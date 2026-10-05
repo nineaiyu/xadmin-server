@@ -111,7 +111,7 @@ class TestEmailTestEndpoint:
 class TestImTestEndpoint:
     def test_uses_form_values_fallback_stored(self, auth_client, settings, monkeypatch):
         """凭据按表单值构造（未提交键回退已存），不触碰进程全局。"""
-        from common.sdk.im.dingtalk import DingTalkClient
+        from integrations.sdk.im.dingtalk import DingTalkClient
 
         settings.DINGTALK_ENABLED = True
         settings.DINGTALK_APP_KEY = "stored-key"

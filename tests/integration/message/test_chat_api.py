@@ -67,7 +67,7 @@ class StubLLM:
 @pytest.fixture
 def stub_llm(monkeypatch):
     stub = StubLLM()
-    monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+    monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
     return stub
 
 
@@ -351,10 +351,10 @@ class TestAiChat:
         assert response.json()["code"] == 1001
 
     def test_llm_failure_degrades_to_system_message(self, auth_client, superuser, ai_enabled, monkeypatch):
-        from common.sdk.ai.chat import AiSdkError
+        from integrations.sdk.ai.chat import AiSdkError
 
         monkeypatch.setattr(
-            "common.sdk.ai.chat.ChatCompletionsClient.chat",
+            "integrations.sdk.ai.chat.ChatCompletionsClient.chat",
             lambda self, messages, temperature=0.2: (_ for _ in ()).throw(AiSdkError("provider down")),
         )
         response = auth_client.post(AI_URL, {"content": "你好"}, format="json")

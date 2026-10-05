@@ -33,7 +33,7 @@ unionId）；企微「应用消息 message/send」（touser=userid）；飞书
   不提供手工填写 IM 账号的入口（unionId/userid 语义易混，且 G2a 登录即自动
   建绑定，零维护）。候选池可再评估「管理员代录」需求。
 
-### 2. 发送 SDK 收口 `common/sdk/im/`，与 `common/sdk/sms/` 对称
+### 2. 发送 SDK 收口 `integrations/sdk/im/`，与 `integrations/sdk/sms/` 对称
 
 - 三个客户端模块（dingtalk / wecom / feishu）：corp/tenant token 获取与缓存
   （django cache，TTL 取 expires_in - 120，凭据摘要入 key，改密自动换 key）、

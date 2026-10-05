@@ -64,7 +64,7 @@ class AiActionExecuteMixin:
         from ai.utils.ai_chat import message_payload, persist_message
         from ai.utils.ai_guard import guard_summary
         from ai.utils.ai_usage import quota_error, tracked_chat_stream
-        from common.sdk.ai.chat import AiSdkError
+        from integrations.sdk.ai.chat import AiSdkError
 
         text = str(request.data.get("message") or "").strip()
         guard = guard_summary(prompt=text)

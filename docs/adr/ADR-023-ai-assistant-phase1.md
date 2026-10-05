@@ -20,7 +20,7 @@
   OpenAI / DeepSeek / Qwen / Kimi / vLLM / Ollama 等主流国内外供应商与本地推理
   全部兼容，一个客户端覆盖整个市场；协议差异大的供应商（如 Anthropic 原生）
   后续按 flavor 扩展（同 ADR-018 模式）；
-- 客户端收口 `common/sdk/ai/`（与 sms/im 对称）：凭据注入、http 可注入
+- 客户端收口 `integrations/sdk/ai/`（与 sms/im 对称）：凭据注入、http 可注入
   （单测离线）、超时与可读错误（供应商原始报文只进日志）；
 - **配置走 Setting 体系**（category=`ai`）：`AI_ASSISTANT_ENABLED`（默认关）/
   `AI_BASE_URL` / `AI_API_KEY`（write_only ⇒ 值级加密落库、API 永不回传）/

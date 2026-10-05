@@ -10,7 +10,7 @@ import json
 
 import pytest
 
-from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
 FULL_CREDENTIALS = {
     "base_url": "https://ai.example.com/v1",
@@ -57,7 +57,7 @@ class _FakeHttp:
 
 @pytest.fixture
 def no_sleep(monkeypatch):
-    monkeypatch.setattr("common.sdk.ai.chat.time.sleep", lambda seconds: None)
+    monkeypatch.setattr("integrations.sdk.ai.chat.time.sleep", lambda seconds: None)
 
 
 class TestRequestBody:

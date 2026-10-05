@@ -14,8 +14,8 @@ from rest_framework.decorators import action
 from ai.utils.ai import readable_ai_error
 from common.core.response import ApiResponse
 from common.drf.renders import sse_response
-from common.sdk.ai.chat import AiSdkError
 from common.swagger.utils import get_default_response_schema
+from integrations.sdk.ai.chat import AiSdkError
 
 
 def _persist_nl_partial(user, reasoning_chunks: list, detail: str) -> dict:

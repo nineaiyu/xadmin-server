@@ -30,7 +30,7 @@ from ai.utils.ai_probe import (
     probe_tool_calls,
     probe_vision,
 )
-from common.sdk.ai.chat import AiSdkError
+from integrations.sdk.ai.chat import AiSdkError
 
 pytestmark = pytest.mark.django_db
 

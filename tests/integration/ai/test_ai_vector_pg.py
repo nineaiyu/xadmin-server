@@ -67,7 +67,7 @@ def _stub_query_embed(monkeypatch):
     """查询向量打桩（检索链路的真实供应商调用在单测里不可达）：固定二维查询向量，
     与各用例写入的二维块向量同维；构建用例自带 monkeypatch 会覆盖本桩。"""
     monkeypatch.setattr(
-        "common.sdk.ai.embeddings.EmbeddingClient.embed", lambda self, texts: [[1.0, 0.0] for _ in texts]
+        "integrations.sdk.ai.embeddings.EmbeddingClient.embed", lambda self, texts: [[1.0, 0.0] for _ in texts]
     )
 
 
@@ -125,7 +125,7 @@ class TestBuildDualWrite:
         _make_embedding_profile()
         chunk = _make_chunk("docs/a.md", 0, "正文")
         monkeypatch.setattr(
-            "common.sdk.ai.embeddings.EmbeddingClient.embed", lambda self, texts: [[1.0, 0.0] for _ in texts]
+            "integrations.sdk.ai.embeddings.EmbeddingClient.embed", lambda self, texts: [[1.0, 0.0] for _ in texts]
         )
         summary = build_embeddings()
         assert summary["ok"] and summary["embedded"] == 1

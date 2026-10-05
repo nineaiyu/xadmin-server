@@ -8,8 +8,8 @@
 
 from django.conf import settings
 
-from common.sdk.im import feishu as feishu_sdk
 from common.utils import get_logger
+from integrations.sdk.im import feishu as feishu_sdk
 
 from .im_base import ImBindingBackend
 

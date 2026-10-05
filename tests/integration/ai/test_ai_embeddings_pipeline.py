@@ -17,7 +17,7 @@ from ai.models.ai import AiKnowledgeChunk, AiProfile
 from ai.utils.ai_embeddings import build_embeddings, invalidate_vector_index, vector_index, vector_stats
 from ai.utils.ai_index import invalidate_chunk_index
 from ai.utils.ai_retrieval import retrieve
-from common.sdk.ai.chat import AiSdkError
+from integrations.sdk.ai.chat import AiSdkError
 
 pytestmark = pytest.mark.django_db
 
@@ -79,7 +79,7 @@ def stub_client(monkeypatch):
     def _install(mapping, fail=False):
         _StubEmbeddingClient.mapping = dict(mapping)
         _StubEmbeddingClient.fail = fail
-        monkeypatch.setattr("common.sdk.ai.embeddings.EmbeddingClient", _StubEmbeddingClient)
+        monkeypatch.setattr("integrations.sdk.ai.embeddings.EmbeddingClient", _StubEmbeddingClient)
         return _StubEmbeddingClient
 
     yield _install

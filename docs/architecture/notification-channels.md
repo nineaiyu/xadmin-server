@@ -58,7 +58,7 @@ backend = Wecom  # 约定：模块级 backend 变量
 | `SMS_NOTIFY_SIGN_NAME` | `""` | 通知短信签名；与模板 code 任一为空则渠道自动降级为不可用 |
 | `SMS_NOTIFY_TEMPLATE_CODE` | `""` | 通知短信模板（模板需含单变量，变量名见下一项） |
 | `SMS_NOTIFY_TEMPLATE_PARAM_KEY` | `content` | 模板变量名（正文填入该变量） |
-| `SMS_BACKEND` | `alibaba` | 短信服务商（`common/sdk/sms/`，验证码与通知共用） |
+| `SMS_BACKEND` | `alibaba` | 短信服务商（`integrations/sdk/sms/`，验证码与通知共用） |
 
 降级语义：开关开启但模板未配置 → `SMS.is_enable()` 返回 `False`，发送链路静默跳过短信渠道，不影响邮件/站内信。
 
@@ -71,8 +71,8 @@ backend = Wecom  # 约定：模块级 backend 变量
 管理页在「消息通知设置」按渠道拆为钉钉 / 企业微信 / 飞书三个页签（后端按
 `?channel=` 收敛字段，非密文凭据必填、密文不回显故可选；测试按钮只测本渠道，
 未启用/未测通按失败反馈）；`is_enable` = 开关 AND 凭据齐全（SMS 同款降级语义），
-token/userid 缓存按凭据摘要隔离（改密换 key）。SDK 收口 `common/sdk/im/`，与
-`common/sdk/sms` 对称。
+token/userid 缓存按凭据摘要隔离（改密换 key）。SDK 收口 `integrations/sdk/im/`，与
+`integrations/sdk/sms` 对称。
 
 ## 六、排错指引
 

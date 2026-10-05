@@ -8,8 +8,8 @@
 
 from django.conf import settings
 
-from common.sdk.im import wecom as wecom_sdk
 from common.utils import get_logger
+from integrations.sdk.im import wecom as wecom_sdk
 
 from .im_base import ImBindingBackend
 

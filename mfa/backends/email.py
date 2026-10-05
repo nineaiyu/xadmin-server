@@ -6,9 +6,9 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
-from common.sdk.sms.exceptions import CodeError, CodeExpired, CodeSendOverRate
 from common.utils import random_string
 from common.utils.verify_code import SendAndVerifyCodeUtil
+from integrations.sdk.sms.exceptions import CodeError, CodeExpired, CodeSendOverRate
 from mfa.backends.base import BaseMFA
 from mfa.const import ConfirmType
 

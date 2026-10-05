@@ -66,7 +66,7 @@ def action_reply(user, request_text: str) -> tuple:
     from ai.utils.ai import native_tools_enabled, structured_chat_client
     from ai.utils.ai_actions import ai_action_enabled, build_draft_prompt, draft_summary, parse_draft
     from ai.utils.ai_guard import mask_text
-    from common.sdk.ai.chat import AiSdkError
+    from integrations.sdk.ai.chat import AiSdkError
 
     if not ai_action_enabled():
         raise DjangoValidationError(_("AI actions are not enabled"))
@@ -154,7 +154,7 @@ def _llm_reply(messages: list, user=None) -> tuple:
     """普通多轮：返回 ``(脱敏后文本, 脱敏命中数)``（输出护栏 + 用量记账）。"""
     from ai.utils.ai_guard import mask_text
     from ai.utils.ai_usage import tracked_chat
-    from common.sdk.ai.chat import AiSdkError
+    from integrations.sdk.ai.chat import AiSdkError
 
     try:
         answer = tracked_chat(user, "chat", messages)
@@ -205,7 +205,7 @@ def _llm_reply_stream(messages: list, user=None):
     """
     from ai.utils.ai import ai_credentials
     from ai.utils.ai_usage import tracked_chat_stream
-    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+    from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
     client = ChatCompletionsClient(ai_credentials())
     try:

@@ -80,7 +80,7 @@ def stub_llm(monkeypatch):
 
     def _install(*answers):
         stub = StubLLM(answers)
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
         holder["stub"] = stub
         return stub
 
@@ -650,7 +650,7 @@ class TestActionInterpretStream:
         def fake_stream(self, messages, **kwargs):
             yield {"type": "content", "text": '{"action": null, "message": "ok"}'}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
         response = action_client.post(
             self.INTERPRET_URL, {"message": "查一下"}, format="json", HTTP_ACCEPT="text/event-stream"
         )
@@ -664,7 +664,7 @@ class TestActionInterpretStream:
             yield {"type": "reasoning", "text": "分析请求"}
             yield {"type": "content", "text": draft_answer("user.search", {"username": "ai_actor"})}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
         response = action_client.post(self.INTERPRET_URL, {"message": "查一下 ai_actor"}, format="json")
         frames = _parse_sse_frames(response)
         assert [event for event, __ in frames] == ["meta", "reasoning", "delta", "done"]
@@ -684,7 +684,7 @@ class TestActionInterpretStream:
                 "text": json.dumps({"action": None, "message": "请说明要查谁"}, ensure_ascii=False),
             }
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
         frames = _parse_sse_frames(action_client.post(self.INTERPRET_URL, {"message": "查用户"}, format="json"))
         assert frames[-1][0] == "done"
         assert frames[-1][1]["kind"] == "message"
@@ -696,7 +696,7 @@ class TestActionInterpretStream:
         def fake_stream(self, messages, **kwargs):
             yield {"type": "content", "text": draft_answer("user.search", {"username": "ai_actor"})}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
         frames = _parse_sse_frames(action_client.post(self.INTERPRET_URL, {"message": "查一下"}, format="json"))
         assert frames[-1][0] == "error"
         assert "permission" in str(frames[-1][1]["detail"]).lower() or "权限" in str(frames[-1][1]["detail"])

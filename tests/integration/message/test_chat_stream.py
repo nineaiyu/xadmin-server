@@ -95,7 +95,7 @@ class StreamStubLLM:
 @pytest.fixture
 def stream_stub(monkeypatch):
     stub = StreamStubLLM()
-    monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+    monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
     return stub
 
 
@@ -159,7 +159,7 @@ class TestStream:
     def test_reasoning_events_forwarded_and_stored(self, auth_client, superuser, ai_enabled, monkeypatch):
         """思考型模型：reasoning 事件先于 delta 实时转发，并落库 extra.reasoning（回看）。"""
         stub = StreamStubLLM(deltas=("答案",), reasonings=("先想", "再看"))
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
 
         frames = parse_sse(auth_client.post(STREAM_URL, {"content": "介绍一下系统"}, format="json"))
         assert [event for event, __ in frames] == ["meta", "reasoning", "reasoning", "delta", "done"]
@@ -174,7 +174,7 @@ class TestStream:
         from django.utils.translation import gettext as _t
 
         stub = StreamStubLLM(deltas=(), reasonings=("想了很久",))
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
 
         frames = parse_sse(auth_client.post(STREAM_URL, {"content": "难问题"}, format="json"))
         assert frames[-1][0] == "done"
@@ -200,10 +200,10 @@ class TestStream:
         assert frames[2][1]["message"]["extra"]["sources"][0]["path"] == "upload/manual.md"
 
     def test_failure_without_delta_degrades_to_system_message(self, auth_client, superuser, ai_enabled, monkeypatch):
-        from common.sdk.ai.chat import AiSdkError
+        from integrations.sdk.ai.chat import AiSdkError
 
         monkeypatch.setattr(
-            "common.sdk.ai.chat.ChatCompletionsClient.chat_stream",
+            "integrations.sdk.ai.chat.ChatCompletionsClient.chat_stream",
             lambda self, messages, temperature=0.2: (_ for _ in ()).throw(AiSdkError("provider down")),
         )
         response = auth_client.post(STREAM_URL, {"content": "你好"}, format="json")
@@ -216,14 +216,14 @@ class TestStream:
         assert not ChatMessage.objects.filter(message_type=ChatMessage.MessageType.AI).exists()
 
     def test_interruption_after_delta_keeps_partial_answer(self, auth_client, superuser, ai_enabled, monkeypatch):
-        from common.sdk.ai.chat import AiSdkError
+        from integrations.sdk.ai.chat import AiSdkError
 
         def broken_stream(self, messages, temperature=0.2):
             yield {"type": "content", "text": "部分"}
             yield {"type": "content", "text": "回答"}
             raise AiSdkError("stream interrupted")
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", broken_stream)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient.chat_stream", broken_stream)
         response = auth_client.post(STREAM_URL, {"content": "写个长答案"}, format="json")
         frames = parse_sse(response)
         assert frames[-1][0] == "done"

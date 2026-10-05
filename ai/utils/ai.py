@@ -153,7 +153,7 @@ def ask(question: str, user=None) -> dict:
     """
     from ai.utils.ai_guard import guard_summary, mask_text
     from ai.utils.ai_usage import tracked_chat
-    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+    from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
     messages, sources, injection_hits = _prepare_rag(question, user=user)
     try:
@@ -191,7 +191,7 @@ def ask_stream(messages: list, sources: list, user=None):
     """
     from ai.utils.ai_guard import StreamMasker, guard_summary
     from ai.utils.ai_usage import tracked_chat_stream
-    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+    from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
     client = ChatCompletionsClient(ai_credentials())
     content_masker = StreamMasker(user)

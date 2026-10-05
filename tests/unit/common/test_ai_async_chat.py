@@ -17,8 +17,8 @@ def anyio_backend():
     return "asyncio"
 
 
-from common.sdk.ai.async_chat import AsyncChatCompletionsClient
-from common.sdk.ai.chat import AiSdkError
+from integrations.sdk.ai.async_chat import AsyncChatCompletionsClient
+from integrations.sdk.ai.chat import AiSdkError
 
 CREDENTIALS = {
     "base_url": "https://ai.example.com/v1",
@@ -161,7 +161,7 @@ async def test_chat_5xx_retries_then_succeeds(monkeypatch):
                 return _FakeResponse(503, {})
             return _FakeResponse(200, self.post_payload)
 
-    monkeypatch.setattr("common.sdk.ai.async_chat.asyncio.sleep", _async_noop)
+    monkeypatch.setattr("integrations.sdk.ai.async_chat.asyncio.sleep", _async_noop)
     http = _FlakyHttp()
     client = AsyncChatCompletionsClient(CREDENTIALS, http_client=http)
     assert await client.chat([{"role": "user", "content": "hi"}]) == "ok"
@@ -216,7 +216,7 @@ async def test_stream_self_built_client_5xx_retry_reads_status(monkeypatch):
         return real_cls(transport=httpx.MockTransport(handler), **kwargs)
 
     monkeypatch.setattr(httpx, "AsyncClient", _factory)
-    monkeypatch.setattr("common.sdk.ai.async_chat._RETRY_BASE_DELAY", 0)
+    monkeypatch.setattr("integrations.sdk.ai.async_chat._RETRY_BASE_DELAY", 0)
 
     client = AsyncChatCompletionsClient(CREDENTIALS)
     frames = [item async for item in client.chat_stream([{"role": "user", "content": "hi"}])]

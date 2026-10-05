@@ -42,6 +42,7 @@ def build_installed_apps(xadmin_apps: list) -> list:
         "notifications.apps.NotificationsConfig",  # 消息通知相关
         "captcha.apps.CaptchaConfig",  # 图片验证码
         "message.apps.MessageConfig",  # websocket 消息
+        "integrations.apps.IntegrationsConfig",  # 外部服务接入（IM/短信/AI 适配器，自 common/sdk 迁出）
         "rest_framework_simplejwt",
         "rest_framework_simplejwt.token_blacklist",
         "corsheaders",

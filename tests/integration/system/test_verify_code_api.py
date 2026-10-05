@@ -9,10 +9,10 @@ import pytest
 from django.core.cache import cache
 
 from common.base.utils import AESCipherV2
-from common.sdk.sms.exceptions import CodeError, CodeExpired
 from common.utils.verify_code import SendAndVerifyCodeUtil
 from identity.models import UserInfo
 from identity.views.auth.verify_code import SendVerifyCodeAPIView
+from integrations.sdk.sms.exceptions import CodeError, CodeExpired
 
 pytestmark = pytest.mark.django_db
 

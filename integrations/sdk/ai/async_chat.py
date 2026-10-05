@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """OpenAI 兼容 chat/completions **异步**客户端（httpx.AsyncClient，S7 根治②）。
 
-与同步客户端（``common/sdk/ai/chat.py``）的分工：
+与同步客户端（``integrations/sdk/ai/chat.py``）的分工：
 - 同步 ``ChatCompletionsClient``：非流式链路（聊天室 / 动作草稿 / NL 查数 / 探测）
   与全部存量调用面，行为零变化；
 - 异步 ``AsyncChatCompletionsClient``：**流式链路**专用——SSE 流在 ASGI 事件循环内
@@ -22,13 +22,13 @@
 import asyncio
 import json
 
-from common.sdk.ai.chat import (
+from common.utils import get_logger
+from integrations.sdk.ai.chat import (
     AiSdkError,
     ChatCompletionsClient,
     parse_chat_message,
     raise_if_empty_answer,
 )
-from common.utils import get_logger
 
 logger = get_logger(__name__)
 

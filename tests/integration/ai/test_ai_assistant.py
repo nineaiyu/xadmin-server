@@ -108,7 +108,7 @@ class StubLLM:
 @pytest.fixture
 def stub_llm(monkeypatch):
     stub = StubLLM()
-    monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+    monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
     return stub
 
 
@@ -188,10 +188,10 @@ class TestAsk:
         """LLM 失败 → 归一为可读文案（不透传内部英文错误；思考型模型单独提示）。"""
         from django.utils.translation import gettext
 
-        from common.sdk.ai.chat import AiSdkError
+        from integrations.sdk.ai.chat import AiSdkError
 
         monkeypatch.setattr(
-            "common.sdk.ai.chat.ChatCompletionsClient.chat",
+            "integrations.sdk.ai.chat.ChatCompletionsClient.chat",
             lambda self, messages, temperature=0.2: (_ for _ in ()).throw(AiSdkError("provider down")),
         )
         response = auth_client.post(f"{ASSISTANT_URL}/ask", {"question": "数据集如何过滤"}, format="json")
@@ -202,10 +202,10 @@ class TestAsk:
         """空回答（思考过长截断）→ 可读文案给出重试/换模型建议。"""
         from django.utils.translation import gettext
 
-        from common.sdk.ai.chat import AiSdkError
+        from integrations.sdk.ai.chat import AiSdkError
 
         monkeypatch.setattr(
-            "common.sdk.ai.chat.ChatCompletionsClient.chat",
+            "integrations.sdk.ai.chat.ChatCompletionsClient.chat",
             lambda self, messages, temperature=0.2: (_ for _ in ()).throw(
                 AiSdkError("The AI provider returned an empty answer")
             ),
@@ -369,7 +369,7 @@ class TestAskStream:
             yield {"type": "content", "text": "根据 [1]"}
             yield {"type": "content", "text": " 的说明。"}
 
-        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
         response = auth_client.post(self.STREAM_URL, {"question": "数据集如何过滤"}, format="json")
         assert response["Content-Type"] == "text/event-stream"
         frames = self._parse_sse(response)
@@ -390,7 +390,7 @@ class TestAskStream:
         async def fake_stream(self, messages, **kwargs):
             yield {"type": "reasoning", "text": "想了很久没结论"}
 
-        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
         frames = self._parse_sse(auth_client.post(self.STREAM_URL, {"question": "数据集如何过滤"}, format="json"))
         assert [event for event, __ in frames] == ["meta", "reasoning", "error"]
         assert frames[-1][1]["detail"] == _t("The model did not provide a final answer; please retry or switch models")
@@ -401,7 +401,7 @@ class TestAskStream:
         async def fake_stream(self, messages, **kwargs):
             yield {"type": "content", "text": "答案"}
 
-        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
         response = auth_client.post(
             self.STREAM_URL, {"question": "数据集如何过滤"}, format="json", HTTP_ACCEPT="text/event-stream"
         )
@@ -415,6 +415,6 @@ class TestAskStream:
         async def fake_stream(self, messages, **kwargs):
             yield {"type": "content", "text": "答案"}
 
-        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
         response = auth_client.post(self.STREAM_URL, {"question": "数据集如何过滤"}, format="json")
         assert response.is_async is True

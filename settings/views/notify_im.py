@@ -17,11 +17,11 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
 from common.core.response import ApiResponse
-from common.sdk.im.base import ImSdkError
-from common.sdk.im.dingtalk import DingTalkClient
-from common.sdk.im.feishu import FeishuClient
-from common.sdk.im.wecom import WeComClient
 from common.utils import get_logger
+from integrations.sdk.im.base import ImSdkError
+from integrations.sdk.im.dingtalk import DingTalkClient
+from integrations.sdk.im.feishu import FeishuClient
+from integrations.sdk.im.wecom import WeComClient
 from settings.serializers.notify_im import (
     DingTalkSettingSerializer,
     FeiShuSettingSerializer,

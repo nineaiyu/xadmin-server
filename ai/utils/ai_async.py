@@ -33,7 +33,7 @@ async def tracked_chat_stream_async(user, feature: str, client, messages: list, 
     """
     from ai.utils.ai_config import active_profile_name
     from ai.utils.ai_usage import acquire_stream_slot, invalidate_usage_cache, record_usage, release_stream_slot
-    from common.sdk.ai.chat import AiSdkError
+    from integrations.sdk.ai.chat import AiSdkError
 
     if not acquire_stream_slot():
         raise AiSdkError("Too many concurrent AI streams, please retry later")
@@ -75,7 +75,7 @@ async def ask_stream_async(messages: list, sources: list, user=None):
     from ai.utils.ai import readable_ai_error
     from ai.utils.ai_config import ai_credentials
     from ai.utils.ai_guard import StreamMasker, guard_summary
-    from common.sdk.ai.async_chat import AiSdkError, AsyncChatCompletionsClient
+    from integrations.sdk.ai.async_chat import AiSdkError, AsyncChatCompletionsClient
 
     # 凭据读取与脱敏规则加载都触 DB（激活档案 / 用户自定义脱敏规则）：在异步段
     # 会被 SynchronousOnlyOperation 拦截——经 sync_to_async 落回线程本地连接构建。

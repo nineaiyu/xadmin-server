@@ -27,9 +27,9 @@ from ai.views.observability import AiObservabilityMixin
 from common.core.response import ApiResponse
 from common.core.throttle import AiThrottleMixin
 from common.drf.renders import SseRendererMixin
-from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 from settings.services import AiAssistantSettingSerializer, BaseSettingViewSet
 
 logger = get_logger(__name__)

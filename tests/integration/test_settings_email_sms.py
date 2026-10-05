@@ -154,7 +154,7 @@ class TestSmsSettingView:
         assert resp.data["detail"] == str(_("test_phone is required"))
 
     def test_config_alibaba_send_success(self, auth_client, settings, monkeypatch):
-        monkeypatch.setattr("common.sdk.sms.alibaba.client", FakeSMSClient)
+        monkeypatch.setattr("integrations.sdk.sms.alibaba.client", FakeSMSClient)
         resp = auth_client.post(f"{SMS_CONFIG_URL}?category=alibaba", SMS_PAYLOAD)
 
         assert resp.data["code"] == 200, resp.data
@@ -170,7 +170,7 @@ class TestSmsSettingView:
 
     def test_config_alibaba_secret_falls_back_to_setting_row(self, auth_client, monkeypatch):
         Setting.objects.create(name="ALIBABA_ACCESS_KEY_SECRET", value='"db-secret"', category="alibaba")
-        monkeypatch.setattr("common.sdk.sms.alibaba.client", FakeSMSClient)
+        monkeypatch.setattr("integrations.sdk.sms.alibaba.client", FakeSMSClient)
         resp = auth_client.post(f"{SMS_CONFIG_URL}?category=alibaba", SMS_PAYLOAD)
 
         assert resp.data["code"] == 200
@@ -178,14 +178,14 @@ class TestSmsSettingView:
         assert client.init_params["access_key_secret"] == "db-secret"
 
     def test_config_alibaba_api_error_surfaces_errmsg(self, auth_client, monkeypatch):
-        monkeypatch.setattr("common.sdk.sms.alibaba.client", APIErrorSMSClient)
+        monkeypatch.setattr("integrations.sdk.sms.alibaba.client", APIErrorSMSClient)
         resp = auth_client.post(f"{SMS_CONFIG_URL}?category=alibaba", SMS_PAYLOAD)
 
         assert resp.data["code"] == 400
         assert resp.data["detail"] == "quota exceeded"
 
     def test_config_alibaba_unexpected_error_keeps_original(self, auth_client, monkeypatch):
-        monkeypatch.setattr("common.sdk.sms.alibaba.client", UnexpectedSMSClient)
+        monkeypatch.setattr("integrations.sdk.sms.alibaba.client", UnexpectedSMSClient)
         resp = auth_client.post(f"{SMS_CONFIG_URL}?category=alibaba", SMS_PAYLOAD)
 
         assert resp.data["code"] == 400

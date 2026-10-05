@@ -92,7 +92,7 @@ def stub_llm(monkeypatch):
 
     def install(replies):
         holder["stub"] = StubLLM(replies)
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: holder["stub"])
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: holder["stub"])
         return holder["stub"]
 
     return install
@@ -377,7 +377,7 @@ class TestInterpretStream:
             yield {"type": "reasoning", "text": "先理解问题"}
             yield {"type": "content", "text": json.dumps(dsl_of(dataset))}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
         response = auth_client.post(self.STREAM_URL, {"question": "列出用户"}, format="json")
         assert response["Content-Type"] == "text/event-stream"
         frames = self._parse_sse(response)
@@ -395,7 +395,7 @@ class TestInterpretStream:
         def fake_stream(self, messages, **kwargs):
             yield {"type": "reasoning", "text": "想不出结论"}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
         frames = self._parse_sse(auth_client.post(self.STREAM_URL, {"question": "随便问问"}, format="json"))
         assert [event for event, __ in frames] == ["meta", "reasoning", "error"]
         assert frames[-1][1]["detail"] == _t("The model did not provide a final answer; please retry or switch models")

@@ -13,11 +13,11 @@ import pytest
 from django.core.cache import cache
 from django.utils.translation import gettext
 
-from common.sdk.im.base import ImSdkError
-from common.sdk.im.dingtalk import DingTalkClient
-from common.sdk.im.feishu import FeishuClient
-from common.sdk.im.wecom import WeComClient
 from identity.models import UserOAuthBinding
+from integrations.sdk.im.base import ImSdkError
+from integrations.sdk.im.dingtalk import DingTalkClient
+from integrations.sdk.im.feishu import FeishuClient
+from integrations.sdk.im.wecom import WeComClient
 from notifications.backends import BACKEND
 from notifications.backends.dingtalk import DingTalk
 from notifications.backends.feishu import FeiShu
@@ -330,7 +330,7 @@ class TestBindingAccounts:
                 "asyncsend_v2": {"errcode": 0, "task_id": 1},
             }
         )
-        from common.sdk.im import dingtalk as dingtalk_sdk
+        from integrations.sdk.im import dingtalk as dingtalk_sdk
 
         monkeypatch.setattr(
             dingtalk_sdk,
@@ -351,7 +351,7 @@ class TestBindingAccounts:
                 "message/send": {"errcode": 0},
             }
         )
-        from common.sdk.im import wecom as wecom_sdk
+        from integrations.sdk.im import wecom as wecom_sdk
 
         monkeypatch.setattr(
             wecom_sdk, "WeComClient", lambda credentials, http_client=None: WeComClient(credentials, http_client=http)
@@ -363,7 +363,7 @@ class TestBindingAccounts:
     def test_send_skipped_when_no_binding(self, settings, im_providers, normal_user, monkeypatch):
         enable_all_channels(settings)
         http = StubHttp({})
-        from common.sdk.im import wecom as wecom_sdk
+        from integrations.sdk.im import wecom as wecom_sdk
 
         monkeypatch.setattr(
             wecom_sdk, "WeComClient", lambda credentials, http_client=None: WeComClient(credentials, http_client=http)
@@ -380,7 +380,7 @@ class TestBindingAccounts:
                 "im/v1/messages": {"code": 0},
             }
         )
-        from common.sdk.im import feishu as feishu_sdk
+        from integrations.sdk.im import feishu as feishu_sdk
 
         monkeypatch.setattr(
             feishu_sdk,

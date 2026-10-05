@@ -17,9 +17,9 @@ from rest_framework.exceptions import APIException
 
 from common.base.utils import get_choices_dict
 from common.core.response import ApiResponse
-from common.sdk.sms.endpoint import BACKENDS
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from integrations.sdk.sms.endpoint import BACKENDS
 from settings.models import Setting
 from settings.serializers.sms import AlibabaSMSSettingSerializer, SMSSettingSerializer
 from settings.views.settings import BaseSettingViewSet
@@ -107,7 +107,7 @@ class SmsConfigViewSet(BaseSettingViewSet):
             return ApiResponse(code=1001, detail=_("test_phone is required"))
 
         init_params, send_sms_params = self.get_params_by_backend(self.category, serializer.validated_data)
-        m = importlib.import_module(f"common.sdk.sms.{self.category}", __package__)
+        m = importlib.import_module(f"integrations.sdk.sms.{self.category}", __package__)
         try:
             client = m.client(**init_params)
             client.send_sms(phone_numbers=[test_phone], **send_sms_params)

@@ -41,7 +41,7 @@ class StubLLM:
 @pytest.fixture
 def stub_llm(monkeypatch):
     stub = StubLLM()
-    monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+    monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
     return stub
 
 
@@ -86,7 +86,7 @@ class TestReferenceIsolation:
     def test_output_masked_before_response(self, ai_enabled, auth_client, monkeypatch):
         _make_chunk("数据集执行时会按数据权限过滤。")
         stub = StubLLM(answer="配置里的 key 是 sk-abcdefghijklmnop 请妥善保管")
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
         body = auth_client.post(f"{ASSISTANT_URL}/ask", {"question": "数据集如何过滤"}, format="json").json()["data"]
         assert "sk-abcdefghijklmnop" not in body["answer"]
         assert REDACTED in body["answer"]

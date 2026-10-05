@@ -279,7 +279,7 @@ class TestMultiDrafts:
         def fake_stream(self, messages, **kwargs):
             yield {"type": "content", "text": text}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
 
     INTERPRET_URL = "/api/ai/assistant/action/interpret/stream"
 

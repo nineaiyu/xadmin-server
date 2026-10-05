@@ -69,7 +69,7 @@ class _StubEmbeddingClient:
 
     def embed(self, texts):
         if type(self).fail:
-            from common.sdk.ai.chat import AiSdkError
+            from integrations.sdk.ai.chat import AiSdkError
 
             raise AiSdkError("provider down")
         default = type(self).mapping.get("__default__", [1.0, 0.0])
@@ -81,7 +81,7 @@ def stub_client(monkeypatch):
     def _install(mapping, fail=False):
         _StubEmbeddingClient.mapping = dict(mapping)
         _StubEmbeddingClient.fail = fail
-        monkeypatch.setattr("common.sdk.ai.embeddings.EmbeddingClient", _StubEmbeddingClient)
+        monkeypatch.setattr("integrations.sdk.ai.embeddings.EmbeddingClient", _StubEmbeddingClient)
         return _StubEmbeddingClient
 
     yield _install

@@ -10,7 +10,7 @@ from rest_framework import serializers
 
 from common.core.fields import PhoneField
 from common.core.validators import PhoneValidator
-from common.sdk.sms.endpoint import BACKENDS
+from integrations.sdk.sms.endpoint import BACKENDS
 from settings.serializers.contract import SettingSaveContractMixin
 
 

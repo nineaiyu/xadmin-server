@@ -164,7 +164,7 @@ def search_vectors(question: str, top_k: int = VECTOR_CANDIDATES) -> list:
         return []
     if not vector_index():
         return []
-    from common.sdk.ai.embeddings import EmbeddingClient
+    from integrations.sdk.ai.embeddings import EmbeddingClient
 
     client = EmbeddingClient(credentials)
     query_vector = _embed_query(client, question)
@@ -252,7 +252,7 @@ def build_embeddings(
         summary["detail"] = "no active embedding profile"
         return summary
 
-    from common.sdk.ai.embeddings import AiSdkError, EmbeddingClient
+    from integrations.sdk.ai.embeddings import AiSdkError, EmbeddingClient
 
     client = EmbeddingClient(credentials)
     model = client.model

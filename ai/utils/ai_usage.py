@@ -160,7 +160,7 @@ def quota_error(user, feature: str = "") -> str:
 def tracked_chat(user, feature: str, messages: list, client=None, track: str = "", **overrides) -> str:
     """单轮 LLM 调用 + 用量记账（保持 ``ChatCompletionsClient.chat`` 返回契约）。"""
     from ai.utils.ai_config import active_profile_name, ai_credentials
-    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+    from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
     owned = client is None
     client = client or ChatCompletionsClient(ai_credentials())
@@ -197,7 +197,7 @@ def tracked_chat_tools(
 ) -> dict:
     """原生 function calling 调用 + 用量记账（保持 ``chat_tools`` 返回契约）。"""
     from ai.utils.ai_config import active_profile_name, ai_credentials
-    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+    from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
     owned = client is None
     client = client or ChatCompletionsClient(ai_credentials())
@@ -235,7 +235,7 @@ def tracked_chat_stream(user, feature: str, client, messages: list, track: str =
     流式增量不改变调用方处理：产出结束后按累计用量记账；失败路径同样记账（ok=False）。
     """
     from ai.utils.ai_config import active_profile_name
-    from common.sdk.ai.chat import AiSdkError
+    from integrations.sdk.ai.chat import AiSdkError
 
     # with 覆盖整个生成器生命周期：异常/中断路径也释放并发信号量
     with stream_slot() as acquired:

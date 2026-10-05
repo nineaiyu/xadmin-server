@@ -11,8 +11,6 @@ from django.conf import settings
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 
-from common.sdk.sms.endpoint import SMS
-from common.sdk.sms.exceptions import CodeError, CodeExpired, CodeSendOverRate
 from common.tasks import send_mail_async
 from common.utils import get_logger, random_string
 
@@ -21,6 +19,10 @@ logger = get_logger(__name__)
 
 @shared_task(verbose_name=_("Send SMS code"))
 def send_sms_async(target, code):
+    # SMS 客户端住 integrations（外部服务接入域）：框架层不模块级依赖业务 app，
+    # 门禁只留函数级惰性 import 逃生门
+    from integrations.sdk.sms.endpoint import SMS
+
     SMS().send_verify_code(target, code)
 
 
@@ -53,6 +55,8 @@ class SendAndVerifyCodeUtil:
             raise
 
     def verify(self, code):
+        from integrations.sdk.sms.exceptions import CodeError, CodeExpired
+
         right = cache.get(self.key)
         if not right:
             raise CodeExpired
@@ -71,6 +75,8 @@ class SendAndVerifyCodeUtil:
         return cache.ttl(self.key)
 
     def __rata(self):
+        from integrations.sdk.sms.exceptions import CodeSendOverRate
+
         token_send_at = cache.get(self.limit_key, 0)
         if token_send_at:
             raise CodeSendOverRate(cache.ttl(self.limit_key))

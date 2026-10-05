@@ -13,8 +13,8 @@ import pytest
 from django.utils.translation import gettext_lazy as _
 from rest_framework.test import APIRequestFactory
 
-from common.sdk.sms.exceptions import CodeError, CodeExpired, CodeSendOverRate
 from identity.models import UserPasskey
+from integrations.sdk.sms.exceptions import CodeError, CodeExpired, CodeSendOverRate
 from mfa.backends import get_backend, get_user_mfa_policy
 from mfa.backends.base import BaseMFA
 from mfa.backends.email import EmailBackend

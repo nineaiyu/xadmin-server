@@ -6,8 +6,8 @@
 
 import pytest
 
-from common.sdk.ai.chat import AiSdkError
-from common.sdk.ai.embeddings import EmbeddingClient
+from integrations.sdk.ai.chat import AiSdkError
+from integrations.sdk.ai.embeddings import EmbeddingClient
 
 CREDENTIALS = {
     "base_url": "https://ai.example.com/v1",
@@ -47,7 +47,7 @@ class _FakeHttp:
 
 @pytest.fixture
 def no_sleep(monkeypatch):
-    monkeypatch.setattr("common.sdk.ai.embeddings.time.sleep", lambda seconds: None)
+    monkeypatch.setattr("integrations.sdk.ai.embeddings.time.sleep", lambda seconds: None)
 
 
 def _client(http, **overrides):

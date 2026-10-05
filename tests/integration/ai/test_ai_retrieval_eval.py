@@ -137,7 +137,7 @@ def test_hybrid_hit_rate_with_stub_embeddings(corpus, monkeypatch):
     )
     profile.api_key_plain = "test-key"
     profile.save(update_fields=["api_key"])
-    monkeypatch.setattr("common.sdk.ai.embeddings.EmbeddingClient", _HashBagEmbeddingClient)
+    monkeypatch.setattr("integrations.sdk.ai.embeddings.EmbeddingClient", _HashBagEmbeddingClient)
     try:
         summary = build_embeddings()
         assert summary["enabled"] and summary["ok"], summary

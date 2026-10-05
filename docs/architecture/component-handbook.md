@@ -258,9 +258,9 @@ config.yml（config.py）→ 同名环境变量 → 代码默认值   ← server
 
 | SDK | 用途 |
 |---|---|
-| `common/sdk/ai/chat.py` | `chat(messages, **overrides)` / `chat_stream(...)`（OpenAI 兼容，凭据取激活档案） |
-| `common/sdk/im/` | 钉钉 / 企微 / 飞书消息发送（token 缓存） |
-| `common/sdk/sms/` | 短信发送 |
+| `integrations/sdk/ai/chat.py` | `chat(messages, **overrides)` / `chat_stream(...)`（OpenAI 兼容，凭据取激活档案） |
+| `integrations/sdk/im/` | 钉钉 / 企微 / 飞书消息发送（token 缓存） |
+| `integrations/sdk/sms/` | 短信发送 |
 
 业务调用 AI/IM/短信一律走 SDK，不要自己拼 HTTP。
 

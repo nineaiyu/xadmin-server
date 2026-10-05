@@ -42,7 +42,7 @@ def structured_chat_client():
     避免思考型模型无界推理挂起（实测）；凭据按 ``structured`` 用途取档案
     （未配该用途档案时回落 chat 激活档案，单档案场景零变化）。
     """
-    from common.sdk.ai.chat import ChatCompletionsClient
+    from integrations.sdk.ai.chat import ChatCompletionsClient
 
     client = ChatCompletionsClient(ai_credentials(PURPOSE_STRUCTURED))
     return client, client.max_tokens or ai_structured_max_tokens()

@@ -11,8 +11,8 @@
 
 import time
 
-from common.sdk.ai.chat import AiSdkError
 from common.utils import get_logger
+from integrations.sdk.ai.chat import AiSdkError
 
 logger = get_logger(__name__)
 

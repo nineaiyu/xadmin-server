@@ -205,7 +205,7 @@ class TestTrackedWrappers:
 
     def test_tracked_chat_records_failure(self, superuser):
         from ai.utils.ai_usage import tracked_chat
-        from common.sdk.ai.chat import AiSdkError
+        from integrations.sdk.ai.chat import AiSdkError
 
         class Client:
             model = "m"

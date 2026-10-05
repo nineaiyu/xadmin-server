@@ -55,6 +55,8 @@ SERVER_TOP_PREFIXES = (
     "loadjson/",
     "scripts/",
     "ops/",
+    "integrations/",
+    "devtools/",
     "docs/",
     "tests/",
     "demo/",

@@ -15,8 +15,8 @@
 
 from django.utils import timezone
 
-from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 from common.utils import get_logger
+from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
 logger = get_logger(__name__)
 
