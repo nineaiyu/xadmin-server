@@ -36,8 +36,8 @@ from django.core.management.base import BaseCommand
 from django.db.models import ProtectedError
 from django.utils import timezone
 
+from demo_seed.management.commands.seed_demo_org import TEMPLATE_VERSION_REMARK
 from identity.models import DeptInfo, UserInfo
-from system.management.commands.seed_demo_org import TEMPLATE_VERSION_REMARK
 
 DEMO_USER_PREFIX = "demo_"
 DEMO_ASSIGNEE_MARK = "demo_flow_"

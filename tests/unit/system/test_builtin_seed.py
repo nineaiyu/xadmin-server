@@ -190,7 +190,7 @@ def test_seed_submissions_pass_validation():
 
 def test_seed_demo_flows_command_aligns_with_seed():
     """seed_demo_flows 的流程 code / 审批人改写目标必须与种子对齐（防改名静默失效）。"""
-    from approval.management.commands import seed_demo_flows as command
+    from demo_seed.management.commands import seed_demo_flows as command
 
     codes = {item["fields"]["code"] for item in _load("approvalflow.json")}
     assert set(command.FLOW_CODES) <= codes, "seed_demo_flows.FLOW_CODES 与种子流程 code 不一致"

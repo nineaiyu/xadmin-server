@@ -75,8 +75,8 @@ python manage.py seed_demo_book
   python manage.py migrate demo
   ```
 - **权限点清单**：demo 路由不参与 loadjson 权限点扫描（既定口径），新增 action 时必须同步
-  `seed_demo_book.py` 的 `PERMISSION_PLAN`（守护测试
-  `tests/unit/system/test_seed_demo_book.py` 会因清单与 ViewSet 不一致而失败）；
+  `demo_seed/management/commands/seed_demo_book.py` 的 `PERMISSION_PLAN`（守护测试
+  `tests/unit/demo_seed/test_seed_demo_book.py` 会因清单与 ViewSet 不一致而失败）；
 - **二次确认开关**：写入 `APPROVAL_REQUIRED_PATHS`（系统配置）；单账号环境无法自审——
   演示第 4 步需两个账号（或为普通账号授权后由其发起、超管批准）；
 - **回收站保留期**：`RECYCLE_BIN_RETENTION_DAYS`（默认 30 天）之外的记录由清理任务物理清除；

@@ -223,11 +223,16 @@ def demo_account_selfheal_job():
     改密码 / 故意输错锁死公共演示登录（密码本就公开，锁定无安全增益）。
     演示账号被人工停用或移入回收站视为有意下线，跳过不自愈。
     """
+    from django.apps import apps as django_apps
     from django.core.management import call_command
 
     from identity.services import UserInfo
     from settings.utils.security import LoginBlockUtil, MFABlockUtils
-    from system.management.commands.seed_demo_admin import ADMIN_USERNAME
+
+    if not django_apps.is_installed("demo_seed"):
+        # 演示种子 app 未注册（生产裁剪）却仍被调度：无处自愈，直接跳过
+        return None
+    from demo_seed.management.commands.seed_demo_admin import ADMIN_USERNAME
 
     user = UserInfo.all_objects.filter(username=ADMIN_USERNAME, is_superuser=False).first()
     if user is None or user.deleted_at or not user.is_active:

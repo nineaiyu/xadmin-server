@@ -31,9 +31,9 @@ from django.utils import timezone
 
 from ai.utils.ai_chat import persist_message
 from approval.models import ApprovalInstance
+from demo_seed.management.commands.seed_demo_admin import ADMIN_USERNAME
 from file.models import UploadFile
 from identity.models import DeptInfo, Post, UserInfo
-from system.management.commands.seed_demo_admin import ADMIN_USERNAME
 from system.models import Tag, TaggedItem
 from task.services import ExportRecord
 
@@ -180,7 +180,7 @@ class Command(BaseCommand):
 
     def _demo_tag_object_ids(self) -> list:
         """演示打标对象的 object_id 集合（清理依据，须在对象被清前运行）。"""
-        from approval.management.commands.seed_demo_flows import INSTANCE_PKS
+        from demo_seed.management.commands.seed_demo_flows import INSTANCE_PKS
 
         ids = set(INSTANCE_PKS)
         ids.update(str(pk) for pk in self._demo_admin_pks())

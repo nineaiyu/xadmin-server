@@ -16,8 +16,6 @@ from django.conf import settings
 from django.core.management import call_command
 
 from ai.models.ai import AiKnowledgeDocument
-from approval.management.commands.seed_demo_flows import INSTANCE_PKS as FLOW_INSTANCE_PKS
-from approval.management.commands.seed_demo_leave import LEAVE_PKS
 from approval.models import Leave
 from approval.models.approval import (
     ApprovalDelegation,
@@ -28,12 +26,14 @@ from approval.models.approval import (
     ApprovalRequest,
 )
 from dataset.models import DynamicForm, DynamicFormSubmission
+from demo_seed.management.commands.seed_demo_flows import INSTANCE_PKS as FLOW_INSTANCE_PKS
+from demo_seed.management.commands.seed_demo_leave import LEAVE_PKS
+from demo_seed.management.commands.seed_demo_org import GRANT_MODELS
 from file.models import UploadFile
 from identity.models import DeptInfo, UserInfo
 from identity.models.token import ApiApplication
 from message.models import ChatMessage
 from notifications.models import MessageContent
-from system.management.commands.seed_demo_org import GRANT_MODELS
 from system.models import Menu, MenuMeta, ModelLabelField
 from task.models.webhook import WebhookDelivery, WebhookSubscription
 

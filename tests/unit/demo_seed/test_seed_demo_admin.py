@@ -14,21 +14,21 @@ import pytest
 from django.core.management import call_command
 
 from ai.models.ai import AiChatMessage
-from identity.models import DeptInfo, Post, UserInfo, UserRole
-from system.management.commands.seed_demo_admin import (
+from demo_seed.management.commands.seed_demo_admin import (
     ADMIN_PASSWORD,
     ADMIN_USERNAME,
     DEMO_ROLE_CODE,
     DENY_PERMISSIONS,
     is_destructive,
 )
-from system.management.commands.seed_demo_extras import (
+from demo_seed.management.commands.seed_demo_extras import (
     AI_MESSAGE_PLAN,
     EXPORT_PKS,
     POST_ASSIGN,
     POST_CODE_PREFIX,
     POST_PLAN,
 )
+from identity.models import DeptInfo, Post, UserInfo, UserRole
 from system.models import Menu, MenuMeta, Tag, TaggedItem
 from task.services import ExportRecord
 

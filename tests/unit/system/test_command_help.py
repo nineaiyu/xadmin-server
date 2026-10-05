@@ -16,7 +16,7 @@ import pytest
 from django.core.management import load_command_class
 
 # 仓库内的本地 app（第三方包不纳入：它们的 help 不归本项目负责）
-LOCAL_APPS = ("system", "common", "captcha")
+LOCAL_APPS = ("system", "common", "captcha", "demo_seed")
 
 
 def _local_commands():

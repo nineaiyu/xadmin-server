@@ -13,7 +13,7 @@ from django.core.management import call_command
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 from common.core.config import SysConfig
-from system.management.commands.seed_demo_book import (
+from demo_seed.management.commands.seed_demo_book import (
     APPROVAL_PATTERNS,
     DIR_META_PK,
     FLOW_PK,
@@ -83,7 +83,7 @@ class TestSeedDemoBook:
         from django_celery_beat.models import PeriodicTask
 
         from demo.models import Book
-        from system.management.commands.seed_demo_book import DEMO_BOOKS, PERIODIC_TASK_NAME, PERIODIC_TASK_PATH
+        from demo_seed.management.commands.seed_demo_book import DEMO_BOOKS, PERIODIC_TASK_NAME, PERIODIC_TASK_PATH
 
         names = [item[0] for item in DEMO_BOOKS]
         call_command("seed_demo_book")

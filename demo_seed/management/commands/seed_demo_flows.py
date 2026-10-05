@@ -23,7 +23,8 @@
 
 from django.core.management.base import BaseCommand
 
-from approval.management.commands._seed_demo_flows_data import (
+from approval.models import ApprovalInstance, ApprovalRequest
+from demo_seed.management.commands._seed_demo_flows_data import (
     ALL_DEMO_PKS,
     DEMO_APPLIER,
     DEMO_APPROVER,
@@ -36,7 +37,6 @@ from approval.management.commands._seed_demo_flows_data import (
     SUBMISSION_PKS,
     DemoDataMixin,
 )
-from approval.models import ApprovalInstance, ApprovalRequest
 
 __all__ = [
     "ALL_DEMO_PKS",

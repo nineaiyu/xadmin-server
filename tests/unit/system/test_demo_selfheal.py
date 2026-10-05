@@ -9,9 +9,9 @@ import pytest
 from django.core.management import call_command
 from django.utils import timezone
 
+from demo_seed.management.commands.seed_demo_admin import ADMIN_PASSWORD, ADMIN_USERNAME
 from identity.models import DeptInfo, UserInfo
 from settings.utils.security import LoginBlockUtil
-from system.management.commands.seed_demo_admin import ADMIN_PASSWORD, ADMIN_USERNAME
 from system.tasks import demo_account_selfheal_job
 
 pytestmark = pytest.mark.django_db

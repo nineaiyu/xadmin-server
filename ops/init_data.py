@@ -86,6 +86,13 @@ def main() -> None:
     management.call_command("load_init_json")
 
     if args.with_demo:
+        import django.apps
+
+        if not django.apps.apps.is_installed("demo_seed"):
+            raise SystemExit(
+                "[init] --with-demo 需要演示种子 app（demo_seed）：开发/演示环境默认注册；"
+                "生产裁剪（未启用 demo app 且非 DEBUG）下不可用，请去掉 --with-demo"
+            )
         management.call_command("seed_demo_all")
 
     print("[init] done. Health check: /api/common/api/health")
