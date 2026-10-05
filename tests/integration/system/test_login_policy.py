@@ -14,9 +14,9 @@ from datetime import time
 import pytest
 from django.utils import timezone
 
+from audit.models import UserLoginLog
 from identity.models import LoginAccessPolicy, UserSession
 from identity.utils.login_policy import evaluate_login_policy, match_ip, match_time, preview_login_policy
-from system.models import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 

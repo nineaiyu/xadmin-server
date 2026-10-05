@@ -9,9 +9,9 @@ from django.conf import settings
 from django.test import RequestFactory
 from django.utils import timezone
 
+from audit.models.log import UserLoginLog
 from identity.models.user import UserInfo
 from identity.utils.login_alert import maybe_alert_abnormal_login
-from system.models.log import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 

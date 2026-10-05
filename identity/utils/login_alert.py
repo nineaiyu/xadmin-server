@@ -36,7 +36,7 @@ def _is_private_ip(ip):
 
 def _detect_new_dimensions(user, ip, city, browser, system):
     """返回本次登录相对基线窗口历史首次出现的维度清单（空列表 = 无异常）。"""
-    from system.services import UserLoginLog
+    from audit.services import UserLoginLog
 
     days = int(getattr(settings, "SECURITY_LOGIN_BASELINE_DAYS", 30))
     since = timezone.now() - datetime.timedelta(days=days)

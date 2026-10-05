@@ -235,8 +235,9 @@ def _seed_system_core(admin, covered: dict) -> list:
 
 def _seed_system_extended(users, admin, covered: dict) -> None:
     """任务执行记录 / 个人访问令牌 / 数据权限 / 登录日志。"""
+    from audit.services import UserLoginLog
     from identity.models import PersonalAccessToken
-    from system.models import DataPermission, TaskExecution, UserLoginLog
+    from system.models import DataPermission, TaskExecution
 
     try:
         TaskExecution.objects.bulk_create(

@@ -22,7 +22,7 @@ RECALL_SNAPSHOT_MAX = 2000
 def write_recall_snapshot(message, user) -> None:
     """写入撤回审计快照（异常只告警：撤回主流程不受影响）。"""
     try:
-        from system.services import OperationLog
+        from audit.services import OperationLog
 
         OperationLog.objects.create(
             module=RECALL_AUDIT_MODULE,

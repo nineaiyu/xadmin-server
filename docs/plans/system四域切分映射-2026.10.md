@@ -191,6 +191,19 @@ input_types、_generate_crud、import_actions.get_model）随域改写；FK 字�
 demo/export/import_）改 `file.UploadFile`；迁移重建 file.0001 deps=identity；路由审计 18 处视图
 前缀平移零违例。
 
+**audit（T04-11）✅**：OperationLog/UserLoginLog/DataMaskRule 独立成 app（audit_* 表）；
+views/{operationlog,loginlog,mask,user/login_log} + serializers/{log,mask} + utils/audit 全树迁入；
+`audit/urls.py` 同前缀挂载（logs/operation、logs/login、mask-rules、user/log）；契约面：
+common.contracts 八项提供方改挂 audit.services（OperationLog、maybe_alert_sensitive_operation、
+apply_mask 族、impact 族），identity/message 等消费方同步改缝；SensitiveOperationMessage 迁
+audit/notifications.py（连 notifications_alert 节流实现），DataMaskRule 失效 receiver 迁
+audit/signal_handler.py（apps.ready 注册）；auto_clean_operation_log 实现体落 audit/services/cleanup.py
+（任务壳留 system.tasks）；log_archive 命令随域；API_LOG_IGNORE 的模型键、loadjson 种子
+（datamaskrule/operationlog/userloginlog 子树）、ai_mask get_model、dashboard 的
+LoginLogSerializer 惰性引用随域改写；迁移重建 audit.0001（deps=identity）+ system.0001 重生成；
+路由审计 25 处视图前缀平移零违例。另：migrate 期消息订阅注册表补挂 identity/audit 通知模块——
+修复 identity 域拆分后五类消息在全新库上不建订阅行的隐性回归。
+
 **口径修正记录**（相对上文的计划表述）：
 - `common/contracts.py` 无 file.services 提供方——common 侧对 UploadFile 的消费全部是
   label 串比较（AutoCleanFileMixin / input_types / serializers.py），不产生 import 缝，无需登记；

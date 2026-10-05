@@ -13,7 +13,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from ai.models.mcp import McpServer
-from system.models import OperationLog
+from audit.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 

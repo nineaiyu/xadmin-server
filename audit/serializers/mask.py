@@ -2,8 +2,8 @@
 # -*- coding:utf-8 -*-
 """字段级数据脱敏规则序列化器。"""
 
+from audit.models.mask import DataMaskRule
 from common.core.serializers import BaseModelSerializer
-from system.models.mask import DataMaskRule
 
 
 class DataMaskRuleSerializer(BaseModelSerializer):

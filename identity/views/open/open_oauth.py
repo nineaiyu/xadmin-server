@@ -22,6 +22,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
+from audit.services import OperationLog
 from common.core.response import ApiResponse
 from common.core.throttle import OAuthClientThrottle
 from common.swagger.utils import get_default_response_schema
@@ -34,7 +35,6 @@ from identity.services.open_oauth import (
 )
 from identity.utils.pat_scope import scope_display_value
 from identity.views.open.open import verify_application_credentials
-from system.services import OperationLog
 
 
 def oauth_error(error: str, detail=None, status: int = 400):

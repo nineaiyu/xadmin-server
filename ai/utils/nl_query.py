@@ -220,7 +220,7 @@ def audit_nl_query(
     usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。
     guard 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数，缺省不写）。
     """
-    from system.models import OperationLog
+    from audit.services import OperationLog
 
     try:
         OperationLog.objects.create(

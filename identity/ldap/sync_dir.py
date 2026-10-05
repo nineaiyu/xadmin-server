@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from audit.services import OperationLog
 from common.utils import get_logger
 from identity.ldap.client import (
     entry_to_attrs,
@@ -23,7 +24,6 @@ from identity.ldap.sync import (
     _sync_roles,
 )
 from identity.models import DeptInfo, LdapUserBinding, UserInfo
-from system.services import OperationLog
 
 logger = get_logger(__name__)
 

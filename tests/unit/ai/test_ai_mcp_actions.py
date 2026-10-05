@@ -28,7 +28,7 @@ from ai.utils.ai_mcp_actions import (
     normalize_tool_key,
     unique_tool_key,
 )
-from system.models import OperationLog
+from audit.models import OperationLog
 
 pytestmark = [pytest.mark.django_db]
 

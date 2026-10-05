@@ -12,7 +12,7 @@ import pytest
 from django.conf import settings
 from rest_framework.test import APIClient
 
-from system.models.log import UserLoginLog
+from audit.models.log import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 

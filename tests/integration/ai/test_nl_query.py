@@ -12,9 +12,10 @@ import pytest
 from django.utils.translation import gettext
 from rest_framework.test import APIClient
 
+from audit.models import OperationLog
 from dataset.models import Dataset
 from identity.models import UserInfo
-from system.models import DataPermission, ModelLabelField, OperationLog
+from system.models import DataPermission, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 

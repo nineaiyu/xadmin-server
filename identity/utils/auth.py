@@ -10,6 +10,7 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
 
+from audit.services import UserLoginLog
 from captcha.services import CaptchaAuth
 from common.base.utils import AESCipherV2
 from common.utils.ip import get_ip_city
@@ -19,7 +20,6 @@ from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
 from identity.models import UserInfo
 from identity.notifications import DifferentCityLoginMessage
 from settings.services import LoginBlockUtil, LoginIpBlockUtil
-from system.services import UserLoginLog
 
 
 class ValidateError(APIException):
@@ -103,7 +103,7 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, s
         # 登录访问策略命中结果（登录视图写入 request.login_policy_result）
         "policy_result": str(getattr(request, "login_policy_result", "") or "")[:128],
     }
-    from system.serializers.log import LoginLogSerializer  # 审计域序列化器，调用期惰性
+    from audit.serializers.log import LoginLogSerializer  # 审计域序列化器，调用期惰性
 
     serializer = LoginLogSerializer(data=data, ignore_field_permission=True)
     serializer.is_valid(raise_exception=True)

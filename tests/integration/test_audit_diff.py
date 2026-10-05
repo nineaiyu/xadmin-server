@@ -5,8 +5,8 @@ import json
 
 import pytest
 
+from audit.models import OperationLog
 from notifications.models import MessageContent
-from system.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 

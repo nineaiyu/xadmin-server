@@ -12,8 +12,8 @@ import secrets
 import pytest
 from rest_framework.test import APIClient
 
+from audit.models.log import OperationLog
 from identity.models.token import OAuthRefreshToken, PersonalAccessToken
-from system.models.log import OperationLog
 
 pytestmark = pytest.mark.django_db
 

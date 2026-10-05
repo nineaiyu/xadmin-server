@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from system.models import OperationLog
+from audit.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 

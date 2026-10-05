@@ -8,15 +8,11 @@ from system.models import (
     Menu,
     MenuMeta,
     ModelLabelField,
-    OperationLog,
     SystemConfig,
-    UserLoginLog,
     UserPersonalConfig,
 )
 
 admin.site.register(ModelLabelField)
-admin.site.register(UserLoginLog)
-admin.site.register(OperationLog)
 admin.site.register(MenuMeta)
 admin.site.register(Menu)
 admin.site.register(DataPermission)

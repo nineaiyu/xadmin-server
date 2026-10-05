@@ -15,12 +15,11 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
+from audit.services import LoginLogSerializer, OperationLog, UserLoginLog
 from common.base.magic import cache_response
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from identity.services import UserInfo
-from system.models import OperationLog, UserLoginLog
-from system.serializers.log import LoginLogSerializer
 
 
 def trend_info(queryset, limit_day=30, total_count=True):

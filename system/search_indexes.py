@@ -47,9 +47,9 @@ SEARCH_TRGM_INDEXES = (
 SEARCH_TRGM_EXEMPT = {
     ("identity_deptinfo", "name"): "小表（部门千级以内），顺序扫描成本可忽略",
     ("identity_deptinfo", "code"): "小表（部门千级以内），顺序扫描成本可忽略",
-    ("system_operationlog", "path"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
-    ("system_operationlog", "module"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
-    ("system_operationlog", "ipaddress"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
+    ("audit_operationlog", "path"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
+    ("audit_operationlog", "module"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
+    ("audit_operationlog", "ipaddress"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
     ("system_tag", "name"): "小表（管理配置类，百级以内），顺序扫描成本可忽略",
     ("system_tag", "remark"): "小表（管理配置类，百级以内），顺序扫描成本可忽略",
     ("identity_post", "name"): "小表（岗位管理类，百级以内），顺序扫描成本可忽略",

@@ -13,7 +13,7 @@ import pytest
 from ai.models.ai import AiProfile, AiUsageRecord
 from ai.utils.ai_actions import ACTION_DASHBOARD_OVERVIEW
 from ai.utils.ai_config import PURPOSE_STRUCTURED, set_active_profile
-from system.models.log import OperationLog
+from audit.models.log import OperationLog
 
 pytestmark = pytest.mark.django_db
 

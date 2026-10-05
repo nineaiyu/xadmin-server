@@ -8,11 +8,12 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
+from audit.models import OperationLog
+from audit.models.log import UserLoginLog
 from common.core.auth import ServerAccessToken
 from identity.models import UserSession
 from identity.models.user import UserInfo
-from system.models import DataPermission, OperationLog
-from system.models.log import UserLoginLog
+from system.models import DataPermission
 
 pytestmark = pytest.mark.django_db
 

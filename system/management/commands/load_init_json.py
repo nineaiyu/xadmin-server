@@ -13,6 +13,7 @@ from django.db import DEFAULT_DB_ALIAS
 from django.db.models.signals import ModelSignal
 
 from approval.models import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
+from audit.models import DataMaskRule
 from common.core.config import SysConfig
 from common.core.modules import ModuleSeedFilter
 from dataset.models import Dashboard, Dataset, DynamicForm, DynamicFormSubmission, Report, Screen

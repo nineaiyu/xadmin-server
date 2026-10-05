@@ -20,6 +20,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_celery_results.models import TaskResult
 
+from audit.services import auto_clean_operation_log
 from common.base.utils import remove_file
 from common.celery.decorator import register_as_period_task
 from common.celery.utils import get_celery_task_log_path
@@ -30,10 +31,7 @@ from file.services import (
     auto_clean_upload_file,
 )
 from system.models.task import TaskExecution
-from system.utils.task.ctasks import (
-    auto_clean_black_token,
-    auto_clean_operation_log,
-)
+from system.utils.task.ctasks import auto_clean_black_token
 
 logger = get_logger(__name__)
 

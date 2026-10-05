@@ -4,9 +4,9 @@
 import pytest
 from django.db import connection
 
+from audit.models import OperationLog, UserLoginLog
 from file.models import UploadFile
 from notifications.models import MessageContent, MessageUserRead
-from system.models import OperationLog, UserLoginLog
 
 pytestmark = pytest.mark.django_db
 

@@ -85,7 +85,7 @@ def _load_rule_text_patterns() -> list:
     try:
         from django.apps import apps
 
-        rule_model = apps.get_model("system", "DataMaskRule")
+        rule_model = apps.get_model("audit", "DataMaskRule")
         rows = list(rule_model.objects.filter(is_active=True).values_list("mask_type", "pattern"))
     except Exception:  # noqa: BLE001 模型缺失/库未就绪时不启用规则脱敏
         return []
@@ -146,7 +146,7 @@ def _custom_probe_patterns() -> list:
         from django.apps import apps
 
         rows = list(
-            apps.get_model("system", "DataMaskRule")
+            apps.get_model("audit", "DataMaskRule")
             .objects.filter(is_active=True, mask_type="custom")
             .values_list("pattern", flat=True)
         )

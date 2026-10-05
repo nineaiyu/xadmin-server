@@ -16,6 +16,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from audit.services import UserLoginLog
 from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
@@ -39,7 +40,6 @@ from identity.utils.auth import (
 )
 from identity.utils.session import bind_session_claim, register_user_session
 from settings.services import LoginBlockUtil
-from system.services import UserLoginLog
 
 logger = get_logger(__name__)
 

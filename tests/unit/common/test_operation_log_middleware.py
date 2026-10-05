@@ -16,9 +16,9 @@ import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
+from audit.models import OperationLog
 from common.core.middleware import MAX_LOG_FIELD, build_operation_log_info, desensitize_body, write_operation_log
 from common.utils.request import get_browser, get_os
-from system.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 

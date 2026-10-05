@@ -74,7 +74,7 @@ def collect_alerts(status=None, item=None, range_key="7d", limit=ALERT_LIMIT):
 
 def collect_error_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT):
     """异常请求：业务码非 1000 的操作日志（慢请求另有独立面板）。"""
-    from system.models.log import OperationLog
+    from audit.models.log import OperationLog
 
     deadline = timezone.now() - datetime.timedelta(seconds=EVENT_RANGES.get(range_key, 86400))
     rows = list(

@@ -9,10 +9,11 @@ from django.core.cache import cache
 from django.utils import timezone
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 
+from audit.models.log import OperationLog
+from audit.notifications import SensitiveOperationMessage
+from audit.notifications_alert import maybe_alert_sensitive_operation
+from audit.views.admin.operationlog import OperationLogViewSet
 from identity.models.user import UserInfo
-from system.models.log import OperationLog
-from system.notifications import SensitiveOperationMessage, maybe_alert_sensitive_operation
-from system.views.admin.operationlog import OperationLogViewSet
 
 pytestmark = pytest.mark.django_db
 

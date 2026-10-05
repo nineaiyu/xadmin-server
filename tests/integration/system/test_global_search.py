@@ -11,9 +11,9 @@ import pytest
 from django.core.files.base import ContentFile
 
 from approval.models import ApprovalRequest
+from audit.models import OperationLog
 from file.models import UploadFile
 from identity.models import UserInfo
-from system.models import OperationLog
 from system.search import _approval_row_scope
 
 pytestmark = pytest.mark.django_db
@@ -91,8 +91,9 @@ class TestGlobalSearchAPI:
         """分组输出同过脱敏规则：列表接口已掩码时搜索不得回原文（防旁路）。"""
         from django.core.cache import cache
 
+        from audit.models import DataMaskRule
         from identity.models import UserRole
-        from system.models import DataMaskRule, DataPermission
+        from system.models import DataPermission
 
         UserInfo.objects.create_user(username="mask-search-target", password="x", nickname="张三丰")
         DataMaskRule.objects.create(

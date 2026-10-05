@@ -428,8 +428,8 @@ def test_dict_choice_field_write_path_accepts_enum_values():
     元组列表，key 变成「整个元组的字符串」，字典驱动字段所有写入报 invalid_choice
     （WS 登录 login_type=8 写日志即触发）。修复后 key 必须是 str(value)。
     """
+    from audit.serializers.log import LoginLogSerializer
     from identity.serializers.user import UserSerializer
-    from system.serializers.log import LoginLogSerializer
 
     cache.clear()
     # login_type：merge 模式，字典未配置时回退整型枚举

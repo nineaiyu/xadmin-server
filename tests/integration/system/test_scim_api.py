@@ -7,10 +7,10 @@ filter 子集、PATCH 停用即踢会话、Group ↔ UserRole 成员同步、写
 
 import pytest
 
+from audit.models import OperationLog
 from common.cache.storage import UserTokenRevokedCache
 from common.core.config import SysConfig
 from identity.models import UserInfo, UserRole
-from system.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 

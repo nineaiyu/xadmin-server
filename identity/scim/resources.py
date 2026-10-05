@@ -328,8 +328,8 @@ def write_audit(request, *, action: str, object_pk: str = "", changes: dict | No
 
     刻意不记录请求体（可能含 password / 敏感属性）；审计失败不影响业务响应。
     """
+    from audit.services import OperationLog
     from common.utils.request import get_request_ip
-    from system.services import OperationLog
 
     try:
         OperationLog.objects.create(

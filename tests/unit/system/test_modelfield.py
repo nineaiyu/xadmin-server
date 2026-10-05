@@ -26,8 +26,8 @@ def test_framework_special_lookups_have_labels():
 @pytest.mark.django_db
 def test_extra_lookups_by_field_type():
     """自定义匹配符按字段类型暴露：多对多给 m2m/m2m_all，IP 字段给 ip_in，普通字段不给。"""
+    from audit.models import UserLoginLog
     from identity.models import UserInfo
-    from system.models import UserLoginLog
 
     m2m_field = UserInfo._meta.get_field("roles")
     assert get_extra_field_lookups(m2m_field) == ["m2m", "m2m_all"]

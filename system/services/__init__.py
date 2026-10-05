@@ -22,10 +22,8 @@ globals，``from system.services import Menu`` 这类 from-import 仍然可用�
 # 惰性导出名经 PEP 562 __getattr__ 提供，静态分析不可见，统一 noqa F822
 __all__ = [
     # 模型契约
-    "UserLoginLog",  # noqa: F822
     "SystemConfig",  # noqa: F822
     "UserPersonalConfig",  # noqa: F822
-    "OperationLog",  # noqa: F822
     "Menu",  # noqa: F822
     "FieldPermission",  # noqa: F822
     "DataPermission",  # noqa: F822
@@ -39,23 +37,14 @@ __all__ = [
     "TaggedObjectSerializerMixin",  # noqa: F822
     # 契约委托函数（观察项收口：common 侧函数级业务 import 的模块级替代）
     "emit_webhook_event",
-    "maybe_alert_sensitive_operation",
-    "apply_mask",
-    "get_mask_rules",
-    "record_original_channel_access",
-    "ensure_impact_confirmed",
-    "impact_for_many",
-    "guarded_models",
     "sync_model_field",
     "scan_permission_gaps",
 ]
 
 # 惰性再导出表：名字 -> 所属模块
 _LAZY_EXPORTS = {
-    "UserLoginLog": "system.models",
     "SystemConfig": "system.models",
     "UserPersonalConfig": "system.models",
-    "OperationLog": "system.models",
     "Menu": "system.models",
     "FieldPermission": "system.models",
     "DataPermission": "system.models",
@@ -90,55 +79,6 @@ def emit_webhook_event(event, payload):
     from system.utils.task.webhook import emit_webhook_event as _emit
 
     return _emit(event, payload)
-
-
-def maybe_alert_sensitive_operation(info):
-    """敏感操作告警分流（system.notifications 契约导出）。"""
-    from system.notifications import maybe_alert_sensitive_operation as _alert
-
-    return _alert(info)
-
-
-def apply_mask(value, rule):
-    """按掩码规则脱敏单值（system.utils.audit.mask 契约导出）。"""
-    from system.utils.audit.mask import apply_mask as _apply
-
-    return _apply(value, rule)
-
-
-def get_mask_rules(model_label):
-    """取模型掩码规则（system.utils.audit.mask 契约导出）。"""
-    from system.utils.audit.mask import get_mask_rules as _get
-
-    return _get(model_label)
-
-
-def record_original_channel_access(request, user, model_label=None):
-    """掩码通道明文访问审计（system.utils.audit.mask 契约导出）。"""
-    from system.utils.audit.mask import record_original_channel_access as _record
-
-    return _record(request, user, model_label)
-
-
-def ensure_impact_confirmed(view, request, instances=None, queryset=None):
-    """删除影响面确认校验（system.utils.audit.impact 契约导出）。"""
-    from system.utils.audit.impact import ensure_impact_confirmed as _ensure
-
-    return _ensure(view, request, instances=instances, queryset=queryset)
-
-
-def impact_for_many(objects) -> dict:
-    """批量影响面预览（system.utils.audit.impact 契约导出）。"""
-    from system.utils.audit.impact import impact_for_many as _impact
-
-    return _impact(objects)
-
-
-def guarded_models() -> set:
-    """登记影响面保护的模型清单（system.utils.audit.impact 契约导出）。"""
-    from system.utils.audit.impact import guarded_models as _guarded
-
-    return _guarded()
 
 
 def sync_model_field():

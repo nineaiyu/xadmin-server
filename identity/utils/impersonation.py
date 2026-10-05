@@ -47,9 +47,9 @@ def start_impersonation(request, target, impersonator) -> dict:
     返回登录载荷（refresh / access / 生存期 / 目标用户摘要），由调用方下发；
     ``UPDATE_LAST_LOGIN`` 只作用于账密登录链路，模拟不污染 target 的 last_login。
     """
+    from audit.services import UserLoginLog
     from identity.utils.auth import get_token_lifetime, save_login_log
     from identity.utils.session import bind_session_claim, register_user_session
-    from system.services import UserLoginLog
 
     session = None
     try:
@@ -139,7 +139,7 @@ def blacklist_impersonated_refresh(request) -> None:
 
 def _record_impersonation_log(request, target, action: str, impersonator) -> None:
     """模拟开始 / 退出的显式审计留痕（操作日志，module=User:impersonate）。"""
-    from system.services import OperationLog
+    from audit.services import OperationLog
 
     try:
         OperationLog.objects.create(

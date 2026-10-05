@@ -29,12 +29,12 @@ def explain_plan(sql: str, params: list | None = None) -> str:
 
 class TestIndexUsage:
     def test_operation_log_default_ordering_uses_index(self):
-        plan = explain_plan("SELECT id FROM system_operationlog ORDER BY created_time DESC")
+        plan = explain_plan("SELECT id FROM audit_operationlog ORDER BY created_time DESC")
         assert "idx_oplog_created" in plan, plan
 
     def test_operation_log_module_filter_uses_composite_index(self):
         plan = explain_plan(
-            "SELECT id FROM system_operationlog WHERE module = %s",
+            "SELECT id FROM audit_operationlog WHERE module = %s",
             ["面板"],
         )
         if connection.vendor == "sqlite":
@@ -45,7 +45,7 @@ class TestIndexUsage:
             assert "idx_oplog_module" in plan, plan
 
     def test_login_log_default_ordering_uses_index(self):
-        plan = explain_plan("SELECT id FROM system_userloginlog ORDER BY created_time DESC")
+        plan = explain_plan("SELECT id FROM audit_userloginlog ORDER BY created_time DESC")
         assert "idx_loginlog_created" in plan, plan
 
     def test_message_user_read_owner_unread_uses_composite_index(self):

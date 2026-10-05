@@ -119,7 +119,7 @@
           "type": "value.user.id",
           "field": "creator",
           "match": "exact",
-          "table": "system.operationlog",
+          "table": "audit.operationlog",
           "value": "",
           "exclude": false
         },
@@ -127,7 +127,7 @@
           "type": "value.user.id",
           "field": "creator",
           "match": "exact",
-          "table": "system.userloginlog",
+          "table": "audit.userloginlog",
           "value": "",
           "exclude": false
         },

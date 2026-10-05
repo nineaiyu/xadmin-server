@@ -9,6 +9,7 @@ import pytest
 from django.core.cache import cache
 from rest_framework.test import APIRequestFactory, force_authenticate
 
+from audit.models.log import UserLoginLog
 from identity.models.oauth import UserOAuthBinding
 from identity.services.auth_login import complete_login
 from identity.utils.oauth import (
@@ -30,7 +31,6 @@ from identity.views.auth.oauth import (
     OAuthProvidersAPIView,
     OAuthUnbindAPIView,
 )
-from system.models.log import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 

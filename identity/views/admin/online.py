@@ -116,7 +116,7 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         # 用户可能刚好掉线，被踢语义仍应生效。
         # 兼容三种入参：会话行 pk（UUID）/ 用户 pk / 旧版登录日志行 pk（整型）。
         # UUID 解析失败的项只参与整型/用户维度查询，避免 pk 字段校验 500。
-        from system.services import UserLoginLog
+        from audit.services import UserLoginLog
 
         session_pks = []
         for pk in pks:

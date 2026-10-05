@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra: dict | None = None) -> None:
     """AI 动作语义审计：落 OperationLog(module=AI:action, auth_type=ai)。"""
-    from system.models import OperationLog
+    from audit.services import OperationLog
 
     try:
         OperationLog.objects.create(
@@ -52,7 +52,7 @@ def audit_ai_ask(
     usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。
     guard 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数 / 输出长度，缺省不写）。
     """
-    from system.models import OperationLog
+    from audit.services import OperationLog
 
     try:
         OperationLog.objects.create(

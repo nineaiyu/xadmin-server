@@ -14,6 +14,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from audit.services import UserLoginLog
 from common.base.utils import AESCipherV2
 from common.cache.lock import ReentrantLock
 from common.core.response import ApiResponse
@@ -23,7 +24,6 @@ from identity.models import DeptInfo, UserInfo
 from identity.utils.auth import get_token_lifetime, save_login_log, verify_sms_email_code
 from identity.utils.session import bind_session_claim, register_user_session
 from settings.services import RegisterBlockUtil, check_leak_password, check_password_rules, record_password_hash
-from system.services import UserLoginLog
 
 
 class RegisterViewAPIView(GenericAPIView):

@@ -17,6 +17,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from audit.services import UserLoginLog
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
@@ -25,7 +26,6 @@ from common.utils.verify_code import TokenTempCache
 from identity.services.auth_login import login_success
 from identity.utils.auth import ValidateError, get_token_lifetime
 from mfa.services import check_user_mfa_code, send_user_mfa_code, validate_login_mfa_token
-from system.services import UserLoginLog
 
 logger = get_logger(__name__)
 

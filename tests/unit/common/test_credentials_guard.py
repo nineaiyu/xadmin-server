@@ -136,7 +136,8 @@ class TestValueEncryption:
         assert result["ok"] is False
 
     def test_rotate_writes_audit(self, superuser):
-        from system.models import OperationLog, SystemConfig
+        from audit.models import OperationLog
+        from system.models import SystemConfig
         from system.utils.platform.credential import rotate_system_config
 
         SystemConfig.objects.update_or_create(key="OPS_ALERT_TOKEN", defaults={"value": "plain"})

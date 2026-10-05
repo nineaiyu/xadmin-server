@@ -31,6 +31,7 @@ def build_installed_apps(xadmin_apps: list) -> list:
         "django.contrib.staticfiles",
         "identity.apps.IdentityConfig",  # 身份与认证域（Phase C 拆分批次1 自 system 迁出）
         "file.apps.FileConfig",  # 文件域（Phase C 拆分批次2 自 system 迁出）
+        "audit.apps.AuditConfig",  # 审计域（Phase C 拆分批次3 自 system 迁出）
         "system.apps.SystemConfig",  # 系统管理（platform 面）
         "approval.apps.ApprovalConfig",  # 审批流（3.1 拆分批次2 自 system 迁出）
         "ai.apps.AiConfig",  # AI 平台与知识库（3.1 拆分批次3 自 system 迁出）

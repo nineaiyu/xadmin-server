@@ -10,8 +10,8 @@ object_pk=<pk> + path 前缀（缩小到本资源）查询；
 import pytest
 from django.db import connection
 
-from system.models import OperationLog
-from system.views.admin.operationlog import OperationLogFilter
+from audit.models import OperationLog
+from audit.views.admin.operationlog import OperationLogFilter
 
 pytestmark = pytest.mark.django_db
 

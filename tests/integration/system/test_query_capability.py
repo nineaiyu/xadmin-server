@@ -15,9 +15,9 @@ from types import SimpleNamespace
 import pytest
 from django.conf import settings
 
+from audit.models import OperationLog
 from common.core.filter import ControlledLookupFilterBackend
 from identity.models import UserInfo
-from system.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 

@@ -103,7 +103,17 @@ PERMISSION_SHOW_PREFIX = [
 # 种子含 demo.book 字段树，缺席会让「字段同步」把 demo 子树清掉。生产裁剪 demo
 # 无需再手工清理本清单（路由装配期 auto_register_app_url 的注入与本次装配期
 # 注入重复，消费侧仅做成员判断，无害）。
-PERMISSION_DATA_AUTH_APPS = ["identity", "file", "system", "settings", "notifications", "dataset", "approval", "ai"]
+PERMISSION_DATA_AUTH_APPS = [
+    "identity",
+    "file",
+    "audit",
+    "system",
+    "settings",
+    "notifications",
+    "dataset",
+    "approval",
+    "ai",
+]
 if "demo" in INSTALLED_APPS:
     PERMISSION_DATA_AUTH_APPS.append("demo")
 

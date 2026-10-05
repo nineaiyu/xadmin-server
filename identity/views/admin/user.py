@@ -15,6 +15,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
+from audit.services import OperationLog
 from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend
 from common.core.modelset import (
@@ -39,7 +40,6 @@ from mfa.const import ConfirmType
 from mfa.services import clear_recovery_codes
 from notifications.message import SiteMessageUtil
 from settings.services import LoginBlockUtil
-from system.services import OperationLog
 from system.utils.platform.modelset import ChangeRolePermissionAction, PermissionPreviewAction
 from system.utils.platform.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 

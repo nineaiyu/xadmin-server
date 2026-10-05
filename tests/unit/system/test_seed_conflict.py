@@ -124,13 +124,13 @@ class TestFilterConflictingRows:
                     "fields": {"code": role_code, "name": "种子角色", "menu": []},
                 }
             ],
-            "system.datamaskrule": [
-                {"model": "system.datamaskrule", "pk": "rule-1", "fields": {"name": "规则", "roles": [role_pk]}}
+            "audit.datamaskrule": [
+                {"model": "audit.datamaskrule", "pk": "rule-1", "fields": {"name": "规则", "roles": [role_pk]}}
             ],
         }
         filtered, notes = filter_conflicting_rows(rows)
         assert filtered["identity.userrole"] == []
-        assert filtered["system.datamaskrule"][0]["fields"]["roles"] == []
+        assert filtered["audit.datamaskrule"][0]["fields"]["roles"] == []
         assert any("datamaskrule" in note for note in notes)
 
     def test_composite_unique_conflict_dropped(self):

@@ -17,6 +17,7 @@
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
+from audit.services import UserLoginLog
 from common.core.response import ApiResponse
 from common.utils import get_logger
 from common.utils.ip import get_ip_city
@@ -31,7 +32,6 @@ from settings.services import (
     LoginIpBlockUtil,
     is_password_expired,
 )
-from system.services import UserLoginLog
 
 logger = get_logger(__name__)
 

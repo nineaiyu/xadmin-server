@@ -18,8 +18,8 @@ from django.contrib.auth.hashers import make_password
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
+from audit.models import UserLoginLog
 from identity.models import UserInfo
-from system.models import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 

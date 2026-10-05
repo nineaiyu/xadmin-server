@@ -379,7 +379,7 @@ class TestAskStream:
         assert done["answer"] == "根据 [1] 的说明。"
         assert done["sources"] and done["sources"][0]["path"] == "docs/test-knowledge.md"
 
-        from system.models import OperationLog
+        from audit.models import OperationLog
 
         assert OperationLog.objects.filter(module="AI:ask").exists()
 

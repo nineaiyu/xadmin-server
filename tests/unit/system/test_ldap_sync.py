@@ -10,10 +10,10 @@ from unittest import mock
 
 import pytest
 
+from audit.models import OperationLog
 from identity.ldap import sync as ldap_sync
 from identity.ldap import sync_dir
 from identity.models import DeptInfo, LdapUserBinding, UserInfo
-from system.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 

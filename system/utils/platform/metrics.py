@@ -293,7 +293,7 @@ def collect_celery_status():
 
 def collect_slow_requests():
     """慢请求 Top N（最近窗口内 exec_time 超阈值的操作日志）。"""
-    from system.models.log import OperationLog
+    from audit.models.log import OperationLog
 
     threshold = SysConfig.SLOW_REQUEST_THRESHOLD
     deadline = timezone.now() - timedelta(hours=SLOW_REQUEST_WINDOW_HOURS)

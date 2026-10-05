@@ -20,6 +20,7 @@ from rest_framework import serializers
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
+from audit.services import UserLoginLog
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
@@ -51,7 +52,6 @@ from identity.utils.oidc import (
 )
 from identity.utils.session import bind_session_claim
 from identity.views.auth.login import _register_session_safe, complete_login
-from system.services import UserLoginLog
 
 logger = get_logger(__name__)
 

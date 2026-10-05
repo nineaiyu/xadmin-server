@@ -4,11 +4,11 @@
 import pytest
 from django.conf import settings as dj_settings
 
+from audit.models import UserLoginLog
 from identity.models import LdapUserBinding
 from identity.serializers.user import ResetPasswordSerializer  # noqa: PLC2701
 from identity.views.auth.login import _login_type_for  # noqa: PLC2701
 from settings.models import Setting
-from system.models import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 

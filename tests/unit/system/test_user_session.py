@@ -16,6 +16,7 @@ from django.utils import timezone
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from audit.models.log import UserLoginLog
 from common.cache.storage import SessionTokenRevokedCache
 from common.core.auth import ServerAccessToken
 from identity.models import UserSession
@@ -28,7 +29,6 @@ from identity.utils.session import (
 )
 from identity.views.admin.online import UserOnlineViewSet
 from message import utils as msg_utils
-from system.models.log import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 

@@ -17,6 +17,7 @@ import json
 
 from django.conf import settings
 
+from audit.services import OperationLog
 from common.utils import get_logger
 from identity.ldap.client import (
     LdapConfigError,
@@ -24,7 +25,6 @@ from identity.ldap.client import (
     paged_search_entries,
     service_connection,
 )
-from system.services import OperationLog
 
 logger = get_logger(__name__)
 

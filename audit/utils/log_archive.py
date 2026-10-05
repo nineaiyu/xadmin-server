@@ -44,7 +44,7 @@ PRUNE_BATCH_SIZE = 2000
 ARCHIVE_MODEL_KEYS = ("operation", "login")
 
 # 归档表（延后导入避免 AppRegistry 未就绪）
-_MODEL_PATHS = {"operation": "system.OperationLog", "login": "system.UserLoginLog"}
+_MODEL_PATHS = {"operation": "audit.OperationLog", "login": "audit.UserLoginLog"}
 
 
 def archive_root(directory=None) -> Path:

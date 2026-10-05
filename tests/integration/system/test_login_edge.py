@@ -4,10 +4,10 @@
 import pytest
 from django.core.cache import cache
 
+from audit.models.log import UserLoginLog
 from common.base.utils import AESCipherV2
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
 from settings.services import LoginBlockUtil
-from system.models.log import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 

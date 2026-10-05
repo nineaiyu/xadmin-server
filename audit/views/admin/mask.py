@@ -8,13 +8,13 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 
+from audit.models.mask import DataMaskRule
+from audit.serializers.mask import DataMaskRuleSerializer
+from audit.utils.mask import apply_mask
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImportExportDataAction
 from common.core.response import ApiResponse
 from common.utils import get_logger
-from system.models.mask import DataMaskRule
-from system.serializers.mask import DataMaskRuleSerializer
-from system.utils.audit.mask import apply_mask
 
 logger = get_logger(__name__)
 

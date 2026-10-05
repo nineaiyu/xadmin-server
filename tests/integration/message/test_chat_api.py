@@ -182,7 +182,7 @@ class TestRecall:
 
     def test_recall_writes_audit_snapshot(self, auth_client, superuser, bob):
         """撤回内容从消息行清空，但原文保留在操作日志快照（可审计、非物理删除）。"""
-        from system.services import OperationLog
+        from audit.services import OperationLog
 
         room = chat_service.get_or_create_private_room(superuser, bob)
         message, __ = chat_service.create_message(room, superuser, "待审计的原文")
@@ -200,7 +200,7 @@ class TestRecall:
 
     def test_recall_audit_failure_does_not_block_recall(self, auth_client, superuser, bob, monkeypatch):
         """审计写入失败只告警，不阻断撤回（消息内容仍按撤回语义清空）。"""
-        from system.services import OperationLog
+        from audit.services import OperationLog
 
         def _boom(**kwargs):
             raise RuntimeError("audit sink down")

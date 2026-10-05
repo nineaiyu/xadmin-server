@@ -13,6 +13,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.views import APIView
 
+from audit.models import OperationLog
 from common.core.auth import PersonalAccessTokenAuthentication, path_allowed_by_scopes
 from common.core.config import SysConfig
 from common.core.permission import IsAuthenticated as ApiIsAuthenticated
@@ -21,7 +22,7 @@ from common.core.response import ApiResponse
 from common.core.throttle import PatThrottle
 from identity.models.token import PersonalAccessToken
 from identity.views.user.token import PersonalAccessTokenViewSet
-from system.models import Menu, OperationLog
+from system.models import Menu
 from system.tasks import auto_clean_pat_job
 
 pytestmark = pytest.mark.django_db

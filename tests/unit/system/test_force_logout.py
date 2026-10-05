@@ -83,7 +83,7 @@ def test_force_logout_action(superuser, auth_client):
 
 
 def test_batch_force_logout_action(superuser, auth_client):
-    from system.models.log import UserLoginLog as LoginLog
+    from audit.models.log import UserLoginLog as LoginLog
 
     target = UserInfo.objects.create_user(username="online_batch", password="x")
     log = LoginLog.objects.create(

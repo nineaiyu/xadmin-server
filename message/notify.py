@@ -12,6 +12,7 @@ import aiofiles
 from channels.db import database_sync_to_async
 from django.conf import settings
 
+from audit.services import UserLoginLog
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
 from common.utils import get_logger
@@ -24,7 +25,6 @@ from identity.services import (
 from message.base import AsyncJsonWebsocket
 from message.utils import async_push_message, get_user_layer_group_name
 from server.utils import get_current_request
-from system.services import UserLoginLog
 
 logger = get_logger(__name__)
 

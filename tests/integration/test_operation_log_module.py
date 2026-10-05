@@ -13,7 +13,7 @@ process_view 写占位日志时 DataError，整个请求 500——敏感操作�
 
 import pytest
 
-from system.models import OperationLog
+from audit.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 

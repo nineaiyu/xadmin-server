@@ -65,7 +65,7 @@ class PersonalAccessTokenViewSet(BaseModelSet):
     @action(methods=["get"], detail=True, url_path="logs")
     def logs(self, request, *args, **kwargs):
         """凭证调用记录（精确口径：按凭证标识 token_pk 归集）"""
-        from system.serializers.log import OperationLogSerializer  # 审计域序列化器，调用期惰性
+        from audit.serializers.log import OperationLogSerializer  # 审计域序列化器，调用期惰性
 
         token = self.get_object()  # 取值域保护：他人凭证 404
         queryset = self._call_log_queryset(request, token)
@@ -112,7 +112,7 @@ class PersonalAccessTokenViewSet(BaseModelSet):
         只按 token_pk 过滤：凭证与日志归属同一属主，且 token_pk 唯一定位凭证；
         token_pk 为空的历史行（升级前写入）天然不计入任一凭证。
         """
-        from system.services import OperationLog
+        from audit.services import OperationLog
 
         queryset = OperationLog.objects.filter(token_pk=token.pk)
         params = request.query_params

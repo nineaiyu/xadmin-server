@@ -421,7 +421,7 @@ def audit_mcp_call(
     """
     import logging
 
-    from system.models import OperationLog
+    from audit.services import OperationLog
 
     logger = logging.getLogger(__name__)
     try:

@@ -19,9 +19,10 @@ from django.urls import resolve
 
 from approval.models.approval import ApprovalRequest
 from approval.utils.approval import approve_request
+from audit.models import OperationLog
 from common.core.config import SysConfig
 from identity.models import UserRole
-from system.models import OperationLog, SystemConfig
+from system.models import SystemConfig
 
 pytestmark = pytest.mark.django_db
 

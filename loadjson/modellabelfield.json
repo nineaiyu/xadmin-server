@@ -1225,7 +1225,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.userloginlog",
+      "name": "audit.userloginlog",
       "label": "用户登录日志"
     }
   },
@@ -2335,7 +2335,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.operationlog",
+      "name": "audit.operationlog",
       "label": "操作日志"
     }
   },
@@ -3430,7 +3430,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.userloginlog",
+      "name": "audit.userloginlog",
       "label": "用户登录日志"
     }
   },
@@ -6955,7 +6955,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.operationlog",
+      "name": "audit.operationlog",
       "label": "操作日志"
     }
   },
@@ -10660,7 +10660,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.datamaskrule",
+      "name": "audit.datamaskrule",
       "label": "数据脱敏规则"
     }
   },
@@ -16000,7 +16000,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.datamaskrule",
+      "name": "audit.datamaskrule",
       "label": "数据脱敏规则"
     }
   },

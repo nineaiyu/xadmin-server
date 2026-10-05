@@ -9,10 +9,10 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 
+from audit.models import OperationLog
+from audit.serializers.log import OperationLogSerializer
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend, PkMultipleFilter
 from common.core.modelset import OnlyExportDataAction, OnlyListModelSet
-from system.models import OperationLog
-from system.serializers.log import OperationLogSerializer
 
 
 class OperationLogFilter(BaseFilterSet):

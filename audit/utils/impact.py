@@ -201,7 +201,7 @@ def _impact_screen(obj) -> list:
 
 def _impact_menu(obj) -> list:
     from identity.services import UserRole
-    from system.models import Menu
+    from system.services import Menu
 
     children = Menu.objects.filter(parent=obj)
     roles = UserRole.objects.filter(menu=obj)

@@ -152,7 +152,7 @@ def audit_ai_security(user, kind: str, detail: str = "", extra: dict | None = No
     非 1000 状态码使事件进入监控面板的错误事件流（``collect_error_events``），
     无需新增模型/枚举；写失败只记日志，不影响业务链路。
     """
-    from system.models import OperationLog
+    from audit.services import OperationLog
 
     try:
         OperationLog.objects.create(

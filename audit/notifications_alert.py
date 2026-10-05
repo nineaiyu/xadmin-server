@@ -5,11 +5,11 @@
 import hashlib
 import re
 
-from common.utils import get_logger
-from common.utils.timezone import local_now_display
-from system.notifications import (
+from audit.notifications import (
     SensitiveOperationMessage,
 )
+from common.utils import get_logger
+from common.utils.timezone import local_now_display
 
 logger = get_logger(__name__)
 
@@ -61,6 +61,6 @@ def maybe_alert_sensitive_operation(info: dict):
     except Exception:
         logger.warning("send sensitive operation alert failed", exc_info=True)
     # 出站 Webhook：敏感操作事件（emit 全程吞异常）
-    from system.utils.task.webhook import emit_webhook_event
+    from system.services import emit_webhook_event
 
     emit_webhook_event("security.sensitive_operation", info or {})

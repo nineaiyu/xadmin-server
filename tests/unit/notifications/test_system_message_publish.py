@@ -13,8 +13,8 @@ from unittest import mock
 
 import pytest
 
+from audit.notifications import SensitiveOperationMessage
 from notifications.notifications import publish_task
-from system.notifications import SensitiveOperationMessage
 
 pytestmark = pytest.mark.django_db
 

@@ -72,7 +72,7 @@ def apply_mask(value, rule):
 
 def get_mask_rules(model_label):
     """取某模型的活动脱敏规则（按 sort 升序），5 分钟缓存。"""
-    data_mask_model = apps.get_model("system", "DataMaskRule")
+    data_mask_model = apps.get_model("audit", "DataMaskRule")
 
     def _load():
         queryset = data_mask_model.objects.filter(model=model_label, is_active=True).order_by("sort", "created_time")
@@ -114,7 +114,7 @@ def record_original_channel_access(request, user, model_label=None):
         model_label or "*",
     )
     try:
-        from system.services import OperationLog
+        from audit.models import OperationLog
 
         OperationLog.objects.create(
             module=ORIGINAL_CHANNEL_MODULE,
@@ -135,7 +135,7 @@ def invalid_mask_cache(model_label=None):
     if model_label:
         cache.delete(f"{MASK_CACHE_PREFIX}{model_label}")
         return
-    data_mask_model = apps.get_model("system", "DataMaskRule")
+    data_mask_model = apps.get_model("audit", "DataMaskRule")
     models_list = list(data_mask_model.objects.values_list("model", flat=True))
     if models_list:
         cache.delete_many([f"{MASK_CACHE_PREFIX}{item}" for item in models_list])

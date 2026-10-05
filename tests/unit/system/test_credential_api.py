@@ -95,7 +95,7 @@ class TestCredentialRotate:
         assert body["code"] == 1001
 
     def test_rotate_writes_audit(self, auth_client):
-        from system.models import OperationLog
+        from audit.models import OperationLog
 
         SystemConfig.objects.update_or_create(key="SCIM_TOKEN", defaults={"value": "plain-token"})
         auth_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN"}, format="json")

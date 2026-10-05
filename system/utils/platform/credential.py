@@ -132,7 +132,7 @@ def _last_rotated_time(key: str):
     """
     import json
 
-    from system.models import OperationLog
+    from audit.services import OperationLog
 
     rows = (
         OperationLog.objects.filter(module=AUDIT_MODULE, object_pk=key, response_code=1000)
@@ -162,7 +162,7 @@ def write_credential_audit(detail: dict, user=None) -> None:
     """凭据操作审计（module=system:credential）；失败只记日志不影响主流程。"""
     import json
 
-    from system.models import OperationLog
+    from audit.services import OperationLog
 
     try:
         OperationLog.objects.create(

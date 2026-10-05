@@ -132,7 +132,7 @@ def application_usage_stats(application: ApiApplication, days: int) -> dict:
     from django.db.models import Avg, Count, Q
     from django.db.models.functions import TruncDate
 
-    from system.services import OperationLog
+    from audit.services import OperationLog
 
     since = timezone.now() - timedelta(days=days)
     token_pks = list(PersonalAccessToken.objects.filter(api_application=application).values_list("pk", flat=True))

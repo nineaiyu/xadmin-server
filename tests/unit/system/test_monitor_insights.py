@@ -10,8 +10,8 @@ from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 
+from audit.models.log import OperationLog
 from common.models import Monitor, MonitorAlert
-from system.models.log import OperationLog
 from system.models.task import TaskExecution
 from system.views.platform.monitor import MonitorViewSet
 

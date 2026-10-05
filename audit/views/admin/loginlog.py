@@ -11,13 +11,13 @@ from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
+from audit.models import UserLoginLog
+from audit.serializers.log import LoginLogSerializer
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import OnlyExportDataAction, OnlyListModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from message.services import send_logout_msg
-from system.models import UserLoginLog
-from system.serializers.log import LoginLogSerializer
 
 
 class LoginLogFilter(BaseFilterSet):

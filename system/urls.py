@@ -14,11 +14,8 @@ from system.views.admin.credential import CredentialViewSet
 from system.views.admin.dict import DataDictViewSet
 from system.views.admin.export import ExportRecordViewSet
 from system.views.admin.import_ import ImportRecordViewSet, ImportTemplateViewSet
-from system.views.admin.loginlog import LoginLogViewSet
-from system.views.admin.mask import DataMaskRuleViewSet
 from system.views.admin.menu import MenuViewSet
 from system.views.admin.modelfield import ModelLabelFieldViewSet
-from system.views.admin.operationlog import OperationLogViewSet
 from system.views.admin.permission import DataPermissionViewSet
 from system.views.admin.saved_view import SavedListViewSet
 from system.views.platform.dashboard import DashboardViewSet
@@ -36,7 +33,6 @@ from system.views.task.task import (
 from system.views.task.task_center import SystemTaskCenterViewSet
 from system.views.task.webhook import WebhookDeliveryViewSet, WebhookSubscriptionViewSet
 from system.views.user.configs import ConfigsViewSet
-from system.views.user.login_log import UserLoginLogViewSet
 from system.views.user.routes import UserRoutesAPIView
 
 app_name = "system"
@@ -59,7 +55,6 @@ router.register("menu", MenuViewSet, basename="menu")
 router.register("permission", DataPermissionViewSet, basename="permission")
 router.register("field", ModelLabelFieldViewSet, basename="model_label_field")
 router.register("dict", DataDictViewSet, basename="data_dict")
-router.register("mask-rules", DataMaskRuleViewSet, basename="data_mask_rule")
 # 列表「我的视图」
 router.register("saved-views", SavedListViewSet, basename="saved_view")
 # 代码生成器 GUI（只读引擎适配：模型清单/字段计划/预览/下载）
@@ -85,16 +80,10 @@ router.register("search/menu", SearchMenuViewSet, basename="SearchMenu")
 
 # 个人配置（ConfigsViewSet）
 router.register("configs", ConfigsViewSet, basename="configs")
-# 个人登录日志（audit 域视图，user 面口径）
-router.register("user/log", UserLoginLogViewSet, basename="user_login_log")
-
 # 通用标签中心：标签 CRUD + 打标 / 批量打标
 router.register("tags", TagViewSet, basename="tag")
 
-# —— 以下注册项随 file / audit / task 域切分迁往各域 urls.py（暂留本文件）——
-# 日志相关
-router.register("logs/operation", OperationLogViewSet, basename="operation_log")
-router.register("logs/login", LoginLogViewSet, basename="login_log")
+# —— 以下注册项随 task 域切分迁往 task/urls.py（暂留本文件）——
 # 导出下载中心
 router.register("exports", ExportRecordViewSet, basename="export_record")
 # 导入记录（下载中心「导入记录」页签）
@@ -118,5 +107,6 @@ router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
 urlpatterns += [path("", include("identity.urls"))]
 urlpatterns += [path("", include("file.urls"))]
+urlpatterns += [path("", include("audit.urls"))]
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]
