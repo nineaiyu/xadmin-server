@@ -6,6 +6,9 @@
   sheet）；单组件失败（字段被删、字段权限收紧等）只写一行提示，不拖垮整份报表；
 - 投递：邮件携带附件；IM 为文本消息（报表名/行数/下载中心提示），逐渠道独立失败
   并返回明细，任一渠道失败仅记 error 与交付状态，不回滚产物。
+
+产物 MIME 与落盘复用 task 域统一导出服务（task.services），本模块只保留报表
+工作簿渲染器与多渠道投递（下载中心链路的报表侧薄适配）。
 """
 
 import io
@@ -21,8 +24,6 @@ from django.utils.translation import gettext_lazy as _
 from common.utils import get_logger
 
 logger = get_logger(__name__)
-
-EXPORT_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 def _excel_safe(value):
@@ -122,6 +123,7 @@ def _render_workbook(report, user) -> tuple:
 
 def _deliver_email(report, filename: str, content: bytes, rows: int) -> None:
     from dataset.utils.report_design import design_components
+    from task.services import mime_type_for
 
     subject = "{} - {}".format(report.name, timezone.localtime().strftime("%Y-%m-%d %H:%M"))
     body = str(_("Scheduled report {}. {} rows generated. The xlsx file is attached.").format(subject, rows))
@@ -130,7 +132,7 @@ def _deliver_email(report, filename: str, content: bytes, rows: int) -> None:
     if charts:
         body = "{}\n{}".format(body, str(_("Designed charts: {}").format(", ".join(charts))))
     mail = EmailMessage(subject=subject, body=body, to=list(report.recipients or []))
-    mail.attach(filename, content, EXPORT_MIME)
+    mail.attach(filename, content, mime_type_for("xlsx"))
     mail.send()
 
 

@@ -1,12 +1,21 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""异步导出任务实现（显式请求上下文执行 export_data 并落产物）。
+"""统一导出服务：MIME 注册表 + 产物落库 + 进度/取消协议 + 异步导出编排。
 
-说明：任务函数本体保留在 ``system.tasks``（celery 任务名 = 函数 __module__，
-必须保持 ``system.tasks.<name>`` 不变以便既有周期任务登记/日志/告警链路匹配），
-本模块只承载实现体。请求经 ``build_task_request`` 显式构造（不再重放 WSGIRequest，
-见 common/core/task_request.py 的契约清单）；导出为只读链路，
-不写 creator/审计，因此不绑定 thread-local 请求。
+全站导出/下载中心链路的单一出口，两条消费链各留薄适配：
+
+- **视图重放链**（本模块 ``run_async_export``）：视图动作（export-async）落
+  ExportRecord 后派发任务，任务经 ``build_task_request`` 显式构造请求（不再重放
+  WSGIRequest，见 common/core/task_request.py 的契约清单）重放 export_data 视图；
+  导出为只读链路，不写 creator/审计，因此不绑定 thread-local 请求。任务函数本体
+  保留在 ``system.tasks``（celery 任务名 = 函数 __module__，必须保持
+  ``system.tasks.<name>`` 不变以便既有周期任务登记/日志/告警链路匹配）；
+- **定时报表链**（dataset 域）：渲染器在 dataset（报表工作簿与视图重放产物
+  形态不同），产物落库 / 进度 / 取消协议复用本模块（``persist_export_artifact`` /
+  ``update_progress`` / ``TaskCancelled`` 收敛）。
+
+产物统一落 UploadFile(is_tmp=True)（复用临时文件定时清理），MIME 一律经
+``EXPORT_MIME_TYPES`` 取值——下载中心按记录后缀回写 Content-Type 的唯一来源。
 """
 
 from django.conf import settings
@@ -21,11 +30,41 @@ from task.utils.task_center import TaskCancelled, mark_execution_revoked
 
 logger = get_logger(__name__)
 
-# 导出产物 MIME：下载中心按记录后缀回写 Content-Type
+# 导出产物 MIME 注册表（全站单源）：下载中心按记录后缀回写 Content-Type
 EXPORT_MIME_TYPES = {
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "csv": "text/csv",
 }
+
+
+def mime_type_for(file_format) -> str:
+    """按导出格式取产物 MIME（未登记格式回落通用二进制流）。"""
+    return EXPORT_MIME_TYPES.get(str(file_format or "").lower(), "application/octet-stream")
+
+
+def persist_export_artifact(record, filename: str, content: bytes, user=None):
+    """导出产物落 UploadFile(is_tmp=True) 并挂接到下载中心记录。
+
+    渲染完成的字节流统一经此落盘（文件存储 + mime 按格式注册表回写），
+    返回 UploadFile 实例并写入 ``record.file``——记录行的落库（update_fields
+    取舍）仍归各编排方，避免同一记录的两条链路对字段时序产生分歧。
+    """
+    from django.core.files.base import ContentFile
+
+    from file.services import UploadFile
+
+    upload = UploadFile(
+        filename=filename,
+        filesize=len(content),
+        mime_type=mime_type_for(record.file_format),
+        is_tmp=True,
+        is_upload=False,
+        creator=user,
+    )
+    upload.filepath.save(filename, ContentFile(content), save=False)
+    upload.save()
+    record.file = upload
+    return upload
 
 
 def build_export_request(record, query_params, user):
@@ -62,10 +101,7 @@ def run_async_export(record_id, view_path, query_params, user_pk):
     TaskExecution 由 after_task_publish/prerun/postrun 信号自动记账，
     因此执行历史页与增量日志零成本复用。
     """
-    from django.core.files.base import ContentFile
-
     from common.notifications import ExportDataMessage
-    from file.services import UploadFile
     from identity.models import UserInfo
     from task.models.export import ExportRecord
     from task.models.task import TaskExecution
@@ -107,17 +143,7 @@ def run_async_export(record_id, view_path, query_params, user_pk):
         _save_progress(record, 80, stage=_("Rendering content"))
 
         filename = f"{record.name}.{record.file_format}"
-        upload = UploadFile(
-            filename=filename,
-            filesize=len(content),
-            mime_type=EXPORT_MIME_TYPES.get(record.file_format, "application/octet-stream"),
-            is_tmp=True,
-            is_upload=False,
-            creator=user,
-        )
-        upload.filepath.save(filename, ContentFile(content), save=False)
-        upload.save()
-        record.file = upload
+        persist_export_artifact(record, filename, content, user=user)
         record.rows = min(total, getattr(settings, "EXPORT_MAX_LIMIT", total))
         record.status = ExportRecord.Status.SUCCESS
         record.progress = 100

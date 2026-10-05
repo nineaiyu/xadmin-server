@@ -9,7 +9,8 @@
 - 执行以**创建者**权限上下文运行数据集（menu 上下文为空 ⇒ 仅未绑菜单的全局
   授权生效，fail-closed 语义不变）；
 - 产物复用下载中心：派发方预创建 ExportRecord（pk == celery task_id 契约），
-  xlsx 渲染后落 UploadFile 并挂 record；
+  xlsx 渲染后经 task 域统一导出服务落 UploadFile 并挂 record（MIME/进度/取消
+  协议与异步导出同源，见 task.services._export）；
 - 投递按 `notify_channels` 逐渠道独立执行（空 = 仅邮件）：邮件携带附件，IM 为
   文本消息（报表名/行数/下载中心提示，收件人取 `im_recipients` 用户主键并按各
   渠道 OAuth 绑定可达性过滤）；任一渠道失败仅记 error 与交付状态，不回滚产物。
@@ -24,14 +25,12 @@ from datetime import datetime, timedelta
 
 from asgiref.sync import async_to_sync
 from celery import shared_task
-from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.celery.decorator import register_as_period_task
 from common.utils import get_logger
 from dataset.report_render import (  # noqa: F401  (渲染/投递拆至 report_render，此处再导出保持调用面)
-    EXPORT_MIME,
     _deliver_email,
     _deliver_im,
     _excel_safe,
@@ -187,38 +186,37 @@ def dispatch_cron_reports():
 def run_scheduled_report(self, report_id: str):
     """执行单个报表：数据集渲染 xlsx → ExportRecord（下载中心）→ 邮件附件。
 
-    task_id == 预创建 ExportRecord.pk（CeleryTaskRecordModel 契约）。
+    task_id == 预创建 ExportRecord.pk（CeleryTaskRecordModel 契约）。产物落库、
+    进度与取消协议与异步导出同源（task.services 统一导出服务）。
     """
     from dataset.models.dataset import Report
-    from file.services import UploadFile
-    from task.services import KIND_REPORT, ExportRecord, update_progress
+    from task.models.task import TaskExecution
+    from task.services import KIND_REPORT, ExportRecord, persist_export_artifact, update_progress
+    from task.utils.task_center import TaskCancelled, mark_execution_revoked
 
     record = ExportRecord.objects.filter(pk=self.request.id).first()
     report = Report.objects.filter(pk=report_id).select_related("dataset", "creator").first()
     if record is None or report is None:
         logger.warning("scheduled report record/report missing: %s", report_id)
         return 0
+    # 真实投递由 after_task_publish 自动记账；同步执行（apply/EAGER）不发该信号，此处补齐，
+    # 保证执行历史页与增量日志在两种环境下都可用（与异步导出/导入链同口径）
+    TaskExecution.objects.get_or_create(
+        pk=record.pk,
+        defaults={"name": "dataset.analysis_tasks.run_scheduled_report", "kwargs": {"report_id": str(report.pk)}},
+    )
 
     record.status = ExportRecord.Status.RUNNING
     record.save(update_fields=["status", "updated_time"])
     user = report.creator
-    # 统一进度：报表此前只有终态 100，此处补中间里程碑（查询 → 渲染 → 落盘）
-    update_progress(KIND_REPORT, record.pk, 20, stage=_("Querying dataset"))
     try:
+        # 统一进度：报表此前只有终态 100，此处补中间里程碑（查询 → 渲染 → 落盘）；
+        # 里程碑即协作式取消安全点，取消检查须在 try 内由 TaskCancelled 分支收敛
+        update_progress(KIND_REPORT, record.pk, 20, stage=_("Querying dataset"))
         content, rows = _render_workbook(report, user)
         update_progress(KIND_REPORT, record.pk, 80, stage=_("Rendering workbook"))
         filename = f"{report.name}-{timezone.localtime():%Y%m%d%H%M}.xlsx"
-        upload = UploadFile(
-            filename=filename,
-            filesize=len(content),
-            mime_type=EXPORT_MIME,
-            is_tmp=True,
-            is_upload=False,
-            creator=user,
-        )
-        upload.filepath.save(filename, ContentFile(content), save=False)
-        upload.save()
-        record.file = upload
+        persist_export_artifact(record, filename, content, user=user)
         record.rows = rows
         record.status = ExportRecord.Status.SUCCESS
         record.progress = 100
@@ -240,6 +238,15 @@ def run_scheduled_report(self, report_id: str):
         record.save(update_fields=["error", "updated_time"])
         logger.info("scheduled report done: %s rows=%s channels=%s", report.pk, rows, channels)
         return rows
+    except TaskCancelled as exc:
+        # 协作式取消（取消检查在 update_progress 里程碑内）：与异步导出同口径收敛为
+        # REVOKED 终态——不是故障，不 re-raise（避免用户取消触发 task_failure 告警）
+        record.status = ExportRecord.Status.REVOKED
+        record.error = str(exc)[:2000]
+        record.save(update_fields=["status", "error", "updated_time"])
+        mark_execution_revoked(record.pk)
+        logger.info("scheduled report cancelled by user: %s", record.pk)
+        return 0
     except Exception as exc:
         record.status = ExportRecord.Status.FAILURE
         record.error = str(exc)[:2000]

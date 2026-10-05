@@ -15,7 +15,9 @@
 - Webhook 契约：emit_webhook_event / deliver_webhook / EVENT_CATALOG /
   URL 与签名工具（身份域登录告警、审批事件、开放接口凭据回执共用）；
 - 进度契约：update_progress / KIND_REPORT（dataset 报表导出进度上报）；
-- 导入导出实现：run_async_export / run_async_import（celery 任务壳的委托体）；
+- 导入导出实现：run_async_export / run_async_import（celery 任务壳的委托体），
+  及导出产物协议 EXPORT_MIME_TYPES / mime_type_for / persist_export_artifact
+  （定时报表链与视图重放链共用的统一导出服务面）；
 - 清理契约：clean_task_executions / clean_export_records / clean_import_records /
   auto_clean_black_token（周期任务壳的委托体）。
 
@@ -51,6 +53,9 @@ __all__ = [
     # 导入导出实现
     "run_async_export",  # noqa: F822
     "run_async_import",  # noqa: F822
+    "EXPORT_MIME_TYPES",  # noqa: F822
+    "mime_type_for",  # noqa: F822
+    "persist_export_artifact",  # noqa: F822
     # 清理契约
     "clean_task_executions",  # noqa: F822
     "clean_export_records",  # noqa: F822
@@ -80,6 +85,9 @@ _LAZY_EXPORTS = {
     "KIND_REPORT": "task.utils.task_progress",
     "run_async_export": "task.services._export",
     "run_async_import": "task.services._import",
+    "EXPORT_MIME_TYPES": "task.services._export",
+    "mime_type_for": "task.services._export",
+    "persist_export_artifact": "task.services._export",
     "clean_task_executions": "task.services.cleanup",
     "clean_export_records": "task.services.cleanup",
     "clean_import_records": "task.services.cleanup",
