@@ -186,7 +186,7 @@ config.yml              XADMIN_APPS 注册 app
 
 ### 权限
 
-- 页面级：`getDefaultAuths(instance, [...自定义动作])` 生成权限 map；
+- 页面级：`usePageAuth([...自定义动作])` 生成权限 map；
 - 按钮级：`hasAuth("动作:组件名")` 或 `<Auth value="...">`；
 - 权限机制（API/数据/字段 + 应用级授权）见 `docs/architecture/{permission,data-permission,field-permission}.md`。
 

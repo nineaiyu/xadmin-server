@@ -159,7 +159,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | 字段权限 | `BaseModelSerializer` 自动裁剪 | `common/core/serializers.py` |
 | 应用级授权 | `identity/utils/api_grant.py`（仅 PAT 凭证，只收敛不提权） | 三处挂载 |
 | 权限点治理 | `get_view_permissions` / `scan_gaps` / `sync_menu_permissions` / `doctor` | `system/utils/platform/menu.py`、`identity/utils/permission_sync/` |
-| 前端消费 | `hasAuth("动作:组件名")` / `<Auth>` / `getDefaultAuths` | 见 §2.6 |
+| 前端消费 | `hasAuth("动作:组件名")` / `<Auth>` / `usePageAuth` | 见 §2.6 |
 
 - 权限码约定 `{action}:{ViewSetName}`；**新增端点必须登记权限点**（生成器种子或 `sync_menu_permissions`），漏登记 = 非超管 403。
 - 深入：[permission.md](permission.md)（体系）、[data-permission.md](data-permission.md)、[field-permission.md](field-permission.md)（配置操作教程）。
@@ -407,7 +407,7 @@ class KnowledgeApi extends BaseApi {
 | 静态路由 | `src/router/modules/*.ts` 自动收集（`remaining.ts` 不进菜单） |
 | 动态路由 | 登录后 `GET /api/system/routes` → `handleAsyncRoutes`；`meta.frameSrc` → iframe 容器；component 字符串按 `/src/views/**` 匹配（未匹配 DEV 报错） |
 | meta 约定 | `title/icon/showLink/auths/hiddenTag/dynamicLevel/fixedTag/frameSrc/rank/showParent/extraIcon/activePath/watermark`（路由侧另有 `keepAlive`） |
-| 权限判定 | `hasAuth("动作:组件名")`；`getDefaultAuths(instance, ["customAction"])` 一次生成 RePlusPage 的 `auth` 对象；模板 `<Auth value="...">` |
+| 权限判定 | `hasAuth("动作:组件名")`；`usePageAuth(["customAction"])` 一次生成 RePlusPage 的 `auth` 对象；模板 `<Auth value="...">` |
 | 约定 | 组件 `name` 与权限码后缀一字不差；无 `v-auth` |
 | 权威源 | `src/router/utils/auth.ts`、`src/router/utils/async-routes.ts`、`src/layout/types.ts` |
 

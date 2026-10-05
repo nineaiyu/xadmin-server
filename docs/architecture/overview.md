@@ -72,7 +72,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | 应用级授权     | API 应用的模型×动作×字段×行收敛（仅 PAT 凭证） | `identity/utils/api_grant.py`（三处挂载）              | ApiApplication.grant                  |
 
 权限编码约定：`{action}:{ViewSetName}`（如 `create:UserViewSet`）；前端 `hasAuth()` / `<Auth>` 组件 /
-`getDefaultAuths()` 消费（无 `v-auth` 指令）。缓存失效由信号驱动（见 cache.md），变更即时生效。
+`usePageAuth()` 消费（无 `v-auth` 指令）。缓存失效由信号驱动（见 cache.md），变更即时生效。
 
 ## 五、关键子系统速览
 

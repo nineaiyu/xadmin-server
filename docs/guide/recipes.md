@@ -36,7 +36,7 @@
 | 2. 权限点 | `python manage.py sync_menu_permissions --dry-run` 查缺口 → 执行补齐；要固化进种子加 `--update-seed`。（**PUT 方法需手工登记**，生成器不产出） |
 | 3. 前端 API | `src/api/system/crm.ts`（或模块 api 文件）里的 Api 类加方法：`mark = (pk) => this.request<BaseResult>("post", {}, {}, \`${this.baseApi}/${pk}/mark\`)` |
 | 4. 前端按钮 | hook 的 `operationButtonsProps.buttons` 加一项：`{ text, code: "mark", show: auth.mark && 10, confirm: {...}, onClick: ({ row, loading }) => handleOperation({ t, apiReq: api.mark(row.pk), requestEnd: refresh }) }` |
-| 5. 权限映射 | hook 的 `auth` 里加 `mark: hasAuth("mark:CustomerViewSet")`（或 `getDefaultAuths(instance, ["mark"])`） |
+| 5. 权限映射 | hook 的 `auth` 里加 `mark: hasAuth("mark:CustomerViewSet")`（或 `usePageAuth(["mark"])` 的 extraKeys） |
 
 **验证**：超管点按钮功能正常 → 换非超管（已授权）可见可用；未授权角色按钮隐藏且直调接口 403。
 
@@ -130,7 +130,7 @@
 
 1. 前端：`src/views/<模块>/<页面>/index.vue`（`defineOptions({ name: "XxxYyy" })`）；
 2. 后端菜单：菜单管理新增**菜单类型**记录——`name` = 组件名、`component` = `src/views` 下相对路径（如 `crm/dashboard/index`）、`path` = 路由路径、`meta` 标题/图标；或写入种子（R20 的 `--update-seed` 口径）；
-3. 若页面调接口：按 R2 登记权限点，前端 `getDefaultAuths` / `hasAuth` 控制按钮；
+3. 若页面调接口：按 R2 登记权限点，前端 `usePageAuth` / `hasAuth` 控制按钮；
 4. 词条：`locales/zh-CN.yaml` + `en.yaml` 成对补；
 5. 验证：侧栏进入 → 刷新保持 → 非超管授权后可用。
 

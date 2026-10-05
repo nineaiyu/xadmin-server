@@ -83,7 +83,7 @@
 ### 11. 找不到 `v-auth` 指令
 
 - **事实**：本项目**没有** `v-auth`。用 `hasAuth("动作:组件名")`（`src/router/utils/auth.ts`）、
-  `<Auth value="...">` 组件、或 `getDefaultAuths(...)` 一次算出 RePlusPage 的 `auth` 对象。
+  `<Auth value="...">` 组件、或 `usePageAuth()` 一次算出 RePlusPage 的 `auth` 对象。
 - **组件名**：取自 `defineOptions({ name })`，与后端权限码里 `:` 后半段**一字不差**。
 
 ### 12. 自定义渲染器/组件不生效

@@ -24,8 +24,8 @@ class RenderFrontendMixin:
 
     def _render_client_hook(self, ctx):
         lines = [
-            'import { getCurrentInstance, reactive } from "vue";',
-            'import { getDefaultAuths } from "@/router/utils";',
+            'import { reactive } from "vue";',
+            'import { usePageAuth } from "@/router/utils";',
             "",
             f'import {{ {ctx["model_snake"]}Api }} from "./api";',
             "",
@@ -34,11 +34,12 @@ class RenderFrontendMixin:
             " * 表格列/搜索/表单覆写按需追加：listColumnsFormat / searchColumnsFormat /",
             " * addOrEditOptions，参考 xadmin-docs example/new-app-client.md。",
             " * 自定义按钮：工具栏 tableBarButtonsProps / 行内 operationButtonsProps，",
-            " * code 需对应权限码 <action>:" + ctx["component"] + "（菜单管理挂权限点）。",
+            " * code 需对应权限码 <action>:" + ctx["component"] + "（菜单管理挂权限点），",
+            ' * 自定义权限位以 extraKeys 形式传入 usePageAuth，如 usePageAuth(["customAction"])。',
             " */",
             f"export function use{ctx['component']}() {{",
             f"  const api = reactive({ctx['model_snake']}Api);",
-            "  const auth = reactive({ ...getDefaultAuths(getCurrentInstance()) });",
+            "  const auth = usePageAuth();",
             "",
             "  // 自定义按钮样板（取消注释后按需修改），完整范式参考 src/views/system/dict/utils/hook.tsx：",
             "  // const tableBarButtonsProps = {",
