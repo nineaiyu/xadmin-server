@@ -18,6 +18,8 @@ class DatasetSerializer(BaseModelSerializer):
     # 定义类资源（配置对象）不做字段权限裁剪：可见性语义 = 创建者/共享；
     # 字段权限叠加发生在执行/聚合输出侧（system/utils/dataset.py）
     ignore_field_permission = True
+    # 非创建者修改/删除被写守卫拒绝（1003）：下发 is_owner 供行内按钮显隐
+    row_owner_guard = True
     # 数值列（读侧派生）：卡片/报表的 sum・avg 度量字段候选（后端聚合会做同样校验）
     numeric_columns = serializers.SerializerMethodField(label=_("Numeric columns"))
     # 关联计数声明：报表引用数（与影响面同源——「删除会影响几张报表」的同一口径）
@@ -69,8 +71,9 @@ class DatasetSerializer(BaseModelSerializer):
 
 
 class DashboardSerializer(BaseModelSerializer):
-    # 同 DatasetSerializer：定义类资源豁免字段权限
+    # 同 DatasetSerializer：定义类资源豁免字段权限；非创建者写守卫 1003 → 下发 is_owner
     ignore_field_permission = True
+    row_owner_guard = True
 
     class Meta:
         model = Dashboard

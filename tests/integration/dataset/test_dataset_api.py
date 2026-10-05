@@ -372,3 +372,40 @@ class TestDashboard:
         }
         response = auth_client.post(DASHBOARD_URL, payload, format="json")
         assert response.status_code == 400
+
+
+class TestRowOwnerFlag:
+    """行级归属标记（is_owner）约定：写守卫域下发该标记（creator/超管为真），
+    供前端行内按钮按行显隐；未开启守卫的域不下发，行数据保持原状。"""
+
+    @staticmethod
+    def _client(user):
+        from rest_framework.test import APIClient
+
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        client.force_authenticate(user=user)
+        return client
+
+    def test_creator_sees_is_owner_true(self, dataset, superuser):
+        rows = {row["pk"]: row for row in self._client(superuser).get(DATASET_URL).json()["data"]["results"]}
+        assert rows[str(dataset.pk)]["is_owner"] is True
+
+    def test_non_creator_sees_is_owner_false(self, dataset, normal_user, grant_dataset_menus):
+        rows = {row["pk"]: row for row in self._client(normal_user).get(DATASET_URL).json()["data"]["results"]}
+        assert rows[str(dataset.pk)]["is_owner"] is False
+
+    def test_retrieve_includes_flag(self, dataset, normal_user, grant_dataset_menus):
+        body = self._client(normal_user).get(f"{DATASET_URL}/{dataset.pk}").json()
+        assert body["data"]["is_owner"] is False
+
+    def test_flag_absent_without_guard(self, superuser):
+        """未声明 row_owner_guard 的序列化器（demo Book）不下发 is_owner。"""
+        from demo.models import Book
+        from file.models import UploadFile
+
+        upload = UploadFile.objects.create(
+            filename="c.png", filesize=1, mime_type="image/png", md5sum="b" * 32, creator=superuser
+        )
+        Book.objects.create(name="无守卫书", isbn="isbn-x", author="a", admin=superuser, admin2=superuser, file=upload)
+        rows = self._client(superuser).get("/api/demo/book").json()["data"]["results"]
+        assert rows and all("is_owner" not in row for row in rows)

@@ -27,6 +27,11 @@ class BaseModelSerializer(ModelSerializer):
     serializer_related_field = BasePrimaryKeyRelatedField
     serializer_choice_field = LabeledChoiceField
     ignore_field_permission = False  # 忽略字段权限
+    # 行级归属守卫开关：声明为 True 的序列化器在输出中注入 is_owner
+    # （当前访问者是 creator 或超管），前端行内按钮按其显隐；与各域写守卫
+    # （非 creator 修改返回 1003）同一口径。按域显式开启——守卫落在哪个域，
+    # 标记就下发到哪个域，避免无守卫语义的接口让前端误藏按钮。
+    row_owner_guard = False
 
     class Meta:
         model: Any = None
@@ -222,6 +227,15 @@ class BaseModelSerializer(ModelSerializer):
         """
         return mask_exempt(request, user, model, ignore_field_permission=self.ignore_field_permission)
 
+    def _inject_row_ownership(self, ret, instance, user):
+        """行级归属标记（is_owner）注入：仅 ``row_owner_guard`` 开启的域生效。"""
+        if not self.row_owner_guard or not ret or instance is None:
+            return
+        creator_id = getattr(instance, "creator_id", None)
+        if creator_id is None:
+            return
+        ret["is_owner"] = bool(user is not None and (getattr(user, "is_superuser", False) or creator_id == user.pk))
+
     def to_representation(self, instance):
         """字段级数据脱敏钩子：列表/详情/导出同一条输出链路统一掩码。
 
@@ -235,6 +249,7 @@ class BaseModelSerializer(ModelSerializer):
         if model is None or request is None:
             return ret
         user = getattr(request, "user", None)
+        self._inject_row_ownership(ret, instance, user)
         return apply_output_mask(ret, request, user, model, self.ignore_field_permission)
 
     def to_internal_value(self, data):

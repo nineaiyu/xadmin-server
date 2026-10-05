@@ -26,6 +26,8 @@ class ScreenSerializer(BaseModelSerializer):
     """大屏模板。可见性同 Dataset（personal/shared）；创建者与超管可改。"""
 
     ignore_field_permission = True
+    # 非创建者修改/删除被写守卫拒绝（1003）：下发 is_owner 供行内按钮显隐
+    row_owner_guard = True
 
     class Meta:
         model = Screen
@@ -116,6 +118,8 @@ class ReportSerializer(BaseModelSerializer):
     """定时报表。执行以创建者权限上下文进行（menu 上下文为空 = 仅全局授权）。"""
 
     ignore_field_permission = True
+    # 非创建者修改/删除被写守卫拒绝（1003）：下发 is_owner 供行内按钮显隐
+    row_owner_guard = True
 
     class Meta:
         model = Report
