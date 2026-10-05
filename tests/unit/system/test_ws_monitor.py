@@ -33,7 +33,7 @@ def test_collect_panel_payload_shape():
     from system.ws_monitor import _collect_panel
 
     # 测试环境无 celery worker：与 HTTP 测试同款，patch 掉 celery 探测
-    with mock.patch("system.utils.platform.metrics.probe_celery", return_value=(True, 0.01)):
+    with mock.patch("system.utils.platform.monitor_metrics.probe_celery", return_value=(True, 0.01)):
         panel = async_to_sync(_collect_panel)()
     assert panel["section"] == "panel"
     assert panel["services"]["status"] is True
@@ -45,7 +45,7 @@ def test_collect_panel_payload_shape():
 
 
 def test_collect_live_metrics_shape():
-    from system.utils.platform.metrics import collect_live_metrics
+    from system.utils.platform.monitor_metrics import collect_live_metrics
 
     live = collect_live_metrics()
     assert live is not None

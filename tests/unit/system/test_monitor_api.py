@@ -47,7 +47,7 @@ def test_overview_returns_live_latest_and_trend(superuser):
 
 
 def test_services_reports_all_components(superuser):
-    with mock.patch("system.utils.platform.metrics.probe_celery", return_value=(True, 0.01)):
+    with mock.patch("system.utils.platform.monitor_metrics.probe_celery", return_value=(True, 0.01)):
         response = _call("services", superuser)
     data = response.data["data"]
     assert set(data.keys()) == {"db", "redis", "celery", "status"}
@@ -57,7 +57,7 @@ def test_services_reports_all_components(superuser):
 
 
 def test_redis_info_graceful_when_unavailable(superuser):
-    with mock.patch("system.utils.platform.metrics.get_redis_client", side_effect=RuntimeError("down")):
+    with mock.patch("system.utils.platform.monitor_metrics.get_redis_client", side_effect=RuntimeError("down")):
         response = _call("redis-info", superuser)
     data = response.data["data"]
     assert data["redis"]["status"] is False

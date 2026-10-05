@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """系统监控面板：主机资源 / 服务健康 / Redis / Celery / 指标历史 / 告警 / 事件 / 导出。
 
-数据源全部复用既有基建（不引入新组件），采集逻辑在 system/utils/platform/metrics.py
+数据源全部复用既有基建（不引入新组件），采集逻辑在 system/utils/platform/monitor_metrics.py
 （与 WS 实时推送 ws_monitor.py 共用，保证两路口径一致）：
 - 主机指标：common.Monitor 心跳表（startup 线程 30s 落盘，psutil 采集）+ 实时快照；
 - 指标历史：monitor_history（时间范围/聚合粒度/多指标/环比，按需直查不缓存）；
@@ -25,7 +25,8 @@ from rest_framework.viewsets import GenericViewSet
 from common.base.magic import cache_response
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.utils.platform import metrics, monitor_events, monitor_history
+from system.utils.platform import monitor_events, monitor_history
+from system.utils.platform import monitor_metrics as metrics
 from system.utils.platform.monitor_export import render_table_export
 
 THRESHOLD_CATEGORY = "security_monitor"

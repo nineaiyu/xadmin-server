@@ -145,7 +145,7 @@ class TestHistory:
 
 class TestHealthSummary:
     def test_critical_resource_and_degraded_celery(self):
-        from system.utils.platform import metrics
+        from system.utils.platform import monitor_metrics as metrics
 
         health = metrics.collect_health_summary(
             live={"cpu_percent": 100, "cpu_load": 0.1, "memory_used": 10, "disk_used": 10},
@@ -165,7 +165,7 @@ class TestHealthSummary:
         assert health["score"] < 100
 
     def test_all_healthy_scores_full(self):
-        from system.utils.platform import metrics
+        from system.utils.platform import monitor_metrics as metrics
 
         health = metrics.collect_health_summary(
             live={"cpu_percent": 10, "cpu_load": 0.5, "memory_used": 20, "disk_used": 30},
@@ -180,7 +180,7 @@ class TestHealthSummary:
         assert health["score"] == 100
 
     def test_skipped_celery_not_counted(self):
-        from system.utils.platform import metrics
+        from system.utils.platform import monitor_metrics as metrics
 
         health = metrics.collect_health_summary(
             live={"cpu_percent": 10, "cpu_load": 0.5, "memory_used": 20, "disk_used": 30},
