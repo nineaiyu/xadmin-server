@@ -17,6 +17,7 @@
 | [system-utils域拆分映射-2026.10.md](system-utils域拆分映射-2026.10.md) | **system app utils/views 域归位映射清单**：51 个 utils 平铺文件 + 3 个既有子包按 identity/file/audit/task/platform 五域归位、views 顶层 13 个平铺文件归入 task/open/platform 子包的逐文件映射与行为零变化保证点（Phase B~E 沿用） |
 | [system-services服务层下沉-2026.10.md](system-services服务层下沉-2026.10.md) | **system app 服务层下沉映射清单**：`system/services.py` 转包（契约门面 + token_issue / open_oauth / auth_login / file 四个服务子模块），OAuth 引擎、登录策略流、令牌签发三处统一、文件统计与预览状态机、message 视图编排的逐项归位与行为零变化保证点 |
 | [system四域切分映射-2026.10.md](system四域切分映射-2026.10.md) | **system app 四域切分映射清单（Phase C）**：identity / file / audit / task 四域独立成 app 的模型/视图/序列化器/路由/任务/通知/信号逐文件映射，清库重建口径下的全量迁移重建（identity 0001 真实建表 + trgm 扩展保障 + 跨域 M2M 推迟补加）与契约面重组 |
+| [导出链路统一与杂项归位-2026.10.md](导出链路统一与杂项归位-2026.10.md) | **导出链路统一与杂项归位映射清单（Phase D+E）**：三套导出链路（视图动作 / 任务重放 / 定时报表）统一为 task 域导出服务的 MIME 单源与产物落库/进度/取消协议，顶层 utils 更名 ops、seed_demo 条件注册独立 app、common 非框架内容（sdk 适配器 / generate_crud / Monitor 模型）拆出 integrations/devtools/system 的逐项映射与行为零变化保证点 |
 
 ## 历史归档（archive/，15 份）
 
