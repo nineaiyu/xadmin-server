@@ -52,13 +52,21 @@ SMELL_PATTERN = re.compile(
 # 合法保留清单：path -> 原因
 ALLOWLIST = {
     "demo/models.py": "FK 跨 app model 引用（规划允许保留）",
+    # 管理命令（合法保留）：跨 app 模块级 import 仅存在于命令入口，
+    # 非运行期业务链路（Phase C 四域切分后 system 命令直连 identity 等域模型）
     "system/management/commands/dump_init_json.py": "管理命令（合法保留）",
     "system/management/commands/load_init_json.py": "管理命令（合法保留）",
-    # 演示数据种子命令：与 load_init_json 同口径的管理命令合法保留（跨 app
-    # 模块级 import 仅存在于命令入口，非运行期业务链路）
     "system/management/commands/seed_demo_content.py": "管理命令（合法保留）",
     "system/management/commands/seed_demo_org.py": "管理命令（合法保留）",
     "system/management/commands/seed_demo_extras.py": "管理命令（合法保留）",
+    "system/management/commands/seed_demo_users.py": "管理命令（合法保留）",
+    "system/management/commands/seed_demo_admin.py": "管理命令（合法保留）",
+    "system/management/commands/seed_demo_book.py": "管理命令（合法保留）",
+    "system/management/commands/seed_demo_clean.py": "管理命令（合法保留）",
+    "system/management/commands/sync_menu_permissions.py": "管理命令（合法保留）",
+    "system/management/commands/audit_data_permission_rules.py": "管理命令（合法保留）",
+    "system/management/commands/doctor.py": "管理命令（合法保留）",
+    "system/management/commands/post_upgrade.py": "管理命令（合法保留）",
 }
 
 # ---------------------------------------------------------------------------
@@ -82,7 +90,8 @@ CONTRACT_PROVIDER_RE = re.compile(r'^\s*"[A-Za-z_]\w*": \("([a-z_]+\.[a-z_]+)",'
 CONTRACT_SEAMS = {
     "common/contracts.py": {
         "notifications.services": "框架层业务消费唯一显式契约出口：消息渠道生产面（5 名字）",
-        "system.services": "框架层业务消费唯一显式契约出口：模型契约 12 项 + 契约委托函数 17 项",
+        "identity.services": "框架层业务消费唯一显式契约出口：身份域模型与应用凭证委托（Phase C 四域切分）",
+        "system.services": "框架层业务消费唯一显式契约出口：platform 域模型契约 + 审计/任务委托过渡缝",
         "approval.services": "框架层业务消费唯一显式契约出口：审批流拦截入口",
         "ai.services": "框架层业务消费唯一显式契约出口：AI 动作声明注册表",
         "settings.services": "框架层业务消费唯一显式契约出口：Setting 启动自检 + 文档站登录锁定",

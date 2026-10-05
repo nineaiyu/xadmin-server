@@ -34,7 +34,7 @@ class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
 
 
 class FieldPermission(DbAuditModel, DbCharModel):
-    role = models.ForeignKey("system.UserRole", on_delete=models.CASCADE, verbose_name=_("Role"))
+    role = models.ForeignKey("identity.UserRole", on_delete=models.CASCADE, verbose_name=_("Role"))
     menu = models.ForeignKey("system.Menu", on_delete=models.CASCADE, verbose_name=_("Menu"))
     field = models.ManyToManyField("system.ModelLabelField", verbose_name=_("Field"), blank=True)
 

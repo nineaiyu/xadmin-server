@@ -11,7 +11,7 @@ from django.test.utils import CaptureQueriesContext
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 from dataset.models import DynamicForm
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

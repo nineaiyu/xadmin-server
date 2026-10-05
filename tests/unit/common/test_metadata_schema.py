@@ -33,7 +33,7 @@ from common.core.modelset.input_types import (
     INPUT_TYPE_PREFIX_FAMILIES,
 )
 from demo.views import BookViewSet
-from system.views.admin.user import UserViewSet
+from identity.views.admin.user import UserViewSet
 
 pytestmark = pytest.mark.django_db
 

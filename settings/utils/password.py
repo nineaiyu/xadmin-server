@@ -61,7 +61,7 @@ def record_password_hash(user, hashed_password: str) -> None:
     if user is None or user.pk is None or not hashed_password:
         return
     from common.utils import get_logger
-    from system.models.password import PasswordHistory
+    from identity.models.password import PasswordHistory
 
     logger = get_logger(__name__)
     try:

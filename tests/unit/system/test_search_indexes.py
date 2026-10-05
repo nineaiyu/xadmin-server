@@ -4,34 +4,63 @@
 三类守护：
 - **覆盖**：每个搜索提供者的检索字段必须落在「索引清单」或「豁免清单」（新增检索字段
   忘补索引/豁免时红灯——否则会静默退回顺序扫描，且只有上线后才可能被发现）；
-- **漂移**：迁移快照 ↔ 运行期清单 ↔ 迁移 state_operations 三处索引名/表/字段一致
-  （迁移快照直接以当前表名冻结——2026-10-03 迁移合并后初始迁移即建现名表，无改名折算）；
-- **降级与形态**：建索引 SQL 为 pg_trgm GIN 且幂等；非 PostgreSQL 不执行任何 DDL；
-  扩展不可用时只告警、不再尝试建索引（不阻断迁移）。
+- **漂移**：迁移快照 ↔ 运行期清单一致（trgm 索引随各域 0001 迁移的模型 Meta GinIndex
+  落地，快照即从迁移 operations 提取——只在注册表或只在模型 Meta 出现都会红灯）；
+- **扩展与形态**：pg_trgm 扩展由 identity.0001（迁移链最前端）首操作守护——仅 PG 执行、
+  不可用只告警不阻断迁移（检索回退顺序扫描）；建索引 SQL 为幂等形态。
 """
 
 import importlib
 
 import pytest
+from django.apps import apps
+from django.db.migrations import AddIndex, CreateModel
 
 from system import search_indexes
 from system.search import SEARCH_PROVIDERS
 
-# trgm 索引快照按表归属拆在两个迁移里：system 侧 5 个 + approval 侧 4 个
-MIGRATIONS = [
-    importlib.import_module(module_path)
-    for module_path in (
-        "system.migrations.0004_accountrisk_apiapplication_apiapplicationgrant_and_more",
-        "approval.migrations.0001_initial",
-    )
-]
+# trgm 索引随模型 Meta 分属三个域的初始迁移：identity 侧 4 个 + system 侧 1 个 + approval 侧 4 个
+MIGRATION_MODULES = (
+    "identity.migrations.0001_initial",
+    "system.migrations.0001_initial",
+    "approval.migrations.0001_initial",
+)
+MIGRATIONS = [importlib.import_module(module_path) for module_path in MIGRATION_MODULES]
+
+# 扩展守护函数：迁移链最前端（identity.0001）的首个 RunPython，后续所有 GinIndex DDL 依赖它
+_ensure_trgm_extension = importlib.import_module("identity.migrations.0001_initial")._ensure_trgm_extension
+
+
+def _trgm_indexes_of(module) -> dict:
+    """迁移 CreateModel 的 GinIndex（gin_trgm_ops）→ {索引名: (表, 字段)}。
+
+    表名经运行期模型解析（各域默认表名，与初始迁移建表名同源）；单字段口径与
+    system/search_indexes.py 清单一致，出现复合字段索引说明口径漂移。
+    """
+    app_label = module.__name__.split(".")[0]
+    snapshot = {}
+    for op in module.Migration.operations:
+        if isinstance(op, AddIndex):
+            model_name, index = op.model_name, op.index
+        elif isinstance(op, CreateModel):
+            model_name = op.name
+            index = next(
+                (i for i in (op.options or {}).get("indexes") or [] if "gin_trgm_ops" in (i.opclasses or [])),
+                None,
+            )
+        else:
+            continue
+        if index is None or "gin_trgm_ops" not in (index.opclasses or []):
+            continue
+        assert len(index.fields) == 1, f"trgm 索引按单字段登记：{index.name}"
+        snapshot[index.name] = (apps.get_model(app_label, model_name)._meta.db_table, index.fields[0])
+    return snapshot
 
 
 def _folded_snapshot() -> dict:
-    """迁移快照 → 与运行期清单同口径（键：索引名，值：(表, 字段)）。"""
     snapshot = {}
-    for migration in MIGRATIONS:
-        snapshot.update({name: (table, field) for name, table, field in migration.TRGM_INDEXES})
+    for module in MIGRATIONS:
+        snapshot.update(_trgm_indexes_of(module))
     return snapshot
 
 
@@ -77,22 +106,23 @@ class TestCoverage:
 class TestMigrationDrift:
     def test_snapshot_matches_runtime_registry(self):
         registry = {item.name: (item.table, item.field) for item in search_indexes.SEARCH_TRGM_INDEXES}
-        assert _folded_snapshot() == registry, "迁移快照与 system/search_indexes.py 清单漂移（新增字段请补新迁移）"
+        assert _folded_snapshot() == registry, (
+            "迁移模型 Meta 与 system/search_indexes.py 清单漂移（新增检索字段请同步模型 Meta）"
+        )
 
-    @pytest.mark.parametrize("migration", MIGRATIONS, ids=lambda m: m.__name__)
-    def test_state_operations_match_snapshot(self, migration):
-        operations = migration.Migration.operations
-        state_ops = [op for op in operations if hasattr(op, "state_operations") and op.state_operations]
-        assert len(state_ops) == 1, "迁移应仅有单个 SeparateDatabaseAndState（state 声明 + 受控执行）"
-        declared = {op.index.name for op in state_ops[0].state_operations}
-        assert declared == {name for name, _table, _field in migration.TRGM_INDEXES}
+    @pytest.mark.parametrize("module", MIGRATIONS, ids=lambda m: m.__name__)
+    def test_every_domain_migration_carries_trgm_indexes(self, module):
+        snapshot = _trgm_indexes_of(module)
+        assert snapshot, f"{module.__name__} 应随模型 Meta 携带 trgm 索引"
+        bad = [name for name in snapshot if not (name.startswith("idx_") and name.endswith("_trgm"))]
+        assert bad == [], f"索引名违反 idx_*_trgm 约定：{bad}"
 
 
 class TestSqlShape:
     def test_create_index_sql_is_idempotent_trigram(self):
-        sql = search_indexes.create_index_sql("system_userinfo", "username", "idx_userinfo_username_trgm")
+        sql = search_indexes.create_index_sql("identity_userinfo", "username", "idx_userinfo_username_trgm")
         assert sql == (
-            "CREATE INDEX IF NOT EXISTS idx_userinfo_username_trgm ON system_userinfo USING gin (username gin_trgm_ops)"
+            "CREATE INDEX IF NOT EXISTS idx_userinfo_username_trgm ON identity_userinfo USING gin (username gin_trgm_ops)"
         )
         assert search_indexes.drop_index_sql("idx_userinfo_username_trgm") == (
             "DROP INDEX IF EXISTS idx_userinfo_username_trgm"
@@ -139,22 +169,15 @@ class _NonPgConnection:
 
 
 class TestDegradation:
-    @pytest.mark.parametrize("migration", MIGRATIONS, ids=lambda m: m.__name__)
-    def test_migration_skips_non_postgres(self, migration):
-        migration._create_indexes(None, _FakeSchemaEditor(_NonPgConnection()))
-        migration._drop_indexes(None, _FakeSchemaEditor(_NonPgConnection()))
+    def test_extension_guard_skips_non_postgres(self):
+        _ensure_trgm_extension(None, _FakeSchemaEditor(_NonPgConnection()))
 
-    @pytest.mark.parametrize("migration", MIGRATIONS, ids=lambda m: m.__name__)
-    def test_migration_creates_extension_then_all_indexes(self, migration):
+    def test_extension_guard_creates_extension(self):
         connection = _RecordingPgConnection()
-        migration._create_indexes(None, _FakeSchemaEditor(connection))
-        assert connection.log[0] == search_indexes.TRGM_EXTENSION_SQL
-        created = connection.log[1:]
-        assert len(created) == len(migration.TRGM_INDEXES)
-        assert all("USING gin" in sql and sql.startswith("CREATE INDEX IF NOT EXISTS") for sql in created)
+        _ensure_trgm_extension(None, _FakeSchemaEditor(connection))
+        assert connection.log == [search_indexes.TRGM_EXTENSION_SQL]
 
-    @pytest.mark.parametrize("migration", MIGRATIONS, ids=lambda m: m.__name__)
-    def test_migration_degrades_when_extension_unavailable(self, migration):
+    def test_extension_guard_degrades_when_unavailable(self):
         connection = _RecordingPgConnection(fail_extension=True)
-        migration._create_indexes(None, _FakeSchemaEditor(connection))
-        assert connection.log == [], "扩展不可用时不应再尝试建索引（检索回退顺序扫描）"
+        _ensure_trgm_extension(None, _FakeSchemaEditor(connection))
+        assert connection.log == [], "扩展不可用时只告警、不再尝试 DDL（检索回退顺序扫描）"

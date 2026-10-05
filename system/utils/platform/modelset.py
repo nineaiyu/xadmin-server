@@ -17,8 +17,9 @@ from common.core.filter import get_filter_queryset
 from common.core.modelset import RelationCountMixin
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.models import DataPermission, SystemConfig, UserRole
-from system.utils.identity.permission_preview import (
+from identity.services import UserRole
+from system.models import DataPermission, SystemConfig
+from system.utils.platform.permission_preview import (
     get_dept_preview,
     get_post_preview,
     get_role_preview,

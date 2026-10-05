@@ -18,7 +18,8 @@ from rest_framework.viewsets import GenericViewSet
 from common.base.magic import cache_response
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.models import OperationLog, UserInfo, UserLoginLog
+from identity.services import UserInfo
+from system.models import OperationLog, UserLoginLog
 from system.serializers.log import LoginLogSerializer
 
 

@@ -13,9 +13,9 @@ from django.db import connection
 from django.db.models import Count
 from django.test.utils import CaptureQueriesContext
 
-from system.models import DeptInfo, UserInfo
-from system.serializers.department import DeptSerializer
-from system.views.admin.dept import DeptViewSet
+from identity.models import DeptInfo, UserInfo
+from identity.serializers.department import DeptSerializer
+from identity.views.admin.dept import DeptViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -35,15 +35,15 @@ def dept_page(db):
 
 
 def _per_row_count_queries(ctx):
-    """筛出 user_count 的逐行 COUNT：只涉及 system_userinfo 的 COUNT(*)。
+    """筛出 user_count 的逐行 COUNT：只涉及 identity_userinfo 的 COUNT(*)。
 
-    排除两类干扰：分页器统计 system_deptinfo 总数的 COUNT，
-    以及 annotate 主查询（LEFT JOIN 了 system_userinfo，但同时涉及 system_deptinfo）。
+    排除两类干扰：分页器统计 identity_deptinfo 总数的 COUNT，
+    以及 annotate 主查询（LEFT JOIN 了 identity_userinfo，但同时涉及 identity_deptinfo）。
     """
     return [
         q
         for q in ctx.captured_queries
-        if "COUNT(*)" in q["sql"].upper() and "system_userinfo" in q["sql"] and "system_deptinfo" not in q["sql"]
+        if "COUNT(*)" in q["sql"].upper() and "identity_userinfo" in q["sql"] and "identity_deptinfo" not in q["sql"]
     ]
 
 

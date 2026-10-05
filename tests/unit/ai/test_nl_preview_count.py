@@ -8,7 +8,7 @@
 import pytest
 
 from ai.utils.nl_query import PREVIEW_PROBE_LIMIT, bounded_preview_count
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

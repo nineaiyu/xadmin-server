@@ -22,8 +22,9 @@ from approval.models.approval import ApprovalRequest
 from approval.models.leave import Leave
 from approval.utils.approval import approve_request
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
+from identity.models import UserInfo
 from message.models import ChatMessage
-from system.models import Menu, OperationLog, UserInfo
+from system.models import Menu, OperationLog
 
 pytestmark = pytest.mark.django_db
 
@@ -494,7 +495,7 @@ class TestUserSetActiveAction:
     """
 
     def test_disable_then_enable_user(self, auth_client, ai_action_settings):
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         target = UserInfo.objects.create_user(username="ai_target", password="Test@123456", nickname="目标用户")
         disabled = auth_client.post(
@@ -524,7 +525,7 @@ class TestUserSetActiveAction:
 
     def test_requires_business_permission(self, action_client, ai_action_settings, action_user, menu_factory):
         """越权矩阵：无 partialUpdate:UserInfo 不得禁用他人（视图权限链兜底）。"""
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         target = UserInfo.objects.create_user(username="victim", password="Test@123456", nickname="受害者")
         grant_perms(action_user.roles.first(), menu_factory, NOTICE_PERMS)
@@ -611,7 +612,7 @@ class TestCatalogExtensions:
     def test_role_create(self, ai_action_settings, superuser):
         """角色管理动作以超管验证（普通用户受字段级权限裁剪，属业务接口既有约束）。"""
         from ai.utils.ai_actions import execute_action
-        from system.models import UserRole
+        from identity.models import UserRole
 
         result = execute_action(superuser, "role.create", {"name": "运营组", "code": "ops"})
         assert result["ok"] is True, result
@@ -620,7 +621,7 @@ class TestCatalogExtensions:
     def test_role_grant_menu_subtree(self, ai_action_settings, superuser, menu_factory):
         """菜单名解析为「菜单 + 子树全量权限点」（与授权树勾选父节点同语义）。"""
         from ai.utils.ai_actions import execute_action
-        from system.models import UserRole
+        from identity.models import UserRole
 
         parent = menu_factory("AI授权测试父菜单", menu_type=Menu.MenuChoices.MENU)
         menu_factory("AI授权测试子权限", path="api/system/user$", method="GET", parent=parent)

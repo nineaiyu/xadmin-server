@@ -11,7 +11,8 @@
 import pytest
 from django.db import IntegrityError
 
-from system.models import Menu, SavedListView, UserInfo
+from identity.models import UserInfo
+from system.models import Menu, SavedListView
 
 pytestmark = pytest.mark.django_db
 

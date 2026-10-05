@@ -7,7 +7,7 @@ pks 回显（编辑既有提交）、非法参数忽略、无权限用户 fail-c
 
 import pytest
 
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

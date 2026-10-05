@@ -15,7 +15,7 @@ from django.utils import timezone
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 from approval.models.leave import Leave
 from approval.utils.leave import resolve_leave_flow, submit_leave, validate_leave_payload
-from system.models import UserInfo, UserRole
+from identity.models import UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 

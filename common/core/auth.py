@@ -215,7 +215,7 @@ class CookieJWTAuthentication(JWTAuthentication):
                 if sid:
                     from django.apps import apps
 
-                    apps.get_model("system", "UserSession").touch(sid)
+                    apps.get_model("identity", "UserSession").touch(sid)
             except Exception:  # noqa: BLE001 会话刷新失败不影响认证
                 pass
         return result
@@ -256,7 +256,7 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
         # 惰性 import：common.utils.request 顶层反向依赖本模块的 token 类
         from common.utils.request import get_request_ip
 
-        token_model = apps.get_model("system", "PersonalAccessToken")
+        token_model = apps.get_model("identity", "PersonalAccessToken")
         pat = (
             token_model.objects.filter(token_hash=self.hash_token(parts[1]), is_active=True)
             .select_related("creator", "api_application")

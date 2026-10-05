@@ -33,7 +33,7 @@ def online_user_pks() -> set:
 
 def _fetch_peer(room: ChatRoom, user):
     """单房间私聊对端（列表批量路径见 prefetch_room_context）。"""
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     peer_obj = UserInfo.objects.filter(pk__in=room.members.exclude(user_id=_user_pk(user)).values("user_id")).first()
     return user_brief(peer_obj) if peer_obj is not None else None
@@ -46,7 +46,7 @@ def prefetch_room_context(rooms, user) -> tuple:
     - 群成员预览 + 成员数：一次查询取成员行，Python 分组（每群取前
       GROUP_MEMBERS_PREVIEW 人 + 计数），避免每群 2 次查询。
     """
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     private_ids = [room.pk for room in rooms if room.room_type == ChatRoom.RoomType.PRIVATE]
     group_ids = [room.pk for room in rooms if room.room_type == ChatRoom.RoomType.GROUP]

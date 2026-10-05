@@ -6,9 +6,10 @@ from unittest.mock import patch
 import pytest
 from django.test import RequestFactory, override_settings
 
+from identity.models import UserInfo
+from identity.serializers.userinfo import UserInfoSerializer
 from server.utils import set_current_request
-from system.models import DataMaskRule, UserInfo
-from system.serializers.userinfo import UserInfoSerializer
+from system.models import DataMaskRule
 from system.utils.audit.mask import apply_mask, get_mask_rules, invalid_mask_cache
 from system.views.admin.mask import PREVIEW_MAX_VALUE_LENGTH, PREVIEW_MAX_VALUES
 
@@ -20,7 +21,7 @@ PHONE = "13812345678"
 def _make_request(user, fields=None):
     request = RequestFactory().get("/api/system/user/")
     request.user = user
-    request.fields = fields or {"system.userinfo": ["pk", "username", "nickname", "phone", "email"]}
+    request.fields = fields or {"identity.userinfo": ["pk", "username", "nickname", "phone", "email"]}
     set_current_request(request)
     return request
 
@@ -33,12 +34,12 @@ def _make_request_with_params(user, params=None, path="/api/system/user/"):
     """带查询参数的请求（?mask=false 原文通道用例）。"""
     request = RequestFactory().get(path, params or {})
     request.user = user
-    request.fields = {"system.userinfo": ["pk", "username", "nickname", "phone", "email"]}
+    request.fields = {"identity.userinfo": ["pk", "username", "nickname", "phone", "email"]}
     set_current_request(request)
     return request
 
 
-def _rule(model="system.userinfo", field="phone", mask_type="phone", sort=0, **extra):
+def _rule(model="identity.userinfo", field="phone", mask_type="phone", sort=0, **extra):
     rule = DataMaskRule.objects.create(model=model, field=field, mask_type=mask_type, sort=sort, **extra)
     return rule
 
@@ -84,25 +85,25 @@ class TestApplyMask:
 
 class TestMaskRulesCache:
     def test_load_active_rules_sorted_by_sort(self):
-        _rule(model="system.userinfo", field="email", mask_type="email", sort=2)
-        _rule(model="system.userinfo", field="phone", mask_type="phone", sort=1)
-        _rule(model="system.userinfo", field="phone", mask_type="phone", sort=0, is_active=False)
-        rules = get_mask_rules("system.userinfo")
+        _rule(model="identity.userinfo", field="email", mask_type="email", sort=2)
+        _rule(model="identity.userinfo", field="phone", mask_type="phone", sort=1)
+        _rule(model="identity.userinfo", field="phone", mask_type="phone", sort=0, is_active=False)
+        rules = get_mask_rules("identity.userinfo")
         assert [r["field"] for r in rules] == ["phone", "email"]
         assert rules[0].get("roles") == []
 
     def test_post_save_signal_invalidates_cache(self):
         rule = _rule()
-        assert get_mask_rules("system.userinfo")  # 预热缓存
+        assert get_mask_rules("identity.userinfo")  # 预热缓存
         rule.is_active = False
         rule.save()
-        assert get_mask_rules("system.userinfo") == []
+        assert get_mask_rules("identity.userinfo") == []
 
     def test_roles_m2m_changed_invalidates_cache(self, role):
         rule = _rule()
-        get_mask_rules("system.userinfo")  # 预热
+        get_mask_rules("identity.userinfo")  # 预热
         rule.roles.add(role)
-        rules = get_mask_rules("system.userinfo")
+        rules = get_mask_rules("identity.userinfo")
         assert rules[0]["roles"] == [role.pk]
 
     def test_invalid_mask_cache_by_model(self):
@@ -191,17 +192,17 @@ class TestNestedOutputMasking:
     """嵌套输出收口：关联字段 attrs 同过目标模型规则（历史实现只掩码主链路）。"""
 
     def test_related_field_attrs_masked(self, normal_user, superuser):
-        """DeptSerializer.leader（attrs 含 nickname）受 system.userinfo 规则约束。"""
-        from system.models import DeptInfo
-        from system.serializers.department import DeptSerializer
+        """DeptSerializer.leader（attrs 含 nickname）受 identity.userinfo 规则约束。"""
+        from identity.models import DeptInfo
+        from identity.serializers.department import DeptSerializer
 
         normal_user.nickname = "张三丰"
         normal_user.save()
         dept = DeptInfo.objects.create(name="研发部", leader=normal_user)
         _rule(field="nickname", mask_type="name", keep_head=1, keep_tail=1)
         fields = {
-            "system.userinfo": ["pk", "username", "nickname"],
-            "system.deptinfo": ["pk", "name", "leader"],
+            "identity.userinfo": ["pk", "username", "nickname"],
+            "identity.deptinfo": ["pk", "name", "leader"],
         }
 
         _make_request(normal_user, fields=fields)
@@ -216,7 +217,7 @@ class TestNestedOutputMasking:
         """自定义 attrs（含 phone）同样掩码；原文通道豁免同样生效。"""
         from common.core.fields import BasePrimaryKeyRelatedField
         from common.core.serializers import BaseModelSerializer
-        from system.models import DeptInfo
+        from identity.models import DeptInfo
 
         normal_user.phone = PHONE
         normal_user.save()
@@ -231,8 +232,8 @@ class TestNestedOutputMasking:
                 fields = ["pk", "name", "leader"]
 
         fields = {
-            "system.userinfo": ["pk", "nickname", "phone"],
-            "system.deptinfo": ["pk", "name", "leader"],
+            "identity.userinfo": ["pk", "nickname", "phone"],
+            "identity.deptinfo": ["pk", "name", "leader"],
         }
         _make_request(normal_user, fields=fields)
         data = _ProbeSerializer(dept).data
@@ -313,7 +314,7 @@ class TestMaskOriginalChannel:
         mock_logger.warning.assert_called_once()
         _, audited_user_pk, _path, model_label = mock_logger.warning.call_args[0]
         assert audited_user_pk == normal_user.pk
-        assert model_label == "system.userinfo"
+        assert model_label == "identity.userinfo"
 
         # 未走原文通道（无 ?mask=false）不记审计
         _make_request_with_params(normal_user)
@@ -343,7 +344,7 @@ class TestMaskOriginalChannel:
         assert rows.count() == 1  # 列表逐行调用只记一条
         row = rows.first()
         assert row.creator_id == normal_user.pk
-        assert row.object_pk == "system.userinfo"
+        assert row.object_pk == "identity.userinfo"
         assert row.path == f"/api/system/user/{normal_user.pk}"
         assert row.method == "GET"
 
@@ -389,7 +390,7 @@ class TestMaskOriginalChannelAPI:
             name="E2E-全部用户数据",
             rules=[
                 {
-                    "table": "system.userinfo",
+                    "table": "identity.userinfo",
                     "field": "id",
                     "type": "value.all",
                     "match": "",
@@ -496,7 +497,7 @@ class TestMaskRuleAPI:
     def test_crud_smoke(self, auth_client):
         resp = auth_client.post(
             "/api/system/mask-rules",
-            {"model": "system.userinfo", "field": "phone", "mask_type": "phone", "keep_head": 3, "keep_tail": 4},
+            {"model": "identity.userinfo", "field": "phone", "mask_type": "phone", "keep_head": 3, "keep_tail": 4},
             format="json",
         )
         assert resp.data["code"] == 1000

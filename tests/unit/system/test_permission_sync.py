@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from system.utils.identity import permission_sync as sync
+from system.utils.platform import permission_sync as sync
 
 
 class TestUrlSampling:
@@ -77,7 +77,7 @@ class TestFindCovering:
 
     def test_shared_method_registry_matches_view_action(self):
         """登记表与视图 action 同源：im-binding 仍为单动作 GET+POST（防登记表悬空）。"""
-        from system.views.admin.user import UserViewSet
+        from identity.views.admin.user import UserViewSet
 
         action = UserViewSet.im_binding
         assert sorted(action.mapping) == ["get", "post"]

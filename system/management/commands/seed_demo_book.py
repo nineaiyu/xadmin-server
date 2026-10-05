@@ -266,7 +266,7 @@ class Command(BaseCommand):
             self.stdout.write("skip demo books: demo app 未启用（XADMIN_APPS 不含 demo；先启用再灌数据）")
             return
         from demo.models import Book
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         admin = (
             UserInfo.objects.filter(is_superuser=True).order_by("pk").first() or UserInfo.objects.order_by("pk").first()

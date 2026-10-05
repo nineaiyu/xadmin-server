@@ -67,7 +67,7 @@ class TestArgon2Migration:
 
     @override_settings(PASSWORD_HASHERS=ARGON2_FIRST)
     def test_check_password_setter_upgrades_hash(self):
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         user = UserInfo.objects.create_user(username="hash-upgrade", password="Legacy@Pass1")
         # 预置存量 PBKDF2 哈希（迁移前登记的老用户形态）

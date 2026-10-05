@@ -22,7 +22,7 @@ class TestLogout:
         """真实 JWT 认证路径：request.auth 为 simplejwt Token（与生产一致）。"""
         from django.contrib.sessions.backends.db import SessionStore
 
-        from system.views.auth.logout import LogoutAPIView
+        from identity.views.auth.logout import LogoutAPIView
 
         factory = APIRequestFactory()
         access = None

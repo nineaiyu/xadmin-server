@@ -36,29 +36,30 @@ from typing import Any, Protocol
 #: 契约名 → (提供方模块, 原因)。新增契约：此处登记 + 门禁 CONTRACT_SEAMS
 #: 同步 + tests/unit/common/test_contracts.py 往返守护自动覆盖。
 _CONTRACT_PROVIDERS: dict[str, tuple[str, str]] = {
-    # --- system.services：模型契约（跨 app 关联 / isinstance / Meta.model 场景） ---
+    # --- identity.services：身份域契约（用户/角色/部门/PAT/应用凭证） ---
+    "UserInfo": ("identity.services", "用户模型（数据权限主体与行级过滤）"),
+    "DeptInfo": ("identity.services", "部门模型（数据权限主体与行级过滤）"),
+    "UserRole": ("identity.services", "角色模型（生成器种子关联）"),
+    "PersonalAccessToken": ("identity.services", "PAT 模型（审计日志的类型判定）"),
+    # --- system.services：platform 域契约（跨 app 关联 / isinstance / Meta.model 场景） ---
     "SystemConfig": ("system.services", "运行期配置模型（config 缓存基座 + 凭据巡检）"),
     "UserPersonalConfig": ("system.services", "用户个人配置模型（config 缓存基座）"),
     "OperationLog": ("system.services", "审计日志模型（操作日志记录 / 中间件审计）"),
-    "PersonalAccessToken": ("system.services", "PAT 模型（审计日志的类型判定）"),
     "Menu": ("system.services", "菜单模型（模块裁剪 / 字段权限 / 生成器种子关联）"),
     "FieldPermission": ("system.services", "字段权限模型（权限层消费）"),
     "DataPermission": ("system.services", "数据权限模型（行级过滤规则加载）"),
-    "DeptInfo": ("system.services", "部门模型（数据权限主体与行级过滤）"),
-    "UserInfo": ("system.services", "用户模型（数据权限主体与行级过滤）"),
     "ModelLabelField": ("system.services", "模型字段注册模型（数据权限常量 / 生成器）"),
     "ModeTypeAbstract": ("system.services", "数据权限模式常量（数据权限编译器）"),
-    "UserRole": ("system.services", "角色模型（生成器种子关联）"),
     # --- system.services：契约委托函数（services 侧已惰性委托，import 零模型加载） ---
     "emit_webhook_event": ("system.services", "出站 Webhook 事件投递（告警发布共用）"),
-    "get_active_superuser_queryset": ("system.services", "告警收件人解析（在用超管 queryset）"),
-    "publish_api_quota_warning": ("system.services", "API 配额告警（系统消息 + Webhook）"),
+    "get_active_superuser_queryset": ("identity.services", "告警收件人解析（在用超管 queryset）"),
+    "publish_api_quota_warning": ("identity.services", "API 配额告警（系统消息 + Webhook）"),
     "maybe_alert_sensitive_operation": ("system.services", "敏感操作告警分流（审计中间件）"),
-    "apply_grant_fields": ("system.services", "应用凭证字段授权（序列化器可见字段收敛）"),
-    "apply_grant_row_scope": ("system.services", "应用凭证行级授权（queryset 收敛）"),
-    "application_of_request": ("system.services", "请求关联的应用凭证解析"),
-    "enforce_application_grant": ("system.services", "应用凭证权限点校验"),
-    "resolve_request_menu_pk": ("system.services", "按请求路径解析应用凭证菜单"),
+    "apply_grant_fields": ("identity.services", "应用凭证字段授权（序列化器可见字段收敛）"),
+    "apply_grant_row_scope": ("identity.services", "应用凭证行级授权（queryset 收敛）"),
+    "application_of_request": ("identity.services", "请求关联的应用凭证解析"),
+    "enforce_application_grant": ("identity.services", "应用凭证权限点校验"),
+    "resolve_request_menu_pk": ("identity.services", "按请求路径解析应用凭证菜单"),
     "apply_mask": ("system.services", "字段掩码：单值脱敏（序列化器应用）"),
     "get_mask_rules": ("system.services", "字段掩码：规则加载"),
     "record_original_channel_access": ("system.services", "字段掩码：原文通道访问审计"),

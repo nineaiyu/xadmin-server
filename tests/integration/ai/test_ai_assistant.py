@@ -60,7 +60,7 @@ def ai_enabled(settings):
 @pytest.fixture
 def knowledge(db):
     root, _ = ModelLabelField.objects.get_or_create(
-        name="system.userinfo", defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"}
+        name="identity.userinfo", defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"}
     )
     for name in ("username",):
         ModelLabelField.objects.get_or_create(

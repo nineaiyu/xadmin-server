@@ -44,7 +44,7 @@ def get_or_create_private_room(user_a, user_b) -> ChatRoom:
                 room = ChatRoom.objects.create(room_key=key, room_type=ChatRoom.RoomType.PRIVATE)
         except IntegrityError:  # 并发开通：另一请求已创建
             room = ChatRoom.objects.get(room_key=key)
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     for user in UserInfo.objects.filter(pk__in=[pk_a, pk_b]):
         ChatRoomMember.objects.get_or_create(room=room, user=user)
@@ -56,7 +56,7 @@ def get_or_create_private_room_by_pk(user, target_pk) -> ChatRoom:
 
     目标不存在或已停用抛可读校验错误（视图层映射 1001「User not found」）。
     """
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     target = UserInfo.objects.filter(pk=target_pk, is_active=True).first()
     if target is None:
@@ -83,7 +83,7 @@ def create_group(owner, name: str, member_pks) -> ChatRoom:
 
     创建者为群主；成员只接受在用用户，任一非法/失效成员整体拒绝（避免半成品群）。
     """
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     name = (name or "").strip()
     if not name:
@@ -138,7 +138,7 @@ def rename_group(room_id, user, name: str) -> ChatRoom:
 
 def add_group_members(room_id, user, member_pks) -> ChatRoom:
     """群主拉人入群：已在内/失效成员静默跳过；超上限整体拒绝。"""
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     room = group_room_or_deny(room_id, user)
     _require_group_owner(room, user)

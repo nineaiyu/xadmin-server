@@ -2,7 +2,7 @@
 
 > 面向管理员：provider 配置字段、生效条件与常见配置错误排错（功能模块评估 §4.1「配置错误提示依赖文档」）。
 > 设计决策见 [ADR-018](../adr/ADR-018-im-scan-login.md)（IM 扫码登录）与 [ADR-019](../adr/ADR-019-im-notify-channels.md)（IM 消息渠道，复用同一批 OAuth 绑定）；
-> 代码：`system/utils/identity/oauth.py`（读取/写入校验）、`system/utils/identity/oauth_flavors.py`（IM flavor 官方端点预设）、`system/views/auth/oauth.py`（登录/绑定回调）。
+> 代码：`identity/utils/oauth.py`（读取/写入校验）、`identity/utils/oauth_flavors.py`（IM flavor 官方端点预设）、`identity/views/auth/oauth.py`（登录/绑定回调）。
 
 ## 一、配置位置与字段
 
@@ -50,7 +50,7 @@
 
 ## 五、新增一个 flavor（内核扩展）
 
-IM flavor 的协议差异全部收口在 `system/utils/identity/oauth_flavors.py`，新增一个 flavor = 三步：
+IM flavor 的协议差异全部收口在 `identity/utils/oauth_flavors.py`，新增一个 flavor = 三步：
 
 1. **登记预设**：`FLAVOR_PRESETS` 加官方端点与 `subject_field`（授权 / 换码 / 用户信息 URL，允许显式配置覆盖）；
    `FLAVOR_REQUIRED_KEYS` 加写入侧必填键（如企微额外要求 `agent_id`）；
@@ -61,7 +61,7 @@ IM flavor 的协议差异全部收口在 `system/utils/identity/oauth_flavors.py
 
 ## 六、标准 OIDC（flavor=oidc）
 
-对接标准 OIDC IdP（Keycloak / Auth0 / Entra ID 等）：代码在 `system/utils/identity/oidc.py`（discovery / id_token 验签 / claims 映射 / 组角色同步）。
+对接标准 OIDC IdP（Keycloak / Auth0 / Entra ID 等）：代码在 `identity/utils/oidc.py`（discovery / id_token 验签 / claims 映射 / 组角色同步）。
 
 **配置字段**（在通用字段之外）：
 

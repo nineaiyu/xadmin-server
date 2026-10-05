@@ -32,7 +32,8 @@ from common.core.data_scope import KeyChoices, validate_rules
 # 与编译器读侧同源——巡检若自写一份解析，会与运行时对同一份数据产生两种口径
 from common.core.data_scope.values import _pk_list
 from common.utils import get_logger
-from system.models import DataPermission, DeptInfo, DeptManagerAssignment, Menu, UserInfo, UserRole
+from identity.models import DeptInfo, DeptManagerAssignment, UserInfo, UserRole
+from system.models import DataPermission, Menu
 
 logger = get_logger(__name__)
 

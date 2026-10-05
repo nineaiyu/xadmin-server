@@ -8,67 +8,26 @@ from django.urls import include, path, re_path
 from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
-from system.views.admin.account_risk import AccountRiskViewSet
 from system.views.admin.codegen import SystemCodeGenViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
 from system.views.admin.credential import CredentialViewSet
-from system.views.admin.dept import DeptViewSet
 from system.views.admin.dict import DataDictViewSet
 from system.views.admin.export import ExportRecordViewSet
 from system.views.admin.file import UploadFileViewSet
 from system.views.admin.import_ import ImportRecordViewSet, ImportTemplateViewSet
-from system.views.admin.login_policy import LoginAccessPolicyViewSet
 from system.views.admin.loginlog import LoginLogViewSet
 from system.views.admin.mask import DataMaskRuleViewSet
 from system.views.admin.menu import MenuViewSet
 from system.views.admin.modelfield import ModelLabelFieldViewSet
-from system.views.admin.online import UserOnlineViewSet
 from system.views.admin.operationlog import OperationLogViewSet
-from system.views.admin.passkey import PasskeyViewSet
 from system.views.admin.permission import DataPermissionViewSet
-from system.views.admin.post import PostViewSet
-from system.views.admin.role import RoleViewSet
 from system.views.admin.saved_view import SavedListViewSet
-from system.views.admin.user import UserViewSet
-from system.views.auth.impersonation import ImpersonateExitAPIView
-from system.views.auth.invite import InviteAcceptAPIView, InviteValidateAPIView
-from system.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
-from system.views.auth.logout import LogoutAPIView
-from system.views.auth.mfa import (
-    LoginMFAPasskeyChallengeAPIView,
-    LoginMFASendCodeAPIView,
-    LoginMFAVerifyAPIView,
-)
-from system.views.auth.oauth import (
-    OAuthAuthorizeAPIView,
-    OAuthBindAuthorizeAPIView,
-    OAuthBindingsAPIView,
-    OAuthCallbackAPIView,
-    OAuthProvidersAPIView,
-    OAuthUnbindAPIView,
-)
-from system.views.auth.register import RegisterViewAPIView
-from system.views.auth.reset import ResetPasswordAPIView
-from system.views.auth.rule import PasswordRulesAPIView
-from system.views.auth.token import CaptchaAPIView, RefreshTokenAPIView, TempTokenAPIView
-from system.views.auth.verify_code import SendVerifyCodeAPIView
-from system.views.open.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
-from system.views.open.open_oauth import (
-    OpenOAuthApproveAPIView,
-    OpenOAuthAuthorizeAPIView,
-    OpenOAuthRevokeAPIView,
-    OpenOAuthTokenAPIView,
-)
 from system.views.platform.dashboard import DashboardViewSet
 from system.views.platform.modules import SystemModuleViewSet
 from system.views.platform.monitor import MonitorViewSet
 from system.views.platform.tag import TagViewSet
-from system.views.search.dept import SearchDeptViewSet
 from system.views.search.global_search import GlobalSearchAPIView
 from system.views.search.menu import SearchMenuViewSet
-from system.views.search.post import SearchPostViewSet
-from system.views.search.role import SearchRoleViewSet
-from system.views.search.user import SearchUserViewSet
 from system.views.task.task import (
     CrontabScheduleViewSet,
     IntervalScheduleViewSet,
@@ -78,11 +37,8 @@ from system.views.task.task import (
 from system.views.task.task_center import SystemTaskCenterViewSet
 from system.views.task.webhook import WebhookDeliveryViewSet, WebhookSubscriptionViewSet
 from system.views.user.configs import ConfigsViewSet
-from system.views.user.directory import DirectoryViewSet
 from system.views.user.login_log import UserLoginLogViewSet
 from system.views.user.routes import UserRoutesAPIView
-from system.views.user.token import PersonalAccessTokenViewSet
-from system.views.user.userinfo import UserInfoViewSet
 
 app_name = "system"
 
@@ -91,94 +47,20 @@ no_detail_router = NoDetailRouter(False)
 
 no_auth_url = [
     re_path("^captcha/", include("captcha.urls")),
-    re_path("^login/basic$", BasicLoginAPIView.as_view(), name="login-by-basic"),
-    re_path("^login/code$", VerifyCodeLoginAPIView.as_view(), name="login-by-code"),
-    re_path("^login/mfa/send-code$", LoginMFASendCodeAPIView.as_view(), name="login-mfa-send-code"),
-    re_path("^login/mfa/verify$", LoginMFAVerifyAPIView.as_view(), name="login-mfa-verify"),
-    re_path(
-        "^login/mfa/passkey/challenge$",
-        LoginMFAPasskeyChallengeAPIView.as_view(),
-        name="login-mfa-passkey-challenge",
-    ),
-    re_path("^register$", RegisterViewAPIView.as_view(), name="register"),
-    re_path("^auth/captcha$", CaptchaAPIView.as_view(), name="captcha"),
-    re_path("^auth/token$", TempTokenAPIView.as_view(), name="temp_token"),
-    re_path("^auth/verify$", SendVerifyCodeAPIView.as_view(), name="send-verify-code"),
-    re_path("^auth/reset$", ResetPasswordAPIView.as_view(), name="reset-password"),
-    # 邀请激活：令牌即凭据，激活页未登录，必须匿名可达
-    re_path("^auth/invite/validate$", InviteValidateAPIView.as_view(), name="invite-validate"),
-    re_path("^auth/invite/accept$", InviteAcceptAPIView.as_view(), name="invite-accept"),
-    # 第三方登录：authorize/callback 必须匿名可达，故挂在 no_auth_url
-    re_path("^auth/oauth/providers$", OAuthProvidersAPIView.as_view(), name="oauth-providers"),
-    re_path(
-        "^auth/oauth/(?P<provider>[^/]+)/authorize$",
-        OAuthAuthorizeAPIView.as_view(),
-        name="oauth-authorize",
-    ),
-    re_path(
-        "^auth/oauth/(?P<provider>[^/]+)/callback$",
-        OAuthCallbackAPIView.as_view(),
-        name="oauth-callback",
-    ),
-    # 绑定意图的授权地址（同样是白名单路径，视图内要求 DRF IsAuthenticated）
-    re_path(
-        "^auth/oauth/(?P<provider>[^/]+)/bind-authorize$",
-        OAuthBindAuthorizeAPIView.as_view(),
-        name="oauth-bind-authorize",
-    ),
-    re_path("^auth/oauth/bindings$", OAuthBindingsAPIView.as_view(), name="oauth-bindings"),
-    re_path(
-        "^auth/oauth/bindings/(?P<pk>[^/]+)$",
-        OAuthUnbindAPIView.as_view(),
-        name="oauth-unbind",
-    ),
 ]
 
-auth_url = [
-    re_path("^logout$", LogoutAPIView.as_view(), name="logout"),
-    re_path("^impersonate/exit$", ImpersonateExitAPIView.as_view(), name="impersonate-exit"),
-    re_path("^refresh$", RefreshTokenAPIView.as_view(), name="refresh"),
-    re_path("^rules/password$", PasswordRulesAPIView.as_view(), name="password-rules"),
-]
+auth_url = []
 
 router_url = [
     re_path("^routes$", UserRoutesAPIView.as_view(), name="user_routes"),
 ]
-# 面板信息
-router.register("dashboard", DashboardViewSet, basename="dashboard")
-router.register("monitor", MonitorViewSet, basename="monitor")
-
-# 通讯录（人员名录，只读）
-router.register("directory", DirectoryViewSet, basename="SystemDirectory")
-
-# 仅数据搜索
-router.register("search/user", SearchUserViewSet, basename="SearchUser")
-router.register("search/role", SearchRoleViewSet, basename="SearchRole")
-router.register("search/dept", SearchDeptViewSet, basename="SearchDept")
-router.register("search/post", SearchPostViewSet, basename="SearchPost")
-router.register("search/menu", SearchMenuViewSet, basename="SearchMenu")
-
-# 个人用户信息
-no_detail_router.register("userinfo", UserInfoViewSet, basename="userinfo")
-router.register("user/log", UserLoginLogViewSet, basename="user_login_log")
-router.register("configs", ConfigsViewSet, basename="configs")
-router.register("personal-access-tokens", PersonalAccessTokenViewSet, basename="personal_access_token")
 
 # 系统设置相关路由
-router.register("user", UserViewSet, basename="user")
-router.register("dept", DeptViewSet, basename="dept")
-router.register("posts", PostViewSet, basename="post")
 router.register("menu", MenuViewSet, basename="menu")
-router.register("role", RoleViewSet, basename="role")
 router.register("permission", DataPermissionViewSet, basename="permission")
 router.register("field", ModelLabelFieldViewSet, basename="model_label_field")
 router.register("dict", DataDictViewSet, basename="data_dict")
 router.register("mask-rules", DataMaskRuleViewSet, basename="data_mask_rule")
-router.register("online", UserOnlineViewSet, basename="online_socket")
-# 安全域：账号风险巡检 / 登录访问策略 / Passkey 凭据
-router.register("account-risks", AccountRiskViewSet, basename="account_risk")
-router.register("login-policies", LoginAccessPolicyViewSet, basename="login_policy")
-router.register("passkeys", PasskeyViewSet, basename="passkey")
 # 列表「我的视图」
 router.register("saved-views", SavedListViewSet, basename="saved_view")
 # 代码生成器 GUI（只读引擎适配：模型清单/字段计划/预览/下载）
@@ -190,32 +72,38 @@ router.register("config/system", SystemConfigViewSet, basename="sysconfig")
 router.register("credentials", CredentialViewSet, basename="credential")
 # 功能模块清单（只读）：模块等级/依赖/启停状态与裁剪配置片段
 router.register("modules", SystemModuleViewSet, basename="module")
-# 数据集与仪表盘（可视化一期）
-# 出站 Webhook
-router.register("webhooks/subscriptions", WebhookSubscriptionViewSet, basename="webhook-subscription")
-router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook-delivery")
 # AI 助手：配置（Setting 体系）与问答
 # AI 知识库文档管理：上传/预览/启停/删除 + 仓库文档重建
 # AI 配置档案：多套凭据/采样参数，激活唯一（无激活档案回落 Setting 通路）
 router.register("config/user", UserPersonalConfigViewSet, basename="userconfig")
 
+# 面板信息
+router.register("dashboard", DashboardViewSet, basename="dashboard")
+router.register("monitor", MonitorViewSet, basename="monitor")
+
+# 仅数据搜索
+router.register("search/menu", SearchMenuViewSet, basename="SearchMenu")
+
+# 个人配置（ConfigsViewSet）
+router.register("configs", ConfigsViewSet, basename="configs")
+# 个人登录日志（audit 域视图，user 面口径）
+router.register("user/log", UserLoginLogViewSet, basename="user_login_log")
+
+# 通用标签中心：标签 CRUD + 打标 / 批量打标
+router.register("tags", TagViewSet, basename="tag")
+
+# —— 以下注册项随 file / audit / task 域切分迁往各域 urls.py（暂留本文件）——
 # 日志相关
 router.register("logs/operation", OperationLogViewSet, basename="operation_log")
 router.register("logs/login", LoginLogViewSet, basename="login_log")
-
 # 文件管理
 router.register("file", UploadFileViewSet, basename="file")
-
 # 导出下载中心
 router.register("exports", ExportRecordViewSet, basename="export_record")
 # 导入记录（下载中心「导入记录」页签）
 router.register("imports", ImportRecordViewSet, basename="import_record")
 # 导入列映射模板（个人 / 全局共享，导入弹窗内维护，无独立页面）
 router.register("import-templates", ImportTemplateViewSet, basename="import_template")
-
-# 开放平台应用：client-credentials 应用管理与回调测试
-router.register("api-applications", ApiApplicationViewSet, basename="api_application")
-
 # 定时任务管理（django_celery_beat）
 router.register("tasks/periodic", PeriodicTaskViewSet, basename="periodic_task")
 router.register("tasks/crontab", CrontabScheduleViewSet, basename="crontab_schedule")
@@ -223,21 +111,14 @@ router.register("tasks/executions", TaskExecutionViewSet, basename="task_executi
 router.register("tasks/interval", IntervalScheduleViewSet, basename="interval_schedule")
 # 任务中心：三类记录统一列表 + 取消 / 重跑
 router.register("tasks/unified", SystemTaskCenterViewSet, basename="task_center")
-# 通用标签中心：标签 CRUD + 打标 / 批量打标
-router.register("tags", TagViewSet, basename="tag")
+# 出站 Webhook
+router.register("webhooks/subscriptions", WebhookSubscriptionViewSet, basename="webhook-subscription")
+router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook-delivery")
 
+# identity / file / audit / task 四域路由：经本文件同前缀挂载（ADR-057 D1.2 口径），
+# 各域 urls.py 不设 app_name，注册项并入 system 命名空间——
+# /api/system/* 路径、system: 视图名、权限点与 menu.json 全部零变化。
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
-# 审批流 / AI 平台 / 数据分析与动态表单三域已迁独立前缀（server/urls.py）：
-# /api/approval/... /api/ai/... /api/dataset/...
+urlpatterns += [path("", include("identity.urls"))]
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]
-# MCP 协议端点（Streamable HTTP 无状态）：外部 MCP 客户端经 PAT 接入统一工具层
-# 开放平台换发端点：匿名可达（白名单），凭 client_secret 换 PAT 凭证
-urlpatterns += [path("open/token", ApiApplicationTokenAPIView.as_view())]
-# 开放平台 OAuth 授权码：authorize/approve 需登录态，token/revoke 匿名可达
-urlpatterns += [
-    path("open/oauth/authorize", OpenOAuthAuthorizeAPIView.as_view()),
-    path("open/oauth/approve", OpenOAuthApproveAPIView.as_view()),
-    path("open/oauth/token", OpenOAuthTokenAPIView.as_view()),
-    path("open/oauth/revoke", OpenOAuthRevokeAPIView.as_view()),
-]

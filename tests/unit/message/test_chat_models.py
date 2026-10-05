@@ -22,14 +22,14 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def alice(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="alice", password="Test@123456", nickname="爱丽丝")
 
 
 @pytest.fixture
 def bob(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="bob", password="Test@123456", nickname="鲍勃")
 
@@ -56,7 +56,7 @@ class TestRoomKey:
 
 class TestAccessControl:
     def test_private_room_rejects_non_member(self, alice, bob):
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         outsider = UserInfo.objects.create_user(username="eve", password="Test@123456")
         room = chat_service.get_or_create_private_room(alice, bob)

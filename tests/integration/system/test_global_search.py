@@ -11,7 +11,8 @@ import pytest
 from django.core.files.base import ContentFile
 
 from approval.models import ApprovalRequest
-from system.models import OperationLog, UploadFile, UserInfo
+from identity.models import UserInfo
+from system.models import OperationLog, UploadFile
 from system.search import _approval_row_scope
 
 pytestmark = pytest.mark.django_db
@@ -63,7 +64,8 @@ class TestGlobalSearchAPI:
 
     def test_tag_group_hidden_without_tag_page_permission(self, api_client, menu_factory):
         """页面权限门：仅有搜索权限、无 list:Tag 的用户看不到标签分组。"""
-        from system.models import Tag, UserRole
+        from identity.models import UserRole
+        from system.models import Tag
 
         menu = menu_factory("retrieve:SystemGlobalSearch", path="api/system/global-search$", method="GET")
         role = UserRole.objects.create(name="仅搜索无标签", code="search-no-tag")
@@ -88,17 +90,18 @@ class TestGlobalSearchAPI:
         """分组输出同过脱敏规则：列表接口已掩码时搜索不得回原文（防旁路）。"""
         from django.core.cache import cache
 
-        from system.models import DataMaskRule, DataPermission, UserRole
+        from identity.models import UserRole
+        from system.models import DataMaskRule, DataPermission
 
         UserInfo.objects.create_user(username="mask-search-target", password="x", nickname="张三丰")
         DataMaskRule.objects.create(
-            model="system.userinfo", field="nickname", mask_type="name", keep_head=1, keep_tail=1
+            model="identity.userinfo", field="nickname", mask_type="name", keep_head=1, keep_tail=1
         )
         data_permission = DataPermission.objects.create(
             name="E2E-搜索可见全部用户",
             rules=[
                 {
-                    "table": "system.userinfo",
+                    "table": "identity.userinfo",
                     "field": "id",
                     "type": "value.all",
                     "match": "",
@@ -153,7 +156,7 @@ class TestGlobalSearchAPI:
 
     def test_plain_user_with_permission_but_no_data_grant_is_fail_closed(self, api_client, menu_factory):
         """两道门串联：页面权限门已过（授予搜索权限码），数据权限门 fail-closed（无授权 = 空分组）。"""
-        from system.models import UserRole
+        from identity.models import UserRole
 
         menu = menu_factory("retrieve:SystemGlobalSearch", path="api/system/global-search$", method="GET")
         role = UserRole.objects.create(name="仅搜索", code="search-only")

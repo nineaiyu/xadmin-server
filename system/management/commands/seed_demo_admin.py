@@ -34,7 +34,8 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from system.models import DeptInfo, Menu, UserInfo, UserRole
+from identity.models import DeptInfo, UserInfo, UserRole
+from system.models import Menu
 
 #: 演示账号：用户名/密码/昵称。用户名固定 admin（README 承诺对外口径），
 #: 由数据库自增 pk 承载（UserInfo 主键为自增整型，非 UUID）。

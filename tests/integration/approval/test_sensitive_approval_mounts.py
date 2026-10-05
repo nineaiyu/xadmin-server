@@ -11,7 +11,7 @@ import pytest
 
 from approval.models.approval import ApprovalRequest
 from common.core.config import SysConfig
-from system.models import DeptInfo, UserInfo, UserRole
+from identity.models import DeptInfo, UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 

@@ -12,7 +12,8 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from system.models import Menu, OperationLog, UserInfo
+from identity.models import UserInfo
+from system.models import Menu, OperationLog
 
 pytestmark = pytest.mark.django_db
 

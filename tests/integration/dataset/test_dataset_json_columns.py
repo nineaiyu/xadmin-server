@@ -13,7 +13,8 @@ from django.core.exceptions import ValidationError
 from dataset.models import Dataset
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 from dataset.utils.dataset import aggregate_dataset, execute_dataset
-from system.models import FieldPermission, Menu, MenuMeta, ModelLabelField, UserRole
+from identity.models import UserRole
+from system.models import FieldPermission, Menu, MenuMeta, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 

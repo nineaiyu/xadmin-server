@@ -7,8 +7,8 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from rest_framework.test import APIRequestFactory, force_authenticate
 
+from identity.models.user import UserInfo
 from system.models.dict import DataDict
-from system.models.user import UserInfo
 from system.utils.platform.dict import get_dict_items
 from system.views.admin.dict import DataDictViewSet
 
@@ -428,8 +428,8 @@ def test_dict_choice_field_write_path_accepts_enum_values():
     元组列表，key 变成「整个元组的字符串」，字典驱动字段所有写入报 invalid_choice
     （WS 登录 login_type=8 写日志即触发）。修复后 key 必须是 str(value)。
     """
+    from identity.serializers.user import UserSerializer
     from system.serializers.log import LoginLogSerializer
-    from system.serializers.user import UserSerializer
 
     cache.clear()
     # login_type：merge 模式，字典未配置时回退整型枚举
@@ -449,7 +449,7 @@ def test_dict_choice_field_write_path_accepts_enum_values():
 def test_user_gender_choices_from_dict():
     """用户 gender 下拉真实接入字典：配置 user_gender 字典后 choices 被字典替换
     （value 整型化）；未配置时由 fallback_choices 兜底模型枚举。"""
-    from system.serializers.user import UserSerializer
+    from identity.serializers.user import UserSerializer
 
     cache.clear()
     # 测试库不跑 load_init_json：先回退（无 user_gender 字典）→ 建字典后被替换

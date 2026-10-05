@@ -179,7 +179,7 @@ def resolve_pat_scopes(request):
     if cached is not None:
         scopes = cached
     else:
-        token_model = apps.get_model("system", "PersonalAccessToken")
+        token_model = apps.get_model("identity", "PersonalAccessToken")
         pat = (
             token_model.objects.filter(token_hash=hash_pat_token(parts[1]), is_active=True)
             .only("scopes", "expired_at")

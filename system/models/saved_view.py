@@ -10,6 +10,7 @@
 
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -19,7 +20,7 @@ from common.core.models import DbAuditModel
 class SavedListView(DbAuditModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     owner = models.ForeignKey(
-        "system.UserInfo",
+        settings.AUTH_USER_MODEL,
         related_name="saved_list_views",
         on_delete=models.CASCADE,
         verbose_name=_("Owner"),

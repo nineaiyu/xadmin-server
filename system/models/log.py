@@ -12,27 +12,16 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.core.models import DbAuditModel
+from identity.consts import LoginTypeChoices
 
 # 分批删除的批大小：避免一次性大 DELETE 造成长事务与锁表
 CLEAN_BATCH_SIZE = 2000
 
 
 class UserLoginLog(DbAuditModel):
-    class LoginTypeChoices(models.IntegerChoices):
-        USERNAME = 0, _("Username and password")
-        SMS = 1, _("SMS verification code")
-        EMAIL = 2, _("Email verification code")
-        WECHAT = 4, _("Wechat scan code")
-        # 第三方 OAuth/OIDC 登录：位标记风格下的独立槽位（0/1/2/4/8/9 已占用）
-        OAUTH = 5, _("Third-party OAuth")
-        # LDAP/AD 目录账号 bind 登录：经 LdapBindBackend 认证，
-        # login_type 由 SessionTokenObtainPairSerializer 依 _ldap_authenticated 透传
-        LDAP = 3, _("LDAP directory account")
-        WEBSOCKET = 8, _("Websocket")
-        UNKNOWN = 9, _("Unknown")
-        # 用户模拟（管理员以该用户身份使用后台）：非真实登录，登录日志与
-        # 在线会话以此类型区分；模拟发起人记录在同请求的操作日志里
-        IMPERSONATE = 6, _("Impersonation")
+    # 登录类型枚举上提 identity 域（会话模型等跨域复用）；类属性别名维持
+    # ``UserLoginLog.LoginTypeChoices`` 既有引用面不变
+    LoginTypeChoices = LoginTypeChoices
 
     status = models.BooleanField(default=True, verbose_name=_("Login status"))
     ipaddress = models.GenericIPAddressField(verbose_name=_("IpAddress"), null=True, blank=True)

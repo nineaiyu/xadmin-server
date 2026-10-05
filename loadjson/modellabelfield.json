@@ -490,7 +490,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.usersession",
+      "name": "identity.usersession",
       "label": "用户会话"
     }
   },
@@ -580,7 +580,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.userinfo",
+      "name": "identity.userinfo",
       "label": "用户信息"
     }
   },
@@ -715,7 +715,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.userrole",
+      "name": "identity.userrole",
       "label": "用户角色"
     }
   },
@@ -805,7 +805,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.userinfo",
+      "name": "identity.userinfo",
       "label": "用户信息"
     }
   },
@@ -2995,7 +2995,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.userrole",
+      "name": "identity.userrole",
       "label": "用户角色"
     }
   },
@@ -3400,7 +3400,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.deptinfo",
+      "name": "identity.deptinfo",
       "label": "部门"
     }
   },
@@ -3940,7 +3940,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.deptinfo",
+      "name": "identity.deptinfo",
       "label": "部门"
     }
   },
@@ -7615,7 +7615,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.usersession",
+      "name": "identity.usersession",
       "label": "用户会话"
     }
   },
@@ -12535,7 +12535,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.apiapplication",
+      "name": "identity.apiapplication",
       "label": "API 应用"
     }
   },
@@ -12730,7 +12730,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.personalaccesstoken",
+      "name": "identity.personalaccesstoken",
       "label": "个人访问令牌"
     }
   },
@@ -15130,7 +15130,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.apiapplication",
+      "name": "identity.apiapplication",
       "label": "API 应用"
     }
   },
@@ -15385,7 +15385,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.personalaccesstoken",
+      "name": "identity.personalaccesstoken",
       "label": "个人访问令牌"
     }
   },
@@ -15550,7 +15550,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.passwordhistory",
+      "name": "identity.passwordhistory",
       "label": "密码历史"
     }
   },
@@ -15730,7 +15730,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.useroauthbinding",
+      "name": "identity.useroauthbinding",
       "label": "OAuth 绑定"
     }
   },
@@ -16435,7 +16435,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.ldapuserbinding",
+      "name": "identity.ldapuserbinding",
       "label": "LDAP 绑定"
     }
   },
@@ -20320,7 +20320,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.apiapplicationgrant",
+      "name": "identity.apiapplicationgrant",
       "label": "应用资源授权"
     }
   },
@@ -20875,7 +20875,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.oauthrefreshtoken",
+      "name": "identity.oauthrefreshtoken",
       "label": "OAuth 刷新令牌"
     }
   },
@@ -21085,7 +21085,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.apiapplicationgrant",
+      "name": "identity.apiapplicationgrant",
       "label": "应用资源授权"
     }
   },
@@ -23470,7 +23470,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.userpasskey",
+      "name": "identity.userpasskey",
       "label": "用户 Passkey"
     }
   },
@@ -23695,7 +23695,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.loginaccesspolicy",
+      "name": "identity.loginaccesspolicy",
       "label": "登录访问策略"
     }
   },
@@ -23890,7 +23890,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.accountrisk",
+      "name": "identity.accountrisk",
       "label": "账号风险"
     }
   },
@@ -25330,7 +25330,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.userpasskey",
+      "name": "identity.userpasskey",
       "label": "用户 Passkey"
     }
   },
@@ -25615,7 +25615,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.loginaccesspolicy",
+      "name": "identity.loginaccesspolicy",
       "label": "登录访问策略"
     }
   },
@@ -25870,7 +25870,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.accountrisk",
+      "name": "identity.accountrisk",
       "label": "账号风险"
     }
   },
@@ -27910,7 +27910,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.post",
+      "name": "identity.post",
       "label": "岗位"
     }
   },
@@ -28300,7 +28300,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.post",
+      "name": "identity.post",
       "label": "岗位"
     }
   },

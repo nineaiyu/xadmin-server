@@ -19,14 +19,14 @@ LDAP/AD 的 pull 接入。政企环境的本地 AD/OpenLDAP 是事实标配：�
 
 ## 决策
 
-### 1. 依赖与代码边界：ldap3 + `system/ldap/` 包，配置走 Setting 体系
+### 1. 依赖与代码边界：ldap3 + `identity/ldap/` 包，配置走 Setting 体系
 
 - 协议库选 **ldap3**（纯 Python、无系统级依赖、支持显式 LDAPS/StartTLS）；
   不引 django-auth-ldap：其配置模型是静态 `AUTH_LDAP_*` 常量，与「运行期可改、
   优先级可配、部门树同步、冲突审计」的自研需求不匹配，引它只省 bind 的几十行
   却多一整层配置翻译。
-- 代码位置：`system/ldap/`（`client.py` 连接封装 / `auth.py` 认证 backend /
-  `sync.py` 同步服务 / `tasks.py` 周期任务），与 `system/scim/` 对称；新增模型
+- 代码位置：`identity/ldap/`（`client.py` 连接封装 / `auth.py` 认证 backend /
+  `sync.py` 同步服务 / `tasks.py` 周期任务），与 `identity/scim/` 对称；新增模型
   仅 `LdapUserBinding`（用户 FK + dn 唯一 + 最近同步时间）。
 - 配置面复用 `settings` app 的 **Setting 体系**（category=`ldap`，与邮件服务
   器配置同构）：序列化器字段即配置名、`write_only` 字段自动**值级加密**

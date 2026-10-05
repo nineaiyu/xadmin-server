@@ -254,9 +254,10 @@ class TestMenuPermissionAudit:
 
     def test_field_permission_gap_reported(self, auth_client, menu_factory):
         """角色已获模型权限点但未配置字段权限：列入审计（零字段 fail-closed 可见化）。"""
-        from system.models import FieldPermission, ModelLabelField, UserRole
+        from identity.models import UserRole
+        from system.models import FieldPermission, ModelLabelField
 
-        model_root = ModelLabelField.objects.create(name="system.post", label="岗位")
+        model_root = ModelLabelField.objects.create(name="identity.post", label="岗位")
         perm = menu_factory("list:SystemPost", path="api/system/post$", method="GET")
         perm.model.add(model_root)
         role = UserRole.objects.create(name="字段权限缺口角色", code="field_gap_role")
@@ -290,7 +291,8 @@ class TestMenuPermissionAudit:
 
     def test_field_permission_gap_ignores_unbound_or_unused(self, auth_client, menu_factory):
         """非模型权限点、未授予角色的权限点不进字段权限审计面。"""
-        from system.models import ModelLabelField, UserRole
+        from identity.models import UserRole
+        from system.models import ModelLabelField
 
         model_root = ModelLabelField.objects.create(name="system.post2", label="岗位2")
         unbound = menu_factory("list:SystemPost2", path="api/system/post2$", method="GET")

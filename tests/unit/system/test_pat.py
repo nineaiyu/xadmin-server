@@ -19,10 +19,10 @@ from common.core.permission import IsAuthenticated as ApiIsAuthenticated
 from common.core.permission import PatScopePermission
 from common.core.response import ApiResponse
 from common.core.throttle import PatThrottle
+from identity.models.token import PersonalAccessToken
+from identity.views.user.token import PersonalAccessTokenViewSet
 from system.models import Menu, OperationLog
-from system.models.token import PersonalAccessToken
 from system.tasks import auto_clean_pat_job
-from system.views.user.token import PersonalAccessTokenViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -548,7 +548,7 @@ class TestScopeAnchoring:
 
     def test_scope_display_value_readable_forms(self):
         """展示形态还原（仅展示层，判定语义不变）。"""
-        from system.utils.identity.pat_scope import scope_display_value
+        from identity.utils.pat_scope import scope_display_value
 
         assert scope_display_value("GET ^/api/system/user/?$") == "GET /api/system/user"
         assert scope_display_value("^(?:/api/system/user)(/.*)?$") == "/api/system/user"
@@ -598,8 +598,8 @@ class TestScopeAnchoring:
         """开放平台应用 scope 同口径锚定（应用 scope 会作为 OAuth 访问凭证下发）。"""
         from rest_framework.test import APIRequestFactory, force_authenticate
 
-        from system.models.token import ApiApplication
-        from system.views.open.open import ApiApplicationViewSet
+        from identity.models.token import ApiApplication
+        from identity.views.open.open import ApiApplicationViewSet
 
         request = APIRequestFactory().post(
             "/api/system/api-applications",

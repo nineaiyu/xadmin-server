@@ -26,7 +26,7 @@ from django.utils import timezone
 
 from approval.models import ApprovalInstance, ApprovalNodeTask, Leave
 from approval.utils.leave import submit_leave
-from system.services import DeptInfo, UserInfo
+from identity.services import DeptInfo, UserInfo
 
 # 固定 pk 段（与 loadjson 的 5eed 段、seed_demo_flows 的 6eed0001~0003 段区分）
 LEAVE_PKS = [f"6eed0004-0000-4000-8000-00000000000{i}" for i in range(1, 5)]

@@ -81,7 +81,7 @@ class DashboardSerializer(BaseModelSerializer):
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Invalid dashboard layout"))
         dataset_pks = {str(pk) for pk in Dataset.objects.values_list("pk", flat=True)}
-        from system.models import UserRole
+        from identity.models import UserRole
 
         known_role_codes = set(UserRole.objects.values_list("code", flat=True))
         for card in value or []:

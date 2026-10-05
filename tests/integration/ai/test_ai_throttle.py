@@ -50,7 +50,7 @@ class TestAiChatThrottle:
         assert auth_client.post(MCP_URL, payload, format="json").status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
     def test_limit_is_per_user(self, auth_client, set_rate):
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         set_rate(AiChatThrottle, "1/m")
         assert auth_client.post(f"{ASSISTANT_URL}/ask", {}, format="json").status_code == status.HTTP_200_OK

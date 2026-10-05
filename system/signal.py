@@ -5,10 +5,12 @@
 # author : ly_13
 # date : 10/11/2024
 
+"""platform 域信号定义。
+
+invalid_user_cache_signal（用户缓存失效）已随 identity 域拆分至 identity/signal.py。
+"""
 
 from django.dispatch import Signal
-
-invalid_user_cache_signal = Signal()
 
 # 流程实例到达终态（APPROVED/REJECTED/CANCELLED）：kwargs = instance/status/reason。
 # 终态写入走 queryset.update()（不触发 post_save），故由 _finish_instance 显式发送；

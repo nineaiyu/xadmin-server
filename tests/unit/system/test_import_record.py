@@ -10,9 +10,9 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
+from identity.models.user import UserInfo
 from system.models.import_ import ImportRecord
 from system.models.upload import UploadFile
-from system.models.user import UserInfo
 from system.tasks import async_import_data_task, auto_clean_import_record_job
 from system.views.admin.dict import DataDictViewSet
 from system.views.admin.import_ import ImportRecordViewSet

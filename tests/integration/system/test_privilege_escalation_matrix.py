@@ -35,7 +35,8 @@
 import pytest
 
 from demo.models import Book
-from system.models import DataPermission, FieldPermission, ModelLabelField, UserRole
+from identity.models import UserRole
+from system.models import DataPermission, FieldPermission, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 
@@ -184,14 +185,14 @@ class TestVerticalSelfEscalation:
     def test_self_role_grant_blocked_by_related_field_filter(self, api_client, normal_user, role, menu_factory):
         """M10：持有用户管理 PATCH 权限的用户，无法给自己授予数据权限不可见的角色。
 
-        roles 关联字段写入受字段白名单约束：用户无 system.userrole 字段白名单 →
+        roles 关联字段写入受字段白名单约束：用户无 identity.userrole 字段白名单 →
         roles 字段被整体裁剪（写忽略），目标角色不会被授予。防护观感为
         200-写忽略 或 400-拒绝，均属阻断，此处断言安全属性本身。
         （normal_user fixture 默认持有 role 以承载菜单授权，提权目标用另一角色。）
         """
         grant_menu(role, menu_factory, USER_DETAIL_PATH, "PATCH")
         # 数据权限仅允许看见本人资料（否则对象级就被拦截，测不到字段层防线）
-        normal_user.rules.add(make_owner_permission("self-userinfo", "system.userinfo", "pk"))
+        normal_user.rules.add(make_owner_permission("self-userinfo", "identity.userinfo", "pk"))
         target_role = UserRole.objects.create(name="管理员", code="admin")
         api_client.force_authenticate(user=normal_user)
         api_client.patch(f"{USER_LIST_URL}/{normal_user.pk}", {"roles": [target_role.pk]}, format="json")
@@ -344,7 +345,7 @@ class TestEmpowerScopeIsolation:
     def test_foreign_rule_not_assignable(self, api_client, normal_user, role, menu_factory):
         """取值域仅本人（规则不覆盖数据权限模型）时，全量规则不能挂到自己名下。"""
         grant_menu(role, menu_factory, self.EMPOWER_PATH, "POST")
-        normal_user.rules.add(make_owner_permission("self-userinfo", "system.userinfo", "pk"))
+        normal_user.rules.add(make_owner_permission("self-userinfo", "identity.userinfo", "pk"))
         full = self._all_rule()
         api_client.force_authenticate(user=normal_user)
         resp = api_client.post(f"{USER_LIST_URL}/{normal_user.pk}/empower", {"rules": [str(full.pk)]}, format="json")

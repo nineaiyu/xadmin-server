@@ -9,10 +9,9 @@ import pytest
 from django.core.cache import cache
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.models.log import UserLoginLog
-from system.models.oauth import UserOAuthBinding
-from system.services.auth_login import complete_login
-from system.utils.identity.oauth import (
+from identity.models.oauth import UserOAuthBinding
+from identity.services.auth_login import complete_login
+from identity.utils.oauth import (
     OAUTH_STATE_TTL,
     OAuthError,
     build_authorize_url,
@@ -23,7 +22,7 @@ from system.utils.identity.oauth import (
     make_unique_username,
     validate_providers,
 )
-from system.views.auth.oauth import (
+from identity.views.auth.oauth import (
     OAUTH_ERROR_CODE,
     OAuthBindAuthorizeAPIView,
     OAuthBindingsAPIView,
@@ -31,6 +30,7 @@ from system.views.auth.oauth import (
     OAuthProvidersAPIView,
     OAuthUnbindAPIView,
 )
+from system.models.log import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 
@@ -99,7 +99,7 @@ def stub_idp(monkeypatch):
 
     def install(client):
         holder["client"] = client
-        monkeypatch.setattr("system.utils.identity.oauth._default_client", lambda: holder["client"], raising=True)
+        monkeypatch.setattr("identity.utils.oauth._default_client", lambda: holder["client"], raising=True)
 
     return install
 
@@ -120,8 +120,8 @@ class TestCompleteLoginSingleEntry:
     )
     def test_mfa_required_returns_response(self, superuser, monkeypatch, login_type):
         """MFA 开启时任何路径都必须返回 MFA 响应（漏接即后门）。"""
-        monkeypatch.setattr("system.services.auth_login.is_login_mfa_required", lambda user: True)
-        monkeypatch.setattr("system.services.auth_login.get_login_mfa_methods", lambda user, request: ["otp"])
+        monkeypatch.setattr("identity.services.auth_login.is_login_mfa_required", lambda user: True)
+        monkeypatch.setattr("identity.services.auth_login.get_login_mfa_methods", lambda user, request: ["otp"])
         request = APIRequestFactory().post("/api/system/login")
         request.user = superuser
         response = complete_login(request, superuser, login_type=login_type)
@@ -130,10 +130,10 @@ class TestCompleteLoginSingleEntry:
 
     def test_no_mfa_runs_success_hook(self, superuser, monkeypatch):
         """未开启 MFA：走登录成功链路（日志/会话/提醒），不返回 MFA 响应。"""
-        monkeypatch.setattr("system.services.auth_login.is_login_mfa_required", lambda user: False)
+        monkeypatch.setattr("identity.services.auth_login.is_login_mfa_required", lambda user: False)
         called = {}
         monkeypatch.setattr(
-            "system.services.auth_login.login_success",
+            "identity.services.auth_login.login_success",
             lambda request, user_obj, login_type=None, save_log=True: called.update(
                 {"user": user_obj, "login_type": login_type}
             ),
@@ -431,7 +431,7 @@ class TestProviderConfigValidation:
 class TestUsernameUniqueness:
     def test_make_unique_username_avoids_collision(self, superuser, oauth_config):
         """同名 subject 依次加序号：绝不覆盖既有账号（命名劫持防护）。"""
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         UserInfo.objects.create_user(username="idp_dup", password="Dup-Pwd-2026!")
         first = make_unique_username("idp", "dup")

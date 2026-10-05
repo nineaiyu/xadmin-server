@@ -18,7 +18,7 @@ from django.conf import settings
 TABLE_NAME_OVERRIDES = {}
 
 #: 已按域拆分的业务 app（批次 2/3/4）
-SPLIT_APPS = ("ai", "approval", "dataset")
+SPLIT_APPS = ("ai", "approval", "dataset", "identity")
 
 
 def _base_table(meta) -> str:

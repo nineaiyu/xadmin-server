@@ -8,8 +8,8 @@ fail-closed / 密码错误与目录不可达降级（绝不抛异常阻断本地
 import pytest
 from ldap3.core.exceptions import LDAPException
 
-from system.ldap.auth import LdapBindBackend
-from system.models import LdapUserBinding, UserInfo
+from identity.ldap.auth import LdapBindBackend
+from identity.models import LdapUserBinding, UserInfo
 
 pytestmark = pytest.mark.django_db
 
@@ -70,9 +70,9 @@ def stub_directory(monkeypatch):
         holder["searched"] += 1
         return holder["entries"]
 
-    monkeypatch.setattr("system.ldap.auth.service_connection", fake_service_connection)
-    monkeypatch.setattr("system.ldap.auth.user_connection", fake_user_connection)
-    monkeypatch.setattr("system.ldap.auth.paged_search_entries", fake_search)
+    monkeypatch.setattr("identity.ldap.auth.service_connection", fake_service_connection)
+    monkeypatch.setattr("identity.ldap.auth.user_connection", fake_user_connection)
+    monkeypatch.setattr("identity.ldap.auth.paged_search_entries", fake_search)
     return holder
 
 
@@ -85,7 +85,7 @@ class TestDisabled:
     def test_disabled_returns_none_without_directory(self, backend, monkeypatch):
         """LDAP 关闭：不产生任何连接开销，行为与现状一致。"""
         searched = []
-        monkeypatch.setattr("system.ldap.auth.service_connection", lambda: searched.append(1))
+        monkeypatch.setattr("identity.ldap.auth.service_connection", lambda: searched.append(1))
         assert backend.authenticate(None, username="alice", password="x") is None
         assert searched == []
 

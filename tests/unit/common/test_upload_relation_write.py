@@ -17,7 +17,7 @@
 import pytest
 
 from demo.models import Book
-from system.models import UserInfo
+from identity.models import UserInfo
 from system.models.upload import UploadFile
 
 pytestmark = pytest.mark.django_db

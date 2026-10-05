@@ -9,16 +9,16 @@ from django.conf import settings
 from django.utils import timezone
 
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
+from identity.models.user import UserInfo
+from identity.views.admin.user import UserViewSet
 from system.models.export import ExportRecord
 from system.models.upload import UploadFile
-from system.models.user import UserInfo
 from system.tasks import async_export_data_task, auto_clean_export_record_job
 from system.views.admin.export import ExportRecordViewSet
-from system.views.admin.user import UserViewSet
 
 pytestmark = pytest.mark.django_db
 
-USER_VIEW_PATH = "system.views.admin.user.UserViewSet"
+USER_VIEW_PATH = "identity.views.admin.user.UserViewSet"
 
 
 def _post_export_async(user, params=None):

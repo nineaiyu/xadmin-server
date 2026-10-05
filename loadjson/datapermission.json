@@ -50,7 +50,7 @@
           "type": "value.table.dept.ids",
           "field": "id",
           "match": "in",
-          "table": "system.deptinfo",
+          "table": "identity.deptinfo",
           "value": "[{\"pk\":\"6f2e45a1-4969-4d62-a456-9769866935ca\",\"label\":\"测试部门\"}]",
           "exclude": false
         }
@@ -81,7 +81,7 @@
           "type": "value.user.id",
           "field": "id",
           "match": "exact",
-          "table": "system.userinfo",
+          "table": "identity.userinfo",
           "value": "",
           "exclude": false
         }
@@ -293,7 +293,7 @@
           "type": "value.user.dept.id",
           "field": "dept",
           "match": "exact",
-          "table": "system.userinfo",
+          "table": "identity.userinfo",
           "value": "",
           "exclude": false
         }
@@ -375,7 +375,7 @@
           "type": "value.user.dept.id",
           "field": "dept",
           "match": "exact",
-          "table": "system.userinfo",
+          "table": "identity.userinfo",
           "value": "",
           "exclude": false
         }

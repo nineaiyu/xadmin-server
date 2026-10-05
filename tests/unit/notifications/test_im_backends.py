@@ -17,12 +17,13 @@ from common.sdk.im.base import ImSdkError
 from common.sdk.im.dingtalk import DingTalkClient
 from common.sdk.im.feishu import FeishuClient
 from common.sdk.im.wecom import WeComClient
+from identity.models import UserOAuthBinding
 from notifications.backends import BACKEND
 from notifications.backends.dingtalk import DingTalk
 from notifications.backends.feishu import FeiShu
 from notifications.backends.wecom import WeCom
 from settings.models import Setting
-from system.models import SystemConfig, UserOAuthBinding
+from system.models import SystemConfig
 
 pytestmark = pytest.mark.django_db
 

@@ -14,7 +14,8 @@ from django.test.utils import CaptureQueriesContext
 
 from common.core.models import AutoCleanFileMixin
 from demo.models import Book
-from system.models import UploadFile, UserInfo
+from identity.models import UserInfo
+from system.models import UploadFile
 
 pytestmark = pytest.mark.django_db
 

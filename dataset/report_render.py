@@ -148,8 +148,8 @@ def _deliver_im(report, rows: int) -> list:
     逐渠道独立失败并返回失败明细（``渠道: 原因``）；未配置的渠道记入明细而非静默跳过。
     消息体不携带附件（各 IM 后端 send_msg 为文本协议），产物统一在下载中心取用。
     """
+    from identity.models import UserInfo
     from notifications.backends import BACKEND
-    from system.models import UserInfo
 
     channels = [item for item in report_notify_channels(report) if item != "email"]
     if not channels:

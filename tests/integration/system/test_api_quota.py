@@ -10,8 +10,8 @@ import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from identity.models.token import PersonalAccessToken
 from system.models.log import OperationLog
-from system.models.token import PersonalAccessToken
 from system.models.webhook import WebhookDelivery, WebhookSubscription
 from system.utils.task.webhook import encrypt_secret
 

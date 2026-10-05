@@ -15,7 +15,7 @@ from django.test.utils import CaptureQueriesContext
 
 from common.core.config import SysConfig
 from common.core.fields import BasePrimaryKeyRelatedField, get_search_choices_max_count
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

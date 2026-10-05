@@ -11,8 +11,8 @@ import pytest
 from django.core.cache import cache as django_cache
 from rest_framework.test import APIClient
 
+from identity.models.token import ApiApplicationGrant
 from system.models.field import ModelLabelField
-from system.models.token import ApiApplicationGrant
 
 pytestmark = pytest.mark.django_db
 
@@ -53,8 +53,8 @@ def _put_grants(client, application, grants):
 
 @pytest.fixture
 def user_menus(db, menu_factory):
-    """SystemUser 的 list/retrieve 权限菜单 + 模型标签（system.userinfo），另备 system.deptinfo。"""
-    model_label = ModelLabelField.objects.create(name="system.userinfo", label="用户信息")
+    """SystemUser 的 list/retrieve 权限菜单 + 模型标签（identity.userinfo），另备 identity.deptinfo。"""
+    model_label = ModelLabelField.objects.create(name="identity.userinfo", label="用户信息")
     ModelLabelField.objects.create(name="username", label="用户名", parent=model_label)
     menus = {}
     for action, method, path in (
@@ -64,7 +64,7 @@ def user_menus(db, menu_factory):
         menu = menu_factory(f"{action}:SystemUser", path=path, method=method)
         menu.model.add(model_label)
         menus[action] = menu
-    dept_label = ModelLabelField.objects.create(name="system.deptinfo", label="部门")
+    dept_label = ModelLabelField.objects.create(name="identity.deptinfo", label="部门")
     dept_menu = menu_factory("list:SystemDept", path="api/system/dept$", method="GET")
     dept_menu.model.add(dept_label)
     return menus
@@ -82,20 +82,20 @@ class TestGrantEnforcement:
     def test_grants_stored_per_application(self, auth_client, user_menus):
         """规则落库归属应用；删除应用级联清理。"""
         application = _create_application(auth_client)
-        _put_grants(auth_client, application, [{"model": "system.userinfo", "actions": ["list"]}])
+        _put_grants(auth_client, application, [{"model": "identity.userinfo", "actions": ["list"]}])
         assert ApiApplicationGrant.objects.filter(application_id=application["pk"]).count() == 1
         assert "client_secret" not in str(ApiApplicationGrant.objects.first())
 
     def test_whitelist_mode_denies_uncovered_model(self, auth_client, user_menus):
         application = _create_application(auth_client)
-        _put_grants(auth_client, application, [{"model": "system.userinfo", "actions": ["list"]}])
+        _put_grants(auth_client, application, [{"model": "identity.userinfo", "actions": ["list"]}])
         client = _pat_client(_issue_raw(application))
         assert client.get(USER_URL).status_code == 200
         assert client.get("/api/system/dept").status_code == 403
 
     def test_whitelist_mode_denies_uncovered_action(self, auth_client, superuser, user_menus):
         application = _create_application(auth_client)
-        _put_grants(auth_client, application, [{"model": "system.userinfo", "actions": ["retrieve"]}])
+        _put_grants(auth_client, application, [{"model": "identity.userinfo", "actions": ["retrieve"]}])
         client = _pat_client(_issue_raw(application))
         assert client.get(USER_URL).status_code == 403  # list 未授权
         assert client.get(f"{USER_URL}/{superuser.pk}").status_code == 200
@@ -115,7 +115,7 @@ class TestGrantEnforcement:
         _put_grants(
             auth_client,
             application,
-            [{"model": "system.userinfo", "actions": ["list"], "fields": ["username"]}],
+            [{"model": "identity.userinfo", "actions": ["list"], "fields": ["username"]}],
         )
         client = _pat_client(_issue_raw(application))
         resp = client.get(USER_URL)
@@ -132,7 +132,7 @@ class TestGrantEnforcement:
             application,
             [
                 {
-                    "model": "system.userinfo",
+                    "model": "identity.userinfo",
                     "actions": ["list"],
                     "row_filter": [{"field": "username", "match": "icontains", "value": "admin", "type": "value.text"}],
                 }
@@ -150,7 +150,7 @@ class TestGrantEnforcement:
         _put_grants(
             auth_client,
             application,
-            [{"model": "system.userinfo", "actions": ["list"], "is_active": False}],
+            [{"model": "identity.userinfo", "actions": ["list"], "is_active": False}],
         )
         client = _pat_client(_issue_raw(application))
         assert client.get(USER_URL).status_code == 200
@@ -164,18 +164,18 @@ class TestGrantManagement:
             auth_client,
             application,
             [
-                {"model": "system.userinfo", "actions": ["list"]},
-                {"model": "system.deptinfo", "actions": ["list"]},
+                {"model": "identity.userinfo", "actions": ["list"]},
+                {"model": "identity.deptinfo", "actions": ["list"]},
             ],
         )
-        assert {row["model"] for row in first} == {"system.userinfo", "system.deptinfo"}
+        assert {row["model"] for row in first} == {"identity.userinfo", "identity.deptinfo"}
 
         # 全量替换：保留第一条（带 pk 更新），删除第二条
-        kept_pk = next(row["pk"] for row in first if row["model"] == "system.userinfo")
+        kept_pk = next(row["pk"] for row in first if row["model"] == "identity.userinfo")
         rows = _put_grants(
             auth_client,
             application,
-            [{"pk": kept_pk, "model": "system.userinfo", "actions": ["list", "retrieve"]}],
+            [{"pk": kept_pk, "model": "identity.userinfo", "actions": ["list", "retrieve"]}],
         )
         assert len(rows) == 1
         assert rows[0]["pk"] == kept_pk
@@ -186,13 +186,13 @@ class TestGrantManagement:
         application = _create_application(auth_client)
         cases = [
             [{"model": "system.unknown", "actions": ["list"]}],
-            [{"model": "system.userinfo", "actions": ["unknown-action"]}],
-            [{"model": "system.userinfo", "actions": ["list"], "fields": ["no_such_field"]}],
+            [{"model": "identity.userinfo", "actions": ["unknown-action"]}],
+            [{"model": "identity.userinfo", "actions": ["list"], "fields": ["no_such_field"]}],
             [{"model": "*", "actions": ["list"], "fields": ["username"]}],
-            [{"model": "system.userinfo", "actions": []}],
+            [{"model": "identity.userinfo", "actions": []}],
             [
                 {
-                    "model": "system.userinfo",
+                    "model": "identity.userinfo",
                     "actions": ["list"],
                     "row_filter": [{"field": "no_such_field", "match": "exact", "value": "x", "type": "value.text"}],
                 }
@@ -212,21 +212,21 @@ class TestMenuMatchBoundary:
     """菜单解析的段边界口径（对抗性）：不得跨字符粘连、不得漏覆盖子路径。"""
 
     def test_no_cross_char_prefix_match(self):
-        from system.utils.identity.api_grant import _match_menu_pk
+        from identity.utils.api_grant import _match_menu_pk
 
         data = {"api/system/user": "pk-a"}
         assert _match_menu_pk(data, "/api/system/userfoo") is None
         assert _match_menu_pk(data, "/api/system/user-exports") is None
 
     def test_segment_prefix_covers_children(self):
-        from system.utils.identity.api_grant import _match_menu_pk
+        from identity.utils.api_grant import _match_menu_pk
 
         data = {"api/system/user": "pk-a"}
         assert _match_menu_pk(data, "/api/system/user") == "pk-a"
         assert _match_menu_pk(data, "/api/system/user/1") == "pk-a"
 
     def test_exact_anchor_keeps_exact_semantics(self):
-        from system.utils.identity.api_grant import _match_menu_pk
+        from identity.utils.api_grant import _match_menu_pk
 
         data = {"api/system/user$": "pk-a"}
         assert _match_menu_pk(data, "/api/system/user") == "pk-a"
@@ -237,8 +237,8 @@ class TestMenuMatchBoundary:
         from types import SimpleNamespace
 
         from common.core.permission import get_menu_pk
+        from identity.utils.api_grant import resolve_request_menu_pk
         from system.models import Menu
-        from system.utils.identity.api_grant import resolve_request_menu_pk
 
         menu_factory("list:SystemUser", path="api/system/user", method="GET")
         menu_factory("list:SystemDept", path="api/system/dept$", method="GET")
@@ -271,7 +271,7 @@ class TestMenuPathCache:
         from django.db import connection
         from django.test.utils import CaptureQueriesContext
 
-        from system.utils.identity.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
+        from identity.utils.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
 
         menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
         invalid_menu_path_cache()  # 清掉工厂创建期间可能写入的缓存
@@ -286,7 +286,7 @@ class TestMenuPathCache:
         assert len(second_ctx.captured_queries) == 0  # 第二次命中缓存
 
     def test_method_dimension_is_independent(self, menu_factory):
-        from system.utils.identity.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
+        from identity.utils.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
 
         menu_factory("list:SystemUser", path="api/system/user$", method="GET")
         invalid_menu_path_cache()
@@ -295,7 +295,7 @@ class TestMenuPathCache:
         assert resolve_request_menu_pk(self._request("/api/system/user", "POST")) is None
 
     def test_menu_change_signal_invalidates_cache(self, menu_factory):
-        from system.utils.identity.api_grant import resolve_request_menu_pk
+        from identity.utils.api_grant import resolve_request_menu_pk
 
         request = self._request("/api/system/user")
         assert resolve_request_menu_pk(request) is None  # 空映射同样入缓存
@@ -304,15 +304,15 @@ class TestMenuPathCache:
         assert resolve_request_menu_pk(request) == menu.pk
 
     def test_cache_failure_falls_back_to_query(self, menu_factory, monkeypatch):
-        from system.utils.identity.api_grant import resolve_request_menu_pk
+        from identity.utils.api_grant import resolve_request_menu_pk
 
         menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
 
         def boom(*args, **kwargs):
             raise RuntimeError("cache down")
 
-        monkeypatch.setattr("system.utils.identity.api_grant.cache.get", boom)
-        monkeypatch.setattr("system.utils.identity.api_grant.cache.set", boom)
+        monkeypatch.setattr("identity.utils.api_grant.cache.get", boom)
+        monkeypatch.setattr("identity.utils.api_grant.cache.set", boom)
         assert resolve_request_menu_pk(self._request("/api/system/user")) == menu.pk
 
 
@@ -322,7 +322,7 @@ class TestGrantOptions:
         assert resp.data["code"] == 1000
         models = resp.data["data"]["models"]
         assert models[0]["value"] == "*"
-        target = next(item for item in models if item["value"] == "system.userinfo")
+        target = next(item for item in models if item["value"] == "identity.userinfo")
         assert {"list", "retrieve"} <= {action["value"] for action in target["actions"]}
         assert "username" in {field["value"] for field in target["fields"]}
 
@@ -337,14 +337,14 @@ class TestGrantValidationScope:
     def _serializer(user, payload):
         from rest_framework.test import APIRequestFactory
 
-        from system.serializers.token import ApiApplicationGrantSerializer
+        from identity.serializers.token import ApiApplicationGrantSerializer
 
         request = APIRequestFactory().post(APPS_URL)
         request.user = user
         return ApiApplicationGrantSerializer(data=payload, context={"request": request})
 
     def test_superuser_can_grant_any_known_model(self, superuser, user_menus):
-        serializer = self._serializer(superuser, {"model": "system.deptinfo", "actions": ["list"]})
+        serializer = self._serializer(superuser, {"model": "identity.deptinfo", "actions": ["list"]})
         assert serializer.is_valid(), serializer.errors
 
     def test_normal_user_scoped_to_own_grantable_models(self, normal_user, role, user_menus):
@@ -353,18 +353,18 @@ class TestGrantValidationScope:
         django_cache.clear()  # 权限数据 24h 缓存：授权变更后需失效
 
         in_scope = self._serializer(
-            normal_user, {"model": "system.userinfo", "actions": ["list"], "fields": ["username"]}
+            normal_user, {"model": "identity.userinfo", "actions": ["list"], "fields": ["username"]}
         )
         assert in_scope.is_valid(), in_scope.errors
 
         # 面外模型（部门菜单存在但未授予该用户）
-        out_of_model = self._serializer(normal_user, {"model": "system.deptinfo", "actions": ["list"]})
+        out_of_model = self._serializer(normal_user, {"model": "identity.deptinfo", "actions": ["list"]})
         assert not out_of_model.is_valid()
         # 面外动作（用户只有 list，没有 create）
-        out_of_action = self._serializer(normal_user, {"model": "system.userinfo", "actions": ["create"]})
+        out_of_action = self._serializer(normal_user, {"model": "identity.userinfo", "actions": ["create"]})
         assert not out_of_action.is_valid()
         # 面外字段
         out_of_field = self._serializer(
-            normal_user, {"model": "system.userinfo", "actions": ["list"], "fields": ["nickname"]}
+            normal_user, {"model": "identity.userinfo", "actions": ["list"], "fields": ["nickname"]}
         )
         assert not out_of_field.is_valid()

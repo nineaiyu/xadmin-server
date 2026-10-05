@@ -11,7 +11,8 @@ from django.conf import settings as dj_settings
 
 from dataset.models import Dataset
 from dataset.models.dataset import Dashboard
-from system.models import DataPermission, ModelLabelField, UserInfo, UserRole
+from identity.models import UserInfo, UserRole
+from system.models import DataPermission, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 
@@ -26,9 +27,9 @@ def _data_permission_on(settings):
 
 @pytest.fixture
 def model_registry(db):
-    """字段注册表：system.userinfo 三个字段（白名单源）。"""
+    """字段注册表：identity.userinfo 三个字段（白名单源）。"""
     root, _ = ModelLabelField.objects.get_or_create(
-        name="system.userinfo",
+        name="identity.userinfo",
         defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"},
     )
     for name in ("username", "nickname", "email", "is_active"):
@@ -44,7 +45,7 @@ def model_registry(db):
 def dataset(model_registry, superuser):
     return Dataset.objects.create(
         name="用户清单",
-        bound_model="system.userinfo",
+        bound_model="identity.userinfo",
         columns=["username", "nickname", "email"],
         filters=[],
         row_limit=1000,
@@ -90,7 +91,7 @@ def grant_dataset_menus(normal_user):
     return _grant
 
 
-def make_permission(user, table="system.userinfo", field="id", value_type="value.user.id", value=""):
+def make_permission(user, table="identity.userinfo", field="id", value_type="value.user.id", value=""):
     dp = DataPermission.objects.create(
         name=f"dp-{user.username}-{field}",
         rules=[
@@ -108,7 +109,7 @@ class TestDatasetCrud:
     def test_create_with_whitelist(self, auth_client, model_registry):
         payload = {
             "name": "活跃用户",
-            "bound_model": "system.userinfo",
+            "bound_model": "identity.userinfo",
             "columns": ["username", "is_active"],
             "filters": [{"field": "is_active", "op": "exact", "value": True}],
             "visibility": "personal",
@@ -125,14 +126,14 @@ class TestDatasetCrud:
         assert response.status_code == 400
 
     def test_create_rejects_out_of_whitelist_field(self, auth_client, model_registry):
-        payload = {"name": "坏字段", "bound_model": "system.userinfo", "columns": ["password"]}
+        payload = {"name": "坏字段", "bound_model": "identity.userinfo", "columns": ["password"]}
         response = auth_client.post(DATASET_URL, payload, format="json")
         assert response.status_code == 400
 
     def test_create_rejects_bad_op(self, auth_client, model_registry):
         payload = {
             "name": "坏op",
-            "bound_model": "system.userinfo",
+            "bound_model": "identity.userinfo",
             "columns": ["username"],
             "filters": [{"field": "username", "op": "regex", "value": ".*"}],
         }
@@ -140,14 +141,14 @@ class TestDatasetCrud:
         assert response.status_code == 400
 
     def test_row_limit_capped(self, auth_client, model_registry):
-        payload = {"name": "超大", "bound_model": "system.userinfo", "columns": ["username"], "row_limit": 99999}
+        payload = {"name": "超大", "bound_model": "identity.userinfo", "columns": ["username"], "row_limit": 99999}
         response = auth_client.post(DATASET_URL, payload, format="json")
         assert response.status_code == 400
 
     def test_meta_lists_registry(self, auth_client, model_registry):
         body = auth_client.get(f"{DATASET_URL}/meta").json()
-        assert "system.userinfo" in body["data"]["models"]
-        assert "username" in body["data"]["fields"]["system.userinfo"]
+        assert "identity.userinfo" in body["data"]["models"]
+        assert "username" in body["data"]["fields"]["identity.userinfo"]
 
 
 class TestDatasetExecute:
@@ -185,7 +186,7 @@ class TestDatasetExecute:
         assert [row["username"] for row in body["data"]["rows"]] == ["admin"]
 
     def test_aggregate_trend(self, auth_client, dataset, model_registry):
-        root = ModelLabelField.objects.get(name="system.userinfo")
+        root = ModelLabelField.objects.get(name="identity.userinfo")
         ModelLabelField.objects.get_or_create(
             name="created_time",
             parent=root,
@@ -206,7 +207,7 @@ class TestDatasetExecute:
         """趋势聚合必须按时间桶分组：同桶多行不能裂开（annotate/values 顺序回归守护）。"""
         from django.utils import timezone
 
-        root = ModelLabelField.objects.get(name="system.userinfo")
+        root = ModelLabelField.objects.get(name="identity.userinfo")
         ModelLabelField.objects.get_or_create(
             name="date_joined",
             parent=root,
@@ -246,7 +247,7 @@ class TestDatasetExecute:
 
     def test_aggregate_group_label_maps_choice_codes(self, auth_client, dataset, model_registry):
         """枚举码分组走 display 文案（gender 1 → 男/Male），不再输出裸码 "1"。"""
-        root = ModelLabelField.objects.get(name="system.userinfo")
+        root = ModelLabelField.objects.get(name="identity.userinfo")
         ModelLabelField.objects.get_or_create(
             name="gender",
             parent=root,
@@ -283,7 +284,7 @@ class TestDatasetVisibility:
         other = UserInfo.objects.create_user(username="lisi", password="Test@123456")
         grant_dataset_menus(other)
         dataset = Dataset.objects.create(
-            name="私人数据集", bound_model="system.userinfo", columns=["username"], creator=normal_user
+            name="私人数据集", bound_model="identity.userinfo", columns=["username"], creator=normal_user
         )
         client = APIClient(HTTP_USER_AGENT="pytest-agent")
         client.force_authenticate(user=other)
@@ -307,7 +308,7 @@ class TestDatasetVisibility:
 
     def test_creator_can_update(self, normal_user, model_registry, grant_dataset_menus):
         dataset = Dataset.objects.create(
-            name="我的数据集", bound_model="system.userinfo", columns=["username"], creator=normal_user
+            name="我的数据集", bound_model="identity.userinfo", columns=["username"], creator=normal_user
         )
         from rest_framework.test import APIClient
 

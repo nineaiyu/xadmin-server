@@ -285,8 +285,8 @@ class TestBootstrap:
     """--bootstrap：sync_model_field + loaddata 一条龙幂等入库（--grant-to 显式授权）。"""
 
     def test_bootstrap_loads_seed_and_grants_role(self, workspace):
+        from identity.models.role import UserRole
         from system.models import Menu
-        from system.models.role import UserRole
 
         role = UserRole.objects.create(name="Ops", code="ops")
         backend, _ = _generate(workspace, "--bootstrap", "--grant-to", "ops")
@@ -302,8 +302,8 @@ class TestBootstrap:
 
     def test_bootstrap_idempotent(self, workspace):
         """重复 --bootstrap：菜单数与授权数不变（uuid5 确定性 pk upsert + M2M 幂等）。"""
+        from identity.models.role import UserRole
         from system.models import Menu
-        from system.models.role import UserRole
 
         UserRole.objects.create(name="Ops", code="ops")
         # 执行两次本身即断言对象（幂等性来自第二次 run 的 upsert 行为）
@@ -340,8 +340,8 @@ class TestBootstrap:
         return out.getvalue()
 
     def test_bootstrap_without_grant_skips_authorization(self, workspace, capsys):
+        from identity.models.role import UserRole
         from system.models import Menu
-        from system.models.role import UserRole
 
         UserRole.objects.create(name="Ops", code="ops")
         _generate(workspace, "--bootstrap")

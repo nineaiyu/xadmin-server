@@ -16,7 +16,8 @@ import pytest
 from django.conf import settings
 
 from common.core.filter import ControlledLookupFilterBackend
-from system.models import OperationLog, UserInfo
+from identity.models import UserInfo
+from system.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 
@@ -170,7 +171,7 @@ class TestFieldVisibilityFailClosed:
 
     @staticmethod
     def _visible(request, field="nickname"):
-        return BACKEND._field_visible(request, "system.userinfo", field)
+        return BACKEND._field_visible(request, "identity.userinfo", field)
 
     def test_superuser_allowed(self):
         user = SimpleNamespace(is_superuser=True)
@@ -185,7 +186,7 @@ class TestFieldVisibilityFailClosed:
     def test_whitelist_hit_and_miss(self, monkeypatch):
         monkeypatch.setattr(settings, "PERMISSION_FIELD_ENABLED", True)
         user = SimpleNamespace(is_superuser=False)
-        request = SimpleNamespace(user=user, fields={"system.userinfo": {"username"}})
+        request = SimpleNamespace(user=user, fields={"identity.userinfo": {"username"}})
         assert self._visible(request, "username") is True
         assert self._visible(request, "nickname") is False
 

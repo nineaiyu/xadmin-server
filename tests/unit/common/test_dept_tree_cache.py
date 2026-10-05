@@ -15,7 +15,8 @@ from django.test.utils import CaptureQueriesContext
 
 from common.core.filter import get_filter_queryset
 from demo.models import Book
-from system.models import DataPermission, DeptInfo
+from identity.models import DeptInfo
+from system.models import DataPermission
 
 pytestmark = pytest.mark.django_db
 

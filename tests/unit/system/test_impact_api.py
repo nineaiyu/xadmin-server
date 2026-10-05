@@ -8,7 +8,8 @@
 import pytest
 
 from dataset.models import Dashboard, Dataset, DynamicForm, Screen
-from system.models import DataDict, Menu, UserInfo, UserRole
+from identity.models import UserInfo, UserRole
+from system.models import DataDict, Menu
 
 pytestmark = pytest.mark.django_db
 
@@ -50,7 +51,7 @@ class TestImpactPreview:
 
     def test_dataset_impact_cards_and_screens(self, auth_client, superuser):
         dataset = Dataset.objects.create(
-            name="影响面数据集", bound_model="system.userinfo", columns=["username"], creator=superuser
+            name="影响面数据集", bound_model="identity.userinfo", columns=["username"], creator=superuser
         )
         Dashboard.objects.create(
             name="影响面看板", layout=[{"id": "card-1", "dataset": str(dataset.pk)}], creator=superuser
@@ -95,8 +96,8 @@ class TestImpactRegistryAlignment:
     """影响面注册表与视图集混入一致（新增资源须三处同步：CALCULATORS / 混入 / 前端白名单）。"""
 
     VIEWSETS = (
-        ("system.views.admin.role", "RoleViewSet"),
-        ("system.views.admin.dept", "DeptViewSet"),
+        ("identity.views.admin.role", "RoleViewSet"),
+        ("identity.views.admin.dept", "DeptViewSet"),
         ("system.views.admin.dict", "DataDictViewSet"),
         ("dataset.views.dataset", "DatasetViewSet"),
         ("approval.views.approval_flow", "ApprovalFlowViewSet"),
@@ -136,7 +137,7 @@ class TestImpactGuard:
         assert not UserRole.objects.filter(pk=role.pk).exists()
 
     def test_guard_requires_confirmation(self, auth_client, settings):
-        settings.IMPACT_GUARD_MODELS = ["system.userrole"]
+        settings.IMPACT_GUARD_MODELS = ["identity.userrole"]
         role = self._role_with_user()
         response = auth_client.delete(f"/api/system/role/{role.pk}")
         assert response.status_code == 400
@@ -147,12 +148,12 @@ class TestImpactGuard:
         assert not UserRole.objects.filter(pk=role.pk).exists()
 
     def test_guard_allows_zero_impact(self, auth_client, settings):
-        settings.IMPACT_GUARD_MODELS = ["system.userrole"]
+        settings.IMPACT_GUARD_MODELS = ["identity.userrole"]
         role = UserRole.objects.create(name="无引用保护角色", code="guard_role2")
         assert auth_client.delete(f"/api/system/role/{role.pk}").json()["code"] == 1000
 
     def test_batch_destroy_guard(self, auth_client, settings):
-        settings.IMPACT_GUARD_MODELS = ["system.userrole"]
+        settings.IMPACT_GUARD_MODELS = ["identity.userrole"]
         role = self._role_with_user()
         response = auth_client.post("/api/system/role/batch-destroy", [str(role.pk)], format="json")
         assert response.status_code == 400

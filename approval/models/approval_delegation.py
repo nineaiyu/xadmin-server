@@ -19,10 +19,10 @@ class ApprovalDelegation(DbAuditModel):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     delegator = models.ForeignKey(
-        "system.UserInfo", related_name="approval_delegations", on_delete=models.CASCADE, verbose_name=_("Delegator")
+        "identity.UserInfo", related_name="approval_delegations", on_delete=models.CASCADE, verbose_name=_("Delegator")
     )
     delegate = models.ForeignKey(
-        "system.UserInfo",
+        "identity.UserInfo",
         related_name="approval_delegations_as_delegate",
         on_delete=models.CASCADE,
         verbose_name=_("Delegate"),

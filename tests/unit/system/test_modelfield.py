@@ -26,7 +26,8 @@ def test_framework_special_lookups_have_labels():
 @pytest.mark.django_db
 def test_extra_lookups_by_field_type():
     """自定义匹配符按字段类型暴露：多对多给 m2m/m2m_all，IP 字段给 ip_in，普通字段不给。"""
-    from system.models import UserInfo, UserLoginLog
+    from identity.models import UserInfo
+    from system.models import UserLoginLog
 
     m2m_field = UserInfo._meta.get_field("roles")
     assert get_extra_field_lookups(m2m_field) == ["m2m", "m2m_all"]
@@ -104,7 +105,7 @@ class TestSyncModelField:
         role_qs = ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE)
         assert role_qs.count() > 300, f"ROLE 字段树规模异常（{role_qs.count()}），检查 URLconf 预热"
         covered = set(role_qs.filter(parent=None).values_list("name", flat=True))
-        for model_label in ("system.userinfo", "system.menu", "system.userrole", "system.datadict"):
+        for model_label in ("identity.userinfo", "system.menu", "identity.userrole", "system.datadict"):
             assert model_label in covered, f"ROLE 字段树缺模型节点：{model_label}"
 
     def test_broken_serializer_is_skipped_not_fatal(self):
@@ -155,7 +156,7 @@ class TestSyncModelField:
             for row in seed_rows
             if row["fields"]["field_type"] == 1 and not row["fields"]["parent"]
         }
-        for model_label in ("approval.approvalinstance", "ai.aiprofile", "system.post"):
+        for model_label in ("approval.approvalinstance", "ai.aiprofile", "identity.post"):
             assert model_label in roots, f"数据权限表树种子缺模型：{model_label}"
 
         # 种子行 creator=1 为约定值：测试库首个用户即 pk=1（superuser fixture）

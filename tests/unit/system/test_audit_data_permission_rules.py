@@ -4,7 +4,8 @@
 import pytest
 from django.core.management import call_command
 
-from system.models import DataPermission, DeptInfo
+from identity.models import DeptInfo
+from system.models import DataPermission
 
 pytestmark = pytest.mark.django_db
 
@@ -13,14 +14,16 @@ def make_bad_permission(name="巡检-坏规则"):
     """坏规则（字段名写错），与写入侧 validate_rules 口径一致。"""
     return DataPermission.objects.create(
         name=name,
-        rules=[{"table": "system.userinfo", "field": "creat0r", "type": "value.text", "value": "x", "match": "exact"}],
+        rules=[
+            {"table": "identity.userinfo", "field": "creat0r", "type": "value.text", "value": "x", "match": "exact"}
+        ],
     )
 
 
 def make_all_permission(name="巡检-全部数据"):
     return DataPermission.objects.create(
         name=name,
-        rules=[{"table": "system.userinfo", "field": "id", "type": "value.all", "value": "*", "match": "all"}],
+        rules=[{"table": "identity.userinfo", "field": "id", "type": "value.all", "value": "*", "match": "all"}],
     )
 
 
@@ -29,7 +32,7 @@ def make_leader_permission(name="巡检-主管规则"):
         name=name,
         rules=[
             {
-                "table": "system.userinfo",
+                "table": "identity.userinfo",
                 "field": "creator",
                 "type": "value.leader.user.ids",
                 "value": "*",
@@ -115,7 +118,7 @@ def test_audit_warns_dangling_reference(capsys, normal_user):
         name="巡检-悬空引用",
         rules=[
             {
-                "table": "system.userinfo",
+                "table": "identity.userinfo",
                 "field": "dept",
                 "type": "value.table.dept.ids",
                 "value": [missing],

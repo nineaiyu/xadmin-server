@@ -88,9 +88,9 @@ def run_async_import(record_id, view_path, user_pk):
     """
     from common.core.config import SysConfig
     from common.notifications import ImportDataMessage
+    from identity.models import UserInfo
     from system.models.import_ import ImportRecord
     from system.models.task import TaskExecution
-    from system.models.user import UserInfo
     from system.utils.task.import_progress import clear_import_progress
     from system.utils.task.task_progress import KIND_IMPORT, update_progress
 

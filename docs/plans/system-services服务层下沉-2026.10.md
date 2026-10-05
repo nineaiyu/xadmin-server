@@ -29,9 +29,9 @@
 
 | 原实现（三处重复「前缀 + 随机串 → sha256 哈希 + 截断前缀 + create」） | 收口后 |
 |---|---|
-| `system/serializers/token.py::PersonalAccessTokenSerializer.create`（`pat_` 个人令牌） | `new_token_secret()` 生成三元组，序列化器保留自身的 create/信号语义 |
-| `system/views/open/open.py::issue_application_token`（`apst_` 应用凭证，含失效旧凭证轮换） | `issue_application_token()`（事务内 `revoke_application_tokens` + `issue_access_token`），视图改调用 |
-| `system/views/open/open_oauth.py::issue_oauth_access_token`（`aoat_` OAuth 访问凭证） | `issue_oauth_access_token()` 委托 `issue_access_token()`，过期时间统一 `application_token_expiry()` |
+| `identity/serializers/token.py::PersonalAccessTokenSerializer.create`（`pat_` 个人令牌） | `new_token_secret()` 生成三元组，序列化器保留自身的 create/信号语义 |
+| `identity/views/open/open.py::issue_application_token`（`apst_` 应用凭证，含失效旧凭证轮换） | `issue_application_token()`（事务内 `revoke_application_tokens` + `issue_access_token`），视图改调用 |
+| `identity/views/open/open_oauth.py::issue_oauth_access_token`（`aoat_` OAuth 访问凭证） | `issue_oauth_access_token()` 委托 `issue_access_token()`，过期时间统一 `application_token_expiry()` |
 
 附带收口：`ApiApplicationViewSet.perform_update` / `regenerate_secret` 中的
 「停用即失效全部有效凭证」改调用 `revoke_application_tokens()`（原 inline ORM update）。
@@ -67,7 +67,7 @@
 
 **契约切断**：`system/services` 门面 `__getattr__` 对 `login_success` 的视图再导出
 特例删除，改为 `_LAZY_EXPORTS` 惰性导出服务子模块成员——门面不再 re-export views
-成员（`message/notify.py` 等跨 app 消费方 import 面不变）。视图侧 `system/views/auth/mfa.py`
+成员（`message/notify.py` 等跨 app 消费方 import 面不变）。视图侧 `identity/views/auth/mfa.py`
 改从服务层 import `login_success`；视图模块内保留会话登记辅助
 （`_register_session_safe` / `_login_type_for` / `SessionTokenObtainPairSerializer`，属请求编排）。
 

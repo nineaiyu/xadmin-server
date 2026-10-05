@@ -75,7 +75,7 @@ class TestMainFlow:
     @pytest.fixture
     def run_main(self, monkeypatch):
         """打桩 call_command 与 UserInfo 管理器，返回 (calls, created, invoke)。"""
-        from system.models import UserInfo
+        from identity.models import UserInfo
         from utils import init_data
 
         calls: list[str] = []

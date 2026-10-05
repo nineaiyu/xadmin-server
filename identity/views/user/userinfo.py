@@ -1,0 +1,141 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# project : server
+# filename : userinfo
+# author : ly_13
+# date : 6/16/2023
+
+from django.conf import settings
+from drf_spectacular.plumbing import build_basic_type, build_object_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiRequest, extend_schema
+from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser
+
+from common.core.modelset import ChoicesAction, DetailUpdateModelSet, UploadFileAction
+from common.core.permission import IsAuthenticated
+from common.core.response import ApiResponse
+from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
+from common.utils.verify_code import TokenTempCache
+from identity.models import UserInfo
+from identity.notifications import ResetPasswordSuccessMsg
+from identity.serializers.userinfo import ChangePasswordSerializer, UserInfoSerializer
+from identity.utils.auth import verify_sms_email_code
+from mfa.cache import UserConfirmStateCache
+from mfa.confirm import UserConfirmation
+from mfa.const import ConfirmType
+from settings.services import ResetBlockUtil
+
+logger = get_logger(__name__)
+
+
+class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
+    """个人"""
+
+    serializer_class = UserInfoSerializer
+    FILE_UPLOAD_FIELD = "avatar"
+    choices_models = [UserInfo]
+    queryset = UserInfo.objects.none()
+
+    def get_object(self):
+        return self.request.user
+
+    def get_queryset(self):
+        return UserInfo.objects.filter(pk=self.request.user.pk)
+
+    def retrieve(self, request, *args, **kwargs):
+        """获取{cls}信息"""
+        data = super().retrieve(request, *args, **kwargs).data
+        # 巡检处置联动：管理员要求改密时随用户信息下发（刷新页面后仍能引导改密；
+        # 改密成功由 record_password_hash 自动清除标记）。注意写入 data 子字典——
+        # 前端读 res.data.must_change_password（UserInfo 载荷内）
+        payload = data.get("data") if isinstance(data, dict) else None
+        if isinstance(payload, dict):
+            payload["must_change_password"] = bool(getattr(request.user, "must_change_password", False))
+            # 用户模拟态：随用户信息下发发起人摘要（前端据此渲染「模拟用户中」横幅；
+            # 硬刷新后横幅不丢——状态跟 token 走，不落在前端本地存储）
+            from identity.utils.impersonation import get_impersonator_pk
+
+            imp_pk = get_impersonator_pk(request)
+            if imp_pk:
+                impersonator = UserInfo.objects.filter(pk=imp_pk).first()
+                if impersonator:
+                    payload["impersonator"] = {
+                        "pk": impersonator.pk,
+                        "username": impersonator.username,
+                        "nickname": impersonator.nickname,
+                    }
+        # 水印配置随用户信息下发（应用/刷新时机在客户端 App.vue）
+        return ApiResponse(
+            **data,
+            config={
+                "FRONT_END_WEB_WATERMARK_ENABLED": settings.FRONT_END_WEB_WATERMARK_ENABLED,
+                "FRONT_END_WEB_WATERMARK_TEXT": settings.FRONT_END_WEB_WATERMARK_TEXT,
+                "FRONT_END_WEB_WATERMARK_PATHS": settings.FRONT_END_WEB_WATERMARK_PATHS,
+                "FRONT_END_WEB_WATERMARK_FONT_SIZE": settings.FRONT_END_WEB_WATERMARK_FONT_SIZE,
+                "FRONT_END_WEB_WATERMARK_OPACITY": settings.FRONT_END_WEB_WATERMARK_OPACITY,
+                "FRONT_END_WEB_WATERMARK_ROTATE": settings.FRONT_END_WEB_WATERMARK_ROTATE,
+                "FRONT_END_WEB_WATERMARK_COLOR": settings.FRONT_END_WEB_WATERMARK_COLOR,
+            },
+        )
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(
+        methods=["post"],
+        detail=False,
+        url_path="reset-password",
+        serializer_class=ChangePasswordSerializer,
+        permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
+    )
+    def reset_password(self, request, *args, **kwargs):
+        """修改{cls}密码（敏感操作：需密码二次确认）"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        # 密码变更后清除旧确认状态（密码本身是确认方式之一）
+        UserConfirmStateCache(request.user).clear()
+        ResetPasswordSuccessMsg(instance, request).publish_async()
+        return ApiResponse()
+
+    @extend_schema(
+        request=OpenApiRequest(build_object_type(properties={"file": build_basic_type(OpenApiTypes.BINARY)})),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, parser_classes=(MultiPartParser,))
+    def upload(self, request, *args, **kwargs):
+        """上传{cls}头像"""
+        return super().upload(request, *args, **kwargs)
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    "verify_token": build_basic_type(OpenApiTypes.STR),
+                    "verify_code": build_basic_type(OpenApiTypes.STR),
+                },
+                required=["verify_token", "verify_code"],
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(
+        methods=["post"],
+        detail=False,
+        url_path="bind",
+        permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
+    )
+    def bind(self, request, *args, **kwargs):
+        """绑定{cls}邮箱或手机（敏感操作：需密码二次确认）"""
+        query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
+        instance = UserInfo.objects.filter(**{query_key: target}).first()
+        if instance:
+            setattr(instance, query_key, "")
+            instance.save(update_fields=(query_key,))
+        setattr(request.user, query_key, target)
+        request.user.save(update_fields=(query_key,))
+        # 手机/邮箱变更影响短信、邮件验证方式可用性，清除旧确认状态
+        UserConfirmStateCache(request.user).clear()
+        TokenTempCache.expired_cache_token(verify_token)
+        return ApiResponse()

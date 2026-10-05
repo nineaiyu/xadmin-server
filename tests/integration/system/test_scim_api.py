@@ -9,7 +9,8 @@ import pytest
 
 from common.cache.storage import UserTokenRevokedCache
 from common.core.config import SysConfig
-from system.models import OperationLog, UserInfo, UserRole
+from identity.models import UserInfo, UserRole
+from system.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 
@@ -239,7 +240,7 @@ class TestGovernanceGuards:
 
     @pytest.fixture
     def builtin_role(self):
-        from system.builtin import sync_builtin_roles
+        from identity.builtin import sync_builtin_roles
 
         sync_builtin_roles()
         return UserRole.objects.get(code="SystemAdmin")

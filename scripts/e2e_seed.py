@@ -49,7 +49,7 @@ E2E_USERS = [
 # 数据权限规则：用户列表仅可见「id 等于本人」的记录（运行时 value 被替换为当前用户 pk）
 DATA_PERMISSION_RULES = [
     {
-        "table": "system.userinfo",
+        "table": "identity.userinfo",
         "field": "id",
         "type": "value.user.id",
         "match": "exact",
@@ -61,7 +61,7 @@ DATA_PERMISSION_RULES = [
 # 部门主管规则：用户列表可见「主管部门成员」（运行时解析为 leader 部门递归成员 pk）
 DATA_PERMISSION_LEADER_RULES = [
     {
-        "table": "system.userinfo",
+        "table": "identity.userinfo",
         "field": "id",
         "type": "value.leader.user.ids",
         "match": "in",
@@ -73,7 +73,7 @@ DATA_PERMISSION_LEADER_RULES = [
 # 数据权限规则：全部数据（value.all），用于字段权限场景放行行可见性
 # （数据权限默认拒绝：无任何授权的用户列表返回 none，见 common/core/filter.py）
 DATA_PERMISSION_ALL_RULES = [
-    {"table": "system.userinfo", "field": "id", "type": "value.all", "match": "all", "value": "", "exclude": False}
+    {"table": "identity.userinfo", "field": "id", "type": "value.all", "match": "all", "value": "", "exclude": False}
 ]
 
 
@@ -134,7 +134,7 @@ def grant_field_permission(role, excluded_field):
 
     list_menu = get_user_list_api_menu()
     root = ModelLabelField.objects.filter(
-        name="system.userinfo", parent__isnull=True, field_type=ModelLabelField.FieldChoices.ROLE
+        name="identity.userinfo", parent__isnull=True, field_type=ModelLabelField.FieldChoices.ROLE
     ).first()
     if not (role and list_menu and root):
         print(f"skip field permission: role={bool(role)} menu={bool(list_menu)} root={bool(root)}")
@@ -205,7 +205,8 @@ def main() -> None:
     sys.argv = ["init_data"]
     init_data_main()
 
-    from system.models import DataPermission, UserInfo, UserRole
+    from identity.models import UserInfo, UserRole
+    from system.models import DataPermission
 
     created_users = {}
     for username, password, nickname, is_superuser, role_code in E2E_USERS:
@@ -242,7 +243,7 @@ def main() -> None:
         print("data permission seeded for e2e_dp")
 
     # ---- 部门主管场景：e2e_leader 主管测试部门（本人兼成员），列表可见本人 + 部门成员 ----
-    from system.models import DeptInfo
+    from identity.models import DeptInfo
 
     e2e_leader = created_users.get("e2e_leader") or UserInfo.objects.filter(username="e2e_leader").first()
     e2e_member = created_users.get("e2e_member") or UserInfo.objects.filter(username="e2e_member").first()

@@ -1,6 +1,6 @@
 # SCIM 真实 IdP 联调准备方案（W4，2026-09-12）
 
-> 背景：SCIM 2.0 目录同步服务端已实现（`system/scim/`，路由 `/api/scim/v2/`，
+> 背景：SCIM 2.0 目录同步服务端已实现（`identity/scim/`，路由 `/api/scim/v2/`，
 > 集成测试 `tests/integration/system/test_scim_api.py` 覆盖 provisioning/deprovisioning/
 > 改组/审计回溯）。本方案列出接入真实 IdP（Okta / Microsoft Entra ID / Keycloak）前的
 > 准备清单，联调本身需外部 IdP 环境与租户权限，另行排期。

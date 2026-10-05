@@ -12,7 +12,7 @@
 
 import pytest
 
-from system.models import UserInfo
+from identity.models import UserInfo
 
 SUGGEST_URL = "/api/approval/approval-delegations/suggestions"
 COLUMNS_URL = "/api/approval/approval-delegations/search-columns"

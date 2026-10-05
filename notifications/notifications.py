@@ -9,9 +9,9 @@ from html2text import HTML2Text
 
 from common.utils import get_logger
 from common.utils.sanitize import sanitize_rich_text
+from identity.services import UserInfo, get_superusers, get_users_by_pks
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
-from system.services import UserInfo, get_superusers, get_users_by_pks
 
 logger = get_logger(__name__)
 

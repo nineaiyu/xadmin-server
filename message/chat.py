@@ -158,7 +158,7 @@ def message_payload(message: ChatMessage, room=None, sender=None, avatar_map: di
     """
     if avatar_map is None:
         if sender is None and message.sender_id:
-            from system.models import UserInfo
+            from identity.models import UserInfo
 
             sender = UserInfo.objects.filter(pk=message.sender_id).first()
         avatar = avatar_url(sender)
@@ -190,7 +190,7 @@ def message_payload(message: ChatMessage, room=None, sender=None, avatar_map: di
 
 def sender_avatar_map(messages: list) -> dict:
     """一批消息的发送者头像映射（一次查询，供历史列表/广播批量使用）。"""
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     pks = {message.sender_id for message in messages if message.sender_id}
     if not pks:
@@ -454,7 +454,7 @@ def recent_contacts(user, limit: int = CONTACT_LIMIT) -> list:
     数据源 = UserSession.last_active（登录即登记，WS/HTTP 会话统一），
     在线态 = message.utils 在线快照（WS 心跳口径）。
     """
-    from system.models import UserInfo, UserSession
+    from identity.models import UserInfo, UserSession
 
     online_pks = online_user_pks()
     rows = list(

@@ -12,8 +12,8 @@ import secrets
 import pytest
 from rest_framework.test import APIClient
 
+from identity.models.token import OAuthRefreshToken, PersonalAccessToken
 from system.models.log import OperationLog
-from system.models.token import OAuthRefreshToken, PersonalAccessToken
 
 pytestmark = pytest.mark.django_db
 
@@ -158,7 +158,7 @@ class TestAuthorizeFlow:
         """历史缓存中的 plain 授权码：兑换一律失败（不再按 plain 比对，fail-closed）。"""
         from django.core.cache import cache
 
-        from system.services.open_oauth import _code_cache_key
+        from identity.services.open_oauth import _code_cache_key
 
         application = _create_application(auth_client)
         verifier = "legacy-plain-verifier"
@@ -269,14 +269,14 @@ class TestGrantEnforcementOnOAuthToken:
         """红线：OAuth 凭证不绕过 B1 四级授权（应用有规则时同样白名单）。"""
         from system.models.field import ModelLabelField
 
-        model_label = ModelLabelField.objects.create(name="system.userinfo", label="用户信息")
+        model_label = ModelLabelField.objects.create(name="identity.userinfo", label="用户信息")
         menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
         menu.model.add(model_label)
 
         application = _create_application(auth_client)
         put = auth_client.put(
             f"{APPS_URL}/{application['pk']}/grants",
-            {"grants": [{"model": "system.userinfo", "actions": ["list"]}]},
+            {"grants": [{"model": "identity.userinfo", "actions": ["list"]}]},
             format="json",
         )
         assert put.data["code"] == 1000

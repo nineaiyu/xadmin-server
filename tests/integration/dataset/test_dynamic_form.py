@@ -10,7 +10,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
@@ -33,7 +33,8 @@ def form(superuser):
 
 
 def grant_form_menus(user):
-    from system.models import Menu, MenuMeta, UserRole
+    from identity.models import UserRole
+    from system.models import Menu, MenuMeta
 
     def _make(name, path, method):
         menu = Menu.objects.filter(name=name).first()

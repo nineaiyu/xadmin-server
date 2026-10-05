@@ -17,7 +17,7 @@ from common.core.fields import BasePrimaryKeyRelatedField
 from common.core.models import AutoCleanFileMixin
 from demo.models import Book
 from demo.views import BookViewSet
-from system.models import UserInfo
+from identity.models import UserInfo
 from system.models.upload import UploadFile
 
 pytestmark = pytest.mark.django_db
@@ -93,7 +93,9 @@ class TestRelatedMemo:
             assert Book.objects.count() == count
             Book.objects.all().delete()
             # 只统计 to_internal_value 的关联校验 SELECT（排除 M2M set() 的簿记查询）
-            return len([q for q in _business_queries(ctx) if "system_userinfo" in q and "demo_book_managers" not in q])
+            return len(
+                [q for q in _business_queries(ctx) if "identity_userinfo" in q and "demo_book_managers" not in q]
+            )
 
         one = measure(1)
         many = measure(7)

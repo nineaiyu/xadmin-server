@@ -45,7 +45,7 @@ def _lock_creator_submissions(creator_id) -> None:
     """
     if not creator_id:
         return
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     list(UserInfo.objects.select_for_update().filter(pk=creator_id).values_list("pk", flat=True))
 

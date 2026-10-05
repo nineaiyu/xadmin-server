@@ -12,7 +12,7 @@ import json
 
 import pytest
 
-from system.models import Post
+from identity.models import Post
 
 pytestmark = pytest.mark.django_db
 
@@ -87,7 +87,7 @@ class TestPostCrud:
 
 class TestPostMembers:
     def test_assign_add_and_remove(self, auth_client, normal_user, superuser):
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         pk = _create(auth_client).json()["data"]["pk"]
         member = UserInfo.objects.create_user(username="member", password="Test@123456", nickname="成员")
@@ -129,7 +129,7 @@ class TestPostMembers:
         assert resp.json()["code"] == 1001, resp.json()
 
     def test_inactive_user_not_added(self, auth_client):
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         pk = _create(auth_client).json()["data"]["pk"]
         inactive = UserInfo.objects.create_user(username="inactive", password="Test@123456")
@@ -140,7 +140,7 @@ class TestPostMembers:
         assert Post.objects.get(pk=pk).users.count() == 0, "失效用户不进入成员"
 
     def test_user_options_returns_brief(self, auth_client):
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         UserInfo.objects.create_user(username="searchme", password="Test@123456", nickname="可搜索")
         resp = auth_client.get(f"{POST_URL}/user-options", {"keyword": "searchme"})
@@ -158,7 +158,7 @@ class TestSearchPostCandidates:
     SEARCH_URL = "/api/system/search/post"
 
     def test_candidates_carry_user_count(self, auth_client):
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         post = Post.objects.create(name="候选岗", code="cand_post")
         member = UserInfo.objects.create_user(username="cand_user", password="Test@123456")

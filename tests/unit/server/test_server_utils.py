@@ -37,7 +37,7 @@ class TestAddDbPrefixViaShim:
         meta = SimpleNamespace(
             managed=True,
             app_label="system",
-            label_lower="system.userinfo",
+            label_lower="identity.userinfo",
             label="system.UserInfo",
             db_table=db_table,
         )
@@ -61,7 +61,7 @@ class TestAddDbPrefixViaShim:
         add_db_prefix(sender)
         assert sender._meta.db_table == "system_userinfo"
 
-    @override_settings(DB_PREFIX={"system.userinfo": "abc_"})
+    @override_settings(DB_PREFIX={"identity.userinfo": "abc_"})
     def test_dict_prefix_by_label_lower(self):
         sender = self._make_sender()
         add_db_prefix(sender)

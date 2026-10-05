@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
-from system.models import DeptInfo
+from identity.models import DeptInfo
 
 pytestmark = pytest.mark.django_db
 

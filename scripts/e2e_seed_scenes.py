@@ -57,8 +57,9 @@ def seed_user_notice_scene():
     - 通知数据：USER 类型（发给指定用户）两条，标题固定便于用例定位；
       直接建 MessageUserRead 未读行，不依赖发布信号的推送链路（链路另有单测覆盖）。
     """
+    from identity.models import UserInfo, UserRole
     from notifications.models import MessageContent, MessageUserRead
-    from system.models import Menu, UserInfo, UserRole
+    from system.models import Menu
 
     user = UserInfo.objects.filter(username="e2e_user").first()
     page = Menu.objects.filter(path="/user/notice/index", menu_type=Menu.MenuChoices.MENU).first()
@@ -166,7 +167,7 @@ def seed_directory_scene():
     用户种子中建好），岗位清单来自 search/post——这里补两个岗位并分配成员，
     让岗位视角在 E2E 有真实数据（而不是只有空态）。
     """
-    from system.models import Post, UserInfo
+    from identity.models import Post, UserInfo
 
     dev, _ = Post.objects.get_or_create(name="E2E研发岗", defaults={"code": "e2e_dev", "rank": 10})
     # 安全岗刻意用长名称（与演示库「示例-安全员（全组织）」同形）：名录列表视图的
@@ -189,7 +190,7 @@ def disable_login_mfa_policy():
     夜间跑批时全量登录用例会被拦截——与 tests/settings_e2e.py 关闭登录验证码 /
     传输加密同口径：E2E 环境放开登录辅助安全项（策略行为由后端集成测试覆盖）。
     """
-    from system.models import LoginAccessPolicy
+    from identity.models import LoginAccessPolicy
 
     disabled = LoginAccessPolicy.objects.filter(action=LoginAccessPolicy.Action.REQUIRE_MFA, is_active=True).update(
         is_active=False

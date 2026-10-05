@@ -54,7 +54,7 @@ class ApprovalRequest(DbAuditModel):
         db_index=True,
     )
     approver = models.ForeignKey(
-        "system.UserInfo",
+        "identity.UserInfo",
         related_name="approved_requests",
         on_delete=models.SET_NULL,
         null=True,
@@ -77,7 +77,7 @@ class ApprovalRequest(DbAuditModel):
     # current_assignees = 当前级候选人冗余投影（列表展示与待办查询用；权威数据在 steps 快照）
     current_level = models.PositiveSmallIntegerField(_("Current level"), default=0)
     current_assignees = models.ManyToManyField(
-        "system.UserInfo",
+        "identity.UserInfo",
         related_name="approval_current_assignments",
         blank=True,
         verbose_name=_("Current approvers"),

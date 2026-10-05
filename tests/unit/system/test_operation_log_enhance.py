@@ -9,8 +9,8 @@ from django.core.cache import cache
 from django.utils import timezone
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 
+from identity.models.user import UserInfo
 from system.models.log import OperationLog
-from system.models.user import UserInfo
 from system.notifications import SensitiveOperationMessage, maybe_alert_sensitive_operation
 from system.views.admin.operationlog import OperationLogViewSet
 

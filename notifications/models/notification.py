@@ -14,7 +14,7 @@ from common.core.models import DbAuditModel
 class UserMsgSubscription(DbAuditModel):
     message_type = models.CharField(max_length=128, verbose_name=_("message type"))
     user = models.ForeignKey(
-        "system.UserInfo", related_name="user_msg_subscription", on_delete=models.CASCADE, verbose_name=_("User")
+        "identity.UserInfo", related_name="user_msg_subscription", on_delete=models.CASCADE, verbose_name=_("User")
     )
     receive_backends = models.JSONField(default=list, verbose_name=_("receive backend"))
 
@@ -28,7 +28,7 @@ class UserMsgSubscription(DbAuditModel):
 
 class SystemMsgSubscription(DbAuditModel):
     message_type = models.CharField(max_length=128, unique=True, verbose_name=_("message type"))
-    users = models.ManyToManyField("system.UserInfo", related_name="system_msg_subscriptions", verbose_name=_("User"))
+    users = models.ManyToManyField("identity.UserInfo", related_name="system_msg_subscriptions", verbose_name=_("User"))
     receive_backends = models.JSONField(default=list, verbose_name=_("receive backend"))
 
     class Meta:

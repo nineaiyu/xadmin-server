@@ -22,7 +22,7 @@ from approval.utils.approval_flow import approve_task, reject_task
 from common.core.config import SysConfig
 from demo.models import Book
 from demo.services import BOOK_BIZ_TYPE, BOOK_FLOW_CODE
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

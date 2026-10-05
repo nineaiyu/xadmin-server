@@ -1,8 +1,8 @@
 # SCIM 2.0 用户目录同步（对接与运维）
 
-> 实现：`system/scim/`（RFC 7643/7644 核心子集）· 鉴权 `system/scim/auth.py` · 路由 `/api/scim/v2/`
+> 实现：`identity/scim/`（RFC 7643/7644 核心子集）· 鉴权 `identity/scim/auth.py` · 路由 `/api/scim/v2/`
 > 相关：安全登记见 [../security-review.md](../security-review.md)「四期登记 S1」；
-> 身份联邦（登录侧）见 `system/views/auth/`（OAuth2/OIDC 绑定）与 [ADR-011](../adr/ADR-011-aes-protocol-v2.md) 邻域文档
+> 身份联邦（登录侧）见 `identity/views/auth/`（OAuth2/OIDC 绑定）与 [ADR-011](../adr/ADR-011-aes-protocol-v2.md) 邻域文档
 
 ## 1. 定位与边界
 

@@ -10,9 +10,10 @@ from unittest import mock
 
 import pytest
 
-from system.ldap import sync as ldap_sync
-from system.ldap import sync_dir
-from system.models import DeptInfo, LdapUserBinding, OperationLog, UserInfo
+from identity.ldap import sync as ldap_sync
+from identity.ldap import sync_dir
+from identity.models import DeptInfo, LdapUserBinding, UserInfo
+from system.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 
@@ -257,13 +258,13 @@ class TestAuditAndNotify:
     def test_notify_on_actions(self, sync_on, stub_directory):
         """有建号动作时发布超管摘要通知。"""
         stub_directory["by_base"][PEOPLE_BASE] = [user_entry("cn=alice,ou=people,dc=corp,dc=com", "alice")]
-        with mock.patch("system.notifications.LdapSyncMessage.publish") as publish:
+        with mock.patch("identity.notifications.LdapSyncMessage.publish") as publish:
             ldap_sync.run_ldap_sync()
         assert publish.called
 
     def test_no_notify_when_idle(self, sync_on, stub_directory):
         stub_directory["by_base"][PEOPLE_BASE] = []
-        with mock.patch("system.notifications.LdapSyncMessage.publish") as publish:
+        with mock.patch("identity.notifications.LdapSyncMessage.publish") as publish:
             ldap_sync.run_ldap_sync()
         assert not publish.called
 

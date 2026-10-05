@@ -9,9 +9,9 @@ import pytest
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask, ApprovalRequest
 from common.core.config import SysConfig
+from identity.models import UserInfo
 from mfa.cache import UserConfirmStateCache
 from mfa.const import ConfirmType
-from system.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

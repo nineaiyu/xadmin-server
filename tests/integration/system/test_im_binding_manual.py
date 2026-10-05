@@ -3,7 +3,8 @@
 
 import pytest
 
-from system.models import OperationLog, UserInfo, UserOAuthBinding
+from identity.models import UserInfo, UserOAuthBinding
+from system.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 

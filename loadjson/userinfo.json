@@ -1,6 +1,6 @@
 [
   {
-    "model": "system.userinfo",
+    "model": "identity.userinfo",
     "pk": 1,
     "fields": {
       "password": "pbkdf2_sha256$720000$Do0cosVxbLzxwVi3I5HEwF$zdwmPpcZg9Frj8Df6sVkPx6ECus6mWaEF3Lt25hglTs=",
@@ -31,7 +31,7 @@
     }
   },
   {
-    "model": "system.userinfo",
+    "model": "identity.userinfo",
     "pk": 2,
     "fields": {
       "password": "pbkdf2_sha256$720000$Jit275P4xwt3isqGjNaFNU$SntnpI6m0NGVGC+cljtFxp2XU+EYYJ5K4XA4OcvhlH4=",

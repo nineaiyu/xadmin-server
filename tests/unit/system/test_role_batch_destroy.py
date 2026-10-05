@@ -9,9 +9,9 @@
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.builtin import sync_builtin_roles
-from system.models import UserRole
-from system.views.admin.role import RoleViewSet
+from identity.builtin import sync_builtin_roles
+from identity.models import UserRole
+from identity.views.admin.role import RoleViewSet
 
 pytestmark = pytest.mark.django_db
 

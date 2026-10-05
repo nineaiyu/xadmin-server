@@ -27,10 +27,11 @@ from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from common.core.utils import get_all_url_dict
 from common.swagger.utils import get_default_response_schema
+from identity.services import invalidate_menu_user_caches
 from system.models import Menu, ModelLabelField
 from system.serializers.menu import MenuSerializer
-from system.signal_handler import clean_cache_handler, invalidate_menu_user_caches
-from system.utils.identity import permission_sync as sync
+from system.signal_handler import clean_cache_handler
+from system.utils.platform import permission_sync as sync
 from system.utils.platform.menu import get_view_permissions
 
 

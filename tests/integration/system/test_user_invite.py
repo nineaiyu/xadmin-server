@@ -19,11 +19,11 @@ from django.conf import settings as dj_settings
 from django.core import mail
 from django.utils import timezone
 
-from system.models import UserInfo
-from system.services.auth_login import login_success
-from system.utils.identity import account_expiry, user_invite
-from system.utils.identity.account_expiry import disable_expired_accounts, is_account_expired, notify_expiring_accounts
-from system.utils.identity.auth import ValidateError
+from identity.models import UserInfo
+from identity.services.auth_login import login_success
+from identity.utils import account_expiry, user_invite
+from identity.utils.account_expiry import disable_expired_accounts, is_account_expired, notify_expiring_accounts
+from identity.utils.auth import ValidateError
 
 pytestmark = pytest.mark.django_db
 
@@ -121,7 +121,7 @@ class TestCreateWithInvite:
 
     def test_create_with_invite_requires_invite_permission(self, auth_client, monkeypatch):
         """创建即邀请需同时具备邀请权限点（invite:SystemUser），否则 403 且不创建。"""
-        monkeypatch.setattr("system.views.admin.user.user_has_permission", lambda *args, **kwargs: False)
+        monkeypatch.setattr("identity.views.admin.user.user_has_permission", lambda *args, **kwargs: False)
         resp = auth_client.post(
             USER_URL, {"username": "no_perm", "email": "no_perm@example.com", "invite": True}, format="json"
         )

@@ -6,9 +6,9 @@ import json
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
+from identity.models.user import UserInfo
 from system.models.dict import DataDict
 from system.models.import_ import ImportTemplate
-from system.models.user import UserInfo
 from system.views.admin.dict import DataDictViewSet
 from system.views.admin.import_ import ImportTemplateViewSet
 

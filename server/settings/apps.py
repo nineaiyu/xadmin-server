@@ -29,7 +29,8 @@ def build_installed_apps(xadmin_apps: list) -> list:
         "django.contrib.sessions",
         "django.contrib.messages",
         "django.contrib.staticfiles",
-        "system.apps.SystemConfig",  # 系统管理
+        "identity.apps.IdentityConfig",  # 身份与认证域（Phase C 拆分批次1 自 system 迁出）
+        "system.apps.SystemConfig",  # 系统管理（platform 面）
         "approval.apps.ApprovalConfig",  # 审批流（3.1 拆分批次2 自 system 迁出）
         "ai.apps.AiConfig",  # AI 平台与知识库（3.1 拆分批次3 自 system 迁出）
         "dataset.apps.DatasetConfig",  # 数据分析与动态表单（3.1 拆分批次4 自 system 迁出）

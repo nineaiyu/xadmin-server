@@ -14,13 +14,13 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.test import APIRequestFactory
 
 from common.sdk.sms.exceptions import CodeError, CodeExpired, CodeSendOverRate
+from identity.models import UserPasskey
 from mfa.backends import get_backend, get_user_mfa_policy
 from mfa.backends.base import BaseMFA
 from mfa.backends.email import EmailBackend
 from mfa.backends.otp import OtpBackend
 from mfa.backends.passkey import PasskeyBackend
 from mfa.backends.sms import SmsBackend
-from system.models import UserPasskey
 
 pytestmark = pytest.mark.django_db
 
@@ -197,7 +197,7 @@ class TestPasskeyBackend:
         def raise_value_error(**kwargs):
             raise ValueError("bad signature")
 
-        monkeypatch.setattr("system.utils.identity.webauthn.verify_assertion", raise_value_error)
+        monkeypatch.setattr("identity.utils.webauthn.verify_assertion", raise_value_error)
         ok, err = PasskeyBackend(normal_user, request=self._request()).check_code(
             json.dumps({"credential_id": "cred-1"})
         )
@@ -209,7 +209,7 @@ class TestPasskeyBackend:
         def raise_runtime_error(**kwargs):
             raise RuntimeError("kaboom")
 
-        monkeypatch.setattr("system.utils.identity.webauthn.verify_assertion", raise_runtime_error)
+        monkeypatch.setattr("identity.utils.webauthn.verify_assertion", raise_runtime_error)
         ok, err = PasskeyBackend(normal_user, request=self._request()).check_code(
             json.dumps({"credential_id": "cred-2"})
         )

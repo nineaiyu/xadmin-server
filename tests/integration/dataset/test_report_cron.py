@@ -16,7 +16,7 @@ REPORTS_URL = "/api/dataset/reports"
 
 @pytest.fixture
 def dataset(db):
-    return Dataset.objects.create(name="cron_ds", bound_model="system.userinfo", visibility="personal")
+    return Dataset.objects.create(name="cron_ds", bound_model="identity.userinfo", visibility="personal")
 
 
 def make_report(dataset, **kwargs):

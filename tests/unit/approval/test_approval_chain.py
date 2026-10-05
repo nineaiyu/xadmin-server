@@ -37,7 +37,7 @@ from approval.utils.approval import (
 )
 from common.core.approval import ApprovalRequired
 from common.core.response import ApiResponse
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
@@ -160,7 +160,7 @@ class TestPostLevel:
     """按岗位级次：post=岗位 code 清单，仅启用且未删除岗位的在岗用户可审（不参与权限判定）。"""
 
     def test_post_level_resolves_holders(self, applicant, chain_users):
-        from system.models import Post
+        from identity.models import Post
 
         post = Post.objects.create(name="安全员", code="chain_post_security")
         chain_users[0].posts.add(post)
@@ -181,7 +181,7 @@ class TestPostLevel:
     def test_soft_deleted_post_excluded(self, db):
         """软删除（回收站）岗位不参与级次解析；未知 code 同样为空（fail-closed 由 build_steps 兜底）。"""
         from approval.utils.approval.chains import resolve_level_users
-        from system.models import Post
+        from identity.models import Post
 
         post = Post.objects.create(name="财务专员", code="chain_post_finance")
         holder = UserInfo.objects.create_user(username="fin_holder", password="Test@123456")
@@ -195,7 +195,7 @@ class TestPostLevel:
     @pytest.mark.django_db(transaction=True)
     def test_inactive_post_level_fails_closed(self, applicant):
         """岗位停用后该级无人可审 → 不建单（与「级次无可用用户」同口径）。"""
-        from system.models import Post
+        from identity.models import Post
 
         post = Post.objects.create(name="实习生岗", code="chain_post_inactive", is_active=False)
         rule = ApprovalRule.objects.create(name="规则-停用岗位", path_patterns=[r"^/api/test/"], priority=0)

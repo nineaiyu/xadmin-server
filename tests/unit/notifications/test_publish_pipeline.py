@@ -13,6 +13,7 @@ from unittest import mock
 import pytest
 from django.core import mail
 
+from identity.notifications import DifferentCityLoginMessage, ResetPasswordSuccessMsg
 from notifications.backends import BACKEND, client_name_mapper
 from notifications.models import MessageContent, SystemMsgSubscription, UserMsgSubscription
 from notifications.notifications import (
@@ -21,7 +22,7 @@ from notifications.notifications import (
     UserMessage,
     publish_task,
 )
-from system.notifications import DifferentCityLoginMessage, ResetPasswordSuccessMsg, SensitiveOperationMessage
+from system.notifications import SensitiveOperationMessage
 
 pytestmark = pytest.mark.django_db
 

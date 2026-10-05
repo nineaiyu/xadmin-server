@@ -32,14 +32,14 @@ def ws_layer():
 
 @pytest.fixture
 def alice(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="alice", password="Test@123456", nickname="爱丽丝")
 
 
 @pytest.fixture
 def bob(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="bob", password="Test@123456", nickname="鲍勃")
 
@@ -336,8 +336,8 @@ class TestGroupFanoutBatch:
 
     @pytest.fixture
     def group_room(self, alice):
+        from identity.models import UserInfo
         from message.models import ChatRoomMember, group_room_key
-        from system.models import UserInfo
 
         members = [
             UserInfo.objects.create_user(username=f"fanout{index}", password="Test@123456") for index in range(6)

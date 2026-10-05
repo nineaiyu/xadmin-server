@@ -143,7 +143,7 @@ class TestImTestEndpoint:
 class TestLdapTestEndpoint:
     def test_config_snapshot_from_form_values(self, auth_client, settings, monkeypatch):
         """连接测试按表单值构造 LdapConfig 快照传参，不临时改写进程全局。"""
-        import system.ldap.sync as ldap_sync
+        import identity.ldap.sync as ldap_sync
 
         settings.LDAP_SERVER_URI = "ldap://stored"
         settings.LDAP_USER_SEARCH_BASE = "dc=stored"
@@ -173,7 +173,7 @@ class TestLdapTestEndpoint:
         assert dj_settings.LDAP_SERVER_URI == "ldap://stored"
 
     def test_empty_secret_falls_back_to_stored_password(self, auth_client, settings, monkeypatch):
-        import system.ldap.sync as ldap_sync
+        import identity.ldap.sync as ldap_sync
 
         settings.LDAP_SERVER_URI = "ldap://stored"
         settings.LDAP_USER_SEARCH_BASE = "dc=stored"

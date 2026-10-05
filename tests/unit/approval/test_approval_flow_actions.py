@@ -24,7 +24,7 @@ from approval.utils.approval_flow import (
     return_instance,
     returnable_nodes,
 )
-from system.models import DeptInfo, UserInfo, UserRole
+from identity.models import DeptInfo, UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 

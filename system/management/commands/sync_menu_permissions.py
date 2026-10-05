@@ -19,8 +19,9 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from system.models import Menu, MenuMeta, ModelLabelField, UserInfo
-from system.utils.identity import permission_sync as sync
+from identity.models import UserInfo
+from system.models import Menu, MenuMeta, ModelLabelField
+from system.utils.platform import permission_sync as sync
 from system.utils.platform.modelfield import sync_model_field
 
 DETAIL_LIMIT = 100

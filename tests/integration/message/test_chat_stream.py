@@ -101,14 +101,14 @@ def stream_stub(monkeypatch):
 
 @pytest.fixture
 def alice(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="alice", password="Test@123456", nickname="爱丽丝")
 
 
 @pytest.fixture
 def bob(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="bob", password="Test@123456", nickname="鲍勃")
 

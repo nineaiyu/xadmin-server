@@ -4,11 +4,11 @@
 import pytest
 from django.test import RequestFactory
 
+from identity.models import UserInfo
+from identity.serializers.department import DeptSerializer
+from identity.serializers.role import RoleSerializer
+from identity.serializers.user import UserSerializer
 from server.utils import set_current_request
-from system.models import UserInfo
-from system.serializers.department import DeptSerializer
-from system.serializers.role import RoleSerializer
-from system.serializers.user import UserSerializer
 
 pytestmark = pytest.mark.django_db
 
@@ -67,7 +67,7 @@ class TestRoleSerializer:
         assert serializer.is_valid(), serializer.errors
 
     def test_duplicate_code_invalid(self, post_request):
-        from system.models import UserRole
+        from identity.models import UserRole
 
         UserRole.objects.create(name="已有", code="dup")
         serializer = RoleSerializer(data={"name": "新角色", "code": "dup", "fields": {}}, ignore_field_permission=True)

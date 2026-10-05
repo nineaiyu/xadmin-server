@@ -7,8 +7,9 @@
 
 import pytest
 
-from system.models import FieldPermission, Menu, ModelLabelField, UserRole
-from system.serializers.role import FieldPermissionSerializer, RoleSerializer
+from identity.models import UserRole
+from identity.serializers.role import FieldPermissionSerializer, RoleSerializer
+from system.models import FieldPermission, Menu, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 

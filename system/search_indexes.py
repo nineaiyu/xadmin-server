@@ -8,8 +8,8 @@
 - **部署形态无关**：只有 PostgreSQL 会真正建索引（迁移内判 vendor 并 try/except），
   其它后端与「pg_trgm 扩展不可用」的库一律跳过——检索仍然正确，只退回顺序扫描，
   不阻断迁移（warning 可观测）；
-- 索引清单与豁免理由登记在 docs/architecture/indexes.md；建索引/回滚在
-  system/migrations/0004_*（快照自含），新增检索字段时
+- 索引清单与豁免理由登记在 docs/architecture/indexes.md；trgm 索引随各域 0001 迁移的
+  模型 Meta GinIndex 落地（identity.0001 首操作先行确保扩展可用），新增检索字段时
   tests/unit/system/test_search_indexes.py 的覆盖守护与漂移守护会提示同步。
 """
 
@@ -29,13 +29,13 @@ class TrigramIndex:
 
 
 # 检索加速清单：用户/文件/审批单/请假（检索面向使用者且表随业务增长）
-# 表名为现名（与初始迁移建表名一致）；迁移侧快照（system/0004 与 approval/0001）
-# 与本清单的漂移由 tests/unit/system/test_search_indexes.py 守护
+# 表名为现名（各域默认表名，与初始迁移建表名一致）；迁移侧快照（identity/system/approval
+# 三个 0001 的模型 Meta）与本清单的漂移由 tests/unit/system/test_search_indexes.py 守护
 SEARCH_TRGM_INDEXES = (
-    TrigramIndex("system_userinfo", "username", "idx_userinfo_username_trgm"),
-    TrigramIndex("system_userinfo", "nickname", "idx_userinfo_nickname_trgm"),
-    TrigramIndex("system_userinfo", "email", "idx_userinfo_email_trgm"),
-    TrigramIndex("system_userinfo", "phone", "idx_userinfo_phone_trgm"),
+    TrigramIndex("identity_userinfo", "username", "idx_userinfo_username_trgm"),
+    TrigramIndex("identity_userinfo", "nickname", "idx_userinfo_nickname_trgm"),
+    TrigramIndex("identity_userinfo", "email", "idx_userinfo_email_trgm"),
+    TrigramIndex("identity_userinfo", "phone", "idx_userinfo_phone_trgm"),
     TrigramIndex("system_uploadfile", "filename", "idx_uploadfile_filename_trgm"),
     TrigramIndex("approval_approvalrequest", "path", "idx_approvalrequest_path_trgm"),
     TrigramIndex("approval_approvalrequest", "module", "idx_approval_module_trgm"),
@@ -45,15 +45,15 @@ SEARCH_TRGM_INDEXES = (
 
 # 豁免清单（(表, 字段) → 理由）：覆盖守护要求每个检索字段要么在索引清单、要么在此登记
 SEARCH_TRGM_EXEMPT = {
-    ("system_deptinfo", "name"): "小表（部门千级以内），顺序扫描成本可忽略",
-    ("system_deptinfo", "code"): "小表（部门千级以内），顺序扫描成本可忽略",
+    ("identity_deptinfo", "name"): "小表（部门千级以内），顺序扫描成本可忽略",
+    ("identity_deptinfo", "code"): "小表（部门千级以内），顺序扫描成本可忽略",
     ("system_operationlog", "path"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
     ("system_operationlog", "module"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
     ("system_operationlog", "ipaddress"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
     ("system_tag", "name"): "小表（管理配置类，百级以内），顺序扫描成本可忽略",
     ("system_tag", "remark"): "小表（管理配置类，百级以内），顺序扫描成本可忽略",
-    ("system_post", "name"): "小表（岗位管理类，百级以内），顺序扫描成本可忽略",
-    ("system_post", "code"): "小表（岗位管理类，百级以内），顺序扫描成本可忽略",
+    ("identity_post", "name"): "小表（岗位管理类，百级以内），顺序扫描成本可忽略",
+    ("identity_post", "code"): "小表（岗位管理类，百级以内），顺序扫描成本可忽略",
 }
 
 

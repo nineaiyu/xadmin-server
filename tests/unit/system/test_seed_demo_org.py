@@ -12,16 +12,8 @@ from django.core.management import call_command
 
 from approval.models.approval import ApprovalFlow
 from dataset.models.dform import DynamicForm
-from system.models import (
-    DataPermission,
-    DeptInfo,
-    FieldPermission,
-    Menu,
-    MenuMeta,
-    ModelLabelField,
-    UserInfo,
-    UserRole,
-)
+from identity.models import DeptInfo, UserInfo, UserRole
+from system.models import DataPermission, FieldPermission, Menu, MenuMeta, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 

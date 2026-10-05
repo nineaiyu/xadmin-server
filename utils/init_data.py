@@ -57,7 +57,7 @@ def main() -> None:
 
     from django.core import management
 
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     # 初始化操作（migrate / compilemessages / download_ip_db 均可重复执行）
     try:

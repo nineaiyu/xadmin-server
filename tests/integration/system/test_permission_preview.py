@@ -51,7 +51,7 @@ def make_user_self_scope(name="仅本人用户"):
     """system.user 模型「仅本人」数据权限（field=pk 精确匹配本人行）。"""
     return DataPermission.objects.create(
         name=name,
-        rules=[{"table": "system.userinfo", "field": "pk", "type": "value.user.id", "value": "*", "match": "exact"}],
+        rules=[{"table": "identity.userinfo", "field": "pk", "type": "value.user.id", "value": "*", "match": "exact"}],
     )
 
 
@@ -175,7 +175,7 @@ def test_decode_role_ids_and_exclude(normal_user, role):
             },
         ],
     )
-    from system.utils.identity.permission_preview import decode_data_permission
+    from system.utils.platform.permission_preview import decode_data_permission
 
     decoded = decode_data_permission(dp, normal_user)
     assert decoded["rules"][0]["value_text"] == role.name
@@ -192,7 +192,7 @@ def test_decode_single_rule_forced_or(normal_user):
         mode_type=ModeTypeAbstract.ModeChoices.AND,
         rules=[{"table": "demo.book", "field": "name", "type": "value.text", "value": "x", "match": "exact"}],
     )
-    from system.utils.identity.permission_preview import decode_data_permission
+    from system.utils.platform.permission_preview import decode_data_permission
 
     decoded = decode_data_permission(dp, normal_user)
     assert decoded["rule_text"].startswith("或模式")
@@ -208,7 +208,7 @@ def test_decode_all_ignored_in_and_mode(normal_user):
             {"table": "demo.book", "field": "isbn", "type": "value.text", "value": "x-1", "match": "exact"},
         ],
     )
-    from system.utils.identity.permission_preview import decode_data_permission
+    from system.utils.platform.permission_preview import decode_data_permission
 
     decoded = decode_data_permission(dp, normal_user)
     assert decoded["rules"][0]["value_text"] == "且模式下被忽略"
@@ -227,7 +227,7 @@ def test_data_permission_dept_chain_grouping(normal_user, role, dept):
     normal_user.save()
     normal_user.rules.add(make_owner_book_permission("个人规则"))
 
-    from system.utils.identity.permission_preview import get_user_data_permissions
+    from system.utils.platform.permission_preview import get_user_data_permissions
 
     result = get_user_data_permissions(normal_user)
     assert len(result["personal"]) == 1
@@ -342,12 +342,18 @@ def test_role_preview_filters_users_by_caller_scope(api_client, normal_user, rol
     """水平越权防线：调用者仅能看到角色本身（system.role 自我范围），持有用户列表为空。"""
     preview_role_menu = menu_factory(name="preview:SystemRole", path=ROLE_PREVIEW_PATH, method="GET")
     role.menu.add(preview_role_menu)
-    # 授予 system.userrole 上 code=common 的可见范围（否则 get_object 404），但不授予 system.user 范围
+    # 授予 identity.userrole 上 code=common 的可见范围（否则 get_object 404），但不授予 system.user 范围
     normal_user.rules.add(
         DataPermission.objects.create(
             name="仅本角色可见",
             rules=[
-                {"table": "system.userrole", "field": "code", "type": "value.text", "value": "common", "match": "exact"}
+                {
+                    "table": "identity.userrole",
+                    "field": "code",
+                    "type": "value.text",
+                    "value": "common",
+                    "match": "exact",
+                }
             ],
         )
     )
@@ -374,7 +380,7 @@ def test_inactive_dept_grant_not_effective(normal_user, dept):
     normal_user.dept = dept
     normal_user.save()
 
-    from system.utils.identity.permission_preview import get_user_data_permissions
+    from system.utils.platform.permission_preview import get_user_data_permissions
 
     result = get_user_data_permissions(normal_user)
     assert result["has_any_grant"] is False
@@ -394,7 +400,7 @@ def test_inactive_ancestor_dept_grant_not_effective(normal_user, dept):
     normal_user.dept = dept
     normal_user.save()
 
-    from system.utils.identity.permission_preview import get_user_data_permissions
+    from system.utils.platform.permission_preview import get_user_data_permissions
 
     result = get_user_data_permissions(normal_user)
     assert result["has_any_grant"] is False
@@ -405,7 +411,7 @@ def test_inactive_ancestor_dept_grant_not_effective(normal_user, dept):
 def test_menu_scoped_grant_flagged_not_general_effective(normal_user, menu_factory):
     """绑定菜单的授权仅在对应菜单上下文生效：标 menu_scoped，不计入通用 has_any_grant。"""
     from system.models import Menu
-    from system.utils.identity.permission_preview import get_user_data_permissions
+    from system.utils.platform.permission_preview import get_user_data_permissions
 
     dp = make_owner_book_permission("绑定菜单规则")
     dp.menu.add(menu_factory(name="书籍列表", menu_type=Menu.MenuChoices.MENU))
@@ -498,13 +504,13 @@ def test_dept_preview_filters_users_by_caller_scope(api_client, normal_user, dep
     """水平越权防线：调用者数据范围内看不到部门成员时，成员列表为空。"""
     role = normal_user.roles.first()
     role.menu.add(menu_factory(name="preview:SystemDept", path=DEPT_PREVIEW_PATH, method="GET"))
-    # 授予 system.deptinfo 的可见范围（否则 get_object 404），但不授予 system.userinfo 范围
+    # 授予 identity.deptinfo 的可见范围（否则 get_object 404），但不授予 identity.userinfo 范围
     normal_user.rules.add(
         DataPermission.objects.create(
             name="仅本部门可见",
             rules=[
                 {
-                    "table": "system.deptinfo",
+                    "table": "identity.deptinfo",
                     "field": "code",
                     "type": "value.text",
                     "value": "dev",
@@ -517,7 +523,7 @@ def test_dept_preview_filters_users_by_caller_scope(api_client, normal_user, dep
 
     response = api_client.get(dept_preview_url(dept))
     assert response.status_code == 200, response.data
-    # normal_user 对 system.userinfo 无任何授权 → 看不到部门成员
+    # normal_user 对 identity.userinfo 无任何授权 → 看不到部门成员
     assert response.data["data"]["users"]["total"] == 0
 
 
@@ -529,7 +535,7 @@ def post_preview_url(post) -> str:
 
 
 def test_post_preview_contract(auth_client, normal_user, dept):
-    from system.models import Post
+    from identity.models import Post
 
     post = Post.objects.create(name="安全员", code="preview_post", dept=dept)
     normal_user.posts.add(post)
@@ -549,18 +555,25 @@ def test_post_preview_contract(auth_client, normal_user, dept):
 
 def test_post_preview_filters_users_by_caller_scope(api_client, normal_user, dept, menu_factory):
     """水平越权防线：调用者数据范围内看不到持岗用户时，成员列表为空。"""
-    from system.models import DataPermission, Post
+    from identity.models import Post
+    from system.models import DataPermission
 
     role = normal_user.roles.first()
     role.menu.add(
         menu_factory(name="preview:SystemPost", path="api/system/posts/(?P<pk>[^/.]+)/preview$", method="GET")
     )
-    # 授予 system.post 的可见范围（否则 get_object 404），但不授予 system.userinfo 范围
+    # 授予 identity.post 的可见范围（否则 get_object 404），但不授予 identity.userinfo 范围
     normal_user.rules.add(
         DataPermission.objects.create(
             name="仅本岗位可见",
             rules=[
-                {"table": "system.post", "field": "code", "type": "value.text", "value": "scope_post", "match": "exact"}
+                {
+                    "table": "identity.post",
+                    "field": "code",
+                    "type": "value.text",
+                    "value": "scope_post",
+                    "match": "exact",
+                }
             ],
         )
     )
@@ -646,7 +659,7 @@ def test_decode_dirty_value_falls_back(normal_user):
             {"table": "demo.book", "field": "name", "type": "value.table.role.ids", "value": "not-json", "match": "in"},
         ],
     )
-    from system.utils.identity.permission_preview import decode_data_permission
+    from system.utils.platform.permission_preview import decode_data_permission
 
     decoded = decode_data_permission(dp, normal_user)
     assert decoded["rules"][0]["value_text"] == "not-json"

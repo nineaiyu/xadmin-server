@@ -1,12 +1,20 @@
-# Register your models here.
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
 from django.contrib import admin
 
-# Register your models here.
-from system.models import *
+from system.models import (
+    DataPermission,
+    FieldPermission,
+    Menu,
+    MenuMeta,
+    ModelLabelField,
+    OperationLog,
+    SystemConfig,
+    UploadFile,
+    UserLoginLog,
+    UserPersonalConfig,
+)
 
-admin.site.register(UserInfo)
-admin.site.register(DeptInfo)
-admin.site.register(Post)
 admin.site.register(ModelLabelField)
 admin.site.register(UserLoginLog)
 admin.site.register(OperationLog)
@@ -14,7 +22,6 @@ admin.site.register(MenuMeta)
 admin.site.register(Menu)
 admin.site.register(DataPermission)
 admin.site.register(FieldPermission)
-admin.site.register(UserRole)
 admin.site.register(UploadFile)
 admin.site.register(SystemConfig)
 admin.site.register(UserPersonalConfig)

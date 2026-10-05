@@ -245,7 +245,7 @@ class PatThrottle(SimpleRateThrottle):
     def get_cache_key(self, request, view):
         from django.apps import apps
 
-        pat_model = apps.get_model("system", "PersonalAccessToken")
+        pat_model = apps.get_model("identity", "PersonalAccessToken")
         auth = getattr(request, "auth", None)
         if auth is not None and isinstance(auth, pat_model):
             return self.cache_format % {"scope": self.scope, "ident": auth.token_hash}

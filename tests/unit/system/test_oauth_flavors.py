@@ -11,8 +11,8 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory
 
-from system.models import SystemConfig, UserInfo
-from system.utils.identity.oauth import (
+from identity.models import UserInfo
+from identity.utils.oauth import (
     OAuthError,
     build_authorize_url,
     exchange_code,
@@ -21,7 +21,8 @@ from system.utils.identity.oauth import (
     issue_state,
     validate_providers,
 )
-from system.views.auth.oauth import OAUTH_ERROR_CODE, OAuthCallbackAPIView
+from identity.views.auth.oauth import OAUTH_ERROR_CODE, OAuthCallbackAPIView
+from system.models import SystemConfig
 
 pytestmark = pytest.mark.django_db
 
@@ -30,8 +31,8 @@ REDIRECT = "https://app.example.com/#/oauth/callback?provider=x"
 
 def make_provider(flavor, **kw):
     """按「通用默认 < flavor 预设 < 显式配置」合成 provider（与 get_providers 同序）。"""
-    from system.utils.identity.oauth import OPTIONAL_DEFAULTS
-    from system.utils.identity.oauth_flavors import FLAVOR_PRESETS
+    from identity.utils.oauth import OPTIONAL_DEFAULTS
+    from identity.utils.oauth_flavors import FLAVOR_PRESETS
 
     return {**OPTIONAL_DEFAULTS, **FLAVOR_PRESETS[flavor], "flavor": flavor, **kw}
 
@@ -76,8 +77,8 @@ def stub_client(monkeypatch):
     def install(client):
         holder["client"] = client
         # flavors 与 oauth 各有独立的 _default_client，统一替换
-        monkeypatch.setattr("system.utils.identity.oauth._default_client", lambda: holder["client"])
-        monkeypatch.setattr("system.utils.identity.oauth_flavors._default_client", lambda: holder["client"])
+        monkeypatch.setattr("identity.utils.oauth._default_client", lambda: holder["client"])
+        monkeypatch.setattr("identity.utils.oauth_flavors._default_client", lambda: holder["client"])
 
     return install
 
@@ -124,7 +125,7 @@ class TestFlavorConfig:
             "client_secret": "s",
             "subject_field": "open_id",
         }
-        from system.utils.identity import oauth
+        from identity.utils import oauth
 
         merged = {**oauth.OPTIONAL_DEFAULTS, **{}, **item}
         assert merged["subject_field"] == "open_id"
@@ -427,7 +428,7 @@ class TestCallbackIntegration:
 
     def test_mfa_regression(self, feishu_config, stub_client, superuser):
         """MFA 回归：IM 登录与其他路径共用 complete_login，命中 MFA 必须返回引导响应。"""
-        from system.models.oauth import UserOAuthBinding
+        from identity.models.oauth import UserOAuthBinding
 
         superuser.mfa_level = UserInfo.MFALevelChoices.ENABLED
         superuser.otp_secret_key = "x" * 32
@@ -448,7 +449,7 @@ class TestCallbackIntegration:
         assert response.data["data"]["mfa_required"] is True
 
     def test_disabled_user_rejected(self, feishu_config, stub_client, superuser):
-        from system.models.oauth import UserOAuthBinding
+        from identity.models.oauth import UserOAuthBinding
 
         superuser.is_active = False
         superuser.save(update_fields=["is_active"])

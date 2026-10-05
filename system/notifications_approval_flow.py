@@ -93,7 +93,7 @@ class ApprovalFlowMessage(UserMessage):
     @classmethod
     def gen_test_msg(cls):
         from approval.models import ApprovalFlow, ApprovalInstance
-        from system.models import UserInfo
+        from identity.services import UserInfo
 
         user = UserInfo.objects.first()
         instance = ApprovalInstance(flow=ApprovalFlow(name="Test", code="test"), flow_name="Test", title="Test")

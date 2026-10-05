@@ -16,7 +16,7 @@ from django.utils import timezone
 from approval.models import ApprovalInstance, ApprovalNodeTask, ApprovalRequest
 from approval.utils.approval_flow import approve_task, create_instance, reject_task
 from approval.utils.approval_flow.versioning import apply_definition
-from system.services import DeptInfo, UserInfo
+from identity.services import DeptInfo, UserInfo
 
 # 内置示例流程 code（loadjson/approvalflow.json）
 FLOW_CODES = ("demo_leave", "demo_expense")

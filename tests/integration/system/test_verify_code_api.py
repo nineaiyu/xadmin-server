@@ -11,8 +11,8 @@ from django.core.cache import cache
 from common.base.utils import AESCipherV2
 from common.sdk.sms.exceptions import CodeError, CodeExpired
 from common.utils.verify_code import SendAndVerifyCodeUtil
-from system.models import UserInfo
-from system.views.auth.verify_code import SendVerifyCodeAPIView
+from identity.models import UserInfo
+from identity.views.auth.verify_code import SendVerifyCodeAPIView
 
 pytestmark = pytest.mark.django_db
 
@@ -444,7 +444,7 @@ class TestSendVerifyCodeBind:
         normal_user.save(update_fields=["email"])
         # 头像字段为空文件对象，mock 绝对地址构造逻辑验证 request 拼接
         monkeypatch.setattr(
-            "system.views.auth.verify_code.get_file_absolute_uri",
+            "identity.views.auth.verify_code.get_file_absolute_uri",
             lambda value, request=None, use_url=True: f"{request.scheme}://{request.get_host()}/media/avatar.png",
         )
         resp = api_client.post(

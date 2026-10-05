@@ -23,14 +23,14 @@ AI_URL = "/api/chat/ai/message"
 
 @pytest.fixture
 def alice(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="alice", password="Test@123456", nickname="爱丽丝")
 
 
 @pytest.fixture
 def bob(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="bob", password="Test@123456", nickname="鲍勃")
 
@@ -216,7 +216,7 @@ class TestRecall:
 
 class TestContacts:
     def test_contacts_returns_recent_users(self, auth_client, superuser, bob):
-        from system.models import UserSession
+        from identity.models import UserSession
 
         UserSession.objects.create(creator=bob, channel_name="chan-bob")
         body = auth_client.get(CONTACT_URL).json()["data"]
@@ -224,7 +224,7 @@ class TestContacts:
         assert body["results"][0]["online"] is False
 
     def test_contacts_excludes_self(self, auth_client, superuser):
-        from system.models import UserSession
+        from identity.models import UserSession
 
         UserSession.objects.create(creator=superuser, channel_name="chan-self")
         body = auth_client.get(CONTACT_URL).json()["data"]

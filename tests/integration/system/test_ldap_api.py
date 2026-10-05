@@ -4,10 +4,11 @@
 import pytest
 from django.conf import settings as dj_settings
 
+from identity.models import LdapUserBinding
+from identity.serializers.user import ResetPasswordSerializer  # noqa: PLC2701
+from identity.views.auth.login import _login_type_for  # noqa: PLC2701
 from settings.models import Setting
-from system.models import LdapUserBinding, UserLoginLog
-from system.serializers.user import ResetPasswordSerializer  # noqa: PLC2701
-from system.views.auth.login import _login_type_for  # noqa: PLC2701
+from system.models import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 
@@ -96,7 +97,7 @@ class TestConnectionTest:
         payload = dict(PAYLOAD, LDAP_USER_SEARCH_BASE="dc=corp,dc=com")
         from unittest import mock
 
-        with mock.patch("system.ldap.sync.test_ldap_connection", side_effect=LDAPException("conn refused")):
+        with mock.patch("identity.ldap.sync.test_ldap_connection", side_effect=LDAPException("conn refused")):
             response = auth_client.post(LDAP_BASE, payload, format="json")
         body = response.json()
         assert body["code"] == 1002
@@ -106,7 +107,7 @@ class TestConnectionTest:
         from unittest import mock
 
         with mock.patch(
-            "system.ldap.sync.test_ldap_connection",
+            "identity.ldap.sync.test_ldap_connection",
             return_value={"user_count": 12, "dept_count": 3},
         ):
             response = auth_client.post(LDAP_BASE, PAYLOAD, format="json")
@@ -131,7 +132,7 @@ class TestLoginFlow:
         def raise_down():
             raise LDAPException("connection refused")
 
-        monkeypatch.setattr("system.ldap.auth.service_connection", raise_down)
+        monkeypatch.setattr("identity.ldap.auth.service_connection", raise_down)
         from django.contrib.auth import authenticate
 
         user = authenticate(username="admin", password="Admin@123456")
@@ -162,4 +163,4 @@ class TestPeriodicTaskRegistered:
         from common.celery.decorator import get_register_period_tasks
 
         names = [next(iter(item)) for item in get_register_period_tasks()]
-        assert "system.ldap.tasks.sync_ldap_directory_job" in names
+        assert "identity.ldap.tasks.sync_ldap_directory_job" in names

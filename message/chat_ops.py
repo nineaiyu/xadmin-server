@@ -82,7 +82,7 @@ def parse_mentions(content: str) -> list:
 
 def mention_users(content: str, exclude_username: str = "") -> list:
     """把 @提及解析为在用用户对象（跳过自己与不存在的用户名）。"""
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     names = [name for name in parse_mentions(content) if name != exclude_username]
     if not names:

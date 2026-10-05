@@ -79,7 +79,7 @@
 ### 6. 敏感操作审批挂载点扩展（默认仍休眠）
 
 - 在「删除用户」之外，补挂 `@ApprovalRequired()`：角色删除/批量删除、部门删除/批量删除
-  （`system/views/admin/role.py`、`dept.py`）；
+  （`identity/views/admin/role.py`、`dept.py`）；
 - **默认 `APPROVAL_REQUIRED_PATHS` 仍为 `[]`（不改变任何既有行为）**，理由有两条：
   ① 令牌审批是「拦截 → 审批 → 携令牌重发」的交互，开启后会改变对应操作的调用契约，应由运维按
   治理需要显式开启；② E2E 与既有自动化会在这些路径上做删除，默认开启等于让所有部署的

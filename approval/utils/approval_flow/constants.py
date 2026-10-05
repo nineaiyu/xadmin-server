@@ -38,7 +38,7 @@ def _models():
 
 
 def _users():
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo
 

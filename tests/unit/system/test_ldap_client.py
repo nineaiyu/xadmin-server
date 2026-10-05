@@ -3,7 +3,7 @@
 
 import pytest
 
-from system.ldap.client import entry_to_attrs, first_attr, get_attr_map, is_entry_disabled, normalize_dn
+from identity.ldap.client import entry_to_attrs, first_attr, get_attr_map, is_entry_disabled, normalize_dn
 
 
 class TestNormalizeDn:

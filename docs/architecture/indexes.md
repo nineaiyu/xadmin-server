@@ -33,12 +33,12 @@
 
 全局搜索的 `icontains` 是**前缀通配**（`LIKE '%关键词%'`），B-tree 无法命中；
 PostgreSQL 部署下补 pg_trgm GIN 索引加速（语义不变：仍是 icontains，非 PG / 扩展不可用
-自动回退顺序扫描）。清单与豁免见 `system/search_indexes.py`；建索引/回滚快照按表归属拆在
-`system/migrations/0004_accountrisk_apiapplication_apiapplicationgrant_and_more.py`（system 侧 5 个）与 `approval/migrations/0001_initial.py`（approval 侧 4 个）（vendor 守护 + 失败只告警；合并口径见 ADR-084——快照即以现名冻结）。
+自动回退顺序扫描）。清单与豁免见 `system/search_indexes.py`；trgm 索引随模型 Meta 按表归属落在
+`identity/migrations/0001_initial.py`（identity 侧 4 个）、`system/migrations/0001_initial.py`（system 侧 1 个）与 `approval/migrations/0001_initial.py`（approval 侧 4 个）（pg_trgm 扩展由 identity.0001 首操作先行确保，失败只告警；合并口径见 ADR-084——快照即以现名冻结）。
 
 | 表                     | 索引                                                                                  | 服务的检索字段                     |
 |-----------------------|-------------------------------------------------------------------------------------|-----------------------------|
-| system_userinfo       | `idx_userinfo_username_trgm` / `idx_userinfo_nickname_trgm` / `idx_userinfo_email_trgm` / `idx_userinfo_phone_trgm` | 用户分组 username/nickname/email/phone |
+| identity_userinfo     | `idx_userinfo_username_trgm` / `idx_userinfo_nickname_trgm` / `idx_userinfo_email_trgm` / `idx_userinfo_phone_trgm` | 用户分组 username/nickname/email/phone |
 | system_uploadfile     | `idx_uploadfile_filename_trgm`                                                      | 文件分组 filename                 |
 | approval_approvalrequest | `idx_approvalrequest_path_trgm` / `idx_approval_module_trgm` / `idx_approval_object_pk_trgm` | 审批单分组 path/module/object_pk   |
 | approval_leave        | `idx_leave_reason_trgm`                                                             | 请假分组 reason                   |
@@ -51,7 +51,7 @@ DeptInfo.name/code（小表）；OperationLog.path/module/ipaddress（写热表 
 Tag.name/remark（标签分组，管理配置类小表——百级以内，顺序扫描成本可忽略）；
 Post.name/code（岗位分组，管理配置类小表——百级以内，顺序扫描成本可忽略）。
 
-**验证方式**（PG 库上）：`EXPLAIN SELECT id FROM system_userinfo WHERE username ILIKE '%关键词%';`
+**验证方式**（PG 库上）：`EXPLAIN SELECT id FROM identity_userinfo WHERE username ILIKE '%关键词%';`
 应出现 `Bitmap Index Scan on idx_userinfo_username_trgm`；单字符关键词不使用索引（trigram 需 ≥2 字符）。
 
 ## 四、回归保护

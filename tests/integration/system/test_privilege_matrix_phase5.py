@@ -22,9 +22,9 @@
 
 import pytest
 
+from identity.models.oauth import UserOAuthBinding
 from system.models.export import ExportRecord
 from system.models.import_ import ImportRecord, ImportTemplate
-from system.models.oauth import UserOAuthBinding
 from system.models.task import TaskExecution
 
 pytestmark = pytest.mark.django_db
@@ -53,7 +53,7 @@ def alice(normal_user):
 
 @pytest.fixture
 def bob():
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="bob-matrix", password="Bob-Pwd-2026!")
 

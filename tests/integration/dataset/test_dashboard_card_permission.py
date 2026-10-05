@@ -11,7 +11,8 @@ from django.utils import timezone
 
 from dataset.models.dataset import Dashboard, Dataset
 from dataset.utils.dataset import aggregate_dataset, execute_dataset, filter_layout_for_user
-from system.models import DataPermission, FieldPermission, ModelLabelField, UserInfo, UserRole
+from identity.models import UserInfo, UserRole
+from system.models import DataPermission, FieldPermission, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 
@@ -19,15 +20,15 @@ DASHBOARDS_URL = "/api/dataset/dashboards"
 
 # 行级数据权限：全部数据（value.all）——数据权限默认拒绝，无授权的用户行集为 none()
 DATA_PERMISSION_ALL_RULES = [
-    {"table": "system.userinfo", "field": "id", "type": "value.all", "match": "all", "value": "", "exclude": False}
+    {"table": "identity.userinfo", "field": "id", "type": "value.all", "match": "all", "value": "", "exclude": False}
 ]
 
 
 @pytest.fixture
 def model_registry(db):
-    """字段注册表：system.userinfo 的 DATA 白名单节点（模型白名单源，与 test_dataset_api 同款）。"""
+    """字段注册表：identity.userinfo 的 DATA 白名单节点（模型白名单源，与 test_dataset_api 同款）。"""
     root, _ = ModelLabelField.objects.get_or_create(
-        name="system.userinfo",
+        name="identity.userinfo",
         defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"},
     )
     for name in ("username", "phone", "nickname"):
@@ -41,7 +42,7 @@ def model_registry(db):
 
 @pytest.fixture
 def dataset(model_registry):
-    return Dataset.objects.create(name="card_ds", bound_model="system.userinfo", visibility="shared")
+    return Dataset.objects.create(name="card_ds", bound_model="identity.userinfo", visibility="shared")
 
 
 def card(card_id, dataset, roles=None):
@@ -117,7 +118,7 @@ class TestFieldPermissionOverlay:
         """给用户直挂角色配置字段白名单（ROLE 树节点 + FieldPermission；菜单任意）。"""
         menu = menu_factory(name="fp-menu", path="api/system/user$", method="GET")
         parent = ModelLabelField.objects.create(
-            name="system.userinfo", label="system.userinfo", field_type=ModelLabelField.FieldChoices.ROLE
+            name="identity.userinfo", label="identity.userinfo", field_type=ModelLabelField.FieldChoices.ROLE
         )
         children = [
             ModelLabelField.objects.create(name=f, label=f, parent=parent, field_type=ModelLabelField.FieldChoices.ROLE)

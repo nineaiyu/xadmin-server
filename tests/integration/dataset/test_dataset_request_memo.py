@@ -27,7 +27,7 @@ def request_ctx():
 @pytest.fixture
 def model_registry(db):
     root, _ = ModelLabelField.objects.get_or_create(
-        name="system.userinfo",
+        name="identity.userinfo",
         defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"},
     )
     for name in ("username", "nickname"):
@@ -43,7 +43,7 @@ def model_registry(db):
 def dataset(model_registry, superuser):
     return Dataset.objects.create(
         name="memo数据集",
-        bound_model="system.userinfo",
+        bound_model="identity.userinfo",
         columns=["username", "nickname"],
         filters=[],
         row_limit=100,
@@ -59,15 +59,15 @@ def _label_queries(ctx):
 class TestRequestScopedMemo:
     def test_available_fields_cached_within_request(self, request_ctx, model_registry):
         with CaptureQueriesContext(connection) as first:
-            assert "username" in available_fields("system.userinfo")
+            assert "username" in available_fields("identity.userinfo")
         with CaptureQueriesContext(connection) as second:
-            available_fields("system.userinfo")
+            available_fields("identity.userinfo")
         assert len(_label_queries(first)) == 1
         assert _label_queries(second) == [], "同请求内白名单第二次命中 memo"
 
     def test_available_models_cached_within_request(self, request_ctx, model_registry):
         with CaptureQueriesContext(connection) as first:
-            assert "system.userinfo" in available_models()
+            assert "identity.userinfo" in available_models()
         with CaptureQueriesContext(connection) as second:
             available_models()
         assert len(_label_queries(first)) == 1
@@ -79,7 +79,7 @@ class TestRequestScopedMemo:
         for _ in range(2):
             set_current_request(SimpleNamespace())
             with CaptureQueriesContext(connection) as ctx:
-                available_fields("system.userinfo")
+                available_fields("identity.userinfo")
             assert len(_label_queries(ctx)) == 1, "memo 按请求隔离，跨请求必须重查"
         set_current_request(None)
 
@@ -88,15 +88,15 @@ class TestRequestScopedMemo:
         set_current_request(None)
         for _ in range(2):
             with CaptureQueriesContext(connection) as ctx:
-                available_fields("system.userinfo")
+                available_fields("identity.userinfo")
             assert len(_label_queries(ctx)) == 1
 
     def test_viewer_visible_fields_cached_within_request(self, request_ctx, normal_user, model_registry):
         """字段权限（含 None 结果）同请求只查一次。"""
         with CaptureQueriesContext(connection) as first:
-            assert viewer_visible_fields("system.userinfo", normal_user) is None
+            assert viewer_visible_fields("identity.userinfo", normal_user) is None
         with CaptureQueriesContext(connection) as second:
-            assert viewer_visible_fields("system.userinfo", normal_user) is None
+            assert viewer_visible_fields("identity.userinfo", normal_user) is None
         assert first.captured_queries, "首次需要查角色/字段权限"
         assert second.captured_queries == [], "第二次（含 None 结果）命中 memo"
 

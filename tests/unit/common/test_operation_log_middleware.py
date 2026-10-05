@@ -281,7 +281,7 @@ class TestAuthIdentity:
         return type("R", (), attrs)()
 
     def test_pat_request_records_token_identity(self, superuser):
-        from system.models.token import PersonalAccessToken
+        from identity.models.token import PersonalAccessToken
 
         token = PersonalAccessToken.objects.create(
             creator=superuser, name="ci", token_hash="a" * 64, token_prefix="pat_identity"

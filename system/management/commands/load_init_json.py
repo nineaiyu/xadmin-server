@@ -16,6 +16,7 @@ from approval.models import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
 from common.core.config import SysConfig
 from common.core.modules import ModuleSeedFilter
 from dataset.models import Dashboard, Dataset, DynamicForm, DynamicFormSubmission, Report, Screen
+from identity.models import DeptInfo, LoginAccessPolicy, UserInfo, UserRole
 from settings.models import Setting
 from system.models import *
 from system.utils.platform.dict import invalid_dict_cache
@@ -134,14 +135,14 @@ class Command(LoadCommand):
         字段白名单；字段权限 fail-closed，缺失 = 非超管接口输出空对象）。
         本命令恰好种入上述数据，收尾补跑一次同步使新装环境开箱可用。
         """
-        from system.builtin import sync_builtin_roles
+        from identity.builtin import sync_builtin_roles
 
         changed = sync_builtin_roles()
         self.stdout.write(f"[内置角色] 种子收尾同步完成（幂等，角色行变更 {changed}）")
 
     @staticmethod
     def _invalidate_route_caches():
-        from system.signal_handler import batch_invalid_cache
+        from identity.signal_handler import batch_invalid_cache
 
         pks = list(UserInfo.objects.values_list("pk", flat=True))
         if pks:

@@ -25,7 +25,7 @@ from common.core.models import DbAuditModel, DbUuidModel
 #: 审批单是流程对象、不可整体更新（无 PATCH 权限点），回落到「评论」权限点——
 #: 同为单据上的元数据写入动作，语义最接近。
 TAGGABLE_MODELS = {
-    "system.userinfo": {"label": _("User"), "visit": "/api/system/user/<pk>"},
+    "identity.userinfo": {"label": _("User"), "visit": "/api/system/user/<pk>"},
     "system.uploadfile": {"label": _("File"), "visit": "/api/system/file/<pk>"},
     "approval.approvalinstance": {
         "label": _("Approval instance"),

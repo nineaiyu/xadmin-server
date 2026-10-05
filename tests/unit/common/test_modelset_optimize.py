@@ -12,9 +12,10 @@ from django.contrib.auth.hashers import make_password
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
-from system.models import UserInfo, UserLoginLog
+from identity.models import UserInfo
+from identity.views.admin.user import UserViewSet
+from system.models import UserLoginLog
 from system.views.admin.loginlog import LoginLogViewSet
-from system.views.admin.user import UserViewSet
 
 pytestmark = pytest.mark.django_db
 

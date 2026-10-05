@@ -10,16 +10,9 @@
 
 import pytest
 
-from system.models import (
-    DataPermission,
-    DeptInfo,
-    DeptManagerAssignment,
-    FieldPermission,
-    ModelLabelField,
-    UserInfo,
-    UserRole,
-)
-from system.utils.identity.dept_managers import DEPT_MANAGER_ROLE_CODE, sync_manager_assembly
+from identity.models import DeptInfo, DeptManagerAssignment, UserInfo, UserRole
+from identity.utils.dept_managers import DEPT_MANAGER_ROLE_CODE, sync_manager_assembly
+from system.models import DataPermission, FieldPermission, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 
@@ -41,7 +34,7 @@ def grant_menu(role, menu_factory, path, method, name=None):
 def make_user_field_whitelist(role, menu, fields=("pk", "username", "nickname", "dept")):
     """用户模型字段白名单（fail-closed：无白名单=响应全裁剪）。"""
     model_field = ModelLabelField.objects.create(
-        name="system.userinfo", label="用户", field_type=ModelLabelField.FieldChoices.ROLE
+        name="identity.userinfo", label="用户", field_type=ModelLabelField.FieldChoices.ROLE
     )
     children = [
         ModelLabelField.objects.create(
@@ -240,7 +233,7 @@ class TestWriteScopeGuardAPI:
         normal_user.rules.add(
             DataPermission.objects.create(
                 name="all-users-guard",
-                rules=[{"table": "system.userinfo", "field": "id", "type": "value.all", "match": "all", "value": ""}],
+                rules=[{"table": "identity.userinfo", "field": "id", "type": "value.all", "match": "all", "value": ""}],
             )
         )
         patch_menu = grant_menu(role, menu_factory, USER_DETAIL_PATH, "PATCH", name="p-user-patch")

@@ -14,6 +14,7 @@ import pytest
 from django.core.management import call_command
 
 from ai.models.ai import AiChatMessage
+from identity.models import DeptInfo, Post, UserInfo, UserRole
 from system.management.commands.seed_demo_admin import (
     ADMIN_PASSWORD,
     ADMIN_USERNAME,
@@ -28,17 +29,7 @@ from system.management.commands.seed_demo_extras import (
     POST_CODE_PREFIX,
     POST_PLAN,
 )
-from system.models import (
-    DeptInfo,
-    ExportRecord,
-    Menu,
-    MenuMeta,
-    Post,
-    Tag,
-    TaggedItem,
-    UserInfo,
-    UserRole,
-)
+from system.models import ExportRecord, Menu, MenuMeta, Tag, TaggedItem
 
 pytestmark = pytest.mark.django_db
 

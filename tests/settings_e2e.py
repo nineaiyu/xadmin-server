@@ -90,7 +90,7 @@ SECURITY_MFA_CONFIRM_ENABLED = False
 SENSITIVE_OPERATION_METHODS = []
 
 # 字段级审计 diff：E2E 的「变更历史」用例需要 diff 断言（生产按需经 config.yml 开启）
-AUDIT_DIFF_MODELS = ["system.UserInfo"]
+AUDIT_DIFF_MODELS = ["identity.UserInfo"]
 
 # 邀请开户发信链路：E2E 使用内存后端（不真实投递，也满足「邮件渠道已配置」判定）
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"

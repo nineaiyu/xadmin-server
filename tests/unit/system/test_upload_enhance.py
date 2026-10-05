@@ -166,7 +166,7 @@ class TestUploadDedup:
 
         第二个属主用另一位超管：普通用户走 RBAC 菜单链路，测试里没有上传菜单权限。
         """
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         other = UserInfo.objects.create_superuser(username="other_super", password="Test@123456")
         first = _uploaded_file(superuser, "cross.txt", content=b"cross-bytes")

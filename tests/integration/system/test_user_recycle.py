@@ -5,7 +5,7 @@ import pytest
 from django.contrib.auth import authenticate
 from django.test import override_settings
 
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

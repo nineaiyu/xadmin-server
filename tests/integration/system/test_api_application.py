@@ -15,7 +15,7 @@ from django.core.cache import cache
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from system.models.token import ApiApplication, PersonalAccessToken
+from identity.models.token import ApiApplication, PersonalAccessToken
 
 pytestmark = pytest.mark.django_db
 

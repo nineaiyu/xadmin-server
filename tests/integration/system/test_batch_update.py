@@ -10,7 +10,7 @@
 
 import pytest
 
-from system.models import UserInfo, UserRole
+from identity.models import UserInfo, UserRole
 
 USER_URL = "/api/system/user/batch-update"
 ROLE_URL = "/api/system/role/batch-update"

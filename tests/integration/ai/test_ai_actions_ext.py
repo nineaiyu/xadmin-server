@@ -20,7 +20,8 @@ from django.urls import resolve
 from approval.models.approval import ApprovalRequest
 from approval.utils.approval import approve_request
 from common.core.config import SysConfig
-from system.models import OperationLog, SystemConfig, UserRole
+from identity.models import UserRole
+from system.models import OperationLog, SystemConfig
 
 pytestmark = pytest.mark.django_db
 
@@ -55,7 +56,7 @@ def ai_action_settings(settings):
 @pytest.fixture
 def actor(db, role, menu_factory):
     """持有 AI 执行端点权限的普通用户（业务权限按用例追加）。"""
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     user = UserInfo.objects.create_user(username="ai_ext_actor", password="Test@123456", nickname="扩展执行人")
     user.roles.add(role)
@@ -248,7 +249,7 @@ class TestHighRiskApproval:
 
         用非超管验证（超管豁免审批，见 requires_approval_high_risk）。
         """
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         user = UserInfo.objects.create_user(username="ai_mcp_actor", password="Test@123456", nickname="MCP执行人")
         user.roles.add(role)

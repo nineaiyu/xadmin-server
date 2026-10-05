@@ -3,7 +3,7 @@
 
 import pytest
 
-from system.models import UserRole
+from identity.models import UserRole
 
 pytestmark = pytest.mark.django_db
 

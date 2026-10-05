@@ -15,7 +15,7 @@
 
 #### 为什么要关联这四个模型？
 
-用户序列化器在 `system/serializers/user.py`，部分代码如下（节选，完整以真源为准）：
+用户序列化器在 `identity/serializers/user.py`，部分代码如下（节选，完整以真源为准）：
 
 ```python
 class UserSerializer(BaseModelSerializer):

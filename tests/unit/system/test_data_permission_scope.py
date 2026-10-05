@@ -15,8 +15,8 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.models import DataPermission, Menu, ModelLabelField
 from system.serializers.permission import DataPermissionSerializer, expand_menu_scope
-from system.utils.identity.rule_meta import RULE_TYPE_GROUP_TEXTS, RULE_TYPE_META, RULE_TYPE_TEXTS
 from system.utils.platform.modelfield import get_field_meta
+from system.utils.platform.rule_meta import RULE_TYPE_GROUP_TEXTS, RULE_TYPE_META, RULE_TYPE_TEXTS
 from system.views.admin.modelfield import ModelLabelFieldViewSet
 
 pytestmark = pytest.mark.django_db
@@ -115,17 +115,17 @@ class TestSerializerScope:
 
 class TestFieldMeta:
     def test_relation_field_meta(self):
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         field = UserInfo._meta.get_field("dept")
         meta = get_field_meta(field)
         assert meta["internal_type"] == "ForeignKey"
-        assert meta["related_model"] == "system.deptinfo"
+        assert meta["related_model"] == "identity.deptinfo"
         assert meta["multiple"] is False
         assert meta["null"] is True
 
     def test_m2m_field_meta(self):
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         meta = get_field_meta(UserInfo._meta.get_field("rules"))
         assert meta["multiple"] is True
@@ -157,19 +157,19 @@ class TestFieldApiMetadata:
         assert not any(item.get("disabled") for item in choices.values())
 
     def test_lookups_exposes_field_meta(self, superuser):
-        parent = ModelLabelField.objects.create(name="system.userinfo", label="用户信息")
+        parent = ModelLabelField.objects.create(name="identity.userinfo", label="用户信息")
         ModelLabelField.objects.create(name="dept", label="部门", parent=parent)
 
         response = self._get(
             "lookups",
             "/api/system/field/lookups",
             superuser,
-            table="system.userinfo",
+            table="identity.userinfo",
             field="dept",
         )
         assert response.data["code"] == 1000
         assert response.data["field_meta"]["internal_type"] == "ForeignKey"
-        assert response.data["field_meta"]["related_model"] == "system.deptinfo"
+        assert response.data["field_meta"]["related_model"] == "identity.deptinfo"
 
     def test_lookups_unknown_field_returns_business_error(self, superuser):
         response = self._get(

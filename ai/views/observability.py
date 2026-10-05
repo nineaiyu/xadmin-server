@@ -51,7 +51,8 @@ class AiObservabilityMixin:
         from django.db.models.functions import TruncDate
         from django.utils import timezone
 
-        from system.models import OperationLog, UserInfo
+        from identity.models import UserInfo
+        from system.models import OperationLog
 
         try:
             days = int(request.query_params.get("days") or 30)

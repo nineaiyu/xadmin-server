@@ -5,7 +5,8 @@ import pytest
 from django.db.models import Q
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
-from system.models import Menu, UserInfo
+from identity.models import UserInfo
+from system.models import Menu
 
 pytestmark = pytest.mark.django_db
 
@@ -486,7 +487,7 @@ class TestApprovalInstanceApi:
 
     def test_post_assignee_lifecycle(self, applicant, auth_client, approver_client, api_client, approver):
         """post 节点全链路：API 建含岗位节点流程 → 发起解析在岗用户 → 审批通过。"""
-        from system.models import Post
+        from identity.models import Post
 
         post = Post.objects.create(name="安全员", code="api_post_security")
         approver.posts.add(post)

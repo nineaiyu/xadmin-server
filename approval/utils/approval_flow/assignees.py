@@ -43,7 +43,7 @@ def _no_approver_detail(node, applicant) -> str:
                 )
             ).format(node.name)
     if node.assignee_type == node.AssigneeType.POST:
-        from system.models import Post
+        from identity.models import Post
 
         codes = [
             value.strip() for value in str(node.assignee_value or "").replace("，", ",").split(",") if value.strip()

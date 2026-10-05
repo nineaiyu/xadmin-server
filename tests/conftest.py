@@ -6,8 +6,9 @@ from django.core.cache import cache
 from django.db import connections
 from rest_framework.test import APIClient
 
+from identity.models import DeptInfo, UserInfo, UserRole
 from server.utils import set_current_request
-from system.models import DeptInfo, Menu, MenuMeta, UserInfo, UserRole
+from system.models import Menu, MenuMeta
 
 
 def pytest_configure(config):

@@ -51,8 +51,8 @@ class PasskeyBackend(BaseMFA):
 
     def check_code(self, code) -> tuple:
         """校验 Passkey 断言（code 为 JSON 串或 dict）。"""
-        from system.models import UserPasskey
-        from system.utils.identity.webauthn import verify_assertion
+        from identity.models import UserPasskey
+        from identity.utils.webauthn import verify_assertion
 
         if isinstance(code, str):
             try:
@@ -68,7 +68,7 @@ class PasskeyBackend(BaseMFA):
         if passkey is None:
             return False, str(_("This passkey is not bound to the current account"))
 
-        from system.utils.identity.webauthn import rp_id_and_origin
+        from identity.utils.webauthn import rp_id_and_origin
 
         rp_id, origin = rp_id_and_origin(self.request)
         try:

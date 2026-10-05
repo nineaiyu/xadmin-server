@@ -1,6 +1,6 @@
 # LDAP / AD 真实目录联调准备方案
 
-> 背景：LDAP bind 认证与目录同步已实现（`system/ldap/`；管理页 `settings/views/ldap.py`；
+> 背景：LDAP bind 认证与目录同步已实现（`identity/ldap/`；管理页 `settings/views/ldap.py`；
 > 周期任务 `sync_ldap_directory_job`，每小时 :17 由 `LDAP_SYNC_ENABLED` 控制启停）。
 > 本方案列出接入真实 LDAP/AD 前的准备清单与验收口径——**联调本身需外部目录环境与
 > 只读服务账号，另行排期**（P3 联调清单化，触发条件登记于 docs/plans/触发制任务清单-长期.md）。

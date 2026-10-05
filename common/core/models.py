@@ -193,7 +193,7 @@ class DbAuditModel(DbBaseModel):
         related_name="+",
     )
     dept_belong = models.ForeignKey(
-        to="system.DeptInfo",
+        to="identity.DeptInfo",
         related_query_name="dept_belong_query",
         null=True,
         blank=True,

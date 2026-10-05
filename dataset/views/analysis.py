@@ -33,7 +33,7 @@ from dataset.ws_screen import (
     broadcast_screen_data_trigger,
     load_screen_state,
 )
-from system.utils.identity.user_options import search_user_options
+from identity.utils.user_options import search_user_options
 
 _EDIT_DENY = "Only the creator can modify it"
 

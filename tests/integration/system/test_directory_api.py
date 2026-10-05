@@ -3,7 +3,7 @@
 
 import pytest
 
-from system.models import DeptInfo, Post, UserInfo
+from identity.models import DeptInfo, Post, UserInfo
 
 pytestmark = pytest.mark.django_db
 

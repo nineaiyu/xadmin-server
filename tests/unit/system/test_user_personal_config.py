@@ -10,7 +10,8 @@
 import pytest
 from rest_framework.exceptions import ValidationError
 
-from system.models import UserInfo, UserPersonalConfig
+from identity.models import UserInfo
+from system.models import UserPersonalConfig
 from system.serializers.config import UserPersonalConfigSerializer
 
 pytestmark = pytest.mark.django_db

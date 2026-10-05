@@ -25,12 +25,13 @@ from channels.layers import get_channel_layer
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
+from identity.models import UserRole
 from message import chat as chat_service
 from message.attachments import attachment_kind
 from message.consumers import ChatNotify
 from message.models import ChatMessage
 from message.utils import get_chat_user_group_name, get_public_chat_group_name
-from system.models import UploadFile, UserRole
+from system.models import UploadFile
 
 pytestmark = pytest.mark.django_db
 
@@ -43,21 +44,21 @@ PNG_BYTES = base64.b64decode(
 
 @pytest.fixture
 def alice(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="alice", password="Test@123456", nickname="爱丽丝")
 
 
 @pytest.fixture
 def bob(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="bob", password="Test@123456", nickname="鲍勃")
 
 
 @pytest.fixture
 def charlie(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="charlie", password="Test@123456", nickname="卡罗")
 

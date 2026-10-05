@@ -13,10 +13,10 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from common.core.validation import ActiveUniqueValidationMixin, trim_required
-from system.models import Post
+from identity.models import Post
+from identity.serializers.post import PostSerializer
+from identity.serializers.role import RoleSerializer
 from system.serializers.menu import MenuSerializer
-from system.serializers.post import PostSerializer
-from system.serializers.role import RoleSerializer
 
 pytestmark = pytest.mark.django_db
 
@@ -74,7 +74,7 @@ class TestSharedImplementation:
             assert issubclass(serializer_cls, ActiveUniqueValidationMixin)
 
     def test_no_parallel_implementations_remain(self):
-        for relative in ("system/serializers/post.py", "system/serializers/role.py"):
+        for relative in ("identity/serializers/post.py", "identity/serializers/role.py"):
             source = (SERVER_ROOT / relative).read_text(encoding="utf-8")
             assert "def _validate_active_unique" not in source
         menu_source = (SERVER_ROOT / "system/serializers/menu.py").read_text(encoding="utf-8")

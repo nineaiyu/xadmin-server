@@ -80,7 +80,7 @@ class TestIndexUsage:
 
     def test_user_username_exact_lookup_uses_unique_index(self):
         plan = explain_plan(
-            "SELECT id FROM system_userinfo WHERE username = %s",
+            "SELECT id FROM identity_userinfo WHERE username = %s",
             ["xadmin"],
         )
         if connection.vendor == "sqlite":
@@ -97,6 +97,6 @@ class TestIndexUsage:
         """全局搜索前缀通配能走 trigram 索引（PG 专属；表小需关 seqscan 才证明「可用」）。"""
         with connection.cursor() as cursor:
             cursor.execute("SET LOCAL enable_seqscan = off")
-            cursor.execute("EXPLAIN SELECT id FROM system_userinfo WHERE username ILIKE %s", ["%关键词%"])
+            cursor.execute("EXPLAIN SELECT id FROM identity_userinfo WHERE username ILIKE %s", ["%关键词%"])
             plan = "\n".join(row[0] for row in cursor.fetchall())
         assert "idx_userinfo_username_trgm" in plan, plan

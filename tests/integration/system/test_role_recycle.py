@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
-import system.signal_handler
-from system.models import UserRole
+import identity.signal_handler
+from identity.models import UserRole
 
 pytestmark = pytest.mark.django_db
 
@@ -22,7 +22,7 @@ def _create_role(auth_client, name="测试角色", code="test_role"):
 class TestRoleRecycleBin:
     def test_soft_delete_and_restore(self, auth_client):
         pk = _create_role(auth_client)
-        with patch.object(system.signal_handler, "batch_invalid_cache") as invalid_mock:
+        with patch.object(identity.signal_handler, "batch_invalid_cache") as invalid_mock:
             resp = auth_client.delete(f"{ROLE_URL}/{pk}")
         assert resp.data["code"] == 1000
         # 软删除：默认列表不可见 + post_save 失效权限缓存
@@ -33,7 +33,7 @@ class TestRoleRecycleBin:
         # 回收站可见并恢复（逐行 save，恢复同样触发 post_save 失效权限缓存）
         resp = auth_client.get(f"{ROLE_URL}/recycle")
         assert any(r["pk"] == pk for r in resp.data["data"]["results"])
-        with patch.object(system.signal_handler, "batch_invalid_cache") as restore_mock:
+        with patch.object(identity.signal_handler, "batch_invalid_cache") as restore_mock:
             resp = auth_client.patch(f"{ROLE_URL}/recycle/restore", {"pks": [pk]}, format="json")
         assert resp.data["code"] == 1000, resp.data
         assert UserRole.objects.filter(pk=pk).exists()
@@ -42,7 +42,7 @@ class TestRoleRecycleBin:
     def test_batch_destroy_soft_deletes_with_signal(self, auth_client):
         pk1 = _create_role(auth_client, name="批量A", code="batch_a")
         pk2 = _create_role(auth_client, name="批量B", code="batch_b")
-        with patch.object(system.signal_handler, "batch_invalid_cache") as invalid_mock:
+        with patch.object(identity.signal_handler, "batch_invalid_cache") as invalid_mock:
             resp = auth_client.post(f"{ROLE_URL}/batch-destroy", [pk1, pk2], format="json")
         assert resp.data["code"] == 1000, resp.data
         # 逐行软删（不走单 SQL update，post_save 信号照常触发）

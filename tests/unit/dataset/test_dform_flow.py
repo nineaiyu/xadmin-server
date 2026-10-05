@@ -26,7 +26,7 @@ from dataset.utils.dform_flow import (
     sync_bound_flow_schema,
     sync_dform_instance,
 )
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

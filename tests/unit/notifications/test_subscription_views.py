@@ -36,7 +36,7 @@ class TestMessageRegistry:
         assert all(hasattr(info["cls"], "post_insert_to_db") for info in SYSTEM_MESSAGE_REGISTRY)
 
     def test_different_city_login_message_html(self, normal_user):
-        from system.notifications import DifferentCityLoginMessage
+        from identity.notifications import DifferentCityLoginMessage
 
         msg = DifferentCityLoginMessage(normal_user, ip="8.8.8.8", city="洛杉矶")
         html = msg.get_html_msg()
@@ -45,7 +45,7 @@ class TestMessageRegistry:
         assert html["subject"]
 
     def test_reset_password_success_message_html(self, normal_user, rf):
-        from system.notifications import ResetPasswordSuccessMsg
+        from identity.notifications import ResetPasswordSuccessMsg
 
         msg = ResetPasswordSuccessMsg(normal_user, rf.get("/login"))
         html = msg.get_html_msg()

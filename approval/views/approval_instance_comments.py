@@ -35,7 +35,7 @@ class ApprovalInstanceCommentMixin:
 
     def _resolve_comment_mentions(self, content, exclude_user):
         """解析评论中的 @用户名 → 启用用户列表（排除自己，去重保序）。"""
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         names = []
         for name in MENTION_PATTERN.findall(content or ""):

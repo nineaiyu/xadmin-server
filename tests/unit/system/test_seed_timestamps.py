@@ -21,7 +21,7 @@ pytestmark = pytest.mark.django_db
 class TestBackfillNullTimestamps:
     def test_fills_null_rows_and_keeps_existing(self):
         dataset = Dataset.objects.create(
-            name="时间回填样例", bound_model="system.userinfo", columns=[], visibility="shared"
+            name="时间回填样例", bound_model="identity.userinfo", columns=[], visibility="shared"
         )
         # 直连更新绕过 auto_now（模拟 loaddata raw 保存后的 NULL 行）
         Dataset.objects.filter(pk=dataset.pk).update(created_time=None, updated_time=None)
@@ -39,7 +39,7 @@ class TestBackfillNullTimestamps:
         assert dataset.created_time is not None
 
     def test_returns_zero_when_nothing_to_fill(self):
-        Dataset.objects.create(name="时间完整样例", bound_model="system.userinfo", columns=[], visibility="shared")
+        Dataset.objects.create(name="时间完整样例", bound_model="identity.userinfo", columns=[], visibility="shared")
         assert backfill_null_timestamps([Dataset]) == 0
 
 

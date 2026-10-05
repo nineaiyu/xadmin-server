@@ -1,0 +1,142 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# project : xadmin-server
+# filename : user
+# author : ly_13
+# date : 8/10/2024
+
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.postgres.indexes import GinIndex
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+from pilkit.processors import ResizeToFill
+
+from common.core.models import (
+    AutoCleanFileMixin,
+    DbAuditModel,
+    SoftDeleteManager,
+    SoftDeleteModel,
+    SoftDeleteQuerySet,
+    upload_directory_path,
+)
+from common.fields.image import ProcessedImageField
+
+
+class SoftDeleteUserManager(SoftDeleteManager, UserManager):
+    """用户软删除管理器——默认查询过滤已删除用户，
+    同时保留 UserManager 的 create_user / create_superuser 等能力。"""
+
+    def get_queryset(self):
+        return SoftDeleteQuerySet(self.model, using=self._db).filter(deleted_at__isnull=True)
+
+
+class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
+    """用户软删除——删除进入回收站可恢复；
+    登录/鉴权走默认管理器（过滤 deleted_at），软删除用户的存量 JWT 立即失效。"""
+
+    objects = SoftDeleteUserManager()
+
+    # 通用标签（白名单对象）：可预取（tagged_items__tag），列表零 N+1
+    tagged_items = GenericRelation("system.TaggedItem")
+
+    class GenderChoices(models.IntegerChoices):
+        UNKNOWN = 0, _("Unknown")
+        MALE = 1, _("Male")
+        FEMALE = 2, _("Female")
+
+    class MFALevelChoices(models.IntegerChoices):
+        DISABLED = 0, _("Disabled")
+        ENABLED = 1, _("Enabled")
+
+    class InviteStatusChoices(models.TextChoices):
+        """邀请开户状态：空 = 非邀请账号。"""
+
+        PENDING = "pending", _("Pending acceptance")
+        ACCEPTED = "accepted", _("Accepted")
+
+    avatar = ProcessedImageField(
+        verbose_name=_("Avatar"),
+        null=True,
+        blank=True,
+        upload_to=upload_directory_path,
+        processors=[ResizeToFill(512, 512)],  # 默认存储像素大小
+        scales=[1, 2, 3, 4],  # 缩略图可缩小倍数，
+        format="png",
+    )
+
+    nickname = models.CharField(verbose_name=_("Nickname"), max_length=150, blank=True)
+    gender = models.IntegerField(choices=GenderChoices, default=GenderChoices.UNKNOWN, verbose_name=_("Gender"))
+    phone = models.CharField(verbose_name=_("Phone"), max_length=16, default="", blank=True, db_index=True)
+    email = models.EmailField(verbose_name=_("Email"), default="", blank=True, db_index=True)
+
+    # MFA 二次验证（登录 MFA 开关 + OTP 密钥，密钥泄露即可重置密码，无需加密存储）
+    mfa_level = models.IntegerField(
+        verbose_name=_("MFA level"), choices=MFALevelChoices.choices, default=MFALevelChoices.DISABLED
+    )
+    otp_secret_key = models.CharField(verbose_name=_("OTP secret key"), max_length=64, default="", blank=True)
+
+    # 认证方式策略：用户级可用验证方式（只能收窄全局/角色策略，空 = 不限）
+    allowed_mfa_types = models.JSONField(verbose_name=_("Allowed MFA types"), default=list, blank=True)
+    # 账号安全巡检处置动作「强制改密」标记：登录响应带出，前端引导改密；
+    # 任一改密链路（本人/管理端重置/忘记密码）经 record_password_hash 统一清除
+    must_change_password = models.BooleanField(verbose_name=_("Must change password"), default=False)
+
+    # 最近一次密码更新时间（改密/重置/建号时由 record_password_hash 刷新）：
+    # 配合 SECURITY_PASSWORD_EXPIRATION_DAYS 做密码过期拦截；NULL = 未跟踪（存量
+    # 用户宽限期，不拦截），改密后开始计时
+    date_password_updated = models.DateTimeField(verbose_name=_("Password updated at"), null=True, blank=True)
+
+    # 账号有效期：到期登录被拒 + 每日任务自动停用；NULL = 永不过期
+    date_expired = models.DateTimeField(verbose_name=_("Account expiry"), null=True, blank=True, db_index=True)
+
+    # 邀请开户：pending = 已发邀请等待激活（密码不可用、登录被拒）；
+    # accepted = 已激活；空 = 非邀请账号（普通建号）。重发邀请刷新 invited_time 与令牌
+    invite_status = models.CharField(
+        verbose_name=_("Invite status"),
+        max_length=16,
+        choices=InviteStatusChoices.choices,
+        blank=True,
+        default="",
+    )
+    invited_time = models.DateTimeField(verbose_name=_("Invited at"), null=True, blank=True)
+
+    roles = models.ManyToManyField(to="identity.UserRole", verbose_name=_("Role permission"), blank=True)
+    # 岗位（人员维度，不参与权限判定；一人可兼多岗，见 system/models/post.py）
+    posts = models.ManyToManyField(
+        to="identity.Post", verbose_name=_("Posts"), blank=True, related_name="users", related_query_name="post_query"
+    )
+    rules = models.ManyToManyField(to="system.DataPermission", verbose_name=_("Data permission"), blank=True)
+    dept = models.ForeignKey(
+        to="identity.DeptInfo",
+        verbose_name=_("Department"),
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_query_name="dept_query",
+    )
+
+    class Meta:
+        verbose_name = _("Userinfo")
+        verbose_name_plural = verbose_name
+        ordering = ("-date_joined",)
+        # 全局搜索的 pg_trgm 索引（PostgreSQL 生效，其它后端由迁移跳过；
+        # 清单与豁免见 system/search_indexes.py 与 docs/architecture/indexes.md）：
+        # username/nickname/email/phone 均为 icontains 检索字段，B-tree 帮不上前缀通配
+        indexes = [
+            GinIndex(fields=["username"], name="idx_userinfo_username_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["nickname"], name="idx_userinfo_nickname_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["email"], name="idx_userinfo_email_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["phone"], name="idx_userinfo_phone_trgm", opclasses=["gin_trgm_ops"]),
+        ]
+        # 注意：username 不做"未删除数据"条件唯一（Django auth.E003 要求
+        # USERNAME_FIELD 全局唯一，部分唯一约束不满足检查），
+        # 已删除用户的用户名在 DB 层仍被占用，序列化器按 all_objects 拦截并给出可读提示
+
+    def __str__(self):
+        return f"{self.nickname}({self.username})"
+
+    @property
+    def mfa_enabled(self):
+        """是否已启用登录 MFA 二次验证（OTP 绑定成功后自动开启）"""
+        return self.mfa_level == self.MFALevelChoices.ENABLED and bool(self.otp_secret_key)

@@ -8,7 +8,7 @@
 
 import pytest
 
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

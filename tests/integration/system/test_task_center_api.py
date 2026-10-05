@@ -63,7 +63,7 @@ class TestUnifiedEndpoint:
         数据域本身的过滤逻辑由 tests/unit/system/test_task_center.py 覆盖，
         这里只守护「接口不向无权限用户开放」。
         """
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         other = UserInfo.objects.create(username="scope-other", nickname="他人")
         _export(other)

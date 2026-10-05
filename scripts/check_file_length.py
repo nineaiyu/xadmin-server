@@ -33,7 +33,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # 与 check_cross_app_imports.py 保持同一扫描面
-SCAN_DIRS = sorted({"common", "system", "notifications", "message", "settings", "captcha", "mfa", "demo"}) + [
+SCAN_DIRS = sorted(
+    {"common", "system", "notifications", "message", "settings", "captcha", "mfa", "demo", "identity"}
+) + [
     "utils",
     "server",
 ]

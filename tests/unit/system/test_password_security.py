@@ -13,14 +13,14 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from common.base.utils import AESCipherV2
+from identity.serializers.user import ResetPasswordSerializer
+from identity.serializers.userinfo import ChangePasswordSerializer
 from settings.services import (
     check_history_password,
     check_leak_password,
     is_password_expired,
     record_password_hash,
 )
-from system.serializers.user import ResetPasswordSerializer
-from system.serializers.userinfo import ChangePasswordSerializer
 
 pytestmark = pytest.mark.django_db
 

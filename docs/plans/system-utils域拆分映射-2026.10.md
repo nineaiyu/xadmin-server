@@ -9,7 +9,7 @@
 
 | 目标子包 | 域语义 | 纳入内容 |
 |---|---|---|
-| `system/utils/identity/` | 身份/认证/账号/会话/数据权限 | 16 个平铺文件 + `permission_preview/`、`permission_sync/` 两个既有包整体迁入 |
+| `identity/utils/` | 身份/认证/账号/会话/数据权限 | 16 个平铺文件 + `permission_preview/`、`permission_sync/` 两个既有包整体迁入 |
 | `system/utils/file/` | 文件上传/预览/存储/文件访问审计 | 5 个平铺文件 + `preview/` 既有包整体迁入 |
 | `system/utils/audit/` | 审计（脱敏/影响面/日志归档） | 3 个平铺文件 |
 | `system/utils/task/` | 任务中心/导入导出/webhook/celery 清理实现体 | 10 个平铺文件 |
@@ -75,8 +75,8 @@
 
 | 原路径 | 新路径 | 域 |
 |---|---|---|
-| system/utils/permission_preview/ | system/utils/identity/permission_preview/ | identity（数据权限预览） |
-| system/utils/permission_sync/ | system/utils/identity/permission_sync/ | identity（权限点同步） |
+| system/utils/permission_preview/ | identity/utils/permission_preview/ | identity（数据权限预览） |
+| system/utils/permission_sync/ | identity/utils/permission_sync/ | identity（权限点同步） |
 | system/utils/preview/ | system/utils/file/preview/ | file（文件预览） |
 
 包内文件不拆不动，`__init__.py` 再导出面原样保留——包内相对 import 不变，

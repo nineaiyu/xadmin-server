@@ -10,7 +10,8 @@ from rest_framework.test import APIClient
 
 from approval.models.approval import ApprovalDelegation, ApprovalFlow, ApprovalFlowNode
 from approval.utils.approval_flow import resolve_assignees
-from system.models import DataPermission, FieldPermission, Menu, MenuMeta, ModelLabelField, UserInfo, UserRole
+from identity.models import UserInfo, UserRole
+from system.models import DataPermission, FieldPermission, Menu, MenuMeta, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 
@@ -271,7 +272,7 @@ class TestDelegationOwnership:
 
     def test_create_for_others_rejected(self, normal_user, other, agent, grant_permission, grant_data_all):
         """以他人名义建委托：拒绝且不落行（否则收编他人待办）。"""
-        grant_data_all(normal_user, "system.userinfo", self.MODEL_LABEL)
+        grant_data_all(normal_user, "identity.userinfo", self.MODEL_LABEL)
         grant_permission(
             normal_user, "create:SystemApprovalDelegation", self.CREATE_PATH, method="POST", fields=self.WRITABLE_FIELDS
         )
@@ -280,7 +281,7 @@ class TestDelegationOwnership:
         assert not ApprovalDelegation.objects.filter(delegator=other).exists()
 
     def test_create_in_own_name_allowed(self, normal_user, agent, grant_permission, grant_data_all):
-        grant_data_all(normal_user, "system.userinfo", self.MODEL_LABEL)
+        grant_data_all(normal_user, "identity.userinfo", self.MODEL_LABEL)
         grant_permission(
             normal_user, "create:SystemApprovalDelegation", self.CREATE_PATH, method="POST", fields=self.WRITABLE_FIELDS
         )
@@ -334,7 +335,7 @@ class TestDelegationOwnership:
 
     def test_update_delegator_to_others_rejected(self, normal_user, other, agent, grant_permission, grant_data_all):
         """改委托人也走同一护栏：本人记录不能改成以他人名义。"""
-        grant_data_all(normal_user, "system.userinfo", self.MODEL_LABEL)
+        grant_data_all(normal_user, "identity.userinfo", self.MODEL_LABEL)
         grant_permission(
             normal_user,
             "partialUpdate:SystemApprovalDelegation",

@@ -15,8 +15,8 @@ def get_approver_queryset():
     的用户即审批人，无需逐个维护角色清单。申请人始终不能自审（resolve_approvers 排除）。
     """
     from common.core.config import SysConfig
-    from system.models import UserInfo
-    from system.services import get_users_by_perms
+    from identity.models import UserInfo
+    from identity.services import get_users_by_perms
 
     role_codes = SysConfig.APPROVAL_APPROVER_ROLES or []
     perms = SysConfig.APPROVAL_APPROVER_PERMS or []

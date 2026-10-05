@@ -97,7 +97,7 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             )
         assignee_type = level.get("assignee_type")
         if assignee_type == ApprovalRuleLevel.AssigneeType.ROLE:
-            from system.models import UserRole
+            from identity.models import UserRole
 
             existing = set(
                 UserRole.objects.filter(code__in=values, deleted_at__isnull=True).values_list("code", flat=True)
@@ -109,7 +109,7 @@ class ApprovalRuleSerializer(BaseModelSerializer):
         if assignee_type == ApprovalRuleLevel.AssigneeType.POST:
             # 岗位分支（引擎 resolve_level_users 同口径：按 code 解析，仅启用且未删除岗位）：
             # 原实现缺此分支，选「岗位」保存时被当用户名查询必报 User does not exist
-            from system.models import Post
+            from identity.models import Post
 
             existing = set(
                 Post.objects.filter(code__in=values, is_active=True, deleted_at__isnull=True).values_list(
@@ -121,7 +121,7 @@ class ApprovalRuleSerializer(BaseModelSerializer):
                 raise serializers.ValidationError(_("Post does not exist: {}").format(", ".join(missing)))
             return
         if assignee_type == ApprovalRuleLevel.AssigneeType.USER:
-            from system.models import UserInfo
+            from identity.models import UserInfo
 
             existing = set(UserInfo.objects.filter(username__in=values).values_list("username", flat=True))
             missing = [value for value in values if value not in existing]

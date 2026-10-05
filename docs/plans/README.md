@@ -16,6 +16,7 @@
 | [触发制任务清单-长期.md](触发制任务清单-长期.md) | **触发制 / 重开条件 / 时间窗的唯一索引（跨窗口维护）**：开发任务类触发项、红线重开条件、供应链与安全登记、时间窗、滚动债对照；含维护约定与已触发收口归档。与候选池分工：候选池等优先级、本清单等触发 |
 | [system-utils域拆分映射-2026.10.md](system-utils域拆分映射-2026.10.md) | **system app utils/views 域归位映射清单**：51 个 utils 平铺文件 + 3 个既有子包按 identity/file/audit/task/platform 五域归位、views 顶层 13 个平铺文件归入 task/open/platform 子包的逐文件映射与行为零变化保证点（Phase B~E 沿用） |
 | [system-services服务层下沉-2026.10.md](system-services服务层下沉-2026.10.md) | **system app 服务层下沉映射清单**：`system/services.py` 转包（契约门面 + token_issue / open_oauth / auth_login / file 四个服务子模块），OAuth 引擎、登录策略流、令牌签发三处统一、文件统计与预览状态机、message 视图编排的逐项归位与行为零变化保证点 |
+| [system四域切分映射-2026.10.md](system四域切分映射-2026.10.md) | **system app 四域切分映射清单（Phase C）**：identity / file / audit / task 四域独立成 app 的模型/视图/序列化器/路由/任务/通知/信号逐文件映射，清库重建口径下的全量迁移重建（identity 0001 真实建表 + trgm 扩展保障 + 跨域 M2M 推迟补加）与契约面重组 |
 
 ## 历史归档（archive/，15 份）
 

@@ -5,9 +5,9 @@ import pytest
 from django.core.management import call_command
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.builtin import BUILTIN_ROLES, sync_builtin_roles
-from system.models import UserRole
-from system.views.admin.role import RoleViewSet
+from identity.builtin import BUILTIN_ROLES, sync_builtin_roles
+from identity.models import UserRole
+from identity.views.admin.role import RoleViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -93,7 +93,7 @@ class TestBuiltinRoleProtection:
         assert UserRole.all_objects.filter(code="SystemAdmin").exists() is True
 
     def test_builtin_code_change_blocked(self, superuser, api_client):
-        from system.serializers.role import RoleSerializer
+        from identity.serializers.role import RoleSerializer
 
         sync_builtin_roles()
         role = UserRole.objects.get(code="SystemAdmin")

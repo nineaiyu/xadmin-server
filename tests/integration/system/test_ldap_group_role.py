@@ -4,8 +4,8 @@
 import pytest
 from django.test import override_settings
 
-from system.ldap.sync import _group_matches, _sync_roles, get_group_role_map
-from system.models import UserInfo, UserRole
+from identity.ldap.sync import _group_matches, _sync_roles, get_group_role_map
+from identity.models import UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 

@@ -9,7 +9,7 @@
 import pytest
 
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

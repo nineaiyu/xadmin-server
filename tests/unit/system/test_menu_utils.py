@@ -8,7 +8,7 @@ from system.utils.platform.menu import get_view_permissions
 
 pytestmark = pytest.mark.django_db
 
-USER_VIEW = "system.views.admin.user.UserViewSet"
+USER_VIEW = "identity.views.admin.user.UserViewSet"
 
 
 class TestGetViewPermissions:
@@ -28,7 +28,7 @@ class TestGetViewPermissions:
             if p["models"]:
                 models.update(p["models"])
         assert models
-        assert "system.userinfo" in models
+        assert "identity.userinfo" in models
 
     def test_unknown_view_returns_empty(self):
-        assert get_view_permissions("system.views.admin.user.NoSuchViewSet") == []
+        assert get_view_permissions("identity.views.admin.user.NoSuchViewSet") == []

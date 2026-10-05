@@ -10,6 +10,7 @@ from django.conf import settings
 from django.core import serializers
 from django.core.management.base import BaseCommand
 
+from identity.models import DeptInfo, LoginAccessPolicy, UserRole
 from settings.models import Setting
 from system.models import *
 

@@ -15,7 +15,8 @@ from common.core.permission import (
     user_has_permission,
 )
 from common.core.utils import permission_path_matches
-from system.models import Menu, UserInfo
+from identity.models import UserInfo
+from system.models import Menu
 
 pytestmark = pytest.mark.django_db
 

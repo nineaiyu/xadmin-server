@@ -12,10 +12,10 @@ from django.utils.translation import gettext_lazy as _
 
 from common.core.response import ApiResponse
 from common.utils import get_logger
+from identity.ldap.client import LdapConfig, LdapConfigError, LDAPException
 from settings.serializers.ldap import LdapSettingSerializer
 from settings.utils.test_connection import build_test_values
 from settings.views.settings import BaseSettingViewSet
-from system.ldap.client import LdapConfig, LdapConfigError, LDAPException
 
 logger = get_logger(__name__)
 
@@ -63,7 +63,7 @@ class LdapServerSettingViewSet(BaseSettingViewSet):
 
         config = LdapConfig.from_values(values)
         try:
-            from system.ldap.sync import test_ldap_connection
+            from identity.ldap.sync import test_ldap_connection
 
             result = test_ldap_connection(config)
         except LdapConfigError as e:

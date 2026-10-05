@@ -17,7 +17,8 @@ from django.utils import timezone
 from dataset.models.dataset import Dashboard, Dataset, Screen
 from dataset.screen_data import _execute_card, collect_screen_cards
 from dataset.utils.dataset import execute_dataset
-from system.models import DataPermission, FieldPermission, ModelLabelField, UserInfo
+from identity.models import UserInfo
+from system.models import DataPermission, FieldPermission, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 
@@ -25,14 +26,14 @@ DATASET_URL = "/api/dataset/datasets"
 
 # 行级数据权限：全部数据（无授权用户行集为 none()，见 test_dashboard_card_permission 同款）
 DATA_PERMISSION_ALL_RULES = [
-    {"table": "system.userinfo", "field": "id", "type": "value.all", "match": "all", "value": "", "exclude": False}
+    {"table": "identity.userinfo", "field": "id", "type": "value.all", "match": "all", "value": "", "exclude": False}
 ]
 
 
 @pytest.fixture
 def model_registry(db):
     root, _ = ModelLabelField.objects.get_or_create(
-        name="system.userinfo",
+        name="identity.userinfo",
         defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"},
     )
     for name in ("username", "nickname", "created_time"):
@@ -46,7 +47,7 @@ def model_registry(db):
 def dataset(model_registry, superuser):
     return Dataset.objects.create(
         name=f"数字卡数据集-{timezone.now().timestamp()}",
-        bound_model="system.userinfo",
+        bound_model="identity.userinfo",
         columns=["username", "nickname", "created_time"],
         filters=[],
         row_limit=1000,
@@ -95,7 +96,7 @@ class TestExecuteDatasetCountOnly:
         normal_user.rules.add(dp)
         menu = menu_factory(name="count-fp-menu", path="api/system/user$", method="GET")
         parent = ModelLabelField.objects.create(
-            name="system.userinfo", label="system.userinfo", field_type=ModelLabelField.FieldChoices.ROLE
+            name="identity.userinfo", label="identity.userinfo", field_type=ModelLabelField.FieldChoices.ROLE
         )
         child = ModelLabelField.objects.create(
             name="username", label="username", parent=parent, field_type=ModelLabelField.FieldChoices.ROLE

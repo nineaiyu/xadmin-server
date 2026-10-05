@@ -355,7 +355,7 @@ class TestApprovalActions:
     def test_approver_perm_scope(self, superuser, normal_user, role, menu_factory):
         """职能权限反查：APPROVAL_APPROVER_PERMS 按权限码推导审批人（get_users_by_perm）。"""
         from common.core.config import SysConfig
-        from system.services import get_users_by_perm
+        from identity.services import get_users_by_perm
 
         # 权限码挂 PERMISSION 类型菜单，经角色授权给 normal_user（role=common）
         perm = menu_factory("approve:SystemApprovalRequest", path="api/approval/approvals$", method="POST")
@@ -386,7 +386,7 @@ class TestApprovalActions:
         assert not approvers.filter(pk=superuser.pk).exists()
 
         # 建第二个角色持权限码的用户 → 并集命中
-        from system.models import UserInfo, UserRole
+        from identity.models import UserInfo, UserRole
 
         auditor_role = UserRole.objects.create(name="审计员", code="auditor")
         auditor_role.menu.add(other_perm)

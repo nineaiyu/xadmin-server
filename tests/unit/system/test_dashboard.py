@@ -17,7 +17,8 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
-from system.models import OperationLog, UserInfo, UserLoginLog
+from identity.models import UserInfo
+from system.models import OperationLog, UserLoginLog
 from system.views.platform.dashboard import trend_info
 
 pytestmark = pytest.mark.django_db

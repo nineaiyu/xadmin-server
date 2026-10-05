@@ -24,15 +24,8 @@ from django.db import transaction
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 from approval.utils.approval_flow.versioning import apply_definition
 from dataset.models import DynamicForm
-from system.models import (
-    DataPermission,
-    DeptInfo,
-    FieldPermission,
-    Menu,
-    ModelLabelField,
-    UserInfo,
-    UserRole,
-)
+from identity.models import DeptInfo, UserInfo, UserRole
+from system.models import DataPermission, FieldPermission, Menu, ModelLabelField
 
 DEFAULT_PASSWORD = "Demo@2026!"
 #: 场景模板落版本快照的备注（seed_demo_clean 依赖同名字面量做回滚清理）

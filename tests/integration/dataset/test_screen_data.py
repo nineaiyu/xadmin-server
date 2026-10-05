@@ -45,9 +45,9 @@ SCREEN_URL = "/api/dataset/screens"
 
 @pytest.fixture
 def model_registry(db):
-    """字段注册表：system.userinfo 白名单节点（含 DateTime 趋势字段，与 test_dataset_api 同款）。"""
+    """字段注册表：identity.userinfo 白名单节点（含 DateTime 趋势字段，与 test_dataset_api 同款）。"""
     root, _ = ModelLabelField.objects.get_or_create(
-        name="system.userinfo",
+        name="identity.userinfo",
         defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"},
     )
     for name in ("username", "nickname", "created_time"):
@@ -61,7 +61,7 @@ def model_registry(db):
 def dataset(model_registry, superuser):
     return Dataset.objects.create(
         name="推送数据集",
-        bound_model="system.userinfo",
+        bound_model="identity.userinfo",
         columns=["username", "nickname"],
         filters=[],
         row_limit=1000,

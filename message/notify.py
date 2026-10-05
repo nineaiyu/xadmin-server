@@ -15,16 +15,16 @@ from django.conf import settings
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
 from common.utils import get_logger
-from message.base import AsyncJsonWebsocket
-from message.utils import async_push_message, get_user_layer_group_name
-from server.utils import get_current_request
-from system.services import (
-    UserLoginLog,
+from identity.services import (
     get_active_user_pk_by_username,
     login_success,
     register_user_session,
     websocket_session_logout,
 )
+from message.base import AsyncJsonWebsocket
+from message.utils import async_push_message, get_user_layer_group_name
+from server.utils import get_current_request
+from system.services import UserLoginLog
 
 logger = get_logger(__name__)
 

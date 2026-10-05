@@ -13,7 +13,8 @@ from django.core import mail
 from django.utils import timezone
 
 from dataset.models.dataset import Dashboard, Dataset, Report, Screen
-from system.models import ModelLabelField, UserInfo
+from identity.models import UserInfo
+from system.models import ModelLabelField
 
 pytestmark = pytest.mark.django_db
 
@@ -24,7 +25,7 @@ REPORT_URL = "/api/dataset/reports"
 @pytest.fixture
 def model_registry(db):
     root, _ = ModelLabelField.objects.get_or_create(
-        name="system.userinfo", defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"}
+        name="identity.userinfo", defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"}
     )
     for name in ("username", "nickname"):
         ModelLabelField.objects.get_or_create(
@@ -37,7 +38,7 @@ def model_registry(db):
 def dataset(model_registry, superuser):
     return Dataset.objects.create(
         name="用户清单",
-        bound_model="system.userinfo",
+        bound_model="identity.userinfo",
         columns=["username", "nickname"],
         visibility="shared",
         creator=superuser,
@@ -69,7 +70,7 @@ def screen_urls():
 
 
 def grant(user, menus):
-    from system.models import UserRole
+    from identity.models import UserRole
 
     role = UserRole.objects.create(name=f"role-{user.username}", code=user.username)
     user.roles.add(role)
@@ -225,11 +226,11 @@ class TestReportRun:
         """FK 列（UUID pk）进 xlsx：单元格转字符串，不再抛 Cannot convert UUID（回归守护）。"""
         from openpyxl import load_workbook
 
-        from system.models import DeptInfo
+        from identity.models import DeptInfo
         from system.models.export import ExportRecord
 
         settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
-        root = ModelLabelField.objects.get(name="system.userinfo")
+        root = ModelLabelField.objects.get(name="identity.userinfo")
         ModelLabelField.objects.get_or_create(
             name="dept", parent=root, defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "部门"}
         )

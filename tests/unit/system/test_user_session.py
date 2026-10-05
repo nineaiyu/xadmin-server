@@ -18,17 +18,17 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from common.cache.storage import SessionTokenRevokedCache
 from common.core.auth import ServerAccessToken
-from message import utils as msg_utils
-from system.models import UserSession
-from system.models.log import UserLoginLog
-from system.utils.identity.session import (
+from identity.models import UserSession
+from identity.utils.session import (
     bind_session_claim,
     clean_expired_sessions,
     expire_stale_sessions,
     force_logout_user,
     register_user_session,
 )
-from system.views.admin.online import UserOnlineViewSet
+from identity.views.admin.online import UserOnlineViewSet
+from message import utils as msg_utils
+from system.models.log import UserLoginLog
 
 pytestmark = pytest.mark.django_db
 

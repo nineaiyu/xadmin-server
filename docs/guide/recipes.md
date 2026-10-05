@@ -45,7 +45,7 @@
 **场景**：一个不围绕单模型的动作型端点（如"一键同步"）。
 
 - 优先复用 ViewSet + `@action(detail=False)`（自动获得权限链、审计、统一响应）；
-- 完全独立的端点（如运维类）参考 `common/api/`（内核只读端点）或 `system/views/auth/`（免鉴权类）的写法；
+- 完全独立的端点（如运维类）参考 `common/api/`（内核只读端点）或 `identity/views/auth/`（免鉴权类）的写法；
 - 返回一律 `ApiResponse`；**新增端点后跑 `sync_menu_permissions`** 登记权限点，再跑 `doctor` 复核。
 
 ### R4 加搜索/筛选字段

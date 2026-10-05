@@ -22,13 +22,13 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import ModelLabelField
 from system.serializers.field import ModelLabelFieldImportSerializer, ModelLabelFieldSerializer
-from system.utils.identity.rule_meta import MATCH_TEXTS, RULE_TYPE_GROUP_TEXTS, RULE_TYPE_META, RULE_TYPE_TEXTS
 from system.utils.platform.modelfield import (
     get_extra_field_lookups,
     get_field_lookup_info,
     get_field_meta,
     sync_model_field,
 )
+from system.utils.platform.rule_meta import MATCH_TEXTS, RULE_TYPE_GROUP_TEXTS, RULE_TYPE_META, RULE_TYPE_TEXTS
 
 logger = get_logger(__name__)
 
@@ -110,7 +110,7 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
         field = request.query_params.get("field")
         if table and field:
             if table == "*":
-                table = "system.userinfo"
+                table = "identity.userinfo"
             obj = (
                 self.filter_queryset(self.get_queryset())
                 .filter(name=field, parent__name=table, parent__parent=None)

@@ -21,7 +21,7 @@ def _business_queries(ctx):
 
 @pytest.fixture
 def peers(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return [
         UserInfo.objects.create_user(username=f"peer_{index}", password="Test@123456", nickname=f"对端{index}")

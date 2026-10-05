@@ -65,10 +65,10 @@ def run_async_export(record_id, view_path, query_params, user_pk):
     from django.core.files.base import ContentFile
 
     from common.notifications import ExportDataMessage
+    from identity.models import UserInfo
     from system.models.export import ExportRecord
     from system.models.task import TaskExecution
     from system.models.upload import UploadFile
-    from system.models.user import UserInfo
 
     record = ExportRecord.objects.filter(pk=record_id).first()
     if record is None:

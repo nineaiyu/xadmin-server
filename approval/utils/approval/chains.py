@@ -36,7 +36,7 @@ def resolve_rule(path: str):
 
 def resolve_level_users(level):
     """级次候选人：user=用户名清单，role/post=角色/岗位 code 清单（仅启用账号，均支持逗号多值）。"""
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     values = [value.strip() for value in str(level.assignee_value or "").split(",") if value.strip()]
     if not values:

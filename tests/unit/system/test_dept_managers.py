@@ -5,20 +5,21 @@
 import pytest
 
 from common.core.data_scope import resolve_rule
-from system.models import DataPermission, DeptInfo, DeptManagerAssignment, UserInfo
-from system.utils.identity.dept_managers import (
+from identity.models import DeptInfo, DeptManagerAssignment, UserInfo
+from identity.utils.dept_managers import (
     DEPT_MANAGER_ROLE_CODE,
     DEPT_MANAGER_RULE_SPECS,
     assign_dept_managers,
     ensure_preset_rules,
 )
-from system.utils.identity.permission_sync import audit_wide_manager_grants
+from system.models import DataPermission
+from system.utils.platform.permission_sync import audit_wide_manager_grants
 
 pytestmark = pytest.mark.django_db
 
 
 def _rule(f_type):
-    return {"table": "system.userinfo", "field": "id", "type": f_type, "value": "*", "match": "in"}
+    return {"table": "identity.userinfo", "field": "id", "type": f_type, "value": "*", "match": "in"}
 
 
 class TestManagerRuleResolution:

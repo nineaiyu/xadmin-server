@@ -12,7 +12,8 @@ from rest_framework.test import APIClient
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 from approval.models.leave import Leave
-from system.models import Menu, UserInfo
+from identity.models import UserInfo
+from system.models import Menu
 
 pytestmark = pytest.mark.django_db
 

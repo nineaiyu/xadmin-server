@@ -11,7 +11,7 @@ import pytest
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 from approval.utils.approval_flow import cancel_instance, create_instance, urge_instance
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

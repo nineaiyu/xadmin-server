@@ -2,7 +2,7 @@
 
 - 日期：2026-09-30
 - 状态：**已交付**（阶段一 + 阶段二；实现清单与验证见文末交付记录）
-- 关联：ADR-031（多租户 no-go——本项为其登记的「部门级自治」替代路径）、ADR-056（数据权限配置与生效范围：多授权并集取最宽为显式设计）、ADR-006（数据权限编译器）；`common/core/data_scope/`、`common/core/filter.py`、`system/models/department.py`、`system/serializers/user.py`、`system/utils/modelset.py`
+- 关联：ADR-031（多租户 no-go——本项为其登记的「部门级自治」替代路径）、ADR-056（数据权限配置与生效范围：多授权并集取最宽为显式设计）、ADR-006（数据权限编译器）；`common/core/data_scope/`、`common/core/filter.py`、`system/models/department.py`、`identity/serializers/user.py`、`system/utils/modelset.py`
 - 背景：多租户评估（ADR-031）结论为「一租户一实例、不引入租户维度」。走查确认：**部门级的数据/管理隔离已具备大半**（16 种数据权限规则、读侧与对象级写侧统一收敛），但距离「部门管理员能自主管理且硬保证出不了本部门」还差三项。本项只做这三项，不引入租户维度。
 
 ## 现状（事实基础）
@@ -12,13 +12,13 @@
 1. **数据权限规则面**：16 种规则类型（`system/models/field.py:15-31` 的 `KeyChoices`），部门相关族覆盖「本部门 / 本部门及下级 / 指定部门及下级 / 我主管部门及下级 / 我主管部门成员」；解析四段管线（validate→resolve→compile→combine）在 `common/core/data_scope/values.py:152-201`，leader 族解析实现可参照（`values.py:135-149`）。
 2. **读侧收敛**：授权池 = 个人绑定 + 部门祖先链绑定（仅启用部门），无授权 fail-closed 空集（`common/core/filter.py:98-107` 授权池、`:117-169` 读侧消费）。
 3. **对象级写侧收敛（框架统一）**：`get_object()` 走 `filter_queryset(get_queryset())`，按 pk 改/删范围外对象 → 404/400；批量删除/批量更新/导入 update 分支同样过滤（`common/core/modelset/batch.py:81,242`）。
-4. **授权池约束先例**：empower 的 roles/rules 过 `get_filter_queryset`（`system/utils/modelset.py:77-87`），部门序列化器对关系池同口径（`system/serializers/department.py:92-104`）。
+4. **授权池约束先例**：empower 的 roles/rules 过 `get_filter_queryset`（`system/utils/modelset.py:77-87`），部门序列化器对关系池同口径（`identity/serializers/department.py:92-104`）。
 5. **部门侧既有机制**：`DeptInfo.leader`（主管，数据权限解析上下文，`system/models/department.py:33-41`）与 `DeptInfo.roles/rules`（部门绑角色/规则，成员继承，`department.py:42-43`）。
 
 **缺口（三项补齐的对象）**：
 
 1. **没有「部门管理员」实体**：`DeptInfo.leader` 只承载审批与数据权限解析语义，没有「任命即获得本部门（及下级）管理权」的闭环——现状只能人工拼「全局权限点角色 + 数据权限规则」两件套，任命变更不联动授权；
-2. **写侧载荷未校验**：创建用户/子部门时可指定范围外的 `dept`/`parent`、可把对象改出范围；`UserSerializer` 的 `roles`/`rules` 关系写入不过可授权池（`system/serializers/user.py` 无过滤，仅 empower 与部门序列化器有）；
+2. **写侧载荷未校验**：创建用户/子部门时可指定范围外的 `dept`/`parent`、可把对象改出范围；`UserSerializer` 的 `roles`/`rules` 关系写入不过可授权池（`identity/serializers/user.py` 无过滤，仅 empower 与部门序列化器有）；
 3. **边界保证不成体系**：数据权限多授权并集取最宽（ADR-056 显式设计，无「上限」表达），权限点为全局粒度（`destroy:SystemUser` 授予即可作用于任意对象）——「部门管理员出不了本部门」目前靠配置纪律，无装配收敛与巡检可见性。
 
 ## 决策（三项补齐）
@@ -89,7 +89,7 @@
 | 规则族 | `value.manager.dept.ids` / `value.manager.user.ids`（KeyChoices / `rule_meta` / `RUNTIME_VALUE_TYPES` / `resolve_rule` 解析 / 写侧 match 白名单 / 预览解码 / 数据权限巡检命令全覆盖） |
 | 任命装配 | `system/utils/dept_managers.py`：端点一步维护 through 行 + 预置角色成员 + 用户级预置规则；解任按「不再管理任何部门」回收；幂等 |
 | 端点 | `POST /api/system/dept/{pk}/assign-managers`（权限点 `assignManagers:SystemDept`）+ `GET .../user-options`（候选，list 同口径）+ `GET .../managed`（我的管辖） |
-| 预置角色 | 内置角色 `DeptManager`（`system/builtin.py` 幂等同步：权限点清单 + **字段白名单**（`_ensure_role_fields`，缺失补建为模型全字段）） |
+| 预置角色 | 内置角色 `DeptManager`（`identity/builtin.py` 幂等同步：权限点清单 + **字段白名单**（`_ensure_role_fields`，缺失补建为模型全字段）） |
 | 写侧校验 | `assert_within_data_scope`（`common/core/filter.py`）+ `UserSerializer`（dept / roles / rules）+ `DeptSerializer`（parent） |
 | 巡检 | `audit_wide_manager_grants`（部门管理员持宽规则）+ `sync_menu_permissions` 的 `[宽授权]` 段 + 数据权限巡检命令的「管理部门」类告警 |
 | 前端 | 部门页「部门管理员」动作（ReDialog + `DeptManagersDialog.vue`，增量载荷）；「我的管辖」页（`/system/my-scope/index`，统计 + 部门卡片 + 成员跳转）；规则元数据镜像（constants / ruleMeta / presets） |

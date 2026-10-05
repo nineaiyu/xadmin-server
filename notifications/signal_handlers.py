@@ -5,10 +5,10 @@ from django.utils.functional import LazyObject
 
 from common.utils import get_logger
 from common.utils.connection import RedisPubSub
+from identity.services import UserInfo
 from notifications.message import SiteMessageUtil
 from notifications.models import MessageContent, SystemMsgSubscription
 from notifications.notifications import SYSTEM_MESSAGE_REGISTRY
-from system.services import UserInfo
 
 logger = get_logger(__name__)
 

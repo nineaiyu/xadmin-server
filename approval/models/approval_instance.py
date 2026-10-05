@@ -57,7 +57,7 @@ class ApprovalInstance(DbAuditModel):
     # 抄送人快照：发起时 = 全部可达节点 cc_users 并集 + 发起人追加（去重）；
     # 抄送人可查看实例详情、参与讨论，并在进入节点 / 实例终态时收到通知
     cc_users = models.ManyToManyField(
-        "system.UserInfo",
+        "identity.UserInfo",
         related_name="approval_cc_instances",
         verbose_name=_("CC users"),
         blank=True,
@@ -107,7 +107,7 @@ class ApprovalNodeTask(DbAuditModel):
     node_name = models.CharField(_("Node name"), max_length=64)
     node_order = models.IntegerField(_("Node order"), default=1)
     assignee = models.ForeignKey(
-        "system.UserInfo",
+        "identity.UserInfo",
         related_name="approval_node_tasks",
         on_delete=models.SET_NULL,
         null=True,
@@ -115,7 +115,7 @@ class ApprovalNodeTask(DbAuditModel):
         verbose_name=_("Assignee"),
     )
     actor = models.ForeignKey(
-        "system.UserInfo",
+        "identity.UserInfo",
         related_name="approval_node_acted_tasks",
         on_delete=models.SET_NULL,
         null=True,
@@ -128,7 +128,7 @@ class ApprovalNodeTask(DbAuditModel):
     # 委托代审来源：assignee 为代理人时记录原审批人（委托人生效替换），
     # 供审批轨迹标注「由 X 代理」；无委托的任务留空。
     delegate_from = models.ForeignKey(
-        "system.UserInfo",
+        "identity.UserInfo",
         related_name="approval_node_delegated_tasks",
         on_delete=models.SET_NULL,
         null=True,

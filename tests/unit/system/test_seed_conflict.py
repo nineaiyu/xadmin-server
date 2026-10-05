@@ -16,8 +16,9 @@ import pytest
 from django.conf import settings as dj_settings
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
+from identity.models import UserRole
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
-from system.models import DataDict, ModelLabelField, UserRole
+from system.models import DataDict, ModelLabelField
 from system.utils.platform.seed import _unique_checks, build_seed_fixtures, filter_conflicting_rows
 
 pytestmark = pytest.mark.django_db
@@ -116,9 +117,9 @@ class TestFilterConflictingRows:
         role_pk, role_code = role["pk"], role["fields"]["code"]
         UserRole.objects.create(pk="aaaa1111-0000-0000-0000-000000000000", code=role_code, name="库内角色")
         rows = {
-            "system.userrole": [
+            "identity.userrole": [
                 {
-                    "model": "system.userrole",
+                    "model": "identity.userrole",
                     "pk": role_pk,
                     "fields": {"code": role_code, "name": "种子角色", "menu": []},
                 }
@@ -128,7 +129,7 @@ class TestFilterConflictingRows:
             ],
         }
         filtered, notes = filter_conflicting_rows(rows)
-        assert filtered["system.userrole"] == []
+        assert filtered["identity.userrole"] == []
         assert filtered["system.datamaskrule"][0]["fields"]["roles"] == []
         assert any("datamaskrule" in note for note in notes)
 
@@ -200,21 +201,21 @@ class TestFilterConflictingRows:
         拦不住这种业务上的重复行（现场共 67 个根节点）。
         """
         ModelLabelField.objects.create(
-            pk="dbce1001-0000-4000-8000-000000000001", name="system.post", label="Post", field_type=1
+            pk="dbce1001-0000-4000-8000-000000000001", name="identity.post", label="Post", field_type=1
         )
         rows = {
             "system.modellabelfield": [
                 {
                     "model": "system.modellabelfield",
                     "pk": "dbce1002-0000-4000-8000-000000000002",
-                    "fields": {"name": "system.post", "parent": None, "label": "Post", "field_type": 1},
+                    "fields": {"name": "identity.post", "parent": None, "label": "Post", "field_type": 1},
                 }
             ]
         }
         filtered, notes = filter_conflicting_rows(rows)
         assert filtered["system.modellabelfield"] == []
         assert len(notes) == 1
-        assert "name=system.post" in notes[0]
+        assert "name=identity.post" in notes[0]
 
 
 class TestUniqueChecks:

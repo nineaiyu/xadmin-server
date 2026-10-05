@@ -17,7 +17,8 @@ from rest_framework.test import APIClient
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 from approval.utils.approval_flow import add_sign, create_instance, transfer_task
-from system.models import Menu, MenuMeta, UserInfo, UserRole
+from identity.models import UserInfo, UserRole
+from system.models import Menu, MenuMeta
 
 pytestmark = pytest.mark.django_db
 

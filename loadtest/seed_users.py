@@ -28,7 +28,7 @@ django.setup()
 
 from django.contrib.auth.hashers import make_password  # noqa: E402
 
-from system.models import UserInfo  # noqa: E402
+from identity.models import UserInfo  # noqa: E402
 
 PERF_PREFIX = "perf_"
 

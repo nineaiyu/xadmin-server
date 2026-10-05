@@ -13,7 +13,8 @@ from django.utils.translation import gettext
 from rest_framework.test import APIClient
 
 from dataset.models import Dataset
-from system.models import DataPermission, ModelLabelField, OperationLog, UserInfo
+from identity.models import UserInfo
+from system.models import DataPermission, ModelLabelField, OperationLog
 
 pytestmark = pytest.mark.django_db
 
@@ -42,7 +43,7 @@ RUN_URL = "/api/ai/assistant/nl-query/run"
 @pytest.fixture
 def model_registry(db):
     root, _ = ModelLabelField.objects.get_or_create(
-        name="system.userinfo", defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"}
+        name="identity.userinfo", defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"}
     )
     for name in ("username", "is_active"):
         ModelLabelField.objects.get_or_create(
@@ -100,7 +101,7 @@ def stub_llm(monkeypatch):
 def dataset(model_registry, superuser):
     return Dataset.objects.create(
         name="用户清单",
-        bound_model="system.userinfo",
+        bound_model="identity.userinfo",
         columns=["username", "is_active"],
         visibility="shared",
         creator=superuser,
@@ -112,7 +113,7 @@ def make_permission(user):
         name=f"dp-{user.username}",
         rules=[
             {
-                "table": "system.userinfo",
+                "table": "identity.userinfo",
                 "field": "id",
                 "type": "value.user.id",
                 "match": "exact",
@@ -305,7 +306,7 @@ class TestAuthz:
         grant_menus(normal_user)
         personal = Dataset.objects.create(
             name="私人清单",
-            bound_model="system.userinfo",
+            bound_model="identity.userinfo",
             columns=["username"],
             visibility="personal",
             creator=normal_user,
@@ -339,7 +340,7 @@ def grant_menus(user):
         _make("interpret:AiAssistant", "api/ai/assistant/nl-query/interpret$", "POST"),
         _make("run:AiAssistant", "api/ai/assistant/nl-query/run$", "POST"),
     ]
-    role = user.roles.first() or __import__("system.models", fromlist=["UserRole"]).UserRole.objects.create(
+    role = user.roles.first() or __import__("identity.models", fromlist=["UserRole"]).UserRole.objects.create(
         name=f"role-{user.username}", code=user.username
     )
     user.roles.add(role)

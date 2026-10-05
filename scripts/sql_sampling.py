@@ -182,7 +182,8 @@ def _seed_system_core(admin, covered: dict) -> list:
     """用户（挂部门/角色/岗位）+ 标签 + 字典 + 上传文件。"""
     from django.contrib.contenttypes.models import ContentType
 
-    from system.models import DataDict, DeptInfo, Post, Tag, TaggedItem, UploadFile, UserInfo, UserRole
+    from identity.models import DeptInfo, Post, UserInfo, UserRole
+    from system.models import DataDict, Tag, TaggedItem, UploadFile
 
     roles = [UserRole.objects.create(name=f"角色{i}", code=f"role{i}") for i in range(45)]
     depts = [DeptInfo.objects.create(name=f"部门{i}", code=f"dept{i}") for i in range(45)]
@@ -234,7 +235,8 @@ def _seed_system_core(admin, covered: dict) -> list:
 
 def _seed_system_extended(users, admin, covered: dict) -> None:
     """任务执行记录 / 个人访问令牌 / 数据权限 / 登录日志。"""
-    from system.models import DataPermission, PersonalAccessToken, TaskExecution, UserLoginLog
+    from identity.models import PersonalAccessToken
+    from system.models import DataPermission, TaskExecution, UserLoginLog
 
     try:
         TaskExecution.objects.bulk_create(
@@ -298,7 +300,7 @@ def _seed_dataset(users, admin, covered: dict) -> None:
         from dataset.models import Dataset, DynamicForm, DynamicFormSubmission
 
         for i in range(45):
-            Dataset.objects.create(name=f"数据集{i}", bound_model="system.UserInfo", creator=admin)
+            Dataset.objects.create(name=f"数据集{i}", bound_model="identity.UserInfo", creator=admin)
         forms = [DynamicForm.objects.create(name=f"表单{i}", schema=[], creator=admin) for i in range(2)]
         DynamicFormSubmission.objects.bulk_create(
             [DynamicFormSubmission(form=forms[0], data={"k": i}, creator=users[i % len(users)]) for i in range(45)]

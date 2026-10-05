@@ -12,8 +12,8 @@ search-columns 的 ``sortable`` 必须与 ViewSet 的 ``ordering_fields`` 声明
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.views.admin.passkey import PasskeyViewSet
-from system.views.admin.user import UserViewSet
+from identity.views.admin.passkey import PasskeyViewSet
+from identity.views.admin.user import UserViewSet
 
 pytestmark = pytest.mark.django_db
 

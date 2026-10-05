@@ -7,7 +7,7 @@
 
 import pytest
 
-from system.models import UserInfo
+from identity.models import UserInfo
 from system.models.tag import Tag, TaggedItem
 
 pytestmark = pytest.mark.django_db
@@ -54,7 +54,7 @@ class TestTagCrud:
     def test_resources_endpoint(self, auth_client):
         data = auth_client.get(f"{TAGS_URL}/resources").json()["data"]
         assert {item["key"] for item in data["resources"]} == {
-            "system.userinfo",
+            "identity.userinfo",
             "system.uploadfile",
             "approval.approvalinstance",
         }
@@ -66,12 +66,12 @@ class TestAssign:
         tag = Tag.objects.create(name="外包")
         response = auth_client.post(
             f"{TAGS_URL}/assign",
-            {"resource": "system.userinfo", "pk": str(user.pk), "tags": [str(tag.pk)]},
+            {"resource": "identity.userinfo", "pk": str(user.pk), "tags": [str(tag.pk)]},
             format="json",
         )
         assert response.status_code == 200, response.data
         assert [item["name"] for item in response.json()["data"]["tags"]] == ["外包"]
-        objects = auth_client.get(f"{TAGS_URL}/objects?resource=system.userinfo&pk={user.pk}").json()["data"]
+        objects = auth_client.get(f"{TAGS_URL}/objects?resource=identity.userinfo&pk={user.pk}").json()["data"]
         assert [item["name"] for item in objects["tags"]] == ["外包"]
         # 业务序列化器回显（列表 tags 字段）
         rows = auth_client.get("/api/system/user?username=tag-api-1").json()["data"]["results"]
@@ -87,7 +87,7 @@ class TestAssign:
         user = UserInfo.objects.create(username="tag-api-2", nickname="打标用户")
         response = auth_client.post(
             f"{TAGS_URL}/assign",
-            {"resource": "system.userinfo", "pk": str(user.pk), "tags": ["00000000-0000-0000-0000-000000000000"]},
+            {"resource": "identity.userinfo", "pk": str(user.pk), "tags": ["00000000-0000-0000-0000-000000000000"]},
             format="json",
         )
         assert response.json()["code"] == 1001
@@ -98,20 +98,20 @@ class TestAssign:
         pks = [str(user.pk) for user in users]
         added = auth_client.post(
             f"{TAGS_URL}/batch-assign",
-            {"resource": "system.userinfo", "pks": pks, "tags": [str(first.pk)], "mode": "add"},
+            {"resource": "identity.userinfo", "pks": pks, "tags": [str(first.pk)], "mode": "add"},
             format="json",
         ).json()
         assert added["code"] == 1000 and len(added["data"]["success"]) == 2
         removed = auth_client.post(
             f"{TAGS_URL}/batch-assign",
-            {"resource": "system.userinfo", "pks": pks, "tags": [str(first.pk)], "mode": "remove"},
+            {"resource": "identity.userinfo", "pks": pks, "tags": [str(first.pk)], "mode": "remove"},
             format="json",
         ).json()
         assert removed["code"] == 1000
         assert TaggedItem.objects.count() == 0
         replaced = auth_client.post(
             f"{TAGS_URL}/batch-assign",
-            {"resource": "system.userinfo", "pks": pks, "tags": [str(second.pk)], "mode": "replace"},
+            {"resource": "identity.userinfo", "pks": pks, "tags": [str(second.pk)], "mode": "replace"},
             format="json",
         ).json()
         assert replaced["code"] == 1000 and TaggedItem.objects.count() == 2
@@ -144,7 +144,7 @@ class TestAssign:
         client = APIClient(HTTP_USER_AGENT="pytest-agent")
         client.force_authenticate(user=normal_user)
         response = client.post(
-            f"{TAGS_URL}/assign", {"resource": "system.userinfo", "pk": str(user.pk), "tags": []}, format="json"
+            f"{TAGS_URL}/assign", {"resource": "identity.userinfo", "pk": str(user.pk), "tags": []}, format="json"
         )
         assert response.status_code == 403 or response.json()["code"] == 1001
         assert not TaggedItem.objects.exists()
@@ -157,7 +157,7 @@ class TestFilterAndDeleteProtection:
         tag = Tag.objects.create(name="筛选标签")
         auth_client.post(
             f"{TAGS_URL}/assign",
-            {"resource": "system.userinfo", "pk": str(tagged.pk), "tags": [str(tag.pk)]},
+            {"resource": "identity.userinfo", "pk": str(tagged.pk), "tags": [str(tag.pk)]},
             format="json",
         )
         rows = auth_client.get("/api/system/user?tag=筛选标签").json()["data"]["results"]
@@ -183,12 +183,12 @@ class TestFilterAndDeleteProtection:
         tag_b = Tag.objects.create(name="组合标签B")
         auth_client.post(
             f"{TAGS_URL}/assign",
-            {"resource": "system.userinfo", "pk": str(first.pk), "tags": [str(tag_a.pk), str(tag_b.pk)]},
+            {"resource": "identity.userinfo", "pk": str(first.pk), "tags": [str(tag_a.pk), str(tag_b.pk)]},
             format="json",
         )
         auth_client.post(
             f"{TAGS_URL}/assign",
-            {"resource": "system.userinfo", "pk": str(second.pk), "tags": [str(tag_a.pk)]},
+            {"resource": "identity.userinfo", "pk": str(second.pk), "tags": [str(tag_a.pk)]},
             format="json",
         )
 
@@ -210,7 +210,7 @@ class TestFilterAndDeleteProtection:
         tag = Tag.objects.create(name="被引用")
         auth_client.post(
             f"{TAGS_URL}/assign",
-            {"resource": "system.userinfo", "pk": str(user.pk), "tags": [str(tag.pk)]},
+            {"resource": "identity.userinfo", "pk": str(user.pk), "tags": [str(tag.pk)]},
             format="json",
         )
         assert auth_client.delete(f"{TAGS_URL}/{tag.pk}").status_code == 400

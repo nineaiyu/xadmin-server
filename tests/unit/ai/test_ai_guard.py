@@ -36,7 +36,7 @@ def _clear_guard_caches():
 def _make_phone_rule():
     from system.models.mask import DataMaskRule
 
-    return DataMaskRule.objects.create(model="system.userinfo", field="phone", mask_type="phone")
+    return DataMaskRule.objects.create(model="identity.userinfo", field="phone", mask_type="phone")
 
 
 class TestScanInjection:

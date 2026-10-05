@@ -34,9 +34,9 @@ def _load(name: str):
 
 @pytest.fixture
 def userinfo_whitelist(db):
-    """system.userinfo 白名单（列取值与种子 columns 严格同源）。"""
+    """identity.userinfo 白名单（列取值与种子 columns 严格同源）。"""
     root, _ = ModelLabelField.objects.get_or_create(
-        name="system.userinfo",
+        name="identity.userinfo",
         defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"},
     )
     for name in ("username", "nickname", "gender", "is_active", "phone", "dept", "date_joined"):
@@ -60,7 +60,7 @@ def test_seed_dataset_columns_within_whitelist(userinfo_whitelist):
     from dataset.utils.dataset import available_fields
 
     item = _load("dataset.json")[0]
-    whitelist = set(available_fields("system.userinfo"))
+    whitelist = set(available_fields("identity.userinfo"))
     columns = item["fields"]["columns"]
     assert set(columns) <= whitelist
     date_field = (item["fields"].get("config") or {}).get("date_field")

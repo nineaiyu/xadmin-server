@@ -55,7 +55,7 @@ def _check(key: str, label, count: int, hint="", samples=None) -> ImpactCheck:
 
 
 def _impact_userrole(obj) -> list:
-    from system.models import UserInfo
+    from identity.services import UserInfo
 
     users = UserInfo.objects.filter(roles=obj, is_active=True)
     return [
@@ -77,7 +77,7 @@ def _impact_userrole(obj) -> list:
 
 
 def _impact_deptinfo(obj) -> list:
-    from system.models import DeptInfo, UserInfo
+    from identity.services import DeptInfo, UserInfo
 
     children = DeptInfo.objects.filter(parent=obj)
     users = UserInfo.objects.filter(dept=obj)
@@ -200,7 +200,8 @@ def _impact_screen(obj) -> list:
 
 
 def _impact_menu(obj) -> list:
-    from system.models import Menu, UserRole
+    from identity.services import UserRole
+    from system.models import Menu
 
     children = Menu.objects.filter(parent=obj)
     roles = UserRole.objects.filter(menu=obj)
@@ -224,8 +225,8 @@ def _impact_menu(obj) -> list:
 
 #: 影响面计算器注册表：模型 label_lower → 计算器（返回 ImpactCheck 列表）
 IMPACT_CALCULATORS = {
-    "system.userrole": _impact_userrole,
-    "system.deptinfo": _impact_deptinfo,
+    "identity.userrole": _impact_userrole,
+    "identity.deptinfo": _impact_deptinfo,
     "system.datadict": _impact_datadict,
     "dataset.dataset": _impact_dataset,
     "approval.approvalflow": _impact_approvalflow,

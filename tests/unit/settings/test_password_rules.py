@@ -7,8 +7,8 @@
 
 import pytest
 
+from identity.models.password import PasswordHistory
 from settings.utils import password as pwd
-from system.models.password import PasswordHistory
 
 pytestmark = pytest.mark.django_db
 

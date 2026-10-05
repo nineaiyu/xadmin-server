@@ -15,8 +15,8 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
 from dataset.models.dataset import Dataset, Report
-from system.models import UserInfo, UserRole
-from system.views.admin.role import RoleViewSet
+from identity.models import UserInfo, UserRole
+from identity.views.admin.role import RoleViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -71,8 +71,8 @@ class TestRelationCountDeclarative:
         assert own == {"count_role_0": 2, "count_role_1": 1, "count_role_2": 0}
 
         # 3 个自建角色：基线每行一次 COUNT，声明式预聚合后逐行 COUNT 归零
-        assert len(_per_row_count_queries(ctx_base, "system_userinfo_roles")) >= 3
-        assert _per_row_count_queries(ctx_opt, "system_userinfo_roles") == []
+        assert len(_per_row_count_queries(ctx_base, "identity_userinfo_roles")) >= 3
+        assert _per_row_count_queries(ctx_opt, "identity_userinfo_roles") == []
 
     def test_write_action_not_annotated(self, db):
         view = RoleViewSet()
@@ -92,7 +92,7 @@ class TestRelationCountDeclarative:
 
     def test_single_object_falls_back(self, role_page):
         """未走 mixin 的单对象序列化回退为单次 COUNT，结果一致。"""
-        from system.serializers.role import RoleSerializer
+        from identity.serializers.role import RoleSerializer
 
         plain = UserRole.objects.get(pk=role_page[0].pk)
         assert not hasattr(plain, "user_count")
@@ -100,7 +100,7 @@ class TestRelationCountDeclarative:
 
     def test_undeclared_view_untouched(self, auth_client):
         """未混入 mixin 的视图（用户列表）queryset 无关联计数注解。"""
-        from system.views.admin.user import UserViewSet
+        from identity.views.admin.user import UserViewSet
 
         view = UserViewSet()
         view.action = "list"
@@ -109,8 +109,8 @@ class TestRelationCountDeclarative:
 
 class TestDatasetReportCount:
     def test_list_report_count(self, auth_client):
-        dataset_with = Dataset.objects.create(name="计数数据集A", bound_model="system.userinfo")
-        Dataset.objects.create(name="计数数据集B", bound_model="system.userinfo")  # 无报表引用 → 计数 0
+        dataset_with = Dataset.objects.create(name="计数数据集A", bound_model="identity.userinfo")
+        Dataset.objects.create(name="计数数据集B", bound_model="identity.userinfo")  # 无报表引用 → 计数 0
         for index in range(2):
             Report.objects.create(name=f"计数报表{index}", dataset=dataset_with)
 

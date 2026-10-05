@@ -138,14 +138,14 @@ class ApprovalRequestStep(DbAuditModel):
     )
     # 候选人快照（一行一人，M2M）；当前级候选人另有主单冗余投影 current_assignees
     assignees = models.ManyToManyField(
-        "system.UserInfo",
+        "identity.UserInfo",
         related_name="approval_step_assignments",
         blank=True,
         verbose_name=_("Assignees"),
     )
     status = models.CharField(_("Status"), max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
     approver = models.ForeignKey(
-        "system.UserInfo",
+        "identity.UserInfo",
         related_name="acted_approval_steps",
         on_delete=models.SET_NULL,
         null=True,
@@ -193,7 +193,7 @@ class ApprovalRequestStepAction(DbAuditModel):
         verbose_name=_("Approval step"),
     )
     approver = models.ForeignKey(
-        "system.UserInfo",
+        "identity.UserInfo",
         related_name="approval_step_actions",
         on_delete=models.SET_NULL,
         null=True,

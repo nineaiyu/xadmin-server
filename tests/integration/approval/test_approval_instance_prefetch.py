@@ -7,7 +7,7 @@ from django.test.utils import CaptureQueriesContext
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalNodeTask
 from approval.utils.approval_flow import approve_task, create_instance
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

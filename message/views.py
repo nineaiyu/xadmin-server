@@ -39,6 +39,7 @@ from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from identity.utils.user_options import search_user_options
 from message import ai as chat_ai
 from message import chat as chat_service
 from message.attachments import attachment_response
@@ -50,7 +51,6 @@ from message.serializers import (
     RenameGroupSerializer,
 )
 from message.utils import broadcast_message_recall
-from system.utils.identity.user_options import search_user_options
 
 logger = get_logger(__name__)
 

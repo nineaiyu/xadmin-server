@@ -40,21 +40,21 @@ def ws_layer():
 
 @pytest.fixture
 def alice(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="react-alice", password="Test@123456", nickname="爱丽丝")
 
 
 @pytest.fixture
 def bob(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="react-bob", password="Test@123456", nickname="鲍勃")
 
 
 @pytest.fixture
 def charlie(db):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     return UserInfo.objects.create_user(username="react-charlie", password="Test@123456", nickname="卡罗")
 
@@ -299,7 +299,7 @@ class TestReactionValidation:
         # 同一用户重复 add 幂等放行（无新增成员）
         assert captured == []
 
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         bob = UserInfo.objects.create_user(username="react-cap-bob", password="Test@123456")
         __, captured = _react(ws_layer, bob, {"message": message.pk, "emoji": "👍", "op": "add"})
@@ -309,7 +309,7 @@ class TestReactionValidation:
 class TestReactionRateLimit:
     def test_reaction_shares_send_rate_limit(self, ws_layer, monkeypatch):
         """回应与消息发送共用每用户每秒限流：超限时回执 1001 且不落库不广播。"""
-        from system.models import UserInfo
+        from identity.models import UserInfo
 
         monkeypatch.setattr("message.consumers.CHAT_SEND_LIMIT_PER_SECOND", 1)
         user = UserInfo.objects.create_user(username="react-rate", password="Test@123456")

@@ -7,9 +7,9 @@
 
 import pytest
 
+from identity.models import Post, UserInfo
 from notifications.models import MessageContent
 from notifications.views.user_site_msg import get_users_notice_q
-from system.models import Post, UserInfo
 
 pytestmark = pytest.mark.django_db
 
@@ -100,7 +100,7 @@ class TestPostNoticeValidate:
 
     def test_role_type_drops_notice_post(self, auth_client, superuser, post):
         """维度互斥：非 POST 类型的 notice_post 载荷被清理，不会误存。"""
-        from system.models import UserRole
+        from identity.models import UserRole
 
         role = UserRole.objects.create(name="通知角色", code="notice_role_x")
         resp = auth_client.post(

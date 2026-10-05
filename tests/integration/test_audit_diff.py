@@ -54,7 +54,7 @@ def test_default_whitelist_covers_user_management(settings):
     回归守护：默认清单曾被置空 → 变更历史弹窗的字段明细恒为空（前端显示「—」），
     用户改了性别/昵称也看不到任何 diff。
     """
-    assert "system.UserInfo" in (settings.AUDIT_DIFF_MODELS or [])
+    assert "identity.UserInfo" in (settings.AUDIT_DIFF_MODELS or [])
 
 
 def test_user_update_records_changes_by_default(
@@ -88,9 +88,11 @@ def test_list_request_has_no_object_pk(auth_client, django_capture_on_commit_cal
 def test_m2m_changes_recorded(auth_client, superuser, menu_factory, monkeypatch, django_capture_on_commit_callbacks):
     """M2M 关系变更纳入 diff（角色菜单授权）：与标量字段同形态落 changes。"""
     from common.core.config import SysConfig
-    from system.models import UserRole
+    from identity.models import UserRole
 
-    monkeypatch.setattr(type(SysConfig), "AUDIT_DIFF_MODELS", property(lambda self: ["system.UserRole"]), raising=False)
+    monkeypatch.setattr(
+        type(SysConfig), "AUDIT_DIFF_MODELS", property(lambda self: ["identity.UserRole"]), raising=False
+    )
     role = UserRole.objects.create(name="审计角色", code="audit-diff-m2m")
     menu = menu_factory("授权菜单", path="api/audit-m2m$", method="GET")
 
@@ -115,9 +117,11 @@ def test_m2m_unchanged_not_recorded(
 ):
     """M2M 未变化的 update 不产生该字段 diff（groups 等恒空关系亦无噪声）。"""
     from common.core.config import SysConfig
-    from system.models import UserRole
+    from identity.models import UserRole
 
-    monkeypatch.setattr(type(SysConfig), "AUDIT_DIFF_MODELS", property(lambda self: ["system.UserRole"]), raising=False)
+    monkeypatch.setattr(
+        type(SysConfig), "AUDIT_DIFF_MODELS", property(lambda self: ["identity.UserRole"]), raising=False
+    )
     role = UserRole.objects.create(name="无变化角色", code="audit-diff-m2m-2")
 
     with django_capture_on_commit_callbacks(execute=True):

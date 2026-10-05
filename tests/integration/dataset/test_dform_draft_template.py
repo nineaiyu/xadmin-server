@@ -13,7 +13,7 @@ import pytest
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
-from system.models import UserInfo
+from identity.models import UserInfo
 from system.models.dict import DataDict
 
 pytestmark = pytest.mark.django_db

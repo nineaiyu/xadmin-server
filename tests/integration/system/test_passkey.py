@@ -21,8 +21,8 @@ import pytest
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from system.models import UserPasskey
-from system.utils.identity.webauthn import (
+from identity.models import UserPasskey
+from identity.utils.webauthn import (
     SCENE_AUTHENTICATE,
     SCENE_REGISTER,
     generate_challenge,
@@ -265,8 +265,8 @@ class TestMfaMethodPolicy:
         assert get_backend(superuser, "otp") is None
 
     def test_role_and_user_layers_intersect(self, superuser, settings):
+        from identity.models import UserRole
         from mfa.backends import get_user_mfa_policy
-        from system.models import UserRole
 
         settings.SECURITY_MFA_METHODS = []
         role = UserRole.objects.create(name="安全角色", code="sec_role", allowed_mfa_types=["otp", "passkey"])
@@ -277,8 +277,8 @@ class TestMfaMethodPolicy:
         assert get_user_mfa_policy(superuser)["methods"] == {"otp"}
 
     def test_role_requires_mfa(self, superuser):
+        from identity.models import UserRole
         from mfa.services import is_login_mfa_required
-        from system.models import UserRole
 
         superuser.otp_secret_key = "JBSWY3DPEHPK3PXP"
         superuser.mfa_level = 1
@@ -288,8 +288,8 @@ class TestMfaMethodPolicy:
         assert is_login_mfa_required(superuser) is True
 
     def test_role_requires_mfa_without_method_degrades(self, superuser):
+        from identity.models import UserRole
         from mfa.services import is_login_mfa_required
-        from system.models import UserRole
 
         role = UserRole.objects.create(name="强制MFA2", code="mfa_role2", mfa_required=True)
         superuser.roles.add(role)

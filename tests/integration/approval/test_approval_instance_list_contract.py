@@ -16,7 +16,7 @@ from django.test.utils import CaptureQueriesContext
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 from approval.models.leave import Leave
 from approval.utils.approval_flow import create_instance
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

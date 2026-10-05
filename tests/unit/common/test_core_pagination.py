@@ -11,7 +11,7 @@ from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
 from common.core.pagination import DynamicPageNumber
-from system.models import UserInfo
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

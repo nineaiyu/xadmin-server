@@ -60,12 +60,12 @@ class Command(BaseCommand):
     def _scan_permissions(self):
         self.stdout.write("[4/4] 权限点缺口扫描…")
         try:
-            from system.models import UserInfo
+            from identity.models import UserInfo
 
             if not UserInfo.objects.exists():
                 self.stdout.write("      数据库尚未初始化，跳过（先执行 python utils/init_data.py）")
                 return
-            from system.utils.identity import permission_sync as sync
+            from system.utils.platform import permission_sync as sync
 
             gaps = sync.scan_permission_gaps()
             if gaps:

@@ -9,7 +9,8 @@
 import pytest
 from rest_framework.test import APIClient
 
-from system.models import DataPermission, DeptInfo, UserInfo, UserRole
+from identity.models import DeptInfo, UserInfo, UserRole
+from system.models import DataPermission
 
 pytestmark = pytest.mark.django_db
 
@@ -32,7 +33,7 @@ def grant_targets(db):
             name="全部数据",
             rules=[
                 {
-                    "table": "system.userinfo",
+                    "table": "identity.userinfo",
                     "field": "id",
                     "type": "value.all",
                     "match": "all",

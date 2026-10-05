@@ -11,7 +11,8 @@ import pytest
 from rest_framework.test import APIClient
 
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
-from system.models import Menu, MenuMeta, UserRole
+from identity.models import UserRole
+from system.models import Menu, MenuMeta
 
 pytestmark = pytest.mark.django_db
 

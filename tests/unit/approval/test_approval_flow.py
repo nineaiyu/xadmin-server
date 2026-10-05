@@ -23,7 +23,7 @@ from approval.utils.approval_flow import (
     validate_form,
 )
 from common.core.config import SysConfig
-from system.models import DeptInfo, Post, UserInfo, UserRole
+from identity.models import DeptInfo, Post, UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 
@@ -1065,7 +1065,7 @@ class TestNodeLimitAndBatchPaths:
         with CaptureQueriesContext(connection) as ctx:
             users = _resolve_instance_cc([], applicant, [str(approver.pk), approver2.username])
         assert {user.pk for user in users} == {approver.pk, approver2.pk}
-        assert len([item for item in ctx.captured_queries if "system_userinfo" in item["sql"].lower()]) == 1
+        assert len([item for item in ctx.captured_queries if "identity_userinfo" in item["sql"].lower()]) == 1
 
     def test_auto_approved_alerts_webhook_and_admins(
         self, monkeypatch, applicant, superuser, django_capture_on_commit_callbacks

@@ -11,8 +11,8 @@ import json
 import pytest
 from django.conf import settings as dj_settings
 
+from identity.services import invalid_user_cache_signal
 from settings.models import Setting
-from system.services import invalid_user_cache_signal
 
 pytestmark = pytest.mark.django_db
 

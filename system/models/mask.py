@@ -33,7 +33,7 @@ class DataMaskRule(DbUuidModel, DbAuditModel):
     mask_char = models.CharField(_("Mask char"), max_length=4, default="*")
     pattern = models.CharField(_("Custom pattern"), max_length=255, blank=True, null=True)
     roles = models.ManyToManyField(
-        to="system.UserRole", verbose_name=_("Roles"), blank=True, help_text=_("Empty = all non-superuser")
+        to="identity.UserRole", verbose_name=_("Roles"), blank=True, help_text=_("Empty = all non-superuser")
     )
     is_active = models.BooleanField(_("Is active"), default=True)
     sort = models.IntegerField(_("Sort"), default=0)

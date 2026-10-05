@@ -13,9 +13,9 @@ from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
+from identity.models.user import UserInfo
 from system import tasks as system_tasks
 from system.models.task import TaskExecution
-from system.models.user import UserInfo
 from system.serializers.task import CrontabScheduleSerializer, TaskExecutionSerializer
 from system.signal_task_execution import (
     task_execution_on_finish,

@@ -98,7 +98,8 @@ def module_impact(resolution=None) -> dict:
 
     from django.contrib.auth import get_user_model
 
-    from system.models import Menu, UserRole
+    from identity.services import UserRole
+    from system.models import Menu
 
     resolution = resolution or resolve_modules()
     rows = menu_rows()

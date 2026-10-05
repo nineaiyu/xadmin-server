@@ -39,7 +39,7 @@ def _resolve_user(value):
     宽容解析保证两段式幂等：``validate`` 输出的可读展示值（``昵称(用户名)``）与
     前端回传的主键都能在 ``execute`` 阶段解析回同一个用户。
     """
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     text = str(value or "").strip()
     if not text:
@@ -59,7 +59,7 @@ def _resolve_user(value):
 
 def _user_display(pk: str) -> str:
     """用户主键 → 确认卡片展示文本 ``昵称(用户名)``（昵称缺失则仅用户名）。"""
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     user = UserInfo.objects.filter(pk=pk).first()
     if user is None:
@@ -70,7 +70,7 @@ def _user_display(pk: str) -> str:
 
 def _resolve_role(value):
     """角色名/主键 → 角色主键（确认卡片回显用展示文本，与 user 同口径）。"""
-    from system.models import UserRole
+    from identity.models import UserRole
 
     text = str(value or "").strip()
     if not text:
@@ -87,7 +87,7 @@ def _resolve_role(value):
 
 def _role_display(pk: str) -> str:
     """角色主键 → 确认卡片展示文本（角色名）。"""
-    from system.models import UserRole
+    from identity.models import UserRole
 
     role = UserRole.objects.filter(pk=pk).first()
     return role.name if role else str(pk)

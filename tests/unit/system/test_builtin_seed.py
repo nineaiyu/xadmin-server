@@ -29,9 +29,10 @@ from django.core.management import call_command
 from approval.serializers.approval_flow import FORM_FIELD_TYPES
 from approval.utils.approval_flow import CONDITION_OPS
 from dataset.utils.dform import validate_schema, validate_submission_data
-from system.builtin import BUILTIN_ROLES
+from identity.builtin import BUILTIN_ROLES
+from identity.models import UserRole
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
-from system.models import FieldPermission, Menu, ModelLabelField, UserRole
+from system.models import FieldPermission, Menu, ModelLabelField
 
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 

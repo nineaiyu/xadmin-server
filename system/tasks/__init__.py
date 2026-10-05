@@ -38,7 +38,7 @@ logger = get_logger(__name__)
 # LDAP 同步周期任务：celery autodiscover 只导入 <app>.tasks，
 # 子包任务必须在此显式引入才会注册到 django_celery_beat
 from dataset.analysis_tasks import dispatch_scheduled_reports as _dispatch_scheduled_reports  # noqa: F401,E402
-from system.ldap.tasks import sync_ldap_directory_job as _sync_ldap_directory_job  # noqa: F401,E402
+from identity.ldap.tasks import sync_ldap_directory_job as _sync_ldap_directory_job  # noqa: F401,E402
 from system.webhook_tasks import deliver_webhook as _deliver_webhook  # noqa: F401,E402
 
 
@@ -59,7 +59,7 @@ def auto_clean_black_token_job():
 @register_as_period_task(crontab="0 8 * * *")
 def account_expiry_job():
     """账号有效期维护：到期前 N 天提醒（站内信 + 邮件），到期自动停用。"""
-    from system.utils.identity.account_expiry import disable_expired_accounts, notify_expiring_accounts
+    from identity.utils.account_expiry import disable_expired_accounts, notify_expiring_accounts
 
     notified = notify_expiring_accounts()
     disabled = disable_expired_accounts()
@@ -168,7 +168,7 @@ def auto_expire_user_session_job():
     WS 会话不在此列：其在线判定由 channel 存活决定，优雅断开由 WS logout
     钩子标记，异常残留由 auto_clean_user_session_job 按保留期回收。
     """
-    from system.utils.identity.session import expire_stale_sessions
+    from identity.utils.session import expire_stale_sessions
 
     count = expire_stale_sessions()
     if count:
@@ -180,7 +180,7 @@ def auto_expire_user_session_job():
 @register_as_period_task(crontab="12 3 * * *")
 def auto_clean_user_session_job():
     """删除超过保留期的会话记录（USER_SESSION_RETENTION_DAYS，默认 30 天）。"""
-    from system.utils.identity.session import clean_expired_sessions
+    from identity.utils.session import clean_expired_sessions
 
     removed = clean_expired_sessions()
     if removed:
@@ -201,7 +201,7 @@ def auto_clean_upload_sessions_job():
 @register_as_period_task(crontab="22 3 * * *")
 def auto_clean_pat_job():
     """清理个人访问令牌：过期超 30 天的凭证，以及停用且 30 天未更新的凭证。"""
-    from system.models.token import PersonalAccessToken
+    from identity.models.token import PersonalAccessToken
 
     deadline = timezone.now() - datetime.timedelta(days=30)
     removed = PersonalAccessToken.objects.filter(
@@ -250,7 +250,7 @@ def async_export_data_task(self, record_id, view_path, query_params, user_pk):
 @register_as_period_task(crontab="23 4 * * *")
 def scan_account_risk_job():
     """账号安全风险巡检：弱项巡检一次，产出/刷新待处置风险清单。"""
-    from system.utils.identity.account_risk import scan_account_risks
+    from identity.utils.account_risk import scan_account_risks
 
     return scan_account_risks()
 
@@ -276,9 +276,9 @@ def demo_account_selfheal_job():
     """
     from django.core.management import call_command
 
+    from identity.services import UserInfo
     from settings.utils.security import LoginBlockUtil, MFABlockUtils
     from system.management.commands.seed_demo_admin import ADMIN_USERNAME
-    from system.models import UserInfo
 
     user = UserInfo.all_objects.filter(username=ADMIN_USERNAME, is_superuser=False).first()
     if user is None or user.deleted_at or not user.is_active:

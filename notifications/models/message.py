@@ -27,16 +27,16 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         DANGER = "danger", _("Important notices")
 
     notice_user = models.ManyToManyField(
-        "system.UserInfo",
+        "identity.UserInfo",
         through="MessageUserRead",
         blank=True,
         through_fields=("notice", "owner"),
         verbose_name=_("The notified user"),
     )
-    notice_dept = models.ManyToManyField("system.DeptInfo", blank=True, verbose_name=_("The notified department"))
-    notice_role = models.ManyToManyField("system.UserRole", blank=True, verbose_name=_("The notified role"))
+    notice_dept = models.ManyToManyField("identity.DeptInfo", blank=True, verbose_name=_("The notified department"))
+    notice_role = models.ManyToManyField("identity.UserRole", blank=True, verbose_name=_("The notified role"))
     # 岗位为人员维度（不参与权限判定）：按「持有该岗位的用户」展开接收人
-    notice_post = models.ManyToManyField("system.Post", blank=True, verbose_name=_("The notified post"))
+    notice_post = models.ManyToManyField("identity.Post", blank=True, verbose_name=_("The notified post"))
     level = models.CharField(
         verbose_name=_("Notice level"), choices=LevelChoices, default=LevelChoices.DEFAULT, max_length=20
     )
@@ -74,7 +74,7 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
 
 
 class MessageUserRead(DbAuditModel):
-    owner = models.ForeignKey("system.UserInfo", on_delete=models.CASCADE, verbose_name=_("User"))
+    owner = models.ForeignKey("identity.UserInfo", on_delete=models.CASCADE, verbose_name=_("User"))
     notice = models.ForeignKey(MessageContent, on_delete=models.CASCADE, verbose_name=_("Notice"))
     # 单列 db_index 与下方 (owner, unread) 复合索引的左前缀重复，属冗余索引，删除单列保留复合
     unread = models.BooleanField(verbose_name=_("Unread"), default=True, blank=False)

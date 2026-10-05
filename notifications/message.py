@@ -3,10 +3,10 @@ from django.db.models import QuerySet
 
 from common.core.config import batch_user_config
 from common.utils import get_logger
+from identity.services import UserInfo
 from message.utils import get_online_users
 from notifications.serializers.message import NoticeMessageSerializer
 from notifications.tasks import json_safe, push_messages_job
-from system.services import UserInfo
 
 logger = get_logger(__name__)
 

@@ -17,8 +17,9 @@ from common.core.fields import BasePrimaryKeyRelatedField
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
 from common.utils import get_logger
-from system.models import SystemConfig, UserInfo, UserPersonalConfig
-from system.utils.identity.oauth import validate_providers
+from identity.services import UserInfo
+from identity.utils.oauth import validate_providers
+from system.models import SystemConfig, UserPersonalConfig
 
 logger = get_logger(__name__)
 

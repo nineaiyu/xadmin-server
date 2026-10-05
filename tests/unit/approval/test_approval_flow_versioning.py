@@ -11,7 +11,7 @@ from django.utils.translation import gettext as _gettext
 from approval.models.approval import ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 from approval.serializers.approval_flow import ApprovalFlowSerializer
 from approval.utils.approval_flow import approve_task, create_instance
-from system.models import UserInfo, UserRole
+from identity.models import UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 

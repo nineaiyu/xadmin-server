@@ -16,8 +16,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from system.models.ldap import LdapUserBinding
-from system.views.auth import reset as reset_view
+from identity.models.ldap import LdapUserBinding
+from identity.views.auth import reset as reset_view
 from tests.unit.common.test_aes_cipher_v2 import _encrypt_v2
 
 RESET_URL = "/api/system/auth/reset"

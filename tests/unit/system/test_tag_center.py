@@ -8,7 +8,7 @@
 import pytest
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from system.models import UserInfo
+from identity.models import UserInfo
 from system.models.tag import TAGGABLE_MODELS, Tag, TaggedItem
 from system.utils.platform.tags import (
     ensure_tag_permission,
@@ -38,7 +38,7 @@ class TestWhitelist:
     def test_taggable_resources(self):
         resources = {item["key"] for item in taggable_resources()}
         assert resources == set(TAGGABLE_MODELS)
-        assert "system.userinfo" in resources
+        assert "identity.userinfo" in resources
 
     def test_non_whitelisted_model_rejected(self):
         assert taggable_model("system.role") is None
@@ -48,7 +48,7 @@ class TestWhitelist:
         assert resource_key(UserInfo) in TAGGABLE_MODELS
 
     def test_permission_fail_closed_on_non_taggable(self, superuser):
-        from system.models.department import DeptInfo
+        from identity.models.department import DeptInfo
 
         # 非白名单对象：打标权限无从回落 → 直接拒绝（fail-closed）
         with pytest.raises(DjangoValidationError):

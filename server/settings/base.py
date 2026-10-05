@@ -187,7 +187,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-AUTH_USER_MODEL = "system.UserInfo"
+AUTH_USER_MODEL = "identity.UserInfo"
 
 # 会话存储与密码哈希（SESSION_ENGINE / PASSWORD_HASHERS）见 libs.py 的
 # 「Django 认证/会话」段（与 DRF/JWT/CORS 同属框架级配置层）。
@@ -196,7 +196,7 @@ AUTH_USER_MODEL = "system.UserInfo"
 # LDAP_AUTH_ENABLED / LDAP_AUTH_PRIORITY 动态让位 ModelBackend，
 # 关闭/降级时行为与纯本地账密完全一致
 AUTHENTICATION_BACKENDS = [
-    "system.ldap.auth.LdapBindBackend",
+    "identity.ldap.auth.LdapBindBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
 

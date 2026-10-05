@@ -18,7 +18,7 @@ from approval.models import (
     ApprovalRequest,
 )
 from common.core.config import SysConfig
-from system.models import UserInfo, UserRole
+from identity.models import UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 
@@ -39,7 +39,7 @@ class TestTargetSnapshot:
         assert response.status_code == 412
         approval = ApprovalRequest.objects.get(status=ApprovalRequest.Status.PENDING)
         snapshot = approval.target_snapshot
-        assert snapshot["model"] == "system.userrole"
+        assert snapshot["model"] == "identity.userrole"
         assert snapshot["pk"] == str(role.pk)
         assert snapshot["name"].startswith("待删角色")
 
@@ -54,7 +54,7 @@ class TestTargetSnapshot:
     def test_patch_style_changes_diff_rendered(self):
         """变更类请求（PATCH body）→ 快照含「变更前 → 变更后」对照。"""
         from approval.utils.approval.snapshot import build_target_snapshot
-        from system.views.admin.role import RoleViewSet
+        from identity.views.admin.role import RoleViewSet
 
         role = UserRole.objects.create(name="原角色名", code="u1_role3")
         view = RoleViewSet()
@@ -70,7 +70,7 @@ class TestTargetSnapshot:
 
     def test_snapshot_missing_for_unreachable_object(self):
         from approval.utils.approval.snapshot import build_target_snapshot
-        from system.views.admin.role import RoleViewSet
+        from identity.views.admin.role import RoleViewSet
 
         view = RoleViewSet()
         view.action = "update"

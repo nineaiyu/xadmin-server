@@ -11,15 +11,15 @@ from unittest import mock
 import pytest
 from django.core.cache import cache
 
-from system.models import DeptInfo, Menu, SystemConfig, UserInfo, UserRole
-from system.signal_handler import (
-    clean_cache_handler,
-    invalid_config_cache_handler,
+from identity.models import DeptInfo, UserInfo, UserRole
+from identity.signal_handler import (
     invalid_dept_cache_handler,
     invalid_role_cache_handler,
     invalid_user_cache,
     invalid_user_cache_handler,
 )
+from system.models import Menu, SystemConfig
+from system.signal_handler import clean_cache_handler, invalid_config_cache_handler
 
 pytestmark = pytest.mark.django_db
 

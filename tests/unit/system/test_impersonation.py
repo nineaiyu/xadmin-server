@@ -9,9 +9,10 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, Ou
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from common.core.auth import ServerAccessToken
-from system.models import DataPermission, OperationLog, UserSession
+from identity.models import UserSession
+from identity.models.user import UserInfo
+from system.models import DataPermission, OperationLog
 from system.models.log import UserLoginLog
-from system.models.user import UserInfo
 
 pytestmark = pytest.mark.django_db
 
@@ -126,7 +127,7 @@ def test_role_user_with_grant_can_impersonate(api_client, normal_user, role, men
     role.menu.add(menu)
     grant = DataPermission.objects.create(
         name="模拟-全部数据",
-        rules=[{"table": "system.userinfo", "field": "id", "type": "value.all", "value": "*", "match": "all"}],
+        rules=[{"table": "identity.userinfo", "field": "id", "type": "value.all", "value": "*", "match": "all"}],
     )
     normal_user.rules.add(grant)
     django_cache.clear()  # 权限缓存 24h：授权变更后需失效再取
@@ -146,7 +147,7 @@ def test_cannot_impersonate_while_impersonating(api_client, superuser, normal_us
     normal_user.rules.add(
         DataPermission.objects.create(
             name="链式-全部数据",
-            rules=[{"table": "system.userinfo", "field": "id", "type": "value.all", "value": "*", "match": "all"}],
+            rules=[{"table": "identity.userinfo", "field": "id", "type": "value.all", "value": "*", "match": "all"}],
         )
     )
     django_cache.clear()

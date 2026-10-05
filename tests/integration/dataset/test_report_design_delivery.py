@@ -24,7 +24,7 @@ ALL_COLUMNS = ["username", "gender", "is_active"]
 def model_registry(db):
     """数据集可用字段白名单：执行侧只认已登记的数据字段（与 test_analysis_api 同款）。"""
     root, _ = ModelLabelField.objects.get_or_create(
-        name="system.userinfo", defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"}
+        name="identity.userinfo", defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "用户"}
     )
     for name in ALL_COLUMNS:
         ModelLabelField.objects.get_or_create(
@@ -37,7 +37,7 @@ def model_registry(db):
 def dataset(model_registry, superuser):
     return Dataset.objects.create(
         name="投递设计数据集",
-        bound_model="system.userinfo",
+        bound_model="identity.userinfo",
         columns=list(ALL_COLUMNS),
         visibility="shared",
         creator=superuser,
@@ -53,7 +53,7 @@ def _workbook(dataset, superuser, design, mode="rows", **kwargs):
         mode=mode,
         **kwargs,
     )
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     user = UserInfo.objects.get(pk=superuser.pk)
     content, rows = _render_workbook(report, user)
@@ -76,7 +76,7 @@ def test_design_columns_trim_and_order(dataset, superuser):
 
 
 def test_table_limit_truncates_rows(dataset, superuser):
-    from system.models import UserInfo
+    from identity.models import UserInfo
 
     for index in range(12):
         UserInfo.objects.create_user(username=f"design_row_{index}", password="Pass-2026!")

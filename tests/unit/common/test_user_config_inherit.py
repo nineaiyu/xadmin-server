@@ -18,8 +18,9 @@ from django.core.cache import cache as django_cache
 
 from common.cache.storage import UserSystemConfigCache
 from common.core.config import SysConfig, UserConfig, batch_user_config
+from identity.models import UserInfo
 from server.const import CONFIG
-from system.models import SystemConfig, UserInfo, UserPersonalConfig
+from system.models import SystemConfig, UserPersonalConfig
 
 pytestmark = pytest.mark.django_db
 

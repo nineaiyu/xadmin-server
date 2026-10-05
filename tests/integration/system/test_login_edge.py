@@ -48,7 +48,7 @@ class TestBasicLoginEdge:
         def boom(request, user, login_type, channel_name=""):
             raise RuntimeError("session down")
 
-        monkeypatch.setattr("system.views.auth.login.register_user_session", boom)
+        monkeypatch.setattr("identity.views.auth.login.register_user_session", boom)
         resp = api_client.post(
             BASIC_LOGIN_URL,
             {"username": "zhangsan", "password": "Test@123456"},
@@ -65,7 +65,7 @@ class TestBasicLoginEdge:
         def boom(refresh_token, session_pk):
             raise RuntimeError("claim bind failed")
 
-        monkeypatch.setattr("system.views.auth.login.bind_session_claim", boom)
+        monkeypatch.setattr("identity.views.auth.login.bind_session_claim", boom)
         resp = api_client.post(
             BASIC_LOGIN_URL,
             {"username": "zhangsan", "password": "Test@123456"},
@@ -99,7 +99,7 @@ class TestTempTokenExpire:
             captured["time_limit"] = time_limit
             return "tmp_token_fake"
 
-        monkeypatch.setattr("system.views.auth.token.make_token_cache", fake_make_token_cache)
+        monkeypatch.setattr("identity.views.auth.token.make_token_cache", fake_make_token_cache)
         settings.SECURITY_TEMP_TOKEN_EXPIRE = 1200
         resp = api_client.get(TEMP_TOKEN_URL, HTTP_ACCEPT="application/json")
         assert resp.data["code"] == 1000, resp.data
@@ -114,7 +114,7 @@ class TestTempTokenExpire:
             captured["time_limit"] = time_limit
             return "tmp_token_fake"
 
-        monkeypatch.setattr("system.views.auth.token.make_token_cache", fake_make_token_cache)
+        monkeypatch.setattr("identity.views.auth.token.make_token_cache", fake_make_token_cache)
         settings.SECURITY_TEMP_TOKEN_EXPIRE = 0
         resp = api_client.get(TEMP_TOKEN_URL, HTTP_ACCEPT="application/json")
         assert resp.data["code"] == 1000, resp.data
@@ -277,7 +277,7 @@ class TestVerifyCodeLogin:
         def boom(request, user, login_type, channel_name=""):
             raise RuntimeError("session down")
 
-        monkeypatch.setattr("system.views.auth.login.register_user_session", boom)
+        monkeypatch.setattr("identity.views.auth.login.register_user_session", boom)
         verify_token, verify_code = self._send_login_code(api_client, "zhangsan")
         resp = api_client.post(
             LOGIN_CODE_URL,
@@ -295,7 +295,7 @@ class TestVerifyCodeLogin:
         def boom(refresh_token, session_pk):
             raise RuntimeError("claim bind failed")
 
-        monkeypatch.setattr("system.views.auth.login.bind_session_claim", boom)
+        monkeypatch.setattr("identity.views.auth.login.bind_session_claim", boom)
         verify_token, verify_code = self._send_login_code(api_client, "zhangsan")
         resp = api_client.post(
             LOGIN_CODE_URL,

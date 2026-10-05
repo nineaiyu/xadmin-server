@@ -20,7 +20,7 @@ REPORTS_URL = "/api/dataset/reports"
 def dataset(superuser):
     return Dataset.objects.create(
         name="设计报表数据集",
-        bound_model="system.userinfo",
+        bound_model="identity.userinfo",
         columns=["username", "gender", "is_active", "date_joined"],
         visibility="shared",
         creator=superuser,
