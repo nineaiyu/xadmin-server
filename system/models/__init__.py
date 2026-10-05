@@ -4,6 +4,7 @@ from .dict import *
 from .field import *
 from .menu import *
 from .module import *
+from .monitor import *
 from .permission import *
 from .saved_view import *
 from .tag import *

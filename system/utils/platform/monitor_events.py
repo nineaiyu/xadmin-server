@@ -32,7 +32,7 @@ def resolve_hours(range_key, default_key=DEFAULT_EVENT_RANGE):
 
 def alert_counts():
     """告警计数（面板角标）：未恢复数 / 24h 新增与恢复数。"""
-    from common.models import MonitorAlert
+    from system.models import MonitorAlert
 
     now = timezone.now()
     day_ago = now - datetime.timedelta(hours=24)
@@ -47,7 +47,7 @@ def alert_counts():
 
 def collect_alerts(status=None, item=None, range_key="7d", limit=ALERT_LIMIT):
     """告警记录查询（默认近 7 天，按最近命中时间倒序）。"""
-    from common.models import MonitorAlert
+    from system.models import MonitorAlert
 
     deadline = timezone.now() - datetime.timedelta(seconds=EVENT_RANGES.get(range_key, 604800))
     queryset = MonitorAlert.objects.filter(last_time__gte=deadline)
@@ -134,7 +134,7 @@ def _fmt_time(value):
 
 def build_alert_export_sheets(rows):
     """告警记录导出（CSV/Excel 共用的表格结构）。"""
-    from common.models import MonitorAlert
+    from system.models import MonitorAlert
 
     item_labels = dict(MonitorAlert.Item.choices)
     status_labels = dict(MonitorAlert.Status.choices)

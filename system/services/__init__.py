@@ -29,6 +29,10 @@ __all__ = [
     "DataPermission",  # noqa: F822
     "ModeTypeAbstract",  # noqa: F822
     "ModelLabelField",  # noqa: F822
+    # 运维监控域（自 common 迁出；common 采集/告警/清理经 common.contracts 消费）
+    "Monitor",  # noqa: F822
+    "MonitorAlert",  # noqa: F822
+    "MonitorSerializer",  # noqa: F822
     # 序列化器契约
     # 打标序列化混入（TaggedObjectSerializerMixin）：审批域拆分后经本契约门面
     # 消费（模块级 import 不违反跨 app 门禁的 services 契约通道）
@@ -47,6 +51,9 @@ _LAZY_EXPORTS = {
     "DataPermission": "system.models",
     "ModeTypeAbstract": "system.models",
     "ModelLabelField": "system.models",
+    "Monitor": "system.models",
+    "MonitorAlert": "system.models",
+    "MonitorSerializer": "system.serializers.monitor",
     "TaggedObjectSerializerMixin": "system.serializers.tag",
 }
 

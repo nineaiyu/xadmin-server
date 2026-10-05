@@ -8,8 +8,8 @@ import pytest
 from django.utils import timezone
 
 from audit.models.log import OperationLog
-from common.models import Monitor
 from identity.models.user import UserInfo
+from system.models import Monitor
 from system.views.platform.monitor import MonitorViewSet
 
 pytestmark = pytest.mark.django_db

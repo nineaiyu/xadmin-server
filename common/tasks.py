@@ -30,7 +30,6 @@ from common.celery.utils import (
 from common.core.task_request import build_task_request
 from common.core.utils import get_doc_first_line
 from common.local import set_current_request
-from common.models import Monitor, MonitorAlert
 from common.notifications import BatchDeleteDataMessage, ImportDataMessage, ServerPerformanceCheckUtil
 from common.utils.timezone import local_now_display
 
@@ -140,8 +139,10 @@ def auto_clean_monitor_logs():
     沿用 OperationLog.remove_expired 的分批范式。告警记录同为监控数据：
     已恢复（resolved）且超期的流水一并清理，未恢复记录保留到指标回落。
     """
+    from common import contracts
     from common.core.config import SysConfig
 
+    Monitor, MonitorAlert = contracts.Monitor, contracts.MonitorAlert
     retention_days = SysConfig.MONITOR_RETENTION_DAYS
     if retention_days <= 0:
         return 0

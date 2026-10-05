@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-# project : xadmin-server
-# filename : models
-# author : ly_13
-# date : 9/14/2024
+"""运维监控域模型：服务器心跳历史 + 资源告警流水（自 common 迁出）。
+
+common 是框架层基座，不应承载具体运维域的表；监控面板（视图 / WS 推送 /
+导出）与采集侧本就住在 system，模型随域归位。框架层（common）的心跳写线程、
+告警通知与保留期清理经 common.contracts 契约缝消费本模块。
+"""
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _

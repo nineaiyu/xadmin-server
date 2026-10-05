@@ -14,9 +14,9 @@ import pytest
 from django.core import mail
 from django.test import override_settings
 
-from common.models import Monitor
 from notifications.models import SystemMsgSubscription
 from settings.models import Setting
+from system.models import Monitor
 
 pytestmark = pytest.mark.django_db
 

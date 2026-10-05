@@ -12,9 +12,9 @@ import time
 
 from django.conf import settings
 
+from common import contracts
 from common.core.db.utils import close_old_connections
 from common.decorators import Singleton
-from common.serializers import MonitorSerializer
 from common.utils import (
     get_boot_time,
     get_cpu_load,
@@ -63,7 +63,7 @@ class BaseTerminal:
                     "net_sent_mb": round(net_sent / 1024 / 1024, 3),
                     "net_recv_mb": round(net_recv / 1024 / 1024, 3),
                 }
-                status_serializer = MonitorSerializer(data=heartbeat_data)
+                status_serializer = contracts.MonitorSerializer(data=heartbeat_data)
                 status_serializer.is_valid()
                 status_serializer.save()
             except Exception:

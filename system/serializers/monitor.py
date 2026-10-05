@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-# project : xadmin-server
-# filename : serializers
-# author : ly_13
-# date : 9/14/2024
+"""服务器心跳序列化器（采集线程写 Monitor 前的校验面，自 common 迁出）。"""
+
 from rest_framework import serializers
 
-from common.models import Monitor
+from system.models.monitor import Monitor
 
 
 class MonitorSerializer(serializers.ModelSerializer):

@@ -15,7 +15,6 @@ from common.contracts import (
     get_active_superuser_queryset,
     register_message,
 )
-from common.models import Monitor
 
 
 @register_message
@@ -134,14 +133,16 @@ class ServerPerformanceCheckUtil:
         持续超标时续写 last_time/count，回落时置 resolved；重复告警不刷记录，
         避免 60s 检查周期把告警流水打成噪音。
         """
-        from common.models import MonitorAlert
+        from common import contracts
 
         now = timezone.now()
         for state in self.item_states:
             value = state["value"]
             if not isinstance(value, (int, float)):
                 continue
-            firing = MonitorAlert.objects.filter(item=state["item"], status=MonitorAlert.Status.FIRING).first()
+            firing = contracts.MonitorAlert.objects.filter(
+                item=state["item"], status=contracts.MonitorAlert.Status.FIRING
+            ).first()
             if state["exceeded"]:
                 if firing:
                     firing.value = value
@@ -151,7 +152,7 @@ class ServerPerformanceCheckUtil:
                     firing.last_time = now
                     firing.save(update_fields=["value", "threshold", "message", "count", "last_time"])
                 else:
-                    MonitorAlert.objects.create(
+                    contracts.MonitorAlert.objects.create(
                         item=state["item"],
                         value=value,
                         threshold=state["threshold"],
@@ -160,7 +161,7 @@ class ServerPerformanceCheckUtil:
                         last_time=now,
                     )
             elif firing:
-                firing.status = MonitorAlert.Status.RESOLVED
+                firing.status = contracts.MonitorAlert.Status.RESOLVED
                 firing.resolved_time = now
                 firing.save(update_fields=["status", "resolved_time"])
 
@@ -185,8 +186,10 @@ class ServerPerformanceCheckUtil:
 
     @staticmethod
     def get_monitor_latest_average_value(num=3):
-        """最近三次数据的平均值"""
-        return Monitor.objects.order_by("-created_time")[0:num].aggregate(
+        """最近三次数据的平均值（Monitor 住 system 运维域，经契约缝消费）"""
+        from common import contracts
+
+        return contracts.Monitor.objects.order_by("-created_time")[0:num].aggregate(
             cpu_load=Round(Avg("cpu_load"), 2),
             cpu_percent=Round(Avg("cpu_percent"), 2),
             memory_used=Round(Avg("memory_used"), 2),

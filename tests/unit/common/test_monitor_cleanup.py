@@ -10,8 +10,8 @@ import pytest
 from django.utils import timezone
 
 from common.core.config import SysConfig
-from common.models import Monitor
 from common.tasks import auto_clean_monitor_logs
+from system.models import Monitor
 
 pytestmark = pytest.mark.django_db
 

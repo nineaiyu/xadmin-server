@@ -50,6 +50,10 @@ _CONTRACT_PROVIDERS: dict[str, tuple[str, str]] = {
     "DataPermission": ("system.services", "数据权限模型（行级过滤规则加载）"),
     "ModelLabelField": ("system.services", "模型字段注册模型（数据权限常量 / 生成器）"),
     "ModeTypeAbstract": ("system.services", "数据权限模式常量（数据权限编译器）"),
+    # --- system.services：运维监控域契约（心跳采集 / 告警通知 / 保留期清理） ---
+    "Monitor": ("system.services", "服务器心跳模型（common 采集线程写心跳历史）"),
+    "MonitorAlert": ("system.services", "资源告警模型（阈值检查的状态跃迁流水）"),
+    "MonitorSerializer": ("system.services", "心跳序列化器（采集线程写库前的校验面）"),
     # --- system.services：契约委托函数（services 侧已惰性委托，import 零模型加载） ---
     "emit_webhook_event": ("task.services", "出站 Webhook 事件投递（告警发布共用）"),
     "get_active_superuser_queryset": ("identity.services", "告警收件人解析（在用超管 queryset）"),

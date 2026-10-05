@@ -213,7 +213,7 @@ def compare_with_previous(model, start_dt, end_dt, metrics, summary):
 
 def collect_history(range_key=None, start=None, end=None, interval=None, metrics=None, compare=True):
     """历史趋势主入口：窗口/粒度/指标解析 + 原始点 + 聚合点 + 汇总 + 环比。"""
-    from common.models import Monitor
+    from system.models import Monitor
 
     start_dt, end_dt = resolve_window(range_key, start, end)
     seconds = (end_dt - start_dt).total_seconds()

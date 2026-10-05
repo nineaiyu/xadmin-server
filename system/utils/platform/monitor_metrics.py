@@ -78,7 +78,7 @@ def collect_live_metrics():
 
 def collect_latest_and_trend():
     """心跳表最新值 + 最近趋势（common.Monitor 30s 落盘）。"""
-    from common.models import Monitor
+    from system.models import Monitor
 
     latest = Monitor.objects.order_by("-created_time").first()
     trend = list(

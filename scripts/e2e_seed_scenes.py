@@ -102,7 +102,7 @@ def seed_monitor_scene():
 
     from django.utils import timezone
 
-    from common.models import Monitor, MonitorAlert
+    from system.models import Monitor, MonitorAlert
 
     now = timezone.now()
     boot_time = (now - timezone.timedelta(days=3)).timestamp()

@@ -11,7 +11,7 @@ from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from audit.models.log import OperationLog
-from common.models import Monitor, MonitorAlert
+from system.models import Monitor, MonitorAlert
 from system.views.platform.monitor import MonitorViewSet
 from task.models.task import TaskExecution
 
