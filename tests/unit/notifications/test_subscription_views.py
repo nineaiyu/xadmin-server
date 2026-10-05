@@ -4,9 +4,12 @@
 import pytest
 
 # 生产上这些模块由登录/改密/celery 链路导入并触发注册；测试中显式导入对齐
+import approval.notifications  # noqa: F401
+import audit.notifications  # noqa: F401
 import common.celery.failure_handler  # noqa: F401
 import common.notifications  # noqa: F401
-import system.notifications  # noqa: F401
+import identity.notifications  # noqa: F401
+import task.notifications  # noqa: F401
 from notifications.notifications import (
     SYSTEM_MESSAGE_REGISTRY,
     USER_MESSAGE_REGISTRY,

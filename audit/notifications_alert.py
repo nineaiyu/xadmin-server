@@ -61,6 +61,6 @@ def maybe_alert_sensitive_operation(info: dict):
     except Exception:
         logger.warning("send sensitive operation alert failed", exc_info=True)
     # 出站 Webhook：敏感操作事件（emit 全程吞异常）
-    from system.services import emit_webhook_event
+    from task.services import emit_webhook_event
 
     emit_webhook_event("security.sensitive_operation", info or {})

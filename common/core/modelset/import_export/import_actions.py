@@ -80,7 +80,7 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         template_id = request.query_params.get("template_id")
         mapping = None
         if template_id:
-            template_model = apps.get_model("system", "ImportTemplate")
+            template_model = apps.get_model("task", "ImportTemplate")
             model_label = self.get_queryset().model._meta.label_lower
             template = (
                 template_model.objects.filter(pk=template_id, model=model_label)
@@ -124,7 +124,7 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         )
         if max_running <= 0:
             return None
-        import_record_model = apps.get_model("system", "ImportRecord")
+        import_record_model = apps.get_model("task", "ImportRecord")
         running = import_record_model.objects.filter(
             creator=request.user,
             status__in=[import_record_model.Status.PENDING, import_record_model.Status.RUNNING],
@@ -157,7 +157,7 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         from django.apps import apps
         from django.utils import timezone as dj_timezone
 
-        import_record_model = apps.get_model("system", "ImportRecord")
+        import_record_model = apps.get_model("task", "ImportRecord")
         name = "import_{}".format(dj_timezone.localtime().strftime("%Y-%m-%d_%H-%M-%S"))
         return import_record_model.objects.create(
             name=name,

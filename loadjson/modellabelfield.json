@@ -5155,7 +5155,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.exportrecord",
+      "name": "task.exportrecord",
       "label": "导出记录"
     }
   },
@@ -7135,7 +7135,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.exportrecord",
+      "name": "task.exportrecord",
       "label": "导出记录"
     }
   },
@@ -7540,7 +7540,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.taskexecution",
+      "name": "task.taskexecution",
       "label": "任务执行"
     }
   },
@@ -7780,7 +7780,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.taskexecution",
+      "name": "task.taskexecution",
       "label": "任务执行"
     }
   },
@@ -11050,7 +11050,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.importtemplate",
+      "name": "task.importtemplate",
       "label": "导入模板"
     }
   },
@@ -11320,7 +11320,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.importrecord",
+      "name": "task.importrecord",
       "label": "导入记录"
     }
   },
@@ -11590,7 +11590,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.webhookdelivery",
+      "name": "task.webhookdelivery",
       "label": "Webhook 投递"
     }
   },
@@ -11755,7 +11755,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.webhooksubscription",
+      "name": "task.webhooksubscription",
       "label": "Webhook 订阅"
     }
   },
@@ -14590,7 +14590,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.webhookdelivery",
+      "name": "task.webhookdelivery",
       "label": "Webhook 投递"
     }
   },
@@ -14800,7 +14800,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.webhooksubscription",
+      "name": "task.webhooksubscription",
       "label": "Webhook 订阅"
     }
   },
@@ -16630,7 +16630,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.importtemplate",
+      "name": "task.importtemplate",
       "label": "导入模板"
     }
   },
@@ -16945,7 +16945,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.importrecord",
+      "name": "task.importrecord",
       "label": "导入记录"
     }
   },

@@ -12,9 +12,9 @@ from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 from file.models.upload import UploadFile
 from identity.models.user import UserInfo
 from identity.views.admin.user import UserViewSet
-from system.models.export import ExportRecord
 from system.tasks import async_export_data_task, auto_clean_export_record_job
-from system.views.admin.export import ExportRecordViewSet
+from task.models.export import ExportRecord
+from task.views.admin.export import ExportRecordViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -65,7 +65,7 @@ def test_export_async_runs_task_when_eager(superuser):
     assert record.file.filesize > 0
     # 同 pk 的 TaskExecution 由任务内补建（eager 下 apply() 不触发 after_task_publish，
     # 真实投递环境则由信号 get_or_create 命中既有记录）——执行历史/增量日志双环境可用
-    from system.models.task import TaskExecution
+    from task.models.task import TaskExecution
 
     execution = TaskExecution.objects.get(pk=record.pk)
     assert execution.name == "system.tasks.async_export_data_task"

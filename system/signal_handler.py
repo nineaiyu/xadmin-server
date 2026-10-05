@@ -8,7 +8,7 @@
 
 用户/角色/部门缓存失效接收器已随 identity 域拆分（identity/signal_handler.py）；
 DataMaskRule 脱敏缓存失效已随 audit 域拆分（audit/signal_handler.py）；
-TaskExecution 日志清理随 task 域各自归位。
+TaskExecution 日志清理已随 task 域拆分（task/signal_handler.py）。
 """
 
 from django.db.models.signals import m2m_changed, post_delete, post_migrate, post_save, pre_delete
@@ -24,7 +24,6 @@ from system.models import (
     Menu,
     MenuMeta,
     SystemConfig,
-    TaskExecution,
     UserPersonalConfig,
 )
 from system.signal import approval_instance_finished
@@ -95,17 +94,6 @@ def invalid_data_permission_menu_m2m_cache_handler(sender, instance, action, **k
         return
     invalidate_data_permission_grants_cache()
     logger.info(f"invalid data permission grants cache by menu m2m {instance}")
-
-
-@receiver(pre_delete, sender=TaskExecution)
-def delete_task_execution_log_handler(sender, **kwargs):
-    # 执行历史删除（含批量删除）时联动清理落盘日志文件
-    instance = kwargs.get("instance")
-    if instance:
-        from common.base.utils import remove_file
-        from common.celery.utils import get_celery_task_log_path
-
-        remove_file(get_celery_task_log_path(str(instance.pk)))
 
 
 @receiver([post_save, pre_delete], sender=DataDict)

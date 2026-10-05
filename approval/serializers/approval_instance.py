@@ -14,7 +14,8 @@ from rest_framework import serializers
 from approval.models.approval import ApprovalFlow, ApprovalInstance, ApprovalNodeTask
 from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer
-from system.services import DisplayRelatedField, TaggedObjectSerializerMixin
+from system.services import TaggedObjectSerializerMixin
+from task.services import DisplayRelatedField
 
 
 def _username(value):

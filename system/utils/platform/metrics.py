@@ -324,7 +324,7 @@ def collect_task_health(days: int | None = None):
     """
     from django.db.models import Count, Q
 
-    from system.models.task import TaskExecution
+    from task.services import TaskExecution
 
     if days is None:
         days = TASK_HEALTH_WINDOW_DAYS

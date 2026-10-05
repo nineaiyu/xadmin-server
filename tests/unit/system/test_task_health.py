@@ -6,8 +6,8 @@ import uuid
 import pytest
 from django.utils import timezone
 
-from system.models.task import TaskExecution
 from system.utils.platform.metrics import TASK_HEALTH_MIN_SAMPLE, collect_task_health
+from task.models.task import TaskExecution
 
 pytestmark = pytest.mark.django_db
 

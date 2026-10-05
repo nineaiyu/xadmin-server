@@ -15,15 +15,16 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 from identity.models.user import UserInfo
 from system import tasks as system_tasks
-from system.models.task import TaskExecution
-from system.serializers.task import CrontabScheduleSerializer, TaskExecutionSerializer
-from system.signal_task_execution import (
+from task.models.task import TaskExecution
+from task.serializers.task import CrontabScheduleSerializer, TaskExecutionSerializer
+from task.services import cleanup as cleanup_impl
+from task.signal_task_execution import (
     task_execution_on_finish,
     task_execution_on_publish,
     task_execution_on_revoked,
     task_execution_on_start,
 )
-from system.views.task.task import PeriodicTaskViewSet, TaskExecutionViewSet
+from task.views.task import PeriodicTaskViewSet, TaskExecutionViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -118,7 +119,7 @@ def test_run_action_creates_execution_and_publishes(monkeypatch, django_capture_
     request = factory.post(f"/api/system/tasks/periodic/{instance.pk}/run")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "run"})
-    with mock.patch("system.views.task.task_periodic.app.send_task") as send_task:
+    with mock.patch("task.views.task_periodic.app.send_task") as send_task:
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request, pk=str(instance.pk))
     assert response.data["code"] == 1000
@@ -259,7 +260,7 @@ def test_auto_clean_task_execution():
     old = TaskExecution.objects.create(name="x.tasks.old")
     TaskExecution.objects.filter(pk=old.pk).update(created_time=timezone.now() - timedelta(days=40))
     TaskExecution.objects.create(name="x.tasks.new")
-    with mock.patch.object(system_tasks.settings, "TASK_EXECUTION_KEEP_DAYS", 30):
+    with mock.patch.object(cleanup_impl.settings, "TASK_EXECUTION_KEEP_DAYS", 30):
         removed = system_tasks.auto_clean_task_execution_job.run()
     assert removed >= 1
     assert TaskExecution.objects.filter(name="x.tasks.old").exists() is False
@@ -270,7 +271,7 @@ def _make_log_consumer(execution_pk):
     """直构 TaskLogNotify，捕获 send_base_json 输出（参照心跳测试做法）。"""
     from asgiref.sync import async_to_sync
 
-    from system.ws import TaskLogNotify
+    from task.ws import TaskLogNotify
 
     consumer = TaskLogNotify()
     consumer.pk = str(execution_pk)
@@ -325,8 +326,8 @@ def test_batch_run_action_dispatches_selected(monkeypatch, django_capture_on_com
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
     with (
-        mock.patch("system.views.task.task_periodic.app.send_task") as send_task,
-        mock.patch("system.views.task.task_periodic.app.autodiscover_tasks"),
+        mock.patch("task.views.task_periodic.app.send_task") as send_task,
+        mock.patch("task.views.task_periodic.app.autodiscover_tasks"),
     ):
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request)
@@ -344,7 +345,7 @@ def test_batch_run_action_reports_unregistered(monkeypatch):
     request = factory.post("/api/system/tasks/periodic/batch-run", data=[str(instance.pk)], format="json")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
-    with mock.patch("system.views.task.task_periodic.app.autodiscover_tasks"):
+    with mock.patch("task.views.task_periodic.app.autodiscover_tasks"):
         response = view(request)
     assert response.data["code"] == 1000
     assert response.data["data"]["success"] == 0
@@ -370,7 +371,7 @@ def test_destroy_execution_removes_log_file(monkeypatch, tmp_path):
 
 
 def test_clean_orphan_periodic_tasks():
-    from system.signal_task_execution import clean_orphan_periodic_tasks
+    from task.signal_task_execution import clean_orphan_periodic_tasks
 
     _make_periodic_task()  # 已注册任务：保留
     PeriodicTask.objects.create(
@@ -387,9 +388,9 @@ def test_clean_orphan_periodic_tasks():
         tasks = {"system.tasks.auto_clean_operation_job": object()}
 
     with (
-        mock.patch("system.signal_task_execution.app", FakeApp()),
-        mock.patch("system.signal_task_execution.cache") as cache_mock,
-        mock.patch("system.signal_task_execution.PeriodicTasks.update_changed") as update_changed,
+        mock.patch("task.signal_task_execution.app", FakeApp()),
+        mock.patch("task.signal_task_execution.cache") as cache_mock,
+        mock.patch("task.signal_task_execution.PeriodicTasks.update_changed") as update_changed,
     ):
         # 模型 save/delete 已触发过 update_changed，这里只统计 handler 期间的调用
         update_changed.reset_mock()
@@ -402,7 +403,7 @@ def test_clean_orphan_periodic_tasks():
 
 
 def test_clean_orphan_periodic_tasks_cache_guard():
-    from system.signal_task_execution import clean_orphan_periodic_tasks
+    from task.signal_task_execution import clean_orphan_periodic_tasks
 
     orphan = PeriodicTask.objects.create(
         name="orphan-periodic-job-2",
@@ -414,8 +415,8 @@ def test_clean_orphan_periodic_tasks_cache_guard():
         kwargs="{}",
     )
     with (
-        mock.patch("system.signal_task_execution.cache") as cache_mock,
-        mock.patch("system.signal_task_execution.app.tasks", new={"x.tasks.alive": object()}),
+        mock.patch("task.signal_task_execution.cache") as cache_mock,
+        mock.patch("task.signal_task_execution.app.tasks", new={"x.tasks.alive": object()}),
     ):
         cache_mock.get.return_value = 1  # 其他 worker 已执行过清理，本次直接返回
         clean_orphan_periodic_tasks()
@@ -426,7 +427,7 @@ def test_clean_orphan_periodic_tasks_cache_guard():
 
 def test_ws_log_permission_owner_and_superuser(normal_user, superuser):
     """守护：WS 日志读取按归属判定——本人/超管可读，他人与未知 pk 拒绝。"""
-    from system.ws import can_read_task_log
+    from task.ws import can_read_task_log
 
     execution = TaskExecution.objects.create(name="x.tasks.perm", creator=normal_user)
     assert can_read_task_log(normal_user, str(execution.pk)) is True
@@ -438,8 +439,8 @@ def test_ws_log_permission_owner_and_superuser(normal_user, superuser):
 
 def test_ws_log_permission_export_record_owner(normal_user, superuser):
     """守护：导出记录日志同口径（本人/超管可读），与 HTTP download 归属过滤一致。"""
-    from system.models.export import ExportRecord
-    from system.ws import can_read_task_log
+    from task.models.export import ExportRecord
+    from task.ws import can_read_task_log
 
     record = ExportRecord.objects.create(name="x", file_format="csv", creator=normal_user)
     assert can_read_task_log(normal_user, str(record.pk)) is True
@@ -450,7 +451,7 @@ def test_ws_log_permission_export_record_owner(normal_user, superuser):
 
 def test_execution_list_exposes_product_info(superuser):
     """列表按 pk 带出产物信息：导出/导入任务与执行记录共用主键，一行即有类型/业务名/进度/重跑能力。"""
-    from system.models.export import ExportRecord
+    from task.models.export import ExportRecord
 
     export = ExportRecord.objects.create(
         name="用户导出-20260924",
@@ -498,8 +499,8 @@ def test_execution_list_exposes_product_info(superuser):
 
 def test_product_type_filter(superuser):
     """记录类型过滤（导出/导入/任务）与列表注解同源：按产物表同 pk 记录判定。"""
-    from system.models.export import ExportRecord
-    from system.views.task.task import TaskExecutionFilter
+    from task.models.export import ExportRecord
+    from task.views.task import TaskExecutionFilter
 
     export = ExportRecord.objects.create(name="导出记录", creator=superuser)
     TaskExecution.objects.create(pk=export.pk, name="system.tasks.run_export", creator=superuser)

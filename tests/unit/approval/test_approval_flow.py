@@ -932,7 +932,7 @@ class TestNotifyDeferredToCommit:
             def publish(self, **kwargs):
                 pass
 
-        monkeypatch.setattr("system.notifications.ApprovalFlowMessage", _Recorder)
+        monkeypatch.setattr("approval.notifications.ApprovalFlowMessage", _Recorder)
         return events
 
     @staticmethod
@@ -1082,9 +1082,8 @@ class TestNodeLimitAndBatchPaths:
         )
 
         emitted = []
-        monkeypatch.setattr(
-            "system.utils.task.webhook.emit_webhook_event", lambda event, data: emitted.append((event, data))
-        )
+        # 消费方（engine_events）经 task.services 缝调用期导入，补丁须落在缝上
+        monkeypatch.setattr("task.services.emit_webhook_event", lambda event, data: emitted.append((event, data)))
         notified = []
 
         class _Recorder:
@@ -1094,7 +1093,7 @@ class TestNodeLimitAndBatchPaths:
             def publish(self, **kwargs):
                 pass
 
-        monkeypatch.setattr("system.notifications.ApprovalFlowMessage", _Recorder)
+        monkeypatch.setattr("approval.notifications.ApprovalFlowMessage", _Recorder)
 
         # 通知经 transaction.on_commit 入队：测试事务内需显式执行回调
         with django_capture_on_commit_callbacks(execute=True):

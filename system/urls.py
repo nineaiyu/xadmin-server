@@ -12,8 +12,6 @@ from system.views.admin.codegen import SystemCodeGenViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
 from system.views.admin.credential import CredentialViewSet
 from system.views.admin.dict import DataDictViewSet
-from system.views.admin.export import ExportRecordViewSet
-from system.views.admin.import_ import ImportRecordViewSet, ImportTemplateViewSet
 from system.views.admin.menu import MenuViewSet
 from system.views.admin.modelfield import ModelLabelFieldViewSet
 from system.views.admin.permission import DataPermissionViewSet
@@ -24,14 +22,6 @@ from system.views.platform.monitor import MonitorViewSet
 from system.views.platform.tag import TagViewSet
 from system.views.search.global_search import GlobalSearchAPIView
 from system.views.search.menu import SearchMenuViewSet
-from system.views.task.task import (
-    CrontabScheduleViewSet,
-    IntervalScheduleViewSet,
-    PeriodicTaskViewSet,
-    TaskExecutionViewSet,
-)
-from system.views.task.task_center import SystemTaskCenterViewSet
-from system.views.task.webhook import WebhookDeliveryViewSet, WebhookSubscriptionViewSet
 from system.views.user.configs import ConfigsViewSet
 from system.views.user.routes import UserRoutesAPIView
 
@@ -83,24 +73,6 @@ router.register("configs", ConfigsViewSet, basename="configs")
 # 通用标签中心：标签 CRUD + 打标 / 批量打标
 router.register("tags", TagViewSet, basename="tag")
 
-# —— 以下注册项随 task 域切分迁往 task/urls.py（暂留本文件）——
-# 导出下载中心
-router.register("exports", ExportRecordViewSet, basename="export_record")
-# 导入记录（下载中心「导入记录」页签）
-router.register("imports", ImportRecordViewSet, basename="import_record")
-# 导入列映射模板（个人 / 全局共享，导入弹窗内维护，无独立页面）
-router.register("import-templates", ImportTemplateViewSet, basename="import_template")
-# 定时任务管理（django_celery_beat）
-router.register("tasks/periodic", PeriodicTaskViewSet, basename="periodic_task")
-router.register("tasks/crontab", CrontabScheduleViewSet, basename="crontab_schedule")
-router.register("tasks/executions", TaskExecutionViewSet, basename="task_execution")
-router.register("tasks/interval", IntervalScheduleViewSet, basename="interval_schedule")
-# 任务中心：三类记录统一列表 + 取消 / 重跑
-router.register("tasks/unified", SystemTaskCenterViewSet, basename="task_center")
-# 出站 Webhook
-router.register("webhooks/subscriptions", WebhookSubscriptionViewSet, basename="webhook-subscription")
-router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook-delivery")
-
 # identity / file / audit / task 四域路由：经本文件同前缀挂载（ADR-057 D1.2 口径），
 # 各域 urls.py 不设 app_name，注册项并入 system 命名空间——
 # /api/system/* 路径、system: 视图名、权限点与 menu.json 全部零变化。
@@ -108,5 +80,6 @@ urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_rout
 urlpatterns += [path("", include("identity.urls"))]
 urlpatterns += [path("", include("file.urls"))]
 urlpatterns += [path("", include("audit.urls"))]
+urlpatterns += [path("", include("task.urls"))]
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]

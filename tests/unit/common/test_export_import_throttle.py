@@ -48,8 +48,8 @@ class TestExportImportThrottle:
     def test_declarations_union_across_mixins(self):
         """导出/导入 Action mixin 与下载 mixin 各自声明，组合视图自动合并。"""
         from demo.views import BookViewSet
-        from system.views.admin.export import ExportRecordViewSet
-        from system.views.admin.import_ import ImportRecordViewSet
+        from task.views.admin.export import ExportRecordViewSet
+        from task.views.admin.import_ import ImportRecordViewSet
 
         assert _declared_actions(ExportRecordViewSet) == {"download"}
         assert _declared_actions(ImportRecordViewSet) == {"download"}

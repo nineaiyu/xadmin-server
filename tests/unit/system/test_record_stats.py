@@ -14,13 +14,13 @@ import pytest
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.models.export import ExportRecord
-from system.models.import_ import ImportRecord
-from system.models.task import TaskExecution
-from system.utils.task.record_stats import RECORD_STATS_WINDOW_DAYS, record_stats
-from system.views.admin.export import ExportRecordViewSet
-from system.views.admin.import_ import ImportRecordViewSet
-from system.views.task.task import TaskExecutionViewSet
+from task.models.export import ExportRecord
+from task.models.import_ import ImportRecord
+from task.models.task import TaskExecution
+from task.utils.record_stats import RECORD_STATS_WINDOW_DAYS, record_stats
+from task.views.admin.export import ExportRecordViewSet
+from task.views.admin.import_ import ImportRecordViewSet
+from task.views.task import TaskExecutionViewSet
 
 pytestmark = pytest.mark.django_db
 

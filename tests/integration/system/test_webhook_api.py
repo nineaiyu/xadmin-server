@@ -16,8 +16,8 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.test import RequestFactory
 
-from system.models.webhook import WebhookDelivery, WebhookSubscription
-from system.utils.task.webhook import (
+from task.models.webhook import WebhookDelivery, WebhookSubscription
+from task.utils.webhook import (
     EVENT_CATALOG,
     decrypt_secret,
     emit_webhook_event,
@@ -187,7 +187,7 @@ class TestDelivery:
     def test_emit_never_raises(self, monkeypatch):
         """发射口吞异常：投递链路故障不影响宿主动作。"""
         monkeypatch.setattr(
-            "system.models.webhook.WebhookSubscription.objects",
+            "task.models.webhook.WebhookSubscription.objects",
             property(lambda self: (_ for _ in ()).throw(RuntimeError("db down"))),
         )
         assert emit_webhook_event("user.login_succeeded", {}) == 0

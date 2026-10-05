@@ -59,8 +59,8 @@ def remind_pending_approvals(remind_hours: int | None = None) -> int:
     from django.utils import timezone
 
     from approval.models.approval import ApprovalRequest
+    from approval.notifications import ApprovalRequestMessage
     from common.core.config import SysConfig
-    from system.notifications import ApprovalRequestMessage
 
     hours = int(SysConfig.APPROVAL_REMIND_HOURS) if remind_hours is None else int(remind_hours)
     if not hours or hours <= 0:

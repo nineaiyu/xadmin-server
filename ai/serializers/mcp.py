@@ -18,7 +18,7 @@ from ai.utils.mcp_client import validate_server_url
 from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
 from common.core.validation import trim_required
-from system.services import DisplayRelatedField
+from task.services import DisplayRelatedField
 
 MAX_ALLOWED_TOOLS = 100
 MAX_TOOL_NAME_LENGTH = 128

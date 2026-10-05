@@ -479,8 +479,8 @@ class TestSensitiveGetAudit:
         """声明沿 MRO 取并集：导出 mixin 声明 export_data，下载 mixin 声明 download。"""
         from common.core.oplog_recorder import sensitive_get_actions
         from demo.views import BookViewSet
-        from system.views.admin.export import ExportRecordViewSet
-        from system.views.admin.import_ import ImportRecordViewSet
+        from task.views.admin.export import ExportRecordViewSet
+        from task.views.admin.import_ import ImportRecordViewSet
 
         assert sensitive_get_actions(BookViewSet) == frozenset({"export_data"})
         assert sensitive_get_actions(ExportRecordViewSet) == frozenset({"download"})

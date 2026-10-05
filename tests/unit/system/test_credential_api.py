@@ -104,15 +104,15 @@ class TestCredentialRotate:
 
 class TestModelFieldRotate:
     def _make_subscription(self, secret="old-secret"):
-        from system.models import WebhookSubscription
-        from system.utils.task.webhook import encrypt_secret
+        from task.services import WebhookSubscription
+        from task.utils.webhook import encrypt_secret
 
         return WebhookSubscription.objects.create(
             name=f"sub-{secret}", url="https://example.com/hook", secret=encrypt_secret(secret), events=[]
         )
 
     def test_rotate_model_field_regenerates_and_encrypts(self, auth_client):
-        from system.utils.task.webhook import decrypt_secret
+        from task.utils.webhook import decrypt_secret
 
         sub = self._make_subscription("old-secret")
         body = auth_client.post(

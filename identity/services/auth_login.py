@@ -43,7 +43,7 @@ def login_failed(request, username):
     request.user = UserInfo.objects.filter(username=username).first()
     save_login_log(request, status=False)
     # 出站 Webhook：登录失败事件
-    from system.utils.task.webhook import emit_webhook_event
+    from task.services import emit_webhook_event
 
     emit_webhook_event("user.login_failed", {"username": username, "ip": get_request_ip(request)})
     login_block_util.incr_failed_count()
@@ -83,7 +83,7 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
         return
     request.user = user_obj
     # 出站 Webhook：登录成功事件（emit 全程吞异常）
-    from system.utils.task.webhook import emit_webhook_event
+    from task.services import emit_webhook_event
 
     emit_webhook_event("user.login_succeeded", {"username": user_obj.username, "ip": ipaddr})
     check_different_city_login_if_need(user_obj, ipaddr)

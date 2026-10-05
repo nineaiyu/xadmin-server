@@ -93,6 +93,7 @@ CONTRACT_SEAMS = {
         "notifications.services": "框架层业务消费唯一显式契约出口：消息渠道生产面（5 名字）",
         "identity.services": "框架层业务消费唯一显式契约出口：身份域模型与应用凭证委托（Phase C 四域切分）",
         "audit.services": "框架层业务消费唯一显式契约出口：审计域模型与掩码/影响面委托（Phase C 四域切分）",
+        "task.services": "框架层业务消费唯一显式契约出口：任务域 Webhook 事件投递（Phase C 四域切分）",
         "system.services": "框架层业务消费唯一显式契约出口：platform 域模型契约 + 审计/任务委托过渡缝",
         "approval.services": "框架层业务消费唯一显式契约出口：审批流拦截入口",
         "ai.services": "框架层业务消费唯一显式契约出口：AI 动作声明注册表",

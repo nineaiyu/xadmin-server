@@ -97,8 +97,12 @@ def _registered_ws_regexes():
     from dataset.routing import urlpatterns as dataset_patterns
     from message.routing import urlpatterns as message_patterns
     from system.routing import urlpatterns as system_patterns
+    from task.routing import urlpatterns as task_patterns
 
-    return [pattern.pattern.regex.pattern for pattern in (*message_patterns, *system_patterns, *dataset_patterns)]
+    return [
+        pattern.pattern.regex.pattern
+        for pattern in (*message_patterns, *system_patterns, *task_patterns, *dataset_patterns)
+    ]
 
 
 @pytest.fixture(scope="module", autouse=True)

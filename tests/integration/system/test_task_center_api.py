@@ -8,8 +8,8 @@
 import pytest
 from rest_framework.test import APIClient
 
-from system.models.export import ExportRecord
-from system.models.task import TaskExecution
+from task.models.export import ExportRecord
+from task.models.task import TaskExecution
 
 pytestmark = pytest.mark.django_db
 
@@ -88,7 +88,7 @@ class TestCancelEndpoint:
 
 class TestRerunEndpoint:
     def test_rerun_export_creates_clone(self, auth_client, superuser, monkeypatch):
-        from system.utils.task import task_center_unified
+        from task.utils import task_center_unified
 
         dispatched = []
         # 重跑派发实现位于 task_center_unified（task_center 仅再导出），patch 须与实现同源

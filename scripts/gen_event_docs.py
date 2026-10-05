@@ -27,7 +27,7 @@ django.setup()
 
 from django.utils.translation import override  # noqa: E402
 
-from system.utils.task.webhook import EVENT_CATALOG  # noqa: E402
+from task.services import EVENT_CATALOG  # noqa: E402
 
 DOC_PATH = BASE_DIR / "docs" / "open-platform" / "events.md"
 

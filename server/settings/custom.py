@@ -107,6 +107,7 @@ PERMISSION_DATA_AUTH_APPS = [
     "identity",
     "file",
     "audit",
+    "task",
     "system",
     "settings",
     "notifications",

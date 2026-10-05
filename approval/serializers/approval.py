@@ -20,7 +20,7 @@ from approval.models.approval import ApprovalRequest
 from approval.utils.approval import can_act
 from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer
-from system.services import DisplayRelatedField
+from task.services import DisplayRelatedField
 
 
 class ApprovalRequestSerializer(BaseModelSerializer):

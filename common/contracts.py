@@ -51,7 +51,7 @@ _CONTRACT_PROVIDERS: dict[str, tuple[str, str]] = {
     "ModelLabelField": ("system.services", "模型字段注册模型（数据权限常量 / 生成器）"),
     "ModeTypeAbstract": ("system.services", "数据权限模式常量（数据权限编译器）"),
     # --- system.services：契约委托函数（services 侧已惰性委托，import 零模型加载） ---
-    "emit_webhook_event": ("system.services", "出站 Webhook 事件投递（告警发布共用）"),
+    "emit_webhook_event": ("task.services", "出站 Webhook 事件投递（告警发布共用）"),
     "get_active_superuser_queryset": ("identity.services", "告警收件人解析（在用超管 queryset）"),
     "publish_api_quota_warning": ("identity.services", "API 配额告警（系统消息 + Webhook）"),
     "maybe_alert_sensitive_operation": ("audit.services", "敏感操作告警分流（审计中间件）"),

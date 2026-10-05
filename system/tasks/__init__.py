@@ -7,31 +7,33 @@
 """系统异步任务入口（周期任务 + Office 转换 + 导入导出任务壳）。
 
 约定：celery 任务名 = 函数 ``__module__`` + 函数名，因此**任务函数必须留在本模块**
-（``system.tasks.<name>``），重实现体拆入私有子模块（``_export`` / ``_import``），
-避免任务改名导致既有周期任务登记、TaskExecution 记录与告警路由失配。
+（``system.tasks.<name>``），避免任务改名导致既有周期任务登记、TaskExecution 记录
+与告警路由失配。实现体已随四域切分下沉（audit/file 清理经各域 services、任务域
+清理与导入导出经 task.services、身份/会话/风控巡检经 identity 内部模块），本模块
+只保留任务壳与注册名。
 """
 
 import datetime
 
 from celery import shared_task
-from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django_celery_results.models import TaskResult
 
 from audit.services import auto_clean_operation_log
-from common.base.utils import remove_file
 from common.celery.decorator import register_as_period_task
-from common.celery.utils import get_celery_task_log_path
 from common.utils import get_logger
 from file.services import (
     auto_clean_preview_cache,
     auto_clean_tmp_file,
     auto_clean_upload_file,
 )
-from system.models.task import TaskExecution
-from system.utils.task.ctasks import auto_clean_black_token
+from task.services import (
+    auto_clean_black_token,
+    clean_export_records,
+    clean_import_records,
+    clean_task_executions,
+)
 
 logger = get_logger(__name__)
 
@@ -39,7 +41,7 @@ logger = get_logger(__name__)
 # 子包任务必须在此显式引入才会注册到 django_celery_beat
 from dataset.analysis_tasks import dispatch_scheduled_reports as _dispatch_scheduled_reports  # noqa: F401,E402
 from identity.ldap.tasks import sync_ldap_directory_job as _sync_ldap_directory_job  # noqa: F401,E402
-from system.webhook_tasks import deliver_webhook as _deliver_webhook  # noqa: F401,E402
+from task.webhook_tasks import deliver_webhook as _deliver_webhook  # noqa: F401,E402
 
 
 @shared_task
@@ -90,74 +92,21 @@ def auto_clean_preview_cache_job():
 @register_as_period_task(crontab="42 2 * * *")
 def auto_clean_task_execution_job():
     """清理超过保留期的执行历史与日志文件（TaskResult 删除联动清日志）。"""
-    keep_days = getattr(settings, "TASK_EXECUTION_KEEP_DAYS", 30)
-    deadline = timezone.now() - datetime.timedelta(days=keep_days)
-    removed = 0
-    while True:
-        executions = list(TaskExecution.objects.filter(created_time__lt=deadline).values_list("pk", flat=True)[:500])
-        if not executions:
-            break
-        for pk in executions:
-            remove_file(get_celery_task_log_path(str(pk)))
-        removed += TaskExecution.objects.filter(pk__in=executions).delete()[0]
-    removed += TaskResult.objects.filter(date_done__lt=deadline).delete()[0]
-    logger.info("Clean task execution history: %s rows", removed)
-    return removed
+    return clean_task_executions()
 
 
 @shared_task
 @register_as_period_task(crontab="52 2 * * *")
 def auto_clean_export_record_job():
     """清理超过保留期的异步导出记录与产物文件（EXPORT_FILE_KEEP_DAYS，默认 7 天）。"""
-    from common.core.config import SysConfig  # 局部导入避免循环依赖（config <-> system.services）
-    from system.models.export import ExportRecord
-
-    keep_days = SysConfig.EXPORT_FILE_KEEP_DAYS
-    deadline = timezone.now() - datetime.timedelta(days=keep_days)
-    removed = 0
-    while True:
-        # 分批处理：避免逐条扫描 + 逐条两条删除，随数据累积单次任务耗时线性上升
-        records = list(ExportRecord.objects.filter(created_time__lt=deadline).select_related("file")[:500])
-        if not records:
-            break
-        for record in records:
-            upload = record.file
-            record.delete()
-            if upload:
-                # 硬删除才会清理底层文件（UploadFile 为软删除模型）
-                upload.hard_delete()
-            removed += 1
-    logger.info("Clean export record: %s rows, keep_days: %s", removed, keep_days)
-    return removed
+    return clean_export_records()
 
 
 @shared_task
 @register_as_period_task(crontab="58 2 * * *")
 def auto_clean_import_record_job():
     """清理超过保留期的异步导入记录、源文件与错误报告（IMPORT_RECORD_KEEP_DAYS，默认 30 天）。"""
-    from common.core.config import SysConfig  # 局部导入避免循环依赖（config <-> system.services）
-    from system.models.import_ import ImportRecord
-
-    keep_days = SysConfig.IMPORT_RECORD_KEEP_DAYS
-    deadline = timezone.now() - datetime.timedelta(days=keep_days)
-    removed = 0
-    while True:
-        # 分批处理：避免逐条扫描 + 逐条两条删除，随数据累积单次任务耗时线性上升
-        records = list(
-            ImportRecord.objects.filter(created_time__lt=deadline).select_related("source_file", "error_report")[:500]
-        )
-        if not records:
-            break
-        for record in records:
-            source_file, error_report = record.source_file, record.error_report
-            record.delete()
-            for upload in (source_file, error_report):
-                if upload:
-                    # 硬删除才会清理底层文件（UploadFile 为软删除模型）
-                    upload.hard_delete()
-            removed += 1
-    logger.info("Clean import record: %s rows, keep_days: %s", removed, keep_days)
-    return removed
+    return clean_import_records()
 
 
 @shared_task
@@ -239,9 +188,9 @@ def async_export_data_task(self, record_id, view_path, query_params, user_pk):
 
     记录状态在任务内推进（PENDING → RUNNING → SUCCESS/FAILURE）；同 pk 的
     TaskExecution 由 after_task_publish/prerun/postrun 信号自动记账，
-    因此执行历史页与增量日志零成本复用。实现体见 ``system.tasks._export``。
+    因此执行历史页与增量日志零成本复用。实现体见 ``task.services._export``。
     """
-    from ._export import run_async_export
+    from task.services import run_async_export
 
     return run_async_export(record_id, view_path, query_params, user_pk)
 
@@ -300,8 +249,8 @@ def async_import_data_task(self, record_id, view_path, user_pk):
       IMPORT_FAIL_RATE_LIMIT（默认 0.5，0=不限制）时中止并回滚全部成功行；
     - 校验/写入复用目标视图的 serializer（字段权限/联动校验同源），
       threadlocal 请求注入保证 creator 信号正常赋值。
-    实现体见 ``system.tasks._import``。
+    实现体见 ``task.services._import``。
     """
-    from ._import import run_async_import
+    from task.services import run_async_import
 
     return run_async_import(record_id, view_path, user_pk)

@@ -30,13 +30,10 @@ __all__ = [
     "ModeTypeAbstract",  # noqa: F822
     "ModelLabelField",  # noqa: F822
     # 序列化器契约
-    # 周期任务/审批序列化器的展示增强字段（DisplayRelatedField）与打标序列化混入
-    # （TaggedObjectSerializerMixin）：审批域拆分后经本契约门面消费（模块级 import
-    # 不违反跨 app 门禁的 services 契约通道）
-    "DisplayRelatedField",  # noqa: F822
+    # 打标序列化混入（TaggedObjectSerializerMixin）：审批域拆分后经本契约门面
+    # 消费（模块级 import 不违反跨 app 门禁的 services 契约通道）
     "TaggedObjectSerializerMixin",  # noqa: F822
     # 契约委托函数（观察项收口：common 侧函数级业务 import 的模块级替代）
-    "emit_webhook_event",
     "sync_model_field",
     "scan_permission_gaps",
 ]
@@ -50,7 +47,6 @@ _LAZY_EXPORTS = {
     "DataPermission": "system.models",
     "ModeTypeAbstract": "system.models",
     "ModelLabelField": "system.models",
-    "DisplayRelatedField": "system.serializers.task",
     "TaggedObjectSerializerMixin": "system.serializers.tag",
 }
 
@@ -72,13 +68,6 @@ def __getattr__(name):
 # 等价（循环依赖 / 迁移期降级语义不变），但缝隙在门禁 CONTRACT_SEAMS 显式
 # 登记可审计。新增委托时同步登记 CONTRACT_SEAMS 并更新 __all__。
 # ---------------------------------------------------------------------------
-
-
-def emit_webhook_event(event, payload):
-    """出站 Webhook 事件投递（system.utils.task.webhook 契约导出）。"""
-    from system.utils.task.webhook import emit_webhook_event as _emit
-
-    return _emit(event, payload)
 
 
 def sync_model_field():

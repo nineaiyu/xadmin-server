@@ -37,7 +37,7 @@ from identity.serializers.token import ApiApplicationGrantSerializer, ApiApplica
 from identity.services.token_issue import issue_application_token, revoke_application_tokens
 from identity.utils.api_grant import grant_options_for_user
 from identity.utils.pat_scope import scope_options_for_user
-from system.utils.task.webhook import decrypt_secret, encrypt_secret, sign_payload
+from task.services import decrypt_secret, encrypt_secret, sign_payload
 
 CLIENT_SECRET_PREFIX = "aps"
 CALLBACK_TIMEOUT_SECONDS = 10
@@ -103,7 +103,7 @@ def send_test_callback(application: ApiApplication, url: str, client=None) -> di
     try:
         if client is None:
             from common.utils.outbound import pinned_request
-            from system.utils.task.webhook import outbound_allowed_hosts
+            from task.services import outbound_allowed_hosts
 
             response = pinned_request(
                 "POST",

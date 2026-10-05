@@ -40,8 +40,7 @@ from identity.models.token import ApiApplication
 from message import chat as chat_service
 from message.models import ChatMessage
 from notifications.models import MessageContent
-from system.models.webhook import WebhookDelivery, WebhookSubscription
-from system.utils.task.webhook import encrypt_secret
+from task.services import WebhookDelivery, WebhookSubscription, encrypt_secret
 
 # ---- 幂等 / 清理标识（演示数据统一带可识别的固定标识） ----
 NOTICE_TITLE_PREFIX = "演示："

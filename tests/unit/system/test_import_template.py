@@ -8,9 +8,9 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from identity.models.user import UserInfo
 from system.models.dict import DataDict
-from system.models.import_ import ImportTemplate
 from system.views.admin.dict import DataDictViewSet
-from system.views.admin.import_ import ImportTemplateViewSet
+from task.models.import_ import ImportTemplate
+from task.views.admin.import_ import ImportTemplateViewSet
 
 pytestmark = pytest.mark.django_db
 

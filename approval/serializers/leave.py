@@ -16,7 +16,7 @@ from approval.models.leave import Leave
 from approval.utils.leave import leave_days, validate_leave_payload
 from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer
-from system.services import DisplayRelatedField
+from task.services import DisplayRelatedField
 
 
 def _username(value):

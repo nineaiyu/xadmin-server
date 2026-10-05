@@ -14,9 +14,9 @@ celery 注册表里的任意 ``@shared_task``（含删数据/改密等高危任�
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.serializers.task import PeriodicTaskSerializer
-from system.utils.task.task_whitelist import is_task_runnable, manual_runnable_tasks
-from system.views.task.task_periodic import PeriodicTaskViewSet
+from task.serializers.task import PeriodicTaskSerializer
+from task.utils.task_whitelist import is_task_runnable, manual_runnable_tasks
+from task.views.task_periodic import PeriodicTaskViewSet
 
 pytestmark = pytest.mark.django_db
 

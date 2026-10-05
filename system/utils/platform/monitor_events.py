@@ -99,7 +99,7 @@ def collect_error_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT):
 
 def collect_task_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT):
     """任务失败事件（FAILURE / REVOKED 终态明细）。"""
-    from system.models.task import TaskExecution
+    from task.services import TaskExecution
 
     deadline = timezone.now() - datetime.timedelta(seconds=EVENT_RANGES.get(range_key, 86400))
     rows = list(

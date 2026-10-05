@@ -20,7 +20,7 @@ def notify_approvers(approval, approvers):
     """通知全部审批人（60s 节流，防重复提交刷屏）。"""
     from django.core.cache import cache
 
-    from system.notifications import ApprovalRequestMessage
+    from approval.notifications import ApprovalRequestMessage
 
     if not cache.add(f"approval_notify_{approval.pk}", 1, APPROVAL_NOTIFY_THROTTLE_SECONDS):
         return
@@ -39,7 +39,7 @@ def notify_step(approval, step):
     """
     from django.core.cache import cache
 
-    from system.notifications import ApprovalRequestMessage
+    from approval.notifications import ApprovalRequestMessage
 
     if not cache.add(f"approval_notify_{approval.pk}_{step.order}", 1, APPROVAL_NOTIFY_THROTTLE_SECONDS):
         return
@@ -58,7 +58,7 @@ def notify_step(approval, step):
 
 def _emit_approval_event(event: str, approval) -> None:
     """出站 Webhook：审批事件（emit 全程吞异常，不影响审批流转）。"""
-    from system.utils.task.webhook import emit_webhook_event
+    from task.services import emit_webhook_event
 
     try:
         emit_webhook_event(
@@ -77,7 +77,7 @@ def _emit_approval_event(event: str, approval) -> None:
 
 def notify_applicant(approval, event: str):
     """向申请人推送审批结果（通过/驳回）。"""
-    from system.notifications import ApprovalRequestMessage
+    from approval.notifications import ApprovalRequestMessage
 
     if not approval.creator:
         return

@@ -65,7 +65,7 @@ MODEL_CREDENTIAL_FIELDS = {
         "change_entry": "/integration/ai/config",
     },
     "WebhookSubscription.secret": {
-        "app_label": "system",
+        "app_label": "task",
         "model": "WebhookSubscription",
         "field": "secret",
         "label": _("Webhook signing secret"),
@@ -73,7 +73,7 @@ MODEL_CREDENTIAL_FIELDS = {
         "change_entry": "",
     },
     "ApiApplication.callback_secret_encrypted": {
-        "app_label": "system",
+        "app_label": "identity",
         "model": "ApiApplication",
         "field": "callback_secret_encrypted",
         "label": _("Open platform callback secret"),

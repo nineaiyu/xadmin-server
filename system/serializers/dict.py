@@ -14,7 +14,7 @@ from rest_framework import serializers
 from common.core.fields import ColorField
 from common.core.serializers import BaseModelSerializer
 from system.models.dict import DataDict
-from system.serializers.task import DisplayRelatedField
+from task.services import DisplayRelatedField
 
 
 class DataDictSerializer(BaseModelSerializer):

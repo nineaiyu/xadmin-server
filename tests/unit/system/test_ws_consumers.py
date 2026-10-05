@@ -15,8 +15,8 @@ import os
 import pytest
 
 from common.celery.utils import CELERY_LOG_MAGIC_MARK
-from system.models.export import ExportRecord
-from system.models.task import TaskExecution
+from task.models.export import ExportRecord
+from task.models.task import TaskExecution
 
 # database_sync_to_async 会把 ORM 查询丢到独立线程：默认事务包裹下 sqlite 会
 # "database table is locked"（另一条连接看不到未提交事务）。故本模块走真实事务。
@@ -34,40 +34,40 @@ def run(coro):
 
 class TestCanReadTaskLog:
     def test_superuser_allowed(self, superuser):
-        from system.ws import can_read_task_log
+        from task.ws import can_read_task_log
 
         record = ExportRecord.objects.create(name="x", file_format="csv", creator=superuser)
         assert can_read_task_log(superuser, record.pk) is True
 
     def test_owner_allowed(self, normal_user):
         """本人提交的执行记录可读（ExportRecord / TaskExecution 共用 task_id 命名空间）。"""
-        from system.ws import can_read_task_log
+        from task.ws import can_read_task_log
 
         record = ExportRecord.objects.create(name="x", file_format="csv", creator=normal_user)
         assert can_read_task_log(normal_user, record.pk) is True
 
     def test_other_user_denied(self, superuser, normal_user):
-        from system.ws import can_read_task_log
+        from task.ws import can_read_task_log
 
         record = ExportRecord.objects.create(name="x", file_format="csv", creator=superuser)
         assert can_read_task_log(normal_user, record.pk) is False
 
     def test_task_execution_owner_allowed(self, normal_user):
-        from system.ws import can_read_task_log
+        from task.ws import can_read_task_log
 
         execution = TaskExecution.objects.create(name="job", creator=normal_user)
         assert can_read_task_log(normal_user, execution.pk) is True
 
     def test_unknown_pk_denied(self, normal_user):
         """未知 pk 一律拒绝（fail-closed，不因查询落空而放行）。"""
-        from system.ws import can_read_task_log
+        from task.ws import can_read_task_log
 
         assert can_read_task_log(normal_user, "00000000-0000-0000-0000-000000000000") is False
 
     def test_anonymous_denied(self, django_user_model):
         from django.contrib.auth.models import AnonymousUser
 
-        from system.ws import can_read_task_log
+        from task.ws import can_read_task_log
 
         assert can_read_task_log(AnonymousUser(), "x") is False
         assert can_read_task_log(None, "x") is False
@@ -102,7 +102,7 @@ class FakeTaskLogConsumer:
 
 
 def make_consumer(pk, user):
-    from system.ws import TaskLogNotify
+    from task.ws import TaskLogNotify
 
     return FakeTaskLogConsumer(pk, user, TaskLogNotify)
 
@@ -110,9 +110,9 @@ def make_consumer(pk, user):
 class TestTaskLogPush:
     def test_push_once_missing_file_uses_execution_state(self, superuser, monkeypatch, tmp_path):
         """文件未落盘：按执行终态判定 finished（与 HTTP log action 同语义）。"""
-        from system.ws import TaskLogNotify
+        from task.ws import TaskLogNotify
 
-        monkeypatch.setattr("system.ws.get_celery_task_log_path", lambda pk: str(tmp_path / "missing.log"))
+        monkeypatch.setattr("task.ws.get_celery_task_log_path", lambda pk: str(tmp_path / "missing.log"))
         execution = TaskExecution.objects.create(name="job", creator=superuser)
         consumer = make_consumer(execution.pk, superuser)
         assert run(TaskLogNotify.push_once(consumer, str(tmp_path / "missing.log"))) is False
@@ -130,7 +130,7 @@ class TestTaskLogPush:
 
     def test_push_once_reads_content_and_detects_mark(self, superuser, monkeypatch, tmp_path):
         """读到内容 + 结尾标记：一次性推送内容并结束循环。"""
-        from system.ws import TaskLogNotify
+        from task.ws import TaskLogNotify
 
         path = tmp_path / "job.log"
         path.write_bytes(b"hello world" + CELERY_LOG_MAGIC_MARK)
@@ -144,7 +144,7 @@ class TestTaskLogPush:
 
     def test_push_once_without_mark_keeps_waiting(self, superuser, tmp_path):
         """有内容但无结束标记：不结束（继续增量推送）。"""
-        from system.ws import TaskLogNotify
+        from task.ws import TaskLogNotify
 
         path = tmp_path / "job.log"
         path.write_bytes(b"partial output")
@@ -155,7 +155,7 @@ class TestTaskLogPush:
 
     def test_push_tick_backoff_and_reset(self, superuser, tmp_path):
         """空转退避：无新输出间隔指数增长（封顶），有新输出立即回基础间隔。"""
-        from system.ws import PUSH_INTERVAL, PUSH_INTERVAL_MAX, TaskLogNotify
+        from task.ws import PUSH_INTERVAL, PUSH_INTERVAL_MAX, TaskLogNotify
 
         path = tmp_path / "job.log"
         execution = TaskExecution.objects.create(name="job", creator=superuser)
@@ -178,7 +178,7 @@ class TestTaskLogPush:
         assert interval == PUSH_INTERVAL_MAX
 
     def test_tail_has_mark_short_file(self, tmp_path):
-        from system.ws import _tail_has_mark
+        from task.ws import _tail_has_mark
 
         path = tmp_path / "tiny.log"
         path.write_bytes(b"ab")
@@ -186,7 +186,7 @@ class TestTaskLogPush:
 
     def test_connect_rejects_anonymous_and_unauthorized(self, superuser, normal_user):
         """未登录 4401 / 无权限 4403（敏感日志出口，必须 fail-closed）。"""
-        from system.ws import TaskLogNotify
+        from task.ws import TaskLogNotify
 
         record = ExportRecord.objects.create(name="x", file_format="csv", creator=superuser)
 
@@ -201,7 +201,7 @@ class TestTaskLogPush:
         assert other.closed == 4403
 
     def test_connect_accepts_owner(self, normal_user):
-        from system.ws import TaskLogNotify
+        from task.ws import TaskLogNotify
 
         record = ExportRecord.objects.create(name="x", file_format="csv", creator=normal_user)
         consumer = make_consumer(record.pk, normal_user)
@@ -212,13 +212,13 @@ class TestTaskLogPush:
 
     def test_ping_is_noop(self):
         """任务日志连接不进消息分组，心跳必须静默（否则基类抛 AttributeError 断连）。"""
-        from system.ws import TaskLogNotify
+        from task.ws import TaskLogNotify
 
         consumer = make_consumer("x", None)
         assert run(TaskLogNotify.ping(consumer, {})) is None
 
     def test_disconnect_stops_loop(self):
-        from system.ws import TaskLogNotify
+        from task.ws import TaskLogNotify
 
         consumer = make_consumer("x", None)
         consumer.scope = {"user": None, "url_route": {"kwargs": {"pk": "x"}}}
@@ -228,18 +228,18 @@ class TestTaskLogPush:
 
 class TestNextPushInterval:
     def test_content_resets_to_base(self):
-        from system.ws import PUSH_INTERVAL, PUSH_INTERVAL_MAX, next_push_interval
+        from task.ws import PUSH_INTERVAL, PUSH_INTERVAL_MAX, next_push_interval
 
         assert next_push_interval(PUSH_INTERVAL_MAX, True) == PUSH_INTERVAL
 
     def test_idle_doubles(self):
-        from system.ws import next_push_interval
+        from task.ws import next_push_interval
 
         assert next_push_interval(1, False) == 2
         assert next_push_interval(2, False) == 4
 
     def test_idle_capped(self):
-        from system.ws import PUSH_INTERVAL_MAX, next_push_interval
+        from task.ws import PUSH_INTERVAL_MAX, next_push_interval
 
         assert next_push_interval(PUSH_INTERVAL_MAX, False) == PUSH_INTERVAL_MAX
         assert next_push_interval(100, False) == PUSH_INTERVAL_MAX

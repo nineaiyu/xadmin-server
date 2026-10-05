@@ -7,7 +7,6 @@ class SystemConfig(AppConfig):
 
     def ready(self):
         from . import signal_handler  # noqa
-        from . import signal_task_execution  # noqa
 
         # 数据字典解析器注册进框架层：DictChoiceField（common.core.fields）由此
         # 获得字典读取能力（带缓存 + 变更信号失效），common 保持零业务依赖

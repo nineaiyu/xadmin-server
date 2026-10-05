@@ -204,8 +204,33 @@ LoginLogSerializer 惰性引用随域改写；迁移重建 audit.0001（deps=ide
 路由审计 25 处视图前缀平移零违例。另：migrate 期消息订阅注册表补挂 identity/audit 通知模块——
 修复 identity 域拆分后五类消息在全新库上不建订阅行的隐性回归。
 
+**task（T04-12）✅**：TaskExecution/ExportRecord/ImportRecord/ImportTemplate（+ CeleryTaskRecordModel
+抽象基类）+ WebhookSubscription/WebhookDelivery 独立成 app（task_* 表）；views/{task,task_center,
+task_periodic,webhook,admin/{export,import_,record_base}} + serializers/{task,export,import_,webhook} +
+utils/task 全树迁入（views/task/* 拍平为 task/views/*）；`task/urls.py` 同前缀挂载 11 个 basename
+（exports / imports / import-templates / tasks/{periodic,crontab,executions,interval,unified} /
+webhooks/{subscriptions,deliveries}）；ws.py + routing.py 随域（collect_app_ws_urls 自动收集，
+system/routing.py 留存 monitor 通道）；signal_task_execution.py 与 TaskExecution 日志清理 receiver 迁
+task/（apps.ready 注册）；契约面：task.services 门面（模型 + DisplayRelatedField + emit_webhook_event /
+deliver_webhook / EVENT_CATALOG / URL 签名工具 + update_progress + run_async_export/import + 清理实现体），
+common.contracts 的 emit_webhook_event 提供方改挂 task.services；消费方（identity/{auth_login,open,token}、
+approval/{notify,engine_events,serializers}、ai/serializers、dataset/analysis_tasks、
+system/{serializers/{dict,tag},platform/{metrics,monitor_events,credential_rotate},tasks 壳,
+management/seed_demo_*}、scripts/{gen_event_docs,sql_sampling}）统一改缝。任务名零变化：
+system.tasks 周期任务壳留位，_export/_import 实现体落 task/services/{_export,_import}.py 与 cleanup.py，
+deliver_webhook 显式 name="system.webhook_tasks.deliver_webhook" 钉住；import_actions/export_actions 的
+get_model 改 ("task", Model)，task_center_unified 的 import_string("system.tasks.*") 任务名串保持；
+MODEL_CREDENTIAL_FIELDS 的 WebhookSubscription.secret 改 task 挂载（顺修 identity 轮漏网的
+ApiApplication → identity）；WebhookFailedMessage 迁 task/notifications.py，ApprovalRequestMessage +
+notifications_approval_flow.py 归位 approval/notifications.py（评审 P1 寄居问题一并解决），migrate 期
+消息注册表补挂 approval/task 通知模块；loadjson modellabelfield 种子 12 行 system.* → task.*；
+迁移重建 task.0001（deps=file/identity + django_celery_beat）+ system.0001 重生成；路由审计 66 处
+视图平移零违例（21 处严格前缀 + 45 处 views 拍平），WS 通道归属测试收集源补 task/routing。
+
 **口径修正记录**（相对上文的计划表述）：
 - `common/contracts.py` 无 file.services 提供方——common 侧对 UploadFile 的消费全部是
   label 串比较（AutoCleanFileMixin / input_types / serializers.py），不产生 import 缝，无需登记；
 - trgm 索引未单列迁移，随各域 0001 的模型 Meta 落地（identity.0001 首操作仅保证扩展先行）；
-- identity.0002 即为跨域 M2M 推迟补加迁移（三段式 0001/0002/0003 的规划合并为两段式）。
+- identity.0002 即为跨域 M2M 推迟补加迁移（三段式 0001/0002/0003 的规划合并为两段式）；
+- MODEL_CREDENTIAL_FIELDS 的 app_label 属行为面（轮换入口按其 get_model 解析），identity 轮
+  漏改的 ApiApplication（已迁 identity/models/token.py）在 task 轮顺修回 identity。

@@ -23,8 +23,8 @@ from django.http import QueryDict
 from common.core.task_request import bind_view_task_context, build_task_request
 from server.utils import get_current_request
 from system.models.dict import DataDict
-from system.models.export import ExportRecord
 from system.views.admin.dict import DataDictViewSet
+from task.models.export import ExportRecord
 
 pytestmark = pytest.mark.django_db
 
@@ -146,7 +146,7 @@ class TestAsyncImportContracts:
 
 class TestAsyncExportContracts:
     def test_export_task_binds_request_context_and_query(self, superuser):
-        from system.tasks._export import run_async_export
+        from task.services import run_async_export
 
         ContractDictViewSet.captured = {}
         DataDict.objects.create(code="ctx-hit", label="命中", creator=superuser)

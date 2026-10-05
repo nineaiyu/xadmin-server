@@ -28,7 +28,7 @@ def _notify(users, event, instance, extra=None, node_name=None):
     ``node_name`` 为显式节点名：事件发生在「节点尚未成为 current_node」时（如无候选
     自动通过），由调用方直接给出，避免通知里显示上一个节点。
     """
-    from system.notifications import ApprovalFlowMessage
+    from approval.notifications import ApprovalFlowMessage
 
     def _send(user):
         try:
@@ -83,7 +83,7 @@ def _emit_flow_event(event: str, instance, extra=None) -> None:
     用自身凭证走 API 按流程取（与轻量审批 _emit_approval_event 同口径）。
     ``extra`` 可覆盖/补充摘要字段（如自动通过事件的 node_name 与 current_node）。
     """
-    from system.utils.task.webhook import emit_webhook_event
+    from task.services import emit_webhook_event
 
     data = {
         "instance_no": str(instance.pk)[:8].upper(),

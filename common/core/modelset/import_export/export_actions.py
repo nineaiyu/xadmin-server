@@ -68,7 +68,7 @@ class OnlyExportDataAction(ExportImportThrottleMixin, ListAction):
         model = self.get_queryset().model
         name = "{}_{}".format(model._meta.model_name, dj_timezone.localtime().strftime("%Y-%m-%d_%H-%M-%S"))
         # 跨 app 惰性取模型/任务：common 层不直接依赖 system（契约层约束，见 check_cross_app_imports）
-        export_record_model = apps.get_model("system", "ExportRecord")
+        export_record_model = apps.get_model("task", "ExportRecord")
         # 同用户并发上限：导出是最重的后台任务，防止重复点击/脚本刷爆 worker。
         # 真实个人行优先，未设置回退系统级
         max_running = get_personal_int_config(

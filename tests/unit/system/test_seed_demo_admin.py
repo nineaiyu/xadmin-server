@@ -29,7 +29,8 @@ from system.management.commands.seed_demo_extras import (
     POST_CODE_PREFIX,
     POST_PLAN,
 )
-from system.models import ExportRecord, Menu, MenuMeta, Tag, TaggedItem
+from system.models import Menu, MenuMeta, Tag, TaggedItem
+from task.services import ExportRecord
 
 pytestmark = pytest.mark.django_db
 

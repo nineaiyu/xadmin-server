@@ -35,7 +35,7 @@ from message.models import ChatMessage
 from notifications.models import MessageContent
 from system.management.commands.seed_demo_org import GRANT_MODELS
 from system.models import Menu, MenuMeta, ModelLabelField
-from system.models.webhook import WebhookDelivery, WebhookSubscription
+from task.models.webhook import WebhookDelivery, WebhookSubscription
 
 pytestmark = pytest.mark.django_db
 

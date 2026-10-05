@@ -17,7 +17,7 @@ from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
 from common.core.validation import trim_required
 from common.utils.outbound import OutboundBlocked, validate_outbound_url
-from system.services import DisplayRelatedField
+from task.services import DisplayRelatedField
 
 # 名称中的路径分隔符会破坏 upload/ 前缀隔离，统一拒绝
 NAME_FORBIDDEN_CHARS = ("/", "\\")

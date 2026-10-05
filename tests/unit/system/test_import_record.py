@@ -12,10 +12,10 @@ from django.utils import timezone
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 from file.models.upload import UploadFile
 from identity.models.user import UserInfo
-from system.models.import_ import ImportRecord
 from system.tasks import async_import_data_task, auto_clean_import_record_job
 from system.views.admin.dict import DataDictViewSet
-from system.views.admin.import_ import ImportRecordViewSet
+from task.models.import_ import ImportRecord
+from task.views.admin.import_ import ImportRecordViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -115,12 +115,12 @@ def test_import_async_runs_task_when_eager(superuser):
     record.error_report.refresh_from_db()
     assert record.error_report.filesize > 0
     # 同 pk 的 TaskExecution 由任务内补建（eager 下 apply() 不发 after_task_publish）
-    from system.models.task import TaskExecution
+    from task.models.task import TaskExecution
 
     execution = TaskExecution.objects.get(pk=record.pk)
     assert execution.name == "system.tasks.async_import_data_task"
     # 终态收尾清理运行期缓存进度（未清理会残留 1h）
-    from system.utils.task.import_progress import get_import_progress
+    from task.utils.import_progress import get_import_progress
 
     assert get_import_progress(record.pk) is None
 
@@ -131,8 +131,8 @@ def test_import_progress_served_from_cache_while_running(superuser):
     背景：任务在「外层大事务 + 逐行 savepoint」里执行，事务提交前其他连接读不到
     库内进度，故运行期进度写缓存（见 system/utils/import_progress）。
     """
-    from system.serializers.import_ import ImportRecordSerializer
-    from system.utils.task.import_progress import clear_import_progress, set_import_progress
+    from task.serializers.import_ import ImportRecordSerializer
+    from task.utils.import_progress import clear_import_progress, set_import_progress
 
     record = ImportRecord.objects.create(
         creator=superuser, name="progress-case", status=ImportRecord.Status.RUNNING, progress=0

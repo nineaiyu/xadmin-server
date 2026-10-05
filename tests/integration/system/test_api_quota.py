@@ -12,8 +12,8 @@ from rest_framework.test import APIClient
 
 from audit.models.log import OperationLog
 from identity.models.token import PersonalAccessToken
-from system.models.webhook import WebhookDelivery, WebhookSubscription
-from system.utils.task.webhook import encrypt_secret
+from task.models.webhook import WebhookDelivery, WebhookSubscription
+from task.utils.webhook import encrypt_secret
 
 pytestmark = pytest.mark.django_db
 

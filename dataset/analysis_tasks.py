@@ -129,7 +129,7 @@ def _precreate_record(report) -> str:
 
     params 记 ``report_id``：任务中心「重跑」按记录即可重放同一报表。
     """
-    from system.models.export import ExportRecord
+    from task.services import ExportRecord
 
     record = ExportRecord.objects.create(
         name=f"{report.name}-{timezone.localtime():%Y%m%d%H%M%S}",
@@ -191,8 +191,7 @@ def run_scheduled_report(self, report_id: str):
     """
     from dataset.models.dataset import Report
     from file.services import UploadFile
-    from system.models.export import ExportRecord
-    from system.utils.task.task_progress import KIND_REPORT, update_progress
+    from task.services import KIND_REPORT, ExportRecord, update_progress
 
     record = ExportRecord.objects.filter(pk=self.request.id).first()
     report = Report.objects.filter(pk=report_id).select_related("dataset", "creator").first()

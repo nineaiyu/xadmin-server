@@ -10,7 +10,7 @@ from rest_framework import serializers
 from common.core.serializers import BaseModelSerializer
 from common.core.validation import trim_required
 from system.models.tag import TAGGABLE_MODELS, Tag
-from system.serializers.task import DisplayRelatedField
+from task.services import DisplayRelatedField
 
 #: 标签颜色白名单（Element Plus 语义色 + 自定义十六进制，前端渲染 tag 用）
 COLOR_PATTERN = r"^#[0-9a-fA-F]{6}$"

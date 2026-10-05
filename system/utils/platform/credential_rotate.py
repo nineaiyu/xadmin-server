@@ -56,7 +56,7 @@ def rotate_model_field(name: str, user=None) -> dict:
     """
     from django.apps import apps
 
-    from system.utils.task.webhook import encrypt_secret
+    from task.services import encrypt_secret
 
     name = str(name or "").strip()
     meta = MODEL_CREDENTIAL_FIELDS.get(name)

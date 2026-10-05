@@ -23,9 +23,9 @@
 import pytest
 
 from identity.models.oauth import UserOAuthBinding
-from system.models.export import ExportRecord
-from system.models.import_ import ImportRecord, ImportTemplate
-from system.models.task import TaskExecution
+from task.models.export import ExportRecord
+from task.models.import_ import ImportRecord, ImportTemplate
+from task.models.task import TaskExecution
 
 pytestmark = pytest.mark.django_db
 

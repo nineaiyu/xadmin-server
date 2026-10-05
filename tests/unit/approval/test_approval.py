@@ -593,7 +593,7 @@ class TestLifecycleJobs:
         """超时未处理才提醒；已提醒不重复；0 = 不提醒；非 PENDING 不提醒；推送失败不占位。"""
         from django.core.cache import cache
 
-        from system.notifications import ApprovalRequestMessage
+        from approval.notifications import ApprovalRequestMessage
 
         cache.clear()
         published = []

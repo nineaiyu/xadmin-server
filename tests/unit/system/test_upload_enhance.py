@@ -119,7 +119,7 @@ class TestPhysicalFileGuard:
         """业务反向外键仍指向该附件：只删记录、保留磁盘文件。"""
         import os
 
-        from system.models import ExportRecord
+        from task.services import ExportRecord
 
         upload = _uploaded_file(superuser, content=b"export-bytes")
         ExportRecord.objects.create(name="e2e-export.xlsx", file=upload)
@@ -331,7 +331,7 @@ class TestKeepDaysCleanup:
         import os
 
         from file.services import auto_clean_upload_file
-        from system.models import ExportRecord
+        from task.services import ExportRecord
 
         record = self._formal_file(superuser, "referenced.txt", b"referenced-bytes", age_days=30)
         ExportRecord.objects.create(name="keep.xlsx", file=record)

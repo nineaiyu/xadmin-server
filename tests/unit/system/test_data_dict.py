@@ -329,8 +329,8 @@ def test_export_status_dict_integration():
     """下载中心 status 接入字典（merge 模式）：字典项优先、枚举补缺——
     只配部分项时其余枚举标签不缺（部分配置不再隐藏未配置项的标签）；
     未配置时回退模型枚举（默认行为不变）。"""
-    from system.models.export import ExportRecord
-    from system.serializers.export import ExportRecordSerializer
+    from task.models.export import ExportRecord
+    from task.serializers.export import ExportRecordSerializer
 
     cache.clear()
     field = ExportRecordSerializer().fields["status"]
@@ -346,10 +346,10 @@ def test_export_status_dict_integration():
 
 def test_import_and_task_status_dict_integration():
     """导入记录 status/action / 定时任务执行历史 status 接入字典（merge 模式，同下载中心口径）。"""
-    from system.models.import_ import ImportRecord
-    from system.models.task import TaskExecution
-    from system.serializers.import_ import ImportRecordSerializer
-    from system.serializers.task import TaskExecutionSerializer
+    from task.models.import_ import ImportRecord
+    from task.models.task import TaskExecution
+    from task.serializers.import_ import ImportRecordSerializer
+    from task.serializers.task import TaskExecutionSerializer
 
     cache.clear()
     import_field = ImportRecordSerializer().fields["status"]

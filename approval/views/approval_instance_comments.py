@@ -53,7 +53,7 @@ class ApprovalInstanceCommentMixin:
         """评论 @ 提醒（默认只提醒被提及者；失败只记日志）。"""
         if not users:
             return
-        from system.notifications import ApprovalFlowMessage
+        from approval.notifications import ApprovalFlowMessage
 
         for user in users:
             try:

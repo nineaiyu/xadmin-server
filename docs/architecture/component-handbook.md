@@ -483,7 +483,7 @@ class KnowledgeApi extends BaseApi {
 | 定时跑一件事 | `@register_as_period_task(interval=..., module=...)` |
 | 发一条多通道通知 | 消息类实例 `.publish(is_async=True)`（新渠道加 `backends/<name>.py`） |
 | 让业务走审批 | `approval_flow.engine.create_instance(biz_type=..., biz_id=...)` + 终态信号 |
-| 对外投递事件 | `system/utils/task/webhook.py::emit_webhook_event`（事件先登记 `EVENT_CATALOG`） |
+| 对外投递事件 | `task/utils/webhook.py::emit_webhook_event`（事件先登记 `EVENT_CATALOG`） |
 | 枚举文案可运营 | `DictChoiceField` + 字典页维护 |
 | 让功能可裁剪 | `{app}/modules.py`（`generate_module`）+ `config.yml` 的 `MODULE_*` |
 | 升级后收尾 | `manage.py post_upgrade` / `doctor` |
@@ -504,7 +504,7 @@ class KnowledgeApi extends BaseApi {
 | 周期任务 | `@register_as_period_task(module=...)` | module 归属可裁剪 | `system/tasks/` |
 | 通知渠道 | `notifications/backends/<name>.py`（模块级 `backend`） | 渠道枚举补 `BACKEND` | `notifications/backends/email.py` |
 | 通知消息类型 | `@register_message` + `register_backend_msg` | 渲染映射补齐各渠道 | `notifications/notifications.py` |
-| Webhook 事件 | `EVENT_CATALOG` 登记 + `emit_webhook_event` | 事件契约守护测试 | `system/utils/task/webhook.py` |
+| Webhook 事件 | `EVENT_CATALOG` 登记 + `emit_webhook_event` | 事件契约守护测试 | `task/utils/webhook.py` |
 | 审批业务绑定 | `create_instance(biz_type, biz_id)` + 监听 `approval_instance_finished` | 终态信号在 `system/signal.py` | 请假业务 `approval/utils/leave.py` |
 | 可裁剪模块 | `{app}/modules.py`（`ModuleSpec`） | `generate_module` 生成 | `common/core/modules/registry.py` |
 | 配置键 | 部署期 `config_example.yml`+`defaults.py`；运行期 `system_conf.py`+种子 | 两处同名；种子守护测试 | — |

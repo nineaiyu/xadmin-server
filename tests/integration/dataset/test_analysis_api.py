@@ -195,7 +195,7 @@ class TestReportRun:
         assert response.status_code == 200, response.data
         task_id = response.json()["data"]["task_id"]
 
-        from system.models.export import ExportRecord
+        from task.models.export import ExportRecord
 
         record = ExportRecord.objects.get(pk=task_id)
         assert record.status == ExportRecord.Status.SUCCESS
@@ -215,7 +215,7 @@ class TestReportRun:
         from dataset.analysis_tasks import schedule_report_run
 
         task_id = schedule_report_run(str(report.pk))
-        from system.models.export import ExportRecord
+        from task.models.export import ExportRecord
 
         record = ExportRecord.objects.get(pk=task_id)
         assert record.status == ExportRecord.Status.SUCCESS
@@ -227,7 +227,7 @@ class TestReportRun:
         from openpyxl import load_workbook
 
         from identity.models import DeptInfo
-        from system.models.export import ExportRecord
+        from task.models.export import ExportRecord
 
         settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
         root = ModelLabelField.objects.get(name="identity.userinfo")
@@ -327,7 +327,7 @@ class TestReportImDelivery:
 
         auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
 
-        from system.models.export import ExportRecord
+        from task.models.export import ExportRecord
 
         report.refresh_from_db()
         assert report.last_status == "SUCCESS_WITH_DELIVERY_ERROR"
