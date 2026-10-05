@@ -1,11 +1,11 @@
 # Prometheus 告警桥接（由 xadmin-prometheus-alert-bridge.timer 每分钟触发，单次执行）
 #
-#   install -m 644 utils/monitoring/systemd/xadmin-prometheus-alert-bridge.{service,timer} /etc/systemd/system/
+#   install -m 644 ops/monitoring/systemd/xadmin-prometheus-alert-bridge.{service,timer} /etc/systemd/system/
 #   systemctl daemon-reload && systemctl enable --now xadmin-prometheus-alert-bridge.timer
 #   systemctl list-timers xadmin-prometheus-alert-bridge.timer
 #   journalctl -u xadmin-prometheus-alert-bridge -n 20     # 最近一轮投递结果
 #
-# 前置：监控栈已起（utils/monitoring/docker-compose.monitoring.yml），
+# 前置：监控栈已起（ops/monitoring/docker-compose.monitoring.yml），
 #       ops-alert.env 里 PROMETHEUS_URL / OPS_ALERT_URL / OPS_ALERT_TOKEN 已配置。
 [Unit]
 Description=xadmin Prometheus alert bridge (firing alerts -> ops-alert)

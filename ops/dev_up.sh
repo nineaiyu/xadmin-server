@@ -5,7 +5,7 @@
 #   3) 启动前端 dev server（存在 ../xadmin-client 时；Ctrl+C 仅退出前端）
 #
 # 依赖：docker（含 compose v2）、curl；启动前端需 Node >= 22.22.1 与 pnpm >= 11
-# 用法：bash utils/dev_up.sh [--with-demo] [--backend-only] [--hot]
+# 用法：bash ops/dev_up.sh [--with-demo] [--backend-only] [--hot]
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -16,7 +16,7 @@ HOT=0
 
 usage() {
   cat <<'EOF'
-用法: bash utils/dev_up.sh [选项]
+用法: bash ops/dev_up.sh [选项]
 
 选项:
   --with-demo     初始化后追加演示数据（组织 / 审批 / 表单 / 聊天 / 知识库等，耗时约 1-2 分钟）
@@ -84,7 +84,7 @@ if [ "$WITH_DEMO" = "1" ]; then
 fi
 echo "[dev-up] 初始化 / 补全数据（幂等；随机初始密码仅打印一次，请留意下方输出）..."
 # shellcheck disable=SC2086  # INIT_ARGS 为固定白名单参数，需按词拆分传参
-docker exec xadmin-server python utils/init_data.py ${INIT_ARGS}
+docker exec xadmin-server python ops/init_data.py ${INIT_ARGS}
 
 echo "[dev-up] 环境自检（doctor；失败不阻塞启动，按输出中的修复命令处理）..."
 docker exec xadmin-server python manage.py doctor || true
@@ -92,7 +92,7 @@ docker exec xadmin-server python manage.py doctor || true
 echo "[dev-up] 后端就绪: http://127.0.0.1:8896  (API 文档: /api-docs/swagger/)"
 
 if [ "$BACKEND_ONLY" = "1" ]; then
-  echo "[dev-up] --backend-only：跳过前端启动；停止后端: bash utils/dev_down.sh"
+  echo "[dev-up] --backend-only：跳过前端启动；停止后端: bash ops/dev_down.sh"
   exit 0
 fi
 
@@ -113,5 +113,5 @@ if [ ! -d node_modules ]; then
 fi
 
 echo "[dev-up] 3/3 启动前端 dev server: http://127.0.0.1:8848"
-echo "[dev-up] Ctrl+C 仅退出前端；后端容器保持运行（停止: bash xadmin-server/utils/dev_down.sh）"
+echo "[dev-up] Ctrl+C 仅退出前端；后端容器保持运行（停止: bash xadmin-server/ops/dev_down.sh）"
 exec pnpm dev

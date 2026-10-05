@@ -47,7 +47,7 @@ class TestBackupTopology:
 
     def test_backup_script_never_blocks_local_backup(self):
         """强制项只影响可见性：缺失时本地备份仍产出、单次模式非零退出。"""
-        script = (ROOT / "utils/db_backup.sh").read_text(encoding="utf-8")
+        script = (ROOT / "ops/db_backup.sh").read_text(encoding="utf-8")
         assert "BACKUP_REMOTE_REQUIRED=${BACKUP_REMOTE_REQUIRED:-0}" in script
         assert "check_remote_required" in script
         # 自检不在备份主流程前置中断：do_backup 仍在 while 循环内无条件执行

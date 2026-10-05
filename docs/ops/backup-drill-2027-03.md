@@ -1,7 +1,7 @@
 # 备份恢复演练报告（异地副本收口，2026-09-08 执行 / 2027.03 规划 N1）
 
 > 关联：下期规划 N1 / 遗留缺口 L1（备份三项）、上次演练 `docs/ops/backup-drill-2026-09.md`
-> 脚本：`utils/db_backup.sh`（备份）、`utils/db_restore.sh`（恢复）、`utils/backup_drill.sh`（一键演练）
+> 脚本：`ops/db_backup.sh`（备份）、`ops/db_restore.sh`（恢复）、`ops/backup_drill.sh`（一键演练）
 > 结论：**L1 三项全部闭环**——异地副本已落并 sha256 校验一致、媒体目录入包、RPO 24h → 6h；
 > 恢复 RTO **0.89s**，53 表逐行一致，演练通过。
 
@@ -9,27 +9,27 @@
 
 | # | 缺口（上期遗留） | 处置 | 落点 |
 |---|---|---|---|
-| 1 | 无异地副本（备份与源库同盘） | 备份脚本支持 `BACKUP_REMOTE_TYPE=local\|rsync\|rclone`，逐个包同步并带 `.sha256` 校验和；`local` 模式按天滚动清理 | `utils/db_backup.sh` → `sync_remote()` / `prune_remote()` |
-| 2 | 备份不含媒体目录（`data/upload` 需手工 tar） | `BACKUP_MEDIA=true` + `MEDIA_DIR=/media`（compose 只读挂载 `./data/upload`），产出 `<同名>.media.tar.gz` | `utils/db_backup.sh` → `backup_media()` |
-| 3 | RPO 最长 24h（每日一备） | `BACKUP_INTERVAL` 默认 86400 → **21600**（6h） | `utils/db_backup.sh` + `docker-compose.yml` |
+| 1 | 无异地副本（备份与源库同盘） | 备份脚本支持 `BACKUP_REMOTE_TYPE=local\|rsync\|rclone`，逐个包同步并带 `.sha256` 校验和；`local` 模式按天滚动清理 | `ops/db_backup.sh` → `sync_remote()` / `prune_remote()` |
+| 2 | 备份不含媒体目录（`data/upload` 需手工 tar） | `BACKUP_MEDIA=true` + `MEDIA_DIR=/media`（compose 只读挂载 `./data/upload`），产出 `<同名>.media.tar.gz` | `ops/db_backup.sh` → `backup_media()` |
+| 3 | RPO 最长 24h（每日一备） | `BACKUP_INTERVAL` 默认 86400 → **21600**（6h） | `ops/db_backup.sh` + `docker-compose.yml` |
 
 配套能力：
 
 - **落盘即校验**：`gzip -t` + 非空检查，损坏包不落正式名、不进异地
 - **校验和 sidecar**：每个包附带 `.sha256`，异地副本可直接 `sha256sum -c` 验真
 - **单次模式**：`BACKUP_ONCE=1` 跑一轮即退出，失败返回退出码 1（演练 / 外部 cron 可感知）
-- **一键演练**：`utils/backup_drill.sh` 串起「触发真实备份 → 异地校验 → 恢复验证库 → 逐表行数对比 → 输出报告」
+- **一键演练**：`ops/backup_drill.sh` 串起「触发真实备份 → 异地校验 → 恢复验证库 → 逐表行数对比 → 输出报告」
 
 ## 二、演练范围与方法
 
 | 项 | 内容 |
 |---|---|
-| 备份触发 | `docker exec -e BACKUP_ONCE=1 xadmin-db-backup bash /utils/db_backup.sh`（走真实任务链路，非手工 pg_dump） |
+| 备份触发 | `docker exec -e BACKUP_ONCE=1 xadmin-db-backup bash /ops/db_backup.sh`（走真实任务链路，非手工 pg_dump） |
 | 异地副本 | `BACKUP_REMOTE_TYPE=local`，容器 `/remote` 挂载宿主机 `xadmin-db-backups-remote/` |
 | 媒体目录 | `BACKUP_MEDIA=true`，`./data/upload` 只读挂载为 `/media` |
 | 恢复目标 | 同实例独立验证库 `xadmin_restore_test`（先 DROP 再 CREATE，演练后 DROP） |
 | 一致性验证 | 源库 vs 验证库全表行数 diff（排除 `pg_catalog`/`information_schema`） |
-| 命令 | `BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash utils/backup_drill.sh` |
+| 命令 | `BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash ops/backup_drill.sh` |
 
 ## 三、结果（2026-09-08 18:37）
 
@@ -76,4 +76,4 @@ BACKUP_REMOTE_KEEP_DAYS: ${BACKUP_REMOTE_KEEP_DAYS:-7}
 | 1 | 无 PITR（WAL 归档） | RPO 6h 仍意味着最坏丢 6h 数据；需秒级 RPO 时再立项 WAL 归档 + 回放演练（含磁盘成本） |
 | 2 | 异地副本为同盘目录（本次演练） | 演练用 `../xadmin-db-backups-remote` 仅验证链路；**生产必须指向独立磁盘/NFS/对象存储**，否则同盘故障仍双丢 |
 | 3 | 异地副本无人值守告警 | 同步失败目前只落 `WARN` 日志，建议接入既有资源告警/日志采集 |
-| 4 | 演练未常态化 | 建议 N5 阶段纳入季度演练（直接跑 `utils/backup_drill.sh` 即可，成本 ~2s） |
+| 4 | 演练未常态化 | 建议 N5 阶段纳入季度演练（直接跑 `ops/backup_drill.sh` 即可，成本 ~2s） |

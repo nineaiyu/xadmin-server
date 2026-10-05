@@ -77,7 +77,7 @@ docker run -d --name xadmin-loadtest-redis \
 # ② 以压测专用 settings 执行 migrate + 初始化 + 种子（密码仅本地压测环境）
 export DJANGO_SETTINGS_MODULE=loadtest.settings_loadtest XADMIN_ADMIN_PASSWORD='<压测密码>'
 .venv/bin/python manage.py migrate
-.venv/bin/python utils/init_data.py        # 默认超管用户名为 xadmin
+.venv/bin/python ops/init_data.py        # 默认超管用户名为 xadmin
 .venv/bin/python loadtest/seed_users.py --count 1000
 
 # ③ 生产同参启动被测服务后按 §四 压测；结束后 docker rm -f 两个容器

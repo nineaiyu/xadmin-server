@@ -77,7 +77,7 @@ class TestBackupAlertAPI:
 class TestBackupScriptWiring:
     def test_script_syntax_and_alert_calls(self):
         """备份脚本语法有效，且失败点已接线 send_alert（无需 docker 即可回归）。"""
-        script = SERVER_ROOT / "utils" / "db_backup.sh"
+        script = SERVER_ROOT / "ops" / "db_backup.sh"
         subprocess.run(["bash", "-n", str(script)], check=True)
         text = script.read_text(encoding="utf-8")
         assert "send_alert()" in text

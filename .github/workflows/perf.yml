@@ -95,7 +95,7 @@ jobs:
         run: |
           export XADMIN_ADMIN_PASSWORD="$LOADTEST_PASSWORD"
           uv run --no-sync python manage.py migrate
-          uv run --no-sync python utils/init_data.py
+          uv run --no-sync python ops/init_data.py
           uv run --no-sync python loadtest/seed_users.py --count "${{ github.event.inputs.seed_count || '1000' }}"
 
       - name: Start server (gunicorn + uvicorn worker)

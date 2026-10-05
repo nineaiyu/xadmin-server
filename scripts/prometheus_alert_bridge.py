@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Prometheus 告警桥接：把 firing 告警投递进平台运维告警通道（站内信 + 邮件 + Webhook）。
 
-动机：告警规则（``utils/monitoring/alerts.yml``）只做判定；单机部署不额外引入
+动机：告警规则（``ops/monitoring/alerts.yml``）只做判定；单机部署不额外引入
 Alertmanager，用本脚本轮询 Prometheus 的 ``/api/v1/alerts``，把 firing 告警写进
 平台既有的 ``POST /api/common/api/ops-alert``（令牌 ``OPS_ALERT_TOKEN``）——
 与容器 OOM 告警同一条投递链路（超管站内信 + 邮件 + 出站 Webhook ``system.ops_alert``）。

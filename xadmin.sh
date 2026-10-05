@@ -6,7 +6,7 @@
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
 cd "${PROJECT_DIR}" || exit 1
 XADMIN_PROJECT_DIR="${PROJECT_DIR}"
-. "${PROJECT_DIR}/utils/compose_env.sh"
+. "${PROJECT_DIR}/ops/compose_env.sh"
 sync_compose_credentials
 
 action=${1-}
@@ -86,7 +86,7 @@ function restart() {
 
 function init_data() {
   if ${EXE} ps|grep xadmin-server|grep healthy &>/dev/null;then
-    docker exec -it xadmin-server sh -c 'python utils/init_data.py'
+    docker exec -it xadmin-server sh -c 'python ops/init_data.py'
   else
     echo "error: xadmin-server not healthy"
     exit 1

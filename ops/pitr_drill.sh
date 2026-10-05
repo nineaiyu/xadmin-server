@@ -5,8 +5,8 @@
 # 并在输出里给出时间点回放的标准步骤（回放需在隔离环境人工执行，不在本脚本内自动恢复生产）。
 #
 # 用法：
-#   ./utils/pitr_drill.sh                 # 使用默认容器名/归档目录
-#   PG_CONTAINER=xadmin-postgresql PG_ARCHIVE_DIR=/var/lib/postgresql/archive ./utils/pitr_drill.sh
+#   ./ops/pitr_drill.sh                 # 使用默认容器名/归档目录
+#   PG_CONTAINER=xadmin-postgresql PG_ARCHIVE_DIR=/var/lib/postgresql/archive ./ops/pitr_drill.sh
 
 set -uo pipefail
 

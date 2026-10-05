@@ -6,7 +6,7 @@
 # 测试库（test_xadmin_realtest_gw*）、Redis 键（worker 前缀计数器/锁）与 E2E
 # shard 库（xadmin_e2e_shard*）残留引发的跨轮串扰。
 #
-# 用法：bash utils/test_env_reset.sh
+# 用法：bash ops/test_env_reset.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

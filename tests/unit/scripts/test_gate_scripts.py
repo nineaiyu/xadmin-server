@@ -85,8 +85,8 @@ class TestCrossAppImports:
         assert xcai.scan() == []
 
     def test_non_app_source_dirs_not_scanned(self, xcai, tmp_path):
-        # utils/server 在 SCAN_DIRS 里但不是业务 app：其中的模块级跨 import 不判违例
-        write(tmp_path, "utils/helper.py", "from beta.models import Book\n")
+        # ops/server 在 SCAN_DIRS 里但不是业务 app：其中的模块级跨 import 不判违例
+        write(tmp_path, "ops/helper.py", "from beta.models import Book\n")
         assert xcai.scan() == []
 
     def test_migrations_and_tests_excluded(self, xcai, tmp_path):

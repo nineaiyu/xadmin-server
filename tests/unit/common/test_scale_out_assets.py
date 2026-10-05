@@ -49,20 +49,20 @@ class TestScaleOverlay:
 
     def test_base_compose_mounts_single_backend_conf(self):
         text = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
-        assert "./utils/xadmin-backend.single.conf:/etc/nginx/xadmin-backend.conf:r" in text
+        assert "./ops/xadmin-backend.single.conf:/etc/nginx/xadmin-backend.conf:r" in text
 
     def test_nginx_backend_forms(self):
         """主配置只 include；单/多副本形态各自独立（同一挂载点切换）。"""
-        main = (ROOT / "utils/nginx.conf").read_text(encoding="utf-8")
+        main = (ROOT / "ops/nginx.conf").read_text(encoding="utf-8")
         assert "include /etc/nginx/xadmin-backend.conf;" in main
 
-        single = (ROOT / "utils/xadmin-backend.single.conf").read_text(encoding="utf-8")
+        single = (ROOT / "ops/xadmin-backend.single.conf").read_text(encoding="utf-8")
         assert "set $xadmin_api_backend server:8896;" in single
         # 单副本不得引入配置加载期解析（注释提及 upstream 不算指令）
         directives = "\n".join(line for line in single.splitlines() if not line.lstrip().startswith("#"))
         assert "upstream" not in directives
 
-        multi = (ROOT / "utils/xadmin-backend.multi.conf").read_text(encoding="utf-8")
+        multi = (ROOT / "ops/xadmin-backend.multi.conf").read_text(encoding="utf-8")
         assert "zone xadmin_api 64k;" in multi  # resolve 的前置条件
         assert "server server:8896 resolve;" in multi
         assert "proxy_pass xadmin_api;" in multi

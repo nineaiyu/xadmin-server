@@ -29,7 +29,7 @@ docker run -d --name xadmin-redis -p 6379:6379 redis:8.10.2
 ```shell
 cp config_example.yml config.yml   # 按需修改（sqlite 本地开发：DB_ENGINE: sqlite3）
 python manage.py migrate           # uv 环境加前缀 `uv run`（或先 source .venv/bin/activate）
-python utils/init_data.py          # 初始数据 + 超管账号（幂等，可重复执行；升级后建议执行一次）
+python ops/init_data.py          # 初始数据 + 超管账号（幂等，可重复执行；升级后建议执行一次）
 ```
 
 `SECRET_KEY` 取值规则（缺失时）：无任何配置文件（回落 `config_example.yml`）或 `DEBUG=true` 时自动生成并持久化到
@@ -155,7 +155,7 @@ python manage.py seed_demo_clean             # 一键卸载（清理演示数据
 | `heavy`      | 导入/导出/批量删除后台任务（`background_task_view_set_job`）、Office 转 PDF 预览（`convert_office_preview_task`） | `start celery_heavy`   |
 
 - 路由配置：`server/settings/libs.py` 的 `CELERY_TASK_ROUTES`，新增重任务在此加一行即可。
-- 健康检查：`utils/check_celery.sh [celery|heavy]`（依赖 worker 心跳文件，文件位于 `tempfile.gettempdir()`）。
+- 健康检查：`ops/check_celery.sh [celery|heavy]`（依赖 worker 心跳文件，文件位于 `tempfile.gettempdir()`）。
 
 ### 2.1 Office 在线预览（可选依赖 LibreOffice，ADR-013）
 
@@ -253,15 +253,15 @@ BACKUP_REMOTE_DIR=/mnt/backup-remote docker compose up -d db-backup
 - 手动/单次备份（脚本已支持单次模式，无需再手写 pg_dump）：
 
 ```shell
-docker exec -e BACKUP_ONCE=1 xadmin-db-backup bash /utils/db_backup.sh
+docker exec -e BACKUP_ONCE=1 xadmin-db-backup bash /ops/db_backup.sh
 ```
 
 - 恢复（宿主机执行，会**清空重建**目标库，请先确认）：
 
 ```shell
-sh utils/db_restore.sh ../xadmin-db-backups/xadmin_20260904_205752.sql.gz xadmin
+sh ops/db_restore.sh ../xadmin-db-backups/xadmin_20260904_205752.sql.gz xadmin
 # 演练/自动化：YES_I_KNOW=1 跳过交互确认；RESTORE_MEDIA=1 同时解包媒体目录
-YES_I_KNOW=1 RESTORE_MEDIA=1 sh utils/db_restore.sh <备份包> xadmin_restore_test
+YES_I_KNOW=1 RESTORE_MEDIA=1 sh ops/db_restore.sh <备份包> xadmin_restore_test
 ```
 
 - WAL 归档（PITR）：**2026-09-16 已启用**——`archive_mode=on` + `archive_timeout=60`
@@ -272,8 +272,8 @@ YES_I_KNOW=1 RESTORE_MEDIA=1 sh utils/db_restore.sh <备份包> xadmin_restore_t
 - 一键演练（备份 → 异地校验 → 恢复验证库 → 逐表行数对比 → 输出报告，约 2s）：
 
 ```shell
-bash utils/backup_drill.sh
-BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash utils/backup_drill.sh   # 含异地副本校验
+bash ops/backup_drill.sh
+BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash ops/backup_drill.sh   # 含异地副本校验
 ```
 
 - 演练记录：2026-09-07 首次正式演练通过（RTO 0.88s、52 表逐行一致，见
@@ -293,7 +293,7 @@ BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash utils/backup_drill.sh   # 含
 - [ ] BACKUP_REMOTE_TYPE/TARGET 已配置，且异地目标位于独立故障域（非同盘目录）
 - [ ] 异地副本有当日同名文件且 sha256 与本地一致
 - [ ] BACKUP_MEDIA=true 且 .media.tar.gz 随数据库包一起产出（生产有附件时必查）
-- [ ] 演练：bash utils/backup_drill.sh 全项 PASS（尤其「逐表行数一致」不得为 0 表）
+- [ ] 演练：bash ops/backup_drill.sh 全项 PASS（尤其「逐表行数一致」不得为 0 表）
 - [ ] 确认恢复目标库不得指向 xadmin（db_restore.sh 会先 DROP 目标库）
 - [ ] 备份与异地同步失败已接入告警（S2：`BACKUP_ALERT_URL` + `BACKUP_ALERT_TOKEN`，
       失败点上报 `POST /api/common/api/backup-alert` → 站内信/邮件通知超管；未配置时仅落 WARN 日志）

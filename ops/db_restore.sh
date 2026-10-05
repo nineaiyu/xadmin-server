@@ -2,21 +2,21 @@
 # PostgreSQL 备份恢复脚本（宿主机执行，通过 docker exec 恢复）
 #
 # 用法:
-#   sh utils/db_restore.sh <备份文件.sql.gz> [目标数据库名]
+#   sh ops/db_restore.sh <备份文件.sql.gz> [目标数据库名]
 #
 # 说明:
 # - 默认目标库为 xadmin；恢复前会自动重建目标库（先 DROP 再 CREATE），数据会被覆盖
 # - 目标库正在被占用时会先断开其全部连接
-# - 示例: sh utils/db_restore.sh ../xadmin-db-backups/xadmin_20260904_120000.sql.gz
+# - 示例: sh ops/db_restore.sh ../xadmin-db-backups/xadmin_20260904_120000.sql.gz
 #
 # 非交互（演练/自动化）：
-#   YES_I_KNOW=1 跳过「确认请输入 yes」提示（utils/backup_drill.sh 依赖）
+#   YES_I_KNOW=1 跳过「确认请输入 yes」提示（ops/backup_drill.sh 依赖）
 #
 # 媒体目录恢复（可选，默认关闭）：
 #   RESTORE_MEDIA=1 MEDIA_TARGET=./data/upload 时，若存在同名 .media.tar.gz 会一并解包
 set -euo pipefail
 
-FILE=${1:?用法: sh utils/db_restore.sh <备份文件.sql.gz> [目标数据库名]}
+FILE=${1:?用法: sh ops/db_restore.sh <备份文件.sql.gz> [目标数据库名]}
 TARGET_DB=${2:-xadmin}
 CONTAINER=${CONTAINER:-xadmin-postgresql}
 DB_USER=${DB_USER:-server}

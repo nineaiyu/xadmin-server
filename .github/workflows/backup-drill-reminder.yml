@@ -1,6 +1,6 @@
 # 季度备份恢复演练提醒（备份演练常态化）。
 # 3/6/9/12 月 8 日（北京时间 10:00）自动开 issue 提醒执行
-# docs/ops/deployment.md §3.1 的检查清单与 utils/backup_drill.sh 演练，
+# docs/ops/deployment.md §3.1 的检查清单与 ops/backup_drill.sh 演练，
 # 演练报告落 docs/ops/backup-drill-<年>-<季度>.md。
 name: backup-drill-reminder
 
@@ -45,7 +45,7 @@ jobs:
               "- [ ] BACKUP_REMOTE_TYPE/TARGET 已配置，异地目标位于独立故障域",
               "- [ ] 异地副本有当日同名文件且 sha256 与本地一致",
               "- [ ] BACKUP_MEDIA=true 且 .media.tar.gz 随数据库包一起产出",
-              "- [ ] `bash utils/backup_drill.sh` 全项 PASS（逐表行数一致不得为 0 表）",
+              "- [ ] `bash ops/backup_drill.sh` 全项 PASS（逐表行数一致不得为 0 表）",
               "- [ ] 确认恢复目标库不得指向 xadmin（db_restore.sh 会先 DROP 目标库）",
               "- [ ] 演练报告写入 `docs/ops/backup-drill-" + year + "-" + quarter + ".md`",
               "",

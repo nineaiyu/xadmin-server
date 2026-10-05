@@ -54,7 +54,7 @@ SERVER_TOP_PREFIXES = (
     "captcha/",
     "loadjson/",
     "scripts/",
-    "utils/",
+    "ops/",
     "docs/",
     "tests/",
     "demo/",
@@ -65,7 +65,7 @@ CROSS_REPO_PREFIXES = {"xadmin-client/": "client", "xadmin-docs/": "docs"}
 # 活跃开发文档（校验范围 2）：glob 集 + 排除项（履历性质文档保留历史路径）
 ACTIVE_DOC_GLOBS = ("docs/architecture/*.md", "docs/guide/*.md", "docs/*.md")
 EXCLUDE_ACTIVE_DOCS = ("docs/metrics.md",)
-# 活跃文档只校验"代码路径"（窄前缀集；示例性路径多集中于 loadjson / utils / tests 等，不纳入）
+# 活跃文档只校验"代码路径"（窄前缀集；示例性路径多集中于 loadjson / ops / tests 等，不纳入）
 CODE_PREFIXES = (
     "common/",
     "system/",

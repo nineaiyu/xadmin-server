@@ -3,7 +3,7 @@
 > 目标：把 web（`server`）与任务（`celery-worker` / `celery-heavy`）扩到多副本，
 > 且**不给既有单副本形态引入任何行为变化**。
 > 相关：[deployment.md](deployment.md) §6.1（升级与迁移）、`docker-compose.scale.yml`、
-> `utils/xadmin-backend.multi.conf`、[storage.md](storage.md)（媒体共享/S3 后端）。
+> `ops/xadmin-backend.multi.conf`、[storage.md](storage.md)（媒体共享/S3 后端）。
 
 ## 一、三条硬约束（不满足就会出问题）
 
@@ -11,7 +11,7 @@
 |---|---|---|---|
 | 1 | **迁移只执行一次** | 两个副本同时 `migrate` → DDL 互锁 / 半迁移状态 | 一次性 `migrate` 服务先执行 + web 侧 `AUTO_MIGRATE=false`（`docker-compose.prod.yml` / `scale.yml`） |
 | 2 | **beat 保持单副本** | 周期任务、定时报表被重复投递（`django_celery_beat` 不做跨进程互斥） | base compose 已声明 `deploy.replicas: 1`；扩展时只扩 `server` / `celery-worker` / `celery-heavy` |
-| 3 | **nginx 后端必须轮询全部副本** | 变量式 `proxy_pass` 只解析到一个地址 → 流量全落一台，扩容无收益 | `docker-compose.scale.yml` 覆盖挂载 `utils/xadmin-backend.multi.conf`（`upstream + zone + resolve`） |
+| 3 | **nginx 后端必须轮询全部副本** | 变量式 `proxy_pass` 只解析到一个地址 → 流量全落一台，扩容无收益 | `docker-compose.scale.yml` 覆盖挂载 `ops/xadmin-backend.multi.conf`（`upstream + zone + resolve`） |
 
 > WS 层无需额外配置：`RedisChannelLayer` 已就绪，跨副本广播走 Redis；HTTP/WS 请求
 > 本身无状态（JWT/RBAC/会话/缓存都在 Redis 与 DB），不要求会话粘性。
@@ -73,7 +73,7 @@ reload/restart nginx。
 - **单机形态**：PostgreSQL / Redis / nginx / 备份服务仍是单点，本 overlay 解决的是
   「应用层可横向扩展」，不解决高可用与故障切换（PG/Redis 需另行做副本与切换方案）；
 - **跨主机扩展**：需要共享 DB/Redis 与媒体目录（NFS 或 [storage.md](storage.md) 的
-  S3 后端），并自备外部 L4/L7 负载均衡；本仓自带的 `utils/nginx.conf` 只负责同宿主
+  S3 后端），并自备外部 L4/L7 负载均衡；本仓自带的 `ops/nginx.conf` 只负责同宿主
   副本的轮询；
 - **媒体目录**：多副本必须共享同一份上传目录（同宿主 bind mount 天然共享），否则
   上传落在后端 A、下载命中后端 B 会 404；

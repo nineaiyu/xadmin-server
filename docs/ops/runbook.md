@@ -26,7 +26,7 @@
 ## 4. healthz `celery_status: false`（异步任务不可用）
 
 - **定位**：`docker compose ps` 看 celery-worker/celery-heavy 是否 Up；心跳文件是否存在（
-  `utils/check_celery.sh [celery|heavy]`）；worker 日志尾部。
+  `ops/check_celery.sh [celery|heavy]`）；worker 日志尾部。
 - **处置**：worker 崩溃 → 重启对应容器；反复崩溃多为 broker 断连或任务代码异常（看 `unexpected_exception.log`）。注意 API
   正常但导入/导出/通知将滞留队列，恢复 worker 后自动消费。
 
@@ -84,7 +84,7 @@
 ## 12. 误删数据恢复 / 备份演练
 
 - **定位**：确认最近一份完好的 `xadmin-db-backups/<库名>_<时间戳>.sql.gz`。
-- **处置**：`sh utils/db_restore.sh <备份文件> xadmin`（**清空重建**目标库，先停写入并确认）；媒体目录（uploads）不在 pg_dump
+- **处置**：`sh ops/db_restore.sh <备份文件> xadmin`（**清空重建**目标库，先停写入并确认）；媒体目录（uploads）不在 pg_dump
   范围，需另行同步/恢复；演练后记录 RTO（目标 ≤30 分钟）。
 
 ## 13. migrate 卡住或失败
@@ -119,12 +119,12 @@
 - **定位**：`docker logs xadmin-nginx` 出现 `[emerg] host not found in upstream "server:8896"`（历史形态）；
   运行期 502 对比 `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' xadmin-server`
   与 nginx 实际转发目标 `data/logs/tcp-access.log` 的 `$upstream_addr`。
-- **根因/已修复（2026-09-21）**：后端地址由「配置加载期解析」改为「运行期解析」——`utils/nginx.conf`（stream）
+- **根因/已修复（2026-09-21）**：后端地址由「配置加载期解析」改为「运行期解析」——`ops/nginx.conf`（stream）
   与 `xadmin-web/xadmin-api-conf`（页面层，客户端仓库 `web/conf/` 副本同源）均改为 `resolver 127.0.0.11
   valid=10s ipv6=off` + 变量 `proxy_pass`。修复前 nginx/页面容器早于 server 启动会直接 `[emerg]` 启动失败
   （靠 `restart: always` 反复重试才恢复），且 server 容器重建换 IP 后必须手工 `docker restart xadmin-nginx xadmin-web`。
 - **处置**：先确认配置未被改回静态 `upstream` / `proxy_pass http://server:8896;`（`docker exec xadmin-nginx
   nginx -t` 校验，正常应无 emerg）；server 未就绪期间客户端连接断开 / 502 属预期，server healthy 后 **10s 内
   自动恢复，无需重启 nginx**。安装器 LB 层（`config_init/nginx/lb_http_server.conf`）已同口径修复。
-  多副本形态例外：`utils/xadmin-backend.multi.conf`（`upstream + zone + resolve`）在 nginx 启动期即要求
+  多副本形态例外：`ops/xadmin-backend.multi.conf`（`upstream + zone + resolve`）在 nginx 启动期即要求
   `server` 可解析，首次 up 可能先 emerg 一次并由 `restart: always` 重试收敛（见 [scale-out.md](scale-out.md)）。

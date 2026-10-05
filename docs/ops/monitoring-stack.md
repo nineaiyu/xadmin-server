@@ -3,17 +3,17 @@
 > 目标：把「HTTP 可用性 / API P95 / 任务成功率 / 队列积压」四项 SLO 从
 > 「指标端点已暴露、无人值守看不到」推到**可看 + 可告警**。
 > 相关：[observability.md](observability.md)（三支柱 / SLO 口径 / 演练记录）、
-> [runbook.md](runbook.md)（故障处置）、`utils/monitoring/`（本栈资产）、
+> [runbook.md](runbook.md)（故障处置）、`ops/monitoring/`（本栈资产）、
 > `scripts/prometheus_alert_bridge.py`（告警投递桥接）。
 
 ## 一、形态与边界
 
 | 项 | 说明 |
 |---|---|
-| 组成 | 独立编排 `utils/monitoring/docker-compose.monitoring.yml`：Prometheus（留存 30d）+ Grafana（预置面板）+ blackbox-exporter（健康探针） |
+| 组成 | 独立编排 `ops/monitoring/docker-compose.monitoring.yml`：Prometheus（留存 30d）+ Grafana（预置面板）+ blackbox-exporter（健康探针） |
 | 网络 | 接入主栈网络（默认 `xadmin-server_net`），直接抓 `server:8896`；主栈目录名不同用 `XADMIN_STACK_NETWORK` 覆盖 |
 | 端口 | 默认只发布到 **回环**（`127.0.0.1:9090` / `127.0.0.1:3000`）；对外暴露须自行加认证与反代 |
-| 数据 | `${MONITORING_DATA_DIR:-utils/monitoring-data}`（TSDB 与 Grafana 库，已 gitignore） |
+| 数据 | `${MONITORING_DATA_DIR:-ops/monitoring-data}`（TSDB 与 Grafana 库，已 gitignore） |
 | 不改变主栈 | 主栈的监控页趋势、db-backup 告警、OOM watcher、SLO 快照全部沿用；本栈是**只读抓取**的旁路 |
 | 不替代 Alertmanager | 单机形态不引入 Alertmanager：告警投递走宿主侧桥接脚本（见 §四），组织已有 Alertmanager 也可直接接本 Prometheus |
 
@@ -24,23 +24,23 @@
 
 ```bash
 cd <xadmin-server 仓库根>
-cp utils/monitoring/metrics_token.example utils/monitoring/metrics_token
-vi utils/monitoring/metrics_token        # 只写令牌本身（与 config.yml 的 METRICS_TOKEN 一致）
-chmod 600 utils/monitoring/metrics_token
+cp ops/monitoring/metrics_token.example ops/monitoring/metrics_token
+vi ops/monitoring/metrics_token        # 只写令牌本身（与 config.yml 的 METRICS_TOKEN 一致）
+chmod 600 ops/monitoring/metrics_token
 
-docker compose -f utils/monitoring/docker-compose.monitoring.yml up -d
-docker compose -f utils/monitoring/docker-compose.monitoring.yml ps
+docker compose -f ops/monitoring/docker-compose.monitoring.yml up -d
+docker compose -f ops/monitoring/docker-compose.monitoring.yml ps
 ```
 
 验收：
 
 ```bash
 # ① 目标健康（应为 1）——需要令牌，回环直连
-curl -s -H "Authorization: Bearer $(cat utils/monitoring/metrics_token)" \
+curl -s -H "Authorization: Bearer $(cat ops/monitoring/metrics_token)" \
   http://127.0.0.1:9090/api/v1/query?query=up | head -c 400
 
 # ② 抓到的自定义指标（四项 SLO 数据源）
-curl -s -H "Authorization: Bearer $(cat utils/monitoring/metrics_token)" \
+curl -s -H "Authorization: Bearer $(cat ops/monitoring/metrics_token)" \
   'http://127.0.0.1:9090/api/v1/query?query=xadmin_celery_queue_length'
 ```
 
@@ -52,7 +52,7 @@ curl -s -H "Authorization: Bearer $(cat utils/monitoring/metrics_token)" \
 指标清单见 [observability.md](observability.md) §三；本栈新增消费的是队列积压
 （`xadmin_celery_queue_length`，broker 直读 LLEN，2026-09-29 起进端点）。
 
-`utils/monitoring/alerts.yml` 的规则与 SLO 表同口径：
+`ops/monitoring/alerts.yml` 的规则与 SLO 表同口径：
 
 | 告警 | 条件 | 级别 |
 |---|---|---|
@@ -102,18 +102,18 @@ OPS_ALERT_TOKEN=<令牌> .venv/bin/python scripts/prometheus_alert_bridge.py
 
 ## 五、宿主侧 systemd 单元（三个 agent）
 
-`utils/monitoring/systemd/` 提供可直接安装的单元样例（环境文件集中在 `/etc/xadmin/ops-alert.env`）：
+`ops/monitoring/systemd/` 提供可直接安装的单元样例（环境文件集中在 `/etc/xadmin/ops-alert.env`）：
 
 | 单元 | 作用 | 调度 |
 |---|---|---|
-| `xadmin-oom-alert.service` | 容器 OOM 事件 → ops-alert（`utils/oom_alert.sh`） | 常驻（`Restart=always`） |
-| `xadmin-slo-snapshot.{service,timer}` | 每日 SLO 快照 → JSONL（`utils/slo_snapshot_cron.sh`） | 06:17（`Persistent=true` 补跑） |
+| `xadmin-oom-alert.service` | 容器 OOM 事件 → ops-alert（`ops/oom_alert.sh`） | 常驻（`Restart=always`） |
+| `xadmin-slo-snapshot.{service,timer}` | 每日 SLO 快照 → JSONL（`ops/slo_snapshot_cron.sh`） | 06:17（`Persistent=true` 补跑） |
 | `xadmin-prometheus-alert-bridge.{service,timer}` | Prometheus firing 告警 → ops-alert | 每 1 分钟（`OnBootSec=2min`） |
 
 ```bash
-install -m 600 utils/monitoring/systemd/ops-alert.env.example /etc/xadmin/ops-alert.env
+install -m 600 ops/monitoring/systemd/ops-alert.env.example /etc/xadmin/ops-alert.env
 vi /etc/xadmin/ops-alert.env                    # 填令牌与端点
-install -m 644 utils/monitoring/systemd/xadmin-*.service utils/monitoring/systemd/xadmin-*.timer /etc/systemd/system/
+install -m 644 ops/monitoring/systemd/xadmin-*.service ops/monitoring/systemd/xadmin-*.timer /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now xadmin-oom-alert.service xadmin-slo-snapshot.timer xadmin-prometheus-alert-bridge.timer
 systemctl list-timers 'xadmin-*'
@@ -125,7 +125,7 @@ systemctl list-timers 'xadmin-*'
 
 ```cron
 */1 * * * * . /etc/xadmin/ops-alert.env; cd /opt/xadmin/xadmin-server && .venv/bin/python scripts/prometheus_alert_bridge.py >> /var/log/xadmin-prom-alert.log 2>&1
-17 6 * * *  . /etc/xadmin/ops-alert.env; cd /opt/xadmin/xadmin-server && bash utils/slo_snapshot_cron.sh >> /var/log/xadmin-slo.log 2>&1
+17 6 * * *  . /etc/xadmin/ops-alert.env; cd /opt/xadmin/xadmin-server && bash ops/slo_snapshot_cron.sh >> /var/log/xadmin-slo.log 2>&1
 ```
 
 ## 六、镜像与季度核对

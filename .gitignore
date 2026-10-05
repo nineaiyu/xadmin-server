@@ -9,7 +9,7 @@ upload/*
 common/utils/ip/geoip/GeoLite2-City.mmdb
 common/utils/ip/ipip/ipipfree.ipdb
 config.yml
-# 部署凭据载体（compose 强制注入，见 .env.example 与 utils/dev_up.sh）
+# 部署凭据载体（compose 强制注入，见 .env.example 与 ops/dev_up.sh）
 .env
 .env.*
 !.env.example
@@ -27,8 +27,8 @@ htmlcov/
 loadtest/results/
 loadtest/k6/results
 
-# 监控栈运行期产物（指标令牌 + TSDB/面板数据卷，见 utils/monitoring/）
-utils/monitoring/metrics_token
+# 监控栈运行期产物（指标令牌 + TSDB/面板数据卷，见 ops/monitoring/）
+ops/monitoring/metrics_token
 monitoring-data/
 
 # mypy 增量缓存

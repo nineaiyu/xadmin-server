@@ -98,7 +98,7 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 **校准方法**：观察 ≥3 个月后按实际数据校准目标值与告警阈值（现维持下方初始口径）；初期形态
 （2026-09-16）：周期任务全 SUCCESS、HTTP 指标待流量积累。
 
-**采集机制（A2，2026-09-17 上线）**：`utils/slo_snapshot_cron.sh` 每日（宿主 cron / systemd timer）
+**采集机制（A2，2026-09-17 上线）**：`ops/slo_snapshot_cron.sh` 每日（宿主 cron / systemd timer）
 调用 `scripts/slo_snapshot.py --append`，把快照追加进 JSONL（`SLO_SNAPSHOT_FILE`，默认
 `tmp/slo_snapshots.jsonl`）——HTTP/任务为进程累计口径，**跨重启的趋势**才有意义。
 接线有端到端测试守护（`tests/unit/common/test_slo_snapshot.py::TestCronScriptWiring`：
@@ -146,19 +146,19 @@ tail -5 <仓库>/tmp/slo_cron.log                                 # 执行日志
 | Webhook 投递耗尽 | 投递任务 | 站内信 | ✅ 已接 |
 | API 应用配额软告警 | 开放平台 | 站内信 | ✅ 已接 |
 | 主机资源阈值（CPU / 内存 / 磁盘） | 主机监控心跳 + 周期检查 | 站内信 / 邮件（`ServerPerformanceMessage`）；2026-09-19 起同时落 `MonitorAlert` 流水（监控页可查/可导出） | ✅ 已接 |
-| **容器 OOM** | `docker events` 的 `oom` 事件 | `utils/oom_alert.sh` → `/api/common/api/ops-alert` → 站内信 + 邮件 + Webhook `system.ops_alert` | ✅ 新增（A1，第十六轮验证） |
-| HTTP 可用性 / P95 延迟 / 任务成功率 / 队列积压 | Prometheus 指标 + SLO 阈值（`utils/monitoring/alerts.yml`） | 参考栈抓取判定 → 宿主侧 `scripts/prometheus_alert_bridge.py` → `ops-alert`（站内信 + 邮件 + Webhook `system.ops_alert`），与 OOM 告警同链路 | ✅ 已接（P1-36，见 [monitoring-stack.md](monitoring-stack.md)） |
+| **容器 OOM** | `docker events` 的 `oom` 事件 | `ops/oom_alert.sh` → `/api/common/api/ops-alert` → 站内信 + 邮件 + Webhook `system.ops_alert` | ✅ 新增（A1，第十六轮验证） |
+| HTTP 可用性 / P95 延迟 / 任务成功率 / 队列积压 | Prometheus 指标 + SLO 阈值（`ops/monitoring/alerts.yml`） | 参考栈抓取判定 → 宿主侧 `scripts/prometheus_alert_bridge.py` → `ops-alert`（站内信 + 邮件 + Webhook `system.ops_alert`），与 OOM 告警同链路 | ✅ 已接（P1-36，见 [monitoring-stack.md](monitoring-stack.md)） |
 
 维护约定：新增告警必须经演练验证（本清单同步登记证据）；仅接已证实场景，避免告警噪音。
 
 ### 宿主侧 watcher（容器 OOM）
 
-`utils/oom_alert.sh` 在 **Docker 宿主机** 常驻运行（需 docker socket 与服务端 HTTP 可达）：
+`ops/oom_alert.sh` 在 **Docker 宿主机** 常驻运行（需 docker socket 与服务端 HTTP 可达）：
 
 ```bash
 OPS_ALERT_URL=https://<xadmin-host>/api/common/api/ops-alert \
 OPS_ALERT_TOKEN=<与系统设置 OPS_ALERT_TOKEN 一致> \
-bash utils/oom_alert.sh
+bash ops/oom_alert.sh
 ```
 
 - 监听 `docker events --filter event=oom`；断线自动重连，游标（事件时间纳秒）落
@@ -370,7 +370,7 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
 
 - **背景**：第十五轮登记「`docker events` 暴露 `container oom` 事件，可监听接入告警；当前未接入」——
   本轮完成接入并端到端验证；
-- **接入**：宿主侧 `utils/oom_alert.sh`（`docker events --filter event=oom`，纳秒游标去重 + 断线重连）
+- **接入**：宿主侧 `ops/oom_alert.sh`（`docker events --filter event=oom`，纳秒游标去重 + 断线重连）
   → `POST /api/common/api/ops-alert`（独立令牌 `X-Ops-Token` = 系统设置 `OPS_ALERT_TOKEN`）
   → `OpsAlertMessage` 站内信 + 邮件（超管订阅自愈）+ 出站 Webhook `system.ops_alert`；
   60s 同来源同事件节流（与备份告警同范式）；

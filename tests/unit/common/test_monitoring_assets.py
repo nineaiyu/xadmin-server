@@ -16,7 +16,7 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
-MONITORING = ROOT / "utils" / "monitoring"
+MONITORING = ROOT / "ops" / "monitoring"
 
 #: 指标名后缀：Prometheus 客户端为 Histogram/Counter 生成的派生系列
 _SUFFIXES = ("_bucket", "_count", "_sum", "_total", "_created")
@@ -148,8 +148,8 @@ class TestSystemdUnits:
 
     def test_services_reference_repo_scripts_and_env_file(self):
         cases = {
-            "xadmin-oom-alert.service": "utils/oom_alert.sh",
-            "xadmin-slo-snapshot.service": "utils/slo_snapshot_cron.sh",
+            "xadmin-oom-alert.service": "ops/oom_alert.sh",
+            "xadmin-slo-snapshot.service": "ops/slo_snapshot_cron.sh",
             "xadmin-prometheus-alert-bridge.service": "scripts/prometheus_alert_bridge.py",
         }
         for unit, script in cases.items():
@@ -188,7 +188,7 @@ class TestDocsAndSecrets:
 
     def test_metrics_token_is_gitignored(self):
         gitignore = _read(ROOT / ".gitignore")
-        assert "utils/monitoring/metrics_token" in gitignore
+        assert "ops/monitoring/metrics_token" in gitignore
         # 只提交示例文件，真实令牌不入库
         assert (MONITORING / "metrics_token.example").is_file()
 

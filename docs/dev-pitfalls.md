@@ -49,7 +49,7 @@
 - **原因**：容器是源码挂载 + 进程常驻，**默认不热加载**；且 `xadmin-celery-*` 是独立进程
   （导出/报表等任务跑在 worker 里，只重启 web 不够）。
 - **做法**：`docker compose restart server celery-worker celery-heavy celery-beat`；
-  或用 `bash utils/dev_up.sh --hot` 启动（DEBUG=true → gunicorn `--reload`，web 容器改代码自动重载；
+  或用 `bash ops/dev_up.sh --hot` 启动（DEBUG=true → gunicorn `--reload`，web 容器改代码自动重载；
   celery / beat 与 config.yml、`XADMIN_APPS` 等配置变更仍需 restart）。
 
 ## 二、后端：配置与启动

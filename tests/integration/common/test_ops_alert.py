@@ -2,7 +2,7 @@
 """A1 运维告警（容器 OOM）：令牌鉴权 / 节流 / 站内信落库 / watcher 脚本接线。
 
 背景：容器 OOM 事件原先只能查 `docker events`（演练登记的观察项），本端点让宿主侧
-watcher（utils/oom_alert.sh）能把事件推给站内信/邮件（超管订阅）与出站 Webhook。
+watcher（ops/oom_alert.sh）能把事件推给站内信/邮件（超管订阅）与出站 Webhook。
 """
 
 import subprocess
@@ -90,7 +90,7 @@ class TestOpsAlertAPI:
 class TestOomWatcherScriptWiring:
     def test_script_syntax_and_alert_calls(self):
         """watcher 脚本语法有效，且 oom 监听/回调/重连去重接线完整（无需 docker 即可回归）。"""
-        script = SERVER_ROOT / "utils" / "oom_alert.sh"
+        script = SERVER_ROOT / "ops" / "oom_alert.sh"
         subprocess.run(["bash", "-n", str(script)], check=True)
         text = script.read_text(encoding="utf-8")
         assert "--filter event=oom" in text

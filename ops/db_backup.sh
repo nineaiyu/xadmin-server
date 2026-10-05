@@ -7,7 +7,7 @@
 #   3. 异地副本：BACKUP_REMOTE_TYPE=local|rsync|rclone 同步到 BACKUP_REMOTE_TARGET
 #   4. RPO：默认 BACKUP_INTERVAL=21600（6h，原 24h）
 #
-# 单次模式：BACKUP_ONCE=1 只跑一轮即退出（utils/backup_drill.sh 演练、单测、外部 cron 用）
+# 单次模式：BACKUP_ONCE=1 只跑一轮即退出（ops/backup_drill.sh 演练、单测、外部 cron 用）
 # 产出标记：每轮成功后写 ${BACKUP_DIR}/.latest_backup（首行为 sql.gz 路径，次行为媒体包路径）
 set -euo pipefail
 

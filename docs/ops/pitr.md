@@ -4,7 +4,7 @@
 > 本文给出现状、启用步骤、成本口径、演练流程与回滚。
 > **✅ 2026-09-16 已启用**（发布窗口执行：archive_mode=on 重启 + gzip 压缩归档 + 归档滞后告警接线，
 > 归档卷为同盘独立目录——单机退让决策与迁移条件见 §6）。
-> 相关：[deployment.md](deployment.md)（备份总览）、[backup-drill-*.md](backup-drill-2027-03.md)（既有演练口径）、`utils/pitr_drill.sh`（链路检查助手）。
+> 相关：[deployment.md](deployment.md)（备份总览）、[backup-drill-*.md](backup-drill-2027-03.md)（既有演练口径）、`ops/pitr_drill.sh`（链路检查助手）。
 
 ## 1. 现状与目标
 
@@ -49,7 +49,7 @@
 5. 归档目录应纳入异地副本同步链路（`BACKUP_REMOTE_TYPE` 当前未启用，随异地副本一并规划），
    保留期建议 ≥ 14 天。
 
-### 2.2 告警（已接线：`utils/db_backup.sh` 的 `check_wal_archive`）
+### 2.2 告警（已接线：`ops/db_backup.sh` 的 `check_wal_archive`）
 
 `db-backup` 容器每轮备份后执行一次归档巡检（`archive_mode=on` 才生效），两个信号都
 **不依赖库空闲**（空闲不切段，「最新归档时间」在静默期会误报，故不用它做判据）：
@@ -62,11 +62,11 @@
 
 告警经既有 `send_alert` 通道上报（`BACKUP_ALERT_URL`/`BACKUP_ALERT_TOKEN`，未配置时仅落 WARN 日志）。
 
-## 3. 时间点回放演练（`utils/pitr_drill.sh`）
+## 3. 时间点回放演练（`ops/pitr_drill.sh`）
 
 | 步骤 | 命令/动作 |
 |------|-----------|
-| 1. 链路检查 | `./utils/pitr_drill.sh`（只读：打印 archive_mode / 归档文件数 / 最新归档时间） |
+| 1. 链路检查 | `./ops/pitr_drill.sh`（只读：打印 archive_mode / 归档文件数 / 最新归档时间） |
 | 2. 选时间点 | 记录 `2026-09-15 12:00:00`（先制造一条可辨识的测试数据再"误删"） |
 | 3. 隔离恢复 | 在**临时容器 + 副本数据目录**（切勿覆盖生产数据目录）执行基础备份恢复 + `recovery_target_time` |
 | 4. 校验 | `psql -c "select count(*) …"` 对比预期；确认误删数据回来了、其后的正常数据未被回退（按时间点语义） |

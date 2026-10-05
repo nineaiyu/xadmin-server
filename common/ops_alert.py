@@ -3,7 +3,7 @@
 """运维告警（A1）：宿主侧 watcher 回调 → 站内信 + 邮件通知超管。
 
 背景：容器 OOM 等宿主级事件原先只能查 `docker events`（故障演练登记的观察项），
-无人值守时不会被发现。宿主侧脚本 `utils/oom_alert.sh` 监听 `docker events` 的
+无人值守时不会被发现。宿主侧脚本 `ops/oom_alert.sh` 监听 `docker events` 的
 `oom` 事件并调用 `POST /api/common/api/ops-alert`（独立令牌 `OPS_ALERT_TOKEN`），
 服务端按 `task_failure` 的 60s 节流范式发布 `OpsAlertMessage`。
 

@@ -2,7 +2,7 @@
 
 > 关联：原排期文档《剩余任务排期-2026.09-2027.02》D4「Q4 季度备份演练」（排期文档已随 2026-09-12 规划清理删除）、
 > N5 季度演练常态化、S2 备份失败告警（本报告一并验收）
-> 脚本：`utils/db_backup.sh`（备份，本次未做任何修改）、`utils/db_restore.sh`（恢复，本机以等价命令执行）
+> 脚本：`ops/db_backup.sh`（备份，本次未做任何修改）、`ops/db_restore.sh`（恢复，本机以等价命令执行）
 > 结论：**本轮演练通过**——备份链路 PASS、sha256 自校验与异地副本一致 PASS、媒体包 PASS、
 > 恢复 RTO **0.28s**、**67 表逐表行数 0 不一致**（4785 行）；S2 告警接线在真实失败路径上 PASS。
 
@@ -11,11 +11,11 @@
 | 项 | 内容 |
 |---|---|
 | 执行日期 | 2026-09-11（按 N5「提前完成不推迟」惯例，替 Q4 计划窗口执行；非计划季度内提前完成属正常） |
-| 备份触发 | `PGHOST=127.0.0.1 PGDATABASE=xadmin_q4drill BACKUP_ONCE=1 bash utils/db_backup.sh`（走真实脚本，非手工 pg_dump） |
+| 备份触发 | `PGHOST=127.0.0.1 PGDATABASE=xadmin_q4drill BACKUP_ONCE=1 bash ops/db_backup.sh`（走真实脚本，非手工 pg_dump） |
 | 被备份库 | 本机 PostgreSQL 16 的 `xadmin_q4drill`：**真实迁移 schema（67 表，含 approval 五表）** + 初始化 fixture（1619 objects / 4785 行） |
 | 异地副本 | `BACKUP_REMOTE_TYPE=local`，`/tmp/xadmin-q4-drill-remote-a` |
 | 媒体目录 | `BACKUP_MEDIA=true`，`MEDIA_DIR=/tmp/xadmin-q4-media`（含样本文件） |
-| 恢复目标 | 独立验证库 `xadmin_q4drill_restore`（先 DROP 再 CREATE，等价 `utils/db_restore.sh` 步骤） |
+| 恢复目标 | 独立验证库 `xadmin_q4drill_restore`（先 DROP 再 CREATE，等价 `ops/db_restore.sh` 步骤） |
 | 一致性验证 | 源库 vs 验证库全表 `count(*)` diff（`pg_tables` 取清单，67 表全量） |
 | 环境偏差 | **Docker/OrbStack 守护进程未运行**，容器路径（`xadmin-db-backup` / `db_restore.sh` 的 `docker exec`）本轮未覆盖，改用宿主机 PostgreSQL 原生执行；备份脚本本体零改动，链路逻辑（pg_dump → gzip -t 校验 → sha256 sidecar → 异地同步 → 媒体包）完全一致 |
 
@@ -42,7 +42,7 @@
 | 项 | 内容 |
 |---|---|
 | 环境 | OrbStack 启动 + `docker compose up -d postgresql db-backup`（复用既有 `xadmin-postgresql/data` 数据目录与 aliyuncs 镜像，无新增拉取） |
-| 触发方式 | `bash utils/backup_drill.sh`（内部 `docker exec -e BACKUP_ONCE=1 xadmin-db-backup bash /utils/db_backup.sh`，走真实容器任务链路） |
+| 触发方式 | `bash ops/backup_drill.sh`（内部 `docker exec -e BACKUP_ONCE=1 xadmin-db-backup bash /ops/db_backup.sh`，走真实容器任务链路） |
 | 恢复方式 | 脚本内 `db_restore.sh` 全流程（`docker exec` 建库 + `gunzip \| psql` 回灌） |
 | 异地副本 | `BACKUP_REMOTE_TYPE=local` → 容器 `/remote` 挂载点（`xadmin-db-backups-remote/`） |
 
@@ -56,7 +56,7 @@
 
 ## 三、S2 备份失败告警一并验收
 
-- 脚本侧：`utils/db_backup.sh` 新增 `send_alert()`，在 pg_dump / 归档校验 / 异地同步 / 媒体打包四处失败点上报；
+- 脚本侧：`ops/db_backup.sh` 新增 `send_alert()`，在 pg_dump / 归档校验 / 异地同步 / 媒体打包四处失败点上报；
   令牌走 `X-Backup-Token` 请求头（不进 URL、不落日志），未配置 URL/TOKEN 时静默跳过（保持纯日志模式）。
 - 服务端：`POST /api/common/api/backup-alert`（独立令牌 `BACKUP_ALERT_TOKEN`，`secrets.compare_digest` 比较），
   60s 同源节流后发站内信 + 邮件给在用超管（订阅缺失/收件人为空时自愈补建）。
@@ -73,7 +73,7 @@
    导致 `Key (creator_id)=(1) is not present`；本次先建超管再装载。生产首次初始化走 `init_data`
    不受影响，但**裸 `load_init_json` 建新库需注意顺序**。
 3. **zsh 下 `for t in $TABLES` 不会按行分词**（与 bash 行为不同），逐表比对脚本须用 bash/显式分词或 python；
-   否则会出现「只比 1 张表还显示 0 不一致」的假通过——建议后续把逐表对比固化进 `utils/backup_drill.sh` 时用 python 实现。
+   否则会出现「只比 1 张表还显示 0 不一致」的假通过——建议后续把逐表对比固化进 `ops/backup_drill.sh` 时用 python 实现。
 4. **容器路径未覆盖**：本机 Docker 守护进程未运行，`db-backup` 容器与 `db_restore.sh` 的 `docker exec` 本文未验证；
    下次季度演练（12-08 提醒）在有容器环境时补一次，重点看 `docker exec -e BACKUP_ONCE=1` 触发与 `RESTORE_MEDIA=1` 解包。
 
@@ -84,4 +84,4 @@
 | 1 | ~~容器路径未在本次覆盖~~ | **✅ 2026-09-11 当日补验完成**：OrbStack + compose 容器路径五项全 PASS（见 §2.1） |
 | 2 | 无 PITR（WAL 归档） | 沿用滚动缺口：RPO 6h 仍可能丢最坏 6h 数据，需秒级 RPO 时另立项 |
 | 3 | 演练用异地副本为同盘目录 | 仅验证链路；生产必须指向独立故障域（独立磁盘/NFS/对象存储） |
-| 4 | 逐表对比未固化进演练脚本 | 已固化在 `utils/backup_drill.sh`（`count_tables` + 「0 表即 FAIL」护栏）；本次原生路径曾用 python 复核同一口径，结论一致 |
+| 4 | 逐表对比未固化进演练脚本 | 已固化在 `ops/backup_drill.sh`（`count_tables` + 「0 表即 FAIL」护栏）；本次原生路径曾用 python 复核同一口径，结论一致 |

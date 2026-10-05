@@ -108,7 +108,7 @@ class TestSnapshotAccumulation:
 
 
 class TestCronScriptWiring:
-    """utils/slo_snapshot_cron.sh 接线端到端：stub 指标端点 → 脚本 → --append 落盘。
+    """ops/slo_snapshot_cron.sh 接线端到端：stub 指标端点 → 脚本 → --append 落盘。
 
     采集机制（每日 cron）的正确性取决于三件事：环境变量透传（URL/令牌/累积文件）、
     Bearer 令牌到达端点、快照以 JSONL 追加。本测试用进程内 stub HTTP 服务验证全链路，
@@ -160,7 +160,7 @@ class TestCronScriptWiring:
                 "SLO_SNAPSHOT_FILE": str(target),
                 "PYTHON": sys.executable,
             }
-            script = self.SERVER_ROOT / "utils" / "slo_snapshot_cron.sh"
+            script = self.SERVER_ROOT / "ops" / "slo_snapshot_cron.sh"
             subprocess.run(["bash", str(script)], env=env, capture_output=True, text=True, timeout=60, check=True)
         finally:
             server.shutdown()
@@ -178,7 +178,7 @@ class TestCronScriptWiring:
 
     def test_cron_script_syntax_and_contract(self):
         """脚本语法有效，且默认端点/累积文件/--append 接线保留（文本级回归）。"""
-        script = self.SERVER_ROOT / "utils" / "slo_snapshot_cron.sh"
+        script = self.SERVER_ROOT / "ops" / "slo_snapshot_cron.sh"
         subprocess.run(["bash", "-n", str(script)], check=True)
         text = script.read_text(encoding="utf-8")
         assert "--append" in text

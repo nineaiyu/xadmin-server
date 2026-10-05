@@ -49,7 +49,7 @@ SCAN_DIRS = sorted(
         "task",
     }
 ) + [
-    "utils",
+    "ops",
     "server",
 ]
 

@@ -13,11 +13,11 @@ xadmin-基于Django+vue3的rbac权限管理系统
 
 ```shell
 # 方式一：Docker 一键体验（起后端全栈 + 幂等初始化 + 启动前端；需 Docker 与 Node/pnpm）
-bash utils/dev_up.sh              # --with-demo 追加演示数据；--backend-only 仅起后端；--hot 热加载（改后端代码自动重载）；--help 查看帮助
+bash ops/dev_up.sh              # --with-demo 追加演示数据；--backend-only 仅起后端；--hot 热加载（改后端代码自动重载）；--help 查看帮助
 ```
 
 - 浏览器打开 <http://127.0.0.1:8848>，账号 `xadmin`，初始密码在初始化输出中**仅打印一次**；
-- 停止后端：`bash utils/dev_down.sh`；重复执行是幂等的（升级后同样适用）；
+- 停止后端：`bash ops/dev_down.sh`；重复执行是幂等的（升级后同样适用）；
 - 首次运行会自动构建镜像（数分钟）。
 
 ```shell
@@ -27,7 +27,7 @@ uv sync --all-groups          # 依赖以 uv.lock 为准，见下方「依赖管
 #             && pip install -r requirements.txt -r requirements-dev.txt
 cp config_example.yml config.yml   # 可跳过：不创建时自动使用内置默认配置并自动生成 SECRET_KEY
 uv run python manage.py migrate    # 走 uv 时命令加 `uv run`；或 source .venv/bin/activate 后直接用 python
-uv run python utils/init_data.py   # 幂等；--with-demo / --skip-ip-db / --admin-password
+uv run python ops/init_data.py   # 幂等；--with-demo / --skip-ip-db / --admin-password
 uv run python manage.py start all -d
 ```
 

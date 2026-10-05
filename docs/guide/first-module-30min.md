@@ -1,6 +1,6 @@
 # 30 分钟：开发第一个业务模块（二次开发快速通道）
 
-> 前置：已完成根 [README](../../README.md) 的「快速开始」（`bash utils/dev_up.sh`），能用 `xadmin` 登录。
+> 前置：已完成根 [README](../../README.md) 的「快速开始」（`bash ops/dev_up.sh`），能用 `xadmin` 登录。
 > 目标：从零得到一个**完整可用**的业务模块——后端模型 + REST 接口 + 前端列表页 + 菜单权限，
 > 非超管可按角色授权使用。全程只需了解三条约定，不需要读框架源码。
 
@@ -175,7 +175,7 @@ python manage.py sync_menu_permissions --update-seed   # 同时回写 loadjson �
 | 非超管 403 / 整页不渲染 | 权限点未授权（角色管理）或未入库（`sync_menu_permissions`）；先跑 `doctor` |
 | 列表有数据但单元格空白 | 序列化器 `table_fields` 未声明该字段（元数据驱动，前端没有本地列定义） |
 | 新增字段前端不显示 | 序列化器 `fields` / `table_fields` 未加；再跑 `sync_model_field` 同步字段权限树 |
-| 接口 404 | app 未注册进 `XADMIN_APPS`（`generate_crud --register-app` 可自动写入；改后需重启进程：`docker compose restart server celery-worker celery-heavy celery-beat`，或平时用 `bash utils/dev_up.sh --hot` 启动） |
+| 接口 404 | app 未注册进 `XADMIN_APPS`（`generate_crud --register-app` 可自动写入；改后需重启进程：`docker compose restart server celery-worker celery-heavy celery-beat`，或平时用 `bash ops/dev_up.sh --hot` 启动） |
 | 改代码不生效 | 挂载代码不热加载，重启对应容器即可 |
 
 ## 下一步阅读

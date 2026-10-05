@@ -40,7 +40,7 @@ def discover_apps() -> set[str]:
 
 
 APPS = discover_apps()
-SCAN_DIRS = sorted(APPS) + ["utils", "server"]
+SCAN_DIRS = sorted(APPS) + ["ops", "server"]
 
 # 模块级顶层 import 才算耦合（函数内惰性 import 是官方许可的逃生门）
 SMELL_PATTERN = re.compile(

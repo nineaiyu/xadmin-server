@@ -7,7 +7,7 @@
 >
 > 前置能力（缺一不可）：
 > ① 一次性 `migrate` 服务（迁移不随 web 启动，见 deployment.md §6.1）；
-> ② nginx 多后端 `upstream + zone + resolve`（`utils/xadmin-backend.multi.conf`，`docker-compose.scale.yml` 挂载）；
+> ② nginx 多后端 `upstream + zone + resolve`（`ops/xadmin-backend.multi.conf`，`docker-compose.scale.yml` 挂载）；
 > ③ gunicorn `--graceful-timeout 30` + 服务 `stop_grace_period: 40s`（SIGTERM 后等在途请求跑完）；
 > ④ healthcheck `start_period: 90s`（启动期不误判 unhealthy）。
 

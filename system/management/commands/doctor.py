@@ -165,7 +165,7 @@ class Command(BaseCommand):
             from identity.models import UserInfo
 
             if not UserInfo.objects.exists():
-                self._report(WARN, "权限点", "数据库尚未初始化（无用户）", "python utils/init_data.py")
+                self._report(WARN, "权限点", "数据库尚未初始化（无用户）", "python ops/init_data.py")
                 return
             from system.utils.platform import permission_sync as sync
 

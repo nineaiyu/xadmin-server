@@ -59,4 +59,4 @@ known-first-party = [
 "system/management/commands/load_init_json.py" = ["F403", "F405"]
 "system/models/__init__.py" = ["F403", "F405"]
 "identity/models/__init__.py" = ["F403", "F405"]
-"utils/init_data.py" = ["F403", "F405"]
+"ops/init_data.py" = ["F403", "F405"]

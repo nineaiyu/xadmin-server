@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """备份失败告警上报端点（S2）。
 
-- 调用方：`utils/db_backup.sh`（db-backup 容器内的 bash 循环，无 JWT 登录态）；
+- 调用方：`ops/db_backup.sh`（db-backup 容器内的 bash 循环，无 JWT 登录态）；
 - 鉴权：独立共享令牌 `X-Backup-Token`（对应 `SysConfig.BACKUP_ALERT_TOKEN`，
   默认空 = 未启用，此时端点恒 403），比较用 `secrets.compare_digest`；
 - 不暴露内部信息：令牌不对一律 403 + 通用文案；

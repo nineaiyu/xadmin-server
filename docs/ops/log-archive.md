@@ -48,7 +48,7 @@ python manage.py log_archive --prune             # 执行水位驱动清理（�
 - **归档 ≠ 数据库备份**：数据库离线包 / PITR（[pitr.md](pitr.md)）与审计归档分属两层，互不替代；
   前者恢复「整库任意时间点」，后者回答「某条审计记录当年是什么样」；
 - **纳入异地同步**：把 `LOG_ARCHIVE_DIR` 指向（或定期 rsync）异地副本目录即可复用既有同步链路；
-- **不要直接放备份卷根目录**：`utils/db_backup.sh` 的 `prune_local` 会按
+- **不要直接放备份卷根目录**：`ops/db_backup.sh` 的 `prune_local` 会按
   `*.sql.gz / *.media.tar.gz / *.sha256` 后缀清理超保留期文件（当前不递归区分目录），
   归档的 `.sha256` sidecar 会被误删——如必须同卷，请放子目录并确认 `.sha256` 不受影响；
 - 归档目录属主需与容器用户（uid 1001）一致，否则归档写入失败 → 清理跳过（表增长）。

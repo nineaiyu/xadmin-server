@@ -1,6 +1,6 @@
 # 备份恢复演练报告（T5.4，2026-09-07）
 
-> 关联：半年规划 P5/T5.4、TD-21（P1 已落最低可用备份）；脚本：`utils/db_backup.sh` / `utils/db_restore.sh`；
+> 关联：半年规划 P5/T5.4、TD-21（P1 已落最低可用备份）；脚本：`ops/db_backup.sh` / `ops/db_restore.sh`；
 > 结论：**恢复 RTO ≈ 1 秒（目标 ≤30min），52 表行数全部一致，演练通过**。
 
 ## 一、演练范围与方法
@@ -44,7 +44,7 @@
 ## 五、部署检查清单（备份/恢复部分，同步至 ops/deployment.md）
 
 - [ ] `db-backup` 容器 healthy 且 `xadmin-db-backups/` 有当日 `.sql.gz`
-- [ ] 恢复演练：`sh utils/db_restore.sh <备份包> <验证库名>` 后逐表行数核对，演练完 DROP 验证库
+- [ ] 恢复演练：`sh ops/db_restore.sh <备份包> <验证库名>` 后逐表行数核对，演练完 DROP 验证库
 - [ ] 确认验证库恢复**不得指向 `xadmin`**（db_restore.sh 会先 DROP 目标库）
 - [ ] `data/upload` 媒体目录是否需要纳入当日备份（当前需手工 tar）
 - [ ] 异地副本策略是否已启用（当前未启用）

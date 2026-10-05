@@ -63,7 +63,7 @@ class Command(BaseCommand):
             from identity.models import UserInfo
 
             if not UserInfo.objects.exists():
-                self.stdout.write("      数据库尚未初始化，跳过（先执行 python utils/init_data.py）")
+                self.stdout.write("      数据库尚未初始化，跳过（先执行 python ops/init_data.py）")
                 return
             from system.utils.platform import permission_sync as sync
 

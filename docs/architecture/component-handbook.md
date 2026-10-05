@@ -235,7 +235,7 @@ config.yml（config.py）→ 同名环境变量 → 代码默认值   ← server
 | `manage.py load_init_json` | 幂等装载：模块裁剪过滤 → 自然键冲突预检（跳过并告警）→ 导入 → 时间戳回填 → 缓存失效 |
 | `manage.py dump_init_json` | 反向导出种子 |
 | `loaddata loadjson/seed_<app>_<model>.json` | 生成器产出的模块种子（pk 由 uuid5 派生，可重复装载） |
-| `utils/init_data.py` | 新库初始化：migrate → load_init_json → 建超管（幂等） |
+| `ops/init_data.py` | 新库初始化：migrate → load_init_json → 建超管（幂等） |
 | `seed_demo_*` 命令族 | 演示数据一键装载 / 卸载（`--clean-only` 对称） |
 
 - 纪律：种子禁引特定环境用户；新权限点要么进生成器种子、要么 `sync_menu_permissions --update-seed` 回写。

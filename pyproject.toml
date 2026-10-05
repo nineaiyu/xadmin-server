@@ -137,7 +137,7 @@ dev = [
 #     drf-spectacular 的 build_basic_type 可能返回 None / 运行期替换第三方方法）；
 #   - CI 在 lint.yml 独立 job 跑 `uv run --no-sync mypy`，配置即口径。
 python_version = "3.14"
-files = ["ai", "approval", "captcha", "common", "dataset", "demo", "message", "mfa", "notifications", "server", "settings", "system", "utils"]
+files = ["ai", "approval", "captcha", "common", "dataset", "demo", "message", "mfa", "notifications", "server", "settings", "system", "ops"]
 exclude = ["migrations/"]
 follow_imports = "silent"
 ignore_missing_imports = true

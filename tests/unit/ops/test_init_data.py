@@ -14,7 +14,7 @@ import sys
 
 import pytest
 
-from utils.init_data import ADMIN_PASSWORD_ENV, parse_args, resolve_admin_password
+from ops.init_data import ADMIN_PASSWORD_ENV, parse_args, resolve_admin_password
 
 
 class TestResolveAdminPassword:
@@ -76,7 +76,7 @@ class TestMainFlow:
     def run_main(self, monkeypatch):
         """打桩 call_command 与 UserInfo 管理器，返回 (calls, created, invoke)。"""
         from identity.models import UserInfo
-        from utils import init_data
+        from ops import init_data
 
         calls: list[str] = []
         created: dict = {}

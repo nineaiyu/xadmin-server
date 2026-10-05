@@ -12,7 +12,7 @@
 - 超管初始密码：--admin-password > 环境变量 XADMIN_ADMIN_PASSWORD > 随机生成（仅打印一次）。
 
 用法：
-    python utils/init_data.py [--with-demo] [--admin-password <pwd>] [--skip-ip-db]
+    python ops/init_data.py [--with-demo] [--admin-password <pwd>] [--skip-ip-db]
 """
 
 import argparse

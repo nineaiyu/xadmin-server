@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """运维告警上报端点（A1）。
 
-- 调用方：宿主侧 `utils/oom_alert.sh`（监听 `docker events` 的 `oom` 事件，无登录态）；
+- 调用方：宿主侧 `ops/oom_alert.sh`（监听 `docker events` 的 `oom` 事件，无登录态）；
 - 鉴权：独立共享令牌 `X-Ops-Token`（对应 `SysConfig.OPS_ALERT_TOKEN`，
   默认空 = 未启用，此时端点恒 403），比较用 `secrets.compare_digest`；
 - 不暴露内部信息：令牌不对一律 403 + 通用文案；

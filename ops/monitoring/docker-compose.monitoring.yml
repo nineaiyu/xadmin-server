@@ -6,9 +6,9 @@
 # 本编排补齐的是「HTTP 可用性 / P95 / 任务成功率 / 队列积压」四项 SLO 的自动投递面。
 #
 # 用法（仓库根执行）：
-#   cp utils/monitoring/metrics_token.example utils/monitoring/metrics_token
-#   vi utils/monitoring/metrics_token && chmod 600 utils/monitoring/metrics_token
-#   docker compose -f utils/monitoring/docker-compose.monitoring.yml up -d
+#   cp ops/monitoring/metrics_token.example ops/monitoring/metrics_token
+#   vi ops/monitoring/metrics_token && chmod 600 ops/monitoring/metrics_token
+#   docker compose -f ops/monitoring/docker-compose.monitoring.yml up -d
 #   # Prometheus http://127.0.0.1:9090   Grafana http://127.0.0.1:3000（初始 admin/admin）
 #
 # 与主栈的网络：默认接入主栈网络（<项目名>_net，项目名默认取 compose 所在目录名），

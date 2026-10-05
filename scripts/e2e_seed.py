@@ -8,7 +8,7 @@
     DJANGO_SETTINGS_MODULE=tests.settings_e2e XADMIN_ADMIN_PASSWORD='E2E-Admin-2026!' \
         .venv/bin/python scripts/e2e_seed.py
 
-步骤：DROP/CREATE 独立库（WITH (FORCE) 兜底残留连接）→ migrate → utils/init_data
+步骤：DROP/CREATE 独立库（WITH (FORCE) 兜底残留连接）→ migrate → ops/init_data
 初始化（菜单/角色/超管）→ 创建 E2E 场景用户（普通用户 / 受限用户 / 数据权限 /
 字段权限 / 锁定测试）。
 """
@@ -200,7 +200,7 @@ def main() -> None:
     print("migrate done")
 
     # 初始化基础数据（菜单/角色/超管），密码取 XADMIN_ADMIN_PASSWORD
-    from utils.init_data import main as init_data_main
+    from ops.init_data import main as init_data_main
 
     sys.argv = ["init_data"]
     init_data_main()

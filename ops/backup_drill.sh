@@ -4,9 +4,9 @@
 # 一键闭环：触发真实备份链路 → 校验异地副本 → 恢复到独立验证库 → 逐表行数对比 → 输出报告片段
 #
 # 用法（宿主机，xadmin-server 目录下；脚本用了数组等 bash 特性，请用 bash 而非 sh）：
-#   bash utils/backup_drill.sh
-#   BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash utils/backup_drill.sh  # 校验 local 异地副本
-#   KEEP_VERIFY_DB=1 bash utils/backup_drill.sh                               # 保留验证库便于人工核查
+#   bash ops/backup_drill.sh
+#   BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash ops/backup_drill.sh  # 校验 local 异地副本
+#   KEEP_VERIFY_DB=1 bash ops/backup_drill.sh                               # 保留验证库便于人工核查
 #
 # 环境变量：
 #   BACKUP_DIR        备份目录（默认 ../xadmin-db-backups，与 compose 卷一致）
@@ -76,7 +76,7 @@ count_tables() {
 # ── 1. 触发真实备份链路 ────────────────────────────────────────────────
 log "步骤 1/5：经 ${BACKUP_CONTAINER} 容器触发一次真实备份（BACKUP_ONCE=1）"
 T0=$(now)
-if docker exec -e BACKUP_ONCE=1 "${BACKUP_CONTAINER}" bash /utils/db_backup.sh; then
+if docker exec -e BACKUP_ONCE=1 "${BACKUP_CONTAINER}" bash /ops/db_backup.sh; then
     step "触发备份链路" "PASS"
 else
     step "触发备份链路" "**FAIL**（见上方日志，演练中止）"
@@ -117,7 +117,7 @@ step "异地副本存在且一致" "${REMOTE_RESULT}"
 # ── 3. 恢复到独立验证库 ────────────────────────────────────────────────
 log "步骤 3/5：恢复到验证库 ${TARGET_DB}"
 T1=$(now)
-YES_I_KNOW=1 sh "${BASE_DIR}/utils/db_restore.sh" "${LATEST}" "${TARGET_DB}" > /dev/null
+YES_I_KNOW=1 sh "${BASE_DIR}/ops/db_restore.sh" "${LATEST}" "${TARGET_DB}" > /dev/null
 T2=$(now)
 RTO=$(elapsed "${T1}" "${T2}")
 step "恢复耗时 RTO" "${RTO}s（目标 ≤30min）"

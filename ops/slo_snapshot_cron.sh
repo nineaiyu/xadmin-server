@@ -7,7 +7,7 @@
 #
 # 用法（cron 示例，每日 06:17）：
 #   17 6 * * * METRICS_TOKEN=<与 config.yml 一致> \
-#     /data/xadmin-server/utils/slo_snapshot_cron.sh >> /var/log/xadmin-slo.log 2>&1
+#     /data/xadmin-server/ops/slo_snapshot_cron.sh >> /var/log/xadmin-slo.log 2>&1
 #
 # 环境变量：
 #   METRICS_URL          指标端点（默认 http://127.0.0.1:8896/api/common/api/metrics）

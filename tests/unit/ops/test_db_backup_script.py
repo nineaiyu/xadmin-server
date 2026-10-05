@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""utils/db_backup.sh 备份脚本测试（数据库包 + 媒体目录 + 异地副本）。
+"""ops/db_backup.sh 备份脚本测试（数据库包 + 媒体目录 + 异地副本）。
 
 脚本是 bash，测试方式为「stub 命令 + 真实脚本」：在临时目录造假的
 `pg_dump` / `rclone` 前置到 PATH，用 BACKUP_ONCE=1 跑单轮，断言产物与副作用：
@@ -18,8 +18,7 @@ import subprocess
 import pytest
 
 SCRIPT = (
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    + "/utils/db_backup.sh"
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))) + "/ops/db_backup.sh"
 )
 
 PG_DUMP_STUB = """#!/bin/sh

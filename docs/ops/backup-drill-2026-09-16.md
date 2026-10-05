@@ -1,7 +1,7 @@
 # 备份恢复演练记录（2026-09-16，第四年度 2030-06 季度窗口）
 
 > 季度备份演练（12/03/06/09 口径）。上次记录：[backup-drill-2027-03.md](backup-drill-2027-03.md)。
-> 链路：`utils/db_backup.sh`（`xadmin-db-backup` 容器，`BACKUP_INTERVAL=6h`）→ `/backups`
+> 链路：`ops/db_backup.sh`（`xadmin-db-backup` 容器，`BACKUP_INTERVAL=6h`）→ `/backups`
 > （`pg_dump | gzip` + sha256 sidecar + 媒体包 + `.latest_backup` 标记）。
 
 ## 一、产物校验

@@ -35,6 +35,6 @@ services:
 
   nginx:
     volumes: !override
-      - ./utils/nginx.conf:/etc/nginx/nginx.conf:r
-      - ./utils/xadmin-backend.multi.conf:/etc/nginx/xadmin-backend.conf:r
+      - ./ops/nginx.conf:/etc/nginx/nginx.conf:r
+      - ./ops/xadmin-backend.multi.conf:/etc/nginx/xadmin-backend.conf:r
       - ./data/logs:/var/log/nginx
