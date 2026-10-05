@@ -9,13 +9,13 @@
 不在字典中（如字典未配置 audio）——此时按 other 回退，仍不可用时留空（None），
 绝不把字典外取值写进数据库（DictChoiceField 只约束接口写入路径，DB 层无约束）。
 
-判定顺序与 ``system.utils.file.preview.preview_kind_of`` 的分派保持同源：
+判定顺序与 ``file.utils.preview.preview_kind_of`` 的分派保持同源：
 先图片/视频/音频（MIME 前缀 + 扩展名），再压缩包，最后复用预览判定把
 pdf/office/文本归为文档，全部落空归「其他」。
 """
 
-from system.utils.file.preview import preview_kind_of
-from system.utils.platform.dict import get_dict_items
+from file.utils.preview import preview_kind_of
+from system.services import get_dict_items
 
 __all__ = [
     "UPLOAD_CATEGORY_DICT",

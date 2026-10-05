@@ -31,9 +31,10 @@ from django.utils import timezone
 
 from ai.utils.ai_chat import persist_message
 from approval.models import ApprovalInstance
+from file.models import UploadFile
 from identity.models import DeptInfo, Post, UserInfo
 from system.management.commands.seed_demo_admin import ADMIN_USERNAME
-from system.models import ExportRecord, Tag, TaggedItem, UploadFile
+from system.models import ExportRecord, Tag, TaggedItem
 
 #: 演示岗位固定 code 前缀（幂等定位 / 精确清理）
 POST_CODE_PREFIX = "demo_post_"

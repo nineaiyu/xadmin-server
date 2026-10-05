@@ -28,12 +28,13 @@ from approval.models.approval import (
     ApprovalRequest,
 )
 from dataset.models import DynamicForm, DynamicFormSubmission
+from file.models import UploadFile
 from identity.models import DeptInfo, UserInfo
 from identity.models.token import ApiApplication
 from message.models import ChatMessage
 from notifications.models import MessageContent
 from system.management.commands.seed_demo_org import GRANT_MODELS
-from system.models import Menu, MenuMeta, ModelLabelField, UploadFile
+from system.models import Menu, MenuMeta, ModelLabelField
 from system.models.webhook import WebhookDelivery, WebhookSubscription
 
 pytestmark = pytest.mark.django_db

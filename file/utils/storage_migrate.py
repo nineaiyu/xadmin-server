@@ -51,7 +51,7 @@ def get_remote_storage() -> Storage:
 
 def iter_upload_names(batch_size: int = 500, limit: int | None = None):
     """遍历需搬迁的存储对象名（``UploadFile.filepath.name`` 去重后按 pk 顺序）。"""
-    from system.models import UploadFile
+    from file.models import UploadFile
 
     seen = set()
     count = 0

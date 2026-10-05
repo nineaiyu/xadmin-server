@@ -10,7 +10,7 @@
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from system.models import FileAccessLog
+from file.models import FileAccessLog
 
 pytestmark = pytest.mark.django_db
 
@@ -79,7 +79,7 @@ class TestFileAccessAudit:
         assert FileAccessLog.objects.filter(file_id=upload_pk, action=FileAccessLog.Action.DOWNLOAD).exists()
 
     def test_download_missing_file_logs_failure(self, auth_client, superuser):
-        from system.models import UploadFile
+        from file.models import UploadFile
 
         # md5sum 非空跳过 save() 的文件读取；filepath 指向不存在的文件用于覆盖失败分支
         row = UploadFile.objects.create(
@@ -94,7 +94,7 @@ class TestFileAccessAudit:
 
         from django.utils import timezone
 
-        from system.utils.file.file_audit import clean_expired_file_access_logs
+        from file.utils.file_audit import clean_expired_file_access_logs
 
         settings.FILE_ACCESS_LOG_KEEP_DAYS = 30
         old = FileAccessLog.objects.create(filename="old.txt", action=FileAccessLog.Action.DOWNLOAD)

@@ -15,17 +15,17 @@ from django.core.files.base import ContentFile
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from common.core.config import SysConfig
-from system.models import UploadFile
-from system.utils.file.preview import (
+from file.models import UploadFile
+from file.services import auto_clean_preview_cache
+from file.utils.preview import (
     SIZE_PREVIEW,
     SIZE_THUMB,
     clean_preview_cache,
     preview_cache_path,
     preview_kind,
 )
-from system.utils.file.preview import media as preview_media
-from system.utils.task.ctasks import auto_clean_preview_cache
-from system.views.admin.file import PREVIEW_UNSUPPORTED_CODE, UploadFileViewSet
+from file.utils.preview import media as preview_media
+from file.views.admin.file import PREVIEW_UNSUPPORTED_CODE, UploadFileViewSet
 
 pytestmark = pytest.mark.django_db
 

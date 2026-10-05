@@ -70,7 +70,7 @@ def make_owner_book_permission(name="仅本人书籍"):
 @pytest.fixture
 def books(superuser, normal_user):
     """(他人的书, 自己的书)：以 admin 字段判定归属（Book.file 为必填 FK）。"""
-    from system.models import UploadFile
+    from file.models import UploadFile
 
     upload = UploadFile.objects.create(
         filename="cover.png", filesize=100, mime_type="image/png", md5sum="a" * 32, creator=superuser

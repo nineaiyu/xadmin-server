@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """文件域服务：个人文件统计聚合 与 在线预览状态机。
 
-视图层（``system/views/admin/file.py``）保留鉴权（``get_object``）、审计留痕与
+视图层（``file/views/admin/file.py``）保留鉴权（``get_object``）、审计留痕与
 HTTP 响应构造；统计聚合与预览状态判定收口到本模块，聊天附件等消费方复用
 同一套口径。
 
@@ -20,8 +20,8 @@ from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from common.storage import storage_exists, storage_open
-from system.models import UploadFile
-from system.utils.file.preview import (
+from file.models import UploadFile
+from file.utils.preview import (
     KIND_IMAGE,
     KIND_OFFICE,
     KIND_PDF,
@@ -34,9 +34,9 @@ from system.utils.file.preview import (
     read_text_preview,
     touch_preview_cache,
 )
-from system.utils.file.upload_category import UPLOAD_CATEGORY_DICT
-from system.utils.file.upload_store import get_user_quota_mb
-from system.utils.platform.dict import get_dict_items
+from file.utils.upload_category import UPLOAD_CATEGORY_DICT
+from file.utils.upload_store import get_user_quota_mb
+from system.services import get_dict_items
 
 # 不支持在线预览的业务码：前端按该码禁用预览按钮并说明原因
 PREVIEW_UNSUPPORTED_CODE = 1005

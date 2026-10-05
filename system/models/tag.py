@@ -26,7 +26,7 @@ from common.core.models import DbAuditModel, DbUuidModel
 #: 同为单据上的元数据写入动作，语义最接近。
 TAGGABLE_MODELS = {
     "identity.userinfo": {"label": _("User"), "visit": "/api/system/user/<pk>"},
-    "system.uploadfile": {"label": _("File"), "visit": "/api/system/file/<pk>"},
+    "file.uploadfile": {"label": _("File"), "visit": "/api/system/file/<pk>"},
     "approval.approvalinstance": {
         "label": _("Approval instance"),
         "visit": "/api/approval/approval-instances/<pk>/comment",

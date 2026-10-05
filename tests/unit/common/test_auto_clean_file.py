@@ -3,7 +3,7 @@
 
 覆盖 delete() 路径：
 1. 自身文件字段：删除对象时同步删除底层文件；
-2. 与 system.UploadFile 的关联（FK/M2M）：删除对象时级联清理附件记录；
+2. 与 file.UploadFile 的关联（FK/M2M）：删除对象时级联清理附件记录；
 3. 批量删除路径不走模型 delete()，附件清理需逐行触发。
 """
 
@@ -14,8 +14,8 @@ from django.test.utils import CaptureQueriesContext
 
 from common.core.models import AutoCleanFileMixin
 from demo.models import Book
+from file.models import UploadFile
 from identity.models import UserInfo
-from system.models import UploadFile
 
 pytestmark = pytest.mark.django_db
 

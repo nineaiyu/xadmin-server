@@ -190,8 +190,8 @@ def run_scheduled_report(self, report_id: str):
     task_id == 预创建 ExportRecord.pk（CeleryTaskRecordModel 契约）。
     """
     from dataset.models.dataset import Report
+    from file.services import UploadFile
     from system.models.export import ExportRecord
-    from system.models.upload import UploadFile
     from system.utils.task.task_progress import KIND_REPORT, update_progress
 
     record = ExportRecord.objects.filter(pk=self.request.id).first()

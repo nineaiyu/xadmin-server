@@ -72,7 +72,7 @@ class AutoCleanFileMixin:
         """模型是否存在需要逐行 delete() 才能清理的文件/附件。
 
         - 自身含文件字段（ImageField/FileField）；或
-        - 与 system.UploadFile 存在关联（delete() 时级联清理附件记录）。
+        - 与 file.UploadFile 存在关联（delete() 时级联清理附件记录）。
         """
         model = model or cls
         if any(isinstance(field, (models.ImageField, models.FileField)) for field in model._meta.fields):
@@ -80,7 +80,7 @@ class AutoCleanFileMixin:
         return any(
             field.is_relation
             and field.related_model is not None
-            and field.related_model._meta.label == "system.UploadFile"
+            and field.related_model._meta.label == "file.UploadFile"
             for field in model._meta.get_fields()
             if field.is_relation
         )
@@ -100,7 +100,7 @@ class AutoCleanFileMixin:
         """磁盘文件删除守护钩子：True = 文件仍被别处引用，只删记录、保留磁盘文件。
 
         默认 False：普通模型的文件字段没有「多条记录共享同一物理文件」语义。
-        `system.UploadFile` 覆写为「同路径/同 md5 的其他活动记录 或 业务反向外键引用」检测，
+        `file.UploadFile` 覆写为「同路径/同 md5 的其他活动记录 或 业务反向外键引用」检测，
         避免去重与业务引用场景下连带删掉别人仍在用的文件。
         """
         return False
@@ -141,7 +141,7 @@ class AutoCleanFileMixin:
         if obj is None:
             obj = self
         for field in obj._meta.get_fields():
-            if field.is_relation and field.related_model._meta.label == "system.UploadFile":
+            if field.is_relation and field.related_model._meta.label == "file.UploadFile":
                 try:
                     file_data = getattr(obj, field.name, None)
                 except ObjectDoesNotExist:

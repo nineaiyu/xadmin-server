@@ -55,7 +55,7 @@ class ImportRecord(DbAuditModel):
     # 统一进度助手写入的阶段描述（运行期走缓存通道，终态落库）
     stage = models.CharField(_("Progress stage"), max_length=64, blank=True, default="")
     source_file = models.ForeignKey(
-        "system.UploadFile",
+        "file.UploadFile",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -63,7 +63,7 @@ class ImportRecord(DbAuditModel):
         verbose_name=_("Source file"),
     )
     error_report = models.ForeignKey(
-        "system.UploadFile",
+        "file.UploadFile",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

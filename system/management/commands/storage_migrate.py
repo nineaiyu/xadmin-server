@@ -19,7 +19,7 @@
 
 from django.core.management.base import BaseCommand
 
-from system.utils.file import storage_migrate as util
+from file.utils import storage_migrate as util
 
 
 class Command(BaseCommand):

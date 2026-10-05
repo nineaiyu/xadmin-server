@@ -48,7 +48,7 @@ class ExportRecord(CeleryTaskRecordModel):
     # 统一进度助手写入的阶段描述（如「统计行数 / 渲染内容」）
     stage = models.CharField(_("Progress stage"), max_length=64, blank=True, default="")
     file = models.ForeignKey(
-        "system.UploadFile",
+        "file.UploadFile",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 def log_file_access(*, upload=None, user=None, action, request=None, result=True, detail="", filename=""):
     """写一条文件访问日志（失败只记 warning）。"""
-    from system.models import FileAccessLog
+    from file.models import FileAccessLog
 
     try:
         from approval.utils.approval.display import user_display
@@ -79,7 +79,7 @@ def clean_expired_file_access_logs():
 
     from django.utils import timezone
 
-    from system.models import FileAccessLog
+    from file.models import FileAccessLog
 
     keep_days = int(getattr(settings, "FILE_ACCESS_LOG_KEEP_DAYS", 180) or 0)
     if keep_days <= 0:

@@ -126,7 +126,7 @@ def assert_upload_ownership(value, label, user) -> None:
     UploadFile 数据权限兜底，跨角色/字段权限配置下仍可能读到别人的附件）。
     提交链路统一在提交校验时批量断言；无用户上下文（种子/脚本）由调用方传 None 跳过。
     """
-    from system.services import UploadFile
+    from file.services import UploadFile
 
     pks = [str(item.get("pk") or "").strip() for item in value]
     pks = [pk for pk in pks if pk]

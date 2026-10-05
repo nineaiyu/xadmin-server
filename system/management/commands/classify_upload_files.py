@@ -20,8 +20,8 @@ from django.db.models import Q
 from django.utils import timezone
 
 from common.utils import get_logger
-from system.models import UploadFile
-from system.utils.file.upload_category import resolve_upload_category
+from file.models import UploadFile
+from file.utils.upload_category import resolve_upload_category
 
 logger = get_logger(__name__)
 

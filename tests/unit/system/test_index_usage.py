@@ -73,7 +73,7 @@ class TestIndexUsage:
     def test_upload_file_cleanup_query_uses_composite_index(self):
         """每日清理任务按 (is_tmp, created_time) 扫描。"""
         plan = explain_plan(
-            "SELECT id FROM system_uploadfile WHERE is_tmp = %s AND created_time < %s",
+            "SELECT id FROM file_uploadfile WHERE is_tmp = %s AND created_time < %s",
             [True, "2026-01-01"],
         )
         assert "idx_uploadfile_tmp_created" in plan, plan

@@ -4,7 +4,7 @@
 
 from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
-from system.models import FileAccessLog
+from file.models import FileAccessLog
 
 
 class FileAccessLogSerializer(BaseModelSerializer):

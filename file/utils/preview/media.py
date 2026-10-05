@@ -198,7 +198,7 @@ def clean_preview_cache(keep_days: int | None = None, batch: int = 2000) -> dict
 
     :return: `{"scanned": n, "removed_orphan": n, "removed_expired": n}`
     """
-    from system.models import UploadFile
+    from file.models import UploadFile
 
     if keep_days is None:
         keep_days = _config("FILE_PREVIEW_CACHE_KEEP_DAYS", 7)

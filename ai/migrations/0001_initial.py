@@ -1,4 +1,4 @@
-# ai 域初始迁移（Phase C 迁移重建）：pgvector 扩展先行创建（RunPython 首位），
+# ai 域初始迁移：pgvector 扩展先行创建（RunPython 首位），
 # embedding_vector 向量列（无维度 vector）经模型 VectorField 正常建列。
 
 import logging
@@ -28,27 +28,6 @@ def create_vector_extension(apps, schema_editor):
             logger.warning(
                 "CREATE EXTENSION vector failed; pgvector retrieval will fall back to token channel", exc_info=True
             )
-
-
-def add_vector_column(apps, schema_editor):
-    if not _is_postgresql(schema_editor):
-        return
-    table = schema_editor.connection.ops.quote_name("ai_aiknowledgechunk")
-    column = schema_editor.connection.ops.quote_name("embedding_vector")
-    with schema_editor.connection.cursor() as cursor:
-        try:
-            cursor.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} vector")
-        except Exception:  # noqa: BLE001 扩展缺失等场景仅告警：状态已登记，运行期回退词频
-            logger.warning("ADD COLUMN embedding_vector vector failed; vector channel disabled", exc_info=True)
-
-
-def remove_vector_column(apps, schema_editor):
-    if not _is_postgresql(schema_editor):
-        return
-    table = schema_editor.connection.ops.quote_name("ai_aiknowledgechunk")
-    column = schema_editor.connection.ops.quote_name("embedding_vector")
-    with schema_editor.connection.cursor() as cursor:
-        cursor.execute(f"ALTER TABLE {table} DROP COLUMN IF EXISTS {column}")
 
 
 class Migration(migrations.Migration):

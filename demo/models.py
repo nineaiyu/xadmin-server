@@ -4,8 +4,8 @@ from pilkit.processors import ResizeToFill
 
 from common.core.models import AutoCleanFileMixin, DbAuditModel, SoftDeleteModel, upload_directory_path
 from common.fields.image import ProcessedImageField
+from file.models import UploadFile
 from identity.models import UserInfo
-from system.models import UploadFile
 
 
 class Book(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):

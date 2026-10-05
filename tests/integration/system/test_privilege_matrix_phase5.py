@@ -145,7 +145,7 @@ class TestImportTemplates:
 class TestFilePreview:
     @pytest.fixture
     def other_file(self, superuser):
-        from system.models import UploadFile
+        from file.models import UploadFile
 
         return UploadFile.objects.create(
             filename="secret.png", filesize=10, mime_type="image/png", md5sum="b" * 32, creator=superuser

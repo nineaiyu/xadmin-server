@@ -33,5 +33,6 @@ class TestGetRelatedModels:
 
     def test_related_models_include_fk_targets(self):
         result = get_related_models(Book)
-        # Book 的 admin/admin2/managers 指向上级模型（system 或其子模型）
-        assert any("system." in item for item in result)
+        # Book 的 admin/admin2/managers 指向 identity.UserInfo；file/files 指向 file.UploadFile
+        assert any("identity." in item for item in result)
+        assert any("file." in item for item in result)

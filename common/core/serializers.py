@@ -156,12 +156,12 @@ class BaseModelSerializer(ModelSerializer):
         return field_class, field_kwargs
 
     def _iter_upload_file_fields(self, validated_data):
-        """产出 ``(字段名, 值, 是否多值)``：仅限关联 ``system.UploadFile`` 的字段。
+        """产出 ``(字段名, 值, 是否多值)``：仅限关联 ``file.UploadFile`` 的字段。
 
         create / update 共用同一份关联文件识别逻辑，避免两处判定条件各自漂移。
         """
         for field in self.Meta.model._meta.get_fields():
-            if not (field.is_relation and field.related_model._meta.label == "system.UploadFile"):
+            if not (field.is_relation and field.related_model._meta.label == "file.UploadFile"):
                 continue
             if field.name not in validated_data:
                 continue

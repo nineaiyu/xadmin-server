@@ -27,9 +27,10 @@ from django.db.models import Q, QuerySet
 from common.core.filter import get_filter_queryset
 from common.core.mask import apply_output_mask
 from common.core.permission import get_menu_pk, get_user_permission
+from file.services import UploadFile
 from identity.services import DeptInfo, Post, UserInfo
 from server.utils import get_current_request
-from system.models import OperationLog, Tag, UploadFile
+from system.models import OperationLog, Tag
 
 KEYWORD_MAX_LENGTH = 50
 GROUP_LIMIT = 5

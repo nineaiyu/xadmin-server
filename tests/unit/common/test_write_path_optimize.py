@@ -17,8 +17,8 @@ from common.core.fields import BasePrimaryKeyRelatedField
 from common.core.models import AutoCleanFileMixin
 from demo.models import Book
 from demo.views import BookViewSet
+from file.models.upload import UploadFile
 from identity.models import UserInfo
-from system.models.upload import UploadFile
 
 pytestmark = pytest.mark.django_db
 

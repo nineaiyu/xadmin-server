@@ -23,9 +23,9 @@ from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from system.models import FileAccessLog, UploadFile
-from system.serializers.upload import UploadFileSerializer
-from system.services.file import (
+from file.models import FileAccessLog, UploadFile
+from file.serializers.upload import UploadFileSerializer
+from file.services.file_impl import (
     PREVIEW_PREPARING_CODE,
     PREVIEW_STATE_FILE_MISSING,
     PREVIEW_STATE_IMAGE,
@@ -37,18 +37,18 @@ from system.services.file import (
     build_personal_file_stats,
     resolve_preview,
 )
-from system.utils.file.file_audit import log_file_access
-from system.utils.file.preview import preview_kind
-from system.utils.file.upload_store import (
+from file.utils.file_audit import log_file_access
+from file.utils.preview import preview_kind
+from file.utils.upload_store import (
     INVALID_CODE,
     UploadError,
     check_upload_limits,
     invalidate_upload_stats_cache,
     store_upload_file,
 )
+from file.views.admin.file_access import FileAccessActionMixin, inline_file_response
+from file.views.admin.file_chunk import ChunkUploadActionMixin
 from system.utils.platform.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
-from system.views.admin.file_access import FileAccessActionMixin, inline_file_response
-from system.views.admin.file_chunk import ChunkUploadActionMixin
 
 logger = get_logger(__name__)
 

@@ -34,12 +34,12 @@ from django.utils import timezone
 from ai.models.ai import AiKnowledgeDocument
 from ai.utils.ai import remove_chunks, upsert_upload_document
 from approval.models.approval import ApprovalDelegation
+from file.models.upload import UploadFile
 from identity.models import UserInfo
 from identity.models.token import ApiApplication
 from message import chat as chat_service
 from message.models import ChatMessage
 from notifications.models import MessageContent
-from system.models.upload import UploadFile
 from system.models.webhook import WebhookDelivery, WebhookSubscription
 from system.utils.task.webhook import encrypt_secret
 

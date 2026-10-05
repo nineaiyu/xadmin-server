@@ -323,7 +323,7 @@ class TestUploadOwnership:
     def _make_upload(creator, filename):
         from django.core.files.base import ContentFile
 
-        from system.models import UploadFile
+        from file.models import UploadFile
 
         row = UploadFile(filename=filename, is_upload=True, is_tmp=False, creator=creator)
         row.filepath.save(f"e2e/{filename}", ContentFile(b"e2e-upload"), save=True)

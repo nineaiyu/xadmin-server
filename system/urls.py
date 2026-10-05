@@ -13,7 +13,6 @@ from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigVie
 from system.views.admin.credential import CredentialViewSet
 from system.views.admin.dict import DataDictViewSet
 from system.views.admin.export import ExportRecordViewSet
-from system.views.admin.file import UploadFileViewSet
 from system.views.admin.import_ import ImportRecordViewSet, ImportTemplateViewSet
 from system.views.admin.loginlog import LoginLogViewSet
 from system.views.admin.mask import DataMaskRuleViewSet
@@ -96,8 +95,6 @@ router.register("tags", TagViewSet, basename="tag")
 # 日志相关
 router.register("logs/operation", OperationLogViewSet, basename="operation_log")
 router.register("logs/login", LoginLogViewSet, basename="login_log")
-# 文件管理
-router.register("file", UploadFileViewSet, basename="file")
 # 导出下载中心
 router.register("exports", ExportRecordViewSet, basename="export_record")
 # 导入记录（下载中心「导入记录」页签）
@@ -120,5 +117,6 @@ router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook
 # /api/system/* 路径、system: 视图名、权限点与 menu.json 全部零变化。
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
 urlpatterns += [path("", include("identity.urls"))]
+urlpatterns += [path("", include("file.urls"))]
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]

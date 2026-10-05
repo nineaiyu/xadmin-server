@@ -24,7 +24,7 @@ class FileAccessLog(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     file = models.ForeignKey(
-        "system.UploadFile",
+        "file.UploadFile",
         related_name="access_logs",
         on_delete=models.SET_NULL,
         null=True,

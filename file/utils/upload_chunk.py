@@ -36,9 +36,9 @@ from django.utils.translation import gettext_lazy as _
 
 from common.core.throttle import allow_by_identity
 from common.utils import get_logger
-from system.models import UploadFile, UploadSession, UploadSessionPart
-from system.utils.file.file_audit import validate_upload_extension
-from system.utils.file.upload_store import (
+from file.models import UploadFile, UploadSession, UploadSessionPart
+from file.utils.file_audit import validate_upload_extension
+from file.utils.upload_store import (
     INVALID_CODE,
     QUOTA_EXCEEDED_CODE,
     SIZE_EXCEEDED_CODE,

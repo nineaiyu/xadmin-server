@@ -139,7 +139,7 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         from django.apps import apps
         from django.core.files.base import ContentFile
 
-        upload_model = apps.get_model("system", "UploadFile")
+        upload_model = apps.get_model("file", "UploadFile")
         content = json.dumps(rows, ensure_ascii=False, default=str).encode("utf-8")
         instance = upload_model(
             filename=filename,

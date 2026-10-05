@@ -24,13 +24,15 @@ from common.base.utils import remove_file
 from common.celery.decorator import register_as_period_task
 from common.celery.utils import get_celery_task_log_path
 from common.utils import get_logger
+from file.services import (
+    auto_clean_preview_cache,
+    auto_clean_tmp_file,
+    auto_clean_upload_file,
+)
 from system.models.task import TaskExecution
 from system.utils.task.ctasks import (
     auto_clean_black_token,
     auto_clean_operation_log,
-    auto_clean_preview_cache,
-    auto_clean_tmp_file,
-    auto_clean_upload_file,
 )
 
 logger = get_logger(__name__)
@@ -192,7 +194,7 @@ def auto_clean_user_session_job():
 @register_as_period_task(crontab="6 3 * * *")
 def auto_clean_upload_sessions_job():
     """清理过期分片上传会话（分片文件 + 会话行；断点续传「传到一半放弃」的兜底）。"""
-    from system.utils.file.upload_chunk import auto_clean_upload_sessions
+    from file.services import auto_clean_upload_sessions
 
     return auto_clean_upload_sessions(clean_day=1)
 
@@ -221,8 +223,8 @@ def convert_office_preview_task(upload_pk):
     """
     from django.core.cache import cache
 
-    from system.models import UploadFile
-    from system.utils.file.preview import convert_office_to_pdf
+    from file.models import UploadFile
+    from file.utils.preview import convert_office_to_pdf
 
     try:
         upload = UploadFile.all_objects.filter(pk=upload_pk).first()
@@ -259,7 +261,7 @@ def scan_account_risk_job():
 @register_as_period_task(crontab="12 3 * * *")
 def auto_clean_file_access_log_job():
     """清理超过保留期的文件访问日志（FILE_ACCESS_LOG_KEEP_DAYS，0 = 不清理）。"""
-    from system.utils.file.file_audit import clean_expired_file_access_logs
+    from file.utils.file_audit import clean_expired_file_access_logs
 
     return clean_expired_file_access_logs()
 

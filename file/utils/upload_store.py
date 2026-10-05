@@ -25,9 +25,9 @@ from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 
 from common.core.config import SysConfig, get_personal_config_data, get_personal_int_config
-from system.models import UploadFile
-from system.utils.file.file_audit import validate_upload_extension
-from system.utils.file.upload_category import resolve_upload_category
+from file.models import UploadFile
+from file.utils.file_audit import validate_upload_extension
+from file.utils.upload_category import resolve_upload_category
 
 # 上传失败业务码：1002 文件不合法 / 1003 超过大小上限 / 1004 配额或数量超限
 INVALID_CODE = 1002

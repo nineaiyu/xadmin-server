@@ -33,7 +33,7 @@ def _upload_import_error_report(record, user, column_titles, errors):
 
     from django.core.files.base import ContentFile
 
-    from system.models.upload import UploadFile
+    from file.services import UploadFile
     from system.utils.task.import_report import build_error_report
 
     fd, tmp_path = tempfile.mkstemp(suffix=".xlsx")

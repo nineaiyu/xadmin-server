@@ -8,12 +8,13 @@ import pytest
 from django.utils import timezone
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
+from file.models import UploadFile
+from file.services import auto_clean_tmp_file
 from system import tasks
-from system.models import OperationLog, UploadFile
+from system.models import OperationLog
 from system.utils.task.ctasks import (
     auto_clean_black_token,
     auto_clean_operation_log,
-    auto_clean_tmp_file,
 )
 
 

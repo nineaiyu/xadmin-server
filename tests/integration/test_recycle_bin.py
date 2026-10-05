@@ -7,8 +7,8 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
+from file.models import UploadFile
 from notifications.models import MessageContent
-from system.models import UploadFile
 
 pytestmark = pytest.mark.django_db
 

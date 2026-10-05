@@ -14,9 +14,9 @@ from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import get_file_absolute_uri
 from common.utils import get_logger
-from system.models import UploadFile
-from system.serializers.tag import TaggedObjectSerializerMixin
-from system.utils.file.preview import preview_kind
+from file.models import UploadFile
+from file.utils.preview import preview_kind
+from system.services import TaggedObjectSerializerMixin
 
 logger = get_logger(__name__)
 

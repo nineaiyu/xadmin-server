@@ -52,7 +52,7 @@ def make_book_flow(assignee_value: str):
 
 @pytest.fixture
 def book(superuser):
-    from system.models import UploadFile
+    from file.models import UploadFile
 
     upload = UploadFile.objects.create(
         filename="book.pdf", filesize=100, mime_type="application/pdf", md5sum="b" * 32, creator=superuser

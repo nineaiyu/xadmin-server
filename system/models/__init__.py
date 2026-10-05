@@ -10,8 +10,6 @@ from .menu import *
 from .module import *
 from .permission import *
 from .saved_view import *
-from .security import *
 from .tag import *
 from .task import *
-from .upload import *
 from .webhook import *

@@ -13,7 +13,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from common.core.models import AutoCleanFileMixin, DbAuditModel, SoftDeleteModel, upload_directory_path
-from system.utils.file.preview import remove_preview_cache_by_pk
+from file.utils.preview import remove_preview_cache_by_pk
 
 # 非业务引用关系（related_name 口径）：审计 / 日志类关联表，不参与「附件是否在用」判定
 NON_BUSINESS_RELATIONS = {"access_logs"}

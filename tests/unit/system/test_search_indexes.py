@@ -19,9 +19,10 @@ from django.db.migrations import AddIndex, CreateModel
 from system import search_indexes
 from system.search import SEARCH_PROVIDERS
 
-# trgm 索引随模型 Meta 分属三个域的初始迁移：identity 侧 4 个 + system 侧 1 个 + approval 侧 4 个
+# trgm 索引随模型 Meta 分属四个域的初始迁移：identity 侧 4 个 + file 侧 1 个 + approval 侧 4 个
 MIGRATION_MODULES = (
     "identity.migrations.0001_initial",
+    "file.migrations.0001_initial",
     "system.migrations.0001_initial",
     "approval.migrations.0001_initial",
 )
@@ -110,7 +111,11 @@ class TestMigrationDrift:
             "迁移模型 Meta 与 system/search_indexes.py 清单漂移（新增检索字段请同步模型 Meta）"
         )
 
-    @pytest.mark.parametrize("module", MIGRATIONS, ids=lambda m: m.__name__)
+    # 携带 trgm 索引的域迁移（system.0001 的检索模型 OperationLog 全部豁免、
+    # uploadfile 已随 file 域迁出——它合法地不含 trgm 索引，由 fold 等值守护兜底）
+    TRGM_CARRYING = [m for m in MIGRATIONS if not m.__name__.startswith("system.")]
+
+    @pytest.mark.parametrize("module", TRGM_CARRYING, ids=lambda m: m.__name__)
     def test_every_domain_migration_carries_trgm_indexes(self, module):
         snapshot = _trgm_indexes_of(module)
         assert snapshot, f"{module.__name__} 应随模型 Meta 携带 trgm 索引"

@@ -4585,7 +4585,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.uploadfile",
+      "name": "file.uploadfile",
       "label": "上传文件"
     }
   },
@@ -5815,7 +5815,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.uploadfile",
+      "name": "file.uploadfile",
       "label": "上传文件"
     }
   },
@@ -24040,7 +24040,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.fileaccesslog",
+      "name": "file.fileaccesslog",
       "label": "文件访问日志"
     }
   },
@@ -29035,7 +29035,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.uploadsession",
+      "name": "file.uploadsession",
       "label": "分片上传会话"
     }
   },

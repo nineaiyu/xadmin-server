@@ -154,7 +154,7 @@ class ChatMessage(DbBaseModel):
     # 附件（图片 / 音视频 / 文件消息）：外键引用上传件，兼作「附件是否仍被业务使用」的引用依据
     # （UploadFile.has_business_reference 由此保护磁盘文件不被保留期清理误删）
     attachment = models.ForeignKey(
-        "system.UploadFile",
+        "file.UploadFile",
         verbose_name=_("Attachment"),
         null=True,
         blank=True,

@@ -23,7 +23,7 @@ BOOK_LIST_URL = "/api/demo/book"
 
 @pytest.fixture
 def upload_file(superuser):
-    from system.models import UploadFile
+    from file.models import UploadFile
 
     return UploadFile.objects.create(
         filename="cover.png", filesize=100, mime_type="image/png", md5sum="a" * 32, creator=superuser

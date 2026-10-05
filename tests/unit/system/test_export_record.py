@@ -9,10 +9,10 @@ from django.conf import settings
 from django.utils import timezone
 
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
+from file.models.upload import UploadFile
 from identity.models.user import UserInfo
 from identity.views.admin.user import UserViewSet
 from system.models.export import ExportRecord
-from system.models.upload import UploadFile
 from system.tasks import async_export_data_task, auto_clean_export_record_job
 from system.views.admin.export import ExportRecordViewSet
 

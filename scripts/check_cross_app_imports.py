@@ -65,6 +65,7 @@ ALLOWLIST = {
     "system/management/commands/seed_demo_clean.py": "管理命令（合法保留）",
     "system/management/commands/sync_menu_permissions.py": "管理命令（合法保留）",
     "system/management/commands/audit_data_permission_rules.py": "管理命令（合法保留）",
+    "system/management/commands/classify_upload_files.py": "管理命令（合法保留）",
     "system/management/commands/doctor.py": "管理命令（合法保留）",
     "system/management/commands/post_upgrade.py": "管理命令（合法保留）",
 }

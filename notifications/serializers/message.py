@@ -18,9 +18,9 @@ from common.core.fields import DictChoiceField
 from common.core.filter import get_filter_queryset
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
+from file.services import UploadFile
 from identity.services import UserInfo
 from notifications.models import MessageContent, MessageUserRead
-from system.services import UploadFile
 
 logger = get_logger(__name__)
 

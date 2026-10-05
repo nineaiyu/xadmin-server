@@ -11,8 +11,8 @@ import pytest
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 
-from system.models import UploadFile
-from system.utils.file.storage_migrate import (
+from file.models import UploadFile
+from file.utils.storage_migrate import (
     migrate_uploads,
     object_md5,
     summary_line,

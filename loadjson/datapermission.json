@@ -193,7 +193,7 @@
           "type": "value.all",
           "field": "id",
           "match": "all",
-          "table": "system.uploadfile",
+          "table": "file.uploadfile",
           "value": "",
           "exclude": false
         }

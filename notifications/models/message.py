@@ -46,7 +46,7 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
     title = models.CharField(verbose_name=_("Notice title"), max_length=255)
     message = models.TextField(verbose_name=_("Notice message"), blank=True, null=True)
     extra_json = models.JSONField(verbose_name=_("Additional json data"), blank=True, null=True)
-    file = models.ManyToManyField("system.UploadFile", verbose_name=_("Uploaded attachments"))
+    file = models.ManyToManyField("file.UploadFile", verbose_name=_("Uploaded attachments"))
     publish = models.BooleanField(verbose_name=_("Publish"), default=True)
 
     @classmethod

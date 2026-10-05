@@ -170,7 +170,29 @@ namespace 仍 `scim`；LDAP：`identity/ldap/` → `identity/ldap/`。
 ## 七、执行顺序与验证口径
 
 顺序：**identity → file → audit → task**（identity 最重先趟平方法），每域独立回归、独立提交：
-全量 pytest（xdist 失败项以串行口径复核）+ `manage.py check` + 六项静态门禁 + `show_urls` 路由快照 diff 为空
-+ `makemigrations --check` 干净。
+全量 pytest（xdist 失败项以串行口径复核）+ `manage.py check` + 六项静态门禁 + 路由快照 diff 仅允许
+视图模块路径前缀平移（`system.` → `<域>.`，pattern+name 不变；django admin 模型注册随 app 归属
+平移，排除在外）+ `makemigrations --check` 干净 + 全新库（DB_DATABASE 指向空库）migrate 一次通过。
 
-里程碑：四域切分后接口路径、权限码、任务名零变化；表名按域归位（ADR-080 口径）；导出链路单源属 Phase D 另行处理。
+### 完成态（2026-10-05）
+
+**identity（T04-09）✅**：16 模型 + views/serializers/ldap/scim/services/notifications/urls 独立成 app；
+AUTH_USER_MODEL 切换；迁移清库重建为 identity.0001（trgm 扩展先行 + Meta GinIndex）+ 0002（跨域 M2M
+推迟补加破环）；tests/labels 全量改写；路由审计 175 处视图前缀平移零违例。
+
+**file（T04-10）✅**：UploadFile/UploadSession/UploadSessionPart/FileAccessLog 独立成 app（file_* 表）；
+views/{file,file_chunk,file_access} + serializers/upload + serializers/file_access_log + utils/file 全树
++ services/{file_impl,cleanup} 迁入；`file/urls.py` 同前缀挂载注册 "file"；system.tasks 五个文件清理
+任务壳留位（任务名不变），实现体落 `file/services/cleanup.py` 与 `file/utils/*`；消费方
+（message/attachments、notifications/serializers/message、dataset/{analysis_tasks,dform_fields}、
+system/search、system/tasks/{_export,_import}）统一改经 `file.services` 契约缝；label/表名串
+（system.UploadFile/uploadfile/system_uploadfile、TAGGABLE_MODELS、loadjson、AutoCleanFileMixin、
+input_types、_generate_crud、import_actions.get_model）随域改写；FK 字面引用（message/notifications/
+demo/export/import_）改 `file.UploadFile`；迁移重建 file.0001 deps=identity；路由审计 18 处视图
+前缀平移零违例。
+
+**口径修正记录**（相对上文的计划表述）：
+- `common/contracts.py` 无 file.services 提供方——common 侧对 UploadFile 的消费全部是
+  label 串比较（AutoCleanFileMixin / input_types / serializers.py），不产生 import 缝，无需登记；
+- trgm 索引未单列迁移，随各域 0001 的模型 Meta 落地（identity.0001 首操作仅保证扩展先行）；
+- identity.0002 即为跨域 M2M 推迟补加迁移（三段式 0001/0002/0003 的规划合并为两段式）。

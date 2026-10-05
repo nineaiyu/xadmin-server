@@ -18,7 +18,7 @@ PDF 后走既有 PDF 内嵌渲染。转换不在请求线程里做（耗时且�
 产物落 `preview_cache/<pk>/office.pdf`，与图片缓存同一目录 → 同一套清理/守护。
 
 本包按职责拆分（constants / media / office），对外 API 由本文件统一再导出，
-导入路径保持 ``system.utils.file.preview`` 不变。
+导入路径保持 ``file.utils.preview`` 不变。
 """
 
 from .constants import (

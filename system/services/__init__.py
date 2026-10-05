@@ -23,7 +23,6 @@ globals，``from system.services import Menu`` 这类 from-import 仍然可用�
 __all__ = [
     # 模型契约
     "UserLoginLog",  # noqa: F822
-    "UploadFile",  # noqa: F822
     "SystemConfig",  # noqa: F822
     "UserPersonalConfig",  # noqa: F822
     "OperationLog",  # noqa: F822
@@ -54,7 +53,6 @@ __all__ = [
 # 惰性再导出表：名字 -> 所属模块
 _LAZY_EXPORTS = {
     "UserLoginLog": "system.models",
-    "UploadFile": "system.models",
     "SystemConfig": "system.models",
     "UserPersonalConfig": "system.models",
     "OperationLog": "system.models",
@@ -155,3 +153,10 @@ def scan_permission_gaps():
     from system.utils.platform.permission_sync import scan_permission_gaps as _scan
 
     return _scan()
+
+
+def get_dict_items(code):
+    """数据字典条目下发（system.utils.platform.dict 契约导出）。"""
+    from system.utils.platform.dict import get_dict_items as _get
+
+    return _get(code)

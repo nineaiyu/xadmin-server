@@ -55,7 +55,7 @@ class TestTagCrud:
         data = auth_client.get(f"{TAGS_URL}/resources").json()["data"]
         assert {item["key"] for item in data["resources"]} == {
             "identity.userinfo",
-            "system.uploadfile",
+            "file.uploadfile",
             "approval.approvalinstance",
         }
 
