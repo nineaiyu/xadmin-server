@@ -63,6 +63,7 @@
 |------|------|
 | [adr/README.md](adr/README.md) | **架构决策记录索引（78 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
 | [plans/README.md](plans/README.md) | 规划与治理：活跃台账（触发制任务清单）；**已完成的一次性台账在 `plans/archive/`**，预生成未来年度的填充文档已于 2026-10-03 清理 |
+| [ci-gates.md](ci-gates.md) | **CI 门禁统一清单**：全部流水线门禁与守护测试的登记处（守护语义 / 所在 workflow / 本地复跑；新增门禁必须登记） |
 | [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线 → 实测履历） |
 | [security-review.md](security-review.md) | 安全自查归档（按轮次追加） |
 | [cache-keys-audit.md](cache-keys-audit.md) | 缓存键与 JWT 审计（`scripts/check_cache_keys.py --strict`） |
@@ -83,6 +84,7 @@ docs/
 ├── dev-pitfalls.md       新手陷阱清单
 ├── 框架开发遵循准则.md     开发统一约定与检查清单
 ├── exception-handling.md 错误码规范
+├── ci-gates.md           CI 门禁统一清单（新增门禁必须登记）
 ├── metrics.md / security-review.md / cache-keys-audit.md   维护者参考
 └── （归档）plans/archive/ 已完成的一次性方案 / 台账 / 历史盘点
 ```

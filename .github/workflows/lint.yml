@@ -47,6 +47,32 @@ jobs:
       - name: Check cross-app direct imports
         run: python scripts/check_cross_app_imports.py
 
+  menu-permissions:
+    name: Menu permission reconcile gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        name: Checkout client repo (consumer side)
+        with:
+          repository: nineaiyu/xadmin-client
+          ref: dev
+          path: xadmin-client
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Reconcile menu.json permission points with frontend consumption
+        # 种子权限点 ↔ 前端消费点双向对账（白名单与例外登记见 docs/guide/menu-maintenance.md §5）；
+        # 脚本归前端仓维护，此处就地执行：菜单种子改动在服务端 PR 阶段即暴露漂移
+        working-directory: xadmin-client
+        env:
+          XADMIN_SERVER_DIR: ${{ github.workspace }}
+        run: node scripts/check-menu-permissions.mjs
+
   mypy:
     name: Type check (mypy, common 内核)
     runs-on: ubuntu-latest

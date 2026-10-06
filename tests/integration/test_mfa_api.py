@@ -647,3 +647,211 @@ class TestRecoveryCodes:
         resp = client.post(OTP_DISABLE_URL)
         assert resp.data["code"] == 1000, resp.data
         assert client.get(RECOVERY_URL).data["data"]["remaining"] == 0
+
+
+class TestDisableGuard:
+    """解绑（disable）与 close/open/test/regenerate 同口径：未绑定先拒绝，不做任何写操作。"""
+
+    def test_disable_without_bound_rejected(self, authed_client, normal_user):
+        """未绑定 OTP 时解绑返回 1001，不再像旧实现那样清字段并报成功。"""
+        resp = authed_client.post(
+            CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"}
+        )
+        assert resp.data["code"] == 1000, resp.data
+        resp = authed_client.post(OTP_DISABLE_URL)
+        assert resp.data["code"] == 1001, resp.data
+        assert "OTP is not bound" in resp.data["detail"] or "未绑定" in resp.data["detail"]
+
+    def test_disable_guard_keeps_state_untouched(self, authed_client, normal_user):
+        """守卫先于任何写路径：密钥、开关、恢复码在拒绝后保持原状。"""
+        from mfa import recovery
+
+        normal_user.otp_secret_key = ""
+        normal_user.save(update_fields=["otp_secret_key"])
+        level_before = normal_user.mfa_level
+
+        resp = authed_client.post(
+            CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"}
+        )
+        assert resp.data["code"] == 1000, resp.data
+        resp = authed_client.post(OTP_DISABLE_URL)
+        assert resp.data["code"] == 1001
+        normal_user.refresh_from_db()
+        assert normal_user.otp_secret_key == ""
+        assert normal_user.mfa_level == level_before
+        assert recovery.remaining_count(normal_user) == 0
+
+
+class TestOtpAntiReplay:
+    """OTP 防重放：同一动态码在有效窗口内只允许消费一次（UsedOtpCodeCache）。"""
+
+    def test_confirm_same_code_replay_rejected(self, otp_user):
+        """敏感操作确认链路：正确码首次通过，同码重放拒绝。"""
+        user, client, secret = otp_user
+        code = pyotp.TOTP(secret).now()
+        resp = client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "otp", "code": code})
+        assert resp.data["code"] == 1000, resp.data
+
+        resp = client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "otp", "code": code})
+        assert resp.data["code"] == 1002, resp.data
+        assert "used" in resp.data["detail"] or "已被使用" in resp.data["detail"]
+
+    def test_login_verify_same_code_replay_rejected(self, otp_user, api_client, login_free):
+        """登录 MFA 链路：换新的 mfa_token 重放同一动态码同样拒绝。"""
+        user, _, secret = otp_user
+        code = pyotp.TOTP(secret).now()
+        api_client.force_authenticate(user=None)
+
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
+        token = resp.data["data"]["mfa_token"]
+        resp = api_client.post(LOGIN_MFA_VERIFY_URL, {"mfa_token": token, "method": "otp", "code": code}, format="json")
+        assert resp.data["code"] == 1000, resp.data
+
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
+        token = resp.data["data"]["mfa_token"]
+        resp = api_client.post(LOGIN_MFA_VERIFY_URL, {"mfa_token": token, "method": "otp", "code": code}, format="json")
+        assert resp.status_code == 400
+
+    def test_replay_failure_counts_toward_lock(self, otp_user, settings):
+        """重放拒绝与码错误同口径计入防爆破计数：重放不能作为无限制的试码预言机。"""
+        user, client, secret = otp_user
+        code = pyotp.TOTP(secret).now()
+        resp = client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "otp", "code": code})
+        assert resp.data["code"] == 1000, resp.data
+
+        for _ in range(int(settings.SECURITY_LOGIN_LIMIT_COUNT)):
+            resp = client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "otp", "code": code})
+            assert resp.data["code"] == 1002
+        # 计数达到阈值：此后新的正确动态码也被锁定拒绝
+        resp = client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "otp", "code": pyotp.TOTP(secret).now()})
+        assert resp.data["code"] == 1002
+        assert "locked" in resp.data["detail"] or "锁定" in resp.data["detail"]
+
+
+class TestOtpBruteForce:
+    """OTP 防爆破：确认链路（check_user_mfa_code）失败累计，达阈值后正确码也被拒。"""
+
+    def test_confirm_wrong_codes_reach_lock(self, otp_user, settings):
+        user, client, secret = otp_user
+        limit = int(settings.SECURITY_LOGIN_LIMIT_COUNT)
+        for _ in range(limit):
+            resp = client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "otp", "code": "000000"})
+            assert resp.data["code"] == 1002
+
+        # 锁定中：提交正确动态码也直接拒绝
+        resp = client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "otp", "code": pyotp.TOTP(secret).now()})
+        assert resp.data["code"] == 1002, resp.data
+        assert "locked" in resp.data["detail"] or "锁定" in resp.data["detail"]
+
+    def test_success_resets_failed_counter(self, otp_user, settings):
+        """成功校验清零失败计数：失败-成功-失败交错不会误锁定。"""
+        from settings.services import MFABlockUtils
+
+        user, client, secret = otp_user
+        for _ in range(int(settings.SECURITY_LOGIN_LIMIT_COUNT) - 1):
+            client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "otp", "code": "000000"})
+        resp = client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "otp", "code": pyotp.TOTP(secret).now()})
+        assert resp.data["code"] == 1000, resp.data
+        assert not MFABlockUtils(user.username, "127.0.0.1").is_block()
+
+
+ALL_METHODS = ["otp", "sms", "email", "password", "passkey", "recovery"]
+
+
+class TestMethodPolicyChain:
+    """六后端策略链：全局白名单 ∩ 角色允许集 ∩ 用户允许集，逐层只能收窄。
+
+    服务层交集语义由 passkey 策略单测覆盖；这里经 HTTP 面验证各层收窄在
+    「可用方式列表」「验证入口」两处同口径生效，且六后端逐一被收窄拒绝。
+    """
+
+    SIX = set(ALL_METHODS)
+
+    @pytest.fixture
+    def all_methods(self, email_ready, normal_user, settings):
+        """六后端全部可用的用户：otp+recovery（绑定产生）、sms、email、password、passkey。"""
+        from identity.models import UserPasskey
+
+        settings.SMS_ENABLED = True
+        normal_user.phone = "13800138000"
+        normal_user.save(update_fields=["phone"])
+        UserPasskey.objects.create(
+            user=normal_user, creator=normal_user, credential_id="policy-cred", public_key=b"\xa1\x01", sign_count=0
+        )
+        resp = email_ready.post(OTP_START_URL)
+        assert resp.data["code"] == 1000, resp.data
+        secret = resp.data["data"]["secret"]
+        resp = email_ready.post(OTP_CONFIRM_URL, {"code": pyotp.TOTP(secret).now()})
+        assert resp.data["code"] == 1000, resp.data
+        return normal_user, email_ready, secret
+
+    def _listed(self, client, confirm_type="password"):
+        resp = client.get(CONFIRM_URL, {"confirm_type": confirm_type})
+        assert resp.data["code"] == 1000, resp.data
+        return [m["name"] for m in resp.data["data"]["methods"]]
+
+    def test_all_six_methods_listed(self, all_methods):
+        user, client, _ = all_methods
+        assert set(self._listed(client)) == self.SIX
+
+    def test_global_whitelist_narrows(self, all_methods, settings):
+        user, client, _ = all_methods
+        settings.SECURITY_MFA_METHODS = ["otp", "recovery"]
+        assert self._listed(client) == ["otp", "recovery"]
+
+    def test_role_layer_narrows(self, all_methods, role):
+        user, client, _ = all_methods
+        role.allowed_mfa_types = ["otp", "sms", "recovery"]
+        role.save(update_fields=["allowed_mfa_types"])
+        assert set(self._listed(client)) == {"otp", "sms", "recovery"}
+
+    def test_user_layer_narrows(self, all_methods):
+        user, client, _ = all_methods
+        user.allowed_mfa_types = ["email"]
+        user.save(update_fields=["allowed_mfa_types"])
+        assert self._listed(client) == ["email"]
+
+    def test_three_layers_intersect(self, all_methods, role, settings):
+        user, client, _ = all_methods
+        settings.SECURITY_MFA_METHODS = ["otp", "sms", "email"]
+        role.allowed_mfa_types = ["sms", "email", "passkey"]
+        role.save(update_fields=["allowed_mfa_types"])
+        user.allowed_mfa_types = ["sms", "recovery"]
+        user.save(update_fields=["allowed_mfa_types"])
+        assert self._listed(client) == ["sms"]
+
+    @pytest.mark.parametrize(
+        ("method", "confirm_type"),
+        [
+            ("otp", "mfa"),
+            ("sms", "mfa"),
+            ("email", "mfa"),
+            ("passkey", "mfa"),
+            ("recovery", "mfa"),
+            ("password", "password"),
+        ],
+    )
+    def test_excluded_method_rejected_before_code_check(self, all_methods, method, confirm_type):
+        """被策略排除的方式：验证入口直接拒绝（方式不可用），不再进入码校验。"""
+        user, client, _ = all_methods
+        user.allowed_mfa_types = sorted(self.SIX - {method})
+        user.save(update_fields=["allowed_mfa_types"])
+        resp = client.post(CONFIRM_URL, {"confirm_type": confirm_type, "method": method, "code": "irrelevant"})
+        assert resp.data["code"] == 1002, resp.data
+        assert "unavailable" in resp.data["detail"] or "不可用" in resp.data["detail"]
+
+    def test_role_mfa_required_forces_login_mfa(self, all_methods, role, api_client, login_free):
+        """角色 mfa_required：个人已关闭 MFA 的账号登录仍强制二次验证。"""
+        from django.contrib.auth import get_user_model
+
+        user, client, secret = all_methods
+        user.mfa_level = get_user_model().MFALevelChoices.DISABLED
+        user.save(update_fields=["mfa_level"])
+        role.mfa_required = True
+        role.save(update_fields=["mfa_required"])
+
+        api_client.force_authenticate(user=None)
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
+        data = resp.data["data"]
+        assert data["mfa_required"] is True, data
+        assert "otp" in [m["name"] for m in data["methods"]]

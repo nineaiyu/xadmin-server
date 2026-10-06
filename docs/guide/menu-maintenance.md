@@ -43,11 +43,40 @@
 
 | 菜单 name | URL | 组件 | 登记来源 |
 |---|---|---|---|
-| DataDashboard | `/analysis/dashboard/index` | `dashboard/index` | 历史口径（与 DataDataset 同源） |
-| DataDataset | `/analysis/dataset/index` | `dashboard/dataset/index` | menu.json 该行 description 有同文护栏 |
+| UserInfo | `/user/info/index` | `account/index` | 历史口径：个人中心 URL 与组件目录独立演化 |
+| DataDashboard | `/analysis/dashboard/index` | `dashboard/index` | 历史口径（与 DataDataset 同源，见 §2） |
+| DataDataset | `/analysis/dataset/index` | `dashboard/dataset/index` | menu.json 该行 description 有同文护栏（见 §2） |
+| FormDesigner | `/form-collection/designer/index` | `form/designer/index` | 历史口径：表单域 URL 前缀 `/form-collection`，组件在 `form/` 下 |
+| FormMySubmission | `/form-collection/my/index` | `form/my/index` | 历史口径：同 FormDesigner |
+| FormData | `/form-collection/data/index` | `form/data/index` | 历史口径：同 FormDesigner |
+| AiMcpServers | `/integration/ai/mcp` | `integration/ai/mcp/index` | 历史口径：URL 不带 `/index` 后缀 |
 
 ## 4. 新增页面规范
 
 - 新页面：URL 与 `src/views/` 目录保持一致（参照 DataReport/DataScreen）；
 - 需要偏离时：先在本文第 3 节登记例外与理由，再改种子；
 - 菜单 description 字段（≤256 字符）可用于在该行种子上留下护栏说明。
+
+## 5. 对账白名单（预期偏差登记）
+
+权限点双向对账门禁（`xadmin-client/scripts/check-menu-permissions.mjs`）的登记处。
+方向 **A** = 种子有权限点、前端无消费证据；方向 **B** = 前端有权限检查、种子无对应码。
+登记后该项跳过对账；新增条目必须注明理由。**机器事实源是门禁脚本的
+`WHITELIST_A` / `WHITELIST_B` / `URL_EXCEPTIONS` 清单，本表为同步登记的人类可读版，
+两处需同步更新。**
+
+| 权限点 | 方向 | 理由 |
+|---|---|---|
+| `retrieve:Spectacular` | A | 文档外链类：API 文档页由菜单链接直达，前端无 hasAuth 校验位属预期 |
+| `retrieve:SpectacularSwaggerView` | A | 文档外链类：同上（Swagger UI） |
+| `retrieve:SpectacularRedocView` | A | 文档外链类：同上（Redoc） |
+| `retrieve:SystemFlower` | A | 文档外链类：Celery Flower 监控页外链打开 |
+| `create:SystemFlower` | A | 文档外链类：同上（该点仅配对方法位存在，无前端交互） |
+| `enable:SystemTask` | A | 前端任务启停走批量端点（batch-enable / partialUpdate），单任务 enable 端点无前端交互 |
+| `syncRepoStatus:AiKnowledge` | A | 前端只调 sync-repo 触发同步，状态经列表刷新获得，status 查询端点无前端消费 |
+| `update:SystemApprovalFlow` | B | 编辑兼容口径：前端 OR 检查 update/partialUpdate（两页编辑保存均走 partialUpdate，权限授予习惯不同，只认其一会让另一类角色看不到编辑入口），种子只授 partialUpdate |
+| `update:SystemApprovalRule` | B | 编辑兼容口径：同 SystemApprovalFlow |
+
+另：`retrieve:SystemGlobalSearch` 与 `list:SystemImportTemplate` 在门禁脚本的
+`MUST_CODE_EVIDENCE` 清单中——这两处曾"端点有人调、权限没人查"，后补的前端
+hasAuth 校验不得回退删除。

@@ -282,6 +282,8 @@ class UserOTPViewSet(GenericViewSet):
         恢复码随解绑一并作废——它是当前 OTP 密钥的配套自救凭据，密钥不在即无意义。
         """
         user = request.user
+        if not user.otp_secret_key:
+            return ApiResponse(code=1001, detail=_("OTP is not bound"))
         user.otp_secret_key = ""
         user.mfa_level = get_user_model().MFALevelChoices.DISABLED
         user.save(update_fields=["otp_secret_key", "mfa_level"])
