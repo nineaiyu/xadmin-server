@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db import models
+from django.db import IntegrityError, models, transaction
 from django.utils.translation import gettext_lazy as _
 
 from common.base.utils import signer
@@ -112,21 +112,34 @@ class Setting(DbAuditModel, DbUuidModel):
         不能使用 Model 提供的，update_or_create 因为这里有 encrypted 和 cleaned_value
         :return: (changed, instance)
         """
-        setting = cls.objects.filter(name=name).first()
-        changed = False
-        if not setting:
-            setting = Setting(name=name, encrypted=encrypted, category=category, modifier=user, creator=user)
+        # 「先查后插」不是原子操作，并发写同名键会双双查空后各自插入：
+        # select_for_update 锁不到尚不存在的行（SQLite 上更是 no-op），插入撞
+        # name 唯一约束时回滚本事务并重查一次改走更新分支（限一次重试防死循环）。
+        for _attempt in range(2):
+            try:
+                with transaction.atomic():
+                    setting = cls.objects.select_for_update().filter(name=name).first()
+                    changed = False
+                    if not setting:
+                        setting = Setting(
+                            name=name, encrypted=encrypted, category=category, modifier=user, creator=user
+                        )
 
-        if isinstance(value, InMemoryUploadedFile):
-            value = cls.save_to_file(value)
+                    if isinstance(value, InMemoryUploadedFile):
+                        value = cls.save_to_file(value)
 
-        if setting.cleaned_value != value:
-            setting.encrypted = encrypted
-            setting.cleaned_value = value
-            setting.modifier = user
-            setting.save()
-            changed = True
-        return changed, setting
+                    if setting.cleaned_value != value:
+                        setting.encrypted = encrypted
+                        setting.cleaned_value = value
+                        setting.modifier = user
+                        setting.save()
+                        changed = True
+                    return changed, setting
+            except IntegrityError:
+                continue
+        # 连续两次撞唯一约束的极端并发下不再尝试写入：按未变更返回当前行，
+        # 调用方只在 changed 为真时才使用实例，不向其抛出数据库异常。
+        return False, cls.objects.filter(name=name).first()
 
     class Meta:
         verbose_name = _("System setting")

@@ -65,9 +65,33 @@ class ScreenSerializer(BaseModelSerializer):
         from dataset.utils.dataset import numeric_columns_of
 
         known_dashboards = Dashboard.objects.values_list("pk", flat=True)
-        datasets = {str(item.pk): item for item in Dataset.objects.all().only("pk", "bound_model", "columns")}
+        # 只加载指标卡窗格引用到的数据集（存在性与数值列校验都不需要整表）；
+        # 引用串先过主键形态校验，非法形态按「不存在」处理（主键查询遇非法值会抛错）
+        referenced = set()
+        if isinstance(value, list):
+            for item in value:
+                if not isinstance(item, dict) or str(item.get("type") or "dashboard") != "metric":
+                    continue
+                dataset_pk = str(item.get("dataset") or "").strip()
+                if dataset_pk:
+                    referenced.add(dataset_pk)
+        valid_pks = []
+        for dataset_pk in referenced:
+            try:
+                Dataset._meta.pk.to_python(dataset_pk)
+            except ValidationError:
+                continue
+            valid_pks.append(dataset_pk)
+        datasets = {
+            str(item.pk): item for item in Dataset.objects.filter(pk__in=valid_pks).only("pk", "bound_model", "columns")
+        }
+        known_datasets = datasets.keys()
+        if referenced and not datasets and Dataset.objects.exists():
+            # 引用的数据集全部不存在：known 集为空会令窗格存在性校验被跳过，
+            # 放入窗格不可能命中的占位值，保持「引用必须存在」的既有拒绝语义
+            known_datasets = {object()}
         try:
-            layout = normalize_screen_layout(value, known_dashboards, datasets.keys())
+            layout = normalize_screen_layout(value, known_dashboards, known_datasets)
         except ScreenLayoutError as exc:
             raise serializers.ValidationError(str(exc)) from exc
         for pane in layout:

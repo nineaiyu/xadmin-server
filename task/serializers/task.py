@@ -11,6 +11,7 @@ import json
 
 from celery.schedules import crontab_parser
 from django.conf import settings
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
 from rest_framework import serializers
@@ -108,6 +109,20 @@ class IntervalScheduleSerializer(BaseModelSerializer):
             raise serializers.ValidationError(_("A schedule with the same interval already exists"))
         return attrs
 
+    def create(self, validated_data):
+        """(every, period) 按 get_or_create 语义落库，消除查重校验与写入之间的竞态窗口。
+
+        validate 的查重负责用户可读报错，但校验通过到写入之间另一请求可能已
+        落库同组合（库级自 2.9 起无唯一约束兜底）：命中即复用既有行、未命中
+        才建，写入若撞上唯一约束则由 get_or_create 回查复用兜底；库级无约束时
+        极端并发窗口仍可能双插，属应用层无法根除的残余风险。
+        """
+        lookup = {field: validated_data[field] for field in ("every", "period")}
+        defaults = {key: value for key, value in validated_data.items() if key not in lookup}
+        with transaction.atomic():
+            instance, _created = IntervalSchedule.objects.get_or_create(defaults=defaults, **lookup)
+        return instance
+
 
 def _validate_json_string(raw, expect_type, field_label):
     """args/kwargs 以 JSON 字符串落库（django_celery_beat 约定），入库前校验可解析且类型正确。"""
@@ -204,6 +219,23 @@ def _validate_task_runnable(name) -> str:
     return name
 
 
+def _validate_task_registered(name) -> str:
+    """task 字段存在性校验：未注册的任务路径在保存时即拒绝，而非等到执行才报错。
+
+    与白名单校验（_validate_task_runnable）并列同链，白名单先行；口径与执行
+    侧（run/batch-run）一致——先查注册表，缺失时补一次全量注册（进程内只扫
+    一次）再复查。经函数级导入视图层的注册入口，规避 serializers ↔ views 循环。
+    """
+    from server.celery import app
+    from task.views.task_periodic import ensure_tasks_registered
+
+    if name not in app.tasks:
+        ensure_tasks_registered()
+    if name not in app.tasks:
+        raise serializers.ValidationError(_('Task "{}" is not registered').format(name))
+    return name
+
+
 class PeriodicTaskSerializer(BaseModelSerializer):
     # 调度关联默认只序列化 {pk}，前端显示为数字主键不可读；
     # 换用带 label 的关联字段：列表/详情/下拉直接显示
@@ -255,8 +287,9 @@ class PeriodicTaskSerializer(BaseModelSerializer):
         allow_null=True,
         label=_("Exchange"),
     )
-    # 任务名白名单：仅可手动执行清单内的任务可被配置（默认拒绝未登记任务）
-    task = serializers.CharField(label=_("Task"), validators=[_validate_task_runnable])
+    # 任务名白名单 + 注册存在性：仅可手动执行清单内的任务、且当前进程注册表
+    # 里真实存在的任务可被配置（路径写错在保存时报 400，而非执行时才失败）
+    task = serializers.CharField(label=_("Task"), validators=[_validate_task_runnable, _validate_task_registered])
 
     class Meta:
         model = PeriodicTask
@@ -353,22 +386,31 @@ class TaskExecutionSerializer(BaseModelSerializer):
         ]
         read_only_fields = fields
 
+    def _product_data(self, obj) -> dict:
+        """列表注解合并下发的产物信息（类型/业务名/进度/阶段/错误）。
+
+        仅列表动作带 product_data 注解；详情等其它动作按空表降级，取值语义
+        与拆分前的逐字段注解一致。
+        """
+        data = getattr(obj, "product_data", None)
+        return data if isinstance(data, dict) else {}
+
     def get_product_type(self, obj) -> str:
         """产物类型（export/import；定时与即时任务为空）。"""
-        return str(getattr(obj, "product_type", "") or "")
+        return str(self._product_data(obj).get("type") or "")
 
     def get_product_name(self, obj) -> str:
         """产物记录的业务名（如「用户导出-20260924120000」），非产物任务为空。"""
-        return str(getattr(obj, "product_name", "") or "")
+        return str(self._product_data(obj).get("name") or "")
 
     def get_product_progress(self, obj) -> int:
-        return int(getattr(obj, "product_progress", 0) or 0)
+        return int(self._product_data(obj).get("progress") or 0)
 
     def get_product_stage(self, obj) -> str:
-        return str(getattr(obj, "product_stage", "") or "")
+        return str(self._product_data(obj).get("stage") or "")
 
     def get_product_error(self, obj) -> str:
-        return str(getattr(obj, "product_error", "") or "")[:500]
+        return str(self._product_data(obj).get("error") or "")[:500]
 
     def get_product_has_file(self, obj) -> bool:
         return bool(getattr(obj, "product_has_file", False))

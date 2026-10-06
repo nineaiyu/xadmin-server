@@ -42,3 +42,26 @@ def build_embeddings_task(self, document_pk="", force: bool = False):
         raise
     finally:
         release_lock()
+
+
+@shared_task(bind=True, verbose_name="Sync repository knowledge documents")
+def sync_repo_task(self):
+    """异步重扫仓库文档并全量重建分块（自请求线程内同步拆出）。
+
+    状态机：视图先取单飞锁，任务内置 running 并写终态（含异常）后释放锁——
+    锁 TTL 兜底 worker 崩溃，同步入口不会永久卡死。同步摘要随状态通道保留
+    1 小时，供知识库页经 sync-repo/status 轮询。
+    """
+    from ai.utils.ai_knowledge import sync_knowledge
+    from ai.utils.sync_progress import mark_finished, mark_running, release_lock
+
+    mark_running()
+    try:
+        summary = sync_knowledge()
+        mark_finished(summary, ok=True)
+        return summary
+    except Exception as exc:  # noqa: BLE001 任务级兜底：异常也落终态摘要（前端可读）
+        mark_finished({}, ok=False, detail=str(exc)[:255])
+        raise
+    finally:
+        release_lock()

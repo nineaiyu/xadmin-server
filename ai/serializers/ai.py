@@ -7,6 +7,7 @@
 - 上传写入走独立输入序列化器（name + content 文本），不落文件系统。
 """
 
+from django.db.models.functions import Left, Length
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -21,6 +22,8 @@ from task.services import DisplayRelatedField
 
 # 名称中的路径分隔符会破坏 upload/ 前缀隔离，统一拒绝
 NAME_FORBIDDEN_CHARS = ("/", "\\")
+# 分块摘要预览只取开头若干字符：DB 侧裁剪，大文本 content 不整段出库
+CHUNK_PREVIEW_LENGTH = 120
 
 
 def _encrypt_api_key(value: str) -> str:
@@ -230,17 +233,19 @@ class AiKnowledgeDocumentSerializer(BaseModelSerializer):
         table_fields = ["title", "source_type", "chunk_count", "is_active", "creator", "synced_at"]
 
     def get_chunks(self, obj) -> list:
-        """分块摘要（仅详情返回）：问答检索时会命中的块清单。"""
+        """分块摘要（仅详情返回）：问答检索时会命中的块清单。
+
+        预览在 DB 侧裁剪（Left/Length）：只把开头 120 字符与全文长度取回，
+        避免 content 大文本整段出库才截断。
+        """
         if getattr(self.context.get("view"), "action", None) != "retrieve":
             return []
         rows = (
             AiKnowledgeChunk.objects.filter(source_path=obj.path)
             .order_by("chunk_index")
-            .values("chunk_index", "content")
+            .values("chunk_index", size=Length("content"), preview=Left("content", CHUNK_PREVIEW_LENGTH))
         )
-        return [
-            {"index": row["chunk_index"], "size": len(row["content"]), "preview": row["content"][:120]} for row in rows
-        ]
+        return [{"index": row["chunk_index"], "size": row["size"], "preview": row["preview"]} for row in rows]
 
     def to_representation(self, instance):
         """列表轻量：全文与分块摘要只在详情（预览）返回，避免列表响应随文档量膨胀。"""

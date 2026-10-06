@@ -169,12 +169,18 @@ class MonitorViewSet(GenericViewSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="events")
     def events(self, request, *args, **kwargs):
-        """事件记录查询：kind=alert（告警）/ error（异常请求）/ task（任务失败）"""
+        """事件记录查询：kind=alert（告警）/ error（异常请求）/ task（任务失败）
+
+        分页参数 limit（默认按 kind 为 200/50，封顶 1000）与 offset；响应带
+        total 与 truncated 标记，窗口内数据超出当页时不再静默截断。
+        """
         data = monitor_events.collect_events(
             kind=request.query_params.get("kind") or "alert",
             range_key=request.query_params.get("range") or "24h",
             status=request.query_params.get("status") or None,
             item=request.query_params.get("item") or None,
+            limit=request.query_params.get("limit"),
+            offset=request.query_params.get("offset"),
         )
         return ApiResponse(data=data)
 
@@ -184,13 +190,24 @@ class MonitorViewSet(GenericViewSet):
         """报表导出：kind=history（趋势数据+汇总）/ alerts（告警记录），type=csv|xlsx"""
         file_format = "xlsx" if request.query_params.get("type") == "xlsx" else "csv"
         if request.query_params.get("kind") == "alerts":
-            alerts = monitor_events.collect_alerts(
-                status=request.query_params.get("status") or None,
-                item=request.query_params.get("item") or None,
-                range_key=request.query_params.get("range") or "30d",
-                limit=1000,
-            )
-            sheets = monitor_events.build_alert_export_sheets(alerts["results"])
+            # 导出按块循环取全量：不静默截断，单次查询行数仍受 EXPORT_CHUNK_SIZE 约束
+            alert_rows = []
+            offset = 0
+            while True:
+                page = monitor_events.collect_alerts(
+                    status=request.query_params.get("status") or None,
+                    item=request.query_params.get("item") or None,
+                    range_key=request.query_params.get("range") or "30d",
+                    limit=monitor_events.EXPORT_CHUNK_SIZE,
+                    offset=offset,
+                )
+                alert_rows.extend(page["results"])
+                # 空页兜底：total 与分页切片是两条独立查询，并发删除下可能出现
+                # "truncated 为真但当页为空"，直接收尾避免空转
+                if not page["results"] or not page["truncated"]:
+                    break
+                offset += len(page["results"])
+            sheets = monitor_events.build_alert_export_sheets(alert_rows)
             prefix = "monitor-alerts"
         else:
             result = monitor_history.collect_history(

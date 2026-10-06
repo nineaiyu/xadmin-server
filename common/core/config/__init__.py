@@ -25,6 +25,7 @@ from .user_conf import (
     UserConfigSerializer,
     UserPersonalConfigCache,
     batch_user_config,
+    batch_user_config_values,
     get_personal_config_data,
     get_personal_int_config,
 )
@@ -40,6 +41,7 @@ __all__ = [
     "UserConfigSerializer",
     "UserPersonalConfigCache",
     "batch_user_config",
+    "batch_user_config_values",
     "get_personal_config_data",
     "get_personal_int_config",
     "get_render_context",

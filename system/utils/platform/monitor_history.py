@@ -4,12 +4,14 @@
 
 数据源为 common.Monitor 心跳表（30s 一条）。网络指标存的是累计收发量，
 速率由相邻采样差分得出（进程/系统重启后计数器归零的负差值按缺失处理，
-不伪造 0 值峰值）。聚合在 Python 侧按时间桶完成：心跳表在保留期（默认
-30 天）内最多十万量级行，一次取回后分桶比多次 DB 聚合更可读且便于单测。
+不伪造 0 值峰值）。分桶与汇总聚合下推数据库：相邻差分用窗口函数在
+"窗口前基准行 + 窗口内采样"的全序集合上完成，聚合按时间桶 GROUP BY，
+只回传聚合结果，避免保留期内数万行心跳全量拉入内存。
 """
 
 import datetime
 
+from django.db import connections
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
@@ -42,10 +44,6 @@ METRIC_META = {
     "net_sent_rate": (_("Network upload rate"), "KB/s"),
     "net_recv_rate": (_("Network download rate"), "KB/s"),
 }
-
-
-def _row_fields():
-    return DIRECT_METRICS + tuple(RATE_SOURCES.values()) + ("created_time",)
 
 
 def parse_window_dt(value):
@@ -115,64 +113,114 @@ def _iso(dt):
     return timezone.localtime(dt).isoformat()
 
 
-def build_raw_points(base_row, rows):
-    """原始采样点：直接指标原值 + 网络速率（相邻差分，负值=计数器归零记 None）。"""
+def _metrics_cte(table):
+    """窗口采样 CTE：窗口内采样（含单次取数上限）+ 窗口前最近一条基准行。
+
+    网络速率用窗口函数在全序集合上对相邻采样差分（速率 = 累计量差 × 1024 /
+    间隔秒），负差值（计数器归零）与时间倒退按缺失处理；基准行只参与差分，
+    不进入后续聚合（与原 Python 实现的原始点口径一致）。
+    """
+    fields = ("created_time",) + DIRECT_METRICS + tuple(RATE_SOURCES.values())
+    columns = ", ".join(fields)
+    lags = ", ".join(f"LAG({source}) OVER w AS prev_{source}" for source in RATE_SOURCES.values())
+    rates = ",\n           ".join(
+        f"CASE WHEN prev_time IS NOT NULL AND created_time > prev_time AND {source} >= prev_{source}"
+        f" THEN ROUND((({source} - prev_{source}) * 1024"
+        f" / EXTRACT(EPOCH FROM (created_time - prev_time)))::numeric, 2) END AS {rate}"
+        for rate, source in RATE_SOURCES.items()
+    )
+    return f"""
+WITH base AS (
+    SELECT {columns}
+    FROM {table}
+    WHERE created_time < %(start)s
+    ORDER BY created_time DESC
+    LIMIT 1
+), samples AS (
+    (SELECT {columns}
+     FROM {table}
+     WHERE created_time >= %(start)s AND created_time <= %(end)s
+     ORDER BY created_time
+     LIMIT %(limit)s)
+    UNION ALL
+    (SELECT {columns} FROM base)
+), diffed AS (
+    SELECT {columns},
+           LAG(created_time) OVER w AS prev_time,
+           {lags}
+    FROM samples
+    WINDOW w AS (ORDER BY created_time)
+), metrics AS (
+    SELECT created_time, {", ".join(DIRECT_METRICS)},
+           {rates}
+    FROM diffed
+    WHERE created_time >= %(start)s
+)"""
+
+
+def _bucket_query(table):
+    """按时间桶聚合：桶 = epoch 秒对桶宽取整（与前端逐点对齐口径一致）。"""
+    avgs = ", ".join(f"AVG({field}) AS {field}" for field in DIRECT_METRICS + tuple(RATE_SOURCES))
+    return f"""{_metrics_cte(table)}
+SELECT FLOOR(EXTRACT(EPOCH FROM created_time) / %(bucket)s) * %(bucket)s AS bucket_key,
+       {avgs}
+FROM metrics
+GROUP BY bucket_key
+ORDER BY bucket_key"""
+
+
+def _summary_query(table):
+    """窗口汇总：每指标 min/max/avg + 最后一个有效值（last），COUNT 为原始采样行数。"""
+    columns = []
+    for metric in DIRECT_METRICS + tuple(RATE_SOURCES):
+        columns.extend(
+            [
+                f"MIN({metric}) AS {metric}_min",
+                f"MAX({metric}) AS {metric}_max",
+                f"AVG({metric}) AS {metric}_avg",
+                f"(ARRAY_AGG({metric} ORDER BY created_time DESC) FILTER (WHERE {metric} IS NOT NULL))[1]"
+                f" AS {metric}_last",
+            ]
+        )
+    return f"""{_metrics_cte(table)}
+SELECT COUNT(*) AS row_count,
+       {", ".join(columns)}
+FROM metrics"""
+
+
+def _fetch_dicts(cursor):
+    columns = [column[0] for column in cursor.description]
+    return [dict(zip(columns, row, strict=False)) for row in cursor.fetchall()]
+
+
+def _round_or_none(value):
+    return None if value is None else round(float(value), 2)
+
+
+def _bucket_points(rows, interval_seconds):
+    """聚合行 → 点序列（桶时间取桶起点；桶内无有效值的字段不出现）。"""
     points = []
-    prev = base_row
     for row in rows:
-        point = {"time": row["created_time"]}
-        for field in DIRECT_METRICS:
-            point[field] = row[field]
-        delta_seconds = (row["created_time"] - prev["created_time"]).total_seconds() if prev else 0
-        for rate_key, source in RATE_SOURCES.items():
-            point[rate_key] = None
-            if prev is not None and delta_seconds > 0:
-                delta_mb = row[source] - prev[source]
-                if delta_mb >= 0:
-                    point[rate_key] = round(delta_mb * 1024 / delta_seconds, 2)
-        points.append(point)
-        prev = row
+        bucket_key = int(row["bucket_key"])
+        item = {"time": _iso(datetime.datetime.fromtimestamp(bucket_key, tz=datetime.UTC))}
+        for field in DIRECT_METRICS + tuple(RATE_SOURCES):
+            if row[field] is not None:
+                item[field] = _round_or_none(row[field])
+        points.append(item)
     return points
 
 
-def bucket_points(raw_points, interval_seconds):
-    """按时间桶求均值（桶时间取桶起点），跳过缺失值不拉低均值。"""
-    if not raw_points:
-        return []
-    buckets: dict[int, dict] = {}
-    for point in raw_points:
-        key = int(point["time"].timestamp()) // interval_seconds * interval_seconds
-        bucket = buckets.setdefault(key, {"sums": {}, "counts": {}})
-        for field, value in point.items():
-            if field == "time" or value is None:
-                continue
-            bucket["sums"][field] = bucket["sums"].get(field, 0.0) + float(value)
-            bucket["counts"][field] = bucket["counts"].get(field, 0) + 1
-    result = []
-    for key in sorted(buckets):
-        bucket = buckets[key]
-        item = {"time": _iso(datetime.datetime.fromtimestamp(key, tz=datetime.UTC))}
-        for field, total in bucket["sums"].items():
-            item[field] = round(total / bucket["counts"][field], 2)
-        result.append(item)
-    return result
-
-
-def summarize_points(raw_points, metrics):
-    """窗口内每指标 min/max/avg/last（last 为窗口内最后一个有效值）。"""
-    summary = {}
-    for metric in metrics:
-        values = [point[metric] for point in raw_points if point.get(metric) is not None]
-        if values:
-            summary[metric] = {
-                "min": round(min(values), 2),
-                "max": round(max(values), 2),
-                "avg": round(sum(values) / len(values), 2),
-                "last": round(values[-1], 2),
-            }
-        else:
-            summary[metric] = {"min": None, "max": None, "avg": None, "last": None}
-    return summary
+def _summarize(row, metrics):
+    """汇总行 → 每指标 min/max/avg/last（last 为窗口内最后一个有效值）。"""
+    return {
+        metric: {
+            "min": _round_or_none(row[f"{metric}_min"]),
+            "max": _round_or_none(row[f"{metric}_max"]),
+            "avg": _round_or_none(row[f"{metric}_avg"]),
+            "last": _round_or_none(row[f"{metric}_last"]),
+        }
+        for metric in metrics
+    }
 
 
 def _compare_item(current, previous):
@@ -212,7 +260,11 @@ def compare_with_previous(model, start_dt, end_dt, metrics, summary):
 
 
 def collect_history(range_key=None, start=None, end=None, interval=None, metrics=None, compare=True):
-    """历史趋势主入口：窗口/粒度/指标解析 + 原始点 + 聚合点 + 汇总 + 环比。"""
+    """历史趋势主入口：窗口/粒度/指标解析 + 分桶聚合 + 汇总 + 环比。
+
+    分桶与汇总聚合下推数据库，只回传聚合结果（桶序列 / 汇总 / 环比），
+    环比与报表导出复用同一条聚合路径，不重复拉取原始行。
+    """
     from system.models import Monitor
 
     start_dt, end_dt = resolve_window(range_key, start, end)
@@ -220,17 +272,15 @@ def collect_history(range_key=None, start=None, end=None, interval=None, metrics
     interval_key, interval_seconds = resolve_interval(seconds, interval)
     picked = resolve_metrics(metrics)
 
-    # 窗口前最近一条作为速率基准点：窗口起点也能算出网络速率
-    base_row = (
-        Monitor.objects.filter(created_time__lt=start_dt).order_by("-created_time").values(*_row_fields()).first()
-    )
-    rows = list(
-        Monitor.objects.filter(created_time__gte=start_dt, created_time__lte=end_dt)
-        .order_by("created_time")
-        .values(*_row_fields())[:ROW_LIMIT]
-    )
-    raw_points = build_raw_points(base_row, rows)
-    summary = summarize_points(raw_points, picked)
+    using = Monitor.objects.db
+    table = connections[using].ops.quote_name(Monitor._meta.db_table)
+    params = {"start": start_dt, "end": end_dt, "limit": ROW_LIMIT, "bucket": interval_seconds}
+    with connections[using].cursor() as cursor:
+        cursor.execute(_bucket_query(table), params)
+        points = _bucket_points(_fetch_dicts(cursor), interval_seconds)
+        cursor.execute(_summary_query(table), params)
+        summary_row = _fetch_dicts(cursor)[0]
+    summary = _summarize(summary_row, picked)
     return {
         "range": {
             "start": _iso(start_dt),
@@ -240,10 +290,10 @@ def collect_history(range_key=None, start=None, end=None, interval=None, metrics
             "range_key": range_key or "custom",
         },
         "metrics": picked,
-        "points": bucket_points(raw_points, interval_seconds),
+        "points": points,
         "summary": summary,
         "compare": compare_with_previous(Monitor, start_dt, end_dt, picked, summary) if compare else {},
-        "raw_points": len(rows),
+        "raw_points": summary_row["row_count"],
     }
 
 

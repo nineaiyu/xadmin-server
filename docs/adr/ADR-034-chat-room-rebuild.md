@@ -59,7 +59,7 @@ ChatMessage（BigAuto pk = 自增游标）
 |---|---|---|
 | `chat_message` | ↑ 发送 | `{room_id, content, client_msg_id}` |
 | `chat_message` | ↓ 广播 | `{id, room_id, room_type, sender_pk, sender_name, sender_avatar, message_type, content, created_time, client_msg_id, extra}` |
-| `chat_recall` | ↑/↓ | `{message_id}` → `{message_id, id, room_id, operator_pk}` |
+| `chat_recall` | ↓ | `{message_id, id, room_id, operator_pk}`（上行撤回走 REST `POST /api/chat/message/{id}/recall`） |
 | `chat_read` | ↑ | `{room_id, last_read_id?}` → 回执最新游标 |
 | `chat_unread` | ↓ | `{room_id, unread_count}`（私聊/AI 未读红点） |
 

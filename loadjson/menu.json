@@ -1882,7 +1882,7 @@
    "component": null,
    "is_active": true,
    "meta": "68c37f98-233c-487d-9877-5cf20bfca5f2",
-   "method": "GET",
+   "method": "POST",
    "model": []
   }
  },
@@ -10509,6 +10509,28 @@
    "is_active": true,
    "meta": "26257f70-5f9e-4588-ac19-77c83e323bf0",
    "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8e00b0cb-aff8-46ff-99ff-386e11cfd327",
+  "fields": {
+   "created_time": "2026-10-06T00:00:00.000Z",
+   "updated_time": "2026-10-06T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "416faea3-f2b5-4630-a6ac-4df1c9894023",
+   "menu_type": 2,
+   "name": "syncRepoStatus:AiKnowledge",
+   "rank": 10000,
+   "path": "api/ai/knowledge-documents/sync-repo/status$",
+   "component": null,
+   "is_active": true,
+   "meta": "7c08ab58-cc44-4e26-9794-c0afa3275b84",
+   "method": "GET",
    "model": []
   }
  },

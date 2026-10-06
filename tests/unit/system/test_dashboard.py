@@ -19,7 +19,7 @@ from django.utils import timezone
 
 from audit.models import OperationLog, UserLoginLog
 from identity.models import UserInfo
-from system.views.platform.dashboard import trend_info
+from system.views.platform.dashboard import cached_total_count, trend_info, trend_points
 
 pytestmark = pytest.mark.django_db
 
@@ -88,6 +88,29 @@ class TestTrendInfoPercent:
         assert percent == -75.0
 
 
+class TestTrendPoints:
+    def test_trend_points_matches_trend_info(self, superuser):
+        """trend_points 与 trend_info 的趋势部分一致（拆分重构的回归防护）。"""
+        for _ in range(3):
+            _make_login_log(superuser, days_ago=1)
+
+        results, percent, window_queryset = trend_points(UserLoginLog.objects.all(), 7)
+        info_results, info_percent, info_count = trend_info(UserLoginLog.objects.all(), 7)
+
+        assert results == info_results
+        assert percent == info_percent
+        assert info_count == 3
+        assert window_queryset.count() == 3
+
+    def test_window_queryset_covers_window_only(self, superuser):
+        _make_login_log(superuser, days_ago=0)
+        _make_login_log(superuser, days_ago=100)
+
+        _, _, window_queryset = trend_points(UserLoginLog.objects.all(), 7)
+
+        assert window_queryset.count() == 1
+
+
 class TestTrendInfoCountScope:
     def test_window_count_excludes_older_rows(self):
         _make_operation_log(days_ago=0)
@@ -114,6 +137,40 @@ class TestUserActive:
         # [ [天数, 注册数, 活跃数], ... ]，第 0 项为"今日"；
         # 旧实现统计不同 last_login 值的个数，两人同秒登录只会被算成 1
         assert payload(response)["data"][0][2] == 2
+
+
+class TestTotalCountCache:
+    def test_user_login_total_count_stays_total(self, auth_client, superuser):
+        """count 口径不变：窗口外登录行仍计入累计登录总数，趋势仍按 7 日窗口。"""
+        _make_login_log(superuser, days_ago=0)
+        _make_login_log(superuser, days_ago=100)
+
+        response = auth_client.get(f"{DASHBOARD_URL}/user-login-total")
+        data = payload(response)
+
+        assert response.status_code == 200
+        assert data["results"][-1]["count"] == 1
+        assert data["count"] == 2
+
+    def test_cached_total_count_second_call_skips_db(self, superuser):
+        """全量计数走数据缓存：同用户窗口内重复取值不再回源 COUNT。"""
+        _make_login_log(superuser, days_ago=0)
+        assert cached_total_count(superuser.pk, UserLoginLog.objects.all()) == 1
+
+        with CaptureQueriesContext(connection) as ctx:
+            second = cached_total_count(superuser.pk, UserLoginLog.objects.all())
+
+        assert second == 1
+        assert all("COUNT" not in q["sql"].upper() for q in ctx.captured_queries)
+
+    def test_cached_total_count_keyed_by_user(self, superuser, normal_user):
+        """数据权限收敛后的计数随用户不同：缓存键携带用户维度，互不串值。"""
+        _make_login_log(superuser, days_ago=0)
+        assert cached_total_count(superuser.pk, UserLoginLog.objects.all()) == 1
+        # 另一用户的键独立计算（数据权限收敛场景传 none() 即得 0）
+        assert cached_total_count(normal_user.pk, UserLoginLog.objects.none()) == 0
+        # superuser 键命中自身缓存，不受其他用户键影响
+        assert cached_total_count(superuser.pk, UserLoginLog.objects.all()) == 1
 
 
 class TestDashboardCache:

@@ -104,6 +104,70 @@ class TestSettingModel:
         changed_again, _ = Setting.update_or_create(name="LOGO_FILE", value=setting.cleaned_value)
         assert changed_again is False
 
+    def test_repeated_same_name_keeps_single_row_and_return_semantics(self):
+        """同名键重复保存不产生双行：(changed, instance) 返回语义与主键稳定性不变。"""
+        changed, first = Setting.update_or_create(name="RACE_DUP", value={"a": 1}, category="basic")
+        assert changed is True
+        assert first.cleaned_value == {"a": 1}
+
+        unchanged, second = Setting.update_or_create(name="RACE_DUP", value={"a": 1})
+        assert unchanged is False
+
+        changed_again, third = Setting.update_or_create(name="RACE_DUP", value={"b": 2})
+        assert changed_again is True
+        assert third.cleaned_value == {"b": 2}
+
+        assert first.pk == second.pk == third.pk
+        assert Setting.objects.filter(name="RACE_DUP").count() == 1
+
+    def test_create_race_with_committed_row_retries_as_update(self, monkeypatch):
+        """并发首写模拟：首查读不到对方已提交的同名行，插入撞 name 唯一约束后
+        回滚重查、改走更新分支——不产生双行，也不向调用方抛出数据库异常。"""
+        Setting.objects.create(name="RACE_LOST", value=json.dumps({"winner": True}), category="default")
+
+        real_select_for_update = Setting.objects.select_for_update
+        missed = []
+
+        def racy_select_for_update(*args, **kwargs):
+            queryset = real_select_for_update(*args, **kwargs)
+            if not missed:
+                # 模拟第一遍查询发生在对方提交之前：查不到既有行
+                missed.append(True)
+                return queryset.none()
+            return queryset
+
+        monkeypatch.setattr(Setting.objects, "select_for_update", racy_select_for_update)
+
+        changed, setting = Setting.update_or_create(name="RACE_LOST", value={"mine": 1})
+        assert changed is True
+        rows = Setting.objects.filter(name="RACE_LOST")
+        assert rows.count() == 1
+        assert setting.pk == rows.get().pk
+        assert setting.cleaned_value == {"mine": 1}
+
+    def test_double_unique_conflict_falls_back_to_existing_row(self, monkeypatch):
+        """连续两次插入均撞唯一约束的极端并发：不再尝试写入，按未变更返回既有行。"""
+        existing = Setting.objects.create(name="RACE_TWICE", value=json.dumps({"kept": True}))
+
+        real_select_for_update = Setting.objects.select_for_update
+        misses = []
+
+        def always_missing_select_for_update(*args, **kwargs):
+            queryset = real_select_for_update(*args, **kwargs)
+            if len(misses) < 2:
+                misses.append(True)
+                return queryset.none()
+            return queryset
+
+        monkeypatch.setattr(Setting.objects, "select_for_update", always_missing_select_for_update)
+
+        changed, setting = Setting.update_or_create(name="RACE_TWICE", value={"other": 1})
+        assert changed is False
+        assert setting is not None
+        assert setting.pk == existing.pk
+        assert Setting.objects.filter(name="RACE_TWICE").count() == 1
+        assert Setting.objects.get(name="RACE_TWICE").cleaned_value == {"kept": True}
+
 
 class TestBasicSettingSerializerHooks:
     def test_validate_site_url_defaults_and_strips_trailing_slash(self):

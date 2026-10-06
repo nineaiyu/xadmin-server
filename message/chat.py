@@ -217,36 +217,51 @@ def bump_unread(room: ChatRoom, exclude_pk=None) -> dict:
 
 
 def mark_read(room: ChatRoom, user, message_id=None) -> int:
-    """清零未读并推进已读游标，返回最新游标（公共房间返回 0）。"""
+    """清零未读并推进已读游标，返回最新游标（公共房间返回 0）。
+
+    游标无推进且未读已是 0 时跳过写库：聊天页停留期间会反复触发已读上报
+    （切换会话 / 会话内来消息），状态无变化时不再产生空转 UPDATE。
+    """
     if room.room_type == ChatRoom.RoomType.PUBLIC:
         return 0
     latest = message_id or ChatMessage.objects.filter(room=room).aggregate(Max("id"))["id__max"] or 0
     member = ChatRoomMember.objects.filter(room=room, user_id=_user_pk(user)).first()
     if member is None:
         return 0
-    member.last_read_id = max(member.last_read_id or 0, int(latest))
+    cursor = max(member.last_read_id or 0, int(latest))
+    if cursor == (member.last_read_id or 0) and member.unread_count == 0:
+        return cursor
+    member.last_read_id = cursor
     member.unread_count = 0
     member.save(update_fields=["last_read_id", "unread_count", "updated_time"])
     return member.last_read_id
 
 
 def recall_message(user, message_id) -> ChatMessage:
-    """撤回：仅本人、窗口内、未撤回（超窗/越权返回可读校验错误）。"""
-    message = ChatMessage.objects.filter(pk=message_id).first()
-    if message is None:
-        raise DjangoValidationError(_("Message not found"))
-    if message.sender_id != _user_pk(user):
-        raise DjangoValidationError(_("Only the sender can recall the message"))
-    if message.is_recalled:
-        raise DjangoValidationError(_("Message already recalled"))
-    created = message.created_time or timezone.now()
-    if timezone.now() - created > timezone.timedelta(minutes=RECALL_WINDOW_MINUTES):
-        raise DjangoValidationError(_("Messages can only be recalled within {} minutes").format(RECALL_WINDOW_MINUTES))
-    write_recall_snapshot(message, user)
-    message.is_recalled = True
-    message.recalled_time = timezone.now()
-    message.content = ""
-    message.save(update_fields=["is_recalled", "recalled_time", "content", "updated_time"])
+    """撤回：仅本人、窗口内、未撤回（超窗/越权返回可读校验错误）。
+
+    读-判-写整体包进事务并以行锁取出消息：并发/重复撤回时后到者在锁内
+    重读到「已撤回」即被拒，审计快照与撤回状态各只落一次（不加锁时两个
+    事务都能通过校验，会产生双快照并双双落库）。
+    """
+    with transaction.atomic():
+        message = ChatMessage.objects.select_for_update().filter(pk=message_id).first()
+        if message is None:
+            raise DjangoValidationError(_("Message not found"))
+        if message.sender_id != _user_pk(user):
+            raise DjangoValidationError(_("Only the sender can recall the message"))
+        if message.is_recalled:
+            raise DjangoValidationError(_("Message already recalled"))
+        created = message.created_time or timezone.now()
+        if timezone.now() - created > timezone.timedelta(minutes=RECALL_WINDOW_MINUTES):
+            raise DjangoValidationError(
+                _("Messages can only be recalled within {} minutes").format(RECALL_WINDOW_MINUTES)
+            )
+        write_recall_snapshot(message, user)
+        message.is_recalled = True
+        message.recalled_time = timezone.now()
+        message.content = ""
+        message.save(update_fields=["is_recalled", "recalled_time", "content", "updated_time"])
     return message
 
 

@@ -14,6 +14,7 @@ from common.cache.storage import UserSystemConfigCache
 from common.contracts import UserPersonalConfig
 from common.utils import get_logger
 
+from .base import build_config_render_context, render_config_value, serialize_config_rows
 from .system_conf import ConfigCache, SysConfig
 
 logger = get_logger(__name__)
@@ -58,6 +59,71 @@ class UserConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserPersonalConfig
         fields = "__all__"
+
+
+def batch_user_config_values(owner_key_pairs, default_data=None, ignore_access=True):
+    """批量读取多个 (owner_id, key) 的个人级生效值，返回 {(owner_id, key): value}。
+
+    逐对 UserConfig(owner).get_value(key) 是 N 次缓存往返 + miss 逐行回源；
+    这里个人槽一次 get_many，未命中的 (owner_id, key) 一次 key__in 查询回源
+    个人行（解密 + 渲染上下文只建一次），仍无个人行的 key 一次系统级批量
+    读取兜底。缺席语义与逐对读取一致：无个人行 → 系统生效值，两级皆缺席
+    → {}。个人槽只读不回填——值/缺席标记的写路径仍由单读负责，批量读取
+    不改变缓存状态的演进（旧版 inherit 槽的清理同理交给单读）。
+    """
+    from django.core.cache import cache as django_cache
+
+    pairs = list(dict.fromkeys(owner_key_pairs))
+    if not pairs:
+        return {}
+    result, pending = {}, []
+    slot_keys = {(owner_id, key): UserSystemConfigCache(f"user_{owner_id}_{key}").cache_key for owner_id, key in pairs}
+    try:
+        cached = django_cache.get_many(set(slot_keys.values()))
+    except Exception:  # noqa: BLE001 Redis 不可用（与单读同口径）：降级读库
+        logger.warning("config cache read failed, fallback to db", exc_info=True)
+        cached = {}
+    for pair, slot_key in slot_keys.items():
+        owner_id, key = pair
+        data = cached.get(slot_key)
+        # 缺席标记 / 旧版继承槽（inherit）/ 键不匹配：视同无个人行，回源或系统级兜底
+        if (
+            isinstance(data, dict)
+            and data.get("key", "") == key
+            and not data.get("no_row")
+            and "inherit" not in data
+            and (ignore_access or data.get("access"))
+        ):
+            result[pair] = data.get("value")
+        else:
+            pending.append(pair)
+    if not pending:
+        return result
+    rows = list(
+        UserPersonalConfig.objects.filter(
+            is_active=True,
+            owner_id__in={owner_id for owner_id, _ in pending},
+            key__in={key for _, key in pending},
+        )
+    )
+    context = build_config_render_context(UserPersonalConfig) if rows else {}
+    system_pairs, found_pairs = [], set()
+    for row, data in zip(rows, serialize_config_rows(UserConfigSerializer, rows), strict=True):
+        pair = (row.owner_id, row.key)
+        if data.get("key") != row.key:  # 自引用渲染键视同缺席（防渲染递归）
+            system_pairs.append(pair)
+            continue
+        data["value"] = render_config_value(json.dumps(data["value"]), context, UserPersonalConfig)
+        result[pair] = data["value"] if (ignore_access or data.get("access")) else {}
+        found_pairs.add(pair)
+    # 未回源到行的 pair（无行 / 未激活 / 自引用守卫）：回退系统级生效值。
+    # 与单读一致：系统级读取不透传 ignore_access（缺席继承始终可读）
+    system_pairs.extend(pair for pair in pending if pair not in found_pairs)
+    fallback_keys = {key for _, key in system_pairs}
+    sys_values = SysConfig.get_values(fallback_keys, default_data) if fallback_keys else {}
+    for pair in system_pairs:
+        result.setdefault(pair, sys_values.get(pair[1], {}))
+    return result
 
 
 class UserPersonalConfigCache(ConfigCache):
@@ -125,6 +191,16 @@ class UserPersonalConfigCache(ConfigCache):
         if ignore_access or db_data.get("access"):
             return db_data
         return {}
+
+    def get_values(self, keys, default_data=None, ignore_access=True):
+        """用户级批量读取：个人行优先，缺席继承系统生效值（口径同 get_value）。
+
+        委托 batch_user_config_values 走跨用户批量实现（单用户是其特例），
+        返回按 key 索引的 {key: value}，与系统级 get_values 对齐。
+        """
+        owner_id = self.user_obj if isinstance(self.user_obj, (str, int)) else self.user_obj.pk
+        paired = batch_user_config_values([(owner_id, key) for key in keys], default_data, ignore_access)
+        return {key: paired[(owner_id, key)] for key in keys}
 
     def delete_db(self, key, **kwargs):
         return super().delete_db(key, **self.filter_kwargs)

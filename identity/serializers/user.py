@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 8/10/2024
 
+import json
+
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.utils.translation import gettext_lazy as _
@@ -33,6 +35,53 @@ from settings.services import (
 from system.services import DataPermission, TaggedObjectSerializerMixin
 
 logger = get_logger(__name__)
+
+# 建号密码解密失败的统一报错口径：密文模式下前端提交的是加密串，解密失败
+# （密钥不符/数据被篡改/提交了明文）一律拒绝，不把密文/明文误当密码落库。
+# code 供视图层识别该类拒绝（先落审计再以业务码应答，避免审计随请求事务回滚丢失）
+PASSWORD_DECRYPT_FAILED_MESSAGE = _("Password decryption failed, please refresh the page and try again")
+PASSWORD_DECRYPT_FAILED_CODE = "password_decrypt_failed"
+
+
+def is_password_decrypt_failure(exc) -> bool:
+    """判断校验异常是否为建号密码解密失败（按 ErrorDetail.code 识别，与文案解耦）。"""
+    detail = getattr(exc, "detail", None)
+    if isinstance(detail, dict):
+        items = [item for value in detail.values() if isinstance(value, list) for item in value]
+    elif isinstance(detail, list):
+        items = detail
+    else:
+        items = [detail]
+    return any(getattr(item, "code", None) == PASSWORD_DECRYPT_FAILED_CODE for item in items)
+
+
+def record_create_password_decrypt_failure(request, username):
+    """建号密码解密失败的补充审计：落 OperationLog 供安全追溯。
+
+    与 SCIM 目录同步的操作审计同口径（module 打域内标签、changes 记结构化摘要、
+    不携带提交的密码原文、审计失败仅告警不阻断主流程）。创建被拒时对象不存在，
+    object_pk 留空，以 changes.username 定位目标账号。
+    """
+    from audit.services import OperationLog
+    from common.utils.request import get_request_ip
+
+    try:
+        user = getattr(request, "user", None)
+        OperationLog.objects.create(
+            module="identity:user",
+            path=(getattr(request, "path", "") or "")[:400],
+            method=(getattr(request, "method", "") or "")[:8],
+            ipaddress=get_request_ip(request),
+            creator=user if getattr(user, "pk", None) else None,
+            status_code=1001,
+            response_code=1001,
+            changes=json.dumps(
+                {"action": "create", "error": "password_decrypt_failed", "username": str(username or "")[:64]},
+                ensure_ascii=False,
+            )[:4096],
+        )
+    except Exception:  # noqa: BLE001 审计链路故障不影响主流程
+        logger.warning("record create password decrypt failure audit failed", exc_info=True)
 
 
 def ensure_local_password_changeable(user):
@@ -220,13 +269,25 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
                 # 注意：密码规则必须校验解密后的明文。前端提交的是
                 # AESCipherV2(username) 加密串，若拿提交原文校验，收紧
                 # 大小写/数字规则后密文无法稳定满足（hex/base64 形态随机），
-                # 会导致合法密码被拒。加密失败时提交值即为明文（导入等场景）
-                try:
-                    plain_password = AESCipherV2(attrs.get("username")).decrypt(password)
-                except Exception as e:
-                    # 解密失败 = 提交值本身是明文（导入 / E2E 等场景），按明文落库
-                    plain_password = password
-                    logger.warning(f"create user password decrypt failed:{e}. fallback to submitted plaintext")
+                # 会导致合法密码被拒。
+                if settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED:
+                    # 密文模式：前端建号提交的是加密串，解密失败直接拒绝，
+                    # 不再把密文/明文误当密码落库（导入/脚本等明文提交场景应关闭该开关）
+                    try:
+                        plain_password = AESCipherV2(attrs.get("username")).decrypt(password)
+                    except Exception as e:
+                        logger.warning(f"create user password decrypt failed:{e}. rejected")
+                        raise ValidationError(PASSWORD_DECRYPT_FAILED_MESSAGE, code=PASSWORD_DECRYPT_FAILED_CODE) from e
+                    if not plain_password:
+                        # 解密结果为空 = 密文认证失败（密钥不符/数据被篡改），同解密异常口径拒绝
+                        raise ValidationError(PASSWORD_DECRYPT_FAILED_MESSAGE, code=PASSWORD_DECRYPT_FAILED_CODE)
+                else:
+                    # 明文模式（导入/E2E 等场景）：解密失败视为提交值本身是明文，按明文落库
+                    try:
+                        plain_password = AESCipherV2(attrs.get("username")).decrypt(password)
+                    except Exception as e:
+                        plain_password = password
+                        logger.warning(f"create user password decrypt failed:{e}. fallback to submitted plaintext")
                 if not check_password_rules(plain_password):
                     raise ValidationError(_("Password does not match security rules"))
                 if check_leak_password(plain_password):
@@ -251,11 +312,18 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
 
 
 class ResetPasswordSerializer(serializers.Serializer):
-    password = serializers.CharField(min_length=5, max_length=128, required=True, write_only=True, label=_("Password"))
+    # 密码下限不在字段上硬编码：统一由 check_password_rules 按长度/复杂度开关判定
+    # （普通用户 SECURITY_PASSWORD_MIN_LENGTH、超管 SECURITY_ADMIN_USER_PASSWORD_MIN_LENGTH），
+    # 与注册、本人改密等改密链路共用同一套密码策略与报错文案
+    password = serializers.CharField(max_length=128, required=True, write_only=True, label=_("Password"))
 
     def update(self, instance, validated_data):
         ensure_local_password_changeable(instance)
-        password = AESCipherV2(instance.username).decrypt(validated_data.get("password"))
+        try:
+            password = AESCipherV2(instance.username).decrypt(validated_data.get("password"))
+        except Exception as e:
+            # 解密失败视同不满足密码策略，与下方规则校验同文案拒绝（避免裸异常落成 500）
+            raise serializers.ValidationError(_("Password does not match security rules")) from e
         if not check_password_rules(password, instance.is_superuser):
             raise serializers.ValidationError(_("Password does not match security rules"))
         if check_leak_password(password):

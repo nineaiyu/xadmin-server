@@ -11,12 +11,20 @@ from rest_framework.response import Response
 
 from common.local import get_current_request
 
+# 全平台 API 响应统一成功码（业务层 code，非 HTTP status；业务数据写入
+# OperationLog.status_code 等场景按同值判断成功）
+API_SUCCESS_CODE = 1000
+
 
 class ApiResponse(Response):
-    def __init__(self, code=1000, detail=None, data=None, status=None, headers=None, content_type=None, **kwargs):
+    def __init__(
+        self, code=API_SUCCESS_CODE, detail=None, data=None, status=None, headers=None, content_type=None, **kwargs
+    ):
         dic = {
             "code": code,
-            "detail": detail if detail else (_("Operation successful") if code == 1000 else _("Operation failed")),
+            "detail": detail
+            if detail
+            else (_("Operation successful") if code == API_SUCCESS_CODE else _("Operation failed")),
             "requestId": str(getattr(get_current_request(), "request_uuid", "")),
             "timestamp": str(datetime.datetime.now()),
         }

@@ -292,6 +292,108 @@ class TestPolicyApi:
         assert resp.data["code"] != 1000
 
 
+class TestIpRangesValidation:
+    """ip_ranges 保存期校验：口径与运行时网段匹配（contains_ip）同语义。
+
+    运行时把无法识别的条目退化为与登录 IP 的字符串比对（对真实登录 IP 永远
+    不会命中，配置等于静默失效），保存期必须把这类条目挡下并回显条目原文。
+    """
+
+    LEGAL_NAME = "办公网段"
+
+    def _create(self, auth_client, ip_ranges):
+        return auth_client.post(
+            POLICY_URL,
+            {
+                "name": self.LEGAL_NAME,
+                "priority": 10,
+                "target_type": "all",
+                "action": "reject",
+                "ip_ranges": ip_ranges,
+            },
+            format="json",
+        )
+
+    @pytest.mark.parametrize(
+        "ip_ranges",
+        [
+            "192.168.10.1",  # 单个 IPv4
+            "2001:db8:2de::e13",  # 单个 IPv6
+            "2001:DB8:2DE::E13",  # IPv6 十六进制大小写：解析口径与运行时一致
+            "192.168.1.0/24",  # IPv4 CIDR
+            "0.0.0.0/0",
+            "2001:db8:1a:1110::/64",  # IPv6 CIDR
+            "10.1.1.1-10.1.1.20",  # IPv4 区间
+            "2001:db8::1-2001:db8::ff",  # IPv6 区间
+            "*",  # 运行时视为匹配全部
+            "",  # 空 = 该维度不限制
+            "  192.168.0.0/24  \n\n 10.1.1.1-10.1.1.20 \n",  # 行首尾空白与空行：运行时 strip 后可用，不得误拒
+        ],
+    )
+    def test_legal_ip_ranges_saved(self, auth_client, ip_ranges):
+        resp = self._create(auth_client, ip_ranges)
+        assert resp.data["code"] == 1000, resp.data
+
+    @pytest.mark.parametrize(
+        "ip_ranges",
+        [
+            "not-an-ip",  # 乱串
+            "example.com",  # 域名：运行时只做字符串比对，永不命中
+            "192.168.1.*",  # 通配网段：运行时不支持
+            "192.168.1.0/",  # 半截 CIDR
+            "192.168.1.0/33",  # 前缀长度越界
+            "192.168.1.1/24",  # 网络位含主机位：运行时按死条目忽略
+            "10.0.0.1-10.0.0.5-10.0.0.9",  # 多段区间：运行时解析抛错、整条策略被跳过
+            "10.0.0.20-10.0.0.1",  # 倒置区间
+            "10.0.0.1-2001:db8::1",  # 跨协议族区间：运行时按整数比较会误匹配
+            "10.0.0.1 - 10.0.0.20",  # 区间内带空格：运行时解析失败按死条目忽略
+        ],
+    )
+    def test_illegal_ip_ranges_rejected_with_entry(self, auth_client, ip_ranges):
+        resp = self._create(auth_client, ip_ranges)
+        assert resp.data["code"] != 1000, resp.data
+        # 报错需带条目原文，便于管理员定位是哪一行配置有问题
+        assert ip_ranges in str(resp.data["detail"]), resp.data
+
+    def test_illegal_entry_flagged_in_mixed_lines(self, auth_client):
+        """多行混合时只报非法条目本身，合法行不被牵连"""
+        resp = self._create(auth_client, "192.168.0.0/24\nbad-entry")
+        assert resp.data["code"] != 1000, resp.data
+        assert "bad-entry" in str(resp.data["detail"]), resp.data
+        assert "192.168.0.0/24" not in str(resp.data["detail"]), resp.data
+
+    def test_partial_update_also_validated(self, auth_client):
+        resp = self._create(auth_client, "192.168.0.0/24")
+        assert resp.data["code"] == 1000, resp.data
+        pk = resp.data["data"]["pk"]
+        resp = auth_client.patch(f"{POLICY_URL}/{pk}", {"ip_ranges": "garbage"}, format="json")
+        assert resp.data["code"] != 1000, resp.data
+        assert "garbage" in str(resp.data["detail"]), resp.data
+        resp = auth_client.patch(f"{POLICY_URL}/{pk}", {"ip_ranges": "10.0.0.0/24"}, format="json")
+        assert resp.data["code"] == 1000, resp.data
+
+    def test_saved_policy_runtime_matching_unchanged(self, auth_client):
+        """保存合法策略后，运行时命中/不命中行为与校验前一致（含带空格的历史写法）"""
+        resp = self._create(
+            auth_client,
+            " 192.168.0.0/24 \n\n10.1.1.1-10.1.1.20\n2001:db8:1a:1110::/64\n2001:db8::1-2001:db8::ff",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        policy = LoginAccessPolicy.objects.get(pk=resp.data["data"]["pk"])
+        assert match_ip(policy, "192.168.0.10") is True
+        assert match_ip(policy, "10.1.1.15") is True
+        assert match_ip(policy, "2001:db8:1a:1110::1") is True
+        assert match_ip(policy, "2001:db8::50") is True
+        assert match_ip(policy, "8.8.8.8") is False
+        assert match_ip(policy, "2001:db8:1a:1111::1") is False
+        # 端到端：预演按保存后的策略判定
+        resp = auth_client.post(PREVIEW_URL, {"ip": "192.168.0.10"}, format="json")
+        assert resp.data["data"]["matched"] is True, resp.data
+        assert resp.data["data"]["action"] == "reject"
+        resp = auth_client.post(PREVIEW_URL, {"ip": "8.8.8.8"}, format="json")
+        assert resp.data["data"]["matched"] is False, resp.data
+
+
 class TestBuiltinDefaultPolicies:
     """内置默认登录策略：新装即具备基础安全策略，且不得把任何人锁在门外。
 

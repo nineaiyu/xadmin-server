@@ -549,6 +549,39 @@ def test_batch_active_toggles_and_invalidates_cache(superuser):
     assert second.is_active is True
 
 
+def test_batch_active_single_update_keeps_audit_fields(superuser):
+    """单条 UPDATE 落库：updated_time/modifier 显式随行（等价逐行 save 的审计语义）。"""
+    cache.clear()
+    parent = DataDict.objects.create(code="ba_audit", label="批量审计")
+    item = DataDict.objects.create(parent=parent, code="a", label="A", value="a")
+    before_updated = item.updated_time
+    assert len(get_dict_items("ba_audit")) == 1
+
+    response = _call("batch_active", superuser, method="post", data={"pks": [str(item.pk)], "is_active": False})
+    assert response.data["code"] == 1000
+    item.refresh_from_db()
+    assert item.is_active is False
+    assert item.modifier_id == superuser.pk
+    assert item.updated_time > before_updated
+    # update 绕过信号，缓存由 action 手动失效：消费端立即拿不到停用项
+    assert get_dict_items("ba_audit") == []
+
+
+def test_batch_active_on_type_invalidates_children_cache(superuser):
+    """类型行启停决定其字典项对消费端是否可见：受影响缓存须全量失效。"""
+    cache.clear()
+    parent = DataDict.objects.create(code="ba_type_toggle", label="类型启停")
+    DataDict.objects.create(parent=parent, code="a", label="A", value="a")
+    assert len(get_dict_items("ba_type_toggle")) == 1
+
+    response = _call("batch_active", superuser, method="post", data={"pks": [str(parent.pk)], "is_active": False})
+    assert response.data["code"] == 1000
+    parent.refresh_from_db()
+    assert parent.is_active is False
+    # 消费端过滤 parent__is_active=True：类型停用后其字典项立即不可见
+    assert get_dict_items("ba_type_toggle") == []
+
+
 def test_move_swaps_sibling_sort(superuser):
     cache.clear()
     parent = DataDict.objects.create(code="move_type", label="排序类型")

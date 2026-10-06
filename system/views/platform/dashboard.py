@@ -16,18 +16,20 @@ from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
 from audit.services import LoginLogSerializer, OperationLog, UserLoginLog
-from common.base.magic import cache_response
+from common.base.magic import MagicCacheData, cache_response
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from identity.services import UserInfo
 
+# 全量计数的独立缓存窗口（秒）：登录日志等大表 COUNT(*) 代价随存量线性上升，
+# 而卡片数值口径（累计总数）变化缓慢，趋势 results/percent 仍随响应缓存 60 秒刷新
+TOTAL_COUNT_CACHE_TIMEOUT = 600
 
-def trend_info(queryset, limit_day=30, total_count=True):
-    """按天聚合趋势数据。
 
-    :param total_count: True 返回整表总数；False 只统计趋势窗口内的数量。
-        日志类大表（OperationLog）全表 COUNT 代价随数据增长线性上升，
-        而前端该卡片并不使用 count 字段，故改为窗口内计数。
+def trend_points(queryset, limit_day=30):
+    """按天聚合趋势点与环比增长率，返回 (results, percent, 趋势窗口 queryset)。
+
+    窗口 queryset 一并返回：调用方按需做窗口内计数（日志类大表避免无谓的全表 COUNT）。
     """
     # 必须使用本地时间：TruncDay 按 TIME_ZONE 分桶，而 strftime 是朴素格式化，
     # 直接用 timezone.now()（UTC）会导致日期标签与聚合结果整体错位一天
@@ -53,7 +55,27 @@ def trend_info(queryset, limit_day=30, total_count=True):
         percent = round(100 * (x - y) / y, 2) if y else (100.0 if x else 0.0)
     else:
         percent = 0
+    return results, percent, window_queryset
 
+
+@MagicCacheData.make_cache(timeout=TOTAL_COUNT_CACHE_TIMEOUT, key_func=lambda scope_key, queryset: scope_key)
+def cached_total_count(scope_key, queryset):
+    """全量计数走数据缓存（走既有 MagicCacheData 基建，单飞 + 占位保护）。
+
+    scope_key 为用户主键：统计 queryset 经默认数据权限过滤（非超管按授权收敛、
+    无授权返回空集），计数随用户不同，缓存键必须携带用户维度。
+    """
+    return queryset.count()
+
+
+def trend_info(queryset, limit_day=30, total_count=True):
+    """按天聚合趋势数据。
+
+    :param total_count: True 返回整表总数；False 只统计趋势窗口内的数量。
+        日志类大表（OperationLog）全表 COUNT 代价随数据增长线性上升，
+        而前端该卡片并不使用 count 字段，故改为窗口内计数。
+    """
+    results, percent, window_queryset = trend_points(queryset, limit_day)
     return results, percent, queryset.count() if total_count else window_queryset.count()
 
 
@@ -89,6 +111,8 @@ class DashboardViewSet(GenericViewSet):
     dashboard_cache_timeout = 60
 
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        # 统计 queryset 经默认数据权限过滤（非超管按授权收敛、无授权返回空集），
+        # 结果随用户不同——缓存键必须携带用户维度，否则各用户共享同一份统计
         func_name = f"{view_instance.__class__.__name__}_{view_method.__name__}"
         return f"{func_name}_{request.user.pk}"
 
@@ -97,30 +121,33 @@ class DashboardViewSet(GenericViewSet):
     @cache_response(timeout=60, key_func="get_cache_key")
     def user_login_total(self, request, *args, **kwargs):
         """{cls}-用户登录"""
-        results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7)
-        return ApiResponse(results=results, percent=percent, count=count)
+        queryset = self.filter_queryset(self.get_queryset())
+        results, percent, _ = trend_points(queryset, 7)
+        # count 口径不变（累计登录总数），仅走独立数据缓存避免全表 COUNT 高频回源
+        return ApiResponse(results=results, percent=percent, count=cached_total_count(request.user.pk, queryset))
 
     @extend_schema(responses=get_schema_response())
     @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-total")
     @cache_response(timeout=60, key_func="get_cache_key")
     def user_total(self, request, *args, **kwargs):
         """{cls}-用户数量"""
-        results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7)
-        return ApiResponse(results=results, percent=percent, count=count)
+        queryset = self.filter_queryset(self.get_queryset())
+        results, percent, _ = trend_points(queryset, 7)
+        return ApiResponse(results=results, percent=percent, count=cached_total_count(request.user.pk, queryset))
 
     @extend_schema(responses=get_schema_response(False))
     @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-registered-trend")
     @cache_response(timeout=60, key_func="get_cache_key")
     def user_registered_trend(self, request, *args, **kwargs):
         """{cls}-注册报表"""
-        return ApiResponse(data=trend_info(self.filter_queryset(self.get_queryset()))[0])
+        return ApiResponse(data=trend_points(self.filter_queryset(self.get_queryset()))[0])
 
     @extend_schema(responses=get_schema_response(False))
     @action(methods=["GET"], detail=False, url_path="user-login-trend")
     @cache_response(timeout=60, key_func="get_cache_key")
     def user_login_trend(self, request, *args, **kwargs):
         """{cls}-登录报表"""
-        return ApiResponse(data=trend_info(self.filter_queryset(self.get_queryset()))[0])
+        return ApiResponse(data=trend_points(self.filter_queryset(self.get_queryset()))[0])
 
     @extend_schema(responses=get_schema_response())
     @action(methods=["GET"], detail=False, queryset=OperationLog.objects.all(), url_path="today-operate-total")

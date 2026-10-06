@@ -1631,8 +1631,12 @@ msgstr "is_active is required"
 msgid "Operation successful. Updated {} data"
 msgstr ""
 
-#: ai/views/knowledge.py:162
-msgid "Repository documents synced"
+#: ai/views/knowledge.py:160
+msgid "A repository sync is already running"
+msgstr ""
+
+#: ai/views/knowledge.py:174
+msgid "Repository sync task submitted"
 msgstr ""
 
 #: ai/views/knowledge.py:198
@@ -7069,7 +7073,7 @@ msgstr ""
 msgid "Reset password captcha"
 msgstr ""
 
-#: settings/serializers/security.py:205 settings/serializers/security.py:245
+#: settings/serializers/security.py:205
 #: settings/serializers/security.py:271
 msgid "Enable captcha to prevent robot reset password"
 msgstr ""
@@ -11248,4 +11252,188 @@ msgstr ""
 
 #: approval/serializers/approval_flow.py:317
 msgid "The flow was modified by someone else, please refresh and retry"
+msgstr ""
+
+#: system/views/platform/modules.py
+msgid "Another module configuration save is in progress, please try again later"
+msgstr ""
+
+#: system/serializers/config.py
+msgid "Config value for {} must be an integer"
+msgstr ""
+
+#: system/serializers/config.py
+msgid "Config value for {} must be a number"
+msgstr ""
+
+#: system/serializers/config.py
+msgid "Config value for {} must be a boolean"
+msgstr ""
+
+#: system/serializers/config.py
+msgid "Config value for {} must be a string"
+msgstr ""
+
+#: system/serializers/config.py
+msgid "Config value for {} must be a JSON array"
+msgstr ""
+
+#: system/serializers/config.py
+msgid "Config value for {} must be a JSON object"
+msgstr ""
+
+#: notifications/serializers/message.py
+msgid "Parameter error. System notification cannot be created"
+msgstr ""
+
+#: notifications/serializers/message.py
+msgid "The attachments must be a list of file paths"
+msgstr ""
+
+#: settings/views/sms.py
+msgid "SMS test failed, please check the SMS configuration"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "Local accounts first"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "Directory first"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "Deactivate account"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "Move to recycle bin"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "Keep untouched"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "LDAP search filter; empty falls back to (objectClass=person)"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "e.g. sAMAccountName / uid; empty falls back to sAMAccountName"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "e.g. cn / displayName; empty falls back to cn"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "e.g. mail; empty falls back to mail"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "e.g. telephoneNumber / mobile; empty falls back to telephoneNumber"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "Base DN for department (OU) search; empty disables department sync"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "Directory attribute holding group membership (AD default: memberOf); empty disables group to role mapping"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "Map directory group DN/CN (case-insensitive) to platform role code; empty disables the mapping"
+msgstr ""
+
+#: settings/serializers/ldap.py
+msgid "Encrypted at rest; never returned by the API; submit empty to keep the current one"
+msgstr ""
+
+#: identity/serializers/security.py
+msgid "Invalid IP range entry: `{}`, each line must be a single IP address, a CIDR (e.g. 192.168.1.0/24), an IP range (e.g. 10.1.1.1-10.1.1.20) or *"
+msgstr ""
+
+#: identity/serializers/security.py
+msgid "Invalid IP range entry: `{}`, the start IP must not be greater than the end IP"
+msgstr ""
+
+#: identity/serializers/security.py
+msgid "Invalid IP range entry: `{}`, the start and end IP must be of the same IP version"
+msgstr ""
+
+#: audit/serializers/mask.py
+#, python-format
+msgid "Invalid custom regex: %(pattern)s (%(reason)s)"
+msgstr ""
+
+#: identity/views/open/open_oauth.py
+msgid "This action only accepts JSON requests"
+msgstr ""
+
+#: identity/serializers/user.py
+msgid "Password decryption failed, please refresh the page and try again"
+msgstr ""
+
+#: settings/serializers/security.py
+msgid "Enable captcha to prevent robot bind email"
+msgstr ""
+
+#: identity/views/admin/user.py
+msgid "Password reset successful"
+msgstr ""
+
+#: identity/views/admin/user.py
+msgid "Your password has been reset by an administrator"
+msgstr ""
+
+#: system/views/platform/modules.py
+msgid "Core modules only (minimal base)"
+msgstr ""
+
+#: system/views/platform/modules.py
+msgid "Core + standard modules (recommended for secondary development)"
+msgstr ""
+
+#: system/views/platform/modules.py
+msgid "All modules (default)"
+msgstr ""
+
+#: ai/views/observability.py
+msgid "AI document Q&A"
+msgstr ""
+
+#: ai/views/observability.py
+msgid "AI NL query"
+msgstr ""
+
+#: ai/views/observability.py
+msgid "AI restricted action"
+msgstr ""
+
+#: demo/services.py
+msgid "This book is already under approval"
+msgstr ""
+
+#: demo/services.py
+msgid "This book is already on shelf"
+msgstr ""
+
+#: demo/services.py
+#, python-format
+msgid "No active on-shelf approval flow found (code: %(code)s), please run seed_demo_book first"
+msgstr ""
+
+#: demo/services.py
+#, python-format
+msgid "Book on-shelf: %(name)s"
+msgstr ""
+
+#: demo/services.py
+msgid "On-shelf approval submitted"
+msgstr ""
+
+#: demo/views.py
+#, python-format
+msgid "%(name)s push succeeded"
 msgstr ""

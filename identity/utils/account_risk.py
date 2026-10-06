@@ -16,6 +16,7 @@
 """
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -142,54 +143,82 @@ def _collect_risks(now):
 
 
 def scan_account_risks(operator=None) -> dict:
-    """执行一次巡检（幂等），返回 {"created", "updated", "resolved", "total"}。"""
+    """执行一次巡检（幂等），返回 {"created", "updated", "resolved", "total"}。
+
+    写入侧批量落库：存量行一次取回、按状态分流后 bulk_create / bulk_update，
+    自动解除一次 queryset update——避免用户量大时「逐风险项 SELECT + 逐行写」
+    的 N 次往返把同步请求拖长（巡检语义与逐行处理完全一致）。
+    """
     from approval.utils.approval.display import user_display
     from identity.models import AccountRisk
 
     now = timezone.now()
     items = _collect_risks(now)
-    seen = set()
-    created = updated = 0
+    current = {}
     for item in items:
         user = item["user"]
-        seen.add((user.pk if user else None, item["risk_type"]))
-        row = AccountRisk.objects.filter(user=user, risk_type=item["risk_type"]).first()
-        fields = {
-            "level": item["level"],
-            "detail": item["detail"],
-            "user_display": user_display(user) if user else str(_("Global")),
-        }
+        current[(user.pk if user else None, item["risk_type"])] = item
+
+    existing = {}
+    if current:
+        user_pks = {pk for pk, _ in current if pk is not None}
+        risk_types = {risk_type for _, risk_type in current}
+        rows = AccountRisk.objects.filter(Q(user_id__in=user_pks) | Q(user_id__isnull=True), risk_type__in=risk_types)
+        existing = {(row.user_id, row.risk_type): row for row in rows}
+
+    to_create, refreshed, revived = [], [], []
+    for (user_id, risk_type), item in current.items():
+        row = existing.get((user_id, risk_type))
+        user = item["user"]
         if row is None:
-            AccountRisk.objects.create(user=user, risk_type=item["risk_type"], **fields)
-            created += 1
+            to_create.append(
+                AccountRisk(
+                    user=user,
+                    risk_type=risk_type,
+                    level=item["level"],
+                    detail=item["detail"],
+                    user_display=user_display(user) if user else str(_("Global")),
+                )
+            )
             continue
         if row.status == AccountRisk.Status.IGNORED:
             # 人工豁免：保持不打扰
             continue
+        row.level = item["level"]
+        row.detail = item["detail"]
+        row.user_display = user_display(user) if user else str(_("Global"))
+        row.updated_time = now
         if row.status == AccountRisk.Status.RESOLVED:
             # 风险复现：重新置为待处理
-            for key, value in fields.items():
-                setattr(row, key, value)
             row.status = AccountRisk.Status.PENDING
             row.remark = ""
             row.handled_by = None
             row.handled_at = None
-            row.save(update_fields=[*fields, "status", "remark", "handled_by", "handled_at", "updated_time"])
-            updated += 1
-            continue
-        for key, value in fields.items():
-            setattr(row, key, value)
-        row.save(update_fields=[*fields, "updated_time"])
-        updated += 1
+            revived.append(row)
+        else:
+            refreshed.append(row)
+    if to_create:
+        AccountRisk.objects.bulk_create(to_create, batch_size=500)
+    if refreshed:
+        AccountRisk.objects.bulk_update(refreshed, ["level", "detail", "user_display", "updated_time"], batch_size=500)
+    if revived:
+        AccountRisk.objects.bulk_update(
+            revived,
+            ["level", "detail", "user_display", "status", "remark", "handled_by", "handled_at", "updated_time"],
+            batch_size=500,
+        )
+    created, updated = len(to_create), len(refreshed) + len(revived)
 
     resolved = 0
-    for row in AccountRisk.objects.filter(status=AccountRisk.Status.PENDING):
-        if (row.user_id, row.risk_type) not in seen:
-            row.status = AccountRisk.Status.RESOLVED
-            row.remark = str(_("Automatically resolved (risk no longer detected)"))[:255]
-            row.handled_at = now
-            row.save(update_fields=["status", "remark", "handled_at", "updated_time"])
-            resolved += 1
+    pending = AccountRisk.objects.filter(status=AccountRisk.Status.PENDING).values_list("pk", "user_id", "risk_type")
+    stale_pks = [pk for pk, user_id, risk_type in pending if (user_id, risk_type) not in current]
+    for start in range(0, len(stale_pks), 500):
+        resolved += AccountRisk.objects.filter(pk__in=stale_pks[start : start + 500]).update(
+            status=AccountRisk.Status.RESOLVED,
+            remark=str(_("Automatically resolved (risk no longer detected)"))[:255],
+            handled_at=now,
+            updated_time=now,
+        )
     result = {"created": created, "updated": updated, "resolved": resolved, "total": len(items)}
     logger.info("account risk scan: %s (operator=%s)", result, getattr(operator, "username", None))
     return result

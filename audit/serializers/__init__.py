@@ -2,7 +2,13 @@
 # -*- coding:utf-8 -*-
 """audit 域序列化器。"""
 
-from .log import LoginLogSerializer, OperationLogSerializer, UserLoginLogSerializer
+from .log import LoginLogSerializer, OperationLogListSerializer, OperationLogSerializer, UserLoginLogSerializer
 from .mask import DataMaskRuleSerializer
 
-__all__ = ["DataMaskRuleSerializer", "LoginLogSerializer", "OperationLogSerializer", "UserLoginLogSerializer"]
+__all__ = [
+    "DataMaskRuleSerializer",
+    "LoginLogSerializer",
+    "OperationLogListSerializer",
+    "OperationLogSerializer",
+    "UserLoginLogSerializer",
+]

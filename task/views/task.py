@@ -64,7 +64,9 @@ class TaskExecutionFilter(filters.FilterSet):
             return queryset.filter(pk__in=exports)
         if value == TYPE_IMPORT:
             return queryset.filter(pk__in=imports)
-        return queryset.exclude(pk__in=exports).exclude(pk__in=imports)
+        # 非产物记录 = 两张产物表 pk 并集的补集：合并为单个 IN 子查询，
+        # 避免逐表 anti-join（union 臂上以空 order_by 去掉模型默认排序）
+        return queryset.exclude(pk__in=exports.order_by().union(imports.order_by()))
 
 
 class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
@@ -85,59 +87,60 @@ class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
     extra_filter_class = [ControlledLookupFilterBackend]
 
     def get_queryset(self):
-        """列表带出产物信息（其它动作保持原查询，避免注解影响统计与单条操作）。"""
+        """列表带出产物信息（其它动作保持原查询，避免注解影响统计与单条操作）。
+
+        导出/导入记录与执行历史共用主键（pk = celery task_id），一行至多命中
+        一张产物表：两表的展示字段合并为单个 JSON 注解（COALESCE 先导出后导入，
+        取值顺序与逐字段 Coalesce 一致），行级相关子查询由每行 8 个收敛为
+        COALESCE 短路求值的 2 个；产物文件有无仍按存在性 Case 判定——该写法
+        语义是对两张产物表取或，无法并入单表 JSON，其子查询与行无关、整查询
+        只求值一次，不构成行级放大。
+        """
         queryset = super().get_queryset()
         if self.action != "list":
             return queryset
         from django.db.models import (
             BooleanField,
             Case,
-            CharField,
-            IntegerField,
+            F,
+            JSONField,
             OuterRef,
             Subquery,
-            TextField,
             Value,
             When,
         )
-        from django.db.models.functions import Coalesce
+        from django.db.models.functions import Coalesce, JSONObject
 
         from task.models.export import ExportRecord
         from task.models.import_ import ImportRecord
         from task.utils.task_center import TYPE_EXPORT, TYPE_IMPORT
 
-        export = ExportRecord.objects.filter(pk=OuterRef("pk"))
-        imported = ImportRecord.objects.filter(pk=OuterRef("pk"))
+        # 同主键探测至多命中一行，order_by() 去掉模型默认排序（省去每行探测的排序节点）
+        export = (
+            ExportRecord.objects.filter(pk=OuterRef("pk"))
+            .annotate(
+                product=JSONObject(
+                    type=Value(TYPE_EXPORT), name=F("name"), progress=F("progress"), stage=F("stage"), error=F("error")
+                )
+            )
+            .order_by()
+            .values("product")
+        )
+        imported = (
+            ImportRecord.objects.filter(pk=OuterRef("pk"))
+            .annotate(
+                product=JSONObject(
+                    type=Value(TYPE_IMPORT), name=F("name"), progress=F("progress"), stage=F("stage"), error=F("error")
+                )
+            )
+            .order_by()
+            .values("product")
+        )
         return queryset.annotate(
-            product_type=Case(
-                When(pk__in=ExportRecord.objects.values("pk"), then=Value(TYPE_EXPORT)),
-                When(pk__in=ImportRecord.objects.values("pk"), then=Value(TYPE_IMPORT)),
-                default=Value(""),
-                output_field=CharField(),
-            ),
-            product_name=Coalesce(
-                Subquery(export.values("name")[:1]),
-                Subquery(imported.values("name")[:1]),
-                Value(""),
-                output_field=CharField(),
-            ),
-            product_progress=Coalesce(
-                Subquery(export.values("progress")[:1]),
-                Subquery(imported.values("progress")[:1]),
-                Value(0),
-                output_field=IntegerField(),
-            ),
-            product_stage=Coalesce(
-                Subquery(export.values("stage")[:1]),
-                Subquery(imported.values("stage")[:1]),
-                Value(""),
-                output_field=CharField(),
-            ),
-            product_error=Coalesce(
-                Subquery(export.values("error")[:1]),
-                Subquery(imported.values("error")[:1]),
-                Value(""),
-                output_field=TextField(),
+            product_data=Coalesce(
+                Subquery(export, output_field=JSONField()),
+                Subquery(imported, output_field=JSONField()),
+                output_field=JSONField(),
             ),
             # 是否有产物文件：按存在性判定（导出看 file、导入看错误报告），
             # 不下发 UUID 本体——避免 sqlite 下 UUID 子查询的类型转换边界

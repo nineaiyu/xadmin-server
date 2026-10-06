@@ -7,7 +7,9 @@
 
 import base64
 import hashlib
+import json
 import secrets
+from urllib.parse import urlencode
 
 import pytest
 from rest_framework.test import APIClient
@@ -194,6 +196,54 @@ class TestAuthorizeFlow:
         second = _exchange(application, approved["code"])
         assert second.status_code == 400
         assert second.data["data"]["error"] == "invalid_grant"
+
+
+class TestApproveRequestContract:
+    """同意动作仅接受 JSON 请求体：拦截跨站表单 POST 借 Cookie 冒用登录态授权。"""
+
+    def _approve_payload(self, application):
+        payload = _authorize_params(application)
+        payload["approved"] = True
+        return payload
+
+    def test_approve_rejects_urlencoded_form_post(self, auth_client):
+        """HTML 表单跨站提交的典型形态（urlencoded）被拒，且不产生授权审计。"""
+        application = _create_application(auth_client)
+        payload = self._approve_payload(application)
+        body = urlencode({k: ("true" if v is True else v) for k, v in payload.items()})
+        resp = auth_client.post(f"{OAUTH_URL}/approve", body, content_type="application/x-www-form-urlencoded")
+        assert resp.status_code == 403, resp.data
+        assert resp.data["data"]["error"] == "invalid_request"
+        assert not OperationLog.objects.filter(module="OAuth", response_result="approved").exists()
+
+    def test_approve_rejects_text_plain_json_smuggle(self, auth_client):
+        """text/plain 伪装 JSON 的免预检跨站请求同样被拒。"""
+        application = _create_application(auth_client)
+        resp = auth_client.post(
+            f"{OAUTH_URL}/approve", json.dumps(self._approve_payload(application)), content_type="text/plain"
+        )
+        assert resp.status_code == 403, resp.data
+        assert resp.data["data"]["error"] == "invalid_request"
+
+    def test_approve_rejects_multipart_form_post(self, auth_client):
+        """multipart 表单（HTML 表单 enctype 可产生）与 urlencoded 同口径拒绝。"""
+        application = _create_application(auth_client)
+        resp = auth_client.post(f"{OAUTH_URL}/approve", self._approve_payload(application))
+        assert resp.status_code == 403, resp.data
+        assert resp.data["data"]["error"] == "invalid_request"
+        assert not OperationLog.objects.filter(module="OAuth", response_result="approved").exists()
+
+    def test_approve_accepts_json_with_charset(self, auth_client):
+        """带 charset 参数的 JSON 仍按 JSON 放行（部分客户端会附加编码参数）。"""
+        application = _create_application(auth_client)
+        resp = auth_client.post(
+            f"{OAUTH_URL}/approve",
+            json.dumps(self._approve_payload(application)),
+            content_type="application/json; charset=utf-8",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["code"], resp.data
+        assert OperationLog.objects.filter(module="OAuth", response_result="approved").exists()
 
 
 class TestRefreshAndRevoke:

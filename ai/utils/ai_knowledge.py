@@ -65,25 +65,25 @@ def _chunk_markdown(text: str) -> list:
     return chunks
 
 
-def rebuild_chunks(doc) -> int:
-    """按文档全文重建其全部分块（先删后插），返回块数。
-
-    向量保留：正文未变的块（``content_hash`` 相同）沿用既有 embedding——重建会
-    重新分配块主键，若不保留则每次仓库同步/重传都会让向量全部失效，重算即
-    embedding API 成本；陈旧块（正文变更）不带向量，由显式构建补齐。
-    """
+def _preserved_vectors(paths: list) -> dict:
+    """读取若干文档的既有向量并按正文 hash 去重保留（正文未变的块重建不失效）。"""
     from ai.models.ai import AiKnowledgeChunk
 
     preserved: dict[str, tuple] = {}
-    existing = AiKnowledgeChunk.objects.filter(source_path=doc.path).exclude(embedding__isnull=True)
+    existing = AiKnowledgeChunk.objects.filter(source_path__in=paths).exclude(embedding__isnull=True)
     for content_hash, embedding, embedding_model, embedding_hash, embedding_dim in existing.values_list(
         "content_hash", "embedding", "embedding_model", "embedding_hash", "embedding_dim"
     ):
         preserved.setdefault(content_hash, (embedding, embedding_model, embedding_hash, embedding_dim))
-    AiKnowledgeChunk.objects.filter(source_path=doc.path).delete()
-    chunks = _chunk_markdown(doc.content or "")
+    return preserved
+
+
+def _chunk_rows(doc, preserved: dict) -> list:
+    """构造一个文档的全部分块行（正文 hash + 可保留向量），只建行不落库。"""
+    from ai.models.ai import AiKnowledgeChunk
+
     rows = []
-    for index, chunk in enumerate(chunks):
+    for index, chunk in enumerate(_chunk_markdown(doc.content or "")):
         content_hash = hashlib.sha256(chunk.encode("utf-8")).hexdigest()
         vector = preserved.get(content_hash)
         rows.append(
@@ -105,18 +105,61 @@ def rebuild_chunks(doc) -> int:
                 ),
             )
         )
+    return rows
+
+
+def rebuild_chunks(doc) -> int:
+    """按文档全文重建其全部分块（先删后插），返回块数。
+
+    向量保留：正文未变的块（``content_hash`` 相同）沿用既有 embedding——重建会
+    重新分配块主键，若不保留则每次仓库同步/重传都会让向量全部失效，重算即
+    embedding API 成本；陈旧块（正文变更）不带向量，由显式构建补齐。
+    """
+    from ai.models.ai import AiKnowledgeChunk
+
+    preserved = _preserved_vectors([doc.path])
+    AiKnowledgeChunk.objects.filter(source_path=doc.path).delete()
+    rows = _chunk_rows(doc, preserved)
     AiKnowledgeChunk.objects.bulk_create(rows)
     # 块集合变化：清索引元数据签名缓存（本进程立即生效，多 worker 由短 TTL 兜底）
     invalidate_index_meta()
-    return len(chunks)
+    return len(rows)
+
+
+def rebuild_chunks_bulk(documents) -> dict:
+    """批量重建多文档分块（先删后插），返回 ``{path: 块数}``。
+
+    与逐文档 ``rebuild_chunks`` 语义一致（正文未变的块按 hash 沿用既有向量），
+    差异只在把 N 次删除/插入/索引失效合并为每表一次——批量启停场景避免
+    重复扫盘与重复清缓存。
+    """
+    from ai.models.ai import AiKnowledgeChunk
+
+    paths = [doc.path for doc in documents]
+    preserved = _preserved_vectors(paths)
+    AiKnowledgeChunk.objects.filter(source_path__in=paths).delete()
+    counts: dict = {}
+    rows = []
+    for doc in documents:
+        doc_rows = _chunk_rows(doc, preserved)
+        counts[doc.path] = len(doc_rows)
+        rows.extend(doc_rows)
+    AiKnowledgeChunk.objects.bulk_create(rows)
+    invalidate_index_meta()
+    return counts
+
+
+def remove_chunks_bulk(paths) -> None:
+    """批量移除多文档的全部分块（停用/删除时调用，检索索引即块集合）。"""
+    from ai.models.ai import AiKnowledgeChunk
+
+    AiKnowledgeChunk.objects.filter(source_path__in=list(paths)).delete()
+    invalidate_index_meta()
 
 
 def remove_chunks(path: str) -> None:
     """移除某文档的全部分块（停用/删除时调用，检索索引即块集合）。"""
-    from ai.models.ai import AiKnowledgeChunk
-
-    AiKnowledgeChunk.objects.filter(source_path=path).delete()
-    invalidate_index_meta()
+    remove_chunks_bulk([path])
 
 
 def upsert_upload_document(name: str, content: str, creator=None):
@@ -165,6 +208,36 @@ def set_document_active(doc, active: bool) -> None:
     from ai.utils.ai_embeddings import schedule_auto_rebuild
 
     schedule_auto_rebuild(doc)
+
+
+def set_documents_active(documents, active: bool) -> None:
+    """批量启停（逐条口径的合并版）：停用一次性移除全部分块，启用一次性重建全部分块。
+
+    删除/重建/索引失效各合并为一次；落库字段与单文档口径一致
+    （is_active/chunk_count/synced_at，synced_at 置为当前时刻保持列表置顶语义）。
+    向量补齐至多调度一次全量增量构建（跨多文档的待建块由一个任务吃掉，不逐文档排队）；
+    停用路径无块可建，不调度。
+    """
+    from ai.models.ai import AiKnowledgeDocument
+
+    documents = list(documents)
+    if not documents:
+        return
+    if active:
+        counts = rebuild_chunks_bulk(documents)
+    else:
+        remove_chunks_bulk([doc.path for doc in documents])
+        counts = {}
+    synced_at = timezone.now()
+    for doc in documents:
+        doc.is_active = bool(active)
+        doc.chunk_count = counts.get(doc.path, 0)
+        doc.synced_at = synced_at
+    AiKnowledgeDocument.objects.bulk_update(documents, ["is_active", "chunk_count", "synced_at"])
+    if active:
+        from ai.utils.ai_embeddings import schedule_auto_rebuild
+
+        schedule_auto_rebuild(None)
 
 
 def sync_knowledge() -> dict:

@@ -11,6 +11,7 @@ from datetime import timedelta
 
 import pytest
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from audit.models import OperationLog
 from identity.models import UserInfo
@@ -81,7 +82,8 @@ class TestAiMetrics:
         assert modules.get("AI:nl_query", 0) == base_nl + 1
 
         labels = {row["module"]: row["label"] for row in data["by_module"]}
-        assert labels["AI:ask"] == "文档问答"
+        # 文案断言与产文同源取 gettext（本机装 .mo 为中文、CI 无 .mo 为英文源串）
+        assert labels["AI:ask"] == _("AI document Q&A")
 
         top = {row["username"]: row["count"] for row in data["top_users"]}
         assert top.get("ai_metric_admin", 0) >= 2
@@ -90,7 +92,7 @@ class TestAiMetrics:
         dates = {row["date"] for row in data["by_day"]}
         assert len(dates) >= 2  # 本次 seed 覆盖今天与昨天
 
-        wide, _ = self._query(metrics_client, days=70)
+        wide, _wide_modules = self._query(metrics_client, days=70)
         assert wide["total"] == data["total"] + 1  # 40 天前的记录只计入宽窗口
 
     def test_days_param_clamped(self, metrics_client):

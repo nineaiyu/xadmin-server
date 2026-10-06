@@ -6,9 +6,7 @@
 # date : 9/15/2024
 
 from django_filters import rest_framework as filters
-from drf_spectacular.plumbing import build_basic_type, build_object_type
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiRequest, extend_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
 from common.core.filter import BaseFilterSet, PkMultipleFilter
@@ -19,7 +17,9 @@ from notifications.models import MessageContent, MessageUserRead
 from notifications.serializers.message import (
     AnnouncementSerializer,
     NoticeMessageSerializer,
+    NoticePublishSerializer,
     NoticeUserReadMessageSerializer,
+    NoticeUserReadStateSerializer,
 )
 
 
@@ -42,16 +42,16 @@ class NoticeMessageViewSet(RecycleBinAction, BaseModelSet):
     filterset_class = NoticeMessageFilter
 
     @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(properties={"publish": build_basic_type(OpenApiTypes.BOOL)}, required=["publish"])
-        ),
+        request=NoticePublishSerializer,
         responses=get_default_response_schema(),
     )
     @action(methods=["patch"], detail=True)
     def publish(self, request, *args, **kwargs):
         """修改{cls}状态"""
+        serializer = NoticePublishSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         instance: MessageContent = self.get_object()
-        instance.publish = request.data.get("publish")
+        instance.publish = serializer.validated_data["publish"]
         instance.modifier = request.user
         instance.save(update_fields=["publish", "modifier"])
         return ApiResponse()
@@ -87,17 +87,17 @@ class NoticeUserReadMessageViewSet(ListDeleteModelSet):
     filterset_class = NoticeUserReadMessageFilter
 
     @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(properties={"unread": build_basic_type(OpenApiTypes.BOOL)}, required=["unread"])
-        ),
+        request=NoticeUserReadStateSerializer,
         responses=get_default_response_schema(),
     )
     @action(methods=["patch"], detail=True)
     def state(self, request, *args, **kwargs):
         """修改{cls}状态"""
+        serializer = NoticeUserReadStateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         instance = self.get_object()
         if instance.notice.notice_type in MessageContent.get_user_choices():
-            instance.unread = request.data.get("unread", True)
+            instance.unread = serializer.validated_data["unread"]
             instance.modifier = request.user
             instance.save(update_fields=["unread", "modifier"])
         if instance.notice.notice_type in MessageContent.get_notice_choices():

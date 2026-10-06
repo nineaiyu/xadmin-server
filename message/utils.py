@@ -251,6 +251,23 @@ async def send_logout_msg(user_pk: str | int, channel_names: list[str] | None = 
 
 
 @async_to_sync
+async def batch_send_logout_msg(layers_by_user: dict):
+    """批量向多个用户的在线 channel 推送 logout 并退组。
+
+    入参为 ``get_online_users_layers`` 的返回（user_pk -> [channel]）；逐 channel
+    send + group_discard 与 ``send_logout_msg`` 同语义，仅把逐用户各一次的同步
+    桥接合并为整批一次（批量踢线的桥接开销从 O(用户数) 降到 O(1)）。
+    """
+    for user_pk, channel_names in layers_by_user.items():
+        if not channel_names:
+            continue
+        group_name = get_user_layer_group_name(user_pk)
+        for channel_name in channel_names:
+            await async_push_layer_message(channel_name, {"message_type": "logout"})
+            await channel_layer.group_discard(group_name, channel_name)
+
+
+@async_to_sync
 async def push_message(user_pk: str | int, message: dict, message_type="push_message"):
     return await async_push_message(user_pk, message, message_type)
 

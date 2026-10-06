@@ -10,6 +10,13 @@ pytestmark = pytest.mark.django_db
 DEPT_URL = "/api/system/dept"
 
 
+@pytest.fixture(autouse=True)
+def _plaintext_create_mode(settings):
+    """本文件建号用明文密码提交（导入/脚本等非浏览器客户端的形态），
+    属建号密码加密开关（SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED）关闭的明文模式。"""
+    settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False
+
+
 def _create_dept(auth_client, name="测试部门", code="test_dept", **kwargs):
     payload = {"name": name, "code": code}
     payload.update(kwargs)

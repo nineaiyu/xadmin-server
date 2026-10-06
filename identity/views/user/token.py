@@ -17,7 +17,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
 from common.core.modelset import BaseModelSet
-from common.core.response import ApiResponse
+from common.core.response import API_SUCCESS_CODE, ApiResponse
 from common.swagger.utils import get_default_response_schema
 from identity.models.token import PersonalAccessToken
 from identity.serializers.token import PersonalAccessTokenSerializer
@@ -25,8 +25,6 @@ from identity.utils.pat_scope import scope_options_for_user
 
 # 调用统计回看窗口（近 7 天）
 PAT_STATS_WINDOW_DAYS = 7
-# 业务成功码（ApiResponse 约定）：status_code != 1000 记为失败调用
-API_SUCCESS_CODE = 1000
 
 
 class PersonalAccessTokenFilter(dj_filters.FilterSet):

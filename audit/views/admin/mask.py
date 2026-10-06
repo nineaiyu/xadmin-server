@@ -10,7 +10,7 @@ from rest_framework.exceptions import ValidationError
 
 from audit.models.mask import DataMaskRule
 from audit.serializers.mask import DataMaskRuleSerializer
-from audit.utils.mask import apply_mask
+from audit.utils.mask import apply_mask, custom_pattern_error
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImportExportDataAction
 from common.core.response import ApiResponse
@@ -80,11 +80,17 @@ class DataMaskRuleViewSet(BaseModelSet, ImportExportDataAction):
         if rule.get("mask_type") and rule["mask_type"] not in DataMaskRule.MaskType.values:
             raise ValidationError(_("Invalid mask type"))
         values, truncated = collect_preview_values(request.data)
+        # 非法自定义正则沿用静默回退（apply_mask 返回原值），但显式标记出来供调用方提示
+        # 「该规则未生效」；标记挂在 data 顶层与 truncated 平级——预览单条规则，
+        # 非法性属于规则本身而非逐条样例。
+        pattern = rule.get("pattern") if rule.get("mask_type") == DataMaskRule.MaskType.CUSTOM else None
+        invalid_pattern = custom_pattern_error(pattern) is not None
         results = [{"input": value, "output": apply_mask(value, rule)} for value in values]
         return ApiResponse(
             data={
                 "result": results[0]["output"] if results else "",
                 "results": results,
                 "truncated": truncated,
+                "invalid_pattern": invalid_pattern,
             }
         )

@@ -18,6 +18,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.core.credentials import (
+    MASK,
     SENSITIVE_SETTING_KEYS,
     encryption_status,
     plaintext_sensitive_keys,
@@ -28,9 +29,6 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 AUDIT_MODULE = "system:credential"
-
-#: 掩码占位：只表达「已配置」，不含长度/前缀等可推断信息
-MASK = "••••••"
 
 #: 系统自生成、可原地重生的 SystemConfig 键（轮换 = 重新生成随机值后加密落库）
 ROTATABLE_SYSTEM_CONFIG_KEYS = ("SCIM_TOKEN", "BACKUP_ALERT_TOKEN", "OPS_ALERT_TOKEN")

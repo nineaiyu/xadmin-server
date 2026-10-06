@@ -105,11 +105,12 @@ def _render_workbook(report, user) -> tuple:
         ws.append([str(_("Name")), str(_("Value"))])
         rows = [[_excel_safe(item["name"]), _excel_safe(item["value"])] for item in result["series"]]
     else:
-        result = execute_dataset(report.dataset, user)
-        columns = design_export_columns(design, result["columns"])
+        # 明细行数上限随执行下推到 SQL（LIMIT），不再全量物化后在 Python 侧切片
         limit = design_table_limit(design)
+        result = execute_dataset(report.dataset, user, max_rows=limit)
+        columns = design_export_columns(design, result["columns"])
         ws.append(list(columns))
-        rows = [[_excel_safe(row.get(col)) for col in columns] for row in result["rows"][:limit]]
+        rows = [[_excel_safe(row.get(col)) for col in columns] for row in result["rows"]]
     for row in rows:
         ws.append(row)
 

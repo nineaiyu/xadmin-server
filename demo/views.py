@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 
@@ -73,7 +74,7 @@ class BookViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction):
 
         # 自定义一个请求为post的 push 路由行为，执行自定义操作， action装饰器有好多参数，可以查看源码自行分析
         instance = self.get_object()
-        return ApiResponse(detail=f"{instance.name} 推送成功")
+        return ApiResponse(detail=_("%(name)s push succeeded") % {"name": instance.name})
 
     @action(methods=["post"], detail=True)
     def submit(self, request, *args, **kwargs):

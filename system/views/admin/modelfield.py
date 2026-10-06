@@ -129,7 +129,10 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
         return ApiResponse(code=1001)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False)
+    @action(methods=["post"], detail=False)
     def sync(self, request, *args, **kwargs):
-        """同步{cls}的字段名"""
+        """同步{cls}的字段名。
+
+        全量同步有写副作用，只暴露 POST：GET 可被浏览器预取/代理重放误触发。
+        """
         return ApiResponse(data=sync_model_field())

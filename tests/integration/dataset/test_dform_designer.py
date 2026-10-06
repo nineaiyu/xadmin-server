@@ -126,6 +126,38 @@ class TestSchemaVersioning:
         assert DynamicForm.objects.get(pk=created["pk"]).schema_version == 1
 
 
+class TestListSchemaTrimming:
+    def test_list_reports_field_count_only(self, auth_client):
+        """列表行不回传 schema 全文：只带字段数元数据，详情仍取全文。"""
+        created = _create_form(auth_client, name="轻列表表单")
+        listed = auth_client.get(FORMS_URL)
+        row = next(item for item in listed.data["data"]["results"] if item["pk"] == created["pk"])
+        assert "schema" not in row
+        assert row["schema_fields_count"] == len(SCHEMA_V1["fields"])
+
+        detail = auth_client.get(f"{FORMS_URL}/{created['pk']}")
+        assert detail.data["code"] == 1000, detail.data
+        assert detail.data["data"]["schema"] == SCHEMA_V1
+
+    def test_template_list_reports_field_count(self, auth_client):
+        """模板列表（kind=templates）与表单列表同口径：不回传 schema 全文。"""
+        auth_client.post(
+            FORMS_URL,
+            {
+                "name": "模板-轻列表",
+                "is_template": True,
+                "is_active": False,
+                "schema": SCHEMA_V1,
+            },
+            format="json",
+        )
+        listed = auth_client.get(f"{FORMS_URL}?kind=templates")
+        rows = listed.data["data"]["results"]
+        assert len(rows) == 1
+        assert "schema" not in rows[0]
+        assert rows[0]["schema_fields_count"] == len(SCHEMA_V1["fields"])
+
+
 class TestSubmissionVersionAndLinkage:
     def test_submission_records_current_schema_version(self, auth_client):
         created = _create_form(auth_client, name="提交版本表单")

@@ -5,15 +5,18 @@
 1. 列表 unread 字段的查询数与页内消息条数解耦；
 2. 优化前后响应数据逐字段一致（unread / read_user_count）；
 3. read_message 固定 3 条 SQL，与 pks 数量无关；
-4. read_message 幂等且结果正确。
+4. read_message 幂等且结果正确；
+5. DEPT/ROLE/POST 目标人数与公告类已读人数的整页聚合（含软删除边界）。
 """
 
 import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
 
+from identity.models import DeptInfo, Post, UserInfo, UserRole
 from notifications.models import MessageContent, MessageUserRead
-from notifications.serializers.message import UserNoticeSerializer
+from notifications.serializers.message import NoticeMessageSerializer, UserNoticeSerializer
 from notifications.views.user_site_msg import UserSiteMessageViewSet
 
 pytestmark = pytest.mark.django_db
@@ -225,3 +228,154 @@ class TestNoticeMessageCountBatching:
 
         assert results["n-0"]["read_user_count"] == 1
         assert results["n-1"]["read_user_count"] == 0
+
+
+def _per_row_target_count_queries(ctx):
+    """筛出目标人数/已读人数的逐行 COUNT（含 notice_* 关联表且无 GROUP BY）。
+
+    整页聚合查询带 GROUP BY，逐行回表（回退路径或回归）则没有。
+    """
+    tables = ("notice_dept", "notice_role", "notice_post", "notice_user")
+    return [
+        q
+        for q in _business_queries(ctx)
+        if "COUNT(" in q["sql"].upper()
+        and "GROUP BY" not in q["sql"].upper()
+        and any(table in q["sql"] for table in tables)
+    ]
+
+
+@pytest.fixture
+def multi_type_page(db, normal_user):
+    """覆盖五类消息的计数口径：
+
+    - USER：1 名接收人且已读；NOTICE：无接收人（notice_user 口径为 0）；
+    - DEPT：目标部门 1 名在册用户，另 1 人属其它部门不计；
+    - ROLE：1 名用户持有目标角色（一人一角色，不涉及多角色重复计数）；
+    - POST：岗位持有人 2 人，其中停用用户不计。
+    """
+    dept = DeptInfo.objects.create(name="通知部", code="multi_type_dept_a")
+    other_dept = DeptInfo.objects.create(name="无关部", code="multi_type_dept_b")
+    role = UserRole.objects.create(name="通知角色", code="multi_type_role_a")
+    post = Post.objects.create(name="通知岗", code="multi_type_post_a")
+
+    dept_user = UserInfo.objects.create_user(username="multi_type_dept_user", password="Test@123456")
+    dept_user.dept = dept
+    dept_user.save(update_fields=["dept"])
+    outsider = UserInfo.objects.create_user(username="multi_type_outsider", password="Test@123456")
+    outsider.dept = other_dept
+    outsider.save(update_fields=["dept"])
+
+    role_user = UserInfo.objects.create_user(username="multi_type_role_user", password="Test@123456")
+    role_user.roles.add(role)
+
+    holder = UserInfo.objects.create_user(username="multi_type_post_holder", password="Test@123456")
+    holder.posts.add(post)
+    idle = UserInfo.objects.create_user(username="multi_type_post_idle", password="Test@123456", is_active=False)
+    idle.posts.add(post)
+
+    user_msg = MessageContent.objects.create(
+        title="mt-user", message="m", notice_type=MessageContent.NoticeChoices.USER
+    )
+    user_msg.notice_user.add(normal_user)
+    MessageUserRead.objects.filter(owner=normal_user, notice=user_msg).update(unread=False)
+    dept_msg = MessageContent.objects.create(
+        title="mt-dept", message="m", notice_type=MessageContent.NoticeChoices.DEPT
+    )
+    dept_msg.notice_dept.add(dept)
+    role_msg = MessageContent.objects.create(
+        title="mt-role", message="m", notice_type=MessageContent.NoticeChoices.ROLE
+    )
+    role_msg.notice_role.add(role)
+    post_msg = MessageContent.objects.create(
+        title="mt-post", message="m", notice_type=MessageContent.NoticeChoices.POST
+    )
+    post_msg.notice_post.add(post)
+    notice_msg = MessageContent.objects.create(
+        title="mt-notice", message="m", notice_type=MessageContent.NoticeChoices.NOTICE
+    )
+
+    return {
+        "user": user_msg,
+        "dept": dept_msg,
+        "role": role_msg,
+        "post": post_msg,
+        "notice": notice_msg,
+        "role_obj": role,
+        "post_obj": post,
+        "normal_user": normal_user,
+    }
+
+
+class TestMultiTypeCountBatching:
+    """DEPT/ROLE/POST 目标人数与公告类已读人数的整页聚合及口径边界。"""
+
+    def test_counts_values_match(self, auth_client, multi_type_page):
+        resp = auth_client.get(NOTICE_MSG_URL, {"page": 1, "size": 50, "page_size": 50})
+        assert resp.status_code == 200
+        results = {item["title"]: item for item in resp.data["data"]["results"]}
+
+        assert results["mt-user"]["user_count"] == 1
+        assert results["mt-user"]["read_user_count"] == 1
+        assert results["mt-dept"]["user_count"] == 1
+        assert results["mt-role"]["user_count"] == 1
+        assert results["mt-post"]["user_count"] == 1
+        # 公告类 read_user_count 口径即 notice_user 关联数：不直填接收人时为 0
+        assert results["mt-dept"]["read_user_count"] == 0
+        assert results["mt-role"]["read_user_count"] == 0
+        assert results["mt-post"]["read_user_count"] == 0
+        assert results["mt-notice"]["user_count"] == 0
+        assert results["mt-notice"]["read_user_count"] == 0
+
+    def test_counts_match_per_object_semantics(self, auth_client, multi_type_page):
+        """整页聚合结果与逐对象查询（单对象序列化路径）逐条一致。"""
+        resp = auth_client.get(NOTICE_MSG_URL, {"page": 1, "size": 50, "page_size": 50})
+        results = {item["title"]: item for item in resp.data["data"]["results"]}
+
+        for notice in (
+            multi_type_page["user"],
+            multi_type_page["dept"],
+            multi_type_page["role"],
+            multi_type_page["post"],
+            multi_type_page["notice"],
+        ):
+            serializer = NoticeMessageSerializer()
+            assert results[notice.title]["user_count"] == serializer.get_user_count(notice), notice.title
+            assert results[notice.title]["read_user_count"] == serializer.get_read_user_count(notice), notice.title
+
+    def test_counts_not_queried_per_row(self, auth_client, multi_type_page):
+        with CaptureQueriesContext(connection) as ctx:
+            resp = auth_client.get(NOTICE_MSG_URL, {"page": 1, "size": 50, "page_size": 50})
+        assert resp.status_code == 200
+        assert _per_row_target_count_queries(ctx) == []
+
+    def test_soft_deleted_scope_entities_excluded(self, auth_client, multi_type_page):
+        """软删除的角色/岗位/接收人与逐对象口径一致地不计入（join 侧显式过滤）。"""
+        page = multi_type_page
+        resp = auth_client.get(NOTICE_MSG_URL, {"page": 1, "size": 50, "page_size": 50})
+        results = {item["title"]: item for item in resp.data["data"]["results"]}
+        assert results["mt-role"]["user_count"] == 1
+        assert results["mt-post"]["user_count"] == 1
+        assert results["mt-user"]["read_user_count"] == 1
+
+        page["role_obj"].deleted_at = timezone.now()
+        page["role_obj"].save(update_fields=["deleted_at"])
+        page["post_obj"].deleted_at = timezone.now()
+        page["post_obj"].save(update_fields=["deleted_at"])
+        page["normal_user"].deleted_at = timezone.now()
+        page["normal_user"].save(update_fields=["deleted_at"])
+
+        resp = auth_client.get(NOTICE_MSG_URL, {"page": 1, "size": 50, "page_size": 50})
+        results = {item["title"]: item for item in resp.data["data"]["results"]}
+        assert results["mt-role"]["user_count"] == 0
+        assert results["mt-post"]["user_count"] == 0
+        assert results["mt-user"]["read_user_count"] == 0
+
+    def test_recycle_list_keeps_counts(self, auth_client, multi_type_page):
+        """回收站列表的软删除消息计数不归零（与逐对象查询同口径）。"""
+        multi_type_page["dept"].delete()
+
+        resp = auth_client.get(f"{NOTICE_MSG_URL}/recycle")
+        assert resp.status_code == 200
+        results = {item["title"]: item for item in resp.data["data"]["results"]}
+        assert results["mt-dept"]["user_count"] == 1

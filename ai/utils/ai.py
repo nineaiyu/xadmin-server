@@ -51,6 +51,7 @@ from ai.utils.ai_knowledge import (  # noqa: F401  (知识库文档管理拆至 
     rebuild_chunks,
     remove_chunks,
     set_document_active,
+    set_documents_active,
     sync_knowledge,
     upsert_upload_document,
 )

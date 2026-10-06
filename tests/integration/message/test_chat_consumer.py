@@ -2,8 +2,9 @@
 """聊天室 WS consumer（ChatNotify）集成测试。
 
 覆盖：准入（匿名 4401 / 无权限 4403 / 超管放行）、连接即下发未读快照、
-公共与私聊广播拓扑、未读推送、client_msg_id 幂等、撤回/已读上行、
-心跳只续期两个聊天组而不污染在线索引。
+公共与私聊广播拓扑、未读推送、client_msg_id 幂等、已读上行、
+心跳只续期两个聊天组而不污染在线索引；撤回上行已收敛到 REST，
+WS 上行 chat_recall 按未知 action 关闭。
 """
 
 import json
@@ -441,30 +442,20 @@ class TestGroupFanoutBatch:
 
 
 class TestRecallAndRead:
-    def test_recall_broadcasts_to_room(self, ws_layer, alice, bob, monkeypatch):
-        room = chat_service.get_or_create_private_room(alice, bob)
-        message, __ = chat_service.create_message(room, alice, "撤回我")
-        sent = _capture_group_send(ws_layer, monkeypatch)
+    def test_recall_uplink_removed_closes_as_unknown(self, ws_layer, superuser, fast_close):
+        """撤回上行唯一入口是 REST：chat_recall 上行帧按未知 action 处理（提示后关闭）。"""
+        room = chat_service.get_public_room()
+        message, __ = chat_service.create_message(room, superuser, "撤回不再走 WS 上行")
 
         async def scenario():
-            consumer, ___, ____ = _make_consumer(ws_layer, alice)
-            await consumer.handle_recall({"message_id": message.pk})
+            consumer, __, closed = _make_consumer(ws_layer, superuser)
+            consumer.disconnected = True
+            await consumer.receive(json.dumps({"action": "chat_recall", "data": {"message_id": message.pk}}))
+            assert closed == [None]
 
         async_to_sync(scenario)()
-
-        assert [item["message"]["type"] for item in sent] == ["chat_recall", "chat_recall"]
-        assert sent[0]["message"]["data"]["message_id"] == message.pk
-
-    def test_recall_other_message_rejected(self, ws_layer, alice, bob):
-        room = chat_service.get_or_create_private_room(alice, bob)
-        message, __ = chat_service.create_message(room, bob, "别人的")
-
-        async def scenario():
-            consumer, captured, __ = _make_consumer(ws_layer, alice)
-            await consumer.handle_recall({"message_id": message.pk})
-            assert captured[0]["code"] == 1001
-
-        async_to_sync(scenario)()
+        message.refresh_from_db()
+        assert message.is_recalled is False  # 上行不再触达撤回逻辑
 
     def test_read_clears_unread_and_replies_cursor(self, ws_layer, alice, bob):
         room = chat_service.get_or_create_private_room(alice, bob)
@@ -547,18 +538,3 @@ class TestSendRateLimit:
 
         async_to_sync(scenario)()
         assert ChatMessage.objects.filter(room=room).count() == 2
-
-    def test_recall_not_blocked_by_send_limit(self, ws_layer, alice, bob, monkeypatch):
-        """撤回/已读不受发送限流影响（限流只挡新增消息）。"""
-        monkeypatch.setattr("message.consumers.CHAT_SEND_LIMIT_PER_SECOND", 1)
-        room = chat_service.get_public_room()
-        _capture_group_send(ws_layer, monkeypatch)
-        message, _ = chat_service.create_message(room, alice, "先发一条")
-
-        async def scenario():
-            consumer, captured, __ = _make_consumer(ws_layer, alice)
-            await consumer.receive(json.dumps({"action": "chat_recall", "data": {"message_id": message.pk}}))
-            return captured
-
-        captured = async_to_sync(scenario)()
-        assert [item for item in captured if item["code"] == 1001] == []

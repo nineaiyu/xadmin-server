@@ -7,6 +7,7 @@ metrics（AI 调用观测：近 N 天用量 / 成功率 / 日趋势 / 类型分�
 两个 action 与 status 共用同一权限点路径正则，不新增权限点。
 """
 
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
@@ -68,11 +69,15 @@ class AiObservabilityMixin:
         total = base.count()
         failed = base.exclude(status_code=1000).count()
 
-        module_labels = {"AI:ask": "文档问答", "AI:nl_query": "NL 查数", "AI:action": "受限动作"}
+        module_labels = {
+            "AI:ask": _("AI document Q&A"),
+            "AI:nl_query": _("AI NL query"),
+            "AI:action": _("AI restricted action"),
+        }
         by_module = [
             {
                 "module": row["module"] or "",
-                "label": module_labels.get(row["module"] or "", row["module"] or "未知"),
+                "label": module_labels.get(row["module"] or "", row["module"] or _("Unknown")),
                 "count": row["count"],
             }
             for row in base.values("module").annotate(count=Count("id")).order_by("-count")

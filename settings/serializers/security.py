@@ -243,21 +243,21 @@ class SecurityBindEmailAuthSerializer(SettingSaveContractMixin, serializers.Seri
         required=False,
         default=True,
         label=_("Bind email captcha"),
-        help_text=_("Enable captcha to prevent robot reset password"),
+        help_text=_("Enable captcha to prevent robot bind email"),
     )
 
     SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED = serializers.BooleanField(
         required=False,
         default=True,
-        label=_("Bind email encrypted"),
-        help_text=_("Enable encryption to prevent information leakage"),
+        label=_("Bind email temp token"),
+        help_text=_("Enable temporary tokens to prevent attacks"),
     )
 
     SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED = serializers.BooleanField(
         required=False,
         default=True,
-        label=_("Bind email temp token"),
-        help_text=_("Enable temporary tokens to prevent attacks"),
+        label=_("Bind email encrypted"),
+        help_text=_("Enable encryption to prevent information leakage"),
     )
 
 

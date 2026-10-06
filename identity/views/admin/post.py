@@ -36,10 +36,16 @@ logger = get_logger(__name__)
 MEMBER_LIMIT = 500
 
 
-def _members_payload(post) -> list:
-    """岗位成员简要信息（在用用户，按 pk 顺序稳定输出）。"""
-    rows = post.users.filter(is_active=True).order_by("pk").only("pk", "username", "nickname")[:MEMBER_LIMIT]
-    return [{"pk": row.pk, "username": row.username, "nickname": row.nickname} for row in rows]
+def _members_payload(post) -> tuple[list, int]:
+    """岗位成员简要信息与全量在用成员数（在用用户，按 pk 顺序稳定输出）。
+
+    成员数超出 MEMBER_LIMIT 时仅返回前 MEMBER_LIMIT 条；调用方以 total/truncated
+    向前端标记截断状态，避免「列表悄悄少了人」无提示。
+    """
+    users = post.users.filter(is_active=True)
+    total = users.count()
+    rows = users.order_by("pk").only("pk", "username", "nickname")[:MEMBER_LIMIT]
+    return [{"pk": row.pk, "username": row.username, "nickname": row.nickname} for row in rows], total
 
 
 class PostFilter(BaseFilterSet):
@@ -68,9 +74,13 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="members")
     def members(self, request, *args, **kwargs):
-        """岗位成员（查看）：在用用户清单（≤500）。"""
+        """岗位成员（查看）：在用用户清单（≤500，超出截断）。
+
+        total 为全量在用成员数，truncated 标记本次是否截断（向后兼容新增字段）。
+        """
         post = self.get_object()
-        return ApiResponse(data={"members": _members_payload(post)})
+        members, total = _members_payload(post)
+        return ApiResponse(data={"members": members, "total": total, "truncated": total > len(members)})
 
     @extend_schema(request=PostMemberSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="assign")
@@ -95,7 +105,11 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
         except (DjangoValidationError, ValueError, TypeError):
             # 非法主键形态：按可读参数错误返回（不落 500）
             return ApiResponse(code=1001, detail=_("Invalid member id"))
-        return ApiResponse(data={"members": _members_payload(post)}, detail=_("Members updated"))
+        members, total = _members_payload(post)
+        return ApiResponse(
+            data={"members": members, "total": total, "truncated": total > len(members)},
+            detail=_("Members updated"),
+        )
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="user-options")

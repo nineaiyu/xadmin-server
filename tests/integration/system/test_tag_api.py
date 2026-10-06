@@ -2,18 +2,23 @@
 """通用标签中心API 集成测试：标签 CRUD / 打标 / 过滤 / 删除保护 / 白名单。
 
 打标权限回落业务对象 update 权限点（超管天然具备；普通用户被拒）；
+读口（objects）要求请求者对目标对象可见（各域列表页同源可见域，不可见 404）；
 列表 `?tag=` 过滤走 TagFilterBackend（AND 语义）；元数据下发 tag 搜索字段。
 """
 
 import pytest
+from django.contrib.contenttypes.models import ContentType
+from django.core.cache import cache as django_cache
 
 from identity.models import UserInfo
+from system.models import DataPermission
 from system.models.tag import Tag, TaggedItem
 
 pytestmark = pytest.mark.django_db
 
 TAGS_URL = "/api/system/tags"
 USER_TAG_PATH = "api/system/user/(?P<pk>[^/.]+)$"
+TAG_OBJECTS_PERMISSION = "api/system/tags/objects$"
 
 
 @pytest.fixture(autouse=True)
@@ -148,6 +153,137 @@ class TestAssign:
         )
         assert response.status_code == 403 or response.json()["code"] == 1001
         assert not TaggedItem.objects.exists()
+
+
+class TestObjectVisibility:
+    """objects 读口对象级校验：请求者看不到目标对象时与「不存在」同响应（404）。
+
+    可见域与各域列表页同源：普通模型走全局数据权限过滤（无授权 = 不可见），
+    审批实例走审批域可见域（发起人/审批人/参与人/抄送人可见，与数据授权无关）。
+    """
+
+    @staticmethod
+    def _tag_object(model, pk, name):
+        tag = Tag.objects.create(name=name)
+        TaggedItem.objects.create(tag=tag, content_type=ContentType.objects.get_for_model(model), object_id=str(pk))
+        return tag
+
+    @staticmethod
+    def _granted_viewer(api_client, normal_user, role, menu_factory):
+        """带 objects:Tag 权限点的普通用户（通过端点菜单门禁，专测对象级校验）。"""
+        menu = menu_factory("objects:Tag", path=TAG_OBJECTS_PERMISSION, method="GET")
+        role.menu.add(menu)
+        django_cache.clear()  # 权限数据 24h 缓存：授权变更后需失效再取
+        api_client.force_authenticate(user=normal_user)
+        return normal_user
+
+    @staticmethod
+    def _make_approval_instance(creator=None):
+        from approval.models import ApprovalFlow, ApprovalInstance
+
+        flow = ApprovalFlow.objects.create(name="可见性流程", code="tag_visible_flow", form_schema=[], version=1)
+        return ApprovalInstance.objects.create(
+            flow=flow, flow_name=flow.name, title="可见性审批单", status="PENDING", creator=creator
+        )
+
+    def test_superuser_reads_each_object_type(self, auth_client):
+        """三类可打标对象（用户/文件/审批实例）：可见者照常返回打标情况。"""
+        user = UserInfo.objects.create(username="tag-vis-su", nickname="可见性")
+        self._tag_object(UserInfo, user.pk, "用户标签")
+        resp = auth_client.get(f"{TAGS_URL}/objects", {"resource": "identity.userinfo", "pk": str(user.pk)})
+        assert resp.status_code == 200 and [i["name"] for i in resp.json()["data"]["tags"]] == ["用户标签"]
+
+        from file.models import UploadFile
+
+        doc = UploadFile.objects.create(
+            filename="tag-vis.txt", filesize=1, mime_type="text/plain", md5sum="md5-tag-vis"
+        )
+        self._tag_object(UploadFile, doc.pk, "文件标签")
+        resp = auth_client.get(f"{TAGS_URL}/objects", {"resource": "file.uploadfile", "pk": str(doc.pk)})
+        assert resp.status_code == 200 and [i["name"] for i in resp.json()["data"]["tags"]] == ["文件标签"]
+
+        instance = self._make_approval_instance()
+        self._tag_object(type(instance), instance.pk, "审批标签")
+        resp = auth_client.get(f"{TAGS_URL}/objects", {"resource": "approval.approvalinstance", "pk": str(instance.pk)})
+        assert resp.status_code == 200 and [i["name"] for i in resp.json()["data"]["tags"]] == ["审批标签"]
+
+    def test_user_denied_without_data_grant(self, api_client, normal_user, role, menu_factory):
+        """目标用户不在请求者数据权限可见域内（无任何授权）→ 404。"""
+        viewer = self._granted_viewer(api_client, normal_user, role, menu_factory)
+        target = UserInfo.objects.create(username="tag-vis-target", nickname="被探测")
+        self._tag_object(UserInfo, target.pk, "私有标签")
+        resp = api_client.get(f"{TAGS_URL}/objects", {"resource": "identity.userinfo", "pk": str(target.pk)})
+        assert resp.status_code == 404
+        assert TaggedItem.objects.filter(object_id=str(target.pk)).exists()  # 打标关系仍在，只是不可见
+        assert str(viewer.pk) != str(target.pk)
+
+    def test_user_visible_with_data_grant(self, api_client, normal_user, role, menu_factory):
+        """授权「全部数据」后，可见域内对象的打标情况照常返回。"""
+        viewer = self._granted_viewer(api_client, normal_user, role, menu_factory)
+        grant = DataPermission.objects.create(
+            name="标签可见-全部用户",
+            rules=[{"table": "identity.userinfo", "field": "id", "type": "value.all", "value": "*", "match": "all"}],
+        )
+        viewer.rules.add(grant)
+        django_cache.clear()
+        target = UserInfo.objects.create(username="tag-vis-granted", nickname="已授权")
+        self._tag_object(UserInfo, target.pk, "已授权标签")
+        resp = api_client.get(f"{TAGS_URL}/objects", {"resource": "identity.userinfo", "pk": str(target.pk)})
+        assert resp.status_code == 200
+        assert [i["name"] for i in resp.json()["data"]["tags"]] == ["已授权标签"]
+
+    def test_file_denied_without_data_grant(self, api_client, normal_user, role, menu_factory):
+        """目标文件不在请求者数据权限可见域内 → 404；授权后照常返回。"""
+        from file.models import UploadFile
+
+        self._granted_viewer(api_client, normal_user, role, menu_factory)
+        doc = UploadFile.objects.create(
+            filename="tag-denied.txt", filesize=1, mime_type="text/plain", md5sum="md5-deny"
+        )
+        self._tag_object(UploadFile, doc.pk, "文件私有标签")
+        resp = api_client.get(f"{TAGS_URL}/objects", {"resource": "file.uploadfile", "pk": str(doc.pk)})
+        assert resp.status_code == 404
+
+        grant = DataPermission.objects.create(
+            name="标签可见-全部文件",
+            rules=[{"table": "file.uploadfile", "field": "id", "type": "value.all", "value": "*", "match": "all"}],
+        )
+        normal_user.rules.add(grant)
+        django_cache.clear()
+        resp = api_client.get(f"{TAGS_URL}/objects", {"resource": "file.uploadfile", "pk": str(doc.pk)})
+        assert resp.status_code == 200
+        assert [i["name"] for i in resp.json()["data"]["tags"]] == ["文件私有标签"]
+
+    def test_approval_creator_visible_without_data_grant(self, api_client, normal_user, role, menu_factory):
+        """审批实例走审批域可见域：发起人无需数据授权即可读自己单据的打标情况。"""
+        self._granted_viewer(api_client, normal_user, role, menu_factory)
+        instance = self._make_approval_instance(creator=normal_user)
+        self._tag_object(type(instance), instance.pk, "我的审批标签")
+        resp = api_client.get(f"{TAGS_URL}/objects", {"resource": "approval.approvalinstance", "pk": str(instance.pk)})
+        assert resp.status_code == 200
+        assert [i["name"] for i in resp.json()["data"]["tags"]] == ["我的审批标签"]
+
+    def test_approval_uninvolved_denied(self, api_client, normal_user, role, menu_factory):
+        """与审批单无任何关系（非发起/审批/参与/抄送）→ 404。"""
+        self._granted_viewer(api_client, normal_user, role, menu_factory)
+        instance = self._make_approval_instance()
+        self._tag_object(type(instance), instance.pk, "他人审批标签")
+        resp = api_client.get(f"{TAGS_URL}/objects", {"resource": "approval.approvalinstance", "pk": str(instance.pk)})
+        assert resp.status_code == 404
+
+    def test_malformed_pk_denied(self, api_client, normal_user, role, menu_factory):
+        """主键格式非法（UUID 主键传入任意串）按不可见处理，不 500。"""
+        self._granted_viewer(api_client, normal_user, role, menu_factory)
+        resp = api_client.get(f"{TAGS_URL}/objects", {"resource": "identity.userinfo", "pk": "not-a-uuid"})
+        assert resp.status_code == 404
+
+    def test_unknown_resource_and_empty_pk_unchanged(self, api_client, normal_user, role, menu_factory):
+        """白名单外资源仍按业务校验拒绝（1001）；缺 pk 的退化查询仍返回空标签。"""
+        self._granted_viewer(api_client, normal_user, role, menu_factory)
+        resp = api_client.get(f"{TAGS_URL}/objects", {"resource": "system.role", "pk": "1"})
+        assert resp.status_code == 200 and resp.json()["code"] == 1001
+        resp = api_client.get(f"{TAGS_URL}/objects", {"resource": "identity.userinfo"})
+        assert resp.status_code == 200 and resp.json()["data"]["tags"] == []
 
 
 class TestFilterAndDeleteProtection:

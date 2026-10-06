@@ -12,6 +12,7 @@ from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 from audit.models.log import OperationLog
 from audit.notifications import SensitiveOperationMessage
 from audit.notifications_alert import maybe_alert_sensitive_operation
+from audit.serializers.log import OPERATION_LOG_LIST_PREVIEW_MAX
 from audit.views.admin.operationlog import OperationLogViewSet
 from identity.models.user import UserInfo
 
@@ -87,6 +88,35 @@ def test_changes_exported_in_serializer(superuser):
     response = _list(superuser)
     fields = response.data["data"]["results"][0].keys()
     assert "changes" in fields
+
+
+def test_list_carries_bounded_preview_with_marker(superuser):
+    """列表行大 JSON 降为预览并附截断标记：changes 保留全量（变更历史弹窗逐行渲染）。"""
+    big_body = json.dumps({"payload": "x" * 800})
+    _make_log(
+        body=big_body,
+        response_result=json.dumps({"code": 1000}),
+        changes=json.dumps({"name": {"old": "a", "new": "b"}}),
+    )
+    row = _list(superuser).data["data"]["results"][0]
+    assert len(row["body"]) == OPERATION_LOG_LIST_PREVIEW_MAX
+    assert row["body_truncated"] is True
+    assert row["response_result_truncated"] is False
+    assert json.loads(row["changes"])["name"]["new"] == "b"
+
+
+def test_retrieve_keeps_full_large_json(superuser):
+    """详情接口返回全量大字段（列表预览不影响详情/导出口径）。"""
+    big_body = json.dumps({"payload": "x" * 800})
+    log = _make_log(body=big_body, response_result=json.dumps({"code": 1000}))
+    client = APIClient(HTTP_USER_AGENT="pytest-agent")
+    client.force_authenticate(user=superuser)
+    response = client.get(f"{LIST_URL}/{log.pk}")
+    assert response.status_code == 200
+    data = response.data["data"]
+    assert data["body"] == big_body
+    assert data["response_result"] == json.dumps({"code": 1000})
+    assert "body_truncated" not in data
 
 
 def test_layered_retention_keeps_recent_errors(superuser):

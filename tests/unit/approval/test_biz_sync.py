@@ -80,3 +80,80 @@ class TestSignalDispatch:
         monkeypatch.setattr(biz_sync, "get_biz_syncer", lambda biz_type: boom if biz_type else None)
         instance = self._make_instance("leave")
         approval_instance_finished.send(sender=type(instance), instance=instance, status="REJECTED", reason="x")
+
+
+class TestDemoBookSyncModifier:
+    """demo 书籍终态回写的修改人语义：回写只推进状态，不覆盖 modifier。
+
+    终态回写是系统驱动的状态流转；若把 modifier 覆盖为审批实例创建人，
+    审批期间管理员编辑书籍留下的真实修改人痕迹会被抹掉。
+    """
+
+    def _make_users(self):
+        from identity.models import UserInfo
+
+        applicant = UserInfo.objects.create_user(username="book_applicant", password="Test@123456")
+        editor = UserInfo.objects.create_user(username="book_editor", password="Test@123456")
+        return applicant, editor
+
+    def _make_book(self, creator, modifier):
+        from demo.models import Book
+
+        return Book.objects.create(
+            name="回写书籍",
+            isbn="978-7-000-00000-1",
+            author="作者",
+            admin=creator,
+            admin2=creator,
+            creator=creator,
+            modifier=modifier,
+        )
+
+    def _make_instance(self, creator, book):
+        from approval.models.approval import ApprovalFlow
+        from demo.services import BOOK_BIZ_TYPE
+
+        flow = ApprovalFlow.objects.create(name="回写修改人流", code="biz-sync-modifier")
+        return ApprovalInstance.objects.create(
+            flow=flow,
+            flow_name=flow.name,
+            title="回写修改人",
+            biz_type=BOOK_BIZ_TYPE,
+            biz_id=str(book.pk),
+            creator=creator,
+        )
+
+    def test_terminal_writeback_keeps_modifier(self):
+        """终态回写后 modifier 保持回写前的值（不覆盖为审批实例创建人）。"""
+        from demo.models import Book
+        from demo.services import sync_book_instance
+
+        applicant, editor = self._make_users()
+        book = self._make_book(creator=applicant, modifier=editor)
+        instance = self._make_instance(creator=applicant, book=book)
+
+        sync_book_instance(instance, "APPROVED")
+
+        book.refresh_from_db()
+        assert book.status == Book.Status.ON_SHELF
+        assert book.modifier == editor
+
+    def test_third_party_edit_during_approval_not_overwritten(self):
+        """审批期间第三方编辑书籍后，终态回写不抹掉其留下的修改人痕迹。"""
+        from demo.models import Book
+        from demo.services import sync_book_instance
+
+        applicant, editor = self._make_users()
+        book = self._make_book(creator=applicant, modifier=applicant)
+        instance = self._make_instance(creator=applicant, book=book)
+
+        # 审批期间管理员编辑书籍（真实修改人 = 编辑者）
+        book.name = "回写书籍（已修订）"
+        book.modifier = editor
+        book.save(update_fields=["name", "modifier", "updated_time"])
+
+        sync_book_instance(instance, "APPROVED")
+
+        book.refresh_from_db()
+        assert book.status == Book.Status.ON_SHELF
+        assert book.modifier == editor

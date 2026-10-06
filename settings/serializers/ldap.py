@@ -6,19 +6,27 @@
 ⇒ Setting.encrypted=True 值级加密落库，且 retrieve 回显时自动剔除。
 """
 
+from django.db.models import TextChoices
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.core.fields import LabeledChoiceField
 from settings.serializers.contract import SettingSaveContractMixin
 
 
 class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     # 认证接入
+    class AuthPriorityChoices(TextChoices):
+        """认证优先级取值：value 为存量存储值，label 供 API 元数据与前端下拉展示。"""
+
+        LOCAL_FIRST = "local_first", _("Local accounts first")
+        LDAP_FIRST = "ldap_first", _("Directory first")
+
     LDAP_AUTH_ENABLED = serializers.BooleanField(
         default=False, label=_("LDAP authentication"), help_text=_("Enable LDAP/AD account login")
     )
-    LDAP_AUTH_PRIORITY = serializers.ChoiceField(
-        choices=["local_first", "ldap_first"],
+    LDAP_AUTH_PRIORITY = LabeledChoiceField(
+        choices=AuthPriorityChoices.choices,
         default="local_first",
         label=_("Authentication priority"),
         help_text=_(
@@ -58,7 +66,7 @@ class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         allow_blank=True,
         write_only=True,
         label=_("Bind password"),
-        help_text=_("Encrypted at rest; never returned by the API"),
+        help_text=_("Encrypted at rest; never returned by the API; submit empty to keep the current one"),
     )
     LDAP_CONNECT_TIMEOUT = serializers.IntegerField(
         default=10, min_value=1, max_value=120, label=_("Connect timeout (seconds)")
@@ -77,7 +85,7 @@ class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         required=False,
         allow_blank=True,
         label=_("User filter"),
-        help_text=_("LDAP search filter, e.g. (objectClass=person)"),
+        help_text=_("LDAP search filter; empty falls back to (objectClass=person)"),
     )
 
     # 字段映射（固定四键）
@@ -86,24 +94,28 @@ class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         required=False,
         allow_blank=True,
         label=_("Username attribute"),
-        help_text=_("e.g. sAMAccountName / uid"),
+        help_text=_("e.g. sAMAccountName / uid; empty falls back to sAMAccountName"),
     )
     LDAP_ATTR_NICKNAME = serializers.CharField(
         max_length=64,
         required=False,
         allow_blank=True,
         label=_("Nickname attribute"),
-        help_text=_("e.g. cn / displayName"),
+        help_text=_("e.g. cn / displayName; empty falls back to cn"),
     )
     LDAP_ATTR_EMAIL = serializers.CharField(
-        max_length=64, required=False, allow_blank=True, label=_("Email attribute"), help_text=_("e.g. mail")
+        max_length=64,
+        required=False,
+        allow_blank=True,
+        label=_("Email attribute"),
+        help_text=_("e.g. mail; empty falls back to mail"),
     )
     LDAP_ATTR_PHONE = serializers.CharField(
         max_length=64,
         required=False,
         allow_blank=True,
         label=_("Phone attribute"),
-        help_text=_("e.g. telephoneNumber / mobile"),
+        help_text=_("e.g. telephoneNumber / mobile; empty falls back to telephoneNumber"),
     )
 
     # 部门
@@ -113,7 +125,11 @@ class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         help_text=_("Sync organizational units under the department search base as the department tree"),
     )
     LDAP_DEPT_SEARCH_BASE = serializers.CharField(
-        max_length=512, required=False, allow_blank=True, label=_("Department search base")
+        max_length=512,
+        required=False,
+        allow_blank=True,
+        label=_("Department search base"),
+        help_text=_("Base DN for department (OU) search; empty disables department sync"),
     )
 
     # 定时同步
@@ -123,8 +139,16 @@ class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         help_text=_("Hourly sync of users/departments/status from the directory"),
     )
     LDAP_SYNC_AUTO_CREATE = serializers.BooleanField(default=True, label=_("Auto create user on sync"))
-    LDAP_SYNC_MISSING_POLICY = serializers.ChoiceField(
-        choices=["deactivate", "soft_delete", "ignore"],
+
+    class SyncMissingPolicyChoices(TextChoices):
+        """缺失用户处置策略取值：value 为存量存储值，label 供 API 元数据与前端下拉展示。"""
+
+        DEACTIVATE = "deactivate", _("Deactivate account")
+        SOFT_DELETE = "soft_delete", _("Move to recycle bin")
+        IGNORE = "ignore", _("Keep untouched")
+
+    LDAP_SYNC_MISSING_POLICY = LabeledChoiceField(
+        choices=SyncMissingPolicyChoices.choices,
         default="deactivate",
         label=_("Missing user policy"),
         help_text=_(
@@ -139,13 +163,15 @@ class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         required=False,
         allow_blank=True,
         label=_("Group attribute"),
-        help_text=_("Directory attribute holding group membership (AD default: memberOf)"),
+        help_text=_(
+            "Directory attribute holding group membership (AD default: memberOf); empty disables group to role mapping"
+        ),
     )
     LDAP_GROUP_ROLE_MAP = serializers.DictField(
         child=serializers.CharField(allow_blank=False),
         required=False,
         label=_("Group to role mapping"),
-        help_text=_("Map directory group DN/CN (case-insensitive) to platform role code"),
+        help_text=_("Map directory group DN/CN (case-insensitive) to platform role code; empty disables the mapping"),
     )
 
     # 留白的可选字段收敛到默认值：空 filter/空属性名会让搜索静默失效

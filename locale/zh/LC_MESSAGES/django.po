@@ -1641,9 +1641,13 @@ msgstr "启用状态为必填项"
 msgid "Operation successful. Updated {} data"
 msgstr "操作成功，已更新 {} 条数据"
 
-#: ai/views/knowledge.py:162
-msgid "Repository documents synced"
-msgstr "仓库文档已同步"
+#: ai/views/knowledge.py:160
+msgid "A repository sync is already running"
+msgstr "已有仓库文档同步任务在运行中"
+
+#: ai/views/knowledge.py:174
+msgid "Repository sync task submitted"
+msgstr "仓库文档同步任务已提交"
 
 #: ai/views/knowledge.py:198
 msgid "No active embedding profile is configured"
@@ -7026,7 +7030,7 @@ msgstr "允许用户重置密码"
 msgid "Reset password captcha"
 msgstr "重置密码图片验证码"
 
-#: settings/serializers/security.py:205 settings/serializers/security.py:245
+#: settings/serializers/security.py:205
 #: settings/serializers/security.py:271
 msgid "Enable captcha to prevent robot reset password"
 msgstr "开启图片验证码，防止机器人重置密码"
@@ -11196,3 +11200,187 @@ msgstr "运算符 {} 的条件值必须是数字"
 #: approval/serializers/approval_flow.py:317
 msgid "The flow was modified by someone else, please refresh and retry"
 msgstr "流程已被他人修改，请刷新后重试"
+
+#: system/views/platform/modules.py
+msgid "Another module configuration save is in progress, please try again later"
+msgstr "另一个模块配置保存正在进行，请稍后重试"
+
+#: system/serializers/config.py
+msgid "Config value for {} must be an integer"
+msgstr "配置项 {} 的值必须是整数"
+
+#: system/serializers/config.py
+msgid "Config value for {} must be a number"
+msgstr "配置项 {} 的值必须是数字"
+
+#: system/serializers/config.py
+msgid "Config value for {} must be a boolean"
+msgstr "配置项 {} 的值必须是布尔值"
+
+#: system/serializers/config.py
+msgid "Config value for {} must be a string"
+msgstr "配置项 {} 的值必须是字符串"
+
+#: system/serializers/config.py
+msgid "Config value for {} must be a JSON array"
+msgstr "配置项 {} 的值必须是 JSON 数组"
+
+#: system/serializers/config.py
+msgid "Config value for {} must be a JSON object"
+msgstr "配置项 {} 的值必须是 JSON 对象"
+
+#: notifications/serializers/message.py
+msgid "Parameter error. System notification cannot be created"
+msgstr "参数有误，不支持创建系统通知"
+
+#: notifications/serializers/message.py
+msgid "The attachments must be a list of file paths"
+msgstr "附件必须是文件路径数组"
+
+#: settings/views/sms.py
+msgid "SMS test failed, please check the SMS configuration"
+msgstr "短信测试失败，请检查短信配置"
+
+#: settings/serializers/ldap.py
+msgid "Local accounts first"
+msgstr "本地账号优先"
+
+#: settings/serializers/ldap.py
+msgid "Directory first"
+msgstr "目录优先"
+
+#: settings/serializers/ldap.py
+msgid "Deactivate account"
+msgstr "停用账号"
+
+#: settings/serializers/ldap.py
+msgid "Move to recycle bin"
+msgstr "移入回收站"
+
+#: settings/serializers/ldap.py
+msgid "Keep untouched"
+msgstr "保持不变"
+
+#: settings/serializers/ldap.py
+msgid "LDAP search filter; empty falls back to (objectClass=person)"
+msgstr "LDAP 搜索过滤器；留空回落默认 (objectClass=person)"
+
+#: settings/serializers/ldap.py
+msgid "e.g. sAMAccountName / uid; empty falls back to sAMAccountName"
+msgstr "例如 sAMAccountName / uid；留空回落默认 sAMAccountName"
+
+#: settings/serializers/ldap.py
+msgid "e.g. cn / displayName; empty falls back to cn"
+msgstr "例如 cn / displayName；留空回落默认 cn"
+
+#: settings/serializers/ldap.py
+msgid "e.g. mail; empty falls back to mail"
+msgstr "例如 mail；留空回落默认 mail"
+
+#: settings/serializers/ldap.py
+msgid "e.g. telephoneNumber / mobile; empty falls back to telephoneNumber"
+msgstr "例如 telephoneNumber / mobile；留空回落默认 telephoneNumber"
+
+#: settings/serializers/ldap.py
+msgid "Base DN for department (OU) search; empty disables department sync"
+msgstr "部门（OU）搜索基 DN；留空则不同步部门"
+
+#: settings/serializers/ldap.py
+msgid "Directory attribute holding group membership (AD default: memberOf); empty disables group to role mapping"
+msgstr "目录侧存储组成员关系的属性（AD 默认 memberOf）；留空则组→角色映射不生效"
+
+#: settings/serializers/ldap.py
+msgid "Map directory group DN/CN (case-insensitive) to platform role code; empty disables the mapping"
+msgstr "将目录组 DN/CN（大小写不敏感）映射到平台角色 code；留空（空映射）则不启用"
+
+#: settings/serializers/ldap.py
+msgid "Encrypted at rest; never returned by the API; submit empty to keep the current one"
+msgstr "加密存储；不会通过接口返回；留空表示沿用已存密码"
+
+#: identity/serializers/security.py
+msgid "Invalid IP range entry: `{}`, each line must be a single IP address, a CIDR (e.g. 192.168.1.0/24), an IP range (e.g. 10.1.1.1-10.1.1.20) or *"
+msgstr "无效的网段条目：`{}`，每行须为单个 IP 地址、CIDR 网段（如 192.168.1.0/24）、IP 区间（如 10.1.1.1-10.1.1.20）或 *"
+
+#: identity/serializers/security.py
+msgid "Invalid IP range entry: `{}`, the start IP must not be greater than the end IP"
+msgstr "无效的网段条目：`{}`，起始 IP 不能大于结束 IP"
+
+#: identity/serializers/security.py
+msgid "Invalid IP range entry: `{}`, the start and end IP must be of the same IP version"
+msgstr "无效的网段条目：`{}`，起始与结束 IP 必须属于同一 IP 版本"
+
+#: audit/serializers/mask.py
+#, python-format
+msgid "Invalid custom regex: %(pattern)s (%(reason)s)"
+msgstr "自定义正则非法：%(pattern)s（%(reason)s）"
+
+#: identity/views/open/open_oauth.py
+msgid "This action only accepts JSON requests"
+msgstr "该操作仅接受 JSON 请求"
+
+#: identity/serializers/user.py
+msgid "Password decryption failed, please refresh the page and try again"
+msgstr "密码解密失败，请刷新页面后重试"
+
+#: settings/serializers/security.py
+msgid "Enable captcha to prevent robot bind email"
+msgstr "开启图片验证码，防止机器人绑定邮件"
+
+#: identity/views/admin/user.py
+msgid "Password reset successful"
+msgstr "密码重置成功"
+
+#: identity/views/admin/user.py
+msgid "Your password has been reset by an administrator"
+msgstr "密码被管理员重置成功"
+
+#: system/views/platform/modules.py
+msgid "Core modules only (minimal base)"
+msgstr "仅内核（极简底座）"
+
+#: system/views/platform/modules.py
+msgid "Core + standard modules (recommended for secondary development)"
+msgstr "内核 + 标配（推荐二次开发起点）"
+
+#: system/views/platform/modules.py
+msgid "All modules (default)"
+msgstr "全部功能（默认）"
+
+#: ai/views/observability.py
+msgid "AI document Q&A"
+msgstr "文档问答"
+
+#: ai/views/observability.py
+msgid "AI NL query"
+msgstr "NL 查数"
+
+#: ai/views/observability.py
+msgid "AI restricted action"
+msgstr "受限动作"
+
+#: demo/services.py
+msgid "This book is already under approval"
+msgstr "该书籍已在审批中"
+
+#: demo/services.py
+msgid "This book is already on shelf"
+msgstr "该书籍已上架"
+
+#: demo/services.py
+#, python-format
+msgid "No active on-shelf approval flow found (code: %(code)s), please run seed_demo_book first"
+msgstr "未找到启用的上架审批流程（code: %(code)s），请先执行 seed_demo_book"
+
+#: demo/services.py
+#, python-format
+msgid "Book on-shelf: %(name)s"
+msgstr "书籍上架：%(name)s"
+
+#: demo/services.py
+msgid "On-shelf approval submitted"
+msgstr "已提交上架审批"
+
+#: demo/views.py
+#, python-format
+msgid "%(name)s push succeeded"
+msgstr "%(name)s 推送成功"

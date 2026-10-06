@@ -8,6 +8,7 @@ message app 对外服务契约层。
 """
 
 from message.utils import (
+    batch_send_logout_msg,
     get_online_info,
     get_online_users,
     get_online_users_layers,
@@ -17,6 +18,7 @@ from message.utils import (
 
 __all__ = [
     "send_logout_msg",
+    "batch_send_logout_msg",
     "get_online_users_layers",
     "get_online_info",
     "get_online_users",

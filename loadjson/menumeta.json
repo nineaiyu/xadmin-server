@@ -17961,5 +17961,31 @@
    "fixed_tag": false,
    "dynamic_level": 0
   }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "7c08ab58-cc44-4e26-9794-c0afa3275b84",
+  "fields": {
+   "created_time": "2026-10-06T00:00:00.000Z",
+   "updated_time": "2026-10-06T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "仓库文档同步运行状态（后台任务轮询端点）。",
+   "icon": null,
+   "r_svg_name": null,
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": null,
+   "frame_loading": false,
+   "watermark": false,
+   "transition_enter": null,
+   "transition_leave": null,
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
  }
 ]

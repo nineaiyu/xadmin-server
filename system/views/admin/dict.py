@@ -2,7 +2,8 @@
 # -*- coding:utf-8 -*-
 """数据字典管理：类型/字典项两级维护 + 状态/排序/缓存维护 + items 消费接口。"""
 
-from django.db.models import Case, IntegerField, Value, When
+from django.db.models import BooleanField, Case, IntegerField, Value, When
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -119,18 +120,28 @@ class DataDictViewSet(
         """批量启用或停用字典
 
         body: {"pks": [...], "is_active": bool}；is_active 省略时按各行当前状态取反。
-        逐个 save 而非 queryset.update：字典缓存失效挂在 post_save 信号上，批量
-        update 会绕过信号，导致消费端最长 5 分钟拿不到新状态。
+        单条 UPDATE 落库（取反用 Case/When，同 move 的排序写法）；update 不触发
+        post_save 信号与 pre_save 审计字段回填，updated_time/modifier 显式随行，
+        字典缓存按受影响行范围手动失效——类型行的启用状态决定其字典项是否对
+        消费端可见，存在类型行时全量失效更稳。
         """
         data = request.data if isinstance(request.data, dict) else {}
         pks = data.get("pks") or []
         is_active = data.get("is_active")
         queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
-        count = 0
-        for instance in queryset:
-            instance.is_active = (not instance.is_active) if is_active is None else bool(is_active)
-            instance.save()
-            count += 1
+        parent_codes = set(queryset.exclude(parent=None).values_list("parent__code", flat=True))
+        has_type_row = queryset.filter(parent=None).exists()
+        updates = {"updated_time": timezone.now(), "modifier": request.user}
+        if is_active is None:
+            toggle = Case(When(is_active=True, then=Value(False)), default=Value(True), output_field=BooleanField())
+            count = queryset.update(is_active=toggle, **updates)
+        else:
+            count = queryset.update(is_active=bool(is_active), **updates)
+        # update 绕过字典缓存失效信号：按受影响行手动失效，消费端立即拿到新状态
+        for code in parent_codes:
+            invalid_dict_cache(code)
+        if has_type_row:
+            invalid_dict_cache()
         return ApiResponse(detail=_("Batch update submitted: {} success").format(count))
 
     @extend_schema(

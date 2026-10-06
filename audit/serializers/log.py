@@ -65,6 +65,43 @@ class OperationLogSerializer(BaseModelSerializer):
     changes = serializers.JSONField(required=False, allow_null=True)
 
 
+# 列表行大 JSON 字段的预览上限：三字段落库时已按 OPERATION_LOG_FIELD_MAX 截断，
+# 列表再收一道有界预览，避免整页载荷被请求/响应正文撑爆（详情/导出走全量口径）
+OPERATION_LOG_LIST_PREVIEW_MAX = 500
+
+
+class OperationLogListSerializer(OperationLogSerializer):
+    """操作日志列表序列化器：大 JSON 字段降为有界预览（列表载荷轻量化）。
+
+    列表表格列不渲染 body / response_result，但行数据仍被前端复用：
+    详情抽屉直接渲染列表行（本视图集历史上无 retrieve），「变更历史」弹窗
+    逐行读取 changes 渲染 old/new 对照——因此 changes 保留全量不裁剪；
+    body / response_result 只保留预览，截断时附 ``*_truncated`` 标记
+    （键恒在，向后兼容）。全量口径由 retrieve / 导出经 OperationLogSerializer 承载。
+    """
+
+    body_truncated = serializers.SerializerMethodField(label=_("Request body truncated"))
+    response_result_truncated = serializers.SerializerMethodField(label=_("Response result truncated"))
+
+    class Meta(OperationLogSerializer.Meta):
+        fields = [*OperationLogSerializer.Meta.fields, "body_truncated", "response_result_truncated"]
+        table_fields = OperationLogSerializer.Meta.table_fields
+
+    def get_body_truncated(self, obj) -> bool:
+        return isinstance(obj.body, str) and len(obj.body) > OPERATION_LOG_LIST_PREVIEW_MAX
+
+    def get_response_result_truncated(self, obj) -> bool:
+        return isinstance(obj.response_result, str) and len(obj.response_result) > OPERATION_LOG_LIST_PREVIEW_MAX
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        for name in ("body", "response_result"):
+            value = data.get(name)
+            if isinstance(value, str) and len(value) > OPERATION_LOG_LIST_PREVIEW_MAX:
+                data[name] = value[:OPERATION_LOG_LIST_PREVIEW_MAX]
+        return data
+
+
 class LoginLogSerializer(BaseModelSerializer):
     class Meta:
         model = UserLoginLog

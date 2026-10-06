@@ -17,7 +17,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from ai.models.ai import AiKnowledgeDocument
 from ai.serializers.ai import AiKnowledgeDocumentSerializer, KnowledgeUploadSerializer
-from ai.utils.ai import remove_chunks, set_document_active, sync_knowledge, upsert_upload_document
+from ai.utils.ai import remove_chunks, set_documents_active, upsert_upload_document
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseViewSet,
@@ -63,7 +63,7 @@ class AiKnowledgeDocumentViewSet(
     - 上传：{name, content} 文本入库（同名覆盖更新），前端选本地 .md 文件由浏览器读文本；
     - 预览：详情返回全文 + 分块摘要（列表轻量）；
     - 删除：仅 upload 来源（repo 由 sync 命令按文件存在性维护）；
-    - sync-repo：管理端手动重新扫描仓库 docs/ 文档。
+    - sync-repo：管理端手动重新扫描仓库 docs/ 文档（后台任务，摘要经 sync-repo/status 轮询）。
     """
 
     queryset = AiKnowledgeDocument.objects.all()
@@ -136,30 +136,62 @@ class AiKnowledgeDocumentViewSet(
     )
     @action(methods=["post"], detail=False, url_path="batch-toggle")
     def batch_toggle(self, request, *args, **kwargs):
-        """批量启用/停用：停用移除分块（退出问答检索），启用重建分块。"""
+        """批量启用/停用：停用移除分块（退出问答检索），启用重建分块。
+
+        受影响文档合并为一次批量重建/清理（单次索引失效 + 至多一次向量补齐调度），
+        不逐文档触发。
+        """
         pks = request.data.get("pks") or []
         if not isinstance(pks, (list, tuple)) or not pks:
             raise ValidationError(_("Please select the data to operate"))
         if "is_active" not in request.data:
             raise ValidationError(_("is_active is required"))
         want_active = bool(request.data.get("is_active"))
-        changed = 0
-        for doc in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
-            if bool(doc.is_active) == want_active:
-                continue
-            set_document_active(doc, want_active)
-            changed += 1
+        documents = [
+            doc
+            for doc in self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
+            if bool(doc.is_active) != want_active
+        ]
+        set_documents_active(documents, want_active)
         return ApiResponse(
-            data={"changed": changed},
-            detail=_("Operation successful. Updated {} data").format(changed),
+            data={"changed": len(documents)},
+            detail=_("Operation successful. Updated {} data").format(len(documents)),
         )
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="sync-repo")
     def sync_repo(self, request, *args, **kwargs):
-        """重新扫描仓库文档（docs/）并返回同步摘要（上传文档不受影响）。"""
-        summary = sync_knowledge()
-        return ApiResponse(data=summary, detail=_("Repository documents synced"))
+        """提交仓库文档同步后台任务（上传文档不受影响）。
+
+        全量重建为重操作，不再在请求线程内同步执行：响应返回任务提交信息，
+        同步摘要（created/updated/removed/...）经 sync-repo/status 轮询获取。
+        单飞：已有同步在跑时返回 1001（不排队、不重复扫盘）。
+        """
+        from ai.utils.sync_progress import try_acquire_lock
+
+        if not try_acquire_lock():
+            return ApiResponse(code=1001, detail=_("A repository sync is already running"))
+        from ai.tasks import sync_repo_task
+
+        if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+            # 测试/E2E：eager 下 apply_async 不执行，改 apply 同步跑完（与向量构建同口径）
+            result = sync_repo_task.apply(args=[])
+            task_id = str(result.id)
+        else:
+            transaction.on_commit(lambda: sync_repo_task.apply_async(args=[]))
+            task_id = ""
+        return ApiResponse(
+            data={"task_id": task_id, "state": "running", "status_url": "sync-repo/status"},
+            detail=_("Repository sync task submitted"),
+        )
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="sync-repo/status")
+    def sync_repo_status(self, request, *args, **kwargs):
+        """仓库文档同步运行状态（轮询端点）：state + 终态同步摘要。"""
+        from ai.utils.sync_progress import get_status
+
+        return ApiResponse(data=get_status())
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="vector-status")

@@ -145,6 +145,29 @@ class TestUnreadCursor:
         chat_service.mark_read(room, bob, message_id=second.pk)
         assert chat_service.mark_read(room, bob, message_id=first.pk) == second.pk
 
+    def test_mark_read_without_progress_skips_write(self, alice, bob):
+        """游标无推进且未读已清零：跳过写库（聊天页停留期反复上报零写放大）。"""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from message.models import ChatRoomMember
+
+        room = chat_service.get_or_create_private_room(alice, bob)
+        message, __ = chat_service.create_message(room, alice, "先读一次")
+        assert chat_service.mark_read(room, bob) == message.pk
+        assert ChatRoomMember.objects.get(room=room, user=bob).unread_count == 0
+
+        with CaptureQueriesContext(connection) as ctx:
+            assert chat_service.mark_read(room, bob) == message.pk
+        assert not [row["sql"] for row in ctx.captured_queries if row["sql"].startswith("UPDATE")]
+
+        # 有推进（新消息 + 未读清零 + 游标前移）时仍正常落库
+        second, __ = chat_service.create_message(room, alice, "再来一条")
+        chat_service.bump_unread(room, alice.pk)
+        with CaptureQueriesContext(connection) as ctx:
+            assert chat_service.mark_read(room, bob) == second.pk
+        assert [row["sql"] for row in ctx.captured_queries if row["sql"].startswith("UPDATE")]
+
 
 class TestRecall:
     def test_sender_can_recall(self, alice, bob):

@@ -68,6 +68,51 @@ def ensure_tag_permission(user, model, pk) -> None:
         raise DjangoValidationError(_("You do not have permission to tag this object"))
 
 
+def _data_scope_queryset(model, user):
+    """默认可见域：全局数据权限过滤（与各域列表页的 BaseDataPermissionFilter 同源）。"""
+    from common.core.filter import get_filter_queryset
+
+    return get_filter_queryset(model._default_manager.all(), user)
+
+
+def _approval_instance_queryset(model, user):
+    """审批实例可见域：我发起 ∪ 待我审批 ∪ 我参与过 ∪ 我被抄送（列表页缺省页签同源）。"""
+    from approval.utils.approval_flow.queries import visible_instances_for
+
+    return visible_instances_for(user)
+
+
+#: 资源键 → 可见域工厂（与该域列表页取值域同口径）。打标白名单新增资源时必须在此
+#: 登记可见性口径，未登记的类型 fail-closed：对象一律按不可见处理（404），不放宽放行。
+VISIBLE_QUERYSETS = {
+    "identity.userinfo": _data_scope_queryset,
+    "file.uploadfile": _data_scope_queryset,
+    "approval.approvalinstance": _approval_instance_queryset,
+}
+
+
+def ensure_object_visible(user, model, pk) -> None:
+    """查看级对象校验：目标对象必须落在请求者的用户可见域内（fail-closed）。
+
+    打标读口与写口权限不同口径：写（assign / batch-assign）回落业务对象的更新权限点，
+    读只要求「能看到该对象」，与各域列表页同源（普通模型走全局数据权限过滤，审批实例
+    走审批域可见域）。对象不可见与不存在同响应（404），不泄露对象存在性；
+    主键格式非法同按不可见处理。
+    """
+    from rest_framework.exceptions import NotFound
+
+    factory = VISIBLE_QUERYSETS.get(resource_key(model))
+    if factory is None:
+        raise NotFound()
+    try:
+        visible = factory(model, user).filter(pk=pk).exists()
+    except (ValueError, DjangoValidationError):
+        # 主键取值与目标模型主键字段不匹配（如 UUID 主键传入任意串）按不可见处理
+        visible = False
+    if not visible:
+        raise NotFound()
+
+
 def tag_brief(tag) -> dict:
     return {"pk": str(tag.pk), "name": tag.name, "color": tag.color or ""}
 
@@ -125,6 +170,98 @@ def set_object_tags(model, pk, tag_pks, user=None) -> list:
             ]
         )
     return object_tags(model, pk)
+
+
+def set_object_tags_batch(model, pks, tag_pks, mode="add", user=None, guard=None) -> tuple[list, list]:
+    """多对象批量打标：``mode`` 与批量端点同语义（add 合并去重 / remove 剔除 / replace 全量）。
+
+    校验口径与单对象 ``set_object_tags`` 一致（目标主键必填、单对象标签数上限、标签必须
+    已存在），数据访问批量化：现有关联一次读、标签存在性一次读、写关联一个事务
+    （先删后 ``bulk_create(ignore_conflicts=True)``，同对象同标签的唯一约束兜底并发重复）、
+    最新标签一次读回。逐对象先执行 ``guard(pk)``（打标权限回落由调用方定义）再做校验，
+    任一对象失败只记入 ``failed`` 不阻断其余对象。返回 ``(changed, failed)``，
+    条目顺序与 ``pks`` 一致；``changed`` 条目为 ``{"pk", "tags"}``，``failed`` 为 ``{"pk", "reason"}``。
+    """
+    from django.db import transaction
+
+    from system.models.tag import Tag, TaggedItem
+
+    raw_pks = list(pks or [])
+    if not raw_pks:
+        return [], []
+    incoming = [str(item) for item in (tag_pks or []) if str(item or "").strip()]
+
+    # 现有关联按对象一次读回（replace 全量替换不依赖现值，免读）
+    current_map: dict = {}
+    if mode != "replace":
+        content_type = ContentType.objects.get_for_model(model)
+        rows = TaggedItem.objects.filter(content_type=content_type, object_id__in=[str(pk) for pk in raw_pks])
+        for row in rows.order_by("object_id", "tag__name"):
+            current_map.setdefault(row.object_id, []).append(str(row.tag_id))
+
+    # 逐对象计算目标标签集（add 去重合并 / remove 剔除 / 其余按全量替换）
+    wanted_map: dict = {}
+    for pk in (str(pk) for pk in raw_pks):
+        current = current_map.get(pk, [])
+        if mode == "add":
+            wanted_map[pk] = list(dict.fromkeys([*current, *incoming]))
+        elif mode == "remove":
+            wanted_map[pk] = [item for item in current if item not in set(incoming)]
+        else:
+            wanted_map[pk] = incoming
+
+    # 标签存在性整批一次校验（取代逐对象查库；replace 入参可能重复，集合口径不受影响）
+    wanted_tag_ids = {item for wanted in wanted_map.values() for item in wanted}
+    existing_tag_ids = (
+        {str(item) for item in Tag.objects.filter(pk__in=wanted_tag_ids).values_list("pk", flat=True)}
+        if wanted_tag_ids
+        else set()
+    )
+
+    changed, failed, valid_pks = [], [], []
+    for raw_pk in raw_pks:
+        pk = str(raw_pk)
+        try:
+            if guard is not None:
+                guard(raw_pk)
+            if raw_pk in (None, ""):
+                raise DjangoValidationError(_("The target object is required"))
+            wanted = wanted_map[pk]
+            if len(wanted) > MAX_TAGS_PER_OBJECT:
+                raise DjangoValidationError(_("Too many tags (max {})").format(MAX_TAGS_PER_OBJECT))
+            if set(wanted) - existing_tag_ids:
+                raise DjangoValidationError(_("Some tags no longer exist; refresh and retry"))
+        except DjangoValidationError as exc:
+            failed.append({"pk": pk, "reason": "; ".join(getattr(exc, "messages", None) or [str(exc)])})
+            continue
+        valid_pks.append(pk)
+
+    if valid_pks:
+        content_type = ContentType.objects.get_for_model(model)
+        creator = user if getattr(user, "pk", None) else None
+        with transaction.atomic():
+            TaggedItem.objects.filter(content_type=content_type, object_id__in=valid_pks).delete()
+            TaggedItem.objects.bulk_create(
+                [
+                    TaggedItem(tag_id=tag_id, content_type=content_type, object_id=pk, creator=creator)
+                    for pk in valid_pks
+                    for tag_id in dict.fromkeys(wanted_map[pk])  # replace 入参可重复，落库按集合去重
+                ],
+                ignore_conflicts=True,
+                # 批量入口的目标对象数不受限，显式分批避免单条 INSERT 超出后端绑定参数上限
+                batch_size=500,
+            )
+        # 最新标签一次读回（按 tag 名排序，与单对象打标回显同序）
+        latest: dict = {}
+        rows = (
+            TaggedItem.objects.filter(content_type=content_type, object_id__in=valid_pks)
+            .select_related("tag")
+            .order_by("object_id", "tag__name")
+        )
+        for row in rows:
+            latest.setdefault(row.object_id, []).append(tag_brief(row.tag))
+        changed = [{"pk": pk, "tags": latest.get(pk, [])} for pk in valid_pks]
+    return changed, failed
 
 
 def _ids_for_token(model, token: str) -> set:

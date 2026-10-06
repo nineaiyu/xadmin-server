@@ -57,7 +57,10 @@ class SecurityBlockIpViewSet(ListDeleteModelSet):
     def get_queryset(self):
         ips = []
         prefix = LoginIpBlockUtil.BLOCK_KEY_TMPL.replace("{}", "")
-        keys = cache.keys(f"{prefix}*")
+        # iter_keys 走 Redis SCAN 游标增量遍历；keys() 的 KEYS 命令是全库扫描，
+        # 拦截键量大时会阻塞整个 Redis 实例。两者经同一套 key_func/reverse_key
+        # 拼接与还原键前缀，命中范围与返回的逻辑键口径不变。
+        keys = cache.iter_keys(f"{prefix}*")
         for key in keys:
             ips.append(key.replace(prefix, ""))
 

@@ -163,6 +163,41 @@ class DynamicFormSerializer(BaseModelSerializer):
         return instance
 
 
+class DynamicFormListSerializer(BaseModelSerializer):
+    """表单定义列表轻量序列化器：schema 裁剪为字段数（列表页只渲染字段数列）。
+
+    schema 全文随行回传是设计器列表的主开销（大表单 × 每页行数），列表行只保留
+    字段数元数据；需要 schema 全文的入口（设计器编辑弹窗、存为模板、从模板新建）
+    经 retrieve 单条取全量（DynamicFormSerializer），与「我的填报」列表的拆分同口径。
+    """
+
+    ignore_field_permission = True
+    approval_flow = ApprovalFlowRelatedField(
+        required=False, allow_null=True, attrs=["pk", "name"], format="{name}", label=_("Approval flow")
+    )
+    schema_fields_count = serializers.SerializerMethodField(label=_("Field count"))
+
+    class Meta:
+        model = DynamicForm
+        fields = [
+            "pk",
+            "name",
+            "description",
+            "schema_fields_count",
+            "schema_version",
+            "is_active",
+            "approval_required",
+            "approval_flow",
+            "is_template",
+            "created_time",
+            "updated_time",
+        ]
+        read_only_fields = fields
+
+    def get_schema_fields_count(self, obj) -> int:
+        return len((obj.schema or {}).get("fields") or [])
+
+
 class FormPkField(serializers.PrimaryKeyRelatedField):
     """表单外键取值域不做行级数据权限过滤（定义类资源）。"""
 

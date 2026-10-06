@@ -100,6 +100,29 @@ class TestMenuApiUrl:
         assert resp.data["code"] == 1000
         assert len(resp.data["data"]) > 0
 
+    def test_api_url_prefix_whitelist(self, auth_client):
+        """返回层前缀白名单：仅业务接口路由（api/ 前缀）进入权限点配置面。"""
+        resp = auth_client.get(f"{MENU_URL}/api-url")
+        urls = [str(item["url"]) for item in resp.data["data"]]
+        assert urls and all(url.startswith("api/") for url in urls)
+        # 非业务入口不再返回：文档站 / 任务监控代理 / 「#」哨兵条目
+        assert not any(url.startswith(("api-docs", "api/flower")) for url in urls)
+        assert "#" not in urls
+
+    def test_api_url_keeps_business_routes(self, auth_client):
+        """白名单内路由仍在清单中（权限点 path 选择器与视图下拉的合法所需）。"""
+        resp = auth_client.get(f"{MENU_URL}/api-url")
+        urls = [str(item["url"]) for item in resp.data["data"]]
+        assert "api/system/user$" in urls
+        views = {str(item.get("view") or "") for item in resp.data["data"]}
+        assert "identity.views.admin.user.UserViewSet" in views
+
+    def test_api_url_requires_menu_permission(self, api_client, normal_user):
+        """端点自身的菜单权限门禁不变：无权限点用户仍被 403 拦截。"""
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.get(f"{MENU_URL}/api-url")
+        assert resp.status_code == 403
+
 
 class TestMenuBatchUpdate:
     """批量启停：白名单只放开 is_active，逐项走序列化器校验。"""

@@ -15,6 +15,7 @@
 """
 
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -23,6 +24,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.viewsets import GenericViewSet
 
+from common.cache.lock import ReentrantLock
 from common.core.modules import (
     PRESETS,
     clear_override,
@@ -61,10 +63,26 @@ MODULE_DOCS_PATH = "docs/architecture/模块化与功能裁剪.md"
 # 生效方式提示：标准部署为多容器，页面不提供进程内重启，由运维执行
 RESTART_COMMAND = "sh xadmin.sh restart"
 PRESET_LABELS = {
-    "core": "仅内核（极简底座）",
-    "standard": "内核 + 标配（推荐二次开发起点）",
-    "full": "全部功能（默认）",
+    "core": _("Core modules only (minimal base)"),
+    "standard": _("Core + standard modules (recommended for secondary development)"),
+    "full": _("All modules (default)"),
 }
+
+# 后台覆盖写入互斥（apply / reset 共用一把锁）：「校验 → 落库 → 回显」整段串行化，
+# 否则并发请求会交错——后写者无声覆盖前者的校验结论，回显也可能混入对方的落库结果。
+# 保存是单行秒级写入，竞争方快速失败比排队等待更符合管理页交互；
+# TTL 为进程异常终止时的兜底释放，正常路径请求结束即释放。
+OVERRIDE_WRITE_LOCK_NAME = "modules_override_write"
+OVERRIDE_WRITE_LOCK_TTL = 10  # 秒
+
+
+def _acquire_override_write_lock() -> ReentrantLock:
+    """获取覆盖写入互斥锁；拿不到立即以 400 失败（不排队等待）。"""
+
+    lock = ReentrantLock(OVERRIDE_WRITE_LOCK_NAME, timeout=OVERRIDE_WRITE_LOCK_TTL)
+    if not lock.acquire(blocking=False):
+        raise ValidationError({"detail": _("Another module configuration save is in progress, please try again later")})
+    return lock
 
 
 class ModuleApplySerializer(serializers.Serializer):
@@ -145,22 +163,35 @@ class SystemModuleViewSet(GenericViewSet):
 
         校验与启动期完全同口径：未知模块 / 内核被关 / 依赖不满足直接 400。
         保存只落库，不改变当前进程的解析结果（避免等同于热更新）。
+        校验、落库与回显在写入锁内整体完成，并发保存互斥串行。
         """
         serializer = ModuleApplySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         preset = serializer.validated_data["preset"]
         enable = serializer.validated_data.get("enable", [])
         disable = serializer.validated_data.get("disable", [])
+        lock = _acquire_override_write_lock()
         try:
-            preview_modules(preset=preset, enable=enable, disable=disable)
-        except ImproperlyConfigured as exc:
-            raise ValidationError({"detail": str(exc)}) from exc
-        save_override(preset=preset, enable=enable, disable=disable)
-        return ApiResponse(data=build_payload())
+            # 校验必须与落库同锁：校验结论对「即将写入的这份配置」负责，
+            # 锁外校验会让并发写入插进校验与落库之间，失去互斥意义
+            try:
+                preview_modules(preset=preset, enable=enable, disable=disable)
+            except ImproperlyConfigured as exc:
+                raise ValidationError({"detail": str(exc)}) from exc
+            save_override(preset=preset, enable=enable, disable=disable)
+            payload = build_payload()
+        finally:
+            lock.release()
+        return ApiResponse(data=payload)
 
     @extend_schema(request=None, responses=modules_response_schema())
     @action(detail=False, methods=["post"], url_path="reset")
     def reset(self, request, *args, **kwargs):
         """恢复为部署配置（清除后台覆盖，重启后生效）"""
-        clear_override()
-        return ApiResponse(data=build_payload())
+        lock = _acquire_override_write_lock()
+        try:
+            clear_override()
+            payload = build_payload()
+        finally:
+            lock.release()
+        return ApiResponse(data=payload)

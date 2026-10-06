@@ -8,6 +8,7 @@ from unittest import mock
 
 import pytest
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from rest_framework.test import APIRequestFactory, force_authenticate
@@ -223,6 +224,58 @@ def test_registered_action_lists_user_tasks():
     assert not any(name.startswith("celery.") for name in names)
     item = next(i for i in response.data["data"] if i["name"] == "system.tasks.auto_clean_operation_job")
     assert isinstance(item["verbose_name"], str)
+
+
+def test_ensure_tasks_registered_scans_once_per_process(monkeypatch):
+    """全量 autodiscover 开销大：进程内只扫一次，后续调用直接复用已注册任务。"""
+    from task.views import task_periodic
+
+    monkeypatch.setattr(task_periodic, "_autodiscovered", False)
+    with mock.patch.object(task_periodic.app, "autodiscover_tasks") as autodiscover:
+        task_periodic.ensure_tasks_registered()
+        task_periodic.ensure_tasks_registered()
+        autodiscover.assert_called_once_with(force=True)
+
+
+def test_ensure_tasks_registered_force_rescans(monkeypatch):
+    from task.views import task_periodic
+
+    monkeypatch.setattr(task_periodic, "_autodiscovered", True)
+    with mock.patch.object(task_periodic.app, "autodiscover_tasks") as autodiscover:
+        task_periodic.ensure_tasks_registered(force=True)
+        autodiscover.assert_called_once_with(force=True)
+
+
+def test_registered_action_reuses_scanned_tasks_by_default(monkeypatch):
+    """缺省（不带 refresh）复用进程内已注册任务，不再重复全量扫描。"""
+    from task.views import task_periodic
+
+    monkeypatch.setattr(task_periodic, "_autodiscovered", True)
+    user = _make_user()
+    factory = APIRequestFactory()
+    request = factory.get("/api/system/tasks/periodic/registered")
+    force_authenticate(request, user=user)
+    view = PeriodicTaskViewSet.as_view({"get": "registered"})
+    with mock.patch.object(task_periodic.app, "autodiscover_tasks") as autodiscover:
+        response = view(request)
+    assert response.data["code"] == 1000
+    autodiscover.assert_not_called()
+
+
+def test_registered_action_refresh_forces_rescan(monkeypatch):
+    """refresh=1 强制重新扫描任务模块（新装 app 后立即可见的逃生口）。"""
+    from task.views import task_periodic
+
+    monkeypatch.setattr(task_periodic, "_autodiscovered", True)
+    user = _make_user()
+    factory = APIRequestFactory()
+    request = factory.get("/api/system/tasks/periodic/registered?refresh=1")
+    force_authenticate(request, user=user)
+    view = PeriodicTaskViewSet.as_view({"get": "registered"})
+    with mock.patch.object(task_periodic.app, "autodiscover_tasks") as autodiscover:
+        response = view(request)
+    assert response.data["code"] == 1000
+    autodiscover.assert_called_once_with(force=True)
 
 
 def test_periodic_task_args_must_be_json_list():
@@ -527,3 +580,236 @@ def test_execution_detail_without_annotation_stays_safe(superuser):
     assert row["product_type"] == "" and row["product_progress"] == 0
     # 默认 PENDING 属活跃态（可取消），非产物任务不可重跑
     assert row["can_cancel"] is True and row["can_rerun"] is False
+
+
+# ---------------------------------------------------------------------------
+# 定时任务一致性回归：interval 落库复用 / 克隆名后缀 / batch-enable 失败明细 /
+# task 路径存在性校验
+# ---------------------------------------------------------------------------
+
+
+def _make_interval_crontab():
+    return CrontabSchedule.objects.create(minute="0", hour="4", day_of_week="*", day_of_month="*", month_of_year="*")
+
+
+def _make_named_periodic_task(name):
+    return PeriodicTask.objects.create(
+        name=name,
+        task="system.tasks.auto_clean_operation_job",
+        crontab=_make_interval_crontab(),
+        args="[]",
+        kwargs="{}",
+    )
+
+
+def test_interval_create_reuses_existing_schedule_row():
+    """同 (every, period) 二次落库复用既有行：不产生重复的间隔调度。"""
+    from django_celery_beat.models import IntervalSchedule
+
+    from task.serializers.task import IntervalScheduleSerializer
+
+    first = IntervalSchedule.objects.create(every=9, period="minutes")
+    instance = IntervalScheduleSerializer().create({"every": 9, "period": "minutes"})
+    assert instance.pk == first.pk
+    assert IntervalSchedule.objects.filter(every=9, period="minutes").count() == 1
+
+
+def test_interval_create_requeries_after_write_conflict():
+    """并发兜底：查重通过后他人先落库且本次写入撞车（IntegrityError）时回查复用既有行。"""
+    from django.db import IntegrityError
+    from django_celery_beat.models import IntervalSchedule
+
+    from task.serializers.task import IntervalScheduleSerializer
+
+    existing = IntervalSchedule.objects.create(every=9, period="minutes")
+    # get_or_create 内部调用查询集的 get/create，管理器实例上的 mock 拦截不到，
+    # 须在查询集类上模拟「首次查询未命中 → 写入撞车 → 回查命中」的竞态序列
+    queryset_class = type(IntervalSchedule.objects.none())
+    with (
+        mock.patch.object(queryset_class, "get", side_effect=[IntervalSchedule.DoesNotExist, existing]),
+        mock.patch.object(queryset_class, "create", side_effect=IntegrityError),
+    ):
+        instance = IntervalScheduleSerializer().create({"every": 9, "period": "minutes"})
+    assert instance.pk == existing.pk
+    assert IntervalSchedule.objects.filter(every=9, period="minutes").count() == 1
+
+
+def test_interval_serializer_still_rejects_duplicate_combo():
+    """业务侧查重校验保留：重复组合在校验阶段即被拒（用户可读报错，不落到复用分支）。"""
+    from django_celery_beat.models import IntervalSchedule
+
+    from task.serializers.task import IntervalScheduleSerializer
+
+    IntervalSchedule.objects.create(every=9, period="minutes")
+    serializer = IntervalScheduleSerializer(data={"every": 9, "period": "minutes"})
+    assert serializer.is_valid() is False
+
+
+def test_clone_name_computes_next_suffix_with_single_query():
+    """克隆名后缀一次查询推导：既有克隆名密集时返回第一个空档，且仅发一条查询。"""
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    from task.views.task_periodic import _next_available_clone_name
+
+    crontab = _make_interval_crontab()
+    for name in ("后缀任务-copy", "后缀任务-copy-2", "后缀任务-copy-4"):
+        PeriodicTask.objects.create(name=name, task="system.tasks.auto_clean_operation_job", crontab=crontab)
+    with CaptureQueriesContext(connection) as ctx:
+        assert _next_available_clone_name("后缀任务") == "后缀任务-copy-3"
+    assert len(ctx) == 1
+
+
+def test_clone_name_ignores_unnumbered_and_gapless_from_two():
+    """克隆名后缀规则：非数字后缀与「-copy-1」不占位，缺省名空闲时直接用首选名。"""
+    from task.views.task_periodic import _next_available_clone_name
+
+    crontab = _make_interval_crontab()
+    # 手工改名的同前缀名（非 -{数字} 后缀）不算克隆占位
+    PeriodicTask.objects.create(
+        name="改名任务-copy-备份", task="system.tasks.auto_clean_operation_job", crontab=crontab
+    )
+    assert _next_available_clone_name("改名任务") == "改名任务-copy"
+    # 「-copy-1」形态不阻塞首选名（与逐次探测口径一致）
+    PeriodicTask.objects.create(name="手工任务-copy-1", task="system.tasks.auto_clean_operation_job", crontab=crontab)
+    assert _next_available_clone_name("手工任务") == "手工任务-copy"
+    # 无任何同前缀名 → 首选「{name}-copy」
+    assert _next_available_clone_name("全新任务") == "全新任务-copy"
+
+
+def test_clone_periodic_task_uses_computed_name():
+    """克隆走一次查询的后缀推导：密集命名下得到第一个空档且默认停用。"""
+    from task.views.task_periodic import _clone_periodic_task
+
+    source = _make_named_periodic_task("克隆源任务")
+    _make_named_periodic_task("克隆源任务-copy")
+    clone = _clone_periodic_task(source)
+    assert clone.name == "克隆源任务-copy-2"
+    assert clone.enabled is False
+    assert clone.task == source.task
+
+
+def test_batch_enable_reports_unmatched_and_invalid_pks():
+    """批量启停的失败明细如实返回：非法主键与未命中主键进 failed，不再恒为空列表。"""
+    user = _make_user()
+    instance = _make_periodic_task()
+    bogus = str(uuid.uuid4())
+    factory = APIRequestFactory()
+    request = factory.post(
+        "/api/system/tasks/periodic/batch-enable",
+        data={"pks": [str(instance.pk), "abc", "999999", bogus], "enabled": True},
+        format="json",
+    )
+    force_authenticate(request, user=user)
+    view = PeriodicTaskViewSet.as_view({"post": "batch_enable"})
+    response = view(request)
+    assert response.data["code"] == 1000
+    assert response.data["data"]["success"] == 1
+    failed = response.data["data"]["failed"]
+    assert {item["pk"] for item in failed} == {"abc", "999999", bogus}
+    assert all(item["detail"] for item in failed)
+    instance.refresh_from_db()
+    assert instance.enabled is True
+
+
+def test_batch_enable_reports_save_failure():
+    """批量启停单项保存失败不影响其余项，失败明细带 pk/名称/原因。"""
+    user = _make_user()
+    ok_task = _make_named_periodic_task("批量启停-成功项")
+    doomed = _make_named_periodic_task("批量启停-失败项")
+    real_save = PeriodicTask.save
+
+    def _flaky_save(self, *args, **kwargs):
+        if self.pk == doomed.pk:
+            raise OSError("boom")
+        return real_save(self, *args, **kwargs)
+
+    factory = APIRequestFactory()
+    request = factory.post(
+        "/api/system/tasks/periodic/batch-enable",
+        data={"pks": [str(ok_task.pk), str(doomed.pk)], "enabled": False},
+        format="json",
+    )
+    force_authenticate(request, user=user)
+    view = PeriodicTaskViewSet.as_view({"post": "batch_enable"})
+    with mock.patch.object(PeriodicTask, "save", _flaky_save):
+        response = view(request)
+    assert response.data["code"] == 1000
+    assert response.data["data"]["success"] == 1
+    failed = response.data["data"]["failed"]
+    assert len(failed) == 1
+    assert failed[0]["pk"] == str(doomed.pk)
+    assert failed[0]["name"] == "批量启停-失败项"
+    assert "boom" in failed[0]["detail"]
+    ok_task.refresh_from_db()
+    doomed.refresh_from_db()
+    assert ok_task.enabled is False
+    assert doomed.enabled is True  # 保存失败不改状态
+
+
+def test_periodic_create_rejects_unregistered_task_path(monkeypatch):
+    """task 路径未注册时创建即 400：保存期拦截，而非执行时才失败。"""
+    _allow_runnable_tasks(monkeypatch, ["no.exist.task"])
+    user = _make_user()
+    crontab = _make_interval_crontab()
+    factory = APIRequestFactory()
+    request = factory.post(
+        "/api/system/tasks/periodic",
+        data={
+            "name": "未注册路径任务",
+            "task": "no.exist.task",
+            "crontab": crontab.pk,
+            "args": "[]",
+            "kwargs": "{}",
+        },
+        format="json",
+    )
+    force_authenticate(request, user=user)
+    view = PeriodicTaskViewSet.as_view({"post": "create"})
+    # 直接调用视图时 ATOMIC_REQUESTS 会把 400 的回滚标记打到测试事务上，
+    # 用 savepoint 隔离，断言才能在错误响应后继续查库
+    with transaction.atomic():
+        response = view(request)
+    assert response.data["code"] != 1000
+    assert PeriodicTask.objects.filter(name="未注册路径任务").exists() is False
+
+
+def test_periodic_update_rejects_unregistered_task_path(monkeypatch):
+    """更新同理：改为未注册路径被 400 拒绝，原 task 字段保持不变。"""
+    _allow_runnable_tasks(monkeypatch, ["system.tasks.auto_clean_operation_job", "no.exist.task"])
+    user = _make_user()
+    instance = _make_periodic_task()
+    factory = APIRequestFactory()
+    request = factory.patch(f"/api/system/tasks/periodic/{instance.pk}", data={"task": "no.exist.task"}, format="json")
+    force_authenticate(request, user=user)
+    view = PeriodicTaskViewSet.as_view({"patch": "partial_update"})
+    # 同上：错误响应的回滚标记用 savepoint 隔离，refresh_from_db 才能继续
+    with transaction.atomic():
+        response = view(request, pk=str(instance.pk))
+    assert response.data["code"] != 1000
+    instance.refresh_from_db()
+    assert instance.task == "system.tasks.auto_clean_operation_job"
+
+
+def test_periodic_create_accepts_registered_task_path(monkeypatch):
+    """路径存在（已注册任务）时创建通过：存在性校验与白名单并列不冲突。"""
+    _allow_runnable_tasks(monkeypatch, ["system.tasks.auto_clean_operation_job"])
+    user = _make_user()
+    crontab = _make_interval_crontab()
+    factory = APIRequestFactory()
+    request = factory.post(
+        "/api/system/tasks/periodic",
+        data={
+            "name": "已注册路径任务",
+            "task": "system.tasks.auto_clean_operation_job",
+            "crontab": crontab.pk,
+            "args": "[]",
+            "kwargs": "{}",
+        },
+        format="json",
+    )
+    force_authenticate(request, user=user)
+    view = PeriodicTaskViewSet.as_view({"post": "create"})
+    response = view(request)
+    assert response.data["code"] == 1000, response.data
+    assert PeriodicTask.objects.filter(pk=response.data["data"]["pk"]).exists() is True

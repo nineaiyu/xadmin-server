@@ -92,9 +92,18 @@ class OpenOAuthAuthorizeAPIView(APIView):
 
 
 class OpenOAuthApproveAPIView(APIView):
-    """用户同意 / 拒绝：同意生成一次性授权码；拒绝回传 access_denied（均写审计）。"""
+    """用户同意 / 拒绝：同意生成一次性授权码；拒绝回传 access_denied（均写审计）。
+
+    同意动作仅接受 JSON 请求体：本产品的授权同意页只以 JSON POST 调用本端点，
+    而认证链带 X-Token Cookie 回退，放开表单编码时跨站表单 POST 可借 Cookie
+    冒用登录态代用户授权；HTML 表单产生不了 JSON Content-Type，跨站脚本请求
+    又过不了 CORS 预检，故以 Content-Type 作为同源收紧点（fail-closed）。
+    """
 
     def post(self, request, *args, **kwargs):
+        content_type = (request.content_type or "").split(";")[0].strip().lower()
+        if content_type != "application/json":
+            return oauth_error("invalid_request", _("This action only accepts JSON requests"), status=403)
         approved = request.data.get("approved")
         approved = approved is True or str(approved).lower() in ("true", "1", "yes")
         application, redirect_uri, scopes, challenge, method, state, error = validate_authorize_request(request.data)

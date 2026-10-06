@@ -7,6 +7,7 @@ import pytest
 from django.test import RequestFactory, override_settings
 
 from audit.models import DataMaskRule
+from audit.serializers.mask import DataMaskRuleSerializer
 from audit.utils.mask import apply_mask, get_mask_rules, invalid_mask_cache
 from audit.views.admin.mask import PREVIEW_MAX_VALUE_LENGTH, PREVIEW_MAX_VALUES
 from identity.models import UserInfo
@@ -81,6 +82,44 @@ class TestApplyMask:
         assert apply_mask("", rule) == ""
         assert apply_mask(None, rule) is None
         assert apply_mask(12345, rule) == 12345
+
+
+class TestCustomPatternSaveValidation:
+    """自定义正则保存期试编译：非法正则入口即拒，不再流入运行时静默失效。"""
+
+    def test_accepts_valid_custom_pattern(self):
+        serializer = DataMaskRuleSerializer(
+            data={"model": "identity.userinfo", "field": "phone", "mask_type": "custom", "pattern": r"1[3-9]\d{9}"}
+        )
+        assert serializer.is_valid(), serializer.errors
+
+    def test_rejects_illegal_custom_pattern(self):
+        serializer = DataMaskRuleSerializer(
+            data={"model": "identity.userinfo", "field": "phone", "mask_type": "custom", "pattern": "("}
+        )
+        assert not serializer.is_valid()
+        assert "pattern" in serializer.errors
+        assert "(" in str(serializer.errors["pattern"])  # 报错携带正则原文
+
+    def test_create_defaults_to_custom_and_validates(self):
+        """创建时未显式携带 mask_type：按模型默认 custom 参与判定。"""
+        serializer = DataMaskRuleSerializer(data={"model": "identity.userinfo", "field": "phone", "pattern": "("})
+        assert not serializer.is_valid()
+        assert "pattern" in serializer.errors
+
+    def test_patch_to_custom_validates_stored_pattern(self):
+        """PATCH 把 mask_type 改成 custom 时，存量非法 pattern 同样被拦截。"""
+        rule = DataMaskRule.objects.create(model="identity.userinfo", field="phone", mask_type="phone", pattern="(")
+        serializer = DataMaskRuleSerializer(rule, data={"mask_type": "custom"}, partial=True)
+        assert not serializer.is_valid()
+        assert "pattern" in serializer.errors
+
+    def test_non_custom_type_leaves_pattern_unvalidated(self):
+        """pattern 仅在 mask_type=custom 时参与脱敏：其他类型不因存量非法值卡保存。"""
+        serializer = DataMaskRuleSerializer(
+            data={"model": "identity.userinfo", "field": "phone", "mask_type": "phone", "pattern": "("}
+        )
+        assert serializer.is_valid(), serializer.errors
 
 
 class TestMaskRulesCache:
@@ -493,6 +532,57 @@ class TestMaskRuleAPI:
             format="json",
         )
         assert resp.status_code == 400
+
+    def test_preview_illegal_pattern_flags_invalid(self, auth_client):
+        """非法自定义正则：预览仍返回原值不炸，但 data.invalid_pattern=true 显式标记未生效。"""
+        resp = auth_client.post(
+            "/api/system/mask-rules/preview",
+            {"value": PHONE, "rule": {"mask_type": "custom", "keep_head": 3, "keep_tail": 2, "pattern": "("}},
+            format="json",
+        )
+        assert resp.data["code"] == 1000
+        data = resp.data["data"]
+        assert data["result"] == PHONE
+        assert data["invalid_pattern"] is True
+
+    def test_preview_valid_pattern_flag_false(self, auth_client):
+        """合法自定义正则：正常脱敏，invalid_pattern=False（响应结构只增不改）。"""
+        resp = auth_client.post(
+            "/api/system/mask-rules/preview",
+            {
+                "value": PHONE,
+                "rule": {"mask_type": "custom", "keep_head": 3, "keep_tail": 2, "pattern": r"1[3-9]\d{9}"},
+            },
+            format="json",
+        )
+        assert resp.data["code"] == 1000
+        data = resp.data["data"]
+        assert data["result"] == "138******78"
+        assert data["invalid_pattern"] is False
+
+    def test_create_illegal_custom_pattern_rejected(self, auth_client):
+        """非法自定义正则：创建被 400 拒绝，报错含正则原文，规则不落库。"""
+        resp = auth_client.post(
+            "/api/system/mask-rules",
+            {"model": "identity.userinfo", "field": "phone", "mask_type": "custom", "pattern": "("},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert "(" in str(resp.data["detail"])
+        assert not DataMaskRule.objects.filter(field="phone", mask_type="custom").exists()
+
+    def test_create_valid_custom_pattern_masks_as_before(self, auth_client):
+        """保存合法自定义正则成功，且按已存规则脱敏行为不变。"""
+        resp = auth_client.post(
+            "/api/system/mask-rules",
+            {"model": "identity.userinfo", "field": "phone", "mask_type": "custom", "pattern": r"1[3-9]\d{9}"},
+            format="json",
+        )
+        assert resp.data["code"] == 1000
+        rule = next(
+            r for r in get_mask_rules("identity.userinfo") if r["field"] == "phone" and r["mask_type"] == "custom"
+        )
+        assert apply_mask(PHONE, rule) == "138******78"
 
     def test_crud_smoke(self, auth_client):
         resp = auth_client.post(

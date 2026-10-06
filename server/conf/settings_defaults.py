@@ -82,6 +82,10 @@ SETTINGS_CONFIG = {
     "SECURITY_BIND_PHONE_CAPTCHA_ENABLED": True,
     "SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED": True,
     "SECURITY_BIND_PHONE_ENCRYPTED_ENABLED": True,
+    # 管理端建号密码传输加密（前端建号表单提交 AESCipherV2(username) 加密串）：
+    # 开启时建号密码必须解密成功，解密失败直接拒绝并补审计，不再把密文/明文误落；
+    # 导入/脚本/E2E 等按明文提交密码的场景可关闭（关闭后保持解密失败回退明文的兼容行为）
+    "SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED": True,
     # 临时令牌（tmp_token）独立时效（秒）：登录/注册/重置/绑定加密握手共用
     "SECURITY_TEMP_TOKEN_EXPIRE": 600,
     # MFA / 敏感操作二次验证

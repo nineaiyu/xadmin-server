@@ -17,6 +17,7 @@ from system.utils.platform.tags import (
     object_tags,
     resource_key,
     set_object_tags,
+    set_object_tags_batch,
     taggable_model,
     taggable_resources,
     tags_for_instance,
@@ -86,6 +87,107 @@ class TestTagging:
     def test_empty_pk_rejected(self):
         with pytest.raises(DjangoValidationError):
             set_object_tags(UserInfo, "", [])
+
+
+class TestBatchTagging:
+    """多对象批量打标：三种模式语义 + 重复执行幂等 + 单对象失败隔离与统计口径。"""
+
+    def test_batch_modes_multi_objects_and_idempotent(self, superuser):
+        alice = UserInfo.objects.create(username="tag-batch-a", nickname="A")
+        bob = UserInfo.objects.create(username="tag-batch-b", nickname="B")
+        vip = Tag.objects.create(name="VIP")
+        outsource = Tag.objects.create(name="外包")
+        pks = [str(alice.pk), str(bob.pk)]
+
+        # add：入参重复的标签按集合口径合并，逐对象落库
+        changed, failed = set_object_tags_batch(UserInfo, pks, [str(vip.pk), str(vip.pk)], mode="add", user=superuser)
+        assert not failed and [item["pk"] for item in changed] == pks
+        assert [item["name"] for item in changed[0]["tags"]] == ["VIP"]
+        assert TaggedItem.objects.count() == 2
+
+        # 重复执行幂等：不产生重复关联，回显不变
+        changed_again, failed_again = set_object_tags_batch(UserInfo, pks, [str(vip.pk)], mode="add", user=superuser)
+        assert not failed_again
+        assert changed_again == changed
+        assert TaggedItem.objects.count() == 2
+
+        # remove：只剔除命中标签，其余关联原样保留
+        set_object_tags_batch(UserInfo, [str(bob.pk)], [str(outsource.pk)], mode="add", user=superuser)
+        changed, failed = set_object_tags_batch(UserInfo, pks, [str(vip.pk)], mode="remove", user=superuser)
+        assert not failed
+        assert TaggedItem.objects.count() == 1  # 仅 bob 剩「外包」
+        assert [item["name"] for item in changed[0]["tags"]] == []
+        assert [item["name"] for item in changed[1]["tags"]] == ["外包"]
+        # remove 幂等：重复剔除不增不减
+        changed, failed = set_object_tags_batch(UserInfo, pks, [str(vip.pk)], mode="remove", user=superuser)
+        assert not failed and TaggedItem.objects.count() == 1
+
+        # replace：全量替换（此前为空的对象也写入）
+        changed, failed = set_object_tags_batch(UserInfo, pks, [str(vip.pk)], mode="replace", user=superuser)
+        assert not failed
+        assert TaggedItem.objects.count() == 2
+        assert all([item["name"] for item in entry["tags"]] == ["VIP"] for entry in changed)
+
+    def test_batch_multi_tag_order_and_duplicate_targets(self, superuser):
+        user = UserInfo.objects.create(username="tag-batch-g", nickname="G")
+        zeta = Tag.objects.create(name="zeta")
+        alpha = Tag.objects.create(name="alpha")
+        mid = Tag.objects.create(name="mid")
+        duplicated_pks = [str(user.pk), str(user.pk)]
+
+        # 回显按标签名排序（与单对象打标同序），与入参顺序无关
+        changed, failed = set_object_tags_batch(
+            UserInfo, duplicated_pks, [str(zeta.pk), str(mid.pk), str(alpha.pk)], mode="replace", user=superuser
+        )
+        assert not failed
+        assert [item["name"] for item in changed[0]["tags"]] == ["alpha", "mid", "zeta"]
+
+        # 入参目标重复：与逐对象循环同口径——每个目标各回显一条，落库不产生重复关联
+        assert [item["pk"] for item in changed] == duplicated_pks
+        assert TaggedItem.objects.filter(object_id=str(user.pk)).count() == 3
+
+    def test_batch_failure_isolation_and_stats(self, superuser):
+        alice = UserInfo.objects.create(username="tag-batch-c", nickname="C")
+        bob = UserInfo.objects.create(username="tag-batch-d", nickname="D")
+        vip = Tag.objects.create(name="VIP")
+        ghost = "00000000-0000-0000-0000-000000000000"
+
+        # 标签不存在：replace 语义下入参即目标集，全部对象失败、不入库
+        changed, failed = set_object_tags_batch(
+            UserInfo, [str(alice.pk), str(bob.pk)], [str(vip.pk), ghost], mode="replace", user=superuser
+        )
+        assert not changed
+        assert [item["pk"] for item in failed] == [str(alice.pk), str(bob.pk)]
+        assert all(item["reason"] for item in failed)
+        assert TaggedItem.objects.count() == 0
+
+        # add 模式超上限：现有关联多的对象被拦，其余对象照常成功（失败对象原关联不动）
+        hoarded = [Tag.objects.create(name=f"存量-{i}") for i in range(19)]
+        set_object_tags(UserInfo, alice.pk, [tag.pk for tag in hoarded], superuser)
+        extras = [Tag.objects.create(name=f"新增-{i}") for i in range(2)]
+        changed, failed = set_object_tags_batch(
+            UserInfo, [str(alice.pk), str(bob.pk)], [tag.pk for tag in extras], mode="add", user=superuser
+        )
+        assert [item["pk"] for item in changed] == [str(bob.pk)]
+        assert [item["pk"] for item in failed] == [str(alice.pk)]
+        assert TaggedItem.objects.filter(object_id=str(bob.pk)).count() == 2
+        assert TaggedItem.objects.filter(object_id=str(alice.pk)).count() == 19
+
+        # 权限回落拒绝（guard 抛错）：按对象隔离，成功对象照常写库
+        carol = UserInfo.objects.create(username="tag-batch-e", nickname="E")
+        dave = UserInfo.objects.create(username="tag-batch-f", nickname="F")
+
+        def deny_dave(pk):
+            if pk == str(dave.pk):
+                raise DjangoValidationError("denied")
+
+        changed, failed = set_object_tags_batch(
+            UserInfo, [str(carol.pk), str(dave.pk)], [str(vip.pk)], mode="replace", user=superuser, guard=deny_dave
+        )
+        assert [item["pk"] for item in changed] == [str(carol.pk)]
+        assert [item["name"] for item in changed[0]["tags"]] == ["VIP"]
+        assert [item["pk"] for item in failed] == [str(dave.pk)]
+        assert not TaggedItem.objects.filter(object_id=str(dave.pk)).exists()
 
 
 class TestFiltering:

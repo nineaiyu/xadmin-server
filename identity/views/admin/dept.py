@@ -5,7 +5,7 @@
 # author : ly_13
 # date : 6/16/2023
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
@@ -110,13 +110,16 @@ class DeptViewSet(
         """我的管辖：当前用户任管理员的部门（含全部下级）与成员统计（恒定本人范围，只读）。
 
         部门行附带主管（leader）与管理员清单（managers，含共管同事），供管辖页
-        直接展示联系人；user_count 为直属成员数，总体成员数在顶层 user_count。
+        直接展示联系人；user_count 为直属在册成员数（未删除、含停用），与成员
+        预览/用户管理按部门筛选的列表展示同口径；总体在册成员数在顶层 user_count。
         """
         direct_pks = list(request.user.managed_depts.filter(is_active=True).values_list("pk", flat=True))
         tree_pks = [str(pk) for pk in DeptInfo.dept_tree_pks(direct_pks)] if direct_pks else []
         rows = (
             DeptInfo.objects.filter(pk__in=tree_pks, is_active=True)
-            .annotate(member_count=Count("dept_query"))
+            # 注解走 JOIN 不经软删除管理器，须显式排除已删除用户，与顶层 user_count
+            # （默认管理器已滤软删除）及成员列表展示保持同一口径
+            .annotate(member_count=Count("dept_query", filter=Q(dept_query__deleted_at__isnull=True)))
             .select_related("leader")
             .prefetch_related("managers")
             .order_by("rank", "name")
@@ -139,5 +142,7 @@ class DeptViewSet(
             }
             for row in rows
         ]
-        user_count = UserInfo.objects.filter(dept__in=tree_pks, is_active=True).count() if tree_pks else 0
+        # 与部门行 member_count 同口径：未删除成员（默认管理器已滤软删除，含停用），
+        # 与成员预览/用户管理按部门筛选列表实际展示一致；各直属计数之和即此总数
+        user_count = UserInfo.objects.filter(dept__in=tree_pks).count() if tree_pks else 0
         return ApiResponse(data={"depts": depts, "dept_count": len(depts), "user_count": user_count})

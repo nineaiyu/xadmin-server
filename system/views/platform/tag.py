@@ -5,6 +5,8 @@
 - 权限：标签管理 4 个权限点（list/create/partialUpdate/destroy:Tag）；
   打标（assign / batch-assign）回落业务对象的写权限点（``user_can_visit``
   与 AI 动作同一匹配函数，不新增对象级权限点；回落模板见 TAGGABLE_MODELS）；
+  读取（objects）要求请求者对目标对象可见（可见域口径见 VISIBLE_QUERYSETS，
+  不可见与不存在同响应 404，防主键探测）；
 - 删除保护：内置标签不可删；被引用（有打标对象）的标签拒绝删除，提示先解绑；
 - 过滤：列表 ``?tag=<id|name>``（多值 AND）落在对象视图集的 ``TagFilterBackend`` 上。
 """
@@ -36,10 +38,12 @@ from common.swagger.utils import get_default_response_schema
 from system.models.tag import Tag
 from system.serializers.tag import TagAssignSerializer, TagBatchAssignSerializer, TagSerializer
 from system.utils.platform.tags import (
+    ensure_object_visible,
     ensure_tag_permission,
     invalidate_tag_options_cache,
     object_tags,
     set_object_tags,
+    set_object_tags_batch,
     taggable_model,
     taggable_resources,
 )
@@ -110,11 +114,16 @@ class TagViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="objects")
     def objects(self, request, *args, **kwargs):
-        """查询某对象的标签：``?resource=system.userinfo&pk=<对象主键>``。"""
+        """查询某对象的标签：``?resource=identity.userinfo&pk=<对象主键>``。"""
         model = taggable_model(request.query_params.get("resource"))
         if model is None:
             return ApiResponse(code=1001, detail=_("The object type cannot be tagged"))
-        return ApiResponse(data={"tags": object_tags(model, request.query_params.get("pk"))})
+        pk = request.query_params.get("pk")
+        if pk:
+            # 对象级校验：请求者看不到目标对象时不返回打标情况（与「对象不存在」同响应，
+            # 避免知道主键就能探测任意对象的打标情况）；可见域口径见 VISIBLE_QUERYSETS
+            ensure_object_visible(request.user, model, pk)
+        return ApiResponse(data={"tags": object_tags(model, pk)})
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="assign")
@@ -139,22 +148,13 @@ class TagViewSet(
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data
         model = taggable_model(payload["resource"])
-        mode = payload.get("mode") or "add"
-        changed, failed = [], []
-        for pk in payload["pks"]:
-            try:
-                ensure_tag_permission(request.user, model, pk)
-                current = [] if mode == "replace" else [item["pk"] for item in object_tags(model, pk)]
-                incoming = [str(item) for item in payload.get("tags") or []]
-                if mode == "add":
-                    wanted = list(dict.fromkeys([*current, *incoming]))
-                elif mode == "remove":
-                    wanted = [item for item in current if item not in set(incoming)]
-                else:
-                    wanted = incoming
-                tags = set_object_tags(model, pk, wanted, request.user)
-                changed.append({"pk": str(pk), "tags": tags})
-            except DjangoValidationError as exc:
-                failed.append({"pk": str(pk), "reason": _detail_of(exc)})
+        changed, failed = set_object_tags_batch(
+            model,
+            payload["pks"],
+            payload.get("tags") or [],
+            mode=payload.get("mode") or "add",
+            user=request.user,
+            guard=lambda pk: ensure_tag_permission(request.user, model, pk),
+        )
         detail = _("Tags updated: {} objects, {} failed").format(len(changed), len(failed))
         return ApiResponse(data={"success": changed, "failures": failed}, detail=detail)

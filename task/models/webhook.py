@@ -49,6 +49,10 @@ class WebhookDelivery(DbAuditModel, DbUuidModel):
     response_body = models.CharField(_("Response body"), max_length=500, blank=True, default="")
     duration = models.FloatField(_("Duration"), null=True, blank=True, help_text=_("Seconds"))
     next_retry_at = models.DateTimeField(_("Next retry at"), null=True, blank=True)
+    # 派发代际号：每次派发（首投/倒计时重试/人工重试）事务内 +1，任务只认领
+    # 派发时携带的代际号——队列中残留的旧任务到期后因不匹配静默失效，
+    # 避免与人工 retry 并发造成订阅方收到计划外重复投递
+    generation = models.IntegerField(_("Generation"), default=0)
 
     class Meta:
         verbose_name = _("Webhook delivery")

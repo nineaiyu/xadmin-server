@@ -10,9 +10,10 @@ from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 
 from audit.models import OperationLog
-from audit.serializers.log import OperationLogSerializer
+from audit.serializers.log import OperationLogListSerializer, OperationLogSerializer
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend, PkMultipleFilter
-from common.core.modelset import OnlyExportDataAction, OnlyListModelSet
+from common.core.modelset import DetailAction, OnlyExportDataAction, OnlyListModelSet
+from common.core.response import API_SUCCESS_CODE
 
 
 class OperationLogFilter(BaseFilterSet):
@@ -32,9 +33,10 @@ class OperationLogFilter(BaseFilterSet):
     error_status = filters.BooleanFilter(method="get_error_status", label=_("Error status"))
 
     def get_error_status(self, queryset, name, value):
+        # 成功口径 = 全平台 API 业务成功码（与 ApiResponse / 写日志侧同源）
         if value is True:
-            return queryset.exclude(status_code=1000)
-        return queryset.filter(status_code=1000)
+            return queryset.exclude(status_code=API_SUCCESS_CODE)
+        return queryset.filter(status_code=API_SUCCESS_CODE)
 
     def get_has_changes(self, queryset, name, value):
         # 字段级审计 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径写入）
@@ -67,16 +69,21 @@ class OperationLogFilter(BaseFilterSet):
         ]
 
 
-class OperationLogViewSet(OnlyListModelSet, OnlyExportDataAction):
-    """操作日志（只读 + 导出）
+class OperationLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction):
+    """操作日志（只读 + 详情 + 导出）
 
     审计痕迹不可经 API 抹除：不提供删除 / 批量删除端点。凭证轮换、OAuth 授权、
     SCIM 审计与业务操作日志同表存储，删除能力等于允许灭迹；留存的收敛由
     ``manage.py log_archive``（归档水位驱动清理）在服务端统一执行。
+
+    列表与详情分口径：列表行的大 JSON 字段（body / response_result）降为有界
+    预览（``OperationLogListSerializer``，changes 保留全量供「变更历史」弹窗
+    逐行渲染），retrieve / 导出经 ``serializer_class`` 返回全量。
     """
 
     queryset = OperationLog.objects.all()
     serializer_class = OperationLogSerializer
+    list_serializer_class = OperationLogListSerializer
 
     ordering_fields = ["created_time", "updated_time", "exec_time"]
     filterset_class = OperationLogFilter

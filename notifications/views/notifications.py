@@ -137,12 +137,25 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
     @extend_schema(responses={200: UserMsgSubscriptionByCategorySerializer})
     def list(self, request, *args, **kwargs):
         """获取用户消息订阅列表"""
+        msg_type_sub_mapper = {sub.message_type: sub for sub in self.get_queryset()}
+
+        # GET 请求补齐缺失订阅（隐含批量写）：并发首访会同时查空、同时逐条
+        # create，撞 (user, message_type) 唯一约束而 500。改为一次 bulk_create
+        # 并 ignore_conflicts（谁先插入谁生效，后来者静默跳过），随后重查全量
+        # 订阅重建映射再组装响应树，保证双方都拿到完整且一致的返回。
+        missing_types = [msg["message_type"] for msg in user_msgs if msg["message_type"] not in msg_type_sub_mapper]
+        if missing_types:
+            UserMsgSubscription.objects.bulk_create(
+                [
+                    UserMsgSubscription(user=request.user, message_type=message_type, receive_backends=[])
+                    for message_type in missing_types
+                ],
+                ignore_conflicts=True,
+            )
+            msg_type_sub_mapper = {sub.message_type: sub for sub in self.get_queryset()}
+
         data = []
         category_children_mapper = {}
-        msg_type_sub_mapper = {}
-        for sub in self.get_queryset():
-            msg_type_sub_mapper[sub.message_type] = sub
-
         for msg in user_msgs:
             message_type = msg["message_type"]
             message_type_label = msg["message_type_label"]
@@ -156,8 +169,9 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
 
             sub = msg_type_sub_mapper.get(message_type)
             if not sub:
-                sub = UserMsgSubscription.objects.create(
-                    user=request.user, message_type=message_type, receive_backends=[]
+                # 极端时序兜底（补齐行在重查前被并发删除）：单条补建，同样冲突安全
+                sub, _ = UserMsgSubscription.objects.get_or_create(
+                    user=request.user, message_type=message_type, defaults={"receive_backends": []}
                 )
             sub.message_type_label = message_type_label
             category_children_mapper[category].append(sub)

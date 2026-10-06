@@ -26,7 +26,7 @@ from dataset.utils.dataset import (
 )
 
 
-def execute_dataset(dataset, user_obj, count_only: bool = False):
+def execute_dataset(dataset, user_obj, count_only: bool = False, max_rows: int | None = None):
     """执行数据集：返回白名单列的行数据（row_limit 上限）。
 
     输出列 = 数据集 columns ∩ 浏览者字段权限白名单（JSON 路径列按根字段收敛；
@@ -37,10 +37,16 @@ def execute_dataset(dataset, user_obj, count_only: bool = False):
     全列只为读 total 是纯开销，挂屏 M 张数字卡每刷新周期即 M 次全量行查询；
     此模式跳过列展开与行物化，仅 count。字段权限口径与全量路径一致：浏览者
     无任何可见字段（显式配置为空集）时 total 恒 0，不泄露行数（fail-closed）。
+
+    ``max_rows``：外部行数上限（如报表设计的明细行数上限），与数据集 row_limit
+    取小者一并下推到 SQL，避免为 Python 侧切片而全量物化；LIMIT 取行必须有
+    确定排序才可复现，数据集与绑定模型均未声明排序时按主键稳定排序。
     """
     queryset, model, columns = build_queryset(dataset, user_obj)
     whitelist = set(available_fields(dataset.bound_model))
     limit = min(int(dataset.row_limit or 1000), ROW_LIMIT_CAP)
+    if max_rows is not None:
+        limit = min(limit, max_rows)
     if count_only:
         visible = viewer_visible_fields(dataset.bound_model, user_obj)
         if visible is not None and not visible:
@@ -53,6 +59,10 @@ def execute_dataset(dataset, user_obj, count_only: bool = False):
     if not specs:
         return {"columns": [], "rows": [], "total": 0, "limit": limit}
     alias_map = {spec.alias: spec.raw for spec in specs if spec.alias != spec.raw}
+    if max_rows is not None and not queryset.ordered:
+        # 行数上限下推到 SQL 后，LIMIT 取行依赖数据库返回顺序则不可复现：
+        # 数据集未声明排序且绑定模型无默认排序时按主键稳定取行
+        queryset = queryset.order_by("pk")
     rows = list(queryset.values(*[spec.alias for spec in specs])[:limit])
     if alias_map:
         rows = [{alias_map.get(key, key): value for key, value in row.items()} for row in rows]

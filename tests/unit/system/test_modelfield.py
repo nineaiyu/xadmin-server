@@ -3,8 +3,10 @@
 
 import pytest
 from django.conf import settings
+from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.utils.platform.modelfield import get_extra_field_lookups, get_field_lookup_info
+from system.views.admin.modelfield import ModelLabelFieldViewSet
 
 
 def test_lookup_info_covers_known_lookups():
@@ -168,3 +170,33 @@ class TestSyncModelField:
         assert not removed, (
             f"{len(removed)} 行种子字段节点在同步后被判为陈旧（扫描范围与种子不一致，重新导出前先查 PERMISSION_DATA_AUTH_APPS）"
         )
+
+
+@pytest.mark.django_db
+class TestSyncEndpoint:
+    """sync 接口的方法契约：全量字段同步有写副作用，只暴露 POST，GET 返回 405。"""
+
+    @staticmethod
+    def _dispatch(method, user):
+        factory = APIRequestFactory()
+        request = getattr(factory, method)("/api/system/field/sync")
+        force_authenticate(request, user=user)
+        # 与路由注册同口径：sync 仅注册 POST，GET 落到 http_method_not_allowed
+        view = ModelLabelFieldViewSet.as_view({"post": "sync"})
+        return view(request)
+
+    def test_get_is_not_allowed(self, superuser):
+        # GET 会被浏览器预取/爬虫/代理重放误触发，写副作用端点必须拒绝
+        response = self._dispatch("get", superuser)
+        assert response.status_code == 405
+
+    def test_post_returns_sync_summary(self, superuser):
+        response = self._dispatch("post", superuser)
+        assert response.status_code == 200
+        assert response.data["code"] == 1000
+        # 响应结构与改前一致：data 携带数据权限树 / 角色字段树两维同步摘要
+        summary = response.data["data"]
+        assert set(summary) == {"data", "role"}
+        assert set(summary["data"]) == {"kept", "deleted", "models"}
+        assert summary["role"]["kept"] > 0
+        assert "failed_serializers" in summary["role"]

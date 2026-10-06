@@ -16,11 +16,15 @@ INTERVAL_URL = "/api/system/tasks/interval"
 @pytest.fixture(autouse=True)
 def _allow_test_task(monkeypatch):
     """放宽可手动执行白名单（默认拒绝）：本文件 CRUD 用例使用
-    common.tasks.expire_caches 作样本任务，与 test_task_execution 同手法覆写。"""
+    demo.tasks.auto_off_shelf_books（演示应用的真实注册任务）作样本，
+    与 test_task_execution 同手法覆写。"""
     from common.core.config import SysConfig
 
     monkeypatch.setattr(
-        type(SysConfig), "MANUAL_RUNNABLE_TASKS", property(lambda self: ["common.tasks.expire_caches"]), raising=False
+        type(SysConfig),
+        "MANUAL_RUNNABLE_TASKS",
+        property(lambda self: ["demo.tasks.auto_off_shelf_books"]),
+        raising=False,
     )
 
 
@@ -39,7 +43,7 @@ def crontab_pk(auth_client):
 def _create_task(auth_client, crontab_pk, name="清理临时文件"):
     payload = {
         "name": name,
-        "task": "common.tasks.expire_caches",
+        "task": "demo.tasks.auto_off_shelf_books",
         "crontab": crontab_pk,
         "enabled": True,
         "description": "测试任务",
@@ -243,7 +247,7 @@ class TestPeriodicTaskIntervalSchedule:
 
         payload = {
             "name": f"间隔任务-{uuid.uuid4().hex[:6]}",
-            "task": "common.tasks.expire_caches",
+            "task": "demo.tasks.auto_off_shelf_books",
             "interval": interval_pk,
             "enabled": False,
         }

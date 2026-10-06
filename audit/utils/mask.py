@@ -12,6 +12,7 @@ import re
 from django.apps import apps
 from django.core.cache import cache
 
+from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -45,6 +46,21 @@ def _mask_email(value, keep_head, mask_char):
     return f"{_segment(local, keep_head, 0, mask_char)}{sep}{domain}"
 
 
+def custom_pattern_error(pattern):
+    """试编译自定义正则：非法返回 re.error 实例，合法（或空/非字符串）返回 None。
+
+    保存期校验（序列化器）与预览接口的非法正则标记共用同一判定，
+    避免两处对"什么算非法正则"的口径漂移。
+    """
+    if not pattern or not isinstance(pattern, str):
+        return None
+    try:
+        re.compile(pattern)
+    except re.error as exc:
+        return exc
+    return None
+
+
 def apply_mask(value, rule):
     """按规则对单个值脱敏。空值/非字符串/规则缺省时原样返回。
 
@@ -65,6 +81,8 @@ def apply_mask(value, rule):
         try:
             return re.sub(pattern, lambda m: _segment(m.group(0), keep_head, keep_tail, mask_char), value)
         except re.error:
+            # 存量脏数据兜底：仅针对历史遗留的非法正则回退原值，保证脱敏管道不因单条坏配置中断；
+            # 新配置的非法正则已在保存期被序列化器拒绝，正常链路不会再走到这里。
             return value
     # phone / idcard / name / bankcard 及默认路径统一走分段掩码
     return _segment(value, keep_head, keep_tail, mask_char)
@@ -121,7 +139,7 @@ def record_original_channel_access(request, user, model_label=None):
             path=path or "",
             method=getattr(request, "method", "") or "",
             object_pk=model_label or "*",
-            status_code=1000,
+            status_code=API_SUCCESS_CODE,
             response_result="original-channel",
             creator=user if getattr(user, "pk", None) else None,
             request_uuid=getattr(request, "request_uuid", None),

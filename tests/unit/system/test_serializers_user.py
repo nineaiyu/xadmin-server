@@ -9,6 +9,7 @@ from identity.serializers.department import DeptSerializer
 from identity.serializers.role import RoleSerializer
 from identity.serializers.user import UserSerializer
 from server.utils import set_current_request
+from tests.unit.common.test_aes_cipher_v2 import _encrypt_v2
 
 pytestmark = pytest.mark.django_db
 
@@ -23,6 +24,12 @@ def post_request(superuser):
 
 
 class TestUserSerializer:
+    # 本类用明文密码直接提交（导入/脚本等非浏览器客户端的形态），
+    # 属建号密码加密开关关闭的明文模式
+    @pytest.fixture(autouse=True)
+    def _plaintext_password_mode(self, settings):
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False
+
     def test_missing_required_fields(self, post_request, superuser):
         serializer = UserSerializer(data={}, ignore_field_permission=True)
         assert not serializer.is_valid()
@@ -54,6 +61,78 @@ class TestUserSerializer:
         instance = serializer.save()
         assert instance.username == "savetest"
         assert UserInfo.objects.filter(username="savetest").exists()
+
+
+class TestUserSerializerPasswordTransport:
+    """建号密码传输口径（SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED）。
+
+    密文模式（默认）：前端提交 AESCipherV2(username) 加密串，解密失败直接拒绝
+    （不把密文/明文误落；拒绝点的审计与业务码应答由视图层承担，见集成测试）；
+    明文模式：解密失败视为提交值本身是明文，保持导入/脚本等场景的兼容行为。
+    """
+
+    USERNAME = "transport"
+
+    @pytest.fixture(autouse=True)
+    def _encrypted_password_mode(self, settings):
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = True
+
+    def test_encrypted_mode_accepts_valid_ciphertext(self, post_request, superuser):
+        serializer = UserSerializer(
+            data={"username": self.USERNAME, "nickname": "密文", "password": _encrypt_v2(self.USERNAME, "Test@123456")},
+            ignore_field_permission=True,
+        )
+        assert serializer.is_valid(), serializer.errors
+        instance = serializer.save()
+        assert instance.check_password("Test@123456")
+
+    def test_encrypted_mode_rejects_undecryptable_payload(self, post_request, superuser):
+        payload = "v2:!!!not-a-valid-ciphertext!!!"
+        serializer = UserSerializer(
+            data={"username": self.USERNAME, "nickname": "坏密文", "password": payload},
+            ignore_field_permission=True,
+        )
+        assert not serializer.is_valid()
+        assert "解密" in str(serializer.errors) or "decrypt" in str(serializer.errors)
+        assert not UserInfo.objects.filter(username=self.USERNAME).exists()
+
+    def test_encrypted_mode_rejects_plaintext_submission(self, post_request, superuser):
+        """密文模式下明文提交不再被当作密码落库（旧口径仅告警后照落）。"""
+        serializer = UserSerializer(
+            data={"username": self.USERNAME, "nickname": "明文", "password": "Test@123456"},
+            ignore_field_permission=True,
+        )
+        assert not serializer.is_valid()
+        assert not UserInfo.objects.filter(username=self.USERNAME).exists()
+
+    def test_plaintext_mode_accepts_submitted_password(self, post_request, superuser, settings):
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False
+        serializer = UserSerializer(
+            data={"username": self.USERNAME, "nickname": "明文", "password": "Test@123456"},
+            ignore_field_permission=True,
+        )
+        assert serializer.is_valid(), serializer.errors
+        instance = serializer.save()
+        assert instance.check_password("Test@123456")
+
+    def test_plaintext_mode_still_decrypts_ciphertext(self, post_request, superuser, settings):
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False
+        serializer = UserSerializer(
+            data={"username": self.USERNAME, "nickname": "密文", "password": _encrypt_v2(self.USERNAME, "Test@123456")},
+            ignore_field_permission=True,
+        )
+        assert serializer.is_valid(), serializer.errors
+        instance = serializer.save()
+        assert instance.check_password("Test@123456")
+
+    def test_ciphertext_without_matching_key_rejected(self, post_request, superuser):
+        """密钥与提交用户名不符（合法密文但解密失败）→ 拒绝，密文不落库。"""
+        serializer = UserSerializer(
+            data={"username": self.USERNAME, "nickname": "错钥", "password": _encrypt_v2("otheruser", "Test@123456")},
+            ignore_field_permission=True,
+        )
+        assert not serializer.is_valid()
+        assert not UserInfo.objects.filter(username=self.USERNAME).exists()
 
 
 class TestRoleSerializer:

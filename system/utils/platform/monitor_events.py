@@ -22,12 +22,38 @@ EVENT_RANGES = {"1h": 3600, "24h": 86400, "7d": 604800, "30d": 2592000}
 DEFAULT_EVENT_RANGE = "24h"
 ALERT_LIMIT = 200
 EVENT_LIMIT = 50
+# 分页参数上限：防止一次请求拉全表；超出按该值收敛，截断在响应中如实标注
+MAX_PAGE_LIMIT = 1000
+# 报表导出按块循环取数：导出全量（不静默截断）且单次查询行数有界
+EXPORT_CHUNK_SIZE = 1000
 ALERT_ITEMS = ("cpu_percent", "cpu_load", "memory_used", "disk_used")
 
 
 def resolve_hours(range_key, default_key=DEFAULT_EVENT_RANGE):
     seconds = EVENT_RANGES.get(range_key, EVENT_RANGES[default_key])
     return seconds / 3600
+
+
+def _page_params(limit, offset, default):
+    """分页参数收敛：非法/非正数回退默认页大小，limit 封顶，offset 非负。"""
+    try:
+        limit = int(limit)
+    except (TypeError, ValueError):
+        limit = default
+    if limit <= 0:
+        limit = default
+    try:
+        offset = max(0, int(offset))
+    except (TypeError, ValueError):
+        offset = 0
+    return min(limit, MAX_PAGE_LIMIT), offset
+
+
+def _paged_result(queryset, values_fields, order_by, limit, offset):
+    """通用分页取数：返回 results/total/truncated，截断不再静默。"""
+    rows = list(queryset.order_by(*order_by).values(*values_fields)[offset : offset + limit])
+    total = queryset.count()
+    return {"results": rows, "total": total, "truncated": offset + len(rows) < total}
 
 
 def alert_counts():
@@ -45,8 +71,8 @@ def alert_counts():
     }
 
 
-def collect_alerts(status=None, item=None, range_key="7d", limit=ALERT_LIMIT):
-    """告警记录查询（默认近 7 天，按最近命中时间倒序）。"""
+def collect_alerts(status=None, item=None, range_key="7d", limit=ALERT_LIMIT, offset=0):
+    """告警记录查询（默认近 7 天，按最近命中时间倒序；total/truncated 支撑分页）。"""
     from system.models import MonitorAlert
 
     deadline = timezone.now() - datetime.timedelta(seconds=EVENT_RANGES.get(range_key, 604800))
@@ -55,8 +81,10 @@ def collect_alerts(status=None, item=None, range_key="7d", limit=ALERT_LIMIT):
         queryset = queryset.filter(status=status)
     if item in ALERT_ITEMS:
         queryset = queryset.filter(item=item)
-    rows = list(
-        queryset.order_by("-last_time")[:limit].values(
+    limit, offset = _page_params(limit, offset, ALERT_LIMIT)
+    data = _paged_result(
+        queryset,
+        (
             "pk",
             "item",
             "status",
@@ -67,21 +95,25 @@ def collect_alerts(status=None, item=None, range_key="7d", limit=ALERT_LIMIT):
             "first_time",
             "last_time",
             "resolved_time",
-        )
+        ),
+        ("-last_time", "-pk"),
+        limit,
+        offset,
     )
-    return {"results": rows, "counts": alert_counts()}
+    data["counts"] = alert_counts()
+    return data
 
 
-def collect_error_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT):
+def collect_error_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT, offset=0):
     """异常请求：业务码非 1000 的操作日志（慢请求另有独立面板）。"""
     from audit.models.log import OperationLog
 
     deadline = timezone.now() - datetime.timedelta(seconds=EVENT_RANGES.get(range_key, 86400))
-    rows = list(
-        OperationLog.objects.filter(created_time__gte=deadline)
-        .exclude(status_code=1000)
-        .order_by("-created_time")
-        .values(
+    queryset = OperationLog.objects.filter(created_time__gte=deadline).exclude(status_code=1000)
+    limit, offset = _page_params(limit, offset, EVENT_LIMIT)
+    return _paged_result(
+        queryset,
+        (
             "pk",
             "module",
             "path",
@@ -92,34 +124,43 @@ def collect_error_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT):
             "ipaddress",
             "creator__username",
             "created_time",
-        )[:limit]
+        ),
+        ("-created_time", "-pk"),
+        limit,
+        offset,
     )
-    return {"results": rows}
 
 
-def collect_task_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT):
+def collect_task_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT, offset=0):
     """任务失败事件（FAILURE / REVOKED 终态明细）。"""
     from task.services import TaskExecution
 
     deadline = timezone.now() - datetime.timedelta(seconds=EVENT_RANGES.get(range_key, 86400))
-    rows = list(
-        TaskExecution.objects.filter(
-            date_finished__gte=deadline,
-            status__in=[TaskExecution.Status.FAILURE, TaskExecution.Status.REVOKED],
-        )
-        .order_by("-date_finished")
-        .values("pk", "name", "status", "date_start", "date_finished")[:limit]
+    queryset = TaskExecution.objects.filter(
+        date_finished__gte=deadline,
+        status__in=[TaskExecution.Status.FAILURE, TaskExecution.Status.REVOKED],
     )
-    return {"results": rows}
+    limit, offset = _page_params(limit, offset, EVENT_LIMIT)
+    return _paged_result(
+        queryset,
+        ("pk", "name", "status", "date_start", "date_finished"),
+        ("-date_finished", "-pk"),
+        limit,
+        offset,
+    )
 
 
 def collect_events(kind="alert", range_key=DEFAULT_EVENT_RANGE, **kwargs):
-    """统一事件入口：kind=alert|error|task。"""
+    """统一事件入口：kind=alert|error|task；limit/offset 分页，响应带 total/truncated。"""
+    limit = kwargs.get("limit")
+    offset = kwargs.get("offset") or 0
     if kind == "error":
-        return collect_error_events(range_key=range_key, limit=kwargs.get("limit") or EVENT_LIMIT)
+        return collect_error_events(range_key=range_key, limit=limit, offset=offset)
     if kind == "task":
-        return collect_task_events(range_key=range_key, limit=kwargs.get("limit") or EVENT_LIMIT)
-    return collect_alerts(status=kwargs.get("status"), item=kwargs.get("item"), range_key=range_key)
+        return collect_task_events(range_key=range_key, limit=limit, offset=offset)
+    return collect_alerts(
+        status=kwargs.get("status"), item=kwargs.get("item"), range_key=range_key, limit=limit, offset=offset
+    )
 
 
 def _fmt_time(value):

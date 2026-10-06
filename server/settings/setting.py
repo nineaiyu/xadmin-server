@@ -95,6 +95,8 @@ FORWARD_KEYS = [
     "SECURITY_BIND_PHONE_CAPTCHA_ENABLED",
     "SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED",
     "SECURITY_BIND_PHONE_ENCRYPTED_ENABLED",
+    # 管理端建号密码传输加密开关（读取方 identity/serializers/user.py 建号路径）
+    "SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED",
     # 临时令牌（tmp_token）有效期（秒）：登录/注册/重置/绑定加密握手共用
     "SECURITY_TEMP_TOKEN_EXPIRE",
     # MFA / 敏感操作二次验证

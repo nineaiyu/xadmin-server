@@ -108,6 +108,54 @@ class TestPayloadShell:
             emit_webhook_event("webhook.ping", {"unexpected": "x"})
         assert any("missing required fields" in record.message for record in caplog.records)
 
+    def test_emit_delivers_only_to_matching_active_subscriptions(self, superuser):
+        """订阅过滤语义：只投递订阅了该事件的 active 订阅（DB 下推路径，jsonb contains）。"""
+        hit = WebhookSubscription.objects.create(
+            name="命中订阅",
+            url="http://127.0.0.1:9/hook",
+            secret=encrypt_secret("whs-hit"),
+            events=["webhook.ping"],
+        )
+        WebhookSubscription.objects.create(
+            name="未订阅该事件",
+            url="http://127.0.0.1:9/hook",
+            secret=encrypt_secret("whs-other"),
+            events=["system.backup_failure"],
+        )
+        WebhookSubscription.objects.create(
+            name="停用订阅",
+            url="http://127.0.0.1:9/hook",
+            secret=encrypt_secret("whs-off"),
+            events=["webhook.ping"],
+            is_active=False,
+        )
+        emit_webhook_event("webhook.ping", {"subscription": "命中订阅"})
+        deliveries = WebhookDelivery.objects.filter(event="webhook.ping")
+        assert deliveries.count() == 1
+        assert deliveries.get().subscription_id == hit.id
+
+    def test_emit_memory_fallback_matches_same_subscriptions(self, superuser, monkeypatch):
+        """不支持 JSON contains 的引擎（SQLite/Oracle）走内存过滤，投递语义一致。"""
+        import types
+
+        WebhookSubscription.objects.create(
+            name="命中订阅",
+            url="http://127.0.0.1:9/hook",
+            secret=encrypt_secret("whs-hit"),
+            events=["webhook.ping"],
+        )
+        WebhookSubscription.objects.create(
+            name="未订阅该事件",
+            url="http://127.0.0.1:9/hook",
+            secret=encrypt_secret("whs-other"),
+            events=["system.backup_failure"],
+        )
+        monkeypatch.setattr("task.utils.webhook.connection", types.SimpleNamespace(vendor="sqlite"))
+        emit_webhook_event("webhook.ping", {"subscription": "命中订阅"})
+        deliveries = WebhookDelivery.objects.filter(event="webhook.ping")
+        assert deliveries.count() == 1
+        assert deliveries.get().subscription.name == "命中订阅"
+
 
 class TestEventDocs:
     def test_docs_match_catalog(self):

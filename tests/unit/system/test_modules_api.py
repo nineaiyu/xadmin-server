@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
 """功能模块清单接口（/api/system/modules）单元测试 + 种子权限点守护。"""
 
+import contextlib
 import json
 import os
+import threading
 
 import pytest
 from django.conf import settings as dj_settings
+from django.utils.translation import gettext as _
+from django_redis import get_redis_connection
 
+from common.cache.lock import LOCK_KEY_PREFIX, ReentrantLock
 from common.core.modules import CORE, all_module_specs, override_active
+from system.models import ModuleOverride
+from system.views.platform.modules import OVERRIDE_WRITE_LOCK_NAME
 
 pytestmark = pytest.mark.django_db
 
@@ -67,8 +74,6 @@ class TestSystemModuleWriteApi:
         return client.post("/api/system/modules/apply", payload, format="json")
 
     def test_apply_persists_without_hot_reload(self, auth_client, module_config):
-        from system.models import ModuleOverride
-
         module_config(preset="full")
 
         resp = self._apply(auth_client, preset="standard", enable=[], disable=[])
@@ -114,6 +119,91 @@ class TestSystemModuleWriteApi:
     def test_normal_user_cannot_reset(self, api_client, normal_user):
         api_client.force_authenticate(user=normal_user)
         assert api_client.post("/api/system/modules/reset", {}, format="json").status_code == 403
+
+
+class TestSystemModuleWriteConcurrency:
+    """覆盖写入互斥：「校验 → 落库 → 回显」持锁串行，竞争方快速失败。
+
+    持锁方放在独立线程：ReentrantLock 的可重入计数挂在 thread-local 上，
+    测试线程直接持锁会让同线程内的视图请求重入成功，验证不了互斥。
+    """
+
+    LOCK_KEY = LOCK_KEY_PREFIX + OVERRIDE_WRITE_LOCK_NAME
+    CONFLICT_MSGID = "Another module configuration save is in progress, please try again later"
+
+    @pytest.fixture(autouse=True)
+    def _clean_override_lock(self):
+        """裸 redis 锁键不在 conftest _clean_cache 范围内（只清带前缀的 django cache），前后兜底清除。"""
+        conn = get_redis_connection("default")
+        conn.delete(self.LOCK_KEY)
+        yield
+        conn.delete(self.LOCK_KEY)
+
+    @contextlib.contextmanager
+    def _hold_write_lock_in_other_thread(self):
+        """独立线程持有写入锁（模拟另一 worker 正在保存），退出时释放。"""
+        acquired = threading.Event()
+        release = threading.Event()
+
+        def _hold():
+            holder = ReentrantLock(OVERRIDE_WRITE_LOCK_NAME, timeout=30)
+            assert holder.acquire(blocking=False)
+            acquired.set()
+            release.wait(timeout=10)
+            holder.release()
+
+        thread = threading.Thread(target=_hold)
+        thread.start()
+        assert acquired.wait(timeout=10)
+        try:
+            yield
+        finally:
+            release.set()
+            thread.join(timeout=10)
+
+    def _apply(self, client, **payload):
+        return client.post("/api/system/modules/apply", payload, format="json")
+
+    def test_apply_conflicts_while_another_save_in_progress(self, auth_client):
+        with self._hold_write_lock_in_other_thread():
+            resp = self._apply(auth_client, preset="standard")
+        assert resp.status_code == 400
+        # 文案断言与产文同源取 gettext（本机装 .mo 为中文、CI 无 .mo 为英文源串）
+        assert resp.json()["detail"] == _(self.CONFLICT_MSGID)
+        # 快速失败而非交错落库：冲突请求不产生覆盖行
+        assert not ModuleOverride.objects.filter(key="module").exists()
+        # 持锁方释放后重试成功：锁不粘滞
+        resp = self._apply(auth_client, preset="standard")
+        assert resp.status_code == 200
+        assert resp.json()["data"]["override_active"] is True
+
+    def test_reset_conflicts_while_another_save_in_progress(self, auth_client, module_override):
+        module_override(preset="standard")
+        with self._hold_write_lock_in_other_thread():
+            resp = auth_client.post("/api/system/modules/reset", {}, format="json")
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == _(self.CONFLICT_MSGID)
+        # 与 apply 互斥：持锁窗口内覆盖行未被清除
+        assert ModuleOverride.objects.filter(key="module").exists()
+
+    def test_validation_failure_keeps_lock_free(self, auth_client):
+        resp = self._apply(auth_client, preset="full", disable=["not-exist"])
+        assert resp.status_code == 400
+        # 校验失败不遗留锁占用：redis 锁键已释放，后续保存可立即进行
+        assert not get_redis_connection("default").exists(self.LOCK_KEY)
+        resp = self._apply(auth_client, preset="standard")
+        assert resp.status_code == 200
+
+    def test_apply_success_response_structure_unchanged(self, auth_client, module_config):
+        module_config(preset="full")
+        list_data = auth_client.get("/api/system/modules").json()["data"]
+        apply_data = self._apply(auth_client, preset="standard").json()["data"]
+        # 成功路径回显由同一 build_payload 产出：键集合与 list 完全一致，语义字段不变
+        assert set(apply_data.keys()) == set(list_data.keys())
+        assert apply_data["override_active"] is True
+        assert apply_data["desired"]["preset"] == "standard"
+        assert apply_data["preset"] == "full"
+        assert apply_data["pending"] is True
 
 
 class TestModuleSeedRegistration:

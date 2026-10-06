@@ -81,6 +81,19 @@ class TestPreviewAndList:
         assert len(body["chunks"]) == 3
         assert body["chunks"][0]["index"] == 0 and body["chunks"][0]["size"] > 0
 
+    def test_chunk_preview_truncated_on_db_side(self, auth_client):
+        """分块摘要只展示开头 120 字符：DB 侧裁剪（Left/Length），预览语义与全文长度不变。"""
+        long_text = "字" * 300
+        _upload(auth_client, name="超长分块文档", content=f"# 超长分块文档\n\n## 长章节\n\n{long_text}")
+        doc = AiKnowledgeDocument.objects.get(title="超长分块文档")
+        chunk = AiKnowledgeChunk.objects.get(source_path=doc.path, chunk_index=1)
+        assert len(chunk.content) > 120
+        body = auth_client.get(f"{KNOWLEDGE_URL}/{doc.pk}").json()["data"]
+        preview_row = body["chunks"][1]
+        assert preview_row["preview"] == chunk.content[:120]
+        assert len(preview_row["preview"]) == 120
+        assert preview_row["size"] == len(chunk.content)
+
     def test_list_is_lightweight(self, auth_client):
         _upload(auth_client)
         rows = auth_client.get(KNOWLEDGE_URL).json()["data"]["results"]
@@ -144,7 +157,37 @@ class TestRepoRebuildAction:
         monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
         response = auth_client.post(f"{KNOWLEDGE_URL}/sync-repo", {}, format="json")
         assert response.status_code == 200, response.data
-        assert response.json()["data"]["created"] == 1
+        # 异步契约：响应只带任务提交信息，同步摘要改经状态端点轮询（测试档 eager 同步跑完）
+        data = response.json()["data"]
+        assert data["state"] == "running"
+        assert data["status_url"] == "sync-repo/status"
+        assert AiKnowledgeDocument.objects.filter(path="docs/guide.md").exists()
+        status = auth_client.get(f"{KNOWLEDGE_URL}/sync-repo/status").json()["data"]
+        assert status["state"] == "done"
+        assert status["summary"]["created"] == 1
+
+    def test_sync_repo_conflict_when_already_running(self, auth_client):
+        """单飞：已有同步在跑时返回 1001，不排队、不重复扫盘。"""
+        from ai.utils.sync_progress import try_acquire_lock
+
+        assert try_acquire_lock()
+        response = auth_client.post(f"{KNOWLEDGE_URL}/sync-repo", {}, format="json")
+        assert response.json()["code"] == 1001
+
+    def test_sync_repo_task_error_releases_lock(self, monkeypatch):
+        """任务级兜底：同步异常落 error 终态并释放单飞锁（同步入口不会永久卡死）。"""
+        from ai.tasks import sync_repo_task
+        from ai.utils import ai_knowledge
+        from ai.utils.sync_progress import get_status, try_acquire_lock
+
+        def _boom():
+            raise RuntimeError("sync exploded")
+
+        monkeypatch.setattr(ai_knowledge, "sync_knowledge", _boom)
+        with pytest.raises(RuntimeError):
+            sync_repo_task.apply(args=[])
+        assert get_status()["state"] == "error"
+        assert try_acquire_lock()
 
 
 class TestBatchOperations:
@@ -190,6 +233,40 @@ class TestBatchOperations:
         assert on.status_code == 200, on.data
         assert on.json()["data"]["changed"] == 2
         assert AiKnowledgeChunk.objects.filter(source_path__startswith="upload/").count() == 6
+
+    def test_batch_toggle_merged_rebuild(self, auth_client, monkeypatch):
+        """批量启用走合并重建：多文档只触发一次批量重建，不逐文档循环。"""
+        from ai.utils import ai_knowledge
+
+        _upload(auth_client, name="合并启停甲")
+        _upload(auth_client, name="合并启停乙")
+        pks = [
+            str(pk)
+            for pk in AiKnowledgeDocument.objects.filter(source_type=AiKnowledgeDocument.SourceType.UPLOAD).values_list(
+                "pk", flat=True
+            )
+        ]
+        assert (
+            auth_client.post(
+                f"{KNOWLEDGE_URL}/batch-toggle", {"pks": pks, "is_active": False}, format="json"
+            ).status_code
+            == 200
+        )
+        calls = []
+        original = ai_knowledge.rebuild_chunks_bulk
+
+        def _spy(documents):
+            calls.append([doc.path for doc in documents])
+            return original(documents)
+
+        monkeypatch.setattr(ai_knowledge, "rebuild_chunks_bulk", _spy)
+        on = auth_client.post(f"{KNOWLEDGE_URL}/batch-toggle", {"pks": pks, "is_active": True}, format="json")
+        assert on.status_code == 200, on.data
+        assert on.json()["data"]["changed"] == 2
+        assert len(calls) == 1 and len(calls[0]) == 2
+        assert AiKnowledgeChunk.objects.filter(source_path__startswith="upload/").count() == 6
+        for doc in AiKnowledgeDocument.objects.filter(source_type=AiKnowledgeDocument.SourceType.UPLOAD):
+            assert doc.is_active and doc.chunk_count == 3
 
     @pytest.mark.parametrize("payload", [{"pks": []}, {"is_active": True}])
     def test_batch_toggle_validation(self, auth_client, payload):

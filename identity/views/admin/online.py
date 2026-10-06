@@ -28,7 +28,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from identity.models import UserInfo, UserSession
 from identity.serializers.session import UserSessionSerializer
-from identity.utils.session import force_logout_user
+from identity.utils.session import force_logout_user, force_logout_users
 from message.services import get_online_info, send_logout_msg
 
 
@@ -129,9 +129,8 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
             | set(UserSession.objects.filter(creator_id__in=pks).values_list("creator_id", flat=True))
             | set(UserLoginLog.objects.filter(pk__in=pks).values_list("creator_id", flat=True))
         )
-        channels = 0
-        for user_pk in user_pks:
-            channels += force_logout_user(user_pk, operator=request.user)
+        # 批量踢线走批量原语（缓存/黑名单/WS 逐用户循环收敛为整批一次），响应结构不变
+        channels = force_logout_users(user_pks, operator=request.user)
         return ApiResponse(
             data={"users": len(user_pks), "channels": channels},
             detail=_("Batch force offline submitted: {} users").format(len(user_pks)),

@@ -29,7 +29,7 @@ from rest_framework.views import APIView
 from common.core.auth import hash_pat_token
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
-from common.core.response import ApiResponse
+from common.core.response import API_SUCCESS_CODE, ApiResponse
 from common.core.throttle import OpenClientThrottle
 from common.swagger.utils import get_default_response_schema
 from identity.models.token import ApiApplication, PersonalAccessToken
@@ -41,8 +41,6 @@ from task.services import decrypt_secret, encrypt_secret, sign_payload
 
 CLIENT_SECRET_PREFIX = "aps"
 CALLBACK_TIMEOUT_SECONDS = 10
-# 业务成功码（与 system/views/user/token.py 的 stats 口径一致）
-API_SUCCESS_CODE = 1000
 
 
 def build_client_credentials() -> tuple[str, str, str, str]:

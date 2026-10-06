@@ -18,6 +18,7 @@ import hmac
 import time
 
 from django.core.exceptions import ValidationError
+from django.db import connection
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -331,11 +332,16 @@ def emit_webhook_event(event: str, data: dict) -> int:
             return 0
         from task.models.webhook import WebhookDelivery, WebhookSubscription
 
-        # events 为 JSON 列表：contains lookup 在 SQLite 不可用，改为内存过滤
-        # （订阅量为管理面个位数，无需 JSON 索引）
-        subscriptions = [
-            sub for sub in WebhookSubscription.objects.filter(is_active=True) if event in (sub.events or [])
-        ]
+        # events 为 JSON 列表：支持 JSON contains 的引擎把事件匹配下推 DB
+        # （jsonb @> / JSON_CONTAINS），只拉命中的订阅；SQLite/Oracle 无该
+        # lookup，保留内存过滤兜底。订阅量为管理面个位数且事件按业务动作触发
+        # （非每请求热路径），不再叠加进程级缓存——缓存 TTL 会让跨进程的订阅
+        # 增删延迟生效，投递语义（订阅即收、删订即停）保持精确不变。
+        active_subscriptions = WebhookSubscription.objects.filter(is_active=True)
+        if connection.vendor in ("postgresql", "mysql"):
+            subscriptions = list(active_subscriptions.filter(events__contains=[event]))
+        else:
+            subscriptions = [sub for sub in active_subscriptions if event in (sub.events or [])]
         contract = EVENT_CATALOG.get(event) or {}
         # 契约校验只告警不阻断：宿主链路永不受 webhook 契约缺陷影响（守护测试兜底）
         missing = [
@@ -360,10 +366,10 @@ def emit_webhook_event(event: str, data: dict) -> int:
             for sub in subscriptions
         ]
         deliveries = WebhookDelivery.objects.bulk_create(payloads)
-        from task.webhook_tasks import deliver_webhook
+        from task.webhook_tasks import dispatch_deliver_webhook
 
         for delivery in deliveries:
-            deliver_webhook.apply_async(kwargs={"delivery_id": str(delivery.pk)}, task_id=str(delivery.pk))
+            dispatch_deliver_webhook(str(delivery.pk))
         return len(deliveries)
     except Exception:  # noqa: BLE001 发射口绝不打断宿主动作
         logger.warning("emit webhook event failed: %s", event, exc_info=True)

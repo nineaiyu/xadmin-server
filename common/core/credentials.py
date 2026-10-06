@@ -54,6 +54,9 @@ ENCRYPTED_SETTING_KEYS = (
 #: 敏感键名模式（守护测试用：新配置键命中模式必须显式声明加密或豁免）
 SENSITIVE_KEY_PATTERN = re.compile(r"(password|passwd|secret|token|api_?key|access_key|private_key)", re.I)
 
+#: 掩码占位：只表达「已配置」，不含长度/前缀等可推断信息；该串永不落库（写入侧守护）
+MASK = "••••••"
+
 #: 字段级加密前缀（AESCipherV3：v3: + base64(salt|nonce|ct|tag)）
 CIPHER_PREFIX = "v3:"
 
@@ -61,6 +64,18 @@ CIPHER_PREFIX = "v3:"
 def is_sensitive_key(key: str) -> bool:
     """该 SystemConfig 键是否声明为敏感。"""
     return str(key or "") in SENSITIVE_SETTING_KEYS
+
+
+def is_sensitive_setting_row(name: str, encrypted: bool) -> bool:
+    """该 Setting 行的值是否需要在 list/export 输出掩码。
+
+    口径与行级加密声明同源：``encrypted=True`` 的行落库即密文，密文同样不外发；
+    ``ENCRYPTED_SETTING_KEYS`` 是敏感键声明事实源（守护测试保证与各设置序列化器
+    的 write_only 声明不漂移），覆盖 encrypted=False 的存量明文行。不按名字模式
+    猜测未声明键——TEMP_TOKEN 开关、MAX_TOKENS 上限等非敏感项会被误伤，未声明
+    的明文敏感行由 ``plaintext_setting_names()`` 巡检与 ``rotate_credential`` 收敛。
+    """
+    return bool(encrypted) or str(name or "") in ENCRYPTED_SETTING_KEYS
 
 
 def is_cipher_str(value) -> bool:

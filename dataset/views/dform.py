@@ -25,6 +25,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from dataset.models.dform import DynamicForm
 from dataset.serializers.dform import (
+    DynamicFormListSerializer,
     DynamicFormSerializer,
 )
 
@@ -47,6 +48,9 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
 
     queryset = DynamicForm.objects.all()
     serializer_class = DynamicFormSerializer
+    # 列表走轻量序列化器：列表页只渲染 schema 字段数，schema 全文（设计器编辑、
+    # 模板复用）经 retrieve 单条取，与「我的填报」列表的拆分同口径
+    list_serializer_class = DynamicFormListSerializer
     ordering = ["-created_time"]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = DynamicFormFilter

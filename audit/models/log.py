@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.core.models import DbAuditModel
+from common.core.response import API_SUCCESS_CODE
 from identity.consts import LoginTypeChoices
 
 # 分批删除的批大小：避免一次性大 DELETE 造成长事务与锁表
@@ -151,10 +152,10 @@ class OperationLog(DbAuditModel):
                     deleted, _rows = cls.objects.filter(pk__in=pks).delete()
                 total += deleted
 
-        # 1) 过全量保留期：删除成功日志（status_code=1000 或未写入；错误日志留给错误保留期窗口）
+        # 1) 过全量保留期：删除成功日志（status_code=API_SUCCESS_CODE 或未写入；错误日志留给错误保留期窗口）
         _delete(
             cls.objects.filter(created_time__lt=clean_time).filter(
-                models.Q(status_code=1000) | models.Q(status_code__isnull=True)
+                models.Q(status_code=API_SUCCESS_CODE) | models.Q(status_code__isnull=True)
             )
         )
         # 2) 补删超过错误保留期的剩余行（即错误日志）：error_clean_time 恒早于等于

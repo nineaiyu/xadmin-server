@@ -37,6 +37,8 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
+from common.core.response import API_SUCCESS_CODE
+
 logger = logging.getLogger(__name__)
 
 ARCHIVE_VERSION = 1
@@ -319,7 +321,7 @@ def prune_archived(
         # 分层留存：先删过全量保留期的成功日志，再删过错误保留期的剩余（错误）日志
         _delete(
             model.objects.filter(created_time__lt=success_cutoff).filter(
-                Q(status_code=1000) | Q(status_code__isnull=True)
+                Q(status_code=API_SUCCESS_CODE) | Q(status_code__isnull=True)
             )
         )
         _delete(model.objects.filter(created_time__lt=error_cutoff))

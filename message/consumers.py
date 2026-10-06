@@ -13,10 +13,12 @@
 - `chat_message {room_id, content, client_msg_id, message_type?, file_pk?}` → 落库后广播
   （幂等：同 client_msg_id 不重复落库/广播）；message_type=image/video/audio/file 时
   携带 `file_pk`（先经 `POST /api/chat/message/upload` 取得，服务端校验归属后引用）；
-- `chat_recall {message_id}` → 本人在 2 分钟内撤回，双方同步；
 - `chat_reaction {message, emoji, op}` → 表情回应落库（extra.reactions 全量表）后
   向房间广播；消息不存在/已撤回/非成员/机器消息静默忽略（fail-closed）；
 - `chat_read {room_id}` → 清零未读并回执最新已读游标。
+
+撤回不经 WS 上行：唯一入口是 REST `POST /api/chat/message/{id}/recall`（仅本人、
+窗口内），落库成功后向房间广播 `chat_recall` 下行帧（多端同步）。
 
 下行 action：`chat_message` / `chat_recall` / `chat_reaction` / `chat_read` / `chat_unread`。
 """
@@ -149,8 +151,6 @@ class ChatNotify(AsyncJsonWebsocket):
         match action:
             case MessageAction.CHAT_MESSAGE.value:
                 await self.handle_send(data)
-            case MessageAction.CHAT_RECALL.value:
-                await self.handle_recall(data)
             case MessageAction.CHAT_REACTION.value:
                 await self.handle_reaction(data)
             case MessageAction.CHAT_READ.value:
@@ -208,16 +208,6 @@ class ChatNotify(AsyncJsonWebsocket):
                 {"type": MessageAction.CHAT_UNREAD.value, "data": {"room_id": room.pk, "unread_count": unread_count}},
             )
         await self.notify_room(room, payload)
-
-    async def handle_recall(self, data):
-        try:
-            message = await database_sync_to_async(chat_service.recall_message)(self.user, data.get("message_id"))
-        except DjangoValidationError as exc:
-            await self.send_base_json(MessageAction.CHAT_RECALL.value, code=1001, detail="; ".join(exc.messages))
-            return
-        room = await database_sync_to_async(ChatRoom.objects.get)(pk=message.room_id)
-        payload = {"message_id": message.pk, "id": message.pk, "room_id": message.room_id, "operator_pk": self.user.pk}
-        await self.broadcast(room, MessageAction.CHAT_RECALL.value, payload)
 
     async def handle_reaction(self, data):
         # 限流与消息发送同源：回应同样是「落库 + 房间广播」的上行写操作，

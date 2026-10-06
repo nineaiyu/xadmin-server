@@ -5,11 +5,14 @@
 FileAccessLogSerializer 属文件域，在 system/serializers/security.py（随 file 域切分迁移）。
 """
 
+from ipaddress import ip_address
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
+from common.utils.ip import is_ip_address, is_ip_network
 from identity.models import AccountRisk, LoginAccessPolicy, UserPasskey
 
 
@@ -47,6 +50,36 @@ class AccountRiskSerializer(BaseModelSerializer):
             "updated_time",
         ]
         table_fields = ["user_display", "risk_type", "level", "status", "remark", "handled_at", "created_time"]
+
+
+def validate_login_policy_ip_ranges(value):
+    """逐行校验登录策略网段条目，口径与运行时网段匹配（contains_ip）保持同一语义。
+
+    运行时对无法识别的条目只会退化为「与登录 IP 字符串比对」——对真实登录 IP
+    永远不会命中，配置等于静默失效。因此保存期把运行时无法真正匹配的条目
+    一律拒绝，并回显条目原文，避免管理员配置的网段限制无声失效。
+    """
+    for entry in (line.strip() for line in str(value or "").splitlines() if line.strip()):
+        if entry == "*" or is_ip_address(entry) or is_ip_network(entry):
+            continue
+        parts = entry.split("-")
+        if len(parts) == 2 and is_ip_address(parts[0]) and is_ip_address(parts[1]):
+            start_ip, end_ip = ip_address(parts[0]), ip_address(parts[1])
+            if type(start_ip) is not type(end_ip):
+                raise serializers.ValidationError(
+                    _("Invalid IP range entry: `{}`, the start and end IP must be of the same IP version").format(entry)
+                )
+            if int(start_ip) > int(end_ip):
+                raise serializers.ValidationError(
+                    _("Invalid IP range entry: `{}`, the start IP must not be greater than the end IP").format(entry)
+                )
+            continue
+        raise serializers.ValidationError(
+            _(
+                "Invalid IP range entry: `{}`, each line must be a single IP address, a CIDR (e.g. 192.168.1.0/24), "
+                "an IP range (e.g. 10.1.1.1-10.1.1.20) or *"
+            ).format(entry)
+        )
 
 
 class LoginAccessPolicySerializer(BaseModelSerializer):
@@ -87,6 +120,10 @@ class LoginAccessPolicySerializer(BaseModelSerializer):
         ):
             raise serializers.ValidationError(_("Please specify the target users or roles"))
         return attrs
+
+    def validate_ip_ranges(self, value):
+        validate_login_policy_ip_ranges(value)
+        return value
 
 
 class UserPasskeySerializer(BaseModelSerializer):

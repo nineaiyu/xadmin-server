@@ -45,6 +45,63 @@ def get_render_context(tmp: str, context: dict) -> str:
     return template.render(context)
 
 
+def build_config_render_context(model) -> dict:
+    """{{ KEY }} 渲染上下文：模型全部激活行（key → JSON 字符串值）。
+
+    行值自身含同名渲染键（自引用）时跳过，防止渲染递归；批量回源时整个
+    列表只需构建一次。
+    """
+    context_dict = {}
+    for sys_obj_dict in model.objects.filter(is_active=True).values("key", "value").all():
+        str_value = json.dumps(sys_obj_dict["value"])  # 将dict转换为json字符串进行匹配
+        if re.findall("{{{{.*{}.*}}}}".format(sys_obj_dict["key"]), str_value):
+            logger.warning("get same render key. so continue")
+            continue
+        context_dict[sys_obj_dict["key"]] = str_value
+    return context_dict
+
+
+def render_config_value(value: str, context_dict: dict, model) -> Any:
+    """渲染单条行值并做 JSON 后处理；解析失败的重试分支按 model 重建上下文。"""
+    if value:
+        try:
+            try:
+                value = get_render_context(value, context_dict)
+            except TemplateSyntaxError as e:
+                res_list = re.findall("Could not parse the remainder: '{{(.*?)}}'", str(e))
+                for res in res_list:
+                    r_value = render_config_value(f"{{{{{res}}}}}", build_config_render_context(model), model)
+                    value = value.replace(f"{{{{{res}}}}}", f"{r_value}")
+                value = render_config_value(value, build_config_render_context(model), model)
+            except Exception as e:
+                logger.warning(f"db config - render failed {e}")
+        except Exception as e:
+            logger.warning(f"db config - render failed {e}")
+    value = value.replace('"(', "").replace(')"', "")  # 支持"({{ h }})"， 为了转换变量，h不能为字符串
+    try:
+        value = json.loads(value)
+    except Exception as e:
+        logger.warning(f"db config - json loads failed {e}")
+    return value
+
+
+def serialize_config_rows(serializer, rows) -> list:
+    """配置行统一序列化为缓存数据结构（返回顺序与 rows 一致）。
+
+    与单行 get_value_from_db 同口径：读取侧统一解密（凭据治理，消费方拿
+    明文）；行值自引用渲染键时置空 key 视同缺席（防止渲染递归）。
+    """
+    result = []
+    for data in serializer(rows, many=True).data:
+        row_key = data.get("key")
+        data["value"] = decrypt_setting_value(row_key, data["value"])
+        if re.findall(f"{{{{.*{row_key}.*}}}}", json.dumps(data["value"])):
+            logger.warning(f"get same render key:{row_key}. so get default value")
+            data["key"] = ""
+        result.append(data)
+    return result
+
+
 class ConfigCacheBase:
     # 无行 no_row 标记 TTL：只缓存「该 key 无数据行」这一事实（值不落缓存，
     # 每次由调用方默认值现算），信号失效/种子导入/行创建路径都会清理标记，
@@ -132,39 +189,8 @@ class ConfigCacheBase:
         cls._L1_STORE.pop(l1_key, None)
 
     def get_render_value(self, value: str) -> Any:
-        if value:
-            try:
-                context_dict = {}
-                for sys_obj_dict in self.model.objects.filter(is_active=True).values().all():
-                    str_value = json.dumps(sys_obj_dict["value"])  # 将dict转换为json字符串进行匹配
-                    if re.findall("{{{{.*{}.*}}}}".format(sys_obj_dict["key"]), str_value):
-                        logger.warning("get same render key. so continue")
-                        continue
-                    context_dict[sys_obj_dict["key"]] = str_value
-                try:
-                    value = get_render_context(value, context_dict)
-                except TemplateSyntaxError as e:
-                    res_list = re.findall("Could not parse the remainder: '{{(.*?)}}'", str(e))
-                    for res in res_list:
-                        r_value = self.get_render_value(f"{{{{{res}}}}}")
-                        value = value.replace(f"{{{{{res}}}}}", f"{r_value}")
-                    value = self.get_render_value(value)
-                except Exception as e:
-                    logger.warning(f"db config - render failed {e}")
-            except Exception as e:
-                logger.warning(f"db config - render failed {e}")
-        value = value.replace('"(', "").replace(')"', "")  # 支持"({{ h }})"， 为了转换变量，h不能为字符串
-        try:
-            value = json.loads(value)
-        except Exception as e:
-            logger.warning(f"db config - json loads failed {e}")
-        # if isinstance(value, str):
-        #     if value.isdigit():
-        #         return int(value)
-        #     v_group = re.findall('"(.*?)"', value)
-        #     if v_group and len(v_group) == 1 and v_group[0].isdigit():
-        #         return int(v_group[0])
-        return value
+        # 空值不构建渲染上下文：缺席渲染无需触发全表查询（原语义保留）
+        return render_config_value(value, build_config_render_context(self.model) if value else {}, self.model)
 
     def get_value_from_db(self, key):  # 取得数据是激活的数据，如果数据未激活，则取默认数据
         row = self.model.objects.filter(is_active=True, key=key, **self.filter_kwargs).first()
@@ -177,6 +203,83 @@ class ConfigCacheBase:
             logger.warning(f"get same render key:{key}. so get default value")
             data["key"] = ""
         return data
+
+    def get_value_from_db_many(self, keys) -> dict:
+        """批量取激活行并序列化：返回 {key: 缓存数据}，缺席的 key 不在结果中。
+
+        与 get_value_from_db 同口径（只取激活行、读取侧解密、自引用渲染键
+        视同缺席）；差异仅在一次 key__in 查询 + 一次批量序列化。
+        """
+        key_list = list(keys)
+        if not key_list:
+            return {}
+        rows = list(self.model.objects.filter(is_active=True, key__in=key_list, **self.filter_kwargs))
+        return {row.key: data for row, data in zip(rows, serialize_config_rows(self.serializer, rows), strict=True)}
+
+    def _resolve_cached_data(self, key, cache_data, default_data, ignore_access):
+        """缓存数据 → 生效数据；视同未命中（需回源 DB）时返回 None。
+
+        与 get_data 的命中判定同口径：键不匹配 / access 拦下时回源，
+        no_row 缺席标记直接按缺席语义返回（不回源）。
+        """
+        if not (isinstance(cache_data, dict) and cache_data.get("key", "") == key):
+            return None
+        if cache_data.get("no_row"):
+            return self._absence_value(key, default_data)
+        if ignore_access or cache_data.get("access"):
+            return cache_data
+        return None
+
+    def get_values(self, keys, default_data=None, ignore_access=True):
+        """批量读取多个 key 的生效值，返回 {key: value}。
+
+        语义与逐个 get_value 一致（L1/缓存命中、access 过滤、缺席默认值、
+        解密与渲染），仅合并往返：L1 命中后剩余 key 一次 Redis get_many，
+        仍未命中的 key 一次 key__in 查询回源（渲染上下文只建一次）。
+        只读不回填缓存——值与缺席标记的写路径仍由单读负责，批量读取不改变
+        缓存状态的演进。
+        """
+        from django.core.cache import cache as django_cache
+
+        key_list = list(dict.fromkeys(keys))
+        if not key_list:
+            return {}
+        resolved, pending = {}, []
+        for key in key_list:
+            cache_data = self._l1_get(self._l1_key(key))
+            if cache_data is not None:
+                data = self._resolve_cached_data(key, cache_data, default_data, ignore_access)
+                if data is not None:
+                    resolved[key] = data
+                    continue
+            pending.append(key)
+        if pending:
+            slot_keys = {key: self.cache(f"{self.px}_{key}").cache_key for key in pending}
+            try:
+                cached = django_cache.get_many(set(slot_keys.values()))
+            except Exception:  # noqa: BLE001 Redis 不可用（与单读同口径）：降级读库
+                logger.warning("config cache read failed, fallback to db", exc_info=True)
+                cached = {}
+            still_pending = []
+            for key in pending:
+                data = self._resolve_cached_data(key, cached.get(slot_keys[key]), default_data, ignore_access)
+                if data is not None:
+                    resolved[key] = data
+                else:
+                    still_pending.append(key)
+            if still_pending:
+                db_map = self.get_value_from_db_many(still_pending)
+                context = build_config_render_context(self.model) if db_map else {}
+                for key in still_pending:
+                    db_data = db_map.get(key)
+                    if db_data is None or db_data.get("key") != key:
+                        # 无行 / 自引用渲染键：缺席语义（默认值现算，不落缓存）
+                        resolved[key] = self._absence_value(key, default_data)
+                        continue
+                    db_data["value"] = render_config_value(json.dumps(db_data["value"]), context, self.model)
+                    resolved[key] = db_data if (ignore_access or db_data.get("access")) else {}
+        # 与 get_value 的返回整形一致：数据为空（缺席/拦下）原样返回空 {}
+        return {key: (data.get("value") if data else data) for key, data in resolved.items()}
 
     def get_default_data(self, key, default_data):
         if default_data is None:

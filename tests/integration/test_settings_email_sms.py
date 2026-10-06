@@ -12,6 +12,7 @@ from django.core import mail
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
 
+from integrations.sdk.sms.endpoint import BACKENDS
 from settings.models import Setting
 
 pytestmark = pytest.mark.django_db
@@ -37,6 +38,11 @@ SMS_PAYLOAD = {
     "ALIBABA_VERIFY_SIGN_NAME": "签名",
     "ALIBABA_VERIFY_TEMPLATE_CODE": "SMS_123",
     "SMS_TEST_PHONE": "13800138000",
+}
+
+# 各供应商的专属字段面（write_only 密钥字段不出现在 GET 响应里，不在此列）
+BACKEND_EXCLUSIVE_FIELDS = {
+    "alibaba": {"ALIBABA_ACCESS_KEY_ID", "ALIBABA_VERIFY_SIGN_NAME", "ALIBABA_VERIFY_TEMPLATE_CODE"},
 }
 
 
@@ -148,6 +154,24 @@ class TestSmsSettingView:
         values = {item["value"] for item in resp.data["data"]}
         assert "alibaba" in values
 
+    @pytest.mark.parametrize("backend", BACKENDS.values)
+    def test_config_field_face_for_every_registered_backend(self, auth_client, backend):
+        resp = auth_client.get(f"{SMS_CONFIG_URL}?category={backend}")
+
+        assert resp.status_code == 200
+        fields = set(resp.data["data"])
+        # 任一已注册供应商都收敛到合法字段面：公共测试字段必在、专属字段不缺，
+        # 不再错配基础设置序列化器（其字段与短信域对不上）
+        assert "SMS_TEST_PHONE" in fields
+        assert "SITE_URL" not in fields
+        assert BACKEND_EXCLUSIVE_FIELDS.get(backend, set()) <= fields
+
+    def test_config_unknown_category_send_returns_controlled_error(self, auth_client):
+        resp = auth_client.post(f"{SMS_CONFIG_URL}?category=nonexistent", SMS_PAYLOAD)
+
+        assert resp.data["code"] == 400
+        assert resp.data["detail"] == str(_("SMS provider not support: {}").format("nonexistent"))
+
     def test_config_without_category_requires_test_phone(self, auth_client):
         resp = auth_client.post(SMS_CONFIG_URL, {})
         assert resp.data["code"] == 1001
@@ -184,12 +208,16 @@ class TestSmsSettingView:
         assert resp.data["code"] == 400
         assert resp.data["detail"] == "quota exceeded"
 
-    def test_config_alibaba_unexpected_error_keeps_original(self, auth_client, monkeypatch):
+    def test_config_alibaba_unexpected_error_returns_unified_detail(self, auth_client, monkeypatch):
         monkeypatch.setattr("integrations.sdk.sms.alibaba.client", UnexpectedSMSClient)
         resp = auth_client.post(f"{SMS_CONFIG_URL}?category=alibaba", SMS_PAYLOAD)
 
         assert resp.data["code"] == 400
-        assert "network down" in resp.data["detail"]
+        # 对外统一文案：SDK/网络原始细节不回显，原始异常只进服务端日志
+        assert resp.data["detail"] == str(_("SMS test failed, please check the SMS configuration"))
+        assert "network down" not in resp.data["detail"]
+        # 失败响应外层结构不变（前端据 code 分流）
+        assert {"code", "detail", "requestId", "timestamp"} <= set(resp.data)
 
     def test_partial_update_persists_test_phone(self, auth_client):
         resp = auth_client.patch(f"{SMS_CONFIG_URL}?category=alibaba", SMS_PAYLOAD)

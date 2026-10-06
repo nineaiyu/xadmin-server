@@ -151,6 +151,40 @@ class TestManagedScopeAPI:
         assert rows[str(child.pk)]["leader"] is None
         assert rows[str(child.pk)]["managers"] == []
 
+    def test_managed_member_count_excludes_deleted_includes_disabled(
+        self, api_client, dept, normal_user, role, menu_factory
+    ):
+        """成员数口径 = 未删除成员（含停用），与成员预览/用户管理列表展示一致。
+
+        回归：两处统计口径曾漂移——部门行 member_count（注解 JOIN 不经软删除
+        管理器）把已删除用户计入，顶层 user_count 却按 is_active 过滤把停用
+        成员排除；现统一为「未删除、含停用」：成员预览抽屉（用户列表按部门
+        筛选）展示停用用户，统计与列表实际展示对齐，且各直属计数之和等于总数。
+        """
+        active_member = UserInfo.objects.create_user(username="mgt_active", password="Test@123456")
+        active_member.dept = dept
+        active_member.save(update_fields=["dept"])
+        disabled_member = UserInfo.objects.create_user(username="mgt_off", password="Test@123456")
+        disabled_member.is_active = False
+        disabled_member.save(update_fields=["is_active"])
+        disabled_member.dept = dept
+        disabled_member.save(update_fields=["dept"])
+        removed_member = UserInfo.objects.create_user(username="mgt_gone", password="Test@123456")
+        removed_member.dept = dept
+        removed_member.save(update_fields=["dept"])
+        removed_member.delete()  # 软删除进回收站：成员列表不可见，统计同口径排除
+
+        DeptManagerAssignment.objects.create(dept=dept, user=normal_user)
+        grant_menu(role, menu_factory, DEPT_DETAIL_PATH, "GET", name="p-dept-detail")
+
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.get(f"{DEPT_URL}/managed")
+        assert resp.status_code == 200
+        data = resp.data["data"]
+        row = next(row for row in data["depts"] if row["pk"] == dept.pk)
+        assert row["user_count"] == 2
+        assert data["user_count"] == 2
+
 
 class TestWriteScopeGuardAPI:
     """写侧载荷范围校验（D2，走真实链路）：归属字段与关系字段的取值范围收敛。

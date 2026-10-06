@@ -170,6 +170,25 @@ class TestRecall:
         message.refresh_from_db()
         assert message.is_recalled is True and message.content == ""
 
+    def test_recall_twice_rejected_without_second_broadcast(self, auth_client, superuser, bob, monkeypatch):
+        """重复撤回：第二次返回「已撤回」可读错误，房间广播只发生一次（不双发）。"""
+        from django.utils.translation import gettext_lazy as _
+
+        room = chat_service.get_or_create_private_room(superuser, bob)
+        message, __ = chat_service.create_message(room, superuser, "只撤一次")
+        calls = []
+        monkeypatch.setattr(
+            "message.utils.push_room_event", lambda room, payload, message_type=None: calls.append(payload)
+        )
+
+        first = auth_client.post(f"{MESSAGE_URL}/{message.pk}/recall", {}, format="json")
+        second = auth_client.post(f"{MESSAGE_URL}/{message.pk}/recall", {}, format="json")
+
+        assert first.status_code == 200, first.data
+        assert second.json()["code"] == 1001
+        assert second.json()["detail"] == str(_("Message already recalled"))
+        assert len(calls) == 1
+
     def test_recall_other_user_message_rejected(self, auth_client, superuser, bob):
         room = chat_service.get_or_create_private_room(superuser, bob)
         message, __ = chat_service.create_message(room, bob, "别人的消息")

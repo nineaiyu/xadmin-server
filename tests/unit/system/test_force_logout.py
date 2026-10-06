@@ -31,6 +31,19 @@ def _valid_access(token_str):
     ServerAccessToken(token_str.encode()).verify()
 
 
+@pytest.fixture
+def layer(settings):
+    """channel layer（InMemory 档 / 真 Redis 层通用，清理走 tests/channel_layer helper）。"""
+    from channels.layers import get_channel_layer
+
+    from tests.channel_layer import reset_layer_state
+
+    layer = get_channel_layer()
+    reset_layer_state(layer)
+    yield layer
+    reset_layer_state(layer)
+
+
 def test_force_logout_revokes_existing_access_tokens():
     user = _make_user()
     old_token = _access_token(user)
@@ -179,3 +192,58 @@ class TestVerifyRoundTrip:
 
         assert len(calls) == 1
         assert len(calls[0]) == 2
+
+
+class TestBatchForceLogoutUsers:
+    """批量踢线：与逐用户 force_logout_user 四步语义等价，往返合并为整批一次。"""
+
+    def test_batch_kicks_all_listed_users(self, layer, superuser):
+        from asgiref.sync import async_to_sync
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        from audit.models.log import UserLoginLog as LoginLog
+        from common.cache.storage import UserTokenRevokedCache
+        from identity.models import UserSession
+        from identity.utils.session import force_logout_users
+        from message.utils import get_user_layer_group_name
+        from tests.channel_layer import beat_layer
+
+        targets = [
+            UserInfo.objects.create_user(username="batch_kick_a", password="x"),
+            UserInfo.objects.create_user(username="batch_kick_b", password="x"),
+        ]
+        RefreshToken.for_user(targets[0])
+        for index, target in enumerate(targets):
+            from identity.utils.session import register_user_session
+
+            register_user_session(None, target, LoginLog.LoginTypeChoices.WEBSOCKET, channel_name=f"ws-{index}")
+            beat_layer(layer, target.pk, f"ws-{index}")
+
+        kicked = force_logout_users([target.pk for target in targets])
+
+        assert kicked == 2
+        for target in targets:
+            assert UserTokenRevokedCache(target.pk).get_storage_cache() is not None
+            assert not UserSession.objects.filter(creator=target, status=UserSession.Status.ONLINE).exists()
+            # 逐 channel 推送 logout 并退组：批量派发后组内 channel 清空
+            channels = async_to_sync(layer.get_layers)(get_user_layer_group_name(target.pk))
+            assert channels == []
+
+    def test_batch_without_online_channels_still_revokes_tokens(self, superuser):
+        from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        from common.cache.storage import UserTokenRevokedCache
+        from identity.utils.session import force_logout_users
+
+        target = UserInfo.objects.create_user(username="batch_kick_offline", password="x")
+        old_token = _access_token(target)
+        _valid_access(old_token)
+        RefreshToken.for_user(target)
+
+        assert force_logout_users([target.pk, target.pk]) == 0
+
+        with pytest.raises(TokenError):
+            ServerAccessToken(old_token).verify()
+        assert BlacklistedToken.objects.filter(token__user=target).exists()
+        assert UserTokenRevokedCache(target.pk).get_storage_cache() is not None

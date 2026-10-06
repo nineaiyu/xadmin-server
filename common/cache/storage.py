@@ -111,6 +111,18 @@ class UserTokenRevokedCache(RedisCacheBase):
         timeout = int(lifetime.total_seconds()) + 60 if lifetime else 3660
         super().__init__(self.cache_key, timeout=timeout)
 
+    @classmethod
+    def revoke_many(cls, user_ids, revoked_at):
+        """批量写多个用户的失效时间戳：合并为一次 set_many 往返。
+
+        键、值、TTL 均与逐用户 set_storage_cache 一致（批量踢线用），
+        仅把 N 次缓存往返合并为一次 pipeline 写。
+        """
+        caches = [cls(user_id) for user_id in user_ids]
+        if not caches:
+            return None
+        return cache.set_many({c.cache_key: revoked_at for c in caches}, timeout=caches[0]._timeout)
+
 
 class SessionTokenRevokedCache(RedisCacheBase):
     """会话级令牌失效标记：单会话下线时写入，按 token 自定义 claim sid 精确拒绝。

@@ -139,6 +139,34 @@ class TestPostMembers:
         assert resp.json()["code"] == 1000
         assert Post.objects.get(pk=pk).users.count() == 0, "失效用户不进入成员"
 
+    def test_members_truncation_marker(self, auth_client, monkeypatch):
+        """成员超上限时截断并返回 total/truncated 标记（向后兼容新增字段）。"""
+        from identity.models import UserInfo
+        from identity.views.admin import post as post_view
+
+        pk = _create(auth_client).json()["data"]["pk"]
+        members = [UserInfo.objects.create_user(username=f"postmem{i}", password="Test@123456") for i in range(3)]
+        Post.objects.get(pk=pk).users.add(*members)
+
+        # 未达上限：truncated 为 False，total 为全量在用成员数
+        data = auth_client.get(f"{POST_URL}/{pk}/members").json()["data"]
+        assert data["total"] == 3
+        assert data["truncated"] is False
+        assert len(data["members"]) == 3
+
+        # 超上限：按 pk 顺序截断，标记不缺位
+        monkeypatch.setattr(post_view, "MEMBER_LIMIT", 2)
+        data = auth_client.get(f"{POST_URL}/{pk}/members").json()["data"]
+        assert len(data["members"]) == 2
+        assert data["total"] == 3
+        assert data["truncated"] is True
+
+        # assign 响应同形状（分配后回显同样携带标记）
+        resp = auth_client.post(f"{POST_URL}/{pk}/assign", {"add": [members[0].pk]}, format="json")
+        assert resp.json()["code"] == 1000
+        assert resp.json()["data"]["total"] == 3
+        assert resp.json()["data"]["truncated"] is True
+
     def test_user_options_returns_brief(self, auth_client):
         from identity.models import UserInfo
 

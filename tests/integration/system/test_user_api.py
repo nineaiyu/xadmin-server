@@ -3,6 +3,7 @@
 
 import pytest
 
+from audit.services import OperationLog
 from common.base.utils import AESCipherV2
 from identity.models import Post, UserInfo
 from tests.integration.aes_v2 import encrypt_v2
@@ -11,6 +12,14 @@ pytestmark = pytest.mark.django_db
 
 USER_URL = "/api/system/user"
 CONFIRM_URL = "/api/mfa/confirm"
+
+
+@pytest.fixture(autouse=True)
+def _plaintext_create_mode(settings):
+    """本文件建号用明文密码提交（导入/脚本等非浏览器客户端的形态），
+    属建号密码加密开关（SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED）关闭的明文模式；
+    密文模式的拒绝/审计语义在显式开启该开关的用例中覆盖。"""
+    settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False
 
 
 @pytest.fixture
@@ -139,6 +148,61 @@ class TestUserActionsSmoke:
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000
         assert UserInfo.objects.get(pk=pk).check_password("NewPass@123456")
+
+    def test_reset_password_enforces_unified_password_policy(self, auth_client):
+        """重置密码下限/复杂度由 check_password_rules 统一判定（与注册/改密同源）。"""
+        pk = _create_user(auth_client, username="lisi")
+        for weak in ("Abc@1", "abcdefghij"):  # 过短（低于默认 10 位） / 缺大写与数字
+            resp = auth_client.post(f"{USER_URL}/{pk}/reset-password", {"password": encrypt_v2("lisi", weak)})
+            assert resp.status_code == 400, resp.data
+            assert any(k in str(resp.data) for k in ("rules", "安全规则")), resp.data
+        # 原密码未被重置
+        assert UserInfo.objects.get(pk=pk).check_password("Test@123456")
+
+    def test_reset_password_short_input_rejected_by_rules_not_field(self, auth_client):
+        """超短输入不再被字段级 min_length 双轨拦截，统一落到密码规则文案（且不 500）。"""
+        pk = _create_user(auth_client, username="lisi")
+        for raw in ("a", "abc"):
+            resp = auth_client.post(f"{USER_URL}/{pk}/reset-password", {"password": raw})
+            assert resp.status_code == 400, resp.data
+            assert any(k in str(resp.data) for k in ("rules", "安全规则")), resp.data
+
+    def test_create_user_rejects_undecryptable_password_when_encrypted(self, auth_client, settings):
+        """密文模式下解密失败：4xx 拒绝 + 补审计，密文/明文不再误落。"""
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = True
+        payload = "v2:!!!not-a-valid-ciphertext!!!"
+        resp = auth_client.post(
+            USER_URL, {"username": "decryptfail", "nickname": "解密失败", "password": payload}, format="json"
+        )
+        assert resp.status_code == 400, resp.data
+        assert resp.data["code"] == 1001, resp.data
+        assert "decrypt" in str(resp.data["detail"]) or "解密" in str(resp.data["detail"])
+        assert not UserInfo.objects.filter(username="decryptfail").exists()
+        row = OperationLog.objects.filter(module="identity:user", status_code=1001).get()
+        assert "password_decrypt_failed" in row.changes
+        assert "decryptfail" in row.changes
+        assert payload not in row.changes  # 审计不携带提交的密码原文
+
+    def test_create_user_rejects_plaintext_when_encrypted(self, auth_client, settings):
+        """密文模式下明文提交不再回退落库（旧口径仅告警后照落）。"""
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = True
+        resp = auth_client.post(
+            USER_URL, {"username": "plainmode", "nickname": "明文", "password": "Test@123456"}, format="json"
+        )
+        assert resp.status_code == 400, resp.data
+        assert not UserInfo.objects.filter(username="plainmode").exists()
+
+    def test_create_user_with_v2_encrypted_password_when_encrypted(self, auth_client, settings):
+        """密文模式（默认开关态）下合法密文照常建号。"""
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = True
+        resp = auth_client.post(
+            USER_URL,
+            {"username": "v2strict", "nickname": "V2", "password": encrypt_v2("v2strict", "Test@123456")},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000
+        assert UserInfo.objects.get(username="v2strict").check_password("Test@123456")
 
     def test_create_user_with_v2_encrypted_password(self, auth_client):
         """新增用户密码为 v2 协议密文（前端 beforeSubmit 异步加密后提交）。"""

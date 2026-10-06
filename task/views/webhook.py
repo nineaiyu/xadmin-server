@@ -9,6 +9,8 @@
 订阅 secret 永不回传；管理类资源按菜单权限点控制，无个人/共享分档。
 """
 
+from django.db import transaction
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -88,11 +90,20 @@ class WebhookDeliveryViewSet(ListDeleteModelSet):
         delivery = self.get_object()
         if delivery.status not in ("exhausted", "failed"):
             return ApiResponse(code=1001, detail=_("Only failed or exhausted deliveries can be retried"))
-        delivery.status = "pending"
-        delivery.attempt = 0
-        delivery.next_retry_at = None
-        delivery.save(update_fields=["status", "attempt", "next_retry_at", "updated_time"])
-        from task.webhook_tasks import deliver_webhook
+        from task.webhook_tasks import dispatch_deliver_webhook
 
-        deliver_webhook.apply_async(kwargs={"delivery_id": str(delivery.pk)}, task_id=str(delivery.pk))
+        with transaction.atomic():
+            # 行锁内复核状态（并发下可能已被其他请求或到期的旧任务改写）
+            locked = (
+                WebhookDelivery.objects.select_for_update()
+                .filter(pk=delivery.pk, status__in=("exhausted", "failed"))
+                .first()
+            )
+            if locked is None:
+                return ApiResponse(code=1001, detail=_("Only failed or exhausted deliveries can be retried"))
+            WebhookDelivery.objects.filter(pk=locked.pk).update(
+                status="pending", attempt=0, next_retry_at=None, updated_time=timezone.now()
+            )
+            # 重置与代际递增同事务：队列中残留的旧倒计时任务到期后因代际不匹配静默失效
+            dispatch_deliver_webhook(str(locked.pk))
         return ApiResponse(detail=_("Delivery re-dispatched"))

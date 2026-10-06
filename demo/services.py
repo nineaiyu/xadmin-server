@@ -14,6 +14,7 @@
 """
 
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
 
@@ -47,20 +48,22 @@ def submit_book(book, user):
     """
     Book = _models()
     if book.status == Book.Status.PENDING:
-        return False, "该书籍已在审批中"
+        return False, _("This book is already under approval")
     if book.status == Book.Status.ON_SHELF:
-        return False, "该书籍已上架"
+        return False, _("This book is already on shelf")
 
     flow = resolve_book_flow()
     if flow is None:
-        return False, f"未找到启用的上架审批流程（code: {BOOK_FLOW_CODE}），请先执行 seed_demo_book"
+        return False, _("No active on-shelf approval flow found (code: %(code)s), please run seed_demo_book first") % {
+            "code": BOOK_FLOW_CODE
+        }
 
     from approval.utils.approval_flow import create_instance
 
     instance, error = create_instance(
         flow=flow,
         applicant=user,
-        title=f"书籍上架：{book.name}",
+        title=_("Book on-shelf: %(name)s") % {"name": book.name},
         # 表单数据随实例快照（流程条件节点 / 字段审批人可按这些 key 取值）
         form_data={
             "name": book.name,
@@ -79,7 +82,7 @@ def submit_book(book, user):
     book.status = Book.Status.PENDING
     book.modifier = user
     book.save(update_fields=["instance", "status", "modifier", "updated_time"])
-    return True, "已提交上架审批"
+    return True, _("On-shelf approval submitted")
 
 
 def sync_book_instance(instance, status, reason: str = "") -> None:
@@ -108,7 +111,9 @@ def sync_book_instance(instance, status, reason: str = "") -> None:
         )
         return
     target = mapping[status]
-    update_fields = ["status", "modifier", "updated_time"]
+    # 终态回写只推进业务状态，不触碰 modifier：审批期间可能有管理员编辑过书籍，
+    # 把修改人覆盖为审批实例创建人会抹掉真实的编辑痕迹（修改人语义留给业务编辑路径）
+    update_fields = ["status", "updated_time"]
     book.status = target
     if target == Book.Status.ON_SHELF:
         if not book.is_active:
@@ -118,6 +123,5 @@ def sync_book_instance(instance, status, reason: str = "") -> None:
         if book.on_shelf_time is None:
             book.on_shelf_time = timezone.now()
             update_fields.append("on_shelf_time")
-    book.modifier = instance.creator
     book.save(update_fields=update_fields)
     logger.info("demo book status synced by approval instance. book:%s status:%s reason:%s", book.pk, target, reason)

@@ -36,7 +36,7 @@ class MessageAction(StrEnum):
     USERINFO = "userinfo"  # 请求/推送当前登录用户信息
     PUSH_MESSAGE = "push_message"  # 站内信/通知推送
     CHAT_MESSAGE = "chat_message"  # 聊天室消息（双向）
-    CHAT_RECALL = "chat_recall"  # 消息撤回（双向，ws/chat/）
+    CHAT_RECALL = "chat_recall"  # 消息撤回（下行广播，ws/chat/；上行撤回走 REST recall 端点）
     CHAT_REACTION = "chat_reaction"  # 消息表情回应（双向，ws/chat/）
     CHAT_READ = "chat_read"  # 已读回执（上行 chat_read → 下行游标）
     CHAT_UNREAD = "chat_unread"  # 未读红点推送（下行，ws/chat/）
@@ -129,7 +129,7 @@ class ChatAttachmentPayload(TypedDict, total=False):
 
 
 class ChatRecallPayload(TypedDict, total=False):
-    """消息撤回帧（上行只带 message_id；下行广播撤回结果）。"""
+    """消息撤回广播帧（下行）：REST 撤回端点落库后向房间下发，多端同步对齐。"""
 
     message_id: int
     id: int

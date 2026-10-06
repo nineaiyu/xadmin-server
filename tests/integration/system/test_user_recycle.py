@@ -15,6 +15,13 @@ USER_URL = "/api/system/user"
 MFA_OFF = override_settings(SECURITY_MFA_CONFIRM_ENABLED=False)
 
 
+@pytest.fixture(autouse=True)
+def _plaintext_create_mode(settings):
+    """本文件建号用明文密码提交（导入/脚本等非浏览器客户端的形态），
+    属建号密码加密开关（SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED）关闭的明文模式。"""
+    settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False
+
+
 class TestUserRecycleBin:
     @MFA_OFF
     def test_soft_delete_blocks_login_and_restore_revives(self, auth_client, normal_user):

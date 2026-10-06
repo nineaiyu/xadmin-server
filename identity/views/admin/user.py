@@ -30,7 +30,13 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from identity.models import Post, UserInfo, UserOAuthBinding
-from identity.serializers.user import ResetPasswordSerializer, UserSerializer
+from identity.serializers.user import (
+    PASSWORD_DECRYPT_FAILED_MESSAGE,
+    ResetPasswordSerializer,
+    UserSerializer,
+    is_password_decrypt_failure,
+    record_create_password_decrypt_failure,
+)
 from identity.utils import user_invite
 from identity.utils.impersonation import is_impersonating, start_impersonation
 from message.services import send_logout_msg
@@ -133,7 +139,16 @@ class UserViewSet(
                 raise PermissionDenied(
                     str(_("You do not have permission to perform the action: {}").format(str(_("Invite activation"))))
                 )
-        return super().create(request, *args, **kwargs)
+        try:
+            return super().create(request, *args, **kwargs)
+        except ValidationError as exc:
+            if not is_password_decrypt_failure(exc):
+                raise
+            # 密文模式下建号密码解密失败：先落审计再以业务码应答（同注册/忘记密码拒绝口径）。
+            # 异常应答会触发请求事务回滚（common_exception_handler set_rollback），
+            # 审计必须在回滚前落库，否则记录随事务一并丢失。
+            record_create_password_decrypt_failure(request, request.data.get("username"))
+            return ApiResponse(code=1001, detail=PASSWORD_DECRYPT_FAILED_MESSAGE, status=400)
 
     def perform_create(self, serializer):
         super().perform_create(serializer)
@@ -170,7 +185,11 @@ class UserViewSet(
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        SiteMessageUtil.notify_error(users=instance, title="密码重置成功", message="密码被管理员重置成功")
+        SiteMessageUtil.notify_success(
+            users=instance,
+            title=_("Password reset successful"),
+            message=_("Your password has been reset by an administrator"),
+        )
         return ApiResponse()
 
     @extend_schema(responses=get_default_response_schema(), request=None)

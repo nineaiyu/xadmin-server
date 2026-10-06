@@ -27,31 +27,49 @@ def force_logout_user(user_pk, operator=None):
     ③ WS 推送 logout 消息并断开连接（前端收到即本地登出）；
     ④ 登记的 UserSession 全部置 OFFLINE（在线列表立即消失）。
     """
+    return force_logout_users([user_pk], operator=operator)
+
+
+def force_logout_users(user_pks, operator=None) -> int:
+    """批量强制多个用户全部会话下线，返回被踢掉的 WS channel 总数。
+
+    ``force_logout_user`` 的批量版：四步语义与逐用户执行一致，仅合并往返开销——
+    ① 用户级令牌失效时间戳一次 set_many 写入（键 / 值 / TTL 同单用户口径）；
+    ② refresh token 一次取回、批量插入黑名单（冲突行跳过，即 get_or_create 语义）；
+    ③ 一次实时批量查询在线 channel，单次同步桥接内逐 channel 推送 logout 并退组；
+    ④ 登记的 UserSession 一次批量置 OFFLINE（在线列表立即消失）。
+    """
     from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
     from identity.models import UserSession
-    from message.services import get_online_users_layers, send_logout_msg
+    from message.services import batch_send_logout_msg, get_online_users_layers
+
+    pks = list(dict.fromkeys(user_pks))
+    if not pks:
+        return 0
 
     # ① 服务端 access token 失效（时间戳取当前秒；iat 与 exp 均为 epoch 秒）
-    UserTokenRevokedCache(user_pk).set_storage_cache(int(timezone.now().timestamp()))
+    UserTokenRevokedCache.revoke_many(pks, int(timezone.now().timestamp()))
 
     # ② refresh token 全部拉黑（OutstandingToken 为登录/轮换全量签发记录）
-    tokens = OutstandingToken.objects.filter(user_id=user_pk)
-    for token in tokens:
-        BlacklistedToken.objects.get_or_create(token=token)
+    tokens = list(OutstandingToken.objects.filter(user_id__in=pks))
+    if tokens:
+        BlacklistedToken.objects.bulk_create(
+            (BlacklistedToken(token=token) for token in tokens), ignore_conflicts=True, batch_size=500
+        )
 
-    # ③ 踢掉在线 WS 连接（get_online_users_layers 批量接口：入参列表、返回 {user_pk: [channels]}）。
-    # use_snapshot=False：踢连接必须拿实时 channel 明细，不能吃展示快照的 5s 延迟
-    channels = get_online_users_layers([user_pk], use_snapshot=False).get(user_pk, [])
-    if channels:
-        send_logout_msg(user_pk, channels)
+    # ③ 踢掉在线 WS 连接。use_snapshot=False：踢连接必须拿实时 channel 明细，
+    # 不能吃展示快照的 5s 延迟
+    layers = get_online_users_layers(pks, use_snapshot=False)
+    batch_send_logout_msg(layers)
+    channels = sum(len(channel_names) for channel_names in layers.values())
 
     # ④ 会话记录置离线（channel 已随 ③ 断开）
-    UserSession.objects.filter(creator_id=user_pk, status=UserSession.Status.ONLINE).update(
+    UserSession.objects.filter(creator_id__in=pks, status=UserSession.Status.ONLINE).update(
         status=UserSession.Status.OFFLINE
     )
-    logger.info("force logout user %s: %s channels, operator %s", user_pk, len(channels), operator)
-    return len(channels)
+    logger.info("force logout %s users: %s channels, operator %s", len(pks), channels, operator)
+    return channels
 
 
 def enforce_session_limit(user, limit=None):
