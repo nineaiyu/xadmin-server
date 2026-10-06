@@ -91,7 +91,11 @@ jobs:
           enable-cache: true
 
       - name: Install dev dependencies
-        run: uv sync --locked --only-group dev
+        # 全量安装（主依赖 + dev 组）：mypy 依据环境里实际安装的包推导类型，缺包会被
+        # ignore_missing_imports 吞成 Any——dev-only 环境与本地完整 venv 会对同一行代码
+        # 给出相反判定（ignore 一侧必需、另一侧 unused-ignore）。mysqlclient 需系统库
+        # 编译且无内联类型，跳过不影响检查口径（与 test.yml 同参）
+        run: uv sync --locked --no-install-package mysqlclient
 
       - name: Run mypy
         # 增量收口模式：受检范围与存量豁免清单见 pyproject [tool.mypy]（豁免只减不增）
