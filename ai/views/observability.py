@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
-from common.core.response import ApiResponse
+from common.core.response import API_SUCCESS_CODE, ApiResponse
 from common.swagger.utils import get_default_response_schema
 
 
@@ -67,7 +67,7 @@ class AiObservabilityMixin:
             created_time__gte=since,
         )
         total = base.count()
-        failed = base.exclude(status_code=1000).count()
+        failed = base.exclude(status_code=API_SUCCESS_CODE).count()
 
         module_labels = {
             "AI:ask": _("AI document Q&A"),

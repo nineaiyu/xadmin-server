@@ -28,6 +28,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from common.core.config import SysConfig
+from common.core.response import API_SUCCESS_CODE
 from common.utils.outbound import OutboundBlocked, parse_allowed_hosts, pinned_request, validate_outbound_url
 
 MCP_PROTOCOL_VERSION = "2025-06-18"
@@ -429,8 +430,8 @@ def audit_mcp_call(
             module="AI:mcp:client",
             object_pk=str(getattr(server, "pk", "")),
             auth_type=OperationLog.AuthType.AI,
-            status_code=1000 if ok else 1001,
-            response_code=1000 if ok else 1001,
+            status_code=API_SUCCESS_CODE if ok else 1001,
+            response_code=API_SUCCESS_CODE if ok else 1001,
             changes=json.dumps(
                 {
                     "server": server.name,

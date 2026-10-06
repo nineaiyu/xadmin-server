@@ -99,6 +99,7 @@ PAYLOAD_DECLARATIONS: dict[str, dict[str, Any]] = {
             "room_type": "public / private / ai",
             "message_type": "text / ai / system / image / video / audio / file",
             "client_msg_id": "客户端幂等键",
+            "can_recall": "撤回资格（仅发送者定向帧下发，与 REST 历史同一判定；房间共享广播帧不带）",
         },
     },
     "chatReactionPayload": {

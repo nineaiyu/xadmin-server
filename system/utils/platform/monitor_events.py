@@ -13,6 +13,7 @@ import datetime
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -109,7 +110,7 @@ def collect_error_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT, offse
     from audit.models.log import OperationLog
 
     deadline = timezone.now() - datetime.timedelta(seconds=EVENT_RANGES.get(range_key, 86400))
-    queryset = OperationLog.objects.filter(created_time__gte=deadline).exclude(status_code=1000)
+    queryset = OperationLog.objects.filter(created_time__gte=deadline).exclude(status_code=API_SUCCESS_CODE)
     limit, offset = _page_params(limit, offset, EVENT_LIMIT)
     return _paged_result(
         queryset,

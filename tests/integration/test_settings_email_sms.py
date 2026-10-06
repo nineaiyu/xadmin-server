@@ -140,7 +140,9 @@ class TestEmailSettingView:
         resp = auth_client.post(EMAIL_URL, EMAIL_PAYLOAD)
 
         assert resp.data["code"] == 1002
-        assert "connection refused" in resp.data["detail"]
+        # 对外统一文案：网络/协议等原始异常细节不回显，只进服务端日志
+        assert resp.data["detail"] == str(_("Email test failed, please check the SMTP configuration"))
+        assert "connection refused" not in resp.data["detail"]
 
     def test_test_send_requires_host_and_user(self, auth_client):
         resp = auth_client.post(EMAIL_URL, {"EMAIL_HOST": ""})

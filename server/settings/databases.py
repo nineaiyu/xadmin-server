@@ -57,8 +57,9 @@ if DB_POOL_ENABLED:
 
     from common.db import check_db_connection
 
-    # 运行期替换第三方类方法（配置期生效于全部连接池）
-    ConnectionPool.check_connection = staticmethod(check_db_connection)
+    # 运行期替换第三方类方法（配置期生效于全部连接池）：Django 硬编码读取类属性
+    # 且池配置不允许重复传 check，类属性替换是唯一注入点
+    ConnectionPool.check_connection = staticmethod(check_db_connection)  # type: ignore[method-assign,assignment]
 
     DB_OPTIONS["pool"] = {
         "min_size": int(CONFIG.DB_POOL_MIN_SIZE),

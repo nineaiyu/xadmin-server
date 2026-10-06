@@ -131,7 +131,20 @@ class TestImagePane:
             normalize_screen_layout([{"pk": "i1", "type": "image", "x": 0, "y": 0, "w": 3, "h": 2}], [DASH])
 
     def test_non_http_url_rejected(self):
-        for url in ("javascript:alert(1)", "data:image/png;base64,xxx", "/media/local.png"):
+        for url in ("javascript:alert(1)", "data:image/png;base64,xxx"):
+            with pytest.raises(ScreenLayoutError):
+                normalize_screen_layout(
+                    [{"pk": "i1", "type": "image", "x": 0, "y": 0, "w": 3, "h": 2, "url": url}], [DASH]
+                )
+
+    def test_root_relative_url_accepted(self):
+        """站内根相对路径（/ 开头）与前端守卫口径对齐：过前端校验的值不再保存必 400。"""
+        raw = [{"pk": "i1", "type": "image", "x": 0, "y": 0, "w": 3, "h": 2, "url": "/media/local.png"}]
+        assert normalize_screen_layout(raw, [DASH])[0]["url"] == "/media/local.png"
+
+    def test_protocol_relative_url_rejected(self):
+        """// 开头的 protocol-relative 地址等价可跳任意 host：两端口径一致拒绝。"""
+        for url in ("//evil.com/x.png", "//a.b/c.png"):
             with pytest.raises(ScreenLayoutError):
                 normalize_screen_layout(
                     [{"pk": "i1", "type": "image", "x": 0, "y": 0, "w": 3, "h": 2, "url": url}], [DASH]

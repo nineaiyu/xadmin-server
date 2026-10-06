@@ -3,6 +3,7 @@
 
 import pytest
 from django.conf import settings as dj_settings
+from django.utils.translation import gettext_lazy as _
 
 from audit.models import UserLoginLog
 from identity.models import LdapUserBinding
@@ -91,7 +92,7 @@ class TestConnectionTest:
         assert response.json()["code"] == 1001
 
     def test_unreachable_directory_readable_error(self, auth_client):
-        """目录不可达：可读失败提示（1002），不回显 Traceback。"""
+        """目录不可达：统一文案（1002），SDK/原始异常细节不回显。"""
         from ldap3.core.exceptions import LDAPException
 
         payload = dict(PAYLOAD, LDAP_USER_SEARCH_BASE="dc=corp,dc=com")
@@ -101,7 +102,34 @@ class TestConnectionTest:
             response = auth_client.post(LDAP_BASE, payload, format="json")
         body = response.json()
         assert body["code"] == 1002
-        assert "Traceback" not in body["detail"]
+        assert body["detail"] == str(_("LDAP connection test failed, please check the LDAP configuration"))
+        assert "conn refused" not in body["detail"]
+
+    def test_unexpected_error_returns_unified_detail(self, auth_client):
+        """非 SDK 兜底：统一文案，原始异常细节不回显。"""
+        payload = dict(PAYLOAD, LDAP_USER_SEARCH_BASE="dc=corp,dc=com")
+        from unittest import mock
+
+        with mock.patch("identity.ldap.sync.test_ldap_connection", side_effect=RuntimeError("boom")):
+            response = auth_client.post(LDAP_BASE, payload, format="json")
+        body = response.json()
+        assert body["code"] == 1002
+        assert "boom" not in body["detail"]
+
+    def test_config_incomplete_keeps_controlled_detail(self, auth_client):
+        """配置不完整（平台自持文案）保留可控细节引导补配置，code=1001。"""
+        from identity.ldap.client import LdapConfigError
+
+        payload = dict(PAYLOAD, LDAP_USER_SEARCH_BASE="dc=corp,dc=com")
+        from unittest import mock
+
+        with mock.patch(
+            "identity.ldap.sync.test_ldap_connection", side_effect=LdapConfigError("LDAP search base is empty")
+        ):
+            response = auth_client.post(LDAP_BASE, payload, format="json")
+        body = response.json()
+        assert body["code"] == 1001
+        assert body["detail"] == "LDAP search base is empty"
 
     def test_success_returns_counts(self, auth_client):
         from unittest import mock

@@ -18,6 +18,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
+from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
 from dataset.services import (
     ALLOWED_METRICS,
@@ -227,8 +228,8 @@ def audit_nl_query(
             module="AI:nl_query",
             object_pk=str(user_obj.pk),
             auth_type=OperationLog.AuthType.AI,
-            status_code=1000 if error == "" else 1001,
-            response_code=1000 if error == "" else 1001,
+            status_code=API_SUCCESS_CODE if error == "" else 1001,
+            response_code=API_SUCCESS_CODE if error == "" else 1001,
             changes=json.dumps(
                 {
                     "action": action,

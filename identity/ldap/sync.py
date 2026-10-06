@@ -18,6 +18,7 @@ import json
 from django.conf import settings
 
 from audit.services import OperationLog
+from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
 from identity.ldap.client import (
     LdapConfigError,
@@ -150,8 +151,8 @@ def _audit_summary(summary: dict):
         OperationLog.objects.create(
             module="LDAP:sync",
             auth_type=OperationLog.AuthType.LDAP,
-            status_code=1000,
-            response_code=1000,
+            status_code=API_SUCCESS_CODE,
+            response_code=API_SUCCESS_CODE,
             changes=json.dumps(summary, ensure_ascii=False)[:4096],
         )
     except Exception:  # noqa: BLE001 审计失败不影响同步结果

@@ -41,6 +41,7 @@ from ai.utils.ai_api_params import (  # noqa: F401  (参数解析/URL 构建拆�
     build_action_url,
     resolve_api_params,
 )
+from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -216,7 +217,7 @@ def execute_api_action(spec: ApiActionSpec, user, params: dict) -> dict:
     payload = getattr(response, "data", None) or {}
     status_code = int(getattr(response, "status_code", 500) or 500)
     code = payload.get("code") if isinstance(payload, dict) else None
-    if status_code < 400 and code == 1000:
+    if status_code < 400 and code == API_SUCCESS_CODE:
         detail = payload.get("detail")
         return {
             "ok": True,

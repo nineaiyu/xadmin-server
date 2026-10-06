@@ -5436,7 +5436,7 @@ msgstr "Invalid IM recipient: {}"
 
 #: dataset/utils/screen_layout.py:164
 #, python-brace-format
-msgid "Screen pane image url must be http(s): {}"
+msgid "Screen pane image url must be http(s) or a root-relative path: {}"
 msgstr ""
 
 #: dataset/utils/screen_layout.py:167
@@ -11294,6 +11294,14 @@ msgstr ""
 msgid "SMS test failed, please check the SMS configuration"
 msgstr ""
 
+#: settings/views/email.py
+msgid "Email test failed, please check the SMTP configuration"
+msgstr ""
+
+#: settings/views/ldap.py
+msgid "LDAP connection test failed, please check the LDAP configuration"
+msgstr ""
+
 #: settings/serializers/ldap.py
 msgid "Local accounts first"
 msgstr ""
@@ -11377,6 +11385,10 @@ msgstr ""
 
 #: settings/serializers/security.py
 msgid "Enable captcha to prevent robot bind email"
+msgstr ""
+
+#: settings/serializers/security.py
+msgid "Enable captcha to prevent robot bind phone"
 msgstr ""
 
 #: identity/views/admin/user.py

@@ -208,6 +208,15 @@ class ChatNotify(AsyncJsonWebsocket):
                 {"type": MessageAction.CHAT_UNREAD.value, "data": {"room_id": room.pk, "unread_count": unread_count}},
             )
         await self.notify_room(room, payload)
+        # 撤回资格按观看者计（发送者本人 + 未撤回 + 窗口内，与 REST 历史 can_recall
+        # 同一判定），不能随共享帧扇出给全房间——否则其他成员会渲染出撤回入口。
+        # 房间广播帧不带该字段（前端按「服务端未下发才本地置位」兜底），另向发送者
+        # 聊天组定向补帧下发，多端同步一并覆盖；与共享帧先后到达均幂等。
+        can_recall = await database_sync_to_async(chat_service.can_recall_for)(message, self.user)
+        await self.channel_layer.group_send(
+            get_chat_user_group_name(self.user.pk),
+            {"type": MessageAction.CHAT_MESSAGE.value, "data": {**payload, "can_recall": can_recall}},
+        )
 
     async def handle_reaction(self, data):
         # 限流与消息发送同源：回应同样是「落库 + 房间广播」的上行写操作，

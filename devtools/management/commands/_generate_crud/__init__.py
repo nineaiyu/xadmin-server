@@ -60,7 +60,11 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
         parser.add_argument("--component", default="", help="前端组件名（默认 App+Model 驼峰，如 DemoBook）")
         parser.add_argument("--url-prefix", default="", help="API 前缀（默认 api/<app>/<model>）")
         parser.add_argument("--frontend-dir", default="", help="前端目录（相对 src/views，默认 <app>/<model>）")
-        parser.add_argument("--frontend-root", default="", help="前端仓库根（默认同级 xadmin-client，存在时使用）")
+        parser.add_argument(
+            "--frontend-root",
+            default="",
+            help="前端仓库根（优先级：本旗标 > XADMIN_CLIENT_DIR 环境变量 > 同级 xadmin-client）",
+        )
         parser.add_argument("--parent", default="", help="菜单种子的上级菜单 pk（默认顶级）")
         parser.add_argument("--menu-title", default="", help="菜单种子的菜单标题（默认模型 verbose_name）")
         parser.add_argument(

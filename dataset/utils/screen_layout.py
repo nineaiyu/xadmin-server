@@ -161,9 +161,14 @@ def normalize_screen_layout(raw, dashboard_pks, dataset_pks=()) -> list:
             url = str(item.get("url") or "").strip()
             if not url or len(url) > SCREEN_MAX_IMAGE_URL:
                 raise ScreenLayoutError(_("Invalid screen pane image url: {}").format(pane_id))
-            # 仅允许 http(s) 绝对地址：阻止 javascript:/data: 等注入向量
-            if not (url.startswith("https://") or url.startswith("http://")):
-                raise ScreenLayoutError(_("Screen pane image url must be http(s): {}").format(pane_id))
+            # http(s) 绝对地址或站内根相对路径（/ 开头，站内静态资源）；必须拒绝
+            # // 开头的 protocol-relative 地址（等价可跳任意 host 的注入向量），
+            # javascript:/data: 等其他协议同样不收
+            allowed = url.startswith(("https://", "http://")) or (url.startswith("/") and not url.startswith("//"))
+            if not allowed:
+                raise ScreenLayoutError(
+                    _("Screen pane image url must be http(s) or a root-relative path: {}").format(pane_id)
+                )
             fit = str(item.get("fit") or "cover").strip()
             if fit not in SCREEN_IMAGE_FITS:
                 raise ScreenLayoutError(_("Invalid screen pane image fit: {}").format(pane_id))

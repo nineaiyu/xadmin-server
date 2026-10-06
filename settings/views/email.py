@@ -77,7 +77,8 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
                 # 两种编码都解不出时退回 bytes 原文（str(bytes) 至少可读形态不丢信息）
                 return ApiResponse(code=1001, detail=decoded or str(error))
             return ApiResponse(code=1001, detail=str(error))
-        except Exception as e:
-            logger.error(e)
-            return ApiResponse(code=1002, detail=str(e))
+        except Exception:
+            # 测试入口兜底：网络/协议等原始异常细节只留服务端日志，对外统一文案避免泄露内部信息
+            logger.warning("SMTP test send unexpected error", exc_info=True)
+            return ApiResponse(code=1002, detail=_("Email test failed, please check the SMTP configuration"))
         return ApiResponse(detail=_("Test mail sent to {}, please check").format(email_recipient))

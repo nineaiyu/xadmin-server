@@ -13,7 +13,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from common.base.utils import AESCipherV2
-from identity.serializers.user import ResetPasswordSerializer
+from identity.serializers.user import ResetPasswordSerializer, is_password_decrypt_failure
 from identity.serializers.userinfo import ChangePasswordSerializer
 from settings.services import (
     check_history_password,
@@ -164,6 +164,50 @@ class TestChangePasswordFlow:
         with pytest.raises(ValidationError) as exc:
             serializer.save()
         assert "has been leaked" in str(exc.value) or "泄露库" in str(exc.value)
+
+    def test_field_level_min_length_removed(self):
+        """密码下限唯一走 check_password_rules：字段不再硬编码 min_length 双轨。"""
+        serializer = ChangePasswordSerializer()
+        assert serializer.fields["old_password"].min_length is None
+        assert serializer.fields["sure_password"].min_length is None
+
+    def test_change_policy_min_length_enforced(self, normal_user, settings):
+        """策略下限经 check_password_rules 拒绝，短密码不再被放行也不 500。"""
+        settings.SECURITY_PASSWORD_MIN_LENGTH = 10
+        serializer = self._change_password(normal_user, "Test@123456", "Ab@1")
+        assert serializer.is_valid(), serializer.errors
+        with pytest.raises(ValidationError) as exc:
+            serializer.save()
+        assert "security rules" in str(exc.value) or "安全规则" in str(exc.value)
+
+    def test_change_bad_ciphertext_rejected_not_500(self, normal_user, settings):
+        """密文模式：坏 base64/非法密文解密失败转受控拒绝（不再 500），密码不变。"""
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = True
+        for bad in ("not-base64-$$$", "v2:!!!not-a-valid-ciphertext!!!"):
+            serializer = ChangePasswordSerializer(
+                instance=normal_user,
+                data={"old_password": bad, "sure_password": bad},
+                context={"request": SimpleNamespace(user=normal_user)},
+            )
+            assert serializer.is_valid(), serializer.errors
+            with pytest.raises(ValidationError) as exc:
+                serializer.save()
+            assert is_password_decrypt_failure(exc.value)
+        normal_user.refresh_from_db()
+        assert normal_user.check_password("Test@123456")
+
+    def test_change_plaintext_mode_fallback(self, normal_user, settings):
+        """明文模式（开关关闭）：解密失败视为提交原文，按明文核验（导入/E2E 场景）。"""
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False
+        serializer = ChangePasswordSerializer(
+            instance=normal_user,
+            data={"old_password": "Test@123456", "sure_password": "New@Password123"},
+            context={"request": SimpleNamespace(user=normal_user)},
+        )
+        assert serializer.is_valid(), serializer.errors
+        instance = serializer.save()
+        instance.refresh_from_db()
+        assert instance.check_password("New@Password123")
 
 
 class TestAdminResetFlow:

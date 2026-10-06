@@ -37,9 +37,12 @@ class TestPredicates:
 
     def test_is_ip_segment(self):
         assert is_ip_segment("10.1.1.1-10.1.1.20") is True
-        assert is_ip_segment("10.1.1.20-10.1.1.1") is True
         assert is_ip_segment("10.1.1.1") is False  # 无 "-"
         assert is_ip_segment("abc-def") is False
+        # 收紧口径：倒置区间 / 多 "-" / 跨协议族不合法（保存期拒绝，存量数据运行时容忍见 in_ip_segment）
+        assert is_ip_segment("10.1.1.20-10.1.1.1") is False
+        assert is_ip_segment("1.1.1.1-2.2.2.2-3") is False
+        assert is_ip_segment("1.1.1.1-2001:db8::1") is False
 
     def test_in_ip_segment(self):
         assert in_ip_segment("10.1.1.5", "10.1.1.1-10.1.1.20") is True

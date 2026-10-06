@@ -313,6 +313,22 @@ class TestBuiltinSensitiveOperations:
         assert resp.data["code"] == 1000, resp.data
         assert superuser.check_password("New@123456")
 
+    def test_reset_password_undecryptable_rejected_with_1001(self, api_client, superuser, settings):
+        """密文模式下改密口令解密失败：业务码 1001 受控拒绝，不再 500、密码不变。"""
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = True
+        api_client.force_authenticate(user=superuser)
+        api_client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"})
+
+        resp = api_client.post(
+            "/api/system/userinfo/reset-password",
+            {"old_password": "v2:!!!not-a-valid-ciphertext!!!", "sure_password": "v2:!!!not-a-valid-ciphertext!!!"},
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
+        assert resp.data["code"] == 1001, resp.data
+        assert "decrypt" in str(resp.data["detail"]) or "解密" in str(resp.data["detail"])
+        assert superuser.check_password("Admin@123456")
+
     def test_destroy_user_requires_confirm(self, api_client, superuser, normal_user):
         api_client.force_authenticate(user=superuser)
         resp = api_client.delete(f"/api/system/user/{normal_user.pk}")

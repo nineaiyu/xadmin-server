@@ -24,6 +24,7 @@ from common.core.credentials import (
     plaintext_sensitive_keys,
     plaintext_setting_names,
 )
+from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -133,7 +134,7 @@ def _last_rotated_time(key: str):
     from audit.services import OperationLog
 
     rows = (
-        OperationLog.objects.filter(module=AUDIT_MODULE, object_pk=key, response_code=1000)
+        OperationLog.objects.filter(module=AUDIT_MODULE, object_pk=key, response_code=API_SUCCESS_CODE)
         .order_by("-created_time")
         .values_list("changes", "created_time")[:20]
     )
@@ -167,8 +168,8 @@ def write_credential_audit(detail: dict, user=None) -> None:
             module=AUDIT_MODULE,
             object_pk=str(detail.get("key") or ""),
             creator=user if getattr(user, "pk", None) else None,
-            status_code=1000 if detail.get("ok", True) else 1001,
-            response_code=1000 if detail.get("ok", True) else 1001,
+            status_code=API_SUCCESS_CODE if detail.get("ok", True) else 1001,
+            response_code=API_SUCCESS_CODE if detail.get("ok", True) else 1001,
             changes=json.dumps(detail, ensure_ascii=False, default=str)[:4096],
         )
     except Exception:  # noqa: BLE001 审计失败不影响轮换本身

@@ -11,6 +11,7 @@
 
 import json
 
+from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -25,8 +26,8 @@ def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra:
             module="AI:action",
             object_pk=str(getattr(user, "pk", "")),
             auth_type=OperationLog.AuthType.AI,
-            status_code=1000 if ok else 1001,
-            response_code=1000 if ok else 1001,
+            status_code=API_SUCCESS_CODE if ok else 1001,
+            response_code=API_SUCCESS_CODE if ok else 1001,
             changes=json.dumps(
                 {
                     "action": action_key,
@@ -59,8 +60,8 @@ def audit_ai_ask(
             module="AI:ask",
             object_pk=str(getattr(user_obj, "pk", "")),
             auth_type=OperationLog.AuthType.AI,
-            status_code=1000 if ok else 1001,
-            response_code=1000 if ok else 1001,
+            status_code=API_SUCCESS_CODE if ok else 1001,
+            response_code=API_SUCCESS_CODE if ok else 1001,
             changes=json.dumps(
                 {
                     "question": (question or "")[:200],

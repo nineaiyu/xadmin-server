@@ -790,3 +790,40 @@ class TestRegisterApp:
         steps = output.split("后续步骤", 1)[1]
         assert "已由 --register-app 写入" in steps
         assert "重启进程后生效" in steps
+
+
+class TestClientRootResolution:
+    """前端仓库根解析优先级：旗标 > XADMIN_CLIENT_DIR 环境变量 > 默认同级 xadmin-client
+    （对齐客户端 sync-contract.mjs 的 XADMIN_SERVER_DIR 覆盖口径）。"""
+
+    def test_env_var_used_when_flag_absent(self, workspace, monkeypatch):
+        backend, client = workspace
+        monkeypatch.setenv("XADMIN_CLIENT_DIR", str(client))
+        call_command("generate_crud", "demo.Book", output=str(backend))
+        assert (client / "src" / "views" / "demo" / "book" / "index.vue").exists()
+
+    def test_flag_overrides_env_var(self, workspace, monkeypatch, tmp_path):
+        backend, client = workspace
+        env_client = tmp_path / "env-client"
+        env_client.mkdir()
+        monkeypatch.setenv("XADMIN_CLIENT_DIR", str(env_client))
+        call_command("generate_crud", "demo.Book", output=str(backend), frontend_root=str(client))
+        assert (client / "src" / "views" / "demo" / "book" / "index.vue").exists()
+        assert not (env_client / "src").exists()
+
+    def test_env_var_missing_dir_degrades_to_notice(self, workspace, monkeypatch, capsys):
+        backend, client = workspace
+        missing = backend / "no-such-client"
+        monkeypatch.setenv("XADMIN_CLIENT_DIR", str(missing))
+        call_command("generate_crud", "demo.Book", output=str(backend))
+        assert not (client / "src").exists()
+        assert "XADMIN_CLIENT_DIR" in capsys.readouterr().out
+
+    def test_env_unset_falls_back_to_sibling_default(self, workspace, monkeypatch, settings):
+        """未设环境变量时按同级 xadmin-client 缺省解析（此处指向临时目录，不落真实仓）。"""
+        backend, client = workspace
+        monkeypatch.delenv("XADMIN_CLIENT_DIR", raising=False)
+        monkeypatch.setattr(settings, "PROJECT_DIR", str(backend))
+        (backend.parent / "xadmin-client").mkdir()
+        call_command("generate_crud", "demo.Book", output=str(backend))
+        assert (backend.parent / "xadmin-client" / "src" / "views" / "demo" / "book" / "index.vue").exists()

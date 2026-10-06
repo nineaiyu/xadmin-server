@@ -3,6 +3,7 @@
 """代码生成器：模型解析、字段规划与产物收集。"""
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -299,7 +300,8 @@ class AnalysisMixin(FieldPlanMixin):
                     ),
                     "mode": "notice",
                     "key": f"frontend-{ctx['model_snake']}",
-                    "notice": "未找到前端仓库根：传 --frontend-root 或 --skip-frontend（以下内容可手工复制）",
+                    "notice": "未找到前端仓库根：设置 XADMIN_CLIENT_DIR、传 --frontend-root 或 --skip-frontend"
+                    "（以下内容可手工复制）",
                 }
             ]
         view_dir = client_root / "src" / "views" / ctx["frontend_dir"]
@@ -329,6 +331,16 @@ class AnalysisMixin(FieldPlanMixin):
 
     @staticmethod
     def _default_client_root():
+        """前端仓库根缺省解析：XADMIN_CLIENT_DIR 环境变量优先，其次同级 xadmin-client
+        （对齐客户端 sync-contract.mjs 的 XADMIN_SERVER_DIR 覆盖口径）。
+
+        显式设置的环境变量指向不存在目录时不回退同级缺省——按「未找到」降级为
+        notice 产物，避免静默写进另一个根。
+        """
+        env_dir = os.environ.get("XADMIN_CLIENT_DIR")
+        if env_dir:
+            candidate = Path(env_dir)
+            return candidate if candidate.is_dir() else None
         candidate = Path(settings.PROJECT_DIR).parent / "xadmin-client"
         return candidate if candidate.is_dir() else None
 

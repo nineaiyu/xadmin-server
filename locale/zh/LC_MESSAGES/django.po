@@ -5380,8 +5380,9 @@ msgid "Invalid screen pane image url: {}"
 msgstr "窗格图片地址非法：{}"
 
 #: dataset/utils/screen_layout.py:164
-msgid "Screen pane image url must be http(s): {}"
-msgstr "窗格图片地址必须为 http(s)：{}"
+#, python-brace-format
+msgid "Screen pane image url must be http(s) or a root-relative path: {}"
+msgstr "窗格图片地址必须为 http(s) 或站内根相对路径：{}"
 
 #: dataset/utils/screen_layout.py:167
 msgid "Invalid screen pane image fit: {}"
@@ -11241,6 +11242,14 @@ msgstr "附件必须是文件路径数组"
 msgid "SMS test failed, please check the SMS configuration"
 msgstr "短信测试失败，请检查短信配置"
 
+#: settings/views/email.py
+msgid "Email test failed, please check the SMTP configuration"
+msgstr "邮件测试失败，请检查 SMTP 配置"
+
+#: settings/views/ldap.py
+msgid "LDAP connection test failed, please check the LDAP configuration"
+msgstr "LDAP 连接测试失败，请检查 LDAP 配置"
+
 #: settings/serializers/ldap.py
 msgid "Local accounts first"
 msgstr "本地账号优先"
@@ -11325,6 +11334,10 @@ msgstr "密码解密失败，请刷新页面后重试"
 #: settings/serializers/security.py
 msgid "Enable captcha to prevent robot bind email"
 msgstr "开启图片验证码，防止机器人绑定邮件"
+
+#: settings/serializers/security.py
+msgid "Enable captcha to prevent robot bind phone"
+msgstr "开启图片验证码，防止机器人绑定手机"
 
 #: identity/views/admin/user.py
 msgid "Password reset successful"

@@ -123,8 +123,40 @@ class TestMaskWritebackGuard:
         """非敏感行的读-改-回写链路保持原状。"""
         _, _, normal = _make_rows()
         resp = auth_client.patch(f"{SETTING_URL}/{normal.pk}", {"value": "https://new.example.com"}, format="json")
-        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["code"] == 1000
         assert resp.data["data"]["value"] == "https://new.example.com"
 
         normal.refresh_from_db()
         assert normal.value == "https://new.example.com"
+
+
+class TestValueSearchSideChannel:
+    """按 value 子串搜索激活时排除敏感行：命中/不命中不得构成对敏感值的探测预言机。"""
+
+    def _search(self, auth_client, query):
+        resp = auth_client.get(SETTING_URL, {"value": query})
+        assert resp.data["code"] == 1000, resp.data
+        return [row["name"] for row in resp.data["data"]["results"]]
+
+    def test_secret_substring_never_matches_sensitive_rows(self, auth_client):
+        """敏感值子串（无论加密行还是声明键的存量明文行）不出现在搜索结果。"""
+        _make_rows()
+        assert self._search(auth_client, "smtp-secret") == []
+        assert self._search(auth_client, "sk-legacy") == []
+        # 前缀式逐字符探测同样不命中
+        assert self._search(auth_client, "sk-") == []
+        assert self._search(auth_client, "smtp") == []
+
+    def test_normal_value_still_matches(self, auth_client):
+        """非敏感行搜索行为不变。"""
+        _, _, _ = _make_rows()
+        assert "SITE_URL" in self._search(auth_client, "mask.example")
+        assert self._search(auth_client, "不存在的子串") == []
+
+    def test_search_by_name_filter_unaffected(self, auth_client):
+        """按 name 过滤不受影响（敏感行按名定位走掩码读取口径）。"""
+        _make_rows()
+        resp = auth_client.get(SETTING_URL, {"name": "AI_API_KEY"})
+        assert resp.data["code"] == 1000, resp.data
+        names = [row["name"] for row in resp.data["data"]["results"]]
+        assert names == ["AI_API_KEY"]

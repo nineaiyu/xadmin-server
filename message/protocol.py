@@ -96,6 +96,8 @@ class ChatRoomMessagePayload(TypedDict, total=False):
     message_type 取值 text / ai / system / image / video / audio / file；附件消息
     （image / video / audio / file）的上行帧额外携带 `file_pk`（先经上传端点取得），
     下行载荷的 extra 内附 ChatAttachmentPayload（含受鉴权取件 url）。
+    撤回资格按观看者计：can_recall 只随发送者定向帧下发（与 REST 历史同一判定），
+    房间共享广播帧不带该字段。
     """
 
     id: int
@@ -109,6 +111,7 @@ class ChatRoomMessagePayload(TypedDict, total=False):
     created_time: str
     client_msg_id: str
     extra: dict[str, Any]
+    can_recall: bool
 
 
 class ChatAttachmentPayload(TypedDict, total=False):

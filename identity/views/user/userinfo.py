@@ -10,6 +10,7 @@ from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser
 
 from common.core.modelset import ChoicesAction, DetailUpdateModelSet, UploadFileAction
@@ -20,6 +21,7 @@ from common.utils import get_logger
 from common.utils.verify_code import TokenTempCache
 from identity.models import UserInfo
 from identity.notifications import ResetPasswordSuccessMsg
+from identity.serializers.user import PASSWORD_DECRYPT_FAILED_MESSAGE, is_password_decrypt_failure
 from identity.serializers.userinfo import ChangePasswordSerializer, UserInfoSerializer
 from identity.utils.auth import verify_sms_email_code
 from mfa.cache import UserConfirmStateCache
@@ -93,7 +95,13 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        try:
+            serializer.save()
+        except ValidationError as exc:
+            if not is_password_decrypt_failure(exc):
+                raise
+            # 密文模式下改密口令解密失败：以业务码 1001 应答（与建号/忘记密码拒绝同口径）
+            return ApiResponse(code=1001, detail=PASSWORD_DECRYPT_FAILED_MESSAGE, status=400)
         # 密码变更后清除旧确认状态（密码本身是确认方式之一）
         UserConfirmStateCache(request.user).clear()
         ResetPasswordSuccessMsg(instance, request).publish_async()

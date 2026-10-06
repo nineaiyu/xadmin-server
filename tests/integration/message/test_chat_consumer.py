@@ -203,10 +203,16 @@ class TestSendPublic:
 
         async_to_sync(scenario)()
 
-        assert [item["group"] for item in sent] == [get_public_chat_group_name()]
+        assert [item["group"] for item in sent] == [
+            get_public_chat_group_name(),
+            get_chat_user_group_name(superuser.pk),
+        ]
         payload = sent[0]["message"]["data"]
         assert payload["content"] == "大家好"
         assert payload["room_type"] == ChatRoom.RoomType.PUBLIC
+        # 共享广播帧不带撤回资格（按观看者计），发送者定向帧才携带
+        assert "can_recall" not in payload
+        assert sent[1]["message"]["data"]["can_recall"] is True
         assert ChatMessage.objects.filter(room=room).count() == 1
         assert pushes == []  # 无 @提及
 
@@ -230,7 +236,10 @@ class TestSendPublic:
 
         async_to_sync(scenario)()
 
-        assert [item["group"] for item in sent] == [get_public_chat_group_name()]
+        assert [item["group"] for item in sent] == [
+            get_public_chat_group_name(),
+            get_chat_user_group_name(superuser.pk),
+        ]
         pushed_pks = sorted(pk for pk, __ in pushes)
         assert pushed_pks == sorted([alice.pk, bob.pk])
         assert all(message["message_type"] == "chat_message" for __, message in pushes)
@@ -278,7 +287,9 @@ class TestSendPrivate:
         async_to_sync(scenario)()
 
         groups = [item["group"] for item in sent if item["message"]["type"] == "chat_message"]
-        assert sorted(groups) == sorted([get_chat_user_group_name(alice.pk), get_chat_user_group_name(bob.pk)])
+        # 共享广播到双方聊天组，发送者定向帧（携带 can_recall）再入 alice 组
+        assert groups.count(get_chat_user_group_name(alice.pk)) == 2
+        assert groups.count(get_chat_user_group_name(bob.pk)) == 1
         # 未读事件只推给接收者
         unread_events = [item for item in sent if item["message"]["type"] == "chat_unread"]
         assert len(unread_events) == 1
@@ -324,12 +335,12 @@ class TestSendPrivate:
 
         async_to_sync(scenario)()
 
-        # 只有一次真实广播（双方各一条 chat_message）+ 接收者一条未读事件；
-        # 第二次命中幂等只回执给发送方，不产生任何 group_send
+        # 只有一次真实广播（双方各一条 chat_message + 发送者定向帧）+ 接收者一条
+        # 未读事件；第二次命中幂等只回执给发送方，不产生任何 group_send
         assert ChatMessage.objects.filter(room=room).count() == 1
-        assert len([item for item in sent if item["message"]["type"] == "chat_message"]) == 2
+        assert len([item for item in sent if item["message"]["type"] == "chat_message"]) == 3
         assert len([item for item in sent if item["message"]["type"] == "chat_unread"]) == 1
-        assert len(sent) == 3
+        assert len(sent) == 4
 
 
 class TestGroupFanoutBatch:
@@ -510,9 +521,10 @@ class TestSendRateLimit:
 
         captured = async_to_sync(scenario)()
 
-        # 前两条放行，后续回执 1001（可读错误）且不落库、不广播
+        # 前两条放行，后续回执 1001（可读错误）且不落库、不广播；
+        # 每条放行消息 = 公共广播帧 + 发送者定向帧
         assert ChatMessage.objects.filter(room=room).count() == 2
-        assert len(sent) == 2
+        assert len(sent) == 4
         rejected = [item for item in captured if item["code"] == 1001]
         assert len(rejected) == 2
         assert rejected[0]["detail"]
@@ -538,3 +550,70 @@ class TestSendRateLimit:
 
         async_to_sync(scenario)()
         assert ChatMessage.objects.filter(room=room).count() == 2
+
+
+class TestRecallFlagBroadcast:
+    """新消息撤回资格下发：房间共享广播帧不带 can_recall（撤回资格按观看者计），
+    发送者定向帧携带该字段，且与 REST 历史下发的判定（can_recall_for）完全一致。"""
+
+    @staticmethod
+    def _mute_push(monkeypatch):
+        async def fake_push(*args, **kwargs):
+            return None
+
+        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+
+    def test_sender_frame_carries_field_public_shared_frame_does_not(self, ws_layer, superuser, monkeypatch):
+        room = chat_service.get_public_room()
+        sent = _capture_group_send(ws_layer, monkeypatch)
+        self._mute_push(monkeypatch)
+
+        async def scenario():
+            consumer, __, ___ = _make_consumer(ws_layer, superuser)
+            await consumer.handle_send({"room_id": room.pk, "content": "大家好呀", "client_msg_id": "c-recall-flag"})
+
+        async_to_sync(scenario)()
+
+        frames = [item for item in sent if item["message"]["type"] == "chat_message"]
+        assert [item["group"] for item in frames] == [
+            get_public_chat_group_name(),
+            get_chat_user_group_name(superuser.pk),
+        ]
+        assert "can_recall" not in frames[0]["message"]["data"]
+        assert frames[1]["message"]["data"]["can_recall"] is True
+
+    def test_sender_frame_matches_rest_history_criteria(self, ws_layer, alice, bob, monkeypatch):
+        """定向帧的 can_recall 与 REST 历史（history_messages）同判定：撤回后双双翻 False。"""
+        room = chat_service.get_or_create_private_room(alice, bob)
+        sent = _capture_group_send(ws_layer, monkeypatch)
+        self._mute_push(monkeypatch)
+
+        async def scenario():
+            consumer, __, ___ = _make_consumer(ws_layer, alice)
+            await consumer.handle_send({"room_id": room.pk, "content": "可撤回", "client_msg_id": "c-recall-parity"})
+
+        async_to_sync(scenario)()
+
+        alice_frames = [
+            item["message"]["data"]
+            for item in sent
+            if item["message"]["type"] == "chat_message" and item["group"] == get_chat_user_group_name(alice.pk)
+        ]
+        # alice 组先收到共享广播帧（不带字段），后收到发送者定向帧（携带）
+        assert "can_recall" not in alice_frames[0]
+        assert alice_frames[1]["can_recall"] is True
+
+        message = ChatMessage.objects.get(room=room, client_msg_id="c-recall-parity")
+        row = next(item for item in chat_service.history_messages(room, alice)["results"] if item["id"] == message.pk)
+        assert row["can_recall"] is True
+        # 接收者视角：REST 历史同样下发 False（非本人不可撤回）
+        row_for_bob = next(
+            item for item in chat_service.history_messages(room, bob)["results"] if item["id"] == message.pk
+        )
+        assert row_for_bob["can_recall"] is False
+
+        chat_service.recall_message(alice, message.pk)
+        message.refresh_from_db()  # recall_message 锁行重写，本实例需回读最新撤回态
+        assert chat_service.can_recall_for(message, alice) is False
+        row = next(item for item in chat_service.history_messages(room, alice)["results"] if item["id"] == message.pk)
+        assert row["can_recall"] is False

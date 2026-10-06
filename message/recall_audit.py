@@ -9,6 +9,7 @@
 
 import json
 
+from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -37,7 +38,7 @@ def write_recall_snapshot(message, user) -> None:
                 },
                 ensure_ascii=False,
             ),
-            status_code=1000,
+            status_code=API_SUCCESS_CODE,
             response_result="recalled-content-snapshot",
             creator=user if getattr(user, "pk", None) else None,
         )

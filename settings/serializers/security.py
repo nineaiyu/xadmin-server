@@ -271,7 +271,7 @@ class SecurityBindPhoneAuthSerializer(SettingSaveContractMixin, serializers.Seri
         required=False,
         default=True,
         label=_("Bind phone captcha"),
-        help_text=_("Enable captcha to prevent robot reset password"),
+        help_text=_("Enable captcha to prevent robot bind phone"),
     )
 
     SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED = serializers.BooleanField(

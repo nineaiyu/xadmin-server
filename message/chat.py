@@ -268,8 +268,12 @@ def recall_message(user, message_id) -> ChatMessage:
 # ---------------------------------------------------------------- 历史 / 附件取件
 
 
-def _can_recall(message: ChatMessage, user) -> bool:
-    """撤回资格：仅本人、未撤回、撤回窗口内（与 recall_message 同口径的读侧判定）。"""
+def can_recall_for(message: ChatMessage, user) -> bool:
+    """撤回资格：仅本人、未撤回、撤回窗口内（与 recall_message 同口径的读侧判定）。
+
+    REST 历史（history_messages）与 WS 新消息的发送者定向帧共用本判定，
+    保证两条下发链路的撤回资格完全一致。
+    """
     if message.is_recalled or not message.sender_id or message.sender_id != user.pk:
         return False
     created = message.created_time or timezone.now()
@@ -293,7 +297,7 @@ def history_messages(room: ChatRoom, user, before_id=None, limit: int = 20) -> d
     messages = []
     for message in rows:
         payload = message_payload(message, room=room, avatar_map=avatar_map)
-        payload["can_recall"] = _can_recall(message, user)
+        payload["can_recall"] = can_recall_for(message, user)
         messages.append(payload)
     messages.reverse()  # 前端按时间正序渲染
     return {

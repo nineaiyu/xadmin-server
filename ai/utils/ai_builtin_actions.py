@@ -15,6 +15,7 @@ from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
+from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -323,7 +324,7 @@ def _execute_dashboard(user, params: dict) -> dict:
             failed.append(name)
             continue
         payload = _response_payload(response)
-        if isinstance(payload, dict) and payload.get("code") == 1000:
+        if isinstance(payload, dict) and payload.get("code") == API_SUCCESS_CODE:
             metrics[name] = _extract_metric(payload)
         else:
             failed.append(name)

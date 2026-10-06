@@ -12,7 +12,7 @@ from rest_framework import serializers
 
 from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
-from common.utils.ip import is_ip_address, is_ip_network
+from common.utils.ip import is_ip_address, is_ip_network, is_ip_segment
 from identity.models import AccountRisk, LoginAccessPolicy, UserPasskey
 
 
@@ -53,17 +53,18 @@ class AccountRiskSerializer(BaseModelSerializer):
 
 
 def validate_login_policy_ip_ranges(value):
-    """逐行校验登录策略网段条目，口径与运行时网段匹配（contains_ip）保持同一语义。
+    """逐行校验登录策略网段条目，判定面与 basic 页 ip 组共用（is_ip_segment 等）。
 
     运行时对无法识别的条目只会退化为「与登录 IP 字符串比对」——对真实登录 IP
     永远不会命中，配置等于静默失效。因此保存期把运行时无法真正匹配的条目
     一律拒绝，并回显条目原文，避免管理员配置的网段限制无声失效。
     """
     for entry in (line.strip() for line in str(value or "").splitlines() if line.strip()):
-        if entry == "*" or is_ip_address(entry) or is_ip_network(entry):
+        if entry == "*" or is_ip_address(entry) or is_ip_network(entry) or is_ip_segment(entry):
             continue
         parts = entry.split("-")
         if len(parts) == 2 and is_ip_address(parts[0]) and is_ip_address(parts[1]):
+            # 区间形态的精细化提示：能走到这里说明同族/有序两项至少缺一，按因给错
             start_ip, end_ip = ip_address(parts[0]), ip_address(parts[1])
             if type(start_ip) is not type(end_ip):
                 raise serializers.ValidationError(

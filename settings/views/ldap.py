@@ -67,13 +67,15 @@ class LdapServerSettingViewSet(BaseSettingViewSet):
 
             result = test_ldap_connection(config)
         except LdapConfigError as e:
+            # 配置不完整为平台自持文案（区别于 SDK/原始异常），保留细节引导管理员补配置
             return ApiResponse(code=1001, detail=str(e))
-        except LDAPException as e:
-            logger.warning("LDAP connection test failed: %s", e)
-            return ApiResponse(code=1002, detail=str(e))
-        except Exception as e:  # noqa: BLE001 测试入口兜底，不给前端裸异常
+        except LDAPException:
+            # SDK 异常细节只留服务端日志，对外统一文案避免泄露目录内部信息
+            logger.warning("LDAP connection test failed", exc_info=True)
+            return ApiResponse(code=1002, detail=_("LDAP connection test failed, please check the LDAP configuration"))
+        except Exception:  # noqa: BLE001 测试入口兜底，不给前端裸异常
             logger.warning("LDAP connection test unexpected error", exc_info=True)
-            return ApiResponse(code=1002, detail=str(e))
+            return ApiResponse(code=1002, detail=_("LDAP connection test failed, please check the LDAP configuration"))
         return ApiResponse(
             detail=_("Connection OK: {user_count} users, {dept_count} departments found").format(**result),
             data=result,

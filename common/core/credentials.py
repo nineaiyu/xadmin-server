@@ -18,6 +18,8 @@
 
 import re
 
+from django.db.models import Q
+
 import common.contracts as contracts
 from common.base.utils import signer
 from common.utils import get_logger
@@ -76,6 +78,16 @@ def is_sensitive_setting_row(name: str, encrypted: bool) -> bool:
     的明文敏感行由 ``plaintext_setting_names()`` 巡检与 ``rotate_credential`` 收敛。
     """
     return bool(encrypted) or str(name or "") in ENCRYPTED_SETTING_KEYS
+
+
+def filter_out_sensitive_rows(queryset):
+    """Setting 查询集排除敏感行（``encrypted=True`` 或名字在声明清单）。
+
+    供按 value 子串搜索等「行命中与否受值内容影响」的查询场景：出口掩码只堵
+    读取，命中/不命中仍构成对敏感值的逐字符探测预言机。排除口径与
+    :func:`is_sensitive_setting_row` 同源（encrypted 位 + 声明清单）。
+    """
+    return queryset.exclude(Q(encrypted=True) | Q(name__in=ENCRYPTED_SETTING_KEYS))
 
 
 def is_cipher_str(value) -> bool:

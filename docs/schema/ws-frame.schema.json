@@ -156,6 +156,10 @@
         },
         "extra": {
           "type": "object"
+        },
+        "can_recall": {
+          "type": "boolean",
+          "description": "撤回资格（仅发送者定向帧下发，与 REST 历史同一判定；房间共享广播帧不带）"
         }
       },
       "additionalProperties": true

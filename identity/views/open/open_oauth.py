@@ -23,7 +23,7 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from audit.services import OperationLog
-from common.core.response import ApiResponse
+from common.core.response import API_SUCCESS_CODE, ApiResponse
 from common.core.throttle import OAuthClientThrottle
 from common.swagger.utils import get_default_response_schema
 from identity.services.open_oauth import (
@@ -58,7 +58,7 @@ def write_oauth_audit(request, application, result: str) -> None:
             path=request.path,
             method=request.method,
             object_pk=str(application.pk),
-            status_code=1000,
+            status_code=API_SUCCESS_CODE,
             response_result=result,
             creator=request.user,
             request_uuid=getattr(request, "request_uuid", None),

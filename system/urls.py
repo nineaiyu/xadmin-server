@@ -4,7 +4,7 @@
 # filename : urls
 # author : ly_13
 # date : 6/6/2023
-from django.urls import include, path, re_path
+from django.urls import URLPattern, include, path, re_path
 from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
@@ -34,7 +34,7 @@ no_auth_url = [
     re_path("^captcha/", include("captcha.urls")),
 ]
 
-auth_url = []
+auth_url: list[URLPattern] = []
 
 router_url = [
     re_path("^routes$", UserRoutesAPIView.as_view(), name="user_routes"),

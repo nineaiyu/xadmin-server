@@ -10,6 +10,7 @@ from typing import Any
 from django.conf import settings
 from django_filters import rest_framework as filters
 
+from common.core.credentials import filter_out_sensitive_rows
 from common.core.filter import BaseFilterSet
 from common.core.modelset import ImportExportDataAction, ListDeleteModelSet, NoDetailModelSet
 from common.utils import get_logger
@@ -104,7 +105,12 @@ class BaseSettingViewSet(NoDetailModelSet):
 class SettingFilter(BaseFilterSet):
     pk = filters.UUIDFilter(field_name="id")
     name = filters.CharFilter(field_name="name", lookup_expr="icontains")
-    value = filters.CharFilter(field_name="value", lookup_expr="icontains")
+    # 按值子串搜索激活时排除敏感行：出口掩码只堵读取，命中/不命中仍构成对
+    # 敏感值内容的逐字符探测；排除口径与输出掩码同源（encrypted 位 + 声明清单）
+    value = filters.CharFilter(field_name="value", method="filter_value")
+
+    def filter_value(self, queryset, name, value):
+        return filter_out_sensitive_rows(queryset.filter(**{f"{name}__icontains": value}))
 
     class Meta:
         model = Setting

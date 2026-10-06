@@ -3,6 +3,7 @@
 """大屏与报表序列化器。定义类资源，豁免字段权限裁剪。"""
 
 import re
+from collections.abc import Collection
 
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
@@ -85,7 +86,8 @@ class ScreenSerializer(BaseModelSerializer):
         datasets = {
             str(item.pk): item for item in Dataset.objects.filter(pk__in=valid_pks).only("pk", "bound_model", "columns")
         }
-        known_datasets = datasets.keys()
+        # 容器统一为「成员对象集合」视角：keys 视图与占位单元素集共用一个类型面
+        known_datasets: Collection[object] = datasets.keys()
         if referenced and not datasets and Dataset.objects.exists():
             # 引用的数据集全部不存在：known 集为空会令窗格存在性校验被跳过，
             # 放入窗格不可能命中的占位值，保持「引用必须存在」的既有拒绝语义

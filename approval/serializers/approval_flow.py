@@ -209,6 +209,9 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             raise serializers.ValidationError(_("Unsupported condition operator: {}").format(condition.get("op")))
         if op in NUMERIC_CONDITION_OPS:
             value = condition.get("value")
+            if value is None:
+                # 缺值与不可转数值同拒绝口径（float(None) 不可转）
+                raise serializers.ValidationError(_("Condition value for operator {} must be a number").format(op))
             try:
                 float(value)
             except (TypeError, ValueError):
