@@ -153,7 +153,7 @@ python manage.py sync_menu_permissions --update-seed   # 同时回写 loadjson �
 - 补一条 E2E：参考 `xadmin-client/e2e/README.md` 的既有用例模式；
 - 字段权限/数据权限：角色页勾选字段白名单、数据权限规则（见 `docs/architecture/permission.md`）。
 
-## 生成物自带的门禁与默认值（2026-09-25 走查核实）
+## 生成物自带的门禁与默认值（2026-09-25 首次走查；2026-10-07 实跑复核）
 
 `generate_crud` 的产物**开箱即可过项目门禁**，新模块无需额外修补：
 
@@ -164,8 +164,32 @@ python manage.py sync_menu_permissions --update-seed   # 同时回写 loadjson �
 | 关联字段形态 | `api-search-user`（远程搜索）＋ `format` 展示 | 数据量大时按 cookbook 换形态 |
 | AI 动作声明 | 生成只读动作骨架（写动作在注释中给出注册指引） | 按需注册到 `ai/utils/ai_api_registry.py` |
 | 迁移文件 | `makemigrations` 产物与 ruff 格式略有差异 | 仓库 pre-commit 会自动格式化，无需手工处理 |
+| 批量删除保护 | 生成的 ViewSet 只继承 `BaseModelSet`，不自行覆写批删：基类的 `batch-destroy` 与单删都从 `get_queryset()` 取数，子类对 `get_queryset` 的收口（如内置角色排除，见 `identity/views/admin/role.py`）对两个入口同口径生效 | 生成物无需修补；需要引用保护时按同一 `get_queryset` 收口范式写 |
+| 菜单种子幂等 | pk 由固定 uuid5 命名空间按 `app:model:角色` 派生，重复生成结果一致，重复 `loaddata` 覆盖同一批行不产生新行 | 可放心反复生成与装载 |
+| 前端权限位 | hook 模板用 `usePageAuth()` 统一装配权限位（全站收敛范式），页面为一行 `RePlusPage`；自定义按钮以 extraKeys 传入 | 与既有页面写法对齐，无第二套口径 |
 
 实测链路（生成 → `loaddata` 权限种子 → 接口调用）：列表 / 新增 / `with_meta=1` 内联元数据 / 匿名访问 401 全部符合预期。
+
+### 2026-10-07 实跑复核记录
+
+复核方法：CLI 直跑（参数先经 `manage.py generate_crud` 现查，临时 app 定义在仓库外，
+后端产物走 `--output`、前端产物走 `--frontend-root` 指向临时目录，两仓工作树零写入），
+复核后产物删除。核实结论：
+
+- **结构**：后端序列化器（`fields` / `table_fields` / 关联字段 `attrs`+`format`）、`BaseModelSet` 视图、
+  `urls.py` / `config.py`（`URLPATTERNS` 自动注入）、AI 声明骨架与步骤 3 表格一一对应；
+  前端 `index.vue`（一行 `RePlusPage`）+ `utils/{api.ts,hook.tsx}`（`BaseApi` + `usePageAuth`）。
+- **门禁**：完整 app（startapp 产物 + 生成块）在仓库根一次过 `ruff check` / `ruff format --check`；
+  生成器自身的守护测试 `tests/unit/devtools/test_generate_crud.py`（含"生成即过 ruff"用例）全过；
+  前端产物过 prettier。
+- **权限点默认登记 6 个**：`list` / `retrieve` / `create` / `partialUpdate` / `destroy` / `batchDestroy`
+  （`--with-import-export` 追加导入导出两点）。`BaseModelSet` 恒挂批量删除动作，批删权限点必须随种子
+  登记——前端批量删除按钮读 `auth.batchDestroy`（权限码 `batchDestroy:<组件名>`），服务端
+  `POST <prefix>/batch-destroy` 也需要 method=POST 的独立权限点（权限点 path 带 `$` 精确锚定，
+  不覆盖子路径）。不需要批删入口的模块，可在菜单管理停用该权限点或自行收窄授权。
+- **GUI 与 CLI 同源**：管理页代码生成器端点 `system/views/admin/codegen.py` 经适配层
+  `system/utils/platform/codegen_gui.py` 复用同一引擎（`_build_context → _collect_artifacts`，
+  预览/打包不落盘），字段计划与产物口径一致。
 
 ## 常见问题
 

@@ -13,6 +13,22 @@
   `path` 落库并被角色授权引用，**改种子的 path 不会自动迁移线上数据**，
   旧 URL 上的书签/收藏/历史/外部链接会全部断链。
 
+### 1.1 例外：demo 模块的菜单与权限点是运行期注入
+
+`demo`（示例 app）的菜单与权限点**不在 `loadjson/menu.json` 里**：由
+`python manage.py seed_demo_book`（`demo_seed/management/commands/seed_demo_book.py`）
+在运行期幂等灌入（`update_or_create`：目录「示例」+ 页面「图书管理」+
+`PERMISSION_PLAN` 的 19 个权限点，含 `batchDestroy` / 回收站 / 导入导出等
+`generate_crud` 默认种子之外的 action）。口径上它仍是"种子"，只是载体是命令而非 JSON：
+
+- **对账覆盖**：客户端对账门禁 `xadmin-client/scripts/check-menu-permissions.mjs`
+  除解析 `loadjson/menu.json` 外，还解析 `seed_demo_book.py` 的 `MENU_NAME` /
+  `PERMISSION_PLAN` 作为第二种子源，demo 页面的权限检查（`push:DemoBook` 等）
+  不会按"种子无码"误报；
+- **与 loadjson 的关系**：`loadjson/menu.json` 仍是平台内置菜单的唯一权威，
+  demo 注入是该口径唯一的运行期例外；其余业务 app 一律按 §4 新增页面规范
+  走平台种子或 `generate_crud` 生成的 `loadjson/seed_*.json`。
+
 ## 2. 分析域 URL≠目录 映射（口径结论，2026-10）
 
 **决策：保留映射，不修齐。**

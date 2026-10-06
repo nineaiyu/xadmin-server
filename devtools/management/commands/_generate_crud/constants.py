@@ -43,12 +43,14 @@ BLOCK_END = "# --- xadmin:generated:{key}:end ---"
 # 菜单种子 pk 的 uuid5 命名空间（固定常量，保证确定性）
 SEED_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_URL, "https://github.com/nineaiyu/xadmin-server/generated-seed")
 # 权限码：动作 → (HTTP 方法, 路径正则)；路径口径与既有种子一致（无前导 ^，$ 收尾）
+# BaseModelSet 恒挂 BatchDestroyAction，批删权限点必须随种子登记，否则非超管批删按钮可见但请求 403
 PERMISSION_ACTIONS = (
     ("list", "GET", "{prefix}$"),
     ("retrieve", "GET", "{prefix}/(?P<pk>[^/.]+)$"),
     ("create", "POST", "{prefix}$"),
     ("partialUpdate", "PATCH", "{prefix}/(?P<pk>[^/.]+)$"),
     ("destroy", "DELETE", "{prefix}/(?P<pk>[^/.]+)$"),
+    ("batchDestroy", "POST", "{prefix}/batch-destroy$"),
 )
 IMPORT_EXPORT_PERMISSIONS = (
     ("exportData", "GET", "{prefix}/export-data$"),
