@@ -11,9 +11,11 @@ from django_filters import rest_framework as filters
 
 from audit.models import OperationLog
 from audit.serializers.log import OperationLogListSerializer, OperationLogSerializer
+from common.core.config import SysConfig
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend, PkMultipleFilter
 from common.core.modelset import DetailAction, OnlyExportDataAction, OnlyListModelSet
-from common.core.response import API_SUCCESS_CODE
+from common.core.permission_meta import shared_list_action
+from common.core.response import API_SUCCESS_CODE, ApiResponse
 
 
 class OperationLogFilter(BaseFilterSet):
@@ -91,3 +93,8 @@ class OperationLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction):
     # 字段可见性 fail-closed）——集成排障常用 field__icontains / field__gte 类查询
     controlled_lookup = True
     extra_filter_class = [ControlledLookupFilterBackend]
+
+    @shared_list_action(methods=["get"], detail=False, url_path="slow-threshold")
+    def slow_threshold(self, request, *args, **kwargs):
+        """慢请求标红阈值（SysConfig 单源）；供本页无监控权限的查看者读取。"""
+        return ApiResponse(data={"threshold": SysConfig.SLOW_REQUEST_THRESHOLD})

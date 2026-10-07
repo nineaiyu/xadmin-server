@@ -10892,6 +10892,10 @@ msgstr ""
 msgid "Invalid mask type"
 msgstr ""
 
+#: audit/views/admin/mask.py:90
+msgid "Invalid viewer roles"
+msgstr ""
+
 #: system/views/admin/online.py:104
 msgid "User forced offline (all sessions revoked)"
 msgstr ""

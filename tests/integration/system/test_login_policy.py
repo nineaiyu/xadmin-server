@@ -292,6 +292,28 @@ class TestPolicyApi:
         assert resp.data["code"] != 1000
 
 
+class TestChoicesMetadata:
+    """choices 选项元数据：target_type / action 枚举的选项单源（编辑表单渲染用）。
+
+    choices 路径在 PERMISSION_WHITE_URL 白名单内（``^/api/.*choices$``）：
+    所有登录用户可达，无需任何菜单权限。
+    """
+
+    CHOICES_URL = "/api/system/login-policies/choices"
+
+    def test_choices_available_to_plain_user_with_no_menus(self, api_client, normal_user):
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.get(self.CHOICES_URL)
+        assert resp.status_code == 200, resp.data
+        choices = resp.json()["choices_dict"]
+        assert len(choices["target_type"]) == 3
+        assert len(choices["action"]) == 4
+        # gettext_lazy label 经 JSON 渲染后必须是可读 str（Promise 序列化安全）
+        for item in choices["target_type"] + choices["action"]:
+            assert isinstance(item["label"], str) and item["label"]
+            assert isinstance(item["value"], str)
+
+
 class TestIpRangesValidation:
     """ip_ranges 保存期校验：口径与运行时网段匹配（contains_ip）同语义。
 

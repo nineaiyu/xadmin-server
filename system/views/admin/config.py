@@ -10,6 +10,7 @@ from drf_spectacular.utils import extend_schema
 
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ImportExportDataAction
+from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
@@ -18,6 +19,7 @@ from system.serializers.config import (
     SystemConfigSerializer,
     UserPersonalConfigExportImportSerializer,
     UserPersonalConfigSerializer,
+    registered_config_key_types,
 )
 from system.utils.platform.modelset import InvalidConfigCacheAction
 
@@ -50,6 +52,11 @@ class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDa
         self._invalidate_config_cache(instance)
         self.perform_destroy(instance)
         return ApiResponse()
+
+    @shared_list_action(methods=["get"], detail=False, url_path="registered-keys")
+    def registered_keys(self, request, *args, **kwargs):
+        """注册配置键清单（键名 + 期望值类型名）：配置页键枚举提示的数据源。"""
+        return ApiResponse(data={"keys": [{"key": k, "type": t} for k, t in registered_config_key_types().items()]})
 
 
 class UserPersonalConfigFilter(SystemConfigFilter):

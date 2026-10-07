@@ -176,3 +176,33 @@ class TestUnknownAndPartialUpdate:
         row.refresh_from_db()
         assert row.value == 120 and type(row.value) is int
         cleanup_config_rows("FILE_KEEP_DAYS")
+
+
+class TestRegisteredKeysEndpoint:
+    """注册键清单端点：配置页新增/编辑键时的键枚举提示数据源（结构元数据）。"""
+
+    REGISTERED_KEYS_URL = "/api/system/config/system/registered-keys"
+
+    def test_keys_sorted_with_expected_types(self, admin_client):
+        resp = admin_client.get(self.REGISTERED_KEYS_URL)
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000
+        keys = resp.data["data"]["keys"]
+        names = [item["key"] for item in keys]
+        assert names == sorted(names)
+        by_key = {item["key"]: item["type"] for item in keys}
+        assert by_key["WEB_SITE_CONFIG"] == "object"
+        assert by_key["SLOW_REQUEST_THRESHOLD"] == "number"
+        # 结构元数据只含键名与类型名，不含任何配置值
+        assert all(set(item) == {"key", "type"} for item in keys)
+        assert set(by_key.values()) <= {"boolean", "integer", "number", "string", "array", "object"}
+
+    def test_permission_follows_parent_list(self, api_client, normal_user, role, menu_factory):
+        """shared_list 口径：有 config/system list 权限可读，无权限拒绝。"""
+        api_client.force_authenticate(user=normal_user)
+        assert api_client.get(self.REGISTERED_KEYS_URL).status_code == 403
+        role.menu.add(menu_factory(name="list:SystemConfig", path="api/system/config/system$", method="GET"))
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.get(self.REGISTERED_KEYS_URL)
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000

@@ -80,6 +80,18 @@ def _config_value_types() -> dict[str, type]:
     return _CONFIG_VALUE_TYPES
 
 
+_CONFIG_TYPE_NAMES = {bool: "boolean", int: "integer", float: "number", str: "string", list: "array", dict: "object"}
+
+
+def registered_config_key_types() -> dict[str, str]:
+    """注册键 → 期望值类型名（结构元数据，不含任何配置值）。"""
+    return {
+        key: type_name
+        for key, typ in sorted(_config_value_types().items())
+        if (type_name := _CONFIG_TYPE_NAMES.get(typ)) is not None
+    }
+
+
 def _type_error(key, expected_type: type) -> ValidationError:
     messages = {
         int: _("Config value for {} must be an integer"),

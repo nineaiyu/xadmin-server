@@ -17,7 +17,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet
+from common.core.modelset import BaseModelSet, ChoicesAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils.request import get_request_ip
@@ -32,7 +32,7 @@ class LoginAccessPolicyFilter(BaseFilterSet):
         fields = ["name", "is_active", "target_type", "action"]
 
 
-class LoginAccessPolicyViewSet(BaseModelSet):
+class LoginAccessPolicyViewSet(BaseModelSet, ChoicesAction):
     """登录访问策略"""
 
     queryset = LoginAccessPolicy.objects.all()

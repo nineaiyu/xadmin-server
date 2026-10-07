@@ -598,3 +598,107 @@ class TestMaskRuleAPI:
         deleted = auth_client.delete(f"/api/system/mask-rules/{pk}")
         assert deleted.data["code"] == 1000
         assert not DataMaskRule.objects.filter(pk=pk).exists()
+
+
+class TestPreviewRolesContext:
+    """预览的角色视角模拟：与运行时「规则 roles ∩ 查看者角色」裁剪同口径。
+
+    运行时按「规则绑定的角色 ∩ 查看者实际角色」决定规则是否生效（超管恒豁免），
+    预览端点补齐同一语义——否则配置者无法预演「某角色之外的用户看到什么」。
+    """
+
+    PREVIEW_URL = "/api/system/mask-rules/preview"
+
+    def _post(self, client, rule, viewer_roles=None):
+        payload = {"value": PHONE, "rule": rule}
+        if viewer_roles is not None:
+            payload["viewer_roles"] = viewer_roles
+        return client.post(self.PREVIEW_URL, payload, format="json")
+
+    def test_rule_without_roles_applies_to_any_viewer(self, auth_client, role):
+        resp = self._post(
+            auth_client, {"mask_type": "phone", "keep_head": 3, "keep_tail": 2}, viewer_roles=[str(role.pk)]
+        )
+        data = resp.data["data"]
+        assert data["applied"] is True
+        assert data["result"] == "138******78"
+
+    def test_rule_roles_intersecting_viewer_roles_applies(self, auth_client, role):
+        resp = self._post(
+            auth_client,
+            {"mask_type": "phone", "keep_head": 3, "keep_tail": 2, "roles": [str(role.pk)]},
+            viewer_roles=[str(role.pk)],
+        )
+        data = resp.data["data"]
+        assert data["applied"] is True
+        assert data["result"] == "138******78"
+
+    def test_rule_roles_disjoint_viewer_roles_skipped(self, auth_client, role):
+        from identity.models import UserRole
+
+        other = UserRole.objects.create(name="其他角色", code="other-role")
+        resp = self._post(
+            auth_client,
+            {"mask_type": "phone", "keep_head": 3, "keep_tail": 2, "roles": [str(role.pk)]},
+            viewer_roles=[str(other.pk)],
+        )
+        data = resp.data["data"]
+        assert data["applied"] is False
+        # 原样回显：results 保持 input → input
+        assert data["result"] == PHONE
+        assert data["results"] == [{"input": PHONE, "output": PHONE}]
+
+    def test_missing_viewer_roles_means_no_roles(self, auth_client, role):
+        """viewer_roles 缺省 = 查看者无任何角色：绑角色规则不生效，未绑规则照常生效。"""
+        resp = self._post(auth_client, {"mask_type": "phone", "keep_head": 3, "keep_tail": 2, "roles": [str(role.pk)]})
+        data = resp.data["data"]
+        assert data["applied"] is False
+        assert data["result"] == PHONE
+
+    def test_role_pk_types_normalized_as_strings(self, auth_client, role):
+        """pk 两侧 str 化比较：int 形式的 pk 不会与 UUID 角色误判相交，str 形式正常命中。"""
+        rule = {"mask_type": "phone", "keep_head": 3, "keep_tail": 2, "roles": [123]}
+        resp = self._post(auth_client, rule, viewer_roles=[str(role.pk)])
+        assert resp.data["data"]["applied"] is False
+        assert resp.data["data"]["result"] == PHONE
+
+    def test_viewer_roles_not_list_rejected(self, auth_client):
+        resp = self._post(auth_client, {"mask_type": "phone"}, viewer_roles="admin")
+        assert resp.status_code == 400
+
+    def test_rule_roles_not_list_rejected(self, auth_client):
+        resp = self._post(auth_client, {"mask_type": "phone", "roles": "admin"})
+        assert resp.status_code == 400
+
+
+class TestPreviewPermission:
+    """preview 权限点：非超管脱敏管理员需显式授权 preview:SystemDataMaskRule。"""
+
+    PREVIEW_URL = "/api/system/mask-rules/preview"
+    PREVIEW_PERM_PATH = "api/system/mask-rules/preview$"
+
+    def _post(self, client):
+        return client.post(
+            self.PREVIEW_URL,
+            {"value": PHONE, "rule": {"mask_type": "phone", "keep_head": 3, "keep_tail": 2}},
+            format="json",
+        )
+
+    def test_preview_without_code_403(self, api_client, normal_user):
+        """仅持有 list 等其他权限码（或无任何码）→ 403：按钮显隐依据 preview 码。"""
+        api_client.force_authenticate(user=normal_user)
+        assert self._post(api_client).status_code == 403
+
+    def test_preview_with_code_200(self, api_client, normal_user, role, menu_factory):
+        role.menu.add(menu_factory(name="preview:SystemDataMaskRule", path=self.PREVIEW_PERM_PATH, method="POST"))
+        api_client.force_authenticate(user=normal_user)
+        resp = self._post(api_client)
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000
+        assert resp.data["data"]["applied"] is True
+
+    def test_preview_method_must_match(self, api_client, normal_user, role, menu_factory):
+        """权限码按方法精确匹配：仅授 GET 码打 POST preview → 403。"""
+        role.menu.add(menu_factory(name="wrong-method", path=self.PREVIEW_PERM_PATH, method="GET"))
+        api_client.force_authenticate(user=normal_user)
+        assert self._post(api_client).status_code == 403

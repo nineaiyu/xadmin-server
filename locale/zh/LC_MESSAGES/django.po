@@ -10843,6 +10843,10 @@ msgstr "脱敏规则不合法"
 msgid "Invalid mask type"
 msgstr "脱敏类型不合法"
 
+#: audit/views/admin/mask.py:90
+msgid "Invalid viewer roles"
+msgstr "查看者角色不合法"
+
 #: system/views/admin/online.py:104
 msgid "User forced offline (all sessions revoked)"
 msgstr "用户已被强制下线（所有会话已吊销）"

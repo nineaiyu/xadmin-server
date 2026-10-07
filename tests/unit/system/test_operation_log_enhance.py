@@ -221,3 +221,33 @@ class TestAuditLogReadOnly:
         assert client.delete(f"{LIST_URL}/{log.pk}").status_code in (404, 405)
         assert client.post(f"{LIST_URL}/batch-destroy", {"pks": [str(log.pk)]}, format="json").status_code in (404, 405)
         assert OperationLog.objects.filter(pk=log.pk).exists()
+
+
+# ---------------------------------------------------------------- 慢请求阈值端点
+
+
+class TestSlowThresholdEndpoint:
+    """慢请求标红阈值轻量端点：操作日志域自持（权限与列表同口径）。
+
+    前端标红慢请求需要阈值；走监控 slow 接口需要监控权限且携带大量样本，
+    无监控权限的查看者在本页只能读到阈值本身——故阈值单独出轻量端点。
+    """
+
+    THRESHOLD_URL = f"{LIST_URL}/slow-threshold"
+
+    def test_threshold_matches_sysconfig_for_list_permission(self, api_client, normal_user, role, menu_factory):
+        role.menu.add(menu_factory(name="list:OperationLog", path="api/system/logs/operation$", method="GET"))
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.get(self.THRESHOLD_URL)
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000
+        from common.core.config import SysConfig
+
+        threshold = resp.data["data"]["threshold"]
+        assert isinstance(threshold, (int, float))
+        assert threshold == SysConfig.SLOW_REQUEST_THRESHOLD
+
+    def test_threshold_denied_without_permission(self, api_client, normal_user):
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.get(self.THRESHOLD_URL)
+        assert resp.status_code == 403

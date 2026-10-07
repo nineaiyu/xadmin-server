@@ -73,24 +73,42 @@ class DataMaskRuleViewSet(BaseModelSet, ImportExportDataAction):
 
         样例可为 ``values`` 数组，或 ``value`` 内含换行（按行拆分）；``result``
         保留首条结果以兼容单值调用方，逐条结果统一在 ``results``。
+
+        角色视角模拟：``viewer_roles`` 为「非超管查看者具备的角色 pk 列表」（缺省
+        视为无任何角色；超管在运行时恒豁免脱敏，无需模拟），规则字典可带 ``roles``
+        （该规则绑定的角色 pk 列表）。与运行时「规则 roles ∩ 查看者角色」裁剪同口径：
+        规则未绑角色 = 对所有非超管查看者生效；交集为空时该规则对此查看者不生效，
+        ``applied=False``，样例原样回显。
         """
         rule = request.data.get("rule")
         if not isinstance(rule, dict):
             raise ValidationError(_("Invalid mask rule"))
         if rule.get("mask_type") and rule["mask_type"] not in DataMaskRule.MaskType.values:
             raise ValidationError(_("Invalid mask type"))
+        viewer_roles = request.data.get("viewer_roles")
+        if viewer_roles is not None and not isinstance(viewer_roles, (list, tuple)):
+            raise ValidationError(_("Invalid viewer roles"))
+        rule_roles = rule.get("roles")
+        if rule_roles is not None and not isinstance(rule_roles, (list, tuple)):
+            raise ValidationError(_("Invalid mask rule"))
+        # pk 两侧统一 str 化比较：JSON 入参可能是 str/int、库内角色 pk 为 UUID，
+        # 混型直接比对会永远不相交
+        viewer_role_pks = {str(pk) for pk in viewer_roles or []}
+        rule_role_pks = {str(pk) for pk in rule_roles or []}
+        applies = not rule_role_pks or bool(rule_role_pks & viewer_role_pks)
         values, truncated = collect_preview_values(request.data)
         # 非法自定义正则沿用静默回退（apply_mask 返回原值），但显式标记出来供调用方提示
         # 「该规则未生效」；标记挂在 data 顶层与 truncated 平级——预览单条规则，
         # 非法性属于规则本身而非逐条样例。
         pattern = rule.get("pattern") if rule.get("mask_type") == DataMaskRule.MaskType.CUSTOM else None
         invalid_pattern = custom_pattern_error(pattern) is not None
-        results = [{"input": value, "output": apply_mask(value, rule)} for value in values]
+        results = [{"input": value, "output": apply_mask(value, rule) if applies else value} for value in values]
         return ApiResponse(
             data={
                 "result": results[0]["output"] if results else "",
                 "results": results,
                 "truncated": truncated,
                 "invalid_pattern": invalid_pattern,
+                "applied": applies,
             }
         )
