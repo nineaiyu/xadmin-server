@@ -449,6 +449,14 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 > （保留亦不影响，其原为停用状态）；③ 可选新配置 `MEDIA_X_ACCEL_PREFIX`（媒体零拷贝直出）
 > 与 `OUTBOUND_ALLOWED_HOSTS`（出站白名单，内网 Webhook 接收端必配）。
 
+> **2026-10-08 升级注意**：① 菜单种子把执行历史「取消/重跑」权限点改名
+> `cancel/rerun:SystemTaskCenter` → `cancel/rerun:SystemTaskExecution`（pk 未变，
+> `post_upgrade` 灌种子后存量角色授权自动延续，前后端需同批发布——过渡窗口内按钮暂隐）；
+> ② 「水印设置」页签拆出独立权限点 `retrieve/partialUpdate:SettingWatermark`
+> （与 `SettingBasic` 同端点，仅前端授权粒度拆分）——存量自定义角色升级后水印页签暂不可见，
+> 需在角色管理显式勾选新权限点（SystemAdmin 自动获得，口径见
+> [menu-maintenance.md §6](../guide/menu-maintenance.md)）。
+
 > 历史版本注意：compose 内置与 `config.yml` 对齐的数据库/Redis 默认密码兜底（单机自用决策，见 docker-compose.yml 注释）——*
 *生产部署必须**通过环境变量或 `.env` 覆盖 `DB_PASSWORD` / `REDIS_PASSWORD` 为随机值，并在 `config.yml` 中同步修改（config.yml
 > 为应用运行时唯一定义处）；队列拆分后首次升级，`docker compose up -d` 会新增 `celery-worker`/`celery-heavy`/`celery-beat`

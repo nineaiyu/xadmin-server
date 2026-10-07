@@ -96,3 +96,14 @@
 另：`retrieve:SystemGlobalSearch` 与 `list:SystemImportTemplate` 在门禁脚本的
 `MUST_CODE_EVIDENCE` 清单中——这两处曾"端点有人调、权限没人查"，后补的前端
 hasAuth 校验不得回退删除。
+
+## 6. 权限码语义口径（页签显隐 / 同端点多权限点）
+
+页签类功能无独立路由菜单，其显隐/按钮权限码挂在宿主页面菜单下；同端点挂多个
+权限点属于**有意的授权粒度设计**，维护时不得按"疑似重复"清理：
+
+| 权限码 | 口径 |
+|---|---|
+| `list:SystemImportRecord` | 下载中心「导入记录」页签显隐开关（`views/system/export/index.vue`），挂在 SystemExportRecord 菜单下；权限点标题已注明「控制导入页签显隐」 |
+| `retrieve/partialUpdate:SettingWatermark` | 基本设置「水印设置」页签独立权限位，与 `SettingBasic` 两点同 path（`api/settings/basic$`）：后端按 path+method 鉴权为 OR 语义（任一点授权即可调 API），前端页签按 Watermark 码独立判权——仅授权粒度拆分，不做字段级隔离；存量自定义角色需显式勾选后水印页签才可见 |
+| `cancel/rerun:SystemTaskExecution` | 执行历史页取消/重跑按钮，走聚合端点 `/api/system/tasks/unified/{cancel,rerun}`；权限码归执行历史资源名（2026-10 由 `SystemTaskCenter` 改名，任务中心菜单已删除，pk 未变故存量授权自动延续） |
