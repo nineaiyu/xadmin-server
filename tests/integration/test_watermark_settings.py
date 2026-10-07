@@ -137,3 +137,25 @@ class TestUserInfoWatermarkConfig:
         for key in WATERMARK_KEYS:
             assert key in config, f"用户信息接口未下发 {key}"
             assert config[key] == getattr(dj_settings, key)
+
+
+class TestSiteUrlSetting:
+    """SITE_URL 留空契约：空值原样落库，不静默归一为回环地址。"""
+
+    def test_partial_update_empty_stores_empty(self, auth_client):
+        resp = auth_client.patch(BASIC_URL, {"SITE_URL": ""})
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000
+        setting = Setting.objects.filter(name="SITE_URL").first()
+        assert setting is not None
+        assert setting.cleaned_value == ""
+        # 生产上由 pubsub 订阅者执行；测试内直接模拟 worker 侧回写
+        setting.refresh_setting()
+        resp = auth_client.get(BASIC_URL)
+        assert resp.data["data"]["SITE_URL"] == ""
+
+    def test_partial_update_strips_trailing_slash(self, auth_client):
+        resp = auth_client.patch(BASIC_URL, {"SITE_URL": "https://xadmin.example.com/"})
+        assert resp.status_code == 200, resp.data
+        setting = Setting.objects.filter(name="SITE_URL").first()
+        assert setting.cleaned_value == "https://xadmin.example.com"

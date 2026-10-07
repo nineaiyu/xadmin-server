@@ -162,3 +162,86 @@ class TestLayoutRead:
 
         listed = auth_client.get(SCREEN_URL, {"name": "画布大屏-读"}).json()["data"]["results"]
         assert listed[0]["layout"][0]["pk"] == "p1"
+
+
+@pytest.fixture
+def screen_writer_menus(db):
+    """非超管写大屏所需的权限菜单（与 test_analysis_api 的 screen_urls 同款注册）。"""
+    from system.models import Menu, MenuMeta
+
+    def _make(name, path, method):
+        meta = MenuMeta.objects.create(title=name)
+        return Menu.objects.create(
+            name=name, path=path, method=method, menu_type=Menu.MenuChoices.PERMISSION, meta=meta
+        )
+
+    detail = "api/dataset/screens/(?P<pk>[^/.]+)"
+    return [
+        _make("list:Screen", "api/dataset/screens$", "GET"),
+        _make("create:Screen", "api/dataset/screens$", "POST"),
+        _make("partialUpdate:Screen", detail + "$", "PATCH"),
+    ]
+
+
+def _user_client(user, menus):
+    from rest_framework.test import APIClient
+
+    from identity.models import UserRole
+
+    role = UserRole.objects.create(name=f"role-{user.username}", code=user.username)
+    user.roles.add(role)
+    role.menu.set(menus)
+    client = APIClient(HTTP_USER_AGENT="pytest-agent")
+    client.force_authenticate(user=user)
+    return client
+
+
+class TestDashboardVisibilityOnWrite:
+    """引用校验与 Dashboard 读侧可见口径一致：shared 或本人创建（超管全量）。
+
+    低权用户把他人个人仪表盘挂进大屏会被展示端整格静默空——保存时按提交用户
+    可见域拒绝（轮播清单与画布窗格两条路径都校验）。
+    """
+
+    def test_others_personal_dashboard_rejected(self, superuser, normal_user, screen_writer_menus):
+        personal = Dashboard.objects.create(name="他人个人看板", layout=[], visibility="personal", creator=superuser)
+        client = _user_client(normal_user, screen_writer_menus)
+
+        # 轮播清单：存在但不可见 → 拒绝
+        carousel = client.post(SCREEN_URL, {"name": "越权轮播大屏", "dashboards": [str(personal.pk)]}, format="json")
+        assert carousel.status_code == 400
+        # 画布窗格：同样拒绝
+        canvas = client.post(
+            SCREEN_URL,
+            {"name": "越权画布大屏", "dashboards": [], "layout": [_pane("p1", str(personal.pk))]},
+            format="json",
+        )
+        assert canvas.status_code == 400
+        assert not Screen.objects.filter(name__in=["越权轮播大屏", "越权画布大屏"]).exists()
+
+    def test_creator_own_personal_dashboard_allowed(self, normal_user, screen_writer_menus):
+        own = Dashboard.objects.create(name="本人个人看板", layout=[], visibility="personal", creator=normal_user)
+        client = _user_client(normal_user, screen_writer_menus)
+        resp = client.post(
+            SCREEN_URL,
+            {"name": "自有看板大屏", "dashboards": [str(own.pk)], "layout": [_pane("p1", str(own.pk))]},
+            format="json",
+        )
+        assert resp.json()["code"] == 1000, resp.json()
+
+    def test_shared_dashboard_referenceable_by_others(self, superuser, normal_user, screen_writer_menus):
+        shared = Dashboard.objects.create(name="共享看板", layout=[], visibility="shared", creator=superuser)
+        client = _user_client(normal_user, screen_writer_menus)
+        resp = client.post(
+            SCREEN_URL,
+            {"name": "共享引用大屏", "dashboards": [str(shared.pk)], "layout": [_pane("p1", str(shared.pk))]},
+            format="json",
+        )
+        assert resp.json()["code"] == 1000, resp.json()
+
+    def test_superuser_may_reference_any_dashboard(self, auth_client, superuser):
+        personal = Dashboard.objects.create(
+            name="超管引用个人看板", layout=[], visibility="personal", creator=superuser
+        )
+        resp = auth_client.post(SCREEN_URL, {"name": "超管大屏", "dashboards": [str(personal.pk)]}, format="json")
+        assert resp.json()["code"] == 1000, resp.json()

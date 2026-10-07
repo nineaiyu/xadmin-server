@@ -153,7 +153,7 @@ class MonitorViewSet(GenericViewSet):
 
     @staticmethod
     def persist_thresholds(serializer, request):
-        """写 Setting 并同步本进程 settings（其他进程由 pubsub 回写）。"""
+        """写 Setting 并同步本进程 settings（其他进程由 pubsub 回写，丢失时消费侧周期对账收敛）。"""
         from settings.models import Setting
 
         changed = []

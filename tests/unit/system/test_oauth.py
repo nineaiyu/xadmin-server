@@ -446,3 +446,26 @@ def test_oauth_error_carries_readable_detail():
     error = OAuthError("readable")
     assert error.detail == "readable"
     assert str(error) == "readable"
+
+
+class TestCallbackMustChangePassword:
+    """第三方登录响应与本地密码登录同口径携带 must_change_password 标记。"""
+
+    def _bind_superuser(self, superuser):
+        UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="subject-1")
+
+    def test_must_change_password_user_flagged(self, superuser, oauth_config, stub_idp):
+        self._bind_superuser(superuser)
+        superuser.must_change_password = True
+        superuser.save(update_fields=["must_change_password"])
+        stub_idp(FakeClient())
+        response = callback(None)
+        assert response.data["code"] == 1000, response.data
+        assert response.data["data"]["must_change_password"] is True
+
+    def test_normal_user_not_flagged(self, superuser, oauth_config, stub_idp):
+        self._bind_superuser(superuser)
+        stub_idp(FakeClient())
+        response = callback(None)
+        assert response.data["code"] == 1000, response.data
+        assert response.data["data"]["must_change_password"] is False

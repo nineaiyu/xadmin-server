@@ -20,6 +20,7 @@ WATERMARK_COLOR_RE = re.compile(r"^(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\([^)]*
 class BasicSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     SITE_URL = serializers.URLField(
         required=False,
+        allow_blank=True,
         label=_("Site URL"),
         help_text=_(
             "Site URL is the externally accessible address of the current product "
@@ -113,8 +114,10 @@ class BasicSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
 
     @staticmethod
     def validate_SITE_URL(s):
+        # 留空 = 未配置，原样落库（不伪造 127.0.0.1）：站点链接基址的实际消费方
+        # 已自带「按请求推导」兜底，伪造回环地址反而会把兜底打穿成不可达链接
         if not s:
-            return "http://127.0.0.1"
+            return ""
         return s.strip("/")
 
     @staticmethod

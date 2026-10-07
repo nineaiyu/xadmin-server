@@ -15,7 +15,9 @@
 收到后以**连接自身用户**视角聚合整屏数据并只发给自己（dataset/screen_data.py）——
 execute/aggregate 的数据权限绑定浏览者，直接组广播数据帧会跨用户泄露。
 触发源：REST refresh 指令（立即一轮）与 beat 周期任务 push_screen_data（按屏
-refresh 周期节流）。
+refresh 周期节流）；重复触发两处收敛——beat 侧以 ``cache.add`` 原子占位
+（同一 refresh 周期只有一个并发赢者广播），连接侧按合并窗口跳过入参
+（控制态 rev / 当前页）未变化的重复事件。
 """
 
 import time
@@ -43,6 +45,9 @@ SCREEN_COMMANDS = ("switch", "page", "refresh", "auto")
 MIN_DATA_PUSH_INTERVAL = 10
 # last_push 时间戳的缓存时长：覆盖 refresh 上限（3600s）的两倍即可保证节流有效
 DATA_PUSH_TS_TTL = 3600 * 2
+# 展示连接的触发合并窗口（秒）：REST refresh 与 beat 触发背靠背到达时，
+# 聚合入参（控制态 rev / 当前页）与刚完成一轮完全一致的重复触发只聚合一次
+SCREEN_TRIGGER_MERGE_WINDOW = 1.0
 
 
 def screen_group_name(screen_pk) -> str:
@@ -56,6 +61,11 @@ def screen_state_key(screen_pk) -> str:
 def screen_push_ts_key(screen_pk) -> str:
     """beat 数据推送节流键（last_push epoch 秒）；与控制态键同命名空间。"""
     return f"screen_display_data_push_{screen_pk}"
+
+
+def screen_push_claim_key(screen_pk) -> str:
+    """beat 推送原子占用键：``cache.add`` 占位即赢得本轮推送权，不存在即已被占。"""
+    return f"screen_display_data_push_claim_{screen_pk}"
 
 
 def load_screen_state(screen_pk) -> dict:
@@ -159,6 +169,19 @@ def mark_screen_pushed(screen_pk, now=None) -> None:
     cache.set(screen_push_ts_key(screen_pk), int(now if now is not None else time.time()), DATA_PUSH_TS_TTL)
 
 
+def claim_screen_push(screen, now=None) -> bool:
+    """原子占位一轮 beat 推送：并发扫描只有一个赢者（``cache.add`` 单命令语义）。
+
+    「查占用 + 占用」两步拆开（先 GET 判 due、后 SET 记时刻）在双 beat / 并发下
+    存在双广播窗口；占位把裁判收敛为一次 add，落选者直接跳过本轮。占位键 TTL =
+    该屏推送周期（钳 10s），到期自动放行下一轮，无需清理；last_push 时间戳键
+    （SET 覆盖，供 ``screen_push_due`` 快速预筛与观测）与其并存。
+    """
+    return cache.add(
+        screen_push_claim_key(screen.pk), int(now if now is not None else time.time()), data_push_interval(screen)
+    )
+
+
 def can_view_screen(user, screen_pk) -> bool:
     """展示通道准入（与 HTTP _visible_queryset 同口径）：超管 / 创建者 / shared 可见。"""
     if not user or not getattr(user, "is_authenticated", False):
@@ -179,6 +202,10 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
     disconnected = False  # 已断开标记（disconnect 后不再续期所在组）
     # 展示连接当前页（carousel；展示端经 screen_page_state 上报，None = 未上报）
     page_index: int | None = None
+    # 上次聚合完成时刻（monotonic）与入参快照（控制态 rev / 当前页）：触发合并的判定基准
+    _last_built_at: float = 0.0
+    _last_built_rev: int | None = None
+    _last_built_page: int | None = None
 
     async def connect(self):
         self.user = self.scope["user"]
@@ -239,8 +266,13 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
         权限语义与旧「客户端逐卡 HTTP 重拉」逐字节等价（同走 dataset_query 的
         fail-closed 过滤），仅把 M 卡 × N 观察者的请求收敛为每观察者每轮 1 帧。
 
-        event 无载荷不取用；不能写 ``_ = event``——会遮蔽模块级 gettext 别名 ``_``，
+        事件无载荷不取用；不能写 ``_ = event``——会遮蔽模块级 gettext 别名 ``_``，
         下方错误帧的 ``_()`` 将变成对 dict 的调用。
+
+        触发合并：REST refresh 指令与 beat 周期推送可能背靠背投递触发事件，同一连接
+        虽逐事件串行处理，仍会对相同入参反复全屏聚合——距上次聚合完成不足合并窗口
+        且控制态 rev / 当前页均未变化时跳过本轮（任一变化 = 新指令或新页，立即聚合；
+        周期性数据刷新不受影响，其入参在窗口外照常重建）。
         """
         # 断开后仍可能收到排队中的触发事件：丢弃，不再向已死连接写帧
         if getattr(self, "disconnected", False):
@@ -252,10 +284,16 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
             return
         state = await database_sync_to_async(load_screen_state)(pk)
         rev = int(state.get("rev") or 0)
+        page_index = getattr(self, "page_index", None)
+        if (
+            time.monotonic() - self._last_built_at < SCREEN_TRIGGER_MERGE_WINDOW
+            and rev == self._last_built_rev
+            and page_index == self._last_built_page
+        ):
+            return
         try:
             # carousel 按展示连接上报的当前页聚合（未上报回退全页）；
             # canvas 单帧与页码无关（build 内部忽略）
-            page_index = getattr(self, "page_index", None)
             payloads = await database_sync_to_async(build_screen_data_payload)(
                 self.user, screen, rev, page_index=page_index
             )
@@ -271,5 +309,10 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
                     "ts": int(time.time()),
                 }
             ]
+        else:
+            # 聚合成功才推进基准：失败帧的快速重试不被合并窗口吞掉
+            self._last_built_at = time.monotonic()
+            self._last_built_rev = rev
+            self._last_built_page = page_index
         for payload in payloads:
             await self.send_base_json(MessageAction.SCREEN_DATA.value, data=payload)

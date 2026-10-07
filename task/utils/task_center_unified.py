@@ -348,5 +348,9 @@ def _rerun_report(record) -> dict:
     if report is None:
         return {"ok": False, "detail": str(_("The original report no longer exists"))}
     new_record = _precreate_record(report)
-    _dispatch(run_scheduled_report, kwargs={"report_id": str(report.pk)}, task_id=new_record)
+    # 重跑与「run 动作」同为手动触发：不推进调度簿记 last_run_at（bookkeep_schedule=False），
+    # last_status 照常写——否则重跑恰好落在到期点与派发扫描之间会吞掉当期投递
+    _dispatch(
+        run_scheduled_report, kwargs={"report_id": str(report.pk), "bookkeep_schedule": False}, task_id=new_record
+    )
     return {"ok": True, "detail": str(_("Rerun submitted")), "data": {"record_id": str(new_record)}}

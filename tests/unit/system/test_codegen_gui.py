@@ -370,3 +370,18 @@ class TestBatchDownload:
     def test_unknown_model_in_batch_rejected(self, superuser):
         response = _post(superuser, "download", {"models": ["demo.Book", "nope.Missing"]})
         assert response.data["code"] == 1001
+
+    def test_batch_over_limit_rejected(self, superuser):
+        """批量打包模型数超上限：同步逐模型渲染数千文件会阻塞请求，须可读拒绝（不打 zip）。"""
+        models = ["demo.Book"] * (codegen_gui.MAX_BATCH_MODELS + 1)
+        response = _post(superuser, "download", {"models": models})
+        assert response.status_code == 400, response.data
+        assert str(codegen_gui.MAX_BATCH_MODELS) in str(response.data)
+
+    def test_batch_at_limit_allowed(self, superuser, monkeypatch):
+        """边界内（=上限）正常打包。"""
+        monkeypatch.setattr(codegen_gui, "MAX_BATCH_MODELS", 2)
+        response = _post(superuser, "download", {"models": ["demo.Book", "system.DataDict"]})
+        assert response.status_code == 200
+        with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+            assert "NEXT_STEPS.md" in archive.namelist()

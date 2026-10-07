@@ -271,6 +271,9 @@ class OAuthCallbackAPIView(GenericAPIView):
         user.save(update_fields=["last_login"])
         result = _issue_token(request, user)
         result.update(get_token_lifetime(user))
+        # 强制改密标记与本地密码/验证码登录同口径同来源（user.must_change_password）：
+        # 第三方登录路径同样不能绕过改密引导
+        result["must_change_password"] = bool(getattr(user, "must_change_password", False))
         return ApiResponse(data=result)
 
 

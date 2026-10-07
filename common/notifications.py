@@ -16,6 +16,43 @@ from common.contracts import (
     register_message,
 )
 
+# 资源告警阈值设置键：可写面 = 监控页阈值 PUT（SecurityMonitorSerializer），逐键对应
+MONITOR_THRESHOLD_SETTINGS = (
+    "SECURITY_MONITOR_DISK_USED_MAX",
+    "SECURITY_MONITOR_MEMORY_USED_MAX",
+    "SECURITY_MONITOR_CPU_PERCENT_MAX",
+    "SECURITY_MONITOR_CPU_LOAD_MAX",
+)
+# 阈值对账间隔（秒）：与告警检查周期一致，pubsub 丢消息后最多一个间隔内收敛
+THRESHOLD_RECONCILE_INTERVAL = 60
+_THRESHOLD_RECONCILE_CACHE_KEY = "monitor_thresholds_reconcile_at"
+
+
+def reconcile_monitor_thresholds():
+    """阈值对账：Setting 行热更靠 pubsub 回写各进程，pubsub 丢消息时本进程
+    settings 停留旧值且告警判定无自愈手段。判定 / 展示前从库回读阈值应用，
+    经带 TTL 的缓存闸门限流（间隔内至多一次回读），保证在收敛窗口
+    （THRESHOLD_RECONCILE_INTERVAL，即告警检查周期）内自动读到新阈值；
+    缓存不可用时按需要对账处理，宁可多读一次库也不让收敛失效。
+    """
+    from django.core.cache import cache
+
+    from settings.models import Setting
+
+    try:
+        if cache.get(_THRESHOLD_RECONCILE_CACHE_KEY) is not None:
+            return
+    except Exception:  # noqa: BLE001 缓存异常不阻断对账
+        pass
+    try:
+        Setting.refresh_names(MONITOR_THRESHOLD_SETTINGS)
+    except Exception:  # noqa: BLE001 对账失败不阻断告警检查（下轮再试）
+        return
+    try:
+        cache.set(_THRESHOLD_RECONCILE_CACHE_KEY, True, THRESHOLD_RECONCILE_INTERVAL)
+    except Exception:  # noqa: BLE001 闸门写失败只会导致更频繁对账
+        pass
+
 
 @register_message
 class ServerPerformanceMessage(SystemMessage):
@@ -61,7 +98,8 @@ class ServerPerformanceMessage(SystemMessage):
 
 class ServerPerformanceCheckUtil:
     # 阈值可在后台「系统设置 → 安全设置 → 资源告警」配置（settings/serializers/security.py）；
-    # Setting 行会经 django_ready/pubsub 实时回写 settings，这里必须每次检查时读取
+    # Setting 行经 django_ready/pubsub 回写 settings，pubsub 丢消息时由
+    # reconcile_monitor_thresholds 每轮判定前回读对账，这里必须每次检查时读取
     @property
     def items_mapper(self):
         return {
@@ -93,6 +131,8 @@ class ServerPerformanceCheckUtil:
         self._terminals = []
 
     def check_and_publish(self):
+        # 阈值对账：pubsub 丢消息时本进程 settings 仍是旧值，先回读再判定
+        reconcile_monitor_thresholds()
         self.check()
         self.publish()
         self.sync_alert_records()

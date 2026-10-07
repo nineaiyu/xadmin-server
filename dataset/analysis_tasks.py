@@ -183,11 +183,16 @@ def dispatch_cron_reports():
 
 
 @shared_task(bind=True)
-def run_scheduled_report(self, report_id: str):
+def run_scheduled_report(self, report_id: str, bookkeep_schedule: bool = True):
     """执行单个报表：数据集渲染 xlsx → ExportRecord（下载中心）→ 邮件附件。
 
     task_id == 预创建 ExportRecord.pk（CeleryTaskRecordModel 契约）。产物落库、
     进度与取消协议与异步导出同源（task.services 统一导出服务）。
+
+    ``bookkeep_schedule``：调度簿记开关。last_run_at 是到期判定的「上次执行时刻」
+    （见 report_due），只有调度派发链路（缺省 True）才推进它；手动运行（run 动作 /
+    任务中心重跑传 False）恰好落在到期点与派发扫描之间时，若推进 last_run_at 会
+    吞掉当期投递——last_status 照常写入，用户仍能看到本次结果。
     """
     from dataset.models.dataset import Report
     from task.models.task import TaskExecution
@@ -209,6 +214,16 @@ def run_scheduled_report(self, report_id: str):
     record.status = ExportRecord.Status.RUNNING
     record.save(update_fields=["status", "updated_time"])
     user = report.creator
+
+    def bookkeep(status: str) -> None:
+        """last_status 必写（用户可见的最近一次结果）；last_run_at 仅调度链路推进。"""
+        update_fields = ["last_status", "updated_time"]
+        if bookkeep_schedule:
+            report.last_run_at = timezone.now()
+            update_fields.append("last_run_at")
+        report.last_status = status
+        report.save(update_fields=update_fields)
+
     try:
         # 统一进度：报表此前只有终态 100，此处补中间里程碑（查询 → 渲染 → 落盘）；
         # 里程碑即协作式取消安全点，取消检查须在 try 内由 TaskCancelled 分支收敛
@@ -231,9 +246,7 @@ def run_scheduled_report(self, report_id: str):
                 errors.append(f"email: {exc}")
                 logger.warning("scheduled report email failed: %s", report.pk, exc_info=True)
         errors.extend(_deliver_im(report, rows))
-        report.last_run_at = timezone.now()
-        report.last_status = "SUCCESS" if not errors else "SUCCESS_WITH_DELIVERY_ERROR"
-        report.save(update_fields=["last_run_at", "last_status", "updated_time"])
+        bookkeep("SUCCESS" if not errors else "SUCCESS_WITH_DELIVERY_ERROR")
         record.error = "; ".join(errors)[:2000] if errors else None
         record.save(update_fields=["error", "updated_time"])
         logger.info("scheduled report done: %s rows=%s channels=%s", report.pk, rows, channels)
@@ -251,23 +264,25 @@ def run_scheduled_report(self, report_id: str):
         record.status = ExportRecord.Status.FAILURE
         record.error = str(exc)[:2000]
         record.save(update_fields=["status", "error", "updated_time"])
-        report.last_run_at = timezone.now()
-        report.last_status = "FAILURE"
-        report.save(update_fields=["last_run_at", "last_status", "updated_time"])
+        bookkeep("FAILURE")
         logger.warning("scheduled report failed: %s", report.pk, exc_info=True)
         raise
 
 
 @shared_task
 def schedule_report_run(report_id: str):
-    """立即运行入口（管理页 run 动作）：预创建 ExportRecord 并按契约派发。"""
+    """立即运行入口（管理页 run 动作）：预创建 ExportRecord 并按契约派发。
+
+    手动运行属触发即执行，不推进调度簿记 last_run_at（到期判定不受影响，
+    恰好落在到期点上的期次仍会被分发扫描投递）；last_status 照常写。
+    """
     from dataset.models.dataset import Report
 
     report = Report.objects.filter(pk=report_id).first()
     if report is None:
         return ""
     task_id = _precreate_record(report)
-    run_scheduled_report.apply_async(kwargs={"report_id": str(report.pk)}, task_id=task_id)
+    run_scheduled_report.apply_async(kwargs={"report_id": str(report.pk), "bookkeep_schedule": False}, task_id=task_id)
     return task_id
 
 
@@ -288,15 +303,17 @@ def _screen_has_viewers(layer, group) -> bool:
 def push_screen_data():
     """扫描大屏：向「有在线展示端且已到 refresh 周期」的屏投递数据触发事件。
 
-    beat 只做「谁该刷」的节流判定（逐屏 last_push 缓存键，见 ws_screen.screen_push_due），
-    不做任何数据集查询；离屏（组内无连接）不触发也不落节流键，观众上线后能尽快
-    收到首帧。屏数量小（模板级资源），MVP 全表扫描足够。
+    beat 只做「谁该刷」的节流判定（逐屏 last_push 缓存键 + cache.add 原子占位，
+    见 ws_screen.screen_push_due / claim_screen_push），不做任何数据集查询；
+    离屏（组内无连接）不触发也不占位，观众上线后能尽快收到首帧。屏数量小
+    （模板级资源），MVP 全表扫描足够。
     """
     from channels.layers import get_channel_layer
 
     from dataset.models.dataset import Screen
     from dataset.ws_screen import (
         broadcast_screen_data_trigger,
+        claim_screen_push,
         mark_screen_pushed,
         screen_group_name,
         screen_push_due,
@@ -308,10 +325,14 @@ def push_screen_data():
     pushed = 0
     for screen in Screen.objects.iterator():
         try:
-            # 先判节流（一次 cache get）再查在线（一次 Redis 往返），离屏不落节流键
+            # 先判节流（一次 cache get）再查在线（一次 Redis 往返），离屏不占位不落节流键
             if not screen_push_due(screen):
                 continue
             if not _screen_has_viewers(layer, screen_group_name(screen.pk)):
+                continue
+            # 原子占位（cache.add）：双 beat / 并发扫描只有一个赢者取得本轮广播权，
+            # 落选者直接跳过——「查占用 + 占用」两步拆开会有双触发竞态窗口
+            if not claim_screen_push(screen):
                 continue
             broadcast_screen_data_trigger(screen.pk)
             mark_screen_pushed(screen.pk)

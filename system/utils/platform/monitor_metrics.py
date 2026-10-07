@@ -182,8 +182,11 @@ def collect_health_summary(live=None, services=None, celery_skipped=None):
     live/services 允许调用方复用已采集结果（overview 与 WS panel 帧各采一次）。
     """
 
+    # 阈值对账：pubsub 丢消息时本进程 settings 仍是旧阈值，展示前先回读
+    from common.notifications import reconcile_monitor_thresholds
     from system.utils.platform.monitor_events import alert_counts
 
+    reconcile_monitor_thresholds()
     if live is None:
         live = collect_live_metrics()
     if services is None:

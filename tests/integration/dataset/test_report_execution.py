@@ -2,13 +2,17 @@
 """定时报表执行任务（run_scheduled_report）：产物落库与协作式取消协议。
 
 执行链与异步导出共用 task 域统一导出服务（产物落 UploadFile + 进度里程碑 +
-REVOKED 收敛），本文件守护两条链路的协议一致性。
+REVOKED 收敛），本文件守护两条链路的协议一致性；另守护调度簿记口径——
+last_run_at 只有调度链路推进（到期判定依据），手动运行只写 last_status。
 """
+
+from datetime import timedelta
 
 import pytest
 from django.core import mail
 from django.utils import timezone
 
+from dataset.analysis_tasks import report_due
 from dataset.models.dataset import Dataset, Report
 from task.models.export import ExportRecord
 from task.models.task import TaskExecution
@@ -100,3 +104,57 @@ def test_report_run_cancel_converges_revoked(report, superuser):
     assert len(mail.outbox) == 0
     execution = TaskExecution.objects.get(pk=record_pk)
     assert execution.status == "REVOKED"
+
+
+class TestScheduleBookkeeping:
+    """调度簿记口径：last_run_at 只由调度链路推进，手动运行不吞当期投递。"""
+
+    def _backdate_created(self, report):
+        """建单时间拨回两天前，让默认 daily 08:00 的最近到期点必然晚于参考点。"""
+        Report.objects.filter(pk=report.pk).update(created_time=timezone.localtime() - timedelta(days=2))
+        report.refresh_from_db()
+
+    def test_manual_run_does_not_advance_last_run_at(self, report, superuser):
+        """手动 run：last_status 可见结果，但 last_run_at 不动——到期扫描仍会投递该期。"""
+        from dataset.analysis_tasks import schedule_report_run
+
+        self._backdate_created(report)
+        assert report_due(report) is True
+
+        task_id = schedule_report_run(str(report.pk))
+        record = ExportRecord.objects.get(pk=task_id)
+        assert record.status == ExportRecord.Status.SUCCESS
+        report.refresh_from_db()
+        assert report.last_status == "SUCCESS"
+        assert report.last_run_at is None
+        # 手动运行恰好落在到期点与派发扫描之间：该期次不被吞
+        assert report_due(report) is True
+
+    def test_manual_run_failure_keeps_last_run_at(self, report, superuser, monkeypatch):
+        """手动 run 失败：last_status 记 FAILURE，last_run_at 同样不推进。"""
+        from dataset.analysis_tasks import run_scheduled_report
+
+        def boom(report_obj, user):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr("dataset.analysis_tasks._render_workbook", boom)
+        record_pk = _precreate_record(report)
+        with pytest.raises(RuntimeError):
+            run_scheduled_report.apply(
+                kwargs={"report_id": str(report.pk), "bookkeep_schedule": False}, task_id=record_pk
+            )
+        report.refresh_from_db()
+        assert report.last_status == "FAILURE"
+        assert report.last_run_at is None
+
+    def test_scheduled_run_advances_last_run_at(self, report, superuser):
+        """调度链路簿记行为不变：成功执行推进 last_run_at，到期判定随之翻转为未到期。"""
+        self._backdate_created(report)
+        assert report_due(report) is True
+
+        record = _run(report)
+        assert record.status == ExportRecord.Status.SUCCESS
+        report.refresh_from_db()
+        assert report.last_status == "SUCCESS"
+        assert report.last_run_at is not None
+        assert report_due(report) is False

@@ -14,7 +14,7 @@ from rest_framework.exceptions import ValidationError
 from common.core.filter import assert_within_data_scope, get_filter_queryset
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from identity.models import DeptInfo, UserRole
+from identity.models import DeptInfo, UserInfo, UserRole
 from system.services import DataPermission
 
 logger = get_logger(__name__)
@@ -87,16 +87,25 @@ class DeptSerializer(BaseModelSerializer):
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
 
     def validate(self, attrs):
-        # 上级部门必须存在，否则会出现数据权限问题
-        parent = attrs.get("parent", self.instance.parent if self.instance else None)
-        if not parent:
-            attrs["parent"] = self.request.user.dept
-        elif "parent" in attrs:
-            # 写侧载荷范围校验：非超管指定上级部门时须在数据权限可见范围内
+        if self.instance is None:
+            # 创建时未指定上级（未提交或显式置空）默认挂到操作者所在部门，保持既有新增体验
+            if attrs.get("parent") is None:
+                attrs["parent"] = self.request.user.dept
+        elif "parent" in attrs and attrs["parent"] is not None:
+            # 更新时未提交不动、显式提交 parent=null 允许提升为顶层部门（模型字段可空）；
+            # 指定上级部门则做写侧载荷范围校验：非超管须在数据权限可见范围内
             assert_within_data_scope(
-                DeptInfo.objects.filter(pk=parent.pk),
+                DeptInfo.objects.filter(pk=attrs["parent"].pk),
                 self.request.user,
                 _("The superior department is outside your data scope"),
+            )
+        # 主管写入口与上级部门同口径：非超管指定的主管须在数据权限可见范围内
+        leader = attrs.get("leader")
+        if leader is not None:
+            assert_within_data_scope(
+                UserInfo.objects.filter(pk=leader.pk),
+                self.request.user,
+                _("The department leader is outside your data scope"),
             )
         return attrs
 

@@ -84,6 +84,19 @@ class Setting(DbAuditModel, DbUuidModel):
         setattr(settings, data[0], data[1])
 
     @classmethod
+    def refresh_names(cls, names):
+        """从库回读指定设置行并应用为本进程运行时值（对账原语）。
+
+        Setting 行热更依赖 pubsub 广播回写各进程，丢消息时本进程 settings 会停留
+        旧值；按行名回读（唯一索引，行数极小）让消费方以固定周期自愈收敛。
+        """
+        for setting in cls.objects.filter(name__in=names):
+            try:
+                setting.refresh_setting()
+            except Exception:  # noqa: BLE001 单条损坏不中断批量刷新（与 refresh_all_settings 同口径）
+                logger.warning("refresh setting failed: %s", setting.name, exc_info=True)
+
+    @classmethod
     def default_value(cls, name):
         """行删除后的运行时回收值：同名静态配置默认值（config.yml / 环境变量 / 代码默认值）。
 

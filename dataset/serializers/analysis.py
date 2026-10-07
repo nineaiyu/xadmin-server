@@ -7,6 +7,7 @@ from collections.abc import Collection
 
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -47,12 +48,33 @@ class ScreenSerializer(BaseModelSerializer):
         # RePlusPage 列表列
         table_fields = ["name", "dashboards", "interval", "refresh", "visibility", "updated_time"]
 
+    def _visible_dashboard_pks(self, referenced) -> set:
+        """按引用主键在「当前提交用户可见」的仪表盘内取交集（只查主键，不整表加载）。
+
+        可见域与 DashboardViewSet 读侧同口径：超管全量，其余为 shared 或本人创建；
+        主键形态非法的引用按「不可见」处理（主键查询遇非法值会抛错，先行拦截）。
+        引用不可见的个人仪表盘会令展示端整格静默空，与未知主键同语义拒绝。
+        """
+        valid = set()
+        for pk in referenced:
+            try:
+                Dashboard._meta.pk.to_python(str(pk))
+            except ValidationError:
+                continue
+            valid.add(str(pk))
+        user = getattr(self.context.get("request"), "user", None)
+        queryset = Dashboard.objects.all()
+        if user is None or not getattr(user, "is_superuser", False):
+            queryset = queryset.filter(Q(visibility=Dashboard.Visibility.SHARED) | Q(creator=user))
+        return {str(pk) for pk in queryset.filter(pk__in=valid).values_list("pk", flat=True)}
+
     def validate_dashboards(self, value):
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Invalid screen dashboards"))
-        known = {str(pk) for pk in Dashboard.objects.values_list("pk", flat=True)}
+        # 存在性 + 可见性一并校验：轮播清单里引用不可见仪表盘同样整页渲染不出
+        visible = self._visible_dashboard_pks(value)
         for pk in value:
-            if str(pk) not in known:
+            if str(pk) not in visible:
                 raise serializers.ValidationError(_("Unknown dashboard in layout"))
         return value
 
@@ -61,11 +83,21 @@ class ScreenSerializer(BaseModelSerializer):
 
         指标卡窗格的 sum/avg 取值列必须落在该数据集的数值列白名单内
         （与报表组件同口径的 fail-closed：源头挡住执行期必然 400 的组合）。
+        仪表盘白名单按当前提交用户的可见域过滤（shared 或本人创建）——存在但不
+        可见的引用同样拒绝，避免低权用户挂入自己不可见的个人仪表盘。
         """
         from dataset.models.dataset import Dataset
         from dataset.utils.dataset import numeric_columns_of
 
-        known_dashboards = Dashboard.objects.values_list("pk", flat=True)
+        # 只取窗格引用到的仪表盘主键（可见性交集，不整表加载）
+        referenced_dashboards = set()
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict) and str(item.get("type") or "dashboard") == "dashboard":
+                    dashboard_pk = str(item.get("dashboard") or "").strip()
+                    if dashboard_pk:
+                        referenced_dashboards.add(dashboard_pk)
+        known_dashboards = self._visible_dashboard_pks(referenced_dashboards)
         # 只加载指标卡窗格引用到的数据集（存在性与数值列校验都不需要整表）；
         # 引用串先过主键形态校验，非法形态按「不存在」处理（主键查询遇非法值会抛错）
         referenced = set()

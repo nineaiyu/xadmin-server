@@ -28,10 +28,13 @@ from dataset.screen_data import build_screen_data_payload, collect_screen_cards
 from dataset.views import analysis as analysis_views
 from dataset.ws_screen import (
     MIN_DATA_PUSH_INTERVAL,
+    SCREEN_TRIGGER_MERGE_WINDOW,
     ScreenDisplayNotify,
     apply_screen_command,
+    claim_screen_push,
     data_push_interval,
     screen_group_name,
+    screen_push_claim_key,
     screen_push_due,
     screen_push_ts_key,
 )
@@ -585,3 +588,125 @@ class TestCarouselPageState:
         rejects = [item for item in captured[before:] if item.get("code") == 1001]
         assert len(rejects) == 1
         assert rejects[0]["action"] == "screen_command"
+
+
+class TestTriggerMerge:
+    """连接侧触发合并：REST refresh 与 beat 背靠背投递的重复触发只聚合一次。
+
+    合并窗口内控制态 rev 与当前页均未变化 → 跳过；任一变化（新指令 / 新页）→
+    立即聚合；聚合失败不推进基准，窗口内的重试不被吞。
+    """
+
+    def _counting_consumer(self, superuser, monkeypatch, *dashboards):
+        screen = _make_screen(superuser, list(dashboards))
+        consumer, captured, _closed = _make_consumer(get_channel_layer(), superuser, screen.pk)
+        async_to_sync(consumer.connect)()
+        calls = []
+        real_build = build_screen_data_payload
+
+        def counting_build(user, screen_obj, rev, page_index=None):
+            calls.append((str(screen_obj.pk), rev, page_index))
+            return real_build(user, screen_obj, rev, page_index=page_index)
+
+        monkeypatch.setattr("dataset.ws_screen.build_screen_data_payload", counting_build)
+        return screen, consumer, captured, calls
+
+    def test_same_rev_duplicate_trigger_builds_once(self, dashboard_a, superuser, monkeypatch):
+        screen, consumer, captured, calls = self._counting_consumer(superuser, monkeypatch, dashboard_a)
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+        # 合并窗口内同 rev / 同页码的重复触发（双击刷新、refresh+beat 重叠）不再聚合
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+        assert len(calls) == 1
+        frames = [item for item in captured if item["action"] == "screen_data"]
+        assert len(frames) == 1
+        assert frames[0]["data"]["rev"] == 0
+
+    def test_rev_change_within_window_rebuilds(self, dashboard_a, superuser, monkeypatch):
+        screen, consumer, captured, calls = self._counting_consumer(superuser, monkeypatch, dashboard_a)
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+        # 控制态 rev 变化 = 新指令：不受合并窗口钳制，立即再聚合
+        apply_screen_command(screen, "refresh")
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+        assert len(calls) == 2
+        frames = [item for item in captured if item["action"] == "screen_data"]
+        assert frames[-1]["data"]["rev"] == 1
+
+    def test_page_change_within_window_rebuilds(self, dashboard_a, dashboard_b, superuser, monkeypatch):
+        screen, consumer, captured, calls = self._counting_consumer(superuser, monkeypatch, dashboard_a, dashboard_b)
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+        # 展示端翻页后（page_state 上报）页码变化：聚合入参变了，不合并
+        async_to_sync(consumer.receive_json)(MessageAction.SCREEN_PAGE_STATE.value, {"index": 1}, "")
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+        assert calls == [(str(screen.pk), 0, None), (str(screen.pk), 0, 1)]
+        frames = [item for item in captured if item["action"] == "screen_data"]
+        assert frames[-1]["data"]["dashboard"] == str(dashboard_b.pk)
+
+    def test_build_failure_allows_retry_within_window(self, dashboard_a, superuser, monkeypatch):
+        screen = _make_screen(superuser, [dashboard_a])
+        consumer, captured, _closed = _make_consumer(get_channel_layer(), superuser, screen.pk)
+        async_to_sync(consumer.connect)()
+        real_build = build_screen_data_payload
+
+        def boom(user, screen_obj, rev, page_index=None):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr("dataset.ws_screen.build_screen_data_payload", boom)
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+        assert [item["action"] for item in captured[-1:]] == ["screen_data"]
+        assert captured[-1]["data"]["errors"][0]["card"] == "*"
+
+        # 失败不推进合并基准：窗口内重试仍然执行（恢复后拿到数据帧）
+        monkeypatch.setattr("dataset.ws_screen.build_screen_data_payload", real_build)
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+        frames = [item for item in captured if item["action"] == "screen_data"]
+        assert len(frames) == 2
+        assert frames[-1]["data"]["cards"]
+
+    def test_merge_window_expires_rebuilds_same_rev(self, dashboard_a, superuser, monkeypatch):
+        """周期性数据刷新不受合并影响：窗口过后同 rev 触发照常聚合。"""
+        screen, consumer, _captured, calls = self._counting_consumer(superuser, monkeypatch, dashboard_a)
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+        # 手动把上次聚合完成时刻拨回窗口之外
+        consumer._last_built_at -= SCREEN_TRIGGER_MERGE_WINDOW * 2
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+        assert len(calls) == 2
+
+
+class TestBeatPushAtomicClaim:
+    """beat 侧推送权占位：cache.add 单命令完成「查占用 + 占用」，并发扫描只有一个赢者。"""
+
+    def test_claim_add_semantics(self, dashboard_a, superuser):
+        screen = _make_screen(superuser, [dashboard_a])
+        assert claim_screen_push(screen) is True
+        # 占位期内重复占位落选（原子性：不存在 GET→SET 之间的双占窗口）
+        assert claim_screen_push(screen) is False
+        cache.delete(screen_push_claim_key(screen.pk))
+        assert claim_screen_push(screen) is True
+
+    def test_preclaimed_screen_skips_broadcast(self, dashboard_a, superuser, monkeypatch):
+        """并发赢者已占位时，落选 beat 不广播（占用键存在即跳过本轮）。"""
+        screen = _make_screen(superuser, [dashboard_a])
+        layer = get_channel_layer()
+        consumer, _captured, _closed = _make_consumer(layer, superuser, screen.pk)
+        async_to_sync(consumer.connect)()
+        assert claim_screen_push(screen) is True  # 模拟并发赢者先占位
+        triggered = []
+        monkeypatch.setattr("dataset.ws_screen.broadcast_screen_data_trigger", lambda pk: triggered.append(str(pk)))
+        assert push_screen_data() == 0
+        assert triggered == []
+        # 落选者也不推进 last_push 节流键，赢家周期不受影响
+        assert cache.get(screen_push_ts_key(screen.pk)) is None
+
+    def test_winner_broadcasts_then_marks(self, dashboard_a, superuser, monkeypatch):
+        screen = _make_screen(superuser, [dashboard_a])
+        layer = get_channel_layer()
+        consumer, _captured, _closed = _make_consumer(layer, superuser, screen.pk)
+        async_to_sync(consumer.connect)()
+        triggered = []
+        monkeypatch.setattr("dataset.ws_screen.broadcast_screen_data_trigger", lambda pk: triggered.append(str(pk)))
+        assert push_screen_data() == 1
+        assert triggered == [str(screen.pk)]
+        assert isinstance(cache.get(screen_push_ts_key(screen.pk)), int)
+        # 占位键 TTL = 该屏推送周期：到期自动放行下一轮，无需清理
+        assert cache.get(screen_push_claim_key(screen.pk)) is not None
+        assert cache.ttl(screen_push_claim_key(screen.pk)) <= data_push_interval(screen)

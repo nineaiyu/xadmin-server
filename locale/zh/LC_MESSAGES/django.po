@@ -11397,3 +11397,12 @@ msgstr "已提交上架审批"
 #, python-format
 msgid "%(name)s push succeeded"
 msgstr "%(name)s 推送成功"
+
+#: identity/serializers/department.py
+msgid "The department leader is outside your data scope"
+msgstr "部门主管超出你的数据权限范围"
+
+#: system/utils/platform/codegen_gui.py
+#, python-format
+msgid "Too many models for batch codegen (max {})"
+msgstr "批量代码生成的模型数量超限（最多 {} 个）"

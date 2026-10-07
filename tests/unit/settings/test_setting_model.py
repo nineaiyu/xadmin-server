@@ -170,11 +170,12 @@ class TestSettingModel:
 
 
 class TestBasicSettingSerializerHooks:
-    def test_validate_site_url_defaults_and_strips_trailing_slash(self):
+    def test_validate_site_url_keeps_empty_and_strips_trailing_slash(self):
         from settings.serializers.basic import BasicSettingSerializer
 
         serializer = BasicSettingSerializer()
-        assert serializer.validate_SITE_URL("") == "http://127.0.0.1"
+        # 留空 = 未配置，原样落库（不伪造回环地址）
+        assert serializer.validate_SITE_URL("") == ""
         assert serializer.validate_SITE_URL("http://x.local/") == "http://x.local"
 
     def test_post_save_notifies_only_on_permission_field_change(self):

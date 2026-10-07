@@ -262,6 +262,34 @@ class TestRerun:
         result = rerun_record(superuser, "export", str(record.pk))
         assert result["ok"] is False
 
+    def test_report_rerun_dispatches_without_schedule_bookkeeping(self, superuser, monkeypatch):
+        """报表重跑属手动触发：派发 kwargs 携带 bookkeep_schedule=False（不推进 last_run_at）。"""
+        from dataset.analysis_tasks import run_scheduled_report
+        from dataset.models.dataset import Dataset, Report
+
+        dispatched = []
+        monkeypatch.setattr(
+            task_center_unified,
+            "_dispatch",
+            lambda task, args=None, kwargs=None, task_id=None: dispatched.append((task, kwargs, task_id)),
+        )
+        dataset = Dataset.objects.create(name="重跑数据集", bound_model="identity.userinfo", creator=superuser)
+        report = Report.objects.create(name="重跑报表-调度簿记", dataset=dataset, creator=superuser)
+        record = _export(
+            superuser,
+            name="报表-重跑",
+            module="Report",
+            params={"report_id": str(report.pk)},
+            status=ExportRecord.Status.SUCCESS,
+        )
+        result = rerun_record(superuser, "export", str(record.pk))
+        assert result["ok"] is True
+        task, kwargs, task_id = dispatched[0]
+        assert task is run_scheduled_report
+        assert kwargs == {"report_id": str(report.pk), "bookkeep_schedule": False}
+        clone = ExportRecord.objects.exclude(pk=record.pk).get()
+        assert task_id == str(clone.pk)
+
     def test_foreign_record_not_rerunnable(self, superuser, normal_user):
         record = _export(superuser, status=ExportRecord.Status.SUCCESS)
         assert rerun_record(normal_user, "export", str(record.pk))["ok"] is False

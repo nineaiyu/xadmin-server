@@ -24,6 +24,8 @@ from pathlib import Path
 from django.apps import apps as django_apps
 from django.conf import settings
 from django.core.management.base import CommandError
+from django.utils.translation import gettext as _
+from rest_framework.exceptions import ValidationError
 
 from common.utils import get_logger
 from devtools.management.commands._generate_crud import Command
@@ -38,6 +40,9 @@ CLIENT_REPO_PREFIX = "xadmin-client"
 _CLIENT_ROOT_SENTINEL = "/.xadmin-codegen-client"
 # 模块等级合法面（与 CLI --module-level choices 对齐）
 _MODULE_LEVELS = ("core", "standard", "optional")
+# 批量打包单次模型数上限：CLI 一次只生成一个模型，GUI 批量为同步请求内逐模型
+# 渲染数十个产物文件，超限请求应拆批，避免长请求阻塞 worker
+MAX_BATCH_MODELS = 20
 
 
 def _engine() -> Command:
@@ -275,6 +280,8 @@ def build_zip(payload: dict) -> bytes:
     models = payload.get("models")
     if not (isinstance(models, list) and models):
         return io_bytes_zip(build_artifacts(payload))
+    if len(models) > MAX_BATCH_MODELS:
+        raise ValidationError(_("Too many models for batch codegen (max {})").format(MAX_BATCH_MODELS))
 
     engine = _engine()
     all_artifacts: list[dict] = []

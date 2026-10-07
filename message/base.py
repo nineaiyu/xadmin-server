@@ -13,6 +13,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils.translation import gettext_lazy as _
 from rest_framework.utils import encoders
 
+from common.core.response import API_SUCCESS_CODE
 from common.decorators import cached_method
 from common.utils import get_logger
 from identity.services import serialize_user_info
@@ -60,7 +61,9 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
 
         pass
 
-    async def send_base_json(self, action: str, data=None, mid=None, code=1000, detail=None, close=False, **kwargs):
+    async def send_base_json(
+        self, action: str, data=None, mid=None, code=API_SUCCESS_CODE, detail=None, close=False, **kwargs
+    ):
         """
         action: 动作
         data: 数据
@@ -69,7 +72,9 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
         content = {
             "code": code,
             "action": action,
-            "detail": detail if detail else (_("Operation successful") if code == 1000 else _("Operation failed")),
+            "detail": detail
+            if detail
+            else (_("Operation successful") if code == API_SUCCESS_CODE else _("Operation failed")),
             "timestamp": str(datetime.datetime.now()),
             "v": PROTOCOL_VERSION,
         }

@@ -118,3 +118,90 @@ class TestServerPerformanceCheck:
         assert list(subscription.users.values_list("username", flat=True)) == [superuser.username]
         assert mail.outbox
         assert superuser.email in mail.outbox[0].recipients()
+
+
+class TestThresholdReconcile:
+    """pubsub 丢消息时消费侧的阈值对账：一个收敛窗口内自动读到新阈值。"""
+
+    @pytest.fixture(autouse=True)
+    def _gate_and_runtime_restore(self):
+        """清 TTL 闸门并保存/恢复运行时阈值（refresh_setting 改的是进程级 settings）。"""
+        import django.conf
+        from django.core.cache import cache
+
+        from common.notifications import _THRESHOLD_RECONCILE_CACHE_KEY, MONITOR_THRESHOLD_SETTINGS
+
+        cache.delete(_THRESHOLD_RECONCILE_CACHE_KEY)
+        saved = {name: getattr(django.conf.settings, name, None) for name in MONITOR_THRESHOLD_SETTINGS}
+        yield
+        for name, value in saved.items():
+            setattr(django.conf.settings, name, value)
+        cache.delete(_THRESHOLD_RECONCILE_CACHE_KEY)
+
+    @staticmethod
+    def _persist_without_broadcast(name, value):
+        """模拟另一进程直接改库且本进程收不到 pubsub：只落 Setting 行，不回写本进程 settings。"""
+        Setting.objects.create(name=name, value=str(value), category="security_monitor")
+
+    def test_converges_without_pubsub(self, superuser):
+        from common.notifications import reconcile_monitor_thresholds
+
+        self._persist_without_broadcast("SECURITY_MONITOR_DISK_USED_MAX", 90)
+        import django.conf
+
+        django.conf.settings.SECURITY_MONITOR_DISK_USED_MAX = 80  # 本进程停留旧值
+
+        reconcile_monitor_thresholds()
+        assert django.conf.settings.SECURITY_MONITOR_DISK_USED_MAX == 90
+
+    def test_gate_skips_within_interval_then_expires(self, superuser, monkeypatch):
+        """TTL 闸门：间隔内至多一次回读；缓存过期（时间推进）后再次对账读到最新值。"""
+        import django.conf
+        from django.core.cache import cache
+
+        from common.notifications import (
+            _THRESHOLD_RECONCILE_CACHE_KEY,
+            reconcile_monitor_thresholds,
+        )
+        from settings.models import Setting
+
+        self._persist_without_broadcast("SECURITY_MONITOR_DISK_USED_MAX", 90)
+        django.conf.settings.SECURITY_MONITOR_DISK_USED_MAX = 80
+
+        calls = []
+        real_func = Setting.refresh_names.__func__
+
+        def spy(cls, names):
+            calls.append(list(names))
+            return real_func(cls, names)
+
+        monkeypatch.setattr(Setting, "refresh_names", classmethod(spy))
+
+        reconcile_monitor_thresholds()
+        assert django.conf.settings.SECURITY_MONITOR_DISK_USED_MAX == 90
+        assert len(calls) == 1
+
+        # 间隔内第二次调用命中闸门，不回读（库再变也不影响本窗口）
+        Setting.objects.filter(name="SECURITY_MONITOR_DISK_USED_MAX").update(value="95")
+        reconcile_monitor_thresholds()
+        assert len(calls) == 1
+        assert django.conf.settings.SECURITY_MONITOR_DISK_USED_MAX == 90
+
+        # 缓存过期（时间推进）：闸门放行，重新收敛到最新落库值
+        cache.delete(_THRESHOLD_RECONCILE_CACHE_KEY)
+        reconcile_monitor_thresholds()
+        assert len(calls) == 2
+        assert django.conf.settings.SECURITY_MONITOR_DISK_USED_MAX == 95
+
+    def test_health_summary_uses_reconciled_threshold(self, superuser):
+        """面板健康总览（web 进程消费路径）同样经对账读到新阈值。"""
+        import django.conf
+
+        from system.utils.platform.monitor_metrics import collect_health_summary
+
+        self._persist_without_broadcast("SECURITY_MONITOR_DISK_USED_MAX", 90)
+        django.conf.settings.SECURITY_MONITOR_DISK_USED_MAX = 80
+
+        summary = collect_health_summary()
+        disk = next(item for item in summary["items"] if item["key"] == "disk_used")
+        assert disk["threshold"] == 90
