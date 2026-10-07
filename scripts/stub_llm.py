@@ -6,7 +6,7 @@
 需要一个**确定性**的模型回答。由 playwright.config.ts 的 webServer 拉起，
 端口 E2E_STUB_LLM_PORT（默认 18897）。
 
-规则（与 system/utils/ai_actions.py 的 prompt 契约对齐）：
+规则（与 ai/utils/ai_actions.py 的 prompt 契约对齐）：
 - 从最后一条 user 消息解析 ``ALLOWED_ACTIONS_JSON:`` 标记之后的动作目录；
 - 目录中存在名字以 ``E2E-AI动作`` 开头的表单 → 返回 dform.submit 草稿
   （data 按表单字段逐个填固定值，input 字段可过校验）；
@@ -32,7 +32,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 ALLOWED_ACTIONS_MARKER = "ALLOWED_ACTIONS_JSON:"
-#: 护栏的引用数据块边界（目录被包裹后仍可解析；与 system/utils/ai_guard.py 同口径）
+#: 护栏的引用数据块边界（目录被包裹后仍可解析；与 ai/utils/ai_guard.py 同口径）
 REFERENCE_BEGIN = "<<<REFERENCE_DATA>>>"
 REFERENCE_END = "<<<END_REFERENCE_DATA>>>"
 E2E_FORM_NAME_PREFIX = "E2E-AI动作"

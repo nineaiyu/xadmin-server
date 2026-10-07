@@ -4,7 +4,7 @@
 
 两条链路：
 - 草稿生成：聊天室 `/do`（message/ai.py，非流式）与助手页 `action/interpret/stream`
-  （本文件，SSE 思考 + 结构化草稿），共用 system/utils/ai_actions.py 的注册表与校验；
+  （本文件，SSE 思考 + 结构化草稿），共用 ai/utils/ai_actions.py 的注册表与校验；
 - 执行：`action/execute`（用户确认后），白名单 + 参数重校验 + 权限双门 + 审批协议 + 审计。
 
 对话持久化：助手页来源（未携带 room_id）的草稿与执行结果落 AiChatMessage；

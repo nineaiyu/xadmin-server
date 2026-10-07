@@ -13,7 +13,7 @@
 渐进启用）决定，与 SENSITIVE_OPERATION_PATHS 同口径。命中时未携带令牌则建
 PENDING 审批单并返回 412 + 业务码 1002（type=approval_required），业务代码不执行；
 携带令牌则消费校验（一次性、有效期、指纹一致）后放行。判定/建单/消费逻辑在
-system/utils/approval.py（common 层惰性导入，跨 app 门禁合规）。
+approval/services.py（common 层经 common.contracts 惰性导入，跨 app 门禁合规）。
 """
 
 import functools

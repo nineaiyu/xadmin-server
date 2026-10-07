@@ -98,7 +98,7 @@ class PermissionPreviewAction:
     """用户权限预览（可见菜单/API 码/数据权限规则解码/字段权限矩阵 + 实时试算）。
 
     取数全部直查 DB，不经过 24h/10s 权限缓存，确保反映当前配置
-    （详见 system/utils/identity/permission_preview.py 模块注释）。
+    （详见 system/utils/platform/permission_preview/ 包模块注释）。
     """
 
     @extend_schema(request=None, responses=get_default_response_schema())

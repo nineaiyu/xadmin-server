@@ -39,7 +39,7 @@ class Leave(DbAuditModel, DbUuidModel):
     leave_type = models.CharField(_("Leave type"), max_length=32, choices=LeaveType.choices, default=LeaveType.ANNUAL)
     start_date = models.DateField(_("Start date"))
     end_date = models.DateField(_("End date"))
-    # 支持半天（0.5 步进）；提交时校验不得超过起止跨度（见 system/utils/leave.py）
+    # 支持半天（0.5 步进）；提交时校验不得超过起止跨度（见 approval/utils/leave.py）
     days = models.DecimalField(_("Days"), max_digits=5, decimal_places=1)
     reason = models.CharField(_("Reason"), max_length=500)
     status = models.CharField(_("Status"), max_length=16, choices=Status.choices, default=Status.DRAFT, db_index=True)

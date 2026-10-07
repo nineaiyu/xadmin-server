@@ -96,4 +96,4 @@ IM flavor 的协议差异全部收口在 `identity/utils/oauth_flavors.py`，新
 安全纪律（与通用流一致）：IdP 原始报文只进日志、用户侧错误统一 `OAuthError` 可读文案、
 http 客户端可注入（保证单测离线）；换码 / 取用户信息的缓存按凭据摘要隔离（参考企微 corp token 实现）。
 
-> flavor 属内核扩展（改动面在 `system/utils/` 与写入校验白名单），建议先提 ADR 再落代码。
+> flavor 属内核扩展（改动面在 `identity/utils/oauth_flavors.py` 与写入校验白名单），建议先提 ADR 再落代码。

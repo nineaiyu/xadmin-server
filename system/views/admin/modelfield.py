@@ -53,7 +53,18 @@ class ModelLabelFieldFilter(BaseFilterSet):
 
 
 class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
-    """模型字段"""
+    """模型字段。
+
+    导入导出与「展示序列化器全字段 read_only + 页面关闭行编辑」并存的口径说明：
+    保留 ImportExportDataAction 是为与全站模型集能力对齐。导出用于字段元数据
+    落档/对账；导入不是空转——import 动作经按 action 取序列化器的机制命中独立的
+    ModelLabelFieldImportSerializer（未设 read_only，可写 name/label/parent/field_type，
+    pk 与审计时间字段由框架自动只读），同步导入与异步任务重放（重放侧绑
+    action=import_data）均走该序列化器，是与 sync 动作（按模型注册表自动装配）
+    互补的手工批量维护入口（如跨环境迁移字段标签树）。展示序列化器全只读使
+    视图自带的 create/update 端点无有效写入字段；前端字段管理页仅注册 sync
+    权限码，RePlusPage 因此不渲染导入导出按钮，导入导出当前只有直连 API 入口。
+    """
 
     queryset = ModelLabelField.objects.all()
     serializer_class = ModelLabelFieldSerializer

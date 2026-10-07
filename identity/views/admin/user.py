@@ -280,7 +280,7 @@ class UserViewSet(
     def im_binding(self, request, *args, **kwargs):
         """管理员代录 IM 身份（免扫码）：GET 查看绑定，POST 创建或更新。
 
-        与自助扫码绑定（system/views/auth/oauth.py）共用 UserOAuthBinding；
+        与自助扫码绑定（identity/views/auth/oauth.py）共用 UserOAuthBinding；
         钉钉的 subject 必须是 unionId（发消息前再换算 userid，见 notifications/backends/dingtalk.py）。
         写操作落 OperationLog（module=IM:binding）。
         """

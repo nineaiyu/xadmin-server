@@ -3,7 +3,7 @@
 """审批委托视图集（自 approval_flow.py 拆出，仅因文件行数门禁；行为与拆分前一致）。
 
 委托只影响「待办归属」（生效委托用代理人替换原审批人），不改变节点定义；
-解析语义见 system/utils/approval_flow/conditions.py::resolve_assignee_pairs 的委托展开。
+解析语义见 approval/utils/approval_flow/conditions.py::resolve_assignee_pairs 的委托展开。
 """
 
 from django_filters.rest_framework import DjangoFilterBackend

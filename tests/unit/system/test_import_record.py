@@ -129,7 +129,7 @@ def test_import_progress_served_from_cache_while_running(superuser):
     """运行期进度读缓存通道：RUNNING 时以缓存值为准，终态回落到库内字段。
 
     背景：任务在「外层大事务 + 逐行 savepoint」里执行，事务提交前其他连接读不到
-    库内进度，故运行期进度写缓存（见 system/utils/import_progress）。
+    库内进度，故运行期进度写缓存（见 task/utils/import_progress）。
     """
     from task.serializers.import_ import ImportRecordSerializer
     from task.utils.import_progress import clear_import_progress, set_import_progress

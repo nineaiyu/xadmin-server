@@ -116,7 +116,7 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
     def user_options(self, request, *args, **kwargs):
         """成员候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
 
-        与选人控件同源（system/utils/identity/user_options.py）；权限与 list 同口径
+        与选人控件同源（identity/utils/user_options.py）；权限与 list 同口径
         （框架 shared_list 注册表，无需新增权限点）。
         """
         data = search_user_options(

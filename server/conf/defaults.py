@@ -187,7 +187,7 @@ BASE_CONFIG = {
     # 与数据权限（visible_datasets）口径
     "AI_NL_QUERY_ENABLED": True,
     # AI 四期受限动作（A2：草稿→确认→以用户身份执行）：2026-10-03 灰度转正
-    # 协议自身 fail-closed；白名单动作与审计见 system/utils/ai_actions.py
+    # 协议自身 fail-closed；白名单动作与审计见 ai/utils/ai_actions.py
     "AI_ACTION_ENABLED": True,
     # AI 三期采样/行为参数（档案未配置的参数按此回落；None = 不下发走供应商默认）
     "AI_TEMPERATURE": 0.2,

@@ -7,7 +7,7 @@
   （`Authorization: Pat <token>`），三层权限/数据权限/审计天然生效；
 - 换发 = **轮换**：明文不可回读，故每次换发都失效旧凭证再发新凭证（避免「以为复用、其实是旧密文」）；
 - 应用停用/过期、按应用限流在 PAT 认证类内即时校验（common/core/auth.py）；
-- 回调测试复用 webhook 的 HMAC-SHA256 时间戳签名口径（system/utils/task/webhook.py）。
+- 回调测试复用 webhook 的 HMAC-SHA256 时间戳签名口径（task/utils/webhook.py）。
 """
 
 import hmac
@@ -292,7 +292,7 @@ class ApiApplicationViewSet(BaseModelSet):
     def scope_options(self, request, *args, **kwargs):
         """应用可授权的接口范围（按菜单分组，供应用「接口范围」勾选）
 
-        口径与个人访问令牌同源（`system/utils/identity/pat_scope.py`）：权限菜单 × 请求用户角色
+        口径与个人访问令牌同源（`identity/utils/pat_scope.py`）：权限菜单 × 请求用户角色
         （超管为全部启用的权限菜单）；条目是锚定正则（如 ``GET ^/api/system/user/?$``），
         只放行勾选的那一个接口。应用凭证以 owner（creator）身份走既有认证链，管理页由
         平台管理员维护，故选项集合取「当前用户可授权的接口」；非 owner 编辑时，超出

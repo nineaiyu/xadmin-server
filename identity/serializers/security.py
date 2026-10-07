@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """identity 域安全序列化器（风险巡检 / 登录策略 / Passkey）。
 
-FileAccessLogSerializer 属文件域，在 system/serializers/security.py（随 file 域切分迁移）。
+FileAccessLogSerializer 属文件域，在 file/serializers/file_access_log.py（随 file 域切分迁移）。
 """
 
 from ipaddress import ip_address

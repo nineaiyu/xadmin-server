@@ -158,7 +158,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | 数据权限 | `get_filter_queryset` + `core/data_scope/`（16 种规则，fail-closed） | `common/core/filter.py` |
 | 字段权限 | `BaseModelSerializer` 自动裁剪 | `common/core/serializers.py` |
 | 应用级授权 | `identity/utils/api_grant.py`（仅 PAT 凭证，只收敛不提权） | 三处挂载 |
-| 权限点治理 | `get_view_permissions` / `scan_gaps` / `sync_menu_permissions` / `doctor` | `system/utils/platform/menu.py`、`identity/utils/permission_sync/` |
+| 权限点治理 | `get_view_permissions` / `scan_gaps` / `sync_menu_permissions` / `doctor` | `system/utils/platform/menu.py`、`system/utils/platform/permission_sync/` |
 | 前端消费 | `hasAuth("动作:组件名")` / `<Auth>` / `usePageAuth` | 见 §2.6 |
 
 - 权限码约定 `{action}:{ViewSetName}`；**新增端点必须登记权限点**（生成器种子或 `sync_menu_permissions`），漏登记 = 非超管 403。

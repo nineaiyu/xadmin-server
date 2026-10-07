@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""system 定时任务清理逻辑单元测试（system/utils/task/ctasks.py 与 system/tasks.py）。"""
+"""system 定时任务清理逻辑单元测试（task/utils/ctasks.py 与 system/tasks/__init__.py）。"""
 
 import datetime
 import uuid

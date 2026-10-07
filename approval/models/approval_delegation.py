@@ -13,7 +13,7 @@ from common.core.models import DbAuditModel
 class ApprovalDelegation(DbAuditModel):
     """审批委托（审批流三期）：委托人在时段/流程范围内将审批权交由代理人代审。
 
-    解析语义见 system/utils/approval_flow.py::_expand_delegations ——
+    解析语义见 approval/utils/approval_flow/conditions.py::_expand_delegations ——
     只替换「待办归属」，不改变节点定义；代理人再委托不生效（防环）。
     """
 

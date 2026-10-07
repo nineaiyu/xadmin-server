@@ -184,7 +184,7 @@ class AiProfile(DbAuditModel, DbUuidModel):
 class AiUsageRecord(DbAuditModel, DbUuidModel):
     """AI 调用用量账本：逐次记录 token / 耗时 / 成败，供用量端点与配额判定。
 
-    写入口收敛（``system/utils/ai_usage.py`` 的 ``tracked_chat`` / ``tracked_chat_stream``），
+    写入口收敛（``ai/utils/ai_usage.py`` 的 ``tracked_chat`` / ``tracked_chat_stream``），
     不在各链路散落；保留期随 ``MONITOR_RETENTION_DAYS`` 由周期任务清理。
     ``feature`` 区分链路（文档问答 / 聊天室 / NL 查数 / 动作草稿），用于成本归因。
     """

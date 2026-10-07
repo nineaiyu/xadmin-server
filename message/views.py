@@ -273,7 +273,7 @@ class ChatContactViewSet(GenericViewSet):
     def user_options(self, request, *args, **kwargs):
         """群成员候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
 
-        口径与选人控件同源（system/utils/identity/user_options.py）；权限与该视图 list 权限
+        口径与选人控件同源（identity/utils/user_options.py）；权限与该视图 list 权限
         同口径（common/core/permission.py 的 user-options 特例），无需新增权限点。
         """
         data = search_user_options(

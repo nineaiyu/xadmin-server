@@ -144,7 +144,7 @@ class SecurityConfMixin(ConfigCacheBase):
     def OAUTH_PROVIDERS(self):
         """第三方登录 provider 列表（JSON 数组，默认空 = 整体休眠）。
 
-        每项结构见 `system/utils/identity/oauth.py`：key/name/enabled/client_id/client_secret/
+        每项结构见 `identity/utils/oauth.py`：key/name/enabled/client_id/client_secret/
         authorize_url/token_url/userinfo_url/scope/subject_field/auto_create。
         密钥仅服务端可见，列表接口回传时掩码（见 `mask_providers`）。
         """
@@ -165,7 +165,7 @@ class SecurityConfMixin(ConfigCacheBase):
 
         任务管理页创建周期任务 / 「立即执行」只放行命中项（防止任意
         已注册任务——含删数据/改密等系统任务——被配置执行）；业务方确认范围后
-        在系统配置页扩容。见 `system/utils/task/task_whitelist.py`。
+        在系统配置页扩容。见 `task/utils/task_whitelist.py`。
         """
         return self.get_value("MANUAL_RUNNABLE_TASKS", get_server_config().MANUAL_RUNNABLE_TASKS)
 

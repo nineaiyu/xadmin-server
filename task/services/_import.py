@@ -141,7 +141,7 @@ def run_async_import(record_id, view_path, user_pk):
 
         fail_rate_limit = SysConfig.IMPORT_FAIL_RATE_LIMIT
         # 运行期进度走缓存通道：本循环包在外层事务里，事务提交前其他连接读不到
-        # 库内进度（见 system/utils/import_progress 模块说明），因此不写库、只写缓存
+        # 库内进度（见 task/utils/import_progress 模块说明），因此不写库、只写缓存
         last_percent = -1
         try:
             with transaction.atomic():

@@ -5,7 +5,7 @@
 模型关系：ApprovalFlow（定义）→ ApprovalFlowNode（顺序节点，节点级条件）→
 ApprovalInstance（一次申请）→ ApprovalNodeTask（一行一个候选审批人）。
 
-与轻量敏感操作审批（system/utils/approval.py 的一次性令牌）完全独立：
+与轻量敏感操作审批（approval/utils/approval/ 的一次性令牌）完全独立：
 - 令牌审批面向「拦截业务请求 → 批准后重发」，无表单、无多级；
 - 本引擎面向业务表单（请假/报销类），无请求重放，状态机完整。
 

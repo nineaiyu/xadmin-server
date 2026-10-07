@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""system/serializers/role.py FieldPermissionSerializer / RoleSerializer 单元测试。
+"""identity/serializers/role.py FieldPermissionSerializer / RoleSerializer 单元测试。
 
 验证字段权限的序列化/反序列化、RoleSerializer.save_fields 建立关系、update
 替换旧关系，以及 get_field 输出的 {menu: [field,...]} 结构。

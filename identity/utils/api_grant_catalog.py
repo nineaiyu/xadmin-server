@@ -7,7 +7,7 @@
 - 写入校验：``validate_grant_payload`` 保证「模型 × 动作 × 字段 × 行」四级配置在
   保存时即合法，且非超管管理员的校验面收敛到本人可授权面（与展示面同源）。
 
-运行时判定（匹配 / 字段收敛 / 行过滤）仍在 ``system/utils/identity/api_grant.py``。
+运行时判定（匹配 / 字段收敛 / 行过滤）仍在 ``identity/utils/api_grant.py``。
 """
 
 from django.core.cache import cache

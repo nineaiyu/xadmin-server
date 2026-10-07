@@ -3,7 +3,7 @@
 """聊天室周期任务（二期）：聊天历史自动清理。
 
 celery autodiscover 会导入各安装应用的 ``tasks`` 模块，``message`` 为顶层应用，
-本模块随应用自动注册到 django_celery_beat，无需在 system/tasks.py 显式引入。
+本模块随应用自动注册到 django_celery_beat，无需在 system/tasks/__init__.py 显式引入。
 """
 
 from celery import shared_task

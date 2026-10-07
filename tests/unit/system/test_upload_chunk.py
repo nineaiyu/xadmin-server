@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""分片上传 / 断点续传协议守护测试（协议内核见 system/utils/file/upload_chunk.py）。
+"""分片上传 / 断点续传协议守护测试（协议内核见 file/utils/upload_chunk.py）。
 
 覆盖：init 计划校验（大小上限 / 扩展名 / 分片数）、断点续传命中、分片幂等、
 complete 合并落库与 md5 一致性、abort 清理、过期会话清理。

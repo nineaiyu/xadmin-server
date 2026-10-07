@@ -1,7 +1,7 @@
 """AI 知识库检索评测（A1「评测驱动」）：评测集 hit@5 门禁入 CI。
 
 评测口径（A1「评测驱动」立项时定稿）：
-- 语料 = 仓库文档（system/utils/ai.py 的 _iter_doc_files，docs/**.md + 根 README/CONTRIBUTING）；
+- 语料 = 仓库文档（ai/utils/ai.py 的 _iter_doc_files，docs/**.md + 根 README/CONTRIBUTING）；
 - 评测集 = tests/data/ai_retrieval_eval.json（问题 + 期望出处），命中 top-5 任一期望出处即 hit；
 - 门禁：hit@5 ≥ 75%（低于阈值按规划升级向量检索）；
 - 向量触发条件（分块数 > 500 或 hit@5 < 75%）的实测值随本测试输出，结论回填 docs/metrics.md。

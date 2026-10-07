@@ -9,7 +9,7 @@
 所有 celery 任务（定时调度 + 手动执行）的统一执行历史：
 - 主键 id 即 celery task_id，投递前预创建，天然与 celery 日志文件/结果对齐；
 - 状态流转 PENDING → RUNNING → SUCCESS/FAILURE/REVOKED，由 celery 信号自动推进
-  （system/signal_task_execution.py），业务任务代码零侵入；
+  （task/signal_task_execution.py），业务任务代码零侵入；
 - creator 经全局 pre_save 信号自动记录（common/signal_handlers.py），
   定时调度无请求上下文，creator 为空即系统调度。
 """
@@ -29,7 +29,7 @@ class CeleryTaskRecordModel(DbAuditModel):
     TaskExecution 与 ExportRecord 共用同一主键取值：记录在任务投递前预创建
     （pk = task_id），after_task_publish 信号自动补建同 pk 的 TaskExecution——
     日志文件（CELERY_LOG_DIR/<task_id>.log）与结果因此按 task_id 零成本对齐。
-    跨表按 pk 定位记录（如 system/ws.py 的日志归属判定）依赖此契约；
+    跨表按 pk 定位记录（如 task/ws.py 的日志归属判定）依赖此契约；
     新增承载 celery 任务的记录模型应继承本基类以纳入约定。
     """
 

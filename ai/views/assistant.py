@@ -4,7 +4,7 @@
 
 - 配置视图与邮件/LDAP 同构：POST create = 连接测试（真实 ping LLM）；
 - ask/status/history/tools 经菜单权限点门控（未授权 403）；问答链路不触生产数据；
-- 对话持久化：三入口消息落 AiChatMessage（system/utils/ai_chat.py 收口），
+- 对话持久化：三入口消息落 AiChatMessage（ai/utils/ai_chat.py 收口），
   流式 done/error 载荷携带持久化消息（前端以服务端载荷为准，刷新可续看）；
 - NL 查数与受限动作执行拆至同目录 mixin（nl_query.py / actions.py，仅行数门禁，
   URL 与权限点不变）。
@@ -174,7 +174,7 @@ class AiAssistantViewSet(
         输出当前用户**有权执行**的全部系统动作（白名单注册表），每条包含
         ``name / description / inputSchema``（JSON Schema）；LLM 的 function
         calling、外部 MCP 客户端或二开脚本可共用这一份目录——机制说明见
-        ``system/utils/ai_actions.py`` 的模块注释（新增能力 = 加一条声明）。
+        ``ai/utils/ai_actions.py`` 的模块注释（新增能力 = 加一条声明）。
         """
         from ai.utils.ai_actions import ai_action_enabled
         from ai.utils.ai_tool_catalog import tool_catalog

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """LDAP 同步周期任务入口。
 
-注册范式与 system/tasks.py 一致：``@shared_task`` + ``@register_as_period_task``
+注册范式与 system/tasks/__init__.py 一致：``@shared_task`` + ``@register_as_period_task``
 启动时 upsert 到 django_celery_beat；任务内先查 ``LDAP_SYNC_ENABLED``，管理页可
 随时停用；手动触发复用周期任务管理页 run 动作（自动获得 TaskExecution 历史）。
 """

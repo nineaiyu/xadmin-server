@@ -42,7 +42,7 @@ def preview_kind(upload) -> str | None:
 def preview_kind_of(mime_type, filename) -> str | None:
     """按 MIME + 文件名判定预览类型（纯函数）。
 
-    独立成纯函数的原因：上传自动分类（system/utils/file/upload_category.py）要在落库前
+    独立成纯函数的原因：上传自动分类（file/utils/upload_category.py）要在落库前
     用同一套判定把 pdf/office/文本归为「文档」，避免两处规则各自演化后漂移。
     """
     mime = (mime_type or "").lower()

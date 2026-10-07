@@ -203,7 +203,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
                 data[attr] = data[attr]()
         if data:
             # 嵌套输出同样过目标模型的脱敏规则（唯一实现在 common.core.mask）：
-            # 关联 attrs 曾整段绕过 system.userinfo 等规则——加字段即静默泄露。
+            # 关联 attrs 曾整段绕过 identity.userinfo 等规则——加字段即静默泄露。
             # 先掩码再拼 label，避免 label 模板把原文带出来
             data = self._mask_related(data, value)
             if self.label_format:

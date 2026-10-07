@@ -78,7 +78,7 @@ class RenderBackendMixin:
     def _render_dict_declarations(ctx, dict_fields):
         """字典绑定字段的显式声明：DictChoiceField(dict_code=...)，整型值带 value_cast=int。
 
-        显式声明放在 class 体首、Meta 之前（与 system/serializers/user.py 的 gender 同范式）；
+        显式声明放在 class 体首、Meta 之前（与 identity/serializers/user.py 的 gender 同范式）；
         空绑定返回空列表（产物与未启用字典时逐字节一致，保证幂等）。
         """
         if not dict_fields:

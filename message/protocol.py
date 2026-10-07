@@ -40,7 +40,7 @@ class MessageAction(StrEnum):
     CHAT_REACTION = "chat_reaction"  # 消息表情回应（双向，ws/chat/）
     CHAT_READ = "chat_read"  # 已读回执（上行 chat_read → 下行游标）
     CHAT_UNREAD = "chat_unread"  # 未读红点推送（下行，ws/chat/）
-    TASK_LOG = "task_log"  # 任务执行日志增量推送（system/ws.py）
+    TASK_LOG = "task_log"  # 任务执行日志增量推送（task/ws.py）
     MONITOR = "monitor"  # 监控面板指标推送（system/ws_monitor.py）
     SCREEN_COMMAND = "screen_command"  # 大屏远程控制指令（dataset/ws_screen.py，下行单向）
     SCREEN_DATA = "screen_data"  # 大屏服务端聚合数据推送（dataset/ws_screen.py，下行单向）
@@ -199,7 +199,7 @@ class PushMessagePayload(TypedDict, total=False):
 
 
 class TaskLogPayload(TypedDict):
-    """任务执行日志增量帧（system/ws.py 每轮推送一次）。"""
+    """任务执行日志增量帧（task/ws.py 每轮推送一次）。"""
 
     offset: int
     content: str

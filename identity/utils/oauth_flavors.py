@@ -2,7 +2,7 @@
 """企业 IM 扫码登录 flavor 适配器：钉钉 / 企业微信 / 飞书。
 
 三家协议都不是标准 OAuth2（授权参数名、换码方式、用户信息端点与响应结构、
-错误语义各有差异），差异全部收口在本模块；对外仍满足 `system/utils/identity/oauth.py`
+错误语义各有差异），差异全部收口在本模块；对外仍满足 `identity/utils/oauth.py`
 的协议契约：
 
 - ``exchange_flavor_code(provider, code, redirect_uri, http_client)`` →

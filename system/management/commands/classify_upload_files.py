@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """存量上传文件分类回填。
 
-上传自动分类（`system/utils/file/upload_category.py`）只对新上传生效——历史上传
+上传自动分类（`file/utils/upload_category.py`）只对新上传生效——历史上传
 记录的 category 仍为空，因此「存储面板分类分布」对存量数据不准确。本命令按
 同一套推断规则批量整理（含回收站记录，恢复后分类仍在）。
 

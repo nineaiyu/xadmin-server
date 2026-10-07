@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """WebSocket consumer 单测（任务日志推送 + 监控面板推送）。
 
-覆盖目标：把 `system/ws.py`(66%) 与 `system/ws_monitor.py`(49%) 的权限判定与
+覆盖目标：把 `task/ws.py` 与 `system/ws_monitor.py`(49%) 的权限判定与
 推送分支纳入回归——两处都是**敏感数据出口**（任务日志含导出参数、监控面板含服务凭据），
 权限判定出错即信息泄漏，必须有测试锁住。
 

@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """审批规则（多级审批链配置）：CRUD。
 
-规则的消费端在 system/utils/approval/chains.py::resolve_rule —— 命中路径的请求
+规则的消费端在 approval/utils/approval/chains.py::resolve_rule —— 命中路径的请求
 在建单时展开为多级审批链（逐级通知与推进）；未命中时回退全局审批人逻辑。
 规则改动只影响之后新建的审批单（在途单按建单快照推进）。
 """

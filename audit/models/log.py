@@ -66,7 +66,7 @@ class OperationLog(DbAuditModel):
         SCIM = "scim", _("SCIM directory sync")
         # LDAP 目录同步：同步冲突/摘要由 system/ldap/sync 落库
         LDAP = "ldap", _("LDAP directory sync")
-        # AI NL 查数：interpret/run 语义审计由 system/utils/nl_query 落库
+        # AI NL 查数：interpret/run 语义审计由 ai/utils/nl_query 落库
         AI = "ai", _("AI assistant")
 
     module = models.CharField(max_length=64, verbose_name=_("Module"), null=True, blank=True)

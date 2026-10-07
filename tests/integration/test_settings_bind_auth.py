@@ -4,7 +4,7 @@
 历史缺陷（2026-10 P0）：SecurityBindPhoneAuthSerializer 字段误用
 SECURITY_BIND_EMAIL_* 前缀，"绑定手机"页签实际读写邮箱配置（Setting 按
 name 唯一 upsert），且运行时真正消费的 SECURITY_BIND_PHONE_*
-（system/views/auth/verify_code.py）在 UI 上不可配。
+（identity/views/auth/verify_code.py）在 UI 上不可配。
 """
 
 import pytest

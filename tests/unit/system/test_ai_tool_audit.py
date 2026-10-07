@@ -3,7 +3,7 @@
 
 - 巡检命令三态：已声明 / triage 豁免（含理由）/ 缺口（待注册或未登记新资源域）；
 - **缺口清零守护**（入 CI）：全量路由无未注册候选 —— 新资源域出现即红，强制做一次
-  「注册动作 or 登记不 AI 化」的决策（`system/utils/ai_tool_triage.py`）；
+  「注册动作 or 登记不 AI 化」的决策（`ai/utils/ai_tool_triage.py`）；
 - --fail-on-gap：缺口非空时退出码 1；
 - 豁免清单：AI 自身端点（api/ai/*）不计入候选；
 - OpenAPI：声明式动作按 (method, path) 命中即注入 x-ai-*，视图 ai_meta 可覆盖。

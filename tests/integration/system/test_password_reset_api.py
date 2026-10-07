@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""免登密码重置接口（system/views/auth/reset.py）的分支覆盖。
+"""免登密码重置接口（identity/views/auth/reset.py）的分支覆盖。
 
 该视图是匿名可达的安全链路（permission_classes=[]），post() 内的每个拒绝
 分支都是防线：缺密码 / LDAP 绑定用户 / 弱口令 / 泄露口令 / 历史口令复用，

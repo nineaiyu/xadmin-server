@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""分片上传 / 断点续传协议内核（system/views/admin/file.py 的 chunk-* action 复用）。
+"""分片上传 / 断点续传协议内核（file/views/admin/file.py 的 chunk-* action 复用）。
 
 协议（全部挂在 ``/api/system/file/chunk/*``，权限口径与文件中心父级一致）：
 

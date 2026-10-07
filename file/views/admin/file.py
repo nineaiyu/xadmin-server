@@ -54,9 +54,9 @@ logger = get_logger(__name__)
 
 
 # 上传落库内核（扩展名/大小/配额校验、md5 去重、分类、存储）见
-# system/utils/file/upload_store.py：聊天室附件等业务上传入口复用同一套安全策略，
+# file/utils/upload_store.py：聊天室附件等业务上传入口复用同一套安全策略，
 # 避免两处规则各自演化；本模块的 upload / stats 响应口径不变。
-# 统计聚合与预览状态机见 system/services/file.py：本模块只保留鉴权、审计与响应构造。
+# 统计聚合与预览状态机见 file/services/file_impl.py：本模块只保留鉴权、审计与响应构造。
 
 
 class UploadFileFilter(TagFilterMixin, BaseFilterSet):
@@ -229,7 +229,7 @@ class UploadFileViewSet(
         """上传文件"""
 
         files = request.FILES.getlist("file", [])
-        # 先全量校验再统一落库（内核见 system/utils/file/upload_store.py）：任一文件不合规
+        # 先全量校验再统一落库（内核见 file/utils/upload_store.py）：任一文件不合规
         # 直接返回错误（1002/1003/1004 且不落盘），避免多文件上传时「前面的已落库、
         # 后面的被拒」造成部分写入
         try:

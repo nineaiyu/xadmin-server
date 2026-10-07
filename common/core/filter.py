@@ -26,7 +26,8 @@ from common.utils import get_logger
 
 logger = get_logger(__name__)
 
-# 授权池缓存：版本号在数据权限 / 部门 / 授权关系变更时自增（system/signal_handler.py），
+# 授权池缓存：版本号在数据权限 / 部门 / 授权关系变更时自增（system/signal_handler.py 与
+# identity/signal_handler.py），
 # 让既有缓存条目立即不可达；TTL 仅兜底。缓存后端异常时静默回落直查，不影响权限结果。
 GRANTS_CACHE_VERSION_KEY = "data_permission_grants_version"
 GRANTS_CACHE_TTL = 300

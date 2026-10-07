@@ -67,7 +67,7 @@ def _normalize_scope_path(path) -> str:
 def normalize_scope_entry(pattern) -> str:
     """scope 条目规范化：统一为**锚定**形态（保存时收口 + 运行期兜底同源）。
 
-    形态约定与 ``system/utils/identity/pat_scope.py::scope_entry`` 的输出一致，可安全重复规范化；
+    形态约定与 ``identity/utils/pat_scope.py::scope_entry`` 的输出一致，可安全重复规范化；
     ``METHOD /path`` 条目的方法前缀原样保留（仅路径部分锚定）。空条目 / 规范化后为空
     返回空串（调用方跳过）；正则非法抛 ``ValueError``，写入侧转成校验错误。
     """

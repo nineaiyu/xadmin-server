@@ -131,7 +131,7 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
 
 
 class UploadSession(DbAuditModel):
-    """分片上传会话：大文件分片/断点续传协议的会话侧记录（协议见 system/utils/file/upload_chunk.py）。
+    """分片上传会话：大文件分片/断点续传协议的会话侧记录（协议见 file/utils/upload_chunk.py）。
 
     会话只承载「传输中」状态，不承载文件本体：分片写入存储的
     ``upload_sessions/<pk>/part-<index>``，完成时合并并经既有上传内核

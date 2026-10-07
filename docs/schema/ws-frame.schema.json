@@ -86,7 +86,7 @@
     },
     "taskLogPayload": {
       "type": "object",
-      "description": "task_log 增量帧载荷（system/ws.py push_once，前端 TaskLogDialog 增量渲染契约）",
+      "description": "task_log 增量帧载荷（task/ws.py push_once，前端 TaskLogDialog 增量渲染契约）",
       "required": [
         "offset",
         "content",

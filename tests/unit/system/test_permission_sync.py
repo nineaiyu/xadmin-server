@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""system/utils/identity/permission_sync.py：菜单权限点同步内核（纯逻辑 + 轻量 DB）。"""
+"""system/utils/platform/permission_sync/：菜单权限点同步内核（纯逻辑 + 轻量 DB）。"""
 
 import json
 from types import SimpleNamespace

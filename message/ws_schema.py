@@ -80,7 +80,7 @@ _OUTBOUND_FRAME: dict[str, Any] = {
 PAYLOAD_DECLARATIONS: dict[str, dict[str, Any]] = {
     "taskLogPayload": {
         "typed_dict": "TaskLogPayload",
-        "description": "task_log 增量帧载荷（system/ws.py push_once，前端 TaskLogDialog 增量渲染契约）",
+        "description": "task_log 增量帧载荷（task/ws.py push_once，前端 TaskLogDialog 增量渲染契约）",
         "required": ["offset", "content", "finished"],
         "open": False,
         "fields": {
