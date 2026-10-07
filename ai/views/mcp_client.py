@@ -21,7 +21,14 @@ from rest_framework.viewsets import GenericViewSet
 
 from ai.models.mcp import McpServer
 from ai.serializers.mcp import McpServerSerializer
-from ai.utils.mcp_client import MAX_ARGUMENTS_BYTES, McpClientError, audit_mcp_call, client_for, summarize_tool_result
+from ai.utils.mcp_client import (
+    MAX_ARGUMENTS_BYTES,
+    McpClientError,
+    audit_mcp_call,
+    client_for,
+    summarize_tool_result,
+    tools_with_callable,
+)
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseViewSet,
@@ -93,7 +100,8 @@ class McpServerViewSet(
         server.last_synced_time = timezone.now()
         server.last_sync_error = ""
         server.save(update_fields=["tools_snapshot", "last_synced_time", "last_sync_error", "updated_time"])
-        return ApiResponse(data={"tools": tools, "count": len(tools)})
+        # 回传与快照同一份工具清单，逐条附 callable 标记（与 call 端点准入规则同口径）
+        return ApiResponse(data={"tools": tools_with_callable(server, tools), "count": len(tools)})
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="call")

@@ -32,6 +32,9 @@ from system.utils.platform.rule_meta import MATCH_TEXTS, RULE_TYPE_GROUP_TEXTS, 
 
 logger = get_logger(__name__)
 
+# lookups 的 table 通配符：配置页用 * 代指用户模型（identity.userinfo），免传具体表名
+LOOKUPS_USER_TABLE_WILDCARD = "*"
+
 
 class ModelLabelFieldFilter(BaseFilterSet):
     pk = filters.UUIDFilter(field_name="id")
@@ -109,7 +112,7 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
         table = request.query_params.get("table")
         field = request.query_params.get("field")
         if table and field:
-            if table == "*":
+            if table == LOOKUPS_USER_TABLE_WILDCARD:
                 table = "identity.userinfo"
             obj = (
                 self.filter_queryset(self.get_queryset())

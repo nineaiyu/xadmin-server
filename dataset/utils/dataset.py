@@ -18,6 +18,7 @@ from django.utils.translation import gettext_lazy as _
 from common.utils import get_logger
 from dataset.utils.columns import (
     annotations_for,
+    json_fields_of_bound_model,
     parse_column,
     resolve_columns,
 )
@@ -30,6 +31,28 @@ ALLOWED_DATE_TRUNC = ("day", "month")
 AGGREGATE_BUCKET_LIMIT = 365
 ROW_LIMIT_CAP = 5000
 NUMERIC_FIELD_CLASSES = ("IntegerField", "BigIntegerField", "SmallIntegerField", "FloatField", "DecimalField")
+
+# 设计器元数据短缓存（meta 端点）：载荷只读 ModelLabelField 与模型内省，与请求用户
+# 无关；一次下发全部白名单模型的字段面回表成本高。白名单仅随管理端字段同步/编辑
+# 变化（低频），滞后至多一个 TTL；需立即生效可 cache.delete(DATASET_META_CACHE_KEY)
+# 或迭代键内版本号（v1 → v2）换 key。
+DATASET_META_CACHE_KEY = "dataset:designer_meta:v1"
+DATASET_META_CACHE_TTL = 60
+
+
+def designer_meta_payload() -> dict:
+    """设计器元数据载荷：模型白名单 / 逐模型字段清单 / JSON 路径根字段（短 TTL 缓存）。"""
+    from django.core.cache import cache
+
+    def _load() -> dict:
+        models = available_models()
+        return {
+            "models": models,
+            "fields": {name: available_fields(name) for name in models},
+            "json_fields": {name: json_fields_of_bound_model(name) for name in models},
+        }
+
+    return cache.get_or_set(DATASET_META_CACHE_KEY, _load, DATASET_META_CACHE_TTL)
 
 
 def _request_memo(key, loader):

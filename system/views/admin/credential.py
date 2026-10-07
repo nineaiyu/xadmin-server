@@ -15,17 +15,21 @@ from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models import SystemConfig
 from system.utils.platform.credential import (
-    NOT_ROTATABLE_DETAIL,
     credential_overview,
     regenerate_system_config,
     rotate_model_field,
 )
+
+# rotate 的合法 scope 枚举：Setting 体系凭据均为外部签发、不提供原地轮换，
+# 不在轮换入参面内（总览只给更换入口）
+ROTATE_SCOPES = ("model_field", "system_config")
 
 
 class CredentialViewSet(GenericViewSet):
@@ -58,13 +62,14 @@ class CredentialViewSet(GenericViewSet):
         scope = str(request.data.get("scope") or "system_config")
         if not key:
             return ApiResponse(code=1001, detail=_("A credential key is required"))
+        # scope 显式收口为合法枚举：未知值直接 400，不落入「Setting 不可轮换」
+        # 的业务分支伪装语义（Setting 凭据根本没有轮换入口）
+        if scope not in ROTATE_SCOPES:
+            raise ValidationError(_("Rotation scope must be 'model_field' or 'system_config'"))
         if scope == "model_field":
             result = rotate_model_field(key, user=request.user)
-        elif scope == "system_config":
-            result = regenerate_system_config(key, user=request.user)
         else:
-            # Setting 体系凭据均为外部签发：不提供原地轮换，去对应设置页替换
-            return ApiResponse(code=1001, detail=NOT_ROTATABLE_DETAIL)
+            result = regenerate_system_config(key, user=request.user)
         if not result.get("ok"):
             return ApiResponse(code=1001, detail=result.get("detail") or _("Credential rotation failed"))
         if result.get("action") == "skip":

@@ -149,6 +149,9 @@ class ListRoleSerializer(RoleSerializer):
         ]
         read_only_fields = [x.name for x in UserRole._meta.fields]
 
+    # 列表行的 field 刻意只是空列表占位（不逐行回显字段权限字典：整页逐行查
+    # FieldPermission 的查询与体积成本都不可接受），编辑回显以 retrieve 的
+    # get_field 逐对象输出为准
     field = serializers.ListField(default=[], read_only=True)
     menu = serializers.SerializerMethodField(read_only=True)
 

@@ -78,6 +78,8 @@ def submit_book(book, user):
     if error:
         return False, error
 
+    # 驳回后重提直接把业务单指向最新实例：旧终态实例仅作历史轨迹保留（审批记录
+    # 可查），业务单生效口径始终以最新实例为准——不迁移也不归档旧实例
     book.instance = instance
     book.status = Book.Status.PENDING
     book.modifier = user

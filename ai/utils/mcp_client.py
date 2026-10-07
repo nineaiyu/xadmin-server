@@ -412,6 +412,26 @@ def summarize_tool_result(result: dict, limit: int = RESULT_TEXT_LIMIT) -> dict:
     return {"is_error": bool(result.get("isError")), "text": text}
 
 
+def tools_with_callable(server, tools) -> list:
+    """工具快照逐条补 callable 标记（列表序列化时计算，不落库）。
+
+    准入规则与 call 端点同口径：服务器启用 + 工具在白名单内
+    （``allowed_tools`` 为空 = 全部禁止，fail-closed）。规则变更后
+    标记随下一次列表读取即时生效；快照原条目原样保留，仅追加布尔键。
+    """
+    allowed = set(server.tool_names)
+    enabled = bool(server.enabled)
+    rows = []
+    for tool in tools or []:
+        if isinstance(tool, dict):
+            row = dict(tool)
+            row["callable"] = enabled and str(row.get("name") or "") in allowed
+            rows.append(row)
+        else:
+            rows.append(tool)
+    return rows
+
+
 def audit_mcp_call(
     user, server, tool: str, ok: bool, detail: str = "", arguments: dict | None = None, extra: dict | None = None
 ) -> None:

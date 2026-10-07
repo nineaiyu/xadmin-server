@@ -165,6 +165,54 @@ class TestReadMessage:
         assert resp.status_code == 200
         assert MessageUserRead.objects.count() == 0
 
+    def test_queryset_path_matches_explicit_pks_semantics(self, normal_user):
+        """queryset 形态（all-read 口径）：pk 过滤与「尚无已读行」差集下推 DB，端态等价。
+
+        覆盖三类行：已读行不重复建、未读行原地置已读、无行消息（公告）补建。
+        """
+        read_1 = _make_message(normal_user, MessageContent.NoticeChoices.USER, "qs-read-1")
+        read_2 = _make_message(normal_user, MessageContent.NoticeChoices.USER, "qs-read-2")
+        unread = _make_message(normal_user, MessageContent.NoticeChoices.USER, "qs-unread", unread=True)
+        # 公告不经 notice_user 建行：走「尚无已读行 → 补建」差集路径
+        announce = MessageContent.objects.create(
+            title="qs-announce", message="m", notice_type=MessageContent.NoticeChoices.NOTICE
+        )
+        view = UserSiteMessageViewSet()
+
+        class FakeRequest:
+            user = normal_user
+
+        scope = (
+            MessageContent.objects.filter(pk__in=[read_1.pk, read_2.pk, unread.pk, announce.pk])
+            .values_list("pk", flat=True)
+            .distinct()
+        )
+        with CaptureQueriesContext(connection) as ctx:
+            resp = view.read_message(scope, FakeRequest())
+        assert resp.status_code == 200
+        assert len(_business_queries(ctx)) <= 3
+
+        # 端态与显式 pks 路径一致：每条消息恰一行已读，无重复行
+        assert MessageUserRead.objects.filter(owner=normal_user).count() == 4
+        for msg in (read_1, read_2, unread, announce):
+            assert MessageUserRead.objects.get(owner=normal_user, notice=msg).unread is False
+
+        # 幂等：queryset 形态重复执行不产生新行
+        view.read_message(scope, FakeRequest())
+        assert MessageUserRead.objects.filter(owner=normal_user).count() == 4
+
+    def test_all_read_endpoint_creates_announcement_rows(self, auth_client, superuser):
+        """all-read 端点走 queryset 路径：公告类（无已读行）也被补建为已读。"""
+        notice = MessageContent.objects.create(
+            title="ar-notice", message="m", notice_type=MessageContent.NoticeChoices.NOTICE
+        )
+        user_msg = _make_message(superuser, MessageContent.NoticeChoices.USER, "ar-user", unread=True)
+
+        resp = auth_client.patch(f"{SITE_MSG_URL}/all-read")
+        assert resp.status_code == 200
+        assert MessageUserRead.objects.get(owner=superuser, notice=notice).unread is False
+        assert MessageUserRead.objects.get(owner=superuser, notice=user_msg).unread is False
+
 
 NOTICE_MSG_URL = "/api/notifications/notice-messages"
 

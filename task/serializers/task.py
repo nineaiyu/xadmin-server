@@ -56,9 +56,8 @@ def crontab_display(value: CrontabSchedule) -> str:
 
 class CrontabScheduleSerializer(BaseModelSerializer):
     # CrontabSchedule.timezone 为 TimeZoneField，取值是 ZoneInfo 对象，无法直接 JSON 序列化，按字符串读写
-    timezone = serializers.CharField(
-        required=False, allow_null=True, default=settings.CELERY_TIMEZONE, label=_("Timezone")
-    )
+    # 显式传 null 直接 400（调度时区必填）；字段缺省时仍按 CELERY_TIMEZONE 落默认值
+    timezone = serializers.CharField(required=False, default=settings.CELERY_TIMEZONE, label=_("Timezone"))
 
     class Meta:
         model = CrontabSchedule

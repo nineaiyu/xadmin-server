@@ -31,6 +31,7 @@ from approval.utils.approval import (
     reject_request,
 )
 from approval.utils.approval_mfa import ensure_approval_action_confirmed
+from approval.views.approval_instance_batch import missing_pk_failures
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseViewSet, DetailAction, ListAction, SearchColumnsAction, SearchFieldsAction
 from common.core.response import ApiResponse
@@ -121,13 +122,8 @@ class ApprovalRequestViewSet(
         return approval
 
     def _missing_pk_failures(self, pks, handled_pks) -> list:
-        """取值域外/已失效 pk 的失败明细（不可见单不泄露存在性，原因统一口径）。
-
-        批量入口只对取值域内可见的单逐条处理；勾选中其余 pk 若静默跳过，
-        前端「勾选 N 条」与结果数就对不上——统一计入 failed 明细返回。
-        """
-        detail = str(_("No visible application for the given id"))
-        return [{"no": str(pk)[:8].upper(), "reason": detail} for pk in pks if str(pk) not in handled_pks]
+        """取值域外/已失效 pk 的失败明细（共享实现见 approval_instance_batch）。"""
+        return missing_pk_failures(pks, handled_pks)
 
     @extend_schema(
         request=OpenApiRequest(

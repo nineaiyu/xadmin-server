@@ -67,6 +67,9 @@ class PasskeyViewSet(BaseViewSet, ListAction, SearchColumnsAction, DestroyAction
             data={
                 "challenge": generate_challenge(user, scene),
                 "rp_id": rp_id,
+                # WebAuthn 依赖方展示名：后端暂无站点可读名的配置源，先与 RP ID 同值
+                # 下发（消费方对缺失键已有回落，字段存在时以服务端为准）
+                "rp_name": rp_id,
                 "user_id": b64url_encode(str(user.pk).encode()),
                 "username": user.username,
                 "display_name": user.nickname or user.username,

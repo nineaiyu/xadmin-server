@@ -37,6 +37,8 @@ logger = get_logger(__name__)
 
 # 日用量汇总缓存时长（配额判定读缓存，避免每次调用都聚合账本）
 USAGE_CACHE_TTL = 60
+# 用量/观测端点查询窗口的天数上限（usage 与 metrics 共用同一口径）
+USAGE_MAX_DAYS = 365
 
 
 def extract_tokens(usage) -> dict:
@@ -276,7 +278,7 @@ def usage_summary(days: int = 7, feature: str = "") -> dict:
     """用量汇总（端点用）：按天 / 按链路 / Top 用户 + 合计。"""
     from ai.models.ai import AiUsageRecord
 
-    days = max(1, min(int(days or 7), 365))
+    days = max(1, min(int(days or 7), USAGE_MAX_DAYS))
     since = timezone.now() - datetime.timedelta(days=days)
     rows = AiUsageRecord.objects.filter(created_time__gte=since)
     if feature:

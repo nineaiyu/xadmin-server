@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""AI 观测看板（B1）集成测试：用量 / 成功率 / 日趋势 / 类型分布 / Top 用户聚合。
+"""AI 观测看板集成测试：用量 / 成功率 / 类型分布 / Top 用户聚合。
 
 数据源 = OperationLog(auth_type=ai)；权限点与 status 共用 `(status|metrics)$` 路径正则。
 断言全部采用「基线差值」形态：前序用例可能以非回滚事务/后台线程写入 AI 审计，
@@ -89,14 +89,14 @@ class TestAiMetrics:
         assert top.get("ai_metric_admin", 0) >= 2
         assert top.get("ai_other", 0) >= 1
 
-        dates = {row["date"] for row in data["by_day"]}
-        assert len(dates) >= 2  # 本次 seed 覆盖今天与昨天
+        # 响应不再携带日趋势（前端从未渲染，聚合成本省下）；键面收敛为固定集合
+        assert "by_day" not in data
 
         wide, _wide_modules = self._query(metrics_client, days=70)
         assert wide["total"] == data["total"] + 1  # 40 天前的记录只计入宽窗口
 
     def test_days_param_clamped(self, metrics_client):
-        assert metrics_client.get(METRICS_URL, {"days": "999"}).json()["data"]["days"] == 90
+        assert metrics_client.get(METRICS_URL, {"days": "999"}).json()["data"]["days"] == 365
         assert metrics_client.get(METRICS_URL, {"days": "0"}).json()["data"]["days"] == 1
         assert metrics_client.get(METRICS_URL, {"days": "abc"}).json()["data"]["days"] == 30
 

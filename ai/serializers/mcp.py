@@ -14,7 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from ai.models.mcp import McpServer
-from ai.utils.mcp_client import validate_server_url
+from ai.utils.mcp_client import tools_with_callable, validate_server_url
 from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
 from common.core.validation import trim_required
@@ -41,6 +41,9 @@ class McpServerSerializer(BaseModelSerializer):
         required=False, allow_blank=True, write_only=True, max_length=512, label=_("Auth token")
     )
     auth_token_set = serializers.SerializerMethodField(label=_("Auth token set"))
+    # 工具快照在序列化时逐条补 callable 标记（与 call 端点准入规则同口径），
+    # 后端规则变更后列表标记即时生效；原始快照不入此逻辑（read_only 展示面）
+    tools_snapshot = serializers.SerializerMethodField(label=_("Tools snapshot"))
 
     class Meta:
         model = McpServer
@@ -77,6 +80,9 @@ class McpServerSerializer(BaseModelSerializer):
     def get_auth_token_set(self, obj) -> bool:
         return bool(obj.auth_token)
 
+    def get_tools_snapshot(self, obj) -> list:
+        return tools_with_callable(obj, obj.tools_snapshot or [])
+
     def validate_name(self, value):
         return trim_required(value, _("Server name is required"))
 
@@ -89,9 +95,13 @@ class McpServerSerializer(BaseModelSerializer):
     def validate_timeout(self, value):
         if value is None:
             return 30
-        if not 5 <= int(value) <= 120:
+        try:
+            timeout = int(value)
+        except (TypeError, ValueError):
+            raise serializers.ValidationError(_("Timeout must be an integer between 5 and 120 seconds")) from None
+        if not 5 <= timeout <= 120:
             raise serializers.ValidationError(_("Timeout must be between 5 and 120 seconds"))
-        return int(value)
+        return timeout
 
     def validate_auth_header(self, value):
         header = (value or "").strip()

@@ -3,7 +3,7 @@
 """AI 观测端点（自 assistant.py 拆分，URL 路径 / 权限点 / 行为不变）。
 
 含 usage（用量账本汇总：按天 / 按链路 / Top 用户 + 配额与并发占用）与
-metrics（AI 调用观测：近 N 天用量 / 成功率 / 日趋势 / 类型分布 / Top 用户）。
+metrics（AI 调用观测：近 N 天用量 / 成功率 / 类型分布 / Top 用户）。
 两个 action 与 status 共用同一权限点路径正则，不新增权限点。
 """
 
@@ -40,7 +40,7 @@ class AiObservabilityMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="metrics")
     def metrics(self, request, *args, **kwargs):
-        """AI 调用观测：近 N 天用量 / 成功率 / 日趋势 / 类型分布 / Top 用户。
+        """AI 调用观测：近 N 天用量 / 成功率 / 类型分布 / Top 用户。
 
         数据源 = OperationLog(auth_type=ai)：AI:ask（文档问答）/ AI:nl_query（NL 查数）/
         AI:action（受限动作）；权限点与 status 共用同一路径正则（`(status|metrics)$`，
@@ -49,9 +49,9 @@ class AiObservabilityMixin:
         from datetime import timedelta
 
         from django.db.models import Count
-        from django.db.models.functions import TruncDate
         from django.utils import timezone
 
+        from ai.utils.ai_usage import USAGE_MAX_DAYS
         from audit.services import OperationLog
         from identity.models import UserInfo
 
@@ -59,7 +59,8 @@ class AiObservabilityMixin:
             days = int(request.query_params.get("days") or 30)
         except (TypeError, ValueError):
             days = 30
-        days = max(1, min(days, 90))
+        # 窗口上限与用量账本端点（usage_summary）同口径
+        days = max(1, min(days, USAGE_MAX_DAYS))
         since = (timezone.now() - timedelta(days=days - 1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
         base = OperationLog.objects.filter(
@@ -81,13 +82,6 @@ class AiObservabilityMixin:
                 "count": row["count"],
             }
             for row in base.values("module").annotate(count=Count("id")).order_by("-count")
-        ]
-        by_day = [
-            {"date": row["day"].isoformat(), "module": row["module"] or "", "count": row["count"]}
-            for row in base.annotate(day=TruncDate("created_time"))
-            .values("day", "module")
-            .annotate(count=Count("id"))
-            .order_by("day")
         ]
         top_rows = (
             base.exclude(object_pk__isnull=True)
@@ -112,7 +106,6 @@ class AiObservabilityMixin:
                 "success": total - failed,
                 "failed": failed,
                 "by_module": by_module,
-                "by_day": by_day,
                 "top_users": [
                     {"username": name_map.get(row["object_pk"], row["object_pk"][:12]), "count": row["count"]}
                     for row in top_rows

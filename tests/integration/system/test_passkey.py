@@ -235,6 +235,12 @@ class TestPasskeyApi:
         assert resp.data["code"] == 1000, resp.data
         assert UserPasskey.objects.count() == 0
 
+    def test_challenge_returns_rp_name(self, auth_client):
+        """挑战响应携带 rp_name：后端暂无站点可读名配置源，回落与 rp_id 同值下发。"""
+        resp = auth_client.post(CHALLENGE_URL, {"scene": "register"}, format="json", HTTP_ORIGIN=ORIGIN)
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["rp_name"] == RP_ID
+
     def test_register_rejects_duplicate_credential(self, auth_client, superuser):
         private_key = ec.generate_private_key(ec.SECP256R1())
         _bind_passkey(superuser, private_key, credential_id=b"dup-cred")

@@ -84,8 +84,14 @@ class TestCredentialRotate:
         assert body["code"] == 1001
 
     def test_rotate_rejects_setting_scope(self, auth_client):
-        body = auth_client.post(f"{URL}/rotate", {"key": "AI_API_KEY", "scope": "setting"}, format="json").json()
-        assert body["code"] == 1001
+        """scope 枚举收口：Setting 凭据不在轮换入参面（只能去设置页更换），非法值 400。"""
+        resp = auth_client.post(f"{URL}/rotate", {"key": "AI_API_KEY", "scope": "setting"}, format="json")
+        assert resp.status_code == 400
+
+    def test_rotate_rejects_unknown_scope(self, auth_client):
+        """未知 scope 直接 400，不落入「不可轮换」的业务分支伪装语义。"""
+        resp = auth_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN", "scope": "nope"}, format="json")
+        assert resp.status_code == 400
 
     def test_rotate_missing_key(self, auth_client):
         assert auth_client.post(f"{URL}/rotate", {}, format="json").json()["code"] == 1001

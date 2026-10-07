@@ -381,10 +381,8 @@ msgid "Expose to AI actions"
 msgstr ""
 
 #: ai/models/mcp.py:40
-#, fuzzy
-#| msgid "Version snapshots"
 msgid "Tools snapshot"
-msgstr "Version snapshots"
+msgstr "Tools snapshot"
 
 #: ai/models/mcp.py:41
 #, fuzzy
@@ -482,6 +480,10 @@ msgstr "Profile name is required"
 #: ai/serializers/mcp.py:93
 msgid "Timeout must be between 5 and 120 seconds"
 msgstr ""
+
+#: ai/serializers/mcp.py:101
+msgid "Timeout must be an integer between 5 and 120 seconds"
+msgstr "Timeout must be an integer between 5 and 120 seconds"
 
 #: ai/serializers/mcp.py:99
 msgid "Auth header must be a valid HTTP header name"
@@ -10775,6 +10777,10 @@ msgstr ""
 #: system/views/admin/credential.py:60
 msgid "A credential key is required"
 msgstr "A credential key is required"
+
+#: system/views/admin/credential.py:68
+msgid "Rotation scope must be 'model_field' or 'system_config'"
+msgstr "Rotation scope must be 'model_field' or 'system_config'"
 
 #: system/views/admin/credential.py:69
 msgid "Credential rotation failed"

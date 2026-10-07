@@ -150,6 +150,22 @@ class TestAskStreamPersist:
         auth_client.post(f"{ASSISTANT_URL}/ask/stream", {"question": "x"}, format="json")
         assert AiChatMessage.objects.count() == 0
 
+    def test_quota_rejection_persists_user_and_system(self, ai_enabled, knowledge, superuser, auth_client, monkeypatch):
+        """配额拒绝与非流式 ask 同口径：落 user + system 消息（刷新后历史可续看）。"""
+        from common.core.config import SysConfig
+
+        monkeypatch.setattr(type(SysConfig), "AI_QUOTA_USER_DAILY_CALLS", property(lambda self: 1), raising=False)
+        from ai.utils.ai_usage import invalidate_usage_cache, record_usage
+
+        record_usage(superuser, "docs")
+        invalidate_usage_cache(superuser)
+        response = auth_client.post(f"{ASSISTANT_URL}/ask/stream", {"question": "数据集如何过滤"}, format="json")
+        assert response.status_code == 200
+        assert response.json()["code"] == 1001
+        roles = list(AiChatMessage.objects.filter(feature="docs").order_by("id").values_list("role", flat=True))
+        assert roles == ["user", "system"]
+        assert AiChatMessage.objects.filter(role="system", extra__error=True).exists()
+
     def test_only_reasoning_error_persists_thinking(self, ai_enabled, knowledge, auth_client, monkeypatch):
         """只有思考没有回答：保留思考（assistant + partial 标记），前端可回看。"""
         from django.utils.translation import gettext as _t

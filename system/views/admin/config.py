@@ -10,6 +10,7 @@ from drf_spectacular.utils import extend_schema
 
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ImportExportDataAction
+from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import SystemConfig, UserPersonalConfig
@@ -44,8 +45,11 @@ class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDa
     @extend_schema(request=None, responses=get_default_response_schema())
     def destroy(self, request, *args, **kwargs):
         """删除{cls}并清理缓存"""
-        self.invalid(request, *args, **kwargs)
-        return super().destroy(request, *args, **kwargs)
+        # 一次取实例复用：先清缓存再删除（父类 destroy 会再次 get_object，这里等价展开）
+        instance = self.get_object()
+        self._invalidate_config_cache(instance)
+        self.perform_destroy(instance)
+        return ApiResponse()
 
 
 class UserPersonalConfigFilter(SystemConfigFilter):

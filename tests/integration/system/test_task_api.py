@@ -183,6 +183,17 @@ class TestCrontabCrud:
         assert resp.status_code == 200
         assert not CrontabSchedule.objects.filter(pk=pk).exists()
 
+    def test_timezone_null_rejected_default_kept(self, auth_client, settings):
+        """显式传 null 的时区按 400 拒绝；字段缺省时仍落 CELERY_TIMEZONE 默认值。"""
+        base = {"minute": "*/10", "hour": "*", "day_of_week": "*", "day_of_month": "*", "month_of_year": "*"}
+        resp = auth_client.post(CRONTAB_URL, {**base, "timezone": None}, format="json")
+        assert resp.status_code == 400
+
+        resp = auth_client.post(CRONTAB_URL, base, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        # 模型侧 timezone 是 ZoneInfo，与 settings 的字符串按 key 比较
+        assert str(CrontabSchedule.objects.get(pk=resp.data["data"]["pk"]).timezone) == settings.CELERY_TIMEZONE
+
 
 class TestIntervalCrud:
     def test_create_list_patch_delete(self, auth_client):

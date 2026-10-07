@@ -141,7 +141,9 @@ class ChunkUploadActionMixin:
         file_obj = request.FILES.get("file")
         if session_pk is None or index is None or file_obj is None:
             return ApiResponse(code=SESSION_MISSING_CODE, detail=_("Missing session / index / file"))
-        session = UploadSession.objects.filter(pk=session_pk).first()
+        # 会话查询带 creator 收敛取值域：非本人会话走同一条「会话不存在」路径
+        # （store_part 对他人会话也是同样的拒绝口径），少一次注定被拒的行读取
+        session = UploadSession.objects.filter(pk=session_pk, creator=request.user).first()
         if not session:
             return ApiResponse(code=SESSION_MISSING_CODE, detail=_("Invalid upload session"))
         try:

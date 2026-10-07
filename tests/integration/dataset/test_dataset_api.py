@@ -150,6 +150,25 @@ class TestDatasetCrud:
         assert "identity.userinfo" in body["data"]["models"]
         assert "username" in body["data"]["fields"]["identity.userinfo"]
 
+    def test_meta_short_ttl_cache(self, auth_client, model_registry):
+        """meta 载荷带短 TTL 缓存：TTL 内白名单变更滞后，清缓存后立即可见。"""
+        from django.core.cache import cache
+
+        from dataset.utils.dataset import DATASET_META_CACHE_KEY
+
+        first = auth_client.get(f"{DATASET_URL}/meta").json()["data"]
+        assert "username" in first["fields"]["identity.userinfo"]
+
+        # 白名单收窄（删除字段节点）：TTL 内响应读到旧载荷
+        ModelLabelField.objects.filter(name="username", parent=model_registry).delete()
+        cached = auth_client.get(f"{DATASET_URL}/meta").json()["data"]
+        assert "username" in cached["fields"]["identity.userinfo"]
+
+        # 清空缓存入口：立即反映最新白名单
+        cache.delete(DATASET_META_CACHE_KEY)
+        fresh = auth_client.get(f"{DATASET_URL}/meta").json()["data"]
+        assert "username" not in fresh["fields"]["identity.userinfo"]
+
 
 class TestDatasetExecute:
     def test_fail_closed_without_grant(self, dataset, normal_user, grant_dataset_menus):

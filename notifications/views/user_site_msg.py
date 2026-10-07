@@ -6,7 +6,7 @@
 # date : 9/15/2024
 
 from django.core.cache import cache
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -186,20 +186,38 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
         return ApiResponse(data={"results": results, "total": sum([item.get("total", 0) for item in results])})
 
     def read_message(self, pks, request):
-        """批量已读：固定 3 条 SQL，与 pks 数量无关（旧实现为 2N 条）"""
-        pks = list(set(pks))
-        if not pks:
-            return ApiResponse()
-        # 1. 已存在的未读记录批量置为已读
-        MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user, unread=True).update(unread=False)
-        # 2. 已存在的记录（无论原状态）不再重复创建
-        exist_ids = set(
-            MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user).values_list("notice_id", flat=True)
-        )
-        # 3. 仅对尚无记录的消息补建"已读"行
-        new_reads = [
-            MessageUserRead(owner=request.user, notice_id=pk, unread=False) for pk in pks if pk not in exist_ids
-        ]
+        """批量已读：固定 3 条 SQL，与 pks 数量无关（旧实现为 2N 条）。
+
+        两种入参形态：
+        - 显式 pk 列表（batch-read）：应用侧去重后按 pk 过滤，行为与历史口径一致；
+        - pk queryset（all-read）：pk 过滤与「尚无该用户已读行」差集全部下推 DB——
+          公告全量下发时单用户未读 pk 可达数千，不再整表物化成 list，仅待补建行
+          迭代后分批 bulk_create。
+        """
+        if isinstance(pks, QuerySet):
+            # 1. 已存在的未读记录批量置为已读（pk 集合以子查询下推）
+            MessageUserRead.objects.filter(notice__in=pks, owner=request.user, unread=True).update(unread=False)
+            # 2+3. 仅对尚无该用户已读行的消息（DB 反连接差集）补建"已读"行
+            missing_pks = (
+                MessageContent.objects.filter(pk__in=pks)
+                .exclude(messageuserread__owner=request.user)
+                .values_list("pk", flat=True)
+            )
+        else:
+            pks = list(set(pks))
+            if not pks:
+                return ApiResponse()
+            # 1. 已存在的未读记录批量置为已读
+            MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user, unread=True).update(unread=False)
+            # 2. 已存在的记录（无论原状态）不再重复创建
+            exist_ids = set(
+                MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user).values_list(
+                    "notice_id", flat=True
+                )
+            )
+            # 3. 仅对尚无记录的消息补建"已读"行
+            missing_pks = [pk for pk in pks if pk not in exist_ids]
+        new_reads = [MessageUserRead(owner=request.user, notice_id=pk, unread=False) for pk in missing_pks]
         # 未读量大（如系统公告全量下发）时一次性 bulk_create 会生成超大 INSERT：分批写入
         for start in range(0, len(new_reads), 1000):
             MessageUserRead.objects.bulk_create(new_reads[start : start + 1000])
@@ -227,5 +245,7 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
     @action(methods=["patch"], detail=False, url_path="all-read")
     def all_read(self, request, *args, **kwargs):
         """全部已读消息"""
+        # 未读 pk 集合保持 queryset 形态传给 read_message：pk 去重/差集全部下推
+        # DB（公告全量下发时不把数千 pk 物化成内存 list）
         queryset = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user))
         return self.read_message(queryset.values_list("pk", flat=True).distinct(), request)

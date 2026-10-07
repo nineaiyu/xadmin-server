@@ -105,7 +105,7 @@ class CrontabScheduleViewSet(ScheduleDeleteGuardMixin, BaseModelSet):
     """crontab 表达式管理"""
 
     schedule_field = "crontab"
-    queryset = CrontabSchedule.objects.all().order_by("minute", "hour", "day_of_week", "month_of_year")
+    queryset = CrontabSchedule.objects.all()
     serializer_class = CrontabScheduleSerializer
     filterset_class = CrontabScheduleFilter
     ordering = ["id"]
@@ -116,7 +116,7 @@ class IntervalScheduleViewSet(ScheduleDeleteGuardMixin, BaseModelSet):
     """固定间隔调度管理"""
 
     schedule_field = "interval"
-    queryset = IntervalSchedule.objects.all().order_by("every", "period")
+    queryset = IntervalSchedule.objects.all()
     serializer_class = IntervalScheduleSerializer
     filterset_class = IntervalScheduleFilter
     ordering = ["id"]

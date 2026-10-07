@@ -419,6 +419,59 @@ class TestApprovalInstanceApi:
         assert ApprovalInstance.objects.get(pk=first).status == ApprovalInstance.Status.APPROVED
         assert ApprovalInstance.objects.get(pk=second).status == ApprovalInstance.Status.REJECTED
 
+    def test_batch_actions_report_unmatched_pks(self, applicant, approver_client, api_client, role, menu_factory):
+        """勾选中不存在/越权的 pk 计入 failed 明细，不再静默丢弃（与勾选数对得上）。"""
+        flow = make_flow(
+            code="batch_unmatched", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}]
+        )
+        api_client.force_authenticate(user=applicant)
+        first = api_client.post(
+            INSTANCES_URL, {"flow": str(flow.pk), "title": "第一单", "form_data": {}}, format="json"
+        ).data["data"]["pk"]
+        second = api_client.post(
+            INSTANCES_URL, {"flow": str(flow.pk), "title": "第二单", "form_data": {}}, format="json"
+        ).data["data"]["pk"]
+
+        # 混合批：一单可处理 + 一个不存在的 pk
+        missing_pk = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+        approved = approver_client.post(
+            f"{INSTANCES_URL}/batch-approve", {"pks": [first, missing_pk], "comment": "批量同意"}, format="json"
+        )
+        assert approved.data["data"]["succeeded"] == 1
+        failed = approved.data["data"]["failed"]
+        assert len(failed) == 1
+        assert failed[0]["no"] == "FFFFFFFF"
+        assert failed[0]["reason"]
+
+        # 混合批：一单可处理 + 一个不存在的 pk（驳回同口径）
+        rejected = approver_client.post(
+            f"{INSTANCES_URL}/batch-reject", {"pks": [second, missing_pk], "reason": "批量驳回"}, format="json"
+        )
+        assert rejected.data["data"]["succeeded"] == 1
+        assert len(rejected.data["data"]["failed"]) == 1
+
+        # 越权：非参与用户（列表 + 批量动作权限点）对他人实例批量操作，整批进 failed 明细
+        outsider = UserInfo.objects.create_user(username="flow_batch_outsider", password="Test@123456")
+        outsider.roles.add(role)
+        grant(role, menu_factory, "list:SystemApprovalInstance", "api/approval/approval-instances$", "GET")
+        grant(
+            role,
+            menu_factory,
+            "batchApprove:SystemApprovalInstance",
+            "api/approval/approval-instances/batch-approve$",
+            "POST",
+        )
+        from rest_framework.test import APIClient
+
+        outsider_client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        outsider_client.force_authenticate(user=outsider)
+        denied = outsider_client.post(
+            f"{INSTANCES_URL}/batch-approve", {"pks": [first], "comment": "越权批量"}, format="json"
+        )
+        assert denied.data["data"]["succeeded"] == 0
+        assert len(denied.data["data"]["failed"]) == 1
+        assert denied.data["data"]["failed"][0]["no"] == str(first)[:8].upper()
+
     # 二期：条件分支主链路 API + 版本列表/回滚 API
 
     def test_phase2_branch_api_lifecycle(self, api_client, applicant, approver_client, approver, menu_factory, role):

@@ -19,6 +19,34 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.utils.platform import codegen_gui
 
+# 生成表单载荷的 schema 声明：与 codegen_gui._base_options / _prepare 实际读取的键
+# 一致（GUI 表单面）；preview 单模型必填 model，download 额外支持 models 批量清单。
+# build_basic_type 的 stub 返回 dict | None：与 file.py 的 `or {}` 同口径
+_PAYLOAD_PROPERTIES = {
+    "model": build_basic_type(OpenApiTypes.STR),
+    "component": build_basic_type(OpenApiTypes.STR),
+    "url_prefix": build_basic_type(OpenApiTypes.STR),
+    "frontend_dir": build_basic_type(OpenApiTypes.STR),
+    "menu_parent": build_basic_type(OpenApiTypes.STR),
+    "menu_title": build_basic_type(OpenApiTypes.STR),
+    "menu_icon": build_basic_type(OpenApiTypes.STR),
+    "ordering": build_basic_type(OpenApiTypes.STR),
+    "include_fields": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+    "exclude_fields": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+    # 字段级覆盖：name / include / label / required / read_only / in_table /
+    # in_search / input_type（仅关联字段）/ dict_code（仅非关联字段），顺序即字段序
+    "fields": build_array_type(build_object_type() or {}),
+    "with_import_export": build_basic_type(OpenApiTypes.BOOL),
+    "with_tags": build_basic_type(OpenApiTypes.BOOL),
+    "with_tests": build_basic_type(OpenApiTypes.BOOL),
+    "with_frontend": build_basic_type(OpenApiTypes.BOOL),
+    "with_ai": build_basic_type(OpenApiTypes.BOOL),
+    "with_module": build_basic_type(OpenApiTypes.BOOL),
+    "module_id": build_basic_type(OpenApiTypes.STR),
+    "module_level": build_basic_type(OpenApiTypes.STR),
+    "skip_menu_seed": build_basic_type(OpenApiTypes.BOOL),
+}
+
 
 class SystemCodeGenViewSet(viewsets.ViewSet):
     """代码生成器（GUI 化 generate_crud）：只读引擎适配，产物预览与下载"""
@@ -100,30 +128,7 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
 
     @extend_schema(
         description="生成产物预览（不落盘）：按表单配置渲染全部文件内容（含 NEXT_STEPS.md）",
-        request=build_object_type(
-            properties={
-                "model": build_basic_type(OpenApiTypes.STR),
-                "component": build_basic_type(OpenApiTypes.STR),
-                "url_prefix": build_basic_type(OpenApiTypes.STR),
-                "frontend_dir": build_basic_type(OpenApiTypes.STR),
-                "menu_parent": build_basic_type(OpenApiTypes.STR),
-                "menu_icon": build_basic_type(OpenApiTypes.STR),
-                # build_basic_type 的 stub 返回 dict | None：与 file.py 的 `or {}` 同口径
-                "include_fields": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
-                "exclude_fields": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
-                # 字段级覆盖：name / include / label / required / read_only / in_table /
-                # in_search / input_type（仅关联字段）/ dict_code（仅非关联字段），顺序即字段序
-                "fields": build_array_type(build_object_type() or {}),
-                "with_import_export": build_basic_type(OpenApiTypes.BOOL),
-                "with_tags": build_basic_type(OpenApiTypes.BOOL),
-                "with_tests": build_basic_type(OpenApiTypes.BOOL),
-                "with_module": build_basic_type(OpenApiTypes.BOOL),
-                "module_id": build_basic_type(OpenApiTypes.STR),
-                "module_level": build_basic_type(OpenApiTypes.STR),
-                "skip_menu_seed": build_basic_type(OpenApiTypes.BOOL),
-            },
-            required=["model"],
-        ),
+        request=build_object_type(properties=_PAYLOAD_PROPERTIES, required=["model"]),
         responses=get_default_response_schema(
             {
                 "data": build_array_type(
@@ -152,7 +157,8 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
         description="生成产物打包下载（zip，路径 = 仓库相对路径；models 传多模型清单走批量打包）",
         request=build_object_type(
             properties={
-                "model": build_basic_type(OpenApiTypes.STR),
+                **_PAYLOAD_PROPERTIES,
+                # 批量打包：共享表单选项 + 逐模型引擎默认字段计划（单模型时忽略）
                 "models": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
             },
             required=[],

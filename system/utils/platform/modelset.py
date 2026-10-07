@@ -189,18 +189,20 @@ class InvalidConfigCacheAction:
 
         def get_object(self, *args, **kwargs) -> Any: ...
 
-    @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=["post"], detail=True)
-    def invalid(self, request, *args, **kwargs):
-        """使{cls}缓存失效"""
-        instance = self.get_object()
-
+    def _invalidate_config_cache(self, instance) -> None:
+        """按实例类型清理对应配置缓存（invalid 动作与 destroy 删除前复用同一份逻辑）。"""
         if isinstance(instance, SystemConfig):
             SysConfig.invalid_config_cache(key=instance.key)
             owner = "*"
         else:
             owner = instance.owner
         UserConfig(owner).invalid_config_cache(key=instance.key)
+
+    @extend_schema(request=None, responses=get_default_response_schema())
+    @action(methods=["post"], detail=True)
+    def invalid(self, request, *args, **kwargs):
+        """使{cls}缓存失效"""
+        self._invalidate_config_cache(self.get_object())
         return ApiResponse()
 
 

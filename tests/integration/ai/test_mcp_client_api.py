@@ -141,6 +141,15 @@ class TestServerCrud:
         stored = McpServer.objects.get(pk=pk)
         assert stored.tool_names == ["echo", "other"]
 
+    def test_timeout_non_numeric_rejected_as_400(self, client, stub):
+        """timeout 非数字（如 "abc"）按 400 字段错误拒绝，而非 500。"""
+        url, _ = stub
+        res = client.post(MCP_URL, {"name": "超时桩", "url": url, "timeout": "abc"}, format="json")
+        assert res.status_code == 400
+        res = client.post(MCP_URL, {"name": "超时桩", "url": url, "timeout": 45}, format="json")
+        assert res.status_code == 200
+        assert McpServer.objects.get(pk=res.data["data"]["pk"]).timeout == 45
+
 
 class TestSync:
     def test_sync_stores_snapshot_and_session(self, client, stub):
@@ -157,6 +166,28 @@ class TestSync:
         assert server.last_sync_error == ""
         # 会话头回带：initialize 之后的请求携带 Mcp-Session-Id
         assert any(item["headers"].get("Mcp-Session-Id") == "stub-session" for item in receiver.received)
+
+    def test_sync_annotates_callable_flags(self, client, stub):
+        """sync 回传的工具清单逐条带 callable：白名单内可调用，白名单外不可调用。"""
+        url, _ = stub
+        pk = _create_server(client, url)
+        data = client.post(f"{MCP_URL}/{pk}/sync").data["data"]
+        flags = {tool["name"]: tool["callable"] for tool in data["tools"]}
+        assert flags == {"echo": True, "danger": False}
+
+    def test_detail_tools_snapshot_callable_follows_whitelist_and_enabled(self, client, stub):
+        """列表/详情序列化时按 call 同口径计算 callable：白名单 + 启用态即时生效。"""
+        url, _ = stub
+        pk = _create_server(client, url)
+        client.post(f"{MCP_URL}/{pk}/sync")
+        detail = client.get(f"{MCP_URL}/{pk}").data["data"]
+        flags = {tool["name"]: tool["callable"] for tool in detail["tools_snapshot"]}
+        assert flags == {"echo": True, "danger": False}
+
+        # 停用后全部不可调用（与 call 端点的禁用拒绝同口径）
+        client.patch(f"{MCP_URL}/{pk}", {"enabled": False}, format="json")
+        detail = client.get(f"{MCP_URL}/{pk}").data["data"]
+        assert all(tool["callable"] is False for tool in detail["tools_snapshot"])
 
     def test_sync_failure_records_error(self, client):
         pk = _create_server(client, "http://127.0.0.1:9/mcp")
