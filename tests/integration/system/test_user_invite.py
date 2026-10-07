@@ -7,6 +7,8 @@
   未配置邮件渠道（非 locmem/console 且 EMAIL_HOST 为空）时 fail-closed 返回可读错误；
 - 激活 = 令牌一次性（激活即失效、复用返回「已激活」）、无效令牌不泄露原因、
   密码强度 / 泄露库 / 历史校验与注册 / 忘记密码同口径；
+  密码传输与注册 / 忘记密码同契约：加密开关默认开启，客户端以邀请令牌原文为密钥
+  提交 AES 密文，明文/错钥密文受控拒绝（不 500）；validate 响应回传 encrypted 标志；
 - 账号有效期 = 到期登录拦截（``login_success`` 与密码过期同一拦截面）、
   到期前提醒（同日去重）、到期自动停用（is_active=False + 通知）。
 """
@@ -19,11 +21,13 @@ from django.conf import settings as dj_settings
 from django.core import mail
 from django.utils import timezone
 
+from common.base.utils import AESCipherV2
 from identity.models import UserInfo
 from identity.services.auth_login import login_success
 from identity.utils import account_expiry, user_invite
 from identity.utils.account_expiry import disable_expired_accounts, is_account_expired, notify_expiring_accounts
 from identity.utils.auth import ValidateError
+from tests.unit.common.test_aes_cipher_v2 import _encrypt_v2
 
 pytestmark = pytest.mark.django_db
 
@@ -130,14 +134,28 @@ class TestCreateWithInvite:
 
 
 class TestAcceptInvite:
+    @staticmethod
+    def _accept(api_client, token, password, *, encrypt=True):
+        """默认按生产契约提交密文：密钥 = 邀请令牌原文（与 register/reset 同库同参序）。
+
+        ``AESCipherV2.encrypt`` 按 bytes 入参打包（服务端侧只消费解密），
+        前端 crypto-es 旧格式回退即此形态。
+        """
+        payload = {
+            "token": token,
+            "password": AESCipherV2(token).encrypt(password.encode("utf-8")).decode() if encrypt else password,
+        }
+        return api_client.post(ACCEPT_URL, payload, format="json")
+
     def test_accept_flow_and_token_single_use(self, api_client, auth_client, invited_user):
         token = user_invite.send_invite(invited_user)
 
         resp = api_client.get(VALIDATE_URL, {"token": token})
         assert resp.json()["data"]["state"] == "pending"
         assert resp.json()["data"]["username"] == "invite_target"
+        assert resp.json()["data"]["encrypted"] is True  # 默认开启：前端须以令牌为密钥加密提交
 
-        resp = api_client.post(ACCEPT_URL, {"token": token, "password": NEW_PASSWORD}, format="json")
+        resp = self._accept(api_client, token, NEW_PASSWORD)
         assert resp.status_code == 200, resp.content
         assert resp.json()["code"] == 1000
         invited_user.refresh_from_db()
@@ -145,7 +163,7 @@ class TestAcceptInvite:
         assert invited_user.check_password(NEW_PASSWORD)
 
         # 令牌一次性：激活后复用返回「已激活」，且不再改写密码
-        resp = api_client.post(ACCEPT_URL, {"token": token, "password": "Another@2026Xyz"}, format="json")
+        resp = self._accept(api_client, token, "Another@2026Xyz")
         assert resp.json()["code"] == 1002
         invited_user.refresh_from_db()
         assert invited_user.check_password(NEW_PASSWORD)
@@ -156,7 +174,7 @@ class TestAcceptInvite:
 
     def test_weak_password_rejected(self, api_client, invited_user):
         token = user_invite.send_invite(invited_user)
-        resp = api_client.post(ACCEPT_URL, {"token": token, "password": WEAK_PASSWORD}, format="json")
+        resp = self._accept(api_client, token, WEAK_PASSWORD)
         assert resp.json()["code"] == 1003
         invited_user.refresh_from_db()
         assert invited_user.invite_status == UserInfo.InviteStatusChoices.PENDING
@@ -164,8 +182,50 @@ class TestAcceptInvite:
     def test_leaked_password_rejected(self, api_client, invited_user, monkeypatch):
         monkeypatch.setattr("settings.utils.password.check_leak_password", lambda password: True)
         token = user_invite.send_invite(invited_user)
-        resp = api_client.post(ACCEPT_URL, {"token": token, "password": NEW_PASSWORD}, format="json")
+        resp = self._accept(api_client, token, NEW_PASSWORD)
         assert resp.json()["code"] == 1003
+
+    def test_plaintext_rejected_when_encryption_enabled(self, api_client, invited_user):
+        """开关默认开启：明文提交解密必然失败，受控拒绝（非 500、密码不落库）。"""
+        token = user_invite.send_invite(invited_user)
+        resp = api_client.post(ACCEPT_URL, {"token": token, "password": NEW_PASSWORD}, format="json")
+        assert resp.status_code == 200, resp.content
+        assert resp.json()["code"] == 1003
+        assert any(k in str(resp.json()["detail"]) for k in ("decrypt", "解密"))
+        invited_user.refresh_from_db()
+        assert invited_user.invite_status == UserInfo.InviteStatusChoices.PENDING
+        assert invited_user.has_usable_password() is False
+
+    def test_wrong_key_ciphertext_rejected(self, api_client, invited_user):
+        """密钥不符的密文（GCM 认证失败解密为空）：同受控拒绝口径，非 500。"""
+        token = user_invite.send_invite(invited_user)
+        resp = api_client.post(
+            ACCEPT_URL, {"token": token, "password": _encrypt_v2("other-token", NEW_PASSWORD)}, format="json"
+        )
+        assert resp.status_code == 200, resp.content
+        assert resp.json()["code"] == 1003
+        assert any(k in str(resp.json()["detail"]) for k in ("decrypt", "解密"))
+        invited_user.refresh_from_db()
+        assert invited_user.invite_status == UserInfo.InviteStatusChoices.PENDING
+
+    def test_plaintext_accepted_when_encryption_disabled(self, api_client, invited_user, settings):
+        """开关关闭（脚本/E2E 等按明文提交的场景）：明文可用。"""
+        settings.SECURITY_INVITE_ENCRYPTED_ENABLED = False
+        token = user_invite.send_invite(invited_user)
+        resp = self._accept(api_client, token, NEW_PASSWORD, encrypt=False)
+        assert resp.status_code == 200, resp.content
+        assert resp.json()["code"] == 1000, resp.data
+        invited_user.refresh_from_db()
+        assert invited_user.check_password(NEW_PASSWORD)
+
+    def test_validate_reports_encrypted_flag(self, api_client, invited_user, settings):
+        """validate 响应回传 encrypted 标志（前端据此决定是否加密提交）。"""
+        token = user_invite.send_invite(invited_user)
+        resp = api_client.get(VALIDATE_URL, {"token": token})
+        assert resp.json()["data"]["encrypted"] is True
+        settings.SECURITY_INVITE_ENCRYPTED_ENABLED = False
+        resp = api_client.get(VALIDATE_URL, {"token": token})
+        assert resp.json()["data"]["encrypted"] is False
 
 
 class TestAccountExpiry:

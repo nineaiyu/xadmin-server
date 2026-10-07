@@ -198,6 +198,10 @@ class SendVerifyCodeAPIView(GenericAPIView):
             LoginIpBlockUtil(ipaddr).set_block_if_need()
             return ApiResponse(code=1001, detail=_("Operation failed. Abnormal data"))
 
+        # 设计口径：username（basic）表单类型没有短信/邮件投递通道，验证码按设计随响应
+        # 返回（dryrun 只渲染不投递），由前端回填以完成校验管线。该路径的实际防线是
+        # 发送侧图形验证码/临时令牌/限流与提交侧密码认证+失败锁定，动态验证码因子
+        # 仅在 phone/email 表单类型生效（走真实投递通道，响应不回显）。
         dryrun = form_type == "username"
         code = ""
         if should_send:
@@ -216,6 +220,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         verify_token = TokenTempCache.generate_cache_token(settings.VERIFY_CODE_TTL, cache_data)
         data = {"verify_token": verify_token, "extra": extra}
         if dryrun and code:
+            # 仅 basic 表单类型回显验证码（phone/email 走真实投递）：见上方 dryrun 设计口径
             data["verify_code"] = code
 
         return ApiResponse(data=data, detail=_("The verification code has been sent"))

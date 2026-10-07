@@ -10827,6 +10827,10 @@ msgstr "时间格式无效"
 msgid "This login record cannot be forcibly logged out"
 msgstr "该登录记录不支持强制下线"
 
+#: audit/views/admin/loginlog.py:61
+msgid "The session is already offline"
+msgstr "会话已离线，无需重复下线"
+
 #: system/views/admin/mask.py:35
 msgid "Invalid sample values"
 msgstr "示例值不合法"

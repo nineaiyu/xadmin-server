@@ -54,5 +54,9 @@ class LoginLogViewSet(OnlyListModelSet, OnlyExportDataAction):
         # creator / channel_name 可能为空（历史日志、系统记录）：空值返回可读错误，避免 AttributeError 500
         if not instance.creator_id or not instance.channel_name:
             return ApiResponse(code=400, detail=_("This login record cannot be forcibly logged out"))
-        send_logout_msg(instance.creator_id, [instance.channel_name])
+        hit = send_logout_msg(instance.creator_id, [instance.channel_name])
+        if not hit:
+            # 会话已下线（channel 已不在推送组）：记录留存不受影响，仍算成功，
+            # 但给出可读提示让操作者知道无需重复下线，而非静默成功
+            return ApiResponse(detail=_("The session is already offline"))
         return ApiResponse()

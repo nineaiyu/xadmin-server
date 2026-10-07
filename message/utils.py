@@ -240,14 +240,24 @@ async def async_push_layer_message(channel_name: str, message: dict, message_typ
 
 
 @async_to_sync
-async def send_logout_msg(user_pk: str | int, channel_names: list[str] | None = None):
+async def send_logout_msg(user_pk: str | int, channel_names: list[str] | None = None) -> bool:
+    """向用户在线 channel 推送 logout 并逐个退组；返回是否命中至少一个在线 channel。
+
+    显式传入的 channel 名先与用户推送组的存活 channel 求交集：会话已下线的
+    channel 不再在组内，跳过投递并计为未命中（对已断开的 channel 发送本就是
+    静默丢弃）。调用方可据返回值区分「已踢下线」与「会话本就不在线」，避免
+    对同一会话的重复强退静默伪装成成功。
+    """
     group_name = get_user_layer_group_name(user_pk)
     if not channel_names:
         channel_names = await get_layers_form_group(group_name)
-    if channel_names:
-        for channel_name in channel_names:
-            await async_push_layer_message(channel_name, {"message_type": "logout"})
-            await channel_layer.group_discard(group_name, channel_name)
+    else:
+        group_channels = set(await get_layers_form_group(group_name))
+        channel_names = [name for name in channel_names if name in group_channels]
+    for channel_name in channel_names:
+        await async_push_layer_message(channel_name, {"message_type": "logout"})
+        await channel_layer.group_discard(group_name, channel_name)
+    return bool(channel_names)
 
 
 @async_to_sync

@@ -357,3 +357,31 @@ class TestPushMessagesJob:
             assert config_mod.batch_user_config([9], "PUSH_MESSAGE_NOTICE", True) == {9: False}
         finally:
             UserSystemConfigCache("user_9_PUSH_MESSAGE_NOTICE").del_storage_cache()
+
+
+class TestLogoutKick:
+    """强退踢线：返回是否命中在线 channel，已下线会话不再投递（未命中可被调用方区分）。"""
+
+    def test_hit_pushes_logout_and_discards_group(self, layer):
+        from asgiref.sync import async_to_sync
+
+        from message.utils import get_user_layer_group_name, send_logout_msg
+
+        _beat(layer, 11, "ch-live")
+        assert send_logout_msg(11, ["ch-live"]) is True
+        # 命中即逐 channel 推送并退组：组内清空
+        assert async_to_sync(layer.get_layers)(get_user_layer_group_name(11)) == []
+
+    def test_stale_channel_misses_without_push(self, layer):
+        """已下线会话（channel 不在推送组）：计为未命中，不再做无效投递。"""
+        from message.utils import send_logout_msg
+
+        assert send_logout_msg(12, ["ch-gone"]) is False
+
+    def test_auto_resolve_group_channels_reports_hit(self, layer):
+        """不传 channel 名时取推送组存活 channel：在线命中、离线未命中。"""
+        from message.utils import send_logout_msg
+
+        _beat(layer, 13, "ch-auto")
+        assert send_logout_msg(13) is True
+        assert send_logout_msg(13) is False  # 上一次命中已退组，组内无 channel

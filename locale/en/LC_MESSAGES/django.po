@@ -10876,6 +10876,10 @@ msgstr ""
 msgid "This login record cannot be forcibly logged out"
 msgstr ""
 
+#: audit/views/admin/loginlog.py:61
+msgid "The session is already offline"
+msgstr ""
+
 #: system/views/admin/mask.py:35
 msgid "Invalid sample values"
 msgstr ""

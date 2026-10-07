@@ -54,19 +54,23 @@ class TaskExecutionFilter(filters.FilterSet):
         fields = ["product_type", "name", "status", "periodic_task", "creator", "created_time"]
 
     def filter_product_type(self, queryset, name, value):
+        from django.db.models import Exists, OuterRef
+
         from task.models.export import ExportRecord
         from task.models.import_ import ImportRecord
         from task.utils.task_center import TYPE_EXPORT, TYPE_IMPORT
 
-        exports = ExportRecord.objects.values("pk")
-        imports = ImportRecord.objects.values("pk")
+        # 产物记录与执行历史共用主键（pk = celery task_id）：按同 pk 相关子查询判存在，
+        # 每行一次主键索引探测；不用全表 values("pk") 做 IN 子查询（避免整表物化放大）
+        has_export = Exists(ExportRecord.objects.filter(pk=OuterRef("pk")))
+        has_import = Exists(ImportRecord.objects.filter(pk=OuterRef("pk")))
         if value == TYPE_EXPORT:
-            return queryset.filter(pk__in=exports)
+            return queryset.filter(has_export)
         if value == TYPE_IMPORT:
-            return queryset.filter(pk__in=imports)
-        # 非产物记录 = 两张产物表 pk 并集的补集：合并为单个 IN 子查询，
-        # 避免逐表 anti-join（union 臂上以空 order_by 去掉模型默认排序）
-        return queryset.exclude(pk__in=exports.order_by().union(imports.order_by()))
+            return queryset.filter(has_import)
+        # 非产物记录 = 两类产物都不存在：NOT (EXISTS 导出 OR EXISTS 导入)，
+        # 与「两表 pk 并集取补集」语义等价
+        return queryset.filter(~(has_export | has_import))
 
 
 class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
@@ -93,8 +97,8 @@ class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
         一张产物表：两表的展示字段合并为单个 JSON 注解（COALESCE 先导出后导入，
         取值顺序与逐字段 Coalesce 一致），行级相关子查询由每行 8 个收敛为
         COALESCE 短路求值的 2 个；产物文件有无仍按存在性 Case 判定——该写法
-        语义是对两张产物表取或，无法并入单表 JSON，其子查询与行无关、整查询
-        只求值一次，不构成行级放大。
+        语义是对两张产物表取或，无法并入单表 JSON，条件用同 pk 相关 Exists
+        （每行主键索引探测），与全表 pk 物化成 IN 子查询语义等价且无整表物化。
         """
         queryset = super().get_queryset()
         if self.action != "list":
@@ -102,6 +106,7 @@ class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
         from django.db.models import (
             BooleanField,
             Case,
+            Exists,
             F,
             JSONField,
             OuterRef,
@@ -143,10 +148,16 @@ class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
                 output_field=JSONField(),
             ),
             # 是否有产物文件：按存在性判定（导出看 file、导入看错误报告），
-            # 不下发 UUID 本体——避免 sqlite 下 UUID 子查询的类型转换边界
+            # 不下发 UUID 本体；同 pk 相关 Exists 保证语义与按记录表判定一致
             product_has_file=Case(
-                When(pk__in=ExportRecord.objects.exclude(file__isnull=True).values("pk"), then=Value(True)),
-                When(pk__in=ImportRecord.objects.exclude(error_report__isnull=True).values("pk"), then=Value(True)),
+                When(
+                    Exists(ExportRecord.objects.filter(pk=OuterRef("pk"), file__isnull=False)),
+                    then=Value(True),
+                ),
+                When(
+                    Exists(ImportRecord.objects.filter(pk=OuterRef("pk"), error_report__isnull=False)),
+                    then=Value(True),
+                ),
                 default=Value(False),
                 output_field=BooleanField(),
             ),

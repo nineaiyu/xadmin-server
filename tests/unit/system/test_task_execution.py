@@ -551,19 +551,58 @@ def test_execution_list_exposes_product_info(superuser):
 
 
 def test_product_type_filter(superuser):
-    """记录类型过滤（导出/导入/任务）与列表注解同源：按产物表同 pk 记录判定。"""
+    """记录类型过滤（导出/导入/任务）与列表注解同源：按产物表同 pk 记录（相关 Exists）判定。"""
     from task.models.export import ExportRecord
+    from task.models.import_ import ImportRecord
     from task.views.task import TaskExecutionFilter
 
     export = ExportRecord.objects.create(name="导出记录", creator=superuser)
     TaskExecution.objects.create(pk=export.pk, name="system.tasks.run_export", creator=superuser)
+    imported = ImportRecord.objects.create(name="导入记录", creator=superuser)
+    TaskExecution.objects.create(pk=imported.pk, name="system.tasks.run_import", creator=superuser)
     plain = TaskExecution.objects.create(name="common.tasks.foo", creator=superuser)
 
     queryset = TaskExecution.objects.all()
     export_rows = TaskExecutionFilter({"product_type": "export"}, queryset=queryset).qs
     assert {str(row.pk) for row in export_rows} == {str(export.pk)}
+    import_rows = TaskExecutionFilter({"product_type": "import"}, queryset=queryset).qs
+    assert {str(row.pk) for row in import_rows} == {str(imported.pk)}
     task_rows = TaskExecutionFilter({"product_type": "task"}, queryset=queryset).qs
     assert {str(row.pk) for row in task_rows} == {str(plain.pk)}
+
+
+def test_product_has_file_matches_record_tables(superuser):
+    """产物文件有无注解与记录表逐行判定语义一致：导出看 file、导入看错误报告。"""
+    from file.models import UploadFile
+    from task.models.export import ExportRecord
+    from task.models.import_ import ImportRecord
+
+    upload = UploadFile.objects.create(
+        filename="result.xlsx",
+        filesize=10,
+        mime_type="application/octet-stream",
+        md5sum="m" * 32,
+        creator=superuser,
+        is_tmp=True,
+    )
+    export_with_file = ExportRecord.objects.create(name="带产物导出", creator=superuser, file=upload)
+    import_with_report = ImportRecord.objects.create(name="带错误报告导入", creator=superuser, error_report=upload)
+    export_without_file = ExportRecord.objects.create(name="无产物导出", creator=superuser)
+    for record in (export_with_file, import_with_report, export_without_file):
+        TaskExecution.objects.create(pk=record.pk, name="system.tasks.run", creator=superuser)
+    plain = TaskExecution.objects.create(name="common.tasks.foo", creator=superuser)
+
+    request = APIRequestFactory().get("/api/system/tasks/executions")
+    force_authenticate(request, user=superuser)
+    viewset = TaskExecutionViewSet()
+    viewset.request = request
+    viewset.action = "list"
+    queryset = viewset.get_queryset()
+
+    assert queryset.get(pk=export_with_file.pk).product_has_file is True
+    assert queryset.get(pk=import_with_report.pk).product_has_file is True
+    assert queryset.get(pk=export_without_file.pk).product_has_file is False
+    assert queryset.get(pk=plain.pk).product_has_file is False
 
 
 def test_execution_detail_without_annotation_stays_safe(superuser):

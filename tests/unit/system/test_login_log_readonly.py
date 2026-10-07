@@ -13,6 +13,7 @@ from django.conf import settings
 from rest_framework.test import APIClient
 
 from audit.models.log import UserLoginLog
+from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
@@ -20,10 +21,29 @@ LIST_URL = "/api/system/logs/login"
 RETIRED_PERMISSION_NAMES = ("destroy:SystemUserLoginLog", "batchDestroy:SystemUserLoginLog")
 
 
+@pytest.fixture
+def layer(settings):
+    """channel layer（InMemory 档 / 真 Redis 层通用，清理走 tests/channel_layer helper）。"""
+    from channels.layers import get_channel_layer
+
+    from tests.channel_layer import reset_layer_state
+
+    layer = get_channel_layer()
+    reset_layer_state(layer)
+    yield layer
+    reset_layer_state(layer)
+
+
 def _make_log(**kwargs):
     defaults = dict(status=True, ipaddress="127.0.0.1")
     defaults.update(kwargs)
     return UserLoginLog.objects.create(**defaults)
+
+
+def _superuser_client(superuser):
+    client = APIClient(HTTP_USER_AGENT="pytest-agent")
+    client.force_authenticate(user=superuser)
+    return client
 
 
 class TestLoginLogReadOnly:
@@ -61,3 +81,30 @@ class TestLoginLogReadOnly:
         names = [entry["fields"]["name"] for entry in json.loads(menu_json.read_text())]
         for name in RETIRED_PERMISSION_NAMES:
             assert name not in names
+
+
+class TestLogoutAction:
+    """强退命中语义：在线会话踢下线返回成功；已下线会话同样成功但带可读提示。"""
+
+    def test_online_session_logout_succeeds(self, superuser, layer):
+        from tests.channel_layer import beat_layer
+
+        user = UserInfo.objects.create_user(username="loginlog_logout_online", password="x")
+        beat_layer(layer, user.pk, "ch-loginlog-live")
+        log = _make_log(creator=user, channel_name="ch-loginlog-live")
+
+        resp = _superuser_client(superuser).post(f"{LIST_URL}/{log.pk}/logout")
+
+        assert resp.status_code == 200
+        assert resp.data["code"] == 1000
+
+    def test_offline_session_logout_returns_readable_detail(self, superuser):
+        """channel 已不在推送组（会话已下线）：不算失败，但提示无需重复下线。"""
+        user = UserInfo.objects.create_user(username="loginlog_logout_offline", password="x")
+        log = _make_log(creator=user, channel_name="ch-loginlog-gone")
+
+        resp = _superuser_client(superuser).post(f"{LIST_URL}/{log.pk}/logout")
+
+        assert resp.status_code == 200
+        assert resp.data["code"] == 1000
+        assert any(k in str(resp.data["detail"]) for k in ("offline", "已离线"))

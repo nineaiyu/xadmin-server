@@ -72,6 +72,10 @@ SETTINGS_CONFIG = {
     "SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED": True,
     "SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED": True,
     "SECURITY_RESET_PASSWORD_BY_SMS_ENABLED": False,
+    # 邀请激活密码传输加密（前端激活页提交 AESCipherV2(邀请令牌原文) 加密串，密钥契约与
+    # 注册/忘记密码一致）：开启时激活提交的密码必须解密成功，解密失败/明文为空按受控口径
+    # 拒绝；脚本/E2E 等按明文提交密码的场景可关闭（关闭后按明文接收）
+    "SECURITY_INVITE_ENCRYPTED_ENABLED": True,
     # 绑定邮箱
     "SECURITY_BIND_EMAIL_ACCESS_ENABLED": True,
     "SECURITY_BIND_EMAIL_CAPTCHA_ENABLED": True,
