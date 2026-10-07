@@ -7,7 +7,9 @@
 """celery 全局信号 → TaskExecution 自动记账。
 - after_task_publish（发布进程）：get_or_create PENDING 记录；beat 定时投递的
   message headers 带 periodic_task_name（django_celery_beat/schedulers.py:89），
-  据此回填关联；手动执行场景记录已预创建，不覆盖 creator；
+  据此回填关联；手动执行场景记录已预创建，不覆盖 creator；定时派发无请求
+  上下文，creator 回溯到所属周期任务的配置者（PeriodicTaskOwner side 表），
+  未登记归属保持为空即系统调度；
 - task_prerun / task_postrun（worker 进程）：推进 RUNNING / 终态；
 - task_revoked：REVOKED。
 handler 均用幂等 update/get_or_create，重复触发无副作用。
@@ -27,7 +29,7 @@ from django_celery_beat.models import PeriodicTask, PeriodicTasks
 from common.utils import get_logger
 from server.celery import app
 from server.utils import get_current_request
-from task.models.task import TaskExecution
+from task.models.task import PeriodicTaskOwner, TaskExecution
 
 logger = get_logger(__name__)
 
@@ -54,7 +56,15 @@ def task_execution_on_publish(sender=None, headers=None, body=None, **kwargs):
     }
     periodic_task_name = headers.get("periodic_task_name")
     if periodic_task_name:
-        defaults["periodic_task"] = PeriodicTask.objects.filter(name=periodic_task_name).first()
+        periodic_task = PeriodicTask.objects.filter(name=periodic_task_name).first()
+        defaults["periodic_task"] = periodic_task
+        # 定时派发无请求上下文（beat 投递）：执行记录回溯到周期任务配置者，
+        # 任务中心的归属人可与之交互（可见/可取消）；未登记归属（系统注册、
+        # 种子、存量任务）保持为空即系统调度
+        if defaults["creator"] is None and periodic_task is not None:
+            owner = PeriodicTaskOwner.objects.filter(periodic_task=periodic_task).select_related("creator").first()
+            if owner is not None:
+                defaults["creator"] = owner.creator
     try:
         TaskExecution.objects.get_or_create(pk=task_id, defaults=defaults)
     except Exception:  # 记账失败不能影响任务投递

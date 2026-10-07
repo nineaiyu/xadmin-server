@@ -4,7 +4,7 @@
 
 from .export import ExportRecord
 from .import_ import ImportRecord, ImportTemplate
-from .task import CeleryTaskRecordModel, TaskExecution
+from .task import CeleryTaskRecordModel, PeriodicTaskOwner, TaskExecution
 from .webhook import WebhookDelivery, WebhookSubscription
 
 __all__ = [
@@ -12,6 +12,7 @@ __all__ = [
     "ExportRecord",
     "ImportRecord",
     "ImportTemplate",
+    "PeriodicTaskOwner",
     "TaskExecution",
     "WebhookDelivery",
     "WebhookSubscription",
