@@ -374,3 +374,27 @@ class TestAsyncBuildTask:
         status = auth_client.get(f"{KNOWLEDGE_URL}/build-embeddings/status").json()["data"]
         assert status["state"] == "done"
         assert status["summary"]["embedded"] == 1
+
+    def test_first_poll_after_submit_never_hits_previous_terminal_state(self, auth_client, stub_client, settings):
+        """提交即翻 running：上一轮随通道保留的旧终态从提交时刻起不可命中，
+        首轮轮询（任务尚未被 worker 拉起）读到的只能是 running，而非旧摘要。"""
+        stub_client({"__default__": [1.0, 0.0]})
+        _make_embedding_profile()
+
+        from django.core.cache import cache
+
+        from ai.utils.embedding_progress import BUILD_STATUS_KEY, release_lock
+
+        cache.set(
+            BUILD_STATUS_KEY,
+            {"state": "done", "summary": {"embedded": 9, "skipped": 1}, "finished_time": "prev"},
+            3600,
+        )
+        settings.CELERY_TASK_ALWAYS_EAGER = False  # 只验证提交时刻的通道语义，不真跑任务
+        response = auth_client.post(f"{KNOWLEDGE_URL}/build-embeddings", {}, format="json")
+        assert response.status_code == 200, response.data
+        status = auth_client.get(f"{KNOWLEDGE_URL}/build-embeddings/status").json()["data"]
+        assert status["state"] == "running"
+        assert "summary" not in status
+        assert "finished_time" not in status
+        release_lock()

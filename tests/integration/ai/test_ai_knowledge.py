@@ -189,6 +189,27 @@ class TestRepoRebuildAction:
         assert get_status()["state"] == "error"
         assert try_acquire_lock()
 
+    def test_first_poll_after_submit_never_hits_previous_terminal_state(self, auth_client, settings):
+        """提交即翻 running：上一轮随通道保留的旧终态从提交时刻起不可命中，
+        首轮轮询（任务尚未被 worker 拉起）读到的只能是 running，而非旧摘要。"""
+        from django.core.cache import cache
+
+        from ai.utils.sync_progress import SYNC_STATUS_KEY, release_lock
+
+        cache.set(
+            SYNC_STATUS_KEY,
+            {"state": "done", "summary": {"created": 9, "updated": 8, "removed": 7}, "finished_time": "prev"},
+            3600,
+        )
+        settings.CELERY_TASK_ALWAYS_EAGER = False  # 只验证提交时刻的通道语义，不真跑任务
+        response = auth_client.post(f"{KNOWLEDGE_URL}/sync-repo", {}, format="json")
+        assert response.status_code == 200, response.data
+        status = auth_client.get(f"{KNOWLEDGE_URL}/sync-repo/status").json()["data"]
+        assert status["state"] == "running"
+        assert "summary" not in status
+        assert "finished_time" not in status
+        release_lock()
+
 
 class TestBatchOperations:
     def test_batch_destroy_only_uploads_and_clears_chunks(self, auth_client):

@@ -139,6 +139,31 @@ class TestPostMembers:
         assert resp.json()["code"] == 1000
         assert Post.objects.get(pk=pk).users.count() == 0, "失效用户不进入成员"
 
+    def test_assign_reports_skipped_pks(self, auth_client):
+        """失效/不存在用户的 pk 跳过不阻断，但经 skipped 明细回显（与 tags 批量打标同口径）。"""
+        from identity.models import UserInfo
+
+        pk = _create(auth_client).json()["data"]["pk"]
+        inactive = UserInfo.objects.create_user(username="ghost", password="Test@123456")
+        inactive.is_active = False
+        inactive.save(update_fields=["is_active"])
+        active = UserInfo.objects.create_user(username="real", password="Test@123456")
+
+        resp = auth_client.post(
+            f"{POST_URL}/{pk}/assign",
+            {"add": [active.pk, inactive.pk, "99999999"]},
+            format="json",
+        )
+        assert resp.json()["code"] == 1000, resp.json()
+        data = resp.json()["data"]
+        assert [item["pk"] for item in data["members"]] == [active.pk]
+        assert data["skipped"] == sorted([str(inactive.pk), "99999999"])
+        assert Post.objects.get(pk=pk).users.count() == 1
+
+        # 全部命中：skipped 为空列表（形状恒定）
+        resp = auth_client.post(f"{POST_URL}/{pk}/assign", {"add": [active.pk]}, format="json")
+        assert resp.json()["data"]["skipped"] == []
+
     def test_members_truncation_marker(self, auth_client, monkeypatch):
         """成员超上限时截断并返回 total/truncated 标记（向后兼容新增字段）。"""
         from identity.models import UserInfo

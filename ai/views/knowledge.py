@@ -166,11 +166,14 @@ class AiKnowledgeDocumentViewSet(
         全量重建为重操作，不再在请求线程内同步执行：响应返回任务提交信息，
         同步摘要（created/updated/removed/...）经 sync-repo/status 轮询获取。
         单飞：已有同步在跑时返回 1001（不排队、不重复扫盘）。
+        提交即翻 running（先于 worker 拉起）：上一轮随通道保留的旧终态从提交
+        时刻起不可命中，首轮轮询只会读到 running。
         """
-        from ai.utils.sync_progress import try_acquire_lock
+        from ai.utils.sync_progress import mark_running, try_acquire_lock
 
         if not try_acquire_lock():
             return ApiResponse(code=1001, detail=_("A repository sync is already running"))
+        mark_running()
         from ai.tasks import sync_repo_task
 
         if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
@@ -222,9 +225,11 @@ class AiKnowledgeDocumentViewSet(
 
         单飞：已有构建在跑时返回 1001 + 当前状态（不排队、不重复消耗供应商预算）；
         未配置 embedding 档案直接拒绝并给出引导。终态摘要随状态通道保留 1 小时。
+        提交即翻 running（先于 worker 拉起）：上一轮随通道保留的旧终态从提交
+        时刻起不可命中，首轮轮询只会读到 running。
         """
         from ai.utils.ai_config import embedding_credentials
-        from ai.utils.embedding_progress import get_status, try_acquire_lock
+        from ai.utils.embedding_progress import get_status, mark_running, try_acquire_lock
 
         if embedding_credentials() is None:
             return ApiResponse(code=1001, detail=_("No active embedding profile is configured"))
@@ -249,6 +254,7 @@ class AiKnowledgeDocumentViewSet(
 
         from ai.tasks import build_embeddings_task
 
+        mark_running(0)
         task_args = [document_pk, force]
         if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
             # 测试/E2E：eager 下 apply_async 不执行，改 apply 同步跑完（与导出同口径）

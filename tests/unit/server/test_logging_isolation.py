@@ -33,8 +33,11 @@ def test_log_records_land_in_isolated_file():
     probe = "logging-isolation-probe"
     logger = logging.getLogger("xadmin")
     logger.warning(probe)
-    for handler in logger.handlers:
-        handler.flush()
+    # 只 flush 断言对象（server 文件 handler）：console handler 的流是 pytest 捕获层
+    # 的对象，其生命周期归捕获管理器管——中途被换掉/关闭属测试基建常态，与本断言
+    # （落盘位置）无关；遍历全部 handler flush 会把别人的流健康当作自己的断言面。
+    server_handler = next(h for h in logger.handlers if getattr(h, "name", "") == "server")
+    server_handler.flush()
 
     target = Path(settings.LOGGING["handlers"]["server"]["filename"])
     assert target.exists(), f"隔离日志文件不存在：{target}"

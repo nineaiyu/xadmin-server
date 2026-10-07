@@ -25,8 +25,10 @@ Redis 的 xdist 隔离（方案 §3.2，本迁移核心风险点）：FakeRedis 
 - 键前缀：django cache 全部键（含限流计数器、magic 缓存）经 test_redis_key_func 加
   "tN:" 前缀。生产的 redis_key_func 是恒等实现（KEY_PREFIX 不落键），因此测试前缀必须
   走 KEY_FUNCTION 覆盖而非 KEY_PREFIX；delete_pattern / keys 经 make_pattern /
-  reverse_key 同源拼前缀，SCAN 命中范围与逻辑键回读天然自洽。db 循环复用（>15 worker
-  时两 worker 共库）由前缀兜底，conftest._clean_cache 只按前缀清理、永不 flushdb；
+  reverse_key 同源拼前缀，SCAN 命中范围与逻辑键回读天然自洽。**裸连接自管键不经
+  前缀**（locker / pending / 限流等自管键名），跨 worker 唯一性依赖独库——pytest.ini
+  以 --maxprocesses=15 把 worker 数封顶在库容量内（db0 兜底保留），共库复用分支不发生；
+  conftest._clean_cache 只按前缀清理、永不 flushdb；
 - channel layer：共享 CHANNEL_LAYERS_CACHE_ID 逻辑库，按 worker 加 asgi 前缀隔离
   （channels_redis prefix 参数）；在线用户索引键 online_users_key 同源于 prefix，
   无需额外处理。
@@ -77,6 +79,11 @@ from tests.settings_base import *  # noqa: F401,F403,E402
 # 键前缀双保险（见模块 docstring）
 CACHES["default"]["KEY_FUNCTION"] = "tests.settings_real.test_redis_key_func"  # noqa: F405
 CACHES["default"]["REVERSE_KEY_FUNCTION"] = "tests.settings_real.test_redis_reverse_key_func"  # noqa: F405
+# 生产档 fail-open（缓存故障读 None/写静默）对测试是灾难语义：满载下瞬时超时
+# 会让 cache.get 静默返回 None、cache.set 静默丢写，表现为无关用例随机断言红
+# （计数丢失/状态回 idle），且单跑必过、无法归因。测试档要求即时失败：
+# Redis 瞬时异常直接抛出，用例红在出错的操作点上，可见即就可修。
+CACHES["default"]["OPTIONS"]["IGNORE_EXCEPTIONS"] = False  # noqa: F405
 
 # channel layer 按 worker 前缀隔离：prefix 是 channels_redis 的 layer 层参数
 # （RedisChannelLayer 构造参数，默认 asgi），必须放 CONFIG 顶层而非 hosts[0]——

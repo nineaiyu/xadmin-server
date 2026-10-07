@@ -12,6 +12,11 @@ services:
   postgres:
     image: pgvector/pgvector:pg17
     container_name: xadmin-test-pg
+    # xdist 按 CPU 数起 worker（每 worker 独立测试库 + 独立 psycopg 连接池，
+    # min/max_size 2/8）：18 worker 满负载时连接数轻松越过 PG 默认 max_connections=100，
+    # 撞顶表现为随机用例 fixture 阶段报「too many connections」/池超时（容量类偶发红）。
+    # 开发栈 docker-compose.yml 已按 200 起配；测试档按满载余量放宽到 300。
+    command: ["postgres", "-c", "max_connections=300"]
     environment:
       POSTGRES_USER: server
       POSTGRES_PASSWORD: pgtest

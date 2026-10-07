@@ -44,7 +44,13 @@ def get_status() -> dict:
 
 
 def mark_running() -> None:
-    _write({"state": "running"})
+    """开工即整体重置为 running：上一轮终态（summary/detail/finished_time）就地清除，
+    残留终态不会被下一轮首轮轮询命中；本轮终态摘要仍在结束后随通道保留 1 小时。"""
+    cache.set(
+        SYNC_STATUS_KEY,
+        {"state": "running", "updated_time": timezone.now().isoformat()},
+        STATUS_TTL,
+    )
 
 
 def mark_finished(summary: dict, ok: bool, detail: str = "") -> None:

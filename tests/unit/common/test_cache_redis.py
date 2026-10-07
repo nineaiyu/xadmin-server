@@ -41,7 +41,17 @@ def redis_conn():
 
     conn = get_redis_connection("default")
     yield conn
-    conn.flushall()
+    # 只清本文件用例的键（cl:*）：裸 flushall 会把其它 xdist worker 正在使用的
+    # 限流计数器/在线层/缓存键一并清空，表现为无关用例随机红（单跑必过）。
+    cursor = 0
+    keys: list[bytes] = []
+    while True:
+        cursor, batch = conn.scan(cursor=cursor, match="cl:*", count=100)
+        keys.extend(batch)
+        if cursor == 0:
+            break
+    if keys:
+        conn.delete(*keys)
 
 
 class TestCacheList:

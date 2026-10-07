@@ -87,8 +87,9 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
     def assign(self, request, *args, **kwargs):
         """岗位成员分配：`{add, remove}` 增量变更（幂等）。
 
-        新增只接受在用用户（失效/不存在的 pk 静默跳过，避免「部分失败」的半成品状态）；
-        查看（members，GET）与分配（assign，POST）是两个独立权限点，便于「只读名录」授权。
+        新增只接受在用用户（失效/不存在的 pk 跳过不阻断，跳过明细经 skipped
+        返回，与 tags 批量打标的 failures 同口径）；查看（members，GET）与
+        分配（assign，POST）是两个独立权限点，便于「只读名录」授权。
         """
         from identity.models import UserInfo
 
@@ -97,9 +98,12 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
         serializer.is_valid(raise_exception=True)
         add_pks = serializer.validated_data.get("add") or []
         remove_pks = serializer.validated_data.get("remove") or []
+        skipped: list[str] = []
         try:
             if add_pks:
-                post.users.add(*UserInfo.objects.filter(pk__in=add_pks, is_active=True))
+                matched = list(UserInfo.objects.filter(pk__in=add_pks, is_active=True))
+                skipped = sorted({str(pk) for pk in add_pks} - {str(user.pk) for user in matched})
+                post.users.add(*matched)
             if remove_pks:
                 post.users.remove(*UserInfo.objects.filter(pk__in=remove_pks))
         except (DjangoValidationError, ValueError, TypeError):
@@ -107,7 +111,7 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
             return ApiResponse(code=1001, detail=_("Invalid member id"))
         members, total = _members_payload(post)
         return ApiResponse(
-            data={"members": members, "total": total, "truncated": total > len(members)},
+            data={"members": members, "total": total, "truncated": total > len(members), "skipped": skipped},
             detail=_("Members updated"),
         )
 

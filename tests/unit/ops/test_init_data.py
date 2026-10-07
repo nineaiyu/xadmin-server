@@ -75,6 +75,8 @@ class TestMainFlow:
     @pytest.fixture
     def run_main(self, monkeypatch):
         """打桩 call_command 与 UserInfo 管理器，返回 (calls, created, invoke)。"""
+        import django
+
         from identity.models import UserInfo
         from ops import init_data
 
@@ -85,6 +87,11 @@ class TestMainFlow:
             calls.append(name)
 
         monkeypatch.setattr("django.core.management.call_command", fake_call_command)
+        # django.setup() 每次调用都会重新应用 dictConfig（logging.shutdown 关闭全部
+        # 既有 handler，console handler 改绑当时的 pytest 捕获流）——测试进程内 Django
+        # 已就绪，setup 是脚本入口的关注点；不桩断的话，后续用例会持有指向已关闭
+        # 捕获流的 handler，日志落盘类断言随机炸 ValueError: I/O operation on closed file
+        monkeypatch.setattr(django, "setup", lambda *a, **kw: None)
 
         def invoke(argv=(), *, user_exists=False):
             monkeypatch.setattr(sys, "argv", ["init_data.py", *argv])

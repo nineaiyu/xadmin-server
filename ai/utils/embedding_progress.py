@@ -45,7 +45,20 @@ def get_status() -> dict:
 
 
 def mark_running(total: int) -> None:
-    _write({"state": "running", "percent": 0, "stage": "collect", "embedded": 0, "total": int(total or 0)})
+    """开工即整体重置为 running：上一轮终态（summary/finished_time）就地清除，
+    残留终态不会被下一轮首轮轮询命中；进度字段同步归零，本轮终态摘要仍在结束后保留 1 小时。"""
+    cache.set(
+        BUILD_STATUS_KEY,
+        {
+            "state": "running",
+            "percent": 0,
+            "stage": "collect",
+            "embedded": 0,
+            "total": int(total or 0),
+            "updated_time": timezone.now().isoformat(),
+        },
+        STATUS_TTL,
+    )
 
 
 def mark_progress(percent: int, stage: str = "", embedded: int = 0) -> None:

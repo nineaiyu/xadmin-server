@@ -27,31 +27,42 @@ class TestGetPendingResult:
             func,
             lambda r: True,
             loop_count=1,
-            sleep_time=0.01,
+            # sleep_time 只用于推导状态键 TTL（本路径不会真睡）：0.5 → TTL 1.5s，
+            # 与循环内 Redis 往返拉开两个数量级余量，避免极小 TTL 在窗口内过期
+            sleep_time=0.5,
             unique_key="u1",
             locker_key="locker-1",
         )
         assert ok is True
         assert result == {"data": "payload"}
 
-    def test_expect_func_false_times_out(self):
+    def test_expect_func_false_times_out(self, monkeypatch):
         calls = []
 
         def func():
             calls.append(1)
             return "no"
 
+        # 状态键 TTL = loop_count*sleep_time*(run_func_count+1)：按生产量级缩微后的
+        # 极小 TTL（如 0.03s）会在真实 sleep 的轮询窗口内先于 loop_count 耗尽过期，
+        # 下一轮读不到自身键即误入「请求重复」分支——并发负载下 Redis 往返变慢时
+        # 偶发。注入可控时间源（sleep 置空）把轮询窗口塌缩为纯 Redis 往返，TTL 竞态
+        # 消除；被测语义（loop_count 耗尽 → 「请求超时」）与断言强度保持不变。
+        import common.utils.pending as pending_module
+
+        monkeypatch.setattr(pending_module.time, "sleep", lambda _seconds: None)
+
         ok, result = get_pending_result(
             func,
             lambda r: False,
-            loop_count=1,
-            sleep_time=0.01,
+            loop_count=2,
+            sleep_time=3,
             unique_key="u2",
             locker_key="locker-2",
         )
         assert ok is False
         assert result == {"err_msg": "请求超时"}
-        assert len(calls) >= 1
+        assert len(calls) == 3  # 首轮 + loop_count 轮重试，func 恰好执行 loop_count+1 次
 
     def test_repeated_key_beyond_limit_rejected(self):
         # pop_first=False：超出并发数时移除最新请求，返回重复错误
@@ -62,7 +73,7 @@ class TestGetPendingResult:
             lambda: "x",
             lambda r: True,
             loop_count=1,
-            sleep_time=0.01,
+            sleep_time=0.5,
             unique_key="u-new",
             run_func_count=1,
             pop_first=False,
@@ -80,7 +91,7 @@ class TestGetPendingResult:
             lambda: "done",
             lambda r: True,
             loop_count=1,
-            sleep_time=0.01,
+            sleep_time=0.5,
             unique_key="u-new",
             run_func_count=2,
             pop_first=True,
@@ -99,7 +110,7 @@ class TestGetPendingResult:
             broken,
             lambda r: True,
             loop_count=1,
-            sleep_time=0.01,
+            sleep_time=0.5,
             unique_key="u-err",
             locker_key="locker-err",
         )
