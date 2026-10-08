@@ -26,10 +26,10 @@ def missing_pk_failures(pks, handled_pks) -> list:
     """取值域外/已失效 pk 的失败明细（不可见单不泄露存在性，原因统一口径）。
 
     批量入口只对取值域内可见的单逐条处理；勾选中其余 pk 若静默跳过，
-    前端「勾选 N 条」与结果数就对不上——统一计入 failed 明细返回。
+    前端「勾选 N 条」与结果数就对不上——统一计入 failures 明细返回。
     """
     detail = str(_("No visible application for the given id"))
-    return [{"no": str(pk)[:8].upper(), "reason": detail} for pk in pks if str(pk) not in handled_pks]
+    return [{"pk": str(pk), "detail": detail} for pk in pks if str(pk) not in handled_pks]
 
 
 class ApprovalInstanceBatchMixin:
@@ -72,7 +72,7 @@ class ApprovalInstanceBatchMixin:
         if not pks:
             raise ValidationError(_("Please select the data to operate"))
         comment = (request.data.get("comment") or "").strip()
-        succeeded, failed, handled_pks = 0, [], set()
+        succeeded, failures, handled_pks = 0, [], set()
         queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
         for instance in queryset:
             handled_pks.add(str(instance.pk))
@@ -80,16 +80,16 @@ class ApprovalInstanceBatchMixin:
                 assignee=request.user, status=ApprovalNodeTask.Status.PENDING, node=instance.current_node
             ).first()
             if task is None:
-                failed.append({"no": str(instance.pk)[:8].upper(), "reason": str(_("No pending task for you"))})
+                failures.append({"pk": str(instance.pk), "detail": str(_("No pending task for you"))})
                 continue
             ok, detail = approve_task(task.pk, request.user, comment)
             if ok:
                 succeeded += 1
             else:
-                failed.append({"no": str(instance.pk)[:8].upper(), "reason": str(detail)})
-        failed.extend(missing_pk_failures(pks, handled_pks))
+                failures.append({"pk": str(instance.pk), "detail": str(detail)})
+        failures.extend(missing_pk_failures(pks, handled_pks))
         return ApiResponse(
-            data={"succeeded": succeeded, "failed": failed},
+            data={"succeeded": succeeded, "failures": failures},
             detail=_("Operation successful. Approved {} data").format(succeeded),
         )
 
@@ -116,7 +116,7 @@ class ApprovalInstanceBatchMixin:
         pks = request.data.get("pks") or []
         if not pks:
             raise ValidationError(_("Please select the data to operate"))
-        succeeded, failed, handled_pks = 0, [], set()
+        succeeded, failures, handled_pks = 0, [], set()
         queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
         for instance in queryset:
             handled_pks.add(str(instance.pk))
@@ -124,16 +124,16 @@ class ApprovalInstanceBatchMixin:
                 assignee=request.user, status=ApprovalNodeTask.Status.PENDING, node=instance.current_node
             ).first()
             if task is None:
-                failed.append({"no": str(instance.pk)[:8].upper(), "reason": str(_("No pending task for you"))})
+                failures.append({"pk": str(instance.pk), "detail": str(_("No pending task for you"))})
                 continue
             ok, detail = reject_task(task.pk, request.user, reason)
             if ok:
                 succeeded += 1
             else:
-                failed.append({"no": str(instance.pk)[:8].upper(), "reason": str(detail)})
-        failed.extend(missing_pk_failures(pks, handled_pks))
+                failures.append({"pk": str(instance.pk), "detail": str(detail)})
+        failures.extend(missing_pk_failures(pks, handled_pks))
         return ApiResponse(
-            data={"succeeded": succeeded, "failed": failed},
+            data={"succeeded": succeeded, "failures": failures},
             detail=_("Operation successful. Rejected {} data").format(succeeded),
         )
 

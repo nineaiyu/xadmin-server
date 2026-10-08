@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+"""[[verbose_name]] 的 AI 动作声明骨架（generate_crud 生成）。
+
+注册方式：在 ai/utils/ai_api_registry.py 里 import 本模块的 AI_READ_ACTIONS，并并入 API_ACTION_SPECS；
+只读动作可直接注册（AI 工具目录 / MCP / 原生 function calling 三者同源）。
+
+写动作（create/update/destroy）启用前需确认：412 审批口径、字段权限、幂等语义，
+格式见文件末尾注释。
+"""
+
+from django.utils.translation import gettext_lazy as _
+
+from ai.utils.ai_api_actions import api_action
+
+RESOURCE_PATH = "[[resource]]"
+
+AI_READ_ACTIONS = {
+    "[[model_snake]].list": api_action(
+        key="[[model_snake]].list",
+        label=_("[[verbose_name]]列表"),
+        description=_("查询[[verbose_name]]列表（支持关键字与分页）"),
+        method="GET",
+        path=RESOURCE_PATH,
+        params={
+            "search": {"type": "string", "in": "query", "description": "关键字"},
+            "page": {"type": "int", "in": "query", "description": "页码"},
+            "size": {"type": "int", "in": "query", "description": "每页条数"},
+        },
+    ),
+    "[[model_snake]].detail": api_action(
+        key="[[model_snake]].detail",
+        label=_("[[verbose_name]]详情"),
+        description=_("按主键查询单条[[verbose_name]]"),
+        method="GET",
+        path=f"{RESOURCE_PATH}/<pk>",
+        params={
+            "pk": {"type": "pk", "in": "path", "required": True, "description": "主键"},
+        },
+    ),
+}
+
+# 写动作（确认审批与权限后放开）：
+# AI_WRITE_ACTIONS = {
+#     "[[model_snake]].create": api_action(
+#         key="[[model_snake]].create", label=_("新建[[verbose_name]]"),
+#         description=_("新建一条[[verbose_name]]"), method="POST", path=RESOURCE_PATH,
+#         params={},  # 按模型字段补齐（必填字段用 required=True）
+#     ),
+# }

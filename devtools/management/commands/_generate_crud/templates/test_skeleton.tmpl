@@ -1,0 +1,18 @@
+# -*- coding: utf-8 -*-
+"""[[verbose_name]] API 测试骨架（generate_crud 生成）：按需补断言后提交。"""
+
+import pytest
+
+pytestmark = pytest.mark.django_db
+
+LIST_URL = "/[[url_prefix]]"
+
+
+class Test[[model_name]]Api:
+    def test_list_requires_auth(self, api_client):
+        assert api_client.get(LIST_URL).status_code == 401
+
+    def test_list_contract(self, auth_client):
+        response = auth_client.get(LIST_URL, {"page": 1, "size": 10})
+        assert response.status_code == 200
+        assert "results" in response.json()["data"]

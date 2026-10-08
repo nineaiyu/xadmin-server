@@ -46,7 +46,12 @@ class SettingSaveContractMixin:
     @property
     def _change_fields(self):
         warnings.warn(
-            str(_("settings 序列化器 _change_fields 已更名为 change_fields（显式契约），别名将在下个大版本移除")),
+            str(
+                _(
+                    "Settings serializer _change_fields has been renamed to change_fields "
+                    "(explicit contract); the alias will be removed in the next major version"
+                )
+            ),
             DeprecationWarning,
             stacklevel=2,
         )
@@ -55,7 +60,12 @@ class SettingSaveContractMixin:
     @_change_fields.setter
     def _change_fields(self, value):
         warnings.warn(
-            str(_("settings 序列化器 _change_fields 已更名为 change_fields（显式契约），别名将在下个大版本移除")),
+            str(
+                _(
+                    "Settings serializer _change_fields has been renamed to change_fields "
+                    "(explicit contract); the alias will be removed in the next major version"
+                )
+            ),
             DeprecationWarning,
             stacklevel=2,
         )

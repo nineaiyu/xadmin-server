@@ -108,7 +108,9 @@ class StubLLM:
 @pytest.fixture
 def stub_llm(monkeypatch):
     stub = StubLLM()
-    monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+    monkeypatch.setattr(
+        "integrations.sdk.ai.chat.ChatCompletionsClient._request", lambda self, url, kwargs: stub.post(url, **kwargs)
+    )
     return stub
 
 

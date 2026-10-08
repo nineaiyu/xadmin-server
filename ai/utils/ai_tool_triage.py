@@ -34,6 +34,10 @@ TRIAGE_RESOURCES = {
         "exempt",
         "代码生成器为开发者页面工具（模型清单/字段勾选/预览/下载为 GUI 向导链路，产物下载为文件动作），不进 AI 工具面",
     ),
+    "system/codegen-plans": (
+        "exempt",
+        "代码生成方案的保存/取用为同一开发者页面工具的配套存储（个人级表单状态），与生成器同口径不进 AI 工具面",
+    ),
     "system/credentials": ("exempt", "凭据总览与轮换为高危运维动作，需人工确认"),
     "system/dept": ("exempt", "部门树维护在组织管理页面（权限与数据域强相关）"),
     "system/directory": ("exempt", "通讯录为只读人员名录页面链路（无写动作）"),

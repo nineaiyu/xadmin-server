@@ -13,11 +13,12 @@ from rest_framework import serializers
 
 from ai.models.ai import AiKnowledgeChunk, AiKnowledgeDocument, AiProfile
 from ai.utils.ai import MAX_UPLOAD_CONTENT_LENGTH, MAX_UPLOAD_NAME_LENGTH, set_document_active
+from ai.utils.ai_config import outbound_allowed_hosts
 from ai.utils.doc_extract import PARSABLE_EXTENSIONS
 from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
 from common.core.validation import trim_required
-from common.utils.outbound import OutboundBlocked, validate_outbound_url
+from common.utils.outbound import OutboundBlocked, validate_outbound_config_url
 from task.services import DisplayRelatedField
 
 # 名称中的路径分隔符会破坏 upload/ 前缀隔离，统一拒绝
@@ -124,11 +125,17 @@ class AiProfileSerializer(BaseModelSerializer):
         url = (value or "").strip()
         if not (url.startswith("http://") or url.startswith("https://")):
             raise serializers.ValidationError(_("Base URL must start with http:// or https://"))
-        # 出站地址归属校验（SSRF）：AI 服务允许内网/环回（自建推理服务与本地联调），
-        # 但拒绝云元数据 / link-local / 隧道地址；域名当前不可解析不阻断保存，
-        # 发送侧仍会做地址校验
+        # 出站地址归属校验（SSRF），与 Webhook/MCP 同口径：https 强制（写入侧域名不解
+        # 析，发送侧严格校验）；http 仅允许 loopback（本地联调）或 OUTBOUND_ALLOWED_HOSTS
+        # 登记目标——自建推理服务须显式登记主机，base_url 默认不得指向内网
         try:
-            validate_outbound_url(url, allow_private=True, allow_loopback=True, strict_resolve=False)
+            validate_outbound_config_url(
+                url,
+                allowed_hosts=outbound_allowed_hosts(),
+                scheme_message=_(
+                    "Base URL must use https (http is allowed for loopback or OUTBOUND_ALLOWED_HOSTS targets)"
+                ),
+            )
         except OutboundBlocked as exc:
             raise serializers.ValidationError([str(item) for item in exc.messages]) from exc
         return url

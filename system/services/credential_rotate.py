@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""凭据轮换动作（系统配置键 / 模型密钥字段的再生成与轮换，自 credential 拆分，行为不变）。"""
+"""凭据轮换动作服务（系统配置键 / 模型密钥字段的再生成与轮换，自 credential 拆分，行为不变）。
+
+归位为 system 服务层：本模块承担落库、审计与配置缓存失效等业务副作用。
+"""
 
 import secrets
 
@@ -13,7 +16,7 @@ from common.core.credentials import (
     encryption_status,
 )
 from common.utils import get_logger
-from system.utils.platform.credential import (
+from system.services.credential import (
     MODEL_CREDENTIAL_FIELDS,
     NOT_CONFIGURED_DETAIL,
     NOT_ROTATABLE_DETAIL,

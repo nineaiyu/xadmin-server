@@ -455,7 +455,13 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 > ② 「水印设置」页签拆出独立权限点 `retrieve/partialUpdate:SettingWatermark`
 > （与 `SettingBasic` 同端点，仅前端授权粒度拆分）——存量自定义角色升级后水印页签暂不可见，
 > 需在角色管理显式勾选新权限点（SystemAdmin 自动获得，口径见
-> [menu-maintenance.md §6](../guide/menu-maintenance.md)）。
+> [menu-maintenance.md §6](../guide/menu-maintenance.md)）；
+> ③ 发送验证码端点移除了 **username 表单类型**（无投递通道，回显管线一并下线）——
+> 登录/注册页的「用户名」验证码页签消失，账号密码登录/注册仍由 `/login/basic`
+> 与邮件/短信验证码通道承载（注册至少需 `EMAIL_ENABLED` / `SMS_ENABLED` 其一）；
+> 配置项 `SECURITY_REGISTER_BY_BASIC_ENABLED` 同步移除（存量库中的同名设置行不再被读取，
+> 可留可删）。发送端仍接受手工缓存的 username 类 verify_token（兼容存量令牌，
+> 登录分支照旧要求密码校验）。前端需重新构建部署。
 
 > 历史版本注意：compose 内置与 `config.yml` 对齐的数据库/Redis 默认密码兜底（单机自用决策，见 docker-compose.yml 注释）——*
 *生产部署必须**通过环境变量或 `.env` 覆盖 `DB_PASSWORD` / `REDIS_PASSWORD` 为随机值，并在 `config.yml` 中同步修改（config.yml

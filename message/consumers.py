@@ -312,9 +312,24 @@ class ChatNotify(AsyncJsonWebsocket):
                     "sender_pk": self.user.pk,
                 },
             )
+        # 落库兜底：目标不在聊天室页面（含离线）时通知中心可回看（群聊普通消息不落）
+        await database_sync_to_async(chat_service.store_chat_notices)(
+            targets,
+            title=title,
+            message=payload.get("content", ""),
+            extra={
+                "chat_room_id": str(room.pk),
+                "chat_message_type": "chat_private",
+                "sender_pk": str(self.user.pk),
+            },
+        )
 
     async def notify_group(self, room, payload: dict):
-        """群聊站内信：提醒不在聊天室页面的成员（在线者已实时收到，不重复提醒）。"""
+        """群聊站内信：提醒不在聊天室页面的成员（在线者已实时收到，不重复提醒）。
+
+        群聊普通消息**不落库**（高频消息落站内信会灌满通知中心）：实时提醒即可，
+        离线回看走聊天室自身的未读游标；需要离线可见请使用 @提及（提及落库）。
+        """
         member_pks = await database_sync_to_async(chat_service.room_member_pks)(room)
         targets = await self.offline_notice_targets(member_pks)
         if not targets:
@@ -347,9 +362,11 @@ class ChatNotify(AsyncJsonWebsocket):
             return
         enabled = await database_sync_to_async(batch_push_chat_enabled)(pks)
         title = str(_("User {} mentioned you in the chat room").format(self.user.username))
+        pushed_pks = []
         for target in targets:
             if target.pk == self.user.pk or not enabled.get(target.pk, True):
                 continue
+            pushed_pks.append(target.pk)
             await async_push_message(
                 target.pk,
                 {
@@ -362,6 +379,17 @@ class ChatNotify(AsyncJsonWebsocket):
                     "sender_pk": self.user.pk,
                 },
             )
+        # 落库兜底：与推送同批目标（离线/不在聊天室时通知中心可回看）
+        await database_sync_to_async(chat_service.store_chat_notices)(
+            pushed_pks,
+            title=title,
+            message=content,
+            extra={
+                "chat_room_id": str(payload.get("room_id") or ""),
+                "chat_message_type": "chat_message",
+                "sender_pk": str(self.user.pk),
+            },
+        )
 
     async def chat_channel_alive(self, user_pk) -> bool:
         """对端是否正开着聊天室页面（存在活跃聊天连接）。查询失败按「不在线」处理。"""

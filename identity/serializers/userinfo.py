@@ -70,6 +70,14 @@ class UserInfoSerializer(BaseModelSerializer):
 
 
 class ChangePasswordSerializer(serializers.Serializer):
+    """改密载荷：字段少而语义特殊，改动前先读本说明。
+
+    字段面只有 ``old_password`` + ``sure_password``：后者即**新密码**——前端表单的
+    「新密码 / 确认密码」两栏在提交层只发一栏（确认栏仅用于本地一致性比对），
+    后端字段名沿用了表单里的「确认」语义；改名会同时触碰两端契约，保持现状并以
+    本说明消歧。
+    """
+
     # 密码下限不在字段上硬编码：与改密链路其他序列化器同口径，唯一由
     # check_password_rules 按长度/复杂度开关判定（旧密码仅做核验，不设策略下限）
     old_password = serializers.CharField(max_length=128, required=True, write_only=True, label=_("Old password"))

@@ -1,0 +1,15 @@
+{
+  "title": "",
+  "icon": "ep:document",
+  "r_svg_name": "",
+  "is_show_menu": true,
+  "is_show_parent": false,
+  "is_keepalive": true,
+  "frame_url": "",
+  "frame_loading": false,
+  "transition_enter": "",
+  "transition_leave": "",
+  "is_hidden_tag": false,
+  "fixed_tag": false,
+  "dynamic_level": 0
+}

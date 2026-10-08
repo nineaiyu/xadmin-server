@@ -52,7 +52,6 @@ logger = get_logger(__name__)
                         "sms": build_basic_type(OpenApiTypes.BOOL),
                         "rate": build_basic_type(OpenApiTypes.NUMBER),
                         "lifetime": build_basic_type(OpenApiTypes.NUMBER),
-                        "basic": build_basic_type(OpenApiTypes.BOOL),
                         "reset": build_basic_type(OpenApiTypes.BOOL),
                         "register": build_basic_type(OpenApiTypes.BOOL),
                         "password": build_array_type(
@@ -94,7 +93,6 @@ logger = get_logger(__name__)
                 "data": build_object_type(
                     properties={
                         "verify_token": build_basic_type(OpenApiTypes.STR),
-                        "verify_code": build_basic_type(OpenApiTypes.STR),
                         "extra": build_basic_type(OpenApiTypes.ANY),
                     }
                 )
@@ -158,11 +156,11 @@ class SendVerifyCodeAPIView(GenericAPIView):
         form_type = request.data.get("form_type")
         target = request.data.get("target")
 
+        # 表单类型仅限有真实投递通道者（phone/email）：username 类型无投递通道，
+        # 不再提供——账号密码登录由 /api/system/login/basic 承载
         form_types = []
         if config.get("sms"):
             form_types.append("phone")
-        if config.get("basic"):
-            form_types.append("username")
         if config.get("email"):
             form_types.append("email")
 
@@ -198,16 +196,11 @@ class SendVerifyCodeAPIView(GenericAPIView):
             LoginIpBlockUtil(ipaddr).set_block_if_need()
             return ApiResponse(code=1001, detail=_("Operation failed. Abnormal data"))
 
-        # 设计口径：username（basic）表单类型没有短信/邮件投递通道，验证码按设计随响应
-        # 返回（dryrun 只渲染不投递），由前端回填以完成校验管线。该路径的实际防线是
-        # 发送侧图形验证码/临时令牌/限流与提交侧密码认证+失败锁定，动态验证码因子
-        # 仅在 phone/email 表单类型生效（走真实投递通道，响应不回显）。
-        dryrun = form_type == "username"
-        code = ""
+        # 仅真实投递通道（phone/email）：验证码随真实下发，响应不回显
         if should_send:
             try:
                 content, code = self.prepare_code_data(username)
-                SendAndVerifyCodeUtil(target, code, backend=form_type, dryrun=dryrun, **content).gen_and_send_async()
+                SendAndVerifyCodeUtil(target, code, backend=form_type, **content).gen_and_send_async()
             except ValueError as e:
                 # 发送工具抛出的 ValueError 为业务校验文案
                 logger.warning("Send verify code failed: %s", e)
@@ -219,9 +212,6 @@ class SendVerifyCodeAPIView(GenericAPIView):
         cache_data = {"target": target, "form_type": form_type, "query_key": query_key, "extra": extra}
         verify_token = TokenTempCache.generate_cache_token(settings.VERIFY_CODE_TTL, cache_data)
         data = {"verify_token": verify_token, "extra": extra}
-        if dryrun and code:
-            # 仅 basic 表单类型回显验证码（phone/email 走真实投递）：见上方 dryrun 设计口径
-            data["verify_code"] = code
 
         return ApiResponse(data=data, detail=_("The verification code has been sent"))
 
@@ -235,7 +225,6 @@ class SendVerifyCodeAPIView(GenericAPIView):
             "email": settings.SECURITY_REGISTER_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
             "sms": settings.SECURITY_REGISTER_BY_SMS_ENABLED and settings.SMS_ENABLED,
             "rate": settings.VERIFY_CODE_LIMIT,
-            "basic": settings.SECURITY_REGISTER_BY_BASIC_ENABLED,
             "password": get_password_check_rules(request.user),
         }
         return config
@@ -249,7 +238,6 @@ class SendVerifyCodeAPIView(GenericAPIView):
             "encrypted": settings.SECURITY_LOGIN_ENCRYPTED_ENABLED,
             "email": settings.SECURITY_LOGIN_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
             "sms": settings.SECURITY_LOGIN_BY_SMS_ENABLED and settings.SMS_ENABLED,
-            "basic": settings.SECURITY_LOGIN_BY_BASIC_ENABLED,
             "rate": settings.VERIFY_CODE_LIMIT,
             "lifetime": settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME").days,
             "reset": settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED,

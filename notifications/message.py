@@ -59,6 +59,29 @@ class SiteMessageUtil:
         return notify_obj
 
     @classmethod
+    def store_notice(
+        cls,
+        users: list | QuerySet,
+        title: str,
+        message: str,
+        notice_type: int,
+        level: MessageContent.LevelChoices,
+        extra_json: dict | None = None,
+    ):
+        """仅落库（不推送）：供已有实时投递链路的调用方做「持久化兜底」。
+
+        与 ``base_notify`` 的差别是跳过 ``push_notice_messages``——调用方自身
+        负责实时推送（如聊天提醒的 WS 投递），避免同一提醒双通道重复推送。
+        """
+        recipients = users if isinstance(users, (QuerySet, list)) else [users]
+        with transaction.atomic():
+            notify_obj = MessageContent.objects.create(
+                title=title, publish=True, message=message, level=level, notice_type=notice_type, extra_json=extra_json
+            )
+            notify_obj.notice_user.set(recipients)
+        return notify_obj
+
+    @classmethod
     def base_notify(
         cls,
         users: list | QuerySet,
@@ -68,15 +91,8 @@ class SiteMessageUtil:
         level: MessageContent.LevelChoices,
         extra_json: dict | None = None,
     ):
-        if isinstance(users, (QuerySet, list)):
-            recipients = users
-        else:
-            recipients = [users]
-        with transaction.atomic():
-            notify_obj = MessageContent.objects.create(
-                title=title, publish=True, message=message, level=level, notice_type=notice_type, extra_json=extra_json
-            )
-            notify_obj.notice_user.set(recipients)
+        notify_obj = cls.store_notice(users, title, message, notice_type, level, extra_json)
+        recipients = users if isinstance(users, (QuerySet, list)) else [users]
         cls.push_notice_messages(
             notify_obj, [user.pk for user in recipients] if isinstance(recipients[0], UserInfo) else recipients
         )

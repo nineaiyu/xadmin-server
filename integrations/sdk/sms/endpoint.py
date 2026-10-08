@@ -54,3 +54,8 @@ class SMS:
                 code="verify_code_sign_tmpl_invalid", detail=_("SMS verification code signature or template invalid")
             )
         return self.send_sms([phone_number], sign_name or "", template_code or "", OrderedDict(code=code))
+
+
+def send_verify_code(phone_number, code):
+    """验证码短信发送入口：供框架层验证码编排注册回调，避免框架层直接依赖本域。"""
+    return SMS().send_verify_code(phone_number, code)

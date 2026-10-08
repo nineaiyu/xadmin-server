@@ -1139,5 +1139,22 @@
       "key": "MANUAL_RUNNABLE_TASKS",
       "inherit": false
     }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b42",
+    "fields": {
+      "created_time": "2026-10-08T00:00:00Z",
+      "updated_time": "2026-10-08T00:00:00Z",
+      "description": "模块裁剪页展示的重启命令（按部署形态覆盖：Docker/Compose 等非标准部署改为实际命令）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "sh xadmin.sh restart",
+      "is_active": true,
+      "access": false,
+      "key": "MODULE_RESTART_COMMAND",
+      "inherit": false
+    }
   }
 ]

@@ -1,0 +1,16 @@
+<script lang="ts" setup>
+import { RePlusPage } from "@/components/RePlusPage";
+
+import { use[[component]] } from "./utils/hook";
+
+defineOptions({
+  // 必须唯一：权限码按 动作:组件名 匹配
+  name: "[[component]]"
+});
+
+const { api, auth } = use[[component]]();
+</script>
+
+<template>
+  <RePlusPage :api="api" :auth="auth" locale-name="[[locale_name]]" />
+</template>

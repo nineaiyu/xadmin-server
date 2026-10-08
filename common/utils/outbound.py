@@ -323,3 +323,65 @@ def parse_allowed_hosts(value) -> tuple[str, ...]:
         if host and host not in hosts:
             hosts.append(host)
     return tuple(hosts)
+
+
+# 出站配置写入侧的 loopback 主机：http 仅对本地联调目标放行（https 不受限）
+LOOPBACK_HOSTS = ("127.0.0.1", "localhost")
+
+
+def outbound_allowed_hosts() -> tuple[str, ...]:
+    """出站白名单统一读取：系统配置 ``OUTBOUND_ALLOWED_HOSTS``（解析为域名/IP 元组）。
+
+    各出站目标（Webhook / AI base_url / MCP server）同源消费本函数，配置不可用
+    时按空白名单降级——私网目标即默认拒绝（fail-closed），不因配置读取异常放行。
+    """
+    try:
+        from common.core.config import SysConfig
+
+        return parse_allowed_hosts(SysConfig.OUTBOUND_ALLOWED_HOSTS)
+    except Exception:  # noqa: BLE001 配置不可用时按空白名单（私网目标默认拒绝）
+        return ()
+
+
+def validate_outbound_config_url(
+    url: str,
+    *,
+    allowed_hosts: Iterable[str] = (),
+    allow_loopback: bool = True,
+    allow_private: bool = False,
+    allow_http_whitelist: bool = True,
+    scheme_message=None,
+    resolver: Resolver | None = None,
+) -> str:
+    """写入侧出站配置地址统一校验（Webhook / AI base_url / MCP / 回调地址共用）。
+
+    协议口径：https 一律放行；http 仅当目标为 loopback（本地联调）或
+    ``allowed_hosts`` 白名单登记（内网自建服务）时放行——其余协议与未登记目标拒绝。
+
+    与执行侧 ``pinned_request`` 同源：写入侧域名不做解析（可能尚未上线 / 仅内网
+    DNS 可见 / 被本地 DNS 屏蔽），归属校验统一留到发送侧；IP 字面量两种模式都校验。
+
+    :param allow_http_whitelist: http 是否接受白名单登记的目标（False = 仅 loopback）
+    :param scheme_message: 协议不合规时的错误文案（各资源保留各自语义）
+    """
+    raw = str(url or "").strip()
+    host = str(urlsplit(raw).hostname or "").lower()
+    allowed = raw.startswith("https://")
+    if not allowed and raw.startswith("http://"):
+        if allow_loopback and host in LOOPBACK_HOSTS:
+            allowed = True
+        elif allow_http_whitelist:
+            allowed = host in {str(item).strip().lower() for item in (allowed_hosts or ()) if str(item).strip()}
+    if not allowed:
+        raise OutboundBlocked(
+            scheme_message or _("Outbound url must use https (http is allowed for loopback or registered targets)")
+        )
+    validate_outbound_url(
+        raw,
+        allow_private=allow_private,
+        allow_loopback=allow_loopback,
+        allowed_hosts=allowed_hosts,
+        resolver=resolver,
+        strict_resolve=False,
+    )
+    return raw

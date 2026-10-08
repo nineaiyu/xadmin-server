@@ -218,7 +218,8 @@ async def test_stream_self_built_client_5xx_retry_reads_status(monkeypatch):
     monkeypatch.setattr(httpx, "AsyncClient", _factory)
     monkeypatch.setattr("integrations.sdk.ai.async_chat._RETRY_BASE_DELAY", 0)
 
-    client = AsyncChatCompletionsClient(CREDENTIALS)
+    # 自建路径会走出站守卫（MockTransport 不接真实网络）：测试域名显式登记白名单
+    client = AsyncChatCompletionsClient({**CREDENTIALS, "allowed_hosts": ("ai.example.com",)})
     frames = [item async for item in client.chat_stream([{"role": "user", "content": "hi"}])]
     assert calls["n"] == 2  # 500 一次 + 成功一次：重试判定读到状态码后才可能重试
     assert frames[-1] == {"type": "content", "text": "ok"}

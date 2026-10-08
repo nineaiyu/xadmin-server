@@ -91,6 +91,17 @@ def embedding_credentials():
     return profile_credentials(profile)
 
 
+def outbound_allowed_hosts() -> tuple:
+    """出站白名单（与 Webhook/MCP 同源：``OUTBOUND_ALLOWED_HOSTS``）。
+
+    AI 出站目标默认拒绝私网（loopback 供本地联调）；自建推理服务须在系统配置
+    登记主机后放行（配置读取失败按空白名单降级，私网目标即默认拒绝）。
+    """
+    from common.utils.outbound import outbound_allowed_hosts as _load_allowed_hosts
+
+    return _load_allowed_hosts()
+
+
 def embedding_enabled() -> bool:
     """向量通道是否可启用（存在可用的 embedding 档案）。"""
     return embedding_credentials() is not None

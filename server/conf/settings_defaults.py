@@ -64,7 +64,6 @@ SETTINGS_CONFIG = {
     "SECURITY_REGISTER_TEMP_TOKEN_ENABLED": True,
     "SECURITY_REGISTER_BY_EMAIL_ENABLED": True,
     "SECURITY_REGISTER_BY_SMS_ENABLED": False,
-    "SECURITY_REGISTER_BY_BASIC_ENABLED": True,
     # 忘记密码规则
     "SECURITY_RESET_PASSWORD_ACCESS_ENABLED": True,
     "SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED": True,
@@ -333,6 +332,8 @@ SETTINGS_CONFIG = {
     "EXPORT_ASYNC_MAX_RUNNING": 3,
     # 主机监控心跳历史保留天数（30s 一条长期落库）
     "MONITOR_RETENTION_DAYS": 30,
+    # 模块裁剪页展示的重启命令（Docker/Compose 部署按实际部署形态覆盖）
+    "MODULE_RESTART_COMMAND": "sh xadmin.sh restart",
     # 纯 HTTP 会话在线判定窗口（秒）/ 已结束会话记录保留天数
     "SESSION_ONLINE_TIMEOUT": 300,
     "USER_SESSION_RETENTION_DAYS": 30,

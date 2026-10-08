@@ -74,7 +74,9 @@ def stub_llm(monkeypatch):
             return _FakeResponse({"choices": [{"message": {"content": "provider ok"}}]})
 
     _Stub.calls = []
-    monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: _Stub())
+    monkeypatch.setattr(
+        "integrations.sdk.ai.chat.ChatCompletionsClient._request", lambda self, url, kwargs: _Stub().post(url, **kwargs)
+    )
     return _Stub.calls
 
 

@@ -210,3 +210,81 @@ class TestSubmissionVersionAndLinkage:
             format="json",
         )
         assert resp.data["code"] == 1000, resp.data
+
+
+class TestCreatorGuard:
+    """创建者隔离（与 Dataset/大屏同口径）：非创建者不可改删；is_owner 随行下发。
+
+    单改/单删返回 1003；批量删除走逐行分支——越权项进 failures 明细（不静默跳过）。
+    """
+
+    def _grant(self, user, menu_factory, *, with_batch=False):
+        menus = [
+            menu_factory("list:FormDesigner", path="api/dataset/dynamic-forms$", method="GET"),
+            menu_factory("create:FormDesigner", path="api/dataset/dynamic-forms$", method="POST"),
+            menu_factory(
+                "partialUpdate:FormDesigner", path="api/dataset/dynamic-forms/(?P<pk>[^/.]+)$", method="PATCH"
+            ),
+            menu_factory("destroy:FormDesigner", path="api/dataset/dynamic-forms/(?P<pk>[^/.]+)$", method="DELETE"),
+        ]
+        if with_batch:
+            menus.append(
+                menu_factory(
+                    "batchDestroy:FormDesigner", path="api/dataset/dynamic-forms/batch-destroy$", method="POST"
+                )
+            )
+        user.roles.first().menu.add(*menus)
+
+    def test_non_creator_update_and_destroy_rejected(self, auth_client, api_client, normal_user, menu_factory):
+        created = _create_form(auth_client, name="守卫表单")
+        pk = created["pk"]
+        self._grant(normal_user, menu_factory)
+        api_client.force_authenticate(user=normal_user)
+
+        patched = api_client.patch(f"{FORMS_URL}/{pk}", {"name": "越权改名"}, format="json")
+        assert patched.status_code == 200
+        assert patched.json()["code"] == 1003
+        assert DynamicForm.objects.get(pk=pk).name == "守卫表单"
+
+        removed = api_client.delete(f"{FORMS_URL}/{pk}")
+        assert removed.status_code == 200
+        assert removed.json()["code"] == 1003
+        assert DynamicForm.objects.filter(pk=pk).exists()
+
+    def test_creator_can_update_own_form(self, api_client, normal_user, menu_factory):
+        self._grant(normal_user, menu_factory)
+        api_client.force_authenticate(user=normal_user)
+        created = api_client.post(FORMS_URL, {"name": "我的表单", "schema": SCHEMA_V1}, format="json")
+        assert created.data["code"] == 1000, created.data
+        pk = created.data["data"]["pk"]
+
+        resp = api_client.patch(f"{FORMS_URL}/{pk}", {"description": "自用"}, format="json")
+        assert resp.data["code"] == 1000, resp.data
+
+    def test_batch_destroy_reports_guard_failures(self, auth_client, api_client, normal_user, menu_factory):
+        others = _create_form(auth_client, name="他人表单")
+        self._grant(normal_user, menu_factory, with_batch=True)
+        api_client.force_authenticate(user=normal_user)
+        mine = api_client.post(FORMS_URL, {"name": "我的批删表单", "schema": SCHEMA_V1}, format="json")
+        mine_pk = mine.data["data"]["pk"]
+
+        resp = api_client.post(f"{FORMS_URL}/batch-destroy", [str(others["pk"]), str(mine_pk)], format="json")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["code"] == 1000
+        assert [item["pk"] for item in body["data"]["failures"]] == [str(others["pk"])]
+        assert body["data"]["success"] == [str(mine_pk)]
+        assert DynamicForm.objects.filter(pk=others["pk"]).exists()
+        assert not DynamicForm.objects.filter(pk=mine_pk).exists()
+
+    def test_is_owner_flag_exposed(self, auth_client, api_client, normal_user, menu_factory):
+        created = _create_form(auth_client, name="归属表单")
+        pk = created["pk"]
+        self._grant(normal_user, menu_factory)
+
+        admin_rows = {item["pk"]: item for item in auth_client.get(FORMS_URL).json()["data"]["results"]}
+        assert admin_rows[pk]["is_owner"] is True  # 超管
+
+        api_client.force_authenticate(user=normal_user)
+        rows = {item["pk"]: item for item in api_client.get(FORMS_URL).json()["data"]["results"]}
+        assert rows[pk]["is_owner"] is False  # 非创建者（可读但不可写）

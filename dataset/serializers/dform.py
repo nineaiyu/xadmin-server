@@ -64,6 +64,8 @@ class ApprovalFlowRelatedField(BasePrimaryKeyRelatedField):
 
 class DynamicFormSerializer(BaseModelSerializer):
     ignore_field_permission = True
+    # 非创建者修改/删除被写守卫拒绝（1003）：下发 is_owner 供行内按钮显隐
+    row_owner_guard = True
 
     # 绑定流程后提交进入流程引擎（多级审批），approval_required 的操作审批被忽略
     approval_flow = ApprovalFlowRelatedField(
@@ -172,6 +174,8 @@ class DynamicFormListSerializer(BaseModelSerializer):
     """
 
     ignore_field_permission = True
+    # 与 DynamicFormSerializer 同口径：下发 is_owner 供列表行内按钮显隐
+    row_owner_guard = True
     approval_flow = ApprovalFlowRelatedField(
         required=False, allow_null=True, attrs=["pk", "name"], format="{name}", label=_("Approval flow")
     )

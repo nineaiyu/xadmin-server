@@ -827,3 +827,52 @@ class TestClientRootResolution:
         (backend.parent / "xadmin-client").mkdir()
         call_command("generate_crud", "demo.Book", output=str(backend))
         assert (backend.parent / "xadmin-client" / "src" / "views" / "demo" / "book" / "index.vue").exists()
+
+
+class TestTemplates:
+    """产物模板外部化：模板目录随包定位、加载即填充（防「模板路径写错但产物仍是旧实现」的假绿）。"""
+
+    def test_templates_dir_resolves_beside_package(self):
+        from devtools.management.commands._generate_crud import templating
+
+        assert templating.TEMPLATES_DIR.is_dir(), "模板目录缺失（随包分发依赖 Path(__file__).parent/templates）"
+        for name in (
+            "backend_serializer.tmpl",
+            "backend_views.tmpl",
+            "backend_urls.tmpl",
+            "backend_config.tmpl",
+            "client_api.tmpl",
+            "client_hook.tmpl",
+            "client_page.tmpl",
+            "ai_declarations.tmpl",
+            "test_skeleton.tmpl",
+            "seed_menu_meta.json",
+        ):
+            assert (templating.TEMPLATES_DIR / name).is_file(), f"缺少模板 {name}"
+
+    def test_render_template_fills_inline_and_blocks(self):
+        from devtools.management.commands._generate_crud.templating import render_template
+
+        text = render_template("backend_config.tmpl", {"app_label": "demo"})
+        assert 'path("api/demo/", include("demo.urls"))' in text
+        assert "[[" not in text  # 占位符全部被填充
+
+    def test_load_json_template_preserves_key_order(self):
+        from devtools.management.commands._generate_crud.templating import load_json_template
+
+        fields = load_json_template("seed_menu_meta.json")
+        assert list(fields) == [
+            "title",
+            "icon",
+            "r_svg_name",
+            "is_show_menu",
+            "is_show_parent",
+            "is_keepalive",
+            "frame_url",
+            "frame_loading",
+            "transition_enter",
+            "transition_leave",
+            "is_hidden_tag",
+            "fixed_tag",
+            "dynamic_level",
+        ]

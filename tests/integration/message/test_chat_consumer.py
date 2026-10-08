@@ -617,3 +617,76 @@ class TestRecallFlagBroadcast:
         assert chat_service.can_recall_for(message, alice) is False
         row = next(item for item in chat_service.history_messages(room, alice)["results"] if item["id"] == message.pk)
         assert row["can_recall"] is False
+
+
+class TestChatNoticePersistence:
+    """聊天提醒落库（站内信兜底）：私聊/@提及落库为 USER 类站内信，群聊普通消息不落。
+
+    推送负责实时、落库负责可回看——目标离线时此前纯 group_send 会丢，现在通知
+    中心可看到；与推送同批目标（同 PUSH_CHAT_MESSAGE 偏好口径）。
+    """
+
+    def _fake_push(self, monkeypatch):
+        pushes = []
+
+        async def fake_push(user_pk, message, **kwargs):
+            pushes.append((user_pk, message))
+
+        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        return pushes
+
+    def test_private_message_persists_notice(self, ws_layer, alice, bob, monkeypatch, chat_push_enabled):
+        from notifications.models import MessageContent
+
+        room = chat_service.get_or_create_private_room(alice, bob)
+        self._fake_push(monkeypatch)
+
+        async def scenario():
+            consumer, __, ___ = _make_consumer(ws_layer, alice)
+            await consumer.handle_send({"room_id": room.pk, "content": "离线可见的私聊", "client_msg_id": "c-notice-1"})
+
+        async_to_sync(scenario)()
+
+        notices = MessageContent.objects.filter(notice_type=MessageContent.NoticeChoices.USER)
+        assert notices.count() == 1
+        notice = notices.get()
+        assert "离线可见的私聊" in (notice.message or "")
+        assert list(notice.notice_user.values_list("pk", flat=True)) == [bob.pk]
+        assert notice.extra_json["chat_room_id"] == str(room.pk)
+        assert notice.extra_json["chat_message_type"] == "chat_private"
+
+    def test_mention_persists_notice(self, ws_layer, superuser, alice, monkeypatch, chat_push_enabled):
+        from notifications.models import MessageContent
+
+        room = chat_service.get_public_room()
+        self._fake_push(monkeypatch)
+
+        async def scenario():
+            consumer, __, ___ = _make_consumer(ws_layer, superuser)
+            await consumer.handle_send(
+                {"room_id": room.pk, "content": "@alice 请看这条", "client_msg_id": "c-notice-2"}
+            )
+
+        async_to_sync(scenario)()
+
+        notices = MessageContent.objects.filter(notice_type=MessageContent.NoticeChoices.USER)
+        assert notices.count() == 1
+        notice = notices.get()
+        assert list(notice.notice_user.values_list("pk", flat=True)) == [alice.pk]
+        assert notice.extra_json["chat_message_type"] == "chat_message"
+
+    def test_group_message_without_mention_not_persisted(self, ws_layer, alice, bob, monkeypatch, chat_push_enabled):
+        from notifications.models import MessageContent
+
+        room = chat_service.create_group(alice, "通知落库群", [bob.pk])
+        pushes = self._fake_push(monkeypatch)
+
+        async def scenario():
+            consumer, __, ___ = _make_consumer(ws_layer, alice)
+            await consumer.handle_send({"room_id": room.pk, "content": "普通群消息", "client_msg_id": "c-notice-3"})
+
+        async_to_sync(scenario)()
+
+        # 推送发生（bob 不在聊天室页面）但群聊普通消息不落库（高频降噪）
+        assert [pk for pk, __ in pushes] == [bob.pk]
+        assert MessageContent.objects.filter(notice_type=MessageContent.NoticeChoices.USER).count() == 0

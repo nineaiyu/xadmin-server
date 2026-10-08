@@ -56,6 +56,8 @@ class AsyncChatCompletionsClient:
         self.timeout = self._builder.timeout
         self.max_retries = self._builder.max_retries
         self.http = http_client
+        # 出站白名单（与同步客户端共享解析；生产路径发送前严格校验）
+        self.allowed_hosts = self._builder.allowed_hosts
         self.last_usage: dict | None = None
         self.last_reasoning: str | None = None
         self.last_tool_calls: list = []
@@ -69,6 +71,30 @@ class AsyncChatCompletionsClient:
     def _require_config(self) -> None:
         if not (self.base_url and self.api_key and self.model):
             raise AiSdkError("AI client is not configured (base_url/api_key/model)")
+
+    async def _ensure_outbound_allowed(self, url: str) -> None:
+        """生产路径发送前严格校验出站归属（注入 http 的测试路径跳过）。
+
+        异步流式链路不复用同步侧的固定解析连接（httpx 生命周期自管），以
+        「发送前严格解析校验」承担纵深防御：私网目标默认拒绝（loopback 供本地
+        联调），自建服务须在 OUTBOUND_ALLOWED_HOSTS 登记后放行。
+        """
+        if self.http is not None:
+            return
+        from asgiref.sync import sync_to_async
+
+        from common.utils.outbound import OutboundBlocked, validate_outbound_url
+
+        try:
+            await sync_to_async(validate_outbound_url, thread_sensitive=False)(
+                url,
+                allow_private=False,
+                allow_loopback=True,
+                allowed_hosts=self._builder._outbound_allowed_hosts(),
+            )
+        except OutboundBlocked as exc:
+            logger.warning("ai async chat outbound blocked: %s", "; ".join(str(item) for item in exc.messages))
+            raise AiSdkError("AI provider base_url is blocked by the outbound policy") from exc
 
     def _body(self, messages: list, stream: bool = False, **overrides) -> dict:
         return self._builder._body(messages, stream=stream, **overrides)
@@ -86,6 +112,9 @@ class AsyncChatCompletionsClient:
         for attempt in range(attempts):
             try:
                 response = await send()
+            except AiSdkError:
+                # SDK 语义错误（含出站守卫拒绝）：重试无意义，原样上抛
+                raise
             except Exception as exc:
                 if attempt + 1 < attempts:
                     logger.warning("ai async chat request failed (attempt %s/%s): %s", attempt + 1, attempts, exc)
@@ -102,6 +131,7 @@ class AsyncChatCompletionsClient:
 
     async def _post_once(self, url: str, body: dict):
         """单次非流式 POST（自带客户端生命周期；注入客户端时直接复用）。"""
+        await self._ensure_outbound_allowed(url)
         if self.http is not None:
             return await self.http.post(
                 url, timeout=self.timeout, json=body, headers={"Authorization": f"Bearer {self.api_key}"}
@@ -119,6 +149,7 @@ class AsyncChatCompletionsClient:
         注入客户端（测试桩）时 closer 为空操作（生命周期归注入方）。
         重试只发生在响应头到达前（响应体未消费即可整体弃置重开）。
         """
+        await self._ensure_outbound_allowed(url)
         import httpx
 
         headers = {"Authorization": f"Bearer {self.api_key}"}

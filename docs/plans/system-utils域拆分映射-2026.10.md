@@ -93,6 +93,10 @@
   `docs/architecture/permission.md` 将其列为权限模型成员；依附 PAT（identity 域）。
 - **credential(_rotate) → platform**：凭据加密治理是平台安全基建（SystemConfig/模型密钥字段），
   不属于任何业务域。
+- **（2026-10-08 更新）credential(_rotate) 已下沉 `system/services/`**：判据从「是否属业务域」
+  细化为「是否含写副作用」——凭据轮换/重加密落库 + 审计属服务型，随服务层下沉迁至
+  `system/services/credential.py` / `system/services/credential_rotate.py`；platform 目录
+  分区口径与逐文件清单见 `system/utils/platform/README.md`。
 - **seed / module_impact / modelfield / menu / dict / tags → platform**：装配与元数据治理，
   服务全平台。
 

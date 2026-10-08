@@ -64,7 +64,9 @@ class TestPeriodicTaskWriteSide:
         serializer = PeriodicTaskSerializer(data={"name": "越权任务", "task": DANGEROUS_TASK})
         assert not serializer.is_valid()
         assert "task" in serializer.errors
-        assert "whitelist" in str(serializer.errors["task"])
+        # 双语断言：本地有 .mo 显中文、CI 无 .mo 回退英文
+        detail = str(serializer.errors["task"])
+        assert "whitelist" in detail or "白名单" in detail
 
     def test_serializer_allows_whitelisted_task(self, monkeypatch):
         _set_whitelist(monkeypatch, [DEMO_TASK])

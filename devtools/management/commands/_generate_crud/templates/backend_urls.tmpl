@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+"""[[verbose_name]] 路由（generate_crud 生成）。"""
+
+from rest_framework.routers import SimpleRouter
+
+from [[view_module]] import [[model_name]]ViewSet
+
+app_name = "[[app_label]]"
+
+router = SimpleRouter(False)  # 设置为 False ,为了去掉url后面的斜线
+
+router.register("[[router_path]]", [[model_name]]ViewSet, basename="[[basename]]")
+
+urlpatterns = []
+urlpatterns += router.urls

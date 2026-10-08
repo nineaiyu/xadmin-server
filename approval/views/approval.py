@@ -150,17 +150,22 @@ class ApprovalRequestViewSet(
         pks = request.data.get("pks") or []
         if not pks:
             raise ValidationError(_("Please select the data to operate"))
-        succeeded, failed, handled_pks = 0, [], set()
+        succeeded, failures, handled_pks = 0, [], set()
         for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
             handled_pks.add(str(approval.pk))
             ok, detail = approve_request(approval, request.user)
             if ok:
                 succeeded += 1
             else:
-                failed.append({"no": str(approval.pk)[:8].upper(), "reason": str(detail)})
-        failed.extend(self._missing_pk_failures(pks, handled_pks))
+                failures.append({"pk": str(approval.pk), "detail": str(detail)})
+        failures.extend(self._missing_pk_failures(pks, handled_pks))
         return ApiResponse(
-            data={"succeeded": succeeded, "failed": failed},
+            data={
+                "succeeded": succeeded,
+                "failures": failures,
+                # 兼容字段（过渡期保留）：旧客户端按 单号+原因 展示失败明细
+                "failed": [{"no": item["pk"][:8].upper(), "reason": item["detail"]} for item in failures],
+            },
             detail=_("Operation successful. Approved {} data").format(succeeded),
         )
 
@@ -191,18 +196,22 @@ class ApprovalRequestViewSet(
         pks = request.data.get("pks") or []
         if not pks:
             raise ValidationError(_("Please select the data to operate"))
-        succeeded, failed, handled_pks = 0, [], set()
+        succeeded, failures, handled_pks = 0, [], set()
         for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
             handled_pks.add(str(approval.pk))
             ok, detail = reject_request(approval, request.user, reason)
             if ok:
                 succeeded += 1
             else:
-                # 与 batch-approve 的「单号: 原因」等价的可读明细（前端逐条展示）
-                failed.append({"no": str(approval.pk)[:8].upper(), "reason": str(detail)})
-        failed.extend(self._missing_pk_failures(pks, handled_pks))
+                failures.append({"pk": str(approval.pk), "detail": str(detail)})
+        failures.extend(self._missing_pk_failures(pks, handled_pks))
         return ApiResponse(
-            data={"succeeded": succeeded, "failed": failed},
+            data={
+                "succeeded": succeeded,
+                "failures": failures,
+                # 兼容字段（过渡期保留）：旧客户端按 单号+原因 展示失败明细
+                "failed": [{"no": item["pk"][:8].upper(), "reason": item["detail"]} for item in failures],
+            },
             detail=_("Operation successful. Rejected {} data").format(succeeded),
         )
 

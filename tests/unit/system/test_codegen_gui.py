@@ -297,14 +297,36 @@ class TestAdvancedOptions:
         assert "ordering" in response.data["detail"]
 
     def test_skip_ai_omits_declaration(self, superuser):
-        response = _post(superuser, "preview", {"model": "demo.Book", "with_ai": False})
+        response = _post(superuser, "preview", {"model": "demo.Book", "skip_ai": True})
         labels = [row["label"] for row in response.data["data"]]
         assert "AI 动作声明" not in labels
 
     def test_skip_frontend_omits_client_paths(self, superuser):
-        response = _post(superuser, "preview", {"model": "demo.Book", "with_frontend": False})
+        response = _post(superuser, "preview", {"model": "demo.Book", "skip_frontend": True})
         paths = [row["path"] for row in response.data["data"]]
         assert not any(path.startswith("xadmin-client/") for path in paths)
+
+    def test_default_keeps_ai_and_frontend(self, superuser):
+        """不传 skip_* 时两个产物都生成（缺省开关与页面默认勾选一致）。"""
+        response = _post(superuser, "preview", {"model": "demo.Book"})
+        artifacts = response.data["data"]
+        labels = [row["label"] for row in artifacts]
+        paths = [row["path"] for row in artifacts]
+        assert "AI 动作声明" in labels
+        assert any(path.startswith("xadmin-client/") for path in paths)
+
+    def test_skip_flags_apply_to_batch_download(self, superuser):
+        """批量打包路径同样消费 skip_* 契约（开关对多模型一次下载生效）。"""
+        response = _post(
+            superuser,
+            "download",
+            {"models": ["demo.Book"], "skip_frontend": True, "skip_ai": True},
+        )
+        assert response.status_code == 200
+        with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+            names = archive.namelist()
+        assert not any(name.startswith("xadmin-client/") for name in names)
+        assert not any(name.endswith("ai_declarations.py") for name in names)
 
 
 class TestDownload:

@@ -20,6 +20,36 @@ class AiSdkError(Exception):
     """LLM 调用失败（网络/协议/供应商拒绝）。message 面向日志与可读转换。"""
 
 
+def outbound_allowed_hosts(configured=None) -> tuple:
+    """解析出站白名单：显式注入优先；缺省读系统配置 ``OUTBOUND_ALLOWED_HOSTS``。
+
+    与 Webhook/MCP 同源；配置读取失败按空白名单降级（私网目标默认拒绝）。
+    """
+    if configured is not None:
+        return tuple(configured)
+    from common.utils.outbound import outbound_allowed_hosts as _load_allowed_hosts
+
+    return _load_allowed_hosts()
+
+
+def outbound_pinned_post(url: str, kwargs: dict, *, allowed_hosts=None):
+    """生产路径出站 POST：守卫校验 + 固定解析连接（Webhook/MCP 同口径）。
+
+    私网目标默认拒绝（loopback 供本地联调，自建服务须登记白名单）；域名固定为
+    已校验 IP 连接，消除配置写入与发送之间的 DNS rebinding 窗口。
+    """
+    from common.utils.outbound import pinned_request
+
+    return pinned_request(
+        "POST",
+        url,
+        allow_private=False,
+        allow_loopback=True,
+        allowed_hosts=outbound_allowed_hosts(allowed_hosts),
+        **kwargs,
+    )
+
+
 def parse_chat_message(payload: dict) -> tuple:
     """choices[0].message → ``(content, reasoning, usage, tool_calls_raw)``（同步/异步共用）。
 
@@ -83,6 +113,9 @@ class ChatCompletionsClient:
             stop = stop.split(",")
         self.stop = [str(item).strip() for item in (stop or []) if str(item).strip()] if stop else []
         self.http = http_client
+        # 出站白名单（None = 未显式注入：生产路径从系统配置 OUTBOUND_ALLOWED_HOSTS
+        # 读取，与 Webhook/MCP 同源）；注入 http（测试）时不做任何出站校验
+        self.allowed_hosts = credentials.get("allowed_hosts")
         # 最近一次成功 chat() 的 token 用量（供应商 payload.usage 原样，缺省 None）：
         # 供调用方写审计（成本维度观测），不改变 chat() 的返回契约
         self.last_usage: dict | None = None
@@ -92,12 +125,15 @@ class ChatCompletionsClient:
         # 最近一次 chat_tools() 的原始 tool_calls（规范化后的列表，缺省 []）
         self.last_tool_calls: list = []
 
-    def _client(self):
-        if self.http is None:
-            import requests
+    def _outbound_allowed_hosts(self) -> tuple:
+        """出站白名单：显式注入优先；未注入时读系统配置（读取失败按空白名单降级）。"""
+        return outbound_allowed_hosts(self.allowed_hosts)
 
-            self.http = requests
-        return self.http
+    def _request(self, url: str, kwargs: dict):
+        """POST 一次：注入 http（测试）原样透传；生产路径走出站守卫 + 固定解析连接。"""
+        if self.http is not None:
+            return self.http.post(url, **kwargs)
+        return outbound_pinned_post(url, kwargs, allowed_hosts=self.allowed_hosts)
 
     def _body(self, messages: list, stream: bool = False, **overrides) -> dict:
         body = {
@@ -126,7 +162,8 @@ class ChatCompletionsClient:
 
     def _post(self, url: str, body: dict, stream: bool = False):
         """POST + 重试：网络异常与 5xx/429 指数退避重试；4xx 配置类错误不重试。"""
-        http = self._client()
+        from common.utils.outbound import OutboundBlocked
+
         attempts = self.max_retries + 1
         response = None
         for attempt in range(attempts):
@@ -138,7 +175,11 @@ class ChatCompletionsClient:
             if stream:
                 kwargs["stream"] = True
             try:
-                response = http.post(url, **kwargs)
+                response = self._request(url, kwargs)
+            except OutboundBlocked as exc:
+                # 出站守卫拒绝（私网/环回未登记）：配置类错误，重试无意义
+                logger.warning("ai chat outbound blocked: %s", "; ".join(str(item) for item in exc.messages))
+                raise AiSdkError("AI provider base_url is blocked by the outbound policy") from exc
             except Exception as exc:
                 if attempt + 1 < attempts:
                     logger.warning("ai chat request failed (attempt %s/%s): %s", attempt + 1, attempts, exc)

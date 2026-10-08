@@ -7,6 +7,7 @@
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -466,4 +467,4 @@ class MenuViewSet(
             instance.save(update_fields=["is_active"])
             invalidate_menu_user_caches([instance, *saved])
             return ApiResponse()
-        return ApiResponse(code=1001)
+        return ApiResponse(code=1001, detail=_("No matched api views for permission generation"))

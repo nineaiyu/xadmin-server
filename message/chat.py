@@ -36,6 +36,7 @@ from message.chat_ops import (  # noqa: F401 再导出：chat_service 调用面�
     mention_users,
     new_client_msg_id,
     parse_mentions,
+    store_chat_notices,
     user_brief,
 )
 from message.chat_room_ops import (  # noqa: F401 再导出：房间开通与群组管理调用面保持不变

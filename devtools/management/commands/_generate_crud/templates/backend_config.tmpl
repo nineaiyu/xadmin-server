@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+"""[[app_label]] 应用配置（generate_crud 生成）。"""
+
+from django.urls import include, path
+
+# 路由配置，当添加APP完成时候，会自动注入路由到总服务
+URLPATTERNS = [
+    path("api/[[app_label]]/", include("[[app_label]].urls")),
+]
+
+# 请求白名单，支持正则表达式，可参考 settings 的 PERMISSION_WHITE_URL
+PERMISSION_WHITE_REURL = []

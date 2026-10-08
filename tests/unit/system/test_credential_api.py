@@ -220,7 +220,7 @@ class TestSettingPlaintextRemediation:
 
     def test_rotate_setting_encrypts_plaintext_row(self):
         from common.core.credentials import plaintext_setting_names
-        from system.utils.platform.credential import rotate_setting
+        from system.services.credential import rotate_setting
 
         row = self._plain_row()
         result = rotate_setting("AI_API_KEY")
@@ -232,7 +232,7 @@ class TestSettingPlaintextRemediation:
         assert "AI_API_KEY" not in plaintext_setting_names()
 
     def test_rotate_setting_reencrypts_existing_cipher(self):
-        from system.utils.platform.credential import rotate_setting
+        from system.services.credential import rotate_setting
 
         row = self._plain_row()
         rotate_setting("AI_API_KEY")
@@ -248,7 +248,7 @@ class TestSettingPlaintextRemediation:
         """值已是密文但 encrypted=False（标记漂移）：只校正标记，不重复加密。"""
         from common.base.utils import signer
         from settings.models import Setting
-        from system.utils.platform.credential import rotate_setting
+        from system.services.credential import rotate_setting
 
         cipher = signer.encrypt(json.dumps("sk-drift").encode()).decode()
         row = Setting.objects.create(name="AI_API_KEY", value=cipher, category="ai", encrypted=False)

@@ -5,11 +5,13 @@
 # author : ly_13
 # date : 8/6/2024
 import time
+from collections.abc import Callable
 
 from celery import shared_task
 from django.conf import settings
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import APIException
 
 from common.tasks import send_mail_async
 from common.utils import get_logger, random_string
@@ -17,13 +19,58 @@ from common.utils import get_logger, random_string
 logger = get_logger(__name__)
 
 
+# --- 验证码域异常语义（框架层定义） ---------------------------------------
+# 定义在 common：验证码校验与发送限流是框架层编排，异常类型须随编排走，
+# 短信供应商适配器侧仅再导出保持导入面（类型同一，非双实现）。
+class CodeExpired(APIException):
+    default_code = "verify_code_expired"
+    default_detail = _("The verification code has expired. Please resend it")
+
+
+class CodeError(APIException):
+    default_code = "verify_code_error"
+    default_detail = _("The verification code is incorrect")
+
+
+class CodeSendTooFrequently(APIException):
+    default_code = "code_send_too_frequently"
+    default_detail = _("Please wait {} seconds before sending")
+
+    def __init__(self, ttl):
+        super().__init__(detail=self.default_detail.format(ttl))
+
+
+class CodeSendOverRate(APIException):
+    default_code = "code_send_over_rate"
+    default_detail = _("Please wait {} seconds before sending")
+
+    def __init__(self, ttl):
+        super().__init__(detail=self.default_detail.format(ttl))
+
+
+class VerifyCodeSenderNotRegistered(RuntimeError):
+    """验证码短信发送实现未注册：外部服务接入域未装配时发送明确失败，不静默丢码。"""
+
+
+# 验证码短信发送实现：外部服务接入域（短信供应商适配器）在 AppConfig.ready 注入。
+# 框架层不直接依赖具体供应商——未注册时发送任务 fail-fast，绝不静默吞掉验证码。
+_verify_code_sender: Callable[[str, str], None] | None = None
+
+
+def register_verify_code_sender(sender: Callable[[str, str], None] | None) -> None:
+    """注册验证码短信发送实现 ``sender(target, code)``（传 None 撤销，供测试清理）。"""
+    global _verify_code_sender
+    _verify_code_sender = sender
+
+
 @shared_task(verbose_name=_("Send SMS code"))
 def send_sms_async(target, code):
-    # SMS 客户端住 integrations（外部服务接入域）：框架层不模块级依赖业务 app，
-    # 门禁只留函数级惰性 import 逃生门
-    from integrations.sdk.sms.endpoint import SMS
-
-    SMS().send_verify_code(target, code)
+    sender = _verify_code_sender
+    if sender is None:
+        raise VerifyCodeSenderNotRegistered(
+            "verify code SMS sender is not registered; the integrations app must register one in ready()"
+        )
+    sender(target, code)
 
 
 class SendAndVerifyCodeUtil:
@@ -55,8 +102,6 @@ class SendAndVerifyCodeUtil:
             raise
 
     def verify(self, code):
-        from integrations.sdk.sms.exceptions import CodeError, CodeExpired
-
         right = cache.get(self.key)
         if not right:
             raise CodeExpired
@@ -75,8 +120,6 @@ class SendAndVerifyCodeUtil:
         return cache.ttl(self.key)
 
     def __rata(self):
-        from integrations.sdk.sms.exceptions import CodeSendOverRate
-
         token_send_at = cache.get(self.limit_key, 0)
         if token_send_at:
             raise CodeSendOverRate(cache.ttl(self.limit_key))

@@ -72,7 +72,9 @@ class TestBatchCreateUserPersonalConfig:
         assert serializer.is_valid(), serializer.errors
         with pytest.raises(ValidationError) as excinfo:
             serializer.save()
-        assert "already exists" in str(excinfo.value.detail[0] if excinfo.value.detail else excinfo.value)
+        # 双语断言：本地有 .mo 显中文、CI 无 .mo 回退英文
+        detail = str(excinfo.value.detail[0] if excinfo.value.detail else excinfo.value)
+        assert "already exists" in detail or "已存在该配置键" in detail
         # 事务回滚：user_b 的记录未落库，user_a 的存量记录未被破坏
         assert UserPersonalConfig.objects.filter(key=KEY, owner=user_b).exists() is False
         assert UserPersonalConfig.objects.get(key=KEY, owner=user_a).value == {"old": True}

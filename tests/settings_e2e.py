@@ -67,6 +67,9 @@ MIDDLEWARE = [m for m in MIDDLEWARE if m != "django.middleware.locale.LocaleMidd
 # 登录关验证码/加密（E2E 明文密码走真实链路），放宽失败锁定阈值避免用例互相影响
 SECURITY_LOGIN_CAPTCHA_ENABLED = False
 SECURITY_LOGIN_ENCRYPTED_ENABLED = False
+# 建号（用户创建）密码同为明文直传：密文模式下前端提交加密串，而 E2E 用例经
+# API 建号一律传明文，fail-closed 解密失败会整体拒绝（PASSWORD_DECRYPT_FAILED）
+SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False
 SECURITY_LOGIN_LIMIT_COUNT = 50
 VERIFY_CODE_LIMIT = 1000
 # 忘记密码链路 E2E：关图片验证码（无法自动识别），验证码值本身仍走真实发送/校验，

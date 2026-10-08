@@ -1,0 +1,22 @@
+[[header]]
+[[imports]]
+
+
+class [[model_name]]ViewSetFilter(BaseFilterSet):
+[[filter_custom_fields]]
+
+    class Meta:
+        model = [[model_name]]
+        fields = [
+[[filter_meta_fields]]
+        ]
+
+
+class [[model_name]]ViewSet([[mixins]]):
+    """[[verbose_name]]"""
+
+    queryset = [[model_name]].objects.all()
+    serializer_class = [[model_name]]Serializer
+[[default_ordering]]
+    ordering_fields = ["created_time"]
+    filterset_class = [[model_name]]ViewSetFilter

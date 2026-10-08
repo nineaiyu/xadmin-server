@@ -19,6 +19,7 @@ from common.utils.outbound import (
     parse_allowed_hosts,
     pinned_request,
     resolve_outbound_target,
+    validate_outbound_config_url,
     validate_outbound_url,
 )
 
@@ -165,6 +166,56 @@ class TestWhitelist:
             "b.example.com",
             "::1",
         )
+
+
+class TestValidateOutboundConfigUrl:
+    """写入侧出站配置地址统一校验（Webhook / AI base_url / MCP / 回调地址共用）。"""
+
+    def test_https_allowed(self):
+        url = "https://api.example.com/v1"
+        assert validate_outbound_config_url(url) == url
+
+    def test_missing_host_rejected(self):
+        with pytest.raises(OutboundBlocked):
+            validate_outbound_config_url("https://")
+
+    @pytest.mark.parametrize("url", ["file:///etc/passwd", "gopher://x/1", "ftp://api.example.com/v1", "not-a-url", ""])
+    def test_non_http_scheme_rejected(self, url):
+        with pytest.raises(OutboundBlocked):
+            validate_outbound_config_url(url)
+
+    @pytest.mark.parametrize("url", ["http://127.0.0.1:11434/v1", "http://localhost:11434/v1"])
+    def test_loopback_http_allowed(self, url):
+        assert validate_outbound_config_url(url) == url
+
+    def test_loopback_http_rejected_when_disabled(self):
+        with pytest.raises(OutboundBlocked):
+            validate_outbound_config_url("http://127.0.0.1/v1", allow_loopback=False)
+
+    def test_whitelisted_http_allowed(self):
+        url = "http://mcp.internal:8765/mcp"
+        assert validate_outbound_config_url(url, allowed_hosts=("mcp.internal",)) == url
+
+    def test_whitelisted_http_rejected_when_not_allowed(self):
+        with pytest.raises(OutboundBlocked):
+            validate_outbound_config_url(
+                "http://hooks.internal/hook",
+                allowed_hosts=("hooks.internal",),
+                allow_http_whitelist=False,
+            )
+
+    def test_https_private_literal_rejected(self):
+        with pytest.raises(OutboundBlocked):
+            validate_outbound_config_url("https://10.0.0.8/v1")
+
+    def test_http_private_literal_rejected(self):
+        with pytest.raises(OutboundBlocked):
+            validate_outbound_config_url("http://192.168.1.10:11434/v1")
+
+    def test_scheme_message_override(self):
+        with pytest.raises(OutboundBlocked) as exc:
+            validate_outbound_config_url("ftp://x", scheme_message="custom message")
+        assert "custom message" in str(exc.value)
 
 
 class _EchoHandler(BaseHTTPRequestHandler):

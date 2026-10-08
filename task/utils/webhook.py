@@ -24,7 +24,7 @@ from django.utils.translation import gettext_lazy as _
 
 from common.base.utils import signer
 from common.utils import get_logger
-from common.utils.outbound import parse_allowed_hosts, validate_outbound_url
+from common.utils.outbound import validate_outbound_config_url
 
 logger = get_logger(__name__)
 
@@ -227,8 +227,6 @@ EVENT_CATALOG = {
     },
 }
 
-LOOPBACK_HOSTS = ("127.0.0.1", "localhost")
-
 # 重试策略：countdown = min(60 × 2^attempt, 3600)，上限 5 次尝试
 MAX_ATTEMPTS = 5
 RETRY_BASE_SECONDS = 60
@@ -262,9 +260,9 @@ def event_catalog_payload() -> list:
 
 def outbound_allowed_hosts() -> tuple:
     """出站白名单（逗号分隔的域名/IP，默认空 = 不启用）：Webhook 私网目标的放行途径。"""
-    from common.core.config import SysConfig
+    from common.utils.outbound import outbound_allowed_hosts as _load_allowed_hosts
 
-    return parse_allowed_hosts(SysConfig.OUTBOUND_ALLOWED_HOSTS)
+    return _load_allowed_hosts()
 
 
 def validate_url(url: str) -> str:
@@ -272,23 +270,16 @@ def validate_url(url: str) -> str:
 
     - 域名写入侧不解析（可能尚未上线/仅内网 DNS 可见/被本地 DNS 屏蔽）——
       归属校验统一在发送侧严格执行（`pinned_request` 解析校验 + 固定解析结果连接）；
-    - 白名单命中 = 显式授权，跳过地址校验（内网自建接收端须登记）；
+    - http 仅 loopback 例外（联调）；Webhook 接收端不接受白名单 http 目标——
+      白名单仅用于放行发送侧的私网地址归属校验（内网自建接收端须登记）；
     - IP 字面量的私网/环回/link-local 目标（非 loopback http 联调例外）写入即拒绝。
     """
-    url = str(url or "").strip()
-    allowed = url.startswith("https://")
-    if not allowed:
-        allowed = any(url.startswith(f"http://{host}:") or url == f"http://{host}" for host in LOOPBACK_HOSTS)
-    if not allowed:
-        raise ValidationError(_("Webhook url must use https (loopback http is allowed for testing)"))
-    validate_outbound_url(
+    return validate_outbound_config_url(
         url,
-        allow_private=False,
-        allow_loopback=True,
         allowed_hosts=outbound_allowed_hosts(),
-        strict_resolve=False,
+        allow_http_whitelist=False,
+        scheme_message=_("Webhook url must use https (loopback http is allowed for testing)"),
     )
-    return url
 
 
 def validate_events(events) -> list:

@@ -1,0 +1,18 @@
+[[header]]
+[[imports]]
+
+
+class [[model_name]]Serializer(BaseModelSerializer):
+[[dict_declarations]]
+    class Meta:
+        model = models.[[model_name]]
+        fields = [
+[[serializer_fields]]
+        ]
+        table_fields = [
+[[table_fields]]
+        ]
+        # 关联字段形态：attrs 至少含 pk；数据量大时按 cookbook 换 input_type
+        extra_kwargs = {
+[[extra_kwargs]]
+        }

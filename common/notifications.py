@@ -37,7 +37,7 @@ def reconcile_monitor_thresholds():
     """
     from django.core.cache import cache
 
-    from settings.models import Setting
+    from common import contracts
 
     try:
         if cache.get(_THRESHOLD_RECONCILE_CACHE_KEY) is not None:
@@ -45,7 +45,9 @@ def reconcile_monitor_thresholds():
     except Exception:  # noqa: BLE001 缓存异常不阻断对账
         pass
     try:
-        Setting.refresh_names(MONITOR_THRESHOLD_SETTINGS)
+        # Setting 模型经框架层契约缝消费（调用期解析）：不直接 import 业务 app，
+        # 迁移期模型不可用时随本题异常处理降级（下轮再试）。
+        contracts.Setting.refresh_names(MONITOR_THRESHOLD_SETTINGS)
     except Exception:  # noqa: BLE001 对账失败不阻断告警检查（下轮再试）
         return
     try:

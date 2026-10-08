@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """验证码发送 + 校验集成测试。
 
-验证码发送走 username/basic 通道（dryrun），响应直接回显 verify_code，
-避免依赖邮件/短信网关（默认 EMAIL_ENABLED/SMS_ENABLED 均为 False）。
+表单类型仅限有真实投递通道者（phone/email），发送请求 mock 掉实际投递
+（silent_send 屏蔽邮件/短信任务），响应不回显验证码；验证码真实写入缓存。
 """
+
+from unittest.mock import Mock
 
 import pytest
 from django.core.cache import cache
@@ -27,73 +29,87 @@ def _assert_bilingual(text, en_kw, zh_kw):
 
 
 @pytest.fixture
+def silent_send(monkeypatch):
+    """屏蔽真实投递（mock celery 发送任务）：验证码生成与缓存写入保持真实。"""
+    monkeypatch.setattr("common.utils.verify_code.send_mail_async", Mock())
+    monkeypatch.setattr("common.utils.verify_code.send_sms_async", Mock())
+
+
+@pytest.fixture
 def register_free(settings):
-    """关闭发送验证码辅助安全项（图片验证码 / 临时 token / 加密），便于直达下发逻辑。"""
+    """关闭发送验证码辅助安全项（图片验证码 / 临时 token / 加密），并开启 email 通道。"""
     settings.SECURITY_REGISTER_CAPTCHA_ENABLED = False
     settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED = False
     settings.SECURITY_REGISTER_ENCRYPTED_ENABLED = False
-    settings.SECURITY_REGISTER_BY_BASIC_ENABLED = True
+    settings.SECURITY_REGISTER_BY_EMAIL_ENABLED = True
+    settings.EMAIL_ENABLED = True
 
 
 class TestSendVerifyCode:
-    def test_send_verify_code_success(self, api_client, register_free):
+    def test_send_verify_code_success(self, api_client, register_free, silent_send):
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=register",
-            {"form_type": "username", "target": "newuser"},
+            {"form_type": "email", "target": "newuser@example.com"},
             format="json",
         )
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000, resp.data
         verify_token = resp.data["data"]["verify_token"]
-        verify_code = resp.data["data"]["verify_code"]
         assert verify_token
-        assert verify_code
-        # username 通道 dryrun，验证码真实写入缓存且与回显一致
-        assert cache.get(VERIFY_CODE_KEY_TPL.format("newuser")) == verify_code
+        # 真实投递通道：不回显验证码，但验证码真实写入缓存
+        assert "verify_code" not in resp.data["data"]
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("newuser@example.com"))
 
     def test_send_verify_code_invalid_form_type(self, api_client, register_free):
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=register",
-            {"form_type": "chat", "target": "newuser"},
+            {"form_type": "chat", "target": "newuser@example.com"},
             format="json",
         )
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1004
 
+    def test_send_verify_code_username_type_removed(self, api_client, register_free):
+        """username 表单类型无投递通道已移除：register/login 类别均判数据异常（1004）。"""
+        for category in ("register", "login"):
+            resp = api_client.post(
+                SEND_VERIFY_URL + f"?category={category}",
+                {"form_type": "username", "target": "newuser"},
+                format="json",
+            )
+            assert resp.status_code == 200, resp.data
+            assert resp.data["code"] == 1004, resp.data
+
     def test_send_verify_code_access_disabled(self, api_client, register_free, settings):
         settings.SECURITY_REGISTER_ACCESS_ENABLED = False
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=register",
-            {"form_type": "username", "target": "newuser"},
+            {"form_type": "email", "target": "newuser@example.com"},
             format="json",
         )
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1001
-        assert cache.get(VERIFY_CODE_KEY_TPL.format("newuser")) is None
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("newuser@example.com")) is None
 
 
 class TestVerifyCodeCheck:
-    def _send(self, api_client, target):
-        resp = api_client.post(
-            SEND_VERIFY_URL + "?category=register",
-            {"form_type": "username", "target": target},
-            format="json",
-        )
-        assert resp.status_code == 200 and resp.data["code"] == 1000, resp.data
-        return resp.data["data"]["verify_code"]
+    @staticmethod
+    def _issue(target, code="123456"):
+        """直接向缓存写入验证码（不依赖发送通道）。"""
+        SendAndVerifyCodeUtil(target, code=code, backend="email", dryrun=True).gen_and_send()
+        return code
 
     def test_verify_correct_code(self, api_client, register_free):
-        code = self._send(api_client, "verify_ok")
+        code = self._issue("verify_ok")
         assert SendAndVerifyCodeUtil("verify_ok").verify(code) is True
 
     def test_verify_wrong_code(self, api_client, register_free):
-        code = self._send(api_client, "verify_wrong")
-        assert code != "999999"
+        self._issue("verify_wrong")
         with pytest.raises(CodeError):
             SendAndVerifyCodeUtil("verify_wrong").verify("999999")
 
     def test_verify_code_is_one_time(self, api_client, register_free):
-        code = self._send(api_client, "verify_once")
+        code = self._issue("verify_once")
         assert SendAndVerifyCodeUtil("verify_once").verify(code) is True
         # 一次性性质：成功校验后验证码即被清除，重复使用失败
         with pytest.raises(CodeExpired):
@@ -102,11 +118,12 @@ class TestVerifyCodeCheck:
 
 @pytest.fixture
 def login_send_free(settings):
-    """关闭登录/重置类别的辅助安全项（图片验证码 / 临时 token / 加密），basic 通道开启。"""
+    """关闭登录/重置类别的辅助安全项（图片验证码 / 临时 token / 加密），email 通道开启。"""
     settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
     settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
     settings.SECURITY_LOGIN_ENCRYPTED_ENABLED = False
-    settings.SECURITY_LOGIN_BY_BASIC_ENABLED = True
+    settings.SECURITY_LOGIN_BY_EMAIL_ENABLED = True
+    settings.EMAIL_ENABLED = True
     settings.SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = False
     settings.SECURITY_RESET_PASSWORD_TEMP_TOKEN_ENABLED = False
     settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED = False
@@ -128,7 +145,6 @@ class TestVerifyCodeConfig:
             "encrypted",
             "email",
             "sms",
-            "basic",
             "rate",
             "lifetime",
             "reset",
@@ -142,7 +158,7 @@ class TestVerifyCodeConfig:
         resp = api_client.get(SEND_VERIFY_URL, {"category": "register"})
         assert resp.data["code"] == 1000
         data = resp.data["data"]
-        assert {"access", "captcha", "token", "encrypted", "email", "sms", "rate", "basic", "password"} <= set(data)
+        assert {"access", "captcha", "token", "encrypted", "email", "sms", "rate", "password"} <= set(data)
         # 密码规则结构：[{key, value}]
         for rule in data["password"]:
             assert {"key", "value"} <= set(rule)
@@ -188,52 +204,54 @@ class TestVerifyCodeConfig:
 
 
 class TestSendVerifyCodeLoginReset:
-    """login / reset 类别发送：目标用户存在性校验与 dryrun 回显。"""
+    """login / reset 类别发送：目标用户存在性校验与防枚举。"""
 
     def test_login_send_user_not_exist_silent(self, api_client, login_send_free):
         """防枚举：目标不存在同样返回成功（统一文案），但不生成验证码。"""
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=login",
-            {"form_type": "username", "target": "ghost"},
+            {"form_type": "email", "target": "ghost@example.com"},
             format="json",
         )
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000, resp.data
         assert resp.data["data"]["verify_token"]
-        # 未发送：dryrun 不回显验证码，缓存中也没有该目标的验证码
-        assert not resp.data["data"].get("verify_code")
-        assert cache.get(VERIFY_CODE_KEY_TPL.format("ghost")) is None
+        assert "verify_code" not in resp.data["data"]
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("ghost@example.com")) is None
 
-    def test_login_send_user_exist(self, api_client, normal_user, login_send_free):
+    def test_login_send_user_exist(self, api_client, normal_user, login_send_free, silent_send):
+        normal_user.email = "zhangsan@example.com"
+        normal_user.save(update_fields=["email"])
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=login",
-            {"form_type": "username", "target": "zhangsan", "extra": {"k": "v"}},
+            {"form_type": "email", "target": "zhangsan@example.com", "extra": {"k": "v"}},
             format="json",
         )
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000, resp.data
         data = resp.data["data"]
         assert data["verify_token"]
-        # username 通道 dryrun：回显验证码且与缓存一致
-        assert data["verify_code"]
+        # 真实投递通道：不回显验证码，但验证码真实写入缓存
+        assert "verify_code" not in data
         assert data["extra"] == {"k": "v"}
-        assert cache.get(VERIFY_CODE_KEY_TPL.format("zhangsan")) == data["verify_code"]
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("zhangsan@example.com"))
 
     def test_login_send_inactive_user_silent(self, api_client, normal_user, login_send_free):
         """停用账号同样不泄露状态：静默成功但不生成验证码（check_reset_config 过滤 is_active）。"""
+        normal_user.email = "zhangsan@example.com"
         normal_user.is_active = False
-        normal_user.save(update_fields=["is_active"])
+        normal_user.save(update_fields=["email", "is_active"])
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=login",
-            {"form_type": "username", "target": "zhangsan"},
+            {"form_type": "email", "target": "zhangsan@example.com"},
             format="json",
         )
         assert resp.data["code"] == 1000, resp.data
-        assert not resp.data["data"].get("verify_code")
-        assert cache.get(VERIFY_CODE_KEY_TPL.format("zhangsan")) is None
+        assert "verify_code" not in resp.data["data"]
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("zhangsan@example.com")) is None
 
     def test_reset_send_username_form_not_allowed(self, api_client, login_send_free):
-        """reset 类别配置不含 basic 通道：username 表单直接判数据异常（1004）。"""
+        """username 表单类型已移除：reset 类别同样直接判数据异常（1004）。"""
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=reset",
             {"form_type": "username", "target": "ghost"},
@@ -281,35 +299,39 @@ class TestSendVerifyCodeLoginReset:
         assert resp.data["data"]["verify_token"]
         assert sent == [], "目标不存在时不应发送验证码"
 
-    def test_login_send_encrypted_target(self, api_client, normal_user, settings):
+    def test_login_send_encrypted_target(self, api_client, normal_user, settings, silent_send):
         """encrypted + temp token 开启：先用临时 token 加密 target，服务端解密后下发。"""
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
         settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = True
         settings.SECURITY_LOGIN_ENCRYPTED_ENABLED = True
+        settings.SECURITY_LOGIN_BY_EMAIL_ENABLED = True
+        settings.EMAIL_ENABLED = True
+        normal_user.email = "zhangsan@example.com"
+        normal_user.save(update_fields=["email"])
         resp = api_client.get(TEMP_TOKEN_URL, HTTP_ACCEPT="application/json")
         assert resp.data["code"] == 1000, resp.data
         token = resp.data["token"]
-        enc_target = AESCipherV2(token).encrypt(b"zhangsan").decode()
+        enc_target = AESCipherV2(token).encrypt(b"zhangsan@example.com").decode()
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=login",
-            {"form_type": "username", "target": enc_target, "token": token},
+            {"form_type": "email", "target": enc_target, "token": token},
             format="json",
             HTTP_ACCEPT="application/json",
         )
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000, resp.data
-        # 解密后的 target 落到缓存，dryrun 回显与缓存一致
-        code = cache.get(VERIFY_CODE_KEY_TPL.format("zhangsan"))
-        assert code
-        assert code == resp.data["data"]["verify_code"]
+        # 解密后的 target 落到缓存；真实投递通道不回显
+        assert "verify_code" not in resp.data["data"]
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("zhangsan@example.com"))
 
     def test_login_send_temp_token_missing(self, api_client, normal_user, settings):
         """temp token 开启但未携带 → 临时令牌校验失败（ValidateError → HTTP 400）。"""
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
         settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = True
+        settings.EMAIL_ENABLED = True
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=login",
-            {"form_type": "username", "target": "zhangsan"},
+            {"form_type": "email", "target": "zhangsan@example.com"},
             format="json",
         )
         assert resp.status_code == 400, resp.data
@@ -320,9 +342,10 @@ class TestSendVerifyCodeLoginReset:
         """图片验证码开启但缺 captcha_key/captcha_code → 校验失败。"""
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = True
         settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
+        settings.EMAIL_ENABLED = True
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=login",
-            {"form_type": "username", "target": "zhangsan"},
+            {"form_type": "email", "target": "zhangsan@example.com"},
             format="json",
         )
         assert resp.status_code == 400, resp.data
@@ -349,20 +372,13 @@ class TestSendVerifyCodeLoginReset:
         assert resp.data["data"]["verify_token"]
         assert "verify_code" not in resp.data["data"]
 
-    def test_send_rate_limit_then_block(self, api_client, register_free, settings):
+    def test_send_rate_limit_then_block(self, api_client, register_free, settings, silent_send):
         """发送限流：达到阈值后同一目标再次发送被锁定（ValidateError → HTTP 400）。"""
         settings.SECURITY_LOGIN_LIMIT_COUNT = 1
-        first = api_client.post(
-            SEND_VERIFY_URL + "?category=register",
-            {"form_type": "username", "target": "ratelimit"},
-            format="json",
-        )
+        payload = {"form_type": "email", "target": "ratelimit@example.com"}
+        first = api_client.post(SEND_VERIFY_URL + "?category=register", payload, format="json")
         assert first.data["code"] == 1000, first.data
-        second = api_client.post(
-            SEND_VERIFY_URL + "?category=register",
-            {"form_type": "username", "target": "ratelimit"},
-            format="json",
-        )
+        second = api_client.post(SEND_VERIFY_URL + "?category=register", payload, format="json")
         assert second.status_code == 400, second.data
         _assert_bilingual(str(second.data["detail"]), "The account has been locked", "账号已被锁定")
 
@@ -401,16 +417,6 @@ class TestSendVerifyCodeRegisterEmail:
         assert resp.data["data"]["verify_token"]
         # email 非 dryrun：不回显验证码
         assert "verify_code" not in resp.data["data"]
-
-    def test_register_username_already_exist(self, api_client, normal_user, register_free):
-        resp = api_client.post(
-            SEND_VERIFY_URL + "?category=register",
-            {"form_type": "username", "target": "zhangsan"},
-            format="json",
-        )
-        assert resp.status_code == 200, resp.data
-        assert resp.data["code"] == 1001
-        _assert_bilingual(str(resp.data["detail"]), "Username already exist", "用户名已经存在")
 
     def test_register_phone_already_exist(self, api_client, normal_user, settings, monkeypatch):
         """register 类别 sms 通道：手机号已注册 → 手机号已经存在。"""
@@ -505,7 +511,7 @@ class TestSendVerifyCodeFailurePaths:
         monkeypatch.setattr(SendVerifyCodeAPIView, "check_register_config", staticmethod(boom))
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=register",
-            {"form_type": "username", "target": "whoever"},
+            {"form_type": "email", "target": "whoever@example.com"},
             format="json",
         )
         assert resp.status_code == 200, resp.data
@@ -521,7 +527,7 @@ class TestSendVerifyCodeFailurePaths:
         monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", boom)
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=register",
-            {"form_type": "username", "target": "whoever2"},
+            {"form_type": "email", "target": "whoever2@example.com"},
             format="json",
         )
         assert resp.status_code == 200, resp.data
@@ -549,6 +555,6 @@ class TestO8EndpointThrottle:
         for _ in range(3):
             resp = api_client.get(SEND_VERIFY_URL + "?category=register")
             assert resp.status_code == 200
-        payload = {"form_type": "username", "target": "throttleuser"}
+        payload = {"form_type": "email", "target": "throttleuser@example.com"}
         assert api_client.post(SEND_VERIFY_URL + "?category=register", payload, format="json").status_code == 200
         assert api_client.post(SEND_VERIFY_URL + "?category=register", payload, format="json").status_code == 429

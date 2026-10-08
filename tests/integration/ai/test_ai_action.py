@@ -80,7 +80,10 @@ def stub_llm(monkeypatch):
 
     def _install(*answers):
         stub = StubLLM(answers)
-        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+        monkeypatch.setattr(
+            "integrations.sdk.ai.chat.ChatCompletionsClient._request",
+            lambda self, url, kwargs: stub.post(url, **kwargs),
+        )
         holder["stub"] = stub
         return stub
 

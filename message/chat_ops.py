@@ -120,3 +120,28 @@ def clean_expired_history(keep_days=None, batch_size=2000) -> int:
         removed += deleted
     logger.info(f"clean {removed} chat history message, keep_days {days}")
     return removed
+
+
+def store_chat_notices(user_pks, title: str, message: str, extra: dict | None = None) -> int:
+    """聊天提醒落库（站内信兜底）：给「不在聊天室页面」的提醒目标落持久记录。
+
+    WS 推送负责实时、落库负责可回看——此前纯 group_send，目标离线即丢、通知
+    中心无记录；现与推送同批目标（同 PUSH_CHAT_MESSAGE 偏好口径）落 USER 类站内信，
+    离线用户上线后可在通知中心看到并跳转对应聊天室（extra.chat_room_id）。
+    群聊普通消息不落库（高频降噪），@提及与私聊落库。返回落库接收人数。
+    """
+    pks = [pk for pk in dict.fromkeys(user_pks or []) if pk]
+    if not pks:
+        return 0
+    from notifications.message import SiteMessageUtil
+    from notifications.models import MessageContent
+
+    SiteMessageUtil.store_notice(
+        list(pks),
+        title=title,
+        message=message or "",
+        notice_type=MessageContent.NoticeChoices.USER,  # type: ignore[arg-type]  # Choices 元类（运行期为枚举成员）
+        level=MessageContent.LevelChoices.DEFAULT,  # type: ignore[arg-type]  # Choices 元类（运行期为枚举成员）
+        extra_json=extra,
+    )
+    return len(pks)

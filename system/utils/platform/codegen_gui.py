@@ -68,9 +68,9 @@ def _base_options(payload: dict) -> dict:
         "module_id": str(payload.get("module_id") or ""),
         "module_level": module_level if module_level in _MODULE_LEVELS else "optional",
         "output": "",  # 默认项目根：仅用于推导路径，GUI 不写盘
-        "skip_frontend": not bool(payload.get("with_frontend", True)),
+        "skip_frontend": bool(payload.get("skip_frontend")),
         "skip_menu_seed": bool(payload.get("skip_menu_seed")),
-        "skip_ai": not bool(payload.get("with_ai", True)),
+        "skip_ai": bool(payload.get("skip_ai")),
         "frontend_root": _CLIENT_ROOT_SENTINEL,
         "bootstrap": False,
         "grant_to": "",

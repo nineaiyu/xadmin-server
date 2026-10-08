@@ -4,32 +4,18 @@
 # filename : exceptions
 # author : ly_13
 # date : 8/6/2024
+"""验证码域异常：定义已下沉框架层（common），此处仅再导出保持既有导入面（类型同一）。"""
 
-from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import APIException
+from common.utils.verify_code import (
+    CodeError,
+    CodeExpired,
+    CodeSendOverRate,
+    CodeSendTooFrequently,
+)
 
-
-class CodeExpired(APIException):
-    default_code = "verify_code_expired"
-    default_detail = _("The verification code has expired. Please resend it")
-
-
-class CodeError(APIException):
-    default_code = "verify_code_error"
-    default_detail = _("The verification code is incorrect")
-
-
-class CodeSendTooFrequently(APIException):
-    default_code = "code_send_too_frequently"
-    default_detail = _("Please wait {} seconds before sending")
-
-    def __init__(self, ttl):
-        super().__init__(detail=self.default_detail.format(ttl))
-
-
-class CodeSendOverRate(APIException):
-    default_code = "code_send_over_rate"
-    default_detail = _("Please wait {} seconds before sending")
-
-    def __init__(self, ttl):
-        super().__init__(detail=self.default_detail.format(ttl))
+__all__ = [
+    "CodeError",
+    "CodeExpired",
+    "CodeSendOverRate",
+    "CodeSendTooFrequently",
+]

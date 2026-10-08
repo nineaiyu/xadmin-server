@@ -21,7 +21,7 @@ from rest_framework.viewsets import GenericViewSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models import SystemConfig
-from system.utils.platform.credential import (
+from system.services.credential import (
     credential_overview,
     regenerate_system_config,
     rotate_model_field,

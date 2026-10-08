@@ -130,6 +130,7 @@ class TestResolveWithDelegation:
 
 class TestDelegationCrud:
     def test_create_and_list(self, auth_client, target, agent):
+        make_flow("leave")
         now = timezone.now()
         payload = {
             "delegator": str(target.pk),
@@ -144,6 +145,22 @@ class TestDelegationCrud:
         assert created.data["code"] == 1000, created.data
         listed = auth_client.get(DELEGATIONS_URL)
         assert listed.data["data"]["total"] == 1
+
+    def test_unknown_flow_code_rejected(self, auth_client, target, agent):
+        """流程范围 fail-closed：错码委托会静默不生效（引擎按 code 匹配流程），写入即拒绝。"""
+        now = timezone.now()
+        resp = auth_client.post(
+            DELEGATIONS_URL,
+            {
+                "delegator": str(target.pk),
+                "delegate": str(agent.pk),
+                "start_time": now.isoformat(),
+                "end_time": (now + datetime.timedelta(hours=1)).isoformat(),
+                "flow_codes": ["ghost_flow"],
+            },
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
 
     def test_same_person_rejected(self, auth_client, target):
         now = timezone.now()

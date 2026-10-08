@@ -21,15 +21,12 @@
 
 import json
 from typing import Any
-from urllib.parse import urlparse
 
 import requests
-from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from common.core.config import SysConfig
 from common.core.response import API_SUCCESS_CODE
-from common.utils.outbound import OutboundBlocked, parse_allowed_hosts, pinned_request, validate_outbound_url
+from common.utils.outbound import OutboundBlocked, pinned_request, validate_outbound_config_url
 
 MCP_PROTOCOL_VERSION = "2025-06-18"
 CLIENT_NAME = "xadmin"
@@ -40,7 +37,6 @@ MAX_BODY_BYTES = 2 * 1024 * 1024
 RESULT_TEXT_LIMIT = 4000
 #: 工具调用参数 JSON 体积上限（AI 动作链路与 mcp-servers/call 端点同一口径）
 MAX_ARGUMENTS_BYTES = 32 * 1024
-LOOPBACK_HOSTS = ("127.0.0.1", "localhost")
 
 # ---------------------------------------------------------------------------
 # 快照 input_schema 有界化（快照要喂给 LLM 工具目录，必须收敛体积与形态）
@@ -72,7 +68,9 @@ class McpClientError(Exception):
 
 def outbound_allowed_hosts() -> tuple:
     """出站白名单（与 Webhook 同源：``OUTBOUND_ALLOWED_HOSTS``）。"""
-    return parse_allowed_hosts(SysConfig.OUTBOUND_ALLOWED_HOSTS)
+    from common.utils.outbound import outbound_allowed_hosts as _load_allowed_hosts
+
+    return _load_allowed_hosts()
 
 
 def validate_server_url(url: str) -> str:
@@ -82,23 +80,13 @@ def validate_server_url(url: str) -> str:
     - http：仅允许 loopback（联调）或白名单登记的主机（内网自建 MCP 服务）；
     - 其余协议与 IP 字面量私网目标按 outbound 守卫拒绝（元数据地址等任何模式都拒绝）。
     """
-    url = str(url or "").strip()
-    host = str(urlparse(url).hostname or "").lower()
-    allowed = url.startswith("https://")
-    if not allowed and url.startswith("http://"):
-        allowed = host in LOOPBACK_HOSTS or host in outbound_allowed_hosts()
-    if not allowed:
-        raise ValidationError(
-            _("MCP server url must use https (http is allowed for loopback or OUTBOUND_ALLOWED_HOSTS targets)")
-        )
-    validate_outbound_url(
+    return validate_outbound_config_url(
         url,
-        allow_private=False,
-        allow_loopback=True,
         allowed_hosts=outbound_allowed_hosts(),
-        strict_resolve=False,
+        scheme_message=_(
+            "MCP server url must use https (http is allowed for loopback or OUTBOUND_ALLOWED_HOSTS targets)"
+        ),
     )
-    return url
 
 
 def _error_text(exc) -> str:

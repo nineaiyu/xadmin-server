@@ -93,6 +93,20 @@ class ApprovalDelegationSerializer(BaseModelSerializer):
             raise serializers.ValidationError({"delegate": _("Delegate must be an active user")})
         if start and end and end <= start:
             raise serializers.ValidationError({"end_time": _("End time must be later than start time")})
+        # 流程范围 fail-closed：码必须是真实存在的启用流程——引擎按 code 匹配流程，
+        # 填错码的委托会静默不生效（表面建了委托，实际从不替换待办）
+        flow_codes = attrs.get("flow_codes")
+        if flow_codes is None and self.instance is not None:
+            flow_codes = self.instance.flow_codes
+        if flow_codes:
+            from approval.models import ApprovalFlow
+
+            valid = set(ApprovalFlow.objects.filter(code__in=flow_codes, is_active=True).values_list("code", flat=True))
+            unknown = [code for code in flow_codes if code not in valid]
+            if unknown:
+                raise serializers.ValidationError(
+                    {"flow_codes": _("Unknown approval flow code: %(codes)s") % {"codes": ", ".join(unknown)}}
+                )
         # 同一委托人时间重叠的生效委托：解析会取「最新一条」，重叠即歧义，直接拒绝
         if delegator and start and end and row_active:
             conflict = ApprovalDelegation.objects.filter(

@@ -14,6 +14,7 @@ import pytest
 from approval.models.approval import (
     ApprovalFlow,
     ApprovalFlowNode,
+    ApprovalInstance,
     ApprovalNodeTask,
     ApprovalRequest,
 )
@@ -119,6 +120,25 @@ class TestBookOnShelfFlow:
         auth_client.post(f"{BOOK_LIST_URL}/{book.pk}/submit")
         resp = auth_client.post(f"{BOOK_LIST_URL}/{book.pk}/submit")
         assert resp.data["code"] == 1001
+
+    def test_resubmit_after_reject_keeps_old_instance(self, auth_client, approver, book):
+        """驳回后重提：新建实例接管业务单，旧终态实例保留作历史轨迹（不删除）。"""
+        make_book_flow(approver.username)
+        auth_client.post(f"{BOOK_LIST_URL}/{book.pk}/submit")
+        book.refresh_from_db()
+        first_instance_pk = book.instance_id
+        task = ApprovalNodeTask.objects.get(instance_id=first_instance_pk, assignee=approver)
+        ok, detail = reject_task(task.pk, approver, "信息不全（测试）")
+        assert ok, detail
+        book.refresh_from_db()
+        assert book.status == Book.Status.REJECTED
+
+        resp = auth_client.post(f"{BOOK_LIST_URL}/{book.pk}/submit")
+        assert resp.data["code"] == 1000, resp.data
+        book.refresh_from_db()
+        # 新实例接管业务单；旧实例仍在库（审批记录可查）
+        assert book.instance_id != first_instance_pk
+        assert ApprovalInstance.objects.filter(pk=first_instance_pk).exists()
 
 
 class TestBookRecycleBin:

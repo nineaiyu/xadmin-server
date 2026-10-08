@@ -65,7 +65,14 @@ class AccountRiskViewSet(OnlyListModelSet):
         )
         if not ok:
             return ApiResponse(code=1001, detail=message)
-        return ApiResponse(data=self.get_serializer(risk).data, detail=_("Handled successfully"))
+        # 文案区分「已解除」与「已执行待自动解除」：notify/force_* 类动作执行成功后
+        # 风险项保持 PENDING（待下次巡检确认条件消失才自动关闭），统一报「处理成功」
+        # 会让用户误以为风险已消除
+        if request.data.get("action") in ("ignore", "resolve"):
+            detail = _("Risk marked as resolved")
+        else:
+            detail = _("Action executed; the risk closes automatically once the condition clears")
+        return ApiResponse(data=self.get_serializer(risk).data, detail=detail)
 
     @extend_schema(
         request=OpenApiRequest(

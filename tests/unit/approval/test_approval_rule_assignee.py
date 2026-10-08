@@ -45,7 +45,9 @@ class TestAssigneeValidation:
     def test_post_assignee_unknown_code_rejected(self):
         with pytest.raises(ValidationError) as excinfo:
             _validated_serializer(_payload("post", "no_such_post"))
-        assert "Post does not exist" in str(excinfo.value.detail)
+        # 双语断言：本地有 .mo 显中文、CI 无 .mo 回退英文（po 门禁只校验 zh 译文）
+        detail = str(excinfo.value.detail)
+        assert "Post does not exist" in detail or "岗位不存在" in detail
 
     def test_post_assignee_inactive_or_deleted_rejected(self):
         """停用 / 软删除岗位不可作为审批人（与引擎 resolve_level_users 同口径）。"""

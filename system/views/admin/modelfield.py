@@ -7,6 +7,7 @@
 
 from django.apps import apps
 from django.core.exceptions import FieldDoesNotExist
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -140,7 +141,7 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
                 if mf:
                     lookups = list(mf.get_class_lookups().keys()) + get_extra_field_lookups(mf)
                     return ApiResponse(data=get_field_lookup_info(lookups), field_meta=get_field_meta(mf))
-        return ApiResponse(code=1001)
+        return ApiResponse(code=1001, detail=_("No lookups available for the field"))
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False)

@@ -193,6 +193,9 @@ class InvalidConfigCacheAction:
         """按实例类型清理对应配置缓存（invalid 动作与 destroy 删除前复用同一份逻辑）。"""
         if isinstance(instance, SystemConfig):
             SysConfig.invalid_config_cache(key=instance.key)
+            # 系统级变更还要清「全部用户」对该 key 的个人缓存：owner="*" 是
+            # UserConfig 的通配哨兵（px="user_*"，del_many 按模式批删）——个人
+            # 缓存里可能固化过含系统回退的合成值
             owner = "*"
         else:
             owner = instance.owner

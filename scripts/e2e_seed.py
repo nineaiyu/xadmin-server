@@ -307,6 +307,15 @@ def main() -> None:
     SysConfig.set_value("SENSITIVE_OPERATION_METHODS", ["__E2E_DISABLED__"])
     print("sensitive operation alert disabled")
 
+    # ---- 手动任务白名单扩容：用例要手工调度种子任务 system.tasks.auto_clean_operation_job ----
+    # 种子默认仅放行演示任务（demo.tasks.auto_off_shelf_books），任务管理页用例
+    # 创建周期任务/立即执行会被写入侧白名单拦截（400），测试库在此扩容。
+    SysConfig.set_value(
+        "MANUAL_RUNNABLE_TASKS",
+        ["demo.tasks.auto_off_shelf_books", "system.tasks.auto_clean_operation_job"],
+    )
+    print("manual runnable tasks extended")
+
     # ---- 登录页第三方入口（feishu flavor）----
     seed_oauth_im_provider()
 

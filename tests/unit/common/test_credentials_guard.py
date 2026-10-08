@@ -109,7 +109,7 @@ class TestValueEncryption:
 
     def test_plaintext_detected_and_rotate_fixes(self, superuser):
         from system.models import SystemConfig
-        from system.utils.platform.credential import rotate_system_config
+        from system.services.credential import rotate_system_config
 
         SystemConfig.objects.update_or_create(key="SCIM_TOKEN", defaults={"value": "plain-token"})
         assert plaintext_sensitive_keys() == ["SCIM_TOKEN"]
@@ -130,7 +130,7 @@ class TestValueEncryption:
         assert decrypt_setting_value("SCIM_TOKEN", row.value) == "plain-token"
 
     def test_rotate_unknown_key_rejected(self, superuser):
-        from system.utils.platform.credential import rotate_system_config
+        from system.services.credential import rotate_system_config
 
         result = rotate_system_config("WEB_SITE_CONFIG", user=superuser)
         assert result["ok"] is False
@@ -138,7 +138,7 @@ class TestValueEncryption:
     def test_rotate_writes_audit(self, superuser):
         from audit.models import OperationLog
         from system.models import SystemConfig
-        from system.utils.platform.credential import rotate_system_config
+        from system.services.credential import rotate_system_config
 
         SystemConfig.objects.update_or_create(key="OPS_ALERT_TOKEN", defaults={"value": "plain"})
         rotate_system_config("OPS_ALERT_TOKEN", user=superuser)

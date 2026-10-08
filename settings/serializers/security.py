@@ -190,10 +190,6 @@ class SecurityRegisterAuthSerializer(SettingSaveContractMixin, serializers.Seria
         required=False, default=True, label=_("Register by sms"), help_text=_("Enable send sms verify code to user")
     )
 
-    SECURITY_REGISTER_BY_BASIC_ENABLED = serializers.BooleanField(
-        required=False, default=True, label=_("Register by basic"), help_text=_("Enable basic verify to user register")
-    )
-
 
 class SecurityResetPasswordAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
     SECURITY_RESET_PASSWORD_ACCESS_ENABLED = serializers.BooleanField(

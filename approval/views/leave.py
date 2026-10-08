@@ -29,7 +29,9 @@ from common.swagger.utils import get_default_response_schema
 
 # 业务码：保存成功但未能提交审批（已存草稿）。区别于成功 1000 与失败 1001，
 # 前端据此给警告提示而不是成功/失败，避免用户把草稿当成已提交。
-LEAVE_DRAFT_SAVED_CODE = 1002
+# 取 1008 而非早期沿用的 1002：1002 是审批令牌待审批（APPROVAL_PENDING_CODE）
+# 语义，两义重载易误读（前端契约常量同步于 api/approval/leave.ts）。
+LEAVE_DRAFT_SAVED_CODE = 1008
 
 
 class LeaveFilter(BaseFilterSet):

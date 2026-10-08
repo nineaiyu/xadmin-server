@@ -9,6 +9,7 @@ from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
 from system.views.admin.codegen import SystemCodeGenViewSet
+from system.views.admin.codegen_plan import CodegenPlanViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
 from system.views.admin.credential import CredentialViewSet
 from system.views.admin.dict import DataDictViewSet
@@ -49,6 +50,8 @@ router.register("dict", DataDictViewSet, basename="data_dict")
 router.register("saved-views", SavedListViewSet, basename="saved_view")
 # 代码生成器 GUI（只读引擎适配：模型清单/字段计划/预览/下载）
 router.register("codegen", SystemCodeGenViewSet, basename="system-codegen")
+# 代码生成方案：个人级保存（服务端存储，取值域「本人 + 共享」）
+router.register("codegen-plans", CodegenPlanViewSet, basename="codegen_plan")
 
 # 配置相关
 router.register("config/system", SystemConfigViewSet, basename="sysconfig")

@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""凭据治理工具：聚合只读清单 + 轮换/重加密 + 审计（管理命令与 API 共用）。
+"""凭据治理服务：聚合只读清单 + 轮换/重加密 + 审计（管理命令与 API 共用）。
+
+归位为 system 服务层：本模块承担落库、审计与配置缓存失效等业务副作用，
+视图 / 管理命令只做请求解析与响应构造。
 
 两类动作语义必须区分，不能互相冒充：
 
@@ -133,10 +136,12 @@ def _last_rotated_time(key: str):
 
     from audit.services import OperationLog
 
+    # 窗口 200 条：action 在 changes JSON 内（无法 SQL 过滤），窗口过小会被
+    # 近期 encrypt/其他动作挤掉而漏掉真正的轮换行；超出窗口时按未知处理。
     rows = (
         OperationLog.objects.filter(module=AUDIT_MODULE, object_pk=key, response_code=API_SUCCESS_CODE)
         .order_by("-created_time")
-        .values_list("changes", "created_time")[:20]
+        .values_list("changes", "created_time")[:200]
     )
     for changes, created in rows:
         try:
@@ -292,7 +297,7 @@ def _model_credential_rows() -> list:
     return rows
 
 
-# 实现拆至 system.utils.platform.credential_rotate：经模块级 __getattr__ 延迟再导出（保持调用面，避免循环导入）。
+# 实现拆至 system.services.credential_rotate：经模块级 __getattr__ 延迟再导出（保持调用面，避免循环导入）。
 _MOVED_EXPORTS = (
     "_model_secret_plaintext",
     "regenerate_system_config",
@@ -306,5 +311,5 @@ def __getattr__(name):
     if name in _MOVED_EXPORTS:
         from importlib import import_module
 
-        return getattr(import_module("system.utils.platform.credential_rotate"), name)
+        return getattr(import_module("system.services.credential_rotate"), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

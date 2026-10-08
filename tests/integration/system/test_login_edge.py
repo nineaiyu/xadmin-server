@@ -124,25 +124,20 @@ class TestTempTokenExpire:
 class TestVerifyCodeLogin:
     """验证码登录：token/验证码校验、username 与 email 两条分支。"""
 
-    def _send_login_code(self, api_client, target, temp_token=None):
-        """通过发送接口（login 类别 basic 通道 dryrun）获取 verify_token / verify_code。
+    def _send_login_code(self, api_client, target):
+        """手工构造账号密码组合登录（username 分支）的验证码流程。
 
-        `temp_token` 非空时按 encrypted 契约先用它加密 target（与前端
-        `ReSendVerifyCode` → `AesEncrypted(data.token, target)` 同一链路），
-        并随请求带上该 token（服务端用它解密）。
+        发送通道已不再提供 username 表单类型（行为见 test_verify_code_api），
+        此处直接向缓存写入验证码并生成 verify_token，覆盖登录端点的
+        username 分支语义（密码校验 / MFA / 会话登记）。
         """
-        payload = {"form_type": "username", "target": target}
-        if temp_token:
-            payload["target"] = AESCipherV2(temp_token).encrypt(target.encode()).decode()
-            payload["token"] = temp_token
-        # 临时 token 绑定客户端指纹（UA + Accept + IP）：取值请求与使用请求的 Accept
-        # 必须一致，否则 verify_token_cache 校验失败（见 test_verify_code_api 同款写法）
-        resp = api_client.post(
-            "/api/system/auth/verify?category=login", payload, format="json", HTTP_ACCEPT="application/json"
+        code = "654321"
+        SendAndVerifyCodeUtil(target, code=code, backend="email", dryrun=True).gen_and_send()
+        verify_token = TokenTempCache.generate_cache_token(
+            300,
+            {"target": target, "form_type": "username", "query_key": "username", "extra": {}},
         )
-        assert resp.status_code == 200 and resp.data["code"] == 1000, resp.data
-        data = resp.data["data"]
-        return data["verify_token"], data["verify_code"]
+        return verify_token, code
 
     def test_login_code_forbidden(self, api_client, settings):
         settings.SECURITY_LOGIN_ACCESS_ENABLED = False
@@ -249,18 +244,14 @@ class TestVerifyCodeLogin:
         assert cache.get("_LOGIN_LIMIT_zhangsan@example.com_127.0.0.1") == 1
 
     def test_login_code_encrypted_password(self, api_client, normal_user, settings):
-        """encrypted 开启：target 用临时 token 加密下发，密码用 verify_token 解密。
+        """encrypted 开启：密码用 verify_token 解密（target 从 verify_token 缓存取回）。
 
-        与前端契约一致：`ReSendVerifyCode` 加密 target（临时 token）、
-        `loginByUsername` 加密 username+password；验证码登录态下服务端只解密码
-        （target 从 verify_token 缓存取回，不再由请求携带明文）。
+        与前端契约一致：`loginByUsername` 加密 username+password；验证码登录态下
+        服务端只解密码，不再由请求携带明文 target。
         """
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
-        settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = True
         settings.SECURITY_LOGIN_ENCRYPTED_ENABLED = True
-        token_resp = api_client.get(TEMP_TOKEN_URL, HTTP_ACCEPT="application/json")
-        assert token_resp.data["code"] == 1000, token_resp.data
-        verify_token, verify_code = self._send_login_code(api_client, "zhangsan", temp_token=token_resp.data["token"])
+        verify_token, verify_code = self._send_login_code(api_client, "zhangsan")
         enc_password = AESCipherV2(verify_token).encrypt(b"Test@123456").decode()
         resp = api_client.post(
             LOGIN_CODE_URL,

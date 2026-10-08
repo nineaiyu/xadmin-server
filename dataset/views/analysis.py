@@ -111,8 +111,12 @@ class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
     def command(self, request, *args, **kwargs):
         """GET 当前控制态（+仪表盘清单）；POST 下发切换/翻页/刷新/恢复轮播。
 
-        取值域沿用可见性过滤（个人大屏仅创建者可控制）；GET+POST 共享权限码
-        `command:DataScreen`（登记见 permission_sync SHARED_METHOD_PATHS）。
+        控制权口径（与 report.run 的创建者守卫刻意不同，评估结论=维持现状并明确）：
+        - personal 大屏：取值域仅创建者（或超管）→ 即仅创建者可控制；
+        - shared 大屏：协作语义——持有 `command:DataScreen`（管理员级）权限的用户
+          均可控制，控制权由可见性过滤划定（shared 的存在意义即团队投屏与切换），
+          不叠加 owner 守卫；若需"仅创建者可控制"，请使用 personal 可见性。
+        GET+POST 共享权限码 `command:DataScreen`（登记见 permission_sync SHARED_METHOD_PATHS）。
         """
         screen = self.get_object()
         if request.method == "GET":

@@ -74,13 +74,26 @@ class DataDictViewSet(
     )
     @action(methods=["post"], detail=False, url_path="batch-destroy")
     def batch_destroy(self, request, *args, **kwargs):
-        """批量删除：内置字典静默排除，不因单条受保护而整批失败。
+        """批量删除：内置字典（is_locked）排除并点名，不因单条受保护而整批失败。
+
+        被排除项进 `data.failures` 明细（此前静默跳过，用户只知数量少了对不上）。
 
         ⚠️ 覆写基类 `BatchDestroyAction.batch_destroy` 必须保留 `@action`
         装饰器（DRF 靠其 `.mapping` 注册路由），否则端点丢失、请求 405。
         """
+        pks = request.data if isinstance(request.data, (list, tuple)) else []
+        locked_pks = [
+            str(pk) for pk in self.get_queryset().filter(pk__in=pks, is_locked=True).values_list("pk", flat=True)
+        ]
         self.queryset = self.queryset.filter(is_locked=False)
-        return super().batch_destroy(request, *args, **kwargs)
+        response = super().batch_destroy(request, *args, **kwargs)
+        if locked_pks:
+            data = getattr(response, "data", None)
+            if isinstance(data, dict):
+                data.setdefault("failures", []).extend(
+                    {"pk": pk, "reason": str(_("Locked dict cannot be deleted"))} for pk in locked_pks
+                )
+        return response
 
     @extend_schema(
         parameters=[OpenApiParameter(name="code", required=True, type=OpenApiTypes.STR)],

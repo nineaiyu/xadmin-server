@@ -95,7 +95,9 @@ class StreamStubLLM:
 @pytest.fixture
 def stream_stub(monkeypatch):
     stub = StreamStubLLM()
-    monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+    monkeypatch.setattr(
+        "integrations.sdk.ai.chat.ChatCompletionsClient._request", lambda self, url, kwargs: stub.post(url, **kwargs)
+    )
     return stub
 
 
@@ -159,7 +161,10 @@ class TestStream:
     def test_reasoning_events_forwarded_and_stored(self, auth_client, superuser, ai_enabled, monkeypatch):
         """思考型模型：reasoning 事件先于 delta 实时转发，并落库 extra.reasoning（回看）。"""
         stub = StreamStubLLM(deltas=("答案",), reasonings=("先想", "再看"))
-        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+        monkeypatch.setattr(
+            "integrations.sdk.ai.chat.ChatCompletionsClient._request",
+            lambda self, url, kwargs: stub.post(url, **kwargs),
+        )
 
         frames = parse_sse(auth_client.post(STREAM_URL, {"content": "介绍一下系统"}, format="json"))
         assert [event for event, __ in frames] == ["meta", "reasoning", "reasoning", "delta", "done"]
@@ -174,7 +179,10 @@ class TestStream:
         from django.utils.translation import gettext as _t
 
         stub = StreamStubLLM(deltas=(), reasonings=("想了很久",))
-        monkeypatch.setattr("integrations.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+        monkeypatch.setattr(
+            "integrations.sdk.ai.chat.ChatCompletionsClient._request",
+            lambda self, url, kwargs: stub.post(url, **kwargs),
+        )
 
         frames = parse_sse(auth_client.post(STREAM_URL, {"content": "难问题"}, format="json"))
         assert frames[-1][0] == "done"

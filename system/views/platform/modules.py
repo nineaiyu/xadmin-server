@@ -25,6 +25,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.viewsets import GenericViewSet
 
 from common.cache.lock import ReentrantLock
+from common.core.config import SysConfig
 from common.core.modules import (
     PRESETS,
     clear_override,
@@ -60,8 +61,8 @@ def modules_response_schema():
 
 # 裁剪语义文档（前端展示的「怎么用」提示）
 MODULE_DOCS_PATH = "docs/architecture/模块化与功能裁剪.md"
-# 生效方式提示：标准部署为多容器，页面不提供进程内重启，由运维执行
-RESTART_COMMAND = "sh xadmin.sh restart"
+# 生效方式提示：标准部署为多容器，页面不提供进程内重启，由运维执行；
+# 命令按部署形态可配（SysConfig MODULE_RESTART_COMMAND，Docker/Compose 部署覆盖）
 PRESET_LABELS = {
     "core": _("Core modules only (minimal base)"),
     "standard": _("Core + standard modules (recommended for secondary development)"),
@@ -138,7 +139,7 @@ def build_payload() -> dict:
             "enable": list(baseline_enable),
             "disable": list(baseline_disable),
         },
-        "restart_command": RESTART_COMMAND,
+        "restart_command": SysConfig.MODULE_RESTART_COMMAND,
         "docs": MODULE_DOCS_PATH,
     }
 

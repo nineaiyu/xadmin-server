@@ -76,6 +76,11 @@ class OpsConfMixin(ConfigCacheBase):
         return int(self.get_value("MONITOR_RETENTION_DAYS", get_server_config().MONITOR_RETENTION_DAYS))
 
     @property
+    def MODULE_RESTART_COMMAND(self):
+        """模块裁剪页展示的重启命令：按部署形态可配（Docker/Compose 部署改自定义命令）。"""
+        return str(self.get_value("MODULE_RESTART_COMMAND", get_server_config().MODULE_RESTART_COMMAND))
+
+    @property
     def SESSION_ONLINE_TIMEOUT(self):
         """纯 HTTP 会话的在线判定窗口（秒）：last_active 超过该窗口视为离线（默认 300）。"""
         return int(self.get_value("SESSION_ONLINE_TIMEOUT", get_server_config().SESSION_ONLINE_TIMEOUT))

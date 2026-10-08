@@ -12,7 +12,7 @@
 import time
 
 from common.utils import get_logger
-from integrations.sdk.ai.chat import AiSdkError
+from integrations.sdk.ai.chat import AiSdkError, outbound_pinned_post
 
 logger = get_logger(__name__)
 
@@ -37,29 +37,36 @@ class EmbeddingClient:
         self.timeout = int(credentials.get("timeout") or 60)
         self.max_retries = max(0, int(credentials.get("max_retries") or 0))
         self.http = http_client
+        # 出站白名单（None = 未显式注入：生产路径从系统配置读取，与 chat/Webhook 同源）
+        self.allowed_hosts = credentials.get("allowed_hosts")
         # 最近一次成功的 token 用量（供应商 payload.usage 原样，缺省 None）：供记账观测
         self.last_usage: dict | None = None
 
-    def _client(self):
-        if self.http is None:
-            import requests
-
-            self.http = requests
-        return self.http
+    def _request(self, url: str, kwargs: dict):
+        """POST 一次：注入 http（测试）原样透传；生产路径走出站守卫 + 固定解析连接。"""
+        if self.http is not None:
+            return self.http.post(url, **kwargs)
+        return outbound_pinned_post(url, kwargs, allowed_hosts=self.allowed_hosts)
 
     def _post(self, body: dict):
         """POST + 重试：网络异常与 5xx/429 指数退避；4xx 不重试。"""
-        http = self._client()
+        from common.utils.outbound import OutboundBlocked
+
         attempts = self.max_retries + 1
         response = None
         for attempt in range(attempts):
             try:
-                response = http.post(
+                response = self._request(
                     f"{self.base_url}/embeddings",
-                    json=body,
-                    headers={"Authorization": f"Bearer {self.api_key}"},
-                    timeout=self.timeout,
+                    {
+                        "json": body,
+                        "headers": {"Authorization": f"Bearer {self.api_key}"},
+                        "timeout": self.timeout,
+                    },
                 )
+            except OutboundBlocked as exc:
+                logger.warning("ai embedding outbound blocked: %s", "; ".join(str(item) for item in exc.messages))
+                raise AiSdkError("AI provider base_url is blocked by the outbound policy") from exc
             except Exception as exc:
                 if attempt + 1 < attempts:
                     logger.warning("ai embedding request failed (attempt %s/%s): %s", attempt + 1, attempts, exc)

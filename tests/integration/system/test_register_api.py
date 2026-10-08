@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """注册接口集成测试。
 
-注册前需先通过验证码流程拿到 verify_token / verify_code。username/basic
-通道 dryrun 回显验证码；注册校验真实读取缓存中的验证码。默认配置下
+注册前需先拿到 verify_token / verify_code。发送通道的行为由
+``test_verify_code_api`` 覆盖，本文件手工构造验证码流程（直接向缓存写入
+验证码并生成 verify_token），注册校验真实读取缓存中的验证码。默认配置下
 注册加密开启，因此相关用例统一关闭加密以便直接传明文密码。
 """
 
@@ -13,7 +14,6 @@ from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-SEND_VERIFY_URL = "/api/system/auth/verify"
 REGISTER_URL = "/api/system/register"
 
 PASSWORD = "Test@123456"
@@ -25,23 +25,11 @@ def register_free(settings):
     settings.SECURITY_REGISTER_CAPTCHA_ENABLED = False
     settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED = False
     settings.SECURITY_REGISTER_ENCRYPTED_ENABLED = False
-    settings.SECURITY_REGISTER_BY_BASIC_ENABLED = True
 
 
-def _send_verify(api_client, target):
-    """通过发送验证码接口获取 verify_token / verify_code（username 通道回显验证码）。"""
-    resp = api_client.post(
-        SEND_VERIFY_URL + "?category=register",
-        {"form_type": "username", "target": target},
-        format="json",
-    )
-    assert resp.status_code == 200 and resp.data["code"] == 1000, resp.data
-    return resp.data["data"]["verify_token"], resp.data["data"]["verify_code"]
-
-
-def _manual_verify(target):
-    """为已存在用户目标手工构造验证码流程（发送接口对已注册用户会拒绝）。"""
-    SendAndVerifyCodeUtil(target, code="654321", backend="username", dryrun=True).gen_and_send()
+def _manual_verify(target, code="654321"):
+    """手工构造验证码流程：验证码写入缓存 + 生成携带点位的 verify_token。"""
+    SendAndVerifyCodeUtil(target, code=code, backend="email", dryrun=True).gen_and_send()
     token = TokenTempCache.generate_cache_token(
         300,
         {
@@ -51,11 +39,11 @@ def _manual_verify(target):
             "extra": {},
         },
     )
-    return token, "654321"
+    return token, code
 
 
 def _register(api_client, target, password=PASSWORD, channel="default", **extra):
-    token, code = _send_verify(api_client, target)
+    token, code = _manual_verify(target)
     body = {"channel": channel, "verify_token": token, "verify_code": code, "password": password}
     body.update(extra)
     return api_client.post(REGISTER_URL, body, format="json")
@@ -74,7 +62,7 @@ class TestRegister:
 
     def test_register_missing_password(self, api_client, register_free):
         target = "nopassword"
-        token, code = _send_verify(api_client, target)
+        token, code = _manual_verify(target)
         resp = api_client.post(
             REGISTER_URL,
             {"channel": "default", "verify_token": token, "verify_code": code},

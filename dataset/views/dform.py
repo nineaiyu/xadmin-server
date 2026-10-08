@@ -38,8 +38,19 @@ class DynamicFormFilter(BaseFilterSet):
         fields = ["is_active", "approval_required"]
 
 
+def _creator_guard(request, instance):
+    """非创建者写守卫（与 Dataset/大屏同口径）：拒绝时返回 1003 响应，否则 None。"""
+    if instance and not getattr(request.user, "is_superuser", False) and instance.creator_id != request.user.pk:
+        return ApiResponse(code=1003, detail=_("Only the creator can modify a form"))
+    return None
+
+
 class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
-    """动态表单定义（管理员）。
+    """动态表单定义（创建者隔离，与 Dataset/大屏同口径）。
+
+    归属由创建者写守卫承担：定义类资源不做行级数据权限过滤（与 Dataset 同款），
+    可读面不收敛；编辑/删除仅创建者（或超管）——单改/单删 1003 拒绝，批量删除
+    走逐行分支归一为 failures 明细（不静默跳过）。
 
     模板（is_template）与表单共用一张表：列表默认只出表单（kind=templates 时
     只出模板，供「从模板新建」复用）；详情类动作（编辑/删除/取详情）不做过滤，
@@ -66,18 +77,45 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user, modifier=self.request.user)
 
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        guarded = _creator_guard(request, instance)
+        if guarded:
+            return guarded
+        self.perform_update(serializer)
+        return ApiResponse(data=serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        guarded = _creator_guard(request, instance)
+        if guarded:
+            return guarded
+        return super().destroy(request, *args, **kwargs)
+
     def _needs_rowwise_delete(self):
         """删除表单有逐行副作用（绑定流程的 form_schema 再同步，见 perform_destroy），
         批量删除必须走逐行分支（覆写契约见 docs/architecture/framework-cookbook.md）。"""
         return True
 
     def perform_destroy(self, instance):
-        """删除表单后对绑定流程做 form_schema 再同步（其他绑定表单仍存在时重投影）。"""
+        """删除表单后对绑定流程做 form_schema 再同步（其他绑定表单仍存在时重投影）。
+
+        非创建者删除守卫：单删由 destroy() 提前返回 1003；批量删除走逐行分支，
+        此处抛出的拒绝被归一为 failures 明细（批量响应不静默跳过越权项）。
+        返回值必须回传（批量逐行分支以删除计数判定成功项，丢弃会把已删项误报
+        「未删除」——同 ScheduleDeleteGuardMixin 的口径）。
+        """
+        if not getattr(self.request.user, "is_superuser", False) and instance.creator_id != self.request.user.pk:
+            raise ValidationError(_("Only the creator can modify a form"))
         from dataset.utils.dform_flow import resync_flow_after_unbind
 
         flow_id = instance.approval_flow_id
-        super().perform_destroy(instance)
+        result = super().perform_destroy(instance)
         resync_flow_after_unbind(flow_id)
+        return result
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="schema-history")

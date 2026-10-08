@@ -420,7 +420,7 @@ class TestApprovalInstanceApi:
         assert ApprovalInstance.objects.get(pk=second).status == ApprovalInstance.Status.REJECTED
 
     def test_batch_actions_report_unmatched_pks(self, applicant, approver_client, api_client, role, menu_factory):
-        """勾选中不存在/越权的 pk 计入 failed 明细，不再静默丢弃（与勾选数对得上）。"""
+        """勾选中不存在/越权的 pk 计入 failures 明细，不再静默丢弃（与勾选数对得上）。"""
         flow = make_flow(
             code="batch_unmatched", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}]
         )
@@ -438,17 +438,17 @@ class TestApprovalInstanceApi:
             f"{INSTANCES_URL}/batch-approve", {"pks": [first, missing_pk], "comment": "批量同意"}, format="json"
         )
         assert approved.data["data"]["succeeded"] == 1
-        failed = approved.data["data"]["failed"]
-        assert len(failed) == 1
-        assert failed[0]["no"] == "FFFFFFFF"
-        assert failed[0]["reason"]
+        failures = approved.data["data"]["failures"]
+        assert len(failures) == 1
+        assert failures[0]["pk"] == missing_pk
+        assert failures[0]["detail"]
 
         # 混合批：一单可处理 + 一个不存在的 pk（驳回同口径）
         rejected = approver_client.post(
             f"{INSTANCES_URL}/batch-reject", {"pks": [second, missing_pk], "reason": "批量驳回"}, format="json"
         )
         assert rejected.data["data"]["succeeded"] == 1
-        assert len(rejected.data["data"]["failed"]) == 1
+        assert len(rejected.data["data"]["failures"]) == 1
 
         # 越权：非参与用户（列表 + 批量动作权限点）对他人实例批量操作，整批进 failed 明细
         outsider = UserInfo.objects.create_user(username="flow_batch_outsider", password="Test@123456")
@@ -469,8 +469,8 @@ class TestApprovalInstanceApi:
             f"{INSTANCES_URL}/batch-approve", {"pks": [first], "comment": "越权批量"}, format="json"
         )
         assert denied.data["data"]["succeeded"] == 0
-        assert len(denied.data["data"]["failed"]) == 1
-        assert denied.data["data"]["failed"][0]["no"] == str(first)[:8].upper()
+        assert len(denied.data["data"]["failures"]) == 1
+        assert denied.data["data"]["failures"][0]["pk"] == str(first)
 
     # 二期：条件分支主链路 API + 版本列表/回滚 API
 

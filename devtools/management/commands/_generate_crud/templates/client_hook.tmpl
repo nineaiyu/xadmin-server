@@ -1,0 +1,46 @@
+import { reactive } from "vue";
+import { usePageAuth } from "@/router/utils";
+
+import { [[model_snake]]Api } from "./api";
+
+/** [[verbose_name]] 页面逻辑（generate_crud 生成）
+ *
+ * 表格列/搜索/表单覆写按需追加：listColumnsFormat / searchColumnsFormat /
+ * addOrEditOptions，参考 xadmin-docs example/new-app-client.md。
+ * 自定义按钮：工具栏 tableBarButtonsProps / 行内 operationButtonsProps，
+ * code 需对应权限码 <action>:[[component]]（菜单管理挂权限点），
+ * 自定义权限位以 extraKeys 形式传入 usePageAuth，如 usePageAuth(["customAction"])。
+ */
+export function use[[component]]() {
+  const api = reactive([[model_snake]]Api);
+  const auth = usePageAuth();
+
+  // 自定义按钮样板（取消注释后按需修改），完整范式参考 src/views/system/dict/utils/hook.tsx：
+  // const tableBarButtonsProps = {
+  //   buttons: [
+  //     {
+  //       text: "自定义按钮",
+  //       code: "customAction",
+  //       props: { type: "primary", plain: true },
+  //       onClick: ({ loading }) => {
+  //         loading.value = true;
+  //         api.customAction().finally(() => (loading.value = false));
+  //       },
+  //       show: auth.customAction && 1
+  //     }
+  //   ]
+  // };
+  // const operationButtonsProps = {
+  //   buttons: [
+  //     {
+  //       text: "行内动作",
+  //       code: "rowAction",
+  //       props: { type: "primary", link: true },
+  //       onClick: ({ row }) => api.rowAction(row.pk),
+  //       show: auth.rowAction && 1
+  //     }
+  //   ]
+  // };
+
+  return { api, auth };
+}

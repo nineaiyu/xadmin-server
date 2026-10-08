@@ -130,6 +130,13 @@ def readable_ai_error(exc) -> str:
     text = str(exc or "")
     if "concurrent" in text.lower():
         return str(_("Too many AI requests are running; please retry in a moment"))
+    if "outbound policy" in text.lower():
+        return str(
+            _(
+                "The AI provider address is blocked by the outbound policy; "
+                "self-hosted targets must be registered in OUTBOUND_ALLOWED_HOSTS"
+            )
+        )
     if "only reasoning content" in text or "did not provide a final answer" in text:
         return str(_("The model did not provide a final answer; please retry or switch models"))
     if "empty answer" in text:
