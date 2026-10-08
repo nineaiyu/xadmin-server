@@ -16,7 +16,11 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from approval.models.approval_rule import ApprovalRule, ApprovalRuleLevel
+from approval.models.approval_rule import (
+    RULE_METHODS,
+    ApprovalRule,
+    ApprovalRuleLevel,
+)
 from common.core.serializers import BaseModelSerializer
 
 
@@ -38,6 +42,7 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             "pk",
             "name",
             "path_patterns",
+            "methods",
             "priority",
             "is_active",
             "remark",
@@ -47,7 +52,16 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             "updated_time",
         ]
         read_only_fields = ["pk"]
-        table_fields = ["name", "path_patterns", "level_count", "priority", "is_active", "remark", "created_time"]
+        table_fields = [
+            "name",
+            "path_patterns",
+            "methods",
+            "level_count",
+            "priority",
+            "is_active",
+            "remark",
+            "created_time",
+        ]
 
     def get_level_count(self, obj) -> int:
         annotated = getattr(obj, "levels_count", None)
@@ -72,6 +86,23 @@ class ApprovalRuleSerializer(BaseModelSerializer):
         if not patterns:
             raise serializers.ValidationError(_("At least one path pattern is required"))
         return patterns
+
+    def validate_methods(self, value):
+        """HTTP 方法清单：白名单校验 + 统一大写去重；空清单 = 不限定方法（存量语义）。"""
+        if value in (None, ""):
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("Methods must be a list"))
+        methods = []
+        for item in value:
+            method = str(item or "").strip().upper()
+            if not method:
+                continue
+            if method not in RULE_METHODS:
+                raise serializers.ValidationError(_("Invalid method: {}").format(method))
+            if method not in methods:
+                methods.append(method)
+        return methods
 
     def validate_levels(self, value):
         """级次校验：至少 1 级；order 缺省按顺序补齐且不可重复；审批人必须真实存在。"""

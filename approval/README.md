@@ -33,7 +33,7 @@
 | 回答的问题 | 这次操作能不能执行 | 这份申请怎么流转 |
 | 触发方式 | 请求命中路径正则**自动拦截**（`APPROVAL_REQUIRED_PATHS` + `@ApprovalRequired()`） | 业务代码提交时**显式发起** `create_instance` |
 | 协议形态 | HTTP 412 + 业务码 1002 + 一次性令牌重放 | 业务单状态机 + 实例绑定 |
-| 审批人来源 | 全局审批人（`APPROVAL_APPROVER_ROLES` ∪ `APPROVAL_APPROVER_PERMS`，皆空回退超管）；命中规则时按多级审批链（`approval-rules`：路径正则 → 有序级次快照） | 节点编排：role / user / leader（申请人主管）/ field（表单字段指定）/ post（岗位） |
+| 审批人来源 | 全局审批人（`APPROVAL_APPROVER_ROLES` ∪ `APPROVAL_APPROVER_PERMS`，皆空回退超管）；命中规则时按多级审批链（`approval-rules`：路径正则 + 方法限定〔空 = 全部方法，HEAD 按 GET 匹配〕 → 有序级次快照） | 节点编排：role / user / leader（申请人主管）/ field（表单字段指定）/ post（岗位） |
 | 会签/或签 | 级次内 OR / AND | 节点内 OR / AND / 比例会签（RATIO） |
 | 业务绑定 | 无（请求指纹 + 参数快照） | `biz_type` + `biz_id`（通用业务绑定） |
 | 终态回写 | `register_on_approved`（通过后自动执行落库动作） | `approval_instance_finished` 信号 → `biz_sync.py` 注册表（业务 app 在自身 `config.py` 声明 `APPROVAL_BIZ_SYNCERS`） |

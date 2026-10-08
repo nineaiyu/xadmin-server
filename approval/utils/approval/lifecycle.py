@@ -42,7 +42,7 @@ def create_approval(view, request, module: str = ""):
     """
     from approval.models.approval import ApprovalRequest
 
-    rule = resolve_rule(request.path)
+    rule = resolve_rule(request.path, request.method)
     steps = None
     approvers = None
     if rule is not None:

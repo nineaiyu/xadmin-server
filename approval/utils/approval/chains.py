@@ -11,8 +11,18 @@ import re
 from django.utils.translation import gettext_lazy as _
 
 
-def resolve_rule(path: str):
-    """按请求路径匹配启用的审批规则：priority 大者优先，并列取创建时间新者。
+def normalize_rule_method(method: str) -> str:
+    """请求方法归一：HEAD 探针按 GET 语义匹配（DRF 的 head 复用 get handler）。"""
+    value = str(method or "").strip().upper()
+    return "GET" if value == "HEAD" else value
+
+
+def resolve_rule(path: str, method: str = ""):
+    """按请求路径 + HTTP 方法匹配启用的审批规则：priority 大者优先，并列取创建时间新者。
+
+    - method 为空 = 不约束方法（兼容既有调用，唯一真实调用点见 lifecycle.create_approval）；
+    - 规则 methods 为空清单 = 全部方法（存量规则）；非空时请求方法（HEAD 归一为 GET）
+      必须在清单内才继续参与路径匹配。
 
     未命中返回 None（调用方回退全局审批人逻辑）；非法正则跳过不中断（与
     APPROVAL_REQUIRED_PATHS 的容错口径一致）。
@@ -21,8 +31,13 @@ def resolve_rule(path: str):
 
     if not path:
         return None
+    request_method = normalize_rule_method(method)
     queryset = ApprovalRule.objects.filter(is_active=True).prefetch_related("levels")
     for rule in queryset.order_by("-priority", "-created_time"):
+        rule_methods = {str(item).strip().upper() for item in (rule.methods or []) if str(item).strip()}
+        # method 缺失（兼容调用）不做过滤；规则未限定方法时全方法命中
+        if rule_methods and request_method and request_method not in rule_methods:
+            continue
         for pattern in rule.path_patterns or []:
             if not pattern:
                 continue

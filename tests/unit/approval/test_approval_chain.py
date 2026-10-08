@@ -80,10 +80,11 @@ def applicant(db, role):
     return UserInfo.objects.create_user(username="chain_applicant", password="Test@123456")
 
 
-def _make_rule(usernames, path_patterns=None, priority=0, is_active=True):
+def _make_rule(usernames, path_patterns=None, methods=None, priority=0, is_active=True):
     rule = ApprovalRule.objects.create(
         name=f"规则-{priority}",
         path_patterns=path_patterns or [r"^/api/test/"],
+        methods=methods or [],
         priority=priority,
         is_active=is_active,
     )
@@ -120,6 +121,58 @@ class TestResolveRule:
         rule.is_active = True
         rule.save(update_fields=["is_active"])
         assert resolve_rule("/api/test/1").pk == rule.pk
+
+
+class TestResolveRuleMethod:
+    """规则匹配的 HTTP 方法维度（空清单=全部方法；HEAD 按 GET 归一）。"""
+
+    def test_method_filter_hits_and_misses(self, chain_users):
+        rule = _make_rule([chain_users[0].username], methods=["DELETE"])
+        assert resolve_rule("/api/test/1", "DELETE").pk == rule.pk
+        assert resolve_rule("/api/test/1", "POST") is None
+        # method 缺失（兼容调用）不做过滤
+        assert resolve_rule("/api/test/1").pk == rule.pk
+
+    def test_empty_methods_matches_all(self, chain_users):
+        rule = _make_rule([chain_users[0].username])
+        assert resolve_rule("/api/test/1", "POST").pk == rule.pk
+        assert resolve_rule("/api/test/1", "DELETE").pk == rule.pk
+
+    def test_head_normalized_to_get(self, chain_users):
+        rule = _make_rule([chain_users[0].username], methods=["GET"])
+        assert resolve_rule("/api/test/1", "HEAD").pk == rule.pk
+        # GET 规则不匹配 POST（证明归一不是"全部放行"）
+        assert resolve_rule("/api/test/1", "POST") is None
+
+    def test_lowercase_method_normalized(self, chain_users):
+        rule = _make_rule([chain_users[0].username], methods=["DELETE"])
+        assert resolve_rule("/api/test/1", "delete").pk == rule.pk
+
+    def test_priority_decided_after_method_filter(self, chain_users):
+        low = _make_rule([chain_users[0].username], methods=["DELETE"], priority=1)
+        high = _make_rule([chain_users[1].username], methods=["POST"], priority=10)
+        assert resolve_rule("/api/test/1", "DELETE").pk == low.pk
+        assert resolve_rule("/api/test/1", "POST").pk == high.pk
+        assert resolve_rule("/api/test/1", "PUT") is None
+
+    def test_create_approval_passes_request_method(self, applicant, chain_users, monkeypatch):
+        """建单链路把请求方法传入匹配（锁定唯一调用点的传参口径）。"""
+        import approval.utils.approval.lifecycle as lifecycle
+
+        seen = {}
+        original = lifecycle.resolve_rule
+
+        def spy(path, method=""):
+            seen["path"], seen["method"] = path, method
+            return original(path, method)
+
+        monkeypatch.setattr(lifecycle, "resolve_rule", spy)
+        _enable_interception()
+        _make_rule([chain_users[0].username], methods=["DELETE"])
+        response = _dispatch_delete(applicant)
+        assert response.status_code == 412, response.data
+        assert seen["method"] == "DELETE"
+        assert ApprovalRequest.objects.filter(creator=applicant).exists()
 
 
 class TestCreateChain:

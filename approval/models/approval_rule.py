@@ -19,13 +19,17 @@ from django.utils.translation import gettext_lazy as _
 
 from common.core.models import DbAuditModel
 
+#: 审批规则可限定的 HTTP 方法白名单（写入侧校验与匹配侧归一共用；HEAD 按 GET 归一匹配）
+RULE_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
+
 
 class ApprovalRule(DbAuditModel):
     """审批规则：路径命中 → 用多级审批链替换全局审批人集合。
 
     - path_patterns：路径正则清单（``re.search`` 命中即算，写法与系统配置
       APPROVAL_REQUIRED_PATHS 一致，如 ``["api/demo/book/(?P<pk>[^/.]+)$"]``）；
-      匹配只看请求路径、不区分 HTTP method（与 APPROVAL_REQUIRED_PATHS 同口径）；
+    - methods：限定命中的 HTTP 方法清单（如 ``["DELETE"]``）；空清单 = 不限定方法
+      （存量规则语义），HEAD 探针按 GET 归一参与匹配；
     - priority：多条规则同时命中时取 priority 最大者（并列取创建时间更新者）；
     - is_active=False 不参与匹配。
     """
@@ -33,6 +37,7 @@ class ApprovalRule(DbAuditModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Rule name"), max_length=64)
     path_patterns = models.JSONField(_("Path patterns"), default=list, blank=True)
+    methods = models.JSONField(_("Methods"), default=list, blank=True)
     priority = models.IntegerField(_("Priority"), default=0)
     is_active = models.BooleanField(_("Is active"), default=True, db_index=True)
     remark = models.CharField(_("Remark"), max_length=255, blank=True, null=True)
