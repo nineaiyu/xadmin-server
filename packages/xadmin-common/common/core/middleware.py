@@ -9,12 +9,12 @@ import logging
 import time
 
 from asgiref.sync import iscoroutinefunction, markcoroutinefunction, sync_to_async
-from django.conf import settings
 from django.db import transaction
 from django.utils.deprecation import MiddlewareMixin
 
 from common.contracts import OperationLog, maybe_alert_sensitive_operation
 from common.core.config import SysConfig
+from common.settings_contract import kernel_setting
 from common.utils import get_logger
 from common.utils.request import (
     get_request_data,
@@ -98,9 +98,9 @@ class CSPModeMiddleware:
 class ApiLoggingMiddleware(MiddlewareMixin):
     def __init__(self, get_response=None):
         super().__init__(get_response)
-        self.enable = getattr(settings, "API_LOG_ENABLE", None) or False
-        self.methods = getattr(settings, "API_LOG_METHODS", None) or set()
-        self.ignores = getattr(settings, "API_LOG_IGNORE", None) or {}
+        self.enable = kernel_setting("API_LOG_ENABLE") or False
+        self.methods = kernel_setting("API_LOG_METHODS") or set()
+        self.ignores = kernel_setting("API_LOG_IGNORE") or {}
         self.operation_log_id = "__operation_log_id"
 
     def _should_log(self, request, view_func) -> bool:
@@ -179,7 +179,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                 ):
                     return
                 if not v:
-                    v = settings.API_MODEL_MAP.get(request.path, v)
+                    v = kernel_setting("API_MODEL_MAP").get(request.path, v)
                     if not v and model:
                         v = model._meta.label
                 log = OperationLog(

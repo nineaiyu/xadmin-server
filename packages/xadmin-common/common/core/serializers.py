@@ -9,7 +9,6 @@ import os
 from inspect import isfunction
 from typing import Any
 
-from django.conf import settings
 from django.db.models import QuerySet
 from django.db.models.fields import NOT_PROVIDED
 from rest_framework.fields import empty
@@ -20,6 +19,7 @@ from common.contracts import apply_grant_fields
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.mask import apply_mask, apply_output_mask, get_mask_rules, mask_exempt
 from common.local import get_current_request
+from common.settings_contract import kernel_required_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -102,7 +102,7 @@ class BaseModelSerializer(ModelSerializer):
         # （fail-closed，接口输出空对象，而非"未配置即全字段"）——漏配字段权限会被
         # 静默裁空，故审计面把「角色有权限点无字段权限」列为告警
         # （system/services/permission_sync/audit.py::audit_field_permissions）。
-        if self.request and settings.PERMISSION_FIELD_ENABLED and not self.ignore_field_permission:
+        if self.request and kernel_required_setting("PERMISSION_FIELD_ENABLED") and not self.ignore_field_permission:
             if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
                 allow_fields = _fields
             elif hasattr(self.request, "fields"):

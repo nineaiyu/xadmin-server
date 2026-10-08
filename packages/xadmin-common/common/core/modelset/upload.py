@@ -7,7 +7,6 @@
 
 from typing import TYPE_CHECKING, Any
 
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -17,6 +16,7 @@ from rest_framework.parsers import MultiPartParser
 
 from common.core.config import SysConfig, get_personal_config_data
 from common.core.response import ApiResponse
+from common.settings_contract import kernel_setting
 from common.swagger.utils import get_default_response_schema
 
 if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
@@ -33,7 +33,7 @@ class UploadFileAction:
         "gif": b"GIF8",  # GIF87a / GIF89a 公共前缀
     }
     FILE_UPLOAD_FIELD = "avatar"
-    FILE_UPLOAD_SIZE = settings.FILE_UPLOAD_SIZE
+    FILE_UPLOAD_SIZE = kernel_setting("FILE_UPLOAD_SIZE")
 
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
         request: "Request"

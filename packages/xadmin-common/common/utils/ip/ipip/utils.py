@@ -3,7 +3,8 @@
 import os
 
 import ipdb
-from django.conf import settings
+
+from common.settings_contract import kernel_required_setting
 
 __all__ = ["get_ip_city_by_ipip"]
 ipip_db = None
@@ -14,7 +15,7 @@ def init_ipip_db():
     if ipip_db is not None:
         return
 
-    ipip_db_path = os.path.join(settings.DATA_DIR, "system", "ipipfree.ipdb")
+    ipip_db_path = os.path.join(kernel_required_setting("DATA_DIR"), "system", "ipipfree.ipdb")
     if not os.path.exists(ipip_db_path):
         ipip_db_path = os.path.join(os.path.dirname(__file__), "ipipfree.ipdb")
     if not os.path.exists(ipip_db_path):

@@ -6,7 +6,6 @@
 # date : 6/2/2023
 from types import SimpleNamespace
 
-from django.conf import settings
 from django.core.cache import cache
 from django.db.models import (
     Q,
@@ -22,6 +21,7 @@ from common.base.magic import count_sql_queries, timeit
 from common.cache.storage import CommonResourceIDsCache
 from common.contracts import DataPermission, DeptInfo, apply_grant_row_scope
 from common.core.data_scope import ScopeResult, combine, compile_grant
+from common.settings_contract import kernel_required_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -119,7 +119,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj, extra_grants=None):
     extra_grants：额外参与本次编译的授权（如试算草稿的未落库 DataPermission 实例）。
     调用方需自行保证其菜单上下文已判定；该参数不改变正常请求路径的行为。
     """
-    if not settings.PERMISSION_DATA_ENABLED or queryset is None:
+    if not kernel_required_setting("PERMISSION_DATA_ENABLED") or queryset is None:
         return queryset
 
     if user_obj.is_superuser:

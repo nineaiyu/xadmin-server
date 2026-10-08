@@ -5,7 +5,6 @@
 字段面 = filterset 声明 field_name ∪ controlled_lookup_fields ∪ pk；lookup 白名单
 九种；值按模型字段转换；字段可见性 fail-closed（非超管必须命中授权字段面）。"""
 
-from django.conf import settings
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db.models import (
     BooleanField,
@@ -23,6 +22,8 @@ from django_filters import rest_framework as filters
 from django_filters.fields import MultipleChoiceField
 from rest_framework.exceptions import ValidationError as RestValidationError
 from rest_framework.filters import BaseFilterBackend
+
+from common.settings_contract import kernel_required_setting
 
 
 class ControlledLookupFilterBackend(BaseFilterBackend):
@@ -136,7 +137,7 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
     @staticmethod
     def _field_visible(request, model_label: str, field_name: str) -> bool:
         """与序列化器字段裁剪同口径：超管全量；其余按 request.fields（fail-closed）。"""
-        if not settings.PERMISSION_FIELD_ENABLED:
+        if not kernel_required_setting("PERMISSION_FIELD_ENABLED"):
             return True
         if field_name == "pk":
             return True

@@ -9,7 +9,6 @@ import os
 
 from celery import Task, current_app, shared_task
 from celery.utils.log import get_task_logger
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives, get_connection, send_mail
 from django.utils import timezone, translation
@@ -31,6 +30,7 @@ from common.core.task_request import build_task_request
 from common.core.utils import get_doc_first_line
 from common.local import set_current_request
 from common.notifications import BatchDeleteDataMessage, ImportDataMessage, ServerPerformanceCheckUtil
+from common.settings_contract import kernel_required_setting, kernel_setting
 from common.utils.timezone import local_now_display
 
 logger = get_task_logger(__name__)
@@ -71,8 +71,9 @@ def send_mail_async(*args, **kwargs):
     task_self, args = _strip_task_self(args)
     if len(args) == 3:
         args_list = list(args)
-        args_list[0] = f"{settings.EMAIL_SUBJECT_PREFIX or ''} {args_list[0]}"
-        from_email = settings.EMAIL_FROM or settings.EMAIL_HOST_USER
+        subject_prefix = kernel_required_setting("EMAIL_SUBJECT_PREFIX") or ""
+        args_list[0] = f"{subject_prefix} {args_list[0]}"
+        from_email = kernel_setting("EMAIL_FROM") or kernel_required_setting("EMAIL_HOST_USER")
         args_list.insert(2, from_email)
         args = tuple(args_list)
 
@@ -98,8 +99,9 @@ def send_mail_attachment_async(*args, **kwargs):
     attachment_list = args[3] if len(args) > 3 else kwargs.get("attachment_list")
     if attachment_list is None:
         attachment_list = []
-    from_email = settings.EMAIL_FROM or settings.EMAIL_HOST_USER
-    subject = f"{settings.EMAIL_SUBJECT_PREFIX or ''} {subject}"
+    from_email = kernel_setting("EMAIL_FROM") or kernel_required_setting("EMAIL_HOST_USER")
+    subject_prefix = kernel_required_setting("EMAIL_SUBJECT_PREFIX") or ""
+    subject = f"{subject_prefix} {subject}"
     email = EmailMultiAlternatives(
         subject=subject,
         body=message,
@@ -299,7 +301,7 @@ def purge_soft_deleted():
 
     from common.core.models import SoftDeleteModel
 
-    retention_days = getattr(settings, "RECYCLE_BIN_RETENTION_DAYS", 30)
+    retention_days = kernel_setting("RECYCLE_BIN_RETENTION_DAYS")
     cutoff = timezone.now() - datetime.timedelta(days=retention_days)
     total = 0
     for model in apps.get_models():

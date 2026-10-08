@@ -1,0 +1,45 @@
+name: Publish kernel package
+
+# 内核分发包（xadmin-common）上传私有源。渠道形态、版本策略与宿主升级口径见
+# docs/ops/kernel-release.md；日常「版本一致 + 产物内容」校验在 lint.yml 的 kernel-package job。
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "只做 dry-run（不上传）"
+        type: boolean
+        default: true
+
+jobs:
+  publish:
+    name: Publish xadmin-common
+    runs-on: ubuntu-latest
+    env:
+      # 私有源上传端点与凭据（仓库 secrets；缺失即 fail-fast，不静默跳过）
+      XADMIN_COMMON_PUBLISH_URL: ${{ secrets.KERNEL_PUBLISH_URL }}
+      UV_PUBLISH_TOKEN: ${{ secrets.KERNEL_PUBLISH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Validate publish configuration
+        run: |
+          test -n "$XADMIN_COMMON_PUBLISH_URL" || { echo "::error::缺少 KERNEL_PUBLISH_URL secret（内核包上传端点）"; exit 1; }
+          test -n "$UV_PUBLISH_TOKEN" || { echo "::error::缺少 KERNEL_PUBLISH_TOKEN secret（内核包上传凭据）"; exit 1; }
+
+      - name: Check version consistency
+        run: python scripts/release_kernel.py check
+
+      - name: Build and verify artifacts
+        run: python scripts/release_kernel.py build
+
+      - name: Upload to private index
+        # dry_run 默认 true：先跑通流程再真上传（真上传加 --upload）
+        run: python scripts/release_kernel.py publish ${{ inputs.dry_run && '' || '--upload' }}

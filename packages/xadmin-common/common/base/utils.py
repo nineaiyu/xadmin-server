@@ -13,9 +13,9 @@ from Cryptodome import Random
 from Cryptodome.Cipher import AES
 from Cryptodome.Hash import SHA256
 from Cryptodome.Protocol.KDF import HKDF
-from django.conf import settings
 from django.forms.models import ModelChoiceIteratorValue
 
+from common.settings_contract import kernel_required_setting, kernel_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -136,11 +136,13 @@ def get_signer():
     ``FIELD_ENCRYPTION_LEGACY_KEYS`` 中即可读出存量密文（写新读旧，逐项试钥）。
     未配置时维持旧行为（主密钥 = SECRET_KEY）。改动密钥需重启进程。
     """
-    primary = settings.FIELD_ENCRYPTION_KEY or settings.SECRET_KEY
+    encryption_key = kernel_setting("FIELD_ENCRYPTION_KEY")
+    secret_key = kernel_required_setting("SECRET_KEY")
+    primary = encryption_key or secret_key
     legacy: tuple[str, ...] = ()
-    if settings.FIELD_ENCRYPTION_KEY:
+    if encryption_key:
         legacy = tuple(
-            key for key in (settings.SECRET_KEY, *settings.FIELD_ENCRYPTION_LEGACY_KEYS) if key and key != primary
+            key for key in (secret_key, *kernel_setting("FIELD_ENCRYPTION_LEGACY_KEYS")) if key and key != primary
         )
     return AESCipherV3(primary, legacy_masters=legacy)
 
@@ -376,9 +378,7 @@ class AESCipherV2:
         宁可多兼容不误杀。确认全量用户升级至 v2 优先前端后由运维关闭。
         """
         try:
-            from django.conf import settings
-
-            return bool(getattr(settings, "SECURITY_AES_V1_DECRYPT_ENABLED", True))
+            return bool(kernel_setting("SECURITY_AES_V1_DECRYPT_ENABLED"))
         except Exception:
             # 读不到配置时保持默认开启（兼容存量前端密文；显式关闭要求配置可达）
             return True

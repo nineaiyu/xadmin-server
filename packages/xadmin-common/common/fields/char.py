@@ -5,11 +5,11 @@
 # author : ly_13
 # date : 1/17/2024
 
-from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from common.base.utils import AESCipher
+from common.settings_contract import kernel_required_setting
 
 
 class AESField(models.Field):
@@ -19,7 +19,7 @@ class AESField(models.Field):
             del kwargs["prefix"]
         else:
             self.prefix = "aes:::"
-        self.cipher = AESCipher(settings.SECRET_KEY)
+        self.cipher = AESCipher(kernel_required_setting("SECRET_KEY"))
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):

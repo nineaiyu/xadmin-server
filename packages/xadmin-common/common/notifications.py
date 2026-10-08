@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 
-from django.conf import settings
 from django.db.models.aggregates import Avg
 from django.db.models.functions import Round
 from django.template.loader import render_to_string
@@ -15,6 +14,7 @@ from common.contracts import (
     get_active_superuser_queryset,
     register_message,
 )
+from common.settings_contract import kernel_setting
 
 # 资源告警阈值设置键：可写面 = 监控页阈值 PUT（SecurityMonitorSerializer），逐键对应
 MONITOR_THRESHOLD_SETTINGS = (
@@ -107,22 +107,22 @@ class ServerPerformanceCheckUtil:
         return {
             "disk_used": {
                 "default": 0,
-                "max_threshold": settings.SECURITY_MONITOR_DISK_USED_MAX,
+                "max_threshold": kernel_setting("SECURITY_MONITOR_DISK_USED_MAX"),
                 "alarm_msg_format": _("Disk used more than {max_threshold}%: => {value}"),
             },
             "memory_used": {
                 "default": 0,
-                "max_threshold": settings.SECURITY_MONITOR_MEMORY_USED_MAX,
+                "max_threshold": kernel_setting("SECURITY_MONITOR_MEMORY_USED_MAX"),
                 "alarm_msg_format": _("Memory used more than {max_threshold}%: => {value}"),
             },
             "cpu_load": {
                 "default": 0,
-                "max_threshold": settings.SECURITY_MONITOR_CPU_LOAD_MAX,
+                "max_threshold": kernel_setting("SECURITY_MONITOR_CPU_LOAD_MAX"),
                 "alarm_msg_format": _("CPU load more than {max_threshold}: => {value}"),
             },
             "cpu_percent": {
                 "default": 0,
-                "max_threshold": settings.SECURITY_MONITOR_CPU_PERCENT_MAX,
+                "max_threshold": kernel_setting("SECURITY_MONITOR_CPU_PERCENT_MAX"),
                 "alarm_msg_format": _("CPU percent more than {max_threshold}: => {value}"),
             },
         }

@@ -7,6 +7,7 @@
 """
 
 from common.injection import get_server_config
+from common.settings_contract import kernel_setting
 
 from .base import ConfigCacheBase
 
@@ -179,6 +180,5 @@ class SecurityConfMixin(ConfigCacheBase):
         settings_e2e 尾部的显式覆盖；本键是唯一需要与测试覆盖联动的例外，
         SysConfig 其余键的默认值统一单源在 server/conf.py（见 BaseConfCache 说明）。
         """
-        from django.conf import settings as dj_settings
 
-        return self.get_value("AUDIT_DIFF_MODELS", getattr(dj_settings, "AUDIT_DIFF_MODELS", []) or [])
+        return self.get_value("AUDIT_DIFF_MODELS", kernel_setting("AUDIT_DIFF_MODELS") or [])

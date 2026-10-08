@@ -9,6 +9,7 @@
 - 采集失败静默跳过：指标是旁路能力，任何异常都不得影响主流程。
 """
 
+from common.settings_contract import kernel_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -226,9 +227,8 @@ def _render_queue_depth() -> bytes:
     """
     try:
         import redis
-        from django.conf import settings
 
-        url = str(getattr(settings, "CELERY_BROKER_URL", "") or "")
+        url = str(kernel_setting("CELERY_BROKER_URL") or "")
         if not url:
             return b""
         client = redis.from_url(url, socket_connect_timeout=0.2, socket_timeout=0.5)

@@ -6,13 +6,14 @@
 # date : 6/25/2024
 import re
 
-from django.conf import settings
 from django.http import QueryDict
 from django.http.multipartparser import MultiPartParser as DjangoMultiPartParser
 from django.http.multipartparser import MultiPartParserError
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ParseError
 from rest_framework.parsers import BaseParser, DataAndFiles
+
+from common.settings_contract import kernel_required_setting
 
 
 def format_data(data: QueryDict | dict):
@@ -117,7 +118,7 @@ class AxiosMultiPartParser(BaseParser):
         """
         parser_context = parser_context or {}
         request = parser_context["request"]
-        encoding = parser_context.get("encoding", settings.DEFAULT_CHARSET)
+        encoding = parser_context.get("encoding", kernel_required_setting("DEFAULT_CHARSET"))
         meta = request.META.copy()
         meta["CONTENT_TYPE"] = media_type
         upload_handlers = request.upload_handlers

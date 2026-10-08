@@ -16,7 +16,6 @@ get_recycle_purge_queryset 两个 hook 即可，不要整段复制 action。
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
-from django.conf import settings
 from django.db import transaction
 from django.db.utils import IntegrityError
 from django.utils import timezone
@@ -27,6 +26,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
 from common.core.response import ApiResponse
+from common.settings_contract import kernel_setting
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 
@@ -58,7 +58,7 @@ class RecycleBinAction:
         if pks:
             queryset = queryset.filter(pk__in=pks)
         else:
-            retention_days = getattr(settings, "RECYCLE_BIN_RETENTION_DAYS", 30)
+            retention_days = kernel_setting("RECYCLE_BIN_RETENTION_DAYS")
             cutoff = timezone.now() - timedelta(days=retention_days)
             queryset = queryset.filter(deleted_at__lt=cutoff)
         return self.filter_queryset(queryset)

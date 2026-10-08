@@ -9,13 +9,13 @@ import time
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import QuerySet
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from common.settings_contract import kernel_required_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -175,7 +175,7 @@ class DbBaseModel(models.Model):
 
 class DbAuditModel(DbBaseModel):
     creator = models.ForeignKey(
-        to=settings.AUTH_USER_MODEL,
+        to=kernel_required_setting("AUTH_USER_MODEL"),
         related_query_name="creator_query",
         null=True,
         blank=True,
@@ -184,7 +184,7 @@ class DbAuditModel(DbBaseModel):
         related_name="+",
     )
     modifier = models.ForeignKey(
-        to=settings.AUTH_USER_MODEL,
+        to=kernel_required_setting("AUTH_USER_MODEL"),
         related_query_name="modifier_query",
         null=True,
         blank=True,

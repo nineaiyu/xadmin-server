@@ -4,12 +4,12 @@
 
 import secrets
 
-from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework.views import APIView
 
 from common.metrics import metrics_available, render_metrics
+from common.settings_contract import kernel_setting
 
 
 class MetricsAPIView(APIView):
@@ -28,9 +28,9 @@ class MetricsAPIView(APIView):
 
     @extend_schema(exclude=True)
     def get(self, request):
-        if not getattr(settings, "METRICS_ENABLED", False):
+        if not kernel_setting("METRICS_ENABLED"):
             return JsonResponse({"detail": "Not found"}, status=404)
-        token = getattr(settings, "METRICS_TOKEN", "")
+        token = kernel_setting("METRICS_TOKEN")
         if not token:
             return JsonResponse({"detail": "METRICS_TOKEN is not configured"}, status=403)
         # 常量时间比较（与备份/运维告警端点同口径）：避免逐字符探测令牌

@@ -2,7 +2,6 @@
 # -*- coding:utf-8 -*-
 """导入导出：文件导出（export-data / export-async）。"""
 
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -14,6 +13,7 @@ from common.core.response import ApiResponse
 from common.core.throttle import ExportImportThrottleMixin
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
+from common.settings_contract import kernel_setting
 from common.swagger.utils import get_default_response_schema
 
 
@@ -100,7 +100,7 @@ class OnlyExportDataAction(ExportImportThrottleMixin, ListAction):
             getattr(request.user, "pk", None),
         ]
         task = import_string("system.tasks.async_export_data_task")
-        if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+        if kernel_setting("CELERY_TASK_ALWAYS_EAGER"):
             # 测试/E2E：send_task/apply_async 在 eager 下不执行，改 apply 同步跑完
             task.apply(args=task_args, task_id=str(record.pk))
         else:

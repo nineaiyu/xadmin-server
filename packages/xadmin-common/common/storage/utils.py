@@ -20,9 +20,9 @@ import uuid
 from collections.abc import Iterator
 from urllib.parse import quote
 
-from django.conf import settings
 from django.core.files.storage import FileSystemStorage, default_storage
 
+from common.settings_contract import kernel_required_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -77,7 +77,7 @@ def storage_size(name: str) -> int:
 
 
 def storage_cache_dir() -> str:
-    return os.path.join(str(settings.MEDIA_ROOT), STORAGE_CACHE_DIR_NAME)
+    return os.path.join(str(kernel_required_setting("MEDIA_ROOT")), STORAGE_CACHE_DIR_NAME)
 
 
 def _cache_path(name: str) -> str:
@@ -234,7 +234,7 @@ def storage_probe():
     t1 = time.time()
     try:
         if storage_is_local():
-            root = str(settings.MEDIA_ROOT)
+            root = str(kernel_required_setting("MEDIA_ROOT"))
             os.makedirs(root, exist_ok=True)
             probe = _storage_probe_path(root)
             with open(probe, "w", encoding="utf-8") as file:

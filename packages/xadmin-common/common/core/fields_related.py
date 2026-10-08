@@ -9,7 +9,6 @@
 from functools import partial
 from typing import Any
 
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
 from django.db.models.fields.files import FieldFile
@@ -21,6 +20,7 @@ from common.core.filter import get_filter_queryset
 from common.core.mask import apply_related_output_mask
 from common.fields.utils import get_file_absolute_uri
 from common.local import get_current_request
+from common.settings_contract import kernel_required_setting
 
 
 def attr_get(obj, attr, sp="."):
@@ -172,7 +172,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             return set(self.attrs)
 
         allow_fields: list | set = []
-        if self.request and settings.PERMISSION_FIELD_ENABLED:
+        if self.request and kernel_required_setting("PERMISSION_FIELD_ENABLED"):
             if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
                 allow_fields = self.attrs
             elif hasattr(self.request, "fields"):

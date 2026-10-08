@@ -143,3 +143,26 @@ jobs:
       - name: Check tutorial mirror
         # 教程里的 manage.py 命令 / CLI 参数 / demo 路径必须与代码一致
         run: python scripts/check_tutorial_mirror.py
+
+  kernel-package:
+    name: Kernel package (version / build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Check kernel version consistency
+        # 版本四方一致（源码 / 分发元数据 / changelog / 架构文档）+ 契约面就绪；
+        # 口径与发版流程见 docs/ops/kernel-release.md
+        run: python scripts/release_kernel.py check
+
+      - name: Build and verify kernel wheel
+        # wheel 必须只含内核包本体（含 templates/ 与 migrations/ 数据文件），元数据版本一致
+        run: python scripts/release_kernel.py build

@@ -12,7 +12,6 @@ from functools import lru_cache
 from importlib import import_module
 
 from django.apps import apps
-from django.conf import settings
 from django.http import QueryDict
 from django.urls import URLPattern, URLResolver
 from django.utils.module_loading import import_string
@@ -20,6 +19,7 @@ from django.utils.termcolors import make_style
 
 from common.base.magic import import_from_string
 from common.decorators import cached_method
+from common.settings_contract import kernel_required_setting, kernel_setting
 
 logger = logging.getLogger(__name__)
 
@@ -90,13 +90,13 @@ def permission_path_matches(permission_path: str, url: str) -> bool:
 
 
 def check_show_url(url):
-    for prefix in settings.PERMISSION_SHOW_PREFIX:
+    for prefix in kernel_setting("PERMISSION_SHOW_PREFIX"):
         if re.match(prefix, url):
             return True
 
 
 def ignore_white_url(url):
-    for prefix in settings.ROUTE_IGNORE_URL:
+    for prefix in kernel_setting("ROUTE_IGNORE_URL"):
         if re.match(prefix, f"/{url.replace('$', '')}"):
             return True
 
@@ -152,7 +152,7 @@ def get_all_url_dict(pre_url="/"):
     获取项目中所有的URL（必须有name别名）
     """
     url_ordered_dict = OrderedDict()
-    md = import_string(settings.ROOT_URLCONF)
+    md = import_string(kernel_required_setting("ROOT_URLCONF"))
     url_ordered_dict["#"] = {"name": "#", "url": "#", "view": "#", "label": "#"}
     recursion_urls(None, pre_url, md.urlpatterns, url_ordered_dict)  # 递归去获取所有的路由
     return url_ordered_dict.values()
@@ -183,7 +183,7 @@ def collect_app_ws_urls():
 
 def auto_register_app_url(urlpatterns):
     xadmin_apps = []
-    for app in settings.XADMIN_APPS:
+    for app in kernel_setting("XADMIN_APPS"):
         if "." in app:
             xadmin_apps.append(import_string(app).name)
         else:
@@ -212,13 +212,13 @@ def auto_register_app_url(urlpatterns):
         if urls:
             urlpatterns.extend(urls)
             for url in urls:
-                settings.PERMISSION_SHOW_PREFIX.append(url.pattern.regex.pattern.lstrip("^"))
-            settings.PERMISSION_DATA_AUTH_APPS.append(name)
+                kernel_setting("PERMISSION_SHOW_PREFIX").append(url.pattern.regex.pattern.lstrip("^"))
+            kernel_setting("PERMISSION_DATA_AUTH_APPS").append(name)
 
         try:
             urls = import_from_string(f"{app_module_name}.config.PERMISSION_WHITE_REURL")
             if urls:
-                settings.PERMISSION_WHITE_URL.update(urls)
+                kernel_setting("PERMISSION_WHITE_URL").update(urls)
         except Exception as e:
             logger.warning(f"auto register {name} permission_white_reurl failed. {e}")
 

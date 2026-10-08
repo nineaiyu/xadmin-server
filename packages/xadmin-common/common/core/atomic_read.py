@@ -23,7 +23,7 @@ BEGIN/COMMIT 两次数据库往返（容器/局域网链路实测约 1-3ms/请�
 
 import contextvars
 
-from django.conf import settings
+from common.settings_contract import kernel_setting
 
 SAFE_METHODS = frozenset({"GET", "HEAD"})
 
@@ -57,7 +57,7 @@ def is_read_only_request(request, view) -> bool:
 
 def skip_atomic_enabled() -> bool:
     """总开关（config.yml 的 ATOMIC_REQUESTS_SKIP_READ_ACTIONS，默认开）。"""
-    return bool(getattr(settings, "ATOMIC_REQUESTS_SKIP_READ_ACTIONS", True))
+    return bool(kernel_setting("ATOMIC_REQUESTS_SKIP_READ_ACTIONS"))
 
 
 class SafeMethodAtomicSkipMixin:

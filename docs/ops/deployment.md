@@ -451,7 +451,11 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 > `Dockerfile-dev` 同口径已同步）；② **镜像形态**——需重建应用镜像（旧的烘焙镜像里没有
 > 新目录）。本地 uv 开发 `uv sync --all-groups` 后由 editable 安装提供 `common`；
 > pip 路径需补 `pip install --no-deps -e ./packages/xadmin-common`（见 §1.1）。
-> 细节与 settings 契约表见 [architecture/kernel-package.md](../architecture/kernel-package.md)。
+> 细节与 settings 契约表见 [architecture/kernel-package.md](../architecture/kernel-package.md)；
+> 内核包独立版本、私有源发版与宿主升级口径见 [kernel-release.md](kernel-release.md)。
+> **内核包 0.2.0 起**：settings 读取统一走契约访问器（`kernel_setting` /
+> `kernel_required_setting`），多数此前「必给」的键有了内核缺省——本工程（xadmin-server）
+> 的配置项一个都不用改（相关键照常提供，行为不变），省略非必给键只对二开宿主生效。
 
 > 涉及新增菜单/权限点或 gettext 文案的版本，升级后执行：
 > `python manage.py post_upgrade`（= 内置种子 `load_init_json` + `compilemessages` + 配置缓存失效 + 权限点缺口扫描，

@@ -63,4 +63,7 @@
 3. **新增缓存键**：`scripts/check_cache_keys.py --strict` 门禁（单文件前缀，冲突即失败）；
 4. **覆写点必须附守护测试**（cookbook §四覆写红线第 4 条）；
 5. **行数门禁**：单文件 ≤ 500 行（`scripts/check_file_length.py`），超限先拆分；
-6. 内核变更默认影响全部业务 app——提交前跑全量 pytest（2600+）而不是只跑改动面。
+6. **读 settings**：一律走 `settings_contract.py` 的 `kernel_setting` / `kernel_required_setting`
+   （新增键先登记契约面；裸读 `settings.KEY` / `getattr(settings, ...)` 与直接 import
+   `django.conf.settings` 均被 `tests/unit/common/test_settings_contract.py` 拦截）；
+7. 内核变更默认影响全部业务 app——提交前跑全量 pytest（2600+）而不是只跑改动面。

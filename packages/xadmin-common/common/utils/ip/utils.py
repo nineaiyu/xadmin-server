@@ -2,8 +2,9 @@ import ipaddress
 import socket
 from ipaddress import ip_address, ip_network
 
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+
+from common.settings_contract import kernel_required_setting
 
 from .geoip import get_ip_city_by_geoip
 from .ipip import get_ip_city_by_ipip
@@ -122,7 +123,7 @@ def get_ip_city(ip):
         country = info.get("country")
 
         # 国内城市 并且 语言是中文就使用国内
-        is_zh = settings.LANGUAGE_CODE.startswith("zh")
+        is_zh = kernel_required_setting("LANGUAGE_CODE").startswith("zh")
         if country == "中国" and is_zh:
             return city if city else get_ip_city_by_geoip(ip)
     return get_ip_city_by_geoip(ip)

@@ -5,7 +5,6 @@
 # author : ly_13
 # date : 8/12/2024
 
-from django.conf import settings
 from django.contrib.auth import login, logout
 from django.shortcuts import redirect
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -25,6 +24,7 @@ from rest_framework_simplejwt.serializers import TokenObtainSerializer
 from common.base.magic import cache_response
 from common.contracts import LoginBlockUtil, LoginIpBlockUtil
 from common.core.response import ApiResponse
+from common.settings_contract import kernel_setting
 from common.utils.request import get_request_ip
 
 # 文档站登录默认回跳（next 缺失或校验不通过时使用）
@@ -38,7 +38,7 @@ def _safe_next_url(request) -> str:
     """
     target = str(request.query_params.get("next") or "").strip() or DOCS_DEFAULT_NEXT
     allowed_hosts = {request.get_host()}
-    allowed_hosts.update(host for host in settings.ALLOWED_HOSTS if host and host != "*")
+    allowed_hosts.update(host for host in kernel_setting("ALLOWED_HOSTS") if host and host != "*")
     if url_has_allowed_host_and_scheme(target, allowed_hosts=allowed_hosts, require_https=request.is_secure()):
         return target
     return DOCS_DEFAULT_NEXT
@@ -70,7 +70,7 @@ class ApiLogin(GenericAPIView):
                 code=1001,
                 detail=_(
                     "The account has been locked (please contact admin to unlock it or try again after {} minutes)"
-                ).format(settings.SECURITY_LOGIN_LIMIT_TIME),
+                ).format(kernel_setting("SECURITY_LOGIN_LIMIT_TIME")),
             )
 
         try:

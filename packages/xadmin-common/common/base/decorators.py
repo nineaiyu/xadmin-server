@@ -8,9 +8,9 @@
 import time
 from functools import wraps
 
-from django.conf import settings
 from django.db import close_old_connections, connection
 
+from common.settings_contract import kernel_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -53,7 +53,7 @@ def _diagnostics_enabled():
     ``timeit`` / ``count_sql_queries`` 挂在数据权限过滤这类热路径上，
     生产环境每次都打 INFO 日志、并在每次 SQL 执行上挂钩子，属纯开销。
     """
-    return bool(getattr(settings, "DEBUG", False) or getattr(settings, "DEBUG_DEV", False))
+    return bool(kernel_setting("DEBUG") or kernel_setting("DEBUG_DEV"))
 
 
 def timeit(func):

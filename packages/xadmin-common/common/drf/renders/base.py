@@ -4,7 +4,6 @@ import re
 from datetime import datetime
 
 import pyzipper
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.renderers import BaseRenderer
@@ -12,6 +11,7 @@ from rest_framework.utils import encoders, json
 
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField, PhoneField
 from common.core.utils import has_self_fields
+from common.settings_contract import kernel_required_setting, kernel_setting
 from common.utils import get_logger
 from common.utils.timezone import local_now
 
@@ -95,7 +95,7 @@ class BaseFileRenderer(BaseRenderer):
             results = [results[0]] if results else results
         else:
             # 限制数据数量
-            results = results[: settings.EXPORT_MAX_LIMIT]
+            results = results[: kernel_setting("EXPORT_MAX_LIMIT")]
         # 会将一些 UUID 字段转化为 string
         results = json.loads(json.dumps(results, cls=encoders.JSONEncoder))
         return results
@@ -171,7 +171,9 @@ class BaseFileRenderer(BaseRenderer):
                 field.min_value, field.max_value, field.max_digits, field.decimal_places
             )
         elif isinstance(field, serializers.DateTimeField):
-            text = _("Datetime format {}").format(local_now().strftime(settings.REST_FRAMEWORK["DATETIME_FORMAT"]))
+            text = _("Datetime format {}").format(
+                local_now().strftime(kernel_required_setting("REST_FRAMEWORK")["DATETIME_FORMAT"])
+            )
         elif isinstance(field, serializers.IPAddressField):
             text = _("IP")
         elif isinstance(field, serializers.ChoiceField):

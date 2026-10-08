@@ -33,3 +33,6 @@ monitoring-data/
 
 # mypy 增量缓存
 .mypy_cache/
+
+# 内核分发包构建产物（scripts/release_kernel.py build / uv build --package xadmin-common）
+dist/

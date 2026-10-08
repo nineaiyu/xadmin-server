@@ -9,7 +9,6 @@ import ipaddress
 import json
 import re
 
-from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 from django.utils.module_loading import import_string
 from rest_framework.throttling import BaseThrottle
@@ -18,6 +17,7 @@ from user_agents import parse
 
 from common.core.auth import GetUserFromAccessToken
 from common.core.utils import get_doc_first_line
+from common.settings_contract import kernel_required_setting, kernel_setting
 
 #: multipart 请求体解析上限（只解析小表单的字段名；超大请求不读正文，避免整包进内存）
 MULTIPART_FIELD_PARSE_LIMIT = 64 * 1024
@@ -45,7 +45,9 @@ def get_request_user(request):
             refresh_token = body.get("refresh")
             if refresh_token:
                 token = GetUserFromAccessToken(refresh_token)
-                auth_class = import_string(settings.REST_FRAMEWORK.get("DEFAULT_AUTHENTICATION_CLASSES")[0])()
+                auth_class = import_string(
+                    kernel_required_setting("REST_FRAMEWORK").get("DEFAULT_AUTHENTICATION_CLASSES")[0]
+                )()
                 user = auth_class.get_user(token)
         except Exception:
             # refresh 令牌同样不可用：按匿名用户处理（由视图权限决定 401）
@@ -71,9 +73,8 @@ def _normalize_ip(value):
 
 def _is_trusted_proxy(ip):
     """直连地址/转发地址是否命中 TRUSTED_PROXY_IPS（单个 IP 或 CIDR）。"""
-    from django.conf import settings as dj_settings
 
-    trusted = getattr(dj_settings, "TRUSTED_PROXY_IPS", None) or []
+    trusted = kernel_setting("TRUSTED_PROXY_IPS") or []
     if not trusted or not ip:
         return False
     try:

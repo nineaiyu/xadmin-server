@@ -10,7 +10,6 @@ from collections import defaultdict
 
 from celery import signature
 from celery.signals import after_setup_logger, worker_ready, worker_shutdown
-from django.conf import settings
 from django.core.cache import cache
 from django.core.signals import request_finished
 from django.db import connection
@@ -24,6 +23,7 @@ from common.celery.decorator import get_after_app_ready_tasks, get_after_app_shu
 from common.celery.logger import CeleryThreadTaskFileHandler
 from common.celery.utils import get_celery_task_log_path
 from common.local import get_current_request
+from common.settings_contract import kernel_setting
 from common.signals import django_ready
 from common.utils import get_logger
 
@@ -163,7 +163,7 @@ def on_update_set_modifier(sender, instance=None, **kwargs):
             instance.modifier = modifier
 
 
-if settings.DEBUG_DEV:
+if kernel_setting("DEBUG_DEV"):
     request_finished.connect(on_request_finished_logging_db_query)
 
 

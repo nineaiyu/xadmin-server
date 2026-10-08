@@ -1,3 +1,5 @@
+from common.settings_contract import kernel_setting
+
 from ..hands import *
 from .base import BaseService
 
@@ -47,7 +49,7 @@ class FlowerService(BaseService):
         ]
         if CELERY_FLOWER_AUTH:
             cmd.append(f"--basic-auth={CELERY_FLOWER_AUTH}")  # 未配置则代表 flower 无认证（仅限本机回环）
-        if settings.DEBUG:
+        if kernel_setting("DEBUG"):
             cmd += ["--debug"]
         return cmd
 

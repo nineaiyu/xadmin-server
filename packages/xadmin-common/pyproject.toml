@@ -10,15 +10,20 @@
 #   - 内核读取的 Django settings 全部登记在 common/settings_contract.py，
 #     宿主按其声明提供（缺省列「必给」的键必须提供，其余键缺失即按契约默认值工作）。
 #
-# 版本策略：packaging 版本独立演进（首版 0.1.0）；平台版本见 server/const.py 的 VERSION。
+# 版本策略：packaging 版本独立演进（单一事实源 = common/__init__.py 的 __version__，
+# 下方 [tool.hatch.version] 从这里取值；首版 0.1.0）；平台版本见 server/const.py 的 VERSION。
+# 发版流程 / 私有源接入 / changelog 纪律见 docs/ops/kernel-release.md，
+# 一致性由 scripts/release_kernel.py check 与 tests/unit/test_kernel_release.py 守护。
 # 依赖策略：内核直接 import 的第三方库在此声明为范围约束（工作区内实际锁定版本由
 # uv.lock 决定，宿主可自行收紧）；仅函数级延迟导入的可选能力走 extras（storage）。
 #
-# 构建：
-#   uv build --package xadmin-common          # wheel + sdist → dist/
+# 构建与发布：
+#   uv build --package xadmin-common              # wheel + sdist → dist/
+#   python scripts/release_kernel.py check        # 版本 / changelog / 文档三方一致性
+#   python scripts/release_kernel.py publish      # 上传私有源（默认 dry-run）
 [project]
 name = "xadmin-common"
-version = "0.1.0"
+dynamic = ["version"]
 description = "xadmin 框架内核（可复用层）：模型基类 / CRUD ViewSet / 权限与元数据 / 缓存 / 任务基建"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -75,15 +80,20 @@ Documentation = "https://docs.dvcloud.xin/"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# 版本单一事实源：common/__init__.py 的 __version__（不在此重复写版本号）
+[tool.hatch.version]
+path = "common/__init__.py"
+
 # wheel 只收 common 包本体（含 templates/ 与 migrations/ 等数据文件）：
 # packages 条目的末段即导入包名，故 common/ 落到 wheel 根下仍是 common/。
 [tool.hatch.build.targets.wheel]
 packages = ["common"]
 
-# sdist 只收包本体与本文档（宿主仓其余内容不随分发）。
+# sdist 只收包本体与包级文档（宿主仓其余内容不随分发）。
 [tool.hatch.build.targets.sdist]
 include = [
     "/common",
     "/README.md",
+    "/CHANGELOG.md",
     "/pyproject.toml",
 ]

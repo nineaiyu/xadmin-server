@@ -10,11 +10,10 @@ import socket
 import threading
 import time
 
-from django.conf import settings
-
 from common import contracts
 from common.core.db.utils import close_old_connections
 from common.decorators import Singleton
+from common.settings_contract import kernel_required_setting
 from common.utils import (
     get_boot_time,
     get_cpu_load,
@@ -58,7 +57,7 @@ class BaseTerminal:
                     "cpu_load": get_cpu_load(),
                     "cpu_percent": get_cpu_percent(),
                     "memory_used": get_memory_usage(),
-                    "disk_used": get_disk_usage(path=settings.PROJECT_DIR),
+                    "disk_used": get_disk_usage(path=kernel_required_setting("PROJECT_DIR")),
                     "boot_time": get_boot_time(),
                     "net_sent_mb": round(net_sent / 1024 / 1024, 3),
                     "net_recv_mb": round(net_recv / 1024 / 1024, 3),

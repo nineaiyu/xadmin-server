@@ -7,7 +7,6 @@
 import traceback
 from logging import getLogger
 
-from django.conf import settings
 from django.db.models import ProtectedError
 from django.http import Http404
 from django.utils.translation import gettext_lazy as _
@@ -16,6 +15,7 @@ from rest_framework.views import exception_handler, set_rollback
 from rest_framework_simplejwt.exceptions import InvalidToken
 
 from common.core.response import ApiResponse
+from common.settings_contract import kernel_setting
 
 logger = getLogger("drf_exception")
 unexpected_exception_logger = getLogger("unexpected_exception")
@@ -31,7 +31,7 @@ class ReadableThrottled(Throttled):
 
 
 def common_exception_handler(exc, context):
-    if settings.DEBUG_DEV:
+    if kernel_setting("DEBUG_DEV"):
         logger.exception("Print traceback exception for Debug")
         traceback.print_exc()
 

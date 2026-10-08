@@ -2,7 +2,6 @@ import os
 import sys
 import time
 
-from django.conf import settings
 from django.core import management
 from django.core.management.base import SystemCheckError
 from django.db.utils import OperationalError
@@ -10,6 +9,7 @@ from django.db.utils import OperationalError
 from common.contracts import Setting, scan_permission_gaps
 from common.core.utils import PrintLogFormat
 from common.injection import get_server_config, get_server_version
+from common.settings_contract import kernel_required_setting
 from common.utils import test_ip_connectivity
 from common.utils.file import download_file
 
@@ -29,7 +29,7 @@ CELERY_FLOWER_PORT = CONFIG.CELERY_FLOWER_PORT or 5555
 CELERY_FLOWER_AUTH = CONFIG.CELERY_FLOWER_AUTH or ""
 DEBUG = CONFIG.DEBUG or False
 AUTO_MIGRATE = CONFIG.AUTO_MIGRATE if CONFIG.AUTO_MIGRATE is not None else True
-APPS_DIR = settings.BASE_DIR
+APPS_DIR = kernel_required_setting("BASE_DIR")
 LOG_DIR = os.path.join(APPS_DIR, "data", "logs")
 TMP_DIR = os.path.join(APPS_DIR, "tmp")
 CELERY_WORKER_COUNT = CONFIG.CELERY_WORKER_COUNT or 10
@@ -116,7 +116,7 @@ def download_ip_db(force=False):
         ("system", "ipipfree.ipdb"): "https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/ipipfree.ipdb",
     }
     for p, src in db_path_url_mapper.items():
-        path = os.path.join(settings.DATA_DIR, *p)
+        path = os.path.join(kernel_required_setting("DATA_DIR"), *p)
         if not force and os.path.isfile(path) and os.path.getsize(path) > 1000:
             continue
         logger.info(f"Download ip db: {path}")

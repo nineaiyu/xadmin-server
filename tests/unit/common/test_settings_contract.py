@@ -1,24 +1,32 @@
 # -*- coding: utf-8 -*-
 """内核 settings 契约守护（common/settings_contract.py）。
 
-守护面（纯静态 AST 扫描，不依赖运行期导入）：
-1. 契约面 ↔ 源码读取双向一致：内核任何 ``settings.KEY`` / ``getattr(settings, "KEY", ...)``
-   都必须在契约面登记；契约面登记的键也必须有真实读取点（防登记腐化）；
-2. 缺省表达式锁步：``default_expr`` 必须与源码里的 getattr 缺省表达式一致；
-   字面量缺省还要求与解析值一致（``default``）；
-3. 消费方清单锁步：``consumers`` 必须等于实际读取该键的内核模块集合；
-4. 混合读取形态显式登记：既直读又带缺省读取的键（缺失即报错 vs 回落默认值两种语义
-   并存）白名单化，防止新增键无意引入混合语义；
-5. 文档表锁步：``docs/architecture/kernel-package.md`` §三 的契约表与本模块同源渲染。
+守护面（AST 静态扫描，不依赖运行期导入）：
 
-约定：本文件用 AST 扫描而不是正则，且跳过 ``settings_contract.py`` 自身（其
-docstring 含示例读取形态）。
+1. **读取形态唯一**：内核任何地方都不得直接读 ``settings.KEY`` / ``getattr(settings, ...)``
+   （含 ``dj_settings`` 等别名），一律走契约访问器 ``kernel_setting`` / ``kernel_required_setting``；
+   内核也不得再 import ``django.conf.settings``（唯一例外是契约模块自身的读取实现）；
+2. **契约面 ↔ 源码双向一致**：访问器读取的每个键都必须在契约面登记；契约面登记的键也必须有
+   真实读取点（防登记腐化）；
+3. **访问器形态与缺省状态锁步**：``REQUIRED`` 键必须用 ``kernel_required_setting``（缺失 fail-fast），
+   有缺省的键必须用 ``kernel_setting``（缺失回落契约缺省值）；
+4. **消费方清单锁步**：``consumers`` 必须等于实际读取该键的内核模块集合；
+5. **零配置回落**：每个有缺省的键在键缺失时都按契约缺省值工作，且回落值是可变的容器时返回副本
+   （不污染契约面共享对象）；每个 ``REQUIRED`` 键缺失时报 ``ImproperlyConfigured`` 并带用途提示；
+6. **framework 标记自证**：``framework=True`` ↔ ``django.conf.global_settings`` 真正内置（双向）；
+7. **文档表锁步**：``docs/architecture/kernel-package.md`` §三 的契约表与「宿主最小对接面」
+   与本模块同源渲染。
+
+约定：本文件用 AST 扫描而不是正则，且跳过 ``settings_contract.py`` 自身（其 docstring 含
+读取形态示例，读取实现也在此）。
 """
 
 import ast
+import copy
 import re
 from pathlib import Path
 
+from django.conf import global_settings
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
@@ -30,6 +38,7 @@ from common.settings_contract import (
     kernel_required_setting,
     kernel_setting,
     render_default,
+    required_kernel_settings,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -37,11 +46,10 @@ KERNEL_DIR = REPO_ROOT / "packages" / "xadmin-common" / "common"
 CONTRACT_MODULE = KERNEL_DIR / "settings_contract.py"
 DOC = REPO_ROOT / "docs" / "architecture" / "kernel-package.md"
 
-# 混合读取形态白名单：既存在直读点（缺失即 AttributeError），又存在 getattr 缺省点。
-# 语义：键缺失时「部分链路报错、部分链路回落默认」——仅这三处经评审保留：
-#   - DEBUG / DEBUG_DEV：开发态判定允许回落 False，进程管理命令直读（部署必给）
-#   - ALLOWED_HOSTS：Django 内置键（global_settings 恒有值），getattr 只是为了拿 None 语义
-MIXED_READ_KEYS = {"DEBUG", "DEBUG_DEV", "ALLOWED_HOSTS"}
+#: 内核源码里禁止出现的 settings 读取对象名（含历史别名，防换名绕过）
+FORBIDDEN_SETTINGS_NAMES = {"settings", "dj_settings", "django_settings"}
+#: 契约访问器 → 契约缺省状态
+ACCESSOR_KINDS = {"kernel_setting": "defaulted", "kernel_required_setting": "required"}
 
 
 def _iter_kernel_modules():
@@ -55,52 +63,71 @@ def _iter_kernel_modules():
 
 
 def scan_reads() -> dict[str, dict]:
-    """扫描内核源码，返回 {键: {direct: bool, defaults: set[str], modules: set[str]}}。"""
+    """扫描内核源码，返回 {键: {accessor: 访问器名集合, modules: 消费模块集合}}。"""
     found: dict[str, dict] = {}
-
-    def record(key: str, module: str, default_expr: str | None) -> None:
-        entry = found.setdefault(key, {"direct": False, "defaults": set(), "modules": set()})
-        entry["modules"].add(module)
-        if default_expr is None:
-            entry["direct"] = True
-        else:
-            entry["defaults"].add(default_expr)
-
     for path in _iter_kernel_modules():
         module = path.relative_to(KERNEL_DIR).as_posix()
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id in ACCESSOR_KINDS
+                and node.args
+                and isinstance(node.args[0], ast.Constant)
+                and isinstance(node.args[0].value, str)
+            ):
+                entry = found.setdefault(node.args[0].value, {"accessor": set(), "modules": set()})
+                entry["accessor"].add(node.func.id)
+                entry["modules"].add(module)
+    return found
+
+
+def scan_raw_reads() -> list[str]:
+    """扫描内核源码的裸 settings 读取（未走契约访问器），返回 ``模块:行号 形态`` 清单。"""
+    violations: list[str] = []
+    for path in _iter_kernel_modules():
+        module = path.relative_to(KERNEL_DIR).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module == "django.conf":
+                if any(alias.name == "settings" for alias in node.names):
+                    violations.append(f"{module}:{node.lineno} 直接 import django.conf.settings")
+            if (
                 isinstance(node, ast.Attribute)
                 and isinstance(node.value, ast.Name)
-                and node.value.id == "settings"
+                and node.value.id in FORBIDDEN_SETTINGS_NAMES
                 and node.attr.isupper()
             ):
-                record(node.attr, module, None)
-            elif (
+                violations.append(f"{module}:{node.lineno} 裸读 {node.value.id}.{node.attr}")
+            if (
                 isinstance(node, ast.Call)
                 and isinstance(node.func, ast.Name)
                 and node.func.id == "getattr"
                 and len(node.args) >= 2
                 and isinstance(node.args[0], ast.Name)
-                and node.args[0].id == "settings"
+                and node.args[0].id in FORBIDDEN_SETTINGS_NAMES
                 and isinstance(node.args[1], ast.Constant)
                 and isinstance(node.args[1].value, str)
             ):
-                default_expr = ast.unparse(node.args[2]) if len(node.args) > 2 else None
-                record(node.args[1].value, module, default_expr)
-    return found
+                violations.append(f"{module}:{node.lineno} 裸读 getattr(..., {node.args[1].value!r})")
+    return sorted(violations)
 
 
-def _resolve_symbol(name: str):
-    """在契约消费模块内解析符号常量（如 DEFAULT_PRESET）的字面量取值。"""
-    pattern = re.compile(rf"^\s*{re.escape(name)}\s*=\s*(.+?)\s*$", re.M)
-    values = set()
-    for path in _iter_kernel_modules():
-        for matched in pattern.finditer(path.read_text(encoding="utf-8")):
-            values.add(ast.literal_eval(matched.group(1)))
-    assert len(values) == 1, f"符号 {name} 在契约消费模块内不唯一：{values}"
-    return values.pop()
+class TestAccessorOnly:
+    def test_no_raw_settings_read_in_kernel(self):
+        violations = scan_raw_reads()
+        assert violations == [], "内核存在未走契约访问器的 settings 读取（契约面是唯一读取入口）：\n  " + "\n  ".join(
+            violations
+        )
+
+    def test_contract_module_is_only_settings_importer(self):
+        offenders = sorted(
+            path.relative_to(KERNEL_DIR).as_posix()
+            for path in _iter_kernel_modules()
+            if "from django.conf import settings" in path.read_text(encoding="utf-8")
+        )
+        assert offenders == [], f"以下内核模块仍 import django.conf.settings：{offenders}"
 
 
 class TestContractSurfaceLockstep:
@@ -114,31 +141,15 @@ class TestContractSurfaceLockstep:
         dead = sorted(set(KERNEL_SETTINGS) - set(reads))
         assert dead == [], f"契约面登记了没有读取点的键：{dead}（防登记腐化，请核对后移除）"
 
-    def test_default_expr_matches_source(self):
+    def test_accessor_form_matches_contract_default(self):
         reads = scan_reads()
         mismatched = []
         for name, entry in KERNEL_SETTINGS.items():
-            code_defaults = reads[name]["defaults"]
-            if entry.default_expr is None:
-                if code_defaults:
-                    mismatched.append(f"{name}: 契约标记直读，源码含缺省 {sorted(code_defaults)}")
-            elif code_defaults != {entry.default_expr}:
-                mismatched.append(f"{name}: 契约 {entry.default_expr!r} vs 源码 {sorted(code_defaults)}")
-        assert mismatched == [], "缺省表达式与源码不一致：\n  " + "\n  ".join(mismatched)
-
-    def test_literal_defaults_match_resolved_value(self):
-        mismatched = []
-        for name, entry in KERNEL_SETTINGS.items():
-            if entry.default_expr is None or entry.default is REQUIRED:
-                continue
-            try:
-                resolved = ast.literal_eval(entry.default_expr)
-            except (ValueError, SyntaxError):
-                # 非常量表达式（符号引用，如 DEFAULT_PRESET）：在契约消费模块内静态解析字面量取值
-                resolved = _resolve_symbol(entry.default_expr)
-            if resolved != entry.default:
-                mismatched.append(f"{name}: default={entry.default!r} vs {entry.default_expr}={resolved!r}")
-        assert mismatched == [], "契约默认值与代码缺省表达式解析结果不一致：\n  " + "\n  ".join(mismatched)
+            expected = "kernel_required_setting" if entry.default is REQUIRED else "kernel_setting"
+            accessors = reads[name]["accessor"]
+            if accessors != {expected}:
+                mismatched.append(f"{name}: 契约期望 {expected}，源码用 {sorted(accessors)}")
+        assert mismatched == [], "访问器形态与契约缺省状态不一致：\n  " + "\n  ".join(mismatched)
 
     def test_consumers_match_scanned_modules(self):
         reads = scan_reads()
@@ -148,39 +159,17 @@ class TestContractSurfaceLockstep:
                 mismatched.append(f"{name}: 契约 {sorted(entry.consumers)} vs 源码 {sorted(reads[name]['modules'])}")
         assert mismatched == [], "消费方清单与源码不一致：\n  " + "\n  ".join(mismatched)
 
-    def test_required_keys_have_no_default_read(self):
-        reads = scan_reads()
-        bad = sorted(
-            name for name, entry in KERNEL_SETTINGS.items() if entry.default is REQUIRED and reads[name]["defaults"]
-        )
-        assert bad == [], f"契约标记为必给（REQUIRED）却存在缺省读取：{bad}"
-
-    def test_mixed_read_keys_are_registered(self):
-        reads = scan_reads()
-        mixed = {name for name, data in reads.items() if data["direct"] and data["defaults"]}
-        assert mixed == MIXED_READ_KEYS, (
-            f"混合读取形态（直读 + 缺省读取）发生变化：新增 {sorted(mixed - MIXED_READ_KEYS)} / "
-            f"消失 {sorted(MIXED_READ_KEYS - mixed)}——请评审后同步白名单与契约说明"
+    def test_framework_flag_matches_django_builtins(self):
+        """``framework=True`` ↔ 真正的 Django 内置键（``global_settings`` 恒有值），双向核对。"""
+        marked = {name for name, entry in KERNEL_SETTINGS.items() if entry.framework}
+        builtin = {name for name in KERNEL_SETTINGS if hasattr(global_settings, name)}
+        assert marked == builtin, (
+            f"framework 标记与 Django 内置键不一致：误标 {sorted(marked - builtin)}，漏标 {sorted(builtin - marked)}"
         )
 
-    def test_framework_keys_are_django_builtins(self):
-        """framework 标记只用于 Django 内置键（文档语义），逐键显式核对。"""
-        expected = {
-            "SECRET_KEY",
-            "AUTH_USER_MODEL",
-            "ALLOWED_HOSTS",
-            "BASE_DIR",
-            "MEDIA_ROOT",
-            "MEDIA_URL",
-            "EMAIL_HOST_USER",
-            "EMAIL_SUBJECT_PREFIX",
-            "DEBUG",
-            "API_MODEL_MAP",
-            "LANGUAGE_CODE",
-            "DEFAULT_CHARSET",
-        }
-        actual = {name for name, entry in KERNEL_SETTINGS.items() if entry.framework}
-        assert actual == expected, f"framework 标记集合变化：{sorted(actual ^ expected)}"
+    def test_required_helper_matches_contract(self):
+        expected = tuple(sorted(name for name, entry in KERNEL_SETTINGS.items() if entry.default is REQUIRED))
+        assert required_kernel_settings() == expected
 
 
 class TestReadHelpers:
@@ -208,6 +197,12 @@ class TestReadHelpers:
         with override_settings(MODULE_PRESET="core"):
             assert kernel_setting("MODULE_PRESET") == "core"
 
+    def test_kernel_setting_preserves_configured_container_identity(self):
+        """宿主已配置时原样返回（就地改写 settings 生效的既有语义，如许可前缀追加）。"""
+        provided = ["^/api/custom/"]
+        with override_settings(PERMISSION_SHOW_PREFIX=provided):
+            assert kernel_setting("PERMISSION_SHOW_PREFIX") is provided
+
     def test_kernel_setting_rejects_unregistered_key(self):
         import pytest
 
@@ -233,16 +228,100 @@ class TestReadHelpers:
             assert kernel_required_setting("SECRET_KEY") == "contract-test-key"
 
 
-class TestDocTableLockstep:
-    """docs/architecture/kernel-package.md §三 契约表须与本模块同源（键 / 类型 / 缺省）。"""
+class TestZeroConfigFallback:
+    """零配置口径：有缺省的键缺失即按契约缺省值工作（宿主可省略全部非必给键）。"""
+
+    def test_every_defaulted_key_falls_back_to_contract_default(self):
+        with override_settings():
+            mismatched = []
+            for name, entry in KERNEL_SETTINGS.items():
+                if entry.default is REQUIRED:
+                    continue
+                if hasattr(django_settings, name):
+                    delattr(django_settings, name)
+                value = kernel_setting(name)
+                if value != entry.default or type(value) is not type(entry.default):
+                    mismatched.append(f"{name}: 回落 {value!r} 与契约缺省 {entry.default!r} 不一致")
+            assert mismatched == [], "零配置缺省回落与契约面不一致：\n  " + "\n  ".join(mismatched)
+
+    def test_every_required_key_missing_raises_with_purpose(self):
+        import pytest
+
+        with override_settings():
+            for name, entry in KERNEL_SETTINGS.items():
+                if entry.default is not REQUIRED:
+                    continue
+                if hasattr(django_settings, name):
+                    delattr(django_settings, name)
+                with pytest.raises(ImproperlyConfigured) as exc:
+                    kernel_setting(name)
+                assert entry.purpose in str(exc.value), f"{name} 的必给报错缺少用途提示：{exc.value}"
+
+    def test_mutable_fallback_is_isolated_copy(self):
+        """回落缺省值必须是副本：调用方就地改写不得污染契约面共享对象。"""
+        with override_settings():
+            for name in (
+                "PERMISSION_SHOW_PREFIX",
+                "PERMISSION_DATA_AUTH_APPS",
+                "PERMISSION_WHITE_URL",
+                "API_MODEL_MAP",
+            ):
+                if hasattr(django_settings, name):
+                    delattr(django_settings, name)
+                fallback = kernel_setting(name)
+                if isinstance(fallback, dict):
+                    fallback["polluted"] = True
+                else:
+                    fallback.append("polluted")
+                assert kernel_setting(name) == KERNEL_SETTINGS[name].default, f"{name} 的缺省对象被就地改写污染"
+            assert copy.deepcopy(KERNEL_SETTINGS["PERMISSION_WHITE_URL"].default) == {}
+
+
+class TestZeroConfigBoot:
+    """「宿主能跑即配」冒烟：删掉全部非必给键后，代表性内核链路仍按契约缺省工作。"""
 
     @staticmethod
-    def _rows() -> dict[str, tuple[str, str]]:
+    def _drop_optional_settings():
+        for name, entry in KERNEL_SETTINGS.items():
+            if entry.default is not REQUIRED and hasattr(django_settings, name):
+                delattr(django_settings, name)
+
+    def test_representative_paths_run_on_contract_defaults(self):
+        from common.base.decorators import _diagnostics_enabled
+        from common.core.atomic_read import skip_atomic_enabled
+        from common.core.middleware import ApiLoggingMiddleware
+        from common.utils.verify_code import SendAndVerifyCodeUtil
+
+        with override_settings():
+            self._drop_optional_settings()
+
+            assert _diagnostics_enabled() is False
+            assert skip_atomic_enabled() is True
+
+            middleware = ApiLoggingMiddleware(lambda request: None)
+            assert middleware.enable is False
+            assert middleware.methods == set()
+            assert middleware.ignores == {}
+
+            code_util = SendAndVerifyCodeUtil(target="13800000000", dryrun=True)
+            assert code_util.timeout == KERNEL_SETTINGS["VERIFY_CODE_TTL"].default
+            assert code_util.limit == KERNEL_SETTINGS["VERIFY_CODE_LIMIT"].default
+
+
+class TestDocLockstep:
+    """docs/architecture/kernel-package.md §三 契约表 / 宿主最小对接面须与本模块同源。"""
+
+    @staticmethod
+    def _section() -> str:
         text = DOC.read_text(encoding="utf-8")
         section = text.split("## 三、内核 settings 契约", 1)
         assert len(section) == 2, "内核 settings 契约章节缺失（## 三、内核 settings 契约）"
+        return section[1]
+
+    @classmethod
+    def _rows(cls) -> dict[str, tuple[str, str]]:
         rows: dict[str, tuple[str, str]] = {}
-        for line in section[1].splitlines():
+        for line in cls._section().splitlines():
             # Markdown 表格里的 `\|` 是类型列中联合类型的转义写法：按「未转义竖线」切列后再还原
             cells = [cell.replace("\\|", "|").strip() for cell in re.split(r"(?<!\\)\|", line)]
             if len(cells) < 4 or not re.fullmatch(r"`[A-Z][A-Z0-9_]*`", cells[1]):
@@ -265,3 +344,12 @@ class TestDocTableLockstep:
             if default != render_default(entry):
                 mismatched.append(f"{name}: 缺省 文档 {default!r} vs 契约 {render_default(entry)!r}")
         assert mismatched == [], "文档表与契约面字段不一致：\n  " + "\n  ".join(mismatched)
+
+    def test_doc_minimal_host_surface_matches_required_keys(self):
+        """「宿主最小对接面」= REQUIRED 键去除 Django 内置键，逐行登记在文档中。"""
+        expected = sorted(name for name in required_kernel_settings() if not KERNEL_SETTINGS[name].framework)
+        section = self._section()
+        block = section.split("宿主最小对接面", 1)
+        assert len(block) == 2, "文档缺少「宿主最小对接面」小节"
+        listed = sorted(set(re.findall(r"^- `([A-Z][A-Z0-9_]*)`", block[1].split("## 四", 1)[0], re.M)))
+        assert listed == expected, f"宿主最小对接面与契约不一致：文档 {listed} vs 契约 {expected}"

@@ -22,9 +22,9 @@ FILE_S3_SECRET_KEY / FILE_S3_REGION / FILE_S3_CUSTOM_DOMAIN / FILE_S3_ADDRESSING
 
 import threading
 
-from django.conf import settings
 from django.core.files.storage import FileSystemStorage, Storage
 
+from common.settings_contract import kernel_required_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -87,7 +87,9 @@ def config_fingerprint(config: dict) -> tuple:
 
 
 def _local_storage() -> FileSystemStorage:
-    return FileSystemStorage(location=str(settings.MEDIA_ROOT), base_url=str(settings.MEDIA_URL))
+    return FileSystemStorage(
+        location=str(kernel_required_setting("MEDIA_ROOT")), base_url=str(kernel_required_setting("MEDIA_URL"))
+    )
 
 
 def build_delegate(config: dict) -> Storage:

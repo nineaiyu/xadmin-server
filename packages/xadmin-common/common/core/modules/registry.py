@@ -8,9 +8,9 @@ import sys
 from functools import lru_cache
 from importlib import import_module
 
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
+from common.settings_contract import kernel_setting
 from common.utils import get_logger
 
 from .catalog import MODULES  # noqa: F401 再导出：模块清单事实源见该模块
@@ -33,7 +33,7 @@ def _as_tuple(value) -> tuple:
 
 
 def _configured_preset() -> str:
-    preset = str(getattr(settings, "MODULE_PRESET", DEFAULT_PRESET) or DEFAULT_PRESET).strip().lower()
+    preset = str(kernel_setting("MODULE_PRESET") or DEFAULT_PRESET).strip().lower()
     if preset not in PRESETS:
         raise ImproperlyConfigured(f"MODULE_PRESET={preset!r} 无效，可选值：{', '.join(PRESETS)}")
     return preset
@@ -118,8 +118,8 @@ def _baseline() -> tuple:
 
     return (
         _configured_preset(),
-        _as_tuple(getattr(settings, "MODULE_ENABLE", ())),
-        _as_tuple(getattr(settings, "MODULE_DISABLE", ())),
+        _as_tuple(kernel_setting("MODULE_ENABLE")),
+        _as_tuple(kernel_setting("MODULE_DISABLE")),
     )
 
 
@@ -197,8 +197,8 @@ def preview_modules(preset=None, enable=None, disable=None) -> ModuleResolution:
     preset_value = _configured_preset() if preset is None else str(preset).strip().lower()
     if preset_value not in PRESETS:
         raise ImproperlyConfigured(f"MODULE_PRESET={preset_value!r} 无效，可选值：{', '.join(PRESETS)}")
-    enable_value = _as_tuple(getattr(settings, "MODULE_ENABLE", ())) if enable is None else _as_tuple(enable)
-    disable_value = _as_tuple(getattr(settings, "MODULE_DISABLE", ())) if disable is None else _as_tuple(disable)
+    enable_value = _as_tuple(kernel_setting("MODULE_ENABLE")) if enable is None else _as_tuple(enable)
+    disable_value = _as_tuple(kernel_setting("MODULE_DISABLE")) if disable is None else _as_tuple(disable)
     return _resolve(preset_value, enable_value, disable_value)
 
 

@@ -3081,7 +3081,6 @@ wheels = [
 
 [[package]]
 name = "xadmin-common"
-version = "0.1.0"
 source = { editable = "packages/xadmin-common" }
 dependencies = [
     { name = "asgiref" },

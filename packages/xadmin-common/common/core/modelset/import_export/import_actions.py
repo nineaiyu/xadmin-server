@@ -6,7 +6,6 @@ import codecs
 import json
 from typing import TYPE_CHECKING, Any
 
-from django.conf import settings
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -17,6 +16,7 @@ from common.core.import_mapping import first_column_candidates, writable_field_o
 from common.core.permission_meta import parent_fallback_action
 from common.core.response import ApiResponse
 from common.core.throttle import ExportImportThrottleMixin
+from common.settings_contract import kernel_setting
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 
@@ -313,7 +313,7 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         record.save(update_fields=["source_file", "updated_time"])
         task_args = [str(record.pk), view_path, user_pk]
         task = import_string("system.tasks.async_import_data_task")
-        if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+        if kernel_setting("CELERY_TASK_ALWAYS_EAGER"):
             # 测试/E2E：send_task/apply_async 在 eager 下不执行，改 apply 同步跑完
             task.apply(args=task_args, task_id=str(record.pk))
         else:

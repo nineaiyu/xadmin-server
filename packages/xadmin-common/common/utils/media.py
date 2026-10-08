@@ -22,7 +22,6 @@ import posixpath
 from pathlib import Path
 
 from django.apps import apps
-from django.conf import settings
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, HttpResponseNotModified
 from django.utils._os import safe_join
 from django.utils.http import http_date
@@ -30,6 +29,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.static import directory_index, was_modified_since
 
 from common.fields.image import ProcessedImageField, get_thumbnail
+from common.settings_contract import kernel_setting
 
 
 def get_media_path(path):
@@ -110,8 +110,8 @@ def media_serve(request, path, document_root=None, show_indexes=False):
             # 对象存储后端：本地目录无该文件时回落到存储读取（远端内容应用层代理）
             return _storage_serve(request, path)
 
-    accel_prefix = str(getattr(settings, "MEDIA_X_ACCEL_PREFIX", "") or "").strip().rstrip("/")
-    if accel_prefix and not settings.DEBUG:
+    accel_prefix = str(kernel_setting("MEDIA_X_ACCEL_PREFIX") or "").strip().rstrip("/")
+    if accel_prefix and not kernel_setting("DEBUG"):
         # 生产 nginx：内部重定向给 nginx 直出（零拷贝）；内部位置声明 internal，
         # 外部不可寻址——鉴权已在上方完成。DEBUG（开发/E2E 直连）走下面的本进程输出
         content_type, encoding = mimetypes.guess_type(str(fullpath))

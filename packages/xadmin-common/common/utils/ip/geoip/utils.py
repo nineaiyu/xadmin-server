@@ -4,9 +4,10 @@ import ipaddress
 import os
 
 import geoip2.database
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from geoip2.errors import GeoIP2Error
+
+from common.settings_contract import kernel_required_setting
 
 __all__ = ["get_ip_city_by_geoip"]
 reader = None
@@ -17,7 +18,7 @@ def init_ip_reader():
     if reader:
         return
 
-    path = os.path.join(settings.DATA_DIR, "system", "GeoLite2-City.mmdb")
+    path = os.path.join(kernel_required_setting("DATA_DIR"), "system", "GeoLite2-City.mmdb")
     if not os.path.exists(path):
         path = os.path.join(os.path.dirname(__file__), "GeoLite2-City.mmdb")
     if not os.path.exists(path):
@@ -48,7 +49,7 @@ def get_ip_city_by_geoip(ip):
         return _("Unknown")
 
     city_names = response.city.names or {}
-    lang = settings.LANGUAGE_CODE[:2]
+    lang = kernel_required_setting("LANGUAGE_CODE")[:2]
     if lang == "zh":
         lang = "zh-CN"
     city = city_names.get(lang, _("Unknown"))

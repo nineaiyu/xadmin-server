@@ -7,12 +7,17 @@
 
 import logging
 
-from django.conf import settings
 from django.core.cache import cache
 
+from common.settings_contract import kernel_required_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
+
+
+def _key_template() -> dict:
+    """缓存键模板表（内核契约读取的单点包装，避免各处 f-string 内嵌双引号）。"""
+    return kernel_required_setting("CACHE_KEY_TEMPLATE")
 
 
 class RedisCacheBase:
@@ -69,31 +74,31 @@ class RedisCacheBase:
 
 class TokenManagerCache(RedisCacheBase):
     def __init__(self, key, release_id):
-        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('make_token_key')}_{key.lower()}_{release_id}"
+        self.cache_key = f"{_key_template().get('make_token_key')}_{key.lower()}_{release_id}"
         super().__init__(self.cache_key)
 
 
 class PendingStateCache(RedisCacheBase):
     def __init__(self, locker_key):
-        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('pending_state_key')}_{locker_key}"
+        self.cache_key = f"{_key_template().get('pending_state_key')}_{locker_key}"
         super().__init__(self.cache_key)
 
 
 class UploadPartInfoCache(RedisCacheBase):
     def __init__(self, locker_key):
-        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('upload_part_info_key')}_{locker_key}"
+        self.cache_key = f"{_key_template().get('upload_part_info_key')}_{locker_key}"
         super().__init__(self.cache_key)
 
 
 class DownloadUrlCache(RedisCacheBase):
     def __init__(self, drive_id, file_id):
-        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('download_url_key')}_{drive_id}_{file_id}"
+        self.cache_key = f"{_key_template().get('download_url_key')}_{drive_id}_{file_id}"
         super().__init__(self.cache_key)
 
 
 class BlackAccessTokenCache(RedisCacheBase):
     def __init__(self, user_id, access_key):
-        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('black_access_token_key')}_{user_id}_{access_key}"
+        self.cache_key = f"{_key_template().get('black_access_token_key')}_{user_id}_{access_key}"
         super().__init__(self.cache_key)
 
 
@@ -106,8 +111,8 @@ class UserTokenRevokedCache(RedisCacheBase):
     """
 
     def __init__(self, user_id):
-        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('user_token_revoked_key')}_{user_id}"
-        lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
+        self.cache_key = f"{_key_template().get('user_token_revoked_key')}_{user_id}"
+        lifetime = kernel_required_setting("SIMPLE_JWT").get("ACCESS_TOKEN_LIFETIME")
         timeout = int(lifetime.total_seconds()) + 60 if lifetime else 3660
         super().__init__(self.cache_key, timeout=timeout)
 
@@ -134,25 +139,25 @@ class SessionTokenRevokedCache(RedisCacheBase):
     """
 
     def __init__(self, session_pk):
-        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('session_token_revoked_key')}_{session_pk}"
-        lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
+        self.cache_key = f"{_key_template().get('session_token_revoked_key')}_{session_pk}"
+        lifetime = kernel_required_setting("SIMPLE_JWT").get("ACCESS_TOKEN_LIFETIME")
         timeout = int(lifetime.total_seconds()) + 60 if lifetime else 3660
         super().__init__(self.cache_key, timeout=timeout)
 
 
 class UserSystemConfigCache(RedisCacheBase):
     def __init__(self, prefix_key):
-        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('config_key')}_{prefix_key}"
+        self.cache_key = f"{_key_template().get('config_key')}_{prefix_key}"
         super().__init__(self.cache_key)
 
 
 class CommonResourceIDsCache(RedisCacheBase):
     def __init__(self, prefix_key):
-        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('common_resource_ids_key')}_{prefix_key}"
+        self.cache_key = f"{_key_template().get('common_resource_ids_key')}_{prefix_key}"
         super().__init__(self.cache_key)
 
 
 class WebSocketMsgResultCache(RedisCacheBase):
     def __init__(self, prefix_key):
-        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('websocket_message_result_key')}_{prefix_key}"
+        self.cache_key = f"{_key_template().get('websocket_message_result_key')}_{prefix_key}"
         super().__init__(self.cache_key)

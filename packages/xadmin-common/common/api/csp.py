@@ -19,13 +19,13 @@ import logging
 import re
 from urllib.parse import urlparse
 
-from django.conf import settings
 from django.http import HttpResponse
 from django.utils.translation import gettext_lazy as _
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 
 from common.core.response import ApiResponse
+from common.settings_contract import kernel_setting
 
 logger = logging.getLogger("xadmin")
 
@@ -65,7 +65,7 @@ def _synthetic_reason(document: str, user_agent: str, request_host: str = "") ->
     allowed = set()
     if request_host:
         allowed.add(request_host.split(":")[0])
-    for item in getattr(settings, "ALLOWED_HOSTS", None) or []:
+    for item in kernel_setting("ALLOWED_HOSTS") or []:
         item = str(item)
         if item == "*":
             return ""  # 通配配置无法判定归属，宁可多记不漏记真实违规

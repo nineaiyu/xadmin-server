@@ -8,11 +8,11 @@ import time
 from collections.abc import Callable
 
 from celery import shared_task
-from django.conf import settings
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
 
+from common.settings_contract import kernel_setting
 from common.tasks import send_mail_async
 from common.utils import get_logger, random_string
 
@@ -83,8 +83,8 @@ class SendAndVerifyCodeUtil:
         self.backend = backend
         self.dryrun = dryrun
         self.key = key or self.KEY_TMPL.format(target)
-        self.timeout = settings.VERIFY_CODE_TTL if timeout is None else timeout
-        self.limit = settings.VERIFY_CODE_LIMIT if limit is None else limit
+        self.timeout = kernel_setting("VERIFY_CODE_TTL") if timeout is None else timeout
+        self.limit = kernel_setting("VERIFY_CODE_LIMIT") if limit is None else limit
         self.limit_key = self.RATE_KEY_TMPL.format(target)
         self.other_args = kwargs
 
@@ -129,10 +129,10 @@ class SendAndVerifyCodeUtil:
 
     def __generate(self):
         code = random_string(
-            settings.VERIFY_CODE_LENGTH,
-            lower=settings.VERIFY_CODE_LOWER_CASE,
-            upper=settings.VERIFY_CODE_UPPER_CASE,
-            digit=settings.VERIFY_CODE_DIGIT_CASE,
+            kernel_setting("VERIFY_CODE_LENGTH"),
+            lower=kernel_setting("VERIFY_CODE_LOWER_CASE"),
+            upper=kernel_setting("VERIFY_CODE_UPPER_CASE"),
+            digit=kernel_setting("VERIFY_CODE_DIGIT_CASE"),
         )
         self.code = code
         return code

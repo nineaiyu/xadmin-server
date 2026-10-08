@@ -7,7 +7,6 @@
 import re
 import uuid
 
-from django.conf import settings
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import NotAuthenticated, PermissionDenied
@@ -25,6 +24,7 @@ from common.core import permission_meta
 from common.core.modules import filter_menu_queryset
 from common.core.utils import permission_path_matches
 from common.local import get_current_request, set_current_request
+from common.settings_contract import kernel_required_setting, kernel_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -134,7 +134,7 @@ def match_permission_white_url(method: str, path: str) -> bool:
     """
     if not method or not path:
         return False
-    for w_url, methods in settings.PERMISSION_WHITE_URL.items():
+    for w_url, methods in kernel_setting("PERMISSION_WHITE_URL").items():
         if re.match(w_url, path) and ("*" in methods or method.upper() in methods):
             return True
     return False
@@ -348,7 +348,7 @@ class IsAuthenticated(BasePermission):
     @staticmethod
     def _load_field_permission(request, menu_pk):
         """装载字段级权限到 ``request.fields``（未启用字段权限时跳过）。"""
-        if not settings.PERMISSION_FIELD_ENABLED:
+        if not kernel_required_setting("PERMISSION_FIELD_ENABLED"):
             return
         try:
             request.fields = get_user_field_queryset(request.user, menu_pk)

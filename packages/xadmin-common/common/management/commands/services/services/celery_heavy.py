@@ -1,4 +1,4 @@
-from django.conf import settings
+from common.settings_contract import kernel_setting
 
 from .celery_base import CeleryBaseService
 
@@ -16,7 +16,7 @@ class CeleryHeavyService(CeleryBaseService):
 
     def __init__(self, **kwargs):
         kwargs["queue"] = "heavy"
-        kwargs.setdefault("pool", settings.CELERY_HEAVY_POOL)
-        kwargs.setdefault("concurrency", settings.CELERY_HEAVY_CONCURRENCY)
+        kwargs.setdefault("pool", kernel_setting("CELERY_HEAVY_POOL"))
+        kwargs.setdefault("concurrency", kernel_setting("CELERY_HEAVY_CONCURRENCY"))
         kwargs["prefetch"] = 1
         super().__init__(**kwargs)

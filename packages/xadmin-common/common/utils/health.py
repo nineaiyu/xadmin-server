@@ -12,8 +12,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-from django.conf import settings
 from django.core.cache import cache
+
+from common.settings_contract import kernel_setting
 
 
 def probe_db():
@@ -88,7 +89,7 @@ def probe_celery(timeout=None):
     背景见上方缓存说明；HEALTH_CHECK_SKIP_CELERY 跳过语义保持不变。
     timeout 参数保留仅为兼容历史调用方（内部使用固定收集窗口）。
     """
-    if getattr(settings, "HEALTH_CHECK_SKIP_CELERY", False):
+    if kernel_setting("HEALTH_CHECK_SKIP_CELERY"):
         return False, 0.0
     if time.time() - _celery_probe_cache["at"] < _CELERY_PROBE_CACHE_TTL:
         return _celery_probe_cache["value"]

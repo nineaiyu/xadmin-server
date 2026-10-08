@@ -129,6 +129,20 @@ def _roots(entries: list[dict]) -> list[tuple[str, tuple]]:
     return [(entry["name"], tuple(entry.get("extra", ()))) for entry in entries]
 
 
+def _lock_versions(packages: list[dict]) -> dict[str, set[str]]:
+    """lock 的 ``包名 → 版本集合``。
+
+    动态版本的工作区成员（``version`` 缺省，如 ``xadmin-common`` 经 hatch 读包内
+    ``__version__``）在 lock 里没有版本行——版本事实源在包源码，产物比对不适用，故跳过。
+    """
+    versions: dict[str, set[str]] = {}
+    for pkg in packages:
+        if not pkg.get("version"):
+            continue
+        versions.setdefault(normalize(pkg["name"]), set()).add(pkg["version"])
+    return versions
+
+
 def test_lock_closure_matches_runtime_requirements():
     """运行时产物 = lock 中运行依赖闭包（防手加 / 手删 / 手改版本；工作区成员除外）。"""
     packages = load_lock()
@@ -156,9 +170,7 @@ def test_lock_closure_matches_dev_requirements():
 def test_requirement_versions_match_lock():
     """产物的每个 pin 必须在 lock 中同名同版本。"""
     packages = load_lock()
-    lock_versions: dict[str, set[str]] = {}
-    for pkg in packages:
-        lock_versions.setdefault(normalize(pkg["name"]), set()).add(pkg["version"])
+    lock_versions = _lock_versions(packages)
     for path in (RUNTIME_REQUIREMENTS, DEV_REQUIREMENTS):
         for name, versions in parse_requirements(path).items():
             assert name in lock_versions, f"{path.name} 的 {name} 未在 uv.lock 中登记（请先 uv lock）"
@@ -209,9 +221,7 @@ def test_optional_dependencies_resolved_in_lock():
     pyproject = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
     extras = pyproject["project"].get("optional-dependencies", {})
     assert extras, "预期至少声明一个可选依赖组（如 storage）"
-    lock_versions: dict[str, set[str]] = {}
-    for pkg in load_lock():
-        lock_versions.setdefault(normalize(pkg["name"]), set()).add(pkg["version"])
+    lock_versions = _lock_versions(load_lock())
     runtime = parse_requirements(RUNTIME_REQUIREMENTS)
 
     for extra, specs in extras.items():
@@ -265,6 +275,10 @@ def test_workspace_member_is_locked_editable_and_declared():
         entry = locked.get(normalize(name))
         assert entry is not None, f"uv.lock 缺少工作区成员 {name}（请执行 uv lock）"
         assert entry.get("source") == {"editable": rel_dir}, f"{name} 在 lock 中须登记为 editable 本地源"
+        assert "version" not in entry, (
+            f"{name} 的版本是动态的（包内 __version__，见 scripts/release_kernel.py）："
+            f"uv.lock 不应记录版本行（改版本后无需重锁；若出现版本行说明 pyproject 又写死了 version）"
+        )
         for dep in member["project"]["dependencies"]:
             assert _spec_name(dep) in locked, f"成员依赖 {dep!r} 未在 uv.lock 中解析"
 

@@ -8,11 +8,11 @@ import json
 import os
 from datetime import UTC, datetime, timedelta
 
-from django.conf import settings
 from django.db.utils import OperationalError, ProgrammingError
 from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask, PeriodicTasks
 
+from common.settings_contract import kernel_required_setting
 from common.utils import get_logger
 from common.utils.timezone import local_now
 
@@ -36,7 +36,7 @@ def get_task_log_path(base_path, task_id, level=0):
 
 
 def get_celery_task_log_path(task_id):
-    return get_task_log_path(settings.CELERY_LOG_DIR, task_id)
+    return get_task_log_path(kernel_required_setting("CELERY_LOG_DIR"), task_id)
 
 
 def eta_second(second):

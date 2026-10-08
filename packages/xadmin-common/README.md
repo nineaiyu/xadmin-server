@@ -17,8 +17,10 @@ uv add "xadmin-common[storage]"      # 启用对象存储后端（django-storage
 宿主侧三件事：
 
 1. `INSTALLED_APPS` 加入 `"common"`（`CommonConfig.ready()` 负责信号、周期任务与契约装配）；
-2. 按 [settings 契约](common/settings_contract.py)提供配置——**有缺省值的键缺失即按默认值工作，
-   标记「必给」的键必须提供**；契约表见
+2. 按 [settings 契约](common/settings_contract.py)提供配置——**有缺省值的键缺失即按默认值工作
+   （零配置可用），标记「必给」的键必须提供（缺失即启动期 fail-fast 并给出用途提示）**；
+   必给键里只有十项是内核真正新增的对接面（宿主最小对接面），其余为 Django 内置键；
+   契约表与最小对接面清单见
    [《框架内核独立分发包》§三](../../docs/architecture/kernel-package.md)；
 3. 需要宿主业务能力（菜单、系统配置等）时，由宿主 app 在 `ready()` 注册契约提供方，
    或在 `xadmin.contracts` entry point 装配（见 `common/contracts.py`）。

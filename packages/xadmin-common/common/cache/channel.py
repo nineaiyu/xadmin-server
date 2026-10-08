@@ -8,6 +8,8 @@ import time
 
 from channels_redis.core import RedisChannelLayer as _RedisChannelLayer
 
+from common.settings_contract import kernel_required_setting
+
 
 class RedisChannelLayer(_RedisChannelLayer):
     layer_expire = 30  # 需要心跳方式发送在线状态，否则将channel移除
@@ -22,9 +24,8 @@ class RedisChannelLayer(_RedisChannelLayer):
 
     def _online_group_prefix(self):
         # 延迟读取配置，保持本模块可被无 settings 的工具导入
-        from django.conf import settings
-
-        return f"{settings.CACHE_KEY_TEMPLATE.get('websocket_group_key')}_"
+        template = kernel_required_setting("CACHE_KEY_TEMPLATE")
+        return f"{template.get('websocket_group_key')}_"
 
     def user_pk_from_group(self, group):
         """从个人消息推送组名中解析用户 pk；聊天室等非个人组返回 None。"""
