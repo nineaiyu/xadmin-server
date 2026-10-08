@@ -51,7 +51,7 @@ def _catalogs():
     """(模型→动作段集合, 模型→字段集合) 目录（从启用权限菜单与字段标签树派生，短缓存）。"""
     try:
         cached = cache.get(CATALOG_CACHE_KEY)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 缓存不可用回退实时派生
         cached = None
     if cached is not None:
         return cached["actions"], cached["fields"]
@@ -77,7 +77,7 @@ def _catalogs():
             fields.setdefault(label, set()).add(row["name"])
     try:
         cache.set(CATALOG_CACHE_KEY, {"actions": actions, "fields": fields}, CATALOG_CACHE_TTL)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 缓存写入失败不影响返回值
         pass
     return actions, fields
 

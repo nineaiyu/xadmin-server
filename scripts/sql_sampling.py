@@ -424,7 +424,7 @@ def param_overrides() -> dict[str, dict]:
 
         form_pk = str(DynamicForm.objects.first().pk)
         overrides["dataset/form-data"] = {"form": form_pk}
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 采样脚本：无演示表单时跳过该覆盖项
         pass
     return overrides
 

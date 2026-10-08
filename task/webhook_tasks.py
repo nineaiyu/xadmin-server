@@ -61,7 +61,7 @@ def _post(client, url, body: bytes, headers: dict):
             response = client.post(url, data=body, headers=merged_headers, timeout=DELIVER_TIMEOUT)
         try:
             text = response.text[:500]
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001 仅取审计文本，读取失败不影响投递结果判定
             text = ""
         return response.status_code, text
     except Exception as exc:  # noqa: BLE001 网络异常与拒绝同语义

@@ -73,7 +73,8 @@ def clear_cancel(record_id) -> None:
 def is_cancel_requested(record_id) -> bool:
     try:
         return bool(cache.get(_cancel_key(record_id)))
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 缓存故障按未请求取消处理（fail-open，避免误杀任务）
+        logger.warning("read task cancel flag failed: %s", record_id, exc_info=True)
         return False
 
 

@@ -270,7 +270,7 @@ class StubLLMHandler(BaseHTTPRequestHandler):
         try:
             length = int(self.headers.get("Content-Length") or 0)
             payload = json.loads(self.rfile.read(length) or b"{}")
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001 测试桩：请求体解析失败按空载荷处理
             payload = {}
         raw = payload.get("input") if isinstance(payload, dict) else None
         items = [raw] if isinstance(raw, str) else list(raw or [])

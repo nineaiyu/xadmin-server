@@ -118,7 +118,7 @@ class RegisterViewAPIView(GenericAPIView):
             try:
                 refresh_str, access_str = bind_session_claim(refresh, session.pk)
                 result = {"refresh": refresh_str, "access": access_str}
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001 sid 绑定失败降级为无 sid 令牌（注册流程不阻断；该令牌不参与按会话吊销）
                 result = {"refresh": str(refresh), "access": str(refresh.access_token)}
         else:
             result = {"refresh": str(refresh), "access": str(refresh.access_token)}

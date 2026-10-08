@@ -95,7 +95,7 @@ def resolve_menu_meta(menu_pk):
     }
     try:
         cache.set(cache_key, meta, MENU_META_CACHE_TTL)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 缓存不可用不影响正确性（直接返回计算结果）
         pass
     return meta
 
@@ -120,7 +120,7 @@ def _permission_path_pk_map(method: str):
     }
     try:
         cache.set(cache_key, data, MENU_PATH_CACHE_TTL)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 缓存不可用不影响正确性（直接返回计算结果）
         pass
     return data
 
@@ -129,8 +129,9 @@ def invalid_menu_path_cache():
     """失效权限菜单 ``path → pk`` 映射缓存（全部方法维度；菜单变更信号调用）。"""
     try:
         cache.delete_many([MENU_PATH_CACHE_KEY.format(method=method) for method in MENU_PATH_CACHE_METHODS])
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception:  # noqa: BLE001 缓存不可用退化为自然过期（TTL 兜底）
+        # 失效失败会让权限菜单 path→pk 映射短暂陈旧，需可观测
+        logger.warning("invalidate menu path cache failed", exc_info=True)
 
 
 def resolve_request_menu_pk(request):

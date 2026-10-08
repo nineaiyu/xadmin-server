@@ -21,7 +21,7 @@ STREAM_SLOT_TTL = 1800
 def stream_slots_in_use() -> int:
     try:
         return int(cache.get(STREAM_SLOT_KEY) or 0)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 缓存不可用按无占用兜底（并发准入另有单飞锁）
         return 0
 
 

@@ -71,7 +71,8 @@ def storage_open(name: str, mode: str = "rb"):
 def storage_size(name: str) -> int:
     try:
         return int(default_storage.size(name))
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 读取失败按 0 处理（上层仅用于容量展示与比对）
+        logger.debug("read storage size failed. name:%s", name, exc_info=True)
         return 0
 
 
@@ -170,7 +171,8 @@ def storage_url(name: str) -> str:
     """存储对象的访问 URL（本地 = MEDIA_URL 相对地址；远端 = 对象存储 / CDN 地址）。"""
     try:
         return default_storage.url(name)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 取 URL 失败返回空串（调用方按无链接降级）
+        logger.debug("read storage url failed. name:%s", name, exc_info=True)
         return ""
 
 

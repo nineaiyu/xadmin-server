@@ -72,7 +72,8 @@ class MessageTemplateViewSet(GenericViewSet):
                     default_subject = str(base.get("subject") or "")
                     # 默认正文一并下发：编辑弹窗展示「代码默认长什么样」，覆盖才有参照
                     default_body = str(base.get("message") or "")
-                except Exception:  # noqa: BLE001
+                except Exception:  # noqa: BLE001 样例渲染失败仅影响默认值展示（允许为空）
+                    logger.debug("render sample html failed", exc_info=True)
                     default_subject = ""
                     default_body = ""
             items.append(
