@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """common/core/data_scope.py：规则编译器 + ScopeResult 代数 + 写入校验单测。"""
 
+import warnings
+
 import pytest
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from common.core.data_scope import (
@@ -362,6 +365,41 @@ class TestValidateRules:
             validate_rules(
                 [{**self.valid_rule(), "field": "created_time", "type": "value.text", "value": value, "match": match}]
             )
+
+    def test_field_class_datetime_range_no_naive_warning(self, db):
+        """日期型 class lookup 的字符串取值须先按当前时区归一，不触发 naive 告警。
+
+        回归背景：编译探测（_is_compilable）在查询期之前构建 SQL，字符串日期若
+        保持 naive，DateTimeField.get_prep_value 会发 RuntimeWarning。
+        """
+        rule = {
+            **self.valid_rule(),
+            "field": "created_time",
+            "type": "value.text",
+            "value": ["2026-01-01 00:00:00", "2026-02-01 00:00:00"],
+            "match": "range",
+        }
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            validate_rules([rule])
+        naive = [str(item.message) for item in caught if "naive datetime" in str(item.message)]
+        assert naive == []
+
+    def test_compile_condition_normalizes_datetime_values(self, db):
+        """读侧编译同样归一：投递到查询的值已是 aware datetime。"""
+        from demo.models import Book
+
+        result = compile_condition(
+            Book,
+            {
+                "field": "created_time",
+                "value": ["2026-01-01 00:00:00", "2026-02-01 00:00:00"],
+                "match": "range",
+            },
+        )
+        lookup, value = result.q.children[0]
+        assert lookup == "created_time__range"
+        assert all(timezone.is_aware(item) for item in value)
 
     def test_bogus_match_rejected(self, db):
         with pytest.raises(ValidationError) as exc:

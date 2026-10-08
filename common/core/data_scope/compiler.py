@@ -7,6 +7,8 @@ import json
 from django.apps import apps
 from django.core.exceptions import EmptyResultSet, FieldDoesNotExist, FieldError, FullResultSet
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import DateTimeField
+from django.forms.utils import from_current_timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
@@ -65,6 +67,39 @@ def _allowed_matches(model, field):
     return matches
 
 
+def _to_current_timezone(value):
+    """可解析为 datetime 的字符串 → 当前时区 aware datetime；其余原样返回。"""
+    if not isinstance(value, str):
+        return value
+    try:
+        parsed = parse_datetime(value)
+    except ValueError:
+        return value
+    return from_current_timezone(parsed) if parsed is not None else value
+
+
+def _normalize_datetime_values(model, rule):
+    """datetime 字段上的字符串取值先做时区归一（返回新 dict，不改调用方对象）。
+
+    前端与种子里的 datetime 字面量（``"YYYY-MM-DD HH:MM:SS"``）进 range/in 等
+    lookup 时，``DateTimeField.get_prep_value`` 会对 naive 值「告警 + 按默认时区
+    隐式补 tz」，运行期日志被 RuntimeWarning 刷屏。这里显式按当前时区 make
+    aware，消除告警且解释口径不变（与 Django 隐式处理同一时区）。
+    """
+    field = _resolve_field(model, rule.get("field") or "")
+    if not isinstance(field, DateTimeField):
+        return rule
+    value = rule.get("value")
+    if isinstance(value, str):
+        normalized = _to_current_timezone(value)
+    elif isinstance(value, (list, tuple)):
+        converted = [_to_current_timezone(item) for item in value]
+        normalized = converted if any(new is not old for new, old in zip(converted, value, strict=True)) else value
+    else:
+        return rule
+    return rule if normalized is value else {**rule, "value": normalized}
+
+
 def _is_compilable(model, q):
     """把 Q 编译成 SQL 探测合法性（只构建查询，不连库、不执行）。
 
@@ -103,7 +138,8 @@ def compile_condition(model, cond):
             field,
         )
         return DENY_ALL
-    q = rule_to_q(cond)
+    # 字符串 datetime 取值先按字段类型归一为 aware（读侧与写入校验同一口径）
+    q = rule_to_q(_normalize_datetime_values(model, cond))
     if not _is_compilable(model, q):
         return DENY_ALL
     return condition_result(q)
@@ -235,7 +271,7 @@ def validate_rules(rules):
                     raise ValidationError(
                         _("Rule %(index)d has a malformed value for match %(match)s") % {"index": index, "match": match}
                     )
-                if not _is_compilable(model, rule_to_q(rule)):
+                if not _is_compilable(model, rule_to_q(_normalize_datetime_values(model, rule))):
                     # 附字段名：通常是「值形态与字段类型不匹配」（如 UUID 字段配非 UUID 值）
                     raise ValidationError(
                         _("Rule %(index)d cannot be applied with the given value for field %(field)s")
