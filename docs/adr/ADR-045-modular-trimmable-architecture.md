@@ -299,3 +299,12 @@ diff）；`tests/unit/system/test_modules_api.py::TestSystemModuleWriteApi`（ap
 pending、非法组合 400、reset、普通用户 403）+ 种子权限点守护；
 `tests/unit/system/test_modules_command.py::TestClearOverride`（恢复通道）；
 E2E `system-pages.e2e.ts`（保存 → 待重启差异 → 恢复）。
+
+## 增量（2026-10-08）：重启命令按部署形态可配
+
+管理页「待重启生效」提示中的重启命令原为写死的 `sh xadmin.sh restart`（Docker/Compose
+部署不适用）。现经系统配置 `MODULE_RESTART_COMMAND` 下发：默认值在
+`server/conf/settings_defaults.py`，`SysConfig.MODULE_RESTART_COMMAND`
+（`common/core/config/conf_ops.py`）读取，`SystemModuleViewSet` 以 `restart_command`
+字段返回、页面展示并支持一键复制；部署侧在 config.yml 或系统参数页覆盖为实际命令
+（如 `docker compose restart server`），保持默认值的部署零配置。
