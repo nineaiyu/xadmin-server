@@ -83,7 +83,7 @@ class LeaveViewSet(BaseModelSet):
         serializer.save(creator=user, modifier=user, dept_belong=getattr(user, "dept", None))
 
     def create(self, request, *args, **kwargs):
-        """新增请假申请（保存后立即提交审批；无可用流程时保留草稿并以业务码 1002 返回）"""
+        """新增请假申请（保存后立即提交审批；无可用审批人时保留草稿并以业务码 1008 返回）"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
