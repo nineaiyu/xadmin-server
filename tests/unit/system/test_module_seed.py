@@ -16,12 +16,25 @@ from django.core.management.commands.loaddata import Command as LoadDataCommand
 
 from common.core.modules import ModuleSeedFilter, compute_hidden_menu_pks
 from identity.models import UserRole
+from settings.models import Setting
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
-from system.models import FieldPermission, Menu, MenuMeta
-from system.services.seed import build_seed_fixtures
+from system.models import FieldPermission, Menu, MenuMeta, SystemConfig
+from system.services.seed import build_seed_fixtures, write_seed_rows
 
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 TRIMMED_MODULES = ("chat", "analysis")
+
+
+def _non_empty_model_names():
+    """装配清单会跳过空种子模型（loaddata 对空 fixture 报 "No fixture data found"）。"""
+    result = []
+    for model in LoadInitJsonCommand.model_names:
+        path = os.path.join(LOADJSON_DIR, f"{model._meta.model_name}.json")
+        with open(path, encoding="utf-8") as fp:
+            if json.load(fp):
+                result.append(model)
+    return result
+
 
 # 种子装配（build_seed_fixtures）要查库判定自然键冲突，故整模块需要数据库
 pytestmark = pytest.mark.django_db
@@ -33,13 +46,14 @@ def _read(name):
 
 
 def _export(seed_filter, models, target_dir):
-    """把过滤结果落到 target_dir，返回 {文件名: rows}。"""
+    """把过滤结果落到 target_dir，返回 {文件名: rows}（空种子模型不落盘，视作空）。"""
 
     build_seed_fixtures(models, LOADJSON_DIR, str(target_dir), module_filter=seed_filter)
-    return {
-        model._meta.model_name: json.load(open(target_dir / f"{model._meta.model_name}.json", encoding="utf-8"))
-        for model in models
-    }
+    exported = {}
+    for model in models:
+        path = target_dir / f"{model._meta.model_name}.json"
+        exported[model._meta.model_name] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+    return exported
 
 
 class TestComputeHiddenMenuPks:
@@ -213,7 +227,8 @@ class TestLoadInitJsonCommandWiring:
         call_command("load_init_json")
 
         labels = captured["labels"]
-        assert len(labels) == len(LoadInitJsonCommand.model_names)
+        # 空种子模型（无行）不进清单：loaddata 对空 fixture 会告警且无可导入内容
+        assert len(labels) == len(_non_empty_model_names())
         # 传的是过滤后的临时文件（不再是 loadjson/ 原始路径）
         assert all(label.startswith(tempfile.gettempdir()) for label in labels)
         assert "Chat" not in captured["menu_names"]
@@ -231,3 +246,34 @@ class TestLoadInitJsonCommandWiring:
         call_command("load_init_json")
 
         assert all(label.startswith(LOADJSON_DIR) for label in captured["labels"])
+
+
+class TestEmptySeedFilesSkipped:
+    """空种子文件不进待导入清单（覆盖装配的两条分支）。
+
+    loaddata 对空 fixture 会报 "No fixture data found for '<model>'"（RuntimeWarning
+    噪音）且没有可导入内容——跳过与导入空文件语义等价。
+    """
+
+    def test_labels_exclude_empty_seeds(self, module_config, tmp_path):
+        module_config()  # 无裁剪：原始文件路径分支
+        labels, _, trimmed = build_seed_fixtures(LoadInitJsonCommand.model_names, LOADJSON_DIR, str(tmp_path))
+        assert not trimmed
+        assert labels
+        assert len(labels) == len(_non_empty_model_names())
+
+        module_config(disable=["chat"])  # 有裁剪：过滤后落盘分支
+        labels, _, trimmed = build_seed_fixtures(
+            LoadInitJsonCommand.model_names, LOADJSON_DIR, str(tmp_path), module_filter=ModuleSeedFilter.build()
+        )
+        assert trimmed
+        assert labels
+        for label in labels:
+            with open(label, encoding="utf-8") as fp:
+                assert json.load(fp), f"空种子不应进清单: {os.path.basename(label)}"
+
+    def test_write_seed_rows_skips_empty_models(self, tmp_path):
+        row = {"model": "system.systemconfig", "pk": "1", "fields": {"key": "X", "value": {}}}
+        labels = write_seed_rows({SystemConfig._meta.label_lower: [row]}, [SystemConfig, Setting], str(tmp_path))
+        assert [os.path.basename(label) for label in labels] == ["systemconfig.json"]
+        assert not (tmp_path / "setting.json").exists()
