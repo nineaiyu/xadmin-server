@@ -13327,7 +13327,7 @@
    "deleted_at": null,
    "parent": "8a8a9349-cdaf-48cd-a0ba-4bc0c9f3bacd",
    "menu_type": 2,
-   "name": "all:ApprovalDelegation",
+   "name": "all:SystemApprovalDelegation",
    "rank": 10006,
    "path": "api/approval/approval-delegations/all$",
    "component": null,

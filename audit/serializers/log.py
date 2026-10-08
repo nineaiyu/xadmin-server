@@ -149,6 +149,10 @@ class LoginLogSerializer(BaseModelSerializer):
 
     @extend_schema_field(serializers.IntegerField)
     def get_online(self, obj):
+        """在线态三元取值：-1 = 不适用（非 WS 登录或无 creator），True/False = WS 会话是否在线。
+
+        前端按 `{true: 在线, false: 离线, "-1": "/"}` 渲染；两侧口径保持一致。
+        """
         if UserLoginLog.LoginTypeChoices.WEBSOCKET == obj.login_type:
             if not obj.creator:
                 return -1

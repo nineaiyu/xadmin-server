@@ -13,7 +13,7 @@ from system.models import Menu, ModelLabelField
 from system.utils.platform.menu import get_view_permissions
 
 from .constants import DEAD_ENDPOINT_PREFIXES, PARENT_MENU_MAP, SHARED_METHOD_PATHS, SKIP_ROUTE_PREFIXES
-from .types import PlanItem, RouteInfo
+from .types import PERMISSION_MENU_RANK_BASE, PlanItem, RouteInfo
 
 logger = get_logger(__name__)
 
@@ -238,7 +238,7 @@ def build_plans(gaps, routes, perms, default_parent=None):
                     parent_id=parent.pk if parent else None,
                     parent_name=parent.name if parent else "",
                     model_pks=model_pks,
-                    rank=10000 + index,
+                    rank=PERMISSION_MENU_RANK_BASE + index,
                     source=plan_source,
                 )
             )

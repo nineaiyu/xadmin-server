@@ -26,6 +26,9 @@ from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__name__)
 
+#: 测试短信验证码的固定数字（长度仍取 VERIFY_CODE_LENGTH，保持与真实校验码同格式）
+TEST_CODE_DIGIT = "6"
+
 
 class SmsSettingViewSet(BaseSettingViewSet):
     """短信配置"""
@@ -67,7 +70,7 @@ class SmsConfigViewSet(BaseSettingViewSet):
 
     @property
     def test_code(self):
-        return "6" * settings.VERIFY_CODE_LENGTH
+        return TEST_CODE_DIGIT * settings.VERIFY_CODE_LENGTH
 
     @staticmethod
     def get_or_from_setting(key, value=""):

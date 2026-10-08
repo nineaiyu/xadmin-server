@@ -265,7 +265,7 @@ class MenuViewSet(
                 role_models.setdefault(field.name, []).append(field)
 
         items = []
-        rank = 10000
+        rank = sync.PERMISSION_MENU_RANK_BASE
         for permission in permissions:
             rank += 1
             models = [field for label in permission.get("models") for field in role_models.get(label, [])]

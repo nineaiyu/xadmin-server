@@ -11,6 +11,7 @@ from collections import Counter
 from pathlib import Path
 
 PO_PATH = Path(__file__).resolve().parents[3] / "locale/zh/LC_MESSAGES/django.po"
+EN_PO_PATH = Path(__file__).resolve().parents[3] / "locale/en/LC_MESSAGES/django.po"
 
 EMPTY = ("", '""')
 
@@ -42,11 +43,11 @@ def _iter_entries(text: str):
         yield msgid, msgstr, fuzzy, obsolete
 
 
-def _entries():
-    assert PO_PATH.exists(), f"中文语言包不存在：{PO_PATH}"
+def _entries(path=PO_PATH):
+    assert path.exists(), f"语言包不存在：{path}"
     return [
         (msgid, msgstr, fuzzy)
-        for msgid, msgstr, fuzzy, obsolete in _iter_entries(PO_PATH.read_text(encoding="utf-8"))
+        for msgid, msgstr, fuzzy, obsolete in _iter_entries(path.read_text(encoding="utf-8"))
         if not obsolete and msgid not in EMPTY
     ]
 
@@ -64,3 +65,21 @@ def test_no_fuzzy_entries():
 def test_no_duplicate_msgid():
     duplicates = [msgid for msgid, count in Counter(msgid for msgid, _s, _f in _entries()).items() if count > 1]
     assert duplicates == [], f"存在重复 msgid（后者覆盖前者，易漏翻）：{duplicates[:20]}"
+
+
+def test_en_catalog_has_no_fuzzy_entries():
+    """英文语言包不得残留 fuzzy 条目（与中文门禁同口径）。
+
+    en 目录是部分翻译目录：空 msgstr 属正常（回落到英文原文 msgid）；但 fuzzy
+    条目携带的是旧 msgid 的陈旧译文，一旦误去标记就会启用错文案——存量 88 条
+    已清理，此处设门禁防止 makemessages 回潮。
+    """
+    fuzzy = [msgid for msgid, _msgstr, is_fuzzy in _entries(EN_PO_PATH) if is_fuzzy]
+    assert fuzzy == [], f"en 语言包存在 fuzzy 条目（陈旧译文，不会生效）：{fuzzy[:20]}"
+
+
+def test_en_catalog_no_duplicate_msgid():
+    duplicates = [
+        msgid for msgid, count in Counter(msgid for msgid, _s, _f in _entries(EN_PO_PATH)).items() if count > 1
+    ]
+    assert duplicates == [], f"en 语言包存在重复 msgid：{duplicates[:20]}"

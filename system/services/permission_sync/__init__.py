@@ -42,7 +42,7 @@ from .scan import (
     url_to_sample,
 )
 from .seed import detect_indent, dump_entries, merge_seed_file, seed_entry_pks
-from .types import BindingFix, PlanItem, RouteInfo
+from .types import PERMISSION_MENU_RANK_BASE, BindingFix, PlanItem, RouteInfo
 
 __all__ = [
     "AUDIT_KNOWN_DUPLICATES",
@@ -51,6 +51,7 @@ __all__ = [
     "DEAD_ENDPOINT_PREFIXES",
     "IMPORT_EXPORT_ACTIONS",
     "PARENT_MENU_MAP",
+    "PERMISSION_MENU_RANK_BASE",
     "SHARED_METHOD_PATHS",
     "SKIP_ROUTE_PREFIXES",
     "BindingFix",

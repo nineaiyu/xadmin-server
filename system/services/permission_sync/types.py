@@ -7,6 +7,9 @@ from dataclasses import field as dc_field
 
 from system.models import Menu
 
+#: 自动生成权限点菜单的起始 rank（与手工菜单的 rank 取值区间错开，留出插入余量）
+PERMISSION_MENU_RANK_BASE = 10000
+
 
 @dataclass
 class RouteInfo:
@@ -30,7 +33,7 @@ class PlanItem:
     parent_id: object
     parent_name: str
     model_pks: list
-    rank: int = 10000
+    rank: int = PERMISSION_MENU_RANK_BASE
     source: str = "generator"  # generator / fallback
 
     @property

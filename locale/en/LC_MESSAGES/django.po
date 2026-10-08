@@ -342,10 +342,8 @@ msgid "AI chat messages"
 msgstr ""
 
 #: ai/models/mcp.py:25
-#, fuzzy
-#| msgid "Sender name"
 msgid "Server name"
-msgstr "Sender name"
+msgstr ""
 
 #: ai/models/mcp.py:26
 msgid "Server URL"
@@ -364,10 +362,8 @@ msgid "e.g. Authorization"
 msgstr ""
 
 #: ai/models/mcp.py:30 ai/serializers/mcp.py:41
-#, fuzzy
-#| msgid "Max tokens"
 msgid "Auth token"
-msgstr "Max tokens"
+msgstr ""
 
 #: ai/models/mcp.py:33
 msgid "Allowed tools"
@@ -386,10 +382,8 @@ msgid "Tools snapshot"
 msgstr "Tools snapshot"
 
 #: ai/models/mcp.py:41
-#, fuzzy
-#| msgid "Last message time"
 msgid "Last synced time"
-msgstr "Last message time"
+msgstr ""
 
 #: ai/models/mcp.py:42
 msgid "Last sync error"
@@ -477,10 +471,8 @@ msgid "Auth token set"
 msgstr ""
 
 #: ai/serializers/mcp.py:87
-#, fuzzy
-#| msgid "Profile name is required"
 msgid "Server name is required"
-msgstr "Profile name is required"
+msgstr ""
 
 #: ai/serializers/mcp.py:101
 msgid "Timeout must be an integer between 5 and 120 seconds"
@@ -503,10 +495,9 @@ msgid "Tool name is too long"
 msgstr ""
 
 #: ai/serializers/mcp.py:127
-#, fuzzy, python-brace-format
-#| msgid "Too many items to preview (max {})"
+#, python-brace-format
 msgid "Too many allowed tools (max {})"
-msgstr "Too many items to preview (max {})"
+msgstr ""
 
 #: ai/utils/ai.py:78 ai/views/nl_query.py:64 ai/views/nl_query.py:156
 msgid "Question cannot be empty"
@@ -895,10 +886,8 @@ msgid "Tool arguments are not serializable"
 msgstr ""
 
 #: ai/utils/ai_mcp_actions.py:153 ai/views/mcp_client.py:126
-#, fuzzy
-#| msgid "Draft data exceeds the size limit"
 msgid "Tool arguments exceed the size limit"
-msgstr "Draft data exceeds the size limit"
+msgstr ""
 
 #: ai/utils/ai_mcp_actions.py:169 tests/unit/ai/test_ai_mcp_actions.py:315
 msgid "The MCP server is not available for AI actions"
@@ -1357,10 +1346,8 @@ msgid "MCP server url must use https (http is allowed for loopback or OUTBOUND_A
 msgstr ""
 
 #: ai/utils/mcp_client.py:229
-#, fuzzy
-#| msgid "Draft data exceeds the size limit"
 msgid "MCP server response exceeds the size limit"
-msgstr "Draft data exceeds the size limit"
+msgstr ""
 
 #: ai/utils/mcp_client.py:259
 msgid "MCP server returned invalid JSON"
@@ -1566,10 +1553,8 @@ msgid "An embedding build is already running"
 msgstr ""
 
 #: ai/views/knowledge.py:251
-#, fuzzy
-#| msgid "The submission does not exist"
 msgid "Document does not exist"
-msgstr "The submission does not exist"
+msgstr ""
 
 #: ai/views/knowledge.py:268
 msgid "Embedding build task submitted"
@@ -1593,10 +1578,8 @@ msgid "MCP server is disabled"
 msgstr ""
 
 #: ai/views/mcp_client.py:118
-#, fuzzy
-#| msgid "Profile name is required"
 msgid "Tool name is required"
-msgstr "Profile name is required"
+msgstr ""
 
 #: ai/views/mcp_client.py:120
 msgid "Tool arguments must be an object"
@@ -2528,10 +2511,9 @@ msgid "Role does not exist: {}"
 msgstr ""
 
 #: approval/serializers/approval_rule.py:126
-#, fuzzy, python-brace-format
-#| msgid "The submission does not exist"
+#, python-brace-format
 msgid "Post does not exist: {}"
-msgstr "The submission does not exist"
+msgstr ""
 
 #: approval/serializers/approval_rule.py:136
 #, python-brace-format
@@ -2539,10 +2521,9 @@ msgid "User does not exist: {}"
 msgstr ""
 
 #: approval/serializers/approval_rule.py:138
-#, fuzzy, python-brace-format
-#| msgid "Unknown screen command"
+#, python-brace-format
 msgid "Unknown assignee type: {}"
-msgstr "Unknown screen command"
+msgstr ""
 
 #: approval/serializers/leave.py:42
 msgid "Application no"
@@ -2907,10 +2888,8 @@ msgid "Transferred to {}"
 msgstr ""
 
 #: approval/utils/approval_flow/periodic.py:32
-#, fuzzy
-#| msgid "System message"
 msgid "System (timeout)"
-msgstr "System message"
+msgstr ""
 
 #: approval/utils/approval_flow/periodic.py:88
 msgid "The application was cancelled automatically: the submission did not complete"
@@ -2936,28 +2915,20 @@ msgstr ""
 
 #: approval/utils/approval_flow/returns.py:70
 #: approval/views/approval_instance_actions.py:277
-#, fuzzy
-#| msgid "token is required"
 msgid "Return reason is required"
-msgstr "token is required"
+msgstr ""
 
 #: approval/utils/approval_flow/returns.py:77
-#, fuzzy
-#| msgid "Only pending applications can be urged"
 msgid "Only pending applications can be returned"
-msgstr "Only pending applications can be urged"
+msgstr ""
 
 #: approval/utils/approval_flow/returns.py:87
-#, fuzzy
-#| msgid "Only the applicant can urge the application"
 msgid "Only the current node approvers can return the application"
-msgstr "Only the applicant can urge the application"
+msgstr ""
 
 #: approval/utils/approval_flow/returns.py:94
-#, fuzzy
-#| msgid "There is no pending approver to urge"
 msgid "There is no earlier node to return to"
-msgstr "There is no pending approver to urge"
+msgstr ""
 
 #: approval/utils/approval_flow/returns.py:101
 #: approval/utils/approval_flow/returns.py:103
@@ -3068,16 +3039,12 @@ msgid "The approver has been added"
 msgstr ""
 
 #: approval/views/approval_instance_actions.py:246
-#, fuzzy
-#| msgid "The approval reminder has been sent"
 msgid "The added approver has been removed"
-msgstr "The approval reminder has been sent"
+msgstr ""
 
 #: approval/views/approval_instance_actions.py:290
-#, fuzzy
-#| msgid "Only pending applications can be urged"
 msgid "The application has been returned"
-msgstr "Only pending applications can be urged"
+msgstr ""
 
 #: approval/views/approval_instance_actions.py:318
 #: approval/views/approval_instance_batch.py:190
@@ -4638,16 +4605,12 @@ msgid "Data"
 msgstr ""
 
 #: dataset/models/dform.py:78
-#, fuzzy
-#| msgid "Refresh data"
 msgid "Filter data"
-msgstr "Refresh data"
+msgstr ""
 
 #: dataset/models/dform.py:80
-#, fuzzy
-#| msgid "Form submissions"
 msgid "Form schema version"
-msgstr "Form submissions"
+msgstr ""
 
 #: dataset/models/dform.py:99
 msgid "Dynamic form submission"
@@ -4699,10 +4662,9 @@ msgid "Unknown dashboard in layout"
 msgstr ""
 
 #: dataset/serializers/analysis.py:138
-#, fuzzy, python-brace-format
-#| msgid "index is required for page"
+#, python-brace-format
 msgid "Value field is not numeric in pane: {}"
-msgstr "index is required for page"
+msgstr ""
 
 #: dataset/serializers/analysis.py:143
 msgid "Interval must be between 5 and 3600 seconds"
@@ -4838,10 +4800,8 @@ msgid "A form template cannot bind an approval flow"
 msgstr "A form template cannot bind an approval flow"
 
 #: dataset/serializers/dform.py:182
-#, fuzzy
-#| msgid "Hit count"
 msgid "Field count"
-msgstr "Hit count"
+msgstr ""
 
 #: dataset/serializers/dform.py:254 dataset/serializers/dform.py:413
 msgid "Approval trail"
@@ -5118,10 +5078,9 @@ msgid "Field {} filterable must be boolean"
 msgstr ""
 
 #: dataset/utils/dform.py:170
-#, fuzzy, python-brace-format
-#| msgid "Field {} of type {} does not accept a dict"
+#, python-brace-format
 msgid "Field {} of type {} cannot be filterable"
-msgstr "Field {} of type {} does not accept a dict"
+msgstr ""
 
 #: dataset/utils/dform.py:197 dataset/utils/dform.py:204
 #: dataset/utils/dform.py:243
@@ -5307,16 +5266,12 @@ msgstr ""
 
 #: dataset/utils/dform_filter.py:169 dataset/utils/dform_filter.py:186
 #: dataset/utils/dform_filter.py:188 dataset/utils/dform_filter.py:197
-#, fuzzy
-#| msgid "Invalid IM recipients"
 msgid "Invalid filter conditions"
-msgstr "Invalid IM recipients"
+msgstr ""
 
 #: dataset/utils/dform_filter.py:257
-#, fuzzy
-#| msgid "The submission does not exist"
 msgid "The form does not exist"
-msgstr "The submission does not exist"
+msgstr ""
 
 #: dataset/utils/dform_flow.py:90
 #, python-brace-format
@@ -5395,10 +5350,9 @@ msgid "SUM/AVG/MIN/MAX require a table column reference"
 msgstr ""
 
 #: dataset/utils/dform_formula_parser.py:88
-#, fuzzy, python-brace-format
-#| msgid "Unknown role codes: {}"
+#, python-brace-format
 msgid "Unknown formula function: {}"
-msgstr "Unknown role codes: {}"
+msgstr ""
 
 #: dataset/utils/dform_formula_parser.py:91
 #, python-brace-format
@@ -5419,44 +5373,34 @@ msgid "A table column reference must be used inside SUM/AVG/MIN/MAX"
 msgstr ""
 
 #: dataset/utils/dform_formula_parser.py:215
-#, fuzzy
-#| msgid "token is required"
 msgid "Formula expression is required"
-msgstr "token is required"
+msgstr ""
 
 #: dataset/utils/dform_formula_parser.py:217
-#, fuzzy, python-brace-format
-#| msgid "Message is too long (max {} characters)"
+#, python-brace-format
 msgid "Formula expression is too long (max {} characters)"
-msgstr "Message is too long (max {} characters)"
+msgstr ""
 
 #: dataset/utils/dform_history.py:21
 msgid " (historical)"
 msgstr ""
 
 #: dataset/utils/dform_linkage.py:37
-#, fuzzy
-#| msgid "Invalid page index"
 msgid "Invalid linkage value"
-msgstr "Invalid page index"
+msgstr ""
 
 #: dataset/utils/dform_linkage.py:51
-#, fuzzy
-#| msgid "Invalid card roles"
 msgid "Invalid form linkages"
-msgstr "Invalid card roles"
+msgstr ""
 
 #: dataset/utils/dform_linkage.py:53
-#, fuzzy, python-brace-format
-#| msgid "Group members exceed the limit of {}"
+#, python-brace-format
 msgid "Form linkages exceed the limit of {}"
-msgstr "Group members exceed the limit of {}"
+msgstr ""
 
 #: dataset/utils/dform_linkage.py:59
-#, fuzzy
-#| msgid "Invalid page index"
 msgid "Invalid form linkage rule"
-msgstr "Invalid page index"
+msgstr ""
 
 #: dataset/utils/dform_linkage.py:63
 #, python-brace-format
@@ -5473,16 +5417,14 @@ msgid "A linkage rule cannot target its own trigger field"
 msgstr ""
 
 #: dataset/utils/dform_linkage.py:70
-#, fuzzy, python-brace-format
-#| msgid "Unknown role codes: {}"
+#, python-brace-format
 msgid "Unknown linkage operator: {}"
-msgstr "Unknown role codes: {}"
+msgstr ""
 
 #: dataset/utils/dform_linkage.py:73
-#, fuzzy, python-brace-format
-#| msgid "Unknown role codes: {}"
+#, python-brace-format
 msgid "Unknown linkage effect: {}"
-msgstr "Unknown role codes: {}"
+msgstr ""
 
 #: dataset/utils/dform_linkage.py:79
 #, python-brace-format
@@ -5490,28 +5432,24 @@ msgid "A linkage value list is required for operator {}"
 msgstr ""
 
 #: dataset/utils/report_design.py:42
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid report design number: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/report_design.py:49
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid report metric: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/report_design.py:52
-#, fuzzy, python-brace-format
-#| msgid "Unknown role codes: {}"
+#, python-brace-format
 msgid "Unknown report field: {}"
-msgstr "Unknown role codes: {}"
+msgstr ""
 
 #: dataset/utils/report_design.py:55 dataset/utils/screen_layout.py:152
-#, fuzzy, python-brace-format
-#| msgid "index is required for page"
+#, python-brace-format
 msgid "Value field is required for {} in {}"
-msgstr "index is required for page"
+msgstr ""
 
 #: dataset/utils/report_design.py:57
 #, python-brace-format
@@ -5519,22 +5457,17 @@ msgid "Value field is not numeric in {}: {}"
 msgstr ""
 
 #: dataset/utils/report_design.py:66
-#, fuzzy
-#| msgid "Invalid cron expression"
 msgid "Invalid report design"
-msgstr "Invalid cron expression"
+msgstr ""
 
 #: dataset/utils/report_design.py:75
-#, fuzzy
-#| msgid "Invalid cron expression"
 msgid "Invalid report design columns"
-msgstr "Invalid cron expression"
+msgstr ""
 
 #: dataset/utils/report_design.py:82
-#, fuzzy, python-brace-format
-#| msgid "Unknown role codes: {}"
+#, python-brace-format
 msgid "Unknown report column: {}"
-msgstr "Unknown role codes: {}"
+msgstr ""
 
 #: dataset/utils/report_design.py:89
 #, python-brace-format
@@ -5542,16 +5475,13 @@ msgid "Report row limit must be {}~{}"
 msgstr ""
 
 #: dataset/utils/report_design.py:95
-#, fuzzy
-#| msgid "Invalid cron expression"
 msgid "Invalid report design components"
-msgstr "Invalid cron expression"
+msgstr ""
 
 #: dataset/utils/report_design.py:97
-#, fuzzy, python-brace-format
-#| msgid "Too many items to preview (max {})"
+#, python-brace-format
 msgid "Too many report components (max {})"
-msgstr "Too many items to preview (max {})"
+msgstr ""
 
 #: dataset/utils/report_design.py:102
 #, python-brace-format
@@ -5559,16 +5489,14 @@ msgid "component {}"
 msgstr ""
 
 #: dataset/utils/report_design.py:104
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid report component: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/report_design.py:108
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid report component id: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/report_design.py:110
 #, python-brace-format
@@ -5576,10 +5504,9 @@ msgid "Duplicated report component id: {}"
 msgstr ""
 
 #: dataset/utils/report_design.py:115
-#, fuzzy, python-brace-format
-#| msgid "Unknown role codes: {}"
+#, python-brace-format
 msgid "Unknown report component type: {}"
-msgstr "Unknown role codes: {}"
+msgstr ""
 
 #: dataset/utils/report_design.py:119
 #, python-brace-format
@@ -5587,10 +5514,9 @@ msgid "Report component title is too long: {}"
 msgstr ""
 
 #: dataset/utils/report_design.py:123
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid report component span: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/report_design.py:129
 #, python-brace-format
@@ -5603,46 +5529,38 @@ msgid "Group by is required for {}: {}"
 msgstr ""
 
 #: dataset/utils/report_design.py:135
-#, fuzzy, python-brace-format
-#| msgid "Unknown role codes: {}"
+#, python-brace-format
 msgid "Unknown report group by: {}"
-msgstr "Unknown role codes: {}"
+msgstr ""
 
 #: dataset/utils/report_design.py:137
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid report date trunc: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:64
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid screen layout box: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:77
-#, fuzzy
-#| msgid "Invalid IM recipients"
 msgid "Invalid screen layout"
-msgstr "Invalid IM recipients"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:84
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid screen layout pane: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:88
-#, fuzzy, python-brace-format
-#| msgid "Unknown screen command"
+#, python-brace-format
 msgid "Unknown screen pane type: {}"
-msgstr "Unknown screen command"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:92
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid screen pane id: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:99
 #, python-brace-format
@@ -5670,10 +5588,9 @@ msgid "Screen pane title is too long: {}"
 msgstr ""
 
 #: dataset/utils/screen_layout.py:118
-#, fuzzy, python-brace-format
-#| msgid "Unknown notify channel: {}"
+#, python-brace-format
 msgid "Unknown dashboard in pane: {}"
-msgstr "Unknown notify channel: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:124
 #, python-brace-format
@@ -5681,10 +5598,9 @@ msgid "Screen pane text is too long: {}"
 msgstr ""
 
 #: dataset/utils/screen_layout.py:128
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid screen pane align: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:137
 #, python-brace-format
@@ -5692,28 +5608,24 @@ msgid "Screen pane font size must be {}~{}: {}"
 msgstr ""
 
 #: dataset/utils/screen_layout.py:146
-#, fuzzy, python-brace-format
-#| msgid "Unknown notify channel: {}"
+#, python-brace-format
 msgid "Unknown dataset in pane: {}"
-msgstr "Unknown notify channel: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:149
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid screen pane metric: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:154
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid screen pane value field: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:163
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid screen pane image url: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:170
 #, python-brace-format
@@ -5721,10 +5633,9 @@ msgid "Screen pane image url must be http(s) or a root-relative path: {}"
 msgstr ""
 
 #: dataset/utils/screen_layout.py:174
-#, fuzzy, python-brace-format
-#| msgid "Invalid IM recipient: {}"
+#, python-brace-format
 msgid "Invalid screen pane image fit: {}"
-msgstr "Invalid IM recipient: {}"
+msgstr ""
 
 #: dataset/utils/screen_layout.py:180
 #, python-brace-format
@@ -5732,10 +5643,9 @@ msgid "Screen panes overlap: {}"
 msgstr ""
 
 #: dataset/utils/screen_layout.py:184
-#, fuzzy, python-brace-format
-#| msgid "Too many items to preview (max {})"
+#, python-brace-format
 msgid "Too many screen panes (max {})"
-msgstr "Too many items to preview (max {})"
+msgstr ""
 
 #: dataset/views/analysis.py:145
 msgid "Command sent"
@@ -5754,16 +5664,13 @@ msgid "Only the creator can modify a form"
 msgstr ""
 
 #: dataset/views/dform.py:156
-#, fuzzy
-#| msgid "A credential key is required"
 msgid "A schema version is required"
-msgstr "A credential key is required"
+msgstr ""
 
 #: dataset/views/dform.py:162
-#, fuzzy, python-brace-format
-#| msgid "The submission does not exist"
+#, python-brace-format
 msgid "Schema version {} does not exist"
-msgstr "The submission does not exist"
+msgstr ""
 
 #: dataset/views/dform.py:168
 #, python-brace-format
@@ -5815,10 +5722,8 @@ msgid "Unknown action for screen display channel"
 msgstr ""
 
 #: dataset/ws_screen.py:308
-#, fuzzy
-#| msgid "Credential rotation failed"
 msgid "Screen data build failed"
-msgstr "Credential rotation failed"
+msgstr ""
 
 #: demo/services.py:51
 msgid "This book is already under approval"
@@ -6162,10 +6067,8 @@ msgid "Websocket"
 msgstr ""
 
 #: identity/consts.py:27
-#, fuzzy
-#| msgid "Persona"
 msgid "Impersonation"
-msgstr "Persona"
+msgstr ""
 
 #: identity/models/department.py:23
 msgid "Department name"
@@ -6281,16 +6184,12 @@ msgid "Password history"
 msgstr ""
 
 #: identity/models/post.py:23
-#, fuzzy
-#| msgid "Profile name"
 msgid "Post name"
-msgstr "Profile name"
+msgstr ""
 
 #: identity/models/post.py:24
-#, fuzzy
-#| msgid "Flow codes"
 msgid "Post code"
-msgstr "Flow codes"
+msgstr ""
 
 #: identity/models/post.py:27 identity/serializers/post.py:55
 msgid "Dept"
@@ -6838,10 +6737,8 @@ msgid "The superior department is outside your data scope"
 msgstr "The superior department is outside your data scope"
 
 #: identity/serializers/department.py:108
-#, fuzzy
-#| msgid "The department is outside your data scope"
 msgid "The department leader is outside your data scope"
-msgstr "The department is outside your data scope"
+msgstr ""
 
 #: identity/serializers/department.py:145
 msgid "The superior department cannot be its own subordinate department"
@@ -7472,16 +7369,12 @@ msgid "Passkey bound successfully"
 msgstr ""
 
 #: identity/views/admin/post.py:111
-#, fuzzy
-#| msgid "Invalid page index"
 msgid "Invalid member id"
-msgstr "Invalid page index"
+msgstr ""
 
 #: identity/views/admin/post.py:115
-#, fuzzy
-#| msgid "Members"
 msgid "Members updated"
-msgstr "Members"
+msgstr ""
 
 #: identity/views/admin/user.py:126
 msgid "The super administrator disallows deletion"
@@ -7732,10 +7625,8 @@ msgid "AI assistant is not configured"
 msgstr "AI assistant is not configured"
 
 #: message/attachments.py:107 message/chat.py:117
-#, fuzzy
-#| msgid "Message not found"
 msgid "Attachment not found"
-msgstr "Message not found"
+msgstr ""
 
 #: message/attachments.py:125
 msgid "The message type does not match the attachment kind"
@@ -7772,34 +7663,27 @@ msgid "Messages can only be recalled within {} minutes"
 msgstr "Messages can only be recalled within {} minutes"
 
 #: message/chat.py:354
-#, fuzzy
-#| msgid "Actions cannot be empty"
 msgid "Reaction emoji cannot be empty"
-msgstr "Actions cannot be empty"
+msgstr ""
 
 #: message/chat.py:357
-#, fuzzy, python-brace-format
-#| msgid "Message is too long (max {} characters)"
+#, python-brace-format
 msgid "Reaction emoji is too long (max {} characters)"
-msgstr "Message is too long (max {} characters)"
+msgstr ""
 
 #: message/chat.py:360
-#, fuzzy
-#| msgid "Invalid cron expression"
 msgid "Invalid reaction operation"
-msgstr "Invalid cron expression"
+msgstr ""
 
 #: message/chat.py:383
-#, fuzzy, python-brace-format
-#| msgid "Too many items to preview (max {})"
+#, python-brace-format
 msgid "Too many emojis on this message (max {})"
-msgstr "Too many items to preview (max {})"
+msgstr ""
 
 #: message/chat.py:387
-#, fuzzy, python-brace-format
-#| msgid "Too many items to preview (max {})"
+#, python-brace-format
 msgid "Too many users reacted with this emoji (max {})"
-msgstr "Too many items to preview (max {})"
+msgstr ""
 
 #: message/chat_room_ops.py:38
 msgid "Cannot start a private chat with yourself"
@@ -9534,10 +9418,8 @@ msgid "Permission mode, and the mode indicates that the data needs to satisfy ea
 msgstr ""
 
 #: system/models/codegen_plan.py:22
-#, fuzzy
-#| msgid "Profile name"
 msgid "Plan name"
-msgstr "Profile name"
+msgstr ""
 
 #: system/models/codegen_plan.py:23 task/models/webhook.py:45
 msgid "Payload"
@@ -10098,10 +9980,8 @@ msgid "Number of bound users"
 msgstr ""
 
 #: system/serializers/permission.py:66
-#, fuzzy
-#| msgid "Members of this department"
 msgid "Number of bound departments"
-msgstr "Members of this department"
+msgstr ""
 
 #: system/serializers/permission.py:133
 msgid "The selected menus contain no API permission, please select a page with APIs"
@@ -10173,10 +10053,8 @@ msgid "Used to sign outgoing webhook deliveries"
 msgstr ""
 
 #: system/services/credential.py:107
-#, fuzzy
-#| msgid "Open platform callback secret"
 msgid "Used by open-platform apps for callback signature"
-msgstr "Open platform callback secret"
+msgstr ""
 
 #: system/services/credential.py:111
 msgid "Used by LDAP/AD directory binding and sync"
@@ -10334,10 +10212,9 @@ msgid "If the password update was not initiated by you, your account may have se
 msgstr ""
 
 #: system/utils/platform/codegen_gui.py:284
-#, fuzzy, python-brace-format
-#| msgid "Too many items to preview (max {})"
+#, python-brace-format
 msgid "Too many models for batch codegen (max {})"
-msgstr "Too many items to preview (max {})"
+msgstr ""
 
 #: system/utils/platform/modelfield.py:91
 msgid "All tables"
@@ -10590,10 +10467,8 @@ msgid "Credential rotation failed"
 msgstr "Credential rotation failed"
 
 #: system/views/admin/credential.py:77
-#, fuzzy
-#| msgid "Credential rotation failed"
 msgid "Credential rotated"
-msgstr "Credential rotation failed"
+msgstr ""
 
 #: system/views/admin/dict.py:36
 msgid "Is dict type"
@@ -10880,10 +10755,8 @@ msgid "Next retry at"
 msgstr ""
 
 #: task/models/webhook.py:55
-#, fuzzy
-#| msgid "Persona"
 msgid "Generation"
-msgstr "Persona"
+msgstr ""
 
 #: task/models/webhook.py:58
 msgid "Webhook delivery"
@@ -10959,10 +10832,8 @@ msgid "Default exchange"
 msgstr ""
 
 #: task/serializers/task.py:213
-#, fuzzy
-#| msgid "Profile name is required"
 msgid "Task name is required"
-msgstr "Profile name is required"
+msgstr ""
 
 #: task/serializers/task.py:216
 #, python-brace-format
@@ -10995,16 +10866,12 @@ msgid "Time Cost"
 msgstr ""
 
 #: task/serializers/task.py:340 task/views/task.py:46
-#, fuzzy
-#| msgid "Room type"
 msgid "Record type"
-msgstr "Room type"
+msgstr ""
 
 #: task/serializers/task.py:341
-#, fuzzy
-#| msgid "Sender name"
 msgid "Record name"
-msgstr "Sender name"
+msgstr ""
 
 #: task/serializers/task.py:345
 msgid "Output file"
@@ -11223,10 +11090,8 @@ msgid "Flow application cancelled"
 msgstr ""
 
 #: task/utils/webhook.py:182
-#, fuzzy
-#| msgid "Only pending applications can be urged"
 msgid "Flow application returned"
-msgstr "Only pending applications can be urged"
+msgstr ""
 
 #: task/utils/webhook.py:196
 msgid "Flow node auto-approved"
@@ -11266,10 +11131,8 @@ msgid "Error report not found"
 msgstr ""
 
 #: task/views/task_periodic.py:89
-#, fuzzy
-#| msgid "The credential is not configured yet"
 msgid "Schedule reference guard is not configured"
-msgstr "The credential is not configured yet"
+msgstr ""
 
 #: task/views/task_periodic.py:97
 #, python-format

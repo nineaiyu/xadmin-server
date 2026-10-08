@@ -376,7 +376,7 @@ class TestDelegationOwnership:
         """「查看全部委托记录」授权后可见全部（管理视角权限点）。"""
         grant_data_all(normal_user, self.MODEL_LABEL)
         grant_permission(normal_user, "list:SystemApprovalDelegation", self.LIST_PATH, method="GET")
-        grant_permission(normal_user, "all:ApprovalDelegation", self.ALL_PATH, method="GET")
+        grant_permission(normal_user, "all:SystemApprovalDelegation", self.ALL_PATH, method="GET")
         make_delegation(normal_user, agent)
         make_delegation(other, other_agent)
         resp = self._client(normal_user).get(DELEGATIONS_URL)

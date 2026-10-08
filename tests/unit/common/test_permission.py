@@ -182,7 +182,7 @@ class TestUserHasPermission:
     """功能开关权限点判定（无独立路由的按 path 授权）。"""
 
     def test_exact_point_required(self, normal_user, role, menu_factory):
-        menu = menu_factory("all:ApprovalDelegation", path="api/approval/approval-delegations/all$", method="GET")
+        menu = menu_factory("all:SystemApprovalDelegation", path="api/approval/approval-delegations/all$", method="GET")
         role.menu.add(menu)
         assert user_has_permission(normal_user, "api/approval/approval-delegations/all$", "GET") is True
 

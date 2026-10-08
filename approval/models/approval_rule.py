@@ -25,6 +25,7 @@ class ApprovalRule(DbAuditModel):
 
     - path_patterns：路径正则清单（``re.search`` 命中即算，写法与系统配置
       APPROVAL_REQUIRED_PATHS 一致，如 ``["api/demo/book/(?P<pk>[^/.]+)$"]``）；
+      匹配只看请求路径、不区分 HTTP method（与 APPROVAL_REQUIRED_PATHS 同口径）；
     - priority：多条规则同时命中时取 priority 最大者（并列取创建时间更新者）；
     - is_active=False 不参与匹配。
     """

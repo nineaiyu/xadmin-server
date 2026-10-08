@@ -4,6 +4,8 @@
 # filename : serializers
 # author : ly_13
 # date : 12/21/2023
+import asyncio
+import os
 from inspect import isfunction
 from typing import Any
 
@@ -21,6 +23,21 @@ from common.local import get_current_request
 from common.utils import get_logger
 
 logger = get_logger(__name__)
+
+
+def _running_in_event_loop() -> bool:
+    """当前线程是否存在运行中的事件循环（与 Django async_unsafe 的判定同款）。
+
+    事件循环线程内不能做同步 DB 访问；asgiref 线程敏感执行器（同步视图的实际执行处、
+    管理命令、WSGI 线程）没有运行中的事件循环，不受影响。
+    """
+    if os.environ.get("DJANGO_ALLOW_ASYNC_UNSAFE"):
+        return False
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    return True
 
 
 class BaseModelSerializer(ModelSerializer):
@@ -117,6 +134,14 @@ class BaseModelSerializer(ModelSerializer):
         super().__init__(instance, data, **kwargs)
         self.request: Request = get_current_request()
         if self.request is None:
+            return
+        # 事件循环线程内不做字段收敛：ASGI 下 URLconf 首次加载发生在事件循环线程，
+        # 而声明式嵌套序列化器（字段在类体实例化）与 @extend_schema 响应里的 schema
+        # 序列化器会在**导入期**实例化——此处继续绑定字段会触发字典字段解析（事件循环
+        # 线程内的同步 DB 读取被 Django 拦截并降级），且导入期实例的字段收敛没有请求
+        # 语义（request 恰为"正在加载 URLconf 的那个请求"）。请求线程内的实例会按当次
+        # 请求 deepcopy 重做绑定与收敛，输出口径不受影响。
+        if _running_in_event_loop():
             return
         # 记录显式豁免参数，供输出侧（to_representation 脱敏）与 get_allow_fields 同口径判断
         self.ignore_field_permission = self.ignore_field_permission or ignore_field_permission

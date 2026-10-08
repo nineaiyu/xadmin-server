@@ -96,6 +96,8 @@ class NoticeUserReadMessageViewSet(ListDeleteModelSet):
         serializer = NoticeUserReadStateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = self.get_object()
+        # 两类消息的 state 语义相反：用户类消息的已读状态可回写（unread 开关，可再置未读）；
+        # 公告类不持久化阅读状态——state 表示「从我的列表移除」，故直接删行。勿合并两分支。
         if instance.notice.notice_type in MessageContent.get_user_choices():
             instance.unread = serializer.validated_data["unread"]
             instance.modifier = request.user
