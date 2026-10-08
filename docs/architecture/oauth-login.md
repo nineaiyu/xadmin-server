@@ -35,8 +35,16 @@
 | Unknown OAuth provider flavor: xxx | `flavor` 不在预设集合（oauth2 / dingtalk / wecom / feishu） |
 | OAuth provider is missing required fields: … | 缺必填（通用 flavor 需要三个 URL；IM flavor 按预设放宽） |
 | Duplicate OAuth provider key: xxx | `key` 重复 |
-| OAuth provider url must use https: token_url | 显式配置的 URL 非 `https://` |
+| OAuth provider url must use https: token_url | 显式配置的 URL 非 `https://`（`http://127.0.0.1` / `http://localhost` 例外，供本地联调） |
+| Outbound target must not be a private address: … | URL 为私网 / link-local / 云元数据的 **IP 字面量**（统一出站守卫口径；改用域名或在 `OUTBOUND_ALLOWED_HOSTS` 登记后重存） |
 | Enabled OAuth provider requires client_secret | 已启用但缺 `client_secret` |
+
+> **出站守卫统一口径**：provider 地址校验走 `common/utils/outbound.py`（与 Webhook /
+> AI base_url / MCP / 开放平台回调同源）——写入侧 https 强制 + IP 字面量归属校验
+> （域名写入侧不解析：内网 IdP 可能仅对服务端 DNS 可见）；**发送侧**（换码 / 取用户
+> 信息 / OIDC discovery 与 JWKS）走固定解析连接，私网 / 环回 / link-local 默认拒绝，
+> 内网自建 IdP 须在「系统管理 → 系统配置」登记 `OUTBOUND_ALLOWED_HOSTS`（公网 IdP
+> 无需任何配置）。
 
 ## 四、常见现象排错
 
@@ -88,12 +96,14 @@ IM flavor 的协议差异全部收口在 `identity/utils/oauth_flavors.py`，新
 
 | 现象 | 处置 |
 |------|------|
-| 点击登录按钮提示"无法连接身份提供商" | discovery 不可达：确认 `issuer`/`discovery_url` 为 https 且容器可访问；`http://` 会被保存校验直接拒绝 |
+| 点击登录按钮提示"无法连接身份提供商" | discovery 不可达：确认 `issuer`/`discovery_url` 为 https 且容器可访问（`http://` 保存时即被拒）；**IdP 在内网时须登记 `OUTBOUND_ALLOWED_HOSTS`**——发送侧按统一出站守卫拒绝私网 / 环回 / link-local |
 | 回调提示"id_token 无效" | `aud` 是否是 `client_id`、`iss` 是否与 `issuer` 一致、时钟偏差、算法是否在白名单；JWKS 轮换由自动刷新兜底 |
 | 回调提示"未返回 id_token" | IdP 的 scope 需含 `openid`（默认 scope 已含）；确认 token 端点返回 `id_token` |
 | 登录后角色没变 | `group_role_map` 是否配置、组名是否命中（支持组名精确匹配或 `cn=<组名>,...` 的 DN 形态）、角色 code 是否存在且启用 |
 
 安全纪律（与通用流一致）：IdP 原始报文只进日志、用户侧错误统一 `OAuthError` 可读文案、
-http 客户端可注入（保证单测离线）；换码 / 取用户信息的缓存按凭据摘要隔离（参考企微 corp token 实现）。
+http 客户端可注入（保证单测离线）；出站目标统一经 `common/utils/outbound.py` 守卫
+（写入侧校验 + 发送侧固定解析连接，防 SSRF / DNS rebinding）；换码 / 取用户信息的缓存
+按凭据摘要隔离（参考企微 corp token 实现）。
 
 > flavor 属内核扩展（改动面在 `identity/utils/oauth_flavors.py` 与写入校验白名单），建议先提 ADR 再落代码。

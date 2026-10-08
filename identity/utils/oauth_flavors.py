@@ -90,20 +90,23 @@ WECOM_TOKEN_TTL_SLACK = 120
 # ---------------------------------------------------------------- http 助手
 
 
-def _default_client():
-    import requests
-
-    return requests
-
-
 def _post_json(url, body, timeout=10, http_client=None):
-    client = http_client or _default_client()
-    return client.post(url, json=body, timeout=timeout)
+    """出站 POST(JSON)：注入客户端（测试离线桩）原样调用；生产路径与通用链路
+    同口径走固定解析连接（``identity.utils.oauth._pinned_request``）。"""
+    if http_client is not None:
+        return http_client.post(url, json=body, timeout=timeout)
+    from identity.utils.oauth import _pinned_request
+
+    return _pinned_request("POST", url, json=body, timeout=timeout)
 
 
 def _get_params(url, params, headers=None, timeout=10, http_client=None):
-    client = http_client or _default_client()
-    return client.get(url, params=params, headers=headers or {}, timeout=timeout)
+    """出站 GET(params)：口径同 ``_post_json``。"""
+    if http_client is not None:
+        return http_client.get(url, params=params, headers=headers or {}, timeout=timeout)
+    from identity.utils.oauth import _pinned_request
+
+    return _pinned_request("GET", url, params=params, headers=headers or {}, timeout=timeout)
 
 
 def _get_bearer(url, token, timeout=10, http_client=None):

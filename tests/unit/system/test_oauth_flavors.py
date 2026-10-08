@@ -76,9 +76,11 @@ def stub_client(monkeypatch):
 
     def install(client):
         holder["client"] = client
-        # flavors 与 oauth 各有独立的 _default_client，统一替换
-        monkeypatch.setattr("identity.utils.oauth._default_client", lambda: holder["client"])
-        monkeypatch.setattr("identity.utils.oauth_flavors._default_client", lambda: holder["client"])
+        # 通用链路与 flavor 适配器共用同一出站缝（`_pinned_request`）：替换一处即全覆盖
+        monkeypatch.setattr(
+            "identity.utils.oauth._pinned_request",
+            lambda method, url, **kwargs: getattr(holder["client"], method.lower())(url, **kwargs),
+        )
 
     return install
 

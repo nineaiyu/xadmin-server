@@ -346,7 +346,11 @@ class TestCallbackIntegration:
                 "id_token": _sign(private_key, _claims(nonce=nonce_holder["value"])),
             },
         }
-        monkeypatch.setattr("identity.utils.oauth._default_client", lambda: _StubClient(routes))
+        stub = _StubClient(routes)
+        monkeypatch.setattr(
+            "identity.utils.oauth._pinned_request",
+            lambda method, url, **kwargs: getattr(stub, method.lower())(url, **kwargs),
+        )
 
         # 回调是匿名可达端点（白名单整段前缀），这里直接走 APIClient
         response = APIClient().get(f"/api/system/auth/oauth/corp/callback?code=code-1&state={state}")
@@ -366,7 +370,10 @@ class TestAuthorizeUrl:
         provider = _provider(enabled=True)
         monkeypatch.setattr(type(SysConfig), "OAUTH_PROVIDERS", property(lambda self: [provider]), raising=False)
         client = _StubClient({DISCOVERY_URL: _discovery_payload()})
-        monkeypatch.setattr("identity.utils.oauth._default_client", lambda: client)
+        monkeypatch.setattr(
+            "identity.utils.oauth._pinned_request",
+            lambda method, url, **kwargs: getattr(client, method.lower())(url, **kwargs),
+        )
 
         response = APIClient().get("/api/system/auth/oauth/corp/authorize")
         assert response.status_code == 200, response.data

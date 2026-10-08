@@ -461,7 +461,15 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 > 与邮件/短信验证码通道承载（注册至少需 `EMAIL_ENABLED` / `SMS_ENABLED` 其一）；
 > 配置项 `SECURITY_REGISTER_BY_BASIC_ENABLED` 同步移除（存量库中的同名设置行不再被读取，
 > 可留可删）。发送端仍接受手工缓存的 username 类 verify_token（兼容存量令牌，
-> 登录分支照旧要求密码校验）。前端需重新构建部署。
+> 登录分支照旧要求密码校验）。前端需重新构建部署；
+> ④ **OAuth / OIDC 出站链路并入统一守卫**（`common/utils/outbound.py`，与 Webhook /
+> AI base_url / MCP 同源）：provider 地址在写入侧改为 https 强制 + 地址归属校验
+> （IP 字面量拒绝私网 / link-local / 元数据地址，`http://127.0.0.1` 与
+> `http://localhost` 例外供本地联调），发送侧改为固定解析连接（私网 / 环回 /
+> link-local 拒绝，白名单放行）——**内网自建 IdP（私网 IP 或仅内网可达域名）需在
+> 「系统管理 → 系统配置」登记 `OUTBOUND_ALLOWED_HOSTS`，否则登录回调报「无法连接身份
+> 提供方」；公网 IdP 无需任何配置**。已保存的私网 IP 字面量地址会被写入侧拒绝，
+> 请改为域名或在白名单登记后重存。
 
 > 历史版本注意：compose 内置与 `config.yml` 对齐的数据库/Redis 默认密码兜底（单机自用决策，见 docker-compose.yml 注释）——*
 *生产部署必须**通过环境变量或 `.env` 覆盖 `DB_PASSWORD` / `REDIS_PASSWORD` 为随机值，并在 `config.yml` 中同步修改（config.yml

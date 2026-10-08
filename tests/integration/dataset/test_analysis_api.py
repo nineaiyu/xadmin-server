@@ -13,6 +13,7 @@ from django.core import mail
 from django.utils import timezone
 
 from dataset.models.dataset import Dashboard, Dataset, Report, Screen
+from dataset.serializers.analysis import IM_NOTIFY_CHANNELS, REPORT_NOTIFY_CHANNELS
 from identity.models import UserInfo
 from system.models import ModelLabelField
 
@@ -343,6 +344,15 @@ class TestReportImDelivery:
         }
         response = auth_client.post(REPORT_URL, payload, format="json")
         assert response.status_code == 400
+
+    def test_choices_matches_write_side_constants(self, auth_client):
+        """渠道枚举单源守护：choices 下发值集 == 写入校验常量（前端不手抄选项表）。"""
+        response = auth_client.get(f"{REPORT_URL}/choices")
+        assert response.status_code == 200, response.data
+        assert response.data["code"] == 1000
+        choices = response.data["choices_dict"]
+        assert choices["notify_channels"] == list(REPORT_NOTIFY_CHANNELS)
+        assert choices["im_notify_channels"] == list(IM_NOTIFY_CHANNELS)
 
     def test_im_channel_requires_recipients(self, auth_client, dataset):
         payload = {

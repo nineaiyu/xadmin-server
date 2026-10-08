@@ -7,7 +7,11 @@
   列表接口回传时 `client_secret` 一律掩码，密钥不出服务端；
 - state 一次性（Redis `cache.add` 占位 + 5 分钟 TTL），回调消费即失效；
 - 与 IdP 的交互全部走**可注入的 http 客户端**，单测可完全离线覆盖（含异常分支）；
-- IdP 原始报文不回显给前端，所有失败统一映射为可读业务文案。
+- IdP 原始报文不回显给前端，所有失败统一映射为可读业务文案；
+- 出站目标统一经 `common/utils/outbound.py` 口径（与 Webhook / AI base_url / MCP /
+  开放平台回调同源）：写入侧 https 强制 + 地址归属校验（IP 字面量拒绝私网 /
+  link-local / 元数据地址），发送侧固定解析连接（私网 / 环回 / link-local 拒绝，
+  `OUTBOUND_ALLOWED_HOSTS` 登记放行），消除「校验一次解析、连接又解析一次」窗口。
 """
 
 import secrets
@@ -120,7 +124,13 @@ def validate_providers(value) -> list[dict]:
 
     配置错误必须在**保存时**挡住，否则会让每个用户都撞到一个看不懂的回调错误。
     IM flavor 的 URL 有官方预设可不填，https 只校验显式配置的 URL。
+
+    URL 校验走 `common/utils/outbound.py` 统一口径（Webhook / AI base_url / MCP /
+    开放平台回调同源）：https 强制（换码携带 `client_secret`，http 不放行，仅
+    loopback 联调例外），IP 字面量按归属校验拒绝私网 / link-local / 元数据地址；
+    域名写入侧不解析（内网 IdP 可能仅对服务端 DNS 可见），归属校验留到发送侧。
     """
+    from common.utils.outbound import OutboundBlocked, outbound_allowed_hosts, validate_outbound_config_url
     from identity.utils.oauth_flavors import FLAVOR_PRESETS, FLAVOR_REQUIRED_KEYS
 
     if value in (None, ""):
@@ -146,8 +156,17 @@ def validate_providers(value) -> list[dict]:
 
         for url_key in ("authorize_url", "token_url", "userinfo_url", "issuer", "discovery_url", "jwks_uri"):
             url = str(item.get(url_key) or "")
-            if url and not url.startswith("https://"):
-                raise ValidationError(_("OAuth provider url must use https: {}").format(url_key))
+            if not url:
+                continue
+            try:
+                validate_outbound_config_url(
+                    url,
+                    allowed_hosts=outbound_allowed_hosts(),
+                    allow_http_whitelist=False,
+                    scheme_message=_("OAuth provider url must use https: {}").format(url_key),
+                )
+            except OutboundBlocked as exc:
+                raise ValidationError([str(message) for message in exc.messages]) from exc
         if item.get("enabled") and not item.get("client_secret"):
             raise ValidationError(_("Enabled OAuth provider requires client_secret"))
         if flavor == "oidc":
@@ -254,20 +273,41 @@ def build_authorize_url(provider: dict, redirect_uri: str, state: str, nonce: st
     return f"{provider['authorize_url']}{separator}{urlencode({k: v for k, v in params.items() if v})}"
 
 
+def _outbound_allowed_hosts() -> tuple:
+    """发送侧出站白名单（与 Webhook / AI / MCP 同源：``OUTBOUND_ALLOWED_HOSTS``）。"""
+    from common.utils.outbound import outbound_allowed_hosts
+
+    return outbound_allowed_hosts()
+
+
+def _pinned_request(method: str, url: str, **kwargs):
+    """生产路径出站请求：与 Webhook / AI / MCP 同口径走 ``pinned_request``——
+    发送侧严格校验归属（私网 / 环回 / link-local 拒绝，``OUTBOUND_ALLOWED_HOSTS``
+    放行）并把连接固定为已校验 IP，消除 DNS rebinding 窗口；flavor 适配器共用。"""
+    from common.utils.outbound import pinned_request
+
+    return pinned_request(
+        method,
+        url,
+        allow_private=False,
+        allow_loopback=True,
+        allowed_hosts=_outbound_allowed_hosts(),
+        **kwargs,
+    )
+
+
 def _post(url, data, timeout=10, http_client=None):
-    client = http_client or _default_client()
-    return client.post(url, data=data, timeout=timeout)
+    """出站 POST：注入客户端（测试离线桩）原样调用；生产路径见 ``_pinned_request``。"""
+    if http_client is not None:
+        return http_client.post(url, data=data, timeout=timeout)
+    return _pinned_request("POST", url, data=data, timeout=timeout)
 
 
 def _get(url, headers, timeout=10, http_client=None):
-    client = http_client or _default_client()
-    return client.get(url, headers=headers, timeout=timeout)
-
-
-def _default_client():
-    import requests
-
-    return requests
+    """出站 GET：口径同 ``_post``（userinfo / OIDC discovery / JWKS 共用）。"""
+    if http_client is not None:
+        return http_client.get(url, headers=headers, timeout=timeout)
+    return _pinned_request("GET", url, headers=headers, timeout=timeout)
 
 
 def exchange_code(provider: dict, code: str, redirect_uri: str, http_client=None) -> dict:

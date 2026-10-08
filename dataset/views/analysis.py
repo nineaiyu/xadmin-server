@@ -26,7 +26,13 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from dataset.analysis_tasks import schedule_report_run
 from dataset.models.dataset import Report, Screen
-from dataset.serializers.analysis import ReportSerializer, ScreenCommandSerializer, ScreenSerializer
+from dataset.serializers.analysis import (
+    IM_NOTIFY_CHANNELS,
+    REPORT_NOTIFY_CHANNELS,
+    ReportSerializer,
+    ScreenCommandSerializer,
+    ScreenSerializer,
+)
 from dataset.ws_screen import (
     apply_screen_command,
     broadcast_screen_command,
@@ -165,6 +171,22 @@ class ReportViewSet(BaseAnalysisViewSet):
             pks=request.query_params.get("pks", ""),
         )
         return ApiResponse(data=data)
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="choices")
+    def choices(self, request, *args, **kwargs):
+        """投递渠道枚举（结构元数据）：值集单源在本模块常量，前端不再手抄选项表。
+
+        与其它 choices 消费方同口径（``choices_dict`` 在响应顶层）；路径命中
+        ``^/api/.*choices$`` 结构元数据白名单，无需独立权限点。``im_notify_channels``
+        显式下发 IM 子集，前端不再按「非 email」隐式推导。
+        """
+        return ApiResponse(
+            choices_dict={
+                "notify_channels": list(REPORT_NOTIFY_CHANNELS),
+                "im_notify_channels": list(IM_NOTIFY_CHANNELS),
+            }
+        )
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="run")

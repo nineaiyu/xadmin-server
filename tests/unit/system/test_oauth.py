@@ -99,7 +99,13 @@ def stub_idp(monkeypatch):
 
     def install(client):
         holder["client"] = client
-        monkeypatch.setattr("identity.utils.oauth._default_client", lambda: holder["client"], raising=True)
+        # 出站缝已统一到 `_pinned_request`（守卫校验 + 固定解析连接）：替换该缝
+        # 即让 token/userinfo 交换完全离线可测
+        monkeypatch.setattr(
+            "identity.utils.oauth._pinned_request",
+            lambda method, url, **kwargs: getattr(holder["client"], method.lower())(url, **kwargs),
+            raising=True,
+        )
 
     return install
 
