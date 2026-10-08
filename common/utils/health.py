@@ -17,17 +17,29 @@ from django.core.cache import cache
 
 
 def probe_db():
-    """SELECT 1 探测数据库连通性，不依赖任何业务表。"""
-    t1 = time.time()
-    try:
-        from django.db import connection
+    """SELECT 1 探测数据库连通性，不依赖任何业务表。
 
+    探测会在常驻线程池（health-probe）内执行：结束即归还/关闭连接（连接池只在
+    归还时回收连接），避免被线程本地长期借出。
+    """
+    t1 = time.time()
+    from django.db import connection
+
+    try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
             cursor.fetchone()
         return True, time.time() - t1
     except Exception as e:  # noqa: BLE001 探测失败需返回原因而非中断
         return False, str(e)
+    finally:
+        # 原子块内禁止关闭：Django 不允许在 atomic 中重连（测试基座的 db fixture
+        # 即原子块包裹）。探测是只读操作，事务态不归还连接、由连接池自行回收。
+        if not connection.in_atomic_block:
+            try:
+                connection.close()
+            except Exception:  # noqa: BLE001 归还失败不影响探测结果
+                pass
 
 
 def probe_redis():

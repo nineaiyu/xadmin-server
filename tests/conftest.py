@@ -118,6 +118,94 @@ def django_db_modify_db_settings(django_db_modify_db_settings_parallel_suffix):
             close_pool()
 
 
+def _worker_test_db_name():
+    """当前进程测试用的 PG 库名；非 PG 档返回 None。"""
+    from django.conf import settings as dj_settings
+
+    db = dj_settings.DATABASES.get("default") or {}
+    if "postgresql" not in db.get("ENGINE", ""):
+        return None
+    return db.get("NAME")
+
+
+def _release_pool_connections():
+    """在已知后台线程池内各归还一次连接（Django 连接是线程本地，必须在线程内执行）。"""
+
+    def _close_all():
+        from django.db import connections
+
+        connections.close_all()
+
+    from asgiref.sync import AsyncToSync, SyncToAsync
+
+    from common.decorators import debounce
+    from common.utils import health
+
+    executors = {SyncToAsync.single_thread_executor, *AsyncToSync.loop_thread_executors.values()}
+    executors.update(SyncToAsync.context_to_thread_executor.values())
+    executors.add(health._probe_pool)  # 健康探测线程池：probe_db 借出的连接由本步归还
+    if debounce._executor is not None:
+        executors.add(debounce._executor)
+    for executor in executors:
+        try:
+            executor.submit(_close_all).result(timeout=5)
+        except Exception:  # noqa: BLE001 清理失败不阻断测试收尾
+            continue
+
+
+def _terminate_other_sessions(db_name):
+    """终止测试库上的其它会话（借出连接不随池关闭释放，最后兜底）。"""
+    import psycopg
+    from django.conf import settings as dj_settings
+
+    db = dj_settings.DATABASES["default"]
+    try:
+        with (
+            psycopg.connect(
+                host=db["HOST"],
+                port=db["PORT"],
+                dbname="postgres",
+                user=db["USER"],
+                password=db["PASSWORD"],
+                connect_timeout=5,
+                autocommit=True,
+            ) as conn,
+            conn.cursor() as cursor,
+        ):
+            cursor.execute(
+                "select pg_terminate_backend(pid) from pg_stat_activity where datname = %s and pid <> pg_backend_pid()",
+                [db_name],
+            )
+    except Exception:  # noqa: BLE001 兜底清理失败不阻断测试收尾
+        pass
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _release_test_db_connections(django_db_setup):
+    """销毁测试库前释放本 worker 借出的 PG 连接（防 DROP 被残留会话挡住）。
+
+    真环境档走 psycopg 连接池，Django 的 ``close_pool()`` 只关闭空闲连接：「已借出」
+    的连接要等持有者归还，而测试进程里的部分持有者不会归还（健康探测 / 防抖等后台
+    线程池、asgiref 线程敏感执行器线程等）——pytest-django 销毁测试库时因此报
+    "database is being accessed by other users"（PytestWarning）。
+
+    这里先归还主线程与已知线程池的连接，再终止本库其余会话兜底（幂等）。依赖
+    ``django_db_setup`` 保证 finalizer 先于其销毁测试库执行。
+    """
+    yield
+    from django.db import connections
+
+    db_name = _worker_test_db_name()
+    for connection in connections.all(initialized_only=True):
+        try:
+            connection.close()
+        except Exception:  # noqa: BLE001 连接可能已不可用
+            continue
+    _release_pool_connections()
+    if db_name:
+        _terminate_other_sessions(db_name)
+
+
 @pytest.fixture(autouse=True, scope="session")
 def _safe_channels_conn_recycle():
     """channels 的 database_sync_to_async 每次执行前后调 close_old_connections()。
