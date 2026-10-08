@@ -11,7 +11,7 @@
 | 开关 | `FILE_STORAGE_BACKEND`：`local`（默认，本地磁盘）/ `s3`（对象存储）/ `mirror`（搬迁窗口双写：本地为主 + 对象存储尽力副本） |
 | 生效方式 | SysConfig 声明式，**运行期热生效**（下一次文件操作即用新后端，无需重启） |
 | 依赖 | `s3` / `mirror` 需可选依赖 `django-storages` + `boto3`（未启用零加载；未安装 / 配置不全自动回退本地并告警） |
-| 密钥 | `FILE_S3_ACCESS_KEY` / `FILE_S3_SECRET_KEY` 经 signer 加密落库（凭据治理注册表，见 `common/core/credentials.py`） |
+| 密钥 | `FILE_S3_ACCESS_KEY` / `FILE_S3_SECRET_KEY` 经 signer 加密落库（凭据治理注册表，见 `packages/xadmin-common/common/core/credentials.py`） |
 | 搬迁 | `manage.py storage_migrate`（幂等可断点续搬 / `--verify` 校验 / `--direction pull` 回迁）；不停服窗口走 `mirror`（见 §三点五） |
 | 直连 | 受鉴权下载端点支持 `?direct=1` 返回**预签名短时效 URL**（仅 `s3` 后端；大文件不经服务端中转，鉴权与审计先于签发） |
 | 观测 | `GET /api/common/api/health` 带 `storage_status` / `storage_time`（**不参与 status 判定**，对象存储抖动不让容器被判不健康） |

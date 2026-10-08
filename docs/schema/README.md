@@ -6,7 +6,7 @@
 | Schema | 契约 | 校验测试 |
 |--------|------|----------|
 | `search-columns.schema.json` / `search-fields.schema.json` | 元数据接口（RePlusPage 渲染契约，T2.3） | `test_metadata_schema.py` |
-| `api-response.schema.json` | 统一响应信封（`common/core/response.py`） | `test_contract_schemas.py` |
+| `api-response.schema.json` | 统一响应信封（`packages/xadmin-common/common/core/response.py`） | `test_contract_schemas.py` |
 | `routes-payload.schema.json` | 动态路由接口完整载荷（路由树 + auths 权限码） | `test_contract_schemas.py` |
 | `ws-frame.schema.json` | WebSocket 消息协议 v1 帧（`message/protocol.py`） | `test_contract_schemas.py` / `test_ws_frame_schema.py` |
 
@@ -30,7 +30,7 @@
   `input_type` 属性 = 封闭核心枚举 ∨ `^api-` 前缀族（分支显式 `type: string`，
   生成 TS 类型收敛为 `string` 开放边界）；`x-fallback-rendered` 自定义关键字
   登记无内置渲染器的回退呈现类型。**单一事实源为服务端
-  `common/core/modelset/input_types.py`（`DECLARED_INPUT_TYPES` 等）**，
+  `packages/xadmin-common/common/core/modelset/input_types.py`（`DECLARED_INPUT_TYPES` 等）**，
   与本目录枚举锁步对账（`test_metadata_schema.py`）；client 侧
   `metadata-vocabulary.spec.ts` 做词表 ⇄ 渲染器注册表双向覆盖对账。
   新增类型的扩展流程见 ADR-083（词表 → Schema → sync:contract → 注册表）。

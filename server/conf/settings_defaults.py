@@ -302,7 +302,7 @@ SETTINGS_CONFIG = {
     "CAPTCHA_NOISE_FUNCTIONS": ("captcha.helpers.noise_arcs", "captcha.helpers.noise_dots"),
     # ------------------------------------------------------------------
     # 运行期系统配置（SysConfig 热更新）的代码默认值唯一源：
-    # common/core/config.py 的 SysConfig property 一律回读这里（CONFIG.<KEY>），
+    # packages/xadmin-common/common/core/config.py 的 SysConfig property 一律回读这里（CONFIG.<KEY>），
     # loadjson/systemconfig.json 的初始值须与本段一致
     # （守护测试 tests/unit/common/test_config_defaults_single_source.py）
     # ------------------------------------------------------------------

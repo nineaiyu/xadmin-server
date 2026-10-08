@@ -92,7 +92,7 @@ class ImportTemplate(DbUuidModel, DbAuditModel):
 
     - 按目标模型（label_lower）隔离，避免跨模型误用；
     - 个人模板（creator 可见）+ 全局共享模板（is_shared，仅超管可建改）两档；
-    - 映射为显式字典，不做模糊/语义推断（见 common/core/import_mapping.py）。
+    - 映射为显式字典，不做模糊/语义推断（见 packages/xadmin-common/common/core/import_mapping.py）。
     """
 
     model = models.CharField(

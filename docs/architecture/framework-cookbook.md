@@ -13,7 +13,7 @@
 ## 〇、三层职责与依赖方向
 
 > 改代码前先定位自己在哪一层：**业务 → 工程 → 内核，禁止反向依赖**。
-> 详细边界规则见 [common/README.md](../../common/README.md)。
+> 详细边界规则见 [packages/xadmin-common/common/README.md](../../packages/xadmin-common/common/README.md)。
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -35,7 +35,7 @@
 
 | 判断题 | 答案 |
 |--------|------|
-| 一个工具类/装饰器想被多个 app 复用 | 放 `common/`（内核），**不得**反过来 import 业务 app |
+| 一个工具类/装饰器想被多个 app 复用 | 放 `packages/xadmin-common/common/`（内核），**不得**反过来 import 业务 app |
 | 跨 app 调用另一个 app 的能力 | 走目标 app 的 `services` 契约层，不直接 import 其 models/views |
 | 业务专属的字段/渲染逻辑 | 留在业务 app 的 serializer（`input_type` 已是开放扩展点） |
 | 工程级装配（新中间件/路由注入） | `server/`；业务可插拔配置走 `config.yml` + `modules.py` |
@@ -54,13 +54,13 @@ demo/serializers/       序列化器（继承 BaseModelSerializer，声明式字
 demo/views.py           视图（继承 BaseModelSet + Mixin；filterset_class 声明搜索）
 demo/urls.py            SimpleRouter 注册
 demo/config.py          URLPATTERNS（自动注入总路由）+ PERMISSION_WHITE_REURL（白名单）
-                        + TASK_ROUTES（celery 队列路由声明，走 common/celery/routing.py 合并）
+                        + TASK_ROUTES（celery 队列路由声明，走 packages/xadmin-common/common/celery/routing.py 合并）
 app 自带 routing.py     WebSocket 路由（urlpatterns，asgi 按 INSTALLED_APPS 自动收集，无需改工程层；参照 system/routing.py）
 config.yml              XADMIN_APPS 注册 app
 菜单注册                 权限码/菜单/模型关联（xadmin-docs example/new-app-menu.md）
 ```
 
-## 二、ViewSet 选型（common/core/modelset/viewsets.py）
+## 二、ViewSet 选型（packages/xadmin-common/common/core/modelset/viewsets.py）
 
 | ViewSet | 组成 | 适用 |
 |---|---|---|
@@ -90,7 +90,7 @@ config.yml              XADMIN_APPS 注册 app
 | UploadFileAction | `upload` / `get_upload_size` | `http.upload()` |
 
 自定义 action 直接用 DRF `@action`，返回 `ApiResponse`；**docstring 必写**（菜单与访问日志的显示名取自它，见 demo/views.py 的 `push` 范例）。
-需要「与父级 list 权限同口径」或「父级兜底」的子 action，改用 `@shared_list_action` / `@parent_fallback_action`（`common/core/permission_meta.py`，声明即登记，勿在权限核心类加后缀特例）。
+需要「与父级 list 权限同口径」或「父级兜底」的子 action，改用 `@shared_list_action` / `@parent_fallback_action`（`packages/xadmin-common/common/core/permission_meta.py`，声明即登记，勿在权限核心类加后缀特例）。
 
 ## 四、常用覆写点（BaseViewSet，modelset/base.py）
 
@@ -165,7 +165,7 @@ config.yml              XADMIN_APPS 注册 app
 互不兜底（**详情只认 `render` / `valueType`，列表只认 `cellRenderer`**），漏写一侧即出现
 空白列 / `[object Object]` 类问题。新增或调整字段类型时逐项核对：
 
-1. **服务端类型判定**：`common/drf/metadata.py::get_field_type` 必须用 `isinstance` 而非
+1. **服务端类型判定**：`packages/xadmin-common/common/drf/metadata.py::get_field_type` 必须用 `isinstance` 而非
    类名精确匹配（子类如 `DictChoiceField` 要命中 `labeled_choice`）；改判定即补
    `tests/unit/system/test_data_dict.py` 同款守护测试；
 2. **契约同步**（若涉及 Schema）：改 [docs/schema](../schema/README.md) → client 仓库
@@ -192,7 +192,7 @@ config.yml              XADMIN_APPS 注册 app
 
 ## 七、功能模块与裁剪（二开起点）
 
-功能按 `core / standard / optional` 三级声明在 `common/core/modules/`，通过 config.yml 裁剪，
+功能按 `core / standard / optional` 三级声明在 `packages/xadmin-common/common/core/modules/`，通过 config.yml 裁剪，
 不改代码即可得到轻量后台（清单、语义红线与路线图见
 [模块化与功能裁剪.md](模块化与功能裁剪.md)）：
 

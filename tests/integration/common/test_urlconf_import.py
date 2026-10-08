@@ -8,7 +8,7 @@
 
 本测试在子进程内复现该路径（asyncio 事件循环中加载 URLconf），断言期间字典解析
 零调用：序列化器基类在事件循环线程内跳过字段收敛，字段绑定与字典解析留给请求线程
-上按当次请求 deepcopy 出来的实例（见 common/core/serializers.py 的说明）。
+上按当次请求 deepcopy 出来的实例（见 packages/xadmin-common/common/core/serializers.py 的说明）。
 """
 
 import os

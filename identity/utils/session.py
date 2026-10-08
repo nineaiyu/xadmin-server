@@ -22,7 +22,7 @@ def force_logout_user(user_pk, operator=None):
     """强制某用户全部会话下线，返回被踢掉的 WS channel 数。
 
     ① 写用户级令牌失效时间戳：iat 早于该值的 access token 一律拒绝
-      （ServerAccessToken.verify 校验，common/core/auth.py）；
+      （ServerAccessToken.verify 校验，packages/xadmin-common/common/core/auth.py）；
     ② 拉黑该用户全部 refresh token，防止被踢后立刻刷新续命；
     ③ WS 推送 logout 消息并断开连接（前端收到即本地登出）；
     ④ 登记的 UserSession 全部置 OFFLINE（在线列表立即消失）。

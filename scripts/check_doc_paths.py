@@ -11,10 +11,10 @@
 1. **组件手册**（``docs/architecture/component-handbook.md``）：
    - **权威源行**（宽松）：含「权威源」的行内反引号标注路径必须可达——"改组件先改哪"的
      锚点，指向不存在的路径 = 文档已失真；
-   - **全文顶层路径**（严格）：以已知仓库顶层目录开头的引用（``common/`` / ``src/`` /
+   - **全文顶层路径**（严格）：以已知仓库顶层目录开头的引用（``packages/xadmin-common/common/`` / ``src/`` /
      ``notifications/`` …，含 ``xadmin-client/`` 跨仓标识）必须可达；
 2. **活跃开发文档**（``docs/architecture/*.md`` / ``docs/guide/*.md`` / ``docs/*.md`` 根级，
-   排除履历性质的 ``docs/metrics.md``）：**代码路径引用**（``common/`` / ``system/`` /
+   排除履历性质的 ``docs/metrics.md``）：**代码路径引用**（``packages/xadmin-common/common/`` / ``system/`` /
    ``server/`` / ``notifications/`` / ``settings/`` / ``message/`` / ``mfa/`` / ``captcha/`` /
    ``demo/`` 前缀）必须可达——文件拆包 / 改名（如 ``modules.py`` → ``modules/``）后
    引用不更新即 CI 失败。
@@ -44,7 +44,7 @@ BRACE_RE = re.compile(r"\{([^{}]+)\}")
 CLIENT_ONLY_PREFIXES = ("src/", "locales/", "e2e/", "contract/")
 # 全文路径校验：以已知仓库顶层目录开头（server 侧）
 SERVER_TOP_PREFIXES = (
-    "common/",
+    "packages/",
     "system/",
     "server/",
     "notifications/",
@@ -69,7 +69,7 @@ ACTIVE_DOC_GLOBS = ("docs/architecture/*.md", "docs/guide/*.md", "docs/*.md")
 EXCLUDE_ACTIVE_DOCS = ("docs/metrics.md",)
 # 活跃文档只校验"代码路径"（窄前缀集；示例性路径多集中于 loadjson / ops / tests 等，不纳入）
 CODE_PREFIXES = (
-    "common/",
+    "packages/",
     "system/",
     "server/",
     "notifications/",
@@ -148,7 +148,7 @@ def _top_level_paths(text: str) -> list:
     """全文提取"以已知仓库顶层目录开头"的反引号路径（示例简写 / 占位符自动豁免）。"""
     paths = []
     for raw in TOKEN_RE.findall(text):
-        # "文件::符号" 写法（如 common/base/utils.py::signer）只校验文件部分
+        # "文件::符号" 写法（如 packages/xadmin-common/common/base/utils.py::signer）只校验文件部分
         token = raw.split("::")[0].strip()
         if not token or " " in token:
             continue

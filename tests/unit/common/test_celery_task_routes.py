@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/celery/routing.py 单元测试（Celery 队列路由声明式收集）。
+"""packages/xadmin-common/common/celery/routing.py 单元测试（Celery 队列路由声明式收集）。
 
 约定：应用在自身 config.py 声明 ``TASK_ROUTES = {"app.tasks.x": "heavy"}``，
 可调用路由应用声明优先、框架内置兜底，二开无需改 server/settings/libs.py。

@@ -9,7 +9,7 @@ last_active，WS 会话以 channel 存活为准（get_online_info）；强制下
 
 token 侧的会话级失效：登录签发 token 时写入自定义 claim ``sid``（= 会话 pk，
 refresh 轮换/access 派生均自动继承），单会话下线经 SessionTokenRevokedCache
-按 sid 拒绝（common/core/auth.py ServerAccessToken.verify 校验）。
+按 sid 拒绝（packages/xadmin-common/common/core/auth.py ServerAccessToken.verify 校验）。
 """
 
 import uuid

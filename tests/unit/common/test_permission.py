@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/permission.py 菜单/接口权限校验单元测试。"""
+"""packages/xadmin-common/common/core/permission.py 菜单/接口权限校验单元测试。"""
 
 import pytest
 from rest_framework.exceptions import NotAuthenticated, PermissionDenied

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ViewSet 覆写守护：批量删除路径与 perform_destroy 覆写的契约。
 
-框架批量删除有两条路径（common/core/modelset/batch.py）：
+框架批量删除有两条路径（packages/xadmin-common/common/core/modelset/batch.py）：
 - 非逐行分支：filter 后直接 queryset.delete()，**不会调用 perform_destroy**；
 - 逐行分支（软删模型 / 带文件清理的模型）：逐行 self.perform_destroy(instance)。
 

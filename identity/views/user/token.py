@@ -6,7 +6,7 @@
 - 路由挂在 PERMISSION_WHITE_URL（个人安全操作，无需菜单权限，同 MFA 口径），
   但仍需登录（认证链生效）。
 - 调用审计不新增埋点表：OperationLog 记录 PAT 请求时写入凭证标识（auth_type=pat +
-  token_pk，见 common/core/middleware.py），logs/stats 按 token_pk 精确归集；
+  token_pk，见 packages/xadmin-common/common/core/middleware.py），logs/stats 按 token_pk 精确归集；
   升级前（无 token_pk）的历史日志无法归属到具体凭证，不计入并在前端标注。
 """
 

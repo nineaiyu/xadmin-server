@@ -2,7 +2,7 @@
 
 原理： 字段权限是通过 ```djangorestframework``` 中的 ```ModelSerializer``` 来实现。
 
-若要使用字段权限，则需要继承 ```BaseModelSerializer``` 参考 ```common/core/serializers.py```
+若要使用字段权限，则需要继承 ```BaseModelSerializer``` 参考 ```packages/xadmin-common/common/core/serializers.py```
 
 1. 请求先通过```common.core.permission.IsAuthenticated```, 获取该请求的菜单，通过菜单获取绑定的模型，通过模型获取字段
 2. 然后在使用 ```common.core.serializers.BaseModelSerializer``` 的时候，会调用```__init__```方法，在该方法中定义了所需字段

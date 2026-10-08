@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/permission.py 菜单/接口权限 与 数据权限范围（HTTP 级）单元测试。
+"""packages/xadmin-common/common/core/permission.py 菜单/接口权限 与 数据权限范围（HTTP 级）单元测试。
 
 创建菜单权限 + 数据权限规则 + 字段权限，验证普通用户访问受保护接口的行为。
 注意：权限结果按用户以 24h 缓存（MagicCacheData），因此"无权限->403"和

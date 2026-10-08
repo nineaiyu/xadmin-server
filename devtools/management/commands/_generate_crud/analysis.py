@@ -247,7 +247,7 @@ class AnalysisMixin(FieldPlanMixin):
         """可选产物：{app}/modules.py 模块声明（可裁剪模块的脚手架）。
 
         模块 id 已存在时不中断生成，降级为提示（换 --module-id 或去掉 --with-module）；
-        模板与 `generate_module` 同源（common/core/modules/scaffold.py）。
+        模板与 `generate_module` 同源（packages/xadmin-common/common/core/modules/scaffold.py）。
         """
         from common.core.modules import derive_route_prefixes, module_id_conflict, render_modules_source
 
@@ -266,7 +266,7 @@ class AnalysisMixin(FieldPlanMixin):
         # 菜单根 name 取生成的页面菜单名（component）；跳过菜单种子时无从声明，留空
         menus = () if options["skip_menu_seed"] else (ctx["component"],)
         # 路由前缀：app 有 config.py::URLPATTERNS 时留空（运行期按同一事实源推导，
-        # 见 common/core/modules/routes.py）；没有才写显式兜底声明（如内置 app 的
+        # 见 packages/xadmin-common/common/core/modules/routes.py）；没有才写显式兜底声明（如内置 app 的
         # 路由挂在 server/urls.py，无可推导来源）。
         routes = () if derive_route_prefixes(ctx["app_label"]) else (f"^/api/{ctx['app_label']}/",)
         return {

@@ -166,7 +166,7 @@ def decode_data_permission(
 ) -> dict:
     """DataPermission → 可读授权组（含生效模式与总述文案）。
 
-    与 common/core/data_scope.py 组内语义对齐：value.all 在或模式下短路全放行、
+    与 packages/xadmin-common/common/core/data_scope.py 组内语义对齐：value.all 在或模式下短路全放行、
     在且模式下该规则被忽略（代数下即 ALLOW 单位元）。deepcopy 防止解码过程改写 JSONField 内存值。
 
     menu_scoped=True 表示该授权绑定了菜单，只在对应菜单上下文生效（通用列表接口下不生效），

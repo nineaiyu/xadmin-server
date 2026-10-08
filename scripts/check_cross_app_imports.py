@@ -8,14 +8,14 @@ notifications / backends / signal(s) 直接 import——这是契约层收口的
 显式登记在 ALLOWLIST 并注明原因，禁止无台账新增。
 
 框架层方向规则（单缝收敛）：common 消费业务 app 的唯一出口是
-`common/contracts.py`（声明式契约面）——common 内除该文件外，任何模块级
+`packages/xadmin-common/common/contracts.py`（声明式契约面）——common 内除该文件外，任何模块级
 业务 import（含 `*.services` 形态）一律违例；contracts.py 自身仍受
 「仅 `*.services`」+ CONTRACT_SEAMS 登记约束（双向漂移校验）。
 函数级惰性 import 属逃生门，作为观察项打印。
 
 反向依赖规则：common（框架层）禁止 import server（工程层）——
 common 是被所有人依赖的基座，反向依赖破坏分层单向性。
-server 装配产物经 common/injection.py 依赖注入下发，无契约缝可言，
+server 装配产物经 packages/xadmin-common/common/injection.py 依赖注入下发，无契约缝可言，
 模块级与函数级 import 一律违例（不留逃生门）。
 
 用法：python scripts/check_cross_app_imports.py
@@ -75,16 +75,18 @@ ALLOWLIST = {
 
 # ---------------------------------------------------------------------------
 # 方向规则（框架层依赖治理，单缝收敛）：common 是框架层，业务能力
-# 消费唯一出口是 common/contracts.py（声明式契约面：白名单 + Protocol +
-# PEP 562 惰性解析）——common 内其余文件出现任何业务 app 模块级 import
-# （含 `*.services`）即违例。contracts.py 自身只允许经 `<app>.services`
-# 消费，且每条缝在 CONTRACT_SEAMS 登记原因。登记双向校验：出现未登记的缝、
-# 或登记的缝已不存在，均为违例。函数级（缩进）业务 import 仍属官方逃生门，
-# 不阻断，作为观察项打印。
+# 消费唯一出口是 packages/xadmin-common/common/contracts.py（声明式契约面：
+# 白名单 + Protocol + PEP 562 惰性解析）——框架内核内其余文件出现任何业务 app
+# 模块级 import（含 `*.services`）即违例。contracts.py 自身只允许经
+# `<app>.services` 消费，且每条缝在 CONTRACT_SEAMS 登记原因。登记双向校验：
+# 出现未登记的缝、或登记的缝已不存在，均为违例。函数级（缩进）业务 import
+# 仍属官方逃生门，不阻断，作为观察项打印。
 # ---------------------------------------------------------------------------
+# 框架内核：分发名 xadmin-common（工作区成员），源码目录相对仓库根路径
 FRAMEWORK_APP = "common"
+FRAMEWORK_DIR = "packages/xadmin-common/common"
 
-CONTRACTS_MODULE = "common/contracts.py"
+CONTRACTS_MODULE = f"{FRAMEWORK_DIR}/contracts.py"
 
 # contracts.py 的缝以 _CONTRACT_PROVIDERS 白名单声明（PEP 562 惰性解析，文件无
 # 模块级业务 import），漂移校验对照白名单的提供方声明而非 import 语句：
@@ -92,7 +94,7 @@ CONTRACTS_MODULE = "common/contracts.py"
 CONTRACT_PROVIDER_RE = re.compile(r'^\s*"[A-Za-z_]\w*": \("([a-z_]+\.[a-z_]+)",', re.M)
 
 CONTRACT_SEAMS = {
-    "common/contracts.py": {
+    CONTRACTS_MODULE: {
         "notifications.services": "框架层业务消费唯一显式契约出口：消息渠道生产面（5 名字）",
         "identity.services": "框架层业务消费唯一显式契约出口：身份域模型与应用凭证委托（Phase C 四域切分）",
         "audit.services": "框架层业务消费唯一显式契约出口：审计域模型与掩码/影响面委托（Phase C 四域切分）",
@@ -137,7 +139,7 @@ def scan_framework_direction():
     """common（框架层）→ 业务 app 的方向治理：返回 (违例, 观察项)。"""
     violations = []
     observations = {}
-    common_dir = REPO_ROOT / FRAMEWORK_APP
+    common_dir = REPO_ROOT / FRAMEWORK_DIR
     for py in sorted(common_dir.rglob("*.py")):
         if {"migrations", "tests", "__pycache__"} & set(py.parts):
             continue
@@ -187,13 +189,13 @@ def scan_framework_direction():
 
 # ---------------------------------------------------------------------------
 # 反向依赖门禁：common（框架层）→ server（工程层）禁止 import。
-# 例外从无：server 装配产物（CONFIG / VERSION）经 common/injection.py 依赖注入
+# 例外从无：server 装配产物（CONFIG / VERSION）经 packages/xadmin-common/common/injection.py 依赖注入
 # 下发（server/const.py 末尾登记），thread-local 请求持有器与表前缀信号已归位
-# （common/local.py、common/core/db/prefix.py，server/utils.py 留兼容 re-export）。
+# （packages/xadmin-common/common/local.py、packages/xadmin-common/common/core/db/prefix.py，server/utils.py 留兼容 re-export）。
 # 函数级惰性 import 同样违例——工程层不是业务 app，不存在「运行期才可判定」的
 # 循环依赖，逃生门只会让反向依赖回潮。
 # ---------------------------------------------------------------------------
-REVERSE_DEP_FRAMEWORK = "common"
+REVERSE_DEP_FRAMEWORK = FRAMEWORK_DIR
 REVERSE_DEP_PROJECT = "server"
 
 # 语句级锚定（含函数级缩进）：from server[.x] import / import server[.x]
@@ -219,7 +221,7 @@ def scan_common_to_server() -> list[tuple[str, int, str]]:
                     rel,
                     line,
                     f"框架层禁止 import 工程层 {m.group(0).strip()}——"
-                    "server 产物经 common/injection.py 注入或归位模块读取",
+                    "server 产物经 packages/xadmin-common/common/injection.py 注入或归位模块读取",
                 )
             )
     return violations
@@ -264,9 +266,9 @@ def main() -> int:
         print(
             "\n跨 app 引用请改走 <app>.services 契约层；确需保留的，"
             "在 scripts/check_cross_app_imports.py 的 ALLOWLIST 登记原因。\n"
-            "common（框架层）→ 业务 app 的消费统一经 common/contracts.py 契约面："
+            "common（框架层）→ 业务 app 的消费统一经 packages/xadmin-common/common/contracts.py 契约面："
             "在 _CONTRACT_PROVIDERS 声明名字，并在 CONTRACT_SEAMS 登记提供方缝。\n"
-            "common（框架层）→ server（工程层）禁止 import：装配产物经 common/injection.py "
+            "common（框架层）→ server（工程层）禁止 import：装配产物经 packages/xadmin-common/common/injection.py "
             "依赖注入，请求持有器/表前缀信号用归位模块（common.local、common.core.db）。"
         )
         return 1

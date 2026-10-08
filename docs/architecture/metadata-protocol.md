@@ -14,7 +14,7 @@
 | `GET /api/<app>/<model>/choices` | `choices_models` 各模型的 choice 字段聚合 | 下拉数据源兜底 |
 | 列表接口 `?with_meta=1` | `ListAction.inline_metadata` 把前两者内联进列表响应 | 页面首开 3 请求合 1 |
 
-- 实现位置：`common/core/modelset/metadata.py`（Action）+ `common/drf/metadata.py::SimpleMetadataWithFilters`
+- 实现位置：`packages/xadmin-common/common/core/modelset/metadata.py`（Action）+ `packages/xadmin-common/common/drf/metadata.py::SimpleMetadataWithFilters`
   （字段信息装配，经 DRF `DEFAULT_METADATA_CLASS` 挂载）；
 - **序列化器是唯一真源**：改字段先改序列化器，前端零改动（渲染器按 `input_type` 分派）。
 
@@ -42,7 +42,7 @@ search-fields 条目为子集：`key/label/help_text/input_type/choices/default`
 1. 字段显式携带 `input_type`（`input_wrapper(某字段)(input_type=...)` 包装，或内核字段类自带）——最高优先；
 2. 前后缀修饰（`get_format_intput_type`）：`input_type_prefix` / `input_type_suffix`，
    如上传关联自动加 `_file` 后缀；
-3. 类型判定 `common/drf/metadata.py::get_field_type`：
+3. 类型判定 `packages/xadmin-common/common/drf/metadata.py::get_field_type`：
    - **必须 isinstance**：`LabeledMultipleChoiceField → labeled_multiple_choice`、
      `LabeledChoiceField → labeled_choice`（含子类 `DictChoiceField`）、
      `BasePrimaryKeyRelatedField → object_related_field`、`ManyRelated → m2m_related_field`；
@@ -85,7 +85,7 @@ search-fields 条目为子集：`key/label/help_text/input_type/choices/default`
 从服务端声明一个新 `input_type` 到前端四通道可用，按序核对（详见
 [framework-cookbook.md](framework-cookbook.md) §六「新增 input_type 检查清单」）：
 
-1. **服务端判定**：`common/drf/metadata.py::get_field_type` 用 `isinstance` 分支产出该 `input_type`
+1. **服务端判定**：`packages/xadmin-common/common/drf/metadata.py::get_field_type` 用 `isinstance` 分支产出该 `input_type`
    （或字段类自带），并补 `tests/unit/system/test_data_dict.py` 同款守护；
 2. **契约同步**（若涉及响应结构）：改 `docs/schema/` → `pnpm sync:contract` 镜像并重新生成
    `src/api/types/*.d.ts`；
@@ -104,7 +104,7 @@ search-fields 条目为子集：`key/label/help_text/input_type/choices/default`
    **不出现**在 search-columns 元数据中（列/表单/搜索同源消失）。元数据不是独立裁剪面，
    不存在"元数据有、数据没有"的二次授权缝隙；
 2. **API 权限同口径**：`search-columns` / `search-fields` / `suggestions` 的权限点匹配
-   剥掉尾缀后与 `list` 一致（`common/core/permission.py::_resolve_menu_pk`）——
+   剥掉尾缀后与 `list` 一致（`packages/xadmin-common/common/core/permission.py::_resolve_menu_pk`）——
    能进列表就能拿元数据，反之列表权限未授权时元数据同样 403；
 3. **值级脱敏在上游**：脱敏（数据掩码）作用于序列化输出（`to_representation`），豁免口径与
    `get_allow_fields` 一致（超管 / 显式豁免 / 原文通道）；元数据只描述形态，不携带明文；

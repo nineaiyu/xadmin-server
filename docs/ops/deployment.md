@@ -9,13 +9,18 @@
 ### 1.1 环境准备
 
 ```shell
-# 依赖安装（推荐 uv：以 uv.lock 为唯一安装依据，秒级重建）
+# 依赖安装（推荐 uv：以 uv.lock 为唯一安装依据，秒级重建；框架内核 xadmin-common
+# 为工作区成员，随之以 editable 安装，改 common/ 源码即时生效）
 uv sync --all-groups
 
 # 无 uv 环境（pip 路径，安装 uv export 产物；用途见 README「依赖管理」）
 python3.14 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
+# pip 产物不含内核（路径依赖，导出时以 --no-emit-workspace 剔除），需再装一次、
+# 或把内核源码目录挂到 PYTHONPATH：
+pip install --no-deps -e ./packages/xadmin-common
+# 等价写法：export PYTHONPATH="$PWD/packages/xadmin-common${PYTHONPATH:+:$PYTHONPATH}"
 ```
 
 依赖服务：PostgreSQL（或 SQLite）+ Redis。本地快速起 Redis：
@@ -438,6 +443,16 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 > [scale-out.md](scale-out.md)；**要求零停机**（发布期间不断连）改用
 > [blue-green.md](blue-green.md) 的叠加滚动发布（前置：`stop_grace_period` + gunicorn `--graceful-timeout` + nginx `resolve`）。
 
+> **2026-10-08（框架内核独立分发包）升级注意**：源码目录 `common/` 迁至
+> `packages/xadmin-common/common/`（uv 工作区成员，分发名 `xadmin-common`；导入名仍是
+> `common`，接口/迁移/命令/权限点均无变化）。升级动作按部署形态二选一：① **源码挂载形态**
+> ——`entrypoint.sh` 已注入 `PYTHONPATH=/data/xadmin-server/packages/xadmin-common`，
+> **重启容器即生效，无需重建镜像**（镜像 ENV `Dockerfile` / `Dockerfile-base` /
+> `Dockerfile-dev` 同口径已同步）；② **镜像形态**——需重建应用镜像（旧的烘焙镜像里没有
+> 新目录）。本地 uv 开发 `uv sync --all-groups` 后由 editable 安装提供 `common`；
+> pip 路径需补 `pip install --no-deps -e ./packages/xadmin-common`（见 §1.1）。
+> 细节与 settings 契约表见 [architecture/kernel-package.md](../architecture/kernel-package.md)。
+
 > 涉及新增菜单/权限点或 gettext 文案的版本，升级后执行：
 > `python manage.py post_upgrade`（= 内置种子 `load_init_json` + `compilemessages` + 配置缓存失效 + 权限点缺口扫描，
 > 幂等可重跑；**安装器升级流程已自动调用**），随后重启容器——权限点未灌库时非超管角色不会出现新入口（接口 403），
@@ -462,7 +477,7 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 > 配置项 `SECURITY_REGISTER_BY_BASIC_ENABLED` 同步移除（存量库中的同名设置行不再被读取，
 > 可留可删）。发送端仍接受手工缓存的 username 类 verify_token（兼容存量令牌，
 > 登录分支照旧要求密码校验）。前端需重新构建部署；
-> ④ **OAuth / OIDC 出站链路并入统一守卫**（`common/utils/outbound.py`，与 Webhook /
+> ④ **OAuth / OIDC 出站链路并入统一守卫**（`packages/xadmin-common/common/utils/outbound.py`，与 Webhook /
 > AI base_url / MCP 同源）：provider 地址在写入侧改为 https 强制 + 地址归属校验
 > （IP 字面量拒绝私网 / link-local / 元数据地址，`http://127.0.0.1` 与
 > `http://localhost` 例外供本地联调），发送侧改为固定解析连接（私网 / 环回 /
@@ -662,5 +677,5 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self'; worke
 | **用户级配置** | `WEB_SITE_CONFIG` / `PUSH_MESSAGE_NOTICE` / `PUSH_CHAT_MESSAGE` | 用户可在「账户设置」页覆盖个人值，即时生效 |
 
 > 完整运行期参数清单与语义见 `loadjson/systemconfig.json`（种子初值）与
-> [common/README.md](../../common/README.md)；用户级覆盖的读取链路见
+> [packages/xadmin-common/common/README.md](../../packages/xadmin-common/common/README.md)；用户级覆盖的读取链路见
 > [architecture/cache.md](../architecture/cache.md)。

@@ -106,7 +106,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
 
         填报链路的轻量数据源：关键字必填（不做通讯录全量枚举）；编辑既有提交时
         可带 pks 批量回显已选用户（同样字段收敛，仅主键命中）。
-        权限与对应 list 权限同口径（见 common/core/permission.py 的 user-options
+        权限与对应 list 权限同口径（见 packages/xadmin-common/common/core/permission.py 的 user-options
         特例），存量角色无需为控件单独授权。
         """
         data = search_user_options(

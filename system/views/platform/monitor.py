@@ -6,7 +6,7 @@
 （与 WS 实时推送 ws_monitor.py 共用，保证两路口径一致）：
 - 主机指标：common.Monitor 心跳表（startup 线程 30s 落盘，psutil 采集）+ 实时快照；
 - 指标历史：monitor_history（时间范围/聚合粒度/多指标/环比，按需直查不缓存）；
-- 服务健康：common/utils/health.py（与 healthz 同一套探测，口径一致）；
+- 服务健康：packages/xadmin-common/common/utils/health.py（与 healthz 同一套探测，口径一致）；
 - 告警：monitor_events（MonitorAlert 记录）+ 阈值读写（settings.Setting 同源）；
 - 事件：monitor_events（异常请求 / 任务失败明细）；
 - 导出：monitor_export（CSV / Excel）。

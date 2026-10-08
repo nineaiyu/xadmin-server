@@ -35,8 +35,10 @@ fix(common): 操作日志中间件动词方法无兜底导致 500（TD-24）
 ## 3. 开发环境
 
 ```shell
-uv sync --all-groups                # 依赖以 uv.lock 为准（无 uv 时：python3.13 -m venv .venv
-                                    #   && pip install -r requirements.txt -r requirements-dev.txt）
+uv sync --all-groups                # 依赖以 uv.lock 为准（框架内核 xadmin-common 为工作区成员，随即可编辑安装；
+                                    # 无 uv 时：python3.14 -m venv .venv
+                                    #   && pip install -r requirements.txt -r requirements-dev.txt
+                                    #   && pip install --no-deps -e ./packages/xadmin-common）
 cp config_example.yml config.yml    # 本地开发建议 DB_ENGINE: sqlite3
 uv run python manage.py migrate && uv run python ops/init_data.py
 uv run python manage.py start all

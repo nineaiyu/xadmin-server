@@ -57,7 +57,7 @@
    `python manage.py services gunicorn`），并记录 worker 数/机器规格——
    这些是基线的环境元数据，换环境后基线不可比。
    启动参数固定为 `--keep-alive 5 --graceful-timeout 30`（生产同源：
-   `common/management/commands/services/services/gunicorn.py`；CI 见 `.github/workflows/perf.yml`）——
+   `packages/xadmin-common/common/management/commands/services/services/gunicorn.py`；CI 见 `.github/workflows/perf.yml`）——
    keep-alive 直接影响连接复用率与 P95，改参后必须重测基线。
 
 ### 3.1 可复现压测环境（2026-09-06 首测实际采用）
@@ -176,7 +176,7 @@ metrics.md 的「五、性能基线」占位表逐行回填，形如：
 
 - 以 metrics.md 登记的基线为参照：某接口 P95 劣化 **>20%** 且 RPS 同向下降 → 需开 silk 归因，
   并在 PR 描述中给出 SQL/火焰证据；
-- 涉及 `common/core/`（modelset/filter/serializers/permission）、元数据接口、分页的改动，
+- 涉及 `packages/xadmin-common/common/core/`（modelset/filter/serializers/permission）、元数据接口、分页的改动，
   PR 自查项加「是否跑过基线回归」；
 - 每阶段结束（双周回顾）若架构有实质变更（如 T2.1 拆分、T3.2 内联），重新测定并覆盖登记，
   旧基线在回填记录中留痕。
@@ -262,7 +262,7 @@ cd ../..
   故只跳过 RPS、P95 容差放宽到 3 倍，用于拦截**数量级**劣化并留档趋势报告，
   **不代表精确回归结论**。首轮 CI 跑完后按实测调整 `tolerance` 入参并在此登记。
 
-**快照刷新纪律**：改动 `common/core/`、元数据接口、索引、连接池、缓存策略后，
+**快照刷新纪律**：改动 `packages/xadmin-common/common/core/`、元数据接口、索引、连接池、缓存策略后，
 在固定环境重跑三轮并 `--update` 刷新快照，同时在 metrics.md §三 回填记录中写明环境与方法。
 
 > **P1-37 复测已完成（2026-09-30）**：固定环境（容器栈 + 专用 PG/Redis + 1000 种子用户）
@@ -285,9 +285,9 @@ cd ../..
 
 | 优化 | 机制 | 入口 | 实测 |
 |------|------|------|------|
-| 纯读请求免 `ATOMIC_REQUESTS` | GET/HEAD 且 action ∈ 读动作白名单（list/retrieve/search-*/choices/suggestions）的请求不套事务，省 BEGIN/COMMIT 两次往返；自定义 GET action（导出等有副作用）与写请求语义不变；`ATOMIC_REQUESTS_SKIP_READ_ACTIONS=false` 可回退 | `common/core/atomic_read.py` + `server/{asgi,wsgi}.py` | 03-list 单 VU p50 18.3→16.6ms；PG 事务计数验证豁免生效（20 请求事务数 ~1→~2.4/请求） |
+| 纯读请求免 `ATOMIC_REQUESTS` | GET/HEAD 且 action ∈ 读动作白名单（list/retrieve/search-*/choices/suggestions）的请求不套事务，省 BEGIN/COMMIT 两次往返；自定义 GET action（导出等有副作用）与写请求语义不变；`ATOMIC_REQUESTS_SKIP_READ_ACTIONS=false` 可回退 | `packages/xadmin-common/common/core/atomic_read.py` + `server/{asgi,wsgi}.py` | 03-list 单 VU p50 18.3→16.6ms；PG 事务计数验证豁免生效（20 请求事务数 ~1→~2.4/请求） |
 | 在线 channel 明细 5s 快照 | 用户列表「在线数」/登录日志「在线态」改读与在线页同源的 5s 快照（全量一次构建、按请求 pk 取子集）；强制下线等动作走 `use_snapshot=False` 实时口径 | `message/utils.py`（`ONLINE_LAYERS_CACHE_KEY`） | 列表请求（30 在线用户）进程内 A/B 16.68→14.27ms（−14.5%），在线数正确 |
-| 元数据载荷缓存单飞 | 缓存窗口到期瞬间的并发未命中只让一个请求回源重建（其余在锁上排队、拿到锁后二次检查复用首次结果）；等锁超时（`LockError`）降级为直接重建；`builder()` 返回 None 视为构建失败不回写缓存 | `common/core/modelset/metadata_cache.py::cached_payload`（`SearchFieldsAction` / `SearchColumnsAction` 接入） | 归因依据：fields 变体 p50 18.6ms 与 P95 106.7ms 的巨大落差 + 重尾集中于 5 分钟窗口切换点；修复后同一窗口的重复重建收敛为 1 次（守护测试断言 builder 调用数），k6 复测待固定环境窗口 |
+| 元数据载荷缓存单飞 | 缓存窗口到期瞬间的并发未命中只让一个请求回源重建（其余在锁上排队、拿到锁后二次检查复用首次结果）；等锁超时（`LockError`）降级为直接重建；`builder()` 返回 None 视为构建失败不回写缓存 | `packages/xadmin-common/common/core/modelset/metadata_cache.py::cached_payload`（`SearchFieldsAction` / `SearchColumnsAction` 接入） | 归因依据：fields 变体 p50 18.6ms 与 P95 106.7ms 的巨大落差 + 重尾集中于 5 分钟窗口切换点；修复后同一窗口的重复重建收敛为 1 次（守护测试断言 builder 调用数），k6 复测待固定环境窗口 |
 
 合计量测（1 VU 服务时间口径）：**20.7 → 16.6ms（−19.8%）**；20 VU 的 P95 在本机噪声下无显著差异
 （排队/CPU 竞争主导），不据此宣称收益。剩余成本结构：6 次 DB 往返（本机 OrbStack 链路每次约 1.2ms；

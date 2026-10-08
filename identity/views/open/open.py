@@ -6,7 +6,7 @@
 - 应用不携带权限：换发出的凭证以 owner（creator）身份走既有 PAT 认证链
   （`Authorization: Pat <token>`），三层权限/数据权限/审计天然生效；
 - 换发 = **轮换**：明文不可回读，故每次换发都失效旧凭证再发新凭证（避免「以为复用、其实是旧密文」）；
-- 应用停用/过期、按应用限流在 PAT 认证类内即时校验（common/core/auth.py）；
+- 应用停用/过期、按应用限流在 PAT 认证类内即时校验（packages/xadmin-common/common/core/auth.py）；
 - 回调测试复用 webhook 的 HMAC-SHA256 时间戳签名口径（task/utils/webhook.py）。
 """
 

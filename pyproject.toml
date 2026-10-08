@@ -1,7 +1,8 @@
-# xadmin-server 依赖事实源（pyproject + uv）
+# xadmin-server 依赖事实源（pyproject + uv 工作区）
 #
 # 单一事实源约定：
-#   - 运行依赖写在本文件 [project].dependencies；
+#   - 运行依赖写在本文件 [project].dependencies（框架内核 xadmin-common 为工作区成员，
+#     见 packages/xadmin-common/，其自身依赖声明在该成员 pyproject 中）；
 #   - 开发 / 测试依赖写在 [dependency-groups].dev；
 #   - requirements.txt / requirements-dev.txt 是 `uv export` 的导出产物，
 #     由 tests/unit/test_dependency_manifest.py 守护三方一致（pyproject ↔ 产物 ↔ uv.lock），
@@ -10,8 +11,10 @@
 #
 # 导出命令（uv >= 0.12）：
 #   uv lock
-#   uv export --no-hashes --no-emit-project --no-group dev --no-annotate -o requirements.txt
-#   uv export --no-hashes --no-emit-project --only-group dev --no-annotate -o requirements-dev.txt
+#   uv export --no-hashes --no-emit-project --no-emit-workspace --no-group dev --no-annotate -o requirements.txt
+#   uv export --no-hashes --no-emit-project --no-emit-workspace --only-group dev --no-annotate -o requirements-dev.txt
+#     # --no-emit-workspace：工作区成员（xadmin-common）以路径形态存在，导出的
+#     # requirements 只服务 pip 安装（容器/离线/安全扫描），路径依赖无法 pip 安装故剔除
 #
 # 安装路径（版本依据一律是 uv.lock）：
 #   uv sync --all-groups                       # 本地开发（含 dev 组）
@@ -31,6 +34,8 @@ version = "0.0.0"
 description = "xadmin server（依赖管理用途；发布版本见 server/const.py）"
 requires-python = ">=3.14"
 dependencies = [
+    # 框架内核（工作区成员，editable 安装；源码在 packages/xadmin-common/）
+    "xadmin-common",
     "django==6.0.8",
     "djangorestframework==3.18.1",
     "django-cors-headers==4.9.0",
@@ -137,7 +142,7 @@ dev = [
 #     drf-spectacular 的 build_basic_type 可能返回 None / 运行期替换第三方方法）；
 #   - CI 在 lint.yml 独立 job 跑 `uv run --no-sync mypy`，配置即口径。
 python_version = "3.14"
-files = ["ai", "approval", "captcha", "common", "dataset", "demo", "message", "mfa", "notifications", "server", "settings", "system", "ops", "integrations", "devtools"]
+files = ["ai", "approval", "captcha", "packages/xadmin-common/common", "dataset", "demo", "message", "mfa", "notifications", "server", "settings", "system", "ops", "integrations", "devtools"]
 exclude = ["migrations/"]
 follow_imports = "silent"
 ignore_missing_imports = true
@@ -147,8 +152,17 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 
 [tool.uv]
-# 本仓库只借助 uv 做依赖管理与锁文件，不将服务端作为可分发包构建
+# 服务端本体只借助 uv 做依赖管理与锁文件，不作为可分发包构建；
+# 框架内核（xadmin-common）是工作区成员，自身可 build（见 packages/xadmin-common/）
 package = false
 # 工具链版本下界（CI 的 astral-sh/setup-uv 依此选择版本；Dockerfile-base/Dockerfile-dev
 # 的 ARG UV_VERSION 与之对齐，容器构建保持一致口径）
 required-version = ">=0.12.5"
+
+[tool.uv.workspace]
+# 工作区成员：框架内核独立分发包（源码在 packages/xadmin-common/common/）
+members = ["packages/*"]
+
+[tool.uv.sources]
+# 根项目消费内核：工作区成员 + editable（改 common/ 源码即时生效，无需重装）
+xadmin-common = { workspace = true, editable = true }

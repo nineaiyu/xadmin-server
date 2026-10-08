@@ -6,7 +6,7 @@ xadmin 作为 MCP 客户端外接第三方 MCP 服务器（Streamable HTTP）：
 
 - 工具清单经「同步」拉取并快照展示（``tools_snapshot``，含名称/描述/参数 schema 摘要）；
 - 调用必须命中显式勾选的工具白名单（``allowed_tools`` 为空 = 全部禁止，fail-closed）；
-- 出站地址与 Webhook 共用同一守卫（``common/utils/outbound.py``）：https 强制
+- 出站地址与 Webhook 共用同一守卫（``packages/xadmin-common/common/utils/outbound.py``）：https 强制
   （loopback http 仅联调例外），内网目标须经 ``OUTBOUND_ALLOWED_HOSTS`` 白名单登记；
   实际请求走固定解析连接（``pinned_request``，消除 DNS rebinding）；
 - 鉴权令牌值级加密落库（signer），回显只给 ``auth_token_set`` 布尔。

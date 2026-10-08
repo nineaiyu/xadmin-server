@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/utils/media.py：媒体文件响应（鉴权、目录拒绝、404、304 与文件流）。"""
+"""packages/xadmin-common/common/utils/media.py：媒体文件响应（鉴权、目录拒绝、404、304 与文件流）。"""
 
 import pytest
 from django.http import Http404, HttpResponseNotModified

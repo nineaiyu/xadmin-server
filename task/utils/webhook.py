@@ -9,7 +9,7 @@
   timestamp 参与签名防重放（接收方建议 5 分钟窗口校验）；
 - URL 在写入侧校验（https 强制，loopback http 例外供联调）并做出站地址归属校验
   （SSRF 防护：私网/环回/link-local 拒绝，`OUTBOUND_ALLOWED_HOSTS` 白名单可放行）；
-- 投递侧固定解析结果连接（`common/utils/outbound.py::pinned_request`），
+- 投递侧固定解析结果连接（`packages/xadmin-common/common/utils/outbound.py::pinned_request`），
   在发送前再次校验，消除 DNS rebinding 窗口。
 """
 

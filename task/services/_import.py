@@ -118,7 +118,7 @@ def run_async_import(record_id, view_path, user_pk):
         view_cls = import_string(view_path)
         view = view_cls()
         # 显式请求上下文（不再重放 WSGIRequest）：五个契约集中在 task_request 装配点，
-        # 契约清单与守护测试见 common/core/task_request.py
+        # 契约清单与守护测试见 packages/xadmin-common/common/core/task_request.py
         request = build_task_request(method="POST", path=record.path or "/", user=user)
         drf_request = bind_view_task_context(view, request, action="import_data")
         # 契约 5：thread-local 请求（creator 信号赋值 + 操作审计 request_uuid），出口处清理

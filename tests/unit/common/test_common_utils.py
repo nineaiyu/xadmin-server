@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/utils/common.py：系统信息采集与 HTML 转 Markdown。"""
+"""packages/xadmin-common/common/utils/common.py：系统信息采集与 HTML 转 Markdown。"""
 
 import socket
 

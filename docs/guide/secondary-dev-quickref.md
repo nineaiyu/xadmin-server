@@ -25,7 +25,7 @@
 - 注册链：`config.yml` 的 `XADMIN_APPS` → `CONFIG`（`server/conf/`，缺省空清单见
   `server/conf/defaults.py`）→ `server/settings/base.py` → `server/settings/apps.py`
   的 `build_installed_apps` 装进 `INSTALLED_APPS`；
-- 路由注入：`server/urls.py` 调 `common/core/utils.py` 的 `auto_register_app_url`，
+- 路由注入：`server/urls.py` 调 `packages/xadmin-common/common/core/utils.py` 的 `auto_register_app_url`，
   收集各 app 自带 `config.py::URLPATTERNS`（缺 config.py 时打告警不崩溃，支持
   「先注册、后生成」顺序）；WS 路由放 app 自带 `routing.py` 自动收集；
 - 最短路径：`generate_crud --register-app` 自动写入 `XADMIN_APPS`（幂等）；

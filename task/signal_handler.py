@@ -25,7 +25,7 @@ def record_periodic_task_owner_handler(sender, instance, created, **kwargs):
     """PeriodicTask 新建时兜底落配置者归属（side 表 PeriodicTaskOwner）。
 
     周期任务的创建入口分散：任务管理页创建/克隆（task 域视图）、启动期系统
-    注册（common/celery/utils.py，受框架层依赖方向约束不宜反向 import task）、
+    注册（packages/xadmin-common/common/celery/utils.py，受框架层依赖方向约束不宜反向 import task）、
     种子命令与 Admin 等——显式写入难以收敛且新入口易漏，统一在 save 信号兜底：
 
     - 仅新建（created=True）落行；更新路径（含 beat 启停簿记）不落行，归属

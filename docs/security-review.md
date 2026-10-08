@@ -15,15 +15,15 @@
 | 项      | 内容                                                                                                                                                                                                                                                                           |
 |--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 风险     | 历史版本 `CELERY_FLOWER_AUTH` 默认值硬编码弱口令（`flower:flower123.` / `flower:flower` 双兜底），部署方不改即带弱口令暴露监控面板                                                                                                                                                                              |
-| 处置     | ① `server/conf/` 默认值改为空串；② `common/management/commands/services/hands.py` 移除 `or 'flower:flower'` 兜底；③ `common/management/commands/services/services/flower.py` 启动守卫：未配置认证时仅允许绑定 `127.0.0.1`/`localhost`，绑定其他地址直接 `sys.exit(11)` 拒绝启动，未配置认证时不再向 flower 传空的 `--basic-auth=` 参数；④ `config_example.yml` 补充配置示例与说明 |
+| 处置     | ① `server/conf/` 默认值改为空串；② `packages/xadmin-common/common/management/commands/services/hands.py` 移除 `or 'flower:flower'` 兜底；③ `packages/xadmin-common/common/management/commands/services/services/flower.py` 启动守卫：未配置认证时仅允许绑定 `127.0.0.1`/`localhost`，绑定其他地址直接 `sys.exit(11)` 拒绝启动，未配置认证时不再向 flower 传空的 `--basic-auth=` 参数；④ `config_example.yml` 补充配置示例与说明 |
 | 验收     | 全仓 grep 无 `flower123`/`flower:flower` 硬编码残留；生产部署必须显式配置 `CELERY_FLOWER_AUTH` 才能对外暴露监控面板                                                                                                                                                                                       |
-| 面板访问链路 | 管理台经 `common/celery/flower.py` 代理访问，代理侧自动携带所配置的 basic-auth，前端无需感知                                                                                                                                                                                                            |
+| 面板访问链路 | 管理台经 `packages/xadmin-common/common/celery/flower.py` 代理访问，代理侧自动携带所配置的 basic-auth，前端无需感知                                                                                                                                                                                                            |
 
 ### 2. X-Frame-Options ✅ 无需变更
 
 - `XFrameOptionsMiddleware` 已启用（`server/settings/base.py` 中间件链），未显式设置 `X_FRAME_OPTIONS`，取 Django 默认
   `SAMEORIGIN`，管理台页面不可被第三方 iframe 嵌套。
-- 既有豁免均为有意保留：`common/swagger/views.py`（API 文档页）、`common/celery/flower.py`（Flower 代理页）需要以 iframe
+- 既有豁免均为有意保留：`packages/xadmin-common/common/swagger/views.py`（API 文档页）、`packages/xadmin-common/common/celery/flower.py`（Flower 代理页）需要以 iframe
   内嵌进管理台，属功能必需。
 - 结论：默认防线有效，豁免面最小化，记录即可。
 
@@ -35,7 +35,7 @@
 
 ### 4. 上传类型校验 ✅ 白名单已有，记录一个低风险项
 
-- `common/core/modelset/upload.py`：扩展名白名单 `FILE_UPLOAD_TYPE = ["png", "jpeg", "jpg", "gif"]` + 大小上限（
+- `packages/xadmin-common/common/core/modelset/upload.py`：扩展名白名单 `FILE_UPLOAD_TYPE = ["png", "jpeg", "jpg", "gif"]` + 大小上限（
   `FILE_UPLOAD_SIZE`，可按站点配置 `PICTURE_UPLOAD_SIZE`），不符合即拒绝（code=1002/1003）。
 - 低风险记录：未校验文件 magic bytes / 实际内容类型，理论上可在白名单扩展名内伪装内容。上传目录非可执行目录、Django
   静态服务不解析脚本，可利用面很小。
@@ -93,13 +93,13 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 | 项                              | 状态           | 说明                                                              |
 |--------------------------------|--------------|-----------------------------------------------------------------|
 | 越权矩阵测试（水平/垂直越权用例 ≥10 条入 CI）    | ✅ 已完成        | 2026-09-06 交付 19 例（M01-M17）入 `tests/integration/system/test_privilege_escalation_matrix.py`，已常态化入 CI 运行；2026-09 扩容至 M18-M29 |
-| 上传 magic bytes 校验              | ✅ 已实现        | `common/core/modelset/upload.py` 的 `FILE_UPLOAD_MAGIC` 文件头校验已上线（扩展名白名单 + 魔数双重校验） |
+| 上传 magic bytes 校验              | ✅ 已实现        | `packages/xadmin-common/common/core/modelset/upload.py` 的 `FILE_UPLOAD_MAGIC` 文件头校验已上线（扩展名白名单 + 魔数双重校验） |
 | client pnpm audit 高危清零（40 → 0） | ✅ 已清零        | 2026-09-11 四期复核：官方源 `pnpm audit --audit-level high` **0 漏洞**（vue3-ts-jsoneditor 3.4.1 + 构建链刷新） |
 | server pip-audit               | ✅ 已清零        | 2026-09-06，见上节                                                  |
 
 ## 三期自查（2026-09-11）：JWT 专项审计（N5）
 
-范围：签发/校验/吊销全链路（`common/core/auth.py`、`identity/views/auth/`、
+范围：签发/校验/吊销全链路（`packages/xadmin-common/common/core/auth.py`、`identity/views/auth/`、
 `server/settings/libs.py` SIMPLE_JWT 配置、client 侧 token 消费）。
 
 ### 审计结论：11 项达标，3 项已知边界（无需改动，记录触发条件）
@@ -198,7 +198,7 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 
 ### S-1 接口文档登录：开放重定向 + 锁定旁路 —— 已处置
 
-- next 回跳同源校验（`common/swagger/views.py::_safe_next_url`，`url_has_allowed_host_and_scheme`，
+- next 回跳同源校验（`packages/xadmin-common/common/swagger/views.py::_safe_next_url`，`url_has_allowed_host_and_scheme`，
   `ALLOWED_HOSTS` 的通配 `*` 不并入判定）；外部域一律回落默认文档地址。
 - 接入主登录同源锁定：失败累计 / 成功清零共用 `LoginBlockUtil` / `LoginIpBlockUtil` 计数键，
   锁定语义与主链路一致。
@@ -206,7 +206,7 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 
 ### S-2 出站请求 SSRF（Webhook / AI base_url） —— 已处置
 
-- 统一守卫 `common/utils/outbound.py`：协议白名单；link-local（含云元数据）/ 多播 / 保留 /
+- 统一守卫 `packages/xadmin-common/common/utils/outbound.py`：协议白名单；link-local（含云元数据）/ 多播 / 保留 /
   unspecified / 6to4 / Teredo / IPv4-mapped 地址**任何模式拒绝**；私网与环回按场景放行。
 - Webhook：写入侧校验（https 强制 + loopback http 联调例外 + IP 字面量归属），
   发送侧严格解析 + **固定解析结果连接**（`pinned_request`：IP 直连 + Host 头 + TLS SNI 域名），
@@ -290,12 +290,12 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 
 | 包 | 锁定版本 | 最近发布 | 用途（代码位置） | 核实结论 | 处置 / 重开条件 |
 |---|---|---|---|---|---|
-| `unicodecsv` | 0.14.1 | **2015-09-22** | CSV 导入解析/导出渲染（`common/drf/parsers/csv.py`、`common/drf/renders/csv.py`） | **停维**（11 年无发布，作者已弃） | 出现 CVE 或需 Python 3.15 兼容时替换为 stdlib `csv`（手工包 encoding，改动面 2 文件）；无 CVE 前不动 |
+| `unicodecsv` | 0.14.1 | **2015-09-22** | CSV 导入解析/导出渲染（`packages/xadmin-common/common/drf/parsers/csv.py`、`packages/xadmin-common/common/drf/renders/csv.py`） | **停维**（11 年无发布，作者已弃） | 出现 CVE 或需 Python 3.15 兼容时替换为 stdlib `csv`（手工包 encoding，改动面 2 文件）；无 CVE 前不动 |
 | `django-ranged-response` | 0.2.0 | **2017-07-18** | 验证码图片 Range 响应（`captcha/views.py`） | **停维**（9 年无发布） | 跟随 `django-simple-captcha` 生态决策；出现 CVE 时用 Django 原生 `FileResponse` Range 支持替换（改动面 1 文件） |
-| `user-agents` | 2.2.0 | **2020-08-23** | UA 解析（操作日志 system/browser 列，`common/utils/request.py`） | **停维**（6 年无发布；底层 ua-parser 亦低频） | UA 解析仅做日志展示非安全判定；出现解析错乱面扩大或 CVE 时评估换 `ua-parser` 直连/自维护精简正则 |
+| `user-agents` | 2.2.0 | **2020-08-23** | UA 解析（操作日志 system/browser 列，`packages/xadmin-common/common/utils/request.py`） | **停维**（6 年无发布；底层 ua-parser 亦低频） | UA 解析仅做日志展示非安全判定；出现解析错乱面扩大或 CVE 时评估换 `ua-parser` 直连/自维护精简正则 |
 | `ldap3` | 2.9.1 | **2021-07-18** | LDAP 登录/同步客户端（`identity/ldap/client.py`） | **事实停维**（5 年无稳定版；2.10.2 停在 rc；无官方公告，上游 issue 1169 证实停滞） | LDAP 功能默认关闭（F7-3）；启用部署出现 CVE 时补丁后移（六期 S-1 同款流程）或换 `python-ldap`/社区 fork，走独立立项 |
-| `pilkit` | 3.0 | 2023-09-27 | 图片处理器（缩略图 ResizeToFill，`common/fields/image.py`、`identity/models/user.py`） | **低频维护**（3 年无发布，非弃维信号明确） | 随 PIL 生态观察；Pillow 大版本升级门禁若报 pilkit 不兼容，届时评估 |
-| `pyexcel` | 0.7.6 | **2026-06-29** | xlsx 解析（`common/drf/parsers/excel.py`） | **仍活跃**（本轮核实纠正了此前「疑似停维」判定，从清单移除） | 无动作；`pyexcel-xlsx 0.6.1` 适配器较旧，随季度窗口观察 |
+| `pilkit` | 3.0 | 2023-09-27 | 图片处理器（缩略图 ResizeToFill，`packages/xadmin-common/common/fields/image.py`、`identity/models/user.py`） | **低频维护**（3 年无发布，非弃维信号明确） | 随 PIL 生态观察；Pillow 大版本升级门禁若报 pilkit 不兼容，届时评估 |
+| `pyexcel` | 0.7.6 | **2026-06-29** | xlsx 解析（`packages/xadmin-common/common/drf/parsers/excel.py`） | **仍活跃**（本轮核实纠正了此前「疑似停维」判定，从清单移除） | 无动作；`pyexcel-xlsx 0.6.1` 适配器较旧，随季度窗口观察 |
 
 **窗口纪律**：本表每季度依赖窗口（与六期 S-1 监控动作同窗口）复核一次「最近发布」列与各包 CVE 公告，结论追加到 [ops/release-checklist.md](ops/release-checklist.md) 执行记录。
 

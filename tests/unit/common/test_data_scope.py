@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/data_scope.py：规则编译器 + ScopeResult 代数 + 写入校验单测。"""
+"""packages/xadmin-common/common/core/data_scope.py：规则编译器 + ScopeResult 代数 + 写入校验单测。"""
 
 import warnings
 

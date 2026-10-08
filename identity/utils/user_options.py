@@ -6,7 +6,7 @@
 用户主键/用户名/昵称，结果条数封顶——必须带关键字或 pks，不做通讯录全量枚举。
 
 权限：由调用方视图的 action 决定；action 路径以 ``/user-options`` 结尾时，
-权限解析与该视图 list 权限同口径（见 common/core/permission.py，存量角色免重授权）。
+权限解析与该视图 list 权限同口径（见 packages/xadmin-common/common/core/permission.py，存量角色免重授权）。
 """
 
 from django.db.models import Q

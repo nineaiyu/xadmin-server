@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""通用校验工具（common/core/validation.py）单元测试。
+"""通用校验工具（packages/xadmin-common/common/core/validation.py）单元测试。
 
 覆盖「活跃唯一」mixin 的语义（重复拒绝 / 自身排除 / 软删不占用）与必填修剪
 helper；并用源码级断言钉住岗位 / 角色 / 菜单三处序列化器复用同一实现

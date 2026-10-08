@@ -29,10 +29,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SCAN_DIRS = ("common", "system", "settings", "captcha")
+# 框架内核源码在 packages/xadmin-common/common/（工作区成员），扫描路径与业务 app 同口径
+SCAN_DIRS = ("packages/xadmin-common/common", "system", "settings", "captcha")
 IGNORE_PARTS = ("/tests/", "/migrations/")
 
-# MagicCacheData / MagicCacheResponse 自动加的前缀（common/base/magic.py）
+# MagicCacheData / MagicCacheResponse 自动加的前缀（packages/xadmin-common/common/base/magic.py）
 DECORATOR_PREFIXES = ("magic_cache_data_", "magic_cache_response_")
 
 # 手写键的调用形态（DOTALL：容忍多行调用，键与调用同行或紧随其后）

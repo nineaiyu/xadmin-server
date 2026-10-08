@@ -100,7 +100,7 @@ jobs:
 
       - name: Start server (gunicorn + uvicorn worker)
         run: |
-          # 与生产同参（common/management/commands/services/services/gunicorn.py 同源）：
+          # 与生产同参（packages/xadmin-common/common/management/commands/services/services/gunicorn.py 同源）：
           # keep-alive 5 + graceful-timeout 30，改参必须同步压测基线文档并复测
           uv run --no-sync python -m gunicorn server.asgi:application \
             -b 127.0.0.1:8896 -k uvicorn.workers.UvicornWorker \

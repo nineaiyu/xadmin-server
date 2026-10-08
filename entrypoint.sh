@@ -1,4 +1,10 @@
 #!/bin/bash
+
+# 框架内核为工作区成员：源码在 /data/xadmin-server/packages/xadmin-common/，
+# 运行期经 PYTHONPATH 引入（镜像 ENV 同口径）。放在 entrypoint 里可让
+# bind mount 部署「重启容器即生效」，无需重建镜像。
+export PYTHONPATH="/data/xadmin-server/packages/xadmin-common${PYTHONPATH:+:${PYTHONPATH}}"
+
 function cleanup()
 {
     local pids

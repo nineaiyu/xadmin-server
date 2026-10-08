@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""数据字典驱动字段的兼容 re-export（实现已下沉框架层 common/core/fields.py）。
+"""数据字典驱动字段的兼容 re-export（实现已下沉框架层 packages/xadmin-common/common/core/fields.py）。
 
 DictChoiceField 是通用扩展件（任何业务 app 可用），依赖经
 ``common.core.fields.register_dict_items_resolver`` 注入（system app 在

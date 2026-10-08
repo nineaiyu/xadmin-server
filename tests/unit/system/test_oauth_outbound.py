@@ -2,7 +2,7 @@
 """OAuth / OIDC 出站链路统一口径（写入侧校验 + 发送侧固定解析连接）。
 
 背景：provider URL 此前是独立实现的 https 前缀判断，与 Webhook / AI base_url /
-MCP / 开放平台回调的出站守卫（`common/utils/outbound.py`）分叉——私网 / 元数据
+MCP / 开放平台回调的出站守卫（`packages/xadmin-common/common/utils/outbound.py`）分叉——私网 / 元数据
 地址字面量与「校验一次解析、连接又解析一次」的 DNS rebinding 窗口都不在该链路
 覆盖内。本文件锁定统一后的双向口径，以及「注入客户端不触发守卫」的离线桩契约。
 """

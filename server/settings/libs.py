@@ -199,7 +199,7 @@ CELERY_TASK_TIME_LIMIT = 30 * 60
 
 # 队列路由：heavy 队列承载导入/导出/批量操作等重任务（background_task_view_set_job），
 # 避免慢任务阻塞邮件/短信/站内信等轻量任务；worker 由 start celery_heavy 拉起消费 heavy 队列。
-# 采用可调用路由（common/celery/routing.py）：内置表兜底 + 各应用 config.py::TASK_ROUTES
+# 采用可调用路由（packages/xadmin-common/common/celery/routing.py）：内置表兜底 + 各应用 config.py::TASK_ROUTES
 # 声明优先，二开应用改队列归属无需修改本工程层文件
 CELERY_TASK_ROUTES = celery_task_route
 

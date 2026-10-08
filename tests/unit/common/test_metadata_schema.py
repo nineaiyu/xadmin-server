@@ -9,7 +9,7 @@ input_type 词表（稳定公共契约）由本模块两面守护：
 - **载荷闭包**：真实端点下发的 input_type 必须落在声明词表（DECLARED_INPUT_TYPES
   ∪ api-* 前缀族）内——平台侧新增类型未登记即 fail；
 - **Schema 锁步**：两份 Schema 的 input_type 枚举 / api-* pattern 例外 /
-  x-fallback-rendered 回退登记与 ``common/core/modelset/input_types.py`` 真源
+  x-fallback-rendered 回退登记与 ``packages/xadmin-common/common/core/modelset/input_types.py`` 真源
   逐一相等（真源改了 Schema 不同步即 fail，反之亦然）。
 
 跨栈的「词表 ⇄ 前端渲染器注册表」双向覆盖对账在 client 仓库 vitest
@@ -107,7 +107,7 @@ class TestMetadataContract:
         undeclared = {t for _, t in emitted if not t.startswith(INPUT_TYPE_PREFIX_FAMILIES)} - DECLARED_INPUT_TYPES
         assert not undeclared, (
             f"{viewset_cls.__name__} 下发了未登记的 input_type：{sorted(undeclared)}——"
-            "先在 common/core/modelset/input_types.py 词表登记（连同呈现归宿），"
+            "先在 packages/xadmin-common/common/core/modelset/input_types.py 词表登记（连同呈现归宿），"
             "再同步 docs/schema 枚举与前端渲染器（扩展流程）"
         )
 

@@ -109,7 +109,7 @@
    `login_failed` 的日志→Webhook→计数顺序、refresh 轮换的事务边界均与原实现一致。
 3. **import 时机保持**：门面保持零顶层业务导入（`login_success` 仍惰性）；出站
    Webhook 的函数级 import 位置不变（import 链语义不变）。
-4. **跨 app 门禁**：`check_cross_app_imports` 通过（契约缝 5 条不变，`common/contracts.py`
+4. **跨 app 门禁**：`check_cross_app_imports` 通过（契约缝 5 条不变，`packages/xadmin-common/common/contracts.py`
    提供方声明无需变更）；`check_file_length` 通过（新服务模块最大 ~230 行）。
 
 ## 四、测试与回归

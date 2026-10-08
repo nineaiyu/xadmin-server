@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/filter.py 过滤单元测试（以 system.UserViewSet 列表为载体）。
+"""packages/xadmin-common/common/core/filter.py 过滤单元测试（以 system.UserViewSet 列表为载体）。
 
 经 HTTP 走 DjangoFilterBackend + BaseDataPermissionFilter 组合，验证
 ?field=keyword 单字段过滤与多字段组合过滤。注意：superuser 跳过数据权限过滤，

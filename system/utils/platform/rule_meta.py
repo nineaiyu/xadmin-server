@@ -74,7 +74,7 @@ RULE_TYPE_GROUP_TEXTS = {
     "free": "自定义值（需手动填写，谨慎使用）",
 }
 
-# match lookup → 过滤语义（与 common/core/data_scope.py 编译器支持的匹配符对齐）
+# match lookup → 过滤语义（与 packages/xadmin-common/common/core/data_scope.py 编译器支持的匹配符对齐）
 MATCH_TEXTS = {
     "exact": "等于",
     "iexact": "忽略大小写等于",

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/celery/utils.py：任务日志路径与定时任务注册。"""
+"""packages/xadmin-common/common/celery/utils.py：任务日志路径与定时任务注册。"""
 
 from datetime import timedelta
 

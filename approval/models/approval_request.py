@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """敏感操作审批单模型（自 approval.py 拆分，表名 / 行为不变）。
 
-ApprovalRequest（轻量：一次性通行令牌）：拦截点（common/core/approval.py 的
+ApprovalRequest（轻量：一次性通行令牌）：拦截点（packages/xadmin-common/common/core/approval.py 的
 ApprovalRequired 装饰器）在业务执行前建 PENDING 单并通知审批人；审批通过后由
 原始客户端在有效期内携带 approval_id 重发同一请求，消费令牌后放行。不做服务端
 请求重放（multipart/大 body 重放不可靠），含文件的敏感操作不支持审批。

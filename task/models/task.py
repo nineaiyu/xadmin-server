@@ -10,7 +10,7 @@
 - 主键 id 即 celery task_id，投递前预创建，天然与 celery 日志文件/结果对齐；
 - 状态流转 PENDING → RUNNING → SUCCESS/FAILURE/REVOKED，由 celery 信号自动推进
   （task/signal_task_execution.py），业务任务代码零侵入；
-- creator 经全局 pre_save 信号自动记录（common/signal_handlers.py）：手动执行
+- creator 经全局 pre_save 信号自动记录（packages/xadmin-common/common/signal_handlers.py）：手动执行
   为触发者；定时派发无请求上下文，回溯到所属周期任务的配置者
   （PeriodicTaskOwner side 表），未登记归属（系统注册/种子/存量任务）保持
   为空即系统调度。

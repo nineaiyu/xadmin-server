@@ -100,7 +100,7 @@ def django_db_modify_db_settings(django_db_modify_db_settings_parallel_suffix):
     Django postgres 后端的 pool property 是「读即建池」语义，而 `_cursor()` 在
     ensure_connection（pytest-django 的 DB 阻断点）**之前**会先经
     close_if_health_check_failed() 读一次 pool——应用启动后台线程
-    （common/apps.py django_ready → Setting.refresh_all_settings）因此在
+    （packages/xadmin-common/common/apps.py django_ready → Setting.refresh_all_settings）因此在
     pytest 收集阶段就把连接池固化到「尚未创建的测试库名」上；之后
     django_db_setup 换库名，migrate 经旧池取连接全部 PoolTimeout
     （2026-10-01 nightly PG 首轮 3630 errors 的根因，处置登记见
@@ -348,7 +348,7 @@ def module_config(settings):
     """应用一次功能模块裁剪配置（preset / enable / disable）并清空派生缓存。
 
     模块组合变更在生产环境需重启进程；测试中通过 settings + reset_module_state()
-    模拟同等效果（见 common/core/modules/ 包）。
+    模拟同等效果（见 packages/xadmin-common/common/core/modules/ 包）。
     """
     from common.core.modules import clear_override, reset_module_state
 

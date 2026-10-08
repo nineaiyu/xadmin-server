@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/utils.py::collect_app_ws_urls 单元测试（WS 路由自动收集约定）。
+"""packages/xadmin-common/common/core/utils.py::collect_app_ws_urls 单元测试（WS 路由自动收集约定）。
 
 约定：<app>/routing.py 暴露 urlpatterns 即自动接入 asgi，无需改工程层文件。
 """

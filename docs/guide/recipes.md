@@ -45,7 +45,7 @@
 **场景**：一个不围绕单模型的动作型端点（如"一键同步"）。
 
 - 优先复用 ViewSet + `@action(detail=False)`（自动获得权限链、审计、统一响应）；
-- 完全独立的端点（如运维类）参考 `common/api/`（内核只读端点）或 `identity/views/auth/`（免鉴权类）的写法；
+- 完全独立的端点（如运维类）参考 `packages/xadmin-common/common/api/`（内核只读端点）或 `identity/views/auth/`（免鉴权类）的写法；
 - 返回一律 `ApiResponse`；**新增端点后跑 `sync_menu_permissions`** 登记权限点，再跑 `doctor` 复核。
 
 ### R4 加搜索/筛选字段
@@ -121,7 +121,7 @@
    ```
 2. **四通道互不兜底**：搜索 / 表单 / 详情 / 列表分别注册（`registerSearchRenderer` / `registerFormRenderer` / `registerDetailRenderer`）；对象/数组值必须**同时**给详情 `render` 与列表 `cellRenderer`；
 3. 在 `RePlusPage/src/utils/__tests__/renderers-pairing.spec.ts` 的分类清单登记（未登记即测试失败）；表单不可编辑的类型登记 `FORM_EXEMPT_TYPES` 说明理由；
-4. 后端侧：`common/drf/metadata.py::get_field_type` 加 isinstance 分支（若引入新字段类）+ 契约同步（改 Schema 时 `pnpm sync:contract`）；
+4. 后端侧：`packages/xadmin-common/common/drf/metadata.py::get_field_type` 加 isinstance 分支（若引入新字段类）+ 契约同步（改 Schema 时 `pnpm sync:contract`）；
 5. 验证：`pnpm vitest`（配对守护）+ `pnpm typecheck`（strict 全仓单轨）+ 目标页面人工核验。
 
 ### R11 加一个独立页面（非 RePlusPage）

@@ -2,15 +2,19 @@
 # -*- coding:utf-8 -*-
 """依赖清单三方一致性守护（pyproject + uv.lock + requirements 产物）。
 
-事实源：``pyproject.toml``（运行依赖 [project].dependencies / 开发依赖 [dependency-groups].dev）
+事实源：``pyproject.toml``（运行依赖 [project].dependencies / 开发依赖 [dependency-groups].dev；
+        框架内核 ``xadmin-common`` 为工作区成员，其依赖声明在 packages/xadmin-common/pyproject.toml）
 产物：``requirements.txt`` / ``requirements-dev.txt``（``uv export`` 输出，**勿手工编辑**）
 锁：``uv.lock``
 
 守护面（纯解析，不依赖 uv 二进制与网络）：
 1. 产物每行必须是 ``name[extras]==version[ ; marker]`` 形态（防手写非法行）；
 2. 产物包集合与版本必须与 uv.lock 完全一致（含由 lock 计算的依赖闭包：防手加 / 手删 / 手改版本）；
+   工作区成员以路径形态存在、经 ``--no-emit-workspace`` 从产物剔除，比对时排除；
 3. pyproject 的直接依赖必须已导出到对应产物（防改 pyproject 忘导出）；
-4. 本机存在 uv（>= 0.12）时，产物必须与 ``uv export --frozen`` 逐行一致（防手改，离线可跑）。
+4. 本机存在 uv（>= 0.12）时，产物必须与 ``uv export --frozen`` 逐行一致（防手改，离线可跑）；
+5. 工作区骨架（框架内核独立分发包）：成员锁定为 editable 本地源、wheel 只收 common 包本体、
+   内核依赖全部落在运行产物中。
 """
 
 import re
@@ -35,8 +39,13 @@ _REQUIREMENT_RE = re.compile(
 # PEP 503 名称规范化
 _NORMALIZE_RE = re.compile(r"[-_.]+")
 # 导出流程固定的 uv 参数（与 pyproject.toml 头部注释、uv.lock revision 对齐）
-_EXPORT_ARGS = ("--no-hashes", "--no-emit-project", "--no-annotate")
+# --no-emit-workspace：工作区成员（框架内核 xadmin-common）以路径形态存在，
+# 导出的 requirements 只服务 pip 安装（容器 / 离线 / 安全扫描），路径依赖无法 pip 安装故剔除
+_EXPORT_ARGS = ("--no-hashes", "--no-emit-project", "--no-emit-workspace", "--no-annotate")
 _MIN_UV = (0, 12)
+
+# 框架内核工作区成员（分发名 → 项目目录，相对仓库根）
+WORKSPACE_MEMBERS = {"xadmin-common": "packages/xadmin-common"}
 
 
 def normalize(name: str) -> str:
@@ -95,6 +104,20 @@ def dependency_closure(packages: list[dict], roots: list[tuple[str, tuple]]) -> 
     return names
 
 
+def workspace_member_names(packages: list[dict]) -> set[str]:
+    """uv.lock 中工作区成员（本地 source：editable / virtual / directory）的规范化包名。
+
+    成员以路径形态参与解析（如 xadmin-common → packages/xadmin-common），而 requirements
+    产物经 --no-emit-workspace 剔除路径依赖，故闭包/直接依赖比对时须排除。
+    """
+    names = set()
+    for pkg in packages:
+        source = pkg.get("source") or {}
+        if any(key in source for key in ("editable", "virtual", "directory")):
+            names.add(normalize(pkg["name"]))
+    return names
+
+
 def project_package(packages: list[dict]) -> dict:
     for pkg in packages:
         if normalize(pkg.get("name", "")) == "xadmin-server":
@@ -107,9 +130,10 @@ def _roots(entries: list[dict]) -> list[tuple[str, tuple]]:
 
 
 def test_lock_closure_matches_runtime_requirements():
-    """运行时产物 = lock 中运行依赖闭包（防手加 / 手删 / 手改版本）。"""
+    """运行时产物 = lock 中运行依赖闭包（防手加 / 手删 / 手改版本；工作区成员除外）。"""
     packages = load_lock()
     expected = dependency_closure(packages, _roots(project_package(packages).get("dependencies", [])))
+    expected -= workspace_member_names(packages)
     actual = set(parse_requirements(RUNTIME_REQUIREMENTS))
     assert actual == expected, (
         f"requirements.txt 与 uv.lock 运行依赖闭包不一致："
@@ -145,7 +169,7 @@ def test_requirement_versions_match_lock():
 
 
 def test_pyproject_direct_dependencies_are_exported():
-    """pyproject 直接依赖（含 extras）必须已导出到产物且版本一致。"""
+    """pyproject 直接依赖（含 extras）必须已导出到产物且版本一致（工作区成员除外）。"""
     pyproject = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
     runtime = parse_requirements(RUNTIME_REQUIREMENTS)
     dev = parse_requirements(DEV_REQUIREMENTS)
@@ -166,7 +190,11 @@ def test_pyproject_direct_dependencies_are_exported():
         name = normalize(name_matched.group("name"))
         assert name in exported, f"pyproject {label} 依赖 {name} 未出现在导出产物中（请重新导出）"
 
+    workspace_names = {normalize(name) for name in WORKSPACE_MEMBERS}
     for spec in pyproject["project"]["dependencies"]:
+        name_matched = re.match(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)", spec)
+        if name_matched and normalize(name_matched.group("name")) in workspace_names:
+            continue  # 工作区成员以路径形态消费（--no-emit-workspace 剔除），不要求出现在产物中
         _assert_exported(spec, runtime, "运行")
     for spec in pyproject["dependency-groups"]["dev"]:
         _assert_exported(spec, dev, "开发")
@@ -203,6 +231,51 @@ def test_optional_dependencies_resolved_in_lock():
             assert name not in runtime, (
                 f"可选依赖 {extra}: {name} 出现在默认运行产物 requirements.txt 中（可选依赖应保持「默认不装」语义）"
             )
+
+
+# --- 工作区骨架守护（框架内核独立分发包） ---
+
+
+def _member_pyproject(name: str) -> dict:
+    return tomllib.loads((REPO_ROOT / WORKSPACE_MEMBERS[name] / "pyproject.toml").read_text(encoding="utf-8"))
+
+
+def _spec_name(spec: str) -> str:
+    matched = re.match(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)", spec)
+    assert matched, f"依赖声明无法解析：{spec!r}"
+    return normalize(matched.group("name"))
+
+
+def test_workspace_member_is_locked_editable_and_declared():
+    """框架内核以工作区成员锁定：根项目声明 + editable 消费 + 成员元数据齐备。"""
+    pyproject = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+    uv_tool = pyproject["tool"]["uv"]
+    assert uv_tool["workspace"]["members"] == ["packages/*"], "工作区成员声明缺失（[tool.uv.workspace].members）"
+    locked = {normalize(pkg["name"]): pkg for pkg in load_lock()}
+    for name, rel_dir in WORKSPACE_MEMBERS.items():
+        assert name in pyproject["project"]["dependencies"], f"根项目未声明工作区成员依赖 {name}"
+        assert uv_tool["sources"].get(name) == {"workspace": True, "editable": True}, (
+            f"{name} 的 [tool.uv.sources] 须为 workspace + editable（改源码即时生效）"
+        )
+        member = _member_pyproject(name)
+        assert member["project"]["name"] == name, f"成员分发名与目录约定不符：{rel_dir}"
+        assert member["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == ["common"], (
+            "内核 wheel 须只收 common 包本体（含 templates/ 与 migrations/ 数据文件）"
+        )
+        entry = locked.get(normalize(name))
+        assert entry is not None, f"uv.lock 缺少工作区成员 {name}（请执行 uv lock）"
+        assert entry.get("source") == {"editable": rel_dir}, f"{name} 在 lock 中须登记为 editable 本地源"
+        for dep in member["project"]["dependencies"]:
+            assert _spec_name(dep) in locked, f"成员依赖 {dep!r} 未在 uv.lock 中解析"
+
+
+def test_workspace_member_dependencies_covered_by_runtime_requirements():
+    """内核声明的第三方依赖必须全部落在运行产物中（容器 / 离线 pip 安装面不缺口）。"""
+    member = _member_pyproject("xadmin-common")
+    exported = parse_requirements(RUNTIME_REQUIREMENTS)
+    for dep in member["project"]["dependencies"]:
+        name = _spec_name(dep)
+        assert name in exported, f"内核依赖 {dep!r} 未出现在 requirements.txt（容器安装面缺口，请重新导出）"
 
 
 def test_uv_export_reproduces_requirements_files():

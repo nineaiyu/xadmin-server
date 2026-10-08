@@ -19,9 +19,9 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 
 | 层          | 入口                               | 核心模块                         | 粒度           | 载体                                              |
 |------------|----------------------------------|------------------------------|--------------|-------------------------------------------------|
-| ① API/菜单权限 | DRF `DEFAULT_PERMISSION_CLASSES` | `common/core/permission.py`  | URL × Method | `Menu`（menu_type=PERMISSION）× `UserRole`        |
-| ② 数据权限     | `DEFAULT_FILTER_BACKENDS`        | `common/core/filter.py`      | 表的行          | `DataPermission`（规则 JSON）× 角色/用户                |
-| ③ 字段权限     | `BaseModelSerializer.__init__`   | `common/core/serializers.py` | 表的列          | `FieldPermission`（角色 × 菜单）× `ModelLabelField` 树 |
+| ① API/菜单权限 | DRF `DEFAULT_PERMISSION_CLASSES` | `packages/xadmin-common/common/core/permission.py`  | URL × Method | `Menu`（menu_type=PERMISSION）× `UserRole`        |
+| ② 数据权限     | `DEFAULT_FILTER_BACKENDS`        | `packages/xadmin-common/common/core/filter.py`      | 表的行          | `DataPermission`（规则 JSON）× 角色/用户                |
+| ③ 字段权限     | `BaseModelSerializer.__init__`   | `packages/xadmin-common/common/core/serializers.py` | 表的列          | `FieldPermission`（角色 × 菜单）× `ModelLabelField` 树 |
 | ④ 应用级授权    | 权限类 + 过滤后端 + 序列化层三处挂载       | `identity/utils/api_grant.py`  | 模型 × 动作 × 字段 × 行 | `ApiApplication.grant`（开放平台 API 应用，仅 PAT 凭证）   |
 
 前三层共享同一套角色-用户-部门关系（`UserInfo → UserRole → Menu`，部门可挂角色），并共享 `MagicCacheData` 缓存体系与信号失效链路；第四层挂在应用凭证维度，与前三层取交集。
@@ -53,7 +53,7 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 
 - **白名单**：`settings.PERMISSION_WHITE_URL`（正则 → 方法集合），命中则完全跳过权限。
   - 命名提示：`PERMISSION_WHITE_REURL` 是各业务 app 的 `config.py` 导出的扩展变量（形如
-    `PERMISSION_WHITE_REURL = [("^/api/demo/", ["GET", "POST"])]`），由 `common/core/utils.py`
+    `PERMISSION_WHITE_REURL = [("^/api/demo/", ["GET", "POST"])]`），由 `packages/xadmin-common/common/core/utils.py`
     的 `auto_register_app_url` 在注册路由时合并进 `settings.PERMISSION_WHITE_URL`——运行时真正直读的
     只有后者。
 - **fail-closed**：权限缓存或 DB 查询抛异常时返回 403，绝不放行（PERF-01 修复项）。
@@ -167,7 +167,7 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
 
 ## 五、缓存与失效
 
-### 5.1 缓存 key 一览（`common/base/magic.py`）
+### 5.1 缓存 key 一览（`packages/xadmin-common/common/base/magic.py`）
 
 | 数据                  | key 形态                                        | TTL  |
 |---------------------|-----------------------------------------------|------|

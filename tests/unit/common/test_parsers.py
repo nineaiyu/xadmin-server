@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/drf/parsers/base.py：导入文件解析器（行列转换、字段映射、值解析）。"""
+"""packages/xadmin-common/common/drf/parsers/base.py：导入文件解析器（行列转换、字段映射、值解析）。"""
 
 import io
 from csv import reader as csv_reader

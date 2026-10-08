@@ -6,7 +6,7 @@
 不提供整体替换（避免前端漏传即清空）；新增只接受在用用户，移除对不存在的关联静默跳过。
 
 选人候选（``user-options``）为框架级「与父级 list 权限同口径」的子 action
-（common/core/permission_meta.py 的 shared_list 注册表），无需独立权限点。
+（packages/xadmin-common/common/core/permission_meta.py 的 shared_list 注册表），无需独立权限点。
 """
 
 from django.core.exceptions import ValidationError as DjangoValidationError

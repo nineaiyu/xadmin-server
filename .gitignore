@@ -6,8 +6,8 @@ data/*
 tmp/*
 static/*
 upload/*
-common/utils/ip/geoip/GeoLite2-City.mmdb
-common/utils/ip/ipip/ipipfree.ipdb
+packages/xadmin-common/common/utils/ip/geoip/GeoLite2-City.mmdb
+packages/xadmin-common/common/utils/ip/ipip/ipipfree.ipdb
 config.yml
 # 部署凭据载体（compose 强制注入，见 .env.example 与 ops/dev_up.sh）
 .env

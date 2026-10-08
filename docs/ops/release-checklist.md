@@ -36,15 +36,15 @@
 ## 1.（硬门禁）CSP enforce 切换
 
 **背景**：`SysConfig.CSP_MODE` 默认 `report-only`（`server/conf/`，取值 `disabled / report-only / enforce`），
-`CSPModeMiddleware` 按配置改写 django-csp 生成的响应头（`common/core/middleware.py`）；违规上报落 `/api/csp-report`
-（`common/api/csp.py`，按「指令+文档路径」60s 节流打 WARNING）。
+`CSPModeMiddleware` 按配置改写 django-csp 生成的响应头（`packages/xadmin-common/common/core/middleware.py`）；违规上报落 `/api/csp-report`
+（`packages/xadmin-common/common/api/csp.py`，按「指令+文档路径」60s 节流打 WARNING）。
 
 **前置（全部满足才可切换）**：
 
 - [x] `CSP_REPORT_URI` 已指向 `/api/csp-report`（2026-09-16 已配置：SysConfig 运行期键，响应头验证已注入）
 - [x] 生产日志 `data/logs/server.log` 中 `CSP violation:` 命中**连续 7 天清零**
       （统计：`grep -c "CSP violation:" data/logs/server.log`；按 directive 看：`grep -o "directive=[^ ]*" ... | sort | uniq -c`）
-      - **2026-09-16 起该判据已可判**：`common/api/csp.py` 增加合成上报隔离，非真实浏览器来源
+      - **2026-09-16 起该判据已可判**：`packages/xadmin-common/common/api/csp.py` 增加合成上报隔离，非真实浏览器来源
         （缺 `document-uri` / 脚本 UA / 非本站文档域）只记 `CSP synthetic report ignored:`（INFO），
         不再写入 `CSP violation:`。隔离前当日 69 条命中**全部**为合成上报，判据无意义。
       - 排查合成来源仍可查原始字段：`grep "CSP synthetic report ignored" data/logs/server.log`（含 reason/directive/blocked/document）
@@ -72,7 +72,7 @@
 ## 2.（硬门禁）AES v1 解密关闭
 
 **背景**：`SECURITY_AES_V1_DECRYPT_ENABLED` 默认 `True`（`server/conf/`）；关闭后旧 `Salted__` 格式密文
-一律按非法输入返回空串（`common/base/utils.py` 的 `AESCipherV2.decrypt`）。前端 `aes.ts` 默认走 v2。
+一律按非法输入返回空串（`packages/xadmin-common/common/base/utils.py` 的 `AESCipherV2.decrypt`）。前端 `aes.ts` 默认走 v2。
 
 **前置（核对前端版本分布）**：
 
@@ -155,12 +155,12 @@
 1. **项 1（CSP enforce）**：定位到污染源的准确形态——当日 69 条违规与 `tests/unit/common/test_csp.py`
    的 payload 字面量完全一致（`document=https://example.com/#/system/user/index` + `cdn.example.com/x.js`、
    CSP3 信封 `https://x/` + `blob:`、非法 JSON 全空三条），即**探测/测试流量**而非真实浏览器。
-   处置：在 `common/api/csp.py` 加合成上报隔离（缺 `document-uri` / 脚本 UA / 非本站文档域 → INFO 不计违规，
+   处置：在 `packages/xadmin-common/common/api/csp.py` 加合成上报隔离（缺 `document-uri` / 脚本 UA / 非本站文档域 → INFO 不计违规，
    响应头 `X-CSP-Report: ignored`），原始字段仍留痕。`ALLOWED_HOSTS` 为通配或未配置时跳过域名判据（宁可多记）。
    **下一步**：隔离上线后重新起算 7 天窗口，`CSP violation:` 连续 7 天为 0 即可切 enforce。
 2. **项 2（AES v1 关闭）**：**澄清一个此前的口径错误**——v1（`Salted__`）只出现在**前端请求体**加密
    （`AESCipherV2`，key 为 username/token 的一次性密文），**不落库**；落库字段级加密是另一套
-   `AESCipherV3`（`v3:` 前缀 + HKDF/AES-GCM，`common/base/utils.py`），且 `AESCharField/AESTextField`
+   `AESCipherV3`（`v3:` 前缀 + HKDF/AES-GCM，`packages/xadmin-common/common/base/utils.py`），且 `AESCharField/AESTextField`
    全仓无模型使用。因此**不存在「扫库重写 v1 密文」这条路径**，命中必然来自仍在提交旧格式密文的客户端或遗留调用点。
    处置：观测点日志新增 `caller=`（调用方 `文件名:行号 函数名`），使 572 条/天的命中可收敛到具体入口。
    **下一步**：部署后按 `caller` 聚合定位，收敛来源并清零后再置 `SECURITY_AES_V1_DECRYPT_ENABLED=false`。

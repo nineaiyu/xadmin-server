@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """日志页时间过滤口径锁定：登录日志与操作日志的 created_time 过滤器同为范围口径。
 
-两过滤器均继承 ``common/core/filter.py::BaseFilterSet``，其显式声明的
+两过滤器均继承 ``packages/xadmin-common/common/core/filter.py::BaseFilterSet``，其显式声明的
 ``created_time = DateTimeFromToRangeFilter`` 优先于 Meta.fields 生成的同名精确
 过滤器；据此前端两个日志页的时间过滤交互保持一致（起止区间，而非单点精确）。
 此测试把该口径钉住，防止某页单独漂移回 exact 造成两页口径不一致。

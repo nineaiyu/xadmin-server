@@ -8,6 +8,12 @@ resolution-markers = [
     "(python_full_version < '3.15' and platform_python_implementation != 'PyPy') or (python_full_version < '3.15' and sys_platform != 'win32')",
 ]
 
+[manifest]
+members = [
+    "xadmin-common",
+    "xadmin-server",
+]
+
 [[package]]
 name = "aiofiles"
 version = "24.1.0"
@@ -3074,6 +3080,94 @@ wheels = [
 ]
 
 [[package]]
+name = "xadmin-common"
+version = "0.1.0"
+source = { editable = "packages/xadmin-common" }
+dependencies = [
+    { name = "asgiref" },
+    { name = "bleach" },
+    { name = "celery" },
+    { name = "channels-redis" },
+    { name = "chardet" },
+    { name = "django" },
+    { name = "django-celery-beat" },
+    { name = "django-celery-results" },
+    { name = "django-filter" },
+    { name = "django-imagekit" },
+    { name = "django-proxy" },
+    { name = "django-redis" },
+    { name = "djangorestframework" },
+    { name = "djangorestframework-simplejwt" },
+    { name = "drf-spectacular" },
+    { name = "geoip2" },
+    { name = "html2text" },
+    { name = "ipip-ipdb" },
+    { name = "openpyxl" },
+    { name = "phonenumbers" },
+    { name = "pilkit" },
+    { name = "prometheus-client" },
+    { name = "psutil" },
+    { name = "psycopg" },
+    { name = "pycountry" },
+    { name = "pycryptodomex" },
+    { name = "pyexcel" },
+    { name = "python-daemon" },
+    { name = "pyzipper" },
+    { name = "redis" },
+    { name = "requests" },
+    { name = "six" },
+    { name = "unicodecsv" },
+    { name = "user-agents" },
+]
+
+[package.optional-dependencies]
+storage = [
+    { name = "boto3" },
+    { name = "django-storages" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "asgiref", specifier = ">=3.12,<4" },
+    { name = "bleach", specifier = ">=6.4,<7" },
+    { name = "boto3", marker = "extra == 'storage'", specifier = ">=1.34" },
+    { name = "celery", specifier = ">=5.6,<6" },
+    { name = "channels-redis", specifier = ">=4.3,<5" },
+    { name = "chardet", specifier = ">=7,<8" },
+    { name = "django", specifier = ">=6.0,<7" },
+    { name = "django-celery-beat", specifier = ">=2.9,<3" },
+    { name = "django-celery-results", specifier = ">=2.6,<3" },
+    { name = "django-filter", specifier = ">=26,<27" },
+    { name = "django-imagekit", specifier = ">=6.1,<7" },
+    { name = "django-proxy", specifier = ">=1.3,<2" },
+    { name = "django-redis", specifier = ">=7,<8" },
+    { name = "django-storages", marker = "extra == 'storage'", specifier = ">=1.14" },
+    { name = "djangorestframework", specifier = ">=3.18,<4" },
+    { name = "djangorestframework-simplejwt", specifier = ">=5.5,<6" },
+    { name = "drf-spectacular", specifier = ">=0.30,<1" },
+    { name = "geoip2", specifier = ">=5,<6" },
+    { name = "html2text", specifier = ">=2025.4" },
+    { name = "ipip-ipdb", specifier = ">=1.6,<2" },
+    { name = "openpyxl", specifier = ">=3.1,<4" },
+    { name = "phonenumbers", specifier = ">=9,<10" },
+    { name = "pilkit", specifier = ">=3,<4" },
+    { name = "prometheus-client", specifier = ">=0.21" },
+    { name = "psutil", specifier = ">=7,<8" },
+    { name = "psycopg", specifier = ">=3.3,<4" },
+    { name = "pycountry", specifier = ">=26" },
+    { name = "pycryptodomex", specifier = ">=3.23,<4" },
+    { name = "pyexcel", specifier = ">=0.7.6,<0.8" },
+    { name = "python-daemon", specifier = ">=3.1,<4" },
+    { name = "pyzipper", specifier = ">=0.4,<1" },
+    { name = "redis", specifier = ">=8,<9" },
+    { name = "requests", specifier = ">=2.34,<3" },
+    { name = "six", specifier = ">=1.17,<2" },
+    { name = "unicodecsv", specifier = ">=0.14,<0.15" },
+    { name = "user-agents", specifier = ">=2.2,<3" },
+]
+provides-extras = ["storage"]
+
+[[package]]
 name = "xadmin-server"
 version = "0.0.0"
 source = { virtual = "." }
@@ -3137,6 +3231,7 @@ dependencies = [
     { name = "uvicorn" },
     { name = "uvicorn-worker" },
     { name = "websockets" },
+    { name = "xadmin-common" },
 ]
 
 [package.optional-dependencies]
@@ -3220,6 +3315,7 @@ requires-dist = [
     { name = "uvicorn", specifier = "==0.52.4" },
     { name = "uvicorn-worker", specifier = "==0.4.0" },
     { name = "websockets", specifier = "==17.1" },
+    { name = "xadmin-common", editable = "packages/xadmin-common" },
 ]
 provides-extras = ["storage"]
 

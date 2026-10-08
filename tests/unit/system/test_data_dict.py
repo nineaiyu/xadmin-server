@@ -303,7 +303,7 @@ def test_dict_choice_field_merge_fallback_and_color():
 
 def test_dict_choice_field_metadata_type_is_labeled_choice():
     """守护：DictChoiceField 的 search-columns 类型必须是 labeled_choice。
-    common/drf/metadata.py 曾按精确类名匹配 LabeledChoiceField，DictChoiceField
+    packages/xadmin-common/common/drf/metadata.py 曾按精确类名匹配 LabeledChoiceField，DictChoiceField
     作为子类被判成普通 choice：前端详情列按字符串取值，而该字段序列化为
     {value,label,color} 对象，详情页该字段会渲染成空白（下载中心状态列即此问题）。
     """

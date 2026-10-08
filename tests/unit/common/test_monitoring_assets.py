@@ -23,8 +23,8 @@ _SUFFIXES = ("_bucket", "_count", "_sum", "_total", "_created")
 
 
 def _metric_names_in_code() -> set:
-    """从 common/metrics.py 源码提取指标名（HELP/TYPE 声明即注册名）。"""
-    source = (ROOT / "common" / "metrics.py").read_text(encoding="utf-8")
+    """从 packages/xadmin-common/common/metrics.py 源码提取指标名（HELP/TYPE 声明即注册名）。"""
+    source = (ROOT / "packages" / "xadmin-common" / "common" / "metrics.py").read_text(encoding="utf-8")
     return set(re.findall(r"xadmin_[a-z_]+", source))
 
 
@@ -68,7 +68,7 @@ class TestComposeAndScrapeConfig:
         config = yaml.safe_load(_read(MONITORING / "prometheus.yml"))
         scrape = {job["job_name"]: job for job in config["scrape_configs"]}
         app = scrape["xadmin-app"]
-        # 指标端点（common/urls.py）+ Bearer 令牌文件
+        # 指标端点（packages/xadmin-common/common/urls.py）+ Bearer 令牌文件
         assert app["metrics_path"] == "/api/common/api/metrics"
         assert app["authorization"]["credentials_file"] == "/etc/prometheus/metrics_token"
         assert config["rule_files"] == ["/etc/prometheus/alerts.yml"]

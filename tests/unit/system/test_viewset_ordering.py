@@ -29,7 +29,7 @@ LIST_MIXINS = {
 }
 
 # 框架抽象基类目录：本身不绑定模型，排序由子类声明
-FRAMEWORK_DIR = "common/core/modelset"
+FRAMEWORK_DIR = "packages/xadmin-common/common/core/modelset"
 # demo app 按项目决策不再维护（演示模型不影响正式项目），不纳入门禁
 SKIP_DIRS = ("migrations/", ".venv", "__pycache__", "tests/", "demo/")
 

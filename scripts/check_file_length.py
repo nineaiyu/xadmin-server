@@ -32,10 +32,11 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# 与 check_cross_app_imports.py 保持同一扫描面
+# 与 check_cross_app_imports.py 保持同一扫描面（框架内核为工作区成员，
+# 源码在 packages/xadmin-common/common/）
 SCAN_DIRS = sorted(
     {
-        "common",
+        "packages/xadmin-common/common",
         "system",
         "notifications",
         "message",

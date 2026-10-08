@@ -11,7 +11,7 @@
         "my_biz": "myapp.services.sync_my_biz_instance",
     }
 
-先例与 ``common/celery/routing.py`` 的 ``TASK_ROUTES`` 声明式合并同构：
+先例与 ``packages/xadmin-common/common/celery/routing.py`` 的 ``TASK_ROUTES`` 声明式合并同构：
 框架内置表兜底、应用声明按 biz_type 合并，导入路径在分发时才惰性 import
 ——业务 app 未装载（模块裁剪）时自然不参与收集，不产生任何导入开销。
 

@@ -208,7 +208,7 @@ def get_field_lookup_info(fields):
         ),
         "has_keys": _("The field value must contain all the given keys, typically used with JSON fields."),
         "has_key": _("The field value must contain the given single key, typically used with JSON fields."),
-        # 框架自定义匹配符（不在 Django class lookups 里，见 common/core/data_scope.SPECIAL_MATCHES）
+        # 框架自定义匹配符（不在 Django class lookups 里，见 packages/xadmin-common/common/core/data_scope.SPECIAL_MATCHES）
         "m2m": _("Many-to-many: the field contains any of the given values."),
         "m2m_all": _("Many-to-many: the field contains all of the given values."),
         "ip_in": _("IP address is inside the given network / range, * means no restriction."),

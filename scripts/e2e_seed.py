@@ -71,7 +71,7 @@ DATA_PERMISSION_LEADER_RULES = [
 ]
 
 # 数据权限规则：全部数据（value.all），用于字段权限场景放行行可见性
-# （数据权限默认拒绝：无任何授权的用户列表返回 none，见 common/core/filter.py）
+# （数据权限默认拒绝：无任何授权的用户列表返回 none，见 packages/xadmin-common/common/core/filter.py）
 DATA_PERMISSION_ALL_RULES = [
     {"table": "identity.userinfo", "field": "id", "type": "value.all", "match": "all", "value": "", "exclude": False}
 ]

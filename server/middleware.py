@@ -96,7 +96,7 @@ def _module_gate_detail(request) -> str:
 
 
 class ModuleGateMiddleware:
-    """功能模块裁剪的路由级拦截（见 common/core/modules.py）。
+    """功能模块裁剪的路由级拦截（见 packages/xadmin-common/common/core/modules.py）。
 
     命中「已停用模块」路由前缀的请求直接返回 404，语义等价于该功能不存在，
     避免出现「页面已隐藏、接口仍可达」的半残状态。未配置停用模块时零开销。
@@ -149,7 +149,7 @@ class RequestMiddleware:
     """请求 ID 透传与 current_request 上下文装配（链首）。
 
     双模中间件：sync 链（WSGI / 测试）走 `__call__`，ASGI 链走 `__acall__`
-    留在事件循环执行；`set_current_request` 经 contextvars 存储（common/local.py）
+    留在事件循环执行；`set_current_request` 经 contextvars 存储（packages/xadmin-common/common/local.py）
     在同步视图线程经 sync_to_async 的 context 复制照常可读。
     """
 

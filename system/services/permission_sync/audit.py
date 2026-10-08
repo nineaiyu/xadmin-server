@@ -12,7 +12,7 @@ def audit_field_permissions():
 
     字段权限是 **fail-closed 的零字段口径**：某 (角色, 菜单) 没有字段白名单（无
     FieldPermission 行，或行内字段为空）时，该角色在这些接口上拿到的字段集合为空——
-    列表/详情输出空对象（不是"默认全字段"，见 ``common/core/serializers.py`` 的
+    列表/详情输出空对象（不是"默认全字段"，见 ``packages/xadmin-common/common/core/serializers.py`` 的
     get_allow_fields）。新建角色、批量生成的新权限点最容易漏配，因此列入审计面：
     不改安全语义，只把「静默空输出」变成可见告警。
 

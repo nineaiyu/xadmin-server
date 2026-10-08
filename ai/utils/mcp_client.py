@@ -10,7 +10,7 @@
 - initialize 后发送 ``notifications/initialized`` 通知（失败不阻断）；
 - 每次会话（同步/调用）先 initialize（协议要求），方法级错误归一为 McpClientError。
 
-安全（与出站 Webhook 同一守卫 ``common/utils/outbound.py``）：
+安全（与出站 Webhook 同一守卫 ``packages/xadmin-common/common/utils/outbound.py``）：
 
 - 写入侧（保存配置）https 强制；http 仅允许 loopback 或经 ``OUTBOUND_ALLOWED_HOSTS``
   白名单登记的目标（白名单 = 显式授权的内网自建服务）；

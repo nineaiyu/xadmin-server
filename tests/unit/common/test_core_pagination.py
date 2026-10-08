@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/pagination.py DynamicPageNumber 单元测试。
+"""packages/xadmin-common/common/core/pagination.py DynamicPageNumber 单元测试。
 
 直接以 DRF Request 驱动动态分页类，验证 page/page_size 参数解析：
 合法值切页、非法 size 回退默认、超大 size 按 max_page_size 截断，以及

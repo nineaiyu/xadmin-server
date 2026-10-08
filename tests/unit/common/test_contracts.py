@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/contracts.py 契约面守护。
+"""packages/xadmin-common/common/contracts.py 契约面守护。
 
 contracts 是框架层消费业务 app 的唯一显式出口：白名单即接口声明。这里的
 守护保证声明不漂移——白名单里的每个名字都能从提供方解析出**同一对象**

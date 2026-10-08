@@ -56,6 +56,10 @@ RUN --mount=type=cache,target=/root/.cache,id=core \
 
 ENV PATH=/data/py3/bin:$PATH
 
+# 框架内核（工作区成员）运行期经 PYTHONPATH 引入：源码在
+# /data/xadmin-server/packages/xadmin-common/（bind mount 场景由 entrypoint.sh 同源兜底）
+ENV PYTHONPATH=/data/xadmin-server/packages/xadmin-common
+
 WORKDIR /data/xadmin-server/
 
 ENTRYPOINT ["/bin/bash", "entrypoint.sh"]

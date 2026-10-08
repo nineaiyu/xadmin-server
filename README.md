@@ -33,9 +33,13 @@ uv run python manage.py start all -d
 
 超管初始密码：`--admin-password` 或环境变量 `XADMIN_ADMIN_PASSWORD` 显式指定，未设置时随机生成并仅打印一次。
 
-### 依赖管理（pyproject + uv）
+### 依赖管理（pyproject + uv 工作区）
 
-- **事实源**：`pyproject.toml`（运行依赖 + `dev` 组）与 `uv.lock`（锁文件，入库）；
+- **事实源**：根 `pyproject.toml`（运行依赖 + `dev` 组）与 `uv.lock`（锁文件，入库）；
+  **框架内核（`common`）是工作区成员**——打包元数据在 `packages/xadmin-common/pyproject.toml`，
+  源码在 `packages/xadmin-common/common/`，根项目以 `workspace + editable` 消费（改内核源码即时生效）；
+  分发名 `xadmin-common`，独立构建 `uv build --package xadmin-common`，宿主接线与 settings 契约见
+  [docs/architecture/kernel-package.md](docs/architecture/kernel-package.md)；
 - **安装路径**（`uv.lock` 是版本唯一依据）：本地开发 `uv sync --all-groups`；CI
   `uv sync --locked` + `uv lock --check`（见 `.github/workflows/`）；**容器构建**
   `uv pip install -r requirements*.txt --index-url ${PIP_MIRROR}`（见 `Dockerfile-base` /
@@ -52,19 +56,20 @@ uv run python manage.py start all -d
   容器内由 `ARG UV_VERSION` 固定，两处同源）：
 
 ```shell
-uv sync --all-groups              # 创建/同步 .venv（含 dev 组）
-uv lock                           # 变更 pyproject 依赖后刷新 uv.lock（入库，保证解析可复现）
+uv sync --all-groups              # 创建/同步 .venv（含 dev 组；内核以 editable 安装）
+uv lock                           # 变更依赖（含内核成员 pyproject）后刷新 uv.lock（入库，保证解析可复现）
 # 重新导出产物（pyproject.toml 头部注释同口径）：
-uv export --no-hashes --no-emit-project --no-group dev --no-annotate -o requirements.txt
-uv export --no-hashes --no-emit-project --only-group dev --no-annotate -o requirements-dev.txt
+uv export --no-hashes --no-emit-project --no-emit-workspace --no-group dev --no-annotate -o requirements.txt
+uv export --no-hashes --no-emit-project --no-emit-workspace --only-group dev --no-annotate -o requirements-dev.txt
 ```
 
-- **可选依赖**（对象存储后端）：声明于 `[project.optional-dependencies].storage`，默认不装，
-  未装时文件链路回退本地，启用方式 `uv sync --extra storage` 或 `pip install django-storages boto3`
-  （详见 `docs/ops/storage.md`）；
+- **可选依赖**（对象存储后端）：声明于两处 `[project.optional-dependencies].storage`（根项目与内核
+  成员同口径），默认不装，未装时文件链路回退本地，启用方式 `uv sync --extra storage` 或
+  `pip install django-storages boto3`（详见 `docs/ops/storage.md`）；
 - **守护**（`tests/unit/test_dependency_manifest.py`，纯解析、不依赖网络）：pyproject ↔ 产物 ↔ uv.lock
-  三方一致、容器与 CI 的安装方式未回退到产物、uv 版本同源、`.dockerignore` 排除宿主环境；
-  本机存在 uv 时额外校验「产物与导出逐行一致」。
+  三方一致（工作区成员以路径形态存在、经 `--no-emit-workspace` 从产物剔除）、工作区骨架
+  （成员 editable 锁定 / wheel 只收内核包本体 / 内核依赖全部落在运行产物中）、容器与 CI 的安装方式
+  未回退到产物、uv 版本同源、`.dockerignore` 排除宿主环境；本机存在 uv 时额外校验「产物与导出逐行一致」。
 
 ## 开发部署文档
 
@@ -93,7 +98,7 @@ python manage.py start all -d  # -d 参数是后台运行，如果去掉，则�
 ### B.手动执行命令
 
 > 日常运行推荐直接用上面的 A 一键命令；以下为拆解示意，各服务参数（端口 / 地址 / 认证）以
-> `common/management/commands/services/` 下的定义为准。
+> `packages/xadmin-common/common/management/commands/services/` 下的定义为准。
 
 #### 1.api服务
 
@@ -115,7 +120,7 @@ python -m celery -A server flower -logging=info --url_prefix=api/flower --auto_r
 ```
 
 > 地址与端口由 `config.yml` 的 `CELERY_FLOWER_HOST` / `CELERY_FLOWER_PORT` 决定（未配置认证时仅允许绑定
-> 127.0.0.1，见 `common/management/commands/services/services/flower.py`）。
+> 127.0.0.1，见 `packages/xadmin-common/common/management/commands/services/services/flower.py`）。
 ```
 
 ## 捐赠

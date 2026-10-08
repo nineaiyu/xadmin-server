@@ -6,7 +6,7 @@
 
 - **视图重放链**（本模块 ``run_async_export``）：视图动作（export-async）落
   ExportRecord 后派发任务，任务经 ``build_task_request`` 显式构造请求（不再重放
-  WSGIRequest，见 common/core/task_request.py 的契约清单）重放 export_data 视图；
+  WSGIRequest，见 packages/xadmin-common/common/core/task_request.py 的契约清单）重放 export_data 视图；
   导出为只读链路，不写 creator/审计，因此不绑定 thread-local 请求。任务函数本体
   保留在 ``system.tasks``（celery 任务名 = 函数 __module__，必须保持
   ``system.tasks.<name>`` 不变以便既有周期任务登记/日志/告警链路匹配）；

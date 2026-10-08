@@ -32,7 +32,7 @@ django.setup(set_prefix=False)  # 等价 get_asgi_application 的 setup（后者
 
 
 class XadminASGIHandler(SafeMethodAtomicSkipMixin, ASGIHandler):
-    """HTTP 入口 handler：纯读请求免 ATOMIC_REQUESTS（见 common/core/atomic_read.py）。"""
+    """HTTP 入口 handler：纯读请求免 ATOMIC_REQUESTS（见 packages/xadmin-common/common/core/atomic_read.py）。"""
 
 
 django_asgi_app = XadminASGIHandler()

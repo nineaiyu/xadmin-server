@@ -274,7 +274,7 @@ class ChatContactViewSet(GenericViewSet):
         """群成员候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
 
         口径与选人控件同源（identity/utils/user_options.py）；权限与该视图 list 权限
-        同口径（common/core/permission.py 的 user-options 特例），无需新增权限点。
+        同口径（packages/xadmin-common/common/core/permission.py 的 user-options 特例），无需新增权限点。
         """
         data = search_user_options(
             keyword=request.query_params.get("keyword", ""),

@@ -100,7 +100,7 @@ class ImportTemplateSerializer(BaseModelSerializer):
     """导入列映射模板：mapping/options 形态清洗 + 共享模板仅超管可维护。
 
     ``mapping`` 的目标字段合法性不在此处校验：字段随目标模型而定，解释权在
-    导入链路的 ``common/core/import_mapping.build_field_index``（未知目标按未匹配处理）。
+    导入链路的 ``packages/xadmin-common/common/core/import_mapping.build_field_index``（未知目标按未匹配处理）。
     """
 
     MAPPING_MAX_ITEMS = 200

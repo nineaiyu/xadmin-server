@@ -23,7 +23,7 @@ CACHES = {
             # 故障演练 2029-10 复测修复：Redis 冻结（容器 stop，连接挂起而非拒绝）时
             # socket 无超时会让请求挂在中间件/配置读取阶段（实测 10s+ 被 worker
             # timeout 打断、health 端点被拖挂）。局域网 redis 操作 <5ms，1s 超时充裕，
-            # 冻结时快速失败（配合 ConfigCache 回落读库，见 common/core/config.py）。
+            # 冻结时快速失败（配合 ConfigCache 回落读库，见 packages/xadmin-common/common/core/config.py）。
             "CONNECTION_POOL_KWARGS": {
                 "max_connections": 8000,
                 # 连接超时 0.2s：局域网建连正常 <1ms；冻结（连接挂起）时每个调用

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/permission_meta.py 单元测试（子 action 权限口径注册表）。
+"""packages/xadmin-common/common/core/permission_meta.py 单元测试（子 action 权限口径注册表）。
 
 覆盖：两档语义登记、正则编译与缓存、装饰器默认命名（与 DRF 同规则）、
 二开扩展场景（自注册后缀不改权限核心类）。

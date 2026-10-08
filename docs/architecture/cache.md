@@ -16,8 +16,8 @@
 
 | 缓存内容     | 位置                                                   | key                   | TTL | 失效             |
 |----------|------------------------------------------------------|-----------------------|-----|----------------|
-| API 权限映射 | `common/core/permission.py::get_user_permission`     | `{user_pk}_{method}`  | 24h | 信号失效（见 §五）+ 登出 |
-| 字段权限集合   | `common/core/permission.py::get_user_field_queryset` | `{user_pk}_{menu_pk}` | 10s | TTL 短，靠过期收敛    |
+| API 权限映射 | `packages/xadmin-common/common/core/permission.py::get_user_permission`     | `{user_pk}_{method}`  | 24h | 信号失效（见 §五）+ 登出 |
+| 字段权限集合   | `packages/xadmin-common/common/core/permission.py::get_user_field_queryset` | `{user_pk}_{menu_pk}` | 10s | TTL 短，靠过期收敛    |
 
 规范：`make_cache(timeout, key_func)` 的 `key_func` 必须包含**所有**影响结果的输入
 维度（user pk、method、菜单等）；fail-closed 原则——权限类缓存读取异常按 403 处理
@@ -41,7 +41,7 @@
   `invalid_config_cache_handler` 精确失效。
 - `UserPersonalConfig`（用户级，如表格列宽/主题）：`user_{pk}_{key}`；
   用户变更信号失效。
-- `UserSystemConfigCache.del_many` 批量失效用户侧键（`common/cache/storage.py`）。
+- `UserSystemConfigCache.del_many` 批量失效用户侧键（`packages/xadmin-common/common/cache/storage.py`）。
 
 ## 五、失效链路（唯一入口：`system/signal_handler.py`）
 

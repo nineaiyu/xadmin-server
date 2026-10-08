@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/utils/ip/utils.py 纯函数回归：IP/网段/区间判定与归属地兜底链路。
+"""packages/xadmin-common/common/utils/ip/utils.py 纯函数回归：IP/网段/区间判定与归属地兜底链路。
 
 is_ip 的 `/` 与 `-` 分支比较的是 ip_address 对象（调用方传入前需自行转换），
 `.` 四段与前缀分支比较的是字符串——测试按真实入参类型分别驱动，锁住语义。

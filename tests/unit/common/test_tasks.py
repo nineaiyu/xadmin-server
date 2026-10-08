@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/tasks.py 周期/异步任务回归。
+"""packages/xadmin-common/common/tasks.py 周期/异步任务回归。
 
 celery eager 模式下 `.delay()` 同步执行，任务体当普通函数驱动：
 - 邮件任务用 mock send_mail 捕获参数 + locmem 真发各验一层；

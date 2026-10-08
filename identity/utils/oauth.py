@@ -8,7 +8,7 @@
 - state 一次性（Redis `cache.add` 占位 + 5 分钟 TTL），回调消费即失效；
 - 与 IdP 的交互全部走**可注入的 http 客户端**，单测可完全离线覆盖（含异常分支）；
 - IdP 原始报文不回显给前端，所有失败统一映射为可读业务文案；
-- 出站目标统一经 `common/utils/outbound.py` 口径（与 Webhook / AI base_url / MCP /
+- 出站目标统一经 `packages/xadmin-common/common/utils/outbound.py` 口径（与 Webhook / AI base_url / MCP /
   开放平台回调同源）：写入侧 https 强制 + 地址归属校验（IP 字面量拒绝私网 /
   link-local / 元数据地址），发送侧固定解析连接（私网 / 环回 / link-local 拒绝，
   `OUTBOUND_ALLOWED_HOSTS` 登记放行），消除「校验一次解析、连接又解析一次」窗口。
@@ -125,7 +125,7 @@ def validate_providers(value) -> list[dict]:
     配置错误必须在**保存时**挡住，否则会让每个用户都撞到一个看不懂的回调错误。
     IM flavor 的 URL 有官方预设可不填，https 只校验显式配置的 URL。
 
-    URL 校验走 `common/utils/outbound.py` 统一口径（Webhook / AI base_url / MCP /
+    URL 校验走 `packages/xadmin-common/common/utils/outbound.py` 统一口径（Webhook / AI base_url / MCP /
     开放平台回调同源）：https 强制（换码携带 `client_secret`，http 不放行，仅
     loopback 联调例外），IP 字面量按归属校验拒绝私网 / link-local / 元数据地址；
     域名写入侧不解析（内网 IdP 可能仅对服务端 DNS 可见），归属校验留到发送侧。

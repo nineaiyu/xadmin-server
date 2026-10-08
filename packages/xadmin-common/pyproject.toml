@@ -1,0 +1,89 @@
+# xadmin-common —— 框架内核（common）独立分发包
+#
+# 定位：把 xadmin-server 仓的 common（框架内核，可复用层）以「uv 工作区成员」形态
+# 发布为独立分发包，供其他仓库 / 二开项目复用。宿主引用后导入名仍是 `common`
+# （包目录名 = 导入名，包名与分发名解耦：分发名 xadmin-common ↔ 导入包 common）。
+#
+# 与宿主的边界（详见包内 common/README.md 与 common/settings_contract.py）：
+#   - 内核不 import 任何业务 app（跨 app 门禁扫描本目录）；
+#   - 内核消费宿主能力的唯一出口是 common/contracts.py（声明式契约面 + 注入制）；
+#   - 内核读取的 Django settings 全部登记在 common/settings_contract.py，
+#     宿主按其声明提供（缺省列「必给」的键必须提供，其余键缺失即按契约默认值工作）。
+#
+# 版本策略：packaging 版本独立演进（首版 0.1.0）；平台版本见 server/const.py 的 VERSION。
+# 依赖策略：内核直接 import 的第三方库在此声明为范围约束（工作区内实际锁定版本由
+# uv.lock 决定，宿主可自行收紧）；仅函数级延迟导入的可选能力走 extras（storage）。
+#
+# 构建：
+#   uv build --package xadmin-common          # wheel + sdist → dist/
+[project]
+name = "xadmin-common"
+version = "0.1.0"
+description = "xadmin 框架内核（可复用层）：模型基类 / CRUD ViewSet / 权限与元数据 / 缓存 / 任务基建"
+readme = "README.md"
+requires-python = ">=3.14"
+license = "MIT"
+dependencies = [
+    "django>=6.0,<7",
+    "djangorestframework>=3.18,<4",
+    "djangorestframework-simplejwt>=5.5,<6",
+    "django-filter>=26,<27",
+    "django-redis>=7,<8",
+    "django-celery-beat>=2.9,<3",
+    "django-celery-results>=2.6,<3",
+    "celery>=5.6,<6",
+    "channels-redis>=4.3,<5",
+    "redis>=8,<9",
+    "asgiref>=3.12,<4",
+    "pycryptodomex>=3.23,<4",
+    "psycopg>=3.3,<4",
+    "bleach>=6.4,<7",
+    "chardet>=7,<8",
+    "python-daemon>=3.1,<4",
+    "drf-spectacular>=0.30,<1",
+    "geoip2>=5,<6",
+    "html2text>=2025.4",
+    "django-imagekit>=6.1,<7",
+    "ipip-ipdb>=1.6,<2",
+    "openpyxl>=3.1,<4",
+    "phonenumbers>=9,<10",
+    "pilkit>=3,<4",
+    "prometheus-client>=0.21",
+    "django-proxy>=1.3,<2",
+    "psutil>=7,<8",
+    "pycountry>=26",
+    "pyexcel>=0.7.6,<0.8",
+    "pyzipper>=0.4,<1",
+    "requests>=2.34,<3",
+    "six>=1.17,<2",
+    "unicodecsv>=0.14,<0.15",
+    "user-agents>=2.2,<3",
+]
+
+[project.optional-dependencies]
+# 对象存储后端（与平台 [project.optional-dependencies].storage 同口径）：
+# 不装时 SwitchableStorage 回退本地磁盘并输出去重告警（文件链路不中断）。
+storage = [
+    "django-storages>=1.14",
+    "boto3>=1.34",
+]
+
+[project.urls]
+Documentation = "https://docs.dvcloud.xin/"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# wheel 只收 common 包本体（含 templates/ 与 migrations/ 等数据文件）：
+# packages 条目的末段即导入包名，故 common/ 落到 wheel 根下仍是 common/。
+[tool.hatch.build.targets.wheel]
+packages = ["common"]
+
+# sdist 只收包本体与本文档（宿主仓其余内容不随分发）。
+[tool.hatch.build.targets.sdist]
+include = [
+    "/common",
+    "/README.md",
+    "/pyproject.toml",
+]

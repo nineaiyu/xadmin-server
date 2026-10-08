@@ -44,7 +44,7 @@ def xcai(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "ALLOWLIST", {})
     monkeypatch.setattr(module, "CONTRACT_SEAMS", {})
     # 单缝出口：路径名判定，与 tmp 树中是否真有该文件无关
-    monkeypatch.setattr(module, "CONTRACTS_MODULE", "common/contracts.py")
+    monkeypatch.setattr(module, "CONTRACTS_MODULE", "packages/xadmin-common/common/contracts.py")
     return module
 
 
@@ -100,34 +100,36 @@ class TestCrossAppImports:
 
 
 class TestFrameworkDirection:
-    """common（框架层）→ 业务 app 单缝收敛：唯一出口 common/contracts.py。"""
+    """common（框架层）→ 业务 app 单缝收敛：唯一出口 packages/xadmin-common/common/contracts.py。"""
+
+    FRAMEWORK_FILE = "packages/xadmin-common/common/foo.py"
 
     def test_direct_model_import_violation(self, xcai, tmp_path):
-        write(tmp_path, "common/foo.py", "from system.models import UserInfo\n")
+        write(tmp_path, self.FRAMEWORK_FILE, "from system.models import UserInfo\n")
         violations, _ = xcai.scan_framework_direction()
-        assert any("须统一经 common/contracts.py" in msg for _, _, msg in violations)
+        assert any("须统一经 packages/xadmin-common/common/contracts.py" in msg for _, _, msg in violations)
 
     def test_services_import_outside_contracts_flagged_even_if_registered(self, xcai, tmp_path):
         # 单缝规则的 precedence：缝登记只对 contracts.py 生效，其余文件登记了也违例
-        write(tmp_path, "common/foo.py", "from system.services import getSomething\n")
-        xcai.CONTRACT_SEAMS.update({"common/foo.py": {"system.services": "历史登记"}})
+        write(tmp_path, self.FRAMEWORK_FILE, "from system.services import getSomething\n")
+        xcai.CONTRACT_SEAMS.update({self.FRAMEWORK_FILE: {"system.services": "历史登记"}})
         violations, _ = xcai.scan_framework_direction()
-        assert any("须统一经 common/contracts.py" in msg for _, _, msg in violations)
+        assert any("须统一经 packages/xadmin-common/common/contracts.py" in msg for _, _, msg in violations)
 
     def test_contracts_registered_seam_passes(self, xcai, tmp_path):
         write(
             tmp_path,
-            "common/contracts.py",
+            "packages/xadmin-common/common/contracts.py",
             '_CONTRACT_PROVIDERS = {\n    "X": ("system.services", "原因"),\n}\n',
         )
-        xcai.CONTRACT_SEAMS.update({"common/contracts.py": {"system.services": "测试缝"}})
+        xcai.CONTRACT_SEAMS.update({"packages/xadmin-common/common/contracts.py": {"system.services": "测试缝"}})
         violations, _ = xcai.scan_framework_direction()
         assert violations == []
 
     def test_contracts_unregistered_seam_violation(self, xcai, tmp_path):
         write(
             tmp_path,
-            "common/contracts.py",
+            "packages/xadmin-common/common/contracts.py",
             '_CONTRACT_PROVIDERS = {\n    "X": ("system.services", "原因"),\n}\n',
         )
         violations, _ = xcai.scan_framework_direction()
@@ -135,29 +137,33 @@ class TestFrameworkDirection:
 
     def test_contracts_registered_seam_drift_detected(self, xcai, tmp_path):
         # 台账登记了缝但白名单里已无该提供方：双向漂移必须报
-        write(tmp_path, "common/contracts.py", '_CONTRACT_PROVIDERS = {"X": ("system.services", "r")}\n')
-        xcai.CONTRACT_SEAMS.update({"common/contracts.py": {"approval.services": "已迁移的缝"}})
+        write(
+            tmp_path,
+            "packages/xadmin-common/common/contracts.py",
+            '_CONTRACT_PROVIDERS = {"X": ("system.services", "r")}\n',
+        )
+        xcai.CONTRACT_SEAMS.update({"packages/xadmin-common/common/contracts.py": {"approval.services": "已迁移的缝"}})
         violations, _ = xcai.scan_framework_direction()
         assert any("登记的契约缝 approval.services 已不存在" in msg for _, _, msg in violations)
 
     def test_contracts_module_level_import_still_shape_checked(self, xcai, tmp_path):
         # contracts.py 自身的模块级 import 仍受「仅 *.services」+ 登记约束
-        write(tmp_path, "common/contracts.py", "from system.models import UserInfo\n")
+        write(tmp_path, "packages/xadmin-common/common/contracts.py", "from system.models import UserInfo\n")
         violations, _ = xcai.scan_framework_direction()
         assert any("框架层须经" in msg for _, _, msg in violations)
 
     def test_lazy_import_is_observation_not_violation(self, xcai, tmp_path):
         write(
             tmp_path,
-            "common/foo.py",
+            self.FRAMEWORK_FILE,
             "import os\n\n\ndef f():\n    from system.services import getSomething\n    return getSomething\n",
         )
         violations, observations = xcai.scan_framework_direction()
         assert violations == []
-        assert observations == {"common/foo.py": {"system.services"}}
+        assert observations == {self.FRAMEWORK_FILE: {"system.services"}}
 
     def test_non_business_app_import_ignored(self, xcai, tmp_path):
-        write(tmp_path, "common/foo.py", "from os.path import join\nimport collections\n")
+        write(tmp_path, self.FRAMEWORK_FILE, "from os.path import join\nimport collections\n")
         violations, observations = xcai.scan_framework_direction()
         assert violations == []
         assert observations == {}

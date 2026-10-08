@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """敏感操作审批：判定 / 建单 / 消费令牌 / 审批人解析（纯函数，单测主战场）。
 
-调用入口在 common/core/approval.py 的 ApprovalRequired 装饰器（挂在需要审批的
+调用入口在 packages/xadmin-common/common/core/approval.py 的 ApprovalRequired 装饰器（挂在需要审批的
 action 上，DRF dispatch 在权限校验之后执行 handler，装饰器因此晚于权限生效）。
 
 协议（沿用 MFA 412 语义，业务码 1002）：

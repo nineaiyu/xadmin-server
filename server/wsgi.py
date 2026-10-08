@@ -19,7 +19,7 @@ django.setup(set_prefix=False)
 
 
 class XadminWSGIHandler(SafeMethodAtomicSkipMixin, WSGIHandler):
-    """WSGI 入口 handler：纯读请求免 ATOMIC_REQUESTS（见 common/core/atomic_read.py）。"""
+    """WSGI 入口 handler：纯读请求免 ATOMIC_REQUESTS（见 packages/xadmin-common/common/core/atomic_read.py）。"""
 
 
 application = XadminWSGIHandler()

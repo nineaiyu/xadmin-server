@@ -104,7 +104,7 @@ namespace 仍 `scim`；LDAP：`identity/ldap/` → `identity/ldap/`。
 
 ## 三、services 契约面重组
 
-- `common/contracts.py` `_CONTRACT_PROVIDERS` 按域改挂：
+- `packages/xadmin-common/common/contracts.py` `_CONTRACT_PROVIDERS` 按域改挂：
   - identity.services：UserInfo、UserRole、DeptInfo、PersonalAccessToken、get_active_superuser_queryset、
     publish_api_quota_warning、apply_grant_fields、apply_grant_row_scope、application_of_request、
     enforce_application_grant、resolve_request_menu_pk
@@ -228,7 +228,7 @@ notifications_approval_flow.py 归位 approval/notifications.py（评审 P1 寄�
 视图平移零违例（21 处严格前缀 + 45 处 views 拍平），WS 通道归属测试收集源补 task/routing。
 
 **口径修正记录**（相对上文的计划表述）：
-- `common/contracts.py` 无 file.services 提供方——common 侧对 UploadFile 的消费全部是
+- `packages/xadmin-common/common/contracts.py` 无 file.services 提供方——common 侧对 UploadFile 的消费全部是
   label 串比较（AutoCleanFileMixin / input_types / serializers.py），不产生 import 缝，无需登记；
 - trgm 索引未单列迁移，随各域 0001 的模型 Meta 落地（identity.0001 首操作仅保证扩展先行）；
 - identity.0002 即为跨域 M2M 推迟补加迁移（三段式 0001/0002/0003 的规划合并为两段式）；

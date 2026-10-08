@@ -47,7 +47,7 @@ FORWARD_KEYS = [
     "SECURITY_PASSWORD_HISTORY_COUNT",
     # 密码有效期（天数，0 = 永不过期；date_password_updated 为空的存量用户 = 宽限期）
     "SECURITY_PASSWORD_EXPIRATION_DAYS",
-    # AES 旧格式（Salted__）解密灰度开关：读取方 common/base/utils.py 走
+    # AES 旧格式（Salted__）解密灰度开关：读取方 packages/xadmin-common/common/base/utils.py 走
     # getattr(settings, ...)——漏转发会让开关永远落默认值（形同虚设）
     "SECURITY_AES_V1_DECRYPT_ENABLED",
     # 用户登录限制的规则
@@ -281,7 +281,7 @@ CAPTCHA_GET_FROM_POOL = False
 CAPTCHA_GET_FROM_POOL_TIMEOUT = 5
 CAPTCHA_2X_IMAGE = True
 
-# 纯读请求免 ATOMIC_REQUESTS（见 common/core/atomic_read.py）：GET/HEAD 且 action 命中
+# 纯读请求免 ATOMIC_REQUESTS（见 packages/xadmin-common/common/core/atomic_read.py）：GET/HEAD 且 action 命中
 # DRF 读动作白名单的请求不套事务（省 BEGIN/COMMIT 两次数据库往返）；写请求与自定义
 # GET action（导出/同步等带副作用）保持原语义。config.yml 置 false 可整体回退。
 # 特殊转发（bool 归一），不进 FORWARD_KEYS——由守护测试按「CONFIG 直接引用」豁免。
@@ -296,15 +296,15 @@ NON_FORWARDED_KEYS = {
     # 启动装配条件（非 django settings 面）
     "AUTO_MIGRATE": "services 命令 hands.py 启动判断",
     "SECRET_KEY_AUTO_GENERATE": "base.py 密钥兜底判断（config.get 字符串形式）",
-    # 密钥/令牌：common/core/credentials.py 与告警 API 直读
-    "BACKUP_ALERT_TOKEN": "备份告警令牌，common/api/backup.py 直读",
-    "OPS_ALERT_TOKEN": "资源告警令牌，common/api/ops_alert.py 直读",
-    # common/core/config/base.py（注入面配置基座）
+    # 密钥/令牌：packages/xadmin-common/common/core/credentials.py 与告警 API 直读
+    "BACKUP_ALERT_TOKEN": "备份告警令牌，packages/xadmin-common/common/api/backup.py 直读",
+    "OPS_ALERT_TOKEN": "资源告警令牌，packages/xadmin-common/common/api/ops_alert.py 直读",
+    # packages/xadmin-common/common/core/config/base.py（注入面配置基座）
     "CSP_MODE": "CSP 策略模式，conf base/csp 装配消费",
-    "CSP_REPORT_URI": "CSP 上报端点，common/api/csp.py 直读",
+    "CSP_REPORT_URI": "CSP 上报端点，packages/xadmin-common/common/api/csp.py 直读",
     "SCIM_TOKEN": "SCIM Bearer 令牌，conf base + credentials 直读",
     "SLOW_REQUEST_THRESHOLD": "慢请求阈值，conf base + conf_ops 消费",
-    # common/core/config/conf_security.py（注入面：审批/敏感操作/SCIM/OAUTH/限流）
+    # packages/xadmin-common/common/core/config/conf_security.py（注入面：审批/敏感操作/SCIM/OAUTH/限流）
     "APPROVAL_APPROVER_PERMS": "审批注入面 conf_security",
     "APPROVAL_APPROVER_ROLES": "审批注入面 conf_security",
     "APPROVAL_FLOW_KEEP_DAYS": "审批注入面 conf_security",
@@ -324,7 +324,7 @@ NON_FORWARDED_KEYS = {
     "SCIM_RATE_LIMIT": "SCIM 限流，conf_security + scim/auth 消费",
     "SENSITIVE_OPERATION_METHODS": "敏感操作方法，conf_security + 告警消费",
     "SENSITIVE_OPERATION_PATHS": "敏感操作路径，approval/auth_scopes 消费",
-    # common/core/config/conf_ops.py（注入面：保留期/异步并发/会话/监控）
+    # packages/xadmin-common/common/core/config/conf_ops.py（注入面：保留期/异步并发/会话/监控）
     "ACCOUNT_EXPIRY_REMIND_DAYS": "到期提醒天数，conf_ops 消费",
     "CHAT_HISTORY_DAYS": "聊天历史保留，conf_ops 消费",
     "EXPORT_ASYNC_MAX_RUNNING": "导出并发上限，conf_ops 消费",
@@ -344,7 +344,7 @@ NON_FORWARDED_KEYS = {
     "SESSION_ONLINE_TIMEOUT": "在线会话超时，conf_ops 消费",
     "USER_SESSION_RETENTION_DAYS": "会话记录保留，conf_ops 消费",
     "WEB_SITE_URL": "站点外链，conf_ops + user_invite 消费",
-    # common/core/config/conf_upload.py（注入面：文件存储/S3/预览）
+    # packages/xadmin-common/common/core/config/conf_upload.py（注入面：文件存储/S3/预览）
     "FILE_OFFICE_CONVERT_TIMEOUT": "office 转换超时，conf_upload 消费",
     "FILE_OFFICE_MAX_BYTES": "office 预览大小上限，conf_upload 消费",
     "FILE_OFFICE_PREVIEW_ENABLED": "office 预览开关，conf_upload 消费",
@@ -364,7 +364,7 @@ NON_FORWARDED_KEYS = {
     "FILE_STORAGE_BACKEND": "存储后端选择，conf_upload + storage 消费",
     "FILE_STORAGE_QUOTA_MB": "存储配额，conf_upload + upload_store 消费",
     "FILE_UPLOAD_COUNT_LIMIT": "上传数量限制，conf_upload + upload_store 消费",
-    # common/core/config/system_conf.py（注入面：推送开关）
+    # packages/xadmin-common/common/core/config/system_conf.py（注入面：推送开关）
     "PUSH_CHAT_MESSAGE": "聊天推送开关，system_conf + configs 视图消费",
     "PUSH_MESSAGE_NOTICE": "通知推送开关，system_conf + configs 视图消费",
 }

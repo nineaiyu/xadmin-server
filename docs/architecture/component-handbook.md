@@ -9,7 +9,7 @@
 > | 按任务找步骤（加字段 / 加按钮 / 加任务……） | [guide/recipes.md](../guide/recipes.md) |
 > | 在两个方案之间做选择 | [方案选型与对比.md](方案选型与对比.md) |
 > | 理解某个机制的设计与边界 | [overview.md](overview.md) → 各机制篇章 |
-> | 改内核前确认边界 | [common/README.md](../../common/README.md) |
+> | 改内核前确认边界 | [packages/xadmin-common/common/README.md](../../packages/xadmin-common/common/README.md) |
 >
 > 本文每个组件都标注**权威源**（类型/实现的唯一事实处）——文档与代码冲突时以权威源为准，
 > 改组件时先改权威源、再回来同步本页。
@@ -46,13 +46,13 @@
 | `SoftDeleteModel` | 软删（`deleted_at` + `objects`/`all_objects`），配套回收站三通道 | **必须放 MRO 首位**：`class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel)` |
 | `AutoCleanFileMixin` | 保存/删除时自动清理旧文件 | 模型含 `FileField`/`ImageField` 或关联 `system.UploadFile` 时混入 |
 | `AESCharField` / `AESTextField` | 模型字段级加密（`aes:::` 前缀，落库密文） | 少量高敏字段：`from common.fields.char import AESCharField` |
-| `signer`（值级加密） | HKDF+AES-GCM（`v3:` 前缀），用于 JSON 值内的敏感键 | `common/base/utils.py::signer.encrypt/decrypt`（webhook secret / AI api_key 同款） |
+| `signer`（值级加密） | HKDF+AES-GCM（`v3:` 前缀），用于 JSON 值内的敏感键 | `packages/xadmin-common/common/base/utils.py::signer.encrypt/decrypt`（webhook secret / AI api_key 同款） |
 | `upload_directory_path` | 统一上传路径 `{app}/{model}/{creator}/{pk}/{uuid5}.{ext}` | `upload_to=upload_directory_path` |
 
 - 依赖：仅依赖 `django.db`；`DbAuditModel.dept_belong` 关联 `system.DeptInfo`（数据权限的归属字段）。
 - 配置项：无需配置；`Meta.ordering` 必须给默认排序（列表分页依赖，缺失有告警）。
-- 扩展点：新增通用字段时在 `common/core/models.py` 加抽象基类（内核），**不要**改 `DbAuditModel` 既有字段语义。
-- 权威源：`common/core/models.py`、`common/fields/char.py`、`common/base/utils.py`。
+- 扩展点：新增通用字段时在 `packages/xadmin-common/common/core/models.py` 加抽象基类（内核），**不要**改 `DbAuditModel` 既有字段语义。
+- 权威源：`packages/xadmin-common/common/core/models.py`、`packages/xadmin-common/common/fields/char.py`、`packages/xadmin-common/common/base/utils.py`。
 
 ### 1.2 序列化器与字段形态（`BaseModelSerializer`）
 
@@ -64,7 +64,7 @@
 | `Meta.tabs` | `TabsColumn("分组名", ["字段", ...])` 表单分栏 |
 | action 级序列化器 | ViewSet 类属性 `{action}_serializer_class`（如 `list_serializer_class`） |
 
-常用字段形态（均在 `common/core/fields.py`；`system/serializers/fields.py` 仅为兼容别名）：
+常用字段形态（均在 `packages/xadmin-common/common/core/fields.py`；`system/serializers/fields.py` 仅为兼容别名）：
 
 | 字段 | 元数据 `input_type` | 用途 |
 |---|---|---|
@@ -76,12 +76,12 @@
 | `input_wrapper(serializers.SerializerMethodField)(read_only=True, input_type="boolean")` | 自定义 | 只读展示字段 / 自定义渲染类型的注入口 |
 | `PkMultipleFilter(input_type="api-search-user")` | 见 §1.4 | 搜索区的远程选择/多选 |
 
-- 依赖：`common/core/fields.py`、`common/drf/metadata.py`（`input_type` 判定，**必须 isinstance**）。
+- 依赖：`packages/xadmin-common/common/core/fields.py`、`packages/xadmin-common/common/drf/metadata.py`（`input_type` 判定，**必须 isinstance**）。
 - 配置项：`extra_kwargs`（`input_type` / `attrs` / `format` / `required`）；`Meta.fields_unexport`（导入导出忽略列）。
-- 扩展点：自定义 JSON 校验走 `validate()`；新增字段类型 → 先在 `common/drf/metadata.py::get_field_type` 加 isinstance 分支，再走前端四通道（§4.2）。
-- 权威源：`common/core/serializers.py`、`common/core/fields.py`；协议见 [metadata-protocol.md](metadata-protocol.md)。
+- 扩展点：自定义 JSON 校验走 `validate()`；新增字段类型 → 先在 `packages/xadmin-common/common/drf/metadata.py::get_field_type` 加 isinstance 分支，再走前端四通道（§4.2）。
+- 权威源：`packages/xadmin-common/common/core/serializers.py`、`packages/xadmin-common/common/core/fields.py`；协议见 [metadata-protocol.md](metadata-protocol.md)。
 
-### 1.3 ViewSet 体系（`common/core/modelset/`）
+### 1.3 ViewSet 体系（`packages/xadmin-common/common/core/modelset/`）
 
 **预组合基类**（`viewsets.py`）——选型直接继承：
 
@@ -121,10 +121,10 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
     pagination_class = DynamicPageNumber(1000)  # 缺省最大 100 条
 ```
 
-- 依赖：`common/core/modelset/` 各模块 + `common/core/response.py`。
+- 依赖：`packages/xadmin-common/common/core/modelset/` 各模块 + `packages/xadmin-common/common/core/response.py`。
 - 配置项（类属性）：`queryset` / `serializer_class` / `filterset_class` / `pagination_class` / `ordering_fields` / `select_related_fields` / `prefetch_related_fields` / `{action}_serializer_class`。
 - 扩展点：覆写点表与红线见 [framework-cookbook.md](framework-cookbook.md) §四；自定义动作 `@action` + `@extend_schema` + `ApiResponse`。
-- 权威源：`common/core/modelset/viewsets.py`、`common/core/modelset/base.py`。
+- 权威源：`packages/xadmin-common/common/core/modelset/viewsets.py`、`packages/xadmin-common/common/core/modelset/base.py`。
 
 ### 1.4 过滤与搜索
 
@@ -136,7 +136,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | 联想（`SuggestionsAction`） | 大表关联字段的远程候选（候选集与写入校验同源） | ViewSet 声明 `suggestion_fields = ("delegate",)`，前端自动升级 `SuggestSelect` |
 
 - 约束：FilterSet 声明的过滤器**必须同时列入 `Meta.fields`**，否则 `search-fields` 不产出。
-- 权威源：`common/core/filter.py`、`common/core/data_scope/`；设计见 [permission.md](permission.md)。
+- 权威源：`packages/xadmin-common/common/core/filter.py`、`packages/xadmin-common/common/core/data_scope/`；设计见 [permission.md](permission.md)。
 
 ### 1.5 元数据通道
 
@@ -148,15 +148,15 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | `GET {base}/search-fields` | `filterset_class` | 前端搜索区 |
 | `GET {base}/choices` | `choices_models` 聚合 | 下拉数据源 |
 
-`input_type` 推断链：字段自带 `input_type`（最高）→ `input_type_prefix/suffix` → `common/drf/metadata.py::get_field_type` 类型判定 → DRF 默认。协议全文（字段语义 / 注册表 / 与字段权限关系 / 失败可见性）见 [metadata-protocol.md](metadata-protocol.md)；性能开关 `?with_meta=1` 把三请求合并为一。
+`input_type` 推断链：字段自带 `input_type`（最高）→ `input_type_prefix/suffix` → `packages/xadmin-common/common/drf/metadata.py::get_field_type` 类型判定 → DRF 默认。协议全文（字段语义 / 注册表 / 与字段权限关系 / 失败可见性）见 [metadata-protocol.md](metadata-protocol.md)；性能开关 `?with_meta=1` 把三请求合并为一。
 
 ### 1.6 权限组件
 
 | 层 | 组件 | 位置 |
 |---|---|---|
-| API/菜单权限 | `IsAuthenticated`（白名单 → `get_user_permission` → 菜单 pk 解析） | `common/core/permission.py` |
-| 数据权限 | `get_filter_queryset` + `core/data_scope/`（16 种规则，fail-closed） | `common/core/filter.py` |
-| 字段权限 | `BaseModelSerializer` 自动裁剪 | `common/core/serializers.py` |
+| API/菜单权限 | `IsAuthenticated`（白名单 → `get_user_permission` → 菜单 pk 解析） | `packages/xadmin-common/common/core/permission.py` |
+| 数据权限 | `get_filter_queryset` + `core/data_scope/`（16 种规则，fail-closed） | `packages/xadmin-common/common/core/filter.py` |
+| 字段权限 | `BaseModelSerializer` 自动裁剪 | `packages/xadmin-common/common/core/serializers.py` |
 | 应用级授权 | `identity/utils/api_grant.py`（仅 PAT 凭证，只收敛不提权） | 三处挂载 |
 | 权限点治理 | `get_view_permissions` / `scan_gaps` / `sync_menu_permissions` / `doctor` | `system/utils/platform/menu.py`、`system/services/permission_sync/` |
 | 前端消费 | `hasAuth("动作:组件名")` / `<Auth>` / `usePageAuth` | 见 §2.6 |
@@ -183,7 +183,7 @@ RequestMiddleware（request_id + 当前请求上下文）
 → ApiLoggingMiddleware（操作日志，异步落库）
 ```
 
-- 常用上下文：`server/utils.py`（`get_current_request` / `set_current_request`，当前请求与当前用户）；异步任务构造请求用 `common/core/task_request.py::build_task_request`。
+- 常用上下文：`server/utils.py`（`get_current_request` / `set_current_request`，当前请求与当前用户）；异步任务构造请求用 `packages/xadmin-common/common/core/task_request.py::build_task_request`。
 - 扩展点：新增中间件写类后插入 `MIDDLEWARE`（注意响应阶段自内向外）；需要开关时 `raise MiddlewareNotUsed`。范例 `server/middleware.py`。
 
 ### 1.9 Celery 任务
@@ -196,7 +196,7 @@ RequestMiddleware（request_id + 当前请求上下文）
 | `background_task_view_set_job` + `run_view_by_celery_task` | 把 ViewSet action 丢进 heavy 队列跑（批量导入导出用，**无活跃 worker 自动降级同步**） |
 | `CELERY_TASK_ROUTES` | 队列路由（default / heavy 双队列，重活加条目） |
 
-- 权威源：`common/celery/decorator.py`、`common/tasks.py`；范例 `system/tasks/`（报表分发、清理任务）。
+- 权威源：`packages/xadmin-common/common/celery/decorator.py`、`packages/xadmin-common/common/tasks.py`；范例 `system/tasks/`（报表分发、清理任务）。
 
 ### 1.10 通知中心（`notifications/`）
 
@@ -214,18 +214,18 @@ RequestMiddleware（request_id + 当前请求上下文）
 
 ```
 config.yml（config.py）→ 同名环境变量 → 代码默认值   ← server/conf/ 装载
-数据库态 SysConfig（管理页可改，热更新）             ← common/core/config/
+数据库态 SysConfig（管理页可改，热更新）             ← packages/xadmin-common/common/core/config/
 个人级 UserConfig（真实个人行优先，缺席继承系统级）
 ```
 
 | 我要加…… | 放在 |
 |---|---|
 | 一个部署期配置（重启生效） | `config_example.yml` + `server/conf/defaults.py`（两处同名键） |
-| 一个运行期配置（管理页可改） | `common/core/config/system_conf.py` 注册 property + `loadjson/systemconfig.json` 种子 + `settings/`（系统设置 app）管理页表单 |
-| 一个个人配置 | `common/core/config/user_conf.py` + 个人设置页 |
+| 一个运行期配置（管理页可改） | `packages/xadmin-common/common/core/config/system_conf.py` 注册 property + `loadjson/systemconfig.json` 种子 + `settings/`（系统设置 app）管理页表单 |
+| 一个个人配置 | `packages/xadmin-common/common/core/config/user_conf.py` + 个人设置页 |
 
 - 取值链细节与配置速查表（键 ↔ 环境变量 ↔ 默认值 ↔ 生效方式）见 [../ops/deployment.md](../ops/deployment.md) §9。
-- 权威源：`server/conf/`、`common/core/config/`。
+- 权威源：`server/conf/`、`packages/xadmin-common/common/core/config/`。
 
 ### 1.12 种子与初始化
 
@@ -499,17 +499,17 @@ class KnowledgeApi extends BaseApi {
 | 弹窗表单复用 | `openDialogDrawer` | 页面级 | `useUserColumnFormats.tsx::handleRoleRules` |
 | 内置图标集扩展 | `iconRegistry.ts::SET_LOADERS` / `offlineIcon.ts` | 离线约束：不得回退在线 | 双形态注册 |
 | 全局 `el-*` 组件 | `src/plugins/elementPlus.ts` | 有单测比对清单 | — |
-| 值级加密 | `common/base/utils.py::signer` | 敏感字段入库前 | webhook secret / AI api_key |
-| 新增缓存类 | `common/cache/storage.py::RedisCacheBase` | 键名过 `check_cache_keys.py` | — |
+| 值级加密 | `packages/xadmin-common/common/base/utils.py::signer` | 敏感字段入库前 | webhook secret / AI api_key |
+| 新增缓存类 | `packages/xadmin-common/common/cache/storage.py::RedisCacheBase` | 键名过 `check_cache_keys.py` | — |
 | 周期任务 | `@register_as_period_task(module=...)` | module 归属可裁剪 | `system/tasks/` |
 | 通知渠道 | `notifications/backends/<name>.py`（模块级 `backend`） | 渠道枚举补 `BACKEND` | `notifications/backends/email.py` |
 | 通知消息类型 | `@register_message` + `register_backend_msg` | 渲染映射补齐各渠道 | `notifications/notifications.py` |
 | Webhook 事件 | `EVENT_CATALOG` 登记 + `emit_webhook_event` | 事件契约守护测试 | `task/utils/webhook.py` |
 | 审批业务绑定 | `create_instance(biz_type, biz_id)` + 监听 `approval_instance_finished` | 终态信号在 `system/signal.py` | 请假业务 `approval/utils/leave.py` |
-| 可裁剪模块 | `{app}/modules.py`（`ModuleSpec`） | `generate_module` 生成 | `common/core/modules/registry.py` |
+| 可裁剪模块 | `{app}/modules.py`（`ModuleSpec`） | `generate_module` 生成 | `packages/xadmin-common/common/core/modules/registry.py` |
 | 配置键 | 部署期 `config_example.yml`+`defaults.py`；运行期 `system_conf.py`+种子 | 两处同名；种子守护测试 | — |
 | 中间件 | `MIDDLEWARE` 插入 | 开关用 `MiddlewareNotUsed` | `server/middleware.py` |
-| 自定义渲染器（SSE 等） | `common/drf/renders/` + ViewSet `get_renderers()` | **ViewSet 必须覆写 `get_renderers`**（装饰器只对 `@api_view` 生效） | `message/views.py::ChatAiViewSet` |
+| 自定义渲染器（SSE 等） | `packages/xadmin-common/common/drf/renders/` + ViewSet `get_renderers()` | **ViewSet 必须覆写 `get_renderers`**（装饰器只对 `@api_view` 生效） | `message/views.py::ChatAiViewSet` |
 | 数据源非 ORM 的 ViewSet | 自带 `batch_destroy` | 不能依赖 QuerySet 能力 | `SecurityBlockIpViewSet` |
 
 ### 4.3 前后端咬合点（改一侧必看另一侧）
@@ -532,4 +532,4 @@ class KnowledgeApi extends BaseApi {
 | [方案选型与对比.md](方案选型与对比.md) | 组件/方案的特点、适用场景与对比 |
 | [../guide/recipes.md](../guide/recipes.md) | 典型扩展流程处方集（按任务索引） |
 | [模块化与功能裁剪.md](模块化与功能裁剪.md) | 模块清单、裁剪矩阵、CLI |
-| [../../common/README.md](../../common/README.md) | 内核目录地图与边界规则 |
+| [../../packages/xadmin-common/common/README.md](../../packages/xadmin-common/common/README.md) | 内核目录地图与边界规则 |

@@ -39,7 +39,7 @@
 | Outbound target must not be a private address: … | URL 为私网 / link-local / 云元数据的 **IP 字面量**（统一出站守卫口径；改用域名或在 `OUTBOUND_ALLOWED_HOSTS` 登记后重存） |
 | Enabled OAuth provider requires client_secret | 已启用但缺 `client_secret` |
 
-> **出站守卫统一口径**：provider 地址校验走 `common/utils/outbound.py`（与 Webhook /
+> **出站守卫统一口径**：provider 地址校验走 `packages/xadmin-common/common/utils/outbound.py`（与 Webhook /
 > AI base_url / MCP / 开放平台回调同源）——写入侧 https 强制 + IP 字面量归属校验
 > （域名写入侧不解析：内网 IdP 可能仅对服务端 DNS 可见）；**发送侧**（换码 / 取用户
 > 信息 / OIDC discovery 与 JWKS）走固定解析连接，私网 / 环回 / link-local 默认拒绝，
@@ -102,7 +102,7 @@ IM flavor 的协议差异全部收口在 `identity/utils/oauth_flavors.py`，新
 | 登录后角色没变 | `group_role_map` 是否配置、组名是否命中（支持组名精确匹配或 `cn=<组名>,...` 的 DN 形态）、角色 code 是否存在且启用 |
 
 安全纪律（与通用流一致）：IdP 原始报文只进日志、用户侧错误统一 `OAuthError` 可读文案、
-http 客户端可注入（保证单测离线）；出站目标统一经 `common/utils/outbound.py` 守卫
+http 客户端可注入（保证单测离线）；出站目标统一经 `packages/xadmin-common/common/utils/outbound.py` 守卫
 （写入侧校验 + 发送侧固定解析连接，防 SSRF / DNS rebinding）；换码 / 取用户信息的缓存
 按凭据摘要隔离（参考企微 corp token 实现）。
 

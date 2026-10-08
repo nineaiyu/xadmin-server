@@ -13,7 +13,7 @@
 - 以任意 user 为主语取数，不依赖当前请求（复用 get_user_menu_queryset；
   超管自行走 Menu.objects.filter(is_active=True) 旁路，与 routes 视图口径一致）。
 - 试算向目标 user 注入 `menu` 属性模拟菜单上下文，与 IsAuthenticated 写入
-  request.user.menu 完全同构（common/core/permission.py L123）。
+  request.user.menu 完全同构（packages/xadmin-common/common/core/permission.py L123）。
 - 文案为面向管理员的中文直述（同登录限流等既有中文文案惯例），不入 .po。
 
 本包按职责拆分（constants / labels / decode / queries / trial_data / trial_field /

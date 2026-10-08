@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """生产启动参数守护：gunicorn 的连接保持与优雅退出参数三处同源。
 
-- 生产命令：`common/management/commands/services/services/gunicorn.py`
+- 生产命令：`packages/xadmin-common/common/management/commands/services/services/gunicorn.py`
 - 压测 CI：`.github/workflows/perf.yml`（与生产同参才可比基线）
 - 文档：`docs/ops/performance-baseline.md` §三
 

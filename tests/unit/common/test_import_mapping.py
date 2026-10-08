@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""列映射纯函数（common/core/import_mapping.py）与解析器接入（三入口同源）。"""
+"""列映射纯函数（packages/xadmin-common/common/core/import_mapping.py）与解析器接入（三入口同源）。"""
 
 import io
 from csv import reader as csv_reader

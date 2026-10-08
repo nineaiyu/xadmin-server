@@ -146,7 +146,7 @@ def _task_routes_config() -> dict:
     """取当前生效的任务路由表（dict 形态）。
 
     `CELERY_TASK_ROUTES` 支持两种形态：静态 dict（用户在 config.yml 覆盖）与
-    可调用路由（common/celery/routing.py：内置表 + 各应用 config.TASK_ROUTES 声明，
+    可调用路由（packages/xadmin-common/common/celery/routing.py：内置表 + 各应用 config.TASK_ROUTES 声明，
     celery 每次投递时求值）。需要枚举全部路由的消费方（队列/交换机下拉推导）
     统一走此处取静态合并视图。
     """

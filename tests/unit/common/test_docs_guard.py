@@ -99,19 +99,23 @@ class TestDocPathsLogic:
         architecture = tmp_path / "docs" / "architecture"
         architecture.mkdir(parents=True)
         (architecture / "component-handbook.md").write_text("（空手册）\n", encoding="utf-8")
-        (architecture / "some-doc.md").write_text("见 `common/core/nothere.py`。\n", encoding="utf-8")
+        (architecture / "some-doc.md").write_text(
+            "见 `packages/xadmin-common/common/core/nothere.py`。\n", encoding="utf-8"
+        )
         violations = check_doc_paths.collect_violations(
             tmp_path, client_root=tmp_path / "none", docs_root=tmp_path / "none"
         )
         assert len(violations) == 1
-        assert "common/core/nothere.py" in violations[0]
+        assert "packages/xadmin-common/common/core/nothere.py" in violations[0]
 
     def test_active_doc_existing_code_path_passes(self, tmp_path):
         architecture = tmp_path / "docs" / "architecture"
         architecture.mkdir(parents=True)
         (architecture / "component-handbook.md").write_text("（空手册）\n", encoding="utf-8")
-        (architecture / "some-doc.md").write_text("见 `common/core/models.py::Book`。\n", encoding="utf-8")
-        core = tmp_path / "common" / "core"
+        (architecture / "some-doc.md").write_text(
+            "见 `packages/xadmin-common/common/core/models.py::Book`。\n", encoding="utf-8"
+        )
+        core = tmp_path / "packages" / "xadmin-common" / "common" / "core"
         core.mkdir(parents=True)
         (core / "models.py").write_text("", encoding="utf-8")
         violations = check_doc_paths.collect_violations(

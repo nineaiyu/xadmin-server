@@ -67,7 +67,7 @@ curl -s -H "Authorization: Bearer $(cat ops/monitoring/metrics_token)" \
 [../cache-keys-audit.md](../cache-keys-audit.md)。
 
 **指标名漂移守护**：`tests/unit/common/test_monitoring_assets.py` 断言规则与面板表达式
-只引用 `common/metrics.py` 中真实存在的指标——名字改了而规则没改会直接失败
+只引用 `packages/xadmin-common/common/metrics.py` 中真实存在的指标——名字改了而规则没改会直接失败
 （避免「看着有告警、其实永远不触发」）。
 
 ## 四、告警投递（桥接进站内信 / 邮件 / Webhook）

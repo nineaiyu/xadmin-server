@@ -3,7 +3,7 @@
 
 历史缺陷：``get_queryset`` 仅在 ``action == "destroy"`` 时排除内置角色，
 ``batch_destroy`` 直接 ``get_queryset()``——单删被拦、批删可把内置角色软删进
-回收站（`identity/views/admin/role.py` + `common/core/modelset/batch.py`）。
+回收站（`identity/views/admin/role.py` + `packages/xadmin-common/common/core/modelset/batch.py`）。
 """
 
 import pytest

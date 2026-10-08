@@ -67,7 +67,7 @@ XADMIN_APPS = CONFIG.XADMIN_APPS
 
 # 功能模块裁剪（软裁剪）：MODULE_PRESET 选基线（core/standard/full），
 # MODULE_ENABLE / MODULE_DISABLE 做显式增删。模块清单、依赖校验与裁剪动作
-# 见 common/core/modules.py（默认 full = 全部开启，行为与改造前一致）
+# 见 packages/xadmin-common/common/core/modules.py（默认 full = 全部开启，行为与改造前一致）
 MODULE_PRESET = CONFIG.MODULE_PRESET
 MODULE_ENABLE = CONFIG.MODULE_ENABLE
 MODULE_DISABLE = CONFIG.MODULE_DISABLE
@@ -100,7 +100,7 @@ from server.settings.csp import (  # noqa: E402,F401
 )
 
 # Prometheus 指标采集（默认关闭）：仅在显式启用时挂载，避免无谓开销与端点暴露。
-# 开关与令牌**无条件导出**：读取方（common/api/metrics.py）走 getattr(settings, ...)，
+# 开关与令牌**无条件导出**：读取方（packages/xadmin-common/common/api/metrics.py）走 getattr(settings, ...)，
 # 漏导出会让端点永远 404（2026-09-16 实测踩中，与 SECURITY_AES_V1_DECRYPT_ENABLED 同类缺陷）
 METRICS_ENABLED = CONFIG.METRICS_ENABLED
 METRICS_TOKEN = CONFIG.METRICS_TOKEN

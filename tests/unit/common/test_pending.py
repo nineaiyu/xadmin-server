@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/utils/pending.py：并发等待队列（pending result）。"""
+"""packages/xadmin-common/common/utils/pending.py：并发等待队列（pending result）。"""
 
 from common.cache.storage import PendingStateCache
 from common.utils.pending import get_pending_result, set_pending_cache

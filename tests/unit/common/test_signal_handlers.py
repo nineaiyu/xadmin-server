@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/signal_handlers.py 回归：celery 启停钩子、任务日志清理、creator/modifier 自动落值。
+"""packages/xadmin-common/common/signal_handlers.py 回归：celery 启停钩子、任务日志清理、creator/modifier 自动落值。
 
 creator/modifier 直接以 kwargs 调用 receiver（不经 save），请求上下文通过 patch
 `get_current_request` 注入——threadlocal 在单测里本就没有请求。

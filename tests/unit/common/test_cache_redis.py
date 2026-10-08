@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/cache/redis.py：Redis 数据结构封装（基于测试 FakeRedis 后端）。"""
+"""packages/xadmin-common/common/cache/redis.py：Redis 数据结构封装（基于测试 FakeRedis 后端）。"""
 
 import pytest
 

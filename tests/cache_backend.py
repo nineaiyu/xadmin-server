@@ -11,7 +11,7 @@ django 标准的 LocMemCache 不支持这些能力，而 django-redis 6.0 又难
 - lock 提供基于 add 的简化互斥（单线程测试环境下与 redis lock 行为一致）
 - delete_pattern 以 glob 方式匹配内部键并删除（满足缓存失效逻辑）
 - client 属性伪装 django_redis 的 DefaultClient，将 redis 命令转发给
-  fakeredis.FakeStrictRedis（common/cache/redis.py 的 CacheList 等使用）
+  fakeredis.FakeStrictRedis（packages/xadmin-common/common/cache/redis.py 的 CacheList 等使用）
 """
 
 import fnmatch

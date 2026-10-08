@@ -30,6 +30,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=core \
 # PyPI 候选集不完全一致时会误报「lock 需更新」；lock ↔ pyproject 同步由 CI 的 uv lock --check 守护。
 WORKDIR /data/
 
+# 框架内核（工作区成员）运行期经 PYTHONPATH 引入：源码在
+# /data/xadmin-server/packages/xadmin-common/（bind mount 场景由 entrypoint.sh 同源兜底）
+ENV PYTHONPATH=/data/xadmin-server/packages/xadmin-common
+
 # 默认官方源：本 Dockerfile 由 CI（海外 runner）构建基础镜像。
 # 国内本地构建可 --build-arg PIP_MIRROR=https://mirrors.huaweicloud.com/repository/pypi/simple --build-arg APT_MIRROR=http://mirrors.huaweicloud.com
 ARG PIP_MIRROR=https://pypi.org/simple

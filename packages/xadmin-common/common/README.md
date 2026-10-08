@@ -5,7 +5,7 @@
 > `scripts/check_cross_app_imports.py` 静态门禁禁止**（CI lint 强制）。
 >
 > 用法速查（ViewSet 选型 / 覆写点 / 前端契约）见
-> [framework-cookbook.md](../docs/architecture/framework-cookbook.md)；
+> [framework-cookbook.md](../../../docs/architecture/framework-cookbook.md)；
 > 本文回答"内核里有什么、边界在哪、扩展走哪条路"。
 
 ## 一、目录地图
@@ -49,11 +49,11 @@
 
 | 主题 | 入口 | 机制文档 |
 |---|---|---|
-| 权限（API/数据/字段 + 应用级授权） | `core/permission.py`、`core/filter.py`、`core/serializers.py::get_allow_fields`、`system/utils/api_grant.py` | [permission.md](../docs/architecture/permission.md) |
-| 元数据（search-columns / search-fields / choices） | `core/modelset/metadata.py` + `drf/metadata.py`；协议 Schema 见 [docs/schema/](../docs/schema/README.md)，规范见 [元数据协议规范](../docs/architecture/metadata-protocol.md) | 契约测试 `tests/unit/common/test_metadata_schema.py` |
-| 响应与异常 | `core/response.py::ApiResponse`（`code=1000` 成功） | [exception-handling.md](../docs/exception-handling.md) |
-| 缓存 | `cache/storage.py::RedisCacheBase`（键登记过 `check_cache_keys.py`）；失效走信号，别手工散落 delete | [cache.md](../docs/architecture/cache.md) |
-| 模块裁剪 | `core/modules/`（`ModuleSpec` 声明 → preset/enable/disable 解析 → 六层裁剪） | [模块化与功能裁剪.md](../docs/architecture/模块化与功能裁剪.md) |
+| 权限（API/数据/字段 + 应用级授权） | `core/permission.py`、`core/filter.py`、`core/serializers.py::get_allow_fields`、`system/utils/api_grant.py` | [permission.md](../../../docs/architecture/permission.md) |
+| 元数据（search-columns / search-fields / choices） | `core/modelset/metadata.py` + `drf/metadata.py`；协议 Schema 见 [docs/schema/](../../../docs/schema/README.md)，规范见 [元数据协议规范](../../../docs/architecture/metadata-protocol.md) | 契约测试 `tests/unit/common/test_metadata_schema.py` |
+| 响应与异常 | `core/response.py::ApiResponse`（`code=1000` 成功） | [exception-handling.md](../../../docs/exception-handling.md) |
+| 缓存 | `cache/storage.py::RedisCacheBase`（键登记过 `check_cache_keys.py`）；失效走信号，别手工散落 delete | [cache.md](../../../docs/architecture/cache.md) |
+| 模块裁剪 | `core/modules/`（`ModuleSpec` 声明 → preset/enable/disable 解析 → 六层裁剪） | [模块化与功能裁剪.md](../../../docs/architecture/模块化与功能裁剪.md) |
 
 ## 四、扩展纪律（改内核前必读）
 

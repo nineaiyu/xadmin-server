@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/filter.py 数据权限过滤单元测试（以 demo.Book 模型为载体）。"""
+"""packages/xadmin-common/common/core/filter.py 数据权限过滤单元测试（以 demo.Book 模型为载体）。"""
 
 import pytest
 

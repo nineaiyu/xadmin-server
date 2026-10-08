@@ -191,7 +191,7 @@ def test_forward_keys_bound_at_module_import():
 def test_metrics_keys_exported():
     """METRICS_ENABLED / METRICS_TOKEN 必须无条件导出到 settings。
 
-    读取方 common/api/metrics.py 走 `getattr(settings, "METRICS_ENABLED", False)`：
+    读取方 packages/xadmin-common/common/api/metrics.py 走 `getattr(settings, "METRICS_ENABLED", False)`：
     漏导出时端点永远 404（2026-09-16 实测踩中，与 SECURITY_AES_V1_DECRYPT_ENABLED 同类缺陷）。
     """
     from django.conf import settings

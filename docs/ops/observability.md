@@ -3,7 +3,7 @@
 > 建立：2026-09-16（年度计划 A1 追踪 + A2 SLO 交付物）。
 > 相关：[metrics.md](../metrics.md)（KPI 与基线）、[release-checklist.md](release-checklist.md)（发布观察）、
 > [runbook.md](runbook.md)（故障处置）、`server/monitoring.py`（Sentry 初始化）、
-> `common/metrics.py` + `common/celery/metrics.py`（指标定义与任务信号）。
+> `packages/xadmin-common/common/metrics.py` + `packages/xadmin-common/common/celery/metrics.py`（指标定义与任务信号）。
 
 ## 一、三支柱现状
 
@@ -211,9 +211,9 @@ bash ops/oom_alert.sh
 **修复清单**：
 1. `server/settings/base.py`：redis 连接池 `socket_connect_timeout=0.2` / `socket_timeout=0.5` / `retry_on_timeout=False`；
 2. 同处 `IGNORE_EXCEPTIONS=True`：缓存不可用时读返回 None、写静默（fail-open 标准降级语义）；
-3. `common/core/config/`：ConfigCache 读/写异常兜底 → 回落读库（配置通路不被缓存故障阻断）；
-4. `common/api/common.py`：health 视图豁免 DRF 限流（基础设施端点不吃业务限流）；
-5. `common/utils/health.py`：探测预算 2s→1s。
+3. `packages/xadmin-common/common/core/config/`：ConfigCache 读/写异常兜底 → 回落读库（配置通路不被缓存故障阻断）；
+4. `packages/xadmin-common/common/api/common.py`：health 视图豁免 DRF 限流（基础设施端点不吃业务限流）；
+5. `packages/xadmin-common/common/utils/health.py`：探测预算 2s→1s。
 
 **验收**：Redis 冻结时 health **1.85s** 返回 `status:false` + `redis_status:false`（判活正确、远低于
 healthcheck 5s 超时）；恢复后无人工干预自动回正。单测 2378 全绿 + E2E smoke 9 passed。
@@ -225,7 +225,7 @@ healthcheck 5s 超时）；恢复后无人工干预自动回正。单测 2378 �
 | 重启中（PG 停止） | health **1.05s** 快速失败：`db_status:false` + `db_time:"terminating connection..."`（DB 探测无挂死）|
 | 修复前恢复期 | **永不恢复**：连续 6 次探测全 false（"the connection is closed"），仅进程重启可恢复 |
 | 根因 | psycopg_pool 默认 `check_connection` 以**空查询**判活，检测不到「PG 重启后服务端已断开、客户端未读到终止报文」的**半开连接**——坏连接被反复取出复用 |
-| 修复 | 配置期替换 `ConnectionPool.check_connection` 为**真实 SELECT 1** 判活（`common/db.py` + 测试 3 例）——坏连接在取用阶段被识别淘汰；Django 硬编码 check 参数无法从 OPTIONS 覆盖（实测 duplicate keyword 启动失败），故采用配置期静态方法替换 |
+| 修复 | 配置期替换 `ConnectionPool.check_connection` 为**真实 SELECT 1** 判活（`packages/xadmin-common/common/db.py` + 测试 3 例）——坏连接在取用阶段被识别淘汰；Django 硬编码 check 参数无法从 OPTIONS 覆盖（实测 duplicate keyword 启动失败），故采用配置期静态方法替换 |
 | 修复后恢复期 | **自动恢复**：数次探测内收敛为 true（uvicorn 多 worker 各自检出坏连接，存在几秒波动窗口——可接受边界）；全量 2387 passed |
 
 ### 第五轮（2030-12，SLO 校准窗口）：网络分区（PG 断网）——含一次环境事故与恢复
@@ -416,7 +416,7 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
 规则必须 trap 兜底清理。
 
 **修复与复演（2026-09-18 当日闭环）**：本轮暴露的韧性缺口四层修复——①**基础设施端点事务豁免**
-（`common/urls.py`，**根因修复**）：`ATOMIC_REQUESTS=True` 使每个请求进入视图前
+（`packages/xadmin-common/common/urls.py`，**根因修复**）：`ATOMIC_REQUESTS=True` 使每个请求进入视图前
 `ensure_connection`，DB 故障时 health 在请求入口直接 500 → health/metrics/csp-report 用官方
 `non_atomic_requests` 包装 URLconf callback；②**DB 半开快速失败**：`tcp_user_timeout=30s`
 （内核对未确认数据超时强制断开）+ keepalives 三件套 + 池 `timeout=5s`（取用等待上限）

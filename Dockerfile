@@ -14,7 +14,8 @@ RUN echo > config.yml \
 FROM python:3.14.7-slim
 
 ENV LANG=en_US.UTF-8 \
-    PATH=/data/py3/bin:$PATH
+    PATH=/data/py3/bin:$PATH \
+    PYTHONPATH=/data/xadmin-server/packages/xadmin-common
 
 ARG APT_MIRROR=http://deb.debian.org
 

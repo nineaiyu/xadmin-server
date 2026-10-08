@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/db/utils.py：数据权限 Q 表达式构建与连接管理器。"""
+"""packages/xadmin-common/common/core/db/utils.py：数据权限 Q 表达式构建与连接管理器。"""
 
 import pytest
 from django.db import connection, transaction

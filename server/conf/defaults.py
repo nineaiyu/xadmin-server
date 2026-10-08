@@ -49,7 +49,7 @@ BASE_CONFIG = {
     "XADMIN_APPS": [],
     # ------------------------------------------------------------------
     # 功能模块裁剪（软裁剪）：预设 + 显式增删，模块清单与裁剪语义见
-    # common/core/modules.py；默认 full = 全部开启，与改造前行为一致
+    # packages/xadmin-common/common/core/modules.py；默认 full = 全部开启，与改造前行为一致
     # ------------------------------------------------------------------
     "MODULE_PRESET": "full",  # core / standard / full
     "MODULE_ENABLE": [],  # 在预设基础上额外启用，如 ["chat"]
@@ -82,7 +82,7 @@ BASE_CONFIG = {
     # 纯读请求（GET/HEAD/OPTIONS 且 action 命中 DRF 读动作白名单）跳过
     # ATOMIC_REQUESTS 事务：省 BEGIN/COMMIT 两次数据库往返（列表页/元数据接口
     # 是调用量最大的一类）。写请求与自定义 GET action 不受影响，详见
-    # common/core/atomic_read.py；置 false 可整体回退到「每请求一个事务」。
+    # packages/xadmin-common/common/core/atomic_read.py；置 false 可整体回退到「每请求一个事务」。
     "ATOMIC_REQUESTS_SKIP_READ_ACTIONS": True,
     # HOST 校验白名单，生产环境必须配置，如 ['xadmin.example.com']；DEBUG 模式默认放行
     "ALLOWED_HOSTS": [],

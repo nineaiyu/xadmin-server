@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/serializers.py 字段权限裁剪单元测试。"""
+"""packages/xadmin-common/common/core/serializers.py 字段权限裁剪单元测试。"""
 
 import pytest
 from rest_framework.request import Request

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/core/exception.py 全局异常处理测试。
+"""packages/xadmin-common/common/core/exception.py 全局异常处理测试。
 
 这是所有接口的错误契约，覆盖：
 1. DRF APIException / ValidationError / Http404 / Throttled 的统一响应结构；
