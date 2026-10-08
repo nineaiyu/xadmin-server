@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""system/utils/platform/permission_sync/：菜单权限点同步内核（纯逻辑 + 轻量 DB）。"""
+"""system/services/permission_sync/：菜单权限点同步内核（纯逻辑 + 轻量 DB）。"""
 
 import json
 from types import SimpleNamespace
 
 import pytest
 
-from system.utils.platform import permission_sync as sync
+from system.services import permission_sync as sync
 
 
 class TestUrlSampling:

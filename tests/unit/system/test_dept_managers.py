@@ -13,7 +13,7 @@ from identity.utils.dept_managers import (
     ensure_preset_rules,
 )
 from system.models import DataPermission
-from system.utils.platform.permission_sync import audit_wide_manager_grants
+from system.services.permission_sync import audit_wide_manager_grants
 
 pytestmark = pytest.mark.django_db
 

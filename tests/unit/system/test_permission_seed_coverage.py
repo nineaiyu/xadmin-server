@@ -19,7 +19,7 @@ from types import SimpleNamespace
 
 from django.conf import settings
 
-from system.utils.platform.permission_sync import build_route_index, scan_gaps
+from system.services.permission_sync import build_route_index, scan_gaps
 
 MENU_SEED_FILE = "menu.json"
 

@@ -116,7 +116,7 @@ def clean_tag_metadata_cache_handler(sender, instance, **kwargs):
     （内置标签同步）也走此信号，故挂模型而非视图。
     """
     from common.core.modelset.metadata import invalidate_metadata_payload_cache
-    from system.utils.platform.tags import invalidate_tag_options_cache
+    from system.services.tags import invalidate_tag_options_cache
 
     invalidate_tag_options_cache()
     invalidate_metadata_payload_cache()

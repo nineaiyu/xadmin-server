@@ -12,7 +12,7 @@
 
 本包不打印、不交互，供 management 命令与测试复用。按职责拆分
 （constants / types / scan / apply / audit / seed），对外 API 由本文件统一再导出，
-导入路径保持 ``system.utils.platform.permission_sync`` 不变。
+对外导入路径为 ``system.services.permission_sync``（服务型模块，随服务层下沉归位）。
 """
 
 from .apply import apply_binding_fixes, apply_plans, grant_to_roles, plan_binding_fixes

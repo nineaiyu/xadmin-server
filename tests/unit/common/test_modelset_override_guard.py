@@ -19,7 +19,7 @@ from rest_framework.mixins import DestroyModelMixin
 
 from common.core.modelset.base import BaseViewSet
 from common.core.modelset.batch import BatchDestroyAction
-from system.utils.platform.permission_sync.scan import build_route_index
+from system.services.permission_sync.scan import build_route_index
 
 # 豁免登记：{ViewSet 类名: 理由}。新增条目必须说明批量路径为何可以跳过 perform_destroy。
 EXEMPT_VIEWSETS = {}

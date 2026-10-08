@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""种子装配的冲突预检（system/utils/platform/seed.py）单元测试。
+"""种子装配的冲突预检（system/services/seed.py）单元测试。
 
 守护：库内数据优先——自然键被占用时跳过种子行并级联处理引用；无冲突时零改动
 （直接用仓库原始种子文件）。
@@ -19,7 +19,7 @@ from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlo
 from identity.models import UserRole
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
 from system.models import DataDict, ModelLabelField
-from system.utils.platform.seed import _unique_checks, build_seed_fixtures, filter_conflicting_rows
+from system.services.seed import _unique_checks, build_seed_fixtures, filter_conflicting_rows
 
 pytestmark = pytest.mark.django_db
 

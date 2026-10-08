@@ -22,7 +22,7 @@ from common.utils import get_logger
 from identity.builtin import BUILTIN_ROLE_CODES
 from identity.models import UserRole
 from identity.serializers.role import ListRoleSerializer, RoleSerializer
-from system.utils.platform.modelset import RolePreviewAction
+from system.services.modelset import RolePreviewAction
 
 logger = get_logger(__name__)
 

@@ -21,8 +21,8 @@ from django.core.management.base import BaseCommand
 
 from identity.models import UserInfo
 from system.models import Menu, MenuMeta, ModelLabelField
-from system.utils.platform import permission_sync as sync
-from system.utils.platform.modelfield import sync_model_field
+from system.services import permission_sync as sync
+from system.services.modelfield import sync_model_field
 
 DETAIL_LIMIT = 100
 

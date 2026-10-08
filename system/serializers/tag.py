@@ -86,6 +86,6 @@ class TaggedObjectSerializerMixin:
     """
 
     def get_tags(self, obj) -> list:
-        from system.utils.platform.tags import tags_for_instance
+        from system.services.tags import tags_for_instance
 
         return tags_for_instance(obj)

@@ -15,7 +15,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.models import DataPermission, Menu, ModelLabelField
 from system.serializers.permission import DataPermissionSerializer, expand_menu_scope
-from system.utils.platform.modelfield import get_field_meta
+from system.services.modelfield import get_field_meta
 from system.utils.platform.rule_meta import RULE_TYPE_GROUP_TEXTS, RULE_TYPE_META, RULE_TYPE_TEXTS
 from system.views.admin.modelfield import ModelLabelFieldViewSet
 

@@ -6,7 +6,7 @@
 # date : 10/25/2024
 from django.core.management.base import BaseCommand
 
-from system.utils.platform.modelfield import sync_model_field
+from system.services.modelfield import sync_model_field
 
 
 class Command(BaseCommand):

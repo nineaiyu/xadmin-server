@@ -56,15 +56,22 @@ def read_seed_rows(model_names, file_root) -> dict:
 
 
 def write_seed_rows(rows_by_model, model_names, target_dir) -> list:
-    """把（已过滤的）种子行写到 ``target_dir``，返回可交给 loaddata 的路径清单。"""
+    """把（已过滤的）种子行写到 ``target_dir``，返回可交给 loaddata 的路径清单。
+
+    空模型不写文件也不进清单：没有可导入内容，loaddata 还会对空 fixture 报
+    "No fixture data found for '<model>'"（RuntimeWarning 噪音），跳过语义等价。
+    """
 
     labels = []
     os.makedirs(target_dir, exist_ok=True)
     for model in model_names:
         label = model._meta.label_lower
+        rows = rows_by_model.get(label) or []
+        if not rows:
+            continue
         target = os.path.join(target_dir, f"{model._meta.model_name}.json")
         with open(target, "w", encoding="utf-8") as fp:
-            json.dump(rows_by_model.get(label, []), fp, ensure_ascii=False, indent=1)
+            json.dump(rows, fp, ensure_ascii=False, indent=1)
             fp.write("\n")
         labels.append(target)
     return labels
@@ -266,7 +273,9 @@ def build_seed_fixtures(model_names, file_root, target_dir, *, module_filter=Non
     """装配待导入的种子：读文件 → 模块裁剪（可选）→ 冲突预检 → 落盘。
 
     :return: ``(fixture_labels, notes, trimmed)``；``trimmed=False`` 时 ``fixture_labels``
-        是仓库里的原始文件路径（无裁剪、无冲突，零改动）
+        是仓库里的原始文件路径（无裁剪、无冲突，零改动）。空种子模型（无行）不进
+        清单：没有可导入内容，loaddata 还会对空 fixture 报 "No fixture data found"
+        （RuntimeWarning 噪音），跳过语义等价
     """
 
     rows_by_model = read_seed_rows(model_names, file_root)
@@ -283,13 +292,14 @@ def build_seed_fixtures(model_names, file_root, target_dir, *, module_filter=Non
         notes.extend(conflict_notes)
         trimmed = True
 
+    non_empty = [model for model in model_names if rows_by_model.get(model._meta.label_lower)]
     if not trimmed:
-        labels = [os.path.join(file_root, f"{model._meta.model_name}.json") for model in model_names]
+        labels = [os.path.join(file_root, f"{model._meta.model_name}.json") for model in non_empty]
         return labels, notes, False
 
     for note in notes:
         logger.warning("seed conflict: %s", note)
-    return write_seed_rows(rows_by_model, model_names, target_dir), notes, True
+    return write_seed_rows(rows_by_model, non_empty, target_dir), notes, True
 
 
 def _apply_module_filter(module_filter, rows_by_model, model_names) -> dict:

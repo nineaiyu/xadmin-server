@@ -62,8 +62,8 @@ class TestAuditCommand:
 
     def test_fail_on_gap_exit_code(self, monkeypatch):
         """注入一个未登记资源域的路由：--fail-on-gap 退出码 1（新模块出生即被感知）。"""
-        from system.utils.platform import permission_sync
-        from system.utils.platform.permission_sync.types import RouteInfo
+        from system.services import permission_sync
+        from system.services.permission_sync.types import RouteInfo
 
         fake = RouteInfo(
             view="demo.views.FakeViewSet",

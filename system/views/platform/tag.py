@@ -37,7 +37,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models.tag import Tag
 from system.serializers.tag import TagAssignSerializer, TagBatchAssignSerializer, TagSerializer
-from system.utils.platform.tags import (
+from system.services.tags import (
     ensure_object_visible,
     ensure_tag_permission,
     invalidate_tag_options_cache,

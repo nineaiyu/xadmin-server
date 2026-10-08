@@ -1,8 +1,8 @@
 # `system/utils/platform/` 分区说明
 
 平台通用工具（字典 / 菜单 / 标签 / 代码生成 / 监控 / 种子等）。本目录按
-「服务型 / 只读查询型 / 纯工具型」三类分区，逐步把**服务型**模块下沉到
-`system/services/`，本目录最终只保留只读查询与纯工具两类。归类口径与术语与
+「服务型 / 只读查询型 / 纯工具型」三类分区，**服务型**模块已全部下沉到
+`system/services/`，本目录只保留只读查询与纯工具两类。归类口径与术语与
 [`docs/plans/system-utils域拆分映射-2026.10.md`](../../../docs/plans/system-utils域拆分映射-2026.10.md)
 （utils 五域归位）及 [`docs/plans/system-services服务层下沉-2026.10.md`](../../../docs/plans/system-services服务层下沉-2026.10.md)
 （服务层目标形态）保持一致。
@@ -20,15 +20,15 @@
 
 ## 逐文件归属清单
 
-### 服务型（下沉候选，滚动迁移）
+### 服务型（已全部下沉 `system/services/`）
 
 | 文件 | 职责 | 迁移状态 |
 |---|---|---|
-| `modelfield.py` | 模型字段标签同步（写 `ModelLabelField`） | 待滚（下一步候选） |
-| `modelset.py` | ViewSet 共用动作编排（含角色权限变更写库、配置缓存失效） | 待滚 |
-| `seed.py` | 内置种子装配（写 fixture 文件 + 空时间戳回填落库） | 待滚 |
-| `tags.py` | 通用标签中心（打标读写落库） | 待滚 |
-| `permission_sync/` | 权限点同步（写菜单 / 权限点） | 待滚（整包） |
+| `modelfield.py` | 模型字段标签同步（写 `ModelLabelField`） | **已迁** `system/services/modelfield.py` |
+| `modelset.py` | ViewSet 共用动作编排（含角色权限变更写库、配置缓存失效） | **已迁** `system/services/modelset.py` |
+| `seed.py` | 内置种子装配（写 fixture 文件 + 空时间戳回填落库） | **已迁** `system/services/seed.py` |
+| `tags.py` | 通用标签中心（打标读写落库） | **已迁** `system/services/tags.py` |
+| `permission_sync/` | 权限点同步（写菜单 / 权限点） | **已迁** `system/services/permission_sync/` |
 | `credential.py` | 凭据治理（轮换 / 重加密 + 审计落库） | **已迁** `system/services/credential.py` |
 | `credential_rotate.py` | 凭据轮换动作（落库 + 审计 + 缓存失效） | **已迁** `system/services/credential_rotate.py` |
 
@@ -59,4 +59,6 @@
   仅移动模块并更新全仓引用，含测试 `monkeypatch` 目标）；
 - 调用方（视图 / 管理命令 / 其他 app）改从 `system.services.<模块>` 导入；
   `system/services/__init__.py` 契约门面按需增补惰性导出；
-- 迁移完成即在「迁移状态」列标注 `已迁`，本目录不再保留同名实现（禁止双实现）。
+- 迁移完成即在「迁移状态」列标注 `已迁`，本目录不再保留同名实现（禁止双实现）；
+- 当前状态：上表服务型条目已全部迁出，本目录仅剩只读查询型与纯工具型；新增模块
+  先按上方判据归类，判为服务型者直接落 `system/services/`，不再回流本目录。

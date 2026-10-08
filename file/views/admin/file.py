@@ -48,7 +48,7 @@ from file.utils.upload_store import (
 )
 from file.views.admin.file_access import FileAccessActionMixin, inline_file_response
 from file.views.admin.file_chunk import ChunkUploadActionMixin
-from system.utils.platform.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
+from system.services.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 
 logger = get_logger(__name__)
 

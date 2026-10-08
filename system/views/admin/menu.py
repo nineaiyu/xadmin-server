@@ -33,8 +33,8 @@ from common.swagger.utils import get_default_response_schema
 from identity.services import invalidate_menu_user_caches
 from system.models import Menu, MenuMeta, ModelLabelField
 from system.serializers.menu import MenuSerializer
+from system.services import permission_sync as sync
 from system.signal_handler import clean_cache_handler
-from system.utils.platform import permission_sync as sync
 from system.utils.platform.menu import get_view_permissions
 
 

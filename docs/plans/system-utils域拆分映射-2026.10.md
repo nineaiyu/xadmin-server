@@ -97,6 +97,12 @@
   细化为「是否含写副作用」——凭据轮换/重加密落库 + 审计属服务型，随服务层下沉迁至
   `system/services/credential.py` / `system/services/credential_rotate.py`；platform 目录
   分区口径与逐文件清单见 `system/utils/platform/README.md`。
+- **（2026-10-08 更新）platform 服务型模块已全部下沉 `system/services/`**：按
+  `system/utils/platform/README.md` 的判据（写库 / 事务 / 文件落盘 / 外部副作用），
+  `modelfield.py` / `modelset.py` / `seed.py` / `tags.py` / `permission_sync/` 随服务层
+  下沉迁至 `system/services/` 同名路径；只读查询型（dict / codegen_gui / monitor_* /
+  module_impact / permission_preview）与纯工具型（menu / codegen_fields /
+  monitor_export / rule_meta）留在 `system/utils/platform/`。
 - **seed / module_impact / modelfield / menu / dict / tags → platform**：装配与元数据治理，
   服务全平台。
 

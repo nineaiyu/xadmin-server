@@ -23,7 +23,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import ModelLabelField
 from system.serializers.field import ModelLabelFieldImportSerializer, ModelLabelFieldSerializer
-from system.utils.platform.modelfield import (
+from system.services.modelfield import (
     get_extra_field_lookups,
     get_field_lookup_info,
     get_field_meta,

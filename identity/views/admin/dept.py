@@ -21,7 +21,7 @@ from common.utils import get_logger
 from identity.models import DeptInfo, UserInfo
 from identity.serializers.department import DeptManagerAssignSerializer, DeptSerializer
 from identity.utils.dept_managers import assign_dept_managers
-from system.utils.platform.modelset import AnnotateUserCountMixin, ChangeRolePermissionAction, DeptPreviewAction
+from system.services.modelset import AnnotateUserCountMixin, ChangeRolePermissionAction, DeptPreviewAction
 
 logger = get_logger(__name__)
 

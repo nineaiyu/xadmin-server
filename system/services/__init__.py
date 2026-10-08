@@ -78,15 +78,15 @@ def __getattr__(name):
 
 
 def sync_model_field():
-    """模型字段权限树同步（system.utils.platform.modelfield 契约导出）。"""
-    from system.utils.platform.modelfield import sync_model_field as _sync
+    """模型字段权限树同步（system.services.modelfield 契约导出）。"""
+    from system.services.modelfield import sync_model_field as _sync
 
     return _sync()
 
 
 def scan_permission_gaps():
-    """权限点缺口扫描（system.utils.platform.permission_sync 契约导出）。"""
-    from system.utils.platform.permission_sync import scan_permission_gaps as _scan
+    """权限点缺口扫描（system.services.permission_sync 契约导出）。"""
+    from system.services.permission_sync import scan_permission_gaps as _scan
 
     return _scan()
 

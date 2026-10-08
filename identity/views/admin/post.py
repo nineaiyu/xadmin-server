@@ -28,7 +28,7 @@ from common.utils import get_logger
 from identity.models import Post
 from identity.serializers.post import PostMemberSerializer, PostSerializer
 from identity.utils.user_options import search_user_options
-from system.utils.platform.modelset import PostPreviewAction
+from system.services.modelset import PostPreviewAction
 
 logger = get_logger(__name__)
 

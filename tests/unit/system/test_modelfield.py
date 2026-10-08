@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""system/utils/platform/modelfield.py：字段 lookup 说明与模型字段同步。"""
+"""system/services/modelfield.py：字段 lookup 说明与模型字段同步。"""
 
 import pytest
 from django.conf import settings
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.utils.platform.modelfield import get_extra_field_lookups, get_field_lookup_info
+from system.services.modelfield import get_extra_field_lookups, get_field_lookup_info
 from system.views.admin.modelfield import ModelLabelFieldViewSet
 
 
@@ -54,7 +54,7 @@ def test_lookup_info_empty_fields():
 class TestSyncModelField:
     def test_sync_model_field_creates_label_fields(self):
         from system.models import ModelLabelField
-        from system.utils.platform.modelfield import sync_model_field
+        from system.services.modelfield import sync_model_field
 
         sync_model_field()
         # 数据权限维度：所有表/所有字段节点存在
@@ -69,7 +69,7 @@ class TestSyncModelField:
 
     def test_get_app_model_fields_includes_system_models(self):
         from system.models import ModelLabelField
-        from system.utils.platform.modelfield import get_app_model_fields
+        from system.services.modelfield import get_app_model_fields
 
         get_app_model_fields()
         names = set(
@@ -81,7 +81,7 @@ class TestSyncModelField:
     def test_prune_removes_stale_rows_with_null_updated_time(self):
         """清理陈旧行不得依赖 updated_time（种子 loaddata 写入的行该列为 NULL）。"""
         from system.models import ModelLabelField
-        from system.utils.platform.modelfield import sync_model_field
+        from system.services.modelfield import sync_model_field
 
         sync_model_field()
         stale = ModelLabelField.objects.create(
@@ -101,7 +101,7 @@ class TestSyncModelField:
         且种子回写会把缺项固化。
         """
         from system.models import ModelLabelField
-        from system.utils.platform.modelfield import sync_model_field
+        from system.services.modelfield import sync_model_field
 
         sync_model_field()
         role_qs = ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE)
@@ -113,7 +113,7 @@ class TestSyncModelField:
     def test_broken_serializer_is_skipped_not_fatal(self):
         """单个序列化器实例化异常只跳过并登记，不中断全量同步。"""
         from common.core.serializers import BaseModelSerializer
-        from system.utils.platform.modelfield import sync_model_field
+        from system.services.modelfield import sync_model_field
 
         class BrokenProbeSerializer(BaseModelSerializer):
             def __init__(self, *args, **kwargs):
@@ -145,7 +145,7 @@ class TestSyncModelField:
         from django.core.management import call_command
 
         from system.models import ModelLabelField
-        from system.utils.platform.modelfield import sync_model_field
+        from system.services.modelfield import sync_model_field
 
         seed_path = Path(settings.PROJECT_DIR) / "loadjson" / "modellabelfield.json"
         seed_rows = json.loads(seed_path.read_text(encoding="utf-8"))

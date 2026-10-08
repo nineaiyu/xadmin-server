@@ -46,8 +46,8 @@ from mfa.const import ConfirmType
 from mfa.services import clear_recovery_codes
 from notifications.message import SiteMessageUtil
 from settings.services import LoginBlockUtil
-from system.utils.platform.modelset import ChangeRolePermissionAction, PermissionPreviewAction
-from system.utils.platform.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
+from system.services.modelset import ChangeRolePermissionAction, PermissionPreviewAction
+from system.services.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 
 logger = get_logger(__name__)
 
