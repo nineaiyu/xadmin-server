@@ -48,6 +48,8 @@ class UserPersonalConfig(BaseConfig):
         verbose_name = _("User config")
         verbose_name_plural = verbose_name
         unique_together = (("owner", "key"),)
+        # 与 SystemConfig 同口径：无默认排序时列表分页会抛 UnorderedObjectListWarning
+        ordering = ["created_time"]
 
     def __str__(self):
         return f"{self.key}-{self.description}"
