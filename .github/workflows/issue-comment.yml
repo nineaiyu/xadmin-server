@@ -1,65 +1,52 @@
 on:
   issue_comment:
-    types: [ created ]
+    types: [created]
 
 name: Add issues workflow labels
+
+permissions:
+  issues: write
 
 jobs:
   add-label-if-is-author:
     runs-on: ubuntu-latest
     if: (github.event.issue.user.id == github.event.comment.user.id) && !github.event.issue.pull_request && (github.event.issue.state == 'open')
     steps:
-      - name: Add require handle label
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: 'add-labels'
-          labels: '🔔 Pending processing'
-
-      - name: Remove require reply label
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: 'remove-labels'
-          labels: '⏳ Pending feedback'
+      - name: Author replied, mark pending processing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          number="${{ github.event.issue.number }}"
+          labels=$(gh issue view "$number" --repo "$GITHUB_REPOSITORY" --json labels --jq '.labels[].name')
+          if ! grep -qxF "🔔 Pending processing" <<<"$labels"; then
+            gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --add-label "🔔 Pending processing"
+          fi
+          if grep -qxF "⏳ Pending feedback" <<<"$labels"; then
+            gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --remove-label "⏳ Pending feedback"
+          fi
 
   add-label-if-is-member:
     runs-on: ubuntu-latest
+    if: ${{ !github.event.issue.pull_request && (github.event.issue.state == 'open') }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Get Organization name
-        id: org_name
-        run: echo "data=$(echo '${{ github.repository }}' | cut -d '/' -f 1)" >> $GITHUB_OUTPUT
-
-      - name: Get Organization public members
-        uses: octokit/request-action@v2.x
-        id: members
-        with:
-          route: GET /orgs/${{ steps.org_name.outputs.data }}/public_members
+      - name: Maintainer replied, mark pending feedback
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Process public members data
-        # 将 members 中的数据转化为 login 字段的拼接字符串
-        id: member_names
-        run: echo "data=$(echo '${{ steps.members.outputs.data }}' | jq '[.[].login] | join(",")')" >> $GITHUB_OUTPUT
-
-
-      - run: "echo members: '${{ steps.members.outputs.data }}'"
-      - run: "echo member names: '${{ steps.member_names.outputs.data }}'"
-      - run: "echo comment user: '${{ github.event.comment.user.login }}'"
-      - run: "echo contains? : '${{ contains(steps.member_names.outputs.data, github.event.comment.user.login) }}'"
-
-      - name: Add require replay label
-        if: contains(steps.member_names.outputs.data, github.event.comment.user.login)
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: 'add-labels'
-          labels: '⏳ Pending feedback'
-
-      - name: Remove require handle label
-        if: contains(steps.member_names.outputs.data, github.event.comment.user.login)
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: 'remove-labels'
-          labels: '🔔 Pending processing'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          number="${{ github.event.issue.number }}"
+          commenter="${{ github.event.comment.user.login }}"
+          # 原实现按「组织公开成员」判断成员身份，本仓库为个人账号无组织，
+          # 语义收敛为仓库协作者（owner 天然是协作者），非协作者评论不切标签
+          if ! gh api "repos/$GITHUB_REPOSITORY/collaborators/$commenter" >/dev/null 2>&1; then
+            echo "$commenter is not a collaborator, skip"
+            exit 0
+          fi
+          labels=$(gh issue view "$number" --repo "$GITHUB_REPOSITORY" --json labels --jq '.labels[].name')
+          if ! grep -qxF "⏳ Pending feedback" <<<"$labels"; then
+            gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --add-label "⏳ Pending feedback"
+          fi
+          if grep -qxF "🔔 Pending processing" <<<"$labels"; then
+            gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --remove-label "🔔 Pending processing"
+          fi
