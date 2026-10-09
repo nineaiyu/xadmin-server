@@ -32,10 +32,19 @@ class LabeledChoiceField(serializers.ChoiceField):
         return {"value": key, "label": label}
 
     def to_internal_value(self, data: Any) -> Any:
-        if not data:
-            return data
+        """写入契约（与前端 RePlusPage 表单一致）：对象 ``{value, label}`` 或标量。
+
+        - 对象形态取 ``value``（``{}`` / ``{"value": null}`` 归一为 None）；
+        - 空选择（None / 空白串）按字段 ``allow_null`` 语义收口：不允许则明确报
+          ``null`` 错，而不是把 ``{}`` 或空值写进库；
+        - ``0`` / ``False`` 等合法枚举值不再被 falsy 短路绕过 choices 校验。
+        """
         if isinstance(data, dict):
             data = data.get("value")
+        if data is None or (isinstance(data, str) and not data.strip()):
+            if not self.allow_null:
+                self.fail("null")
+            return None
         if isinstance(data, str) and "(" in data and data.endswith(")"):
             data = data.strip(")").split("(")[-1]
         return super().to_internal_value(data)
@@ -71,13 +80,26 @@ class LabeledMultipleChoiceField(serializers.MultipleChoiceField):
         return [{"value": key, "label": self.choice_mapper.get(key)} for key in keys]
 
     def to_internal_value(self, data: Any) -> Any:
-        if not data:
-            return data
+        """写入契约：``[{value, label}, ...]`` 列表（清空为 ``[]``）。
 
-        if isinstance(data[0], dict):
-            return [item.get("value") for item in data]
-        else:
-            return data
+        - 逐项取 ``value`` 并过滤未选择占位（前端默认值形态 ``[{}]`` /
+          ``[{"value": null}]``），统一交给 MultipleChoiceField 做 choices 校验；
+        - 空选择（None / 空白串）按 ``allow_null`` 语义收口；``[]`` 合法表示清空；
+        - 返回列表形态，与既有 validated_data 消费面一致。
+        """
+        if data is None or data == "":
+            if not self.allow_null:
+                self.fail("null")
+            return None
+        if isinstance(data, (list, tuple)):
+            values = []
+            for item in data:
+                value = item.get("value") if isinstance(item, dict) else item
+                if value is None or value == "":
+                    continue
+                values.append(value)
+            return list(super().to_internal_value(values))
+        return list(super().to_internal_value(data))
 
 
 class PhoneField(serializers.CharField):
@@ -104,6 +126,10 @@ class PhoneField(serializers.CharField):
         return super().to_internal_value(data)
 
     def to_representation(self, value: Any) -> Any:
+        if not value:
+            # 空号码（未填写）回显空结构：phonenumbers.parse(None, ...) 抛的是
+            # TypeError（不在下方 except 捕获范围内），会让整个序列化 500
+            return {"code": "+86", "phone": ""}
         try:
             phone = phonenumbers.parse(value, "CN")
             value = {"code": f"+{phone.country_code}", "phone": phone.national_number}

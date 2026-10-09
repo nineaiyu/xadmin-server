@@ -31,7 +31,7 @@
 |---------|--------------------------------|---------------------------------|
 | 1000    | 成功                             | ApiResponse 默认（`packages/xadmin-common/common/core/response.py`） |
 | 500     | 服务器内部错误（详情不入响应）                | `packages/xadmin-common/common/core/exception.py` 兜底分支 |
-| 998     | 数据被其他数据引用，无法删除（ProtectedError） | `packages/xadmin-common/common/core/exception.py`      |
+| 998     | 数据被其他数据引用，无法删除（ProtectedError；**HTTP 400**，业务码语义不变） | `packages/xadmin-common/common/core/exception.py`      |
 | 999     | 请求过于频繁（Throttled）              | `packages/xadmin-common/common/core/exception.py`      |
 | 40001   | access token 失效或过期（前端触发无感刷新）   | `packages/xadmin-common/common/core/exception.py`      |
 | 40002   | refresh token 失效或过期（前端跳登录页）    | `packages/xadmin-common/common/core/exception.py`      |
@@ -41,3 +41,7 @@
 | 1004    | 请求数据异常                         | verify_code                     |
 
 > 约定：新增错误码必须先在本表登记；`40001/40002` 为前端约定的协议码，不可挪作他用。
+>
+> 业务码与 HTTP 状态的分工：业务码承载**语义**，HTTP 状态承载**传输层归类**（客户端错误 4xx /
+> 服务端错误 5xx），二者不互相替代——客户端错误不得伪装成 HTTP 200（网关与监控按状态码统计）。
+> 当前映射：998 → 400、999 → 429、40001/40002 → 401、未预期异常 → 500。

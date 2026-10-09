@@ -36,9 +36,12 @@ def common_exception_handler(exc: Any, context: Any) -> Any:
         logger.exception("Print traceback exception for Debug")
         traceback.print_exc()
 
-    # context['view']  是TextView的对象，想拿出这个对象对应的类名
+    # context['view'] 是 TextView 的对象，想拿出这个对象对应的类名；
+    # 缺失时（非视图链路）不能让错误处理器自身抛 KeyError
+    view = context.get("view")
+    view_name = view.__class__.__name__ if view is not None else "unknown"
     ret = exception_handler(exc, context)  # 是Response对象，它内部有个data
-    logger.error(f"{context['view'].__class__.__name__} ERROR: {exc} ret:{ret}")
+    logger.error(f"{view_name} ERROR: {exc} ret:{ret}")
     # 各分支显式指定的业务码，优先于 HTTP 状态码写入响应体（见函数末尾）
     business_code = None
     if isinstance(exc, ReadableThrottled):
@@ -60,8 +63,11 @@ def common_exception_handler(exc: Any, context: Any) -> Any:
             else:
                 ret.code = 40002  # refresh token 失效或者过期
 
-        if isinstance(exc.detail, (list, dict)):
-            ret.data = exc.detail
+        # 浅拷贝后再写入 status/code/errors：避免污染异常自身的 detail 容器
+        if isinstance(exc.detail, dict):
+            ret.data = dict(exc.detail)
+        elif isinstance(exc.detail, list):
+            ret.data = list(exc.detail)
         else:
             ret.data = {"detail": exc.detail}
         set_rollback()
@@ -72,8 +78,17 @@ def common_exception_handler(exc: Any, context: Any) -> Any:
 
     elif isinstance(exc, ProtectedError):
         set_rollback()
-        verbose_name = exc.protected_objects.pop()._meta.verbose_name
-        return ApiResponse(code=998, detail=_("Is referenced by other {} and cannot be deleted").format(verbose_name))
+        # pop() 会改动异常自身、对空集合还会抛 KeyError：缺失时降级为通用文案
+        protected = next(iter(exc.protected_objects), None)
+        verbose_name = protected._meta.verbose_name if protected is not None else _("data")
+        # HTTP 400 + 业务码 998：与同一处理器其它分支的 HTTP 语义对齐——原为 200，
+        # 客户端错误被伪装成成功响应，网关/监控无法按状态码统计；前端全局兜底
+        # （errorStrategies 的 400 策略）读取 detail 提示，业务码 998 语义不变
+        return ApiResponse(
+            code=998,
+            status=400,
+            detail=_("Is referenced by other {} and cannot be deleted").format(verbose_name),
+        )
     else:
         unexpected_exception_logger.exception("")
 
