@@ -8,6 +8,7 @@ scope 条目形如 ``GET /api/system/user``（方法名可选，缺省仅匹配�
 import functools
 import ipaddress
 import re
+from typing import Any
 
 from common.utils import get_logger
 
@@ -19,7 +20,7 @@ SCOPE_METHOD_RE = re.compile(r"^(?P<method>[A-Za-z]{3,7})\s+(?P<path>\S.*)$")
 SCOPE_HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
 
 
-def split_scope_entry(pattern) -> tuple:
+def split_scope_entry(pattern: Any) -> tuple[Any, ...]:
     """拆分 scope 条目为 ``(method, path)``；无方法前缀时 method 为 None。
 
     仅当首段是合法 HTTP 方法名时才按「方法 + 路径」解析，避免把含空格的
@@ -32,7 +33,7 @@ def split_scope_entry(pattern) -> tuple:
     return None, text
 
 
-def _normalize_scope_path(path) -> str:
+def _normalize_scope_path(path: str) -> str:
     """scope 条目的路径部分 → 锚定正则串（空返回空串；正则非法抛 ``ValueError``）。
 
     - ``^…$`` 完整锚定：原样保留（作者可控的自定义正则）；
@@ -64,7 +65,7 @@ def _normalize_scope_path(path) -> str:
     return anchored
 
 
-def normalize_scope_entry(pattern) -> str:
+def normalize_scope_entry(pattern: Any) -> str:
     """scope 条目规范化：统一为**锚定**形态（保存时收口 + 运行期兜底同源）。
 
     形态约定与 ``identity/utils/pat_scope.py::scope_entry`` 的输出一致，可安全重复规范化；
@@ -82,7 +83,7 @@ def normalize_scope_entry(pattern) -> str:
 
 
 @functools.lru_cache(maxsize=4096)
-def _compiled_scope_matcher(path_part: str):
+def _compiled_scope_matcher(path_part: str) -> Any:
     """路径部分 → 编译后正则（进程内缓存）；不可规范化/正则非法返回 None。"""
     try:
         normalized = _normalize_scope_path(path_part)
@@ -91,7 +92,7 @@ def _compiled_scope_matcher(path_part: str):
         return None
 
 
-def path_allowed_by_scopes(path: str, scopes, method: str | None = None) -> bool:
+def path_allowed_by_scopes(path: str, scopes: Any, method: str | None = None) -> bool:
     """PAT scope 判定：空清单 = 不限（既有 token 向后兼容）。
 
     条目语义（大小写不敏感，与 SENSITIVE_OPERATION_PATHS 同口径）：
@@ -121,7 +122,7 @@ def path_allowed_by_scopes(path: str, scopes, method: str | None = None) -> bool
     return False
 
 
-def ip_allowed_by_allowlist(client_ip: str, allowlist) -> bool:
+def ip_allowed_by_allowlist(client_ip: str, allowlist: Any) -> bool:
     """PAT IP 白名单判定：空清单 = 不限；支持单个 IP 与 CIDR 网段。
 
     fail-closed：无法解析的客户端 IP 视为不匹配；非法条目跳过并告警

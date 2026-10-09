@@ -6,6 +6,8 @@
 # date : 6/2/2023
 
 import logging
+from collections.abc import Iterable
+from typing import Any
 
 from django.core.cache import cache
 
@@ -15,17 +17,18 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def _key_template() -> dict:
+def _key_template() -> dict[str, Any]:
     """缓存键模板表（内核契约读取的单点包装，避免各处 f-string 内嵌双引号）。"""
-    return kernel_required_setting("CACHE_KEY_TEMPLATE")
+    template: dict[str, Any] = kernel_required_setting("CACHE_KEY_TEMPLATE")
+    return template
 
 
 class RedisCacheBase:
-    def __init__(self, cache_key, timeout=600):
+    def __init__(self, cache_key: str, timeout: int = 600) -> None:
         self.cache_key = cache_key
         self._timeout = timeout
 
-    def __getattribute__(self, item):
+    def __getattribute__(self, item: str) -> Any:
         # f-string 会先求值再传参，即使日志级别过滤掉输出，字符串拼接开销也逃不掉。
         # 该类被 JWT 黑名单校验等热路径继承，必须用 isEnabledFor 守卫，DEBUG 关闭时零开销。
         if logger.isEnabledFor(logging.DEBUG) and isinstance(item, str) and item != "cache_key":
@@ -33,71 +36,71 @@ class RedisCacheBase:
                 logger.debug(f"act:{item} cache_key:{super().__getattribute__('cache_key')}")
         return super().__getattribute__(item)
 
-    def get_storage_cache(self, defaults=None):
+    def get_storage_cache(self, defaults: Any = None) -> Any:
         return cache.get(self.cache_key, defaults)
 
-    def get_storage_key_and_cache(self):
+    def get_storage_key_and_cache(self) -> tuple[str, Any]:
         return self.cache_key, cache.get(self.cache_key)
 
-    def set_storage_cache(self, value, timeout=0):
+    def set_storage_cache(self, value: Any, timeout: int = 0) -> Any:
         if isinstance(timeout, int) and timeout == 0:
             timeout = self._timeout
         return cache.set(self.cache_key, value, timeout)
 
-    def append_storage_cache(self, value, timeout=None):
+    def append_storage_cache(self, value: Any, timeout: int | None = None) -> Any:
         with cache.lock(f"{self.cache_key}_lock", timeout=60, blocking_timeout=60):
             data = cache.get(self.cache_key, [])
             data.append(value)
             return cache.set(self.cache_key, data, timeout if timeout else self._timeout)
 
-    def del_storage_cache(self):
+    def del_storage_cache(self) -> Any:
         return cache.delete(self.cache_key)
 
-    def incr(self, amount=1):
+    def incr(self, amount: int = 1) -> Any:
         return cache.incr(self.cache_key, amount)
 
-    def expire(self, timeout):
+    def expire(self, timeout: int) -> Any:
         return cache.expire(self.cache_key, timeout=timeout)
 
-    def iter_keys(self):
+    def iter_keys(self) -> Any:
         if not self.cache_key.endswith("*"):
             self.cache_key = f"{self.cache_key}*"
         return cache.iter_keys(self.cache_key)
 
-    def get_many(self):
+    def get_many(self) -> Any:
         return cache.get_many(self.cache_key)
 
-    def del_many(self):
+    def del_many(self) -> bool:
         cache.delete_pattern(self.cache_key)
         return True
 
 
 class TokenManagerCache(RedisCacheBase):
-    def __init__(self, key, release_id):
+    def __init__(self, key: str, release_id: Any) -> None:
         self.cache_key = f"{_key_template().get('make_token_key')}_{key.lower()}_{release_id}"
         super().__init__(self.cache_key)
 
 
 class PendingStateCache(RedisCacheBase):
-    def __init__(self, locker_key):
+    def __init__(self, locker_key: str) -> None:
         self.cache_key = f"{_key_template().get('pending_state_key')}_{locker_key}"
         super().__init__(self.cache_key)
 
 
 class UploadPartInfoCache(RedisCacheBase):
-    def __init__(self, locker_key):
+    def __init__(self, locker_key: str) -> None:
         self.cache_key = f"{_key_template().get('upload_part_info_key')}_{locker_key}"
         super().__init__(self.cache_key)
 
 
 class DownloadUrlCache(RedisCacheBase):
-    def __init__(self, drive_id, file_id):
+    def __init__(self, drive_id: Any, file_id: Any) -> None:
         self.cache_key = f"{_key_template().get('download_url_key')}_{drive_id}_{file_id}"
         super().__init__(self.cache_key)
 
 
 class BlackAccessTokenCache(RedisCacheBase):
-    def __init__(self, user_id, access_key):
+    def __init__(self, user_id: Any, access_key: str) -> None:
         self.cache_key = f"{_key_template().get('black_access_token_key')}_{user_id}_{access_key}"
         super().__init__(self.cache_key)
 
@@ -110,14 +113,14 @@ class UserTokenRevokedCache(RedisCacheBase):
     无需继续保留该键；refresh 轮换后新签发的 access iat 更新，不受影响。
     """
 
-    def __init__(self, user_id):
+    def __init__(self, user_id: Any) -> None:
         self.cache_key = f"{_key_template().get('user_token_revoked_key')}_{user_id}"
         lifetime = kernel_required_setting("SIMPLE_JWT").get("ACCESS_TOKEN_LIFETIME")
         timeout = int(lifetime.total_seconds()) + 60 if lifetime else 3660
         super().__init__(self.cache_key, timeout=timeout)
 
     @classmethod
-    def revoke_many(cls, user_ids, revoked_at):
+    def revoke_many(cls, user_ids: Iterable[Any], revoked_at: Any) -> Any:
         """批量写多个用户的失效时间戳：合并为一次 set_many 往返。
 
         键、值、TTL 均与逐用户 set_storage_cache 一致（批量踢线用），
@@ -138,7 +141,7 @@ class SessionTokenRevokedCache(RedisCacheBase):
     TTL 与用户级一致（access 寿命 + 缓冲，过后 token 自然过期）。
     """
 
-    def __init__(self, session_pk):
+    def __init__(self, session_pk: Any) -> None:
         self.cache_key = f"{_key_template().get('session_token_revoked_key')}_{session_pk}"
         lifetime = kernel_required_setting("SIMPLE_JWT").get("ACCESS_TOKEN_LIFETIME")
         timeout = int(lifetime.total_seconds()) + 60 if lifetime else 3660
@@ -146,18 +149,18 @@ class SessionTokenRevokedCache(RedisCacheBase):
 
 
 class UserSystemConfigCache(RedisCacheBase):
-    def __init__(self, prefix_key):
+    def __init__(self, prefix_key: str) -> None:
         self.cache_key = f"{_key_template().get('config_key')}_{prefix_key}"
         super().__init__(self.cache_key)
 
 
 class CommonResourceIDsCache(RedisCacheBase):
-    def __init__(self, prefix_key):
+    def __init__(self, prefix_key: str) -> None:
         self.cache_key = f"{_key_template().get('common_resource_ids_key')}_{prefix_key}"
         super().__init__(self.cache_key)
 
 
 class WebSocketMsgResultCache(RedisCacheBase):
-    def __init__(self, prefix_key):
+    def __init__(self, prefix_key: str) -> None:
         self.cache_key = f"{_key_template().get('websocket_message_result_key')}_{prefix_key}"
         super().__init__(self.cache_key)

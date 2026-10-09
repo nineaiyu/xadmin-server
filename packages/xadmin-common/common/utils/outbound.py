@@ -30,7 +30,7 @@ from __future__ import annotations
 import ipaddress
 import socket
 from collections.abc import Callable, Iterable
-from typing import NamedTuple
+from typing import Any, NamedTuple
 from urllib.parse import urlsplit, urlunsplit
 
 from django.core.exceptions import ValidationError
@@ -67,14 +67,14 @@ class OutboundTarget(NamedTuple):
     is_ip_literal: bool
 
 
-def _unwrap(ip):
+def _unwrap(ip: Any) -> Any:
     """IPv4-mapped IPv6 还原为 IPv4，避免 ``::ffff:10.0.0.1`` 绕过私网判定。"""
     if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
         return ip.ipv4_mapped
     return ip
 
 
-def _ensure_allowed(addr, *, host: str, allow_private: bool, allow_loopback: bool) -> None:
+def _ensure_allowed(addr: Any, *, host: str, allow_private: bool, allow_loopback: bool) -> None:
     # loopback 必须先判：IPv6 的 ::1 落在 ipaddress 的 reserved 集合（::/8）内，
     # 先判 reserved 会把环回误判为「任何模式都拒绝」
     if addr.is_loopback:
@@ -121,10 +121,10 @@ def resolve_host_ips(host: str, *, resolver: Resolver | None = None) -> tuple[st
     return tuple(ips)
 
 
-def _pinned_url(parts, scheme: str, pinned_host: str) -> str:
+def _pinned_url(parts: Any, scheme: str, pinned_host: str) -> str:
     host = pinned_host if ":" not in pinned_host else f"[{pinned_host}]"
     netloc = host if parts.port is None else f"{host}:{parts.port}"
-    return urlunsplit((scheme, netloc, parts.path, parts.query, parts.fragment))
+    return str(urlunsplit((scheme, netloc, parts.path, parts.query, parts.fragment)))
 
 
 def resolve_outbound_target(
@@ -256,11 +256,11 @@ class PinnedHostAdapter(HTTPAdapter):
     - assert_hostname：证书按域名校验（连接目标是 IP 也不影响）。
     """
 
-    def __init__(self, hostname: str, **kwargs):
+    def __init__(self, hostname: str, **kwargs: Any) -> None:
         self._pinned_hostname = hostname
         super().__init__(**kwargs)
 
-    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+    def init_poolmanager(self, connections: Any, maxsize: Any, block: bool = False, **pool_kwargs: Any) -> Any:
         pool_kwargs["server_hostname"] = self._pinned_hostname
         pool_kwargs["assert_hostname"] = self._pinned_hostname
         return super().init_poolmanager(connections, maxsize, block, **pool_kwargs)
@@ -274,9 +274,9 @@ def pinned_request(
     allow_loopback: bool = False,
     allowed_hosts: Iterable[str] = (),
     resolver: Resolver | None = None,
-    headers: dict | None = None,
-    **kwargs,
-):
+    headers: dict[str, Any] | None = None,
+    **kwargs: Any,
+) -> Any:
     """校验后发起请求：域名目标固定为已校验 IP 连接（Host/SNI 保留域名）。
 
     IP 字面量目标无 DNS 解析环节，直接按原 URL 请求（Host 头交给 requests）。
@@ -303,7 +303,7 @@ def pinned_request(
     return session.request(method, request_url, headers=merged_headers, **kwargs)
 
 
-def parse_allowed_hosts(value) -> tuple[str, ...]:
+def parse_allowed_hosts(value: Any) -> tuple[str, ...]:
     """解析逗号/换行分隔的白名单配置（域名或 IP，大小写不敏感，兼容 host:port 写法）。"""
     if isinstance(value, (list, tuple, set)):
         items = value
@@ -350,7 +350,7 @@ def validate_outbound_config_url(
     allow_loopback: bool = True,
     allow_private: bool = False,
     allow_http_whitelist: bool = True,
-    scheme_message=None,
+    scheme_message: Any = None,
     resolver: Resolver | None = None,
 ) -> str:
     """写入侧出站配置地址统一校验（Webhook / AI base_url / MCP / 回调地址共用）。

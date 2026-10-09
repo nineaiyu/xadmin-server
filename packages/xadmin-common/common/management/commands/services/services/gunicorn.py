@@ -1,3 +1,5 @@
+from typing import Any
+
 from common.startup import CoreTerminal
 
 from ..hands import *
@@ -7,12 +9,12 @@ __all__ = ["GunicornService"]
 
 
 class GunicornService(BaseService):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.worker = kwargs["worker_gunicorn"]
         super().__init__(**kwargs)
 
     @property
-    def cmd(self):
+    def cmd(self) -> Any:
         print("\n- Start Gunicorn ASGI HTTP Server")
 
         log_format = '%(h)s %(t)s %(L)ss "%(r)s" %(s)s %(b)s '
@@ -52,9 +54,9 @@ class GunicornService(BaseService):
         return cmd
 
     @property
-    def cwd(self):
+    def cwd(self) -> Any:
         return APPS_DIR
 
-    def start_other(self):
+    def start_other(self) -> None:
         core_terminal = CoreTerminal()
         core_terminal.start_heartbeat_thread()

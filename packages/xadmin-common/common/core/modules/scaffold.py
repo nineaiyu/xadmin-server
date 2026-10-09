@@ -12,6 +12,7 @@
 """
 
 import json
+from typing import Any
 
 from .registry import all_module_specs
 
@@ -43,7 +44,7 @@ def module_id_conflict(module_id: str) -> bool:
     return module_id in {spec.id for spec in all_module_specs()}
 
 
-def _render_tuple(items) -> str:
+def _render_tuple(items: Any) -> str:
     """元组字面量（双引号，与 ruff format 的 quote-style=double 对齐，生成物即过 format）。"""
     body = ", ".join(json.dumps(str(item), ensure_ascii=False) for item in items)
     return f"({body},)" if len(tuple(items)) == 1 else f"({body})"
@@ -55,9 +56,9 @@ def render_modules_source(
     module_id: str,
     label: str,
     level: str,
-    menus: tuple = (),
-    routes: tuple = (),
-    permissions: tuple = (),
+    menus: tuple[Any, ...] = (),
+    routes: tuple[Any, ...] = (),
+    permissions: tuple[Any, ...] = (),
 ) -> str:
     """渲染 ``{app}/modules.py`` 源码。
 

@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 6/25/2024
 import re
+from typing import Any
 
 from django.http import QueryDict
 from django.http.multipartparser import MultiPartParser as DjangoMultiPartParser
@@ -16,7 +17,7 @@ from rest_framework.parsers import BaseParser, DataAndFiles
 from common.settings_contract import kernel_required_setting
 
 
-def format_data(data: QueryDict | dict):
+def format_data(data: QueryDict | dict[str, Any]) -> Any:
     """
     axios 配置如下：
 
@@ -75,7 +76,7 @@ def format_data(data: QueryDict | dict):
             new_data[key_split[0]] = value
         else:
             if re.match(r"\d+", key_split[1]):  # 列表
-                info: list = new_data.get(key_split[0]) or []
+                info: list[Any] = new_data.get(key_split[0]) or []
                 if not info:
                     new_data[key_split[0]] = [{}]
                     result = format_data({".".join(key_split[1:]): value})
@@ -92,7 +93,7 @@ def format_data(data: QueryDict | dict):
                         new_data[key_split[0]].append({})
                     new_data[key_split[0]][int(lk[0])].update(result.get(lk[0]))
             else:  # 字典
-                info_dict: dict = new_data.get(key_split[0], {})
+                info_dict: dict[str, Any] = new_data.get(key_split[0], {})
                 if not info_dict:
                     new_data[key_split[0]] = format_data({".".join(key_split[1:]): value})
                 else:
@@ -108,7 +109,7 @@ class AxiosMultiPartParser(BaseParser):
 
     media_type = "multipart/form-data"
 
-    def parse(self, stream, media_type=None, parser_context=None):
+    def parse(self, stream: Any, media_type: Any = None, parser_context: Any = None) -> Any:
         """
         Parses the incoming bytestream as a multipart encoded form,
         and returns a DataAndFiles object.

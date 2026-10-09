@@ -30,8 +30,10 @@ LIST_MIXINS = {
 
 # 框架抽象基类目录：本身不绑定模型，排序由子类声明
 FRAMEWORK_DIR = "packages/xadmin-common/common/core/modelset"
-# demo app 按项目决策不再维护（演示模型不影响正式项目），不纳入门禁
-SKIP_DIRS = ("migrations/", ".venv", "__pycache__", "tests/", "demo/")
+# demo app 按项目决策不再维护（演示模型不影响正式项目），不纳入门禁；
+# examples/ 为示例分发包（二开插件样本，目录名带连字符且不进宿主 app registry，
+# 无法按模块路径导入）——其排序声明由示例自带守卫测试与 mypy / 行数门禁覆盖
+SKIP_DIRS = ("migrations/", ".venv", "__pycache__", "tests/", "demo/", "examples/")
 
 # 显式例外（键 = 类名，值 = 原因）；新增例外必须在 PR 里说明理由
 EXEMPT = {

@@ -1,4 +1,6 @@
 import json
+from collections.abc import AsyncIterator, Iterator
+from typing import Any
 
 from rest_framework import renderers
 
@@ -9,7 +11,7 @@ from .excel import *
 _STREAM_END = object()
 
 
-def sse_frame(event) -> str:
+def sse_frame(event: Any) -> str:
     """单帧序列化（`event:` + `data:` + 空行）。
 
     JSON 序列化对 UUID/datetime 宽松处理（default=str），与 message_payload 的
@@ -18,13 +20,13 @@ def sse_frame(event) -> str:
     return f"event: {event['event']}\ndata: {json.dumps(event['data'], ensure_ascii=False, default=str)}\n\n"
 
 
-def sse_frames(events):
+def sse_frames(events: Any) -> Iterator[str]:
     """事件字典序列 → 同步帧生成器（同步消费场景/测试；HTTP 流式勿直接使用，见下）。"""
     for event in events:
         yield sse_frame(event)
 
 
-def _next_or_end(iterator):
+def _next_or_end(iterator: Any) -> Any:
     """在线程池内推进一步同步生成器：结束返回哨兵（线程内捕获 StopIteration）。"""
     try:
         return next(iterator)
@@ -32,7 +34,7 @@ def _next_or_end(iterator):
         return _STREAM_END
 
 
-async def async_sse_frames(events):
+async def async_sse_frames(events: Any) -> AsyncIterator[str]:
     """SSE 帧异步迭代器（ASGI 实时逐帧 flush 的唯一正确形态）。
 
     **"一次性输出"根因**：StreamingHttpResponse 的 streaming_content 若为
@@ -62,7 +64,7 @@ async def async_sse_frames(events):
         yield sse_frame(event)
 
 
-async def async_sse_frames_async(events):
+async def async_sse_frames_async(events: Any) -> AsyncIterator[str]:
     """异步事件字典序列 → SSE 帧（**零线程占用**形态，承接 S7 根治②）。
 
     事件源为 async 生成器（帧组装已是纯 CPU）；LLM 增量由异步 SDK 在事件循环内
@@ -74,7 +76,7 @@ async def async_sse_frames_async(events):
         yield sse_frame(event)
 
 
-def sse_response(events):
+def sse_response(events: Any) -> Any:
     """SSE 响应装配（同步事件源入口）：异步帧迭代器逐帧 flush + 关闭代理缓冲。
 
     事件源为同步生成器（``event`` 字典序列，见 ``async_sse_frames`` 的「一次性输出」
@@ -89,7 +91,7 @@ def sse_response(events):
     return response
 
 
-def sse_response_async(events):
+def sse_response_async(events: Any) -> Any:
     """SSE 响应装配（**异步事件源**入口）：事件循环内逐帧 flush，零线程占用。
 
     事件源为 async 生成器（LLM 增量已异步化）；响应头语义与 ``sse_response`` 完全
@@ -112,9 +114,9 @@ class SseRendererMixin:
     """
 
     #: 需要 SSE 协商的 action 名（``url_path`` 的驼峰形式）
-    sse_actions: tuple = ()
+    sse_actions: tuple[Any, ...] = ()
 
-    def get_renderers(self):
+    def get_renderers(self) -> Any:
         if getattr(self, "action", None) in self.sse_actions:
             return [renderers.JSONRenderer(), EventStreamRenderer()]
         return super().get_renderers()  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
@@ -128,7 +130,7 @@ class PassthroughRenderer(renderers.BaseRenderer):
     media_type = "application/octet-stream"
     format = ""
 
-    def render(self, data, accepted_media_type=None, renderer_context=None):
+    def render(self, data: Any, accepted_media_type: Any = None, renderer_context: Any = None) -> Any:
         return data
 
 
@@ -147,7 +149,7 @@ class EventStreamRenderer(renderers.BaseRenderer):
     media_type = "text/event-stream"
     format = "event-stream"
 
-    def render(self, data, accepted_media_type=None, renderer_context=None):
+    def render(self, data: Any, accepted_media_type: Any = None, renderer_context: Any = None) -> Any:
         if data is None:
             return b""
         if isinstance(data, (bytes, bytearray)):

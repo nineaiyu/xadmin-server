@@ -2,6 +2,8 @@ import abc
 import codecs
 import json
 import re
+from collections.abc import Iterator
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers, status
@@ -28,7 +30,7 @@ class BaseFileParser(BaseParser):
     serializer_fields = None
     obj_pattern = re.compile(r"^(.+)\(([a-z0-9-]+)\)$")
 
-    def check_content_length(self, meta):
+    def check_content_length(self, meta: Any) -> None:
         content_length = int(meta.get("CONTENT_LENGTH", meta.get("HTTP_CONTENT_LENGTH", 0)))
         if content_length > self.FILE_CONTENT_MAX_LENGTH:
             msg = FileContentOverflowedError.default_detail.format(self.FILE_CONTENT_MAX_LENGTH)
@@ -36,21 +38,21 @@ class BaseFileParser(BaseParser):
             raise FileContentOverflowedError(msg)
 
     @staticmethod
-    def get_stream_data(stream):
+    def get_stream_data(stream: Any) -> Any:
         stream_data = stream.read()
         stream_data = stream_data.strip(codecs.BOM_UTF8)
         return stream_data
 
     @abc.abstractmethod
-    def generate_rows(self, stream_data):
+    def generate_rows(self, stream_data: Any) -> Iterator[list[Any]]:
         raise NotImplementedError
 
-    def get_column_titles(self, rows):
+    def get_column_titles(self, rows: Any) -> Any:
         return next(rows)
 
-    def convert_to_field_names(self, column_titles):
+    def convert_to_field_names(self, column_titles: Any) -> Any:
         fields_map = {}
-        fields: dict = self.serializer_fields or {}
+        fields: dict[str, Any] = self.serializer_fields or {}
         for k, v in fields.items():
             # id 是只读的, 导入更新资产平台会失败
             if v.read_only and k not in ["id", "pk"]:
@@ -67,14 +69,14 @@ class BaseFileParser(BaseParser):
         return field_names
 
     @staticmethod
-    def _replace_chinese_quote(s):
+    def _replace_chinese_quote(s: Any) -> Any:
         if not isinstance(s, str):
             return s
         trans_table = str.maketrans({"“": '"', "”": '"', "‘": '"', "’": '"', "'": '"'})
         return s.translate(trans_table)
 
     @classmethod
-    def load_row(cls, row):
+    def load_row(cls, row: Any) -> Any:
         """
         构建json数据前的行处理
         """
@@ -94,7 +96,7 @@ class BaseFileParser(BaseParser):
             new_row.append(col)
         return new_row
 
-    def id_name_to_obj(self, v):
+    def id_name_to_obj(self, v: Any) -> Any:
         if not v or not isinstance(v, str):
             return v
         matched = self.obj_pattern.match(v)
@@ -105,7 +107,7 @@ class BaseFileParser(BaseParser):
             obj_id = int(obj_id)
         return {"pk": obj_id, "name": obj_name}
 
-    def parse_value(self, field, value):
+    def parse_value(self, field: Any, value: Any) -> Any:
         if value == "-" and field and field.allow_null:
             return None
         elif hasattr(field, "to_file_internal_value"):
@@ -150,7 +152,7 @@ class BaseFileParser(BaseParser):
 
         return value
 
-    def process_row_data(self, row_data):
+    def process_row_data(self, row_data: Any) -> Any:
         """
         构建json数据后的行数据处理
         """
@@ -161,7 +163,7 @@ class BaseFileParser(BaseParser):
             new_row[k] = v
         return new_row
 
-    def generate_data(self, fields_name, rows):
+    def generate_data(self, fields_name: Any, rows: Any) -> Any:
         data = []
         for row in rows:
             # 空行不处理
@@ -175,7 +177,7 @@ class BaseFileParser(BaseParser):
         return data
 
     @staticmethod
-    def pop_help_text_if_need(rows):
+    def pop_help_text_if_need(rows: Any) -> Any:
         rows = list(rows)
         if not rows:
             return rows
@@ -183,7 +185,7 @@ class BaseFileParser(BaseParser):
             rows.pop(0)
         return rows
 
-    def parse(self, stream, media_type=None, parser_context=None):
+    def parse(self, stream: Any, media_type: Any = None, parser_context: Any = None) -> Any:
         assert parser_context is not None, "`parser_context` should not be `None`"
 
         view = parser_context["view"]

@@ -17,6 +17,7 @@ import hashlib
 import json
 import logging
 import re
+from typing import Any
 from urllib.parse import urlparse
 
 from django.http import HttpResponse
@@ -75,12 +76,13 @@ def _synthetic_reason(document: str, user_agent: str, request_host: str = "") ->
     return ""
 
 
-def _extract_violation(payload: dict) -> dict:
+def _extract_violation(payload: dict[str, Any]) -> dict[str, Any]:
     """兼容两种上报信封：`{"csp-report": {...}}`（CSP2）与数组式 reports（CSP3）。"""
     if not isinstance(payload, dict):
         return {}
-    if isinstance(payload.get("csp-report"), dict):
-        return payload["csp-report"]
+    report = payload.get("csp-report")
+    if isinstance(report, dict):
+        return report
     reports = payload.get("reports") or payload.get("body")
     if isinstance(reports, list) and reports and isinstance(reports[0], dict):
         return reports[0].get("body") or reports[0]
@@ -93,7 +95,7 @@ class CSPReportAPIView(GenericAPIView):
     permission_classes = (AllowAny,)
     authentication_classes = ()
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         raw = request.body[:CSP_REPORT_MAX_BYTES]
         try:
             payload = json.loads(raw.decode("utf-8", errors="replace") or "{}")
@@ -133,6 +135,6 @@ class CSPReportAPIView(GenericAPIView):
         response[CSP_REPORT_HEADER] = "logged"
         return response
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """GET 仅用于探测端点存在（浏览器不会用 GET 上报）。"""
         return ApiResponse(detail=_("CSP report endpoint"))

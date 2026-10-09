@@ -4,6 +4,8 @@
 # filename : validators
 # author : ly_13
 # date : 8/6/2024
+from typing import Any
+
 import phonenumbers
 from django.utils.translation import gettext_lazy as _
 from phonenumbers import NumberParseException
@@ -13,7 +15,7 @@ from rest_framework import serializers
 class PhoneValidator:
     message = _("The phone number format is incorrect")
 
-    def __call__(self, value):
+    def __call__(self, value: Any) -> None:
         if not value:
             return
 

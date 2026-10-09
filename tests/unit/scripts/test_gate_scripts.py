@@ -270,3 +270,73 @@ class TestFileLength:
         finally:
             sys.argv = original
         assert "巨型文件门禁通过" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# check_function_length.py
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def cfln(tmp_path, monkeypatch):
+    module = load_gate("cfln_gate_under_test", "check_function_length")
+    (tmp_path / "common").mkdir()
+    monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(module, "SCAN_DIRS", ["common"])
+    monkeypatch.setattr(module, "BASELINE", {})
+    monkeypatch.setattr(module, "THRESHOLD", 100)
+    return module
+
+
+def _long_func(name: str, lines: int) -> str:
+    """生成正好 lines 行（含 def 行）的函数源码。"""
+    body = "\n".join(f"    x{i} = {i}" for i in range(lines - 2))
+    return f"def {name}():\n{body}\n    return 0\n"
+
+
+class TestFunctionLength:
+    def test_ast_counts_exact_function_span(self, cfln, tmp_path):
+        write(tmp_path, "common/a.py", _long_func("big", 100))
+        rows = cfln.collect()
+        assert [(rel, name, size) for rel, name, size in rows] == [("common/a.py", "big", 100)]
+
+    def test_nested_and_method_qualname(self, cfln, tmp_path):
+        write(
+            tmp_path,
+            "common/a.py",
+            "class A:\n" + "\n".join("    " + line for line in _long_func("big", 100).splitlines()),
+        )
+        assert [(name, size) for _rel, name, size in cfln.collect()] == [("A.big", 100)]
+
+    def test_below_threshold_not_collected(self, cfln, tmp_path):
+        write(tmp_path, "common/a.py", _long_func("ok", 99))
+        assert cfln.collect() == []
+
+    def test_new_oversized_function_fails(self, cfln, tmp_path, capsys):
+        write(tmp_path, "common/a.py", _long_func("big", 101))
+        original = sys.argv
+        sys.argv = ["check_function_length.py"]
+        try:
+            assert cfln.main() == 1
+        finally:
+            sys.argv = original
+        assert "未登记的新增超长函数" in capsys.readouterr().out
+
+    def test_baseline_only_shrink_never_grow(self, cfln, tmp_path, capsys):
+        write(tmp_path, "common/a.py", _long_func("big", 103))
+        cfln.BASELINE.update({"common/a.py::big": 105})
+        original = sys.argv
+        sys.argv = ["check_function_length.py"]
+        try:
+            assert cfln.main() == 0  # 103 <= 基线 105：放行
+            capsys.readouterr()
+            write(tmp_path, "common/a.py", _long_func("big", 106))
+            assert cfln.main() == 1  # 超基线：阻断
+            assert "只减不增" in capsys.readouterr().out
+        finally:
+            sys.argv = original
+
+    def test_migrations_and_tests_excluded(self, cfln, tmp_path):
+        write(tmp_path, "common/migrations/0001_x.py", _long_func("big", 101))
+        write(tmp_path, "common/tests/test_x.py", _long_func("big", 101))
+        assert cfln.collect() == []

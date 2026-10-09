@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 3/29/2025
 import time
+from collections.abc import Iterable
+from typing import Any
 
 from channels_redis.core import RedisChannelLayer as _RedisChannelLayer
 
@@ -19,15 +21,15 @@ class RedisChannelLayer(_RedisChannelLayer):
     ONLINE_USERS_SUFFIX = "online:users"
 
     @property
-    def online_users_key(self):
+    def online_users_key(self) -> bytes:
         return f"{self.prefix}:{self.ONLINE_USERS_SUFFIX}".encode()
 
-    def _online_group_prefix(self):
+    def _online_group_prefix(self) -> str:
         # 延迟读取配置，保持本模块可被无 settings 的工具导入
         template = kernel_required_setting("CACHE_KEY_TEMPLATE")
         return f"{template.get('websocket_group_key')}_"
 
-    def user_pk_from_group(self, group):
+    def user_pk_from_group(self, group: str) -> int | None:
         """从个人消息推送组名中解析用户 pk；聊天室等非个人组返回 None。"""
         prefix = self._online_group_prefix()
         if group and group.startswith(prefix):
@@ -37,10 +39,10 @@ class RedisChannelLayer(_RedisChannelLayer):
         return None
 
     @staticmethod
-    def _decode(value):
+    def _decode(value: Any) -> Any:
         return value.decode("utf8") if isinstance(value, bytes) else value
 
-    async def group_discard(self, group, channel):
+    async def group_discard(self, group: str, channel: str) -> None:
         """
         Removes the channel from the named group if it is in the group;
         does nothing otherwise (does not error)
@@ -60,7 +62,7 @@ class RedisChannelLayer(_RedisChannelLayer):
             online_connection = self.connection(self.consistent_hash(self.online_users_key))
             await online_connection.zrem(self.online_users_key, str(user_pk))
 
-    async def auto_expire_layers(self, group):
+    async def auto_expire_layers(self, group: str) -> tuple[Any, Any]:
         assert self.valid_group_name(group), "Group name not valid"
         key = self._group_key(group)
         connection = self.connection(self.consistent_hash(group))
@@ -70,11 +72,11 @@ class RedisChannelLayer(_RedisChannelLayer):
 
         return connection, key
 
-    async def get_layers(self, group):
+    async def get_layers(self, group: str) -> list[Any]:
         connection, key = await self.auto_expire_layers(group)
         return [self._decode(x) for x in await connection.zrange(key, 0, -1)]
 
-    async def update_active_layers(self, group, channel):
+    async def update_active_layers(self, group: str, channel: str) -> None:
         """心跳更新：group ZSET 维护与全局在线索引并入一次 pipeline 往返。"""
         key = self._group_key(group)
         index = self.consistent_hash(group)
@@ -99,12 +101,12 @@ class RedisChannelLayer(_RedisChannelLayer):
             await online_connection.zadd(online_key, {str(user_pk): now})
             await online_connection.expire(online_key, self.layer_expire * 10)
 
-    async def get_online_user_pks(self):
+    async def get_online_user_pks(self) -> list[int]:
         """在线用户 pk 列表：一条 ZRANGEBYSCORE，天然复用 30s 心跳过期语义。"""
         connection = self.connection(self.consistent_hash(self.online_users_key))
         now = time.time()
         rows = await connection.zrangebyscore(self.online_users_key, now - self.layer_expire, "+inf")
-        result = []
+        result: list[int] = []
         for row in rows:
             try:
                 result.append(int(self._decode(row)))
@@ -112,13 +114,13 @@ class RedisChannelLayer(_RedisChannelLayer):
                 continue
         return result
 
-    async def get_layers_for_groups(self, groups):
+    async def get_layers_for_groups(self, groups: Iterable[str]) -> dict[str, list[Any]]:
         """批量获取多个 group 的 channel 列表。
 
         同一节点的 group 合并进一个 pipeline，单 Redis 部署下整个请求只有一次往返，
         替代旧实现的逐 group 串行 ZREMRANGEBYSCORE + ZRANGE。
         """
-        result = {}
+        result: dict[str, list[Any]] = {}
         by_index: dict[int, list[str]] = {}
         for group in groups:
             by_index.setdefault(self.consistent_hash(group), []).append(group)
@@ -137,13 +139,13 @@ class RedisChannelLayer(_RedisChannelLayer):
                 result[group] = [self._decode(x) for x in channels]
         return result
 
-    async def get_groups(self):
+    async def get_groups(self) -> list[str]:
         """降级路径：SCAN 全库列出全部 group。
 
         仅在反向索引不可用/为空时调用（例如 Redis 重启后等待首个心跳自愈的窗口）。
         match 收紧到个人组前缀并显式传 COUNT，避免遍历整个 keyspace。
         """
-        groups = []
+        groups: list[str] = []
         group = self._group_key(self._online_group_prefix() + "*")
         for index in range(self.ring_size):
             connection = self.connection(index)

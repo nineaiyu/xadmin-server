@@ -6,6 +6,7 @@
 # date : 6/2/2023
 import functools
 import hashlib
+from typing import Any
 
 from django.http.cookie import parse_cookie
 from django.utils.translation import gettext_lazy as _
@@ -22,9 +23,9 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def auth_required(view_func):
+def auth_required(view_func: Any) -> Any:
     @functools.wraps(view_func)
-    def wrapper(view, request, *args, **kwargs):
+    def wrapper(view: Any, request: Any, *args: Any, **kwargs: Any) -> Any:
         if request.user and request.user.is_authenticated:
             return view_func(view, request, *args, **kwargs)
         raise NotAuthenticated(_("Unauthorized authentication"))
@@ -36,7 +37,7 @@ def auth_required(view_func):
 PAT_IP_REJECT_LOG_THROTTLE_SECONDS = 60
 
 
-def _log_pat_ip_rejection(pat, client_ip):
+def _log_pat_ip_rejection(pat: Any, client_ip: Any) -> None:
     """IP 白名单未命中告警（按凭证节流；缓存不可用时退化为每次都记，不静默）。"""
     from django.core.cache import cache
 
@@ -57,7 +58,7 @@ def hash_pat_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
 
-def check_api_application_quota(application) -> None:
+def check_api_application_quota(application: Any) -> None:
     """每日配额计数 + 告警，``daily_quota_hard`` 开启时超限硬阻断（429）。
 
     计数键按「应用 + 自然日」（TTL 两天，跨日自然滚动）；达到
@@ -105,7 +106,7 @@ def check_api_application_quota(application) -> None:
     notify_api_quota_warning(application, count, quota)
 
 
-def notify_api_quota_warning(application, used: int, quota: int) -> None:
+def notify_api_quota_warning(application: Any, used: int, quota: int) -> None:
     """配额软告警：站内信（超管）+ webhook 事件；任何故障只记日志。"""
     info = {
         "application": application.name,
@@ -123,7 +124,7 @@ def notify_api_quota_warning(application, used: int, quota: int) -> None:
         logger.warning("emit api quota warning event failed", exc_info=True)
 
 
-def check_api_application_rate_limit(application) -> None:
+def check_api_application_rate_limit(application: Any) -> None:
     """开放平台应用限流：按应用 + 分钟窗口计数，超限抛 429；0 = 不限。
 
     在认证成功处生效：应用凭证的每一次已认证请求都计数（含 4xx 业务响应，
@@ -156,7 +157,7 @@ class ServerAccessToken(AccessToken):
     自定义的token方法是为了登出的时候，将 access token 禁用
     """
 
-    def verify(self):
+    def verify(self) -> None:
         # 认证热路径：黑名单 / 用户级失效 / 会话级失效三处键值一次 get_many 取回
         # （原先三次独立 GET = 每个已认证请求 3 次 Redis 往返，合并后 1 次；
         # django-redis 下 get_many 走单次管线，语义与逐个 cache.get 完全一致）
@@ -195,7 +196,7 @@ class CookieJWTAuthentication(JWTAuthentication):
     支持cookie认证，是为了可以访问 django-proxy 的页面，比如 flower
     """
 
-    def get_header(self, request):
+    def get_header(self, request: Any) -> Any:
         header = super().get_header(request)
         if not header:
             cookies = request.META.get("HTTP_COOKIE")
@@ -205,7 +206,7 @@ class CookieJWTAuthentication(JWTAuthentication):
                     header = f"Bearer {cookie_dict.get('X-Token')}".encode()
         return header
 
-    def authenticate(self, request):
+    def authenticate(self, request: Any) -> Any:
         result = super().authenticate(request)
         if result:
             # 会话活跃刷新（登录即登记的 UserSession）：节流门控在 touch 内部，
@@ -241,7 +242,7 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
         # 保留类方法入口（既有调用点/测试引用），实现统一走 hash_pat_token
         return hash_pat_token(raw_token)
 
-    def authenticate(self, request):
+    def authenticate(self, request: Any) -> Any:
         header = request.META.get("HTTP_AUTHORIZATION", "")
         if not header:
             return None
@@ -310,6 +311,8 @@ from common.core.auth_scopes import (  # noqa: F401  (实现拆至 auth_scopes�
     _normalize_scope_path,
     ip_allowed_by_allowlist,
     normalize_scope_entry,
-    path_allowed_by_scopes,
     split_scope_entry,
+)
+from common.core.auth_scopes import (
+    path_allowed_by_scopes as path_allowed_by_scopes,
 )

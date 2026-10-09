@@ -18,6 +18,7 @@ import shutil
 import time
 import uuid
 from collections.abc import Iterator
+from typing import Any
 from urllib.parse import quote
 
 from django.core.files.storage import FileSystemStorage, default_storage
@@ -50,7 +51,7 @@ def storage_backend_name() -> str:
         return name
     if isinstance(default_storage, FileSystemStorage):
         return "local"
-    return default_storage.__class__.__name__
+    return str(default_storage.__class__.__name__)
 
 
 def storage_exists(name: str | None) -> bool:
@@ -63,7 +64,7 @@ def storage_exists(name: str | None) -> bool:
         return False
 
 
-def storage_open(name: str, mode: str = "rb"):
+def storage_open(name: str, mode: str = "rb") -> Any:
     """打开存储对象（本地 / 远端统一入口；返回类文件对象）。"""
     return default_storage.open(name, mode)
 
@@ -115,7 +116,7 @@ def storage_local_path(name: str | None) -> str | None:
         return None
 
 
-def _touch(path: str):
+def _touch(path: str) -> None:
     try:
         os.utime(path, None)
     except OSError:
@@ -170,7 +171,7 @@ def clean_storage_cache(keep_days: int = 7, batch: int = 2000) -> int:
 def storage_url(name: str) -> str:
     """存储对象的访问 URL（本地 = MEDIA_URL 相对地址；远端 = 对象存储 / CDN 地址）。"""
     try:
-        return default_storage.url(name)
+        return str(default_storage.url(name))
     except Exception:  # noqa: BLE001 取 URL 失败返回空串（调用方按无链接降级）
         logger.debug("read storage url failed. name:%s", name, exc_info=True)
         return ""
@@ -212,7 +213,7 @@ def storage_presigned_url(
         params = {"Bucket": config["bucket"], "Key": name}
         if download_filename:
             params["ResponseContentDisposition"] = f"attachment; filename*=UTF-8''{quote(download_filename)}"
-        return client.generate_presigned_url("get_object", Params=params, ExpiresIn=int(expires))
+        return str(client.generate_presigned_url("get_object", Params=params, ExpiresIn=int(expires)))
     except Exception as e:  # noqa: BLE001 签名失败按不可用处理（调用方回退服务端中转）
         logger.warning("generate presigned url failed. name:%s error:%s", name, e)
         return None
@@ -229,7 +230,7 @@ def _storage_probe_path(root: str) -> str:
     return os.path.join(root, f".storage_probe.{os.getpid()}.{uuid.uuid4().hex[:8]}")
 
 
-def storage_probe():
+def storage_probe() -> Any:
     """存储后端可达性探测，返回 ``(ok, cost)``（与 health 探测同口径）。"""
     t1 = time.time()
     try:

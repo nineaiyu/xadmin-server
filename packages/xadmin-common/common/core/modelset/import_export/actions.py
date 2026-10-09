@@ -3,6 +3,7 @@
 """导入导出：组合动作（import-data 同步/异步分流）。"""
 
 from collections.abc import Callable
+from typing import Any
 
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -24,9 +25,9 @@ logger = get_logger(__name__)
 
 
 class ImportExportDataAction(CreateAction, UpdateAction, ImportAsyncAction, OnlyExportDataAction):
-    filter_queryset: Callable
-    get_queryset: Callable
-    get_serializer: Callable
+    filter_queryset: Callable[..., Any]
+    get_queryset: Callable[..., Any]
+    get_serializer: Callable[..., Any]
 
     @extend_schema(
         parameters=[
@@ -37,9 +38,9 @@ class ImportExportDataAction(CreateAction, UpdateAction, ImportAsyncAction, Only
         ),
         responses={200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))},
     )
-    @parent_fallback_action(methods=["post"], detail=False, url_path="import-data")
-    @transaction.atomic
-    def import_data(self, request, *args, **kwargs):
+    @parent_fallback_action(methods=["post"], detail=False, url_path="import-data")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def import_data(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """导入{cls}数据"""
 
         task = kwargs.get(
@@ -81,7 +82,7 @@ class ImportExportDataAction(CreateAction, UpdateAction, ImportAsyncAction, Only
             return ApiResponse(detail=_("Operation successful. Import {} data").format(count))
         return ApiResponse(detail=_("Operation failed. Abnormal data"), code=1001)
 
-    def _sync_import(self, request, data, ignore_error):
+    def _sync_import(self, request: Any, data: Any, ignore_error: Any) -> Any:
         """同步导入 create/update 两种动作，返回 ``(成功条数, 失败或跳过条数)``。"""
         act = request.query_params.get("action")
         count = 0

@@ -9,6 +9,7 @@ import secrets
 import string
 import time
 import uuid
+from typing import Any
 
 from common.cache.storage import RedisCacheBase, TokenManagerCache
 from common.utils import get_logger
@@ -16,7 +17,9 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def make_token_cache(key, time_limit=60, prefix="", force_new=False, ext_data=None):
+def make_token_cache(
+    key: str, time_limit: int = 60, prefix: str = "", force_new: bool = False, ext_data: Any = None
+) -> Any:
     token_cache = TokenManagerCache(prefix, key)
     token_key, token = token_cache.get_storage_key_and_cache()
     if token and not force_new:
@@ -37,7 +40,7 @@ def make_token_cache(key, time_limit=60, prefix="", force_new=False, ext_data=No
         return token
 
 
-def verify_token_cache(token, key, success_once=False):
+def verify_token_cache(token: Any, key: str, success_once: bool = False) -> Any:
     try:
         token_cache = RedisCacheBase(token)
         token, values = token_cache.get_storage_key_and_cache()
@@ -53,7 +56,7 @@ def verify_token_cache(token, key, success_once=False):
     return False
 
 
-def generate_token_for_medium(medium):
+def generate_token_for_medium(medium: Any) -> Any:
     if medium == "email":
         return generate_alphanumeric_token_of_length(32)
     elif medium == "wechat":
@@ -62,17 +65,17 @@ def generate_token_for_medium(medium):
         return generate_numeric_token_of_length(6)
 
 
-def generate_numeric_token_of_length(length, random_str=""):
+def generate_numeric_token_of_length(length: Any, random_str: str = "") -> Any:
     return "".join([random.choice(string.digits + random_str) for _ in range(length)])
 
 
-def generate_alphanumeric_token_of_length(length):
+def generate_alphanumeric_token_of_length(length: Any) -> Any:
     return "".join(
         [random.choice(string.digits + string.ascii_lowercase + string.ascii_uppercase) for _ in range(length)]
     )
 
 
-def generate_good_token_of_length(length):
+def generate_good_token_of_length(length: Any) -> Any:
     ascii_uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ"
     digits = "23456789"
     return "".join([random.choice(digits + ascii_uppercase) for _ in range(length)])

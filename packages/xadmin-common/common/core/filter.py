@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 6/2/2023
 from types import SimpleNamespace
+from typing import Any
 
 from django.core.cache import cache
 from django.db.models import (
@@ -33,7 +34,7 @@ GRANTS_CACHE_VERSION_KEY = "data_permission_grants_version"
 GRANTS_CACHE_TTL = 300
 
 
-def invalidate_data_permission_grants_cache():
+def invalidate_data_permission_grants_cache() -> None:
     """失效授权池缓存（数据权限 / 部门 / 用户或部门-授权关系变更时调用）。"""
     try:
         cache.incr(GRANTS_CACHE_VERSION_KEY)
@@ -47,7 +48,7 @@ def invalidate_data_permission_grants_cache():
         logger.warning("invalidate data permission grants cache failed", exc_info=True)
 
 
-def _grants_cache_version():
+def _grants_cache_version() -> Any:
     """当前授权池缓存版本号；缓存不可用时返回 None（调用方跳过缓存直查）。"""
     try:
         version = cache.get(GRANTS_CACHE_VERSION_KEY)
@@ -63,7 +64,7 @@ def _grants_cache_version():
     return version
 
 
-def _load_grants(user_obj, dq):
+def _load_grants(user_obj: Any, dq: Any) -> Any:
     """加载授权池（部门祖先链授权 + 个人授权）。
 
     单次 OR 查询取代旧实现的「部门 / 个人」两次查询；结果按
@@ -105,7 +106,7 @@ def _load_grants(user_obj, dq):
 
 @timeit
 @count_sql_queries
-def get_filter_queryset(queryset: QuerySet, user_obj, extra_grants=None):
+def get_filter_queryset(queryset: QuerySet, user_obj: Any, extra_grants: Any = None) -> Any:
     """数据权限过滤入口（薄壳；规则编译与代数在 common/core/data_scope/ 包）。
 
     合并语义（对齐行业「取最宽生效」）：
@@ -160,7 +161,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj, extra_grants=None):
     return queryset.filter(combined.q)
 
 
-def assert_within_data_scope(queryset, user_obj, message) -> None:
+def assert_within_data_scope(queryset: Any, user_obj: Any, message: Any) -> None:
     """写侧载荷范围校验：目标对象/归属值必须在数据权限可见范围内。
 
     与读侧同源（``get_filter_queryset``）：可见即可写、不可见即拒（fail-closed）——
@@ -178,21 +179,21 @@ def assert_within_data_scope(queryset, user_obj, message) -> None:
 
 
 class OwnerUserFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
+    def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
         if request.user and request.user.is_authenticated:
             return queryset.filter(owner=request.user)
         raise NotAuthenticated(_("Unauthorized authentication"))
 
 
 class CreatorUserFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
+    def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
         if request.user and request.user.is_authenticated:
             return queryset.filter(creator=request.user)
         raise NotAuthenticated(_("Unauthorized authentication"))
 
 
 class BaseDataPermissionFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
+    def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
         queryset = get_filter_queryset(queryset, request.user)
         # 应用行级授权：AND 叠加在数据权限之后（超管 owner 同样生效）
         return apply_grant_row_scope(request, queryset)
@@ -208,7 +209,7 @@ class BaseFilterSet(filters.FilterSet):
     updated_time = filters.DateTimeFromToRangeFilter(field_name="updated_time")
     description = filters.CharFilter(field_name="description", lookup_expr="icontains")
 
-    def get_spm_filter(self, queryset, name, value):
+    def get_spm_filter(self, queryset: Any, name: str, value: Any) -> Any:
         pks = CommonResourceIDsCache(value).get_storage_cache()
         if pks:
             return queryset.filter(pk__in=pks)
@@ -221,7 +222,7 @@ class BaseFilterSet(filters.FilterSet):
 _MOVED_EXPORTS = ("ControlledLookupFilterBackend", "PkMultipleChoiceField", "PkMultipleFilter")
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> Any:
     if name in _MOVED_EXPORTS:
         from importlib import import_module
 

@@ -1,3 +1,7 @@
+import os
+import sys
+from typing import Any
+
 from common.settings_contract import kernel_setting
 
 from ..hands import *
@@ -8,15 +12,15 @@ __all__ = ["FlowerService"]
 
 class FlowerService(BaseService):
     # https://flower.readthedocs.io/en/latest/man.html?highlight=pool#description
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
     @property
-    def db_file(self):
+    def db_file(self) -> Any:
         return os.path.join(LOG_DIR, "flower.db")
 
     @property
-    def cmd(self):
+    def cmd(self) -> Any:
         print("\n- Start Flower as Task Monitor")
 
         if not CELERY_FLOWER_AUTH:
@@ -54,5 +58,5 @@ class FlowerService(BaseService):
         return cmd
 
     @property
-    def cwd(self):
+    def cwd(self) -> Any:
         return APPS_DIR

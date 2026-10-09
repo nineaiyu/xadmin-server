@@ -16,6 +16,7 @@
 """
 
 import re
+from typing import Any
 
 from common.contracts import API_ACTION_SPECS
 
@@ -31,7 +32,7 @@ def normalize_path(path: str) -> str:
     return normalized.rstrip("/")
 
 
-def declared_actions() -> dict:
+def declared_actions() -> dict[tuple[str, str], Any]:
     """声明式动作索引：``{(METHOD, "/api/.../ <pk>"): spec}``（注册表是唯一来源）。"""
     index = {}
     for spec in API_ACTION_SPECS.values():
@@ -39,14 +40,14 @@ def declared_actions() -> dict:
     return index
 
 
-def _approval_flag(value):
+def _approval_flag(value: Any) -> Any:
     """审批标记：bool 原样；谓词（按用户判定）标 conditional。"""
     return value if isinstance(value, bool) else "conditional"
 
 
-def ai_operation_meta(view, path: str, method: str) -> dict:
+def ai_operation_meta(view: Any, path: str, method: str) -> dict[str, Any]:
     """收集 operation 的 AI 元数据（无任何来源时返回空 dict，端点零变化）。"""
-    meta: dict = {}
+    meta: dict[str, Any] = {}
     spec = declared_actions().get((str(method or "").upper(), normalize_path(path)))
     if spec is not None:
         meta.update(
@@ -65,5 +66,5 @@ def ai_operation_meta(view, path: str, method: str) -> dict:
     return meta
 
 
-def operation_extensions(meta: dict) -> dict:
+def operation_extensions(meta: dict[str, Any]) -> dict[str, Any]:
     return {f"{EXTENSION_PREFIX}{key}": value for key, value in meta.items()}

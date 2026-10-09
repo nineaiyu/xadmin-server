@@ -3,6 +3,7 @@
 """功能模块注册表：模块声明与解析结果的数据结构。"""
 
 from dataclasses import dataclass, field
+from typing import Any
 
 # 模块等级
 CORE = "core"
@@ -55,9 +56,9 @@ class ModuleResolution:
     """一次模块解析的结果（预设 + 显式覆盖 + 依赖校验后）。"""
 
     preset: str
-    enabled: frozenset
-    disabled: frozenset
-    overrides: tuple = field(default=())
+    enabled: frozenset[Any]
+    disabled: frozenset[Any]
+    overrides: tuple[Any, ...] = field(default=())
 
     @property
     def is_full(self) -> bool:

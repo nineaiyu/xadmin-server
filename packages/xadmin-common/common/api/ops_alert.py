@@ -10,6 +10,7 @@
 """
 
 import secrets
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -44,7 +45,7 @@ class OpsAlertAPIView(GenericAPIView):
         ),
         responses=get_default_response_schema(),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """上报运维事件：节流发布站内信/邮件告警（60s 同来源同事件去重）"""
         from common.core.config import SysConfig
         from common.ops_alert import notify_ops_alert

@@ -6,6 +6,7 @@
 """
 
 from collections.abc import Callable
+from typing import Any
 
 from django.db import transaction
 from django.db.models import Case, IntegerField, Value, When
@@ -29,15 +30,15 @@ BATCH_MAX_ITEMS = 500
 
 
 class RankAction:
-    filter_queryset: Callable
-    get_queryset: Callable
+    filter_queryset: Callable[..., Any]
+    get_queryset: Callable[..., Any]
 
     @extend_schema(
         request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="rank")
-    def rank(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="rank")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def rank(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}排序"""
         # 入参必须是主键列表：dict 会被 list() 解包成键列表，非法形态直接返回可读错误
         if not isinstance(request.data, (list, tuple)):
@@ -58,16 +59,16 @@ class RankAction:
 
 
 class BatchDestroyAction:
-    filter_queryset: Callable
-    get_queryset: Callable
-    perform_destroy: Callable
+    filter_queryset: Callable[..., Any]
+    get_queryset: Callable[..., Any]
+    perform_destroy: Callable[..., Any]
 
     @extend_schema(
         request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-destroy")
-    def batch_destroy(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除{cls}"""
 
         # 入参必须是主键列表（与 rank 同口径）：防 dict 等非法形态按键误删，
@@ -121,7 +122,7 @@ class BatchDestroyAction:
             data={"success": success, "failures": failures},
         )
 
-    def _needs_rowwise_delete(self):
+    def _needs_rowwise_delete(self) -> Any:
         """是否需要逐行 delete() 以触发模型级副作用。
 
         - 继承 AutoCleanFileMixin 且确实存在文件/附件关联的模型，delete()
@@ -143,7 +144,7 @@ class BatchDestroyAction:
         return issubclass(model, AutoCleanFileMixin) and AutoCleanFileMixin.has_file_cleanup(model)
 
 
-def _normalize_pks(model, pks):
+def _normalize_pks(model: Any, pks: Any) -> Any:
     """批量入参 pk 的类型安全规范化，返回 (合法值, 非法项明细)。
 
     主键形态因模型而异（自增整数 / UUID / 字符串），直接把原始入参交给
@@ -160,7 +161,7 @@ def _normalize_pks(model, pks):
     return valid, invalid
 
 
-def _batch_error_message(exc, limit=200):
+def _batch_error_message(exc: Any, limit: int = 200) -> Any:
     """批量逐项失败原因的可读归一（DRF ValidationError → 字段: 消息）。"""
     detail = getattr(exc, "detail", None)
     if detail:
@@ -188,15 +189,15 @@ class BatchPartialUpdateAction:
     - 单项失败不影响其余项，统一返回 ``data={"success": [...], "failures": [{"pk", "reason"}]}``。
     """
 
-    filter_queryset: Callable
-    get_queryset: Callable
-    get_serializer: Callable
-    perform_update: Callable
+    filter_queryset: Callable[..., Any]
+    get_queryset: Callable[..., Any]
+    get_serializer: Callable[..., Any]
+    perform_update: Callable[..., Any]
 
     # 视图声明：允许批量修改的字段白名单（None/空 = 未开放批量更新）
-    batch_update_fields: tuple | dict = ()
+    batch_update_fields: tuple[Any, ...] | dict[str, Any] = ()
 
-    def get_batch_update_fields(self) -> set:
+    def get_batch_update_fields(self) -> set[Any]:
         fields = self.batch_update_fields
         entries = fields.keys() if isinstance(fields, dict) else (fields or ())
         names: set[str] = set()
@@ -217,8 +218,8 @@ class BatchPartialUpdateAction:
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-update")
-    def batch_update(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-update")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量修改{cls}"""
         allowed = self.get_batch_update_fields()
         if not allowed:

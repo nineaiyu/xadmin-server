@@ -7,7 +7,7 @@
 import requests
 
 
-def download_file(src, path):
+def download_file(src: str, path: str) -> None:
     with requests.get(src, stream=True) as r:
         r.raise_for_status()
         with open(path, "wb") as f:

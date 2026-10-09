@@ -41,17 +41,17 @@ class RecycleBinAction:
 
         def get_queryset(self) -> Any: ...
 
-        def filter_queryset(self, queryset) -> Any: ...
+        def filter_queryset(self, queryset: Any) -> Any: ...
 
-        def list(self, request, *args, **kwargs) -> Any: ...
+        def list(self, request: Any, *args: Any, **kwargs: Any) -> Any: ...
 
-    def get_recycle_restore_queryset(self, pks):
+    def get_recycle_restore_queryset(self, pks: Any) -> Any:
         """恢复目标查询集（已含数据权限过滤）；成组语义的模型可覆写扩展范围。"""
         model = self.get_queryset().model
         queryset = model.all_objects.filter(deleted_at__isnull=False, pk__in=pks)
         return self.filter_queryset(queryset)
 
-    def get_recycle_purge_queryset(self, pks):
+    def get_recycle_purge_queryset(self, pks: Any) -> Any:
         """物理清除目标（已含数据权限过滤）：选中 pks，或不传 pks 时清除超过保留期的数据。"""
         model = self.get_queryset().model
         queryset = model.all_objects.filter(deleted_at__isnull=False)
@@ -67,8 +67,8 @@ class RecycleBinAction:
         request=OpenApiRequest(build_object_type(properties={"pks": _PKS_ARRAY})),
         responses=get_default_response_schema(),
     )
-    @action(methods=["patch"], detail=False, url_path="recycle/restore")
-    def recycle_restore(self, request, *args, **kwargs):
+    @action(methods=["patch"], detail=False, url_path="recycle/restore")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def recycle_restore(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """从回收站恢复{cls}数据"""
         pks = request.data.get("pks") or []
         if not pks:
@@ -96,8 +96,8 @@ class RecycleBinAction:
         request=OpenApiRequest(build_object_type(properties={"pks": _PKS_ARRAY})),
         responses=get_default_response_schema(),
     )
-    @action(methods=["delete"], detail=False, url_path="recycle/purge")
-    def recycle_purge(self, request, *args, **kwargs):
+    @action(methods=["delete"], detail=False, url_path="recycle/purge")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def recycle_purge(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """物理清除{cls}回收站数据（不传 pks 时清除全部超过保留期的数据）"""
         queryset = self.get_recycle_purge_queryset(request.data.get("pks") or [])
         count = 0
@@ -109,8 +109,8 @@ class RecycleBinAction:
         return ApiResponse(detail=_("Purged {} data").format(count))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="recycle")
-    def recycle(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="recycle")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def recycle(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}回收站列表"""
         model = self.get_queryset().model
         self.queryset = model.all_objects.filter(deleted_at__isnull=False).order_by("-deleted_at")

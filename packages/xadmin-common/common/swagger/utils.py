@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 8/12/2024
 
+from typing import Any
+
 from drf_spectacular.extensions import OpenApiAuthenticationExtension, OpenApiSerializerFieldExtension
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -20,7 +22,7 @@ class CustomAutoSchema(AutoSchema):
     def get_tags(self) -> list[str]:
         return [self.view.__class__.__name__]
 
-    def get_operation(self, path, path_regex, path_prefix, method, registry):
+    def get_operation(self, path: str, path_regex: Any, path_prefix: Any, method: Any, registry: Any) -> Any:
         """按 AI 注册表 + 视图 ai_meta 注入 ``x-ai-*`` 扩展（未涉及端点零变化）。"""
         operation = super().get_operation(path, path_regex, path_prefix, method, registry)
         if operation is None:  # 端点被忽略时保持原样返回 None
@@ -36,18 +38,18 @@ class CustomAutoSchema(AutoSchema):
         return operation
 
 
-class OpenApiAuthenticationScheme(OpenApiAuthenticationExtension):
+class OpenApiAuthenticationScheme(OpenApiAuthenticationExtension):  # type: ignore[no-untyped-call]
     target_class = "common.core.auth.CookieJWTAuthentication"  # full import path OR class ref
     name = "CookieJWTAuthentication"  # name used in the schema
 
-    def get_security_definition(self, auto_schema):
+    def get_security_definition(self, auto_schema: Any) -> Any:
         return {}
 
 
-class OpenApiPrimaryKeyRelatedField(OpenApiSerializerFieldExtension):
+class OpenApiPrimaryKeyRelatedField(OpenApiSerializerFieldExtension):  # type: ignore[no-untyped-call]
     target_class = "common.core.fields.BasePrimaryKeyRelatedField"
 
-    def map_serializer_field(self, auto_schema, direction):
+    def map_serializer_field(self, auto_schema: Any, direction: Any) -> Any:
         field = self.target
         # 获取字段的基本信息
         field_type = "array" if field.many else "object"
@@ -69,13 +71,13 @@ class OpenApiPrimaryKeyRelatedField(OpenApiSerializerFieldExtension):
                 "title": getattr(field, "label", ""),
             }
 
-    def _get_openapi_item_schema(self, field):
+    def _get_openapi_item_schema(self, field: Any) -> Any:
         """
         获取数组项的 OpenAPI schema
         """
         return self._get_openapi_object_schema(field)
 
-    def _get_openapi_object_schema(self, field):
+    def _get_openapi_object_schema(self, field: Any) -> Any:
         """
         获取对象的 OpenAPI schema
         """
@@ -89,7 +91,7 @@ class OpenApiPrimaryKeyRelatedField(OpenApiSerializerFieldExtension):
 
         return {"type": "object", "properties": properties, "required": ["id"] if "id" in field.attrs else []}
 
-    def _infer_field_type(self, field, attr_name):
+    def _infer_field_type(self, field: Any, attr_name: Any) -> Any:
         """
         智能推断字段类型
         """
@@ -108,7 +110,7 @@ class OpenApiPrimaryKeyRelatedField(OpenApiSerializerFieldExtension):
         # 如果没有 queryset 或无法获取字段信息，使用启发式规则
         return self._heuristic_field_type(attr_name)
 
-    def _map_django_field_type(self, model_field):
+    def _map_django_field_type(self, model_field: Any) -> str:
         """
         将 Django 字段类型映射到 OpenAPI 类型
         """
@@ -133,7 +135,7 @@ class OpenApiPrimaryKeyRelatedField(OpenApiSerializerFieldExtension):
         else:
             return "string"
 
-    def _heuristic_field_type(self, attr_name):
+    def _heuristic_field_type(self, attr_name: Any) -> str:
         """
         启发式推断字段类型
         """
@@ -149,21 +151,21 @@ class OpenApiPrimaryKeyRelatedField(OpenApiSerializerFieldExtension):
             # 默认返回字符串类型
             return "string"
 
-    def _get_openapi_properties_schema(self, field):
+    def _get_openapi_properties_schema(self, field: Any) -> Any:
         """
         获取对象属性的 OpenAPI schema
         """
         return self._get_openapi_object_schema(field)["properties"]
 
 
-class LabeledChoiceFieldExtension(OpenApiSerializerFieldExtension):
+class LabeledChoiceFieldExtension(OpenApiSerializerFieldExtension):  # type: ignore[no-untyped-call]
     """
     为 LabeledChoiceField 提供 OpenAPI schema
     """
 
     target_class = "common.core.fields.LabeledChoiceField"
 
-    def map_serializer_field(self, auto_schema, direction):
+    def map_serializer_field(self, auto_schema: Any, direction: Any) -> Any:
         field = self.target
 
         if getattr(field, "many", False):
@@ -182,7 +184,7 @@ class LabeledChoiceFieldExtension(OpenApiSerializerFieldExtension):
             }
 
 
-def get_default_response_schema(data=None):
+def get_default_response_schema(data: Any = None) -> Any:
     if data is None:
         data = {}
     return {

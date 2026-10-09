@@ -1,10 +1,12 @@
 import abc
 import datetime
+import os
 import shutil
 import signal
 import subprocess
 import threading
 import time
+from typing import Any
 
 import psutil
 
@@ -12,9 +14,9 @@ from ..hands import *
 
 
 class BaseService:
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.name = kwargs["name"]
-        self._process = None
+        self._process: Any = None
         self.STOP_TIMEOUT = 10
         self.max_retry = 3
         self.retry = 0
@@ -23,16 +25,16 @@ class BaseService:
 
     @property
     @abc.abstractmethod
-    def cmd(self):
+    def cmd(self) -> Any:
         return []
 
     @property
     @abc.abstractmethod
-    def cwd(self):
+    def cwd(self) -> str:
         return ""
 
     @property
-    def is_running(self):
+    def is_running(self) -> bool:
         if self.pid == 0:
             return False
         try:
@@ -42,7 +44,7 @@ class BaseService:
         else:
             return True
 
-    def show_status(self):
+    def show_status(self) -> None:
         if self.is_running:
             msg = f"{self.name} is running: {self.pid}."
         else:
@@ -58,30 +60,30 @@ class BaseService:
 
     # -- log --
     @property
-    def log_filename(self):
+    def log_filename(self) -> str:
         return f"{self.name}.log"
 
     @property
-    def log_filepath(self):
+    def log_filepath(self) -> Any:
         return os.path.join(LOG_DIR, self.log_filename)
 
     @property
-    def log_file(self):
+    def log_file(self) -> Any:
         return open(self.log_filepath, "a")
 
     @property
-    def log_dir(self):
+    def log_dir(self) -> Any:
         return os.path.dirname(self.log_filepath)
 
     # -- end log --
 
     # -- pid --
     @property
-    def pid_filepath(self):
+    def pid_filepath(self) -> Any:
         return os.path.join(TMP_DIR, f"{self.name}.pid")
 
     @property
-    def pid(self):
+    def pid(self) -> Any:
         if not os.path.isfile(self.pid_filepath):
             return 0
         with open(self.pid_filepath) as f:
@@ -91,11 +93,11 @@ class BaseService:
                 pid = 0
         return pid
 
-    def write_pid(self):
+    def write_pid(self) -> None:
         with open(self.pid_filepath, "w") as f:
             f.write(str(self.process.pid))
 
-    def remove_pid(self):
+    def remove_pid(self) -> None:
         if os.path.isfile(self.pid_filepath):
             os.unlink(self.pid_filepath)
 
@@ -103,7 +105,7 @@ class BaseService:
 
     # -- process --
     @property
-    def process(self):
+    def process(self) -> Any:
         if not self._process:
             try:
                 self._process = psutil.Process(self.pid)
@@ -115,11 +117,11 @@ class BaseService:
     # -- end process --
 
     # -- action --
-    def open_subprocess(self):
+    def open_subprocess(self) -> None:
         kwargs = {"cwd": self.cwd, "stderr": self.log_file, "stdout": self.log_file}
         self._process = subprocess.Popen(self.cmd, **kwargs)
 
-    def start(self):
+    def start(self) -> None:
         if self.is_running:
             self.show_status()
             return
@@ -132,7 +134,7 @@ class BaseService:
         self.write_pid()
         self.start_other()
 
-    def _terminate_stale(self):
+    def _terminate_stale(self) -> None:
         pid = self.pid
         if pid <= 0:
             return
@@ -151,10 +153,10 @@ class BaseService:
         except (ProcessLookupError, PermissionError):
             pass
 
-    def start_other(self):
+    def start_other(self) -> None:
         pass
 
-    def stop(self, force=False):
+    def stop(self, force: bool = False) -> None:
         if not self.is_running:
             self.show_status()
             # self.remove_pid()
@@ -183,13 +185,13 @@ class BaseService:
             else:
                 continue
 
-    def watch(self):
+    def watch(self) -> None:
         self._check()
         if not self.is_running:
             self._restart()
         self._rotate_log()
 
-    def _check(self):
+    def _check(self) -> None:
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"{now} Check service status: {self.name} -> ", end="")
         if self.process:
@@ -204,7 +206,7 @@ class BaseService:
         else:
             print(f"stopped at {self.pid}")
 
-    def _restart(self):
+    def _restart(self) -> None:
         if self.retry > self.max_retry:
             print(f"Service start failed, exit: {self.name}")
             self.EXIT_EVENT.set()
@@ -213,7 +215,7 @@ class BaseService:
         print(f"> Find {self.name} stopped, retry {self.retry}, {self.pid}")
         self.start()
 
-    def _rotate_log(self):
+    def _rotate_log(self) -> None:
         now = datetime.datetime.now()
         _time = now.strftime("%H:%M")
         if _time != "23:59":

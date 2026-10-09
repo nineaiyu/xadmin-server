@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 6/29/2023
 import base64
+from typing import Any
 
 from django.http import HttpResponse
 from django.utils.translation import gettext_lazy as _
@@ -27,8 +28,8 @@ class CeleryFlowerAPIView(GenericAPIView):
     """celery 定时任务"""
 
     @extend_schema(exclude=True)
-    @xframe_options_exempt
-    def get(self, request, path):
+    @xframe_options_exempt  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def get(self, request: Any, path: str) -> Any:
         """获取{cls}"""
         remote_url = f"http://{flower_url}/api/flower/{path}"
         try:
@@ -41,7 +42,7 @@ class CeleryFlowerAPIView(GenericAPIView):
         return response
 
     @extend_schema(exclude=True)
-    @xframe_options_exempt
-    def post(self, request, path):
+    @xframe_options_exempt  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def post(self, request: Any, path: str) -> Any:
         """操作{cls}"""
         return self.get(request, path)

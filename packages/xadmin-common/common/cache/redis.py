@@ -6,6 +6,7 @@
 # date : 6/2/2023
 import json
 import time
+from typing import Any
 
 from django_redis import get_redis_connection
 
@@ -14,7 +15,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def format_return(data):
+def format_return(data: Any) -> Any:
     try:
         if isinstance(data, bytes):
             data = data.decode(encoding="utf-8")
@@ -24,7 +25,7 @@ def format_return(data):
         return data
 
 
-def format_input(data):
+def format_input(data: Any) -> Any:
     try:
         return json.dumps(data)
     except Exception:
@@ -33,36 +34,36 @@ def format_input(data):
 
 
 class CacheRedis:
-    def __init__(self, key):
+    def __init__(self, key: str) -> None:
         self.connect = get_redis_connection("default")
         self.key = key
 
-    def lock(self, *args, **kwargs):
+    def lock(self, *args: Any, **kwargs: Any) -> Any:
         return self.connect.lock(f"{self.key}_locker", *args, **kwargs)
 
-    def expire(self, timeout=None):
+    def expire(self, timeout: int | None = None) -> Any:
         return self.connect.expire(self.key, timeout)
 
 
 class CacheList(CacheRedis):
-    def __init__(self, key, max_size=1024, timeout=None):
+    def __init__(self, key: str, max_size: int = 1024, timeout: int | None = None) -> None:
         super().__init__(key)
         self.max_size = max_size
         self.timeout = timeout
 
-    def auto_ltrim(self):
+    def auto_ltrim(self) -> None:
         stop = self.connect.llen(self.key)
         if self.max_size < stop:
             start = stop - self.max_size
             self.connect.ltrim(self.key, start, stop)
 
-    def push(self, json_data, *args):
+    def push(self, json_data: Any, *args: Any) -> None:
         self.connect.lpush(self.key, json.dumps(json_data), *[json.dumps(x) for x in args])
         self.auto_ltrim()
         if self.timeout is not None:
             self.connect.expire(self.key, self.timeout)
 
-    def pop(self):
+    def pop(self) -> Any:
         try:
             b_data = self.connect.rpop(self.key)
             if b_data:
@@ -70,64 +71,64 @@ class CacheList(CacheRedis):
         except Exception as e:
             logger.warning(f"{self.key} pop failed {e}")
 
-    def delete(self):
+    def delete(self) -> None:
         self.connect.delete(self.key)
 
-    def len(self):
-        return self.connect.llen(self.key)
+    def len(self) -> int:
+        return int(self.connect.llen(self.key))
 
-    def get_all(self):
+    def get_all(self) -> list[Any]:
         return [format_return(k) for k in self.connect.lrange(self.key, 0, -1)]
 
 
 class CacheSet(CacheRedis):
-    def __init__(self, key):
+    def __init__(self, key: str) -> None:
         super().__init__(key)
 
-    def get_all(self):
+    def get_all(self) -> set[Any]:
         return {format_return(k) for k in self.connect.smembers(self.key)}
 
-    def exist(self, val):
-        return self.connect.sismember(self.key, val)
+    def exist(self, val: Any) -> bool:
+        return bool(self.connect.sismember(self.key, val))
 
-    def count(self):
+    def count(self) -> Any:
         return format_return(self.connect.scard(self.key))
 
-    def push(self, val, *args):
+    def push(self, val: Any, *args: Any) -> Any:
         return self.connect.sadd(self.key, format_input(val), *[format_input(x) for x in args])
 
-    def pop(self, val):
+    def pop(self, val: Any) -> Any:
         try:
             return self.connect.srem(self.key, format_input(val))
         except Exception as e:
             logger.warning(f"{self.key} pop {val} failed {e}")
 
-    def delete(self):
+    def delete(self) -> None:
         self.connect.delete(self.key)
 
 
 class CacheSortedSet(CacheRedis):
-    def __init__(self, key):
+    def __init__(self, key: str) -> None:
         super().__init__(key)
 
-    def get_all(self, with_scores=False):
+    def get_all(self, with_scores: bool = False) -> list[Any]:
         return self.get_members(0, -1, with_scores)
 
-    def get_members(self, start=0, end=-1, with_scores=False):
+    def get_members(self, start: int = 0, end: int = -1, with_scores: bool = False) -> list[Any]:
         data = self.connect.zrevrange(self.key, start, end, with_scores)
         if with_scores:
             return [{format_return(k[0]): format_return(k[1])} for k in data]
         else:
             return [format_return(k) for k in data]
 
-    def exist(self, val):
+    def exist(self, val: Any) -> bool:
         return bool(self.connect.zrank(self.key, val))
 
-    def count(self):
+    def count(self) -> Any:
         return format_return(self.connect.zcard(self.key))
 
-    def push(self, val, *args):
-        map_data = {}
+    def push(self, val: Any, *args: Any) -> Any:
+        map_data: dict[Any, Any] = {}
         if isinstance(val, dict):
             map_data.update(val)
         else:
@@ -141,44 +142,44 @@ class CacheSortedSet(CacheRedis):
 
         return self.connect.zadd(self.key, map_data)
 
-    def pop(self, val):
+    def pop(self, val: Any) -> Any:
         try:
             return self.connect.zrem(self.key, format_input(val))
         except Exception as e:
             logger.warning(f"{self.key} pop {val} failed {e}")
 
-    def delete(self):
+    def delete(self) -> None:
         self.connect.delete(self.key)
 
 
 class CacheHash(CacheRedis):
-    def __init__(self, key):
+    def __init__(self, key: str) -> None:
         super().__init__(key)
 
-    def get_all(self):
+    def get_all(self) -> dict[Any, Any]:
         # return [format_return(v) for v in self.connect.hgetall(self.key).values()]
-        data = {}
+        data: dict[Any, Any] = {}
         for k, v in self.connect.hgetall(self.key).items():
             data[format_return(k)] = format_return(v)
         return data
         # return [{format_return(k): format_return(v)} for k, v in self.connect.hgetall(self.key).items()]
 
-    def get(self, key):
+    def get(self, key: Any) -> Any:
         return format_return(self.connect.hget(self.key, key))
 
-    def count(self):
+    def count(self) -> Any:
         return format_return(self.connect.hlen(self.key))
 
-    def push(self, key, val):
+    def push(self, key: Any, val: Any) -> Any:
         return self.connect.hset(self.key, key, format_input(val))
 
-    def pop(self, val):
+    def pop(self, val: Any) -> Any:
         try:
             return self.connect.hdel(self.key, val)
         except Exception as e:
             logger.warning(f"{self.key} pop {val} failed {e}")
 
-    def delete(self):
+    def delete(self) -> None:
         self.connect.delete(self.key)
 
 

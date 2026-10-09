@@ -21,6 +21,7 @@ FILE_S3_SECRET_KEY / FILE_S3_REGION / FILE_S3_CUSTOM_DOMAIN / FILE_S3_ADDRESSING
 """
 
 import threading
+from typing import Any
 
 from django.core.files.storage import FileSystemStorage, Storage
 
@@ -34,11 +35,11 @@ BACKEND_S3 = "s3"
 BACKEND_MIRROR = "mirror"
 
 #: 回退告警去重（同一原因只告警一次，避免每次文件操作刷日志）
-_warned_reasons: set = set()
+_warned_reasons: set[Any] = set()
 _warn_lock = threading.Lock()
 
 
-def _warn_once(reason: str):
+def _warn_once(reason: str) -> None:
     with _warn_lock:
         if reason in _warned_reasons:
             return
@@ -46,7 +47,7 @@ def _warn_once(reason: str):
     logger.warning("storage backend fallback to local: %s", reason)
 
 
-def storage_config() -> dict:
+def storage_config() -> dict[str, Any]:
     """当前存储配置（SysConfig 声明式）。
 
     读配置失败（迁移期 / 库不可用）回退 local：文件链路可用性优先于切换语义。
@@ -81,7 +82,7 @@ def storage_config() -> dict:
     return config
 
 
-def config_fingerprint(config: dict) -> tuple:
+def config_fingerprint(config: dict[str, Any]) -> tuple[Any, ...]:
     """配置指纹：用于判断委托实例是否需要重建（切换后端 / 换 bucket 等）。"""
     return tuple(sorted(config.items()))
 
@@ -92,7 +93,7 @@ def _local_storage() -> FileSystemStorage:
     )
 
 
-def build_delegate(config: dict) -> Storage:
+def build_delegate(config: dict[str, Any]) -> Storage:
     """按配置构建委托存储；s3 / mirror 不可用时回退本地。"""
     backend = config.get("backend")
     if backend == BACKEND_S3:
@@ -106,7 +107,7 @@ def build_delegate(config: dict) -> Storage:
     return _local_storage()
 
 
-def _build_s3(config: dict, file_overwrite: bool = False):
+def _build_s3(config: dict[str, Any], file_overwrite: bool = False) -> Any:
     """构建 S3 后端（django-storages 为可选依赖；缺失 / 配置不全返回 None）。
 
     ``file_overwrite`` 默认 False（同名不覆盖，与既有口径一致）；mirror 副本写入传 True
@@ -139,7 +140,7 @@ def _build_s3(config: dict, file_overwrite: bool = False):
         return None
 
 
-def _build_mirror(config: dict):
+def _build_mirror(config: dict[str, Any]) -> Any:
     """构建双写（搬迁窗口）后端：本地为主存储 + 对象存储尽力副本；副本不可用回退纯本地。"""
     replica = _build_s3(config, file_overwrite=True)
     if replica is None:
@@ -163,12 +164,12 @@ class MirrorStorage(Storage):
     #: 后端名（storage_backend_name() 诊断口径）
     backend_name = BACKEND_MIRROR
 
-    def __init__(self, primary: Storage, replica: Storage):
+    def __init__(self, primary: Storage, replica: Storage) -> None:
         super().__init__()
         self.primary = primary
         self.replica = replica
 
-    def _replica_call(self, action: str, name: str, func):
+    def _replica_call(self, action: str, name: str, func: Any) -> Any:
         """副本尽力语义：异常只告警（主链路可用性优先）。"""
         try:
             return func()
@@ -176,10 +177,10 @@ class MirrorStorage(Storage):
             logger.warning("mirror %s replica failed. name:%s", action, name, exc_info=True)
             return None
 
-    def save(self, name, content, max_length=None):
+    def save(self, name: str, content: Any, max_length: Any = None) -> Any:
         saved = self.primary.save(name, content, max_length)
 
-        def _copy():
+        def _copy() -> Any:
             # 本地落盘后按同一对象名复制到远端（流式，不整份读进内存）
             with self.primary.open(saved, "rb") as source:
                 return self.replica.save(saved, source, max_length)
@@ -187,52 +188,52 @@ class MirrorStorage(Storage):
         self._replica_call("write", saved, _copy)
         return saved
 
-    def delete(self, name):
+    def delete(self, name: str) -> Any:
         result = self.primary.delete(name)
         self._replica_call("delete", name, lambda: self.replica.delete(name))
         return result
 
     # ---- Storage 接口显式委托（与 SwitchableStorage 同口径） ----
-    def open(self, name, mode="rb"):
+    def open(self, name: str, mode: str = "rb") -> Any:
         return self.primary.open(name, mode)
 
-    def exists(self, name):
+    def exists(self, name: str) -> Any:
         return self.primary.exists(name)
 
-    def listdir(self, path):
+    def listdir(self, path: str) -> Any:
         return self.primary.listdir(path)
 
-    def size(self, name):
+    def size(self, name: str) -> Any:
         return self.primary.size(name)
 
-    def url(self, name):
+    def url(self, name: str) -> Any:
         return self.primary.url(name)
 
-    def path(self, name):
+    def path(self, name: str) -> Any:
         return self.primary.path(name)
 
-    def get_accessed_time(self, name):
+    def get_accessed_time(self, name: str) -> Any:
         return self.primary.get_accessed_time(name)
 
-    def get_created_time(self, name):
+    def get_created_time(self, name: str) -> Any:
         return self.primary.get_created_time(name)
 
-    def get_modified_time(self, name):
+    def get_modified_time(self, name: str) -> Any:
         return self.primary.get_modified_time(name)
 
-    def get_valid_name(self, name):
+    def get_valid_name(self, name: str) -> Any:
         return self.primary.get_valid_name(name)
 
-    def get_available_name(self, name, max_length=None):
+    def get_available_name(self, name: str, max_length: Any = None) -> Any:
         return self.primary.get_available_name(name, max_length)
 
-    def get_alternative_name(self, file_root, file_ext):
+    def get_alternative_name(self, file_root: Any, file_ext: Any) -> Any:
         return self.primary.get_alternative_name(file_root, file_ext)
 
-    def is_name_available(self, name, max_length=None):
+    def is_name_available(self, name: str, max_length: Any = None) -> Any:
         return self.primary.is_name_available(name, max_length)
 
-    def generate_filename(self, filename):
+    def generate_filename(self, filename: Any) -> Any:
         return self.primary.generate_filename(filename)
 
 
@@ -243,10 +244,10 @@ class SwitchableStorage(Storage):
     故 Storage 接口逐项显式委托给当前生效的委托实例。
     """
 
-    def __init__(self, location=None, base_url=None, **kwargs):
+    def __init__(self, location: Any = None, base_url: Any = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._lock = threading.Lock()
-        self._fingerprint = None
+        self._fingerprint: Any = None
         self._delegate: Storage | None = None
 
     def _current(self) -> Storage:
@@ -284,50 +285,50 @@ class SwitchableStorage(Storage):
         return name if isinstance(name, str) else storage.__class__.__name__
 
     # ---- Storage 接口显式委托 ----
-    def open(self, name, mode="rb"):
+    def open(self, name: str, mode: str = "rb") -> Any:
         return self._current().open(name, mode)
 
-    def save(self, name, content, max_length=None):
+    def save(self, name: str, content: Any, max_length: Any = None) -> Any:
         return self._current().save(name, content, max_length)
 
-    def delete(self, name):
+    def delete(self, name: str) -> Any:
         return self._current().delete(name)
 
-    def exists(self, name):
+    def exists(self, name: str) -> Any:
         return self._current().exists(name)
 
-    def listdir(self, path):
+    def listdir(self, path: str) -> Any:
         return self._current().listdir(path)
 
-    def size(self, name):
+    def size(self, name: str) -> Any:
         return self._current().size(name)
 
-    def url(self, name):
+    def url(self, name: str) -> Any:
         return self._current().url(name)
 
-    def path(self, name):
+    def path(self, name: str) -> Any:
         return self._current().path(name)
 
-    def get_accessed_time(self, name):
+    def get_accessed_time(self, name: str) -> Any:
         return self._current().get_accessed_time(name)
 
-    def get_created_time(self, name):
+    def get_created_time(self, name: str) -> Any:
         return self._current().get_created_time(name)
 
-    def get_modified_time(self, name):
+    def get_modified_time(self, name: str) -> Any:
         return self._current().get_modified_time(name)
 
-    def get_valid_name(self, name):
+    def get_valid_name(self, name: str) -> Any:
         return self._current().get_valid_name(name)
 
-    def get_available_name(self, name, max_length=None):
+    def get_available_name(self, name: str, max_length: Any = None) -> Any:
         return self._current().get_available_name(name, max_length)
 
-    def get_alternative_name(self, file_root, file_ext):
+    def get_alternative_name(self, file_root: Any, file_ext: Any) -> Any:
         return self._current().get_alternative_name(file_root, file_ext)
 
-    def is_name_available(self, name, max_length=None):
+    def is_name_available(self, name: str, max_length: Any = None) -> Any:
         return self._current().is_name_available(name, max_length)
 
-    def generate_filename(self, filename):
+    def generate_filename(self, filename: Any) -> Any:
         return self._current().generate_filename(filename)

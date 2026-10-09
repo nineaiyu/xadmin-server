@@ -14,13 +14,23 @@
 （``?mask=false`` 且对当前地址有更新权限，放行时按请求留一条审计日志）。
 """
 
-from common.contracts import apply_mask, get_mask_rules, record_original_channel_access
+from typing import Any
+
+from common.contracts import (
+    apply_mask as apply_mask,
+)
+from common.contracts import (
+    get_mask_rules as get_mask_rules,
+)
+from common.contracts import (
+    record_original_channel_access,
+)
 from common.utils import get_logger
 
 logger = get_logger(__name__)
 
 
-def mask_exempt(request, user, model=None, ignore_field_permission=False) -> bool:
+def mask_exempt(request: Any, user: Any, model: Any = None, ignore_field_permission: bool = False) -> bool:
     """脱敏豁免判定（与 get_allow_fields 同口径）：超管 / 显式豁免 / 原文通道。
 
     原文通道 = 显式 ``?mask=false`` 且当前用户对该菜单有更新权限。编辑弹窗依赖
@@ -57,11 +67,11 @@ def mask_exempt(request, user, model=None, ignore_field_permission=False) -> boo
     return cached
 
 
-def mask_role_pks(request, user) -> set:
+def mask_role_pks(request: Any, user: Any) -> set[Any]:
     """当前用户角色 pk 集合（按请求缓存，避免列表逐行 N+1 查询）。"""
     if user is None or not hasattr(user, "roles"):
         return set()
-    cached = getattr(request, "_mask_role_pks", None) if request is not None else None
+    cached: set[Any] | None = getattr(request, "_mask_role_pks", None) if request is not None else None
     if cached is not None:
         return cached
     try:
@@ -76,7 +86,7 @@ def mask_role_pks(request, user) -> set:
     return role_pks
 
 
-def apply_related_output_mask(field, data, value):
+def apply_related_output_mask(field: Any, data: Any, value: Any) -> Any:
     """关联字段（``BasePrimaryKeyRelatedField.attrs``）输出掩码的唯一实现。
 
     请求上下文缺失（celery 内序列化等）时原样返回；豁免口径与主链路一致——
@@ -95,7 +105,7 @@ def apply_related_output_mask(field, data, value):
     return apply_output_mask(data, request, user, value._meta.model, ignore)
 
 
-def apply_output_mask(data, request, user, model, ignore_field_permission=False):
+def apply_output_mask(data: Any, request: Any, user: Any, model: Any, ignore_field_permission: bool = False) -> Any:
     """按 model 的脱敏规则对输出字典逐字段掩码；豁免 / 无规则 / 非字典时原样返回。
 
     规则按 sort 升序加载；同字段「sort 小者优先」——首个命中（字段匹配 + 角色匹配）

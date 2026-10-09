@@ -142,7 +142,7 @@ dev = [
 #     drf-spectacular 的 build_basic_type 可能返回 None / 运行期替换第三方方法）；
 #   - CI 在 lint.yml 独立 job 跑 `uv run --no-sync mypy`，配置即口径。
 python_version = "3.14"
-files = ["ai", "approval", "captcha", "packages/xadmin-common/common", "dataset", "demo", "message", "mfa", "notifications", "server", "settings", "system", "ops", "integrations", "devtools"]
+files = ["ai", "approval", "captcha", "packages/xadmin-common/common", "dataset", "demo", "examples", "message", "mfa", "notifications", "server", "settings", "system", "ops", "integrations", "devtools"]
 exclude = ["migrations/"]
 follow_imports = "silent"
 ignore_missing_imports = true
@@ -150,6 +150,28 @@ check_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
+
+# mypy 严格度提升试点（内核先行）：common 框架层启用 strict 子集，验收后按 app 推广。
+# 三个口径说明：
+#   1. 逐项列出而非 `strict = true`：mypy 2.x 的 per-module `strict` 会被全局应用
+#      （config_parser 对 strict 走全局 set_strict_flags，不落 per-module 选项），
+#      逐项声明才能把严格面限定在内核；
+#   2. `disallow_subclassing_any` 暂不启用：Django / DRF / channels / celery 未装存根，
+#      其基类均为 Any，启用会放大为 ~100 处纯存根产物忽略（引入 stubs 后随推广一并重评）；
+#   3. 第三方装饰器（celery signal / @shared_task / DRF @action / Django @receiver）无
+#      存根导致的 untyped-decorator 走行级精确 ignore；框架侧动态值参数以显式 Any 标注
+#      （显式标注而非豁免——受检意义在于新增代码不得再无标注）。
+[[tool.mypy.overrides]]
+module = ["common", "common.*"]
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+warn_return_any = true
+no_implicit_reexport = true
+strict_equality = true
+extra_checks = true
 
 [tool.uv]
 # 服务端本体只借助 uv 做依赖管理与锁文件，不作为可分发包构建；

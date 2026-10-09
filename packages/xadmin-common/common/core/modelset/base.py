@@ -40,13 +40,13 @@ class BaseViewSet:
     # 自动推断仅在这些 action 生效（这些 action 会逐行序列化关联对象，存在 N+1 查询）
     auto_prefetch_actions = ("list", "retrieve", "export_data")
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> Any:
         # 引用保护：登记在 IMPACT_GUARD_MODELS 的模型有影响面时要求显式确认
         # （未登记模型零开销直接放行）
         ensure_impact_confirmed(self, self.request, instances=[instance])
         return instance.delete()
 
-    def filter_queryset(self, queryset):
+    def filter_queryset(self, queryset: Any) -> Any:
         # 有序去重（dict.fromkeys）：`set()` 的迭代顺序不定，多后端组合时过滤顺序
         # 会随哈希漂移——数据权限/受控 lookup 等后端的求值顺序必须稳定可预期
         backends = dict.fromkeys(list(self.filter_backends) + list(self.extra_filter_class or []))
@@ -54,12 +54,12 @@ class BaseViewSet:
             queryset = backend().filter_queryset(self.request, queryset, self)
         return self.optimize_queryset(queryset)
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         if getattr(self, "values_queryset", None):
             return self.values_queryset
         return super().get_queryset()  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
 
-    def optimize_queryset(self, queryset):
+    def optimize_queryset(self, queryset: Any) -> Any:
         """
         为 queryset 应用 select_related / prefetch_related，消除列表/导出序列化时的 N+1 查询：
         - 显式声明的字段在所有 action 生效；
@@ -83,7 +83,7 @@ class BaseViewSet:
             queryset = queryset.prefetch_related(*prefetch_fields)
         return queryset
 
-    def get_serializer_related_fields(self):
+    def get_serializer_related_fields(self) -> Any:
         """
         从当前 action 对应 serializer 的字段推断需要预取的关联字段：
         - ManyRelatedField（M2M/反向关联）序列化时每行都会执行 value.all()，需要 prefetch_related；
@@ -122,13 +122,13 @@ class BaseViewSet:
         self._serializer_related_fields = (select_related, prefetch_related)
         return self._serializer_related_fields
 
-    def paginate_queryset(self, queryset):
+    def paginate_queryset(self, queryset: Any) -> Any:
         # 文件导出的时候，忽略 paginate_queryset
         if self.request.query_params.get("type") in ["csv", "xlsx"] and self.request.path_info.endswith("export-data"):
             return None
         return super().paginate_queryset(queryset)  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
 
-    def get_serializer(self, *args, **kwargs):
+    def get_serializer(self, *args: Any, **kwargs: Any) -> Any:
         """``?fields=`` 字段子集：只收窄可见字段（与字段权限 / 应用授权求交），
         不扩大任何字段面；仅 GET 生效（写路径语义不变），非 BaseModelSerializer 视图自动忽略。
         """
@@ -141,7 +141,7 @@ class BaseViewSet:
                     kwargs["fields"] = [item.strip() for item in fields_param.split(",") if item.strip()][:100]
         return super().get_serializer(*args, **kwargs)  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Any:
         action_serializer_name = f"{self.action}_serializer_class"
         action_serializer_class = getattr(self, action_serializer_name, None)
         if action_serializer_class:

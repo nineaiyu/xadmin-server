@@ -22,6 +22,7 @@ A4 风险：绕过 middleware、强依赖 DRF 内部字段、框架升级易碎�
 """
 
 from io import BytesIO
+from typing import Any
 from urllib.parse import urlencode
 
 from django.http import HttpRequest, QueryDict
@@ -30,7 +31,7 @@ from rest_framework.request import Request
 TASK_SERVER_NAME = "xadmin"
 
 
-def _query_string(query) -> str:
+def _query_string(query: Any) -> str:
     """查询串归一：dict → urlencode（doseq 保留多值），字符串原样透传（分片任务从 META 取）。"""
     if isinstance(query, str):
         return query
@@ -41,10 +42,10 @@ def build_task_request(
     *,
     method: str,
     path: str,
-    query_params: dict | str | None = None,
+    query_params: dict[str, Any] | str | None = None,
     body: bytes = b"",
     content_type: str = "application/json",
-    user=None,
+    user: Any = None,
     request_uuid: str | None = None,
 ) -> HttpRequest:
     """构造任务内请求：显式字段 + 可选提交者（``_force_auth_user`` 直通）。"""
@@ -79,7 +80,9 @@ def build_task_request(
     return request
 
 
-def bind_view_task_context(view, request: HttpRequest, *, action: str, kwargs: dict | None = None) -> Request:
+def bind_view_task_context(
+    view: Any, request: HttpRequest, *, action: str, kwargs: dict[str, Any] | None = None
+) -> Request:
     """把任务请求绑定到视图实例（替代 ``view.request/action/kwargs/format_kwarg`` 的手工拼装）。
 
     返回绑定后的 DRF Request（调用方如需再挂 thread-local 用 ``task_request_scope``）。

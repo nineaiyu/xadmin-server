@@ -14,6 +14,7 @@
 
 import json
 import re
+from typing import Any
 
 #: markdown 码栅包裹的 JSON（```json {...} ``` / ``` {...} ```）
 _FENCED = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.S)
@@ -23,7 +24,7 @@ class AiOutputParseError(ValueError):
     """LLM 输出无法解析为 JSON 对象（调用方转各自框架的错误类型）。"""
 
 
-def extract_json_object(text: str) -> dict:
+def extract_json_object(text: str) -> dict[str, Any]:
     """从 LLM 输出中提取 JSON 对象（robust：容忍码栅与前后废话）。
 
     策略：优先取 markdown 码栅内的首个大括号块；否则取全文第一个 ``{`` 到

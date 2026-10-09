@@ -6,6 +6,7 @@
 # date : 6/6/2023
 import re
 import uuid
+from typing import Any
 
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -30,7 +31,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def get_user_menu_queryset(user_obj):
+def get_user_menu_queryset(user_obj: Any) -> Any:
     q = Q()
     has_role = False
     # 一次取出角色列表复用：原 exists()/count() + all() 会对同一关系重复查询
@@ -50,7 +51,7 @@ def get_user_menu_queryset(user_obj):
 
 
 @MagicCacheData.make_cache(timeout=10, key_func=lambda *args: f"{args[0].pk}_{args[1]}")
-def get_user_field_queryset(user_obj, menu):
+def get_user_field_queryset(user_obj: Any, menu: Any) -> Any:
     q = Q()
     data: dict[str, set[str]] = {}
     has_q = False
@@ -75,7 +76,7 @@ def get_user_field_queryset(user_obj, menu):
 
 
 @MagicCacheData.make_cache(timeout=3600 * 24, key_func=lambda x, y: f"{x.pk}_{y}")
-def get_user_permission(user_obj, method):
+def get_user_permission(user_obj: Any, method: Any) -> Any:
     menus = []
     menu_queryset = get_user_menu_queryset(user_obj)
     if menu_queryset:
@@ -84,7 +85,7 @@ def get_user_permission(user_obj, method):
     return dict([(menu[0], menu[1:]) for menu in menus])
 
 
-def get_menu_pk(permission_data, url):
+def get_menu_pk(permission_data: Any, url: Any) -> Any:
     # 1.直接get api/system/permission$   /api/system/config/system
     p_data = permission_data.get(f"{url[1:]}$")
     if not p_data:
@@ -97,7 +98,7 @@ def get_menu_pk(permission_data, url):
     return p_data
 
 
-def user_has_permission(user, path: str, method: str = "GET") -> bool:
+def user_has_permission(user: Any, path: str, method: str = "GET") -> bool:
     """按权限点 path 判定用户是否具备该权限（与运行时访问控制同源）。
 
     用于「无独立路由、但需按权限点授权的功能开关」场景（如审批实例的
@@ -147,7 +148,7 @@ def match_permission_white_url(method: str, path: str) -> bool:
 PAT_SCOPE_FALLBACK_CACHE_SECONDS = 60
 
 
-def resolve_pat_scopes(request):
+def resolve_pat_scopes(request: Any) -> Any:
     """解析本次请求的 PAT scope 清单，非 PAT 请求返回 None。
 
     - PAT 认证胜出：PersonalAccessTokenAuthentication 已把 scopes 挂 request.pat_scopes；
@@ -197,7 +198,7 @@ def resolve_pat_scopes(request):
     return scopes
 
 
-def check_pat_scope(request) -> bool:
+def check_pat_scope(request: Any) -> bool:
     """PAT scope 判定：True 放行；False 表示当前凭证不允许访问该请求。
 
     校验口径 = 凭证 scope（空清单 = 不限，向后兼容）× 请求 path
@@ -212,7 +213,7 @@ def check_pat_scope(request) -> bool:
     return path_allowed_by_scopes(request.path, scopes, str(method) if method else None)
 
 
-def user_can_update_menu(user, url) -> bool:
+def user_can_update_menu(user: Any, url: Any) -> bool:
     """当前用户是否拥有该请求地址对应资源的更新权限（PUT / PATCH 任一命中）。
 
     供脱敏「原文通道」门禁使用：只有具备更新权限的用户才需要原文，否则编辑弹窗
@@ -247,7 +248,7 @@ class PatScopePermission(BasePermission):
 
     message = _("PAT scope does not allow this path")
 
-    def has_permission(self, request, view):
+    def has_permission(self, request: Any, view: Any) -> Any:
         return check_pat_scope(request)
 
 
@@ -256,7 +257,7 @@ class IsAuthenticated(BasePermission):
     Allows access only to authenticated users.
     """
 
-    def has_permission(self, request, view):
+    def has_permission(self, request: Any, view: Any) -> bool:
         if not (request.user and request.user.is_authenticated):
             raise NotAuthenticated(_("Unauthorized authentication"))
 
@@ -290,7 +291,7 @@ class IsAuthenticated(BasePermission):
         return True
 
     @staticmethod
-    def _check_application_grant(request, view):
+    def _check_application_grant(request: Any, view: Any) -> None:
         """应用四级授权校验（模型 × 动作级；字段/行级在各自消费点收敛）。
 
         超管与白名单 URL 出口未解析菜单上下文（``request.user.menu`` 为空）——
@@ -301,12 +302,12 @@ class IsAuthenticated(BasePermission):
         enforce_application_grant(request, view)
 
     @staticmethod
-    def _match_white_url(request):
+    def _match_white_url(request: Any) -> Any:
         """命中白名单 URL（按 HTTP 方法匹配）时放行。"""
         return match_permission_white_url(request.method, request.path_info)
 
     @staticmethod
-    def _load_user_permission(request):
+    def _load_user_permission(request: Any) -> Any:
         """加载用户权限菜单数据；依赖故障时 fail-closed（不放行、也不 500）。"""
         try:
             # 缓存基建修复后异常不再被吞掉（不再缓存空权限），此处 fail-closed
@@ -317,7 +318,7 @@ class IsAuthenticated(BasePermission):
             raise PermissionDenied(_("Permission denied")) from None
 
     @staticmethod
-    def _resolve_menu_pk(request, permission_data):
+    def _resolve_menu_pk(request: Any, permission_data: Any) -> Any:
         """解析当前请求命中的权限菜单主键（``permission_data[path] = (pk, model)``）。
 
         子 action 的权限口径为声明式元数据（common/core/permission_meta.py），
@@ -346,7 +347,7 @@ class IsAuthenticated(BasePermission):
         return menu_data[0]
 
     @staticmethod
-    def _load_field_permission(request, menu_pk):
+    def _load_field_permission(request: Any, menu_pk: Any) -> None:
         """装载字段级权限到 ``request.fields``（未启用字段权限时跳过）。"""
         if not kernel_required_setting("PERMISSION_FIELD_ENABLED"):
             return

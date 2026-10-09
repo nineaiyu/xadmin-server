@@ -13,6 +13,8 @@
 时才惰性创建。
 """
 
+from typing import Any
+
 from common.decorators.cache import cached_method
 from common.decorators.debounce import (
     Debouncer,
@@ -46,7 +48,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> Any:
     """兼容历史模块级 `executor` 引用（原 import 即创建，现首次访问惰性创建）。"""
     if name == "executor":
         return get_executor()

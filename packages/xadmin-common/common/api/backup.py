@@ -10,6 +10,7 @@
 """
 
 import secrets
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -44,7 +45,7 @@ class BackupAlertAPIView(GenericAPIView):
         ),
         responses=get_default_response_schema(),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """上报备份失败事件：节流发布站内信/邮件告警（60s 同源去重）"""
         from common.backup_alert import notify_backup_failure
         from common.core.config import SysConfig

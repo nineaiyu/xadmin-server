@@ -14,6 +14,8 @@ client 仓库 vitest：词表 ⇄ 注册表双向覆盖对账）。**扩展流�
 client 侧补注册表/守护——未经登记的类型经真实载荷闭包测试 fail。
 """
 
+from typing import Any
+
 from common.core.serializers import BasePrimaryKeyRelatedField
 
 #: 稳定公共契约：平台可下发的 input_type 全集（封闭核心，不含 api-* 族）。
@@ -79,7 +81,7 @@ INPUT_TYPE_PREFIX_FAMILIES: tuple[str, ...] = ("api-",)
 FALLBACK_RENDERED_INPUT_TYPES: frozenset[str] = frozenset({"email", "input"})
 
 
-def get_upload_input_type_suffix(value, default):
+def get_upload_input_type_suffix(value: Any, default: Any) -> str:
     if hasattr(value, "child_relation"):
         value = value.child_relation
     try:
@@ -95,7 +97,7 @@ def get_upload_input_type_suffix(value, default):
     return ""
 
 
-def get_format_intput_type(value, default=""):
+def get_format_intput_type(value: Any, default: str = "") -> Any:
     input_type_prefix = ""
     input_type = default
     input_type_suffix = get_upload_input_type_suffix(value, default)

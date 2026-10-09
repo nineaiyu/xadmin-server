@@ -56,14 +56,14 @@ class SuggestionsAction:
       具体模型字段的项，跨级 ``__`` lookup 保留）。
     """
 
-    suggestion_search_fields: dict = {}
-    suggestion_fields: tuple = ()
+    suggestion_search_fields: dict[str, Any] = {}
+    suggestion_fields: tuple[Any, ...] = ()
 
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
 
         def get_serializer_class(self) -> Any: ...
 
-        def get_serializer_context(self) -> dict: ...
+        def get_serializer_context(self) -> dict[str, Any]: ...
 
     @extend_schema(
         parameters=[],
@@ -81,8 +81,8 @@ class SuggestionsAction:
             }
         ),
     )
-    @shared_list_action(methods=["get"], detail=False, url_path="suggestions")
-    def suggestions(self, request, *args, **kwargs):
+    @shared_list_action(methods=["get"], detail=False, url_path="suggestions")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def suggestions(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}关联字段的联想候选（候选集与写入校验同源）"""
         field_name = (request.query_params.get("field") or "").strip()
         search = (request.query_params.get("search") or "").strip()
@@ -136,7 +136,7 @@ class SuggestionsAction:
             results.append(data)
         return ApiResponse(data=results)
 
-    def _resolve_search_fields(self, field_name, field, model):
+    def _resolve_search_fields(self, field_name: Any, field: Any, model: Any) -> Any:
         """解析联想搜索字段：ViewSet 显式配置优先，否则按字段 attrs 推导。"""
         configured = getattr(self, "suggestion_search_fields", None) or {}
         if field_name in configured:
@@ -156,7 +156,7 @@ class SuggestionsAction:
         return fields
 
     @staticmethod
-    def get_suggest_url(request):
+    def get_suggest_url(request: Any) -> Any:
         """由当前请求路径推导同资源的 `suggestions` 地址。
 
         两种调用形态（仅在混入了本 Action 的 ViewSet 上被 metadata.py 调用）：
@@ -170,7 +170,7 @@ class SuggestionsAction:
         return f"{base}/suggestions"
 
 
-def expose_suggest_url(view, request, info, input_type):
+def expose_suggest_url(view: Any, request: Any, info: Any, input_type: Any) -> None:
     """metadata 侧挂钩：按 ViewSet 声明的 ``suggestion_fields`` 白名单下发 suggest_url。
 
     在 search-columns 组装字段元数据时调用；只有混入 SuggestionsAction 且声明了

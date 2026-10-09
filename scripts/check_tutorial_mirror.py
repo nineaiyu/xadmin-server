@@ -33,6 +33,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 TUTORIAL_DOCS = (
     "docs/guide/first-module-30min.md",
     "docs/guide/recipes.md",
+    "docs/guide/plugin-development.md",
     "docs/architecture/component-handbook.md",
     "docs/architecture/framework-cookbook.md",
     "docs/architecture/方案选型与对比.md",

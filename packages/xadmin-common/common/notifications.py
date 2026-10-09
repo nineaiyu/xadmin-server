@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.db.models.aggregates import Avg
 from django.db.models.functions import Round
@@ -28,7 +28,7 @@ THRESHOLD_RECONCILE_INTERVAL = 60
 _THRESHOLD_RECONCILE_CACHE_KEY = "monitor_thresholds_reconcile_at"
 
 
-def reconcile_monitor_thresholds():
+def reconcile_monitor_thresholds() -> None:
     """阈值对账：Setting 行热更靠 pubsub 回写各进程，pubsub 丢消息时本进程
     settings 停留旧值且告警判定无自愈手段。判定 / 展示前从库回读阈值应用，
     经带 TTL 的缓存闸门限流（间隔内至多一次回读），保证在收敛窗口
@@ -62,10 +62,10 @@ class ServerPerformanceMessage(SystemMessage):
     category_label = _("Monitor")
     message_type_label = _("Server performance")
 
-    def __init__(self, terms_with_errors):
+    def __init__(self, terms_with_errors: Any) -> None:
         self.terms_with_errors = terms_with_errors
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         subject = _("Server health check warning")
         context = {"terms_with_errors": self.terms_with_errors}
         message = render_to_string("monitor/msg_terminal_performance.html", context)
@@ -74,19 +74,19 @@ class ServerPerformanceMessage(SystemMessage):
             "message": message,
         }
 
-    def get_site_msg_msg(self):
+    def get_site_msg_msg(self) -> Any:
         info = self.get_html_msg()
         info["level"] = "danger"
         return info
 
     @classmethod
-    def post_insert_to_db(cls, subscription: SystemMsgSubscription):
+    def post_insert_to_db(cls, subscription: SystemMsgSubscription) -> None:
         admins = get_active_superuser_queryset()
         subscription.users.add(*admins)
         subscription.receive_backends = [BACKEND.EMAIL]
         subscription.save()
 
-    def publish(self, is_async=False):
+    def publish(self, is_async: bool = False) -> None:
         """发布告警；收件人为空时自愈补齐活跃超管（订阅创建早于超管初始化的存量库）"""
         subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
         if not subscription.users.exists():
@@ -94,7 +94,7 @@ class ServerPerformanceMessage(SystemMessage):
         super().publish(is_async=is_async)
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> None:
         pass
 
 
@@ -103,7 +103,7 @@ class ServerPerformanceCheckUtil:
     # Setting 行经 django_ready/pubsub 回写 settings，pubsub 丢消息时由
     # reconcile_monitor_thresholds 每轮判定前回读对账，这里必须每次检查时读取
     @property
-    def items_mapper(self):
+    def items_mapper(self) -> Any:
         return {
             "disk_used": {
                 "default": 0,
@@ -127,19 +127,19 @@ class ServerPerformanceCheckUtil:
             },
         }
 
-    def __init__(self):
-        self.terms_with_errors = []
-        self.item_states = []
-        self._terminals = []
+    def __init__(self) -> None:
+        self.terms_with_errors: list[Any] = []
+        self.item_states: list[Any] = []
+        self._terminals: list[Any] = []
 
-    def check_and_publish(self):
+    def check_and_publish(self) -> None:
         # 阈值对账：pubsub 丢消息时本进程 settings 仍是旧值，先回读再判定
         reconcile_monitor_thresholds()
         self.check()
         self.publish()
         self.sync_alert_records()
 
-    def check(self):
+    def check(self) -> None:
         self.terms_with_errors = []
         self.item_states = []
         self.initial_terminals()
@@ -150,7 +150,7 @@ class ServerPerformanceCheckUtil:
                 continue
             self.terms_with_errors.append((term, errors))
 
-    def check_terminal(self, term):
+    def check_terminal(self, term: Any) -> Any:
         errors = []
         for item, data in self.items_mapper.items():
             error = self.check_item(term, item, data)
@@ -169,7 +169,7 @@ class ServerPerformanceCheckUtil:
             errors.append(error)
         return errors
 
-    def sync_alert_records(self):
+    def sync_alert_records(self) -> None:
         """把本轮检查结果落成告警记录（同一指标同时只保留一条未恢复记录）。
 
         持续超标时续写 last_time/count，回落时置 resolved；重复告警不刷记录，
@@ -208,7 +208,7 @@ class ServerPerformanceCheckUtil:
                 firing.save(update_fields=["status", "resolved_time"])
 
     @staticmethod
-    def check_item(term, item, data):
+    def check_item(term: Any, item: Any, data: Any) -> Any:
         default = data["default"]
         max_threshold = data["max_threshold"]
         value = term.get(item, default)
@@ -221,13 +221,13 @@ class ServerPerformanceCheckUtil:
         error = msg.format(max_threshold=max_threshold, value=value, name="api")
         return error
 
-    def publish(self):
+    def publish(self) -> None:
         if not self.terms_with_errors:
             return
         ServerPerformanceMessage(self.terms_with_errors).publish()
 
     @staticmethod
-    def get_monitor_latest_average_value(num=3):
+    def get_monitor_latest_average_value(num: int = 3) -> Any:
         """最近三次数据的平均值（Monitor 住 system 运维域，经契约缝消费）"""
         from common import contracts
 
@@ -238,7 +238,7 @@ class ServerPerformanceCheckUtil:
             disk_used=Round(Avg("disk_used"), 2),
         )
 
-    def initial_terminals(self):
+    def initial_terminals(self) -> None:
         self._terminals = [self.get_monitor_latest_average_value()]
 
 
@@ -246,9 +246,9 @@ class TaskMessage:
     if TYPE_CHECKING:  # 子类（任务消息）与 UserMessage 提供的属性（mixin 模式）
         subject: str
         user_display: str
-        task: dict
+        task: dict[str, Any]
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         context = dict(
             subject=self.subject,
             name=self.user_display,
@@ -264,7 +264,7 @@ class ExportDataMessage(TaskMessage, UserMessage):
     category_label = _("Task Message")
     message_type_label = _("Export data message")
 
-    def __init__(self, user, task):
+    def __init__(self, user: Any, task: Any) -> None:
         super().__init__(user)
         self.task = task
         self.subject = _("Export {} data {} message").format(self.task.get("task_name"), self.task.get("status"))
@@ -276,7 +276,7 @@ class ImportDataMessage(TaskMessage, UserMessage):
     category_label = _("Task Message")
     message_type_label = _("Import data message")
 
-    def __init__(self, user, task):
+    def __init__(self, user: Any, task: Any) -> None:
         super().__init__(user)
         self.task = task
         self.subject = _("Import {} data {} message").format(self.task.get("view_doc"), self.task.get("status"))
@@ -288,7 +288,7 @@ class BatchDeleteDataMessage(TaskMessage, UserMessage):
     category_label = _("Task Message")
     message_type_label = _("Batch delete data message")
 
-    def __init__(self, user, task):
+    def __init__(self, user: Any, task: Any) -> None:
         super().__init__(user)
         self.task = task
         self.subject = _("Batch delete {} data {} message").format(self.task.get("view_doc"), self.task.get("status"))

@@ -35,7 +35,7 @@ TMP_DIR = os.path.join(APPS_DIR, "tmp")
 CELERY_WORKER_COUNT = CONFIG.CELERY_WORKER_COUNT or 10
 
 
-def check_port_is_used():
+def check_port_is_used() -> None:
     for _ in range(5):
         if not test_ip_connectivity(HTTP_HOST, HTTP_PORT):
             return
@@ -46,7 +46,7 @@ def check_port_is_used():
     sys.exit(10)
 
 
-def check_database_connection():
+def check_database_connection() -> None:
     for i in range(60):
         logger.info(f"Check database connection: {i}")
         try:
@@ -68,7 +68,7 @@ def check_database_connection():
     sys.exit(10)
 
 
-def perform_db_migrate():
+def perform_db_migrate() -> None:
     logger.info("Check database structure change ...")
     logger.info("Migrate model change to database ...")
     try:
@@ -78,7 +78,7 @@ def perform_db_migrate():
         sys.exit(11)
 
 
-def maybe_migrate():
+def maybe_migrate() -> None:
     """按 AUTO_MIGRATE 决定是否在启动时迁移。
 
     多副本/滚动发布必须关掉（本容器是否迁移不可控且并发迁移互相竞争），
@@ -91,7 +91,7 @@ def maybe_migrate():
         logger.info("AUTO_MIGRATE=false, skip auto migrate. Run the one-off migrate service first.")
 
 
-def collect_static():
+def collect_static() -> None:
     logger.info("Collect static files")
     try:
         management.call_command("collectstatic", "--no-input", "-c", verbosity=0, interactive=False)
@@ -101,7 +101,7 @@ def collect_static():
         pass
 
 
-def compile_i18n_file():
+def compile_i18n_file() -> None:
     # django_mo_file = os.path.join(PROJECT_DIR, 'locale', 'zh', 'LC_MESSAGES', 'django.mo')
     # if os.path.exists(django_mo_file):
     #     return
@@ -110,7 +110,7 @@ def compile_i18n_file():
     logger.info("Compile i18n files done")
 
 
-def download_ip_db(force=False):
+def download_ip_db(force: bool = False) -> None:
     db_path_url_mapper = {
         ("system", "GeoLite2-City.mmdb"): "https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/GeoLite2-City.mmdb",
         ("system", "ipipfree.ipdb"): "https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/ipipfree.ipdb",
@@ -124,7 +124,7 @@ def download_ip_db(force=False):
         download_file(src, path)
 
 
-def expire_caches():
+def expire_caches() -> None:
     try:
         management.call_command("expire_caches", "config_*")
     except Exception:
@@ -132,7 +132,7 @@ def expire_caches():
         pass
 
 
-def check_settings():
+def check_settings() -> None:
     # 启动自检依赖迁移就绪的表：查询失败在下方重试循环里降级
     for _ in range(60):
         try:
@@ -146,14 +146,14 @@ def check_settings():
     sys.exit(10)
 
 
-def celery_prepare():
+def celery_prepare() -> None:
     check_database_connection()
     check_settings()
     compile_i18n_file()
     download_ip_db()
 
 
-def check_permission_gaps():
+def check_permission_gaps() -> None:
     """开发态启动自检：权限点缺口只告警不改库（生产不执行，避免启动开销）。
 
     缺口 = 代码里有路由但库内没有对应权限点 → 非超管访问将 403。
@@ -173,7 +173,7 @@ def check_permission_gaps():
         logger.warning(f"权限点自检跳过：{exc}")
 
 
-def server_prepare():
+def server_prepare() -> None:
     check_database_connection()
     collect_static()
     compile_i18n_file()

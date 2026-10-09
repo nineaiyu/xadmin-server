@@ -4,13 +4,14 @@
 
 import json
 import time
+from typing import Any
 
 from django.contrib.auth.models import AnonymousUser
 from rest_framework.utils import encoders
 
 from common.contracts import OperationLog, PersonalAccessToken
 from common.core.config import SysConfig
-from common.core.sensitive import SENSITIVE_FIELDS
+from common.core.sensitive import SENSITIVE_FIELDS as SENSITIVE_FIELDS
 from common.core.utils import get_doc_first_line
 from common.utils import get_logger
 from common.utils.request import (
@@ -29,7 +30,7 @@ MAX_LOG_FIELD = 4096
 # SENSITIVE_FIELDS 随之再导出保持既有导入路径不变）
 
 
-def _log_field_limit():
+def _log_field_limit() -> Any:
     """大字段（请求体/响应/变更）截断上限：系统配置 OPERATION_LOG_FIELD_MAX。
 
     默认 4096；0 = 不落大字段内容（只保留状态码等元数据）。配置异常时回落默认值，
@@ -48,7 +49,7 @@ OPERATION_LOG_MODULE_MAX = OperationLog._meta.get_field("module").max_length
 HEALTH_CHECK_PATH = "/api/common/api/health"
 
 
-def desensitize_payload(value):
+def desensitize_payload(value: Any) -> Any:
     """递归脱敏：dict 按键名掩码、list 逐项处理，其余（标量 / 非容器）原样返回。
 
     请求体（含嵌套 payload、嵌套 list）与**响应体**共用同一口径——登录响应的
@@ -66,12 +67,12 @@ def desensitize_payload(value):
     return value
 
 
-def desensitize_body(body):
+def desensitize_body(body: Any) -> Any:
     """对请求体中的敏感字段做掩码处理（递归入口，兼容既有调用点）。"""
     return desensitize_payload(body)
 
 
-def sensitive_get_actions(view_cls) -> frozenset:
+def sensitive_get_actions(view_cls: Any) -> frozenset[Any]:
     """视图类声明的「敏感 GET action」集合（敏感读取审计）。
 
     ``API_LOG_METHODS`` 默认不含 GET（列表/详情读请求全部落库即日志洪水），
@@ -81,13 +82,13 @@ def sensitive_get_actions(view_cls) -> frozenset:
     命中与否最终仍受 ``API_LOG_IGNORE``（模型 / 路径维度）与 ``API_LOG_ENABLE``
     管辖。
     """
-    actions: set = set()
+    actions: set[Any] = set()
     for klass in getattr(view_cls, "__mro__", ()):
         actions.update(getattr(klass, "SENSITIVE_GET_ACTIONS", ()) or ())
     return frozenset(actions)
 
 
-def log_body_preview(payload) -> str:
+def log_body_preview(payload: Any) -> str:
     """日志正文预览：脱敏 + 按大字段上限截断（DEBUG / 慢请求日志共用）。
 
     ``OPERATION_LOG_FIELD_MAX=0``（不落大字段）时同样不落正文——配置意图对
@@ -98,7 +99,7 @@ def log_body_preview(payload) -> str:
     return text[:limit] if limit else ""
 
 
-def write_operation_log(operation_log_id, info):
+def write_operation_log(operation_log_id: Any, info: Any) -> None:
     """主键已知，用 UPDATE 替代 update_or_create（省 1 条 SELECT）。
 
     该函数通过 transaction.on_commit 在请求事务提交后执行，
@@ -111,7 +112,7 @@ def write_operation_log(operation_log_id, info):
         logger.warning(f"write operation log failed. id:{operation_log_id} error:{e}")
 
 
-def resolve_auth_identity(request, response):
+def resolve_auth_identity(request: Any, response: Any) -> Any:
     """本次请求的凭证标识：``(auth_type, token_pk)``。
 
     - PAT 请求：``pat`` + 凭证主键（PAT 调用记录/统计据此精确归集）；
@@ -144,7 +145,7 @@ def resolve_auth_identity(request, response):
     return None, None
 
 
-def build_operation_log_info(request, response, request_start_time):
+def build_operation_log_info(request: Any, response: Any, request_start_time: Any) -> Any:
     """组装操作日志字段。
 
     所有字段在此一次性求值（包括 UA 解析与用户主键），返回值不再持有

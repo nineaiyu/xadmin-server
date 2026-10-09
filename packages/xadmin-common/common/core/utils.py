@@ -10,6 +10,7 @@ import re
 from collections import OrderedDict, defaultdict, deque
 from functools import lru_cache
 from importlib import import_module
+from typing import Any
 
 from django.apps import apps
 from django.http import QueryDict
@@ -24,7 +25,7 @@ from common.settings_contract import kernel_required_setting, kernel_setting
 logger = logging.getLogger(__name__)
 
 
-def get_doc_first_line(doc):
+def get_doc_first_line(doc: Any) -> Any:
     """取 docstring 首行；多行长说明只保留首行，供操作日志/菜单权限等单行字段使用。"""
     if not doc:
         return ""
@@ -39,7 +40,7 @@ _PERMISSION_LITERAL_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO
 
 
 @lru_cache(maxsize=8192)
-def _compile_permission_pattern(pattern: str):
+def _compile_permission_pattern(pattern: str) -> Any:
     """编译权限点 path（已去前导 ``/``）→ ``(字面量前缀, 编译后正则)``。
 
     正则为 None 表示坏正则（该权限点视为不命中，不影响其它权限点）。
@@ -89,19 +90,21 @@ def permission_path_matches(permission_path: str, url: str) -> bool:
         return False
 
 
-def check_show_url(url):
+def check_show_url(url: Any) -> bool:
     for prefix in kernel_setting("PERMISSION_SHOW_PREFIX"):
         if re.match(prefix, url):
             return True
+    return False
 
 
-def ignore_white_url(url):
+def ignore_white_url(url: Any) -> bool:
     for prefix in kernel_setting("ROUTE_IGNORE_URL"):
         if re.match(prefix, f"/{url.replace('$', '')}"):
             return True
+    return False
 
 
-def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
+def recursion_urls(pre_namespace: Any, pre_url: Any, urlpatterns: Any, url_ordered_dict: Any) -> None:
     """递归去获取URL
     :param pre_namespace: namespace前缀，以后用户拼接name
     :param pre_url: url前缀，以后用于拼接url
@@ -147,7 +150,7 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
 
 
 @cached_method(ttl=-1)
-def get_all_url_dict(pre_url="/"):
+def get_all_url_dict(pre_url: str = "/") -> Any:
     """
     获取项目中所有的URL（必须有name别名）
     """
@@ -158,7 +161,7 @@ def get_all_url_dict(pre_url="/"):
     return url_ordered_dict.values()
 
 
-def collect_app_ws_urls():
+def collect_app_ws_urls() -> Any:
     """按 INSTALLED_APPS 收集各应用的 WebSocket 路由（约定：<app>/routing.py 的 urlpatterns）。
 
     与 HTTP 侧 auto_register_app_url 同思路：新业务 app 自带 routing.py 即自动接入
@@ -181,7 +184,7 @@ def collect_app_ws_urls():
     return collected
 
 
-def auto_register_app_url(urlpatterns):
+def auto_register_app_url(urlpatterns: Any) -> None:
     xadmin_apps = []
     for app in kernel_setting("XADMIN_APPS"):
         if "." in app:
@@ -223,7 +226,7 @@ def auto_register_app_url(urlpatterns):
             logger.warning(f"auto register {name} permission_white_reurl failed. {e}")
 
 
-def get_query_post_pks(request):
+def get_query_post_pks(request: Any) -> Any:
     if isinstance(request.data, QueryDict):
         pks = request.data.getlist("pks", [])
     else:
@@ -232,7 +235,9 @@ def get_query_post_pks(request):
 
 
 class PrintLogFormat:
-    def __init__(self, base_str="", title_width=80, body_width=60, logger_enable=False):
+    def __init__(
+        self, base_str: str = "", title_width: int = 80, body_width: int = 60, logger_enable: bool = False
+    ) -> None:
         self.base_str = base_str
         self.logger_enable = logger_enable
         self.title_width = title_width
@@ -243,7 +248,7 @@ class PrintLogFormat:
         self._warning = make_style(fg="yellow")
         self._debug = make_style(fg="blue")
 
-    def __print(self, title, body):
+    def __print(self, title: Any, body: Any) -> None:
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(
             f"{now} {title}"
@@ -252,32 +257,32 @@ class PrintLogFormat:
             body if self.body_width < 1 else "{0: >{body_width}}".format(body, body_width=self.body_width),
         )
 
-    def info(self, msg, *args, **kwargs):
+    def info(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         if self.logger_enable:
             logger.info(f"{self.base_str} {msg}", *args, **kwargs)
         if logger.isEnabledFor(logging.INFO):
             self.__print(self.bold_error(self.base_str), self._info(msg))
 
-    def error(self, msg, *args, **kwargs):
+    def error(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         if self.logger_enable:
             logger.error(f"{self.base_str} {msg}", *args, **kwargs)
         if logger.isEnabledFor(logging.ERROR):
             self.__print(self.bold_error(self.base_str), self._error(msg))
 
-    def debug(self, msg, *args, **kwargs):
+    def debug(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         if self.logger_enable:
             logger.debug(f"{self.base_str} {msg}", *args, **kwargs)
         if logger.isEnabledFor(logging.DEBUG):
             self.__print(self.bold_error(self.base_str), self._debug(msg))
 
-    def warning(self, msg, *args, **kwargs):
+    def warning(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         if self.logger_enable:
             logger.warning(f"{self.base_str} {msg}", *args, **kwargs)
         if logger.isEnabledFor(logging.WARNING):
             self.__print(self.bold_error(self.base_str), self._warning(msg))
 
 
-def topological_sort(data, pk="pk", parent="parent"):
+def topological_sort(data: Any, pk: str = "pk", parent: str = "parent") -> Any:
     # 构建图和入度表
     graph = defaultdict(list)
     in_degree = {item[pk]: 0 for item in data}
@@ -314,7 +319,7 @@ def topological_sort(data, pk="pk", parent="parent"):
     return [new_data[node_id] for node_id in sorted_order]
 
 
-def has_self_fields(model, keys):
+def has_self_fields(model: Any, keys: Any) -> Any:
     """
     仅仅支持判断 ForeignKey 自关联，不支持多对对自关联判断
     """

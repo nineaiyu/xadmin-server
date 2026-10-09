@@ -17,6 +17,7 @@ blocking_timeout 语义一致。
 
 import threading
 import uuid
+from typing import Any, Literal, Self
 
 from django.db import transaction
 from django_redis import get_redis_connection
@@ -35,7 +36,9 @@ class LockNotOwnedError(Exception):
 class ReentrantLock:
     """按 name 隔离的可重入分布式锁。"""
 
-    def __init__(self, name, timeout=60, blocking_timeout=None, release_on_commit=False):
+    def __init__(
+        self, name: str, timeout: int = 60, blocking_timeout: int | None = None, release_on_commit: bool = False
+    ) -> None:
         self.name = f"{LOCK_KEY_PREFIX}{name}"
         # 过期时间下限保护：看门狗按 timeout/3 续期，过短的 timeout 会造成续期风暴
         self.timeout = max(int(timeout), 5)
@@ -43,14 +46,14 @@ class ReentrantLock:
         self.release_on_commit = release_on_commit
         self._local = threading.local()
 
-    def _conn(self):
+    def _conn(self) -> Any:
         return get_redis_connection("default")
 
     @property
-    def _held(self):
+    def _held(self) -> bool:
         return getattr(self._local, "count", 0) > 0
 
-    def acquire(self, blocking=True) -> bool:
+    def acquire(self, blocking: bool = True) -> bool:
         """获取锁；同线程重入直接计数成功。返回 False 表示竞争失败。"""
         if self._held:
             self._local.count += 1
@@ -67,7 +70,7 @@ class ReentrantLock:
         self._start_watchdog()
         return True
 
-    def release(self):
+    def release(self) -> None:
         """释放一层持有；重入计数归零才真释放（release_on_commit 时延迟到事务提交后）。"""
         if not self._held:
             return
@@ -78,7 +81,7 @@ class ReentrantLock:
         lock = self._local.lock
         self._local.lock = None
 
-        def _release():
+        def _release() -> None:
             try:
                 lock.release()
             except Exception as exc:
@@ -91,14 +94,14 @@ class ReentrantLock:
         else:
             _release()
 
-    def _start_watchdog(self):
+    def _start_watchdog(self) -> None:
         # 看门狗运行在独立线程：锁引用经闭包捕获（thread-local 跨线程不可见）
         lock = self._local.lock
         stop = threading.Event()
         self._local.watchdog_stop = stop
         interval = max(self.timeout / 3, 1)
 
-        def _watch():
+        def _watch() -> None:
             while not stop.wait(interval):
                 try:
                     # extend 校验 token（Lua 原子）：锁易主后续期失败，看门狗退出
@@ -109,16 +112,16 @@ class ReentrantLock:
 
         threading.Thread(target=_watch, name=f"lock-watchdog:{self.name}", daemon=True).start()
 
-    def _stop_watchdog(self):
+    def _stop_watchdog(self) -> None:
         stop = getattr(self._local, "watchdog_stop", None)
         if stop is not None:
             stop.set()
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         if not self.acquire():
             raise LockNotOwnedError(f"acquire lock failed: {self.name}")
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
         self.release()
         return False

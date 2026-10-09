@@ -13,25 +13,25 @@ import html2text
 import psutil
 
 
-def get_logger(name="") -> logging.Logger:
+def get_logger(name: str = "") -> logging.Logger:
     if "/" in name:
         name = os.path.basename(name).replace(".py", "")
     return logging.getLogger(f"xadmin.{name}")
 
 
-def get_disk_usage(path):
-    return psutil.disk_usage(path=path).percent
+def get_disk_usage(path: str) -> float:
+    return float(psutil.disk_usage(path=path).percent)
 
 
-def get_boot_time():
-    return psutil.boot_time()
+def get_boot_time() -> float:
+    return float(psutil.boot_time())
 
 
-def get_cpu_percent():
-    return psutil.cpu_percent()
+def get_cpu_percent() -> float:
+    return float(psutil.cpu_percent())
 
 
-def get_cpu_load():
+def get_cpu_load() -> float:
     cpu_load_1, cpu_load_5, cpu_load_15 = psutil.getloadavg()
     cpu_count = psutil.cpu_count()
     single_cpu_load_1 = cpu_load_1 / cpu_count
@@ -39,7 +39,7 @@ def get_cpu_load():
     return float(single_cpu_load_1)
 
 
-def get_docker_mem_usage_if_limit():
+def get_docker_mem_usage_if_limit() -> float | None:
     try:
         with open("/sys/fs/cgroup/memory/memory.limit_in_bytes") as f:
             limit_in_bytes = int(f.readline())
@@ -69,27 +69,27 @@ def get_docker_mem_usage_if_limit():
         return None
 
 
-def get_memory_usage():
+def get_memory_usage() -> float:
     usage = get_docker_mem_usage_if_limit()
     if usage is not None:
         return usage
-    return psutil.virtual_memory().percent
+    return float(psutil.virtual_memory().percent)
 
 
-def get_net_io_bytes():
+def get_net_io_bytes() -> tuple[int, int]:
     """网卡累计收发字节 (sent, recv)；采集失败返回 (0, 0) 不中断心跳。
 
     注意这是累计计数器（进程/系统重启后归零），速率必须由调用方按时间差换算。
     """
     try:
         net = psutil.net_io_counters()
-        return net.bytes_sent, net.bytes_recv
+        return int(net.bytes_sent), int(net.bytes_recv)
     except Exception:
         # 网卡计数不可用：返回零值（监控采集降级，不阻断心跳）
         return 0, 0
 
 
-def test_ip_connectivity(host, port, timeout=0.5):
+def test_ip_connectivity(host: str, port: int | str, timeout: float = 0.5) -> bool:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(timeout)
     result = sock.connect_ex((host, int(port)))
@@ -101,12 +101,12 @@ def test_ip_connectivity(host, port, timeout=0.5):
     return connectivity
 
 
-def convert_html_to_markdown(html_str):
+def convert_html_to_markdown(html_str: str) -> str:
     h = html2text.HTML2Text()
     h.body_width = 0
     h.ignore_links = False
 
-    markdown = h.handle(html_str)
+    markdown = str(h.handle(html_str))
     markdown = markdown.replace("\n\n", "\n")
     markdown = markdown.replace("\n ", "\n")
     return markdown

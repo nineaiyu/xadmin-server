@@ -6,6 +6,8 @@
 事件属性（on*）与 javascript: 等危险协议，保留正常排版所需的标签与属性。
 """
 
+from typing import Any
+
 import bleach
 from bleach.css_sanitizer import CSSSanitizer
 
@@ -114,7 +116,7 @@ ALLOWED_CSS_PROPERTIES = [
 _css_sanitizer = CSSSanitizer(allowed_css_properties=ALLOWED_CSS_PROPERTIES)
 
 
-def sanitize_rich_text(value):
+def sanitize_rich_text(value: Any) -> Any:
     """净化富文本 HTML；非字符串或空值原样返回。"""
     if not isinstance(value, str) or not value:
         return value

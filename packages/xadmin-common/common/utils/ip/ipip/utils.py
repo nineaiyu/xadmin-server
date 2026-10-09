@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 import os
+from typing import Any
 
 import ipdb
 
@@ -10,7 +11,7 @@ __all__ = ["get_ip_city_by_ipip"]
 ipip_db = None
 
 
-def init_ipip_db():
+def init_ipip_db() -> None:
     global ipip_db
     if ipip_db is not None:
         return
@@ -23,7 +24,7 @@ def init_ipip_db():
     ipip_db = ipdb.City(ipip_db_path)
 
 
-def get_ip_city_by_ipip(ip):
+def get_ip_city_by_ipip(ip: Any) -> Any:
     try:
         init_ipip_db()
     except Exception:

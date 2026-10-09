@@ -8,6 +8,7 @@ import base64
 import ipaddress
 import json
 import re
+from typing import Any
 
 from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 from django.utils.module_loading import import_string
@@ -23,7 +24,7 @@ from common.settings_contract import kernel_required_setting, kernel_setting
 MULTIPART_FIELD_PARSE_LIMIT = 64 * 1024
 
 
-def get_request_user(request):
+def get_request_user(request: Any) -> Any:
     """
     获取请求user
     (1)如果request里的user没有认证,那么则手动认证一次
@@ -55,7 +56,7 @@ def get_request_user(request):
     return user or AnonymousUser()
 
 
-def _normalize_ip(value):
+def _normalize_ip(value: Any) -> Any:
     """归一化单个地址：剥离空白/引号，兼容 "ipv4:port"、"[ipv6]:port" 等非标准写法。"""
     if not value:
         return ""
@@ -71,7 +72,7 @@ def _normalize_ip(value):
     return value
 
 
-def _is_trusted_proxy(ip):
+def _is_trusted_proxy(ip: Any) -> bool:
     """直连地址/转发地址是否命中 TRUSTED_PROXY_IPS（单个 IP 或 CIDR）。"""
 
     trusted = kernel_setting("TRUSTED_PROXY_IPS") or []
@@ -90,7 +91,7 @@ def _is_trusted_proxy(ip):
     return False
 
 
-def get_request_ip(request):
+def get_request_ip(request: Any) -> Any:
     """
     获取请求 IP（防伪造：X-Forwarded-For 仅在直连地址为可信代理时参与解析）。
 
@@ -113,7 +114,7 @@ def get_request_ip(request):
     return remote_addr or "unknown"
 
 
-def get_request_data(request):
+def get_request_data(request: Any) -> Any:
     """
     获取请求参数
     :param request:
@@ -143,7 +144,7 @@ def get_request_data(request):
             fields = sorted({name.decode("utf-8", "ignore") for name in names})
             return {"_multipart_fields": fields}
         return {"_multipart_fields": [], "_multipart_body_skipped": True}
-    data: dict = {**request.GET.dict(), **request.POST.dict()}
+    data: dict[str, Any] = {**request.GET.dict(), **request.POST.dict()}
     if not data:
         try:
             body = request.body
@@ -157,7 +158,7 @@ def get_request_data(request):
     return data
 
 
-def get_request_path(request, *args, **kwargs):
+def get_request_path(request: Any, *args: Any, **kwargs: Any) -> Any:
     """
     获取请求路径
     :param request:
@@ -186,7 +187,7 @@ def get_request_path(request, *args, **kwargs):
     return path
 
 
-def get_user_agent(request):
+def get_user_agent(request: Any) -> Any:
     """
     解析 User-Agent。每个请求只解析一次（user_agents.parse 是重型正则），
     结果挂在 request 上复用；缺失 UA 头不再抛 KeyError。
@@ -198,7 +199,7 @@ def get_user_agent(request):
     return request._parsed_user_agent
 
 
-def get_browser(request):
+def get_browser(request: Any) -> Any:
     """
     获取浏览器名
     :param request:
@@ -207,7 +208,7 @@ def get_browser(request):
     return get_user_agent(request).get_browser()
 
 
-def get_os(request):
+def get_os(request: Any) -> Any:
     """
     获取操作系统
     :param request:
@@ -216,7 +217,7 @@ def get_os(request):
     return get_user_agent(request).get_os()
 
 
-def get_verbose_name(queryset=None, view=None, model=None):
+def get_verbose_name(queryset: Any = None, view: Any = None, model: Any = None) -> Any:
     """
     :param model:
     :param queryset:
@@ -243,7 +244,7 @@ def get_verbose_name(queryset=None, view=None, model=None):
     return model, verbose_name
 
 
-def get_request_ident(request):
+def get_request_ident(request: Any) -> Any:
     http_user_agent = request.META.get("HTTP_USER_AGENT")
     http_accept = request.META.get("HTTP_ACCEPT")
     remote_addr = BaseThrottle().get_ident(request)

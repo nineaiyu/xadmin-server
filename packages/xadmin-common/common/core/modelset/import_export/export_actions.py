@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """导入导出：文件导出（export-data / export-async）。"""
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -30,8 +32,8 @@ class OnlyExportDataAction(ExportImportThrottleMixin, ListAction):
         ],
         responses={200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))},
     )
-    @parent_fallback_action(methods=["get"], detail=False, url_path="export-data")
-    def export_data(self, request, *args, **kwargs):
+    @parent_fallback_action(methods=["get"], detail=False, url_path="export-data")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def export_data(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """导出{cls}数据（type=csv|xlsx，缺省 xlsx）"""
         file_format = request.query_params.get("type", "xlsx")
         self.format_kwarg = file_format
@@ -51,8 +53,8 @@ class OnlyExportDataAction(ExportImportThrottleMixin, ListAction):
         request=OpenApiRequest(build_object_type(properties={"type": build_basic_type(OpenApiTypes.STR)})),
         responses=get_default_response_schema(),
     )
-    @parent_fallback_action(methods=["post"], detail=False, url_path="export-async")
-    def export_async(self, request, *args, **kwargs):
+    @parent_fallback_action(methods=["post"], detail=False, url_path="export-async")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def export_async(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """异步导出{cls}数据"""
         from django.apps import apps
         from django.db import transaction

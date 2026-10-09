@@ -11,6 +11,8 @@
 """
 
 import re
+from collections.abc import Iterator
+from typing import Any
 
 # 前端「忽略该列」选项 / 显式空值 的等价占位：命中即视为不导入该列
 IGNORE_COLUMN = "__ignore__"
@@ -20,7 +22,7 @@ IGNORE_TOKENS = {"-", IGNORE_COLUMN}
 _PAREN_PATTERN = re.compile(r"^(.+)\(([a-z0-9_-]+)\)$")
 
 
-def normalize_header(header):
+def normalize_header(header: Any) -> Any:
     """表头归一化：去空白与星号标记、提取 `名称(pk)` 内的字段名、统一大小写与分隔符。"""
     if header is None:
         header = ""
@@ -33,7 +35,7 @@ def normalize_header(header):
     return header.strip().lower().replace(" ", "_").replace("-", "_")
 
 
-def _is_ignore_value(value):
+def _is_ignore_value(value: Any) -> bool:
     """映射值是否为「显式忽略该列」；非字符串值一律按非法（不忽略）处理。"""
     if value is None:
         return True
@@ -42,7 +44,7 @@ def _is_ignore_value(value):
     return False
 
 
-def iter_writable_fields(fields):
+def iter_writable_fields(fields: Any) -> Iterator[tuple[str, Any]]:
     """按导入口径过滤可写字段（与 BaseFileParser.convert_to_field_names 一致）。
 
     ``id`` / ``pk`` 例外保留：更新导入靠它们定位记录。
@@ -53,7 +55,7 @@ def iter_writable_fields(fields):
         yield name, field
 
 
-def build_field_index(fields):
+def build_field_index(fields: Any) -> Any:
     """构造「归一化表头 → 序列化字段名」索引（字段名与 label 双向可命中）。"""
     index: dict[str, str] = {}
     for name, field in iter_writable_fields(fields):
@@ -64,7 +66,7 @@ def build_field_index(fields):
     return index
 
 
-def writable_field_options(fields):
+def writable_field_options(fields: Any) -> Any:
     """目标字段下拉选项：[{value: 字段名, label: 展示名}]（供列映射步骤使用）。"""
     options = []
     for name, field in iter_writable_fields(fields):
@@ -73,13 +75,13 @@ def writable_field_options(fields):
     return options
 
 
-def first_column_candidates(headers, fields):
+def first_column_candidates(headers: Any, fields: Any) -> Any:
     """为每个表头给出「归一化等名」候选字段名（仅提示，无候选返回空串）。"""
     index = build_field_index(fields)
     return [index.get(normalize_header(header), "") for header in headers]
 
 
-def apply_column_mapping(headers, mapping, ignore_unknown=True):
+def apply_column_mapping(headers: Any, mapping: Any, ignore_unknown: bool = True) -> Any:
     """按映射替换表头，返回 ``(resolved, unmatched)``。
 
     - ``mapping``：{原始表头: 目标字段名}，键匹配走 :func:`normalize_header`；
@@ -104,7 +106,7 @@ def apply_column_mapping(headers, mapping, ignore_unknown=True):
     return resolved, unmatched
 
 
-def resolve_headers(headers, mapping, fields, ignore_unknown=True):
+def resolve_headers(headers: Any, mapping: Any, fields: Any, ignore_unknown: bool = True) -> Any:
     """映射 + 字段解析一步到位（文件解析器入口）。
 
     返回 ``(field_names, unmatched)``：``field_names`` 与 ``headers`` 等长，

@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """功能模块注册表：种子文件按模块裁剪。"""
 
+from typing import Any
+
 from .gate import _disabled_specs, compute_hidden_menu_pks, permission_prefixes_of
 
 
@@ -24,20 +26,20 @@ class ModuleSeedFilter:
     MENU_MODEL = "system.menu"
     MENU_META_MODEL = "system.menumeta"
 
-    def __init__(self, specs=()) -> None:
+    def __init__(self, specs: Any = ()) -> None:
         self.specs = tuple(specs)
-        self.hidden: frozenset = frozenset()
-        self._all_meta_refs: set = set()
-        self._kept_meta_refs: set = set()
+        self.hidden: frozenset[Any] = frozenset()
+        self._all_meta_refs: set[Any] = set()
+        self._kept_meta_refs: set[Any] = set()
 
     @classmethod
-    def build(cls):
+    def build(cls) -> Any:
         """按当前配置构造过滤器；无停用模块时返回 None（调用方走原始种子）。"""
 
         specs = _disabled_specs()
         return cls(specs) if specs else None
 
-    def compute_hidden(self, menu_rows) -> frozenset:
+    def compute_hidden(self, menu_rows: Any) -> frozenset[Any]:
         """按本过滤器的模块集合计算需剔除的菜单主键（口径与运行期一致）。"""
 
         rows = [
@@ -56,7 +58,7 @@ class ModuleSeedFilter:
             prefixes=permission_prefixes_of(self.specs),
         )
 
-    def filter_rows(self, model_label: str, rows: list) -> list:
+    def filter_rows(self, model_label: str, rows: list[Any]) -> list[Any]:
         if model_label == self.MENU_MODEL:
             # 懒计算隐藏集合：调用方（种子装配/硬裁剪命令）无需关心调用顺序
             if not self.hidden:

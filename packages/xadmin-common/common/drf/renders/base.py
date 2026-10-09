@@ -1,7 +1,9 @@
 import abc
 import io
 import re
+from collections.abc import Iterator
 from datetime import datetime
+from typing import Any
 
 import pyzipper
 from django.utils.translation import gettext_lazy as _
@@ -24,17 +26,17 @@ class BaseFileRenderer(BaseRenderer):
     serializer = None
 
     @staticmethod
-    def _check_validation_data(data):
+    def _check_validation_data(data: Any) -> bool:
         detail_key = "detail"
         if detail_key in data:
             return False
         return True
 
     @staticmethod
-    def _json_format_response(response_data):
+    def _json_format_response(response_data: Any) -> Any:
         return json.dumps(response_data)
 
-    def set_response_disposition(self, response):
+    def set_response_disposition(self, response: Any) -> None:
         meta = getattr(self.serializer, "Meta", None)
         model = getattr(meta, "model", None)
         if response and model is not None:
@@ -49,7 +51,7 @@ class BaseFileRenderer(BaseRenderer):
         response["Content-Disposition"] = disposition
         response["Access-Control-Expose-Headers"] = "Content-Disposition"
 
-    def get_rendered_fields(self):
+    def get_rendered_fields(self) -> Any:
         fields_map = getattr(self.serializer, "fields", None) or {}
         meta = getattr(self.serializer, "Meta", None)
         pk_field = fields_map.get("pk")
@@ -76,7 +78,7 @@ class BaseFileRenderer(BaseRenderer):
         return fields
 
     @staticmethod
-    def get_column_titles(render_fields):
+    def get_column_titles(render_fields: Any) -> Any:
         titles = []
         for field in render_fields:
             name = field.label
@@ -85,7 +87,7 @@ class BaseFileRenderer(BaseRenderer):
             titles.append(f"{name}({field.field_name})")
         return titles
 
-    def process_data(self, data):
+    def process_data(self, data: Any) -> Any:
         results = data["results"] if "results" in data else data
 
         if isinstance(results, dict):
@@ -101,7 +103,7 @@ class BaseFileRenderer(BaseRenderer):
         return results
 
     @staticmethod
-    def to_id_name(value):
+    def to_id_name(value: Any) -> str:
         if value is None:
             return "-"
         pk = str(value.get("id", "") or value.get("pk", ""))
@@ -115,13 +117,13 @@ class BaseFileRenderer(BaseRenderer):
         return f"{name}({pk})"
 
     @staticmethod
-    def to_choice_name(value):
+    def to_choice_name(value: Any) -> Any:
         if value is None:
             return "-"
         value = value.get("value", "")
         return value
 
-    def render_value(self, field, value):
+    def render_value(self, field: Any, value: Any) -> Any:
         if value is None:
             value = "-"
         elif hasattr(field, "to_file_representation"):
@@ -151,7 +153,7 @@ class BaseFileRenderer(BaseRenderer):
             value = json.dumps(value, cls=encoders.JSONEncoder, ensure_ascii=False)
         return str(value)
 
-    def get_field_help_text(self, field):
+    def get_field_help_text(self, field: Any) -> Any:
         text = ""
         if hasattr(field, "get_render_help_text"):
             text = field.get_render_help_text()
@@ -216,7 +218,7 @@ class BaseFileRenderer(BaseRenderer):
             text = ",".join(n_text)
         return text
 
-    def generate_rows(self, data, render_fields):
+    def generate_rows(self, data: Any, render_fields: Any) -> Iterator[list[Any]]:
         for item in data:
             row = []
             for field in render_fields:
@@ -225,7 +227,7 @@ class BaseFileRenderer(BaseRenderer):
                 row.append(value)
             yield row
 
-    def write_help_text_if_need(self):
+    def write_help_text_if_need(self) -> None:
         if self.template == "export":
             return
         fields = self.get_rendered_fields()
@@ -237,31 +239,31 @@ class BaseFileRenderer(BaseRenderer):
         self.write_row(row)
 
     @abc.abstractmethod
-    def initial_writer(self):
+    def initial_writer(self) -> None:
         raise NotImplementedError
 
-    def add_validation(self, rendered_fields):
+    def add_validation(self, rendered_fields: Any) -> None:
         pass
 
-    def write_column_titles(self, column_titles):
+    def write_column_titles(self, column_titles: Any) -> None:
         self.write_row(column_titles)
 
-    def write_rows(self, rows):
+    def write_rows(self, rows: Any) -> None:
         for row in rows:
             self.write_row(row)
 
     @abc.abstractmethod
-    def write_row(self, row):
+    def write_row(self, row: Any) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_rendered_value(self):
+    def get_rendered_value(self) -> Any:
         raise NotImplementedError
 
-    def after_render(self):
+    def after_render(self) -> None:
         pass
 
-    def render(self, data, accepted_media_type=None, renderer_context=None):
+    def render(self, data: Any, accepted_media_type: Any = None, renderer_context: Any = None) -> Any:
         if data is None:
             return b""
 
@@ -302,7 +304,7 @@ class BaseFileRenderer(BaseRenderer):
             return value
         return value
 
-    def compress_into_zip_file(self, value, request, response):
+    def compress_into_zip_file(self, value: Any, request: Any, response: Any) -> Any:
         filename_pattern = re.compile(r'filename="([^"]+)"')
         content_disposition = response["Content-Disposition"]
         match = filename_pattern.search(content_disposition)

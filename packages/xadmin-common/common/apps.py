@@ -10,7 +10,7 @@ class CommonConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "common"
 
-    def ready(self):
+    def ready(self) -> None:
         from .celery import heatbeat  # noqa
         from .celery import failure_handler  # noqa
         from .celery import metrics as celery_metrics  # noqa
@@ -45,7 +45,7 @@ class CommonConfig(AppConfig):
 
         validate_deployment_config()
 
-        def background_task():
+        def background_task() -> None:
             time.sleep(0.1)
             django_ready.send(CommonConfig)
 

@@ -9,6 +9,7 @@ import os
 import socket
 import threading
 import time
+from typing import Any
 
 from common import contracts
 from common.core.db.utils import close_old_connections
@@ -25,7 +26,7 @@ from common.utils import (
 
 
 class BaseTerminal:
-    def __init__(self, suffix_name, _type):
+    def __init__(self, suffix_name: Any, _type: Any) -> None:
         server_hostname = os.environ.get("SERVER_HOSTNAME") or ""
         hostname = socket.gethostname()
         if server_hostname:
@@ -38,18 +39,18 @@ class BaseTerminal:
         self.type = _type
 
     @staticmethod
-    def get_remote_addr(hostname):
+    def get_remote_addr(hostname: Any) -> Any:
         try:
             return socket.gethostbyname(hostname)
         except socket.gaierror:
             return "127.0.0.1"
 
-    def start_heartbeat_thread(self):
+    def start_heartbeat_thread(self) -> None:
         print(f"- Start heartbeat thread => ({self.name})")
         t = threading.Thread(target=self.start_heartbeat, daemon=True)
         t.start()
 
-    def start_heartbeat(self):
+    def start_heartbeat(self) -> None:
         while True:
             try:
                 net_sent, net_recv = get_net_io_bytes()
@@ -76,5 +77,5 @@ class BaseTerminal:
 
 @Singleton
 class CoreTerminal(BaseTerminal):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(suffix_name="Core", _type="core")

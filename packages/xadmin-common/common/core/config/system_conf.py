@@ -12,6 +12,8 @@ BaseConfCache 按域拆分（文件行数门禁）：文件上传/Office 预览/
 维持既有导入面（common.core.config 再导出）不变。
 """
 
+from typing import Any
+
 from common.injection import get_server_config
 from common.utils import get_logger
 
@@ -32,25 +34,25 @@ class BaseConfCache(UploadConfMixin, SecurityConfMixin, OpsConfMixin):
     conf.py 一致（守护测试校验）。
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
 
 class MessagePushConfCache(ConfigCacheBase):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
     @property
-    def PUSH_MESSAGE_NOTICE(self):
+    def PUSH_MESSAGE_NOTICE(self) -> Any:
         return self.get_value("PUSH_MESSAGE_NOTICE", get_server_config().PUSH_MESSAGE_NOTICE)
 
     @property
-    def PUSH_CHAT_MESSAGE(self):
+    def PUSH_CHAT_MESSAGE(self) -> Any:
         return self.get_value("PUSH_CHAT_MESSAGE", get_server_config().PUSH_CHAT_MESSAGE)
 
 
 class ConfigCache(BaseConfCache, MessagePushConfCache):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
 

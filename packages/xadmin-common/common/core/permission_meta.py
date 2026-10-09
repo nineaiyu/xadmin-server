@@ -19,14 +19,15 @@
 """
 
 import re
+from typing import Any
 
 # 后缀登记表（存 url_path，不含斜杠；运行期编译为 $ 锚定正则）
 SHARED_LIST_SUFFIXES: set[str] = set()
 PARENT_FALLBACK_SUFFIXES: set[str] = set()
 
 # 编译缓存：注册表只在模块导入期（URLconf 装载前）变化，按规模失效即可
-_shared_list_cache: tuple[int, re.Pattern | None] = (-1, None)
-_parent_fallback_cache: tuple[int, re.Pattern | None] = (-1, None)
+_shared_list_cache: tuple[int, re.Pattern[str] | None] = (-1, None)
+_parent_fallback_cache: tuple[int, re.Pattern[str] | None] = (-1, None)
 
 
 def register_shared_list(url_path: str) -> None:
@@ -58,14 +59,16 @@ FRAMEWORK_PARENT_FALLBACK = frozenset(
 )
 
 
-def _compiled_suffixes(suffixes: frozenset[str], cache: tuple[int, re.Pattern | None]) -> tuple[int, re.Pattern | None]:
+def _compiled_suffixes(
+    suffixes: frozenset[str], cache: tuple[int, re.Pattern[str] | None]
+) -> tuple[int, re.Pattern[str] | None]:
     if cache[0] != len(suffixes):
         pattern = re.compile(r"/(?:" + "|".join(sorted(suffixes)) + r")$") if suffixes else None
         cache = (len(suffixes), pattern)
     return cache
 
 
-def shared_list_pattern() -> re.Pattern | None:
+def shared_list_pattern() -> re.Pattern[str] | None:
     """shared_list 后缀的 ``/xxx$`` 匹配正则（剥离 URL 尾部后缀用）。"""
     global _shared_list_cache
     effective = FRAMEWORK_SHARED_LIST | SHARED_LIST_SUFFIXES
@@ -73,7 +76,7 @@ def shared_list_pattern() -> re.Pattern | None:
     return _shared_list_cache[1]
 
 
-def parent_fallback_pattern() -> re.Pattern | None:
+def parent_fallback_pattern() -> re.Pattern[str] | None:
     """parent_fallback 后缀的 ``/xxx$`` 匹配正则。"""
     global _parent_fallback_cache
     effective = FRAMEWORK_PARENT_FALLBACK | PARENT_FALLBACK_SUFFIXES
@@ -81,11 +84,11 @@ def parent_fallback_pattern() -> re.Pattern | None:
     return _parent_fallback_cache[1]
 
 
-def _registering_action(register, **action_kwargs):
+def _registering_action(register: Any, **action_kwargs: Any) -> Any:
     """DRF ``@action`` 的登记变体：按 url_path（缺省由方法名派生，与 DRF 同规则）登记后转发。"""
     from rest_framework.decorators import action
 
-    def decorator(func):
+    def decorator(func: Any) -> Any:
         url_path = action_kwargs.get("url_path") or func.__name__.replace("_", "-")
         register(url_path)
         return action(**action_kwargs)(func)
@@ -93,12 +96,12 @@ def _registering_action(register, **action_kwargs):
     return decorator
 
 
-def shared_list_action(**action_kwargs):
+def shared_list_action(**action_kwargs: Any) -> Any:
     """``@shared_list_action(methods=..., detail=False, url_path=...)``：
     声明即登记为「与父级 list 权限同口径」。"""
     return _registering_action(register_shared_list, **action_kwargs)
 
 
-def parent_fallback_action(**action_kwargs):
+def parent_fallback_action(**action_kwargs: Any) -> Any:
     """``@parent_fallback_action(...)``：声明即登记为「自身权限点优先、父级兜底」。"""
     return _registering_action(register_parent_fallback, **action_kwargs)

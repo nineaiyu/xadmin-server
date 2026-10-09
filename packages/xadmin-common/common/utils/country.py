@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/6/2024
 import gettext
+from typing import Any
 
 import phonenumbers
 import pycountry
@@ -12,8 +13,8 @@ from django.utils.translation import gettext_lazy as _
 from phonenumbers import PhoneMetadata
 
 
-def get_country_phone_codes():
-    phone_codes = []
+def get_country_phone_codes() -> list[tuple[str, int | None]]:
+    phone_codes: list[tuple[str, int | None]] = []
     for region_code in phonenumbers.SUPPORTED_REGIONS:
         phone_metadata = PhoneMetadata.metadata_for_region(region_code)
         if phone_metadata:
@@ -21,7 +22,7 @@ def get_country_phone_codes():
     return phone_codes
 
 
-def get_country(region_code):
+def get_country(region_code: str) -> Any:
     country = pycountry.countries.get(alpha_2=region_code)
     if country:
         return country
@@ -29,9 +30,9 @@ def get_country(region_code):
         return None
 
 
-def get_country_phone_choices(locales=None):
+def get_country_phone_choices(locales: str | None = None) -> list[dict[str, Any]]:
     codes = get_country_phone_codes()
-    choices = []
+    choices: list[dict[str, Any]] = []
     german = None
     if locales:
         german = gettext.translation("iso3166-1", pycountry.LOCALES_DIR, languages=[locales])

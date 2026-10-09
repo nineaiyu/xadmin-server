@@ -1,3 +1,5 @@
+from typing import Any
+
 from common.settings_contract import kernel_setting
 
 from .celery_base import CeleryBaseService
@@ -14,7 +16,7 @@ class CeleryHeavyService(CeleryBaseService):
     default 队列保持相同的运行时状态共享行为。
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         kwargs["queue"] = "heavy"
         kwargs.setdefault("pool", kernel_setting("CELERY_HEAVY_POOL"))
         kwargs.setdefault("concurrency", kernel_setting("CELERY_HEAVY_CONCURRENCY"))

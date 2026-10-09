@@ -7,6 +7,7 @@
 import logging
 import re
 from collections import defaultdict
+from typing import Any
 
 from celery import signature
 from celery.signals import after_setup_logger, worker_ready, worker_shutdown
@@ -30,15 +31,15 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def safe_str(x):
+def safe_str(x: Any) -> Any:
     return x
 
 
 pattern = re.compile(r"FROM `(\w+)`")
 
 
-@worker_ready.connect
-def on_app_ready(sender=None, headers=None, **kwargs):
+@worker_ready.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def on_app_ready(sender: Any = None, headers: Any = None, **kwargs: Any) -> None:
     if cache.get("CELERY_APP_READY", 0) == 1:
         return
     cache.set("CELERY_APP_READY", 1, 10)
@@ -53,8 +54,8 @@ def on_app_ready(sender=None, headers=None, **kwargs):
         signature(task).delay()
 
 
-@worker_shutdown.connect
-def after_app_shutdown_periodic_tasks(sender=None, **kwargs):
+@worker_shutdown.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def after_app_shutdown_periodic_tasks(sender: Any = None, **kwargs: Any) -> None:
     if cache.get("CELERY_APP_SHUTDOWN", 0) == 1:
         return
     cache.set("CELERY_APP_SHUTDOWN", 1, 10)
@@ -64,8 +65,8 @@ def after_app_shutdown_periodic_tasks(sender=None, **kwargs):
     PeriodicTask.objects.filter(name__in=tasks).delete()
 
 
-@receiver(pre_delete, sender=TaskResult)
-def delete_file_handler(sender, **kwargs):
+@receiver(pre_delete, sender=TaskResult)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def delete_file_handler(sender: Any, **kwargs: Any) -> None:
     # 清理任务记录，同时并清理日志文件
     instance = kwargs.get("instance")
     if instance:
@@ -75,8 +76,10 @@ def delete_file_handler(sender, **kwargs):
             remove_file(log_path)
 
 
-@after_setup_logger.connect
-def on_after_setup_logger(sender=None, logger=None, loglevel=None, format=None, **kwargs):
+@after_setup_logger.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def on_after_setup_logger(
+    sender: Any = None, logger: Any = None, loglevel: Any = None, format: Any = None, **kwargs: Any
+) -> None:
     if not logger:
         return
     task_handler = CeleryThreadTaskFileHandler()
@@ -87,24 +90,24 @@ def on_after_setup_logger(sender=None, logger=None, loglevel=None, format=None, 
 
 
 class Counter:
-    def __init__(self):
+    def __init__(self) -> None:
         self.counter = 0
         self.time: float = 0
 
-    def __gt__(self, other):
+    def __gt__(self, other: Any) -> Any:
         return self.counter > other.counter
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> Any:
         return self.counter < other.counter
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> Any:
         return self.counter == other.counter
 
 
-def on_request_finished_logging_db_query(sender, **kwargs):
+def on_request_finished_logging_db_query(sender: Any, **kwargs: Any) -> None:
     queries = connection.queries
     counters: defaultdict[str, Counter] = defaultdict(Counter)
-    table_queries: defaultdict[str, list] = defaultdict(list)
+    table_queries: defaultdict[str, list[Any]] = defaultdict(list[Any])
     for query in queries:
         if not query["sql"] or not query["sql"].startswith("SELECT"):
             continue
@@ -134,14 +137,14 @@ def on_request_finished_logging_db_query(sender, **kwargs):
         logger.debug(f"Query {counter.counter:3} times using {counter.time:.2f}s {name}")
 
 
-def _get_request_user():
+def _get_request_user() -> Any:
     current_request = get_current_request()
     if current_request and current_request.user and current_request.user.is_authenticated:
         return current_request.user
 
 
-@receiver(pre_save)
-def on_create_set_creator(sender, instance=None, **kwargs):
+@receiver(pre_save)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def on_create_set_creator(sender: Any, instance: Any = None, **kwargs: Any) -> None:
     if getattr(instance, "_ignore_auto_creator", False):
         return
     if not hasattr(instance, "creator") or instance.creator:
@@ -153,8 +156,8 @@ def on_create_set_creator(sender, instance=None, **kwargs):
             instance.dept_belong = creator.dept
 
 
-@receiver(pre_save)
-def on_update_set_modifier(sender, instance=None, **kwargs):
+@receiver(pre_save)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def on_update_set_modifier(sender: Any, instance: Any = None, **kwargs: Any) -> None:
     if getattr(instance, "_ignore_auto_modifier", False):
         return
     if hasattr(instance, "modifier"):
@@ -167,6 +170,6 @@ if kernel_setting("DEBUG_DEV"):
     request_finished.connect(on_request_finished_logging_db_query)
 
 
-@receiver(django_ready)
-def clear_response_cache(sender, **kwargs):
+@receiver(django_ready)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def clear_response_cache(sender: Any, **kwargs: Any) -> None:
     cache.delete_pattern("magic_cache_response_*")

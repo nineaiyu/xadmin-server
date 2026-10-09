@@ -6,6 +6,7 @@
 # date : 6/7/2024
 import time
 import uuid
+from typing import Any
 
 from django.utils import translation
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -35,7 +36,7 @@ class ResourcesIDCacheAPIView(GenericAPIView):
         ),
         responses=get_default_response_schema({"spm": build_basic_type(OpenApiTypes.STR)}),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """添加临时资源数据"""
         spm = str(uuid.uuid4())
         resources = request.data.get("resources")
@@ -65,7 +66,7 @@ class CountryListAPIView(GenericAPIView):
             }
         )
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取城市手机号列表"""
         current_lang = translation.get_language()
         if current_lang == "zh-hans":
@@ -84,15 +85,15 @@ class HealthCheckAPIView(GenericAPIView):
 
     # 探测逻辑已抽至 common/utils/health.py（与监控面板共用），此处保留方法名以兼容既有调用方
     @staticmethod
-    def get_db_status():
+    def get_db_status() -> Any:
         return probe_db()
 
     @staticmethod
-    def get_redis_status():
+    def get_redis_status() -> Any:
         return probe_redis()
 
     @staticmethod
-    def get_celery_status():
+    def get_celery_status() -> Any:
         return probe_celery()
 
     @extend_schema(
@@ -115,7 +116,7 @@ class HealthCheckAPIView(GenericAPIView):
             )
         }
     )
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         """获取服务健康状态（并行探测 + 总超时预算，避免故障依赖拖挂 healthcheck）"""
         results = probe_all()
         db_status, db_time = results["db"]

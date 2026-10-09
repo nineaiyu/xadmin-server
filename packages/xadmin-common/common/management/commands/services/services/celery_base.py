@@ -1,9 +1,14 @@
+import os
+from typing import Any
+
 from ..hands import *
 from .base import BaseService
 
 
 class CeleryBaseService(BaseService):
-    def __init__(self, queue, pool=None, concurrency=None, prefetch=None, **kwargs):
+    def __init__(
+        self, queue: Any, pool: Any = None, concurrency: Any = None, prefetch: Any = None, **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
         self.queue = queue
         self.num = int(concurrency or CELERY_WORKER_COUNT)
@@ -11,7 +16,7 @@ class CeleryBaseService(BaseService):
         self.prefetch = prefetch
 
     @property
-    def cmd(self):
+    def cmd(self) -> Any:
         print(f"\n- Start Celery as Distributed Task Queue: {self.queue.capitalize()}")
         os.environ.setdefault("LC_ALL", "C.UTF-8")
         os.environ.setdefault("PYTHONOPTIMIZE", "1")
@@ -49,5 +54,5 @@ class CeleryBaseService(BaseService):
         return cmd
 
     @property
-    def cwd(self):
+    def cwd(self) -> Any:
         return APPS_DIR

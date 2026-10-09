@@ -6,10 +6,12 @@
 # date : 6/2/2023
 
 
+from typing import Any
+
 from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle, UserRateThrottle
 
 
-def allow_by_identity(ident, scope: str, limit: int, window_seconds: int = 60) -> bool:
+def allow_by_identity(ident: Any, scope: str, limit: int, window_seconds: int = 60) -> bool:
     """固定窗口限流（非 DRF 场景通用入口，如原生视图 / WebSocket 消费者）：True = 放行。
 
     计数落在 Redis（`cache.add` 建窗 + `incr` 计数，单键原子自增，窗口首请求占位），
@@ -26,7 +28,7 @@ def allow_by_identity(ident, scope: str, limit: int, window_seconds: int = 60) -
         return True
 
 
-def allow_by_ip(request, scope: str, limit: int, window_seconds: int = 60) -> bool:
+def allow_by_ip(request: Any, scope: str, limit: int, window_seconds: int = 60) -> bool:
     """IP 固定窗口限流（非 DRF 视图用，如 Django 原生验证码端点）：True = 放行。
 
     验证码图片/刷新每次都会生成并写入 CaptchaStore 行，匿名可刷即等于可灌库；
@@ -54,7 +56,7 @@ class IpScopedThrottle(SimpleRateThrottle):
     """匿名端点按来源 IP 限流基类：IP 口径走 ``get_request_ip``（防 XFF 伪造，
     与 IP 封禁/审计同源）；全局 AnonRateThrottle 之外的单列收紧档用此基类。"""
 
-    def get_cache_key(self, request, view):
+    def get_cache_key(self, request: Any, view: Any) -> Any:
         from common.utils.request import get_request_ip
 
         return self.cache_format % {"scope": self.scope, "ident": get_request_ip(request)}
@@ -67,7 +69,7 @@ class ClientScopedThrottle(SimpleRateThrottle):
     以 ``client_`` / ``ip_`` 前缀区分两个维度，避免互相撞键。
     """
 
-    def get_cache_key(self, request, view):
+    def get_cache_key(self, request: Any, view: Any) -> Any:
         from common.utils.request import get_request_ip
 
         data = getattr(request, "data", None)
@@ -154,12 +156,12 @@ class AiThrottleMixin:
     MCP 端点等无 DRF action 语义的场景）。
     """
 
-    ai_chat_actions: tuple = ()
-    ai_admin_actions: tuple = ()
+    ai_chat_actions: tuple[Any, ...] = ()
+    ai_admin_actions: tuple[Any, ...] = ()
     ai_chat_all: bool = False
     ai_admin_all: bool = False
 
-    def get_throttles(self):
+    def get_throttles(self) -> Any:
         throttles = list(super().get_throttles())  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
         action = getattr(self, "action", None)
         if self.ai_chat_all or (action and action in self.ai_chat_actions):
@@ -192,11 +194,11 @@ class ExportImportThrottleMixin:
 
     export_import_actions: tuple[str, ...] = ()
 
-    def get_throttles(self):
+    def get_throttles(self) -> Any:
         throttles = list(super().get_throttles())  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
         action = getattr(self, "action", None)
         if action:
-            declared: set = set()
+            declared: set[Any] = set()
             for klass in type(self).__mro__:
                 declared.update(getattr(klass, "export_import_actions", ()) or ())
             if action in declared:
@@ -214,7 +216,7 @@ class PatThrottle(SimpleRateThrottle):
 
     scope = "pat"
 
-    def get_rate(self, request=None):
+    def get_rate(self, request: Any = None) -> Any:
         # 覆盖默认实现：速率来自 SysConfig/UserConfig 动态配置而非静态 THROTTLE_RATES；
         # 空 / "0"（数字 0 同）= 不限（直接传 parse_rate 会因缺单位 ValueError）
         from common.core.config import SysConfig, UserConfig
@@ -231,7 +233,7 @@ class PatThrottle(SimpleRateThrottle):
         limit = str(SysConfig.PAT_RATE_LIMIT or "").strip()
         return None if not limit or limit == "0" else limit
 
-    def allow_request(self, request, view):
+    def allow_request(self, request: Any, view: Any) -> Any:
         # 实例化早于认证（拿不到 request.user），PAT 请求在此按认证用户重取速率；
         # 非 PAT 请求维持实例化时的系统级判定，不额外读用户配置。
         # rate 变更须同步重算 num_requests/duration（DRF 在实例化期解析一次）
@@ -242,7 +244,7 @@ class PatThrottle(SimpleRateThrottle):
             return True
         return super().allow_request(request, view)
 
-    def get_cache_key(self, request, view):
+    def get_cache_key(self, request: Any, view: Any) -> Any:
         from django.apps import apps
 
         pat_model = apps.get_model("identity", "PersonalAccessToken")

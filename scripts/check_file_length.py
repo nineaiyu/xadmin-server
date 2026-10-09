@@ -54,6 +54,7 @@ SCAN_DIRS = sorted(
     "server",
     "integrations",
     "devtools",
+    "examples",
 ]
 
 EXCLUDED_SEGMENTS = {"migrations", "tests", "__pycache__", ".venv", "node_modules"}

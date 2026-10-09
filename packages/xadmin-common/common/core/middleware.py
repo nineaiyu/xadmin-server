@@ -7,6 +7,7 @@
 
 import logging
 import time
+from typing import Any
 
 from asgiref.sync import iscoroutinefunction, markcoroutinefunction, sync_to_async
 from django.db import transaction
@@ -46,7 +47,7 @@ class CSPModeMiddleware:
     sync_capable = True
     async_capable = True  # 双模；SysConfig 读（L1→Redis→DB）经 sync_to_async 包裹
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Any) -> None:
         self.get_response = get_response
         self.async_mode = iscoroutinefunction(self.get_response)
         if self.async_mode:
@@ -59,20 +60,20 @@ class CSPModeMiddleware:
         report_uri = str(getattr(SysConfig, "CSP_REPORT_URI", None) or "").strip()
         return mode, report_uri
 
-    def __call__(self, request):
+    def __call__(self, request: Any) -> Any:
         if self.async_mode:
             return self.__acall__(request)
         response = self.get_response(request)
         mode, report_uri = self._read_csp_config()
         return self._apply(response, mode, report_uri)
 
-    async def __acall__(self, request):
+    async def __acall__(self, request: Any) -> Any:
         response = await self.get_response(request)
         mode, report_uri = await sync_to_async(self._read_csp_config, thread_sensitive=True)()
         return self._apply(response, mode, report_uri)
 
     @staticmethod
-    def _apply(response, mode, report_uri):
+    def _apply(response: Any, mode: Any, report_uri: Any) -> Any:
         if mode == "disabled":
             response.headers.pop(CSP_HEADER, None)
             response.headers.pop(CSP_HEADER_REPORT_ONLY, None)
@@ -96,14 +97,14 @@ class CSPModeMiddleware:
 
 
 class ApiLoggingMiddleware(MiddlewareMixin):
-    def __init__(self, get_response=None):
+    def __init__(self, get_response: Any = None) -> None:
         super().__init__(get_response)
         self.enable = kernel_setting("API_LOG_ENABLE") or False
         self.methods = kernel_setting("API_LOG_METHODS") or set()
         self.ignores = kernel_setting("API_LOG_IGNORE") or {}
         self.operation_log_id = "__operation_log_id"
 
-    def _should_log(self, request, view_func) -> bool:
+    def _should_log(self, request: Any, view_func: Any) -> bool:
         """请求是否落操作日志：``API_LOG_METHODS`` 命中，或敏感 GET action 白名单命中。
 
         ：``API_LOG_METHODS`` 默认不含 GET（列表/详情读请求全落库即日志洪水）
@@ -120,7 +121,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         return bool(actions) and getattr(view_func, "actions", {}).get("get") in actions
 
     @classmethod
-    def __handle_request(cls, request):
+    def __handle_request(cls, request: Any) -> None:
         request.request_ip = get_request_ip(request)
         request.request_data = get_request_data(request)
         request.request_start_time = time.time()
@@ -131,7 +132,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"request start. {request.method} {request.path} {log_body_preview(request.request_data)}")
 
-    def __handle_response(self, request, response):
+    def __handle_response(self, request: Any, response: Any) -> Any:
         request_start_time = getattr(request, "request_start_time", time.time())
         exec_time = time.time() - request_start_time
         # 慢请求阈值走系统配置（默认 1.0s），与监控面板 slow 接口同口径
@@ -151,7 +152,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
 
         info = build_operation_log_info(request, response, request_start_time)
 
-        def _after_commit():
+        def _after_commit() -> None:
             # Step3：移出请求事务，提交后再写日志；日志落库后做敏感操作告警判定
             write_operation_log(operation_log_id, info)
             try:
@@ -167,7 +168,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             )
         return True
 
-    def process_view(self, request, view_func, view_args, view_kwargs):
+    def process_view(self, request: Any, view_func: Any, view_args: Any, view_kwargs: Any) -> None:
         if hasattr(view_func, "cls") and hasattr(view_func.cls, "queryset"):
             if self.enable and self._should_log(request, view_func):
                 if not (self.methods == "ALL" or request.method in self.methods):
@@ -194,12 +195,12 @@ class ApiLoggingMiddleware(MiddlewareMixin):
 
         return
 
-    def process_request(self, request):
+    def process_request(self, request: Any) -> None:
         if request.path == HEALTH_CHECK_PATH:
             return
         self.__handle_request(request)
 
-    def process_response(self, request, response):
+    def process_response(self, request: Any, response: Any) -> Any:
         """
         :param request:
         :param response:
@@ -229,10 +230,10 @@ class MetricsMiddleware(MiddlewareMixin):
     默认不挂载：关闭时零开销，也不会因指标依赖缺失影响请求链路。
     """
 
-    def process_request(self, request):
+    def process_request(self, request: Any) -> None:
         request._metrics_start_time = time.time()
 
-    def process_response(self, request, response):
+    def process_response(self, request: Any, response: Any) -> Any:
         start = getattr(request, "_metrics_start_time", None)
         if start is None:
             return response
@@ -257,4 +258,26 @@ from common.core.oplog_recorder import (  # noqa: F401  (日志辅助拆至 oplo
     resolve_auth_identity,
     sensitive_get_actions,
     write_operation_log,
+)
+
+# 显式公开面：内核严格类型口径（no_implicit_reexport）下，再导出必须经 __all__ 声明；
+# 同时把本模块对外承诺的中间件与常量面一并固化（消费方按名字导入不受影响）。
+__all__ = (
+    "CSP_HEADER",
+    "CSP_HEADER_REPORT_ONLY",
+    "ApiLoggingMiddleware",
+    "CSPModeMiddleware",
+    "MetricsMiddleware",
+    # 自 oplog_recorder 再导出：操作日志辅助的历史导入面保持不变
+    "HEALTH_CHECK_PATH",
+    "MAX_LOG_FIELD",
+    "OPERATION_LOG_MODULE_MAX",
+    "SENSITIVE_FIELDS",
+    "build_operation_log_info",
+    "desensitize_body",
+    "desensitize_payload",
+    "log_body_preview",
+    "resolve_auth_identity",
+    "sensitive_get_actions",
+    "write_operation_log",
 )

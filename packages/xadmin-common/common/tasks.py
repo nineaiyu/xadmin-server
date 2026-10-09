@@ -6,6 +6,7 @@
 # date : 7/30/2024
 import datetime
 import os
+from typing import Any
 
 from celery import Task, current_app, shared_task
 from celery.utils.log import get_task_logger
@@ -43,7 +44,7 @@ MAIL_MAX_RETRIES = 3
 MAIL_RETRY_BACKOFF_MAX = 600
 
 
-def _strip_task_self(args):
+def _strip_task_self(args: Any) -> Any:
     """剥离 bind=True 注入的 Task 实例首参，返回 (task_self, 业务参数)。
 
     无论 ``.delay()`` 还是同步直接调用，celery 都会把 Task 实例作为首参传入
@@ -54,8 +55,8 @@ def _strip_task_self(args):
     return None, args
 
 
-@shared_task(bind=True, acks_late=True, verbose_name=_("Send email"))
-def send_mail_async(*args, **kwargs):
+@shared_task(bind=True, acks_late=True, verbose_name=_("Send email"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def send_mail_async(*args: Any, **kwargs: Any) -> Any:
     """Using celery to send email async
 
     You can use it as django send_mail function
@@ -90,8 +91,8 @@ def send_mail_async(*args, **kwargs):
         return None
 
 
-@shared_task(bind=True, acks_late=True, verbose_name=_("Send email attachment"))
-def send_mail_attachment_async(*args, **kwargs):
+@shared_task(bind=True, acks_late=True, verbose_name=_("Send email attachment"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def send_mail_attachment_async(*args: Any, **kwargs: Any) -> Any:
     task_self, args = _strip_task_self(args)
     subject = args[0] if len(args) > 0 else kwargs.get("subject")
     message = args[1] if len(args) > 1 else kwargs.get("message")
@@ -131,10 +132,10 @@ def send_mail_attachment_async(*args, **kwargs):
     return result
 
 
-@shared_task(verbose_name=_("Periodic delete monitor"))
-@register_as_period_task(interval=3600, module="ops")
+@shared_task(verbose_name=_("Periodic delete monitor"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(interval=3600, module="ops")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 @after_app_ready_start
-def auto_clean_monitor_logs():
+def auto_clean_monitor_logs() -> Any:
     """心跳历史与已恢复告警记录的保留期清理（MONITOR_RETENTION_DAYS，默认 30 天）。
 
     心跳 30s 一条长期落库，单批一次性 DELETE 在大保留期下会长时间锁表，
@@ -168,12 +169,12 @@ def auto_clean_monitor_logs():
     return removed
 
 
-@shared_task(
+@shared_task(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     verbose_name=_("Clear celery periodic tasks"),
     description=_("At system startup, clean up celery tasks that no longer exist"),
 )
 @after_app_ready_start
-def clean_celery_periodic_tasks():
+def clean_celery_periodic_tasks() -> None:
     logger.info("Start clean celery periodic tasks.")
     register_tasks = PeriodicTask.objects.all()
     for task in register_tasks:
@@ -191,7 +192,7 @@ def clean_celery_periodic_tasks():
             logger.info(f"Clean task failure: {task}")
 
 
-@shared_task(
+@shared_task(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     verbose_name=_("Create or update periodic tasks"),
     description=_(
         """With version iterations, new tasks may be added, or task names and execution times may 
@@ -200,7 +201,7 @@ def clean_celery_periodic_tasks():
     ),
 )
 @after_app_ready_start
-def create_or_update_registered_periodic_tasks():
+def create_or_update_registered_periodic_tasks() -> None:
     from .celery.decorator import get_register_period_tasks
     from .core.modules import is_module_enabled
 
@@ -215,20 +216,20 @@ def create_or_update_registered_periodic_tasks():
             create_or_update_celery_periodic_tasks({name: detail})
 
 
-@shared_task(
+@shared_task(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     verbose_name=_("Periodic check service performance"),
     description=_(
         """Check every hour whether each component is offline and whether the CPU, memory, 
         and disk usage exceed the thresholds, and send an alert message to the administrator"""
     ),
 )
-@register_as_period_task(interval=60, module="ops")
-def check_server_performance_period():
+@register_as_period_task(interval=60, module="ops")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def check_server_performance_period() -> None:
     ServerPerformanceCheckUtil().check_and_publish()
 
 
-@shared_task(verbose_name=_("Run background task view set"))
-def background_task_view_set_job(view: str, meta: dict, data: str, action_map: dict):
+@shared_task(verbose_name=_("Run background task view set"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def background_task_view_set_job(view: str, meta: dict[str, Any], data: str, action_map: dict[str, Any]) -> Any:
     cache = CacheList(f"view_task_{(meta.get('task_id') or '').split('_')[0]}", timeout=3600 * 24)
     task_info = {
         "start_time": local_now_display(),
@@ -289,13 +290,13 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
     return task_info
 
 
-@shared_task(
+@shared_task(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     verbose_name=_("Purge soft deleted data"),
     description=_("Physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS"),
 )
-@register_as_period_task(interval=86400)
+@register_as_period_task(interval=86400)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 @after_app_ready_start
-def purge_soft_deleted():
+def purge_soft_deleted() -> Any:
     """物理清除回收站中超过保留期的软删除数据（含底层文件/级联清理）。"""
     from django.apps import apps
 

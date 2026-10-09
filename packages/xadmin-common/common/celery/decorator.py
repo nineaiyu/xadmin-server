@@ -6,37 +6,46 @@
 # date : 9/14/2024
 
 from functools import wraps
+from typing import Any
 
-_need_registered_period_tasks: list[dict] = []
+_need_registered_period_tasks: list[dict[str, Any]] = []
 _after_app_ready_start_tasks: list[str] = []
 _after_app_shutdown_clean_periodic_tasks: list[str] = []
 
 
-def add_register_period_task(task):
+def add_register_period_task(task: Any) -> None:
     _need_registered_period_tasks.append(task)
 
 
-def get_register_period_tasks():
+def get_register_period_tasks() -> Any:
     return _need_registered_period_tasks
 
 
-def add_after_app_shutdown_clean_task(name):
+def add_after_app_shutdown_clean_task(name: str) -> None:
     _after_app_shutdown_clean_periodic_tasks.append(name)
 
 
-def get_after_app_shutdown_clean_tasks():
+def get_after_app_shutdown_clean_tasks() -> Any:
     return _after_app_shutdown_clean_periodic_tasks
 
 
-def add_after_app_ready_task(name):
+def add_after_app_ready_task(name: str) -> None:
     _after_app_ready_start_tasks.append(name)
 
 
-def get_after_app_ready_tasks():
+def get_after_app_ready_tasks() -> Any:
     return _after_app_ready_start_tasks
 
 
-def register_as_period_task(crontab=None, interval=None, name=None, args=(), kwargs=None, description="", module=None):
+def register_as_period_task(
+    crontab: Any = None,
+    interval: Any = None,
+    name: Any = None,
+    args: Any = (),
+    kwargs: Any = None,
+    description: str = "",
+    module: Any = None,
+) -> Any:
     """
     Warning: Task must have not any args and kwargs
     :param crontab:  "* * * * *"
@@ -52,7 +61,7 @@ def register_as_period_task(crontab=None, interval=None, name=None, args=(), kwa
     if crontab is None and interval is None:
         raise SyntaxError("Must set crontab or interval one")
 
-    def decorate(func):
+    def decorate(func: Any) -> Any:
         if crontab is None and interval is None:
             raise SyntaxError("Interval and crontab must set one")
 
@@ -75,7 +84,7 @@ def register_as_period_task(crontab=None, interval=None, name=None, args=(), kwa
         )
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return func(*args, **kwargs)
 
         return wrapper
@@ -83,7 +92,7 @@ def register_as_period_task(crontab=None, interval=None, name=None, args=(), kwa
     return decorate
 
 
-def after_app_ready_start(func):
+def after_app_ready_start(func: Any) -> Any:
     # Because when this decorator run, the task was not created,
     # So we can't use func.name
     name = f"{func.__module__}.{func.__name__}"
@@ -91,13 +100,13 @@ def after_app_ready_start(func):
         add_after_app_ready_task(name)
 
     @wraps(func)
-    def decorate(*args, **kwargs):
+    def decorate(*args: Any, **kwargs: Any) -> Any:
         return func(*args, **kwargs)
 
     return decorate
 
 
-def after_app_shutdown_clean_periodic(func):
+def after_app_shutdown_clean_periodic(func: Any) -> Any:
     # Because when this decorator run, the task was not created,
     # So we can't use func.name
     name = f"{func.__module__}.{func.__name__}"
@@ -105,7 +114,7 @@ def after_app_shutdown_clean_periodic(func):
         add_after_app_shutdown_clean_task(name)
 
     @wraps(func)
-    def decorate(*args, **kwargs):
+    def decorate(*args: Any, **kwargs: Any) -> Any:
         return func(*args, **kwargs)
 
     return decorate

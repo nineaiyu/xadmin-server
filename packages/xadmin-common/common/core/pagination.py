@@ -8,6 +8,7 @@
 
 
 from collections import OrderedDict
+from typing import Any
 
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -21,7 +22,7 @@ class PageNumber(PageNumberPagination):
     page_query_param = "page"  # URL中页码的参数
     max_page_size = 100  # 返回最大数据条数
 
-    def get_paginated_response(self, data):
+    def get_paginated_response(self, data: Any) -> Any:
         return Response(
             OrderedDict(
                 [
@@ -33,7 +34,7 @@ class PageNumber(PageNumberPagination):
             )
         )
 
-    def get_paginated_response_schema(self, schema):
+    def get_paginated_response_schema(self, schema: Any) -> Any:
         return build_object_type(
             properties={
                 "code": build_basic_type(OpenApiTypes.NUMBER),
@@ -46,11 +47,11 @@ class PageNumber(PageNumberPagination):
 
 
 class DynamicPageNumber:
-    def __init__(self, max_page_size=100, page_size=20):
+    def __init__(self, max_page_size: int = 100, page_size: int = 20) -> None:
         self.max_page_size = max_page_size
         self.page_size = page_size
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         instance = PageNumber()
         instance.max_page_size = self.max_page_size
         instance.page_size = self.page_size

@@ -8,6 +8,8 @@
 便于按真实量级评估是否推进分页化改造。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
@@ -18,7 +20,7 @@ logger = get_logger(__name__)
 DATASOURCE_MAX_ROWS = 200
 
 
-def limit_datasource(queryset, *, name="", limit=None) -> tuple:
+def limit_datasource(queryset: Any, *, name: str = "", limit: int | None = None) -> tuple[list[Any], bool]:
     """裁剪数据源查询集：返回 ``(rows, truncated)``。
 
     多取一条判断是否超限（不额外 COUNT）；超限时截断并记 warning 日志。
@@ -33,7 +35,7 @@ def limit_datasource(queryset, *, name="", limit=None) -> tuple:
     return rows, truncated
 
 
-def truncation_detail(limit=None) -> str:
+def truncation_detail(limit: int | None = None) -> str:
     """超限时的可读提示（列表仍返回前 N 条，提示随响应 detail 一并下发）。"""
     limit = DATASOURCE_MAX_ROWS if limit is None else limit
     return str(_("Too many items, only the first {} are returned").format(limit))

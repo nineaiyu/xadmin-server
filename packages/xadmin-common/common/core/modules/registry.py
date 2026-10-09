@@ -7,13 +7,14 @@ import re
 import sys
 from functools import lru_cache
 from importlib import import_module
+from typing import Any
 
 from django.core.exceptions import ImproperlyConfigured
 
 from common.settings_contract import kernel_setting
 from common.utils import get_logger
 
-from .catalog import MODULES  # noqa: F401 再导出：模块清单事实源见该模块
+from .catalog import MODULES as MODULES  # noqa: F401 再导出：模块清单事实源见该模块
 from .override import load_override
 from .routes import _apply_derived_routes
 from .specs import _PRESET_LEVELS, CORE, DEFAULT_PRESET, PRESETS, ModuleResolution, ModuleSpec
@@ -24,7 +25,7 @@ logger = get_logger(__name__)
 _MODULE_INDEX = {spec.id: spec for spec in MODULES}
 
 
-def _as_tuple(value) -> tuple:
+def _as_tuple(value: Any) -> tuple[Any, ...]:
     if value is None:
         return ()
     if isinstance(value, str):
@@ -63,7 +64,7 @@ def validate_deployment_config() -> ModuleResolution:
 
 
 @lru_cache(maxsize=1)
-def discovered_modules() -> tuple:
+def discovered_modules() -> tuple[Any, ...]:
     """各已安装 app 通过 ``{app}/modules.py`` 声明的模块（第三方功能模块扩展点）。
 
     与 ``XADMIN_APPS`` → ``{app}/config.py``（路由注册）对称的二开契约：
@@ -94,17 +95,17 @@ def discovered_modules() -> tuple:
 
 
 @lru_cache(maxsize=1)
-def all_module_specs() -> tuple:
+def all_module_specs() -> tuple[Any, ...]:
     """内置模块 + 第三方 app 声明的模块（模块清单的唯一取数口）。"""
 
     return MODULES + discovered_modules()
 
 
 @lru_cache(maxsize=1)
-def module_index() -> dict:
+def module_index() -> dict[str, Any]:
     """模块 id → 声明（含第三方）；id 重复直接 fail-fast。"""
 
-    index: dict = {}
+    index: dict[str, Any] = {}
     for spec in all_module_specs():
         if spec.id in index:
             raise ImproperlyConfigured(f"模块 id 重复：{spec.id}（内置模块与 app 声明冲突）")
@@ -113,7 +114,7 @@ def module_index() -> dict:
 
 
 @lru_cache(maxsize=1)
-def _baseline() -> tuple:
+def _baseline() -> tuple[Any, ...]:
     """部署基线（config.yml / 环境变量）的 ``(preset, enable, disable)``。"""
 
     return (
@@ -123,13 +124,13 @@ def _baseline() -> tuple:
     )
 
 
-def deployment_config() -> tuple:
+def deployment_config() -> tuple[Any, ...]:
     """部署基线 ``(preset, enable, disable)``（供管理页展示「偏离了哪份基线」）。"""
 
     return _baseline()
 
 
-def _effective_config() -> tuple:
+def _effective_config() -> tuple[Any, ...]:
     """生效配置：后台覆盖行优先（整体替换部署基线），无行回退部署基线。"""
 
     override = load_override()
@@ -178,7 +179,7 @@ def desired_modules() -> ModuleResolution:
     return preview_modules(preset=override.preset, enable=override.enable, disable=override.disable)
 
 
-def module_diff(effective: ModuleResolution, desired: ModuleResolution) -> dict:
+def module_diff(effective: ModuleResolution, desired: ModuleResolution) -> dict[str, Any]:
     """生效态与待生效态的差异（供管理页展示「待重启生效」）。"""
 
     return {
@@ -188,7 +189,7 @@ def module_diff(effective: ModuleResolution, desired: ModuleResolution) -> dict:
     }
 
 
-def preview_modules(preset=None, enable=None, disable=None) -> ModuleResolution:
+def preview_modules(preset: Any = None, enable: Any = None, disable: Any = None) -> ModuleResolution:
     """按给定组合解析模块（不改动运行期配置，供 CLI 预演与文档生成）。
 
     未传的项沿用当前配置；组合非法时与真实配置一样 fail-fast。
@@ -202,7 +203,7 @@ def preview_modules(preset=None, enable=None, disable=None) -> ModuleResolution:
     return _resolve(preset_value, enable_value, disable_value)
 
 
-def _resolve(preset: str, enable: tuple, disable: tuple) -> ModuleResolution:
+def _resolve(preset: str, enable: tuple[Any, ...], disable: tuple[Any, ...]) -> ModuleResolution:
     index = module_index()
     unknown = [mid for mid in (*enable, *disable) if mid not in index]
     if unknown:
@@ -268,15 +269,15 @@ def reset_module_state() -> None:
     _trim_cache_invalidated = False
 
 
-def enabled_module_ids() -> frozenset:
+def enabled_module_ids() -> frozenset[Any]:
     return resolve_modules().enabled
 
 
-def disabled_module_ids() -> frozenset:
+def disabled_module_ids() -> frozenset[Any]:
     return resolve_modules().disabled
 
 
-def is_module_enabled(module_id) -> bool:
+def is_module_enabled(module_id: Any) -> bool:
     """模块是否启用；``None`` 视为内核（未声明模块归属的功能一律按启用处理）。"""
 
     if not module_id:
@@ -294,7 +295,7 @@ def module_signature() -> str:
     return f"{resolution.preset}-{digest}"
 
 
-def preset_module_ids(preset: str) -> frozenset:
+def preset_module_ids(preset: str) -> frozenset[Any]:
     """某预设下默认启用的模块集合（用于计算「相对预设的覆盖项」）。"""
 
     if preset not in PRESETS:
@@ -320,7 +321,7 @@ def config_snippet(resolution: ModuleResolution | None = None) -> str:
     return "\n".join(lines)
 
 
-def modules_report(resolution: ModuleResolution | None = None) -> list:
+def modules_report(resolution: ModuleResolution | None = None) -> list[Any]:
     """模块清单报表（CLI / 文档生成共用）。"""
 
     resolution = resolution or resolve_modules()

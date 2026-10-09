@@ -86,13 +86,9 @@ def run_async_import(record_id, view_path, user_pk):
     - 校验/写入复用目标视图的 serializer（字段权限/联动校验同源），
       threadlocal 请求注入保证 creator 信号正常赋值。
     """
-    from common.core.config import SysConfig
-    from common.notifications import ImportDataMessage
     from identity.models import UserInfo
     from task.models.import_ import ImportRecord
     from task.models.task import TaskExecution
-    from task.utils.import_progress import clear_import_progress
-    from task.utils.task_progress import KIND_IMPORT, update_progress
 
     record = ImportRecord.objects.filter(pk=record_id).first()
     if record is None:
@@ -106,99 +102,156 @@ def run_async_import(record_id, view_path, user_pk):
     record.status = ImportRecord.Status.RUNNING
     record.save(update_fields=["status", "updated_time"])
     start_time, state = local_now_display(), True
-    total = success_rows = 0
+    success_rows = 0
     errors: list[dict] = []
     column_titles: list[str] = []
+    total = 0
     aborted, abort_reason = False, None
     try:
-        if not record.source_file or not record.source_file.filepath:
-            raise ValueError(_("Import source file not found"))
-        source_path = record.source_file.filepath.path
-
-        view_cls = import_string(view_path)
-        view = view_cls()
-        # 显式请求上下文（不再重放 WSGIRequest）：五个契约集中在 task_request 装配点，
-        # 契约清单与守护测试见 packages/xadmin-common/common/core/task_request.py
-        request = build_task_request(method="POST", path=record.path or "/", user=user)
-        drf_request = bind_view_task_context(view, request, action="import_data")
-        # 契约 5：thread-local 请求（creator 信号赋值 + 操作审计 request_uuid），出口处清理
-        set_current_request(drf_request)
-
-        # 行数据在 action 内已由文件解析器解析并序列化为 JSON（与同步导入同一条解析链）
-        import json
-
-        with open(source_path, encoding="utf-8") as fp:
-            rows = json.load(fp)
-        column_titles = (record.params or {}).get("column_titles") or []
+        view, rows, column_titles = _prepare_import_rows(record, view_path, user)
         total = len(rows)
-        if rows:
-            # 自关联依赖拓扑排序（与同步导入 import_data 同口径，父行先建）
-            from common.core.utils import has_self_fields, topological_sort
-
-            self_field = has_self_fields(view.get_queryset().model, rows[0].keys())
-            if self_field:
-                rows = topological_sort(rows, parent=self_field)
-
-        fail_rate_limit = SysConfig.IMPORT_FAIL_RATE_LIMIT
-        # 运行期进度走缓存通道：本循环包在外层事务里，事务提交前其他连接读不到
-        # 库内进度（见 task/utils/import_progress 模块说明），因此不写库、只写缓存
-        last_percent = -1
-        try:
-            with transaction.atomic():
-                for idx, row in enumerate(rows, start=1):
-                    # 协作式取消：逐行循环即安全点，取消触发外层事务回滚
-                    ensure_not_cancelled(record.pk)
-                    try:
-                        with transaction.atomic():
-                            _import_row(view, record.action, row)
-                        success_rows += 1
-                    except Exception as exc:
-                        errors.append(
-                            {
-                                "row": idx,
-                                "values": {str(k): row.get(k) for k in row},
-                                "error": str(exc)[:500],
-                            }
-                        )
-                        if fail_rate_limit and fail_rate_limit > 0 and failed_rate(errors, total) > fail_rate_limit:
-                            aborted = True
-                            abort_reason = _("Aborted: failure rate exceeds limit ({}/{} rows failed)").format(
-                                len(errors), total
-                            )
-                            break
-                    # 分批上报进度（1% 粒度 统一助手：导入运行期走缓存通道），供下载中心进度条展示
-                    percent = int(idx / max(total, 1) * 100)
-                    if percent != last_percent:
-                        last_percent = percent
-                        update_progress(KIND_IMPORT, record.pk, percent)
-                if aborted:
-                    # 外层事务回滚：已写入的成功行一并撤销
-                    raise _ImportAborted(abort_reason)
-        except _ImportAborted:
-            pass
+        success_rows, errors, aborted, abort_reason = _run_import_rows(record, view, rows)
     except TaskCancelled as exc:
         # 协作式取消：外层事务已回滚，落 REVOKED 终态（不是故障，不 re-raise）
         state = False
-        record.status = ImportRecord.Status.REVOKED
-        record.error = str(exc)[:2000]
-        record.total = record.total or total
-        record.save(update_fields=["status", "error", "total", "updated_time"])
-        clear_import_progress(record.pk)
-        mark_execution_revoked(record.pk)
+        _mark_import_terminated(record, ImportRecord.Status.REVOKED, str(exc), total, revoked=True)
         logger.info("async import cancelled by user: %s", record_id)
     except Exception as exc:
         state = False
-        record.status = ImportRecord.Status.FAILURE
-        record.error = str(exc)[:2000]
-        record.total = record.total or total
-        record.save(update_fields=["status", "error", "total", "updated_time"])
-        clear_import_progress(record.pk)
+        _mark_import_terminated(record, ImportRecord.Status.FAILURE, str(exc), total)
         logger.exception("async import failed: %s", record_id)
         raise
     finally:
         set_current_request(None)
 
     # 走到这里：解析成功（含失败率中止回滚场景），推进终态与报告
+    _finalize_import(
+        record,
+        user,
+        total=total,
+        success_rows=success_rows,
+        errors=errors,
+        column_titles=column_titles,
+        aborted=aborted,
+        abort_reason=abort_reason,
+        start_time=start_time,
+        state=state,
+    )
+    return record.success_rows
+
+
+def _prepare_import_rows(record, view_path, user):
+    """装配视图上下文并解析源文件行数据（含 thread-local 请求注入），返回 (view, rows, column_titles)。"""
+    if not record.source_file or not record.source_file.filepath:
+        raise ValueError(_("Import source file not found"))
+    source_path = record.source_file.filepath.path
+
+    view_cls = import_string(view_path)
+    view = view_cls()
+
+    # 显式请求上下文（不再重放 WSGIRequest）：五个契约集中在 task_request 装配点，
+    # 契约清单与守护测试见 packages/xadmin-common/common/core/task_request.py
+    request = build_task_request(method="POST", path=record.path or "/", user=user)
+    drf_request = bind_view_task_context(view, request, action="import_data")
+    # 契约 5：thread-local 请求（creator 信号赋值 + 操作审计 request_uuid），出口处清理
+    set_current_request(drf_request)
+
+    # 行数据在 action 内已由文件解析器解析并序列化为 JSON（与同步导入同一条解析链）
+    import json
+
+    with open(source_path, encoding="utf-8") as fp:
+        rows = json.load(fp)
+    column_titles = (record.params or {}).get("column_titles") or []
+    if rows:
+        # 自关联依赖拓扑排序（与同步导入 import_data 同口径，父行先建）
+        from common.core.utils import has_self_fields, topological_sort
+
+        self_field = has_self_fields(view.get_queryset().model, rows[0].keys())
+        if self_field:
+            rows = topological_sort(rows, parent=self_field)
+    return view, rows, column_titles
+
+
+def _run_import_rows(record, view, rows):
+    """逐行 savepoint 导入，返回 (success_rows, errors, aborted, abort_reason)。"""
+    from common.core.config import SysConfig
+    from task.utils.task_progress import KIND_IMPORT, update_progress
+
+    fail_rate_limit = SysConfig.IMPORT_FAIL_RATE_LIMIT
+    errors: list[dict] = []
+    success_rows = 0
+    aborted, abort_reason = False, None
+    total = len(rows)
+    # 运行期进度走缓存通道：本循环包在外层事务里，事务提交前其他连接读不到
+    # 库内进度（见 task/utils/import_progress 模块说明），因此不写库、只写缓存
+    last_percent = -1
+    try:
+        with transaction.atomic():
+            for idx, row in enumerate(rows, start=1):
+                # 协作式取消：逐行循环即安全点，取消触发外层事务回滚
+                ensure_not_cancelled(record.pk)
+                try:
+                    with transaction.atomic():
+                        _import_row(view, record.action, row)
+                    success_rows += 1
+                except Exception as exc:
+                    errors.append(
+                        {
+                            "row": idx,
+                            "values": {str(k): row.get(k) for k in row},
+                            "error": str(exc)[:500],
+                        }
+                    )
+                    if fail_rate_limit and fail_rate_limit > 0 and failed_rate(errors, total) > fail_rate_limit:
+                        aborted = True
+                        abort_reason = _("Aborted: failure rate exceeds limit ({}/{} rows failed)").format(
+                            len(errors), total
+                        )
+                        break
+                # 分批上报进度（1% 粒度 统一助手：导入运行期走缓存通道），供下载中心进度条展示
+                percent = int(idx / max(total, 1) * 100)
+                if percent != last_percent:
+                    last_percent = percent
+                    update_progress(KIND_IMPORT, record.pk, percent)
+            if aborted:
+                # 外层事务回滚：已写入的成功行一并撤销
+                raise _ImportAborted(abort_reason)
+    except _ImportAborted:
+        pass
+    return success_rows, errors, aborted, abort_reason
+
+
+def _mark_import_terminated(record, status, message, total, *, revoked=False):
+    """异常/取消路径的终态落库 + 运行期进度清理（REVOKED 额外标记执行记录）。"""
+    from task.utils.import_progress import clear_import_progress
+
+    record.status = status
+    record.error = message[:2000]
+    record.total = record.total or total
+    record.save(update_fields=["status", "error", "total", "updated_time"])
+    clear_import_progress(record.pk)
+    if revoked:
+        mark_execution_revoked(record.pk)
+
+
+def _finalize_import(
+    record,
+    user,
+    *,
+    total,
+    success_rows,
+    errors,
+    column_titles,
+    aborted,
+    abort_reason,
+    start_time,
+    state,
+):
+    """成功路径的终态推进：结果落库 + 失败行报告 + 站内通知（原尾部块）。"""
+    from common.notifications import ImportDataMessage
+    from task.models.import_ import ImportRecord
+    from task.utils.import_progress import clear_import_progress
+
     try:
         record.total = total
         record.success_rows = 0 if aborted else success_rows
@@ -232,7 +285,7 @@ def run_async_import(record_id, view_path, user_pk):
             aborted,
         )
     except Exception:
-        logger.exception("async import finalize failed: %s", record_id)
+        logger.exception("async import finalize failed: %s", record.pk)
         raise
     finally:
         # 终态已落库，清掉运行期缓存进度（序列化器 RUNNING 时才读缓存）
@@ -259,7 +312,6 @@ def run_async_import(record_id, view_path, user_pk):
                 ).publish()
             except Exception:
                 logger.warning("Send import data message failed", exc_info=True)
-    return record.success_rows
 
 
 def failed_rate(errors, total):

@@ -8,6 +8,8 @@ import base64
 import hashlib
 import os
 import sys
+from collections.abc import Iterable
+from typing import Any
 
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
@@ -22,7 +24,7 @@ logger = get_logger(__name__)
 
 
 class AESCipher:
-    def __init__(self, key):
+    def __init__(self, key: str) -> None:
         self.key = hashlib.sha256(key.encode()).digest()
 
     def encrypt(self, raw: bytes | str) -> bytes:
@@ -45,11 +47,9 @@ class AESCipher:
         return s + padding.encode("utf-8")
 
     @staticmethod
-    def _unpack_data(s):
-        data = s[: -ord(s[len(s) - 1 :])]
-        if isinstance(data, bytes):
-            data = data.decode("utf-8")
-        return data
+    def _unpack_data(s: bytes) -> str:
+        pad = s[len(s) - 1]
+        return s[:-pad].decode("utf-8")
 
 
 class AESCipherV3:
@@ -75,7 +75,7 @@ class AESCipherV3:
     KEY_LENGTH = 32
     HKDF_INFO = b"xadmin-field-encryption"
 
-    def __init__(self, key: str | bytes, legacy_masters: tuple[str | bytes, ...] = ()):
+    def __init__(self, key: str | bytes, legacy_masters: tuple[str | bytes, ...] = ()) -> None:
         """:param key: 当前主密钥（写路径）；:param legacy_masters: 历史主密钥（读路径兜底，
         用于 FIELD_ENCRYPTION_KEY 与 SECRET_KEY 分离后的平滑轮换——存量 v3 密文
         不记录生成密钥，解密时按「当前 → 历史」逐个尝试）。"""
@@ -127,7 +127,7 @@ class AESCipherV3:
         raise last_error
 
 
-def get_signer():
+def get_signer() -> AESCipherV3:
     """字段级加解密器（S5）：写路径统一 v3（HKDF + AES-GCM），读路径兼容旧 v1 密文。
 
     主密钥分离（3.4）：``FIELD_ENCRYPTION_KEY`` 显式配置后作为字段加密主密钥
@@ -151,21 +151,22 @@ signer: AESCipherV3 = get_signer()
 
 
 class AesBaseCrypt:
-    def __init__(self):
+    def __init__(self) -> None:
         self.cipher = AESCipher(self.__class__.__name__)
 
-    def set_encrypt_uid(self, key):
+    def set_encrypt_uid(self, key: str) -> str:
         return self.cipher.encrypt(key.encode("utf-8")).decode("utf-8")
 
-    def get_decrypt_uid(self, enc):
+    def get_decrypt_uid(self, enc: str | bytes) -> str | None:
         try:
             return self.cipher.decrypt(enc)
         except Exception as e:
-            logger.warning(f"decrypt {enc} failed. exception:{e}")
+            logger.warning(f"decrypt {enc!r} failed. exception:{e}")
+            return None
 
 
-def get_choices_dict(choices, disabled_choices=None):
-    result = []
+def get_choices_dict(choices: Iterable[Any], disabled_choices: list[Any] | None = None) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
     choices_org_list = list(choices)
     for choice in choices_org_list:
         c0 = choice[0]
@@ -178,7 +179,7 @@ def get_choices_dict(choices, disabled_choices=None):
     return result
 
 
-def get_choices_name_from_key(choices, key):
+def get_choices_name_from_key(choices: Iterable[Any], key: Any) -> Any:
     choices_org_list = list(choices)
     for choice in choices_org_list:
         if choice[0] == key:
@@ -186,7 +187,7 @@ def get_choices_name_from_key(choices, key):
     return ""
 
 
-def redis_key_func(key, key_prefix, version):
+def redis_key_func(key: str, key_prefix: str, version: int) -> str:
     """
     Default function to generate keys.
 
@@ -201,39 +202,39 @@ def redis_reverse_key_func(key: str) -> str:
     return key
 
 
-def menu_list_to_tree(data: list, root_field: str = "parent") -> list:
+def menu_list_to_tree(data: list[dict[str, Any]], root_field: str = "parent") -> list[dict[str, Any]]:
     """
     将权限菜单转换为树状结构
     """
-    mapping: dict = dict(zip([str(i["pk"]) for i in data], data, strict=True))
+    mapping: dict[str, dict[str, Any]] = dict(zip([str(i["pk"]) for i in data], data, strict=True))
 
     # 树容器
-    container: list = []
+    container: list[dict[str, Any]] = []
 
     for d in data:
         # 如果找不到父级项，则是根节点
         parent_key = d.get(root_field)
         if isinstance(parent_key, dict) and "pk" in parent_key:
             parent_key = parent_key.get("pk")
-        parent: dict | None = mapping.get(str(parent_key))
+        parent: dict[str, Any] | None = mapping.get(str(parent_key))
         if parent is None:
             container.append(d)
         else:
-            children: list = parent.get("children") or []
+            children: list[dict[str, Any]] = parent.get("children") or []
             children.append(d)
             parent.update({"children": children, "count": len(children)})
     return container
 
 
-def format_menu_meta(meta: dict) -> dict:
-    new_meta = {}
+def format_menu_meta(meta: dict[str, Any]) -> dict[str, Any]:
+    new_meta: dict[str, Any] = {}
     for key in ["icon", "title", "rank", "showLink"]:
         new_meta[key] = meta.get(key)
     return new_meta
 
 
-def format_menu_data(data):
-    new_result = []
+def format_menu_data(data: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    new_result: list[dict[str, Any]] = []
     for d in data:
         if d.get("count", -1) < 1:
             route = {
@@ -248,7 +249,7 @@ def format_menu_data(data):
     return new_result
 
 
-def remove_file(name):
+def remove_file(name: str) -> None:
     try:
         if os.path.isdir(name):
             os.rmdir(name)
@@ -295,10 +296,10 @@ class AESCipherV2:
     V2_PBKDF2_ITERATIONS = 100_000
     V2_KEY_LENGTH = 32
 
-    def __init__(self, key: str | bytes):
+    def __init__(self, key: str | bytes) -> None:
         self.key = key.encode("utf-8") if isinstance(key, str) else key
 
-    def _make_key(self, salt, output=48):
+    def _make_key(self, salt: bytes, output: int = 48) -> bytes:
         key = hashlib.md5(self.key + salt).digest()
         final_key = key
         while len(final_key) < output:
@@ -306,7 +307,7 @@ class AESCipherV2:
             final_key += key
         return final_key[:output]
 
-    def encrypt(self, raw):
+    def encrypt(self, raw: bytes) -> bytes:
         salt = Random.new().read(8)
         key_iv = self._make_key(salt, 32 + 16)
         key = key_iv[:32]
@@ -384,14 +385,12 @@ class AESCipherV2:
             return True
 
     @staticmethod
-    def _pack_data(s):
+    def _pack_data(s: bytes) -> bytes:
         return s + ((AES.block_size - len(s) % AES.block_size) * chr(AES.block_size - len(s) % AES.block_size)).encode(
             "utf-8"
         )
 
     @staticmethod
-    def _unpack_data(s):
-        data = s[: -ord(s[len(s) - 1 :])]
-        if isinstance(data, bytes):
-            data = data.decode("utf-8")
-        return data
+    def _unpack_data(s: bytes) -> str:
+        pad = s[len(s) - 1]
+        return s[:-pad].decode("utf-8")

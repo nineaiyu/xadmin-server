@@ -44,10 +44,10 @@ class AutoCleanFileMixin:
         _meta: Any
         pk: Any
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> Any:
         update_fields = kwargs.get("update_fields")
         if kwargs.get("force_insert", None):
-            filelist: list[tuple] = []
+            filelist: list[tuple[Any, ...]] = []
         elif update_fields and not (set(update_fields) & self._file_field_names):
             # 本次保存不涉及文件字段时，文件内容不可能变化，
             # 跳过 diff 前置 SELECT。UserInfo 每次登录更新 last_login、
@@ -60,7 +60,7 @@ class AutoCleanFileMixin:
         return result
 
     @property
-    def _file_field_names(self):
+    def _file_field_names(self) -> Any:
         if not hasattr(self, "_cached_file_field_names"):
             self._cached_file_field_names = {
                 field.name for field in self._meta.fields if isinstance(field, (models.ImageField, models.FileField))
@@ -68,7 +68,7 @@ class AutoCleanFileMixin:
         return self._cached_file_field_names
 
     @classmethod
-    def has_file_cleanup(cls, model=None):
+    def has_file_cleanup(cls, model: Any = None) -> Any:
         """模型是否存在需要逐行 delete() 才能清理的文件/附件。
 
         - 自身含文件字段（ImageField/FileField）；或
@@ -85,7 +85,7 @@ class AutoCleanFileMixin:
             if field.is_relation
         )
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args: Any, **kwargs: Any) -> Any:
         filelist = self.__get_filelist()
         related_filelist = self.__get_related_filelist()
         # 磁盘删除守护必须在记录删除**之前**求值：反向外键会随 DELETE 被 SET_NULL
@@ -105,7 +105,7 @@ class AutoCleanFileMixin:
         """
         return False
 
-    def __delete_file(self, filelist, is_save=False, keep_flags=None):
+    def __delete_file(self, filelist: Any, is_save: bool = False, keep_flags: Any = None) -> None:
         keep_flags = keep_flags or {}
         try:
             for item in filelist:
@@ -125,7 +125,7 @@ class AutoCleanFileMixin:
         except Exception as e:
             logger.warning(f"remove {self} old file {filelist} failed, {e}")
 
-    def __get_filelist(self, obj=None):
+    def __get_filelist(self, obj: Any = None) -> Any:
         filelist = []
         if obj is None:
             obj = self
@@ -136,8 +136,8 @@ class AutoCleanFileMixin:
                     filelist.append((field.name, file_obj.name, file_obj))
         return filelist
 
-    def __get_related_filelist(self, obj=None):
-        filelist: list = []
+    def __get_related_filelist(self, obj: Any = None) -> Any:
+        filelist: list[Any] = []
         if obj is None:
             obj = self
         for field in obj._meta.get_fields():
@@ -159,7 +159,7 @@ class AutoCleanFileMixin:
                     filelist.append(file_data)
         return filelist
 
-    def __delete_related_files(self, filelist):
+    def __delete_related_files(self, filelist: Any) -> None:
         for file in filelist:
             file.delete()
 
@@ -213,14 +213,14 @@ class SoftDeleteQuerySet(models.QuerySet):
     调用方（如 batch-destroy 的解包）才不会因返回 int 而崩溃。
     """
 
-    def delete(self):
+    def delete(self) -> Any:
         """批量软删除"""
         rows = self.update(deleted_at=timezone.now())
         return rows, {self.model._meta.label: rows}
 
 
 class SoftDeleteManager(models.Manager):
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return SoftDeleteQuerySet(self.model, using=self._db).filter(deleted_at__isnull=True)
 
 
@@ -240,18 +240,18 @@ class SoftDeleteModel(models.Model):
     class Meta:
         abstract = True
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args: Any, **kwargs: Any) -> int:
         """软删除：标记 deleted_at 并触发 post_save 信号（权限缓存失效依赖此链路）。"""
         self.deleted_at = timezone.now()
         self.save(update_fields=["deleted_at"])
         return 1
 
-    def hard_delete(self, *args, **kwargs):
+    def hard_delete(self, *args: Any, **kwargs: Any) -> Any:
         """物理删除：跳过软删除标记，走原始 delete() 链（文件清理/级联照常生效）。"""
         return super().delete(*args, **kwargs)
 
 
-def upload_directory_path(instance, filename):
+def upload_directory_path(instance: Any, filename: Any) -> Any:
     prefix = filename.split(".")[-1]
     tmp_name = f"{filename}_{time.time()}"
     new_filename = f"{uuid.uuid5(uuid.NAMESPACE_DNS, tmp_name).__str__().replace('-', '')}.{prefix}"

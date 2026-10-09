@@ -7,6 +7,7 @@
 
 
 import time
+from collections.abc import Callable, Iterable
 from functools import WRAPPER_ASSIGNMENTS, wraps
 from importlib import import_module
 from typing import Any
@@ -20,16 +21,18 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def run_function_by_locker(timeout=60 * 5, lock_func=None):
+def run_function_by_locker(
+    timeout: int = 60 * 5, lock_func: Callable[..., Any] | None = None
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     :param timeout:
     :param lock_func:  func -> {'locker_key':''}
     :return:
     """
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             start_time = time.time()
             if lock_func:
                 locker = lock_func(*args, **kwargs)
@@ -55,10 +58,12 @@ def run_function_by_locker(timeout=60 * 5, lock_func=None):
     return decorator
 
 
-def call_function_try_attempts(try_attempts=3, sleep_time=2, failed_callback=None):
-    def decorator(func):
+def call_function_try_attempts(
+    try_attempts: int = 3, sleep_time: int = 2, failed_callback: Callable[..., Any] | None = None
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             res: tuple[bool, Any] = (False, {})
             start_time = time.time()
             for i in range(try_attempts):
@@ -84,15 +89,15 @@ def call_function_try_attempts(try_attempts=3, sleep_time=2, failed_callback=Non
     return decorator
 
 
-def magic_wrapper(func, *args, **kwargs):
+def magic_wrapper(func: Callable[..., Any], *args: Any, **kwargs: Any) -> Callable[[], Any]:
     @wraps(func)
-    def wrapper():
+    def wrapper() -> Any:
         return func(*args, **kwargs)
 
     return wrapper
 
 
-def import_from_string(dotted_path):
+def import_from_string(dotted_path: str) -> Any:
     """
     Import a dotted module path and return the attribute/class designated by the
     last name in the path. Raise ImportError if the import failed.
@@ -110,10 +115,12 @@ def import_from_string(dotted_path):
         raise ImportError(f'Module "{module_path}" does not define a "{class_name}" attribute/class') from err
 
 
-def magic_call_in_times(call_time=24 * 3600, call_limit=6, key=None):
-    def decorator(func):
+def magic_call_in_times(
+    call_time: int = 24 * 3600, call_limit: int = 6, key: Callable[..., Any] | None = None
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             cache_key = f"magic_call_in_times_{func.__name__}"
             if key:
                 cache_key = f"{cache_key}_{key(*args, **kwargs)}"
@@ -165,7 +172,12 @@ class MagicCacheData:
     PLACEHOLDER_TTL = 60
 
     @staticmethod
-    def make_cache(timeout=60 * 10, invalid_time=0, key_func=None, timeout_func=None):
+    def make_cache(
+        timeout: int = 60 * 10,
+        invalid_time: int = 0,
+        key_func: Callable[..., Any] | None = None,
+        timeout_func: Callable[..., Any] | None = None,
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         :param timeout_func:
         :param timeout:  数据缓存的时候，单位秒
@@ -174,9 +186,9 @@ class MagicCacheData:
         :return:
         """
 
-        def decorator(func):
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             @wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
                 cache_key = f"magic_cache_data_{func.__name__}"
                 if key_func:
                     cache_key = f"{cache_key}_{key_func(*args, **kwargs)}"
@@ -188,7 +200,7 @@ class MagicCacheData:
                 # 占位/锁的 TTL 取 PLACEHOLDER_TTL 与业务有效期的较小值，至少 1 秒
                 placeholder_ttl = max(min(MagicCacheData.PLACEHOLDER_TTL, valid_time), 1)
 
-                def is_valid(res, now):
+                def is_valid(res: Any, now: float) -> bool:
                     return bool(res) and res.get("status") == "ok" and now - res.get("c_time", 0) < valid_time
 
                 n_time = time.time()
@@ -233,7 +245,7 @@ class MagicCacheData:
         return decorator
 
     @staticmethod
-    def invalid_cache(key):
+    def invalid_cache(key: str) -> None:
         cache_key = f"magic_cache_data_{key}"
         count = cache.delete_pattern(cache_key)
         # 降噪（2029-10 运营基线）：缓存失效按需走写路径高频触发（实测 WARN 级 ~9.6 万行/天），
@@ -241,38 +253,43 @@ class MagicCacheData:
         logger.debug(f"invalid_cache cache_key:{cache_key} count:{count}")
 
     @staticmethod
-    def invalid_caches(keys):
+    def invalid_caches(keys: Iterable[str]) -> None:
         delete_keys = [f"magic_cache_data_{key}" for key in keys]
         count = cache.delete_many(delete_keys)
         logger.debug(f"invalid_cache_data cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}")
 
 
 class MagicCacheResponse:
-    def __init__(self, timeout=60 * 10, invalid_time=0, key_func=None):
+    def __init__(
+        self,
+        timeout: int | str = 60 * 10,
+        invalid_time: int = 0,
+        key_func: str | Callable[..., Any] | None = None,
+    ) -> None:
         self.timeout = timeout
         self.key_func = key_func
         self.invalid_time = invalid_time
 
     @staticmethod
-    def invalid_cache(key):
+    def invalid_cache(key: str) -> None:
         cache_key = f"magic_cache_response_{key}"
         count = cache.delete_pattern(cache_key)
         # 降噪（2029-10 运营基线）：同 MagicCache，高频 WARN 降为 debug
         logger.debug(f"invalid_response_cache cache_key:{cache_key} count:{count}")
 
     @staticmethod
-    def invalid_caches(keys):
+    def invalid_caches(keys: Iterable[str]) -> None:
         delete_keys = [f"magic_cache_response_{key}" for key in keys]
         count = cache.delete_many(delete_keys)
         logger.debug(
             f"invalid_response_cache cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}"
         )
 
-    def __call__(self, func):
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         this = self
 
         @wraps(func, assigned=WRAPPER_ASSIGNMENTS)
-        def inner(self, request, *args, **kwargs):
+        def inner(self: Any, request: Any, *args: Any, **kwargs: Any) -> Any:
             return this.process_cache_response(
                 view_instance=self,
                 view_method=func,
@@ -286,7 +303,14 @@ class MagicCacheResponse:
     #: 单飞锁 TTL（秒）：锁只覆盖「一次回源 + 回写」，超时后其它请求自行回源
     LOCK_TTL = 60
 
-    def process_cache_response(self, view_instance, view_method, request, args, kwargs):
+    def process_cache_response(
+        self,
+        view_instance: Any,
+        view_method: Callable[..., Any],
+        request: Any,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> Any:
         func_key = self.calculate_key(
             view_instance=view_instance, view_method=view_method, request=request, args=args, kwargs=kwargs
         )
@@ -327,14 +351,14 @@ class MagicCacheResponse:
             logger.warning(f"acquire response cache lock timeout, fallback to direct render. key:{cache_key}")
             return self._execute_view(view_instance, view_method, request, args, kwargs, cache_key, timeout, store=True)
 
-    def _load_valid(self, cache_key: str, timeout) -> dict | None:
+    def _load_valid(self, cache_key: str, timeout: int) -> dict[str, Any] | None:
         """读取未过期缓存载荷（窗口内才命中；no_cache 分支不走这里）。"""
-        res = cache.get(cache_key)
+        res: dict[str, Any] | None = cache.get(cache_key)
         if res and time.time() - res.get("c_time", time.time()) < timeout - self.invalid_time:
             return res
         return None
 
-    def _serve_cached(self, res: dict, view_instance, func_name: str, cache_key: str) -> HttpResponse:
+    def _serve_cached(self, res: dict[str, Any], view_instance: Any, func_name: str, cache_key: str) -> Any:
         logger.info(f"exec {func_name} finished. cache_key:{cache_key}  cache data exist")
         content, status, headers = res["data"]
         response = HttpResponse(content=content, status=status)
@@ -343,7 +367,17 @@ class MagicCacheResponse:
             response[k] = v
         return self._ensure_closable(response)
 
-    def _execute_view(self, view_instance, view_method, request, args, kwargs, cache_key, timeout, store: bool):
+    def _execute_view(
+        self,
+        view_instance: Any,
+        view_method: Callable[..., Any],
+        request: Any,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+        cache_key: str,
+        timeout: int,
+        store: bool,
+    ) -> Any:
         """回源渲染；``store`` 为真且响应非 4xx/5xx 时回写缓存。"""
         n_time = time.time()
         func_name = f"{view_instance.__class__.__name__}_{view_method.__name__}"
@@ -364,7 +398,14 @@ class MagicCacheResponse:
             response._closable_objects = []
         return response
 
-    def calculate_key(self, view_instance, view_method, request, args, kwargs):
+    def calculate_key(
+        self,
+        view_instance: Any,
+        view_method: Callable[..., Any],
+        request: Any,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> Any:
         if isinstance(self.key_func, str):
             key_func = getattr(view_instance, self.key_func)
         else:
@@ -378,7 +419,7 @@ class MagicCacheResponse:
                 kwargs=kwargs,
             )
 
-    def calculate_timeout(self, view_instance, **_):
+    def calculate_timeout(self, view_instance: Any, **_: Any) -> Any:
         if isinstance(self.timeout, str):
             self.timeout = getattr(view_instance, self.timeout)
         return self.timeout
@@ -387,10 +428,18 @@ class MagicCacheResponse:
 cache_response = MagicCacheResponse
 
 # 通用装饰器拆分至 decorators.py（文件行数门禁），此处再导出保持既有导入面
-from common.base.decorators import (  # noqa: E402,F401
-    SQLCounter,
-    count_sql_queries,
-    handle_db_connections,
-    temporary_disable_signal,
-    timeit,
+from common.base.decorators import (  # noqa: E402
+    SQLCounter as SQLCounter,
+)
+from common.base.decorators import (
+    count_sql_queries as count_sql_queries,
+)
+from common.base.decorators import (
+    handle_db_connections as handle_db_connections,
+)
+from common.base.decorators import (
+    temporary_disable_signal as temporary_disable_signal,
+)
+from common.base.decorators import (
+    timeit as timeit,
 )

@@ -22,6 +22,7 @@ BEGIN/COMMIT 两次数据库往返（容器/局域网链路实测约 1-3ms/请�
 """
 
 import contextvars
+from typing import Any
 
 from common.settings_contract import kernel_setting
 
@@ -34,7 +35,7 @@ READ_ONLY_ACTIONS = frozenset({"list", "retrieve", "search_fields", "search_colu
 _current_request = contextvars.ContextVar("atomic_read_current_request", default=None)
 
 
-def _action_of(actions: dict, method: str):
+def _action_of(actions: dict[str, Any], method: str) -> Any:
     action = actions.get(method.lower())
     if action is None and method == "HEAD":
         # DRF/Django 语义：HEAD 走 GET handler（actions 可能未显式声明 head）
@@ -42,7 +43,7 @@ def _action_of(actions: dict, method: str):
     return action
 
 
-def is_read_only_request(request, view) -> bool:
+def is_read_only_request(request: Any, view: Any) -> bool:
     """该请求是否命中「纯读 action」豁免面。"""
     if request is None or request.method not in SAFE_METHODS:
         return False
@@ -68,19 +69,19 @@ class SafeMethodAtomicSkipMixin:
     基类实现，不复制任何 Django 内部逻辑。
     """
 
-    def make_view_atomic(self, view):
+    def make_view_atomic(self, view: Any) -> Any:
         if skip_atomic_enabled() and is_read_only_request(_current_request.get(), view):
             return view
         return super().make_view_atomic(view)  # type: ignore[misc]  # 宿主 handler 提供实现
 
-    def _get_response(self, request):
+    def _get_response(self, request: Any) -> Any:
         token = _current_request.set(request)
         try:
             return super()._get_response(request)  # type: ignore[misc]  # 宿主 handler 提供实现
         finally:
             _current_request.reset(token)
 
-    async def _get_response_async(self, request):
+    async def _get_response_async(self, request: Any) -> Any:
         token = _current_request.set(request)
         try:
             return await super()._get_response_async(request)  # type: ignore[misc]  # 宿主 handler 提供实现

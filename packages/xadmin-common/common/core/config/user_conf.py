@@ -7,6 +7,7 @@
 """系统配置缓存：个人级配置（继承系统级 + 个人行覆盖）。"""
 
 import json
+from typing import Any
 
 from rest_framework import serializers
 
@@ -20,7 +21,7 @@ from .system_conf import ConfigCache, SysConfig
 logger = get_logger(__name__)
 
 
-def batch_user_config(user_pks, key, default=None):
+def batch_user_config(user_pks: Any, key: str, default: Any = None) -> Any:
     """批量读取多个用户的同一配置项，返回 {user_pk: value}。
 
     逐用户 UserConfig(pk).key 会产生 N 次缓存读 + N 次 DB 回源；这里一次 get_many
@@ -61,7 +62,7 @@ class UserConfigSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-def batch_user_config_values(owner_key_pairs, default_data=None, ignore_access=True):
+def batch_user_config_values(owner_key_pairs: Any, default_data: Any = None, ignore_access: bool = True) -> Any:
     """批量读取多个 (owner_id, key) 的个人级生效值，返回 {(owner_id, key): value}。
 
     逐对 UserConfig(owner).get_value(key) 是 N 次缓存往返 + miss 逐行回源；
@@ -127,7 +128,7 @@ def batch_user_config_values(owner_key_pairs, default_data=None, ignore_access=T
 
 
 class UserPersonalConfigCache(ConfigCache):
-    def __init__(self, user_obj):
+    def __init__(self, user_obj: Any) -> None:
         self.user_obj = user_obj
         self.filter_kwargs = {"owner": self.user_obj}
         if isinstance(user_obj, (str, int)):
@@ -143,7 +144,7 @@ class UserPersonalConfigCache(ConfigCache):
             filter_kwargs=self.filter_kwargs,
         )
 
-    def _absence_value(self, key, default_data):
+    def _absence_value(self, key: str, default_data: Any) -> Any:
         """无个人行时的读取结果：系统生效值，统一带 system_fallback 标记。
 
         三级回退语义（L0 conf 默认 / L1 系统行 / L2 个人行）：L1/L2 之间不做
@@ -160,7 +161,7 @@ class UserPersonalConfigCache(ConfigCache):
             return {"key": key, "value": data.get("value"), "access": True, "system_fallback": True}
         return {}
 
-    def get_data(self, key, default_data=None, ignore_access=True):
+    def get_data(self, key: str, default_data: Any = None, ignore_access: bool = True) -> Any:
         """用户级读取：个人缓存槽只存「个人行值（长 TTL）」或「缺席标记（短 TTL）」。
 
         继承来的系统值不落个人缓存，缺席标记只缓存「该用户没有此 key 的个人行」
@@ -192,7 +193,7 @@ class UserPersonalConfigCache(ConfigCache):
             return db_data
         return {}
 
-    def get_values(self, keys, default_data=None, ignore_access=True):
+    def get_values(self, keys: Any, default_data: Any = None, ignore_access: bool = True) -> Any:
         """用户级批量读取：个人行优先，缺席继承系统生效值（口径同 get_value）。
 
         委托 batch_user_config_values 走跨用户批量实现（单用户是其特例），
@@ -202,20 +203,20 @@ class UserPersonalConfigCache(ConfigCache):
         paired = batch_user_config_values([(owner_id, key) for key in keys], default_data, ignore_access)
         return {key: paired[(owner_id, key)] for key in keys}
 
-    def delete_db(self, key, **kwargs):
+    def delete_db(self, key: str, **kwargs: Any) -> Any:
         return super().delete_db(key, **self.filter_kwargs)
 
-    def save_db(self, key, value, is_active=None, description=None, **kwargs):
+    def save_db(self, key: str, value: Any, is_active: Any = None, description: Any = None, **kwargs: Any) -> Any:
         return super().save_db(key, value, is_active, description, **self.filter_kwargs, **kwargs)
 
-    def set_default_value(self, key, **kwargs):
+    def set_default_value(self, key: str, **kwargs: Any) -> Any:
         return super().set_default_value(key, **self.filter_kwargs)
 
 
 UserConfig = UserPersonalConfigCache
 
 
-def get_personal_config_data(user_obj, key):
+def get_personal_config_data(user_obj: Any, key: str) -> Any:
     """返回用户真实个人行的完整缓存数据（无个人行返回 None）。
 
     缺席标记/系统生效值回退（no_row/system_fallback）均视为「未个性化」，
@@ -228,7 +229,7 @@ def get_personal_config_data(user_obj, key):
     return None
 
 
-def get_personal_int_config(user_obj, key, system_value):
+def get_personal_int_config(user_obj: Any, key: str, system_value: Any) -> Any:
     """个人级 int 配置读取：真实个人行优先（int 类型才生效），否则回退系统级。"""
     data = get_personal_config_data(user_obj, key)
     if data is not None and isinstance(data.get("value"), int):

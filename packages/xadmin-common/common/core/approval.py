@@ -17,6 +17,7 @@ approval/services.py（common 层经 common.contracts 惰性导入，跨 app 门
 """
 
 import functools
+from typing import Any
 
 from common.contracts import process_approval
 from common.utils import get_logger
@@ -27,13 +28,13 @@ logger = get_logger(__name__)
 class ApprovalRequired:
     """敏感操作审批装饰器（显式挂载，全局清单控制启停）。"""
 
-    def __init__(self, enabled=True):
+    def __init__(self, enabled: bool = True) -> None:
         # enabled 预留按需硬开关（如调试期临时摘除），默认恒真
         self.enabled = enabled
 
-    def __call__(self, func):
+    def __call__(self, func: Any) -> Any:
         @functools.wraps(func)
-        def wrapper(view_instance, request, *args, **kwargs):
+        def wrapper(view_instance: Any, request: Any, *args: Any, **kwargs: Any) -> Any:
             if self.enabled:
                 response = process_approval(view_instance, request)
                 if response is not None:

@@ -78,6 +78,8 @@ CODE_PREFIXES = (
     "mfa/",
     "captcha/",
     "demo/",
+    # 示例代码（二开插件样本等）：文档引用即须可达，防止示例重构后教程失真
+    "examples/",
 )
 
 

@@ -5,6 +5,8 @@
 统一将 DRF 原生响应包装为 ApiResponse。拆分自 modelset.py。
 """
 
+from typing import Any
+
 from rest_framework import mixins
 
 from common.core.response import ApiResponse
@@ -15,21 +17,21 @@ logger = get_logger(__name__)
 
 
 class CreateAction(mixins.CreateModelMixin):
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """添加{cls}数据"""
         data = super().create(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
 
 class DetailAction(mixins.RetrieveModelMixin):
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}的详情"""
         data = super().retrieve(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
 
 class ListAction(mixins.ListModelMixin):
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}的列表"""
         data = super().list(request, *args, **kwargs).data
         if isinstance(data, dict) and request.query_params.get("with_meta", "").lower() in ("1", "true", "yes"):
@@ -38,7 +40,7 @@ class ListAction(mixins.ListModelMixin):
             self.inline_metadata(request, data)
         return ApiResponse(data=data)
 
-    def inline_metadata(self, request, data: dict) -> None:
+    def inline_metadata(self, request: Any, data: dict[str, Any]) -> None:
         """将 search-columns / search-fields 载荷内联进列表响应。
 
         仅在视图集混入了对应元数据 Action 时生效；单条元数据构建失败
@@ -72,7 +74,7 @@ class ListAction(mixins.ListModelMixin):
 
 
 class DestroyAction(mixins.DestroyModelMixin):
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """删除{cls}数据"""
         instance = self.get_object()
         self.perform_destroy(instance)
@@ -83,7 +85,7 @@ class UpdateAction(mixins.UpdateModelMixin):
     # diff 中忽略的审计/时间字段
     AUDIT_DIFF_IGNORED_FIELDS = {"created_time", "updated_time", "date_changed", "pk", "id"}
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """整体更新{cls}信息"""
         old_values = self._audit_diff_old_values(kwargs.get("pk"))
         data = super().update(request, *args, **kwargs).data
@@ -91,7 +93,7 @@ class UpdateAction(mixins.UpdateModelMixin):
             self._stash_audit_changes(old_values)
         return ApiResponse(data=data)
 
-    def _audit_diff_old_values(self, pk):
+    def _audit_diff_old_values(self, pk: Any) -> Any:
         """AUDIT_DIFF_MODELS 白名单模型的 update 路径，取更新前快照用于计算 diff。
 
         白名单为空（默认）时零开销直接返回；命中白名单的更新额外产生 2 次查询
@@ -115,7 +117,7 @@ class UpdateAction(mixins.UpdateModelMixin):
             old_values["__m2m__"] = m2m_old
         return old_values
 
-    def _audit_m2m_snapshot(self, instance):
+    def _audit_m2m_snapshot(self, instance: Any) -> Any:
         """M2M 字段快照：{field_name: [str(pk)...]}（无 M2M 字段返回空 dict）。"""
         if instance is None:
             return {}
@@ -125,7 +127,7 @@ class UpdateAction(mixins.UpdateModelMixin):
             snapshot[field.name] = pks
         return snapshot
 
-    def _stash_audit_changes(self, old_values):
+    def _stash_audit_changes(self, old_values: Any) -> None:
         """对比更新前后字段值与 M2M 关系，把 diff 挂到当前请求上，由 ApiLoggingMiddleware 写入操作日志。"""
         m2m_old = old_values.pop("__m2m__", None)
         pk = old_values.get("pk") or old_values.get("id")
@@ -162,7 +164,7 @@ class UpdateAction(mixins.UpdateModelMixin):
                 target = getattr(current_request, "_request", current_request)
                 target.operation_log_changes = changes
 
-    def partial_update(self, request, *args, **kwargs):
+    def partial_update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """部分更新{cls}信息"""
         kwargs["partial"] = True
         return self.update(request, *args, **kwargs)

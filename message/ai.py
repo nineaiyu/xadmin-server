@@ -238,8 +238,7 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
     chunks: list = []
     reasoning_chunks: list = []
     extra: dict[str, Any] = {"mode": "chat"}
-    content_masker = StreamMasker(room.owner)
-    reasoning_masker = StreamMasker(room.owner)
+    masks = (StreamMasker(room.owner), StreamMasker(room.owner))
     try:
         quota = quota_error(room.owner, "chat")
         if quota:
@@ -258,37 +257,54 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
             chunks.append(answer)
             yield {"event": "delta", "data": {"delta": answer}}
         else:
-            for item in _llm_reply_stream(build_chat_messages(room, question), room.owner):
-                text = item.get("text") or ""
-                if not text:
-                    continue
-                if item.get("type") == "reasoning":
-                    delta = reasoning_masker.feed(text)
-                    if delta:
-                        reasoning_chunks.append(delta)
-                        yield {"event": "reasoning", "data": {"delta": delta}}
-                else:
-                    delta = content_masker.feed(text)
-                    if delta:
-                        chunks.append(delta)
-                        yield {"event": "delta", "data": {"delta": delta}}
+            yield from _stream_llm_deltas(room, question, chunks, reasoning_chunks, masks)
     except DjangoValidationError as exc:
         detail = "; ".join(getattr(exc, "messages", None) or [str(exc)])
         if not chunks and not reasoning_chunks:
-            fallback, __ = chat_service.create_message(
-                room,
-                None,
-                detail,
-                message_type=ChatMessage.MessageType.SYSTEM,  # type: ignore[arg-type]  # Choices 元类
-                extra={"error": True, "mode": "chat"},
-            )
-            payload = chat_service.message_payload(fallback, room=room)
-            push_room_event(room, payload)
-            yield {"event": "error", "data": {"detail": detail, "message": payload}}
+            yield from _stream_error_fallback(room, detail)
             return
         # 已有内容：保留部分回答；只有思考（流中断）：走下方「未给出最终回答」兜底
         if chunks:
             extra["partial"] = detail
+    yield from _finalize_stream_reply(room, chunks, reasoning_chunks, extra, masks)
+
+
+def _stream_llm_deltas(room: ChatRoom, question: str, chunks: list, reasoning_chunks: list, masks: tuple):
+    """LLM 流式增量 → ``reasoning`` / ``delta`` 事件（逐段经 StreamMasker 脱敏后产出）。"""
+    content_masker, reasoning_masker = masks
+    for item in _llm_reply_stream(build_chat_messages(room, question), room.owner):
+        text = item.get("text") or ""
+        if not text:
+            continue
+        if item.get("type") == "reasoning":
+            delta = reasoning_masker.feed(text)
+            if delta:
+                reasoning_chunks.append(delta)
+                yield {"event": "reasoning", "data": {"delta": delta}}
+        else:
+            delta = content_masker.feed(text)
+            if delta:
+                chunks.append(delta)
+                yield {"event": "delta", "data": {"delta": delta}}
+
+
+def _stream_error_fallback(room: ChatRoom, detail: str):
+    """全程无增量即失败：落一条 system 降级消息（前端可见）+ ``error`` 事件。"""
+    fallback, __ = chat_service.create_message(
+        room,
+        None,
+        detail,
+        message_type=ChatMessage.MessageType.SYSTEM,  # type: ignore[arg-type]  # Choices 元类
+        extra={"error": True, "mode": "chat"},
+    )
+    payload = chat_service.message_payload(fallback, room=room)
+    push_room_event(room, payload)
+    yield {"event": "error", "data": {"detail": detail, "message": payload}}
+
+
+def _finalize_stream_reply(room: ChatRoom, chunks: list, reasoning_chunks: list, extra: dict, masks: tuple):
+    """冲刷脱敏缓冲 → 组装 extra（guard/reasoning/兜底文案）→ 落库广播 → ``done`` 事件。"""
+    content_masker, reasoning_masker = masks
     # 冲刷脱敏器缓冲（中断场景也要补发已缓冲的安全文本）
     content_tail = content_masker.flush()
     if content_tail:

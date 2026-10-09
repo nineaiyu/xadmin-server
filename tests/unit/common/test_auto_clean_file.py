@@ -48,13 +48,22 @@ class TestHasFileCleanup:
         assert AutoCleanFileMixin.has_file_cleanup(Book) is True
 
     def test_mixin_without_file_fields_detected_as_false(self):
+        from django.apps import apps
+
         from common.core.models import DbBaseModel
 
         class PlainFileModel(AutoCleanFileMixin, DbBaseModel):
             class Meta:
                 app_label = "demo"
 
-        assert AutoCleanFileMixin.has_file_cleanup(PlainFileModel) is False
+        try:
+            assert AutoCleanFileMixin.has_file_cleanup(PlainFileModel) is False
+        finally:
+            # 用例内定义的模型会注册进 app registry（进程级），污染「按注册表列举期望表」
+            # 的 schema 判据（upgrade_check 体检在同 worker 后续用例会误报缺表）；
+            # 用例自清理，注册表即期望表的口径保持不变。
+            apps.all_models["demo"].pop("plainfilemodel", None)
+            apps.clear_cache()
 
     def test_mixin_detection_includes_class_itself(self):
         class Direct(AutoCleanFileMixin):

@@ -5,6 +5,8 @@
 字段面 = filterset 声明 field_name ∪ controlled_lookup_fields ∪ pk；lookup 白名单
 九种；值按模型字段转换；字段可见性 fail-closed（非超管必须命中授权字段面）。"""
 
+from typing import Any
+
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db.models import (
     BooleanField,
@@ -52,7 +54,7 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
     m2m_lookups = ("exact", "in", "ne")
     max_conditions = 20
 
-    def filter_queryset(self, request, queryset, view):
+    def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
         if not getattr(view, "controlled_lookup", False):
             return queryset
         keys = [key for key in request.query_params if "__" in key]
@@ -94,7 +96,7 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
     bool_lookups = ("exact", "isnull", "ne")
 
     @classmethod
-    def available_lookups(cls, model_field) -> list:
+    def available_lookups(cls, model_field: Any) -> list[Any]:
         """字段类型对应的可用 lookup（与 filter_queryset 的判定同源）。"""
         if model_field is None:
             return []
@@ -107,14 +109,14 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
         return list(cls.text_lookups)
 
     @classmethod
-    def field_lookups(cls, view, model_field, field_name: str) -> list:
+    def field_lookups(cls, view: Any, model_field: Any, field_name: str) -> list[Any]:
         """视图白名单命中的字段可用 lookup；未命中返回空列表（前端不下发该字段）。"""
         if model_field is None or field_name not in cls._allowed_fields(view):
             return []
         return cls.available_lookups(model_field)
 
     @staticmethod
-    def _allowed_fields(view) -> set:
+    def _allowed_fields(view: Any) -> set[Any]:
         filterset_class = getattr(view, "filterset_class", None)
         fields = {"pk"}  # pk 恒可用（列表接口本就返回主键，不属于字段权限收敛面）
         if filterset_class is not None:
@@ -126,7 +128,7 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
         return fields
 
     @staticmethod
-    def _model_field(model, field_name):
+    def _model_field(model: Any, field_name: Any) -> Any:
         if field_name == "pk":
             return model._meta.pk
         try:
@@ -135,7 +137,7 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
             return None
 
     @staticmethod
-    def _field_visible(request, model_label: str, field_name: str) -> bool:
+    def _field_visible(request: Any, model_label: str, field_name: str) -> bool:
         """与序列化器字段裁剪同口径：超管全量；其余按 request.fields（fail-closed）。"""
         if not kernel_required_setting("PERMISSION_FIELD_ENABLED"):
             return True
@@ -149,7 +151,7 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
             return False
         return field_name in (allowed.get(model_label) or ())
 
-    def _coerce(self, model_field, values, lookup: str = "exact"):
+    def _coerce(self, model_field: Any, values: Any, lookup: str = "exact") -> Any:
         """查询参数值 → ORM 值。
 
         `values` 为同一参数名的重复值列表（``getlist``）：既支持 ``a,b`` 逗号分隔，
@@ -169,7 +171,7 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
         return self._to_python(model_field, first)
 
     @staticmethod
-    def _to_python(model_field, value):
+    def _to_python(model_field: Any, value: Any) -> Any:
         try:
             if isinstance(model_field, ManyToManyField):
                 return model_field.target_field.to_python(value)
@@ -187,7 +189,7 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
 
 
 class PkMultipleChoiceField(MultipleChoiceField):
-    def validate(self, value):
+    def validate(self, value: Any) -> None:
         if self.required and not value:
             raise ValidationError(self.error_messages["required"], code="required")
 
@@ -199,6 +201,6 @@ class PkMultipleFilter(filters.MultipleChoiceFilter):
 
     field_class = PkMultipleChoiceField
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.input_type = kwargs.pop("input_type", None)
         super().__init__(**kwargs)

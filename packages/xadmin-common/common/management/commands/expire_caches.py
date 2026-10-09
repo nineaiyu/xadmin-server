@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from common.cache.storage import RedisCacheBase
@@ -6,12 +8,12 @@ from common.cache.storage import RedisCacheBase
 class Command(BaseCommand):
     help = "Expire Caches"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument(
             "args", metavar="cache key", nargs="+", help="please input cache key or '*' for delete all keys"
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         for key in args:
             if key.endswith("*"):
                 RedisCacheBase(key).del_many()

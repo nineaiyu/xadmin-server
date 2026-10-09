@@ -40,7 +40,7 @@ class UploadFileAction:
 
         def get_object(self) -> Any: ...
 
-    def get_upload_size(self):
+    def get_upload_size(self) -> Any:
         """头像上传上限：系统级为天花板，真实个人行只能收紧（min 语义）。"""
         user = getattr(self.request, "user", None)
         personal_data = None
@@ -54,8 +54,8 @@ class UploadFileAction:
         request=OpenApiRequest(build_object_type(properties={"file": build_basic_type(OpenApiTypes.BINARY)})),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, parser_classes=(MultiPartParser,))
-    def upload(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, parser_classes=(MultiPartParser,))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def upload(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """上传头像"""
         self.FILE_UPLOAD_SIZE = self.get_upload_size()
         files = request.FILES.getlist("file", [])

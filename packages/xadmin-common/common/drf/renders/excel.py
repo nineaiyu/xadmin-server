@@ -25,11 +25,11 @@ class ExcelFileRenderer(BaseFileRenderer):
     ws: Any = None
     row_count = 0
 
-    def initial_writer(self):
+    def initial_writer(self) -> None:
         self.wb = Workbook()
         self.ws = self.wb.active
 
-    def write_row(self, row):
+    def write_row(self, row: Any) -> None:
         self.row_count += 1
         self.ws.row_dimensions[self.row_count].height = 20
         column_count = 0
@@ -41,7 +41,7 @@ class ExcelFileRenderer(BaseFileRenderer):
             # 设置单元格格式为纯文本, 防止执行公式
             cell.data_type = "s"
 
-    def format_values(self, data, related=False):
+    def format_values(self, data: Any, related: bool = False) -> Any:
         result = []
         for key, value in data.items():
             if related:
@@ -50,7 +50,7 @@ class ExcelFileRenderer(BaseFileRenderer):
                 result.append(f"{value}({key})")
         return json.loads(json.dumps(result, cls=encoders.JSONEncoder, ensure_ascii=False))
 
-    def add_validation(self, rendered_fields):
+    def add_validation(self, rendered_fields: Any) -> None:
         if self.template not in ["import", "update"]:
             return
         validation_data_dict = {}
@@ -85,7 +85,7 @@ class ExcelFileRenderer(BaseFileRenderer):
             for inx, ele in enumerate(validation_data):
                 w_data[f"{get_column_letter(index + 1)}{inx + 2}"] = ele
 
-    def after_render(self):
+    def after_render(self) -> None:
         count = 0
         for col in self.ws.columns:
             max_length = 0
@@ -114,7 +114,7 @@ class ExcelFileRenderer(BaseFileRenderer):
             tab.tableStyleInfo = style
             self.ws.add_table(tab)
 
-    def get_rendered_value(self):
+    def get_rendered_value(self) -> Any:
         if os.name == "nt":
             ## 针对 windows 平台，解决 NamedTemporaryFile 方法 权限异常
             tmp_name = mktemp()

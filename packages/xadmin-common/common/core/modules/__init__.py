@@ -54,7 +54,9 @@ from .registry import (
     _MODULE_INDEX as _MODULE_INDEX,  # noqa: PLC0414 显式再导出（测试按私有名导入）
 )
 from .registry import (
-    MODULES,
+    MODULES as MODULES,
+)
+from .registry import (
     all_module_specs,
     config_snippet,
     deployment_config,

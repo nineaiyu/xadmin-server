@@ -4,6 +4,8 @@
 # filename : routers
 # author : ly_13
 # date : 7/31/2024
+from typing import Any
+
 from rest_framework.routers import DynamicRoute, Route, SimpleRouter
 
 
@@ -30,5 +32,5 @@ class NoDetailRouter(SimpleRouter):
         ),
     ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

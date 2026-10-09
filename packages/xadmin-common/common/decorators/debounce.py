@@ -13,7 +13,9 @@ import inspect
 import os
 import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
+from typing import Any
 
 from common.core.db.utils import open_db_connection
 from common.utils import get_logger
@@ -22,7 +24,7 @@ logger = get_logger(__name__)
 
 
 class EventLoopThread(threading.Thread):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._loop = asyncio.new_event_loop()
 
@@ -33,20 +35,20 @@ class EventLoopThread(threading.Thread):
         except Exception as e:
             logger.error(f"Event loop stopped with err: {e} ")
 
-    def get_loop(self):
+    def get_loop(self) -> asyncio.AbstractEventLoop:
         return self._loop
 
 
 # 惰性状态：None 表示尚未创建（首次调度防抖任务时经双检锁初始化）
-_loop_thread = None
-_executor = None
+_loop_thread: EventLoopThread | None = None
+_executor: ThreadPoolExecutor | None = None
 _state_lock = threading.Lock()
-_loop_debouncer_func_task_cache: dict[str, Future] = {}
-_loop_debouncer_func_args_cache: dict[str, dict] = {}
+_loop_debouncer_func_task_cache: dict[str, Future[Any]] = {}
+_loop_debouncer_func_args_cache: dict[str, dict[str, Any]] = {}
 _loop_debouncer_func_task_time_cache: dict[str, float] = {}
 
 
-def _get_loop_thread():
+def _get_loop_thread() -> EventLoopThread:
     """事件循环线程惰性创建（daemon 线程，不阻塞进程退出）。"""
     global _loop_thread
     if _loop_thread is None:
@@ -59,7 +61,7 @@ def _get_loop_thread():
     return _loop_thread
 
 
-def get_executor():
+def get_executor() -> ThreadPoolExecutor:
     """防抖执行池惰性创建（max_workers=10，与原模块级实例同参数）。"""
     global _executor
     if _executor is None:
@@ -69,15 +71,15 @@ def get_executor():
     return _executor
 
 
-def get_loop():
+def get_loop() -> asyncio.AbstractEventLoop:
     return _get_loop_thread().get_loop()
 
 
-def default_suffix_key(*args, **kwargs):
+def default_suffix_key(*args: Any, **kwargs: Any) -> str:
     return "default"
 
 
-def cancel_or_remove_debouncer_task(cache_key):
+def cancel_or_remove_debouncer_task(cache_key: str) -> None:
     task = _loop_debouncer_func_task_cache.get(cache_key, None)
     if not task:
         return
@@ -87,7 +89,7 @@ def cancel_or_remove_debouncer_task(cache_key):
         task.cancel()
 
 
-def run_debouncer_func(cache_key, ttl, func, *args, **kwargs):
+def run_debouncer_func(cache_key: str, ttl: int, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
     cancel_or_remove_debouncer_task(cache_key)
     run_func_partial = functools.partial(_run_func, cache_key, func)
 
@@ -111,23 +113,28 @@ def run_debouncer_func(cache_key, ttl, func, *args, **kwargs):
 
 
 class Debouncer:
-    def __init__(self, callback, check, delay, loop=None, executor=None):
+    def __init__(
+        self,
+        callback: Callable[..., Any],
+        check: Callable[..., Any],
+        delay: int,
+        loop: asyncio.AbstractEventLoop | None = None,
+        executor: ThreadPoolExecutor | None = None,
+    ) -> None:
         self.callback = callback
         self.check = check
         self.delay = delay
-        self.loop = loop
-        if not loop:
-            self.loop = asyncio.get_event_loop()
+        self.loop: asyncio.AbstractEventLoop = loop if loop else asyncio.get_event_loop()
         self.executor = executor
 
-    async def __call__(self, *args, **kwargs):
+    async def __call__(self, *args: Any, **kwargs: Any) -> Any:
         await asyncio.sleep(self.delay)
         ok = await self._run_sync_to_async(self.check)
         if ok:
             callback_func = functools.partial(self.callback, *args, **kwargs)
             return await self._run_sync_to_async(callback_func)
 
-    async def _run_sync_to_async(self, func):
+    async def _run_sync_to_async(self, func: Callable[..., Any]) -> Any:
         if asyncio.iscoroutinefunction(func):
             return await func()
         return await self.loop.run_in_executor(self.executor, func)
@@ -136,7 +143,7 @@ class Debouncer:
 ignore_err_exceptions = ("(3101, 'Plugin instructed the server to rollback the current transaction.')",)
 
 
-def _run_func(key, func, *args, **kwargs):
+def _run_func(key: str, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
     try:
         with open_db_connection():
             # 保证执行时使用的是新的 connection 数据库连接
@@ -155,7 +162,7 @@ def _run_func(key, func, *args, **kwargs):
     _loop_debouncer_func_task_time_cache.pop(key, None)
 
 
-def delay_run(ttl=5, key=None):
+def delay_run(ttl: int = 5, key: Callable[..., Any] | None = None) -> Callable[..., Any]:
     """
     延迟执行函数, 在 ttl 秒内, 只执行最后一次
     :param ttl:
@@ -163,14 +170,14 @@ def delay_run(ttl=5, key=None):
     :return:
     """
 
-    def inner(func):
+    def inner(func: Callable[..., Any]) -> Callable[..., Any]:
         suffix_key_func = key if key else default_suffix_key
         sigs = inspect.signature(func)
         if len(sigs.parameters) != 0:
             raise ValueError(f"Merge delay run must not arguments: {func.__name__}")
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> None:
             func_name = f"{func.__module__}_{func.__name__}"
             key_suffix = suffix_key_func(*args)
             cache_key = f"DELAY_RUN_{func_name}_{key_suffix}"
@@ -181,7 +188,7 @@ def delay_run(ttl=5, key=None):
     return inner
 
 
-def merge_delay_run(ttl=5, key=None):
+def merge_delay_run(ttl: int = 5, key: Callable[..., Any] | None = None) -> Callable[..., Any]:
     """
     延迟执行函数, 在 ttl 秒内, 只执行最后一次, 并且合并参数
     :param ttl:
@@ -189,7 +196,7 @@ def merge_delay_run(ttl=5, key=None):
     :return:
     """
 
-    def delay(func, *args, **kwargs):
+    def delay(func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         # 每次调用 delay 时可以指定本次调用的 ttl
         current_ttl = kwargs.pop("ttl", ttl)
         suffix_key_func = key if key else default_suffix_key
@@ -209,13 +216,13 @@ def merge_delay_run(ttl=5, key=None):
         _loop_debouncer_func_args_cache[cache_key] = cache_kwargs
         run_debouncer_func(cache_key, current_ttl, func, *args, **cache_kwargs)
 
-    def apply(func, sync=False, *args, **kwargs):
+    def apply(func: Callable[..., Any], sync: bool = False, *args: Any, **kwargs: Any) -> Any:
         if sync:
             return func(*args, **kwargs)
         else:
             return delay(func, *args, **kwargs)
 
-    def inner(func):
+    def inner(func: Any) -> Callable[..., Any]:
         sigs = inspect.signature(func)
         if len(sigs.parameters) != 1:
             raise ValueError(f"func must have one arguments: {func.__name__}")
@@ -226,7 +233,7 @@ def merge_delay_run(ttl=5, key=None):
         func.apply = functools.partial(apply, func)
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return func(*args, **kwargs)
 
         return wrapper

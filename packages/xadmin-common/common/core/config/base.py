@@ -30,7 +30,7 @@ class SystemConfigSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-def get_render_context(tmp: str, context: dict) -> str:
+def get_render_context(tmp: str, context: dict[str, Any]) -> str:
     # SysConfig 在 system_conf 子模块定义（继承本模块的 ConfigCacheBase），
     # 函数内惰性导入避免模块级循环依赖
     from .system_conf import SysConfig
@@ -42,10 +42,10 @@ def get_render_context(tmp: str, context: dict) -> str:
             if v_key and v_key[0].isupper():
                 context[v_key[0]] = getattr(SysConfig, v_key[0])
     context = Context(context)
-    return template.render(context)
+    return str(template.render(context))
 
 
-def build_config_render_context(model) -> dict:
+def build_config_render_context(model: Any) -> dict[str, Any]:
     """{{ KEY }} 渲染上下文：模型全部激活行（key → JSON 字符串值）。
 
     行值自身含同名渲染键（自引用）时跳过，防止渲染递归；批量回源时整个
@@ -61,7 +61,7 @@ def build_config_render_context(model) -> dict:
     return context_dict
 
 
-def render_config_value(value: str, context_dict: dict, model) -> Any:
+def render_config_value(value: str, context_dict: dict[str, Any], model: Any) -> Any:
     """渲染单条行值并做 JSON 后处理；解析失败的重试分支按 model 重建上下文。"""
     if value:
         try:
@@ -85,7 +85,7 @@ def render_config_value(value: str, context_dict: dict, model) -> Any:
     return value
 
 
-def serialize_config_rows(serializer, rows) -> list:
+def serialize_config_rows(serializer: Any, rows: Any) -> list[Any]:
     """配置行统一序列化为缓存数据结构（返回顺序与 rows 一致）。
 
     与单行 get_value_from_db 同口径：读取侧统一解密（凭据治理，消费方拿
@@ -128,17 +128,17 @@ class ConfigCacheBase:
 
     def _ttl_for(self, key: str) -> int:
         """键级缓存时长：短 TTL 键优先，其余用实例默认（30 天）。"""
-        return self.SHORT_TTL_KEYS.get(key, self.timeout)
+        return int(self.SHORT_TTL_KEYS.get(key, self.timeout))
 
     def __init__(
         self,
-        px="system",
-        model=SystemConfig,
-        cache=UserSystemConfigCache,
-        serializer=SystemConfigSerializer,
-        timeout=60 * 60 * 24 * 30,
-        filter_kwargs=None,
-    ):
+        px: str = "system",
+        model: Any = SystemConfig,
+        cache: Any = UserSystemConfigCache,
+        serializer: Any = SystemConfigSerializer,
+        timeout: Any = 60 * 60 * 24 * 30,
+        filter_kwargs: Any = None,
+    ) -> None:
         if filter_kwargs is None:
             filter_kwargs = {}
         self.px = px
@@ -148,17 +148,17 @@ class ConfigCacheBase:
         self.serializer = serializer
         self.filter_kwargs = filter_kwargs
 
-    def invalid_config_cache(self, key="*"):
+    def invalid_config_cache(self, key: str = "*") -> None:
         UserSystemConfigCache(f"{self.px}_{key}").del_many()
         # 同进程 L1 同步清理：否则本进程最长 L1_TTL 内仍读到旧值
         self._l1_clear(self._l1_key(key))
 
-    def _l1_key(self, key) -> str:
+    def _l1_key(self, key: str) -> str:
         """L1 键（进程内命名空间）：与 Redis 缓存类共用 px/key 口径，保持失效对得上。"""
         return f"{self.px}_{key}"
 
     @classmethod
-    def _l1_get(cls, l1_key) -> Any:
+    def _l1_get(cls, l1_key: Any) -> Any:
         entry = cls._L1_STORE.get(l1_key)
         if not entry:
             return None
@@ -171,7 +171,7 @@ class ConfigCacheBase:
         return copy.deepcopy(value)
 
     @classmethod
-    def _l1_set(cls, l1_key, value, ttl=None) -> None:
+    def _l1_set(cls, l1_key: Any, value: Any, ttl: Any = None) -> None:
         if len(cls._L1_STORE) >= cls.L1_MAX_ENTRIES:
             # 容量兜底：用户级配置键理论上无界，超限整体清空（粗粒度但安全）
             cls._L1_STORE.clear()
@@ -179,7 +179,7 @@ class ConfigCacheBase:
         cls._L1_STORE[l1_key] = (time.monotonic() + (ttl or cls.L1_TTL), copy.deepcopy(value))
 
     @classmethod
-    def _l1_clear(cls, l1_key) -> None:
+    def _l1_clear(cls, l1_key: Any) -> None:
         """按 Redis 同款语义清理：``*`` 结尾为前缀匹配，否则精确键。"""
         if isinstance(l1_key, str) and l1_key.endswith("*"):
             head = l1_key[:-1]
@@ -192,7 +192,7 @@ class ConfigCacheBase:
         # 空值不构建渲染上下文：缺席渲染无需触发全表查询（原语义保留）
         return render_config_value(value, build_config_render_context(self.model) if value else {}, self.model)
 
-    def get_value_from_db(self, key):  # 取得数据是激活的数据，如果数据未激活，则取默认数据
+    def get_value_from_db(self, key: str) -> Any:  # 取得数据是激活的数据，如果数据未激活，则取默认数据
         row = self.model.objects.filter(is_active=True, key=key, **self.filter_kwargs).first()
         if row is None:
             return {}
@@ -204,7 +204,7 @@ class ConfigCacheBase:
             data["key"] = ""
         return data
 
-    def get_value_from_db_many(self, keys) -> dict:
+    def get_value_from_db_many(self, keys: Any) -> dict[str, Any]:
         """批量取激活行并序列化：返回 {key: 缓存数据}，缺席的 key 不在结果中。
 
         与 get_value_from_db 同口径（只取激活行、读取侧解密、自引用渲染键
@@ -216,7 +216,7 @@ class ConfigCacheBase:
         rows = list(self.model.objects.filter(is_active=True, key__in=key_list, **self.filter_kwargs))
         return {row.key: data for row, data in zip(rows, serialize_config_rows(self.serializer, rows), strict=True)}
 
-    def _resolve_cached_data(self, key, cache_data, default_data, ignore_access):
+    def _resolve_cached_data(self, key: str, cache_data: Any, default_data: Any, ignore_access: Any) -> Any:
         """缓存数据 → 生效数据；视同未命中（需回源 DB）时返回 None。
 
         与 get_data 的命中判定同口径：键不匹配 / access 拦下时回源，
@@ -230,7 +230,7 @@ class ConfigCacheBase:
             return cache_data
         return None
 
-    def get_values(self, keys, default_data=None, ignore_access=True):
+    def get_values(self, keys: Any, default_data: Any = None, ignore_access: bool = True) -> Any:
         """批量读取多个 key 的生效值，返回 {key: value}。
 
         语义与逐个 get_value 一致（L1/缓存命中、access 过滤、缺席默认值、
@@ -281,18 +281,18 @@ class ConfigCacheBase:
         # 与 get_value 的返回整形一致：数据为空（缺席/拦下）原样返回空 {}
         return {key: (data.get("value") if data else data) for key, data in resolved.items()}
 
-    def get_default_data(self, key, default_data):
+    def get_default_data(self, key: str, default_data: Any) -> Any:
         if default_data is None:
             default_data = {}
         return default_data
 
-    def get_value(self, key, default_data=None, ignore_access=True):
+    def get_value(self, key: str, default_data: Any = None, ignore_access: bool = True) -> Any:
         data = self.get_data(key, default_data, ignore_access)
         if data:
             return data.get("value")
         return data
 
-    def get_data(self, key, default_data=None, ignore_access=True):
+    def get_data(self, key: str, default_data: Any = None, ignore_access: bool = True) -> Any:
         cache = self.cache(f"{self.px}_{key}")
         l1_key = self._l1_key(key)
         ttl = self._ttl_for(key)
@@ -332,7 +332,7 @@ class ConfigCacheBase:
             return db_data
         return {}
 
-    def _absence_value(self, key, default_data):
+    def _absence_value(self, key: str, default_data: Any) -> Any:
         """无行（系统级/用户级通用）时的返回：调用方默认值的纯 JSON 拷贝。
 
         不做模板渲染——无行场景下 {{ KEY }} 引用的源行同样不存在，渲染只会
@@ -342,7 +342,7 @@ class ConfigCacheBase:
             return {}
         return {"key": key, "value": json.loads(json.dumps(default_data)), "access": True}
 
-    def save_db(self, key, value, is_active, description, **kwargs):
+    def save_db(self, key: str, value: Any, is_active: Any, description: Any, **kwargs: Any) -> Any:
         # 凭据治理：敏感键的值内字段加密（写入侧统一收口，幂等）
         defaults = {"value": encrypt_setting_value(key, value)}
         if is_active is not None:
@@ -351,22 +351,22 @@ class ConfigCacheBase:
             defaults["description"] = description
         return self.model.objects.update_or_create(key=key, defaults=defaults, **kwargs)
 
-    def delete_db(self, key, **kwargs):
+    def delete_db(self, key: str, **kwargs: Any) -> Any:
         return self.model.objects.filter(key=key, **kwargs).delete()
 
-    def set_value(self, key, value, is_active=None, description=None, **kwargs):
+    def set_value(self, key: str, value: Any, is_active: Any = None, description: Any = None, **kwargs: Any) -> Any:
         obj = self.save_db(key, value, is_active, description, **kwargs)
         self.cache(f"{self.px}_{key}").del_storage_cache()
         return obj
 
-    def set_default_value(self, key, **kwargs):
+    def set_default_value(self, key: str, **kwargs: Any) -> Any:
         return self.set_value(key, self.get_value(key, None), **kwargs)
 
-    def del_value(self, key, **kwargs):
+    def del_value(self, key: str, **kwargs: Any) -> None:
         self.delete_db(key, **kwargs)
         self.cache(f"{self.px}_{key}").del_storage_cache()
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
         if name == "shape":
             return ""
         try:

@@ -8,6 +8,7 @@ Celery 任务失败告警。
 """
 
 import logging
+from typing import Any
 
 from celery.signals import task_failure
 from django.core.cache import cache
@@ -34,17 +35,17 @@ class TaskFailureMessage(SystemMessage):
     category_label = _("Monitor")
     message_type_label = _("Celery task failure")
 
-    def __init__(self, task_name, exc, traceback_msg):
+    def __init__(self, task_name: Any, exc: Any, traceback_msg: Any) -> None:
         self.task_name = task_name
         self.exc = exc
         self.traceback_msg = (traceback_msg or "")[-2000:]
 
     @classmethod
-    def template_variables(cls) -> tuple:
+    def template_variables(cls) -> tuple[Any, ...]:
         """模板可引用的业务变量（与 get_template_vars 同源，缺一会由守护测试拦下）。"""
         return ("task_name", "exc", "traceback_msg")
 
-    def get_template_vars(self) -> dict:
+    def get_template_vars(self) -> dict[str, Any]:
         """业务变量取值：模板覆盖层据此渲染 ``{{ task_name }}`` 等细粒度变量。"""
         return {
             "task_name": self.task_name,
@@ -52,7 +53,7 @@ class TaskFailureMessage(SystemMessage):
             "traceback_msg": self.traceback_msg,
         }
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         # 取值与模板变量同源：渠道默认文案与模板覆盖层不会各写一套
         context = self.get_template_vars()
         subject = _("Celery task failure alert: {}").format(context["task_name"])
@@ -63,25 +64,25 @@ class TaskFailureMessage(SystemMessage):
         )
         return {"subject": subject, "message": message}
 
-    def get_site_msg_msg(self):
+    def get_site_msg_msg(self) -> Any:
         info = self.get_html_msg()
         info["level"] = "danger"
         return info
 
     @classmethod
-    def post_insert_to_db(cls, subscription: SystemMsgSubscription):
+    def post_insert_to_db(cls, subscription: SystemMsgSubscription) -> None:
         admins = get_active_superuser_queryset()
         subscription.users.add(*admins)
         subscription.receive_backends = [BACKEND.SITE_MSG, BACKEND.EMAIL]
         subscription.save()
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         return cls("demo_task", "demo exception", "Traceback (demo): task failed")
 
 
-@task_failure.connect
-def send_task_failure_alert(sender=None, exception=None, traceback=None, **kwargs):
+@task_failure.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def send_task_failure_alert(sender: Any = None, exception: Any = None, traceback: Any = None, **kwargs: Any) -> None:
     task_name = getattr(sender, "name", "") or ""
     if not task_name or task_name in IGNORE_TASKS:
         return

@@ -409,6 +409,10 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 
 ## 6. 升级与回滚
 
+> **跨版本升级先体检**：执行 `python manage.py upgrade_check` 判定库能否原地升级
+> （旧版链路的库需清库重建，不适用本节流程）——判定口径、两条流程与常见问题见
+> [upgrade-stock.md](upgrade-stock.md)。
+
 ### 6.1 升级流程
 
 1. **备份先行**：确认最近一次 `db-backup` 产出完好（或手动 `pg_dump` 一次）；

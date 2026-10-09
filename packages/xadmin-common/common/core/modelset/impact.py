@@ -32,7 +32,7 @@ class ImpactPreviewAction:
 
         def get_queryset(self) -> Any: ...
 
-        def filter_queryset(self, queryset) -> Any: ...
+        def filter_queryset(self, queryset: Any) -> Any: ...
 
     @extend_schema(
         request=OpenApiRequest(
@@ -40,8 +40,8 @@ class ImpactPreviewAction:
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="impact")
-    def impact(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="impact")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def impact(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}的影响面预览"""
         pks = request.data.get("pks") if isinstance(request.data, dict) else request.data
         if not isinstance(pks, (list, tuple)) or not pks:

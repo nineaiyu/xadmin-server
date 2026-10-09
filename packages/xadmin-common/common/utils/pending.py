@@ -6,6 +6,7 @@
 # date : 6/2/2023
 
 import time
+from typing import Any
 
 from django.core.cache import cache
 
@@ -15,7 +16,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def set_pending_cache(unique_key, cache_data, cache_obj, timeout):
+def set_pending_cache(unique_key: Any, cache_data: Any, cache_obj: Any, timeout: Any) -> None:
     if unique_key in cache_data:
         cache_data.remove(unique_key)
     logger.warning(f"return unique_key:{unique_key}  cache_data: {cache_data}  ")
@@ -23,16 +24,16 @@ def set_pending_cache(unique_key, cache_data, cache_obj, timeout):
 
 
 def get_pending_result(
-    func,
-    expect_func,
-    loop_count=10,
-    sleep_time=3,
-    unique_key="default_key",
-    run_func_count=2,
-    pop_first=True,
-    *args,
-    **kwargs,
-):
+    func: Any,
+    expect_func: Any,
+    loop_count: int = 10,
+    sleep_time: int = 3,
+    unique_key: str = "default_key",
+    run_func_count: int = 2,
+    pop_first: bool = True,
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
     """
     :param func:            将要运行的函数对象
     :param expect_func:     期待的运行结果函数

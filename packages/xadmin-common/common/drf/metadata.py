@@ -3,6 +3,7 @@
 
 import datetime
 from collections import OrderedDict
+from typing import Any
 
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
@@ -22,7 +23,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
     methods = {"PUT", "POST", "GET", "PATCH"}
     attrs = ["read_only", "label", "help_text", "min_length", "max_length", "min_value", "max_value", "write_only"]
 
-    def determine_actions(self, request, view):
+    def determine_actions(self, request: Any, view: Any) -> Any:
         """
         For generic class based views we return information about
         the fields that are accepted for 'PUT' and 'POST' methods.
@@ -52,7 +53,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
                 view.request = request
         return actions
 
-    def get_field_type(self, field):
+    def get_field_type(self, field: Any) -> Any:
         """
         Given a field, return a string representing the type of the field.
         """
@@ -84,7 +85,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
         return tp
 
     @staticmethod
-    def set_choices_field(field, field_info):
+    def set_choices_field(field: Any, field_info: Any) -> None:
         field_info["choices"] = [
             {
                 "value": choice_value,
@@ -93,7 +94,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
             for choice_value, choice_label in dict(field.choices).items()
         ]
 
-    def get_field_info(self, field):
+    def get_field_info(self, field: Any) -> Any:
         """
         Given an instance of a serializer field, return a dictionary
         of metadata about it.
@@ -135,7 +136,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
         return field_info
 
     @staticmethod
-    def get_filters_fields(request, view):
+    def get_filters_fields(request: Any, view: Any) -> Any:
         fields = []
         if hasattr(view, "get_filter_fields"):
             fields = view.get_filter_fields(request)
@@ -158,7 +159,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
         return fields
 
     @staticmethod
-    def get_ordering_fields(request, view):
+    def get_ordering_fields(request: Any, view: Any) -> Any:
         fields = []
         if hasattr(view, "get_ordering_fields"):
             fields = view.get_ordering_fields(request)
@@ -166,7 +167,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
             fields = view.ordering_fields
         return fields
 
-    def determine_metadata(self, request, view):
+    def determine_metadata(self, request: Any, view: Any) -> Any:
         metadata = super().determine_metadata(request, view)
         filterset_fields = self.get_filters_fields(request, view)
         order_fields = self.get_ordering_fields(request, view)

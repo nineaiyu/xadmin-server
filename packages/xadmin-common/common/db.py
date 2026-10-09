@@ -11,10 +11,12 @@ health 与业务请求持续失败（"the connection is closed"），直到进�
 装载：``server/settings/base.py`` 的 ``DB_OPTIONS["pool"]["check"]``（池模式）。
 """
 
+from typing import Any
+
 from psycopg.pq import TransactionStatus
 
 
-def check_db_connection(conn) -> bool:
+def check_db_connection(conn: Any) -> bool:
     """连接存活校验：closed 或真实查询失败返回 False（池将淘汰并重建）。
 
     探针必须自清事务：池归还连接时只回滚事务、不恢复 psycopg 级 autocommit；

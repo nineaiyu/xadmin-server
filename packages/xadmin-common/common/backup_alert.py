@@ -13,6 +13,7 @@
 
 import hashlib
 import logging
+from typing import Any
 
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
@@ -39,10 +40,10 @@ class BackupFailureMessage(SystemMessage):
     category_label = _("Monitor")
     message_type_label = _("Backup failure alert")
 
-    def __init__(self, payload: dict):
+    def __init__(self, payload: dict[str, Any]) -> None:
         self.payload = payload or {}
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         source = self.payload.get("source") or "backup"
         event = self.payload.get("event") or _("Unknown failure")
         host = self.payload.get("host") or "-"
@@ -60,19 +61,19 @@ class BackupFailureMessage(SystemMessage):
         message += f"<p>{_('Please check the backup container logs and the backup directory.')}</p>"
         return {"subject": subject, "message": message}
 
-    def get_site_msg_msg(self):
+    def get_site_msg_msg(self) -> Any:
         info = self.get_html_msg()
         info["level"] = "danger"
         return info
 
     @classmethod
-    def post_insert_to_db(cls, subscription: SystemMsgSubscription):
+    def post_insert_to_db(cls, subscription: SystemMsgSubscription) -> None:
         admins = get_active_superuser_queryset()
         subscription.users.add(*admins)
         subscription.receive_backends = [BACKEND.SITE_MSG, BACKEND.EMAIL]
         subscription.save()
 
-    def publish(self, is_async=False):
+    def publish(self, is_async: bool = False) -> None:
         """发布告警；订阅缺失/收件人为空时自愈补建（存量库 post_migrate 早于本消息注册）。
 
         与 SensitiveOperationMessage 同范式：不自愈会让备份告警在存量库永久静默。
@@ -83,11 +84,11 @@ class BackupFailureMessage(SystemMessage):
         super().publish(is_async=is_async)
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         return cls({"source": "db-backup", "event": "demo backup failure", "host": "test"})
 
 
-def notify_backup_failure(payload: dict) -> bool:
+def notify_backup_failure(payload: dict[str, Any]) -> bool:
     """按 60s 节流发布备份失败告警；返回是否真正发布（被节流为 False）。
 
     节流键对来源做哈希：source 由调用方（备份脚本）传入，可能含空格/引号等

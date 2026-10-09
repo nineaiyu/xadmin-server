@@ -23,10 +23,10 @@ from common.local import get_current_request
 from common.settings_contract import kernel_required_setting
 
 
-def attr_get(obj, attr, sp="."):
+def attr_get(obj: Any, attr: Any, sp: str = ".") -> Any:
     names = attr.split(sp)
 
-    def func(obj):
+    def func(obj: Any) -> Any:
         for name in names:
             obj = getattr(obj, name)
         return obj
@@ -37,7 +37,7 @@ def attr_get(obj, attr, sp="."):
 _CHOICES_MAX_CACHE: dict[str, Any] = {"value": None, "expires": 0.0}
 
 
-def get_search_choices_max_count(default=200, ttl=60):
+def get_search_choices_max_count(default: int = 200, ttl: int = 60) -> Any:
     """读取关联列 choices 的行数上限（系统配置 SEARCH_CHOICES_MAX_COUNT）。
 
     局部导入避免潜在的循环依赖；配置读取失败时退回默认值，绝不让下拉数据影响主流程。
@@ -79,7 +79,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         "queryset_none": _("The query set is empty."),
     }
 
-    def __init__(self, attrs=None, ignore_field_permission=False, **kwargs):
+    def __init__(self, attrs: Any = None, ignore_field_permission: bool = False, **kwargs: Any) -> None:
         """
         :param attrs: 默认为 None，返回默认的 pk， 一般需要自定义
         :param ignore_field_permission: 忽略字段权限控制
@@ -94,24 +94,24 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         self.request: Request = get_current_request()
         self.ignore_field_permission = ignore_field_permission
 
-    def use_pk_only_optimization(self):
+    def use_pk_only_optimization(self) -> bool:
         return False
 
-    def __add_request(self):
+    def __add_request(self) -> None:
         if not self.request:
             self.request = get_current_request()
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         self.__add_request()
         if self.request and self.request.user and self.request.user.is_authenticated:
             return get_filter_queryset(super().get_queryset(), self.request.user)
         return super().get_queryset()
 
-    def display_value(self, instance):
+    def display_value(self, instance: Any) -> Any:
         # 用于自定义的choices中value的展示，默认是 str(instance) ，可以通过在model中重写__str__方法，也可以在此方法定义
         return super().display_value(instance)
 
-    def get_choices(self, cutoff=None):
+    def get_choices(self, cutoff: Any = None) -> Any:
         # 用于获取可选
         is_column = getattr(self, "is_column", False)
         queryset = self.get_queryset()
@@ -129,7 +129,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             queryset = queryset[: max_count + 1]
 
         if is_column:
-            result_list: list = []
+            result_list: list[Any] = []
             for item in queryset:
                 data = self.to_representation(item)
                 if isinstance(data, dict):
@@ -138,9 +138,9 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
                 else:
                     data = {"value": data, "label": data}
                 result_list.append(data)
-            result: list | dict = result_list
+            result: list[Any] | dict[str, Any] = result_list
         else:
-            result_map: dict = {}
+            result_map: dict[str, Any] = {}
             for item in queryset:
                 key = self.to_representation(item)
                 if isinstance(key, dict):
@@ -156,7 +156,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
                 result = dict(list(result.items())[:max_count])
         return result
 
-    def get_allow_fields(self, value):
+    def get_allow_fields(self, value: Any) -> Any:
         self.__add_request()
         if self.attrs is None:  # 默认没写attrs, 返回默认pk
             return self.attrs
@@ -171,7 +171,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         if self.ignore_field_permission or getattr(self.request, "ignore_field_permission", False):
             return set(self.attrs)
 
-        allow_fields: list | set = []
+        allow_fields: list[Any] | set[Any] = []
         if self.request and kernel_required_setting("PERMISSION_FIELD_ENABLED"):
             if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
                 allow_fields = self.attrs
@@ -183,7 +183,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
 
         return set(self.attrs) & set(allow_fields) | extra_fields
 
-    def to_representation(self, value):
+    def to_representation(self, value: Any) -> Any:
         attrs = self.get_allow_fields(value)
         if not attrs:
             return value.pk
@@ -216,12 +216,12 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
                     data["label"] = data.get("pk")
         return data
 
-    def _mask_related(self, data, value):
+    def _mask_related(self, data: Any, value: Any) -> Any:
         """关联输出掩码：request 懒加载在字段侧，规则应用见 ``common.core.mask``。"""
         self.__add_request()
         return apply_related_output_mask(self, data, value)
 
-    def _get_related_memo(self):
+    def _get_related_memo(self) -> Any:
         """请求级关联对象缓存。
 
         导入 R 行 × F 个关联字段时，旧实现每字段每行执行一次 SELECT（超管 R×F 条，
@@ -249,7 +249,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             memo = request._related_memo = {}
         return memo
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: Any) -> Any:
         memo = self._get_related_memo()
         if isinstance(data, Model):
             pk = data.pk
@@ -281,7 +281,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             memo[memo_key] = obj
         return obj
 
-    def get_schema(self):
+    def get_schema(self) -> Any:
         """
         为 drf-spectacular 提供 OpenAPI schema
         """
@@ -305,13 +305,13 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
                 "title": getattr(self, "label", ""),
             }
 
-    def _get_openapi_item_schema(self):
+    def _get_openapi_item_schema(self) -> Any:
         """
         获取数组项的 OpenAPI schema
         """
         return self._get_openapi_object_schema()
 
-    def _get_openapi_object_schema(self):
+    def _get_openapi_object_schema(self) -> Any:
         """
         获取对象的 OpenAPI schema
         """
@@ -325,7 +325,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
 
         return {"type": "object", "properties": properties, "required": ["id"] if "id" in self.attrs else []}
 
-    def _infer_field_type(self, attr_name):
+    def _infer_field_type(self, attr_name: Any) -> Any:
         """
         智能推断字段类型
         """
@@ -344,7 +344,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         # 如果没有 queryset 或无法获取字段信息，使用启发式规则
         return self._heuristic_field_type(attr_name)
 
-    def _map_django_field_type(self, field):
+    def _map_django_field_type(self, field: Any) -> str:
         """
         将 Django 字段类型映射到 OpenAPI 类型
         """
@@ -369,7 +369,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         else:
             return "string"
 
-    def _heuristic_field_type(self, attr_name):
+    def _heuristic_field_type(self, attr_name: Any) -> str:
         """
         启发式推断字段类型
         """
@@ -385,7 +385,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             # 默认返回字符串类型
             return "string"
 
-    def _get_openapi_properties_schema(self):
+    def _get_openapi_properties_schema(self) -> Any:
         """
         获取对象属性的 OpenAPI schema
         """

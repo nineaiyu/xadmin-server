@@ -2,11 +2,12 @@
 """缓存域装饰器：进程内方法级内存缓存。"""
 
 import time
+from collections.abc import Callable
 from functools import wraps
 from typing import Any
 
 
-def cached_method(ttl=20):
+def cached_method(ttl: int = 20) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     进程内内存缓存，ttl 为缓存时间，-1 表示永久。
 
@@ -17,9 +18,9 @@ def cached_method(ttl=20):
     """
     _cache: dict[Any, dict[str, Any]] = {}
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             key = (func, args, tuple(sorted(kwargs.items())))
             # 检查缓存是否存在且未过期
             if key in _cache and (ttl == -1 or time.time() - _cache[key]["timestamp"] < ttl):

@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 1/17/2024
 
+from typing import Any
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -13,7 +15,7 @@ from common.settings_contract import kernel_required_setting
 
 
 class AESField(models.Field):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         if "prefix" in kwargs:
             self.prefix = kwargs["prefix"]
             del kwargs["prefix"]
@@ -22,13 +24,13 @@ class AESField(models.Field):
         self.cipher = AESCipher(kernel_required_setting("SECRET_KEY"))
         super().__init__(*args, **kwargs)
 
-    def deconstruct(self):
+    def deconstruct(self) -> Any:
         name, path, args, kwargs = super().deconstruct()
         if self.prefix != "aes:::":
             kwargs["prefix"] = self.prefix
         return name, path, args, kwargs
 
-    def from_db_value(self, value, *args, **kwargs):
+    def from_db_value(self, value: Any, *args: Any, **kwargs: Any) -> Any:
         if value is None:
             return value
         if value.startswith(self.prefix):
@@ -38,7 +40,7 @@ class AESField(models.Field):
             value = self.cipher.decrypt(value)
         return value
 
-    def to_python(self, value):
+    def to_python(self, value: Any) -> Any:
         if value is None:
             return value
         elif value.startswith(self.prefix):
@@ -48,7 +50,7 @@ class AESField(models.Field):
             value = self.cipher.decrypt(value)
         return value
 
-    def get_prep_value(self, value):
+    def get_prep_value(self, value: Any) -> Any:
         if isinstance(value, str):
             value = value.encode("utf-8")
         if isinstance(value, bytes):

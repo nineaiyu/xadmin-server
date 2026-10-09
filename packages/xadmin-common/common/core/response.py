@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 6/2/2023
 import datetime
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework.response import Response
@@ -18,8 +19,15 @@ API_SUCCESS_CODE = 1000
 
 class ApiResponse(Response):
     def __init__(
-        self, code=API_SUCCESS_CODE, detail=None, data=None, status=None, headers=None, content_type=None, **kwargs
-    ):
+        self,
+        code: Any = API_SUCCESS_CODE,
+        detail: Any = None,
+        data: Any = None,
+        status: Any = None,
+        headers: Any = None,
+        content_type: Any = None,
+        **kwargs: Any,
+    ) -> None:
         dic = {
             "code": code,
             "detail": detail

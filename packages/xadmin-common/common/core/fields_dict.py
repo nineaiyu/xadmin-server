@@ -13,12 +13,14 @@ system.utils.platform.dict.get_dict_items——带缓存 + 变更信号失效）
 新代码建议直接从本模块导入。
 """
 
+from typing import Any
+
 from common.core.fields import LabeledChoiceField
 
 _dict_items_resolver = None
 
 
-def register_dict_items_resolver(resolver):
+def register_dict_items_resolver(resolver: Any) -> None:
     """注册字典项解析器（业务 app 在 AppConfig.ready() 调用一次）。
 
     :param resolver: callable(dict_code) -> list[dict]，项含 value / label / color。
@@ -42,7 +44,15 @@ class DictChoiceField(LabeledChoiceField):
     deepcopy，不重跑 __init__，因此选项刷新必须挂在 bind 上。
     """
 
-    def __init__(self, *, dict_code, fallback_choices=None, value_cast=None, merge_fallback=False, **kwargs):
+    def __init__(
+        self,
+        *,
+        dict_code: Any,
+        fallback_choices: Any = None,
+        value_cast: Any = None,
+        merge_fallback: bool = False,
+        **kwargs: Any,
+    ) -> None:
         kwargs.pop("choices", None)
         self.dict_code = dict_code
         self.fallback_choices = list(fallback_choices) if fallback_choices else []
@@ -50,15 +60,15 @@ class DictChoiceField(LabeledChoiceField):
         self.merge_fallback = merge_fallback
         # 字典项颜色映射（value -> color），bind 时随选项一起解析；
         # 元数据（common/drf/metadata.py）据此把 color 注入 choices，前端渲染 tag
-        self.choice_colors = {}
+        self.choice_colors: dict[Any, Any] = {}
         # import 期不查库（declared field 在类定义时实例化，查库会让任意 import
         # user 序列化器的模块在无 DB 上下文中崩溃）：先用回退项占位，bind() 再解析
         super().__init__(choices=self.fallback_choices, **kwargs)
 
-    def _cast(self, value):
+    def _cast(self, value: Any) -> Any:
         return value if self.value_cast is None else self.value_cast(value)
 
-    def resolve_choices(self):
+    def resolve_choices(self) -> Any:
         """读字典当前项；未注册解析器或字典为空时回退 fallback_choices。"""
         if _dict_items_resolver is None:
             return self.fallback_choices
@@ -73,7 +83,7 @@ class DictChoiceField(LabeledChoiceField):
             return merged
         return choices if choices else self.fallback_choices
 
-    def bind(self, field_name, parent):
+    def bind(self, field_name: Any, parent: Any) -> None:
         super().bind(field_name, parent)
         # 字段实例来自类级 declared field 的 deepcopy：绑定到具体序列化器时
         # 重新解析字典，保证同进程内字典变更（信号失效缓存）对后续请求生效。
@@ -83,7 +93,7 @@ class DictChoiceField(LabeledChoiceField):
         # setter 内部已用 flatten 后的 dict 正确重建该映射。
         self.choices = self.resolve_choices()
 
-    def to_representation(self, key):
+    def to_representation(self, key: str) -> Any:
         if key is None:
             return key
         # fallback 枚举的 label 是 gettext_lazy 代理：必须物化为 str，

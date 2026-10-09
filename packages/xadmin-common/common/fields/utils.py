@@ -5,12 +5,13 @@
 # author : ly_13
 # date : 7/25/2024
 from functools import wraps
+from typing import Any
 
 from django.db.models.fields.files import FieldFile
 from rest_framework.fields import Field as RFField
 
 
-def get_file_absolute_uri(value: FieldFile, request=None, use_url=True):
+def get_file_absolute_uri(value: FieldFile, request: Any = None, use_url: bool = True) -> Any:
     if not value:
         return None
 
@@ -26,15 +27,15 @@ def get_file_absolute_uri(value: FieldFile, request=None, use_url=True):
     return value.name
 
 
-def input_wrapper(func: type[RFField]):
+def input_wrapper(func: type[RFField]) -> Any:
     """
     增加 input_type 参数，用于前端识别
     """
 
     @wraps(func)
-    def wrapper(*args, **kwargs) -> RFField:
+    def wrapper(*args: Any, **kwargs: Any) -> RFField:
         class Field(func):
-            def __init__(self, *_args, **_kwargs):
+            def __init__(self, *_args: Any, **_kwargs: Any) -> None:
                 self.input_type = _kwargs.pop("input_type", "")
                 super().__init__(*_args, **_kwargs)
 

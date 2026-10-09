@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 8/12/2024
 
+from typing import Any
+
 from django.contrib.auth import login, logout
 from django.shortcuts import redirect
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -31,7 +33,7 @@ from common.utils.request import get_request_ip
 DOCS_DEFAULT_NEXT = "/api-docs/swagger/"
 
 
-def _safe_next_url(request) -> str:
+def _safe_next_url(request: Any) -> str:
     """登录回跳的同源校验：仅放行本站 host（request.get_host + ALLOWED_HOSTS）。
 
     ALLOWED_HOSTS 里的通配 "*" 不并入——那等于放行任意外部域，失去防护意义。
@@ -58,8 +60,8 @@ class ApiLogin(GenericAPIView):
     throttle_scope = "api_docs_login"
 
     @extend_schema(exclude=True)
-    @xframe_options_exempt
-    def post(self, request, *args, **kwargs):
+    @xframe_options_exempt  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         username = str(request.data.get("username") or "").strip()
         ipaddr = get_request_ip(request)
         login_block = LoginBlockUtil(username, ipaddr)
@@ -88,8 +90,8 @@ class ApiLogin(GenericAPIView):
         return redirect(_safe_next_url(request))
 
     @extend_schema(exclude=True)
-    @xframe_options_exempt
-    def get(self, request, *args, **kwargs):
+    @xframe_options_exempt  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         if request.user.is_authenticated:
             return redirect(to="/api-docs/swagger/")
         return ApiResponse(detail=_("Please enter your account information to log in"))
@@ -99,19 +101,19 @@ class ApiLogout(GenericAPIView):
     permission_classes: list[type] = []
 
     @extend_schema(exclude=True)
-    @xframe_options_exempt
-    def get(self, request, *args, **kwargs):
+    @xframe_options_exempt  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         logout(request)
         return redirect("/api-docs/login/")
 
 
 class SchemaMixin:
-    @xframe_options_exempt
+    @xframe_options_exempt  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60 * 5, key_func="get_cache_key")
-    def get(self, *args, **kwargs):
+    def get(self, *args: Any, **kwargs: Any) -> Any:
         return super().get(*args, **kwargs)  # type: ignore[misc]  # 宿主视图提供基类实现（mixin 模式）
 
-    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+    def get_cache_key(self, view_instance: Any, view_method: Any, request: Any, args: Any, kwargs: Any) -> str:
         func_name = f"{view_instance.__class__.__name__}_{view_method.__name__}"
         return f"{func_name}_{request.user.pk}"
 

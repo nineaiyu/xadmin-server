@@ -34,7 +34,7 @@ logger = get_logger(__name__)
 METADATA_CACHE_TIMEOUT = 60 * 5
 
 
-def metadata_cache_key(view_instance, method_name, request) -> str:
+def metadata_cache_key(view_instance: Any, method_name: Any, request: Any) -> str:
     """载荷缓存键：视图集 + 方法 + 用户主键（+ ``?fields=`` 摘要 + 视图集扩展槽位）。
 
     ``?fields=`` 会收窄 search-columns 的序列化器字段（BaseViewSet.get_serializer），
@@ -69,7 +69,7 @@ def invalidate_metadata_payload_cache() -> None:
         logger.debug("invalidate metadata payload cache failed", exc_info=True)
 
 
-def metadata_cache_bypass(request) -> bool:
+def metadata_cache_bypass(request: Any) -> bool:
     """``?no_cache=1`` 旁路：与 cache_response 的刷新口径一致（读跳过、也不回写）。"""
     query = getattr(request, "query_params", None)
     if query is None:
@@ -80,7 +80,7 @@ def metadata_cache_bypass(request) -> bool:
 
 
 class ChoicesAction:
-    choices_models: list = []
+    choices_models: list[Any] = []
 
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
         queryset: Any
@@ -103,8 +103,8 @@ class ChoicesAction:
             }
         )
     )
-    @action(methods=["get"], detail=False, url_path="choices")
-    def choices_dict(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="choices")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def choices_dict(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}的字段选择"""
         result = {}
         models = getattr(self, "choices_models", None)
@@ -148,8 +148,8 @@ class SearchFieldsAction:
             }
         )
     )
-    @action(methods=["get"], detail=False, url_path="search-fields")
-    def search_fields(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="search-fields")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def search_fields(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}的查询字段"""
         cache_key = metadata_cache_key(self, "search_fields", request)
         cache_bypass = metadata_cache_bypass(request)
@@ -160,7 +160,7 @@ class SearchFieldsAction:
             return ApiResponse(code=500, detail=_("Failed to get search fields"))
         return ApiResponse(data=results)
 
-    def _build_search_fields(self):
+    def _build_search_fields(self) -> Any:
         """构建查询字段元数据；返回 None 表示构建失败（调用方转失败码，且失败不入缓存）。"""
         if getattr(self, "filterset_class", None) is None:
             # 非模型视图集（内存 queryset / 未声明 filterset，如 IP 拦截名单）：
@@ -255,7 +255,7 @@ class SearchFieldsAction:
 _MOVED_EXPORTS = ("SearchColumnsAction",)
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> Any:
     if name in _MOVED_EXPORTS:
         from importlib import import_module
 

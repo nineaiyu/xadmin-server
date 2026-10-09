@@ -47,9 +47,9 @@ class ImportAsyncAction(ExportImportThrottleMixin):
 
         def get_serializer_class(self) -> Any: ...
 
-        def get_serializer(self, *args, **kwargs) -> Any: ...
+        def get_serializer(self, *args: Any, **kwargs: Any) -> Any: ...
 
-    def _get_rows_and_titles(self, request):
+    def _get_rows_and_titles(self, request: Any) -> Any:
         """从文件解析器产物中取行数据与原表头（含列映射预处理）。"""
         self._resolve_import_mapping(request)
         rows = request.data
@@ -60,12 +60,12 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         return rows, column_titles
 
     @staticmethod
-    def _field_titles(request):
+    def _field_titles(request: Any) -> Any:
         """字段名 → 原始表头（错误报告按原始列名展示，便于与源文件对照）。"""
         pairs = getattr(request, "jms_context", {}).get("column_title_field_pairs") or []
         return {field: title for title, field in pairs if field}
 
-    def _resolve_import_mapping(self, request):
+    def _resolve_import_mapping(self, request: Any) -> None:
         """把列映射解析进 ``request.jms_context``，供文件解析器在解析表头时取用。
 
         - ``template_id`` 优先（模板已持久化，取目标模型下「共享 + 本人」可见者）；
@@ -106,13 +106,13 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         jms_context["import_mapping"] = {"mapping": mapping, "ignore_unknown": ignore_unknown}
         request.jms_context = jms_context
 
-    def _import_context(self, request):
+    def _import_context(self, request: Any) -> Any:
         """提取导入上下文：目标模型、视图路径、提交者。"""
         model = self.get_queryset().model
         view_path = f"{self.__class__.__module__}.{self.__class__.__name__}"
         return model, view_path, getattr(request.user, "pk", None)
 
-    def _check_running_limit(self, request):
+    def _check_running_limit(self, request: Any) -> Any:
         """同用户并发上限（IMPORT_ASYNC_MAX_RUNNING，0=不限制），超限返回提示文案。"""
         from django.apps import apps
 
@@ -134,7 +134,7 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         return None
 
     @staticmethod
-    def _save_rows_file(rows, user, filename):
+    def _save_rows_file(rows: Any, user: Any, filename: Any) -> Any:
         """行数据序列化为 JSON 落 UploadFile(is_tmp=True)，供任务内读取。"""
         from django.apps import apps
         from django.core.files.base import ContentFile
@@ -153,7 +153,7 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         instance.save()
         return instance
 
-    def _create_import_record(self, request, model, action_type, column_titles):
+    def _create_import_record(self, request: Any, model: Any, action_type: Any, column_titles: Any) -> Any:
         from django.apps import apps
         from django.utils import timezone as dj_timezone
 
@@ -174,7 +174,7 @@ class ImportAsyncAction(ExportImportThrottleMixin):
             creator=request.user if getattr(request.user, "pk", None) else None,
         )
 
-    def _get_file_parser(self, request):
+    def _get_file_parser(self, request: Any) -> Any:
         """按 Content-Type 取当前视图可用的文件解析器实例（CSV / xlsx）。
 
         只认文件解析器（``BaseFileParser`` 子类）：DRF 的 JSONParser/FormParser 也带
@@ -200,8 +200,8 @@ class ImportAsyncAction(ExportImportThrottleMixin):
             }
         ),
     )
-    @parent_fallback_action(methods=["post"], detail=False, url_path="import-headers")
-    def import_headers(self, request, *args, **kwargs):
+    @parent_fallback_action(methods=["post"], detail=False, url_path="import-headers")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def import_headers(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """读取导入文件首行表头并给出列映射候选{cls}（列映射步骤，不落库）"""
         from rest_framework.exceptions import ParseError
 
@@ -256,13 +256,13 @@ class ImportAsyncAction(ExportImportThrottleMixin):
             }
         ),
     )
-    @parent_fallback_action(methods=["post"], detail=False, url_path="import-validate")
-    def import_validate(self, request, *args, **kwargs):
+    @parent_fallback_action(methods=["post"], detail=False, url_path="import-validate")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def import_validate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """导入前校验{cls}数据（逐行校验不落库，返回字段级错误定位）"""
         from common.core.config import SysConfig
 
         rows, _column_titles = self._get_rows_and_titles(request)
-        errors: list = []
+        errors: list[Any] = []
         limit = SysConfig.IMPORT_VALIDATE_ERROR_LIMIT
         invalid_count = 0
         for idx, row in enumerate(rows, start=1):
@@ -291,8 +291,8 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         request=OpenApiRequest(build_basic_type(OpenApiTypes.BINARY)),
         responses=get_default_response_schema(),
     )
-    @parent_fallback_action(methods=["post"], detail=False, url_path="import-async")
-    def import_async(self, request, *args, **kwargs):
+    @parent_fallback_action(methods=["post"], detail=False, url_path="import-async")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def import_async(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """异步导入{cls}数据（大数据量，进度与错误报告在下载中心获取）"""
         from django.db import transaction
         from django.utils.module_loading import import_string

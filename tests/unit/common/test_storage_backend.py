@@ -161,8 +161,10 @@ class TestAdapterForRemoteBackend:
         assert target
         # 保留期 0 天 → 立即清理
         assert clean_storage_cache(keep_days=0) == 0  # keep_days<=0 视为不清理
+        # 断言语义而非绝对计数：同 worker 的 MEDIA_ROOT 跨运行复用，缓存目录可能
+        # 存有历史运行遗留的过期文件（并入清理属正确行为），绝对计数会失真
         os.utime(target, (0, 0))
-        assert clean_storage_cache(keep_days=1) == 1
+        assert clean_storage_cache(keep_days=1) >= 1
         assert not os.path.exists(target)
 
 

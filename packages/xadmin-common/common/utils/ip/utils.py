@@ -1,6 +1,7 @@
 import ipaddress
 import socket
 from ipaddress import ip_address, ip_network
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
@@ -10,7 +11,7 @@ from .geoip import get_ip_city_by_geoip
 from .ipip import get_ip_city_by_ipip
 
 
-def is_ip_address(address):
+def is_ip_address(address: Any) -> bool:
     """192.168.10.1"""
     try:
         ip_address(address)
@@ -20,7 +21,7 @@ def is_ip_address(address):
         return True
 
 
-def is_ip_network(ip):
+def is_ip_network(ip: Any) -> bool:
     """192.168.1.0/24"""
     try:
         ip_network(ip)
@@ -30,7 +31,7 @@ def is_ip_network(ip):
         return True
 
 
-def is_ip_segment(ip):
+def is_ip_segment(ip: Any) -> Any:
     """10.1.1.1-10.1.1.20（区间两端同族且 start ≤ end）。
 
     保存期口径与登录策略网段校验一致：多 ``-``、倒置区间、跨协议族一律不合法；
@@ -45,7 +46,7 @@ def is_ip_segment(ip):
     return type(start_ip) is type(end_ip) and int(start_ip) <= int(end_ip)
 
 
-def _is_ip_range_pair(entry):
+def _is_ip_range_pair(entry: Any) -> Any:
     """运行时宽松区间判定：两端为合法 IP 即可（容忍倒置，交由 in_ip_segment 归一）。
 
     与 is_ip_segment 的差异仅服务于运行时匹配——存量配置中可能存在收紧口径
@@ -55,7 +56,7 @@ def _is_ip_range_pair(entry):
     return len(parts) == 2 and is_ip_address(parts[0]) and is_ip_address(parts[1])
 
 
-def in_ip_segment(ip, ip_segment):
+def in_ip_segment(ip: Any, ip_segment: Any) -> Any:
     ip1, ip2 = ip_segment.split("-")
     ip1 = int(ip_address(ip1))
     ip2 = int(ip_address(ip2))
@@ -63,7 +64,7 @@ def in_ip_segment(ip, ip_segment):
     return min(ip1, ip2) <= ip <= max(ip1, ip2)
 
 
-def contains_ip(ip, ip_group):
+def contains_ip(ip: Any, ip_group: Any) -> bool:
     """
     ip_group:
     [192.168.10.1, 192.168.1.0/24, 10.1.1.1-10.1.1.20, 2001:db8:2de::e13, 2001:db8:1a:1110::/64.]
@@ -94,7 +95,7 @@ def contains_ip(ip, ip_group):
     return False
 
 
-def is_ip(ip, rule_value):
+def is_ip(ip: Any, rule_value: Any) -> Any:
     if rule_value == "*":
         return True
     elif "/" in rule_value:
@@ -111,7 +112,7 @@ def is_ip(ip, rule_value):
         return ip.startswith(rule_value)
 
 
-def get_ip_city(ip):
+def get_ip_city(ip: Any) -> Any:
     if not ip or not isinstance(ip, str):
         return _("Invalid address")
     if ":" in ip:
@@ -129,7 +130,7 @@ def get_ip_city(ip):
     return get_ip_city_by_geoip(ip)
 
 
-def lookup_domain(domain):
+def lookup_domain(domain: Any) -> Any:
     try:
         return socket.gethostbyname(domain), ""
     except Exception as e:

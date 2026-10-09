@@ -4,21 +4,25 @@
 # filename : fields
 # author : ly_13
 # date : 8/6/2024
+from typing import Any
+
 import phonenumbers
 from rest_framework import serializers
 
 from common.core.fields_related import (  # noqa: F401 再导出：关联字段族导入面保持不变
-    BasePrimaryKeyRelatedField,
-    get_search_choices_max_count,
+    BasePrimaryKeyRelatedField as BasePrimaryKeyRelatedField,
+)
+from common.core.fields_related import (
+    get_search_choices_max_count as get_search_choices_max_count,
 )
 
 
 class LabeledChoiceField(serializers.ChoiceField):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.attrs = kwargs.pop("attrs", None) or ("value", "label")
         super().__init__(**kwargs)
 
-    def to_representation(self, key):
+    def to_representation(self, key: str) -> Any:
         if key is None:
             return key
         # label 可能是 gettext_lazy 代理（模型枚举 choices）：必须物化为 str，
@@ -27,7 +31,7 @@ class LabeledChoiceField(serializers.ChoiceField):
         label = str(self.choices.get(key, key))
         return {"value": key, "label": label}
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: Any) -> Any:
         if not data:
             return data
         if isinstance(data, dict):
@@ -36,7 +40,7 @@ class LabeledChoiceField(serializers.ChoiceField):
             data = data.strip(")").split("(")[-1]
         return super().to_internal_value(data)
 
-    def get_schema(self):
+    def get_schema(self) -> Any:
         """
         为 drf-spectacular 提供 OpenAPI schema
         """
@@ -57,16 +61,16 @@ class LabeledChoiceField(serializers.ChoiceField):
 
 
 class LabeledMultipleChoiceField(serializers.MultipleChoiceField):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.choice_mapper = {key: value for key, value in self.choices.items()}
 
-    def to_representation(self, keys):
+    def to_representation(self, keys: Any) -> Any:
         if keys is None:
             return keys
         return [{"value": key, "label": self.choice_mapper.get(key)} for key in keys]
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: Any) -> Any:
         if not data:
             return data
 
@@ -77,11 +81,11 @@ class LabeledMultipleChoiceField(serializers.MultipleChoiceField):
 
 
 class PhoneField(serializers.CharField):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.input_type = "phone"
         super().__init__(**kwargs)
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: Any) -> Any:
         if isinstance(data, dict):
             code = data.get("code")
             phone = data.get("phone", "")
@@ -99,7 +103,7 @@ class PhoneField(serializers.CharField):
 
         return super().to_internal_value(data)
 
-    def to_representation(self, value):
+    def to_representation(self, value: Any) -> Any:
         try:
             phone = phonenumbers.parse(value, "CN")
             value = {"code": f"+{phone.country_code}", "phone": phone.national_number}
@@ -109,7 +113,7 @@ class PhoneField(serializers.CharField):
 
 
 class ColorField(serializers.CharField):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.input_type = "color"
         super().__init__(**kwargs)
 
@@ -122,7 +126,7 @@ class StepFloatField(serializers.FloatField):
     其他数值字段的既有渲染）。
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.step = kwargs.pop("step", None)
         super().__init__(**kwargs)
 
@@ -130,4 +134,9 @@ class StepFloatField(serializers.FloatField):
 # 数据字典驱动字段拆分至 fields_dict.py（文件行数门禁）；此处保留兼容再导出，
 # 既有 `from common.core.fields import DictChoiceField / register_dict_items_resolver`
 # 的消费点无需改动，新代码建议直接 import common.core.fields_dict
-from common.core.fields_dict import DictChoiceField, register_dict_items_resolver  # noqa: E402,F401
+from common.core.fields_dict import (  # noqa: E402,F401
+    DictChoiceField as DictChoiceField,
+)
+from common.core.fields_dict import (
+    register_dict_items_resolver as register_dict_items_resolver,
+)

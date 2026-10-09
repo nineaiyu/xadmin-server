@@ -6,6 +6,7 @@
 # date : 6/2/2023
 import traceback
 from logging import getLogger
+from typing import Any
 
 from django.db.models import ProtectedError
 from django.http import Http404
@@ -30,7 +31,7 @@ class ReadableThrottled(Throttled):
     """
 
 
-def common_exception_handler(exc, context):
+def common_exception_handler(exc: Any, context: Any) -> Any:
     if kernel_setting("DEBUG_DEV"):
         logger.exception("Print traceback exception for Debug")
         traceback.print_exc()

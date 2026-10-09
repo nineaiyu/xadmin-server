@@ -20,6 +20,7 @@ import mimetypes
 import os
 import posixpath
 from pathlib import Path
+from typing import Any
 
 from django.apps import apps
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, HttpResponseNotModified
@@ -32,7 +33,7 @@ from common.fields.image import ProcessedImageField, get_thumbnail
 from common.settings_contract import kernel_setting
 
 
-def get_media_path(path):
+def get_media_path(path: str) -> Any:
     path_list = path.split("/")
     if len(path_list) == 5:
         pic_names = path_list[4].split("_")
@@ -58,7 +59,7 @@ def get_media_path(path):
                         return get_thumbnail(pic, int(index[0]))
 
 
-def _storage_serve(request, path):
+def _storage_serve(request: Any, path: str) -> Any:
     """对象存储后端的媒体兜底：本地无文件时从存储读取并由应用层代理返回。"""
     from common.storage import storage_exists, storage_is_local, storage_open
 
@@ -72,7 +73,7 @@ def _storage_serve(request, path):
     return response
 
 
-def _is_authenticated(request) -> bool:
+def _is_authenticated(request: Any) -> bool:
     """媒体请求鉴权：Cookie JWT（浏览器同源请求）或已建立的 Django session。"""
     user = getattr(request, "user", None)
     if user is not None and getattr(user, "is_authenticated", False):
@@ -89,7 +90,7 @@ def _is_authenticated(request) -> bool:
     return True
 
 
-def media_serve(request, path, document_root=None, show_indexes=False):
+def media_serve(request: Any, path: str, document_root: Any = None, show_indexes: bool = False) -> Any:
     """受鉴权媒体服务：鉴权 → （可选）X-Accel 内转 → 本进程输出。"""
     if not _is_authenticated(request):
         return HttpResponseForbidden()

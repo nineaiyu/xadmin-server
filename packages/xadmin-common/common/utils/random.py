@@ -9,20 +9,21 @@ import secrets
 import socket
 import string
 import struct
+from typing import Any
 
 string_punctuation = "!#$%&()*+,-.:;<=?@[]_~"
 
 
-def random_datetime(date_start, date_end):
+def random_datetime(date_start: Any, date_end: Any) -> Any:
     random_delta = (date_end - date_start) * random.random()
     return date_start + random_delta
 
 
-def random_ip():
+def random_ip() -> Any:
     return socket.inet_ntoa(struct.pack(">I", random.randint(1, 0xFFFFFFFF)))
 
 
-def random_replace_char(seq, chars, length):
+def random_replace_char(seq: Any, chars: Any, length: Any) -> Any:
     using_index = set()
 
     while length > 0:
@@ -35,15 +36,21 @@ def random_replace_char(seq, chars, length):
     return seq
 
 
-def remove_exclude_char(s, exclude_chars):
+def remove_exclude_char(s: Any, exclude_chars: Any) -> Any:
     for i in exclude_chars:
         s = s.replace(i, "")
     return s
 
 
 def random_string(
-    length: int, lower=True, upper=True, digit=True, special_char=False, exclude_chars="", symbols=string_punctuation
-):
+    length: int,
+    lower: bool = True,
+    upper: bool = True,
+    digit: bool = True,
+    special_char: bool = False,
+    exclude_chars: str = "",
+    symbols: Any = string_punctuation,
+) -> Any:
     if not any([lower, upper, digit]):
         raise ValueError("At least one of `lower`, `upper`, `digit` must be `True`")
     if length < 4:

@@ -1,6 +1,7 @@
 import json
 import threading
 import time
+from typing import Any
 
 import redis
 from django.core.cache import cache
@@ -12,43 +13,43 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def get_redis_client(db=0):
+def get_redis_client(db: int = 0) -> Any:
     client = cache.client.get_client()
     assert isinstance(client, redis.Redis)
     return client
 
 
 class RedisPubSub:
-    def __init__(self, ch, db=10):
+    def __init__(self, ch: Any, db: int = 10) -> None:
         self.ch = ch
         self.db = db
         self.redis = get_redis_client(db)
 
-    def subscribe(self, _next, error=None, complete=None):
+    def subscribe(self, _next: Any, error: Any = None, complete: Any = None) -> Any:
         ps = self.redis.pubsub()
         ps.subscribe(self.ch)
         sub = Subscription(self, ps)
         sub.keep_handle_msg(_next, error, complete)
         return sub
 
-    def resubscribe(self, _next, error=None, complete=None):
+    def resubscribe(self, _next: Any, error: Any = None, complete: Any = None) -> None:
         self.redis = get_redis_client(self.db)
         self.subscribe(_next, error, complete)
 
-    def publish(self, data):
+    def publish(self, data: Any) -> bool:
         data_json = json.dumps(data)
         self.redis.publish(self.ch, data_json)
         return True
 
 
 class Subscription:
-    def __init__(self, pb: RedisPubSub, sub: PubSub):
+    def __init__(self, pb: RedisPubSub, sub: PubSub) -> None:
         self.pb = pb
         self.ch = pb.ch
         self.sub = sub
         self.unsubscribed = False
 
-    def _handle_msg(self, _next, error, complete):
+    def _handle_msg(self, _next: Any, error: Any, complete: Any) -> None:
         """
         handle arg is the pub published
         :param _next: next msg handler
@@ -56,16 +57,16 @@ class Subscription:
         :param complete: complete msg handler
         :return:
         """
-        msgs = self.sub.listen()
+        msgs = self.sub.listen()  # type: ignore[no-untyped-call]
 
         if error is None:
 
-            def error(m, i):
+            def error(m: Any, i: Any) -> Any:
                 return None
 
         if complete is None:
 
-            def complete():
+            def complete() -> Any:
                 return None
 
         try:
@@ -101,13 +102,13 @@ class Subscription:
         except Exception as e:
             logger.error(f"Redis observer close error: {e}")
 
-    def keep_handle_msg(self, _next, error, complete):
+    def keep_handle_msg(self, _next: Any, error: Any, complete: Any) -> Any:
         t = threading.Thread(target=self._handle_msg, args=(_next, error, complete))
         t.daemon = True
         t.start()
         return t
 
-    def unsubscribe(self):
+    def unsubscribe(self) -> None:
         self.unsubscribed = True
         logger.info(f"Unsubscribed from channel: {self.sub}")
         try:
@@ -115,7 +116,7 @@ class Subscription:
         except Exception as e:
             logger.warning(f"Unsubscribe msg error: {e}")
 
-    def retry(self, _next, error, complete):
+    def retry(self, _next: Any, error: Any, complete: Any) -> None:
         logger.info(f"Retry subscribe channel: {self.ch}")
         times = 0
 

@@ -2,6 +2,7 @@
 #
 
 import codecs
+from typing import Any
 
 import unicodecsv
 from six import BytesIO
@@ -18,14 +19,14 @@ class CSVFileRenderer(BaseFileRenderer):
 
     escape_chars = tuple(CSV_FILE_ESCAPE_CHARS)
 
-    def initial_writer(self):
+    def initial_writer(self) -> None:
         csv_buffer = BytesIO()
         csv_buffer.write(codecs.BOM_UTF8)
         csv_writer = unicodecsv.writer(csv_buffer, encoding="utf-8")
         self.buffer = csv_buffer
         self.writer = csv_writer
 
-    def __render_row(self, row):
+    def __render_row(self, row: Any) -> Any:
         row_escape = []
         for d in row:
             if isinstance(d, str) and d.strip().startswith(self.escape_chars):
@@ -33,12 +34,12 @@ class CSVFileRenderer(BaseFileRenderer):
             row_escape.append(d)
         return row_escape
 
-    def write_row(self, row):
+    def write_row(self, row: Any) -> None:
         row = self.__render_row(row)
         assert self.writer is not None  # initial_writer() 已初始化
         self.writer.writerow(row)
 
-    def get_rendered_value(self):
+    def get_rendered_value(self) -> Any:
         assert self.buffer is not None  # initial_writer() 已初始化
         value = self.buffer.getvalue()
         return value

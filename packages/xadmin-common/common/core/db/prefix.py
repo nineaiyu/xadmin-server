@@ -10,6 +10,8 @@ django.setup() 前经 server.utils 兼容层 import 到本模块，与迁移前�
 前缀部署下新增入口时须保证本模块先于模型装载被 import。
 """
 
+from typing import Any
+
 from django.db import connection
 from django.db.backends.utils import truncate_name
 from django.db.models.signals import class_prepared
@@ -17,7 +19,7 @@ from django.db.models.signals import class_prepared
 from common.settings_contract import kernel_setting
 
 
-def add_db_prefix(sender, **kwargs):
+def add_db_prefix(sender: Any, **kwargs: Any) -> None:
     prefix = kernel_setting("DB_PREFIX")
     meta = sender._meta
     if not meta.managed:

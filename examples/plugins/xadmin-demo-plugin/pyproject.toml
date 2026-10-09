@@ -1,0 +1,33 @@
+# 示例二开插件（xadmin 二开实战）：独立分发的插件包骨架。
+#
+# 接入通道（互不依赖，按需使用；详见 xadmin_demo_plugin/README 与
+# docs/guide/plugin-development.md）：
+#   1. 契约注入 · entry point（本文件声明，零 INSTALLED_APPS 接线）；
+#   2. 契约注入 · AppConfig.ready()（xadmin_demo_plugin/apps.py，需精确注入时序时用）；
+#   3. 功能模块声明（modules.py）+ 独立路由 / WS 通道 + 周期任务。
+#
+# 安装与启用（在宿主工程 xadmin-server 目录内执行）：
+#   pip install ./examples/plugins/xadmin-demo-plugin      # 或 uv pip install -e <路径>
+#   config.yml 的 XADMIN_APPS 追加 xadmin_demo_plugin      # 路由/模块声明随装配链生效
+#   python manage.py migrate xadmin_demo_plugin            # 插件自有表（独立迁移）
+#   重启进程（模块组合与装配在启动期解析）
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "xadmin-demo-plugin"
+version = "0.1.0"
+description = "xadmin 二开插件示例：契约注入（register_contract / entry points）+ 模块声明 + 独立路由"
+readme = "README.md"
+requires-python = ">=3.14"
+# 宿主提供 Django / DRF 与框架内核（common）：插件不重复声明宿主依赖
+dependencies = []
+
+[project.entry-points."xadmin.contracts"]
+# 条目名 = 契约名（必须在 packages/xadmin-common/common/contracts.py 白名单内，白名单外名字启动期报错）；
+# 条目值 = 提供方对象（pkg.mod:attr）。装配点：common/apps.py 的 ready()。
+get_active_superuser_queryset = "xadmin_demo_plugin.providers:get_active_superuser_queryset"
+
+[tool.hatch.build.targets.wheel]
+packages = ["xadmin_demo_plugin"]

@@ -7,6 +7,7 @@
 import json
 import os
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from django.db.utils import OperationalError, ProgrammingError
 from django.utils import timezone
@@ -22,12 +23,12 @@ logger = get_logger(__name__)
 CELERY_LOG_MAGIC_MARK = b"\x00\x00\x00\x00\x00"
 
 
-def make_dirs(name, mode=0o755, exist_ok=False):
+def make_dirs(name: str, mode: int = 0o755, exist_ok: bool = False) -> Any:
     """默认权限设置为 0o755"""
     return os.makedirs(name, mode=mode, exist_ok=exist_ok)
 
 
-def get_task_log_path(base_path, task_id, level=0):
+def get_task_log_path(base_path: Any, task_id: Any, level: int = 0) -> Any:
     task_id = str(task_id)
     rel_path = os.path.join(*task_id[:level], task_id + ".log")
     path = os.path.join(base_path, rel_path)
@@ -35,15 +36,15 @@ def get_task_log_path(base_path, task_id, level=0):
     return path
 
 
-def get_celery_task_log_path(task_id):
+def get_celery_task_log_path(task_id: Any) -> Any:
     return get_task_log_path(kernel_required_setting("CELERY_LOG_DIR"), task_id)
 
 
-def eta_second(second):
+def eta_second(second: Any) -> Any:
     return datetime.fromtimestamp(datetime.now().timestamp(), UTC) + timedelta(seconds=second)
 
 
-def create_or_update_celery_periodic_tasks(tasks):
+def create_or_update_celery_periodic_tasks(tasks: Any) -> Any:
     """
     :param tasks: {
         'add-every-monday-morning': {
@@ -123,21 +124,21 @@ def create_or_update_celery_periodic_tasks(tasks):
         return task
 
 
-def disable_celery_periodic_task(task_name):
+def disable_celery_periodic_task(task_name: Any) -> None:
     from django_celery_beat.models import PeriodicTask
 
     PeriodicTask.objects.filter(name=task_name).update(enabled=False)
     PeriodicTasks.update_changed()
 
 
-def delete_celery_periodic_task(task_name):
+def delete_celery_periodic_task(task_name: Any) -> None:
     from django_celery_beat.models import PeriodicTask
 
     PeriodicTask.objects.filter(name=task_name).delete()
     PeriodicTasks.update_changed()
 
 
-def get_celery_periodic_task(task_name):
+def get_celery_periodic_task(task_name: Any) -> Any:
     from django_celery_beat.models import PeriodicTask
 
     task = PeriodicTask.objects.filter(name=task_name).first()

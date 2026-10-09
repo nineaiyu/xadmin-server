@@ -4,6 +4,7 @@
 
 import re
 from functools import lru_cache
+from typing import Any
 
 from django.db.models import Q
 
@@ -17,14 +18,14 @@ logger = get_logger(__name__)
 
 
 @lru_cache(maxsize=1)
-def _disabled_specs() -> tuple:
+def _disabled_specs() -> tuple[Any, ...]:
     resolution = resolve_modules()
     index = module_index()
     return tuple(index[mid] for mid in sorted(resolution.disabled))
 
 
 @lru_cache(maxsize=1)
-def _disabled_route_pairs() -> tuple:
+def _disabled_route_pairs() -> tuple[tuple[re.Pattern[str], str], ...]:
     """(编译正则, 模块 id) 对：网关命中后能报出「哪个模块被停用」。"""
 
     pairs = []
@@ -34,7 +35,7 @@ def _disabled_route_pairs() -> tuple:
     return tuple(pairs)
 
 
-def disabled_route_patterns() -> tuple:
+def disabled_route_patterns() -> tuple[Any, ...]:
     """禁用模块的请求路径正则（空元组 = 无裁剪，调用方走零开销旁路）。"""
 
     return tuple(pattern for pattern, _mid in _disabled_route_pairs())
@@ -50,7 +51,7 @@ def match_disabled_module(path: str) -> str:
 
 
 @lru_cache(maxsize=1)
-def _disabled_ws_regexes() -> tuple:
+def _disabled_ws_regexes() -> tuple[Any, ...]:
     patterns = []
     for spec in _disabled_specs():
         for prefix in spec.ws_routes:
@@ -58,7 +59,7 @@ def _disabled_ws_regexes() -> tuple:
     return tuple(patterns)
 
 
-def disabled_ws_patterns() -> tuple:
+def disabled_ws_patterns() -> tuple[Any, ...]:
     """禁用模块的 WebSocket 路径正则（空元组 = 无裁剪，调用方走零开销旁路）。"""
 
     return _disabled_ws_regexes()
@@ -84,10 +85,10 @@ class ModuleTrimWebsocketMiddleware:
     - 内核通道（``ws/message``、``ws/tasks/log``）不声明即不拦截。
     """
 
-    def __init__(self, app):
+    def __init__(self, app: Any) -> None:
         self.app = app
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> Any:
         if scope.get("type") == "websocket" and is_ws_path_trimmed(scope.get("path", "")):
             logger.warning("websocket rejected by module trim: %s", scope.get("path"))
             await send({"type": "websocket.close", "code": 4404})
@@ -95,7 +96,7 @@ class ModuleTrimWebsocketMiddleware:
         return await self.app(scope, receive, send)
 
 
-def permission_prefixes_of(specs) -> tuple:
+def permission_prefixes_of(specs: Any) -> tuple[Any, ...]:
     """给定模块集合的权限点 path 前缀。
 
     两条来源合并：
@@ -115,14 +116,14 @@ def permission_prefixes_of(specs) -> tuple:
     return tuple(prefixes)
 
 
-def disabled_permission_prefixes() -> tuple:
+def disabled_permission_prefixes() -> tuple[Any, ...]:
     """当前停用模块的权限点 path 前缀。"""
 
     return permission_prefixes_of(_disabled_specs())
 
 
 @lru_cache(maxsize=1)
-def _disabled_menu_pks_uncached() -> frozenset:
+def _disabled_menu_pks_uncached() -> frozenset[Any]:
     if not _disabled_specs():
         return frozenset()
     try:
@@ -140,11 +141,11 @@ def _disabled_menu_pks_uncached() -> frozenset:
     return hidden
 
 
-def _disabled_menu_pks() -> frozenset:
+def _disabled_menu_pks() -> frozenset[Any]:
     return _disabled_menu_pks_uncached()
 
 
-def compute_hidden_menu_pks(rows, names=None, prefixes=None) -> frozenset:
+def compute_hidden_menu_pks(rows: Any, names: Any = None, prefixes: Any = None) -> frozenset[Any]:
     """计算需隐藏的菜单主键（纯函数：运行期过滤与种子导入共用同一口径）。
 
     规则：
@@ -165,9 +166,9 @@ def compute_hidden_menu_pks(rows, names=None, prefixes=None) -> frozenset:
 
     # 入参可能是生成器（种子侧直接传推导式），必须物化：rows 会被遍历两次
     rows = list(rows)
-    children: dict = {}
-    by_name: dict = {}
-    hidden: set = set()
+    children: dict[str, Any] = {}
+    by_name: dict[str, Any] = {}
+    hidden: set[Any] = set()
     # _prefix_regex 返回的是给 path__regex 用的模式串，这里需要编译后再自行匹配
     permission_re = re.compile(_prefix_regex(prefixes)) if prefixes else None
     for pk, parent_id, menu_type, name, path in rows:
@@ -198,7 +199,7 @@ def compute_hidden_menu_pks(rows, names=None, prefixes=None) -> frozenset:
     return frozenset(hidden)
 
 
-def filter_menu_queryset(queryset):
+def filter_menu_queryset(queryset: Any) -> Any:
     """剔除禁用模块的菜单行（含权限点行）；无禁用模块时原样返回。"""
 
     resolution = resolve_modules()
@@ -225,11 +226,11 @@ def filter_menu_queryset(queryset):
 
 
 @lru_cache(maxsize=8)
-def _prefix_regex(prefixes: tuple) -> str:
+def _prefix_regex(prefixes: tuple[Any, ...]) -> str:
     return "^(" + "|".join(re.escape(prefix) for prefix in prefixes) + ")"
 
 
-def invalidate_trimmed_caches(resolution=None) -> int:
+def invalidate_trimmed_caches(resolution: Any = None) -> int:
     """清理受模块裁剪影响的缓存（进程内首次模块解析时调用一次）。
 
     菜单路由与用户权限码缓存 TTL 均为 24 小时，而模块组合只在配置变更并重启后生效：

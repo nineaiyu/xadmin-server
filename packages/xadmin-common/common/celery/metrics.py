@@ -21,13 +21,15 @@ from common.metrics import record_task_result
 _start_times: dict[Any, float] = {}
 
 
-@task_prerun.connect
-def on_task_prerun(task_id=None, **kwargs):
+@task_prerun.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def on_task_prerun(task_id: Any = None, **kwargs: Any) -> None:
     _start_times[task_id] = time.time()
 
 
-@task_postrun.connect
-def on_task_postrun(sender=None, task_id=None, task=None, state=None, **kwargs):
+@task_postrun.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def on_task_postrun(
+    sender: Any = None, task_id: Any = None, task: Any = None, state: Any = None, **kwargs: Any
+) -> None:
     started = _start_times.pop(task_id, None)
     duration = (time.time() - started) if started else None
     name = str(getattr(task, "name", None) or getattr(sender, "name", "unknown"))

@@ -131,6 +131,32 @@
 结论：词频重叠检索在现语料规模下质量充分，**不引入向量嵌入**；重开条件（hit@5<75% / 分块>1000 /
 检索 P95>300ms / 明确语义检索需求）见 ADR-037。
 
+### 2026-10-09 HNSW 向量定型实测（真实 embedding 档案 + 仓库语料）
+
+重开条件（分块 > 1000）已由语料自然增长触发（1321 块），向量通道从「假向量测试」进入
+「真实模型全链路」实测：
+
+- **环境**：本机 compose（PostgreSQL 17 + pgvector），LM Studio 本地 `text-embedding-bge-m3`
+  （Q8_0，1024 维），后端容器经 `host.docker.internal:1234` 调用（出站白名单
+  `OUTBOUND_ALLOWED_HOSTS=host.docker.internal`），档案用途 `embedding`（`AiProfile`）。
+- **语料**：`manage.py sync_ai_knowledge` 同步仓库文档（153 个 md）→ **1321 块**
+  （超过 `INDEX_MIN_ROWS=1000` 门槛，进入定型窗口）。
+- **构建与定型**：`manage.py build_ai_embeddings` 全量构建 **1321/1321（fresh，无 stale）**，
+  构建成功回调自动执行 `ensure_vector_index` —— `column=vector(1024) hnsw=True dims=[1024]`；
+  近邻查询 `EXPLAIN (ANALYZE)` 实测走 `Index Scan using aichunk_embedding_vector_hnsw`
+  （`vector_cosine_ops`，m=16 / ef_construction=64，0.6ms）。
+- **hit@5 对照（36 问评测集，同语料同时刻）**：
+
+| 模式 | hit@5 | 平均耗时 | 最差耗时 |
+|------|------|------|------|
+| 纯词频（基线通道） | **35/36 = 97.2%** | 5.8ms | 131.3ms |
+| 混合（bge-m3 向量 + 词频 RRF） | **35/36 = 97.2%** | 21.1ms | 54.8ms |
+
+- **结论**：真实 embedding 全链路（档案 → 构建 → 自动定型 → HNSW 检索 → 评测）跑通；
+  hit@5 与词频基线持平（唯一 miss 同为 `hard-field-hidden`，两通道均未召回首选出处），
+  维持 ADR-065 口径——向量通道定位为语料规模化后的容量/语义补充通道，门控（≥75%）不变。
+  混合模式平均耗时含 query 向量往返（约 15ms），最差耗时由词频全量扫描侧降至 54.8ms。
+
 ## 依赖安全审计（W4，2026-09-12）
 
 | 仓库 | 工具 | 结果 | 备注 |

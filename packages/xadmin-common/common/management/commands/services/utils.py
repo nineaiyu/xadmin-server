@@ -1,5 +1,8 @@
+import os
 import signal
 import threading
+import time
+from typing import Any
 
 import daemon
 from daemon import pidfile
@@ -9,7 +12,9 @@ from .services.base import BaseService
 
 
 class ServicesUtil:
-    def __init__(self, services: list[BaseService], run_daemon=False, force_stop=False, stop_daemon=False):
+    def __init__(
+        self, services: list[BaseService], run_daemon: bool = False, force_stop: bool = False, stop_daemon: bool = False
+    ) -> None:
         self._services = services
         self.run_daemon = run_daemon
         self.force_stop = force_stop
@@ -18,12 +23,12 @@ class ServicesUtil:
         self.check_interval = 30
         self.files_preserve_map: dict[str, str] = {}
 
-    def restart(self):
+    def restart(self) -> None:
         self.stop()
         time.sleep(5)
         self.start_and_watch()
 
-    def start_and_watch(self):
+    def start_and_watch(self) -> None:
         print(time.ctime())
         print("server now start")
         self.start()
@@ -34,7 +39,7 @@ class ServicesUtil:
         else:
             self.watch()
 
-    def start(self):
+    def start(self) -> None:
         check_db_status = False
         if "gunicorn" in [service.name for service in self._services]:
             server_prepare()
@@ -49,7 +54,7 @@ class ServicesUtil:
 
         time.sleep(1)
 
-    def stop(self):
+    def stop(self) -> None:
         for service in self._services:
             service.stop(force=self.force_stop)
 
@@ -57,7 +62,7 @@ class ServicesUtil:
             self._stop_daemon()
 
     # -- watch --
-    def watch(self):
+    def watch(self) -> None:
         while not self.EXIT_EVENT.is_set():
             try:
                 _exit = self._watch()
@@ -69,7 +74,7 @@ class ServicesUtil:
                 break
         self.clean_up()
 
-    def _watch(self):
+    def _watch(self) -> bool:
         for service in self._services:
             service.watch()
             if service.EXIT_EVENT.is_set():
@@ -79,27 +84,27 @@ class ServicesUtil:
 
     # -- end watch --
 
-    def clean_up(self):
+    def clean_up(self) -> None:
         if not self.EXIT_EVENT.is_set():
             self.EXIT_EVENT.set()
         self.stop()
 
-    def show_status(self):
+    def show_status(self) -> None:
         for service in self._services:
             service.show_status()
 
     # -- daemon --
-    def _stop_daemon(self):
+    def _stop_daemon(self) -> None:
         if self.daemon_pid and self.daemon_is_running:
             os.kill(self.daemon_pid, 15)
         self.remove_daemon_pid()
 
-    def remove_daemon_pid(self):
+    def remove_daemon_pid(self) -> None:
         if os.path.isfile(self.daemon_pid_filepath):
             os.unlink(self.daemon_pid_filepath)
 
     @property
-    def daemon_pid(self):
+    def daemon_pid(self) -> Any:
         if not os.path.isfile(self.daemon_pid_filepath):
             return 0
         with open(self.daemon_pid_filepath) as f:
@@ -110,7 +115,7 @@ class ServicesUtil:
         return pid
 
     @property
-    def daemon_is_running(self):
+    def daemon_is_running(self) -> bool:
         try:
             os.kill(self.daemon_pid, 0)
         except (OSError, ProcessLookupError):
@@ -119,15 +124,15 @@ class ServicesUtil:
             return True
 
     @property
-    def daemon_pid_filepath(self):
+    def daemon_pid_filepath(self) -> Any:
         return os.path.join(TMP_DIR, "server.pid")
 
     @property
-    def daemon_log_filepath(self):
+    def daemon_log_filepath(self) -> Any:
         return os.path.join(LOG_DIR, "server.log")
 
     @property
-    def daemon_context(self):
+    def daemon_context(self) -> Any:
         daemon_log_file = open(self.daemon_log_filepath, "a")
         context = daemon.DaemonContext(
             pidfile=pidfile.TimeoutPIDLockFile(self.daemon_pid_filepath),

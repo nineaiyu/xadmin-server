@@ -18,6 +18,7 @@ app 侧模块声明里的 ``routes`` 与真实路由（``{app}/config.py`` 的 `
 import re
 from dataclasses import replace
 from importlib import import_module
+from typing import Any
 
 from common.utils import get_logger
 
@@ -39,7 +40,7 @@ def _escape_literal(text: str) -> str:
     return _ESCAPE_PATTERN.sub(r"\\\1", text)
 
 
-def _pattern_source(pattern) -> str:
+def _pattern_source(pattern: Any) -> str:
     """URLPATTERNS 条目 → 路由来源串（``path()`` 取原始 route，``re_path()`` 取正则）。
 
     URL 配置对象分三层：``include()`` 得到 ``URLResolver``、``path()`` / ``re_path()``
@@ -84,7 +85,7 @@ def static_prefix(source: str) -> str:
     return "" if prefix == "/" else prefix
 
 
-def derive_route_prefixes(app_label: str) -> tuple:
+def derive_route_prefixes(app_label: str) -> tuple[Any, ...]:
     """app 的 ``config.py::URLPATTERNS`` → 路由前缀正则元组（``^/api/xxx/`` 形态）。
 
     无 config.py / 无 URLPATTERNS / 导入异常时返回空元组（调用方保持原声明：
@@ -109,7 +110,7 @@ def derive_route_prefixes(app_label: str) -> tuple:
     return tuple(f"^{_escape_literal(prefix)}" for prefix in prefixes)
 
 
-def _apply_derived_routes(app_label: str, declared: tuple) -> tuple:
+def _apply_derived_routes(app_label: str, declared: tuple[Any, ...]) -> tuple[Any, ...]:
     """未声明 ``routes`` 的模块从 ``config.py::URLPATTERNS`` 推导路由前缀。
 
     - 推导成功且声明未写 ``routes`` → 用推导结果（路由前缀单一事实源）；

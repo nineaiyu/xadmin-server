@@ -6,6 +6,7 @@ import itertools
 import json
 import math
 import uuid
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
@@ -25,7 +26,7 @@ CELERY_IMPORT_DEFAULT_BATCH = 100
 CELERY_IMPORT_SINGLE_BATCH = 99999999
 
 
-def has_active_celery_worker():
+def has_active_celery_worker() -> Any:
     """探测是否存在活跃 Celery worker（结果短缓存，避免请求线程内反复广播阻塞）。"""
     # current_app 代理解析到当前进程的 Celery app（server.celery），common 不反向 import server
     from celery import current_app
@@ -45,7 +46,7 @@ def has_active_celery_worker():
     return result
 
 
-def _flatten_row_errors(row, ser_errors, limit):
+def _flatten_row_errors(row: Any, ser_errors: Any, limit: Any) -> Any:
     """把 DRF serializer.errors 展开为字段级条目 [{row, field, message}]，最多 limit 条。
 
     嵌套序列化器（dict 值）无法定位单一字段，整体 JSON 序列化进 message。
@@ -63,7 +64,7 @@ def _flatten_row_errors(row, ser_errors, limit):
     return items
 
 
-def run_view_by_celery_task(view, request, kwargs, data, batch_length=100):
+def run_view_by_celery_task(view: Any, request: Any, kwargs: Any, data: Any, batch_length: int = 100) -> Any:
     """把导入/批量操作分发到 Celery，返回 ``ApiResponse`` 或 ``None``。
 
     - 返回 ``ApiResponse``：任务已提交，调用方直接返回该响应；

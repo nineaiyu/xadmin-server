@@ -10,6 +10,8 @@
 不把争用升级为错误；builder 返回 None 表示构建失败，不回写缓存（失败不缓存）。
 """
 
+from typing import Any
+
 from django.core.cache import cache
 from redis.exceptions import LockError
 
@@ -22,7 +24,7 @@ METADATA_LOCK_TTL = 30
 METADATA_LOCK_WAIT = 35
 
 
-def cached_payload(cache_key: str, timeout: int, builder, bypass: bool = False):
+def cached_payload(cache_key: str, timeout: int, builder: Any, bypass: bool = False) -> Any:
     """读取载荷缓存；未命中时单飞重建并回写。
 
     ``bypass=True``（`?no_cache=1`）跳过读写直接重建；``builder()`` 返回 None

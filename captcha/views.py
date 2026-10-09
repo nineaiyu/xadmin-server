@@ -49,22 +49,62 @@ def captcha_image(request, key, scale=1):
         return HttpResponse(status=410)
 
     random.seed(key)  # Do not generate different images for the same key
+    image = _render_challenge(store.challenge, scale)
 
-    text = store.challenge
+    out = BytesIO()
+    image.save(out, "PNG")
+    out.seek(0)
 
+    response = HttpResponse(content_type="image/png")
+    response.write(out.read())
+    response["Content-length"] = out.tell()
+
+    # At line :50 above we fixed the random seed so that we always generate the
+    # same image, see: https://github.com/mbi/django-simple-captcha/pull/194
+    # This is a problem though, because knowledge of the seed will let an attacker
+    # predict the next random (globally). We therefore reset the random here.
+    # Reported in https://github.com/mbi/django-simple-captcha/pull/221
+    random.seed()
+
+    return response
+
+
+def _resolve_font_path():
+    """settings.CAPTCHA_FONT_PATH 归一为单个字体路径（原 captcha_image 内联分支）。"""
     if isinstance(settings.CAPTCHA_FONT_PATH, str):
-        fontpath = settings.CAPTCHA_FONT_PATH
-    elif isinstance(settings.CAPTCHA_FONT_PATH, (list, tuple)):
-        fontpath = random.choice(settings.CAPTCHA_FONT_PATH)
-    else:
-        raise ImproperlyConfigured("settings.CAPTCHA_FONT_PATH needs to be a path to a font or list of paths to fonts")
+        return settings.CAPTCHA_FONT_PATH
+    if isinstance(settings.CAPTCHA_FONT_PATH, (list, tuple)):
+        return random.choice(settings.CAPTCHA_FONT_PATH)
+    raise ImproperlyConfigured("settings.CAPTCHA_FONT_PATH needs to be a path to a font or list of paths to fonts")
 
+
+def _load_font(fontpath, scale):
+    """按扩展名装载字体（ttf 走指定字号，其余交 Pillow 默认装载）。"""
     font: ImageFont.FreeTypeFont | ImageFont.ImageFont
     if fontpath.lower().strip().endswith("ttf"):
         font = ImageFont.truetype(fontpath, settings.CAPTCHA_FONT_SIZE * scale)
     else:
         font = ImageFont.load(fontpath)
+    return font
 
+
+def _split_challenge_chars(text):
+    """标点归并到前一个字符（与 django-simple-captcha 原实现同口径）。"""
+    charlist: list[str] = []
+    for char in text:
+        if char in settings.CAPTCHA_PUNCTUATION and len(charlist) >= 1:
+            charlist[-1] += char
+        else:
+            charlist.append(char)
+    return charlist
+
+
+def _render_challenge(text, scale):
+    """绘制挑战文本：尺寸解析 → 逐字符合成 → 居中裁剪 → 噪声与滤镜。
+
+    随机序列由调用方按 key 播种（同 key 同图），本函数只做确定性绘制。
+    """
+    font = _load_font(_resolve_font_path(), scale)
     if settings.CAPTCHA_IMAGE_SIZE:
         size = settings.CAPTCHA_IMAGE_SIZE
     else:
@@ -74,12 +114,7 @@ def captcha_image(request, key, scale=1):
     image = makeimg(size, settings.CAPTCHA_BACKGROUND_COLOR)
     xpos = 2
 
-    charlist: list[str] = []
-    for char in text:
-        if char in settings.CAPTCHA_PUNCTUATION and len(charlist) >= 1:
-            charlist[-1] += char
-        else:
-            charlist.append(char)
+    charlist = _split_challenge_chars(text)
     for char in charlist:
         fgimage = makeimg(size, settings.CAPTCHA_FOREGROUND_COLOR)
         charimage = Image.new("L", getsize(font, f" {char} "), "#000000")
@@ -126,23 +161,7 @@ def captcha_image(request, key, scale=1):
         draw = f(draw, image)
     for f in filter_functions():
         image = f(image)
-
-    out = BytesIO()
-    image.save(out, "PNG")
-    out.seek(0)
-
-    response = HttpResponse(content_type="image/png")
-    response.write(out.read())
-    response["Content-length"] = out.tell()
-
-    # At line :50 above we fixed the random seed so that we always generate the
-    # same image, see: https://github.com/mbi/django-simple-captcha/pull/194
-    # This is a problem though, because knowledge of the seed will let an attacker
-    # predict the next random (globally). We therefore reset the random here.
-    # Reported in https://github.com/mbi/django-simple-captcha/pull/221
-    random.seed()
-
-    return response
+    return image
 
 
 def captcha_audio(request, key):

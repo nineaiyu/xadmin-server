@@ -11,6 +11,7 @@
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 from django.apps import apps
 
@@ -27,16 +28,16 @@ class ModuleOverrideData:
     """后台覆盖行（None 语义见 load_override）。"""
 
     preset: str
-    enable: tuple
-    disable: tuple
+    enable: tuple[Any, ...]
+    disable: tuple[Any, ...]
     updated_time: object = None
 
 
-def _model():
+def _model() -> Any:
     return apps.get_model(MODEL_LABEL)
 
 
-def load_override():
+def load_override() -> Any:
     """读取后台覆盖行；无行或读取异常（表未建 / 数据库不可达）一律返回 None。"""
 
     try:
@@ -54,7 +55,7 @@ def load_override():
     )
 
 
-def save_override(preset, enable=(), disable=()):
+def save_override(preset: Any, enable: Any = (), disable: Any = ()) -> Any:
     """写入（或更新）覆盖行；异常向上抛出，由调用方转成可读错误。"""
 
     row, _created = _model().objects.update_or_create(
@@ -67,4 +68,4 @@ def save_override(preset, enable=(), disable=()):
 def clear_override() -> int:
     """删除覆盖行（恢复为部署基线）；返回删除行数。"""
 
-    return _model().objects.filter(key=OVERRIDE_KEY).delete()[0]
+    return int(_model().objects.filter(key=OVERRIDE_KEY).delete()[0])

@@ -1,3 +1,5 @@
+from typing import Any
+
 import pyexcel
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ParseError
@@ -8,7 +10,7 @@ from .base import BaseFileParser
 class ExcelFileParser(BaseFileParser):
     media_type = "text/xlsx"
 
-    def generate_rows(self, stream_data):
+    def generate_rows(self, stream_data: Any) -> Any:
         try:
             workbook = pyexcel.get_book(file_type="xlsx", file_content=stream_data)
         except Exception as e:

@@ -3,6 +3,7 @@
 """Prometheus 指标抓取端点（默认关闭）。"""
 
 import secrets
+from typing import Any
 
 from django.http import HttpResponse, JsonResponse
 from drf_spectacular.utils import extend_schema
@@ -27,7 +28,7 @@ class MetricsAPIView(APIView):
     permission_classes: list[type] = []
 
     @extend_schema(exclude=True)
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         if not kernel_setting("METRICS_ENABLED"):
             return JsonResponse({"detail": "Not found"}, status=404)
         token = kernel_setting("METRICS_TOKEN")

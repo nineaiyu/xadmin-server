@@ -7,6 +7,7 @@ import ipaddress
 import json
 import re
 from functools import reduce
+from typing import Any
 
 from django.db.models import Q
 from django.forms.utils import from_current_timezone
@@ -18,7 +19,7 @@ from common.contracts import DeptInfo, UserInfo
 from .constants import _NUMERIC_LOOKUPS, AND_MODE, OR_MODE, TABLE_TYPES, KeyChoices
 
 
-def _as_bool(value):
+def _as_bool(value: Any) -> Any:
     """isnull 专用：bool 原样返回，``"true"/"1"/"false"/"0"`` 归一，其余返回 None（非法）。"""
     if isinstance(value, bool):
         return value
@@ -31,7 +32,7 @@ def _as_bool(value):
     return None
 
 
-def normalize_match_value(match, value):
+def normalize_match_value(match: Any, value: Any) -> Any:
     """严格类型 lookup 的 value 归一；返回 None 表示形态非法（调用方 fail-closed）。
 
     ``_NUMERIC_LOOKUPS`` 归一为 int（Django 的 year/month 等 lookup 只接受数字）；
@@ -60,11 +61,11 @@ class ScopeResult:
     KIND_DENY = "deny_all"
     KIND_COND = "condition"
 
-    def __init__(self, kind, q=None):
+    def __init__(self, kind: Any, q: Any = None) -> None:
         self.kind = kind
         self.q = q
 
-    def __repr__(self):  # pragma: no cover 调试辅助
+    def __repr__(self) -> str:  # pragma: no cover 调试辅助
         return f"ScopeResult({self.kind}, {self.q})"
 
 
@@ -72,11 +73,11 @@ ALLOW_ALL = ScopeResult(ScopeResult.KIND_ALLOW)
 DENY_ALL = ScopeResult(ScopeResult.KIND_DENY)
 
 
-def condition_result(q):
+def condition_result(q: Any) -> Any:
     return ScopeResult(ScopeResult.KIND_COND, q)
 
 
-def combine(results, mode=OR_MODE):
+def combine(results: Any, mode: Any = OR_MODE) -> Any:
     """ScopeResult 布尔代数组合。
 
     AND：DENY_ALL 是零元（支配）、ALLOW_ALL 是单位元（忽略）；
@@ -101,7 +102,7 @@ def combine(results, mode=OR_MODE):
     return condition_result(reduce(lambda a, b: a | b, qs))
 
 
-def _json_value(value):
+def _json_value(value: Any) -> Any:
     if isinstance(value, str):
         try:
             return json.loads(value)
@@ -110,7 +111,7 @@ def _json_value(value):
     return value
 
 
-def _pk_list(value):
+def _pk_list(value: Any) -> Any:
     items = _json_value(value)
     if not isinstance(items, (list, tuple)):
         items = [items]
@@ -123,7 +124,7 @@ def _pk_list(value):
     return pks
 
 
-def _flatten_dept_tree(raw):
+def _flatten_dept_tree(raw: Any) -> Any:
     """指定部门列表 → 各自及全部下级的并集。
 
     批量展开（`DeptInfo.dept_tree_pks`）：一次取全表 + 内存索引，替代逐 pk 递归
@@ -132,7 +133,7 @@ def _flatten_dept_tree(raw):
     return DeptInfo.dept_tree_pks(_pk_list(raw))
 
 
-def _leader_dept_pks(user):
+def _leader_dept_pks(user: Any) -> Any:
     """用户作为 leader 的启用部门及其全部下级并集（无主管职责返回空）。"""
     if user is None or not hasattr(user, "leader_depts"):
         return []
@@ -142,14 +143,14 @@ def _leader_dept_pks(user):
     return DeptInfo.dept_tree_pks(led_pks)
 
 
-def _leader_user_pks(user):
+def _leader_user_pks(user: Any) -> Any:
     dept_pks = _leader_dept_pks(user)
     if not dept_pks:
         return []
     return list(UserInfo.objects.filter(dept__in=dept_pks).values_list("pk", flat=True))
 
 
-def _manager_dept_pks(user):
+def _manager_dept_pks(user: Any) -> Any:
     """用户作为部门管理员（DeptInfo.managers）的启用部门及其全部下级并集（无管理职责返回空）。"""
     if user is None or not hasattr(user, "managed_depts"):
         return []
@@ -159,14 +160,14 @@ def _manager_dept_pks(user):
     return DeptInfo.dept_tree_pks(managed_pks)
 
 
-def _manager_user_pks(user):
+def _manager_user_pks(user: Any) -> Any:
     dept_pks = _manager_dept_pks(user)
     if not dept_pks:
         return []
     return list(UserInfo.objects.filter(dept__in=dept_pks).values_list("pk", flat=True))
 
 
-def resolve_rule(rule, user):
+def resolve_rule(rule: Any, user: Any) -> Any:
     """单条规则 JSON → 归一化条件 dict（按规则类型注入用户/部门上下文，不改写传入 rule）。"""
     cond = {
         "field": rule.get("field"),
@@ -224,7 +225,7 @@ def resolve_rule(rule, user):
     return cond
 
 
-def ip_in_q(name, val):
+def ip_in_q(name: str, val: Any) -> Any:
     """IP 匹配符：精确 / 前缀 / 网段 / 范围；``"*"`` 表示不限（守卫已修复，不再要求嵌套列表形态）。"""
     q = Q()
     if isinstance(val, str):
@@ -250,7 +251,7 @@ def ip_in_q(name, val):
     return q
 
 
-def rule_to_q(rule):
+def rule_to_q(rule: Any) -> Any:
     """归一化条件 dict → 单个 Q。
 
     ``match=all`` 的恒真语义由 compile_condition / build_rules_qs 前置短路，
@@ -297,7 +298,7 @@ def rule_to_q(rule):
     return q
 
 
-def build_rules_qs(rules):
+def build_rules_qs(rules: Any) -> Any:
     """批量入口（RelatedManager.get_filter_attrs_qs 委托）：每条规则一个 Q，无效规则跳过。
 
     ALL 短路按 ``type`` 判定而非 ``match`` 字面（存量 ALL 规则的 match 可能缺失/为 ``"*"``），

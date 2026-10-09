@@ -10,6 +10,7 @@
 import logging
 from functools import lru_cache
 from importlib import import_module
+from typing import Any
 
 from django.apps import apps
 
@@ -25,13 +26,13 @@ BUILTIN_TASK_ROUTES = {
 
 
 @lru_cache(maxsize=1)
-def _app_task_routes() -> dict:
+def _app_task_routes() -> dict[str, Any]:
     """收集各应用 config.py 的 TASK_ROUTES 声明（应用名 → 任务名 → 队列）。
 
     仅在首次投递时执行（django.setup 已完成），config.py 的 import 语义与 HTTP 侧
     URL 注入完全一致；结果缓存——改 TASK_ROUTES 需重启进程（与路由表同口径）。
     """
-    collected: dict = {}
+    collected: dict[str, Any] = {}
     for app_config in apps.get_app_configs():
         try:
             module = import_module(f"{app_config.name}.config")
@@ -49,12 +50,12 @@ def _app_task_routes() -> dict:
     return collected
 
 
-def celery_task_route(name, *args, task=None, **kwargs):
+def celery_task_route(name: str, *args: Any, task: Any = None, **kwargs: Any) -> Any:
     """celery task_routes 可调用入口：应用声明优先，框架内置兜底。"""
     return _app_task_routes().get(name) or BUILTIN_TASK_ROUTES.get(name)
 
 
-def get_all_task_routes() -> dict:
+def get_all_task_routes() -> dict[str, Any]:
     """静态合并视图（内置 + 应用声明），供需要「枚举全部路由」的消费方使用
     （如定时任务序列化器的队列下拉推导）；单任务解析走 celery_task_route。"""
     return {**BUILTIN_TASK_ROUTES, **_app_task_routes()}

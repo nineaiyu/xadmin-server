@@ -4,7 +4,9 @@
 # filename : utils
 # author : ly_13
 # date : 12/18/2023
+from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import Any
 
 from django.db import connection, connections, transaction
 
@@ -16,43 +18,43 @@ class RelatedManager:
     rule_to_q / ip_in_q / build_rules_qs。
     """
 
-    def __init__(self, instance, field):
+    def __init__(self, instance: Any, field: Any) -> None:
         self.instance = instance
         self.field = field
         self.value = None
 
-    def set(self, value):
+    def set(self, value: Any) -> None:
         self.value = value
         self.instance.__dict__[self.field.name] = value
 
     @staticmethod
-    def get_ip_in_q(name, val):
+    def get_ip_in_q(name: str, val: Any) -> Any:
         from common.core.data_scope import ip_in_q
 
         return ip_in_q(name, val)
 
     @classmethod
-    def get_filter_attrs_qs(cls, rules):
+    def get_filter_attrs_qs(cls, rules: Any) -> Any:
         from common.core.data_scope import build_rules_qs
 
         return build_rules_qs(rules)
 
 
-def close_old_connections(**kwargs):
+def close_old_connections(**kwargs: Any) -> None:
     for conn in connections.all(initialized_only=True):
         conn.close_if_unusable_or_obsolete()
 
 
 # 这个要是在 Django 请求周期外使用的，不能影响 Django 的事务管理， 在 api 中使用会影响 api 事务
 @contextmanager
-def safe_db_connection():
+def safe_db_connection() -> Iterator[None]:
     close_old_connections()
     yield
     close_old_connections()
 
 
 @contextmanager
-def safe_atomic_db_connection(auto_close=False):
+def safe_atomic_db_connection(auto_close: bool = False) -> Iterator[None]:
     """
     通用数据库连接管理器（线程安全、事务感知）：
     - 在连接不可用时主动重建连接
@@ -80,7 +82,7 @@ def safe_atomic_db_connection(auto_close=False):
 
 
 @contextmanager
-def open_db_connection(alias="default"):
+def open_db_connection(alias: str = "default") -> Iterator[Any]:
     connection = transaction.get_connection(alias)
     try:
         connection.connect()

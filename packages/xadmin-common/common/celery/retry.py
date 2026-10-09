@@ -11,12 +11,16 @@
    重试与耗尽告警，状态可查询、可人工重放。
 """
 
+from typing import Any
+
 from common.utils import get_logger
 
 logger = get_logger(__name__)
 
 
-def retry_or_log(task_self, exc, *, what: str, base_seconds: int = 60, max_seconds: int = 600, max_retries: int = 3):
+def retry_or_log(
+    task_self: Any, exc: Any, *, what: str, base_seconds: int = 60, max_seconds: int = 600, max_retries: int = 3
+) -> bool:
     """外部 IO 任务的统一退避重试；耗尽或同步调用时记录错误并返回 False（不外抛）。
 
     返回 True 前必然以 ``task.retry`` 抛出（任务以 RETRY 状态结束，由 celery 排期）；

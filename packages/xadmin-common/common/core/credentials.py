@@ -17,6 +17,7 @@
 """
 
 import re
+from typing import Any
 
 from django.db.models import Q
 
@@ -40,7 +41,7 @@ SENSITIVE_SETTING_KEYS = {
 }
 
 #: 历史遗留明文豁免清单（只减不增；迁移完成后清空）
-PLAINTEXT_EXEMPT_KEYS: set = set()
+PLAINTEXT_EXEMPT_KEYS: set[Any] = set()
 
 #: Setting 体系中声明为加密（write_only）的敏感键清单（守护测试比对两侧）
 ENCRYPTED_SETTING_KEYS = (
@@ -80,7 +81,7 @@ def is_sensitive_setting_row(name: str, encrypted: bool) -> bool:
     return bool(encrypted) or str(name or "") in ENCRYPTED_SETTING_KEYS
 
 
-def filter_out_sensitive_rows(queryset):
+def filter_out_sensitive_rows(queryset: Any) -> Any:
     """Setting 查询集排除敏感行（``encrypted=True`` 或名字在声明清单）。
 
     供按 value 子串搜索等「行命中与否受值内容影响」的查询场景：出口掩码只堵
@@ -90,17 +91,17 @@ def filter_out_sensitive_rows(queryset):
     return queryset.exclude(Q(encrypted=True) | Q(name__in=ENCRYPTED_SETTING_KEYS))
 
 
-def is_cipher_str(value) -> bool:
+def is_cipher_str(value: Any) -> bool:
     """值是否为本仓字段级密文（v3: 前缀）。"""
     return isinstance(value, str) and value.startswith(CIPHER_PREFIX)
 
 
-def _is_empty(value) -> bool:
+def _is_empty(value: Any) -> bool:
     """空值判定（None / 空串 / 空容器一律视为未配置）。"""
     return value is None or value == "" or value == [] or value == {}
 
 
-def _collect_field_values(value, fields) -> list:
+def _collect_field_values(value: Any, fields: Any) -> list[Any]:
     """按字段声明收集需要检查/加密的标量值（空元组 = 整值）。"""
     if not fields:
         return [] if _is_empty(value) else [value]
@@ -111,7 +112,7 @@ def _collect_field_values(value, fields) -> list:
     return []
 
 
-def _map_field_values(value, fields, mapper):
+def _map_field_values(value: Any, fields: Any, mapper: Any) -> Any:
     """对敏感字段值应用 mapper（幂等/兼容由 mapper 保证）。"""
     if not fields:
         return mapper(value) if value not in (None, "") else value
@@ -122,7 +123,7 @@ def _map_field_values(value, fields, mapper):
     return value
 
 
-def _map_dict(item, fields, mapper):
+def _map_dict(item: Any, fields: Any, mapper: Any) -> Any:
     if not isinstance(item, dict):
         return item
     result = dict(item)
@@ -132,7 +133,7 @@ def _map_dict(item, fields, mapper):
     return result
 
 
-def _encrypt_scalar(value):
+def _encrypt_scalar(value: Any) -> Any:
     """单值加密（幂等：已是 v3 密文原样返回）。"""
     if not isinstance(value, str) or not value:
         return value
@@ -141,7 +142,7 @@ def _encrypt_scalar(value):
     return signer.encrypt(value.encode("utf-8")).decode("utf-8")
 
 
-def _decrypt_scalar(value):
+def _decrypt_scalar(value: Any) -> Any:
     """单值解密（明文兼容：非 v3 前缀原样返回）。"""
     if not is_cipher_str(value):
         return value
@@ -152,7 +153,7 @@ def _decrypt_scalar(value):
         return value
 
 
-def encrypt_setting_value(key: str, value):
+def encrypt_setting_value(key: str, value: Any) -> Any:
     """SystemConfig 写入前加密敏感字段（非敏感键 / 空值原样返回）。"""
     fields = SENSITIVE_SETTING_KEYS.get(str(key or ""))
     if fields is None:
@@ -164,7 +165,7 @@ def encrypt_setting_value(key: str, value):
         return value
 
 
-def decrypt_setting_value(key: str, value):
+def decrypt_setting_value(key: str, value: Any) -> Any:
     """SystemConfig 读取后解密敏感字段（非敏感键 / 明文原样返回）。"""
     fields = SENSITIVE_SETTING_KEYS.get(str(key or ""))
     if fields is None:
@@ -172,7 +173,7 @@ def decrypt_setting_value(key: str, value):
     return _map_field_values(value, fields, _decrypt_scalar)
 
 
-def encryption_status(key: str, value) -> str:
+def encryption_status(key: str, value: Any) -> str:
     """敏感键的加密状态：not_sensitive / empty / encrypted / plaintext。"""
     fields = SENSITIVE_SETTING_KEYS.get(str(key or ""))
     if fields is None:
@@ -183,7 +184,7 @@ def encryption_status(key: str, value) -> str:
     return "encrypted" if all(is_cipher_str(item) for item in values) else "plaintext"
 
 
-def sensitive_setting_names() -> list:
+def sensitive_setting_names() -> list[Any]:
     """巡检：Setting 中「名字命中敏感模式」的行名（不看 encrypted 标记）。
 
     供 ``rotate_credential --key AI_API_KEY``（Setting 侧重加密/首次加密）解析目标名；
@@ -201,7 +202,7 @@ def sensitive_setting_names() -> list:
     return sorted({str(name) for name in names if SENSITIVE_KEY_PATTERN.search(str(name or ""))})
 
 
-def plaintext_setting_names() -> list:
+def plaintext_setting_names() -> list[Any]:
     """巡检：Setting 中「名字命中敏感模式但 encrypted=False」的行（明文风险面）。
 
     与 :func:`plaintext_sensitive_keys` 同为只读巡检，异常降级为空清单；
@@ -220,7 +221,7 @@ def plaintext_setting_names() -> list:
     return sorted({str(name) for name in names if SENSITIVE_KEY_PATTERN.search(str(name or ""))})
 
 
-def plaintext_sensitive_keys() -> list:
+def plaintext_sensitive_keys() -> list[Any]:
     """巡检：返回当前库中仍为明文的敏感 SystemConfig 键（排除豁免清单）。
 
     只读、异常降级为空清单（库未就绪时不阻断调用方）。

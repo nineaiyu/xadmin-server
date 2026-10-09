@@ -17,7 +17,7 @@ from django.core.cache import cache
 from common.settings_contract import kernel_setting
 
 
-def probe_db():
+def probe_db() -> Any:
     """SELECT 1 探测数据库连通性，不依赖任何业务表。
 
     探测会在常驻线程池（health-probe）内执行：结束即归还/关闭连接（连接池只在
@@ -43,7 +43,7 @@ def probe_db():
                 pass
 
 
-def probe_redis():
+def probe_redis() -> Any:
     """缓存 Redis set/get 往返探测。"""
     t1 = time.time()
     try:
@@ -67,7 +67,7 @@ _celery_probe_cache: dict[str, Any] = {"at": 0.0, "value": (False, 0.0)}
 _celery_probe_refreshing = threading.Lock()
 
 
-def _refresh_celery_probe():
+def _refresh_celery_probe() -> None:
     """后台刷新 celery 探测结果（失败记录原因，由下次刷新重试）。"""
     try:
         # current_app 代理解析到当前进程的 Celery app（server.celery），common 不反向 import server
@@ -83,7 +83,7 @@ def _refresh_celery_probe():
         _celery_probe_refreshing.release()
 
 
-def probe_celery(timeout=None):
+def probe_celery(timeout: Any = None) -> Any:
     """探测在线 worker（inspect ping，结果进程内缓存 TTL=30s，毫秒级返回）。
 
     背景见上方缓存说明；HEALTH_CHECK_SKIP_CELERY 跳过语义保持不变。
@@ -109,7 +109,7 @@ PROBE_BUDGET_SECONDS = 1
 _probe_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix="health-probe")
 
 
-def probe_storage():
+def probe_storage() -> Any:
     """存储后端可达性探测：本地 = MEDIA_ROOT 可写；对象存储 = 一次往返。
 
     仅作为可观测项输出，不参与 health 的 status 判定（对象存储抖动不应让
@@ -123,7 +123,7 @@ def probe_storage():
         return False, str(e)
 
 
-def probe_all(timeout=PROBE_BUDGET_SECONDS):
+def probe_all(timeout: Any = PROBE_BUDGET_SECONDS) -> Any:
     """并行执行 db/redis/celery/storage 四项探测，返回 {name: (ok, cost)}。
 
     单项超预算即返回 ``(False, "probe timeout")``——探测线程由各自的连接超时

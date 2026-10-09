@@ -9,6 +9,8 @@
 - 采集失败静默跳过：指标是旁路能力，任何异常都不得影响主流程。
 """
 
+from typing import Any
+
 from common.settings_contract import kernel_setting
 from common.utils import get_logger
 
@@ -146,12 +148,12 @@ def _render_task_redis() -> bytes:
     return ("\n".join(lines) + "\n").encode() if lines else b""
 
 
-def _decode_text(value) -> str:
+def _decode_text(value: Any) -> str:
     """原始连接（get_redis_connection）不做 decode，key/value 可能为 bytes。"""
     return value.decode() if isinstance(value, bytes) else str(value)
 
 
-def _render_task_counts(raw) -> list:
+def _render_task_counts(raw: Any) -> list[Any]:
     if not raw:
         return []
     lines = [
@@ -172,11 +174,11 @@ def _render_task_counts(raw) -> list:
     return lines
 
 
-def _render_task_durations(raw) -> list:
+def _render_task_durations(raw: Any) -> list[Any]:
     """渲染耗时 histogram（累积桶 + sum/count；供任务 P95 计算）。"""
     if not raw:
         return []
-    grouped: dict = {}
+    grouped: dict[str, Any] = {}
     for key, value in raw.items():
         name, _, field = _decode_text(key).partition("|")
         if not name:
@@ -271,7 +273,7 @@ def _render_grants_cache() -> bytes:
     return ("\n".join(lines) + "\n").encode()
 
 
-def render_metrics():
+def render_metrics() -> Any:
     """返回 (payload, content_type)。
 
     celery 任务指标来自 redis 跨进程聚合（worker 写入，本端点附加渲染）——

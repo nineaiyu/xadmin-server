@@ -32,6 +32,7 @@
 | 权限体系 | [architecture/permission.md](architecture/permission.md)（三层 + 应用级授权）；配置操作教程 [architecture/data-permission.md](architecture/data-permission.md) / [architecture/field-permission.md](architecture/field-permission.md) |
 | 菜单维护口径 | [guide/menu-maintenance.md](guide/menu-maintenance.md)：种子 path↔组件目录基本口径 / URL≠目录 例外清单（对账门禁白名单）/ 新增页面规范 |
 | 模块化与裁剪 | [architecture/模块化与功能裁剪.md](architecture/模块化与功能裁剪.md)：三级分层 / 发行预设 / 六层裁剪 / CLI 与管理页 |
+| **二开插件开发** | [guide/plugin-development.md](guide/plugin-development.md)：契约注入（`register_contract` / entry points）/ 应用级扩展点 / 模块声明与发行预设 / 验证清单（可运行样本 `examples/plugins/xadmin-demo-plugin`） |
 | 认证扩展 | [architecture/mfa.md](architecture/mfa.md)（MFA / 412 协议）、[architecture/oauth-login.md](architecture/oauth-login.md)（第三方登录 / IM 扫码） |
 | 目录同步 | [architecture/ldap-readiness.md](architecture/ldap-readiness.md)、[architecture/scim.md](architecture/scim.md)、[architecture/scim-idp-readiness.md](architecture/scim-idp-readiness.md) |
 | 通知渠道 | [architecture/notification-channels.md](architecture/notification-channels.md)（新增渠道 = 新增一个文件） |
@@ -46,6 +47,7 @@
 | 文档 | 内容 |
 |------|------|
 | [ops/deployment.md](ops/deployment.md) | **部署与运维手册**：配置速查表（§9）/ Docker / 备份恢复 / 升级回滚 |
+| [ops/upgrade-stock.md](ops/upgrade-stock.md) | 存量库升级通道：升级前体检（`upgrade_check`）/ 支持矩阵（可原地升级 vs 清库重建）/ 两条流程 |
 | [ops/runbook.md](ops/runbook.md) | 故障处置（常见故障 → 处置步骤） |
 | [ops/scale-out.md](ops/scale-out.md) | 横向扩展 runbook（单机多副本：迁移一次性 / beat 单例 / nginx 多后端轮询 + 验证与回退） |
 | [ops/blue-green.md](ops/blue-green.md) | 零停机发布 runbook（叠加滚动：迁移兼容性 / 加新摘旧 / 回滚与边界） |

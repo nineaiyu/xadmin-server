@@ -2,6 +2,7 @@
 #
 import ipaddress
 import os
+from typing import Any
 
 import geoip2.database
 from django.utils.translation import gettext_lazy as _
@@ -13,7 +14,7 @@ __all__ = ["get_ip_city_by_geoip"]
 reader = None
 
 
-def init_ip_reader():
+def init_ip_reader() -> None:
     global reader
     if reader:
         return
@@ -27,7 +28,7 @@ def init_ip_reader():
     reader = geoip2.database.Reader(path)
 
 
-def get_ip_city_by_geoip(ip):
+def get_ip_city_by_geoip(ip: Any) -> Any:
     try:
         init_ip_reader()
     except Exception:

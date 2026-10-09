@@ -27,6 +27,8 @@
 手写实现（字典 ``children_count``、审批流程 ``node_count``）已迁移到本声明式口径。
 """
 
+from typing import Any
+
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -35,7 +37,7 @@ logger = get_logger(__name__)
 class RelationCountMixin:
     """按序列化器声明为 queryset 预聚合关联计数。"""
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         queryset = super().get_queryset()  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
         counts = self._relation_count_fields()
         if not counts:
@@ -48,7 +50,7 @@ class RelationCountMixin:
             queryset = queryset.order_by(*ordering)
         return queryset
 
-    def _relation_count_fields(self) -> dict:
+    def _relation_count_fields(self) -> dict[str, Any]:
         serializer_class = getattr(self, "serializer_class", None)
         if hasattr(self, "get_serializer_class"):
             try:

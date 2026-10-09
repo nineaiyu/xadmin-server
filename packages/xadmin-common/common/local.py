@@ -6,6 +6,8 @@
 # date : 10/18/2024
 
 
+from typing import Any
+
 from asgiref.local import Local
 
 # 上下文本地存储：thread_critical=False → contextvars 存储。
@@ -18,15 +20,15 @@ from asgiref.local import Local
 thread_local = Local()
 
 
-def _find(attr):
+def _find(attr: Any) -> Any:
     return getattr(thread_local, attr, None)
 
 
-def set_current_request(request) -> None:
+def set_current_request(request: Any) -> None:
     """绑定当前请求到上下文本地存储（自 server/utils.py 归位）。"""
     thread_local.current_request = request
 
 
-def get_current_request():
+def get_current_request() -> Any:
     """读取当前请求；无请求上下文（celery 任务 / 启动期）返回 None。"""
     return _find("current_request")
