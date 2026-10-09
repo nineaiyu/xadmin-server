@@ -16,6 +16,7 @@
 
 import random
 from datetime import timedelta
+from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
@@ -29,12 +30,12 @@ DEMO_PREFIX = "demo_"
 class Command(BaseCommand):
     help = "创建演示用户（demo_ 前缀，不可登录），供数据分析页面演示取数"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--count", type=int, default=128, help="创建数量（1-2000）")
         parser.add_argument("--reset", action="store_true", help="先删除已存在的 demo_ 前缀用户再创建")
         parser.add_argument("--clean-only", action="store_true", help="只删除批量演示用户（demo_数字 前缀），不创建")
 
-    def _remove_batch_users(self):
+    def _remove_batch_users(self) -> None:
         """仅清理批量演示用户（demo_ 后跟纯数字）：不触碰 demo_flow_* / demo_lead 等命令专用账号。"""
         user_model = get_user_model()
         queryset = user_model.all_objects.filter(username__regex=r"^demo_[0-9]+$")
@@ -45,7 +46,7 @@ class Command(BaseCommand):
         deleted, _rows = queryset.delete()
         self.stdout.write(f"removed demo batch users: {deleted}")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options["clean_only"]:
             self._remove_batch_users()
             return

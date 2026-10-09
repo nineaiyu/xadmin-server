@@ -4,6 +4,7 @@
 
 import json
 import threading
+from typing import Any
 
 from django.conf import settings
 from django.db import transaction
@@ -75,16 +76,16 @@ class ScheduleDeleteGuardMixin:
     # PeriodicTask 关联本调度模型的外键字段名（子类声明：crontab / interval）
     schedule_field = ""
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> Any:
         self._ensure_schedule_unreferenced(instance)
         # 必须回传删除结果：batch_destroy 逐行分支以返回值区分 success / failures，
         # 丢弃返回值会把已成功删除的调度误报为「未删除」（mixin 模式，见 file_access 同款）
         return super().perform_destroy(instance)  # type: ignore[misc]  # 宿主 ViewSet 提供同名方法
 
-    def _needs_rowwise_delete(self):
+    def _needs_rowwise_delete(self) -> Any:
         return True
 
-    def _ensure_schedule_unreferenced(self, instance) -> None:
+    def _ensure_schedule_unreferenced(self, instance: Any) -> None:
         if not self.schedule_field:  # pragma: no cover - 子类未声明时 fail-closed 不放行
             raise ValidationError(_("Schedule reference guard is not configured"))
         queryset = PeriodicTask.objects.filter(**{self.schedule_field: instance})
@@ -145,7 +146,7 @@ def ensure_tasks_registered(force: bool = False) -> None:
         _autodiscovered = True
 
 
-def _dispatch_periodic_run(instance):
+def _dispatch_periodic_run(instance: Any) -> Any:
     """为周期任务派发一次立即执行，返回新建的 TaskExecution。
 
     Raises:
@@ -176,7 +177,7 @@ def _dispatch_periodic_run(instance):
     )
 
     # on_commit 保证记录先落库，publisher 进程的 after_task_publish 才能命中既有记录
-    def _dispatch():
+    def _dispatch() -> None:
         app.send_task(
             instance.task,
             args=args,
@@ -200,7 +201,7 @@ def _dispatch_periodic_run(instance):
     return execution
 
 
-def _clean_pks(pks) -> list:
+def _clean_pks(pks: Any) -> list[Any]:
     """清洗主键列表：PeriodicTask 主键为整型，非法值直接忽略而非查询报错"""
     valid = []
     for pk in pks or []:
@@ -265,8 +266,8 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
         request=build_object_type(properties={"enabled": build_basic_type(OpenApiTypes.BOOL)}),
         responses=get_default_response_schema(),
     )
-    @action(methods=["patch"], detail=True)
-    def enable(self, request, *args, **kwargs):
+    @action(methods=["patch"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def enable(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """启用或停用{cls}任务"""
         instance = self.get_object()
         enabled = request.data.get("enabled")
@@ -286,8 +287,8 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
         request=None,
         responses=get_default_response_schema(),
     )
-    @action(methods=["get"], detail=False, url_path="registered")
-    def registered(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="registered")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def registered(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """已注册任务列表（附 runnable 标记：是否在可手动执行白名单内）"""
         # 全量 autodiscover 开销大，进程内只做一次；新装 app 后需立即可见时
         # 带 refresh=1 强制重扫，缺省行为与既往接口保持兼容
@@ -307,8 +308,8 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
         request=None,
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, url_path="run")
-    def run(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="run")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def run(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """立即执行一次{cls}任务"""
         try:
             execution = _dispatch_periodic_run(self.get_object())
@@ -320,8 +321,8 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
         request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-run")
-    def batch_run(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-run")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_run(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量立即执行{cls}任务"""
         success, failed = 0, []
         queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=_clean_pks(request.data))
@@ -346,8 +347,8 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-enable")
-    def batch_enable(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-enable")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_enable(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量启用或停用{cls}任务
 
         body: {"pks": [...], "enabled": bool}；enabled 省略时按各任务当前状态取反。
@@ -389,8 +390,8 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
         request=None,
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, url_path="clone")
-    def clone(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="clone")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def clone(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """克隆{cls}任务（复制计划与参数，默认停用，避免克隆即执行）"""
         instance = self.get_object()
         clone = _clone_periodic_task(instance)

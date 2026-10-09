@@ -9,6 +9,8 @@
 权限解析与该视图 list 权限同口径（见 packages/xadmin-common/common/core/permission.py，存量角色免重授权）。
 """
 
+from typing import Any
+
 from django.db.models import Q
 
 from identity.models import UserInfo
@@ -16,7 +18,7 @@ from identity.models import UserInfo
 MAX_USER_OPTIONS = 20
 
 
-def search_user_options(keyword: str = "", pks: str = "", limit: int = MAX_USER_OPTIONS) -> list:
+def search_user_options(keyword: str = "", pks: str = "", limit: int = MAX_USER_OPTIONS) -> list[Any]:
     """返回候选用户列表（pk/用户名/昵称）；无关键字且无合法主键时返回空列表。"""
     keyword = (keyword or "").strip()
     queryset = UserInfo.objects.filter(is_active=True)

@@ -10,6 +10,8 @@
 （与导入记录共用，避免两份逐字重复的实现各自漂移）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -58,8 +60,8 @@ class ExportRecordViewSet(RecordStatsMixin, RecordFileDownloadMixin, RecordTaskL
     log_finished_statuses = (ExportRecord.Status.SUCCESS, ExportRecord.Status.FAILURE)
 
     @extend_schema(responses=OpenApiResponse(build_basic_type(OpenApiTypes.BINARY)))
-    @action(methods=["get"], detail=True, url_path="download")
-    def download(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="download")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def download(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """下载导出文件"""
         return self.download_record_file()
 
@@ -72,7 +74,7 @@ class ExportRecordViewSet(RecordStatsMixin, RecordFileDownloadMixin, RecordTaskL
             }
         )
     )
-    @action(methods=["get"], detail=True, url_path="log")
-    def log(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="log")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def log(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """增量读取导出任务日志"""
         return self.read_record_task_log(request)

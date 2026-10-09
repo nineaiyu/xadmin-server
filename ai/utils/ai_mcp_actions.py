@@ -28,6 +28,7 @@
 import json
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
@@ -65,7 +66,7 @@ def normalize_tool_key(name: str) -> str:
     return cleaned or "tool"
 
 
-def unique_tool_key(normalized: str, used: set) -> str:
+def unique_tool_key(normalized: str, used: set[Any]) -> str:
     """同服务器内规范化名冲突加序号（首个占用原名，后续 ``_2`` ``_3``...）。"""
     tail, seq = normalized, 1
     while tail in used:
@@ -90,17 +91,17 @@ class McpActionSpec:
     label: object
     description: object
     #: 同步快照的白名单化有界 schema（见 mcp_client.bound_input_schema）
-    input_schema: dict
+    input_schema: dict[str, Any]
     #: 快照 readOnlyHint：只读工具免审批
     read_only: bool
 
     @property
-    def required_visits(self) -> tuple:
+    def required_visits(self) -> tuple[Any, ...]:
         """复用既有权限点 call:AiMcpServers（零新权限种子）。"""
         return (("POST", f"/api/ai/mcp-servers/{self.server_pk}/call"),)
 
     @property
-    def params(self) -> dict:
+    def params(self) -> dict[str, Any]:
         """prompt 轨目录的参数视图：properties 展开为 name → 规则（补 required 标记）。
 
         ``tool_catalog``（function calling / MCP tools/list 轨）不走这里——本 spec
@@ -112,26 +113,27 @@ class McpActionSpec:
         if not isinstance(properties, dict):
             return {}
         required = {str(name) for name in schema.get("required") or [] if isinstance(name, str)}
-        rules: dict = {}
+        rules: dict[str, Any] = {}
         for name, rule in properties.items():
             merged = dict(rule) if isinstance(rule, dict) else {}
             merged["required"] = str(name) in required
             rules[str(name)] = merged
         return rules
 
-    def has_permission(self, user) -> bool:
+    def has_permission(self, user: Any) -> bool:
         """与 ActionSpec 同口径双门：业务权限点 + 可用性。"""
         return all(user_can_visit(user, method, path) for method, path in self.required_visits) and bool(
             self.available(user)
         )
 
-    def available(self, user) -> bool:
+    def available(self, user: Any) -> bool:
         """服务器当前仍 enabled 且 expose_to_ai（现查库，不用构建目录时的旧状态）。"""
         from ai.models.mcp import McpServer
 
-        return McpServer.objects.filter(pk=self.server_pk, enabled=True, expose_to_ai=True).exists()
+        typed_value: bool = McpServer.objects.filter(pk=self.server_pk, enabled=True, expose_to_ai=True).exists()
+        return typed_value
 
-    def validate(self, user, params):
+    def validate(self, user: Any, params: Any) -> Any:
         """轻量 JSON 校验（输入按不可信处理）：required 名单 + 32KB 体积上限。
 
         第三方 inputSchema 千奇百怪，这里不做完整 JSON Schema 校验（也不信任快照
@@ -153,13 +155,13 @@ class McpActionSpec:
             return {}, str(_("Tool arguments exceed the size limit"))
         return params, None
 
-    def requires_approval(self, user, params) -> bool:
+    def requires_approval(self, user: Any, params: Any) -> bool:
         """只读工具直执行；写类/未知只读性的工具按高危动作处理（非超管 412）。"""
         if self.read_only:
             return False
         return requires_approval_high_risk(user, params)
 
-    def execute(self, user, params) -> dict:
+    def execute(self, user: Any, params: Any) -> dict[str, Any]:
         """执行外部工具调用：执行期再校验（TOCTOU）→ call_tool → 摘要 → 审计。"""
         from ai.models.mcp import McpServer
 
@@ -187,7 +189,7 @@ class McpActionSpec:
         return {"ok": ok, "detail": detail, "data": {"tool": self.tool_name, **summary}}
 
 
-def _spec_for(server, entry: dict, used: set) -> McpActionSpec:
+def _spec_for(server: Any, entry: dict[str, Any], used: set[Any]) -> McpActionSpec:
     """快照条目 → 动态 spec（key 同服务器内冲突加序号，跨服务器由 pk 天然隔离）。"""
     tool_name = str(entry.get("name") or "").strip()
     tail = unique_tool_key(normalize_tool_key(tool_name), used)
@@ -205,7 +207,7 @@ def _spec_for(server, entry: dict, used: set) -> McpActionSpec:
     )
 
 
-def mcp_action_specs(user) -> dict[str, McpActionSpec]:
+def mcp_action_specs(user: Any) -> dict[str, McpActionSpec]:
     """当前用户可用的外接 MCP 工具动作（enabled + expose_to_ai + 权限点 + 白名单 + 快照齐全）。
 
     目录与执行解析共用本函数（``get_action(key, user)`` 按完整 key 命中），
@@ -231,12 +233,12 @@ def mcp_action_specs(user) -> dict[str, McpActionSpec]:
         # 连目录都不该看到（批量预检避免目录构建期逐 spec 再查库）
         if not user_can_visit(user, "POST", f"/api/ai/mcp-servers/{server.pk}/call"):
             continue
-        snapshot: dict = {}
+        snapshot: dict[str, Any] = {}
         for entry in server.tools_snapshot or []:
             if isinstance(entry, dict) and str(entry.get("name") or "").strip():
                 snapshot[str(entry["name"]).strip()] = entry
         missing_schema = False
-        used: set = set()
+        used: set[Any] = set()
         for tool_name in server.tool_names[:MAX_TOOLS_PER_SERVER]:
             if len(specs) >= MAX_DYNAMIC_SPECS:
                 truncated = True

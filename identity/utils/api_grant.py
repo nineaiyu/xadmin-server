@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import re
 from types import SimpleNamespace
+from typing import Any
 
 from django.core.cache import cache
 from django.db.models import Q
@@ -36,8 +37,12 @@ from identity.utils.api_grant_catalog import (  # noqa: F401 目录/选项拆出
     ANY,
     _catalogs,
     action_of_code,
-    grant_options_for_user,
-    validate_grant_payload,
+)
+from identity.utils.api_grant_catalog import (
+    grant_options_for_user as grant_options_for_user,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from identity.utils.api_grant_catalog import (
+    validate_grant_payload as validate_grant_payload,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from system.services import Menu
 
@@ -53,7 +58,7 @@ MENU_PATH_CACHE_KEY = "api_grant_menu_paths_{method}"
 MENU_PATH_CACHE_METHODS = ("GET", "PUT", "DELETE", "POST", "PATCH")
 
 
-def application_of_request(request):
+def application_of_request(request: Any) -> Any:
     """当前请求若以应用凭证认证（``request.auth`` 为绑定了应用的 PAT），返回应用对象。
 
     - JWT / 匿名请求：request.auth 非 PAT → None（不适用四级授权）；
@@ -70,12 +75,12 @@ def application_of_request(request):
     return application
 
 
-def active_grants(application):
+def active_grants(application: Any) -> Any:
     """应用的生效授权规则（无规则 = 兼容模式，见模块 docstring）。"""
     return list(application.grants.filter(is_active=True))
 
 
-def resolve_menu_meta(menu_pk):
+def resolve_menu_meta(menu_pk: Any) -> Any:
     """菜单权限点的 ``{"action": 动作段, "models": [模型标签]}``（短缓存）。"""
     if not menu_pk:
         return None
@@ -100,7 +105,7 @@ def resolve_menu_meta(menu_pk):
     return meta
 
 
-def _permission_path_pk_map(method: str):
+def _permission_path_pk_map(method: str) -> Any:
     """「启用权限菜单」的 ``path → pk`` 映射（按 HTTP 方法维度，短缓存）。
 
     缓存故障不影响判定（降级直查）；空映射同样入缓存（避免无规则时穿透）。
@@ -125,7 +130,7 @@ def _permission_path_pk_map(method: str):
     return data
 
 
-def invalid_menu_path_cache():
+def invalid_menu_path_cache() -> None:
     """失效权限菜单 ``path → pk`` 映射缓存（全部方法维度；菜单变更信号调用）。"""
     try:
         cache.delete_many([MENU_PATH_CACHE_KEY.format(method=method) for method in MENU_PATH_CACHE_METHODS])
@@ -134,7 +139,7 @@ def invalid_menu_path_cache():
         logger.warning("invalidate menu path cache failed", exc_info=True)
 
 
-def resolve_request_menu_pk(request):
+def resolve_request_menu_pk(request: Any) -> Any:
     """按请求 path + method 在「启用权限菜单」里命中菜单 pk（与权限层同口径）。
 
     仅用于超管 / 白名单 URL 出口（权限层未解析菜单上下文）的应用凭证请求：
@@ -157,7 +162,7 @@ def resolve_request_menu_pk(request):
     return menu_pk
 
 
-def _match_menu_pk(permission_data, url):
+def _match_menu_pk(permission_data: Any, url: Any) -> Any:
     """按请求地址命中菜单 pk：精确 `path$` 优先，其次段边界前缀回退。
 
     回退匹配复用 ``common.core.utils.permission_path_matches``（与运行期判定、
@@ -173,7 +178,7 @@ def _match_menu_pk(permission_data, url):
     return None
 
 
-def resolve_request_model_label(request, view):
+def resolve_request_model_label(request: Any, view: Any) -> Any:
     """请求的目标模型标签：优先视图 ``queryset.model``（真实资源），回退菜单绑定模型。
 
     两者都解析不到（裸 APIView 且菜单未绑定模型）→ None：白名单模式下只有
@@ -188,7 +193,7 @@ def resolve_request_model_label(request, view):
     return models[0] if len(models) == 1 else None
 
 
-def match_grants(grants, model_label, action):
+def match_grants(grants: Any, model_label: Any, action: Any) -> Any:
     """覆盖（模型 × 动作）的规则列表；白名单模式下为空 = 拒绝。"""
     matched = []
     for grant in grants:
@@ -201,7 +206,7 @@ def match_grants(grants, model_label, action):
     return matched
 
 
-def grant_field_allowlist(matched, model_label):
+def grant_field_allowlist(matched: Any, model_label: Any) -> Any:
     """字段级收敛白名单：None = 不限；set = 允许字段（精确模型规则并集）。
 
     任一覆盖规则 ``fields`` 为空即视为「该模型不限字段」；``*`` 规则的 fields
@@ -218,7 +223,7 @@ def grant_field_allowlist(matched, model_label):
     return allowed or None
 
 
-def grant_row_filter(matched, model, user):
+def grant_row_filter(matched: Any, model: Any, user: Any) -> Any:
     """行级收敛：编译为 ``Q``（None = 不限）；无有效规则时 fail-closed 全拒。
 
     复用 DataPermission 的规则编译器（``data_scope.compile_grant``）：规则的
@@ -246,7 +251,7 @@ def grant_row_filter(matched, model, user):
     return result.q
 
 
-def enforce_application_grant(request, view):
+def enforce_application_grant(request: Any, view: Any) -> Any:
     """四级授权主入口（在权限层调用）：模型 × 动作级判定 + 字段收敛挂载。
 
     返回匹配的规则列表（兼容模式返回 None）。命中失败抛 PermissionDenied；
@@ -279,7 +284,7 @@ def enforce_application_grant(request, view):
     return matched
 
 
-def apply_grant_row_scope(request, queryset):
+def apply_grant_row_scope(request: Any, queryset: Any) -> Any:
     """行级收敛挂载点（数据权限过滤之后调用）：AND 叠加应用行级规则。"""
     matched = getattr(request, "_api_grant_matched", None)
     if not matched:
@@ -293,7 +298,7 @@ def apply_grant_row_scope(request, queryset):
     return queryset.filter(row_q)
 
 
-def apply_grant_fields(request, model_label, allowed):
+def apply_grant_fields(request: Any, model_label: Any, allowed: Any) -> Any:
     """字段级收敛挂载点（序列化层调用）：与用户字段权限取交集（最后一道）。"""
     grant_fields = getattr(request, "api_grant_fields", None)
     if not grant_fields:

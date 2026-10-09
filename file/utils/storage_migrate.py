@@ -16,6 +16,7 @@
 """
 
 import hashlib
+from collections.abc import Iterator
 from typing import Any
 
 from django.core.files.base import File
@@ -49,11 +50,11 @@ def get_remote_storage() -> Storage:
     return delegate
 
 
-def iter_upload_names(batch_size: int = 500, limit: int | None = None):
+def iter_upload_names(batch_size: int = 500, limit: int | None = None) -> Iterator[tuple[Any, str]]:
     """遍历需搬迁的存储对象名（``UploadFile.filepath.name`` 去重后按 pk 顺序）。"""
     from file.models import UploadFile
 
-    seen = set()
+    seen: set[str] = set()
     count = 0
     queryset = UploadFile.all_objects.exclude(filepath="").order_by("pk")
     for row in queryset.iterator(chunk_size=batch_size):
@@ -67,7 +68,7 @@ def iter_upload_names(batch_size: int = 500, limit: int | None = None):
             return
 
 
-def _md5(file_obj) -> str:
+def _md5(file_obj: Any) -> str:
     digest = hashlib.md5()  # noqa: S324 文件指纹（非安全用途），与 UploadFile.md5sum 口径一致
     while True:
         chunk = file_obj.read(COPY_CHUNK_SIZE)
@@ -88,7 +89,8 @@ def object_md5(storage: Storage, name: str) -> str | None:
 
 def _same_size(source: Storage, target: Storage, name: str) -> bool:
     try:
-        return source.exists(name) and target.exists(name) and source.size(name) == target.size(name)
+        same: bool = source.exists(name) and target.exists(name) and source.size(name) == target.size(name)
+        return same
     except Exception:  # noqa: BLE001 任一端不可达按「不确定」处理（走复制分支并由 save 报错）
         return False
 
@@ -135,7 +137,7 @@ def migrate_uploads(
     overwrite: bool = False,
     verify: bool = False,
     check_md5: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     """执行搬迁 / 校验，返回统计与失败明细。
 
     ``dry_run`` 只统计不写入（会读取源端做存在性 / 大小判断）。
@@ -177,7 +179,7 @@ def migrate_uploads(
     return stats
 
 
-def summary_line(stats: dict, direction: str, dry_run: bool = False, verify: bool = False) -> str:
+def summary_line(stats: dict[str, Any], direction: str, dry_run: bool = False, verify: bool = False) -> str:
     """人类可读的统计行（命令输出用）。"""
     if verify:
         return (

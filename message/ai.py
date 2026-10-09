@@ -55,7 +55,7 @@ def strip_action_command(content: str) -> str:
     return (content or "").strip()[len(ACTION_COMMAND) :].strip()
 
 
-def action_reply(user, request_text: str) -> tuple:
+def action_reply(user: Any, request_text: str) -> tuple[Any, ...]:
     """受限动作草稿（A2）：返回 (content, extra, mode)。
 
     - 可执行 → content 为确认摘要，``extra.action_draft`` 携带白名单动作与规范化参数
@@ -116,7 +116,7 @@ def action_reply(user, request_text: str) -> tuple:
     return summary, extra, "action"
 
 
-def history_messages(room: ChatRoom, limit: int | None = None, drop_last_user: bool = False) -> list:
+def history_messages(room: ChatRoom, limit: int | None = None, drop_last_user: bool = False) -> list[Any]:
     """取会话最近 N 条消息（时间正序）：用户消息 → user，AI 回复 → assistant，系统消息跳过。
 
     limit 缺省读配置（档案/Setting 的 AI_CONTEXT_LIMIT）；
@@ -139,7 +139,7 @@ def history_messages(room: ChatRoom, limit: int | None = None, drop_last_user: b
     return messages[-limit:]
 
 
-def build_chat_messages(room: ChatRoom, question: str) -> list:
+def build_chat_messages(room: ChatRoom, question: str) -> list[Any]:
     """通用多轮上下文：人设 + 历史（不含本轮提问）+ 本轮提问。"""
     from ai.utils.ai import ai_persona
 
@@ -150,7 +150,7 @@ def build_chat_messages(room: ChatRoom, question: str) -> list:
     )
 
 
-def _llm_reply(messages: list, user=None) -> tuple:
+def _llm_reply(messages: list[Any], user: Any = None) -> tuple[Any, ...]:
     """普通多轮：返回 ``(脱敏后文本, 脱敏命中数)``（输出护栏 + 用量记账）。"""
     from ai.utils.ai_guard import mask_text
     from ai.utils.ai_usage import tracked_chat
@@ -164,7 +164,7 @@ def _llm_reply(messages: list, user=None) -> tuple:
     return mask_text(answer, user)
 
 
-def kb_answer(question: str, user=None) -> tuple:
+def kb_answer(question: str, user: Any = None) -> tuple[Any, ...]:
     """知识库问答：返回 (answer, sources)；无命中/未启用转可读校验错误。
 
     answer 已由 ``system.utils.ai.ask`` 走输出护栏脱敏。
@@ -175,7 +175,7 @@ def kb_answer(question: str, user=None) -> tuple:
     return result["answer"], result.get("sources") or []
 
 
-def ai_reply_content(room: ChatRoom, question: str) -> tuple:
+def ai_reply_content(room: ChatRoom, question: str) -> tuple[Any, ...]:
     """按命令分流生成回复，返回 (content, extra, mode)（输出文本统一过护栏脱敏）。"""
     from ai.utils.ai_usage import quota_error
 
@@ -198,7 +198,7 @@ def ai_reply_content(room: ChatRoom, question: str) -> tuple:
     return answer, extra, "chat"
 
 
-def _llm_reply_stream(messages: list, user=None):
+def _llm_reply_stream(messages: list[Any], user: Any = None) -> Any:
     """流式多轮：逐段产出 ``{"type": "reasoning"|"content", "text": ...}`` 事件。
 
     AiSdkError 转可读校验错误（在生成器内抛出）；用量记账由 ``tracked_chat_stream`` 收口。
@@ -215,7 +215,7 @@ def _llm_reply_stream(messages: list, user=None):
         raise DjangoValidationError(_("AI service is temporarily unavailable")) from exc
 
 
-def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
+def ai_stream_events(room: ChatRoom, question: str, question_payload: dict[str, Any]) -> Any:
     """SSE 事件生成器（二期，含思考过程）：yield dict(event, data)，视图转 text/event-stream。
 
     事件序：``meta``（问题回执）→ ``reasoning``*（思考增量，思考型模型才有）→
@@ -235,8 +235,8 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
 
     yield {"event": "meta", "data": {"question": question_payload}}
 
-    chunks: list = []
-    reasoning_chunks: list = []
+    chunks: list[Any] = []
+    reasoning_chunks: list[Any] = []
     extra: dict[str, Any] = {"mode": "chat"}
     masks = (StreamMasker(room.owner), StreamMasker(room.owner))
     try:
@@ -269,7 +269,9 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
     yield from _finalize_stream_reply(room, chunks, reasoning_chunks, extra, masks)
 
 
-def _stream_llm_deltas(room: ChatRoom, question: str, chunks: list, reasoning_chunks: list, masks: tuple):
+def _stream_llm_deltas(
+    room: ChatRoom, question: str, chunks: list[Any], reasoning_chunks: list[Any], masks: tuple[Any, ...]
+) -> Any:
     """LLM 流式增量 → ``reasoning`` / ``delta`` 事件（逐段经 StreamMasker 脱敏后产出）。"""
     content_masker, reasoning_masker = masks
     for item in _llm_reply_stream(build_chat_messages(room, question), room.owner):
@@ -288,13 +290,13 @@ def _stream_llm_deltas(room: ChatRoom, question: str, chunks: list, reasoning_ch
                 yield {"event": "delta", "data": {"delta": delta}}
 
 
-def _stream_error_fallback(room: ChatRoom, detail: str):
+def _stream_error_fallback(room: ChatRoom, detail: str) -> Any:
     """全程无增量即失败：落一条 system 降级消息（前端可见）+ ``error`` 事件。"""
     fallback, __ = chat_service.create_message(
         room,
         None,
         detail,
-        message_type=ChatMessage.MessageType.SYSTEM,  # type: ignore[arg-type]  # Choices 元类
+        message_type=ChatMessage.MessageType.SYSTEM,
         extra={"error": True, "mode": "chat"},
     )
     payload = chat_service.message_payload(fallback, room=room)
@@ -302,7 +304,9 @@ def _stream_error_fallback(room: ChatRoom, detail: str):
     yield {"event": "error", "data": {"detail": detail, "message": payload}}
 
 
-def _finalize_stream_reply(room: ChatRoom, chunks: list, reasoning_chunks: list, extra: dict, masks: tuple):
+def _finalize_stream_reply(
+    room: ChatRoom, chunks: list[Any], reasoning_chunks: list[Any], extra: dict[str, Any], masks: tuple[Any, ...]
+) -> Any:
     """冲刷脱敏缓冲 → 组装 extra（guard/reasoning/兜底文案）→ 落库广播 → ``done`` 事件。"""
     content_masker, reasoning_masker = masks
     # 冲刷脱敏器缓冲（中断场景也要补发已缓冲的安全文本）
@@ -328,7 +332,7 @@ def _finalize_stream_reply(room: ChatRoom, chunks: list, reasoning_chunks: list,
         room,
         None,
         "".join(chunks),
-        message_type=ChatMessage.MessageType.AI,  # type: ignore[arg-type]  # 同上
+        message_type=ChatMessage.MessageType.AI,
         extra=extra,
     )
     payload = chat_service.message_payload(reply, room=room)

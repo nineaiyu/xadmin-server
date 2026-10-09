@@ -11,6 +11,7 @@
 """
 
 import uuid
+from typing import Any
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -78,11 +79,11 @@ class ImportRecord(DbAuditModel):
         verbose_name = _("Import record")
         indexes = [models.Index(fields=["status", "created_time"], name="idx_import_status_created")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.pk})"
 
     @property
-    def report_filesize(self):
+    def report_filesize(self) -> Any:
         """错误报告字节数，未生成或文件缺失时返回 None。"""
         return getattr(self.error_report, "filesize", None) if self.error_report_id else None
 
@@ -115,5 +116,5 @@ class ImportTemplate(DbUuidModel, DbAuditModel):
             ),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.model})"

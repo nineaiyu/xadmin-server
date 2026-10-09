@@ -13,6 +13,8 @@
 - ApprovalNodeTaskSerializer：节点任务（审批轨迹）。
 """
 
+from typing import Any
+
 from django.db import transaction
 from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _
@@ -23,9 +25,13 @@ from approval.models.approval import (
     ApprovalFlowNode,
 )
 from approval.serializers.approval_instance import (  # noqa: F401 实例/任务序列化器拆出后保持既有导入面
-    ApprovalInstanceExportSerializer,
-    ApprovalInstanceSerializer,
-    ApprovalNodeTaskSerializer,
+    ApprovalInstanceExportSerializer as ApprovalInstanceExportSerializer,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from approval.serializers.approval_instance import (
+    ApprovalInstanceSerializer as ApprovalInstanceSerializer,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from approval.serializers.approval_instance import (
+    ApprovalNodeTaskSerializer as ApprovalNodeTaskSerializer,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from approval.utils.approval_flow import CONDITION_OPS, MAX_FLOW_NODES
 from approval.utils.approval_flow.versioning import apply_definition, build_snapshot
@@ -38,7 +44,7 @@ FORM_FIELD_TYPES = ("text", "textarea", "number", "date", "select")
 NUMERIC_CONDITION_OPS = ("gt", "gte", "lt", "lte")
 
 
-def _username(value):
+def _username(value: Any) -> Any:
     return getattr(value, "username", str(value))
 
 
@@ -76,7 +82,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     # 两管理员并发编辑时后写不再静默覆盖先写（否则先写内容无提示丢失且各落一版）
     base_updated_time = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         # 仅 list 裁剪（实例侧 LIST_EXCLUDED_FIELDS 同款口径）：列表页只渲染 table_fields，
         # nodes / form_schema 随节点数与字段数线性膨胀；编辑走 retrieve 独立取全量
@@ -113,11 +119,12 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         ]
         table_fields = ["name", "code", "node_count", "is_active", "creator", "created_time"]
 
-    def get_node_count(self, obj) -> int:
+    def get_node_count(self, obj: Any) -> int:
         annotated = getattr(obj, "node_count", None)
-        return annotated if annotated is not None else obj.nodes.count()
+        count: int = annotated if annotated is not None else obj.nodes.count()
+        return count
 
-    def get_form_schema_locked(self, obj) -> bool:
+    def get_form_schema_locked(self, obj: Any) -> bool:
         """是否被 dform 绑定（绑定期 form_schema 由表单侧单向投影维护）。
 
         列表/详情/导出走 ``relation_count_fields`` 预聚合（注解为 Count，转布尔）；
@@ -125,10 +132,12 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         """
         annotated = getattr(obj, "form_schema_locked", None)
         if annotated is not None:
-            return annotated > 0
-        return obj.bound_forms.filter(is_template=False).exists()
+            locked: bool = annotated > 0
+            return locked
+        bound: bool = obj.bound_forms.filter(is_template=False).exists()
+        return bound
 
-    def validate_form_schema(self, value):
+    def validate_form_schema(self, value: Any) -> Any:
         """表单字段定义校验：key/label/type 必填，type 白名单，select 需 options。"""
         if value in (None, ""):
             return []
@@ -151,7 +160,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                 raise serializers.ValidationError(_("Select field {} requires options").format(key))
         return value
 
-    def validate_nodes(self, value):
+    def validate_nodes(self, value: Any) -> Any:
         """节点校验：数量上限；至少 1 个；order 缺省按顺序补齐且不可重复；审批人配置与条件表达式合法。"""
         if value is None:
             return value
@@ -200,7 +209,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                     self._validate_condition(condition)
         return value
 
-    def _validate_condition(self, condition):
+    def _validate_condition(self, condition: Any) -> None:
         """条件表达式校验：field 必填、op 白名单、数值运算符的值必须可转数值（routes 与节点条件共用）。"""
         if not isinstance(condition, dict) or not (condition.get("field") or "").strip():
             raise serializers.ValidationError(_("Condition requires a field"))
@@ -219,19 +228,19 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                     _("Condition value for operator {} must be a number").format(op)
                 ) from None
 
-    def validate_code(self, value):
+    def validate_code(self, value: Any) -> Any:
         value = (value or "").strip()
         if not value:
             raise serializers.ValidationError(_("Flow code is required"))
         return value
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         nodes = attrs.get("nodes") or []
         if nodes:
             self._validate_routes_graph(nodes)
         return attrs
 
-    def _validate_routes_graph(self, nodes):
+    def _validate_routes_graph(self, nodes: Any) -> None:
         """跨节点路由校验：target 必须是同流程有效 order 且非自环；显式回跳环 DFS 拦截
         （线性隐式边按 order 递增天然无环，仅需检测 routes 边）。"""
         orders = {int(node["order"]) for node in nodes}
@@ -281,15 +290,15 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                     if target_state == 0:
                         stack.append((target, False))
 
-    @transaction.atomic
-    def create(self, validated_data):
+    @transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def create(self, validated_data: Any) -> Any:
         nodes = validated_data.pop("nodes", [])
         flow = super().create(validated_data)
         apply_definition(flow, nodes, remark=_("Initial version"))
         return flow
 
-    @transaction.atomic
-    def update(self, instance, validated_data):
+    @transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def update(self, instance: Any, validated_data: Any) -> Any:
         nodes = validated_data.pop("nodes", None)
         base_updated_time = validated_data.pop("base_updated_time", None)
         # 编辑锁：绑定期 form_schema 由绑定表单单向投影，客户端改动忽略不落库
@@ -306,7 +315,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             apply_definition(flow, nodes, remark=_("Nodes updated"))
         return flow
 
-    def _check_not_concurrently_modified(self, flow, base_updated_time) -> None:
+    def _check_not_concurrently_modified(self, flow: Any, base_updated_time: Any) -> None:
         """乐观锁：编辑基线落后于当前行说明他人已先保存，拒绝整单覆盖（fail-closed）。
 
         基线值是客户端原样回传的 updated_time 渲染串，这里用同款 DateTimeField 渲染
@@ -319,7 +328,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         if str(base_updated_time) != str(current):
             raise serializers.ValidationError(_("The flow was modified by someone else, please refresh and retry"))
 
-    def _definition_changed(self, flow, nodes) -> bool:
+    def _definition_changed(self, flow: Any, nodes: Any) -> bool:
         """与最新版本快照比较：nodes 或 form_schema 有变化返回 True。
 
         历史快照缺 `timeout_action`（字段后补）时按默认值回填再比较，避免
@@ -338,7 +347,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             build_snapshot(flow, nodes), sort_keys=True, ensure_ascii=False
         )
 
-    def rollback_to_version(self, flow, version: int, remark=""):
+    def rollback_to_version(self, flow: Any, version: int, remark: Any = "") -> Any:
         """回滚到历史版本：快照写入活定义（节点/表单）并落新版本。返回 (ok, detail)。
 
         与改节点同口径：在途实例按自身 ``flow_version`` 推进，回滚只影响之后发起的新单，

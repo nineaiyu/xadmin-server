@@ -8,13 +8,14 @@ CeleryThreadTaskFileHandler 按 task_id 落盘 CELERY_LOG_DIR/<task_id>.log，
 """
 
 import os
+from typing import Any
 
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 
 LOG_READ_CHUNK = 64 * 1024
 
 
-def read_task_log_chunk(task_id, offset=0, finished_hint=False):
+def read_task_log_chunk(task_id: Any, offset: Any = 0, finished_hint: Any = False) -> Any:
     """增量读取一段任务日志。
 
     Args:

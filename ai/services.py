@@ -6,17 +6,19 @@
 ``from <app>.services import ...`` 模块级引用业务 app。
 """
 
+from typing import Any
+
 __all__ = ["api_action_specs"]
 
 
-def api_action_specs() -> dict:
+def api_action_specs() -> dict[str, Any]:
     """AI 动作声明注册表（MCP / 助手页 / function calling / OpenAPI 元数据同源）。"""
     from ai.utils.ai_api_registry import API_ACTION_SPECS
 
     return API_ACTION_SPECS
 
 
-def __getattr__(name):
+def __getattr__(name: Any) -> Any:
     # 惰性再导出：注册表常量供声明式消费方按需获取
     if name == "API_ACTION_SPECS":
         from ai.utils.ai_api_registry import API_ACTION_SPECS as _specs

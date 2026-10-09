@@ -29,6 +29,7 @@
 
 import json
 import os
+from typing import Any
 
 from django.conf import settings
 from django.core.management import call_command
@@ -51,19 +52,20 @@ FLOW_SEED_FILE = "approvalflow.json"
 DEPT_SEED_FILE = "deptinfo.json"
 
 
-def _load_seed(filename: str) -> list:
+def _load_seed(filename: str) -> list[Any]:
     path = os.path.join(settings.PROJECT_DIR, "loadjson", filename)
     with open(path, encoding="utf-8") as fp:
-        return json.load(fp)
+        rows: list[Any] = json.load(fp)
+    return rows
 
 
 class Command(BaseCommand):
     help = "一键卸载全部演示数据（清理 seed_demo_* 生成的数据并回滚对内置种子的改写）"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--keep-users", action="store_true", help="保留演示用户（默认一并清理）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         # 1) 各命令自清理（顺序 = 业务数据 → 组织 → 用户，避免外键拦截）
         call_command("seed_demo_extras", clean_only=True)
         call_command("seed_demo_admin", clean_only=True)
@@ -86,7 +88,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 回滚
 
-    def _restore_builtin_flow_nodes(self):
+    def _restore_builtin_flow_nodes(self) -> None:
         """恢复演示命令改写的流程定义：种子行复活 + 演示落的新行退役 + 快照/版本回落。
 
         版本化改造后改版不再物理删除节点行：演示重绑与场景模板都走「收口旧行 +
@@ -139,7 +141,7 @@ class Command(BaseCommand):
                     flow.save(update_fields=["version", "updated_time"])
         self.stdout.write(f"restored builtin flow nodes: {restored}; retired demo rows: {retired}")
 
-    def _restore_demo_dept_leader(self):
+    def _restore_demo_dept_leader(self) -> None:
         """恢复「演示部门」负责人为种子值（seed_demo_leave 曾改写为演示审批人）。"""
         seed = {
             str(row["pk"]): row["fields"].get("leader")
@@ -157,7 +159,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 用户
 
-    def _remove_demo_users(self):
+    def _remove_demo_users(self) -> None:
         # 硬删优先（彻底释放 username 唯一约束）；被业务数据引用拦截（PROTECT）时降级软删
         queryset = UserInfo.all_objects.filter(username__startswith=DEMO_USER_PREFIX)
         total = queryset.count()

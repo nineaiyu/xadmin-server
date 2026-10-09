@@ -4,6 +4,8 @@
 # filename : impersonation
 # author : ly_13
 # date : 10/1/2026
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -35,7 +37,7 @@ class ImpersonateExitAPIView(GenericAPIView):
         request=OpenApiRequest(build_object_type(properties={"refresh": build_basic_type(OpenApiTypes.STR)})),
         responses=get_default_response_schema(),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """退出模拟：失效模拟态凭证，为模拟发起人重签 token"""
         if not is_impersonating(request):
             return ApiResponse(code=1001, detail=_("Not impersonating any user"))

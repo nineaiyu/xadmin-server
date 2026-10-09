@@ -14,6 +14,7 @@
 import hashlib
 import json
 import time
+from typing import Any
 
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -30,18 +31,18 @@ IMPERSONATOR_CLAIM = "imp"
 IMPERSONATE_LOG_MODULE = "User:impersonate"
 
 
-def get_impersonator_pk(request):
+def get_impersonator_pk(request: Any) -> Any:
     """当前请求处于模拟态时返回发起人 pk，否则 None（session/PAT 认证无 payload）。"""
     payload = getattr(getattr(request, "auth", None), "payload", None) or {}
     return payload.get(IMPERSONATOR_CLAIM)
 
 
-def is_impersonating(request) -> bool:
+def is_impersonating(request: Any) -> bool:
     """当前请求是否处于模拟态（token 带发起人 claim）。"""
     return bool(get_impersonator_pk(request))
 
 
-def start_impersonation(request, target, impersonator) -> dict:
+def start_impersonation(request: Any, target: Any, impersonator: Any) -> dict[str, Any]:
     """以 target 身份签发模拟 token：登记模拟会话 + 登录日志留痕。
 
     返回登录载荷（refresh / access / 生存期 / 目标用户摘要），由调用方下发；
@@ -89,7 +90,7 @@ def start_impersonation(request, target, impersonator) -> dict:
     return data
 
 
-def stop_impersonation(request):
+def stop_impersonation(request: Any) -> Any:
     """退出模拟：失效当前模拟会话 + 为发起人重签 token。
 
     :return: (impersonator, data)；发起人不存在或已停用时返回 (None, None)，
@@ -124,7 +125,7 @@ def stop_impersonation(request):
     return impersonator, data
 
 
-def blacklist_impersonated_refresh(request) -> None:
+def blacklist_impersonated_refresh(request: Any) -> None:
     """拉黑请求体携带的模拟态 refresh token（缺失/已失效静默跳过，不阻断退出）。"""
     from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -137,7 +138,7 @@ def blacklist_impersonated_refresh(request) -> None:
         logger.info("blacklist impersonated refresh token skipped", exc_info=True)
 
 
-def _record_impersonation_log(request, target, action: str, impersonator) -> None:
+def _record_impersonation_log(request: Any, target: Any, action: str, impersonator: Any) -> None:
     """模拟开始 / 退出的显式审计留痕（操作日志，module=User:impersonate）。"""
     from audit.services import OperationLog
 

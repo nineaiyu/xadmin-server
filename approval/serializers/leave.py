@@ -9,6 +9,8 @@
   审批轨迹（复用流程实例接口，不重复造数据结构）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -19,7 +21,7 @@ from common.core.serializers import BaseModelSerializer
 from task.services import DisplayRelatedField
 
 
-def _username(value):
+def _username(value: Any) -> Any:
     return getattr(value, "username", str(value))
 
 
@@ -89,29 +91,29 @@ class LeaveSerializer(BaseModelSerializer):
 
     # ---------------------------------------------------------------- 只读派生字段
 
-    def get_instance_pk(self, obj):
+    def get_instance_pk(self, obj: Any) -> Any:
         return str(obj.instance_id) if obj.instance_id else ""
 
-    def get_instance_no(self, obj) -> str:
+    def get_instance_no(self, obj: Any) -> str:
         return str(obj.instance_id)[:8].upper() if obj.instance_id else ""
 
-    def get_current_node_name(self, obj) -> str:
+    def get_current_node_name(self, obj: Any) -> str:
         instance = obj.instance
         if instance is None or obj.status != Leave.Status.PENDING:
             return ""
         return getattr(instance.current_node, "name", "") or ""
 
-    def get_reject_reason(self, obj) -> str:
+    def get_reject_reason(self, obj: Any) -> str:
         instance = obj.instance
         return (getattr(instance, "reason", "") or "") if instance is not None else ""
 
-    def get_finished_at(self, obj):
+    def get_finished_at(self, obj: Any) -> Any:
         instance = obj.instance
         return getattr(instance, "finished_at", None) if instance is not None else None
 
     # ---------------------------------------------------------------- 校验与写入
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         start_date = attrs.get("start_date") or getattr(self.instance, "start_date", None)
         end_date = attrs.get("end_date") or getattr(self.instance, "end_date", None)
         days = attrs.get("days")

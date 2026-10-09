@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """权限可视化：用户/部门/角色/岗位四个维度的只读预览载荷。"""
 
+from typing import Any
+
 from django.conf import settings
 
 from common.core.filter import get_filter_queryset
@@ -23,7 +25,7 @@ from .queries import (
 )
 
 
-def get_user_preview(user_obj: UserInfo) -> dict:
+def get_user_preview(user_obj: UserInfo) -> dict[str, Any]:
     """用户维度三层权限预览全量载荷。"""
     menu_queryset = get_user_menu_queryset_for_preview(user_obj)
     page_menus = None
@@ -63,7 +65,7 @@ def get_user_preview(user_obj: UserInfo) -> dict:
     }
 
 
-def get_dept_preview(dept_obj: DeptInfo, operator: UserInfo) -> dict:
+def get_dept_preview(dept_obj: DeptInfo, operator: UserInfo) -> dict[str, Any]:
     """部门维度授权预览：部门信息 + 挂载角色 / 数据权限 / 字段权限 + 成员采样。
 
     与用户/角色预览同源：菜单树复用 _serialize_menu_tree（自动补齐祖先），
@@ -156,7 +158,7 @@ def get_dept_preview(dept_obj: DeptInfo, operator: UserInfo) -> dict:
     }
 
 
-def get_role_preview(role_obj: UserRole, operator: UserInfo) -> dict:
+def get_role_preview(role_obj: UserRole, operator: UserInfo) -> dict[str, Any]:
     """角色维度授权预览载荷（授权菜单树 / 字段授权 / 持有用户采样）。
 
     持有用户列表经调用者数据权限过滤（不泄漏调用者不可见的用户）。
@@ -204,7 +206,7 @@ def get_role_preview(role_obj: UserRole, operator: UserInfo) -> dict:
     }
 
 
-def get_post_preview(post_obj: Post, operator: UserInfo) -> dict:
+def get_post_preview(post_obj: Post, operator: UserInfo) -> dict[str, Any]:
     """岗位维度预览载荷（岗位信息 + 持有用户采样 + 固定说明）。
 
     岗位不参与权限判定，故无菜单树 / 数据权限 / 字段权限段；成员列表与部门/角色

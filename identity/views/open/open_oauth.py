@@ -16,6 +16,8 @@ scope 参数说明：xadmin 的 scope 条目是「METHOD + 路径正则」（本
 故本实现的 ``scope`` 参数用**逗号**分隔（省略 = 应用全部 scope；提供即必须是子集）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny
@@ -37,12 +39,12 @@ from identity.utils.pat_scope import scope_display_value
 from identity.views.open.open import verify_application_credentials
 
 
-def oauth_error(error: str, detail=None, status: int = 400):
+def oauth_error(error: str, detail: Any = None, status: int = 400) -> Any:
     """标准 OAuth 错误码 + 项目响应壳（``data.error`` 供标准客户端读取）。"""
     return ApiResponse(code=1001, detail=str(detail or error), data={"error": error}, status=status)
 
 
-def _oauth_response(result, error):
+def _oauth_response(result: Any, error: Any) -> Any:
     """协议结果 → 响应：错误三元组映射 oauth_error，成功载荷原样返回。"""
     if error is not None:
         code, detail, status = error
@@ -50,7 +52,7 @@ def _oauth_response(result, error):
     return ApiResponse(data=result)
 
 
-def write_oauth_audit(request, application, result: str) -> None:
+def write_oauth_audit(request: Any, application: Any, result: str) -> None:
     """授权动作审计（approve/deny 各一条，module=OAuth）；异常不外抛。"""
     try:
         OperationLog.objects.create(
@@ -71,7 +73,7 @@ class OpenOAuthAuthorizeAPIView(APIView):
     """同意页数据：校验请求参数并回显应用、请求范围与当前用户（登录态）。"""
 
     @extend_schema(responses=get_default_response_schema())
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         application, redirect_uri, scopes, challenge, method, state, error = validate_authorize_request(
             request.query_params
         )
@@ -100,7 +102,7 @@ class OpenOAuthApproveAPIView(APIView):
     又过不了 CORS 预检，故以 Content-Type 作为同源收紧点（fail-closed）。
     """
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         content_type = (request.content_type or "").split(";")[0].strip().lower()
         if content_type != "application/json":
             return oauth_error("invalid_request", _("This action only accepts JSON requests"), status=403)
@@ -130,7 +132,7 @@ class OpenOAuthTokenAPIView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AnonRateThrottle, OAuthClientThrottle]
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         client_id = str(request.data.get("client_id") or "").strip()
         client_secret = str(request.data.get("client_secret") or "").strip()
         if not client_id or not client_secret:
@@ -163,7 +165,7 @@ class OpenOAuthRevokeAPIView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AnonRateThrottle, OAuthClientThrottle]
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         client_id = str(request.data.get("client_id") or "").strip()
         client_secret = str(request.data.get("client_secret") or "").strip()
         if not client_id or not client_secret:

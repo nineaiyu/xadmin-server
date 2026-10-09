@@ -15,6 +15,7 @@
 
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db.models import FloatField, JSONField, TextField
@@ -55,7 +56,7 @@ class ColumnSpec:
         return f"{_ALIAS_PREFIX}{sanitize(self.root)}_{sanitize(self.key)}"
 
 
-def split_type(column) -> tuple:
+def split_type(column: Any) -> tuple[Any, ...]:
     """按最后一个 ``|`` 切分类型标注（模型字段名与 JSON 键均不含 ``|``）。"""
     raw = str(column or "").strip()
     if "|" not in raw:
@@ -64,7 +65,7 @@ def split_type(column) -> tuple:
     return path.strip(), value_type.strip()
 
 
-def parse_column(model, column, whitelist=None) -> ColumnSpec:
+def parse_column(model: Any, column: Any, whitelist: Any = None) -> ColumnSpec:
     """解析单列声明；越界一律 ValidationError。
 
     ``whitelist`` 为模型 DATA 字段白名单（``available_fields`` 结果）：
@@ -101,7 +102,7 @@ def parse_column(model, column, whitelist=None) -> ColumnSpec:
     return ColumnSpec(raw=raw, path=path, is_json=True, root=root, key=key, value_type=value_type)
 
 
-def expression_of(spec: ColumnSpec):
+def expression_of(spec: ColumnSpec) -> Any:
     """JSON 列的 ORM 表达式：统一 Cast 到显式类型。
 
     文本列也必须 Cast（``output_field=TextField()``）：裸 ``KeyTextTransform`` 参与
@@ -116,7 +117,7 @@ def expression_of(spec: ColumnSpec):
     return Cast(expression, output_field=output_field)
 
 
-def resolve_columns(model, columns, whitelist=None) -> list:
+def resolve_columns(model: Any, columns: Any, whitelist: Any = None) -> list[Any]:
     """批量解析并检测别名冲突（sanitize 后重名，如 ``data.a-b`` 与 ``data.a_b``）。"""
     specs = [parse_column(model, column, whitelist) for column in columns or []]
     aliases = set()
@@ -134,17 +135,17 @@ def resolve_columns(model, columns, whitelist=None) -> list:
     return specs
 
 
-def annotations_for(specs) -> dict:
+def annotations_for(specs: Any) -> dict[str, Any]:
     """JSON 列的 ORM 注解映射（别名 → 表达式）；模型字段不产生注解。"""
     return {spec.alias: expression_of(spec) for spec in specs if spec.is_json}
 
 
-def json_fields_of(model) -> list:
+def json_fields_of(model: Any) -> list[Any]:
     """模型上的 JSONField 字段名（设计器提示「哪些字段支持 JSON 路径」）。"""
     return sorted(field.name for field in model._meta.get_fields() if isinstance(field, JSONField))
 
 
-def json_fields_of_bound_model(bound_model) -> list:
+def json_fields_of_bound_model(bound_model: Any) -> list[Any]:
     """按 ``label_lower`` 取模型上的 JSONField 名单（模型不可用返回空表）。"""
     from django.apps import apps as django_apps
 
@@ -160,7 +161,7 @@ def visible_root_of(spec: ColumnSpec) -> str:
     return spec.root if spec.is_json else spec.raw
 
 
-def date_bucket_expression(spec: ColumnSpec, date_trunc: str):
+def date_bucket_expression(spec: ColumnSpec, date_trunc: str) -> Any:
     """JSON 日期列的趋势桶：``Substr`` 前缀截断（跨库一致）。
 
     不用 ``Trunc(Cast(expr, DateTimeField()))``：SQLite 的 ``CAST(x AS datetime)``

@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 DEFAULT_OFF_SHELF_DAYS = 30
 
 
-@shared_task
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def auto_off_shelf_books(days: int = DEFAULT_OFF_SHELF_DAYS, dry_run: bool = False) -> str:
     """把上架超过 ``days`` 天的书籍自动下架（状态回草稿并停用）。
 

@@ -10,6 +10,7 @@
 
 import json
 import uuid
+from typing import Any
 
 from common.contracts import ModelLabelField
 
@@ -20,7 +21,7 @@ from .templating import load_json_template
 class RenderSeedMixin:
     """菜单种子渲染。"""
 
-    def _render_menu_seed(self, ctx, parent):
+    def _render_menu_seed(self, ctx: dict[str, Any], parent: Any) -> str:
         # model_label_pk 由 _collect_artifacts 预先解析（后续步骤提示复用）；兜底现场解析
         model_pk = ctx["model_label_pk"] if "model_label_pk" in ctx else self._model_label_pk(ctx["model"])
         menu_title = ctx.get("menu_title") or ctx["verbose_name"]
@@ -86,11 +87,11 @@ class RenderSeedMixin:
         return json.dumps(entries, ensure_ascii=False, indent=2) + "\n"
 
     @staticmethod
-    def _seed_pk(ctx, role):
+    def _seed_pk(ctx: dict[str, Any], role: str) -> uuid.UUID:
         return uuid.uuid5(SEED_NAMESPACE, f"{ctx['app_label']}:{ctx['model_snake']}:{role}")
 
     @staticmethod
-    def _model_label_pk(model):
+    def _model_label_pk(model: Any) -> Any:
         """菜单的 model 关联（字段权限数据源）：取 ROLE 树上的模型节点 pk，未同步则为空。"""
         try:
             node = ModelLabelField.objects.filter(

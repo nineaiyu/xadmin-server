@@ -2,12 +2,14 @@
 # -*- coding:utf-8 -*-
 """敏感操作审批：审批人解析与在途单查找。"""
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 from .payload import canonical_params
 
 
-def get_approver_queryset():
+def get_approver_queryset() -> Any:
     """可审批人集合：显式角色清单（APPROVAL_APPROVER_ROLES）∪ 职能权限反查
     （APPROVAL_APPROVER_PERMS，get_users_by_perms 按权限码推导）；两者皆空 = 全部在用超管。
 
@@ -33,26 +35,28 @@ def get_approver_queryset():
     return queryset.distinct()
 
 
-def resolve_approvers(applicant):
+def resolve_approvers(applicant: Any) -> Any:
     """审批人集合 = 可审批人 - 申请人本人（不能自审）。结果为空时调用方必须拒绝建单。"""
     return get_approver_queryset().exclude(pk=applicant.pk)
 
 
-def can_approve(user) -> bool:
+def can_approve(user: Any) -> bool:
     """审批权限：超管或属可审批人集合；申请人任何时候不能审批自己的单。"""
     if not (user and user.is_authenticated):
         return False
-    return get_approver_queryset().filter(pk=user.pk).exists()
+    allowed: bool = get_approver_queryset().filter(pk=user.pk).exists()
+    return allowed
 
 
-def build_module(view) -> str:
+def build_module(view: Any) -> str:
     """module 取视图 docstring 首行（同操作日志口径），缺省回退「敏感操作」。"""
     from common.core.utils import get_doc_first_line
 
-    return get_doc_first_line(getattr(view, "__doc__", None)) or _("Sensitive operation")
+    first_line: str = get_doc_first_line(getattr(view, "__doc__", None)) or _("Sensitive operation")
+    return first_line
 
 
-def find_active_pending(applicant, method, path, params):
+def find_active_pending(applicant: Any, method: Any, path: Any, params: Any) -> Any:
     """同指纹的在途 PENDING 单（防止重复点提交刷屏建单）。"""
     from approval.models.approval import ApprovalRequest
 

@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """数据字典消费端工具：get_dict_items 带缓存，字典变更信号失效。"""
 
+from typing import Any
+
 from django.apps import apps
 from django.core.cache import cache
 from django.utils import translation
@@ -14,7 +16,7 @@ DICT_CACHE_PREFIX = "data_dict_"
 DICT_CACHE_TIMEOUT = 300
 
 
-def get_dict_items(code):
+def get_dict_items(code: str) -> list[dict[str, Any]]:
     """取某字典类型下的启用字典项 [{label, value, color}]，5 分钟缓存。
 
     供业务表单 / 前端下拉消费；缓存由 DataDict 的 post_save/pre_delete 信号失效
@@ -30,7 +32,7 @@ def get_dict_items(code):
     data_dict_model = apps.get_model("system", "DataDict")
     cache_key = f"{DICT_CACHE_PREFIX}{code}"
 
-    def _load():
+    def _load() -> list[dict[str, Any]]:
         return [
             {"label": item.label, "label_en": item.label_en, "value": item.value, "color": item.color}
             for item in data_dict_model.objects.filter(
@@ -58,7 +60,7 @@ def get_dict_items(code):
     ]
 
 
-def invalid_dict_cache(code=None):
+def invalid_dict_cache(code: Any = None) -> None:
     """失效字典缓存；code 为空时清全部字典缓存（字典类型删除/批量变更场景）。"""
     if code:
         cache.delete(f"{DICT_CACHE_PREFIX}{code}")

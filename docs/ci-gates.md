@@ -11,7 +11,7 @@
 | `lint.yml` | ruff | 代码风格（format --check + check） | — | `ruff format --check . && ruff check .` |
 | `lint.yml` | Cross-app import gate | app 间依赖方向：框架层 `common` 禁止 import `server` 及越权横向依赖（allowlist 只减不增） | `scripts/check_cross_app_imports.py` | `python scripts/check_cross_app_imports.py` |
 | `lint.yml` | Menu permission reconcile gate | 菜单种子权限点 ↔ 前端消费点双向对账（种子无消费 / 前端无种子 / 页面 URL=目录例外），白名单见 `docs/guide/menu-maintenance.md` §5，脚本归前端仓 | `xadmin-client/scripts/check-menu-permissions.mjs`（本仓检出客户端就地执行） | `XADMIN_SERVER_DIR=.. node ../xadmin-client/scripts/check-menu-permissions.mjs` |
-| `lint.yml` | Type check | 全仓 mypy；**common 框架层已启用 strict 子集**（`[[tool.mypy.overrides]]`，试点先行，业务 app 增量收口不变） | `pyproject.toml [tool.mypy]` + 守护 `tests/unit/test_mypy_strict_pilot.py` | `mypy` |
+| `lint.yml` | Type check | 全仓 mypy；**common 框架层 + 全部业务 app 启用 strict 子集**（`[[tool.mypy.overrides]]` 逐 app 入列：captcha / demo / devtools / integrations / mfa / server / settings + audit / file / demo_seed / notifications / task / message / dataset / approval / ai / system / identity；2026-10-09 收口，无未推广面） | `pyproject.toml [tool.mypy]` + 守护 `tests/unit/test_mypy_strict_pilot.py` | `mypy` |
 | `lint.yml` | File length gate | 单文件 >500 行新增即失败（存量基线只减不增） | `scripts/check_file_length.py` | `python scripts/check_file_length.py` |
 | `lint.yml` | Function length gate | 单函数 ≥100 行新增即失败（存量基线只减不增，AST 计行） | `scripts/check_function_length.py` | `python scripts/check_function_length.py` |
 | `lint.yml` | Doc facts gate | 文档"当前事实"防漂移（版本 / 端口 / workflow 参数等，FACTS 表逐条登记） | `scripts/check_doc_facts.py` | `python scripts/check_doc_facts.py` |
@@ -35,7 +35,7 @@
 | 覆盖率阈值门禁 | `--cov-fail-under` 汇入全量 pytest（`tests/unit/test_coverage_gate.py` 守护其配置存在性） | `tests/unit/test_coverage_gate.py` |
 | 依赖清单一致性 | 依赖清单（requirements ↔ uv.lock ↔ Dockerfile 安装面）漂移即红；含工作区骨架（内核成员 editable 锁定 / wheel 只收内核包本体 / 内核依赖落在运行产物中） | `tests/unit/test_dependency_manifest.py` |
 | 内核 settings 契约锁步 | 框架内核读取的 settings 键 ↔ 契约面（`packages/xadmin-common/common/settings_contract.py`）双向一致：缺省表达式 / 消费方清单 / 文档表（[kernel-package.md](architecture/kernel-package.md) §三）逐项锁步 | `tests/unit/common/test_settings_contract.py` |
-| mypy 严格度试点配置 | 内核 strict 子集覆盖块逐项 flag 存在、**未改用 `strict = true`**（mypy 2.x per-module strict 会全局生效）、业务 app 不受试点影响 | `tests/unit/test_mypy_strict_pilot.py` |
+| mypy 严格度试点配置 | 内核与业务 app 覆盖块逐项 flag 齐备且同口径、**未改用 `strict = true`**（mypy 2.x per-module strict 会全局生效）、已推广 app 清单（`PROMOTED_APPS`）与配置块双向一致、全局段不含试点 flag | `tests/unit/test_mypy_strict_pilot.py` |
 | 二开插件三通道装配 | 示例插件（entry point / `AppConfig.ready()` / 应用级扩展点）三条通道真实驱动：契约面解析到插件实现、模块声明进清单并随预设开关、停用后路由 404 / WS 4404 / 权限点前缀拦截（清理纪律：注册表与 app registry 复原） | `tests/integration/plugins/test_plugin_demo.py` |
 
 ## 非阻塞 / 定时档

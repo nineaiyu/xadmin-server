@@ -10,6 +10,8 @@
 - 输出列叠加浏览者字段权限白名单。
 """
 
+from typing import Any
+
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db.models import BooleanField, F
@@ -40,11 +42,11 @@ DATASET_META_CACHE_KEY = "dataset:designer_meta:v1"
 DATASET_META_CACHE_TTL = 60
 
 
-def designer_meta_payload() -> dict:
+def designer_meta_payload() -> dict[str, Any]:
     """设计器元数据载荷：模型白名单 / 逐模型字段清单 / JSON 路径根字段（短 TTL 缓存）。"""
     from django.core.cache import cache
 
-    def _load() -> dict:
+    def _load() -> dict[str, Any]:
         models = available_models()
         return {
             "models": models,
@@ -52,10 +54,11 @@ def designer_meta_payload() -> dict:
             "json_fields": {name: json_fields_of_bound_model(name) for name in models},
         }
 
-    return cache.get_or_set(DATASET_META_CACHE_KEY, _load, DATASET_META_CACHE_TTL)
+    payload: dict[str, Any] = cache.get_or_set(DATASET_META_CACHE_KEY, _load, DATASET_META_CACHE_TTL)
+    return payload
 
 
-def _request_memo(key, loader):
+def _request_memo(key: Any, loader: Any) -> Any:
     """请求级 memo：白名单与字段权限在同一请求内不变（多卡片同屏只查一次）。
 
     容器挂在当前请求对象上随请求销毁，跨请求零残留；无请求上下文
@@ -75,11 +78,11 @@ def _request_memo(key, loader):
     return store[key]
 
 
-def available_models() -> list:
+def available_models() -> list[Any]:
     """模型白名单：ModelLabelField DATA 根节点（label_lower 列表）。"""
     from system.models import ModelLabelField
 
-    def _load():
+    def _load() -> Any:
         return tuple(
             ModelLabelField.objects.filter(
                 field_type=ModelLabelField.FieldChoices.DATA, parent__isnull=True
@@ -89,11 +92,11 @@ def available_models() -> list:
     return list(_request_memo("available_models", _load))
 
 
-def available_fields(bound_model: str) -> list:
+def available_fields(bound_model: str) -> list[Any]:
     """模型字段白名单：该模型 DATA 节点的子节点字段名。"""
     from system.models import ModelLabelField
 
-    def _load():
+    def _load() -> Any:
         return tuple(
             ModelLabelField.objects.filter(
                 field_type=ModelLabelField.FieldChoices.DATA, parent__name=bound_model
@@ -103,7 +106,7 @@ def available_fields(bound_model: str) -> list:
     return list(_request_memo(("available_fields", bound_model), _load))
 
 
-def get_whitelisted_model(bound_model: str):
+def get_whitelisted_model(bound_model: str) -> Any:
     """白名单校验 + 取模型类；越权模型 raise ValidationError。"""
     if bound_model not in available_models():
         raise ValidationError(_("Model {} is not available for datasets").format(bound_model))
@@ -113,7 +116,7 @@ def get_whitelisted_model(bound_model: str):
         raise ValidationError(_("Model {} is not available for datasets").format(bound_model)) from exc
 
 
-def _check_fields(bound_model: str, fields, allow_empty=True):
+def _check_fields(bound_model: str, fields: Any, allow_empty: Any = True) -> None:
     """列清单校验：模型字段（白名单）或 JSON 路径（根字段白名单 + JSONField）。"""
     model = get_whitelisted_model(bound_model)
     whitelist = set(available_fields(bound_model))
@@ -123,7 +126,7 @@ def _check_fields(bound_model: str, fields, allow_empty=True):
         raise ValidationError(_("Dataset columns cannot be empty"))
 
 
-def validate_filters(bound_model: str, filters):
+def validate_filters(bound_model: str, filters: Any) -> None:
     """filters: [{field, op, value}]；field 在白名单、op 在白名单、value 形态合法。"""
     if not filters:
         return
@@ -143,7 +146,7 @@ def validate_filters(bound_model: str, filters):
             raise ValidationError(_("Filter op isnull requires a boolean value"))
 
 
-def validate_dataset(instance) -> None:
+def validate_dataset(instance: Any) -> None:
     """保存侧整体校验（模型/列/过滤/排序/limit/config）。"""
     model = get_whitelisted_model(instance.bound_model)
     whitelist = set(available_fields(instance.bound_model))
@@ -170,7 +173,7 @@ def validate_dataset(instance) -> None:
         raise ValidationError(_("Field {}.{} is not available for datasets").format(instance.bound_model, date_field))
 
 
-def _group_label(value, model_field=None) -> str:
+def _group_label(value: Any, model_field: Any = None) -> str:
     """分组名：布尔与枚举码走可读文案（i18n / choices display）；仅 None 落空串。
 
     直接 ``str(value)`` 会把原始值画进图例：布尔字段出现两个同名「True」、
@@ -190,7 +193,7 @@ def _group_label(value, model_field=None) -> str:
     return str(value)
 
 
-def numeric_columns_of(dataset) -> list:
+def numeric_columns_of(dataset: Any) -> list[Any]:
     """数据集列中的数值字段（sum/avg 聚合候选）：供前端 value_field 选择器使用。
 
     含 JSON 路径列（``data.amount|number`` 的类型标注即候选）；历史列在模型演进后
@@ -221,7 +224,7 @@ def numeric_columns_of(dataset) -> list:
     return numeric
 
 
-def _check_numeric(model, field: str, whitelist=None):
+def _check_numeric(model: Any, field: str, whitelist: Any = None) -> Any:
     """sum/avg 取值字段：模型数值字段，或带 ``|number`` 标注的 JSON 路径。"""
     spec = parse_column(model, field, whitelist)
     if spec.is_json:
@@ -237,7 +240,7 @@ def _check_numeric(model, field: str, whitelist=None):
     return spec
 
 
-def build_queryset(dataset, user_obj, extra_filters=None):
+def build_queryset(dataset: Any, user_obj: Any, extra_filters: Any = None) -> Any:
     """执行侧查询构建：白名单复核 → JSON 列注解 → filters → 排序 → 数据权限过滤。
 
     JSON 路径列统一注解为 ``json_<根>_<键>`` 别名：筛选 / 排序 / 分组全部走别名，
@@ -273,7 +276,7 @@ def build_queryset(dataset, user_obj, extra_filters=None):
     return get_filter_queryset(queryset, user_obj), model, columns
 
 
-def viewer_visible_fields(bound_model: str, user_obj):
+def viewer_visible_fields(bound_model: str, user_obj: Any) -> Any:
     """浏览者对 bound_model 的字段权限白名单。
 
     角色解析与 `common.core.permission.get_user_field_queryset` 同口径
@@ -289,7 +292,7 @@ def viewer_visible_fields(bound_model: str, user_obj):
     结果按请求级 memo 缓存（键含用户 pk）：同请求多卡片同屏只查一次。
     """
 
-    def _load():
+    def _load() -> Any:
         from django.db.models import Q
 
         from system.models import FieldPermission
@@ -325,7 +328,7 @@ def viewer_visible_fields(bound_model: str, user_obj):
 _EXECUTION_EXPORTS = ("execute_dataset", "aggregate_dataset", "filter_layout_for_user")
 
 
-def __getattr__(name):
+def __getattr__(name: Any) -> Any:
     if name in _EXECUTION_EXPORTS:
         from dataset.utils import dataset_query
 

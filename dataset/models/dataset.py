@@ -41,7 +41,7 @@ class Dataset(DbAuditModel, DbUuidModel):
         verbose_name_plural = _("Datasets")
         ordering = ("-created_time",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.bound_model})"
 
 
@@ -63,7 +63,7 @@ class Dashboard(DbAuditModel, DbUuidModel):
         verbose_name_plural = _("Dashboards")
         ordering = ("-created_time",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.visibility})"
 
 
@@ -94,7 +94,7 @@ class Screen(DbAuditModel, DbUuidModel):
         verbose_name_plural = _("Screens")
         ordering = ("-created_time",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({len(self.dashboards)})"
 
 
@@ -147,5 +147,5 @@ class Report(DbAuditModel, DbUuidModel):
         verbose_name_plural = _("Reports")
         ordering = ("-created_time",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.frequency})"

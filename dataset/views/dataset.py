@@ -10,6 +10,8 @@
 更新/删除仅创建者与超管（对象级校验）。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -51,7 +53,7 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
     # 数据权限作用于数据集执行的**业务数据**，而非数据集定义本身
     filter_backends = [DjangoFilterBackend, OrderingFilter]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         queryset = super().get_queryset()
         user = self.request.user
         if getattr(user, "is_superuser", False):
@@ -59,7 +61,7 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
         # 两档可见性：personal 仅创建者；shared 全员（含创建者）可读
         return queryset.filter(Q(visibility=Dataset.Visibility.SHARED) | Q(creator=user))
 
-    def _perform_write_guard(self, serializer):
+    def _perform_write_guard(self, serializer: Any) -> Any:
         """非创建者不得修改/删除他人数据集（共享只读）。"""
         instance = getattr(serializer, "instance", None)
         user = self.request.user
@@ -67,10 +69,10 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
             return ApiResponse(code=1003, detail=_("Only the creator can modify a dataset"))
         return None
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         serializer.save(creator=self.request.user, modifier=self.request.user)
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -81,21 +83,21 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
         self.perform_update(serializer)
         return ApiResponse(data=serializer.data)
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         instance = self.get_object()
         if not getattr(request.user, "is_superuser", False) and instance.creator_id != request.user.pk:
             return ApiResponse(code=1003, detail=_("Only the creator can modify a dataset"))
         return super().destroy(request, *args, **kwargs)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="meta")
-    def meta(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="meta")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def meta(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """设计器元数据：模型白名单、字段清单与可用的 JSON 路径根字段（短 TTL 缓存）。"""
         return ApiResponse(data=designer_meta_payload())
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="execute")
-    def execute(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="execute")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def execute(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """执行数据集（行级数据权限随调用者过滤，fail-closed）。
 
         ``count_only=true``：仅取行数（数字卡场景，跳过行物化）。
@@ -108,8 +110,8 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
         return ApiResponse(data=result)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="aggregate")
-    def aggregate(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="aggregate")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def aggregate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """聚合序列（图表数据源）：group_by + metric(+value_field) + date_trunc。"""
         dataset = self.get_object()
         try:
@@ -135,24 +137,24 @@ class DashboardViewSet(BaseModelSet):
     # 同 Dataset：可见性语义替代行级数据权限
     filter_backends = [DjangoFilterBackend, OrderingFilter]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         queryset = super().get_queryset()
         user = self.request.user
         if getattr(user, "is_superuser", False):
             return queryset
         return queryset.filter(Q(visibility=Dashboard.Visibility.SHARED) | Q(creator=user))
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         serializer.save(creator=self.request.user, modifier=self.request.user)
 
-    def _ownership_guard(self, instance):
+    def _ownership_guard(self, instance: Any) -> Any:
         user = self.request.user
         if instance and not getattr(user, "is_superuser", False) and instance.creator_id != user.pk:
             # 共享仪表盘对非创建者只读
             return ApiResponse(code=1003, detail=_("Only the creator can modify a dashboard"))
         return None
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -163,7 +165,7 @@ class DashboardViewSet(BaseModelSet):
         self.perform_update(serializer)
         return ApiResponse(data=serializer.data)
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         instance = self.get_object()
         guarded = self._ownership_guard(instance)
         if guarded:

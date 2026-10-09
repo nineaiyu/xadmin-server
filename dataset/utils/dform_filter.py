@@ -36,11 +36,11 @@ from dataset.utils.dform import FILTERABLE_TYPES, KEY_RE
 ARRAY_VALUE_TYPES = ("checkbox", "cascader")
 
 
-def _is_empty(value) -> bool:
+def _is_empty(value: Any) -> bool:
     return value is None or value == "" or value == [] or value == {}
 
 
-def filterable_items(schema) -> list:
+def filterable_items(schema: Any) -> list[Any]:
     """schema 中勾选「可筛选」且类型可物化的字段定义（顺序即展示顺序）。"""
     fields = schema.get("fields") if isinstance(schema, dict) else None
     if not isinstance(fields, list):
@@ -55,12 +55,12 @@ def filterable_items(schema) -> list:
     ]
 
 
-def filterable_keys(schema) -> list:
+def filterable_keys(schema: Any) -> list[Any]:
     """可筛选字段 key 清单（渲染筛选控件 / 校验筛选参数共用）。"""
     return [item["key"] for item in filterable_items(schema)]
 
 
-def build_filter_data(schema, data) -> dict:
+def build_filter_data(schema: Any, data: Any) -> dict[str, Any]:
     """提交时物化：只取可筛选字段的规范化取值，空值不写入。
 
     入参 ``data`` 必须是**已按 schema 规范化**的提交数据（submit 校验产物），
@@ -76,11 +76,11 @@ def build_filter_data(schema, data) -> dict:
     return materialized
 
 
-def _is_multi(item: dict) -> bool:
+def _is_multi(item: dict[str, Any]) -> bool:
     return bool(item.get("multiple")) or item.get("type") in ARRAY_VALUE_TYPES
 
 
-def _coerce_number(key: str, value):
+def _coerce_number(key: str, value: Any) -> Any:
     if isinstance(value, bool):
         raise ValidationError(_("Filter value of {} must be numeric").format(key))
     if isinstance(value, (int, float)):
@@ -93,7 +93,7 @@ def _coerce_number(key: str, value):
     return int(number) if number.is_integer() else number
 
 
-def _coerce_bool(key: str, value) -> bool:
+def _coerce_bool(key: str, value: Any) -> bool:
     if isinstance(value, bool):
         return value
     text = str(value).strip().lower()
@@ -104,7 +104,7 @@ def _coerce_bool(key: str, value) -> bool:
     raise ValidationError(_("Filter value of {} must be a boolean").format(key))
 
 
-def coerce_filter_value(item: dict, value):
+def coerce_filter_value(item: dict[str, Any], value: Any) -> Any:
     """单个筛选条件取值规范化：形态与提交校验后的物化值一致。
 
     多值字段（checkbox / user 多选）标量自动包成单元素列表；cascader 要求整条路径。
@@ -140,7 +140,7 @@ def coerce_filter_value(item: dict, value):
     return coerced
 
 
-def build_filter_contains(schema, filters) -> dict:
+def build_filter_contains(schema: Any, filters: Any) -> dict[str, Any]:
     """把「字段=值」筛选条件编译为 filter_data 的 JSON 包含查询对象。
 
     fail-closed：条件必须是对象；字段必须在当前 schema 的可筛选面内；取值形态按
@@ -160,7 +160,7 @@ def build_filter_contains(schema, filters) -> dict:
     return contains
 
 
-def _generic_scalar(value):
+def _generic_scalar(value: Any) -> Any:
     """无 schema 上下文的通用取值校验：标量原样、数组逐项标量，其余拒绝。"""
     if isinstance(value, list):
         return [entry for entry in value if not _is_empty(entry)] or None
@@ -169,7 +169,7 @@ def _generic_scalar(value):
     raise ValidationError(_("Invalid filter conditions"))
 
 
-def compile_materialized_filters(raw, schema=None) -> dict:
+def compile_materialized_filters(raw: Any, schema: Any = None) -> dict[str, Any]:
     """解析 ``filter_data`` 查询参数（JSON 对象）并编译为包含查询对象。
 
     - 给出 ``schema``（管理端已选表单）：严格按该表单**当前 schema** 的可筛选面
@@ -205,10 +205,11 @@ def _json_contains_supported() -> bool:
     """当前数据库是否支持 JSON 包含查询（PostgreSQL 支持并可命中 GIN；sqlite 不支持）。"""
     from django.db import connection
 
-    return connection.vendor == "postgresql"
+    is_postgres: bool = connection.vendor == "postgresql"
+    return is_postgres
 
 
-def apply_materialized_contains(queryset, contains):
+def apply_materialized_contains(queryset: Any, contains: Any) -> Any:
     """把编译好的筛选条件落到查询集上。
 
     - PostgreSQL：单条 JSON 包含查询（``filter_data @> {...}``，GIN 索引可命中）；
@@ -239,7 +240,7 @@ class MaterializedFilterMixin(filters.FilterSet):
 
     filter_data = filters.CharFilter(method="filter_materialized")
 
-    def filter_materialized(self, queryset, name, value):
+    def filter_materialized(self, queryset: Any, name: Any, value: Any) -> Any:
         from dataset.models.dform import DynamicForm
 
         schema = None

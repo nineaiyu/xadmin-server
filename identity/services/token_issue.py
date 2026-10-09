@@ -14,6 +14,7 @@
 
 import secrets
 from datetime import timedelta
+from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
@@ -40,7 +41,7 @@ def new_token_secret(prefix: str = PAT_TOKEN_PREFIX) -> tuple[str, str, str]:
     return raw_token, hash_pat_token(raw_token), raw_token[:12]
 
 
-def application_token_expires_at(application):
+def application_token_expires_at(application: Any) -> Any:
     """应用维度凭证过期时间：TTL 与应用有效期取更早者；均未设置为 None（永不过期）。"""
     expires_at = None
     if application.token_ttl_seconds:
@@ -52,13 +53,13 @@ def application_token_expires_at(application):
 
 def issue_access_token(
     *,
-    creator,
+    creator: Any,
     name: str,
     prefix: str = PAT_TOKEN_PREFIX,
-    scopes=None,
-    ip_allowlist=None,
-    expired_at=None,
-    api_application=None,
+    scopes: Any = None,
+    ip_allowlist: Any = None,
+    expired_at: Any = None,
+    api_application: Any = None,
 ) -> tuple[PersonalAccessToken, str]:
     """签发一条 PAT 凭证，返回 (实例, 明文)。明文仅本次返回，不落库。"""
     raw_token, token_hash, token_prefix = new_token_secret(prefix)
@@ -75,12 +76,15 @@ def issue_access_token(
     return token, raw_token
 
 
-def revoke_application_tokens(application) -> int:
+def revoke_application_tokens(application: Any) -> int:
     """失效应用全部有效凭证（应用停用 / 密钥重置 / 凭证轮换共用），返回失效条数。"""
-    return PersonalAccessToken.objects.filter(api_application=application, is_active=True).update(is_active=False)
+    typed_value: int = PersonalAccessToken.objects.filter(api_application=application, is_active=True).update(
+        is_active=False
+    )
+    return typed_value
 
 
-def issue_application_token(application) -> tuple[PersonalAccessToken, str]:
+def issue_application_token(application: Any) -> tuple[PersonalAccessToken, str]:
     """为应用轮换一条凭证：失效旧凭证 → 新建（client-credentials 换发口径）。
 
     凭证 scope/IP 白名单/过期时间取应用当前配置；creator = 应用 owner，

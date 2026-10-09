@@ -9,11 +9,13 @@ import json
 import re
 import time
 import uuid
+from collections.abc import Callable
+from typing import Any
 
 from asgiref.sync import markcoroutinefunction
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 
@@ -26,12 +28,12 @@ class SQLCountMiddleware:
 
     sync_capable = True
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
         if not settings.DEBUG:
             raise MiddlewareNotUsed
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         from django.db import connection
 
         response = self.get_response(request)
@@ -45,12 +47,12 @@ class StartMiddleware:
 
     sync_capable = True
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
         if not settings.DEBUG_DEV:
             raise MiddlewareNotUsed
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         request._s_time_start = time.time()
         response = self.get_response(request)
         request._s_time_end = time.time()
@@ -71,19 +73,19 @@ class EndMiddleware:
 
     sync_capable = True
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
         if not settings.DEBUG_DEV:
             raise MiddlewareNotUsed
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         request._e_time_start = time.time()
         response = self.get_response(request)
         request._e_time_end = time.time()
         return response
 
 
-def _module_gate_detail(request) -> str:
+def _module_gate_detail(request: HttpRequest) -> str:
     """模块网关 404 的文案（按请求语言翻译）。
 
     网关排在 `LocaleMiddleware` 之前（早退路径不经过语言协商），直接取 `_()` 会落到
@@ -106,7 +108,7 @@ class ModuleGateMiddleware:
     sync_capable = True
     async_capable = True  # 请求相纯内存正则，双模留在事件循环
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[..., Any]) -> None:
         self.get_response = get_response
         self.async_mode = asyncio.iscoroutinefunction(self.get_response)
         if self.async_mode:
@@ -116,7 +118,7 @@ class ModuleGateMiddleware:
 
         self.patterns = disabled_route_patterns()
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> Any:
         if self.async_mode:
             return self.__acall__(request)
         module_id = self._match(request)
@@ -124,13 +126,13 @@ class ModuleGateMiddleware:
             return self._forbidden(module_id, request)
         return self.get_response(request)
 
-    async def __acall__(self, request):
+    async def __acall__(self, request: HttpRequest) -> Any:
         module_id = self._match(request)
         if module_id:
             return self._forbidden(module_id, request)
         return await self.get_response(request)
 
-    def _match(self, request):
+    def _match(self, request: HttpRequest) -> str | None:
         if not self.patterns:
             return None
         from common.core.modules import match_disabled_module
@@ -138,7 +140,7 @@ class ModuleGateMiddleware:
         return match_disabled_module(request.path)
 
     @staticmethod
-    def _forbidden(module_id, request):
+    def _forbidden(module_id: str, request: HttpRequest) -> JsonResponse:
         return JsonResponse(
             {"code": 1001, "detail": _module_gate_detail(request), "data": None, "module": module_id},
             status=404,
@@ -156,24 +158,24 @@ class RequestMiddleware:
     sync_capable = True
     async_capable = True
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[..., Any]) -> None:
         self.get_response = get_response
         self.async_mode = asyncio.iscoroutinefunction(self.get_response)
         if self.async_mode:
             markcoroutinefunction(self)
 
     @staticmethod
-    def get_request_uuid(request):
+    def get_request_uuid(request: HttpRequest) -> Any:
         # 优先沿用网关/上游传入的请求 ID，便于跨服务日志串联；无则生成新的
         upstream_id = re.sub(r"[^0-9a-zA-Z\-_]", "", request.headers.get("X-Request-Id", ""))[:64]
         return upstream_id or uuid.uuid4()
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> Any:
         if self.async_mode:
             return self.__acall__(request)
         return self._handle_sync(request)
 
-    async def __acall__(self, request):
+    async def __acall__(self, request: HttpRequest) -> Any:
         request.request_uuid = self.get_request_uuid(request)
         set_current_request(request)
         response = await self.get_response(request)
@@ -181,7 +183,7 @@ class RequestMiddleware:
         response["X-Request-Id"] = str(request.request_uuid)
         return response
 
-    def _handle_sync(self, request):
+    def _handle_sync(self, request: HttpRequest) -> Any:
         request.request_uuid = self.get_request_uuid(request)
         set_current_request(request)
         response = self.get_response(request)
@@ -195,7 +197,7 @@ class RefererCheckMiddleware:
     sync_capable = True
     async_capable = True
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[..., Any]) -> None:
         if not settings.REFERER_CHECK_ENABLED:
             raise MiddlewareNotUsed
         self.get_response = get_response
@@ -204,7 +206,7 @@ class RefererCheckMiddleware:
             markcoroutinefunction(self)
         self.http_pattern = re.compile("https?://")
 
-    def check_referer(self, request):
+    def check_referer(self, request: HttpRequest) -> bool:
         referer = request.META.get("HTTP_REFERER", "")
         referer = self.http_pattern.sub("", referer)
         if not referer:
@@ -213,14 +215,14 @@ class RefererCheckMiddleware:
         # 站点边界锚定：`xadmin.example.com.evil.com` 不得命中 `xadmin.example.com`
         return referer == remote_host or referer.startswith(f"{remote_host}/")
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> Any:
         if self.async_mode:
             return self.__acall__(request)
         if not self.check_referer(request):
             return HttpResponseForbidden("CSRF CHECK ERROR")
         return self.get_response(request)
 
-    async def __acall__(self, request):
+    async def __acall__(self, request: HttpRequest) -> Any:
         if not self.check_referer(request):
             return HttpResponseForbidden("CSRF CHECK ERROR")
         return await self.get_response(request)

@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import time
 import uuid
+from typing import Any
 
 from django.core.cache import cache
 
@@ -47,12 +48,12 @@ def office_converter_bin() -> str | None:
     return None
 
 
-def office_cache_path(upload) -> str:
+def office_cache_path(upload: Any) -> str:
     """Office 转 PDF 产物路径：`preview_cache/<pk>/office.pdf`（与图片缓存同目录）。"""
     return os.path.join(preview_cache_dir(), str(upload.pk), OFFICE_CACHE_FILENAME)
 
 
-def office_preview_available(upload) -> bool:
+def office_preview_available(upload: Any) -> bool:
     """Office 预览可用性：开关开、转换器已安装、源文件在且不超过大小上限。"""
     if not bool(_config_value("FILE_OFFICE_PREVIEW_ENABLED", True)):
         return False
@@ -67,7 +68,7 @@ def office_preview_available(upload) -> bool:
     return True
 
 
-def convert_office_to_pdf(upload) -> str | None:
+def convert_office_to_pdf(upload: Any) -> str | None:
     """同步执行 LibreOffice 转换（**必须在 heavy 队列任务内调用**）：成功返回产物路径。
 
     - 源文件复制到临时目录并使用安全文件名（含原后缀，soffice 依赖后缀识别格式）；
@@ -135,7 +136,7 @@ def convert_office_to_pdf(upload) -> str | None:
         shutil.rmtree(workdir, ignore_errors=True)
 
 
-def ensure_office_pdf(upload) -> tuple[str | None, str]:
+def ensure_office_pdf(upload: Any) -> tuple[str | None, str]:
     """请求侧入口：返回 `(产物路径, 状态)`，状态 ∈ ready / preparing / unsupported。
 
     缓存命中直接返回；未命中则投递 heavy 队列转换任务并短等

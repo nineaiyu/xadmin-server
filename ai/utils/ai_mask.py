@@ -15,6 +15,7 @@ JSON 结构；可读摘要与最终落库文本仍走脱敏。
 """
 
 import re
+from typing import Any
 
 from django.core.cache import cache
 
@@ -80,7 +81,7 @@ def output_mask_enabled() -> bool:
     return bool(getattr(dj_settings, "AI_OUTPUT_MASK_ENABLED", True))
 
 
-def _load_rule_text_patterns() -> list:
+def _load_rule_text_patterns() -> list[Any]:
     """活动 DataMaskRule 的文本级形态（内置四类 + custom 正则），异常降级空集。"""
     try:
         from django.apps import apps
@@ -103,19 +104,22 @@ def _load_rule_text_patterns() -> list:
     return patterns
 
 
-def rule_text_patterns() -> list:
+def rule_text_patterns() -> list[Any]:
     """规则形态正则（300s 缓存；规则变更由既有信号失效链路在下次窗口生效）。"""
-    return cache.get_or_set(_RULE_PATTERN_CACHE_KEY, _load_rule_text_patterns, _RULE_PATTERN_CACHE_TTL)
+    typed_value: list[Any] = cache.get_or_set(
+        _RULE_PATTERN_CACHE_KEY, _load_rule_text_patterns, _RULE_PATTERN_CACHE_TTL
+    )
+    return typed_value
 
 
-def _rule_masking_for(user) -> bool:
+def _rule_masking_for(user: Any) -> bool:
     """规则形态脱敏是否对当前调用者生效（超管豁免，与 DataMaskRule 语义一致）。"""
     if getattr(user, "is_superuser", False):
         return False
     return bool(rule_text_patterns())
 
 
-def mask_text(text: str, user=None) -> tuple:
+def mask_text(text: str, user: Any = None) -> tuple[Any, ...]:
     """对自由文本做输出脱敏，返回 ``(masked_text, hit_count)``。
 
     - 敏感形态：始终生效（含超管）；
@@ -136,7 +140,7 @@ def mask_text(text: str, user=None) -> tuple:
     return text, hits
 
 
-def _custom_probe_patterns() -> list:
+def _custom_probe_patterns() -> list[Any]:
     """custom 脱敏规则中可用于「未完成探测」的正则（跳过可能无界的模式）。
 
     ``.*`` / ``.+`` 这类模式会让探测恒命中（全部内容被无限期扣留），直接跳过：
@@ -164,7 +168,7 @@ def _custom_probe_patterns() -> list:
     return patterns
 
 
-def _partial_prefix_len(text: str, extra_patterns=()) -> int:
+def _partial_prefix_len(text: str, extra_patterns: Any = ()) -> int:
     """返回文本尾部「可能未完成的敏感串前缀」长度（0 = 无）。
 
     extra_patterns：当前调用者启用的 custom 规则正则（一并进行未完成探测）。
@@ -175,7 +179,8 @@ def _partial_prefix_len(text: str, extra_patterns=()) -> int:
     for pattern in tuple(_PARTIAL_TAIL_PATTERNS) + tuple(extra_patterns):
         match = pattern.search(tail)
         if match and match.end() == len(tail):
-            return len(tail) - match.start()
+            typed_value: int = len(tail) - match.start()
+            return typed_value
     return 0
 
 
@@ -187,7 +192,7 @@ class StreamMasker:
     敏感串一旦完整出现即被替换为占位符。流结束时 ``flush()`` 冲刷剩余缓冲。
     """
 
-    def __init__(self, user=None):
+    def __init__(self, user: Any = None) -> None:
         self._user = user
         self._buffer = ""
         self.hits = 0
@@ -215,7 +220,8 @@ class StreamMasker:
         masked, hits = mask_text(head, self._user)
         self.hits += hits
         self._buffer = tail
-        return masked
+        typed_value: str = masked
+        return typed_value
 
     def flush(self) -> str:
         """冲刷剩余缓冲（流结束时调用）。"""
@@ -226,4 +232,5 @@ class StreamMasker:
             return buffered
         masked, hits = mask_text(buffered, self._user)
         self.hits += hits
-        return masked
+        typed_value: str = masked
+        return typed_value

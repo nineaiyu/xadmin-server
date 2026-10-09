@@ -10,6 +10,8 @@
 非创建者只读。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -44,7 +46,7 @@ from identity.utils.user_options import search_user_options
 _EDIT_DENY = "Only the creator can modify it"
 
 
-def _visible_queryset(viewset):
+def _visible_queryset(viewset: Any) -> Any:
     """两档可见性：personal 仅创建者；shared 全员（superuser 绕过）。"""
     queryset = viewset.queryset
     user = viewset.request.user
@@ -53,7 +55,7 @@ def _visible_queryset(viewset):
     return queryset.filter(Q(visibility="shared") | Q(creator=user))
 
 
-def _creator_guard(request, instance):
+def _creator_guard(request: Any, instance: Any) -> Any:
     if instance and not getattr(request.user, "is_superuser", False) and instance.creator_id != request.user.pk:
         return ApiResponse(code=1003, detail=_EDIT_DENY)
     return None
@@ -64,13 +66,13 @@ class BaseAnalysisViewSet(BaseModelSet):
 
     filter_backends = [DjangoFilterBackend, OrderingFilter]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return _visible_queryset(self)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         serializer.save(creator=self.request.user, modifier=self.request.user)
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -81,7 +83,7 @@ class BaseAnalysisViewSet(BaseModelSet):
         self.perform_update(serializer)
         return ApiResponse(data=serializer.data)
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         instance = self.get_object()
         guarded = _creator_guard(request, instance)
         if guarded:
@@ -113,8 +115,8 @@ class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
     filterset_class = ScreenFilter
 
     @extend_schema(request=ScreenCommandSerializer, responses=get_default_response_schema())
-    @action(methods=["get", "post"], detail=True, url_path="command")
-    def command(self, request, *args, **kwargs):
+    @action(methods=["get", "post"], detail=True, url_path="command")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def command(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """GET 当前控制态（+仪表盘清单）；POST 下发切换/翻页/刷新/恢复轮播。
 
         控制权口径（与 report.run 的创建者守卫刻意不同，评估结论=维持现状并明确）：
@@ -159,8 +161,8 @@ class ReportViewSet(BaseAnalysisViewSet):
     filterset_class = ReportFilter
 
     @extend_schema(responses=get_default_response_schema())
-    @shared_list_action(methods=["get"], detail=False, url_path="user-options")
-    def user_options(self, request, *args, **kwargs):
+    @shared_list_action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def user_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """IM 收件人候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
 
         口径与选人控件同源（identity/utils/user_options.py）；权限与该视图 list
@@ -173,8 +175,8 @@ class ReportViewSet(BaseAnalysisViewSet):
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="choices")
-    def choices(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="choices")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def choices(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """投递渠道枚举（结构元数据）：值集单源在本模块常量，前端不再手抄选项表。
 
         与其它 choices 消费方同口径（``choices_dict`` 在响应顶层）；路径命中
@@ -189,8 +191,8 @@ class ReportViewSet(BaseAnalysisViewSet):
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="run")
-    def run(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="run")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def run(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """立即运行一次报表（预创建 ExportRecord 并按契约派发）。"""
         report = self.get_object()
         guarded = _creator_guard(request, report)

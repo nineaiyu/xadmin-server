@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """AI 平台周期任务（自 system/tasks/__init__.py 与 system/utils/task/ctasks.py 随域迁出）。"""
 
+from typing import Any
+
 from celery import shared_task
 
 from common.celery.decorator import register_as_period_task
@@ -10,17 +12,17 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-@shared_task
-@register_as_period_task(crontab="12 3 * * *")
-def auto_clean_ai_usage_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="12 3 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_ai_usage_job() -> None:
     """AI 用量账本保留期清理（保留期随 MONITOR_RETENTION_DAYS）。"""
     from ai.utils.ai_usage import auto_clean_ai_usage
 
     auto_clean_ai_usage()
 
 
-@shared_task(bind=True, verbose_name="Build knowledge embeddings")
-def build_embeddings_task(self, document_pk="", force: bool = False):
+@shared_task(bind=True, verbose_name="Build knowledge embeddings")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def build_embeddings_task(self: Any, document_pk: Any = "", force: bool = False) -> Any:
     """异步构建知识库向量（7.3）：进度经缓存通道上报，供知识库页轮询。
 
     状态机：视图先取单飞锁并置 running，任务内推进批次进度，终态（含异常）
@@ -44,8 +46,8 @@ def build_embeddings_task(self, document_pk="", force: bool = False):
         release_lock()
 
 
-@shared_task(bind=True, verbose_name="Sync repository knowledge documents")
-def sync_repo_task(self):
+@shared_task(bind=True, verbose_name="Sync repository knowledge documents")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def sync_repo_task(self: Any) -> Any:
     """异步重扫仓库文档并全量重建分块（自请求线程内同步拆出）。
 
     状态机：视图先取单飞锁并置 running（上一轮旧终态就地清除），任务内重置

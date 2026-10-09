@@ -16,6 +16,8 @@
     python manage.py post_upgrade --skip-seed --skip-compile
 """
 
+from typing import Any
+
 from django.core import management
 from django.core.management.base import BaseCommand
 
@@ -23,12 +25,12 @@ from django.core.management.base import BaseCommand
 class Command(BaseCommand):
     help = "Post-upgrade tasks: seed sync + compilemessages + cache invalidation (+ permission scan)"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--skip-seed", action="store_true", help="跳过 load_init_json（仅编译语言包与缓存）")
         parser.add_argument("--skip-compile", action="store_true", help="跳过 compilemessages（无 gettext 环境）")
         parser.add_argument("--skip-permissions", action="store_true", help="跳过权限点缺口扫描")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options["skip_seed"]:
             self.stdout.write("[1/4] 跳过种子导入（--skip-seed）")
         else:
@@ -57,7 +59,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("post_upgrade 完成"))
 
-    def _scan_permissions(self):
+    def _scan_permissions(self) -> None:
         self.stdout.write("[4/4] 权限点缺口扫描…")
         try:
             from identity.models import UserInfo

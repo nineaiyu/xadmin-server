@@ -5,7 +5,7 @@ class SystemConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "system"
 
-    def ready(self):
+    def ready(self) -> None:
         from . import signal_handler  # noqa
 
         # 数据字典解析器注册进框架层：DictChoiceField（common.core.fields）由此

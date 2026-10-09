@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """数据字典管理：类型/字典项两级维护 + 状态/排序/缓存维护 + items 消费接口。"""
 
+from typing import Any
+
 from django.db.models import BooleanField, Case, IntegerField, Value, When
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -57,7 +59,7 @@ class DataDictViewSet(
     filterset_class = DataDictFilter
     ordering_fields = ["sort", "created_time", "updated_time"]
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> Any:
         """内置字典（被代码按 code 引用）禁止删除，避免业务字段选项凭空消失。"""
         if instance.is_locked:
             raise serializers.ValidationError({"is_locked": _("Locked dict cannot be deleted")})
@@ -72,8 +74,8 @@ class DataDictViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-destroy")
-    def batch_destroy(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除：内置字典（is_locked）排除并点名，不因单条受保护而整批失败。
 
         被排除项进 `data.failures` 明细（此前静默跳过，用户只知数量少了对不上）。
@@ -111,8 +113,8 @@ class DataDictViewSet(
             }
         ),
     )
-    @action(methods=["get"], detail=False, url_path="items")
-    def items(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="items")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def items(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """按字典类型 code 取启用字典项"""
         code = request.query_params.get("code")
         if not code:
@@ -128,8 +130,8 @@ class DataDictViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-active")
-    def batch_active(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-active")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_active(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量启用或停用字典
 
         body: {"pks": [...], "is_active": bool}；is_active 省略时按各行当前状态取反。
@@ -166,8 +168,8 @@ class DataDictViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, url_path="move")
-    def move(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="move")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def move(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """同层内上移/下移一位
         （重排同层 sort，列表与消费端均按 sort 升序）
         body: {"direction": "up" | "down"}。已在边界时不做变更并正常返回（幂等）。
@@ -196,8 +198,8 @@ class DataDictViewSet(
         return ApiResponse(detail=_("Sorting saved successfully"))
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="refresh-cache")
-    def refresh_cache(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="refresh-cache")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def refresh_cache(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """清空全部字典缓存
         直连改库等绕过信号的场景手动触发立即生效。
         """

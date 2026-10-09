@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """数据集与仪表盘序列化器。"""
 
+from typing import Any
+
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
@@ -48,15 +50,15 @@ class DatasetSerializer(BaseModelSerializer):
         # RePlusPage 列表列：列/filters/ordering/config 等定义细节不进列表
         table_fields = ["name", "bound_model", "visibility", "report_count", "description", "updated_time"]
 
-    def get_numeric_columns(self, obj) -> list:
+    def get_numeric_columns(self, obj: Any) -> list[Any]:
         return numeric_columns_of(obj)
 
     @extend_schema_field(serializers.IntegerField)
-    def get_report_count(self, obj):
+    def get_report_count(self, obj: Any) -> Any:
         count = getattr(obj, "report_count", None)
         return count if count is not None else obj.report_set.count()
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         """保存侧白名单校验：部分更新时与既有实例字段合并后整体校验。"""
         merged = {
             "bound_model": attrs.get("bound_model", getattr(self.instance, "bound_model", "")),
@@ -80,7 +82,7 @@ class DashboardSerializer(BaseModelSerializer):
         fields = ["pk", "name", "layout", "visibility", "created_time", "updated_time"]
         read_only_fields = ["pk", "created_time", "updated_time"]
 
-    def validate_layout(self, value):
+    def validate_layout(self, value: Any) -> Any:
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Invalid dashboard layout"))
         dataset_pks = {str(pk) for pk in Dataset.objects.values_list("pk", flat=True)}
@@ -103,7 +105,7 @@ class DashboardSerializer(BaseModelSerializer):
                 raise serializers.ValidationError(_("Unknown role codes: {}").format(", ".join(unknown)))
         return value
 
-    def to_representation(self, instance):
+    def to_representation(self, instance: Any) -> Any:
         """读取侧按浏览者过滤卡片（卡片级权限；超管全量，匿名 fail-closed）。"""
         data = super().to_representation(instance)
         request = self.context.get("request")

@@ -4,7 +4,7 @@
 # filename : permission
 # author : ly_13
 # date : 8/10/2024
-
+from typing import Any
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -29,7 +29,7 @@ class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
         verbose_name = _("Data permission")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}"
 
 
@@ -44,9 +44,9 @@ class FieldPermission(DbAuditModel, DbCharModel):
         ordering = ("-created_time",)
         unique_together = ("role", "menu")
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> Any:
         self.id = f"{self.role.pk}-{self.menu.pk}"
         return super().save(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.pk}-{self.role.name}-{self.created_time}"

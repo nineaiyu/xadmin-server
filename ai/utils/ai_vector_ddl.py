@@ -15,6 +15,8 @@
 调用面：``build_embeddings`` 成功后自动尝试 + ``build_ai_vector_index`` 命令手工执行。
 """
 
+from typing import Any
+
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -27,7 +29,8 @@ def _chunk_table() -> str:
     """知识块表名取自模型 Meta（/ 表归域后随 ORM 单源，不再硬编码）。"""
     from ai.models import AiKnowledgeChunk
 
-    return AiKnowledgeChunk._meta.db_table
+    typed_value: str = AiKnowledgeChunk._meta.db_table
+    return typed_value
 
 
 #: HNSW 参数（m=16, ef_construction=64）
@@ -44,13 +47,13 @@ ACTION_UNTYPED = "untyped"  # 撤索引 + 列退回无维度（维度混存窗�
 ACTION_SKIPPED = "skipped"  # 不可判定/不可用（无向量、非 PG、扩展缺失）
 
 
-def _cursor():
+def _cursor() -> Any:
     from django.db import connection
 
     return connection.cursor()
 
 
-def vector_index_state() -> dict:
+def vector_index_state() -> dict[str, Any]:
     """当前索引形态（命令/状态页展示）：列类型、是否有 HNSW、向量维度分布。"""
     table = _chunk_table()
     with _cursor() as cursor:
@@ -73,7 +76,7 @@ def vector_index_state() -> dict:
     }
 
 
-def ensure_vector_index() -> dict:
+def ensure_vector_index() -> dict[str, Any]:
     """按维度稳定性定型列 / 建（或撤）HNSW 索引，返回动作与形态（可安全反复执行）。"""
     from django.db import connection
 
@@ -106,7 +109,7 @@ def ensure_vector_index() -> dict:
     return {**vector_index_state(), "action": ACTION_INDEXED, "dim": dim}
 
 
-def ensure_column_accepts_dim(dim: int) -> dict:
+def ensure_column_accepts_dim(dim: int) -> dict[str, Any]:
     """写入前护栏：列已定型为其他维度时反向定型（撤索引 + 退回无维度）。
 
     定型后的列写入新维度向量会直接 DataError（模型换档场景），因此构建路径在
@@ -147,7 +150,7 @@ def _drop_index_and_untype() -> None:
             cursor.execute(f"ALTER TABLE {_chunk_table()} ALTER COLUMN {COLUMN} TYPE vector")
 
 
-def _column_type(cursor) -> str:
+def _column_type(cursor: Any) -> str:
     cursor.execute(
         "SELECT format_type(atttypid, atttypmod) FROM pg_attribute "
         "WHERE attrelid = %s::regclass AND attname = %s AND NOT attisdropped",
@@ -157,7 +160,7 @@ def _column_type(cursor) -> str:
     return row[0] if row else ""
 
 
-def _advisory_locked(fn, *args):
+def _advisory_locked(fn: Any, *args: Any) -> None:
     """会话级咨询锁串行化 DDL（锁键 = 固定命名空间，同连接加锁/解锁）。
 
     事务包裹的调用方（测试原子块）中 fn 失败会把连接留在 aborted 态，finally

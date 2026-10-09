@@ -10,6 +10,7 @@
 """
 
 import json
+from typing import Any
 
 from django.conf import settings
 from django.utils import timezone
@@ -45,11 +46,11 @@ class PasskeyBackend(BaseMFA):
         if not getattr(self.user, "pk", None):
             return False
         try:
-            return self.user.passkeys.exists()
+            return bool(self.user.passkeys.exists())
         except Exception:  # noqa: BLE001 用户未落库等场景视为不可用
             return False
 
-    def check_code(self, code) -> tuple:
+    def check_code(self, code: Any) -> tuple[bool, Any]:
         """校验 Passkey 断言（code 为 JSON 串或 dict）。"""
         from identity.models import UserPasskey
         from identity.utils.webauthn import verify_assertion

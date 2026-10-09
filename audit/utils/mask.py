@@ -8,6 +8,7 @@
 """
 
 import re
+from typing import Any
 
 from django.apps import apps
 from django.core.cache import cache
@@ -23,7 +24,7 @@ MASK_CACHE_TIMEOUT = 300
 ORIGINAL_CHANNEL_MODULE = "mask:original"
 
 
-def _segment(value, keep_head, keep_tail, mask_char):
+def _segment(value: str, keep_head: int, keep_tail: int, mask_char: str) -> str:
     """通用分段掩码：保留前 keep_head 与后 keep_tail，中间以 mask_char 填充。
     长度不足以构成掩码区间时原样返回（避免退化成一整串星号破坏可辨识度）。
     """
@@ -39,14 +40,14 @@ def _segment(value, keep_head, keep_tail, mask_char):
     return masked
 
 
-def _mask_email(value, keep_head, mask_char):
+def _mask_email(value: str, keep_head: int, mask_char: str) -> str:
     local, sep, domain = value.rpartition("@")
     if not sep:
         return _segment(value, keep_head, 0, mask_char)
     return f"{_segment(local, keep_head, 0, mask_char)}{sep}{domain}"
 
 
-def custom_pattern_error(pattern):
+def custom_pattern_error(pattern: Any) -> re.error | None:
     """试编译自定义正则：非法返回 re.error 实例，合法（或空/非字符串）返回 None。
 
     保存期校验（序列化器）与预览接口的非法正则标记共用同一判定，
@@ -61,7 +62,7 @@ def custom_pattern_error(pattern):
     return None
 
 
-def apply_mask(value, rule):
+def apply_mask(value: Any, rule: dict[str, Any]) -> Any:
     """按规则对单个值脱敏。空值/非字符串/规则缺省时原样返回。
 
     :param rule: get_mask_rules 产出的规则 dict（mask_type/keep_head/keep_tail/mask_char/pattern）
@@ -88,11 +89,11 @@ def apply_mask(value, rule):
     return _segment(value, keep_head, keep_tail, mask_char)
 
 
-def get_mask_rules(model_label):
+def get_mask_rules(model_label: str) -> list[dict[str, Any]]:
     """取某模型的活动脱敏规则（按 sort 升序），5 分钟缓存。"""
     data_mask_model = apps.get_model("audit", "DataMaskRule")
 
-    def _load():
+    def _load() -> list[dict[str, Any]]:
         queryset = data_mask_model.objects.filter(model=model_label, is_active=True).order_by("sort", "created_time")
         return [
             {
@@ -107,10 +108,11 @@ def get_mask_rules(model_label):
             for rule in queryset
         ]
 
-    return cache.get_or_set(f"{MASK_CACHE_PREFIX}{model_label}", _load, MASK_CACHE_TIMEOUT)
+    rules: list[dict[str, Any]] = cache.get_or_set(f"{MASK_CACHE_PREFIX}{model_label}", _load, MASK_CACHE_TIMEOUT)
+    return rules
 
 
-def record_original_channel_access(request, user, model_label=None):
+def record_original_channel_access(request: Any, user: Any, model_label: str | None = None) -> None:
     """原文通道（``?mask=false`` + 对该菜单有更新权限）访问审计。
 
     记录「谁、在什么路径、看了哪个模型的原文」，落 **OperationLog(module=mask:original)**
@@ -148,7 +150,7 @@ def record_original_channel_access(request, user, model_label=None):
         logger.warning("write mask original channel audit failed", exc_info=True)
 
 
-def invalid_mask_cache(model_label=None):
+def invalid_mask_cache(model_label: str | None = None) -> None:
     """失效脱敏缓存；model_label 缺省时清全部（规则批量变更场景）。"""
     if model_label:
         cache.delete(f"{MASK_CACHE_PREFIX}{model_label}")

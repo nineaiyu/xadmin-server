@@ -18,6 +18,8 @@
 ``EXPORT_MIME_TYPES`` 取值——下载中心按记录后缀回写 Content-Type 的唯一来源。
 """
 
+from typing import Any
+
 from django.conf import settings
 from django.utils import translation
 from django.utils.module_loading import import_string
@@ -37,12 +39,12 @@ EXPORT_MIME_TYPES = {
 }
 
 
-def mime_type_for(file_format) -> str:
+def mime_type_for(file_format: Any) -> str:
     """按导出格式取产物 MIME（未登记格式回落通用二进制流）。"""
     return EXPORT_MIME_TYPES.get(str(file_format or "").lower(), "application/octet-stream")
 
 
-def persist_export_artifact(record, filename: str, content: bytes, user=None):
+def persist_export_artifact(record: Any, filename: str, content: bytes, user: Any = None) -> Any:
     """导出产物落 UploadFile(is_tmp=True) 并挂接到下载中心记录。
 
     渲染完成的字节流统一经此落盘（文件存储 + mime 按格式注册表回写），
@@ -67,7 +69,7 @@ def persist_export_artifact(record, filename: str, content: bytes, user=None):
     return upload
 
 
-def build_export_request(record, query_params, user):
+def build_export_request(record: Any, query_params: Any, user: Any) -> Any:
     """构造导出执行请求：显式 method/path/查询串 + 提交者身份直通。
 
     不在任务里重新签发 access token：任务排队可能超过 access token 寿命（默认 1h），
@@ -82,7 +84,7 @@ def build_export_request(record, query_params, user):
     )
 
 
-def _save_progress(record, percent, stage=""):
+def _save_progress(record: Any, percent: Any, stage: Any = "") -> None:
     """运行中进度落库（0-100） 统一助手（里程碑即协作式取消的安全点）。
 
     终态由任务结束分支覆盖（终态 100 不做取消检查，避免已完成的导出被翻成取消）。
@@ -94,7 +96,7 @@ def _save_progress(record, percent, stage=""):
     record.progress = max(0, min(100, int(percent)))
 
 
-def run_async_export(record_id, view_path, query_params, user_pk):
+def run_async_export(record_id: Any, view_path: Any, query_params: Any, user_pk: Any) -> Any:
     """异步执行数据导出：重放 export_data 视图，产物落 UploadFile 供下载中心取用。
 
     记录状态在任务内推进（PENDING → RUNNING → SUCCESS/FAILURE）；同 pk 的

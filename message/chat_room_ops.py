@@ -6,6 +6,8 @@
 经 chat.py 再导出保持不变。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.utils.translation import gettext_lazy as _
@@ -25,19 +27,20 @@ from message.models import (
 
 def get_public_room() -> ChatRoom:
     """公共聊天室（全站单例；展示名走前端 i18n，此处只存稳定 key）。"""
+    room: ChatRoom
     room, __ = ChatRoom.objects.get_or_create(
         room_key="public", defaults={"room_type": ChatRoom.RoomType.PUBLIC, "name": "Public chat room"}
     )
     return room
 
 
-def get_or_create_private_room(user_a, user_b) -> ChatRoom:
+def get_or_create_private_room(user_a: Any, user_b: Any) -> ChatRoom:
     """一对一私聊房间：`dm:{min_pk}:{max_pk}` 幂等，双方各建一条未读游标行。"""
     pk_a, pk_b = _user_pk(user_a), _user_pk(user_b)
     if pk_a == pk_b:
         raise DjangoValidationError(_("Cannot start a private chat with yourself"))
     key = private_room_key(pk_a, pk_b)
-    room = ChatRoom.objects.filter(room_key=key).first()
+    room: ChatRoom | None = ChatRoom.objects.filter(room_key=key).first()
     if room is None:
         try:
             with transaction.atomic():
@@ -51,7 +54,7 @@ def get_or_create_private_room(user_a, user_b) -> ChatRoom:
     return room
 
 
-def get_or_create_private_room_by_pk(user, target_pk) -> ChatRoom:
+def get_or_create_private_room_by_pk(user: Any, target_pk: Any) -> ChatRoom:
     """按主键开通（幂等复用）与目标用户的一对一私聊（REST 入口口径）。
 
     目标不存在或已停用抛可读校验错误（视图层映射 1001「User not found」）。
@@ -64,10 +67,10 @@ def get_or_create_private_room_by_pk(user, target_pk) -> ChatRoom:
     return get_or_create_private_room(user, target)
 
 
-def get_or_create_ai_room(owner) -> ChatRoom:
+def get_or_create_ai_room(owner: Any) -> ChatRoom:
     """AI 助手房间：每用户一间（`ai:{pk}`），归属校验靠 owner。"""
     key = ai_room_key(_user_pk(owner))
-    room = ChatRoom.objects.filter(room_key=key).first()
+    room: ChatRoom | None = ChatRoom.objects.filter(room_key=key).first()
     if room is None:
         try:
             with transaction.atomic():
@@ -78,7 +81,7 @@ def get_or_create_ai_room(owner) -> ChatRoom:
     return room
 
 
-def create_group(owner, name: str, member_pks) -> ChatRoom:
+def create_group(owner: Any, name: str, member_pks: Any) -> ChatRoom:
     """创建多人群聊：名称必填、成员（含创建者）至少 2 人、上限 MAX_GROUP_MEMBERS。
 
     创建者为群主；成员只接受在用用户，任一非法/失效成员整体拒绝（避免半成品群）。
@@ -99,7 +102,7 @@ def create_group(owner, name: str, member_pks) -> ChatRoom:
         raise DjangoValidationError(_("Some selected members are unavailable"))
     if len(members) + 1 > MAX_GROUP_MEMBERS:
         raise DjangoValidationError(_("Group members exceed the limit of {}").format(MAX_GROUP_MEMBERS))
-    room = ChatRoom.objects.create(
+    room: ChatRoom = ChatRoom.objects.create(
         room_key=group_room_key(), room_type=ChatRoom.RoomType.GROUP, name=name, owner_id=owner_pk
     )
     ChatRoomMember.objects.get_or_create(room=room, user_id=owner_pk)
@@ -109,20 +112,22 @@ def create_group(owner, name: str, member_pks) -> ChatRoom:
     return room
 
 
-def group_room_or_deny(room_id, user) -> ChatRoom:
+def group_room_or_deny(room_id: Any, user: Any) -> ChatRoom:
     """群聊会话（fail-closed）：非群聊或非成员一律按「房间不存在」拒绝。"""
-    room = ChatRoom.objects.filter(pk=room_id, is_active=True, room_type=ChatRoom.RoomType.GROUP).first()
+    room: ChatRoom | None = ChatRoom.objects.filter(
+        pk=room_id, is_active=True, room_type=ChatRoom.RoomType.GROUP
+    ).first()
     if room is None or not ChatRoomMember.objects.filter(room=room, user_id=_user_pk(user)).exists():
         raise DjangoValidationError(_("Chat room not found"))
     return room
 
 
-def _require_group_owner(room, user) -> None:
+def _require_group_owner(room: Any, user: Any) -> None:
     if room.owner_id != _user_pk(user):
         raise DjangoValidationError(_("Only the group owner can perform this operation"))
 
 
-def rename_group(room_id, user, name: str) -> ChatRoom:
+def rename_group(room_id: Any, user: Any, name: str) -> ChatRoom:
     """群主改名（成员态校验 + 群主门槛）。"""
     room = group_room_or_deny(room_id, user)
     _require_group_owner(room, user)
@@ -136,7 +141,7 @@ def rename_group(room_id, user, name: str) -> ChatRoom:
     return room
 
 
-def add_group_members(room_id, user, member_pks) -> ChatRoom:
+def add_group_members(room_id: Any, user: Any, member_pks: Any) -> ChatRoom:
     """群主拉人入群：已在内/失效成员静默跳过；超上限整体拒绝。"""
     from identity.models import UserInfo
 
@@ -155,7 +160,7 @@ def add_group_members(room_id, user, member_pks) -> ChatRoom:
     return room
 
 
-def remove_group_members(room_id, user, member_pks) -> ChatRoom:
+def remove_group_members(room_id: Any, user: Any, member_pks: Any) -> ChatRoom:
     """群主移除成员：成员行（含未读游标）删除；群主不能被移除。"""
     room = group_room_or_deny(room_id, user)
     _require_group_owner(room, user)
@@ -167,7 +172,7 @@ def remove_group_members(room_id, user, member_pks) -> ChatRoom:
     return room
 
 
-def leave_group(room_id, user) -> ChatRoom:
+def leave_group(room_id: Any, user: Any) -> ChatRoom:
     """退出群聊：群主退出自动转让给最早加入成员；最后一人退出则房间软删。"""
     room = group_room_or_deny(room_id, user)
     room.members.filter(user_id=_user_pk(user)).delete()
@@ -181,9 +186,9 @@ def leave_group(room_id, user) -> ChatRoom:
     return room
 
 
-def accessible_room(room_id, user) -> ChatRoom:
+def accessible_room(room_id: Any, user: Any) -> ChatRoom:
     """按可访问性取房间（fail-closed）：公共全员可进、私聊/群聊仅成员、AI 仅归属者。"""
-    room = ChatRoom.objects.filter(pk=room_id, is_active=True).first()
+    room: ChatRoom | None = ChatRoom.objects.filter(pk=room_id, is_active=True).first()
     if room is None:
         raise DjangoValidationError(_("Chat room not found"))
     if room.room_type == ChatRoom.RoomType.PUBLIC:
@@ -197,7 +202,7 @@ def accessible_room(room_id, user) -> ChatRoom:
     return room
 
 
-def room_member_pks(room) -> list:
+def room_member_pks(room: Any) -> list[Any]:
     """房间成员 pk 列表（公共房间返回空：走公共广播组）。"""
     if room.room_type == ChatRoom.RoomType.PUBLIC:
         return []

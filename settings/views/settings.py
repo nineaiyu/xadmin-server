@@ -9,6 +9,7 @@ from typing import Any
 
 from django.conf import settings
 from django_filters import rest_framework as filters
+from rest_framework.request import Request
 
 from common.core.credentials import filter_out_sensitive_rows
 from common.core.filter import BaseFilterSet
@@ -27,25 +28,25 @@ class BaseSettingViewSet(NoDetailModelSet):
     category = "basic"
     serializer_class_mapper: dict[str, Any] = {}
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Any:
         if not self.serializer_class_mapper:
             return super().get_serializer_class()
         self.category = self.request.query_params.get("category", "basic")
         cls = self.serializer_class_mapper.get(self.category, self.serializer_class)
         return cls
 
-    def metadata_extra_cache_key(self, request) -> str:
+    def metadata_extra_cache_key(self, request: Request) -> str:
         """元数据字段面随 `?category=` 变化（get_serializer_class 收敛），并入缓存键。"""
         return str(self.request.query_params.get("category") or "")
 
-    def get_fields(self):
+    def get_fields(self) -> dict[str, Any]:
         serializer = self.get_serializer_class()()
-        fields = serializer.get_fields()
+        fields: dict[str, Any] = serializer.get_fields()
         return fields
 
-    def get_object(self):
+    def get_object(self) -> dict[str, Any]:
         items = self.get_fields().keys()
-        obj = {}
+        obj: dict[str, Any] = {}
         for item in items:
             if hasattr(settings, item):
                 obj[item] = getattr(settings, item)
@@ -53,8 +54,8 @@ class BaseSettingViewSet(NoDetailModelSet):
                 obj[item] = None
         return obj
 
-    def parse_serializer_data(self, serializer):
-        data = []
+    def parse_serializer_data(self, serializer: Any) -> list[dict[str, Any]]:
+        data: list[dict[str, Any]] = []
         fields = self.get_fields()
         encrypted_items = [name for name, field in fields.items() if field.write_only]
         for name, value in serializer.validated_data.items():
@@ -64,7 +65,7 @@ class BaseSettingViewSet(NoDetailModelSet):
             data.append({"name": name, "value": value, "encrypted": encrypted, "category": self.category})
         return data
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         """设置项保存（显式契约，配对 settings/serializers/contract.py）。
 
         - 仅 request.data 显式提交的键持久化（带 default 的可选字段未提交不落库，
@@ -81,13 +82,14 @@ class BaseSettingViewSet(NoDetailModelSet):
         post_data_names = set(self.request.data.keys())
         settings_items = self.parse_serializer_data(serializer)
         serializer_data = serializer.data
-        change_fields = []
+        change_fields: list[str] = []
         for item in settings_items:
             if item["name"] not in post_data_names:
                 continue
             changed, setting = Setting.update_or_create(**item, user=self.request.user)
             if not changed:
                 continue
+            assert setting is not None  # 契约：changed 为真时必有实例（此处仅作类型收窄）
             change_fields.append(setting.name)
             serializer_data[setting.name] = setting.cleaned_value
         if hasattr(serializer, "set_response_data"):
@@ -109,7 +111,7 @@ class SettingFilter(BaseFilterSet):
     # 敏感值内容的逐字符探测；排除口径与输出掩码同源（encrypted 位 + 声明清单）
     value = filters.CharFilter(field_name="value", method="filter_value")
 
-    def filter_value(self, queryset, name, value):
+    def filter_value(self, queryset: Any, name: str, value: str) -> Any:
         return filter_out_sensitive_rows(queryset.filter(**{f"{name}__icontains": value}))
 
     class Meta:

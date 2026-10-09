@@ -4,6 +4,7 @@
 # filename : config
 # author : ly_13
 # date : 6/16/2023
+from typing import Any
 
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
@@ -45,7 +46,7 @@ class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDa
     filterset_class = SystemConfigFilter
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """删除{cls}并清理缓存"""
         # 一次取实例复用：先清缓存再删除（父类 destroy 会再次 get_object，这里等价展开）
         instance = self.get_object()
@@ -53,8 +54,8 @@ class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDa
         self.perform_destroy(instance)
         return ApiResponse()
 
-    @shared_list_action(methods=["get"], detail=False, url_path="registered-keys")
-    def registered_keys(self, request, *args, **kwargs):
+    @shared_list_action(methods=["get"], detail=False, url_path="registered-keys")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def registered_keys(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """注册配置键清单（键名 + 期望值类型名）：配置页键枚举提示的数据源。"""
         return ApiResponse(data={"keys": [{"key": k, "type": t} for k, t in registered_config_key_types().items()]})
 

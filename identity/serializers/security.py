@@ -6,6 +6,7 @@ FileAccessLogSerializer 属文件域，在 file/serializers/file_access_log.py�
 """
 
 from ipaddress import ip_address
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -52,7 +53,7 @@ class AccountRiskSerializer(BaseModelSerializer):
         table_fields = ["user_display", "risk_type", "level", "status", "remark", "handled_at", "created_time"]
 
 
-def validate_login_policy_ip_ranges(value):
+def validate_login_policy_ip_ranges(value: Any) -> None:
     """逐行校验登录策略网段条目，判定面与 basic 页 ip 组共用（is_ip_segment 等）。
 
     运行时对无法识别的条目只会退化为「与登录 IP 字符串比对」——对真实登录 IP
@@ -107,7 +108,7 @@ class LoginAccessPolicySerializer(BaseModelSerializer):
         ]
         table_fields = ["name", "priority", "is_active", "target_type", "action", "remark", "updated_time"]
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         instance = self.instance
         start = attrs.get("start_time", getattr(instance, "start_time", None))
         end = attrs.get("end_time", getattr(instance, "end_time", None))
@@ -122,7 +123,7 @@ class LoginAccessPolicySerializer(BaseModelSerializer):
             raise serializers.ValidationError(_("Please specify the target users or roles"))
         return attrs
 
-    def validate_ip_ranges(self, value):
+    def validate_ip_ranges(self, value: Any) -> Any:
         validate_login_policy_ip_ranges(value)
         return value
 

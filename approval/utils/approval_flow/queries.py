@@ -3,6 +3,7 @@
 """全量审批流引擎：待办/可见域/统计查询口径。"""
 
 import datetime
+from typing import Any
 
 from django.db.models import Q
 from django.utils import timezone
@@ -10,7 +11,7 @@ from django.utils import timezone
 from .constants import FLOW_PENDING_COUNT_CACHE_SECONDS, FLOW_STATS_WINDOW_DAYS, _models
 
 
-def pending_tasks_for(user):
+def pending_tasks_for(user: Any) -> Any:
     """待我审批的任务（PENDING、指派给我、且非本人发起）。"""
     ApprovalNodeTask = _models().Task
 
@@ -19,14 +20,14 @@ def pending_tasks_for(user):
     )
 
 
-def done_tasks_for(user):
+def done_tasks_for(user: Any) -> Any:
     """我处理过的任务（actor=我），与「已办」页签同口径。"""
     ApprovalNodeTask = _models().Task
 
     return ApprovalNodeTask.objects.filter(actor=user)
 
 
-def visible_instances_for(user):
+def visible_instances_for(user: Any) -> Any:
     """实例可见域：超管全部；其余「我发起 ∪ 待我审批 ∪ 我参与过 ∪ 我被抄送」。"""
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
 
@@ -37,20 +38,21 @@ def visible_instances_for(user):
     return ApprovalInstance.objects.filter(Q(creator=user) | Q(pk__in=involved) | Q(cc_users=user)).distinct()
 
 
-def pending_count_for(user) -> int:
+def pending_count_for(user: Any) -> int:
     """待我审批数（10s 短缓存；与「待办」页签同口径）。"""
     from django.core.cache import cache
 
     if not (user and getattr(user, "is_authenticated", False)):
         return 0
 
-    def _load():
+    def _load() -> Any:
         return pending_tasks_for(user).count()
 
-    return cache.get_or_set(f"approval_flow_pending_count_{user.pk}", _load, FLOW_PENDING_COUNT_CACHE_SECONDS)
+    count: int = cache.get_or_set(f"approval_flow_pending_count_{user.pk}", _load, FLOW_PENDING_COUNT_CACHE_SECONDS)
+    return count
 
 
-def node_progress_for(instance, node=None, tasks=None) -> dict | None:
+def node_progress_for(instance: Any, node: Any = None, tasks: Any = None) -> dict[str, Any] | None:
     """当前（或指定）节点进度：比例会签的「达标线预览」，会签/或签也给可视化数字。
 
     返回 ``{approve_type, approve_ratio, total, approved, pending, rejected, required, reached}``：
@@ -98,7 +100,7 @@ def node_progress_for(instance, node=None, tasks=None) -> dict | None:
     }
 
 
-def instance_stats(user, days: int = FLOW_STATS_WINDOW_DAYS) -> dict:
+def instance_stats(user: Any, days: int = FLOW_STATS_WINDOW_DAYS) -> dict[str, Any]:
     """流程审批统计（近 N 天）：我提交 / 我通过 / 我驳回 / 我的待办。"""
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
 

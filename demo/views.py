@@ -1,6 +1,9 @@
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
+from rest_framework.request import Request
 
 from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet, PkMultipleFilter
@@ -58,26 +61,26 @@ class BookViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction):
     # 命中时先建审批单（响应 412，所有用户一律拦截），审批通过后携带令牌重放才真正执行
     # （申请人不能自审；前端已内置令牌暂存与自动携带）。演示环境由 seed_demo_book 写入拦截清单。
     @ApprovalRequired()
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """删除{cls}数据（高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批）"""
         return super().destroy(request, *args, **kwargs)
 
     @ApprovalRequired()
-    @action(methods=["post"], detail=False, url_path="batch-destroy")
-    def batch_destroy(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_destroy(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """批量删除{cls}（高危：与删除同口径纳入审批）"""
         return super().batch_destroy(request, *args, **kwargs)
 
-    @action(methods=["post"], detail=True)
-    def push(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def push(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """推送到其他服务"""  # 这个 推送到其他服务 的注释得写， 否则菜单中可能会显示null，访问日志记录中也可能显示异常
 
         # 自定义一个请求为post的 push 路由行为，执行自定义操作， action装饰器有好多参数，可以查看源码自行分析
         instance = self.get_object()
         return ApiResponse(detail=_("%(name)s push succeeded") % {"name": instance.name})
 
-    @action(methods=["post"], detail=True)
-    def submit(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def submit(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """提交上架审批"""  # 接入审批流引擎：终态经信号回写 status（见 demo/services.py）
 
         instance = self.get_object()

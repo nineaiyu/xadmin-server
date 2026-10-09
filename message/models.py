@@ -18,6 +18,7 @@
 """
 
 import uuid
+from typing import Any
 
 from django.conf import settings
 from django.db import models
@@ -40,13 +41,13 @@ GROUP_MEMBERS_PREVIEW = 12
 PUBLIC_ROOM_KEY = "public"
 
 
-def private_room_key(pk_a, pk_b) -> str:
+def private_room_key(pk_a: Any, pk_b: Any) -> str:
     """一对一私聊规范化键：小 pk 在前，保证 (A,B) 与 (B,A) 落到同一会话。"""
     low, high = sorted([int(pk_a), int(pk_b)])
     return f"dm:{low}:{high}"
 
 
-def ai_room_key(owner_pk) -> str:
+def ai_room_key(owner_pk: Any) -> str:
     """AI 助手会话键：每个用户一间，刷新/重进续聊。"""
     return f"ai:{int(owner_pk)}"
 
@@ -60,10 +61,11 @@ class ChatRoom(DbBaseModel):
     """会话（公共聊天室 / 私聊 / AI 助手 / 多人群聊）。"""
 
     class RoomType(models.TextChoices):
-        PUBLIC = "public", _("Public chat room")
-        PRIVATE = "private", _("Private chat")
-        AI = "ai", _("AI assistant")
-        GROUP = "group", _("Group chat")
+        # 元组声明语法由 TextChoices 元类在运行期转为 str 成员；类型面显式声明为 str
+        PUBLIC: str = "public", _("Public chat room")  # type: ignore[assignment]  # TextChoices 元组声明语法
+        PRIVATE: str = "private", _("Private chat")  # type: ignore[assignment]  # TextChoices 元组声明语法
+        AI: str = "ai", _("AI assistant")  # type: ignore[assignment]  # TextChoices 元组声明语法
+        GROUP: str = "group", _("Group chat")  # type: ignore[assignment]  # TextChoices 元组声明语法
 
     room_type = models.CharField(
         _("Room type"), max_length=16, choices=RoomType.choices, default=RoomType.PUBLIC, db_index=True
@@ -88,12 +90,13 @@ class ChatRoom(DbBaseModel):
         verbose_name_plural = _("Chat rooms")
         ordering = ("-last_message_time", "-id")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.room_key}({self.room_type})"
 
     @property
     def is_public(self) -> bool:
-        return self.room_type == self.RoomType.PUBLIC
+        is_public: bool = self.room_type == self.RoomType.PUBLIC
+        return is_public
 
 
 class ChatRoomMember(DbBaseModel):
@@ -113,7 +116,7 @@ class ChatRoomMember(DbBaseModel):
         constraints = [models.UniqueConstraint(fields=["room", "user"], name="uniq_chat_room_member")]
         indexes = [models.Index(fields=["user", "room"], name="chat_member_user_room_idx")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.room_id}#{self.user_id}"
 
 
@@ -121,14 +124,15 @@ class ChatMessage(DbBaseModel):
     """聊天消息。主键自增即游标，`(room, id)` 索引支撑倒序拉取 + before_id 翻页。"""
 
     class MessageType(models.TextChoices):
-        TEXT = "text", _("Text")
-        AI = "ai", _("AI reply")
-        SYSTEM = "system", _("System message")
+        # 元组声明语法由 TextChoices 元类在运行期转为 str 成员；类型面显式声明为 str
+        TEXT: str = "text", _("Text")  # type: ignore[assignment]  # TextChoices 元组声明语法
+        AI: str = "ai", _("AI reply")  # type: ignore[assignment]  # TextChoices 元组声明语法
+        SYSTEM: str = "system", _("System message")  # type: ignore[assignment]  # TextChoices 元组声明语法
         # 附件消息（内容为文件名 + 附件外键引用；见 message/attachments.py）
-        IMAGE = "image", _("Image")
-        VIDEO = "video", _("Video")
-        AUDIO = "audio", _("Audio")
-        FILE = "file", _("File")
+        IMAGE: str = "image", _("Image")  # type: ignore[assignment]  # TextChoices 元组声明语法
+        VIDEO: str = "video", _("Video")  # type: ignore[assignment]  # TextChoices 元组声明语法
+        AUDIO: str = "audio", _("Audio")  # type: ignore[assignment]  # TextChoices 元组声明语法
+        FILE: str = "file", _("File")  # type: ignore[assignment]  # TextChoices 元组声明语法
 
     room = models.ForeignKey(ChatRoom, verbose_name=_("Room"), on_delete=models.CASCADE, related_name="messages")
     sender = models.ForeignKey(
@@ -176,7 +180,7 @@ class ChatMessage(DbBaseModel):
             )
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.room_id}#{self.pk}"
 
 

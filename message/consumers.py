@@ -50,19 +50,20 @@ logger = get_logger(__name__)
 CHAT_SEND_LIMIT_PER_SECOND = 5
 
 
-def allow_chat_send(user_pk) -> bool:
+def allow_chat_send(user_pk: Any) -> bool:
     """聊天消息发送速率判定（每用户每秒上限）。"""
     from common.core.throttle import allow_by_identity
 
-    return allow_by_identity(user_pk, scope="chat_send", limit=CHAT_SEND_LIMIT_PER_SECOND, window_seconds=1)
+    allowed: bool = allow_by_identity(user_pk, scope="chat_send", limit=CHAT_SEND_LIMIT_PER_SECOND, window_seconds=1)
+    return allowed
 
 
-def unread_rows(user) -> list:
+def unread_rows(user: Any) -> list[Any]:
     """本人未读会话（room_id, unread_count）列表（连接建立时的首屏对齐）。"""
     return list(ChatRoomMember.objects.filter(user=user, unread_count__gt=0).values_list("room_id", "unread_count"))
 
 
-def batch_push_chat_enabled(user_pks) -> dict:
+def batch_push_chat_enabled(user_pks: Any) -> dict[str, Any]:
     """批量读取「聊天消息站内信提醒」偏好（``{pk: bool}``）。
 
     与用户级配置同源（键 PUSH_CHAT_MESSAGE、系统默认 True）：群聊/私聊扇出
@@ -78,7 +79,7 @@ def batch_push_chat_enabled(user_pks) -> dict:
     return {pk: bool(value) for pk, value in batch_user_config(pks, "PUSH_CHAT_MESSAGE", True).items()}
 
 
-def has_chat_permission(user) -> bool:
+def has_chat_permission(user: Any) -> bool:
     """聊天通道准入（fail-closed）：超管放行；其余用户需持有聊天室会话列表权限。
 
     与 HTTP 侧同一套权限数据（菜单权限点 `list:ChatRoom` → 路径 `api/chat/room$`），
@@ -97,7 +98,7 @@ def has_chat_permission(user) -> bool:
 class ChatNotify(AsyncJsonWebsocket):
     """聊天室专用连接：一条连接同时承载公共广播 + 私聊/AI 定向 + 未读推送。"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(args, kwargs)
         self.user: Any = None
         self.disconnected = True
@@ -106,7 +107,7 @@ class ChatNotify(AsyncJsonWebsocket):
 
     # ------------------------------------------------------------ 连接生命周期
 
-    async def connect(self):
+    async def connect(self) -> None:
         self.user = self.scope["user"]
         if not self.user:
             logger.error("chat connect rejected: not authenticated")
@@ -127,14 +128,14 @@ class ChatNotify(AsyncJsonWebsocket):
         # 首屏未读对齐：连接建立即下发本人未读快照（前端左列表红点）
         await self.push_unread_snapshot()
 
-    async def disconnect(self, close_code):
+    async def disconnect(self, close_code: Any) -> None:
         self.disconnected = True
         for group in (self.public_group, self.group_name):
             if group:
                 await self.channel_layer.group_discard(group, self.channel_name)
         logger.info("chat disconnect: %s", self.user)
 
-    async def ping(self, event):
+    async def ping(self, event: Any) -> None:
         """心跳：同时续期两个分组（基类只续期 self.group_name）。
 
         两个组名都不匹配个人推送组前缀，因此不会写入在线索引/在线列表。
@@ -147,7 +148,7 @@ class ChatNotify(AsyncJsonWebsocket):
 
     # ------------------------------------------------------------ 上行分发
 
-    async def receive_json(self, action, data, content, **kwargs):
+    async def receive_json(self, action: Any, data: Any, content: Any, **kwargs: Any) -> None:
         match action:
             case MessageAction.CHAT_MESSAGE.value:
                 await self.handle_send(data)
@@ -160,7 +161,7 @@ class ChatNotify(AsyncJsonWebsocket):
                 await asyncio.sleep(3)
                 await self.close()
 
-    async def handle_send(self, data):
+    async def handle_send(self, data: Any) -> None:
         # 限流：超过每用户每秒上限时回执可读错误并丢弃本条（幂等重发同样受控）
         if not await database_sync_to_async(allow_chat_send)(self.user.pk):
             logger.warning("chat send rate limited: user=%s", self.user.pk)
@@ -218,7 +219,7 @@ class ChatNotify(AsyncJsonWebsocket):
             {"type": MessageAction.CHAT_MESSAGE.value, "data": {**payload, "can_recall": can_recall}},
         )
 
-    async def handle_reaction(self, data):
+    async def handle_reaction(self, data: Any) -> None:
         # 限流与消息发送同源：回应同样是「落库 + 房间广播」的上行写操作，
         # 恶意连接高频刷回应会放大成 DB 写与广播风暴
         if not await database_sync_to_async(allow_chat_send)(self.user.pk):
@@ -246,7 +247,7 @@ class ChatNotify(AsyncJsonWebsocket):
             {"room": room.pk, "message": message_pk, "reactions": reactions, "ts": ts},
         )
 
-    async def handle_read(self, data):
+    async def handle_read(self, data: Any) -> None:
         try:
             room = await database_sync_to_async(chat_service.accessible_room)(data.get("room_id"), self.user)
         except DjangoValidationError as exc:
@@ -259,24 +260,24 @@ class ChatNotify(AsyncJsonWebsocket):
 
     # ------------------------------------------------------------ 下行事件
 
-    async def chat_recall(self, event):
+    async def chat_recall(self, event: Any) -> None:
         await self._send_base(event)
 
-    async def chat_reaction(self, event):
+    async def chat_reaction(self, event: Any) -> None:
         await self._send_base(event)
 
-    async def chat_unread(self, event):
+    async def chat_unread(self, event: Any) -> None:
         await self._send_base(event)
 
     # ------------------------------------------------------------ 内部
 
-    async def broadcast(self, room, message_type: str, payload: dict):
+    async def broadcast(self, room: Any, message_type: str, payload: dict[str, Any]) -> None:
         """按房间类型广播（目标组口径见 message.utils.room_event_groups，REST 侧同源）。"""
         groups = await database_sync_to_async(room_event_groups)(room)
         for group in groups:
             await self.channel_layer.group_send(group, {"type": message_type, "data": payload})
 
-    async def push_unread_snapshot(self):
+    async def push_unread_snapshot(self) -> None:
         """连接建立时下发本人未读快照（私聊/AI 会话逐条）。"""
         rows = await database_sync_to_async(unread_rows)(self.user)
         for room_id, unread_count in rows:
@@ -284,7 +285,7 @@ class ChatNotify(AsyncJsonWebsocket):
                 MessageAction.CHAT_UNREAD.value, data={"room_id": room_id, "unread_count": unread_count}
             )
 
-    async def notify_room(self, room, payload: dict):
+    async def notify_room(self, room: Any, payload: dict[str, Any]) -> None:
         """站内信提醒：私聊/群聊提醒不在聊天室的成员、公共房间提醒被 @ 的用户。"""
         if room.room_type == ChatRoom.RoomType.PUBLIC:
             await self.notify_mentions(payload)
@@ -324,7 +325,7 @@ class ChatNotify(AsyncJsonWebsocket):
             },
         )
 
-    async def notify_group(self, room, payload: dict):
+    async def notify_group(self, room: Any, payload: dict[str, Any]) -> None:
         """群聊站内信：提醒不在聊天室页面的成员（在线者已实时收到，不重复提醒）。
 
         群聊普通消息**不落库**（高频消息落站内信会灌满通知中心）：实时提醒即可，
@@ -349,7 +350,7 @@ class ChatNotify(AsyncJsonWebsocket):
                 },
             )
 
-    async def notify_mentions(self, payload: dict):
+    async def notify_mentions(self, payload: dict[str, Any]) -> None:
         """@提及站内信：全位置、多目标（不含自己）；受用户 PUSH_CHAT_MESSAGE 偏好约束。"""
         content = payload.get("content") or ""
         try:
@@ -391,7 +392,7 @@ class ChatNotify(AsyncJsonWebsocket):
             },
         )
 
-    async def chat_channel_alive(self, user_pk) -> bool:
+    async def chat_channel_alive(self, user_pk: Any) -> bool:
         """对端是否正开着聊天室页面（存在活跃聊天连接）。查询失败按「不在线」处理。"""
         try:
             channels = await self.channel_layer.get_layers(get_chat_user_group_name(user_pk))
@@ -399,7 +400,7 @@ class ChatNotify(AsyncJsonWebsocket):
         except Exception:  # noqa: BLE001
             return False
 
-    async def chat_channels_alive(self, user_pks) -> set:
+    async def chat_channels_alive(self, user_pks: Any) -> set[Any]:
         """批量判定这些用户是否正开着聊天室页面（扇出合并为一次 pipeline 往返）。
 
         逐人 ``get_layers`` 会退化成「每人 2 条命令 + 1 次往返」；channel layer
@@ -423,7 +424,7 @@ class ChatNotify(AsyncJsonWebsocket):
             return set()
         return {pk for pk, group in groups.items() if layers.get(group)}
 
-    async def offline_notice_targets(self, user_pks) -> list:
+    async def offline_notice_targets(self, user_pks: Any) -> list[Any]:
         """私聊/群聊扇出的站内信目标：不在聊天室页面 + 开启提醒偏好（批量预取）。
 
         在线态与偏好各一次批量读取（替代逐人 2 次往返的串行放大），候选顺序保留。

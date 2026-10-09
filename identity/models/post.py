@@ -49,5 +49,5 @@ class Post(SoftDeleteModel, DbAuditModel, DbUuidModel):
             ),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.code})"

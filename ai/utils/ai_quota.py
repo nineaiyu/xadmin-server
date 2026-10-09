@@ -6,6 +6,8 @@
 config.yml）→ 0（不限）；供用量记账与并发流式信号量共用。
 """
 
+from typing import Any
+
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -37,7 +39,7 @@ def _quota_int(name: str) -> int:
         return 0
 
 
-def quota_limits() -> dict:
+def quota_limits() -> dict[str, Any]:
     return {
         "daily_calls": _quota_int("AI_QUOTA_USER_DAILY_CALLS"),
         "daily_tokens": _quota_int("AI_QUOTA_USER_DAILY_TOKENS"),

@@ -13,10 +13,17 @@
    与 ``approval/utils/leave.py`` 的请假业务接入互为对照。
 """
 
+from typing import TYPE_CHECKING
+
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+
+if TYPE_CHECKING:  # 仅类型检查期导入：运行期仍走函数内惰性导入（app 装载顺序）
+    from approval.models.approval import ApprovalFlow, ApprovalInstance
+    from demo.models import Book
+    from identity.models import UserInfo
 
 logger = get_logger(__name__)
 
@@ -26,21 +33,22 @@ BOOK_BIZ_TYPE = "demo_book"
 BOOK_FLOW_CODE = "demo_book"
 
 
-def _models():
+def _models() -> type[Book]:
     """延迟导入模型：避免 app 装载期的导入顺序问题。"""
     from demo.models import Book
 
     return Book
 
 
-def resolve_book_flow():
+def resolve_book_flow() -> ApprovalFlow | None:
     """解析上架审批流程定义（code=demo_book 的启用流程）；缺失返回 None。"""
     from approval.models.approval import ApprovalFlow
 
-    return ApprovalFlow.objects.filter(code=BOOK_FLOW_CODE, is_active=True).first()
+    flow: ApprovalFlow | None = ApprovalFlow.objects.filter(code=BOOK_FLOW_CODE, is_active=True).first()
+    return flow
 
 
-def submit_book(book, user):
+def submit_book(book: Book, user: UserInfo) -> tuple[bool, str | None]:
     """提交上架审批：返回 (ok, detail)。
 
     仅「草稿 / 已驳回」可提交（审批中在途、已上架不可重提）；无可用流程定义时
@@ -87,7 +95,7 @@ def submit_book(book, user):
     return True, _("On-shelf approval submitted")
 
 
-def sync_book_instance(instance, status, reason: str = "") -> None:
+def sync_book_instance(instance: ApprovalInstance, status: str, reason: str = "") -> None:
     """审批终态回写业务单：由 ``approval/signal_handler.py`` 按 biz_type 分发调用（幂等）。
 
     - APPROVED → 已上架（同时启用 ``is_active``，演示「审批通过产生业务效果」）；

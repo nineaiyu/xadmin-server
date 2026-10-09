@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import collections
+from typing import Any
 
 from common.core.modules import (
     compute_hidden_menu_pks,
@@ -43,14 +44,14 @@ TABLE_HINTS = (
 )
 
 
-def specs_of(resolution) -> tuple:
+def specs_of(resolution: Any) -> tuple[Any, ...]:
     """该 resolution 下被停用的模块声明（按 id 排序，保证输出稳定）。"""
 
     index = module_index()
     return tuple(index[module_id] for module_id in sorted(resolution.disabled))
 
 
-def menu_rows() -> list:
+def menu_rows() -> list[Any]:
     """菜单表的最小字段快照（与 ``compute_hidden_menu_pks`` 的入参口径一致）。"""
 
     from system.models import Menu
@@ -58,11 +59,11 @@ def menu_rows() -> list:
     return list(Menu.objects.values_list("pk", "parent_id", "menu_type", "name", "path"))
 
 
-def _counts_by_type(rows, pks) -> collections.Counter:
+def _counts_by_type(rows: Any, pks: Any) -> collections.Counter[Any]:
     return collections.Counter(menu_type for pk, _parent, menu_type, _name, _path in rows if pk in pks)
 
 
-def _display_name(role) -> str:
+def _display_name(role: Any) -> str:
     for field in ("name", "label", "code"):
         value = getattr(role, field, None)
         if value:
@@ -70,7 +71,7 @@ def _display_name(role) -> str:
     return f"#{role.pk}"
 
 
-def _related_tables() -> list:
+def _related_tables() -> list[Any]:
     """相关表体量（近似；非 postgres 或无权读取时为空白）。"""
 
     from django.db import connection
@@ -89,7 +90,7 @@ def _related_tables() -> list:
     return [{"table": name, "rows": rows} for name, rows in related[:30]]
 
 
-def module_impact(resolution=None) -> dict:
+def module_impact(resolution: Any = None) -> dict[str, Any]:
     """计算模块组合在当前库上的影响面。
 
     :param resolution: 待预演的模块解析结果（默认当前生效配置）

@@ -16,6 +16,7 @@
 
 import secrets
 import time
+from typing import Any
 from urllib.parse import urlencode
 
 from django.core.cache import cache
@@ -33,7 +34,7 @@ class OAuthError(Exception):
     只带面向用户的文案：IdP 的原始报文（含 client_id / token 片段）一律不回显。
     """
 
-    def __init__(self, detail):
+    def __init__(self, detail: Any) -> None:
         self.detail = detail
         super().__init__(str(detail))
 
@@ -86,13 +87,13 @@ OPTIONAL_DEFAULTS = {
 }
 
 
-def _config_providers():
+def _config_providers() -> Any:
     from common.core.config import SysConfig
 
     return SysConfig.OAUTH_PROVIDERS or []
 
 
-def get_providers(enabled_only: bool = False) -> list[dict]:
+def get_providers(enabled_only: bool = False) -> list[dict[str, Any]]:
     """读取 provider 配置；`enabled_only=True` 时只返回已启用且配置完整的。
 
     flavor 预设合并优先级：显式配置 > flavor 官方端点预设 > 通用默认值
@@ -112,14 +113,14 @@ def get_providers(enabled_only: bool = False) -> list[dict]:
     return providers
 
 
-def get_provider(key: str, enabled_only: bool = True) -> dict | None:
+def get_provider(key: str, enabled_only: bool = True) -> dict[str, Any] | None:
     for provider in get_providers(enabled_only=enabled_only):
         if provider.get("key") == key:
             return provider
     return None
 
 
-def validate_providers(value) -> list[dict]:
+def validate_providers(value: Any) -> list[dict[str, Any]]:
     """写入侧校验：结构、必填键、key 唯一、URL 必须 https、启用时 secret 非空。
 
     配置错误必须在**保存时**挡住，否则会让每个用户都撞到一个看不懂的回调错误。
@@ -183,7 +184,7 @@ def validate_providers(value) -> list[dict]:
     return providers
 
 
-def mask_providers(providers: list[dict]) -> list[dict]:
+def mask_providers(providers: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """回传前掩码密钥：只保留是否配置（布尔），不泄露任何密钥字符。"""
     masked = []
     for provider in providers:
@@ -208,10 +209,11 @@ def consume_state(state: str) -> str | None:
     key = STATE_CACHE_KEY.format(state=state)
     provider_key = cache.get(key)
     cache.delete(key)
-    return provider_key
+    typed_value: str | None = provider_key
+    return typed_value
 
 
-def issue_bind_state(provider_key: str, user_pk) -> str:
+def issue_bind_state(provider_key: str, user_pk: Any) -> str:
     """生成「绑定意图」的一次性 state（载荷含发起人 pk，回调据此绑定到本人）。
 
     与登录 state 用不同键空间：即使 state 泄露，也不能把登录流程变成绑定流程。
@@ -225,7 +227,7 @@ def issue_bind_state(provider_key: str, user_pk) -> str:
     return state
 
 
-def consume_bind_state(state: str) -> dict | None:
+def consume_bind_state(state: str) -> dict[str, Any] | None:
     """消费绑定 state：返回载荷 ``{provider, user_pk}``；已使用/过期返回 None（一次性）。"""
     if not state:
         return None
@@ -250,17 +252,19 @@ def consume_nonce(state: str) -> str | None:
     nonce = cache.get(key)
     if nonce:
         cache.delete(key)
-    return nonce
+    typed_value: str | None = nonce
+    return typed_value
 
 
-def build_authorize_url(provider: dict, redirect_uri: str, state: str, nonce: str | None = None) -> str:
+def build_authorize_url(provider: dict[str, Any], redirect_uri: str, state: str, nonce: str | None = None) -> str:
     from identity.utils.oauth_flavors import build_flavor_authorize_url
 
     # IM flavor 参数形状不同（企微 appid/agentid、飞书 app_id）；返回 None 表示
     # 与标准形状一致（含钉钉），落回通用构造
     flavor_url = build_flavor_authorize_url(provider, redirect_uri, state)
     if flavor_url:
-        return flavor_url
+        typed_value: str = flavor_url
+        return typed_value
     params = {
         "response_type": "code",
         "client_id": provider.get("client_id"),
@@ -273,14 +277,15 @@ def build_authorize_url(provider: dict, redirect_uri: str, state: str, nonce: st
     return f"{provider['authorize_url']}{separator}{urlencode({k: v for k, v in params.items() if v})}"
 
 
-def _outbound_allowed_hosts() -> tuple:
+def _outbound_allowed_hosts() -> tuple[Any, ...]:
     """发送侧出站白名单（与 Webhook / AI / MCP 同源：``OUTBOUND_ALLOWED_HOSTS``）。"""
     from common.utils.outbound import outbound_allowed_hosts
 
-    return outbound_allowed_hosts()
+    typed_value: tuple[Any, ...] = outbound_allowed_hosts()
+    return typed_value
 
 
-def _pinned_request(method: str, url: str, **kwargs):
+def _pinned_request(method: str, url: str, **kwargs: Any) -> Any:
     """生产路径出站请求：与 Webhook / AI / MCP 同口径走 ``pinned_request``——
     发送侧严格校验归属（私网 / 环回 / link-local 拒绝，``OUTBOUND_ALLOWED_HOSTS``
     放行）并把连接固定为已校验 IP，消除 DNS rebinding 窗口；flavor 适配器共用。"""
@@ -296,21 +301,21 @@ def _pinned_request(method: str, url: str, **kwargs):
     )
 
 
-def _post(url, data, timeout=10, http_client=None):
+def _post(url: Any, data: Any, timeout: Any = 10, http_client: Any = None) -> Any:
     """出站 POST：注入客户端（测试离线桩）原样调用；生产路径见 ``_pinned_request``。"""
     if http_client is not None:
         return http_client.post(url, data=data, timeout=timeout)
     return _pinned_request("POST", url, data=data, timeout=timeout)
 
 
-def _get(url, headers, timeout=10, http_client=None):
+def _get(url: Any, headers: Any, timeout: Any = 10, http_client: Any = None) -> Any:
     """出站 GET：口径同 ``_post``（userinfo / OIDC discovery / JWKS 共用）。"""
     if http_client is not None:
         return http_client.get(url, headers=headers, timeout=timeout)
     return _pinned_request("GET", url, headers=headers, timeout=timeout)
 
 
-def exchange_code(provider: dict, code: str, redirect_uri: str, http_client=None) -> dict:
+def exchange_code(provider: dict[str, Any], code: str, redirect_uri: str, http_client: Any = None) -> dict[str, Any]:
     """授权码换 token；失败统一抛 `OAuthError`（不回显 IdP 原始报文）。
 
     IM flavor（钉钉/企微/飞书）由适配器处理；返回 None 落回通用表单换码。
@@ -319,7 +324,8 @@ def exchange_code(provider: dict, code: str, redirect_uri: str, http_client=None
 
     adapted = exchange_flavor_code(provider, code, redirect_uri, http_client)
     if adapted is not None:
-        return adapted
+        typed_value: dict[str, Any] = adapted
+        return typed_value
     try:
         response = _post(
             provider["token_url"],
@@ -343,7 +349,7 @@ def exchange_code(provider: dict, code: str, redirect_uri: str, http_client=None
     return payload
 
 
-def fetch_userinfo(provider: dict, token_payload: dict, http_client=None) -> dict:
+def fetch_userinfo(provider: dict[str, Any], token_payload: dict[str, Any], http_client: Any = None) -> dict[str, Any]:
     """取用户信息；失败或缺少 subject 时抛 `OAuthError`。
 
     :param token_payload: `exchange_code` 的返回（oauth2 用 access_token；
@@ -353,7 +359,8 @@ def fetch_userinfo(provider: dict, token_payload: dict, http_client=None) -> dic
 
     adapted = fetch_flavor_userinfo(provider, token_payload, http_client)
     if adapted is not None:
-        return adapted
+        typed_value: dict[str, Any] = adapted
+        return typed_value
     try:
         response = _get(
             provider["userinfo_url"],
@@ -370,7 +377,7 @@ def fetch_userinfo(provider: dict, token_payload: dict, http_client=None) -> dic
     return payload
 
 
-def resolve_subject(provider: dict, userinfo: dict) -> str:
+def resolve_subject(provider: dict[str, Any], userinfo: dict[str, Any]) -> str:
     """按 `subject_field`（默认 sub）取 IdP 唯一标识。"""
     field = provider.get("subject_field") or "sub"
     return str(userinfo.get(field) or "")

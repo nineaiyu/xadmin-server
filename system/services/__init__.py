@@ -19,6 +19,8 @@ globals，``from system.services import Menu`` 这类 from-import 仍然可用�
 等底层模块安全顶层引用，避免循环导入。
 """
 
+from typing import TYPE_CHECKING, Any
+
 # 惰性导出名经 PEP 562 __getattr__ 提供，静态分析不可见，统一 noqa F822
 __all__ = [
     # 模型契约
@@ -57,8 +59,16 @@ _LAZY_EXPORTS = {
     "TaggedObjectSerializerMixin": "system.serializers.tag",
 }
 
+if TYPE_CHECKING:
+    # 静态类型面显式声明（运行期仍走 PEP 562 惰性加载，避免循环导入）：
+    # 供类型化调用方（identity/utils 等）取到真实类型而非「Any?」占位
+    from system.models import DataPermission as DataPermission  # noqa: F401
+    from system.models import Menu as Menu  # noqa: F401
+    from system.models import ModelLabelField as ModelLabelField  # noqa: F401
+    from system.serializers.tag import TaggedObjectSerializerMixin as TaggedObjectSerializerMixin  # noqa: F401
 
-def __getattr__(name):
+
+def __getattr__(name: Any) -> Any:
     module_path = _LAZY_EXPORTS.get(name)
     if module_path is not None:
         from importlib import import_module
@@ -77,22 +87,23 @@ def __getattr__(name):
 # ---------------------------------------------------------------------------
 
 
-def sync_model_field():
+def sync_model_field() -> Any:
     """模型字段权限树同步（system.services.modelfield 契约导出）。"""
     from system.services.modelfield import sync_model_field as _sync
 
     return _sync()
 
 
-def scan_permission_gaps():
+def scan_permission_gaps() -> Any:
     """权限点缺口扫描（system.services.permission_sync 契约导出）。"""
     from system.services.permission_sync import scan_permission_gaps as _scan
 
     return _scan()
 
 
-def get_dict_items(code):
+def get_dict_items(code: str) -> list[dict[str, Any]]:
     """数据字典条目下发（system.utils.platform.dict 契约导出）。"""
     from system.utils.platform.dict import get_dict_items as _get
 
-    return _get(code)
+    items: list[dict[str, Any]] = _get(code)
+    return items

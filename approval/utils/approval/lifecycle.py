@@ -3,6 +3,7 @@
 """敏感操作审批：建单 / 消费令牌 / 状态流转。"""
 
 import uuid
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
@@ -28,7 +29,7 @@ from .queries import invalidate_pending_count_cache
 from .snapshot import build_target_snapshot
 
 
-def create_approval(view, request, module: str = ""):
+def create_approval(view: Any, request: Any, module: str = "") -> Any:
     """建 PENDING 单并通知审批人；无可用审批人时直接报错（避免永久 PENDING）。
 
     审批人来源两条路（见 system.models.ApprovalRule）：
@@ -77,7 +78,7 @@ def create_approval(view, request, module: str = ""):
     return approval
 
 
-def consume_approval(request, approval_id):
+def consume_approval(request: Any, approval_id: Any) -> Any:
     """消费审批令牌：返回 None 表示放行（调用方继续执行业务），否则返回协议响应。"""
     from django.utils import timezone
 
@@ -141,7 +142,7 @@ def consume_approval(request, approval_id):
     return None
 
 
-def process_approval(view, request):
+def process_approval(view: Any, request: Any) -> Any:
     """装饰器主入口：返回 None 放行业务，否则返回协议响应（412/403）。
 
     全局清单为空时整体休眠（渐进启用），已携令牌的重发请求在休眠期直接放行。
@@ -166,7 +167,7 @@ def process_approval(view, request):
     return pending_response(approval)
 
 
-def approve_request(approval, user, comment: str = ""):
+def approve_request(approval: Any, user: Any, comment: str = "") -> Any:
     """审批通过：多级链逐级推进（末级通过才置 APPROVED + 令牌有效期）。返回 (ok, detail)。
 
     多级链的授权口径 = 当前级候选人（配置到谁就谁审，超管不越级）；
@@ -217,7 +218,7 @@ def approve_request(approval, user, comment: str = ""):
     return True, None
 
 
-def reject_request(approval, user, reason: str):
+def reject_request(approval: Any, user: Any, reason: str) -> Any:
     """驳回：reason 必填；多级链中任一级驳回即整单终止（其余在途级作废）。返回 (ok, detail)。
 
     状态流转以 CAS 落库（同 approve_request）。
@@ -257,7 +258,7 @@ def reject_request(approval, user, reason: str):
     return True, None
 
 
-def cancel_request(approval, user):
+def cancel_request(approval: Any, user: Any) -> Any:
     """申请人撤回：仅本人、仅 PENDING。返回 (ok, detail)。状态流转以 CAS 落库。
 
     多级链：撤回时把在途级次统一置 CANCELLED（扁平单无级次，更新命中 0 行无副作用）。

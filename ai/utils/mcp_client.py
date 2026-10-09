@@ -60,17 +60,18 @@ SCHEMA_KEEP_KEYS = ("type", "description", "enum", "properties", "required")
 class McpClientError(Exception):
     """MCP 交互错误（消息可直接作为 API detail 下发）。"""
 
-    def __init__(self, message, *, code: int = 1001):
+    def __init__(self, message: Any, *, code: int = 1001) -> None:
         self.message = str(message)
         self.code = code
         super().__init__(self.message)
 
 
-def outbound_allowed_hosts() -> tuple:
+def outbound_allowed_hosts() -> tuple[Any, ...]:
     """出站白名单（与 Webhook 同源：``OUTBOUND_ALLOWED_HOSTS``）。"""
     from common.utils.outbound import outbound_allowed_hosts as _load_allowed_hosts
 
-    return _load_allowed_hosts()
+    typed_value: tuple[Any, ...] = _load_allowed_hosts()
+    return typed_value
 
 
 def validate_server_url(url: str) -> str:
@@ -80,16 +81,17 @@ def validate_server_url(url: str) -> str:
     - http：仅允许 loopback（联调）或白名单登记的主机（内网自建 MCP 服务）；
     - 其余协议与 IP 字面量私网目标按 outbound 守卫拒绝（元数据地址等任何模式都拒绝）。
     """
-    return validate_outbound_config_url(
+    typed_value: str = validate_outbound_config_url(
         url,
         allowed_hosts=outbound_allowed_hosts(),
         scheme_message=_(
             "MCP server url must use https (http is allowed for loopback or OUTBOUND_ALLOWED_HOSTS targets)"
         ),
     )
+    return typed_value
 
 
-def _error_text(exc) -> str:
+def _error_text(exc: Any) -> str:
     """OutboundBlocked/ValidationError → 可读消息。"""
     messages = getattr(exc, "messages", None)
     if messages:
@@ -97,11 +99,11 @@ def _error_text(exc) -> str:
     return str(exc)
 
 
-def _schema_bytes(schema: dict) -> int:
+def _schema_bytes(schema: dict[str, Any]) -> int:
     return len(json.dumps(schema, ensure_ascii=False, default=str).encode("utf-8"))
 
 
-def _sanitize_schema_node(node, depth: int, flags: dict):
+def _sanitize_schema_node(node: Any, depth: int, flags: dict[str, Any]) -> Any:
     """递归白名单化单个 schema 节点：只留 LLM 友好关键字，additionalProperties 一律 False。
 
     为什么不做完整 JSON Schema 透传：第三方 inputSchema 可能携带 $ref/definitions
@@ -115,7 +117,7 @@ def _sanitize_schema_node(node, depth: int, flags: dict):
         return {"type": "object"}
     if not isinstance(node, dict):
         return {}
-    out: dict = {}
+    out: dict[str, Any] = {}
     kind = node.get("type")
     if isinstance(kind, str) and kind:
         out["type"] = kind
@@ -156,7 +158,7 @@ def _sanitize_schema_node(node, depth: int, flags: dict):
     return out
 
 
-def _strip_schema_descriptions(node):
+def _strip_schema_descriptions(node: Any) -> Any:
     """尺寸降级第一步：递归剥 description（保留结构与类型）。"""
     if isinstance(node, dict):
         return {key: _strip_schema_descriptions(value) for key, value in node.items() if key != "description"}
@@ -165,7 +167,7 @@ def _strip_schema_descriptions(node):
     return node
 
 
-def _flatten_schema(schema: dict) -> dict:
+def _flatten_schema(schema: dict[str, Any]) -> dict[str, Any]:
     """尺寸降级第二步（保底）：只留顶层参数名 + 类型（32 键上限下必然 ≤ 8KB）。"""
     properties = schema.get("properties")
     flat_properties = {}
@@ -174,20 +176,20 @@ def _flatten_schema(schema: dict) -> dict:
             flat_properties[str(name)] = (
                 {"type": rule.get("type")} if isinstance(rule, dict) and rule.get("type") else {}
             )
-    flat: dict = {"type": "object", "properties": flat_properties, "additionalProperties": False}
+    flat: dict[str, Any] = {"type": "object", "properties": flat_properties, "additionalProperties": False}
     if schema.get("required"):
         flat["required"] = schema["required"]
     return flat
 
 
-def bound_input_schema(raw) -> tuple:
+def bound_input_schema(raw: Any) -> tuple[Any, ...]:
     """第三方 inputSchema → 有界白名单 schema。返回 ``(schema, truncated)``。
 
     三级收敛：白名单化（含 32 键 / 深度 / enum 上限）→ 超尺寸剥 description →
     仍超尺寸拍平为「参数名 + 类型」。任一降级发生即置 ``truncated``，快照据此
     标记 ``schema_truncated``，管理页可识别不完整 schema。
     """
-    flags: dict = {"truncated": False}
+    flags: dict[str, Any] = {"truncated": False}
     schema = _sanitize_schema_node(raw if isinstance(raw, dict) else {}, 0, flags)
     if _schema_bytes(schema) > MAX_SCHEMA_BYTES:
         flags["truncated"] = True
@@ -210,7 +212,7 @@ class McpClient:
 
     # -- 传输 ---------------------------------------------------------------
 
-    def _headers(self) -> dict:
+    def _headers(self) -> dict[str, Any]:
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream",
@@ -221,7 +223,7 @@ class McpClient:
             headers["Mcp-Session-Id"] = self.session_id
         return headers
 
-    def _read_limited(self, response) -> str:
+    def _read_limited(self, response: Any) -> str:
         chunks, total = [], 0
         for chunk in response.iter_content(chunk_size=65536):
             total += len(chunk)
@@ -230,7 +232,7 @@ class McpClient:
             chunks.append(chunk)
         return b"".join(chunks).decode("utf-8", errors="replace")
 
-    def _read_sse(self, response, request_id) -> dict:
+    def _read_sse(self, response: Any, request_id: Any) -> dict[str, Any]:
         """SSE 响应：逐行取 ``data:`` 负载，返回 id 匹配的 JSON-RPC message。"""
         for raw_line in response.iter_lines(decode_unicode=False):
             if not raw_line:
@@ -250,7 +252,7 @@ class McpClient:
         return {}
 
     @staticmethod
-    def _parse_message(text: str) -> dict:
+    def _parse_message(text: str) -> dict[str, Any]:
         if not text.strip():
             return {}
         try:
@@ -264,7 +266,7 @@ class McpClient:
             return {}
         return message if isinstance(message, dict) else {}
 
-    def _request(self, payload: dict) -> dict:
+    def _request(self, payload: dict[str, Any]) -> dict[str, Any]:
         """发送 JSON-RPC 消息并返回响应 message（通知类返回 {}）。"""
         try:
             response = pinned_request(
@@ -297,7 +299,7 @@ class McpClient:
 
     # -- 协议 ---------------------------------------------------------------
 
-    def _call(self, method: str, params: dict | None = None) -> Any:
+    def _call(self, method: str, params: dict[str, Any] | None = None) -> Any:
         self._seq += 1
         rpc_id = self._seq
         message = self._request({"jsonrpc": "2.0", "id": rpc_id, "method": method, "params": params or {}})
@@ -311,10 +313,10 @@ class McpClient:
             raise McpClientError(_("MCP server error: {}").format(detail))
         return message.get("result")
 
-    def _notify(self, method: str, params: dict | None = None) -> None:
+    def _notify(self, method: str, params: dict[str, Any] | None = None) -> None:
         self._request({"jsonrpc": "2.0", "method": method, "params": params or {}})
 
-    def initialize(self) -> dict:
+    def initialize(self) -> dict[str, Any]:
         result = self._call(
             "initialize",
             {
@@ -329,21 +331,21 @@ class McpClient:
             pass  # 通知失败不阻断（部分服务端对通知返回空体/405）
         return result if isinstance(result, dict) else {}
 
-    def list_tools(self) -> list:
+    def list_tools(self) -> list[Any]:
         """拉取工具清单（initialize → tools/list），返回快照条目列表。"""
         self.initialize()
         result = self._call("tools/list", {})
         tools = (result or {}).get("tools") if isinstance(result, dict) else None
         return [self._tool_summary(item) for item in tools or [] if isinstance(item, dict)]
 
-    def call_tool(self, name: str, arguments: dict | None = None) -> dict:
+    def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
         """调用工具（initialize → tools/call），返回原始 result。"""
         self.initialize()
         result = self._call("tools/call", {"name": name, "arguments": arguments or {}})
         return result if isinstance(result, dict) else {}
 
     @staticmethod
-    def _tool_summary(item: dict) -> dict:
+    def _tool_summary(item: dict[str, Any]) -> dict[str, Any]:
         """工具快照条目：展示字段 + 有界 ``input_schema``（AI 动作目录的数据源）。
 
         完整 inputSchema 不直接落快照（$ref/oneOf 等对 LLM 不友好且可能递归/超大），
@@ -372,7 +374,7 @@ class McpClient:
         }
 
 
-def client_for(server, *, timeout=None) -> McpClient:
+def client_for(server: Any, *, timeout: Any = None) -> McpClient:
     """按 McpServer 配置构建客户端（令牌解密在此发生）。
 
     ``timeout`` 覆盖 ``server.timeout``：AI 动作链路用它把同步等待钳到更短上限
@@ -386,7 +388,7 @@ def client_for(server, *, timeout=None) -> McpClient:
     )
 
 
-def summarize_tool_result(result: dict, limit: int = RESULT_TEXT_LIMIT) -> dict:
+def summarize_tool_result(result: dict[str, Any], limit: int = RESULT_TEXT_LIMIT) -> dict[str, Any]:
     """调用结果摘要（回传管理页展示 + 审计）：文本内容拼接截断 + isError。"""
     texts = []
     content = result.get("content")
@@ -400,7 +402,7 @@ def summarize_tool_result(result: dict, limit: int = RESULT_TEXT_LIMIT) -> dict:
     return {"is_error": bool(result.get("isError")), "text": text}
 
 
-def tools_with_callable(server, tools) -> list:
+def tools_with_callable(server: Any, tools: Any) -> list[Any]:
     """工具快照逐条补 callable 标记（列表序列化时计算，不落库）。
 
     准入规则与 call 端点同口径：服务器启用 + 工具在白名单内
@@ -421,7 +423,13 @@ def tools_with_callable(server, tools) -> list:
 
 
 def audit_mcp_call(
-    user, server, tool: str, ok: bool, detail: str = "", arguments: dict | None = None, extra: dict | None = None
+    user: Any,
+    server: Any,
+    tool: str,
+    ok: bool,
+    detail: str = "",
+    arguments: dict[str, Any] | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> None:
     """MCP 调用语义审计：落 OperationLog(module=AI:mcp:client)。
 

@@ -10,6 +10,8 @@
 只有一次能推进到 PENDING，失败路径不留「状态与实例不一致」的行。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -42,14 +44,14 @@ class _FlowRollback(Exception):
     """内部信号：本次发起流程实例的尝试需要整体回滚（失败原因即 detail）。"""
 
 
-def flow_referenced_keys(flow) -> set:
+def flow_referenced_keys(flow: Any) -> set[Any]:
     """流程**当前生效定义**引用的表单字段 key 集合（三类引用）：
 
     节点条件（condition.field）、分支路由条件（routes[].condition.field）、
     FIELD 型审批人（assignee_value 即字段 key）。默认管理器只暴露当前生效行
     ，历史版本行不参与——在途单按钉住版本的行推进，不受影响。
     """
-    keys: set = set()
+    keys: set[Any] = set()
     for node in flow.nodes.all():
         condition = node.condition if isinstance(node.condition, dict) else {}
         if condition.get("field"):
@@ -62,7 +64,7 @@ def flow_referenced_keys(flow) -> set:
     return keys
 
 
-def assert_schema_safe_for_flow(form, new_schema) -> None:
+def assert_schema_safe_for_flow(form: Any, new_schema: Any) -> None:
     """schema 实质变更的流程引用检查：被绑定流程引用的字段不可删除。
 
     在途单已按版本钉住定义，本检查保护的是**改版后新建/重提**的实例：
@@ -91,7 +93,7 @@ def assert_schema_safe_for_flow(form, new_schema) -> None:
         )
 
 
-def project_flow_form_schema(flow) -> list:
+def project_flow_form_schema(flow: Any) -> list[Any]:
     """绑定表单 → flow.form_schema 单向投影（dform 是唯一事实源）。
 
     字段集合 = 全部**未删除**绑定表单（按创建序）的 schema 字段并集：同 key 以
@@ -99,8 +101,8 @@ def project_flow_form_schema(flow) -> list:
     form_schema（快照仅审计/回滚用，节点推进不读它——在途单不受影响；刷新是为
     避免后续纯节点改版被误判「定义变更」多落版本）。
     """
-    fields: list = []
-    seen: set = set()
+    fields: list[Any] = []
+    seen: set[Any] = set()
     for form in flow.bound_forms.filter(is_template=False).order_by("created_time"):
         for item in (form.schema or {}).get("fields") or []:
             if not isinstance(item, dict):
@@ -110,7 +112,7 @@ def project_flow_form_schema(flow) -> list:
                 continue
             seen.add(key)
             ftype = _FLOW_FIELD_TYPES.get(str(item.get("type") or ""), "text")
-            options: list = []
+            options: list[Any] = []
             if ftype == "select":
                 from dataset.utils.dform import field_option_values
 
@@ -130,7 +132,7 @@ def project_flow_form_schema(flow) -> list:
     return fields
 
 
-def _refresh_latest_snapshot_form_schema(flow) -> None:
+def _refresh_latest_snapshot_form_schema(flow: Any) -> None:
     """最新版本快照的 form_schema 对齐当前投影（无快照/无变化跳过）。"""
     import json
 
@@ -147,7 +149,7 @@ def _refresh_latest_snapshot_form_schema(flow) -> None:
     row.save(update_fields=["snapshot", "updated_time"])
 
 
-def sync_bound_flow_schema(form) -> None:
+def sync_bound_flow_schema(form: Any) -> None:
     """表单保存（新建/改版/绑定变化）后同步绑定流程的 form_schema 投影。"""
     if form.approval_flow_id is None:
         return
@@ -156,7 +158,7 @@ def sync_bound_flow_schema(form) -> None:
         project_flow_form_schema(flow)
 
 
-def resync_flow_after_unbind(previous_flow_id) -> None:
+def resync_flow_after_unbind(previous_flow_id: Any) -> None:
     """表单解绑/删除后的流程侧再同步：仍有其他绑定表单才重投影（保留投影结果）。
 
     最后一个绑定表单移除后流程 form_schema 保持原样（不静默清空）：编辑锁随
@@ -172,13 +174,13 @@ def resync_flow_after_unbind(previous_flow_id) -> None:
     project_flow_form_schema(flow)
 
 
-def build_instance_title(form, applicant) -> str:
+def build_instance_title(form: Any, applicant: Any) -> str:
     """流程实例标题：表单名 + 提交人，便于审批列表一眼区分。"""
     username = getattr(applicant, "nickname", "") or getattr(applicant, "username", "")
     return f"{form.name}（{username}）" if username else str(form.name)
 
 
-def create_flow_instance(submission, applicant):
+def create_flow_instance(submission: Any, applicant: Any) -> Any:
     """为绑定流程的表单提交创建流程实例并置 PENDING。返回 (ok, detail)。
 
     并发安全（双击 / 重放）：以「读取时的源状态」做条件更新（CAS）把提交行推进到
@@ -227,7 +229,7 @@ def create_flow_instance(submission, applicant):
     return True, None
 
 
-def resubmit_submission(submission, user):
+def resubmit_submission(submission: Any, user: Any) -> Any:
     """被驳回后重新提交：仅申请人、仅 REJECTED；按当前数据发起新流程实例。返回 (ok, detail)。
 
     行锁内复核状态：并发重放也只有一次能推进（配合 create_flow_instance 的源状态 CAS）。
@@ -264,7 +266,7 @@ def resubmit_submission(submission, user):
         return create_flow_instance(locked, user)
 
 
-def submit_from_approval(approval, user):
+def submit_from_approval(approval: Any, user: Any) -> Any:
     """审批通过后自动落库：按审批单快照重建表单提交。返回 (ok, detail)。
 
     申请人取审批单 creator（不是审批人）；此处只覆盖「操作审批」链路——绑定流程的
@@ -300,7 +302,7 @@ def submit_from_approval(approval, user):
     return True, None
 
 
-def update_from_approval(approval, user):
+def update_from_approval(approval: Any, user: Any) -> Any:
     """草稿提交经操作审批通过后自动完成：更新既有提交行（不重复建行）。返回 (ok, detail)。
 
     与「新建提交」链路的区别：目标行已存在（草稿），审批通过 = 提交生效，
@@ -335,7 +337,7 @@ def update_from_approval(approval, user):
     return True, None
 
 
-def register_approval_handlers():
+def register_approval_handlers() -> None:
     """注册「审批通过后自动完成」的动作（app ready 时调用，可重复执行）。
 
     两条链路：新建提交（POST 列表）与草稿提交（POST {pk}/submit）——后者更新既有行。
@@ -346,7 +348,7 @@ def register_approval_handlers():
     register_on_approved(r"^/api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$", update_from_approval)
 
 
-def sync_dform_instance(instance, status, reason: str = "") -> None:
+def sync_dform_instance(instance: Any, status: Any, reason: str = "") -> None:
     """流程实例终态回写表单提交状态：由信号接收器调用（幂等）。"""
     from approval.models.approval import ApprovalInstance
 

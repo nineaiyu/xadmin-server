@@ -28,6 +28,8 @@ AI 接口额外受 `AI_ASSISTANT_ENABLED` + 凭据完整性门禁（未启用返
 消息内容一律文本（前端插值渲染，不 v-html；长度上限服务端强制）。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
@@ -59,7 +61,7 @@ HISTORY_DEFAULT_LIMIT = 20
 HISTORY_MAX_LIMIT = 50
 
 
-def _validation_detail(exc) -> str:
+def _validation_detail(exc: Any) -> str:
     return "; ".join(getattr(exc, "messages", None) or [str(exc)])
 
 
@@ -69,7 +71,7 @@ class ChatRoomViewSet(GenericViewSet):
     queryset = ChatRoom.objects.all()
 
     @extend_schema(responses=get_default_response_schema())
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """我的会话列表：公共聊天室置顶，AI 助手按门禁显隐，私聊未读优先。"""
         ai_enabled = chat_ai.is_enabled()
         rooms = chat_service.list_user_rooms(request.user, ai_enabled=ai_enabled)
@@ -83,8 +85,8 @@ class ChatRoomViewSet(GenericViewSet):
         )
 
     @extend_schema(request=OpenPrivateRoomSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="open-private")
-    def open_private(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="open-private")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def open_private(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """开通私聊：`room_key` 幂等，重复调用返回同一会话（双端可同时发起）。"""
         serializer = OpenPrivateRoomSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -98,8 +100,8 @@ class ChatRoomViewSet(GenericViewSet):
         )
 
     @extend_schema(request=CreateGroupSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="create-group")
-    def create_group(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="create-group")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def create_group(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """创建多人群聊：成员（含创建者）至少 2 人，创建者即群主。"""
         serializer = CreateGroupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -117,8 +119,8 @@ class ChatRoomViewSet(GenericViewSet):
         )
 
     @extend_schema(request=GroupMembersSerializer, responses=get_default_response_schema())
-    @action(methods=["get", "post"], detail=True, url_path="members")
-    def members(self, request, *args, **kwargs):
+    @action(methods=["get", "post"], detail=True, url_path="members")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def members(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """群成员：GET 返回完整成员列表（成员可见）；POST 变更（add / remove，仅群主）。
 
         GET+POST 共享同一权限码（登记见 permission_sync SHARED_METHOD_PATHS），
@@ -144,8 +146,8 @@ class ChatRoomViewSet(GenericViewSet):
         return ApiResponse(data=chat_service.room_to_dict(room, request.user, 0, chat_service.online_user_pks()))
 
     @extend_schema(request=RenameGroupSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="rename")
-    def rename(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="rename")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def rename(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """群聊改名（仅群主）。"""
         serializer = RenameGroupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -159,8 +161,8 @@ class ChatRoomViewSet(GenericViewSet):
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="leave")
-    def leave(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="leave")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def leave(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """退出群聊：群主退出自动转让给最早加入成员；最后一人退出即解散。"""
         try:
             room = chat_service.leave_group(kwargs.get("pk"), request.user)
@@ -178,7 +180,7 @@ class ChatMessageViewSet(GenericViewSet):
     queryset = ChatMessage.objects.all()
 
     @extend_schema(responses=get_default_response_schema())
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """历史消息：`room` + 可选 `before_id`（倒序游标，响应按时间正序）+ `limit`。"""
         try:
             room = chat_service.accessible_room(request.query_params.get("room"), request.user)
@@ -199,14 +201,14 @@ class ChatMessageViewSet(GenericViewSet):
         return ApiResponse(data=chat_service.history_messages(room, request.user, before_id=before_id, limit=limit))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"],
         detail=False,
         url_path="upload",
         throttle_classes=[UploadThrottle],
         parser_classes=(MultiPartParser,),
     )
-    def upload(self, request, *args, **kwargs):
+    def upload(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """聊天附件上传（图片/音视频/文件消息共用）。
 
         复用文件中心的安全策略与落库内核（扩展名黑名单/白名单、大小上限、配额、
@@ -225,8 +227,8 @@ class ChatMessageViewSet(GenericViewSet):
         return ApiResponse(data=data, detail=_("Upload successful"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="file")
-    def file(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="file")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def file(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """附件取件（受鉴权）：仅消息所在房间的可访问者可读；撤回/附件失效返回 1001。
 
         图片支持 `?size=thumb|preview`（缩略图/预览缓存，inline）；音/视频按真实
@@ -242,8 +244,8 @@ class ChatMessageViewSet(GenericViewSet):
         return response
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="recall")
-    def recall(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="recall")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def recall(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """撤回消息：仅本人、2 分钟内；成功后向房间广播撤回事件（双方/多端同步）。"""
         try:
             message = chat_service.recall_message(request.user, kwargs.get("pk"))
@@ -259,7 +261,7 @@ class ChatContactViewSet(GenericViewSet):
     queryset = ChatRoom.objects.none()
 
     @extend_schema(responses=get_default_response_schema())
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """最近在线联系人：在线优先 + 按会话最近活跃倒序（建私聊入口）。"""
         try:
             limit = int(request.query_params.get("limit") or chat_service.CONTACT_LIMIT)
@@ -269,8 +271,8 @@ class ChatContactViewSet(GenericViewSet):
         return ApiResponse(data={"results": chat_service.recent_contacts(request.user, limit)})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="user-options")
-    def user_options(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def user_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """群成员候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
 
         口径与选人控件同源（identity/utils/user_options.py）；权限与该视图 list 权限

@@ -16,6 +16,8 @@ AES 密文（``AesEncrypted(token, password)``，与 register/reset 同库同参
 密文误当密码交给强度校验。开关关闭时按明文接收。生产应经 HTTPS 承载。
 """
 
+from typing import Any
+
 from django.conf import settings
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -54,7 +56,7 @@ class InviteValidateAPIView(GenericAPIView):
             }
         ),
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         token = str(request.query_params.get("token") or "").strip()
         user, state = user_invite.resolve_invite_token(token)
         return ApiResponse(
@@ -79,7 +81,7 @@ class InviteAcceptAPIView(GenericAPIView):
                 properties={
                     "token": build_basic_type(OpenApiTypes.STR),
                     "password": {
-                        **build_basic_type(OpenApiTypes.STR),
+                        **(build_basic_type(OpenApiTypes.STR) or {}),
                         "description": (
                             "Submit an AESCipherV2(token) ciphertext keyed by the invite token; "
                             "plaintext is only accepted when the encrypted switch is off"
@@ -90,7 +92,7 @@ class InviteAcceptAPIView(GenericAPIView):
         ),
         responses=get_default_response_schema(),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         token = str(request.data.get("token") or "").strip()
         password = str(request.data.get("password") or "")
         user, state = user_invite.resolve_invite_token(token)

@@ -12,6 +12,7 @@ auto_clean_export_record_job 按 EXPORT_FILE_KEEP_DAYS（默认 7 天）清理�
 """
 
 import uuid
+from typing import Any
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -62,10 +63,10 @@ class ExportRecord(CeleryTaskRecordModel):
         verbose_name = _("Export record")
         indexes = [models.Index(fields=["status", "created_time"], name="idx_export_status_created")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.pk})"
 
     @property
-    def filesize(self):
+    def filesize(self) -> Any:
         """产物字节数，未生成或文件缺失时返回 None。"""
         return getattr(self.file, "filesize", None) if self.file_id else None

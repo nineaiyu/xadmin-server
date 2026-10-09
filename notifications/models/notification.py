@@ -22,8 +22,9 @@ class UserMsgSubscription(DbAuditModel):
         verbose_name = _("User message subscription")
         unique_together = (("user", "message_type"),)
 
-    def __str__(self):
-        return _("{} subscription").format(self.user)
+    def __str__(self) -> str:
+        text: str = _("{} subscription").format(self.user)
+        return text
 
 
 class SystemMsgSubscription(DbAuditModel):
@@ -34,5 +35,5 @@ class SystemMsgSubscription(DbAuditModel):
     class Meta:
         verbose_name = _("System message subscription")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.message_type} -- {self.receive_backends}"

@@ -4,6 +4,7 @@
 # filename : code
 # author : ly_13
 # date : 8/10/2024
+from typing import Any
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -107,7 +108,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
     authentication_classes: list[type] = []
 
     @staticmethod
-    def prepare_code_data(username):
+    def prepare_code_data(username: Any) -> Any:
         subject = _("Verify code")
         code = random_string(
             settings.VERIFY_CODE_LENGTH,
@@ -123,20 +124,20 @@ class SendVerifyCodeAPIView(GenericAPIView):
     #: 允许的验证码场景（与 get_*_config 方法一一对应）；白名单校验避免缺参/拼错时 500
     CATEGORY_KEYS = ("register", "login", "reset", "bind_email", "bind_phone")
 
-    def _get_category_config(self, request):
+    def _get_category_config(self, request: Any) -> Any:
         """按 category 取场景配置；未知/缺失 category 返回 None（由调用方给可读错误）。"""
         category = request.query_params.get("category")
         if category not in self.CATEGORY_KEYS:
             return None
         return getattr(self, f"get_{category}_config")(request)
 
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         config = self._get_category_config(request)
         if config is None:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
         return ApiResponse(data=config)
 
-    def get_throttles(self):
+    def get_throttles(self) -> Any:
         """IP 维度专用限流只打在发送动作上（GET 配置读取便宜且页面加载必调）；
         保留默认链（全局匿名限流），发送请求在其上叠加更严专用档。"""
         throttles = super().get_throttles()
@@ -144,7 +145,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
             throttles.append(VerifyCodeThrottle())
         return throttles
 
-    def post(self, request):
+    def post(self, request: Any) -> Any:
         """发送验证码"""
         category = request.query_params.get("category")
         config = self._get_category_config(request)
@@ -216,7 +217,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         return ApiResponse(data=data, detail=_("The verification code has been sent"))
 
     @staticmethod
-    def get_register_config(request):
+    def get_register_config(request: Any) -> Any:
         config = {
             "access": settings.SECURITY_REGISTER_ACCESS_ENABLED,
             "captcha": settings.SECURITY_REGISTER_CAPTCHA_ENABLED,
@@ -230,7 +231,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         return config
 
     @staticmethod
-    def get_login_config(request):
+    def get_login_config(request: Any) -> Any:
         config = {
             "access": settings.SECURITY_LOGIN_ACCESS_ENABLED,
             "captcha": settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
@@ -246,7 +247,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         return config
 
     @staticmethod
-    def get_reset_config(request):
+    def get_reset_config(request: Any) -> Any:
         config = {
             "access": settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED,
             "captcha": settings.SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED,
@@ -260,7 +261,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         return config
 
     @staticmethod
-    def check_register_config(request, form_type, query_key, target):
+    def check_register_config(request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
         """注册场景：目标已存在时明确告知（注册流程必须提示占用，否则用户无法完成注册）。
 
         返回 ``(username, extra, should_send)``；注册链路始终发送验证码。
@@ -279,7 +280,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         return "", extra, True
 
     @staticmethod
-    def check_reset_config(request, form_type, query_key, target):
+    def check_reset_config(request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
         """重置/登录场景：不区分账号是否存在（防用户枚举）。
 
         账号不存在（或已停用）时不发送验证码，但同样返回成功与统一文案，
@@ -292,11 +293,11 @@ class SendVerifyCodeAPIView(GenericAPIView):
             return "", extra, False
         return user.username, extra, True
 
-    def check_login_config(self, request, form_type, query_key, target):
+    def check_login_config(self, request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
         return self.check_reset_config(request, form_type, query_key, target)
 
     @staticmethod
-    def get_bind_email_config(request):
+    def get_bind_email_config(request: Any) -> Any:
         config = {
             "access": settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED,
             "captcha": settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED,
@@ -308,7 +309,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         return config
 
     @staticmethod
-    def check_bind_email_config(request, form_type, query_key, target):
+    def check_bind_email_config(request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
         """绑定场景：回显目标用户资料（绑定流程需要展示「绑定到哪个账号」）。"""
         extra = request.data.get("extra", {})
         user = UserInfo.objects.filter(**{query_key: target}).first()
@@ -319,7 +320,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         return "", extra, True
 
     @staticmethod
-    def get_bind_phone_config(request):
+    def get_bind_phone_config(request: Any) -> Any:
         config = {
             "access": settings.SECURITY_BIND_PHONE_ACCESS_ENABLED,
             "captcha": settings.SECURITY_BIND_PHONE_CAPTCHA_ENABLED,
@@ -330,5 +331,5 @@ class SendVerifyCodeAPIView(GenericAPIView):
         }
         return config
 
-    def check_bind_phone_config(self, request, form_type, query_key, target):
+    def check_bind_phone_config(self, request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
         return self.check_bind_email_config(request, form_type, query_key, target)

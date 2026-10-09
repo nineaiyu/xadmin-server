@@ -15,6 +15,7 @@ import io
 import json
 from datetime import datetime
 from datetime import time as dt_time
+from typing import Any
 from uuid import UUID
 
 from django.core.mail import EmailMessage
@@ -26,7 +27,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def _excel_safe(value):
+def _excel_safe(value: Any) -> Any:
     """openpyxl 仅支持基础标量：UUID（FK pk）转字符串、带时区 datetime/time 转本地
     naive（Excel 不接受 tzinfo）、dict/list 转 JSON 文本，其余原样。"""
     if isinstance(value, UUID):
@@ -40,7 +41,7 @@ def _excel_safe(value):
     return value
 
 
-def _sheet_title(component, index: int) -> str:
+def _sheet_title(component: Any, index: int) -> str:
     """组件 sheet 名：标题（非法字符替换、截断）+ 序号前缀（保证唯一且 ≤31 字符）。"""
     title = str(component.get("title") or component.get("type") or _("Chart"))
     for char in "[]:*?/\\":
@@ -49,7 +50,7 @@ def _sheet_title(component, index: int) -> str:
     return f"{index}-{title}"
 
 
-def _render_component_sheet(wb, report, user, component, index: int) -> None:
+def _render_component_sheet(wb: Any, report: Any, user: Any, component: Any, index: int) -> None:
     """单个聚合组件落一张独立 sheet（名称/值两列）。
 
     单组件失败（字段被删、字段权限收紧等）只写一行提示，不拖垮整份报表投递：
@@ -76,7 +77,7 @@ def _render_component_sheet(wb, report, user, component, index: int) -> None:
         sheet.append([_excel_safe(item["name"]), _excel_safe(item["value"])])
 
 
-def _render_workbook(report, user) -> tuple:
+def _render_workbook(report: Any, user: Any) -> tuple[Any, ...]:
     """执行数据集并渲染 xlsx 到内存。返回 (bytes, 明细行数)。
 
     批次二：`design` 决定明细列与行数上限（空 = 存量全列口径），并为每个聚合组件
@@ -122,7 +123,7 @@ def _render_workbook(report, user) -> tuple:
     return buffer.getvalue(), len(rows)
 
 
-def _deliver_email(report, filename: str, content: bytes, rows: int) -> None:
+def _deliver_email(report: Any, filename: str, content: bytes, rows: int) -> None:
     from dataset.utils.report_design import design_components
     from task.services import mime_type_for
 
@@ -137,7 +138,7 @@ def _deliver_email(report, filename: str, content: bytes, rows: int) -> None:
     mail.send()
 
 
-def report_notify_channels(report) -> list:
+def report_notify_channels(report: Any) -> list[Any]:
     """报表投递渠道清单：非法取值忽略；空 = 仅邮件（存量数据与旧客户端兼容）。"""
     from dataset.serializers.analysis import REPORT_NOTIFY_CHANNELS
 
@@ -145,7 +146,7 @@ def report_notify_channels(report) -> list:
     return channels or ["email"]
 
 
-def _deliver_im(report, rows: int) -> list:
+def _deliver_im(report: Any, rows: int) -> list[Any]:
     """IM 渠道投递（文本消息：报表名/行数/下载中心提示）。
 
     逐渠道独立失败并返回失败明细（``渠道: 原因``）；未配置的渠道记入明细而非静默跳过。

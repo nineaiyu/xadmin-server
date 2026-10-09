@@ -7,7 +7,7 @@
 按域拆分（文件行数门禁）的后端部分，组合与入口见 renderers.py。
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .templating import render_template
 
@@ -17,16 +17,18 @@ class RenderBackendMixin:
 
     if TYPE_CHECKING:  # 组合使用的兄弟 mixin（MergeMixin）提供（mixin 模式）
 
-        def _render_imports(self, specs, existing_names) -> list[str]: ...
+        def _render_imports(
+            self, specs: list[tuple[str, list[tuple[str, str | None]]]], existing_names: set[str]
+        ) -> list[str]: ...
 
-        def _imported_names(self, text) -> set[str]: ...
+        def _imported_names(self, text: str) -> set[str]: ...
 
-        def _group_imports(self, lines, extra_first_party=frozenset()) -> list[str]: ...
+        def _group_imports(self, lines: list[str], extra_first_party: frozenset[str] = frozenset()) -> list[str]: ...
 
     # ------------------------------------------------------------ 公共片段
 
     @staticmethod
-    def _module_header(ctx, standalone, title, note):
+    def _module_header(ctx: dict[str, Any], standalone: bool, title: str, note: str) -> list[str]:
         """模块头部：独立文件带 shebang/docstring；追加进共享文件的生成块用注释头。
 
         头部随「独立文件 / 生成块」两种落盘形态切换（条件片段，故留在渲染侧），
@@ -45,7 +47,7 @@ class RenderBackendMixin:
         ]
 
     @staticmethod
-    def _render_dict_declarations(ctx, dict_fields):
+    def _render_dict_declarations(ctx: dict[str, Any], dict_fields: dict[str, Any]) -> list[str]:
         """字典绑定字段的显式声明：DictChoiceField(dict_code=...)，整型值带 value_cast=int。
 
         显式声明放在 class 体首、Meta 之前（与 identity/serializers/user.py 的 gender 同范式）；
@@ -62,7 +64,7 @@ class RenderBackendMixin:
             "PositiveSmallIntegerField",
             "PositiveBigIntegerField",
         }
-        lines = []
+        lines: list[str] = []
         for name, code in dict_fields.items():
             field = next((item for item in model._meta.fields if item.name == name), None)
             cast = ", value_cast=int" if field is not None and field.get_internal_type() in integer_types else ""
@@ -71,7 +73,7 @@ class RenderBackendMixin:
         return lines
 
     @staticmethod
-    def _render_kwargs(name, kwargs):
+    def _render_kwargs(name: str, kwargs: dict[str, Any]) -> str:
         """extra_kwargs 条目：逐键展开 + magic trailing comma（ruff format 幂等）。"""
         lines = [f'            "{name}": {{']
         for key, value in kwargs.items():
@@ -80,7 +82,7 @@ class RenderBackendMixin:
         return "\n".join(lines)
 
     @staticmethod
-    def _py_value(value):
+    def _py_value(value: Any) -> str:
         if isinstance(value, list):
             return "[" + ", ".join(f'"{item}"' for item in value) + "]"
         if isinstance(value, bool):
@@ -89,9 +91,9 @@ class RenderBackendMixin:
 
     # ------------------------------------------------------------ 产物模板
 
-    def _render_serializer_module(self, ctx, existing, standalone):
+    def _render_serializer_module(self, ctx: dict[str, Any], existing: str, standalone: bool) -> Any:
         dict_fields = ctx.get("dict_fields") or {}
-        specs = [
+        specs: list[tuple[str, list[tuple[str, str | None]]]] = [
             ("common.core.serializers", [("BaseModelSerializer", None)]),
             (ctx["app_label"], [("models", None)]),
         ]
@@ -108,7 +110,7 @@ class RenderBackendMixin:
                     note="字段声明同时驱动 search-columns 元数据与前端渲染：增删字段先想清楚三层影响"
                     "（元数据 / 权限码关联模型 / 前端列），参考 docs/architecture/framework-cookbook.md。",
                 ),
-                "imports": self._group_imports(imports, {ctx["app_label"]}),
+                "imports": self._group_imports(imports, frozenset({ctx["app_label"]})),
                 "model_name": ctx["model_name"],
                 "dict_declarations": self._render_dict_declarations(ctx, dict_fields),
                 "serializer_fields": [f'            "{name}",' for name in ctx["serializer_fields"]],
@@ -117,8 +119,8 @@ class RenderBackendMixin:
             },
         )
 
-    def _render_views_module(self, ctx, existing, standalone):
-        specs = [
+    def _render_views_module(self, ctx: dict[str, Any], existing: str, standalone: bool) -> Any:
+        specs: list[tuple[str, list[tuple[str, str | None]]]] = [
             ("django_filters", [("rest_framework", "filters")]),
             ("common.core.filter", [("BaseFilterSet", None)]),
             ("common.core.modelset", [("BaseModelSet", None)]),
@@ -144,7 +146,7 @@ class RenderBackendMixin:
                     note="数据权限由 BaseViewSet.get_queryset/filter_queryset 全局挂载，勿绕过；"
                     "自定义 action 的 docstring 必写（菜单与访问日志显示名取自它）。",
                 ),
-                "imports": self._group_imports(imports, {ctx["app_label"]}),
+                "imports": self._group_imports(imports, frozenset({ctx["app_label"]})),
                 "model_name": ctx["model_name"],
                 "mixins": mixins,
                 "verbose_name": ctx["verbose_name"],
@@ -157,7 +159,7 @@ class RenderBackendMixin:
             },
         )
 
-    def _render_urls_module(self, ctx):
+    def _render_urls_module(self, ctx: dict[str, Any]) -> Any:
         return render_template(
             "backend_urls.tmpl",
             {
@@ -170,5 +172,5 @@ class RenderBackendMixin:
             },
         )
 
-    def _render_config(self, ctx):
+    def _render_config(self, ctx: dict[str, Any]) -> Any:
         return render_template("backend_config.tmpl", {"app_label": ctx["app_label"]})

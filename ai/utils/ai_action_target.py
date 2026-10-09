@@ -9,6 +9,8 @@
 避免误杀既有能力）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
@@ -16,7 +18,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def verify_action_target(user, spec, params) -> str:
+def verify_action_target(user: Any, spec: Any, params: Any) -> str:
     """动作参数行级复核：参数指向的目标对象必须在调用者数据权限内可达。
 
     返回不可达原因（可读文案），空串 = 通过。

@@ -6,7 +6,7 @@ class DatasetConfig(AppConfig):
     name = "dataset"
     verbose_name = "数据分析与动态表单"
 
-    def ready(self):
+    def ready(self) -> None:
         # 动态表单提交的「审批通过后自动落库」动作：进程启动时注册一次
         from .utils.dform_flow import register_approval_handlers
 

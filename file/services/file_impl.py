@@ -14,6 +14,7 @@ PDF → 原样 inline；Office → 转换产物 inline / 转换中回 1006（HTT
 """
 
 import datetime
+from typing import Any
 
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate
@@ -56,7 +57,7 @@ PREVIEW_STATE_OFFICE_PREPARING = "office_preparing"  # 转换中 → 1006/425
 # ---------------------------------------------------------------- 统计聚合
 
 
-def build_personal_file_stats(user) -> dict:
+def build_personal_file_stats(user: Any) -> dict[str, Any]:
     """个人文件统计（数量/总大小/配额使用率 + 分类分布/近 7 天趋势/最大文件）。
 
     顶部统计面板的数据源：列表口径（活动记录）+ 一次聚合出多组维度，
@@ -85,7 +86,7 @@ def build_personal_file_stats(user) -> dict:
     }
 
 
-def _category_stats(queryset):
+def _category_stats(queryset: Any) -> list[dict[str, Any]]:
     """分类分布（数量/大小）：label/color 取自字典，字典缺失时回退分类 code。
 
     `value=None` 表示未分类（历史数据），label/color 一并给 null，
@@ -109,7 +110,7 @@ def _category_stats(queryset):
     return result
 
 
-def _recent_trend(queryset, days=7):
+def _recent_trend(queryset: Any, days: int = 7) -> list[dict[str, Any]]:
     """近 N 天上传趋势（按天聚合，空缺日期补 0，前端无需再做日历运算）。
 
     日期口径与 Django 当前时区一致（TruncDate 走 USE_TZ 时区转换）。
@@ -134,7 +135,7 @@ def _recent_trend(queryset, days=7):
 # ---------------------------------------------------------------- 预览状态机
 
 
-def resolve_preview(upload, kind, size=None) -> tuple:
+def resolve_preview(upload: Any, kind: Any, size: str | None = None) -> tuple[Any, Any]:
     """预览状态判定：按 ``preview_kind`` 结果分派，返回 ``(state, payload)``。
 
     ``kind`` 由调用方传入（视图先经 ``preview_kind`` 取值用于访问审计明细，

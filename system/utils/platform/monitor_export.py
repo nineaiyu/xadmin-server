@@ -10,6 +10,7 @@ CSV 带 UTF-8 BOM 供 Excel 正确识别中文；Excel 走 openpyxl，datetime �
 import csv
 import datetime
 import io
+from typing import Any
 
 from django.utils import timezone
 
@@ -17,14 +18,14 @@ CSV_CONTENT_TYPE = "text/csv; charset=utf-8"
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
-def _excel_safe(value):
+def _excel_safe(value: Any) -> Any:
     """openpyxl 兼容转换：aware datetime → 本地朴素时间；其余原样。"""
     if isinstance(value, datetime.datetime) and timezone.is_aware(value):
         return timezone.localtime(value).replace(tzinfo=None)
     return value
 
 
-def _csv_bytes(sheets):
+def _csv_bytes(sheets: Any) -> Any:
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     for index, sheet in enumerate(sheets):
@@ -38,7 +39,7 @@ def _csv_bytes(sheets):
     return buffer.getvalue().encode("utf-8-sig")
 
 
-def _xlsx_bytes(sheets):
+def _xlsx_bytes(sheets: Any) -> Any:
     from openpyxl import Workbook
     from openpyxl.styles import Font
     from openpyxl.utils import get_column_letter
@@ -61,7 +62,7 @@ def _xlsx_bytes(sheets):
     return stream.getvalue()
 
 
-def render_table_export(prefix, sheets, file_format="csv"):
+def render_table_export(prefix: Any, sheets: Any, file_format: Any = "csv") -> Any:
     """生成导出文件，返回 (文件名, 内容 bytes, content-type)。"""
     timestamp = timezone.localtime(timezone.now()).strftime("%Y%m%d-%H%M%S")
     if file_format == "xlsx":

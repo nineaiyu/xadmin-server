@@ -15,6 +15,7 @@
 
 import threading
 import time
+from typing import Any
 
 #: 短 TTL：多 worker 各自缓存，块写入后最迟 TTL 秒被下次签名比对发现
 META_CACHE_TTL_SECONDS = 5
@@ -24,10 +25,10 @@ SCOPE_CHUNK_META = "chunk_meta"
 SCOPE_VECTOR_META = "vector_meta"
 
 _LOCK = threading.Lock()
-_CACHE: dict = {}  # scope -> (expires_at, rows)
+_CACHE: dict[str, Any] = {}  # scope -> (expires_at, rows)
 
 
-def cached_meta_rows(scope: str, loader):
+def cached_meta_rows(scope: str, loader: Any) -> Any:
     """按 scope 缓存的元数据行列表：TTL 内命中即返回，否则调用 loader 重取。
 
     返回列表为共享只读对象（调用方只做遍历与签名比对，不得原地修改）。

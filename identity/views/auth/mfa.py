@@ -9,6 +9,8 @@
 2. POST /api/system/login/mfa/verify     提交验证码，通过后签发正式 JWT。
 """
 
+from typing import Any
+
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -34,7 +36,7 @@ LOGIN_MFA_METHODS = ["otp", "sms", "email", "passkey", "recovery"]
 CHALLENGE_METHODS = ["sms", "email"]
 
 
-def _get_mfa_user(request):
+def _get_mfa_user(request: Any) -> Any:
     """校验 mfa_token 并返回待验证用户，无效则直接抛业务异常。
 
     只要求已绑定凭据（OTP 密钥或 Passkey）：全局强制场景下允许验证"个人已关闭但被强制"的账号。
@@ -63,7 +65,7 @@ class LoginMFAPasskeyChallengeAPIView(APIView):
         ),
         responses=get_default_response_schema(),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取 Passkey 挑战值"""
         from identity.utils.webauthn import SCENE_AUTHENTICATE, generate_challenge, rp_id_and_origin
 
@@ -91,7 +93,7 @@ class LoginMFASendCodeAPIView(APIView):
         ),
         responses=get_default_response_schema(),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """发送登录 MFA 验证码"""
         user = _get_mfa_user(request)
         method = request.data.get("method")
@@ -134,7 +136,7 @@ class LoginMFAVerifyAPIView(APIView):
             }
         ),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """提交登录 MFA 验证码"""
         user = _get_mfa_user(request)
         method = request.data.get("method")

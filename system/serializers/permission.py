@@ -4,8 +4,8 @@
 # filename : permission
 # author : ly_13
 # date : 8/10/2024
-
 from collections import defaultdict
+from typing import Any
 
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -20,13 +20,13 @@ from system.models import DataPermission, Menu
 logger = get_logger(__name__)
 
 
-def get_menu_queryset():
+def get_menu_queryset() -> Any:
     queryset = Menu.objects
     pks = queryset.filter(menu_type=Menu.MenuChoices.PERMISSION).values_list("parent", flat=True)
     return queryset.filter(Q(menu_type=Menu.MenuChoices.PERMISSION) | Q(id__in=pks)).order_by("rank")
 
 
-def expand_menu_scope(menus):
+def expand_menu_scope(menus: Any) -> Any:
     """生效范围归一：页面/目录菜单展开为其下全部权限点菜单（去重）。
 
     运行时菜单上下文恒为「请求命中的权限点菜单」（IsAuthenticated 写入 request.user.menu），
@@ -106,24 +106,24 @@ class DataPermissionSerializer(BaseModelSerializer):
         }
 
     @staticmethod
-    def _annotated(obj, attr, fallback):
+    def _annotated(obj: Any, attr: Any, fallback: Any) -> Any:
         """列表注解优先（零查询），无注解时回退关系计数。"""
         value = getattr(obj, attr, None)
         return fallback() if value is None else value
 
-    def get_rule_count(self, obj):
+    def get_rule_count(self, obj: Any) -> Any:
         return len(obj.rules or [])
 
-    def get_menu_count(self, obj):
+    def get_menu_count(self, obj: Any) -> Any:
         return self._annotated(obj, "scope_menu_count", obj.menu.count)
 
-    def get_user_count(self, obj):
+    def get_user_count(self, obj: Any) -> Any:
         return self._annotated(obj, "scope_user_count", obj.userinfo_set.count)
 
-    def get_dept_count(self, obj):
+    def get_dept_count(self, obj: Any) -> Any:
         return self._annotated(obj, "scope_dept_count", obj.deptinfo_set.count)
 
-    def validate_menu(self, value):
+    def validate_menu(self, value: Any) -> Any:
         """生效范围归一：页面级勾选展开为权限点集合（空集合拒绝，避免范围被意外放大）。"""
         menus = list(value)
         if not menus:
@@ -133,7 +133,7 @@ class DataPermissionSerializer(BaseModelSerializer):
             raise ValidationError(_("The selected menus contain no API permission, please select a page with APIs"))
         return expanded
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         rules = attrs.get("rules", [] if not self.instance else self.instance.rules)
         # 写入侧结构校验：字段名手滑/非法匹配符等坏规则在保存时被拒，
         # 而不是让绑定用户的列表接口在读取时 500（编译器读侧另有 fail-closed 兜底）

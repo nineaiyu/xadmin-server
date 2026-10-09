@@ -9,6 +9,7 @@
 import hashlib
 import re
 from pathlib import Path
+from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
@@ -29,7 +30,7 @@ MAX_UPLOAD_NAME_LENGTH = 120
 MAX_UPLOAD_CONTENT_LENGTH = 200_000
 
 
-def _iter_doc_files() -> list:
+def _iter_doc_files() -> list[Any]:
     """yield (绝对路径, 存储相对路径)：docs/ 内相对 DOCS_DIR，根文档用文件名。"""
     result = []
     for path in DOCS_DIR.rglob("*.md"):
@@ -49,7 +50,7 @@ def _doc_title(text: str, fallback: str) -> str:
     return fallback[:255]
 
 
-def _chunk_markdown(text: str) -> list:
+def _chunk_markdown(text: str) -> list[Any]:
     """按 ## 边界切分；超长块按 CHUNK_WINDOW 滑动窗口再切。"""
     parts = re.split(r"\n(?=##\s)", text)
     chunks = []
@@ -65,11 +66,11 @@ def _chunk_markdown(text: str) -> list:
     return chunks
 
 
-def _preserved_vectors(paths: list) -> dict:
+def _preserved_vectors(paths: list[Any]) -> dict[str, Any]:
     """读取若干文档的既有向量并按正文 hash 去重保留（正文未变的块重建不失效）。"""
     from ai.models.ai import AiKnowledgeChunk
 
-    preserved: dict[str, tuple] = {}
+    preserved: dict[str, tuple[Any, ...]] = {}
     existing = AiKnowledgeChunk.objects.filter(source_path__in=paths).exclude(embedding__isnull=True)
     for content_hash, embedding, embedding_model, embedding_hash, embedding_dim in existing.values_list(
         "content_hash", "embedding", "embedding_model", "embedding_hash", "embedding_dim"
@@ -78,7 +79,7 @@ def _preserved_vectors(paths: list) -> dict:
     return preserved
 
 
-def _chunk_rows(doc, preserved: dict) -> list:
+def _chunk_rows(doc: Any, preserved: dict[str, Any]) -> list[Any]:
     """构造一个文档的全部分块行（正文 hash + 可保留向量），只建行不落库。"""
     from ai.models.ai import AiKnowledgeChunk
 
@@ -108,7 +109,7 @@ def _chunk_rows(doc, preserved: dict) -> list:
     return rows
 
 
-def rebuild_chunks(doc) -> int:
+def rebuild_chunks(doc: Any) -> int:
     """按文档全文重建其全部分块（先删后插），返回块数。
 
     向量保留：正文未变的块（``content_hash`` 相同）沿用既有 embedding——重建会
@@ -126,7 +127,7 @@ def rebuild_chunks(doc) -> int:
     return len(rows)
 
 
-def rebuild_chunks_bulk(documents) -> dict:
+def rebuild_chunks_bulk(documents: Any) -> dict[str, Any]:
     """批量重建多文档分块（先删后插），返回 ``{path: 块数}``。
 
     与逐文档 ``rebuild_chunks`` 语义一致（正文未变的块按 hash 沿用既有向量），
@@ -138,7 +139,7 @@ def rebuild_chunks_bulk(documents) -> dict:
     paths = [doc.path for doc in documents]
     preserved = _preserved_vectors(paths)
     AiKnowledgeChunk.objects.filter(source_path__in=paths).delete()
-    counts: dict = {}
+    counts: dict[str, Any] = {}
     rows = []
     for doc in documents:
         doc_rows = _chunk_rows(doc, preserved)
@@ -149,7 +150,7 @@ def rebuild_chunks_bulk(documents) -> dict:
     return counts
 
 
-def remove_chunks_bulk(paths) -> None:
+def remove_chunks_bulk(paths: Any) -> None:
     """批量移除多文档的全部分块（停用/删除时调用，检索索引即块集合）。"""
     from ai.models.ai import AiKnowledgeChunk
 
@@ -162,7 +163,7 @@ def remove_chunks(path: str) -> None:
     remove_chunks_bulk([path])
 
 
-def upsert_upload_document(name: str, content: str, creator=None):
+def upsert_upload_document(name: str, content: str, creator: Any = None) -> Any:
     """创建/覆盖上传文档并重建分块，返回 (doc, created)。
 
     同名（稳定 path）视为更新——「重新上传即覆盖」，列表不会出现同名多份；
@@ -194,7 +195,7 @@ def upsert_upload_document(name: str, content: str, creator=None):
     return doc, created
 
 
-def set_document_active(doc, active: bool) -> None:
+def set_document_active(doc: Any, active: bool) -> None:
     """停用 = 移除分块（不参与检索，内容保留可再启用）；启用 = 重建分块。"""
     if active:
         doc.chunk_count = rebuild_chunks(doc)
@@ -210,7 +211,7 @@ def set_document_active(doc, active: bool) -> None:
     schedule_auto_rebuild(doc)
 
 
-def set_documents_active(documents, active: bool) -> None:
+def set_documents_active(documents: Any, active: bool) -> None:
     """批量启停（逐条口径的合并版）：停用一次性移除全部分块，启用一次性重建全部分块。
 
     删除/重建/索引失效各合并为一次；落库字段与单文档口径一致
@@ -240,7 +241,7 @@ def set_documents_active(documents, active: bool) -> None:
         schedule_auto_rebuild(None)
 
 
-def sync_knowledge() -> dict:
+def sync_knowledge() -> dict[str, Any]:
     """扫描仓库文档 → 登记/分块入库（内容 hash 幂等）；返回同步摘要。
 
     只维护 repo 来源（双来源边界）：上传文档（source_type=upload 与

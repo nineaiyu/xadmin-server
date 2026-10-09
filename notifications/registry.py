@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """消息类注册表：类型 → 消息类解析与子类自动注册（自 notifications.py 拆分，行为不变）。"""
 
+from typing import Any
+
 from common.utils import get_logger
 from notifications.backends import BACKEND
 from notifications.notifications import (
@@ -16,7 +18,7 @@ from notifications.notifications import (
 logger = get_logger(__name__)
 
 
-def get_message_cls(message_type):
+def get_message_cls(message_type: Any) -> Any:
     """按 message_type 取消息类（系统 + 用户注册表），未注册返回 None。
 
     供「发送测试消息」入口按订阅行的 message_type 定位实现类。
@@ -27,7 +29,7 @@ def get_message_cls(message_type):
     return None
 
 
-def register_message(cls):
+def register_message(cls: Any) -> Any:
     """消息类型显式注册：装饰在 Message 子类上，替代元类隐式收集。
 
     子类需定义 message_type_label / category / category_label；

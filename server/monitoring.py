@@ -16,7 +16,7 @@ from .const import CONFIG
 logger = logging.getLogger("xadmin.monitoring")
 
 
-def init_monitoring():
+def init_monitoring() -> None:
     if not CONFIG.SENTRY_DSN:
         return
     try:

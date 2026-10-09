@@ -17,6 +17,7 @@
 """
 
 import uuid
+from typing import Any
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -75,11 +76,11 @@ class TaskExecution(CeleryTaskRecordModel):
         verbose_name = _("Task Execution")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.pk})"
 
     @property
-    def time_cost(self):
+    def time_cost(self) -> Any:
         """执行耗时（秒），未开始或未结束返回 None。"""
         if self.date_start and self.date_finished:
             return (self.date_finished - self.date_start).total_seconds()
@@ -114,11 +115,11 @@ class PeriodicTaskOwner(DbAuditModel):
         verbose_name = _("Periodic task owner")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.periodic_task_id}->{self.creator_id}"
 
     @classmethod
-    def record_for(cls, periodic_task, creator=None):
+    def record_for(cls, periodic_task: Any, creator: Any = None) -> Any:
         """为周期任务落归属记录（幂等）：已有归属不覆盖。
 
         信号重放、并发落行、种子重跑等场景重复调用时保留首个归属——归属是

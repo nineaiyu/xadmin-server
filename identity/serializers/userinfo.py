@@ -4,7 +4,7 @@
 # filename : userinfo
 # author : ly_13
 # date : 8/10/2024
-
+from typing import Any
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -57,11 +57,11 @@ class UserInfoSerializer(BaseModelSerializer):
     posts = serializers.SerializerMethodField()
 
     @extend_schema_field(serializers.ListField)
-    def get_roles(self, obj):
+    def get_roles(self, obj: Any) -> Any:
         return list(obj.roles.values_list("name", flat=True))
 
     @extend_schema_field(serializers.ListField)
-    def get_posts(self, obj):
+    def get_posts(self, obj: Any) -> Any:
         return list(
             obj.posts.filter(is_active=True, deleted_at__isnull=True)
             .order_by("rank", "name")
@@ -83,7 +83,7 @@ class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(max_length=128, required=True, write_only=True, label=_("Old password"))
     sure_password = serializers.CharField(max_length=128, required=True, write_only=True, label=_("Confirm password"))
 
-    def _decrypt_password(self, instance, ciphertext, field):
+    def _decrypt_password(self, instance: Any, ciphertext: Any, field: Any) -> Any:
         """按密文/明文开关解密提交口令；密文模式解密失败拒绝，明文模式回退提交原文。
 
         前端提交的是 AESCipherV2(username) 加密串；坏 base64 等非法输入不能
@@ -106,7 +106,7 @@ class ChangePasswordSerializer(serializers.Serializer):
             logger.warning(f"change password {field} decrypt failed:{e}. fallback to submitted plaintext")
             return ciphertext
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         ensure_local_password_changeable(instance)
         old_password = self._decrypt_password(instance, validated_data.get("old_password"), "old_password")
         sure_password = self._decrypt_password(instance, validated_data.get("sure_password"), "sure_password")

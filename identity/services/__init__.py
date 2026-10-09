@@ -20,6 +20,8 @@ globals，``from identity.services import UserInfo`` 这类 from-import 仍然�
 同理按需加载。
 """
 
+from typing import TYPE_CHECKING, Any
+
 # 惰性导出名经 PEP 562 __getattr__ 提供，静态分析不可见，统一 noqa F822
 __all__ = [
     # 模型契约
@@ -91,7 +93,16 @@ _LAZY_EXPORTS = {
 }
 
 
-def __getattr__(name):
+if TYPE_CHECKING:
+    # 静态类型面显式声明（运行期仍走 PEP 562 惰性加载，避免循环导入）：
+    # 供类型化调用方（notifications / utils 等）取到真实类型而非「Any?」占位
+    from identity.models import DeptInfo as DeptInfo  # noqa: F401
+    from identity.models import DeptManagerAssignment as DeptManagerAssignment  # noqa: F401
+    from identity.models import UserInfo as UserInfo  # noqa: F401
+    from identity.models import UserRole as UserRole  # noqa: F401
+
+
+def __getattr__(name: Any) -> Any:
     module_path = _LAZY_EXPORTS.get(name)
     if module_path is not None:
         from importlib import import_module
@@ -102,33 +113,33 @@ def __getattr__(name):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-def get_superusers():
+def get_superusers() -> Any:
     """超级管理员 queryset（不过滤启用状态，保持历史行为）。"""
     from identity.models import UserInfo
 
     return UserInfo.objects.filter(is_superuser=True)
 
 
-def get_active_superuser_queryset():
+def get_active_superuser_queryset() -> Any:
     """在用的超级管理员 queryset。"""
     from identity.models import UserInfo
 
     return UserInfo.objects.filter(is_superuser=True, is_active=True)
 
 
-def get_users_by_pks(pks):
+def get_users_by_pks(pks: Any) -> Any:
     """按主键批量取用户。"""
     from identity.models import UserInfo
 
     return UserInfo.objects.filter(id__in=pks).all()
 
 
-def get_users_by_perm(perm):
+def get_users_by_perm(perm: Any) -> Any:
     """按单个权限码反查在用用户（get_users_by_perms 单码薄封装）。"""
     return get_users_by_perms([perm])
 
 
-def get_users_by_perms(perms):
+def get_users_by_perms(perms: Any) -> Any:
     """按权限码清单反查在用用户（任一命中，去重）。
 
     权限码（"动作:组件名"，如 approve:SystemApprovalRequest）挂 PERMISSION 类型
@@ -154,28 +165,29 @@ def get_users_by_perms(perms):
     ).distinct()
 
 
-def get_active_user_pk_by_username(username):
+def get_active_user_pk_by_username(username: Any) -> Any:
     """按用户名取在用用户主键，不存在返回 None。"""
     from identity.models import UserInfo
 
     return UserInfo.objects.filter(username=username, is_active=True).values_list("pk", flat=True).first()
 
 
-def serialize_user_info(user) -> dict:
+def serialize_user_info(user: Any) -> dict[str, Any]:
     """按对外契约序列化用户信息（供 WebSocket 等非 DRF 场景使用）。"""
     from identity.serializers.userinfo import UserInfoSerializer
 
-    return UserInfoSerializer(instance=user).data
+    typed_value: dict[str, Any] = UserInfoSerializer(instance=user).data
+    return typed_value
 
 
-def register_user_session(request, user, login_type, channel_name=""):
+def register_user_session(request: Any, user: Any, login_type: Any, channel_name: str = "") -> Any:
     """登录/WS 接入时登记会话（identity.utils.session 契约导出，供 message app 使用）。"""
     from identity.utils.session import register_user_session as _register
 
     return _register(request, user, login_type, channel_name=channel_name)
 
 
-def websocket_session_logout(channel_name):
+def websocket_session_logout(channel_name: Any) -> None:
     """WS 优雅断开时按 channel 置会话离线（异常残留由保留期清理任务兜底）。"""
     from django.utils import timezone
 
@@ -193,42 +205,42 @@ def websocket_session_logout(channel_name):
 # ---------------------------------------------------------------------------
 
 
-def publish_api_quota_warning(info):
+def publish_api_quota_warning(info: Any) -> None:
     """API 配额告警：系统消息 + 出站 Webhook（identity.notifications 契约导出）。"""
     from identity.notifications import ApiQuotaWarningMessage
 
     ApiQuotaWarningMessage(info).publish(is_async=True)
 
 
-def apply_grant_fields(request, model_label, allowed):
+def apply_grant_fields(request: Any, model_label: Any, allowed: Any) -> Any:
     """应用凭证字段授权：可见字段收敛（identity.utils.api_grant 契约导出）。"""
     from identity.utils.api_grant import apply_grant_fields as _apply
 
     return _apply(request, model_label, allowed)
 
 
-def apply_grant_row_scope(request, queryset):
+def apply_grant_row_scope(request: Any, queryset: Any) -> Any:
     """应用凭证行级授权：queryset 收敛（identity.utils.api_grant 契约导出）。"""
     from identity.utils.api_grant import apply_grant_row_scope as _apply
 
     return _apply(request, queryset)
 
 
-def application_of_request(request):
+def application_of_request(request: Any) -> Any:
     """请求关联的应用凭证（identity.utils.api_grant 契约导出）。"""
     from identity.utils.api_grant import application_of_request as _resolve
 
     return _resolve(request)
 
 
-def enforce_application_grant(request, view):
+def enforce_application_grant(request: Any, view: Any) -> Any:
     """应用凭证权限点校验（identity.utils.api_grant 契约导出）。"""
     from identity.utils.api_grant import enforce_application_grant as _enforce
 
     return _enforce(request, view)
 
 
-def resolve_request_menu_pk(request):
+def resolve_request_menu_pk(request: Any) -> Any:
     """按请求路径解析应用凭证菜单（identity.utils.api_grant 契约导出）。"""
     from identity.utils.api_grant import resolve_request_menu_pk as _resolve
 

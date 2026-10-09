@@ -23,6 +23,7 @@
 
 from functools import lru_cache
 from importlib import import_module
+from typing import Any
 
 from django.apps import apps
 
@@ -37,13 +38,13 @@ BUILTIN_BIZ_SYNCERS = {
 
 
 @lru_cache(maxsize=1)
-def _app_biz_syncers() -> dict:
+def _app_biz_syncers() -> dict[str, Any]:
     """收集各应用 config.py 的 APPROVAL_BIZ_SYNCERS 声明（biz_type → 导入路径）。
 
     仅在首次分发时执行（django.setup 已完成）；结果进程级缓存——改声明需重启，
     与 TASK_ROUTES / URLPATTERNS 的 config.py 语义同口径。
     """
-    collected: dict = {}
+    collected: dict[str, Any] = {}
     for app_config in apps.get_app_configs():
         try:
             module = import_module(f"{app_config.name}.config")
@@ -61,7 +62,7 @@ def _app_biz_syncers() -> dict:
     return collected
 
 
-def get_biz_syncer(biz_type: str):
+def get_biz_syncer(biz_type: str) -> Any:
     """按 biz_type 解析业务同步器函数；应用声明优先，内置表兜底，未注册返回 None。"""
     path = _app_biz_syncers().get(biz_type) or BUILTIN_BIZ_SYNCERS.get(biz_type)
     if not path:
@@ -70,6 +71,6 @@ def get_biz_syncer(biz_type: str):
     return getattr(import_module(module_path), attr)
 
 
-def registered_biz_types() -> tuple:
+def registered_biz_types() -> tuple[Any, ...]:
     """已注册的全部 biz_type（内置 + 应用声明），供诊断/校验类消费方枚举。"""
     return tuple({**BUILTIN_BIZ_SYNCERS, **_app_biz_syncers()})

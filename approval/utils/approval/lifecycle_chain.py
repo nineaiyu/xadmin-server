@@ -5,6 +5,8 @@
 供 lifecycle.py 的 approve_request / reject_request 在 current_level > 0 时调用。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 from .approved_actions import run_on_approved
@@ -14,7 +16,7 @@ from .notify import _emit_approval_event, notify_applicant, notify_step
 from .queries import invalidate_pending_count_cache
 
 
-def _approve_chain(approval, user, comment: str):
+def _approve_chain(approval: Any, user: Any, comment: str) -> Any:
     """多级链通过：标记当前级 → 推进下一级；末级通过才落整单终态（供 approve_request 调用）。"""
     import datetime
 
@@ -119,7 +121,7 @@ def _approve_chain(approval, user, comment: str):
     return True, None
 
 
-def _reject_chain(approval, user, reason: str):
+def _reject_chain(approval: Any, user: Any, reason: str) -> Any:
     """多级链驳回：当前级置 REJECTED、其余在途级作废、整单终止（供 reject_request 调用）。"""
     from django.db import transaction
     from django.utils import timezone

@@ -6,11 +6,13 @@
 发送前经 `topapi/user/getbyunionid` 换 userid（缓存，避免逐条换算的频控压力）。
 """
 
+from typing import Any
 from urllib.parse import urlencode
 
 from common.utils import get_logger
 
-from .base import BaseImClient, ImSdkError
+from .base import BaseImClient  # 显式再导出（no_implicit_reexport）
+from .base import ImSdkError as ImSdkError
 
 logger = get_logger(__name__)
 
@@ -23,13 +25,13 @@ class DingTalkClient(BaseImClient):
     token_cache_prefix = "im_dingtalk_token_"
     userid_cache_prefix = "im_dingtalk_userid_"
 
-    def __init__(self, credentials: dict, http_client=None):
+    def __init__(self, credentials: dict[str, Any], http_client: Any = None) -> None:
         super().__init__(credentials=credentials, http_client=http_client)
         self.app_key = credentials.get("app_key") or ""
         self.app_secret = credentials.get("app_secret") or ""
         self.agent_id = credentials.get("agent_id") or ""
 
-    def _check(self, payload, url):
+    def _check(self, payload: Any, url: str) -> Any:
         errcode = payload.get("errcode")
         if errcode not in (0, None):
             action = url.rsplit("/", 1)[-1].split("?")[0]
@@ -38,14 +40,14 @@ class DingTalkClient(BaseImClient):
             )
         return payload
 
-    def _fetch_token(self, credentials: dict) -> str:
+    def _fetch_token(self, credentials: dict[str, Any]) -> str:
         payload = self._get_json(self.token_url, params={"appkey": self.app_key, "appsecret": self.app_secret})
         token = str(payload.get("access_token") or "")
         if not token:
             raise ImSdkError("dingtalk token response missing access_token")
         return token
 
-    def _topapi_post(self, path: str, access_token: str, body: dict) -> dict:
+    def _topapi_post(self, path: str, access_token: str, body: dict[str, Any]) -> Any:
         """钉钉 oapi 惯例：access_token 走 query，业务参数走 JSON 体。"""
         url = f"{API_BASE}{path}?{urlencode({'access_token': access_token})}"
         try:
@@ -73,7 +75,7 @@ class DingTalkClient(BaseImClient):
         cache.set(cache_key, userid, 7200 - 120)
         return userid
 
-    def send_text(self, accounts, content) -> None:
+    def send_text(self, accounts: Any, content: Any) -> None:
         """accounts 为 userid 列表（后端已完成 unionId 换算）。"""
         if not accounts:
             return

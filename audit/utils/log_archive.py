@@ -31,6 +31,7 @@ import os
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 from django.db import transaction
@@ -49,13 +50,13 @@ ARCHIVE_MODEL_KEYS = ("operation", "login")
 _MODEL_PATHS = {"operation": "audit.OperationLog", "login": "audit.UserLoginLog"}
 
 
-def archive_root(directory=None) -> Path:
+def archive_root(directory: str | Path | None = None) -> Path:
     root = Path(directory or settings.LOG_ARCHIVE_DIR)
     root.mkdir(parents=True, exist_ok=True)
     return root
 
 
-def model_for(model_key: str):
+def model_for(model_key: str) -> Any:
     from django.apps import apps
 
     if model_key not in _MODEL_PATHS:
@@ -90,13 +91,13 @@ def next_month(month: str) -> str:
     return month_of(end)
 
 
-def _paths(model_key: str, month: str, directory=None) -> tuple[Path, Path, Path]:
+def _paths(model_key: str, month: str, directory: str | Path | None = None) -> tuple[Path, Path, Path]:
     root = archive_root(directory)
     stem = f"{model_key}-{month}"
     return root / f"{stem}.jsonl.gz", root / f"{stem}.sha256", root / f"{stem}.manifest.json"
 
 
-def _json_default(value):
+def _json_default(value: Any) -> str:
     if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
         return value.isoformat()
     if isinstance(value, uuid.UUID):
@@ -104,17 +105,19 @@ def _json_default(value):
     return str(value)
 
 
-def _row_to_line(row: dict) -> str:
+def _row_to_line(row: dict[str, Any]) -> str:
     return json.dumps(row, ensure_ascii=False, default=_json_default, separators=(",", ":"))
 
 
-def iter_rows(model, start, end) -> Iterator[dict]:
+def iter_rows(model: Any, start: datetime.datetime, end: datetime.datetime) -> Iterator[dict[str, Any]]:
     fields = [field.name for field in model._meta.concrete_fields]
     queryset = model.objects.filter(created_time__gte=start, created_time__lt=end).order_by("pk").values(*fields)
     yield from queryset.iterator(chunk_size=PRUNE_BATCH_SIZE)
 
 
-def archive_month(model_key: str, month: str, directory=None, dry_run: bool = False) -> dict:
+def archive_month(
+    model_key: str, month: str, directory: str | Path | None = None, dry_run: bool = False
+) -> dict[str, Any]:
     """归档单个整月；已归档且校验通过时幂等跳过（返回 manifest 并附 skipped=True）。"""
     model = model_for(model_key)
     start, end = parse_month(month)
@@ -170,7 +173,7 @@ def archive_month(model_key: str, month: str, directory=None, dry_run: bool = Fa
     return manifest
 
 
-def list_archives(directory=None) -> list[dict]:
+def list_archives(directory: str | Path | None = None) -> list[dict[str, Any]]:
     root = archive_root(directory)
     manifests = []
     for path in sorted(root.glob("*.manifest.json")):
@@ -181,11 +184,11 @@ def list_archives(directory=None) -> list[dict]:
     return manifests
 
 
-def archived_months(model_key: str, directory=None) -> set[str]:
+def archived_months(model_key: str, directory: str | Path | None = None) -> set[str]:
     return {item["month"] for item in list_archives(directory) if item.get("model") == model_key}
 
 
-def retention_days(model_key: str, override=None) -> int:
+def retention_days(model_key: str, override: int | None = None) -> int:
     """归档 / 清理保留期（天；0 = 该对象不清理）。
 
     - 操作日志：``OPERATION_LOG_RETENTION_DAYS``（错误日志另有更长的分层保留期）；
@@ -205,7 +208,7 @@ def retention_days(model_key: str, override=None) -> int:
 _retention_days = retention_days
 
 
-def _error_retention_days(retention_days=None) -> int:
+def _error_retention_days(retention_days: int | None = None) -> int:
     from common.core.config import SysConfig
 
     if retention_days is None:
@@ -213,7 +216,12 @@ def _error_retention_days(retention_days=None) -> int:
     return retention_days or 0
 
 
-def archive_expired(model_key: str = "operation", retention_days=None, directory=None, dry_run: bool = False) -> dict:
+def archive_expired(
+    model_key: str = "operation",
+    retention_days: int | None = None,
+    directory: str | Path | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
     """归档全部「整月已超保留期」的月份（幂等），返回本次归档 / 跳过的清单。"""
     model = model_for(model_key)
     days = _retention_days(model_key, retention_days)
@@ -252,7 +260,9 @@ def archive_expired(model_key: str = "operation", retention_days=None, directory
     return {"model": model_key, "archived": archived, "skipped": skipped}
 
 
-def archive_watermark(model_key: str = "operation", retention_days=None, directory=None) -> datetime.datetime | None:
+def archive_watermark(
+    model_key: str = "operation", retention_days: int | None = None, directory: str | Path | None = None
+) -> datetime.datetime | None:
     """可安全删除的时间上界：从系统最早数据起「连续已归档且整月超期」的边界。
 
     未归档（或未整月超期 / 空月未归档）的月份一律不越过——清理不会删掉未归档数据。
@@ -286,9 +296,9 @@ def archive_watermark(model_key: str = "operation", retention_days=None, directo
 
 def prune_archived(
     model_key: str = "operation",
-    retention_days=None,
-    error_retention_days=None,
-    directory=None,
+    retention_days: int | None = None,
+    error_retention_days: int | None = None,
+    directory: str | Path | None = None,
     batch_size: int = PRUNE_BATCH_SIZE,
 ) -> int:
     """删除已归档且超保留期的日志（水位驱动，删必已归档）；返回删除行数。"""
@@ -307,7 +317,7 @@ def prune_archived(
 
     total = 0
 
-    def _delete(queryset) -> None:
+    def _delete(queryset: Any) -> None:
         nonlocal total
         while True:
             pks = list(queryset.values_list("pk", flat=True)[:batch_size])
@@ -338,7 +348,7 @@ def prune_archived(
     return total
 
 
-def verify_archive(model_key: str, month: str, directory=None) -> dict:
+def verify_archive(model_key: str, month: str, directory: str | Path | None = None) -> dict[str, Any]:
     """校验归档完整性：文件存在、sha256 一致、行数与清单一致。"""
     gz_path, sha_path, manifest_path = _paths(model_key, month, directory)
     if not gz_path.exists() or not manifest_path.exists():
@@ -364,7 +374,13 @@ def verify_archive(model_key: str, month: str, directory=None) -> dict:
     }
 
 
-def read_restore_rows(model_key: str, month: str, directory=None, grep: str | None = None, limit: int | None = 200):
+def read_restore_rows(
+    model_key: str,
+    month: str,
+    directory: str | Path | None = None,
+    grep: str | None = None,
+    limit: int | None = 200,
+) -> Iterator[dict[str, Any]]:
     """流式读取归档行（不落库）：``grep`` 为原始 JSON 行子串匹配，``limit`` 为 0/None 表示不限。"""
     gz_path, _sha_path, _manifest_path = _paths(model_key, month, directory)
     if not gz_path.exists():

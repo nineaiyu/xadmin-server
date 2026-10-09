@@ -23,6 +23,7 @@ import json
 import stat
 import time
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -38,10 +39,10 @@ CACHE_PROBE_KEY = "xadmin_doctor_probe"
 class Command(BaseCommand):
     help = "Self-check the runtime environment (read-only) and print fix commands"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--skip-permissions", action="store_true", help="跳过权限点缺口扫描（大库提速）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         self._passed = 0
         self._warnings = 0
         self._failures = 0
@@ -70,7 +71,7 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 输出
 
-    def _report(self, mark, name, detail, fix=None):
+    def _report(self, mark: Any, name: Any, detail: Any, fix: Any = None) -> None:
         if mark == FAIL:
             self._failures += 1
         elif mark == WARN:
@@ -84,7 +85,7 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 检查项
 
-    def _check_secret_key(self):
+    def _check_secret_key(self) -> None:
         secret = settings.SECRET_KEY or ""
         auto_file = Path(settings.BASE_DIR) / "data" / ".secret_key"
         if not secret:
@@ -107,7 +108,7 @@ class Command(BaseCommand):
         else:
             self._report(PASS, "配置与密钥", "SECRET_KEY 已显式配置")
 
-    def _check_database(self):
+    def _check_database(self) -> None:
         from django.db import connection
 
         try:
@@ -118,7 +119,7 @@ class Command(BaseCommand):
         except Exception as exc:
             self._report(FAIL, "数据库", f"连接失败：{exc}", "检查 config.yml 的 DB_* 与数据库服务状态")
 
-    def _check_redis(self):
+    def _check_redis(self) -> None:
         from django.core.cache import cache
 
         try:
@@ -138,7 +139,7 @@ class Command(BaseCommand):
         except Exception as exc:
             self._report(FAIL, "Redis", f"连接失败：{exc}", "检查 config.yml 的 REDIS_* 与 Redis 服务状态")
 
-    def _check_locale(self):
+    def _check_locale(self) -> None:
         base = Path(settings.BASE_DIR)
         po_files = sorted(base.glob("locale/*/LC_MESSAGES/django.po"))
         if not po_files:
@@ -160,7 +161,7 @@ class Command(BaseCommand):
         else:
             self._report(PASS, "语言包", f"{len(po_files)} 个语言包已编译")
 
-    def _check_permissions(self):
+    def _check_permissions(self) -> None:
         try:
             from identity.models import UserInfo
 
@@ -186,7 +187,7 @@ class Command(BaseCommand):
         except Exception as exc:
             self._report(WARN, "权限点", f"扫描失败（跳过）：{exc}")
 
-    def _check_modules(self):
+    def _check_modules(self) -> None:
         try:
             from common.core.modules import modules_report, override_active, validate_deployment_config
 
@@ -216,7 +217,7 @@ class Command(BaseCommand):
                 "检查 config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE",
             )
 
-    def _check_ai_declarations(self):
+    def _check_ai_declarations(self) -> None:
         """生成物自检：`<app>/ai_declarations.py` 的声明路径必须能对上路由面。
 
         - 无声明文件：跳过（不是所有模块都需要 AI 化）；
@@ -264,7 +265,7 @@ class Command(BaseCommand):
         else:
             self._report(PASS, "AI 声明（生成物）", "无声明文件（非 AI 化模块，跳过）")
 
-    def _check_frontend_contract(self):
+    def _check_frontend_contract(self) -> None:
         local = Path(settings.BASE_DIR) / "docs" / "schema"
         front = Path(settings.BASE_DIR).parent / "xadmin-client" / "contract" / "schema"
         if not front.is_dir():
@@ -294,7 +295,7 @@ class Command(BaseCommand):
         else:
             self._report(PASS, "契约镜像", f"{len(common)} 个 schema 与前端一致")
 
-    def _check_version_sync(self):
+    def _check_version_sync(self) -> None:
         """前后端版本一致性（server/const.py VERSION ↔ xadmin-client/package.json）。
 
         单仓检出 / 容器内（同工作区无前端仓库）时跳过；不一致只告警不判失败

@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 7/31/2024
 
+from typing import Any
+
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.utils.functional import LazyObject
@@ -18,22 +20,22 @@ logger = get_logger(__name__)
 
 
 class SettingSubPub(LazyObject):
-    def _setup(self):
+    def _setup(self) -> None:
         self._wrapped = RedisPubSub("settings")
 
 
 setting_pub_sub = SettingSubPub()
 
 
-@receiver(post_save, sender=Setting)
-def refresh_settings_on_changed(sender, instance=None, **kwargs):
+@receiver(post_save, sender=Setting)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def refresh_settings_on_changed(sender: Any, instance: Any = None, **kwargs: Any) -> None:
     if not instance:
         return
     setting_pub_sub.publish((instance.name, instance.cleaned_value))
 
 
-@receiver(post_delete, sender=Setting)
-def reset_settings_on_deleted(sender, instance=None, **kwargs):
+@receiver(post_delete, sender=Setting)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def reset_settings_on_deleted(sender: Any, instance: Any = None, **kwargs: Any) -> None:
     """删除 Setting 行后回收运行时热更值：恢复静态默认值并广播。
 
     绕过 UI 的删除（批量删除 / admin / 脚本）此前无人回收——被删键的旧值在
@@ -50,13 +52,13 @@ def reset_settings_on_deleted(sender, instance=None, **kwargs):
     Setting.refresh_item((instance.name, default))
 
 
-@receiver(django_ready)
-def on_django_ready_add_db_config(sender, **kwargs):
+@receiver(django_ready)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def on_django_ready_add_db_config(sender: Any, **kwargs: Any) -> None:
     Setting.refresh_all_settings()
 
 
-@receiver(django_ready)
-def subscribe_settings_change(sender, **kwargs):
+@receiver(django_ready)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def subscribe_settings_change(sender: Any, **kwargs: Any) -> None:
     logger.debug("Start subscribe setting change")
 
     setting_pub_sub.subscribe(lambda name: Setting.refresh_item(name))

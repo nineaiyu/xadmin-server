@@ -4,6 +4,7 @@
 # filename : role
 # author : ly_13
 # date : 8/10/2024
+from typing import Any
 
 from django.db import transaction
 from django.db.models import Count
@@ -62,18 +63,18 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
 
     @extend_schema_field(serializers.IntegerField)
-    def get_user_count(self, obj):
+    def get_user_count(self, obj: Any) -> Any:
         count = getattr(obj, "user_count", None)
         return count if count is not None else obj.userinfo_set.count()
 
-    def validate_name(self, value):
+    def validate_name(self, value: Any) -> Any:
         # 唯一性为「未删除数据」条件约束（见 Meta.constraints），走共享 mixin 显式校验
         return self._validate_active_unique("name", value)
 
-    def validate_code(self, value):
+    def validate_code(self, value: Any) -> Any:
         return self._validate_active_unique("code", value)
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         # 内置角色不可改 code（code 被代码与治理配置引用）；create 占用内置 code
         # 已由 validate_code 拦截，这里拦 update 改名场景
         if self.instance is not None and self.instance.builtin:
@@ -83,7 +84,7 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
         return attrs
 
     @extend_schema_field(OpenApiTypes.OBJECT)
-    def get_field(self, obj):
+    def get_field(self, obj: Any) -> Any:
         # 前端授权树回显契约（treeKeys.ts）：{menuPk: [fieldPk]}，pk 一律为纯字符串。
         # 不能经 FieldPermissionSerializer 取值：BasePrimaryKeyRelatedField 默认输出
         # {'pk':..., 'label':...} 结构，会把字典键变成 str(dict)、值变成 dict 列表，
@@ -93,7 +94,7 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
             data[str(fp.menu_id)] = [str(item.pk) for item in fp.field.all()]
         return data
 
-    def save_fields(self, fields, instance):
+    def save_fields(self, fields: Any, instance: Any) -> None:
         for k, v in fields.items():
             serializer = FieldPermissionSerializer(
                 data={"role": instance.pk, "menu": k, "field": v}, ignore_field_permission=True
@@ -101,7 +102,7 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         fields = validated_data.pop("fields", None)
         with transaction.atomic():
             instance = super().update(instance, validated_data)
@@ -110,7 +111,7 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
                 self.save_fields(fields, instance)
         return instance
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         fields = validated_data.pop("fields")
         with transaction.atomic():
             instance = super().create(validated_data)
@@ -156,5 +157,5 @@ class ListRoleSerializer(RoleSerializer):
     menu = serializers.SerializerMethodField(read_only=True)
 
     @extend_schema_field(serializers.ListField)
-    def get_menu(self, instance):
+    def get_menu(self, instance: Any) -> Any:
         return []

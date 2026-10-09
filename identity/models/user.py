@@ -4,6 +4,7 @@
 # filename : user
 # author : ly_13
 # date : 8/10/2024
+from typing import Any
 
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.contrib.contenttypes.fields import GenericRelation
@@ -27,7 +28,7 @@ class SoftDeleteUserManager(SoftDeleteManager, UserManager):
     """用户软删除管理器——默认查询过滤已删除用户，
     同时保留 UserManager 的 create_user / create_superuser 等能力。"""
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return SoftDeleteQuerySet(self.model, using=self._db).filter(deleted_at__isnull=True)
 
 
@@ -133,10 +134,10 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
         # USERNAME_FIELD 全局唯一，部分唯一约束不满足检查），
         # 已删除用户的用户名在 DB 层仍被占用，序列化器按 all_objects 拦截并给出可读提示
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.nickname}({self.username})"
 
     @property
-    def mfa_enabled(self):
+    def mfa_enabled(self) -> Any:
         """是否已启用登录 MFA 二次验证（OTP 绑定成功后自动开启）"""
         return self.mfa_level == self.MFALevelChoices.ENABLED and bool(self.otp_secret_key)

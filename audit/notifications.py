@@ -5,6 +5,8 @@
 消息类型（message_type = 类名）与 category 串不变，既有订阅行与模板零迁移。
 """
 
+from typing import Any
+
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
@@ -21,10 +23,10 @@ class SensitiveOperationMessage(SystemMessage):
     category_label = _("Audit")
     message_type_label = _("Sensitive operation alert")
 
-    def __init__(self, operation: dict):
+    def __init__(self, operation: dict[str, Any]):
         self.operation = operation
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         op = self.operation
         subject = _("Sensitive operation alert: {} {}").format(op.get("method"), op.get("path"))
         message = render_to_string(
@@ -39,18 +41,18 @@ class SensitiveOperationMessage(SystemMessage):
         )
         return {"subject": subject, "message": message}
 
-    def get_site_msg_msg(self):
+    def get_site_msg_msg(self) -> dict[str, Any]:
         info = self.get_html_msg()
         info["level"] = "danger"
         return info
 
     @classmethod
-    def post_insert_to_db(cls, subscription: SystemMsgSubscription):
+    def post_insert_to_db(cls, subscription: SystemMsgSubscription) -> None:
         subscription.users.add(*get_active_superuser_queryset())
         subscription.receive_backends = [BACKEND.SITE_MSG, BACKEND.EMAIL]
         subscription.save()
 
-    def publish(self, is_async=False):
+    def publish(self, is_async: bool = False) -> None:
         """发布告警；订阅收件人为空时自愈补齐活跃超管。
 
         存量库可能在超管初始化前就建好订阅（post_migrate 种子时机不保证），
@@ -62,7 +64,7 @@ class SensitiveOperationMessage(SystemMessage):
         super().publish(is_async=is_async)
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         return cls(
             {
                 "module": _("Operation log"),

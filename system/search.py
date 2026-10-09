@@ -37,33 +37,33 @@ KEYWORD_MAX_LENGTH = 50
 GROUP_LIMIT = 5
 
 
-def _match_keyword(queryset: QuerySet, text_fields, keyword: str) -> QuerySet:
+def _match_keyword(queryset: QuerySet, text_fields: Any, keyword: str) -> QuerySet:
     condition = Q()
     for field_name in text_fields:
         condition |= Q(**{f"{field_name}__icontains": keyword})
     return queryset.filter(condition)
 
 
-def _approval_queryset():
+def _approval_queryset() -> Any:
     from approval.models import ApprovalRequest
 
     return ApprovalRequest.objects.all().order_by("-created_time")
 
 
-def _leave_queryset():
+def _leave_queryset() -> Any:
     from approval.models import Leave
 
     return Leave.objects.select_related("creator").order_by("-created_time")
 
 
-def _approval_row_scope(user, queryset: QuerySet) -> QuerySet:
+def _approval_row_scope(user: Any, queryset: QuerySet) -> QuerySet:
     """审批单行级收紧（与审批中心口径一致）：申请人 = creator，非超管只看与自己相关的单。"""
     if user.is_superuser:
         return queryset
     return queryset.filter(Q(creator=user) | Q(approver=user))
 
 
-def _leave_row_scope(user, queryset: QuerySet) -> QuerySet:
+def _leave_row_scope(user: Any, queryset: QuerySet) -> QuerySet:
     """请假单行级收紧（与请假列表口径一致）：我提交 ∪ 我审批过。"""
     if user.is_superuser:
         return queryset
@@ -88,7 +88,7 @@ class SearchProvider:
     superuser_only: bool = False
     row_scope: Callable[[Any, QuerySet], QuerySet] | None = None
 
-    def visible_to(self, user, permission_data: dict) -> bool:
+    def visible_to(self, user: Any, permission_data: dict[str, Any]) -> bool:
         """页面权限门：按 list 权限 URL 匹配用户的菜单权限码集合（超管与全局 URL 门同口径直通）。"""
         if self.superuser_only and not user.is_superuser:
             return False
@@ -96,7 +96,7 @@ class SearchProvider:
             return True
         return bool(get_menu_pk(permission_data, f"/{self.list_url}"))
 
-    def search(self, user, keyword: str, request=None) -> dict | None:
+    def search(self, user: Any, keyword: str, request: Any = None) -> dict[str, Any] | None:
         queryset = _match_keyword(self.queryset(), self.text_fields, keyword)
         if self.row_scope is not None:
             queryset = self.row_scope(user, queryset)
@@ -127,20 +127,22 @@ class SearchProvider:
             "items": self._mask_items(items, queryset.model, request, user),
         }
 
-    def _mask_items(self, items, model, request, user) -> list:
+    def _mask_items(self, items: Any, model: Any, request: Any, user: Any) -> list[Any]:
         """分组输出过脱敏规则（与列表接口同源，防「列表已掩码、搜索仍原文」旁路）。
 
         取值维度与声明一致：``text`` 对应 display_field、``meta`` 对应 meta_fields，
         合并为字段名字典后统一掩码再拆回（字段名与模型不一致时不会被规则命中）。
         """
         if not items:
-            return items
+            typed_value: list[Any] = items
+            return typed_value
         for item in items:
             flat = {self.display_field: item["text"], **item["meta"]}
             apply_output_mask(flat, request, user, model)
             item["text"] = flat.get(self.display_field) or ""
             item["meta"] = {name: flat.get(name) for name in item["meta"]}
-        return items
+        masked_items: list[Any] = items
+        return masked_items
 
 
 SEARCH_PROVIDERS = (
@@ -227,7 +229,7 @@ SEARCH_PROVIDERS = (
 )
 
 
-def run_global_search(user, keyword: str, scope: str | None = None) -> list[dict]:
+def run_global_search(user: Any, keyword: str, scope: str | None = None) -> list[dict[str, Any]]:
     """按注册表逐实体检索，返回有命中的分组（分组的权限门在 provider 内判定）。"""
     keyword = (keyword or "").strip()
     if not keyword or len(keyword) > KEYWORD_MAX_LENGTH:

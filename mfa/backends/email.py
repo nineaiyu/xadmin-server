@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : email
+from typing import Any
+
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
@@ -29,7 +31,7 @@ class EmailBackend(BaseMFA):
     def is_active(self) -> bool:
         return bool(self.user.email)
 
-    def send_challenge(self) -> tuple:
+    def send_challenge(self) -> tuple[bool, Any]:
         subject = _("Verify code")
         code = random_string(
             settings.VERIFY_CODE_LENGTH,
@@ -46,7 +48,7 @@ class EmailBackend(BaseMFA):
             return False, str(e.detail)
         return True, ""
 
-    def check_code(self, code) -> tuple:
+    def check_code(self, code: str) -> tuple[bool, Any]:
         try:
             SendAndVerifyCodeUtil(self.user.email, backend="email").verify(code)
         except CodeExpired:

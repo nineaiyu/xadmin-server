@@ -13,8 +13,11 @@ Disabled、不计入失败，但**没有任何渠道真正测通**时按失败�
 提示测试完成"。detail 始终可直接展示：首个失败原因 / 渠道未启用 / 测试完成。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
+from rest_framework.request import Request
 
 from common.core.response import ApiResponse
 from common.utils import get_logger
@@ -83,7 +86,7 @@ _CHANNELS = {
 }
 
 
-def _test_channel(channel: dict, values: dict) -> str:
+def _test_channel(channel: dict[str, Any], values: dict[str, Any]) -> str:
     """单渠道连通性：按生效配置快照（表单值 ∪ 已存配置）测试，不改进程全局。
 
     返回可直接展示的结果文本（Disabled / 缺配置 / 渠道错误 / OK）。
@@ -110,18 +113,18 @@ class ImNotifySettingViewSet(BaseSettingViewSet):
     serializer_class = ImNotifySettingSerializer
     category = "notify_im"
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Any:
         """按 `?channel=` 收敛到渠道序列化器（各页签只读写/校验自己的字段）。"""
         channel = self.request.query_params.get("channel")
         if channel in _CHANNELS:
             return _CHANNELS[channel]["serializer"]
         return self.serializer_class
 
-    def metadata_extra_cache_key(self, request) -> str:
+    def metadata_extra_cache_key(self, request: Request) -> str:
         """元数据字段面随 `?channel=` 变化（get_serializer_class 收敛），并入缓存键。"""
         return str(self.request.query_params.get("channel") or "")
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """测试{cls}"""
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -12,6 +12,8 @@
   可读降级。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
@@ -21,39 +23,71 @@ from ai.utils.ai_config import (  # noqa: F401 配置/凭据拆至 ai_config（�
     PURPOSE_EMBEDDING,
     PURPOSE_STRUCTURED,
     STRUCTURED_MAX_TOKENS,
-    active_profile,
     active_profile_name,
-    ai_context_limit,
-    ai_credentials,
-    ai_persona,
     ai_structured_max_tokens,
     embedding_credentials,
     embedding_enabled,
     embedding_profile,
-    is_configured,
-    is_enabled,
-    native_tools_enabled,
-    profile_credentials,
     profile_for,
-    set_active_profile,
-    structured_chat_client,
+)
+from ai.utils.ai_config import (
+    active_profile as active_profile,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_config import (
+    ai_context_limit as ai_context_limit,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_config import (
+    ai_credentials as ai_credentials,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_config import (
+    ai_persona as ai_persona,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_config import (
+    is_configured as is_configured,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_config import (
+    is_enabled as is_enabled,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_config import (
+    native_tools_enabled as native_tools_enabled,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_config import (
+    profile_credentials as profile_credentials,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_config import (
+    set_active_profile as set_active_profile,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_config import (
+    structured_chat_client as structured_chat_client,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from ai.utils.ai_knowledge import (  # noqa: F401  (知识库文档管理拆至 ai_knowledge，此处再导出保持调用面)
     CHUNK_WINDOW,
     DOCS_DIR,
-    MAX_UPLOAD_CONTENT_LENGTH,
-    MAX_UPLOAD_NAME_LENGTH,
     PROJECT_DIR,
     ROOT_DOCS,
     _chunk_markdown,
     _doc_title,
     _iter_doc_files,
     rebuild_chunks,
-    remove_chunks,
-    set_document_active,
-    set_documents_active,
-    sync_knowledge,
-    upsert_upload_document,
+)
+from ai.utils.ai_knowledge import (
+    MAX_UPLOAD_CONTENT_LENGTH as MAX_UPLOAD_CONTENT_LENGTH,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_knowledge import (
+    MAX_UPLOAD_NAME_LENGTH as MAX_UPLOAD_NAME_LENGTH,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_knowledge import remove_chunks as remove_chunks  # noqa: F401 显式再导出（PEP 484 语义）
+from ai.utils.ai_knowledge import (
+    set_document_active as set_document_active,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_knowledge import (
+    set_documents_active as set_documents_active,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_knowledge import (
+    sync_knowledge as sync_knowledge,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_knowledge import (
+    upsert_upload_document as upsert_upload_document,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from ai.utils.ai_retrieval import (  # noqa: F401 检索链路拆至 ai_retrieval（含块级分词缓存），此处再导出保持调用面
     MAX_QUESTION_LENGTH,
@@ -64,7 +98,7 @@ from ai.utils.ai_retrieval import (  # noqa: F401 检索链路拆至 ai_retrieva
 )
 
 
-def _prepare_rag(question: str, user=None) -> tuple:
+def _prepare_rag(question: str, user: Any = None) -> tuple[Any, ...]:
     """问答链路公共部分：问题校验 + 检索 + prompt 构造（引用数据块 + 注入标记）。
 
     返回 ``(messages, sources, injection_hits)``；问题为空/未启用/无命中抛可读
@@ -85,7 +119,7 @@ def _prepare_rag(question: str, user=None) -> tuple:
 
     context_blocks = []
     sources = []
-    injection_hits: list = []
+    injection_hits: list[Any] = []
     for index, item in enumerate(retrieved, start=1):
         chunk = item["chunk"]
         block, hits = annotate_reference(
@@ -121,7 +155,7 @@ def _prepare_rag(question: str, user=None) -> tuple:
     return messages, sources, injection_hits
 
 
-def readable_ai_error(exc) -> str:
+def readable_ai_error(exc: Any) -> str:
     """LLM 调用失败 → 展示可读文案（i18n）。
 
     SDK 内部英文错误按已知类别归一（思考型模型的「只思考未回答」与「空回答」
@@ -144,7 +178,7 @@ def readable_ai_error(exc) -> str:
     return str(_("AI service is temporarily unavailable"))
 
 
-def prepare_ask(question: str, user=None) -> tuple:
+def prepare_ask(question: str, user: Any = None) -> tuple[Any, ...]:
     """流式端点「响应头发出前」的同步预检 + 上下文装配：返回 (messages, sources)。
 
     与 ask / ask_stream 校验完全同源（空问题 / 未启用 / 无命中 → 可读 ValidationError）。
@@ -153,7 +187,7 @@ def prepare_ask(question: str, user=None) -> tuple:
     return messages, sources
 
 
-def ask(question: str, user=None) -> dict:
+def ask(question: str, user: Any = None) -> dict[str, Any]:
     """问答链路（非流式）：检索 → LLM → 可读答案 + 出处。异常转可读 ValidationError 语义。
 
     输出文本过安全护栏（敏感形态 + 规则形态脱敏），命中计数与 prompt 摘要进 ``_guard``
@@ -184,7 +218,7 @@ def ask(question: str, user=None) -> dict:
     }
 
 
-def ask_stream(messages: list, sources: list, user=None):
+def ask_stream(messages: list[Any], sources: list[Any], user: Any = None) -> Any:
     """问答链路（流式生成器）：产出事件 dict，供 SSE 转发。
 
     增量事件：``{"type": "reasoning"|"content", "text": ...}``（思考型模型有 reasoning）；

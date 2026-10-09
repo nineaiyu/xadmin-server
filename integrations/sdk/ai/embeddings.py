@@ -10,9 +10,11 @@
 """
 
 import time
+from typing import Any
 
 from common.utils import get_logger
-from integrations.sdk.ai.chat import AiSdkError, outbound_pinned_post
+from integrations.sdk.ai.chat import AiSdkError as AiSdkError
+from integrations.sdk.ai.chat import outbound_pinned_post
 
 logger = get_logger(__name__)
 
@@ -30,7 +32,7 @@ class EmbeddingClient:
     max_retries），可与 chat 档案并存复用同一 base_url（同一网关同时提供两类端点）。
     """
 
-    def __init__(self, credentials: dict, http_client=None):
+    def __init__(self, credentials: dict[str, Any], http_client: Any = None) -> None:
         self.base_url = str(credentials.get("base_url") or "").rstrip("/")
         self.api_key = str(credentials.get("api_key") or "")
         self.model = str(credentials.get("model") or "")
@@ -40,20 +42,20 @@ class EmbeddingClient:
         # 出站白名单（None = 未显式注入：生产路径从系统配置读取，与 chat/Webhook 同源）
         self.allowed_hosts = credentials.get("allowed_hosts")
         # 最近一次成功的 token 用量（供应商 payload.usage 原样，缺省 None）：供记账观测
-        self.last_usage: dict | None = None
+        self.last_usage: dict[str, Any] | None = None
 
-    def _request(self, url: str, kwargs: dict):
+    def _request(self, url: str, kwargs: dict[str, Any]) -> Any:
         """POST 一次：注入 http（测试）原样透传；生产路径走出站守卫 + 固定解析连接。"""
         if self.http is not None:
             return self.http.post(url, **kwargs)
         return outbound_pinned_post(url, kwargs, allowed_hosts=self.allowed_hosts)
 
-    def _post(self, body: dict):
+    def _post(self, body: dict[str, Any]) -> Any:
         """POST + 重试：网络异常与 5xx/429 指数退避；4xx 不重试。"""
         from common.utils.outbound import OutboundBlocked
 
         attempts = self.max_retries + 1
-        response = None
+        response: Any = None
         for attempt in range(attempts):
             try:
                 response = self._request(
@@ -81,7 +83,7 @@ class EmbeddingClient:
             return response
         return response
 
-    def embed(self, texts: list) -> list:
+    def embed(self, texts: list[Any]) -> list[list[float]]:
         """批量向量化：返回与入参等长、顺序一致的向量列表（元素为 float 列表）。"""
         if not (self.base_url and self.api_key and self.model):
             raise AiSdkError("AI embedding client is not configured (base_url/api_key/model)")

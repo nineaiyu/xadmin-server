@@ -19,6 +19,7 @@
 import hashlib
 import os
 import re
+from typing import Any
 
 from django.core.cache import cache
 from django.db.models import Sum
@@ -38,31 +39,35 @@ QUOTA_EXCEEDED_CODE = 1004
 class UploadError(Exception):
     """上传校验失败：携带业务码与可读文案（视图层归一为 ApiResponse）。"""
 
-    def __init__(self, code: int, detail):
+    def __init__(self, code: int, detail: Any) -> None:
         super().__init__(str(detail))
         self.code = code
         self.detail = detail
 
 
-def get_upload_max_size(user_obj):
+def get_upload_max_size(user_obj: Any) -> int:
     """单文件上传大小上限：系统级为天花板，真实个人行只能收紧（min 语义）。"""
+    system_value: int = SysConfig.FILE_UPLOAD_SIZE
     personal_data = get_personal_config_data(user_obj, "FILE_UPLOAD_SIZE")
     if personal_data is not None and isinstance(personal_data.get("value"), int) and personal_data["value"] > 0:
-        return min(SysConfig.FILE_UPLOAD_SIZE, personal_data["value"])
-    return SysConfig.FILE_UPLOAD_SIZE
+        personal_value: int = personal_data["value"]
+        return min(system_value, personal_value)
+    return system_value
 
 
-def get_user_quota_mb(user_obj):
+def get_user_quota_mb(user_obj: Any) -> int:
     """个人文件存储配额（MB）：个人行优先，未设置继承系统级（0 = 不限）。"""
-    return get_personal_int_config(user_obj, "FILE_STORAGE_QUOTA_MB", SysConfig.FILE_STORAGE_QUOTA_MB)
+    quota: int = get_personal_int_config(user_obj, "FILE_STORAGE_QUOTA_MB", SysConfig.FILE_STORAGE_QUOTA_MB)
+    return quota
 
 
-def get_user_count_limit(user_obj):
+def get_user_count_limit(user_obj: Any) -> int:
     """个人上传文件数量上限：个人行优先，未设置继承系统级（0 = 不限）。"""
-    return get_personal_int_config(user_obj, "FILE_UPLOAD_COUNT_LIMIT", SysConfig.FILE_UPLOAD_COUNT_LIMIT)
+    limit: int = get_personal_int_config(user_obj, "FILE_UPLOAD_COUNT_LIMIT", SysConfig.FILE_UPLOAD_COUNT_LIMIT)
+    return limit
 
 
-def sanitize_filename(name, max_length=255):
+def sanitize_filename(name: Any, max_length: int = 255) -> str:
     """清洗客户端文件名：去除路径部分、控制字符与首尾空白，并限制长度。
 
     客户端提交的文件名不可信：可能携带路径分隔符（伪造存储路径）或控制字符。
@@ -77,7 +82,7 @@ def sanitize_filename(name, max_length=255):
     return base[:max_length]
 
 
-def file_md5(file_obj) -> str:
+def file_md5(file_obj: Any) -> str:
     """计算上传文件的 md5（落盘前求值：命中去重时无需再写一份磁盘文件）。
 
     上传链路原先由 ``UploadFile.save()`` 读已落盘文件计算 md5；去重需要在落盘**之前**
@@ -89,7 +94,7 @@ def file_md5(file_obj) -> str:
     return digest.hexdigest()
 
 
-def find_dedup_source(creator, md5sum):
+def find_dedup_source(creator: Any, md5sum: str) -> Any:
     """去重来源：同属主的既有活动上传件；跨用户不复用（避免越权复用他人文件的存储路径）。
 
     只认 ``is_upload=True`` 且未软删除的记录（回收站中的文件不参与复用），
@@ -100,7 +105,7 @@ def find_dedup_source(creator, md5sum):
     return UploadFile.objects.filter(creator=creator, md5sum=md5sum, is_upload=True).order_by("-created_time").first()
 
 
-def invalidate_upload_stats_cache(user_pk):
+def invalidate_upload_stats_cache(user_pk: Any) -> None:
     """失效个人文件统计短缓存（键口径与 get_stats_cache_key 一致）。
 
     上传成功后立刻刷新页面时，10s 短缓存会返回旧的使用率，故主动失效。
@@ -108,7 +113,7 @@ def invalidate_upload_stats_cache(user_pk):
     cache.delete(f"magic_cache_response_UploadFileViewSet_stats_{user_pk}")
 
 
-def check_upload_limits(user_obj, file_objs) -> list:
+def check_upload_limits(user_obj: Any, file_objs: Any) -> list[int]:
     """批量前置校验：返回各文件字节大小；任一不合规抛 UploadError（不落盘）。
 
     配额与数量上限按本批累计判定（与逐文件提交的语义一致），使多文件上传
@@ -121,7 +126,7 @@ def check_upload_limits(user_obj, file_objs) -> list:
     used_size = (owner_files.aggregate(size=Sum("filesize"))["size"] or 0) if quota_mb else 0
     used_count = owner_files.count() if count_limit else 0
 
-    sizes = []
+    sizes: list[int] = []
     for file_obj in file_objs:
         # 上传安全策略：扩展名黑名单（默认拒绝可执行 / 脚本类）+ 可选白名单，fail-closed
         extension_error = validate_upload_extension(file_obj.name)
@@ -149,7 +154,7 @@ def check_upload_limits(user_obj, file_objs) -> list:
     return sizes
 
 
-def store_upload_file(user_obj, file_obj, *, is_tmp: bool = True, md5sum: str = "") -> tuple:
+def store_upload_file(user_obj: Any, file_obj: Any, *, is_tmp: bool = True, md5sum: str = "") -> tuple[Any, bool]:
     """单文件落库：md5 前置计算 → 同属主去重（复用物理文件）→ 分类 → 写记录。
 
     返回 ``(upload, dedup_hit)``；调用方负责事务边界与 stats 缓存失效。

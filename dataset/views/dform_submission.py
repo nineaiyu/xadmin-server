@@ -9,6 +9,8 @@
 定义/提交类资源不做行级数据权限过滤（与 Dataset 同款处理）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.plumbing import build_object_type
@@ -65,15 +67,15 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = SubmissionFilter
 
-    def get_serializer_context(self):
+    def get_serializer_context(self) -> Any:
         context = super().get_serializer_context()
         if getattr(self, "action", None) == "export_data":
             context["dynamic_fields"] = export_dynamic_fields(self.filter_queryset(self.get_queryset()))
         return context
 
     @extend_schema(responses=get_default_response_schema())
-    @shared_list_action(methods=["get"], detail=False, url_path="available-forms")
-    def available_forms(self, request, *args, **kwargs):
+    @shared_list_action(methods=["get"], detail=False, url_path="available-forms")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def available_forms(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """可填报表单（启用中）：填报页数据源。
 
         表单定义属定义类资源，取值域不做行级数据权限过滤——否则普通员工必须先被
@@ -100,8 +102,8 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
-    @shared_list_action(methods=["get"], detail=False, url_path="user-options")
-    def user_options(self, request, *args, **kwargs):
+    @shared_list_action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def user_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """选人控件数据源：关键字搜索或按主键回显（≤20 条，仅基本展示字段）。
 
         填报链路的轻量数据源：关键字必填（不做通讯录全量枚举）；编辑既有提交时
@@ -116,8 +118,8 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True)
-    def resubmit(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def resubmit(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """重新提交被驳回的填报（仅申请人、仅驳回态；按当前数据重新发起流程实例）"""
         instance = self.get_object()
         ok, detail = resubmit_submission(instance, request.user)
@@ -125,7 +127,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
             return ApiResponse(code=1001, detail=detail)
         return ApiResponse(detail=_("The submission has been resubmitted"))
 
-    def _operation_approval_gate(self, request):
+    def _operation_approval_gate(self, request: Any) -> Any:
         """操作审批门：返回协议响应（412/403）表示请求中止；None = 放行继续执行业务。
 
         - 携令牌：消费一次性令牌（校验指纹/归属/有效期），成功放行；
@@ -149,7 +151,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
             approval = create_approval(self, request)
         return pending_response(approval)
 
-    def _create_with_flow(self, serializer):
+    def _create_with_flow(self, serializer: Any) -> Any:
         """绑定审批流程的提交：事务内建行并发起流程实例，任一失败整体回滚。"""
         from django.db import transaction
 
@@ -160,7 +162,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
                 raise ValidationError({"detail": detail})
         return ApiResponse(data=self.get_serializer(submission).data, detail=_("Application submitted"))
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """提交：数据校验先行 → 审批门 → 创建。
 
         审批分四支：
@@ -206,8 +208,8 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True)
-    def submit(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def submit(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """提交草稿：严格校验数据 → 流程引擎 / 操作审批 / 直接生效 三分支。
 
         草稿本身允许缺必填（暂存语义），因此提交时在服务端统一补一次完整校验；
@@ -285,7 +287,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
             instance.save(update_fields=["status", "updated_time"])
             return ApiResponse(detail=_("The submission has been saved"))
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         queryset = super().get_queryset()
         user = self.request.user
         if getattr(user, "is_superuser", False):
@@ -293,10 +295,10 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         # creator 隔离：普通用户只见本人提交
         return queryset.filter(creator=user)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         serializer.save(creator=self.request.user, modifier=self.request.user)
 
-    def _creator_guard(self, instance, request):
+    def _creator_guard(self, instance: Any, request: Any) -> Any:
         if instance and not getattr(request.user, "is_superuser", False) and instance.creator_id != request.user.pk:
             return ApiResponse(code=1003, detail=_EDIT_DENY)
         # 审批中的提交不可改动：流程实例按提交快照推进，改动会造成两处数据不一致
@@ -304,7 +306,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
             return ApiResponse(code=1003, detail=_PENDING_DENY)
         return None
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         guarded = self._creator_guard(instance, request)
@@ -322,7 +324,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         self.perform_update(serializer)
         return ApiResponse(data=serializer.data)
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         instance = self.get_object()
         guarded = self._creator_guard(instance, request)
         if guarded:

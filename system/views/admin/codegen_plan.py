@@ -8,6 +8,8 @@
   （沿用前端「同名覆盖」语义，故模型不加唯一约束、由本视图收敛）。
 """
 
+from typing import Any
+
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import PermissionDenied
@@ -43,7 +45,7 @@ class CodegenPlanViewSet(
     # 取值域由 get_queryset 收口为「本人 + 共享」
     filter_backends = (OrderingFilter,)
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         queryset = super().get_queryset()
         user = getattr(self.request, "user", None)
         if user is None or not getattr(user, "is_authenticated", False):
@@ -53,12 +55,12 @@ class CodegenPlanViewSet(
             return queryset
         return queryset.filter(Q(creator=user) | Q(is_shared=True))
 
-    def _assert_owner(self, instance):
+    def _assert_owner(self, instance: Any) -> None:
         user = self.request.user
         if instance.creator_id != user.pk and not user.is_superuser:
             raise PermissionDenied(_("You can only modify your own codegen plans"))
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = request.user
@@ -71,7 +73,7 @@ class CodegenPlanViewSet(
             serializer.save(creator=user, modifier=user)
         return ApiResponse(data=self.get_serializer(serializer.instance).data, detail=_("Saved successfully"))
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         partial = kwargs.pop("partial", True)
         instance = self.get_object()
         self._assert_owner(instance)
@@ -80,7 +82,7 @@ class CodegenPlanViewSet(
         serializer.save(modifier=request.user)
         return ApiResponse(data=self.get_serializer(serializer.instance).data, detail=_("Saved successfully"))
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         instance = self.get_object()
         self._assert_owner(instance)
         instance.delete()

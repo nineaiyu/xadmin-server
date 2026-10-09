@@ -4,7 +4,10 @@
 # filename : login_log
 # author : ly_13
 # date : 8/11/2024
+from typing import Any
+
 from rest_framework.mixins import ListModelMixin
+from rest_framework.request import Request
 from rest_framework.viewsets import GenericViewSet
 
 from audit.models import UserLoginLog
@@ -21,9 +24,9 @@ class UserLoginLogViewSet(ListModelMixin, SearchColumnsAction, GenericViewSet):
 
     ordering_fields = ["created_time"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return self.queryset.filter(creator=self.request.user)
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(data=data)

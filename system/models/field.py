@@ -49,5 +49,5 @@ class ModelLabelField(DbAuditModel, DbUuidModel):
         verbose_name = _("Model label field")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.label}({self.name})"

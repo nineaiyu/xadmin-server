@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 9/15/2024
 
+from typing import Any
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -50,11 +52,11 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
     publish = models.BooleanField(verbose_name=_("Publish"), default=True)
 
     @classmethod
-    def get_user_choices(cls):
+    def get_user_choices(cls) -> Any:
         return [cls.NoticeChoices.USER, cls.NoticeChoices.SYSTEM]
 
     @classmethod
-    def get_notice_choices(cls):
+    def get_notice_choices(cls) -> Any:
         return [cls.NoticeChoices.NOTICE, cls.NoticeChoices.DEPT, cls.NoticeChoices.ROLE, cls.NoticeChoices.POST]
 
     class Meta:
@@ -69,7 +71,7 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
             models.Index(fields=["notice_type"], name="idx_msg_notice_type"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.title}-{self.get_notice_type_display()}"
 
 

@@ -30,6 +30,7 @@
 
 import json
 import os
+from typing import Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -118,7 +119,7 @@ def is_destructive(menu: Menu) -> bool:
     return target in CONFIG_MODELS and action in WRITE_ACTIONS
 
 
-def _load_demo_role_menu_seed() -> list:
+def _load_demo_role_menu_seed() -> list[Any]:
     """读取 loadjson 种子中「演示模式」角色的菜单主键（clean 回滚依据）。"""
     path = os.path.join(settings.PROJECT_DIR, "loadjson", "userrole.json")
     try:
@@ -135,11 +136,11 @@ def _load_demo_role_menu_seed() -> list:
 class Command(BaseCommand):
     help = "创建/更新对外演示账号 admin（密码 admin123）并授予经裁剪的「演示模式」角色"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--reset", action="store_true", help="先清理演示账号并回滚角色菜单再重建")
         parser.add_argument("--clean-only", action="store_true", help="只清理（seed_demo_clean 编排调用）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options.get("clean_only"):
             self._clean()
             return
@@ -153,9 +154,10 @@ class Command(BaseCommand):
     # ---------------------------------------------------------------- 角色菜单（数据面裁剪）
 
     def _demo_role(self) -> UserRole | None:
-        return UserRole.objects.filter(code=DEMO_ROLE_CODE).first()
+        role: UserRole | None = UserRole.objects.filter(code=DEMO_ROLE_CODE).first()
+        return role
 
-    def _extra_menu_ids(self) -> set:
+    def _extra_menu_ids(self) -> set[Any]:
         ids = set()
         for path in EXTRA_PAGE_PATHS:
             page = Menu.objects.filter(path=path, menu_type=Menu.MenuChoices.MENU).first()
@@ -247,7 +249,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 清理
 
-    def _clean(self):
+    def _clean(self) -> None:
         # 严格限定用户名 admin 且非超管：绝不误伤 xadmin/isummer 等真实超管
         removed = UserInfo.all_objects.filter(username=ADMIN_USERNAME, is_superuser=False).delete()[0]
         self.stdout.write(f"removed demo account: {removed}")

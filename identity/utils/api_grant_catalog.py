@@ -10,6 +10,8 @@
 运行时判定（匹配 / 字段收敛 / 行过滤）仍在 ``identity/utils/api_grant.py``。
 """
 
+from typing import Any
+
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 
@@ -35,7 +37,7 @@ ACTION_LABELS = {
 }
 
 
-def action_of_code(code) -> str:
+def action_of_code(code: Any) -> str:
     """权限点 code（``list:SystemUser``）→ 动作段（``list``）；无法解析返回空串。"""
     name = str(code or "").strip()
     if ":" not in name:
@@ -47,7 +49,7 @@ CATALOG_CACHE_KEY = "api_grant_catalog_v1"
 CATALOG_CACHE_TTL = 60
 
 
-def _catalogs():
+def _catalogs() -> Any:
     """(模型→动作段集合, 模型→字段集合) 目录（从启用权限菜单与字段标签树派生，短缓存）。"""
     try:
         cached = cache.get(CATALOG_CACHE_KEY)
@@ -55,7 +57,7 @@ def _catalogs():
         cached = None
     if cached is not None:
         return cached["actions"], cached["fields"]
-    actions: dict[str, set] = {}
+    actions: dict[str, set[Any]] = {}
     menus = (
         Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, is_active=True)
         .prefetch_related("model")
@@ -68,7 +70,7 @@ def _catalogs():
         for label_field in menu.model.all():
             if label_field.name:
                 actions.setdefault(label_field.name, set()).add(action)
-    fields: dict[str, set] = {}
+    fields: dict[str, set[Any]] = {}
     nodes = list(ModelLabelField.objects.filter(parent__isnull=True).values("pk", "name"))
     node_names = {node["pk"]: node["name"] for node in nodes}
     for row in ModelLabelField.objects.filter(parent_id__in=node_names.keys()).values("parent_id", "name"):
@@ -82,7 +84,7 @@ def _catalogs():
     return actions, fields
 
 
-def _validation_catalogs(user):
+def _validation_catalogs(user: Any) -> Any:
     """写入校验目录（模型→动作 / 模型→字段）。
 
     普通用户收敛到**本人可授权面**（``grant_options_for_user``，与授权页下拉同源）：
@@ -93,8 +95,8 @@ def _validation_catalogs(user):
     if user is None or getattr(user, "is_superuser", False):
         return _catalogs()
     options = grant_options_for_user(user)
-    actions: dict[str, set] = {}
-    fields: dict[str, set] = {}
+    actions: dict[str, set[Any]] = {}
+    fields: dict[str, set[Any]] = {}
     for item in options.get("models", []):
         label = item.get("value")
         if not label or label == ANY:
@@ -104,7 +106,7 @@ def _validation_catalogs(user):
     return actions, fields
 
 
-def validate_grant_payload(model_label, actions, fields, row_filter, user=None):
+def validate_grant_payload(model_label: Any, actions: Any, fields: Any, row_filter: Any, user: Any = None) -> Any:
     """授权规则写入校验（serializer 调用）：非法配置在保存时被拒。
 
     规则（与运行时判定同口径）：
@@ -164,7 +166,7 @@ def validate_grant_payload(model_label, actions, fields, row_filter, user=None):
     return actions, fields, row_filter
 
 
-def grant_options_for_user(user) -> dict:
+def grant_options_for_user(user: Any) -> dict[str, Any]:
     """应用授权目录：模型 →（动作段、字段），粒度与 scope-options 同口径。
 
     - 数据源：模型/字段标签树（``ModelLabelField``）× 用户可授权的权限菜单；
@@ -173,7 +175,7 @@ def grant_options_for_user(user) -> dict:
     """
     from identity.utils.pat_scope import _iter_scope_menus  # 延迟导入：绕开权限层模块循环
 
-    model_actions: dict[str, set] = {}
+    model_actions: dict[str, set[Any]] = {}
     for _method, menu in _iter_scope_menus(user):
         action = action_of_code(menu.name)
         if not action:
@@ -184,12 +186,12 @@ def grant_options_for_user(user) -> dict:
 
     nodes = list(ModelLabelField.objects.filter(parent__isnull=True).values("pk", "name", "label"))
     node_pks = [node["pk"] for node in nodes]
-    children: dict = {}
+    children: dict[str, Any] = {}
     for row in ModelLabelField.objects.filter(parent_id__in=node_pks).values("parent_id", "name", "label"):
         children.setdefault(row["parent_id"], []).append({"value": row["name"], "label": row["label"] or row["name"]})
 
     models = []
-    merged: dict[str, dict] = {}
+    merged: dict[str, dict[str, Any]] = {}
     for node in nodes:
         label = node["name"]
         if label not in model_actions:
@@ -227,7 +229,7 @@ def grant_options_for_user(user) -> dict:
     return {"total": len(models), "models": models}
 
 
-def _action_sort_key(action: str):
+def _action_sort_key(action: str) -> Any:
     order = list(ACTION_LABELS)
     try:
         return (0, order.index(action), action)

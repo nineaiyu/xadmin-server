@@ -17,6 +17,7 @@
 
 import hashlib
 import secrets
+from typing import Any
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -43,7 +44,7 @@ def hash_code(raw: str) -> str:
     return hashlib.sha256(normalize_code(raw).encode()).hexdigest()
 
 
-def generate_codes(user) -> list[str]:
+def generate_codes(user: Any) -> list[str]:
     """重建该用户的恢复码批次：旧码全部作废，返回明文（仅此一次）"""
     user.mfa_recovery_codes.all().delete()
     codes = [
@@ -54,16 +55,17 @@ def generate_codes(user) -> list[str]:
     return codes
 
 
-def remaining_count(user) -> int:
-    return user.mfa_recovery_codes.filter(used_time__isnull=True).count()
+def remaining_count(user: Any) -> int:
+    count: int = user.mfa_recovery_codes.filter(used_time__isnull=True).count()
+    return count
 
 
-def clear_codes(user) -> None:
+def clear_codes(user: Any) -> None:
     """作废该用户全部恢复码（解绑 / 管理员重置时同步调用：密钥不在即无意义）"""
     user.mfa_recovery_codes.all().delete()
 
 
-def verify_and_consume(user, code) -> tuple:
+def verify_and_consume(user: Any, code: str) -> tuple[bool, Any]:
     """校验并原子认领一个恢复码，返回 (是否通过, 失败原因)
 
     无效与已使用同文案，不暴露「该码存在但已用」的判定面。

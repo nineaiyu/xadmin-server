@@ -33,5 +33,5 @@ class MessageTemplate(DbAuditModel):
         verbose_name = _("Message template")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.message_type}"

@@ -48,7 +48,7 @@ class ScreenLayoutError(ValueError):
     """窗格载荷非法（消息可直接回给调用方）。"""
 
 
-def boxes_overlap(first: dict, second: dict) -> bool:
+def boxes_overlap(first: dict[str, Any], second: dict[str, Any]) -> bool:
     """两个窗格是否在栅格上重叠（边界相接不算重叠）。"""
     return not (
         first["x"] + first["w"] <= second["x"]
@@ -58,14 +58,14 @@ def boxes_overlap(first: dict, second: dict) -> bool:
     )
 
 
-def _as_int(value, field: str) -> int:
+def _as_int(value: Any, field: str) -> int:
     # bool 是 int 的子类：True 会被静默当成 1，必须显式拒绝
     if isinstance(value, bool) or not isinstance(value, int):
         raise ScreenLayoutError(_("Invalid screen layout box: {}").format(field))
     return value
 
 
-def normalize_screen_layout(raw, dashboard_pks, dataset_pks=()) -> list:
+def normalize_screen_layout(raw: Any, dashboard_pks: Any, dataset_pks: Any = ()) -> list[Any]:
     """归一化并校验窗格列表；非法即抛 ``ScreenLayoutError``（消息可读）。
 
     ``dataset_pks``：指标卡窗格引用的数据集白名单（pk 字符串集合/序列），

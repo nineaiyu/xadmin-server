@@ -55,14 +55,14 @@ QUERY_CACHE_SIZE = 128
 MIN_INDEXED_VECTORS = 5
 
 _LOCK = threading.Lock()
-_QUERY_CACHE: dict = {}
+_QUERY_CACHE: dict[tuple[Any, str], Any] = {}
 _OVERFLOW_WARNED = False
 
 
 # ------------------------------------------------------------------ 可用性判定
 
 
-def _load_meta_rows():
+def _load_meta_rows() -> Any:
     from ai.models.ai import AiKnowledgeChunk
 
     return list(
@@ -72,7 +72,7 @@ def _load_meta_rows():
     )
 
 
-def vector_index():
+def vector_index() -> Any:
     """新鲜向量可用性探针：``{pk: dim}``（键序稳定）；不可用时返回 None。
 
     可用性判据与内存索引时代一致（迁移前的口径原样保留）：
@@ -127,7 +127,7 @@ def invalidate_vector_index() -> None:
 # ------------------------------------------------------------------ 检索（向量通道 / 混合）
 
 
-def _embed_query(client, question: str):
+def _embed_query(client: Any, question: str) -> Any:
     """查询向量（带条数上限的短缓存；失败返回 None，由调用方回退词频）。"""
     key = (client.model, question)
     with _LOCK:
@@ -149,7 +149,7 @@ def _embed_query(client, question: str):
     return vector
 
 
-def search_vectors(question: str, top_k: int = VECTOR_CANDIDATES) -> list:
+def search_vectors(question: str, top_k: int = VECTOR_CANDIDATES) -> list[Any]:
     """向量通道排名（pk 列表，余弦降序）；任何不可用情形返回空列表。
 
     SQL 口径：候选 = 新鲜（embedding_hash == content_hash）且模型与
@@ -177,7 +177,7 @@ def search_vectors(question: str, top_k: int = VECTOR_CANDIDATES) -> list:
         return []
 
 
-def _rank_vectors(*, model: str, query_vector: list, top_k: int) -> list:
+def _rank_vectors(*, model: str, query_vector: list[Any], top_k: int) -> list[Any]:
     """SQL 余弦排名本体（独立成函数便于测试注入）。"""
     from pgvector.django import CosineDistance
 
@@ -192,7 +192,7 @@ def _rank_vectors(*, model: str, query_vector: list, top_k: int) -> list:
     return [pk for pk in qs.values_list("pk", flat=True)[: max(1, top_k)]]
 
 
-def hybrid_rank(question: str, token_ranked: list, top_k: int):
+def hybrid_rank(question: str, token_ranked: list[Any], top_k: int) -> Any:
     """混合融合入口：返回 ``[(score, pk)]``；向量通道不可用时返回 None（走词频原路径）。"""
     vector_ranked = search_vectors(question)
     if not vector_ranked:
@@ -203,7 +203,7 @@ def hybrid_rank(question: str, token_ranked: list, top_k: int):
 # ------------------------------------------------------------------ 构建（显式触发）
 
 
-def _pending_rows(qs, model: str, force: bool):
+def _pending_rows(qs: Any, model: str, force: bool) -> Any:
     """待构建块：force 全量；否则仅「未向量化 / 模型变更 / 正文 hash 变更」的块。"""
     pending = []
     skipped = 0
@@ -218,8 +218,12 @@ def _pending_rows(qs, model: str, force: bool):
 
 
 def build_embeddings(
-    document=None, force: bool = False, batch_size: int = EMBED_BATCH_SIZE, dry_run: bool = False, progress_cb=None
-) -> dict:
+    document: Any = None,
+    force: bool = False,
+    batch_size: int = EMBED_BATCH_SIZE,
+    dry_run: bool = False,
+    progress_cb: Any = None,
+) -> dict[str, Any]:
     """批量构建/刷新知识块向量，返回摘要（``enabled/ok/model/dim/total/embedded/skipped/failed``）。
 
     - ``document``：限定单个文档（``source_path`` 匹配）；缺省全库；
@@ -275,7 +279,7 @@ def build_embeddings(
     _report(0, stage="embed")
     batch_size = max(1, min(int(batch_size or EMBED_BATCH_SIZE), 256))
     started = time.monotonic()
-    usage_total: dict = {}
+    usage_total: dict[str, Any] = {}
     dim = 0
     for start in range(0, len(pending), batch_size):
         batch = pending[start : start + batch_size]
@@ -351,10 +355,11 @@ def _has_pending_chunks(source_path: str | None, model: str) -> bool:
     qs = AiKnowledgeChunk.objects.all()
     if source_path:
         qs = qs.filter(source_path=source_path)
-    return qs.exclude(embedding_hash=F("content_hash"), embedding_model=model).exists()
+    typed_value: bool = qs.exclude(embedding_hash=F("content_hash"), embedding_model=model).exists()
+    return typed_value
 
 
-def schedule_auto_rebuild(document=None) -> bool:
+def schedule_auto_rebuild(document: Any = None) -> bool:
     """正文变更后自动补齐向量，返回是否实际调度。
 
     与手工构建共用同一条状态机（单飞锁 → ``build_embeddings_task`` → 进度/终态/释放），
@@ -395,7 +400,7 @@ def schedule_auto_rebuild(document=None) -> bool:
     return True
 
 
-def _accumulate_usage(previous: dict, usage) -> dict:
+def _accumulate_usage(previous: dict[str, Any], usage: Any) -> dict[str, Any]:
     """累计多批调用的 token 用量（供应商 usage 字段缺失按 0）。"""
     data = previous or {}
     current = usage if isinstance(usage, dict) else {}
@@ -404,7 +409,7 @@ def _accumulate_usage(previous: dict, usage) -> dict:
     return data
 
 
-def _record_build_usage(usage: dict, model: str, started: float, summary: dict) -> None:
+def _record_build_usage(usage: dict[str, Any], model: str, started: float, summary: dict[str, Any]) -> None:
     """构建用量入账本（不归因个人：构建是管理端批处理，不占用个人配额）。"""
     from ai.utils.ai_usage import record_usage
 
@@ -419,7 +424,7 @@ def _record_build_usage(usage: dict, model: str, started: float, summary: dict) 
     )
 
 
-def vector_stats() -> dict:
+def vector_stats() -> dict[str, Any]:
     """向量通道状态（知识库页提示 / 命令输出）：总量、已向量化、可用、陈旧。"""
     from ai.models.ai import AiKnowledgeChunk
     from ai.utils.ai_config import embedding_credentials

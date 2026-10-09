@@ -3,6 +3,7 @@
 """LDAP 组织架合同步：部门树 / 用户绑定 / 缺失策略（自 sync.py 拆分，行为不变）。"""
 
 import json
+from typing import Any
 
 from django.conf import settings
 from django.db import transaction
@@ -35,7 +36,7 @@ def _norm_code(dn: str) -> str:
     return DEPT_CODE_PREFIX + dn
 
 
-def _sync_depts(conn, summary: dict) -> dict:
+def _sync_depts(conn: Any, summary: dict[str, Any]) -> dict[str, Any]:
     """同步 OU 为部门树。返回 {规范化父 DN: dept_pk} 供用户归属计算。"""
     if not settings.LDAP_DEPT_ENABLED or not settings.LDAP_DEPT_SEARCH_BASE:
         return {}
@@ -83,7 +84,7 @@ def _sync_depts(conn, summary: dict) -> dict:
     return {dn: _norm_code(dn)[:128] for dn in by_dn}
 
 
-def _resolve_user_dept(user_dn: str, dept_by_dn: dict):
+def _resolve_user_dept(user_dn: str, dept_by_dn: dict[str, Any]) -> Any:
     """按用户 DN 的最近祖先 OU 归属部门；无匹配祖先返回 None。"""
     dn = user_dn
     while "," in dn:
@@ -97,7 +98,7 @@ def _resolve_user_dept(user_dn: str, dept_by_dn: dict):
 # ---------------------------------------------------------------- 用户
 
 
-def _extract_fields(attrs: dict, attr_map: dict) -> dict:
+def _extract_fields(attrs: dict[str, Any], attr_map: dict[str, Any]) -> dict[str, Any]:
     fields = {}
     for key, default_attr in (("nickname", "cn"), ("email", "mail"), ("phone", "telephoneNumber")):
         value = first_attr(attrs, attr_map.get(key, default_attr))
@@ -106,7 +107,7 @@ def _extract_fields(attrs: dict, attr_map: dict) -> dict:
     return fields
 
 
-def _audit_conflict(dn: str, username: str, reasons: list):
+def _audit_conflict(dn: str, username: str, reasons: list[Any]) -> None:
     try:
         OperationLog.objects.create(
             module="LDAP:conflict",
@@ -120,7 +121,7 @@ def _audit_conflict(dn: str, username: str, reasons: list):
         logger.warning("write LDAP conflict audit failed", exc_info=True)
 
 
-def _sync_users(conn, summary: dict, dept_by_dn: dict):
+def _sync_users(conn: Any, summary: dict[str, Any], dept_by_dn: dict[str, Any]) -> None:
     attr_map = get_attr_map()
     username_attr = attr_map.get("username", "sAMAccountName")
     group_attr = getattr(settings, "LDAP_ATTR_GROUPS", "memberOf")
@@ -148,7 +149,7 @@ def _sync_users(conn, summary: dict, dept_by_dn: dict):
     _apply_missing_policy(seen_dns, summary)
 
 
-def _sync_one_user(dn, username, attrs, attr_map, dept_by_dn, summary):
+def _sync_one_user(dn: Any, username: Any, attrs: Any, attr_map: Any, dept_by_dn: Any, summary: Any) -> None:
     disabled = is_entry_disabled(attrs)
     fields = _extract_fields(attrs, attr_map)
     binding = LdapUserBinding.objects.select_related("user").filter(dn=dn).first()
@@ -199,7 +200,7 @@ def _sync_one_user(dn, username, attrs, attr_map, dept_by_dn, summary):
     _sync_roles(user, attrs, summary)
 
 
-def _update_user(user, binding, dn, fields, disabled, dept_by_dn, summary):
+def _update_user(user: Any, binding: Any, dn: Any, fields: Any, disabled: Any, dept_by_dn: Any, summary: Any) -> None:
     changed = []
     if user.deleted_at is not None:
         # 目录重新出现：自动恢复（回收站 restore），绑定关系保留
@@ -238,7 +239,7 @@ def _update_user(user, binding, dn, fields, disabled, dept_by_dn, summary):
     binding.save(update_fields=["synced_at", "updated_time"])
 
 
-def _apply_missing_policy(seen_dns: set, summary: dict):
+def _apply_missing_policy(seen_dns: set[Any], summary: dict[str, Any]) -> None:
     """目录侧已消失的绑定用户按策略处置（ignore/deactivate/soft_delete）。"""
     policy = settings.LDAP_SYNC_MISSING_POLICY
     if policy == "ignore":

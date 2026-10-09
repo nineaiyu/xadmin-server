@@ -8,25 +8,27 @@
 可见、无需提交），终态仍落 ImportRecord 字段，由序列化器在 RUNNING 时优先读缓存。
 """
 
+from typing import Any
+
 from django.core.cache import cache
 
 # 缓存兜底 TTL：任务异常退出未清理时最多残留 1 小时
 IMPORT_PROGRESS_TIMEOUT = 3600
 
 
-def progress_cache_key(record_id) -> str:
+def progress_cache_key(record_id: Any) -> str:
     return f"import_progress_{record_id}"
 
 
-def set_import_progress(record_id, percent: int) -> None:
+def set_import_progress(record_id: Any, percent: int) -> None:
     """运行期进度落缓存（0-100）。"""
     cache.set(progress_cache_key(record_id), max(0, min(100, int(percent))), IMPORT_PROGRESS_TIMEOUT)
 
 
-def get_import_progress(record_id):
+def get_import_progress(record_id: Any) -> Any:
     """运行期进度（未上报或已清理返回 None）。"""
     return cache.get(progress_cache_key(record_id))
 
 
-def clear_import_progress(record_id) -> None:
+def clear_import_progress(record_id: Any) -> None:
     cache.delete(progress_cache_key(record_id))

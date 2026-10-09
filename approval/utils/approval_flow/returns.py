@@ -11,6 +11,8 @@ engine 的 approve → _advance 正常向前流转）。engine 不反向依赖�
 （``nodes_effective_at``），退回只重开「实例实际经过的那一行」，改版不影响在途单。
 """
 
+from typing import Any
+
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -29,7 +31,7 @@ from .engine import (
 )
 
 
-def returnable_nodes(instance) -> list:
+def returnable_nodes(instance: Any) -> list[Any]:
     """可退回节点列表（实例已途经、非当前节点），按 order 降序（上一节点在前）。
 
     「已途经」= 存在任意状态的任务行（任务即节点被进入的事实记录）；返回
@@ -46,14 +48,14 @@ def returnable_nodes(instance) -> list:
         .values_list("node_order", "node_name")
     )
     # 同一 order 可能有多行（或签/会签/历史往返）：按 order 去重保留最近名称
-    by_order: dict = {}
+    by_order: dict[str, Any] = {}
     for order, name in visited:
         by_order[order] = name
     return [{"order": order, "name": by_order[order]} for order in sorted(by_order, reverse=True)]
 
 
-@transaction.atomic
-def return_instance(instance, user, reason: str, target_order=None, task_pk=None):
+@transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def return_instance(instance: Any, user: Any, reason: str, target_order: Any = None, task_pk: Any = None) -> Any:
     """退回：当前节点待办作废，实例回退到已途经的目标节点重开重审。返回 (ok, detail)。
 
     - 权限：当前节点待办处理人本人或超管（引擎侧复核，视图侧另有可见域收敛）；

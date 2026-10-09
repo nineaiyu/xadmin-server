@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """全量审批流引擎：条件求值与审批人解析。"""
 
+from typing import Any
+
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -13,14 +15,14 @@ from .constants import _delegations, _models, _users
 logger = get_logger(__name__)
 
 
-def _as_str_list(value) -> list:
+def _as_str_list(value: Any) -> list[Any]:
     """条件比较统一转字符串列表：标量 → [str(value)]，列表 → 逐项 str（in/not_in 用）。"""
     if isinstance(value, (list, tuple, set)):
         return [str(item) for item in value]
     return [str(value)]
 
 
-def eval_condition(condition, form_data) -> bool:
+def eval_condition(condition: Any, form_data: Any) -> bool:
     """节点条件求值：空条件恒真；未知运算符/取值失败一律返回 False（不经过该节点）。
 
     表达式：``{"field": "amount", "op": "gte", "value": 1000}``；op 白名单见 CONDITION_OPS。
@@ -61,7 +63,7 @@ def eval_condition(condition, form_data) -> bool:
     return False
 
 
-def _split_values(raw) -> list:
+def _split_values(raw: Any) -> list[Any]:
     """解析 assignee_value / 表单字段值：逗号分隔字符串或列表，去空去重保序。"""
     if raw is None:
         return []
@@ -74,7 +76,7 @@ def _split_values(raw) -> list:
     return result
 
 
-def resolve_assignees(node, applicant, form_data) -> list:
+def resolve_assignees(node: Any, applicant: Any, form_data: Any) -> list[Any]:
     """节点候选审批人（按 assignee_type 解析；始终剔除申请人本人与停用用户）。
 
     结果为空说明该节点无人可审，调用方必须拒绝发起（fail-closed）。
@@ -82,7 +84,7 @@ def resolve_assignees(node, applicant, form_data) -> list:
     return [user for user, _source in resolve_assignee_pairs(node, applicant, form_data)]
 
 
-def resolve_assignee_pairs(node, applicant, form_data) -> list:
+def resolve_assignee_pairs(node: Any, applicant: Any, form_data: Any) -> list[Any]:
     """节点候选审批人（含委托来源）：``[(user, delegate_from | None)]``。
 
     delegate_from 非空表示该候选由原审批人委托代理（任务落库时记录，轨迹标注
@@ -134,7 +136,7 @@ def resolve_assignee_pairs(node, applicant, form_data) -> list:
     return _expand_delegations(resolved, node, applicant)
 
 
-def _expand_delegations(users, node, applicant) -> list:
+def _expand_delegations(users: Any, node: Any, applicant: Any) -> list[Any]:
     """委托代理展开（审批流三期）：生效委托用代理人替换原审批人。
 
     - 仅「生效中」委托参与：is_active + start<=now<=end + 流程范围命中（空 = 全部流程）；
@@ -144,7 +146,8 @@ def _expand_delegations(users, node, applicant) -> list:
     - 发生替换时同时回传原审批人（delegate_from），供任务与轨迹标注代审来源。
     """
     if not users:
-        return users
+        empty: list[Any] = users
+        return empty
     ApprovalDelegation = _delegations()
     now = timezone.now()
     flow_code = getattr(getattr(node, "flow", None), "code", "")
@@ -158,7 +161,7 @@ def _expand_delegations(users, node, applicant) -> list:
             continue
         by_delegator[row.delegator_id] = row.delegate
 
-    expanded: dict = {}
+    expanded: dict[str, Any] = {}
     for user in users:
         target = by_delegator.get(user.pk) or user
         if target.pk == applicant.pk or not target.is_active:
@@ -168,7 +171,7 @@ def _expand_delegations(users, node, applicant) -> list:
     return list(expanded.values())
 
 
-def nodes_effective_at(flow, version=None):
+def nodes_effective_at(flow: Any, version: Any = None) -> Any:
     """节点定义查询面：实例钉住版本时取该版本生效行；``None`` → 当前生效定义。
 
     历史行只在 ``all_objects`` 中（默认管理器只暴露当前生效行）；
@@ -179,7 +182,7 @@ def nodes_effective_at(flow, version=None):
     return flow.nodes.all()
 
 
-def ordered_nodes(flow, version=None) -> list:
+def ordered_nodes(flow: Any, version: Any = None) -> list[Any]:
     """按 order 升序物化节点集（一次查询）。
 
     推进/模拟在同一定义面上可能反复求值（每步找下一节点），全部在内存中完成，
@@ -188,7 +191,7 @@ def ordered_nodes(flow, version=None) -> list:
     return list(nodes_effective_at(flow, version).order_by("order"))
 
 
-def matching_nodes(flow, form_data, version=None, nodes=None) -> list:
+def matching_nodes(flow: Any, form_data: Any, version: Any = None, nodes: Any = None) -> list[Any]:
     """按 order 升序返回条件命中的节点（发起时用于校验 + 取首节点）。
 
     ``nodes`` 可传入 ``ordered_nodes`` 的物化结果复用（同一次模拟内不重复取数）。
@@ -198,7 +201,7 @@ def matching_nodes(flow, form_data, version=None, nodes=None) -> list:
     return [node for node in nodes if eval_condition(node.condition, form_data)]
 
 
-def _route_target(nodes, target_order):
+def _route_target(nodes: Any, target_order: Any) -> Any:
     """路由 target（order）在物化节点集中查目标行；缺失/非法返回 None。"""
     try:
         wanted = int(target_order)
@@ -207,7 +210,9 @@ def _route_target(nodes, target_order):
     return next((item for item in nodes if item.order == wanted), None)
 
 
-def next_node(flow, after_order, form_data, node=None, version=None, nodes=None):
+def next_node(
+    flow: Any, after_order: Any, form_data: Any, node: Any = None, version: Any = None, nodes: Any = None
+) -> Any:
     """当前节点的下一节点；返回 None = 流程结束。
 
     二期路由优先：node.routes 逐条求值，首个命中跳转 target
@@ -239,7 +244,7 @@ def next_node(flow, after_order, form_data, node=None, version=None, nodes=None)
     return None
 
 
-def simulate_path(flow, form_data, node=None, version=None) -> list | None:
+def simulate_path(flow: Any, form_data: Any, node: Any = None, version: Any = None) -> list[Any] | None:
     """按 form_data 模拟推进，返回途经节点序列（发起预校验 + 步数兜底）。
 
     排他网关在给定 form_data 下出口唯一，路径确定；步数上限 = 节点数 + 1，
@@ -266,7 +271,7 @@ def simulate_path(flow, form_data, node=None, version=None) -> list | None:
     return path
 
 
-def validate_form(flow, form_data) -> str | None:
+def validate_form(flow: Any, form_data: Any) -> str | None:
     """按 form_schema 校验表单：必填缺失 / key 非法返回错误文案，通过返回 None。"""
     if form_data is None:
         form_data = {}

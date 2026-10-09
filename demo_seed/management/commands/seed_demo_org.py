@@ -16,6 +16,7 @@
 
 import json
 import os
+from typing import Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -32,7 +33,7 @@ DEFAULT_PASSWORD = "Demo@2026!"
 TEMPLATE_VERSION_REMARK = "场景模板"
 
 
-def _template_applied(flow, specs) -> bool:
+def _template_applied(flow: Any, specs: Any) -> bool:
     """场景模板是否已应用（幂等判据）：按 (order, name, assignee_type, condition) 比对。
 
     ``assignee_value`` 不参与比对：内置流程的审批人由 seed_demo_flows 重绑为演示
@@ -45,7 +46,7 @@ def _template_applied(flow, specs) -> bool:
     return current == desired
 
 
-def _builtin_flow_pks() -> set:
+def _builtin_flow_pks() -> set[Any]:
     """内置种子（loadjson/approvalflow.json）里的固定主键集合。
 
     这些行由 load_init_json 维护，reset 不得删除（原因见 _clean 注释）。
@@ -119,7 +120,7 @@ LEGACY_GRANT_MODELS = ("system.approvalflow", "system.approvalrequest", "system.
 EXCLUDE_PERMISSION_NAMES = {"mcp:AiMcp", "ongoing:SystemApprovalInstance"}
 
 
-def _page_menus(paths):
+def _page_menus(paths: Any) -> list[Any]:
     """按页面 path 收集菜单项：页面本身 + 其下权限点 + 上级目录。"""
     menus = []
     pages = Menu.objects.filter(path__in=paths, menu_type=Menu.MenuChoices.MENU)
@@ -138,12 +139,12 @@ def _page_menus(paths):
 class Command(BaseCommand):
     help = "创建开箱模板：示例组织 + 预置角色（四层权限）+ 场景模板（请假/报销/入职登记）"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--reset", action="store_true", help="先清理本命令创建的示例数据再重建")
         parser.add_argument("--clean-only", action="store_true", help="只清理，不重建（seed_demo_clean 编排调用）")
         parser.add_argument("--password", default=DEFAULT_PASSWORD, help="示例账号初始密码")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         self.password = options.get("password") or DEFAULT_PASSWORD
         if options.get("clean_only"):
             with transaction.atomic():
@@ -160,7 +161,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(self._summary()))
 
     # ---------- 清理（reset） ----------
-    def _clean(self):
+    def _clean(self) -> None:
         # 用户为软删模型：走 all_objects 硬删，否则软删行仍持有部门外键，
         # 后续删除部门会被 UserInfo.dept 的 PROTECT 约束挡住
         UserInfo.all_objects.filter(username__in=[u[0] for u in USERS]).delete()
@@ -178,7 +179,7 @@ class Command(BaseCommand):
         self.stdout.write("已清理既有示例数据")
 
     # ---------- 组织 ----------
-    def _ensure_org(self):
+    def _ensure_org(self) -> dict[str, Any]:
         depts = {}
         for code, name, _leader in DEPTS:
             dept, _ = DeptInfo.objects.update_or_create(
@@ -214,7 +215,7 @@ class Command(BaseCommand):
         return depts
 
     # ---------- 角色 ----------
-    def _ensure_roles(self):
+    def _ensure_roles(self) -> dict[str, Any]:
         roles = {}
         for code, name in ROLE_NAMES.items():
             role, _ = UserRole.objects.update_or_create(
@@ -225,7 +226,7 @@ class Command(BaseCommand):
         return roles
 
     # ---------- 字段权限 + 数据权限 ----------
-    def _ensure_grants(self, roles):
+    def _ensure_grants(self, roles: dict[str, Any]) -> None:
         # 字段权限：角色 × 接口菜单 → 模型全字段（未配置时序列化字段被整体裁剪）
         model_fields = {}
         for model_name in GRANT_MODELS:
@@ -264,7 +265,7 @@ class Command(BaseCommand):
                 },
             )
 
-    def _bind_users(self, roles, depts):
+    def _bind_users(self, roles: dict[str, Any], depts: dict[str, Any]) -> None:
         rules = list(DataPermission.objects.filter(name__startswith="示例-"))
         for username, _nickname, _dept_code, role_code, _phone in USERS:
             user = UserInfo.objects.filter(username=username).first()
@@ -274,7 +275,7 @@ class Command(BaseCommand):
             user.rules.set(rules)
 
     # ---------- 场景模板 ----------
-    def _ensure_scenes(self):
+    def _ensure_scenes(self) -> None:
         # 1) 报销审批流程：部门主管 → 金额 ≥1000 加签财务
         flow, _ = ApprovalFlow.objects.update_or_create(
             code="demo_expense",
@@ -360,7 +361,7 @@ class Command(BaseCommand):
             },
         )
 
-    def _summary(self):
+    def _summary(self) -> str:
         return (
             "\n开箱模板已就绪：\n"
             f"  账号：demo_staff（员工）/ demo_lead（研发主管）/ demo_fin（财务）  密码：{self.password}\n"

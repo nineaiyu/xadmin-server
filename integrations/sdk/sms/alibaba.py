@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/6/2024
 import json
+from typing import Any
 
 from alibabacloud_dysmsapi20170525 import models as dysmsapi_20170525_models
 from alibabacloud_dysmsapi20170525.client import Client as Dysmsapi20170525Client
@@ -25,7 +26,7 @@ class AlibabaSMS(BaseSMSClient):
     SIGN_AND_TMPL_SETTING_FIELD_PREFIX = "ALIBABA"
 
     @classmethod
-    def new_from_settings(cls):
+    def new_from_settings(cls) -> "AlibabaSMS":
         return cls(access_key_id=settings.ALIBABA_ACCESS_KEY_ID, access_key_secret=settings.ALIBABA_ACCESS_KEY_SECRET)
 
     def __init__(self, access_key_id: str, access_key_secret: str):
@@ -39,7 +40,14 @@ class AlibabaSMS(BaseSMSClient):
         config.endpoint = "dysmsapi.aliyuncs.com"
         self.client = Dysmsapi20170525Client(config)
 
-    def send_sms(self, phone_numbers: list, sign_name: str, template_code: str, template_param: dict, **kwargs):
+    def send_sms(
+        self,
+        phone_numbers: list[str],
+        sign_name: str,
+        template_code: str,
+        template_param: dict[str, Any],
+        **kwargs: Any,
+    ) -> Any:
         phone_numbers_str = ",".join(phone_numbers)
         send_sms_request = dysmsapi_20170525_models.SendSmsRequest(
             phone_numbers=phone_numbers_str,

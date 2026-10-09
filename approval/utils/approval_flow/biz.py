@@ -10,6 +10,8 @@
 - 只读、异常隔离（渲染失败不影响实例详情本身）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
@@ -19,14 +21,14 @@ logger = get_logger(__name__)
 MAX_FIELDS = 8
 
 
-def _text(value) -> str:
+def _text(value: Any) -> str:
     """DictChoiceField 形态（{value,label}）或标量 → 展示文本。"""
     if isinstance(value, dict):
         return str(value.get("label") or value.get("value") or "")
     return "" if value is None else str(value)
 
 
-def _missing(biz_type: str, label=None) -> dict:
+def _missing(biz_type: str, label: Any = None) -> dict[str, Any]:
     return {
         "type": biz_type,
         "label": str(label) if label else biz_type,
@@ -37,7 +39,7 @@ def _missing(biz_type: str, label=None) -> dict:
     }
 
 
-def _render_dform_submission(instance) -> dict:
+def _render_dform_submission(instance: Any) -> dict[str, Any]:
     from dataset.services import DynamicFormSubmission
 
     row = DynamicFormSubmission.objects.select_related("form", "creator").filter(pk=instance.biz_id).first()
@@ -55,7 +57,7 @@ def _render_dform_submission(instance) -> dict:
     }
 
 
-def _render_leave(instance) -> dict:
+def _render_leave(instance: Any) -> dict[str, Any]:
     from approval.models.leave import Leave
 
     row = Leave.objects.filter(pk=instance.biz_id).first()
@@ -73,7 +75,7 @@ def _render_leave(instance) -> dict:
     }
 
 
-def _render_demo_book(instance) -> dict:
+def _render_demo_book(instance: Any) -> dict[str, Any]:
     from django.apps import apps
 
     try:
@@ -101,7 +103,7 @@ RENDERERS = {
 }
 
 
-def biz_summary(instance) -> dict | None:
+def biz_summary(instance: Any) -> dict[str, Any] | None:
     """返回业务对象摘要；无关联时 None（前端不渲染卡片）。"""
     biz_type = str(getattr(instance, "biz_type", "") or "")
     biz_id = str(getattr(instance, "biz_id", "") or "")

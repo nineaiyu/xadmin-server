@@ -13,6 +13,8 @@
 不参与写回，重建失败不影响业务列。
 """
 
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from dataset.models.dform import DynamicFormSubmission
@@ -22,12 +24,12 @@ from dataset.utils.dform_filter import build_filter_data
 class Command(BaseCommand):
     help = "按当前 schema 重建动态表单提交的物化筛选列（filter_data）"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--form", default="", help="只重建指定表单（pk）；缺省全部表单")
         parser.add_argument("--batch", type=int, default=500, help="批量写回大小（缺省 500）")
         parser.add_argument("--dry-run", action="store_true", help="只统计差异行，不落库")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         queryset = DynamicFormSubmission.objects.select_related("form").order_by("pk")
         form_pk = str(options["form"] or "").strip()
         if form_pk:

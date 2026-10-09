@@ -6,6 +6,7 @@
 （真实引擎推进）/ 轻量审批单 / 表单提交；命令入口与清理逻辑见 seed_demo_flows.py。
 """
 
+import datetime
 import uuid
 from datetime import timedelta
 from typing import TYPE_CHECKING
@@ -74,9 +75,10 @@ class DemoDataMixin:
             user.set_password(DEMO_PASSWORD)
             user.save(update_fields=["password"])
             self.stdout.write(f"enable login for demo user: {username}")
-        return user
+        restored: UserInfo = user
+        return restored
 
-    def _rebind_assignees(self):
+    def _rebind_assignees(self) -> None:
         """把内置流程节点审批人改写为演示用户并落新版本快照（幂等：值相同不落版）。
 
         走版本化路径（生效行收口 + 新版本落行）：在途单按自身钉住的版本仍读旧行，
@@ -113,10 +115,13 @@ class DemoDataMixin:
 
     # ---------------------------------------------------------------- 流程实例（真实引擎推进）
 
-    def _pending_task(self, instance: ApprovalInstance, assignee: UserInfo) -> ApprovalNodeTask:
-        return instance.tasks.filter(status=ApprovalNodeTask.Status.PENDING, assignee=assignee).first()
+    def _pending_task(self, instance: ApprovalInstance, assignee: UserInfo) -> ApprovalNodeTask | None:
+        task: ApprovalNodeTask | None = instance.tasks.filter(
+            status=ApprovalNodeTask.Status.PENDING, assignee=assignee
+        ).first()
+        return task
 
-    def _create_demo_instances(self, applier: UserInfo, approver: UserInfo):
+    def _create_demo_instances(self, applier: UserInfo, approver: UserInfo) -> None:
         from approval.models import ApprovalFlow
 
         if ApprovalInstance.objects.filter(pk__in=INSTANCE_PKS).exists():
@@ -194,7 +199,7 @@ class DemoDataMixin:
             plan = [row for row in plan if row[1] is leave]
         for pk, flow, applicant, title, form_data, baseline, action in plan:
             instance, error = create_instance(flow=flow, applicant=applicant, title=title, form_data=form_data)
-            if error:
+            if error or instance is None:
                 self.stdout.write(self.style.WARNING(f"skip instance {title}: {error}"))
                 continue
             # 引擎造的实例是随机 uuid，改绑为固定 pk 以便幂等与清理
@@ -217,13 +222,21 @@ class DemoDataMixin:
         with transaction.atomic():
             ApprovalInstance.objects.filter(pk=instance.pk).update(id=target_pk)
             ApprovalNodeTask.objects.filter(instance_id=instance.pk).update(instance_id=target_pk)
-        return ApprovalInstance.objects.get(pk=target_pk)
+        migrated: ApprovalInstance = ApprovalInstance.objects.get(pk=target_pk)
+        return migrated
 
-    def _drive(self, instance: ApprovalInstance, applicant: UserInfo, approver: UserInfo, action: str, baseline):
+    def _drive(
+        self,
+        instance: ApprovalInstance,
+        applicant: UserInfo,
+        approver: UserInfo,
+        action: str,
+        baseline: datetime.datetime,
+    ) -> None:
         """按剧本推进演示实例（真实引擎：approve_task / reject_task）。"""
         offset = timedelta(minutes=30)
 
-        def stamp():
+        def stamp() -> datetime.datetime:
             nonlocal offset
             offset += timedelta(minutes=10)
             return baseline + offset
@@ -264,7 +277,7 @@ class DemoDataMixin:
 
     # ---------------------------------------------------------------- 轻量审批单 / 表单提交
 
-    def _create_demo_requests(self, applier: UserInfo, approver: UserInfo):
+    def _create_demo_requests(self, applier: UserInfo, approver: UserInfo) -> None:
         if ApprovalRequest.objects.filter(pk__in=REQUEST_PKS).exists():
             self.stdout.write("demo approval requests already exist, skip")
             return
@@ -341,7 +354,7 @@ class DemoDataMixin:
             ApprovalRequest.objects.filter(pk=pk).update(created_time=baseline, updated_time=baseline)
         self.stdout.write(f"demo approval requests created: {len(rows)}")
 
-    def _create_demo_submissions(self, applier: UserInfo):
+    def _create_demo_submissions(self, applier: UserInfo) -> None:
         from dataset.models import DynamicForm, DynamicFormSubmission
         from dataset.utils.dform import validate_submission_data
 

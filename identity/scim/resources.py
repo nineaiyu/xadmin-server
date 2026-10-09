@@ -18,11 +18,14 @@
 import json
 import re
 from datetime import UTC
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
-from identity.scim.errors import ScimApiError  # noqa: F401 再导出：既有导入路径（views/测试）不变
+from identity.scim.errors import (
+    ScimApiError as ScimApiError,  # noqa: F401 显式再导出（PEP 484 语义）：既有导入路径（views/测试）不变
+)
 from identity.scim.guards import ensure_user_writable
 
 logger = get_logger(__name__)
@@ -41,15 +44,16 @@ LIST_COUNT_DEFAULT = 100
 LIST_COUNT_MAX = 500
 
 
-def _iso(value) -> str:
+def _iso(value: Any) -> str:
     """SCIM 时间格式：UTC ISO8601，秒级 + Z（Django 默认 isoformat 的 +00:00 不兼容部分 IdP）。"""
 
     if not value:
         return ""
-    return value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    typed_value: str = value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return typed_value
 
 
-def _meta(resource_type: str, obj, path: str) -> dict:
+def _meta(resource_type: str, obj: Any, path: str) -> dict[str, Any]:
     return {
         "resourceType": resource_type,
         "created": _iso(getattr(obj, "created_time", None)),
@@ -58,7 +62,7 @@ def _meta(resource_type: str, obj, path: str) -> dict:
     }
 
 
-def _first_value(values, key="value"):
+def _first_value(values: Any, key: Any = "value") -> Any:
     if isinstance(values, list):
         for item in values:
             if isinstance(item, dict) and item.get(key):
@@ -66,7 +70,7 @@ def _first_value(values, key="value"):
     return ""
 
 
-def user_resource(user, base_path: str = "/api/scim/v2/Users") -> dict:
+def user_resource(user: Any, base_path: str = "/api/scim/v2/Users") -> dict[str, Any]:
     """User 资源序列化（只读投影：不含密码等敏感字段）。"""
     display = user.nickname or user.username
     payload = {
@@ -86,7 +90,7 @@ def user_resource(user, base_path: str = "/api/scim/v2/Users") -> dict:
     return payload
 
 
-def group_resource(role, base_path: str = "/api/scim/v2/Groups") -> dict:
+def group_resource(role: Any, base_path: str = "/api/scim/v2/Groups") -> dict[str, Any]:
     """Group 资源序列化：成员 = 拥有该角色的用户。"""
     from identity.models import UserInfo
 
@@ -105,7 +109,7 @@ def group_resource(role, base_path: str = "/api/scim/v2/Groups") -> dict:
     return payload
 
 
-def list_response(resources: list, total: int, start_index: int) -> dict:
+def list_response(resources: list[Any], total: int, start_index: int) -> dict[str, Any]:
     return {
         "schemas": [SCHEMA_LIST],
         "totalResults": total,
@@ -115,7 +119,7 @@ def list_response(resources: list, total: int, start_index: int) -> dict:
     }
 
 
-def error_response(status: int, detail: str, scim_type: str = "") -> dict:
+def error_response(status: int, detail: str, scim_type: str = "") -> dict[str, Any]:
     payload = {"schemas": [SCHEMA_ERROR], "detail": detail, "status": str(status)}
     if scim_type:
         payload["scimType"] = scim_type
@@ -135,7 +139,7 @@ def parse_filter(filter_value: str) -> tuple[str, str]:
     return attribute, value
 
 
-def parse_paging(query_params) -> tuple[int, int]:
+def parse_paging(query_params: Any) -> tuple[int, int]:
     try:
         start_index = int(query_params.get("startIndex") or 1)
         count = int(query_params.get("count") if query_params.get("count") is not None else LIST_COUNT_DEFAULT)
@@ -149,7 +153,7 @@ def parse_paging(query_params) -> tuple[int, int]:
 # ---------------------------------------------------------------- Users
 
 
-def _resolve_username(payload: dict) -> str:
+def _resolve_username(payload: dict[str, Any]) -> str:
     username = str(payload.get("userName") or "").strip()
     if not username:
         email = _first_value(payload.get("emails"))
@@ -159,14 +163,14 @@ def _resolve_username(payload: dict) -> str:
     return username[:150]
 
 
-def _display_name(payload: dict, fallback: str) -> str:
+def _display_name(payload: dict[str, Any], fallback: str) -> str:
     name = payload.get("displayName")
     if not name and isinstance(payload.get("name"), dict):
         name = payload["name"].get("formatted")
     return str(name or fallback).strip()[:150]
 
 
-def _apply_payload(user, payload: dict, *, creating: bool) -> list:
+def _apply_payload(user: Any, payload: dict[str, Any], *, creating: bool) -> list[Any]:
     """把 SCIM payload 写入用户对象（不 save），返回变更字段列表。"""
     from identity.models import UserInfo
 
@@ -204,7 +208,7 @@ def _apply_payload(user, payload: dict, *, creating: bool) -> list:
     return changed
 
 
-def create_user(payload: dict):
+def create_user(payload: dict[str, Any]) -> Any:
     """创建用户：无 password 时置不可用密码（只能经身份联邦登录）。"""
     from common.core.config import SysConfig
     from identity.models import UserInfo, UserRole
@@ -232,7 +236,7 @@ def create_user(payload: dict):
     return user
 
 
-def update_user(user, payload: dict) -> list:
+def update_user(user: Any, payload: dict[str, Any]) -> list[Any]:
     """PUT：整体替换（未提供字段按 SCIM 语义置空/默认；username 不可空）。"""
     from identity.models import UserInfo
 
@@ -254,7 +258,7 @@ def update_user(user, payload: dict) -> list:
     return ["username", "nickname", "email", "phone", "is_active"]
 
 
-def patch_user(user, operations: list) -> list:
+def patch_user(user: Any, operations: list[Any]) -> list[Any]:
     """PATCH：支持 replace/add active/displayName/name.formatted/emails/phoneNumbers/userName。
 
     remove 操作按"置空"处理（SCIM 的 remove 语义为删除属性）。
@@ -262,7 +266,7 @@ def patch_user(user, operations: list) -> list:
     from identity.models import UserInfo
 
     ensure_user_writable(user)
-    changed: list = []
+    changed: list[Any] = []
     for operation in operations or []:
         if not isinstance(operation, dict):
             raise ScimApiError(400, str(_("Invalid patch operation")), scim_type="invalidValue")
@@ -287,7 +291,7 @@ def patch_user(user, operations: list) -> list:
     return sorted(set(changed))
 
 
-def _apply_patch_path(user, path: str, value) -> list:
+def _apply_patch_path(user: Any, path: str, value: Any) -> list[Any]:
     if path in ("active", "urn:ietf:params:scim:schemas:core:2.0:User:active"):
         user.is_active = bool(value)
         return ["is_active"]
@@ -309,7 +313,7 @@ def _apply_patch_path(user, path: str, value) -> list:
     return []
 
 
-def deactivate_user(user, operator: str = "scim") -> int:
+def deactivate_user(user: Any, operator: str = "scim") -> int:
     """停用用户并踢掉全部会话（与在线用户强制下线同一链路）。"""
     from identity.utils.session import force_logout_user
 
@@ -317,13 +321,16 @@ def deactivate_user(user, operator: str = "scim") -> int:
     if user.is_active:
         user.is_active = False
         user.save(update_fields=["is_active", "updated_time"])
-    return force_logout_user(user.pk, operator=operator)
+    typed_value: int = force_logout_user(user.pk, operator=operator)
+    return typed_value
 
 
 # ---------------------------------------------------------------- 审计
 
 
-def write_audit(request, *, action: str, object_pk: str = "", changes: dict | None = None, status_code: int = 1000):
+def write_audit(
+    request: Any, *, action: str, object_pk: str = "", changes: dict[str, Any] | None = None, status_code: int = 1000
+) -> None:
     """SCIM 操作审计：落 OperationLog（auth_type=scim），changes 记字段级 diff。
 
     刻意不记录请求体（可能含 password / 敏感属性）；审计失败不影响业务响应。
@@ -353,8 +360,16 @@ from identity.scim.resources_group import (  # noqa: E402,F401
     _remove_group_members,
     _resolve_member,
     _sync_group_members,
-    create_group,
-    delete_group,
-    patch_group,
-    update_group,
+)
+from identity.scim.resources_group import (
+    create_group as create_group,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from identity.scim.resources_group import (
+    delete_group as delete_group,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from identity.scim.resources_group import (
+    patch_group as patch_group,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from identity.scim.resources_group import (
+    update_group as update_group,  # noqa: F401 显式再导出（PEP 484 语义）
 )

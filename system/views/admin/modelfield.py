@@ -4,6 +4,7 @@
 # filename : modelfield
 # author : ly_13
 # date : 1/5/2024
+from typing import Any
 
 from django.apps import apps
 from django.core.exceptions import FieldDoesNotExist
@@ -43,7 +44,7 @@ class ModelLabelFieldFilter(BaseFilterSet):
     label = filters.CharFilter(field_name="label", lookup_expr="icontains")
     parent = filters.CharFilter(field_name="parent", method="get_parent")
 
-    def get_parent(self, queryset, name, value):
+    def get_parent(self, queryset: Any, name: Any, value: Any) -> Any:
         if value == "0":
             return queryset.filter(parent=None)
         return queryset.filter(parent__id=value)
@@ -92,8 +93,8 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
             }
         )
     )
-    @action(methods=["get"], detail=False, url_path="choices")
-    def choices_dict(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="choices")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def choices_dict(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}字段选择。
 
         规则类型的配置端元数据（值控件形态 / 是否必填 / 建议匹配符 / 分组）在此下发，
@@ -114,8 +115,8 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
         ],
         responses=get_default_response_schema({"data": build_array_type(build_basic_type(OpenApiTypes.STR) or {})}),
     )
-    @action(methods=["get"], detail=False, queryset=ModelLabelField.objects, filterset_class=None)
-    def lookups(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, queryset=ModelLabelField.objects, filterset_class=None)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def lookups(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}的字段名。
 
         返回该字段可用的匹配符（与读侧编译白名单同源）与字段形态元数据
@@ -144,8 +145,8 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
         return ApiResponse(code=1001, detail=_("No lookups available for the field"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False)
-    def sync(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def sync(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """同步{cls}的字段名。
 
         全量同步有写副作用，只暴露 POST：GET 可被浏览器预取/代理重放误触发。

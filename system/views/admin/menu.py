@@ -4,6 +4,8 @@
 # filename : menu
 # author : ly_13
 # date : 6/6/2023
+from typing import Any
+
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.utils import timezone
@@ -81,13 +83,13 @@ class MenuViewSet(
     # 批量更新白名单：批量启停（与行内启停同一字段口径，逐项走序列化器校验）
     batch_update_fields = ("is_active",)
 
-    def get_recycle_restore_queryset(self, pks):
+    def get_recycle_restore_queryset(self, pks: Any) -> Any:
         """成组恢复：目录删除时后代被标记同一 deleted_at，按时间戳成组恢复。"""
         selected = self.filter_queryset(Menu.all_objects.filter(deleted_at__isnull=False, pk__in=pks))
         timestamps = list(selected.values_list("deleted_at", flat=True))
         return Menu.all_objects.filter(deleted_at__in=timestamps)
 
-    def get_recycle_purge_queryset(self, pks):
+    def get_recycle_purge_queryset(self, pks: Any) -> Any:
         """成组清除：后代先于父级物理清除，避免父级删除后子级被外键置空悬挂。"""
         queryset = super().get_recycle_purge_queryset(pks)
         instances = []
@@ -110,8 +112,8 @@ class MenuViewSet(
             }
         )
     )
-    @action(methods=["get"], detail=False, url_path="api-url")
-    def api_url(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="api-url")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def api_url(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取后端API列表（仅业务接口路由，供菜单/权限点配置选择）"""
         urls = [
             item
@@ -122,23 +124,23 @@ class MenuViewSet(
         return ApiResponse(data=urls)
 
     @staticmethod
-    def _suggest_permission_code(suffix, action):
+    def _suggest_permission_code(suffix: Any, action: Any) -> Any:
         """按「批量生成权限」同一 code 规则给出建议权限码（无法归属视图时为空）。"""
         if not suffix or not action:
             return ""
         code = action.title().replace("_", "").replace("-", "")
         return f"{code[0].lower()}{code[1:]}:{suffix}"
 
-    def _serialize_gap_items(self, gaps, routes, perms):
+    def _serialize_gap_items(self, gaps: Any, routes: Any, perms: Any) -> Any:
         """正向缺口：代码有路由、库内无权限点。
 
         ``resolve_view_context`` 逐视图解析一次后缀与父菜单（同源权限点优先），
         避免逐条缺口查库；缺口仅在补权限前出现，正常库为空。
         """
-        by_view: dict[str, list] = {}
+        by_view: dict[str, list[Any]] = {}
         for route, method, gap_action in gaps:
             by_view.setdefault(route.view, []).append((route, method, gap_action))
-        view_urls: dict[str, set] = {}
+        view_urls: dict[str, set[Any]] = {}
         for route in routes:
             view_urls.setdefault(route.view, set()).add(route.url)
 
@@ -161,7 +163,7 @@ class MenuViewSet(
         return items
 
     @staticmethod
-    def _serialize_perm_items(perms, problem, suggestion):
+    def _serialize_perm_items(perms: Any, problem: Any, suggestion: Any) -> Any:
         """游离/重复权限点：字段取自库内菜单，父菜单经 select_related 预取不触发逐条查询。"""
         return [
             {
@@ -178,8 +180,8 @@ class MenuViewSet(
         ]
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="permission-audit")
-    def permission_audit(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="permission-audit")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def permission_audit(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """菜单权限检测：只读报告代码路由与库内权限点之间的四类问题。
 
         复用同步内核（``scan_gaps`` / ``audit_permission_menus`` /
@@ -218,7 +220,7 @@ class MenuViewSet(
         )
 
     @staticmethod
-    def _serialize_field_audit_items(items):
+    def _serialize_field_audit_items(items: Any) -> Any:
         """角色字段权限缺口条目：多一列 role（同一权限点可能多个角色未配置）。"""
         return [
             {
@@ -235,7 +237,7 @@ class MenuViewSet(
             for role, menu in items
         ]
 
-    def _build_permission_items(self, instance, permissions, skip_existing):
+    def _build_permission_items(self, instance: Any, permissions: Any, skip_existing: Any) -> Any:
         """构造待写入的权限点（只读，不落库）。
 
         返回 ``(action, 已有菜单或 None, 数据)`` 列表：``action=create`` 为新建（标题前缀 C-），
@@ -257,7 +259,7 @@ class MenuViewSet(
             )
             .select_related("meta")
         }
-        role_models: dict[str, list] = {}
+        role_models: dict[str, list[Any]] = {}
         role_labels = {label for permission in permissions for label in permission.get("models")}
         if role_labels:
             fields = ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE, name__in=role_labels)
@@ -289,7 +291,7 @@ class MenuViewSet(
         return items
 
     @staticmethod
-    def _serialize_permission_items(items):
+    def _serialize_permission_items(items: Any) -> Any:
         """预览载荷：逐条给出动作、权限码、接口与标题，附新建/覆盖计数。"""
         results = [
             {
@@ -308,7 +310,7 @@ class MenuViewSet(
         }
 
     @temporary_disable_signal(post_save, receiver=clean_cache_handler, sender=Menu)
-    def _save_permission_items(self, items):
+    def _save_permission_items(self, items: Any) -> Any:
         """批量落库权限点并返回落库实例（信号临时禁用，失效由调用方统一执行）。
 
         覆盖更新与新创建各走一支批量写入，整个落库过程原子提交。若逐条保存触发信号，
@@ -321,8 +323,8 @@ class MenuViewSet(
         if user is not None and not user.is_authenticated:
             user = None
         # 同一批出现重复权限码时按顺序收敛：覆盖更新后写生效（与逐条保存一致），新建先到先得
-        updates: dict = {}
-        creates: dict = {}
+        updates: dict[str, Any] = {}
+        creates: dict[str, Any] = {}
         for _action, permission_menu, data in items:
             if permission_menu is not None:
                 updates[permission_menu.pk] = (permission_menu, data)
@@ -334,7 +336,7 @@ class MenuViewSet(
         return saved
 
     @staticmethod
-    def _update_permission_items(updates, user):
+    def _update_permission_items(updates: Any, user: Any) -> Any:
         """覆盖既有权限点：菜单行与 meta 标题各一次批量 UPDATE，角色模型按差集同步。"""
         if not updates:
             return []
@@ -360,7 +362,7 @@ class MenuViewSet(
         return menus
 
     @staticmethod
-    def _create_permission_items(creates, user):
+    def _create_permission_items(creates: Any, user: Any) -> Any:
         """新建权限点：meta 先批量落库取得主键回填 meta_id，菜单行随后批量落库。
 
         活跃行名称唯一约束兜底并发冲突，冲突行被数据库跳过；按主键回读实际
@@ -405,7 +407,7 @@ class MenuViewSet(
         return saved
 
     @staticmethod
-    def _sync_permission_models(menu_model_pairs):
+    def _sync_permission_models(menu_model_pairs: Any) -> None:
         """把 ``[(menu, models)]`` 的角色模型关联同步进中间表（等价于逐实例 ``set()``）。
 
         现有关联一次读回后按差集增删，避免每权限点各查一遍。
@@ -441,8 +443,8 @@ class MenuViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, url_path="permissions")
-    def permissions(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="permissions")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def permissions(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """自动添加API权限"""
         views = request.data.get("views")
         component = request.data.get("component")

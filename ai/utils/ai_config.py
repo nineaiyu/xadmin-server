@@ -5,6 +5,8 @@
 调用面保持 `system.utils.ai` 再导出不变；本模块不依赖 ai.py，无循环导入。
 """
 
+from typing import Any
+
 from django.conf import settings
 
 from common.utils import get_logger
@@ -34,7 +36,7 @@ def ai_structured_max_tokens() -> int:
     return int(getattr(settings, "AI_STRUCTURED_MAX_TOKENS", 0) or 0) or STRUCTURED_MAX_TOKENS
 
 
-def structured_chat_client():
+def structured_chat_client() -> Any:
     """结构化输出（动作草稿 JSON / NL 查数 DSL）的统一客户端：返回 ``(client, max_tokens)``。
 
     四条链路共用同一口径（聊天室 ``/do``、助手页 ``action/interpret/stream``、
@@ -48,7 +50,7 @@ def structured_chat_client():
     return client, client.max_tokens or ai_structured_max_tokens()
 
 
-def profile_for(purpose: str = PURPOSE_CHAT):
+def profile_for(purpose: str = PURPOSE_CHAT) -> Any:
     """按用途取激活档案：本用途优先 → chat 激活档案 → 任意激活档案（无则 None）。
 
     单档案场景（默认 ``purpose=chat``）行为与拆分前完全一致；
@@ -66,12 +68,12 @@ def profile_for(purpose: str = PURPOSE_CHAT):
     return AiProfile.objects.filter(is_active=True).first()
 
 
-def active_profile():
+def active_profile() -> Any:
     """当前激活的 AI 配置档案（问答用途优先；至多每种用途一个激活行）。"""
     return profile_for(PURPOSE_CHAT)
 
 
-def embedding_profile():
+def embedding_profile() -> Any:
     """向量化用途的激活档案（无则 None）。
 
     与 ``profile_for`` 的关键差异：**不做用途回落**——embedding 模型与 chat/structured
@@ -83,7 +85,7 @@ def embedding_profile():
     return AiProfile.objects.filter(is_active=True, purpose=PURPOSE_EMBEDDING).first()
 
 
-def embedding_credentials():
+def embedding_credentials() -> Any:
     """向量化客户端凭据：无激活 embedding 档案 / 档案未配置齐全时返回 None。"""
     profile = embedding_profile()
     if profile is None or not profile.is_configured:
@@ -91,7 +93,7 @@ def embedding_credentials():
     return profile_credentials(profile)
 
 
-def outbound_allowed_hosts() -> tuple:
+def outbound_allowed_hosts() -> tuple[Any, ...]:
     """出站白名单（与 Webhook/MCP 同源：``OUTBOUND_ALLOWED_HOSTS``）。
 
     AI 出站目标默认拒绝私网（loopback 供本地联调）；自建推理服务须在系统配置
@@ -99,7 +101,8 @@ def outbound_allowed_hosts() -> tuple:
     """
     from common.utils.outbound import outbound_allowed_hosts as _load_allowed_hosts
 
-    return _load_allowed_hosts()
+    typed_value: tuple[Any, ...] = _load_allowed_hosts()
+    return typed_value
 
 
 def embedding_enabled() -> bool:
@@ -107,7 +110,7 @@ def embedding_enabled() -> bool:
     return embedding_credentials() is not None
 
 
-def set_active_profile(profile, active: bool = True) -> None:
+def set_active_profile(profile: Any, active: bool = True) -> None:
     """激活/停用档案：激活时事务内清掉「同用途」其余激活行（用途级部分唯一索引兜底）。"""
     from django.db import transaction
 
@@ -122,7 +125,7 @@ def set_active_profile(profile, active: bool = True) -> None:
             profile.save(update_fields=["is_active", "updated_time"])
 
 
-def profile_credentials(profile) -> dict:
+def profile_credentials(profile: Any) -> dict[str, Any]:
     """档案行 → SDK credentials dict（api_key 解密；stop 逗号分隔转列表）。"""
     return {
         "base_url": profile.base_url,
@@ -142,7 +145,7 @@ def profile_credentials(profile) -> dict:
     }
 
 
-def _setting_credentials() -> dict:
+def _setting_credentials() -> dict[str, Any]:
     """Setting 回落通路（无激活档案时）：新参数键 getattr 兜底（测试/旧库无该键不炸）。"""
     return {
         "base_url": settings.AI_BASE_URL,
@@ -165,7 +168,8 @@ def _setting_credentials() -> dict:
 def is_configured() -> bool:
     profile = active_profile()
     if profile is not None:
-        return profile.is_configured
+        typed_value: bool = profile.is_configured
+        return typed_value
     return bool(settings.AI_BASE_URL and settings.AI_API_KEY and settings.AI_MODEL)
 
 
@@ -173,7 +177,7 @@ def is_enabled() -> bool:
     return bool(settings.AI_ASSISTANT_ENABLED) and is_configured()
 
 
-def ai_credentials(purpose: str = PURPOSE_CHAT) -> dict:
+def ai_credentials(purpose: str = PURPOSE_CHAT) -> dict[str, Any]:
     """SDK 凭据 + 采样参数全集：按用途取激活档案优先，无档案回落 Setting 通路。"""
     profile = profile_for(purpose)
     if profile is not None:
@@ -185,7 +189,8 @@ def ai_context_limit() -> int:
     """聊天室多轮上下文条数：档案 → Setting → 内置默认 20。"""
     profile = active_profile()
     if profile is not None and profile.context_limit:
-        return profile.context_limit
+        typed_value: int = profile.context_limit
+        return typed_value
     return getattr(settings, "AI_CONTEXT_LIMIT", 20) or 20
 
 
@@ -193,7 +198,8 @@ def ai_persona() -> str:
     """聊天室助手人设：档案 → Setting → 内置默认。"""
     profile = active_profile()
     if profile is not None and (profile.persona or "").strip():
-        return profile.persona.strip()
+        typed_value: str = profile.persona.strip()
+        return typed_value
     return (getattr(settings, "AI_PERSONA", "") or "").strip() or BUILTIN_PERSONA
 
 

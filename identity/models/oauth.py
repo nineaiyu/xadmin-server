@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """第三方账号绑定（OAuth2 / OIDC 通用 provider）。"""
 
+from typing import Any
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -33,7 +35,7 @@ class UserOAuthBinding(DbAuditModel):
         ordering = ["-created_time"]
         constraints = [models.UniqueConstraint(fields=["provider", "subject"], name="uniq_oauth_provider_subject")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.provider}:{self.subject}"
 
     @property
@@ -42,7 +44,7 @@ class UserOAuthBinding(DbAuditModel):
         return str(self.profile.get("nickname") or self.profile.get("email") or self.subject)
 
     @classmethod
-    def user_has_other_login_method(cls, user, exclude_pk=None) -> bool:
+    def user_has_other_login_method(cls, user: Any, exclude_pk: Any = None) -> bool:
         """解绑后是否仍有其它登录方式（防止把账号解成自锁）。
 
         无密码账号（auto_create 建号）只绑一个第三方时，解绑即永久失联。

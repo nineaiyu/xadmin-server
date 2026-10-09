@@ -26,7 +26,7 @@ class Monitor(models.Model):
         verbose_name = _("Monitor")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.created_time}-{self.cpu_load}"
 
 
@@ -68,5 +68,5 @@ class MonitorAlert(models.Model):
             models.Index(fields=["item", "status"], name="idx_monitoralert_item_status"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.item}-{self.status}-{self.last_time}"

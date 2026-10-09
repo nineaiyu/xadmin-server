@@ -10,6 +10,8 @@
 - 可访问性一律 fail-closed：非成员访问私聊、非归属访问他人 AI 会话均按「房间不存在」拒绝。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import F, Max, Q
@@ -17,48 +19,42 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
-from message.attachments import (  # noqa: F401 再导出：附件链路（上传/取件/载荷）统一经 chat_service 调用  # noqa: F401 再导出：附件上传编排经 chat_service 调用
-    ATTACHMENT_MESSAGE_TYPES,
-    AttachmentUploadError,
-    attachment_extra,
-    attachment_payload,
-    mark_attachment_used,
-    resolve_sender_attachment,
-    store_message_attachment,
-    validate_attachment_kind,
-)
-from message.chat_ops import (  # noqa: F401 再导出：chat_service 调用面（含内部使用）保持不变
-    _normalize_user_pks,
-    _user_pk,
-    avatar_url,
-    clean_expired_history,
-    display_name,
-    mention_users,
-    new_client_msg_id,
-    parse_mentions,
-    store_chat_notices,
-    user_brief,
-)
-from message.chat_room_ops import (  # noqa: F401 再导出：房间开通与群组管理调用面保持不变
-    accessible_room,
-    add_group_members,
-    create_group,
-    get_or_create_ai_room,
-    get_or_create_private_room,
-    get_or_create_private_room_by_pk,
-    get_public_room,
-    group_room_or_deny,
-    leave_group,
-    remove_group_members,
-    rename_group,
-    room_member_pks,
-)
-from message.chat_rooms import (  # noqa: F401 再导出：会话列表构造（含批量预取）
-    UNSET,
-    online_user_pks,
-    prefetch_room_context,
-    room_to_dict,
-)
+
+# 再导出（PEP 484 显式形式，跨模块调用面保持不变）：附件链路 / chat_service 调用面 / 房间与群组管理 / 会话列表构造 / 撤回审计
+from message.attachments import ATTACHMENT_MESSAGE_TYPES as ATTACHMENT_MESSAGE_TYPES
+from message.attachments import AttachmentUploadError as AttachmentUploadError
+from message.attachments import attachment_extra as attachment_extra
+from message.attachments import attachment_payload as attachment_payload
+from message.attachments import mark_attachment_used as mark_attachment_used
+from message.attachments import resolve_sender_attachment as resolve_sender_attachment
+from message.attachments import store_message_attachment as store_message_attachment
+from message.attachments import validate_attachment_kind as validate_attachment_kind
+from message.chat_ops import _normalize_user_pks as _normalize_user_pks
+from message.chat_ops import _user_pk as _user_pk
+from message.chat_ops import avatar_url as avatar_url
+from message.chat_ops import clean_expired_history as clean_expired_history
+from message.chat_ops import display_name as display_name
+from message.chat_ops import mention_users as mention_users
+from message.chat_ops import new_client_msg_id as new_client_msg_id
+from message.chat_ops import parse_mentions as parse_mentions
+from message.chat_ops import store_chat_notices as store_chat_notices
+from message.chat_ops import user_brief as user_brief
+from message.chat_room_ops import accessible_room as accessible_room
+from message.chat_room_ops import add_group_members as add_group_members
+from message.chat_room_ops import create_group as create_group
+from message.chat_room_ops import get_or_create_ai_room as get_or_create_ai_room
+from message.chat_room_ops import get_or_create_private_room as get_or_create_private_room
+from message.chat_room_ops import get_or_create_private_room_by_pk as get_or_create_private_room_by_pk
+from message.chat_room_ops import get_public_room as get_public_room
+from message.chat_room_ops import group_room_or_deny as group_room_or_deny
+from message.chat_room_ops import leave_group as leave_group
+from message.chat_room_ops import remove_group_members as remove_group_members
+from message.chat_room_ops import rename_group as rename_group
+from message.chat_room_ops import room_member_pks as room_member_pks
+from message.chat_rooms import UNSET as UNSET
+from message.chat_rooms import online_user_pks as online_user_pks
+from message.chat_rooms import prefetch_room_context as prefetch_room_context
+from message.chat_rooms import room_to_dict as room_to_dict
 from message.models import (
     AI_MAX_CONTENT_LENGTH,
     MAX_CONTENT_LENGTH,
@@ -71,10 +67,10 @@ from message.models import (
     ChatRoom,
     ChatRoomMember,
 )
-from message.recall_audit import (  # noqa: F401 RECALL_AUDIT_MODULE 再导出：调用面/测试沿用 chat_service 常量
-    RECALL_AUDIT_MODULE,
-    write_recall_snapshot,
-)
+
+# 再导出：撤回审计常量与快照写入（调用面/测试沿用 chat_service 常量）
+from message.recall_audit import RECALL_AUDIT_MODULE as RECALL_AUDIT_MODULE
+from message.recall_audit import write_recall_snapshot as write_recall_snapshot
 
 logger = get_logger(__name__)
 
@@ -97,13 +93,13 @@ def validate_content(content: str, limit: int = MAX_CONTENT_LENGTH) -> str:
 
 def create_message(
     room: ChatRoom,
-    sender,
+    sender: Any,
     content: str,
-    message_type: str = ChatMessage.MessageType.TEXT,  # type: ignore[assignment]  # Choices 元类：运行期为枚举成员
+    message_type: str = ChatMessage.MessageType.TEXT,
     client_msg_id: str = "",
-    extra: dict | None = None,
-    attachment=None,
-) -> tuple:
+    extra: dict[str, Any] | None = None,
+    attachment: Any = None,
+) -> tuple[Any, ...]:
     """落库一条消息，返回 (message, created)。
 
     幂等：同一发送者 + 同一 client_msg_id 命中已有消息时直接返回旧消息
@@ -151,7 +147,9 @@ def create_message(
     return message, True
 
 
-def message_payload(message: ChatMessage, room=None, sender=None, avatar_map: dict | None = None) -> dict:
+def message_payload(
+    message: ChatMessage, room: Any = None, sender: Any = None, avatar_map: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """消息 → 前端渲染载荷（WS 广播 / REST 历史共用同一形状）。
 
     room / sender / avatar_map 为可选预取参数：批量场景（历史列表）传入 avatar_map
@@ -189,7 +187,7 @@ def message_payload(message: ChatMessage, room=None, sender=None, avatar_map: di
     }
 
 
-def sender_avatar_map(messages: list) -> dict:
+def sender_avatar_map(messages: list[Any]) -> dict[str, Any]:
     """一批消息的发送者头像映射（一次查询，供历史列表/广播批量使用）。"""
     from identity.models import UserInfo
 
@@ -205,7 +203,7 @@ def sender_avatar_map(messages: list) -> dict:
 serialize_message = message_payload  # 兼容别名（WS 广播语义）
 
 
-def bump_unread(room: ChatRoom, exclude_pk=None) -> dict:
+def bump_unread(room: ChatRoom, exclude_pk: Any = None) -> dict[str, Any]:
     """未读计数 +1（除发送者），返回 {user_pk: unread_count}（仅私聊/AI 会话）。"""
     if room.room_type == ChatRoom.RoomType.PUBLIC:
         return {}
@@ -217,7 +215,7 @@ def bump_unread(room: ChatRoom, exclude_pk=None) -> dict:
     return dict(room.members.exclude(user_id=exclude_pk).values_list("user_id", "unread_count"))
 
 
-def mark_read(room: ChatRoom, user, message_id=None) -> int:
+def mark_read(room: ChatRoom, user: Any, message_id: Any = None) -> int:
     """清零未读并推进已读游标，返回最新游标（公共房间返回 0）。
 
     游标无推进且未读已是 0 时跳过写库：聊天页停留期间会反复触发已读上报
@@ -229,16 +227,16 @@ def mark_read(room: ChatRoom, user, message_id=None) -> int:
     member = ChatRoomMember.objects.filter(room=room, user_id=_user_pk(user)).first()
     if member is None:
         return 0
-    cursor = max(member.last_read_id or 0, int(latest))
+    cursor: int = max(member.last_read_id or 0, int(latest))
     if cursor == (member.last_read_id or 0) and member.unread_count == 0:
         return cursor
     member.last_read_id = cursor
     member.unread_count = 0
     member.save(update_fields=["last_read_id", "unread_count", "updated_time"])
-    return member.last_read_id
+    return cursor
 
 
-def recall_message(user, message_id) -> ChatMessage:
+def recall_message(user: Any, message_id: Any) -> ChatMessage:
     """撤回：仅本人、窗口内、未撤回（超窗/越权返回可读校验错误）。
 
     读-判-写整体包进事务并以行锁取出消息：并发/重复撤回时后到者在锁内
@@ -246,7 +244,7 @@ def recall_message(user, message_id) -> ChatMessage:
     事务都能通过校验，会产生双快照并双双落库）。
     """
     with transaction.atomic():
-        message = ChatMessage.objects.select_for_update().filter(pk=message_id).first()
+        message: ChatMessage | None = ChatMessage.objects.select_for_update().filter(pk=message_id).first()
         if message is None:
             raise DjangoValidationError(_("Message not found"))
         if message.sender_id != _user_pk(user):
@@ -269,7 +267,7 @@ def recall_message(user, message_id) -> ChatMessage:
 # ---------------------------------------------------------------- 历史 / 附件取件
 
 
-def can_recall_for(message: ChatMessage, user) -> bool:
+def can_recall_for(message: ChatMessage, user: Any) -> bool:
     """撤回资格：仅本人、未撤回、撤回窗口内（与 recall_message 同口径的读侧判定）。
 
     REST 历史（history_messages）与 WS 新消息的发送者定向帧共用本判定，
@@ -278,10 +276,11 @@ def can_recall_for(message: ChatMessage, user) -> bool:
     if message.is_recalled or not message.sender_id or message.sender_id != user.pk:
         return False
     created = message.created_time or timezone.now()
-    return timezone.now() - created <= timezone.timedelta(minutes=RECALL_WINDOW_MINUTES)
+    within_window: bool = timezone.now() - created <= timezone.timedelta(minutes=RECALL_WINDOW_MINUTES)
+    return within_window
 
 
-def history_messages(room: ChatRoom, user, before_id=None, limit: int = 20) -> dict:
+def history_messages(room: ChatRoom, user: Any, before_id: Any = None, limit: int = 20) -> dict[str, Any]:
     """历史消息游标分页：`before_id` 倒序拉取（响应内按时间正序），附带撤回资格。
 
     `room` 须为调用方可访问的房间（视图层先经 accessible_room 校验）；`limit`
@@ -308,14 +307,14 @@ def history_messages(room: ChatRoom, user, before_id=None, limit: int = 20) -> d
     }
 
 
-def get_attachment_message(message_pk, user) -> ChatMessage:
+def get_attachment_message(message_pk: Any, user: Any) -> ChatMessage:
     """附件取件定位：消息存在 → 房间可访问（fail-closed）→ 未撤回。
 
     消息不存在抛「Message not found」、已撤回抛「File not found」（错误文案
     与原视图口径一致，不合并——存在性探测面保持原样）；非可访问者经
     accessible_room 抛「房间不存在」可读校验错误。
     """
-    message = ChatMessage.objects.select_related("attachment").filter(pk=message_pk).first()
+    message: ChatMessage | None = ChatMessage.objects.select_related("attachment").filter(pk=message_pk).first()
     if message is None:
         raise DjangoValidationError(_("Message not found"))
     accessible_room(message.room_id, user)
@@ -327,7 +326,7 @@ def get_attachment_message(message_pk, user) -> ChatMessage:
 # ---------------------------------------------------------------- 表情回应
 
 
-def toggle_reaction(user, message_pk, emoji, op) -> tuple | None:
+def toggle_reaction(user: Any, message_pk: Any, emoji: Any, op: Any) -> tuple[Any, ...] | None:
     """表情回应落库（extra["reactions"] = {emoji: [user_pk, ...]}，不建新表）。
 
     返回 ``(房间, 消息 pk, 全量 reactions, 广播时刻 epoch 秒)``，调用方据此向房间
@@ -412,7 +411,7 @@ def toggle_reaction(user, message_pk, emoji, op) -> tuple | None:
 # ---------------------------------------------------------------- 列表
 
 
-def list_user_rooms(user, ai_enabled: bool = False) -> list:
+def list_user_rooms(user: Any, ai_enabled: bool = False) -> list[Any]:
     """我的会话列表：公共聊天室 → AI 助手（开关开启时）→ 有消息的私聊/AI + 全部群聊。
 
     会话排序：未读优先，再按最后消息时间倒序（零额外排序成本，会话表冗余了
@@ -468,7 +467,7 @@ def list_user_rooms(user, ai_enabled: bool = False) -> list:
     return result
 
 
-def recent_contacts(user, limit: int = CONTACT_LIMIT) -> list:
+def recent_contacts(user: Any, limit: int = CONTACT_LIMIT) -> list[Any]:
     """最近在线联系人：按最近活跃倒序（在线优先），含在线态。
 
     数据源 = UserSession.last_active（登录即登记，WS/HTTP 会话统一），

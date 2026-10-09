@@ -29,7 +29,7 @@ from system.utils.platform.permission_preview import (
 )
 
 
-def _extract_pks(items):
+def _extract_pks(items: Any) -> Any:
     """归一化 empower 入参主键：兼容 ``[{"pk": x}, ...]`` 与 ``["x", ...]`` 两种形态。
 
     历史实现直接对每个元素取 ``.get("pk")``，一旦调用方按 OpenAPI 声明的字符串数组
@@ -49,7 +49,7 @@ def _extract_pks(items):
 class ChangeRolePermissionAction:
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
     @extend_schema(
         request=OpenApiRequest(
@@ -63,8 +63,8 @@ class ChangeRolePermissionAction:
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True)
-    def empower(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def empower(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """给{cls}分配角色-数据权限"""
         instance = self.get_object()
         roles = request.data.get("roles")
@@ -93,7 +93,7 @@ class ChangeRolePermissionAction:
 class PermissionPreviewAction:
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
     """用户权限预览（可见菜单/API 码/数据权限规则解码/字段权限矩阵 + 实时试算）。
 
@@ -102,8 +102,8 @@ class PermissionPreviewAction:
     """
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="preview")
-    def preview(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}的权限预览"""
         return ApiResponse(data=get_user_preview(self.get_object()))
 
@@ -120,8 +120,8 @@ class PermissionPreviewAction:
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, url_path="preview/trial")
-    def preview_trial(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="preview/trial")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview_trial(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """试算{cls}的数据权限/字段权限（只读 dry-run，不落库）
 
         scope=data（默认）：数据权限试算 → 命中行数 + 样本行 + 授权诊断 + 最终 SQL；
@@ -145,13 +145,13 @@ class PermissionPreviewAction:
 class DeptPreviewAction:
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
     """部门维度授权预览（挂载角色 / 数据权限 / 字段权限 / 成员采样）。"""
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="preview")
-    def preview(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}的授权预览"""
         return ApiResponse(data=get_dept_preview(self.get_object(), request.user))
 
@@ -159,13 +159,13 @@ class DeptPreviewAction:
 class RolePreviewAction:
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
     """角色授权预览（授权菜单树 / 字段权限 / 持有用户采样）。"""
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="preview")
-    def preview(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}的授权预览"""
         return ApiResponse(data=get_role_preview(self.get_object(), request.user))
 
@@ -173,13 +173,13 @@ class RolePreviewAction:
 class PostPreviewAction:
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
     """岗位维度预览（岗位信息 / 持有用户采样；岗位不参与权限判定，无授权段）。"""
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="preview")
-    def preview(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}的授权预览"""
         return ApiResponse(data=get_post_preview(self.get_object(), request.user))
 
@@ -187,9 +187,9 @@ class PostPreviewAction:
 class InvalidConfigCacheAction:
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
-    def _invalidate_config_cache(self, instance) -> None:
+    def _invalidate_config_cache(self, instance: Any) -> None:
         """按实例类型清理对应配置缓存（invalid 动作与 destroy 删除前复用同一份逻辑）。"""
         if isinstance(instance, SystemConfig):
             SysConfig.invalid_config_cache(key=instance.key)
@@ -202,8 +202,8 @@ class InvalidConfigCacheAction:
         UserConfig(owner).invalid_config_cache(key=instance.key)
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=["post"], detail=True)
-    def invalid(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def invalid(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """使{cls}缓存失效"""
         self._invalidate_config_cache(self.get_object())
         return ApiResponse()

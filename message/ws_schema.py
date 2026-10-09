@@ -171,7 +171,7 @@ PAYLOAD_DECLARATIONS: dict[str, dict[str, Any]] = {
 }
 
 
-def _json_type(annotation: Any) -> dict:
+def _json_type(annotation: Any) -> dict[str, Any]:
     """Python 类型注解 → JSON Schema 类型片段（不支持的类型退化为无约束）。"""
     if annotation is Any:
         return {}
@@ -204,7 +204,7 @@ def _json_type(annotation: Any) -> dict:
     return {}
 
 
-def build_payload_definition(name: str) -> dict:
+def build_payload_definition(name: str) -> dict[str, Any]:
     """按声明 + TypedDict 导出单个 payload definition。"""
     declaration = PAYLOAD_DECLARATIONS[name]
     typed_dict = getattr(protocol, declaration["typed_dict"])
@@ -225,7 +225,7 @@ def build_payload_definition(name: str) -> dict:
     }
 
 
-def build_schema() -> dict:
+def build_schema() -> dict[str, Any]:
     """构建完整 schema（确定性输出：键序稳定，可逐字节比对落盘文件）。"""
     definitions: dict[str, Any] = {
         "action": {

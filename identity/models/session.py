@@ -13,6 +13,7 @@ refresh 轮换/access 派生均自动继承），单会话下线经 SessionToken
 """
 
 import uuid
+from typing import Any
 
 from django.db import models
 from django.utils import timezone
@@ -48,16 +49,16 @@ class UserSession(DbAuditModel):
         verbose_name = _("User session")
         indexes = [models.Index(fields=["status", "last_active"], name="idx_session_status_active")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.creator}({self.status})"
 
-    def mark_offline(self):
+    def mark_offline(self) -> None:
         if self.status != self.Status.OFFLINE:
             self.status = self.Status.OFFLINE
             self.save(update_fields=["status", "updated_time"])
 
     @classmethod
-    def touch(cls, session_pk, gate_seconds=60):
+    def touch(cls, session_pk: Any, gate_seconds: Any = 60) -> Any:
         """节流刷新活跃时间：Redis 门控 60s 一次，避免每请求写库。
 
         返回 True 表示本次确实刷新了（供测试断言）；会话不存在/已下线时静默跳过。

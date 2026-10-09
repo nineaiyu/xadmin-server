@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/6/2024
 import ipaddress
+from typing import Any
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -28,7 +29,7 @@ class ValidateError(APIException):
     status_code = 400
 
 
-def get_token_lifetime(user_obj):
+def get_token_lifetime(user_obj: Any) -> Any:
     access_token_lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
     refresh_token_lifetime = settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME")
     return {
@@ -38,19 +39,19 @@ def get_token_lifetime(user_obj):
     }
 
 
-def check_captcha(need, captcha_key, captcha_code):
+def check_captcha(need: Any, captcha_key: Any, captcha_code: Any) -> Any:
     if not need or (captcha_key and CaptchaAuth(captcha_key=captcha_key).valid(captcha_code)):
         return True
     raise ValidateError(_("Captcha validation failed. Please try again"))
 
 
-def check_tmp_token(need, token, client_id, success_once=True):
+def check_tmp_token(need: Any, token: Any, client_id: Any, success_once: Any = True) -> Any:
     if not need or (client_id and token and verify_token_cache(token, client_id, success_once)):
         return True
     raise ValidateError(_("Temporary Token validation failed. Please try again"))
 
 
-def check_token_and_captcha(request, token_enable, captcha_enable, success_once=True):
+def check_token_and_captcha(request: Any, token_enable: Any, captcha_enable: Any, success_once: Any = True) -> Any:
     client_id = get_request_ident(request)
     token = request.data.get("token")
     captcha_key = request.data.get("captcha_key")
@@ -61,7 +62,7 @@ def check_token_and_captcha(request, token_enable, captcha_enable, success_once=
     return client_id, token
 
 
-def get_username_password(need, request, token):
+def get_username_password(need: Any, request: Any, token: Any) -> Any:
     username = request.data.get("username")
     password = request.data.get("password")
     if need:
@@ -70,7 +71,9 @@ def get_username_password(need, request, token):
     return username, password
 
 
-def check_is_block(username, ipaddr, ip_block=LoginIpBlockUtil, login_block=LoginBlockUtil):
+def check_is_block(
+    username: Any, ipaddr: Any, ip_block: Any = LoginIpBlockUtil, login_block: Any = LoginBlockUtil
+) -> None:
     if ip_block and ip_block(ipaddr).is_block():
         ip_block(ipaddr).set_block_if_need()
         raise ValidateError(
@@ -87,7 +90,9 @@ def check_is_block(username, ipaddr, ip_block=LoginIpBlockUtil, login_block=Logi
         )
 
 
-def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, status=True, channel_name=""):
+def save_login_log(
+    request: Any, login_type: Any = UserLoginLog.LoginTypeChoices.USERNAME, status: Any = True, channel_name: Any = ""
+) -> None:
     login_ip = get_request_ip(request) if request else ""
     login_ip = login_ip or "0.0.0.0"
     login_city = get_ip_city(login_ip) or _("Unknown")
@@ -110,7 +115,7 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, s
     serializer.save()
 
 
-def verify_sms_email_code(request, block_utils):
+def verify_sms_email_code(request: Any, block_utils: Any) -> Any:
     verify_token = request.data.get("verify_token")
     verify_code = request.data.get("verify_code")
     ipaddr = get_request_ip(request)
@@ -153,7 +158,7 @@ def verify_sms_email_code(request, block_utils):
     return query_key, target, verify_token
 
 
-def check_different_city_login_if_need(user, ipaddr):
+def check_different_city_login_if_need(user: Any, ipaddr: Any) -> None:
     if not settings.SECURITY_CHECK_DIFFERENT_CITY_LOGIN or ipaddr == "unknown":
         return
 

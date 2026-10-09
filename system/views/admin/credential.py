@@ -10,6 +10,8 @@
   确认 + 审计留痕（module=system:credential）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -38,8 +40,8 @@ class CredentialViewSet(GenericViewSet):
     queryset = SystemConfig.objects.none()
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="overview")
-    def overview(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="overview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def overview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取凭据清单"""
         return ApiResponse(data=credential_overview())
 
@@ -55,8 +57,8 @@ class CredentialViewSet(GenericViewSet):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="rotate")
-    def rotate(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="rotate")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def rotate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """轮换凭据（重新生成随机值并加密落库）"""
         key = str(request.data.get("key") or "").strip()
         scope = str(request.data.get("scope") or "system_config")

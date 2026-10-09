@@ -14,6 +14,7 @@
 
 import hashlib
 import json
+from typing import Any
 
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
@@ -29,16 +30,16 @@ OIDC_META_TTL = 600
 ALLOWED_ID_TOKEN_ALGORITHMS = ("RS256", "RS384", "RS512", "PS256", "ES256", "ES384", "ES512")
 
 
-def is_oidc_provider(provider: dict) -> bool:
+def is_oidc_provider(provider: dict[str, Any]) -> bool:
     return (provider or {}).get("flavor") == "oidc"
 
 
-def _cache_suffix(provider, *parts) -> str:
+def _cache_suffix(provider: Any, *parts: Any) -> str:
     raw = "|".join(str(part or "") for part in (provider.get("key"), *parts))
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
 
 
-def discovery_metadata(provider, http_client=None) -> dict:
+def discovery_metadata(provider: Any, http_client: Any = None) -> dict[str, Any]:
     """拉取并缓存 OIDC discovery 元数据（来源：显式 discovery_url 或 issuer 推导）。
 
     IdP 不可达 / 元数据不完整统一抛 `OAuthError`（可读文案，不回显原始报文）。
@@ -64,7 +65,7 @@ def discovery_metadata(provider, http_client=None) -> dict:
     return payload
 
 
-def resolve_endpoints(provider, http_client=None) -> dict:
+def resolve_endpoints(provider: Any, http_client: Any = None) -> dict[str, Any]:
     """解析 OIDC 端点（显式配置优先，缺省取 discovery）。"""
     meta = discovery_metadata(provider, http_client)
     return {
@@ -75,7 +76,7 @@ def resolve_endpoints(provider, http_client=None) -> dict:
     }
 
 
-def prepare_oidc_provider(provider: dict, http_client=None) -> dict:
+def prepare_oidc_provider(provider: dict[str, Any], http_client: Any = None) -> dict[str, Any]:
     """把 discovery 结果写回 provider（授权 / 换码复用通用链路，调用方零分叉）。"""
     for key, value in resolve_endpoints(provider, http_client).items():
         if value and not provider.get(key):
@@ -83,7 +84,7 @@ def prepare_oidc_provider(provider: dict, http_client=None) -> dict:
     return provider
 
 
-def fetch_jwks(provider, jwks_uri: str, http_client=None, force_refresh: bool = False) -> dict:
+def fetch_jwks(provider: Any, jwks_uri: str, http_client: Any = None, force_refresh: bool = False) -> dict[str, Any]:
     cache_key = f"oidc_jwks_{_cache_suffix(provider, jwks_uri)}"
     if not force_refresh:
         cached = cache.get(cache_key)
@@ -102,7 +103,7 @@ def fetch_jwks(provider, jwks_uri: str, http_client=None, force_refresh: bool = 
     return payload
 
 
-def _select_jwk(jwks: dict, kid) -> dict | None:
+def _select_jwk(jwks: dict[str, Any], kid: Any) -> dict[str, Any] | None:
     keys = [item for item in (jwks.get("keys") or []) if isinstance(item, dict)]
     if kid:
         for item in keys:
@@ -113,7 +114,7 @@ def _select_jwk(jwks: dict, kid) -> dict | None:
     return keys[0] if len(keys) == 1 else None
 
 
-def _public_key(jwk: dict, algorithm: str):
+def _public_key(jwk: dict[str, Any], algorithm: str) -> Any:
     import jwt
 
     payload = json.dumps(jwk)
@@ -124,7 +125,9 @@ def _public_key(jwk: dict, algorithm: str):
     raise OAuthError(_("The identity provider returned an invalid id_token"))
 
 
-def verify_id_token(provider: dict, id_token: str, nonce: str | None = None, http_client=None) -> dict:
+def verify_id_token(
+    provider: dict[str, Any], id_token: str, nonce: str | None = None, http_client: Any = None
+) -> dict[str, Any]:
     """验签并校验 id_token，返回 claims（任一环节失败统一抛 `OAuthError`）。"""
     import jwt
 
@@ -176,7 +179,7 @@ def verify_id_token(provider: dict, id_token: str, nonce: str | None = None, htt
     return claims
 
 
-def _claim_groups(provider: dict, claims: dict) -> list[str]:
+def _claim_groups(provider: dict[str, Any], claims: dict[str, Any]) -> list[str]:
     value = claims.get(provider.get("groups_field") or "groups")
     if isinstance(value, str):
         return [item.strip() for item in value.split(",") if item.strip()]
@@ -185,7 +188,7 @@ def _claim_groups(provider: dict, claims: dict) -> list[str]:
     return []
 
 
-def claims_to_userinfo(provider: dict, claims: dict) -> dict:
+def claims_to_userinfo(provider: dict[str, Any], claims: dict[str, Any]) -> dict[str, Any]:
     """claims → 通用 userinfo 形状（与既有 flavor 适配层同键：nickname/email/picture）。
 
     只映射显式声明的资料字段；``groups`` 供组 → 角色同步，不落库。
@@ -205,7 +208,9 @@ def claims_to_userinfo(provider: dict, claims: dict) -> dict:
     }
 
 
-def fetch_oidc_identity(provider: dict, token_payload: dict, nonce: str | None = None, http_client=None):
+def fetch_oidc_identity(
+    provider: dict[str, Any], token_payload: dict[str, Any], nonce: str | None = None, http_client: Any = None
+) -> Any:
     """OIDC 身份获取：``(subject, userinfo)``（换码结果里的 id_token 验签后取 claims）。"""
     id_token = token_payload.get("id_token")
     if not id_token:
@@ -218,7 +223,7 @@ def fetch_oidc_identity(provider: dict, token_payload: dict, nonce: str | None =
     return userinfo["sub"], userinfo
 
 
-def _normalized_group_map(mapping: dict) -> dict:
+def _normalized_group_map(mapping: dict[str, Any]) -> dict[str, Any]:
     """组映射归一（组名 / code 小写去空白，口径同 LDAP 的 get_group_role_map）。"""
     result = {}
     for group, codes in (mapping or {}).items():
@@ -239,7 +244,7 @@ def _group_matches(key: str, value: str) -> bool:
     return normalized.startswith(f"cn={key},")
 
 
-def sync_group_roles(user, provider: dict, userinfo: dict) -> list[str]:
+def sync_group_roles(user: Any, provider: dict[str, Any], userinfo: dict[str, Any]) -> list[str]:
     """按 groups claim 同步本地角色；返回命中的角色 code 清单。
 
     - 只增删**映射内出现的角色**（映射外的授予不被触碰，口径同 LDAP 组映射）；

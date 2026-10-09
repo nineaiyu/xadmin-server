@@ -4,6 +4,7 @@
 
 import re
 from collections.abc import Collection
+from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
@@ -48,7 +49,7 @@ class ScreenSerializer(BaseModelSerializer):
         # RePlusPage 列表列
         table_fields = ["name", "dashboards", "interval", "refresh", "visibility", "updated_time"]
 
-    def _visible_dashboard_pks(self, referenced) -> set:
+    def _visible_dashboard_pks(self, referenced: Any) -> set[Any]:
         """按引用主键在「当前提交用户可见」的仪表盘内取交集（只查主键，不整表加载）。
 
         可见域与 DashboardViewSet 读侧同口径：超管全量，其余为 shared 或本人创建；
@@ -68,7 +69,7 @@ class ScreenSerializer(BaseModelSerializer):
             queryset = queryset.filter(Q(visibility=Dashboard.Visibility.SHARED) | Q(creator=user))
         return {str(pk) for pk in queryset.filter(pk__in=valid).values_list("pk", flat=True)}
 
-    def validate_dashboards(self, value):
+    def validate_dashboards(self, value: Any) -> Any:
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Invalid screen dashboards"))
         # 存在性 + 可见性一并校验：轮播清单里引用不可见仪表盘同样整页渲染不出
@@ -78,7 +79,7 @@ class ScreenSerializer(BaseModelSerializer):
                 raise serializers.ValidationError(_("Unknown dashboard in layout"))
         return value
 
-    def validate_layout(self, value):
+    def validate_layout(self, value: Any) -> Any:
         """窗格载荷：规范化 + 越界/重叠/未知仪表盘/数据集校验（单一事实源见 dataset.utils.screen_layout）。
 
         指标卡窗格的 sum/avg 取值列必须落在该数据集的数值列白名单内
@@ -138,12 +139,12 @@ class ScreenSerializer(BaseModelSerializer):
                 raise serializers.ValidationError(_("Value field is not numeric in pane: {}").format(pane["pk"]))
         return layout
 
-    def validate_interval(self, value):
+    def validate_interval(self, value: Any) -> Any:
         if not (5 <= int(value) <= 3600):
             raise serializers.ValidationError(_("Interval must be between 5 and 3600 seconds"))
         return value
 
-    def validate_refresh(self, value):
+    def validate_refresh(self, value: Any) -> Any:
         if not (10 <= int(value) <= 3600):
             raise serializers.ValidationError(_("Refresh must be between 10 and 3600 seconds"))
         return value
@@ -164,7 +165,7 @@ class ScreenCommandSerializer(serializers.Serializer):
     dashboard_pk = serializers.CharField(required=False, allow_blank=True, default="", label=_("Dashboard"))
     index = serializers.IntegerField(required=False, min_value=0, label=_("Page index"))
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         if attrs["command"] == "switch" and not attrs.get("dashboard_pk"):
             raise serializers.ValidationError(_("dashboard_pk is required for switch"))
         if attrs["command"] == "page" and attrs.get("index") is None:
@@ -218,12 +219,12 @@ class ReportSerializer(BaseModelSerializer):
             "updated_time",
         ]
 
-    def validate_dataset(self, value):
+    def validate_dataset(self, value: Any) -> Any:
         if Dataset.objects.filter(pk=value.pk).exists():
             return value
         raise serializers.ValidationError(_("Unknown dataset in layout"))
 
-    def validate_recipients(self, value):
+    def validate_recipients(self, value: Any) -> Any:
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Recipients cannot be empty"))
         for item in value:
@@ -233,7 +234,7 @@ class ReportSerializer(BaseModelSerializer):
                 raise serializers.ValidationError(_("Invalid email address: {}").format(item)) from exc
         return [str(item) for item in value]
 
-    def validate_notify_channels(self, value):
+    def validate_notify_channels(self, value: Any) -> Any:
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Invalid notify channels"))
         unknown = [item for item in value if item not in REPORT_NOTIFY_CHANNELS]
@@ -244,7 +245,7 @@ class ReportSerializer(BaseModelSerializer):
         # 去重保序
         return list(dict.fromkeys(value))
 
-    def validate_im_recipients(self, value):
+    def validate_im_recipients(self, value: Any) -> Any:
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Invalid IM recipients"))
         if len(value) > 50:
@@ -256,7 +257,7 @@ class ReportSerializer(BaseModelSerializer):
             cleaned.append(item)
         return list(dict.fromkeys(cleaned))
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         merged_mode = attrs.get("mode", getattr(self.instance, "mode", "rows"))
         # 报表设计（批次二）：列 / 聚合字段都按数据集与数值列校验，单一事实源在
         # dataset.utils.report_design；空载荷 = 存量口径（全列明细单表），不做强制。

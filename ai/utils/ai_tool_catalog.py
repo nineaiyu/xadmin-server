@@ -12,15 +12,17 @@
 ``ai_api_actions.api_action`` 声明式复用既有业务接口）。
 """
 
+from typing import Any
+
 from common.utils import get_logger
 
 logger = get_logger(__name__)
 
 
-def _param_schema(rule: dict) -> dict:
+def _param_schema(rule: dict[str, Any]) -> dict[str, Any]:
     """动作参数声明 → JSON Schema 片段（MCP inputSchema 的 property 体）。"""
     kind = str(rule.get("type") or "string")
-    schema: dict = {}
+    schema: dict[str, Any] = {}
     if kind in ("user", "role", "pk"):
         schema = {"type": "string"}
     elif kind == "int":
@@ -40,7 +42,7 @@ def _param_schema(rule: dict) -> dict:
     return schema
 
 
-def tool_catalog(user, exclude_mcp: bool = False) -> list:
+def tool_catalog(user: Any, exclude_mcp: bool = False) -> list[Any]:
     """当前用户可用动作的标准化目录（按权限 + 可用性双门过滤后的子集）。
 
     ``exclude_mcp=True`` 仅输出内置动作：外部 MCP 端点（``ai/views/mcp.py``）的
@@ -90,7 +92,7 @@ SUMMARY_PARAM = "_summary"
 MAX_TOOL_DESCRIPTION = 1024
 
 
-def openai_tools(user) -> list:
+def openai_tools(user: Any) -> list[Any]:
     """工具目录 → OpenAI ``tools`` 定义（同一份 schema 的第三种消费）。
 
     与 MCP ``tools/list``、助手页 ``tools`` 完全同源（都由 ``tool_catalog`` 推导），

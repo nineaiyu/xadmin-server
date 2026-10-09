@@ -9,6 +9,7 @@
 """
 
 import os
+from typing import Any
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -18,7 +19,16 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def log_file_access(*, upload=None, user=None, action, request=None, result=True, detail="", filename=""):
+def log_file_access(
+    *,
+    upload: Any = None,
+    user: Any = None,
+    action: Any,
+    request: Any = None,
+    result: Any = True,
+    detail: str = "",
+    filename: str = "",
+) -> None:
     """写一条文件访问日志（失败只记 warning）。"""
     from file.models import FileAccessLog
 
@@ -41,11 +51,11 @@ def log_file_access(*, upload=None, user=None, action, request=None, result=True
         logger.warning("write file access log failed. action:%s", action, exc_info=True)
 
 
-def _extension_list(value):
+def _extension_list(value: Any) -> set[str]:
     return {str(item).strip().lower().lstrip(".") for item in (value or []) if str(item).strip()}
 
 
-def get_upload_policy():
+def get_upload_policy() -> dict[str, list[str]]:
     """当前上传扩展名策略（黑名单 / 白名单），供前端提示与校验同源。"""
     return {
         "block_extensions": sorted(_extension_list(getattr(settings, "SECURITY_UPLOAD_BLOCK_EXTENSIONS", []))),
@@ -53,7 +63,7 @@ def get_upload_policy():
     }
 
 
-def validate_upload_extension(filename) -> str:
+def validate_upload_extension(filename: Any) -> str:
     """校验上传文件扩展名，返回错误文案（通过返回空串）。
 
     fail-closed 规则：白名单非空 → 必须命中白名单；命中黑名单一律拒绝（黑名单优先，
@@ -73,7 +83,7 @@ def validate_upload_extension(filename) -> str:
 FILE_LOG_CLEAN_BATCH = 2000
 
 
-def clean_expired_file_access_logs():
+def clean_expired_file_access_logs() -> int:
     """按 FILE_ACCESS_LOG_KEEP_DAYS 分批清理文件访问日志（0 = 不清理），返回删除行数。"""
     from datetime import timedelta
 

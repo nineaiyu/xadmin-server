@@ -6,6 +6,8 @@
 用户级 = 用户有 dingtalk flavor 的 OAuth 绑定（unionId → userid 发送前换算）。
 """
 
+from typing import Any
+
 from django.conf import settings
 
 from common.utils import get_logger
@@ -21,7 +23,7 @@ class DingTalk(ImBindingBackend):
     is_enable_field_in_settings = "DINGTALK_ENABLED"
 
     @classmethod
-    def get_credentials(cls) -> dict:
+    def get_credentials(cls) -> dict[str, Any]:
         return {
             "app_key": getattr(settings, "DINGTALK_APP_KEY", ""),
             "app_secret": getattr(settings, "DINGTALK_APP_SECRET", ""),
@@ -29,13 +31,13 @@ class DingTalk(ImBindingBackend):
         }
 
     @classmethod
-    def is_enable(cls):
+    def is_enable(cls) -> Any:
         if not super().is_enable():
             return False
         credentials = cls.get_credentials()
         return all(credentials.get(key) for key in ("app_key", "app_secret", "agent_id"))
 
-    def send_msg(self, users, message, subject="", **kwargs):
+    def send_msg(self, users: Any, message: Any, subject: Any = "", **kwargs: Any) -> Any:
         if not self.is_enable():
             logger.warning("DingTalk notify is not configured, skip dingtalk channel")
             return

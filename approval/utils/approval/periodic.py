@@ -33,7 +33,7 @@ def expire_pending_approvals(pending_days: int | None = None) -> int:
     )
     if not pks:
         return 0
-    count = ApprovalRequest.objects.filter(pk__in=pks).update(
+    count: int = ApprovalRequest.objects.filter(pk__in=pks).update(
         status=ApprovalRequest.Status.EXPIRED, current_level=0, updated_time=now
     )
     # 多级链：在途级次统一作废（扁平单命中 0 行无副作用）+ 清当前级候选人投影

@@ -109,7 +109,7 @@ auth_url = [
     re_path("^rules/password$", PasswordRulesAPIView.as_view(), name="password-rules"),
 ]
 
-router_url = []
+router_url: list[str] = []
 
 # 个人用户信息
 no_detail_router.register("userinfo", UserInfoViewSet, basename="userinfo")

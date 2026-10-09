@@ -21,6 +21,7 @@ refresh 周期节流）；重复触发两处收敛——beat 侧以 ``cache.add`
 """
 
 import time
+from typing import Any
 
 from asgiref.sync import async_to_sync
 from channels.db import database_sync_to_async
@@ -50,25 +51,25 @@ DATA_PUSH_TS_TTL = 3600 * 2
 SCREEN_TRIGGER_MERGE_WINDOW = 1.0
 
 
-def screen_group_name(screen_pk) -> str:
+def screen_group_name(screen_pk: Any) -> str:
     return f"screen_display_{screen_pk}"
 
 
-def screen_state_key(screen_pk) -> str:
+def screen_state_key(screen_pk: Any) -> str:
     return f"screen_display_state_{screen_pk}"
 
 
-def screen_push_ts_key(screen_pk) -> str:
+def screen_push_ts_key(screen_pk: Any) -> str:
     """beat 数据推送节流键（last_push epoch 秒）；与控制态键同命名空间。"""
     return f"screen_display_data_push_{screen_pk}"
 
 
-def screen_push_claim_key(screen_pk) -> str:
+def screen_push_claim_key(screen_pk: Any) -> str:
     """beat 推送原子占用键：``cache.add`` 占位即赢得本轮推送权，不存在即已被占。"""
     return f"screen_display_data_push_claim_{screen_pk}"
 
 
-def load_screen_state(screen_pk) -> dict:
+def load_screen_state(screen_pk: Any) -> dict[str, Any]:
     """当前控制态（无指令时返回默认：自动轮播、第 0 页）。"""
     state = cache.get(screen_state_key(screen_pk)) or {}
     return {
@@ -80,7 +81,7 @@ def load_screen_state(screen_pk) -> dict:
     }
 
 
-def apply_screen_command(screen, command: str, dashboard_pk: str = "", index=None) -> dict:
+def apply_screen_command(screen: Any, command: str, dashboard_pk: str = "", index: Any = None) -> dict[str, Any]:
     """计算控制帧并落态（管理端侧调用；广播由调用方执行）。
 
     - switch：切到指定仪表盘（必须在该大屏的 dashboards 清单内）→ manual；
@@ -118,7 +119,7 @@ def apply_screen_command(screen, command: str, dashboard_pk: str = "", index=Non
     return frame
 
 
-def broadcast_screen_command(screen_pk, frame: dict) -> None:
+def broadcast_screen_command(screen_pk: Any, frame: dict[str, Any]) -> None:
     """把控制帧投递到该大屏的展示连接组（展示端不在线时静默丢弃）。"""
     from channels.layers import get_channel_layer
 
@@ -130,7 +131,7 @@ def broadcast_screen_command(screen_pk, frame: dict) -> None:
     )
 
 
-def broadcast_screen_data_trigger(screen_pk) -> None:
+def broadcast_screen_data_trigger(screen_pk: Any) -> None:
     """请求该大屏的所有在线展示连接各自聚合并自推一帧数据（离屏时静默丢弃）。
 
     只投递无载荷触发事件：数据聚合在各连接内以浏览者自身权限执行，见模块 docstring。
@@ -143,7 +144,7 @@ def broadcast_screen_data_trigger(screen_pk) -> None:
     async_to_sync(layer.group_send)(screen_group_name(screen_pk), {"type": "screen_data_trigger"})
 
 
-def data_push_interval(screen) -> int:
+def data_push_interval(screen: Any) -> int:
     """单屏推送节流周期：Screen.refresh 秒，下限钳 10s（refresh 可被配置成极小值）。"""
     try:
         return max(int(screen.refresh or 0), MIN_DATA_PUSH_INTERVAL)
@@ -151,7 +152,7 @@ def data_push_interval(screen) -> int:
         return MIN_DATA_PUSH_INTERVAL
 
 
-def screen_push_due(screen, now=None) -> bool:
+def screen_push_due(screen: Any, now: Any = None) -> bool:
     """beat 节流判定：距上次推送不足该屏 refresh 周期（钳 10s）则跳过。"""
     now = int(now if now is not None else time.time())
     last = cache.get(screen_push_ts_key(screen.pk))
@@ -164,12 +165,12 @@ def screen_push_due(screen, now=None) -> bool:
     return True
 
 
-def mark_screen_pushed(screen_pk, now=None) -> None:
+def mark_screen_pushed(screen_pk: Any, now: Any = None) -> None:
     """记录本轮推送时刻（离屏不落键：观众上线后能尽快收到首帧）。"""
     cache.set(screen_push_ts_key(screen_pk), int(now if now is not None else time.time()), DATA_PUSH_TS_TTL)
 
 
-def claim_screen_push(screen, now=None) -> bool:
+def claim_screen_push(screen: Any, now: Any = None) -> bool:
     """原子占位一轮 beat 推送：并发扫描只有一个赢者（``cache.add`` 单命令语义）。
 
     「查占用 + 占用」两步拆开（先 GET 判 due、后 SET 记时刻）在双 beat / 并发下
@@ -177,12 +178,13 @@ def claim_screen_push(screen, now=None) -> bool:
     该屏推送周期（钳 10s），到期自动放行下一轮，无需清理；last_push 时间戳键
     （SET 覆盖，供 ``screen_push_due`` 快速预筛与观测）与其并存。
     """
-    return cache.add(
+    claimed: bool = cache.add(
         screen_push_claim_key(screen.pk), int(now if now is not None else time.time()), data_push_interval(screen)
     )
+    return claimed
 
 
-def can_view_screen(user, screen_pk) -> bool:
+def can_view_screen(user: Any, screen_pk: Any) -> bool:
     """展示通道准入（与 HTTP _visible_queryset 同口径）：超管 / 创建者 / shared 可见。"""
     if not user or not getattr(user, "is_authenticated", False):
         return False
@@ -193,7 +195,8 @@ def can_view_screen(user, screen_pk) -> bool:
         return False
     if getattr(user, "is_superuser", False) or screen.creator_id == user.pk:
         return True
-    return screen.visibility == "shared"
+    is_shared: bool = screen.visibility == "shared"
+    return is_shared
 
 
 class ScreenDisplayNotify(AsyncJsonWebsocket):
@@ -207,7 +210,7 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
     _last_built_rev: int | None = None
     _last_built_page: int | None = None
 
-    async def connect(self):
+    async def connect(self) -> None:
         self.user = self.scope["user"]
         if not self.user:
             await self.close(4401)
@@ -227,12 +230,12 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
         state = await database_sync_to_async(load_screen_state)(self.pk)
         await self.send_base_json(MessageAction.SCREEN_COMMAND.value, data={"command": "state", **state})
 
-    async def disconnect(self, close_code):
+    async def disconnect(self, close_code: Any) -> None:
         self.disconnected = True
         if getattr(self, "group_name", ""):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
-    async def receive_json(self, action, data, content, **kwargs):
+    async def receive_json(self, action: Any, data: Any, content: Any, **kwargs: Any) -> None:
         """上行通道：仅接受展示端当前页上报（screen_page_state），非法载荷静默丢弃。
 
         页码合法性在聚合侧兜底（越界回退全页），这里只做类型收敛；canvas 模式
@@ -246,21 +249,21 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
         except (TypeError, ValueError, AttributeError):
             self.page_index = None
 
-    async def _send_base_json_error(self, action):
+    async def _send_base_json_error(self, action: Any) -> None:
         """未知上行动作回执（大屏展示端协议内只有页码上报一种上行）。"""
         await self.send_base_json(action, code=1001, detail=_("Unknown action for screen display channel"))
 
-    async def ping(self, event):
+    async def ping(self, event: Any) -> None:
         """心跳：沿用基类续期本连接所在组（组名不在个人推送组命名空间，不参与在线统计）。"""
         if getattr(self, "group_name", ""):
             await self.channel_layer.update_active_layers(self.group_name, self.channel_name)
         event["data"] = "pong"
         await self._send_base(event)
 
-    async def screen_command(self, event):
+    async def screen_command(self, event: Any) -> None:
         await self._send_base(event)
 
-    async def screen_data_trigger(self, event):
+    async def screen_data_trigger(self, event: Any) -> None:
         """数据触发事件（组广播、无载荷）：以本连接的浏览者视角聚合整屏并只发给自己。
 
         权限语义与旧「客户端逐卡 HTTP 重拉」逐字节等价（同走 dataset_query 的

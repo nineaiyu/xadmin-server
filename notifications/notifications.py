@@ -2,6 +2,7 @@ import json
 import textwrap
 import traceback
 from functools import cached_property
+from typing import TYPE_CHECKING, Any
 
 from celery import shared_task
 from django.utils.translation import gettext_lazy as _
@@ -18,15 +19,15 @@ logger = get_logger(__name__)
 # 消息类型显式注册表（替代元类隐式收集）。
 # 消息子类用 @register_message 装饰后进入对应注册表；
 # 结构与历史版本一致：{message_type, message_type_label, category, category_label}
-SYSTEM_MESSAGE_REGISTRY: list[dict] = []
-USER_MESSAGE_REGISTRY: list[dict] = []
+SYSTEM_MESSAGE_REGISTRY: list[dict[str, Any]] = []
+USER_MESSAGE_REGISTRY: list[dict[str, Any]] = []
 # 兼容别名：既有消费方（notifications/views/notifications.py）沿用旧名
 system_msgs = SYSTEM_MESSAGE_REGISTRY
 user_msgs = USER_MESSAGE_REGISTRY
 
 # 后端消息渲染方法注册表（新增后端不再修改 Message 基类）。
 # key: BACKEND 成员；value: Message 实例上的渲染方法名；未注册的后端回退 get_common_msg
-BACKEND_MSG_RENDERERS: dict = {}
+BACKEND_MSG_RENDERERS: dict[Any, str] = {}
 
 # 正文按 HTML 渲染的渠道（站内信前端 v-html 展示、邮件 html_message 投递）：
 # 渲染收口处对正文做白名单净化。存量缺口：公告路径在 serializer 入库前已净化，
@@ -37,14 +38,14 @@ BACKEND_MSG_RENDERERS: dict = {}
 HTML_MESSAGE_BACKENDS = frozenset({BACKEND.SITE_MSG, BACKEND.EMAIL})
 
 
-def register_backend_msg(backend, method_name):
+def register_backend_msg(backend: Any, method_name: str) -> str:
     """注册后端消息渲染方法（方法可挂在 Message 或任意消息子类上）。"""
     BACKEND_MSG_RENDERERS[BACKEND(backend)] = method_name
     return method_name
 
 
-@shared_task(verbose_name=_("Publish the station message"))
-def publish_task(receive_user_ids, backends_msg_mapper):
+@shared_task(verbose_name=_("Publish the station message"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def publish_task(receive_user_ids: Any, backends_msg_mapper: dict[Any, Any]) -> None:
     Message.send_msg(receive_user_ids, backends_msg_mapper)
 
 
@@ -62,20 +63,20 @@ class Message:
     text_msg_ignore_links = True
 
     @classmethod
-    def get_message_type(cls):
+    def get_message_type(cls) -> str:
         return cls.__name__
 
-    def publish_async(self):
+    def publish_async(self) -> None:
         self.publish(is_async=True)
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         raise NotImplementedError
 
-    def publish(self, is_async=False):
+    def publish(self, is_async: bool = False) -> None:
         raise NotImplementedError
 
-    def get_backend_msg_mapper(self, backends):
+    def get_backend_msg_mapper(self, backends: Any) -> dict[Any, Any]:
         backends = set(backends)
         backends.add(BACKEND.SITE_MSG)  # 站内信必须发
         backends_msg_mapper = {}
@@ -101,11 +102,11 @@ class Message:
         return backends_msg_mapper
 
     @classmethod
-    def template_variables(cls) -> tuple:
+    def template_variables(cls) -> tuple[str, ...]:
         """该消息类型可用的自定义模板变量名（子类按需覆写，供管理页提示与校验）。"""
         return ()
 
-    def get_template_vars(self) -> dict:
+    def get_template_vars(self) -> dict[str, Any]:
         """模板渲染可用的业务变量值（默认空，子类按需覆写）。"""
         return {}
 
@@ -119,7 +120,8 @@ class Message:
         user = getattr(self, "user", None)
         if user is None:
             return "-"
-        return user.nickname or user.username
+        display: str = user.nickname or user.username
+        return display
 
     @property
     def user_username(self) -> str:
@@ -127,14 +129,14 @@ class Message:
         user = getattr(self, "user", None)
         return user.username if user is not None else "-"
 
-    def apply_template_override(self, msg: dict) -> dict:
+    def apply_template_override(self, msg: dict[str, Any]) -> dict[str, Any]:
         """套用 DB 模板覆盖（未配置或渲染异常时原样返回）。"""
         from notifications.template_registry import apply_override
 
         return apply_override(self.get_message_type(), msg, extra=self.get_template_vars())
 
     @staticmethod
-    def _json_safe_backends_msg_mapper(backends_msg_mapper) -> dict:
+    def _json_safe_backends_msg_mapper(backends_msg_mapper: Any) -> dict[Any, Any]:
         """消息 payload 的 JSON 序列化兜底（celery 异步通道）。
 
         与「QuerySet 必须物化」同源的序列化边界问题：subject 常来自
@@ -142,10 +144,11 @@ class Message:
         直接进 celery delay 会抛 EncodeError，通知静默丢失（调用方 catch）。
         统一在此物化为纯 JSON 类型。
         """
-        return json.loads(json.dumps(backends_msg_mapper, default=str))
+        payload: dict[Any, Any] = json.loads(json.dumps(backends_msg_mapper, default=str))
+        return payload
 
     @staticmethod
-    def send_msg(receive_user_ids, backends_msg_mapper):
+    def send_msg(receive_user_ids: Any, backends_msg_mapper: dict[Any, Any]) -> None:
         for backend, msg in backends_msg_mapper.items():
             try:
                 backend = BACKEND(backend)
@@ -158,7 +161,7 @@ class Message:
                 traceback.print_exc()
 
     @classmethod
-    def send_test_msg(cls, user=None):
+    def send_test_msg(cls, user: Any = None) -> None:
         """发送测试消息（渠道连通性自检）：收件人默认全部超管，渠道取当前已启用后端。
 
         历史缺陷：此前传 `backends = []`（list）给 `send_msg`（期望 dict），
@@ -189,13 +192,13 @@ class Message:
         msg.send_msg(user_ids, backends_msg_mapper)
 
     @staticmethod
-    def get_common_msg() -> dict:
+    def get_common_msg() -> dict[str, Any]:
         return {"subject": "", "message": ""}
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         return self.get_common_msg()
 
-    def get_text_msg(self) -> dict:
+    def get_text_msg(self) -> dict[str, Any]:
         h = HTML2Text()
         h.body_width = 90
         msg = self.get_html_msg()
@@ -205,21 +208,21 @@ class Message:
         return msg
 
     @cached_property
-    def common_msg(self) -> dict:
+    def common_msg(self) -> dict[str, Any]:
         return self.get_common_msg()
 
     @cached_property
-    def text_msg(self) -> dict:
+    def text_msg(self) -> dict[str, Any]:
         msg = self.get_text_msg()
         return msg
 
     @cached_property
-    def html_msg(self) -> dict:
+    def html_msg(self) -> dict[str, Any]:
         msg = self.get_html_msg()
         return msg
 
     @cached_property
-    def html_msg_with_sign(self):
+    def html_msg_with_sign(self) -> dict[str, Any]:
         msg = self.get_html_msg()
         msg["message"] = textwrap.dedent("""
         {}
@@ -233,7 +236,7 @@ class Message:
         return msg
 
     @cached_property
-    def text_msg_with_sign(self):
+    def text_msg_with_sign(self) -> dict[str, Any]:
         msg = self.get_text_msg()
         msg["message"] = textwrap.dedent("""
         {}
@@ -243,23 +246,23 @@ class Message:
         return msg
 
     @cached_property
-    def signature(self):
+    def signature(self) -> str:
         return "Xadmin Server"
 
     # --------------------------------------------------------------
     # 支持不同发送消息的方式定义自己的消息内容，比如有些支持 html 标签
-    def get_email_msg(self) -> dict:
+    def get_email_msg(self) -> dict[str, Any]:
         return self.html_msg_with_sign
 
-    def get_site_msg_msg(self) -> dict:
+    def get_site_msg_msg(self) -> dict[str, Any]:
         return self.html_msg
 
-    def get_sms_msg(self) -> dict:
+    def get_sms_msg(self) -> dict[str, Any]:
         return self.text_msg_with_sign
 
     @classmethod
-    def get_all_sub_messages(cls):
-        def get_subclasses(cls):
+    def get_all_sub_messages(cls) -> list[Any]:
+        def get_subclasses(cls: Any) -> Any:
             """returns all subclasses of argument, cls"""
             if issubclass(cls, type):
                 subclasses = cls.__subclasses__(cls)
@@ -269,11 +272,11 @@ class Message:
                 subclasses.extend(get_subclasses(subclass))
             return subclasses
 
-        messages_cls = get_subclasses(cls)
+        messages_cls: list[Any] = get_subclasses(cls)
         return messages_cls
 
     @classmethod
-    def test_all_messages(cls, ding=True, wecom=False):
+    def test_all_messages(cls, ding: bool = True, wecom: bool = False) -> None:
         """逐个消息类型发测试消息（对接方自检用）。
 
         `ding`/`wecom` 为历史钉钉/企微渠道参数：渠道已下线（现仅站内信/邮件/短信），
@@ -287,7 +290,7 @@ class Message:
 
 
 class SystemMessage(Message):
-    def publish(self, is_async=False):
+    def publish(self, is_async: bool = False) -> None:
         subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
 
         # 只发送当前有效后端
@@ -307,21 +310,21 @@ class SystemMessage(Message):
             self.send_msg(receive_user_ids, backends_msg_mapper)
 
     @classmethod
-    def post_insert_to_db(cls, subscription: SystemMsgSubscription):
+    def post_insert_to_db(cls, subscription: SystemMsgSubscription) -> None:
         pass
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         raise NotImplementedError
 
 
 class UserMessage(Message):
     user: UserInfo
 
-    def __init__(self, user):
+    def __init__(self, user: Any) -> None:
         self.user = user
 
-    def publish(self, is_async=False):
+    def publish(self, is_async: bool = False) -> None:
         """
         发送消息到用户配置的接收方式上
         """
@@ -340,11 +343,11 @@ class UserMessage(Message):
             self.send_msg(receive_user_ids, backends_msg_mapper)
 
     @classmethod
-    def get_test_user(cls):
+    def get_test_user(cls) -> Any:
         return UserInfo.objects.all().first()
 
     @classmethod
-    def send_test_msg(cls, user=None):
+    def send_test_msg(cls, user: Any = None) -> None:
         """用户消息的测试发送：收件人默认样例用户（`get_test_user`），渠道取已启用后端。
 
         覆盖基类「发给全部超管」的语义——用户消息（如异地登录提醒）发给超管没有意义，
@@ -366,15 +369,20 @@ class UserMessage(Message):
         msg.send_msg([target.pk], backends_msg_mapper)
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         raise NotImplementedError
 
 
 # 实现拆至 notifications.registry：经模块级 __getattr__ 延迟再导出（保持调用面，避免循环导入）。
 _MOVED_EXPORTS = ("get_message_cls", "register_message")
 
+if TYPE_CHECKING:
+    # 静态类型面显式再导出（运行期仍走 __getattr__ 惰性加载，避免 registry 反向导入成环）
+    from notifications.registry import get_message_cls as get_message_cls  # noqa: F401
+    from notifications.registry import register_message as register_message  # noqa: F401
 
-def __getattr__(name):
+
+def __getattr__(name: str) -> Any:
     if name in _MOVED_EXPORTS:
         from importlib import import_module
 

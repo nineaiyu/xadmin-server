@@ -6,6 +6,8 @@
 ⇒ Setting.encrypted=True 值级加密落库，且 retrieve 回显时自动剔除。
 """
 
+from typing import Any
+
 from django.db.models import TextChoices
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -183,7 +185,7 @@ class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         "LDAP_ATTR_PHONE": "telephoneNumber",
     }
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         for key, default in self._BLANK_DEFAULTS.items():
             if attrs.get(key) in (None, ""):
                 attrs[key] = default

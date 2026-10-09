@@ -15,6 +15,8 @@
 全部记录处置人与时间（留痕口径与审计一致）。
 """
 
+from typing import Any
+
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
@@ -29,7 +31,7 @@ logger = get_logger(__name__)
 HANDLE_ACTIONS = ("notify", "force_change_password", "force_logout", "disable", "ignore", "resolve")
 
 
-def _collect_risks(now):
+def _collect_risks(now: Any) -> Any:
     """产出当前全部风险项：[{"user", "risk_type", "level", "detail"}]。"""
     from identity.models import AccountRisk, UserInfo
 
@@ -142,7 +144,7 @@ def _collect_risks(now):
     return items
 
 
-def scan_account_risks(operator=None) -> dict:
+def scan_account_risks(operator: Any = None) -> dict[str, Any]:
     """执行一次巡检（幂等），返回 {"created", "updated", "resolved", "total"}。
 
     写入侧批量落库：存量行一次取回、按状态分流后 bulk_create / bulk_update，
@@ -224,7 +226,7 @@ def scan_account_risks(operator=None) -> dict:
     return result
 
 
-def _notify_user(user, title, message, level="info"):
+def _notify_user(user: Any, title: Any, message: Any, level: Any = "info") -> None:
     from notifications.message import SiteMessageUtil
 
     try:
@@ -238,7 +240,7 @@ def _notify_user(user, title, message, level="info"):
         logger.warning("notify account risk handler failed. user:%s", getattr(user, "pk", None), exc_info=True)
 
 
-def handle_account_risk(risk, action, operator=None, remark="") -> tuple:
+def handle_account_risk(risk: Any, action: Any, operator: Any = None, remark: Any = "") -> tuple[Any, ...]:
     """处置一项风险，返回 (是否成功, 说明文案)。"""
     from identity.models import AccountRisk
     from identity.utils.session import force_logout_user

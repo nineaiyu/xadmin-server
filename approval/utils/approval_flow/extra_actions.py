@@ -8,6 +8,8 @@
 本模块（包级 ``__init__`` 统一再导出）。拆分的另一动因是文件行数门禁。
 """
 
+from typing import Any
+
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
@@ -24,7 +26,7 @@ from .constants import _models, _users
 URGE_THROTTLE_SECONDS = 600
 
 
-def urge_instance(instance, user, message: str = ""):
+def urge_instance(instance: Any, user: Any, message: str = "") -> Any:
     """人工催办：申请人（或超管）提醒当前节点审批人尽快处理。返回 (ok, detail)。
 
     - 仅申请人本人（或超管）、仅 PENDING 实例；
@@ -56,7 +58,7 @@ def urge_instance(instance, user, message: str = ""):
     return True, None
 
 
-def add_sign(instance, user, usernames, comment: str = ""):
+def add_sign(instance: Any, user: Any, usernames: Any, comment: str = "") -> Any:
     """加签：在当前节点追加候选审批人（会签语义下新候选必须通过）。返回 (ok, detail)。
 
     权限：当前节点任一任务的处理人/被指派人或超管；不能加签申请人本人。
@@ -128,7 +130,7 @@ def add_sign(instance, user, usernames, comment: str = ""):
         return True, None
 
 
-def remove_sign(instance, user, task_pk, comment: str = ""):
+def remove_sign(instance: Any, user: Any, task_pk: Any, comment: str = "") -> Any:
     """减签：移除加签追加的候选审批人（其待办作废，审计行保留）。返回 (ok, detail)。
 
     - 仅可移除 ``is_added=True`` 的加签行（流程定义解析出的初始候选属流程语义，
@@ -193,7 +195,7 @@ def remove_sign(instance, user, task_pk, comment: str = ""):
         return True, None
 
 
-def transfer_task(task_pk, user, to_username: str, comment: str = ""):
+def transfer_task(task_pk: Any, user: Any, to_username: str, comment: str = "") -> Any:
     """转交：把当前待办转给另一名用户处理（一次性，区别于长期「委托」）。返回 (ok, detail)。
 
     - 权限：任务处理人本人或超管；仅 PENDING 任务 / PENDING 实例 / 当前节点；

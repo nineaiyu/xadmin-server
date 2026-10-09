@@ -14,7 +14,14 @@
 向量链路异常同样回退词频结果（问答可用性不被向量可用性绑定）。
 """
 
-from ai.utils.ai_index import _tokenize, chunk_token_index
+from typing import Any
+
+from ai.utils.ai_index import (
+    _tokenize as _tokenize,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_index import (
+    chunk_token_index,
+)
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -24,17 +31,18 @@ SCORE_THRESHOLD = 2
 MAX_QUESTION_LENGTH = 500
 
 
-def _score_entry(query_tokens: set, total_tokens: int, tokens, title_tokens) -> float:
+def _score_entry(query_tokens: set[Any], total_tokens: int, tokens: Any, title_tokens: Any) -> float:
     """命中数（去重词元）+ 标题加成 → 长度归一分数；未达阈值返回 0。"""
     raw_hits = sum(1 for token in query_tokens if token in tokens)
     title_hit = 1 if query_tokens & title_tokens else 0
     boosted = raw_hits + title_hit
     if boosted < SCORE_THRESHOLD:
         return 0.0
-    return boosted / (total_tokens**0.5)
+    score: float = boosted / (total_tokens**0.5)
+    return score
 
 
-def _load_chunks(pks: list) -> dict:
+def _load_chunks(pks: list[Any]) -> dict[str, Any]:
     from ai.models.ai import AiKnowledgeChunk
 
     return {
@@ -45,13 +53,13 @@ def _load_chunks(pks: list) -> dict:
     }
 
 
-def _format(scored: list, top_k: int) -> list:
+def _format(scored: list[Any], top_k: int) -> list[Any]:
     top = scored[:top_k]
     chunks = _load_chunks([pk for _score, pk in top])
     return [{"chunk": chunks[pk], "score": round(score, 4)} for score, pk in top if pk in chunks]
 
 
-def retrieve(question: str, top_k: int = TOP_K) -> list:
+def retrieve(question: str, top_k: int = TOP_K) -> list[Any]:
     """检索，返回 [{chunk 实例, score}]（score 降序，阈值过滤）。
 
     词频为基线通道；向量通道可用时走 RRF 混合（score 语义为融合分，消费方只用
@@ -80,7 +88,7 @@ def retrieve(question: str, top_k: int = TOP_K) -> list:
     return _format(scored, top_k)
 
 
-def _hybrid(scored: list, question: str, top_k: int):
+def _hybrid(scored: list[Any], question: str, top_k: int) -> Any:
     """向量通道融合（不可用/异常返回 None，调用方走词频原路径）。"""
     from ai.utils.ai_embeddings import hybrid_rank
 
@@ -95,7 +103,7 @@ def _hybrid(scored: list, question: str, top_k: int):
 _FALLBACK_SCAN_LIMIT = 5000
 
 
-def _retrieve_full_scan(query_tokens: set, top_k: int) -> list:
+def _retrieve_full_scan(query_tokens: set[Any], top_k: int) -> list[Any]:
     """无缓存兜底：DB 侧 icontains 预筛 + 逐块分词评分（仅在缓存停用时走）。
 
     预筛条件 = 「任一查询词元出现」的 OR 组合：词元（CJK 二元组 / ASCII 词）恒为原文

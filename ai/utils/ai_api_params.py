@@ -8,7 +8,7 @@
 """
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
@@ -33,7 +33,7 @@ class ApiActionError(DjangoValidationError):
     """动作声明/参数解析期的可读错误（转前端文案）。"""
 
 
-def _resolve_user(value):
+def _resolve_user(value: Any) -> Any:
     """用户名/昵称/``昵称(用户名)``/主键 → 用户主键（不存在则报可读错误）。
 
     宽容解析保证两段式幂等：``validate`` 输出的可读展示值（``昵称(用户名)``）与
@@ -68,7 +68,7 @@ def _user_display(pk: str) -> str:
     return f"{nickname}({user.username})" if nickname else str(user.username)
 
 
-def _resolve_role(value):
+def _resolve_role(value: Any) -> Any:
     """角色名/主键 → 角色主键（确认卡片回显用展示文本，与 user 同口径）。"""
     from identity.models import UserRole
 
@@ -93,12 +93,13 @@ def _role_display(pk: str) -> str:
     return role.name if role else str(pk)
 
 
-def _menu_display(pks) -> list:
+def _menu_display(pks: Any) -> list[Any]:
     """菜单主键列表 → 名称数组（确认卡片展示；回传执行期按名称再解析，语义幂等）。"""
     from system.models import Menu
 
     if not isinstance(pks, list):
-        return pks
+        typed_value: list[Any] = pks
+        return typed_value
     names = []
     for pk in pks:
         menu = Menu.objects.filter(pk=pk).first()
@@ -106,7 +107,7 @@ def _menu_display(pks) -> list:
     return names
 
 
-def _menu_subtree_pks(menu) -> list:
+def _menu_subtree_pks(menu: Any) -> list[Any]:
     """菜单子树主键（含自身与全部后代）：授权语义与 UI 勾选父节点（全选子级）一致。"""
     from system.models import Menu
 
@@ -119,12 +120,12 @@ def _menu_subtree_pks(menu) -> list:
     return pks
 
 
-def _resolve_menu(value):
+def _resolve_menu(value: Any) -> Any:
     """菜单名/主键 → 该菜单及其子树全部主键（数组值逐项解析后去重）。"""
     from system.models import Menu
 
     if isinstance(value, (list, tuple)):
-        merged: list = []
+        merged: list[Any] = []
         for item in value:
             merged.extend(_resolve_menu(item))
         return list(dict.fromkeys(merged))
@@ -144,7 +145,7 @@ def _resolve_menu(value):
     return _menu_subtree_pks(menu)
 
 
-def _convert(kind: str, value, rule: dict, field: str):
+def _convert(kind: str, value: Any, rule: dict[str, Any], field: str) -> Any:
     """按声明类型转换单个参数值（失败抛 ApiActionError）。"""
     if kind == "user":
         return _resolve_user(value)
@@ -181,12 +182,12 @@ def _convert(kind: str, value, rule: dict, field: str):
     return str(value)
 
 
-def resolve_api_params(spec: "ApiActionSpec", user, params: dict):
+def resolve_api_params(spec: "ApiActionSpec", user: Any, params: dict[str, Any]) -> Any:
     """参数解析：返回 (path 参数 dict, 请求体 dict, query dict, 错误文案)。"""
     raw = params if isinstance(params, dict) else {}
-    path_params: dict = {}
-    body: dict = {}
-    query: dict = {}
+    path_params: dict[str, Any] = {}
+    body: dict[str, Any] = {}
+    query: dict[str, Any] = {}
     for field, rule in spec.params.items():
         if "const" in rule:
             # 服务端固定值（如公告 notice_type / 空接收人列表）：原样注入，
@@ -214,7 +215,7 @@ def resolve_api_params(spec: "ApiActionSpec", user, params: dict):
     return path_params, body, query, None
 
 
-def build_action_url(spec: "ApiActionSpec", path_params: dict):
+def build_action_url(spec: "ApiActionSpec", path_params: dict[str, Any]) -> Any:
     """URL 模板 + path 参数 → 可解析的真实路径（占位缺失返回 None）。"""
     url = spec.path
     for name, value in path_params.items():

@@ -26,6 +26,7 @@
 
 import hashlib
 from datetime import timedelta
+from typing import Any
 
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
@@ -120,13 +121,13 @@ UPLOAD_FILES = [
 class Command(BaseCommand):
     help = "生成内容类演示数据（通知公告/聊天室/知识库/文件中心/审批委托/Webhook/开放平台应用）"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--reset", action="store_true", help="先清理本命令生成的演示数据再生成")
         parser.add_argument("--clean-only", action="store_true", help="只清理，不生成（seed_demo_clean 编排调用）")
 
     # ---------------------------------------------------------------- 入口
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options["reset"] or options["clean_only"]:
             self._clean()
             if options["clean_only"]:
@@ -148,7 +149,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 清理
 
-    def _clean(self):
+    def _clean(self) -> None:
         removed = MessageContent.all_objects.filter(title__startswith=NOTICE_TITLE_PREFIX).delete()[0]
         self.stdout.write(f"removed demo notices: {removed}")
 
@@ -176,7 +177,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 各内容块
 
-    def _create_notices(self, admin: UserInfo):
+    def _create_notices(self, admin: UserInfo) -> None:
         created = 0
         for index, (title, level, message, publish) in enumerate(NOTICE_PLAN):
             full_title = f"{NOTICE_TITLE_PREFIX}{title}"
@@ -197,7 +198,7 @@ class Command(BaseCommand):
             created += 1
         self.stdout.write(f"demo notices ready: {created}")
 
-    def _create_chat(self, admin: UserInfo):
+    def _create_chat(self, admin: UserInfo) -> None:
         room = chat_service.get_public_room()
         if room is None:
             self.stdout.write(self.style.WARNING("public chat room unavailable; demo chat messages skipped"))
@@ -219,7 +220,7 @@ class Command(BaseCommand):
                 room,
                 sender,
                 content,
-                message_type=message_type,  # type: ignore[arg-type]  # Choices 元类（运行期为枚举成员）
+                message_type=message_type,
                 client_msg_id=client_id,
             )
             if is_created:
@@ -228,7 +229,7 @@ class Command(BaseCommand):
                 created += 1
         self.stdout.write(f"demo chat messages ready: {created}")
 
-    def _create_knowledge(self, admin: UserInfo):
+    def _create_knowledge(self, admin: UserInfo) -> None:
         created = 0
         for name, content in KNOWLEDGE_DOCS:
             path = f"upload/{name}.md"
@@ -239,7 +240,7 @@ class Command(BaseCommand):
                 created += 1
         self.stdout.write(f"demo knowledge documents ready: {created}")
 
-    def _create_files(self, admin: UserInfo):
+    def _create_files(self, admin: UserInfo) -> None:
         created = 0
         for filename, mime_type, content in UPLOAD_FILES:
             if UploadFile.all_objects.filter(filename=filename, creator=admin).exists():
@@ -260,7 +261,7 @@ class Command(BaseCommand):
             created += 1
         self.stdout.write(f"demo upload files ready: {created}")
 
-    def _create_delegation(self, admin: UserInfo):
+    def _create_delegation(self, admin: UserInfo) -> None:
         """演示委托：委托双方一律用演示账号，**禁止把超管作为委托人**。
 
         委托语义是「待办归属替换」——节点解析到 xadmin 时任务会被整体转给代理人。
@@ -293,7 +294,7 @@ class Command(BaseCommand):
         )
         self.stdout.write("demo approval delegation ready")
 
-    def _create_webhook(self, admin: UserInfo):
+    def _create_webhook(self, admin: UserInfo) -> None:
         subscription, _created = WebhookSubscription.objects.update_or_create(
             name=WEBHOOK_NAME,
             defaults={
@@ -347,7 +348,7 @@ class Command(BaseCommand):
             )
         self.stdout.write("demo webhook subscription ready")
 
-    def _create_api_app(self, admin: UserInfo):
+    def _create_api_app(self, admin: UserInfo) -> None:
         if ApiApplication.objects.filter(name=APP_NAME).exists():
             self.stdout.write("demo api application already exists, skip")
             return

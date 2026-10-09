@@ -4,6 +4,7 @@
 # filename : userinfo
 # author : ly_13
 # date : 6/16/2023
+from typing import Any
 
 from django.conf import settings
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -40,13 +41,13 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
     choices_models = [UserInfo]
     queryset = UserInfo.objects.none()
 
-    def get_object(self):
+    def get_object(self) -> Any:
         return self.request.user
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return UserInfo.objects.filter(pk=self.request.user.pk)
 
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}信息"""
         data = super().retrieve(request, *args, **kwargs).data
         # 巡检处置联动：管理员要求改密时随用户信息下发（刷新页面后仍能引导改密；
@@ -83,14 +84,14 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"],
         detail=False,
         url_path="reset-password",
         serializer_class=ChangePasswordSerializer,
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
-    def reset_password(self, request, *args, **kwargs):
+    def reset_password(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """修改{cls}密码（敏感操作：需密码二次确认）"""
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
@@ -111,8 +112,8 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         request=OpenApiRequest(build_object_type(properties={"file": build_basic_type(OpenApiTypes.BINARY)})),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, parser_classes=(MultiPartParser,))
-    def upload(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, parser_classes=(MultiPartParser,))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def upload(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """上传{cls}头像"""
         return super().upload(request, *args, **kwargs)
 
@@ -128,13 +129,13 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         ),
         responses=get_default_response_schema(),
     )
-    @action(
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"],
         detail=False,
         url_path="bind",
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
-    def bind(self, request, *args, **kwargs):
+    def bind(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """绑定{cls}邮箱或手机（敏感操作：需密码二次确认）"""
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
         instance = UserInfo.objects.filter(**{query_key: target}).first()

@@ -4,6 +4,8 @@
 # filename : dept
 # author : ly_13
 # date : 6/16/2023
+from typing import Any
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _
@@ -55,19 +57,19 @@ class DeptViewSet(
     filterset_class = DeptFilter
 
     @ApprovalRequired()
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """删除{cls}数据（高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批）"""
         return super().destroy(request, *args, **kwargs)
 
     @ApprovalRequired()
-    @action(methods=["post"], detail=False, url_path="batch-destroy")
-    def batch_destroy(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除{cls}（高危：与删除同口径纳入审批）"""
         return super().batch_destroy(request, *args, **kwargs)
 
     @extend_schema(request=DeptManagerAssignSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="assign-managers")
-    def assign_managers(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="assign-managers")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def assign_managers(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """部门管理员任命：`{add, remove}` 增量变更（幂等）。
 
         任命同时装配预置角色与用户级数据权限规则（解任按「不再管理任何部门」回收），
@@ -89,8 +91,8 @@ class DeptViewSet(
         return ApiResponse(data={"managers": managers}, detail=_("Managers updated"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="user-options")
-    def user_options(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def user_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """管理员候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
 
         与选人控件同源（identity/utils/user_options.py）；权限与 list 同口径
@@ -105,8 +107,8 @@ class DeptViewSet(
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="managed")
-    def managed(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="managed")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def managed(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """我的管辖：当前用户任管理员的部门（含全部下级）与成员统计（恒定本人范围，只读）。
 
         部门行附带主管（leader）与管理员清单（managers，含共管同事），供管辖页
@@ -126,7 +128,7 @@ class DeptViewSet(
         )
         direct_set = {str(pk) for pk in direct_pks}
 
-        def user_ref(user):
+        def user_ref(user: Any) -> Any:
             return {"pk": user.pk, "nickname": user.nickname, "username": user.username}
 
         depts = [

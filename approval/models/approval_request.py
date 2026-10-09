@@ -97,5 +97,5 @@ class ApprovalRequest(DbAuditModel):
             GinIndex(fields=["object_pk"], name="idx_approval_object_pk_trgm", opclasses=["gin_trgm_ops"]),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.method} {self.path} ({self.status})"

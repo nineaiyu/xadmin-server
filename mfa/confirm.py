@@ -14,6 +14,8 @@
 """
 
 import functools
+from collections.abc import Callable
+from typing import Any
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -27,7 +29,7 @@ from mfa.exceptions import MFAConfirmRequired
 logger = get_logger(__name__)
 
 
-def check_user_confirm(user, confirm_type=ConfirmType.MFA):
+def check_user_confirm(user: Any, confirm_type: str = ConfirmType.MFA) -> None:
     """校验用户是否在有效期内通过过二次确认，未通过则抛出 412 异常"""
     if not settings.SECURITY_MFA_CONFIRM_ENABLED:
         return
@@ -44,7 +46,7 @@ class UserConfirmation(BasePermission):
 
     min_type = ConfirmType.MFA
 
-    def has_permission(self, request, view):
+    def has_permission(self, request: Any, view: Any) -> bool:
         user = request.user
         if not (user and user.is_authenticated):
             # 未认证交给认证层处理，这里只负责已认证用户的二次确认
@@ -53,13 +55,13 @@ class UserConfirmation(BasePermission):
         return True
 
     @classmethod
-    def require(cls, confirm_type=ConfirmType.MFA):
+    def require(cls, confirm_type: str = ConfirmType.MFA) -> Any:
         """按验证类型动态生成权限类（级别语义见 ConfirmType）"""
         name = f"UserConfirmationLevel{CONFIRM_TYPE_LEVEL[confirm_type]}"
         return type(name, (cls,), {"min_type": confirm_type})
 
 
-def ensure_user_confirmed(request, confirm_type=ConfirmType.MFA):
+def ensure_user_confirmed(request: Any, confirm_type: str = ConfirmType.MFA) -> None:
     """非 DRF 视图场景（业务方法/定时任务回调等）手动执行二次确认校验"""
     user = getattr(request, "user", None)
     if not (user and user.is_authenticated):
@@ -67,15 +69,15 @@ def ensure_user_confirmed(request, confirm_type=ConfirmType.MFA):
     check_user_confirm(user, confirm_type)
 
 
-def require_user_confirmation(confirm_type=ConfirmType.MFA):
+def require_user_confirmation(confirm_type: str = ConfirmType.MFA) -> Callable[..., Any]:
     """装饰器：标注敏感业务函数/方法，调用前先执行二次确认校验
 
     自动从位置参数或关键字参数中定位 request 对象（兼容 self, request 调用形态）。
     """
 
-    def decorator(func):
+    def decorator(func: Any) -> Any:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             request = next((arg for arg in args if hasattr(arg, "user")), None)
             if request is None:
                 request = kwargs.get("request")

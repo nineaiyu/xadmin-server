@@ -39,14 +39,14 @@ class RecordStatsMixin:
     """
 
     #: 传给 `record_stats` 的差异项（默认适用于 PENDING/RUNNING + FAILURE/REVOKED/FAILED）
-    record_stats_kwargs: dict = {}
+    record_stats_kwargs: dict[str, Any] = {}
 
-    def get_stats_cache_key(self, view_instance, view_method, request, args, kwargs):
+    def get_stats_cache_key(self, view_instance: Any, view_method: Any, request: Any, args: Any, kwargs: Any) -> Any:
         return f"{self.__class__.__name__}_{view_method.__name__}_{request.user.pk}"
 
-    @action(methods=["get"], detail=False)
+    @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=RECORD_STATS_CACHE_SECONDS, key_func="get_stats_cache_key")
-    def stats(self, request, *args, **kwargs):
+    def stats(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """近 N 天记录统计（总数 / 进行中 / 失败 / 最近一次），按「我的」收口。"""
         model = self.queryset.model
         return ApiResponse(data=record_stats(model.objects.all(), request.user, **self.record_stats_kwargs))
@@ -58,7 +58,7 @@ class RecordOwnerFilter(BaseFilterBackend):
     不走通用数据权限（默认拒绝会让普通用户看不到自己提交的记录）。
     """
 
-    def filter_queryset(self, request, queryset, view):
+    def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
         user = request.user
         if not user or not user.is_authenticated:
             return queryset.none()
@@ -70,7 +70,7 @@ class RecordOwnerFilter(BaseFilterBackend):
 class RecordFileDownloadMixin(ExportImportThrottleMixin):
     if TYPE_CHECKING:
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
     """记录关联文件下载的公共实现（经 DRF 鉴权，避免拿到 URL 即可下载敏感文件）。
 
@@ -86,7 +86,7 @@ class RecordFileDownloadMixin(ExportImportThrottleMixin):
     # 专用限流：产物文件下载按 export_import 档收敛
     export_import_actions: tuple[str, ...] = ("download",)
 
-    def download_upload_file(self, upload):
+    def download_upload_file(self, upload: Any) -> Any:
         """文件缺失返回可读业务错误，否则返回 FileResponse。"""
         if not upload or not upload.filepath:
             return ApiResponse(code=1001, detail=self.download_not_found_message)
@@ -105,7 +105,7 @@ class RecordFileDownloadMixin(ExportImportThrottleMixin):
         response["Access-Control-Expose-Headers"] = "Content-Disposition"
         return response
 
-    def download_record_file(self):
+    def download_record_file(self) -> Any:
         """取当前对象上声明的文件字段并下载。"""
         record = self.get_object()
         return self.download_upload_file(getattr(record, self.download_file_field, None))
@@ -114,7 +114,7 @@ class RecordFileDownloadMixin(ExportImportThrottleMixin):
 class RecordTaskLogMixin:
     if TYPE_CHECKING:
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
     """记录任务日志增量读取的公共实现。
 
@@ -123,7 +123,7 @@ class RecordTaskLogMixin:
 
     log_finished_statuses: tuple[Any, ...] = ()
 
-    def read_record_task_log(self, request):
+    def read_record_task_log(self, request: Any) -> Any:
         record = self.get_object()
         data = read_task_log_chunk(
             record.pk,

@@ -100,5 +100,5 @@ class Book(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         verbose_name_plural = verbose_name
         ordering = ("pk",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}"

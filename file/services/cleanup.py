@@ -21,7 +21,7 @@ from file.utils.preview import clean_preview_cache
 logger = get_task_logger(__name__)
 
 
-def auto_clean_tmp_file(clean_day=1):
+def auto_clean_tmp_file(clean_day: int = 1) -> None:
     clean_time = timezone.now() - datetime.timedelta(days=clean_day)
     _rows_count = 0
     for instance in UploadFile.all_objects.filter(created_time__lte=clean_time, is_tmp=True):
@@ -32,7 +32,7 @@ def auto_clean_tmp_file(clean_day=1):
     logger.info(f"clean {_rows_count} upload tmp file")
 
 
-def auto_clean_upload_file(keep_days=None, batch_size=2000):
+def auto_clean_upload_file(keep_days: int | None = None, batch_size: int = 2000) -> int:
     """分批清理超过保留期的正式上传文件（FILE_KEEP_DAYS，0 = 不清理）。
 
     - 只处理非临时文件（临时文件由 auto_clean_tmp_file 按天清理）；
@@ -67,7 +67,7 @@ def auto_clean_upload_file(keep_days=None, batch_size=2000):
     return removed
 
 
-def auto_clean_preview_cache(keep_days=None):
+def auto_clean_preview_cache(keep_days: int | None = None) -> int:
     """清理预览缓存（孤儿 + 超保留期），保留期取 FILE_PREVIEW_CACHE_KEEP_DAYS。
 
     与上传文件清理同源纪律：缓存是派生产物，删了可按需重建，
@@ -76,7 +76,7 @@ def auto_clean_preview_cache(keep_days=None):
     result = clean_preview_cache(keep_days=keep_days)
     # 对象存储后端会为预览/转换把远端对象缓存到本地（MEDIA_ROOT/storage_cache），
     # 同属派生产物，与预览缓存一起按最近使用淘汰
-    removed_storage_cache = clean_storage_cache(keep_days=keep_days)
+    removed_storage_cache: int = clean_storage_cache(keep_days=keep_days)
     logger.info(
         f"clean preview cache scanned:{result['scanned']} "
         f"orphan:{result['removed_orphan']} expired:{result['removed_expired']} "

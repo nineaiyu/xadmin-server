@@ -20,6 +20,7 @@ import hashlib
 import os
 import secrets
 import struct
+from typing import Any
 
 import cbor2
 from cryptography.exceptions import InvalidSignature
@@ -56,14 +57,14 @@ def b64url_decode(value: str) -> bytes:
     return base64.urlsafe_b64decode(text + "=" * padding_needed)
 
 
-def generate_challenge(user, scene=SCENE_AUTHENTICATE) -> str:
+def generate_challenge(user: Any, scene: Any = SCENE_AUTHENTICATE) -> str:
     """生成并缓存一次性挑战值（base64url）。"""
     challenge = b64url_encode(os.urandom(32))
     cache.set(CHALLENGE_CACHE_KEY.format(scene=scene, user_pk=user.pk), challenge, CHALLENGE_TTL)
     return challenge
 
 
-def consume_challenge(user, scene, challenge) -> bool:
+def consume_challenge(user: Any, scene: Any, challenge: Any) -> bool:
     """校验并消费挑战值（一次性；不匹配或已过期返回 False）。"""
     key = CHALLENGE_CACHE_KEY.format(scene=scene, user_pk=user.pk)
     saved = cache.get(key)
@@ -73,7 +74,7 @@ def consume_challenge(user, scene, challenge) -> bool:
     return True
 
 
-def rp_id_and_origin(request) -> tuple:
+def rp_id_and_origin(request: Any) -> tuple[Any, ...]:
     """从请求推导 WebAuthn 的 RP ID 与 origin（RP ID = 主机名不含端口）。"""
     host = request.get_host() if request is not None else ""
     rp_id = host.split(":")[0]
@@ -83,7 +84,7 @@ def rp_id_and_origin(request) -> tuple:
     return rp_id, origin
 
 
-def parse_client_data(client_data_json: bytes, expected_type: str, expected_origin: str = "") -> dict:
+def parse_client_data(client_data_json: bytes, expected_type: str, expected_origin: str = "") -> dict[str, Any]:
     """解析并校验 clientDataJSON，返回 {"type", "challenge", "origin"}；非法抛 ValueError。"""
     import json
 
@@ -97,10 +98,11 @@ def parse_client_data(client_data_json: bytes, expected_type: str, expected_orig
         raise ValueError(str(_("Invalid origin")))
     if not data.get("challenge"):
         raise ValueError(str(_("Missing challenge")))
-    return data
+    typed_value: dict[str, Any] = data
+    return typed_value
 
 
-def parse_authenticator_data(auth_data: bytes, require_attested: bool = False) -> dict:
+def parse_authenticator_data(auth_data: bytes, require_attested: bool = False) -> dict[str, Any]:
     """解析 authenticatorData（注册需带 attestedCredentialData）。"""
     if len(auth_data) < 37:
         raise ValueError(str(_("Invalid authenticator data")))
@@ -136,7 +138,7 @@ def parse_authenticator_data(auth_data: bytes, require_attested: bool = False) -
     return result
 
 
-def _public_key_from_cose(cose_key: bytes):
+def _public_key_from_cose(cose_key: bytes) -> Any:
     """COSE 公钥 → (cryptography 公钥对象, COSE alg)。支持 ES256 / RS256 / Ed25519。"""
     cose = cbor2.loads(bytes(cose_key))
     kty = cose.get(1)
@@ -171,7 +173,9 @@ def verify_cose_signature(cose_key: bytes, signature: bytes, signed_data: bytes)
         raise ValueError(str(_("Unsupported signature algorithm")))
 
 
-def verify_registration(*, user, payload: dict, expected_rp_id: str, expected_origin: str) -> dict:
+def verify_registration(
+    *, user: Any, payload: dict[str, Any], expected_rp_id: str, expected_origin: str
+) -> dict[str, Any]:
     """校验注册响应，返回 {"credential_id", "public_key", "sign_count", "aaguid", "backed_up", "name"}。
 
     payload 形态（前端 base64url 编码）：{"client_data_json", "attestation_object", "name"?}
@@ -202,7 +206,13 @@ def verify_registration(*, user, payload: dict, expected_rp_id: str, expected_or
 
 
 def verify_assertion(
-    *, user, payload: dict, public_key, stored_sign_count: int, expected_rp_id: str, expected_origin: str
+    *,
+    user: Any,
+    payload: dict[str, Any],
+    public_key: Any,
+    stored_sign_count: int,
+    expected_rp_id: str,
+    expected_origin: str,
 ) -> int:
     """校验认证响应，返回新的签名计数器；失败抛 ValueError。"""
     client_data_bytes = b64url_decode(payload.get("client_data_json", ""))
@@ -227,4 +237,5 @@ def verify_assertion(
         verify_cose_signature(bytes(public_key), signature, signed_data)
     except InvalidSignature as exc:
         raise ValueError(str(_("Signature verification failed"))) from exc
-    return parsed["sign_count"]
+    typed_value: int = parsed["sign_count"]
+    return typed_value

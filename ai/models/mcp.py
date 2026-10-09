@@ -12,6 +12,8 @@ xadmin 作为 MCP 客户端外接第三方 MCP 服务器（Streamable HTTP）：
 - 鉴权令牌值级加密落库（signer），回显只给 ``auth_token_set`` 布尔。
 """
 
+from typing import Any
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -47,8 +49,9 @@ class McpServer(DbAuditModel, DbUuidModel):
         verbose_name_plural = _("External MCP servers")
         ordering = ("name",)
 
-    def __str__(self):
-        return self.name
+    def __str__(self) -> str:
+        typed_value: str = self.name
+        return typed_value
 
     @property
     def auth_token_plain(self) -> str:
@@ -56,17 +59,18 @@ class McpServer(DbAuditModel, DbUuidModel):
         if not self.auth_token:
             return ""
         try:
-            return signer.decrypt(self.auth_token)
+            typed_value: str = signer.decrypt(self.auth_token)
+            return typed_value
         except Exception:  # noqa: BLE001 历史明文/损坏值按未配置处理
             return ""
 
     @auth_token_plain.setter
-    def auth_token_plain(self, value: str):
+    def auth_token_plain(self, value: str) -> None:
         value = (value or "").strip()
         self.auth_token = signer.encrypt(value.encode("utf-8")).decode("utf-8") if value else ""
 
     @property
-    def tool_names(self) -> list:
+    def tool_names(self) -> list[Any]:
         """白名单工具名（去空白、去重、保持声明顺序）。"""
         seen, names = set(), []
         for item in self.allowed_tools or []:

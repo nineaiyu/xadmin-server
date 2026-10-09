@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 
 import os
 import uuid
+from typing import Any
 
 import django
 from channels.auth import AuthMiddlewareStack
@@ -42,8 +43,8 @@ django_asgi_app = XadminASGIHandler()
 urlpatterns = collect_app_ws_urls()
 
 
-@database_sync_to_async
-def get_signature_user(scope):
+@database_sync_to_async  # type: ignore[untyped-decorator]  # 第三方装饰器（channels）无类型存根：函数自身标注完整，此处不因装饰器降级
+def get_signature_user(scope: dict[str, Any]) -> Any:
     if scope["type"] == "websocket":
         scope["method"] = "GET"
 
@@ -70,10 +71,10 @@ def get_signature_user(scope):
 
 
 class WsSignatureAuthMiddleware:
-    def __init__(self, app):
+    def __init__(self, app: Any) -> None:
         self.app = app
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> Any:
         user = await get_signature_user(scope)
         if user:
             scope["user"] = user

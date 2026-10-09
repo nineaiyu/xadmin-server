@@ -17,6 +17,8 @@
 打 ``_ldap_authenticated`` 标记供 login_type 透传。
 """
 
+from typing import Any
+
 from django.conf import settings
 from django.contrib.auth.backends import BaseBackend
 from django.db import IntegrityError
@@ -43,7 +45,7 @@ logger = get_logger(__name__)
 class LdapBindBackend(BaseBackend):
     """服务账号定位用户 DN → 用户 DN bind 验密 → 解析/补建本地账号。"""
 
-    def authenticate(self, request, username=None, password=None, **kwargs):
+    def authenticate(self, request: Any, username: Any = None, password: Any = None, **kwargs: Any) -> Any:
         if not username or not password or not settings.LDAP_AUTH_ENABLED:
             return None
         if self._defer_to_local(username):
@@ -57,35 +59,35 @@ class LdapBindBackend(BaseBackend):
             logger.warning("LDAP authenticate unexpected error", exc_info=True)
             return None
 
-    def get_user(self, user_id):
+    def get_user(self, user_id: Any) -> Any:
         try:
             user = UserInfo._default_manager.get(pk=user_id)
         except (UserInfo.DoesNotExist, ValueError, TypeError):
             return None
         return user if self.user_can_authenticate(user) else None
 
-    def user_can_authenticate(self, user):
+    def user_can_authenticate(self, user: Any) -> Any:
         """与 ModelBackend 同口径：禁用用户不参与认证。"""
         is_active = getattr(user, "is_active", None)
         return is_active or is_active is None
 
     # ---------------------------------------------------------------- 内部
 
-    def _defer_to_local(self, username) -> bool:
+    def _defer_to_local(self, username: Any) -> bool:
         """local_first 优先级：本地存在可用密码的活账号时让位 ModelBackend。"""
         if settings.LDAP_AUTH_PRIORITY != "local_first":
             return False
         local = UserInfo.all_objects.filter(username__iexact=username).first()
         return bool(local and local.deleted_at is None and local.has_usable_password())
 
-    def _bind_and_resolve(self, username, password):
+    def _bind_and_resolve(self, username: Any, password: Any) -> Any:
         user_dn, attrs = self._locate_and_bind(username, password)
         user = self._resolve_or_create(user_dn, attrs)
         if user is not None:
             user._ldap_authenticated = True
         return user
 
-    def _locate_and_bind(self, username, password):
+    def _locate_and_bind(self, username: Any, password: Any) -> Any:
         """服务账号搜索目标条目，再以用户 DN bind 验密。返回 (dn, attrs)。"""
         attr_map = get_attr_map()
         username_attr = attr_map.get("username", "sAMAccountName")
@@ -108,7 +110,7 @@ class LdapBindBackend(BaseBackend):
         # 目录中找不到该用户：交回本地 backend 链
         raise LDAPException("user not found in directory")
 
-    def _resolve_or_create(self, user_dn, attrs):
+    def _resolve_or_create(self, user_dn: Any, attrs: Any) -> Any:
         user_dn = normalize_dn(user_dn)
         binding = LdapUserBinding.objects.filter(dn=user_dn).first()
         if binding:
@@ -133,7 +135,7 @@ class LdapBindBackend(BaseBackend):
             return None
         return self._create_binding_user(username, user_dn, attrs)
 
-    def _create_binding_user(self, username, user_dn, attrs):
+    def _create_binding_user(self, username: Any, user_dn: Any, attrs: Any) -> Any:
         """目录建号：无本地密码（杜绝本地爆破面），邮箱/手机冲突时置空不阻断。"""
         attr_map = get_attr_map()
         nickname = first_attr(attrs, attr_map.get("nickname", "cn")) or username

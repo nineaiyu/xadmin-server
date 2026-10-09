@@ -4,8 +4,8 @@
 # filename : user
 # author : ly_13
 # date : 8/10/2024
-
 import json
+from typing import Any
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
@@ -43,7 +43,7 @@ PASSWORD_DECRYPT_FAILED_MESSAGE = _("Password decryption failed, please refresh 
 PASSWORD_DECRYPT_FAILED_CODE = "password_decrypt_failed"
 
 
-def is_password_decrypt_failure(exc) -> bool:
+def is_password_decrypt_failure(exc: Any) -> bool:
     """判断校验异常是否为建号密码解密失败（按 ErrorDetail.code 识别，与文案解耦）。"""
     detail = getattr(exc, "detail", None)
     if isinstance(detail, dict):
@@ -55,7 +55,7 @@ def is_password_decrypt_failure(exc) -> bool:
     return any(getattr(item, "code", None) == PASSWORD_DECRYPT_FAILED_CODE for item in items)
 
 
-def record_create_password_decrypt_failure(request, username):
+def record_create_password_decrypt_failure(request: Any, username: Any) -> None:
     """建号密码解密失败的补充审计：落 OperationLog 供安全追溯。
 
     与 SCIM 目录同步的操作审计同口径（module 打域内标签、changes 记结构化摘要、
@@ -84,7 +84,7 @@ def record_create_password_decrypt_failure(request, username):
         logger.warning("record create password decrypt failure audit failed", exc_info=True)
 
 
-def ensure_local_password_changeable(user):
+def ensure_local_password_changeable(user: Any) -> None:
     """LDAP 绑定用户拒绝本地改密/重置：密码由目录服务器管理。"""
     if LdapUserBinding.objects.filter(user=user).exists():
         raise ValidationError(_("Password is managed by the LDAP directory and cannot be changed locally"))
@@ -187,7 +187,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
         read_only=True, input_type="number", label=_("Online count")
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         # 创建即邀请：邀请模式无需密码（由被邀请人自行设置）→ 放开字段级必填
         request = self.context.get("request")
@@ -198,7 +198,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
     # 模型字段 unique=True 使 DRF 自动生成的 UniqueValidator 只查活跃数据（默认管理器），
     # 会放过回收站中的同名用户造成 IntegrityError——这里显式按 all_objects 拦截，
     # 回收站用户名视为占用并返回可读 400
-    def validate_username(self, value):
+    def validate_username(self, value: Any) -> Any:
         queryset = UserInfo.all_objects.filter(username=value)
         if self.instance is not None:
             queryset = queryset.exclude(pk=self.instance.pk)
@@ -207,7 +207,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
         return value
 
     @extend_schema_field(serializers.BooleanField)
-    def get_block(self, obj):
+    def get_block(self, obj: Any) -> Any:
         # 以整页用户名为单位批量查询锁定状态，结果缓存在 context 中（ListSerializer 与子字段共享）
         if "user_login_block" not in self.context:
             usernames = [instance.username for instance in self.get_page_instances(obj)]
@@ -215,13 +215,13 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
         return self.context["user_login_block"].get(obj.username, False)
 
     @extend_schema_field(serializers.IntegerField)
-    def get_online_count(self, obj):
+    def get_online_count(self, obj: Any) -> Any:
         if "user_online_layers" not in self.context:
             pks = [instance.pk for instance in self.get_page_instances(obj)]
             self.context["user_online_layers"] = get_online_users_layers(pks)
         return len(self.context["user_online_layers"].get(obj.pk, []))
 
-    def _assert_scope_fields(self, attrs):
+    def _assert_scope_fields(self, attrs: Any) -> None:
         """写侧载荷范围校验：归属字段与关系字段必须落在可授权范围内。
 
         与读侧同源（数据权限可见范围 = 可写范围）：
@@ -257,7 +257,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
                 DataPermission.objects.filter(pk__in=pks), user, _("Data permission is outside your assignable scope")
             )
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         self._assert_scope_fields(attrs)
         if attrs.get("invite"):
             # 邀请模式：密码由被邀请人自行设置（服务端置不可用），提交中的密码一律忽略
@@ -297,7 +297,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
                 raise ValidationError(_("Abnormal password field"))
         return attrs
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         invite = validated_data.pop("invite", False)
         instance = super().create(validated_data)
         if invite:
@@ -317,7 +317,7 @@ class ResetPasswordSerializer(serializers.Serializer):
     # 与注册、本人改密等改密链路共用同一套密码策略与报错文案
     password = serializers.CharField(max_length=128, required=True, write_only=True, label=_("Password"))
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         ensure_local_password_changeable(instance)
         try:
             password = AESCipherV2(instance.username).decrypt(validated_data.get("password"))

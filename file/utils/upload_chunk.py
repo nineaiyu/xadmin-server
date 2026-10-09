@@ -27,6 +27,7 @@ import hashlib
 import mimetypes
 import os
 import tempfile
+from typing import Any
 
 from django.core.files.base import ContentFile, File
 from django.core.files.storage import default_storage
@@ -64,12 +65,12 @@ STORAGE_DIR = "upload_sessions"
 CHECKSUM_MISMATCH_CODE = 1007
 
 
-def part_storage_name(session_pk, index) -> str:
+def part_storage_name(session_pk: Any, index: int) -> str:
     """分片在存储侧的统一命名（local / s3 / mirror 后端同形）。"""
     return f"{STORAGE_DIR}/{session_pk}/part-{index:08d}"
 
 
-def _validate_plan(filename, filesize, total_chunks, chunk_size, user_obj):
+def _validate_plan(filename: str, filesize: int, total_chunks: int, chunk_size: int, user_obj: Any) -> None:
     """init 期政策校验：扩展名 / 大小上限 / 配额 / 分片计划合理性，fail-closed。
 
     配额与数量上限在此前置判定（与单请求 ``check_upload_limits`` 同口径）——
@@ -114,7 +115,16 @@ def _validate_plan(filename, filesize, total_chunks, chunk_size, user_obj):
         raise UploadError(INVALID_CODE, _("Too many chunks (max {})").format(MAX_TOTAL_CHUNKS))
 
 
-def init_session(user_obj, *, filename, filesize, total_chunks, chunk_size, md5sum="", mime_type=""):
+def init_session(
+    user_obj: Any,
+    *,
+    filename: str,
+    filesize: int,
+    total_chunks: int,
+    chunk_size: int,
+    md5sum: str = "",
+    mime_type: str = "",
+) -> tuple[Any, list[Any], bool]:
     """创建或命中（断点续传）分片会话，返回 ``(session, received_indices, created)``。
 
     命中条件：同属主 + 同名同大小 + pending 的既有会话（刷新页面 / 网络中断后
@@ -149,7 +159,7 @@ def init_session(user_obj, *, filename, filesize, total_chunks, chunk_size, md5s
     return session, [], True
 
 
-def store_part(user_obj, session, index, file_obj):
+def store_part(user_obj: Any, session: Any, index: Any, file_obj: Any) -> int:
     """写单个分片（幂等：同 index 重传覆盖同名存储对象，行 get_or_create）。
 
     返回当前已收分片数。index 越界 / 分片超尺寸（末片除外）一律拒绝。
@@ -168,11 +178,12 @@ def store_part(user_obj, session, index, file_obj):
     if default_storage.exists(name):
         default_storage.delete(name)
     default_storage.save(name, ContentFile(file_obj.read()))
-    return session.parts.count()
+    received: int = session.parts.count()
+    return received
 
 
-@transaction.atomic
-def complete_session(user_obj, session_pk, *, declared_md5=""):
+@transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def complete_session(user_obj: Any, session_pk: Any, *, declared_md5: str = "") -> tuple[Any, Any]:
     """合并分片并走既有上传内核落库；会话行锁内串行（与并发 complete/abort 互斥）。
 
     校验分片完整性（行数 / 尺寸和 / 逐片尺寸）→ 流式合并并计算 md5 → 声明指纹
@@ -213,7 +224,7 @@ def complete_session(user_obj, session_pk, *, declared_md5=""):
     return upload, session
 
 
-def _merge_and_store(user_obj, session, declared_md5):
+def _merge_and_store(user_obj: Any, session: Any, declared_md5: str) -> tuple[str, Any]:
     """合并分片到临时文件并落库；md5 在合并时同步计算（整文件只读一遍）。"""
     digest = hashlib.md5()
     fd, temp_path = tempfile.mkstemp(prefix="xadmin-merge-")
@@ -249,12 +260,12 @@ def _merge_and_store(user_obj, session, declared_md5):
 class _MergedFile(File):
     """合并产物到上传内核的适配：UploadedFile 鸭子类型（content_type 注入）。"""
 
-    def __init__(self, file, name, content_type):
+    def __init__(self, file: Any, name: str, content_type: str) -> None:
         super().__init__(file, name=name)
         self.content_type = content_type
 
 
-def abort_session(user_obj, session_pk) -> bool:
+def abort_session(user_obj: Any, session_pk: Any) -> bool:
     """放弃会话：清理分片（存储 + 行）并置 aborted；不存在/非本人返回 False。"""
     with transaction.atomic():
         session = UploadSession.objects.select_for_update().filter(pk=session_pk).first()
@@ -268,7 +279,7 @@ def abort_session(user_obj, session_pk) -> bool:
     return True
 
 
-def _purge_parts(session):
+def _purge_parts(session: Any) -> None:
     """删除会话的全部分片（存储对象 + 行）；存储清理失败只告警（行已删，不阻塞）。"""
     names = [part_storage_name(session.pk, part.index) for part in session.parts.all()]
     session.parts.all().delete()
@@ -279,7 +290,7 @@ def _purge_parts(session):
             logger.warning(f"upload part cleanup failed: {name}")
 
 
-def auto_clean_upload_sessions(clean_day=1):
+def auto_clean_upload_sessions(clean_day: int = 1) -> dict[str, int]:
     """清理过期分片会话：pending 超 N 天（分片 + 行）与全部终态会话行。
 
     分片是临时数据，会话完成即清理；本任务兜底「客户端中途放弃」与

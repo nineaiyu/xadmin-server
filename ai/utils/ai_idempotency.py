@@ -11,6 +11,7 @@
 
 import hashlib
 import json
+from typing import Any
 
 from django.core.cache import cache
 
@@ -23,7 +24,7 @@ IDEMPOTENCY_TTL = 600
 CACHE_PREFIX = "ai_action_idem"
 
 
-def draft_id(user, action_key: str, params: dict) -> str:
+def draft_id(user: Any, action_key: str, params: dict[str, Any]) -> str:
     """稳定哈希：同一用户 + 同一动作 + 同一（规范化）参数 → 同一 draft_id。
 
     参数按键排序序列化，避免字段顺序差异导致哈希漂移；``default=str`` 兼容
@@ -42,11 +43,11 @@ def draft_id(user, action_key: str, params: dict) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:32]
 
 
-def _cache_key(user, key: str) -> str:
+def _cache_key(user: Any, key: str) -> str:
     return f"{CACHE_PREFIX}:{getattr(user, 'pk', 'anonymous')}:{key}"
 
 
-def find_result(user, key: str):
+def find_result(user: Any, key: str) -> Any:
     """查首次执行结果（命中返回 dict，未命中 None，缓存异常按未命中处理）。"""
     try:
         raw = cache.get(_cache_key(user, key))
@@ -62,7 +63,7 @@ def find_result(user, key: str):
     return data if isinstance(data, dict) else None
 
 
-def store_result(user, key: str, result: dict) -> None:
+def store_result(user: Any, key: str, result: dict[str, Any]) -> None:
     """记录首次执行结果（缓存异常/序列化异常都不影响业务返回）。"""
     try:
         cache.set(_cache_key(user, key), json.dumps(result, ensure_ascii=False, default=str), IDEMPOTENCY_TTL)
@@ -70,7 +71,9 @@ def store_result(user, key: str, result: dict) -> None:
         logger.warning("write AI idempotency cache failed", exc_info=True)
 
 
-def execute_idempotent(user, action_key: str, params: dict, executor, force: bool = False) -> dict:
+def execute_idempotent(
+    user: Any, action_key: str, params: dict[str, Any], executor: Any, force: bool = False
+) -> dict[str, Any]:
     """带幂等的动作执行：``executor(user, action_key, params)`` 返回 ``{ok, detail, data}``。
 
     幂等只作用于**成功**结果（失败允许立即重试）；``force=True`` 跳过幂等检查。

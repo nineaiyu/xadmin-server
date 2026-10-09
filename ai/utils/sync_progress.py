@@ -12,6 +12,8 @@
     {"state": "running|done|error", "summary": 同步摘要, ...}
 """
 
+from typing import Any
+
 from django.core.cache import cache
 from django.utils import timezone
 
@@ -32,14 +34,14 @@ def release_lock() -> None:
     cache.delete(SYNC_LOCK_KEY)
 
 
-def _write(values: dict) -> None:
+def _write(values: dict[str, Any]) -> None:
     current = cache.get(SYNC_STATUS_KEY) or {}
     current.update(values)
     current["updated_time"] = timezone.now().isoformat()
     cache.set(SYNC_STATUS_KEY, current, STATUS_TTL)
 
 
-def get_status() -> dict:
+def get_status() -> dict[str, Any]:
     return cache.get(SYNC_STATUS_KEY) or {"state": "idle"}
 
 
@@ -53,7 +55,7 @@ def mark_running() -> None:
     )
 
 
-def mark_finished(summary: dict, ok: bool, detail: str = "") -> None:
+def mark_finished(summary: dict[str, Any], ok: bool, detail: str = "") -> None:
     """终态：state 落 done/error，同步摘要随状态保留（前端轮询终态后停止）。"""
     values = {
         "state": "done" if ok else "error",

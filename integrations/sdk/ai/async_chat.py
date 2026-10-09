@@ -21,10 +21,14 @@
 
 import asyncio
 import json
+from collections.abc import AsyncIterator, Awaitable, Callable
+from typing import Any
 
 from common.utils import get_logger
 from integrations.sdk.ai.chat import (
-    AiSdkError,
+    AiSdkError as AiSdkError,  # 显式再导出（no_implicit_reexport）：调用方经本模块导入同款异常
+)
+from integrations.sdk.ai.chat import (
     ChatCompletionsClient,
     parse_chat_message,
     raise_if_empty_answer,
@@ -38,7 +42,7 @@ _RETRY_MAX_DELAY = 2.0
 
 
 def _backoff(attempt: int) -> float:
-    return min(_RETRY_BASE_DELAY * (2**attempt), _RETRY_MAX_DELAY)
+    return float(min(_RETRY_BASE_DELAY * (2**attempt), _RETRY_MAX_DELAY))
 
 
 class AsyncChatCompletionsClient:
@@ -48,7 +52,7 @@ class AsyncChatCompletionsClient:
     完全一致；``last_usage`` / ``last_reasoning`` / ``last_tool_calls`` 同名同义。
     """
 
-    def __init__(self, credentials: dict, http_client=None):
+    def __init__(self, credentials: dict[str, Any], http_client: Any = None) -> None:
         self._builder = ChatCompletionsClient(credentials)
         self.base_url = self._builder.base_url
         self.api_key = self._builder.api_key
@@ -58,9 +62,9 @@ class AsyncChatCompletionsClient:
         self.http = http_client
         # 出站白名单（与同步客户端共享解析；生产路径发送前严格校验）
         self.allowed_hosts = self._builder.allowed_hosts
-        self.last_usage: dict | None = None
+        self.last_usage: dict[str, Any] | None = None
         self.last_reasoning: str | None = None
-        self.last_tool_calls: list = []
+        self.last_tool_calls: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------------ 基础面
 
@@ -96,19 +100,19 @@ class AsyncChatCompletionsClient:
             logger.warning("ai async chat outbound blocked: %s", "; ".join(str(item) for item in exc.messages))
             raise AiSdkError("AI provider base_url is blocked by the outbound policy") from exc
 
-    def _body(self, messages: list, stream: bool = False, **overrides) -> dict:
+    def _body(self, messages: list[Any], stream: bool = False, **overrides: Any) -> dict[str, Any]:
         return self._builder._body(messages, stream=stream, **overrides)
 
-    def _normalize_tool_calls(self, raw) -> list:
+    def _normalize_tool_calls(self, raw: Any) -> list[dict[str, Any]]:
         return self._builder._normalize_tool_calls(raw)
 
-    async def _send_with_retry(self, send):
+    async def _send_with_retry(self, send: Callable[[], Awaitable[Any]]) -> Any:
         """发送 + 重试：网络异常与 5xx/429 指数退避（``send`` 每次重建请求）。
 
         ``send`` 是零参异步函数——重试需要重新发起请求（流式响应体未消费即可弃）。
         """
         attempts = self.max_retries + 1
-        response = None
+        response: Any = None
         for attempt in range(attempts):
             try:
                 response = await send()
@@ -129,7 +133,7 @@ class AsyncChatCompletionsClient:
             return response
         return response
 
-    async def _post_once(self, url: str, body: dict):
+    async def _post_once(self, url: str, body: dict[str, Any]) -> Any:
         """单次非流式 POST（自带客户端生命周期；注入客户端时直接复用）。"""
         await self._ensure_outbound_allowed(url)
         if self.http is not None:
@@ -141,7 +145,7 @@ class AsyncChatCompletionsClient:
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             return await client.post(url, json=body, headers={"Authorization": f"Bearer {self.api_key}"})
 
-    async def _open_stream(self, url: str, body: dict):
+    async def _open_stream(self, url: str, body: dict[str, Any]) -> tuple[Any, Any]:
         """打开流式响应：返回 ``(closer, response)``。
 
         httpx 流式必须「打开者负责关闭」且客户端在响应体消费期间保持存活——
@@ -154,12 +158,12 @@ class AsyncChatCompletionsClient:
 
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
-        async def _open_with(client):
+        async def _open_with(client: Any) -> tuple[Any, Any]:
             cm = client.stream("POST", url, timeout=self.timeout, json=body, headers=headers)
             response = await cm.__aenter__()
             return cm, response
 
-        async def _send():
+        async def _send() -> Any:
             if self.http is not None:
                 _cm, _response = await _open_with(self.http)
                 return _response
@@ -178,7 +182,7 @@ class AsyncChatCompletionsClient:
 
     # ------------------------------------------------------------------ 非流式
 
-    async def chat(self, messages: list, **overrides) -> str:
+    async def chat(self, messages: list[Any], **overrides: Any) -> str:
         """多轮消息 → 助手回复文本（异步）。错误口径与同步版一致。"""
         self._require_config()
         body = self._body(messages, **overrides)
@@ -196,7 +200,9 @@ class AsyncChatCompletionsClient:
         raise_if_empty_answer(content, reasoning, with_tools=False, raw=payload)
         return str(content)
 
-    async def chat_tools(self, messages: list, tools: list, tool_choice: str = "auto", **overrides) -> dict:
+    async def chat_tools(
+        self, messages: list[Any], tools: list[Any], tool_choice: str = "auto", **overrides: Any
+    ) -> dict[str, Any]:
         """原生 function calling（异步）。返回 ``{content, tool_calls, usage, reasoning}``。"""
         self._require_config()
         body = self._body(messages, tools=tools, tool_choice=tool_choice, **overrides)
@@ -223,7 +229,7 @@ class AsyncChatCompletionsClient:
 
     # ------------------------------------------------------------------ 流式
 
-    async def chat_stream(self, messages: list, **overrides):
+    async def chat_stream(self, messages: list[Any], **overrides: Any) -> AsyncIterator[dict[str, str]]:
         """流式多轮（async 生成器）：产出 ``{"type": "reasoning"|"content", "text": ...}``。
 
         事件语义与同步版一致（增量在事件循环内 await，不占视图线程）；
@@ -286,7 +292,7 @@ class AsyncChatCompletionsClient:
 class _OwnedStream:
     """自建 httpx 客户端的流式响应持有者：消费结束后关闭响应与客户端。"""
 
-    def __init__(self, client, cm, response):
+    def __init__(self, client: Any, cm: Any, response: Any) -> None:
         self._client = client
         self._cm = cm
         self.response = response
@@ -294,19 +300,19 @@ class _OwnedStream:
     @property
     def status_code(self) -> int:
         """重试判定需要读响应头状态码（与注入客户端分支的裸 Response 同形）。"""
-        return self._response.status_code
+        return int(self._response.status_code)
 
     @property
-    def response(self):
+    def response(self) -> Any:
         return self._response
 
     @response.setter
-    def response(self, value):
+    def response(self, value: Any) -> None:
         self._response = value
 
     @property
-    def aclose_all(self):
-        async def _close():
+    def aclose_all(self) -> Callable[[], Awaitable[None]]:
+        async def _close() -> None:
             try:
                 await self._cm.__aexit__(None, None, None)
             finally:

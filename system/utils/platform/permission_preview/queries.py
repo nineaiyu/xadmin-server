@@ -19,14 +19,14 @@ from .decode import decode_data_permission
 from .labels import _new_label_cache
 
 
-def get_user_menu_queryset_for_preview(user_obj: UserInfo):
+def get_user_menu_queryset_for_preview(user_obj: UserInfo) -> Any:
     """预览用可见菜单：超管全量旁路（与 routes 视图一致），无角色/部门 → None。"""
     if user_obj.is_superuser:
         return Menu.objects.filter(is_active=True)
     return get_user_menu_queryset(user_obj)
 
 
-def _visible_menu_or_error(user_obj: UserInfo, menu_pk, menu_type=None) -> Menu:
+def _visible_menu_or_error(user_obj: UserInfo, menu_pk: Any, menu_type: Any = None) -> Menu:
     """菜单 pk → 目标用户可见范围内的菜单对象（非法/不可见统一 400，不抛 500）。
 
     非法 UUID 在 filter 时抛 Django ValidationError，需就地归一为业务错误。
@@ -43,10 +43,11 @@ def _visible_menu_or_error(user_obj: UserInfo, menu_pk, menu_type=None) -> Menu:
         menu_obj = None
     if menu_obj is None:
         raise ValidationError("菜单不在目标用户可见范围")
-    return menu_obj
+    typed_value: Menu = menu_obj
+    return typed_value
 
 
-def _serialize_menu_tree(menus) -> list:
+def _serialize_menu_tree(menus: Any) -> list[Any]:
     """页面菜单（目录/菜单）→ 前端只读树（按 rank 排序）。
 
     刻意不走 RouteSerializer（BaseModelSerializer 会按请求者字段权限裁剪，
@@ -80,15 +81,16 @@ def _serialize_menu_tree(menus) -> list:
         for menu in ordered
     ]
     data.sort(key=lambda item: item.get("rank") or 0)
-    return menu_list_to_tree(data, "parent")
+    typed_value: list[Any] = menu_list_to_tree(data, "parent")
+    return typed_value
 
 
-def _count_menu_nodes(tree: list) -> int:
+def _count_menu_nodes(tree: list[Any]) -> int:
     """菜单树节点总数（含各层子节点；summary.menu_count 需与页面显示一致）。"""
     return sum(1 + _count_menu_nodes(node.get("children") or []) for node in tree)
 
 
-def get_user_api_permissions(user_obj: UserInfo) -> list:
+def get_user_api_permissions(user_obj: UserInfo) -> list[Any]:
     """API 权限码：可见菜单中 menu_type=PERMISSION 的全量码（不经 24h 缓存）。"""
     menu_queryset = get_user_menu_queryset_for_preview(user_obj)
     if not menu_queryset:
@@ -105,7 +107,7 @@ def get_user_api_permissions(user_obj: UserInfo) -> list:
     ]
 
 
-def get_user_data_permissions(user_obj: UserInfo) -> dict:
+def get_user_data_permissions(user_obj: UserInfo) -> dict[str, Any]:
     """数据权限明细：个人授权 + 部门祖先链逐层分组（语义对齐 get_filter_queryset）。
 
     与运行时口径对齐的两个关键点（否则会出现「预览显示有授权、实际看不到」）：
@@ -159,7 +161,7 @@ def get_user_data_permissions(user_obj: UserInfo) -> dict:
     }
 
 
-def _field_groups(field_permission: FieldPermission) -> list:
+def _field_groups(field_permission: FieldPermission) -> list[Any]:
     """FieldPermission.field M2M → 按父模型分组的字段结构。"""
     models: dict[str, Any] = {}
     for field in field_permission.field.all().select_related("parent"):
@@ -180,7 +182,7 @@ def _field_groups(field_permission: FieldPermission) -> list:
     return list(models.values())
 
 
-def get_user_field_matrix(user_obj: UserInfo) -> list:
+def get_user_field_matrix(user_obj: UserInfo) -> list[Any]:
     """字段权限矩阵（菜单 × 角色 × 模型 → 字段白名单）。
 
     复刻 get_user_field_queryset 的取数范围（用户角色 ∪ 部门挂载角色），
@@ -210,7 +212,7 @@ def get_user_field_matrix(user_obj: UserInfo) -> list:
     return rows
 
 
-def get_trial_candidates() -> list:
+def get_trial_candidates() -> list[Any]:
     """试算模型候选：数据权限注册表（ModelLabelField DATA 根节点）+ 规则命中标记。"""
     registered_tables = set()
     for rules_json in DataPermission.objects.filter(is_active=True).values_list("rules", flat=True):

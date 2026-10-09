@@ -13,7 +13,7 @@ from audit.models import OperationLog, UserLoginLog
 logger = get_task_logger(__name__)
 
 
-def auto_clean_operation_log(clean_day=None):
+def auto_clean_operation_log(clean_day: int | None = None) -> int:
     """先归档后清理过期审计日志：操作日志 + 登录日志。
 
     - 归档：把「整月已超保留期」的日志导出为 ``JSONL.gz``（含 sha256 与清单，幂等）；

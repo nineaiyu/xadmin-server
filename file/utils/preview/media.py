@@ -4,6 +4,7 @@
 import os
 import time
 import uuid
+from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
@@ -31,7 +32,7 @@ from .constants import (
 logger = get_logger(__name__)
 
 
-def preview_kind(upload) -> str | None:
+def preview_kind(upload: Any) -> str | None:
     """判定预览类型；`None` 表示不支持预览（前端应只给下载入口）。
 
     Office 判定排在文本之后：csv 等"表格类文本"仍按文本预览（体验更好且零转换成本）。
@@ -39,7 +40,7 @@ def preview_kind(upload) -> str | None:
     return preview_kind_of(getattr(upload, "mime_type", ""), getattr(upload, "filename", ""))
 
 
-def preview_kind_of(mime_type, filename) -> str | None:
+def preview_kind_of(mime_type: Any, filename: Any) -> str | None:
     """按 MIME + 文件名判定预览类型（纯函数）。
 
     独立成纯函数的原因：上传自动分类（file/utils/upload_category.py）要在落库前
@@ -64,12 +65,12 @@ def preview_cache_dir() -> str:
     return os.path.join(str(settings.MEDIA_ROOT), CACHE_DIR_NAME)
 
 
-def preview_cache_path(upload, size: str = SIZE_THUMB) -> str:
+def preview_cache_path(upload: Any, size: str = SIZE_THUMB) -> str:
     """缓存路径：`preview_cache/<pk>/<size>.jpg`（与源文件一对一可推导）。"""
     return os.path.join(preview_cache_dir(), str(upload.pk), f"{size}.jpg")
 
 
-def source_path(upload) -> str | None:
+def source_path(upload: Any) -> str | None:
     """源文件的本地绝对路径；缺失或不存在返回 None。
 
     对象存储后端会先下载到本地缓存再返回（PIL / open 需要本地路径）。
@@ -80,7 +81,8 @@ def source_path(upload) -> str | None:
     name = getattr(filepath, "name", "") if filepath else ""
     if not name:
         return None
-    return storage_local_path(name)
+    local_path: str | None = storage_local_path(name)
+    return local_path
 
 
 def _width_for(size: str) -> int:
@@ -89,7 +91,7 @@ def _width_for(size: str) -> int:
     return _config("FILE_PREVIEW_THUMB_WIDTH", 240)
 
 
-def ensure_image_cache(upload, size: str = SIZE_THUMB) -> str | None:
+def ensure_image_cache(upload: Any, size: str = SIZE_THUMB) -> str | None:
     """按需生成图片预览缓存并返回缓存文件路径（已存在则直接返回）。
 
     并发去重：同一 (pk, size) 只有第一个请求生成，其余短等其产出；
@@ -142,7 +144,7 @@ def _generate_jpeg(source_path_: str, target_path: str, width: int) -> None:
         image.save(target_path, "JPEG", quality=85)
 
 
-def read_text_preview(upload, max_bytes: int | None = None) -> tuple[str, bool]:
+def read_text_preview(upload: Any, max_bytes: int | None = None) -> tuple[str, bool]:
     """读取文本预览内容：`(内容, 是否截断)`。
 
     二进制文件（含 NUL 字节）返回空内容 + 未截断，由调用方按「不支持预览」处理。
@@ -173,12 +175,12 @@ def touch_preview_cache(path: str) -> None:
         pass
 
 
-def remove_preview_cache(upload) -> int:
+def remove_preview_cache(upload: Any) -> int:
     """删除某个源文件的全部预览缓存（源文件删除时联动），返回删除条数。"""
     return remove_preview_cache_by_pk(upload.pk)
 
 
-def remove_preview_cache_by_pk(pk) -> int:
+def remove_preview_cache_by_pk(pk: Any) -> int:
     """按主键删除预览缓存目录。
 
     独立成函数的原因：Django 的 `Model.delete()` 会把实例 `pk` 置为 None，
@@ -193,7 +195,7 @@ def remove_preview_cache_by_pk(pk) -> int:
     return 1
 
 
-def clean_preview_cache(keep_days: int | None = None, batch: int = 2000) -> dict:
+def clean_preview_cache(keep_days: int | None = None, batch: int = 2000) -> dict[str, int]:
     """清理预览缓存：孤儿（源记录已不存在）+ 超保留期（默认 FILE_PREVIEW_CACHE_KEEP_DAYS）。
 
     :return: `{"scanned": n, "removed_orphan": n, "removed_expired": n}`
@@ -238,6 +240,9 @@ def _remove_dir(path: str) -> None:
 
 def _dir_mtime(path: str) -> float:
     try:
-        return max(os.path.getmtime(os.path.join(root, file)) for root, _dirs, files in os.walk(path) for file in files)
+        stamps = [os.path.getmtime(os.path.join(root, file)) for root, _dirs, files in os.walk(path) for file in files]
+        newest: float = max(stamps)
     except (OSError, ValueError):
-        return timezone.now().timestamp()
+        fallback: float = timezone.now().timestamp()
+        return fallback
+    return newest

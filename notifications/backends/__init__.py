@@ -1,4 +1,5 @@
 import importlib
+from typing import Any
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -20,18 +21,18 @@ class BACKEND(models.TextChoices):
     FEISHU = "feishu", _("FeiShu")
 
     @property
-    def client(self):
+    def client(self) -> Any:
         return client_name_mapper[self]
 
-    def get_account(self, user):
+    def get_account(self, user: Any) -> Any:
         return self.client.get_account(user)
 
     @property
-    def is_enable(self):
+    def is_enable(self) -> Any:
         return self.client.is_enable()
 
     @classmethod
-    def filter_enable_backends(cls, backends):
+    def filter_enable_backends(cls, backends: Any) -> Any:
         """过滤出当前可用的渠道。
 
         存量订阅数据里可能残留已下线渠道（如 dingtalk）：未知取值只告警跳过，
@@ -49,7 +50,7 @@ class BACKEND(models.TextChoices):
         return enable_backends
 
 
-def load_backend_clients(backend_members=None):
+def load_backend_clients(backend_members: Any = None) -> None:
     """按约定加载渠道客户端：`backends/<name>.py` 暴露模块级 `backend`（BackendBase 子类）。
 
     新增渠道 = 新增一个模块文件，无需修改本文件（消息渲染映射另见

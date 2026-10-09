@@ -9,6 +9,7 @@
 """
 
 import datetime
+from typing import Any
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -30,12 +31,12 @@ EXPORT_CHUNK_SIZE = 1000
 ALERT_ITEMS = ("cpu_percent", "cpu_load", "memory_used", "disk_used")
 
 
-def resolve_hours(range_key, default_key=DEFAULT_EVENT_RANGE):
+def resolve_hours(range_key: Any, default_key: Any = DEFAULT_EVENT_RANGE) -> Any:
     seconds = EVENT_RANGES.get(range_key, EVENT_RANGES[default_key])
     return seconds / 3600
 
 
-def _page_params(limit, offset, default):
+def _page_params(limit: Any, offset: Any, default: Any) -> Any:
     """分页参数收敛：非法/非正数回退默认页大小，limit 封顶，offset 非负。"""
     try:
         limit = int(limit)
@@ -50,14 +51,14 @@ def _page_params(limit, offset, default):
     return min(limit, MAX_PAGE_LIMIT), offset
 
 
-def _paged_result(queryset, values_fields, order_by, limit, offset):
+def _paged_result(queryset: Any, values_fields: Any, order_by: Any, limit: Any, offset: Any) -> Any:
     """通用分页取数：返回 results/total/truncated，截断不再静默。"""
     rows = list(queryset.order_by(*order_by).values(*values_fields)[offset : offset + limit])
     total = queryset.count()
     return {"results": rows, "total": total, "truncated": offset + len(rows) < total}
 
 
-def alert_counts():
+def alert_counts() -> Any:
     """告警计数（面板角标）：未恢复数 / 24h 新增与恢复数。"""
     from system.models import MonitorAlert
 
@@ -72,7 +73,9 @@ def alert_counts():
     }
 
 
-def collect_alerts(status=None, item=None, range_key="7d", limit=ALERT_LIMIT, offset=0):
+def collect_alerts(
+    status: Any = None, item: Any = None, range_key: Any = "7d", limit: Any = ALERT_LIMIT, offset: Any = 0
+) -> Any:
     """告警记录查询（默认近 7 天，按最近命中时间倒序；total/truncated 支撑分页）。"""
     from system.models import MonitorAlert
 
@@ -105,7 +108,7 @@ def collect_alerts(status=None, item=None, range_key="7d", limit=ALERT_LIMIT, of
     return data
 
 
-def collect_error_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT, offset=0):
+def collect_error_events(range_key: Any = DEFAULT_EVENT_RANGE, limit: Any = EVENT_LIMIT, offset: Any = 0) -> Any:
     """异常请求：业务码非 1000 的操作日志（慢请求另有独立面板）。"""
     from audit.models.log import OperationLog
 
@@ -132,7 +135,7 @@ def collect_error_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT, offse
     )
 
 
-def collect_task_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT, offset=0):
+def collect_task_events(range_key: Any = DEFAULT_EVENT_RANGE, limit: Any = EVENT_LIMIT, offset: Any = 0) -> Any:
     """任务失败事件（FAILURE / REVOKED 终态明细）。"""
     from task.services import TaskExecution
 
@@ -151,7 +154,7 @@ def collect_task_events(range_key=DEFAULT_EVENT_RANGE, limit=EVENT_LIMIT, offset
     )
 
 
-def collect_events(kind="alert", range_key=DEFAULT_EVENT_RANGE, **kwargs):
+def collect_events(kind: Any = "alert", range_key: Any = DEFAULT_EVENT_RANGE, **kwargs: Any) -> Any:
     """统一事件入口：kind=alert|error|task；limit/offset 分页，响应带 total/truncated。"""
     limit = kwargs.get("limit")
     offset = kwargs.get("offset") or 0
@@ -164,7 +167,7 @@ def collect_events(kind="alert", range_key=DEFAULT_EVENT_RANGE, **kwargs):
     )
 
 
-def _fmt_time(value):
+def _fmt_time(value: Any) -> Any:
     if not value:
         return ""
     if isinstance(value, datetime.datetime):
@@ -174,7 +177,7 @@ def _fmt_time(value):
     return str(value)[:19].replace("T", " ")
 
 
-def build_alert_export_sheets(rows):
+def build_alert_export_sheets(rows: Any) -> Any:
     """告警记录导出（CSV/Excel 共用的表格结构）。"""
     from system.models import MonitorAlert
 

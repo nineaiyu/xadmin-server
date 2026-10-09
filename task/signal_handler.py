@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """task 域信号接收器（task.apps.ready 导入挂载）。"""
 
+from typing import Any
+
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django_celery_beat.models import PeriodicTask
@@ -9,8 +11,8 @@ from django_celery_beat.models import PeriodicTask
 from task.models.task import PeriodicTaskOwner, TaskExecution
 
 
-@receiver(pre_delete, sender=TaskExecution)
-def delete_task_execution_log_handler(sender, **kwargs):
+@receiver(pre_delete, sender=TaskExecution)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def delete_task_execution_log_handler(sender: Any, **kwargs: Any) -> None:
     # 执行历史删除（含批量删除）时联动清理落盘日志文件
     instance = kwargs.get("instance")
     if instance:
@@ -20,8 +22,8 @@ def delete_task_execution_log_handler(sender, **kwargs):
         remove_file(get_celery_task_log_path(str(instance.pk)))
 
 
-@receiver(post_save, sender=PeriodicTask)
-def record_periodic_task_owner_handler(sender, instance, created, **kwargs):
+@receiver(post_save, sender=PeriodicTask)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def record_periodic_task_owner_handler(sender: Any, instance: Any, created: Any, **kwargs: Any) -> None:
     """PeriodicTask 新建时兜底落配置者归属（side 表 PeriodicTaskOwner）。
 
     周期任务的创建入口分散：任务管理页创建/克隆（task 域视图）、启动期系统

@@ -26,7 +26,7 @@ MAX_SNAPSHOT_VALUE = 200
 MULTI_VALUE_PLACEHOLDER = "(multi-valued)"
 
 
-def _field_labels(view) -> dict:
+def _field_labels(view: Any) -> dict[str, Any]:
     """序列化器字段名 → 可读 label（拿不到时回落字段名）。"""
     labels = {}
     try:
@@ -40,7 +40,7 @@ def _field_labels(view) -> dict:
     return labels
 
 
-def _scalar(value) -> str:
+def _scalar(value: Any) -> str:
     """标量值 → 可读字符串（截断 + 多值占位）。"""
     if value is None:
         return ""
@@ -54,7 +54,7 @@ def _scalar(value) -> str:
     return text[:MAX_SNAPSHOT_VALUE]
 
 
-def _iter_changes(obj, request):
+def _iter_changes(obj: Any, request: Any) -> Any:
     """遍历请求体声明的字段：返回 [(field, old, new)]（仅模型实际字段）。"""
     data = getattr(request, "data", None)
     if not isinstance(data, dict):
@@ -79,7 +79,7 @@ def _iter_changes(obj, request):
     return changes
 
 
-def build_target_snapshot(view, request) -> dict:
+def build_target_snapshot(view: Any, request: Any) -> dict[str, Any]:
     """构建目标对象快照；不可用时返回 ``{}``（详情页降级展示）。"""
     if view is None:
         return {}

@@ -16,7 +16,9 @@
 dashboards / 表单 schema）在 Python 侧扫描（规模有界，避免跨库 JSON 查询差异）。
 """
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
@@ -41,10 +43,16 @@ class ImpactCheck:
     label: str
     count: int
     hint: str = ""
-    samples: tuple = ()
+    samples: tuple[Any, ...] = ()
 
 
-def _check(key: str, label, count: int, hint="", samples=None) -> ImpactCheck:
+def _check(
+    key: str,
+    label: Any,
+    count: int,
+    hint: Any = "",
+    samples: Iterable[Any] | None = None,
+) -> ImpactCheck:
     return ImpactCheck(
         key=key,
         label=str(label),
@@ -54,7 +62,7 @@ def _check(key: str, label, count: int, hint="", samples=None) -> ImpactCheck:
     )
 
 
-def _impact_userrole(obj) -> list:
+def _impact_userrole(obj: Any) -> list[ImpactCheck]:
     from identity.services import UserInfo
 
     users = UserInfo.objects.filter(roles=obj, is_active=True)
@@ -76,7 +84,7 @@ def _impact_userrole(obj) -> list:
     ]
 
 
-def _impact_deptinfo(obj) -> list:
+def _impact_deptinfo(obj: Any) -> list[ImpactCheck]:
     from identity.services import DeptInfo, UserInfo
 
     children = DeptInfo.objects.filter(parent=obj)
@@ -99,7 +107,7 @@ def _impact_deptinfo(obj) -> list:
     ]
 
 
-def _impact_datadict(obj) -> list:
+def _impact_datadict(obj: Any) -> list[ImpactCheck]:
     from dataset.models import DynamicForm
 
     children = obj.children.count() if getattr(obj, "parent_id", None) is None else 0
@@ -122,7 +130,7 @@ def _impact_datadict(obj) -> list:
     ]
 
 
-def _impact_dataset(obj) -> list:
+def _impact_dataset(obj: Any) -> list[ImpactCheck]:
     from dataset.models import Dashboard, Report, Screen
 
     dashboards = []
@@ -162,7 +170,7 @@ def _impact_dataset(obj) -> list:
     ]
 
 
-def _impact_approvalflow(obj) -> list:
+def _impact_approvalflow(obj: Any) -> list[ImpactCheck]:
     return [
         _check(
             "flow_instances",
@@ -176,7 +184,7 @@ def _impact_approvalflow(obj) -> list:
     ]
 
 
-def _impact_dynamicform(obj) -> list:
+def _impact_dynamicform(obj: Any) -> list[ImpactCheck]:
     return [
         _check(
             "form_submissions",
@@ -188,7 +196,7 @@ def _impact_dynamicform(obj) -> list:
     ]
 
 
-def _impact_screen(obj) -> list:
+def _impact_screen(obj: Any) -> list[ImpactCheck]:
     return [
         _check(
             "screen_dashboards",
@@ -199,7 +207,7 @@ def _impact_screen(obj) -> list:
     ]
 
 
-def _impact_menu(obj) -> list:
+def _impact_menu(obj: Any) -> list[ImpactCheck]:
     from identity.services import UserRole
     from system.services import Menu
 
@@ -224,7 +232,7 @@ def _impact_menu(obj) -> list:
 
 
 #: 影响面计算器注册表：模型 label_lower → 计算器（返回 ImpactCheck 列表）
-IMPACT_CALCULATORS = {
+IMPACT_CALCULATORS: dict[str, Callable[[Any], list[ImpactCheck]]] = {
     "identity.userrole": _impact_userrole,
     "identity.deptinfo": _impact_deptinfo,
     "system.datadict": _impact_datadict,
@@ -240,11 +248,11 @@ def supports_impact(model_label: str) -> bool:
     return str(model_label or "") in IMPACT_CALCULATORS
 
 
-def impact_for(obj) -> dict:
+def impact_for(obj: Any) -> dict[str, Any]:
     """单对象影响面（无计算器 = 零影响，前端不展示弹窗）。"""
     model_label = type(obj)._meta.label_lower
     calculator = IMPACT_CALCULATORS.get(model_label)
-    checks: list = []
+    checks: list[ImpactCheck] = []
     if calculator is not None:
         try:
             checks = [item for item in (calculator(obj) or []) if item.count][:MAX_ITEMS]
@@ -274,10 +282,10 @@ def impact_for(obj) -> dict:
     }
 
 
-def impact_for_many(objects) -> dict:
+def impact_for_many(objects: Iterable[Any]) -> dict[str, Any]:
     """批量影响面汇总（前端删除/批量删除前的预检载荷）。"""
     results = [impact_for(obj) for obj in objects]
-    totals: dict = {}
+    totals: dict[str, dict[str, Any]] = {}
     for result in results:
         for item in result["items"]:
             entry = totals.setdefault(item["key"], {"key": item["key"], "label": item["label"], "count": 0})
@@ -289,7 +297,7 @@ def impact_for_many(objects) -> dict:
     }
 
 
-def guarded_models() -> set:
+def guarded_models() -> set[str]:
     """引用保护开关：``IMPACT_GUARD_MODELS``（模型 label_lower 清单，默认空 = 不阻断）。"""
     from django.conf import settings
 
@@ -297,7 +305,7 @@ def guarded_models() -> set:
     return {str(item).strip().lower() for item in values if str(item).strip()}
 
 
-def _is_confirmed(request) -> bool:
+def _is_confirmed(request: Any) -> bool:
     truthy = ("1", "true", "yes", "on")
     data = getattr(request, "data", None)
     if isinstance(data, dict) and str(data.get("impact_confirmed", "")).strip().lower() in truthy:
@@ -308,7 +316,7 @@ def _is_confirmed(request) -> bool:
     return False
 
 
-def ensure_impact_confirmed(view, request, instances=None, queryset=None) -> None:
+def ensure_impact_confirmed(view: Any, request: Any, instances: Any = None, queryset: Any = None) -> None:
     """删除前引用保护：登记在 IMPACT_GUARD_MODELS 的模型有影响面时要求显式确认。
 
     - 未登记模型 / 已带 ``impact_confirmed=true`` / 影响面为空 → 直接放行（未登记

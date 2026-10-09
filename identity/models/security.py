@@ -86,7 +86,7 @@ class AccountRisk(DbAuditModel):
             models.Index(fields=["risk_type", "created_time"], name="idx_account_risk_type_created"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user_display or self.user_id} {self.risk_type} [{self.status}]"
 
 
@@ -136,7 +136,7 @@ class LoginAccessPolicy(DbAuditModel):
         verbose_name = _("Login access policy")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} [{self.action}]"
 
 
@@ -167,5 +167,5 @@ class UserPasskey(DbAuditModel):
         verbose_name = _("User passkey")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user_id} {self.name or self.credential_id[:12]}"

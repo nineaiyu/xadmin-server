@@ -9,6 +9,8 @@
 - 列表展示：委托人/代理人用户名与昵称、流程范围（空 = 全部流程）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -65,7 +67,7 @@ class ApprovalDelegationSerializer(BaseModelSerializer):
             "remark",
         ]
 
-    def _check_delegator_ownership(self, delegator):
+    def _check_delegator_ownership(self, delegator: Any) -> None:
         """委托归属护栏：非超管只能以自己的名义创建/维护委托。
 
         生效委托在节点解析时会直接替换「待办归属」（引擎只判行存在，不复查是谁建的），
@@ -78,7 +80,7 @@ class ApprovalDelegationSerializer(BaseModelSerializer):
         if delegator is not None and delegator.pk != user.pk:
             raise serializers.ValidationError({"delegator": _("Delegations can only be created in your own name")})
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         delegator = attrs.get("delegator") or getattr(self.instance, "delegator", None)
         delegate = attrs.get("delegate") or getattr(self.instance, "delegate", None)
         start = attrs.get("start_time") or getattr(self.instance, "start_time", None)

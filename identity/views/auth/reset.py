@@ -4,6 +4,8 @@
 # filename : reset
 # author : ly_13
 # date : 8/10/2024
+from typing import Any
+
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -46,7 +48,7 @@ class ResetPasswordAPIView(GenericAPIView):
         ),
         responses=get_default_response_schema(),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """重置密码"""
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
         password = request.data.get("password")

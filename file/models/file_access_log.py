@@ -56,5 +56,5 @@ class FileAccessLog(models.Model):
             models.Index(fields=["user", "action"], name="idx_file_log_user_action"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.filename} {self.action} by {self.user_display}"

@@ -49,8 +49,9 @@ class DynamicForm(DbAuditModel, DbUuidModel):
         verbose_name_plural = _("Dynamic forms")
         ordering = ("-created_time",)
 
-    def __str__(self):
-        return self.name
+    def __str__(self) -> str:
+        name: str = self.name
+        return name
 
 
 class DynamicFormSubmission(DbAuditModel, DbUuidModel):
@@ -104,5 +105,5 @@ class DynamicFormSubmission(DbAuditModel, DbUuidModel):
             GinIndex(fields=["filter_data"], name="idx_dformsub_filter_gin"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.form_id}:{self.creator_id}"

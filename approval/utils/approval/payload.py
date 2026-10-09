@@ -4,18 +4,19 @@
 
 import json
 import re
+from typing import Any
 
 from common.utils import get_logger
 
 logger = get_logger(__name__)
 
 
-def canonical_params(params) -> str:
+def canonical_params(params: Any) -> str:
     """请求体快照的规范化 JSON（排序键 + 固定默认值），用于一致性比对。"""
     return json.dumps(params, ensure_ascii=False, sort_keys=True, default=str)
 
 
-def get_request_params(request):
+def get_request_params(request: Any) -> Any:
     """取脱敏后的请求体快照：dict 走 desensitize_body，其余（list/字符串）原样。
 
     multipart（"multipart/form-data" 哨兵串）场景不开放审批：文件无法进快照，
@@ -33,7 +34,7 @@ def get_request_params(request):
     return body
 
 
-def get_request_object_pk(view) -> str | None:
+def get_request_object_pk(view: Any) -> str | None:
     """detail 路由的对象主键（pk 兜底 id），list 路由返回 None。"""
     kwargs = getattr(view, "kwargs", None) or {}
     value = kwargs.get("pk") or kwargs.get("id")

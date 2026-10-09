@@ -4,6 +4,8 @@
 # filename : base
 # author : ly_13
 # date : 8/6/2024
+from typing import Any
+
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -17,12 +19,19 @@ class BaseSMSClient:
     SIGN_AND_TMPL_SETTING_FIELD_PREFIX: str
 
     @classmethod
-    def new_from_settings(cls):
+    def new_from_settings(cls) -> Any:
         raise NotImplementedError
 
-    def send_sms(self, phone_numbers: list, sign_name: str, template_code: str, template_param: dict, **kwargs):
+    def send_sms(
+        self,
+        phone_numbers: list[str],
+        sign_name: str,
+        template_code: str,
+        template_param: dict[str, Any],
+        **kwargs: Any,
+    ) -> Any:
         raise NotImplementedError
 
     @staticmethod
-    def need_pre_check():
+    def need_pre_check() -> bool:
         return True

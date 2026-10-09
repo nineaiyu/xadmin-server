@@ -17,6 +17,8 @@
 ``pip install django-storages boto3``。
 """
 
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from file.utils import storage_migrate as util
@@ -25,7 +27,7 @@ from file.utils import storage_migrate as util
 class Command(BaseCommand):
     help = "文件存储搬迁 / 校验：本地 <-> 对象存储，幂等可断点续搬"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument(
             "--direction", choices=("push", "pull"), default="push", help="push=本地→对象存储；pull=对象存储→本地"
         )
@@ -38,7 +40,7 @@ class Command(BaseCommand):
         parser.add_argument("--limit", type=int, default=None, help="最多处理文件数（缺省不限）")
         parser.add_argument("--batch", type=int, default=500, help="数据库遍历批大小")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         direction = options["direction"]
         try:
             local = util.get_local_storage()

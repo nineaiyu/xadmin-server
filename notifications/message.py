@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.db import transaction
 from django.db.models import QuerySet
 
@@ -19,19 +21,19 @@ class SiteMessageUtil:
     @classmethod
     def send_msg(
         cls,
-        subject,
-        message,
-        user_ids=None,
-        level=MessageContent.LevelChoices.DEFAULT,
-        notice_type=MessageContent.NoticeChoices.SYSTEM,
-    ):
+        subject: Any,
+        message: Any,
+        user_ids: Any = None,
+        level: Any = MessageContent.LevelChoices.DEFAULT,
+        notice_type: Any = MessageContent.NoticeChoices.SYSTEM,
+    ) -> None:
         if not user_ids:
             raise ValueError("No recipient is specified")
 
         cls.base_notify(user_ids, subject, message, notice_type, level)
 
     @classmethod
-    def push_notice_messages(cls, notify_obj, pks):
+    def push_notice_messages(cls, notify_obj: Any, pks: Any) -> Any:
         notice_message = NoticeMessageSerializer(
             fields=["pk", "level", "title", "notice_type", "message"], instance=notify_obj, ignore_field_permission=True
         ).data
@@ -61,13 +63,13 @@ class SiteMessageUtil:
     @classmethod
     def store_notice(
         cls,
-        users: list | QuerySet,
+        users: list[Any] | QuerySet,
         title: str,
         message: str,
         notice_type: int,
         level: MessageContent.LevelChoices,
-        extra_json: dict | None = None,
-    ):
+        extra_json: dict[str, Any] | None = None,
+    ) -> Any:
         """仅落库（不推送）：供已有实时投递链路的调用方做「持久化兜底」。
 
         与 ``base_notify`` 的差别是跳过 ``push_notice_messages``——调用方自身
@@ -84,13 +86,13 @@ class SiteMessageUtil:
     @classmethod
     def base_notify(
         cls,
-        users: list | QuerySet,
+        users: list[Any] | QuerySet,
         title: str,
         message: str,
         notice_type: int,
         level: MessageContent.LevelChoices,
-        extra_json: dict | None = None,
-    ):
+        extra_json: dict[str, Any] | None = None,
+    ) -> Any:
         notify_obj = cls.store_notice(users, title, message, notice_type, level, extra_json)
         recipients = users if isinstance(users, (QuerySet, list)) else [users]
         cls.push_notice_messages(
@@ -100,8 +102,13 @@ class SiteMessageUtil:
 
     @classmethod
     def notify_success(
-        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict | None = None
-    ):
+        cls,
+        users: list[Any] | QuerySet,
+        title: str,
+        message: str,
+        notice_type: int = SYSTEM,
+        extra_json: dict[str, Any] | None = None,
+    ) -> Any:
         # type ignore[arg-type]：Choices 成员同上（元类在运行期转为枚举成员）
         return cls.base_notify(
             users,
@@ -114,8 +121,13 @@ class SiteMessageUtil:
 
     @classmethod
     def notify_info(
-        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict | None = None
-    ):
+        cls,
+        users: list[Any] | QuerySet,
+        title: str,
+        message: str,
+        notice_type: int = SYSTEM,
+        extra_json: dict[str, Any] | None = None,
+    ) -> Any:
         # type ignore[arg-type]：Choices 成员同上（元类在运行期转为枚举成员）
         return cls.base_notify(
             users,
@@ -128,8 +140,13 @@ class SiteMessageUtil:
 
     @classmethod
     def notify_error(
-        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict | None = None
-    ):
+        cls,
+        users: list[Any] | QuerySet,
+        title: str,
+        message: str,
+        notice_type: int = SYSTEM,
+        extra_json: dict[str, Any] | None = None,
+    ) -> Any:
         # type ignore[arg-type]：Choices 成员同上（元类在运行期转为枚举成员）
         return cls.base_notify(
             users,

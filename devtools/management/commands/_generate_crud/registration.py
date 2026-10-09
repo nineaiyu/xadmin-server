@@ -37,7 +37,7 @@ class RegistrationMixin:
         stdout: Any
         style: Any
 
-    def _register_app(self, ctx, options) -> bool:
+    def _register_app(self, ctx: dict[str, Any], options: dict[str, Any]) -> bool:
         """把 ``ctx["app_label"]`` 写入配置文件；返回是否已确保注册（含本就注册）。
 
         ``--dry-run`` 只预演不落盘（返回 False，后续步骤保留手工提示）。
@@ -122,7 +122,7 @@ class RegistrationMixin:
     # ------------------------------------------------------------------ 细节
 
     @staticmethod
-    def _config_root(options) -> Path:
+    def _config_root(options: dict[str, Any]) -> Path:
         """配置文件查找根：与产物输出根一致（--output 可整体隔离，测试注入用）。"""
 
         return Path(options["output"] or settings.PROJECT_DIR)
@@ -156,7 +156,7 @@ class RegistrationMixin:
         return text[:start] + f" [{', '.join(items)}]" + text[end:]
 
     @staticmethod
-    def _insert_after_key(text: str, match: re.Match, app_label: str) -> str:
+    def _insert_after_key(text: str, match: re.Match[str], app_label: str) -> str:
         """键行后插入 ``- app``（默认两空格缩进，与 config_example.yml 的块列表一致）。"""
 
         lines = text.splitlines(keepends=True)
@@ -179,7 +179,7 @@ class RegistrationMixin:
         """打印变更行（+ 前缀标新增行；XADMIN_APPS 行始终展示，便于核对）。"""
 
         old_lines = set(original.splitlines())
-        diff = []
+        diff: list[str] = []
         for line in updated.splitlines():
             added = line not in old_lines
             if added or line.startswith(XADMIN_APPS_KEY):

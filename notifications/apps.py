@@ -7,7 +7,7 @@ class NotificationsConfig(AppConfig):
     name = "notifications"
     verbose_name = _("App Notifications")
 
-    def ready(self):
+    def ready(self) -> None:
         from notifications.backends import BACKEND  # noqa
         from . import signal_handlers  # noqa
         from . import notifications  # noqa

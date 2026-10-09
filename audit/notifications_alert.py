@@ -4,6 +4,7 @@
 
 import hashlib
 import re
+from typing import Any
 
 from audit.notifications import (
     SensitiveOperationMessage,
@@ -17,7 +18,7 @@ logger = get_logger(__name__)
 SENSITIVE_ALERT_THROTTLE_SECONDS = 60
 
 
-def maybe_alert_sensitive_operation(info: dict):
+def maybe_alert_sensitive_operation(info: dict[str, Any]) -> None:
     """敏感操作命中判定 + 节流告警（由操作日志中间件在日志落库后调用）。
 
     方法清单（SysConfig.SENSITIVE_OPERATION_METHODS，默认 ["DELETE"]）与路径正则

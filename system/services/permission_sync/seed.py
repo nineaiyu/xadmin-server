@@ -5,9 +5,10 @@
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 
-def dump_entries(model, objs, exclude_fields=()):
+def dump_entries(model: Any, objs: Any, exclude_fields: Any = ()) -> Any:
     """把模型实例序列化成 loaddata 兼容的 JSON 结构（与 dump_init_json 同口径）。"""
     from django.core import serializers
 
@@ -15,12 +16,12 @@ def dump_entries(model, objs, exclude_fields=()):
     return json.loads(serializers.serialize("json", list(objs), fields=fields))
 
 
-def detect_indent(text, default=1):
+def detect_indent(text: Any, default: Any = 1) -> Any:
     match = re.search(r"\n( +)\S", text)
     return len(match.group(1)) if match else default
 
 
-def seed_entry_pks(file_path):
+def seed_entry_pks(file_path: Any) -> Any:
     """读取种子文件已有条目的 pk 集合（不存在时返回空集）。"""
     path = Path(file_path)
     if not path.exists():
@@ -28,7 +29,7 @@ def seed_entry_pks(file_path):
     return {entry["pk"] for entry in json.loads(path.read_text(encoding="utf8"))}
 
 
-def merge_seed_file(file_path, entries, normalize_creator=True):
+def merge_seed_file(file_path: Any, entries: Any, normalize_creator: Any = True) -> Any:
     """把条目合并进 loadjson 种子文件（按 pk 原地替换、新条目追加，保持既有缩进）。"""
     path = Path(file_path)
     text = path.read_text(encoding="utf8") if path.exists() else "[]"

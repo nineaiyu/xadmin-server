@@ -31,9 +31,9 @@ class ApprovalInstanceCommentMixin:
 
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
-    def _resolve_comment_mentions(self, content, exclude_user):
+    def _resolve_comment_mentions(self, content: Any, exclude_user: Any) -> Any:
         """解析评论中的 @用户名 → 启用用户列表（排除自己，去重保序）。"""
         from identity.models import UserInfo
 
@@ -49,7 +49,7 @@ class ApprovalInstanceCommentMixin:
                 users.append(user)
         return users
 
-    def _notify_comment_mentions(self, instance, users, content):
+    def _notify_comment_mentions(self, instance: Any, users: Any, content: Any) -> None:
         """评论 @ 提醒（默认只提醒被提及者；失败只记日志）。"""
         if not users:
             return
@@ -62,8 +62,8 @@ class ApprovalInstanceCommentMixin:
                 pass
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="comments")
-    def comments(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="comments")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def comments(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """讨论区评论列表"""
         instance = self.get_object()
         rows = instance.comments.select_related("creator").all()
@@ -79,8 +79,8 @@ class ApprovalInstanceCommentMixin:
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, url_path="comment")
-    def add_comment(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="comment")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def add_comment(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """发表评论（参与人 = 可见域内用户；@ 提及者收提醒）"""
         instance = self.get_object()
         content = str(request.data.get("content") or "").strip()
@@ -111,8 +111,8 @@ class ApprovalInstanceCommentMixin:
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, url_path="comment/delete")
-    def delete_comment(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="comment/delete")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def delete_comment(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """删除评论（作者本人或超管）"""
         instance = self.get_object()
         comment = instance.comments.filter(pk=request.data.get("pk")).first()

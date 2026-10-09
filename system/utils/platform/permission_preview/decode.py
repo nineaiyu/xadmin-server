@@ -4,6 +4,7 @@
 
 import copy
 import json
+from typing import Any
 
 from common.utils import get_logger
 from identity.services import DeptInfo, UserInfo, UserRole
@@ -17,7 +18,7 @@ from .labels import _field_label, _humanize_seconds, _join_names, _model_label, 
 logger = get_logger(__name__)
 
 
-def _resolve_value_text(rule: dict, user_obj: UserInfo | None, subject: str = "user") -> str:
+def _resolve_value_text(rule: dict[str, Any], user_obj: UserInfo | None, subject: str = "user") -> str:
     """按规则类型把 value 解析为可读名称（关联 ID → 用户名/角色名/部门名/菜单标题）。
 
     注意：value.user.* 类型的原始 value 就是 '*' 占位符（过滤时注入真实 ID），
@@ -34,7 +35,7 @@ def _resolve_value_text(rule: dict, user_obj: UserInfo | None, subject: str = "u
         return str(rule.get("value"))
 
 
-def _resolve_dept_subject_text(f_type, val) -> str:
+def _resolve_dept_subject_text(f_type: Any, val: Any) -> str:
     """部门维度：注入类类型的主语是「部门成员」，与具体用户无关。"""
     mapping = {
         "value.user.id": "部门成员本人（各自）",
@@ -51,7 +52,7 @@ def _resolve_dept_subject_text(f_type, val) -> str:
     return _resolve_value_text_inner({"type": f_type, "value": val}, None, "user")
 
 
-def _resolve_value_text_inner(rule: dict, user_obj: UserInfo | None, subject: str = "user") -> str:
+def _resolve_value_text_inner(rule: dict[str, Any], user_obj: UserInfo | None, subject: str = "user") -> str:
     f_type, val = rule.get("type"), rule.get("value")
     if f_type == "value.all":
         return "不限（全部）"
@@ -141,7 +142,9 @@ def _resolve_value_text_inner(rule: dict, user_obj: UserInfo | None, subject: st
     return str(val)
 
 
-def decode_rule(rule: dict, user_obj: UserInfo | None, label_cache: dict | None = None, subject: str = "user") -> dict:
+def decode_rule(
+    rule: dict[str, Any], user_obj: UserInfo | None, label_cache: dict[str, Any] | None = None, subject: str = "user"
+) -> dict[str, Any]:
     """单条规则 JSON → 可读文案结构（table/field/type/match/value 全部附 label）。"""
     table = rule.get("table")
     field = rule.get("field")
@@ -162,8 +165,8 @@ def decode_rule(rule: dict, user_obj: UserInfo | None, label_cache: dict | None 
 
 
 def decode_data_permission(
-    dp: DataPermission, user_obj: UserInfo | None, label_cache: dict | None = None, subject: str = "user"
-) -> dict:
+    dp: DataPermission, user_obj: UserInfo | None, label_cache: dict[str, Any] | None = None, subject: str = "user"
+) -> dict[str, Any]:
     """DataPermission → 可读授权组（含生效模式与总述文案）。
 
     与 packages/xadmin-common/common/core/data_scope.py 组内语义对齐：value.all 在或模式下短路全放行、

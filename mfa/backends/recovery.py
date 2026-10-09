@@ -11,6 +11,8 @@
 TOTP 设备全丢的用户凭恢复码即可完成登录与解绑重绑，不再只能管理员 reset。
 """
 
+from typing import Any
+
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
@@ -45,5 +47,5 @@ class RecoveryCodeBackend(BaseMFA):
         except Exception:  # noqa: BLE001 用户未落库等场景视为不可用
             return False
 
-    def check_code(self, code) -> tuple:
+    def check_code(self, code: str) -> tuple[bool, Any]:
         return recovery.verify_and_consume(self.user, code)

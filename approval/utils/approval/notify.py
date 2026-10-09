@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """敏感操作审批：通知、Webhook 事件与协议响应。"""
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 from common.core.response import ApiResponse
@@ -16,7 +18,7 @@ from .constants import (
 logger = get_logger(__name__)
 
 
-def notify_approvers(approval, approvers):
+def notify_approvers(approval: Any, approvers: Any) -> None:
     """通知全部审批人（60s 节流，防重复提交刷屏）。"""
     from django.core.cache import cache
 
@@ -31,7 +33,7 @@ def notify_approvers(approval, approvers):
             logger.warning("send approval notify failed. approval:%s user:%s", approval.pk, user.pk, exc_info=True)
 
 
-def notify_step(approval, step):
+def notify_step(approval: Any, step: Any) -> None:
     """逐级通知：只通知该级候选人（按「单 + 级次」节流，防重复推进刷屏）。
 
     与 notify_approvers 的差异：多级链的待办归属随级次变化，通知对象必须是
@@ -56,7 +58,7 @@ def notify_step(approval, step):
             )
 
 
-def _emit_approval_event(event: str, approval) -> None:
+def _emit_approval_event(event: str, approval: Any) -> None:
     """出站 Webhook：审批事件（emit 全程吞异常，不影响审批流转）。"""
     from task.services import emit_webhook_event
 
@@ -75,7 +77,7 @@ def _emit_approval_event(event: str, approval) -> None:
         logger.warning("emit approval webhook failed: %s", event, exc_info=True)
 
 
-def notify_applicant(approval, event: str):
+def notify_applicant(approval: Any, event: str) -> None:
     """向申请人推送审批结果（通过/驳回）。"""
     from approval.notifications import ApprovalRequestMessage
 
@@ -87,7 +89,7 @@ def notify_applicant(approval, event: str):
         logger.warning("send approval result failed. approval:%s event:%s", approval.pk, event, exc_info=True)
 
 
-def pending_response(approval) -> ApiResponse:
+def pending_response(approval: Any) -> ApiResponse:
     """待审批协议响应：HTTP 412 + 业务码 1002 + type=approval_required。"""
     return ApiResponse(
         code=APPROVAL_PENDING_CODE,

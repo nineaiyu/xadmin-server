@@ -8,6 +8,8 @@
 - 取值域：超管全部；普通用户「我提交 ∪ 我审批过（待办/已办）」。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -49,7 +51,7 @@ class LeaveScopeFilter(BaseFilterBackend):
     属预期（与流程审批中心的页签口径一致）。
     """
 
-    def filter_queryset(self, request, queryset, view):
+    def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
         user = request.user
         if not user or not user.is_authenticated:
             return queryset.none()
@@ -75,14 +77,14 @@ class LeaveViewSet(BaseModelSet):
     ordering = ["-created_time"]
     ordering_fields = ["created_time", "start_date", "end_date", "days"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return leave_conflict_queryset(super().get_queryset(), self.request.user)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         user = self.request.user
         serializer.save(creator=user, modifier=user, dept_belong=getattr(user, "dept", None))
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """新增请假申请（保存后立即提交审批；无可用审批人时保留草稿并以业务码 1008 返回）"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -95,7 +97,7 @@ class LeaveViewSet(BaseModelSet):
             return ApiResponse(code=LEAVE_DRAFT_SAVED_CODE, data=data, detail=_("Saved as draft: {}").format(error))
         return ApiResponse(data=data, detail=_("The leave request has been submitted for approval"))
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> Any:
         if instance.status in (Leave.Status.PENDING, Leave.Status.APPROVED):
             raise ValidationError({"detail": _("Requests in approval or already approved cannot be deleted")})
         return super().perform_destroy(instance)
@@ -109,8 +111,8 @@ class LeaveViewSet(BaseModelSet):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-destroy")
-    def batch_destroy(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除：静默排除审批中/已批准的申请，不因单条受保护而整批失败。
 
         ⚠️ 覆写基类 `BatchDestroyAction.batch_destroy` 必须保留 `@action`
@@ -120,8 +122,8 @@ class LeaveViewSet(BaseModelSet):
         return super().batch_destroy(request, *args, **kwargs)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True)
-    def submit(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def submit(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """提交审批（草稿或已驳回/已撤回的申请可重新提交）"""
         leave = self.get_object()
         ok, detail = submit_leave(leave, request.user)
@@ -130,8 +132,8 @@ class LeaveViewSet(BaseModelSet):
         return ApiResponse(detail=_("The leave request has been submitted for approval"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True)
-    def cancel(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def cancel(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """撤回申请（仅申请人、仅审批中）"""
         leave = self.get_object()
         ok, detail = cancel_leave(leave, request.user)
@@ -140,7 +142,7 @@ class LeaveViewSet(BaseModelSet):
         return ApiResponse(detail=_("The leave request has been cancelled"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False)
-    def stats(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def stats(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """我的请假统计（近 30 天：提交 / 审批中 / 已通过 / 已驳回）"""
         return ApiResponse(data=leave_stats(request.user))

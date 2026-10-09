@@ -17,6 +17,7 @@ from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework.request import Request
 
 from common.core.response import ApiResponse
 from common.storage import storage_exists, storage_open, storage_presigned_url
@@ -27,7 +28,7 @@ from file.serializers.file_access_log import FileAccessLogSerializer
 from file.utils.file_audit import get_upload_policy, log_file_access
 
 
-def inline_file_response(source, content_type, filename):
+def inline_file_response(source: Any, content_type: str, filename: str) -> FileResponse:
     """inline 响应：浏览器直接渲染（PDF 内嵌 / 图片展示）而非下载。
 
     `source` 支持本地路径与已打开的文件对象（存储适配本地 / 对象存储统一入口）。
@@ -46,9 +47,9 @@ class FileAccessActionMixin:
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
         request: Any
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> Any:
         # 文件访问审计：删除留痕（批量删除逐行走本方法）
         log_file_access(
             upload=instance,
@@ -60,8 +61,8 @@ class FileAccessActionMixin:
         return super().perform_destroy(instance)  # type: ignore[misc]  # 宿主 ViewSet 未提供同名方法
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="download")
-    def download(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="download")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def download(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """下载文件（DRF 鉴权 + 数据权限 + 访问审计，替代 /media/ 直链）
 
         ``?direct=1``（预签名直连）：s3 后端且 boto3 可用时返回短时效预签名 URL
@@ -94,8 +95,8 @@ class FileAccessActionMixin:
         return response
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="access-logs")
-    def access_logs(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="access-logs")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def access_logs(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """文件访问记录：最近 100 条 + 各动作计数"""
         upload = self.get_object()
         queryset = FileAccessLog.objects.filter(file=upload).order_by("-created_time")
@@ -120,8 +121,8 @@ class FileAccessActionMixin:
             }
         )
     )
-    @action(methods=["get"], detail=False)
-    def config(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def config(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """获取上传配置"""
         # 延迟导入：上传配置内核在 utils 层（与文件中心/聊天附件同源），
         # 延迟取用避免与主视图模块形成模块级循环

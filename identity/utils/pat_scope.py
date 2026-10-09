@@ -19,6 +19,7 @@ value 一旦入库即为 scope 语义（正则），前端只负责搬运与勾�
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from common.core.auth import split_scope_entry
 from common.core.permission import get_user_permission
@@ -98,7 +99,7 @@ def scope_display_path(path: str) -> str:
     return "/" + _PLACEHOLDER_RE.sub(lambda match: "{{{}}}".format(match.group("name")), body)
 
 
-def _menu_title(menu) -> str:
+def _menu_title(menu: Any) -> str:
     """菜单标题（原样返回：可能是 i18n key，由前端 te() 翻译）。"""
     if menu is None:
         return ""
@@ -108,7 +109,7 @@ def _menu_title(menu) -> str:
         return ""
 
 
-def _option_label(menu) -> str:
+def _option_label(menu: Any) -> str:
     """权限项展示名：去操作标记的菜单标题 → 权限码资源段 → 权限码。"""
     title = _TITLE_TAG_RE.sub("", _menu_title(menu))
     if title:
@@ -117,7 +118,7 @@ def _option_label(menu) -> str:
     return code.split(":", 1)[-1] or code
 
 
-def _iter_scope_menus(user):
+def _iter_scope_menus(user: Any) -> Any:
     """产出 ``(method, Menu)``：该用户有权限的接口菜单（超管为全部启用权限菜单）。"""
     if user.is_superuser:
         queryset = Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, is_active=True).select_related(
@@ -144,9 +145,9 @@ def _iter_scope_menus(user):
             yield (menu.method or method).upper(), menu
 
 
-def scope_options_for_user(user) -> dict:
+def scope_options_for_user(user: Any) -> dict[str, Any]:
     """当前用户可授权的接口范围，按父菜单分组（供令牌接口范围勾选）。"""
-    groups: dict[str, dict] = {}
+    groups: dict[str, dict[str, Any]] = {}
     seen = set()
     total = 0
     for method, menu in _iter_scope_menus(user):

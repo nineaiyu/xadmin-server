@@ -11,6 +11,7 @@
 import datetime
 import json
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
@@ -21,7 +22,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def _limits():
+def _limits() -> Any:
     """延迟读取常量：模块加载期不 import ai_actions（双向依赖会循环）。"""
     from ai.utils.ai_actions import MAX_CATALOG_FORMS, MAX_REASON_LENGTH
 
@@ -35,21 +36,21 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _parse_date(value):
+def _parse_date(value: Any) -> Any:
     try:
         return datetime.date.fromisoformat(str(value))
     except (TypeError, ValueError):
         return None
 
 
-def _parse_decimal(value):
+def _parse_decimal(value: Any) -> Any:
     try:
         return Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError):
         return None
 
 
-def available_forms(user) -> list:
+def available_forms(user: Any) -> list[Any]:
     """可提交的动态表单（启用中，目录按创建时间倒序取前 N 个）。"""
     from dataset.services import DynamicForm
 
@@ -57,7 +58,7 @@ def available_forms(user) -> list:
     return list(DynamicForm.objects.filter(is_active=True).order_by("-created_time")[:limit])
 
 
-def _form_fields(form) -> list:
+def _form_fields(form: Any) -> list[Any]:
     fields = (form.schema or {}).get("fields") or []
     return [
         {
@@ -71,7 +72,7 @@ def _form_fields(form) -> list:
     ]
 
 
-def _validate_leave(user, params: dict):
+def _validate_leave(user: Any, params: dict[str, Any]) -> Any:
     """校验请假参数：返回 (JSON 安全的规范化参数, 错误文案)。"""
     from approval.models.leave import Leave
     from approval.utils.leave import leave_days, validate_leave_payload
@@ -111,7 +112,7 @@ def _validate_leave(user, params: dict):
     )
 
 
-def _execute_leave(user, params: dict) -> dict:
+def _execute_leave(user: Any, params: dict[str, Any]) -> dict[str, Any]:
     """创建请假单并立即提交审批（与 LeaveViewSet.create 同口径：无流程/无审批人时保留草稿）。"""
     from approval.models.leave import Leave
     from approval.utils.leave import submit_leave
@@ -139,7 +140,7 @@ def _execute_leave(user, params: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _resolve_form(params: dict):
+def _resolve_form(params: dict[str, Any]) -> Any:
     """按 form_id 取启用中的表单；返回 (form, 错误文案)。"""
     from dataset.services import DynamicForm
 
@@ -157,7 +158,7 @@ def _resolve_form(params: dict):
     return form, None
 
 
-def _validate_dform(user, params: dict):
+def _validate_dform(user: Any, params: dict[str, Any]) -> Any:
     """校验动态表单提交参数：返回 (JSON 安全的规范化参数, 错误文案)。"""
     from dataset.services import validate_submission_data
 
@@ -176,14 +177,14 @@ def _validate_dform(user, params: dict):
     return {"form_id": str(form.pk), "data": normalized, "form_name": form.name}, None
 
 
-def _dform_requires_approval(user, params: dict) -> bool:
+def _dform_requires_approval(user: Any, params: dict[str, Any]) -> bool:
     if getattr(user, "is_superuser", False):
         return False
     form, error = _resolve_form(params)
     return bool(form is not None and form.approval_required)
 
 
-def _execute_dform(user, params: dict) -> dict:
+def _execute_dform(user: Any, params: dict[str, Any]) -> dict[str, Any]:
     from dataset.services import DynamicFormSubmission
 
     form, error = _resolve_form(params)
@@ -208,7 +209,7 @@ def _execute_dform(user, params: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 #: 首页统计端点清单（名称 → 业务路径）；一次调用合并返回，避免模型连发 6 个细粒度查询
-DASHBOARD_ENDPOINTS: tuple = (
+DASHBOARD_ENDPOINTS: tuple[Any, ...] = (
     ("user_login_total", "/api/system/dashboard/user-login-total"),
     ("user_total", "/api/system/dashboard/user-total"),
     ("user_registered_trend", "/api/system/dashboard/user-registered-trend"),
@@ -218,7 +219,7 @@ DASHBOARD_ENDPOINTS: tuple = (
 )
 
 #: 指标可读名（随请求语言翻译，进结果表格「指标」列）
-DASHBOARD_LABELS: dict = {
+DASHBOARD_LABELS: dict[str, Any] = {
     "user_login_total": _("User logins"),
     "user_total": _("Total users"),
     "user_registered_trend": _("Registrations"),
@@ -228,12 +229,12 @@ DASHBOARD_LABELS: dict = {
 }
 
 
-def _validate_dashboard(user, params: dict):
+def _validate_dashboard(user: Any, params: dict[str, Any]) -> Any:
     """无参数动作：原样通过。"""
     return {}, None
 
 
-def _extract_metric(payload: dict):
+def _extract_metric(payload: dict[str, Any]) -> Any:
     """统计端点响应 → 指标数据。
 
     两类返回口径（均视为成功后提取）：
@@ -246,7 +247,7 @@ def _extract_metric(payload: dict):
     return {key: payload[key] for key in ("results", "percent", "count") if key in payload}
 
 
-def _response_payload(response):
+def _response_payload(response: Any) -> Any:
     """内部 dispatch 响应 → 统一 JSON payload。
 
     两类响应形态：DRF Response（``.data``）与 ``cache_response`` 缓存命中时返回的
@@ -262,7 +263,7 @@ def _response_payload(response):
     return payload if isinstance(payload, dict) else {}
 
 
-def _trend_text(trend) -> str:
+def _trend_text(trend: Any) -> str:
     """趋势序列压缩为可读短串：``[{day, count}]`` → ``09-15=3 09-16=5 …``。"""
     if not isinstance(trend, list):
         return ""
@@ -275,7 +276,7 @@ def _trend_text(trend) -> str:
     return " ".join(parts)
 
 
-def _metric_row(cols: list, label, metric) -> dict:
+def _metric_row(cols: list[Any], label: Any, metric: Any) -> dict[str, Any]:
     """单个指标 → 结果表格行。
 
     行字典直接以翻译后的列名为 key（AiResultTable 的通用契约：columns 即行键）。
@@ -295,7 +296,7 @@ def _metric_row(cols: list, label, metric) -> dict:
     }
 
 
-def _execute_dashboard(user, params: dict) -> dict:
+def _execute_dashboard(user: Any, params: dict[str, Any]) -> dict[str, Any]:
     """内部 dispatch 6 个统计端点并合并（与声明式动作同一内部构造请求口径）。
 
     data 同时给两种消费形态：``columns/rows/total``（前端 AiResultTable 直接渲染，
@@ -306,8 +307,8 @@ def _execute_dashboard(user, params: dict) -> dict:
     from rest_framework.test import APIRequestFactory
 
     factory = APIRequestFactory()
-    metrics: dict = {}
-    failed: list = []
+    metrics: dict[str, Any] = {}
+    failed: list[Any] = []
     for name, path in DASHBOARD_ENDPOINTS:
         try:
             match = resolve(path)

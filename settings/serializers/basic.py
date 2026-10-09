@@ -113,7 +113,7 @@ class BasicSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     )
 
     @staticmethod
-    def validate_SITE_URL(s):
+    def validate_SITE_URL(s: str) -> str:
         # 留空 = 未配置，原样落库（不伪造 127.0.0.1）：站点链接基址的实际消费方
         # 已自带「按请求推导」兜底，伪造回环地址反而会把兜底打穿成不可达链接
         if not s:
@@ -121,7 +121,7 @@ class BasicSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         return s.strip("/")
 
     @staticmethod
-    def validate_FRONT_END_WEB_WATERMARK_PATHS(value):
+    def validate_FRONT_END_WEB_WATERMARK_PATHS(value: str) -> str:
         """归一化生效页面为逗号分隔的路由前缀列表。
 
         每项必须以 / 开头：水印按路由前缀匹配，无效项（如直接填写中文说明）
@@ -140,7 +140,7 @@ class BasicSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         return ",".join(items)
 
     @staticmethod
-    def validate_FRONT_END_WEB_WATERMARK_COLOR(value):
+    def validate_FRONT_END_WEB_WATERMARK_COLOR(value: str) -> str:
         """校验水印文字颜色：十六进制 / rgb(a) / hsl(a) / CSS 颜色名，留空 = 默认灰。
 
         值最终进入 canvas fillStyle，非法值只会静默画出默认色——保存期直接拒绝，
@@ -155,6 +155,6 @@ class BasicSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
             )
         return value
 
-    def post_save(self):
+    def post_save(self) -> None:
         if set(self.change_fields) & {"PERMISSION_FIELD_ENABLED", "PERMISSION_DATA_ENABLED"}:
             invalid_user_cache_signal.send(sender=self, user_pk="*")

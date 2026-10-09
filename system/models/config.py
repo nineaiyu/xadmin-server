@@ -36,7 +36,7 @@ class SystemConfig(BaseConfig, DbUuidModel):
         # 无默认排序时分页会抛 UnorderedObjectListWarning（导出计数路径也走分页器）
         ordering = ["created_time"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.key}-{self.description}"
 
 
@@ -51,5 +51,5 @@ class UserPersonalConfig(BaseConfig):
         # 与 SystemConfig 同口径：无默认排序时列表分页会抛 UnorderedObjectListWarning
         ordering = ["created_time"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.key}-{self.description}"

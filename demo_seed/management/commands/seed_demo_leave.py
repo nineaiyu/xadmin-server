@@ -20,6 +20,7 @@
 """
 
 import datetime
+from typing import Any
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -41,13 +42,13 @@ DEMO_BIZ_TYPE = "leave"
 class Command(BaseCommand):
     help = "生成请假申请演示数据（demo_flow_ 前缀用户，不可登录）"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--reset", action="store_true", help="先删除演示请假单与关联流程实例再生成")
         parser.add_argument("--clean-only", action="store_true", help="只清理，不生成（seed_demo_clean 编排调用）")
 
     # ---------------------------------------------------------------- 清理 / 用户 / 部门
 
-    def _reset(self):
+    def _reset(self) -> None:
         instances = list(Leave.objects.filter(pk__in=LEAVE_PKS).values_list("instance_id", flat=True))
         deleted, _rows = Leave.objects.filter(pk__in=LEAVE_PKS).delete()
         self.stdout.write(f"removed demo leaves: {deleted}")
@@ -69,7 +70,8 @@ class Command(BaseCommand):
             user.is_active = True
             user.save(update_fields=["deleted_at", "is_active"])
             self.stdout.write(f"restored demo user: {username}")
-        return user
+        restored: UserInfo = user
+        return restored
 
     def _ensure_dept(self, approver: UserInfo, applier: UserInfo) -> DeptInfo:
         """演示部门：负责人 = 演示审批人；申请人归属该部门（首节点 leader 才有候选）。"""
@@ -90,18 +92,20 @@ class Command(BaseCommand):
             applier.dept = dept
             applier.save(update_fields=["dept", "updated_time"])
             self.stdout.write("demo applier joined demo dept")
-        return dept
+        target: DeptInfo = dept
+        return target
 
     # ---------------------------------------------------------------- 演示请假单
 
-    def _create_leaves(self, applier: UserInfo, approver: UserInfo, dept: DeptInfo):
+    def _create_leaves(self, applier: UserInfo, approver: UserInfo, dept: DeptInfo) -> None:
         if Leave.objects.filter(pk__in=LEAVE_PKS).exists():
             self.stdout.write("demo leaves already exist, skip")
             return
         today = timezone.localdate()
 
-        def day(offset: int):
-            return today + datetime.timedelta(days=offset)
+        def day(offset: int) -> datetime.date:
+            value: datetime.date = today + datetime.timedelta(days=offset)
+            return value
 
         plan = [
             # (固定 pk, 类型, 开始, 结束, 天数, 事由, 审批剧本, 基线时间)
@@ -175,7 +179,7 @@ class Command(BaseCommand):
             leave.refresh_from_db()
             self.stdout.write(f"demo leave ready: {leave.approval_title} [{leave.status}]")
 
-    def _drive(self, leave: Leave, approver: UserInfo, action: str, baseline):
+    def _drive(self, leave: Leave, approver: UserInfo, action: str, baseline: datetime.datetime) -> None:
         """按剧本推进（真实引擎）：approve / reject / pending（停首节点待办）。"""
         from approval.utils.approval_flow import approve_task, reject_task
 
@@ -197,7 +201,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 入口
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options["reset"] or options.get("clean_only"):
             self._reset()
         if options.get("clean_only"):

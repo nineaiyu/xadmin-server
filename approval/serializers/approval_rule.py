@@ -11,6 +11,7 @@
 """
 
 import re
+from typing import Any
 
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -63,11 +64,12 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             "created_time",
         ]
 
-    def get_level_count(self, obj) -> int:
+    def get_level_count(self, obj: Any) -> int:
         annotated = getattr(obj, "levels_count", None)
-        return annotated if annotated is not None else obj.levels.count()
+        count: int = annotated if annotated is not None else obj.levels.count()
+        return count
 
-    def validate_path_patterns(self, value):
+    def validate_path_patterns(self, value: Any) -> Any:
         """路径正则清单：至少一条，且逐条可编译（过滤空白项）。"""
         if value in (None, ""):
             return []
@@ -87,7 +89,7 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             raise serializers.ValidationError(_("At least one path pattern is required"))
         return patterns
 
-    def validate_methods(self, value):
+    def validate_methods(self, value: Any) -> Any:
         """HTTP 方法清单：白名单校验 + 统一大写去重；空清单 = 不限定方法（存量语义）。"""
         if value in (None, ""):
             return []
@@ -104,7 +106,7 @@ class ApprovalRuleSerializer(BaseModelSerializer):
                 methods.append(method)
         return methods
 
-    def validate_levels(self, value):
+    def validate_levels(self, value: Any) -> Any:
         """级次校验：至少 1 级；order 缺省按顺序补齐且不可重复；审批人必须真实存在。"""
         if value is None:
             return value
@@ -122,7 +124,7 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             raise serializers.ValidationError(_("Level order is duplicated"))
         return value
 
-    def _validate_assignee(self, level):
+    def _validate_assignee(self, level: Any) -> None:
         """审批人存在性校验：与引擎 resolve_level_users 的解析口径完全一致（含
         is_active 过滤）——停用账号/角色若在这里放行，建单时该级候选人被过滤为空，
         fail-closed 报「该级无可用审批人」，配置错误被推迟到拦截发生时才暴露。"""
@@ -168,22 +170,22 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             return
         raise serializers.ValidationError(_("Unknown assignee type: {}").format(str(assignee_type) or "(empty)"))
 
-    @transaction.atomic
-    def create(self, validated_data):
+    @transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def create(self, validated_data: Any) -> Any:
         levels = validated_data.pop("levels", [])
         rule = super().create(validated_data)
         self._sync_levels(rule, levels)
         return rule
 
-    @transaction.atomic
-    def update(self, instance, validated_data):
+    @transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def update(self, instance: Any, validated_data: Any) -> Any:
         levels = validated_data.pop("levels", None)
         rule = super().update(instance, validated_data)
         if levels is not None:
             self._sync_levels(rule, levels)
         return rule
 
-    def _sync_levels(self, rule, levels):
+    def _sync_levels(self, rule: Any, levels: Any) -> None:
         """级次按 order upsert：order 相同的既有行原位更新，缺失的删除，新出现的创建。
 
         不再 delete+recreate——级次行主键与创建审计在编辑间保持稳定（重复编辑

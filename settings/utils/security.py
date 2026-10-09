@@ -6,6 +6,9 @@
 # date : 8/10/2024
 
 
+from collections.abc import Iterable
+from typing import Any
+
 from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
@@ -17,14 +20,14 @@ from common.utils import ip
 class BlockUtil:
     BLOCK_KEY_TMPL: str
 
-    def __init__(self, username):
+    def __init__(self, username: str) -> None:
         self.block_key = self.BLOCK_KEY_TMPL.format(username)
         self.key_ttl = int(settings.SECURITY_LOGIN_LIMIT_TIME) * 60
 
-    def block(self):
+    def block(self) -> None:
         cache.set(self.block_key, True, self.key_ttl)
 
-    def is_block(self):
+    def is_block(self) -> bool:
         return bool(cache.get(self.block_key))
 
 
@@ -36,7 +39,7 @@ class BlockUtilBase:
     #: 独立额度（验证码空间有限的高价值目标必须叠加用户维度总闸）。
     USER_LIMIT_KEY_TMPL: str = ""
 
-    def __init__(self, username, ip):
+    def __init__(self, username: str, ip: str) -> None:
         self.username = username
         self.ip = ip
         self.limit_key = self.LIMIT_KEY_TMPL.format(username, ip)
@@ -44,7 +47,7 @@ class BlockUtilBase:
         self.block_key = self.BLOCK_KEY_TMPL.format(username)
         self.key_ttl = int(settings.SECURITY_LOGIN_LIMIT_TIME) * 60
 
-    def get_remainder_times(self):
+    def get_remainder_times(self) -> int:
         times_up = settings.SECURITY_LOGIN_LIMIT_COUNT
         times_failed = self.get_failed_count()
         times_remainder = int(times_up) - int(times_failed)
@@ -54,32 +57,32 @@ class BlockUtilBase:
         count = self._incr(self.limit_key)
         # 用户维度计数与 (用户, IP) 并行：任一达到上限即锁定
         user_count = self._incr(self.user_limit_key) if self.user_limit_key else count
-        limit_count = settings.SECURITY_LOGIN_LIMIT_COUNT
+        limit_count = int(settings.SECURITY_LOGIN_LIMIT_COUNT)
         if count >= limit_count or user_count >= limit_count:
             cache.set(self.block_key, True, self.key_ttl)
         return limit_count - max(count, user_count)
 
     @staticmethod
     def _incr(key: str) -> int:
-        count = cache.get(key, 0)
+        count = int(cache.get(key, 0) or 0)
         count += 1
         cache.set(key, count, int(settings.SECURITY_LOGIN_LIMIT_TIME) * 60)
         return count
 
-    def get_failed_count(self):
-        count = cache.get(self.limit_key, 0)
+    def get_failed_count(self) -> int:
+        count = int(cache.get(self.limit_key, 0) or 0)
         if self.user_limit_key:
-            count = max(count, cache.get(self.user_limit_key, 0))
+            count = max(count, int(cache.get(self.user_limit_key, 0) or 0))
         return count
 
-    def clean_failed_count(self):
+    def clean_failed_count(self) -> None:
         cache.delete(self.limit_key)
         if self.user_limit_key:
             cache.delete(self.user_limit_key)
         cache.delete(self.block_key)
 
     @classmethod
-    def unblock_user(cls, username):
+    def unblock_user(cls, username: str) -> None:
         key_limit = cls.LIMIT_KEY_TMPL.format(username, "*")
         key_block = cls.BLOCK_KEY_TMPL.format(username)
         # Redis 尽量不要用通配
@@ -89,12 +92,12 @@ class BlockUtilBase:
         cache.delete(key_block)
 
     @classmethod
-    def is_user_block(cls, username):
+    def is_user_block(cls, username: str) -> bool:
         block_key = cls.BLOCK_KEY_TMPL.format(username)
         return bool(cache.get(block_key))
 
     @classmethod
-    def get_users_block(cls, usernames):
+    def get_users_block(cls, usernames: Iterable[str]) -> dict[str, bool]:
         """批量获取多个用户是否处于锁定状态，一次 get_many 替代逐用户访问缓存"""
         if not usernames:
             return {}
@@ -102,7 +105,7 @@ class BlockUtilBase:
         cached = cache.get_many(key_username)
         return {username: bool(cached.get(key)) for key, username in key_username.items()}
 
-    def is_block(self):
+    def is_block(self) -> bool:
         return bool(cache.get(self.block_key))
 
 
@@ -110,44 +113,44 @@ class BlockGlobalIpUtilBase:
     LIMIT_KEY_TMPL: str
     BLOCK_KEY_TMPL: str
 
-    def __init__(self, ip):
+    def __init__(self, ip: str) -> None:
         self.ip = ip
         self.limit_key = self.LIMIT_KEY_TMPL.format(ip)
         self.block_key = self.BLOCK_KEY_TMPL.format(ip)
         self.key_ttl = int(settings.SECURITY_LOGIN_IP_LIMIT_TIME) * 60
 
     @property
-    def ip_in_black_list(self):
+    def ip_in_black_list(self) -> bool:
         return ip.contains_ip(self.ip, settings.SECURITY_LOGIN_IP_BLACK_LIST)
 
     @property
-    def ip_in_white_list(self):
+    def ip_in_white_list(self) -> bool:
         return ip.contains_ip(self.ip, settings.SECURITY_LOGIN_IP_WHITE_LIST)
 
-    def set_block_if_need(self):
+    def set_block_if_need(self) -> None:
         if self.ip_in_white_list or self.ip_in_black_list:
             return
-        count = cache.get(self.limit_key, 0)
+        count = int(cache.get(self.limit_key, 0) or 0)
         count += 1
         cache.set(self.limit_key, count, self.key_ttl)
 
-        limit_count = settings.SECURITY_LOGIN_IP_LIMIT_COUNT
+        limit_count = int(settings.SECURITY_LOGIN_IP_LIMIT_COUNT)
         if count < limit_count:
             return
         cache.set(self.block_key, timezone.now().isoformat(), self.key_ttl)
 
-    def clean_block_if_need(self):
+    def clean_block_if_need(self) -> None:
         cache.delete(self.limit_key)
         cache.delete(self.block_key)
 
-    def is_block(self):
+    def is_block(self) -> bool:
         if self.ip_in_white_list:
             return False
         if self.ip_in_black_list:
             return True
         return bool(cache.get(self.block_key))
 
-    def get_block_info(self):
+    def get_block_info(self) -> Any:
         try:
             data = cache.get(self.block_key)
             if data:

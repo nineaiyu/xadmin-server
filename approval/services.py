@@ -7,6 +7,8 @@
 惰性（函数级）引用可直接指向 ``approval.utils.*``（官方逃生门）。
 """
 
+from typing import Any
+
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -14,7 +16,7 @@ logger = get_logger(__name__)
 __all__ = ["process_approval"]
 
 
-def process_approval(view_instance, request):
+def process_approval(view_instance: Any, request: Any) -> Any:
     """审批流拦截入口（approval.utils.approval 契约导出）。"""
     from approval.utils.approval import process_approval as _process
 

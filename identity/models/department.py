@@ -7,6 +7,7 @@
 
 import hashlib
 import json
+from typing import Any
 
 from django.core.cache import cache
 from django.db import models
@@ -60,7 +61,9 @@ class DeptInfo(DbAuditModel, DbUuidModel):
     is_active = models.BooleanField(verbose_name=_("Is active"), default=True)
 
     @classmethod
-    def recursion_dept_info(cls, dept_id, dept_all_list=None, dept_list=None, is_parent=False):
+    def recursion_dept_info(
+        cls, dept_id: Any, dept_all_list: Any = None, dept_list: Any = None, is_parent: bool = False
+    ) -> Any:
         """递归获取部门（含自身）及其全部下级（is_parent=True 时向上级方向）。
 
         全量部门表 + O(n²) 递归扫描被数据权限过滤的每个请求调用。
@@ -78,7 +81,9 @@ class DeptInfo(DbAuditModel, DbUuidModel):
         return cls._recursion_dept_info(dept_id, dept_all_list, dept_list, is_parent)
 
     @classmethod
-    def _recursion_dept_info(cls, dept_id, dept_all_list, dept_list=None, is_parent=False):
+    def _recursion_dept_info(
+        cls, dept_id: Any, dept_all_list: Any, dept_list: Any = None, is_parent: Any = False
+    ) -> Any:
         parent = "parent"
         pk = "pk"
         if is_parent:
@@ -99,7 +104,7 @@ class DeptInfo(DbAuditModel, DbUuidModel):
         return json.loads(json.dumps(list(set(dept_list)), cls=encoders.JSONEncoder))
 
     @classmethod
-    def dept_tree_pks(cls, dept_ids, is_parent=False):
+    def dept_tree_pks(cls, dept_ids: Any, is_parent: Any = False) -> Any:
         """批量展开：一次取全表 + 内存建索引（结果 = 逐个 ``recursion_dept_info`` 的并集）。
 
         数据权限编译期按「部门集合」展开子树时，逐 pk 调用会各自全表扫描（缓存未命中
@@ -117,8 +122,8 @@ class DeptInfo(DbAuditModel, DbUuidModel):
         if cached is not None:
             return cached
 
-        children: dict = {}
-        parents: dict = {}
+        children: dict[str, Any] = {}
+        parents: dict[str, Any] = {}
         for row in cls.objects.values("pk", "parent"):
             pk, parent = str(row["pk"]), row["parent"]
             parents[pk] = str(parent) if parent is not None else None
@@ -143,7 +148,7 @@ class DeptInfo(DbAuditModel, DbUuidModel):
         return payload
 
     @classmethod
-    def invalid_dept_tree_cache(cls):
+    def invalid_dept_tree_cache(cls) -> None:
         """部门树缓存失效（DeptInfo 增删改时调用）。"""
         cache.delete_pattern("dept_recursion_*")
 
@@ -157,7 +162,7 @@ class DeptInfo(DbAuditModel, DbUuidModel):
             "-created_time",
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.pk})"
 
 
@@ -197,5 +202,5 @@ class DeptManagerAssignment(DbUuidModel):
         verbose_name = _("Department manager assignment")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.dept_id}:{self.user_id}"

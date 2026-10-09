@@ -7,13 +7,15 @@
 RenderMixin 按域拆分（文件行数门禁）的 AI 接入部分，组合与入口见 renderers.py。
 """
 
+from typing import Any
+
 from .templating import render_template
 
 
 class RenderAiMixin:
     """AI 动作声明与测试骨架渲染。"""
 
-    def _render_ai_declarations(self, ctx, options):
+    def _render_ai_declarations(self, ctx: dict[str, Any], options: dict[str, Any]) -> str:
         """AI 动作声明骨架：只读动作直接给出，写动作以注释给出。
 
         与 ``ai/utils/ai_api_registry.py`` 同一格式（``api_action`` 声明式复用
@@ -39,7 +41,7 @@ class RenderAiMixin:
         # 模板以换行结尾，产物体不含末尾空行：先收尾再拼标签块，保持与历史逐字节一致
         return (body.rstrip("\n") + tags_block).rstrip("\n") + "\n"
 
-    def _render_test_skeleton(self, ctx):
+    def _render_test_skeleton(self, ctx: dict[str, Any]) -> str:
         """pytest 测试骨架（`--with-tests`）：鉴权 + 列表契约两条最小断言。"""
         return render_template(
             "test_skeleton.tmpl",

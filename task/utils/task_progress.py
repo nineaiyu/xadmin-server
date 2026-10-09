@@ -18,6 +18,7 @@
 """
 
 from importlib import import_module
+from typing import Any
 
 from django.utils import timezone
 
@@ -40,7 +41,7 @@ _RECORD_MODELS = {
 STAGE_MAX_LENGTH = 64
 
 
-def normalize_percent(percent) -> int:
+def normalize_percent(percent: Any) -> int:
     """进度归一（0-100），入参非法（None / 非数字）按 0 处理。"""
     try:
         value = int(percent)
@@ -49,7 +50,7 @@ def normalize_percent(percent) -> int:
     return max(0, min(100, value))
 
 
-def update_progress(kind: str, record_id, percent, stage: str = "") -> int:
+def update_progress(kind: str, record_id: Any, percent: Any, stage: str = "") -> int:
     """更新任务进度（0-100）并返回归一后的百分比。
 
     :param kind: 任务类型（``export`` / ``import`` / ``report``）
@@ -57,23 +58,23 @@ def update_progress(kind: str, record_id, percent, stage: str = "") -> int:
     :param percent: 进度百分比（自动归一化）
     :param stage: 阶段描述（可选，仅落库通道写入；超出长度截断）
     """
-    percent = normalize_percent(percent)
+    normalized: int = normalize_percent(percent)
     if kind not in _RECORD_MODELS:
         logger.warning("unknown task progress kind: %s", kind)
-        return percent
-    if kind == KIND_IMPORT and percent < 100:
+        return normalized
+    if kind == KIND_IMPORT and normalized < 100:
         from task.utils.import_progress import set_import_progress
 
-        set_import_progress(record_id, percent)
-        return percent
-    if percent < 100 and kind in (KIND_EXPORT, KIND_REPORT):
+        set_import_progress(record_id, normalized)
+        return normalized
+    if normalized < 100 and kind in (KIND_EXPORT, KIND_REPORT):
         from task.utils.task_center import ensure_not_cancelled
 
         ensure_not_cancelled(record_id)
     module_name, model_name = _RECORD_MODELS[kind]
     model = getattr(import_module(module_name), model_name)
-    values = {"progress": percent, "updated_time": timezone.now()}
+    values = {"progress": normalized, "updated_time": timezone.now()}
     if stage:
         values["stage"] = str(stage)[:STAGE_MAX_LENGTH]
     model.objects.filter(pk=record_id).update(**values)
-    return percent
+    return normalized

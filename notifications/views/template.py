@@ -10,6 +10,8 @@
 - ``reset``：删除覆盖行（回到代码默认模板）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -33,14 +35,14 @@ from notifications.template_registry import (
 logger = get_logger(__name__)
 
 
-def _find_message_cls(message_type):
+def _find_message_cls(message_type: Any) -> Any:
     for info in SYSTEM_MESSAGE_REGISTRY + USER_MESSAGE_REGISTRY:
         if info["message_type"] == message_type:
             return info["cls"], info
     return None, None
 
 
-def _sample_message(cls):
+def _sample_message(cls: Any) -> Any:
     """样例消息实例（gen_test_msg 未实现的消息类型返回 None）。"""
     try:
         msg = cls.gen_test_msg()
@@ -56,7 +58,7 @@ class MessageTemplateViewSet(GenericViewSet):
     """通知消息模板"""
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """消息类型注册表（含覆盖状态与可用变量）"""
         overrides = {row.message_type: row for row in MessageTemplate.objects.all()}
         items = []
@@ -115,8 +117,8 @@ class MessageTemplateViewSet(GenericViewSet):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="preview")
-    def preview(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """按样例变量渲染模板预览（保存前可见效果）"""
         serializer = MessageTemplateWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -172,8 +174,8 @@ class MessageTemplateViewSet(GenericViewSet):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="save")
-    def save(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="save")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def save(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """保存模板覆盖（语法与变量白名单校验）"""
         serializer = MessageTemplateWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -211,8 +213,8 @@ class MessageTemplateViewSet(GenericViewSet):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="reset")
-    def reset(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="reset")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def reset(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """重置回代码默认模板（删除覆盖行）"""
         serializer = MessageTemplateResetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

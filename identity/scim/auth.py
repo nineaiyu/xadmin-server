@@ -9,6 +9,7 @@
 """
 
 import secrets
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework.authentication import BaseAuthentication, get_authorization_header
@@ -19,7 +20,7 @@ from rest_framework.throttling import SimpleRateThrottle
 class ScimPrincipal:
     """SCIM 服务凭证主体（request.auth）：仅标记身份来源，不代表任何业务用户。"""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "scim-token"
 
 
@@ -28,7 +29,7 @@ class ScimTokenAuthentication(BaseAuthentication):
 
     keyword = "Bearer"
 
-    def authenticate(self, request):
+    def authenticate(self, request: Any) -> Any:
         from common.core.config import SysConfig
 
         if not bool(SysConfig.SCIM_ENABLED):
@@ -56,14 +57,14 @@ class ScimTokenAuthentication(BaseAuthentication):
         # 避免任何业务代码误把它当作真实用户
         return (AnonymousUser(), ScimPrincipal())
 
-    def authenticate_header(self, request):
+    def authenticate_header(self, request: Any) -> Any:
         return self.keyword
 
 
 class ScimTokenPermission:
     """仅放行携带 SCIM 凭证的请求（业务用户身份不能访问 SCIM 端点）。"""
 
-    def has_permission(self, request, view):
+    def has_permission(self, request: Any, view: Any) -> Any:
         return isinstance(getattr(request, "auth", None), ScimPrincipal)
 
 
@@ -72,18 +73,18 @@ class ScimThrottle(SimpleRateThrottle):
 
     scope = "scim"
 
-    def get_rate(self):
+    def get_rate(self) -> Any:
         from common.core.config import SysConfig
 
         limit = str(SysConfig.SCIM_RATE_LIMIT or "").strip()
         return None if not limit or limit == "0" else limit
 
-    def allow_request(self, request, view):
+    def allow_request(self, request: Any, view: Any) -> Any:
         if self.rate is None:
             return True
         return super().allow_request(request, view)
 
-    def get_cache_key(self, request, view):
+    def get_cache_key(self, request: Any, view: Any) -> Any:
         if not isinstance(getattr(request, "auth", None), ScimPrincipal):
             return None
         # 单一服务凭证：ident 固定，按凭证空间计数即可

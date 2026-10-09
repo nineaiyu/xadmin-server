@@ -13,6 +13,8 @@
      "embedded": 已构建块数, "total": 待构建块数, "summary": 终态摘要, ...}
 """
 
+from typing import Any
+
 from django.core.cache import cache
 from django.utils import timezone
 
@@ -33,14 +35,14 @@ def release_lock() -> None:
     cache.delete(BUILD_LOCK_KEY)
 
 
-def _write(values: dict) -> None:
+def _write(values: dict[str, Any]) -> None:
     current = cache.get(BUILD_STATUS_KEY) or {}
     current.update(values)
     current["updated_time"] = timezone.now().isoformat()
     cache.set(BUILD_STATUS_KEY, current, STATUS_TTL)
 
 
-def get_status() -> dict:
+def get_status() -> dict[str, Any]:
     return cache.get(BUILD_STATUS_KEY) or {"state": "idle", "percent": 0}
 
 
@@ -62,7 +64,7 @@ def mark_running(total: int) -> None:
 
 
 def mark_progress(percent: int, stage: str = "", embedded: int = 0) -> None:
-    values: dict = {"percent": max(0, min(100, int(percent)))}
+    values: dict[str, Any] = {"percent": max(0, min(100, int(percent)))}
     if stage:
         values["stage"] = stage
     if embedded:
@@ -70,7 +72,7 @@ def mark_progress(percent: int, stage: str = "", embedded: int = 0) -> None:
     _write(values)
 
 
-def mark_finished(summary: dict, ok: bool) -> None:
+def mark_finished(summary: dict[str, Any], ok: bool) -> None:
     """终态：state 落 done/error，完整摘要随状态保留（前端轮询终态后停止）。"""
     _write(
         {
@@ -83,7 +85,7 @@ def mark_finished(summary: dict, ok: bool) -> None:
     )
 
 
-def progress_callback():
+def progress_callback() -> Any:
     """构建进度回调（供 build_embeddings 的 ``progress_cb`` 钩子直接使用）。"""
 
     def _cb(percent: int, stage: str = "", embedded: int = 0) -> None:

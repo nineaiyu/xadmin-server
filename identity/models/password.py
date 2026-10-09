@@ -31,5 +31,5 @@ class PasswordHistory(DbAuditModel):
         verbose_name = _("Password history")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user}({self.created_time})"

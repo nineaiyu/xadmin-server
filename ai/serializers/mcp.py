@@ -9,6 +9,7 @@
 """
 
 import re
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -77,22 +78,22 @@ class McpServerSerializer(BaseModelSerializer):
             "updated_time",
         ]
 
-    def get_auth_token_set(self, obj) -> bool:
+    def get_auth_token_set(self, obj: Any) -> bool:
         return bool(obj.auth_token)
 
-    def get_tools_snapshot(self, obj) -> list:
+    def get_tools_snapshot(self, obj: Any) -> list[Any]:
         return tools_with_callable(obj, obj.tools_snapshot or [])
 
-    def validate_name(self, value):
+    def validate_name(self, value: Any) -> Any:
         return trim_required(value, _("Server name is required"))
 
-    def validate_url(self, value):
+    def validate_url(self, value: Any) -> Any:
         try:
             return validate_server_url(value)
         except Exception as exc:  # ValidationError → DRF 字段错误
             raise serializers.ValidationError(_error_messages(exc)) from exc
 
-    def validate_timeout(self, value):
+    def validate_timeout(self, value: Any) -> Any:
         if value is None:
             return 30
         try:
@@ -103,13 +104,13 @@ class McpServerSerializer(BaseModelSerializer):
             raise serializers.ValidationError(_("Timeout must be between 5 and 120 seconds"))
         return timeout
 
-    def validate_auth_header(self, value):
+    def validate_auth_header(self, value: Any) -> Any:
         header = (value or "").strip()
         if header and not HEADER_RE.match(header):
             raise serializers.ValidationError(_("Auth header must be a valid HTTP header name"))
         return header
 
-    def validate_allowed_tools(self, value):
+    def validate_allowed_tools(self, value: Any) -> Any:
         if value in (None, ""):
             return []
         if not isinstance(value, list):
@@ -127,20 +128,20 @@ class McpServerSerializer(BaseModelSerializer):
             raise serializers.ValidationError(_("Too many allowed tools (max {})").format(MAX_ALLOWED_TOOLS))
         return names
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         token = validated_data.pop("auth_token", None)
         if token is not None:
             validated_data["auth_token"] = _encrypt_token(token)
         return super().create(validated_data)
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         token = validated_data.pop("auth_token", None)
         if token is not None:
             validated_data["auth_token"] = _encrypt_token(token)
         return super().update(instance, validated_data)
 
 
-def _error_messages(exc) -> list:
+def _error_messages(exc: Any) -> list[Any]:
     messages = getattr(exc, "messages", None)
     if messages:
         return [str(item) for item in messages]

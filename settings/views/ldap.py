@@ -8,7 +8,10 @@
 ...)``，并发期间真实请求不可能读到测试值。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
+from rest_framework.request import Request
 
 from common.core.response import ApiResponse
 from common.utils import get_logger
@@ -45,7 +48,7 @@ class LdapServerSettingViewSet(BaseSettingViewSet):
     serializer_class = LdapSettingSerializer
     category = "ldap"
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """测试{cls}"""
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -12,6 +12,7 @@
 """
 
 import json
+from typing import Any
 
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -28,7 +29,7 @@ DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 
 
-def normalize_feature(value) -> str:
+def normalize_feature(value: Any) -> str:
     """入口标识归一（非法值回落 docs，防御式：端点已按 feature 路由）。"""
     from ai.models.ai import AiChatMessage
 
@@ -51,7 +52,9 @@ def clip_reasoning(text: str) -> str:
     return text[:MAX_REASONING_STORED] + "…"
 
 
-def persist_message(user, feature: str, role: str, content: str = "", reasoning: str = "", extra: dict | None = None):
+def persist_message(
+    user: Any, feature: str, role: str, content: str = "", reasoning: str = "", extra: dict[str, Any] | None = None
+) -> Any:
     """落一条助手消息；返回消息行（失败返回 None，不阻断主链路）。
 
     持久化失败不影响对话本身（与审计同口径：吞异常 + 日志），但调用方在
@@ -75,7 +78,7 @@ def persist_message(user, feature: str, role: str, content: str = "", reasoning:
         return None
 
 
-def _json_safe(value):
+def _json_safe(value: Any) -> Any:
     """JSON 安全化：未知类型统一转字符串（NL 结果行可能含 UUID/Decimal/datetime）。"""
     try:
         return json.loads(json.dumps(value, cls=DjangoJSONEncoder, default=str))
@@ -83,7 +86,7 @@ def _json_safe(value):
         return {}
 
 
-def message_payload(row) -> dict:
+def message_payload(row: Any) -> dict[str, Any]:
     """消息行 → 前端契约（历史与流式 done 共用）。"""
     if row is None:
         return {}
@@ -98,7 +101,7 @@ def message_payload(row) -> dict:
     }
 
 
-def load_history(user, feature: str, before_id=None, limit=None) -> dict:
+def load_history(user: Any, feature: str, before_id: Any = None, limit: Any = None) -> dict[str, Any]:
     """按 ``(creator, feature)`` 拉历史：时间正序返回，``has_more`` 表示还有更早的。"""
     from ai.models.ai import AiChatMessage
 
@@ -121,7 +124,7 @@ def load_history(user, feature: str, before_id=None, limit=None) -> dict:
     return {"results": [message_payload(row) for row in rows], "has_more": has_more}
 
 
-def system_error_message(user, feature: str, detail: str) -> dict:
+def system_error_message(user: Any, feature: str, detail: str) -> dict[str, Any]:
     """流内失败的降级消息（落库 + 返回载荷）：前端按系统提示渲染。"""
     row = persist_message(user, feature, "system", content=detail, extra={"error": True})
     return message_payload(row)

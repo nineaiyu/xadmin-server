@@ -6,6 +6,7 @@
 
 import re
 import uuid
+from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
@@ -23,7 +24,7 @@ GROUP_CODE_PATTERN = re.compile(r"[^0-9a-zA-Z_]+")
 # ---------------------------------------------------------------- Groups
 
 
-def _group_code(payload: dict) -> str:
+def _group_code(payload: dict[str, Any]) -> str:
     code = str(payload.get("externalId") or "").strip()
     if not code:
         code = GROUP_CODE_PATTERN.sub("_", str(payload.get("displayName") or "").strip()).strip("_").lower()
@@ -32,7 +33,7 @@ def _group_code(payload: dict) -> str:
     return code[:128]
 
 
-def create_group(payload: dict):
+def create_group(payload: dict[str, Any]) -> Any:
     from identity.models import UserRole
 
     display_name = str(payload.get("displayName") or "").strip()
@@ -46,7 +47,7 @@ def create_group(payload: dict):
     return role
 
 
-def update_group(role, payload: dict) -> None:
+def update_group(role: Any, payload: dict[str, Any]) -> None:
     ensure_group_writable(role)
     display_name = str(payload.get("displayName") or "").strip()
     if display_name:
@@ -63,7 +64,7 @@ def update_group(role, payload: dict) -> None:
     _sync_group_members(role, payload.get("members"), replace=True)
 
 
-def patch_group(role, operations: list) -> None:
+def patch_group(role: Any, operations: list[Any]) -> None:
     from identity.models import UserRole
 
     ensure_group_writable(role)
@@ -99,7 +100,7 @@ def patch_group(role, operations: list) -> None:
             logger.info("SCIM group patch: unsupported operation ignored: %s %s", op, path)
 
 
-def _sync_group_members(role, members, *, replace: bool) -> None:
+def _sync_group_members(role: Any, members: Any, *, replace: bool) -> None:
     from identity.models import UserInfo
 
     if replace:
@@ -114,7 +115,7 @@ def _sync_group_members(role, members, *, replace: bool) -> None:
             user.roles.add(role)
 
 
-def _remove_group_members(role, members) -> None:
+def _remove_group_members(role: Any, members: Any) -> None:
     for member in members or []:
         if not isinstance(member, dict):
             continue
@@ -123,7 +124,7 @@ def _remove_group_members(role, members) -> None:
             user.roles.remove(role)
 
 
-def _resolve_member(member: dict):
+def _resolve_member(member: dict[str, Any]) -> Any:
     """成员解析：`value` 支持主键（int/uuid）或 username（IdP 常用 externalId 直传）。"""
 
     from identity.models import UserInfo
@@ -144,6 +145,6 @@ def _resolve_member(member: dict):
     return user
 
 
-def delete_group(role) -> None:
+def delete_group(role: Any) -> None:
     ensure_group_writable(role)
     role.delete()

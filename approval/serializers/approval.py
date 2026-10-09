@@ -12,6 +12,8 @@ read_only；params 为脱敏后请求体快照，仅供审批人核对。
 详情（retrieve）额外返回 steps：逐级审批进度与留痕。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -84,17 +86,17 @@ class ApprovalRequestSerializer(BaseModelSerializer):
         read_only_fields = fields
 
     @extend_schema_field(serializers.IntegerField)
-    def get_current_level(self, obj) -> int:
+    def get_current_level(self, obj: Any) -> int:
         return obj.current_level or 0
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
-    def get_current_assignees(self, obj) -> list:
+    def get_current_assignees(self, obj: Any) -> list[Any]:
         if not (obj.current_level or 0):
             return []
         return [{"pk": user.pk, "username": user.username} for user in obj.current_assignees.all()]
 
     @extend_schema_field(serializers.BooleanField)
-    def get_can_act(self, obj) -> bool:
+    def get_can_act(self, obj: Any) -> bool:
         request = self.context.get("request")
         return can_act(obj, getattr(request, "user", None))
 
@@ -112,7 +114,7 @@ class ApprovalRequestDetailSerializer(ApprovalRequestSerializer):
         read_only_fields = fields
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
-    def get_steps(self, obj) -> list:
+    def get_steps(self, obj: Any) -> list[Any]:
         queryset = (
             obj.steps.select_related("approver").prefetch_related("assignees", "actions__approver").order_by("order")
         )

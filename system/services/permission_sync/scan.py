@@ -4,6 +4,7 @@
 
 import re
 from collections import Counter
+from typing import Any
 
 from django.conf import settings
 
@@ -36,7 +37,7 @@ def path_whitelisted(sample: str, method: str) -> bool:
     )
 
 
-def requires_permission(view_cls) -> bool:
+def requires_permission(view_cls: Any) -> bool:
     """视图是否走默认菜单权限链（显式 AllowAny / 空清单 / 自定义权限类不走）。"""
     permission_classes = getattr(view_cls, "permission_classes", None)
     if permission_classes is None:
@@ -45,7 +46,7 @@ def requires_permission(view_cls) -> bool:
     return bool(permission_classes) and "IsAuthenticated" in names and "AllowAny" not in names
 
 
-def ensure_urlconf_loaded():
+def ensure_urlconf_loaded() -> None:
     """确保 URLconf 模块已导入（get_all_url_dict 内部走 import_string(ROOT_URLCONF)，
     命令行/测试进程未加载 URLconf 时会 ImportError）。"""
     from django.utils.module_loading import import_module
@@ -53,7 +54,7 @@ def ensure_urlconf_loaded():
     import_module(settings.ROOT_URLCONF)
 
 
-def build_route_index():
+def build_route_index() -> Any:
     """扫描全量路由（仅 api/ 前缀），解析出视图、方法与是否需要权限点。"""
     from django.urls import resolve
     from django.urls.exceptions import Resolver404
@@ -92,11 +93,11 @@ def build_route_index():
     return routes
 
 
-def load_permission_menus():
+def load_permission_menus() -> Any:
     return list(Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, deleted_at__isnull=True))
 
 
-def _method_covers(perm, path, method):
+def _method_covers(perm: Any, path: Any, method: Any) -> Any:
     """方法匹配：同方法直接命中；登记的多方法共享端点按 SHARED_METHOD_PATHS 放宽。"""
     perm_method = (perm.method or "").upper()
     if perm_method == method:
@@ -105,7 +106,7 @@ def _method_covers(perm, path, method):
     return method in shared and perm_method in shared
 
 
-def find_covering(perms, path, method):
+def find_covering(perms: Any, path: Any, method: Any) -> Any:
     """与运行时 get_menu_pk 同口径：精确 `path$` 优先，其次段边界前缀回退。
 
     回退匹配复用 ``common.core.utils.permission_path_matches``（单点口径），
@@ -125,7 +126,7 @@ def find_covering(perms, path, method):
     return None
 
 
-def scan_gaps(routes, perms):
+def scan_gaps(routes: Any, perms: Any) -> Any:
     """扫描需要权限点但未覆盖的端点：返回 [(RouteInfo, METHOD, action)]。"""
     gaps = []
     for route in routes:
@@ -148,7 +149,7 @@ def scan_gaps(routes, perms):
     return gaps
 
 
-def scan_permission_gaps():
+def scan_permission_gaps() -> Any:
     """便捷入口：扫描「代码路由 ↔ 库内权限点」缺口（doctor / 启动自检 / post_upgrade 共用）。
 
     返回 ``[(RouteInfo, METHOD, action)]``；空列表表示当前库的权限点已完整覆盖。
@@ -157,7 +158,7 @@ def scan_permission_gaps():
     return scan_gaps(build_route_index(), load_permission_menus())
 
 
-def resolve_view_context(view, view_route_urls, perms, default_parent=None):
+def resolve_view_context(view: Any, view_route_urls: Any, perms: Any, default_parent: Any = None) -> Any:
     """解析某视图的权限码后缀与父菜单（返回 (suffix, parent, source)）。
 
     优先复用同视图既有权限点（后缀/父菜单），保证与 UI 生成结果一致；
@@ -188,9 +189,9 @@ def resolve_view_context(view, view_route_urls, perms, default_parent=None):
     return None, None, "unresolved"
 
 
-def build_plans(gaps, routes, perms, default_parent=None):
+def build_plans(gaps: Any, routes: Any, perms: Any, default_parent: Any = None) -> Any:
     """把缺口规划为待创建的权限点（不落库）。返回 (plans, unresolved)。"""
-    by_view: dict[str, list] = {}
+    by_view: dict[str, list[Any]] = {}
     for route, method, action in gaps:
         by_view.setdefault(route.view, []).append((route, method, action))
 

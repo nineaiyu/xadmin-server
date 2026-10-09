@@ -7,6 +7,8 @@
 - 上传写入走独立输入序列化器（name + content 文本），不落文件系统。
 """
 
+from typing import Any
+
 from django.db.models.functions import Left, Length
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -92,10 +94,10 @@ class AiProfileSerializer(BaseModelSerializer):
             "updated_time",
         ]
 
-    def get_api_key_set(self, obj) -> bool:
+    def get_api_key_set(self, obj: Any) -> bool:
         return bool(obj.api_key)
 
-    def validate_capabilities(self, value):
+    def validate_capabilities(self, value: Any) -> Any:
         """能力画像手工修正：结构必须为「能力名 → 结果 dict」+ 可选 model/probed_at 元信息。
 
         结构错误直接拒绝，避免前端误写导致链路判据（tool_calls 准入）读到脏数据。
@@ -113,15 +115,15 @@ class AiProfileSerializer(BaseModelSerializer):
                 raise serializers.ValidationError(_("Capability ok flag must be a boolean"))
         return value
 
-    def get_unique_together_validators(self):
+    def get_unique_together_validators(self) -> Any:
         # 条件唯一约束（is_active=True 部分索引）会生成 UniqueTogetherValidator 把
         # is_active 误判必填；激活唯一性由 service 层 set_active_profile + DB 索引兜底
         return []
 
-    def validate_name(self, value):
+    def validate_name(self, value: Any) -> Any:
         return trim_required(value, _("Profile name is required"))
 
-    def validate_base_url(self, value):
+    def validate_base_url(self, value: Any) -> Any:
         url = (value or "").strip()
         if not (url.startswith("http://") or url.startswith("https://")):
             raise serializers.ValidationError(_("Base URL must start with http:// or https://"))
@@ -140,11 +142,11 @@ class AiProfileSerializer(BaseModelSerializer):
             raise serializers.ValidationError([str(item) for item in exc.messages]) from exc
         return url
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         validated_data["api_key"] = _encrypt_api_key(validated_data.get("api_key", ""))
         return super().create(validated_data)
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         api_key = validated_data.pop("api_key", "")
         if api_key.strip():
             # 留空 = 沿用原密钥
@@ -168,18 +170,18 @@ class KnowledgeUploadSerializer(serializers.Serializer):
     # 2MB 二进制 ≈ 2.74M base64 字符：字段级上限即体积门（解码后仍二次校验）
     file_b64 = serializers.CharField(max_length=2_800_000, required=False, allow_blank=True, write_only=True)
 
-    def validate_name(self, value):
+    def validate_name(self, value: Any) -> Any:
         name = trim_required(value, _("Document name is required"))
         if any(char in name for char in NAME_FORBIDDEN_CHARS) or ".." in name:
             raise serializers.ValidationError(_("Document name cannot contain path characters"))
         return name
 
-    def validate_content(self, value):
+    def validate_content(self, value: Any) -> Any:
         if value and not (value or "").strip():
             raise serializers.ValidationError(_("Document content cannot be empty"))
         return value
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         file_type = attrs.get("file_type")
         file_b64 = attrs.get("file_b64")
         content = attrs.get("content")
@@ -239,7 +241,7 @@ class AiKnowledgeDocumentSerializer(BaseModelSerializer):
         read_only_fields = [field for field in fields if field != "is_active"]
         table_fields = ["title", "source_type", "chunk_count", "is_active", "creator", "synced_at"]
 
-    def get_chunks(self, obj) -> list:
+    def get_chunks(self, obj: Any) -> list[Any]:
         """分块摘要（仅详情返回）：问答检索时会命中的块清单。
 
         预览在 DB 侧裁剪（Left/Length）：只把开头 120 字符与全文长度取回，
@@ -254,7 +256,7 @@ class AiKnowledgeDocumentSerializer(BaseModelSerializer):
         )
         return [{"index": row["chunk_index"], "size": row["size"], "preview": row["preview"]} for row in rows]
 
-    def to_representation(self, instance):
+    def to_representation(self, instance: Any) -> Any:
         """列表轻量：全文与分块摘要只在详情（预览）返回，避免列表响应随文档量膨胀。"""
         data = super().to_representation(instance)
         if getattr(self.context.get("view"), "action", None) != "retrieve":
@@ -262,7 +264,7 @@ class AiKnowledgeDocumentSerializer(BaseModelSerializer):
             data.pop("chunks", None)
         return data
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         want_active = validated_data.pop("is_active", None)
         instance = super().update(instance, validated_data)
         if want_active is not None and bool(want_active) != instance.is_active:

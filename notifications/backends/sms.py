@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.conf import settings
 
 from common.utils import get_logger
@@ -20,13 +22,13 @@ class SMS(BackendBase):
     account_field = "phone"
     is_enable_field_in_settings = "SMS_ENABLED"
 
-    def __init__(self):
+    def __init__(self) -> None:
         # 注意：此前直接引用 SMS 会因类名遮蔽 import 而递归实例化自身，
         # 导致 send_msg 调用 self.client.send_sms 时报 AttributeError
         self.client = sms_endpoint.SMS()
 
     @classmethod
-    def get_notify_template_config(cls):
+    def get_notify_template_config(cls) -> Any:
         """通知短信的签名/模板配置；未配置返回 None（渠道自动降级为不可用）。"""
         sign_name = getattr(settings, "SMS_NOTIFY_SIGN_NAME", "")
         template_code = getattr(settings, "SMS_NOTIFY_TEMPLATE_CODE", "")
@@ -39,12 +41,12 @@ class SMS(BackendBase):
         }
 
     @classmethod
-    def is_enable(cls):
+    def is_enable(cls) -> Any:
         if not super().is_enable():
             return False
         return cls.get_notify_template_config() is not None
 
-    def send_msg(self, users, message, subject="", **kwargs):
+    def send_msg(self, users: Any, message: Any, subject: Any = "", **kwargs: Any) -> Any:
         if not self.is_enable():
             logger.warning("SMS notify template is not configured, skip sms channel")
             return

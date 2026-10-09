@@ -7,6 +7,7 @@
 """
 
 import ipaddress
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -17,7 +18,7 @@ from identity.models.token import ApiApplication, ApiApplicationGrant, PersonalA
 from identity.services.token_issue import new_token_secret
 
 
-def _clean_scope_entries(value):
+def _clean_scope_entries(value: Any) -> Any:
     """scope 清单写入口径（PAT 与开放平台应用共用，应用 scope 会下发为 OAuth 访问凭证）。
 
     - 非清单/含非字符串项 → 400；
@@ -97,10 +98,10 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
             "expired_at": {"required": False, "allow_null": True},
         }
 
-    def get_token(self, obj):
+    def get_token(self, obj: Any) -> Any:
         return getattr(obj, "_plain_token", None)
 
-    def validate_scopes(self, value):
+    def validate_scopes(self, value: Any) -> Any:
         """scope 清单清洗：字符串清单、去空白、去重、**逐条锚定**；None/空 = 不限。
 
         手写条目（如 ``api/system/user``）在保存时规范为锚定形态
@@ -109,7 +110,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
         """
         return _clean_scope_entries(value)
 
-    def validate_ip_allowlist(self, value):
+    def validate_ip_allowlist(self, value: Any) -> Any:
         """IP 白名单清洗：去空白、去重、逐条校验 IP/CIDR 格式；None/空 = 不限。"""
         if value in (None, ""):
             return []
@@ -133,7 +134,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
                 cleaned.append(entry)
         return cleaned
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         # 明文仅此一次：pat_ 前缀 + 32 字节 URL 安全随机串（签发口径经 token service）
         raw_token, token_hash, token_prefix = new_token_secret()
         validated_data["token_hash"] = token_hash
@@ -142,7 +143,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
         instance._plain_token = raw_token
         return instance
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         # 凭证本体不可变：吊销走 is_active，续期走 expired_at，哈希/前缀禁止改写
         validated_data.pop("token_hash", None)
         validated_data.pop("token_prefix", None)
@@ -188,7 +189,7 @@ class ApiApplicationSerializer(BaseModelSerializer):
             "created_time",
         ]
 
-    def validate_callback_urls(self, value):
+    def validate_callback_urls(self, value: Any) -> Any:
         """回调地址写入校验：https 强制（loopback http 例外），复用 webhook 同口径。"""
         from task.services import validate_url
 
@@ -196,26 +197,26 @@ class ApiApplicationSerializer(BaseModelSerializer):
             raise serializers.ValidationError(_("Callback urls must be a list"))
         return [validate_url(url) for url in value]
 
-    def validate_scopes(self, value):
+    def validate_scopes(self, value: Any) -> Any:
         """应用 scope 与 PAT 同口径锚定（应用 scope 会作为 OAuth 访问凭证下发）。"""
         return _clean_scope_entries(value)
 
-    def validate_ip_allowlist(self, value):
+    def validate_ip_allowlist(self, value: Any) -> Any:
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Ip allowlist must be a list"))
         return [str(item).strip() for item in value if str(item).strip()]
 
-    def validate_rate_limit_per_minute(self, value):
+    def validate_rate_limit_per_minute(self, value: Any) -> Any:
         if value is not None and value < 0:
             raise serializers.ValidationError(_("Rate limit cannot be negative"))
         return value
 
-    def validate_daily_quota(self, value):
+    def validate_daily_quota(self, value: Any) -> Any:
         if value is not None and value < 0:
             raise serializers.ValidationError(_("Daily quota cannot be negative"))
         return value
 
-    def validate_quota_alert_percent(self, value):
+    def validate_quota_alert_percent(self, value: Any) -> Any:
         if value is not None and not 1 <= value <= 100:
             raise serializers.ValidationError(_("Quota alert percent must be between 1 and 100"))
         return value
@@ -243,7 +244,7 @@ class ApiApplicationGrantSerializer(BaseModelSerializer):
         read_only_fields = ["created_time"]
         table_fields = ["model", "actions", "fields", "is_active", "created_time"]
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         from identity.utils.api_grant import validate_grant_payload
 
         instance = self.instance

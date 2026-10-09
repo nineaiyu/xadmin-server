@@ -4,6 +4,7 @@
 # filename : department
 # author : ly_13
 # date : 8/10/2024
+from typing import Any
 
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
@@ -86,7 +87,7 @@ class DeptSerializer(BaseModelSerializer):
 
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         if self.instance is None:
             # 创建时未指定上级（未提交或显式置空）默认挂到操作者所在部门，保持既有新增体验
             if attrs.get("parent") is None:
@@ -109,7 +110,7 @@ class DeptSerializer(BaseModelSerializer):
             )
         return attrs
 
-    def _assign_authorizations(self, instance, roles, rules):
+    def _assign_authorizations(self, instance: Any, roles: Any, rules: Any) -> None:
         """写入角色与数据权限：与专用授权接口同口径（角色取值域经行级数据权限过滤）。
 
         未传的项保持不变（保留既有授权），避免编辑部门信息时误清空。
@@ -130,14 +131,14 @@ class DeptSerializer(BaseModelSerializer):
                 ).all()
             )
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         roles = validated_data.pop("roles", None)
         rules = validated_data.pop("rules", None)
         instance = super().create(validated_data)
         self._assign_authorizations(instance, roles, rules)
         return instance
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         roles = validated_data.pop("roles", None)
         rules = validated_data.pop("rules", None)
         parent = validated_data.get("parent")
@@ -148,7 +149,7 @@ class DeptSerializer(BaseModelSerializer):
         return instance
 
     @extend_schema_field(serializers.IntegerField)
-    def get_user_count(self, obj):
+    def get_user_count(self, obj: Any) -> Any:
         # 列表/详情/导出由 AnnotateUserCountMixin 预聚合，直接取聚合结果，避免每行一次 COUNT；
         # 未走该 mixin 的场景（直接序列化单个对象）回退为单对象聚合，结果保持一致
         count = getattr(obj, "user_count", None)

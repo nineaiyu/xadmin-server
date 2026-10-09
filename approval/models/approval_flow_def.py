@@ -7,6 +7,7 @@ ApprovalFlowVersion（定义版本快照）与节点查询集 / 管理器。
 """
 
 import uuid
+from typing import Any
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -37,7 +38,7 @@ class ApprovalFlow(DbAuditModel):
         verbose_name = _("Approval flow")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.code})"
 
 
@@ -49,7 +50,7 @@ class ApprovalFlowNodeQuerySet(models.QuerySet):
     在途单按自身 flow_version 推进。
     """
 
-    def effective_at(self, version=None):
+    def effective_at(self, version: Any = None) -> Any:
         """在指定版本生效的节点；``version=None`` → 当前生效定义（version_to 为空）。"""
         if version is None:
             return self.filter(version_to__isnull=True)
@@ -66,7 +67,10 @@ class ApprovalFlowNodeManager(models.Manager):
     """
 
     def get_queryset(self) -> ApprovalFlowNodeQuerySet:
-        return ApprovalFlowNodeQuerySet(self.model, using=self._db).filter(version_to__isnull=True)
+        queryset: ApprovalFlowNodeQuerySet = ApprovalFlowNodeQuerySet(self.model, using=self._db).filter(
+            version_to__isnull=True
+        )
+        return queryset
 
 
 class ApprovalFlowNode(DbAuditModel):
@@ -156,7 +160,7 @@ class ApprovalFlowNode(DbAuditModel):
             ),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.flow_id}#{self.order} {self.name}"
 
 
@@ -188,5 +192,5 @@ class ApprovalFlowVersion(DbAuditModel):
             models.UniqueConstraint(fields=["flow", "version"], name="uniq_approval_flow_version"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.flow_id} v{self.version}"

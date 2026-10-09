@@ -3,6 +3,7 @@
 """IM 客户端基类：token 缓存、响应判定、http 注入的公共件。"""
 
 import hashlib
+from typing import Any
 from urllib.parse import urlencode
 
 from django.core.cache import cache
@@ -18,7 +19,7 @@ TOKEN_TTL_SLACK = 120
 class ImSdkError(Exception):
     """渠道发送失败（含渠道侧拒绝）。message 面向日志，不直接回显给终端用户。"""
 
-    def __init__(self, message, code=None):
+    def __init__(self, message: str, code: Any = None) -> None:
         self.code = code
         super().__init__(message)
 
@@ -31,21 +32,21 @@ class BaseImClient:
     # 缓存 key 前缀（子类覆盖，如 "im_dingtalk_token_"）
     token_cache_prefix = ""
 
-    def __init__(self, credentials: dict | None = None, http_client=None):
+    def __init__(self, credentials: dict[str, Any] | None = None, http_client: Any = None) -> None:
         # 凭据留存实例：token 缓存 key 由凭据摘要派生（改密即换 key，不沿用旧 token）
         self.credentials = credentials or {}
         self.http = http_client
 
     # ---------------------------------------------------------------- http
 
-    def _client(self):
+    def _client(self) -> Any:
         if self.http is None:
             import requests
 
             self.http = requests
         return self.http
 
-    def _get_json(self, url, params=None, headers=None, timeout=10):
+    def _get_json(self, url: str, params: Any = None, headers: Any = None, timeout: int = 10) -> Any:
         try:
             response = self._client().get(url, params=params or {}, headers=headers or {}, timeout=timeout)
             payload = response.json()
@@ -53,7 +54,7 @@ class BaseImClient:
             raise ImSdkError(f"request failed: {exc}") from exc
         return self._check(payload, url) if isinstance(payload, dict) else {}
 
-    def _post_json(self, url, body, params=None, headers=None, timeout=10):
+    def _post_json(self, url: str, body: Any, params: Any = None, headers: Any = None, timeout: int = 10) -> Any:
         try:
             response = self._client().post(url, json=body, params=params or {}, headers=headers or {}, timeout=timeout)
             payload = response.json()
@@ -61,17 +62,17 @@ class BaseImClient:
             raise ImSdkError(f"request failed: {exc}") from exc
         return self._check(payload, url) if isinstance(payload, dict) else {}
 
-    def _post_query(self, url, params, timeout=10):
+    def _post_query(self, url: str, params: Any, timeout: int = 10) -> Any:
         """钉钉旧版 oapi 风格：access_token 走 query string 的 POST。"""
         return self._post_json(f"{url}?{urlencode(params)}", {}, timeout=timeout)
 
-    def _check(self, payload, url):
+    def _check(self, payload: Any, url: str) -> Any:
         """渠道侧错误判定：子类按各家语义覆盖（返回 payload 或抛 ImSdkError）。"""
         return payload
 
     # ---------------------------------------------------------------- token
 
-    def _credentials_digest(self, credentials: dict) -> str:
+    def _credentials_digest(self, credentials: dict[str, Any]) -> str:
         """凭据摘要（键排序 + 带键名）：与 dict 构造顺序解耦，不同渠道/不同凭据互不命中。"""
         raw = ":".join(f"{key}={value or ''}" for key, value in sorted((credentials or {}).items()))
         return hashlib.sha256(raw.encode()).hexdigest()[:32]
@@ -86,10 +87,10 @@ class BaseImClient:
         cache.set(cache_key, token, max(self.token_ttl - TOKEN_TTL_SLACK, 60))
         return token
 
-    def _fetch_token(self, credentials: dict) -> str:
+    def _fetch_token(self, credentials: dict[str, Any]) -> str:
         raise NotImplementedError
 
     # ------------------------------------------------------------ 发送
 
-    def send_text(self, accounts, content) -> None:
+    def send_text(self, accounts: Any, content: Any) -> None:
         raise NotImplementedError

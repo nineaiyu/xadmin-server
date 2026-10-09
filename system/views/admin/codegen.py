@@ -6,6 +6,7 @@
 不落盘不写库；权限走菜单种子权限点，默认仅超管可用，授予角色即开放）。
 """
 
+from typing import Any
 from urllib.parse import quote
 
 from django.http import HttpResponse
@@ -69,8 +70,8 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
             }
         ),
     )
-    @action(methods=["get"], detail=False, url_path="models")
-    def models(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="models")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def models(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         return ApiResponse(data=codegen_gui.list_generatable_models())
 
     @extend_schema(
@@ -118,8 +119,8 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
             }
         ),
     )
-    @action(methods=["get"], detail=False, url_path="model-fields")
-    def model_fields(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="model-fields")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def model_fields(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         label = request.query_params.get("label") or ""
         try:
             return ApiResponse(data=codegen_gui.model_plan(label))
@@ -146,8 +147,8 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
             }
         ),
     )
-    @action(methods=["post"], detail=False, url_path="preview")
-    def preview(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         try:
             return ApiResponse(data=codegen_gui.build_artifacts(request.data or {}))
         except codegen_gui.CodegenError as exc:
@@ -165,8 +166,8 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
         ),
         responses={200: inline_serializer(name="zipFile", fields={})},
     )
-    @action(methods=["post"], detail=False, url_path="download")
-    def download(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="download")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def download(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         try:
             payload = codegen_gui.build_zip(request.data or {})
         except codegen_gui.CodegenError as exc:

@@ -6,6 +6,8 @@
 使用数据集执行面与动态表单校验面，避免直接依赖内部 utils/models 结构。
 """
 
+from typing import Any
+
 from dataset.utils.columns import parse_column
 from dataset.utils.dataset import (
     ALLOWED_METRICS,
@@ -45,7 +47,7 @@ _LAZY_EXPORTS = {
 }
 
 
-def __getattr__(name):
+def __getattr__(name: Any) -> Any:
     module_path = _LAZY_EXPORTS.get(name)
     if module_path is not None:
         from importlib import import_module

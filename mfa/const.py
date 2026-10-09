@@ -12,8 +12,9 @@ class ConfirmType(TextChoices):
     级别递增：PASSWORD < MFA，高级别方式确认通过后，可同时满足低级别要求。
     """
 
-    PASSWORD = "password", _("Password")
-    MFA = "mfa", _("MFA")
+    # 元组声明语法由 TextChoices 元类在运行期转为 str 成员；类型面显式声明为 str
+    PASSWORD: str = "password", _("Password")  # type: ignore[assignment]  # TextChoices 元组声明语法
+    MFA: str = "mfa", _("MFA")  # type: ignore[assignment]  # TextChoices 元组声明语法
 
 
 # 各验证类型对应的确认级别

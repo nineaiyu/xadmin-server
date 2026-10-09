@@ -6,6 +6,8 @@ celery autodiscover 会导入各安装应用的 ``tasks`` 模块，``message`` �
 本模块随应用自动注册到 django_celery_beat，无需在 system/tasks/__init__.py 显式引入。
 """
 
+from typing import Any
+
 from celery import shared_task
 
 from common.celery.decorator import register_as_period_task
@@ -15,9 +17,9 @@ from message import chat as chat_service
 logger = get_logger(__name__)
 
 
-@shared_task
-@register_as_period_task(crontab="23 3 * * *", module="chat")
-def clean_chat_history_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="23 3 * * *", module="chat")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def clean_chat_history_job() -> Any:
     """清理超过 CHAT_HISTORY_DAYS 的聊天消息（0 = 不清理，默认关闭）。"""
     removed = chat_service.clean_expired_history()
     logger.info(f"clean {removed} chat history message")

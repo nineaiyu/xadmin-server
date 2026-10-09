@@ -73,7 +73,7 @@ class ApprovalInstance(DbAuditModel):
             models.Index(fields=["biz_type", "biz_id"], name="idx_appr_inst_biz"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.title} [{self.status}]"
 
 
@@ -149,7 +149,7 @@ class ApprovalNodeTask(DbAuditModel):
             models.Index(fields=["instance", "node_order"], name="idx_appr_task_inst_order"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.node_name} -> {self.assignee_id} [{self.status}]"
 
 
@@ -182,5 +182,5 @@ class ApprovalInstanceComment(DbAuditModel):
             models.Index(fields=["instance", "created_time"], name="idx_appr_comment_inst_created"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.instance_id} {self.author_display}: {self.content[:20]}"

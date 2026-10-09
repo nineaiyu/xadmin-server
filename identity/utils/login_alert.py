@@ -12,6 +12,7 @@
 
 import datetime
 import ipaddress
+from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
@@ -25,7 +26,7 @@ logger = get_logger(__name__)
 ALERT_THROTTLE_SECONDS = 24 * 3600
 
 
-def _is_private_ip(ip):
+def _is_private_ip(ip: Any) -> Any:
     if not ip or ip in ("unknown", "0.0.0.0"):
         return True
     try:
@@ -34,7 +35,7 @@ def _is_private_ip(ip):
         return False
 
 
-def _detect_new_dimensions(user, ip, city, browser, system):
+def _detect_new_dimensions(user: Any, ip: Any, city: Any, browser: Any, system: Any) -> Any:
     """返回本次登录相对基线窗口历史首次出现的维度清单（空列表 = 无异常）。"""
     from audit.services import UserLoginLog
 
@@ -66,7 +67,7 @@ def _detect_new_dimensions(user, ip, city, browser, system):
     return dimensions
 
 
-def maybe_alert_abnormal_login(user, ip, city, browser, system):
+def maybe_alert_abnormal_login(user: Any, ip: Any, city: Any, browser: Any, system: Any) -> None:
     """登录成功后的异常登录提醒入口（login_success 收敛点调用）。
 
     全程 try/except 吞掉异常：提醒是附加能力，任何失败只打 warning。

@@ -7,6 +7,8 @@ metrics（AI 调用观测：近 N 天用量 / 成功率 / 类型分布 / Top 用
 两个 action 与 status 共用同一权限点路径正则，不新增权限点。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
@@ -19,8 +21,8 @@ class AiObservabilityMixin:
     """AI 用量 / 观测 action（self 由组合它的 ViewSet 提供）。"""
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="usage")
-    def usage(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="usage")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def usage(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """AI 用量账本：按天 / 按链路 / Top 用户 + 配额配置与并发占用。
 
         数据源 = AiUsageRecord（逐次记账，保留期随 MONITOR_RETENTION_DAYS 清理）；
@@ -38,8 +40,8 @@ class AiObservabilityMixin:
         return ApiResponse(data=usage_summary(days=days, feature=feature))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="metrics")
-    def metrics(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="metrics")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def metrics(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """AI 调用观测：近 N 天用量 / 成功率 / 类型分布 / Top 用户。
 
         数据源 = OperationLog(auth_type=ai)：AI:ask（文档问答）/ AI:nl_query（NL 查数）/

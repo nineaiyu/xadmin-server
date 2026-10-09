@@ -6,6 +6,7 @@
 # date : 8/8/2024
 import hashlib
 import time
+from typing import Any
 
 from django.contrib.auth import logout
 from django.utils import timezone
@@ -28,7 +29,7 @@ class LogoutAPIView(GenericAPIView):
         request=OpenApiRequest(build_object_type(properties={"refresh": build_basic_type(OpenApiTypes.STR)})),
         responses=get_default_response_schema(),
     )
-    def post(self, request):
+    def post(self, request: Any) -> Any:
         """用户登出"""
         # 登出同时清除敏感操作二次确认状态，避免下个会话在有效期内绕过二次验证
         # （放在 auth 判断之前：session 等非 JWT 认证方式下 request.auth 为空）

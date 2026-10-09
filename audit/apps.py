@@ -9,5 +9,5 @@ class AuditConfig(AppConfig):
     name = "audit"
     verbose_name = _("Audit")
 
-    def ready(self):
+    def ready(self) -> None:
         from . import signal_handler  # noqa: F401  脱敏规则缓存失效接收器注册

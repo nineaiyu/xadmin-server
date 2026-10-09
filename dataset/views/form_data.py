@@ -15,6 +15,8 @@
 通过「数据权限」页配置；授权菜单维度选择「表单数据」或留空（通用）。
 """
 
+from typing import Any
+
 from drf_spectacular.utils import extend_schema
 from rest_framework.viewsets import GenericViewSet
 
@@ -76,7 +78,7 @@ class DynamicFormDataViewSet(
     # filter_backends 不覆写：沿用全局默认（DjangoFilterBackend / OrderingFilter /
     # BaseDataPermissionFilter），数据权限编译器即本视图的取值域
 
-    def get_serializer_context(self):
+    def get_serializer_context(self) -> Any:
         context = super().get_serializer_context()
         if getattr(self, "action", None) == "export_data":
             context["dynamic_fields"] = export_dynamic_fields(self.filter_queryset(self.get_queryset()))
@@ -92,8 +94,8 @@ class DynamicFormDataViewSet(
         return context
 
     @extend_schema(responses=get_default_response_schema())
-    @shared_list_action(methods=["get"], detail=False, url_path="form-options")
-    def form_options(self, request, *args, **kwargs):
+    @shared_list_action(methods=["get"], detail=False, url_path="form-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def form_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """表单选项（全部非模板表单，含停用）：管理端「选择表单」数据源。
 
         返回 schema 供前端渲染动态列；定义类资源不做行级数据权限过滤
@@ -122,8 +124,8 @@ class DynamicFormDataViewSet(
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
-    @shared_list_action(methods=["get"], detail=False, url_path="user-options")
-    def user_options(self, request, *args, **kwargs):
+    @shared_list_action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def user_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """选人控件数据源（关键字搜索 / 按主键回显，≤20 条）：列表内选人字段回显。
 
         与「我的填报」的 user-options 同源（common 轻量数据源），供管理端列表把

@@ -4,6 +4,8 @@
 # filename : menu
 # author : ly_13
 # date : 10/29/2024
+from typing import Any
+
 from django.contrib.auth.models import Group, Permission
 from django.utils.module_loading import import_string
 from rest_framework.routers import SimpleRouter
@@ -19,7 +21,7 @@ no_detail_router = NoDetailRouter(False)
 logger = get_logger(__file__)
 
 
-def get_long_str(li):
+def get_long_str(li: Any) -> Any:
     result = ""
     for i in zip(*li, strict=False):
         if len(set(i)) == 1:
@@ -29,7 +31,7 @@ def get_long_str(li):
     return result
 
 
-def get_related_models(model):
+def get_related_models(model: Any) -> Any:
     related_models = {model._meta.label_lower}
     for field in model._meta._get_fields(reverse=False):
         if (
@@ -42,8 +44,8 @@ def get_related_models(model):
     return related_models
 
 
-def get_view_permissions(view_string, code_suffix=""):
-    permissions: list[dict] = []
+def get_view_permissions(view_string: Any, code_suffix: Any = "") -> Any:
+    permissions: list[dict[str, Any]] = []
 
     url_paths = [url for url in get_all_url_dict("") if url.get("view") == view_string]
     if not url_paths:

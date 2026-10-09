@@ -4,8 +4,8 @@
 # filename : message
 # author : ly_13
 # date : 9/15/2024
-
 import os.path
+from typing import Any
 
 from django.conf import settings
 from django.db.models import Count, Q
@@ -77,7 +77,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
     read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read user count"))
 
-    def validate_message(self, value):
+    def validate_message(self, value: Any) -> Any:
         # 公告/站内信内容以 v-html 渲染（前端 NoticeShow），入库前按白名单净化，
         # 防止持权账号之间注入脚本（存储型 XSS）
         from common.utils.sanitize import sanitize_rich_text
@@ -85,7 +85,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
         return sanitize_rich_text(value)
 
     @extend_schema_field(serializers.IntegerField)
-    def get_read_user_count(self, obj):
+    def get_read_user_count(self, obj: Any) -> Any:
         if obj.notice_type in MessageContent.get_user_choices():
             # 整页一次聚合查询，替代每条消息一次 COUNT
             counts = self._page_read_counts(obj)
@@ -106,7 +106,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
         return 0
 
     @extend_schema_field(serializers.IntegerField)
-    def get_user_count(self, obj):
+    def get_user_count(self, obj: Any) -> Any:
         if obj.notice_type in (
             MessageContent.NoticeChoices.DEPT,
             MessageContent.NoticeChoices.ROLE,
@@ -136,7 +136,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
             )
         return obj.notice_user.count()
 
-    def _page_notice_user_counts(self, obj):
+    def _page_notice_user_counts(self, obj: Any) -> Any:
         """整页消息的 notice_user 关联人数，一次聚合查询得到 {notice_pk: user_count}。
 
         同时服务两个字段：user_count（以 notice_user 表达接收人的 USER/SYSTEM/NOTICE）
@@ -162,7 +162,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
         self.context["_page_notice_user_counts"] = counts
         return counts
 
-    def _page_target_user_counts(self, obj):
+    def _page_target_user_counts(self, obj: Any) -> Any:
         """整页 DEPT/ROLE/POST 消息按目标人群展开的人数，每类一次聚合查询得到 {notice_pk: user_count}。
 
         口径与逐对象查询一致：DEPT 为目标部门下的在册用户；ROLE 沿角色展开的关联行数
@@ -223,7 +223,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
         self.context[cache_key] = counts
         return counts
 
-    def _page_read_counts(self, obj):
+    def _page_read_counts(self, obj: Any) -> Any:
         """整页消息的已读人数，一次聚合查询得到 {notice_pk: read_count}。
 
         仅对"按用户通知"类型有效；非整页序列化（单对象/嵌套）返回 None，退回逐对象查询。
@@ -255,7 +255,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
         self.context["_page_read_counts"] = counts
         return counts
 
-    def validate_notice_type(self, val):
+    def validate_notice_type(self, val: Any) -> Any:
         if self.request.method == "POST":
             if val == MessageContent.NoticeChoices.NOTICE:
                 raise ValidationError(_("Parameter error. System announcement cannot be created"))
@@ -265,7 +265,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
                 raise ValidationError(_("Parameter error. System notification cannot be created"))
         return val
 
-    def validate_files(self, value):
+    def validate_files(self, value: Any) -> Any:
         # 前端仅提交「已上传文件路径字符串数组」（富文本编辑器收集的链接）；
         # 形状畸变（非数组 / 元素非字符串）会让路径解析拿到脏输入——字符串被逐字符
         # 拆分、对象直接 AttributeError（落 500）或误清空附件，统一按参数错误拒绝
@@ -273,7 +273,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
             raise ValidationError(_("The attachments must be a list of file paths"))
         return value
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         notice_type = attrs.get("notice_type")
 
         if notice_type == MessageContent.NoticeChoices.ROLE:
@@ -313,7 +313,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
             attrs["file"] = get_filter_queryset(queryset, self.request.user).all()
         return attrs
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         validated_data.pop("notice_type", None)  # 不能修改消息类型
         if instance.notice_type == MessageContent.NoticeChoices.SYSTEM:  # 系统通知不允许修改
             raise ValidationError(_("The system notice cannot be update"))
@@ -321,7 +321,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
 
 
 class AnnouncementSerializer(NoticeMessageSerializer):
-    def validate_notice_type(self, val):
+    def validate_notice_type(self, val: Any) -> Any:
         if MessageContent.NoticeChoices.NOTICE == val:
             return val
         raise ValidationError(_("Parameter error"))
@@ -376,7 +376,7 @@ class UserNoticeSerializer(BaseModelSerializer):
     unread = serializers.SerializerMethodField(label=_("Unread"))
 
     @extend_schema_field(serializers.BooleanField)
-    def get_unread(self, obj):
+    def get_unread(self, obj: Any) -> Any:
         # 整页一次查询当前用户的已读记录，查询数与消息条数解耦。
         # 语义与旧实现逐字段对齐（owner + notice 唯一，每条消息至多一行）：
         # - USER/SYSTEM：存在 unread=True 的记录 -> 未读；

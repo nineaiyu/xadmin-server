@@ -18,6 +18,7 @@ database_sync_to_async 丢线程池执行，避免拖慢共享事件循环。
 """
 
 import asyncio
+from typing import Any
 
 from channels.db import database_sync_to_async
 
@@ -33,8 +34,8 @@ PANEL_PUSH_EVERY = 6  # 每 6 个 live 周期推一次 panel（约 30s）
 MONITOR_PERMISSION_KEY = "api/system/monitor/overview$"
 
 
-@database_sync_to_async
-def _has_monitor_permission(user) -> bool:
+@database_sync_to_async  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def _has_monitor_permission(user: Any) -> bool:
     """超管全量；普通用户需持有 SystemMonitor 的 list 菜单权限（与 HTTP 同口径）。"""
     if not user or not getattr(user, "is_authenticated", False):
         return False
@@ -49,8 +50,8 @@ def _has_monitor_permission(user) -> bool:
         return False
 
 
-@database_sync_to_async
-def _collect_panel():
+@database_sync_to_async  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def _collect_panel() -> Any:
     """重采集集中在线程池执行（celery inspect 广播最长阻塞 ~1s，不能占事件循环）。"""
     services = metrics.collect_services()
     return {
@@ -68,7 +69,7 @@ class MonitorNotify(AsyncJsonWebsocket):
     disconnected = False
     """一条连接持续推送面板指标；断开即停，无分组广播（面板数据按连接隔离推送）。"""
 
-    async def connect(self):
+    async def connect(self) -> None:
         self.user = self.scope["user"]
         if not self.user:
             await self.close(4401)
@@ -80,14 +81,14 @@ class MonitorNotify(AsyncJsonWebsocket):
         await self.accept()
         asyncio.create_task(self.push_loop())
 
-    async def disconnect(self, close_code):
+    async def disconnect(self, close_code: Any) -> None:
         self.disconnected = True
 
-    async def ping(self, event):
+    async def ping(self, event: Any) -> None:
         """监控连接不属于消息层分组（无 group_name），心跳静默忽略即可；
         沿用基类实现会因缺少 group_name 抛 AttributeError 断连（同 TaskLogNotify）。"""
 
-    async def push_loop(self):
+    async def push_loop(self) -> None:
         try:
             tick = 0
             while not self.disconnected:

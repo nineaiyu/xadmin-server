@@ -14,6 +14,8 @@
 pdf/office/文本归为文档，全部落空归「其他」。
 """
 
+from typing import Any
+
 from file.utils.preview import preview_kind_of
 from system.services import get_dict_items
 
@@ -113,12 +115,12 @@ ARCHIVE_MIME_TYPES = (
 )
 
 
-def _normalize(mime_type) -> str:
+def _normalize(mime_type: Any) -> str:
     """规范化 MIME：去参数（``text/plain; charset=utf-8``）并统一小写。"""
     return (mime_type or "").split(";")[0].strip().lower()
 
 
-def guess_upload_category(filename, mime_type) -> str:
+def guess_upload_category(filename: Any, mime_type: Any) -> str:
     """按 MIME + 扩展名推断语义分类 code（**不保证该 code 存在于字典中**）。
 
     兜底返回 ``other``（「其他」即未知类型的归类），由 resolve 决定是否可用。
@@ -138,7 +140,7 @@ def guess_upload_category(filename, mime_type) -> str:
     return CATEGORY_OTHER
 
 
-def resolve_upload_category(filename, mime_type) -> str | None:
+def resolve_upload_category(filename: Any, mime_type: Any) -> str | None:
     """推断 + 字典校验：返回可直接落库的分类值；字典中无处可归时返回 None。
 
     去重命中与正常落盘两条路径共用本函数（结果一致，仅物理文件复用方式不同）。

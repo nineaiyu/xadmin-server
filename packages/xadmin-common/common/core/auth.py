@@ -304,15 +304,27 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
         return (user, pat)
 
 
-from common.core.auth_scopes import (  # noqa: F401  (实现拆至 auth_scopes，此处再导出保持调用面)
-    SCOPE_HTTP_METHODS,
-    SCOPE_METHOD_RE,
-    _compiled_scope_matcher,
-    _normalize_scope_path,
-    ip_allowed_by_allowlist,
-    normalize_scope_entry,
-    split_scope_entry,
+from common.core.auth_scopes import (  # noqa: F401  (实现拆至 auth_scopes，此处再导出保持调用面；逐名 as 形式=显式再导出)
+    SCOPE_HTTP_METHODS as SCOPE_HTTP_METHODS,
+)
+from common.core.auth_scopes import (
+    SCOPE_METHOD_RE as SCOPE_METHOD_RE,
+)
+from common.core.auth_scopes import (
+    _compiled_scope_matcher as _compiled_scope_matcher,
+)
+from common.core.auth_scopes import (
+    _normalize_scope_path as _normalize_scope_path,
+)
+from common.core.auth_scopes import (
+    ip_allowed_by_allowlist as ip_allowed_by_allowlist,
+)
+from common.core.auth_scopes import (
+    normalize_scope_entry as normalize_scope_entry,
 )
 from common.core.auth_scopes import (
     path_allowed_by_scopes as path_allowed_by_scopes,
+)
+from common.core.auth_scopes import (
+    split_scope_entry as split_scope_entry,
 )

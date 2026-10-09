@@ -11,6 +11,7 @@
 
 import uuid
 from datetime import timedelta
+from typing import Any
 
 from django.db.models import Q
 from django.utils import timezone
@@ -49,7 +50,7 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
     filterset_class = UserOnlineFilter
     ordering_fields = ["last_active", "created_time"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         online_user_pks, online_user_sockets = get_online_info()
         cutoff = timezone.now() - timedelta(seconds=SysConfig.SESSION_ONLINE_TIMEOUT)
         # WS 会话看 channel 存活；HTTP 会话看活跃窗口（status=ONLINE 过滤已下线记录）
@@ -57,7 +58,7 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
             Q(channel_name__in=online_user_sockets) | Q(channel_name="", last_active__gte=cutoff)
         )
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> Any:
         """行维度「下线」：WS 会话踢 channel；HTTP 会话按 sid 服务端失效 token。"""
         if instance.channel_name:
             send_logout_msg(instance.creator_id, [instance.channel_name])
@@ -70,7 +71,7 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         instance.mark_offline()
         return True
 
-    def _needs_rowwise_delete(self):
+    def _needs_rowwise_delete(self) -> Any:
         """批量删除必须逐行：WS 踢线与 HTTP 会话令牌失效只在 perform_destroy 中，
         非逐行分支的 queryset.delete() 会静默跳过这些副作用（在线用户看似被删除、实际未下线）。"""
         return True
@@ -79,8 +80,8 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         request=None,
         responses=get_default_response_schema({"channels": build_basic_type(OpenApiTypes.NUMBER)}),
     )
-    @action(methods=["post"], detail=True, url_path="force-logout")
-    def force_logout(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="force-logout")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def force_logout(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """强制下线该用户全部会话（服务端令牌失效 + WS 踢线）
 
         detail pk 为用户主键（非会话行主键）：踢的是「用户全部会话」，
@@ -108,8 +109,8 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema({"users": build_basic_type(OpenApiTypes.NUMBER)}),
     )
-    @action(methods=["post"], detail=False, url_path="batch-force-logout")
-    def batch_force_logout(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-force-logout")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_force_logout(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量强制下线（按选中行的用户去重后踢全部会话）"""
         pks = [str(pk) for pk in request.data if str(pk).strip()]
         # 用原始 queryset（不做在线交集过滤）：选中行来自列表快照，请求瞬间

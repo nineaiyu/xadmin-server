@@ -6,6 +6,8 @@
 → ``register``（提交 attestation 由服务端验签落库）；删除仅限本人凭据（超管可管理全部）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -39,7 +41,7 @@ class PasskeyViewSet(BaseViewSet, ListAction, SearchColumnsAction, DestroyAction
     serializer_class = UserPasskeySerializer
     ordering = ["-created_time"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         queryset = super().get_queryset()
         user = getattr(self.request, "user", None)
         if user is None or getattr(user, "is_superuser", False):
@@ -55,8 +57,8 @@ class PasskeyViewSet(BaseViewSet, ListAction, SearchColumnsAction, DestroyAction
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="challenge")
-    def challenge(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="challenge")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def challenge(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取 WebAuthn 挑战值（一次性，5 分钟有效）"""
         scene = str(request.data.get("scene") or SCENE_REGISTER)
         if scene not in (SCENE_REGISTER, SCENE_AUTHENTICATE):
@@ -89,8 +91,8 @@ class PasskeyViewSet(BaseViewSet, ListAction, SearchColumnsAction, DestroyAction
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="register")
-    def register(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="register")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def register(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """绑定一个 Passkey 凭据"""
         user = request.user
         # 与验证同口径的方式白名单（共享/演示账号策略可收窄到不允许绑定）

@@ -20,6 +20,8 @@ Django 命令发现只识别模块、跳过包目录，命令入口是同目录�
 ``generate_crud.py``（仅做再导出），因此本包不参与命令注册。
 """
 
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from .analysis import AnalysisMixin
@@ -55,7 +57,7 @@ __all__ = [
 class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCommand):
     help = "Generate CRUD scaffold (serializer/views/urls/config + client page + menu seed) for an existing model"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("model", help="目标模型标签，如 demo.Book")
         parser.add_argument("--component", default="", help="前端组件名（默认 App+Model 驼峰，如 DemoBook）")
         parser.add_argument("--url-prefix", default="", help="API 前缀（默认 api/<app>/<model>）")
@@ -119,7 +121,7 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
 
     # ------------------------------------------------------------------ 入口
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         model = self._resolve_model(options["model"])
         ctx = self._build_context(model, options)
         self._apply_dict_fields(ctx, options.get("dict_field") or [])

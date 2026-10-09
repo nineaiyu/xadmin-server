@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """任务中心统一聚合视图（任务/导出/导入三源合并，自 task_center 拆分，行为不变）。"""
 
+from typing import Any
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from django.utils.module_loading import import_string
@@ -25,14 +27,14 @@ logger = get_logger(__name__)
 # --------------------------------------------------------------- 统一视图
 
 
-def _owner_filter(queryset, user):
+def _owner_filter(queryset: Any, user: Any) -> Any:
     """数据域与下载中心一致：超管全量，其余只看自己创建的记录。"""
     if getattr(user, "is_superuser", False):
         return queryset
     return queryset.filter(creator=user)
 
 
-def _time_filters(queryset, start, end):
+def _time_filters(queryset: Any, start: Any, end: Any) -> Any:
     if start:
         queryset = queryset.filter(created_time__gte=start)
     if end:
@@ -40,7 +42,7 @@ def _time_filters(queryset, start, end):
     return queryset
 
 
-def progress_of(record, kind: str):
+def progress_of(record: Any, kind: str) -> Any:
     """记录进度（0-100；任务执行无进度语义返回 None）。"""
     if kind == TYPE_TASK:
         return None
@@ -53,21 +55,21 @@ def progress_of(record, kind: str):
     return int(getattr(record, "progress", 0) or 0)
 
 
-def _creator_name(record) -> str:
+def _creator_name(record: Any) -> str:
     creator = getattr(record, "creator", None)
     return str(getattr(creator, "username", "") or "")
 
 
-def _iso(value):
+def _iso(value: Any) -> Any:
     return value.isoformat() if value else None
 
 
-def _stage_of(record) -> str:
+def _stage_of(record: Any) -> str:
     """阶段描述（统一进度助手写入；任务执行无阶段语义返回空串）。"""
     return str(getattr(record, "stage", "") or "")
 
 
-def _task_row(record) -> dict:
+def _task_row(record: Any) -> dict[str, Any]:
     time_cost = record.time_cost
     return {
         "type": TYPE_TASK,
@@ -92,7 +94,7 @@ def _task_row(record) -> dict:
     }
 
 
-def _export_row(record) -> dict:
+def _export_row(record: Any) -> dict[str, Any]:
     return {
         "type": TYPE_EXPORT,
         "pk": str(record.pk),
@@ -114,7 +116,7 @@ def _export_row(record) -> dict:
     }
 
 
-def _import_row(record) -> dict:
+def _import_row(record: Any) -> dict[str, Any]:
     return {
         "type": TYPE_IMPORT,
         "pk": str(record.pk),
@@ -139,7 +141,18 @@ def _import_row(record) -> dict:
     }
 
 
-def unified_rows(user, *, types=None, status="", keyword="", creator="", start=None, end=None, page=1, size=15):
+def unified_rows(
+    user: Any,
+    *,
+    types: Any = None,
+    status: Any = "",
+    keyword: Any = "",
+    creator: Any = "",
+    start: Any = None,
+    end: Any = None,
+    page: Any = 1,
+    size: Any = 15,
+) -> Any:
     """跨类型合并的任务行（按创建时间倒序 + 分页）。
 
     每类型先按各类型过滤条件取候选窗口（上限 ``MAX_UNIFIED_ROWS``）再合并排序，
@@ -158,7 +171,7 @@ def unified_rows(user, *, types=None, status="", keyword="", creator="", start=N
     # 前 N×size 行内（各类型自身按创建时间倒序），无需全表扫描即可保证分页正确性
     window = min(MAX_UNIFIED_ROWS, page * size)
 
-    def _filtered(queryset, keyword_q):
+    def _filtered(queryset: Any, keyword_q: Any) -> Any:
         queryset = _time_filters(_owner_filter(queryset, user), start, end)
         if status:
             queryset = queryset.filter(status=status)
@@ -205,7 +218,7 @@ def unified_rows(user, *, types=None, status="", keyword="", creator="", start=N
 # --------------------------------------------------------------- 取消
 
 
-def _fetch(user, kind: str, pk: str):
+def _fetch(user: Any, kind: str, pk: str) -> Any:
     from task.models.export import ExportRecord
     from task.models.import_ import ImportRecord
     from task.models.task import TaskExecution
@@ -220,7 +233,7 @@ def _fetch(user, kind: str, pk: str):
         return None
 
 
-def cancel_record(user, kind: str, pk: str) -> dict:
+def cancel_record(user: Any, kind: str, pk: str) -> dict[str, Any]:
     """取消记录（幂等）：返回 ``{ok, detail}``。"""
     from server.celery import app
 
@@ -269,7 +282,7 @@ def resolve_view_path(url_path: str) -> str:
     return f"{view_cls.__module__}.{view_cls.__name__}"
 
 
-def _dispatch(task, args=None, kwargs=None, task_id=None):
+def _dispatch(task: Any, args: Any = None, kwargs: Any = None, task_id: Any = None) -> Any:
     """派发任务：EAGER（测试/E2E）走同步 apply，否则 apply_async。"""
     from django.conf import settings
     from django.db import transaction
@@ -280,7 +293,7 @@ def _dispatch(task, args=None, kwargs=None, task_id=None):
     return None
 
 
-def rerun_record(user, kind: str, pk: str) -> dict:
+def rerun_record(user: Any, kind: str, pk: str) -> dict[str, Any]:
     """重跑记录（导出 / 导入 / 报表）：新记录 + 同链路重放（以操作者身份执行）。"""
     record = _fetch(user, kind, pk)
     if record is None:
@@ -300,7 +313,7 @@ def rerun_record(user, kind: str, pk: str) -> dict:
         return {"ok": False, "detail": str(exc)}
 
 
-def _rerun_export(record, user) -> dict:
+def _rerun_export(record: Any, user: Any) -> dict[str, Any]:
     from task.models.export import ExportRecord
 
     view_path = resolve_view_path(record.path)
@@ -319,7 +332,7 @@ def _rerun_export(record, user) -> dict:
     return {"ok": True, "detail": str(_("Rerun submitted")), "data": {"record_id": str(clone.pk)}}
 
 
-def _rerun_import(record, user) -> dict:
+def _rerun_import(record: Any, user: Any) -> dict[str, Any]:
     from task.models.import_ import ImportRecord
 
     view_path = resolve_view_path(record.path)
@@ -339,7 +352,7 @@ def _rerun_import(record, user) -> dict:
     return {"ok": True, "detail": str(_("Rerun submitted")), "data": {"record_id": str(clone.pk)}}
 
 
-def _rerun_report(record) -> dict:
+def _rerun_report(record: Any) -> dict[str, Any]:
     from dataset.analysis_tasks import _precreate_record, run_scheduled_report
     from dataset.models.dataset import Report
 

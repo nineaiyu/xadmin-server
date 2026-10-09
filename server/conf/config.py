@@ -14,7 +14,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 logger = logging.getLogger("xadmin.conf")
 
 
-def import_string(dotted_path):
+def import_string(dotted_path: str) -> Any:
     try:
         module_path, class_name = dotted_path.rsplit(".", 1)
     except ValueError as err:
@@ -36,7 +36,7 @@ from .defaults import BASE_CONFIG, LIBS_CONFIG
 from .settings_defaults import SETTINGS_CONFIG
 
 
-class Config(dict):
+class Config(dict[str, Any]):
     base = BASE_CONFIG
     libs = LIBS_CONFIG
     settings = SETTINGS_CONFIG
@@ -59,10 +59,10 @@ class Config(dict):
     defaults.update(settings)
     old_config_map: dict[str, str] = {}
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any) -> None:
         super().__init__(*args)
 
-    def convert_type(self, k, v):
+    def convert_type(self, k: str, v: Any) -> Any:
         default_value = self.defaults.get(k)
         if default_value is None:
             return v
@@ -89,23 +89,23 @@ class Config(dict):
             pass
         return v
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {dict.__repr__(self)}>"
 
-    def get_from_config(self, item):
+    def get_from_config(self, item: str) -> Any:
         try:
             value = super().__getitem__(item)
         except KeyError:
             value = None
         return value
 
-    def get_from_env(self, item):
+    def get_from_env(self, item: str) -> Any:
         value = os.environ.get(item, None)
         if value is not None:
             value = self.convert_type(item, value)
         return value
 
-    def get(self, item, default=None):
+    def get(self, item: str, default: Any = None) -> Any:
         # 再从配置文件中获取
         value = self.get_from_config(item)
         if value is None:
@@ -120,8 +120,8 @@ class Config(dict):
             value = default
         return value
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> Any:
         return self.get(item)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> Any:
         return self.get(item)

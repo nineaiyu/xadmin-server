@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """菜单权限点同步内核：落库创建、绑定校正与授权。"""
 
+from typing import Any
+
 from django.db import transaction
 
 from common.utils import get_logger
@@ -15,7 +17,7 @@ from .types import BindingFix
 logger = get_logger(__name__)
 
 
-def apply_plans(plans, user=None):
+def apply_plans(plans: Any, user: Any = None) -> Any:
     """创建权限点（Menu + MenuMeta）。
 
     同名已存在时：路径一致但方法不同 → 修正方法（如 `batchDestroy:SystemDataMaskRule`
@@ -53,7 +55,7 @@ def apply_plans(plans, user=None):
     return created, conflicts, method_fixed
 
 
-def related_model_labels(view_cls):
+def related_model_labels(view_cls: Any) -> Any:
     try:
         model = view_cls.queryset.model
     except Exception as e:  # noqa: BLE001 无 queryset 的视图（APIView/自定义）不参与绑定
@@ -66,7 +68,7 @@ def related_model_labels(view_cls):
         return set()
 
 
-def _role_root_pks(labels):
+def _role_root_pks(labels: Any) -> Any:
     return set(
         ModelLabelField.objects.filter(
             field_type=ModelLabelField.FieldChoices.ROLE, parent=None, name__in=list(labels)
@@ -74,7 +76,7 @@ def _role_root_pks(labels):
     )
 
 
-def plan_binding_fixes(routes, perms):
+def plan_binding_fixes(routes: Any, perms: Any) -> Any:
     """规划模型绑定校正：CRUD 补绑定（只增不减）；导入导出链清空绑定。"""
     route_by_path = {}
     for route in routes:
@@ -101,14 +103,14 @@ def plan_binding_fixes(routes, perms):
     return fixes
 
 
-def apply_binding_fixes(fixes):
+def apply_binding_fixes(fixes: Any) -> Any:
     with transaction.atomic():
         for fix in fixes:
             fix.menu.model.set(fix.expected)
     return len(fixes)
 
 
-def grant_to_roles(created_menus, perms, parent_of_created):
+def grant_to_roles(created_menus: Any, perms: Any, parent_of_created: Any) -> Any:
     """把新建权限点授予「已拥有同模块权限点且拥有父菜单」的角色（可选，默认不执行）。"""
     granted = []
     for menu in created_menus:

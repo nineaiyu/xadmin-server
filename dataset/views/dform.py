@@ -9,6 +9,8 @@
 定义/提交类资源不做行级数据权限过滤（与 Dataset 同款处理）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -38,7 +40,7 @@ class DynamicFormFilter(BaseFilterSet):
         fields = ["is_active", "approval_required"]
 
 
-def _creator_guard(request, instance):
+def _creator_guard(request: Any, instance: Any) -> Any:
     """非创建者写守卫（与 Dataset/大屏同口径）：拒绝时返回 1003 响应，否则 None。"""
     if instance and not getattr(request.user, "is_superuser", False) and instance.creator_id != request.user.pk:
         return ApiResponse(code=1003, detail=_("Only the creator can modify a form"))
@@ -66,7 +68,7 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = DynamicFormFilter
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         queryset = super().get_queryset()
         if getattr(self, "action", None) == "list":
             if self.request.query_params.get("kind") == "templates":
@@ -74,10 +76,10 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
             return queryset.filter(is_template=False)
         return queryset
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         serializer.save(creator=self.request.user, modifier=self.request.user)
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -88,19 +90,19 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
         self.perform_update(serializer)
         return ApiResponse(data=serializer.data)
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         instance = self.get_object()
         guarded = _creator_guard(request, instance)
         if guarded:
             return guarded
         return super().destroy(request, *args, **kwargs)
 
-    def _needs_rowwise_delete(self):
+    def _needs_rowwise_delete(self) -> Any:
         """删除表单有逐行副作用（绑定流程的 form_schema 再同步，见 perform_destroy），
         批量删除必须走逐行分支（覆写契约见 docs/architecture/framework-cookbook.md）。"""
         return True
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> Any:
         """删除表单后对绑定流程做 form_schema 再同步（其他绑定表单仍存在时重投影）。
 
         非创建者删除守卫：单删由 destroy() 提前返回 1003；批量删除走逐行分支，
@@ -118,8 +120,8 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
         return result
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="schema-history")
-    def schema_history(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="schema-history")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def schema_history(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """schema 版本历史（新 → 旧）：每项含 schema 全文，供查看/对比/回滚。
 
         保留最近 MAX_SCHEMA_HISTORY（20）个版本；版本号单调递增，回滚同样生成新版本。
@@ -143,8 +145,8 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True)
-    def rollback(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def rollback(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """回滚 schema 到指定历史版本：应用其 schema 并生成新版本（历史保留，可再次回滚）。
 
         写入校验与常规编辑同源（规范化 + 字段/联动校验），避免历史脏数据绕过校验落库。

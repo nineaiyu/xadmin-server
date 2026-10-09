@@ -62,10 +62,10 @@ class DataDict(DbAuditModel, DbUuidModel):
             ),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.label}({self.code})"
 
-    def clean(self):
+    def clean(self) -> None:
         # PG 的 UNIQUE(parent, code) 不约束 parent IS NULL 的行，类型层 code 全局唯一在此兜底
         if self.parent_id:
             return

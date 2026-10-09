@@ -23,6 +23,7 @@ import base64
 import hashlib
 import secrets
 from datetime import timedelta
+from typing import Any
 
 from django.core.cache import cache
 from django.db import transaction
@@ -41,7 +42,7 @@ PKCE_METHODS = ("S256",)
 OAUTH_REFRESH_PREFIX = "aort"
 
 
-def _authorized_user(user_pk):
+def _authorized_user(user_pk: Any) -> Any:
     """授权码绑定的在用用户；不存在或已停用返回 None。"""
     from identity.models import UserInfo
 
@@ -52,7 +53,9 @@ def _code_cache_key(code: str) -> str:
     return CODE_CACHE_KEY.format(digest=hashlib.sha256(code.encode("utf-8")).hexdigest())
 
 
-def issue_authorize_code(user, application, redirect_uri, scopes, code_challenge, code_challenge_method) -> str:
+def issue_authorize_code(
+    user: Any, application: Any, redirect_uri: Any, scopes: Any, code_challenge: Any, code_challenge_method: Any
+) -> str:
     """生成一次性授权码（缓存键 = 码哈希，300s）。"""
     code = secrets.token_urlsafe(32)
     cache.set(
@@ -70,7 +73,7 @@ def issue_authorize_code(user, application, redirect_uri, scopes, code_challenge
     return code
 
 
-def consume_authorize_code(code: str):
+def consume_authorize_code(code: str) -> Any:
     """消费授权码（一次性）：命中即删除，返回绑定载荷；未命中/已用过返回 None。"""
     key = _code_cache_key(code)
     payload = cache.get(key)
@@ -98,7 +101,7 @@ def verify_pkce(code_challenge: str, method: str, verifier: str) -> bool:
     return secrets.compare_digest(code_challenge, expected)
 
 
-def resolve_requested_scopes(application, scope_param):
+def resolve_requested_scopes(application: Any, scope_param: Any) -> Any:
     """请求范围 → 应用 scope 子集（省略 = 全部；提供即必须逐项命中，否则 (None, 错误)）。
 
     比对与返回均按**锚定形态**：应用 scope 保存时已归一化（见
@@ -132,7 +135,7 @@ def resolve_requested_scopes(application, scope_param):
     return resolved, None
 
 
-def issue_oauth_access_token(application, user, scopes):
+def issue_oauth_access_token(application: Any, user: Any, scopes: Any) -> Any:
     """为「代表用户」访问签发 access（PAT，creator = 授权用户）。"""
     return issue_access_token(
         creator=user,
@@ -145,7 +148,7 @@ def issue_oauth_access_token(application, user, scopes):
     )
 
 
-def application_token_expiry(application):
+def application_token_expiry(application: Any) -> Any:
     """OAuth access 过期时间：应用 TTL 与应用有效期取更早者；均未设置为永不过期。"""
     expires_at = None
     if application.token_ttl_seconds:
@@ -155,7 +158,7 @@ def application_token_expiry(application):
     return expires_at
 
 
-def issue_oauth_refresh_token(application, user, scopes, access_token):
+def issue_oauth_refresh_token(application: Any, user: Any, scopes: Any, access_token: Any) -> Any:
     """签发刷新令牌（只存哈希；一次性轮换，撤销联动失效 access）。"""
     raw_token = f"{OAUTH_REFRESH_PREFIX}_{secrets.token_urlsafe(32)}"
     row = OAuthRefreshToken.objects.create(
@@ -170,7 +173,7 @@ def issue_oauth_refresh_token(application, user, scopes, access_token):
     return row, raw_token
 
 
-def validate_authorize_request(data) -> tuple:
+def validate_authorize_request(data: Any) -> tuple[Any, ...]:
     """同意页/授权请求公共校验，返回 (application, redirect_uri, scopes, challenge, method, state, error)。
 
     ``error`` 为协议错误三元组 ``(error_code, detail, status)``（无错为 None），
@@ -205,7 +208,7 @@ def validate_authorize_request(data) -> tuple:
     return application, redirect_uri, scopes, code_challenge, code_challenge_method, state, None
 
 
-def _revoke_refresh_row(row) -> None:
+def _revoke_refresh_row(row: Any) -> None:
     """一次性失效刷新令牌并联动失效关联 access（轮换 / 撤销共用）。"""
     with transaction.atomic():
         row.is_revoked = True
@@ -214,7 +217,9 @@ def _revoke_refresh_row(row) -> None:
             PersonalAccessToken.objects.filter(pk=row.access_token_id).update(is_active=False)
 
 
-def token_payload(application, raw_access, access_token, raw_refresh, scopes) -> dict:
+def token_payload(
+    application: Any, raw_access: Any, access_token: Any, raw_refresh: Any, scopes: Any
+) -> dict[str, Any]:
     """/token 响应载荷（授权码与 refresh 换发共用形状）。"""
     expires_in = int((access_token.expired_at - timezone.now()).total_seconds()) if access_token.expired_at else None
     return {
@@ -227,7 +232,7 @@ def token_payload(application, raw_access, access_token, raw_refresh, scopes) ->
     }
 
 
-def exchange_authorization_code(application, code, redirect_uri, verifier):
+def exchange_authorization_code(application: Any, code: Any, redirect_uri: Any, verifier: Any) -> Any:
     """授权码换发双令牌：一次性消费 + 客户端/redirect 绑定 + PKCE + 用户可用性。
 
     返回 ``(token 载荷, 错误三元组)``，载荷非 None 时错误为 None，反之亦然。
@@ -248,7 +253,7 @@ def exchange_authorization_code(application, code, redirect_uri, verifier):
     return token_payload(application, raw_access, access, raw_refresh, scopes), None
 
 
-def rotate_refresh_token(application, raw_refresh):
+def rotate_refresh_token(application: Any, raw_refresh: Any) -> Any:
     """刷新令牌一次性轮换：旧 refresh + 关联 access 同步失效，事务内签发新双令牌。
 
     返回 ``(token 载荷, 错误三元组)``，语义同 :func:`exchange_authorization_code`。
@@ -274,7 +279,7 @@ def rotate_refresh_token(application, raw_refresh):
     return token_payload(application, raw_access, access, raw_refresh_new, scopes), None
 
 
-def revoke_granted_token(application, raw_token) -> bool:
+def revoke_granted_token(application: Any, raw_token: Any) -> bool:
     """撤销（RFC 7009）：优先 refresh（联动失效关联 access），其次 access 凭证本身。
 
     返回响应 ``revoked`` 标志：refresh 命中恒为 True；access 侧命中才为 True

@@ -42,5 +42,5 @@ class SavedListView(DbAuditModel):
             models.UniqueConstraint(fields=["owner", "page_key", "name"], name="uniq_saved_view_owner_page_name"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.owner_id} {self.page_key} {self.name}"

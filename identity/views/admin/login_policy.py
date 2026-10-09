@@ -7,6 +7,7 @@
 """
 
 from datetime import datetime
+from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -54,8 +55,8 @@ class LoginAccessPolicyViewSet(BaseModelSet, ChoicesAction):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="preview")
-    def preview(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """登录策略命中预演"""
         username = str(request.data.get("username") or "").strip()
         user = None

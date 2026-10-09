@@ -5,9 +5,12 @@
 # author : ly_13
 # date : 6/27/2023
 
+from typing import Any
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
+from rest_framework.request import Request
 
 from audit.models import OperationLog
 from audit.serializers.log import OperationLogListSerializer, OperationLogSerializer
@@ -34,13 +37,13 @@ class OperationLogFilter(BaseFilterSet):
     has_changes = filters.BooleanFilter(method="get_has_changes", label=_("Has field changes"))
     error_status = filters.BooleanFilter(method="get_error_status", label=_("Error status"))
 
-    def get_error_status(self, queryset, name, value):
+    def get_error_status(self, queryset: Any, name: Any, value: Any) -> Any:
         # 成功口径 = 全平台 API 业务成功码（与 ApiResponse / 写日志侧同源）
         if value is True:
             return queryset.exclude(status_code=API_SUCCESS_CODE)
         return queryset.filter(status_code=API_SUCCESS_CODE)
 
-    def get_has_changes(self, queryset, name, value):
+    def get_has_changes(self, queryset: Any, name: Any, value: Any) -> Any:
         # 字段级审计 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径写入）
         if value is True:
             return queryset.exclude(changes__isnull=True).exclude(changes="")
@@ -94,7 +97,7 @@ class OperationLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction):
     controlled_lookup = True
     extra_filter_class = [ControlledLookupFilterBackend]
 
-    @shared_list_action(methods=["get"], detail=False, url_path="slow-threshold")
-    def slow_threshold(self, request, *args, **kwargs):
+    @shared_list_action(methods=["get"], detail=False, url_path="slow-threshold")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def slow_threshold(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """慢请求标红阈值（SysConfig 单源）；供本页无监控权限的查看者读取。"""
         return ApiResponse(data={"threshold": SysConfig.SLOW_REQUEST_THRESHOLD})

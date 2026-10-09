@@ -6,6 +6,8 @@
 （PENDING，不含本人发起）+ 我审批过的」，与待办口径一致。
 """
 
+from typing import Any
+
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
@@ -61,7 +63,7 @@ class ApprovalScopeFilter(BaseFilterBackend):
     字段过滤由 filter_backends 里独立的 DjangoFilterBackend 负责。
     """
 
-    def filter_queryset(self, request, queryset, view):
+    def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
         user = request.user
         if not user or not user.is_authenticated:
             return queryset.none()
@@ -101,13 +103,13 @@ class ApprovalRequestViewSet(
     # current_assignees（当前级候选人投影）列表逐行展示：prefetch 避免 N+1
     prefetch_related_fields = ("current_assignees",)
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Any:
         # 详情额外返回 steps（多级审批链进度），列表保持轻量
         if self.action == "retrieve":
             return ApprovalRequestDetailSerializer
         return ApprovalRequestSerializer
 
-    def _get_actionable(self, request):
+    def _get_actionable(self, request: Any) -> Any:
         """取审批单并校验审批权限：多级链 = 当前级候选人；扁平单 = 超管或审批人集合。
 
         申请人不能自审在引擎动作内判断（保持与批量入口同一收口点）。
@@ -121,7 +123,7 @@ class ApprovalRequestViewSet(
             raise PermissionDenied(_("Permission denied"))
         return approval
 
-    def _missing_pk_failures(self, pks, handled_pks) -> list:
+    def _missing_pk_failures(self, pks: Any, handled_pks: Any) -> list[Any]:
         """取值域外/已失效 pk 的失败明细（共享实现见 approval_instance_batch）。"""
         return missing_pk_failures(pks, handled_pks)
 
@@ -137,8 +139,8 @@ class ApprovalRequestViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-approve")
-    def batch_approve(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-approve")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_approve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量通过审批单"""
         ensure_approval_action_confirmed(request, "batch_approve")
         # 授权收口：全局审批人（超管 / 角色或权限反查）直接放行；多级链候选人
@@ -182,8 +184,8 @@ class ApprovalRequestViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-reject")
-    def batch_reject(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-reject")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_reject(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量驳回审批单（原因必填；逐单校验状态与审批人，返回成功数与被拒明细）"""
         ensure_approval_action_confirmed(request, "batch_reject")
         # 授权收口同 batch_approve：全局审批人或某张在途单的当前级候选人
@@ -216,20 +218,20 @@ class ApprovalRequestViewSet(
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="pending-count")
-    def pending_count(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="pending-count")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def pending_count(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """待我审批数（轻量接口：供顶栏/页签角标轮询，服务端 10s 短缓存，非审批人返回 0）"""
         return ApiResponse(data={"pending": pending_count_for(request.user)})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False)
-    def stats(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def stats(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """审批统计（近 30 天：我提交 / 我通过 / 我驳回 / 平均审批时长 / 我的待办）"""
         return ApiResponse(data=approval_stats(request.user))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True)
-    def approve(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def approve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """通过审批单（可选 comment：多级链逐级留痕）"""
         ensure_approval_action_confirmed(request, "approve")
         approval = self._get_actionable(request)
@@ -250,8 +252,8 @@ class ApprovalRequestViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True)
-    def reject(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def reject(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """驳回审批单（必填原因）"""
         ensure_approval_action_confirmed(request, "reject")
         approval = self._get_actionable(request)
@@ -264,8 +266,8 @@ class ApprovalRequestViewSet(
         return ApiResponse(detail=_("The approval request has been rejected"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True)
-    def cancel(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def cancel(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """撤回审批单（仅申请人、仅待审批）"""
         ensure_approval_action_confirmed(request, "cancel")
         approval = self.get_object()

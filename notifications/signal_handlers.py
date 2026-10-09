@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.apps import AppConfig
 from django.db.models.signals import m2m_changed, post_migrate, post_save
 from django.dispatch import receiver
@@ -14,15 +16,15 @@ logger = get_logger(__name__)
 
 
 class NewSiteMsgSubPub(LazyObject):
-    def _setup(self):
+    def _setup(self) -> None:
         self._wrapped = RedisPubSub("notifications.SiteMessageCome")
 
 
 new_site_msg_chan = NewSiteMsgSubPub()
 
 
-@receiver(post_migrate, dispatch_uid="notifications.signal_handlers.create_system_messages")
-def create_system_messages(app_config: AppConfig, **kwargs):
+@receiver(post_migrate, dispatch_uid="notifications.signal_handlers.create_system_messages")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def create_system_messages(app_config: AppConfig, **kwargs: Any) -> None:
     # 统一消费显式注册表；旧实现逐 app 扫描模块 __dict__，
     # 且 `if not created: return` 会在首个已存在订阅时中断后续补建。
     # migrate 时刻 URL 未加载，承载消息子类的模块需在此显式触发装饰器注册
@@ -49,7 +51,7 @@ def create_system_messages(app_config: AppConfig, **kwargs):
             logger.warning(f"Create MsgSubscription failed: type={message_type}", exc_info=True)
 
 
-def invalid_notify_caches(instance, pk_set):
+def invalid_notify_caches(instance: Any, pk_set: Any) -> None:
     pks = []
     if instance.notice_type == MessageContent.NoticeChoices.USER:
         pks = pk_set
@@ -62,8 +64,8 @@ def invalid_notify_caches(instance, pk_set):
             SiteMessageUtil.push_notice_messages(instance, set(pks))
 
 
-@receiver(post_save, sender=MessageContent)
-def clean_notify_cache_handler_post_save(sender, instance, **kwargs):
+@receiver(post_save, sender=MessageContent)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def clean_notify_cache_handler_post_save(sender: Any, instance: Any, **kwargs: Any) -> None:
     pk_set = None
     if instance.notice_type == MessageContent.NoticeChoices.NOTICE:
         if instance.publish:
@@ -79,8 +81,8 @@ def clean_notify_cache_handler_post_save(sender, instance, **kwargs):
     logger.debug("notice fan-out handled: sender=%s content=%s", sender, instance.pk)
 
 
-@receiver(m2m_changed)
-def clean_m2m_notify_cache_handler(sender, instance, **kwargs):
+@receiver(m2m_changed)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def clean_m2m_notify_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     if kwargs.get("action") in ["post_add", "pre_remove"]:
         if isinstance(instance, MessageContent):
             invalid_notify_caches(instance, kwargs.get("pk_set", []))

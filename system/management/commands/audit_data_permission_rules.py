@@ -23,6 +23,8 @@
 管理员可在页面上修正规则后重新启用；``[WARN]`` 是配置提示（部分可能是有意为之），只列不改。
 """
 
+from typing import Any
+
 from django.core.management.base import BaseCommand
 from rest_framework.exceptions import ValidationError
 
@@ -38,7 +40,7 @@ from system.models import DataPermission, Menu
 logger = get_logger(__name__)
 
 # 「指定对象」类规则的 value → 引用目标模型（悬空引用提示）
-REFERENCE_MODELS = {
+REFERENCE_MODELS: dict[str, Any] = {
     KeyChoices.TABLE_USER: UserInfo,
     KeyChoices.TABLE_DEPT: DeptInfo,
     KeyChoices.TABLE_ROLE: UserRole,
@@ -66,7 +68,7 @@ def _bound_text(dp: DataPermission) -> str:
     return ", ".join(bound) or "(unbound)"
 
 
-def _bound_user_pks(dp: DataPermission) -> set:
+def _bound_user_pks(dp: DataPermission) -> set[Any]:
     """绑定对象覆盖的用户主键：显式绑定用户 + 绑定部门（含全部下级）的成员。"""
     user_pks = set(dp.userinfo_set.values_list("pk", flat=True))
     for dept_pk in dp.deptinfo_set.values_list("pk", flat=True):
@@ -75,7 +77,7 @@ def _bound_user_pks(dp: DataPermission) -> set:
     return user_pks
 
 
-def _ineffective_warnings(dp: DataPermission) -> list:
+def _ineffective_warnings(dp: DataPermission) -> list[Any]:
     """规则合法但对绑定对象恒为空集的配置提示（warning 级，只列不改）。"""
     rules = [rule for rule in (dp.rules or []) if isinstance(rule, dict)]
     warnings = []
@@ -103,7 +105,7 @@ def _ineffective_warnings(dp: DataPermission) -> list:
             warnings.append("「管理部门」类规则：绑定对象中没有任何部门管理员，规则对所有绑定用户恒为空集")
 
     for rule in rules:
-        model = REFERENCE_MODELS.get(rule.get("type"))
+        model = REFERENCE_MODELS.get(str(rule.get("type") or ""))
         if model is None:
             continue
         pks = [str(pk) for pk in _pk_list(rule.get("value"))]
@@ -117,17 +119,17 @@ def _ineffective_warnings(dp: DataPermission) -> list:
 class Command(BaseCommand):
     help = "Audit stored data permission rules against the write-side validator"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--deactivate", action="store_true", help="Deactivate invalid permissions after listing")
         parser.add_argument(
             "--strict", action="store_true", help="Exit with a non-zero code when invalid permissions are found"
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         deactivate = options["deactivate"]
         strict = options["strict"]
         invalid = []
-        warnings: list[tuple] = []
+        warnings: list[tuple[Any, ...]] = []
         for dp in DataPermission.objects.all().order_by("created_time"):
             try:
                 validate_rules(dp.rules or [])

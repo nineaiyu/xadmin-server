@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 8/10/2024
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -71,21 +73,21 @@ class UploadFileSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
     preview_kind = serializers.SerializerMethodField(label=_("Preview type"))
 
     @extend_schema_field(serializers.CharField)
-    def get_preview_kind(self, obj):
+    def get_preview_kind(self, obj: Any) -> str | None:
         if not obj.filepath:
             return None
         return preview_kind(obj)
 
     @extend_schema_field(serializers.CharField)
-    def get_access_url(self, obj):
+    def get_access_url(self, obj: Any) -> Any:
         return obj.file_url if obj.file_url else get_file_absolute_uri(obj.filepath, self.context.get("request", None))
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str, Any]) -> Any:
         if not validated_data.get("file_url"):
             raise ValidationError(_("Internet url cannot be null"))
         return super().create(validated_data)
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: dict[str, Any]) -> Any:
         if not validated_data.get("file_url") and not instance.is_upload:
             raise ValidationError("Internet url cannot be null")
         return super().update(instance, validated_data)

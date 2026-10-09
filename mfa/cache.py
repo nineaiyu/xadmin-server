@@ -4,6 +4,7 @@
 # filename : cache
 import hashlib
 import time
+from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
@@ -11,8 +12,9 @@ from django.core.cache import cache
 from mfa.const import CONFIRM_TYPE_LEVEL, CONFIRM_TYPE_TTL_SETTING
 
 
-def _cache_prefix(name, default):
-    return settings.CACHE_KEY_TEMPLATE.get(name, default)
+def _cache_prefix(name: str, default: str) -> str:
+    prefix: str = settings.CACHE_KEY_TEMPLATE.get(name, default)
+    return prefix
 
 
 class UserConfirmStateCache:
@@ -23,14 +25,14 @@ class UserConfirmStateCache:
     有效期按确认类型对应的 settings TTL 计算，高级别确认可满足低级别要求。
     """
 
-    def __init__(self, user):
+    def __init__(self, user: Any) -> None:
         self.user = user
         self.cache_key = f"{_cache_prefix('mfa_confirm_state_key', 'mfa_confirm_state')}_{user.pk}"
 
-    def get(self):
+    def get(self) -> Any:
         return cache.get(self.cache_key)
 
-    def set(self, confirm_type, method):
+    def set(self, confirm_type: str, method: str) -> None:
         cache.set(
             self.cache_key,
             {
@@ -42,10 +44,10 @@ class UserConfirmStateCache:
             int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[confirm_type])),
         )
 
-    def clear(self):
+    def clear(self) -> None:
         cache.delete(self.cache_key)
 
-    def is_valid_for(self, confirm_type):
+    def is_valid_for(self, confirm_type: str) -> bool:
         """当前确认状态是否满足指定验证类型（级别足够且未过有效期）"""
         state = self.get()
         if not state:
@@ -53,7 +55,7 @@ class UserConfirmStateCache:
         if state.get("level", 0) < CONFIRM_TYPE_LEVEL[confirm_type]:
             return False
         ttl = int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[state["type"]]))
-        return time.time() - state.get("time", 0) <= ttl
+        return bool(time.time() - state.get("time", 0) <= ttl)
 
 
 class OtpBindCache:
@@ -61,17 +63,17 @@ class OtpBindCache:
 
     TIMEOUT = 10 * 60
 
-    def __init__(self, user):
+    def __init__(self, user: Any) -> None:
         self.user = user
         self.cache_key = f"{_cache_prefix('mfa_otp_bind_key', 'mfa_otp_bind')}_{user.pk}"
 
-    def get_secret(self):
+    def get_secret(self) -> Any:
         return cache.get(self.cache_key)
 
-    def set_secret(self, secret):
+    def set_secret(self, secret: str) -> None:
         cache.set(self.cache_key, secret, self.TIMEOUT)
 
-    def clear(self):
+    def clear(self) -> None:
         cache.delete(self.cache_key)
 
 
@@ -80,12 +82,12 @@ class UsedOtpCodeCache:
 
     TIMEOUT = 90
 
-    def __init__(self, user, code):
+    def __init__(self, user: Any, code: Any) -> None:
         code_md5 = hashlib.md5(str(code).encode()).hexdigest()
         self.cache_key = f"{_cache_prefix('mfa_otp_used_key', 'mfa_otp_used')}_{user.pk}_{code_md5}"
 
-    def exists(self):
+    def exists(self) -> bool:
         return bool(cache.get(self.cache_key))
 
-    def mark(self):
+    def mark(self) -> None:
         cache.set(self.cache_key, True, self.TIMEOUT)

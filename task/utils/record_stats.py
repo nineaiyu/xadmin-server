@@ -11,6 +11,7 @@
 """
 
 import datetime
+from typing import Any
 
 from django.utils import timezone
 
@@ -30,17 +31,17 @@ DEFAULT_FAILED_STATUSES = ("FAILURE", "REVOKED", "FAILED")
 
 
 def record_stats(
-    queryset,
-    user,
+    queryset: Any,
+    user: Any,
     *,
     days: int = RECORD_STATS_WINDOW_DAYS,
     status_field: str = "status",
     creator_field: str = "creator",
     time_field: str = "created_time",
     name_field: str = "name",
-    in_progress_statuses=DEFAULT_IN_PROGRESS_STATUSES,
-    failed_statuses=DEFAULT_FAILED_STATUSES,
-) -> dict:
+    in_progress_statuses: Any = DEFAULT_IN_PROGRESS_STATUSES,
+    failed_statuses: Any = DEFAULT_FAILED_STATUSES,
+) -> dict[str, Any]:
     """统计某类异步记录在近 `days` 天内的执行情况。
 
     :param queryset: 该记录模型的全量 queryset（未做属主过滤）
@@ -61,7 +62,7 @@ def record_stats(
     }
 
 
-def _serialize_latest(latest, name_field, status_field, time_field):
+def _serialize_latest(latest: Any, name_field: Any, status_field: Any, time_field: Any) -> Any:
     """最近一次记录归一化为固定键（各模型字段名不同，前端只认统一结构）。"""
     if not latest:
         return None

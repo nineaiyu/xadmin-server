@@ -142,7 +142,10 @@ dev = [
 #     drf-spectacular 的 build_basic_type 可能返回 None / 运行期替换第三方方法）；
 #   - CI 在 lint.yml 独立 job 跑 `uv run --no-sync mypy`，配置即口径。
 python_version = "3.14"
-files = ["ai", "approval", "captcha", "packages/xadmin-common/common", "dataset", "demo", "examples", "message", "mfa", "notifications", "server", "settings", "system", "ops", "integrations", "devtools"]
+files = ["ai", "approval", "audit", "captcha", "packages/xadmin-common/common", "dataset", "demo", "demo_seed", "examples", "file", "identity", "message", "mfa", "notifications", "server", "settings", "system", "task", "ops", "integrations", "devtools"]
+# 说明：受检面覆盖全部一级应用（含 system 四域拆分后的 identity / file / task / audit
+# 与条件注册的 demo_seed——2026-10-09 补齐，此前仅经 follow_imports=silent 间接分析）；
+# 新增业务 app 必须同步加入本清单（二开门禁：tests/unit/test_mypy_strict_pilot.py）。
 exclude = ["migrations/"]
 follow_imports = "silent"
 ignore_missing_imports = true
@@ -163,6 +166,65 @@ warn_unused_ignores = true
 #      （显式标注而非豁免——受检意义在于新增代码不得再无标注）。
 [[tool.mypy.overrides]]
 module = ["common", "common.*"]
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+warn_return_any = true
+no_implicit_reexport = true
+strict_equality = true
+extra_checks = true
+
+# 业务 app 严格子集推广（逐 app 入列：修完一个 app 的存量告警即把该 app 写进本清单，
+# 入列即受门禁保护、新增告警不得再豁免；顺序按 app 体量从小到大推进，只增不减）。
+# 与内核块逐项同口径，flag 集合不得增减（守护测试 tests/unit/test_mypy_strict_pilot.py
+# 的 PROMOTED_APPS 与下方 module 清单双向校验——推广一个 app 必须同时改两处）。
+# 已推广（2026-10-09，全部业务 app 收口）：captcha / demo / devtools / integrations /
+# mfa / server / settings（第一批）+ audit / file / demo_seed / notifications / task /
+# message / dataset / approval / ai / system / identity（第二批，含 system 四域拆分后
+# 的 identity / file / task / audit 与条件注册的 demo_seed）。
+# 口径：逐 app 存量告警清零后入列，禁止「先入列再慢慢修」——门禁会立刻变红；
+# 新增业务 app 与新增代码一律按本清单口径（无豁免面）。
+[[tool.mypy.overrides]]
+module = [
+    "captcha",
+    "captcha.*",
+    "demo",
+    "demo.*",
+    "devtools",
+    "devtools.*",
+    "integrations",
+    "integrations.*",
+    "mfa",
+    "mfa.*",
+    "server",
+    "server.*",
+    "settings",
+    "settings.*",
+    "audit",
+    "audit.*",
+    "file",
+    "file.*",
+    "demo_seed",
+    "demo_seed.*",
+    "notifications",
+    "notifications.*",
+    "task",
+    "task.*",
+    "message",
+    "message.*",
+    "dataset",
+    "dataset.*",
+    "approval",
+    "approval.*",
+    "ai",
+    "ai.*",
+    "system",
+    "system.*",
+    "identity",
+    "identity.*",
+]
 disallow_any_generics = true
 disallow_untyped_calls = true
 disallow_untyped_defs = true

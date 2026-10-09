@@ -25,35 +25,35 @@ class AnalysisMixin(FieldPlanMixin):
         stdout: Any
         style: Any
 
-        def _existing_text(self, *args, **kwargs) -> str: ...
+        def _existing_text(self, *args: Any, **kwargs: Any) -> str: ...
 
-        def _strip_block(self, *args, **kwargs) -> str: ...
+        def _strip_block(self, *args: Any, **kwargs: Any) -> str: ...
 
-        def _model_label_pk(self, *args, **kwargs) -> str: ...
+        def _model_label_pk(self, *args: Any, **kwargs: Any) -> str: ...
 
-        def _render_serializer_module(self, *args, **kwargs) -> Any: ...
+        def _render_serializer_module(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def _render_views_module(self, *args, **kwargs) -> Any: ...
+        def _render_views_module(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def _render_urls_module(self, *args, **kwargs) -> Any: ...
+        def _render_urls_module(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def _render_config(self, *args, **kwargs) -> Any: ...
+        def _render_config(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def _render_ai_declarations(self, *args, **kwargs) -> Any: ...
+        def _render_ai_declarations(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def _render_test_skeleton(self, *args, **kwargs) -> Any: ...
+        def _render_test_skeleton(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def _render_menu_seed(self, *args, **kwargs) -> Any: ...
+        def _render_menu_seed(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def _render_client_api(self, *args, **kwargs) -> Any: ...
+        def _render_client_api(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def _render_client_hook(self, *args, **kwargs) -> Any: ...
+        def _render_client_hook(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def _render_client_page(self, *args, **kwargs) -> Any: ...
+        def _render_client_page(self, *args: Any, **kwargs: Any) -> Any: ...
 
     # ------------------------------------------------------------- 上下文构建
 
-    def _resolve_model(self, label):
+    def _resolve_model(self, label: str) -> Any:
         if "." not in label:
             raise CommandError("模型标签需形如 <app_label>.<ModelName>，如 demo.Book")
         app_label, model_name = label.split(".", 1)
@@ -65,7 +65,7 @@ class AnalysisMixin(FieldPlanMixin):
             raise CommandError(f"{label} 是抽象模型，不能生成 CRUD")
         return model
 
-    def _build_context(self, model, options):
+    def _build_context(self, model: Any, options: dict[str, Any]) -> dict[str, Any]:
         model_snake = self._snake(model.__name__)
         app_label = model._meta.app_label
         component = options["component"] or f"{app_label.title()}{model.__name__}"
@@ -92,7 +92,7 @@ class AnalysisMixin(FieldPlanMixin):
         return ctx
 
     @staticmethod
-    def _parse_ordering(options) -> str:
+    def _parse_ordering(options: dict[str, Any]) -> str:
         """显式排序覆盖（--ordering）：单个字段名（可带 - 前缀），空串走引擎推导。
 
         生成物里 ordering 直接落进源码，先做标识符校验防注入；模型已声明
@@ -105,13 +105,13 @@ class AnalysisMixin(FieldPlanMixin):
             raise CommandError(f"--ordering 需为单个模型字段名（可带 - 前缀），收到：{ordering!r}")
         return ordering
 
-    def _apply_dict_fields(self, ctx, pairs):
+    def _apply_dict_fields(self, ctx: dict[str, Any], pairs: list[str]) -> dict[str, str]:
         """字典绑定：``字段名=字典 code`` 对收敛为 ctx["dict_fields"]（渲染 DictChoiceField 声明）。
 
         字段名越界即报错（CLI CommandError / GUI CodegenError 文案一致）；字典 code 的
         存在性由调用方校验（CLI 无库环境降级为警告，GUI 侧硬校验）。
         """
-        dict_fields = {}
+        dict_fields: dict[str, str] = {}
         for pair in pairs:
             name, _, code = str(pair).partition("=")
             name, code = name.strip(), code.strip()
@@ -129,10 +129,10 @@ class AnalysisMixin(FieldPlanMixin):
 
     # --------------------------------------------------------------- 产物收集
 
-    def _collect_artifacts(self, ctx, options):
+    def _collect_artifacts(self, ctx: dict[str, Any], options: dict[str, Any]) -> list[dict[str, Any]]:
         backend_root = Path(options["output"] or settings.PROJECT_DIR)
         app_dir = backend_root / ctx["app_label"]
-        artifacts = []
+        artifacts: list[dict[str, Any]] = []
 
         serializer_package = (app_dir / "serializers").is_dir()
         serializer_path = (
@@ -243,7 +243,7 @@ class AnalysisMixin(FieldPlanMixin):
             )
         return artifacts
 
-    def _module_artifact(self, ctx, options):
+    def _module_artifact(self, ctx: dict[str, Any], options: dict[str, Any]) -> dict[str, Any]:
         """可选产物：{app}/modules.py 模块声明（可裁剪模块的脚手架）。
 
         模块 id 已存在时不中断生成，降级为提示（换 --module-id 或去掉 --with-module）；
@@ -284,7 +284,7 @@ class AnalysisMixin(FieldPlanMixin):
             "key": key,
         }
 
-    def _frontend_artifacts(self, ctx, options):
+    def _frontend_artifacts(self, ctx: dict[str, Any], options: dict[str, Any]) -> list[dict[str, Any]]:
         client_root = Path(options["frontend_root"]) if options["frontend_root"] else self._default_client_root()
         if client_root is None:
             return [
@@ -330,7 +330,7 @@ class AnalysisMixin(FieldPlanMixin):
         ]
 
     @staticmethod
-    def _default_client_root():
+    def _default_client_root() -> Path | None:
         """前端仓库根缺省解析：XADMIN_CLIENT_DIR 环境变量优先，其次同级 xadmin-client
         （对齐客户端 sync-contract.mjs 的 XADMIN_SERVER_DIR 覆盖口径）。
 
@@ -346,7 +346,7 @@ class AnalysisMixin(FieldPlanMixin):
 
     # --------------------------------------------------------------- 后续步骤
 
-    def _bootstrap(self, ctx, options):
+    def _bootstrap(self, ctx: dict[str, Any], options: dict[str, Any]) -> None:
         """--bootstrap：种子一条龙幂等入库。
 
         步骤：sync_model_field（字段权限树）→ 回填种子 model 关联 → loaddata
@@ -411,7 +411,7 @@ class AnalysisMixin(FieldPlanMixin):
                 role.menu.add(*menus)
             self.stdout.write(f"--bootstrap: 已授予角色 {[role.code for role in roles]} 共 {len(menus)} 个菜单/权限点")
 
-    def _next_steps(self, ctx, options):
+    def _next_steps(self, ctx: dict[str, Any], options: dict[str, Any]) -> list[str]:
         """后续步骤清单（可复用：CLI 打印 / GUI 生成 NEXT_STEPS.md 同一口径）。
 
         口径与 docs/guide/first-module-30min.md 同步：权限点种子入库 →
@@ -421,7 +421,7 @@ class AnalysisMixin(FieldPlanMixin):
         bootstrapped = (
             bool(options.get("bootstrap")) and not options.get("dry_run") and not options.get("skip_menu_seed")
         )
-        steps = []
+        steps: list[str] = []
         if ctx["app_label"] in (getattr(settings, "XADMIN_APPS", None) or []):
             pass  # 本就注册（或本进程已加载新配置），无需提示
         elif ctx.get("app_registered"):
@@ -447,10 +447,10 @@ class AnalysisMixin(FieldPlanMixin):
             steps.append("（可选）声明为可裁剪模块：重跑本命令加 --with-module，或 manage.py generate_module")
         return steps
 
-    def _print_next_steps(self, ctx, options):
+    def _print_next_steps(self, ctx: dict[str, Any], options: dict[str, Any]) -> None:
         """生成后「后续步骤」清单：把散落教程里的手工动作收敛为可复制命令。"""
         steps = self._next_steps(ctx, options)
-        lines = ["", "后续步骤（命令在项目根执行）："] if steps else [""]
+        lines: list[str] = ["", "后续步骤（命令在项目根执行）："] if steps else [""]
         lines.extend(f"  {index}) {text}" for index, text in enumerate(steps, start=1))
         lines.append("")
         lines.append("复核：关联字段 input_type 是否符合数据量（大数据量换 api-search-* 形态）；")

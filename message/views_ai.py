@@ -5,6 +5,8 @@
 AI 助手（通用多轮 + `/kb` 知识库问答）：class 与 REST/SSE 两个 action。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
@@ -35,8 +37,8 @@ class ChatAiViewSet(AiThrottleMixin, SseRendererMixin, GenericViewSet):
     ai_chat_all = True
 
     @extend_schema(request=ChatAiMessageSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="message")
-    def message(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="message")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def message(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """提问：用户消息与 AI 回复双条落库并广播（刷新可续聊，附引用来源）。
 
         降级口径：LLM 失败/知识库无命中 → 落一条 system 消息（前端可见），
@@ -76,7 +78,7 @@ class ChatAiViewSet(AiThrottleMixin, SseRendererMixin, GenericViewSet):
                 room,
                 None,
                 detail,
-                message_type=ChatMessage.MessageType.SYSTEM,  # type: ignore[arg-type]  # Choices 元类
+                message_type=ChatMessage.MessageType.SYSTEM,
                 extra={"error": True, "mode": "chat"},
             )
             payload = chat_service.message_payload(fallback, room=room)
@@ -87,7 +89,7 @@ class ChatAiViewSet(AiThrottleMixin, SseRendererMixin, GenericViewSet):
             room,
             None,
             answer,
-            message_type=ChatMessage.MessageType.AI,  # type: ignore[arg-type]  # 同上
+            message_type=ChatMessage.MessageType.AI,
             extra=extra,
         )
         payload = chat_service.message_payload(reply, room=room)
@@ -95,8 +97,8 @@ class ChatAiViewSet(AiThrottleMixin, SseRendererMixin, GenericViewSet):
         return ApiResponse(data={"mode": mode, "question": question_payload, "message": payload})
 
     @extend_schema(request=ChatAiMessageSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="stream")
-    def stream(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="stream")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def stream(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """流式提问（二期）：`text/event-stream`，事件序 meta → delta* → done | error。
 
         事件载荷均为 JSON（``data: {...}\\n\\n``）；业务落库与 WS 广播与 `message` 同口径

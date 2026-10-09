@@ -9,6 +9,8 @@
 message_type（=类名）与 category 串不变，既有订阅行与模板零迁移。
 """
 
+from typing import Any
+
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
@@ -44,7 +46,7 @@ class ApprovalFlowMessage(UserMessage):
         "mentioned": _("You were mentioned in the approval discussion"),
     }
 
-    def __init__(self, user, event: str, instance, extra: str = "", node_name: str = ""):
+    def __init__(self, user: Any, event: str, instance: Any, extra: str = "", node_name: str = "") -> None:
         self.event = event
         self.instance = instance
         self.extra = extra
@@ -53,7 +55,7 @@ class ApprovalFlowMessage(UserMessage):
         super().__init__(user)
 
     @classmethod
-    def template_variables(cls) -> tuple:
+    def template_variables(cls) -> tuple[Any, ...]:
         """模板可用业务变量（与 get_template_vars 同源，两者漂移由守护测试拦下）。"""
         return (
             "title",
@@ -67,7 +69,7 @@ class ApprovalFlowMessage(UserMessage):
             "time",
         )
 
-    def get_template_vars(self) -> dict:
+    def get_template_vars(self) -> dict[str, Any]:
         instance = self.instance
         return {
             "title": instance.title or "-",
@@ -83,7 +85,7 @@ class ApprovalFlowMessage(UserMessage):
             "time": local_now_display(),
         }
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         subject = self.EVENT_TITLES.get(self.event, self.EVENT_TITLES["submitted"])
         # 业务变量（get_template_vars，与模板覆盖同源）+ 渲染补充字段
         context = dict(self.get_template_vars())
@@ -92,7 +94,7 @@ class ApprovalFlowMessage(UserMessage):
         return {"subject": subject, "message": message}
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         from approval.models import ApprovalFlow, ApprovalInstance
         from identity.services import UserInfo
 
@@ -117,12 +119,12 @@ class ApprovalRequestMessage(UserMessage):
         "remind": _("Approval request pending reminder"),
     }
 
-    def __init__(self, user, event: str, approval):
+    def __init__(self, user: Any, event: str, approval: Any) -> None:
         self.event = event
         self.approval = approval
         super().__init__(user)
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         approval = self.approval
         subject = self.EVENT_TITLES.get(self.event, self.EVENT_TITLES["submitted"])
         context = dict(
@@ -140,7 +142,7 @@ class ApprovalRequestMessage(UserMessage):
         return {"subject": subject, "message": message}
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         from approval.models import ApprovalRequest
         from identity.models import UserInfo
 

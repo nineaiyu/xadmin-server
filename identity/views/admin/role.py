@@ -4,6 +4,7 @@
 # filename : role
 # author : ly_13
 # date : 6/19/2023
+from typing import Any
 
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
@@ -56,7 +57,7 @@ class RoleViewSet(
     ordering_fields = ["updated_time", "name", "created_time"]
     filterset_class = RoleFilter
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         # 内置角色（builtin）禁止删除：代码与治理配置按 code 引用，误删会让
         # 审批人角色等配置凭空失效（同内置字典 is_locked 保护口径）；批量删除
         # 同样基于 get_queryset 收口（batch_destroy 走 get_queryset，单删被拦
@@ -65,17 +66,17 @@ class RoleViewSet(
             return super().get_queryset().exclude(code__in=BUILTIN_ROLE_CODES)
         return super().get_queryset()
 
-    def get_recycle_purge_queryset(self, pks):
+    def get_recycle_purge_queryset(self, pks: Any) -> Any:
         # 回收站物理清除走 all_objects：显式排除内置角色
         return super().get_recycle_purge_queryset(pks).exclude(code__in=BUILTIN_ROLE_CODES)
 
     @ApprovalRequired()
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """删除{cls}数据（高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批）"""
         return super().destroy(request, *args, **kwargs)
 
     @ApprovalRequired()
-    @action(methods=["post"], detail=False, url_path="batch-destroy")
-    def batch_destroy(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除{cls}（高危：与删除同口径纳入审批）"""
         return super().batch_destroy(request, *args, **kwargs)

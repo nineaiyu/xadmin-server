@@ -36,8 +36,6 @@ from dataset.utils.dform_constants import (  # noqa: F401 再导出：常量事�
     ALLOWED_TYPES,
     DATE_RE,
     DICT_CODE_RE,
-    FILTERABLE_TYPES,
-    KEY_RE,
     LINKAGE_EFFECTS,
     LINKAGE_OPS,
     MAX_CASCADER_DEPTH,
@@ -56,13 +54,17 @@ from dataset.utils.dform_constants import (  # noqa: F401 再导出：常量事�
     TEXTUAL_TYPES,
     VALUED_LINKAGE_OPS,
 )
+from dataset.utils.dform_constants import FILTERABLE_TYPES as FILTERABLE_TYPES  # noqa: F401 显式再导出（PEP 484 语义）
+from dataset.utils.dform_constants import KEY_RE as KEY_RE  # noqa: F401 显式再导出（PEP 484 语义）
 from dataset.utils.dform_fields import (  # noqa: F401 再导出：字段值工具调用面保持不变
     _cascader_path_valid,
     _validate_cascader_options,
     _validate_user_pk,
     assert_upload_ownership,
-    field_option_values,
     normalize_table_row,
+)
+from dataset.utils.dform_fields import (
+    field_option_values as field_option_values,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from dataset.utils.dform_formula import evaluate_formula_fields, validate_formula_fields
 from dataset.utils.dform_linkage import evaluate_linkages, validate_linkages
@@ -70,7 +72,7 @@ from dataset.utils.dform_linkage import evaluate_linkages, validate_linkages
 logger = get_logger(__name__)
 
 
-def validate_schema(schema: dict) -> list:
+def validate_schema(schema: dict[str, Any]) -> list[Any]:
     """校验表单 schema，返回规范化字段列表。"""
     if not isinstance(schema, dict):
         raise ValidationError(_("Invalid form schema"))
@@ -173,7 +175,7 @@ def validate_schema(schema: dict) -> list:
     return fields
 
 
-def normalize_schema(schema: dict) -> dict:
+def normalize_schema(schema: dict[str, Any]) -> dict[str, Any]:
     """校验 + 规范化 schema（写入侧唯一入口）：字段顺序即渲染顺序。
 
     顶层未声明键丢弃；联动规则缺省不写入（保持存量 schema 形态零变化）。
@@ -187,7 +189,7 @@ def normalize_schema(schema: dict) -> dict:
     return normalized
 
 
-def validate_draft_data(data) -> dict:
+def validate_draft_data(data: Any) -> dict[str, Any]:
     """草稿轻校验：数据须为对象、键为合法字段 key 形态、体积封顶；不做必填/取值校验。
 
     草稿的完整校验在「提交」时统一执行（`validate_submission_data`），
@@ -207,7 +209,7 @@ def validate_draft_data(data) -> dict:
     return data
 
 
-def trim_stale_schema_keys(schema: dict, data):
+def trim_stale_schema_keys(schema: dict[str, Any], data: Any) -> Any:
     """按当前 schema 裁剪 data 中的历史键（仅用于**存储数据回填**路径）。
 
     场景：表单 schema 演进（字段删除/改名）后，旧提交/草稿的 data 含已删除字段
@@ -227,7 +229,7 @@ def trim_stale_schema_keys(schema: dict, data):
     return data
 
 
-def validate_submission_data(schema: dict, data, user=None) -> dict:
+def validate_submission_data(schema: dict[str, Any], data: Any, user: Any = None) -> dict[str, Any]:
     """提交数据校验：未知键拒绝 + required + 类型/选项/边界校验。返回规范化 data。
 
     联动优先：先按原始数据求值联动规则——被隐藏的字段跳过全部校验且不写入

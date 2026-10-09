@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : password
+from typing import Any
+
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
@@ -22,9 +24,9 @@ class PasswordBackend(BaseMFA):
         return "password" in settings.SECURITY_MFA_CONFIRM_BACKENDS
 
     def is_active(self) -> bool:
-        return self.user.has_usable_password()
+        return bool(self.user.has_usable_password())
 
-    def check_code(self, code) -> tuple:
-        if code and self.user.check_password(code):
+    def check_code(self, code: str) -> tuple[bool, Any]:
+        if code and bool(self.user.check_password(code)):
             return True, ""
         return False, _("The password is incorrect")

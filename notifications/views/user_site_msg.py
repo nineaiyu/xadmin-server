@@ -4,6 +4,7 @@
 # filename : user_site_msg
 # author : ly_13
 # date : 9/15/2024
+from typing import Any
 
 from django.core.cache import cache
 from django.db.models import Q, QuerySet
@@ -33,11 +34,11 @@ UNREAD_SUMMARY_CACHE_PREFIX = "notify_unread_summary_"
 UNREAD_IRRELEVANT_PARAMS = frozenset({"page", "size", "ordering", "with_meta", "type"})
 
 
-def unread_summary_cache_key(user_pk) -> str:
+def unread_summary_cache_key(user_pk: Any) -> str:
     return f"{UNREAD_SUMMARY_CACHE_PREFIX}{user_pk}"
 
 
-def get_unread_summary(user) -> dict:
+def get_unread_summary(user: Any) -> dict[str, Any]:
     """未读汇总（角标口径）：公告类 / 私信类 / 合计（30s 短缓存）。"""
     key = unread_summary_cache_key(getattr(user, "pk", "anonymous"))
     try:
@@ -57,7 +58,7 @@ def get_unread_summary(user) -> dict:
     return data
 
 
-def invalidate_unread_summary(user) -> None:
+def invalidate_unread_summary(user: Any) -> None:
     """标记已读后失效缓存（角标立即归零）。"""
     try:
         cache.delete(unread_summary_cache_key(getattr(user, "pk", "anonymous")))
@@ -65,7 +66,7 @@ def invalidate_unread_summary(user) -> None:
         logger.debug("invalidate unread summary failed", exc_info=True)
 
 
-def get_users_notice_q(user_obj):
+def get_users_notice_q(user_obj: Any) -> Any:
     q = Q()
     q |= Q(notice_type=MessageContent.NoticeChoices.NOTICE)
     q |= Q(notice_type=MessageContent.NoticeChoices.DEPT, notice_dept=user_obj.dept)
@@ -78,15 +79,15 @@ def get_users_notice_q(user_obj):
     return q
 
 
-def get_user_unread_q1(user_obj):
+def get_user_unread_q1(user_obj: Any) -> Any:
     return get_users_notice_q(user_obj) & ~Q(notice_user=user_obj)
 
 
-def get_user_unread_q2(user_obj):
+def get_user_unread_q2(user_obj: Any) -> Any:
     return Q(notice_type__in=MessageContent.get_user_choices(), notice_user=user_obj, messageuserread__unread=True)
 
 
-def get_user_unread_q(user_obj):
+def get_user_unread_q(user_obj: Any) -> Any:
     return get_user_unread_q1(user_obj) | get_user_unread_q2(user_obj)
 
 
@@ -95,7 +96,7 @@ class UserSiteMessageViewSetFilter(BaseFilterSet):
     title = filters.CharFilter(field_name="title", lookup_expr="icontains")
     unread = filters.BooleanFilter(field_name="unread", method="unread_filter")
 
-    def unread_filter(self, queryset, name, value):
+    def unread_filter(self, queryset: Any, name: Any, value: Any) -> Any:
         if value:
             return queryset.filter(get_user_unread_q(self.request.user))
         else:
@@ -115,7 +116,7 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
     ordering_fields = ["created_time"]
     filterset_class = UserSiteMessageViewSetFilter
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         if set(request.query_params) - UNREAD_IRRELEVANT_PARAMS:
             # 带筛选条件：未读数按当前条件实时统计（与原语义一致）
             unread_count = (
@@ -157,8 +158,8 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
             )
         },
     )
-    @action(methods=["get"], detail=False)
-    def unread(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def unread(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """用户未读消息"""
         summary = get_unread_summary(request.user)
         has_filters = bool(set(request.query_params) - UNREAD_IRRELEVANT_PARAMS)
@@ -185,7 +186,7 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
 
         return ApiResponse(data={"results": results, "total": sum([item.get("total", 0) for item in results])})
 
-    def read_message(self, pks, request):
+    def read_message(self, pks: Any, request: Any) -> Any:
         """批量已读：固定 3 条 SQL，与 pks 数量无关（旧实现为 2N 条）。
 
         两种入参形态：
@@ -235,15 +236,15 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["patch"], detail=False, url_path="batch-read")
-    def batch_read(self, request, *args, **kwargs):
+    @action(methods=["patch"], detail=False, url_path="batch-read")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_read(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量已读消息"""
         pks = request.data.get("pks", [])
         return self.read_message(pks, request)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["patch"], detail=False, url_path="all-read")
-    def all_read(self, request, *args, **kwargs):
+    @action(methods=["patch"], detail=False, url_path="all-read")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def all_read(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """全部已读消息"""
         # 未读 pk 集合保持 queryset 形态传给 read_message：pk 去重/差集全部下推
         # DB（公告全量下发时不把数千 pk 物化成内存 list）

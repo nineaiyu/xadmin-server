@@ -8,6 +8,8 @@
 - 所有写操作落审计（resources.write_audit）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.exceptions import (
@@ -65,12 +67,12 @@ class ScimView(APIView):
     throttle_classes = [ScimThrottle]
     parser_classes = [JSONParser, ScimJSONParser]
 
-    def finalize_response(self, request, response, *args, **kwargs):
+    def finalize_response(self, request: Any, response: Any, *args: Any, **kwargs: Any) -> Any:
         response = super().finalize_response(request, response, *args, **kwargs)
         response["Content-Type"] = SCIM_MEDIA_TYPE
         return response
 
-    def handle_exception(self, exc):
+    def handle_exception(self, exc: Any) -> Any:
         if isinstance(exc, ScimApiError):
             return Response(error_response(exc.status, exc.detail, exc.scim_type), status=exc.status)
         if isinstance(exc, (AuthenticationFailed, NotAuthenticated)):
@@ -87,14 +89,14 @@ class ScimView(APIView):
         return super().handle_exception(exc)
 
 
-def _get_user(pk):
+def _get_user(pk: Any) -> Any:
     user = UserInfo.all_objects.filter(pk=pk).first() if str(pk).isdigit() else None
     if user is None:
         raise ScimApiError(404, str(_("User not found")))
     return user
 
 
-def _get_group(pk):
+def _get_group(pk: Any) -> Any:
     group = UserRole.objects.filter(pk=pk).first()
     if group is None:
         raise ScimApiError(404, str(_("Group not found")))
@@ -104,7 +106,7 @@ def _get_group(pk):
 class ServiceProviderConfigView(ScimView):
     """能力声明：IdP 据此决定是否启用 PATCH / 过滤 / 批量等（未实现的能力显式 false）。"""
 
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         return Response(
             {
                 "schemas": [SCHEMA_SERVICE_PROVIDER],
@@ -130,7 +132,7 @@ class ServiceProviderConfigView(ScimView):
 class SchemasView(ScimView):
     """支持的 Schema 列表（User / Group 核心属性子集）。"""
 
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         return Response(
             {
                 "schemas": [SCHEMA_LIST],
@@ -167,7 +169,7 @@ class SchemasView(ScimView):
 
 
 class ResourceTypesView(ScimView):
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         return Response(
             {
                 "schemas": [SCHEMA_LIST],
@@ -199,7 +201,7 @@ class ResourceTypesView(ScimView):
 class UsersView(ScimView):
     """GET /Users（filter=userName eq "x" + 分页）/ POST /Users（开通）。"""
 
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         start_index, count = parse_paging(request.query_params)
         attribute, value = parse_filter(request.query_params.get("filter", ""))
         queryset = UserInfo.all_objects.all()
@@ -215,7 +217,7 @@ class UsersView(ScimView):
         resources = [user_resource(user) for user in page]
         return Response(list_response(resources, total, start_index))
 
-    def post(self, request):
+    def post(self, request: Any) -> Any:
         payload = request.data if isinstance(request.data, dict) else {}
         user = create_user(payload)
         write_audit(
@@ -230,10 +232,10 @@ class UsersView(ScimView):
 class UserDetailView(ScimView):
     """GET / PUT / PATCH / DELETE（DELETE = 停用，RFC 7644 §3.6）。"""
 
-    def get(self, request, pk):
+    def get(self, request: Any, pk: Any) -> Any:
         return Response(user_resource(_get_user(pk)))
 
-    def put(self, request, pk):
+    def put(self, request: Any, pk: Any) -> Any:
         user = _get_user(pk)
         payload = request.data if isinstance(request.data, dict) else {}
         was_active = bool(user.is_active)
@@ -243,7 +245,7 @@ class UserDetailView(ScimView):
         write_audit(request, action="replace", object_pk=str(user.pk), changes={key: True for key in changes})
         return Response(user_resource(user))
 
-    def patch(self, request, pk):
+    def patch(self, request: Any, pk: Any) -> Any:
         user = _get_user(pk)
         payload = request.data if isinstance(request.data, dict) else {}
         operations = payload.get("Operations")
@@ -256,7 +258,7 @@ class UserDetailView(ScimView):
         write_audit(request, action="patch", object_pk=str(user.pk), changes={key: True for key in changes})
         return Response(user_resource(user))
 
-    def delete(self, request, pk):
+    def delete(self, request: Any, pk: Any) -> Any:
         user = _get_user(pk)
         deactivate_user(user)
         write_audit(request, action="deactivate", object_pk=str(user.pk), changes={"is_active": False})
@@ -264,7 +266,7 @@ class UserDetailView(ScimView):
 
 
 class GroupsView(ScimView):
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         start_index, count = parse_paging(request.query_params)
         attribute, value = parse_filter(request.query_params.get("filter", ""))
         queryset = UserRole.objects.all()
@@ -281,7 +283,7 @@ class GroupsView(ScimView):
         page = queryset.order_by("pk")[start_index - 1 : start_index - 1 + count]
         return Response(list_response([group_resource(role) for role in page], total, start_index))
 
-    def post(self, request):
+    def post(self, request: Any) -> Any:
         payload = request.data if isinstance(request.data, dict) else {}
         role = create_group(payload)
         write_audit(request, action="create_group", object_pk=str(role.pk), changes={"code": role.code})
@@ -289,17 +291,17 @@ class GroupsView(ScimView):
 
 
 class GroupDetailView(ScimView):
-    def get(self, request, pk):
+    def get(self, request: Any, pk: Any) -> Any:
         return Response(group_resource(_get_group(pk)))
 
-    def put(self, request, pk):
+    def put(self, request: Any, pk: Any) -> Any:
         role = _get_group(pk)
         payload = request.data if isinstance(request.data, dict) else {}
         update_group(role, payload)
         write_audit(request, action="replace_group", object_pk=str(role.pk), changes={"code": role.code})
         return Response(group_resource(role))
 
-    def patch(self, request, pk):
+    def patch(self, request: Any, pk: Any) -> Any:
         role = _get_group(pk)
         payload = request.data if isinstance(request.data, dict) else {}
         operations = payload.get("Operations")
@@ -309,7 +311,7 @@ class GroupDetailView(ScimView):
         write_audit(request, action="patch_group", object_pk=str(role.pk), changes={"code": role.code})
         return Response(group_resource(role))
 
-    def delete(self, request, pk):
+    def delete(self, request: Any, pk: Any) -> Any:
         role = _get_group(pk)
         write_audit(request, action="delete_group", object_pk=str(role.pk), changes={"code": role.code})
         delete_group(role)

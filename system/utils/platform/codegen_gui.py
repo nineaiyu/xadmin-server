@@ -20,6 +20,7 @@
 import io
 import zipfile
 from pathlib import Path
+from typing import Any
 
 from django.apps import apps as django_apps
 from django.conf import settings
@@ -29,7 +30,14 @@ from rest_framework.exceptions import ValidationError
 
 from common.utils import get_logger
 from devtools.management.commands._generate_crud import Command
-from system.utils.platform.codegen_fields import CodegenError, apply_field_overrides, list_dict_types, plan_fields
+from system.utils.platform.codegen_fields import (
+    CodegenError as CodegenError,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from system.utils.platform.codegen_fields import (
+    apply_field_overrides,
+    list_dict_types,
+    plan_fields,
+)
 
 logger = get_logger(__name__)
 
@@ -49,7 +57,7 @@ def _engine() -> Command:
     return Command()
 
 
-def _base_options(payload: dict) -> dict:
+def _base_options(payload: dict[str, Any]) -> dict[str, Any]:
     """CLI options dict 的 GUI 形态：布尔开关 + 命名参数，字段选择单独处理。"""
     module_level = payload.get("module_level")
     return {
@@ -79,7 +87,7 @@ def _base_options(payload: dict) -> dict:
     }
 
 
-def list_generatable_models() -> list[dict]:
+def list_generatable_models() -> list[dict[str, Any]]:
     """可生成模型清单：仓库内一级 app 的普通模型（抽象 / 自动生成 / 交换模型除外）。
 
     app 目录必须是 PROJECT_ROOT 的一级子目录（仓库 app 布局约定，与跨 app 门禁的
@@ -107,7 +115,7 @@ def list_generatable_models() -> list[dict]:
     return rows
 
 
-def _model_or_raise(label: str):
+def _model_or_raise(label: str) -> Any:
     engine = _engine()
     try:
         return engine._resolve_model(label)
@@ -115,7 +123,7 @@ def _model_or_raise(label: str):
         raise CodegenError(str(exc)) from exc
 
 
-def model_plan(label: str) -> dict:
+def model_plan(label: str) -> dict[str, Any]:
     """选中模型的字段计划 + 命名默认值（GUI 表单的初始值）。"""
     engine = _engine()
     model = _model_or_raise(label)
@@ -133,7 +141,7 @@ def model_plan(label: str) -> dict:
     }
 
 
-def _apply_field_selection(ctx: dict, include: list[str], exclude: list[str]) -> None:
+def _apply_field_selection(ctx: dict[str, Any], include: list[str], exclude: list[str]) -> None:
     """字段选择（旧口径）：include 白名单 / exclude 黑名单收敛引擎推导的字段面。
 
     pk 恒保留（主键不可排除）；include 优先于 exclude；表格列 / extra_kwargs /
@@ -161,7 +169,7 @@ def _apply_field_selection(ctx: dict, include: list[str], exclude: list[str]) ->
     ctx["filter_meta_fields"] = [name for name in ctx["filter_meta_fields"] if name in kept]
 
 
-def _prepare(engine: Command, payload: dict) -> tuple[dict, list[dict], list[str]]:
+def _prepare(engine: Command, payload: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
     """单模型准备：解析参数 → ctx → 字段收敛 → 产物与后续步骤（不落盘）。"""
     label = str(payload.get("model") or "")
     if not label:
@@ -197,7 +205,7 @@ def _next_steps_markdown(sections: list[tuple[str, list[str]]]) -> str:
     return "\n".join(lines)
 
 
-def _next_steps_artifact(content: str, suffix: str = "") -> dict:
+def _next_steps_artifact(content: str, suffix: str = "") -> dict[str, Any]:
     return {
         "label": "后续步骤",
         "path": Path("NEXT_STEPS.md"),
@@ -207,9 +215,9 @@ def _next_steps_artifact(content: str, suffix: str = "") -> dict:
     }
 
 
-def _dedupe_artifacts(artifacts: list[dict]) -> list[dict]:
+def _dedupe_artifacts(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """批量打包去重：同路径同内容保留首个；内容冲突保留首个并附合并提示。"""
-    kept: list[dict] = []
+    kept: list[dict[str, Any]] = []
     seen: dict[str, str] = {}
     conflicts: list[str] = []
     for artifact in artifacts:
@@ -249,12 +257,12 @@ def _relative_path(path: Path) -> str:
     return path.as_posix()
 
 
-def _relative_artifacts(artifacts: list[dict]) -> list[dict]:
+def _relative_artifacts(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """产物路径转「仓库前缀 + 相对路径」；无路径的 notice 产物原样保留。"""
     rows = []
     for artifact in artifacts:
         path = artifact.get("path")
-        row = {key: artifact[key] for key in ("label", "content", "mode", "key") if key in artifact}
+        row: dict[str, Any] = {key: artifact[key] for key in ("label", "content", "mode", "key") if key in artifact}
         if artifact.get("notice"):
             row["notice"] = artifact["notice"]
         row["path"] = "" if path is None else _relative_path(Path(path))
@@ -262,7 +270,7 @@ def _relative_artifacts(artifacts: list[dict]) -> list[dict]:
     return rows
 
 
-def build_artifacts(payload: dict) -> list[dict]:
+def build_artifacts(payload: dict[str, Any]) -> list[dict[str, Any]]:
     """按 GUI 表单构建产物清单（与 CLI 同一管线，不落盘，含 NEXT_STEPS.md）。"""
     engine = _engine()
     ctx, artifacts, steps = _prepare(engine, payload)
@@ -271,7 +279,7 @@ def build_artifacts(payload: dict) -> list[dict]:
     return _relative_artifacts(artifacts)
 
 
-def build_zip(payload: dict) -> bytes:
+def build_zip(payload: dict[str, Any]) -> bytes:
     """产物打包 zip（路径即仓库相对路径；模板代码无需加密）。
 
     payload 带 ``models``（多模型清单）时走批量：共享表单选项 + 逐模型引擎默认
@@ -284,7 +292,7 @@ def build_zip(payload: dict) -> bytes:
         raise ValidationError(_("Too many models for batch codegen (max {})").format(MAX_BATCH_MODELS))
 
     engine = _engine()
-    all_artifacts: list[dict] = []
+    all_artifacts: list[dict[str, Any]] = []
     sections: list[tuple[str, list[str]]] = []
     for raw in models:
         single = {**payload, "model": str(raw)}
@@ -297,7 +305,7 @@ def build_zip(payload: dict) -> bytes:
     return io_bytes_zip(_relative_artifacts(all_artifacts))
 
 
-def io_bytes_zip(artifacts: list[dict]) -> bytes:
+def io_bytes_zip(artifacts: list[dict[str, Any]]) -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         for artifact in artifacts:

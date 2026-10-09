@@ -4,6 +4,7 @@
 # filename : register
 # author : ly_13
 # date : 8/8/2024
+from typing import Any
 
 from django.conf import settings
 from django.utils import timezone
@@ -58,7 +59,7 @@ class RegisterViewAPIView(GenericAPIView):
             }
         ),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """注册账户"""
         if not settings.SECURITY_REGISTER_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Registration forbidden"))

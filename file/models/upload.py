@@ -6,6 +6,7 @@
 # date : 8/10/2024
 
 import hashlib
+from typing import Any
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.indexes import GinIndex
@@ -49,7 +50,7 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         help_text=_("Category options come from the data dictionary upload_category"),
     )
 
-    def file_still_referenced(self, file_field_name="filepath", file_name=None) -> bool:
+    def file_still_referenced(self, file_field_name: str = "filepath", file_name: str | None = None) -> bool:
         """磁盘删除守护：文件被别处引用时只删记录、保留磁盘文件（三期销项）。
 
         两类引用：
@@ -90,7 +91,7 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
                 continue
         return False
 
-    def hard_delete(self, *args, **kwargs):
+    def hard_delete(self, *args: Any, **kwargs: Any) -> Any:
         """物理删除：连带清理预览缓存（派生产物，源文件没了缓存即成孤儿）。
 
         只挂在硬删除：软删除可恢复，恢复后缓存仍可直接命中。
@@ -101,7 +102,7 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         remove_preview_cache_by_pk(pk)
         return result
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> Any:
         self.filename = self.filename[:255]
         if not self.md5sum and not self.file_url:
             md5 = hashlib.md5()
@@ -126,7 +127,7 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
             GinIndex(fields=["filename"], name="idx_uploadfile_filename_trgm", opclasses=["gin_trgm_ops"]),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.filename}"
 
 
@@ -176,7 +177,7 @@ class UploadSession(DbAuditModel):
             models.Index(fields=["status", "created_time"], name="idx_upsess_status_created"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.filename}({self.status})"
 
 
@@ -198,5 +199,5 @@ class UploadSessionPart(models.Model):
         verbose_name_plural = verbose_name
         constraints = [models.UniqueConstraint(fields=["session", "index"], name="uniq_uploadsession_part_index")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.session_id}#{self.index}"

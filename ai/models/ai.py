@@ -11,6 +11,7 @@
 """
 
 import hashlib
+from typing import Any
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
@@ -53,12 +54,14 @@ class AiKnowledgeDocument(DbAuditModel, DbUuidModel):
         verbose_name_plural = _("AI knowledge documents")
         ordering = ("-synced_at",)
 
-    def __str__(self):
-        return self.path
+    def __str__(self) -> str:
+        typed_value: str = self.path
+        return typed_value
 
     @property
     def is_upload(self) -> bool:
-        return self.source_type == self.SourceType.UPLOAD
+        typed_value: bool = self.source_type == self.SourceType.UPLOAD
+        return typed_value
 
     @staticmethod
     def hash_content(content: str) -> str:
@@ -98,7 +101,7 @@ class AiKnowledgeChunk(DbAuditModel, DbUuidModel):
         ordering = ("source_path", "chunk_index")
         constraints = [models.UniqueConstraint(fields=["source_path", "chunk_index"], name="uniq_ai_chunk_path_index")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.source_path}#{self.chunk_index}"
 
 
@@ -153,8 +156,9 @@ class AiProfile(DbAuditModel, DbUuidModel):
             )
         ]
 
-    def __str__(self):
-        return self.name
+    def __str__(self) -> str:
+        typed_value: str = self.name
+        return typed_value
 
     @property
     def api_key_plain(self) -> str:
@@ -162,18 +166,19 @@ class AiProfile(DbAuditModel, DbUuidModel):
         if not self.api_key:
             return ""
         try:
-            return signer.decrypt(self.api_key)
+            typed_value: str = signer.decrypt(self.api_key)
+            return typed_value
         except Exception:
             # 解密失败（密钥轮换/密文损坏）：按未配置处理，不炸调用链
             return ""
 
     @api_key_plain.setter
-    def api_key_plain(self, value: str):
+    def api_key_plain(self, value: str) -> None:
         value = (value or "").strip()
         self.api_key = signer.encrypt(value.encode("utf-8")).decode("utf-8") if value else ""
 
     @property
-    def stop_list(self) -> list:
+    def stop_list(self) -> list[Any]:
         return [item.strip() for item in (self.stop or "").split(",") if item.strip()]
 
     @property
@@ -223,7 +228,7 @@ class AiUsageRecord(DbAuditModel, DbUuidModel):
             models.Index(fields=["feature", "-created_time"], name="ai_usage_feat_time_idx"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.feature}#{self.pk}({self.tokens_total})"
 
 
@@ -261,5 +266,5 @@ class AiChatMessage(DbAuditModel):
         ordering = ("-id",)
         indexes = [models.Index(fields=["creator", "feature", "-id"], name="ai_chat_msg_user_feat_idx")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.feature}#{self.pk}({self.role})"

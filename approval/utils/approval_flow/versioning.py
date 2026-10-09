@@ -13,13 +13,15 @@
 ``ApprovalFlowNode.all_objects.effective_at(V)``。
 """
 
+from typing import Any
+
 from django.db import transaction
 from django.utils import timezone
 
 from approval.models.approval import ApprovalFlowNode, ApprovalFlowVersion
 
 
-def normalize_cc_users(value, limit=20) -> list:
+def normalize_cc_users(value: Any, limit: Any = 20) -> list[Any]:
     """抄送人（用户 pk 列表）标准化：去空 / 去重 / 限长。"""
     if not value:
         return []
@@ -32,7 +34,7 @@ def normalize_cc_users(value, limit=20) -> list:
     return result[:limit]
 
 
-def build_snapshot(flow, nodes) -> dict:
+def build_snapshot(flow: Any, nodes: Any) -> dict[str, Any]:
     """定义全量快照：流程元数据 + 表单 + 节点列表（与历史快照格式逐字段一致）。"""
     return {
         "name": flow.name,
@@ -59,14 +61,15 @@ def build_snapshot(flow, nodes) -> dict:
     }
 
 
-def close_active_nodes(flow, version: int) -> int:
+def close_active_nodes(flow: Any, version: int) -> int:
     """当前生效行收口到指定版本（``version_to = version``）；返回收口行数。"""
-    return ApprovalFlowNode.all_objects.filter(flow=flow, version_to__isnull=True).update(
+    closed: int = ApprovalFlowNode.all_objects.filter(flow=flow, version_to__isnull=True).update(
         version_to=version, updated_time=timezone.now()
     )
+    return closed
 
 
-def create_node_rows(flow, nodes, version: int) -> None:
+def create_node_rows(flow: Any, nodes: Any, version: int) -> None:
     """按节点定义落新行（``version_from = version``，即该版本起生效）。"""
     ApprovalFlowNode.all_objects.bulk_create(
         [
@@ -91,8 +94,8 @@ def create_node_rows(flow, nodes, version: int) -> None:
     )
 
 
-@transaction.atomic
-def apply_definition(flow, nodes, remark, *, snapshot_upsert: bool = False) -> int:
+@transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def apply_definition(flow: Any, nodes: Any, remark: Any, *, snapshot_upsert: bool = False) -> int:
     """定义变更统一入口：收口旧行 + 新版本落行 + 版本号 +1 + 落快照。返回新版本号。
 
     ``snapshot_upsert=True``（种子/演示命令重灌场景）：loaddata 会把 ``flow.version``

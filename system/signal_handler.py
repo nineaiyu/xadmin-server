@@ -12,6 +12,8 @@ TaskExecution 日志清理已随 task 域拆分（task/signal_handler.py）；
 审批终态回写已随 approval 域归位（approval/signal_handler.py + approval/biz_sync.py）。
 """
 
+from typing import Any
+
 from django.db.models.signals import m2m_changed, post_delete, post_migrate, post_save, pre_delete
 from django.dispatch import receiver
 
@@ -35,16 +37,16 @@ logger = get_logger(__name__)
 M2M_CHANGED_ACTIONS = ("post_add", "post_remove", "post_clear")
 
 
-@receiver([post_save, pre_delete], sender=Menu)
-def clean_cache_handler(sender, instance, **kwargs):
+@receiver([post_save, pre_delete], sender=Menu)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def clean_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     from identity.services import invalidate_menu_user_caches
 
     invalidate_menu_user_caches([instance])
     logger.info(f"invalid cache {instance}")
 
 
-@receiver([post_save, pre_delete], sender=MenuMeta)
-def clean_menu_meta_cache_handler(sender, instance, **kwargs):
+@receiver([post_save, pre_delete], sender=MenuMeta)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def clean_menu_meta_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     """菜单元数据（标题/图标/隐藏/tag/水印等）变更：路由快照同源失效。
 
     RouteSerializer 输出嵌套 meta；meta 独立保存（菜单页改标题/图标，或
@@ -63,14 +65,14 @@ def clean_menu_meta_cache_handler(sender, instance, **kwargs):
         logger.info(f"invalid menu meta cache {instance}")
 
 
-@receiver([post_save, pre_delete], sender=SystemConfig)
-def invalid_config_cache_handler(sender, instance, **kwargs):
+@receiver([post_save, pre_delete], sender=SystemConfig)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_config_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     SysConfig.invalid_config_cache(instance.key)
     logger.info(f"invalid cache {instance}")
 
 
-@receiver([post_save, post_delete], sender=UserPersonalConfig)
-def invalid_user_config_cache_handler(sender, instance, **kwargs):
+@receiver([post_save, post_delete], sender=UserPersonalConfig)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_user_config_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     """用户个人配置行变更（管理页/导入/ORM 直改）即时失效该用户的对应缓存键。
 
     管理页写个人配置不走 UserConfig.set_value，缺这条时该用户最长 30 天读不到
@@ -80,15 +82,15 @@ def invalid_user_config_cache_handler(sender, instance, **kwargs):
     logger.info(f"invalid user config cache {instance}")
 
 
-@receiver([post_save, pre_delete], sender=DataPermission)
-def invalid_data_permission_cache_handler(sender, instance, **kwargs):
+@receiver([post_save, pre_delete], sender=DataPermission)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_data_permission_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     # 授权规则 / 模式 / 启用状态变化：授权池缓存立即失效（全局版本号自增）
     invalidate_data_permission_grants_cache()
     logger.info(f"invalid data permission grants cache {instance}")
 
 
-@receiver(m2m_changed, sender=DataPermission.menu.through)
-def invalid_data_permission_menu_m2m_cache_handler(sender, instance, action, **kwargs):
+@receiver(m2m_changed, sender=DataPermission.menu.through)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_data_permission_menu_m2m_cache_handler(sender: Any, instance: Any, action: Any, **kwargs: Any) -> None:
     # 授权-菜单绑定直改（绕过 save）同样失效授权池缓存
     if action not in M2M_CHANGED_ACTIONS:
         return
@@ -96,8 +98,8 @@ def invalid_data_permission_menu_m2m_cache_handler(sender, instance, action, **k
     logger.info(f"invalid data permission grants cache by menu m2m {instance}")
 
 
-@receiver([post_save, pre_delete], sender=DataDict)
-def invalid_dict_cache_handler(sender, instance, **kwargs):
+@receiver([post_save, pre_delete], sender=DataDict)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_dict_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     # 字典类型变更失效该 code 缓存；类型删除需失效其下字典项缓存，全量失效更稳
     if instance.parent_id:
         invalid_dict_cache(instance.parent.code)
@@ -106,8 +108,8 @@ def invalid_dict_cache_handler(sender, instance, **kwargs):
     logger.info(f"invalid dict cache {instance}")
 
 
-@receiver([post_save, post_delete], sender="system.Tag", dispatch_uid="system.signal_handler.clean_tag_metadata_cache")
-def clean_tag_metadata_cache_handler(sender, instance, **kwargs):
+@receiver([post_save, post_delete], sender="system.Tag", dispatch_uid="system.signal_handler.clean_tag_metadata_cache")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def clean_tag_metadata_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     """标签变更：下拉选项缓存 + 元数据载荷缓存同源失效。
 
     标签名单在构建 user 等列表元数据时被固化进载荷（TagChoiceFilter choices），
@@ -123,8 +125,8 @@ def clean_tag_metadata_cache_handler(sender, instance, **kwargs):
     logger.info(f"invalid tag derived caches {instance}")
 
 
-@receiver(post_migrate, dispatch_uid="system.signal_handler.sync_builtin_tags")
-def post_migrate_sync_builtin_tags(sender, **kwargs):
+@receiver(post_migrate, dispatch_uid="system.signal_handler.sync_builtin_tags")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def post_migrate_sync_builtin_tags(sender: Any, **kwargs: Any) -> None:
     """migrate 后同步内置标签（幂等）：与内置角色同一时点与容错口径。"""
     if getattr(sender, "name", None) != "system":
         return

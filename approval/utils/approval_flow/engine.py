@@ -2,12 +2,18 @@
 # -*- coding:utf-8 -*-
 """全量审批流引擎：实例推进（发起 / 通过 / 驳回 / 撤回 / 加签）。"""
 
+from typing import TYPE_CHECKING, Any
+
 from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from approval.utils.approval.display import user_display
 from common.utils import get_logger
+
+if TYPE_CHECKING:  # 仅类型检查期导入：运行期模型一律经 _models() 惰性取数
+    from approval.models.approval import ApprovalFlow, ApprovalInstance
+    from identity.models import UserInfo
 
 from .assignees import (
     _no_approver_detail as _no_approver_detail,  # noqa: PLC0414 显式再导出（engine 调用面与外部引用保持）
@@ -25,19 +31,31 @@ from .conditions import (
 )
 from .constants import _models
 from .engine_events import (  # noqa: F401 再导出：事件/通知调用面保持不变
-    _alert_auto_approved,
-    _cancel_pending_tasks,
-    _emit_flow_event,
-    _finish_instance,
-    _invalidate_pending_count,
-    _notify,
-    _notify_business_finished,
+    _alert_auto_approved as _alert_auto_approved,
+)
+from .engine_events import (
+    _cancel_pending_tasks as _cancel_pending_tasks,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from .engine_events import (
+    _emit_flow_event as _emit_flow_event,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from .engine_events import (
+    _finish_instance as _finish_instance,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from .engine_events import (
+    _invalidate_pending_count as _invalidate_pending_count,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from .engine_events import (
+    _notify as _notify,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from .engine_events import (
+    _notify_business_finished as _notify_business_finished,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 
 logger = get_logger(__name__)
 
 
-def _enter_node(instance, node) -> bool:
+def _enter_node(instance: Any, node: Any) -> bool:
     """进入节点：解析候选并建 PENDING 任务 + 通知；无候选返回 False（调用方跳过该节点）。
 
     无候选（如部门 leader 被清空）在推进期发生时不阻塞流程：写一行 assignee 为空的
@@ -86,7 +104,7 @@ def _enter_node(instance, node) -> bool:
     return True
 
 
-def _instance_version(instance):
+def _instance_version(instance: Any) -> Any:
     """实例钉住的定义版本：推进按该版本取节点集；空/0 回退当前生效定义。
 
     改造前的老实例理论上都有 flow_version（发起时写入），这里兜底手工造的历史行。
@@ -95,7 +113,16 @@ def _instance_version(instance):
     return version if version and version > 0 else None
 
 
-def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id="", cc_users=None):
+def create_instance(
+    *,
+    flow: ApprovalFlow,
+    applicant: UserInfo,
+    title: str,
+    form_data: dict[str, Any],
+    biz_type: str = "",
+    biz_id: str = "",
+    cc_users: list[str] | None = None,
+) -> tuple[ApprovalInstance | None, str | None]:
     """发起申请：校验表单与全部可达节点候选，建实例并进入首节点。
 
     返回 (instance, error)：error 为 None 表示成功。候选校验 fail-closed——
@@ -155,7 +182,7 @@ def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id=""
     return instance, None
 
 
-def _advance(instance, node):
+def _advance(instance: Any, node: Any) -> None:
     """节点完成后推进：下一条件命中节点 / 实例通过。
 
     并发安全：调用方（approve_task 等）持有实例行锁（select_for_update）时同一实例
@@ -185,13 +212,13 @@ def _advance(instance, node):
         node = following
 
 
-def _load_task(task_pk):
+def _load_task(task_pk: Any) -> Any:
     ApprovalNodeTask = _models().Task
 
     return ApprovalNodeTask.objects.select_related("instance", "node", "assignee", "actor").filter(pk=task_pk).first()
 
 
-def _settle_node_after_approve(instance, node) -> set:
+def _settle_node_after_approve(instance: Any, node: Any) -> set[Any]:
     """节点通过后的结算（OR/RATIO/AND 共用）：返回需要失效待办计数的 assignee pk 集合。
 
     人工通过（approve_task）与超时自动通过（periodic.execute_timeout_actions）共用：
@@ -203,7 +230,7 @@ def _settle_node_after_approve(instance, node) -> set:
     ApprovalNodeTask = _models().Task
     ApprovalInstance = _models().Instance
 
-    invalidated: set = set()
+    invalidated: set[Any] = set()
     if node.approve_type == node.ApproveType.OR:
         # 或签：任一通过即节点通过，其余待办作废
         invalidated.update(_cancel_pending_tasks(instance, node=node))
@@ -240,7 +267,7 @@ def _settle_node_after_approve(instance, node) -> set:
     return invalidated
 
 
-def approve_task(task_pk, user, comment: str = ""):
+def approve_task(task_pk: Any, user: Any, comment: str = "") -> Any:
     """通过当前待办任务：或签任一通过/会签全部通过后推进。返回 (ok, detail)。
 
     并发安全：实例行锁（select_for_update）使同一实例的并发审批串行化——两个
@@ -291,7 +318,7 @@ def approve_task(task_pk, user, comment: str = ""):
         return True, None
 
 
-def reject_task(task_pk, user, reason: str):
+def reject_task(task_pk: Any, user: Any, reason: str) -> Any:
     """驳回：任务置 REJECTED、实例驳回（终态）、其余待办作废、通知申请人。返回 (ok, detail)。"""
     reason = (reason or "").strip()
     if not reason:
@@ -301,7 +328,7 @@ def reject_task(task_pk, user, reason: str):
         return _reject_task_locked(task_pk, user, reason)
 
 
-def _reject_task_locked(task_pk, user, reason: str):
+def _reject_task_locked(task_pk: Any, user: Any, reason: str) -> Any:
     """驳回主体（调用方已进入事务：实例行锁保证并发串行化）。"""
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
 
@@ -343,7 +370,7 @@ def _reject_task_locked(task_pk, user, reason: str):
     return True, None
 
 
-def cancel_instance(instance, user):
+def cancel_instance(instance: Any, user: Any) -> Any:
     """撤回：申请人本人或超管、仅 PENDING；待办作废并通知当前节点审批人。返回 (ok, detail)。
 
     超管放行用于运营清障：演示/离职账号发起的在途单若无人可撤回，可请管理员代为
@@ -353,7 +380,7 @@ def cancel_instance(instance, user):
         return _cancel_instance_locked(instance, user)
 
 
-def _cancel_instance_locked(instance, user):
+def _cancel_instance_locked(instance: Any, user: Any) -> Any:
     """撤回主体（调用方已进入事务：实例行锁保证并发串行化）。"""
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
 

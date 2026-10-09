@@ -7,6 +7,7 @@ DataPermission/DataDict 等平台面接收器留在 system 侧同名模块。
 """
 
 import itertools
+from typing import Any
 
 from django.contrib.auth import user_logged_out
 from django.db.models.signals import m2m_changed, post_migrate, post_save, pre_delete
@@ -24,18 +25,18 @@ logger = get_logger(__name__)
 M2M_CHANGED_ACTIONS = ("post_add", "post_remove", "post_clear")
 
 
-def get_cache_data_keys(pks):
+def get_cache_data_keys(pks: Any) -> Any:
     for pk in pks:
         for method in ["GET", "PUT", "DELETE", "POST", "PATCH"]:
             yield f"get_user_permission_{pk}_{method}"
 
 
-def get_cache_response_keys(pks):
+def get_cache_response_keys(pks: Any) -> Any:
     for pk in pks:
         yield f"UserRoutesAPIView_get_{pk}"
 
 
-def batch_invalid_cache(pks, batch_length=1000):
+def batch_invalid_cache(pks: Any, batch_length: int = 1000) -> None:
     cleans = [
         (MagicCacheData.invalid_caches, get_cache_data_keys(pks)),
         (cache_response.invalid_caches, get_cache_response_keys(pks)),
@@ -45,7 +46,7 @@ def batch_invalid_cache(pks, batch_length=1000):
             keys[0](data)
 
 
-def invalidate_menu_user_caches(menus) -> None:
+def invalidate_menu_user_caches(menus: Any) -> None:
     """失效菜单相关的用户权限/路由缓存（Menu 与 MenuMeta 变更共用同一实现）。
 
     失效面 = 全部超管（auths 快照含全部启用权限点）+ 拥有这些菜单的角色所属用户
@@ -65,16 +66,16 @@ def invalidate_menu_user_caches(menus) -> None:
     invalid_menu_path_cache()
 
 
-@receiver([post_save, pre_delete], sender=UserRole)
-def invalid_role_cache_handler(sender, instance, **kwargs):
+@receiver([post_save, pre_delete], sender=UserRole)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_role_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     pk1 = instance.userinfo_set.values_list("pk", flat=True).distinct()
     pk2 = DeptInfo.objects.filter(roles=instance).values_list("dept_query", flat=True).distinct()
     batch_invalid_cache(set(pk1) | set(pk2))
     logger.info(f"invalid cache {instance}")
 
 
-@receiver([post_save, pre_delete], sender=DeptInfo)
-def invalid_dept_cache_handler(sender, instance, **kwargs):
+@receiver([post_save, pre_delete], sender=DeptInfo)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_dept_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     batch_invalid_cache(instance.userinfo_set.values_list("pk", flat=True).distinct())
     # 部门树变化会影响下级/上级递归结果，缓存一并失效
     DeptInfo.invalid_dept_tree_cache()
@@ -83,8 +84,8 @@ def invalid_dept_cache_handler(sender, instance, **kwargs):
     logger.info(f"invalid cache {instance}")
 
 
-@receiver(m2m_changed, sender=UserInfo.rules.through)
-def invalid_user_rules_m2m_cache_handler(sender, instance, action, **kwargs):
+@receiver(m2m_changed, sender=UserInfo.rules.through)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_user_rules_m2m_cache_handler(sender: Any, instance: Any, action: Any, **kwargs: Any) -> None:
     # 用户-授权关系直改：该用户授权池立即失效（走全局版本号）
     if action not in M2M_CHANGED_ACTIONS:
         return
@@ -92,22 +93,22 @@ def invalid_user_rules_m2m_cache_handler(sender, instance, action, **kwargs):
     logger.info(f"invalid data permission grants cache by user rules m2m {instance}")
 
 
-@receiver(m2m_changed, sender=UserRole.menu.through)
-def invalid_role_menu_m2m_cache_handler(sender, instance, action, **kwargs):
+@receiver(m2m_changed, sender=UserRole.menu.through)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_role_menu_m2m_cache_handler(sender: Any, instance: Any, action: Any, **kwargs: Any) -> None:
     if action not in M2M_CHANGED_ACTIONS:
         return
     invalid_role_cache_handler(sender=UserRole, instance=instance)
 
 
-@receiver([post_save, pre_delete], sender=UserInfo)
-def invalid_user_cache_handler(sender, instance, **kwargs):
+@receiver([post_save, pre_delete], sender=UserInfo)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_user_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
     batch_invalid_cache([instance.pk])
     logger.info(f"invalid cache {instance}")
 
 
 # 清理用户相关缓存，用户登出会自动清理
-@receiver([invalid_user_cache_signal, user_logged_out])
-def invalid_user_cache(sender, **kwargs):
+@receiver([invalid_user_cache_signal, user_logged_out])  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_user_cache(sender: Any, **kwargs: Any) -> None:
     user_pk = kwargs.get("user_pk", None)
     user = kwargs.get("user", None)
     if isinstance(user, UserInfo):
@@ -118,8 +119,8 @@ def invalid_user_cache(sender, **kwargs):
     batch_invalid_cache([user_pk])
 
 
-@receiver(m2m_changed, sender=DeptInfo.rules.through)
-def invalid_dept_rules_m2m_cache_handler(sender, instance, action, **kwargs):
+@receiver(m2m_changed, sender=DeptInfo.rules.through)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_dept_rules_m2m_cache_handler(sender: Any, instance: Any, action: Any, **kwargs: Any) -> None:
     # 部门-授权关系直改：部门链下的授权池立即失效（走全局版本号）
     if action not in M2M_CHANGED_ACTIONS:
         return
@@ -127,22 +128,22 @@ def invalid_dept_rules_m2m_cache_handler(sender, instance, action, **kwargs):
     logger.info(f"invalid data permission grants cache by dept rules m2m {instance}")
 
 
-@receiver(m2m_changed, sender=UserInfo.roles.through)
-def invalid_user_roles_m2m_cache_handler(sender, instance, action, **kwargs):
+@receiver(m2m_changed, sender=UserInfo.roles.through)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_user_roles_m2m_cache_handler(sender: Any, instance: Any, action: Any, **kwargs: Any) -> None:
     if action not in M2M_CHANGED_ACTIONS:
         return
     batch_invalid_cache([instance.pk])
 
 
-@receiver(m2m_changed, sender=DeptInfo.roles.through)
-def invalid_dept_roles_m2m_cache_handler(sender, instance, action, **kwargs):
+@receiver(m2m_changed, sender=DeptInfo.roles.through)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def invalid_dept_roles_m2m_cache_handler(sender: Any, instance: Any, action: Any, **kwargs: Any) -> None:
     if action not in M2M_CHANGED_ACTIONS:
         return
     batch_invalid_cache(instance.userinfo_set.values_list("pk", flat=True).distinct())
 
 
-@receiver(post_migrate, dispatch_uid="identity.signal_handler.sync_builtin_roles")
-def post_migrate_sync_builtin_roles(sender, **kwargs):
+@receiver(post_migrate, dispatch_uid="identity.signal_handler.sync_builtin_roles")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def post_migrate_sync_builtin_roles(sender: Any, **kwargs: Any) -> None:
     """migrate 后同步内置角色（幂等）：
     全新库 migrate 完成即有可用角色，存量库升级同样生效；同步失败不阻断 migrate。"""
     if getattr(sender, "name", None) != "identity":

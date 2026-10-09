@@ -14,6 +14,7 @@
 import json
 import time
 import uuid
+from typing import Any
 
 from celery import shared_task
 from django.conf import settings
@@ -30,12 +31,12 @@ logger = get_logger(__name__)
 DELIVER_TIMEOUT = 10
 
 
-def _default_client():
+def _default_client() -> Any:
     """生产路径返回 None（走固定解析连接）；测试/联调可注入 requests 兼容客户端。"""
     return None
 
 
-def _post(client, url, body: bytes, headers: dict):
+def _post(client: Any, url: Any, body: bytes, headers: dict[str, Any]) -> Any:
     """POST 原始字节体；返回 (status_code, body_text)。网络异常转 (0, msg)。
 
     生产路径（client=None）先做发送侧严格校验（拒绝私网/环回/link-local，
@@ -70,8 +71,8 @@ def _post(client, url, body: bytes, headers: dict):
 
 # 任务名显式钉住：模块迁位后默认名会变为 task.webhook_tasks.deliver_webhook，
 # 既有投递重试 / 告警路由 / 队列匹配按名工作，零变化是硬约束
-@shared_task(bind=True, max_retries=0, acks_late=True, name="system.webhook_tasks.deliver_webhook")
-def deliver_webhook(self, delivery_id: str, generation: int | None = None):
+@shared_task(bind=True, max_retries=0, acks_late=True, name="system.webhook_tasks.deliver_webhook")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def deliver_webhook(self: Any, delivery_id: str, generation: int | None = None) -> Any:
     """投递一次；失败按指数退避重派，耗尽置 exhausted 并告警。
 
     generation 为派发时的代际号：与库中当前值不一致说明该任务已被更新的

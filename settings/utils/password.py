@@ -7,6 +7,7 @@
 import re
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 from django.contrib.auth.hashers import check_password
@@ -18,7 +19,7 @@ LEAK_PASSWORDS_FILE = Path(__file__).resolve().parent.parent / "data" / "leak_pa
 
 
 @lru_cache(maxsize=1)
-def _load_leak_passwords() -> frozenset:
+def _load_leak_passwords() -> frozenset[str]:
     """加载内置泄露密码库（一行一条，进程内缓存；文件缺失视为空库）"""
     try:
         lines = LEAK_PASSWORDS_FILE.read_text(encoding="utf-8").splitlines()
@@ -37,7 +38,7 @@ def check_leak_password(password: str) -> bool:
     return password in _load_leak_passwords()
 
 
-def check_history_password(user, password: str) -> bool:
+def check_history_password(user: Any, password: str) -> bool:
     """命中用户最近 N 次历史密码返回 True。N（SECURITY_PASSWORD_HISTORY_COUNT）<= 0 时恒 False。
 
     逐条与历史哈希做 check_password 比对（哈希盐随机，无法等值查询）。
@@ -52,7 +53,7 @@ def check_history_password(user, password: str) -> bool:
     return False
 
 
-def record_password_hash(user, hashed_password: str) -> None:
+def record_password_hash(user: Any, hashed_password: str) -> None:
     """改密成功后留存密码哈希并刷新 date_password_updated（密码过期计时起点）。
 
     各改密链路（本人改密 / 管理端重置 / 忘记密码重置 / 注册 / 管理端建号）在
@@ -79,7 +80,7 @@ def record_password_hash(user, hashed_password: str) -> None:
     user.save(update_fields=update_fields)
 
 
-def is_password_expired(user) -> bool:
+def is_password_expired(user: Any) -> bool:
     """密码是否已过期（超过 SECURITY_PASSWORD_EXPIRATION_DAYS 天未更新）。
 
     天数 <= 0 = 永不过期；date_password_updated 为空 = 未跟踪（存量宽限期，不拦截）。
@@ -89,14 +90,14 @@ def is_password_expired(user) -> bool:
         return False
     if user is None or getattr(user, "date_password_updated", None) is None:
         return False
-    return timezone.now() - user.date_password_updated > timezone.timedelta(days=days)
+    return bool(timezone.now() - user.date_password_updated > timezone.timedelta(days=days))
 
 
 PASSWORD_EXPIRED_MESSAGE = _("Password has expired, please change your password before logging in")
 
 
-def get_password_check_rules(user):
-    check_rules = []
+def get_password_check_rules(user: Any) -> list[dict[str, Any]]:
+    check_rules: list[dict[str, Any]] = []
     for rule in settings.SECURITY_PASSWORD_RULES:
         if user.is_superuser and rule == "SECURITY_PASSWORD_MIN_LENGTH":
             rule = "SECURITY_ADMIN_USER_PASSWORD_MIN_LENGTH"
@@ -107,7 +108,7 @@ def get_password_check_rules(user):
     return check_rules
 
 
-def check_password_rules(password, is_super_admin=False):
+def check_password_rules(password: str, is_super_admin: bool = False) -> bool:
     pattern = r"^"
     if settings.SECURITY_PASSWORD_UPPER_CASE:
         pattern += r"(?=.*[A-Z])"

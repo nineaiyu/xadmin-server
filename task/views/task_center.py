@@ -12,6 +12,8 @@
 顶栏现有任务日志抽屉保留为快捷入口；本页是长任务的统一入口。
 """
 
+from typing import Any
+
 from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
@@ -23,7 +25,7 @@ from common.swagger.utils import get_default_response_schema
 from task.utils import task_center
 
 
-def _int_param(value, default: int, minimum: int = 1, maximum: int = 100) -> int:
+def _int_param(value: Any, default: int, minimum: int = 1, maximum: int = 100) -> int:
     try:
         return max(minimum, min(int(value), maximum))
     except (TypeError, ValueError):
@@ -34,7 +36,7 @@ class SystemTaskCenterViewSet(GenericViewSet):
     """任务中心：统一列表 / 取消 / 重跑（三类记录聚合，不建新表）。"""
 
     @extend_schema(responses=get_default_response_schema())
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """统一任务列表：``type`` 多选（task/export/import）、``status``/``keyword``/时间范围可过滤。"""
         types = [item.strip() for item in str(request.query_params.get("type") or "").split(",") if item.strip()]
         params = request.query_params
@@ -53,8 +55,8 @@ class SystemTaskCenterViewSet(GenericViewSet):
         return ApiResponse(data={"results": rows, "total": total})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="cancel")
-    def cancel(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="cancel")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def cancel(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """取消任务：PENDING 立即置 REVOKED；RUNNING 下 revoke 并在安全点收敛（协作式）。"""
         result = task_center.cancel_record(
             request.user,
@@ -66,8 +68,8 @@ class SystemTaskCenterViewSet(GenericViewSet):
         return ApiResponse(detail=result.get("detail"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="rerun")
-    def rerun(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="rerun")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def rerun(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """重跑任务（白名单：导出 / 导入 / 报表）：新记录 + 同链路重放，产物与审计同源。"""
         result = task_center.rerun_record(
             request.user,

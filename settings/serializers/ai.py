@@ -8,6 +8,8 @@ API Key write_only ⇒ 值级加密落库、retrieve 回显自动剔除（G12 �
 凭据 + 采样/行为参数全集（与档案字段一一对应），None/留空 = 不下发走供应商默认。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -100,7 +102,7 @@ class AiAssistantSettingSerializer(SettingSaveContractMixin, serializers.Seriali
         ),
     )
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         # 留白模型名收敛默认值，避免空配置静默失效
         if attrs.get("AI_MODEL") in (None, ""):
             attrs["AI_MODEL"] = "gpt-4o-mini"

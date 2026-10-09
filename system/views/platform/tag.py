@@ -11,6 +11,8 @@
 - 过滤：列表 ``?tag=<id|name>``（多值 AND）落在对象视图集的 ``TagFilterBackend`` 上。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
@@ -83,17 +85,17 @@ class TagViewSet(
     ordering_fields = ["name", "created_time", "updated_time"]
     select_related_fields = ("creator",)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> Any:
         instance = super().perform_create(serializer)
         invalidate_tag_options_cache()
         return instance
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> Any:
         instance = super().perform_update(serializer)
         invalidate_tag_options_cache()
         return instance
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> Any:
         if instance.builtin:
             # 内置标签不允许删除（与模型 docstring 同口径；误删可由 post_migrate 补回）
             raise RestValidationError(_("Builtin tags cannot be deleted"))
@@ -106,14 +108,14 @@ class TagViewSet(
         return result
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="resources")
-    def resources(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="resources")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def resources(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """可打标对象白名单（前端选择器数据源；非白名单对象不出现）。"""
         return ApiResponse(data={"resources": taggable_resources()})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="objects")
-    def objects(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="objects")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def objects(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """查询某对象的标签：``?resource=identity.userinfo&pk=<对象主键>``。"""
         model = taggable_model(request.query_params.get("resource"))
         if model is None:
@@ -126,8 +128,8 @@ class TagViewSet(
         return ApiResponse(data={"tags": object_tags(model, pk)})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="assign")
-    def assign(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="assign")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def assign(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """单对象打标（全量替换语义）：权限回落业务对象 update 权限点。"""
         serializer = TagAssignSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -141,8 +143,8 @@ class TagViewSet(
         return ApiResponse(data={"tags": tags}, detail=_("Tags updated"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="batch-assign")
-    def batch_assign(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-assign")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_assign(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量打标：``mode=replace|add|remove``（逐对象回落 update 权限点校验）。"""
         serializer = TagBatchAssignSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -7,7 +9,7 @@ from captcha.models import CaptchaStore
 class Command(BaseCommand):
     help = "Create a pool of random captchas."
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument(
             "--pool-size",
             type=int,
@@ -21,10 +23,10 @@ class Command(BaseCommand):
             help="Cleanup expired captchas after creating new ones",
         )
 
-    @transaction.atomic
-    def handle(self, **options):
+    @transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def handle(self, **options: Any) -> None:
         verbose = int(options.get("verbosity") or 0)
-        count = options.get("pool_size")
+        count = int(options.get("pool_size") or 0)
         CaptchaStore.create_pool(count)
         verbose and self.stdout.write(f"Created {count} new captchas\n")
         options.get("cleanup_expired") and CaptchaStore.remove_expired()

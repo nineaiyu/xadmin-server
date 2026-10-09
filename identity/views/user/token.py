@@ -10,6 +10,8 @@
   升级前（无 token_pk）的历史日志无法归属到具体凭证，不计入并在前端标注。
 """
 
+from typing import Any
+
 from django.utils import timezone
 from django_filters import rest_framework as dj_filters
 from drf_spectacular.utils import extend_schema
@@ -55,13 +57,13 @@ class PersonalAccessTokenViewSet(BaseModelSet):
     ordering = ["-created_time"]
     ordering_fields = ["created_time", "last_used_time", "expired_at"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         # 严格个人取值域：含超管在内都只看本人凭证
         return self.queryset.filter(creator=self.request.user)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="logs")
-    def logs(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="logs")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def logs(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """凭证调用记录（精确口径：按凭证标识 token_pk 归集）"""
         from audit.serializers.log import OperationLogSerializer  # 审计域序列化器，调用期惰性
 
@@ -75,8 +77,8 @@ class PersonalAccessTokenViewSet(BaseModelSet):
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="scope-options")
-    def scope_options(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="scope-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def scope_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """当前用户可授权的接口范围（按菜单分组，供令牌接口范围勾选）
 
         口径 = 请求鉴权同源的权限菜单 × 本人角色（超管为全部启用的权限菜单）；
@@ -85,8 +87,8 @@ class PersonalAccessTokenViewSet(BaseModelSet):
         return ApiResponse(data=scope_options_for_user(request.user))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="stats")
-    def stats(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="stats")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def stats(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """调用统计（近 7 天调用数 / 失败数 / 末次调用时间，按凭证精确归集）"""
         token = self.get_object()
         queryset = self._call_log_queryset(
@@ -104,7 +106,7 @@ class PersonalAccessTokenViewSet(BaseModelSet):
         )
 
     @staticmethod
-    def _call_log_queryset(request, token, since=None):
+    def _call_log_queryset(request: Any, token: Any, since: Any = None) -> Any:
         """凭证调用日志按时间窗/路径过滤（精确口径：token_pk 命中即该凭证的调用）。
 
         只按 token_pk 过滤：凭证与日志归属同一属主，且 token_pk 唯一定位凭证；

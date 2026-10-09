@@ -3,6 +3,7 @@
 """通用标签中心序列化器：标签 CRUD + 可打标对象的只读 tags 字段。"""
 
 import re
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -41,16 +42,17 @@ class TagSerializer(BaseModelSerializer):
         # builtin 由内置同步机制（system/builtin.py）维护，API 写路径不可篡改
         read_only_fields = ["pk", "builtin"]
 
-    def get_usage_count(self, obj) -> int:
+    def get_usage_count(self, obj: Any) -> int:
         annotated = getattr(obj, "usage_count", None)
         if annotated is not None:
             return int(annotated)
-        return obj.tagged_items.count()
+        typed_value: int = obj.tagged_items.count()
+        return typed_value
 
-    def validate_name(self, value):
+    def validate_name(self, value: Any) -> Any:
         return trim_required(value, _("Tag name is required"))
 
-    def validate_color(self, value):
+    def validate_color(self, value: Any) -> Any:
         color = (value or "").strip()
         if color and not re.match(COLOR_PATTERN, color):
             raise serializers.ValidationError(_("Color must be a hex value like #409EFF"))
@@ -64,7 +66,7 @@ class TagAssignSerializer(serializers.Serializer):
     pk = serializers.CharField(max_length=64)
     tags = serializers.ListField(child=serializers.CharField(max_length=64), required=False, default=list)
 
-    def validate_resource(self, value):
+    def validate_resource(self, value: Any) -> Any:
         key = (value or "").strip().lower()
         if key not in TAGGABLE_MODELS:
             raise serializers.ValidationError(_("The object type cannot be tagged"))
@@ -85,7 +87,7 @@ class TaggedObjectSerializerMixin:
     依赖视图声明 ``prefetch_related_fields = ("tagged_items__tag",)`` 消除 N+1。
     """
 
-    def get_tags(self, obj) -> list:
+    def get_tags(self, obj: Any) -> list[Any]:
         from system.services.tags import tags_for_instance
 
         return tags_for_instance(obj)

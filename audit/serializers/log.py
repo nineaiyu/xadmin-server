@@ -4,6 +4,8 @@
 # filename : log
 # author : ly_13
 # date : 8/10/2024
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -87,14 +89,14 @@ class OperationLogListSerializer(OperationLogSerializer):
         fields = [*OperationLogSerializer.Meta.fields, "body_truncated", "response_result_truncated"]
         table_fields = OperationLogSerializer.Meta.table_fields
 
-    def get_body_truncated(self, obj) -> bool:
+    def get_body_truncated(self, obj: Any) -> bool:
         return isinstance(obj.body, str) and len(obj.body) > OPERATION_LOG_LIST_PREVIEW_MAX
 
-    def get_response_result_truncated(self, obj) -> bool:
+    def get_response_result_truncated(self, obj: Any) -> bool:
         return isinstance(obj.response_result, str) and len(obj.response_result) > OPERATION_LOG_LIST_PREVIEW_MAX
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        data: dict[str, Any] = super().to_representation(instance)
         for name in ("body", "response_result"):
             value = data.get(name)
             if isinstance(value, str) and len(value) > OPERATION_LOG_LIST_PREVIEW_MAX:
@@ -148,7 +150,7 @@ class LoginLogSerializer(BaseModelSerializer):
     )
 
     @extend_schema_field(serializers.IntegerField)
-    def get_online(self, obj):
+    def get_online(self, obj: Any) -> int:
         """在线态三元取值：-1 = 不适用（非 WS 登录或无 creator），True/False = WS 会话是否在线。
 
         前端按 `{true: 在线, false: 离线, "-1": "/"}` 渲染；两侧口径保持一致。

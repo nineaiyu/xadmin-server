@@ -24,6 +24,7 @@
 """
 
 from datetime import timedelta
+from typing import Any
 
 from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
@@ -99,7 +100,7 @@ EXPORT_PLAN = (
     },
 )
 #: AI 助手会话（feature, role, content, extra）；同一 (creator, feature) 构成一条消息流
-AI_MESSAGE_PLAN: tuple[tuple[str, str, str, dict], ...] = (
+AI_MESSAGE_PLAN: tuple[tuple[str, str, str, dict[str, Any]], ...] = (
     (
         "docs",
         "user",
@@ -131,11 +132,11 @@ AI_MESSAGE_PLAN: tuple[tuple[str, str, str, dict], ...] = (
 class Command(BaseCommand):
     help = "补充演示数据：岗位/标签打标/AI 助手会话/导出中心记录"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--reset", action="store_true", help="先清理本命令生成的演示数据再生成")
         parser.add_argument("--clean-only", action="store_true", help="只清理，不生成（seed_demo_clean 编排调用）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options["reset"] or options["clean_only"]:
             self._clean()
             if options["clean_only"]:
@@ -153,7 +154,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 清理
 
-    def _clean(self):
+    def _clean(self) -> None:
         from approval.models import ApprovalFlow
 
         removed = Post.all_objects.filter(code__startswith=POST_CODE_PREFIX).delete()[0]
@@ -178,7 +179,7 @@ class Command(BaseCommand):
         removed = ExportRecord.objects.filter(pk__in=EXPORT_PKS).delete()[0]
         self.stdout.write(f"removed demo export records: {removed}")
 
-    def _demo_tag_object_ids(self) -> list:
+    def _demo_tag_object_ids(self) -> list[Any]:
         """演示打标对象的 object_id 集合（清理依据，须在对象被清前运行）。"""
         from demo_seed.management.commands.seed_demo_flows import INSTANCE_PKS
 
@@ -193,13 +194,13 @@ class Command(BaseCommand):
         return list(ids)
 
     @staticmethod
-    def _demo_admin_pks():
+    def _demo_admin_pks() -> Any:
         # 仅取非超管的同名 account（超管同名账号不是演示账号，不打标也不清理）
         return UserInfo.all_objects.filter(username=ADMIN_USERNAME, is_superuser=False).values_list("pk", flat=True)
 
     # ---------------------------------------------------------------- 岗位
 
-    def _ensure_posts(self):
+    def _ensure_posts(self) -> None:
         for code, name, dept_code, rank, is_active in POST_PLAN:
             dept = DeptInfo.objects.filter(code=dept_code).first() if dept_code else None
             Post.objects.update_or_create(
@@ -209,7 +210,7 @@ class Command(BaseCommand):
         self.stdout.write(f"demo posts ready: {Post.objects.filter(code__startswith=POST_CODE_PREFIX).count()}")
 
     @staticmethod
-    def _ensure_post_flow():
+    def _ensure_post_flow() -> None:
         """含「指定岗位」节点的演示流程（幂等：按 code update_or_create）。
 
         只建定义不造实例：安全员岗的持岗人（含真实 admin）随部署而异，实例由
@@ -237,7 +238,7 @@ class Command(BaseCommand):
             },
         )
 
-    def _assign_posts(self):
+    def _assign_posts(self) -> None:
         assigned = 0
         for username, codes in POST_ASSIGN.items():
             user = UserInfo.objects.filter(username=username, is_superuser=False).first()
@@ -250,7 +251,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 标签打标
 
-    def _assign_tags(self):
+    def _assign_tags(self) -> None:
         plans = [
             ("待跟进", ApprovalInstance, "6eed0001-0000-4000-8000-000000000001"),
             ("归档", ApprovalInstance, "6eed0001-0000-4000-8000-000000000004"),
@@ -276,7 +277,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- AI 助手会话
 
-    def _create_ai_history(self, admin: UserInfo | None):
+    def _create_ai_history(self, admin: UserInfo | None) -> None:
         if admin is None:
             self.stdout.write(self.style.WARNING("demo admin missing (run seed_demo_admin first); AI history skipped"))
             return
@@ -296,11 +297,12 @@ class Command(BaseCommand):
     def _has_demo_ai_history(admin: UserInfo) -> bool:
         from ai.models.ai import AiChatMessage
 
-        return AiChatMessage.objects.filter(creator=admin, extra__demo=True).exists()
+        has_history: bool = AiChatMessage.objects.filter(creator=admin, extra__demo=True).exists()
+        return has_history
 
     # ---------------------------------------------------------------- 导出中心
 
-    def _create_exports(self, admin: UserInfo | None):
+    def _create_exports(self, admin: UserInfo | None) -> None:
         now = timezone.now()
         for index, pk in enumerate(EXPORT_PKS):
             ExportRecord.objects.update_or_create(

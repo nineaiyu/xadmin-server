@@ -27,7 +27,12 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
 # 注册表是唯一白名单入口（再导出：调用方只 import 本模块）
-from ai.utils.ai_action_audit import audit_ai_action, audit_ai_ask  # noqa: F401  (审计实现拆出，再导出保持调用面)
+from ai.utils.ai_action_audit import (
+    audit_ai_action as audit_ai_action,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_action_audit import (
+    audit_ai_ask as audit_ai_ask,  # noqa: F401 显式再导出（PEP 484 语义）
+)
 from ai.utils.ai_action_target import verify_action_target
 from ai.utils.ai_api_registry import API_ACTION_SPECS  # noqa: F401
 from ai.utils.ai_builtin_actions import (
@@ -40,7 +45,12 @@ from ai.utils.ai_builtin_actions import (
     _validate_dashboard,
     _validate_dform,
     _validate_leave,
-    available_forms,
+)
+from ai.utils.ai_builtin_actions import (
+    available_forms as available_forms,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_draft_tools import (
+    native_draft_result as native_draft_result,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from common.utils import get_logger
 
@@ -71,7 +81,7 @@ def ai_action_enabled() -> bool:
     return bool(getattr(settings, "AI_ACTION_ENABLED", False))
 
 
-def user_can_visit(user, method: str, path: str) -> bool:
+def user_can_visit(user: Any, method: str, path: str) -> bool:
     """按菜单权限点口径判定用户能否访问「方法 + 路径」（与 IsAuthenticated 同一匹配函数）。
 
     业务动作执行前的第二道门：仅有 AI 执行端点权限、而没有底层业务权限的用户不得执行。
@@ -94,12 +104,13 @@ def user_can_visit(user, method: str, path: str) -> bool:
     return bool(permission_data and get_menu_pk(permission_data, path))
 
 
-def _extract_json_object(text: str) -> dict:
+def _extract_json_object(text: str) -> dict[str, Any]:
     """robust 解析 LLM 输出：剥 markdown 码栅后取首个 JSON 对象（公共实现在 ai_parse）。"""
     from common.utils.ai_parse import AiOutputParseError, extract_json_object
 
     try:
-        return extract_json_object(text)
+        parsed: dict[str, Any] = extract_json_object(text)
+        return parsed
     except AiOutputParseError as exc:
         raise DjangoValidationError(_("The model returned malformed JSON")) from exc
 
@@ -109,15 +120,15 @@ def _extract_json_object(text: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _never_requires_approval(user, params) -> bool:
+def _never_requires_approval(user: Any, params: Any) -> bool:
     return False
 
 
-def _always_available(user) -> bool:
+def _always_available(user: Any) -> bool:
     return True
 
 
-def _dform_available(user) -> bool:
+def _dform_available(user: Any) -> bool:
     return bool(available_forms(user))
 
 
@@ -128,15 +139,15 @@ class ActionSpec:
     key: str
     label: object
     description: object
-    params: dict
+    params: dict[str, Any]
     #: ((method, path), ...)：执行所需底层业务权限点（路径与菜单权限点 path 同口径）
-    required_visits: tuple
+    required_visits: tuple[Any, ...]
     validate: Callable[..., Any]
     execute: Callable[..., Any]
     requires_approval: Callable[..., bool]
     available: Callable[..., bool]
 
-    def has_permission(self, user) -> bool:
+    def has_permission(self, user: Any) -> bool:
         """业务权限 + 可用性双门（执行前与草稿生成前共用）。"""
         return all(user_can_visit(user, method, path) for method, path in self.required_visits) and bool(
             self.available(user)
@@ -203,7 +214,7 @@ ACTION_SPECS: dict[str, Any] = {
 }
 
 
-def get_action(key: str, user=None):
+def get_action(key: str, user: Any = None) -> Any:
     """按 key 取动作 spec（``user`` 供 ``mcp.`` 前缀动态动作按当前用户现查）。
 
     外接 MCP 工具动作不落静态注册表：import 期守护测试按静态字典对账
@@ -221,7 +232,7 @@ def get_action(key: str, user=None):
     return ACTION_SPECS.get(key)
 
 
-def available_actions(user) -> list:
+def available_actions(user: Any) -> list[Any]:
     """当前用户可用的动作（权限 + 可用性双门；静态注册表 + 外接 MCP 动态目录）。
 
     动态部分（``mcp_action_specs``）内部已做等价双门（服务器开关 + 权限点 +
@@ -232,7 +243,7 @@ def available_actions(user) -> list:
     return [spec for spec in ACTION_SPECS.values() if spec.has_permission(user)] + list(mcp_action_specs(user).values())
 
 
-def build_catalog(user) -> dict:
+def build_catalog(user: Any) -> dict[str, Any]:
     """动作目录（进 LLM prompt 的 JSON；不含任何敏感配置）。"""
     forms = available_forms(user)
     entries = []
@@ -252,7 +263,7 @@ def build_catalog(user) -> dict:
     return {"actions": entries}
 
 
-def build_draft_prompt(user, message: str) -> list:
+def build_draft_prompt(user: Any, message: str) -> list[Any]:
     """构造草稿 prompt：动作目录以标记行定位，便于解析与测试（勿改标记格式）。
 
     多步串联：允许模型一次产出最多 MAX_DRAFTS_PER_REQUEST 个动作草稿（按执行
@@ -289,7 +300,7 @@ def build_draft_prompt(user, message: str) -> list:
     return [{"role": "system", "content": system}, {"role": "user", "content": user_content}]
 
 
-def _build_one_draft(user, item: dict, index: int) -> dict:
+def _build_one_draft(user: Any, item: dict[str, Any], index: int) -> dict[str, Any]:
     """校验并规范化单个动作草稿（index 从 1 起；多草稿时错误带序号前缀）。"""
     prefix = "" if index <= 1 else str(_("#{}: ").format(index))
     action_key = item.get("action")
@@ -319,7 +330,7 @@ def _build_one_draft(user, item: dict, index: int) -> dict:
     }
 
 
-def parse_draft(raw: str, user) -> dict:
+def parse_draft(raw: str, user: Any) -> dict[str, Any]:
     """解析 LLM 草稿输出并逐项服务端校验（LLM 输出按不可信输入处理）。
 
     兼容两种形态：多草稿 ``{"actions": [...]}``（新契约，最多 MAX_DRAFTS_PER_REQUEST
@@ -351,28 +362,30 @@ def parse_draft(raw: str, user) -> dict:
     return {"kind": "draft", "draft": drafts[0], "drafts": drafts}
 
 
-def draft_summary(drafts: list) -> str:
+def draft_summary(drafts: list[Any]) -> str:
     """草稿确认摘要（聊天室 /do 与助手页共用的用户可见文案）。"""
     if len(drafts) == 1:
         return str(_("I will perform: {}").format(drafts[0]["label"]))
     return str(_("I will perform {} actions: {}").format(len(drafts), " → ".join(draft["label"] for draft in drafts)))
 
 
-def execute_action(user, action_key: str, params) -> dict:
+def execute_action(user: Any, action_key: str, params: Any) -> dict[str, Any]:
     """执行动作（调用方已完成门禁/审批）：返回 (ok, detail, data) 语义的 dict。
 
     执行前做参数指向对象的行级复核（见 ``verify_action_target``）。
     """
     spec = get_action(action_key, user)
     if spec is None:
-        return {"ok": False, "detail": str(_("Unknown action")), "data": {}}
+        typed_value: dict[str, Any] = {"ok": False, "detail": str(_("Unknown action")), "data": {}}
+        return typed_value
     clean, error = spec.validate(user, params if isinstance(params, dict) else {})
     if error:
         return {"ok": False, "detail": error, "data": {}}
     target_error = verify_action_target(user, spec, clean)
     if target_error:
         return {"ok": False, "detail": target_error, "data": {}}
-    return spec.execute(user, clean)
+    result: dict[str, Any] = spec.execute(user, clean)
+    return result
 
 
 # 原生 function calling 双轨（工具调用 → 草稿结构）拆至 ai_draft_tools（仅行数门禁）：
@@ -380,5 +393,4 @@ def execute_action(user, action_key: str, params) -> dict:
 from ai.utils.ai_draft_tools import (  # noqa: E402,F401
     build_tool_messages,
     drafts_from_tool_calls,
-    native_draft_result,
 )

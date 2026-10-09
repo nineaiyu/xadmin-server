@@ -6,6 +6,8 @@
 解析语义见 approval/utils/approval_flow/conditions.py::resolve_assignee_pairs 的委托展开。
 """
 
+from typing import Any
+
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 
@@ -42,7 +44,7 @@ class ApprovalDelegationViewSet(BaseModelSet, SuggestionsAction):
     # 远程联想仅开放代理人：委托人在同表单里保持 api-search-user 弹窗选择器
     suggestion_fields = ("delegate",)
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         """取值域：超管与「查看全部委托」授权角色见全部，其余仅见本人作为委托人的记录。
 
         越权取件（他人记录的详情/改/删）同样经本方法收敛为不可见；写入侧

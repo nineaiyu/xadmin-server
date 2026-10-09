@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : exceptions
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
 
@@ -17,7 +19,7 @@ class MFAConfirmRequired(APIException):
     status_code = 412
     default_detail = _("This action requires identity verification")
 
-    def __init__(self, confirm_type=ConfirmType.MFA, detail=None):
+    def __init__(self, confirm_type: Any = ConfirmType.MFA, detail: Any = None) -> None:
         data = {
             "detail": str(detail or self.default_detail),
             "type": "user_confirm_required",

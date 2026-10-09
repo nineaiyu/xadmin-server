@@ -17,6 +17,8 @@
     python manage.py log_archive --prune --dry-run   # 报告水位与将删除行数
 """
 
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from audit.utils import log_archive
@@ -30,7 +32,7 @@ _TABLE_FIELDS = {
 class Command(BaseCommand):
     help = "审计日志冷归档：归档 / 校验 / 离线查询 / 水位驱动清理"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--model", choices=log_archive.ARCHIVE_MODEL_KEYS, default="operation", help="归档对象")
         parser.add_argument(
             "--month", action="append", default=None, help="归档指定月份 YYYY-MM（可重复；缺省 = 全部超期月份）"
@@ -45,7 +47,7 @@ class Command(BaseCommand):
         parser.add_argument("--prune", action="store_true", help="执行水位驱动清理（删必已归档）")
         parser.add_argument("--dir", default=None, help="归档目录（缺省 settings.LOG_ARCHIVE_DIR）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> Any:
         directory = options["dir"]
         if options["restore_range"]:
             return self._restore(options, directory)
@@ -57,7 +59,7 @@ class Command(BaseCommand):
             return self._prune(options, directory)
         return self._archive(options, directory)
 
-    def _archive(self, options, directory):
+    def _archive(self, options: Any, directory: str | None) -> None:
         model_key = options["model"]
         months = options["month"]
         if months:
@@ -76,7 +78,7 @@ class Command(BaseCommand):
         for manifest in result["archived"]:
             self._report_manifest(manifest)
 
-    def _report_manifest(self, manifest):
+    def _report_manifest(self, manifest: dict[str, Any]) -> None:
         prefix = "将归档" if manifest.get("dry_run") else ("已存在" if manifest.get("skipped") else "已归档")
         self.stdout.write(
             f"[{prefix}] {manifest.get('model')} {manifest.get('month')}："
@@ -88,7 +90,7 @@ class Command(BaseCommand):
             )
         )
 
-    def _list(self, directory):
+    def _list(self, directory: str | None) -> None:
         manifests = log_archive.list_archives(directory)
         if not manifests:
             self.stdout.write("（暂无归档）")
@@ -99,7 +101,7 @@ class Command(BaseCommand):
                 f"{item.get('bytes', 0):>10} 字节  {item.get('created_time', '')}"
             )
 
-    def _verify(self, options, directory):
+    def _verify(self, options: Any, directory: str | None) -> None:
         model_key = options["model"]
         months = options["month"] or sorted(log_archive.archived_months(model_key, directory))
         if not months:
@@ -116,7 +118,7 @@ class Command(BaseCommand):
         if failed:
             raise SystemExit(1)
 
-    def _restore(self, options, directory):
+    def _restore(self, options: Any, directory: str | None) -> None:
         model_key = options["model"]
         month = options["restore_range"]
         limit = options["limit"] or None
@@ -136,7 +138,7 @@ class Command(BaseCommand):
             emitted += 1
         self.stderr.write(f"共输出 {emitted} 行（归档 {model_key} {month}）")
 
-    def _prune(self, options, directory):
+    def _prune(self, options: Any, directory: str | None) -> None:
         model_key = options["model"]
         if log_archive.retention_days(model_key) <= 0:
             self.stdout.write(self.style.WARNING(f"{model_key} 日志保留期未启用（0 = 不清理），仅支持手动归档"))

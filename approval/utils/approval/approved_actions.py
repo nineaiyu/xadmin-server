@@ -4,6 +4,7 @@
 
 import json
 import re
+from typing import Any
 
 from common.utils import get_logger
 
@@ -13,15 +14,15 @@ logger = get_logger(__name__)
 
 # 通过后动作注册表：{请求路径正则: handler(approval, user) -> (ok, detail)}
 # 审批通过后按路径命中自动执行业务落库，省去申请人手动重试；未注册的路径行为不变
-ON_APPROVED_HANDLERS: dict = {}
+ON_APPROVED_HANDLERS: dict[str, Any] = {}
 
 
-def register_on_approved(path_pattern: str, handler):
+def register_on_approved(path_pattern: str, handler: Any) -> None:
     """注册「审批通过后自动执行」的动作（键为请求路径正则）。"""
     ON_APPROVED_HANDLERS[path_pattern] = handler
 
 
-def snapshot_payload(request) -> dict:
+def snapshot_payload(request: Any) -> dict[str, Any]:
     """请求体快照：仅 JSON 且小体积时保留，供审批通过后自动执行业务落库。
 
     multipart（文件上传等）与超大 body 一律留空——服务端不做大 body 重放。
@@ -43,7 +44,7 @@ def snapshot_payload(request) -> dict:
     return data
 
 
-def run_on_approved(approval, user):
+def run_on_approved(approval: Any, user: Any) -> None:
     """审批通过后自动执行业务：命中注册路径且带快照时执行，成功即标记自动完成。
 
     失败只记日志：审批结果已生效，落库失败仍保留申请人手动重放兜底。

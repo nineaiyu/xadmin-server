@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """动态表单序列化器。定义类资源豁免字段权限裁剪。"""
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -18,7 +20,7 @@ from dataset.utils.dform_filter import build_filter_data
 from dataset.utils.dform_history import key_of, merged_fields_of_forms, submission_schema
 
 
-def export_dynamic_fields(queryset) -> list[tuple[str, str]]:
+def export_dynamic_fields(queryset: Any) -> list[tuple[str, str]]:
     """导出动态列：按行集合涉及的表单合并字段（key 去重、保留出现顺序）。
 
     「我的填报」与「表单数据」（管理端）两个导出口径共用：列集合跟随过滤后的行
@@ -32,7 +34,7 @@ def export_dynamic_fields(queryset) -> list[tuple[str, str]]:
     return [(key_of(item), str(item.get("label") or key_of(item))) for item in merged_fields_of_forms(forms)]
 
 
-def form_schema_of(obj) -> list:
+def form_schema_of(obj: Any) -> list[Any]:
     """表单 schema 快照（详情展示口径：字段 label 与复杂控件按**提交时版本**渲染）。
 
     - 提交版本命中 `schema_history` 快照 → 用快照（改版后回看历史提交，字段标签与
@@ -43,20 +45,21 @@ def form_schema_of(obj) -> list:
     return submission_schema(obj)
 
 
-def approval_trail_of(obj, context) -> list:
+def approval_trail_of(obj: Any, context: Any) -> list[Any]:
     """审批轨迹：实例任务的展示口径（状态/审批人/意见/时间/加签/委托来源）。"""
     if not obj.instance_id:
         return []
     from approval.serializers.approval_flow import ApprovalNodeTaskSerializer
 
     tasks = obj.instance.tasks.all()
-    return ApprovalNodeTaskSerializer(tasks, many=True, context=context).data
+    data: list[Any] = ApprovalNodeTaskSerializer(tasks, many=True, context=context).data
+    return data
 
 
 class ApprovalFlowRelatedField(BasePrimaryKeyRelatedField):
     """审批流程外键：取值域不做行级数据权限过滤（定义类资源，与表单定义同口径）。"""
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         from approval.models.approval import ApprovalFlow
 
         return ApprovalFlow.objects.all()
@@ -100,11 +103,11 @@ class DynamicFormSerializer(BaseModelSerializer):
             "updated_time",
         ]
 
-    def validate_schema(self, value):
+    def validate_schema(self, value: Any) -> Any:
         """写入侧规范化：字段 + 联动规则（未声明键丢弃，缺省不写入 linkages）。"""
         return normalize_schema(value if isinstance(value, dict) else {})
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         """模板约束：创建后不可改模板标记；模板不绑定审批流程（只做 schema 复用）。
 
         流程引用检查：绑定流程的表单删除「被流程引用」的字段 → 拒绝（改版后
@@ -123,7 +126,7 @@ class DynamicFormSerializer(BaseModelSerializer):
             assert_schema_safe_for_flow(self.instance, attrs["schema"])
         return attrs
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         """新建后同步绑定流程的 form_schema 投影（绑定即投影，含创建时绑定）。"""
         from dataset.utils.dform_flow import sync_bound_flow_schema
 
@@ -131,7 +134,7 @@ class DynamicFormSerializer(BaseModelSerializer):
         sync_bound_flow_schema(instance)
         return instance
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         """schema 实质变更 → 版本 +1 并归档变更前快照（保留最近 MAX_SCHEMA_HISTORY 个）。
 
         同内容保存（规范化后相等）不产生新版本，避免「点一次保存就 +1」的噪声版本。
@@ -198,14 +201,14 @@ class DynamicFormListSerializer(BaseModelSerializer):
         ]
         read_only_fields = fields
 
-    def get_schema_fields_count(self, obj) -> int:
+    def get_schema_fields_count(self, obj: Any) -> int:
         return len((obj.schema or {}).get("fields") or [])
 
 
 class FormPkField(serializers.PrimaryKeyRelatedField):
     """表单外键取值域不做行级数据权限过滤（定义类资源）。"""
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return DynamicForm.objects.all()
 
 
@@ -272,13 +275,13 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
         read_only_fields = ["pk", "schema_version", "creator", "created_time", "updated_time", "instance"]
         table_fields = ["form_name", "status", "creator", "created_time"]
 
-    def get_form_schema(self, obj) -> list:
+    def get_form_schema(self, obj: Any) -> list[Any]:
         return form_schema_of(obj)
 
-    def get_approval_trail(self, obj) -> list:
+    def get_approval_trail(self, obj: Any) -> list[Any]:
         return approval_trail_of(obj, self.context)
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         form = attrs.get("form") or getattr(self.instance, "form", None)
         if form is None:
             raise serializers.ValidationError(_("Dynamic form is required"))
@@ -325,14 +328,14 @@ class SubmissionDataField(serializers.Field):
     未在 schema 声明的历史 data 键不导出（表单已删除字段的旧值不再出现在表头）。
     """
 
-    def __init__(self, data_key, **kwargs):
+    def __init__(self, data_key: Any, **kwargs: Any) -> None:
         self.data_key = data_key
         super().__init__(**kwargs)
 
-    def get_attribute(self, instance):
+    def get_attribute(self, instance: Any) -> Any:
         return (instance.data or {}).get(self.data_key)
 
-    def to_representation(self, value):
+    def to_representation(self, value: Any) -> Any:
         return value
 
 
@@ -352,7 +355,7 @@ class SubmissionExportSerializer(BaseModelSerializer):
         fields = ["pk", "form_name", "creator_name", "created_time"]
         table_fields = ["form_name", "creator_name", "created_time"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         for key, label in self.context.get("dynamic_fields") or []:
             # required=False：导出列标题不带 *（required 标记只对导入模板有意义）
@@ -361,10 +364,10 @@ class SubmissionExportSerializer(BaseModelSerializer):
             field.field_name = key
             self.fields[key] = field
 
-    def get_form_name(self, obj):
+    def get_form_name(self, obj: Any) -> Any:
         return obj.form.name if obj.form_id else ""
 
-    def get_creator_name(self, obj):
+    def get_creator_name(self, obj: Any) -> Any:
         return getattr(obj.creator, "username", "") or ""
 
 
@@ -393,7 +396,7 @@ class FormDataListSerializer(BaseModelSerializer):
         read_only_fields = fields
         table_fields = ["form_name", "status", "creator", "created_time"]
 
-    def to_representation(self, instance):
+    def to_representation(self, instance: Any) -> Any:
         """``?data_fields=key1,key2`` 收缩行内 data 载荷（大 schema 列表页整包回传的主开销）。
 
         收缩只影响展示载荷（缺 key 视为空值），详情与导出不受影响；key 集合由视图
@@ -417,11 +420,11 @@ class FormDataDetailSerializer(FormDataListSerializer):
         fields = [*FormDataListSerializer.Meta.fields, "form_schema", "approval_trail", "instance"]
         read_only_fields = fields
 
-    def get_form_schema(self, obj) -> list:
+    def get_form_schema(self, obj: Any) -> list[Any]:
         return form_schema_of(obj)
 
-    def get_approval_trail(self, obj) -> list:
+    def get_approval_trail(self, obj: Any) -> list[Any]:
         return approval_trail_of(obj, self.context)
 
-    def get_instance(self, obj):
+    def get_instance(self, obj: Any) -> Any:
         return str(obj.instance_id) if obj.instance_id else None

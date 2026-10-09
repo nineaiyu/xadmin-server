@@ -6,12 +6,14 @@
 独立成模块以保持 engine 在行数门禁内。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 from .constants import _users
 
 
-def _no_approver_detail(node, applicant) -> str:
+def _no_approver_detail(node: Any, applicant: Any) -> str:
     """节点无候选时的失败原因（含解决路径）：发起校验 fail-closed 的用户可读提示。
 
     leader 节点区分子场景给出可操作建议（申请人无部门 / 部门无负责人 / 负责人即
@@ -68,7 +70,7 @@ def _no_approver_detail(node, applicant) -> str:
     )
 
 
-def _resolve_instance_cc(path, applicant, extra=None):
+def _resolve_instance_cc(path: Any, applicant: Any, extra: Any = None) -> Any:
     """实例抄送人：全部可达节点 cc 并集 + 发起时追加（去重、仅启用用户、不含申请人）。
 
     标识兼容「用户 pk」与「用户名」两种形态：设计器节点与发起弹窗可直接沿用
@@ -107,8 +109,8 @@ def _resolve_instance_cc(path, applicant, extra=None):
         query |= Q(pk__in=pk_values)
     if names:
         query |= Q(username__in=names)
-    by_pk: dict = {}
-    by_name: dict = {}
+    by_pk: dict[str, Any] = {}
+    by_name: dict[str, Any] = {}
     for candidate in UserInfo.objects.filter(query):
         by_pk[candidate.pk] = candidate
         by_name.setdefault(candidate.username, candidate)

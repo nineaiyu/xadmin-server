@@ -4,6 +4,7 @@
 # filename : menu
 # author : ly_13
 # date : 8/10/2024
+from typing import Any
 
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -53,11 +54,11 @@ class MenuSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
 
     # name 的 DB 唯一约束已改为"未删除数据"条件约束（见 Menu.Meta.constraints），
     # 显式校验活跃菜单唯一，保证重复时返回 400 而非数据库 IntegrityError
-    def validate_name(self, value):
+    def validate_name(self, value: Any) -> Any:
         # 菜单名对「未删除数据」唯一（软删模型），走共享 mixin 显式校验
         return self._validate_active_unique("name", value)
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         with transaction.atomic():
             # meta 缺省时跳过：行内启停 / 批量启停只提交 is_active，不携带 meta，
             # 强制要求携带会让所有字段级局部更新（PATCH）直接 500
@@ -68,7 +69,7 @@ class MenuSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
                 serializer.save()
             return super().update(instance, validated_data)
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         with transaction.atomic():
             serializer = MenuMetaSerializer(data=validated_data.pop("meta"), context=self.context)
             serializer.is_valid(raise_exception=True)

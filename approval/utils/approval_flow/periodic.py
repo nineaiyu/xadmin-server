@@ -3,6 +3,7 @@
 """全量审批流引擎：定时任务（超时提醒与自动动作 / 卡死单兜底清理 / 终态实例清理）。"""
 
 import datetime
+from typing import Any
 
 from django.core.cache import cache
 from django.db import transaction
@@ -32,7 +33,7 @@ TIMEOUT_SKIP_RETRY_SECONDS = 60 * 60 * 24
 _SYSTEM_ACTOR_DISPLAY = str(_("System (timeout)"))
 
 
-def remind_pending_tasks(now=None) -> int:
+def remind_pending_tasks(now: Any = None) -> int:
     """超时提醒：节点 timeout_hours>0 且任务 PENDING 超时，向指派人补发一次（每任务每日一次）。"""
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
 
@@ -122,12 +123,13 @@ def clean_finished_instances(keep_days: int | None = None, batch_size: int = 200
     return total
 
 
-def _timed_out_task_deadline(task, now) -> bool:
+def _timed_out_task_deadline(task: Any, now: Any) -> bool:
     """任务是否已过节点超时线（与提醒同口径：created_time + timeout_hours）。"""
-    return task.created_time + datetime.timedelta(hours=int(task.node.timeout_hours)) <= now
+    timed_out: bool = task.created_time + datetime.timedelta(hours=int(task.node.timeout_hours)) <= now
+    return timed_out
 
 
-def _auto_approve_task(task, instance, now) -> bool:
+def _auto_approve_task(task: Any, instance: Any, now: Any) -> bool:
     """超时自动通过单条任务（系统代处理：actor 置空、comment 注明），并按节点策略结算。"""
     ApprovalNodeTask = _models().Task
 
@@ -150,7 +152,7 @@ def _auto_approve_task(task, instance, now) -> bool:
     return True
 
 
-def _auto_reject_task(task, instance, now) -> bool:
+def _auto_reject_task(task: Any, instance: Any, now: Any) -> bool:
     """超时自动驳回：任务置 REJECTED、整单终态 REJECTED（原因注明超时自动驳回）。"""
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
 
@@ -173,7 +175,7 @@ def _auto_reject_task(task, instance, now) -> bool:
     return True
 
 
-def _auto_transfer_up(task, instance, now) -> bool:
+def _auto_transfer_up(task: Any, instance: Any, now: Any) -> bool:
     """超时升级转交：任务转给处理人所在部门的 leader（delegate_from 记原处理人）。
 
     无部门 / 无 leader / leader 停用 / leader 即本人或申请人时本轮跳过（24h 重试节流），
@@ -216,7 +218,7 @@ def _auto_transfer_up(task, instance, now) -> bool:
     return True
 
 
-def execute_timeout_actions(now=None, batch_size: int = 200) -> dict:
+def execute_timeout_actions(now: Any = None, batch_size: int = 200) -> dict[str, Any]:
     """节点超时自动动作：timeout_action 非空的 PENDING 任务到点后由系统按分支处理。
 
     分支（ApprovalFlowNode.TimeoutAction）：

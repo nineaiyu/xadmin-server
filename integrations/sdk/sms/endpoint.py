@@ -6,6 +6,7 @@
 # date : 8/6/2024
 import importlib
 from collections import OrderedDict
+from typing import Any
 
 from django.conf import settings
 from django.db.models import TextChoices
@@ -26,7 +27,7 @@ class BACKENDS(TextChoices):
 class SMS:
     client: BaseSMSClient
 
-    def __init__(self, backend=None):
+    def __init__(self, backend: Any = None) -> None:
         backend = backend or settings.SMS_BACKEND
         if backend not in BACKENDS:  # type: ignore[attr-defined]  # TextChoices 元类实现 __contains__，stub 未覆盖
             raise APIException(
@@ -35,7 +36,14 @@ class SMS:
         m = importlib.import_module(f".{backend or settings.SMS_BACKEND}", __package__)
         self.client = m.client.new_from_settings()
 
-    def send_sms(self, phone_numbers: list, sign_name: str, template_code: str, template_param: dict, **kwargs):
+    def send_sms(
+        self,
+        phone_numbers: list[str],
+        sign_name: str,
+        template_code: str,
+        template_param: dict[str, Any],
+        **kwargs: Any,
+    ) -> Any:
         return self.client.send_sms(
             phone_numbers=phone_numbers,
             sign_name=sign_name,
@@ -44,7 +52,7 @@ class SMS:
             **kwargs,
         )
 
-    def send_verify_code(self, phone_number, code):
+    def send_verify_code(self, phone_number: str, code: str) -> Any:
         prefix = getattr(self.client, "SIGN_AND_TMPL_SETTING_FIELD_PREFIX", "")
         sign_name = getattr(settings, f"{prefix}_VERIFY_SIGN_NAME", None)
         template_code = getattr(settings, f"{prefix}_VERIFY_TEMPLATE_CODE", None)
@@ -56,6 +64,6 @@ class SMS:
         return self.send_sms([phone_number], sign_name or "", template_code or "", OrderedDict(code=code))
 
 
-def send_verify_code(phone_number, code):
+def send_verify_code(phone_number: str, code: str) -> Any:
     """验证码短信发送入口：供框架层验证码编排注册回调，避免框架层直接依赖本域。"""
     return SMS().send_verify_code(phone_number, code)

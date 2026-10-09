@@ -4,10 +4,11 @@ import random
 import subprocess
 import tempfile
 from io import BytesIO
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse
 from PIL import Image, ImageDraw, ImageFont
 from ranged_response import RangedFileResponse
 
@@ -23,21 +24,31 @@ DISTANCE_FROM_TOP = 4
 CAPTCHA_IP_LIMIT_PER_MINUTE = 60
 
 
-def _rate_limited(request, scope: str) -> bool:
+def _rate_limited(request: HttpRequest, scope: str) -> bool:
     return not allow_by_ip(request, scope=scope, limit=CAPTCHA_IP_LIMIT_PER_MINUTE, window_seconds=60)
 
 
-def getsize(font, text):
+def getsize(font: ImageFont.FreeTypeFont | ImageFont.ImageFont, text: str) -> tuple[int, int]:
+    """文本包围盒宽高。
+
+    旧版 Pillow 的 getsize/getoffset 接口在 Pillow 12 的类型存根中已移除，按鸭子类型
+    取值（运行期由 hasattr 分支保证存在）；新接口按 getbbox 取值。
+    """
     if hasattr(font, "getbbox"):
         _top, _left, _right, _bottom = font.getbbox(text)
-        return _right - _left, _bottom - _top
-    elif hasattr(font, "getoffset"):
-        return tuple([x + y for x, y in zip(font.getsize(text), font.getoffset(text), strict=True)])
-    else:
-        return font.getsize(text)
+        return int(_right - _left), int(_bottom - _top)
+
+    legacy: Any = font
+    if hasattr(legacy, "getoffset"):
+        size = legacy.getsize(text)
+        offset = legacy.getoffset(text)
+        pairs = [int(x + y) for x, y in zip(size, offset, strict=True)]
+        return pairs[0], pairs[1]
+    legacy_size = legacy.getsize(text)
+    return int(legacy_size[0]), int(legacy_size[1])
 
 
-def captcha_image(request, key, scale=1):
+def captcha_image(request: HttpRequest, key: str, scale: int = 1) -> HttpResponse:
     if _rate_limited(request, "captcha_image"):
         return HttpResponse(status=429)
     if scale == 2 and not settings.CAPTCHA_2X_IMAGE:
@@ -69,16 +80,17 @@ def captcha_image(request, key, scale=1):
     return response
 
 
-def _resolve_font_path():
+def _resolve_font_path() -> str:
     """settings.CAPTCHA_FONT_PATH 归一为单个字体路径（原 captcha_image 内联分支）。"""
-    if isinstance(settings.CAPTCHA_FONT_PATH, str):
-        return settings.CAPTCHA_FONT_PATH
-    if isinstance(settings.CAPTCHA_FONT_PATH, (list, tuple)):
-        return random.choice(settings.CAPTCHA_FONT_PATH)
+    font_path: str | list[str] = settings.CAPTCHA_FONT_PATH
+    if isinstance(font_path, str):
+        return font_path
+    if isinstance(font_path, (list, tuple)):
+        return random.choice(font_path)
     raise ImproperlyConfigured("settings.CAPTCHA_FONT_PATH needs to be a path to a font or list of paths to fonts")
 
 
-def _load_font(fontpath, scale):
+def _load_font(fontpath: str, scale: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     """按扩展名装载字体（ttf 走指定字号，其余交 Pillow 默认装载）。"""
     font: ImageFont.FreeTypeFont | ImageFont.ImageFont
     if fontpath.lower().strip().endswith("ttf"):
@@ -88,7 +100,7 @@ def _load_font(fontpath, scale):
     return font
 
 
-def _split_challenge_chars(text):
+def _split_challenge_chars(text: str) -> list[str]:
     """标点归并到前一个字符（与 django-simple-captcha 原实现同口径）。"""
     charlist: list[str] = []
     for char in text:
@@ -99,7 +111,7 @@ def _split_challenge_chars(text):
     return charlist
 
 
-def _render_challenge(text, scale):
+def _render_challenge(text: str, scale: int) -> Image.Image:
     """绘制挑战文本：尺寸解析 → 逐字符合成 → 居中裁剪 → 噪声与滤镜。
 
     随机序列由调用方按 key 播种（同 key 同图），本函数只做确定性绘制。
@@ -157,14 +169,14 @@ def _render_challenge(text, scale):
         image = image.crop((0, 0, xpos + 1, size[1]))
     draw = ImageDraw.Draw(image)
 
-    for f in noise_functions():
-        draw = f(draw, image)
-    for f in filter_functions():
-        image = f(image)
+    for noise_fn in noise_functions():
+        draw = noise_fn(draw, image)
+    for filter_fn in filter_functions():
+        image = filter_fn(image)
     return image
 
 
-def captcha_audio(request, key):
+def captcha_audio(request: HttpRequest, key: str) -> HttpResponse:
     if _rate_limited(request, "captcha_audio"):
         return HttpResponse(status=429)
     if settings.CAPTCHA_FLITE_PATH:
@@ -224,7 +236,7 @@ def captcha_audio(request, key):
     raise Http404
 
 
-def captcha_refresh(request):
+def captcha_refresh(request: HttpRequest) -> HttpResponse:
     """Return json with new captcha for ajax refresh request"""
     if _rate_limited(request, "captcha_refresh"):
         return HttpResponse(status=429)

@@ -47,7 +47,7 @@ class ApprovalRule(DbAuditModel):
         verbose_name = _("Approval rule")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.priority})"
 
 
@@ -99,7 +99,7 @@ class ApprovalRuleLevel(DbAuditModel):
             models.UniqueConstraint(fields=["rule", "order"], name="uniq_approval_rule_level_order"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.rule_id}#{self.order} {self.assignee_type}:{self.assignee_value}"
 
 
@@ -174,7 +174,7 @@ class ApprovalRequestStep(DbAuditModel):
             models.Index(fields=["request", "status"], name="idx_appr_step_req_status"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.request_id}#{self.order} [{self.status}]"
 
 
@@ -219,5 +219,5 @@ class ApprovalRequestStepAction(DbAuditModel):
             models.UniqueConstraint(fields=["step", "approver"], name="uniq_approval_step_action_user"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.step_id}:{self.approver_id} [{self.status}]"

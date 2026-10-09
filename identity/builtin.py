@@ -10,6 +10,8 @@
 - 内置标签（BUILTIN_TAGS / sync_builtin_tags）属标签域，在 system.builtin。
 """
 
+from typing import Any
+
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
@@ -127,7 +129,7 @@ def sync_builtin_roles() -> int:
     return changed
 
 
-def _ensure_role_fields(role, model_names) -> None:
+def _ensure_role_fields(role: Any, model_names: Any) -> None:
     """内置角色字段白名单（缺失时补建为模型全字段，已有配置不覆盖）。
 
     字段权限是 fail-closed 的（无白名单 = 读空对象 / 写忽略）：内置职能角色

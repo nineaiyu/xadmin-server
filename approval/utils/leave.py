@@ -13,6 +13,7 @@
 
 import datetime
 from decimal import Decimal
+from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
@@ -29,14 +30,14 @@ LEAVE_BIZ_TYPE = "leave"
 LEAVE_OPEN_STATUSES = ("DRAFT", "PENDING", "APPROVED")
 
 
-def _models():
+def _models() -> Any:
     """延迟导入模型：避免 system.models ↔ system.utils 导入期循环依赖。"""
     from approval.models.leave import Leave
 
     return Leave
 
 
-def _lock_creator_submissions(creator_id) -> None:
+def _lock_creator_submissions(creator_id: Any) -> None:
     """同申请人「提交请假」临界区串行化（行锁）。调用方须在事务内。
 
     重叠校验是「先查后写」：两个并发提交都读不到对方（此时双方都还不是 PENDING），
@@ -50,7 +51,7 @@ def _lock_creator_submissions(creator_id) -> None:
     list(UserInfo.objects.select_for_update().filter(pk=creator_id).values_list("pk", flat=True))
 
 
-def leave_days(start_date, end_date) -> Decimal:
+def leave_days(start_date: Any, end_date: Any) -> Decimal:
     """按自然日计算天数（含首尾，最小 1 天）。"""
     if not start_date or not end_date:
         return Decimal("0")
@@ -58,7 +59,9 @@ def leave_days(start_date, end_date) -> Decimal:
     return Decimal(max(span, 0))
 
 
-def validate_leave_payload(*, start_date, end_date, days=None, creator=None, exclude_pk=None) -> str | None:
+def validate_leave_payload(
+    *, start_date: Any, end_date: Any, days: Any = None, creator: Any = None, exclude_pk: Any = None
+) -> str | None:
     """业务校验：返回错误文案，通过返回 None。
 
     - 结束日期不得早于开始日期；
@@ -94,7 +97,7 @@ def validate_leave_payload(*, start_date, end_date, days=None, creator=None, exc
     return None
 
 
-def resolve_leave_flow(leave_type: str = ""):
+def resolve_leave_flow(leave_type: str = "") -> Any:
     """解析请假审批流程：配置 code（默认 ``leave``）优先 → ``leave_<type>`` 类型专用流程。
 
     两级都未命中返回 None（调用方拒绝提交并提示管理员配置流程）。不再按 ``leave``
@@ -115,7 +118,7 @@ def resolve_leave_flow(leave_type: str = ""):
     return None
 
 
-def submit_leave(leave, user):
+def submit_leave(leave: Any, user: Any) -> tuple[bool, str | None]:
     """提交请假申请（发起审批）：返回 (ok, detail)。
 
     仅 DRAFT / REJECTED / CANCELLED 可提交（PENDING 在途、APPROVED 已批准不可重提）；
@@ -174,7 +177,7 @@ def submit_leave(leave, user):
     return True, None
 
 
-def cancel_leave(leave, user):
+def cancel_leave(leave: Any, user: Any) -> Any:
     """撤回请假申请：仅申请人、仅审批中；撤回后业务单置 CANCELLED。返回 (ok, detail)。"""
     Leave = _models()
     if leave.status != Leave.Status.PENDING:
@@ -197,7 +200,7 @@ def cancel_leave(leave, user):
     return True, None
 
 
-def sync_leave_instance(instance, status, reason: str = "") -> None:
+def sync_leave_instance(instance: Any, status: Any, reason: str = "") -> None:
     """审批终态回写业务单：由 approval/signal_handler.py 的接收器经 biz_sync 注册表分发调用（幂等）。"""
     from approval.models.approval import ApprovalInstance
 
@@ -219,7 +222,7 @@ def sync_leave_instance(instance, status, reason: str = "") -> None:
     logger.info("leave status synced by approval instance. leave:%s status:%s reason:%s", leave.pk, status, reason)
 
 
-def leave_conflict_queryset(queryset, user):
+def leave_conflict_queryset(queryset: Any, user: Any) -> Any:
     """列表可见域：超管全部；其余「我提交 ∪ 我审批过（待办/已办）」。"""
     from django.db.models import Q
 
@@ -230,7 +233,7 @@ def leave_conflict_queryset(queryset, user):
     ).distinct()
 
 
-def pending_leave_tasks_for(user):
+def pending_leave_tasks_for(user: Any) -> Any:
     """待我审批的请假任务（供发起人视角之外的提醒场景复用，与引擎口径一致）。"""
     from approval.models.approval import ApprovalNodeTask
 
@@ -243,7 +246,7 @@ def pending_leave_tasks_for(user):
     return Leave.objects.filter(pk__in=list(leave_pks))
 
 
-def leave_stats(user, days: int = 30) -> dict:
+def leave_stats(user: Any, days: int = 30) -> dict[str, Any]:
     """我的请假统计（近 N 天）：提交数 / 审批中 / 已通过 / 已驳回。"""
     Leave = _models()
     since = timezone.now() - datetime.timedelta(days=days)

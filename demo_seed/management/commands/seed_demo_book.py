@@ -29,6 +29,7 @@
 """
 
 import json
+from typing import Any
 
 from django.core.management.base import BaseCommand
 
@@ -109,13 +110,13 @@ PERMISSION_PLAN = [
 class Command(BaseCommand):
     help = "生成图书上架审批示例（流程定义 + 菜单/权限点 + 删除二次确认开关），幂等"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--reset", action="store_true", help="先清理示例数据再生成")
         parser.add_argument("--clean-only", action="store_true", help="只清理，不生成（seed_demo_clean 编排调用）")
 
     # ---------------------------------------------------------------- 清理
 
-    def _reset(self):
+    def _reset(self) -> None:
         from approval.models.approval import ApprovalFlow, ApprovalInstance
 
         # 先清流程实例（ApprovalInstance.flow 为 PROTECT），再清流程定义（节点 CASCADE）
@@ -136,7 +137,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 流程 / 菜单 / 权限点
 
-    def _ensure_flow(self):
+    def _ensure_flow(self) -> None:
         from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 
         flow, _created = ApprovalFlow.objects.update_or_create(
@@ -173,7 +174,7 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"demo book flow ready: {FLOW_NAME}({FLOW_CODE})")
 
-    def _ensure_menu(self):
+    def _ensure_menu(self) -> None:
         dir_meta, _ = MenuMeta.objects.update_or_create(
             pk=DIR_META_PK,
             defaults={"title": "示例", "icon": "ep:reading", "is_show_menu": True},
@@ -235,7 +236,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 示例数据 / 周期任务
 
-    def _reset_demo_data(self):
+    def _reset_demo_data(self) -> None:
         """移除示例书籍（物理删除，演示数据无保留价值）与周期任务种子。"""
         from django.apps import apps
 
@@ -250,7 +251,7 @@ class Command(BaseCommand):
         self.stdout.write(f"removed demo books: {removed}")
         self._reset_periodic_task()
 
-    def _reset_periodic_task(self):
+    def _reset_periodic_task(self) -> None:
         try:
             from django_celery_beat.models import PeriodicTask
         except ImportError:  # pragma: no cover - beat 未安装
@@ -258,7 +259,7 @@ class Command(BaseCommand):
         removed = PeriodicTask.objects.filter(name=PERIODIC_TASK_NAME).delete()[0]
         self.stdout.write(f"removed demo periodic task: {removed}")
 
-    def _ensure_demo_data(self):
+    def _ensure_demo_data(self) -> None:
         """3 条示例书籍：开箱即可演示（提交上架 / 删除 / 回收站 / 变更历史）。"""
         from django.apps import apps
 
@@ -297,7 +298,7 @@ class Command(BaseCommand):
                 book.save(update_fields=["deleted_at"])
         self.stdout.write(f"demo books ready: {len(DEMO_BOOKS)} 条（新建 {created}）")
 
-    def _ensure_periodic_task(self):
+    def _ensure_periodic_task(self) -> None:
         """周期任务种子（默认停用）：任务管理页可启停 / 立即运行（见 demo/tasks.py）。"""
         try:
             from django_celery_beat.models import CrontabSchedule, PeriodicTask
@@ -326,7 +327,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 二次确认开关
 
-    def _update_approval_gate(self, remove: bool = False):
+    def _update_approval_gate(self, remove: bool = False) -> None:
         """把 demo 删除路径写入 / 移出敏感操作审批拦截清单（APPROVAL_REQUIRED_PATHS）。"""
         paths = [str(item) for item in (SysConfig.APPROVAL_REQUIRED_PATHS or []) if item]
         changed = False
@@ -347,7 +348,7 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 入口
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options["reset"] or options.get("clean_only"):
             self._reset()
         if options.get("clean_only"):

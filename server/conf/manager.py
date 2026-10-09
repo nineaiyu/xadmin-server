@@ -10,6 +10,7 @@ import secrets
 import string
 import sys
 import types
+from typing import Any
 
 import yaml
 
@@ -34,7 +35,7 @@ def _random_secret_key() -> str:
     return "".join(secrets.choice(alphabet) for _ in range(AUTO_SECRET_KEY_LENGTH))
 
 
-def _load_or_create_auto_secret_key(root_path: str):
+def _load_or_create_auto_secret_key(root_path: str) -> tuple[str, bool]:
     """读取或创建自动生成的 SECRET_KEY；返回 ``(value, created)``。
 
     并发启动（多 worker 同时加载 settings）时用 O_EXCL 抢占，失效方读回既有值，
@@ -71,13 +72,13 @@ def _load_or_create_auto_secret_key(root_path: str):
 
 
 class ConfigManager:
-    config_class = Config
+    config_class: type[Config] = Config
 
-    def __init__(self, root_path=None):
+    def __init__(self, root_path: str | None = None) -> None:
         self.root_path = root_path
         self.config = self.config_class()
 
-    def from_pyfile(self, filename="config.py", silent=False):
+    def from_pyfile(self, filename: str = "config.py", silent: bool = False) -> bool:
 
         if self.root_path:
             filename = os.path.join(self.root_path, filename)
@@ -94,14 +95,14 @@ class ConfigManager:
         self.from_object(d)
         return True
 
-    def from_object(self, obj):
+    def from_object(self, obj: Any) -> None:
         if isinstance(obj, str):
             obj = import_string(obj)
         for key in dir(obj):
             if key.isupper():
                 self.config[key] = getattr(obj, key)
 
-    def from_json(self, filename, silent=False):
+    def from_json(self, filename: str, silent: bool = False) -> bool:
         if self.root_path:
             filename = os.path.join(self.root_path, filename)
         try:
@@ -114,7 +115,7 @@ class ConfigManager:
             raise
         return self.from_mapping(obj)
 
-    def from_yaml(self, filename, silent=False):
+    def from_yaml(self, filename: str, silent: bool = False) -> bool:
         if self.root_path:
             filename = os.path.join(self.root_path, filename)
         try:
@@ -129,8 +130,8 @@ class ConfigManager:
             return self.from_mapping(obj)
         return True
 
-    def from_mapping(self, *mapping, **kwargs):
-        mappings = []
+    def from_mapping(self, *mapping: Any, **kwargs: Any) -> bool:
+        mappings: list[Any] = []
         if len(mapping) == 1:
             if hasattr(mapping[0], "items"):
                 mappings.append(mapping[0].items())
@@ -145,7 +146,7 @@ class ConfigManager:
                     self.config[key] = value
         return True
 
-    def load_from_object(self):
+    def load_from_object(self) -> bool:
         sys.path.insert(0, PROJECT_DIR)
         try:
             from config import config as c
@@ -157,9 +158,10 @@ class ConfigManager:
         else:
             return False
 
-    def load_from_yml(self):
+    def load_from_yml(self) -> bool:
+        root_path = self.root_path or ""
         for i in ["config.yml", "config.yaml"]:
-            if not os.path.isfile(os.path.join(self.root_path, i)):
+            if not os.path.isfile(os.path.join(root_path, i)):
                 continue
             loaded = self.from_yaml(i)
             if loaded:
@@ -167,7 +169,7 @@ class ConfigManager:
         return False
 
     @staticmethod
-    def _fallback_to_example(manager, root_path):
+    def _fallback_to_example(manager: "ConfigManager", root_path: str) -> Config | None:
         """未找到用户配置时回落 config_example.yml（开箱即用）；回落失败返回 None。"""
         if not os.path.isfile(os.path.join(root_path, "config_example.yml")):
             return None
@@ -183,7 +185,7 @@ class ConfigManager:
         return manager.config
 
     @staticmethod
-    def _ensure_secret_key(config, root_path):
+    def _ensure_secret_key(config: Config, root_path: str) -> None:
         """SECRET_KEY 缺失时的开箱即用兜底：自动生成并持久化。
 
         触发条件（满足其一）：无配置文件回落 config_example.yml / DEBUG=true /
@@ -209,29 +211,26 @@ class ConfigManager:
         )
 
     @classmethod
-    def load_user_config(cls, root_path=None, config_class=None):
+    def load_user_config(cls, root_path: str | None = None, config_class: type[Config] | None = None) -> Config:
         config_class = config_class or Config
         cls.config_class = config_class
         if not root_path:
             root_path = PROJECT_DIR
 
         manager = cls(root_path=root_path)
-        if manager.from_pyfile():
-            config = manager.config
-        elif manager.load_from_object():
-            config = manager.config
-        elif manager.load_from_yml():
+        config: Config | None = None
+        if manager.from_pyfile() or manager.load_from_object() or manager.load_from_yml():
             config = manager.config
         else:
             config = cls._fallback_to_example(manager, root_path)
-            if config is None:
-                msg = """
+        if config is None:
+            msg = """
 
                Error: No config file found.
 
                You can run `cp config_example.yml config.yml`, and edit it.
                """
-                raise ImportError(msg)
+            raise ImportError(msg)
 
         cls._ensure_secret_key(config, root_path)
         return config

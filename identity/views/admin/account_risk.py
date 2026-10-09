@@ -5,6 +5,8 @@
 风险项由巡检任务产出（不提供手工创建），因此视图集只暴露列表 + 处置动作。
 """
 
+from typing import Any
+
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -37,8 +39,8 @@ class AccountRiskViewSet(OnlyListModelSet):
     ordering_fields = ["created_time", "updated_time", "level", "handled_at"]
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="scan")
-    def scan(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="scan")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def scan(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """立即执行一次账号安全巡检"""
         result = scan_account_risks(operator=request.user)
         return ApiResponse(data=result, detail=_("Scan completed: {} risk item(s)").format(result["total"]))
@@ -56,8 +58,8 @@ class AccountRiskViewSet(OnlyListModelSet):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, url_path="handle")
-    def handle(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="handle")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def handle(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """处置风险项"""
         risk = self.get_object()
         ok, message = handle_account_risk(
@@ -87,8 +89,8 @@ class AccountRiskViewSet(OnlyListModelSet):
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-handle")
-    def batch_handle(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-handle")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_handle(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量处置风险项（逐项隔离，返回成功 / 失败明细）"""
         pks = request.data.get("pks") or []
         if not isinstance(pks, (list, tuple)) or not pks:
@@ -109,8 +111,8 @@ class AccountRiskViewSet(OnlyListModelSet):
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False)
-    def stats(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def stats(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """风险汇总（按等级 / 状态 / 类型）"""
         base = self.filter_queryset(self.get_queryset())
         by_level = {item["level"]: item["count"] for item in base.values("level").annotate(count=Count("pk"))}

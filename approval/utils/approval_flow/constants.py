@@ -3,6 +3,7 @@
 """全量审批流引擎：常量与模型按需取数。"""
 
 from types import SimpleNamespace
+from typing import Any
 
 # 待办计数短缓存（秒）：顶栏角标/页签角标高频轮询（与轻量审批 10s 口径一致）
 FLOW_PENDING_COUNT_CACHE_SECONDS = 10
@@ -26,7 +27,7 @@ _FLOW_FINISH_EVENTS = {
 }
 
 
-def _models():
+def _models() -> Any:
     """按需返回模型类容器：延迟导入避免模块导入期循环依赖。
 
     注意用属性访问（``_models().Task``）而非元组解包——本模块大量使用 ``_()``
@@ -37,13 +38,13 @@ def _models():
     return SimpleNamespace(Flow=ApprovalFlow, Node=ApprovalFlowNode, Instance=ApprovalInstance, Task=ApprovalNodeTask)
 
 
-def _users():
+def _users() -> Any:
     from identity.models import UserInfo
 
     return UserInfo
 
 
-def _delegations():
+def _delegations() -> Any:
     from approval.models import ApprovalDelegation
 
     return ApprovalDelegation

@@ -25,6 +25,7 @@
 """
 
 import json
+from typing import Any
 
 from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
@@ -49,23 +50,23 @@ JSONRPC_INVALID_PARAMS = -32602
 JSONRPC_SERVER_ERROR = -32000
 
 
-def _rpc_result(msg_id, result) -> JsonResponse:
+def _rpc_result(msg_id: Any, result: Any) -> JsonResponse:
     return JsonResponse({"jsonrpc": "2.0", "id": msg_id, "result": result}, json_dumps_params={"ensure_ascii": False})
 
 
-def _rpc_error(msg_id, code: int, message: str, data: dict | None = None) -> JsonResponse:
+def _rpc_error(msg_id: Any, code: int, message: str, data: dict[str, Any] | None = None) -> JsonResponse:
     error = {"code": code, "message": message}
     if data is not None:
         error["data"] = data
     return JsonResponse({"jsonrpc": "2.0", "id": msg_id, "error": error}, json_dumps_params={"ensure_ascii": False})
 
 
-def _tool_read_only(spec) -> bool:
+def _tool_read_only(spec: Any) -> bool:
     """全部声明路径均为 GET 的动作视为只读（供 MCP annotations.readOnlyHint）。"""
     return bool(spec.required_visits) and all(method.upper() == "GET" for method, __ in spec.required_visits)
 
 
-def _tool_requires_approval(spec, user) -> bool:
+def _tool_requires_approval(spec: Any, user: Any) -> bool:
     """高危动作提示值（requires_approval 谓词按空参数求值，仅供参考性 _meta）。"""
     try:
         return bool(spec.requires_approval(user, {}))
@@ -82,7 +83,7 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
     #: 与 PAT 凭证限流、动作权限双门叠加（限流是纵深，不替代鉴权）
     ai_chat_all = True
 
-    def _check_enabled(self, msg_id):
+    def _check_enabled(self, msg_id: Any) -> Any:
         """灰度门禁（与 action/execute 同口径）：动作开关 + 助手配置。"""
         from ai.utils.ai import is_enabled
         from ai.utils.ai_actions import ai_action_enabled
@@ -93,7 +94,7 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
             return _rpc_error(msg_id, JSONRPC_SERVER_ERROR, str(_("AI assistant is not enabled or configured")))
         return None
 
-    def _handle_initialize(self, request, msg_id, params):
+    def _handle_initialize(self, request: Any, msg_id: Any, params: Any) -> Any:
         requested = str((params or {}).get("protocolVersion") or "")
         version = requested if requested in MCP_SUPPORTED_VERSIONS else MCP_DEFAULT_VERSION
         return _rpc_result(
@@ -105,7 +106,7 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
             },
         )
 
-    def _handle_tools_list(self, request, msg_id):
+    def _handle_tools_list(self, request: Any, msg_id: Any) -> Any:
         from ai.utils.ai_actions import get_action
         from ai.utils.ai_tool_catalog import tool_catalog
 
@@ -123,7 +124,7 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
             tools.append(entry)
         return _rpc_result(msg_id, {"tools": tools})
 
-    def _handle_tools_call(self, request, msg_id, params):
+    def _handle_tools_call(self, request: Any, msg_id: Any, params: Any) -> Any:
         from ai.utils.ai_actions import audit_ai_action, execute_action, get_action
 
         params = params if isinstance(params, dict) else {}
@@ -151,7 +152,7 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
                 },
             )
 
-        def call_result(ok: bool, detail: str, data: dict) -> JsonResponse:
+        def call_result(ok: bool, detail: str, data: dict[str, Any]) -> JsonResponse:
             payload = {"ok": ok, "detail": detail, "data": data}
             return _rpc_result(
                 msg_id,
@@ -207,7 +208,7 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
         return call_result(ok, str(result.get("detail") or ""), result.get("data") or {})
 
     @extend_schema(request=None, responses=None)
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """JSON-RPC 2.0 单对象请求（batch 请求不支持，返回 Invalid Request）。"""
         from rest_framework.exceptions import ParseError
 

@@ -19,6 +19,7 @@
 """
 
 import sys
+from typing import Any
 
 from django.core.management.base import BaseCommand
 from django.db.models import Q
@@ -39,7 +40,7 @@ logger = get_logger(__name__)
 class Command(BaseCommand):
     help = "轮换/巡检敏感凭据（SystemConfig 值内加密 + Setting 加密项重加密）"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument(
             "--key", action="append", default=[], help="指定键：SystemConfig 敏感键或 Setting 敏感名（可多次）"
         )
@@ -48,7 +49,7 @@ class Command(BaseCommand):
         parser.add_argument("--dry-run", action="store_true", help="只打印计划，不改库")
         parser.add_argument("--yes", action="store_true", help="确认执行（省略时等同 dry-run）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> Any:
         keys = [key for key in (options.get("key") or []) if key]
         if options.get("all") and not keys:
             keys = sorted(SENSITIVE_SETTING_KEYS)
@@ -125,7 +126,7 @@ class Command(BaseCommand):
         )
         return None
 
-    def _audit_only(self, keys, setting_keys=None):
+    def _audit_only(self, keys: Any, setting_keys: Any = None) -> Any:
         """只巡检：明文敏感项输出清单，发现即非零退出（可入运维巡检/CI）。"""
         from system.models import SystemConfig
 

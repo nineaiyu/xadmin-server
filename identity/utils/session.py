@@ -9,6 +9,8 @@
 - 在线用户列表统一数据源（WS 会话按 channel 存活，HTTP 会话按 last_active 窗口）。
 """
 
+from typing import Any
+
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -18,7 +20,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def force_logout_user(user_pk, operator=None):
+def force_logout_user(user_pk: Any, operator: Any = None) -> Any:
     """强制某用户全部会话下线，返回被踢掉的 WS channel 数。
 
     ① 写用户级令牌失效时间戳：iat 早于该值的 access token 一律拒绝
@@ -30,7 +32,7 @@ def force_logout_user(user_pk, operator=None):
     return force_logout_users([user_pk], operator=operator)
 
 
-def force_logout_users(user_pks, operator=None) -> int:
+def force_logout_users(user_pks: Any, operator: Any = None) -> int:
     """批量强制多个用户全部会话下线，返回被踢掉的 WS channel 总数。
 
     ``force_logout_user`` 的批量版：四步语义与逐用户执行一致，仅合并往返开销——
@@ -72,7 +74,7 @@ def force_logout_users(user_pks, operator=None) -> int:
     return channels
 
 
-def enforce_session_limit(user, limit=None):
+def enforce_session_limit(user: Any, limit: Any = None) -> Any:
     """并发会话上限（SECURITY_LOGIN_MAX_SESSIONS，0 = 不限）：超限踢最久未活跃会话。
 
     保留最近活跃的 limit 个会话（含本次刚登记的），多余会话写会话级失效标记
@@ -100,7 +102,7 @@ def enforce_session_limit(user, limit=None):
     return len(stale)
 
 
-def register_user_session(request, user, login_type, channel_name=""):
+def register_user_session(request: Any, user: Any, login_type: Any, channel_name: Any = "") -> Any:
     """登录/WS 接入时登记会话，返回 UserSession 实例。
 
     元数据（ip/city/browser/system/agent）与登录日志（save_login_log）同口径
@@ -126,7 +128,7 @@ def register_user_session(request, user, login_type, channel_name=""):
     return session
 
 
-def bind_session_claim(refresh_token, session_pk):
+def bind_session_claim(refresh_token: Any, session_pk: Any) -> Any:
     """把会话 pk 写入 refresh token 自定义 claim ``sid``，返回 (refresh_str, access_str)。
 
     access 由 refresh 派生并继承自定义 claim；refresh 轮换（ROTATE_REFRESH_TOKENS）
@@ -136,7 +138,7 @@ def bind_session_claim(refresh_token, session_pk):
     return str(refresh_token), str(refresh_token.access_token)
 
 
-def expire_stale_sessions():
+def expire_stale_sessions() -> int:
     """把活跃窗口（SESSION_ONLINE_TIMEOUT）外的 HTTP 会话置 OFFLINE，返回处理行数。
 
     WS 会话不在此处置离线：其在线与否由 channel 存活决定（在线列表查询时判定），
@@ -148,12 +150,13 @@ def expire_stale_sessions():
     from identity.models import UserSession
 
     cutoff = timezone.now() - timedelta(seconds=SysConfig.SESSION_ONLINE_TIMEOUT)
-    return UserSession.objects.filter(status=UserSession.Status.ONLINE, channel_name="", last_active__lt=cutoff).update(
-        status=UserSession.Status.OFFLINE
-    )
+    typed_value: int = UserSession.objects.filter(
+        status=UserSession.Status.ONLINE, channel_name="", last_active__lt=cutoff
+    ).update(status=UserSession.Status.OFFLINE)
+    return typed_value
 
 
-def clean_expired_sessions():
+def clean_expired_sessions() -> int:
     """删除超过保留期（USER_SESSION_RETENTION_DAYS）的会话记录，分批删除，返回行数。"""
     from datetime import timedelta
 

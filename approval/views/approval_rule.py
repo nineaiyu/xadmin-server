@@ -7,6 +7,8 @@
 规则改动只影响之后新建的审批单（在途单按建单快照推进）。
 """
 
+from typing import Any
+
 from django.db.models import Count
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -46,14 +48,14 @@ class ApprovalRuleViewSet(BaseModelSet):
     select_related_fields = ("creator",)
     prefetch_related_fields = ("levels",)
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         # level_count 走 annotate 而非逐行 count（列表 N+1）；annotate 会清掉
         # Meta.ordering，需显式补回（与审批流程定义列表同口径）
         return super().get_queryset().annotate(levels_count=Count("levels")).order_by(*ApprovalRule._meta.ordering)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="candidate-options")
-    def candidate_options(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="candidate-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def candidate_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """审批人候选目录：启用用户 + 启用角色 + 启用岗位（审批模块自给自足，不依赖搜索模块）。
 
         配置审批人是审批模块的核心操作：全局搜索（/api/system/search/user）属于

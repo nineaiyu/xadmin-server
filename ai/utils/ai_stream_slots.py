@@ -6,6 +6,8 @@
 超限由调用方给可读提示（不静默排队）。
 """
 
+from typing import Any
+
 from django.core.cache import cache
 
 from ai.utils.ai_quota import quota_limits
@@ -67,14 +69,14 @@ def release_stream_slot() -> None:
 class StreamSlot:
     """并发流式配额上下文（``with stream_slot() as ok:``）：异常路径也保证释放。"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.acquired = False
 
     def __enter__(self) -> bool:
         self.acquired = acquire_stream_slot()
         return self.acquired
 
-    def __exit__(self, *exc_info):
+    def __exit__(self, *exc_info: Any) -> Any:
         if self.acquired:
             release_stream_slot()
         return False

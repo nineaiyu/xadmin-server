@@ -46,7 +46,7 @@ class CardRef(TypedDict):
     value_field: str
 
 
-def load_visible_screen(user, screen_pk):
+def load_visible_screen(user: Any, screen_pk: Any) -> Any:
     """展示连接的数据推送准入：屏已删或用户失去可见性返回 None（与 can_view_screen 同口径）。
 
     connect 时已把关一次；运行期共享被收回 / 屏被删是理论不可达的兜底分支。
@@ -63,7 +63,7 @@ def load_visible_screen(user, screen_pk):
     return screen if screen.visibility == "shared" else None
 
 
-def collect_screen_cards(screen, user=None) -> list[CardRef]:
+def collect_screen_cards(screen: Any, user: Any = None) -> list[CardRef]:
     """展开大屏引用的全部卡片定义（纯函数核心：不做任何数据集查询）。
 
     - canvas：``layout`` 内 type=dashboard 的窗格按列表序展开；type=metric 的
@@ -141,7 +141,7 @@ def collect_screen_cards(screen, user=None) -> list[CardRef]:
     return refs
 
 
-def build_screen_data_payload(user, screen, rev: int, page_index: int | None = None) -> list[dict[str, Any]]:
+def build_screen_data_payload(user: Any, screen: Any, rev: int, page_index: int | None = None) -> list[dict[str, Any]]:
     """以浏览者视角聚合整屏数据帧（逐卡执行，异常逐卡捕获不中断整帧）。
 
     返回帧列表：canvas 单帧；carousel 按 ``page_index`` 只聚合当前页一帧（展示
@@ -184,7 +184,7 @@ def build_screen_data_payload(user, screen, rev: int, page_index: int | None = N
     return payloads
 
 
-def _execute_card(ref: CardRef, user) -> dict:
+def _execute_card(ref: CardRef, user: Any) -> dict[str, Any]:
     """执行单卡：按 kind 路由到 execute/aggregate（权限过滤在 dataset_query 内 fail-closed）。"""
     from dataset.models.dataset import Dataset
     from dataset.utils.dataset import aggregate_dataset, execute_dataset
@@ -203,11 +203,12 @@ def _execute_card(ref: CardRef, user) -> dict:
         raise ValidationError(_("No permission for dataset: {}").format(dataset.name))
     if ref["kind"] == KIND_EXECUTE:
         # 数字卡只读 total：count_only 跳过全量行物化（与 ChartCard 同口径）
-        return execute_dataset(dataset, user, count_only=True)
+        total: dict[str, Any] = execute_dataset(dataset, user, count_only=True)
+        return total
     # date_trunc 仅折线卡下发（前端 ChartCard 同口径：其余图表忽略趋势分桶，
     # 折线未存值时缺省 day）
     date_trunc = (ref["date_trunc"] or "day") if ref["chart_type"] == "line" else ""
-    return aggregate_dataset(
+    aggregated: dict[str, Any] = aggregate_dataset(
         dataset,
         user,
         group_by=ref["group_by"] or None,
@@ -215,6 +216,7 @@ def _execute_card(ref: CardRef, user) -> dict:
         date_trunc=date_trunc or None,
         value_field=ref["value_field"] or None,
     )
+    return aggregated
 
 
 def _error_detail(exc: Exception) -> str:

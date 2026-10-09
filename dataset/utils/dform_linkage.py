@@ -19,7 +19,7 @@ from django.utils.translation import gettext_lazy as _
 from dataset.utils.dform_constants import LINKAGE_EFFECTS, LINKAGE_OPS, MAX_LINKAGES, VALUED_LINKAGE_OPS
 
 
-def _linkage_scalar(value) -> str:
+def _linkage_scalar(value: Any) -> str:
     """联动比较用标量字符串化（布尔 → true/false；整数化浮点去尾零；空值 → 空串）。"""
     if value is None:
         return ""
@@ -30,14 +30,14 @@ def _linkage_scalar(value) -> str:
     return str(value)
 
 
-def _linkage_value(value):
+def _linkage_value(value: Any) -> Any:
     """规则值规范化：仅接受字符串 / 数字 / 布尔（复杂结构拒绝，避免歧义比较）。"""
     if isinstance(value, (bool, int, float, str)):
         return value
     raise ValidationError(_("Invalid linkage value"))
 
 
-def validate_linkages(schema: dict, fields: list) -> list:
+def validate_linkages(schema: dict[str, Any], fields: list[Any]) -> list[Any]:
     """校验并规范化联动规则，返回规则列表（未声明 = 空列表）。
 
     - ``target`` / ``field`` 必须命中本表单字段 key，且不得自引用（语义歧义）；
@@ -84,11 +84,11 @@ def validate_linkages(schema: dict, fields: list) -> list:
     return rules
 
 
-def _is_empty(value) -> bool:
+def _is_empty(value: Any) -> bool:
     return value is None or value == "" or value == [] or value == {}
 
 
-def _linkage_matches(rule: dict, value) -> bool:
+def _linkage_matches(rule: dict[str, Any], value: Any) -> bool:
     """触发条件求值：多值字段（checkbox/多选）按「与规则值集合有交集」判定。"""
     op = rule.get("op")
     if op == "empty":
@@ -109,7 +109,7 @@ def _linkage_matches(rule: dict, value) -> bool:
     return False
 
 
-def evaluate_linkages(schema: dict, data) -> dict:
+def evaluate_linkages(schema: dict[str, Any], data: Any) -> dict[str, Any]:
     """按提交数据求值联动规则：返回 ``{字段 key: {"hidden": bool, "required": bool|None}}``。
 
     ``required`` 为 ``None`` 表示沿用字段自身定义；``True/False`` 为规则覆盖。

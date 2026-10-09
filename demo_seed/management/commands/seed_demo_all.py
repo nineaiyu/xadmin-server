@@ -23,6 +23,9 @@
     python manage.py seed_demo_all --skip-users    # 跳过批量演示用户
 """
 
+from collections.abc import Callable
+from typing import Any
+
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
@@ -30,18 +33,18 @@ from django.core.management.base import BaseCommand
 class Command(BaseCommand):
     help = "一键加载全部演示数据（组织/审批/请假/内容/演示用户）；seed_demo_clean 为对称卸载入口"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument(
             "--reset", action="store_true", help="先彻底清理全部演示数据再加载（等价于先跑 seed_demo_clean）"
         )
         parser.add_argument("--skip-users", action="store_true", help="跳过批量演示用户创建（seed_demo_users）")
         parser.add_argument("--users-count", type=int, default=128, help="批量演示用户数量（1-2000，默认 128）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options["reset"]:
             call_command("seed_demo_clean")
 
-        steps = [
+        steps: list[tuple[str, Callable[[], Any]]] = [
             ("图书上架审批示例（demo app：菜单/权限点/流程/二次确认）", lambda: call_command("seed_demo_book")),
             ("组织与四层权限", lambda: call_command("seed_demo_org")),
             ("审批实例与表单提交", lambda: call_command("seed_demo_flows")),

@@ -15,27 +15,29 @@
 版本快照超出保留窗口（``MAX_SCHEMA_HISTORY``）时按「未知键」兜底，至少保证值可见。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 #: 历史字段的列名标注（导出列头 / 列表列头 / 详情字段名一致）
 HISTORICAL_MARK = _(" (historical)")
 
 
-def key_of(item) -> str:
+def key_of(item: Any) -> str:
     """字段标识：schema 字段项 → key（非 dict / 缺 key 返回空串）。"""
     if not isinstance(item, dict):
         return ""
     return str(item.get("key") or "").strip()
 
 
-def fields_of(schema) -> list:
+def fields_of(schema: Any) -> list[Any]:
     """schema 载荷 → 合法字段清单（非 dict / 缺 key 项跳过）。"""
     if not isinstance(schema, dict):
         return []
     return [item for item in (schema.get("fields") or []) if key_of(item)]
 
 
-def _as_historical(item: dict) -> dict:
+def _as_historical(item: dict[str, Any]) -> dict[str, Any]:
     """历史字段：原字段定义 + label 标注 + historical 标记（不修改原载荷）。"""
     field = dict(item)
     label = str(field.get("label") or field.get("key") or "")
@@ -44,7 +46,7 @@ def _as_historical(item: dict) -> dict:
     return field
 
 
-def schema_for_version(form, version) -> dict:
+def schema_for_version(form: Any, version: Any) -> dict[str, Any]:
     """按提交版本取 schema：命中快照返回快照，否则回落当前 schema。"""
     try:
         target = int(version)
@@ -63,7 +65,7 @@ def schema_for_version(form, version) -> dict:
     return dict(form.schema or {})
 
 
-def merged_fields(form) -> list:
+def merged_fields(form: Any) -> list[Any]:
     """当前 schema 字段 + 历史快照中当前已删除的字段（历史字段追加标注）。
 
     顺序：当前 schema 原序在前，历史字段按版本从新到旧补在末尾（key 去重）。
@@ -82,7 +84,7 @@ def merged_fields(form) -> list:
     return fields
 
 
-def merged_fields_of_forms(forms) -> list:
+def merged_fields_of_forms(forms: Any) -> list[Any]:
     """跨表单合并（导出口径）：按表单顺序拼接并标注历史字段，key 去重保序。"""
     seen, fields = set(), []
     for form in forms:
@@ -95,7 +97,7 @@ def merged_fields_of_forms(forms) -> list:
     return fields
 
 
-def submission_schema(obj) -> list:
+def submission_schema(obj: Any) -> list[Any]:
     """单条提交的详情渲染口径：提交版 schema ∪ data 中无法识别的键（兜底可见）。
 
     当前 schema 仍存在的字段保持原样，已删除字段标注历史；快照缺失（版本超出保留

@@ -14,6 +14,8 @@
   经任命获得的角色成员/规则由本模块唯一维护，手工调整不保证一致（巡检可见）。
 """
 
+from typing import Any
+
 from django.db import transaction
 
 from common.utils import get_logger
@@ -54,7 +56,7 @@ DEPT_MANAGER_RULE_SPECS = (
 )
 
 
-def ensure_manager_role():
+def ensure_manager_role() -> Any:
     """预置角色（内置，post_migrate 同步；此处兜底确保存在）。"""
     from identity.models import UserRole
 
@@ -67,7 +69,7 @@ def ensure_manager_role():
     return UserRole.all_objects.filter(code=DEPT_MANAGER_ROLE_CODE, deleted_at__isnull=True).first()
 
 
-def ensure_preset_rules():
+def ensure_preset_rules() -> Any:
     """幂等维护两条预置规则（内容漂移就地校正，不重复落库）。"""
     from system.services import DataPermission
 
@@ -78,7 +80,7 @@ def ensure_preset_rules():
             dp = DataPermission.objects.create(name=spec["name"], rules=spec["rules"], is_active=True)
             logger.info("dept manager preset rule created: %s", spec["name"])
         else:
-            updates: dict = {}
+            updates: dict[str, Any] = {}
             if dp.rules != spec["rules"]:
                 updates["rules"] = spec["rules"]
             if not dp.is_active:
@@ -92,7 +94,7 @@ def ensure_preset_rules():
     return result
 
 
-def sync_manager_assembly(user) -> bool:
+def sync_manager_assembly(user: Any) -> bool:
     """按「用户是否仍管理任何启用部门」同步预置角色与预置规则（幂等）。
 
     返回用户当前是否持有管理职责（供调用方反馈）。
@@ -110,10 +112,11 @@ def sync_manager_assembly(user) -> bool:
         if role is not None:
             user.roles.remove(role)
         user.rules.remove(*rules)
-    return has_scope
+    typed_value: bool = has_scope
+    return typed_value
 
 
-def managers_payload(dept) -> list:
+def managers_payload(dept: Any) -> list[Any]:
     """部门管理员清单（任命弹窗回显与端点响应共用的轻量载荷）。"""
     from identity.models import DeptManagerAssignment
 
@@ -123,7 +126,7 @@ def managers_payload(dept) -> list:
     ]
 
 
-def assign_dept_managers(dept, *, add_pks, remove_pks, operator) -> list:
+def assign_dept_managers(dept: Any, *, add_pks: Any, remove_pks: Any, operator: Any) -> list[Any]:
     """任命/解任部门管理员（增量、幂等）。
 
     新增只接受在用用户（失效/不存在的 pk 静默跳过，避免半成品状态）；

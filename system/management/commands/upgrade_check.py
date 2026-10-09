@@ -16,6 +16,7 @@
 """
 
 import json
+from typing import Any
 
 from django.core.management.base import BaseCommand
 
@@ -35,7 +36,7 @@ VERDICTS = {
 }
 
 
-def _migration_ledger(connection) -> dict:
+def _migration_ledger(connection: Any) -> dict[str, Any]:
     from django.db.migrations.loader import MigrationLoader
 
     loader = MigrationLoader(connection, ignore_no_migrations=True)
@@ -49,7 +50,7 @@ def _migration_ledger(connection) -> dict:
     }
 
 
-def _schema_ledger(connection) -> dict:
+def _schema_ledger(connection: Any) -> dict[str, Any]:
     from django.apps import apps
 
     models = [model for model in apps.get_models() if getattr(model._meta, "managed", True)]
@@ -85,12 +86,12 @@ def _schema_ledger(connection) -> dict:
     }
 
 
-def collect_report(connection) -> dict:
+def collect_report(connection: Any) -> dict[str, Any]:
     """采集体检报告（只读，不写任何数据）。"""
     return {"migrations": _migration_ledger(connection), "schema": _schema_ledger(connection)}
 
 
-def evaluate(report: dict) -> tuple[str, int]:
+def evaluate(report: dict[str, Any]) -> tuple[str, int]:
     """按报告判定升级路径与退出码（纯函数，便于单测覆盖各分支）。"""
     migrations, schema = report["migrations"], report["schema"]
     if migrations["orphan"]:
@@ -105,10 +106,10 @@ def evaluate(report: dict) -> tuple[str, int]:
 class Command(BaseCommand):
     help = "Pre-upgrade check (read-only): migration ledger vs current schema and upgrade verdict"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--json", action="store_true", dest="as_json", help="JSON 输出（供脚本/安装器消费）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         from django.db import connection
 
         report = collect_report(connection)
@@ -122,7 +123,7 @@ class Command(BaseCommand):
         if exit_code:
             raise SystemExit(exit_code)
 
-    def _render(self, report):
+    def _render(self, report: Any) -> None:
         migrations, schema = report["migrations"], report["schema"]
         self.stdout.write("")
         self.stdout.write(self.style.MIGRATE_HEADING("[xadmin upgrade-check] 升级前体检（只读）"))
@@ -147,7 +148,7 @@ class Command(BaseCommand):
         if fix:
             self.stdout.write(f"       ↳ 处置：{fix}")
 
-    def _detail(self, label, items):
+    def _detail(self, label: Any, items: Any) -> None:
         for item in items[:DETAIL_LIMIT]:
             self.stdout.write(f"        · {label}：{item}")
         if len(items) > DETAIL_LIMIT:

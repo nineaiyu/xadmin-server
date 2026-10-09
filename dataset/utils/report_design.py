@@ -12,6 +12,8 @@
 聚合字段（metric/value_field/group_by/date_trunc）按数据集与数值列校验，未声明键丢弃。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 #: 聚合组件类型（表格即「明细本体」，不做成组件，避免两套表格概念）
@@ -34,7 +36,7 @@ class ReportDesignError(ValueError):
     """设计载荷非法（消息可直接回给调用方）。"""
 
 
-def _as_int(value, field: str, default: int) -> int:
+def _as_int(value: Any, field: str, default: int) -> int:
     if value in (None, ""):
         return default
     # bool 是 int 的子类：True 会被静默当成 1，必须显式拒绝
@@ -43,7 +45,7 @@ def _as_int(value, field: str, default: int) -> int:
     return value
 
 
-def _normalise_metric(item: dict, dataset_columns, numeric_columns, where: str) -> dict:
+def _normalise_metric(item: dict[str, Any], dataset_columns: Any, numeric_columns: Any, where: str) -> dict[str, Any]:
     metric = str(item.get("metric") or "count").strip()
     if metric not in REPORT_METRICS:
         raise ReportDesignError(_("Invalid report metric: {}").format(metric))
@@ -58,7 +60,7 @@ def _normalise_metric(item: dict, dataset_columns, numeric_columns, where: str) 
     return {"metric": metric, "value_field": value_field}
 
 
-def normalize_report_design(raw, dataset, numeric_columns) -> dict:
+def normalize_report_design(raw: Any, dataset: Any, numeric_columns: Any) -> dict[str, Any]:
     """归一化并校验设计载荷；非法即抛 ``ReportDesignError``。空载荷返回 ``{}``（存量行为）。"""
     if raw in (None, "", {}):
         return {}
@@ -153,17 +155,17 @@ def normalize_report_design(raw, dataset, numeric_columns) -> dict:
     return {"columns": columns, "table_limit": table_limit, "components": components}
 
 
-def design_export_columns(design, dataset_columns) -> list:
+def design_export_columns(design: Any, dataset_columns: Any) -> list[Any]:
     """明细导出列：design.columns ∩ 数据集列（保序）；空 design / 空 columns = 数据集全部列。"""
-    dataset_columns = [str(item) for item in (dataset_columns or [])]
+    columns: list[Any] = [str(item) for item in (dataset_columns or [])]
     if not isinstance(design, dict) or not design.get("columns"):
-        return dataset_columns
-    known = set(dataset_columns)
+        return columns
+    known = set(columns)
     # 数据集列后续被删/改名时不阻断投递：逐列静默跳过（与字段权限失配同口径）
     return [str(item) for item in design["columns"] if str(item) in known]
 
 
-def design_table_limit(design) -> int:
+def design_table_limit(design: Any) -> int:
     """明细行数上限：非法/缺省回落默认值（读取侧宽容，写入侧已由序列化器拦截）。"""
     value = design.get("table_limit") if isinstance(design, dict) else None
     if isinstance(value, bool) or not isinstance(value, int):
@@ -173,7 +175,7 @@ def design_table_limit(design) -> int:
     return value
 
 
-def design_components(design) -> list:
+def design_components(design: Any) -> list[Any]:
     """设计中的聚合组件（读侧宽容：非列表/非 dict 项直接跳过）。"""
     raw = design.get("components") if isinstance(design, dict) else None
     if not isinstance(raw, list):

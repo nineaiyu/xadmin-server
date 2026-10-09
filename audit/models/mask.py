@@ -43,5 +43,5 @@ class DataMaskRule(DbUuidModel, DbAuditModel):
         verbose_name = _("Data mask rule")
         indexes = [models.Index(fields=["model", "field"], name="idx_datamask_model_field")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.model}.{self.field}({self.mask_type})"

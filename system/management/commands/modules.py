@@ -17,6 +17,8 @@
 模块清单、裁剪语义与维护约定见 docs/architecture/模块化与功能裁剪.md。
 """
 
+from typing import Any
+
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand, CommandError
 
@@ -39,7 +41,7 @@ class Command(BaseCommand):
     # Python 3.12+ 的 argparse 文本换行处理中会抛 TypeError（见附注）
     help = "List functional modules and preview a trimmed combination"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--preset", choices=PRESETS, help="按指定预设预演（不改变实际配置）")
         parser.add_argument("--enable", default=None, help="额外启用的模块 id，逗号分隔")
         parser.add_argument("--disable", default=None, help="额外停用的模块 id，逗号分隔")
@@ -55,7 +57,7 @@ class Command(BaseCommand):
             help="删除管理页写入的后台覆盖行（覆盖引用已移除模块导致启动失败时的恢复通道）",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         # 恢复通道：必须在任何模块解析之前执行——覆盖行非法时解析本身就会 fail-fast
         if options.get("clear_override"):
             removed = clear_override()
@@ -95,7 +97,7 @@ class Command(BaseCommand):
             self._write_impact(resolution)
         self._write_config(resolution)
 
-    def _warn_override(self):
+    def _warn_override(self) -> None:
         """后台覆盖行会整体替换部署基线：存在时改 config.yml / 环境变量不生效，必须提前告知。"""
 
         from common.core.modules import override_active
@@ -111,7 +113,7 @@ class Command(BaseCommand):
         )
         self.stdout.write("")
 
-    def _write_table(self, resolution, preview: bool):
+    def _write_table(self, resolution: Any, preview: bool) -> None:
         title = "功能模块清单（预演，未改动实际配置）" if preview else "功能模块清单（当前生效）"
         self.stdout.write(f"{title}：preset={resolution.preset}")
         self.stdout.write("")
@@ -132,7 +134,7 @@ class Command(BaseCommand):
             self.stdout.write("停用影响：请求 404 + 菜单与权限点隐藏 + 周期任务不注册（业务数据保留）")
         self.stdout.write("")
 
-    def _write_impact(self, resolution):
+    def _write_impact(self, resolution: Any) -> None:
         from django.db import OperationalError, ProgrammingError
 
         from system.utils.platform.module_impact import module_impact
@@ -180,7 +182,7 @@ class Command(BaseCommand):
             )
         self.stdout.write("")
 
-    def _write_config(self, resolution):
+    def _write_config(self, resolution: Any) -> None:
         self.stdout.write("# 粘贴到 xadmin-server/config.yml 后重启进程生效")
         self.stdout.write(config_snippet(resolution))
         self.stdout.write("# 模块清单与裁剪语义：docs/architecture/模块化与功能裁剪.md")

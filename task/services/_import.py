@@ -7,6 +7,8 @@
 本模块只承载实现体。
 """
 
+from typing import Any
+
 from django.db import transaction
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
@@ -26,7 +28,7 @@ class _ImportAborted(Exception):
     """失败率超限中止：触发外层事务回滚（成功行一并撤销）。"""
 
 
-def _upload_import_error_report(record, user, column_titles, errors):
+def _upload_import_error_report(record: Any, user: Any, column_titles: Any, errors: Any) -> Any:
     """失败行错误报告落 UploadFile(is_tmp=True)，返回实例。"""
     import os
     import tempfile
@@ -58,7 +60,7 @@ def _upload_import_error_report(record, user, column_titles, errors):
     return upload
 
 
-def _import_row(view, action_type, row):
+def _import_row(view: Any, action_type: Any, row: Any) -> None:
     """单行导入：校验 + 写入，失败抛异常由调用方 savepoint 回滚。"""
     from rest_framework.exceptions import ValidationError
 
@@ -76,7 +78,7 @@ def _import_row(view, action_type, row):
         view.perform_create(serializer)
 
 
-def run_async_import(record_id, view_path, user_pk):
+def run_async_import(record_id: Any, view_path: Any, user_pk: Any) -> Any:
     """异步执行数据导入：任务内解析源文件，逐行 savepoint 导入并生成失败行报告。
 
     - 记录状态在任务内推进（PENDING → RUNNING → SUCCESS/FAILURE）；同 pk 的
@@ -103,7 +105,7 @@ def run_async_import(record_id, view_path, user_pk):
     record.save(update_fields=["status", "updated_time"])
     start_time, state = local_now_display(), True
     success_rows = 0
-    errors: list[dict] = []
+    errors: list[dict[str, Any]] = []
     column_titles: list[str] = []
     total = 0
     aborted, abort_reason = False, None
@@ -140,7 +142,7 @@ def run_async_import(record_id, view_path, user_pk):
     return record.success_rows
 
 
-def _prepare_import_rows(record, view_path, user):
+def _prepare_import_rows(record: Any, view_path: Any, user: Any) -> Any:
     """装配视图上下文并解析源文件行数据（含 thread-local 请求注入），返回 (view, rows, column_titles)。"""
     if not record.source_file or not record.source_file.filepath:
         raise ValueError(_("Import source file not found"))
@@ -172,13 +174,13 @@ def _prepare_import_rows(record, view_path, user):
     return view, rows, column_titles
 
 
-def _run_import_rows(record, view, rows):
+def _run_import_rows(record: Any, view: Any, rows: Any) -> Any:
     """逐行 savepoint 导入，返回 (success_rows, errors, aborted, abort_reason)。"""
     from common.core.config import SysConfig
     from task.utils.task_progress import KIND_IMPORT, update_progress
 
     fail_rate_limit = SysConfig.IMPORT_FAIL_RATE_LIMIT
-    errors: list[dict] = []
+    errors: list[dict[str, Any]] = []
     success_rows = 0
     aborted, abort_reason = False, None
     total = len(rows)
@@ -221,7 +223,7 @@ def _run_import_rows(record, view, rows):
     return success_rows, errors, aborted, abort_reason
 
 
-def _mark_import_terminated(record, status, message, total, *, revoked=False):
+def _mark_import_terminated(record: Any, status: Any, message: Any, total: Any, *, revoked: Any = False) -> None:
     """异常/取消路径的终态落库 + 运行期进度清理（REVOKED 额外标记执行记录）。"""
     from task.utils.import_progress import clear_import_progress
 
@@ -235,18 +237,18 @@ def _mark_import_terminated(record, status, message, total, *, revoked=False):
 
 
 def _finalize_import(
-    record,
-    user,
+    record: Any,
+    user: Any,
     *,
-    total,
-    success_rows,
-    errors,
-    column_titles,
-    aborted,
-    abort_reason,
-    start_time,
-    state,
-):
+    total: Any,
+    success_rows: Any,
+    errors: Any,
+    column_titles: Any,
+    aborted: Any,
+    abort_reason: Any,
+    start_time: Any,
+    state: Any,
+) -> None:
     """成功路径的终态推进：结果落库 + 失败行报告 + 站内通知（原尾部块）。"""
     from common.notifications import ImportDataMessage
     from task.models.import_ import ImportRecord
@@ -314,6 +316,6 @@ def _finalize_import(
                 logger.warning("Send import data message failed", exc_info=True)
 
 
-def failed_rate(errors, total):
+def failed_rate(errors: Any, total: Any) -> Any:
     """当前失败率（total 防零）。"""
     return len(errors) / max(total, 1)

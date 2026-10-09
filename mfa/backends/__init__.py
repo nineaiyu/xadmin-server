@@ -43,11 +43,11 @@ __all__ = [
 MFA_BACKEND_CLASSES = [OtpBackend, SmsBackend, EmailBackend, PasswordBackend, PasskeyBackend, RecoveryCodeBackend]
 
 
-def _normalize_methods(value):
+def _normalize_methods(value: Any) -> set[str]:
     return {str(item).strip() for item in (value or []) if str(item).strip()}
 
 
-def get_user_mfa_policy(user) -> dict:
+def get_user_mfa_policy(user: Any) -> dict[str, Any]:
     """认证方式策略：返回 {"methods": set|None, "mfa_required": bool}。
 
     - ``methods``：可用方式集合 = 全局白名单 ∩ 角色允许集 ∩ 用户允许集；
@@ -58,7 +58,7 @@ def get_user_mfa_policy(user) -> dict:
     if user is None or not getattr(user, "pk", None):
         return policy
 
-    layers = []
+    layers: list[set[str]] = []
     global_methods = _normalize_methods(getattr(settings, "SECURITY_MFA_METHODS", []))
     if global_methods:
         layers.append(global_methods)
@@ -86,12 +86,12 @@ def get_user_mfa_policy(user) -> dict:
     return policy
 
 
-def _method_allowed(user, name) -> bool:
+def _method_allowed(user: Any, name: str) -> bool:
     methods = get_user_mfa_policy(user).get("methods")
     return methods is None or name in methods
 
 
-def get_backend(user, name, request=None):
+def get_backend(user: Any, name: str, request: Any = None) -> Any:
     """按名称获取指定验证后端（须全局启用、策略允许且用户可用），不可用返回 None"""
     for cls in MFA_BACKEND_CLASSES:
         if cls.name != name or not cls.global_enabled():
@@ -105,9 +105,9 @@ def get_backend(user, name, request=None):
     return None
 
 
-def get_enabled_backends(user, request=None, levels=None):
+def get_enabled_backends(user: Any, request: Any = None, levels: Any = None) -> list[Any]:
     """获取用户当前可用的全部验证方式，可按确认级别过滤（levels 为 ConfirmType 列表）"""
-    backends = []
+    backends: list[Any] = []
     for cls in MFA_BACKEND_CLASSES:
         if not cls.global_enabled():
             continue

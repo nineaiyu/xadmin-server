@@ -17,6 +17,8 @@
 **不回传任何明文或可解密值**。所有写动作失效配置缓存并写 OperationLog(module=system:credential)。
 """
 
+from typing import Any
+
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -116,17 +118,18 @@ SETTING_CATEGORY_USAGE_HINTS = {
 }
 
 
-def _timestamp(value) -> str:
+def _timestamp(value: Any) -> str:
     """最近更新时间的展示格式（与 DRF 的 DATETIME_FORMAT 同口径，前端无需再格式化）。"""
     if not value:
         return ""
     try:
-        return timezone.localtime(value).strftime("%Y-%m-%d %H:%M:%S")
+        typed_value: str = timezone.localtime(value).strftime("%Y-%m-%d %H:%M:%S")
+        return typed_value
     except Exception:  # noqa: BLE001 无时区信息等异常值回退 iso 字符串
         return str(value)[:19].replace("T", " ")
 
 
-def _last_rotated_time(key: str):
+def _last_rotated_time(key: str) -> Any:
     """最近一次成功「原地轮换」时间（回溯审计台账）；从未轮换返回 None。
 
     审计行由 :func:`write_credential_audit` 落库（object_pk=凭据键，changes JSON 带
@@ -153,7 +156,7 @@ def _last_rotated_time(key: str):
     return None
 
 
-def _rotation_fields(key: str, *, rotatable: bool, configured: bool) -> dict:
+def _rotation_fields(key: str, *, rotatable: bool, configured: bool) -> dict[str, Any]:
     """总览行的轮换追踪字段：上次轮换时间 + 建议轮换标记（仅自生成可轮换键有意义）。"""
     if not rotatable:
         return {"last_rotated": "", "rotate_overdue": False}
@@ -162,7 +165,7 @@ def _rotation_fields(key: str, *, rotatable: bool, configured: bool) -> dict:
     return {"last_rotated": _timestamp(last), "rotate_overdue": overdue}
 
 
-def write_credential_audit(detail: dict, user=None) -> None:
+def write_credential_audit(detail: dict[str, Any], user: Any = None) -> None:
     """凭据操作审计（module=system:credential）；失败只记日志不影响主流程。"""
     import json
 
@@ -181,7 +184,7 @@ def write_credential_audit(detail: dict, user=None) -> None:
         logger.warning("write credential audit failed", exc_info=True)
 
 
-def credential_overview() -> dict:
+def credential_overview() -> dict[str, Any]:
     """凭据聚合清单（只读）：不返回任何密文或明文值，只给状态与可运维动作。"""
     plaintext = sorted(set(plaintext_sensitive_keys()) | {f"Setting:{name}" for name in plaintext_setting_names()})
     return {
@@ -192,7 +195,7 @@ def credential_overview() -> dict:
     }
 
 
-def _setting_rows() -> list:
+def _setting_rows() -> list[Any]:
     """Setting 凭据行：加密项 + 名字命中敏感模式的**明文行**（后者标红提示）。
 
     Setting 体系的敏感键均为外部签发，只能去对应设置页替换；明文行（历史遗留 /
@@ -229,7 +232,7 @@ def _setting_rows() -> list:
     return rows
 
 
-def _system_config_rows() -> list:
+def _system_config_rows() -> list[Any]:
     """SystemConfig 敏感键：区分「自生成可轮换」与「外部签发只能替换」。"""
     from system.models import SystemConfig
 
@@ -261,7 +264,7 @@ def _system_config_rows() -> list:
     return rows
 
 
-def _model_credential_rows() -> list:
+def _model_credential_rows() -> list[Any]:
     """模型字段级凭据（值级加密，按「已配置数量」聚合，不暴露任何值）。"""
     from django.apps import apps
 
@@ -307,7 +310,7 @@ _MOVED_EXPORTS = (
 )
 
 
-def __getattr__(name):
+def __getattr__(name: Any) -> Any:
     if name in _MOVED_EXPORTS:
         from importlib import import_module
 

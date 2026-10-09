@@ -25,7 +25,7 @@ class WebhookSubscription(DbAuditModel, DbUuidModel):
         verbose_name_plural = _("Webhook subscriptions")
         ordering = ("-created_time",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.url})"
 
 
@@ -60,5 +60,5 @@ class WebhookDelivery(DbAuditModel, DbUuidModel):
         ordering = ("-created_time",)
         indexes = [models.Index(fields=["subscription", "created_time"], name="idx_webhook_sub_created")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.subscription_id}:{self.event}:{self.status}"

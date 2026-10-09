@@ -7,6 +7,7 @@
 """
 
 from functools import partial
+from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
@@ -18,7 +19,7 @@ from .constants import _FLOW_FINISH_EVENTS, MAX_AUTO_APPROVE_NOTIFY_ADMINS, _mod
 logger = get_logger(__name__)
 
 
-def _notify(users, event, instance, extra=None, node_name=None):
+def _notify(users: Any, event: Any, instance: Any, extra: Any = None, node_name: Any = None) -> None:
     """向用户列表推送流程通知（单条失败只记日志，不阻断推进）。
 
     入队延迟到事务提交后（`transaction.on_commit`）：发起/通过/驳回/撤回/加签都在
@@ -30,7 +31,7 @@ def _notify(users, event, instance, extra=None, node_name=None):
     """
     from approval.notifications import ApprovalFlowMessage
 
-    def _send(user):
+    def _send(user: Any) -> None:
         try:
             ApprovalFlowMessage(user, event, instance, extra=extra, node_name=node_name).publish(is_async=True)
         except Exception:  # noqa: BLE001 通知链路故障不影响审批主流程
@@ -42,7 +43,7 @@ def _notify(users, event, instance, extra=None, node_name=None):
         transaction.on_commit(partial(_send, user))
 
 
-def _invalidate_pending_count(users):
+def _invalidate_pending_count(users: Any) -> None:
     """失效待办计数缓存（精确集合：处理人 / 被作废任务 assignee / 新节点候选等）。
 
     历史实现无参时全量清「所有活跃用户」（UserInfo 全表扫描 + 最多 5000 键的
@@ -58,7 +59,7 @@ def _invalidate_pending_count(users):
         cache.delete_many([f"approval_flow_pending_count_{pk}" for pk in pks])
 
 
-def _alert_auto_approved(instance, node) -> None:
+def _alert_auto_approved(instance: Any, node: Any) -> None:
     """节点无候选自动通过的治理告警：出站 Webhook + 知会启用中的超管。
 
     自动通过 = 流程按「无人可审」静默放行，属配置缺口，必须能被运维察觉
@@ -76,7 +77,7 @@ def _alert_auto_approved(instance, node) -> None:
         _notify(admins, "auto_approved", instance, node_name=node.name)
 
 
-def _emit_flow_event(event: str, instance, extra=None) -> None:
+def _emit_flow_event(event: str, instance: Any, extra: Any = None) -> None:
     """出站 Webhook：流程实例事件（emit 全程吞异常，不影响审批流转）。
 
     payload 只含摘要字段，不含 form_data——表单内容可能敏感，订阅方需要明细时
@@ -102,7 +103,7 @@ def _emit_flow_event(event: str, instance, extra=None) -> None:
         logger.warning("emit flow webhook failed: %s", event, exc_info=True)
 
 
-def _finish_instance(instance, status, reason=None) -> bool:
+def _finish_instance(instance: Any, status: Any, reason: Any = None) -> bool:
     """实例置终态（仅 PENDING → 终态，CAS）。返回 False = 已非 PENDING（被并发处理）。
 
     并发下同一实例可能被多个推进者同时尝试置终态（如两个审批人几乎同时通过最后
@@ -135,7 +136,7 @@ def _finish_instance(instance, status, reason=None) -> bool:
     return True
 
 
-def _notify_business_finished(instance, status, reason=None) -> None:
+def _notify_business_finished(instance: Any, status: Any, reason: Any = None) -> None:
     """业务回调：实例到达终态时通知绑定的业务模块回写状态。
 
     仅在 biz_type 非空时发送；接收方在 approval/signal_handler.py，同步器经
@@ -156,7 +157,7 @@ def _notify_business_finished(instance, status, reason=None) -> None:
         )
 
 
-def _cancel_pending_tasks(instance, node=None) -> list:
+def _cancel_pending_tasks(instance: Any, node: Any = None) -> list[Any]:
     """作废待办任务（整单或指定节点）；返回被作废任务的 assignee pk 列表。
 
     返回值为待办计数缓存的精确失效集（先取值再 UPDATE；assignee 为空的任务

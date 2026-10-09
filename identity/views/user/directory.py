@@ -9,6 +9,8 @@
   （M2M join 不经过默认管理器，需显式过滤软删除——见 approval/conditions.py 同款注释）。
 """
 
+from typing import Any
+
 from django.db.models import Q
 from django_filters import rest_framework as filters
 
@@ -27,7 +29,7 @@ class DirectoryFilter(BaseFilterSet):
         model = UserInfo
         fields = ["posts", "gender"]
 
-    def filter_keyword(self, queryset, name, value):
+    def filter_keyword(self, queryset: Any, name: Any, value: Any) -> Any:
         value = str(value or "").strip()
         if not value:
             return queryset
@@ -38,7 +40,7 @@ class DirectoryFilter(BaseFilterSet):
             | Q(phone__icontains=value)
         )
 
-    def filter_dept(self, queryset, name, value):
+    def filter_dept(self, queryset: Any, name: Any, value: Any) -> Any:
         """按部门浏览：含全部下级部门（点上级部门看到整棵子树的成员）。
 
         部门树缓存结果含自身 + 后代；非法/不存在的部门主键由 UUIDFilter 前置拦截。

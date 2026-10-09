@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """AI 配置档案视图：多套凭据 + 采样/行为参数，至多一个激活。"""
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -76,7 +78,7 @@ class AiProfileViewSet(
     #: test / probe 均外呼供应商（probe 多次调用）：按管理类重操作限流
     ai_admin_actions = ("test", "probe")
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         # 先清同用途激活行再插入：用途级部分唯一索引（uniq_ai_profile_purpose_active）下
         # 「带 is_active=true 直接新建」才不会在插入瞬间撞约束
         from django.db import transaction
@@ -89,7 +91,7 @@ class AiProfileViewSet(
             if instance.is_active:
                 set_active_profile(instance, True)
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         from django.db import transaction
 
         with transaction.atomic():
@@ -103,22 +105,22 @@ class AiProfileViewSet(
                 set_active_profile(instance, True)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="activate")
-    def activate(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="activate")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def activate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """激活档案（事务内清掉其余激活行，全局至多一个激活档案）。"""
         set_active_profile(self.get_object(), True)
         return ApiResponse(detail=_("Profile activated"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="deactivate")
-    def deactivate(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="deactivate")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def deactivate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """停用档案：AI 全链路回落 Setting 体系历史配置。"""
         set_active_profile(self.get_object(), False)
         return ApiResponse(detail=_("Profile deactivated"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="test")
-    def test(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="test")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def test(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """按档案持久化值真实 ping 一次 LLM（api_key 用已存密钥）。"""
         profile = self.get_object()
         if not profile.is_configured:
@@ -133,8 +135,8 @@ class AiProfileViewSet(
         return ApiResponse(detail=_("AI provider OK: {}").format(reply[:80]))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="probe")
-    def probe(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="probe")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def probe(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """能力探测：按序验证 JSON / tool_calls / reasoning（可选 vision）并落 capabilities。
 
         - 请求体可选 ``capabilities``（能力子集）与 ``vision``（是否追加多模态探测）；

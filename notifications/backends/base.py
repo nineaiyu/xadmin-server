@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.conf import settings
 
 from common.utils import get_logger
@@ -8,7 +10,7 @@ logger = get_logger(__name__)
 UNBOUND_LOG_LIMIT = 10
 
 
-def log_unbound_users(backend_name, requirement, unbound_users):
+def log_unbound_users(backend_name: Any, requirement: Any, unbound_users: Any) -> None:
     """记录「未绑定接收账号而被跳过」的用户。
 
     渠道可达性可观测：排查"为什么没收到"时，先看这里是否过滤掉了未绑定账号的用户。
@@ -34,7 +36,7 @@ class BackendBase:
     # Django setting 中的字段名（子类必须设置；未设置时 is_enable 回落 False）
     is_enable_field_in_settings: str = ""
 
-    def get_accounts(self, users):
+    def get_accounts(self, users: Any) -> Any:
         accounts = []
         unbound_users = []
         account_user_mapper = {}
@@ -51,10 +53,10 @@ class BackendBase:
         return accounts, unbound_users, account_user_mapper
 
     @classmethod
-    def get_account(cls, user):
+    def get_account(cls, user: Any) -> Any:
         return getattr(user, cls.account_field)
 
     @classmethod
-    def is_enable(cls):
+    def is_enable(cls) -> Any:
         # 渠道开关未在 settings 暴露时按禁用处理，避免发送链路 AttributeError
         return bool(getattr(settings, cls.is_enable_field_in_settings, False))

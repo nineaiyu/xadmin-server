@@ -90,7 +90,7 @@ WECOM_TOKEN_TTL_SLACK = 120
 # ---------------------------------------------------------------- http 助手
 
 
-def _post_json(url, body, timeout=10, http_client=None):
+def _post_json(url: Any, body: Any, timeout: Any = 10, http_client: Any = None) -> Any:
     """出站 POST(JSON)：注入客户端（测试离线桩）原样调用；生产路径与通用链路
     同口径走固定解析连接（``identity.utils.oauth._pinned_request``）。"""
     if http_client is not None:
@@ -100,7 +100,7 @@ def _post_json(url, body, timeout=10, http_client=None):
     return _pinned_request("POST", url, json=body, timeout=timeout)
 
 
-def _get_params(url, params, headers=None, timeout=10, http_client=None):
+def _get_params(url: Any, params: Any, headers: Any = None, timeout: Any = 10, http_client: Any = None) -> Any:
     """出站 GET(params)：口径同 ``_post_json``。"""
     if http_client is not None:
         return http_client.get(url, params=params, headers=headers or {}, timeout=timeout)
@@ -109,11 +109,11 @@ def _get_params(url, params, headers=None, timeout=10, http_client=None):
     return _pinned_request("GET", url, params=params, headers=headers or {}, timeout=timeout)
 
 
-def _get_bearer(url, token, timeout=10, http_client=None):
+def _get_bearer(url: Any, token: Any, timeout: Any = 10, http_client: Any = None) -> Any:
     return _get_params(url, {}, headers={"Authorization": f"Bearer {token}"}, timeout=timeout, http_client=http_client)
 
 
-def _json(response) -> dict:
+def _json(response: Any) -> dict[str, Any]:
     try:
         payload = response.json() if hasattr(response, "json") else {}
     except Exception:  # noqa: BLE001 非法 JSON 与网络异常同语义
@@ -121,24 +121,24 @@ def _json(response) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
-def _reject(action: str, provider: dict, detail, exc=None) -> NoReturn:
+def _reject(action: str, provider: dict[str, Any], detail: Any, exc: Any = None) -> NoReturn:
     logger.warning("oauth flavor %s rejected. provider:%s detail:%s", action, provider.get("key"), detail)
     raise OAuthError(_ERR_REJECTED) from exc
 
 
-def _contact(action: str, provider: dict, exc) -> NoReturn:
+def _contact(action: str, provider: dict[str, Any], exc: Any) -> NoReturn:
     logger.warning("oauth flavor %s failed. provider:%s error:%s", action, provider.get("key"), exc)
     raise OAuthError(_ERR_CONTACT) from exc
 
 
-def _normalize(userinfo: dict, **standard_keys) -> dict:
+def _normalize(userinfo: dict[str, Any], **standard_keys: Any) -> dict[str, Any]:
     """归一化：补 nickname/email/picture 标准键（不覆盖 IdP 已有的同名键）。"""
     for key, value in standard_keys.items():
         userinfo.setdefault(key, value or "")
     return userinfo
 
 
-def _require_subject(userinfo: dict, provider: dict) -> dict:
+def _require_subject(userinfo: dict[str, Any], provider: dict[str, Any]) -> dict[str, Any]:
     from identity.utils.oauth import resolve_subject
 
     if not resolve_subject(provider, userinfo):
@@ -149,7 +149,7 @@ def _require_subject(userinfo: dict, provider: dict) -> dict:
 # ---------------------------------------------------------------- 钉钉
 
 
-def exchange_code_dingtalk(provider, code, redirect_uri, http_client=None):
+def exchange_code_dingtalk(provider: Any, code: Any, redirect_uri: Any, http_client: Any = None) -> Any:
     """POST JSON 换 userAccessToken（clientId/clientSecret/grantType 驼峰键）。"""
     try:
         response = _post_json(
@@ -172,7 +172,7 @@ def exchange_code_dingtalk(provider, code, redirect_uri, http_client=None):
     return payload
 
 
-def fetch_userinfo_dingtalk(provider, token_payload, http_client=None):
+def fetch_userinfo_dingtalk(provider: Any, token_payload: Any, http_client: Any = None) -> Any:
     """GET contact/users/me：nick/unionId/openId/email/avatarUrl。"""
     try:
         response = _get_bearer(provider["userinfo_url"], token_payload.get("access_token"), http_client=http_client)
@@ -190,14 +190,14 @@ def fetch_userinfo_dingtalk(provider, token_payload, http_client=None):
 # ---------------------------------------------------------------- 企业微信
 
 
-def _wecom_check(payload: dict, action: str, provider: dict) -> dict:
+def _wecom_check(payload: dict[str, Any], action: str, provider: dict[str, Any]) -> dict[str, Any]:
     errcode = payload.get("errcode")
     if errcode not in (0, None):
         _reject(action, provider, f"errcode={errcode} errmsg={payload.get('errmsg')}")
     return payload
 
 
-def _wecom_corp_token(provider, http_client=None) -> str:
+def _wecom_corp_token(provider: Any, http_client: Any = None) -> str:
     """corp access_token：gettoken 有频控且 7200s 有效，进 django cache；
     缓存 key 含 corpId+secret 摘要，改密自动换 key 不复用旧 token。"""
     secret = provider.get("client_secret") or ""
@@ -225,7 +225,7 @@ def _wecom_corp_token(provider, http_client=None) -> str:
     return token
 
 
-def exchange_code_wecom(provider, code, redirect_uri, http_client=None):
+def exchange_code_wecom(provider: Any, code: Any, redirect_uri: Any, http_client: Any = None) -> Any:
     """corp token（缓存）+ auth/getuserinfo 一步取身份：返回含 userid 的 payload。"""
     token = _wecom_corp_token(provider, http_client=http_client)
     try:
@@ -241,7 +241,7 @@ def exchange_code_wecom(provider, code, redirect_uri, http_client=None):
     return {**payload, "access_token": token}
 
 
-def fetch_userinfo_wecom(provider, token_payload, http_client=None):
+def fetch_userinfo_wecom(provider: Any, token_payload: Any, http_client: Any = None) -> Any:
     """GET user/get：userid → name/email/avatar（通讯录可见范围内的成员资料）。"""
     token = token_payload.get("access_token")
     userid = token_payload.get("userid")
@@ -265,7 +265,7 @@ def fetch_userinfo_wecom(provider, token_payload, http_client=None):
 # ---------------------------------------------------------------- 飞书
 
 
-def exchange_code_feishu(provider, code, redirect_uri, http_client=None):
+def exchange_code_feishu(provider: Any, code: Any, redirect_uri: Any, http_client: Any = None) -> Any:
     """v2 token 端点：JSON 体（client_id=App ID）；兼容 token 顶层或 data 包裹。"""
     try:
         response = _post_json(
@@ -294,7 +294,7 @@ def exchange_code_feishu(provider, code, redirect_uri, http_client=None):
     return {**data, **payload, "access_token": token}
 
 
-def fetch_userinfo_feishu(provider, token_payload, http_client=None):
+def fetch_userinfo_feishu(provider: Any, token_payload: Any, http_client: Any = None) -> Any:
     """GET authen/v1/user_info：响应 data 包裹（union_id/open_id/name/email）。"""
     try:
         response = _get_bearer(provider["userinfo_url"], token_payload.get("access_token"), http_client=http_client)
@@ -323,7 +323,7 @@ def fetch_userinfo_feishu(provider, token_payload, http_client=None):
 # ---------------------------------------------------------------- 分发入口
 
 
-def build_flavor_authorize_url(provider, redirect_uri, state):
+def build_flavor_authorize_url(provider: Any, redirect_uri: Any, state: Any) -> Any:
     """flavor 授权地址；返回 None 表示参数形状与标准一致，落回通用构造。"""
     flavor = provider.get("flavor") or "oauth2"
     if flavor == "wecom":
@@ -350,7 +350,7 @@ def build_flavor_authorize_url(provider, redirect_uri, state):
     return None
 
 
-def exchange_flavor_code(provider, code, redirect_uri, http_client=None):
+def exchange_flavor_code(provider: Any, code: Any, redirect_uri: Any, http_client: Any = None) -> Any:
     flavor = provider.get("flavor") or "oauth2"
     handler = {
         "dingtalk": exchange_code_dingtalk,
@@ -360,7 +360,7 @@ def exchange_flavor_code(provider, code, redirect_uri, http_client=None):
     return handler(provider, code, redirect_uri, http_client) if handler else None
 
 
-def fetch_flavor_userinfo(provider, token_payload, http_client=None):
+def fetch_flavor_userinfo(provider: Any, token_payload: Any, http_client: Any = None) -> Any:
     flavor = provider.get("flavor") or "oauth2"
     handler = {
         "dingtalk": fetch_userinfo_dingtalk,

@@ -6,6 +6,8 @@
 # date : 3/6/2024
 import asyncio
 import uuid
+from collections.abc import Iterable
+from typing import Any
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -26,7 +28,7 @@ ONLINE_INFO_CACHE_KEY = "online_info_snapshot"
 ONLINE_LAYERS_CACHE_KEY = "online_layers_snapshot"
 
 
-def parse_online_user_pk(group):
+def parse_online_user_pk(group: Any) -> Any:
     """从个人消息推送组名中解析用户 pk，非法组名返回 None（不再混入 pk=0）。"""
     prefix = f"{settings.CACHE_KEY_TEMPLATE.get('websocket_group_key')}_"
     if group and group.startswith(prefix):
@@ -37,7 +39,7 @@ def parse_online_user_pk(group):
 
 
 @async_to_sync
-async def get_online_info():
+async def get_online_info() -> Any:
     """在线用户与 channel 列表。
 
     优先走反向索引 online:users（一条 ZRANGEBYSCORE）+ 批量 pipeline 取
@@ -69,7 +71,7 @@ async def get_online_info():
     return result
 
 
-def get_user_layer_group_name(user_pk):
+def get_user_layer_group_name(user_pk: Any) -> Any:
     return f"{settings.CACHE_KEY_TEMPLATE.get('websocket_group_key')}_{user_pk}"
 
 
@@ -85,17 +87,17 @@ def get_public_chat_group_name() -> str:
     return CHAT_PUBLIC_GROUP
 
 
-def get_chat_user_group_name(user_pk) -> str:
+def get_chat_user_group_name(user_pk: Any) -> str:
     return f"{CHAT_USER_GROUP_PREFIX}_{user_pk}"
 
 
-async def async_push_chat_message(room_pks, payload: dict, message_type="chat_message"):
+async def async_push_chat_message(room_pks: Any, payload: dict[str, Any], message_type: Any = "chat_message") -> None:
     """把聊天帧推给若干用户的聊天连接（多端同步；公共房间由调用方走公共组）。"""
     for user_pk in dict.fromkeys(room_pks):
         await channel_layer.group_send(get_chat_user_group_name(user_pk), {"type": message_type, "data": payload})
 
 
-def room_event_groups(room) -> list[str]:
+def room_event_groups(room: Any) -> list[str]:
     """房间事件目标组（聊天室拓扑的唯一口径，同步 DB 查询）。
 
     - 公共聊天室 → 公共广播组（全员在线连接）；
@@ -112,12 +114,12 @@ def room_event_groups(room) -> list[str]:
 
 
 @async_to_sync
-async def _group_broadcast(groups, payload: dict, message_type: str):
+async def _group_broadcast(groups: Any, payload: dict[str, Any], message_type: str) -> None:
     for group in dict.fromkeys(groups):
         await channel_layer.group_send(group, {"type": message_type, "data": payload})
 
 
-def push_room_event(room, payload: dict, message_type="chat_message"):
+def push_room_event(room: Any, payload: dict[str, Any], message_type: Any = "chat_message") -> None:
     """REST 侧同步广播入口（撤回 / AI 回复）。
 
     先在同步上下文解析目标组，再做一次异步投递：不能把 DB 查询放进
@@ -126,7 +128,7 @@ def push_room_event(room, payload: dict, message_type="chat_message"):
     _group_broadcast(room_event_groups(room), payload, message_type)
 
 
-def broadcast_message_recall(message, operator_pk) -> dict:
+def broadcast_message_recall(message: Any, operator_pk: Any) -> dict[str, Any]:
     """向房间广播撤回事件（双方/多端同步），返回广播载荷（REST 响应 data 复用）。
 
     撤回事件的载荷形状是 WS/REST 共同契约；房间不存在（已解散）只落静默。
@@ -145,11 +147,11 @@ def broadcast_message_recall(message, operator_pk) -> dict:
     return payload
 
 
-async def async_push_message(user_pk: str | int, message: dict, message_type="push_message"):
+async def async_push_message(user_pk: str | int, message: dict[str, Any], message_type: Any = "push_message") -> None:
     await channel_layer.group_send(get_user_layer_group_name(user_pk), {"type": message_type, "data": message})
 
 
-async def async_push_messages(user_pks, message: dict, message_type="push_message"):
+async def async_push_messages(user_pks: Any, message: dict[str, Any], message_type: Any = "push_message") -> None:
     """批量推送。整批收进一个 async 函数，只做一次同步桥接；
     message 仅序列化一次，不再对每个用户做 json.loads(json.dumps(...)) 深拷贝。"""
     for user_pk in dict.fromkeys(user_pks):
@@ -157,15 +159,15 @@ async def async_push_messages(user_pks, message: dict, message_type="push_messag
 
 
 @async_to_sync
-async def push_messages(user_pks, message: dict, message_type="push_message"):
+async def push_messages(user_pks: Any, message: dict[str, Any], message_type: Any = "push_message") -> None:
     await async_push_messages(user_pks, message, message_type)
 
 
-async def get_layers_form_group(group):
+async def get_layers_form_group(group: Any) -> Any:
     return await channel_layer.get_layers(group)
 
 
-async def layers_for_groups(groups):
+async def layers_for_groups(groups: Any) -> Any:
     """批量取多组 channel（不支持批量接口的实现回退逐组）。
 
     get_layers_for_groups 按节点归并 pipeline，单 Redis 部署下整个请求一次往返。
@@ -175,7 +177,7 @@ async def layers_for_groups(groups):
     return {group: await get_layers_form_group(group) for group in groups}
 
 
-async def query_online_users_layers(pks):
+async def query_online_users_layers(pks: Any) -> Any:
     """实时查询多个用户的在线 channel layers（一次同步桥接完成全部查询）。"""
     groups = [get_user_layer_group_name(user_pk) for user_pk in pks]
     layers = await layers_for_groups(groups)
@@ -183,7 +185,7 @@ async def query_online_users_layers(pks):
 
 
 @async_to_sync
-async def build_online_layers_snapshot():
+async def build_online_layers_snapshot() -> Any:
     """全量在线用户的 channel 明细快照（user_pk -> [channel]）。
 
     与在线列表页的快照（``get_online_info``）同源：先走反向索引 ``online:users``
@@ -204,7 +206,7 @@ async def build_online_layers_snapshot():
     return {pk: by_group.get(group, []) for pk, group in zip(pks, groups, strict=True)}
 
 
-def get_online_users_layers(user_pks, *, use_snapshot=True):
+def get_online_users_layers(user_pks: Iterable[Any], *, use_snapshot: bool = True) -> dict[Any, list[str]]:
     """批量获取多个用户的在线 channel layers，user_pk 自动去重。
 
     - ``use_snapshot=True``（默认，展示口径）：优先读 5s 快照（与在线列表页/聊天在线态
@@ -217,7 +219,8 @@ def get_online_users_layers(user_pks, *, use_snapshot=True):
     if not pks:
         return {}
     if not use_snapshot:
-        return async_to_sync(query_online_users_layers)(pks)
+        layers: dict[Any, list[str]] = async_to_sync(query_online_users_layers)(pks)
+        return layers
     snapshot = cache.get(ONLINE_LAYERS_CACHE_KEY)
     if snapshot is None:
         snapshot = build_online_layers_snapshot()
@@ -226,7 +229,7 @@ def get_online_users_layers(user_pks, *, use_snapshot=True):
 
 
 @async_to_sync
-async def get_online_users():
+async def get_online_users() -> Any:
     """在线用户 pk 列表（反向索引一条命令，SCAN 仅作降级路径）"""
     if hasattr(channel_layer, "get_online_user_pks"):
         online_user_pks = await channel_layer.get_online_user_pks()
@@ -235,7 +238,9 @@ async def get_online_users():
     return [pk for pk in (parse_online_user_pk(g) for g in await channel_layer.get_groups()) if pk is not None]
 
 
-async def async_push_layer_message(channel_name: str, message: dict, message_type="push_message"):
+async def async_push_layer_message(
+    channel_name: str, message: dict[str, Any], message_type: Any = "push_message"
+) -> None:
     await channel_layer.send(channel_name, {"type": message_type, "data": message})
 
 
@@ -261,7 +266,7 @@ async def send_logout_msg(user_pk: str | int, channel_names: list[str] | None = 
 
 
 @async_to_sync
-async def batch_send_logout_msg(layers_by_user: dict):
+async def batch_send_logout_msg(layers_by_user: dict[str, Any]) -> None:
     """批量向多个用户的在线 channel 推送 logout 并退组。
 
     入参为 ``get_online_users_layers`` 的返回（user_pk -> [channel]）；逐 channel
@@ -278,11 +283,11 @@ async def batch_send_logout_msg(layers_by_user: dict):
 
 
 @async_to_sync
-async def push_message(user_pk: str | int, message: dict, message_type="push_message"):
+async def push_message(user_pk: str | int, message: dict[str, Any], message_type: Any = "push_message") -> Any:
     return await async_push_message(user_pk, message, message_type)
 
 
-async def wait_for_mid_result(mid):
+async def wait_for_mid_result(mid: Any) -> Any:
     mid_cache = WebSocketMsgResultCache(mid)
     while True:
         if result := mid_cache.get_storage_cache():
@@ -291,14 +296,14 @@ async def wait_for_mid_result(mid):
         await asyncio.sleep(0.3)
 
 
-def set_mid_result_to_cache(mid, content, timeout=10):
+def set_mid_result_to_cache(mid: Any, content: Any, timeout: Any = 10) -> None:
     WebSocketMsgResultCache(mid).set_storage_cache(content, timeout)
 
 
 @async_to_sync
 async def push_message_and_wait_result(
-    channel_name: str, message: dict, message_type="push_message", mid=None, timeout=5
-):
+    channel_name: str, message: dict[str, Any], message_type: Any = "push_message", mid: Any = None, timeout: Any = 5
+) -> Any:
     """
     客户端返回结果必须和发送的mid一致，否则拿不到数据
     """

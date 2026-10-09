@@ -14,6 +14,7 @@
 
 import datetime
 import time
+from typing import Any
 
 from django.core.cache import cache
 from django.db.models import Count, Q, Sum
@@ -26,10 +27,14 @@ from ai.utils.ai_stream_slots import (  # noqa: F401  (并发信号量实现拆�
     STREAM_SLOT_KEY,
     STREAM_SLOT_TTL,
     StreamSlot,
-    acquire_stream_slot,
-    release_stream_slot,
     stream_slot,
     stream_slots_in_use,
+)
+from ai.utils.ai_stream_slots import (
+    acquire_stream_slot as acquire_stream_slot,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_stream_slots import (
+    release_stream_slot as release_stream_slot,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from common.utils import get_logger
 
@@ -41,7 +46,7 @@ USAGE_CACHE_TTL = 60
 USAGE_MAX_DAYS = 365
 
 
-def extract_tokens(usage) -> dict:
+def extract_tokens(usage: Any) -> dict[str, Any]:
     """供应商 usage → (in, out, total) 三元组（字段缺失按 0，total 缺省用 in+out）。"""
     data = usage if isinstance(usage, dict) else {}
     tokens_in = int(data.get("prompt_tokens") or data.get("input_tokens") or 0)
@@ -51,10 +56,10 @@ def extract_tokens(usage) -> dict:
 
 
 def record_usage(
-    user,
+    user: Any,
     feature: str,
     *,
-    usage=None,
+    usage: Any = None,
     duration_ms: int = 0,
     ok: bool = True,
     detail: str = "",
@@ -86,11 +91,11 @@ def record_usage(
         logger.warning("write AI usage record failed", exc_info=True)
 
 
-def _usage_cache_key(user) -> str:
+def _usage_cache_key(user: Any) -> str:
     return f"ai_usage_sum_{getattr(user, 'pk', 'anonymous')}_{timezone.localdate().isoformat()}"
 
 
-def today_usage(user) -> dict:
+def today_usage(user: Any) -> dict[str, Any]:
     """当前用户当日用量（调用次数 / token；60s 短缓存，兼容无缓存后端）。"""
     from ai.models.ai import AiUsageRecord
 
@@ -112,14 +117,14 @@ def today_usage(user) -> dict:
     return data
 
 
-def invalidate_usage_cache(user) -> None:
+def invalidate_usage_cache(user: Any) -> None:
     try:
         cache.delete(_usage_cache_key(user))
     except Exception:  # noqa: BLE001
         logger.debug("invalidate AI usage cache failed", exc_info=True)
 
 
-def usage_tokens_since(since) -> dict:
+def usage_tokens_since(since: Any) -> dict[str, Any]:
     """窗口内 token 合计（prompt / completion / total）：DB 侧聚合账本列。
 
     供观测端点使用——不解析审计日志的 JSON（原实现把窗口内全部日志拉进内存逐行
@@ -137,7 +142,7 @@ def usage_tokens_since(since) -> dict:
     }
 
 
-def quota_error(user, feature: str = "") -> str:
+def quota_error(user: Any, feature: str = "") -> str:
     """配额检查：返回空串 = 通过；否则返回可读拒绝文案（i18n）。"""
     limits = quota_limits()
     if not limits["daily_calls"] and not limits["daily_tokens"]:
@@ -159,7 +164,9 @@ def quota_error(user, feature: str = "") -> str:
 # --------------------------------------------------------------------- 统一包装
 
 
-def tracked_chat(user, feature: str, messages: list, client=None, track: str = "", **overrides) -> str:
+def tracked_chat(
+    user: Any, feature: str, messages: list[Any], client: Any = None, track: str = "", **overrides: Any
+) -> str:
     """单轮 LLM 调用 + 用量记账（保持 ``ChatCompletionsClient.chat`` 返回契约）。"""
     from ai.utils.ai_config import active_profile_name, ai_credentials
     from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
@@ -191,12 +198,19 @@ def tracked_chat(user, feature: str, messages: list, client=None, track: str = "
         track=track,
     )
     invalidate_usage_cache(user)
-    return reply
+    reply_text: str = reply
+    return reply_text
 
 
 def tracked_chat_tools(
-    user, feature: str, messages: list, tools: list, client=None, track: str = "", **overrides
-) -> dict:
+    user: Any,
+    feature: str,
+    messages: list[Any],
+    tools: list[Any],
+    client: Any = None,
+    track: str = "",
+    **overrides: Any,
+) -> dict[str, Any]:
     """原生 function calling 调用 + 用量记账（保持 ``chat_tools`` 返回契约）。"""
     from ai.utils.ai_config import active_profile_name, ai_credentials
     from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
@@ -228,10 +242,13 @@ def tracked_chat_tools(
         track=track,
     )
     invalidate_usage_cache(user)
-    return result
+    payload: dict[str, Any] = result
+    return payload
 
 
-def tracked_chat_stream(user, feature: str, client, messages: list, track: str = "", **overrides):
+def tracked_chat_stream(
+    user: Any, feature: str, client: Any, messages: list[Any], track: str = "", **overrides: Any
+) -> Any:
     """流式 LLM 调用 + 结束时记账（逐事件透传 ``{type, text}``，行为与 SDK 一致）。
 
     流式增量不改变调用方处理：产出结束后按累计用量记账；失败路径同样记账（ok=False）。
@@ -274,7 +291,7 @@ def tracked_chat_stream(user, feature: str, client, messages: list, track: str =
 # --------------------------------------------------------------------- 汇总口径
 
 
-def usage_summary(days: int = 7, feature: str = "") -> dict:
+def usage_summary(days: int = 7, feature: str = "") -> dict[str, Any]:
     """用量汇总（端点用）：按天 / 按链路 / Top 用户 + 合计。"""
     from ai.models.ai import AiUsageRecord
 
@@ -347,7 +364,7 @@ def usage_summary(days: int = 7, feature: str = "") -> dict:
     }
 
 
-def auto_clean_ai_usage(retention_days=None, batch_size=2000):
+def auto_clean_ai_usage(retention_days: Any = None, batch_size: Any = 2000) -> Any:
     """分批清理超保留期的 AI 用量记录：保留期取 MONITOR_RETENTION_DAYS。
 
     用量账本是观测数据（与监控心跳同口径），过期即失去成本归因价值；

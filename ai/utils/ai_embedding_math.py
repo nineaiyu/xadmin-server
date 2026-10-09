@@ -8,6 +8,7 @@ docs/adr 检索设计档案；向量通道不可用时由调用方回退词频�
 
 import array
 import math
+from typing import Any
 
 #: RRF 融合常数（Cormack 等 2009 原文取值；排名越靠前权重越高）
 RRF_K = 60
@@ -18,12 +19,12 @@ TOKEN_WEIGHT = 1.0
 VECTOR_WEIGHT = 0.5
 
 
-def encode_vector(values) -> bytes:
+def encode_vector(values: Any) -> bytes:
     """float 序列 → float32 小端二进制（落库形态）。"""
     return array.array("f", [float(value) for value in values]).tobytes()
 
 
-def decode_vector(blob):
+def decode_vector(blob: Any) -> Any:
     """落库二进制 → float32 数组；长度非法（非 4 字节对齐）返回 None。"""
     if blob is None:
         return None
@@ -35,7 +36,7 @@ def decode_vector(blob):
     return values
 
 
-def cosine_similarity(left, right) -> float:
+def cosine_similarity(left: Any, right: Any) -> float:
     """余弦相似度（两侧等长且非零；任一侧为空/长度不一致返回 0）。"""
     if not left or not right or len(left) != len(right):
         return 0.0
@@ -51,7 +52,7 @@ def cosine_similarity(left, right) -> float:
     return dot / (math.sqrt(left_norm) * math.sqrt(right_norm))
 
 
-def rrf_fuse(token_ranked: list, vector_ranked: list, top_k: int) -> list:
+def rrf_fuse(token_ranked: list[Any], vector_ranked: list[Any], top_k: int) -> list[Any]:
     """RRF 融合两个排名列表，返回 ``[(score, pk)]``（score 降序）。
 
     ``token_ranked`` / ``vector_ranked`` 为 pk 列表（名次从 1 开始计）；同一块在两个
@@ -61,9 +62,9 @@ def rrf_fuse(token_ranked: list, vector_ranked: list, top_k: int) -> list:
     同分按「最佳名次 → 向量名次 → pk」稳定排序：RRF 同分无法判优劣（两侧名次互换
     等价的常见情形），该口径让另一侧也更靠前的块胜出，同时保证结果可复现。
     """
-    scores: dict = {}
-    best_rank: dict = {}
-    vector_rank: dict = {}
+    scores: dict[str, Any] = {}
+    best_rank: dict[str, Any] = {}
+    vector_rank: dict[str, Any] = {}
     for channel, ranked, weight in (("token", token_ranked, TOKEN_WEIGHT), ("vector", vector_ranked, VECTOR_WEIGHT)):
         for rank, pk in enumerate(ranked, start=1):
             scores[pk] = scores.get(pk, 0.0) + weight / (RRF_K + rank)

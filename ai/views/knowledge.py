@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """AI 知识库文档管理视图：上传/预览/启停用/删除 + 仓库文档重建。"""
 
+from typing import Any
+
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -77,7 +79,7 @@ class AiKnowledgeDocumentViewSet(
     #: 仓库全量同步与向量构建为高成本重操作：按管理类限流
     ai_admin_actions = ("sync_repo", "build_embeddings")
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """上传文档（文本）：同名视为覆盖更新，重建分块后立即参与检索。"""
         serializer = KnowledgeUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -89,7 +91,7 @@ class AiKnowledgeDocumentViewSet(
             detail=_("Document uploaded") if created else _("Document updated"),
         )
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> None:
         """仅允许删除上传文档；仓库文档由同步命令随文件增删自动维护。"""
         if instance.source_type != AiKnowledgeDocument.SourceType.UPLOAD:
             raise ValidationError(_("Repository documents are managed by sync"))
@@ -100,8 +102,8 @@ class AiKnowledgeDocumentViewSet(
         request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-destroy")
-    def batch_destroy(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除：仅 upload（静默跳过 repo），逐条清理分块后删除。
 
         不复用框架批量删除：其非逐行分支走 queryset.delete()，不会触发
@@ -134,8 +136,8 @@ class AiKnowledgeDocumentViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-toggle")
-    def batch_toggle(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-toggle")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_toggle(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量启用/停用：停用移除分块（退出问答检索），启用重建分块。
 
         受影响文档合并为一次批量重建/清理（单次索引失效 + 至多一次向量补齐调度），
@@ -159,8 +161,8 @@ class AiKnowledgeDocumentViewSet(
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="sync-repo")
-    def sync_repo(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="sync-repo")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def sync_repo(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """提交仓库文档同步后台任务（上传文档不受影响）。
 
         全量重建为重操作，不再在请求线程内同步执行：响应返回任务提交信息，
@@ -189,16 +191,16 @@ class AiKnowledgeDocumentViewSet(
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="sync-repo/status")
-    def sync_repo_status(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="sync-repo/status")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def sync_repo_status(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """仓库文档同步运行状态（轮询端点）：state + 终态同步摘要。"""
         from ai.utils.sync_progress import get_status
 
         return ApiResponse(data=get_status())
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="vector-status")
-    def vector_status(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="vector-status")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def vector_status(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """向量通道状态：是否启用（embedding 档案）/ 模型 / 维度 / 已构建与陈旧条数。
 
         未配置 embedding 档案时 ``enabled=false``，检索完全走词频（零变化）。
@@ -219,8 +221,8 @@ class AiKnowledgeDocumentViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="build-embeddings")
-    def build_embeddings(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="build-embeddings")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def build_embeddings(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """提交向量构建后台任务（7.3 异步化；进度经 build-embeddings/status 轮询）。
 
         单飞：已有构建在跑时返回 1001 + 当前状态（不排队、不重复消耗供应商预算）；
@@ -269,8 +271,8 @@ class AiKnowledgeDocumentViewSet(
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="build-embeddings/status")
-    def build_embeddings_status(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="build-embeddings/status")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def build_embeddings_status(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """向量构建运行状态（轮询端点）：state/percent/stage + 终态摘要。"""
         from ai.utils.embedding_progress import get_status
 

@@ -12,6 +12,7 @@ import re
 import shutil
 from datetime import UTC, datetime, timedelta
 from logging.handlers import TimedRotatingFileHandler
+from typing import Any
 
 from common.core.sensitive import SENSITIVE_FIELDS
 from server.utils import get_current_request
@@ -22,7 +23,7 @@ _DATED_DIR_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
-    def rotator(self, source, dest):
+    def rotator(self, source: str, dest: str) -> None:
         """Override the original method to rotate the log file daily."""
         dest = self._get_rotate_dest_filename(source)
         if os.path.exists(source) and not os.path.exists(dest):
@@ -30,7 +31,7 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
             os.rename(source, dest)
         self._prune_dated_dirs(source)
 
-    def _prune_dated_dirs(self, source):
+    def _prune_dated_dirs(self, source: str) -> None:
         """超出 backupCount 的历史日期目录整体清理（0 或负数表示不清理）。"""
         backup_count = getattr(self, "backupCount", 0) or 0
         if backup_count <= 0:
@@ -51,7 +52,7 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
             shutil.rmtree(os.path.join(log_dir, name), ignore_errors=True)
 
     @staticmethod
-    def _get_rotate_dest_filename(source):
+    def _get_rotate_dest_filename(source: str) -> str:
         date_yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         path = [os.path.dirname(source), date_yesterday, os.path.basename(source)]
         filename = os.path.join(*path)
@@ -68,7 +69,7 @@ class SuppressShieldedCancelledError(logging.Filter):
     按「消息前缀 + 异常类型」双匹配精准丢弃，asyncio 的其余日志原样放行。
     """
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         if not record.getMessage().startswith("CancelledError exception in shielded future"):
             return True
         exc_type = record.exc_info[0] if record.exc_info else None
@@ -97,7 +98,7 @@ class SensitiveDataFilter(logging.Filter):
     _BARE: "re.Pattern[str] | None" = None
 
     @classmethod
-    def _patterns(cls):
+    def _patterns(cls) -> tuple[re.Pattern[str], re.Pattern[str], re.Pattern[str]]:
         # 惰性编译一次：键名单为常量，无需模块导入期开销
         if cls._BARE is None:
             alt = "|".join(sorted(SENSITIVE_FIELDS, key=len, reverse=True))
@@ -107,18 +108,21 @@ class SensitiveDataFilter(logging.Filter):
             cls._SINGLE_QUOTED = re.compile(rf"(?P<key>{alt}){sep}'(?P<val>[^']*)'", re.IGNORECASE)
             # 裸值：取到空白/分隔符为止；空匹配（值缺失或已被前序掩码）在替换函数里原样返回
             cls._BARE = re.compile(rf"(?P<key>{alt}){sep}(?P<val>[^\s'\";,}}]+)", re.IGNORECASE)
-        return cls._DOUBLE_QUOTED, cls._SINGLE_QUOTED, cls._BARE
+        double, single, bare = cls._DOUBLE_QUOTED, cls._SINGLE_QUOTED, cls._BARE
+        # 三者在同一分支内一起赋值，齐备性由上面的惰性编译保证
+        assert double is not None and single is not None and bare is not None
+        return double, single, bare
 
     @classmethod
-    def _mask_text(cls, text):
+    def _mask_text(cls, text: str) -> str:
         if not text:
             return text
 
-        def _already_masked(val):
+        def _already_masked(val: str) -> bool:
             # 幂等：同一 record 会流经多个 handler（console + 文件），重复掩码不二次变形
             return not val or val.strip("*") == ""
 
-        def _sub_quoted(match):
+        def _sub_quoted(match: re.Match[str]) -> str:
             val = match.group("val")
             if _already_masked(val):
                 return match.group(0)
@@ -126,7 +130,7 @@ class SensitiveDataFilter(logging.Filter):
             quote = match.group(0)[len(match.group("key")) + len(match.group("sep"))]
             return f"{match.group('key')}{match.group('sep')}{quote}{'*' * len(val)}{quote}"
 
-        def _sub_bare(match):
+        def _sub_bare(match: re.Match[str]) -> str:
             val = match.group("val")
             if _already_masked(val) or val.isdigit():
                 # 纯数字裸值不掩码：业务响应包络 `code: 200` 是日志主诊断信息，
@@ -140,7 +144,7 @@ class SensitiveDataFilter(logging.Filter):
         text = single.sub(_sub_quoted, text)
         return bare.sub(_sub_bare, text)
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         try:
             original = record.getMessage()
             masked = self._mask_text(original)
@@ -160,12 +164,13 @@ class SensitiveDataFilter(logging.Filter):
 
 
 class ServerFormatter(logging.Formatter):
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         current_request = get_current_request()
         # 认证中间件之前的异常路径（DisallowedHost 等）请求还没有 user 属性——必须兜底，
         # 否则格式器抛 AttributeError → Logging error，整条记录（含异常栈）被吞掉
         # （2026-09-18 真丢包演练排查时发现：500 的 traceback 曾因此不进日志）
         user = getattr(current_request, "user", None) if current_request else None
+        # requestUser / requestUuid 是日志格式模板消费的自定义字段（typeshed 无声明）
         record.requestUser = str(user or "SYSTEM")[:16]
         record.requestUuid = str(getattr(current_request, "request_uuid", ""))
         return super().format(record)
@@ -178,11 +183,11 @@ class JsonFormatter(logging.Formatter):
     便于按请求串联网关日志、应用日志与错误上报。
     """
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         current_request = get_current_request()
         # 与 ServerFormatter 同口径：无 user 属性的请求（认证前异常路径）兜底 SYSTEM
         user = getattr(current_request, "user", None) if current_request else None
-        payload = {
+        payload: dict[str, Any] = {
             "time": datetime.fromtimestamp(record.created, tz=UTC).astimezone().isoformat(timespec="milliseconds"),
             "level": record.levelname,
             "logger": record.name,
@@ -198,7 +203,7 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False, default=str)
 
 
-class ColorHandler(logging.StreamHandler):
+class ColorHandler(logging.StreamHandler[Any]):
     WHITE = "0"
     RED = "31"
     GREEN = "32"
@@ -206,7 +211,7 @@ class ColorHandler(logging.StreamHandler):
     BLUE = "34"
     PURPLE = "35"
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         try:
             msg = self.format(record)
             level_color_map = {

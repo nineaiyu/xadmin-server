@@ -2,11 +2,14 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : views
+from typing import Any
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.permission import IsAuthenticated
@@ -32,11 +35,11 @@ from settings.services import MFABlockUtils
 logger = get_logger(__name__)
 
 
-def _get_confirm_type(value):
+def _get_confirm_type(value: Any) -> Any:
     return value if value in ConfirmType.values else ConfirmType.MFA
 
 
-def _binding_disallowed(user, backend_name):
+def _binding_disallowed(user: Any, backend_name: str) -> bool:
     """绑定入口与验证同口径：该方式不在账号方式白名单（交集）内则拒绝绑定。
 
     验证侧 ``get_enabled_backends`` 本就按白名单过滤，但绑定入口此前不校验——
@@ -46,7 +49,7 @@ def _binding_disallowed(user, backend_name):
     return not is_method_binding_allowed(user, backend_name)
 
 
-def _missing_backup_channel(user) -> bool:
+def _missing_backup_channel(user: Any) -> bool:
     """绑定 OTP 要求至少一个备用挑战渠道（短信/邮件）。
 
     只约束用户层：部署侧没有任何可用挑战渠道（后端未启用或 EMAIL_ENABLED /
@@ -61,7 +64,7 @@ def _missing_backup_channel(user) -> bool:
     return not user_channels
 
 
-def _state_expire_at(state):
+def _state_expire_at(state: Any) -> int | None:
     if not state:
         return None
     ttl = int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[state["type"]]))
@@ -83,7 +86,7 @@ class UserConfirmViewSet(GenericViewSet):
         parameters=[{"name": "confirm_type", "in": "query", "schema": {"type": "string", "enum": ConfirmType.values}}],
         responses=get_default_response_schema(),
     )
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """获取可用验证方式与当前确认状态"""
         confirm_type = _get_confirm_type(request.query_params.get("confirm_type"))
         state_cache = UserConfirmStateCache(request.user)
@@ -98,7 +101,7 @@ class UserConfirmViewSet(GenericViewSet):
         )
 
     @extend_schema(request=ConfirmSerializer, responses=get_default_response_schema())
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """提交验证：校验通过后写入确认状态"""
         serializer = ConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -118,8 +121,8 @@ class UserConfirmViewSet(GenericViewSet):
         )
 
     @extend_schema(request=SendCodeSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="send-code", serializer_class=SendCodeSerializer)
-    def send_code(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="send-code", serializer_class=SendCodeSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def send_code(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """发送挑战验证码（短信/邮件）"""
         serializer = SendCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -135,7 +138,7 @@ class UserOTPViewSet(GenericViewSet):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(responses=get_default_response_schema())
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """获取绑定状态"""
         return ApiResponse(
             data={
@@ -147,8 +150,8 @@ class UserOTPViewSet(GenericViewSet):
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="start")
-    def start(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="start")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def start(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """发起绑定：生成候选密钥与 otpauth URI（前端渲染二维码）"""
         if _binding_disallowed(request.user, OtpBackend.name):
             return ApiResponse(code=1001, detail=_("MFA method is not allowed by account policy"))
@@ -166,8 +169,8 @@ class UserOTPViewSet(GenericViewSet):
         return ApiResponse(data={"secret": secret, "uri": OtpBackend.get_provisioning_uri(request.user, secret)})
 
     @extend_schema(request=OtpBindConfirmSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="confirm", serializer_class=OtpBindConfirmSerializer)
-    def confirm(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="confirm", serializer_class=OtpBindConfirmSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def confirm(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """确认绑定：校验动态码后写入密钥，并自动开启登录 MFA
 
         绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。
@@ -204,13 +207,13 @@ class UserOTPViewSet(GenericViewSet):
         return ApiResponse(data={"recovery_codes": codes}, detail=_("OTP binding successful"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"],
         detail=False,
         url_path="close",
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
-    def close(self, request, *args, **kwargs):
+    def close(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """关闭登录二次验证（敏感操作：需先通过二次验证，未验证时返回 412）。
 
         仅停用开关，保留已绑定的密钥，重新开启时校验动态码即可，无需重新扫码。
@@ -223,8 +226,8 @@ class UserOTPViewSet(GenericViewSet):
         return ApiResponse(detail=_("Login MFA disabled"))
 
     @extend_schema(request=OtpBindConfirmSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="open", serializer_class=OtpBindConfirmSerializer)
-    def open(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="open", serializer_class=OtpBindConfirmSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def open(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """重新开启登录二次验证（密钥保留时校验一次动态码证明持有，无需重新扫码）"""
         user = request.user
         if not user.otp_secret_key:
@@ -246,8 +249,8 @@ class UserOTPViewSet(GenericViewSet):
         return ApiResponse(detail=_("Login MFA enabled"))
 
     @extend_schema(request=OtpBindConfirmSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="test", serializer_class=OtpBindConfirmSerializer)
-    def test(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="test", serializer_class=OtpBindConfirmSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def test(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """校验已绑定密钥的动态码是否正确（不改变任何状态，失败计入防爆破锁定）。
 
         供关闭登录二次验证后自检密钥可用性（换设备 / 手机时间漂移场景），
@@ -270,13 +273,13 @@ class UserOTPViewSet(GenericViewSet):
         return ApiResponse(detail=_("Verification successful"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"],
         detail=False,
         url_path="disable",
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
-    def disable(self, request, *args, **kwargs):
+    def disable(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """解绑 OTP（敏感操作：需先通过二次验证，未验证时返回 412）
 
         恢复码随解绑一并作废——它是当前 OTP 密钥的配套自救凭据，密钥不在即无意义。
@@ -292,19 +295,19 @@ class UserOTPViewSet(GenericViewSet):
         return ApiResponse(detail=_("OTP unbinding successful"))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="recovery-codes")
-    def recovery_codes(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="recovery-codes")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def recovery_codes(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """查询剩余恢复码数量（未用数；不回显任何码面）"""
         return ApiResponse(data={"remaining": recovery.remaining_count(request.user)})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"],
         detail=False,
         url_path="recovery-codes/regenerate",
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
-    def regenerate_recovery_codes(self, request, *args, **kwargs):
+    def regenerate_recovery_codes(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """重新生成恢复码（敏感操作：需先通过密码二次验证，未验证时返回 412）
 
         旧码整批作废，新码明文仅本次响应内出现一次。

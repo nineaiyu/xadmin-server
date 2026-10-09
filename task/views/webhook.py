@@ -9,6 +9,8 @@
 订阅 secret 永不回传；管理类资源按菜单权限点控制，无个人/共享分档。
 """
 
+from typing import Any
+
 from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -54,14 +56,14 @@ class WebhookSubscriptionViewSet(BaseModelSet):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="events")
-    def events(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="events")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def events(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """事件目录（key + 中文名 + 契约版本）。"""
         return ApiResponse(data=event_catalog_payload())
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="test")
-    def test(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="test")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def test(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """发送 ping 测试事件（走真实投递管线，配置自检）。"""
         subscription = self.get_object()
         from task.utils.webhook import emit_webhook_event
@@ -84,8 +86,8 @@ class WebhookDeliveryViewSet(ListDeleteModelSet):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="retry")
-    def retry(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="retry")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def retry(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """重置 exhausted/failed 投递并立即重派。"""
         delivery = self.get_object()
         if delivery.status not in ("exhausted", "failed"):

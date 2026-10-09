@@ -4,6 +4,7 @@
 # filename : route
 # author : ly_13
 # date : 8/16/2024
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -44,7 +45,7 @@ class RouteMetaSerializer(ModelSerializer):
 
     transition = serializers.SerializerMethodField()
 
-    def get_transition(self, obj):
+    def get_transition(self, obj: Any) -> Any:
         return {
             "enterTransition": obj.transition_enter,
             "leaveTransition": obj.transition_leave,

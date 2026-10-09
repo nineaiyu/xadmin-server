@@ -18,6 +18,8 @@ file.models / file.serializers / file.utils 等内部实现，避免 app 间横�
 自身保持零重导入，避免循环导入。
 """
 
+from typing import Any
+
 # 惰性导出名经 PEP 562 __getattr__ 提供，静态分析不可见，统一 noqa F822
 __all__ = [
     # 模型契约
@@ -110,7 +112,7 @@ _LAZY_EXPORTS = {
 }
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> Any:
     module_path = _LAZY_EXPORTS.get(name)
     if module_path is not None:
         from importlib import import_module
@@ -121,5 +123,5 @@ def __getattr__(name):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-def __dir__():
+def __dir__() -> list[str]:
     return sorted(set(globals()) | set(_LAZY_EXPORTS))

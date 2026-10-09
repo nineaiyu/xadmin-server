@@ -6,6 +6,7 @@
 # date : 4/21/2024
 import hashlib
 import json
+from typing import Any
 
 from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
@@ -20,7 +21,7 @@ from system.models import Menu
 from system.serializers.route import RouteSerializer
 
 
-def get_auths(user):
+def get_auths(user: Any) -> Any:
     if user.is_superuser:
         menu_obj = filter_menu_queryset(Menu.objects.filter(is_active=True))
     else:
@@ -30,7 +31,7 @@ def get_auths(user):
     return menu_obj.filter(menu_type=Menu.MenuChoices.PERMISSION).values_list("name", flat=True).distinct()
 
 
-def get_routes_version(data, auths) -> str:
+def get_routes_version(data: Any, auths: Any) -> str:
     """路由 + 按钮授权快照的内容指纹：任一菜单/授权变化即变化。
 
     前端对本地路由快照（CachingAsyncRoutes）按此字段失效——在缓存函数内计算，
@@ -45,7 +46,7 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
 
     @extend_schema(exclude=True)
     @cache_response(timeout=3600 * 24, key_func="get_cache_key")
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         route_list = []
         user_obj = request.user
         menu_type = [Menu.MenuChoices.DIRECTORY, Menu.MenuChoices.MENU]

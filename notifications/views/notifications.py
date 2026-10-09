@@ -40,8 +40,8 @@ class MsgSubscriptionBackend:
             }
         ),
     )
-    @action(methods=["get"], detail=False)
-    def backends(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def backends(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取消息通知后端"""
         return ApiResponse(
             data=[
@@ -61,8 +61,8 @@ class MsgSubscriptionBackend:
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False)
-    def test(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def test(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """发送测试消息（渠道连通性自检）
 
         按订阅行的 message_type 找到消息实现类并走真实发送链路：
@@ -91,7 +91,7 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubs
     list_serializer_class = SystemMsgSubscriptionByCategorySerializer
 
     @extend_schema(responses={200: SystemMsgSubscriptionByCategorySerializer})
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取系统消息订阅列表"""
         data = []
         category_children_mapper = {}
@@ -131,11 +131,11 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
     serializer_class = UserMsgSubscriptionSerializer
     queryset = UserMsgSubscription.objects.all()
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         return super().get_queryset().filter(user=self.request.user)
 
     @extend_schema(responses={200: UserMsgSubscriptionByCategorySerializer})
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取用户消息订阅列表"""
         msg_type_sub_mapper = {sub.message_type: sub for sub in self.get_queryset()}
 

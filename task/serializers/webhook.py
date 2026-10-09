@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """Webhook 订阅与投递序列化器。"""
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -33,13 +35,13 @@ class WebhookSubscriptionSerializer(BaseModelSerializer):
         # RePlusPage 列表列：secret 为 write_only 不进列，补充创建时间作审计锚点
         table_fields = ["name", "url", "events", "is_active", "last_failure", "created_time"]
 
-    def validate_url(self, value):
+    def validate_url(self, value: Any) -> Any:
         return validate_url(value)
 
-    def validate_events(self, value):
+    def validate_events(self, value: Any) -> Any:
         return validate_events(value)
 
-    def validate_secret(self, value):
+    def validate_secret(self, value: Any) -> Any:
         if not value:
             # 更新时留空 = 沿用原密钥
             if self.instance:

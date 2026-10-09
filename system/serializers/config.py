@@ -4,8 +4,8 @@
 # filename : config
 # author : ly_13
 # date : 8/10/2024
-
 import math
+from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
@@ -92,7 +92,7 @@ def registered_config_key_types() -> dict[str, str]:
     }
 
 
-def _type_error(key, expected_type: type) -> ValidationError:
+def _type_error(key: Any, expected_type: type) -> ValidationError:
     messages = {
         int: _("Config value for {} must be an integer"),
         float: _("Config value for {} must be a number"),
@@ -104,7 +104,7 @@ def _type_error(key, expected_type: type) -> ValidationError:
     return ValidationError(messages[expected_type].format(key))
 
 
-def _coerce_config_value(key, value, expected_type: type):
+def _coerce_config_value(key: Any, value: Any, expected_type: type) -> Any:
     """按期望类型收敛写入值，非法即 400。
 
     受控收敛口径：数值键接受等值字符串（"180" / "0.5"）与整数值浮点（180.0），
@@ -155,7 +155,7 @@ def _coerce_config_value(key, value, expected_type: type):
     raise _type_error(key, expected_type)
 
 
-def validate_config_value(key, value):
+def validate_config_value(key: Any, value: Any) -> Any:
     """写入期校验注册键的值类型并做受控收敛；未注册键原样放行。"""
     expected_type = _config_value_types().get(key)
     if expected_type is None:
@@ -170,7 +170,7 @@ class SystemConfigSerializer(BaseModelSerializer):
         read_only_fields = ["pk"]
         fields_unexport = ["cache_value"]  # 导入导出文件时，忽略该字段
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         # 键取请求值，缺省回退实例行键（PATCH 只改 value 时同样过校验）
         key = attrs.get("key") or getattr(self.instance, "key", None)
         if key and "value" in attrs:
@@ -188,20 +188,20 @@ class SystemConfigSerializer(BaseModelSerializer):
         read_only=True, label=_("Config cache value"), input_type="json"
     )
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         """写入前加密敏感键的值内字段（凭据治理；非敏感键原样）。"""
         if "value" in validated_data:
             validated_data["value"] = encrypt_setting_value(validated_data.get("key"), validated_data["value"])
         return super().create(validated_data)
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         if "value" in validated_data:
             key = validated_data.get("key") or getattr(instance, "key", "")
             validated_data["value"] = encrypt_setting_value(key, validated_data["value"])
         return super().update(instance, validated_data)
 
     @extend_schema_field(serializers.JSONField)
-    def get_cache_value(self, obj):
+    def get_cache_value(self, obj: Any) -> Any:
         """生效值：整页序列化时一次批量预取（context 记忆），单对象仍逐 key 读取。"""
         page = self.get_page_instances(obj)
         cached = self.context.get("_page_system_cache_values")
@@ -243,7 +243,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
         write_only=True, many=True, queryset=UserInfo.objects, label=_("Users"), input_type="api-search-user"
     )
 
-    def _dedupe_users(self, users) -> list:
+    def _dedupe_users(self, users: Any) -> list[Any]:
         """同一用户重复提交只建一条：否则第二次 create 撞 (owner, key) 唯一约束。"""
         seen, result = set(), []
         for user in users:
@@ -254,7 +254,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
             result.append(user)
         return result
 
-    def _check_conflicts(self, users, key) -> None:
+    def _check_conflicts(self, users: Any, key: Any) -> None:
         """冲突预检：任一用户已有同名 key 时给出含用户名的可读明细，而不是 IntegrityError 500。"""
         existing = UserPersonalConfig.objects.filter(owner__in=users, key=key).select_related("owner")
         usernames = [row.owner.username for row in existing]
@@ -263,7 +263,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
                 _("Config key already exists for user(s): {}").format(", ".join(sorted(set(usernames))))
             )
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         """批量建用户参数：事务包裹 + 冲突预检。
 
         原实现循环逐个 create：任一用户已有同名 key 即 IntegrityError 500，且
@@ -292,12 +292,12 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
         except IntegrityError:
             raise ValidationError(_("Config key already exists for some user(s), please check and retry")) from None
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: Any) -> Any:
         validated_data.pop("config_user", None)
         return super().update(instance, validated_data)
 
     @extend_schema_field(serializers.JSONField)
-    def get_cache_value(self, obj):
+    def get_cache_value(self, obj: Any) -> Any:
         """生效值：整页序列化时一次批量预取（context 记忆），单对象仍逐 key 读取。"""
         page = self.get_page_instances(obj)
         cached = self.context.get("_page_user_cache_values")

@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 7/24/2024
 
+from typing import Any
+
 from django.db import transaction
 from django.http import HttpResponse
 from django.utils.translation import gettext_lazy as _
@@ -15,6 +17,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema, inline_serializ
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
+from rest_framework.request import Request
 
 from common.base.magic import cache_response
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend
@@ -87,7 +90,9 @@ class UploadFileViewSet(
     extra_filter_class = [TagFilterBackend, ControlledLookupFilterBackend]
 
     # stats 短缓存：10s 内重复刷新不重复聚合；按用户区分缓存键
-    def get_stats_cache_key(self, view_instance, view_method, request, args, kwargs):
+    def get_stats_cache_key(
+        self, view_instance: Any, view_method: Any, request: Request, args: Any, kwargs: Any
+    ) -> str:
         return f"{view_instance.__class__.__name__}_{view_method.__name__}_{request.user.pk}"
 
     @extend_schema(
@@ -135,9 +140,9 @@ class UploadFileViewSet(
             }
         )
     )
-    @action(methods=["get"], detail=False, url_path="stats")
+    @action(methods=["get"], detail=False, url_path="stats")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=10, key_func="get_stats_cache_key")
-    def stats(self, request, *args, **kwargs):
+    def stats(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """个人文件统计（数量/总大小/配额使用率 + 分类分布/近 7 天趋势/最大文件）。
 
         顶部统计面板的数据源：列表口径（活动记录）+ 一次聚合出多组维度，
@@ -146,8 +151,8 @@ class UploadFileViewSet(
         """
         return ApiResponse(data=build_personal_file_stats(request.user))
 
-    @action(methods=["get"], detail=True, url_path="preview")
-    def preview(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """在线预览：走 DRF 鉴权与数据权限（不暴露 /media/ 直链）。
 
         类型分派由后端单一判定（序列化器同步下发 `preview_kind`）：
@@ -217,7 +222,7 @@ class UploadFileViewSet(
             )
         },
     )
-    @action(
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"],
         detail=False,
         throttle_classes=[
@@ -225,7 +230,7 @@ class UploadFileViewSet(
         ],
         parser_classes=(MultiPartParser,),
     )
-    def upload(self, request, *args, **kwargs):
+    def upload(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """上传文件"""
 
         files = request.FILES.getlist("file", [])

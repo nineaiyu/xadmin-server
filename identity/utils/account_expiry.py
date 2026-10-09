@@ -15,6 +15,7 @@
 """
 
 import datetime
+from typing import Any
 
 from django.core.cache import cache
 from django.utils import timezone
@@ -33,18 +34,19 @@ _NOTICE_CACHE_PREFIX = "_KEY_ACCOUNT_EXPIRY_NOTICE_{}"
 _NOTICE_CACHE_TTL = 86400
 
 
-def is_account_expired(user) -> bool:
+def is_account_expired(user: Any) -> bool:
     """账号是否已到期（``date_expired`` 为空 = 永不过期）。"""
     if user is None or getattr(user, "date_expired", None) is None:
         return False
-    return user.date_expired <= timezone.now()
+    typed_value: bool = user.date_expired <= timezone.now()
+    return typed_value
 
 
 def remind_days() -> int:
     return int(getattr(SysConfig, "ACCOUNT_EXPIRY_REMIND_DAYS", 0) or 0)
 
 
-def _notify(user, title, message) -> None:
+def _notify(user: Any, title: Any, message: Any) -> None:
     """站内信 + 邮件（渠道失败仅告警，不阻断任务）。"""
     from notifications.message import SiteMessageUtil
 

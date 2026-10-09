@@ -14,6 +14,7 @@
 """
 
 import json
+from typing import Any
 
 from django.conf import settings
 
@@ -50,7 +51,7 @@ _SUMMARY_AUDIT_KEYS = [
 ]
 
 
-def get_group_role_map() -> dict:
+def get_group_role_map() -> dict[str, Any]:
     """组 → 平台角色映射（LDAP_GROUP_ROLE_MAP；键为组 DN 或 CN，大小写不敏感）。"""
     mapping = getattr(settings, "LDAP_GROUP_ROLE_MAP", None) or {}
     result = {}
@@ -61,7 +62,7 @@ def get_group_role_map() -> dict:
     return result
 
 
-def _group_matches(key: str, values: list) -> bool:
+def _group_matches(key: str, values: list[Any]) -> bool:
     """组标识匹配：完整 DN 相等，或 DN 的 CN 段相等（`CN=<key>,...`）。"""
     for value in values:
         if value == key or value.startswith(f"cn={key},"):
@@ -69,7 +70,7 @@ def _group_matches(key: str, values: list) -> bool:
     return False
 
 
-def _sync_roles(user, attrs, summary) -> None:
+def _sync_roles(user: Any, attrs: Any, summary: Any) -> None:
     """按 LDAP 组映射挂/撤平台角色（只管理映射中出现的角色，不动手工授权）。
 
     - 命中组 → 挂对应角色；未命中 → 撤该角色；
@@ -98,7 +99,7 @@ def _sync_roles(user, attrs, summary) -> None:
         summary["roles_removed"] += len(to_remove)
 
 
-def run_ldap_sync() -> dict:
+def run_ldap_sync() -> dict[str, Any]:
     from identity.ldap.sync_dir import _sync_depts, _sync_users  # noqa: E402  (反向依赖，延迟导入避免循环)
 
     """执行一次完整同步。返回摘要 dict；连接失败抛 LDAPException/LdapConfigError。"""
@@ -113,7 +114,7 @@ def run_ldap_sync() -> dict:
     return summary
 
 
-def test_ldap_connection(config=None) -> dict:
+def test_ldap_connection(config: Any = None) -> dict[str, Any]:
     """连接测试（管理页「测试」按钮）：服务 bind + 按配置快照实际搜索计数。
 
     ``config`` 传 ``LdapConfig`` 快照时完全按快照连搜（测试连接按表单值
@@ -146,7 +147,7 @@ def test_ldap_connection(config=None) -> dict:
 # ---------------------------------------------------------------- 审计与通知
 
 
-def _audit_summary(summary: dict):
+def _audit_summary(summary: dict[str, Any]) -> None:
     try:
         OperationLog.objects.create(
             module="LDAP:sync",
@@ -159,7 +160,7 @@ def _audit_summary(summary: dict):
         logger.warning("write LDAP sync audit failed", exc_info=True)
 
 
-def _notify_summary(summary: dict):
+def _notify_summary(summary: dict[str, Any]) -> None:
     """有处置/冲突动作时向超管发摘要通知（每轮最多一条）。"""
     interesting = {k: v for k, v in summary.items() if k not in ("total_entries",) and v}
     if not interesting:
@@ -186,7 +187,7 @@ _MOVED_EXPORTS = (
 )
 
 
-def __getattr__(name):
+def __getattr__(name: Any) -> Any:
     if name in _MOVED_EXPORTS:
         from importlib import import_module
 

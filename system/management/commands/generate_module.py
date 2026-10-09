@@ -17,6 +17,7 @@
 """
 
 import os
+from typing import Any
 
 from django.apps import apps
 from django.core.management.base import BaseCommand, CommandError
@@ -28,7 +29,7 @@ class Command(BaseCommand):
     # argparse 的 help 必须是 str（惰性翻译对象会抛 TypeError，详见 modules.py 注释）
     help = "Scaffold a functional module declaration for an installed app"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("module_id", help="模块 id（config.yml 的 MODULE_ENABLE/DISABLE 使用）")
         parser.add_argument("--app", required=True, help="已安装的 app label（如 demo）")
         parser.add_argument("--label", default="", help="模块中文名（展示用，默认取模块 id）")
@@ -40,7 +41,7 @@ class Command(BaseCommand):
         parser.add_argument("--permission", action="append", default=[], help="补充权限点 path 前缀（可多次）")
         parser.add_argument("--force", action="store_true", help="覆盖已存在的 {app}/modules.py")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         module_id = options["module_id"]
         if module_id_conflict(module_id):
             raise CommandError(f"模块 id 已存在：{module_id}")

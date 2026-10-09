@@ -7,5 +7,5 @@ class IdentityConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "identity"
 
-    def ready(self):
+    def ready(self) -> None:
         from . import signal_handler  # noqa: F401  缓存失效接收器注册

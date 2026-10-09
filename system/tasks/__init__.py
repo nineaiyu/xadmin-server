@@ -14,6 +14,7 @@
 """
 
 import datetime
+from typing import Any
 
 from celery import shared_task
 from django.db import models
@@ -44,22 +45,22 @@ from identity.ldap.tasks import sync_ldap_directory_job as _sync_ldap_directory_
 from task.webhook_tasks import deliver_webhook as _deliver_webhook  # noqa: F401,E402
 
 
-@shared_task
-@register_as_period_task(crontab="2 2 * * *")
-def auto_clean_operation_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="2 2 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_operation_job() -> None:
     # 保留期读取系统配置 OPERATION_LOG_RETENTION_DAYS（默认 180 天），不再硬编码
     auto_clean_operation_log()
 
 
-@shared_task
-@register_as_period_task(crontab="22 2 * * *")
-def auto_clean_black_token_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="22 2 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_black_token_job() -> None:
     auto_clean_black_token(clean_day=7)
 
 
-@shared_task
-@register_as_period_task(crontab="0 8 * * *")
-def account_expiry_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="0 8 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def account_expiry_job() -> Any:
     """账号有效期维护：到期前 N 天提醒（站内信 + 邮件），到期自动停用。"""
     from identity.utils.account_expiry import disable_expired_accounts, notify_expiring_accounts
 
@@ -68,50 +69,50 @@ def account_expiry_job():
     return {"notified": notified, "disabled": disabled}
 
 
-@shared_task
-@register_as_period_task(crontab="32 2 * * *")
-def auto_clean_tmp_file_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="32 2 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_tmp_file_job() -> None:
     auto_clean_tmp_file(clean_day=7)
 
 
-@shared_task
-@register_as_period_task(crontab="56 2 * * *")
-def auto_clean_upload_file_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="56 2 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_upload_file_job() -> None:
     """清理超过保留期的正式上传文件（FILE_KEEP_DAYS，默认 0 = 不清理）。"""
     auto_clean_upload_file()
 
 
-@shared_task
-@register_as_period_task(crontab="4 3 * * *")
-def auto_clean_preview_cache_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="4 3 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_preview_cache_job() -> None:
     """清理预览缓存（孤儿目录 + 超 FILE_PREVIEW_CACHE_KEEP_DAYS 未访问的缓存）。"""
     auto_clean_preview_cache()
 
 
-@shared_task
-@register_as_period_task(crontab="42 2 * * *")
-def auto_clean_task_execution_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="42 2 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_task_execution_job() -> Any:
     """清理超过保留期的执行历史与日志文件（TaskResult 删除联动清日志）。"""
     return clean_task_executions()
 
 
-@shared_task
-@register_as_period_task(crontab="52 2 * * *")
-def auto_clean_export_record_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="52 2 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_export_record_job() -> Any:
     """清理超过保留期的异步导出记录与产物文件（EXPORT_FILE_KEEP_DAYS，默认 7 天）。"""
     return clean_export_records()
 
 
-@shared_task
-@register_as_period_task(crontab="58 2 * * *")
-def auto_clean_import_record_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="58 2 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_import_record_job() -> Any:
     """清理超过保留期的异步导入记录、源文件与错误报告（IMPORT_RECORD_KEEP_DAYS，默认 30 天）。"""
     return clean_import_records()
 
 
-@shared_task
-@register_as_period_task(interval=300)
-def auto_expire_user_session_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(interval=300)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_expire_user_session_job() -> Any:
     """HTTP 会话活跃窗口（SESSION_ONLINE_TIMEOUT，默认 300s）外置离线。
 
     WS 会话不在此列：其在线判定由 channel 存活决定，优雅断开由 WS logout
@@ -125,9 +126,9 @@ def auto_expire_user_session_job():
     return count
 
 
-@shared_task
-@register_as_period_task(crontab="12 3 * * *")
-def auto_clean_user_session_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="12 3 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_user_session_job() -> Any:
     """删除超过保留期的会话记录（USER_SESSION_RETENTION_DAYS，默认 30 天）。"""
     from identity.utils.session import clean_expired_sessions
 
@@ -137,18 +138,18 @@ def auto_clean_user_session_job():
     return removed
 
 
-@shared_task
-@register_as_period_task(crontab="6 3 * * *")
-def auto_clean_upload_sessions_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="6 3 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_upload_sessions_job() -> Any:
     """清理过期分片上传会话（分片文件 + 会话行；断点续传「传到一半放弃」的兜底）。"""
     from file.services import auto_clean_upload_sessions
 
     return auto_clean_upload_sessions(clean_day=1)
 
 
-@shared_task
-@register_as_period_task(crontab="22 3 * * *")
-def auto_clean_pat_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="22 3 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_pat_job() -> Any:
     """清理个人访问令牌：过期超 30 天的凭证，以及停用且 30 天未更新的凭证。"""
     from identity.models.token import PersonalAccessToken
 
@@ -161,8 +162,8 @@ def auto_clean_pat_job():
     return removed
 
 
-@shared_task
-def convert_office_preview_task(upload_pk):
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def convert_office_preview_task(upload_pk: Any) -> Any:
     """Office 文件转 PDF 预览：走 heavy 队列，产物落预览缓存。
 
     队列归属由 `CELERY_TASK_ROUTES` 按任务名路由；结束后释放转换锁，
@@ -182,8 +183,8 @@ def convert_office_preview_task(upload_pk):
         cache.delete(f"office_converting_{upload_pk}")
 
 
-@shared_task(bind=True, verbose_name=_("Async export data"))
-def async_export_data_task(self, record_id, view_path, query_params, user_pk):
+@shared_task(bind=True, verbose_name=_("Async export data"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def async_export_data_task(self: Any, record_id: Any, view_path: Any, query_params: Any, user_pk: Any) -> Any:
     """异步执行数据导出：重放 export_data 视图，产物落 UploadFile 供下载中心取用。
 
     记录状态在任务内推进（PENDING → RUNNING → SUCCESS/FAILURE）；同 pk 的
@@ -195,27 +196,27 @@ def async_export_data_task(self, record_id, view_path, query_params, user_pk):
     return run_async_export(record_id, view_path, query_params, user_pk)
 
 
-@shared_task
-@register_as_period_task(crontab="23 4 * * *")
-def scan_account_risk_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="23 4 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def scan_account_risk_job() -> Any:
     """账号安全风险巡检：弱项巡检一次，产出/刷新待处置风险清单。"""
     from identity.utils.account_risk import scan_account_risks
 
     return scan_account_risks()
 
 
-@shared_task
-@register_as_period_task(crontab="12 3 * * *")
-def auto_clean_file_access_log_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="12 3 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def auto_clean_file_access_log_job() -> Any:
     """清理超过保留期的文件访问日志（FILE_ACCESS_LOG_KEEP_DAYS，0 = 不清理）。"""
     from file.utils.file_audit import clean_expired_file_access_logs
 
     return clean_expired_file_access_logs()
 
 
-@shared_task
-@register_as_period_task(crontab="17 4 * * *")
-def demo_account_selfheal_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="17 4 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def demo_account_selfheal_job() -> Any:
     """公开演示账号自愈（skipped when demo data is absent，非演示环境零成本跳过）。
 
     每日恢复 seed_demo_admin 发布态一次：重置演示密码、重挂演示角色与菜单裁剪、
@@ -244,8 +245,8 @@ def demo_account_selfheal_job():
     return ADMIN_USERNAME
 
 
-@shared_task(bind=True, verbose_name=_("Async import data"))
-def async_import_data_task(self, record_id, view_path, user_pk):
+@shared_task(bind=True, verbose_name=_("Async import data"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def async_import_data_task(self: Any, record_id: Any, view_path: Any, user_pk: Any) -> Any:
     """异步执行数据导入：任务内解析源文件，逐行 savepoint 导入并生成失败行报告。
 
     - 记录状态在任务内推进（PENDING → RUNNING → SUCCESS/FAILURE）；同 pk 的

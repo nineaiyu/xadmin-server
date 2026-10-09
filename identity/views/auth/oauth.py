@@ -11,6 +11,8 @@
 回调先判绑定意图，命中即把 IdP 身份绑定到发起绑定的本人（不做登录）。
 """
 
+from typing import Any
+
 from django.contrib.auth import authenticate
 from django.db import IntegrityError
 from django.utils import timezone
@@ -59,14 +61,14 @@ logger = get_logger(__name__)
 OAUTH_ERROR_CODE = 1006
 
 
-def _redirect_uri(request, provider: str) -> str:
+def _redirect_uri(request: Any, provider: str) -> str:
     """回调地址：固定落地页 + provider 标识（前端据此回传回调），
     避免被伪造的 redirect_uri 带走 code（换取 token 时用同一份地址校验）。
     """
     return f"{request.scheme}://{request.get_host()}/#/oauth/callback?provider={provider}"
 
 
-def _fetch_identity(request, provider: str, config: dict, code: str, nonce: str | None = None):
+def _fetch_identity(request: Any, provider: str, config: dict[str, Any], code: str, nonce: str | None = None) -> Any:
     """换码 + 取用户信息 + 解析 IdP 唯一标识（登录与绑定链路共用）。
 
     标准 OIDC：换码结果里的 ``id_token`` 经 JWKS 验签后取 claims（不再依赖
@@ -85,7 +87,7 @@ def _fetch_identity(request, provider: str, config: dict, code: str, nonce: str 
     return resolve_subject(config, userinfo), userinfo
 
 
-def _authorize_url_with_nonce(request, provider: str, config: dict, state: str) -> str:
+def _authorize_url_with_nonce(request: Any, provider: str, config: dict[str, Any], state: str) -> str:
     """构造授权地址；OIDC 额外下发 nonce（回调校验 id_token 防重放）。"""
     if not is_oidc_provider(config):
         return build_authorize_url(config, _redirect_uri(request, provider), state)
@@ -94,7 +96,7 @@ def _authorize_url_with_nonce(request, provider: str, config: dict, state: str) 
     return build_authorize_url(config, _redirect_uri(request, provider), state, nonce=issue_nonce(state))
 
 
-def _profile_snapshot(userinfo: dict) -> dict:
+def _profile_snapshot(userinfo: dict[str, Any]) -> dict[str, Any]:
     """绑定展示快照：只留昵称/邮箱/头像，IdP 原始报文不落库。"""
     return {
         "nickname": userinfo.get("nickname") or "",
@@ -103,7 +105,7 @@ def _profile_snapshot(userinfo: dict) -> dict:
     }
 
 
-def _bind_identity(request, provider: str, code: str, payload: dict, state: str = ""):
+def _bind_identity(request: Any, provider: str, code: str, payload: dict[str, Any], state: str = "") -> Any:
     """绑定意图回调：把 IdP 身份绑定到**发起绑定的本人**（不登录、不签发 token）。
 
     归属校验（state 载荷 pk == 当前登录用户）放在最前：防止把别人的 IdP 身份
@@ -157,7 +159,7 @@ class OAuthProvidersAPIView(GenericAPIView):
     permission_classes = [AllowAny]
 
     @extend_schema(responses=get_default_response_schema({"data": {"providers": [{"key": "str", "name": "str"}]}}))
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         providers = get_providers(enabled_only=True)
         # flavor 随下发（前端未来做品牌图标用，本期登录页仍按 name 渲染文本按钮）
         return ApiResponse(
@@ -177,7 +179,7 @@ class OAuthAuthorizeAPIView(GenericAPIView):
     permission_classes = [AllowAny]
 
     @extend_schema(responses=get_default_response_schema({"data": {"url": "str", "state": "str"}}))
-    def get(self, request, provider, *args, **kwargs):
+    def get(self, request: Any, provider: Any, *args: Any, **kwargs: Any) -> Any:
         config = get_provider(provider, enabled_only=True)
         if not config:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("Third-party login is not enabled"))
@@ -199,7 +201,7 @@ class OAuthBindAuthorizeAPIView(GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(responses=get_default_response_schema({"data": {"url": "str", "state": "str"}}))
-    def get(self, request, provider, *args, **kwargs):
+    def get(self, request: Any, provider: Any, *args: Any, **kwargs: Any) -> Any:
         config = get_provider(provider, enabled_only=True)
         if not config:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("Third-party login is not enabled"))
@@ -223,7 +225,7 @@ class OAuthCallbackAPIView(GenericAPIView):
     permission_classes = [AllowAny]
 
     @extend_schema(responses=get_default_response_schema())
-    def get(self, request, provider, *args, **kwargs):
+    def get(self, request: Any, provider: Any, *args: Any, **kwargs: Any) -> Any:
         code = request.query_params.get("code")
         state = request.query_params.get("state")
         # 先判绑定意图：绑定 state 与登录 state 键空间隔离，互不通用
@@ -283,7 +285,7 @@ class OAuthBindingsAPIView(GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(responses=get_default_response_schema())
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         rows = UserOAuthBinding.objects.filter(user=request.user).select_related("user")
         names = {item["key"]: item["name"] for item in get_providers()}
         data = [
@@ -305,7 +307,7 @@ class OAuthUnbindAPIView(GenericAPIView):
         password = serializers.CharField(required=True, write_only=True, label=_("Password"))
 
     @extend_schema(request=UnbindSerializer, responses=get_default_response_schema())
-    def delete(self, request, pk, *args, **kwargs):
+    def delete(self, request: Any, pk: Any, *args: Any, **kwargs: Any) -> Any:
         binding = UserOAuthBinding.objects.filter(pk=pk, user=request.user).first()
         if not binding:
             return ApiResponse(code=1001, detail=_("The binding does not exist"))
@@ -322,7 +324,7 @@ class OAuthUnbindAPIView(GenericAPIView):
         return ApiResponse(detail=str(_("Unbound successfully")))
 
 
-def _create_user_and_binding(provider, config, subject, userinfo):
+def _create_user_and_binding(provider: Any, config: Any, subject: Any, userinfo: Any) -> Any:
     """auto_create：按 `provider_subject` 规则建号并绑定（密码置为不可用，防本地口令爆破）。"""
     from identity.models import UserInfo
 
@@ -339,7 +341,7 @@ def _create_user_and_binding(provider, config, subject, userinfo):
     )
 
 
-def _issue_token(request, user):
+def _issue_token(request: Any, user: Any) -> Any:
     """签发会话 token（与本地登录同口径：登记 UserSession 并写入 sid claim）。"""
     from rest_framework_simplejwt.tokens import RefreshToken
 

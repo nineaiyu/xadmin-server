@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """聊天室请求校验。响应体为显式字典（会话/消息载荷契约见 message/chat.py）。"""
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -38,7 +40,7 @@ class GroupMembersSerializer(serializers.Serializer):
         required=False, default=list, child=serializers.IntegerField(min_value=1), label=_("Remove members")
     )
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         if not attrs.get("add") and not attrs.get("remove"):
             raise serializers.ValidationError(_("Nothing to update"))
         return attrs

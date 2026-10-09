@@ -11,6 +11,8 @@
   挂载流程实例，实例终态由 ``approval_instance_finished`` 信号回写本单状态。
 """
 
+from typing import Any
+
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -64,11 +66,11 @@ class Leave(DbAuditModel, DbUuidModel):
             GinIndex(fields=["reason"], name="idx_leave_reason_trgm", opclasses=["gin_trgm_ops"]),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.get_leave_type_display()}({self.start_date}~{self.end_date}) [{self.status}]"
 
     @property
-    def form_data(self) -> dict:
+    def form_data(self) -> dict[str, Any]:
         """提交审批时随实例走的表单数据（条件节点与字段审批人按这些 key 取值）。"""
         return {
             "leave_type": self.leave_type,

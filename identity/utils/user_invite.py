@@ -23,6 +23,8 @@
   （安全巡检 / 到期停用任务的 `is_active` 口径不受影响）。
 """
 
+from typing import Any
+
 from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -47,7 +49,7 @@ def mail_channel_configured() -> bool:
     return bool(getattr(settings, "EMAIL_HOST", ""))
 
 
-def invite_requested(data) -> bool:
+def invite_requested(data: Any) -> bool:
     """请求体中的「创建即邀请」开关：JSON 布尔与表单字符串均兼容。"""
     if data is None or not hasattr(data, "get"):
         return False
@@ -57,13 +59,16 @@ def invite_requested(data) -> bool:
     return str(value or "").strip().lower() in ("1", "true", "yes", "on")
 
 
-def generate_invite_token(user) -> str:
+def generate_invite_token(user: Any) -> str:
     from common.utils.verify_code import TokenTempCache
 
-    return TokenTempCache.generate_cache_token(INVITE_TOKEN_TTL, {"scene": INVITE_SCENE, "user_id": user.pk})
+    typed_value: str = TokenTempCache.generate_cache_token(
+        INVITE_TOKEN_TTL, {"scene": INVITE_SCENE, "user_id": user.pk}
+    )
+    return typed_value
 
 
-def resolve_invite_token(token):
+def resolve_invite_token(token: Any) -> Any:
     """校验邀请令牌：返回 ``(user, state)``，state ∈ ``invalid / accepted / pending``。"""
     from common.utils.verify_code import TokenTempCache
 
@@ -81,7 +86,7 @@ def resolve_invite_token(token):
     return user, "pending"
 
 
-def invite_link(token: str, request=None) -> str:
+def invite_link(token: str, request: Any = None) -> str:
     base = str(getattr(SysConfig, "WEB_SITE_URL", "") or "").strip()
     if not base and request is not None:
         base = request.build_absolute_uri("/")
@@ -90,7 +95,7 @@ def invite_link(token: str, request=None) -> str:
     return f"{base.rstrip('/')}/#/invite/accept?token={token}"
 
 
-def send_invite(user, request=None) -> str:
+def send_invite(user: Any, request: Any = None) -> str:
     """发送（或重发）邀请：置待激活 + 密码不可用 + 邮件链接；返回一次性令牌。"""
     from identity.models import UserInfo
 
@@ -119,7 +124,7 @@ def send_invite(user, request=None) -> str:
     return token
 
 
-def accept_invite(user, password: str):
+def accept_invite(user: Any, password: str) -> Any:
     """设置密码并完成激活；返回 ``(ok, detail)``。"""
     from identity.models import UserInfo
     from settings.utils.password import (

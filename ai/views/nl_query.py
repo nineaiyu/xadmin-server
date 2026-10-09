@@ -5,6 +5,8 @@
 拆文件仅因行数门禁（500 行）：URL 路径 / 权限点 / 行为与拆分前完全一致。
 """
 
+from typing import Any
+
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
@@ -18,7 +20,7 @@ from common.swagger.utils import get_default_response_schema
 from integrations.sdk.ai.chat import AiSdkError
 
 
-def _persist_nl_partial(user, reasoning_chunks: list, detail: str) -> dict:
+def _persist_nl_partial(user: Any, reasoning_chunks: list[Any], detail: str) -> dict[str, Any]:
     """NL 解释流中断（已有增量）：保留思考与可读原因（extra.partial），返回消息载荷。"""
     from ai.utils.ai_chat import message_payload, persist_message
 
@@ -42,8 +44,8 @@ class AiNlQueryMixin:
     """NL 查数：解释（含流式）/ 执行（以调用者数据权限编译过滤）。"""
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="nl-query/interpret")
-    def nl_interpret(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="nl-query/interpret")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def nl_interpret(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """NL → 数据集 DSL（白名单校验）+ 试算预览计数（数据权限随调用者）。"""
         from ai.utils.ai import is_enabled as ai_enabled_check
         from ai.utils.ai import structured_chat_client
@@ -80,8 +82,8 @@ class AiNlQueryMixin:
 
         persist_message(request.user, "nl", "user", content=question)
 
-        dsl: dict = {}
-        normalized: dict = {}
+        dsl: dict[str, Any] = {}
+        normalized: dict[str, Any] = {}
         usage = None
         try:
             # 结构化输出上限走公共入口：未配置 max_tokens 时用安全默认（AI 配置页可调大）
@@ -129,8 +131,8 @@ class AiNlQueryMixin:
         return ApiResponse(data={**result, "message": message_payload(row)})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="nl-query/interpret/stream")
-    def nl_interpret_stream(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="nl-query/interpret/stream")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def nl_interpret_stream(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """NL 查数解释流式（SSE）：meta → reasoning* → delta* → done | error。
 
         与 `nl_interpret` 同口径：灰度/门禁/参数错误在响应头前返回 JSON 1001；
@@ -174,10 +176,10 @@ class AiNlQueryMixin:
 
         user_row = persist_message(request.user, "nl", "user", content=question)
 
-        def events():
+        def events() -> Any:
             yield {"event": "meta", "data": {"question": question, "user_message": message_payload(user_row)}}
-            chunks: list = []
-            reasoning_chunks: list = []
+            chunks: list[Any] = []
+            reasoning_chunks: list[Any] = []
             try:
                 client, max_tokens = structured_chat_client()
                 for item in tracked_chat_stream(
@@ -256,8 +258,8 @@ class AiNlQueryMixin:
         return sse_response(events())
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="nl-query/run")
-    def nl_run(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="nl-query/run")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def nl_run(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """执行试算确认后的 DSL：服务端重校验（不信任客户端回传）+ 审计。"""
         from ai.utils.ai import is_enabled as ai_enabled_check
         from ai.utils.ai_chat import message_payload, persist_message, system_error_message

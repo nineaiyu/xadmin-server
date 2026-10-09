@@ -2,13 +2,15 @@
 # -*- coding:utf-8 -*-
 """敏感操作审批：待办集合/计数与统计查询。"""
 
+from typing import Any
+
 from .approvers import can_approve, get_approver_queryset
 from .constants import APPROVAL_PENDING_COUNT_CACHE_SECONDS, APPROVAL_STATS_WINDOW_DAYS
 
 PENDING_COUNT_KEY_PREFIX = "approval_pending_count_"
 
 
-def pending_queryset_for(user):
+def pending_queryset_for(user: Any) -> Any:
     """待我审批集合（页签列表与角标计数的唯一口径来源，保证两者永远一致）。
 
     - 扁平单（current_level=0）：给「全局审批人」（超管或 APPROVAL_APPROVER_ROLES/PERMS）；
@@ -29,20 +31,21 @@ def pending_queryset_for(user):
     return queryset.filter(condition).distinct()
 
 
-def pending_count_for(user) -> int:
+def pending_count_for(user: Any) -> int:
     """待我审批数（10s 短缓存）；与「待我审批」页签同口径（同一 queryset 函数）。"""
     from django.core.cache import cache
 
     if not (user and getattr(user, "is_authenticated", False)):
         return 0
 
-    def _load():
+    def _load() -> Any:
         return pending_queryset_for(user).count()
 
-    return cache.get_or_set(f"{PENDING_COUNT_KEY_PREFIX}{user.pk}", _load, APPROVAL_PENDING_COUNT_CACHE_SECONDS)
+    count: int = cache.get_or_set(f"{PENDING_COUNT_KEY_PREFIX}{user.pk}", _load, APPROVAL_PENDING_COUNT_CACHE_SECONDS)
+    return count
 
 
-def invalidate_pending_count_cache():
+def invalidate_pending_count_cache() -> None:
     """失效待办计数缓存（审批单/级次状态变化后调用）。
 
     键空间 = 「可能被指派为审批人的用户」：多级链候选人可以是任意用户、无法
@@ -55,7 +58,7 @@ def invalidate_pending_count_cache():
 
     from approval.models.approval import ApprovalRequest
 
-    pks: set = set()
+    pks: set[Any] = set()
     try:
         pks |= set(get_approver_queryset().values_list("pk", flat=True))
     except Exception:  # noqa: BLE001 审批人配置异常不影响缓存清理
@@ -76,7 +79,7 @@ def invalidate_pending_count_cache():
         pass
 
 
-def approval_stats(user, days: int = APPROVAL_STATS_WINDOW_DAYS) -> dict:
+def approval_stats(user: Any, days: int = APPROVAL_STATS_WINDOW_DAYS) -> dict[str, Any]:
     """审批统计（近 N 天）：我提交 / 我通过 / 我驳回 / 平均审批时长 / 我的待办。
 
     口径：approved/rejected 按「整单终态处理人」计数——多级链的中间级通过

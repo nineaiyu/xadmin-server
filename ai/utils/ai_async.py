@@ -15,6 +15,7 @@
 """
 
 import time
+from typing import Any
 
 from asgiref.sync import sync_to_async
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -25,7 +26,9 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-async def tracked_chat_stream_async(user, feature: str, client, messages: list, track: str = "", **overrides):
+async def tracked_chat_stream_async(
+    user: Any, feature: str, client: Any, messages: list[Any], track: str = "", **overrides: Any
+) -> Any:
     """异步流式 LLM 调用 + 结束时记账（逐事件透传 ``{type, text}``）。
 
     流式增量不改变调用方处理：产出结束后按累计用量记账；失败路径同样记账（ok=False）。
@@ -40,7 +43,7 @@ async def tracked_chat_stream_async(user, feature: str, client, messages: list, 
     started = time.monotonic()
     try:
 
-        def _record(**kwargs) -> None:
+        def _record(**kwargs: Any) -> None:
             record_usage(
                 user,
                 feature,
@@ -64,7 +67,7 @@ async def tracked_chat_stream_async(user, feature: str, client, messages: list, 
         release_stream_slot()
 
 
-async def ask_stream_async(messages: list, sources: list, user=None):
+async def ask_stream_async(messages: list[Any], sources: list[Any], user: Any = None) -> Any:
     """问答链路（异步流式生成器）：产出事件 dict，供 ``sse_response_async`` 转发。
 
     与同步 ``ask_stream`` 事件契约一致：``{"type": "reasoning"|"content", "text": ...}``
@@ -79,7 +82,7 @@ async def ask_stream_async(messages: list, sources: list, user=None):
 
     # 凭据读取与脱敏规则加载都触 DB（激活档案 / 用户自定义脱敏规则）：在异步段
     # 会被 SynchronousOnlyOperation 拦截——经 sync_to_async 落回线程本地连接构建。
-    def _build_sync():
+    def _build_sync() -> Any:
         return AsyncChatCompletionsClient(ai_credentials()), StreamMasker(user), StreamMasker(user)
 
     client, content_masker, reasoning_masker = await sync_to_async(_build_sync)()

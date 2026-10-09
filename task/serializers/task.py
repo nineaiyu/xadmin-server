@@ -8,6 +8,7 @@ periodic task / crontab / interval / 执行历史（TaskExecution）四类资源
 """
 
 import json
+from typing import Any
 
 from celery.schedules import crontab_parser
 from django.conf import settings
@@ -36,11 +37,11 @@ class DisplayRelatedField(BasePrimaryKeyRelatedField):
     供前端列表/详情/下拉直接可读，避免展示裸外键主键（周期任务页的
     crontab/interval 原先显示 1/2/3 这种数字主键，无法辨认）。"""
 
-    def __init__(self, *args, label_builder=str, **kwargs):
+    def __init__(self, *args: Any, label_builder: Any = str, **kwargs: Any) -> None:
         self.label_builder = label_builder
         super().__init__(*args, **kwargs)
 
-    def to_representation(self, value):
+    def to_representation(self, value: Any) -> Any:
         data = super().to_representation(value)
         if isinstance(data, dict):
             # 基类已把 label 兜底为 pk，这里必须覆盖而非 setdefault，否则 label_builder 永不生效
@@ -64,7 +65,7 @@ class CrontabScheduleSerializer(BaseModelSerializer):
         fields = "__all__"
         table_fields = ["pk", "minute", "hour", "day_of_week", "day_of_month", "month_of_year", "timezone"]
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         """五字段合法性校验，防止存入 beat 无法解析的 crontab。
 
         编辑（PUT/PATCH 部分字段）时 attrs 可能缺某字段，用 instance 兜底；
@@ -90,7 +91,7 @@ class IntervalScheduleSerializer(BaseModelSerializer):
         fields = "__all__"
         table_fields = ["pk", "every", "period"]
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         """间隔唯一性校验（django_celery_beat>=2.9 已移除库级 unique_together）。
 
         完全相同的 (every, period) 会在周期任务表单的「执行间隔」下拉里出现
@@ -108,7 +109,7 @@ class IntervalScheduleSerializer(BaseModelSerializer):
             raise serializers.ValidationError(_("A schedule with the same interval already exists"))
         return attrs
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any) -> Any:
         """(every, period) 按 get_or_create 语义落库，消除查重校验与写入之间的竞态窗口。
 
         validate 的查重负责用户可读报错，但校验通过到写入之间另一请求可能已
@@ -123,7 +124,7 @@ class IntervalScheduleSerializer(BaseModelSerializer):
         return instance
 
 
-def _validate_json_string(raw, expect_type, field_label):
+def _validate_json_string(raw: Any, expect_type: Any, field_label: Any) -> Any:
     """args/kwargs 以 JSON 字符串落库（django_celery_beat 约定），入库前校验可解析且类型正确。"""
     if raw in (None, ""):
         return raw
@@ -142,7 +143,7 @@ def _validate_json_string(raw, expect_type, field_label):
     return raw
 
 
-def _task_routes_config() -> dict:
+def _task_routes_config() -> dict[str, Any]:
     """取当前生效的任务路由表（dict 形态）。
 
     `CELERY_TASK_ROUTES` 支持两种形态：静态 dict（用户在 config.yml 覆盖）与
@@ -158,7 +159,7 @@ def _task_routes_config() -> dict:
     return routes or {}
 
 
-def _task_routing_options():
+def _task_routing_options() -> Any:
     """从 celery 配置推导可投递的队列（单一事实源，避免前端手填拼错）。
 
     取值 = 默认队列（CELERY_TASK_DEFAULT_QUEUE，缺省 celery）+ CELERY_TASK_ROUTES
@@ -178,17 +179,17 @@ def _task_routing_options():
     return options
 
 
-def _queue_choices():
+def _queue_choices() -> Any:
     # 留空表示 celery 默认路由（对应 beat 模型 queue=None）
     return [("", _("Default queue"))] + [(queue, queue) for queue in _task_routing_options()]
 
 
-def _routing_key_choices():
+def _routing_key_choices() -> Any:
     # 默认路由键即队列名，选项与队列一致
     return [("", _("Default routing key"))] + [(queue, queue) for queue in _task_routing_options()]
 
 
-def _exchange_choices():
+def _exchange_choices() -> Any:
     # 项目 broker 为默认直接交换机（空名），未配置命名交换机时仅保留默认项
     routes = _task_routes_config()
     options = []
@@ -199,7 +200,7 @@ def _exchange_choices():
     return [("", _("Default exchange"))] + [(exchange, exchange) for exchange in options]
 
 
-def _validate_task_runnable(name) -> str:
+def _validate_task_runnable(name: str) -> str:
     """task 字段白名单校验：仅白名单内的任务可被配置为周期任务。
 
     celery 注册表里的任务即系统全部 @shared_task（含删数据/改密等高危任务），
@@ -218,7 +219,7 @@ def _validate_task_runnable(name) -> str:
     return name
 
 
-def _validate_task_registered(name) -> str:
+def _validate_task_registered(name: str) -> str:
     """task 字段存在性校验：未注册的任务路径在保存时即拒绝，而非等到执行才报错。
 
     与白名单校验（_validate_task_runnable）并列同链，白名单先行；口径与执行
@@ -385,7 +386,7 @@ class TaskExecutionSerializer(BaseModelSerializer):
         ]
         read_only_fields = fields
 
-    def _product_data(self, obj) -> dict:
+    def _product_data(self, obj: Any) -> dict[str, Any]:
         """列表注解合并下发的产物信息（类型/业务名/进度/阶段/错误）。
 
         仅列表动作带 product_data 注解；详情等其它动作按空表降级，取值语义
@@ -394,33 +395,33 @@ class TaskExecutionSerializer(BaseModelSerializer):
         data = getattr(obj, "product_data", None)
         return data if isinstance(data, dict) else {}
 
-    def get_product_type(self, obj) -> str:
+    def get_product_type(self, obj: Any) -> str:
         """产物类型（export/import；定时与即时任务为空）。"""
         return str(self._product_data(obj).get("type") or "")
 
-    def get_product_name(self, obj) -> str:
+    def get_product_name(self, obj: Any) -> str:
         """产物记录的业务名（如「用户导出-20260924120000」），非产物任务为空。"""
         return str(self._product_data(obj).get("name") or "")
 
-    def get_product_progress(self, obj) -> int:
+    def get_product_progress(self, obj: Any) -> int:
         return int(self._product_data(obj).get("progress") or 0)
 
-    def get_product_stage(self, obj) -> str:
+    def get_product_stage(self, obj: Any) -> str:
         return str(self._product_data(obj).get("stage") or "")
 
-    def get_product_error(self, obj) -> str:
+    def get_product_error(self, obj: Any) -> str:
         return str(self._product_data(obj).get("error") or "")[:500]
 
-    def get_product_has_file(self, obj) -> bool:
+    def get_product_has_file(self, obj: Any) -> bool:
         return bool(getattr(obj, "product_has_file", False))
 
-    def get_can_cancel(self, obj) -> bool:
+    def get_can_cancel(self, obj: Any) -> bool:
         return str(obj.status) in ACTIVE_STATUSES
 
-    def get_can_rerun(self, obj) -> bool:
+    def get_can_rerun(self, obj: Any) -> bool:
         """仅产物类（导出/导入）任务在终态后可重跑（白名单口径与任务中心一致）。"""
         return bool(self.get_product_type(obj)) and str(obj.status) not in ACTIVE_STATUSES
 
-    def get_time_cost(self, obj):
+    def get_time_cost(self, obj: Any) -> Any:
         cost = obj.time_cost
         return round(cost, 3) if cost is not None else None

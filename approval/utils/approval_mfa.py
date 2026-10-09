@@ -14,10 +14,12 @@
 跨 app 仅经 mfa 的 services 契约层，且惰性 import（common 侧模块不反向依赖 mfa）。
 """
 
+from typing import Any
+
 from common.core.config import SysConfig
 
 
-def ensure_approval_action_confirmed(request, action: str):
+def ensure_approval_action_confirmed(request: Any, action: str) -> None:
     """命中清单时校验 MFA 确认状态；未确认由 MFA 层抛 412，业务代码不执行。"""
     from mfa.const import ConfirmType
     from mfa.services import ensure_user_confirmed

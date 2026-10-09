@@ -4,6 +4,7 @@
 # filename : post
 # author : ly_13
 # date : 9/28/2026
+from typing import Any
 
 from django_filters import rest_framework as filters
 
@@ -44,6 +45,6 @@ class SearchPostViewSet(RelationCountMixin, OnlyListModelSet):
     ordering_fields = ["rank", "name", "created_time"]
     filterset_class = SearchPostFilter
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         # 停用/软删除岗位不作为候选（与审批人解析口径一致）
         return super().get_queryset().filter(is_active=True, deleted_at__isnull=True).select_related("dept")

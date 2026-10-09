@@ -3,11 +3,12 @@
 """菜单权限点同步内核：审计报告。"""
 
 import re
+from typing import Any
 
 from .constants import AUDIT_KNOWN_DUPLICATES, AUDIT_SKIP_PREFIXES
 
 
-def audit_field_permissions():
+def audit_field_permissions() -> Any:
     """报告「角色已获模型权限点、但未配置字段权限」的组合（只报告不落库）。
 
     字段权限是 **fail-closed 的零字段口径**：某 (角色, 菜单) 没有字段白名单（无
@@ -39,7 +40,7 @@ def audit_field_permissions():
     return items
 
 
-def audit_wide_manager_grants():
+def audit_wide_manager_grants() -> Any:
     """报告「部门管理员持有宽数据权限规则」的配置（只报告不落库）。
 
     数据权限多授权并集取最宽（取最宽生效）：部门管理员一旦（经个人或所在部门
@@ -74,7 +75,7 @@ def audit_wide_manager_grants():
     return findings
 
 
-def audit_permission_menus(routes, perms):
+def audit_permission_menus(routes: Any, perms: Any) -> Any:
     """报告：未匹配任何路由的权限点 / 重复的 (path, method)。
 
     匹配用「样例化为真实请求路径」的路由地址（正则原文含 `(?P<pk>...)`，

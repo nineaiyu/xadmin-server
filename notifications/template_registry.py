@@ -9,6 +9,7 @@
 """
 
 import re
+from typing import Any
 
 from django.core.cache import cache
 from django.template import Context, Engine
@@ -26,13 +27,13 @@ COMMON_VARIABLES = ("subject", "message", "message_type")
 VARIABLE_PATTERN = re.compile(r"{{\s*([\w.]+)\s*}}")
 
 
-def get_overrides() -> dict:
+def get_overrides() -> dict[str, Any]:
     """读取启用中的覆盖行（60s 缓存）：{message_type: {"subject", "body"}}。
 
     数据库不可用时返回空覆盖（通知渲染回退代码默认，绝不因模板层故障丢消息；
     单测未开 db 访问的场景也走此分支）。
     """
-    cached = cache.get(OVERRIDE_CACHE_KEY)
+    cached: dict[str, Any] | None = cache.get(OVERRIDE_CACHE_KEY)
     if cached is not None:
         return cached
     try:
@@ -52,17 +53,18 @@ def get_overrides() -> dict:
     return data
 
 
-def invalidate_overrides():
+def invalidate_overrides() -> None:
     cache.delete(OVERRIDE_CACHE_KEY)
 
 
-def render_template(template_text: str, context: dict) -> str:
+def render_template(template_text: str, context: dict[str, Any]) -> str:
     # 沙箱：只做变量插值（string_if_invalid 为空串、不自动转义），不注册自定义标签/过滤器
     engine = Engine(string_if_invalid="", autoescape=False)
-    return engine.from_string(template_text).render(Context(context))
+    rendered: str = engine.from_string(template_text).render(Context(context))
+    return rendered
 
 
-def apply_override(message_type, msg: dict, extra=None) -> dict:
+def apply_override(message_type: Any, msg: dict[str, Any], extra: Any = None) -> dict[str, Any]:
     """套用 DB 覆盖：返回新的 {subject, message}（无覆盖时原样返回）。"""
     override = get_overrides().get(message_type)
     if not override:
@@ -86,11 +88,11 @@ def apply_override(message_type, msg: dict, extra=None) -> dict:
     return result
 
 
-def extract_variables(template_text: str) -> set:
+def extract_variables(template_text: str) -> set[Any]:
     return set(VARIABLE_PATTERN.findall(str(template_text or "")))
 
 
-def validate_template(template_text: str, available_variables) -> str:
+def validate_template(template_text: str, available_variables: Any) -> str:
     """校验模板语法与变量白名单，返回错误文案（通过返回空串）。"""
     text = str(template_text or "")
     if not text.strip():

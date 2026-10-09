@@ -79,7 +79,7 @@ def _tokenize(expression: str) -> list[tuple[str, Any]]:
 # ---------------------------------------------------------------------------
 
 
-def _check_call(name: str, args: list[dict]) -> dict:
+def _check_call(name: str, args: list[dict[str, Any]]) -> dict[str, Any]:
     if name in AGGREGATE_FUNCS:
         if len(args) != 1 or args[0]["kind"] != "col":
             raise ValidationError(_("SUM/AVG/MIN/MAX require a table column reference"))
@@ -119,33 +119,33 @@ class _Parser:
             raise _syntax_error()
         return self.next()
 
-    def parse(self) -> dict:
+    def parse(self) -> dict[str, Any]:
         node = self.expr(0)
         if self.peek()[0] != "eof":
             raise _syntax_error()
         return node
 
-    def expr(self, depth: int) -> dict:
+    def expr(self, depth: int) -> dict[str, Any]:
         node = self.term(depth)
         while self.peek()[0] in ("+", "-"):
             op = self.next()[0]
             node = {"kind": "binary", "op": op, "left": node, "right": self.term(depth)}
         return node
 
-    def term(self, depth: int) -> dict:
+    def term(self, depth: int) -> dict[str, Any]:
         node = self.unary(depth)
         while self.peek()[0] in ("*", "/"):
             op = self.next()[0]
             node = {"kind": "binary", "op": op, "left": node, "right": self.unary(depth)}
         return node
 
-    def unary(self, depth: int) -> dict:
+    def unary(self, depth: int) -> dict[str, Any]:
         if self.peek()[0] == "-":
             self.next()
             return {"kind": "unary", "op": "-", "operand": self.unary(depth)}
         return self.primary(depth)
 
-    def primary(self, depth: int) -> dict:
+    def primary(self, depth: int) -> dict[str, Any]:
         if depth > MAX_FORMULA_DEPTH:
             raise ValidationError(_("Formula expression is too deeply nested"))
         kind, value = self.peek()
@@ -164,7 +164,7 @@ class _Parser:
             return node
         raise _syntax_error()
 
-    def ref(self) -> dict:
+    def ref(self) -> dict[str, Any]:
         self.expect("{")
         _, key = self.expect("ident")
         if self.peek()[0] == ".":
@@ -175,9 +175,9 @@ class _Parser:
         self.expect("}")
         return {"kind": "ref", "key": key}
 
-    def call(self, name: str, depth: int) -> dict:
+    def call(self, name: str, depth: int) -> dict[str, Any]:
         self.expect("(")
-        args: list[dict] = []
+        args: list[dict[str, Any]] = []
         if self.peek()[0] != ")":
             args.append(self.expr(depth + 1))
             while self.peek()[0] == ",":
@@ -187,7 +187,7 @@ class _Parser:
         return _check_call(name, args)
 
 
-def _assert_column_usage(node: dict, allow_column: bool = False) -> None:
+def _assert_column_usage(node: dict[str, Any], allow_column: bool = False) -> None:
     """表格列引用仅允许出现在聚合函数参数位（其余语境的列引用语义不明，拒绝）。"""
     kind = node["kind"]
     if kind == "col":
@@ -209,7 +209,7 @@ def _assert_column_usage(node: dict, allow_column: bool = False) -> None:
 
 
 @lru_cache(maxsize=512)
-def parse_formula(expression: str) -> dict:
+def parse_formula(expression: str) -> dict[str, Any]:
     """语法校验并解析公式表达式（结果缓存；AST 只读，求值不修改）。"""
     if not isinstance(expression, str) or not expression.strip():
         raise ValidationError(_("Formula expression is required"))

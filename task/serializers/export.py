@@ -5,6 +5,8 @@
 只读资源：全部字段 read_only，列表展示文件名/来源模块/格式/状态/行数/大小/触发人。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -64,5 +66,5 @@ class ExportRecordSerializer(BaseModelSerializer):
         ]
         read_only_fields = fields
 
-    def get_filesize(self, obj):
+    def get_filesize(self, obj: Any) -> Any:
         return obj.filesize

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """文件在线预览：常量与惰性配置读取。"""
 
+from typing import Any
+
 KIND_IMAGE = "image"
 KIND_PDF = "pdf"
 KIND_TEXT = "text"
@@ -87,7 +89,7 @@ GENERATE_LOCK_TIMEOUT = 30
 GENERATE_WAIT_SECONDS = 2.0
 
 
-def _config(key, default):
+def _config(key: str, default: int) -> int:
     """惰性读 SysConfig（int）：避免模块导入期触发配置表查询（迁移/命令场景）。"""
     value = _config_value(key, default)
     try:
@@ -96,7 +98,7 @@ def _config(key, default):
         return int(default)
 
 
-def _config_value(key, default):
+def _config_value(key: str, default: Any) -> Any:
     """惰性读 SysConfig（原值）：未登记（None）时回退默认值。
 
     注意不能直接用 `getattr(SysConfig, key, default)`：SysConfig 的魔法回退

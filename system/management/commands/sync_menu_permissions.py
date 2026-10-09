@@ -15,6 +15,7 @@
 """
 
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -30,7 +31,7 @@ DETAIL_LIMIT = 100
 class Command(BaseCommand):
     help = "同步菜单权限点与模型字段：补齐缺失权限点、校正模型绑定、修复字段树（幂等）"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--dry-run", action="store_true", help="只输出计划，不写库（字段同步也会跳过）")
         parser.add_argument("--skip-fields", action="store_true", help="跳过模型字段树同步")
         parser.add_argument("--skip-permissions", action="store_true", help="跳过菜单权限点同步")
@@ -42,7 +43,7 @@ class Command(BaseCommand):
         parser.add_argument("--update-seed", action="store_true", help="把变更合并回 loadjson 种子文件")
         parser.add_argument("--default-parent", default="", help="无法自动归属时的兜底父菜单 name（默认报告并跳过）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         dry_run = options["dry_run"]
         user = UserInfo.objects.filter(is_superuser=True).order_by("pk").first()
 
@@ -55,7 +56,7 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 字段树
 
-    def _sync_fields(self, dry_run):
+    def _sync_fields(self, dry_run: Any) -> None:
         if dry_run:
             self.stdout.write("[字段] dry-run：跳过字段树写入（去掉 --dry-run 执行实际同步）")
             return
@@ -70,7 +71,7 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 权限点
 
-    def _sync_permissions(self, options, user, dry_run):
+    def _sync_permissions(self, options: Any, user: Any, dry_run: Any) -> None:
         default_parent = None
         if options["default_parent"]:
             default_parent = Menu.objects.filter(
@@ -165,7 +166,7 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 种子
 
-    def _update_seed(self, created_menus, fixed_menus, method_fixed=None):
+    def _update_seed(self, created_menus: Any, fixed_menus: Any, method_fixed: Any = None) -> None:
         root = Path(settings.PROJECT_DIR) / "loadjson"
         menus = {menu.pk: menu for menu in [*created_menus, *fixed_menus, *(method_fixed or [])]}
         # 库内新增但种子缺失的权限点一并补写（多次执行间也能收敛，如先执行修复再补种子）

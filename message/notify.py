@@ -29,17 +29,17 @@ from server.utils import get_current_request
 logger = get_logger(__name__)
 
 
-@database_sync_to_async
-def get_user_pk(username):
+@database_sync_to_async  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def get_user_pk(username: Any) -> Any:
     return get_active_user_pk_by_username(username)
 
 
-@database_sync_to_async
-def get_can_push_message(pk):
+@database_sync_to_async  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def get_can_push_message(pk: Any) -> Any:
     return UserConfig(pk).PUSH_CHAT_MESSAGE
 
 
-async def notify_at_user_msg(data: dict, username: str):
+async def notify_at_user_msg(data: dict[str, Any], username: str) -> None:
     text = data.get("text") or ""
     if text.startswith("@"):
         target = text.split(" ")[0].split("@")
@@ -60,8 +60,8 @@ async def notify_at_user_msg(data: dict, username: str):
                 logger.error(e)
 
 
-@database_sync_to_async
-def websocket_login_success(user_obj, channel_name):
+@database_sync_to_async  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def websocket_login_success(user_obj: Any, channel_name: Any) -> None:
     request = get_current_request()
     request.channel_name = channel_name
     login_success(request, user_obj, UserLoginLog.LoginTypeChoices.WEBSOCKET)
@@ -73,20 +73,20 @@ def websocket_login_success(user_obj, channel_name):
         logger.warning("register websocket session failed", exc_info=True)
 
 
-@database_sync_to_async
-def websocket_logout_success(channel_name):
+@database_sync_to_async  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def websocket_logout_success(channel_name: Any) -> None:
     websocket_session_logout(channel_name)
 
 
 class MessageNotify(AsyncJsonWebsocket):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(args, kwargs)
         self.group_name = ""
         self.disconnected = True
         self.user: Any = None
         self.ws_session_registered = False
 
-    async def connect(self):
+    async def connect(self) -> None:
         self.user = self.scope["user"]
         if not self.user:
             logger.error(f"user not exists. so close. {self.scope}")
@@ -109,7 +109,7 @@ class MessageNotify(AsyncJsonWebsocket):
             await self.channel_layer.group_add(self.group_name, self.channel_name)
             await self.accept()
 
-    async def disconnect(self, close_code):
+    async def disconnect(self, close_code: Any) -> None:
         self.disconnected = True
         if self.group_name:
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
@@ -123,7 +123,7 @@ class MessageNotify(AsyncJsonWebsocket):
         logger.info(f"{self.user} disconnect")
 
     # Receive message from WebSocket
-    async def receive_json(self, action, data, content, **kwargs):
+    async def receive_json(self, action: Any, data: Any, content: Any, **kwargs: Any) -> None:
         match action:
             case "chat_message":
                 # 历史通道（ws/message）的聊天广播：**无落库、无内容校验、无权限校验**，
@@ -149,12 +149,12 @@ class MessageNotify(AsyncJsonWebsocket):
                 await self.close()
 
     # 下面查看文件方法忽略
-    async def task_log(self, event):
+    async def task_log(self, event: Any) -> None:
         task_id = event.get("data", {}).get("task_id")
         log_path = get_celery_task_log_path(task_id)
         await self.async_handle_task(task_id, log_path)
 
-    async def async_handle_task(self, task_id, log_path):
+    async def async_handle_task(self, task_id: Any, log_path: Any) -> None:
         logger.info(f"Task id: {task_id}")
         while not self.disconnected:
             if not os.path.exists(log_path):
@@ -164,7 +164,7 @@ class MessageNotify(AsyncJsonWebsocket):
                 await self.send_task_log(task_id, log_path)
                 break
 
-    async def send_task_log(self, task_id, log_path):
+    async def send_task_log(self, task_id: Any, log_path: Any) -> None:
         await self.send_json({"message": "\r\n"})
         try:
             logger.debug(f"Task log path: {log_path}")

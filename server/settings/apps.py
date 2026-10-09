@@ -9,7 +9,7 @@ base.py 经 build_installed_apps / build_middleware 调用后再导出同名 set
 from ..const import CONFIG
 
 
-def build_installed_apps(xadmin_apps: list) -> list:
+def build_installed_apps(xadmin_apps: list[str]) -> list[str]:
     """INSTALLED_APPS 装配。
 
     内置 app → 业务 app（拆分后各自独立）→ 三方库 → 配置追加的 xadmin_apps →
@@ -68,7 +68,7 @@ def build_installed_apps(xadmin_apps: list) -> list:
     return apps
 
 
-def build_middleware() -> list:
+def build_middleware() -> list[str]:
     """MIDDLEWARE 装配（顺序即语义，注释随行）。"""
     return [
         "server.middleware.StartMiddleware",

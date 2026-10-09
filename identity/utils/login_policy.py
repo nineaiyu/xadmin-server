@@ -17,6 +17,7 @@
 """
 
 from datetime import datetime
+from typing import Any
 
 from django.utils import timezone
 
@@ -26,18 +27,18 @@ from common.utils.ip.utils import contains_ip
 logger = get_logger(__name__)
 
 
-def _split_values(raw):
+def _split_values(raw: Any) -> Any:
     return [item.strip() for item in str(raw or "").replace("\n", ",").split(",") if item.strip()]
 
 
-def _user_role_codes(user):
+def _user_role_codes(user: Any) -> Any:
     try:
         return set(user.roles.values_list("code", flat=True))
     except Exception:  # noqa: BLE001 角色查询异常不阻断登录（视为无角色）
         return set()
 
 
-def match_target(policy, user) -> bool:
+def match_target(policy: Any, user: Any) -> bool:
     """对象维度匹配：全体 / 指定用户（用户名） / 指定角色（角色 code）。"""
     if policy.target_type == policy.TargetType.ALL:
         return True
@@ -50,7 +51,7 @@ def match_target(policy, user) -> bool:
     return bool(_user_role_codes(user) & set(values))
 
 
-def match_time(policy, when: datetime) -> bool:
+def match_time(policy: Any, when: datetime) -> bool:
     """时段维度匹配：星期（1=周一..7=周日）+ 起止时间（start > end 表示跨天）。"""
     weekdays = [int(day) for day in (policy.weekdays or []) if str(day).strip().isdigit()]
     if weekdays and when.isoweekday() not in weekdays:
@@ -58,23 +59,26 @@ def match_time(policy, when: datetime) -> bool:
     if policy.start_time and policy.end_time:
         current = when.time()
         if policy.start_time <= policy.end_time:
-            return policy.start_time <= current <= policy.end_time
+            typed_value: bool = policy.start_time <= current <= policy.end_time
+            return typed_value
         # 跨天窗口（如 22:00-06:00）
-        return current >= policy.start_time or current <= policy.end_time
+        overnight: bool = current >= policy.start_time or current <= policy.end_time
+        return overnight
     return True
 
 
-def match_ip(policy, ip: str) -> bool:
+def match_ip(policy: Any, ip: str) -> bool:
     """网段维度匹配：每行一个 CIDR / 区间（复用 contains_ip 支持的全部形态）。"""
     ranges = [line.strip() for line in str(policy.ip_ranges or "").splitlines() if line.strip()]
     if not ranges:
         return True
     if not ip:
         return False
-    return contains_ip(ip, ranges)
+    typed_value: bool = contains_ip(ip, ranges)
+    return typed_value
 
 
-def match_policy_detail(policy, user, ip, when: datetime) -> dict:
+def match_policy_detail(policy: Any, user: Any, ip: Any, when: datetime) -> dict[str, Any]:
     """逐维度匹配明细：对象 / 时段 / 网段各自命中与否。
 
     预演专用：只返回总命中结果时，管理员无法定位「为什么没生效」。
@@ -90,11 +94,12 @@ def match_policy_detail(policy, user, ip, when: datetime) -> dict:
     }
 
 
-def match_policy(policy, user, ip, when: datetime) -> bool:
-    return match_policy_detail(policy, user, ip, when)["matched"]
+def match_policy(policy: Any, user: Any, ip: Any, when: datetime) -> bool:
+    typed_value: bool = match_policy_detail(policy, user, ip, when)["matched"]
+    return typed_value
 
 
-def evaluate_login_policy(user, ip, when=None) -> dict:
+def evaluate_login_policy(user: Any, ip: Any, when: Any = None) -> dict[str, Any]:
     """求值登录策略，返回首个命中结果。
 
     :return: ``{"action": None|"accept"|"reject"|"require_mfa"|"record",
@@ -116,7 +121,7 @@ def evaluate_login_policy(user, ip, when=None) -> dict:
     return {"action": None, "policy": "", "result": ""}
 
 
-def preview_login_policy(user, ip, when=None) -> dict:
+def preview_login_policy(user: Any, ip: Any, when: Any = None) -> dict[str, Any]:
     """命中预演（管理页用）：返回全部策略的逐条、逐维度匹配结果与最终判定。
 
     未启用策略也列出（``is_active=False``，仅展示不参与判定），便于评估

@@ -25,6 +25,7 @@ DeprecationWarning，一个版本周期后移除。
 """
 
 import warnings
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
@@ -34,17 +35,17 @@ class SettingSaveContractMixin:
 
     change_fields: list[str] = []
 
-    def set_response_data(self, data: dict) -> None:
+    def set_response_data(self, data: dict[str, Any]) -> None:
         """回写保存后的响应载荷（未提交键 = 运行时当前值，变更键 = 新值）。"""
         self._data = data
 
     @property
-    def response_data(self) -> dict:
+    def response_data(self) -> dict[str, Any]:
         """当前响应载荷：post_save 阶段可读；就地改写即完成响应整形。"""
         return self._data
 
     @property
-    def _change_fields(self):
+    def _change_fields(self) -> list[str]:
         warnings.warn(
             str(
                 _(
@@ -58,7 +59,7 @@ class SettingSaveContractMixin:
         return self.change_fields
 
     @_change_fields.setter
-    def _change_fields(self, value):
+    def _change_fields(self, value: list[str]) -> None:
         warnings.warn(
             str(
                 _(

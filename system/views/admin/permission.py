@@ -4,6 +4,7 @@
 # filename : permission
 # author : ly_13
 # date : 6/16/2023
+from typing import Any
 
 from django.db.models import Count
 from django_filters import rest_framework as filters
@@ -34,7 +35,7 @@ class DataPermissionViewSet(BaseModelSet, ImportExportDataAction):
     ordering_fields = ["created_time"]
     filterset_class = DataPermissionFilter
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         queryset = super().get_queryset()
         if self.action == "list":
             # 列表页展示生效范围与分配对象统计：注解计数避免逐行 count()；

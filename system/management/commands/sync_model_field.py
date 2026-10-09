@@ -4,6 +4,8 @@
 # filename : sync_model_field
 # author : ly_13
 # date : 10/25/2024
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from system.services.modelfield import sync_model_field
@@ -12,5 +14,5 @@ from system.services.modelfield import sync_model_field
 class Command(BaseCommand):
     help = "Sync Model Field"
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         sync_model_field()

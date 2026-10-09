@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 12/25/2023
 import os.path
+from typing import Any
 
 from django.conf import settings
 from django.core import serializers
@@ -15,7 +16,7 @@ from settings.models import Setting
 from system.models import *
 
 
-def get_fields(model):
+def get_fields(model: Any) -> Any:
     if issubclass(model, FieldPermission):
         exclude_fields = ["updated_time", "created_time"]
     elif issubclass(model, ModelLabelField):
@@ -28,7 +29,7 @@ def get_fields(model):
 
 class Command(BaseCommand):
     help = "dump init json data"
-    model_names = [
+    model_names: list[Any] = [
         UserRole,
         DeptInfo,
         Menu,
@@ -41,7 +42,7 @@ class Command(BaseCommand):
         Setting,
     ]
 
-    def save_json(self, queryset, filename):
+    def save_json(self, queryset: Any, filename: Any) -> None:
         stream = open(filename, "w", encoding="utf8")
         try:
             serializers.serialize(
@@ -58,7 +59,7 @@ class Command(BaseCommand):
             if stream:
                 stream.close()
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
         for model in self.model_names:
             self.save_json(

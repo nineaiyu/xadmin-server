@@ -16,6 +16,8 @@ HTTP 接口只读（阈值 PUT 除外）且短缓存（10s），权限走菜单 
 WS 通道（ws/system/monitor/）同口径鉴权，前端可二选一或叠加使用。
 """
 
+from typing import Any
+
 from django.conf import settings
 from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema
@@ -38,14 +40,14 @@ class MonitorViewSet(GenericViewSet):
     # 面板数据对实时性不敏感，短缓存避免多端同时刷新时重复采集
     dashboard_cache_timeout = 10
 
-    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+    def get_cache_key(self, view_instance: Any, view_method: Any, request: Any, args: Any, kwargs: Any) -> Any:
         func_name = f"{view_instance.__class__.__name__}_{view_method.__name__}"
         return f"{func_name}_{request.user.pk}"
 
     @extend_schema(responses=get_default_response_schema())
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
-    @action(methods=["get"], detail=False, url_path="overview")
-    def overview(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="overview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def overview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """主机资源概览：实时快照 + 心跳最新值 + 最近趋势 + 健康总览
 
         - live：直读 psutil（与心跳同源工具函数），卡片秒级新鲜；
@@ -66,42 +68,42 @@ class MonitorViewSet(GenericViewSet):
 
     @extend_schema(responses=get_default_response_schema())
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
-    @action(methods=["get"], detail=False, url_path="services")
-    def services(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="services")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def services(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """核心服务健康：DB / Redis / Celery 状态与探测耗时"""
         return ApiResponse(data=metrics.collect_services())
 
     @extend_schema(responses=get_default_response_schema())
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
-    @action(methods=["get"], detail=False, url_path="redis-info")
-    def redis_info(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="redis-info")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def redis_info(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """缓存 Redis 实例关键指标（INFO 解析）与 Celery 队列长度"""
         return ApiResponse(data=metrics.collect_redis_info())
 
     @extend_schema(responses=get_default_response_schema())
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
-    @action(methods=["get"], detail=False, url_path="celery")
-    def celery(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="celery")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def celery(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """Celery worker 与队列状态"""
         return ApiResponse(data=metrics.collect_celery_status())
 
     @extend_schema(responses=get_default_response_schema())
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
-    @action(methods=["get"], detail=False, url_path="task-health")
-    def task_health(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="task-health")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def task_health(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """后台任务健康度（近 1 天聚合：成功率 / 健康色 / 高频任务 / 近期失败）"""
         return ApiResponse(data=metrics.collect_task_health())
 
     @extend_schema(responses=get_default_response_schema())
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
-    @action(methods=["get"], detail=False, url_path="slow")
-    def slow(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="slow")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def slow(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """慢请求 Top N（最近窗口内 exec_time 超阈值的操作日志）"""
         return ApiResponse(data=metrics.collect_slow_requests())
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="history")
-    def history(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="history")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def history(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """指标历史趋势：时间范围（range=1h/6h/24h/7d/30d 或 start/end）、
 
         聚合粒度（interval=auto/1m/5m/15m/1h/1d）、多指标（metrics 逗号分隔）
@@ -118,8 +120,8 @@ class MonitorViewSet(GenericViewSet):
         return ApiResponse(data=result)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get", "put"], detail=False, url_path="thresholds")
-    def thresholds(self, request, *args, **kwargs):
+    @action(methods=["get", "put"], detail=False, url_path="thresholds")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def thresholds(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """资源告警阈值：GET 读取 / PUT 更新（与安全设置同源 Setting 表）"""
         from settings.serializers.security import SecurityMonitorSerializer
 
@@ -133,7 +135,7 @@ class MonitorViewSet(GenericViewSet):
         return ApiResponse(data=self.thresholds_payload())
 
     @staticmethod
-    def thresholds_payload():
+    def thresholds_payload() -> Any:
         """当前阈值与表单元数据（label/范围来自 SecurityMonitorSerializer 单源）。"""
         from settings.serializers.security import SecurityMonitorSerializer
 
@@ -152,7 +154,7 @@ class MonitorViewSet(GenericViewSet):
         return {"items": items, "check_interval_seconds": 60}
 
     @staticmethod
-    def persist_thresholds(serializer, request):
+    def persist_thresholds(serializer: Any, request: Any) -> Any:
         """写 Setting 并同步本进程 settings（其他进程由 pubsub 回写，丢失时消费侧周期对账收敛）。"""
         from settings.models import Setting
 
@@ -163,12 +165,13 @@ class MonitorViewSet(GenericViewSet):
             )
             if is_changed:
                 changed.append(name)
+                assert setting is not None  # 契约：changed 为真时必有实例（此处仅作类型收窄）
                 setting.refresh_setting()
         return changed
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="events")
-    def events(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="events")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def events(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """事件记录查询：kind=alert（告警）/ error（异常请求）/ task（任务失败）
 
         分页参数 limit（默认按 kind 为 200/50，封顶 1000）与 offset；响应带
@@ -185,8 +188,8 @@ class MonitorViewSet(GenericViewSet):
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="export")
-    def export(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="export")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def export(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """报表导出：kind=history（趋势数据+汇总）/ alerts（告警记录），type=csv|xlsx"""
         file_format = "xlsx" if request.query_params.get("type") == "xlsx" else "csv"
         if request.query_params.get("kind") == "alerts":

@@ -16,6 +16,7 @@
 import hashlib
 import hmac
 import time
+from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import connection
@@ -240,7 +241,7 @@ def get_event_label(event: str) -> str:
     return str(entry.get("label") or event)
 
 
-def event_catalog_payload() -> list:
+def event_catalog_payload() -> list[Any]:
     """事件目录（管理页下拉 / 文档生成共用）：key/label/version/fields。"""
     catalog = []
     for key, entry in EVENT_CATALOG.items():
@@ -258,7 +259,7 @@ def event_catalog_payload() -> list:
     return catalog
 
 
-def outbound_allowed_hosts() -> tuple:
+def outbound_allowed_hosts() -> tuple[Any, ...]:
     """出站白名单（逗号分隔的域名/IP，默认空 = 不启用）：Webhook 私网目标的放行途径。"""
     from common.utils.outbound import outbound_allowed_hosts as _load_allowed_hosts
 
@@ -282,7 +283,7 @@ def validate_url(url: str) -> str:
     )
 
 
-def validate_events(events) -> list:
+def validate_events(events: Any) -> list[Any]:
     if not isinstance(events, list) or not events:
         raise ValidationError(_("Webhook events cannot be empty"))
     for event in events:
@@ -304,14 +305,14 @@ def decrypt_secret(encrypted: str) -> str:
         return ""
 
 
-def sign_payload(secret: str, body: bytes, timestamp: int | None = None) -> tuple:
+def sign_payload(secret: str, body: bytes, timestamp: int | None = None) -> tuple[Any, ...]:
     """返回 (signature_header_value, timestamp)。"""
     ts = int(timestamp if timestamp is not None else time.time())
     mac = hmac.new(str(secret).encode("utf-8"), f"{ts}.".encode() + body, hashlib.sha256)
     return f"sha256={mac.hexdigest()}", ts
 
 
-def emit_webhook_event(event: str, data: dict) -> int:
+def emit_webhook_event(event: str, data: dict[str, Any]) -> int:
     """事件发射唯一入口：为每个订阅该事件的 active 订阅创建投递并派发任务。
 
     全程吞异常：Webhook 链路任何故障只记日志，绝不影响宿主动作。

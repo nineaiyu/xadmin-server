@@ -15,7 +15,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
 
-def build_tool_messages(user, message: str) -> list:
+def build_tool_messages(user: Any, message: str) -> list[Any]:
     """原生 tools 轨道的消息：动作目录经 tools 定义下发，不重复进 prompt。
 
     仍保留引用数据护栏声明：模型/工具定义之外的业务内容不可作为指令。
@@ -41,7 +41,7 @@ def build_tool_messages(user, message: str) -> list:
     ]
 
 
-def _tool_call_params(call: dict) -> tuple:
+def _tool_call_params(call: dict[str, Any]) -> tuple[Any, ...]:
     """tool_call arguments（JSON 字符串 / 对象）→ (params, summary)；畸形输出抛可读错误。"""
     from ai.utils.ai_tool_catalog import SUMMARY_PARAM
 
@@ -63,7 +63,7 @@ def _tool_call_params(call: dict) -> tuple:
     return params, summary
 
 
-def drafts_from_tool_calls(user, tool_calls: list) -> dict:
+def drafts_from_tool_calls(user: Any, tool_calls: list[Any]) -> dict[str, Any]:
     """原生 tool_calls → 既有 drafts 结构（双轨共用同一下游）。
 
     返回与 ``parse_draft`` 同构的结果；无工具调用 / 超量 / 参数畸形按可读校验错误处理。
@@ -82,7 +82,7 @@ def drafts_from_tool_calls(user, tool_calls: list) -> dict:
     return {"kind": "draft", "draft": drafts[0], "drafts": drafts}
 
 
-def native_draft_result(user, message: str) -> tuple:
+def native_draft_result(user: Any, message: str) -> tuple[Any, ...]:
     """原生 function calling 轨道生成草稿：返回 ``(parse_draft 同构结果, 轨道标记)``。
 
     仅在 ``native_tools_enabled()``（能力探测通过 + 开关开启）为真时由调用方进入；

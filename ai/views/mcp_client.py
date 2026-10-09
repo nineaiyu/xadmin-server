@@ -9,6 +9,7 @@
 """
 
 import json
+from typing import Any
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -84,8 +85,8 @@ class McpServerViewSet(
     ai_admin_actions = ("call",)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="sync")
-    def sync(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="sync")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def sync(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """同步工具清单（initialize → tools/list），结果存快照。"""
         server = self.get_object()
         if not server.enabled:
@@ -104,8 +105,8 @@ class McpServerViewSet(
         return ApiResponse(data={"tools": tools_with_callable(server, tools), "count": len(tools)})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="call")
-    def call(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="call")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def call(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """调用白名单内工具：body ``{tool, arguments}``（参数对象可选）。"""
         from rest_framework.exceptions import ValidationError
 

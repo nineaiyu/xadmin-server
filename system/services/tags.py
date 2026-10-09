@@ -10,6 +10,8 @@
 - 过滤：``?tag=<id|name>``（多值 AND 语义），与数据权限编译器叠加。
 """
 
+from typing import Any
+
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
@@ -22,7 +24,7 @@ logger = get_logger(__name__)
 MAX_TAGS_PER_OBJECT = 20
 
 
-def taggable_model(resource: str):
+def taggable_model(resource: str) -> Any:
     """资源键 → 模型类（非白名单返回 None，fail-closed）。"""
     from django.apps import apps
 
@@ -38,18 +40,18 @@ def taggable_model(resource: str):
         return None
 
 
-def resource_key(model) -> str:
+def resource_key(model: Any) -> str:
     return f"{model._meta.app_label}.{model._meta.model_name}".lower()
 
 
-def taggable_resources() -> list:
+def taggable_resources() -> list[Any]:
     """白名单资源清单（前端选择器数据源）。"""
     from system.models.tag import TAGGABLE_MODELS
 
     return [{"key": key, "label": str(meta["label"])} for key, meta in TAGGABLE_MODELS.items()]
 
 
-def taggable_visit(model) -> tuple[str, str]:
+def taggable_visit(model: Any) -> tuple[str, str]:
     """对象打标所需的业务权限模板（白名单外返回空串）：返回 (method, path 模板)。"""
     from system.models.tag import TAGGABLE_MODELS
 
@@ -57,7 +59,7 @@ def taggable_visit(model) -> tuple[str, str]:
     return str(meta.get("method") or "PATCH").upper(), str(meta.get("visit") or "")
 
 
-def ensure_tag_permission(user, model, pk) -> None:
+def ensure_tag_permission(user: Any, model: Any, pk: Any) -> None:
     """打标权限校验：回落业务对象的写权限点（fail-closed，模板见 TAGGABLE_MODELS）。"""
     from ai.utils.ai_actions import user_can_visit
 
@@ -68,14 +70,14 @@ def ensure_tag_permission(user, model, pk) -> None:
         raise DjangoValidationError(_("You do not have permission to tag this object"))
 
 
-def _data_scope_queryset(model, user):
+def _data_scope_queryset(model: Any, user: Any) -> Any:
     """默认可见域：全局数据权限过滤（与各域列表页的 BaseDataPermissionFilter 同源）。"""
     from common.core.filter import get_filter_queryset
 
     return get_filter_queryset(model._default_manager.all(), user)
 
 
-def _approval_instance_queryset(model, user):
+def _approval_instance_queryset(model: Any, user: Any) -> Any:
     """审批实例可见域：我发起 ∪ 待我审批 ∪ 我参与过 ∪ 我被抄送（列表页缺省页签同源）。"""
     from approval.utils.approval_flow.queries import visible_instances_for
 
@@ -91,7 +93,7 @@ VISIBLE_QUERYSETS = {
 }
 
 
-def ensure_object_visible(user, model, pk) -> None:
+def ensure_object_visible(user: Any, model: Any, pk: Any) -> None:
     """查看级对象校验：目标对象必须落在请求者的用户可见域内（fail-closed）。
 
     打标读口与写口权限不同口径：写（assign / batch-assign）回落业务对象的更新权限点，
@@ -113,11 +115,11 @@ def ensure_object_visible(user, model, pk) -> None:
         raise NotFound()
 
 
-def tag_brief(tag) -> dict:
+def tag_brief(tag: Any) -> dict[str, Any]:
     return {"pk": str(tag.pk), "name": tag.name, "color": tag.color or ""}
 
 
-def tags_for_instance(obj) -> list:
+def tags_for_instance(obj: Any) -> list[Any]:
     """单对象标签列表（优先走预取缓存，列表页零 N+1）。"""
     prefetched = getattr(obj, "_prefetched_objects_cache", None)
     if prefetched is not None and "tagged_items" in prefetched:
@@ -125,7 +127,7 @@ def tags_for_instance(obj) -> list:
     return [tag_brief(item.tag) for item in obj.tagged_items.select_related("tag").all() if item.tag_id]
 
 
-def object_tags(model, pk) -> list:
+def object_tags(model: Any, pk: Any) -> list[Any]:
     """按主键取标签（详情/打标后回显）。"""
     from system.models.tag import TaggedItem
 
@@ -140,7 +142,7 @@ def object_tags(model, pk) -> list:
     return [tag_brief(row.tag) for row in rows if row.tag_id]
 
 
-def set_object_tags(model, pk, tag_pks, user=None) -> list:
+def set_object_tags(model: Any, pk: Any, tag_pks: Any, user: Any = None) -> list[Any]:
     """全量替换对象标签（返回最新标签列表）；标签不存在即拒绝（fail-closed）。"""
     from django.db import transaction
 
@@ -172,7 +174,9 @@ def set_object_tags(model, pk, tag_pks, user=None) -> list:
     return object_tags(model, pk)
 
 
-def set_object_tags_batch(model, pks, tag_pks, mode="add", user=None, guard=None) -> tuple[list, list]:
+def set_object_tags_batch(
+    model: Any, pks: Any, tag_pks: Any, mode: Any = "add", user: Any = None, guard: Any = None
+) -> tuple[list[Any], list[Any]]:
     """多对象批量打标：``mode`` 与批量端点同语义（add 合并去重 / remove 剔除 / replace 全量）。
 
     校验口径与单对象 ``set_object_tags`` 一致（目标主键必填、单对象标签数上限、标签必须
@@ -192,7 +196,7 @@ def set_object_tags_batch(model, pks, tag_pks, mode="add", user=None, guard=None
     incoming = [str(item) for item in (tag_pks or []) if str(item or "").strip()]
 
     # 现有关联按对象一次读回（replace 全量替换不依赖现值，免读）
-    current_map: dict = {}
+    current_map: dict[str, Any] = {}
     if mode != "replace":
         content_type = ContentType.objects.get_for_model(model)
         rows = TaggedItem.objects.filter(content_type=content_type, object_id__in=[str(pk) for pk in raw_pks])
@@ -200,7 +204,7 @@ def set_object_tags_batch(model, pks, tag_pks, mode="add", user=None, guard=None
             current_map.setdefault(row.object_id, []).append(str(row.tag_id))
 
     # 逐对象计算目标标签集（add 去重合并 / remove 剔除 / 其余按全量替换）
-    wanted_map: dict = {}
+    wanted_map: dict[str, Any] = {}
     for pk in (str(pk) for pk in raw_pks):
         current = current_map.get(pk, [])
         if mode == "add":
@@ -252,7 +256,7 @@ def set_object_tags_batch(model, pks, tag_pks, mode="add", user=None, guard=None
                 batch_size=500,
             )
         # 最新标签一次读回（按 tag 名排序，与单对象打标回显同序）
-        latest: dict = {}
+        latest: dict[str, Any] = {}
         rows = (
             TaggedItem.objects.filter(content_type=content_type, object_id__in=valid_pks)
             .select_related("tag")
@@ -264,7 +268,7 @@ def set_object_tags_batch(model, pks, tag_pks, mode="add", user=None, guard=None
     return changed, failed
 
 
-def _ids_for_token(model, token: str) -> set:
+def _ids_for_token(model: Any, token: str) -> set[Any]:
     """单个过滤词（标签主键或名称）→ 该模型下已打标对象的 id 集合。"""
     from system.models.tag import Tag, TaggedItem
 
@@ -284,7 +288,7 @@ def _looks_like_pk(token: str) -> bool:
     return len(token) >= 32 and "-" in token
 
 
-def filter_by_tags(queryset, model, tokens: list):
+def filter_by_tags(queryset: Any, model: Any, tokens: list[Any]) -> Any:
     """按标签过滤（多词 AND 语义）：未命中任何标签时返回空集（而不是全量）。"""
     ids = None
     for token in tokens:
@@ -295,7 +299,7 @@ def filter_by_tags(queryset, model, tokens: list):
     return queryset.filter(pk__in=list(ids))
 
 
-def tag_choice_options(limit: int = 200) -> list:
+def tag_choice_options(limit: int = 200) -> list[Any]:
     """标签下拉选项（元数据 choices 数据源；60s 短缓存，避免每次请求查表）。"""
     from django.core.cache import cache
 
@@ -307,7 +311,8 @@ def tag_choice_options(limit: int = 200) -> list:
     except Exception:  # noqa: BLE001 缓存不可用直接查库
         cached = None
     if cached is not None:
-        return cached
+        typed_value: list[Any] = cached
+        return typed_value
     data = [(tag.name, tag.name) for tag in Tag.objects.all()[:limit]]
     try:
         cache.set(key, data, 60)
@@ -327,7 +332,7 @@ def invalidate_tag_options_cache() -> None:
             logger.debug("invalidate tag options failed", exc_info=True)
 
 
-def filter_by_tag_name(queryset, value):
+def filter_by_tag_name(queryset: Any, value: Any) -> Any:
     """django-filter 方法体：``value`` 支持逗号分隔多标签（AND 语义）。"""
     tokens = [item.strip() for item in str(value or "").split(",") if item.strip()]
     if not tokens:
@@ -342,7 +347,7 @@ class TagChoiceFilter:
     + ``Meta.fields`` 加入 ``"tag"`` + 视图 ``filter_backends`` 挂 ``TagFilterBackend``。
     """
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: Any, **kwargs: Any) -> Any:
         from django import forms
         from django.utils.translation import gettext_lazy as _
         from django_filters import rest_framework as filters
@@ -355,17 +360,17 @@ class TagChoiceFilter:
             否则「下拉里没有的取值」（新建标签 60s 缓存窗口内、深链带主键、多标签组合）会被拦。
             """
 
-            def valid_value(self, value):
+            def valid_value(self, value: Any) -> Any:
                 return True
 
         class _TagChoiceFilter(filters.ChoiceFilter):
-            def __init__(self, *filter_args, **filter_kwargs):
+            def __init__(self, *filter_args: Any, **filter_kwargs: Any) -> None:
                 filter_kwargs.setdefault("label", _("Tag"))
                 filter_kwargs.setdefault("method", "filter_tag")
                 super().__init__(*filter_args, **filter_kwargs)
 
             @property
-            def field(self):
+            def field(self) -> Any:
                 # 每次取值重建：标签随时可新增，元数据下拉保持最新
                 return _TagValueField(label=self.label, choices=tag_choice_options(), required=False)
 
@@ -382,7 +387,7 @@ class TaggedPrefetchMixin:
     #: 需要标签数据的 action（与 BaseViewSet.auto_prefetch_actions 同口径）
     tagged_prefetch_actions = ("list", "retrieve", "export_data")
 
-    def optimize_queryset(self, queryset):
+    def optimize_queryset(self, queryset: Any) -> Any:
         from django.db.models import QuerySet
 
         queryset = super().optimize_queryset(queryset)  # type: ignore[misc]  # 宿主 mixin 未声明同名优化钩子
@@ -400,7 +405,7 @@ class TagFilterBackend:
     与数据权限叠加执行，不绕过任何既有过滤链。
     """
 
-    def filter_queryset(self, request, queryset, view):
+    def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
         from system.models.tag import TAGGABLE_MODELS
 
         params = request.query_params
@@ -427,5 +432,5 @@ class TagFilterMixin:
 
     tag = TagChoiceFilter()
 
-    def filter_tag(self, queryset, name, value):
+    def filter_tag(self, queryset: Any, name: Any, value: Any) -> Any:
         return filter_by_tag_name(queryset, value)

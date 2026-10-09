@@ -2,11 +2,14 @@
 # -*- coding:utf-8 -*-
 """字段级数据脱敏规则管理（蒙版规则增删改查 + 实时预览）。"""
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.request import Request
 
 from audit.models.mask import DataMaskRule
 from audit.serializers.mask import DataMaskRuleSerializer
@@ -23,7 +26,7 @@ PREVIEW_MAX_VALUES = 20
 PREVIEW_MAX_VALUE_LENGTH = 500
 
 
-def collect_preview_values(payload):
+def collect_preview_values(payload: Any) -> tuple[list[str], bool]:
     """归一化预览样例：兼容 ``values`` 数组与 ``value`` 换行多值两种入参。
 
     返回 ``(values, truncated)``：样例按顺序去空白行、逐条限长、整体限量，
@@ -67,8 +70,8 @@ class DataMaskRuleViewSet(BaseModelSet, ImportExportDataAction):
     ordering_fields = ["sort", "created_time"]
 
     @extend_schema(description="脱敏预览：传入样例值与规则参数，返回逐条脱敏结果（供前端表单实时预览）")
-    @action(methods=["post"], detail=False)
-    def preview(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """给定样例值与规则参数，返回脱敏结果（供前端表单实时预览）。
 
         样例可为 ``values`` 数组，或 ``value`` 内含换行（按行拆分）；``result``

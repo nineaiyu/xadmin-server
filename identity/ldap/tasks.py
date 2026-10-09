@@ -7,6 +7,8 @@
 随时停用；手动触发复用周期任务管理页 run 动作（自动获得 TaskExecution 历史）。
 """
 
+from typing import Any
+
 from celery import shared_task
 
 from common.celery.decorator import register_as_period_task
@@ -15,9 +17,9 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-@shared_task
-@register_as_period_task(crontab="17 * * * *", description="LDAP 目录同步（用户/部门/状态）", module="ldap")
-def sync_ldap_directory_job():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="17 * * * *", description="LDAP 目录同步（用户/部门/状态）", module="ldap")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def sync_ldap_directory_job() -> Any:
     from identity.ldap.sync import run_ldap_sync
 
     summary = run_ldap_sync()

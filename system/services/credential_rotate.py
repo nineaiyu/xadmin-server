@@ -6,6 +6,7 @@
 """
 
 import secrets
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
@@ -27,7 +28,7 @@ from system.services.credential import (
 logger = get_logger(__name__)
 
 
-def regenerate_system_config(key: str, user=None) -> dict:
+def regenerate_system_config(key: str, user: Any = None) -> dict[str, Any]:
     """原地轮换系统自生成的 SystemConfig 键：重新生成随机值并加密落库。
 
     外部签发的注册键（OAuth/S3）拒绝原地轮换，返回更换入口提示，避免造假值打挂集成。
@@ -50,7 +51,7 @@ def regenerate_system_config(key: str, user=None) -> dict:
     return {"ok": True, "action": "rotate", "detail": ""}
 
 
-def rotate_model_field(name: str, user=None) -> dict:
+def rotate_model_field(name: str, user: Any = None) -> dict[str, Any]:
     """原地轮换白名单内的模型字段级凭据：逐行重新生成随机值并加密落库。
 
     只接受 :data:`MODEL_CREDENTIAL_FIELDS` 中的键且 ``rotatable=True``，杜绝任意
@@ -92,7 +93,7 @@ def _model_secret_plaintext(name: str) -> str:
     return raw
 
 
-def rotate_system_config(key: str, user=None) -> dict:
+def rotate_system_config(key: str, user: Any = None) -> dict[str, Any]:
     """重加密（或首次加密）单个 SystemConfig 敏感键；返回 ``{ok, action, detail}``。"""
     from common.core.config import SysConfig
     from system.models import SystemConfig
@@ -116,7 +117,7 @@ def rotate_system_config(key: str, user=None) -> dict:
     return {"ok": True, "action": action, "detail": ""}
 
 
-def rotate_setting(name: str, user=None) -> dict:
+def rotate_setting(name: str, user: Any = None) -> dict[str, Any]:
     """重加密/首次加密单个 Setting 敏感项；返回 ``{ok, action, detail}``。
 
     两种输入形态（值一律不变，仅加密态收敛）：

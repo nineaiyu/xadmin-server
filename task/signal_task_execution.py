@@ -15,6 +15,8 @@
 handler 均用幂等 update/get_or_create，重复触发无副作用。
 """
 
+from typing import Any
+
 from celery.signals import (
     after_task_publish,
     task_postrun,
@@ -34,15 +36,15 @@ from task.models.task import PeriodicTaskOwner, TaskExecution
 logger = get_logger(__name__)
 
 
-def _request_user():
+def _request_user() -> Any:
     request = get_current_request()
     if request and request.user and request.user.is_authenticated:
         return request.user
     return None
 
 
-@after_task_publish.connect
-def task_execution_on_publish(sender=None, headers=None, body=None, **kwargs):
+@after_task_publish.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def task_execution_on_publish(sender: Any = None, headers: Any = None, body: Any = None, **kwargs: Any) -> None:
     headers = headers or {}
     task_id = headers.get("id")
     if not task_id:
@@ -71,15 +73,15 @@ def task_execution_on_publish(sender=None, headers=None, body=None, **kwargs):
         logger.exception("TaskExecution on_publish failed: %s", task_id)
 
 
-@task_prerun.connect
-def task_execution_on_start(task_id=None, task=None, **kwargs):
+@task_prerun.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def task_execution_on_start(task_id: Any = None, task: Any = None, **kwargs: Any) -> None:
     if not task_id:
         return
     TaskExecution.objects.filter(pk=task_id).update(status=TaskExecution.Status.RUNNING, date_start=timezone.now())
 
 
-@task_postrun.connect
-def task_execution_on_finish(task_id=None, state=None, **kwargs):
+@task_postrun.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def task_execution_on_finish(task_id: Any = None, state: Any = None, **kwargs: Any) -> None:
     if not task_id:
         return
     status = state or TaskExecution.Status.SUCCESS
@@ -90,16 +92,16 @@ def task_execution_on_finish(task_id=None, state=None, **kwargs):
     )
 
 
-@task_revoked.connect
-def task_execution_on_revoked(request=None, terminated=None, expired=None, **kwargs):
+@task_revoked.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def task_execution_on_revoked(request: Any = None, terminated: Any = None, expired: Any = None, **kwargs: Any) -> None:
     task_id = getattr(request, "id", None)
     if not task_id:
         return
     TaskExecution.objects.filter(pk=task_id).update(status=TaskExecution.Status.REVOKED, date_finished=timezone.now())
 
 
-@worker_ready.connect
-def clean_orphan_periodic_tasks(sender=None, **kwargs):
+@worker_ready.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def clean_orphan_periodic_tasks(sender: Any = None, **kwargs: Any) -> None:
     """worker 就绪后清理 task 不在注册表中的孤儿 PeriodicTask。
 
     代码重命名/删除任务后，其历史定时配置会成为 beat 无法执行的死配置。

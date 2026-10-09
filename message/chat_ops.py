@@ -12,6 +12,7 @@
 
 import re
 import uuid
+from typing import Any
 
 from django.utils import timezone
 
@@ -24,29 +25,30 @@ logger = get_logger(__name__)
 MENTION_PATTERN = re.compile(r"@([\w.\-]+)")
 
 
-def _user_pk(obj):
+def _user_pk(obj: Any) -> Any:
     return getattr(obj, "pk", obj)
 
 
-def display_name(user) -> str:
+def display_name(user: Any) -> str:
     """消息/联系人展示名：优先昵称，回退用户名。"""
     if user is None:
         return ""
     return (getattr(user, "nickname", "") or getattr(user, "username", "") or "")[:64]
 
 
-def avatar_url(user) -> str:
+def avatar_url(user: Any) -> str:
     """头像 URL（无头像/存储异常返回空串，前端回退首字母头像）。"""
     avatar = getattr(user, "avatar", None)
     if not avatar:
         return ""
     try:
-        return avatar.url
+        url: str = avatar.url
+        return url
     except Exception:  # noqa: BLE001 存储异常不应影响消息链路
         return ""
 
 
-def user_brief(user) -> dict:
+def user_brief(user: Any) -> dict[str, Any]:
     """用户简介（会话对端 / 联系人共用）。"""
     if user is None:
         return {}
@@ -58,7 +60,7 @@ def user_brief(user) -> dict:
     }
 
 
-def _normalize_user_pks(raw_pks) -> list:
+def _normalize_user_pks(raw_pks: Any) -> list[Any]:
     """主键列表规范化：可转 int、去重、剔除非法值（保序）。"""
     result = []
     for raw in raw_pks or []:
@@ -71,7 +73,7 @@ def _normalize_user_pks(raw_pks) -> list:
     return result
 
 
-def parse_mentions(content: str) -> list:
+def parse_mentions(content: str) -> list[Any]:
     """全位置、多目标解析 @提及（去重保序）。"""
     seen = []
     for name in MENTION_PATTERN.findall(content or ""):
@@ -80,7 +82,7 @@ def parse_mentions(content: str) -> list:
     return seen
 
 
-def mention_users(content: str, exclude_username: str = "") -> list:
+def mention_users(content: str, exclude_username: str = "") -> list[Any]:
     """把 @提及解析为在用用户对象（跳过自己与不存在的用户名）。"""
     from identity.models import UserInfo
 
@@ -95,7 +97,7 @@ def new_client_msg_id() -> str:
     return uuid.uuid4().hex
 
 
-def clean_expired_history(keep_days=None, batch_size=2000) -> int:
+def clean_expired_history(keep_days: Any = None, batch_size: Any = 2000) -> int:
     """分批删除超过保留期的聊天消息（CHAT_HISTORY_DAYS，0 = 不清理）。
 
     只删消息行，不动会话与成员关系：历史清空的会话仍在列表里（摘要自然为空），
@@ -122,7 +124,7 @@ def clean_expired_history(keep_days=None, batch_size=2000) -> int:
     return removed
 
 
-def store_chat_notices(user_pks, title: str, message: str, extra: dict | None = None) -> int:
+def store_chat_notices(user_pks: Any, title: str, message: str, extra: dict[str, Any] | None = None) -> int:
     """聊天提醒落库（站内信兜底）：给「不在聊天室页面」的提醒目标落持久记录。
 
     WS 推送负责实时、落库负责可回看——此前纯 group_send，目标离线即丢、通知

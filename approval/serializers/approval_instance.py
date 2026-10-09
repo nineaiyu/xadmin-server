@@ -8,6 +8,8 @@
 - ApprovalNodeTaskSerializer：节点任务（审批轨迹，含处理人显示名快照）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -18,11 +20,11 @@ from system.services import TaggedObjectSerializerMixin
 from task.services import DisplayRelatedField
 
 
-def _username(value):
+def _username(value: Any) -> Any:
     return getattr(value, "username", str(value))
 
 
-def _pending_tasks_of(obj) -> list:
+def _pending_tasks_of(obj: Any) -> list[Any]:
     """实例的当前待办任务（PENDING）。
 
     列表/导出场景走 ``pending_tasks`` 预取（只加载当前待办，历史任务不随流程
@@ -183,7 +185,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
             "related_object",
         ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         # 仅 list 裁剪：retrieve / create / 动作响应保持全量（前端详情独立请求 retrieve）
         if getattr(self.context.get("view"), "action", None) != "list":
@@ -191,10 +193,10 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         for name in self.LIST_EXCLUDED_FIELDS:
             self.fields.pop(name, None)
 
-    def get_current_node_name(self, obj) -> str:
+    def get_current_node_name(self, obj: Any) -> str:
         return getattr(obj.current_node, "name", "") or ""
 
-    def get_node_progress(self, obj):
+    def get_node_progress(self, obj: Any) -> Any:
         """当前节点进度（比例会签达标线预览）：列表不计算（字段已裁剪）。"""
         if getattr(self.context.get("view"), "action", None) == "list":
             return None
@@ -202,7 +204,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
 
         return node_progress_for(obj, tasks=obj.tasks.all())
 
-    def get_current_assignees(self, obj) -> str:
+    def get_current_assignees(self, obj: Any) -> str:
         """当前节点的待办处理人（昵称，逗号分隔）：巡看「申请卡在谁那里」用。
 
         非 PENDING 实例返回空串；只取当前节点 PENDING 任务（加签者一并纳入）；
@@ -216,13 +218,13 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
             if task.assignee_id
         )
 
-    def get_form_schema(self, obj) -> list:
+    def get_form_schema(self, obj: Any) -> list[Any]:
         """表单字段快照：列表不返回（字段已裁剪，前端详情用 retrieve 渲染）。"""
         if getattr(self.context.get("view"), "action", None) == "list":
             return []
         return list(getattr(obj.flow, "form_schema", None) or []) if obj.flow_id else []
 
-    def get_related_object(self, obj):
+    def get_related_object(self, obj: Any) -> Any:
         """关联业务对象当前状态（白名单渲染器）：仅详情返回，列表零业务表查询。"""
         if getattr(self.context.get("view"), "action", None) != "retrieve":
             return None
@@ -230,15 +232,16 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
 
         return biz_summary(obj)
 
-    def get_comments(self, obj) -> list:
+    def get_comments(self, obj: Any) -> list[Any]:
         """讨论区评论：仅详情（retrieve）返回，列表零额外查询。"""
         action = getattr(self.context.get("view"), "action", "")
         if action != "retrieve":
             return []
         rows = obj.comments.select_related("creator").all()
-        return ApprovalInstanceCommentSerializer(rows, many=True).data
+        data: list[Any] = ApprovalInstanceCommentSerializer(rows, many=True).data
+        return data
 
-    def get_my_task(self, obj):
+    def get_my_task(self, obj: Any) -> Any:
         """当前用户在当前节点的待办任务（仅 PENDING 实例有意义；非待办返回 null）。"""
         request = self.context.get("request")
         user = getattr(request, "user", None)
@@ -249,7 +252,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
                 return {"pk": str(task.pk), "node_name": task.node_name, "node_order": task.node_order}
         return None
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         flow = attrs.get("flow")
         if flow is None:
             raise serializers.ValidationError({"flow": _("Flow is required")})
@@ -292,10 +295,10 @@ class ApprovalInstanceExportSerializer(BaseModelSerializer):
             "created_time",
         ]
 
-    def get_current_node_name(self, obj) -> str:
+    def get_current_node_name(self, obj: Any) -> str:
         return getattr(obj.current_node, "name", "") or ""
 
-    def get_current_assignees(self, obj) -> str:
+    def get_current_assignees(self, obj: Any) -> str:
         if obj.status != ApprovalInstance.Status.PENDING:
             return ""
         return ", ".join(

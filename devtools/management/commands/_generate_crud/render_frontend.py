@@ -7,13 +7,15 @@
 按域拆分（文件行数门禁）的前端部分，组合与入口见 renderers.py。
 """
 
+from typing import Any
+
 from .templating import render_template
 
 
 class RenderFrontendMixin:
     """前端模板渲染。"""
 
-    def _render_client_api(self, ctx):
+    def _render_client_api(self, ctx: dict[str, Any]) -> Any:
         return render_template(
             "client_api.tmpl",
             {
@@ -23,7 +25,7 @@ class RenderFrontendMixin:
             },
         )
 
-    def _render_client_hook(self, ctx):
+    def _render_client_hook(self, ctx: dict[str, Any]) -> Any:
         return render_template(
             "client_hook.tmpl",
             {
@@ -33,7 +35,7 @@ class RenderFrontendMixin:
             },
         )
 
-    def _render_client_page(self, ctx):
+    def _render_client_page(self, ctx: dict[str, Any]) -> Any:
         return render_template(
             "client_page.tmpl",
             {

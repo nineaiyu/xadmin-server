@@ -4,8 +4,8 @@
 # filename : user
 # author : ly_13
 # date : 6/16/2023
-
 import json
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
@@ -112,21 +112,21 @@ class UserViewSet(
 
     # export_as_zip = True  导出zip压缩包，密码是用户名
 
-    def get_permissions(self):
+    def get_permissions(self) -> Any:
         """删除用户（单删/批量删）与模拟用户为敏感操作，需先通过密码二次确认"""
         permissions = super().get_permissions()
         if self.action in ("destroy", "batch_destroy", "impersonate"):
             permissions.append(UserConfirmation.require(ConfirmType.PASSWORD)())
         return permissions
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> Any:
         # 抛 ValidationError（400 + 可读文案）而不是裸 Exception（会归一成 500，
         # 前端只能看到「服务器错误」，排查与提示都失真）
         if instance.is_superuser:
             raise ValidationError(_("The super administrator disallows deletion"))
         return instance.delete()
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """创建用户；`invite=true` 一步完成邀请开户（无需密码 + 邮件邀请链接）。
 
         前置校验（fail-closed，不满足则不创建，避免产生「收不到邀请又无法登录」的死号）：
@@ -150,7 +150,7 @@ class UserViewSet(
             record_create_password_decrypt_failure(request, request.data.get("username"))
             return ApiResponse(code=1001, detail=PASSWORD_DECRYPT_FAILED_MESSAGE, status=400)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         super().perform_create(serializer)
         if user_invite.invite_requested(self.request.data):
             user_invite.send_invite(serializer.instance, request=self.request)
@@ -166,20 +166,20 @@ class UserViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-destroy")
-    def batch_destroy(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除{cls}"""
         self.queryset = self.queryset.filter(is_superuser=False)
         return super().batch_destroy(request, *args, **kwargs)
 
     @ApprovalRequired()
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """删除{cls}数据"""
         return super().destroy(request, *args, **kwargs)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="reset-password", serializer_class=ResetPasswordSerializer)
-    def reset_password(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="reset-password", serializer_class=ResetPasswordSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def reset_password(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """重置用户密码"""
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
@@ -193,8 +193,8 @@ class UserViewSet(
         return ApiResponse()
 
     @extend_schema(responses=get_default_response_schema(), request=None)
-    @action(methods=["post"], detail=True)
-    def invite(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def invite(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """发送/重发邀请激活邮件（重置为待激活 + 一次性链接；权限点 invite:SystemUser）"""
         instance = self.get_object()
         if not user_invite.mail_channel_configured():
@@ -203,21 +203,21 @@ class UserViewSet(
         return ApiResponse(detail=_("Invitation sent"))
 
     @extend_schema(responses=get_default_response_schema(), request=None)
-    @action(methods=["post"], detail=True)
-    def unblock(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def unblock(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """解禁用户"""
         instance = self.get_object()
         LoginBlockUtil.unblock_user(instance.username)
         return ApiResponse()
 
     @extend_schema(responses=get_default_response_schema(), request=None)
-    @action(
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"],
         detail=True,
         url_path="reset-mfa",
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
-    def reset_mfa(self, request, *args, **kwargs):
+    def reset_mfa(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """重置{cls}MFA（清除 OTP 绑定，敏感操作：需密码二次确认）"""
         instance = self.get_object()
         instance.otp_secret_key = ""
@@ -238,8 +238,8 @@ class UserViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True)
-    def logout(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def logout(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """强退用户"""
         instance = self.get_object()
         channel_names = request.data.get("channel_names", [])
@@ -247,8 +247,8 @@ class UserViewSet(
         return ApiResponse()
 
     @extend_schema(responses=get_default_response_schema(), request=None)
-    @action(methods=["post"], detail=True)
-    def impersonate(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def impersonate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """模拟用户（签发被模拟用户的 token，以其身份使用后台；impersonate 权限点 + 密码二次确认）"""
         if is_impersonating(request):
             return ApiResponse(code=1001, detail=_("You are already impersonating another user, exit first"))
@@ -276,8 +276,8 @@ class UserViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["get", "post"], detail=True, url_path="im-binding")
-    def im_binding(self, request, *args, **kwargs):
+    @action(methods=["get", "post"], detail=True, url_path="im-binding")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def im_binding(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """管理员代录 IM 身份（免扫码）：GET 查看绑定，POST 创建或更新。
 
         与自助扫码绑定（identity/views/auth/oauth.py）共用 UserOAuthBinding；
@@ -325,8 +325,8 @@ class UserViewSet(
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, url_path="im-unbind")
-    def im_unbind(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="im-unbind")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def im_unbind(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """管理员解绑 IM 身份（防自锁：解绑后无其它登录方式则拒绝）。"""
         user = self.get_object()
         provider = (request.data.get("provider") or "").strip()

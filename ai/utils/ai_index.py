@@ -18,7 +18,7 @@ token 总数 + 标题 token 集合」，以 ``content_hash + title`` 为签名�
 import re
 import sys
 import threading
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from common.utils import get_logger
 
@@ -30,7 +30,7 @@ MAX_INDEXED_CHUNKS = 20000
 LOAD_BATCH_SIZE = 200
 
 _LOCK = threading.Lock()
-_INDEX: dict = {}
+_INDEX: dict[str, Any] = {}
 _OVERFLOW_WARNED = False
 
 
@@ -39,11 +39,11 @@ class ChunkTokens(NamedTuple):
 
     signature: str
     total_tokens: int  # 未去重 token 总数（评分长度归一）
-    tokens: frozenset  # 去重 token 集合（命中判定）
-    title_tokens: frozenset
+    tokens: frozenset[str]  # 去重 token 集合（命中判定）
+    title_tokens: frozenset[str]
 
 
-def _tokenize(text: str) -> list:
+def _tokenize(text: str) -> list[Any]:
     """CJK 二元组 + ASCII 词。"""
     tokens = []
     for word in re.findall(r"[A-Za-z0-9_]+|[\u4e00-\u9fff]+", text.lower()):
@@ -54,7 +54,7 @@ def _tokenize(text: str) -> list:
     return tokens
 
 
-def _intern(tokens) -> frozenset:
+def _intern(tokens: Any) -> frozenset[str]:
     return frozenset(sys.intern(token) for token in tokens)
 
 
@@ -68,7 +68,7 @@ def _build_entry(signature: str, content: str, title: str) -> ChunkTokens:
     )
 
 
-def _load_meta_rows():
+def _load_meta_rows() -> Any:
     from ai.models.ai import AiKnowledgeChunk
 
     return list(
@@ -76,7 +76,7 @@ def _load_meta_rows():
     )
 
 
-def chunk_token_index():
+def chunk_token_index() -> Any:
     """块 pk → ChunkTokens（增量刷新后返回浅拷贝）；超容量停用缓存时返回 None。
 
     每次调用做一次轻量签名比对（pk + content_hash + title，按模型 ordering），

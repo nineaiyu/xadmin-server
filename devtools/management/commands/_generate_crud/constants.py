@@ -25,7 +25,7 @@ FIRST_PARTY_TOP_LEVEL = frozenset(
 )
 
 
-def _import_name_sort_key(name: str) -> tuple:
+def _import_name_sort_key(name: str) -> tuple[int, str]:
     """isort order-by-type 口径的 name 排序键：常量 → 类 → 函数/模块（同类内字母序）。"""
     base = name.split(" as ")[0].strip()
     if base.isupper():

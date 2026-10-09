@@ -12,6 +12,8 @@
 拆文件仅因行数门禁（500 行）：URL 路径 / 权限点 / 行为与拆分前完全一致。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
@@ -29,7 +31,7 @@ class AiActionExecuteMixin:
     """受限动作：草稿生成（流式）+ 执行（白名单 + 参数重校验 + 权限双门 + 审批协议 + 审计）。"""
 
     @staticmethod
-    def _persist_assistant(user, content: str, extra: dict, reasoning: str = "") -> dict:
+    def _persist_assistant(user: Any, content: str, extra: dict[str, Any], reasoning: str = "") -> dict[str, Any]:
         """落助手页 assistant 消息（返回载荷；持久化失败返回空 dict）。"""
         from ai.utils.ai_chat import message_payload, persist_message
 
@@ -37,14 +39,14 @@ class AiActionExecuteMixin:
         return message_payload(row)
 
     @staticmethod
-    def _persist_system(user, detail: str) -> dict:
+    def _persist_system(user: Any, detail: str) -> dict[str, Any]:
         from ai.utils.ai_chat import system_error_message
 
         return system_error_message(user, "action", detail)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="action/interpret/stream")
-    def action_interpret_stream(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="action/interpret/stream")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def action_interpret_stream(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """指令执行草稿（SSE）：事件序 meta → reasoning* → delta* → done | error。
 
         LLM 只产出草稿（白名单动作 + 服务端校验后的规范化参数），**不执行**；
@@ -82,10 +84,10 @@ class AiActionExecuteMixin:
         user_row = persist_message(request.user, "action", "user", content=text)
         quota_hit = quota_error(request.user, "action")
 
-        def events():
+        def events() -> Any:
             yield {"event": "meta", "data": {"message": text, "user_message": message_payload(user_row)}}
-            chunks: list = []
-            reasoning_chunks: list = []
+            chunks: list[Any] = []
+            reasoning_chunks: list[Any] = []
             try:
                 if quota_hit:
                     raise DjangoValidationError(quota_hit)
@@ -180,7 +182,7 @@ class AiActionExecuteMixin:
         return sse_response(events())
 
     @staticmethod
-    def _push_action_result(room_id, user, result: dict) -> None:
+    def _push_action_result(room_id: Any, user: Any, result: dict[str, Any]) -> None:
         """把执行结果落成 AI 房间的 system 消息并广播（跨端可见、刷新可追溯）。"""
         if not room_id:
             return
@@ -199,7 +201,7 @@ class AiActionExecuteMixin:
                 room,
                 None,
                 str(_("Action executed: {}").format(detail))[:2000],
-                message_type=ChatMessage.MessageType.SYSTEM,  # type: ignore[arg-type]  # Choices 元类
+                message_type=ChatMessage.MessageType.SYSTEM,
                 extra={"mode": "action", "action_result": result.get("data") or {}},
             )
             push_room_event(room, chat_service.message_payload(message, room=room))
@@ -207,8 +209,8 @@ class AiActionExecuteMixin:
             logger.warning("push ai action result failed", exc_info=True)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="action/execute")
-    def action_execute(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="action/execute")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def action_execute(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """执行已确认的动作草稿：白名单 + 参数重校验（不信任前端回传）+ 权限双门 + 审批协议 + 审计。
 
         审批口径：动作声明需要审批（如需审批的动态表单）时复用 412 协议——

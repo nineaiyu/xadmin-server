@@ -12,7 +12,7 @@
 """
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.db.models import Q
@@ -41,7 +41,7 @@ DSL_KEYS = {"dataset", "mode", "filters", "group_by", "metric", "date_trunc", "v
 PREVIEW_PROBE_LIMIT = NL_ROW_LIMIT_CAP
 
 
-def bounded_preview_count(queryset, model, limit: int = PREVIEW_PROBE_LIMIT) -> tuple:
+def bounded_preview_count(queryset: Any, model: Any, limit: int = PREVIEW_PROBE_LIMIT) -> tuple[Any, ...]:
     """受限预览计数：取 limit+1 行判定是否截断，替代全量 ``COUNT(*)``。
 
     NL 解释的预览计数只是给用户看量级；全量 ``COUNT`` 在大表 + 复杂过滤下会把
@@ -57,7 +57,7 @@ def bounded_preview_count(queryset, model, limit: int = PREVIEW_PROBE_LIMIT) -> 
     return len(rows), False
 
 
-def visible_datasets(user_obj) -> list:
+def visible_datasets(user_obj: Any) -> list[Any]:
     """当前用户可见数据集（shared ∪ 本人创建；superuser 全部）。"""
     from dataset.services import Dataset
 
@@ -67,7 +67,7 @@ def visible_datasets(user_obj) -> list:
     return list(queryset.values("pk", "name", "description", "bound_model", "columns", "config", "row_limit"))
 
 
-def parse_llm_json(text: str) -> dict:
+def parse_llm_json(text: str) -> dict[str, Any]:
     """robust 解析 LLM 输出：剥 markdown 码栅后取首个 JSON 对象（公共实现在 ai_parse）。
 
     未知键（弱模型常自创 stat/order_by/sql 等）**剥离而非拒绝**：执行安全由
@@ -84,10 +84,11 @@ def parse_llm_json(text: str) -> dict:
     if unknown:
         logger.info("nl query dropped unknown DSL keys: %s", ", ".join(sorted(unknown)))
         payload = {key: value for key, value in payload.items() if key in DSL_KEYS}
-    return payload
+    typed_value: dict[str, Any] = payload
+    return typed_value
 
 
-def _validate_filter_field(dataset: "Dataset", field: str, op: str, value) -> None:
+def _validate_filter_field(dataset: "Dataset", field: str, op: str, value: Any) -> None:
     """过滤字段必须在该数据集的模型白名单内（含 JSON 路径列），op 在 ALLOWED_OPS。"""
     model = get_whitelisted_model(dataset.bound_model)
     whitelist = set(available_fields(dataset.bound_model))
@@ -100,7 +101,7 @@ def _validate_filter_field(dataset: "Dataset", field: str, op: str, value) -> No
         raise ValidationError(_("Filter op isnull requires a boolean value"))
 
 
-def validate_dsl(dsl: dict, user_obj) -> dict:
+def validate_dsl(dsl: dict[str, Any], user_obj: Any) -> dict[str, Any]:
     """DSL 服务端全量校验（interpret 与 run 双侧执行）。返回规范化 DSL。"""
     if not isinstance(dsl, dict) or not dsl.get("dataset"):
         raise ValidationError(_("Invalid NL query DSL"))
@@ -159,7 +160,7 @@ def validate_dsl(dsl: dict, user_obj) -> dict:
     return normalized
 
 
-def build_interpret_prompt(question: str, datasets: list, user=None) -> list:
+def build_interpret_prompt(question: str, datasets: list[Any], user: Any = None) -> list[Any]:
     """构造 interpret 提示词：可见数据集清单 + DSL schema + 仅输出 JSON 约束。
 
     护栏：数据集目录与 DSL schema 属业务元数据，以引用数据块包裹 + system
@@ -207,15 +208,15 @@ def build_interpret_prompt(question: str, datasets: list, user=None) -> list:
 
 
 def audit_nl_query(
-    user_obj,
+    user_obj: Any,
     action: str,
     question: str,
-    dsl: dict,
+    dsl: dict[str, Any],
     rows: int | None = None,
     error: str = "",
-    usage: dict | None = None,
-    guard: dict | None = None,
-):
+    usage: dict[str, Any] | None = None,
+    guard: dict[str, Any] | None = None,
+) -> None:
     """NL 查数语义审计：落 OperationLog(module=AI:nl_query, auth_type=ai)。
 
     usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。

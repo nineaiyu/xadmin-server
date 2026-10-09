@@ -12,6 +12,8 @@ DatabaseScheduler 在 --max-interval（启动参数默认 60s）内感知生效�
 序列化器已拆分至 task.serializers.task；本模块仅保留 Filter/ViewSet/action。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_basic_type
@@ -53,7 +55,7 @@ class TaskExecutionFilter(filters.FilterSet):
         # 顺序即搜索区字段顺序：记录类型放首位（最常用，收起态即可见）
         fields = ["product_type", "name", "status", "periodic_task", "creator", "created_time"]
 
-    def filter_product_type(self, queryset, name, value):
+    def filter_product_type(self, queryset: Any, name: Any, value: Any) -> Any:
         from django.db.models import Exists, OuterRef
 
         from task.models.export import ExportRecord
@@ -90,7 +92,7 @@ class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
     controlled_lookup = True
     extra_filter_class = [ControlledLookupFilterBackend]
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         """列表带出产物信息（其它动作保持原查询，避免注解影响统计与单条操作）。
 
         导出/导入记录与执行历史共用主键（pk = celery task_id），一行至多命中
@@ -172,8 +174,8 @@ class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
             }
         )
     )
-    @action(methods=["get"], detail=True, url_path="log")
-    def log(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="log")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def log(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """增量读取执行日志"""
         execution = self.get_object()
         data = read_task_log_chunk(
@@ -198,7 +200,7 @@ _MOVED_EXPORTS = (
 )
 
 
-def __getattr__(name):
+def __getattr__(name: Any) -> Any:
     if name in _MOVED_EXPORTS:
         from importlib import import_module
 

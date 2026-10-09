@@ -20,6 +20,8 @@
   用于收敛后的白名单固化。
 """
 
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 #: 明确不 AI 化的路由前缀（AI 自身 / 认证 / 文档 / 实时通道 / 内部观测）
@@ -67,13 +69,13 @@ def _classify(method: str) -> str:
 class Command(BaseCommand):
     help = "AI 工具面巡检：输出可 AI 化但未注册的端点候选 + 失效声明（默认只报告）"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--fail-on-gap", action="store_true", help="存在未豁免缺口时退出码 1")
         parser.add_argument("--json", action="store_true", help="输出 JSON（机器可读）")
         parser.add_argument("--limit", type=int, default=200, help="明细输出上限（默认 200）")
         parser.add_argument("--show-exempted", action="store_true", help="同时列出豁免端点")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         import json
         import re
 
@@ -154,9 +156,9 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR(f"存在 {len(candidates)} 个未注册候选（--fail-on-gap）"))
             raise SystemExit(1)
 
-    def _report(self, candidates, stale, exempted, options):
+    def _report(self, candidates: Any, stale: Any, exempted: Any, options: Any) -> None:
         limit = max(1, int(options["limit"]))
-        by_domain: dict[str, list] = {}
+        by_domain: dict[str, list[Any]] = {}
         for row in candidates:
             by_domain.setdefault(row["domain"], []).append(row)
         self.stdout.write(

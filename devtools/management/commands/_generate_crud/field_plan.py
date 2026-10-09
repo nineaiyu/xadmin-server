@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """代码生成器：字段规划（序列化器字段 / 表格列 / 过滤字段映射）。"""
 
+from typing import Any
+
 from django.conf import settings
 from django.db import models
 
@@ -12,7 +14,7 @@ class FieldPlanMixin:
     """字段映射规则：从模型推导序列化器字段、表格列与过滤字段。"""
 
     @staticmethod
-    def _default_ordering(model) -> str:
+    def _default_ordering(model: Any) -> str:
         """列表视图默认排序（空串表示无需生成）。
 
         门禁 tests/unit/system/test_viewset_ordering.py 要求列表 ViewSet 声明
@@ -26,17 +28,17 @@ class FieldPlanMixin:
         return "-created_time" if has_created_time else "-pk"
 
     @staticmethod
-    def _snake(name):
-        out = []
+    def _snake(name: str) -> str:
+        out: list[str] = []
         for index, char in enumerate(name):
             if char.isupper() and index and not name[index - 1].isupper():
                 out.append("_")
             out.append(char.lower())
         return "".join(out)
 
-    def _field_plan(self, model):
+    def _field_plan(self, model: Any) -> dict[str, Any]:
         """字段映射规则：序列化器字段 / 表格列 / extra_kwargs / 搜索字段。"""
-        serializer_fields = ["pk"]
+        serializer_fields: list[str] = ["pk"]
         for field in model._meta.fields:
             if not field.primary_key and field.name not in AUDIT_FIELDS:
                 serializer_fields.append(field.name)
@@ -58,8 +60,8 @@ class FieldPlanMixin:
         }
 
     @staticmethod
-    def _forward_relations(model):
-        relations = []
+    def _forward_relations(model: Any) -> list[Any]:
+        relations: list[Any] = []
         for field in model._meta.get_fields():
             if not field.is_relation or field.auto_created:
                 continue
@@ -68,7 +70,7 @@ class FieldPlanMixin:
         return relations
 
     @staticmethod
-    def _relation_kwargs(field):
+    def _relation_kwargs(field: Any) -> dict[str, Any]:
         related = field.related_model
         if related._meta.label_lower == settings.AUTH_USER_MODEL.lower():
             attrs, fmt, input_type = ["pk", "username"], "{username}({pk})", "api-search-user"
@@ -76,7 +78,7 @@ class FieldPlanMixin:
             attrs, fmt, input_type = ["pk", "name"], "{name}({pk})", None
         else:
             attrs, fmt, input_type = ["pk"], "{pk}", None
-        kwargs: dict = {"attrs": attrs, "format": fmt}
+        kwargs: dict[str, Any] = {"attrs": attrs, "format": fmt}
         if input_type:
             kwargs["input_type"] = input_type
         if field.many_to_many:
@@ -86,9 +88,9 @@ class FieldPlanMixin:
         return kwargs
 
     @staticmethod
-    def _table_fields(model):
+    def _table_fields(model: Any) -> list[str]:
         """表格列：关联/choices/布尔/短文本优先，最多 8 列（长文本、JSON、文件不入列）。"""
-        buckets: dict[int, list] = {1: [], 2: [], 3: [], 4: []}
+        buckets: dict[int, list[str]] = {1: [], 2: [], 3: [], 4: []}
         for field in model._meta.fields:
             if field.primary_key or field.name in AUDIT_FIELDS or field.name in ("created_time", "updated_time"):
                 continue
@@ -109,9 +111,9 @@ class FieldPlanMixin:
         return ["pk"] + ordered[:8]
 
     @staticmethod
-    def _filter_custom_fields(model):
+    def _filter_custom_fields(model: Any) -> list[str]:
         """搜索自定义过滤器：非 choices 的文本字段走 icontains。"""
-        names = []
+        names: list[str] = []
         for field in model._meta.fields:
             if field.primary_key or field.name in AUDIT_FIELDS or field.choices:
                 continue
@@ -120,9 +122,9 @@ class FieldPlanMixin:
         return names
 
     @staticmethod
-    def _filter_meta_fields(model):
+    def _filter_meta_fields(model: Any) -> list[str]:
         """搜索表单字段域：文本/choices/布尔/日期/关联；排除大字段与文件关联。"""
-        names = []
+        names: list[str] = []
         for field in model._meta.fields:
             if field.primary_key or field.name in AUDIT_FIELDS:
                 continue

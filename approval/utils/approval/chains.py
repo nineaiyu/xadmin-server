@@ -7,6 +7,7 @@
 """
 
 import re
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
@@ -17,7 +18,7 @@ def normalize_rule_method(method: str) -> str:
     return "GET" if value == "HEAD" else value
 
 
-def resolve_rule(path: str, method: str = ""):
+def resolve_rule(path: str, method: str = "") -> Any:
     """按请求路径 + HTTP 方法匹配启用的审批规则：priority 大者优先，并列取创建时间新者。
 
     - method 为空 = 不约束方法（兼容既有调用，唯一真实调用点见 lifecycle.create_approval）；
@@ -49,7 +50,7 @@ def resolve_rule(path: str, method: str = ""):
     return None
 
 
-def resolve_level_users(level):
+def resolve_level_users(level: Any) -> Any:
     """级次候选人：user=用户名清单，role/post=角色/岗位 code 清单（仅启用账号，均支持逗号多值）。"""
     from identity.models import UserInfo
 
@@ -74,7 +75,7 @@ def resolve_level_users(level):
     return UserInfo.objects.filter(is_active=True, username__in=values)
 
 
-def build_steps(rule, applicant):
+def build_steps(rule: Any, applicant: Any) -> Any:
     """规则级次 → 建单快照数据；任一级无可用人（或仅申请人）＝ fail-closed。
 
     返回 ``(steps, error)``：steps 为 ``[{"order","name","assignee_type",
@@ -104,7 +105,7 @@ def build_steps(rule, applicant):
     return steps, None
 
 
-def create_steps(approval, steps):
+def create_steps(approval: Any, steps: Any) -> Any:
     """按快照数据落级次行并绑定候选人（建单路径专用）。"""
     from approval.models import ApprovalRequestStep
 
@@ -123,12 +124,12 @@ def create_steps(approval, steps):
     return rows
 
 
-def current_step(approval):
+def current_step(approval: Any) -> Any:
     """当前级 = 最早的 PENDING 级次（无链或已结束返回 None）。"""
     return approval.steps.filter(status="PENDING").order_by("order").first()
 
 
-def can_act(approval, user) -> bool:
+def can_act(approval: Any, user: Any) -> bool:
     """当前级候选人判定（扁平单恒 False：由全局审批人逻辑负责授权）。
 
     会签（AND）级已通过的人不再可操作（重复点击由动作层唯一约束兜底）：
@@ -146,7 +147,7 @@ def can_act(approval, user) -> bool:
     return True
 
 
-def sync_current_level(approval, step=None):
+def sync_current_level(approval: Any, step: Any = None) -> None:
     """同步主单的当前级投影（列表展示与待办查询的唯一数据源）。
 
     权威数据在 steps 表；current_level/current_assignees 只是投影，必须在

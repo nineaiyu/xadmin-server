@@ -43,5 +43,5 @@ class ApprovalDelegation(DbAuditModel):
             models.Index(fields=["delegate", "is_active"], name="idx_appr_deleg_delegate"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.delegator_id} -> {self.delegate_id}"

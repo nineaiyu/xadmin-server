@@ -17,6 +17,7 @@
 
 import asyncio
 import os
+from typing import Any
 
 import aiofiles
 from channels.db import database_sync_to_async
@@ -42,7 +43,7 @@ def next_push_interval(current: float, has_new_content: bool) -> float:
     return min(current * 2, PUSH_INTERVAL_MAX)
 
 
-def can_read_task_log(user, pk) -> bool:
+def can_read_task_log(user: Any, pk: Any) -> bool:
     """日志读取权限（同步，供 connect 线程化调用与单测）：超管全量，
     普通用户仅本人提交的记录（未知 pk 一律拒绝）。"""
     if not user or not getattr(user, "is_authenticated", False):
@@ -57,14 +58,14 @@ def can_read_task_log(user, pk) -> bool:
     return creator_id is not None and creator_id == user.pk
 
 
-@database_sync_to_async
-def _execution_finished(pk):
+@database_sync_to_async  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def _execution_finished(pk: Any) -> Any:
     """执行是否已有终态时间（文件缺失或无结束标记时判断是否还需等待）。"""
     finished = TaskExecution.objects.filter(pk=pk).values_list("date_finished", flat=True).first()
     return finished is not None
 
 
-async def _tail_has_mark(path):
+async def _tail_has_mark(path: Any) -> Any:
     """日志文件最后 5 字节是否为结束标记。"""
     size = os.path.getsize(path)
     if size < len(CELERY_LOG_MAGIC_MARK):
@@ -81,7 +82,7 @@ class TaskLogNotify(AsyncJsonWebsocket):
     offset = 0  # 已推送到的文件字节偏移
     disconnected = False
 
-    async def connect(self):
+    async def connect(self) -> None:
         self.user = self.scope["user"]
         if not self.user:
             await self.close(4401)
@@ -95,20 +96,20 @@ class TaskLogNotify(AsyncJsonWebsocket):
         await self.accept()
         asyncio.create_task(self.push_log_loop())
 
-    async def disconnect(self, close_code):
+    async def disconnect(self, close_code: Any) -> None:
         self.disconnected = True
 
-    async def ping(self, event):
+    async def ping(self, event: Any) -> None:
         """任务日志连接不属于消息层分组（无 group_name），心跳无需登记，
         静默忽略即可；沿用基类实现会因缺少 group_name 抛 AttributeError 断连。"""
 
-    async def push_tick(self, path, interval):
+    async def push_tick(self, path: Any, interval: Any) -> Any:
         """执行一次推送并计算下一次轮询间隔，返回 (finished, next_interval)。"""
         offset_before = self.offset
         finished = await self.push_once(path)
         return finished, next_push_interval(interval, self.offset > offset_before)
 
-    async def push_log_loop(self):
+    async def push_log_loop(self) -> None:
         path = get_celery_task_log_path(str(self.pk))
         interval = PUSH_INTERVAL
         try:
@@ -125,7 +126,7 @@ class TaskLogNotify(AsyncJsonWebsocket):
             if not self.disconnected:
                 await self.close()
 
-    async def push_once(self, path):
+    async def push_once(self, path: Any) -> Any:
         """推送一次增量，返回 True 表示输出已完成、循环可结束。"""
         size = os.path.getsize(path) if os.path.exists(path) else 0
         if self.offset < size:

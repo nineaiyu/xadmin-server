@@ -22,6 +22,7 @@
 """
 
 from datetime import datetime, timedelta
+from typing import Any
 
 from asgiref.sync import async_to_sync
 from celery import shared_task
@@ -41,7 +42,7 @@ from dataset.report_render import (  # noqa: F401  (渲染/投递拆至 report_r
 logger = get_logger(__name__)
 
 
-def report_due(report, now=None) -> bool:
+def report_due(report: Any, now: Any = None) -> bool:
     """到期判定：cron_expression 优先；否则 frequency × send_time(× weekday)。now 仅供测试注入。
 
     判定口径是「最近一次应当执行的时刻」晚于「上次执行时刻（首次执行前取建单时刻）」，
@@ -56,10 +57,11 @@ def report_due(report, now=None) -> bool:
     if reference is None:
         # 无参考点（未落库的裸对象）：视为到期，交由调用方判定
         return True
-    return reference < due_at
+    within_window: bool = reference < due_at
+    return within_window
 
 
-def last_due_at(report, now=None):
+def last_due_at(report: Any, now: Any = None) -> Any:
     """最近一次「应当执行」的时刻（无则 None）：cron 取上一个命中时刻，三档取到期点。"""
     now = now or timezone.localtime()
     expression = (getattr(report, "cron_expression", "") or "").strip()
@@ -68,7 +70,7 @@ def last_due_at(report, now=None):
     return _three_tier_due_at(report, now)
 
 
-def _last_cron_hit(expression: str, now=None):
+def _last_cron_hit(expression: str, now: Any = None) -> Any:
     """cron 表达式在 now 之前（含当分钟）的最近命中时刻：非法表达式返回 None（fail-closed）。"""
     from croniter import croniter
 
@@ -82,7 +84,7 @@ def _last_cron_hit(expression: str, now=None):
     return croniter(expression, moment).get_prev(datetime)
 
 
-def _parse_send_time(value: str):
+def _parse_send_time(value: str) -> Any:
     """HH:MM → (hour, minute)：格式异常返回 None（fail-closed，不误发）。"""
     try:
         raw_hour, raw_minute = str(value or "").split(":", 1)
@@ -94,7 +96,7 @@ def _parse_send_time(value: str):
     return hour, minute
 
 
-def _three_tier_due_at(report, now=None):
+def _three_tier_due_at(report: Any, now: Any = None) -> Any:
     """daily / weekly / monthly 的最近一次到期时刻（send_time 非法返回 None）。"""
     now = now or timezone.localtime()
     parsed = _parse_send_time(getattr(report, "send_time", ""))
@@ -123,7 +125,7 @@ def _three_tier_due_at(report, now=None):
     return None
 
 
-def _precreate_record(report) -> str:
+def _precreate_record(report: Any) -> str:
     """预创建 ExportRecord（下载中心条目），pk 即派发的 celery task_id。
 
     params 记 ``report_id``：任务中心「重跑」按记录即可重放同一报表。
@@ -140,9 +142,9 @@ def _precreate_record(report) -> str:
     return str(record.pk)
 
 
-@shared_task
-@register_as_period_task(crontab="5 * * * *", description="定时报表调度分发", module="analysis")
-def dispatch_scheduled_reports():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="5 * * * *", description="定时报表调度分发", module="analysis")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def dispatch_scheduled_reports() -> Any:
     """每小时扫描 active 报表并派发到期的执行任务（三档频次；cron 报表由每分钟任务负责）。"""
     from dataset.models.dataset import Report
 
@@ -161,9 +163,9 @@ def dispatch_scheduled_reports():
     return dispatched
 
 
-@shared_task
-@register_as_period_task(crontab="* * * * *", description="定时报表 cron 表达式调度分发", module="analysis")
-def dispatch_cron_reports():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="* * * * *", description="定时报表 cron 表达式调度分发", module="analysis")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def dispatch_cron_reports() -> Any:
     """每分钟扫描带 cron 表达式的 active 报表并派发（三档报表由每小时任务负责，职责互斥）。"""
     from dataset.models.dataset import Report
 
@@ -182,8 +184,8 @@ def dispatch_cron_reports():
     return dispatched
 
 
-@shared_task(bind=True)
-def run_scheduled_report(self, report_id: str, bookkeep_schedule: bool = True):
+@shared_task(bind=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def run_scheduled_report(self: Any, report_id: str, bookkeep_schedule: bool = True) -> Any:
     """执行单个报表：数据集渲染 xlsx → ExportRecord（下载中心）→ 邮件附件。
 
     task_id == 预创建 ExportRecord.pk（CeleryTaskRecordModel 契约）。产物落库、
@@ -269,8 +271,8 @@ def run_scheduled_report(self, report_id: str, bookkeep_schedule: bool = True):
         raise
 
 
-@shared_task
-def schedule_report_run(report_id: str):
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def schedule_report_run(report_id: str) -> Any:
     """立即运行入口（管理页 run 动作）：预创建 ExportRecord 并按契约派发。
 
     手动运行属触发即执行，不推进调度簿记 last_run_at（到期判定不受影响，
@@ -286,7 +288,7 @@ def schedule_report_run(report_id: str):
     return task_id
 
 
-def _screen_has_viewers(layer, group) -> bool:
+def _screen_has_viewers(layer: Any, group: Any) -> bool:
     """组内是否有在线展示连接（get_layers 为自定义 channel layer 扩展）。
 
     层未提供 get_layers（极简内存层）时保守视为在线：宁可多触发一次空推送，
@@ -298,9 +300,9 @@ def _screen_has_viewers(layer, group) -> bool:
     return bool(async_to_sync(getter)(group))
 
 
-@shared_task
-@register_as_period_task(interval=15, description="大屏在线展示端周期数据推送", module="analysis")
-def push_screen_data():
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(interval=15, description="大屏在线展示端周期数据推送", module="analysis")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def push_screen_data() -> Any:
     """扫描大屏：向「有在线展示端且已到 refresh 周期」的屏投递数据触发事件。
 
     beat 只做「谁该刷」的节流判定（逐屏 last_push 缓存键 + cache.add 原子占位，

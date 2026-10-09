@@ -10,6 +10,7 @@
 """
 
 import json
+from typing import Any
 
 from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
@@ -17,7 +18,9 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra: dict | None = None) -> None:
+def audit_ai_action(
+    user: Any, action_key: str, params: Any, ok: bool, detail: str, extra: dict[str, Any] | None = None
+) -> None:
     """AI 动作语义审计：落 OperationLog(module=AI:action, auth_type=ai)。"""
     from audit.services import OperationLog
 
@@ -45,7 +48,12 @@ def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra:
 
 
 def audit_ai_ask(
-    user_obj, question: str, ok: bool, detail: str = "", usage: dict | None = None, guard: dict | None = None
+    user_obj: Any,
+    question: str,
+    ok: bool,
+    detail: str = "",
+    usage: dict[str, Any] | None = None,
+    guard: dict[str, Any] | None = None,
 ) -> None:
     """文档问答语义审计：落 OperationLog(module=AI:ask, auth_type=ai)。
 

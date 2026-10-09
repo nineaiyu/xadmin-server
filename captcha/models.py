@@ -2,6 +2,7 @@ import datetime
 import hashlib
 import random
 import time
+from typing import Any
 
 from django.conf import settings
 from django.db import models
@@ -30,7 +31,7 @@ class CaptchaStore(models.Model):
     hashkey = models.CharField(blank=False, max_length=40, unique=True)
     expiration = models.DateTimeField(blank=False)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         self.response = self.response.lower()
         if not self.expiration:
             self.expiration = timezone.now() + datetime.timedelta(minutes=int(settings.CAPTCHA_TIMEOUT))
@@ -45,26 +46,27 @@ class CaptchaStore(models.Model):
             del key_
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return self.challenge
+    def __str__(self) -> str:
+        return str(self.challenge)
 
     @classmethod
-    def remove_expired(cls):
+    def remove_expired(cls) -> None:
         cls.objects.filter(expiration__lte=timezone.now()).delete()
 
     @classmethod
-    def generate_key(cls, generator=None):
+    def generate_key(cls, generator: Any = None) -> str:
         challenge, response = get_challenge(generator)()
         store = cls.objects.create(challenge=challenge, response=response)
 
-        return store.hashkey
+        hashkey: str = store.hashkey
+        return hashkey
 
     @classmethod
-    def pick(cls):
+    def pick(cls) -> str:
         if not settings.CAPTCHA_GET_FROM_POOL:
             return cls.generate_key()
 
-        def fallback():
+        def fallback() -> str:
             logger.error("Couldn't get a captcha from pool, generating")
             return cls.generate_key()
 
@@ -72,10 +74,11 @@ class CaptchaStore(models.Model):
         minimum_expiration = timezone.now() + datetime.timedelta(minutes=int(settings.CAPTCHA_GET_FROM_POOL_TIMEOUT))
         store = cls.objects.filter(expiration__gt=minimum_expiration).order_by("?").first()
 
-        return (store and store.hashkey) or fallback()
+        hashkey: str = (store and store.hashkey) or fallback()
+        return hashkey
 
     @classmethod
-    def create_pool(cls, count=1000):
+    def create_pool(cls, count: int = 1000) -> None:
         assert count > 0
         while count > 0:
             cls.generate_key()

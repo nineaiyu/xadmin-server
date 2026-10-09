@@ -7,6 +7,8 @@
 随 task 域、审批通知随 approval 域各自归位。
 """
 
+from typing import Any
+
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
@@ -30,12 +32,12 @@ class DifferentCityLoginMessage(UserMessage):
     category_label = _("Account Security")
     message_type_label = _("Different city login reminder")
 
-    def __init__(self, user, ip, city):
+    def __init__(self, user: Any, ip: Any, city: Any) -> None:
         self.ip = ip
         self.city = city
         super().__init__(user)
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         now = local_now_display()
         subject = _("Different city login reminder")
         context = dict(
@@ -50,7 +52,7 @@ class DifferentCityLoginMessage(UserMessage):
         return {"subject": subject, "message": message}
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         from identity.models import UserInfo
 
         user = UserInfo.objects.first()
@@ -67,13 +69,13 @@ class AbnormalLoginMessage(UserMessage):
     category_label = _("Account Security")
     message_type_label = _("New device login reminder")
 
-    def __init__(self, user, dimensions, info):
+    def __init__(self, user: Any, dimensions: Any, info: Any) -> None:
         # dimensions: 新维度清单（如 ["ip", "device"]）
         self.dimensions = dimensions
         self.info = info
         super().__init__(user)
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         subject = _("New device login reminder")
         dimension_texts = {
             "ip": _("New IP address"),
@@ -97,7 +99,7 @@ class AbnormalLoginMessage(UserMessage):
         return {"subject": subject, "message": message}
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         from identity.models import UserInfo
 
         user = UserInfo.objects.first()
@@ -114,12 +116,12 @@ class ResetPasswordSuccessMsg(UserMessage):
     category_label = _("Account Security")
     message_type_label = _("Reset password reminder")
 
-    def __init__(self, user, request):
+    def __init__(self, user: Any, request: Any) -> None:
         super().__init__(user)
         self.ip_address = get_request_ip(request)
         self.browser = get_browser(request)
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         user = self.user
 
         subject = _("Reset password success")
@@ -133,7 +135,7 @@ class ResetPasswordSuccessMsg(UserMessage):
         return {"subject": subject, "message": message}
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         # 无可安全构造的测试场景（真实改密事件触发）：显式返回 None，测试消息端点对 None noop
         return None
 
@@ -146,27 +148,27 @@ class LdapSyncMessage(SystemMessage):
     category_label = _("Audit")
     message_type_label = _("LDAP sync summary")
 
-    def __init__(self, summary: dict):
+    def __init__(self, summary: dict[str, Any]):
         self.summary = summary
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         subject = _("LDAP sync finished")
         lines = "".join(f"<li>{key}: {value}</li>" for key, value in self.summary.items())
         message = f"<p>{subject}</p><ul>{lines}</ul>"
         return {"subject": subject, "message": message}
 
-    def get_site_msg_msg(self):
+    def get_site_msg_msg(self) -> Any:
         info = self.get_html_msg()
         info["level"] = "info"
         return info
 
     @classmethod
-    def post_insert_to_db(cls, subscription: SystemMsgSubscription):
+    def post_insert_to_db(cls, subscription: SystemMsgSubscription) -> None:
         subscription.users.add(*get_active_superuser_queryset())
         subscription.receive_backends = [BACKEND.SITE_MSG]
         subscription.save()
 
-    def publish(self, is_async=False):
+    def publish(self, is_async: Any = False) -> None:
         """发布告警；订阅收件人为空时自愈补齐活跃超管（post_migrate 种子早于建号）。"""
         subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
         if not subscription.users.exists():
@@ -174,7 +176,7 @@ class LdapSyncMessage(SystemMessage):
         super().publish(is_async=is_async)
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         return cls({"updated_users": 1})
 
 
@@ -186,10 +188,10 @@ class ApiQuotaWarningMessage(SystemMessage):
     category_label = _("Audit")
     message_type_label = _("API application quota warning")
 
-    def __init__(self, info: dict):
+    def __init__(self, info: dict[str, Any]):
         self.info = info
 
-    def get_html_msg(self) -> dict:
+    def get_html_msg(self) -> dict[str, Any]:
         info = self.info
         subject = _("API application quota warning: {}").format(info.get("application"))
         message = "<p>{}</p><ul><li>client_id: {}</li><li>used: {}</li><li>quota: {}</li></ul>".format(
@@ -197,18 +199,18 @@ class ApiQuotaWarningMessage(SystemMessage):
         )
         return {"subject": subject, "message": message}
 
-    def get_site_msg_msg(self):
+    def get_site_msg_msg(self) -> Any:
         info = self.get_html_msg()
         info["level"] = "warning"
         return info
 
     @classmethod
-    def post_insert_to_db(cls, subscription: SystemMsgSubscription):
+    def post_insert_to_db(cls, subscription: SystemMsgSubscription) -> None:
         subscription.users.add(*get_active_superuser_queryset())
         subscription.receive_backends = [BACKEND.SITE_MSG]
         subscription.save()
 
-    def publish(self, is_async=False):
+    def publish(self, is_async: Any = False) -> None:
         """发布告警；订阅收件人为空时自愈补齐活跃超管（post_migrate 种子早于建号）。"""
         subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
         if not subscription.users.exists():
@@ -216,5 +218,5 @@ class ApiQuotaWarningMessage(SystemMessage):
         super().publish(is_async=is_async)
 
     @classmethod
-    def gen_test_msg(cls):
+    def gen_test_msg(cls) -> Any:
         return cls({"application": "演示应用", "client_id": "app_demo", "used": 82, "quota": 100})

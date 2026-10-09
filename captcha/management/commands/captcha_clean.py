@@ -1,4 +1,5 @@
 import sys
+from typing import Any
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -7,7 +8,7 @@ from django.utils import timezone
 class Command(BaseCommand):
     help = "Clean up expired captcha hashkeys."
 
-    def handle(self, **options):
+    def handle(self, **options: Any) -> None:
         from captcha.models import CaptchaStore
 
         verbose = int(options.get("verbosity") or 0)

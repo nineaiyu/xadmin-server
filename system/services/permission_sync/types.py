@@ -4,6 +4,7 @@
 
 from dataclasses import dataclass
 from dataclasses import field as dc_field
+from typing import Any
 
 from system.models import Menu
 
@@ -17,7 +18,7 @@ class RouteInfo:
     name: str
     url: str
     sample: str
-    actions: dict
+    actions: dict[str, Any]
     view_cls: object
     requires_permission: bool
 
@@ -32,7 +33,7 @@ class PlanItem:
     description: str
     parent_id: object
     parent_name: str
-    model_pks: list
+    model_pks: list[Any]
     rank: int = PERMISSION_MENU_RANK_BASE
     source: str = "generator"  # generator / fallback
 
@@ -46,5 +47,5 @@ class BindingFix:
     menu: Menu
     action: str
     mode: str  # add / clear
-    current: set = dc_field(default_factory=set)
-    expected: set = dc_field(default_factory=set)
+    current: set[Any] = dc_field(default_factory=set[Any])
+    expected: set[Any] = dc_field(default_factory=set[Any])

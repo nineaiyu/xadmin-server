@@ -19,6 +19,8 @@
   DictChoiceField 是 LabeledChoiceField 子类，值为普通标量而非关联对象。
 """
 
+from typing import Any
+
 from common.core.modelset.input_types import DECLARED_INPUT_TYPES
 from system.models.dict import DataDict
 
@@ -35,7 +37,7 @@ def input_type_allowed(value: str) -> bool:
     return value in DECLARED_INPUT_TYPES or value.startswith(INPUT_TYPE_PREFIX_FAMILY)
 
 
-def list_dict_types() -> list[dict]:
+def list_dict_types() -> list[dict[str, Any]]:
     """可绑定字典类型（启用中的类型行）：字段表格字典下拉的数据源。
 
     数据库不可用（未迁移 / 干跑环境）时降级为空清单，不阻断模型计划回显。
@@ -47,11 +49,11 @@ def list_dict_types() -> list[dict]:
     return [{"code": row["code"], "label": row["label"] or row["code"]} for row in rows]
 
 
-def _field_map(model) -> dict:
+def _field_map(model: Any) -> dict[str, Any]:
     return {field.name: field for field in [*model._meta.fields, *model._meta.many_to_many]}
 
 
-def plan_fields(ctx, model) -> list[dict]:
+def plan_fields(ctx: Any, model: Any) -> list[dict[str, Any]]:
     """引擎字段计划 → GUI 字段表格逐字段初始值（顺序 = serializer_fields）。"""
     all_fields = _field_map(model)
     searchable = set(ctx["filter_meta_fields"])
@@ -117,11 +119,11 @@ def plan_fields(ctx, model) -> list[dict]:
     return fields
 
 
-def _normalize_overrides(ctx, fields_cfg) -> list[tuple[str, dict]]:
+def _normalize_overrides(ctx: Any, fields_cfg: Any) -> list[tuple[str, dict[str, Any]]]:
     """去重 + 字段名越界校验（含 pk / 审计字段等一切模型字段名）。"""
     known = set(_field_map(ctx["model"]))
     known.add("pk")
-    overrides: dict[str, dict] = {}
+    overrides: dict[str, dict[str, Any]] = {}
     for cfg in fields_cfg:
         if not isinstance(cfg, dict):
             raise CodegenError("fields 配置项必须是对象（含 name）")
@@ -136,7 +138,7 @@ def _normalize_overrides(ctx, fields_cfg) -> list[tuple[str, dict]]:
     return list(overrides.items())
 
 
-def _validate_dict_bind(ctx, overrides: list[tuple[str, dict]]) -> dict[str, str]:
+def _validate_dict_bind(ctx: Any, overrides: list[tuple[str, dict[str, Any]]]) -> dict[str, str]:
     """字典绑定校验：非关联字段 + code 存在（启用中的类型行）；绑定值写回 ctx。"""
     bind: dict[str, str] = {}
     for name, cfg in overrides:
@@ -159,7 +161,7 @@ def _validate_dict_bind(ctx, overrides: list[tuple[str, dict]]) -> dict[str, str
     return bind
 
 
-def apply_field_overrides(ctx, fields_cfg) -> None:
+def apply_field_overrides(ctx: Any, fields_cfg: Any) -> None:
     """GUI 字段配置写回引擎 ctx（含顺序、表格列、搜索面与 extra_kwargs 覆盖）。
 
     收敛规则（fields 未提及的字段保持引擎推导不动）：

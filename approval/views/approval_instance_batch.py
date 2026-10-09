@@ -22,7 +22,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 
 
-def missing_pk_failures(pks, handled_pks) -> list:
+def missing_pk_failures(pks: Any, handled_pks: Any) -> list[Any]:
     """取值域外/已失效 pk 的失败明细（不可见单不泄露存在性，原因统一口径）。
 
     批量入口只对取值域内可见的单逐条处理；勾选中其余 pk 若静默跳过，
@@ -37,13 +37,13 @@ class ApprovalInstanceBatchMixin:
 
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
 
-        def get_object(self, *args, **kwargs) -> Any: ...
+        def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def get_queryset(self, *args, **kwargs): ...
+        def get_queryset(self, *args: Any, **kwargs: Any) -> Any: ...
 
-        def filter_queryset(self, queryset, *args, **kwargs): ...
+        def filter_queryset(self, queryset: Any, *args: Any, **kwargs: Any) -> Any: ...
 
-    def _my_current_task(self, instance, user):
+    def _my_current_task(self, instance: Any, user: Any) -> Any:
         """我的当前待办（无则 None）：批量转交逐条使用（与单条 _resolve_task 同口径，不抛错）"""
         if instance.status != ApprovalInstance.Status.PENDING or instance.current_node_id is None:
             return None
@@ -64,8 +64,8 @@ class ApprovalInstanceBatchMixin:
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-approve")
-    def batch_approve(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-approve")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_approve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量通过（逐个定位当前用户的待办任务，返回成功数与被拒明细）"""
         ensure_approval_action_confirmed(request, "batch_approve")
         pks = request.data.get("pks") or []
@@ -106,8 +106,8 @@ class ApprovalInstanceBatchMixin:
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-reject")
-    def batch_reject(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-reject")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_reject(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量驳回（原因必填）"""
         ensure_approval_action_confirmed(request, "batch_reject")
         reason = (request.data.get("reason") or "").strip()
@@ -151,8 +151,8 @@ class ApprovalInstanceBatchMixin:
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-transfer")
-    def batch_transfer(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-transfer")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_transfer(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量转交：把我的多条待办一次性转给同一用户（逐条独立，返回成功数 + 失败明细）。
 
         与单条同口径：仅「我的当前待办」可转；无待办的实例计入失败明细而非整体拒绝

@@ -31,5 +31,5 @@ class ModuleOverride(DbAuditModel, DbUuidModel):
         verbose_name_plural = verbose_name
         ordering = ["created_time"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.preset}(+{len(self.enable)}/-{len(self.disable)})"

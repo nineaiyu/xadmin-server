@@ -4,6 +4,7 @@
 # filename : login
 # author : ly_13
 # date : 8/8/2024
+from typing import Any
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -25,7 +26,9 @@ from common.utils import get_logger
 from common.utils.request import get_request_ip
 from identity.models import UserInfo
 from identity.services.auth_login import (
-    complete_login,
+    complete_login as complete_login,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from identity.services.auth_login import (
     evaluate_login_policy_for_request,
     login_failed,
     login_success,
@@ -44,7 +47,7 @@ from settings.services import LoginBlockUtil
 logger = get_logger(__name__)
 
 
-def _register_session_safe(request, user, login_type):
+def _register_session_safe(request: Any, user: Any, login_type: Any) -> Any:
     """登记会话（失败仅告警不影响登录）。返回 UserSession 或 None。"""
     try:
         return register_user_session(request, user, login_type)
@@ -53,11 +56,11 @@ def _register_session_safe(request, user, login_type):
         return None
 
 
-def _login_type_for(user) -> "UserLoginLog.LoginTypeChoices":
+def _login_type_for(user: Any) -> "UserLoginLog.LoginTypeChoices":
     """账密登录来源：LdapBindBackend 认证成功记 LDAP，其余按本地账密。"""
     if getattr(user, "_ldap_authenticated", False):
-        return UserLoginLog.LoginTypeChoices.LDAP  # type: ignore[return-value]  # Choices 元类
-    return UserLoginLog.LoginTypeChoices.USERNAME  # type: ignore[return-value]  # 同上
+        return UserLoginLog.LoginTypeChoices.LDAP
+    return UserLoginLog.LoginTypeChoices.USERNAME
 
 
 class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -67,7 +70,7 @@ class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
     （jti/exp 均保留，OutstandingToken 按 jti 关联不受影响）。
     """
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         data = super().validate(attrs)
         # LDAP bind 认证的登录（LdapBindBackend 成功）在登录日志中标记独立来源；
         # 本地/验证码路径不受影响
@@ -76,7 +79,7 @@ class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
         if session:
             try:
                 # simplejwt 标注入参为 Token，运行期接受已编码串
-                refresh = RefreshToken(data["refresh"])
+                refresh = RefreshToken(data["refresh"])  # type: ignore[arg-type]  # simplejwt 标注入参为 Token，运行期接受已编码串
                 data["refresh"], data["access"] = bind_session_claim(refresh, session.pk)
             except Exception:  # noqa: BLE001 claim 注入失败退回无 sid 行为
                 logger.warning("bind session claim failed", exc_info=True)
@@ -115,7 +118,7 @@ class BasicLoginAPIView(TokenObtainPairView):
             }
         ),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """用户名密码登录"""
         if not settings.SECURITY_LOGIN_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Login forbidden"))
@@ -169,7 +172,7 @@ class BasicLoginAPIView(TokenObtainPairView):
             }
         )
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取登录配置信息"""
         config = {
             "access": settings.SECURITY_LOGIN_ACCESS_ENABLED,
@@ -212,7 +215,7 @@ class VerifyCodeLoginAPIView(TokenObtainPairView):
             }
         ),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """验证码登录"""
         if not settings.SECURITY_LOGIN_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Login forbidden"))

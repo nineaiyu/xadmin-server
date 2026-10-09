@@ -52,11 +52,11 @@ from dataset.utils.dform_formula_parser import (  # noqa: F401  (解析器拆至
 # ---------------------------------------------------------------------------
 
 
-def formula_references(node: dict) -> list[tuple[str, str | None]]:
+def formula_references(node: dict[str, Any]) -> list[tuple[str, str | None]]:
     """展开表达式引用：``(key, None)`` 为标量引用，``(table, column)`` 为表格列引用。"""
     found: list[tuple[str, str | None]] = []
 
-    def walk(item: dict) -> None:
+    def walk(item: dict[str, Any]) -> None:
         kind = item["kind"]
         if kind == "ref":
             found.append((item["key"], None))
@@ -93,10 +93,10 @@ def _round_six(value: float) -> float | None:
 
 
 ScalarResolver = Callable[[str], float | None]
-RowResolver = Callable[[str], list]
+RowResolver = Callable[[str], list[Any]]
 
 
-def _aggregate(name: str, node: dict, rows_of: RowResolver) -> float | None:
+def _aggregate(name: str, node: dict[str, Any], rows_of: RowResolver) -> float | None:
     values: list[float] = []
     for row in rows_of(node["table"]):
         if isinstance(row, dict):
@@ -120,10 +120,11 @@ def _aggregate(name: str, node: dict, rows_of: RowResolver) -> float | None:
     return max(values)
 
 
-def _eval(node: dict, scalar_of: ScalarResolver, rows_of: RowResolver) -> float | None:
+def _eval(node: dict[str, Any], scalar_of: ScalarResolver, rows_of: RowResolver) -> float | None:
     kind = node["kind"]
     if kind == "num":
-        return node["value"]
+        num_value: float | None = node["value"]
+        return num_value
     if kind == "ref":
         return scalar_of(node["key"])
     if kind == "col":  # 解析期已保证只在聚合参数位，此处为防御
@@ -160,11 +161,12 @@ def _eval(node: dict, scalar_of: ScalarResolver, rows_of: RowResolver) -> float 
         factor = 10**digits
         if abs(value) >= 1e18 / factor:
             return value
-        return math.floor(value * factor + 0.5) / factor
+        rounded: float = math.floor(value * factor + 0.5) / factor
+        return rounded
     return None
 
 
-def evaluate_formula(node: dict, scalar_of: ScalarResolver, rows_of: RowResolver) -> float | None:
+def evaluate_formula(node: dict[str, Any], scalar_of: ScalarResolver, rows_of: RowResolver) -> float | None:
     """求值单个表达式（结果已 round 到 6 位小数；None 表示空/不可计算）。"""
     value = _eval(node, scalar_of, rows_of)
     if value is None:
@@ -172,7 +174,9 @@ def evaluate_formula(node: dict, scalar_of: ScalarResolver, rows_of: RowResolver
     return _round_six(value)
 
 
-def evaluate_formula_fields(fields: list[dict], data: dict, hidden: set[str] | None = None) -> dict:
+def evaluate_formula_fields(
+    fields: list[dict[str, Any]], data: dict[str, Any], hidden: set[str] | None = None
+) -> dict[str, Any]:
     """按依赖顺序求值全部 formula 字段，返回 ``{key: 值}``（含 None）。
 
     ``data`` 为规范化后的提交数据（非公式字段的终值）；被隐藏（联动）的
@@ -184,7 +188,7 @@ def evaluate_formula_fields(fields: list[dict], data: dict, hidden: set[str] | N
     results: dict[str, float | None] = {}
     resolving: set[str] = set()
 
-    def rows_of(table_key: str) -> list:
+    def rows_of(table_key: str) -> list[Any]:
         rows = data.get(table_key)
         return rows if isinstance(rows, list) else []
 
@@ -223,7 +227,7 @@ def evaluate_formula_fields(fields: list[dict], data: dict, hidden: set[str] | N
 # ---------------------------------------------------------------------------
 
 
-def validate_formula_fields(fields: list[dict]) -> None:
+def validate_formula_fields(fields: list[dict[str, Any]]) -> None:
     """校验全部公式字段：引用存在且类型可算、表格列引用有效、无循环引用。"""
     numeric_types = {"number", "amount", "formula"}
     fields_by_key = {item["key"]: item for item in fields}

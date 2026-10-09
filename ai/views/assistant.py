@@ -11,6 +11,7 @@
 """
 
 import asyncio
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -45,7 +46,7 @@ class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
     ai_admin_actions = ("create",)
 
     @staticmethod
-    def _test_credentials(data: dict) -> dict:
+    def _test_credentials(data: dict[str, Any]) -> dict[str, Any]:
         """连接测试凭据：表单值 → 激活档案 → Setting 逐项兜底。
 
         不直接走 ``ai_credentials()``（档案优先）：已有激活档案时表单值会被完全
@@ -56,7 +57,7 @@ class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
 
         profile = active_profile()
 
-        def pick(form_key: str, profile_attr: str):
+        def pick(form_key: str, profile_attr: str) -> Any:
             value = data.get(form_key)
             if value not in (None, ""):
                 return value
@@ -81,7 +82,7 @@ class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
             "max_retries": 0,
         }
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """测试{cls}：按表单当前值实际 ping 一次 LLM（表单缺省项按档案/Setting 兜底）。"""
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -128,8 +129,8 @@ class AiAssistantViewSet(
     )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="status")
-    def status(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="status")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def status(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """助手状态：开关/配置/知识库规模/动作可用性（前端渲染未配置引导与 /do 提示）。"""
         from ai.utils.ai_actions import ai_action_enabled, available_actions
 
@@ -149,8 +150,8 @@ class AiAssistantViewSet(
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="history")
-    def history(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="history")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def history(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """助手页对话历史：按入口（feature）分页，只返回当前用户自己的消息流。
 
         契约：时间正序返回最近一页，``has_more`` 为真时用 ``before_id=最早一条 id``
@@ -167,8 +168,8 @@ class AiAssistantViewSet(
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="tools")
-    def tools(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False, url_path="tools")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def tools(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """统一工具目录（MCP tools/list 等价的标准化描述）。
 
         输出当前用户**有权执行**的全部系统动作（白名单注册表），每条包含
@@ -188,8 +189,8 @@ class AiAssistantViewSet(
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="ask")
-    def ask(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="ask")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def ask(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """文档问答（非流式）：回答引用文档出处；未启用/未配置/无命中/LLM 失败均转可读文案。
 
         对话持久化与流式端点同口径（user 消息 + assistant/system 消息）。
@@ -227,8 +228,8 @@ class AiAssistantViewSet(
         return ApiResponse(data={**result, "message": message_payload(row)})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="ask/stream")
-    def ask_stream(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="ask/stream")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def ask_stream(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """文档问答流式（SSE）：事件序 meta → reasoning* → delta* → done | error。
 
         与 `ask` 同口径：门禁/校验错误在响应头发出前返回 JSON 1001（前端按普通
@@ -267,11 +268,11 @@ class AiAssistantViewSet(
         # 校验通过即落用户消息：即使流中断，刷新后也能看到本轮提问
         user_row = persist_message(request.user, "docs", "user", content=question)
 
-        content_chunks: list = []
-        reasoning_chunks: list = []
+        content_chunks: list[Any] = []
+        reasoning_chunks: list[Any] = []
 
         @sync_to_async
-        def _finish_done(item):
+        def _finish_done(item: Any) -> Any:
             audit_ai_ask(request.user, question, ok=True, guard=item.get("guard"))
             row = persist_message(
                 request.user,
@@ -284,7 +285,7 @@ class AiAssistantViewSet(
             return message_payload(row)
 
         @sync_to_async
-        def _finish_error(detail):
+        def _finish_error(detail: Any) -> Any:
             audit_ai_ask(request.user, question, ok=False, detail=detail)
             if content_chunks or reasoning_chunks:
                 # 已有增量后中断：保留部分内容（与前端「已到达增量保留」一致）
@@ -300,7 +301,7 @@ class AiAssistantViewSet(
             return {"detail": detail, "message": system_error_message(request.user, "docs", detail)}
 
         @sync_to_async
-        def _finish_interrupted():
+        def _finish_interrupted() -> Any:
             """客户端中途断开（刷新/离开页）的收尾：按「已到达增量保留」口径落部分回答。
 
             无增量（还在思考/未首帧）不落任何行——此时历史里只有本轮提问，与流前
@@ -321,7 +322,7 @@ class AiAssistantViewSet(
         # meta 载荷在同步段预构建（message_payload 可能触发 FK 懒加载，异步段禁止 DB 访问）
         user_payload = message_payload(user_row)
 
-        async def events():
+        async def events() -> Any:
             yield {"event": "meta", "data": {"question": question, "user_message": user_payload}}
             try:
                 async for item in ai_ask_stream_async(messages, sources, user=request.user):

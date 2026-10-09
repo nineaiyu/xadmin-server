@@ -6,18 +6,20 @@
 与后台管理面的内置角色删除保护、code 不可改口径一致。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 from identity.scim.errors import ScimApiError
 
 
-def ensure_user_writable(user) -> None:
+def ensure_user_writable(user: Any) -> None:
     """超管账号护栏：SCIM 不得改写 / 停用超管。"""
     if getattr(user, "is_superuser", False):
         raise ScimApiError(403, str(_("Superuser accounts cannot be modified via SCIM")), scim_type="mutability")
 
 
-def ensure_group_writable(role) -> None:
+def ensure_group_writable(role: Any) -> None:
     """内置角色护栏：连改名与成员改写也拒绝（成员与授权由管理面维护）。"""
     from identity.builtin import BUILTIN_ROLE_CODES
 

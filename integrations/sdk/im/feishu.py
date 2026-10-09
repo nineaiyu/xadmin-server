@@ -7,6 +7,7 @@
 """
 
 import json
+from typing import Any
 
 from common.utils import get_logger
 
@@ -22,19 +23,19 @@ class FeishuClient(BaseImClient):
     token_ttl = 7200
     token_cache_prefix = "im_feishu_token_"
 
-    def __init__(self, credentials: dict, http_client=None):
+    def __init__(self, credentials: dict[str, Any], http_client: Any = None) -> None:
         super().__init__(credentials=credentials, http_client=http_client)
         self.app_id = credentials.get("app_id") or ""
         self.app_secret = credentials.get("app_secret") or ""
 
-    def _check(self, payload, url):
+    def _check(self, payload: Any, url: str) -> Any:
         code = payload.get("code")
         if code not in (0, None):
             action = url.rsplit("/", 1)[-1].split("?")[0]
             raise ImSdkError(f"feishu rejected {action}: code={code} msg={payload.get('msg')}", code=code)
         return payload
 
-    def _fetch_token(self, credentials: dict) -> str:
+    def _fetch_token(self, credentials: dict[str, Any]) -> str:
         # tenant_access_token/internal 不走 code 包裹，直接返回 {"tenant_access_token": ...}
         payload = self._post_json(self.token_url, {"app_id": self.app_id, "app_secret": self.app_secret})
         token = str(payload.get("tenant_access_token") or "")
@@ -42,7 +43,7 @@ class FeishuClient(BaseImClient):
             raise ImSdkError("feishu token response missing tenant_access_token")
         return token
 
-    def send_text(self, accounts, content) -> None:
+    def send_text(self, accounts: Any, content: Any) -> None:
         """accounts 为 union_id 列表；逐条发送（im 批量接口有 200 上限且错误粒度粗）。"""
         receive_ids = [str(a) for a in accounts if a]
         if not receive_ids:

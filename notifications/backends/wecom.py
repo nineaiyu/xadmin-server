@@ -6,6 +6,8 @@
 的 OAuth 绑定（subject 即 userid，直发）。
 """
 
+from typing import Any
+
 from django.conf import settings
 
 from common.utils import get_logger
@@ -21,7 +23,7 @@ class WeCom(ImBindingBackend):
     is_enable_field_in_settings = "WECOM_ENABLED"
 
     @classmethod
-    def get_credentials(cls) -> dict:
+    def get_credentials(cls) -> dict[str, Any]:
         return {
             "corp_id": getattr(settings, "WECOM_CORP_ID", ""),
             "corp_secret": getattr(settings, "WECOM_CORP_SECRET", ""),
@@ -29,13 +31,13 @@ class WeCom(ImBindingBackend):
         }
 
     @classmethod
-    def is_enable(cls):
+    def is_enable(cls) -> Any:
         if not super().is_enable():
             return False
         credentials = cls.get_credentials()
         return all(credentials.get(key) for key in ("corp_id", "corp_secret", "agent_id"))
 
-    def send_msg(self, users, message, subject="", **kwargs):
+    def send_msg(self, users: Any, message: Any, subject: Any = "", **kwargs: Any) -> Any:
         if not self.is_enable():
             logger.warning("WeCom notify is not configured, skip wecom channel")
             return

@@ -22,7 +22,7 @@ class ImBindingBackend(BackendBase):
     flavor = ""
 
     @classmethod
-    def provider_keys_for_flavor(cls) -> list:
+    def provider_keys_for_flavor(cls) -> list[Any]:
         """flavor 匹配的所有已配置 provider key（含管理员自定义命名）。"""
         from identity.utils.oauth import get_providers
 
@@ -30,7 +30,7 @@ class ImBindingBackend(BackendBase):
             item["key"] for item in get_providers(enabled_only=False) if (item.get("flavor") or "oauth2") == cls.flavor
         ]
 
-    def get_accounts(self, users):
+    def get_accounts(self, users: Any) -> Any:
         """按绑定派生收件账号，返回 (accounts, unbound_users, subject_user_mapper)。
 
         与 BackendBase 的差异：accounts 元素为 ``(账号, user)`` 元组——钉钉需要
@@ -65,7 +65,7 @@ class ImBindingBackend(BackendBase):
         return accounts, unbound_users, {subject: user for subject, user in accounts}
 
     @classmethod
-    def get_account(cls, user):
+    def get_account(cls, user: Any) -> Any:
         from identity.models import UserOAuthBinding
 
         binding = UserOAuthBinding.objects.filter(user=user, provider__in=cls.provider_keys_for_flavor()).first()

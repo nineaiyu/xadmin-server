@@ -52,7 +52,7 @@ class PersonalAccessToken(DbAuditModel):
             models.Index(fields=["expired_at"], name="idx_pat_expired_at"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.token_prefix})"
 
 
@@ -100,7 +100,7 @@ class ApiApplication(DbAuditModel):
         verbose_name_plural = verbose_name
         indexes = [models.Index(fields=["client_id"], name="idx_api_app_client_id")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.client_id})"
 
 
@@ -138,7 +138,7 @@ class ApiApplicationGrant(DbAuditModel):
         verbose_name_plural = verbose_name
         indexes = [models.Index(fields=["application", "is_active"], name="idx_api_grant_app_active")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.application_id}:{self.model}"
 
 
@@ -181,5 +181,5 @@ class OAuthRefreshToken(DbAuditModel):
         verbose_name_plural = verbose_name
         indexes = [models.Index(fields=["application", "user"], name="idx_oauth_refresh_app_user")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"oauth:{self.application_id}:{self.user_id}"

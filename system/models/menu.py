@@ -4,6 +4,7 @@
 # filename : menu
 # author : ly_13
 # date : 8/10/2024
+from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -69,7 +70,7 @@ class MenuMeta(DbAuditModel, DbUuidModel):
         verbose_name_plural = verbose_name
         ordering = ("-created_time",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.title}-{self.description}"
 
 
@@ -113,7 +114,7 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
 
     # api_auth_access = models.BooleanField(verbose_name="是否授权访问，否的话可以匿名访问后端路由", default=True)
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args: Any, **kwargs: Any) -> Any:
         """软删除：标记自身并级联标记全部后代菜单（同一时间戳，成组恢复/清除）。"""
         deleted_at = timezone.now()
         self.deleted_at = deleted_at
@@ -121,14 +122,14 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
         self._cascade_soft_delete_descendants(deleted_at)
         return 1
 
-    def hard_delete(self, *args, **kwargs):
+    def hard_delete(self, *args: Any, **kwargs: Any) -> Any:
         """物理删除：meta 以 CASCADE 指向本模型，删除 meta 即级联删除菜单行
         （沿用原 delete() 的清理顺序），随后清理残余。"""
         if self.meta_id:
             MenuMeta.objects.filter(pk=self.meta_id).delete()
         return super().hard_delete(*args, **kwargs)
 
-    def _cascade_soft_delete_descendants(self, deleted_at):
+    def _cascade_soft_delete_descendants(self, deleted_at: Any) -> None:
         """按广度优先把未删除的后代菜单标记为同一 deleted_at。"""
         frontier = [self.pk]
         while frontier:
@@ -138,7 +139,7 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
             Menu.objects.filter(pk__in=children, deleted_at__isnull=True).update(deleted_at=deleted_at)
             frontier = children
 
-    def get_deleted_descendants(self):
+    def get_deleted_descendants(self) -> Any:
         """与本菜单同一时间戳软删除的后代菜单（成组恢复/清除的口径）。"""
         if self.deleted_at is None:
             return Menu.objects.none()
@@ -154,7 +155,7 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
             ),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         # meta 可能已被级联删除（purge 物理清除流程），缓存访问会抛 KeyError
         try:
             title = self.meta.title

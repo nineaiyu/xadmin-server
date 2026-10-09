@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : sms
+from typing import Any
+
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
@@ -27,14 +29,14 @@ class SmsBackend(BaseMFA):
     def is_active(self) -> bool:
         return bool(self.user.phone)
 
-    def send_challenge(self) -> tuple:
+    def send_challenge(self) -> tuple[bool, Any]:
         try:
             SendAndVerifyCodeUtil(self.user.phone, backend="sms").gen_and_send_async()
         except CodeSendOverRate as e:
             return False, str(e.detail)
         return True, ""
 
-    def check_code(self, code) -> tuple:
+    def check_code(self, code: str) -> tuple[bool, Any]:
         try:
             SendAndVerifyCodeUtil(self.user.phone, backend="sms").verify(code)
         except CodeExpired:

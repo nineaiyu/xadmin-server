@@ -4,6 +4,7 @@
 # filename : message
 # author : ly_13
 # date : 9/15/2024
+from typing import Any
 
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
@@ -45,8 +46,8 @@ class NoticeMessageViewSet(RecycleBinAction, BaseModelSet):
         request=NoticePublishSerializer,
         responses=get_default_response_schema(),
     )
-    @action(methods=["patch"], detail=True)
-    def publish(self, request, *args, **kwargs):
+    @action(methods=["patch"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def publish(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """修改{cls}状态"""
         serializer = NoticePublishSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -56,8 +57,8 @@ class NoticeMessageViewSet(RecycleBinAction, BaseModelSet):
         instance.save(update_fields=["publish", "modifier"])
         return ApiResponse()
 
-    @action(methods=["post"], detail=False)
-    def announcement(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def announcement(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """添加{cls}公告"""
         self.serializer_class = AnnouncementSerializer
         return super().create(request, *args, **kwargs)
@@ -90,8 +91,8 @@ class NoticeUserReadMessageViewSet(ListDeleteModelSet):
         request=NoticeUserReadStateSerializer,
         responses=get_default_response_schema(),
     )
-    @action(methods=["patch"], detail=True)
-    def state(self, request, *args, **kwargs):
+    @action(methods=["patch"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def state(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """修改{cls}状态"""
         serializer = NoticeUserReadStateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

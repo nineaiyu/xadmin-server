@@ -28,5 +28,5 @@ class CodegenPlan(DbAuditModel):
         verbose_name = _("Codegen plan")
         verbose_name_plural = verbose_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.creator_id} {self.name}"

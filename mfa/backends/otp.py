@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : otp
+from typing import Any
+
 import pyotp
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -26,7 +28,7 @@ class OtpBackend(BaseMFA):
     def is_active(self) -> bool:
         return bool(self.user.otp_secret_key)
 
-    def check_code(self, code) -> tuple:
+    def check_code(self, code: str) -> tuple[bool, Any]:
         if not self.user.otp_secret_key:
             return False, _("OTP is not bound")
         used = UsedOtpCodeCache(self.user, code)
@@ -38,7 +40,7 @@ class OtpBackend(BaseMFA):
         return True, ""
 
     @staticmethod
-    def verify_code(secret, code) -> bool:
+    def verify_code(secret: str, code: str) -> bool:
         totp = pyotp.TOTP(secret)
         return totp.verify(code, valid_window=settings.SECURITY_MFA_OTP_VALID_WINDOW)
 
@@ -47,6 +49,6 @@ class OtpBackend(BaseMFA):
         return pyotp.random_base32()
 
     @staticmethod
-    def get_provisioning_uri(user, secret) -> str:
+    def get_provisioning_uri(user: Any, secret: str) -> str:
         """生成 otpauth 绑定 URI，前端据此渲染二维码"""
         return pyotp.TOTP(secret).provisioning_uri(name=user.username, issuer_name=settings.SECURITY_MFA_OTP_ISSUER)

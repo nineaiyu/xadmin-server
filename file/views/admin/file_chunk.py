@@ -16,6 +16,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema, inline_serializer
 from rest_framework import serializers
 from rest_framework.parsers import MultiPartParser
+from rest_framework.request import Request
 
 from common.core.permission_meta import parent_fallback_action
 from common.core.response import ApiResponse
@@ -39,7 +40,7 @@ logger = get_logger(__name__)
 SESSION_MISSING_CODE = 1001
 
 
-def _parse_session_pk(raw):
+def _parse_session_pk(raw: Any) -> int | None:
     """会话主键统一收敛为 int（畸形字符串返回 None，由调用方回 1001 而非 500）。"""
     try:
         return int(raw)
@@ -84,8 +85,8 @@ class ChunkUploadActionMixin:
             )
         },
     )
-    @parent_fallback_action(methods=["post"], detail=False, throttle_classes=[UploadThrottle], url_path="chunk/init")
-    def chunk_init(self, request, *args, **kwargs):
+    @parent_fallback_action(methods=["post"], detail=False, throttle_classes=[UploadThrottle], url_path="chunk/init")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def chunk_init(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         data = request.data or {}
         try:
             session, received, created = init_session(
@@ -128,14 +129,14 @@ class ChunkUploadActionMixin:
             )
         },
     )
-    @parent_fallback_action(
+    @parent_fallback_action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"],
         detail=False,
         throttle_classes=[UploadThrottle],
         parser_classes=[MultiPartParser],
         url_path="chunk/part",
     )
-    def chunk_part(self, request, *args, **kwargs):
+    def chunk_part(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         session_pk = _parse_session_pk(request.data.get("session"))
         index = request.data.get("index")
         file_obj = request.FILES.get("file")
@@ -161,10 +162,10 @@ class ChunkUploadActionMixin:
             )
         ),
     )
-    @parent_fallback_action(
+    @parent_fallback_action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"], detail=False, throttle_classes=[UploadThrottle], url_path="chunk/complete"
     )
-    def chunk_complete(self, request, *args, **kwargs):
+    def chunk_complete(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         data = request.data or {}
         session_pk = _parse_session_pk(data.get("pk"))
         if session_pk is None:
@@ -189,8 +190,8 @@ class ChunkUploadActionMixin:
             build_object_type(properties={"pk": build_basic_type(OpenApiTypes.STR)}, required=["pk"])
         ),
     )
-    @parent_fallback_action(methods=["post"], detail=False, throttle_classes=[UploadThrottle], url_path="chunk/abort")
-    def chunk_abort(self, request, *args, **kwargs):
+    @parent_fallback_action(methods=["post"], detail=False, throttle_classes=[UploadThrottle], url_path="chunk/abort")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def chunk_abort(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         session_pk = _parse_session_pk((request.data or {}).get("pk"))
         if session_pk is None:
             return ApiResponse(code=SESSION_MISSING_CODE, detail=_("Missing session"))

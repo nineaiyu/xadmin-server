@@ -1,4 +1,6 @@
 import json
+from collections.abc import Iterable
+from typing import Any
 
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -21,11 +23,11 @@ class Setting(DbAuditModel, DbUuidModel):
     encrypted = models.BooleanField(default=False, verbose_name=_("Encrypted"))
     is_active = models.BooleanField(default=True, verbose_name=_("Is active"))
 
-    def __str__(self):
-        return self.name
+    def __str__(self) -> str:
+        return str(self.name)
 
     @property
-    def cleaned_value(self):
+    def cleaned_value(self) -> Any:
         try:
             value = self.value
             if self.encrypted and value is not None:
@@ -40,7 +42,7 @@ class Setting(DbAuditModel, DbUuidModel):
             return None
 
     @cleaned_value.setter
-    def cleaned_value(self, item):
+    def cleaned_value(self, item: Any) -> None:
         try:
             if isinstance(item, set):
                 item = list(item)
@@ -52,7 +54,7 @@ class Setting(DbAuditModel, DbUuidModel):
             raise ValueError(f"Json dump error: {str(e)}") from e
 
     @classmethod
-    def refresh_all_settings(cls):
+    def refresh_all_settings(cls) -> None:
         """批量刷新设置项到运行时 settings：逐条容错。
 
         单条设置损坏（密文认证失败 / 值不可序列化）只记日志、不中断其余设置，
@@ -80,11 +82,11 @@ class Setting(DbAuditModel, DbUuidModel):
                 logger.warning("refresh setting failed: %s", setting.name, exc_info=True)
 
     @classmethod
-    def refresh_item(cls, data):
+    def refresh_item(cls, data: Any) -> None:
         setattr(settings, data[0], data[1])
 
     @classmethod
-    def refresh_names(cls, names):
+    def refresh_names(cls, names: Iterable[str]) -> None:
         """从库回读指定设置行并应用为本进程运行时值（对账原语）。
 
         Setting 行热更依赖 pubsub 广播回写各进程，丢消息时本进程 settings 会停留
@@ -97,7 +99,7 @@ class Setting(DbAuditModel, DbUuidModel):
                 logger.warning("refresh setting failed: %s", setting.name, exc_info=True)
 
     @classmethod
-    def default_value(cls, name):
+    def default_value(cls, name: str) -> Any:
         """行删除后的运行时回收值：同名静态配置默认值（config.yml / 环境变量 / 代码默认值）。
 
         CONFIG 经 common.injection 注入，不反向 import server。键完全
@@ -108,19 +110,21 @@ class Setting(DbAuditModel, DbUuidModel):
 
         return get_server_config().get(name)
 
-    def refresh_setting(self):
+    def refresh_setting(self) -> None:
         setattr(settings, self.name, self.cleaned_value)
 
     @classmethod
-    def save_to_file(cls, value: InMemoryUploadedFile):
+    def save_to_file(cls, value: InMemoryUploadedFile) -> str:
         filename = value.name
         filepath = f"upload/settings/{filename}"
         path = default_storage.save(filepath, ContentFile(value.read()))
-        url = default_storage.url(path)
+        url: str = default_storage.url(path)
         return url
 
     @classmethod
-    def update_or_create(cls, name="", value="", encrypted=False, category="", user=None):
+    def update_or_create(
+        cls, name: str = "", value: Any = "", encrypted: bool = False, category: str = "", user: Any = None
+    ) -> tuple[bool, "Setting | None"]:
         """
         不能使用 Model 提供的，update_or_create 因为这里有 encrypted 和 cleaned_value
         :return: (changed, instance)

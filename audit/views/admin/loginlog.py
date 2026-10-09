@@ -6,10 +6,13 @@
 # date : 1/3/2024
 
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework.request import Request
 
 from audit.models import UserLoginLog
 from audit.serializers.log import LoginLogSerializer
@@ -47,8 +50,8 @@ class LoginLogViewSet(OnlyListModelSet, OnlyExportDataAction):
     filterset_class = LoginLogFilter
 
     @extend_schema(responses=get_default_response_schema(), request=None)
-    @action(methods=["post"], detail=True)
-    def logout(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def logout(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """强退用户"""
         instance = self.get_object()
         # creator / channel_name 可能为空（历史日志、系统记录）：空值返回可读错误，避免 AttributeError 500

@@ -7,6 +7,8 @@
   主键定位所属类型，跨环境导入仍可复用（parent 主键在新环境无意义）。
 """
 
+from typing import Any
+
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -71,7 +73,7 @@ class DataDictSerializer(BaseModelSerializer):
             "created_time",
         ]
 
-    def get_unique_together_validators(self):
+    def get_unique_together_validators(self) -> Any:
         """禁用 DRF 对 (parent, code) 约束生成的 UniqueTogetherValidator。
 
         DRF 3.16 对带 condition 的 UniqueConstraint 仍会生成校验器，导致类型层
@@ -80,14 +82,15 @@ class DataDictSerializer(BaseModelSerializer):
         """
         return []
 
-    def get_children_count(self, obj) -> int:
+    def get_children_count(self, obj: Any) -> int:
         """字典项数量（仅类型行有意义）：视图已 annotate 时直接取值，避免 N+1。"""
         count = getattr(obj, "children_count", None)
         if count is None:
             return 0 if obj.parent_id else obj.children.count()
-        return count
+        typed_value: int = count
+        return typed_value
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: Any) -> Any:
         """写入前把 parent_code（字典类型编码）翻译成 parent 主键。
 
         parent_code 是只读的 SerializerMethodField 式字段（source=parent.code），
@@ -103,7 +106,7 @@ class DataDictSerializer(BaseModelSerializer):
             result["parent"] = parent
         return result
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         """唯一性校验：类型层（parent 为空）code 全局唯一；字典项同类型下 code 唯一。
 
         DB 侧唯一约束带 condition（parent 非空），DRF 不做该约束校验，这里显式查重，

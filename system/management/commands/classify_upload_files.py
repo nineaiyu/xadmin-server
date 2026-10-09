@@ -15,6 +15,8 @@
     python manage.py classify_upload_files --all       # 全部重新推断（覆盖人工分类，谨慎）
 """
 
+from typing import Any
+
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 from django.utils import timezone
@@ -29,12 +31,12 @@ logger = get_logger(__name__)
 class Command(BaseCommand):
     help = "Backfill upload file category by MIME/extension (dict-bounded values only)"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--dry-run", action="store_true", help="Only report, do not write")
         parser.add_argument("--all", action="store_true", help="Re-classify records that already have a category")
         parser.add_argument("--batch-size", type=int, default=1000, help="Bulk update batch size")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         dry_run = options["dry_run"]
         batch_size = options["batch_size"]
         # 含回收站：软删除记录恢复后分类仍然有效；默认只动未分类（含历史空串）

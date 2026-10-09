@@ -13,6 +13,8 @@
 探测结果供链路选择（结构化链路要求 JSON 能力、原生工具调用要求 tool_calls 能力）。
 """
 
+from typing import Any
+
 from django.utils import timezone
 
 from common.utils import get_logger
@@ -55,14 +57,14 @@ VISION_PROBE_DATA_URL = (
 )
 
 
-def _entry(ok: bool, detail: str, extra: dict | None = None) -> dict:
+def _entry(ok: bool, detail: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
     entry = {"ok": bool(ok), "detail": str(detail)[:300], "at": timezone.now().isoformat()}
     if extra:
         entry.update(extra)
     return entry
 
 
-def probe_json(client) -> tuple:
+def probe_json(client: Any) -> tuple[Any, ...]:
     """结构化 JSON 能力：要求输出固定对象并校验可解析。"""
     from common.utils.ai_parse import extract_json_object
 
@@ -80,7 +82,7 @@ def probe_json(client) -> tuple:
     )
 
 
-def probe_tool_calls(client) -> tuple:
+def probe_tool_calls(client: Any) -> tuple[Any, ...]:
     """原生 function calling 能力（准入判据）：期望返回 tool_calls。"""
     try:
         result = client.chat_tools(
@@ -98,7 +100,7 @@ def probe_tool_calls(client) -> tuple:
     return CAPABILITY_TOOL_CALLS, _entry(ok, detail, {"probe_tools": [call["name"] for call in calls][:3]})
 
 
-def probe_reasoning(client) -> tuple:
+def probe_reasoning(client: Any) -> tuple[Any, ...]:
     """思考型模型画像：观察 reasoning_content（无思考内容不算探测失败）。"""
     try:
         client.chat(
@@ -114,7 +116,7 @@ def probe_reasoning(client) -> tuple:
     return CAPABILITY_REASONING, _entry(False, "No reasoning_content returned (not a reasoning model)")
 
 
-def probe_vision(client) -> tuple:
+def probe_vision(client: Any) -> tuple[Any, ...]:
     """多模态输入能力（按需）：验证供应商接受 image_url 消息。"""
     messages = [
         {
@@ -140,13 +142,13 @@ PROBES = {
 }
 
 
-def capability_ok(profile, name: str) -> bool:
+def capability_ok(profile: Any, name: str) -> bool:
     """档案画像中某项能力是否通过（未探测 / 探测失败一律视为不通过，fail-closed）。"""
     data = (getattr(profile, "capabilities", None) or {}).get(str(name))
     return bool(isinstance(data, dict) and data.get("ok"))
 
 
-def probe_profile(profile, capabilities=None, vision: bool = False) -> dict:
+def probe_profile(profile: Any, capabilities: Any = None, vision: bool = False) -> dict[str, Any]:
     """按序探测档案能力，返回可直接落 ``AiProfile.capabilities`` 的结果 dict。
 
     ``capabilities`` 指定探测子集（缺省三项）；``vision=True`` 追加多模态探测。

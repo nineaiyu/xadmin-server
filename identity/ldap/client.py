@@ -11,6 +11,7 @@
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 from django.conf import settings
 from ldap3 import ALL, SUBTREE, Connection, Server
@@ -102,7 +103,7 @@ class LdapConfig:
         )
 
     @classmethod
-    def from_values(cls, values: dict) -> "LdapConfig":
+    def from_values(cls, values: dict[str, Any]) -> "LdapConfig":
         """从 settings 键名 dict 构造快照（测试连接：表单值 ∪ 已存配置）。"""
         kwargs = {field: values[key] for key, field in _SETTING_KEY_TO_FIELD.items() if values.get(key) is not None}
         return cls(**kwargs)
@@ -112,7 +113,7 @@ def _resolve(config: "LdapConfig | None") -> LdapConfig:
     return config if config is not None else LdapConfig.from_settings()
 
 
-def build_server(config: "LdapConfig | None" = None):
+def build_server(config: "LdapConfig | None" = None) -> Any:
     cfg = _resolve(config)
     uri = cfg.server_uri
     if not uri:
@@ -125,7 +126,7 @@ def build_server(config: "LdapConfig | None" = None):
     )
 
 
-def service_connection(config: "LdapConfig | None" = None):
+def service_connection(config: "LdapConfig | None" = None) -> Any:
     """服务账号连接（按快照 bind_dn/bind_password）；bind 失败抛 LDAPException。"""
     cfg = _resolve(config)
     server = build_server(cfg)
@@ -141,7 +142,7 @@ def service_connection(config: "LdapConfig | None" = None):
     return conn
 
 
-def user_connection(user_dn, password, config: "LdapConfig | None" = None):
+def user_connection(user_dn: Any, password: Any, config: "LdapConfig | None" = None) -> Any:
     """以用户 DN + 密码 bind（认证判定）；auto_bind 失败抛 LDAPException。"""
     server = build_server(config)
     conn = Connection(server, user=user_dn, password=password, auto_bind=True, read_only=True)
@@ -150,7 +151,9 @@ def user_connection(user_dn, password, config: "LdapConfig | None" = None):
     return conn
 
 
-def paged_search_entries(conn, search_base, search_filter, attributes, config: "LdapConfig | None" = None):
+def paged_search_entries(
+    conn: Any, search_base: Any, search_filter: Any, attributes: Any, config: "LdapConfig | None" = None
+) -> Any:
     """分页搜索，返回条目属性 dict 列表（每条含 dn 与 attributes）。"""
     if not search_base:
         raise LdapConfigError("LDAP search base is empty")
@@ -165,7 +168,7 @@ def paged_search_entries(conn, search_base, search_filter, attributes, config: "
     return [entry for entry in entries if entry.get("type") == "searchResEntry"]
 
 
-def entry_to_attrs(entry) -> dict:
+def entry_to_attrs(entry: Any) -> dict[str, Any]:
     """ldap3 条目归一为 {attr: value|list}；多值属性取列表，单值取标量，None 视为缺失。"""
     raw = entry.get("attributes") or {}
     result = {}
@@ -178,7 +181,7 @@ def entry_to_attrs(entry) -> dict:
     return result
 
 
-def first_attr(attrs: dict, key: str):
+def first_attr(attrs: dict[str, Any], key: str) -> Any:
     """取单值：列表属性取首项；空返回 None。key 先精确匹配再退回小写。"""
     value = attrs.get(key, attrs.get((key or "").lower()))
     if isinstance(value, (list, tuple)):
@@ -186,7 +189,7 @@ def first_attr(attrs: dict, key: str):
     return value
 
 
-def is_entry_disabled(attrs: dict) -> bool:
+def is_entry_disabled(attrs: dict[str, Any]) -> bool:
     """AD userAccountControl 禁用位判定；无该属性（OpenLDAP 等）视为启用。"""
     uac = first_attr(attrs, "userAccountControl")
     try:
@@ -196,10 +199,11 @@ def is_entry_disabled(attrs: dict) -> bool:
 
 
 def escape_filter(value: str) -> str:
-    return escape_filter_chars(value or "")
+    typed_value: str = escape_filter_chars(value or "")
+    return typed_value
 
 
-def get_attr_map(config: "LdapConfig | None" = None) -> dict:
+def get_attr_map(config: "LdapConfig | None" = None) -> dict[str, Any]:
     """字段映射（固定四键）：平台字段 -> 目录属性名（LDAP_ATTR_* 可在管理页改）。"""
     cfg = _resolve(config)
     return {

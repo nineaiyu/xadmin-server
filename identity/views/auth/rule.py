@@ -4,6 +4,8 @@
 # filename : rule
 # author : ly_13
 # date : 8/10/2024
+from typing import Any
+
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -37,6 +39,6 @@ class PasswordRulesAPIView(GenericAPIView):
             }
         )
     )
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         """获取密码规则配置"""
         return ApiResponse(data={"password_rules": get_password_check_rules(request.user)})

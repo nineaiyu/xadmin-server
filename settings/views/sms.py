@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/6/2024
 import importlib
+from typing import Any
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -14,6 +15,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException
+from rest_framework.request import Request
 
 from common.base.utils import get_choices_dict
 from common.core.response import ApiResponse
@@ -51,8 +53,8 @@ class SmsSettingViewSet(BaseSettingViewSet):
             }
         ),
     )
-    @action(methods=["get"], detail=False)
-    def backends(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def backends(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """获取可配置短信后端"""
         return ApiResponse(data=get_choices_dict(BACKENDS.choices))
 
@@ -69,11 +71,12 @@ class SmsConfigViewSet(BaseSettingViewSet):
     }
 
     @property
-    def test_code(self):
-        return TEST_CODE_DIGIT * settings.VERIFY_CODE_LENGTH
+    def test_code(self) -> str:
+        length: int = settings.VERIFY_CODE_LENGTH
+        return TEST_CODE_DIGIT * length
 
     @staticmethod
-    def get_or_from_setting(key, value=""):
+    def get_or_from_setting(key: str, value: Any = "") -> Any:
         if not value:
             secret = Setting.objects.filter(name=key).first()
             if secret:
@@ -81,7 +84,7 @@ class SmsConfigViewSet(BaseSettingViewSet):
 
         return value or ""
 
-    def get_alibaba_params(self, data):
+    def get_alibaba_params(self, data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
         init_params = {
             "access_key_id": data["ALIBABA_ACCESS_KEY_ID"],
             "access_key_secret": self.get_or_from_setting(
@@ -95,7 +98,7 @@ class SmsConfigViewSet(BaseSettingViewSet):
         }
         return init_params, send_sms_params
 
-    def get_params_by_backend(self, backend, data):
+    def get_params_by_backend(self, backend: str, data: dict[str, Any]) -> Any:
         """
         返回两部分参数
             1、实例化参数
@@ -109,7 +112,7 @@ class SmsConfigViewSet(BaseSettingViewSet):
             )
         return get_params_func(data)
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """测试{cls}"""
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)

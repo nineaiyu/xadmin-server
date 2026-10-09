@@ -4,6 +4,8 @@
 # filename : modelfield
 # author : ly_13
 # date : 10/24/2024
+from typing import Any
+
 from django.apps import apps
 from django.conf import settings
 from django.db import transaction
@@ -18,7 +20,7 @@ from system.models import ModelLabelField
 logger = get_logger(__name__)
 
 
-def _prune_stale(field_type, kept_pks, enabled):
+def _prune_stale(field_type: Any, kept_pks: Any, enabled: Any) -> Any:
     """删除本轮未采集到的同类型行（陈旧字段/模型）。
 
     **不依赖 updated_time**：种子 loaddata 写入的行 updated_time 为 NULL，
@@ -35,7 +37,7 @@ def _prune_stale(field_type, kept_pks, enabled):
     return count
 
 
-def get_sub_serializer_fields():
+def get_sub_serializer_fields() -> Any:
     """按序列化器定义重建 ROLE 字段树（角色页字段权限勾选的数据源）。
 
     - 单个序列化器实例化异常只跳过并记录（不再中断整个同步）；
@@ -44,7 +46,7 @@ def get_sub_serializer_fields():
     cls_list = []
     activate(settings.LANGUAGE_CODE)
 
-    def get_all_subclass(base_cls):
+    def get_all_subclass(base_cls: Any) -> None:
         if base_cls.__subclasses__():
             for cls in base_cls.__subclasses__():
                 cls_list.append(cls)
@@ -83,7 +85,7 @@ def get_sub_serializer_fields():
     return {"kept": len(kept), "deleted": deleted, "failed_serializers": failed}
 
 
-def get_app_model_fields():
+def get_app_model_fields() -> Any:
     """按 PERMISSION_DATA_AUTH_APPS 重建「模型/字段」数据权限树（NULL 安全清理）。"""
     field_type = ModelLabelField.FieldChoices.DATA
     kept = set()
@@ -133,7 +135,7 @@ def get_app_model_fields():
     return {"kept": len(kept), "deleted": deleted, "models": processed}
 
 
-def _warmup_urlconf():
+def _warmup_urlconf() -> None:
     """预热 URLconf，确保各 app 的 views/serializers 模块已导入。
 
     ``get_sub_serializer_fields`` 依赖 ``BaseModelSerializer.__subclasses__()``：管理命令
@@ -150,8 +152,8 @@ def _warmup_urlconf():
         logger.warning("urlconf warm-up failed, role field tree may be incomplete", exc_info=True)
 
 
-@transaction.atomic
-def sync_model_field():
+@transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def sync_model_field() -> Any:
     """同步模型字段数据到数据库（角色字段树 + 数据权限字段树）。
 
     返回同步摘要（新增语义按 kept 计），供管理命令 / 接口回显：
@@ -164,7 +166,7 @@ def sync_model_field():
     return {"data": data, "role": role}
 
 
-def get_field_lookup_info(fields):
+def get_field_lookup_info(fields: Any) -> Any:
     field_info = {
         "exact": _("Exact match, the field value must be exactly the same as the given value."),
         "iexact": _("Case-insensitive exact match."),
@@ -216,7 +218,7 @@ def get_field_lookup_info(fields):
     return [{"value": field, "label": field_info.get(field, field)} for field in fields]
 
 
-def get_field_meta(field) -> dict:
+def get_field_meta(field: Any) -> dict[str, Any]:
     """字段形态元数据（配置页做控件适配与兼容性提示，不参与读侧编译）。
 
     - internal_type：Django 字段内部类型（CharField / DateTimeField / ForeignKey ...）
@@ -237,7 +239,7 @@ def get_field_meta(field) -> dict:
     }
 
 
-def get_extra_field_lookups(field) -> list:
+def get_extra_field_lookups(field: Any) -> list[Any]:
     """按字段类型返回框架自定义匹配符（与 data_scope.SPECIAL_MATCHES 同源）。
 
     只对适用字段暴露，避免在 CharField 等字段的 match 下拉里出现 m2m_all/ip_in 造成误导。

@@ -10,6 +10,7 @@
 """
 
 import datetime
+from typing import Any
 
 from django.db import connections
 from django.utils import timezone
@@ -46,7 +47,7 @@ METRIC_META = {
 }
 
 
-def parse_window_dt(value):
+def parse_window_dt(value: Any) -> Any:
     """解析前端传入的时间（ISO 字符串或秒/毫秒时间戳）；朴素时间按本地时区补全。"""
     if not value:
         return None
@@ -67,7 +68,7 @@ def parse_window_dt(value):
     return dt
 
 
-def resolve_window(range_key=None, start=None, end=None):
+def resolve_window(range_key: Any = None, start: Any = None, end: Any = None) -> Any:
     """解析查询窗口：显式 start/end 优先，否则按预设 range 从 end 倒推。"""
     end_dt = parse_window_dt(end) or timezone.now()
     start_dt = parse_window_dt(start)
@@ -81,7 +82,7 @@ def resolve_window(range_key=None, start=None, end=None):
     return start_dt, end_dt
 
 
-def resolve_interval(seconds, interval=None):
+def resolve_interval(seconds: Any, interval: Any = None) -> Any:
     """解析聚合粒度：显式合法值优先，否则 auto 推导；返回 (键, 秒)。"""
     if interval in HISTORY_INTERVALS:
         return interval, HISTORY_INTERVALS[interval]
@@ -91,7 +92,7 @@ def resolve_interval(seconds, interval=None):
     return AUTO_FALLBACK, HISTORY_INTERVALS[AUTO_FALLBACK]
 
 
-def resolve_metrics(metrics):
+def resolve_metrics(metrics: Any) -> Any:
     """指标白名单过滤（空/非法回退默认三件套），保序去重。"""
     if isinstance(metrics, str):
         metrics = [item.strip() for item in metrics.split(",")]
@@ -102,18 +103,18 @@ def resolve_metrics(metrics):
     return picked or list(DEFAULT_METRICS)
 
 
-def metric_label(metric, with_unit=True):
+def metric_label(metric: Any, with_unit: Any = True) -> Any:
     """指标展示名（含单位），用于图表图例、导出表头。"""
     name, unit = METRIC_META.get(metric, (metric, ""))
     name = str(name)
     return f"{name} ({unit})" if with_unit and unit else name
 
 
-def _iso(dt):
+def _iso(dt: Any) -> Any:
     return timezone.localtime(dt).isoformat()
 
 
-def _metrics_cte(table):
+def _metrics_cte(table: Any) -> Any:
     """窗口采样 CTE：窗口内采样（含单次取数上限）+ 窗口前最近一条基准行。
 
     网络速率用窗口函数在全序集合上对相邻采样差分（速率 = 累计量差 × 1024 /
@@ -158,7 +159,7 @@ WITH base AS (
 )"""
 
 
-def _bucket_query(table):
+def _bucket_query(table: Any) -> Any:
     """按时间桶聚合：桶 = epoch 秒对桶宽取整（与前端逐点对齐口径一致）。"""
     avgs = ", ".join(f"AVG({field}) AS {field}" for field in DIRECT_METRICS + tuple(RATE_SOURCES))
     return f"""{_metrics_cte(table)}
@@ -169,7 +170,7 @@ GROUP BY bucket_key
 ORDER BY bucket_key"""
 
 
-def _summary_query(table):
+def _summary_query(table: Any) -> Any:
     """窗口汇总：每指标 min/max/avg + 最后一个有效值（last），COUNT 为原始采样行数。"""
     columns = []
     for metric in DIRECT_METRICS + tuple(RATE_SOURCES):
@@ -188,16 +189,16 @@ SELECT COUNT(*) AS row_count,
 FROM metrics"""
 
 
-def _fetch_dicts(cursor):
+def _fetch_dicts(cursor: Any) -> Any:
     columns = [column[0] for column in cursor.description]
     return [dict(zip(columns, row, strict=False)) for row in cursor.fetchall()]
 
 
-def _round_or_none(value):
+def _round_or_none(value: Any) -> Any:
     return None if value is None else round(float(value), 2)
 
 
-def _bucket_points(rows, interval_seconds):
+def _bucket_points(rows: Any, interval_seconds: Any) -> Any:
     """聚合行 → 点序列（桶时间取桶起点；桶内无有效值的字段不出现）。"""
     points = []
     for row in rows:
@@ -210,7 +211,7 @@ def _bucket_points(rows, interval_seconds):
     return points
 
 
-def _summarize(row, metrics):
+def _summarize(row: Any, metrics: Any) -> Any:
     """汇总行 → 每指标 min/max/avg/last（last 为窗口内最后一个有效值）。"""
     return {
         metric: {
@@ -223,7 +224,7 @@ def _summarize(row, metrics):
     }
 
 
-def _compare_item(current, previous):
+def _compare_item(current: Any, previous: Any) -> Any:
     if current is None or previous is None:
         return {"prev_avg": None, "delta": None, "percent": None}
     previous = round(previous, 2)
@@ -231,7 +232,7 @@ def _compare_item(current, previous):
     return {"prev_avg": previous, "delta": round(current - previous, 2), "percent": percent}
 
 
-def compare_with_previous(model, start_dt, end_dt, metrics, summary):
+def compare_with_previous(model: Any, start_dt: Any, end_dt: Any, metrics: Any, summary: Any) -> Any:
     """与上一等长窗口对比：直接指标走 DB 均值；速率走首末累计差（少取数）。"""
     result = {}
     span = end_dt - start_dt
@@ -259,7 +260,14 @@ def compare_with_previous(model, start_dt, end_dt, metrics, summary):
     return result
 
 
-def collect_history(range_key=None, start=None, end=None, interval=None, metrics=None, compare=True):
+def collect_history(
+    range_key: Any = None,
+    start: Any = None,
+    end: Any = None,
+    interval: Any = None,
+    metrics: Any = None,
+    compare: Any = True,
+) -> Any:
     """历史趋势主入口：窗口/粒度/指标解析 + 分桶聚合 + 汇总 + 环比。
 
     分桶与汇总聚合下推数据库，只回传聚合结果（桶序列 / 汇总 / 环比），
@@ -297,12 +305,12 @@ def collect_history(range_key=None, start=None, end=None, interval=None, metrics
     }
 
 
-def _fmt_time(value):
+def _fmt_time(value: Any) -> Any:
     """导出用本地时间字符串（points 内为带偏移的本地 ISO 串）。"""
     return str(value)[:19].replace("T", " ")
 
 
-def build_history_export_sheets(result):
+def build_history_export_sheets(result: Any) -> Any:
     """历史趋势导出：数据 sheet + 汇总/环比 sheet（CSV/Excel 共用结构）。"""
     metrics = result["metrics"]
     data_header = [str(_("Time"))] + [metric_label(metric) for metric in metrics]

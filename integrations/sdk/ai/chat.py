@@ -4,6 +4,8 @@
 
 import json
 import time
+from collections.abc import Iterator
+from typing import Any
 
 from common.utils import get_logger
 
@@ -20,7 +22,7 @@ class AiSdkError(Exception):
     """LLM 调用失败（网络/协议/供应商拒绝）。message 面向日志与可读转换。"""
 
 
-def outbound_allowed_hosts(configured=None) -> tuple:
+def outbound_allowed_hosts(configured: Any = None) -> tuple[str, ...]:
     """解析出站白名单：显式注入优先；缺省读系统配置 ``OUTBOUND_ALLOWED_HOSTS``。
 
     与 Webhook/MCP 同源；配置读取失败按空白名单降级（私网目标默认拒绝）。
@@ -32,7 +34,7 @@ def outbound_allowed_hosts(configured=None) -> tuple:
     return _load_allowed_hosts()
 
 
-def outbound_pinned_post(url: str, kwargs: dict, *, allowed_hosts=None):
+def outbound_pinned_post(url: str, kwargs: dict[str, Any], *, allowed_hosts: Any = None) -> Any:
     """生产路径出站 POST：守卫校验 + 固定解析连接（Webhook/MCP 同口径）。
 
     私网目标默认拒绝（loopback 供本地联调，自建服务须登记白名单）；域名固定为
@@ -50,7 +52,7 @@ def outbound_pinned_post(url: str, kwargs: dict, *, allowed_hosts=None):
     )
 
 
-def parse_chat_message(payload: dict) -> tuple:
+def parse_chat_message(payload: dict[str, Any]) -> tuple[Any, str | None, Any, Any]:
     """choices[0].message → ``(content, reasoning, usage, tool_calls_raw)``（同步/异步共用）。
 
     reasoning 规范化为 str | None（缺省 None）；usage 仅在 dict 形态时透传；
@@ -70,7 +72,7 @@ def parse_chat_message(payload: dict) -> tuple:
     )
 
 
-def raise_if_empty_answer(content, reasoning: str | None, *, with_tools: bool, raw: dict) -> None:
+def raise_if_empty_answer(content: Any, reasoning: str | None, *, with_tools: bool, raw: dict[str, Any]) -> None:
     """空回答判定（同步/异步客户端共用）：既无内容又无（工具调用时）产出 → AiSdkError。
 
     思考型模型「只有 reasoning」与「彻底空回答」分开报错，供前端给出可操作提示。
@@ -96,7 +98,7 @@ class ChatCompletionsClient:
     流式仅在收到响应前重试——已产出增量不重试，由调用方按部分回答处理。
     """
 
-    def __init__(self, credentials: dict, http_client=None):
+    def __init__(self, credentials: dict[str, Any], http_client: Any = None) -> None:
         self.base_url = str(credentials.get("base_url") or "").rstrip("/")
         self.api_key = str(credentials.get("api_key") or "")
         self.model = str(credentials.get("model") or "")
@@ -118,25 +120,25 @@ class ChatCompletionsClient:
         self.allowed_hosts = credentials.get("allowed_hosts")
         # 最近一次成功 chat() 的 token 用量（供应商 payload.usage 原样，缺省 None）：
         # 供调用方写审计（成本维度观测），不改变 chat() 的返回契约
-        self.last_usage: dict | None = None
+        self.last_usage: dict[str, Any] | None = None
         # 最近一次 chat() 的思考内容（reasoning_content，缺省 None）：用于「只有思考
         # 没有回答」的错误区分（见 chat() 的空回答判定）；流式场景由 chat_stream 逐段产出
         self.last_reasoning: str | None = None
         # 最近一次 chat_tools() 的原始 tool_calls（规范化后的列表，缺省 []）
-        self.last_tool_calls: list = []
+        self.last_tool_calls: list[dict[str, Any]] = []
 
-    def _outbound_allowed_hosts(self) -> tuple:
+    def _outbound_allowed_hosts(self) -> tuple[str, ...]:
         """出站白名单：显式注入优先；未注入时读系统配置（读取失败按空白名单降级）。"""
         return outbound_allowed_hosts(self.allowed_hosts)
 
-    def _request(self, url: str, kwargs: dict):
+    def _request(self, url: str, kwargs: dict[str, Any]) -> Any:
         """POST 一次：注入 http（测试）原样透传；生产路径走出站守卫 + 固定解析连接。"""
         if self.http is not None:
             return self.http.post(url, **kwargs)
         return outbound_pinned_post(url, kwargs, allowed_hosts=self.allowed_hosts)
 
-    def _body(self, messages: list, stream: bool = False, **overrides) -> dict:
-        body = {
+    def _body(self, messages: list[Any], stream: bool = False, **overrides: Any) -> dict[str, Any]:
+        body: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
             "temperature": DEFAULT_TEMPERATURE if self.temperature is None else self.temperature,
@@ -160,12 +162,12 @@ class ChatCompletionsClient:
                 body[key] = value
         return body
 
-    def _post(self, url: str, body: dict, stream: bool = False):
+    def _post(self, url: str, body: dict[str, Any], stream: bool = False) -> Any:
         """POST + 重试：网络异常与 5xx/429 指数退避重试；4xx 配置类错误不重试。"""
         from common.utils.outbound import OutboundBlocked
 
         attempts = self.max_retries + 1
-        response = None
+        response: Any = None
         for attempt in range(attempts):
             kwargs = {
                 "json": body,
@@ -194,7 +196,7 @@ class ChatCompletionsClient:
             return response
         return response
 
-    def chat(self, messages: list, **overrides) -> str:
+    def chat(self, messages: list[Any], **overrides: Any) -> str:
         """多轮消息 → 助手回复文本。失败抛 AiSdkError（可读、不含原始报文）。
 
         overrides：显式覆盖请求体参数（如 temperature=0.7），None 值忽略。
@@ -219,14 +221,14 @@ class ChatCompletionsClient:
         return str(content)
 
     @staticmethod
-    def _normalize_tool_calls(raw) -> list:
+    def _normalize_tool_calls(raw: Any) -> list[dict[str, Any]]:
         """供应商 tool_calls → 统一形态 ``[{id, name, arguments}]``（arguments 保留原始字符串）。"""
-        calls = []
+        calls: list[dict[str, Any]] = []
         for item in raw or []:
             if not isinstance(item, dict):
                 continue
             raw_function = item.get("function")
-            function: dict = raw_function if isinstance(raw_function, dict) else {}
+            function: dict[str, Any] = raw_function if isinstance(raw_function, dict) else {}
             name = str(function.get("name") or "").strip()
             if not name:
                 continue
@@ -242,7 +244,9 @@ class ChatCompletionsClient:
             )
         return calls
 
-    def chat_tools(self, messages: list, tools: list, tool_choice: str = "auto", **overrides) -> dict:
+    def chat_tools(
+        self, messages: list[Any], tools: list[Any], tool_choice: str = "auto", **overrides: Any
+    ) -> dict[str, Any]:
         """原生 function calling（OpenAI tools 协议）：返回 ``{content, tool_calls, usage, reasoning}``。
 
         ``tool_calls`` 规范化后为 ``[{id, name, arguments}]``（arguments 为 JSON 字符串，
@@ -276,7 +280,7 @@ class ChatCompletionsClient:
             "reasoning": self.last_reasoning,
         }
 
-    def chat_stream(self, messages: list, **overrides):
+    def chat_stream(self, messages: list[Any], **overrides: Any) -> Iterator[dict[str, str]]:
         """流式多轮：产出结构化增量事件（OpenAI `stream=true` SSE 兼容）。
 
         产出 ``{"type": "reasoning"|"content", "text": <增量>}``：

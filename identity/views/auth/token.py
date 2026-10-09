@@ -4,6 +4,8 @@
 # filename : token
 # author : ly_13
 # date : 8/10/2024
+from typing import Any
+
 from django.conf import settings
 from drf_spectacular.plumbing import build_basic_type
 from drf_spectacular.types import OpenApiTypes
@@ -33,7 +35,7 @@ class TempTokenAPIView(GenericAPIView):
     throttle_classes = [AnonRateThrottle, TempTokenThrottle]
 
     @extend_schema(responses=get_default_response_schema({"token": build_basic_type(OpenApiTypes.STR)}))
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         """获取{cls}"""
         time_limit = int(getattr(settings, "SECURITY_TEMP_TOKEN_EXPIRE", 600) or 600)
         token = make_token_cache(get_request_ident(request), time_limit=time_limit, force_new=True).encode("utf-8")
@@ -55,7 +57,7 @@ class CaptchaAPIView(GenericAPIView):
             }
         )
     )
-    def get(self, request):
+    def get(self, request: Any) -> Any:
         """获取{cls}"""
         return ApiResponse(**CaptchaAuth(request=request).generate())
 
@@ -63,7 +65,7 @@ class CaptchaAPIView(GenericAPIView):
 class RefreshTokenAPIView(TokenRefreshView):
     """刷新Token"""
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         data = super().post(request, *args, **kwargs).data
         data.update(get_token_lifetime(request.user))
         return ApiResponse(data=data)

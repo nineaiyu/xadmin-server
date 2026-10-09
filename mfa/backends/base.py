@@ -3,6 +3,7 @@
 # project : xadmin-server
 # filename : base
 import abc
+from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
@@ -27,7 +28,7 @@ class BaseMFA(abc.ABC):
     # 该方式验证通过后可满足的确认级别
     confirm_level = ConfirmType.MFA
 
-    def __init__(self, user, request=None):
+    def __init__(self, user: Any, request: Any = None) -> None:
         self.user = user
         self.request = request
 
@@ -40,10 +41,10 @@ class BaseMFA(abc.ABC):
         """当前用户是否具备使用该方式的条件（如手机号/邮箱/已绑定 OTP）"""
         return True
 
-    def send_challenge(self) -> tuple:
+    def send_challenge(self) -> tuple[bool, Any]:
         """下发挑战验证码，返回 (是否成功, 失败原因)"""
         return False, _("This method does not support sending verification codes")
 
     @abc.abstractmethod
-    def check_code(self, code) -> tuple:
+    def check_code(self, code: Any) -> tuple[bool, Any]:
         """校验验证码，返回 (是否通过, 失败原因)"""

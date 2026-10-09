@@ -4,6 +4,7 @@
 
 import ast
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from django.core.management.base import CommandError
@@ -18,11 +19,11 @@ class MergeMixin:
         stdout: Any
 
     @staticmethod
-    def _existing_text(path):
+    def _existing_text(path: Path | None) -> str:
         return path.read_text(encoding="utf-8") if path and path.exists() else ""
 
     @staticmethod
-    def _strip_block(text, key):
+    def _strip_block(text: str, key: str) -> str:
         """去掉目标文件中本 key 的旧生成块：块内 import 不算「文件已导入」，--force 替换后不丢 import。"""
         if not text:
             return text
@@ -36,9 +37,9 @@ class MergeMixin:
 
     # ------------------------------------------------------------------ 落盘
 
-    def _emit(self, artifacts, options):
+    def _emit(self, artifacts: list[dict[str, Any]], options: dict[str, Any]) -> None:
         dry_run = options["dry_run"]
-        lines = []
+        lines: list[str] = []
         for item in artifacts:
             if item["mode"] == "notice":
                 lines.append(f"[提示] {item['label']}：{item['notice']}")
@@ -54,7 +55,7 @@ class MergeMixin:
             lines.append(f"[{action}] {item['label']} → {item['path']}")
         self.stdout.write("\n".join(lines))
 
-    def _write(self, item, force):
+    def _write(self, item: dict[str, Any], force: bool) -> str:
         path = item["path"]
         if item["mode"] == "create":
             if path.exists() and not force:
@@ -70,7 +71,7 @@ class MergeMixin:
             return self._merge_urls(path, item)
         raise CommandError(f"未知产物模式：{item['mode']}")
 
-    def _merge_block(self, path, key, content, force):
+    def _merge_block(self, path: Path, key: str, content: str, force: bool) -> str:
         """共享文件（views.py / serializers.py）的生成块合并：按标记整块替换，幂等。"""
         start = BLOCK_START.format(key=key)
         end = BLOCK_END.format(key=key)
@@ -93,7 +94,7 @@ class MergeMixin:
         path.write_text(text.rstrip("\n") + "\n\n\n" + block, encoding="utf-8")
         return "追加生成块"
 
-    def _merge_urls(self, path, item):
+    def _merge_urls(self, path: Path, item: dict[str, Any]) -> str:
         """urls.py：顶部补 import、urlpatterns 前插入 router.register 注册行（幂等）。"""
         ctx = item["ctx"]
         text = path.read_text(encoding="utf-8")
@@ -113,7 +114,7 @@ class MergeMixin:
         return "插入注册行"
 
     @classmethod
-    def _merge_urls_import(cls, lines, ctx, import_line):
+    def _merge_urls_import(cls, lines: list[str], ctx: dict[str, Any], import_line: str) -> list[str]:
         """把 ViewSet import 合入第一方 import 块并整体重排（防 I001）。
 
         复用 `_group_imports`：同模块 from-import 合并、组内按模块排序、组间空行；
@@ -130,7 +131,7 @@ class MergeMixin:
             else:
                 blocks.append([index])
 
-        def is_first_party(line):
+        def is_first_party(line: str) -> bool:
             if not line.startswith("from "):
                 return False
             top = line[len("from ") :].split()[0].split(".")[0]
@@ -141,12 +142,14 @@ class MergeMixin:
         block_lines = [*lines[head : tail + 1], import_line]
         plain = [line for line in block_lines if not line.startswith("from ")]
         froms = [line for line in block_lines if line.startswith("from ")]
-        return [*lines[:head], *plain, *cls._group_imports(froms, {ctx.get("app_label")}), *lines[tail + 1 :]]
+        # app_label 缺失时以空串入组（不会与任何模块顶层名相等，等价于不追加第一方）
+        extra_first_party = frozenset({str(ctx.get("app_label") or "")})
+        return [*lines[:head], *plain, *cls._group_imports(froms, extra_first_party), *lines[tail + 1 :]]
 
     # ------------------------------------------------------------ 导入去重工具
 
     @staticmethod
-    def _imported_names(text):
+    def _imported_names(text: str) -> set[str]:
         """目标文件顶层已导入的名字集合（含别名），用于生成块内 import 去重（防 F811）。"""
         names: set[str] = set()
         if not text:
@@ -162,9 +165,11 @@ class MergeMixin:
                 names.update(alias.asname or alias.name for alias in node.names)
         return names
 
-    def _render_imports(self, specs, existing_names):
+    def _render_imports(
+        self, specs: list[tuple[str, list[tuple[str, str | None]]]], existing_names: set[str]
+    ) -> list[str]:
         """specs: [(module, [(name, asname), ...])]；已导入的名字跳过，避免重定义。"""
-        lines = []
+        lines: list[str] = []
         for module, items in specs:
             missing = [(name, asname) for name, asname in items if (asname or name) not in existing_names]
             if not missing:
@@ -174,7 +179,7 @@ class MergeMixin:
         return lines
 
     @staticmethod
-    def _group_imports(lines, extra_first_party=frozenset()):
+    def _group_imports(lines: list[str], extra_first_party: frozenset[str] = frozenset()) -> list[str]:
         """import 行按「标准库 → 第三方 → 第一方」分组，组内按模块排序并合并同模块。
 
         第一方（common/system/message 与生成的 app）**同属一组、组内不留空行**——
@@ -204,10 +209,10 @@ class MergeMixin:
                 key = "app"
             else:
                 key = "third"
-            names = sorted(merged[module], key=_import_name_sort_key)
-            groups[key].append(f"from {module} import {', '.join(names)}")
+            sorted_names = sorted(merged[module], key=_import_name_sort_key)
+            groups[key].append(f"from {module} import {', '.join(sorted_names)}")
 
-        ordered = []
+        ordered: list[str] = []
         for key in ("stdlib", "third", "app"):
             if groups[key]:
                 ordered.extend(groups[key])

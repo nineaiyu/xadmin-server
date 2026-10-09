@@ -7,6 +7,8 @@ settings app 对外服务契约层。
 禁止直接 import settings.utils 等内部实现，避免 app 间横向依赖扩散。
 """
 
+from typing import Any
+
 from settings.models import Setting
 from settings.utils.password import (
     PASSWORD_EXPIRED_MESSAGE,
@@ -45,7 +47,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> Any:
     # 惰性再导出（视图模块导入较重，启动期不需要）
     _lazy = {
         "AiAssistantSettingSerializer": "settings.serializers.ai",

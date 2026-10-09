@@ -38,7 +38,7 @@ class BaseSMSSettingSerializer(SettingSaveContractMixin, serializers.Serializer)
         help_text=_("The phone is used for testing the SMS server's connectivity"),
     )
 
-    def post_save(self):
+    def post_save(self) -> None:
         # 响应整形（契约）：把 SMS_TEST_PHONE 归一为 {code, phone} 便于前端回显
         value = self.response_data["SMS_TEST_PHONE"]
         if isinstance(value, dict):

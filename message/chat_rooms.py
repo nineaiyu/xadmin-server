@@ -10,6 +10,8 @@
 chat.py 再导出本模块符号，历史调用面保持不变。
 """
 
+from typing import Any
+
 from common.utils import get_logger
 from message.chat_ops import _user_pk, user_brief
 from message.models import GROUP_MEMBERS_PREVIEW, ChatRoom, ChatRoomMember
@@ -20,7 +22,7 @@ logger = get_logger(__name__)
 UNSET = object()
 
 
-def online_user_pks() -> set:
+def online_user_pks() -> set[Any]:
     """在线用户快照（失败降级为空集：在线态属增强展示，不应阻断会话列表）。"""
     try:
         from message.utils import get_online_users
@@ -31,7 +33,7 @@ def online_user_pks() -> set:
         return set()
 
 
-def _fetch_peer(room: ChatRoom, user):
+def _fetch_peer(room: ChatRoom, user: Any) -> Any:
     """单房间私聊对端（列表批量路径见 prefetch_room_context）。"""
     from identity.models import UserInfo
 
@@ -39,7 +41,7 @@ def _fetch_peer(room: ChatRoom, user):
     return user_brief(peer_obj) if peer_obj is not None else None
 
 
-def prefetch_room_context(rooms, user) -> tuple:
+def prefetch_room_context(rooms: Any, user: Any) -> tuple[Any, ...]:
     """列表批量上下文：返回 (peer_map, member_preview_map, member_count_map)。
 
     - 私聊对端：一次 IN 查询取全部对端用户；
@@ -50,9 +52,9 @@ def prefetch_room_context(rooms, user) -> tuple:
 
     private_ids = [room.pk for room in rooms if room.room_type == ChatRoom.RoomType.PRIVATE]
     group_ids = [room.pk for room in rooms if room.room_type == ChatRoom.RoomType.GROUP]
-    peer_map: dict = {}
-    preview_map: dict = {}
-    count_map: dict = {}
+    peer_map: dict[str, Any] = {}
+    preview_map: dict[str, Any] = {}
+    count_map: dict[str, Any] = {}
 
     if private_ids:
         peer_rows = list(
@@ -80,14 +82,14 @@ def prefetch_room_context(rooms, user) -> tuple:
 
 def room_to_dict(
     room: ChatRoom,
-    user,
+    user: Any,
     unread_count: int = 0,
-    online_pks: set | None = None,
+    online_pks: set[Any] | None = None,
     *,
-    peer=UNSET,
-    member_preview=UNSET,
-    member_count=UNSET,
-) -> dict:
+    peer: Any = UNSET,
+    member_preview: Any = UNSET,
+    member_count: Any = UNSET,
+) -> dict[str, Any]:
     """会话列表行（前端左侧栏渲染契约）。
 
     群聊附加：群主/成员数与成员预览（前 GROUP_MEMBERS_PREVIEW 人，供头像堆叠与选人回显）。

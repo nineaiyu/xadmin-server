@@ -21,6 +21,8 @@
     python manage.py seed_demo_flows --reset     # 先删除演示数据与演示用户再生成
 """
 
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from approval.models import ApprovalInstance, ApprovalRequest
@@ -56,13 +58,13 @@ __all__ = [
 class Command(DemoDataMixin, BaseCommand):
     help = "生成审批中心/流程审批/表单采集演示数据（demo_flow_ 前缀用户）"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--reset", action="store_true", help="先删除演示数据与演示用户再生成")
         parser.add_argument("--clean-only", action="store_true", help="只清理，不生成（seed_demo_clean 编排调用）")
 
     # ---------------------------------------------------------------- 清理
 
-    def _reset(self):
+    def _reset(self) -> None:
         from dataset.models import DynamicFormSubmission
 
         # 固定 pk 段 + 演示标题兜底（覆盖历史上非幂等版本/中断运行留下的随机 pk 残留）
@@ -78,7 +80,7 @@ class Command(DemoDataMixin, BaseCommand):
 
     # ---------------------------------------------------------------- 入口
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options["reset"] or options.get("clean_only"):
             self._reset()
         if options.get("clean_only"):

@@ -15,7 +15,7 @@ from .labels import _model_label
 from .queries import _visible_menu_or_error
 
 
-def _direct_user_field_matrix(user_obj: UserInfo, menu_pk) -> dict:
+def _direct_user_field_matrix(user_obj: UserInfo, menu_pk: Any) -> dict[str, Any]:
     """字段权限生效矩阵直查（与 get_user_field_queryset 同口径，不经 10s 缓存）。
 
     试算需反映「当前配置」，即便 10s 缓存也会让「刚改完立刻试算」失真；
@@ -41,7 +41,7 @@ def _direct_user_field_matrix(user_obj: UserInfo, menu_pk) -> dict:
     return data
 
 
-def _registered_model_fields(model_label: str) -> dict:
+def _registered_model_fields(model_label: str) -> dict[str, Any]:
     """字段权限注册表（ROLE）里某模型的注册字段 → {name: label}。"""
     node = ModelLabelField.objects.filter(
         field_type=ModelLabelField.FieldChoices.ROLE, parent__isnull=True, name=model_label
@@ -51,7 +51,7 @@ def _registered_model_fields(model_label: str) -> dict:
     return dict(ModelLabelField.objects.filter(parent=node).values_list("name", "label"))
 
 
-def _validate_draft_fields(fields) -> dict:
+def _validate_draft_fields(fields: Any) -> dict[str, Any]:
     """字段试算草稿校验：模型与字段都必须在字段权限注册表（ROLE）内。
 
     与字段权限保存路径同口径（白名单只能来自注册表字段），
@@ -79,7 +79,7 @@ def _validate_draft_fields(fields) -> dict:
     return cleaned
 
 
-def _menu_model_labels(menu_obj: Menu) -> dict:
+def _menu_model_labels(menu_obj: Menu) -> dict[str, Any]:
     """菜单关联模型 → 中文名（menu.model 可能指向模型根节点，也可能指向字段节点）。"""
     labels = {}
     for node in menu_obj.model.select_related("parent").all():
@@ -88,7 +88,7 @@ def _menu_model_labels(menu_obj: Menu) -> dict:
     return labels
 
 
-def run_field_trial(user_obj: UserInfo, menu_pk, draft=None) -> dict:
+def run_field_trial(user_obj: UserInfo, menu_pk: Any, draft: Any = None) -> dict[str, Any]:
     """字段权限试算：目标用户在某菜单下的生效字段矩阵（只读，不落库）。
 
     - 生效口径与运行时 get_user_field_queryset 同源（用户角色 ∪ 部门角色，字段并集）；

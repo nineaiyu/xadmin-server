@@ -7,6 +7,7 @@
 import asyncio
 import datetime
 import json
+from typing import Any
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -23,9 +24,9 @@ from message.utils import set_mid_result_to_cache
 logger = get_logger(__name__)
 
 
-@database_sync_to_async
+@database_sync_to_async  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 @cached_method()
-def get_userinfo(user):
+def get_userinfo(user: Any) -> Any:
     return serialize_user_info(user)
 
 
@@ -34,20 +35,20 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
     group_name: str
 
     @classmethod
-    async def encode_json(cls, content):
+    async def encode_json(cls, content: Any) -> Any:
         return json.dumps(content, cls=encoders.JSONEncoder, ensure_ascii=False)
 
-    async def send_json(self, content, close=False):
+    async def send_json(self, content: Any, close: Any = False) -> None:
         """
         Encode the given content as JSON and send it to the client.
         """
         await super().send(text_data=await self.encode_json(content), close=close)
 
     @classmethod
-    async def decode_json(cls, text_data):
+    async def decode_json(cls, text_data: Any) -> Any:
         return json.loads(text_data)
 
-    async def receive_json(self, action, data, content, **kwargs):
+    async def receive_json(self, action: Any, data: Any, content: Any, **kwargs: Any) -> None:
         """
         数据格式如下：
         {
@@ -57,13 +58,20 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
         """
         pass
 
-    async def receive_bytes(self, bytes_data, **kwargs):
+    async def receive_bytes(self, bytes_data: Any, **kwargs: Any) -> None:
 
         pass
 
     async def send_base_json(
-        self, action: str, data=None, mid=None, code=API_SUCCESS_CODE, detail=None, close=False, **kwargs
-    ):
+        self,
+        action: str,
+        data: Any = None,
+        mid: Any = None,
+        code: Any = API_SUCCESS_CODE,
+        detail: Any = None,
+        close: Any = False,
+        **kwargs: Any,
+    ) -> None:
         """
         action: 动作
         data: 数据
@@ -85,7 +93,7 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
         content.update(kwargs)
         await self.send_json(content, close)
 
-    async def receive(self, text_data=None, bytes_data=None, **kwargs):
+    async def receive(self, text_data: Any = None, bytes_data: Any = None, **kwargs: Any) -> Any:
         if text_data:
             try:
                 content = await self.decode_json(text_data)
@@ -117,25 +125,25 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
 
         raise ValueError("No text section for incoming WebSocket frame!")
 
-    async def _send_base(self, event):
+    async def _send_base(self, event: Any) -> None:
         data = event["data"]
         if isinstance(data, str):
             await self.send_base_json(event["type"], data, mid=event.get("mid"))
         else:
             await self.send_base_json(data.get("action", event["type"]), data, mid=data.get("mid", event.get("mid")))
 
-    async def ping(self, event):
+    async def ping(self, event: Any) -> None:
         await self.channel_layer.update_active_layers(self.group_name, self.channel_name)
         event["data"] = "pong"
         await self._send_base(event)
 
-    async def userinfo(self, event):
+    async def userinfo(self, event: Any) -> None:
         event["data"] = await get_userinfo(self.user)
         await self._send_base(event)
 
     # 系统推送消息到客户端，推送消息格式如下：{"timestamp": 1709714533.5625794, "action": "push_message", "data": {"message_type": 11}}
-    async def push_message(self, event):
+    async def push_message(self, event: Any) -> None:
         await self._send_base(event)
 
-    async def chat_message(self, event):
+    async def chat_message(self, event: Any) -> None:
         await self._send_base(event)

@@ -18,13 +18,13 @@ from dataset.utils.dform_constants import (
 )
 
 
-def _validate_cascader_options(key: str, options):
+def _validate_cascader_options(key: str, options: Any) -> None:
     """级联选项树校验：{value,label[,children]} 递归 ≤3 层、节点总数封顶。"""
     if not isinstance(options, list) or not options:
         raise ValidationError(_("Field {} requires options").format(key))
     counter = {"total": 0}
 
-    def walk(nodes, depth):
+    def walk(nodes: Any, depth: Any) -> None:
         if depth > MAX_CASCADER_DEPTH:
             raise ValidationError(_("Field {} cascader options exceed {} levels").format(key, MAX_CASCADER_DEPTH))
         for node in nodes:
@@ -48,13 +48,13 @@ def _validate_cascader_options(key: str, options):
     walk(options, 1)
 
 
-def _validate_user_pk(label: str, value):
+def _validate_user_pk(label: str, value: Any) -> None:
     """选人控件取值：正整数用户主键（不接受布尔/字符串/浮点）。"""
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         raise ValidationError(_("Field {} must be a user id").format(label))
 
 
-def _cascader_path_valid(options, path: list) -> bool:
+def _cascader_path_valid(options: Any, path: list[Any]) -> bool:
     """级联取值必须命中选项树的叶子路径（逐段比对，值类型允许 str/int）。"""
     nodes = options
     for index, step in enumerate(path):
@@ -71,7 +71,7 @@ def _cascader_path_valid(options, path: list) -> bool:
     return False
 
 
-def normalize_table_row(item: dict, label: str, row) -> dict:
+def normalize_table_row(item: dict[str, Any], label: str, row: Any) -> dict[str, Any]:
     """明细子表单行校验：按列定义逐列校验，未知列键拒绝，返回规范化行。"""
     if not isinstance(row, dict):
         raise ValidationError(_("Field {} rows must be objects").format(label))
@@ -106,7 +106,7 @@ def normalize_table_row(item: dict, label: str, row) -> dict:
     return normalized
 
 
-def field_option_values(item: dict) -> list:
+def field_option_values(item: dict[str, Any]) -> list[Any]:
     """选项型字段的合法取值集合：绑定字典时读字典项 value（5 分钟缓存，失败降级空集）。
 
     空集合语义 = fail-closed：字典被清空/停用时该字段不接受任何取值（提交被拒）。
@@ -119,7 +119,7 @@ def field_option_values(item: dict) -> list:
     return list(item.get("options") or [])
 
 
-def assert_upload_ownership(value, label, user) -> None:
+def assert_upload_ownership(value: Any, label: Any, user: Any) -> None:
     """upload 控件值归属断言：文件必须**存在且由提交人上传**（fail-closed）。
 
     历史实现只校验「条目是带 pk 的对象」——可以引用他人文件 pk（访问侧靠

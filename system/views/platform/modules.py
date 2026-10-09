@@ -14,6 +14,8 @@
 裁剪语义、优先级与重启说明见 docs/architecture/模块化与功能裁剪.md。
 """
 
+from typing import Any
+
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -45,7 +47,7 @@ from common.swagger.utils import get_default_response_schema
 from system.models import Menu
 
 
-def modules_response_schema():
+def modules_response_schema() -> Any:
     return get_default_response_schema(
         {
             "preset": build_basic_type(OpenApiTypes.STR),
@@ -94,7 +96,7 @@ class ModuleApplySerializer(serializers.Serializer):
     disable = serializers.ListField(child=serializers.CharField(), required=False)
 
 
-def build_payload() -> dict:
+def build_payload() -> dict[str, Any]:
     """管理页数据：生效态 + 待生效态 + 差异 + 部署基线。"""
 
     effective = resolve_modules()
@@ -153,13 +155,13 @@ class SystemModuleViewSet(GenericViewSet):
     ordering_fields: list[str] = []
 
     @extend_schema(responses=modules_response_schema())
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}"""
         return ApiResponse(data=build_payload())
 
     @extend_schema(request=ModuleApplySerializer, responses=modules_response_schema())
-    @action(detail=False, methods=["post"], url_path="apply")
-    def apply(self, request, *args, **kwargs):
+    @action(detail=False, methods=["post"], url_path="apply")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def apply(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """保存模块裁剪配置（重启后生效）
 
         校验与启动期完全同口径：未知模块 / 内核被关 / 依赖不满足直接 400。
@@ -186,8 +188,8 @@ class SystemModuleViewSet(GenericViewSet):
         return ApiResponse(data=payload)
 
     @extend_schema(request=None, responses=modules_response_schema())
-    @action(detail=False, methods=["post"], url_path="reset")
-    def reset(self, request, *args, **kwargs):
+    @action(detail=False, methods=["post"], url_path="reset")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def reset(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """恢复为部署配置（清除后台覆盖，重启后生效）"""
         lock = _acquire_override_write_lock()
         try:

@@ -17,6 +17,7 @@
   逐条落审计会淹没日志；鉴权口径本身已限定到房间成员）。
 """
 
+from typing import Any
 from urllib.parse import quote
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -42,7 +43,8 @@ from file.utils.upload_store import (
     invalidate_upload_stats_cache,
     store_upload_file,
 )
-from message.models import ATTACHMENT_MESSAGE_TYPES, ChatMessage  # noqa: F401 再导出消息类型常量
+from message.models import ATTACHMENT_MESSAGE_TYPES as ATTACHMENT_MESSAGE_TYPES  # 再导出消息类型常量
+from message.models import ChatMessage
 
 logger = get_logger(__name__)
 
@@ -61,7 +63,7 @@ FILE_URL_TEMPLATE = "/api/chat/message/{pk}/file"
 MAX_ATTACHMENT_CAPTION_LENGTH = 2000
 
 
-def attachment_kind(upload) -> str:
+def attachment_kind(upload: Any) -> str:
     """附件种类：图片 → image，音/视频 → video/audio，其余 → file。
 
     - 图片沿用在线预览判定（存量口径零漂移：仅按 MIME 前缀判图，不引入扩展名
@@ -80,7 +82,7 @@ def attachment_kind(upload) -> str:
     return KIND_FILE
 
 
-def attachment_extra(upload) -> dict:
+def attachment_extra(upload: Any) -> dict[str, Any]:
     """渲染用附件元信息快照（落库进 extra["file"]；取件 URL 在载荷层按消息 pk 派生）。"""
     return {
         "pk": str(upload.pk),
@@ -92,12 +94,12 @@ def attachment_extra(upload) -> dict:
     }
 
 
-def attachment_file_url(message_pk) -> str:
+def attachment_file_url(message_pk: Any) -> str:
     """受鉴权取件地址（图片 img / 文件下载共用同一端点）。"""
     return FILE_URL_TEMPLATE.format(pk=message_pk)
 
 
-def resolve_sender_attachment(file_pk, sender) -> UploadFile:
+def resolve_sender_attachment(file_pk: Any, sender: Any) -> UploadFile:
     """取发送者本人的上传件（fail-closed）：不存在 / 非本人 / 非上传件一律拒绝。
 
     拒绝文案与「房间不存在」同口径（不区分具体原因，避免探测他人文件是否存在）。
@@ -118,14 +120,14 @@ _KIND_BY_MESSAGE_TYPE: dict[str, str] = {
 }
 
 
-def validate_attachment_kind(upload, message_type: str) -> None:
+def validate_attachment_kind(upload: Any, message_type: str) -> None:
     """消息类型与附件种类匹配：图片/音视频消息只接受对应种类附件（文件消息不限）。"""
     required = _KIND_BY_MESSAGE_TYPE.get(message_type)
     if required and attachment_kind(upload) != required:
         raise DjangoValidationError(_("The message type does not match the attachment kind"))
 
 
-def validate_upload_kind(upload, kind: str) -> bool:
+def validate_upload_kind(upload: Any, kind: str) -> bool:
     """上传端点的种类门槛：kind 必须在白名单内，且与实际种类一致。
 
     - 白名单收紧：旧实现只校验 `kind=image`，其余取值（含伪造的 `video`）不限，
@@ -139,14 +141,14 @@ def validate_upload_kind(upload, kind: str) -> bool:
     return kind == KIND_FILE or attachment_kind(upload) == kind
 
 
-def mark_attachment_used(upload) -> None:
+def mark_attachment_used(upload: Any) -> None:
     """附件转正：临时上传件随消息落库即转正式件，交给保留期策略管理。"""
     if upload is not None and upload.is_tmp:
         upload.is_tmp = False
         upload.save(update_fields=["is_tmp", "updated_time"])
 
 
-def attachment_response(message, request):
+def attachment_response(message: Any, request: Any) -> Any:
     """受鉴权取件响应。
 
     - 图片：`?size=thumb|preview` 取缩略图/预览缓存（JPEG，inline，浏览器直接渲染）；
@@ -189,7 +191,7 @@ def attachment_response(message, request):
     return response
 
 
-def attachment_payload(message) -> dict | None:
+def attachment_payload(message: Any) -> dict[str, Any] | None:
     """消息载荷里的附件渲染信息：`{...元信息, url, missing}`。
 
     - `url` 由消息 pk 派生（历史消息/广播载荷一致）；
@@ -207,13 +209,13 @@ def attachment_payload(message) -> dict | None:
 class AttachmentUploadError(Exception):
     """聊天附件上传失败（``code`` = 业务码，``detail`` = 可读文案），视图按其回包。"""
 
-    def __init__(self, code: int, detail):
+    def __init__(self, code: int, detail: Any) -> None:
         super().__init__(detail)
         self.code = code
         self.detail = detail
 
 
-def store_message_attachment(user, file_obj, kind: str, request=None) -> dict:
+def store_message_attachment(user: Any, file_obj: Any, kind: str, request: Any = None) -> dict[str, Any]:
     """聊天附件上传落库编排：限额校验 → 落库（临时件）→ 种类匹配 → 缓存失效 → 审计留痕。
 
     复用文件中心的安全策略与落库内核；落库为临时件——发送消息时由服务端转正，

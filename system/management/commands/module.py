@@ -23,6 +23,7 @@ import json
 import os
 import shutil
 import time
+from typing import Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -46,12 +47,12 @@ class Command(BaseCommand):
     # argparse 的 help 必须是 str（惰性翻译对象会抛 TypeError，详见 modules.py 注释）
     help = "Plan (and optionally apply) the physical removal of a functional module"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("action", choices=["remove"], help="目前仅支持 remove")
         parser.add_argument("module_id", help="模块 id，见 python manage.py modules")
         parser.add_argument("--apply", action="store_true", help="执行种子裁剪（默认只输出计划）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         module_id = options["module_id"]
         spec = module_index().get(module_id)
         if spec is None:
@@ -119,7 +120,7 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 种子
 
-    def _seed_plan(self, module_id):
+    def _seed_plan(self, module_id: Any) -> Any:
         """计算种子文件的变化（不写文件）：{文件名: (原行数, 过滤后行数)}。"""
 
         spec = module_index()[module_id]
@@ -144,7 +145,7 @@ class Command(BaseCommand):
                 plan[f"{model_name}"] = (len(rows), len(filtered))
         return plan
 
-    def _apply_seed(self, module_id, plan) -> str:
+    def _apply_seed(self, module_id: Any, plan: Any) -> str:
         """执行种子裁剪：先归档原文件，再就地写回过滤结果。"""
 
         spec = module_index()[module_id]
@@ -174,7 +175,7 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 引用扫描
 
-    def _reference_scan(self, module_id, limit: int = 30) -> dict:
+    def _reference_scan(self, module_id: Any, limit: int = 30) -> dict[str, Any]:
         """扫描后端仓库中引用该模块的位置。
 
         关键词分两类，避免"Chat"命中 ChatRoom/ChatMessage 之类的噪声：
@@ -217,7 +218,7 @@ class Command(BaseCommand):
             "tests_count": tests_count,
         }
 
-    def _frontend_scan(self, module_id) -> dict:
+    def _frontend_scan(self, module_id: Any) -> dict[str, Any]:
         """前端待删文件与 i18n 词条（组件路径/词条均来自菜单种子，与前端目录无关）。
 
         前端组件按「菜单 component 子串」解析（与 src/router/utils.ts 的匹配口径一致），
@@ -267,14 +268,15 @@ class Command(BaseCommand):
         return result
 
     @staticmethod
-    def _read_json(path) -> list:
+    def _read_json(path: Any) -> list[Any]:
         if not os.path.exists(path):
             return []
         with open(path, encoding="utf-8") as fp:
-            return json.load(fp)
+            typed_value: list[Any] = json.load(fp)
+            return typed_value
 
     @staticmethod
-    def _read_lines(path):
+    def _read_lines(path: Any) -> Any:
         try:
             with open(path, encoding="utf-8") as fp:
                 return fp.readlines()

@@ -4,6 +4,7 @@
 
 import re
 import time
+from typing import Any
 
 from django.apps import apps
 from django.conf import settings
@@ -24,7 +25,7 @@ from .queries import _visible_menu_or_error
 logger = get_logger(__name__)
 
 
-def _normalize_pk_list(raw) -> list:
+def _normalize_pk_list(raw: Any) -> list[Any]:
     """兼容 str / 单值 / 列表的 pk 归一（草稿绑定菜单与上下文判定共用）。"""
     if raw in (None, ""):
         return []
@@ -32,7 +33,7 @@ def _normalize_pk_list(raw) -> list:
     return [str(item) for item in items if item not in (None, "")]
 
 
-def _build_draft_grant(draft, menu_ctx):
+def _build_draft_grant(draft: Any, menu_ctx: Any) -> Any:
     """试算草稿 → 未落库的 DataPermission 实例；不适用当前菜单上下文时返回 None。
 
     草稿只用于本次试算（不落库），但仍走写入侧同一套 validate_rules，
@@ -59,14 +60,14 @@ def _build_draft_grant(draft, menu_ctx):
     return DataPermission(name="__draft__", rules=rules, mode_type=mode, is_active=True)
 
 
-def _grants_for_user(user_obj: UserInfo, menu_ctx) -> list:
+def _grants_for_user(user_obj: UserInfo, menu_ctx: Any) -> list[Any]:
     """按 get_filter_queryset 的口径收集 (授权组, 来源, 部门名) 三元组。
 
     与运行时同一数据源与过滤条件（启用授权 / 菜单上下文 / 启用部门祖先链），
     仅用于试算诊断展示；实际过滤仍由 get_filter_queryset 独立完成。
     """
     dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=menu_ctx)
-    rows: list[tuple] = []
+    rows: list[tuple[Any, ...]] = []
     dept = user_obj.dept
     if dept and dept.pk:
         chain = [str(pk) for pk in DeptInfo.recursion_dept_info(dept.pk, is_parent=True)]
@@ -85,7 +86,7 @@ def _grants_for_user(user_obj: UserInfo, menu_ctx) -> list:
     return rows
 
 
-def _source_grant_diagnosis(user_obj: UserInfo, model, menu_ctx, draft_grant) -> list:
+def _source_grant_diagnosis(user_obj: UserInfo, model: Any, menu_ctx: Any, draft_grant: Any) -> list[Any]:
     """试算诊断：列出本次参与编译的授权组与判定结果（解释 count 从何而来）。
 
     kind：all=「全部数据」放行 / condition=条件过滤 / deny=恒假 / none=与当前模型无关（不参与）。
@@ -121,7 +122,7 @@ def _source_grant_diagnosis(user_obj: UserInfo, model, menu_ctx, draft_grant) ->
     return diagnosis
 
 
-def run_data_trial(user_obj: UserInfo, model_label, menu_pk, draft=None) -> dict:
+def run_data_trial(user_obj: UserInfo, model_label: Any, menu_pk: Any, draft: Any = None) -> dict[str, Any]:
     """以目标用户为主语试算数据权限过滤（只读，不落库）。
 
     安全设计：

@@ -8,6 +8,8 @@
 ——业务状态由审批结果驱动，不应反过来阻断审批。
 """
 
+from typing import Any
+
 from django.dispatch import receiver
 
 from approval.biz_sync import get_biz_syncer
@@ -17,8 +19,10 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-@receiver(approval_instance_finished)
-def sync_business_status_handler(sender, instance, status=None, reason="", **kwargs):
+@receiver(approval_instance_finished)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def sync_business_status_handler(
+    sender: Any, instance: Any, status: Any = None, reason: Any = "", **kwargs: Any
+) -> None:
     """流程实例终态 → 业务同步器（biz_type 认领；未注册的 biz_type 记警告跳过）。"""
     biz_type = getattr(instance, "biz_type", "")
     if not biz_type:

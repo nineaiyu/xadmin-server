@@ -29,5 +29,5 @@ class LdapUserBinding(DbAuditModel):
         verbose_name_plural = _("LDAP bindings")
         ordering = ["-created_time"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user}(dn={self.dn})"

@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 """审批处理人显示名快照工具。"""
 
+from typing import Any
 
-def user_display(user) -> str:
+
+def user_display(user: Any) -> str:
     """用户显示名（昵称优先，缺失回落用户名）：写入审批痕迹快照的唯一口径。"""
     if user is None:
         return ""

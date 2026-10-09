@@ -14,6 +14,7 @@ celery 注册表里的任意任务（含删数据、改密、发信等系统任�
 """
 
 import fnmatch
+from typing import Any
 
 
 def manual_runnable_tasks() -> tuple[str, ...]:
@@ -31,7 +32,7 @@ def manual_runnable_tasks() -> tuple[str, ...]:
     return tuple(dict.fromkeys(item for item in cleaned if item))
 
 
-def is_task_runnable(name) -> bool:
+def is_task_runnable(name: Any) -> bool:
     """任务名是否命中白名单（精确或通配符；空清单 = 默认拒绝全部）。"""
     name = str(name or "")
     return any(fnmatch.fnmatchcase(name, pattern) for pattern in manual_runnable_tasks())

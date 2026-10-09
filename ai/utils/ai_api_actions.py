@@ -24,6 +24,7 @@ requires_approval/available），可直接混装进同一注册表，调用方�
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from django.urls import Resolver404, resolve
 from django.utils.translation import gettext_lazy as _
@@ -33,13 +34,19 @@ from rest_framework.test import APIRequestFactory
 from ai.utils.ai_api_params import (  # noqa: F401  (参数解析/URL 构建拆出，再导出保持调用面)
     IN_BODY,
     IN_PATH,
-    IN_QUERY,
     PATH_PLACEHOLDER,
     _menu_display,
     _role_display,
     _user_display,
-    build_action_url,
-    resolve_api_params,
+)
+from ai.utils.ai_api_params import (
+    IN_QUERY as IN_QUERY,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_api_params import (
+    build_action_url as build_action_url,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_api_params import (
+    resolve_api_params as resolve_api_params,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
@@ -47,7 +54,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def requires_approval_high_risk(user, params) -> bool:
+def requires_approval_high_risk(user: Any, params: Any) -> bool:
     """高危动作共享谓词：非超管一律进 412 审批协议（审批单 module=AI 动作）。
 
     超管豁免与 dform 动作同口径：审批协议要求「申请人不能自审」，而超管通常
@@ -65,16 +72,16 @@ class ApiActionSpec:
     description: object
     method: str
     path: str
-    params: dict
+    params: dict[str, Any]
     requires_approval: Callable[..., bool]
     available: Callable[..., bool]
 
     @property
-    def required_visits(self) -> tuple:
+    def required_visits(self) -> tuple[Any, ...]:
         """执行所需业务权限点（method + path 模板，与菜单权限点 path 同口径）。"""
         return ((self.method.upper(), self.path),)
 
-    def has_permission(self, user) -> bool:
+    def has_permission(self, user: Any) -> bool:
         """与 ActionSpec 同口径双门：业务权限点 + 可用性。"""
         from ai.utils.ai_actions import user_can_visit
 
@@ -82,7 +89,7 @@ class ApiActionSpec:
             self.available(user)
         )
 
-    def validate(self, user, params):
+    def validate(self, user: Any, params: Any) -> Any:
         """参数解析（类型转换 + 必填/枚举校验）。
 
         契约与 ``ai_actions.ActionSpec.validate`` 一致：返回 ``(扁平参数, 错误文案)``。
@@ -115,21 +122,21 @@ class ApiActionSpec:
                 clean[field] = _menu_display(clean[field])
         return clean, None
 
-    def execute(self, user, params):
+    def execute(self, user: Any, params: Any) -> Any:
         """dispatch 到现有业务接口，返回 {ok, detail, data}。"""
         return execute_api_action(self, user, params)
 
 
 def api_action(
     key: str,
-    label,
-    description,
+    label: Any,
+    description: Any,
     method: str,
     path: str,
-    params: dict,
-    defaults: dict | None = None,
-    requires_approval=None,
-    available=None,
+    params: dict[str, Any],
+    defaults: dict[str, Any] | None = None,
+    requires_approval: Any = None,
+    available: Any = None,
 ) -> ApiActionSpec:
     """构造声明式动作。
 
@@ -161,7 +168,7 @@ def api_action(
     )
 
 
-def execute_api_action(spec: ApiActionSpec, user, params: dict) -> dict:
+def execute_api_action(spec: ApiActionSpec, user: Any, params: dict[str, Any]) -> dict[str, Any]:
     """执行声明式动作：解析参数 → 反解 URL → dispatch 现有视图。
 
     返回与专用动作一致的 ``{ok, detail, data}`` 语义（错误一律可读文案）。

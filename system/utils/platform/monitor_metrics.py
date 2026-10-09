@@ -32,7 +32,7 @@ _net_rate_state: dict[str, Any] = {"time": None, "sent": 0, "recv": 0}
 _net_rate_lock = threading.Lock()
 
 
-def _net_rates(sent_bytes, recv_bytes):
+def _net_rates(sent_bytes: Any, recv_bytes: Any) -> Any:
     """返回 (上行 KB/s, 下行 KB/s)；首次采集或计数器重置（重启）时为 (None, None)。"""
     now = time.monotonic()
     with _net_rate_lock:
@@ -48,7 +48,7 @@ def _net_rates(sent_bytes, recv_bytes):
     return round(sent_delta / 1024 / elapsed, 2), round(recv_delta / 1024 / elapsed, 2)
 
 
-def collect_live_metrics():
+def collect_live_metrics() -> Any:
     """主机资源实时快照（psutil 直读）；采集失败返回 None，调用方回退心跳值。"""
     try:
         import psutil
@@ -76,7 +76,7 @@ def collect_live_metrics():
         return None
 
 
-def collect_latest_and_trend():
+def collect_latest_and_trend() -> Any:
     """心跳表最新值 + 最近趋势（common.Monitor 30s 落盘）。"""
     from system.models import Monitor
 
@@ -100,7 +100,7 @@ def collect_latest_and_trend():
     ), trend
 
 
-def collect_services():
+def collect_services() -> Any:
     """核心服务健康：DB / Redis / Celery 状态与探测耗时。"""
     db_ok, db_cost = probe_db()
     redis_ok, redis_cost = probe_redis()
@@ -127,7 +127,7 @@ HEALTH_LABELS = {
 }
 
 
-def _resource_entry(key, value, threshold):
+def _resource_entry(key: Any, value: Any, threshold: Any) -> Any:
     from django.utils.translation import gettext as _
 
     label, unit = HEALTH_LABELS[key]
@@ -154,7 +154,7 @@ def _resource_entry(key, value, threshold):
     }
 
 
-def _service_entry(key, label, probe, degraded=False, skipped=False):
+def _service_entry(key: Any, label: Any, probe: Any, degraded: Any = False, skipped: Any = False) -> Any:
     from django.utils.translation import gettext as _
 
     probe = probe or {}
@@ -176,7 +176,7 @@ def _service_entry(key, label, probe, degraded=False, skipped=False):
     }
 
 
-def collect_health_summary(live=None, services=None, celery_skipped=None):
+def collect_health_summary(live: Any = None, services: Any = None, celery_skipped: Any = None) -> Any:
     """系统健康总览：资源阈值分档 + 服务探测 + 告警计数 → 总状态与健康分。
 
     live/services 允许调用方复用已采集结果（overview 与 WS panel 帧各采一次）。
@@ -229,7 +229,7 @@ def collect_health_summary(live=None, services=None, celery_skipped=None):
     }
 
 
-def collect_redis_info():
+def collect_redis_info() -> Any:
     """缓存 Redis INFO 关键指标与 Celery broker 队列长度。"""
     data = {}
     try:
@@ -264,7 +264,7 @@ def collect_redis_info():
     return data
 
 
-def collect_celery_status():
+def collect_celery_status() -> Any:
     """Celery worker 汇总（stats/active/reserved 并发广播）。"""
     from server.celery import app
 
@@ -294,7 +294,7 @@ def collect_celery_status():
     return {"workers": workers, "total": len(workers)}
 
 
-def collect_slow_requests():
+def collect_slow_requests() -> Any:
     """慢请求 Top N（最近窗口内 exec_time 超阈值的操作日志）。"""
     from audit.models.log import OperationLog
 
@@ -318,7 +318,7 @@ TASK_HEALTH_TOP_TASKS = 10
 TASK_HEALTH_MIN_SAMPLE = 10
 
 
-def collect_task_health(days: int | None = None):
+def collect_task_health(days: int | None = None) -> Any:
     """任务执行健康度（近 N 天聚合）。
 
     - 成功率按终态（SUCCESS/FAILURE/REVOKED）计算，PENDING/RUNNING 在途不计；

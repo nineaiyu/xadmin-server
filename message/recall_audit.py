@@ -8,6 +8,7 @@
 """
 
 import json
+from typing import Any
 
 from common.core.response import API_SUCCESS_CODE
 from common.utils import get_logger
@@ -20,7 +21,7 @@ RECALL_AUDIT_MODULE = "chat:recall"
 RECALL_SNAPSHOT_MAX = 2000
 
 
-def write_recall_snapshot(message, user) -> None:
+def write_recall_snapshot(message: Any, user: Any) -> None:
     """写入撤回审计快照（异常只告警：撤回主流程不受影响）。"""
     try:
         from audit.services import OperationLog

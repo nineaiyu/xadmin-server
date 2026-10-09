@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 3/13/2024
 import datetime
+from typing import Any
 
 from django.db.models import Count
 from django.db.models.functions import TruncDay
@@ -26,7 +27,7 @@ from identity.services import UserInfo
 TOTAL_COUNT_CACHE_TIMEOUT = 600
 
 
-def trend_points(queryset, limit_day=30):
+def trend_points(queryset: Any, limit_day: Any = 30) -> Any:
     """按天聚合趋势点与环比增长率，返回 (results, percent, 趋势窗口 queryset)。
 
     窗口 queryset 一并返回：调用方按需做窗口内计数（日志类大表避免无谓的全表 COUNT）。
@@ -59,7 +60,7 @@ def trend_points(queryset, limit_day=30):
 
 
 @MagicCacheData.make_cache(timeout=TOTAL_COUNT_CACHE_TIMEOUT, key_func=lambda scope_key, queryset: scope_key)
-def cached_total_count(scope_key, queryset):
+def cached_total_count(scope_key: Any, queryset: Any) -> Any:
     """全量计数走数据缓存（走既有 MagicCacheData 基建，单飞 + 占位保护）。
 
     scope_key 为用户主键：统计 queryset 经默认数据权限过滤（非超管按授权收敛、
@@ -68,7 +69,7 @@ def cached_total_count(scope_key, queryset):
     return queryset.count()
 
 
-def trend_info(queryset, limit_day=30, total_count=True):
+def trend_info(queryset: Any, limit_day: Any = 30, total_count: Any = True) -> Any:
     """按天聚合趋势数据。
 
     :param total_count: True 返回整表总数；False 只统计趋势窗口内的数量。
@@ -79,7 +80,7 @@ def trend_info(queryset, limit_day=30, total_count=True):
     return results, percent, queryset.count() if total_count else window_queryset.count()
 
 
-def get_schema_response(has_count=True):
+def get_schema_response(has_count: Any = True) -> Any:
     ext = {}
     if has_count:
         ext = {
@@ -110,16 +111,16 @@ class DashboardViewSet(GenericViewSet):
     # 面板数据对实时性不敏感，短缓存避免多端同时刷新时重复全表聚合
     dashboard_cache_timeout = 60
 
-    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+    def get_cache_key(self, view_instance: Any, view_method: Any, request: Any, args: Any, kwargs: Any) -> Any:
         # 统计 queryset 经默认数据权限过滤（非超管按授权收敛、无授权返回空集），
         # 结果随用户不同——缓存键必须携带用户维度，否则各用户共享同一份统计
         func_name = f"{view_instance.__class__.__name__}_{view_method.__name__}"
         return f"{func_name}_{request.user.pk}"
 
     @extend_schema(responses=get_schema_response())
-    @action(methods=["GET"], detail=False, url_path="user-login-total")
+    @action(methods=["GET"], detail=False, url_path="user-login-total")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
-    def user_login_total(self, request, *args, **kwargs):
+    def user_login_total(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-用户登录"""
         queryset = self.filter_queryset(self.get_queryset())
         results, percent, _ = trend_points(queryset, 7)
@@ -127,32 +128,32 @@ class DashboardViewSet(GenericViewSet):
         return ApiResponse(results=results, percent=percent, count=cached_total_count(request.user.pk, queryset))
 
     @extend_schema(responses=get_schema_response())
-    @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-total")
+    @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-total")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
-    def user_total(self, request, *args, **kwargs):
+    def user_total(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-用户数量"""
         queryset = self.filter_queryset(self.get_queryset())
         results, percent, _ = trend_points(queryset, 7)
         return ApiResponse(results=results, percent=percent, count=cached_total_count(request.user.pk, queryset))
 
     @extend_schema(responses=get_schema_response(False))
-    @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-registered-trend")
+    @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-registered-trend")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
-    def user_registered_trend(self, request, *args, **kwargs):
+    def user_registered_trend(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-注册报表"""
         return ApiResponse(data=trend_points(self.filter_queryset(self.get_queryset()))[0])
 
     @extend_schema(responses=get_schema_response(False))
-    @action(methods=["GET"], detail=False, url_path="user-login-trend")
+    @action(methods=["GET"], detail=False, url_path="user-login-trend")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
-    def user_login_trend(self, request, *args, **kwargs):
+    def user_login_trend(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-登录报表"""
         return ApiResponse(data=trend_points(self.filter_queryset(self.get_queryset()))[0])
 
     @extend_schema(responses=get_schema_response())
-    @action(methods=["GET"], detail=False, queryset=OperationLog.objects.all(), url_path="today-operate-total")
+    @action(methods=["GET"], detail=False, queryset=OperationLog.objects.all(), url_path="today-operate-total")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
-    def today_operate_total(self, request, *args, **kwargs):
+    def today_operate_total(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-最近操作日志"""
         # 前端该卡片只使用 results/percent，不使用 count，故按趋势窗口计数，避免全表 COUNT
         results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7, total_count=False)
@@ -163,9 +164,9 @@ class DashboardViewSet(GenericViewSet):
             {"data": build_array_type(build_array_type(build_basic_type(OpenApiTypes.NUMBER) or {}))}
         )
     )
-    @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-active")
+    @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-active")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
-    def user_active(self, request, *args, **kwargs):
+    def user_active(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-活跃用户"""
         # 与 trend_info 保持一致：按本地时间切分自然日
         today = timezone.localtime(timezone.now())

@@ -9,6 +9,8 @@
 取值域：超管全部；普通用户「我发起 ∪ 待我审批 ∪ 我参与过」（visible_instances_for）。
 """
 
+from typing import Any
+
 from django.db.models import Prefetch, QuerySet
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
@@ -87,7 +89,7 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
     select_related_fields = ("creator",)
     prefetch_related_fields = ("nodes",)
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> Any:
         """有历史实例的流程禁止删除（实例对流程是 PROTECT，直删会 500，这里给可读错误）。"""
         if instance.instances.exists():
             raise ValidationError({"detail": _("A flow with applications cannot be deleted")})
@@ -102,8 +104,8 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="batch-destroy")
-    def batch_destroy(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除：静默排除有历史实例的流程，不因单条受保护而整批失败。
 
         ⚠️ 覆写基类 `BatchDestroyAction.batch_destroy` 必须保留 `@action`
@@ -113,8 +115,8 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
         return super().batch_destroy(request, *args, **kwargs)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=True, url_path="versions")
-    def versions(self, request, *args, **kwargs):
+    @action(methods=["get"], detail=True, url_path="versions")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def versions(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """流程定义版本列表（快照审计追溯）。"""
         flow = self.get_object()
         rows = flow.versions.order_by("-version").values("version", "remark", "created_time")
@@ -131,8 +133,8 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=True, url_path="rollback")
-    def rollback(self, request, *args, **kwargs):
+    @action(methods=["post"], detail=True, url_path="rollback")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def rollback(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """回滚到历史版本：快照写入活定义并落新版本；有 PENDING 实例时拒绝。"""
         ensure_approval_action_confirmed(request, "rollback")
         version = request.data.get("version")
@@ -167,7 +169,7 @@ class ApprovalInstanceScopeFilter(BaseFilterBackend):
     `ongoing:SystemApprovalInstance` 授权（超管天然具备）——普通用户只能看可见域。
     """
 
-    def filter_queryset(self, request, queryset, view):
+    def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
         user = request.user
         if not user or not user.is_authenticated:
             return queryset.none()
@@ -219,7 +221,7 @@ class ApprovalInstanceViewSet(
     # 通用标签：?tag=<标签名> 过滤 + 列表预取（TaggedPrefetchMixin）
     extra_filter_class = [TagFilterBackend]
 
-    def optimize_queryset(self, queryset):
+    def optimize_queryset(self, queryset: Any) -> Any:
         """任务预取按 action 收敛：列表/导出只预取当前待办。
 
         历史实现在列表页把每条实例的全部节点任务 prefetch 进内存（随流程长度
@@ -236,7 +238,7 @@ class ApprovalInstanceViewSet(
             return queryset.prefetch_related(PENDING_TASKS_PREFETCH)
         return super().optimize_queryset(queryset)
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """发起申请（按流程 form_schema 填写，落实例并进入首节点）"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -251,10 +253,11 @@ class ApprovalInstanceViewSet(
         )
         if error:
             raise ValidationError({"detail": error})
+        assert instance is not None  # 引擎契约：error 为空时必有实例（此处仅作类型收窄）
         instance.refresh_from_db()
         return ApiResponse(data=self.get_serializer(instance).data, detail=_("Application submitted"))
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Any:
         """导出走轻量序列化器（仅表格列，不含 tasks/表单快照）。
 
         注意不能覆写 ``export_data``——DRF 的路由收集依赖 ``@action`` 装饰器写在方法上，

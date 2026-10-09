@@ -6,6 +6,7 @@
 # date : 12/25/2023
 import os.path
 import tempfile
+from typing import Any
 
 from django.conf import settings
 from django.core.management.commands.loaddata import Command as LoadCommand
@@ -65,10 +66,10 @@ class Command(LoadCommand):
     ]
     missing_args_message = None
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         pass
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         # 载入期屏蔽模型信号（loaddata 按 pk 覆盖不应触发失效/审计钩子）。屏蔽只限
         # 本次载入：收尾的内置角色补齐同步在信号恢复后执行（角色/菜单 m2m 变更的
         # 缓存失效钩子依赖它），否则进程内信号被永久替换（历史行为）
@@ -83,7 +84,7 @@ class Command(LoadCommand):
                 pass
         self._sync_builtin_roles_after_seed()
 
-    def _load_seed(self, *args, **options):
+    def _load_seed(self, *args: Any, **options: Any) -> None:
         file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
         options["ignore"] = ""
         options["database"] = DEFAULT_DB_ALIAS
@@ -127,7 +128,7 @@ class Command(LoadCommand):
         # 24 小时仍看到旧菜单树（改了种子却"没生效"的典型表现）
         self._invalidate_route_caches()
 
-    def _sync_builtin_roles_after_seed(self):
+    def _sync_builtin_roles_after_seed(self) -> None:
         """种子收尾补齐内置角色（幂等）。
 
         migrate 的 post_migrate 同步先于本命令执行：彼时 Menu 表与
@@ -142,7 +143,7 @@ class Command(LoadCommand):
         self.stdout.write(f"[内置角色] 种子收尾同步完成（幂等，角色行变更 {changed}）")
 
     @staticmethod
-    def _invalidate_route_caches():
+    def _invalidate_route_caches() -> None:
         from identity.signal_handler import batch_invalid_cache
 
         pks = list(UserInfo.objects.values_list("pk", flat=True))

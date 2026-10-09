@@ -26,16 +26,21 @@ JSON 结构；可读摘要与最终落库文本仍走脱敏。
 import hashlib
 import json
 import re
+from typing import Any
 
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 
 from ai.utils.ai_mask import (  # noqa: F401  (输出脱敏拆至 ai_mask，此处再导出保持调用面)
     REDACTED,
-    StreamMasker,
-    mask_text,
     output_mask_enabled,
     rule_text_patterns,
+)
+from ai.utils.ai_mask import (
+    StreamMasker as StreamMasker,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.utils.ai_mask import (
+    mask_text as mask_text,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from common.utils import get_logger
 
@@ -123,7 +128,7 @@ def wrap_reference(text: str, label: str = "") -> str:
     return "\n".join([header, text or "", REFERENCE_END])
 
 
-def scan_injection(text: str) -> list:
+def scan_injection(text: str) -> list[Any]:
     """扫描可疑指令模式，返回命中的模式名列表（去重、保持发现顺序）。"""
     if not text:
         return []
@@ -134,7 +139,7 @@ def scan_injection(text: str) -> list:
     return hits
 
 
-def _throttled(user, name: str) -> bool:
+def _throttled(user: Any, name: str) -> bool:
     """注入告警节流：同一用户 + 模式在窗口内只告警一次。返回 True = 应节流跳过。"""
     key = f"{_ALERT_CACHE_PREFIX}{getattr(user, 'pk', 'anon')}_{name}"
     try:
@@ -146,7 +151,7 @@ def _throttled(user, name: str) -> bool:
         return False
 
 
-def audit_ai_security(user, kind: str, detail: str = "", extra: dict | None = None) -> None:
+def audit_ai_security(user: Any, kind: str, detail: str = "", extra: dict[str, Any] | None = None) -> None:
     """安全事件审计：落 OperationLog(module=AI:security, status_code=1001)。
 
     非 1000 状态码使事件进入监控面板的错误事件流（``collect_error_events``），
@@ -171,7 +176,7 @@ def audit_ai_security(user, kind: str, detail: str = "", extra: dict | None = No
         logger.warning("write AI security audit failed", exc_info=True)
 
 
-def annotate_reference(text: str, label: str = "", user=None, kind: str = "reference") -> tuple:
+def annotate_reference(text: str, label: str = "", user: Any = None, kind: str = "reference") -> tuple[Any, ...]:
     """包裹引用数据 + 注入扫描（命中打标 + 告警）。返回 ``(wrapped_text, hits)``。
 
     ``kind`` 仅用于告警分类（knowledge / action_catalog / dataset_catalog 等）。
@@ -200,7 +205,7 @@ def prompt_digest(text: str) -> str:
     return hashlib.sha1(str(text).encode("utf-8")).hexdigest()[:12]  # noqa: S324 摘要用途非安全承诺
 
 
-def guard_summary(*, prompt: str = "", injection=(), mask_hits: int = 0, output_len: int = 0) -> dict:
+def guard_summary(*, prompt: str = "", injection: Any = (), mask_hits: int = 0, output_len: int = 0) -> dict[str, Any]:
     """护栏审计摘要（写入 AI 审计 changes.guard）。"""
     return {
         "prompt_digest": prompt_digest(prompt),

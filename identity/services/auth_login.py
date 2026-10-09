@@ -14,6 +14,8 @@
 登记、登录日志与失败计数清理。
 """
 
+from typing import Any
+
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
@@ -36,7 +38,7 @@ from settings.services import (
 logger = get_logger(__name__)
 
 
-def login_failed(request, username):
+def login_failed(request: Any, username: Any) -> None:
     ipaddr = get_request_ip(request)
     login_block_util = LoginBlockUtil(username, ipaddr)
     login_ip_block = LoginIpBlockUtil(ipaddr)
@@ -64,7 +66,9 @@ def login_failed(request, username):
     raise ValidateError(detail)
 
 
-def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.USERNAME, save_log=True):
+def login_success(
+    request: Any, user_obj: Any, login_type: Any = UserLoginLog.LoginTypeChoices.USERNAME, save_log: Any = True
+) -> None:
     if is_password_expired(user_obj):
         # 密码有效期拦截（SECURITY_PASSWORD_EXPIRATION_DAYS，默认关闭）：MFA 前收口，
         # 待二次验证路径同样拦截；date_password_updated 为空的存量用户宽限放行
@@ -102,7 +106,7 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
     save_login_log(request, login_type=login_type)
 
 
-def evaluate_login_policy_for_request(request, user_obj, ipaddr):
+def evaluate_login_policy_for_request(request: Any, user_obj: Any, ipaddr: Any) -> Any:
     """登录访问策略判定：返回 (force_mfa, reject_detail)。
 
     命中结果写 ``request.login_policy_result``（由 save_login_log 落入登录日志）；
@@ -118,7 +122,7 @@ def evaluate_login_policy_for_request(request, user_obj, ipaddr):
     return policy.get("action") == "require_mfa", ""
 
 
-def login_mfa_if_required(request, user_obj, force_mfa=False):
+def login_mfa_if_required(request: Any, user_obj: Any, force_mfa: Any = False) -> Any:
     """用户开启登录 MFA 时返回 True：清理密码阶段锁定计数（登录日志在二次验证通过后记录）。
 
     ``force_mfa``：登录访问策略要求二次验证——无可用方式时降级放行避免登录死锁。
@@ -139,7 +143,9 @@ def login_mfa_if_required(request, user_obj, force_mfa=False):
     return True
 
 
-def complete_login(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.USERNAME, force_mfa=False):
+def complete_login(
+    request: Any, user_obj: Any, login_type: Any = UserLoginLog.LoginTypeChoices.USERNAME, force_mfa: Any = False
+) -> Any:
     """登录成功后的**唯一收口**：MFA 判定 → 会话登记 / 登录日志 / 异常提醒 / 锁定计数清理。
 
     任何新增登录路径（本地密码 / 验证码 / WebSocket / 第三方 OAuth…）都必须调用它：

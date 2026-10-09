@@ -10,16 +10,17 @@
 参数，绝不触碰进程全局 settings。
 """
 
+from collections.abc import Iterable
 from typing import Any
 
 from django.conf import settings
 
 
 def build_test_values(
-    validated_data: dict,
-    request_data: dict,
-    keys,
-    secret_keys=(),
+    validated_data: dict[str, Any],
+    request_data: dict[str, Any],
+    keys: Iterable[str],
+    secret_keys: Iterable[str] = (),
 ) -> dict[str, Any]:
     """构造测试用生效配置快照：表单值优先，未提交键回落运行时已存值。
 

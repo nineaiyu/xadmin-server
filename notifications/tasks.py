@@ -9,6 +9,7 @@
 """
 
 import json
+from typing import Any
 
 from celery import shared_task
 
@@ -17,7 +18,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def json_safe(value):
+def json_safe(value: Any) -> Any:
     """任务参数 JSON 化（UUID / gettext_lazy / Decimal 等转原生字符串，结构保持）。
 
     Celery 默认 JSON 序列化对非原生类型直接抛 EncodeError（历史上 gettext_lazy
@@ -26,8 +27,8 @@ def json_safe(value):
     return json.loads(json.dumps(value, ensure_ascii=False, default=str))
 
 
-@shared_task
-def push_messages_job(user_pks, message, message_type="push_message"):
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def push_messages_job(user_pks: Any, message: Any, message_type: Any = "push_message") -> Any:
     """批量 WS 推送（worker 内一次桥接，逐人 group_send）。
 
     返回目标人数，便于任务日志核对；推送异常吞掉（站内信已持久化，

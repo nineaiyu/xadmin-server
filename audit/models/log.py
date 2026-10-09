@@ -6,6 +6,7 @@
 # date : 8/10/2024
 
 import datetime
+from typing import Any
 
 from django.db import models, transaction
 from django.utils import timezone
@@ -46,7 +47,7 @@ class UserLoginLog(DbAuditModel):
         ]
 
     @staticmethod
-    def get_login_type(query_key):
+    def get_login_type(query_key: str) -> Any:
         if query_key == "email":
             login_type = UserLoginLog.LoginTypeChoices.EMAIL
         elif query_key == "phone":
@@ -114,7 +115,7 @@ class OperationLog(DbAuditModel):
         ]
 
     @classmethod
-    def remove_expired(cls, clean_day=None, batch_size=CLEAN_BATCH_SIZE):
+    def remove_expired(cls, clean_day: int | None = None, batch_size: int = CLEAN_BATCH_SIZE) -> int:
         """分批删除过期日志（分层留存），避免一次性大 DELETE 造成长事务与锁表。
 
         :param clean_day: 全量保留天数；缺省读取系统配置 OPERATION_LOG_RETENTION_DAYS（默认 180 天）
@@ -142,7 +143,7 @@ class OperationLog(DbAuditModel):
             error_clean_time = now - datetime.timedelta(days=error_days)
         total = 0
 
-        def _delete(queryset):
+        def _delete(queryset: Any) -> None:
             nonlocal total
             while True:
                 pks = list(queryset.values_list("pk", flat=True)[:batch_size])

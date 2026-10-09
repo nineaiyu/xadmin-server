@@ -4,6 +4,8 @@
 # filename : configs
 # author : ly_13
 # date : 3/14/2024
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -20,7 +22,7 @@ from system.models import UserPersonalConfig
 from system.serializers.config import UserPersonalConfigSerializer
 
 
-def config_response_schema():
+def config_response_schema() -> Any:
     return get_default_response_schema({"config": build_object_type(), "auth": build_basic_type(OpenApiTypes.STR)})
 
 
@@ -45,7 +47,7 @@ class ConfigsViewSet(GenericViewSet):
     filter_backends = [OwnerUserFilter]
 
     @extend_schema(responses=config_response_schema())
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取{cls}"""
         value_key = self.kwargs[self.lookup_field]
         if value_key:
@@ -63,7 +65,7 @@ class ConfigsViewSet(GenericViewSet):
 
     @extend_schema(responses=config_response_schema(), request=OpenApiRequest(build_object_type()))
     @auth_required
-    def partial_update(self, request, *args, **kwargs):
+    def partial_update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """更新{cls}"""
         value_key = self.kwargs[self.lookup_field]
         if value_key:
@@ -83,7 +85,7 @@ class ConfigsViewSet(GenericViewSet):
 
     @extend_schema(responses=config_response_schema())
     @auth_required
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """删除{cls}"""
         value_key = self.kwargs[self.lookup_field]
         if value_key:

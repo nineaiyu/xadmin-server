@@ -7,6 +7,7 @@ IMPORT_RECORD_KEEP_DAYS。任务名与注册面（system.tasks.* 周期任务壳
 """
 
 import datetime
+from typing import Any
 
 from django.conf import settings
 from django.utils import timezone
@@ -22,7 +23,7 @@ from task.models.task import TaskExecution
 logger = get_logger(__name__)
 
 
-def clean_task_executions():
+def clean_task_executions() -> Any:
     """清理超过保留期的执行历史与日志文件（TaskResult 删除联动清日志）。"""
     keep_days = getattr(settings, "TASK_EXECUTION_KEEP_DAYS", 30)
     deadline = timezone.now() - datetime.timedelta(days=keep_days)
@@ -39,7 +40,7 @@ def clean_task_executions():
     return removed
 
 
-def clean_export_records():
+def clean_export_records() -> Any:
     """清理超过保留期的异步导出记录与产物文件（EXPORT_FILE_KEEP_DAYS，默认 7 天）。"""
     from common.core.config import SysConfig  # 局部导入避免循环依赖（config <-> services 契约层）
 
@@ -62,7 +63,7 @@ def clean_export_records():
     return removed
 
 
-def clean_import_records():
+def clean_import_records() -> Any:
     """清理超过保留期的异步导入记录、源文件与错误报告（IMPORT_RECORD_KEEP_DAYS，默认 30 天）。"""
     from common.core.config import SysConfig  # 局部导入避免循环依赖（config <-> services 契约层）
 

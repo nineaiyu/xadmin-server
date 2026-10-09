@@ -6,6 +6,8 @@
 状态走数据字典 import_status（管理员可维护文案/颜色），未配置回退模型枚举。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -83,10 +85,10 @@ class ImportRecordSerializer(BaseModelSerializer):
         ]
         read_only_fields = fields
 
-    def get_report_filesize(self, obj):
+    def get_report_filesize(self, obj: Any) -> Any:
         return obj.report_filesize
 
-    def get_progress(self, obj):
+    def get_progress(self, obj: Any) -> Any:
         if obj.status == ImportRecord.Status.RUNNING:
             from task.utils.import_progress import get_import_progress
 
@@ -122,7 +124,7 @@ class ImportTemplateSerializer(BaseModelSerializer):
         table_fields = ["pk", "model", "name", "is_shared", "creator", "created_time"]
         read_only_fields = ["creator"]
 
-    def get_unique_together_validators(self):
+    def get_unique_together_validators(self) -> Any:
         """禁用 DRF 对 (model, name, creator) 约束生成的 UniqueTogetherValidator。
 
         creator 由框架按登录用户自动赋值（只读），DRF 会把可空的 creator 误判为
@@ -131,10 +133,10 @@ class ImportTemplateSerializer(BaseModelSerializer):
         return []
 
     @staticmethod
-    def _is_superuser(request):
+    def _is_superuser(request: Any) -> Any:
         return bool(getattr(getattr(request, "user", None), "is_superuser", False))
 
-    def validate_mapping(self, value):
+    def validate_mapping(self, value: Any) -> Any:
         if value in (None, ""):
             return {}
         if not isinstance(value, dict):
@@ -148,14 +150,14 @@ class ImportTemplateSerializer(BaseModelSerializer):
             cleaned[key.strip()] = "" if target is None else str(target).strip()
         return cleaned
 
-    def validate_options(self, value):
+    def validate_options(self, value: Any) -> Any:
         if value in (None, ""):
             return {}
         if not isinstance(value, dict):
             raise serializers.ValidationError(_("Operation failed. Abnormal data"))
         return {key: value[key] for key in self.OPTIONS_KEYS if key in value}
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
         attrs = super().validate(attrs)
         request = self.context.get("request")
         if not self._is_superuser(request):

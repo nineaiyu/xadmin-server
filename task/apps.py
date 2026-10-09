@@ -5,7 +5,7 @@ class TaskConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "task"
 
-    def ready(self):
+    def ready(self) -> None:
         from . import signal_handler  # noqa
         from . import signal_task_execution  # noqa
 

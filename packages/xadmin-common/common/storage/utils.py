@@ -137,7 +137,7 @@ def iter_cached_files() -> Iterator[tuple[str, float]]:
                 continue
 
 
-def clean_storage_cache(keep_days: int = 7, batch: int = 2000) -> int:
+def clean_storage_cache(keep_days: int | None = 7, batch: int = 2000) -> int:
     """清理远端对象本地缓存（按文件 mtime 保留期淘汰），返回删除文件数。"""
     if not keep_days or keep_days <= 0:
         return 0

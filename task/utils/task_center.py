@@ -23,6 +23,8 @@
 ——同一件事只出现一行。顶栏任务中心抽屉保留为快捷入口。
 """
 
+from typing import Any
+
 from django.core.cache import cache
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -52,25 +54,25 @@ class TaskCancelled(Exception):
 # --------------------------------------------------------------- 取消标记
 
 
-def _cancel_key(record_id) -> str:
+def _cancel_key(record_id: Any) -> str:
     return f"{CANCEL_FLAG_PREFIX}:{record_id}"
 
 
-def request_cancel(record_id) -> None:
+def request_cancel(record_id: Any) -> None:
     try:
         cache.set(_cancel_key(record_id), 1, CANCEL_FLAG_TTL)
     except Exception:  # noqa: BLE001 缓存不可用只影响协作式取消的即时性
         logger.warning("set task cancel flag failed: %s", record_id, exc_info=True)
 
 
-def clear_cancel(record_id) -> None:
+def clear_cancel(record_id: Any) -> None:
     try:
         cache.delete(_cancel_key(record_id))
     except Exception:  # noqa: BLE001
         logger.debug("clear task cancel flag failed: %s", record_id, exc_info=True)
 
 
-def is_cancel_requested(record_id) -> bool:
+def is_cancel_requested(record_id: Any) -> bool:
     try:
         return bool(cache.get(_cancel_key(record_id)))
     except Exception:  # noqa: BLE001 缓存故障按未请求取消处理（fail-open，避免误杀任务）
@@ -78,13 +80,13 @@ def is_cancel_requested(record_id) -> bool:
         return False
 
 
-def ensure_not_cancelled(record_id) -> None:
+def ensure_not_cancelled(record_id: Any) -> None:
     """任务安全点检查：命中取消标记即抛 ``TaskCancelled``。"""
     if is_cancel_requested(record_id):
         raise TaskCancelled(str(_("Task cancelled by user")))
 
 
-def mark_execution_revoked(record_id) -> None:
+def mark_execution_revoked(record_id: Any) -> None:
     """把同 pk 的执行历史行标记为 REVOKED 终态。
 
     先写 ``date_finished`` 即可让 ``task_postrun`` 信号（带 ``date_finished is null``
@@ -123,7 +125,7 @@ _MOVED_EXPORTS = (
 )
 
 
-def __getattr__(name):
+def __getattr__(name: Any) -> Any:
     if name in _MOVED_EXPORTS:
         from importlib import import_module
 

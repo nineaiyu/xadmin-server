@@ -13,6 +13,8 @@
 向量配置见 AI 配置页（用途 = 文本向量化）的激活档案。
 """
 
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from ai.utils.ai_embeddings import build_embeddings, vector_stats
@@ -21,13 +23,13 @@ from ai.utils.ai_embeddings import build_embeddings, vector_stats
 class Command(BaseCommand):
     help = "Build knowledge base embeddings (requires an active embedding AI profile)"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--force", action="store_true", help="全量重算（忽略既有向量）")
         parser.add_argument("--dry-run", action="store_true", help="只统计待构建条数，不调用供应商")
         parser.add_argument("--document", default="", help="限定单个文档（文档存储路径，如 docs/README.md）")
         parser.add_argument("--batch-size", type=int, default=32, help="单批文本条数（1-256，默认 32）")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         document = None
         path = (options["document"] or "").strip()
         if path:

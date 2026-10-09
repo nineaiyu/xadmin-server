@@ -48,8 +48,9 @@ class Tag(DbAuditModel, DbUuidModel):
         verbose_name_plural = _("Tags")
         ordering = ("name",)
 
-    def __str__(self):
-        return self.name
+    def __str__(self) -> str:
+        typed_value: str = self.name
+        return typed_value
 
 
 class TaggedItem(DbAuditModel, DbUuidModel):
@@ -72,5 +73,5 @@ class TaggedItem(DbAuditModel, DbUuidModel):
         ]
         indexes = [models.Index(fields=["content_type", "object_id"], name="tagged_item_target_idx")]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.content_type_id}:{self.object_id}#{self.tag_id}"

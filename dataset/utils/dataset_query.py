@@ -6,6 +6,8 @@
 字段权限叠加，聚合分组/取值字段必须对浏览者可见（fail-closed 报错）。
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError
 from django.db.models import Avg, Count, DateTimeField, Sum
 from django.db.models.functions import Trunc
@@ -26,7 +28,7 @@ from dataset.utils.dataset import (
 )
 
 
-def execute_dataset(dataset, user_obj, count_only: bool = False, max_rows: int | None = None):
+def execute_dataset(dataset: Any, user_obj: Any, count_only: bool = False, max_rows: int | None = None) -> Any:
     """执行数据集：返回白名单列的行数据（row_limit 上限）。
 
     输出列 = 数据集 columns ∩ 浏览者字段权限白名单（JSON 路径列按根字段收敛；
@@ -69,7 +71,9 @@ def execute_dataset(dataset, user_obj, count_only: bool = False, max_rows: int |
     return {"columns": [spec.raw for spec in specs], "rows": rows, "total": queryset.count(), "limit": limit}
 
 
-def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=None, value_field=None):
+def aggregate_dataset(
+    dataset: Any, user_obj: Any, group_by: Any, metric: Any = "count", date_trunc: Any = None, value_field: Any = None
+) -> Any:
     """聚合：图表卡片数据源。输出 [{name, value}]（桶上限 365）。
 
     - group_by 为空 = 无分组纯聚合（NL 查数「一共有多少个」等）：单桶输出，name 为「总计」；
@@ -179,7 +183,7 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
     return {"name": group_by, "metric": metric, "series": series}
 
 
-def filter_layout_for_user(layout, user) -> list:
+def filter_layout_for_user(layout: Any, user: Any) -> list[Any]:
     """卡片级权限过滤（仪表盘读取侧）：allowed_roles 空 = 全员可见；非空要求浏览者命中其一。
 
     - 超管全量可见（旁路，与数据权限口径一致）；
