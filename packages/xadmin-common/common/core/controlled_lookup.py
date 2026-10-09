@@ -5,6 +5,7 @@
 字段面 = filterset 声明 field_name ∪ controlled_lookup_fields ∪ pk；lookup 白名单
 九种；值按模型字段转换；字段可见性 fail-closed（非超管必须命中授权字段面）。"""
 
+from functools import lru_cache
 from typing import Any
 
 from django.core.exceptions import FieldDoesNotExist, ValidationError
@@ -115,17 +116,28 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
             return []
         return cls.available_lookups(model_field)
 
-    @staticmethod
-    def _allowed_fields(view: Any) -> set[Any]:
+    @classmethod
+    def _allowed_fields(cls, view: Any) -> set[Any]:
         filterset_class = getattr(view, "filterset_class", None)
-        fields = {"pk"}  # pk 恒可用（列表接口本就返回主键，不属于字段权限收敛面）
-        if filterset_class is not None:
-            for filter_obj in filterset_class.get_filters().values():
-                field_name = getattr(filter_obj, "field_name", "") or ""
-                if field_name and "__" not in field_name:
-                    fields.add(field_name)
+        # pk 恒可用（列表接口本就返回主键，不属于字段权限收敛面）
+        fields = set(cls._filterset_fields(filterset_class)) if filterset_class is not None else {"pk"}
         fields |= set(getattr(view, "controlled_lookup_fields", ()) or ())
         return fields
+
+    @staticmethod
+    @lru_cache(maxsize=128)
+    def _filterset_fields(filterset_class: Any) -> frozenset[Any]:
+        """filterset 声明面的字段集合（进程内缓存）。
+
+        ``get_filters()`` 会构造全部 Filter 对象；元数据下发对每一列都会调用一次
+        （40 列表页约 40 次全量构造）。filterset 的声明面在类定义后不可变，按类缓存安全。
+        """
+        fields = {"pk"}
+        for filter_obj in filterset_class.get_filters().values():
+            field_name = getattr(filter_obj, "field_name", "") or ""
+            if field_name and "__" not in field_name:
+                fields.add(field_name)
+        return frozenset(fields)
 
     @staticmethod
     def _model_field(model: Any, field_name: Any) -> Any:

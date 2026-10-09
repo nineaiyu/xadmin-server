@@ -103,29 +103,30 @@ def record_task_result(task_name: str, status: str, duration: float | None = Non
             _TASK_DURATION.labels(task=name).observe(duration)
     except Exception as e:  # noqa: BLE001
         logger.debug(f"record task metrics failed: {e}")
-    try:
-        from django_redis import get_redis_connection
-
-        get_redis_connection("default").hincrby(TASK_REDIS_KEY, f"{name}|{status_name}", 1)
-    except Exception as e:  # noqa: BLE001 指标旁路：redis 不可用不影响任务执行
-        logger.debug(f"record task metrics to redis failed: {e}")
-    if duration is not None:
-        _record_task_duration_redis(name, duration)
+    _record_task_metrics_redis(name, status_name, duration)
 
 
-def _record_task_duration_redis(name: str, duration: float) -> None:
-    """任务耗时写入 redis 累积桶（Prometheus histogram 语义：le >= duration 的桶 +1）。"""
+def _record_task_metrics_redis(name: str, status_name: str, duration: float | None) -> None:
+    """任务终态与耗时写入 redis 聚合（Prometheus histogram 语义：le >= duration 的桶 +1）。
+
+    单次 pipeline 提交：历史实现逐项 hincrby（状态计数 1 次 + 最多 9 个耗时桶 +
+    count/sum ≈ 12 次往返），高吞吐下是 worker 的 Redis 网络热点。
+    """
     try:
         from django_redis import get_redis_connection
 
         conn = get_redis_connection("default")
-        for bound in _TASK_DURATION_BUCKETS:
-            if duration <= bound:
-                conn.hincrby(TASK_DURATION_REDIS_KEY, f"{name}|le:{bound}", 1)
-        conn.hincrby(TASK_DURATION_REDIS_KEY, f"{name}|count", 1)
-        conn.hincrbyfloat(TASK_DURATION_REDIS_KEY, f"{name}|sum", duration)
+        with conn.pipeline() as pipe:
+            pipe.hincrby(TASK_REDIS_KEY, f"{name}|{status_name}", 1)
+            if duration is not None:
+                for bound in _TASK_DURATION_BUCKETS:
+                    if duration <= bound:
+                        pipe.hincrby(TASK_DURATION_REDIS_KEY, f"{name}|le:{bound}", 1)
+                pipe.hincrby(TASK_DURATION_REDIS_KEY, f"{name}|count", 1)
+                pipe.hincrbyfloat(TASK_DURATION_REDIS_KEY, f"{name}|sum", duration)
+            pipe.execute()
     except Exception as e:  # noqa: BLE001 指标旁路：redis 不可用不影响任务执行
-        logger.debug(f"record task duration to redis failed: {e}")
+        logger.debug(f"record task metrics to redis failed: {e}")
 
 
 def _escape_label(value: str) -> str:

@@ -16,6 +16,7 @@
 """
 
 import re
+from functools import lru_cache
 from typing import Any
 
 from common.contracts import API_ACTION_SPECS
@@ -32,8 +33,14 @@ def normalize_path(path: str) -> str:
     return normalized.rstrip("/")
 
 
+@lru_cache(maxsize=1)
 def declared_actions() -> dict[tuple[str, str], Any]:
-    """声明式动作索引：``{(METHOD, "/api/.../ <pk>"): spec}``（注册表是唯一来源）。"""
+    """声明式动作索引：``{(METHOD, "/api/.../ <pk>"): spec}``（注册表是唯一来源）。
+
+    进程内缓存：注册表是启动期装配的声明式常量、不再变化；原实现每次调用都重建
+    整张索引并逐项做路径归一化，而文档生成 / 审计对每个 operation 都会调用一次
+    （O(paths×specs)）。测试如需变更注册表，调用 ``declared_actions.cache_clear()``。
+    """
     index = {}
     for spec in API_ACTION_SPECS.values():
         index[(str(spec.method).upper(), normalize_path(spec.path))] = spec
