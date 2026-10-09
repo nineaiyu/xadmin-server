@@ -61,15 +61,19 @@ class TestPeriodicTasks:
                 "description": "单测",
             }
         }
-        task = create_or_update_celery_periodic_tasks(spec)
-        # update_or_create 返回 (obj, created)
-        assert task is not None
-        assert task[0].name == "test-interval-task"
-        assert task[0].interval.every == 30
+        created_map = create_or_update_celery_periodic_tasks(spec)
+        # 返回 {任务名: (obj, created)}，元组来自 update_or_create
+        assert created_map is not None
+        task, created = created_map["test-interval-task"]
+        assert created is True
+        assert task.name == "test-interval-task"
+        assert task.interval.every == 30
 
         again = create_or_update_celery_periodic_tasks(spec)
-        assert again[0].name == "test-interval-task"
-        assert again[1] is False
+        assert again is not None
+        again_task, again_created = again["test-interval-task"]
+        assert again_task.name == "test-interval-task"
+        assert again_created is False
         assert PeriodicTask.objects.filter(name="test-interval-task").count() == 1
 
         # 清理，避免影响其他测试
@@ -86,10 +90,32 @@ class TestPeriodicTasks:
                 "crontab": "30 7 * * 1-5",
             }
         }
-        task = create_or_update_celery_periodic_tasks(spec)
-        assert task is not None
-        assert task[0].crontab.minute == "30"
+        created_map = create_or_update_celery_periodic_tasks(spec)
+        assert created_map is not None
+        task, _ = created_map["test-crontab-task"]
+        assert task.crontab.minute == "30"
         PeriodicTask.objects.filter(name="test-crontab-task").delete()
+
+    def test_multi_tasks_all_registered(self):
+        """多任务字典必须全部注册（历史缺陷：return 缩进在循环内，只处理第一个）。"""
+        from django_celery_beat.models import PeriodicTask
+
+        from common.celery.utils import create_or_update_celery_periodic_tasks
+
+        spec = {
+            "test-multi-a": {"task": "common.tasks.test_dummy", "interval": 30},
+            "test-multi-b": {"task": "common.tasks.test_dummy", "interval": 60},
+        }
+        created_map = create_or_update_celery_periodic_tasks(spec)
+        assert created_map is not None
+        assert set(created_map.keys()) == {"test-multi-a", "test-multi-b"}
+        assert PeriodicTask.objects.filter(name__startswith="test-multi-").count() == 2
+        PeriodicTask.objects.filter(name__startswith="test-multi-").delete()
+
+    def test_empty_tasks_returns_empty_map(self):
+        from common.celery.utils import create_or_update_celery_periodic_tasks
+
+        assert create_or_update_celery_periodic_tasks({}) == {}
 
     def test_invalid_schedule_returns_none(self):
         from common.celery.utils import create_or_update_celery_periodic_tasks

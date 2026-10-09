@@ -83,3 +83,17 @@ def test_empty_input(query_dict):
 def test_mixed_flat_and_nested(query_dict):
     data = query_dict(name="x", **{"detail.is_active": "true"})
     assert format_data(data) == {"name": "x", "detail": {"is_active": "true"}}
+
+
+def test_array_skipped_index_extends_list(query_dict):
+    """乱序 + 跳号下标（axios 只提交有值的下标）必须先补位再落值。
+
+    历史缺陷：已存在列表时只 append 一个占位，`covers.0` 之后直接给 `covers.5`
+    会走 info[5] 越界（IndexError → 上传 500）。
+    """
+    data = query_dict(**{"covers.0.value": "a", "covers.5.value": "b"})
+    result = format_data(data)
+    assert len(result["covers"]) == 6
+    assert result["covers"][0] == {"value": "a"}
+    assert result["covers"][5] == {"value": "b"}
+    assert result["covers"][1:5] == [{}, {}, {}, {}]

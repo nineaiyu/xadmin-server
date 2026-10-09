@@ -123,6 +123,21 @@ class TestBatchUserConfig:
         result = batch_user_config([user.pk], KEY, default=5)
         assert result[user.pk] == 66
 
+    def test_str_pk_owner_reads_personal_value(self, user):
+        """批量读取按 str(pk) 形态调用（UserConfig(str_pk)）时个人值不能丢。
+
+        历史缺陷：DB 行的 owner_id 是 UUID，与入参 str 永不相等，个人值被静默
+        替换成系统值（单读路径正常，批量读取静默偏差）。
+        """
+        UserConfig(user.pk).set_value(KEY, 66, is_active=True, access=True)
+        result = batch_user_config([str(user.pk)], KEY, default=5)
+        assert result[str(user.pk)] == 66
+
+    def test_str_pk_get_values_reads_personal_value(self, user):
+        """UserConfig(str_pk).get_values 批量路径同样不能丢个人值（按归一键匹配行）。"""
+        UserConfig(user.pk).set_value(KEY, 77, is_active=True, access=True)
+        assert UserConfig(str(user.pk)).get_values([KEY]) == {KEY: 77}
+
 
 class TestPersonalConfigDataHelper:
     def test_system_fallback_is_not_personal_row(self, user):

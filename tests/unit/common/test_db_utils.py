@@ -123,3 +123,19 @@ class TestConnectionManagers:
 
     def test_close_old_connections_noop(self):
         close_old_connections()
+
+    def test_safe_db_connection_closes_on_exception(self, monkeypatch):
+        """异常路径同样要回收连接。
+
+        历史缺陷：实现无 try/finally，with 体抛异常时出口的 close_old_connections
+        被跳过，长跑消费循环错误路径会留下陈旧连接。
+        """
+        import common.core.db.utils as db_utils
+
+        calls = []
+        monkeypatch.setattr(db_utils, "close_old_connections", lambda **kwargs: calls.append(1))
+        with pytest.raises(RuntimeError):
+            with db_utils.safe_db_connection():
+                raise RuntimeError("boom")
+        # 进入 + 异常退出各一次
+        assert len(calls) == 2

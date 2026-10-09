@@ -307,3 +307,64 @@ class TestSingleFlight:
         assert metadata_cache.cached_payload("k", 60, lambda: ["fresh"], bypass=True) == ["fresh"]
         assert fake.get_calls == 0
         assert fake.set_calls == []
+
+
+class _BrokenCache:
+    """缓存后端抖动替身：get / lock / set 抛连接异常。"""
+
+    def get(self, key):
+        raise ConnectionError("cache down")
+
+    def lock(self, *args, **kwargs):
+        raise ConnectionError("cache down")
+
+    def set(self, key, value, timeout):
+        raise ConnectionError("cache down")
+
+
+class TestCacheFailureFallback:
+    """缓存后端不可用必须降级为直接构建：读缓存是优化，不是正确性要求。
+
+    历史缺陷：只捕 LockError，连接抖动或无 lock() 的后端会让元数据端点直接 500。
+    """
+
+    def test_read_failure_falls_back_to_build(self, monkeypatch):
+        from common.core.modelset import metadata_cache
+
+        monkeypatch.setattr(metadata_cache, "cache", _BrokenCache())
+        assert metadata_cache.cached_payload("k", 60, lambda: ["fresh"]) == ["fresh"]
+
+    def test_lock_unavailable_falls_back_to_build(self, monkeypatch):
+        from common.core.modelset import metadata_cache
+
+        class _NoLockCache(_BrokenCache):
+            def get(self, key):
+                return None  # 读正常但无锁能力（本地内存缓存）
+
+        monkeypatch.setattr(metadata_cache, "cache", _NoLockCache())
+        assert metadata_cache.cached_payload("k", 60, lambda: ["fresh"]) == ["fresh"]
+
+    def test_builder_error_inside_lock_not_retried(self, monkeypatch):
+        """builder 自身异常原样上抛且不二次构建（build_started 标记）。"""
+        from common.core.modelset import metadata_cache
+
+        calls = []
+
+        class _WorkingCache:
+            def get(self, key):
+                return None
+
+            def lock(self, *args, **kwargs):
+                return _FakeLock()
+
+            def set(self, key, value, timeout):
+                pass
+
+        def builder():
+            calls.append(1)
+            raise RuntimeError("build failed")
+
+        monkeypatch.setattr(metadata_cache, "cache", _WorkingCache())
+        with pytest.raises(RuntimeError):
+            metadata_cache.cached_payload("k", 60, builder)
+        assert len(calls) == 1

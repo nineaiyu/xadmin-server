@@ -273,6 +273,14 @@ class BoomViewSet(ViewSet):
         raise RuntimeError("boom")
 
 
+class _BoomView:
+    """as_view 即抛：模拟分片框架级异常（DRF exception_handler 不可达）。"""
+
+    @staticmethod
+    def as_view(action_map):
+        raise RuntimeError("boom")
+
+
 @pytest.fixture()
 def clean_view_task_cache():
     yield
@@ -340,6 +348,27 @@ class TestBackgroundTaskViewSetJob:
         assert "failed" in str(info["status"]) or "失败" in str(info["status"])
         assert info["tasks"][0]["result"] == "部分行失败"
         CacheList("view_task_jobf", timeout=3600 * 24).delete()
+
+    def test_view_exception_pushes_failed_shard(self, monkeypatch, clean_view_task_cache):
+        """分片执行抛异常也必须落一条失败结果。
+
+        DRF 视图内部异常由 exception_handler 兜成响应（见 BoomViewSet 走 dispatch），
+        但分片框架级异常（import_string / 请求构造 / as_view 等）会直接冒出：不兜底则
+        cache.push 不执行 → cache.len() 永远凑不满 task_count，整批汇总与通知永久挂起
+        （任务中心长期「进行中」，分片结果 24h 后被 TTL 清掉）。
+        """
+        import common.tasks as ct
+
+        monkeypatch.setattr(ct, "import_string", lambda path: _BoomView)
+        info = background_task_view_set_job(
+            view="common.tests.boom",
+            meta=_build_meta(task_id="jobb_0", index=0, count=1, action="noop"),
+            data="[]",
+            action_map={"post": "create"},
+        )
+        assert info["state"] is False
+        assert "boom" in str(info["tasks"][0]["result"])
+        CacheList("view_task_jobb", timeout=3600 * 24).delete()
 
     @pytest.mark.django_db
     def test_lazy_detail_does_not_break_push(self, clean_view_task_cache):

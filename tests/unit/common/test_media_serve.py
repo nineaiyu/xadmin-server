@@ -89,3 +89,8 @@ class TestGetMediaPath:
         # 5 段路径但末段不含 "_" 尺寸后缀 → None
         with django_db_blocker.unblock():
             assert get_media_path("system/userinfo/avatar/0/pic.png") is None
+
+    def test_unknown_app_or_model_returns_none(self, django_db_blocker):
+        """app/model 不存在（LookupError）返回 None，而不是让 /media 请求 500。"""
+        with django_db_blocker.unblock():
+            assert get_media_path("nope/nomodel/x/1/200_pic.png") is None

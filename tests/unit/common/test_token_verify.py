@@ -37,3 +37,40 @@ class TestTokenCache:
         token1 = make_token_cache("force-key", force_new=True)
         token2 = make_token_cache("force-key", force_new=True)
         assert token1 != token2
+
+
+class TestTokenCacheKeyDigest:
+    """缓存键用令牌摘要而非原文：键会出现在 Redis 键空间 / 慢查询日志 / 监控面板里。"""
+
+    def test_cache_key_contains_no_token_plaintext(self):
+        from django.core.cache import cache
+
+        from common.utils.token import TEMP_TOKEN_CACHE_PREFIX, temp_token_cache_key
+
+        token = make_token_cache("digest-key")
+        cache_key = temp_token_cache_key(token)
+        assert cache_key.startswith(TEMP_TOKEN_CACHE_PREFIX)
+        assert token not in cache_key
+        assert temp_token_cache_key(token) == cache_key  # 幂等
+
+        assert cache.get(cache_key) is not None
+        assert cache.get(token) is None  # 原文不再落键
+
+    def test_plaintext_key_migrated_on_verify(self):
+        """升级前签发的令牌（原文作键）命中后迁移到摘要键并清理旧键。"""
+        import time
+
+        from django.core.cache import cache
+
+        from common.utils.token import RedisCacheBase, temp_token_cache_key
+
+        legacy_token = "tmp_token_legacy_payload"
+        RedisCacheBase(legacy_token).set_storage_cache(
+            {"atime": time.time() + 300, "data": "legacy-key", "ext_data": None}, 300
+        )
+        values = verify_token_cache(legacy_token, "legacy-key")
+        assert values and values["data"] == "legacy-key"
+        assert cache.get(temp_token_cache_key(legacy_token)) is not None
+        assert cache.get(legacy_token) is None
+        # 再次校验走摘要键，仍可用
+        assert verify_token_cache(legacy_token, "legacy-key")

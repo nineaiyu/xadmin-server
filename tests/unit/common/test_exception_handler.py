@@ -94,6 +94,8 @@ class TestProtectedError:
 
         response = common_exception_handler(exc_info.value, _context())
         assert response.data["code"] == 998
+        # HTTP 语义与同一处理器其它分支对齐（客户端错误不伪装成 200 成功响应）
+        assert response.status_code == 400
         assert "部门" in response.data["detail"] or "department" in str(response.data["detail"]).lower()
 
 

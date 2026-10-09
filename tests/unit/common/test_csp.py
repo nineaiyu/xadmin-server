@@ -249,6 +249,20 @@ class TestSyntheticReasonHostBasis:
         settings.ALLOWED_HOSTS = ["xadmin.example.com", "ops.example.com"]
         assert _synthetic_reason("https://ops.example.com/#/x", BROWSER_UA, "xadmin.example.com") == ""
 
+    def test_allowed_hosts_leading_dot_matches_subdomain(self, settings):
+        """ALLOWED_HOSTS 的前导点通配（.example.com = 该域及子域）按 Django 语义匹配。
+
+        历史缺陷：逐字比较会把合法子域的文档判成 foreign，真实违规被当合成上报丢弃，
+        污染「连续 7 天清零」的切 enforce 判据。
+        """
+        settings.ALLOWED_HOSTS = [".example.com"]
+        assert _synthetic_reason("https://app.example.com/#/x", BROWSER_UA, "xadmin.example.com") == ""
+
+    def test_ipv6_host_literals_compared_without_brackets(self, settings):
+        """IPv6 字面量 Host（[::1]:8896）与 document-uri 的 ::1 应判为同源。"""
+        settings.ALLOWED_HOSTS = []
+        assert _synthetic_reason("http://[::1]/#/x", BROWSER_UA, "[::1]:8896") == ""
+
 
 class TestCSPModeAsyncChain:
     """CSPModeMiddleware 双模——async 链行为与 sync 链等价
