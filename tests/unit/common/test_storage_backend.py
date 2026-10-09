@@ -137,6 +137,36 @@ class TestConfigDeclaration:
         assert storage.is_local is True
         assert first is not second or storage.backend_name == "local"
 
+    def test_switchable_storage_rebuilds_on_media_root_change(self, settings, tmp_path):
+        """MEDIA_ROOT 参与本地委托构建：变更后委托实例必须重建。
+
+        否则运行期（或测试隔离）改目录后文件操作仍落在旧根目录——该缺陷会让
+        同 worker 内先后改 MEDIA_ROOT 的用例互相污染（落盘位置错目录）。
+        """
+        storage = SwitchableStorage()
+        first = storage.delegate
+        assert isinstance(first, FileSystemStorage)
+
+        moved = str(tmp_path / "moved")
+        settings.MEDIA_ROOT = moved
+        second = storage.delegate
+        assert isinstance(second, FileSystemStorage)
+        assert str(second.location) == moved
+
+    def test_default_storage_write_follows_media_root_change(self, settings, tmp_path):
+        """全局 default_storage：MEDIA_ROOT 变更后新写入必须落在新根目录。"""
+        name = default_storage.save("media-root-move/probe.txt", ContentFile(b"x"))
+        moved = str(tmp_path / "moved")
+        moved_name = None
+        try:
+            settings.MEDIA_ROOT = moved
+            moved_name = default_storage.save("media-root-move/moved.txt", ContentFile(b"y"))
+            assert os.path.exists(os.path.join(moved, moved_name))
+        finally:
+            default_storage.delete(name)
+            if moved_name:
+                default_storage.delete(moved_name)
+
 
 class TestAdapterForRemoteBackend:
     def test_local_path_downloads_to_cache_and_hits_cache(self, monkeypatch):

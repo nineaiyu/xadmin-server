@@ -10,7 +10,8 @@
   （django-storages / boto3 为可选依赖：``pip install django-storages boto3``，
   或 ``uv sync --extra storage``）；未安装或配置不全时**回退本地并记录可诊断日志**
   （文件链路可用性优先）；
-- **运行期可切换**：委托实例按「配置指纹」缓存，SysConfig 改动后下一次文件操作即生效；
+- **运行期可切换**：委托实例按「配置指纹」缓存（SysConfig 键 + 影响本地委托构建的
+  ``MEDIA_ROOT`` / ``MEDIA_URL``），任一输入改动后下一次文件操作即生效；
 - **搬迁窗口双写**：``mirror`` = 本地为主 + 对象存储尽力副本（新写入双写、读全走本地），
   配合 ``storage_migrate`` 补齐存量后切 ``s3``（全程无停服窗口）。
 
@@ -85,6 +86,20 @@ def storage_config() -> dict[str, Any]:
 def config_fingerprint(config: dict[str, Any]) -> tuple[Any, ...]:
     """配置指纹：用于判断委托实例是否需要重建（切换后端 / 换 bucket 等）。"""
     return tuple(sorted(config.items()))
+
+
+def delegate_fingerprint(config: dict[str, Any]) -> tuple[Any, ...]:
+    """委托实例重建判据：SysConfig 声明键 + 影响本地委托构建的 settings 键。
+
+    ``MEDIA_ROOT`` / ``MEDIA_URL`` 直接参与本地委托（FileSystemStorage）构建，
+    必须纳入指纹——否则运行期改 ``settings.MEDIA_ROOT``（含测试隔离场景）后委托
+    实例不重建，后续文件操作仍落在旧根目录（同 worker 内先后改 MEDIA_ROOT 的
+    用例会互相污染）。
+    """
+    return config_fingerprint(config) + (
+        str(kernel_required_setting("MEDIA_ROOT")),
+        str(kernel_required_setting("MEDIA_URL")),
+    )
 
 
 def _local_storage() -> FileSystemStorage:
@@ -252,7 +267,7 @@ class SwitchableStorage(Storage):
 
     def _current(self) -> Storage:
         config = storage_config()
-        fingerprint = config_fingerprint(config)
+        fingerprint = delegate_fingerprint(config)
         if self._delegate is not None and fingerprint == self._fingerprint:
             return self._delegate
         with self._lock:
