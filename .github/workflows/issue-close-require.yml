@@ -3,18 +3,39 @@ name: Issue Close Require
 on:
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
 
 jobs:
   issue-close-require:
     runs-on: ubuntu-latest
     steps:
-      - name: need reproduce
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: 'close-issues'
-          labels: '⏳ Pending feedback'
-          inactive-day: 30
-          body: |
-            You haven't provided feedback for over 30 days. 
-            We will close this issue. If you have any further needs, you can reopen it or submit a new issue.
-            您超过 30 天未反馈信息，我们将关闭该 issue，如有需求您可以重新打开或者提交新的 issue。
+      - name: Close issues inactive over 30 days
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          inactive_days=30
+          cutoff=$(date -u -d "-${inactive_days} days" '+%Y-%m-%dT%H:%M:%SZ')
+          body=$(cat <<'EOF'
+          You haven't provided feedback for over 30 days. We will close this issue. If you have any further needs, you can reopen it or submit a new issue.
+          您超过 30 天未反馈信息，我们将关闭该 issue，如有需求您可以重新打开或者提交新的 issue。
+          EOF
+          )
+          # updatedAt 为 UTC ISO8601，与 cutoff 同格式可直接按字典序比较
+          stale=$(gh issue list --repo "$GITHUB_REPOSITORY" \
+            --state open --label '⏳ Pending feedback' --limit 500 \
+            --json number,updatedAt \
+            --jq ".[] | select(.updatedAt < \"$cutoff\") | .number")
+          if [ -z "$stale" ]; then
+            echo "no issues inactive over ${inactive_days} days"
+            exit 0
+          fi
+          while IFS= read -r number; do
+            [ -n "$number" ] || continue
+            echo "closing #${number} ..."
+            gh issue comment "$number" --repo "$GITHUB_REPOSITORY" --body "$body"
+            gh issue close "$number" --repo "$GITHUB_REPOSITORY"
+          done <<<"$stale"
