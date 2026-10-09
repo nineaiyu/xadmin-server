@@ -340,3 +340,139 @@ class TestFunctionLength:
         write(tmp_path, "common/migrations/0001_x.py", _long_func("big", 101))
         write(tmp_path, "common/tests/test_x.py", _long_func("big", 101))
         assert cfln.collect() == []
+
+
+# ---------------------------------------------------------------------------
+# check_doc_size.py
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def cds(tmp_path, monkeypatch):
+    module = load_gate("cds_gate_under_test", "check_doc_size")
+    (tmp_path / "docs").mkdir()
+    monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(module, "DOC_SIZE_BUDGET_KB", 40)
+    monkeypatch.setattr(module, "DOC_SIZE_EXEMPT_PREFIXES", {})
+    monkeypatch.setattr(module, "DOC_SIZE_EXEMPT", {})
+    return module
+
+
+def _run_main(module, *argv):
+    original = sys.argv
+    sys.argv = ["gate.py", *argv]
+    try:
+        return module.main()
+    finally:
+        sys.argv = original
+
+
+class TestDocSize:
+    def test_collect_recursive_markdown_only(self, cds, tmp_path):
+        write(tmp_path, "docs/a.md", "x")
+        write(tmp_path, "docs/sub/b.md", "y")
+        write(tmp_path, "docs/c.txt", "z")
+        assert [rel for rel, _ in cds.collect()] == ["docs/a.md", "docs/sub/b.md"]
+
+    def test_new_oversized_doc_fails(self, cds, tmp_path, capsys):
+        write(tmp_path, "docs/big.md", "x" * (41 * 1024))
+        assert _run_main(cds) == 1
+        assert "未登记的新增超预算文档" in capsys.readouterr().out
+
+    def test_within_budget_passes(self, cds, tmp_path, capsys):
+        write(tmp_path, "docs/ok.md", "x" * (39 * 1024))
+        assert _run_main(cds) == 0
+        assert "文档体积门禁通过" in capsys.readouterr().out
+
+    def test_prefix_exempt_dir_passes(self, cds, tmp_path):
+        cds.DOC_SIZE_EXEMPT_PREFIXES.update({"docs/plans/archive/": "只读历史归档"})
+        write(tmp_path, "docs/plans/archive/big.md", "x" * (60 * 1024))
+        assert _run_main(cds) == 0
+
+    def test_per_file_exempt_only_shrink(self, cds, tmp_path, capsys):
+        cds.DOC_SIZE_EXEMPT.update({"docs/big.md": {"reason": "承接中", "baseline_kb": 45}})
+        write(tmp_path, "docs/big.md", "x" * (44 * 1024))
+        assert _run_main(cds) == 0  # 44 <= 基线 45：放行
+        capsys.readouterr()
+        write(tmp_path, "docs/big.md", "x" * (46 * 1024))
+        assert _run_main(cds) == 1  # 超基线：阻断
+        assert "只减不增" in capsys.readouterr().out
+
+    def test_report_mode_never_fails(self, cds, tmp_path):
+        write(tmp_path, "docs/big.md", "x" * (50 * 1024))
+        assert _run_main(cds, "--report") == 0
+
+
+# ---------------------------------------------------------------------------
+# check_adr_status.py
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def cas(tmp_path):
+    module = load_gate("cas_gate_under_test", "check_adr_status")
+    return module
+
+
+def _write_adr(tmp_path: Path, name: str, status_value: str, body: str = "") -> None:
+    adr = tmp_path / "docs" / "adr"
+    adr.mkdir(parents=True, exist_ok=True)
+    (adr / name).write_text(f"# {name[:7]}\n\n- 状态：{status_value}\n\n## 背景\n{body}\n", encoding="utf-8")
+
+
+class TestAdrStatus:
+    def test_normalized_status_passes(self, cas, tmp_path):
+        _write_adr(tmp_path, "ADR-001-a.md", "已交付")
+        _write_adr(tmp_path, "ADR-002-b.md", "已接受（2026-09-04）")
+        violations, counts, _ = cas.collect_violations(tmp_path)
+        assert violations == []
+        assert counts["已交付"] == 1
+        assert counts["已接受"] == 1
+
+    def test_missing_status_line_reported(self, cas, tmp_path):
+        adr = tmp_path / "docs" / "adr"
+        adr.mkdir(parents=True)
+        (adr / "ADR-001-a.md").write_text("# ADR-001\n\n## 背景\n", encoding="utf-8")
+        violations, _, _ = cas.collect_violations(tmp_path)
+        assert any("未找到状态行" in item for item in violations)
+
+    def test_status_outside_closed_set_reported(self, cas, tmp_path):
+        _write_adr(tmp_path, "ADR-001-a.md", "进行中")
+        violations, _, _ = cas.collect_violations(tmp_path)
+        assert any("不在规范闭集" in item for item in violations)
+
+    def test_superseded_missing_target_reported(self, cas, tmp_path):
+        _write_adr(tmp_path, "ADR-001-a.md", "被取代（Superseded by ADR-002）")
+        violations, counts, _ = cas.collect_violations(tmp_path)
+        assert counts["被取代"] == 1
+        assert any("不存在" in item for item in violations)
+
+    def test_superseded_chain_ok(self, cas, tmp_path):
+        _write_adr(tmp_path, "ADR-001-a.md", "被取代（Superseded by ADR-002）")
+        _write_adr(tmp_path, "ADR-002-b.md", "已交付", body="本决策整体取代 ADR-001（原方案弃用）。")
+        violations, _, _ = cas.collect_violations(tmp_path)
+        assert violations == []
+
+    def test_superseded_bidirectional_note_required(self, cas, tmp_path):
+        _write_adr(tmp_path, "ADR-001-a.md", "被取代（Superseded by ADR-002）")
+        _write_adr(tmp_path, "ADR-002-b.md", "已交付")
+        violations, _, _ = cas.collect_violations(tmp_path)
+        assert any("双向一致" in item for item in violations)
+
+    def test_trigger_required_for_deferred(self, cas, tmp_path):
+        _write_adr(tmp_path, "ADR-001-a.md", "暂不实施（触发制登记）")
+        violations, _, _ = cas.collect_violations(tmp_path)
+        assert any("触发制任务清单" in item for item in violations)
+        write(tmp_path, "docs/plans/触发制任务清单-长期.md", "| 项 | [ADR-001](../adr/ADR-001-a.md) 触发制 |\n")
+        violations, _, _ = cas.collect_violations(tmp_path)
+        assert violations == []
+
+    def test_readme_status_lockstep(self, cas, tmp_path):
+        _write_adr(tmp_path, "ADR-001-a.md", "已交付")
+        write(
+            tmp_path,
+            "docs/adr/README.md",
+            "| ADR | 状态 | 主题 |\n|-----|------|------|\n| [ADR-001](ADR-001-a.md) | 已接受 | x |\n",
+        )
+        violations, _, _ = cas.collect_violations(tmp_path)
+        assert any("与文件内状态" in item for item in violations)

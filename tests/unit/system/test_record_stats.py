@@ -116,9 +116,9 @@ class TestViewSetStats:
     @pytest.mark.parametrize(
         "viewset,url,model",
         [
-            (ExportRecordViewSet, "/api/system/exports/stats", ExportRecord),
-            (ImportRecordViewSet, "/api/system/imports/stats", ImportRecord),
-            (TaskExecutionViewSet, "/api/system/tasks/executions/stats", TaskExecution),
+            (ExportRecordViewSet, "/api/task/exports/stats", ExportRecord),
+            (ImportRecordViewSet, "/api/task/imports/stats", ImportRecord),
+            (TaskExecutionViewSet, "/api/task/executions/stats", TaskExecution),
         ],
     )
     def test_unified_payload(self, viewset, url, model, superuser):
@@ -136,12 +136,12 @@ class TestViewSetStats:
     def test_short_cache_and_no_cache_bypass(self, superuser):
         """10s 短缓存：新增记录后仍返回旧值；`?no_cache=1` 旁路读与写。"""
         _make(ExportRecord, superuser, "first", "SUCCESS")
-        first = _stats(ExportRecordViewSet, "/api/system/exports/stats", superuser)
+        first = _stats(ExportRecordViewSet, "/api/task/exports/stats", superuser)
         assert stats_data(first)["total"] == 1
 
         _make(ExportRecord, superuser, "second", "SUCCESS")
-        cached = _stats(ExportRecordViewSet, "/api/system/exports/stats", superuser)
+        cached = _stats(ExportRecordViewSet, "/api/task/exports/stats", superuser)
         assert stats_data(cached)["total"] == 1
 
-        bypassed = _stats(ExportRecordViewSet, "/api/system/exports/stats", superuser, query="?no_cache=1")
+        bypassed = _stats(ExportRecordViewSet, "/api/task/exports/stats", superuser, query="?no_cache=1")
         assert stats_data(bypassed)["total"] == 2

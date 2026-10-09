@@ -23,8 +23,8 @@ def _clean_scope_entries(value: Any) -> Any:
 
     - 非清单/含非字符串项 → 400；
     - 去空白、丢弃空串、去重；
-    - 逐条经 :func:`normalize_scope_entry` 锚定（手写 `api/system/user` 不再粘连
-      命中 `/api/system/user-logs`），正则非法直接拒绝而非静默跳过。
+    - 逐条经 :func:`normalize_scope_entry` 锚定（手写 `api/identity/user` 不再粘连
+      命中 `/api/identity/user-logs`），正则非法直接拒绝而非静默跳过。
     """
     if value in (None, ""):
         return []
@@ -104,9 +104,9 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
     def validate_scopes(self, value: Any) -> Any:
         """scope 清单清洗：字符串清单、去空白、去重、**逐条锚定**；None/空 = 不限。
 
-        手写条目（如 ``api/system/user``）在保存时规范为锚定形态
-        ``^(?:/api/system/user)(/.*)?$``：放行该地址及其子路径，但不再粘性命中
-        ``/api/system/user-logs``；``^…$`` 形态（权限点勾选生成的条目）原样保留。
+        手写条目（如 ``api/identity/user``）在保存时规范为锚定形态
+        ``^(?:/api/identity/user)(/.*)?$``：放行该地址及其子路径，但不再粘性命中
+        ``/api/identity/user-logs``；``^…$`` 形态（权限点勾选生成的条目）原样保留。
         """
         return _clean_scope_entries(value)
 

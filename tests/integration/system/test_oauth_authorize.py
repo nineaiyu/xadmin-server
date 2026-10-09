@@ -19,10 +19,10 @@ from identity.models.token import OAuthRefreshToken, PersonalAccessToken
 
 pytestmark = pytest.mark.django_db
 
-APPS_URL = "/api/system/api-applications"
-OAUTH_URL = "/api/system/open/oauth"
+APPS_URL = "/api/identity/api-applications"
+OAUTH_URL = "/api/identity/open/oauth"
 CALLBACK = "https://example.com/cb"
-USER_URL = "/api/system/user"
+USER_URL = "/api/identity/user"
 
 
 def _create_application(client, **payload):
@@ -82,21 +82,21 @@ def _pat_client(raw_token):
 class TestAuthorizeFlow:
     def test_authorize_returns_consent_data(self, auth_client):
         """同意页数据：scope 以可读形态展示（存储/判定为锚定正则，见收口）。"""
-        application = _create_application(auth_client, scopes=["api/system/user"])
+        application = _create_application(auth_client, scopes=["api/identity/user"])
         resp = auth_client.get(f"{OAUTH_URL}/authorize", _authorize_params(application))
         assert resp.data["code"] == 1000
         data = resp.data["data"]
         assert data["application"]["client_id"] == application["client_id"]
-        assert data["scopes"] == ["/api/system/user"]
+        assert data["scopes"] == ["/api/identity/user"]
         assert data["state"] == "st-123"
         assert data["user"]["username"] == "admin"
 
     def test_authorize_accepts_readable_scope_subset(self, auth_client):
-        """请求范围按锚定口径比对：客户端按可读形态请求（api/system/user）同样命中。"""
-        application = _create_application(auth_client, scopes=["api/system/user"])
-        resp = auth_client.get(f"{OAUTH_URL}/authorize", _authorize_params(application, scope="api/system/user"))
+        """请求范围按锚定口径比对：客户端按可读形态请求（api/identity/user）同样命中。"""
+        application = _create_application(auth_client, scopes=["api/identity/user"])
+        resp = auth_client.get(f"{OAUTH_URL}/authorize", _authorize_params(application, scope="api/identity/user"))
         assert resp.data["code"] == 1000, resp.data
-        assert resp.data["data"]["scopes"] == ["/api/system/user"]
+        assert resp.data["data"]["scopes"] == ["/api/identity/user"]
 
     def test_authorize_requires_login(self, api_client):
         resp = api_client.get(f"{OAUTH_URL}/authorize", {"client_id": "app_x", "redirect_uri": CALLBACK})
@@ -111,8 +111,8 @@ class TestAuthorizeFlow:
         assert resp.data["data"]["error"] == "invalid_request"
 
     def test_authorize_rejects_out_of_scope(self, auth_client):
-        application = _create_application(auth_client, scopes=["api/system/user"])
-        resp = auth_client.get(f"{OAUTH_URL}/authorize", _authorize_params(application, scope="api/system/dept"))
+        application = _create_application(auth_client, scopes=["api/identity/user"])
+        resp = auth_client.get(f"{OAUTH_URL}/authorize", _authorize_params(application, scope="api/identity/dept"))
         assert resp.status_code == 400
         assert resp.data["data"]["error"] == "invalid_scope"
 
@@ -126,7 +126,7 @@ class TestAuthorizeFlow:
         assert OperationLog.objects.filter(module="OAuth", response_result="denied").exists()
 
     def test_full_flow_issues_tokens(self, auth_client, superuser):
-        application = _create_application(auth_client, scopes=["api/system/user"])
+        application = _create_application(auth_client, scopes=["api/identity/user"])
         verifier, challenge = _pkce_pair()
         approved = _approve(auth_client, application, code_challenge=challenge, code_challenge_method="S256")
         assert OperationLog.objects.filter(module="OAuth", response_result="approved").exists()
@@ -137,7 +137,7 @@ class TestAuthorizeFlow:
         assert payload["token_type"] == "Pat"
         assert payload["refresh_token"].startswith("aort_")
         # 签发凭证的 scope 为锚定形态（与库内应用 scope / PAT scope 同口径）
-        assert payload["scope"] == ["^(?:/api/system/user)(/.*)?$"]
+        assert payload["scope"] == ["^(?:/api/identity/user)(/.*)?$"]
 
         # access 走既有认证链（creator = 授权用户 = 超管），scope 生效
         client = _pat_client(payload["access_token"])
@@ -320,7 +320,7 @@ class TestGrantEnforcementOnOAuthToken:
         from system.models.field import ModelLabelField
 
         model_label = ModelLabelField.objects.create(name="identity.userinfo", label="用户信息")
-        menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        menu = menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
         menu.model.add(model_label)
 
         application = _create_application(auth_client)
@@ -334,7 +334,7 @@ class TestGrantEnforcementOnOAuthToken:
         issued = _exchange(application, approved["code"]).data["data"]
         client = _pat_client(issued["access_token"])
         assert client.get(USER_URL).status_code == 200
-        assert client.get("/api/system/dept").status_code == 403
+        assert client.get("/api/identity/dept").status_code == 403
 
 
 class TestOAuthClientThrottle:

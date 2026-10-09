@@ -19,8 +19,8 @@ from identity.views.admin.user import UserViewSet
 
 pytestmark = pytest.mark.django_db
 
-USER_URL = "/api/system/user"
-LOGIN_LOG_URL = "/api/system/logs/login"
+USER_URL = "/api/identity/user"
+LOGIN_LOG_URL = "/api/audit/logs/login"
 
 
 @pytest.fixture

@@ -118,6 +118,81 @@ class TestAlertRules:
         assert datasource["datasources"][0]["uid"] == "prometheus"
 
 
+class TestPerCaseLatencyAlerts:
+    """端点级 P95 告警：每用例一条，``view`` 标签精确匹配端点（阈值 = 基线 P95 × 3）。
+
+    口径：比较基准为 k6 客户端口径（服务端 histogram 更低，宽限实际更宽松），
+    用于拦截数量级退化；精确的 20% 回归判定仍由 fixed-env 的 check_baseline.py 承担。
+    """
+
+    #: 端点级规则 → 精确匹配的 view 标签（= request.resolver_match.view_name）
+    CASE_VIEWS = {
+        "XadminCaseLatencyLogin": "identity:login-by-basic",
+        "XadminCaseLatencyRoutes": "system:user_routes",
+        "XadminCaseLatencyUserList": "identity:user-list",
+        "XadminCaseLatencyMetadataColumns": "identity:user-search-columns",
+        "XadminCaseLatencyMetadataFields": "identity:user-search-fields",
+        "XadminCaseLatencyExport": "identity:user-export-data",
+        "XadminCaseLatencyImport": "identity:user-import-data",
+    }
+
+    #: 端点级规则 → 基线用例（user-list 同 view 覆盖 03-list 与 04-metadata-with-meta，
+    #: 台账判定取两者基线较大者 with_meta）
+    CASE_BASELINE = {
+        "XadminCaseLatencyLogin": "01-login",
+        "XadminCaseLatencyRoutes": "02-routes",
+        "XadminCaseLatencyUserList": "04-metadata-with-meta",
+        "XadminCaseLatencyMetadataColumns": "04-metadata-columns",
+        "XadminCaseLatencyMetadataFields": "04-metadata-fields",
+        "XadminCaseLatencyExport": "05-export",
+        "XadminCaseLatencyImport": "06-import",
+    }
+
+    #: 重 IO 用例：阈值只作数量级兜底，允许更宽的宽限
+    LENIENT = {"XadminCaseLatencyImport"}
+
+    def _rules(self) -> dict:
+        config = yaml.safe_load(_read(MONITORING / "alerts.yml"))
+        return {rule["alert"]: rule for group in config["groups"] for rule in group["rules"]}
+
+    def test_case_rules_exist_with_view_label_and_full_fields(self):
+        rules = self._rules()
+        for name, view in self.CASE_VIEWS.items():
+            assert name in rules, f"缺少端点级告警规则：{name}"
+            rule = rules[name]
+            assert rule["for"] == "10m", name
+            assert rule["labels"]["severity"] == "warning", name
+            assert rule["annotations"]["summary"], name
+            assert rule["annotations"]["description"], name
+            expr = " ".join(rule["expr"].split())
+            assert f'view="{view}"' in expr, (name, view)
+
+    def test_case_rule_expressions_use_existing_metrics(self):
+        """指标名漂移守护：端点级规则引用的指标必须在 metrics.py 声明面内。"""
+        available = _known_names()
+        rules = self._rules()
+        for name in self.CASE_VIEWS:
+            expr = rules[name]["expr"]
+            assert "histogram_quantile" in expr, name
+            used = _metric_names_in_text(expr)
+            assert used, name
+            missing = {metric for metric in used if metric not in available}
+            assert not missing, f"{name} 引用了不存在的指标：{sorted(missing)}"
+
+    def test_case_thresholds_looser_than_baseline(self):
+        """阈值须显著宽于基线（≥2x）以为抖动留余量；非重 IO 用例不超基线 4x（避免漏报）。"""
+        baseline = json.loads(_read(ROOT / "loadtest" / "baseline.json"))
+        rules = self._rules()
+        for name, case in self.CASE_BASELINE.items():
+            base_p95 = baseline["cases"][case]["p95"]
+            match = re.search(r">\s*([0-9.]+)", rules[name]["expr"])
+            assert match, name
+            limit_ms = float(match.group(1)) * 1000
+            assert limit_ms >= base_p95 * 2, (name, base_p95, limit_ms)
+            if name not in self.LENIENT:
+                assert limit_ms <= base_p95 * 4, (name, base_p95, limit_ms)
+
+
 class TestSystemdUnits:
     UNITS = (
         "xadmin-oom-alert.service",

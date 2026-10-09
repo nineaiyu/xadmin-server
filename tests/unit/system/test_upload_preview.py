@@ -29,7 +29,7 @@ from file.views.admin.file import PREVIEW_UNSUPPORTED_CODE, UploadFileViewSet
 
 pytestmark = pytest.mark.django_db
 
-FILE_URL = "/api/system/file"
+FILE_URL = "/api/file/file"
 
 PNG_BYTES_TEMPLATE = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x08\x00\x00\x00\x08\x08\x02"

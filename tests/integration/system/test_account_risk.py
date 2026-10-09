@@ -13,13 +13,13 @@ from identity.models import AccountRisk, UserInfo
 
 pytestmark = pytest.mark.django_db
 
-LIST_URL = "/api/system/account-risks"
-SCAN_URL = "/api/system/account-risks/scan"
-STATS_URL = "/api/system/account-risks/stats"
+LIST_URL = "/api/identity/account-risks"
+SCAN_URL = "/api/identity/account-risks/scan"
+STATS_URL = "/api/identity/account-risks/stats"
 
 
 def _handle_url(pk):
-    return f"/api/system/account-risks/{pk}/handle"
+    return f"/api/identity/account-risks/{pk}/handle"
 
 
 def _risk_of(user, risk_type):
@@ -105,7 +105,7 @@ class TestAccountRiskDispose:
         """引导改密：强制改密标记随 userinfo 下发（刷新页面后仍可引导）"""
         superuser.must_change_password = True
         superuser.save(update_fields=["must_change_password"])
-        resp = auth_client.get("/api/system/userinfo")
+        resp = auth_client.get("/api/identity/userinfo")
         assert resp.data["code"] == 1000, resp.data
         assert resp.data["data"]["must_change_password"] is True
 
@@ -130,7 +130,7 @@ class TestAccountRiskDispose:
         scan_account_risks()
         risks = list(AccountRisk.objects.filter(status=AccountRisk.Status.PENDING)[:2])
         resp = auth_client.post(
-            "/api/system/account-risks/batch-handle",
+            "/api/identity/account-risks/batch-handle",
             {"pks": [str(risk.pk) for risk in risks], "action": "notify"},
             format="json",
         )

@@ -11,7 +11,7 @@
 | # | 文档 | 一句话 |
 |---|------|--------|
 | 1 | [guide/first-module-30min.md](guide/first-module-30min.md) | **30 分钟开发第一个业务模块**：建 app → `generate_crud` → 菜单授权 → `doctor` 自检（生成器主线） |
-| 2 | [architecture/component-handbook.md](architecture/component-handbook.md) | **组件手册**：后端 14 组 / 前端 10 组组件的职责·用法·依赖·配置项·扩展点（含权威源路径） |
+| 2 | [architecture/component-handbook.md](architecture/component-handbook.md) | **组件手册**：全景图 + 工程化设施 + 扩展点速查；后端 14 组见 [handbook-backend.md](architecture/handbook-backend.md)、前端 10 组见 [handbook-frontend.md](architecture/handbook-frontend.md)（含权威源路径） |
 | 3 | [guide/recipes.md](guide/recipes.md) | **扩展流程处方集**：加字段 / 加按钮 / 自定义渲染器 / 定时任务 / AI 动作等 23 条任务步骤 |
 | 4 | [architecture/overview.md](architecture/overview.md) | 架构总览：分层、元数据驱动、子体系速览、前后端协作时序 |
 | 5 | [architecture/framework-cookbook.md](architecture/framework-cookbook.md) | 框架能力速查：ViewSet 选型 / Action↔BaseApi / 覆写红线 / 前端契约 |
@@ -40,13 +40,15 @@
 | 错误码 | [exception-handling.md](exception-handling.md)（新增错误码必须先登记） |
 | 契约 Schema | [schema/README.md](schema/README.md)（search-columns / search-fields 真源） |
 | 开放平台 | [open-platform/README.md](open-platform/README.md)（接入指南）、[open-platform/events.md](open-platform/events.md)（Webhook 事件契约） |
-| 前端开发（xadmin-client） | 页面 / E2E / 契约入口见 [xadmin-client/docs/README.md](https://github.com/nineaiyu/xadmin-client/blob/dev/docs/README.md)；页面写法见 [recipes.md](guide/recipes.md) R9–R14 / R22、[component-handbook.md](architecture/component-handbook.md) §二 |
+| 前端开发（xadmin-client） | 页面 / E2E / 契约入口见 [xadmin-client/docs/README.md](https://github.com/nineaiyu/xadmin-client/blob/dev/docs/README.md)；页面写法见 [recipes.md](guide/recipes.md) R9–R14 / R22、[handbook-frontend.md](architecture/handbook-frontend.md) |
+| **故障排查 FAQ** | [guide/troubleshooting.md](guide/troubleshooting.md)：登录 / 容器 / 权限 / 模块裁剪 / CSP / 时区等高频现象 → 原因与处置（运维故障清册见 [ops/runbook.md](ops/runbook.md)，静默失效坑见 [dev-pitfalls.md](dev-pitfalls.md)） |
+| **升级常见问题** | [guide/upgrade-faq.md](guide/upgrade-faq.md)：升级前后最常问 / 易错（判定与流程权威口径见 [ops/upgrade-stock.md](ops/upgrade-stock.md)、[ops/deployment-upgrade.md](ops/deployment-upgrade.md)） |
 
 ## 三、部署与运维（ops/）
 
 | 文档 | 内容 |
 |------|------|
-| [ops/deployment.md](ops/deployment.md) | **部署与运维手册**：配置速查表（§9）/ Docker / 备份恢复 / 升级回滚 |
+| [ops/deployment.md](ops/deployment.md) | **部署与运维手册（概览）**：本地开发 + 常见问题排查；子页 [deployment-docker.md](ops/deployment-docker.md)（容器 / Celery 队列 / 备份恢复与容量 / 可观测 / 国产化）、[deployment-upgrade.md](ops/deployment-upgrade.md)（升级回滚）、[deployment-csp.md](ops/deployment-csp.md)（安全响应头 CSP）、[config-reference.md](ops/config-reference.md)（配置速查表） |
 | [ops/upgrade-stock.md](ops/upgrade-stock.md) | 存量库升级通道：升级前体检（`upgrade_check`）/ 支持矩阵（可原地升级 vs 清库重建）/ 两条流程 |
 | [ops/runbook.md](ops/runbook.md) | 故障处置（常见故障 → 处置步骤） |
 | [ops/scale-out.md](ops/scale-out.md) | 横向扩展 runbook（单机多副本：迁移一次性 / beat 单例 / nginx 多后端轮询 + 验证与回退） |
@@ -55,7 +57,8 @@
 | [ops/log-archive.md](ops/log-archive.md) | 审计日志冷归档（归档水位驱动清理 / 离线恢复查询 / 校验与演练） |
 | [ops/storage.md](ops/storage.md) | 文件存储后端：声明式可插拔（local / S3）+ 搬迁校验命令 + health 探针 + 排障 |
 | [ops/kernel-release.md](ops/kernel-release.md) | 内核分发包（xadmin-common）发布渠道与版本策略：私有源接入 / 发版流程 / 宿主升级与回滚 |
-| [ops/observability.md](ops/observability.md) | 可观测性与 SLO（指标 / 告警分级 / 演练记录） |
+| [ops/workspace-health.md](ops/workspace-health.md) | 工作区级跨仓一致性健康报告：五个同源面（CSP / 权限种子 / 契约 schema / 词条 / 版本矩阵）+ 门禁聚合的只读校验、退出码与周报 CI |
+| [ops/observability.md](ops/observability.md) | 可观测性与 SLO（指标 / 告警分级 / 追踪评估）；故障演练记录见 [observability-drills.md](ops/observability-drills.md) |
 | [ops/monitoring-stack.md](ops/monitoring-stack.md) | 监控参考栈（Prometheus + Grafana + blackbox + 告警桥接 + systemd 单元） |
 | [ops/release-checklist.md](ops/release-checklist.md) | 发布窗口 checklist（基线门禁 + 执行记录） |
 | [ops/fix-bind-phone-setting-keys-2026-10.md](ops/fix-bind-phone-setting-keys-2026-10.md) | 安全设置「绑定手机」配置键错写（P0）修复的数据核查与清理 SQL |
@@ -66,11 +69,12 @@
 
 | 文档 | 内容 |
 |------|------|
-| [adr/README.md](adr/README.md) | **架构决策记录索引（78 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
+| [adr/README.md](adr/README.md) | **架构决策记录索引（79 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
 | [plans/README.md](plans/README.md) | 规划与治理：活跃台账（触发制任务清单）；**已完成的一次性台账在 `plans/archive/`**，预生成未来年度的填充文档已于 2026-10-03 清理 |
 | [ci-gates.md](ci-gates.md) | **CI 门禁统一清单**：全部流水线门禁与守护测试的登记处（守护语义 / 所在 workflow / 本地复跑；新增门禁必须登记） |
-| [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线 → 实测履历） |
-| [security-review.md](security-review.md) | 安全自查归档（按轮次追加） |
+| [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线概览）；履历见 [metrics-history.md](metrics-history.md)（阶段回填 + 依赖安全审计）、[metrics-perf-history.md](metrics-perf-history.md)（性能 / 前端基线实测） |
+| [security-review.md](security-review.md) | 安全自查归档（按轮次追加，含接受项台账与重开条件） |
+| [asvs-mapping.md](asvs-mapping.md) | **OWASP ASVS L1/L2 对照表**：安全现状映射 + 差距项归属（自动化可下沉 / 接受项 / 触发条件），用于回答客户安全问卷 |
 | [cache-keys-audit.md](cache-keys-audit.md) | 缓存键与 JWT 审计（`scripts/check_cache_keys.py --strict`） |
 
 ## 五、目录结构与维护约定
@@ -79,9 +83,9 @@
 docs/
 ├── README.md             本索引（二开必读 → 按需 → 运维 → 维护）
 ├── guide/                快速上手（30 分钟教程 + 扩展处方集）
-├── architecture/         架构与组件（现状文档：组件手册 / 协议 / 权限 / 模块化…）
+├── architecture/         架构与组件（现状文档：组件手册 component-handbook + handbook-backend / handbook-frontend / 协议 / 权限 / 模块化…）
 ├── adr/                  架构决策记录（历史决策，含索引 README）
-├── ops/                  部署与运维（手册 / runbook / 演练记录）
+├── ops/                  部署与运维（deployment 概览 + deployment-docker / deployment-upgrade / deployment-csp / config-reference / observability / observability-drills / runbook / 演练记录）
 ├── plans/                规划与治理（活跃 1 篇：触发制任务清单；历史归档在 archive/）
 ├── open-platform/        开放平台接入（指南 + 事件契约）
 ├── schema/               前后端契约 JSON Schema
@@ -90,7 +94,8 @@ docs/
 ├── 框架开发遵循准则.md     开发统一约定与检查清单
 ├── exception-handling.md 错误码规范
 ├── ci-gates.md           CI 门禁统一清单（新增门禁必须登记）
-├── metrics.md / security-review.md / cache-keys-audit.md   维护者参考
+├── metrics.md（+ metrics-history.md / metrics-perf-history.md）   基线指标看板与履历
+├── security-review.md / cache-keys-audit.md   维护者参考
 └── （归档）plans/archive/ 已完成的一次性方案 / 台账 / 历史盘点
 ```
 

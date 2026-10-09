@@ -40,6 +40,14 @@ urlpatterns = [
     re_path("^admin/", admin.site.urls),
     re_path("^api/common/", include("common.urls", namespace="common")),
     re_path("^api/system/", include("system.urls", namespace="system")),
+    # 身份与访问域（identity app）：URL 前缀与 app 对齐
+    re_path("^api/identity/", include("identity.urls", namespace="identity")),
+    # 文件域（file app）：URL 前缀与 app 对齐
+    re_path("^api/file/", include("file.urls", namespace="file")),
+    # 审计域（audit app）：操作/登录日志、脱敏规则、个人登录日志
+    re_path("^api/audit/", include("audit.urls", namespace="audit")),
+    # 任务域（task app）：导入导出下载中心、定时任务、任务中心、出站 Webhook
+    re_path("^api/task/", include("task.urls", namespace="task")),
     # 审批流域（approval app）：URL 前缀与 app 对齐
     re_path("^api/approval/", include("approval.urls", namespace="approval")),
     # AI 平台域（ai app）：URL 前缀与 app 对齐

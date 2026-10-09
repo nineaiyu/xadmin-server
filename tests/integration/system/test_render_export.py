@@ -14,7 +14,7 @@ import pytest
 
 pytestmark = pytest.mark.django_db
 
-ROLE_URL = "/api/system/role"
+ROLE_URL = "/api/identity/role"
 EXPORT_URL = f"{ROLE_URL}/export-data"
 MENU_EXPORT_URL = "/api/system/menu/export-data"
 

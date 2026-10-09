@@ -53,7 +53,7 @@ def _export(user, **kwargs):
     defaults = {
         "name": "用户导出",
         "module": "用户",
-        "path": "/api/system/user/export-async",
+        "path": "/api/identity/user/export-async",
         "params": {"type": "xlsx"},
     }
     return ExportRecord.objects.create(creator=user, **{**defaults, **kwargs})
@@ -102,7 +102,7 @@ class TestUnifiedRows:
             creator=superuser,
             name="用户导入",
             module="用户",
-            path="/api/system/user/import-data",
+            path="/api/identity/user/import-data",
             action=ImportRecord.Action.CREATE,
             status=ImportRecord.Status.SUCCESS,
             progress=100,
@@ -211,7 +211,7 @@ class TestCancel:
 
 class TestRerun:
     def test_resolve_view_path(self):
-        assert resolve_view_path("/api/system/user/export-async").endswith("UserViewSet")
+        assert resolve_view_path("/api/identity/user/export-async").endswith("UserViewSet")
         assert resolve_view_path("/no/such/path") == ""
         assert resolve_view_path("") == ""
 
@@ -236,7 +236,7 @@ class TestRerun:
             creator=superuser,
             name="导入",
             module="用户",
-            path="/api/system/user/import-data",
+            path="/api/identity/user/import-data",
             action=ImportRecord.Action.CREATE,
             status=ImportRecord.Status.FAILURE,
         )

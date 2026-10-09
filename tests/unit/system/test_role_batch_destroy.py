@@ -18,7 +18,7 @@ pytestmark = pytest.mark.django_db
 
 def _batch_delete(user, pks):
     factory = APIRequestFactory()
-    request = factory.post("/api/system/role/batch-destroy", [str(pk) for pk in pks], format="json")
+    request = factory.post("/api/identity/role/batch-destroy", [str(pk) for pk in pks], format="json")
     force_authenticate(request, user=user)
     return RoleViewSet.as_view({"post": "batch_destroy"})(request)
 
@@ -53,7 +53,7 @@ class TestBuiltinRoleBatchDestroy:
         sync_builtin_roles()
         role = UserRole.objects.get(code="SystemAdmin")
         factory = APIRequestFactory()
-        request = factory.delete(f"/api/system/role/{role.pk}")
+        request = factory.delete(f"/api/identity/role/{role.pk}")
         force_authenticate(request, user=superuser)
         response = RoleViewSet.as_view({"delete": "destroy"})(request, pk=role.pk)
         # get_queryset 排除内置角色 → get_object 404（统一响应包装为 400）；

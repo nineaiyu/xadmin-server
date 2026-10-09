@@ -28,8 +28,8 @@ from task.utils.webhook import (
 
 pytestmark = pytest.mark.django_db
 
-WEBHOOK_URL = "/api/system/webhooks/subscriptions"
-DELIVERY_URL = "/api/system/webhooks/deliveries"
+WEBHOOK_URL = "/api/task/webhooks/subscriptions"
+DELIVERY_URL = "/api/task/webhooks/deliveries"
 
 
 # ---------------------------------------------------------------- 单元
@@ -199,7 +199,7 @@ class TestEventWiring:
         make_subscription(url=url, event="user.login_succeeded")
         from identity.services.auth_login import login_success
 
-        request = RequestFactory().post("/api/system/login/basic", HTTP_USER_AGENT="pytest-agent")
+        request = RequestFactory().post("/api/identity/login/basic", HTTP_USER_AGENT="pytest-agent")
         request.user = superuser
         superuser.date_password_updated = None
         superuser.save()
@@ -218,7 +218,7 @@ class TestEventWiring:
         # 定向失效配置缓存（delete_pattern 带 worker 前缀，真环境档下不得 flushdb）
         SysConfig.invalid_config_cache()
         factory = RequestFactory()
-        request = factory.post("/api/system/user/1", HTTP_USER_AGENT="pytest-agent")
+        request = factory.post("/api/identity/user/1", HTTP_USER_AGENT="pytest-agent")
         request.user = normal_user
         request.data = {}
         approval = create_approval(_FakeView(), request)

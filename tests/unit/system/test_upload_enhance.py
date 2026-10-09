@@ -17,7 +17,7 @@ from system.utils.platform.dict import invalid_dict_cache
 
 pytestmark = pytest.mark.django_db
 
-FILE_URL = "/api/system/file"
+FILE_URL = "/api/file/file"
 
 
 @pytest.fixture(autouse=True)

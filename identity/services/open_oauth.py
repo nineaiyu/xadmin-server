@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""OAuth 2.0 授权码协议引擎（``/api/system/open/oauth/*`` 的领域逻辑）。
+"""OAuth 2.0 授权码协议引擎（``/api/identity/open/oauth/*`` 的领域逻辑）。
 
 端点行为（白名单，视图内 fail-closed）：
 
@@ -106,7 +106,7 @@ def resolve_requested_scopes(application: Any, scope_param: Any) -> Any:
 
     比对与返回均按**锚定形态**：应用 scope 保存时已归一化（见
     ``common.core.auth.normalize_scope_entry``），客户端按可读形态请求
-    （``api/system/user``）与已锚定条目等价；签发凭证时口径统一落锚定值。
+    （``api/identity/user``）与已锚定条目等价；签发凭证时口径统一落锚定值。
     """
     granted = [str(item) for item in (application.scopes or [])]
     raw = str(scope_param or "").strip()

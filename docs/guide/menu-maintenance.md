@@ -106,4 +106,4 @@ hasAuth 校验不得回退删除。
 |---|---|
 | `list:SystemImportRecord` | 下载中心「导入记录」页签显隐开关（`views/system/export/index.vue`），挂在 SystemExportRecord 菜单下；权限点标题已注明「控制导入页签显隐」 |
 | `retrieve/partialUpdate:SettingWatermark` | 基本设置「水印设置」页签独立权限位，与 `SettingBasic` 两点同 path（`api/settings/basic$`）：后端按 path+method 鉴权为 OR 语义（任一点授权即可调 API），前端页签按 Watermark 码独立判权——仅授权粒度拆分，不做字段级隔离；存量自定义角色需显式勾选后水印页签才可见 |
-| `cancel/rerun:SystemTaskExecution` | 执行历史页取消/重跑按钮，走聚合端点 `/api/system/tasks/unified/{cancel,rerun}`；权限码归执行历史资源名（2026-10 由 `SystemTaskCenter` 改名，任务中心菜单已删除，pk 未变故存量授权自动延续） |
+| `cancel/rerun:SystemTaskExecution` | 执行历史页取消/重跑按钮，走聚合端点 `/api/task/unified/{cancel,rerun}`；权限码归执行历史资源名（2026-10 由 `SystemTaskCenter` 改名，任务中心菜单已删除，pk 未变故存量授权自动延续） |

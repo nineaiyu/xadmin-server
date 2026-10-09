@@ -1,7 +1,8 @@
 # ADR-081：契约出口升级为可注入提供方（二开生态注入制）
 
+- 状态：已交付
+
 > **日期**：2026-10-03
-> **状态**：已交付
 > **关联**：[ADR-079](ADR-079-contract-seam-interface.md) D4（本 ADR 是其预留段的落地）；触发制台账 TG-5；红线表「common 独立包化 / RePlusPage 独立发包」（同一触发）；二开体验与模块化管理评估（发包评估结论见该文档 P2-5）
 > **代码路径**：`common/contracts.py`（注册 API + entry-point 装配）、`common/apps.py`（装配挂点）、`tests/unit/common/test_contracts.py`（注入生命周期守护）
 > **背景**：TG-5 触发命中（2026-10-03 用户点名启动二开生态预备）。ADR-079 已把框架层消费业务 app 的 31 缝/26 文件收敛为 `common/contracts.py` 单文件（39 契约名白名单 + 2 Protocol + PEP 562 惰性解析），并预留「注入制升级」：同仓同生命周期下注册机制是空转的间接层，故触发前不建。触发后本 ADR 补上这一层——common 其余 25 个消费文件零改动（替换面 = 本模块的声明清单与 Protocol，D4 承诺兑现）。

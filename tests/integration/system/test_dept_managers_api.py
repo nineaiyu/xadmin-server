@@ -16,12 +16,12 @@ from system.models import DataPermission, FieldPermission, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 
-DEPT_URL = "/api/system/dept"
-USER_URL = "/api/system/user"
+DEPT_URL = "/api/identity/dept"
+USER_URL = "/api/identity/user"
 
-USER_LIST_PATH = "api/system/user$"
-USER_DETAIL_PATH = "api/system/user/(?P<pk>[^/.]+)$"
-DEPT_DETAIL_PATH = "api/system/dept/(?P<pk>[^/.]+)$"
+USER_LIST_PATH = "api/identity/user$"
+USER_DETAIL_PATH = "api/identity/user/(?P<pk>[^/.]+)$"
+DEPT_DETAIL_PATH = "api/identity/dept/(?P<pk>[^/.]+)$"
 
 
 def grant_menu(role, menu_factory, path, method, name=None):

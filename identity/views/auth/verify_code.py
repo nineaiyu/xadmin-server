@@ -158,7 +158,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         target = request.data.get("target")
 
         # 表单类型仅限有真实投递通道者（phone/email）：username 类型无投递通道，
-        # 不再提供——账号密码登录由 /api/system/login/basic 承载
+        # 不再提供——账号密码登录由 /api/identity/login/basic 承载
         form_types = []
         if config.get("sms"):
             form_types.append("phone")

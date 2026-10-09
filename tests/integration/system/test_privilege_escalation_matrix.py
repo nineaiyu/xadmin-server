@@ -41,12 +41,12 @@ from system.models import DataPermission, FieldPermission, ModelLabelField
 pytestmark = pytest.mark.django_db
 
 BOOK_LIST_URL = "/api/demo/book"
-USER_LIST_URL = "/api/system/user"
-USER_INFO_URL = "/api/system/userinfo"
+USER_LIST_URL = "/api/identity/user"
+USER_INFO_URL = "/api/identity/userinfo"
 
 LIST_PATH = "api/demo/book$"
 DETAIL_PATH = "api/demo/book/(?P<pk>[^/.]+)$"
-USER_DETAIL_PATH = "api/system/user/(?P<pk>[^/.]+)$"
+USER_DETAIL_PATH = "api/identity/user/(?P<pk>[^/.]+)$"
 
 
 def grant_menu(role, menu_factory, path, method, name=None):
@@ -333,7 +333,7 @@ class TestEmpowerScopeIsolation:
     直接突破第二层数据权限。
     """
 
-    EMPOWER_PATH = r"api/system/user/(?P<pk>[^/.]+)/empower$"
+    EMPOWER_PATH = r"api/identity/user/(?P<pk>[^/.]+)/empower$"
 
     @staticmethod
     def _all_rule():

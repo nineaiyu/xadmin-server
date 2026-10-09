@@ -206,7 +206,7 @@ def test_tag_creation_invalidates_embedded_options(superuser):
     client.force_authenticate(superuser)
 
     def _tag_options():
-        data = client.get("/api/system/user/search-fields").data["data"]
+        data = client.get("/api/identity/user/search-fields").data["data"]
         tag_col = next(col for col in data if col["key"] == "tag")
         return [item["value"] for item in (tag_col.get("choices") or [])]
 

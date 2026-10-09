@@ -2,11 +2,14 @@ name: Publish kernel package
 
 # 内核分发包（xadmin-common）上传私有源。渠道形态、版本策略与宿主升级口径见
 # docs/ops/kernel-release.md；日常「版本一致 + 产物内容」校验在 lint.yml 的 kernel-package job。
+#
+# 供应链：为构建产物生成 CycloneDX SBOM 与 GitHub 构建溯源（SLSA build provenance），
+# 真上传时另建 GitHub Release（prerelease，附 SBOM 与 wheel/sdist）供消费方验证，见文档 §六。
 on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "只做 dry-run（不上传）"
+        description: "只做 dry-run（不上传、不建 Release）"
         type: boolean
         default: true
 
@@ -14,6 +17,11 @@ jobs:
   publish:
     name: Publish xadmin-common
     runs-on: ubuntu-latest
+    # id-token / attestations 供构建溯源签发；contents 供创建 Release（写 tag 与附件）
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     env:
       # 私有源上传端点与凭据（仓库 secrets；缺失即 fail-fast，不静默跳过）
       XADMIN_COMMON_PUBLISH_URL: ${{ secrets.KERNEL_PUBLISH_URL }}
@@ -40,6 +48,54 @@ jobs:
       - name: Build and verify artifacts
         run: python scripts/release_kernel.py build
 
+      - name: Read kernel version
+        id: version
+        # 与发布脚本同源（版本单一事实源 = packages/xadmin-common/common/__init__.py），
+        # 供 Release tag 命名（common-vX.Y.Z）
+        run: |
+          VERSION=$(python -c "import sys; sys.path.insert(0, 'scripts'); from release_kernel import read_source_version; print(read_source_version())")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # wheel 是 zip 分发包，扫描器（syft）经 .dist-info/METADATA 识别分发包本体及其声明的
+      # 依赖（Requires-Dist）。解包后扫描才能覆盖内核分发包的依赖树，而非仅产物文件清单。
+      - name: Unpack distribution for SBOM
+        run: |
+          mkdir -p sbom/unpacked
+          python -m zipfile -e dist/xadmin_common-*.whl sbom/unpacked/
+
+      - name: Generate SBOM (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          path: sbom/unpacked
+          format: cyclonedx-json
+          output-file: sbom/sbom-kernel.cdx.json
+          # 产物附件由后面的 Release 步骤统一附带，此处不上传 Actions 产物 / Release 资产
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+
       - name: Upload to private index
         # dry_run 默认 true：先跑通流程再真上传（真上传加 --upload）
         run: python scripts/release_kernel.py publish ${{ inputs.dry_run && '' || '--upload' }}
+
+      # SBOM 与构建溯源在 dry-run / 真上传两条路径都生成（用于验证流水线接线），
+      # 仅 Release 受 dry_run 门控——dry-run 不建 Release，避免污染发布记录与平台 latest 端点。
+      - name: Create kernel release
+        if: ${{ inputs.dry_run == false }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: common-v${{ steps.version.outputs.version }}
+          # 必须 prerelease：xadmin-installer 以 releases/latest 取平台版本，内核 Release 不能进 latest
+          prerelease: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            sbom/sbom-kernel.cdx.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

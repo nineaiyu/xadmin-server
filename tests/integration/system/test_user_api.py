@@ -10,7 +10,7 @@ from tests.integration.aes_v2 import encrypt_v2
 
 pytestmark = pytest.mark.django_db
 
-USER_URL = "/api/system/user"
+USER_URL = "/api/identity/user"
 CONFIRM_URL = "/api/mfa/confirm"
 
 

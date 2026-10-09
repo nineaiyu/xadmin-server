@@ -94,7 +94,7 @@ class TestExecuteDatasetCountOnly:
         _seed_users(2)
         dp = DataPermission.objects.create(name="全部用户数据-字段", rules=DATA_PERMISSION_ALL_RULES)
         normal_user.rules.add(dp)
-        menu = menu_factory(name="count-fp-menu", path="api/system/user$", method="GET")
+        menu = menu_factory(name="count-fp-menu", path="api/identity/user$", method="GET")
         parent = ModelLabelField.objects.create(
             name="identity.userinfo", label="identity.userinfo", field_type=ModelLabelField.FieldChoices.ROLE
         )

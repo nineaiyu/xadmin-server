@@ -188,7 +188,7 @@ def clean_xxx_job(): ...
    TASK_ROUTES = {"{app}.tasks.convert_xxx": "heavy"}  # 值也可用 {"queue": "heavy"}
    ```
 
-**验证**：`/api/system/tasks/periodic` 列表出现该任务；「立即运行」可手工触发；`doctor` 无模块相关告警。
+**验证**：`/api/task/periodic` 列表出现该任务；「立即运行」可手工触发；`doctor` 无模块相关告警。
 
 ### R16 加消息通知（业务 → 用户）
 

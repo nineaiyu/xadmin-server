@@ -62,7 +62,7 @@ class TestComputeHiddenMenuPks:
     ROWS = [
         ("dir", None, 0, "integration", "/integration"),
         ("menu_a", "dir", 1, "WebhookSubscription", "/integration/subscription/index"),
-        ("perm_a", "menu_a", 2, "list:WebhookSubscription", "api/system/webhooks/subscriptions$"),
+        ("perm_a", "menu_a", 2, "list:WebhookSubscription", "api/task/webhooks/subscriptions$"),
         ("menu_b", "dir", 1, "IntegrationApiApp", "/integration/api-app/index"),
         ("perm_search", "root", 2, "retrieve:SystemGlobalSearch", "api/system/global-search$"),
         ("root", None, 0, "system", "/system"),

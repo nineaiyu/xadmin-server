@@ -29,7 +29,7 @@ def _fetch(viewset_cls, url, superuser):
 class TestSearchColumnsSortable:
     def test_declared_ordering_fields_are_sortable(self, superuser):
         """声明 ordering_fields 且落在序列化器字段面的列下发 sortable"""
-        columns = _fetch(UserViewSet, "/api/system/user/search-columns", superuser)
+        columns = _fetch(UserViewSet, "/api/identity/user/search-columns", superuser)
         declared = [key for key in UserViewSet.ordering_fields if key in columns]
         assert declared, f"ordering_fields 与列无交集：{sorted(columns)}"
         for key in declared:
@@ -37,7 +37,7 @@ class TestSearchColumnsSortable:
 
     def test_undeclared_field_is_not_sortable(self, superuser):
         """未声明的展示列不带 sortable（username 在列表面板中但不在 ordering_fields）"""
-        columns = _fetch(UserViewSet, "/api/system/user/search-columns", superuser)
+        columns = _fetch(UserViewSet, "/api/identity/user/search-columns", superuser)
         assert "username" in columns
         assert "sortable" not in columns["username"]
 
@@ -60,14 +60,14 @@ class _AllOrderingViewSet(UserViewSet):
 
 class TestSearchColumnsSortableDeclarations:
     def test_prefixed_ordering_field_is_sortable(self, superuser):
-        columns = _fetch(_PrefixedOrderingViewSet, "/api/system/user/search-columns", superuser)
+        columns = _fetch(_PrefixedOrderingViewSet, "/api/identity/user/search-columns", superuser)
         assert columns["date_joined"].get("sortable") is True
         assert columns["username"].get("sortable") is True
         assert "sortable" not in columns["nickname"]
         assert "sortable" not in columns["last_login"]
 
     def test_all_ordering_fields_are_sortable(self, superuser):
-        columns = _fetch(_AllOrderingViewSet, "/api/system/user/search-columns", superuser)
+        columns = _fetch(_AllOrderingViewSet, "/api/identity/user/search-columns", superuser)
         readable = [item for item in columns.values() if not item.get("write_only")]
         assert readable
         assert all(item.get("sortable") is True for item in readable)

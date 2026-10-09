@@ -53,7 +53,7 @@ logger = get_logger(__name__)
 
 
 #: 邀请权限点 path（与 loadjson/menumeta.json 同源）：创建即邀请需同时具备该权限
-INVITE_PERMISSION_PATH = "api/system/user/1/invite"
+INVITE_PERMISSION_PATH = "api/identity/user/1/invite"
 
 
 class UserFilter(TagFilterMixin, BaseFilterSet):

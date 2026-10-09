@@ -18,8 +18,8 @@ from integrations.sdk.sms.exceptions import CodeError, CodeExpired
 
 pytestmark = pytest.mark.django_db
 
-SEND_VERIFY_URL = "/api/system/auth/verify"
-TEMP_TOKEN_URL = "/api/system/auth/token"
+SEND_VERIFY_URL = "/api/identity/auth/verify"
+TEMP_TOKEN_URL = "/api/identity/auth/token"
 VERIFY_CODE_KEY_TPL = "auth_verify_code_{}"
 
 

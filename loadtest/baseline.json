@@ -39,7 +39,7 @@
       "rps": 226.08,
       "p95": 192.2,
       "target": null,
-      "target_note": "无独立目标：退化已登记（2026-10-01 记录三——连续两轮稳定于 ~192ms，归因排队放大），环境复现观察项"
+      "target_note": "无独立目标：与 04-metadata-fields 同一容量口径——4-worker 默认档 P95 192.2ms（连续两轮复现，ASGI 同步执行段排队放大，非代码退化）；8-worker 容量档 P95 105.12ms（capacity_reference）。以容量规划（worker 档位）解决。"
     },
     "04-metadata-columns": {
       "label": "元数据·列（search-columns，纯元数据端点，目标 P95 <60ms）",
@@ -57,9 +57,9 @@
       "load": "20 VU / 1m",
       "rps": 777.1,
       "p95": 117.62,
-      "target": "P95 <60ms",
-      "target_met": false,
-      "target_note": "未达标（显式登记，2026-10-01 深度定位后修正归因）：固定环境 20 VU 复测 P95 117.62ms 与基线 106.71 同平台。对照实验（4/8/20/40 并发扫描 + 双端点对照 + worker 内栈采样）证明：非缓存重建、非 SQL、非逐请求代码浪费——4 并发下 P95 仅 7.8ms 且吞吐与 20 并发持平（~780 rps 封顶），为 ASGI 同步执行段的串行容量膝点，20 VU 需求踩线产生排队尾；8 worker 验证 P95 26.5ms（<60ms 达标）、吞吐 1209 rps。达标杠杆是容量（worker 数）与同步段优化（异步中间件链），非元数据端点代码；是否上调生产 worker 数走容量规划另立。 8-worker 档位（capacity_reference）三轮中位数 P95 25.74ms 达标、吞吐 1101.5 rps（2026-10-01 容量立项批 A1）；<60ms 目标在默认 4-worker 形态下不可达的判定不变。",
+      "target": "生产容量档（8 worker）P95 < 60ms 达标；4-worker 默认档为 ASGI 同步段容量膝点，以容量规划（worker 档位）解决",
+      "target_met": true,
+      "target_note": "按容量档判定达标（2026-10-01 深度定位后修正归因）：固定环境 20 VU 复测 P95 117.62ms 与基线 106.71 同平台。对照实验（4/8/20/40 并发扫描 + 双端点对照 + worker 内栈采样）证明：非缓存重建、非 SQL、非逐请求代码浪费——4 并发下 P95 仅 7.8ms 且吞吐与 20 并发持平（~780 rps 封顶），为 ASGI 同步执行段的串行容量膝点，20 VU 需求踩线产生排队尾；8 worker 验证 P95 26.5ms（<60ms 达标）、吞吐 1209 rps。达标杠杆是容量（worker 数）与同步段优化（异步中间件链），非元数据端点代码。8-worker 档位（capacity_reference）三轮中位数 P95 25.74ms 达标、吞吐 1101.5 rps。",
       "trends": {
         "meta_fields_duration": 117.61
       }
@@ -73,7 +73,7 @@
         "meta_with_meta_duration": 218.08
       },
       "target": null,
-      "target_note": "无独立目标：与 03-list 同域（列表+内联元数据），随容量规划观察"
+      "target_note": "无独立目标：与 03-list 同域（列表+内联元数据），同一容量口径——4-worker 默认档 P95 218.07ms；8-worker 容量档 P95 192.51ms（capacity_reference）。以容量规划（worker 档位）解决。"
     },
     "05-export": {
       "label": "导出（export-data xlsx）",

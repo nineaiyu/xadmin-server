@@ -103,7 +103,7 @@ PERMISSION_PLAN = [
     ("recycleRestore", "PATCH", "api/demo/book/recycle/restore$", "Demo-回收站恢复"),
     ("recyclePurge", "DELETE", "api/demo/book/recycle/purge$", "Demo-回收站物理清除"),
     # 页面级权限（非 ViewSet action）：行级「变更历史」查操作日志端点
-    ("changeHistory", "GET", "api/system/logs/operation$", "Demo-变更历史"),
+    ("changeHistory", "GET", "api/audit/logs/operation$", "Demo-变更历史"),
 ]
 
 

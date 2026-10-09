@@ -116,7 +116,7 @@ class TestFieldPermissionOverlay:
 
     def grant_field_whitelist(self, user, menu_factory, fields):
         """给用户直挂角色配置字段白名单（ROLE 树节点 + FieldPermission；菜单任意）。"""
-        menu = menu_factory(name="fp-menu", path="api/system/user$", method="GET")
+        menu = menu_factory(name="fp-menu", path="api/identity/user$", method="GET")
         parent = ModelLabelField.objects.create(
             name="identity.userinfo", label="identity.userinfo", field_type=ModelLabelField.FieldChoices.ROLE
         )

@@ -1,7 +1,8 @@
 # ADR-082：六项休眠能力激活（开箱可用 / 演示态批次，TG-4 收口）
 
+- 状态：已交付
+
 > **日期**：2026-10-03
-> **状态**：已交付
 > **关联**：NEXT-DEV-PLAN §三.C（F7 原始登记）；触发制台账 TG-4；ADR-065/074（向量构建与 pgvector 链路）；ADR-023/024/038/048（AI 一~四期能力）；security-review 七期 S-2（ldap3 停维口径）
 > **代码路径**：`server/conf/defaults.py`、`server/conf/settings_defaults.py`、`loadjson/systemconfig.json`（默认值转正）；`ai/utils/ai_embeddings.py`、`ai/utils/ai_knowledge.py`（自动重算调度与挂点）；`tests/`（守护）
 > **背景**：TG-4 触发命中（2026-10-03 用户点名启动「开箱可用/演示态」批次）。六项能力代码齐备、默认休眠（F7-1~F7-6）；原始登记提示：转默认开启须同步补 ①向量自动重算（F7-6 即缺口本身）②渠道密钥管理，否则「能开但不好用」，按完整批次立项。

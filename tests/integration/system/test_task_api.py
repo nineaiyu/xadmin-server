@@ -8,9 +8,9 @@ from django_celery_beat.models import CrontabSchedule, IntervalSchedule, Periodi
 
 pytestmark = pytest.mark.django_db
 
-TASK_URL = "/api/system/tasks/periodic"
-CRONTAB_URL = "/api/system/tasks/crontab"
-INTERVAL_URL = "/api/system/tasks/interval"
+TASK_URL = "/api/task/periodic"
+CRONTAB_URL = "/api/task/crontab"
+INTERVAL_URL = "/api/task/interval"
 
 
 @pytest.fixture(autouse=True)

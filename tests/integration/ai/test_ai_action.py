@@ -413,7 +413,7 @@ class TestActionResultRoom:
 
 
 NOTICE_PERMS = (("announcement:SystemNotice", "api/notifications/notice-messages/announcement$", "POST"),)
-USER_UPDATE_PERMS = (("partialUpdate:UserInfo", "api/system/user/(?P<pk>[^/.]+)$", "PATCH"),)
+USER_UPDATE_PERMS = (("partialUpdate:UserInfo", "api/identity/user/(?P<pk>[^/.]+)$", "PATCH"),)
 NOTICE_PARAMS = {"title": "系统维护公告", "message": "大家好，系统将于今晚 23:00 维护。", "level": "info"}
 
 
@@ -492,7 +492,7 @@ class TestNoticeAction:
 
 
 class TestUserSetActiveAction:
-    """启用/禁用用户（**声明式动作**：复用 PATCH /api/system/user/<pk>）。
+    """启用/禁用用户（**声明式动作**：复用 PATCH /api/identity/user/<pk>）。
 
     新增能力只加了「一条声明」：没有 _validate_xxx/_execute_xxx——这正是本轮重构
     的目的（能力扩展不再写 AI 专用业务代码）。
@@ -584,10 +584,10 @@ def _parse_sse_frames(response):
 class TestCatalogExtensions:
     """新增声明式动作：user.search（读）/ user.update / role.create / role.grant。"""
 
-    LIST_USER_PERMS = (("list:UserInfo", "api/system/user$", "GET"),)
-    UPDATE_USER_PERMS = (("partialUpdate:UserInfo", r"api/system/user/(?P<pk>[^/.]+)$", "PATCH"),)
-    CREATE_ROLE_PERMS = (("create:UserRole", "api/system/role$", "POST"),)
-    UPDATE_ROLE_PERMS = (("partialUpdate:UserRole", r"api/system/role/(?P<pk>[^/.]+)$", "PATCH"),)
+    LIST_USER_PERMS = (("list:UserInfo", "api/identity/user$", "GET"),)
+    UPDATE_USER_PERMS = (("partialUpdate:UserInfo", r"api/identity/user/(?P<pk>[^/.]+)$", "PATCH"),)
+    CREATE_ROLE_PERMS = (("create:UserRole", "api/identity/role$", "POST"),)
+    UPDATE_ROLE_PERMS = (("partialUpdate:UserRole", r"api/identity/role/(?P<pk>[^/.]+)$", "PATCH"),)
 
     def test_user_search_read_action(self, ai_action_settings, superuser):
         """读类动作（GET + query 参数）dispatch 列表接口：分页响应按成功处理。"""
@@ -628,7 +628,7 @@ class TestCatalogExtensions:
         from identity.models import UserRole
 
         parent = menu_factory("AI授权测试父菜单", menu_type=Menu.MenuChoices.MENU)
-        menu_factory("AI授权测试子权限", path="api/system/user$", method="GET", parent=parent)
+        menu_factory("AI授权测试子权限", path="api/identity/user$", method="GET", parent=parent)
         target = UserRole.objects.create(name="目标角色", code="target")
         result = execute_action(superuser, "role.grant", {"pk": "目标角色", "menus": ["AI授权测试父菜单"]})
         assert result["ok"] is True, result

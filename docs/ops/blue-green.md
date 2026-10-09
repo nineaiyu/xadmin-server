@@ -2,11 +2,11 @@
 
 > 适用：单机 compose 生产形态（`docker-compose.yml` + `docker-compose.prod.yml` + `docker-compose.scale.yml`）。
 > 目标：发布期间**新连接始终有健康副本承接**，旧副本优雅退出并跑完在途请求。
-> 相关：[scale-out.md](scale-out.md)（多副本与 nginx 多后端）、[deployment.md](deployment.md) §6（升级与回滚）、
+> 相关：[scale-out.md](scale-out.md)（多副本与 nginx 多后端）、[deployment-upgrade.md](deployment-upgrade.md)（升级与回滚）、
 > [release-checklist.md](release-checklist.md) §0（发布窗口公告）。
 >
 > 前置能力（缺一不可）：
-> ① 一次性 `migrate` 服务（迁移不随 web 启动，见 deployment.md §6.1）；
+> ① 一次性 `migrate` 服务（迁移不随 web 启动，见 deployment-upgrade.md §6.1）；
 > ② nginx 多后端 `upstream + zone + resolve`（`ops/xadmin-backend.multi.conf`，`docker-compose.scale.yml` 挂载）；
 > ③ gunicorn `--graceful-timeout 30` + 服务 `stop_grace_period: 40s`（SIGTERM 后等在途请求跑完）；
 > ④ healthcheck `start_period: 90s`（启动期不误判 unhealthy）。
@@ -134,7 +134,7 @@ docker ps --format '{{.Names}}\t{{.Image}}' | grep -E 'xadmin-server|server-'
    更快的一步式止损：`docker compose $FILES stop server && docker compose $FILES up -d --scale server="$NEW"`
    —— 前提是 tag `xadmin-server` 已被打回旧 image id。
 
-2. **数据回滚**：Django 迁移不做反向回滚，按 [deployment.md](deployment.md) §6.2 走备份恢复（清空重建）；
+2. **数据回滚**：Django 迁移不做反向回滚，按 [deployment-upgrade.md](deployment-upgrade.md) §6.2 走备份恢复（清空重建）；
    因此「扩展型迁移 + 分两次发布」是零停机方案的硬约束，不是可选项。
 
 ## 五、限制与边界

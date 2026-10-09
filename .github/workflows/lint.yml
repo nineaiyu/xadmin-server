@@ -148,6 +148,15 @@ jobs:
         # 教程里的 manage.py 命令 / CLI 参数 / demo 路径必须与代码一致
         run: python scripts/check_tutorial_mirror.py
 
+      - name: Check ADR status governance
+        # ADR 状态归一（- 状态：<值> 落闭集）/ supersede 链（目标存在·无环·双向一致）/
+        # 触发制项登记 / adr/README.md 状态列锁步
+        run: python scripts/check_adr_status.py
+
+      - name: Check doc size budget
+        # 防单篇文档巨型化：单篇 >40 KB 新增即失败；只读归档目录前缀豁免、单篇豁免只减不增
+        run: python scripts/check_doc_size.py
+
   kernel-package:
     name: Kernel package (version / build)
     runs-on: ubuntu-latest

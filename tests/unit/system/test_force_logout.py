@@ -90,7 +90,7 @@ def test_force_logout_blacklists_refresh_tokens():
 
 def test_force_logout_action(superuser, auth_client):
     target = UserInfo.objects.create_user(username="online_target", password="x")
-    response = auth_client.post(f"/api/system/online/{target.pk}/force-logout")
+    response = auth_client.post(f"/api/identity/online/{target.pk}/force-logout")
     assert response.data["code"] == 1000
     assert response.data["data"]["channels"] == 0
 
@@ -102,7 +102,7 @@ def test_batch_force_logout_action(superuser, auth_client):
     log = LoginLog.objects.create(
         creator=target, login_type=LoginLog.LoginTypeChoices.WEBSOCKET, channel_name="ch-batch"
     )
-    response = auth_client.post("/api/system/online/batch-force-logout", [str(log.pk)], format="json")
+    response = auth_client.post("/api/identity/online/batch-force-logout", [str(log.pk)], format="json")
     assert response.data["code"] == 1000
     assert response.data["data"]["users"] == 1
 
@@ -124,7 +124,7 @@ def test_verify_rejects_without_token_error_message():
 
 
 def test_batch_action_requires_auth(api_client):
-    response = api_client.post("/api/system/online/batch-force-logout", [], format="json")
+    response = api_client.post("/api/identity/online/batch-force-logout", [], format="json")
     assert response.status_code in (401, 403)
 
 

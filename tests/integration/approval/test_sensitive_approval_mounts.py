@@ -36,13 +36,13 @@ def enable(paths):
 class TestSensitiveApprovalMounts:
     def test_default_config_does_not_intercept(self, auth_client, target_role):
         """默认休眠：删除直接执行（保证既有部署与自动化不受影响）。"""
-        response = auth_client.delete(f"/api/system/role/{target_role.pk}")
+        response = auth_client.delete(f"/api/identity/role/{target_role.pk}")
         assert response.data["code"] == 1000
         assert not UserRole.objects.filter(pk=target_role.pk).exists()
 
     def test_role_destroy_requires_approval(self, auth_client, approver, target_role):
-        enable([r"^/api/system/role/"])
-        response = auth_client.delete(f"/api/system/role/{target_role.pk}")
+        enable([r"^/api/identity/role/"])
+        response = auth_client.delete(f"/api/identity/role/{target_role.pk}")
         assert response.status_code == 412
         assert response.data["code"] == 1002
         assert response.data["type"] == "approval_required"
@@ -53,14 +53,14 @@ class TestSensitiveApprovalMounts:
         assert approval.path.endswith(str(target_role.pk))
 
     def test_role_batch_destroy_requires_approval(self, auth_client, approver, target_role):
-        enable([r"^/api/system/role/"])
-        response = auth_client.post("/api/system/role/batch-destroy", [str(target_role.pk)], format="json")
+        enable([r"^/api/identity/role/"])
+        response = auth_client.post("/api/identity/role/batch-destroy", [str(target_role.pk)], format="json")
         assert response.status_code == 412
         assert UserRole.objects.filter(pk=target_role.pk).exists()
 
     def test_dept_destroy_requires_approval(self, auth_client, approver, dept):
-        enable([r"^/api/system/dept/"])
-        response = auth_client.delete(f"/api/system/dept/{dept.pk}")
+        enable([r"^/api/identity/dept/"])
+        response = auth_client.delete(f"/api/identity/dept/{dept.pk}")
         assert response.status_code == 412
         assert DeptInfo.objects.filter(pk=dept.pk).exists()
         assert ApprovalRequest.objects.filter(status=ApprovalRequest.Status.PENDING).count() == 1

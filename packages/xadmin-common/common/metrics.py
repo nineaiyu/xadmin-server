@@ -27,6 +27,7 @@ _REQUESTS = None
 _DURATION = None
 _TASKS = None
 _TASK_DURATION = None
+_CACHE_REQUESTS = None
 
 if _DEP_AVAILABLE:
     _REQUESTS = Counter(
@@ -56,6 +57,13 @@ if _DEP_AVAILABLE:
         buckets=(0.1, 0.5, 1, 5, 30, 60, 300, 900, 3600),
         registry=None,
     )
+    # 缓存命中率（观察项）：cache 用缓存名（{View}_{method} / 被装饰函数名）而非缓存键——
+    # 键含用户/参数维度，基数不可控；进程内计数即可（缓存读写都在 web 进程）。
+    _CACHE_REQUESTS = Counter(
+        "xadmin_cache_requests_total",
+        "缓存请求数（按缓存名与命中结果）",
+        ["cache", "result"],
+    )
 
 # 任务指标跨进程聚合（redis hash："task|status" -> count，无 TTL）。
 # worker 侧写入（record_task_result），web 端点渲染时附加（_render_task_redis）——
@@ -83,6 +91,21 @@ def record_http_request(method: str, view: str, status: int, duration: float) ->
         _DURATION.labels(method=method, view=view_name).observe(duration)
     except Exception as e:  # noqa: BLE001
         logger.debug(f"record http metrics failed: {e}")
+
+
+def record_cache_request(cache_name: str, result: str) -> None:
+    """记录一次缓存读取结果（hit / miss）；任何异常都不得影响主流程。
+
+    标签只用缓存名（``{View}_{method}`` 或数据缓存被装饰函数名），**不得传缓存键**
+    ——键含用户/参数维度，基数不可控。命中率 PromQL 见 docs/architecture/cache.md。
+    """
+    if not _DEP_AVAILABLE:
+        return
+    assert _CACHE_REQUESTS is not None  # 依赖可用时已初始化
+    try:
+        _CACHE_REQUESTS.labels(cache=cache_name or "unknown", result=result).inc()
+    except Exception as e:  # noqa: BLE001
+        logger.debug(f"record cache metrics failed: {e}")
 
 
 def record_task_result(task_name: str, status: str, duration: float | None = None) -> None:

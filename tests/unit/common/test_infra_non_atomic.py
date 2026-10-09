@@ -31,4 +31,4 @@ class TestInfraEndpointsNonAtomic:
 
     def test_business_endpoint_still_atomic(self):
         """对照：业务端点不应被误豁免（仍由 ATOMIC_REQUESTS 保护）。"""
-        assert "default" not in _non_atomic_aliases("/api/system/login/basic")
+        assert "default" not in _non_atomic_aliases("/api/identity/login/basic")

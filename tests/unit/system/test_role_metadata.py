@@ -28,8 +28,8 @@ def _fetch(action_map, path, superuser):
 
 class TestRoleInlineMetadata:
     def test_inline_columns_include_menu_and_match_standalone(self, superuser):
-        standalone = _fetch({"get": "search_columns"}, "/api/system/role/search-columns", superuser)
-        inline = _fetch({"get": "list"}, "/api/system/role?with_meta=1", superuser)["search_columns"]
+        standalone = _fetch({"get": "search_columns"}, "/api/identity/role/search-columns", superuser)
+        inline = _fetch({"get": "list"}, "/api/identity/role?with_meta=1", superuser)["search_columns"]
 
         assert inline == standalone
         read_only = {item["key"]: item.get("read_only", False) for item in inline}

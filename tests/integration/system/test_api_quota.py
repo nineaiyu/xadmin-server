@@ -17,9 +17,9 @@ from task.utils.webhook import encrypt_secret
 
 pytestmark = pytest.mark.django_db
 
-APPS_URL = "/api/system/api-applications"
-TOKEN_URL = "/api/system/open/token"
-USER_URL = "/api/system/user"
+APPS_URL = "/api/identity/api-applications"
+TOKEN_URL = "/api/identity/open/token"
+USER_URL = "/api/identity/user"
 
 
 def _create_application(client, **payload):
@@ -124,9 +124,9 @@ class TestUsageStats:
         token_row = PersonalAccessToken.objects.get(api_application_id=application["pk"])
         now = timezone.now()
         for code, path, duration in (
-            (1000, "/api/system/user", 0.1),
-            (1000, "/api/system/user", 0.2),
-            (1001, "/api/system/dept", 0.3),
+            (1000, "/api/identity/user", 0.1),
+            (1000, "/api/identity/user", 0.2),
+            (1001, "/api/identity/dept", 0.3),
         ):
             OperationLog.objects.create(
                 module="system",
@@ -149,7 +149,7 @@ class TestUsageStats:
         assert data["failed"] == 1
         assert data["avg_duration"] == pytest.approx(0.2, abs=1e-6)
         assert data["daily"][0]["total"] == 3
-        assert data["top_paths"][0]["path"] == "/api/system/user"
+        assert data["top_paths"][0]["path"] == "/api/identity/user"
         assert data["quota"]["daily_quota"] == 100
         assert data["quota"]["used_today"] == 1
 
@@ -165,7 +165,7 @@ class TestUsageStats:
         )
         OperationLog.objects.create(
             module="system",
-            path="/api/system/user",
+            path="/api/identity/user",
             method="GET",
             status_code=1000,
             token_pk=other_token.pk,

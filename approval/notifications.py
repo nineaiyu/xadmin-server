@@ -147,5 +147,5 @@ class ApprovalRequestMessage(UserMessage):
         from identity.models import UserInfo
 
         user = UserInfo.objects.first()
-        approval = ApprovalRequest(module="User", method="DELETE", path="/api/system/user/1", creator=user)
+        approval = ApprovalRequest(module="User", method="DELETE", path="/api/identity/user/1", creator=user)
         return cls(user, "submitted", approval)

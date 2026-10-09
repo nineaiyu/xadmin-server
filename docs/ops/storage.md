@@ -116,7 +116,7 @@ python manage.py storage_migrate --verify   # 校验目标完整性
 | 上传 / 写入 | 统一走 storage API（`file_overwrite=False`：同名不覆盖） |
 | 下载（受鉴权端点） | `storage_open()` 流式返回（本地 / 远端一致），不依赖本地绝对路径 |
 | 在线预览（图片 / 文本 / Office） | 远端对象先落 `MEDIA_ROOT/storage_cache`（按最近使用保留，与预览缓存同任务清理），PIL / LibreOffice 在本地缓存上处理 |
-| `/media/` 受鉴权读取 | 本地目录无文件时回落到 storage 读取（应用层代理）；请求统一经应用鉴权（登录态，见 [deployment.md §3.2](deployment.md#32-受鉴权媒体与出站请求2026-09-27)），本地存储可配 `MEDIA_X_ACCEL_PREFIX` 由 nginx 零拷贝直出；生产建议配 `FILE_S3_CUSTOM_DOMAIN` 让文件 URL 直指 CDN |
+| `/media/` 受鉴权读取 | 本地目录无文件时回落到 storage 读取（应用层代理）；请求统一经应用鉴权（登录态，见 [deployment-docker.md §3.2](deployment-docker.md#32-受鉴权媒体与出站请求2026-09-27)），本地存储可配 `MEDIA_X_ACCEL_PREFIX` 由 nginx 零拷贝直出；生产建议配 `FILE_S3_CUSTOM_DOMAIN` 让文件 URL 直指 CDN |
 | 缩略图（`ProcessedImageField`） | 仅本地后端生成 / 删除 `_1.jpg` 缩略图（远端后端跳过，URL 直接用对象地址） |
 | 缓存清理 | `auto_clean_preview_cache` 周期任务同源清理 `storage_cache`（保留期 = `FILE_PREVIEW_CACHE_KEEP_DAYS`） |
 | mirror 双写（搬迁窗口） | 新写入同时落本地与远端副本（副本失败只告警）；读 / URL / 本地路径全走本地（`storage_is_local()` 为真） |

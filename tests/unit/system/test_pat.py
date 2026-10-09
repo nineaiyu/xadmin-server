@@ -27,7 +27,7 @@ from system.tasks import auto_clean_pat_job
 
 pytestmark = pytest.mark.django_db
 
-TOKENS_URL = "/api/system/personal-access-tokens"
+TOKENS_URL = "/api/identity/personal-access-tokens"
 
 
 def _create_token(user, name="ci-token", **kwargs):
@@ -297,21 +297,21 @@ class _MethodProbeView(APIView):
 
 def test_scope_method_prefix_semantics_pure_function():
     """``METHOD /path`` 条目：只放行该方法的该路径；纯路径条目不受方法影响。"""
-    scopes = ["GET /api/system/user", "/api/system/role"]
-    assert path_allowed_by_scopes("/api/system/user", scopes, "GET") is True
-    assert path_allowed_by_scopes("/api/system/user", scopes, "get") is True
-    assert path_allowed_by_scopes("/api/system/user", scopes, "POST") is False
+    scopes = ["GET /api/identity/user", "/api/identity/role"]
+    assert path_allowed_by_scopes("/api/identity/user", scopes, "GET") is True
+    assert path_allowed_by_scopes("/api/identity/user", scopes, "get") is True
+    assert path_allowed_by_scopes("/api/identity/user", scopes, "POST") is False
     # 无方法前缀的条目不限方法
-    assert path_allowed_by_scopes("/api/system/role", scopes, "POST") is True
+    assert path_allowed_by_scopes("/api/identity/role", scopes, "POST") is True
     # 请求方法未知时，方法限定条目不匹配（fail-closed）
-    assert path_allowed_by_scopes("/api/system/user", ["GET /api/system/user"]) is False
+    assert path_allowed_by_scopes("/api/identity/user", ["GET /api/identity/user"]) is False
 
 
 def test_scope_method_prefix_enforced_in_request(superuser):
-    """真实请求：``GET /api/system/user`` 放行 GET、拦住 POST。"""
-    plain = _create_token(superuser, scopes=["GET /api/system/user"]).data["data"]["token"]
-    assert _probe(plain, "/api/system/user", _MethodProbeView).status_code == 200
-    request = APIRequestFactory().post("/api/system/user", HTTP_AUTHORIZATION=f"Pat {plain}")
+    """真实请求：``GET /api/identity/user`` 放行 GET、拦住 POST。"""
+    plain = _create_token(superuser, scopes=["GET /api/identity/user"]).data["data"]["token"]
+    assert _probe(plain, "/api/identity/user", _MethodProbeView).status_code == 200
+    request = APIRequestFactory().post("/api/identity/user", HTTP_AUTHORIZATION=f"Pat {plain}")
     with transaction.atomic():
         response = _MethodProbeView.as_view()(request)
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -339,13 +339,13 @@ def test_pat_ip_allowlist_blocks_authentication(superuser):
     DRF 对无 WWW-Authenticate 挑战的认证失败统一返回 403（与 scope 越界同码）。
     """
     blocked = _create_token(superuser, ip_allowlist=["10.0.0.1"]).data["data"]["token"]
-    request = APIRequestFactory().get("/api/system/user", HTTP_AUTHORIZATION=f"Pat {blocked}")
+    request = APIRequestFactory().get("/api/identity/user", HTTP_AUTHORIZATION=f"Pat {blocked}")
     with transaction.atomic():
         response = _ScopeProbeView.as_view()(request)
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
     allowed = _create_token(superuser, name="allowed", ip_allowlist=["127.0.0.1"]).data["data"]["token"]
-    assert _probe(allowed, "/api/system/user").status_code == 200
+    assert _probe(allowed, "/api/identity/user").status_code == 200
 
 
 def test_ip_allowlist_crud_cleaning_via_api(superuser):
@@ -371,28 +371,28 @@ def test_ip_allowlist_crud_cleaning_via_api(superuser):
 
 def test_path_allowed_by_scopes_pure_function():
     """纯函数口径：空清单放行；前缀/正则命中；非法正则跳过不 500。"""
-    assert path_allowed_by_scopes("/api/system/user/1", []) is True
-    assert path_allowed_by_scopes("/api/system/user/1", ["/api/system/user"]) is True
-    assert path_allowed_by_scopes("/api/system/role", ["/api/system/user"]) is False
-    assert path_allowed_by_scopes("/api/system/role", [r"/api/system/role$"]) is True
+    assert path_allowed_by_scopes("/api/identity/user/1", []) is True
+    assert path_allowed_by_scopes("/api/identity/user/1", ["/api/identity/user"]) is True
+    assert path_allowed_by_scopes("/api/identity/role", ["/api/identity/user"]) is False
+    assert path_allowed_by_scopes("/api/identity/role", [r"/api/identity/role$"]) is True
     # 非法正则被跳过：不匹配该条，但清单内其余条目照常生效
-    assert path_allowed_by_scopes("/api/system/user", ["[invalid", "/api/system/user"]) is True
-    assert path_allowed_by_scopes("/api/system/role", ["[invalid"]) is False
+    assert path_allowed_by_scopes("/api/identity/user", ["[invalid", "/api/identity/user"]) is True
+    assert path_allowed_by_scopes("/api/identity/role", ["[invalid"]) is False
 
 
 def test_scope_empty_allows_all_paths(superuser):
     """旧 token（无 scopes）行为不变：任意路径放行。"""
     plain = _create_token(superuser).data["data"]["token"]
-    for path in ("/api/system/user", "/api/system/role", "/api/settings/basic"):
+    for path in ("/api/identity/user", "/api/identity/role", "/api/settings/basic"):
         assert _probe(plain, path).status_code == 200
 
 
 def test_scope_prefix_allows_hit_and_blocks_out_of_scope(superuser):
     """scope 前缀命中放行、越界 403（scope 不做数据权限收窄，登记边界）。"""
-    plain = _create_token(superuser, scopes=["/api/system/user"]).data["data"]["token"]
-    assert _probe(plain, "/api/system/user").status_code == 200
-    assert _probe(plain, "/api/system/user/1").status_code == 200
-    assert _probe(plain, "/api/system/role").status_code == status.HTTP_403_FORBIDDEN
+    plain = _create_token(superuser, scopes=["/api/identity/user"]).data["data"]["token"]
+    assert _probe(plain, "/api/identity/user").status_code == 200
+    assert _probe(plain, "/api/identity/user/1").status_code == 200
+    assert _probe(plain, "/api/identity/role").status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_scope_enforced_when_permission_classes_overridden(superuser):
@@ -401,9 +401,9 @@ def test_scope_enforced_when_permission_classes_overridden(superuser):
     回归守护：DRF 的 action 级 permission_classes 会整体替换默认链，若 scope 校验
     写成独立权限类就会被漏掉（改密/解绑 MFA/重置 MFA 等入口正是这种写法）。
     """
-    plain = _create_token(superuser, scopes=["/api/system/user"]).data["data"]["token"]
-    assert _probe(plain, "/api/system/user", _ScopeDefaultChainProbeView).status_code == 200
-    assert _probe(plain, "/api/system/role", _ScopeDefaultChainProbeView).status_code == status.HTTP_403_FORBIDDEN
+    plain = _create_token(superuser, scopes=["/api/identity/user"]).data["data"]["token"]
+    assert _probe(plain, "/api/identity/user", _ScopeDefaultChainProbeView).status_code == 200
+    assert _probe(plain, "/api/identity/role", _ScopeDefaultChainProbeView).status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_scope_invalid_regex_not_500(superuser):
@@ -419,24 +419,24 @@ def test_scope_invalid_regex_not_500(superuser):
         name="legacy-invalid",
         token_hash=hash_pat_token(plain),
         token_prefix=plain[:12],
-        scopes=["[invalid", "/api/system/user"],
+        scopes=["[invalid", "/api/identity/user"],
         creator=superuser,
     )
-    assert _probe(plain, "/api/system/user").status_code == 200
-    assert _probe(plain, "/api/system/role").status_code == status.HTTP_403_FORBIDDEN
+    assert _probe(plain, "/api/identity/user").status_code == 200
+    assert _probe(plain, "/api/identity/role").status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_dual_header_jwt_plus_pat_scope_still_enforced(superuser):
     """同请求带 JWT + Pat 双 header：JWT 认证胜出（pat_scopes 未挂），scope 仍生效
     （PatScopePermission 从原始头补解析凭证，评审复盘）。"""
-    plain = _create_token(superuser, scopes=["/api/system/user"]).data["data"]["token"]
-    request = APIRequestFactory().get("/api/system/role", HTTP_AUTHORIZATION=f"Pat {plain}")
+    plain = _create_token(superuser, scopes=["/api/identity/user"]).data["data"]["token"]
+    request = APIRequestFactory().get("/api/identity/role", HTTP_AUTHORIZATION=f"Pat {plain}")
     force_authenticate(request, user=superuser)  # 模拟 JWT 胜出：user 直挂、认证类不触发
     with transaction.atomic():
         response = _ScopeProbeView.as_view()(request)
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    request = APIRequestFactory().get("/api/system/user", HTTP_AUTHORIZATION=f"Pat {plain}")
+    request = APIRequestFactory().get("/api/identity/user", HTTP_AUTHORIZATION=f"Pat {plain}")
     force_authenticate(request, user=superuser)
     assert _ScopeProbeView.as_view()(request).status_code == 200
 
@@ -445,11 +445,11 @@ def test_dual_header_pat_scope_lookup_cached_by_hash(superuser, django_assert_nu
     """双 header 兜底路径的凭证查询按 token 哈希短缓存：第二次解析零查库、结果一致。"""
     from common.core.permission import resolve_pat_scopes
 
-    plain = _create_token(superuser, scopes=["/api/system/user"]).data["data"]["token"]
+    plain = _create_token(superuser, scopes=["/api/identity/user"]).data["data"]["token"]
     expected = PersonalAccessToken.objects.get(token_prefix=plain[:12]).scopes
 
     def _resolve():
-        request = APIRequestFactory().get("/api/system/user", HTTP_AUTHORIZATION=f"Pat {plain}")
+        request = APIRequestFactory().get("/api/identity/user", HTTP_AUTHORIZATION=f"Pat {plain}")
         return resolve_pat_scopes(request)
 
     with django_assert_num_queries(1):
@@ -472,7 +472,7 @@ def test_pat_throttle_limit_and_unlimited(superuser):
     plain = _create_token(superuser).data["data"]["token"]
 
     def _hit():
-        request = APIRequestFactory().get("/api/system/user", HTTP_AUTHORIZATION=f"Pat {plain}")
+        request = APIRequestFactory().get("/api/identity/user", HTTP_AUTHORIZATION=f"Pat {plain}")
         return _ThrottleProbeView.as_view()(request)
 
     SysConfig.set_value("PAT_RATE_LIMIT", "2/min")
@@ -493,12 +493,12 @@ def test_pat_throttle_limit_and_unlimited(superuser):
     SysConfig.set_value("PAT_RATE_LIMIT", "1/min")
     django_cache.clear()
     plain2 = _create_token(superuser, name="second").data["data"]["token"]
-    request = APIRequestFactory().get("/api/system/user", HTTP_AUTHORIZATION=f"Pat {plain2}")
+    request = APIRequestFactory().get("/api/identity/user", HTTP_AUTHORIZATION=f"Pat {plain2}")
     assert _ThrottleProbeView.as_view()(request).status_code == 200
 
     # 非 PAT 请求（JWT 会话）不经过 PAT 限流
     django_cache.clear()
-    request = APIRequestFactory().get("/api/system/user")
+    request = APIRequestFactory().get("/api/identity/user")
     force_authenticate(request, user=superuser)
     assert _ThrottleProbeView.as_view()(request).status_code == 200
 
@@ -511,15 +511,15 @@ def test_scopes_crud_cleaning_via_api(superuser):
     factory = APIRequestFactory()
     request = factory.patch(
         f"{TOKENS_URL}/{pk}",
-        {"scopes": [" /api/system/user ", "/api/system/user", "", "/api/system/role"]},
+        {"scopes": [" /api/identity/user ", "/api/identity/user", "", "/api/identity/role"]},
         format="json",
     )
     force_authenticate(request, user=superuser)
     response = PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=pk)
     assert response.data["code"] == 1000
     assert response.data["data"]["scopes"] == [
-        "^(?:/api/system/user)(/.*)?$",
-        "^(?:/api/system/role)(/.*)?$",
+        "^(?:/api/identity/user)(/.*)?$",
+        "^(?:/api/identity/role)(/.*)?$",
     ]
 
     request = APIRequestFactory().patch(f"{TOKENS_URL}/{pk}", {"scopes": None}, format="json")
@@ -529,19 +529,19 @@ def test_scopes_crud_cleaning_via_api(superuser):
 
 
 class TestScopeAnchoring:
-    """scope 条目锚定收口：手写 ``api/system/user`` 不再粘连命中 ``/api/system/user-logs``。"""
+    """scope 条目锚定收口：手写 ``api/identity/user`` 不再粘连命中 ``/api/identity/user-logs``。"""
 
     def test_normalize_scope_entry_forms(self):
         """规范化形态：前缀语义 / 精确语义 / 方法前缀 / 已锚定原样 / 非法拒绝。"""
         from common.core.auth import normalize_scope_entry
 
-        assert normalize_scope_entry("api/system/user") == "^(?:/api/system/user)(/.*)?$"
-        assert normalize_scope_entry("GET api/system/user") == "GET ^(?:/api/system/user)(/.*)?$"
-        assert normalize_scope_entry(" /api/system/user/ ") == "^(?:/api/system/user)(/.*)?$"
+        assert normalize_scope_entry("api/identity/user") == "^(?:/api/identity/user)(/.*)?$"
+        assert normalize_scope_entry("GET api/identity/user") == "GET ^(?:/api/identity/user)(/.*)?$"
+        assert normalize_scope_entry(" /api/identity/user/ ") == "^(?:/api/identity/user)(/.*)?$"
         # 尾 $ = 精确语义（仅该地址本身）
-        assert normalize_scope_entry("api/system/user$") == "^(?:/api/system/user)$"
+        assert normalize_scope_entry("api/identity/user$") == "^(?:/api/identity/user)$"
         # 已完整锚定（权限点勾选生成形态）：原样保留
-        assert normalize_scope_entry("GET ^/api/system/user/?$") == "GET ^/api/system/user/?$"
+        assert normalize_scope_entry("GET ^/api/identity/user/?$") == "GET ^/api/identity/user/?$"
         assert normalize_scope_entry("") == ""
         assert normalize_scope_entry("   ") == ""
         with pytest.raises(ValueError):
@@ -551,23 +551,23 @@ class TestScopeAnchoring:
         """展示形态还原（仅展示层，判定语义不变）。"""
         from identity.utils.pat_scope import scope_display_value
 
-        assert scope_display_value("GET ^/api/system/user/?$") == "GET /api/system/user"
-        assert scope_display_value("^(?:/api/system/user)(/.*)?$") == "/api/system/user"
-        assert scope_display_value("^(?:/api/system/user)$") == "/api/system/user"
+        assert scope_display_value("GET ^/api/identity/user/?$") == "GET /api/identity/user"
+        assert scope_display_value("^(?:/api/identity/user)(/.*)?$") == "/api/identity/user"
+        assert scope_display_value("^(?:/api/identity/user)$") == "/api/identity/user"
         assert scope_display_value("") == ""
         # 自定义正则原样返回（不过度猜测）
-        assert scope_display_value(r"^/api/system/user/[^/]+/?$") == "/api/system/user/[^/]+"
+        assert scope_display_value(r"^/api/identity/user/[^/]+/?$") == "/api/identity/user/[^/]+"
 
     def test_saved_entry_is_anchored_and_blocks_glued_prefix(self, superuser):
         """保存即锚定：库内条目为锚定形态，粘连地址（-logs）与相似前缀被 403。"""
-        plain = _create_token(superuser, scopes=["api/system/user"]).data["data"]["token"]
+        plain = _create_token(superuser, scopes=["api/identity/user"]).data["data"]["token"]
         record = PersonalAccessToken.objects.get(token_prefix=plain[:12])
-        assert record.scopes == ["^(?:/api/system/user)(/.*)?$"]
+        assert record.scopes == ["^(?:/api/identity/user)(/.*)?$"]
 
-        assert _probe(plain, "/api/system/user").status_code == 200
-        assert _probe(plain, "/api/system/user/1").status_code == 200
-        assert _probe(plain, "/api/system/user-logs").status_code == status.HTTP_403_FORBIDDEN
-        assert _probe(plain, "/api/system/role").status_code == status.HTTP_403_FORBIDDEN
+        assert _probe(plain, "/api/identity/user").status_code == 200
+        assert _probe(plain, "/api/identity/user/1").status_code == 200
+        assert _probe(plain, "/api/identity/user-logs").status_code == status.HTTP_403_FORBIDDEN
+        assert _probe(plain, "/api/identity/role").status_code == status.HTTP_403_FORBIDDEN
 
     def test_runtime_anchoring_covers_legacy_rows(self, superuser):
         """历史库中的非锚定条目运行期同样锚定（不改库也收口，防上线前存量漏改）。"""
@@ -578,11 +578,11 @@ class TestScopeAnchoring:
             name="legacy",
             token_hash=hash_pat_token(plain),
             token_prefix=plain[:12],
-            scopes=["api/system/user"],
+            scopes=["api/identity/user"],
             creator=superuser,
         )
-        assert _probe(plain, "/api/system/user/1").status_code == 200
-        assert _probe(plain, "/api/system/user-logs").status_code == status.HTTP_403_FORBIDDEN
+        assert _probe(plain, "/api/identity/user/1").status_code == 200
+        assert _probe(plain, "/api/identity/user-logs").status_code == status.HTTP_403_FORBIDDEN
 
     def test_invalid_scope_regex_rejected_on_write(self, superuser):
         """非法正则条目写入即 400（不再静默跳过）。"""
@@ -603,8 +603,8 @@ class TestScopeAnchoring:
         from identity.views.open.open import ApiApplicationViewSet
 
         request = APIRequestFactory().post(
-            "/api/system/api-applications",
-            {"name": "锚定应用", "scopes": ["api/system/user"], "rate_limit_per_minute": 0},
+            "/api/identity/api-applications",
+            {"name": "锚定应用", "scopes": ["api/identity/user"], "rate_limit_per_minute": 0},
             format="json",
         )
         force_authenticate(request, user=superuser)
@@ -612,7 +612,7 @@ class TestScopeAnchoring:
         assert response.data["code"] == 1000, response.data
 
         record = ApiApplication.objects.get(pk=response.data["data"]["pk"])
-        assert record.scopes == ["^(?:/api/system/user)(/.*)?$"]
+        assert record.scopes == ["^(?:/api/identity/user)(/.*)?$"]
 
 
 class TestScopeOptions:
@@ -634,51 +634,51 @@ class TestScopeOptions:
 
     def test_superuser_lists_enabled_permission_menus(self, superuser, menu_factory):
         """超管：全部启用的权限菜单（`IsAuthenticated` 对超管放行，不受角色有无影响）。"""
-        menu_factory("list:SystemUser", path="api/system/user$", method="GET")
-        menu_factory("list:SystemRole", path="api/system/role$", method="GET")
+        menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
+        menu_factory("list:SystemRole", path="api/identity/role$", method="GET")
         menu_factory("list:Disabled", path="api/system/disabled$", method="GET", is_active=False)
 
         response = self._call(superuser)
         assert response.data["code"] == 1000
         data = response.data["data"]
         values = self._values(data)
-        assert "GET ^/api/system/user/?$" in values
-        assert "GET ^/api/system/role/?$" in values
+        assert "GET ^/api/identity/user/?$" in values
+        assert "GET ^/api/identity/role/?$" in values
         # 停用菜单不属于可授权范围
         assert "GET ^/api/system/disabled/?$" not in values
         assert data["total"] == len(values)
 
     def test_normal_user_only_sees_granted_menus(self, normal_user, role, menu_factory):
         """普通用户：只有角色绑定的菜单出现，未授权接口不提供选项。"""
-        granted = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
-        menu_factory("list:SystemRole", path="api/system/role$", method="GET")
+        granted = menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
+        menu_factory("list:SystemRole", path="api/identity/role$", method="GET")
         role.menu.add(granted)
         django_cache.clear()  # 权限缓存 24h：授权变更后需失效再取
 
         data = self._call(normal_user).data["data"]
-        assert self._values(data) == ["GET ^/api/system/user/?$"]
+        assert self._values(data) == ["GET ^/api/identity/user/?$"]
 
     def test_scope_entry_is_anchored_to_single_api(self, superuser, menu_factory):
         """条目锚定到单个接口：详情条目不放行列表/子路径/相似前缀，且限定方法。"""
         menu_factory(
             "retrieve:SystemUser",
-            path="api/system/user/(?P<pk>[^/.]+)$",
+            path="api/identity/user/(?P<pk>[^/.]+)$",
             method="GET",
         )
         entry = self._values(self._call(superuser).data["data"])[0]
-        assert entry == "GET ^/api/system/user/[^/]+/?$"
-        assert path_allowed_by_scopes("/api/system/user/1", [entry], "GET") is True
-        assert path_allowed_by_scopes("/api/system/user", [entry], "GET") is False
-        assert path_allowed_by_scopes("/api/system/user/1/cancel", [entry], "GET") is False
-        assert path_allowed_by_scopes("/api/system/user-center/1", [entry], "GET") is False
-        assert path_allowed_by_scopes("/api/system/user/1", [entry], "POST") is False
+        assert entry == "GET ^/api/identity/user/[^/]+/?$"
+        assert path_allowed_by_scopes("/api/identity/user/1", [entry], "GET") is True
+        assert path_allowed_by_scopes("/api/identity/user", [entry], "GET") is False
+        assert path_allowed_by_scopes("/api/identity/user/1/cancel", [entry], "GET") is False
+        assert path_allowed_by_scopes("/api/identity/user-center/1", [entry], "GET") is False
+        assert path_allowed_by_scopes("/api/identity/user/1", [entry], "POST") is False
 
     def test_scope_option_display_fields(self, superuser, menu_factory):
         """展示字段：占位符转 ``{pk}``、标题去录入标记、分组沿用父菜单标题。"""
         parent = menu_factory("menus.userManagement", path="user/index", menu_type=Menu.MenuChoices.MENU)
         child = menu_factory(
             "retrieve:SystemUser",
-            path="api/system/user/(?P<pk>[^/.]+)$",
+            path="api/identity/user/(?P<pk>[^/.]+)$",
             method="GET",
             parent=parent,
         )
@@ -690,25 +690,25 @@ class TestScopeOptions:
         assert group["title"] == "menus.userManagement"  # i18n key 原样下发，前端 te 翻译
         option = group["options"][0]
         assert option["method"] == "GET"
-        assert option["path"] == "/api/system/user/{pk}"
+        assert option["path"] == "/api/identity/user/{pk}"
         assert option["label"] == "获取用户的详情"
         assert option["code"] == "retrieve:SystemUser"
 
     def test_scope_option_entry_enforced_in_request(self, superuser, menu_factory):
         """勾选项落到凭证上即生效：放行该接口、拦住未勾选的兄弟接口。"""
-        menu_factory("list:SystemUser", path="api/system/user$", method="GET")
-        menu_factory("list:SystemRole", path="api/system/role$", method="GET")
-        entry = "GET ^/api/system/user/?$"
+        menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
+        menu_factory("list:SystemRole", path="api/identity/role$", method="GET")
+        entry = "GET ^/api/identity/user/?$"
         assert entry in self._values(self._call(superuser).data["data"])
 
         plain = _create_token(superuser, scopes=[entry]).data["data"]["token"]
-        assert _probe(plain, "/api/system/user").status_code == 200
+        assert _probe(plain, "/api/identity/user").status_code == 200
         with transaction.atomic():
-            response = _probe(plain, "/api/system/role")
+            response = _probe(plain, "/api/identity/role")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def _create_operation_log(user, path="/api/system/user", status_code=1000, token_pk=None):
+def _create_operation_log(user, path="/api/identity/user", status_code=1000, token_pk=None):
     return OperationLog.objects.create(
         creator=user,
         module="Probe",
@@ -736,7 +736,7 @@ def test_logs_and_stats_scoped_by_token_pk(superuser, normal_user):
     first = _create_token(superuser).data["data"]["pk"]
     second = _create_token(superuser, name="second").data["data"]["pk"]
     _create_operation_log(superuser, token_pk=first)
-    _create_operation_log(superuser, path="/api/system/role", status_code=1001, token_pk=first)
+    _create_operation_log(superuser, path="/api/identity/role", status_code=1001, token_pk=first)
     _create_operation_log(superuser, token_pk=second)  # 另一凭证的调用，不得混算
     _create_operation_log(superuser)  # 升级前历史行（无凭证标识），不可区分 → 不计入
 
@@ -747,7 +747,7 @@ def test_logs_and_stats_scoped_by_token_pk(superuser, normal_user):
     assert response.data["code"] == 1000
     data = response.data["data"]
     assert data["total"] == 2
-    assert {item["path"] for item in data["results"]} == {"/api/system/user", "/api/system/role"}
+    assert {item["path"] for item in data["results"]} == {"/api/identity/user", "/api/identity/role"}
     assert all(item["creator"]["pk"] == superuser.pk for item in data["results"])
 
     # 另一凭证只见自己的那 1 条

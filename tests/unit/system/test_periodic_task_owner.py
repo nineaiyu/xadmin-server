@@ -96,7 +96,7 @@ class TestOwnerRecording:
         request = _view_request(
             user,
             "post",
-            "/api/system/tasks/periodic",
+            "/api/task/periodic",
             data={"name": "页面新建任务", "task": RUNNABLE_TASK, "crontab": crontab.pk, "args": "[]", "kwargs": "{}"},
         )
         view = PeriodicTaskViewSet.as_view({"post": "create"})
@@ -109,7 +109,7 @@ class TestOwnerRecording:
         """克隆视为新建：克隆任务归属克隆操作者，源任务归属不变。"""
         cloner = _make_user("cloner-b")
         source = _make_periodic_task("克隆归属源任务")
-        request = _view_request(cloner, "post", f"/api/system/tasks/periodic/{source.pk}/clone")
+        request = _view_request(cloner, "post", f"/api/task/periodic/{source.pk}/clone")
         view = PeriodicTaskViewSet.as_view({"post": "clone"})
         response = view(request, pk=str(source.pk))
         assert response.data["code"] == 1000, response.data
@@ -140,9 +140,7 @@ class TestOwnerRecording:
         creator = _make_user("update-owner")
         task = _make_periodic_task("更新归属任务")
         _set_owner(task, creator)
-        request = _view_request(
-            superuser, "patch", f"/api/system/tasks/periodic/{task.pk}", data={"description": "改描述"}
-        )
+        request = _view_request(superuser, "patch", f"/api/task/periodic/{task.pk}", data={"description": "改描述"})
         view = PeriodicTaskViewSet.as_view({"patch": "partial_update"})
         response = view(request, pk=str(task.pk))
         assert response.data["code"] == 1000, response.data
@@ -275,16 +273,16 @@ class TestOwnerScopeViaView:
 
     @staticmethod
     def _grant_task_center_menus(role, menu_factory):
-        role.menu.add(menu_factory("task-center-list", path="api/system/tasks/unified$", method="GET"))
-        role.menu.add(menu_factory("task-center-cancel", path="api/system/tasks/unified/cancel$", method="POST"))
+        role.menu.add(menu_factory("task-center-list", path="api/task/unified$", method="GET"))
+        role.menu.add(menu_factory("task-center-cancel", path="api/task/unified/cancel$", method="POST"))
 
     def _list_view(self, user, query=""):
-        request = _view_request(user, "get", f"/api/system/tasks/unified{query}")
+        request = _view_request(user, "get", f"/api/task/unified{query}")
         return SystemTaskCenterViewSet.as_view({"get": "list"})(request)
 
     def _cancel_view(self, user, execution):
         request = _view_request(
-            user, "post", "/api/system/tasks/unified/cancel", data={"type": "task", "pk": str(execution.pk)}
+            user, "post", "/api/task/unified/cancel", data={"type": "task", "pk": str(execution.pk)}
         )
         return SystemTaskCenterViewSet.as_view({"post": "cancel"})(request)
 

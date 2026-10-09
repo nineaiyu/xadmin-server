@@ -8,8 +8,9 @@
 - 日期：2026-09-14
 - 关联：[下一年度规划建议](../plans/archive/下一年度规划建议-2027.10-2028.09.md)（已归档）§四.A1（W1–W2）；[ADR-023](ADR-023-ai-assistant-phase1.md)（AI 一期：词频检索 + 向量升级候选池）；
   [ADR-033](ADR-033-knowledge-base-management.md)（知识库文档管理）；
-  `system/utils/ai.py::retrieve`；`tests/data/ai_retrieval_eval.json`、
-  `tests/integration/system/test_ai_retrieval_eval.py`
+  `ai/utils/ai.py::retrieve`；`tests/data/ai_retrieval_eval.json`、
+  `tests/integration/ai/test_ai_retrieval_eval.py`（回答内容层面的评测见
+  `tests/data/ai_answer_eval.json` 与 `tests/integration/ai/test_ai_answer_quality.py`）
 
 ## 背景
 
@@ -30,7 +31,8 @@ AI 一期采用零依赖「词频重叠评分」检索（CJK 二元组 + ASCII �
 | 评测集 | `tests/data/ai_retrieval_eval.json`：**36 问**（覆盖 ADR/架构/运维/规划四类，含 6 条改写式「难题」）+ 期望出处 |
 | 判定 | `retrieve(question, top_k=5)` 的 top-5 中出现任一期望出处即 hit；聚合 hit@5 |
 | 门禁 | hit@5 ≥ 75%（低于阈值按规划升级向量）；另有「期望出处必须存在于当前语料」的守护用例（防文档改名导致评测静默失真）与单次检索耗时护栏 |
-| 运行 | `pytest tests/integration/system/test_ai_retrieval_eval.py`（随全量套件入 CI，无需外部服务） |
+| 运行 | `pytest tests/integration/ai/test_ai_retrieval_eval.py`（随全量套件入 CI，无需外部服务） |
+| 补充 | 回答内容层面的回归另见 `tests/data/ai_answer_eval.json` + `tests/integration/ai/test_ai_answer_quality.py`（判分器与数据分离，与本文检索评测互补不合并） |
 
 ## 实测结果（2026-09-14）
 

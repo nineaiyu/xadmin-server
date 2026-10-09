@@ -24,13 +24,13 @@ def _log(path, **kwargs):
 
 def test_object_pk_filter_scopes_to_object():
     """object_pk 只命中该行的日志：跨模块同值主键经 path 前缀过滤排除串扰。"""
-    target = _log("/api/system/user/7", object_pk="7", module="用户管理", changes='{"nickname": ["a", "b"]}')
-    _log("/api/system/user/77", object_pk="77", module="用户管理")
-    _log("/api/system/user", module="用户管理", method="POST")
-    _log("/api/system/role/7", object_pk="7", module="角色管理")
+    target = _log("/api/identity/user/7", object_pk="7", module="用户管理", changes='{"nickname": ["a", "b"]}')
+    _log("/api/identity/user/77", object_pk="77", module="用户管理")
+    _log("/api/identity/user", module="用户管理", method="POST")
+    _log("/api/identity/role/7", object_pk="7", module="角色管理")
 
     queryset = OperationLogFilter(
-        data={"object_pk": "7", "path": "/api/system/user/"}, queryset=OperationLog.objects.all(), request=None
+        data={"object_pk": "7", "path": "/api/identity/user/"}, queryset=OperationLog.objects.all(), request=None
     ).qs
     assert queryset.count() == 1
     assert queryset.get().pk == target.pk
@@ -38,13 +38,13 @@ def test_object_pk_filter_scopes_to_object():
 
 def test_path_exact_filter_scopes_to_object():
     """path_exact（保留的兼容过滤器）只命中该行 detail 路由日志。"""
-    target = _log("/api/system/user/7", module="用户管理", changes='{"nickname": ["a", "b"]}')
-    _log("/api/system/user/77", module="用户管理")
-    _log("/api/system/user", module="用户管理", method="POST")
-    _log("/api/system/role/7", module="角色管理")
+    target = _log("/api/identity/user/7", module="用户管理", changes='{"nickname": ["a", "b"]}')
+    _log("/api/identity/user/77", module="用户管理")
+    _log("/api/identity/user", module="用户管理", method="POST")
+    _log("/api/identity/role/7", module="角色管理")
 
     queryset = OperationLogFilter(
-        data={"path_exact": "/api/system/user/7"}, queryset=OperationLog.objects.all(), request=None
+        data={"path_exact": "/api/identity/user/7"}, queryset=OperationLog.objects.all(), request=None
     ).qs
     assert queryset.count() == 1
     assert queryset.get().pk == target.pk
@@ -71,7 +71,7 @@ def test_changes_rows_have_diff_payload():
     import json
 
     changes = {"nickname": {"old": "旧昵称", "new": "新昵称"}}
-    record = _log("/api/system/user/9", changes=json.dumps(changes))
+    record = _log("/api/identity/user/9", changes=json.dumps(changes))
     log = OperationLog.objects.get(pk=record.pk)
     parsed = json.loads(log.changes)
     assert parsed["nickname"]["new"] == "新昵称"

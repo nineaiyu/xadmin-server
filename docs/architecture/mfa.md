@@ -117,15 +117,15 @@ def reset_user_api_key(request, user_id): ...
 
 ### 登录 MFA 流程
 
-1. `POST /api/system/login/basic` 返回（**不签发 JWT**）：
+1. `POST /api/identity/login/basic` 返回（**不签发 JWT**）：
 
 ```json
 {"data": {"mfa_required": true, "mfa_token": "...",
           "methods": [{"name": "otp", ...}, ...]}}
 ```
 
-2. 挑战型方式调 `POST /api/system/login/mfa/send-code`（`mfa_token` + `method`）；
-3. `POST /api/system/login/mfa/verify`（`mfa_token` + `method` + `code`）
+2. 挑战型方式调 `POST /api/identity/login/mfa/send-code`（`mfa_token` + `method`）；
+3. `POST /api/identity/login/mfa/verify`（`mfa_token` + `method` + `code`）
    → 通过后签发 `{access, refresh, *_token_lifetime}`；`mfa_token` 一次性，5 分钟有效。
    `method=recovery` 为恢复码自救通道（设备全丢时使用），一次性消费后立即作废。
 
@@ -188,11 +188,11 @@ TOTP 设备全丢时的自救通道，避免「只能管理员 reset」的死锁
 
 | 操作           | API                                                                  | 验证级别     |
 |--------------|----------------------------------------------------------------------|----------|
-| 修改密码（个人中心）   | `POST /api/system/userinfo/reset-password`                           | password |
-| 绑定/换绑邮箱、手机   | `POST /api/system/userinfo/bind`                                     | password |
-| 删除用户（单删/批量删） | `DELETE /api/system/user/{pk}`、`POST /api/system/user/batch-destroy` | password |
+| 修改密码（个人中心）   | `POST /api/identity/userinfo/reset-password`                           | password |
+| 绑定/换绑邮箱、手机   | `POST /api/identity/userinfo/bind`                                     | password |
+| 删除用户（单删/批量删） | `DELETE /api/identity/user/{pk}`、`POST /api/identity/user/batch-destroy` | password |
 | 解绑 OTP（个人）   | `POST /api/mfa/otp/disable`                                          | password |
-| 管理员重置用户 MFA  | `POST /api/system/user/{pk}/reset-mfa`                               | password |
+| 管理员重置用户 MFA  | `POST /api/identity/user/{pk}/reset-mfa`                               | password |
 
 状态生命周期：
 

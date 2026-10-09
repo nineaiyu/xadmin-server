@@ -104,6 +104,11 @@ jobs:
   build-and-push-image:
     needs: [ check-version, security-scan ]
     runs-on: ubuntu-latest
+    # id-token / attestations 供镜像构建溯源签发；contents 供上传 Release 附件
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
 
     steps:
 
@@ -135,6 +140,7 @@ jobs:
             type=semver,pattern={{version}}
 
       - name: Build and push multi-arch image
+        id: push
         uses: docker/build-push-action@v6
         with:
           build-args: VERSION=${{ steps.meta.outputs.version }}
@@ -143,6 +149,13 @@ jobs:
           file: Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      # 多架构推送时 digest 即镜像索引（manifest list）摘要，作为构建溯源主体
+      - name: Attest image build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: nineaiyu/xadmin-server
+          subject-digest: ${{ steps.push.outputs.digest }}
 
       - name: Download SBOM artifact
         uses: actions/download-artifact@v4

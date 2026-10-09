@@ -26,7 +26,7 @@ pytestmark = pytest.mark.django_db
 
 
 def _export_record():
-    return ExportRecord.objects.create(name="用户导出", path="/api/system/user")
+    return ExportRecord.objects.create(name="用户导出", path="/api/identity/user")
 
 
 class TestNormalizePercent:

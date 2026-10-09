@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""当前用户信息端点（/api/system/userinfo）载荷回归。
+"""当前用户信息端点（/api/identity/userinfo）载荷回归。
 
 本人信息无泄露面：超管标记直接透出，前端按 `is_superuser` 参与实例评论
 删除按钮等显隐判断（作者 ∪ 超管）。
@@ -9,7 +9,7 @@ import pytest
 
 pytestmark = pytest.mark.django_db
 
-USERINFO_URL = "/api/system/userinfo"
+USERINFO_URL = "/api/identity/userinfo"
 
 
 class TestUserinfoPayload:

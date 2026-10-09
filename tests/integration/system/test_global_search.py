@@ -29,7 +29,7 @@ def searchable_data(db):
     row.filepath.save("e2e/E2E采购合同.pdf", ContentFile(b"e2e-contract"), save=True)
     OperationLog.objects.create(module="demo", method="GET", path="/api/demo/book/")
     approval = ApprovalRequest.objects.create(
-        module="user", method="DELETE", path="/api/system/user/1/", status="PENDING", creator=user
+        module="user", method="DELETE", path="/api/identity/user/1/", status="PENDING", creator=user
     )
     return {"user": user, "approval": approval}
 
@@ -120,7 +120,7 @@ class TestGlobalSearchAPI:
         role = UserRole.objects.create(name="搜索用户页", code="search-user-page")
         role.menu.add(
             menu_factory("retrieve:SystemGlobalSearch", path="api/system/global-search$", method="GET"),
-            menu_factory("list:SystemUser", path="api/system/user$", method="GET"),
+            menu_factory("list:SystemUser", path="api/identity/user$", method="GET"),
         )
         viewer.roles.add(role)
         cache.clear()
@@ -223,7 +223,7 @@ class TestPagePermissionGate:
             key="user",
             label="用户",
             route="/system/user/index",
-            list_url="api/system/user",
+            list_url="api/identity/user",
             queryset=lambda: UserInfo.objects.all(),
             text_fields=("username",),
             display_field="username",
@@ -233,13 +233,13 @@ class TestPagePermissionGate:
 
     def test_granted_page_permission_is_visible(self, db):
         provider = self._provider()
-        assert provider.visible_to(self._plain_user(), {"api/system/user$": ("menu-pk", None)})
+        assert provider.visible_to(self._plain_user(), {"api/identity/user$": ("menu-pk", None)})
 
     def test_missing_page_permission_is_hidden(self, db):
         assert not self._provider().visible_to(self._plain_user(), {})
 
     def test_superuser_only_group(self, db):
-        provider = self._provider(superuser_only=True, list_url="api/system/logs/operation")
+        provider = self._provider(superuser_only=True, list_url="api/audit/logs/operation")
 
         class SuperUser:
             is_superuser = True

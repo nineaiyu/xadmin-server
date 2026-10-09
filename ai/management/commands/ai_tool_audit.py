@@ -27,10 +27,10 @@ from django.core.management.base import BaseCommand
 #: 明确不 AI 化的路由前缀（AI 自身 / 认证 / 文档 / 实时通道 / 内部观测）
 EXEMPT_PREFIXES = (
     "api/ai/",
-    "api/system/auth/",
-    "api/system/login",
-    "api/system/logout",
-    "api/system/token",
+    "api/identity/auth/",
+    "api/identity/login",
+    "api/identity/logout",
+    "api/identity/token",
     "api/system/captcha",
     "api/system/setting",
     "api/system/config",
@@ -38,7 +38,7 @@ EXEMPT_PREFIXES = (
     "api/system/permission",
     "api/system/field",
     "api/system/modellabelfield",
-    "api/system/online",
+    "api/identity/online",
     "api/system/monitor",
     "api/system/csp-report",
     "api/system/tags",

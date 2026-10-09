@@ -117,7 +117,7 @@ def test_run_action_creates_execution_and_publishes(monkeypatch, django_capture_
     user = _make_user()
     instance = _make_periodic_task()
     factory = APIRequestFactory()
-    request = factory.post(f"/api/system/tasks/periodic/{instance.pk}/run")
+    request = factory.post(f"/api/task/periodic/{instance.pk}/run")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "run"})
     with mock.patch("task.views.task_periodic.app.send_task") as send_task:
@@ -139,7 +139,7 @@ def test_run_action_eager_applies_synchronously(monkeypatch):
     user = _make_user()
     instance = _make_periodic_task()
     factory = APIRequestFactory()
-    request = factory.post(f"/api/system/tasks/periodic/{instance.pk}/run")
+    request = factory.post(f"/api/task/periodic/{instance.pk}/run")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "run"})
     response = view(request, pk=str(instance.pk))
@@ -157,7 +157,7 @@ def test_run_action_rejects_unregistered_task():
     PeriodicTask.objects.filter(pk=instance.pk).update(task="no.exist.task")
     instance.refresh_from_db()
     factory = APIRequestFactory()
-    request = factory.post(f"/api/system/tasks/periodic/{instance.pk}/run")
+    request = factory.post(f"/api/task/periodic/{instance.pk}/run")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "run"})
     response = view(request, pk=str(instance.pk))
@@ -173,7 +173,7 @@ def test_log_action_reads_file(monkeypatch, tmp_path):
 
     user = _make_user()
     factory = APIRequestFactory()
-    request = factory.get(f"/api/system/tasks/executions/{execution.pk}/log")
+    request = factory.get(f"/api/task/executions/{execution.pk}/log")
     force_authenticate(request, user=user)
     view = TaskExecutionViewSet.as_view({"get": "log"})
     response = view(request, pk=str(execution.pk))
@@ -187,7 +187,7 @@ def test_log_action_missing_file(monkeypatch, tmp_path):
     execution = TaskExecution.objects.create(name="x.tasks.nolog")
     user = _make_user()
     factory = APIRequestFactory()
-    request = factory.get(f"/api/system/tasks/executions/{execution.pk}/log")
+    request = factory.get(f"/api/task/executions/{execution.pk}/log")
     force_authenticate(request, user=user)
     view = TaskExecutionViewSet.as_view({"get": "log"})
     response = view(request, pk=str(execution.pk))
@@ -215,7 +215,7 @@ def test_execution_serializer_related_fields_display():
 def test_registered_action_lists_user_tasks():
     user = _make_user()
     factory = APIRequestFactory()
-    request = factory.get("/api/system/tasks/periodic/registered")
+    request = factory.get("/api/task/periodic/registered")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"get": "registered"})
     response = view(request)
@@ -253,7 +253,7 @@ def test_registered_action_reuses_scanned_tasks_by_default(monkeypatch):
     monkeypatch.setattr(task_periodic, "_autodiscovered", True)
     user = _make_user()
     factory = APIRequestFactory()
-    request = factory.get("/api/system/tasks/periodic/registered")
+    request = factory.get("/api/task/periodic/registered")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"get": "registered"})
     with mock.patch.object(task_periodic.app, "autodiscover_tasks") as autodiscover:
@@ -269,7 +269,7 @@ def test_registered_action_refresh_forces_rescan(monkeypatch):
     monkeypatch.setattr(task_periodic, "_autodiscovered", True)
     user = _make_user()
     factory = APIRequestFactory()
-    request = factory.get("/api/system/tasks/periodic/registered?refresh=1")
+    request = factory.get("/api/task/periodic/registered?refresh=1")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"get": "registered"})
     with mock.patch.object(task_periodic.app, "autodiscover_tasks") as autodiscover:
@@ -285,7 +285,7 @@ def test_periodic_task_args_must_be_json_list():
     user = _make_user()
     factory = APIRequestFactory()
     request = factory.post(
-        "/api/system/tasks/periodic",
+        "/api/task/periodic",
         data={
             "name": "bad-args",
             "task": "system.tasks.auto_clean_operation_job",
@@ -375,7 +375,7 @@ def test_batch_run_action_dispatches_selected(monkeypatch, django_capture_on_com
     user = _make_user()
     instance = _make_periodic_task()
     factory = APIRequestFactory()
-    request = factory.post("/api/system/tasks/periodic/batch-run", data=[str(instance.pk)], format="json")
+    request = factory.post("/api/task/periodic/batch-run", data=[str(instance.pk)], format="json")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
     with (
@@ -395,7 +395,7 @@ def test_batch_run_action_reports_unregistered(monkeypatch):
     PeriodicTask.objects.filter(pk=instance.pk).update(task="no.exist.task")
     instance.refresh_from_db()
     factory = APIRequestFactory()
-    request = factory.post("/api/system/tasks/periodic/batch-run", data=[str(instance.pk)], format="json")
+    request = factory.post("/api/task/periodic/batch-run", data=[str(instance.pk)], format="json")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
     with mock.patch("task.views.task_periodic.app.autodiscover_tasks"):
@@ -414,7 +414,7 @@ def test_destroy_execution_removes_log_file(monkeypatch, tmp_path):
 
     user = _make_user()
     factory = APIRequestFactory()
-    request = factory.delete(f"/api/system/tasks/executions/{execution.pk}")
+    request = factory.delete(f"/api/task/executions/{execution.pk}")
     force_authenticate(request, user=user)
     view = TaskExecutionViewSet.as_view({"delete": "destroy"})
     response = view(request, pk=str(execution.pk))
@@ -527,7 +527,7 @@ def test_execution_list_exposes_product_info(superuser):
         status=TaskExecution.Status.RUNNING,
     )
 
-    request = APIRequestFactory().get("/api/system/tasks/executions")
+    request = APIRequestFactory().get("/api/task/executions")
     force_authenticate(request, user=superuser)
     viewset = TaskExecutionViewSet()
     viewset.request = request
@@ -592,7 +592,7 @@ def test_product_has_file_matches_record_tables(superuser):
         TaskExecution.objects.create(pk=record.pk, name="system.tasks.run", creator=superuser)
     plain = TaskExecution.objects.create(name="common.tasks.foo", creator=superuser)
 
-    request = APIRequestFactory().get("/api/system/tasks/executions")
+    request = APIRequestFactory().get("/api/task/executions")
     force_authenticate(request, user=superuser)
     viewset = TaskExecutionViewSet()
     viewset.request = request
@@ -609,7 +609,7 @@ def test_execution_detail_without_annotation_stays_safe(superuser):
     """详情动作不带产物注解：序列化仍可降级为空值，不得抛错。"""
     execution = TaskExecution.objects.create(name="common.tasks.foo", creator=superuser)
 
-    request = APIRequestFactory().get(f"/api/system/tasks/executions/{execution.pk}")
+    request = APIRequestFactory().get(f"/api/task/executions/{execution.pk}")
     force_authenticate(request, user=superuser)
     viewset = TaskExecutionViewSet()
     viewset.request = request
@@ -735,7 +735,7 @@ def test_batch_enable_reports_unmatched_and_invalid_pks():
     bogus = str(uuid.uuid4())
     factory = APIRequestFactory()
     request = factory.post(
-        "/api/system/tasks/periodic/batch-enable",
+        "/api/task/periodic/batch-enable",
         data={"pks": [str(instance.pk), "abc", "999999", bogus], "enabled": True},
         format="json",
     )
@@ -765,7 +765,7 @@ def test_batch_enable_reports_save_failure():
 
     factory = APIRequestFactory()
     request = factory.post(
-        "/api/system/tasks/periodic/batch-enable",
+        "/api/task/periodic/batch-enable",
         data={"pks": [str(ok_task.pk), str(doomed.pk)], "enabled": False},
         format="json",
     )
@@ -793,7 +793,7 @@ def test_periodic_create_rejects_unregistered_task_path(monkeypatch):
     crontab = _make_interval_crontab()
     factory = APIRequestFactory()
     request = factory.post(
-        "/api/system/tasks/periodic",
+        "/api/task/periodic",
         data={
             "name": "未注册路径任务",
             "task": "no.exist.task",
@@ -819,7 +819,7 @@ def test_periodic_update_rejects_unregistered_task_path(monkeypatch):
     user = _make_user()
     instance = _make_periodic_task()
     factory = APIRequestFactory()
-    request = factory.patch(f"/api/system/tasks/periodic/{instance.pk}", data={"task": "no.exist.task"}, format="json")
+    request = factory.patch(f"/api/task/periodic/{instance.pk}", data={"task": "no.exist.task"}, format="json")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"patch": "partial_update"})
     # 同上：错误响应的回滚标记用 savepoint 隔离，refresh_from_db 才能继续
@@ -837,7 +837,7 @@ def test_periodic_create_accepts_registered_task_path(monkeypatch):
     crontab = _make_interval_crontab()
     factory = APIRequestFactory()
     request = factory.post(
-        "/api/system/tasks/periodic",
+        "/api/task/periodic",
         data={
             "name": "已注册路径任务",
             "task": "system.tasks.auto_clean_operation_job",

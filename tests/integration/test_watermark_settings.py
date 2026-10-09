@@ -16,7 +16,7 @@ from settings.models import Setting
 pytestmark = pytest.mark.django_db
 
 BASIC_URL = "/api/settings/basic"
-USERINFO_URL = "/api/system/userinfo"
+USERINFO_URL = "/api/identity/userinfo"
 
 WATERMARK_KEYS = (
     "FRONT_END_WEB_WATERMARK_ENABLED",

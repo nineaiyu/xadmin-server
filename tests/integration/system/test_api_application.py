@@ -19,8 +19,8 @@ from identity.models.token import ApiApplication, PersonalAccessToken
 
 pytestmark = pytest.mark.django_db
 
-APPS_URL = "/api/system/api-applications"
-TOKEN_URL = "/api/system/open/token"
+APPS_URL = "/api/identity/api-applications"
+TOKEN_URL = "/api/identity/open/token"
 
 
 def _create_application(client, **payload):
@@ -91,12 +91,12 @@ class TestScopeOptions:
     """
 
     def test_scope_options_list_authorized_apis(self, auth_client, menu_factory):
-        menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
         resp = auth_client.get(f"{APPS_URL}/scope-options")
         assert resp.data["code"] == 1000
         payload = resp.data["data"]
         options = [option for group in payload["groups"] for option in group["options"]]
-        assert "GET ^/api/system/user/?$" in [option["value"] for option in options]
+        assert "GET ^/api/identity/user/?$" in [option["value"] for option in options]
         for option in options:
             assert option["method"] and option["path"] and option["label"] and option["code"]
 
@@ -123,7 +123,7 @@ class TestClientCredentials:
 
         token_row = PersonalAccessToken.objects.get(api_application_id=application["pk"])
         assert token_row.creator_id is not None  # 凭证归属 owner，审计可回溯
-        assert _pat_client(payload["access_token"]).get("/api/system/userinfo").status_code == 200
+        assert _pat_client(payload["access_token"]).get("/api/identity/userinfo").status_code == 200
 
     def test_wrong_secret_rejected(self, auth_client):
         application = _create_application(auth_client)
@@ -146,10 +146,10 @@ class TestClientCredentials:
 
     def test_application_scopes_restrict_paths(self, auth_client):
         """scope 限制凭证可访问的路径（超管 owner 同样受限，口径见 IsAuthenticated）。"""
-        application = _create_application(auth_client, scopes=["api/system/userinfo"])
+        application = _create_application(auth_client, scopes=["api/identity/userinfo"])
         token = _issue_token(application).data["data"]["access_token"]
         client = _pat_client(token)
-        assert client.get("/api/system/userinfo").status_code == 200
+        assert client.get("/api/identity/userinfo").status_code == 200
         assert client.get(APPS_URL).status_code == 403
 
     def test_rate_limit_per_application(self, auth_client):

@@ -2,7 +2,7 @@
 
 > 目标：把 web（`server`）与任务（`celery-worker` / `celery-heavy`）扩到多副本，
 > 且**不给既有单副本形态引入任何行为变化**。
-> 相关：[deployment.md](deployment.md) §6.1（升级与迁移）、`docker-compose.scale.yml`、
+> 相关：[deployment-upgrade.md](deployment-upgrade.md) §6.1（升级与迁移）、`docker-compose.scale.yml`、
 > `ops/xadmin-backend.multi.conf`、[storage.md](storage.md)（媒体共享/S3 后端）。
 
 ## 一、三条硬约束（不满足就会出问题）
@@ -18,7 +18,7 @@
 
 ## 二、扩展步骤（单机多副本）
 
-前置：生产 overlay 已可用（`.env` 凭据齐全、宿主 `./data` 属主 1001，见 deployment.md §3）。
+前置：生产 overlay 已可用（`.env` 凭据齐全、宿主 `./data` 属主 1001，见 deployment-docker.md §3）。
 
 ```bash
 # 0. 变量：后续命令共用同一组 -f（也可写入 shell 变量 / COMPOSE_FILE 环境变量）

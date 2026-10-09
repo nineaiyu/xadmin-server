@@ -9,7 +9,7 @@ from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-USER_URL = "/api/system/user"
+USER_URL = "/api/identity/user"
 
 # 用户删除为敏感操作（需 MFA 二次确认），测试中关闭总开关
 MFA_OFF = override_settings(SECURITY_MFA_CONFIRM_ENABLED=False)

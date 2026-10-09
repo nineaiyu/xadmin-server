@@ -157,4 +157,4 @@
   用 **IP 或域名走 http** 时 Cookie 被拒收，token 存不下 → 接口 401 → 回跳登录页。
 - **做法**：改用 https 访问（自签证书在自动化里用 `ignoreHTTPSErrors`；手动测试需信任证书），
   或在非生产构建下调试（DEV/未设 PROD 时 Cookie 不带 Secure）。
-  细节与实测记录见 [deployment.md §8](ops/deployment.md)。
+  细节与实测记录见 [deployment-csp.md §8](ops/deployment-csp.md)。

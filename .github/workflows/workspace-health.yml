@@ -1,0 +1,130 @@
+# 工作区级跨仓一致性健康报告（CSP / 权限种子 / 契约 schema / 词条 / 版本矩阵 / 单仓快档门禁）。
+#
+# 单仓 CI 的「缺兄弟仓即 [skip]」是检出现实；本流水线把四个仓库检出到同一工作区，
+# 用 xadmin-server/scripts/workspace_health.py 做真跑口，每周一次把报告 upsert 到固定标题的 issue。
+# 该 job 只报告不阻断（健康报告非 PR 门禁），CI 绿灯不受工作区漂移影响。
+name: workspace-health
+
+on:
+  schedule:
+    - cron: "0 1 * * 1" # UTC 周一 01:00 = 北京时间 09:00
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  workspace-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout server（本仓，含校验脚本与真源）
+        uses: actions/checkout@v4
+        with:
+          path: xadmin-server
+
+      - name: Checkout client
+        uses: actions/checkout@v4
+        with:
+          repository: nineaiyu/xadmin-client
+          ref: dev
+          path: xadmin-client
+
+      - name: Checkout docs
+        uses: actions/checkout@v4
+        with:
+          repository: nineaiyu/xadmin-docs
+          ref: main
+          path: xadmin-docs
+
+      - name: Checkout installer
+        uses: actions/checkout@v4
+        with:
+          repository: nineaiyu/xadmin-installer
+          ref: main
+          path: xadmin-installer
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Run workspace health (fast tier)
+        # 快档门禁只依赖 python / node / bash 内置能力，无需安装依赖。
+        # 该步骤只报告不阻断：其退出码写入 summary，健康漂移由 issue 跟踪。
+        id: health
+        continue-on-error: true
+        run: |
+          set +e
+          python xadmin-server/scripts/workspace_health.py \
+            --workspace-root "$GITHUB_WORKSPACE" \
+            --tier fast \
+            --allow-missing xadmin-web \
+            --format md \
+            --json workspace-health.json > workspace-health.md
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Publish step summary
+        if: always()
+        run: |
+          {
+            echo "## 工作区跨仓一致性健康报告"
+            echo
+            echo "退出码：${{ steps.health.outputs.exit_code }}（0 全绿 / 1 有 fail / 2 有 missing 未放行）"
+            echo
+            cat workspace-health.md 2>/dev/null || echo "（报告未生成，请查看上一步日志）"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upsert weekly issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const title = "工作区跨仓一致性健康报告（周报）";
+            const body = fs.existsSync("workspace-health.md")
+              ? fs.readFileSync("workspace-health.md", "utf8")
+              : "（报告生成失败，请查看 workflow 运行日志）";
+            const exitCode = "${{ steps.health.outputs.exit_code }}" || "unknown";
+            const header = [
+              `> 最近一次运行：${new Date().toISOString()}（run #${context.runNumber}，退出码 ${exitCode}）`,
+              `> 运行入口：[${context.workflow}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              "",
+              "> 说明：本 job 只报告不阻断；退出码 1 = 检出真实漂移，2 = 有缺仓未放行。",
+              "",
+            ].join("\n");
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = issues.find((i) => i.title === title);
+            const finalBody = header + body;
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: finalBody,
+              });
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `报告已刷新（run #${context.runNumber}，退出码 ${exitCode}）。`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body: finalBody,
+                labels: ["operations"],
+              });
+            }

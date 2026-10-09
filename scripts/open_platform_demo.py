@@ -54,9 +54,9 @@ def show(resp, expect_json=True):
 
 def issue_token(base_url, client_id, client_secret):
     """client-credentials 换发（轮换语义：旧凭证即时失效）。"""
-    step("1. 换发凭证（POST /api/system/open/token）")
+    step("1. 换发凭证（POST /api/identity/open/token）")
     resp = requests.post(
-        f"{base_url}/api/system/open/token",
+        f"{base_url}/api/identity/open/token",
         json={"client_id": client_id, "client_secret": client_secret},
         timeout=10,
     )
@@ -67,7 +67,7 @@ def issue_token(base_url, client_id, client_secret):
     return body["data"]
 
 
-def call_with_token(base_url, access_token, path="/api/system/userinfo"):
+def call_with_token(base_url, access_token, path="/api/identity/userinfo"):
     """用凭证调用接口（Authorization: Pat <token>）。"""
     step(f"2. 调用接口（GET {path}）")
     resp = requests.get(
@@ -88,7 +88,7 @@ def oauth_flow(base_url, client_id, client_secret, username, password, redirect_
     step("3. OAuth 授权码：登录 xadmin（代表用户访问的前置）")
     session = requests.Session()
     login = session.post(
-        f"{base_url}/api/system/login",
+        f"{base_url}/api/identity/login",
         json={"username": username, "password": password},
         timeout=10,
     )
@@ -97,17 +97,17 @@ def oauth_flow(base_url, client_id, client_secret, username, password, redirect_
         print("登录失败：跳过 OAuth 演示")
         return None
 
-    step("3.1 同意页数据（GET /api/system/open/oauth/authorize）")
+    step("3.1 同意页数据（GET /api/identity/open/oauth/authorize）")
     authorize = session.get(
-        f"{base_url}/api/system/open/oauth/authorize",
+        f"{base_url}/api/identity/open/oauth/authorize",
         params={"client_id": client_id, "redirect_uri": redirect_uri, "response_type": "code", "state": "demo"},
         timeout=10,
     )
     show(authorize)
 
-    step("3.2 用户同意（POST /api/system/open/oauth/approve）")
+    step("3.2 用户同意（POST /api/identity/open/oauth/approve）")
     approve = session.post(
-        f"{base_url}/api/system/open/oauth/approve",
+        f"{base_url}/api/identity/open/oauth/approve",
         json={"client_id": client_id, "redirect_uri": redirect_uri, "response_type": "code", "approved": True},
         timeout=10,
     )
@@ -117,9 +117,9 @@ def oauth_flow(base_url, client_id, client_secret, username, password, redirect_
         print("未取得授权码，跳过 OAuth 演示")
         return None
 
-    step("3.3 授权码换发（POST /api/system/open/oauth/token）")
+    step("3.3 授权码换发（POST /api/identity/open/oauth/token）")
     token_resp = requests.post(
-        f"{base_url}/api/system/open/oauth/token",
+        f"{base_url}/api/identity/open/oauth/token",
         json={
             "grant_type": "authorization_code",
             "client_id": client_id,
@@ -135,7 +135,7 @@ def oauth_flow(base_url, client_id, client_secret, username, password, redirect_
         step("3.4 代表用户调用（Authorization: Pat <oauth access>）")
         show(
             requests.get(
-                f"{base_url}/api/system/userinfo",
+                f"{base_url}/api/identity/userinfo",
                 headers={"Authorization": f"Pat {access}"},
                 timeout=10,
             )

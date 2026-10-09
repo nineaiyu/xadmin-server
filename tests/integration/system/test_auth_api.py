@@ -5,10 +5,10 @@ import pytest
 
 pytestmark = pytest.mark.django_db
 
-BASIC_LOGIN_URL = "/api/system/login/basic"
-CAPTCHA_URL = "/api/system/auth/captcha"
-REFRESH_URL = "/api/system/refresh"
-LOGOUT_URL = "/api/system/logout"
+BASIC_LOGIN_URL = "/api/identity/login/basic"
+CAPTCHA_URL = "/api/identity/auth/captcha"
+REFRESH_URL = "/api/identity/refresh"
+LOGOUT_URL = "/api/identity/logout"
 
 
 @pytest.fixture

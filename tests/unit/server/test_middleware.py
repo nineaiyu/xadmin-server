@@ -50,7 +50,7 @@ class TestSQLCountMiddleware:
     @override_settings(DEBUG=True)
     def test_enabled_with_debug_sets_header(self):
         middleware = SQLCountMiddleware(lambda r: _response())
-        response = middleware(rf.get("/api/system/user"))
+        response = middleware(rf.get("/api/identity/user"))
         assert response["X-SQL-COUNT"] == "-2"  # 空查询列表 len-2
 
 
@@ -66,7 +66,7 @@ class TestStartEndMiddleware:
     @override_settings(DEBUG_DEV=True)
     def test_start_sets_time_attributes(self):
         start = StartMiddleware(lambda r: _response())
-        request = rf.get("/api/system/user")
+        request = rf.get("/api/identity/user")
         start(request)
         assert hasattr(request, "_s_time_start")
         assert hasattr(request, "_s_time_end")
@@ -74,7 +74,7 @@ class TestStartEndMiddleware:
     @override_settings(DEBUG_DEV=True)
     def test_end_sets_time_attributes(self):
         end = EndMiddleware(lambda r: _response())
-        request = rf.get("/api/system/user")
+        request = rf.get("/api/identity/user")
         end(request)
         assert hasattr(request, "_e_time_start")
         assert hasattr(request, "_e_time_end")
@@ -102,14 +102,14 @@ class TestStartEndMiddleware:
 class TestRequestMiddleware:
     def test_generates_request_uuid(self):
         middleware = RequestMiddleware(lambda r: _response())
-        request = rf.get("/api/system/user")
+        request = rf.get("/api/identity/user")
         response = middleware(request)
         assert str(request.request_uuid) == response["X-Request-Id"]
         assert get_current_request() is request
 
     def test_reuses_upstream_request_id(self):
         middleware = RequestMiddleware(lambda r: _response())
-        request = rf.get("/api/system/user", HTTP_X_REQUEST_ID="gw-abc-123")
+        request = rf.get("/api/identity/user", HTTP_X_REQUEST_ID="gw-abc-123")
         response = middleware(request)
         assert request.request_uuid == "gw-abc-123"
         assert response["X-Request-Id"] == "gw-abc-123"
@@ -180,7 +180,7 @@ class TestAsyncMiddlewareChain:
 
     def test_request_middleware_acall_equivalence(self):
         middleware = RequestMiddleware(_async_response)
-        request = rf.get("/api/system/user", HTTP_X_REQUEST_ID="gw-abc-123")
+        request = rf.get("/api/identity/user", HTTP_X_REQUEST_ID="gw-abc-123")
         response = asyncio.run(middleware(request))
         assert request.request_uuid == "gw-abc-123"
         assert response["X-Request-Id"] == "gw-abc-123"
@@ -197,7 +197,7 @@ class TestAsyncMiddlewareChain:
             return await sync_to_async(_view, thread_sensitive=True)()
 
         middleware = RequestMiddleware(handler)
-        request = rf.get("/api/system/user")
+        request = rf.get("/api/identity/user")
         asyncio.run(middleware(request))
 
     def test_acall_generates_uuid_when_upstream_empty(self):
@@ -218,7 +218,7 @@ class TestAsyncMiddlewareChain:
         response = asyncio.run(middleware(rf.get("/api/chat/messages")))
         assert response.status_code == 404
 
-        request = rf.get("/api/system/user")
+        request = rf.get("/api/identity/user")
         assert asyncio.run(middleware(request)).status_code == 200
 
     def test_module_gate_sync_chain_unchanged(self, monkeypatch):

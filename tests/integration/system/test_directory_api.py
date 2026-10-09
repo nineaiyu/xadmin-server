@@ -7,7 +7,7 @@ from identity.models import DeptInfo, Post, UserInfo
 
 pytestmark = pytest.mark.django_db
 
-DIRECTORY_URL = "/api/system/directory"
+DIRECTORY_URL = "/api/identity/directory"
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ class TestDirectoryPermission:
         全裁剪，见 TestApprovalInstanceApi 同款口径说明）。
         """
         api_client.force_authenticate(user=normal_user)
-        grant(role, menu_factory, "list:SystemDirectory", "api/system/directory$", "GET")
+        grant(role, menu_factory, "list:SystemDirectory", "api/identity/directory$", "GET")
         resp = api_client.get(DIRECTORY_URL)
         assert resp.data["code"] == 1000
         assert resp.data["data"]["total"] == 0

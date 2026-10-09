@@ -11,7 +11,7 @@ from common.cache.storage import BlackAccessTokenCache
 
 pytestmark = pytest.mark.django_db
 
-LOGOUT_URL = "/api/system/logout"
+LOGOUT_URL = "/api/identity/logout"
 # 自服务键必须登记在 ConfigsViewSet.SELF_WRITABLE_CONFIG_KEYS；本组用真实白名单键
 # WEB_SITE_CONFIG 验证「继承系统默认 + 用户覆盖 + 删除回退」通用机制
 CONFIG_URL = "/api/system/configs/WEB_SITE_CONFIG"

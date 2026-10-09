@@ -6,10 +6,10 @@
 
 流程：
 
-1. 管理端 ``POST /api/system/user/{pk}/invite``（权限点 ``invite:SystemUser``）→
+1. 管理端 ``POST /api/identity/user/{pk}/invite``（权限点 ``invite:SystemUser``）→
    :func:`send_invite`：置 ``invite_status=pending`` + 密码置为不可用（登录被拒）+
    生成一次性令牌（``TokenTempCache``，``scene=user_invite``，TTL 72 小时）+ 发邀请邮件；
-2. 激活页 ``POST /api/system/auth/invite/accept``（匿名）：校验令牌 → 密码强度 / 泄露库 /
+2. 激活页 ``POST /api/identity/auth/invite/accept``（匿名）：校验令牌 → 密码强度 / 泄露库 /
    历史校验（与注册、忘记密码重置同口径）→ ``set_password`` + ``invite_status=accepted``
    + ``record_password_hash``（顺带清除强制改密标记、刷新密码过期计时）；
 3. 令牌一次性（激活即失效）；无效 / 过期 / 已激活返回可读文案，不泄露具体原因。

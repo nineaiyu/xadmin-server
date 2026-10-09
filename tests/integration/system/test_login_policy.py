@@ -20,9 +20,9 @@ from identity.utils.login_policy import evaluate_login_policy, match_ip, match_t
 
 pytestmark = pytest.mark.django_db
 
-BASIC_LOGIN_URL = "/api/system/login/basic"
-POLICY_URL = "/api/system/login-policies"
-PREVIEW_URL = "/api/system/login-policies/preview"
+BASIC_LOGIN_URL = "/api/identity/login/basic"
+POLICY_URL = "/api/identity/login-policies"
+PREVIEW_URL = "/api/identity/login-policies/preview"
 
 
 @pytest.fixture
@@ -299,7 +299,7 @@ class TestChoicesMetadata:
     所有登录用户可达，无需任何菜单权限。
     """
 
-    CHOICES_URL = "/api/system/login-policies/choices"
+    CHOICES_URL = "/api/identity/login-policies/choices"
 
     def test_choices_available_to_plain_user_with_no_menus(self, api_client, normal_user):
         api_client.force_authenticate(user=normal_user)

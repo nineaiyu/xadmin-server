@@ -32,7 +32,7 @@ MCP_URL = "/api/ai/mcp"
 AI_EXECUTE_PERM = (("actionExecute:AiAssistant", "api/ai/assistant/action/(interpret/stream|execute)$", "POST"),)
 MONITOR_PERMS = (("list:SystemMonitor", r"api/system/monitor/overview$", "GET"),)
 MONITOR_EVENTS_PERMS = (("events:SystemMonitor", r"api/system/monitor/events$", "GET"),)
-DELETE_ROLE_PERMS = (("destroy:SystemRole", r"api/system/role/(?P<pk>[^/.]+)$", "DELETE"),)
+DELETE_ROLE_PERMS = (("destroy:SystemRole", r"api/identity/role/(?P<pk>[^/.]+)$", "DELETE"),)
 UPDATE_CONFIG_PERMS = (("partialUpdate:SystemConfig", r"api/system/config/system/(?P<pk>[^/.]+)$", "PATCH"),)
 
 
@@ -227,7 +227,7 @@ class TestHighRiskApproval:
         AI 层已审批的操作在内层 dispatch 不再重复建单（否则第二张单不可达）。"""
         settings.PERMISSION_DATA_ENABLED = False
         grant_perms(actor.roles.first(), menu_factory, DELETE_ROLE_PERMS)
-        SysConfig.set_value("APPROVAL_REQUIRED_PATHS", [r"api/system/role/"])
+        SysConfig.set_value("APPROVAL_REQUIRED_PATHS", [r"api/identity/role/"])
         try:
             role = self._make_role("穿透角色")
             body = {"action": "role.delete", "params": {"pk": role.name}}

@@ -153,7 +153,7 @@ def test_websocket_login_skips_alert(superuser, alert_enabled):
     from identity.services.auth_login import login_success
 
     _login_history(superuser)  # 新 IP/设备/城市本应全部命中
-    request = RequestFactory().post("/api/system/user/login", REMOTE_ADDR="8.8.8.8", HTTP_USER_AGENT="Mozilla/5.0")
+    request = RequestFactory().post("/api/audit/user/login", REMOTE_ADDR="8.8.8.8", HTTP_USER_AGENT="Mozilla/5.0")
     with mock.patch("identity.utils.login_alert.maybe_alert_abnormal_login") as maybe_alert:
         login_success(request, superuser, login_type=UserLoginLog.LoginTypeChoices.WEBSOCKET)
     maybe_alert.assert_not_called()
@@ -164,7 +164,7 @@ def test_http_login_triggers_alert(superuser, alert_enabled):
     from identity.services.auth_login import login_success
 
     _login_history(superuser)
-    request = RequestFactory().post("/api/system/user/login", REMOTE_ADDR="8.8.8.8", HTTP_USER_AGENT="Mozilla/5.0")
+    request = RequestFactory().post("/api/audit/user/login", REMOTE_ADDR="8.8.8.8", HTTP_USER_AGENT="Mozilla/5.0")
     with mock.patch("identity.utils.login_alert.maybe_alert_abnormal_login", autospec=True) as maybe_alert:
         login_success(request, superuser, login_type=UserLoginLog.LoginTypeChoices.USERNAME)
     maybe_alert.assert_called_once()

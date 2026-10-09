@@ -17,7 +17,7 @@ from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-LIST_URL = "/api/system/logs/login"
+LIST_URL = "/api/audit/logs/login"
 RETIRED_PERMISSION_NAMES = ("destroy:SystemUserLoginLog", "batchDestroy:SystemUserLoginLog")
 
 

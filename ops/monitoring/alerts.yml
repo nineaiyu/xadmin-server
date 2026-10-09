@@ -51,6 +51,102 @@ groups:
           summary: "xadmin API P95 > 1s（持续 10 分钟）"
           description: "P95 SLO 目标 < 500ms；先看慢请求日志与 DB/Redis 指标（observability §三）。"
 
+      # 端点级 P95 告警：阈值 = loadtest/baseline.json 基线 P95 × 3，`view` 标签精确匹配端点。
+      # 口径说明（避免与 check_baseline 的 1.2x 回归门禁混淆）：
+      #   - 这里的比较基准是 k6 客户端口径（含网络与本机回环），服务端 histogram 值更低，
+      #     因此 3x 宽限在实际服务端指标上更宽松，只用于拦截数量级退化；
+      #   - 精确的 20% 回归判定仍由 fixed-env 的 check_baseline.py 承担，本组规则是兜底。
+      - alert: XadminCaseLatencyLogin
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(xadmin_http_request_duration_seconds_bucket{view="identity:login-by-basic"}[5m]))
+          ) > 0.2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "登录接口 P95 > 200ms（持续 10 分钟）"
+          description: "基线 P95 66.18ms × 3。登录含口令哈希开销，先看 DB/Redis 与 worker 饱和度。"
+
+      - alert: XadminCaseLatencyRoutes
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(xadmin_http_request_duration_seconds_bucket{view="system:user_routes"}[5m]))
+          ) > 0.09
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "菜单/路由接口 P95 > 90ms（持续 10 分钟）"
+          description: "基线 P95 28.38ms × 3。路由走 24h 响应缓存，退化多为缓存失效风暴或权限解析异常。"
+
+      - alert: XadminCaseLatencyUserList
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(xadmin_http_request_duration_seconds_bucket{view="identity:user-list"}[5m]))
+          ) > 0.66
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "列表页 P95 > 660ms（持续 10 分钟）"
+          description: "基线 P95 192.2ms × 3。同一 view 同时承载 03-list 与 04-metadata-with-meta（页面首开），二者 service 端不可分，故阈值取两者基线较大者；退化多为排队放大或 DB 往返。"
+
+      - alert: XadminCaseLatencyMetadataColumns
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(xadmin_http_request_duration_seconds_bucket{view="identity:user-search-columns"}[5m]))
+          ) > 0.09
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "元数据·列接口 P95 > 90ms（持续 10 分钟）"
+          description: "基线 P95 28.67ms × 3。纯元数据端点，载荷缓存命中下应远低于阈值。"
+
+      - alert: XadminCaseLatencyMetadataFields
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(xadmin_http_request_duration_seconds_bucket{view="identity:user-search-fields"}[5m]))
+          ) > 0.35
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "元数据·搜索字段接口 P95 > 350ms（持续 10 分钟）"
+          description: "基线 P95 117.62ms × 3；该用例在 4-worker 默认档即为容量膝点，按生产容量档判定，仅拦数量级退化。"
+
+      - alert: XadminCaseLatencyExport
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(xadmin_http_request_duration_seconds_bucket{view="identity:user-export-data"}[5m]))
+          ) > 2.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "导出接口 P95 > 2.5s（持续 10 分钟）"
+          description: "基线 P95 776.91ms × 3。重 IO 且量级波动大，宽限仅拦数量级退化。"
+
+      - alert: XadminCaseLatencyImport
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(xadmin_http_request_duration_seconds_bucket{view="identity:user-import-data"}[5m]))
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "导入接口 P95 > 500ms（持续 10 分钟）"
+          description: "基线 P95 57.06ms × 3 后再放宽。重 IO 且耗时随文件规模线性变化，宽限仅拦数量级退化。"
+
   - name: xadmin-tasks
     rules:
       - alert: XadminTaskFailureRateHigh

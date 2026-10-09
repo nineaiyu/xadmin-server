@@ -73,7 +73,7 @@ class TestServiceDependencies:
 
 class TestDocsRegistered:
     def test_deployment_doc_documents_migration_switches(self):
-        doc = (ROOT / "docs/ops/deployment.md").read_text(encoding="utf-8")
+        doc = (ROOT / "docs/ops/deployment-docker.md").read_text(encoding="utf-8")
         for key in ("PITR_ARCHIVE_DIR", "BACKUP_REMOTE_DIR", "BACKUP_REMOTE_REQUIRED"):
             assert key in doc
 

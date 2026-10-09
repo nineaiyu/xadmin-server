@@ -34,5 +34,8 @@ monitoring-data/
 # mypy 增量缓存
 .mypy_cache/
 
+# 测试报告产物（junit.xml 等，CI 上传 artifact，不入库）
+test-reports/
+
 # 内核分发包构建产物（scripts/release_kernel.py build / uv build --package xadmin-common）
 dist/

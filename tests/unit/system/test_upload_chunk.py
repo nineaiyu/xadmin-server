@@ -17,7 +17,7 @@ from file.views.admin.file import UploadFileViewSet
 
 pytestmark = pytest.mark.django_db
 
-FILE_URL = "/api/system/file"
+FILE_URL = "/api/file/file"
 
 CHUNK_SIZE = 4  # 测试口径用极小 chunk（走 init 入参直传，绕过 1MB 钳制由 mock 承担）
 

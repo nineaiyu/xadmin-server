@@ -55,16 +55,16 @@ REST_FRAMEWORK = {
         # 文档站登录（/api-docs/login/）：与主登录同口径接入账号锁定之外的单列
         # 更严限流，避免该入口被用作口令爆破通道
         "api_docs_login": "10/m",
-        # 开放平台 client-credentials 换发（/api/system/open/token）：按 client
+        # 开放平台 client-credentials 换发（/api/identity/open/token）：按 client
         # 维度防 client_secret 在线爆破与换发风暴（换发即轮换，频繁调用等于凭证写放大）
         "open_client": "20/m",
-        # OAuth token/revoke（/api/system/open/oauth/token|revoke）：按 client
+        # OAuth token/revoke（/api/identity/open/oauth/token|revoke）：按 client
         # 维度收敛；多用户共用同一应用的后端调用，速率须覆盖正常登录高峰
         "oauth_client": "120/m",
-        # 发送验证码（/api/system/auth/verify）：IP 维度防短信/邮件轰炸与
+        # 发送验证码（/api/identity/auth/verify）：IP 维度防短信/邮件轰炸与
         # Redis 写放大；按目标计数的锁定由 SendVerifyCodeBlockUtil 兜底（互补维度）
         "verify_code": "20/m",
-        # 临时令牌（/api/system/auth/token）：每次调用强制生成新缓存令牌
+        # 临时令牌（/api/identity/auth/token）：每次调用强制生成新缓存令牌
         # 收紧到低于全局匿名档
         "temp_token": "30/m",
         # AI 对话类端点（问答/NL/受限动作/聊天室 AI，含流式）：LLM 外呼是最高成本入口，

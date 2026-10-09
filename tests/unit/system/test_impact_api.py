@@ -13,7 +13,7 @@ from system.models import DataDict, Menu
 
 pytestmark = pytest.mark.django_db
 
-ROLE_IMPACT_URL = "/api/system/role/impact"
+ROLE_IMPACT_URL = "/api/identity/role/impact"
 
 
 class TestImpactPreview:
@@ -133,33 +133,33 @@ class TestImpactGuard:
     def test_default_no_guard(self, auth_client):
         """默认 IMPACT_GUARD_MODELS 为空：删除行为零变化。"""
         role = self._role_with_user()
-        assert auth_client.delete(f"/api/system/role/{role.pk}").json()["code"] == 1000
+        assert auth_client.delete(f"/api/identity/role/{role.pk}").json()["code"] == 1000
         assert not UserRole.objects.filter(pk=role.pk).exists()
 
     def test_guard_requires_confirmation(self, auth_client, settings):
         settings.IMPACT_GUARD_MODELS = ["identity.userrole"]
         role = self._role_with_user()
-        response = auth_client.delete(f"/api/system/role/{role.pk}")
+        response = auth_client.delete(f"/api/identity/role/{role.pk}")
         assert response.status_code == 400
         assert UserRole.objects.filter(pk=role.pk).exists()
 
-        confirmed = auth_client.delete(f"/api/system/role/{role.pk}?impact_confirmed=true")
+        confirmed = auth_client.delete(f"/api/identity/role/{role.pk}?impact_confirmed=true")
         assert confirmed.json()["code"] == 1000
         assert not UserRole.objects.filter(pk=role.pk).exists()
 
     def test_guard_allows_zero_impact(self, auth_client, settings):
         settings.IMPACT_GUARD_MODELS = ["identity.userrole"]
         role = UserRole.objects.create(name="无引用保护角色", code="guard_role2")
-        assert auth_client.delete(f"/api/system/role/{role.pk}").json()["code"] == 1000
+        assert auth_client.delete(f"/api/identity/role/{role.pk}").json()["code"] == 1000
 
     def test_batch_destroy_guard(self, auth_client, settings):
         settings.IMPACT_GUARD_MODELS = ["identity.userrole"]
         role = self._role_with_user()
-        response = auth_client.post("/api/system/role/batch-destroy", [str(role.pk)], format="json")
+        response = auth_client.post("/api/identity/role/batch-destroy", [str(role.pk)], format="json")
         assert response.status_code == 400
         assert UserRole.objects.filter(pk=role.pk).exists()
 
         confirmed = auth_client.post(
-            "/api/system/role/batch-destroy?impact_confirmed=true", [str(role.pk)], format="json"
+            "/api/identity/role/batch-destroy?impact_confirmed=true", [str(role.pk)], format="json"
         )
         assert confirmed.json()["code"] == 1000

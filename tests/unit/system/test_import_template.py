@@ -15,7 +15,7 @@ from task.views.admin.import_ import ImportTemplateViewSet
 pytestmark = pytest.mark.django_db
 
 MODEL_LABEL = "system.datadict"
-BASE_URL = "/api/system/import-templates"
+BASE_URL = "/api/task/import-templates"
 
 # 表头与字段名不一致的 CSV：必须经列映射才能导入
 CSV_MAPPED = b"\xe7\xbc\x96\xe7\xa0\x81,\xe5\x90\x8d\xe7\xa7\xb0\nimp-map-color,Color\n"  # 编码,名称
@@ -53,11 +53,11 @@ def _disable_field_permission(settings):
 def template_menus(role, menu_factory):
     """普通用户的模板权限码（与 loadjson/menu.json 同口径，单测不加载种子）。"""
     perms = [
-        ("list:SystemImportTemplate", "api/system/import-templates$", "GET"),
-        ("create:SystemImportTemplate", "api/system/import-templates$", "POST"),
-        ("retrieve:SystemImportTemplate", "api/system/import-templates/(?P<pk>[^/.]+)$", "GET"),
-        ("update:SystemImportTemplate", "api/system/import-templates/(?P<pk>[^/.]+)$", "PUT"),
-        ("destroy:SystemImportTemplate", "api/system/import-templates/(?P<pk>[^/.]+)$", "DELETE"),
+        ("list:SystemImportTemplate", "api/task/import-templates$", "GET"),
+        ("create:SystemImportTemplate", "api/task/import-templates$", "POST"),
+        ("retrieve:SystemImportTemplate", "api/task/import-templates/(?P<pk>[^/.]+)$", "GET"),
+        ("update:SystemImportTemplate", "api/task/import-templates/(?P<pk>[^/.]+)$", "PUT"),
+        ("destroy:SystemImportTemplate", "api/task/import-templates/(?P<pk>[^/.]+)$", "DELETE"),
     ]
     menus = [menu_factory(name, path=path, method=method) for name, path, method in perms]
     role.menu.set(menus)

@@ -1,0 +1,118 @@
+{
+  "description": "AI 答案质量回归集（规则式判分）：问题 + 判定要素（必含关键短语 / 期望引用出处 / 黑名单 / 结构化字段），与检索评测 tests/data/ai_retrieval_eval.json 互补但不合并。判分逻辑见 tests/integration/ai/test_ai_answer_quality.py 的 judge_answer；docs 类用例的语料与期望短语一致性由该文件的 KNOWLEDGE_DOCS 守护。修改回答内容只改本文件，链路退化才让用例失败。",
+  "version": 1,
+  "updated": "2026-10-09",
+  "cases": [
+    {
+      "id": "docs-dataset-permission",
+      "kind": "docs",
+      "question": "数据集执行时如何按数据权限过滤？",
+      "expected_sources": ["docs/answer-eval/dataset.md"],
+      "required_phrases": ["调用者数据权限过滤"],
+      "forbidden_phrases": ["cron 表达式"]
+    },
+    {
+      "id": "docs-report-trigger",
+      "kind": "docs",
+      "question": "定时报表是怎么触发并通过邮件发送的？",
+      "expected_sources": ["docs/answer-eval/report.md"],
+      "required_phrases": ["cron 表达式触发", "邮件发送给收件人"],
+      "forbidden_phrases": ["页面水印"]
+    },
+    {
+      "id": "docs-watermark-content",
+      "kind": "docs",
+      "question": "页面水印会显示哪些内容？",
+      "expected_sources": ["docs/answer-eval/watermark.md"],
+      "required_phrases": ["叠加用户名与时间戳"],
+      "forbidden_phrases": ["数据集"]
+    },
+    {
+      "id": "docs-dataset-whitelist",
+      "kind": "docs",
+      "question": "数据集的模型与字段白名单是怎么约束的？",
+      "expected_sources": ["docs/answer-eval/dataset.md"],
+      "required_phrases": ["白名单模型", "字段超出白名单会被拒绝"],
+      "forbidden_phrases": []
+    },
+    {
+      "id": "docs_stream-dataset-permission",
+      "kind": "docs_stream",
+      "question": "数据集执行时如何按数据权限过滤？",
+      "expected_sources": ["docs/answer-eval/dataset.md"],
+      "required_phrases": ["调用者数据权限过滤"],
+      "forbidden_phrases": ["cron 表达式"]
+    },
+    {
+      "id": "docs_stream-watermark-content",
+      "kind": "docs_stream",
+      "question": "页面水印会显示哪些内容？",
+      "expected_sources": ["docs/answer-eval/watermark.md"],
+      "required_phrases": ["叠加用户名与时间戳"],
+      "forbidden_phrases": ["数据集"]
+    },
+    {
+      "id": "nl-users-rows",
+      "kind": "nl",
+      "question": "列出所有用户",
+      "expected_dataset_name": "用户清单",
+      "expected_mode": "rows",
+      "required_phrases": ["用户清单"],
+      "forbidden_phrases": []
+    },
+    {
+      "id": "nl-users-count",
+      "kind": "nl",
+      "question": "用户一共有多少个？",
+      "expected_dataset_name": "用户清单",
+      "expected_mode": "aggregate",
+      "required_phrases": ["用户清单"],
+      "forbidden_phrases": []
+    },
+    {
+      "id": "nl_stream-users-rows",
+      "kind": "nl_stream",
+      "question": "按用户名列一下用户",
+      "expected_dataset_name": "用户清单",
+      "expected_mode": "rows",
+      "required_phrases": ["用户清单"],
+      "forbidden_phrases": []
+    },
+    {
+      "id": "fallback-no-match-physics",
+      "kind": "fallback",
+      "scenario": "no_match",
+      "via": "ask",
+      "question": "量子纠缠态的贝尔不等式实验结论是什么？",
+      "expected_code": 1001,
+      "expected_detail": "No matching documents found for this question"
+    },
+    {
+      "id": "fallback-no-match-material",
+      "kind": "fallback",
+      "scenario": "no_match",
+      "via": "ask",
+      "question": "请解释超导体迈斯纳效应的微观机制",
+      "expected_code": 1001,
+      "expected_detail": "No matching documents found for this question"
+    },
+    {
+      "id": "fallback-empty-answer",
+      "kind": "fallback",
+      "scenario": "empty_answer",
+      "via": "ask",
+      "question": "数据集执行时如何按数据权限过滤？",
+      "expected_code": 1001,
+      "expected_detail": "The model returned an empty answer; please retry or switch models"
+    },
+    {
+      "id": "fallback-reasoning-only",
+      "kind": "fallback",
+      "scenario": "reasoning_only",
+      "via": "ask_stream",
+      "question": "数据集执行时如何按数据权限过滤？",
+      "expected_code": 1001,
+      "expected_detail": "The model did not provide a final answer; please retry or switch models"
+    }
+  ]
+}

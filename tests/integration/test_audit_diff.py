@@ -62,10 +62,12 @@ def test_user_update_records_changes_by_default(
 ):
     """默认白名单下的端到端：用户管理改性别/昵称即落 changes（变更明细可见）。"""
     with django_capture_on_commit_callbacks(execute=True):
-        resp = auth_client.patch(f"/api/system/user/{normal_user.pk}", {"gender": 2, "nickname": "改名"}, format="json")
+        resp = auth_client.patch(
+            f"/api/identity/user/{normal_user.pk}", {"gender": 2, "nickname": "改名"}, format="json"
+        )
     assert resp.status_code == 200, resp.data
 
-    log = OperationLog.objects.filter(path=f"/api/system/user/{normal_user.pk}", method="PATCH").latest("id")
+    log = OperationLog.objects.filter(path=f"/api/identity/user/{normal_user.pk}", method="PATCH").latest("id")
     changes = json.loads(log.changes)
     assert changes["gender"]["old"] == "0"
     assert changes["gender"]["new"] == "2"
@@ -98,13 +100,13 @@ def test_m2m_changes_recorded(auth_client, superuser, menu_factory, monkeypatch,
 
     with django_capture_on_commit_callbacks(execute=True):
         resp = auth_client.put(
-            f"/api/system/role/{role.pk}",
+            f"/api/identity/role/{role.pk}",
             {"name": "审计角色v2", "code": "audit-diff-m2m", "menu": [str(menu.pk)], "fields": {}},
             format="json",
         )
     assert resp.status_code == 200, resp.data
 
-    log = OperationLog.objects.filter(path=f"/api/system/role/{role.pk}", method="PUT").latest("id")
+    log = OperationLog.objects.filter(path=f"/api/identity/role/{role.pk}", method="PUT").latest("id")
     changes = json.loads(log.changes)
     assert changes["name"]["old"] == "审计角色"
     assert changes["name"]["new"] == "审计角色v2"
@@ -126,13 +128,13 @@ def test_m2m_unchanged_not_recorded(
 
     with django_capture_on_commit_callbacks(execute=True):
         resp = auth_client.put(
-            f"/api/system/role/{role.pk}",
+            f"/api/identity/role/{role.pk}",
             {"name": "无变化角色v2", "code": "audit-diff-m2m-2", "fields": {}},
             format="json",
         )
     assert resp.status_code == 200, resp.data
 
-    log = OperationLog.objects.filter(path=f"/api/system/role/{role.pk}", method="PUT").latest("id")
+    log = OperationLog.objects.filter(path=f"/api/identity/role/{role.pk}", method="PUT").latest("id")
     changes = json.loads(log.changes)
     assert "menu" not in changes
     assert changes["name"]["new"] == "无变化角色v2"

@@ -33,9 +33,9 @@ def approver(db):
 
 class TestTargetSnapshot:
     def test_delete_snapshot_records_object_identity(self, auth_client, approver):
-        SysConfig.set_value("APPROVAL_REQUIRED_PATHS", [r"^/api/system/role/"])
+        SysConfig.set_value("APPROVAL_REQUIRED_PATHS", [r"^/api/identity/role/"])
         role = UserRole.objects.create(name="待删角色", code="u1_role")
-        response = auth_client.delete(f"/api/system/role/{role.pk}")
+        response = auth_client.delete(f"/api/identity/role/{role.pk}")
         assert response.status_code == 412
         approval = ApprovalRequest.objects.get(status=ApprovalRequest.Status.PENDING)
         snapshot = approval.target_snapshot
@@ -44,9 +44,9 @@ class TestTargetSnapshot:
         assert snapshot["name"].startswith("待删角色")
 
     def test_detail_api_returns_snapshot(self, auth_client, approver):
-        SysConfig.set_value("APPROVAL_REQUIRED_PATHS", [r"^/api/system/role/"])
+        SysConfig.set_value("APPROVAL_REQUIRED_PATHS", [r"^/api/identity/role/"])
         role = UserRole.objects.create(name="详情角色", code="u1_role2")
-        auth_client.delete(f"/api/system/role/{role.pk}")
+        auth_client.delete(f"/api/identity/role/{role.pk}")
         approval = ApprovalRequest.objects.get(status=ApprovalRequest.Status.PENDING)
         body = auth_client.get(f"/api/approval/approvals/{approval.pk}").json()["data"]
         assert body["target_snapshot"]["pk"] == str(role.pk)
@@ -180,9 +180,9 @@ class TestAssigneeSnapshot:
         assert task.status == ApprovalNodeTask.Status.APPROVED
 
     def test_flat_request_approver_display(self, auth_client, approver):
-        SysConfig.set_value("APPROVAL_REQUIRED_PATHS", [r"^/api/system/role/"])
+        SysConfig.set_value("APPROVAL_REQUIRED_PATHS", [r"^/api/identity/role/"])
         role = UserRole.objects.create(name="快照角色", code="u1_role4")
-        auth_client.delete(f"/api/system/role/{role.pk}")
+        auth_client.delete(f"/api/identity/role/{role.pk}")
         approval = ApprovalRequest.objects.get(status=ApprovalRequest.Status.PENDING)
         from approval.utils.approval import approve_request
 

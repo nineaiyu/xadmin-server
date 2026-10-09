@@ -112,7 +112,7 @@ def stub_idp(monkeypatch):
 
 def callback(user, provider=PROVIDER_KEY, code="code-1", state=None, client=None):
     factory = APIRequestFactory()
-    url = f"/api/system/auth/oauth/{provider}/callback"
+    url = f"/api/identity/auth/oauth/{provider}/callback"
     params = {"code": code, "state": state if state is not None else issue_state(provider)}
     request = factory.get(url, params)
     if user is not None:
@@ -128,7 +128,7 @@ class TestCompleteLoginSingleEntry:
         """MFA 开启时任何路径都必须返回 MFA 响应（漏接即后门）。"""
         monkeypatch.setattr("identity.services.auth_login.is_login_mfa_required", lambda user: True)
         monkeypatch.setattr("identity.services.auth_login.get_login_mfa_methods", lambda user, request: ["otp"])
-        request = APIRequestFactory().post("/api/system/login")
+        request = APIRequestFactory().post("/api/identity/login")
         request.user = superuser
         response = complete_login(request, superuser, login_type=login_type)
         assert response is not None
@@ -144,7 +144,7 @@ class TestCompleteLoginSingleEntry:
                 {"user": user_obj, "login_type": login_type}
             ),
         )
-        request = APIRequestFactory().post("/api/system/login")
+        request = APIRequestFactory().post("/api/identity/login")
         request.user = superuser
         assert complete_login(request, superuser) is None
         assert called["user"] == superuser
@@ -187,7 +187,7 @@ class TestAuthorizeUrl:
 
 class TestProvidersApi:
     def test_secret_masked(self, oauth_config):
-        request = APIRequestFactory().get("/api/system/auth/oauth/providers")
+        request = APIRequestFactory().get("/api/identity/auth/oauth/providers")
         response = OAuthProvidersAPIView.as_view()(request)
         providers = response.data["data"]["providers"]
         assert providers and providers[0]["key"] == PROVIDER_KEY
@@ -199,7 +199,7 @@ class TestProvidersApi:
         disabled = dict(PROVIDER, enabled=False)
         SystemConfig.objects.filter(key="OAUTH_PROVIDERS").update(value=[disabled])
         cache.clear()
-        request = APIRequestFactory().get("/api/system/auth/oauth/providers")
+        request = APIRequestFactory().get("/api/identity/auth/oauth/providers")
         response = OAuthProvidersAPIView.as_view()(request)
         assert response.data["data"]["providers"] == []
 
@@ -262,7 +262,7 @@ class TestBindingsAndUnbind:
         UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="s-admin")
         mine = UserOAuthBinding.objects.create(user=normal_user, provider=PROVIDER_KEY, subject="s-user")
 
-        request = APIRequestFactory().get("/api/system/auth/oauth/bindings")
+        request = APIRequestFactory().get("/api/identity/auth/oauth/bindings")
         force_authenticate(request, user=normal_user)
         response = OAuthBindingsAPIView.as_view()(request)
         rows = response.data["data"]
@@ -271,7 +271,7 @@ class TestBindingsAndUnbind:
     def test_unbind_requires_password(self, superuser, oauth_config):
         binding = UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="s1")
         request = APIRequestFactory().delete(
-            "/api/system/auth/oauth/bindings", {"password": "wrong-password"}, format="json"
+            "/api/identity/auth/oauth/bindings", {"password": "wrong-password"}, format="json"
         )
         force_authenticate(request, user=superuser)
         response = OAuthUnbindAPIView.as_view()(request, pk=str(binding.pk))
@@ -284,7 +284,7 @@ class TestBindingsAndUnbind:
         superuser.save(update_fields=["password"])
         binding = UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="s1")
 
-        request = APIRequestFactory().delete("/api/system/auth/oauth/bindings", {"password": "any"}, format="json")
+        request = APIRequestFactory().delete("/api/identity/auth/oauth/bindings", {"password": "any"}, format="json")
         force_authenticate(request, user=superuser)
         # 口令校验用的是真实 authenticate，无密码账号必然失败；此处断言"不会因解绑而失联"
         response = OAuthUnbindAPIView.as_view()(request, pk=str(binding.pk))
@@ -298,7 +298,7 @@ class TestBindingsAndUnbind:
         binding = UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="s1")
 
         request = APIRequestFactory().delete(
-            "/api/system/auth/oauth/bindings", {"password": "Unbind-Pwd-2026!"}, format="json"
+            "/api/identity/auth/oauth/bindings", {"password": "Unbind-Pwd-2026!"}, format="json"
         )
         force_authenticate(request, user=superuser)
         response = OAuthUnbindAPIView.as_view()(request, pk=str(binding.pk))
@@ -307,7 +307,7 @@ class TestBindingsAndUnbind:
 
     def test_unbind_others_binding_not_found(self, superuser, normal_user, oauth_config):
         others = UserOAuthBinding.objects.create(user=normal_user, provider=PROVIDER_KEY, subject="s-other")
-        request = APIRequestFactory().delete("/api/system/auth/oauth/bindings", {"password": "x"}, format="json")
+        request = APIRequestFactory().delete("/api/identity/auth/oauth/bindings", {"password": "x"}, format="json")
         force_authenticate(request, user=superuser)
         response = OAuthUnbindAPIView.as_view()(request, pk=str(others.pk))
         assert response.data["code"] != 1000
@@ -323,7 +323,7 @@ class TestBindFlow:
 
     @staticmethod
     def bind_authorize(user, provider=PROVIDER_KEY):
-        request = APIRequestFactory().get(f"/api/system/auth/oauth/{provider}/bind-authorize")
+        request = APIRequestFactory().get(f"/api/identity/auth/oauth/{provider}/bind-authorize")
         if user is not None:
             force_authenticate(request, user=user)
         return OAuthBindAuthorizeAPIView.as_view()(request, provider=provider)
@@ -334,7 +334,7 @@ class TestBindFlow:
         用 api_client 而非 APIRequestFactory：认证失败走异常处理器（set_rollback），
         与 oauth_config 的库操作 fixture 组合会污染测试事务。
         """
-        response = api_client.get(f"/api/system/auth/oauth/{PROVIDER_KEY}/bind-authorize")
+        response = api_client.get(f"/api/identity/auth/oauth/{PROVIDER_KEY}/bind-authorize")
         assert response.status_code in (401, 403)
 
     def test_bind_flow_binds_current_user_without_login(self, superuser, oauth_config, stub_idp):

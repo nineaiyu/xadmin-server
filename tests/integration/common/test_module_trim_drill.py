@@ -162,7 +162,7 @@ class TestRouteLayer:
     def test_core_path_not_gated(self, module_config):
         module_config(disable=[TRIMMED])
         # 内核路径不受模块网关影响（未登录应为 401/403，而非模块 404）
-        assert Client().get("/api/system/user").status_code != 404
+        assert Client().get("/api/identity/user").status_code != 404
 
 
 class TestWebsocketChannelLayer:
@@ -422,7 +422,7 @@ class TestThirdPartyDeclarationPath:
         rows = [
             (1001, None, MENU_TYPE_DIRECTORY, "ThirdPartyRoot", "/third-party"),
             (1002, 1001, MENU_TYPE_PERMISSION, "list:ThirdParty", "api/third-party/items$"),
-            (1003, None, MENU_TYPE_PERMISSION, "list:SystemUser", "api/system/user$"),
+            (1003, None, MENU_TYPE_PERMISSION, "list:SystemUser", "api/identity/user$"),
         ]
         module_config()
         assert not compute_hidden_menu_pks(rows)  # 启用时零隐藏

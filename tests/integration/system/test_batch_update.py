@@ -12,12 +12,12 @@ import pytest
 
 from identity.models import UserInfo, UserRole
 
-USER_URL = "/api/system/user/batch-update"
-ROLE_URL = "/api/system/role/batch-update"
-DEPT_URL = "/api/system/dept/batch-update"
-TASK_URL = "/api/system/tasks/periodic/batch-update"
+USER_URL = "/api/identity/user/batch-update"
+ROLE_URL = "/api/identity/role/batch-update"
+DEPT_URL = "/api/identity/dept/batch-update"
+TASK_URL = "/api/task/periodic/batch-update"
 LEAVE_URL = "/api/approval/leaves/batch-update"
-ROLE_DESTROY_URL = "/api/system/role/batch-destroy"
+ROLE_DESTROY_URL = "/api/identity/role/batch-destroy"
 MISSING_PK = "999999999"
 
 pytestmark = pytest.mark.django_db

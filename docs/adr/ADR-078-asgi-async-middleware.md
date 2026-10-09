@@ -1,7 +1,8 @@
 # ADR-078：ASGI 中间件链异步化（杠杆 B）
 
+- 状态：已交付
+
 > **日期**：2026-10-01
-> **状态**：已交付
 > **关联**：[ASGI 同步段容量立项（2026.10）](../plans/ASGI同步段容量立项-2026.10.md) 杠杆 B（触发制，本次按用户决策提前触发）；[ADR-006](ADR-006-db-connection-pool.md)（DB 连接池，本链路的容量前提）；[ADR-074](ADR-074-knowledge-pgvector.md) 无关
 > **代码路径**：`server/middleware.py`、`common/core/middleware.py`、`common/local.py`
 > **背景**：容量立项实测单 worker 吞吐封顶 ≈195 rps，请求线程时间 21.6% 花在 sync→async 交接等待；中间件链 18 项中 7 项自定义中间件为纯同步类（`async_capable` 未声明），每请求在同步段与事件循环之间多次交接。

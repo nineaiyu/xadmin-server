@@ -17,7 +17,7 @@ from system.models import DataPermission
 
 pytestmark = pytest.mark.django_db
 
-IMPERSONATE_PATH = "api/system/user/(?P<pk>[^/.]+)/impersonate$"
+IMPERSONATE_PATH = "api/identity/user/(?P<pk>[^/.]+)/impersonate$"
 
 
 def _make_user(username):
@@ -47,7 +47,7 @@ def _jwt_client(api_client, user):
 
 
 def _impersonate(api_client, target):
-    return api_client.post(f"/api/system/user/{target.pk}/impersonate")
+    return api_client.post(f"/api/identity/user/{target.pk}/impersonate")
 
 
 def _bearer_client(access_token: str) -> APIClient:
@@ -168,13 +168,13 @@ def test_cannot_impersonate_while_impersonating(api_client, superuser, normal_us
 def test_userinfo_reports_impersonator(api_client, superuser, normal_user):
     _granted_client(api_client, superuser)
     access = _impersonate(api_client, normal_user).data["data"]["access"]
-    response = _bearer_client(access).get("/api/system/userinfo")
+    response = _bearer_client(access).get("/api/identity/userinfo")
     assert response.data["code"] == 1000
     assert response.data["data"]["impersonator"]["username"] == superuser.username
 
 
 def test_userinfo_without_impersonation_has_no_impersonator(api_client, normal_user):
-    response = _jwt_client(api_client, normal_user).get("/api/system/userinfo")
+    response = _jwt_client(api_client, normal_user).get("/api/identity/userinfo")
     assert response.data["code"] == 1000
     assert "impersonator" not in response.data["data"]
 
@@ -186,7 +186,7 @@ def test_exit_returns_impersonator_tokens_and_revokes_impersonated(api_client, s
     # 退出前取 jti（退出后 token 已入黑名单，再构造 RefreshToken 校验会直接抛错）
     refresh_jti = RefreshToken(refresh).payload["jti"]
 
-    response = _bearer_client(access).post("/api/system/impersonate/exit", {"refresh": refresh}, format="json")
+    response = _bearer_client(access).post("/api/identity/impersonate/exit", {"refresh": refresh}, format="json")
     assert response.data["code"] == 1000
     restored = response.data["data"]
     # 返回的是模拟发起人的新 token（payload 无 imp claim）
@@ -206,7 +206,7 @@ def test_exit_returns_impersonator_tokens_and_revokes_impersonated(api_client, s
 
 
 def test_exit_requires_impersonation_state(api_client, normal_user):
-    response = _jwt_client(api_client, normal_user).post("/api/system/impersonate/exit", {}, format="json")
+    response = _jwt_client(api_client, normal_user).post("/api/identity/impersonate/exit", {}, format="json")
     assert response.data["code"] == 1001
 
 
@@ -214,4 +214,4 @@ def test_exit_without_menu_permission_still_works(api_client, superuser, normal_
     """退出模拟是安全阀：被模拟用户未必有任何菜单权限（白名单 URL），退出必须无条件可达。"""
     _granted_client(api_client, superuser)
     access = _impersonate(api_client, normal_user).data["data"]["access"]
-    assert _bearer_client(access).post("/api/system/impersonate/exit", {}, format="json").data["code"] == 1000
+    assert _bearer_client(access).post("/api/identity/impersonate/exit", {}, format="json").data["code"] == 1000

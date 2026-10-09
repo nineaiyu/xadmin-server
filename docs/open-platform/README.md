@@ -16,7 +16,7 @@
 ## 2. 快速开始（client-credentials）
 
 1. 平台管理员在 `集成管理 → API 应用` 创建应用，登记：
-   - **接口范围（scope）**：可勾选到具体接口（如 `GET ^/api/system/user/?$`），空 = 不限；
+   - **接口范围（scope）**：可勾选到具体接口（如 `GET ^/api/identity/user/?$`），空 = 不限；
    - **资源授权（可选）**：模型 × 动作 × 字段 × 行四级收敛（见 §3.2）；
    - **每分钟限流 / 每日配额**：见 §5；
    - **回调地址**：`https` 强制（联调可用 `http://127.0.0.1:*`）。
@@ -24,13 +24,13 @@
 
 ```bash
 # 换发凭证（轮换语义：旧凭证即时失效，请自行缓存）
-curl -X POST http://<host>/api/system/open/token \
+curl -X POST http://<host>/api/identity/open/token \
   -H 'Content-Type: application/json' \
   -d '{"client_id":"app_xxx","client_secret":"aps_xxx"}'
 # → {"code":1000,"data":{"access_token":"apst_xxx","token_type":"Pat","expires_in":7200,"scopes":[...]}}
 
 # 调用接口
-curl http://<host>/api/system/userinfo -H 'Authorization: Pat apst_xxx'
+curl http://<host>/api/identity/userinfo -H 'Authorization: Pat apst_xxx'
 ```
 
 可直接运行的端到端演示：`python scripts/open_platform_demo.py --base-url ... --client-id ... --client-secret ...`
@@ -47,7 +47,7 @@ curl http://<host>/api/system/userinfo -H 'Authorization: Pat apst_xxx'
 
 ### 3.1 scope（接口级）
 
-- 条目形如 `GET ^/api/system/user/?$`（METHOD + 锚定正则），空清单 = 不限制；
+- 条目形如 `GET ^/api/identity/user/?$`（METHOD + 锚定正则），空清单 = 不限制；
 - 超出 scope → `403`（`PAT scope does not allow this path`）。
 
 ### 3.2 资源授权（模型 × 动作 × 字段 × 行）
@@ -72,11 +72,11 @@ curl http://<host>/api/system/userinfo -H 'Authorization: Pat apst_xxx'
 
 ```
 第三方                        浏览器（被授权用户）              xadmin
-  │  1. 跳转 /api/system/open/oauth/authorize?client_id&redirect_uri&scope&state&code_challenge(S256)
+  │  1. 跳转 /api/identity/open/oauth/authorize?client_id&redirect_uri&scope&state&code_challenge(S256)
   │ ────────────────────────────────▶ 同意页（登录态）
-  │                                    2. POST /api/system/open/oauth/approve (approved=true)
+  │                                    2. POST /api/identity/open/oauth/approve (approved=true)
   │                                    3. 跳回 redirect_uri?code=xxx&state=yyy
-  │  4. POST /api/system/open/oauth/token (grant_type=authorization_code, code, code_verifier)
+  │  4. POST /api/identity/open/oauth/token (grant_type=authorization_code, code, code_verifier)
   │  ◀── access_token(PAT) + refresh_token
   │  5. Authorization: Pat <access_token>
 ```
@@ -86,7 +86,7 @@ curl http://<host>/api/system/userinfo -H 'Authorization: Pat apst_xxx'
 - PKCE：提供 `code_challenge` 后换发必须带 `code_verifier`（仅 `S256`；`plain` 已移除，
   RFC 8252 / OAuth 2.0 Security BCP 建议仅 S256）；
 - 授权码一次性、5 分钟有效；refresh_token 一次即轮换（刷新后旧 refresh 与旧 access 同时失效）；
-- 撤销：`POST /api/system/open/oauth/revoke`（`token` 传 refresh 或 access 均可）；
+- 撤销：`POST /api/identity/open/oauth/revoke`（`token` 传 refresh 或 access 均可）；
 - access 的身份是**授权用户**，权限面 = 应用 scope × 应用资源授权 × 该用户权限（交集）。
 
 错误响应统一为 `{"code":1001,"detail":"...","data":{"error":"<标准 OAuth 错误码>"}}`

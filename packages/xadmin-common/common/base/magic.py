@@ -21,6 +21,15 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
+def _record_cache_metric(cache_name: str, result: str) -> None:
+    """缓存命中/未命中计数（指标旁路：延迟导入避免与 common.metrics 成环，失败静默）。"""
+    try:
+        from common.metrics import record_cache_request
+    except Exception:  # noqa: BLE001 指标旁路：导入失败不得影响缓存主流程
+        return
+    record_cache_request(cache_name, result)
+
+
 def run_function_by_locker(
     timeout: int = 60 * 5, lock_func: Callable[..., Any] | None = None
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -189,7 +198,8 @@ class MagicCacheData:
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             @wraps(func)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
-                cache_key = f"magic_cache_data_{func.__name__}"
+                func_name = func.__name__
+                cache_key = f"magic_cache_data_{func_name}"
                 if key_func:
                     cache_key = f"{cache_key}_{key_func(*args, **kwargs)}"
 
@@ -209,6 +219,7 @@ class MagicCacheData:
                     logger.debug(
                         f"exec {func} finished. cache_time:{cache_time} cache_key:{cache_key} cache data exist"
                     )
+                    _record_cache_metric(func_name, "hit")
                     return res["data"]
 
                 with cache.lock(f"locker_{cache_key}", timeout=placeholder_ttl, blocking_timeout=placeholder_ttl + 5):
@@ -219,9 +230,11 @@ class MagicCacheData:
                         logger.debug(
                             f"exec {func} finished. cache_time:{cache_time} cache_key:{cache_key} cache data exist"
                         )
+                        _record_cache_metric(func_name, "hit")
                         return res["data"]
 
                     # 占位使用短 TTL：崩溃后最多影响 placeholder_ttl 秒
+                    _record_cache_metric(func_name, "miss")
                     cache.set(cache_key, {"status": "ready", "c_time": n_time}, placeholder_ttl)
                     try:
                         data = func(*args, **kwargs)
@@ -360,6 +373,7 @@ class MagicCacheResponse:
 
     def _serve_cached(self, res: dict[str, Any], view_instance: Any, func_name: str, cache_key: str) -> Any:
         logger.info(f"exec {func_name} finished. cache_key:{cache_key}  cache data exist")
+        _record_cache_metric(func_name, "hit")
         content, status, headers = res["data"]
         response = HttpResponse(content=content, status=status)
         response.renderer_context = view_instance.get_renderer_context()
@@ -381,6 +395,9 @@ class MagicCacheResponse:
         """回源渲染；``store`` 为真且响应非 4xx/5xx 时回写缓存。"""
         n_time = time.time()
         func_name = f"{view_instance.__class__.__name__}_{view_method.__name__}"
+        if store:
+            # 仅统计会回写的缓存路径：no_cache 旁路（store=False）属主动绕过而非未命中
+            _record_cache_metric(func_name, "miss")
         response = view_method(view_instance, request, *args, **kwargs)
         response = view_instance.finalize_response(request, response, *args, **kwargs)
         response.render()

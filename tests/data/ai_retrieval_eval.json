@@ -1,5 +1,5 @@
 {
-  "description": "AI 知识库检索评测集（A1，检索升级门控）：问题 -> 期望出处（source_path，命中 top-5 任一即算 hit）。出处路径相对 xadmin-server 仓库根，口径与 system/utils/ai.py 的 _iter_doc_files 一致。新增/重命名语料文档时需同步本文件并重跑 tests/integration/system/test_ai_retrieval_eval.py。",
+  "description": "AI 知识库检索评测集（A1，检索升级门控）：问题 -> 期望出处（source_path，命中 top-5 任一即算 hit）。出处路径相对 xadmin-server 仓库根，口径与 ai/utils/ai.py 的 _iter_doc_files 一致。新增/重命名语料文档时需同步本文件并重跑 tests/integration/ai/test_ai_retrieval_eval.py。回答内容层面的评测另见 tests/data/ai_answer_eval.json（tests/integration/ai/test_ai_answer_quality.py，两者互补不合并）。",
   "version": 1,
   "updated": "2026-09-14",
   "top_k": 5,
@@ -127,7 +127,7 @@
     {
       "id": "deployment-upgrade",
       "question": "生产环境部署的升级与回滚步骤在哪里？配置项如何详解？",
-      "expected": ["docs/ops/deployment.md"]
+      "expected": ["docs/ops/deployment.md", "docs/ops/deployment-upgrade.md", "docs/ops/config-reference.md"]
     },
     {
       "id": "runbook",

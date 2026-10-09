@@ -73,3 +73,54 @@
 - 响应缓存与数据缓存键前缀不同（`magic_cache_response_` / `magic_cache_data_`），
   批量失效分别走 `invalid_caches` 的两个入口，勿混用。
 - 消息未读等高频计数不走缓存，直接聚合查询（PERF-04 索引覆盖），避免缓存一致性问题。
+
+## 八、缓存命中率指标（2026-10-09）
+
+`packages/xadmin-common/common/metrics.py::record_cache_request` 记录两套内核缓存的读取结果，
+Counter `xadmin_cache_requests_total{cache, result}`：
+
+- `cache` 标签用**缓存名**（MagicCacheResponse 取 `{View}_{method}`，MagicCacheData 取被装饰函数名），
+  **不含缓存键**——键带用户/参数维度，基数不可控；
+- `result` 为 `hit` / `miss`。MagicCacheResponse 在 `_serve_cached` 记 hit（含锁内二次命中）、
+  在进入 `_execute_view` 前记 miss（`?no_cache=1` 主动旁路不计）；MagicCacheData 在 `is_valid`
+  判定处记 hit/miss。接线性指标旁路：依赖缺失或记录失败一律 no-op，不影响缓存主流程。
+
+整体命中率 PromQL：
+
+```promql
+sum(rate(xadmin_cache_requests_total{result="hit"}[5m]))
+  / sum(rate(xadmin_cache_requests_total[5m]))
+```
+
+按缓存名分组：
+
+```promql
+sum by (cache) (rate(xadmin_cache_requests_total{result="hit"}[5m]))
+  / sum by (cache) (rate(xadmin_cache_requests_total[5m]))
+```
+
+守护测试：`tests/unit/common/test_cache_metrics.py`。指标清单登记见
+[../ops/observability.md](../ops/observability.md) §三。
+
+## 九、TTL 抖动与降级回源复核（2026-10-09，结论制）
+
+**复核口径**：针对「缓存同批到期/失效是否造成回源尖峰」逐项评估——①主要同批风险点（权限信号失效、
+授权池 grants 版本号 `incr`）与 TTL 无关；②窗口到期的并发击穿已被三层单飞/占位锁吸收
+（MagicCacheData 占位锁、MagicCacheResponse 单飞锁、元数据载荷单飞锁）；③ TTL 写入时刻天然分散
+（逐请求 `c_time`），不存在集中到期窗口。
+
+**结论：不引入 TTL 抖动。** 维持现有确定性 TTL——便于推理、与失效链路一致，且抖动对上述风险点无收益。
+
+**降级回源现状**（安全语义不擅自改）：
+
+| 缓存 | 读取异常 | 处置 |
+|------|----------|------|
+| 权限类（`MagicCacheData`，permission.py 消费） | 异常 | **fail-closed**（403），不得改 |
+| 元数据载荷（`modelset/metadata_cache.py::cached_payload`） | 缓存/锁不可用 | 降级回源直建（已交付） |
+| 授权池（`common/core/filter.py::_grants_cache_version`） | 版本读取异常 | 返回 None → 跳过缓存直查（已交付） |
+| 菜单元信息（`common/core/api_grant.py`） | 读取异常 | 降级回源（已交付） |
+| 响应缓存（`MagicCacheResponse`，只读 GET） | 读缓存/锁故障 | 目前直接抛错；**判定为「可降级回源」**，属行为变更，本次不改 |
+
+**登记项（独立最小改动）**：`MagicCacheResponse` 读/锁/写三处 `try → 直渲`（读缓存是优化、
+不是正确性要求），配套 +1 守护测试；待后续窗口单独实施，避免与本轮指标接入混提。
+另登记观察项：授权池版本切换瞬间无锁保护，若监控（`xadmin_cache_requests_total` 回源率）见尖峰再评估。

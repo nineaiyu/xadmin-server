@@ -51,15 +51,15 @@ def user_page(db, dept, role, superuser):
 # 端点 → (实测基线, 余量)。余量给「配置/字典冷读」等固定差异，不掩盖 N+1（N+1 随行数放大）
 BASELINE = {
     # 2026-09-22 实测（含标签预取）：6 用户一页 7 条（dept JOIN + roles/rules/tags 三次批量）
-    "/api/system/user": (7, 5),
-    "/api/system/role": (4, 5),
-    "/api/system/dept": (6, 5),
-    "/api/system/logs/operation": (3, 5),
-    "/api/system/logs/login": (4, 5),
-    "/api/system/exports": (3, 5),
-    "/api/system/imports": (3, 5),
-    "/api/system/tasks/executions": (3, 5),
-    "/api/system/file": (3, 5),
+    "/api/identity/user": (7, 5),
+    "/api/identity/role": (4, 5),
+    "/api/identity/dept": (6, 5),
+    "/api/audit/logs/operation": (3, 5),
+    "/api/audit/logs/login": (4, 5),
+    "/api/task/exports": (3, 5),
+    "/api/task/imports": (3, 5),
+    "/api/task/executions": (3, 5),
+    "/api/file/file": (3, 5),
     "/api/approval/approvals": (3, 5),
 }
 

@@ -40,7 +40,7 @@ ORG_ACTION_SPECS = {
         label=_("Create a user"),
         description=_("Create a user account with username, initial password and basic profile"),
         method="POST",
-        path="/api/system/user",
+        path="/api/identity/user",
         params={
             "username": {"type": "string", "required": True, "in": "body", "description": "Login username (unique)"},
             "password": {
@@ -59,7 +59,7 @@ ORG_ACTION_SPECS = {
         label=_("Look up a user's details"),
         description=_("Fetch one user's profile (nickname, contact, dept, roles, active state)"),
         method="GET",
-        path="/api/system/user/<pk>",
+        path="/api/identity/user/<pk>",
         params={
             "pk": {"type": "user", "required": True, "in": "path", "description": "Target user username or nickname"}
         },
@@ -69,7 +69,7 @@ ORG_ACTION_SPECS = {
         label=_("Unblock a user"),
         description=_("Release a user from login-block state (after repeated password failures)"),
         method="POST",
-        path="/api/system/user/<pk>/unblock",
+        path="/api/identity/user/<pk>/unblock",
         params={
             "pk": {"type": "user", "required": True, "in": "path", "description": "Target user username or nickname"}
         },
@@ -79,7 +79,7 @@ ORG_ACTION_SPECS = {
         label=_("List online users"),
         description=_("Currently online user sessions (user, login type, last active)"),
         method="GET",
-        path="/api/system/online",
+        path="/api/identity/online",
         params={},
     ),
     ACTION_ONLINE_FORCE_LOGOUT: api_action(
@@ -87,7 +87,7 @@ ORG_ACTION_SPECS = {
         label=_("Force a user offline"),
         description=_("Revoke all sessions of one user (server-side token revocation + WebSocket kick)"),
         method="POST",
-        path="/api/system/online/<pk>/force-logout",
+        path="/api/identity/online/<pk>/force-logout",
         params={
             "pk": {"type": "user", "required": True, "in": "path", "description": "Target user username or nickname"}
         },
@@ -97,7 +97,7 @@ ORG_ACTION_SPECS = {
         label=_("List departments"),
         description=_("Department tree (name, code, leader, user count)"),
         method="GET",
-        path="/api/system/dept",
+        path="/api/identity/dept",
         params={},
     ),
     ACTION_DEPT_CREATE: api_action(
@@ -105,7 +105,7 @@ ORG_ACTION_SPECS = {
         label=_("Create a department"),
         description=_("Create a department under an optional parent department"),
         method="POST",
-        path="/api/system/dept",
+        path="/api/identity/dept",
         params={
             "name": {"type": "string", "required": True, "in": "body", "description": "Department name"},
             "code": {"type": "string", "required": False, "in": "body", "description": "Department code"},
@@ -123,7 +123,7 @@ ORG_ACTION_SPECS = {
         label=_("Update a department"),
         description=_("Rename a department or change its code/parent/description; only provided fields change"),
         method="PATCH",
-        path="/api/system/dept/<pk>",
+        path="/api/identity/dept/<pk>",
         params={
             "pk": {"type": "pk", "required": True, "in": "path", "description": "Department id (from dept.list)"},
             "name": {"type": "string", "required": False, "in": "body", "description": "New name"},
@@ -136,7 +136,7 @@ ORG_ACTION_SPECS = {
         label=_("Delete a department"),
         description=_("Delete one department (destructive; goes through the approval flow)"),
         method="DELETE",
-        path="/api/system/dept/<pk>",
+        path="/api/identity/dept/<pk>",
         params={"pk": {"type": "pk", "required": True, "in": "path", "description": "Department id (from dept.list)"}},
         requires_approval=requires_approval_high_risk,
     ),
@@ -145,7 +145,7 @@ ORG_ACTION_SPECS = {
         label=_("List roles"),
         description=_("List roles (user groups) with name, code and enabled state"),
         method="GET",
-        path="/api/system/role",
+        path="/api/identity/role",
         params={},
     ),
     ACTION_ROLE_UPDATE: api_action(
@@ -153,7 +153,7 @@ ORG_ACTION_SPECS = {
         label=_("Update a role"),
         description=_("Rename a role or change its code/description; menu permissions are not touched"),
         method="PATCH",
-        path="/api/system/role/<pk>",
+        path="/api/identity/role/<pk>",
         params={
             "pk": {"type": "role", "required": True, "in": "path", "description": "Target role name or primary key"},
             "name": {"type": "string", "required": False, "in": "body", "description": "New name"},
@@ -169,7 +169,7 @@ ORG_ACTION_SPECS = {
         label=_("Delete a role"),
         description=_("Delete one role (destructive; goes through the approval flow)"),
         method="DELETE",
-        path="/api/system/role/<pk>",
+        path="/api/identity/role/<pk>",
         params={
             "pk": {"type": "role", "required": True, "in": "path", "description": "Target role name or primary key"}
         },

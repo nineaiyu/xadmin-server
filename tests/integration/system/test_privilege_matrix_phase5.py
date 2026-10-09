@@ -29,12 +29,12 @@ from task.models.task import TaskExecution
 
 pytestmark = pytest.mark.django_db
 
-OAUTH_BINDINGS_URL = "/api/system/auth/oauth/bindings"
-IMPORT_TEMPLATE_URL = "/api/system/import-templates"
-FILE_PREVIEW_URL = "/api/system/file/{pk}/preview"
-EXPORT_STATS_URL = "/api/system/exports/stats"
-IMPORT_STATS_URL = "/api/system/imports/stats"
-TASK_STATS_URL = "/api/system/tasks/executions/stats"
+OAUTH_BINDINGS_URL = "/api/identity/auth/oauth/bindings"
+IMPORT_TEMPLATE_URL = "/api/task/import-templates"
+FILE_PREVIEW_URL = "/api/file/file/{pk}/preview"
+EXPORT_STATS_URL = "/api/task/exports/stats"
+IMPORT_STATS_URL = "/api/task/imports/stats"
+TASK_STATS_URL = "/api/task/executions/stats"
 
 MODEL_LABEL = "demo.book"
 
@@ -91,9 +91,9 @@ class TestOAuthBindings:
 class TestImportTemplates:
     def test_others_personal_template_invisible_and_unwritable(self, api_client, alice, bob, role, menu_factory):
         """M20：他人个人模板不可见；强猜 pk 改删也不生效。"""
-        grant(role, menu_factory, "api/system/import-templates$", "GET", "tpl-list")
-        grant(role, menu_factory, "api/system/import-templates/(?P<pk>[^/.]+)$", "PUT", "tpl-put")
-        grant(role, menu_factory, "api/system/import-templates/(?P<pk>[^/.]+)$", "DELETE", "tpl-del")
+        grant(role, menu_factory, "api/task/import-templates$", "GET", "tpl-list")
+        grant(role, menu_factory, "api/task/import-templates/(?P<pk>[^/.]+)$", "PUT", "tpl-put")
+        grant(role, menu_factory, "api/task/import-templates/(?P<pk>[^/.]+)$", "DELETE", "tpl-del")
         others = ImportTemplate.objects.create(creator=bob, model=MODEL_LABEL, name="bob-tpl", mapping={"a": "b"})
         api_client.force_authenticate(user=alice)
         listed = api_client.get(f"{IMPORT_TEMPLATE_URL}?model={MODEL_LABEL}")
@@ -113,7 +113,7 @@ class TestImportTemplates:
 
     def test_non_superuser_cannot_create_shared(self, api_client, alice, role, menu_factory):
         """M21：共享模板仅超管可建（普通用户提交 is_shared 无效）。"""
-        grant(role, menu_factory, "api/system/import-templates$", "POST", "tpl-post")
+        grant(role, menu_factory, "api/task/import-templates$", "POST", "tpl-post")
         api_client.force_authenticate(user=alice)
         api_client.post(
             IMPORT_TEMPLATE_URL,
@@ -125,8 +125,8 @@ class TestImportTemplates:
 
     def test_non_superuser_cannot_write_shared_template(self, api_client, alice, superuser, role, menu_factory):
         """M22：共享模板对普通用户只读——写操作取值域排除共享，改删均不可达。"""
-        grant(role, menu_factory, "api/system/import-templates/(?P<pk>[^/.]+)$", "PUT", "tpl-put2")
-        grant(role, menu_factory, "api/system/import-templates/(?P<pk>[^/.]+)$", "DELETE", "tpl-del2")
+        grant(role, menu_factory, "api/task/import-templates/(?P<pk>[^/.]+)$", "PUT", "tpl-put2")
+        grant(role, menu_factory, "api/task/import-templates/(?P<pk>[^/.]+)$", "DELETE", "tpl-del2")
         shared = ImportTemplate.objects.create(
             creator=superuser, model=MODEL_LABEL, name="shared-tpl", mapping={}, is_shared=True
         )
@@ -158,14 +158,14 @@ class TestFilePreview:
 
     def test_preview_others_file_denied(self, api_client, alice, other_file, role, menu_factory):
         """M23：预览他人文件——属主收口，越权等同不存在。"""
-        grant(role, menu_factory, "api/system/file/(?P<pk>[^/.]+)/preview$", "GET", "file-preview")
+        grant(role, menu_factory, "api/file/file/(?P<pk>[^/.]+)/preview$", "GET", "file-preview")
         api_client.force_authenticate(user=alice)
         resp = api_client.get(FILE_PREVIEW_URL.format(pk=other_file.pk))
         assert resp.status_code in (400, 403, 404)
 
     def test_preview_missing_pk_denied(self, api_client, alice, role, menu_factory):
         """M24：不存在的主键——404，不泄漏任何文件信息。"""
-        grant(role, menu_factory, "api/system/file/(?P<pk>[^/.]+)/preview$", "GET", "file-preview2")
+        grant(role, menu_factory, "api/file/file/(?P<pk>[^/.]+)/preview$", "GET", "file-preview2")
         api_client.force_authenticate(user=alice)
         resp = api_client.get(FILE_PREVIEW_URL.format(pk="00000000-0000-0000-0000-000000000000"))
         assert resp.status_code in (400, 403, 404)
@@ -180,7 +180,7 @@ class TestRecordStats:
 
     def test_stats_scoped_to_owner(self, api_client, alice, bob, role, menu_factory):
         """M26：stats 只统计本人记录（超管看全量），不泄漏他人数据量。"""
-        grant(role, menu_factory, "api/system/exports/stats$", "GET", "export-stats")
+        grant(role, menu_factory, "api/task/exports/stats$", "GET", "export-stats")
         ExportRecord.objects.create(name="mine", file_format="xlsx", creator=alice)
         ExportRecord.objects.create(name="others", file_format="xlsx", creator=bob)
         api_client.force_authenticate(user=alice)
@@ -190,23 +190,23 @@ class TestRecordStats:
 
     def test_download_others_export_record_denied(self, api_client, alice, bob, role, menu_factory):
         """M27：下载他人导出记录被拒（与列表同口径）。"""
-        grant(role, menu_factory, "api/system/exports/(?P<pk>[^/.]+)/download$", "GET", "export-download")
+        grant(role, menu_factory, "api/task/exports/(?P<pk>[^/.]+)/download$", "GET", "export-download")
         record = ExportRecord.objects.create(name="others", file_format="xlsx", creator=bob)
         api_client.force_authenticate(user=alice)
-        resp = api_client.get(f"/api/system/exports/{record.pk}/download")
+        resp = api_client.get(f"/api/task/exports/{record.pk}/download")
         assert resp.status_code in (400, 403, 404)
 
     def test_download_others_import_error_report_denied(self, api_client, alice, bob, role, menu_factory):
         """M28：他人导入记录的错误报告同样受属主收口。"""
-        grant(role, menu_factory, "api/system/imports/(?P<pk>[^/.]+)/download$", "GET", "import-download")
+        grant(role, menu_factory, "api/task/imports/(?P<pk>[^/.]+)/download$", "GET", "import-download")
         record = ImportRecord.objects.create(action="create", creator=bob)
         api_client.force_authenticate(user=alice)
-        resp = api_client.get(f"/api/system/imports/{record.pk}/download")
+        resp = api_client.get(f"/api/task/imports/{record.pk}/download")
         assert resp.status_code in (400, 403, 404)
 
     def test_task_stats_scoped_to_owner(self, api_client, alice, bob, role, menu_factory):
         """M26 附：任务执行 stats 同样按属主收口。"""
-        grant(role, menu_factory, "api/system/tasks/executions/stats$", "GET", "task-stats")
+        grant(role, menu_factory, "api/task/executions/stats$", "GET", "task-stats")
         TaskExecution.objects.create(name="mine", creator=alice)
         TaskExecution.objects.create(name="others", creator=bob)
         api_client.force_authenticate(user=alice)

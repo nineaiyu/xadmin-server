@@ -9,11 +9,11 @@
 
 1. **用量账本**：`AiUsageRecord`（`ai/models/ai.py:180-224`）逐次记录 `feature`（docs/chat/nl/action/embedding）、`track`、`profile_name`、`model`、`tokens_in/out/total`、`duration_ms`、`ok`、`detail`；按 (creator, -created_time) 与 (feature, -created_time) 建索引；保留期随 `MONITOR_RETENTION_DAYS` 由周期任务清理（`ai/utils/ai_usage.py:441-463`）。
 2. **写入口已收敛**：`record_usage`（`ai/utils/ai_usage.py:78-111`）是唯一记账点，由 `tracked_chat` / `tracked_chat_tools` / `tracked_chat_stream` 三个包装覆盖同步、工具、流式（含异步 SDK 链路）全部消费方；记账失败只记日志不影响业务。
-3. **汇总端点已具备**：`usage_summary`（`ai/utils/ai_usage.py:368-438`）提供按天 / 链路 / 双轨 / Top 用户聚合 + 配额 + 并发槽；出口 `GET /api/ai/assistant/usage`（`ai/views/assistant.py:147-163`），权限沿用 `(status|metrics|history|tools|usage)$` 路径正则。
+3. **汇总端点已具备**：`usage_summary`（`ai/utils/ai_usage.py`）提供按天 / 链路 / 双轨 / 档案 / 模型 / Top 用户聚合（合计与档案、模型维度含成功率与延迟，均值恒给、P95 样本足够才给）+ 配额 + 并发槽；出口 `GET /api/ai/assistant/usage`（`ai/views/observability.py`），权限沿用 `(status|metrics|history|tools|usage)$` 路径正则。
 4. **配额三级已具备**：日调用次数 / 日 token / 并发流式（`quota_limits` / `quota_error`，`ai/utils/ai_usage.py:61-66,165-181`），超限可读拒绝。
 5. **档案体系**：`AiProfile`（`ai/models/ai.py:101-177`）含 `model` 与用途分流（chat / structured / embedding），无任何价格字段。
 6. **前端观测面**：AI 配置页用量面板（`xadmin-client/src/views/integration/ai/config.vue:128-386`）——四张卡片（调用 / token / 失败 / 并发槽）+ by_feature / by_track / top_users 标签云；类型 `AiUsageSummary`（`src/api/ai/ai.ts:189`），接口方法 `aiAssistantApi.usage`（`:274-279`）。
-7. **缺口**：无单价、无成本、无金额维度汇总；「模型」维度在汇总里也缺（现有分组只有 feature / track）。
+7. **缺口**：无单价、无成本、无金额维度汇总（「模型」维度已具备，见第 3 条）。
 
 ## 结论与触发条件
 

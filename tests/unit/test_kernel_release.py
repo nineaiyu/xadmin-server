@@ -10,7 +10,9 @@
 3. **发布脚本契约**：``verify_wheel`` 的产物校验口径（缺文件 / 误带宿主内容即报）、
    ``publish`` 默认 dry-run（``--upload`` 才真上传）；
 4. **CI 口径**：发布 workflow（``workflow_dispatch`` + secrets fail-fast）与 lint 的
-   ``kernel-package`` job 都走同一脚本，避免文档 / CI / 脚本三处漂移。
+   ``kernel-package`` job 都走同一脚本，避免文档 / CI / 脚本三处漂移；
+5. **供应链接线**：发布流水线的 SBOM（wheel 依赖树）/ 构建溯源（attestation）/ Release
+   门控，以及镜像 workflow 的镜像溯源（digest 主体）——接线漂移即失败。
 """
 
 import importlib.util
@@ -19,6 +21,8 @@ import sys
 import tomllib
 import zipfile
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MEMBER_DIR = REPO_ROOT / "packages" / "xadmin-common"
@@ -30,6 +34,8 @@ RELEASE_DOC = REPO_ROOT / "docs" / "ops" / "kernel-release.md"
 RELEASE_SCRIPT = REPO_ROOT / "scripts" / "release_kernel.py"
 LINT_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "lint.yml"
 PUBLISH_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "publish-kernel.yml"
+BUILD_IMAGE_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "build-image.yml"
+CLIENT_BUILD_IMAGE_WORKFLOW = REPO_ROOT.parent / "xadmin-client" / ".github" / "workflows" / "build-image.yml"
 
 _VERSION_RE = re.compile(r'^__version__\s*=\s*"([^"]+)"', re.MULTILINE)
 _RELEASE_RE = re.compile(r"^##\s+\[(\d+\.\d+\.\d+)\]\s+-\s+(\d{4}-\d{2}-\d{2})\s*$", re.MULTILINE)
@@ -171,3 +177,46 @@ class TestCiWiring:
             "发布 workflow 未登记凭据 secret（缺失即 fail-fast）"
         )
         assert "缺少 KERNEL_PUBLISH_URL secret" in text, "发布 workflow 未对缺失凭据 fail-fast"
+
+
+class TestSupplyChainWiring:
+    """发布流水线的 SBOM 与构建溯源接线守护（仅 release 流水线，不进 PR 门禁）。"""
+
+    def test_publish_workflow_generates_kernel_sbom_and_attests(self):
+        text = PUBLISH_WORKFLOW.read_text(encoding="utf-8")
+        assert "anchore/sbom-action@v0" in text, "发布 workflow 缺少内核包 SBOM 生成步骤"
+        assert "cyclonedx-json" in text, "内核包 SBOM 应为 CycloneDX JSON（覆盖 wheel 依赖树）"
+        assert "actions/attest-build-provenance@v2" in text, "发布 workflow 缺少构建溯源 attestation"
+        assert "subject-path:" in text, "内核产物溯源应指定 subject-path（wheel + sdist）"
+        assert "dist/*.whl" in text and "dist/*.tar.gz" in text, "内核溯源主体应覆盖 wheel 与 sdist"
+
+    def test_publish_workflow_releases_with_prerelease_and_permissions(self):
+        text = PUBLISH_WORKFLOW.read_text(encoding="utf-8")
+        for scope in ("contents: write", "id-token: write", "attestations: write"):
+            assert scope in text, f"发布 workflow 缺少权限 {scope}（attestation / Release 所需）"
+        assert "softprops/action-gh-release@v2" in text, "发布 workflow 缺少内核 Release 步骤"
+        assert "common-v" in text, "内核 Release tag 应为 common-v<版本>"
+        assert "prerelease: true" in text, "内核 Release 必须标记 prerelease，避免污染平台发布 latest 端点"
+        assert "inputs.dry_run == false" in text, "Release 步骤应由 dry-run 开关门控（dry-run 不建 Release）"
+
+    def test_build_image_workflow_attests_image_provenance(self):
+        text = BUILD_IMAGE_WORKFLOW.read_text(encoding="utf-8")
+        assert "id: push" in text, "镜像构建步骤缺少 id（attestation 需要读取 digest 输出）"
+        assert "steps.push.outputs.digest" in text, "镜像溯源应取推送步骤的 digest（多架构为索引摘要）"
+        assert "actions/attest-build-provenance@v2" in text, "镜像 workflow 缺少构建溯源 attestation"
+        assert "nineaiyu/xadmin-server" in text, "镜像溯源主体应为服务端镜像名"
+        for scope in ("id-token: write", "attestations: write"):
+            assert scope in text, f"镜像 workflow 缺少权限 {scope}"
+        # Release 附件上传仍走 contents：确认既有 softprops 步骤未被破坏
+        assert "contents: write" in text and "softprops/action-gh-release@v2" in text
+
+    def test_client_build_image_workflow_attests_image_provenance(self):
+        if not CLIENT_BUILD_IMAGE_WORKFLOW.is_file():
+            pytest.skip("xadmin-client 仓库未检出（单仓检出守卫）")
+        text = CLIENT_BUILD_IMAGE_WORKFLOW.read_text(encoding="utf-8")
+        assert "id: push" in text, "客户端镜像构建步骤缺少 id"
+        assert "steps.push.outputs.digest" in text, "客户端镜像溯源应取推送步骤的 digest"
+        assert "actions/attest-build-provenance@v2" in text, "客户端镜像 workflow 缺少构建溯源 attestation"
+        assert "nineaiyu/xadmin-client" in text, "客户端镜像溯源主体应为客户端镜像名"
+        for scope in ("id-token: write", "attestations: write"):
+            assert scope in text, f"客户端镜像 workflow 缺少权限 {scope}"

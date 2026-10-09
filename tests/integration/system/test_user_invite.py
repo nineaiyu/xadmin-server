@@ -31,9 +31,9 @@ from tests.unit.common.test_aes_cipher_v2 import _encrypt_v2
 
 pytestmark = pytest.mark.django_db
 
-USER_URL = "/api/system/user"
-ACCEPT_URL = "/api/system/auth/invite/accept"
-VALIDATE_URL = "/api/system/auth/invite/validate"
+USER_URL = "/api/identity/user"
+ACCEPT_URL = "/api/identity/auth/invite/accept"
+VALIDATE_URL = "/api/identity/auth/invite/validate"
 NEW_PASSWORD = "Invite@2026Abc"
 WEAK_PASSWORD = "123"
 

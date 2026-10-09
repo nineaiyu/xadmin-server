@@ -24,7 +24,7 @@ from settings.services import (
 
 pytestmark = pytest.mark.django_db
 
-BASIC_LOGIN_URL = "/api/system/login/basic"
+BASIC_LOGIN_URL = "/api/identity/login/basic"
 
 
 class TestLeakPassword:

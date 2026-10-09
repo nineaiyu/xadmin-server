@@ -216,13 +216,13 @@ def test_download_error_report_and_owner_scope(superuser, normal_user):
     from rest_framework.test import APIRequestFactory, force_authenticate
 
     factory = APIRequestFactory()
-    request = factory.get(f"/api/system/imports/{record.pk}/download")
+    request = factory.get(f"/api/task/imports/{record.pk}/download")
     force_authenticate(request, user=superuser)
     response = ImportRecordViewSet.as_view({"get": "download"})(request, pk=str(record.pk))
     assert response.status_code == 200
     assert b"".join(response.streaming_content) == b"error-report"
 
-    request = factory.get(f"/api/system/imports/{record.pk}/download")
+    request = factory.get(f"/api/task/imports/{record.pk}/download")
     force_authenticate(request, user=normal_user)
     response = ImportRecordViewSet.as_view({"get": "download"})(request, pk=str(record.pk))
     assert response.status_code in (403, 404)
@@ -239,7 +239,7 @@ def test_import_log_action(superuser, monkeypatch, tmp_path):
     from rest_framework.test import APIRequestFactory, force_authenticate
 
     factory = APIRequestFactory()
-    request = factory.get(f"/api/system/imports/{record.pk}/log")
+    request = factory.get(f"/api/task/imports/{record.pk}/log")
     force_authenticate(request, user=superuser)
     response = ImportRecordViewSet.as_view({"get": "log"})(request, pk=str(record.pk))
     assert response.data["data"]["content"] == "importing\n"

@@ -93,7 +93,18 @@ jobs:
         # 口径不变（G1）：-n auto + --cov-fail-under=85；--cov-fail-under=85 覆盖率门禁：
         # 2026-09-18 上调 82 → 85（实测 87%，满足 ≤ 实测 -2pp 上移规则），2026-09-27
         # 测量口径扩至拆分后的全部 app，真环境档实测 89%，门禁维持不变
-        run: uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85
+        # 不引入 pytest-rerunfailures：失败即暴露，真抖动靠客户端 E2E 抖动榜单定位
+        # （scripts/e2e-flaky-report.mjs），重试只会把真回归伪装成通过
+        run: uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85 --junitxml=test-reports/junit.xml
+
+      - name: Upload test report (junit)
+        # 失败也上传：junit 逐用例结果供定位（无重试，失败即真失败）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-junit
+          path: test-reports/junit.xml
+          retention-days: 7
 
       - name: Django system checks (database-tagged, real PostgreSQL)
         # 守护「启动即炸」类缺陷：索引名超长（models.E034）/ GinIndex 缺

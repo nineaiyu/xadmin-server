@@ -544,8 +544,8 @@ class TestApprovalOperations:
         """待办计数：只算「他人发起的 PENDING」；非审批人恒为 0（10s 缓存需先清）。"""
         from django.core.cache import cache
 
-        ApprovalRequest.objects.create(module="x", method="DELETE", path="/api/system/user/1", creator=superuser)
-        ApprovalRequest.objects.create(module="x", method="DELETE", path="/api/system/user/2", creator=normal_user)
+        ApprovalRequest.objects.create(module="x", method="DELETE", path="/api/identity/user/1", creator=superuser)
+        ApprovalRequest.objects.create(module="x", method="DELETE", path="/api/identity/user/2", creator=normal_user)
         cache.clear()
 
         assert pending_count_for(superuser) == 1  # 自己发起的不计入
@@ -558,7 +558,7 @@ class TestApprovalOperations:
 
         # 审批动作后计数缓存自动失效（不等 TTL 也能读到新值）
         target = ApprovalRequest.objects.create(
-            module="x", method="DELETE", path="/api/system/user/3", creator=normal_user
+            module="x", method="DELETE", path="/api/identity/user/3", creator=normal_user
         )
         cache.clear()
         assert pending_count_for(superuser) == 1
@@ -640,10 +640,10 @@ class TestLifecycleJobs:
         )
 
         stale = ApprovalRequest.objects.create(
-            module="x", method="DELETE", path="/api/system/user/1", creator=normal_user
+            module="x", method="DELETE", path="/api/identity/user/1", creator=normal_user
         )
         ApprovalRequest.objects.filter(pk=stale.pk).update(created_time=timezone.now() - datetime.timedelta(hours=30))
-        ApprovalRequest.objects.create(module="x", method="DELETE", path="/api/system/user/2", creator=normal_user)
+        ApprovalRequest.objects.create(module="x", method="DELETE", path="/api/identity/user/2", creator=normal_user)
 
         # 阈值 24h：仅超时单被提醒一次；重复调用不重复提醒（占位生效）
         assert remind_pending_approvals(24) == 1

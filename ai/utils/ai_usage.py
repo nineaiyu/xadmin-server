@@ -13,6 +13,7 @@
 """
 
 import datetime
+import math
 import time
 from typing import Any
 
@@ -44,6 +45,8 @@ logger = get_logger(__name__)
 USAGE_CACHE_TTL = 60
 # 用量/观测端点查询窗口的天数上限（usage 与 metrics 共用同一口径）
 USAGE_MAX_DAYS = 365
+# p95 延迟的最小样本量：低于此值只给均值（小样本分位数不可靠，给均值会被误读为长尾正常）
+P95_MIN_SAMPLES = 20
 
 
 def extract_tokens(usage: Any) -> dict[str, Any]:
@@ -291,8 +294,63 @@ def tracked_chat_stream(
 # --------------------------------------------------------------------- 汇总口径
 
 
+def _latency_stats(durations: list[int]) -> dict[str, Any]:
+    """延迟统计（毫秒）：均值恒给，p95 仅在样本量足够时给（否则 None）。
+
+    p95 用「最近秩」（nearest-rank）口径在 Python 侧计算——不依赖数据库方言
+    （跨 PG / sqlite 结果一致）。样本不足时给 None 而非均值：均值会把长尾抹平，
+    读起来像「延迟正常」，反而误导。
+    """
+    if not durations:
+        return {"avg_latency_ms": None, "p95_latency_ms": None, "latency_samples": 0}
+    ordered = sorted(int(item or 0) for item in durations)
+    avg = round(sum(ordered) / len(ordered), 1)
+    p95: int | None = None
+    if len(ordered) >= P95_MIN_SAMPLES:
+        rank = math.ceil(0.95 * len(ordered))
+        p95 = ordered[min(rank, len(ordered)) - 1]
+    return {"avg_latency_ms": avg, "p95_latency_ms": p95, "latency_samples": len(ordered)}
+
+
+def _group_dimension(records: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
+    """按维度键（档案 / 模型）聚合：调用 / 失败 / token / 成功率 / 延迟；键为空不入表。
+
+    延迟需要全量样本（p95 无标准 ORM 聚合、跨方言口径不一），故由调用方一次取回
+    记录（``profile_name/model/duration_ms/ok/tokens_total``）后在此内存分组；
+    端点面向管理员观测面，窗口受 ``USAGE_MAX_DAYS`` 约束。
+    """
+    buckets: dict[str, dict[str, Any]] = {}
+    for row in records:
+        name = str(row.get(key) or "").strip()
+        if not name:
+            continue
+        bucket = buckets.setdefault(name, {"calls": 0, "failed": 0, "tokens": 0, "durations": []})
+        bucket["calls"] += 1
+        bucket["failed"] += 0 if row.get("ok") else 1
+        bucket["tokens"] += int(row.get("tokens_total") or 0)
+        bucket["durations"].append(int(row.get("duration_ms") or 0))
+    results = []
+    for name, bucket in sorted(buckets.items(), key=lambda item: -item[1]["calls"]):
+        calls = int(bucket["calls"])
+        failed = int(bucket["failed"])
+        results.append(
+            {
+                key: name,
+                "calls": calls,
+                "failed": failed,
+                "tokens": int(bucket["tokens"]),
+                "success_rate": round((1 - failed / max(calls, 1)) * 100, 1),
+                **_latency_stats(bucket["durations"]),
+            }
+        )
+    return results
+
+
 def usage_summary(days: int = 7, feature: str = "") -> dict[str, Any]:
-    """用量汇总（端点用）：按天 / 按链路 / Top 用户 + 合计。"""
+    """用量汇总（端点用）：按天 / 按链路 / 按档案 / 按模型 / Top 用户 + 合计。
+
+    合计与 each 维度带成功率与延迟（均值恒给，P95 样本足够才给，见 ``_latency_stats``）。
+    """
     from ai.models.ai import AiUsageRecord
 
     days = max(1, min(int(days or 7), USAGE_MAX_DAYS))
@@ -321,11 +379,18 @@ def usage_summary(days: int = 7, feature: str = "") -> dict[str, Any]:
         .annotate(calls=Count("pk"), tokens=Sum("tokens_total"))
         .order_by("-tokens")[:10]
     )
+    # 维度明细（档案 / 模型）与延迟统计：一次取回窗口内记录，内存分组
+    records = list(rows.values("profile_name", "model", "duration_ms", "ok", "tokens_total"))
+    total_calls = int(totals["calls"] or 0)
+    failed_calls = int(totals["failed"] or 0)
     return {
         "days": days,
-        "total_calls": int(totals["calls"] or 0),
+        "total_calls": total_calls,
         "total_tokens": int(totals["tokens"] or 0),
-        "failed": int(totals["failed"] or 0),
+        "failed": failed_calls,
+        "success": total_calls - failed_calls,
+        "success_rate": round((1 - failed_calls / total_calls) * 100, 1) if total_calls else 0.0,
+        **_latency_stats([int(row["duration_ms"] or 0) for row in records]),
         "by_day": [
             {
                 "day": row["day"].isoformat() if hasattr(row["day"], "isoformat") else str(row["day"]),
@@ -359,6 +424,9 @@ def usage_summary(days: int = 7, feature: str = "") -> dict[str, Any]:
             }
             for row in top_users
         ],
+        # 按档案 / 按模型分布：成功率 + 平均 / P95 延迟（键为空的行不入表，见 _group_dimension）
+        "by_profile": _group_dimension(records, "profile_name"),
+        "by_model": _group_dimension(records, "model"),
         "quota": quota_limits(),
         "stream_slots": stream_slots_in_use(),
     }

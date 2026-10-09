@@ -19,7 +19,7 @@ from identity.views.admin.dept import DeptViewSet
 
 pytestmark = pytest.mark.django_db
 
-DEPT_URL = "/api/system/dept"
+DEPT_URL = "/api/identity/dept"
 
 
 @pytest.fixture

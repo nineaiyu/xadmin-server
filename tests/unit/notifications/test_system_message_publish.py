@@ -24,7 +24,7 @@ class TestAsyncPublishSerializable:
         msg = SensitiveOperationMessage(
             {
                 "module": "test",
-                "path": "/api/system/user/1",
+                "path": "/api/identity/user/1",
                 "method": "DELETE",
                 "ipaddress": "127.0.0.1",
                 "created_time": "2026-09-09 17:08:40",

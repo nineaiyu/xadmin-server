@@ -95,7 +95,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 
 ## 六、前端核心结构
 
-> 各组件的职责 / 用法 / 依赖 / 配置项 / 扩展点全景见 [component-handbook.md](component-handbook.md) §二。
+> 各组件的职责 / 用法 / 依赖 / 配置项 / 扩展点全景见 [handbook-frontend.md](handbook-frontend.md)。
 
 ```
 Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/ReAuth/ReDialog）
@@ -115,12 +115,12 @@ Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/R
 ## 七、前后端协作时序（登录 + 首屏）
 
 ```
-1 GET  /api/system/login/basic          登录方式配置（captcha/encrypted 开关）
-2 GET  /api/system/auth/captcha         图片验证码
-3 GET  /api/system/auth/token           临时 Token（AES 加密密钥）
-4 POST /api/system/login/basic          登录 → access/refresh + lifetime
+1 GET  /api/identity/login/basic          登录方式配置（captcha/encrypted 开关）
+2 GET  /api/identity/auth/captcha         图片验证码
+3 GET  /api/identity/auth/token           临时 Token（AES 加密密钥）
+4 POST /api/identity/login/basic          登录 → access/refresh + lifetime
 5 GET  /api/system/routes               动态路由 + 权限编码（列表接口可 with_meta=1 内联元数据）
-6 GET  /api/system/userinfo             用户信息
+6 GET  /api/identity/userinfo             用户信息
 7 WS   /ws/message/{group}/{username}   实时推送通道建立
 ```
 

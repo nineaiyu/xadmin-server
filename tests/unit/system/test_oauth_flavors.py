@@ -400,7 +400,7 @@ def feishu_config():
 def callback(provider="feishu", code="code-1", state=None):
     factory = APIRequestFactory()
     params = {"code": code, "state": state if state is not None else issue_state(provider)}
-    request = factory.get(f"/api/system/auth/oauth/{provider}/callback", params)
+    request = factory.get(f"/api/identity/auth/oauth/{provider}/callback", params)
     return OAuthCallbackAPIView.as_view()(request, provider=provider)
 
 

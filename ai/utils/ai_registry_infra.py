@@ -75,7 +75,7 @@ INFRA_ACTION_SPECS = {
         label=_("Search operation logs"),
         description=_("Audit trail of operations (module, operator, status, time); newest first"),
         method="GET",
-        path="/api/system/logs/operation",
+        path="/api/audit/logs/operation",
         params={
             "module": {"type": "string", "required": False, "in": IN_QUERY, "description": "Module keyword"},
             "creator": {
@@ -92,7 +92,7 @@ INFRA_ACTION_SPECS = {
         label=_("Search login logs"),
         description=_("Login history (user, IP, user agent, success/failure); newest first"),
         method="GET",
-        path="/api/system/logs/login",
+        path="/api/audit/logs/login",
         params={
             "username": {
                 "type": "string",
@@ -108,7 +108,7 @@ INFRA_ACTION_SPECS = {
         label=_("List uploaded files"),
         description=_("List uploaded files (name, size, uploader)"),
         method="GET",
-        path="/api/system/file",
+        path="/api/file/file",
         params={"name": {"type": "string", "required": False, "in": IN_QUERY, "description": "File name keyword"}},
     ),
     "file.stats": api_action(
@@ -116,7 +116,7 @@ INFRA_ACTION_SPECS = {
         label=_("Show file storage stats"),
         description=_("File storage statistics (counts, sizes by type)"),
         method="GET",
-        path="/api/system/file/stats",
+        path="/api/file/file/stats",
         params={},
     ),
     "export.list": api_action(
@@ -124,7 +124,7 @@ INFRA_ACTION_SPECS = {
         label=_("List export records"),
         description=_("Async export records in the download center (file, status, creator)"),
         method="GET",
-        path="/api/system/exports",
+        path="/api/task/exports",
         params={},
     ),
     # ---- AI 自身（知识库目录 + 用量自观测） ----
@@ -150,7 +150,7 @@ INFRA_ACTION_SPECS = {
         label=_("List webhook subscriptions"),
         description=_("Outbound webhook subscriptions (target URL, subscribed events, enabled state)"),
         method="GET",
-        path="/api/system/webhooks/subscriptions",
+        path="/api/task/webhooks/subscriptions",
         params={},
     ),
 }

@@ -35,9 +35,9 @@ ORIGIN = "http://testserver"
 
 pytestmark = pytest.mark.django_db
 
-CHALLENGE_URL = "/api/system/passkeys/challenge"
-REGISTER_URL = "/api/system/passkeys/register"
-PASSKEY_URL = "/api/system/passkeys"
+CHALLENGE_URL = "/api/identity/passkeys/challenge"
+REGISTER_URL = "/api/identity/passkeys/register"
+PASSKEY_URL = "/api/identity/passkeys"
 
 
 def _b64(value: bytes) -> str:

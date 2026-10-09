@@ -76,13 +76,9 @@ router.register("configs", ConfigsViewSet, basename="configs")
 # 通用标签中心：标签 CRUD + 打标 / 批量打标
 router.register("tags", TagViewSet, basename="tag")
 
-# identity / file / audit / task 四域路由：经本文件同前缀挂载（ADR-057 D1.2 口径），
-# 各域 urls.py 不设 app_name，注册项并入 system 命名空间——
-# /api/system/* 路径、system: 视图名、权限点与 menu.json 全部零变化。
+# identity / file / audit / task 四域路由已按 app 边界迁出（server/urls.py 独立前缀
+# ^api/identity/ ^api/file ^api/audit/ ^api/task/）——本文件只保留 system 内核域
+# （菜单/权限/字典/字段/配置/凭据/监控/标签/代码生成/全局搜索）。
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
-urlpatterns += [path("", include("identity.urls"))]
-urlpatterns += [path("", include("file.urls"))]
-urlpatterns += [path("", include("audit.urls"))]
-urlpatterns += [path("", include("task.urls"))]
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]

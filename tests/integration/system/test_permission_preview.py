@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""权限可视化端点集成测试：GET /api/system/user|role/{pk}/preview 与 POST preview/trial。
+"""权限可视化端点集成测试：GET /api/identity/user|role/{pk}/preview 与 POST preview/trial。
 
 覆盖：认证边界（401）/ 接口权限（403 垂直越权、方法与路径精确匹配）/ 三层数据正确性 /
 规则解码文案 / 数据权限分组（个人 + 部门祖先链）/ 缓存旁路（授权后立即可见）/
@@ -20,21 +20,21 @@ from system.models import DataPermission, FieldPermission, ModelLabelField, Mode
 
 pytestmark = pytest.mark.django_db
 
-PREVIEW_PATH = "api/system/user/(?P<pk>[^/.]+)/preview$"
-TRIAL_PATH = "api/system/user/(?P<pk>[^/.]+)/preview/trial$"
-ROLE_PREVIEW_PATH = "api/system/role/(?P<pk>[^/.]+)/preview$"
+PREVIEW_PATH = "api/identity/user/(?P<pk>[^/.]+)/preview$"
+TRIAL_PATH = "api/identity/user/(?P<pk>[^/.]+)/preview/trial$"
+ROLE_PREVIEW_PATH = "api/identity/role/(?P<pk>[^/.]+)/preview$"
 
 
 def preview_url(user) -> str:
-    return f"/api/system/user/{user.pk}/preview"
+    return f"/api/identity/user/{user.pk}/preview"
 
 
 def trial_url(user) -> str:
-    return f"/api/system/user/{user.pk}/preview/trial"
+    return f"/api/identity/user/{user.pk}/preview/trial"
 
 
 def role_preview_url(role) -> str:
-    return f"/api/system/role/{role.pk}/preview"
+    return f"/api/identity/role/{role.pk}/preview"
 
 
 def grant_preview_menus(role, menu_factory, with_trial=True):
@@ -247,7 +247,7 @@ def test_preview_cache_bypass(auth_client, normal_user, role, menu_factory):
     assert codes == {"preview:SystemUser"}
 
     # 追加一条新码（不做任何缓存失效），再次预览应立即出现
-    list_menu = menu_factory(name="list:SystemUser", path="api/system/user$", method="GET")
+    list_menu = menu_factory(name="list:SystemUser", path="api/identity/user$", method="GET")
     role.menu.add(list_menu)
     response = auth_client.get(preview_url(normal_user))
     codes = {item["code"] for item in response.data["data"]["api_permissions"]}
@@ -455,11 +455,11 @@ def test_role_preview_keeps_ancestor_of_bound_child(api_client, superuser, role,
     assert tree[0]["children"][0]["title"] == "用户管理"
 
 
-DEPT_PREVIEW_PATH = "api/system/dept/(?P<pk>[^/.]+)/preview$"
+DEPT_PREVIEW_PATH = "api/identity/dept/(?P<pk>[^/.]+)/preview$"
 
 
 def dept_preview_url(dept) -> str:
-    return f"/api/system/dept/{dept.pk}/preview"
+    return f"/api/identity/dept/{dept.pk}/preview"
 
 
 def test_dept_preview_requires_code(api_client, normal_user, dept):
@@ -531,7 +531,7 @@ def test_dept_preview_filters_users_by_caller_scope(api_client, normal_user, dep
 
 
 def post_preview_url(post) -> str:
-    return f"/api/system/posts/{post.pk}/preview"
+    return f"/api/identity/posts/{post.pk}/preview"
 
 
 def test_post_preview_contract(auth_client, normal_user, dept):
@@ -560,7 +560,7 @@ def test_post_preview_filters_users_by_caller_scope(api_client, normal_user, dep
 
     role = normal_user.roles.first()
     role.menu.add(
-        menu_factory(name="preview:SystemPost", path="api/system/posts/(?P<pk>[^/.]+)/preview$", method="GET")
+        menu_factory(name="preview:SystemPost", path="api/identity/posts/(?P<pk>[^/.]+)/preview$", method="GET")
     )
     # 授予 identity.post 的可见范围（否则 get_object 404），但不授予 identity.userinfo 范围
     normal_user.rules.add(

@@ -15,7 +15,7 @@ from captcha.utils import CaptchaAuth
 
 pytestmark = pytest.mark.django_db
 
-LOGIN_URL = "/api/system/login/basic"
+LOGIN_URL = "/api/identity/login/basic"
 CAPTCHA_REFRESH_URL = "/api/system/captcha/refresh/"
 
 

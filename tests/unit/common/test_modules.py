@@ -147,7 +147,7 @@ class TestRouteGate:
         patterns = disabled_route_patterns()
         assert any(pattern.match("/api/chat/room") for pattern in patterns)
         assert any(pattern.match("/api/ai/profiles") for pattern in patterns)
-        assert not any(pattern.match("/api/system/user") for pattern in patterns)
+        assert not any(pattern.match("/api/identity/user") for pattern in patterns)
 
     def test_middleware_blocks_disabled_module_with_404(self, module_config):
         module_config(disable=["chat"])
@@ -163,13 +163,13 @@ class TestRouteGate:
         module_config(disable=["chat", "ai"])
         assert match_disabled_module("/api/chat/room") == "chat"
         assert match_disabled_module("/api/ai/profiles") == "ai"
-        assert match_disabled_module("/api/system/user") == ""
+        assert match_disabled_module("/api/identity/user") == ""
         assert match_disabled_module("") == ""
 
     def test_middleware_passes_through_other_paths(self, module_config):
         module_config(disable=["chat"])
         # 内核路径不会被模块网关拦截（未登录应为 401/403，而非模块 404）
-        response = Client().get("/api/system/user")
+        response = Client().get("/api/identity/user")
         assert response.status_code != 404
 
     def test_middleware_noop_when_nothing_disabled(self):
@@ -262,7 +262,7 @@ class TestMenuFilter:
             parent=directory,
         )
         perm = menu_factory(
-            "list:WebhookSubscription", path="api/system/webhooks/subscriptions$", method="GET", parent=menu
+            "list:WebhookSubscription", path="api/task/webhooks/subscriptions$", method="GET", parent=menu
         )
         sibling = menu_factory(
             "IntegrationApiApp", menu_type=Menu.MenuChoices.MENU, path="/integration/api-app/index", parent=directory
@@ -306,7 +306,7 @@ class TestMenuFilter:
 
     def test_unrelated_permission_not_hidden(self, module_config, menu_factory):
         """路由前缀推导出的权限前缀不得误伤（如 ai 前缀不得命中 api-applications）。"""
-        perm = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        perm = menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
         module_config(disable=["ai", "chat", "analysis", "webhook", "open_platform", "search"])
         assert perm in filter_menu_queryset(Menu.objects.filter(is_active=True))
 

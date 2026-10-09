@@ -65,7 +65,7 @@ class TestBuiltinRoleSync:
 class TestBuiltinRoleProtection:
     def _delete(self, user, pk):
         factory = APIRequestFactory()
-        request = factory.delete(f"/api/system/role/{pk}")
+        request = factory.delete(f"/api/identity/role/{pk}")
         force_authenticate(request, user=user)
         return _viewset("destroy")(request, pk=pk)
 
@@ -87,7 +87,7 @@ class TestBuiltinRoleProtection:
         role = UserRole.objects.get(code="SystemAdmin")
         role.delete()  # 先软删进回收站
         factory = APIRequestFactory()
-        request = factory.post("/api/system/role/recycle/purge", [str(role.pk)], format="json")
+        request = factory.post("/api/identity/role/recycle/purge", [str(role.pk)], format="json")
         force_authenticate(request, user=superuser)
         _viewset("recycle_purge")(request)
         assert UserRole.all_objects.filter(code="SystemAdmin").exists() is True
@@ -109,7 +109,7 @@ class TestBuiltinRoleProtection:
         # API 层：PUT 400 且 code 未变
         api_client.force_authenticate(user=superuser)
         resp = api_client.put(
-            f"/api/system/role/{role.pk}",
+            f"/api/identity/role/{role.pk}",
             {"name": role.name, "code": "Hacked", "is_active": True, "fields": {}},
             format="json",
         )
@@ -121,7 +121,7 @@ class TestBuiltinRoleProtection:
         sync_builtin_roles()
         api_client.force_authenticate(user=superuser)
         resp = api_client.post(
-            "/api/system/role",
+            "/api/identity/role",
             {"name": "伪装管理员", "code": "SystemAdmin", "fields": {}},
             format="json",
         )

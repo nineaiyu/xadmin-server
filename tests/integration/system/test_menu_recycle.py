@@ -13,8 +13,10 @@ MENU_URL = "/api/system/menu"
 class TestMenuRecycleBin:
     def _tree(self, menu_factory):
         directory = menu_factory(name="系统目录", menu_type=Menu.MenuChoices.DIRECTORY)
-        page = menu_factory(name="用户页面", menu_type=Menu.MenuChoices.MENU, parent=directory, path="api/system/user$")
-        button = menu_factory(name="list:User", parent=page, path=r"api/system/user$", method="GET")
+        page = menu_factory(
+            name="用户页面", menu_type=Menu.MenuChoices.MENU, parent=directory, path="api/identity/user$"
+        )
+        button = menu_factory(name="list:User", parent=page, path=r"api/identity/user$", method="GET")
         return directory, page, button
 
     def test_soft_delete_directory_cascades_descendants(self, auth_client, menu_factory):
@@ -69,7 +71,7 @@ class TestMenuRecycleBin:
             MENU_URL,
             {
                 "name": button.name,
-                "path": r"api/system/user$",
+                "path": r"api/identity/user$",
                 "method": "GET",
                 "menu_type": Menu.MenuChoices.PERMISSION,
                 "meta": {"title": "同名新菜单"},
@@ -84,7 +86,7 @@ class TestMenuRecycleBin:
             MENU_URL,
             {
                 "name": button.name,
-                "path": r"api/system/user$",
+                "path": r"api/identity/user$",
                 "method": "GET",
                 "menu_type": Menu.MenuChoices.PERMISSION,
                 "meta": {"title": "重复名"},

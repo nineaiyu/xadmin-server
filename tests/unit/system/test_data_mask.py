@@ -20,7 +20,7 @@ PHONE = "13812345678"
 
 
 def _make_request(user, fields=None):
-    request = RequestFactory().get("/api/system/user/")
+    request = RequestFactory().get("/api/identity/user/")
     request.user = user
     request.fields = fields or {"identity.userinfo": ["pk", "username", "nickname", "phone", "email"]}
     set_current_request(request)
@@ -31,7 +31,7 @@ def _serialize(user, instance=None, request=None, **kwargs):
     return UserInfoSerializer(instance or user, context={"request": request}, **kwargs).data
 
 
-def _make_request_with_params(user, params=None, path="/api/system/user/"):
+def _make_request_with_params(user, params=None, path="/api/identity/user/"):
     """带查询参数的请求（?mask=false 原文通道用例）。"""
     request = RequestFactory().get(path, params or {})
     request.user = user
@@ -297,8 +297,8 @@ class TestMaskOriginalChannel:
         normal_user.phone = PHONE
         normal_user.save()
         _rule()
-        detail_url = f"/api/system/user/{normal_user.pk}"
-        perm = menu_factory("用户更新", path="api/system/user/(?P<pk>[^/.]+)$", method="PUT")
+        detail_url = f"/api/identity/user/{normal_user.pk}"
+        perm = menu_factory("用户更新", path="api/identity/user/(?P<pk>[^/.]+)$", method="PUT")
         role.menu.add(perm)
         # 权限查询按 {user.pk}_{method} 缓存 24h，跨用例复用需先清理
         cache.clear()
@@ -342,11 +342,11 @@ class TestMaskOriginalChannel:
         normal_user.phone = PHONE
         normal_user.save()
         _rule()
-        perm = menu_factory("用户更新", path="api/system/user/(?P<pk>[^/.]+)$", method="PUT")
+        perm = menu_factory("用户更新", path="api/identity/user/(?P<pk>[^/.]+)$", method="PUT")
         role.menu.add(perm)
         cache.clear()
 
-        request = _make_request_with_params(normal_user, {"mask": "false"}, path=f"/api/system/user/{normal_user.pk}")
+        request = _make_request_with_params(normal_user, {"mask": "false"}, path=f"/api/identity/user/{normal_user.pk}")
         other = UserInfo.objects.create_user(username="audit_target", password="Test@123456")
         with patch("audit.utils.mask.logger") as mock_logger:
             _ = UserInfoSerializer([normal_user, other], many=True, context={"request": request}).data
@@ -370,12 +370,12 @@ class TestMaskOriginalChannel:
         normal_user.phone = PHONE
         normal_user.save()
         _rule()
-        perm = menu_factory("用户更新", path="api/system/user/(?P<pk>[^/.]+)$", method="PUT")
+        perm = menu_factory("用户更新", path="api/identity/user/(?P<pk>[^/.]+)$", method="PUT")
         role.menu.add(perm)
         cache.clear()
         OperationLog.objects.filter(module="mask:original").delete()
 
-        request = _make_request_with_params(normal_user, {"mask": "false"}, path=f"/api/system/user/{normal_user.pk}")
+        request = _make_request_with_params(normal_user, {"mask": "false"}, path=f"/api/identity/user/{normal_user.pk}")
         other = UserInfo.objects.create_user(username="audit_target2", password="Test@123456")
         _ = UserInfoSerializer([normal_user, other], many=True, context={"request": request}).data
 
@@ -384,11 +384,11 @@ class TestMaskOriginalChannel:
         row = rows.first()
         assert row.creator_id == normal_user.pk
         assert row.object_pk == "identity.userinfo"
-        assert row.path == f"/api/system/user/{normal_user.pk}"
+        assert row.path == f"/api/identity/user/{normal_user.pk}"
         assert row.method == "GET"
 
         # 未走原文通道（无 ?mask=false）不落库
-        _make_request_with_params(normal_user, path=f"/api/system/user/{normal_user.pk}")
+        _make_request_with_params(normal_user, path=f"/api/identity/user/{normal_user.pk}")
         _serialize(normal_user)
         assert OperationLog.objects.filter(module="mask:original").count() == 1
 
@@ -443,28 +443,28 @@ class TestMaskOriginalChannelAPI:
         dp.menu.clear()
         normal_user.rules.add(dp)
         role.menu.add(
-            menu_factory("用户列表", path="api/system/user$", method="GET"),
-            menu_factory("用户详情", path="api/system/user/(?P<pk>[^/.]+)$", method="GET"),
-            menu_factory("用户更新", path="api/system/user/(?P<pk>[^/.]+)$", method="PATCH"),
+            menu_factory("用户列表", path="api/identity/user$", method="GET"),
+            menu_factory("用户详情", path="api/identity/user/(?P<pk>[^/.]+)$", method="GET"),
+            menu_factory("用户更新", path="api/identity/user/(?P<pk>[^/.]+)$", method="PATCH"),
         )
         cache.clear()
 
         client = APIClient()
         client.force_authenticate(user=normal_user)
 
-        resp = client.get(f"/api/system/user/{normal_user.pk}?mask=false")
+        resp = client.get(f"/api/identity/user/{normal_user.pk}?mask=false")
         assert resp.status_code == 200
         assert resp.data["data"]["phone"] == PHONE
 
         # 未显式请求原文：即使有更新权限也掩码（列表/详情/导出口径不变）
-        resp_masked = client.get(f"/api/system/user/{normal_user.pk}")
+        resp_masked = client.get(f"/api/identity/user/{normal_user.pk}")
         assert resp_masked.data["data"]["phone"] == "138******78"
 
 
 class TestMaskRuleAPI:
     def test_preview_action(self, auth_client):
         resp = auth_client.post(
-            "/api/system/mask-rules/preview",
+            "/api/audit/mask-rules/preview",
             {"value": PHONE, "rule": {"mask_type": "phone", "keep_head": 3, "keep_tail": 4}},
             format="json",
         )
@@ -474,7 +474,7 @@ class TestMaskRuleAPI:
     def test_preview_batch_values(self, auth_client):
         """批量样例：逐条 results，result 保留首条（单值调用向后兼容）。"""
         resp = auth_client.post(
-            "/api/system/mask-rules/preview",
+            "/api/audit/mask-rules/preview",
             {
                 "values": [PHONE, "13900000000"],
                 "rule": {"mask_type": "phone", "keep_head": 3, "keep_tail": 4},
@@ -491,7 +491,7 @@ class TestMaskRuleAPI:
     def test_preview_value_newline_split(self, auth_client):
         """value 内含换行时按行拆分（尾随换行不产生空样例）。"""
         resp = auth_client.post(
-            "/api/system/mask-rules/preview",
+            "/api/audit/mask-rules/preview",
             {
                 "value": f"{PHONE}\n13900000000\n",
                 "rule": {"mask_type": "phone", "keep_head": 3, "keep_tail": 4},
@@ -504,7 +504,7 @@ class TestMaskRuleAPI:
     def test_preview_truncates_over_limit(self, auth_client):
         """样例条数超上限截断；单条超长截断后仍可脱敏。"""
         resp = auth_client.post(
-            "/api/system/mask-rules/preview",
+            "/api/audit/mask-rules/preview",
             {
                 "values": [PHONE] * (PREVIEW_MAX_VALUES + 5),
                 "rule": {"mask_type": "phone", "keep_head": 3, "keep_tail": 4},
@@ -516,7 +516,7 @@ class TestMaskRuleAPI:
         assert data["truncated"] is True
 
         long_resp = auth_client.post(
-            "/api/system/mask-rules/preview",
+            "/api/audit/mask-rules/preview",
             {"values": ["1" * (PREVIEW_MAX_VALUE_LENGTH + 10)], "rule": {"mask_type": "phone"}},
             format="json",
         )
@@ -527,7 +527,7 @@ class TestMaskRuleAPI:
     def test_preview_invalid_values_type(self, auth_client):
         """values 非数组：返回可读校验失败，而不是 500。"""
         resp = auth_client.post(
-            "/api/system/mask-rules/preview",
+            "/api/audit/mask-rules/preview",
             {"values": "not-a-list", "rule": {"mask_type": "phone"}},
             format="json",
         )
@@ -536,7 +536,7 @@ class TestMaskRuleAPI:
     def test_preview_illegal_pattern_flags_invalid(self, auth_client):
         """非法自定义正则：预览仍返回原值不炸，但 data.invalid_pattern=true 显式标记未生效。"""
         resp = auth_client.post(
-            "/api/system/mask-rules/preview",
+            "/api/audit/mask-rules/preview",
             {"value": PHONE, "rule": {"mask_type": "custom", "keep_head": 3, "keep_tail": 2, "pattern": "("}},
             format="json",
         )
@@ -548,7 +548,7 @@ class TestMaskRuleAPI:
     def test_preview_valid_pattern_flag_false(self, auth_client):
         """合法自定义正则：正常脱敏，invalid_pattern=False（响应结构只增不改）。"""
         resp = auth_client.post(
-            "/api/system/mask-rules/preview",
+            "/api/audit/mask-rules/preview",
             {
                 "value": PHONE,
                 "rule": {"mask_type": "custom", "keep_head": 3, "keep_tail": 2, "pattern": r"1[3-9]\d{9}"},
@@ -563,7 +563,7 @@ class TestMaskRuleAPI:
     def test_create_illegal_custom_pattern_rejected(self, auth_client):
         """非法自定义正则：创建被 400 拒绝，报错含正则原文，规则不落库。"""
         resp = auth_client.post(
-            "/api/system/mask-rules",
+            "/api/audit/mask-rules",
             {"model": "identity.userinfo", "field": "phone", "mask_type": "custom", "pattern": "("},
             format="json",
         )
@@ -574,7 +574,7 @@ class TestMaskRuleAPI:
     def test_create_valid_custom_pattern_masks_as_before(self, auth_client):
         """保存合法自定义正则成功，且按已存规则脱敏行为不变。"""
         resp = auth_client.post(
-            "/api/system/mask-rules",
+            "/api/audit/mask-rules",
             {"model": "identity.userinfo", "field": "phone", "mask_type": "custom", "pattern": r"1[3-9]\d{9}"},
             format="json",
         )
@@ -586,16 +586,16 @@ class TestMaskRuleAPI:
 
     def test_crud_smoke(self, auth_client):
         resp = auth_client.post(
-            "/api/system/mask-rules",
+            "/api/audit/mask-rules",
             {"model": "identity.userinfo", "field": "phone", "mask_type": "phone", "keep_head": 3, "keep_tail": 4},
             format="json",
         )
         assert resp.data["code"] == 1000
         pk = resp.data["data"]["pk"]
-        listing = auth_client.get("/api/system/mask-rules")
+        listing = auth_client.get("/api/audit/mask-rules")
         assert listing.data["code"] == 1000
         assert any(row["pk"] == pk for row in listing.data["data"]["results"])
-        deleted = auth_client.delete(f"/api/system/mask-rules/{pk}")
+        deleted = auth_client.delete(f"/api/audit/mask-rules/{pk}")
         assert deleted.data["code"] == 1000
         assert not DataMaskRule.objects.filter(pk=pk).exists()
 
@@ -607,7 +607,7 @@ class TestPreviewRolesContext:
     预览端点补齐同一语义——否则配置者无法预演「某角色之外的用户看到什么」。
     """
 
-    PREVIEW_URL = "/api/system/mask-rules/preview"
+    PREVIEW_URL = "/api/audit/mask-rules/preview"
 
     def _post(self, client, rule, viewer_roles=None):
         payload = {"value": PHONE, "rule": rule}
@@ -674,8 +674,8 @@ class TestPreviewRolesContext:
 class TestPreviewPermission:
     """preview 权限点：非超管脱敏管理员需显式授权 preview:SystemDataMaskRule。"""
 
-    PREVIEW_URL = "/api/system/mask-rules/preview"
-    PREVIEW_PERM_PATH = "api/system/mask-rules/preview$"
+    PREVIEW_URL = "/api/audit/mask-rules/preview"
+    PREVIEW_PERM_PATH = "api/audit/mask-rules/preview$"
 
     def _post(self, client):
         return client.post(

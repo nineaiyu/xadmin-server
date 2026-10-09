@@ -353,7 +353,7 @@ class TestCallbackIntegration:
         )
 
         # 回调是匿名可达端点（白名单整段前缀），这里直接走 APIClient
-        response = APIClient().get(f"/api/system/auth/oauth/corp/callback?code=code-1&state={state}")
+        response = APIClient().get(f"/api/identity/auth/oauth/corp/callback?code=code-1&state={state}")
         assert response.status_code == 200, response.data
         assert response.data.get("code") == 1000, response.data
 
@@ -375,7 +375,7 @@ class TestAuthorizeUrl:
             lambda method, url, **kwargs: getattr(client, method.lower())(url, **kwargs),
         )
 
-        response = APIClient().get("/api/system/auth/oauth/corp/authorize")
+        response = APIClient().get("/api/identity/auth/oauth/corp/authorize")
         assert response.status_code == 200, response.data
         url = response.data["data"]["url"]
         params = parse_qs(urlparse(url).query)

@@ -372,9 +372,9 @@ def _seed_approval(users, admin, covered: dict) -> None:
         from approval.models.approval_rule import ApprovalRule
 
         for i in range(45):
-            ApprovalRule.objects.create(name=f"审批规则{i}", path_patterns=["^api/system/"], creator=admin)
+            ApprovalRule.objects.create(name=f"审批规则{i}", path_patterns=["^api/"], creator=admin)
         requests_ = [
-            ApprovalRequest(method="GET", path=f"api/system/user/{i}", approver=admin, creator=users[i % len(users)])
+            ApprovalRequest(method="GET", path=f"api/identity/user/{i}", approver=admin, creator=users[i % len(users)])
             for i in range(45)
         ]
         ApprovalRequest.objects.bulk_create(requests_)

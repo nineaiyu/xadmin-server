@@ -73,10 +73,10 @@ class TestSeedDemoBook:
 
     def test_clean_only_keeps_other_paths(self):
         """清理只移出 demo 的拦截路径，不影响其他已配置项。"""
-        SysConfig.set_value("APPROVAL_REQUIRED_PATHS", ["api/system/role/"])
+        SysConfig.set_value("APPROVAL_REQUIRED_PATHS", ["api/identity/role/"])
         call_command("seed_demo_book")
         call_command("seed_demo_book", clean_only=True)
-        assert SysConfig.APPROVAL_REQUIRED_PATHS == ["api/system/role/"]
+        assert SysConfig.APPROVAL_REQUIRED_PATHS == ["api/identity/role/"]
 
     def test_demo_books_and_periodic_task(self, superuser):
         """示例书籍（开箱即演示）+ 周期任务种子：幂等生成、软删复活、清理移除。"""

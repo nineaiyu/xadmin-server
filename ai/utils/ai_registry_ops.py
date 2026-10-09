@@ -145,7 +145,7 @@ OPS_ACTION_SPECS = {
         label=_("List scheduled tasks"),
         description=_("List periodic tasks with schedule, enabled state and last run"),
         method="GET",
-        path="/api/system/tasks/periodic",
+        path="/api/task/periodic",
         params={"name": {"type": "string", "required": False, "in": IN_QUERY, "description": "Task name keyword"}},
     ),
     "task.registered": api_action(
@@ -153,7 +153,7 @@ OPS_ACTION_SPECS = {
         label=_("List registered task types"),
         description=_("All Celery task types registered in the system (targets for new scheduled tasks)"),
         method="GET",
-        path="/api/system/tasks/periodic/registered",
+        path="/api/task/periodic/registered",
         params={},
     ),
     "task.enable": api_action(
@@ -163,7 +163,7 @@ OPS_ACTION_SPECS = {
         # 业务端点为 PATCH（views/task.py::PeriodicTaskViewSet.enable），声明必须同方法，
         # 否则内部 dispatch 405（且 POST 权限点不存在 → 普通用户直接被预检拦掉）。
         method="PATCH",
-        path="/api/system/tasks/periodic/<pk>/enable",
+        path="/api/task/periodic/<pk>/enable",
         params={
             "pk": {"type": "pk", "required": True, "in": "path", "description": "Task id (from task.list)"},
             "enabled": {
@@ -179,7 +179,7 @@ OPS_ACTION_SPECS = {
         label=_("Run a scheduled task now"),
         description=_("Trigger one immediate run of a periodic task and return the execution id"),
         method="POST",
-        path="/api/system/tasks/periodic/<pk>/run",
+        path="/api/task/periodic/<pk>/run",
         params={"pk": {"type": "pk", "required": True, "in": "path", "description": "Task id (from task.list)"}},
     ),
     "task.executions": api_action(
@@ -187,7 +187,7 @@ OPS_ACTION_SPECS = {
         label=_("List task execution history"),
         description=_("History of scheduled task runs (status, duration, timing)"),
         method="GET",
-        path="/api/system/tasks/executions",
+        path="/api/task/executions",
         params={
             "status": {
                 "type": "string",
@@ -202,7 +202,7 @@ OPS_ACTION_SPECS = {
         label=_("Show task execution log"),
         description=_("Log output of one task execution"),
         method="GET",
-        path="/api/system/tasks/executions/<pk>/log",
+        path="/api/task/executions/<pk>/log",
         params={
             "pk": {"type": "pk", "required": True, "in": "path", "description": "Execution id (from task.executions)"}
         },

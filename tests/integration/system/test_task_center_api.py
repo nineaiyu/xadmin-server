@@ -13,7 +13,7 @@ from task.models.task import TaskExecution
 
 pytestmark = pytest.mark.django_db
 
-UNIFIED_URL = "/api/system/tasks/unified"
+UNIFIED_URL = "/api/task/unified"
 
 
 @pytest.fixture(autouse=True)
@@ -36,7 +36,7 @@ def _export(user, **kwargs):
     defaults = {
         "name": "用户导出",
         "module": "用户",
-        "path": "/api/system/user/export-async",
+        "path": "/api/identity/user/export-async",
         "params": {"type": "xlsx"},
     }
     return ExportRecord.objects.create(creator=user, **{**defaults, **kwargs})

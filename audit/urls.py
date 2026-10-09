@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""audit 域路由：经 system/urls.py 以 ``path("", include())`` 同前缀挂载。
+"""audit 域路由：独立前缀挂载（server/urls.py ``^api/audit/``）。
 
-不设 app_name：注册项并入 system 命名空间——/api/system/* 路径、system: 视图名、
-权限点与 menu.json 全部零变化（ADR-057 D1.2 口径）。
+URL 前缀与 app 对齐：``/api/audit/...``；Menu.path 权限点、前端 API 层、
+模块裁剪 ModuleSpec 的 routes 正则已同步平移。
 """
 
 from rest_framework.routers import SimpleRouter
@@ -12,6 +12,8 @@ from audit.views.admin.loginlog import LoginLogViewSet
 from audit.views.admin.mask import DataMaskRuleViewSet
 from audit.views.admin.operationlog import OperationLogViewSet
 from audit.views.user.login_log import UserLoginLogViewSet
+
+app_name = "audit"
 
 router = SimpleRouter(False)
 # 日志相关

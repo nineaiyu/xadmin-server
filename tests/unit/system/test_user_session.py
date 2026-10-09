@@ -94,7 +94,7 @@ class TestSessionClaim:
 
         client = APIClient()
         resp = client.post(
-            "/api/system/login/basic",
+            "/api/identity/login/basic",
             {"username": normal_user.username, "password": "Test@123456"},
             format="json",
         )
@@ -196,7 +196,7 @@ class TestSessionOffline:
         refresh = RefreshToken.for_user(superuser)
         _, access_str = bind_session_claim(refresh, target.pk)
 
-        resp = auth_client.post("/api/system/online/batch-destroy", [str(target.pk)], format="json")
+        resp = auth_client.post("/api/identity/online/batch-destroy", [str(target.pk)], format="json")
 
         assert resp.status_code == 200, resp.data
         # 行维度「下线」是标记离线（保留历史行），不是物理删除

@@ -16,7 +16,7 @@ from task.webhook_tasks import deliver_webhook, dispatch_deliver_webhook
 
 pytestmark = pytest.mark.django_db
 
-DELIVERY_URL = "/api/system/webhooks/deliveries"
+DELIVERY_URL = "/api/task/webhooks/deliveries"
 
 
 def make_subscription(event="user.login_succeeded", **kw):

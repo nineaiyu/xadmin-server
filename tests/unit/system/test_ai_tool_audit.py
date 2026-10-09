@@ -86,24 +86,24 @@ class TestAuditCommand:
 
 class TestOpenApiMetadata:
     def test_normalize_path(self):
-        assert normalize_path("/api/system/user/{pk}/") == "/api/system/user/<pk>"
-        assert normalize_path("/api/system/user") == "/api/system/user"
+        assert normalize_path("/api/identity/user/{pk}/") == "/api/identity/user/<pk>"
+        assert normalize_path("/api/identity/user") == "/api/identity/user"
 
     def test_declared_action_injected(self):
-        meta = ai_operation_meta(None, "/api/system/user/{pk}", "patch")
+        meta = ai_operation_meta(None, "/api/identity/user/{pk}", "patch")
         assert meta["action"] == "user.update"
-        assert meta["required-permissions"] == ["PATCH /api/system/user/<pk>"]
+        assert meta["required-permissions"] == ["PATCH /api/identity/user/<pk>"]
         assert meta["requires-approval"] == "conditional"
         assert "guidance" in meta
 
     def test_undeclared_operation_zero_change(self):
-        assert ai_operation_meta(None, "/api/system/user/export-async", "post") == {}
+        assert ai_operation_meta(None, "/api/identity/user/export-async", "post") == {}
 
     def test_view_ai_meta_overrides(self):
         class View:
             ai_meta = {"visible": False, "guidance": "内部端点，不对外开放"}
 
-        meta = ai_operation_meta(View(), "/api/system/user/{pk}", "get")
+        meta = ai_operation_meta(View(), "/api/identity/user/{pk}", "get")
         assert meta["visible"] is False
         assert meta["guidance"] == "内部端点，不对外开放"
 

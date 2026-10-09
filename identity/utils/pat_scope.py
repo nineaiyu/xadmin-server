@@ -9,8 +9,8 @@
 - 超管走全部启用的权限菜单：`IsAuthenticated` 对超管直接放行（不查角色），
   其可授权范围不应受「有没有绑定角色」影响；
 - 菜单 path 是 DRF 路由片段（含 `(?P<pk>[^/.]+)` 占位与尾部 `$`），转成**锚定**
-  scope 条目（`GET ^/api/system/user/?$`）写入：精确到这一个接口，不会连带放行
-  同前缀的兄弟接口（如 `.../cancel`）或相似前缀（如 `/api/system/user-center`）。
+  scope 条目（`GET ^/api/identity/user/?$`）写入：精确到这一个接口，不会连带放行
+  同前缀的兄弟接口（如 `.../cancel`）或相似前缀（如 `/api/identity/user-center`）。
 
 展示字段（label / display_path / method）与提交字段（value = scope 条目本体）分离：
 value 一旦入库即为 scope 语义（正则），前端只负责搬运与勾选。
@@ -42,14 +42,14 @@ def scope_entry(method: str, path: str) -> str:
     """权限菜单 path → 单个接口的锚定 scope 条目。
 
     ```
-    api/system/user$                        → GET ^/api/system/user/?$
-    api/system/user/(?P<pk>[^/.]+)$         → GET ^/api/system/user/[^/]+/?$
-    api/system/user/(?P<pk>[^/.]+)/cancel$  → GET ^/api/system/user/[^/]+/cancel/?$
+    api/identity/user$                        → GET ^/api/identity/user/?$
+    api/identity/user/(?P<pk>[^/.]+)$         → GET ^/api/identity/user/[^/]+/?$
+    api/identity/user/(?P<pk>[^/.]+)/cancel$  → GET ^/api/identity/user/[^/]+/cancel/?$
     ```
 
     条目路径部分是 Python 正则（scope 判定用 `re.search`）：
 
-    - `^…$` 锚定：避免 `/api/system/user` 连带放行 `/api/system/user-center`；
+    - `^…$` 锚定：避免 `/api/identity/user` 连带放行 `/api/identity/user-center`；
     - `/?` 兼容带尾斜杠的请求地址；
     - 占位符退化为单段通配 `[^/]+`：命名组在 scope 里无意义，可读性也差。
     """
@@ -72,8 +72,8 @@ def scope_display_value(entry: str) -> str:
     同意页/只读列表展示的是「请求范围」，展示正则会让用户困惑；条目保存时已统一
     锚定（见 ``common.core.auth.normalize_scope_entry``），这里反向还原可读形态：
 
-    - ``GET ^/api/system/user/?$``（权限点勾选生成）→ ``GET /api/system/user``；
-    - ``^(?:/api/system/user)(/.*)?$``（手写条目归一化后）→ ``/api/system/user``；
+    - ``GET ^/api/identity/user/?$``（权限点勾选生成）→ ``GET /api/identity/user``；
+    - ``^(?:/api/identity/user)(/.*)?$``（手写条目归一化后）→ ``/api/identity/user``；
     - 无法识别的自定义正则原样返回（不过度猜测，避免误导）。
     """
     text = str(entry or "").strip()

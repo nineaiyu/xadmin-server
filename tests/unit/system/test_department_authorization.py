@@ -51,7 +51,7 @@ def test_update_writes_roles_and_rules(admin, dept, grant_targets):
     client.force_authenticate(user=admin)
 
     response = client.patch(
-        f"/api/system/dept/{dept.pk}",
+        f"/api/identity/dept/{dept.pk}",
         {"name": "研发中心", "roles": [role.pk], "rules": [rule.pk]},
         format="json",
     )
@@ -70,7 +70,7 @@ def test_update_without_authorization_fields_keeps_existing(admin, dept, grant_t
 
     client = APIClient()
     client.force_authenticate(user=admin)
-    response = client.patch(f"/api/system/dept/{dept.pk}", {"name": "研发二部"}, format="json")
+    response = client.patch(f"/api/identity/dept/{dept.pk}", {"name": "研发二部"}, format="json")
     assert response.status_code == 200, response.content
 
     dept.refresh_from_db()

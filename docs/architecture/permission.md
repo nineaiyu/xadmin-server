@@ -133,7 +133,7 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 ### 3.4 部门级自治（部门管理员，ADR-077）
 
 「部门管理员」= 被任命管理某部门及其全部下级的用户：任命事实源 `DeptInfo.managers`（through 记录任命人），
-唯一写口为部门页的「部门管理员」动作（`POST /api/system/dept/{pk}/assign-managers`，增量 `{add, remove}`）。
+唯一写口为部门页的「部门管理员」动作（`POST /api/identity/dept/{pk}/assign-managers`，增量 `{add, remove}`）。
 
 - **任命即装配**：预置内置角色「部门管理员」（用户管理子集 + 部门查看 + 字段白名单，`identity/builtin.py`
   幂等同步）与两条预置数据权限规则（`value.manager.user.ids` / `value.manager.dept.ids`，用户级绑定，

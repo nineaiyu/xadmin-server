@@ -52,7 +52,7 @@
 
 > 备注：首次未设 `BACKUP_REMOTE_TYPE/TARGET` 时异地项报 FAIL（异地缺少文件）——
 > 属**配置未开**而非链路故障；按 `BACKUP_REMOTE_TYPE=local BACKUP_REMOTE_TARGET=/remote`
-> 重启 db-backup 后重跑即 PASS。生产部署同样必须显式配置这两项（见 deployment.md §3.1 检查清单）。
+> 重启 db-backup 后重跑即 PASS。生产部署同样必须显式配置这两项（见 deployment-docker.md §3.1 检查清单）。
 
 ## 三、S2 备份失败告警一并验收
 

@@ -84,15 +84,23 @@
 
 ## 二、views / serializers / urls 映射
 
-新 app 的 `urls.py` **不设 `app_name`**，由 `system/urls.py` 以 `path("", include("<app>.urls"))` 同前缀挂载
-（ADR-057 D1.2 模式）——路由并入 `system` 命名空间，`reverse("system:user")`、权限点、menu.json 全部零变化。
+新 app 的 `urls.py` 显式 `app_name`（= app 名），由 `server/urls.py` **独立前缀挂载**：
+`^api/identity/`、`^api/file/`、`^api/audit/`、`^api/task/`。切分当时沿用的 ADR-057 D1.2
+「system 同前缀挂载、路径零变化」口径已于 2026-10-09 按 ADR-059 同原则升级——URL 前缀
+与 app 边界对齐，权限点 / menu.json / 前端 API 层同步平移（见 ADR-085，存量库用
+`manage.py migrate_api_prefixes` 平移）。
+
+各域注册串口径：identity 保持语义原名（user/dept/role/...）；file 保留注册串 `file`
+（`/api/file/file`，与 `/api/approval/approvals` 同类轻微冗余，避免二次语义改名）；
+audit 保持 `logs/operation`、`mask-rules`、`user/log`；task 拍平原 `tasks/` 注册层
+（`/api/task/periodic`、`/api/task/executions` 等）。
 
 | app | views 迁入（原 system/views/） | urls 注册项（原 system/urls.py） |
 |---|---|---|
 | identity | auth/ 全部 11 文件；admin/{user,dept,post,role,login_policy,passkey,online,account_risk}；user/{userinfo,token,directory}；open/ 全部 2 文件；search/{user,role,dept,post} | login/basic、login/code、login/mfa/*、register、auth/captcha、auth/token、auth/verify、auth/reset、auth/invite/*、auth/oauth/*、logout、impersonate/exit、refresh、rules/password、userinfo、user、dept、posts、role、online、account-risks、login-policies、passkeys、directory、search/user|role|dept|post、personal-access-tokens、api-applications、open/token、open/oauth/* |
-| file | admin/{file,file_chunk,file_access} | file |
+| file | admin/{file,file_chunk,file_access} | file（挂 `/api/file/` 前缀） |
 | audit | admin/{operationlog,loginlog,mask}、user/login_log | logs/operation、logs/login、mask-rules、user/log |
-| task | task/ 全部 4 文件；admin/{export,import_,record_base} | exports、imports、import-templates、tasks/periodic|crontab|executions|interval、tasks/unified、webhooks/* |
+| task | task/ 全部 4 文件；admin/{export,import_,record_base} | exports、imports、import-templates、periodic|crontab|executions|interval、unified、webhooks/*（均挂 `/api/task/` 前缀） |
 | system 留存 | admin/{config,dict,menu,modelfield,credential,codegen,saved_view,permission}；platform/ 全部；search/{global_search,menu}；user/{routes,configs} | dashboard、monitor、search/menu、menu、permission、field、dict、saved-views、codegen、config/system、credentials、modules、config/user、tags、routes、configs、global-search |
 
 serializers：identity（user/userinfo/role/department/post/oauth/token/directory）；file（upload）；

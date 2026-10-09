@@ -18,7 +18,7 @@ from identity.models.user import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-LIST_URL = "/api/system/logs/operation"
+LIST_URL = "/api/audit/logs/operation"
 
 
 def _make_user():
@@ -29,7 +29,7 @@ def _make_log(**kwargs):
     defaults = dict(
         module="用户管理",
         method="DELETE",
-        path="/api/system/user/1",
+        path="/api/identity/user/1",
         ipaddress="10.0.0.1",
         status_code=1000,
         exec_time=0.5,
@@ -162,20 +162,20 @@ def test_layered_retention_error_days_follows_all_when_zero(superuser, monkeypat
 
 
 def test_alert_triggered_for_delete(monkeypatch):
-    _make_log(method="DELETE", path="/api/system/user/1")
-    info = {"method": "DELETE", "path": "/api/system/user/1", "module": "用户管理", "ipaddress": "127.0.0.1"}
+    _make_log(method="DELETE", path="/api/identity/user/1")
+    info = {"method": "DELETE", "path": "/api/identity/user/1", "module": "用户管理", "ipaddress": "127.0.0.1"}
     published = []
     monkeypatch.setattr(SensitiveOperationMessage, "publish", lambda self, *a, **kw: published.append(self.operation))
     cache.clear()
     maybe_alert_sensitive_operation(info)
     assert len(published) == 1
-    assert published[0]["path"] == "/api/system/user/1"
+    assert published[0]["path"] == "/api/identity/user/1"
 
 
 def test_alert_throttled_and_method_filtered(monkeypatch):
     monkeypatch.setattr(SensitiveOperationMessage, "publish", lambda self, *a, **kw: published.append(1))
     published = []
-    info = {"method": "GET", "path": "/api/system/user", "module": "用户管理"}
+    info = {"method": "GET", "path": "/api/identity/user", "module": "用户管理"}
     cache.clear()
     # 默认方法清单 ["DELETE"]：GET 不告警
     maybe_alert_sensitive_operation(info)
@@ -197,14 +197,14 @@ def test_alert_path_regex_filter(monkeypatch):
 
     def fake_get_value(key, default=None):
         if key == "SENSITIVE_OPERATION_PATHS":
-            return [r"/api/system/role"]
+            return [r"/api/identity/role"]
         return original_get_value(key, default)
 
     # SysConfig 属性为只读 property，改为打桩 get_value（缓存/DB 读取的唯一入口）
     monkeypatch.setattr(SysConfig, "get_value", fake_get_value)
-    maybe_alert_sensitive_operation({"method": "DELETE", "path": "/api/system/user/1"})
+    maybe_alert_sensitive_operation({"method": "DELETE", "path": "/api/identity/user/1"})
     assert published == []
-    maybe_alert_sensitive_operation({"method": "DELETE", "path": "/api/system/role/1"})
+    maybe_alert_sensitive_operation({"method": "DELETE", "path": "/api/identity/role/1"})
     assert len(published) == 1
 
 
@@ -236,7 +236,7 @@ class TestSlowThresholdEndpoint:
     THRESHOLD_URL = f"{LIST_URL}/slow-threshold"
 
     def test_threshold_matches_sysconfig_for_list_permission(self, api_client, normal_user, role, menu_factory):
-        role.menu.add(menu_factory(name="list:OperationLog", path="api/system/logs/operation$", method="GET"))
+        role.menu.add(menu_factory(name="list:OperationLog", path="api/audit/logs/operation$", method="GET"))
         api_client.force_authenticate(user=normal_user)
         resp = api_client.get(self.THRESHOLD_URL)
         assert resp.status_code == 200, resp.data

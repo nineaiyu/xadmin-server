@@ -39,6 +39,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 HANDBOOK = "docs/architecture/component-handbook.md"
+# 组件手册主册与分册：分册承载「权威源行」时校验面须随之覆盖（详见 collect_violations）
+HANDBOOK_DOCS = (
+    HANDBOOK,
+    "docs/architecture/handbook-backend.md",
+    "docs/architecture/handbook-frontend.md",
+)
 TOKEN_RE = re.compile(r"`([^`\n]+)`")
 BRACE_RE = re.compile(r"\{([^{}]+)\}")
 CLIENT_ONLY_PREFIXES = ("src/", "locales/", "e2e/", "contract/")
@@ -66,7 +72,12 @@ SERVER_TOP_PREFIXES = (
 CROSS_REPO_PREFIXES = {"xadmin-client/": "client", "xadmin-docs/": "docs"}
 # 活跃开发文档（校验范围 2）：glob 集 + 排除项（履历性质文档保留历史路径）
 ACTIVE_DOC_GLOBS = ("docs/architecture/*.md", "docs/guide/*.md", "docs/*.md")
-EXCLUDE_ACTIVE_DOCS = ("docs/metrics.md",)
+EXCLUDE_ACTIVE_DOCS = (
+    "docs/metrics.md",
+    # 履历性质子页：保留历史路径（与 metrics.md 同口径，见 check_doc_facts.py 的设计注释）
+    "docs/metrics-history.md",
+    "docs/metrics-perf-history.md",
+)
 # 活跃文档只校验"代码路径"（窄前缀集；示例性路径多集中于 loadjson / ops / tests 等，不纳入）
 CODE_PREFIXES = (
     "packages/",
@@ -204,19 +215,22 @@ def collect_violations(
     docs = docs_root if docs_root is not None else _docs_root()
     client_exists, docs_exists = client.is_dir(), docs.is_dir()
     violations = []
-    handbook = root / HANDBOOK
-    if handbook.is_file():
+    for rel in HANDBOOK_DOCS:
+        handbook = root / rel
+        if not handbook.is_file():
+            # 主册缺失视为校验失去载体；分册缺失不报（允许按实际情况增删分册）
+            if rel == HANDBOOK:
+                violations.append(f"{rel}: 文档不存在（路径校验失去载体）")
+            continue
         text = handbook.read_text(encoding="utf-8")
         # 权威源行 + 全文顶层路径合并去重后校验（同一路径只报一次）
         for candidate in _dedupe(_handbook_paths(text) + _top_level_paths(text)):
             if _verify(candidate, root, client, docs, client_exists, docs_exists) is False:
-                violations.append(f"{HANDBOOK}: 引用的路径不存在：{candidate}")
-    else:
-        violations.append(f"{HANDBOOK}: 文档不存在（路径校验失去载体）")
+                violations.append(f"{rel}: 引用的路径不存在：{candidate}")
     for pattern in ACTIVE_DOC_GLOBS:
         for doc in sorted(root.glob(pattern)):
             rel = doc.relative_to(root).as_posix()
-            if rel in EXCLUDE_ACTIVE_DOCS or rel == HANDBOOK:
+            if rel in EXCLUDE_ACTIVE_DOCS or rel in HANDBOOK_DOCS:
                 continue
             for candidate in _code_path_rows(doc.read_text(encoding="utf-8")):
                 if _verify(candidate, root, client, docs, client_exists, docs_exists) is False:

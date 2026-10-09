@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """OAuth 2.0 授权码模式：第三方代表 xadmin 用户访问。
 
-端点（`/api/system/open/oauth/*`，白名单，视图内 fail-closed）：
+端点（`/api/identity/open/oauth/*`，白名单，视图内 fail-closed）：
 
 - ``GET  /authorize``：同意页数据（校验 client / redirect_uri / scope / PKCE），需登录态；
 - ``POST /approve``：用户同意 / 拒绝 → 一次性授权码（缓存 300s，仅存哈希映射）；

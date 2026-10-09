@@ -83,7 +83,7 @@ API_ACTION_SPECS = {
         # 复用用户管理的部分更新接口（UserViewSet.partial_update：序列化校验、
         # 缓存/会话失效、操作日志），权限点 partialUpdate:UserInfo
         method="PATCH",
-        path="/api/system/user/<pk>",
+        path="/api/identity/user/<pk>",
         params={
             # 参数名与 path 占位同名（pk）；type=user 表示接受用户名/昵称并由服务端解析为 pk
             "pk": {"type": "user", "required": True, "in": "path", "description": "Target user username or nickname"},
@@ -96,7 +96,7 @@ API_ACTION_SPECS = {
         label=_("Look up users"),
         description=_("Search users by username / nickname / enabled state; returns the first page (up to 20 rows)"),
         method="GET",
-        path="/api/system/user",
+        path="/api/identity/user",
         params={
             "username": {
                 "type": "string",
@@ -130,7 +130,7 @@ API_ACTION_SPECS = {
         label=_("Update a user's profile"),
         description=_("Update a user's basic attributes (nickname/phone/email); only provided fields change"),
         method="PATCH",
-        path="/api/system/user/<pk>",
+        path="/api/identity/user/<pk>",
         params={
             "pk": {"type": "user", "required": True, "in": "path", "description": "Target user username or nickname"},
             "nickname": {"type": "string", "required": False, "in": "body", "description": "New nickname"},
@@ -143,7 +143,7 @@ API_ACTION_SPECS = {
         label=_("Create a role"),
         description=_("Create a new role (user group) with a unique name and code"),
         method="POST",
-        path="/api/system/role",
+        path="/api/identity/role",
         params={
             "name": {"type": "string", "required": True, "in": "body", "description": "Role name (unique)"},
             "code": {"type": "string", "required": True, "in": "body", "description": "Role code (unique)"},
@@ -161,7 +161,7 @@ API_ACTION_SPECS = {
             "current menu permissions"
         ),
         method="PATCH",
-        path="/api/system/role/<pk>",
+        path="/api/identity/role/<pk>",
         params={
             "pk": {"type": "role", "required": True, "in": "path", "description": "Target role name or primary key"},
             "menus": {

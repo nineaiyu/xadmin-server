@@ -8,8 +8,8 @@ from system.models import DataPermission, FieldPermission, ModelLabelField
 
 pytestmark = pytest.mark.django_db
 
-DEPT_URL = "/api/system/dept"
-DEPT_DETAIL_PATH = "api/system/dept/(?P<pk>[^/.]+)$"
+DEPT_URL = "/api/identity/dept"
+DEPT_DETAIL_PATH = "api/identity/dept/(?P<pk>[^/.]+)$"
 
 
 @pytest.fixture(autouse=True)
@@ -76,10 +76,10 @@ class TestDeptUserBinding:
             "password": "Test@123456",
             "dept": dept_pk,
         }
-        resp = auth_client.post("/api/system/user", payload, format="json")
+        resp = auth_client.post("/api/identity/user", payload, format="json")
         assert resp.status_code == 200, resp.data
 
-        resp = auth_client.get("/api/system/user", {"dept": str(dept_pk)})
+        resp = auth_client.get("/api/identity/user", {"dept": str(dept_pk)})
         assert resp.data["data"]["total"] == 1
         results = resp.data["data"]["results"]
         assert results[0]["username"] == "lisi"

@@ -3,7 +3,7 @@
 """菜单权限点同步内核：扫描/审计/绑定常量与登记表。"""
 
 # 死端点（前端无消费方）：登记豁免，不生成权限点。
-# 2026-09-14：`api/system/tasks/interval` 及其前端死代码已删除，此处清空备查。
+# 2026-09-14：`api/task/interval` 及其前端死代码已删除，此处清空备查。
 DEAD_ENDPOINT_PREFIXES = ()
 # 不参与扫描的路由前缀（demo 应用按既定决策不投入）
 SKIP_ROUTE_PREFIXES = ("api/demo/",)
@@ -13,9 +13,9 @@ PARENT_MENU_MAP = {
     "api/dataset/form-data": "FormData",
     "api/approval/approval-delegations": "SystemApprovalDelegation",
     # 组织与安全域
-    "api/system/posts": "SystemPost",
-    "api/system/account-risks": "SystemAccountRisk",
-    "api/system/login-policies": "SystemLoginPolicy",
+    "api/identity/posts": "SystemPost",
+    "api/identity/account-risks": "SystemAccountRisk",
+    "api/identity/login-policies": "SystemLoginPolicy",
     "api/notifications/message-templates": "SettingMessage",
     # 代码生成器 GUI（generate_crud 引擎的只读端点）
     "api/system/codegen": "SystemCodeGen",
@@ -45,9 +45,9 @@ AUDIT_SKIP_PREFIXES = (
 # - tasks/periodic/batch-enable POST：批量启用/停用共用端点（batchEnable / batchDisable 两码，
 #   授权不区分方向，属已知边界）。
 AUDIT_KNOWN_DUPLICATES = {
-    ("api/system/tasks/executions$", "GET"),
-    ("api/system/logs/operation$", "GET"),
-    ("api/system/tasks/periodic/batch-enable$", "POST"),
+    ("api/task/executions$", "GET"),
+    ("api/audit/logs/operation$", "GET"),
+    ("api/task/periodic/batch-enable$", "POST"),
 }
 # 已知「单权限码覆盖同端点多方法」：前端以同一权限码驱动查看/保存（拆分权限点会改变页面
 # hasAuth 口径），扫描按本表视为全覆盖；键 = 路由正则原文（含 `$`，与权限点 path 同口径），
@@ -55,7 +55,7 @@ AUDIT_KNOWN_DUPLICATES = {
 # - user/{pk}/im-binding GET+POST：管理员代录 IM 身份（查看绑定 / 创建或更新），
 #   前端统一用 `imBinding:SystemUser` 判定入口可见性。
 SHARED_METHOD_PATHS = {
-    "api/system/user/(?P<pk>[^/.]+)/im-binding$": ("GET", "POST"),
+    "api/identity/user/(?P<pk>[^/.]+)/im-binding$": ("GET", "POST"),
     # chat/room/{pk}/members GET+POST：查看成员 / 增删成员共用 members:ChatRoom 权限码
     "api/chat/room/(?P<pk>[^/.]+)/members$": ("GET", "POST"),
     # screens/{pk}/command GET+POST：查询控制态 / 下发控制指令共用 command:DataScreen 权限码

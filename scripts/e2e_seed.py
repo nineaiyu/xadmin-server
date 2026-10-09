@@ -93,7 +93,7 @@ def grant_user_management_menus(role):
 
 
 def get_user_list_api_menu():
-    """「用户列表」GET 接口权限菜单（api/system/user$ + method=GET）。
+    """「用户列表」GET 接口权限菜单（api/identity/user$ + method=GET）。
 
     同一 path 每个HTTP方法各有一条菜单，字段权限必须挂在 GET 菜单上，
     否则列表请求（IsAuthenticated 按当前请求菜单 pk 查 FieldPermission）
@@ -102,14 +102,14 @@ def get_user_list_api_menu():
     from system.models import Menu
 
     return Menu.objects.filter(
-        path="api/system/user$",
+        path="api/identity/user$",
         menu_type=Menu.MenuChoices.PERMISSION,
         method="GET",
     ).first()
 
 
 def get_user_detail_api_menu():
-    """「用户详情」GET 接口权限菜单（api/system/user/{pk}$）。
+    """「用户详情」GET 接口权限菜单（api/identity/user/{pk}$）。
 
     编辑态取原文（?mask=false）走的就是详情 GET，字段白名单必须同样覆盖该菜单，
     否则响应被裁剪成空对象，编辑表单只能拿到列表里的掩码值。
@@ -117,7 +117,7 @@ def get_user_detail_api_menu():
     from system.models import Menu
 
     return Menu.objects.filter(
-        path="api/system/user/(?P<pk>[^/.]+)$",
+        path="api/identity/user/(?P<pk>[^/.]+)$",
         menu_type=Menu.MenuChoices.PERMISSION,
         method="GET",
     ).first()

@@ -58,7 +58,7 @@ class ApprovalRuleViewSet(BaseModelSet):
     def candidate_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """审批人候选目录：启用用户 + 启用角色 + 启用岗位（审批模块自给自足，不依赖搜索模块）。
 
-        配置审批人是审批模块的核心操作：全局搜索（/api/system/search/user）属于
+        配置审批人是审批模块的核心操作：全局搜索（/api/identity/search/user）属于
         独立可裁剪模块，standard 预设下被禁用会让审批人下拉永远搜不到、退化为
         手填——故在本模块内提供目录端点（单次拉取 + 前端本地过滤，管理员低频操作）。
         岗位仅作为人员维度参与审批人解析（不参与权限判定）。

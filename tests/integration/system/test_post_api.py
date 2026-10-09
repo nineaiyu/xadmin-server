@@ -16,7 +16,7 @@ from identity.models import Post
 
 pytestmark = pytest.mark.django_db
 
-POST_URL = "/api/system/posts"
+POST_URL = "/api/identity/posts"
 
 
 def _create(client, name="安全员", code="safety", **extra):
@@ -203,12 +203,12 @@ class TestPostMembers:
 
 
 class TestSearchPostCandidates:
-    """岗位搜索候选（/api/system/search/post）：选人下拉与通讯录岗位视角共用。
+    """岗位搜索候选（/api/identity/search/post）：选人下拉与通讯录岗位视角共用。
 
     候选清单带 user_count（人员名录展示岗位规模），且只含启用未删除岗位。
     """
 
-    SEARCH_URL = "/api/system/search/post"
+    SEARCH_URL = "/api/identity/search/post"
 
     def test_candidates_carry_user_count(self, auth_client):
         from identity.models import UserInfo

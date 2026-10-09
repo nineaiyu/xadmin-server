@@ -5,9 +5,9 @@
 只读聚合三类记录（``TaskExecution`` / ``ExportRecord`` / ``ImportRecord``），
 **不建新表**；数据域与下载中心同口径（超管全量，其余仅本人创建的记录）。
 
-- ``GET  /api/system/tasks/unified``：跨类型列表（类型/状态/关键字/时间范围 + 分页）；
-- ``POST /api/system/tasks/unified/cancel``：取消（PENDING 立即终态；RUNNING 走协作点）；
-- ``POST /api/system/tasks/unified/rerun``：重跑（白名单：导出 / 导入 / 报表）。
+- ``GET  /api/task/unified``：跨类型列表（类型/状态/关键字/时间范围 + 分页）；
+- ``POST /api/task/unified/cancel``：取消（PENDING 立即终态；RUNNING 走协作点）；
+- ``POST /api/task/unified/rerun``：重跑（白名单：导出 / 导入 / 报表）。
 
 顶栏现有任务日志抽屉保留为快捷入口；本页是长任务的统一入口。
 """

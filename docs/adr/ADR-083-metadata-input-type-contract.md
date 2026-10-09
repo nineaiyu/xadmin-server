@@ -1,7 +1,8 @@
 # ADR-083：元数据 input_type 词表冻结为稳定公共契约（多端渲染前置）
 
+- 状态：已交付
+
 > **日期**：2026-10-03
-> **状态**：已交付
 > **关联**：[ADR-079](ADR-079-contract-seam-interface.md)（契约治理同族）；`docs/schema/` 元数据协议（T2.3，载荷结构契约既有门禁 `test_metadata_schema.py`）；[ADR-043](ADR-043-remote-suggestions.md)（api-* 远程联想族）
 > **代码路径**：`common/core/modelset/input_types.py`（词表真源）；`docs/schema/search-{columns,fields}.schema.json`（枚举落盘）；`tests/unit/common/test_metadata_schema.py`（闭包 + 锁步守护）；client `src/components/RePlusPage/__tests__/metadata-vocabulary.spec.ts`（跨栈覆盖对账）
 > **背景**：载荷结构契约已由 JSON Schema 门禁固化，但 `input_type` 仅 `type: string`——后端可随时下发前端不认识的新类型（注册表静默回退），前端渲染器键与后端词表也无对账。多端渲染（同一份元数据 × 多套渲染器，如 H5）要求词表本身成为显式、受守护的公共契约，故先行冻结。

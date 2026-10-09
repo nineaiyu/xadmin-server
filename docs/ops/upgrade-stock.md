@@ -63,11 +63,12 @@ python manage.py upgrade_check --json   # JSON 输出（供脚本 / 安装器消
 1. **备份先行**：确认最近一次 `db-backup` 产出完好（或手动 `pg_dump` 一次）；
 2. 读 Release Notes 的「升级注意」段落；
 3. 拉取新版本并**先体检**：`python manage.py upgrade_check`（预期 `needs-migrate`）；
-4. 按 [deployment.md §6.1](deployment.md) 执行迁移与滚动重启（单实例迁移 → 重启 → healthz 四项全 `true`）；
-5. 涉及新增菜单/权限点或文案的版本，执行 `python manage.py post_upgrade`（安装器已自动调用）；
+4. 按 [deployment-upgrade.md §6.1](deployment-upgrade.md) 执行迁移与滚动重启（单实例迁移 → 重启 → healthz 四项全 `true`）；
+5. 涉及新增菜单/权限点、文案或 API 前缀调整的版本，执行 `python manage.py post_upgrade`
+   （内含存量库 API 前缀平移 `migrate_api_prefixes --apply` → 种子导入 → 语言包编译 → 缓存失效；安装器已自动调用）；
 6. 验证：`python manage.py upgrade_check` 复跑应为 `up-to-date`；再做登录冒烟。
 
-回滚以**备份恢复**为准（Django 迁移原则上不做反向回滚），见 [deployment.md §6.2](deployment.md)
+回滚以**备份恢复**为准（Django 迁移原则上不做反向回滚），见 [deployment-upgrade.md §6.2](deployment-upgrade.md)
 与 [runbook.md](runbook.md) 的「migrate 卡住 / 恢复」条目。
 
 ## 五、清库重建流程（旧链库，或明确不要旧数据）
@@ -104,6 +105,7 @@ python manage.py upgrade_check --json   # JSON 输出（供脚本 / 安装器消
 |------|-----------|
 | `migrate` 报 `Table ... already exists` | 库不是当前链（或上次迁移中途失败）。`upgrade_check` 判定为 `legacy-chain`/`schema-drift` 时按 §五 重建；`needs-migrate` 时检查是否有并发迁移实例 |
 | 升级后部分页面 403 / 菜单缺失 | 权限点未灌库：`python manage.py post_upgrade` 后重启（与迁移链无关） |
+| 升级后用户 / 文件 / 日志 / 任务接口 404 或 403 | 存量库未执行 API 前缀平移（四域已迁至 `/api/identity|file|audit|task/`）：`python manage.py migrate_api_prefixes --apply`（`post_upgrade` 已包含），并确认后端已重启加载新路由 |
 | 中文界面回退英文 | 语言包未编译：`python manage.py compilemessages`（`post_upgrade` 已包含） |
 | `upgrade_check` 报缺表但库里数据完好 | 核对代码版本与库的来源；`schema-drift` 常因「新代码 + 旧库」混用，先对齐版本再判定 |
 | 能不能只升一部分（比如只升前端） | 前后端版本必须一致（发布 tag 门禁强校验）；数据库升级以 §二 判定为准，不支持跨链部分升级 |

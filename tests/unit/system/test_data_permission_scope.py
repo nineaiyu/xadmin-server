@@ -42,21 +42,21 @@ class TestRuleTypeMeta:
 
 class TestExpandMenuScope:
     def test_permission_menu_kept(self, menu_factory):
-        perm = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        perm = menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
         assert expand_menu_scope([perm]) == [perm]
 
     def test_page_expands_to_permission_descendants(self, menu_factory):
         page = menu_factory("用户管理", menu_type=Menu.MenuChoices.MENU)
-        perm = menu_factory("list:SystemUser", path="api/system/user$", method="GET", parent=page)
+        perm = menu_factory("list:SystemUser", path="api/identity/user$", method="GET", parent=page)
         nested_dir = menu_factory("接口分组", menu_type=Menu.MenuChoices.DIRECTORY, parent=page)
-        nested_perm = menu_factory("create:SystemUser", path="api/system/user$", method="POST", parent=nested_dir)
+        nested_perm = menu_factory("create:SystemUser", path="api/identity/user$", method="POST", parent=nested_dir)
 
         result = expand_menu_scope([page])
         assert {menu.pk for menu in result} == {perm.pk, nested_perm.pk}
 
     def test_scope_deduplicated(self, menu_factory):
         page = menu_factory("用户管理", menu_type=Menu.MenuChoices.MENU)
-        perm = menu_factory("list:SystemUser", path="api/system/user$", method="GET", parent=page)
+        perm = menu_factory("list:SystemUser", path="api/identity/user$", method="GET", parent=page)
 
         result = expand_menu_scope([page, perm])
         assert [menu.pk for menu in result] == [perm.pk]
@@ -69,7 +69,7 @@ class TestExpandMenuScope:
 class TestSerializerScope:
     def test_validate_menu_expands_page(self, menu_factory):
         page = menu_factory("用户管理", menu_type=Menu.MenuChoices.MENU)
-        perm = menu_factory("list:SystemUser", path="api/system/user$", method="GET", parent=page)
+        perm = menu_factory("list:SystemUser", path="api/identity/user$", method="GET", parent=page)
 
         serializer = DataPermissionSerializer()
         result = serializer.validate_menu([page])
@@ -90,7 +90,7 @@ class TestSerializerScope:
         assert serializer.validate_menu([]) == []
 
     def test_scope_count_fields(self, normal_user, dept, menu_factory):
-        perm = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        perm = menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
         dp = DataPermission.objects.create(name="范围统计", rules=[make_rule()])
         dp.menu.add(perm)
         dp.userinfo_set.add(normal_user)

@@ -17,7 +17,7 @@ from system.models.tag import Tag, TaggedItem
 pytestmark = pytest.mark.django_db
 
 TAGS_URL = "/api/system/tags"
-USER_TAG_PATH = "api/system/user/(?P<pk>[^/.]+)$"
+USER_TAG_PATH = "api/identity/user/(?P<pk>[^/.]+)$"
 TAG_OBJECTS_PERMISSION = "api/system/tags/objects$"
 
 
@@ -79,7 +79,7 @@ class TestAssign:
         objects = auth_client.get(f"{TAGS_URL}/objects?resource=identity.userinfo&pk={user.pk}").json()["data"]
         assert [item["name"] for item in objects["tags"]] == ["外包"]
         # 业务序列化器回显（列表 tags 字段）
-        rows = auth_client.get("/api/system/user?username=tag-api-1").json()["data"]["results"]
+        rows = auth_client.get("/api/identity/user?username=tag-api-1").json()["data"]["results"]
         assert [item["name"] for item in rows[0]["tags"]] == ["外包"]
 
     def test_unknown_resource_rejected(self, auth_client):
@@ -296,13 +296,13 @@ class TestFilterAndDeleteProtection:
             {"resource": "identity.userinfo", "pk": str(tagged.pk), "tags": [str(tag.pk)]},
             format="json",
         )
-        rows = auth_client.get("/api/system/user?tag=筛选标签").json()["data"]["results"]
+        rows = auth_client.get("/api/identity/user?tag=筛选标签").json()["data"]["results"]
         usernames = {row["username"] for row in rows}
         assert "tag-filter-yes" in usernames and "tag-filter-no" not in usernames
         assert other.username not in usernames
 
     def test_search_fields_expose_tag(self, auth_client):
-        fields = auth_client.get("/api/system/user/search-fields").json()["data"]
+        fields = auth_client.get("/api/identity/user/search-fields").json()["data"]
         tag_field = [item for item in fields if item["key"] == "tag"]
         assert tag_field and tag_field[0]["input_type"] == "select"
 
@@ -328,17 +328,17 @@ class TestFilterAndDeleteProtection:
             format="json",
         )
 
-        by_pk = auth_client.get(f"/api/system/user?tag={tag_a.pk}")
+        by_pk = auth_client.get(f"/api/identity/user?tag={tag_a.pk}")
         assert by_pk.status_code == 200 and by_pk.json()["code"] == 1000
         names = {row["username"] for row in by_pk.json()["data"]["results"]}
         assert {"tag-filter-multi-1", "tag-filter-multi-2"} <= names
 
-        both = auth_client.get(f"/api/system/user?tag={tag_a.name},{tag_b.name}")
+        both = auth_client.get(f"/api/identity/user?tag={tag_a.name},{tag_b.name}")
         assert both.status_code == 200 and both.json()["code"] == 1000
         names = {row["username"] for row in both.json()["data"]["results"]}
         assert names == {"tag-filter-multi-1"}  # AND 语义：两个标签都命中才返回
 
-        unknown = auth_client.get("/api/system/user?tag=不存在的标签")
+        unknown = auth_client.get("/api/identity/user?tag=不存在的标签")
         assert unknown.status_code == 200 and unknown.json()["data"]["total"] == 0
 
     def test_delete_protection(self, auth_client):

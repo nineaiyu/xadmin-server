@@ -68,7 +68,7 @@ EXPORT_PLAN = (
     {
         "name": "演示-用户数据导出.xlsx",
         "module": "系统管理 / 用户",
-        "path": "/api/system/user",
+        "path": "/api/identity/user",
         "file_format": "xlsx",
         "status": ExportRecord.Status.SUCCESS,
         "rows": 128,
@@ -90,7 +90,7 @@ EXPORT_PLAN = (
     {
         "name": "演示-操作日志导出.csv",
         "module": "系统管理 / 操作日志",
-        "path": "/api/system/logs/operation",
+        "path": "/api/audit/logs/operation",
         "file_format": "csv",
         "status": ExportRecord.Status.FAILURE,
         "rows": None,

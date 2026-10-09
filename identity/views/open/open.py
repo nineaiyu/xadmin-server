@@ -311,7 +311,7 @@ class ApiApplicationViewSet(BaseModelSet):
         """应用可授权的接口范围（按菜单分组，供应用「接口范围」勾选）
 
         口径与个人访问令牌同源（`identity/utils/pat_scope.py`）：权限菜单 × 请求用户角色
-        （超管为全部启用的权限菜单）；条目是锚定正则（如 ``GET ^/api/system/user/?$``），
+        （超管为全部启用的权限菜单）；条目是锚定正则（如 ``GET ^/api/identity/user/?$``），
         只放行勾选的那一个接口。应用凭证以 owner（creator）身份走既有认证链，管理页由
         平台管理员维护，故选项集合取「当前用户可授权的接口」；非 owner 编辑时，超出
         选项的历史条目在前端自动落到「自定义」区，不会丢失。

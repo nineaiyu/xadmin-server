@@ -12,7 +12,7 @@ from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-USER_LIST_URL = "/api/system/user"
+USER_LIST_URL = "/api/identity/user"
 
 
 @pytest.fixture

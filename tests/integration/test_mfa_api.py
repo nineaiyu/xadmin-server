@@ -11,8 +11,8 @@ from tests.integration.aes_v2 import encrypt_v2
 
 pytestmark = pytest.mark.django_db
 
-BASIC_LOGIN_URL = "/api/system/login/basic"
-LOGIN_MFA_VERIFY_URL = "/api/system/login/mfa/verify"
+BASIC_LOGIN_URL = "/api/identity/login/basic"
+LOGIN_MFA_VERIFY_URL = "/api/identity/login/mfa/verify"
 CONFIRM_URL = "/api/mfa/confirm"
 SEND_CODE_URL = "/api/mfa/confirm/send-code"
 OTP_URL = "/api/mfa/otp"
@@ -273,7 +273,7 @@ class TestBuiltinSensitiveOperations:
     def test_reset_password_requires_confirm(self, api_client, superuser):
         api_client.force_authenticate(user=superuser)
         resp = api_client.post(
-            "/api/system/userinfo/reset-password",
+            "/api/identity/userinfo/reset-password",
             {"old_password": "Admin@123456", "sure_password": "New@123456"},
             format="json",
         )
@@ -288,7 +288,7 @@ class TestBuiltinSensitiveOperations:
             return AESCipherV2(superuser.username).encrypt(v.encode()).decode()
 
         resp = api_client.post(
-            "/api/system/userinfo/reset-password",
+            "/api/identity/userinfo/reset-password",
             {"old_password": enc("Admin@123456"), "sure_password": enc("New@123456")},
             format="json",
         )
@@ -306,7 +306,7 @@ class TestBuiltinSensitiveOperations:
             return encrypt_v2(superuser.username, v)
 
         resp = api_client.post(
-            "/api/system/userinfo/reset-password",
+            "/api/identity/userinfo/reset-password",
             {"old_password": enc("Admin@123456"), "sure_password": enc("New@123456")},
             format="json",
         )
@@ -320,7 +320,7 @@ class TestBuiltinSensitiveOperations:
         api_client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"})
 
         resp = api_client.post(
-            "/api/system/userinfo/reset-password",
+            "/api/identity/userinfo/reset-password",
             {"old_password": "v2:!!!not-a-valid-ciphertext!!!", "sure_password": "v2:!!!not-a-valid-ciphertext!!!"},
             format="json",
         )
@@ -331,25 +331,25 @@ class TestBuiltinSensitiveOperations:
 
     def test_destroy_user_requires_confirm(self, api_client, superuser, normal_user):
         api_client.force_authenticate(user=superuser)
-        resp = api_client.delete(f"/api/system/user/{normal_user.pk}")
+        resp = api_client.delete(f"/api/identity/user/{normal_user.pk}")
         assert resp.status_code == 412
 
     def test_destroy_user_after_confirm(self, api_client, superuser, normal_user):
         api_client.force_authenticate(user=superuser)
         api_client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"})
-        resp = api_client.delete(f"/api/system/user/{normal_user.pk}")
+        resp = api_client.delete(f"/api/identity/user/{normal_user.pk}")
         assert resp.status_code == 200
 
     def test_admin_reset_mfa(self, api_client, otp_user, superuser):
         """管理员重置用户 OTP（自身需先通过密码二次确认）。"""
         user, _, secret = otp_user
         api_client.force_authenticate(user=superuser)
-        resp = api_client.post(f"/api/system/user/{user.pk}/reset-mfa")
+        resp = api_client.post(f"/api/identity/user/{user.pk}/reset-mfa")
         assert resp.status_code == 412
 
         resp = api_client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"})
         assert resp.data["code"] == 1000, resp.data
-        resp = api_client.post(f"/api/system/user/{user.pk}/reset-mfa")
+        resp = api_client.post(f"/api/identity/user/{user.pk}/reset-mfa")
         assert resp.data["code"] == 1000, resp.data
         user.refresh_from_db()
         assert user.mfa_enabled is False
@@ -370,7 +370,7 @@ class TestBuiltinSensitiveOperations:
         resp = authed_client.get(CONFIRM_URL, {"confirm_type": "password"})
         assert resp.data["data"]["confirmed"] is True
 
-        authed_client.post("/api/system/logout", {}, format="json")
+        authed_client.post("/api/identity/logout", {}, format="json")
         resp = authed_client.get(CONFIRM_URL, {"confirm_type": "password"})
         assert resp.data["data"]["confirmed"] is False
 

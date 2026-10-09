@@ -20,9 +20,9 @@ from identity.views.admin.role import RoleViewSet
 
 pytestmark = pytest.mark.django_db
 
-ROLE_URL = "/api/system/role"
+ROLE_URL = "/api/identity/role"
 DATASET_URL = "/api/dataset/datasets"
-USER_URL = "/api/system/user"
+USER_URL = "/api/identity/user"
 
 
 def _results(resp):

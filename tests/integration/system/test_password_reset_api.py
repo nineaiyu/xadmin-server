@@ -20,7 +20,7 @@ from identity.models.ldap import LdapUserBinding
 from identity.views.auth import reset as reset_view
 from tests.unit.common.test_aes_cipher_v2 import _encrypt_v2
 
-RESET_URL = "/api/system/auth/reset"
+RESET_URL = "/api/identity/auth/reset"
 VERIFY_TOKEN = "vt-test-token"
 VERIFY_CODE = "123456"
 

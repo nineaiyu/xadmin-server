@@ -113,7 +113,7 @@ class TestMenuApiUrl:
         """白名单内路由仍在清单中（权限点 path 选择器与视图下拉的合法所需）。"""
         resp = auth_client.get(f"{MENU_URL}/api-url")
         urls = [str(item["url"]) for item in resp.data["data"]]
-        assert "api/system/user$" in urls
+        assert "api/identity/user$" in urls
         views = {str(item.get("view") or "") for item in resp.data["data"]}
         assert "identity.views.admin.user.UserViewSet" in views
 

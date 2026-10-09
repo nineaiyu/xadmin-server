@@ -11,9 +11,9 @@ from settings.services import LoginBlockUtil
 
 pytestmark = pytest.mark.django_db
 
-BASIC_LOGIN_URL = "/api/system/login/basic"
-LOGIN_CODE_URL = "/api/system/login/code"
-TEMP_TOKEN_URL = "/api/system/auth/token"
+BASIC_LOGIN_URL = "/api/identity/login/basic"
+LOGIN_CODE_URL = "/api/identity/login/code"
+TEMP_TOKEN_URL = "/api/identity/auth/token"
 
 
 def _assert_bilingual(text, en_kw, zh_kw):

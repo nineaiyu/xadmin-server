@@ -21,8 +21,8 @@ from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-USER_URL = "/api/system/user"
-LOG_URL = "/api/system/logs/operation"
+USER_URL = "/api/identity/user"
+LOG_URL = "/api/audit/logs/operation"
 BACKEND = ControlledLookupFilterBackend
 
 
@@ -161,7 +161,7 @@ class TestControlledLookup:
 
     def test_view_without_opt_in_ignores_lookup(self, auth_client):
         """未开启 controlled_lookup 的视图（角色）：`__` 参数被忽略（零变化）。"""
-        resp = auth_client.get("/api/system/role", {"page": 1, "size": 100, "name__icontains": "不存在的角色"})
+        resp = auth_client.get("/api/identity/role", {"page": 1, "size": 100, "name__icontains": "不存在的角色"})
         rows = _rows(resp)
         assert len(rows) >= 2  # 内置角色仍返回（参数未生效）
 

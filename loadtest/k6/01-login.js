@@ -1,4 +1,4 @@
-// T3.1 性能基线 01：登录接口（POST /api/system/login/basic）。
+// T3.1 性能基线 01：登录接口（POST /api/identity/login/basic）。
 // 注意：登录有专属限流（默认 50/h/用户），压测环境需在 config.yml 放开：
 //   DEFAULT_THROTTLE_RATES: { login: '100000/h' }
 // 建议档位：低 VU（默认 5）短时测定；迭代内不做 sleep，测纯登录开销。
@@ -14,7 +14,7 @@ export const options = baseOptions(5, '30s');
 export default function () {
     group('01 basic-login', () => {
         const res = http.post(
-            apiUrl('/api/system/login/basic'),
+            apiUrl('/api/identity/login/basic'),
             JSON.stringify({username: USERNAME, password: PASSWORD}),
             {headers: {'Content-Type': 'application/json'}},
         );

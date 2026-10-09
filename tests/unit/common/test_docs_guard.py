@@ -64,6 +64,38 @@ class TestDocIndexLogic:
         assert check_doc_index.collect_violations(tmp_path, client_root=tmp_path / "none") == []
 
 
+class TestArchiveGuard:
+    """plans/archive/ 双向登记：逐篇登记 plans/README，且不得出现在 docs/README 主索引。"""
+
+    def _seed(self, tmp_path, archive_names, plans_text="", main_text="# index\n"):
+        archive = tmp_path / "docs" / "plans" / "archive"
+        archive.mkdir(parents=True)
+        for name in archive_names:
+            (archive / name).write_text("x", encoding="utf-8")
+        (tmp_path / "docs" / "plans" / "README.md").write_text(plans_text, encoding="utf-8")
+        (tmp_path / "docs" / "README.md").write_text(main_text, encoding="utf-8")
+
+    def test_unregistered_archive_reported(self, tmp_path):
+        self._seed(tmp_path, ["old.md"])
+        violations = check_doc_index.collect_archive_violations(tmp_path)
+        assert len(violations) == 1
+        assert "未在 plans/README.md" in violations[0]
+
+    def test_registered_archive_passes(self, tmp_path):
+        self._seed(tmp_path, ["old.md"], plans_text="| old.md | 说明 |\n")
+        assert check_doc_index.collect_archive_violations(tmp_path) == []
+
+    def test_archive_in_main_index_reported(self, tmp_path):
+        self._seed(tmp_path, ["old.md"], plans_text="| old.md | 说明 |\n", main_text="# 索引\nold.md\n")
+        violations = check_doc_index.collect_archive_violations(tmp_path)
+        assert any("不得出现在 docs/README.md 主索引" in item for item in violations)
+
+    def test_missing_archive_dir_skipped(self, tmp_path):
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "README.md").write_text("# index\n", encoding="utf-8")
+        assert check_doc_index.collect_archive_violations(tmp_path) == []
+
+
 class TestDocPathsLogic:
     def test_missing_source_path_is_reported(self, tmp_path):
         architecture = tmp_path / "docs" / "architecture"

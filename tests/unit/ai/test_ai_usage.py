@@ -78,6 +78,52 @@ class TestUsageLedger:
         assert tracks["prompt"]["success_rate"] == 50.0
 
 
+class TestUsageDimensions:
+    """档案 / 模型维度与延迟统计（运行看板的数据源）。"""
+
+    def test_by_profile_and_model_dimensions(self, superuser):
+        record_usage(superuser, "docs", profile_name="prod", model="gpt-a", duration_ms=100, usage={"total_tokens": 10})
+        record_usage(superuser, "docs", profile_name="prod", model="gpt-a", duration_ms=300, ok=False)
+        record_usage(superuser, "nl", profile_name="local", model="qwen", duration_ms=50, usage={"total_tokens": 5})
+        record_usage(superuser, "docs", duration_ms=10)  # 无档案 / 模型：不入维度表
+        data = usage_summary(days=7)
+        profiles = {row["profile_name"]: row for row in data["by_profile"]}
+        assert set(profiles) == {"prod", "local"}
+        assert profiles["prod"]["calls"] == 2 and profiles["prod"]["failed"] == 1
+        assert profiles["prod"]["success_rate"] == 50.0
+        assert profiles["prod"]["tokens"] == 10
+        assert profiles["prod"]["avg_latency_ms"] == 200.0
+        assert profiles["prod"]["p95_latency_ms"] is None  # 样本不足：不给分位数
+        assert {row["model"] for row in data["by_model"]} == {"gpt-a", "qwen"}
+
+    def test_overall_success_rate_and_latency(self, superuser):
+        record_usage(superuser, "docs", duration_ms=100)
+        record_usage(superuser, "docs", duration_ms=300, ok=False)
+        data = usage_summary(days=7)
+        assert data["success"] == 1 and data["failed"] == 1
+        assert data["success_rate"] == 50.0
+        assert data["avg_latency_ms"] == 200.0
+        assert data["p95_latency_ms"] is None
+        assert data["latency_samples"] == 2
+
+    def test_p95_reported_with_enough_samples(self, superuser):
+        """样本量足够时按最近秩给 P95（小样本给 None，避免把长尾读成正常）。"""
+        from ai.utils.ai_usage import P95_MIN_SAMPLES
+
+        for index in range(P95_MIN_SAMPLES):
+            record_usage(superuser, "docs", profile_name="p", model="m", duration_ms=(index + 1) * 10)
+        row = usage_summary(days=7)["by_profile"][0]
+        assert row["latency_samples"] == P95_MIN_SAMPLES
+        # 最近秩：ceil(0.95 × 20) = 19 → 升序第 19 个（10..200 中为 190）
+        assert row["p95_latency_ms"] == 190
+
+    def test_empty_window_degrades_gracefully(self, superuser):
+        data = usage_summary(days=7)
+        assert data["total_calls"] == 0 and data["success_rate"] == 0.0
+        assert data["avg_latency_ms"] is None and data["p95_latency_ms"] is None
+        assert data["by_profile"] == [] and data["by_model"] == []
+
+
 class TestQuota:
     def test_unlimited_by_default(self, superuser, settings):
         settings.AI_QUOTA_USER_DAILY_CALLS = 0

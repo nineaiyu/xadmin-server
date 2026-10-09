@@ -4,10 +4,10 @@
 # filename : invite
 """邀请激活端点（匿名可达）。
 
-- ``GET  /api/system/auth/invite/validate?token=``：令牌预检（激活页打开时调用，不消费令牌），
+- ``GET  /api/identity/auth/invite/validate?token=``：令牌预检（激活页打开时调用，不消费令牌），
   响应携带 ``encrypted`` 标志（取自 ``SECURITY_INVITE_ENCRYPTED_ENABLED``），前端据此
   决定是否把密码加密后再提交；
-- ``POST /api/system/auth/invite/accept``：校验一次性令牌并设置密码（激活即失效）。
+- ``POST /api/identity/auth/invite/accept``：校验一次性令牌并设置密码（激活即失效）。
 
 限流复用 ``ResetPasswordThrottle``（同为匿名敏感端点，共享匿名限流窗口更严）。
 密码传输与注册 / 忘记密码重置同契约：加密开关开启时，前端以邀请令牌原文为密钥提交

@@ -10,7 +10,7 @@ export const USERNAME = __ENV.USERNAME || 'admin';
 export const PASSWORD = __ENV.PASSWORD || '';
 
 // 列表页与元数据的目标模块（默认用户管理，可用 LIST_PATH 切换到其他 ViewSet 前缀）
-export const LIST_PATH = __ENV.LIST_PATH || '/api/system/user';
+export const LIST_PATH = __ENV.LIST_PATH || '/api/identity/user';
 export const LIST_PAGE = __ENV.LIST_PAGE || '1';
 export const LIST_SIZE = __ENV.LIST_SIZE || '20';
 
@@ -58,7 +58,7 @@ export function jsonHeaders(token) {
 // setup() 中调用：压测开始前获取一次 access token（1h 有效，远长于单轮压测时长）
 export function loginOnce() {
     const res = http.post(
-        apiUrl('/api/system/login/basic'),
+        apiUrl('/api/identity/login/basic'),
         JSON.stringify({username: USERNAME, password: PASSWORD}),
         {headers: {'Content-Type': 'application/json'}},
     );

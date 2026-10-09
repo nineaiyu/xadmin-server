@@ -3,7 +3,7 @@
 """分片上传 / 断点续传端点（自 file.py 拆出，仅因行数门禁）。
 
 四个子 action 全部以 ``parent_fallback_action`` 声明：权限优先按自身权限点
-（如角色显式绑定 ``api/system/file/chunk/init$``），未绑定时回退父级
+（如角色显式绑定 ``api/file/file/chunk/init$``），未绑定时回退父级
 list / create 口径——既有可使用文件中心的角色无需重新授权即可获得分片能力。
 协议与安全策略见 :mod:`file.utils.upload_chunk`（与单请求上传同源）。
 """

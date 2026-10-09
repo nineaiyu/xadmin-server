@@ -282,7 +282,7 @@ class DemoDataMixin:
             self.stdout.write("demo approval requests already exist, skip")
             return
         now = timezone.now()
-        user_path = f"/api/system/user/{uuid.uuid4()}"
+        user_path = f"/api/identity/user/{uuid.uuid4()}"
         rows = [
             # (固定 pk, 状态, method, path, object_pk, params, approver, 基线)
             (
@@ -319,7 +319,7 @@ class DemoDataMixin:
                 REQUEST_PKS[3],
                 ApprovalRequest.Status.CANCELLED,
                 "DELETE",
-                f"/api/system/role/{uuid.uuid4()}",
+                f"/api/identity/role/{uuid.uuid4()}",
                 None,
                 {"code": "demo_removed_role"},
                 None,

@@ -16,7 +16,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def post_request(superuser):
-    request = RequestFactory().post("/api/system/user", {}, content_type="application/json")
+    request = RequestFactory().post("/api/identity/user", {}, content_type="application/json")
     request.user = superuser
     request.fields = {}
     set_current_request(request)

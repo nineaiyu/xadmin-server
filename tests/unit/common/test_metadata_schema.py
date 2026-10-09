@@ -74,7 +74,7 @@ def _input_type_schema_property(schema_name: str) -> dict:
 
 @pytest.mark.parametrize(
     "viewset_cls,base_url",
-    [(BookViewSet, "/api/demo/book"), (UserViewSet, "/api/system/user")],
+    [(BookViewSet, "/api/demo/book"), (UserViewSet, "/api/identity/user")],
 )
 class TestMetadataContract:
     def test_search_fields_matches_schema(self, viewset_cls, base_url, superuser):

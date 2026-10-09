@@ -122,7 +122,7 @@ if CONFIG.SILK_ENABLED:
     SILKY_MAX_RECORDED_REQUESTS_CHECK_PERCENT = 5  # 降低落库概率检查频率，减少剖析自身开销
     SILKY_PYTHON_PROFILER = True  # 请求级 Python profiling；压测排查时如干扰明显可关闭
     SILKY_PYTHON_PROFILER_RESULT_PATH = os.path.join(PROJECT_DIR, "tmp", "silk_profiles")
-    SILKY_IGNORE_PATHS = ("/api/health", "/api/static", "^/media", "^/api/system/auth/captcha")
+    SILKY_IGNORE_PATHS = ("/api/health", "/api/static", "^/media", "^/api/identity/auth/captcha")
 
 ROOT_URLCONF = "server.urls"
 

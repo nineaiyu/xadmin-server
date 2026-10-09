@@ -88,8 +88,8 @@ class TestGetMenuPk:
         assert get_menu_pk(data, "/api/demo/book") == (1, None)
 
     def test_regex_prefix_match(self):
-        data = {"api/system/user/[^/.]+$": (2, None)}
-        assert get_menu_pk(data, "/api/system/user/123") == (2, None)
+        data = {"api/identity/user/[^/.]+$": (2, None)}
+        assert get_menu_pk(data, "/api/identity/user/123") == (2, None)
 
     def test_no_match_returns_none(self):
         assert get_menu_pk({}, "/api/other") is None
@@ -164,18 +164,18 @@ class TestPermissionPathCompileCache:
     def test_literal_prefix_stops_before_regex_metachar(self):
         from common.core.utils import _compile_permission_pattern
 
-        prefix, compiled = _compile_permission_pattern(r"api/system/user/(?P<pk>[^/.]+)$")
-        assert prefix == "/api/system/user/"
+        prefix, compiled = _compile_permission_pattern(r"api/identity/user/(?P<pk>[^/.]+)$")
+        assert prefix == "/api/identity/user/"
         assert compiled is not None
         prefix, _ = _compile_permission_pattern("api/demo/user")
         assert prefix == "/api/demo/user"
 
     def test_regex_detail_pattern_matches_and_rejects(self):
         """剪枝不得改变含正则 path 的匹配结果（详情类权限点主路径）。"""
-        pattern = r"api/system/user/(?P<pk>[^/.]+)$"
-        assert permission_path_matches(pattern, "/api/system/user/abc-123") is True
-        assert permission_path_matches(pattern, "/api/system/user/abc/extra") is False
-        assert permission_path_matches(pattern, "/api/system/dept/abc") is False
+        pattern = r"api/identity/user/(?P<pk>[^/.]+)$"
+        assert permission_path_matches(pattern, "/api/identity/user/abc-123") is True
+        assert permission_path_matches(pattern, "/api/identity/user/abc/extra") is False
+        assert permission_path_matches(pattern, "/api/identity/dept/abc") is False
 
 
 class TestUserHasPermission:

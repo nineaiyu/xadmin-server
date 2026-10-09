@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """访问令牌（PAT / API 应用）的 scope 匹配与 IP 白名单判定（自 auth.py 拆分，行为不变）。
 
-scope 条目形如 ``GET /api/system/user``（方法名可选，缺省仅匹配路径）；path 占位与
+scope 条目形如 ``GET /api/identity/user``（方法名可选，缺省仅匹配路径）；path 占位与
 菜单权限点 path 正则同口径。"""
 
 import functools
@@ -15,7 +15,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-# scope 条目可选的方法前缀：`GET /api/system/user`（方法名 + 空白 + 路径）
+# scope 条目可选的方法前缀：`GET /api/identity/user`（方法名 + 空白 + 路径）
 SCOPE_METHOD_RE = re.compile(r"^(?P<method>[A-Za-z]{3,7})\s+(?P<path>\S.*)$")
 SCOPE_HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
 
@@ -38,8 +38,8 @@ def _normalize_scope_path(path: str) -> str:
 
     - ``^…$`` 完整锚定：原样保留（作者可控的自定义正则）；
     - 其余（路径 / 前缀 / 单侧锚点）：去锚点后统一包裹——``^(?:core)(/.*)?$``
-      放行该路径及其子路径（``/api/system/user`` 命中 ``/api/system/user/1``），
-      但不粘连同前缀兄弟地址（不再命中 ``/api/system/user-logs``）；
+      放行该路径及其子路径（``/api/identity/user`` 命中 ``/api/identity/user/1``），
+      但不粘连同前缀兄弟地址（不再命中 ``/api/identity/user-logs``）；
     - 以 ``$`` 结尾表示精确语义 → ``^(?:core)$``（仅该地址本身）。
     """
     body = str(path or "").strip()
@@ -97,11 +97,11 @@ def path_allowed_by_scopes(path: str, scopes: Any, method: str | None = None) ->
 
     条目语义（大小写不敏感，与 SENSITIVE_OPERATION_PATHS 同口径）：
 
-    - ``METHOD /path``：仅该 HTTP 方法放行（如 ``GET /api/system/user``）；
+    - ``METHOD /path``：仅该 HTTP 方法放行（如 ``GET /api/identity/user``）；
     - 纯路径/正则：不限方法。
 
     匹配前统一经 :func:`normalize_scope_entry` 锚定（历史库内可能存有手写的非锚定
-    条目，如 ``api/system/user``——锚定后不再粘连命中 ``/api/system/user-logs``）；
+    条目，如 ``api/identity/user``——锚定后不再粘连命中 ``/api/identity/user-logs``）；
     已锚定条目原样使用。非法正则跳过并告警，不 500、不放任整清单失效；方法限定
     条目在请求方法未知时不放行（fail-closed）。
     """

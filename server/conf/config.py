@@ -50,7 +50,7 @@ class Config(dict[str, Any]):
         },
         "API_LOG_METHODS": ["POST", "DELETE", "PUT", "PATCH"],
         "API_MODEL_MAP": {
-            "/api/system/refresh": "Token刷新",
+            "/api/identity/refresh": "Token刷新",
             "/api/flower": "定时任务",
         },
     }

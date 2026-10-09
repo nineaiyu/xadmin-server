@@ -5,8 +5,8 @@
 """登录 MFA 二次验证接口（匿名，凭 mfa_token 识别待验证用户）。
 
 流程：密码登录接口返回 mfa_required + mfa_token + methods 后，
-1. POST /api/system/login/mfa/send-code  挑战型方式（短信/邮件）下发验证码；
-2. POST /api/system/login/mfa/verify     提交验证码，通过后签发正式 JWT。
+1. POST /api/identity/login/mfa/send-code  挑战型方式（短信/邮件）下发验证码；
+2. POST /api/identity/login/mfa/verify     提交验证码，通过后签发正式 JWT。
 """
 
 from typing import Any

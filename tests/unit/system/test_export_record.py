@@ -25,7 +25,7 @@ def _post_export_async(user, params=None):
     from rest_framework.test import APIRequestFactory, force_authenticate
 
     factory = APIRequestFactory()
-    request = factory.post("/api/system/user/export-async", params or {"type": "xlsx"}, format="json")
+    request = factory.post("/api/identity/user/export-async", params or {"type": "xlsx"}, format="json")
     force_authenticate(request, user=user)
     return UserViewSet.as_view({"post": "export_async"})(request)
 
@@ -100,7 +100,7 @@ def test_download_action_streams_file(superuser, normal_user):
     from rest_framework.test import APIRequestFactory, force_authenticate
 
     factory = APIRequestFactory()
-    request = factory.get(f"/api/system/exports/{record.pk}/download")
+    request = factory.get(f"/api/task/exports/{record.pk}/download")
     force_authenticate(request, user=superuser)
     response = ExportRecordViewSet.as_view({"get": "download"})(request, pk=str(record.pk))
     assert response.status_code == 200
@@ -108,7 +108,7 @@ def test_download_action_streams_file(superuser, normal_user):
     assert "UTF-8''" in response["Content-Disposition"]
 
     # 普通用户不可下载他人导出：无按钮权限 403，有权限时由取值域兜底 404
-    request = factory.get(f"/api/system/exports/{record.pk}/download")
+    request = factory.get(f"/api/task/exports/{record.pk}/download")
     force_authenticate(request, user=normal_user)
     response = ExportRecordViewSet.as_view({"get": "download"})(request, pk=str(record.pk))
     assert response.status_code in (403, 404)
@@ -119,7 +119,7 @@ def test_download_action_missing_file(superuser):
     from rest_framework.test import APIRequestFactory, force_authenticate
 
     factory = APIRequestFactory()
-    request = factory.get(f"/api/system/exports/{record.pk}/download")
+    request = factory.get(f"/api/task/exports/{record.pk}/download")
     force_authenticate(request, user=superuser)
     response = ExportRecordViewSet.as_view({"get": "download"})(request, pk=str(record.pk))
     assert response.data["code"] != 1000
@@ -135,7 +135,7 @@ def test_log_action_reads_export_log(superuser, monkeypatch, tmp_path):
     from rest_framework.test import APIRequestFactory, force_authenticate
 
     factory = APIRequestFactory()
-    request = factory.get(f"/api/system/exports/{record.pk}/log")
+    request = factory.get(f"/api/task/exports/{record.pk}/log")
     force_authenticate(request, user=superuser)
     response = ExportRecordViewSet.as_view({"get": "log"})(request, pk=str(record.pk))
     assert response.data["data"]["content"] == "exporting\n"
@@ -145,7 +145,7 @@ def test_log_action_reads_export_log(superuser, monkeypatch, tmp_path):
     record.status = ExportRecord.Status.SUCCESS
     record.save(update_fields=["status", "updated_time"])
     other = ExportRecord.objects.create(name="y", file_format="csv", creator=superuser)
-    request = factory.get(f"/api/system/exports/{other.pk}/log")
+    request = factory.get(f"/api/task/exports/{other.pk}/log")
     force_authenticate(request, user=superuser)
     response = ExportRecordViewSet.as_view({"get": "log"})(request, pk=str(other.pk))
     assert response.data["data"]["content"] == ""
@@ -183,7 +183,7 @@ def test_selected_export_fails_closed_when_spm_expired(superuser):
     from rest_framework.test import APIRequestFactory, force_authenticate
 
     factory = APIRequestFactory()
-    request = factory.get("/api/system/user/export-data?type=xlsx&spm=expired-token")
+    request = factory.get("/api/identity/user/export-data?type=xlsx&spm=expired-token")
     force_authenticate(request, user=superuser)
     response = UserViewSet.as_view({"get": "export_data"})(request)
     assert response.status_code == 400

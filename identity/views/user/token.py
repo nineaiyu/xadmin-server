@@ -82,7 +82,7 @@ class PersonalAccessTokenViewSet(BaseModelSet):
         """当前用户可授权的接口范围（按菜单分组，供令牌接口范围勾选）
 
         口径 = 请求鉴权同源的权限菜单 × 本人角色（超管为全部启用的权限菜单）；
-        条目为锚定正则（如 ``GET ^/api/system/user/?$``），只放行勾选的那一个接口。
+        条目为锚定正则（如 ``GET ^/api/identity/user/?$``），只放行勾选的那一个接口。
         """
         return ApiResponse(data=scope_options_for_user(request.user))
 

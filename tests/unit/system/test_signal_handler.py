@@ -127,45 +127,45 @@ class TestRealCacheRefreshFlow:
 
     def test_role_menu_m2m_add_refreshes_cache(self, normal_user, role, menu_factory):
         assert warm_permission_cache(normal_user) == {}
-        perm = menu_factory("用户查询", path="api/system/user$", method="GET")
+        perm = menu_factory("用户查询", path="api/identity/user$", method="GET")
         role.menu.add(perm)  # 不经过实例 save，依赖 m2m_changed 接收器失效
-        assert "api/system/user$" in warm_permission_cache(normal_user)
+        assert "api/identity/user$" in warm_permission_cache(normal_user)
 
     def test_role_menu_m2m_remove_refreshes_cache(self, normal_user, role, menu_factory):
-        perm = menu_factory("用户查询", path="api/system/user$", method="GET")
+        perm = menu_factory("用户查询", path="api/identity/user$", method="GET")
         role.menu.add(perm)
-        assert "api/system/user$" in warm_permission_cache(normal_user)
+        assert "api/identity/user$" in warm_permission_cache(normal_user)
         role.menu.remove(perm)
         assert warm_permission_cache(normal_user) == {}
 
     def test_role_menu_m2m_clear_refreshes_cache(self, normal_user, role, menu_factory):
-        perm = menu_factory("用户查询", path="api/system/user$", method="GET")
+        perm = menu_factory("用户查询", path="api/identity/user$", method="GET")
         role.menu.add(perm)
-        assert "api/system/user$" in warm_permission_cache(normal_user)
+        assert "api/identity/user$" in warm_permission_cache(normal_user)
         role.menu.clear()
         assert warm_permission_cache(normal_user) == {}
 
     def test_user_roles_m2m_add_refreshes_cache(self, role, menu_factory):
-        perm = menu_factory("用户查询", path="api/system/user$", method="GET")
+        perm = menu_factory("用户查询", path="api/identity/user$", method="GET")
         role.menu.add(perm)
         user = UserInfo.objects.create_user(username="lisi", password="Test@123456")
         assert warm_permission_cache(user) == {}
         user.roles.add(role)  # 用户未重新 save，仅 M2M 变更
-        assert "api/system/user$" in warm_permission_cache(user)
+        assert "api/identity/user$" in warm_permission_cache(user)
 
     def test_user_roles_m2m_remove_refreshes_cache(self, normal_user, role, menu_factory):
-        perm = menu_factory("用户查询", path="api/system/user$", method="GET")
+        perm = menu_factory("用户查询", path="api/identity/user$", method="GET")
         role.menu.add(perm)
-        assert "api/system/user$" in warm_permission_cache(normal_user)
+        assert "api/identity/user$" in warm_permission_cache(normal_user)
         normal_user.roles.remove(role)
         assert warm_permission_cache(normal_user) == {}
 
     def test_dept_roles_m2m_add_refreshes_member_cache(self, dept, role, menu_factory):
-        perm = menu_factory("用户查询", path="api/system/user$", method="GET")
+        perm = menu_factory("用户查询", path="api/identity/user$", method="GET")
         role.menu.add(perm)
         member = UserInfo.objects.create_user(username="wangwu", password="Test@123456")
         member.dept = dept
         member.save(update_fields=["dept"])
         assert warm_permission_cache(member) == {}
         dept.roles.add(role)  # 部门继承角色，仅 M2M 变更
-        assert "api/system/user$" in warm_permission_cache(member)
+        assert "api/identity/user$" in warm_permission_cache(member)

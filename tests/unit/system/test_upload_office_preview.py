@@ -32,7 +32,7 @@ from file.views.admin.file import PREVIEW_PREPARING_CODE, UploadFileViewSet
 
 pytestmark = pytest.mark.django_db
 
-FILE_URL = "/api/system/file"
+FILE_URL = "/api/file/file"
 
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

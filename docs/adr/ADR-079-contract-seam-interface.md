@@ -1,7 +1,8 @@
 # ADR-079：common→业务 app 契约缝显式接口化（单缝收敛）
 
+- 状态：已交付
+
 > **日期**：2026-10-02
-> **状态**：已交付
 > **关联**：[NEXT-DEV-PLAN](../../../../NEXT-DEV-PLAN.md) R6（批三结构治理）；`scripts/check_cross_app_imports.py` 契约缝机制（2026-09-26 建立）；二开体验与模块化管理评估（P1/P2 已交付，本 ADR 是其框架层收尾段）
 > **代码路径**：`common/contracts.py`（新增）、`scripts/check_cross_app_imports.py`、common 内 25 个契约缝消费文件
 > **背景**：跨 app 门禁把框架层（common）对业务 app 的消费收敛到 `<app>.services` 并逐缝登记（实测 26 文件 31 条缝；NEXT-DEV-PLAN R6 行的「30 条缝 / 25 文件」为 oplog_recorder 补登记前的旧口径），但登记只是「显式化」而非「收口」——common 侧 21 处 `from system.services import …` 直接落在业务名字上，耦合面分散在 26 个文件里；其中 credentials / modules.gate 两处是「属性访问式引用 + 迁移期降级」（调用期解析，模型不可用时降级）。R6 立项目的：把属性访问式引用 Protocol 化 / 显式接口化，降低 common 对业务 app 的隐式耦合，为二开生态 / common 独立包化（触发制）预备单点替换面。

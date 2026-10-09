@@ -106,7 +106,7 @@ class TestResponseDesensitization:
             {
                 "META": {"HTTP_USER_AGENT": "pytest-agent"},
                 "method": "POST",
-                "path": "/api/system/auth/token",
+                "path": "/api/identity/auth/token",
                 "request_data": {},
                 "request_ip": "127.0.0.1",
                 "request_module": "auth",

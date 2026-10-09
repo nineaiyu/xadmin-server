@@ -363,7 +363,7 @@ class Command(BaseCommand):
             client_secret_hash=secret_hash,
             client_secret_prefix=secret_prefix,
             callback_secret_encrypted=callback_encrypted,
-            scopes=["GET ^/api/system/user/?$", "GET ^/api/system/dept/?$"],
+            scopes=["GET ^/api/identity/user/?$", "GET ^/api/identity/dept/?$"],
             callback_urls=["https://example.com/xadmin/callback"],
             rate_limit_per_minute=60,
             daily_quota=1000,

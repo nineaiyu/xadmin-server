@@ -1,4 +1,4 @@
-// T3.1 性能基线 03：列表页接口（GET {LIST_PATH}?page=&size=，默认 /api/system/user）。
+// T3.1 性能基线 03：列表页接口（GET {LIST_PATH}?page=&size=，默认 /api/identity/user）。
 // 代表元数据驱动 CRUD 的表格热路径：数据权限过滤 + 分页 + 整页序列化（含在线状态/锁定状态批量查询）。
 // 以超级管理员压测：跳过菜单授权差异，聚焦框架本身的列表开销。
 import http from 'k6/http';

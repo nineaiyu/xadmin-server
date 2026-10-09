@@ -8,7 +8,7 @@ from identity.models import UserInfo, UserOAuthBinding
 
 pytestmark = pytest.mark.django_db
 
-USERS_URL = "/api/system/user"
+USERS_URL = "/api/identity/user"
 
 
 @pytest.fixture

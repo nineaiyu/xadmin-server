@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""identity 域路由：经 system/urls.py 同前缀挂载（ADR-057 D1.2 口径）。
+"""identity 域路由：独立前缀挂载（server/urls.py ``^api/identity/``）。
 
-本模块**不设 app_name**——注册项并入 system 命名空间，``reverse("system:user")``
-等既有视图名、权限点与 menu.json 全部零变化。
+URL 前缀与 app 对齐：``/api/identity/...``；Menu.path 权限点、前端 API 层、
+模块裁剪 ModuleSpec 的 routes 正则已同步平移。
 """
 
 from django.urls import path, re_path
@@ -54,6 +54,8 @@ from identity.views.search.user import SearchUserViewSet
 from identity.views.user.directory import DirectoryViewSet
 from identity.views.user.token import PersonalAccessTokenViewSet
 from identity.views.user.userinfo import UserInfoViewSet
+
+app_name = "identity"
 
 router = SimpleRouter(False)
 no_detail_router = NoDetailRouter(False)

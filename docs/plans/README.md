@@ -22,6 +22,7 @@
 ## 历史归档（archive/，15 份）
 
 已完成职能的历史台账，仅作制度记忆与追溯；指向 `adr/` `ops/` `metrics.md` 等的链接为 `../../` 口径。
+本表受 CI 守护（`scripts/check_doc_index.py`）：archive/ 每篇须在本表登记，且不得出现在 `docs/README.md` 主索引。
 
 | 文档 | 说明 |
 |------|------|

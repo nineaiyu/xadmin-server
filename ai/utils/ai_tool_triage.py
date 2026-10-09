@@ -28,8 +28,20 @@ TRIAGE_RESOURCES = {
         "数据分析与动态表单域整体不 AI 化——数据集为分析取数配置、仪表盘/大屏为展示配置"
         "（定时报表由任务中心驱动）、表单设计器为页面级配置面、填报数据走表单中心（含审批与草稿态机）",
     ),
-    "system/account-risks": ("exempt", "账号安全巡检为安全运维面（AI 读侧另有统计口径）"),
-    "system/api-applications": ("exempt", "开放平台应用凭据为集成运维面"),
+    "identity": (
+        "exempt",
+        "身份与访问域整体不 AI 直调——用户/角色/部门/岗位为组织权限配置面（写动作涉及账号与授权安全，"
+        "AI 只读侧走已注册的 user.list 等动作），登录/注册/重置/会话为认证面，通讯录为只读人员名录链路，"
+        "个人中心（资料/绑定/改密）与个人访问令牌为用户自助凭证面，账号安全巡检与登录策略为安全运维面，"
+        "开放平台应用凭据为集成运维面",
+    ),
+    "file": ("exempt", "文件中心（上传/预览/回收站）为页面链路，含上传策略校验"),
+    "audit": ("exempt", "审计日志查询为运维排障面（含脱敏与数据域控制），数据脱敏规则为安全配置面"),
+    "task": (
+        "exempt",
+        "任务中心查询与取消/重跑为运维操作面；下载中心记录查询与产物下载、导入记录与失败报告、"
+        "导入模板为页面链路；Webhook 订阅与投递记录为集成运维面",
+    ),
     "system/codegen": (
         "exempt",
         "代码生成器为开发者页面工具（模型清单/字段勾选/预览/下载为 GUI 向导链路，产物下载为文件动作），不进 AI 工具面",
@@ -39,29 +51,14 @@ TRIAGE_RESOURCES = {
         "代码生成方案的保存/取用为同一开发者页面工具的配套存储（个人级表单状态），与生成器同口径不进 AI 工具面",
     ),
     "system/credentials": ("exempt", "凭据总览与轮换为高危运维动作，需人工确认"),
-    "system/dept": ("exempt", "部门树维护在组织管理页面（权限与数据域强相关）"),
-    "system/directory": ("exempt", "通讯录为只读人员名录页面链路（无写动作）"),
     "system/dict": ("exempt", "数据字典为平台配置面（AI 读侧走字典选项下发）"),
-    "system/exports": ("exempt", "下载中心记录查询与产物下载为页面链路"),
-    "system/file": ("exempt", "文件中心（上传/预览/回收站）为页面链路，含上传策略校验"),
-    "system/import-templates": ("exempt", "导入模板为页面工具"),
-    "system/imports": ("exempt", "导入记录查询与失败报告为页面链路"),
-    "system/logs": ("exempt", "审计日志查询为运维排障面（含脱敏与数据域控制）"),
-    "system/mask-rules": ("exempt", "数据脱敏规则为安全配置面"),
     "system/modules": ("exempt", "模块裁剪为运维动作，需人工确认影响面"),
-    "system/personal-access-tokens": ("exempt", "个人访问令牌为用户自助凭证面"),
-    "system/posts": ("exempt", "岗位为组织人员维度配置面（不参与权限判定），成员分配涉及人员归属需人工确认"),
-    "system/role": ("exempt", "角色与权限为安全配置面，AI 不参与授权变更"),
     "system/search": ("exempt", "全局搜索为前端交互内部接口"),
-    "system/tasks": ("exempt", "任务中心查询与取消/重跑为运维操作面"),
-    "system/user": ("exempt", "用户管理写动作涉及账号安全（AI 只读侧走 user.list 等已注册动作）"),
-    "system/userinfo": ("exempt", "个人中心自助面（资料 / 绑定 / 改密）"),
-    "system/webhooks": ("exempt", "Webhook 订阅与投递记录为集成运维面"),
 }
 
 
 def resource_key(url: str) -> str:
-    """候选 URL → 资源域键（``api/system/user/...`` → ``system/user``；``api/settings/...`` → ``settings``）。"""
+    """候选 URL → 资源域键（``api/system/menu/...`` → ``system/menu``；``api/identity/user/...`` → ``identity``）。"""
     parts = [part for part in str(url or "").strip("/").split("/") if part and part != "api"]
     if not parts:
         return "?"

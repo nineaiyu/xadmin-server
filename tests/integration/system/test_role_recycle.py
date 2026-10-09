@@ -10,7 +10,7 @@ from identity.models import UserRole
 
 pytestmark = pytest.mark.django_db
 
-ROLE_URL = "/api/system/role"
+ROLE_URL = "/api/identity/role"
 
 
 def _create_role(auth_client, name="测试角色", code="test_role"):

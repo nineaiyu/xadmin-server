@@ -14,7 +14,7 @@ from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-REGISTER_URL = "/api/system/register"
+REGISTER_URL = "/api/identity/register"
 
 PASSWORD = "Test@123456"
 

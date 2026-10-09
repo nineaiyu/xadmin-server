@@ -16,9 +16,9 @@ from system.models.field import ModelLabelField
 
 pytestmark = pytest.mark.django_db
 
-APPS_URL = "/api/system/api-applications"
-TOKEN_URL = "/api/system/open/token"
-USER_URL = "/api/system/user"
+APPS_URL = "/api/identity/api-applications"
+TOKEN_URL = "/api/identity/open/token"
+USER_URL = "/api/identity/user"
 
 
 def _create_application(client, **payload):
@@ -58,14 +58,14 @@ def user_menus(db, menu_factory):
     ModelLabelField.objects.create(name="username", label="用户名", parent=model_label)
     menus = {}
     for action, method, path in (
-        ("list", "GET", "api/system/user$"),
-        ("retrieve", "GET", "api/system/user/(?P<pk>[^/.]+)$"),
+        ("list", "GET", "api/identity/user$"),
+        ("retrieve", "GET", "api/identity/user/(?P<pk>[^/.]+)$"),
     ):
         menu = menu_factory(f"{action}:SystemUser", path=path, method=method)
         menu.model.add(model_label)
         menus[action] = menu
     dept_label = ModelLabelField.objects.create(name="identity.deptinfo", label="部门")
-    dept_menu = menu_factory("list:SystemDept", path="api/system/dept$", method="GET")
+    dept_menu = menu_factory("list:SystemDept", path="api/identity/dept$", method="GET")
     dept_menu.model.add(dept_label)
     return menus
 
@@ -91,7 +91,7 @@ class TestGrantEnforcement:
         _put_grants(auth_client, application, [{"model": "identity.userinfo", "actions": ["list"]}])
         client = _pat_client(_issue_raw(application))
         assert client.get(USER_URL).status_code == 200
-        assert client.get("/api/system/dept").status_code == 403
+        assert client.get("/api/identity/dept").status_code == 403
 
     def test_whitelist_mode_denies_uncovered_action(self, auth_client, superuser, user_menus):
         application = _create_application(auth_client)
@@ -105,7 +105,7 @@ class TestGrantEnforcement:
         _put_grants(auth_client, application, [{"model": "*", "actions": ["list"]}])
         client = _pat_client(_issue_raw(application))
         assert client.get(USER_URL).status_code == 200
-        assert client.get("/api/system/dept").status_code == 200
+        assert client.get("/api/identity/dept").status_code == 200
         # 动作级仍然收敛：retrieve 未授权
         assert client.get(f"{USER_URL}/1").status_code == 403
 
@@ -154,7 +154,7 @@ class TestGrantEnforcement:
         )
         client = _pat_client(_issue_raw(application))
         assert client.get(USER_URL).status_code == 200
-        assert client.get("/api/system/dept").status_code == 200
+        assert client.get("/api/identity/dept").status_code == 200
 
 
 class TestGrantManagement:
@@ -214,23 +214,23 @@ class TestMenuMatchBoundary:
     def test_no_cross_char_prefix_match(self):
         from identity.utils.api_grant import _match_menu_pk
 
-        data = {"api/system/user": "pk-a"}
-        assert _match_menu_pk(data, "/api/system/userfoo") is None
-        assert _match_menu_pk(data, "/api/system/user-exports") is None
+        data = {"api/identity/user": "pk-a"}
+        assert _match_menu_pk(data, "/api/identity/userfoo") is None
+        assert _match_menu_pk(data, "/api/identity/user-exports") is None
 
     def test_segment_prefix_covers_children(self):
         from identity.utils.api_grant import _match_menu_pk
 
-        data = {"api/system/user": "pk-a"}
-        assert _match_menu_pk(data, "/api/system/user") == "pk-a"
-        assert _match_menu_pk(data, "/api/system/user/1") == "pk-a"
+        data = {"api/identity/user": "pk-a"}
+        assert _match_menu_pk(data, "/api/identity/user") == "pk-a"
+        assert _match_menu_pk(data, "/api/identity/user/1") == "pk-a"
 
     def test_exact_anchor_keeps_exact_semantics(self):
         from identity.utils.api_grant import _match_menu_pk
 
-        data = {"api/system/user$": "pk-a"}
-        assert _match_menu_pk(data, "/api/system/user") == "pk-a"
-        assert _match_menu_pk(data, "/api/system/user/1") is None
+        data = {"api/identity/user$": "pk-a"}
+        assert _match_menu_pk(data, "/api/identity/user") == "pk-a"
+        assert _match_menu_pk(data, "/api/identity/user/1") is None
 
     def test_match_parity_with_runtime_chain(self, menu_factory):
         """开放平台菜单解析与运行期判定必须同源（历史上一处漏改锚定导致偏差）。"""
@@ -240,17 +240,17 @@ class TestMenuMatchBoundary:
         from identity.utils.api_grant import resolve_request_menu_pk
         from system.models import Menu
 
-        menu_factory("list:SystemUser", path="api/system/user", method="GET")
-        menu_factory("list:SystemDept", path="api/system/dept$", method="GET")
+        menu_factory("list:SystemUser", path="api/identity/user", method="GET")
+        menu_factory("list:SystemDept", path="api/identity/dept$", method="GET")
         menus = list(Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, method="GET"))
         permission_data = {menu.path: (menu.pk, None) for menu in menus}
         for url in (
-            "/api/system/user",
-            "/api/system/user/1",
-            "/api/system/userfoo",
-            "/api/system/user-exports",
-            "/api/system/dept",
-            "/api/system/dept/1",
+            "/api/identity/user",
+            "/api/identity/user/1",
+            "/api/identity/userfoo",
+            "/api/identity/user-exports",
+            "/api/identity/dept",
+            "/api/identity/dept/1",
         ):
             runtime = get_menu_pk(permission_data, url)
             expected = runtime[0] if runtime else None
@@ -273,9 +273,9 @@ class TestMenuPathCache:
 
         from identity.utils.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
 
-        menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        menu = menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
         invalid_menu_path_cache()  # 清掉工厂创建期间可能写入的缓存
-        request = self._request("/api/system/user")
+        request = self._request("/api/identity/user")
         with CaptureQueriesContext(connection) as first_ctx:
             first = resolve_request_menu_pk(request)
         assert first == menu.pk
@@ -288,32 +288,32 @@ class TestMenuPathCache:
     def test_method_dimension_is_independent(self, menu_factory):
         from identity.utils.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
 
-        menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
         invalid_menu_path_cache()
-        assert resolve_request_menu_pk(self._request("/api/system/user", "GET")) is not None
+        assert resolve_request_menu_pk(self._request("/api/identity/user", "GET")) is not None
         # POST 维度的映射独立缓存，无 POST 权限菜单时不得被 GET 键串台
-        assert resolve_request_menu_pk(self._request("/api/system/user", "POST")) is None
+        assert resolve_request_menu_pk(self._request("/api/identity/user", "POST")) is None
 
     def test_menu_change_signal_invalidates_cache(self, menu_factory):
         from identity.utils.api_grant import resolve_request_menu_pk
 
-        request = self._request("/api/system/user")
+        request = self._request("/api/identity/user")
         assert resolve_request_menu_pk(request) is None  # 空映射同样入缓存
-        menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        menu = menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
         # 菜单保存信号已失效映射缓存：无需等待 TTL 即可见
         assert resolve_request_menu_pk(request) == menu.pk
 
     def test_cache_failure_falls_back_to_query(self, menu_factory, monkeypatch):
         from identity.utils.api_grant import resolve_request_menu_pk
 
-        menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        menu = menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
 
         def boom(*args, **kwargs):
             raise RuntimeError("cache down")
 
         monkeypatch.setattr("identity.utils.api_grant.cache.get", boom)
         monkeypatch.setattr("identity.utils.api_grant.cache.set", boom)
-        assert resolve_request_menu_pk(self._request("/api/system/user")) == menu.pk
+        assert resolve_request_menu_pk(self._request("/api/identity/user")) == menu.pk
 
 
 class TestGrantOptions:

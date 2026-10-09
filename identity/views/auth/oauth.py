@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """第三方登录（OAuth2 / OIDC 通用 provider）：authorize / callback / 绑定管理。
 
-**URL 白名单说明**：整段 `^/api/system/auth/oauth/` 已在 `PERMISSION_WHITE_URL` 中，
+**URL 白名单说明**：整段 `^/api/identity/auth/oauth/` 已在 `PERMISSION_WHITE_URL` 中，
 因为登录前置的 authorize/callback 必须匿名可达；绑定管理是个人凭证（同 MFA/PAT 口径），
 也不该依赖菜单权限。因此这里显式要求 DRF 的 `IsAuthenticated`，
 不能用项目的自定义 `IsAuthenticated`（后者按菜单权限校验，白名单已被绕过）。

@@ -2,7 +2,7 @@
 
 > 目标：把「HTTP 可用性 / API P95 / 任务成功率 / 队列积压」四项 SLO 从
 > 「指标端点已暴露、无人值守看不到」推到**可看 + 可告警**。
-> 相关：[observability.md](observability.md)（三支柱 / SLO 口径 / 演练记录）、
+> 相关：[observability.md](observability.md)（三支柱 / SLO 口径）+ [observability-drills.md](observability-drills.md)（演练记录）、
 > [runbook.md](runbook.md)（故障处置）、`ops/monitoring/`（本栈资产）、
 > `scripts/prometheus_alert_bridge.py`（告警投递桥接）。
 
@@ -60,8 +60,17 @@ curl -s -H "Authorization: Bearer $(cat ops/monitoring/metrics_token)" \
 | `XadminHealthProbeFailed` | healthz 探针非 2xx > 2m | critical |
 | `XadminAvailabilityLow` | 5xx 率 > 1% 持续 5m | critical |
 | `XadminApiLatencyHigh` | P95 > 1s 持续 10m | warning |
+| `XadminCaseLatency{Login,Routes,UserList,MetadataColumns,MetadataFields,Export,Import}` | 端点级 P95 > 基线 P95 × 3 持续 10m（`view` 精确匹配） | warning |
 | `XadminTaskFailureRateHigh` | 近 24h 任务成功率 < 99% | warning |
 | `XadminQueueBacklogHigh` / `Warning` | 队列积压 > 500 / > 100 | critical / warning |
+
+**端点级 P95 告警口径**：`XadminCaseLatency*` 组按 `loadtest/baseline.json` 的基线 P95 × 3 设阈，
+`view` 标签精确匹配端点（`system:login-by-basic` / `system:user_routes` / `system:user-list` /
+`system:user-search-columns` / `system:user-search-fields` / `system:user-export-data` /
+`system:user-import-data`）。比较基准是 k6 客户端口径（含网络与本机回环），服务端 histogram 值更低，
+故实际宽限更宽松，只拦数量级退化；精确的 20% 回归判定仍由 fixed-env 的 `loadtest/check_baseline.py`
+承担。`system:user-list` 同一 view 同时承载列表（03-list）与页面首开（04-metadata-with-meta，内联元数据），
+service 端不可分，阈值取两者基线较大者；`Export` / `Import` 为重 IO，阈值仅作数量级兜底。
 
 授权池缓存键基数（观察项）规则默认注释，按部署规模开启并调参；键空间与收敛预案见
 [../cache-keys-audit.md](../cache-keys-audit.md)。

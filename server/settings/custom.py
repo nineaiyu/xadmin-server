@@ -10,9 +10,9 @@ from .base import INSTALLED_APPS
 
 # 访问白名单配置，无需权限配置, key为路由，value为列表，对应的是请求方式， * 表示全部请求方式, 请求方式为大写
 PERMISSION_WHITE_URL = {
-    "^/api/system/login$": ["*"],
-    "^/api/system/logout$": ["*"],
-    "^/api/system/userinfo$": ["GET"],
+    "^/api/identity/login$": ["*"],
+    "^/api/identity/logout$": ["*"],
+    "^/api/identity/userinfo$": ["GET"],
     "^/api/system/routes$": ["*"],
     "^/api/system/dashboard/": ["*"],
     # 结构元数据枚举（S7 口径文档化）：choices / search-fields / dict.items 对所有
@@ -40,30 +40,30 @@ PERMISSION_WHITE_URL = {
     "^/api/mfa/otp/recovery-codes/regenerate$": ["POST"],
     "^/api/mfa/otp/start$": ["POST"],
     "^/api/mfa/otp/test$": ["POST"],
-    "^/api/system/personal-access-tokens": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
+    "^/api/identity/personal-access-tokens": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
     # Passkey 凭据：个人凭据个人管，视图内收口为本人（超管可查全量），同 PAT/MFA 口径
-    "^/api/system/passkeys": ["*"],
+    "^/api/identity/passkeys": ["*"],
     # 列表「我的视图」：个人筛选偏好，视图内收口为「本人 + 共享只读」，同 PAT 口径
     "^/api/system/saved-views": ["*"],
     # 登录前 Passkey 挑战值（匿名，凭一次性 mfa_token）：与登录流程同级，不参与菜单权限
-    "^/api/system/login/mfa/passkey/": ["*"],
+    "^/api/identity/login/mfa/passkey/": ["*"],
     # 退出用户模拟：被模拟用户未必有任何菜单权限，退出模拟是安全阀必须无条件可达
     # （POST，视图内以登录态 + token claim imp 收口，见 views/auth/impersonation.py）
-    "^/api/system/impersonate/exit$": ["POST"],
+    "^/api/identity/impersonate/exit$": ["POST"],
     # 应用接口范围选项（API 应用管理页表单枚举，同 choices/search-fields 口径）：
     # 返回的只是「当前用户可授权的接口」元数据（用户自己权限菜单派生，无业务数据行），
     # 且管理页的查看/编辑是两个独立权限点——按菜单收紧会让只有编辑权限的用户打不开勾选器。
-    "^/api/system/api-applications/scope-options$": ["GET"],
+    "^/api/identity/api-applications/scope-options$": ["GET"],
     # 应用资源授权目录（四级授权表单枚举，同 scope-options 口径：只返回可授权元数据）
-    "^/api/system/api-applications/grant-options$": ["GET"],
+    "^/api/identity/api-applications/grant-options$": ["GET"],
     # 第三方登录与绑定：登录前置（authorize/callback）必须匿名可达，绑定管理是个人凭证，
     # 两者都无需菜单权限（视图内自行要求 DRF IsAuthenticated，见 views/auth/oauth.py）
-    "^/api/system/auth/oauth/": ["*"],
+    "^/api/identity/auth/oauth/": ["*"],
     # 开放平台换发端点：凭 client_secret 认证（凭证即身份），视图内 fail-closed
-    "^/api/system/open/token$": ["*"],
+    "^/api/identity/open/token$": ["*"],
     # OAuth 授权码端点：授权码换发（token/revoke）同客户端凭证口径；
     # authorize/approve 需登录态但不需要菜单权限（第三方接入点，视图内 fail-closed）
-    "^/api/system/open/oauth/": ["*"],
+    "^/api/identity/open/oauth/": ["*"],
 }
 
 # 前端权限路由 忽略配置
@@ -75,15 +75,19 @@ ROUTE_IGNORE_URL = [
     "^/api/system/dashboard/",  # 忽略dashboard路由
     "^/api/system/captcha",  # 忽略图片验证码路由
     "^/api/mfa/",  # 忽略 MFA 二次验证路由
-    "^/api/system/api-applications/scope-options$",  # 接口范围选项：白名单元数据，无需再配权限点
-    "^/api/system/api-applications/grant-options$",  # 资源授权目录：白名单元数据，无需再配权限点
-    "^/api/system/passkeys",  # Passkey 个人凭据：白名单路由，无需再配权限点
+    "^/api/identity/api-applications/scope-options$",  # 接口范围选项：白名单元数据，无需再配权限点
+    "^/api/identity/api-applications/grant-options$",  # 资源授权目录：白名单元数据，无需再配权限点
+    "^/api/identity/passkeys",  # Passkey 个人凭据：白名单路由，无需再配权限点
     "^/api/system/saved-views",  # 我的视图：白名单路由，无需再配权限点
 ]
 
 # 访问权限配置
 PERMISSION_SHOW_PREFIX = [
     r"api/system",
+    r"api/identity",
+    r"api/file",
+    r"api/audit",
+    r"api/task",
     r"api/approval",
     r"api/ai",
     r"api/dataset",
