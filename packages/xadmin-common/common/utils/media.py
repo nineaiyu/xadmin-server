@@ -34,29 +34,37 @@ from common.settings_contract import kernel_setting
 
 
 def get_media_path(path: str) -> Any:
+    """缩略图请求路径解析（``app/model/misc/pk/<size>_<name>``）→ 缩略图相对路径。
+
+    任何不匹配或无法解析的形态都返回 None（调用方回落存储读取）：媒体服务不因
+    畸形路径抛 500。可能的失败来源：app/model 不存在（LookupError）、缩略图尺寸段
+    非数字（ValueError）、对象存储后端无本地 ``path``（NotImplementedError）、
+    文件系统读取异常（OSError）。
+    """
     path_list = path.split("/")
-    if len(path_list) == 5:
-        pic_names = path_list[4].split("_")
-        if len(pic_names) != 2:
-            return
+    if len(path_list) != 5:
+        return None
+    pic_names = path_list[4].split("_")
+    if len(pic_names) != 2:
+        return None
+    try:
         model = apps.get_model(path_list[0], path_list[1])
-        field = None
-        for i in model._meta.fields:
-            if isinstance(i, ProcessedImageField):
-                field = i
-                break
-        if field:
-            pk = path_list[3]
-            fw = {"pk": pk}
-            if pk == "0":  # 通过form-data增加数据的时候，由于instance还未创建，pk不存在,为默认0
-                fw = {field.name: path.replace(f"_{pic_names[1]}", f".{field.format}")}
-            obj = model.objects.filter(**fw).first()
-            if obj:
-                pic = getattr(obj, field.name)
-                if os.path.isfile(pic.path):
-                    index = pic_names[1].split(".")
-                    if pic and len(index) > 0:
-                        return get_thumbnail(pic, int(index[0]))
+        field = next((i for i in model._meta.fields if isinstance(i, ProcessedImageField)), None)
+        if field is None:
+            return None
+        pk = path_list[3]
+        fw = {"pk": pk}
+        if pk == "0":  # 通过form-data增加数据的时候，由于instance还未创建，pk不存在,为默认0
+            fw = {field.name: path.replace(f"_{pic_names[1]}", f".{field.format}")}
+        obj = model.objects.filter(**fw).first()
+        if obj is None:
+            return None
+        pic = getattr(obj, field.name)
+        if not pic or not os.path.isfile(pic.path):
+            return None
+        return get_thumbnail(pic, int(pic_names[1].split(".")[0]))
+    except (LookupError, ValueError, TypeError, NotImplementedError, OSError):
+        return None
 
 
 def _storage_serve(request: Any, path: str) -> Any:

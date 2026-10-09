@@ -178,18 +178,27 @@ def assert_within_data_scope(queryset: Any, user_obj: Any, message: Any) -> None
         raise RestValidationError(message)
 
 
-class OwnerUserFilter(BaseFilterBackend):
+class _CurrentUserFieldFilter(BaseFilterBackend):
+    """按「当前登录用户」过滤指定字段（子类声明 ``filter_field``）。"""
+
+    filter_field = ""
+
     def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
         if request.user and request.user.is_authenticated:
-            return queryset.filter(owner=request.user)
+            return queryset.filter(**{self.filter_field: request.user})
         raise NotAuthenticated(_("Unauthorized authentication"))
 
 
-class CreatorUserFilter(BaseFilterBackend):
-    def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
-        if request.user and request.user.is_authenticated:
-            return queryset.filter(creator=request.user)
-        raise NotAuthenticated(_("Unauthorized authentication"))
+class OwnerUserFilter(_CurrentUserFieldFilter):
+    """按所有者过滤（``owner`` = 当前用户）。"""
+
+    filter_field = "owner"
+
+
+class CreatorUserFilter(_CurrentUserFieldFilter):
+    """按创建者过滤（``creator`` = 当前用户）。"""
+
+    filter_field = "creator"
 
 
 class BaseDataPermissionFilter(BaseFilterBackend):

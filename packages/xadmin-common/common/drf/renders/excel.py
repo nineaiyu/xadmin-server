@@ -20,7 +20,8 @@ class ExcelFileRenderer(BaseFileRenderer):
     media_type = "application/xlsx"
     format = "xlsx"
 
-    # 工作簿/工作表在 initial_writer() 中创建（渲染器协议保证先初始化后写入）
+    # 工作簿/工作表在 initial_writer() 中创建（渲染器协议保证先初始化后写入）；
+    # row_count 在初始化时一并复位，渲染器实例复用时不会延续上一份文档的行号
     wb: Any = None
     ws: Any = None
     row_count = 0
@@ -28,6 +29,7 @@ class ExcelFileRenderer(BaseFileRenderer):
     def initial_writer(self) -> None:
         self.wb = Workbook()
         self.ws = self.wb.active
+        self.row_count = 0
 
     def write_row(self, row: Any) -> None:
         self.row_count += 1
@@ -92,8 +94,10 @@ class ExcelFileRenderer(BaseFileRenderer):
             count += 1
             column = col[0].column_letter
             for cell in col:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(cell.value)
+                # 行长度不齐时列尾部是空单元格（value=None），按空串计入宽度
+                text = str(cell.value or "")
+                if len(text) > max_length:
+                    max_length = len(text)
             adjusted_width = (max_length + 2) * 1.0
             adjusted_width = 300 if adjusted_width > 300 else adjusted_width
             adjusted_width = 30 if adjusted_width < 30 else adjusted_width

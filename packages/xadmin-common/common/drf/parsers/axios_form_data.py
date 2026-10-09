@@ -76,22 +76,20 @@ def format_data(data: QueryDict | dict[str, Any]) -> Any:
             new_data[key_split[0]] = value
         else:
             if re.match(r"\d+", key_split[1]):  # 列表
+                result = format_data({".".join(key_split[1:]): value})
+                lk = list(result.keys())
+                index = int(lk[0])
                 info: list[Any] = new_data.get(key_split[0]) or []
                 if not info:
-                    new_data[key_split[0]] = [{}]
-                    result = format_data({".".join(key_split[1:]): value})
-                    lk = list(result.keys())
-                    index = int(lk[0])
-                    # 乱序下标补位（如仅出现 covers.1 时先占位 0），避免 list 越界
-                    while len(new_data[key_split[0]]) <= index:
-                        new_data[key_split[0]].append({})
-                    new_data[key_split[0]][index] = result.get(lk[0])
+                    new_data[key_split[0]] = info
+                # 下标可能乱序 / 跳号（axios 只提交有值的下标）：先补空位再落值，
+                # 否则 info[index] 会越界（如先 covers.0 再 covers.5）
+                while len(info) <= index:
+                    info.append({})
+                if info[index]:
+                    info[index].update(result.get(lk[0]))
                 else:
-                    result = format_data({".".join(key_split[1:]): value})
-                    lk = list(result.keys())
-                    if int(lk[0]) + 1 > len(new_data[key_split[0]]):
-                        new_data[key_split[0]].append({})
-                    new_data[key_split[0]][int(lk[0])].update(result.get(lk[0]))
+                    info[index] = result.get(lk[0])
             else:  # 字典
                 info_dict: dict[str, Any] = new_data.get(key_split[0], {})
                 if not info_dict:

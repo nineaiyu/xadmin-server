@@ -44,7 +44,7 @@ def eta_second(second: Any) -> Any:
     return datetime.fromtimestamp(datetime.now().timestamp(), UTC) + timedelta(seconds=second)
 
 
-def create_or_update_celery_periodic_tasks(tasks: Any) -> Any:
+def create_or_update_celery_periodic_tasks(tasks: Any) -> dict[str, tuple[Any, bool]] | None:
     """
     :param tasks: {
         'add-every-monday-morning': {
@@ -57,20 +57,22 @@ def create_or_update_celery_periodic_tasks(tasks: Any) -> Any:
             'description': ''
         },
     }
-    :return:
+    :return: {任务名: (PeriodicTask 实例, 是否新建)}；调度表不可用或存在无效 schedule 时返回 None
     """
     # 任务名校验说明：此处**不**校验 task 是否为已注册 celery 任务——周期任务可能经
     # load_init_json 先于业务模块 autodiscover 导入，硬校验会误报；无效任务名在 beat
     # 触发时由 celery 自身报 NotRegistered 并记入日志（运维可见），无需在此重复拦截。
+    try:
+        IntervalSchedule.objects.all().count()
+    except (ProgrammingError, OperationalError):
+        # 周期调度表尚不可用（如迁移尚未执行）：跳过本批，等待下次调用重试
+        return None
+
+    result: dict[str, tuple[Any, bool]] = {}
     for name, detail in tasks.items():
         interval = None
         crontab = None
         last_run_at = None
-
-        try:
-            IntervalSchedule.objects.all().count()
-        except (ProgrammingError, OperationalError):
-            return None
 
         if isinstance(detail.get("interval"), int):
             kwargs = dict(
@@ -87,7 +89,7 @@ def create_or_update_celery_periodic_tasks(tasks: Any) -> Any:
                 minute, hour, day, month, week = detail["crontab"].split()
             except ValueError:
                 logger.error("crontab is not valid")
-                return
+                return None
             kwargs = dict(
                 minute=minute,
                 hour=hour,
@@ -101,7 +103,7 @@ def create_or_update_celery_periodic_tasks(tasks: Any) -> Any:
                 crontab = CrontabSchedule.objects.create(**kwargs)
         else:
             logger.error("Schedule is not valid")
-            return
+            return None
 
         defaults = dict(
             interval=interval,
@@ -116,30 +118,27 @@ def create_or_update_celery_periodic_tasks(tasks: Any) -> Any:
         enabled = detail.get("enabled")
         if enabled is not None:
             defaults["enabled"] = enabled
-        task = PeriodicTask.objects.update_or_create(
+        result[name] = PeriodicTask.objects.update_or_create(
             defaults=defaults,
             name=name,
         )
+
+    if result:
+        # 调度表变更统一在整批写完后刷新一次（update_changed 是 beat 调度全表级操作）
         PeriodicTasks.update_changed()
-        return task
+    return result
 
 
 def disable_celery_periodic_task(task_name: Any) -> None:
-    from django_celery_beat.models import PeriodicTask
-
     PeriodicTask.objects.filter(name=task_name).update(enabled=False)
     PeriodicTasks.update_changed()
 
 
 def delete_celery_periodic_task(task_name: Any) -> None:
-    from django_celery_beat.models import PeriodicTask
-
     PeriodicTask.objects.filter(name=task_name).delete()
     PeriodicTasks.update_changed()
 
 
 def get_celery_periodic_task(task_name: Any) -> Any:
-    from django_celery_beat.models import PeriodicTask
-
     task = PeriodicTask.objects.filter(name=task_name).first()
     return task

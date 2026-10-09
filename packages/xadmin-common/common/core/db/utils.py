@@ -49,8 +49,11 @@ def close_old_connections(**kwargs: Any) -> None:
 @contextmanager
 def safe_db_connection() -> Iterator[None]:
     close_old_connections()
-    yield
-    close_old_connections()
+    try:
+        yield
+    finally:
+        # 异常路径同样要回收连接：长跑消费循环出错后若不清理，陈旧连接会一直挂在进程上
+        close_old_connections()
 
 
 @contextmanager

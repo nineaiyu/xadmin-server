@@ -6,6 +6,7 @@
 # date : 6/6/2023
 import re
 import uuid
+from collections import defaultdict
 from typing import Any
 
 from django.db.models import Q
@@ -31,17 +32,26 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def get_user_menu_queryset(user_obj: Any) -> Any:
+def _role_dept_q(user_obj: Any, role_field: str) -> tuple[Q, bool]:
+    """「角色 ∪ 部门」授权 Q（菜单与字段权限两张表的关系名不同，按 ``role_field`` 参数化）。
+
+    角色列表只取一次复用（原逐个 exists()/count() + all() 会对同一关系重复查询）。
+    返回 (Q, 是否有授权来源)。
+    """
     q = Q()
     has_role = False
-    # 一次取出角色列表复用：原 exists()/count() + all() 会对同一关系重复查询
     roles = list(user_obj.roles.all())
     if roles:
-        q |= Q(userrole__in=roles) & Q(userrole__is_active=True)
+        q |= Q(**{f"{role_field}__in": roles}) & Q(**{f"{role_field}__is_active": True})
         has_role = True
     if user_obj.dept:
-        q |= Q(userrole__deptinfo=user_obj.dept) & Q(userrole__deptinfo__is_active=True)
+        q |= Q(**{f"{role_field}__deptinfo": user_obj.dept}) & Q(**{f"{role_field}__deptinfo__is_active": True})
         has_role = True
+    return q, has_role
+
+
+def get_user_menu_queryset(user_obj: Any) -> Any:
+    q, has_role = _role_dept_q(user_obj, "userrole")
     if has_role:
         # return get_filter_queryset(Menu.objects.filter(is_active=True).filter(q), user_obj)
         # 菜单通过角色控制，就不用再次通过数据权限过滤了，要不然还得两个地方都得配置
@@ -52,27 +62,14 @@ def get_user_menu_queryset(user_obj: Any) -> Any:
 
 @MagicCacheData.make_cache(timeout=10, key_func=lambda *args: f"{args[0].pk}_{args[1]}")
 def get_user_field_queryset(user_obj: Any, menu: Any) -> Any:
-    q = Q()
-    data: dict[str, set[str]] = {}
-    has_q = False
-    # 一次取出角色列表复用，避免 count() 与 all() 各查一次库
-    roles = list(user_obj.roles.all())
-    if roles:
-        q |= Q(role__in=roles) & Q(role__is_active=True)
-        has_q = True
-    if user_obj.dept:
-        q |= Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True)
-        has_q = True
+    q, has_q = _role_dept_q(user_obj, "role")
+    data: dict[str, set[str]] = defaultdict(set)
     if has_q:
         # queryset = get_filter_queryset(FieldPermission.objects.filter(q), user_obj).filter(menu=menu)
         queryset = FieldPermission.objects.filter(q).filter(menu=menu)  # 用户查询用户权限，无需使用权限过滤
-        for val in queryset.values_list("field__parent__name", "field__name").distinct():
-            info = data.get(val[0], set())
-            if info:
-                info.add(val[1])
-            else:
-                data[val[0]] = {val[1]}
-    return data
+        for parent_name, field_name in queryset.values_list("field__parent__name", "field__name").distinct():
+            data[parent_name].add(field_name)
+    return dict(data)
 
 
 @MagicCacheData.make_cache(timeout=3600 * 24, key_func=lambda x, y: f"{x.pk}_{y}")

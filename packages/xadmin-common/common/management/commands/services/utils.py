@@ -22,6 +22,7 @@ class ServicesUtil:
         self.EXIT_EVENT = threading.Event()
         self.check_interval = 30
         self.files_preserve_map: dict[str, str] = {}
+        self._daemon_log_file: Any = None
 
     def restart(self) -> None:
         self.stop()
@@ -133,15 +134,17 @@ class ServicesUtil:
 
     @property
     def daemon_context(self) -> Any:
-        daemon_log_file = open(self.daemon_log_filepath, "a")
+        # 句柄缓存复用：原实现每次访问都 open 且从不关闭（restart 路径逐个泄漏 fd）
+        if self._daemon_log_file is None:
+            self._daemon_log_file = open(self.daemon_log_filepath, "a")
         context = daemon.DaemonContext(
             pidfile=pidfile.TimeoutPIDLockFile(self.daemon_pid_filepath),
             signal_map={
                 signal.SIGTERM: lambda x, y: self.clean_up(),
                 signal.SIGHUP: "terminate",
             },
-            stdout=daemon_log_file,
-            stderr=daemon_log_file,
+            stdout=self._daemon_log_file,
+            stderr=self._daemon_log_file,
             files_preserve=list(self.files_preserve_map.values()),
             detach_process=True,
         )

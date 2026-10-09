@@ -118,9 +118,11 @@ class BaseFileRenderer(BaseRenderer):
 
     @staticmethod
     def to_choice_name(value: Any) -> Any:
+        """``{value, label}`` 取值展示：仅按 dict 取 ``value``，其它形态原样返回。"""
         if value is None:
             return "-"
-        value = value.get("value", "")
+        if isinstance(value, dict):
+            return value.get("value", "")
         return value
 
     def render_value(self, field: Any, value: Any) -> Any:
@@ -131,8 +133,9 @@ class BaseFileRenderer(BaseRenderer):
         elif isinstance(field, serializers.BooleanField):
             value = "Yes" if value else "No"
         elif isinstance(field, LabeledChoiceField):
-            value = value or {}
-            value = "{}({})".format(value.get("label"), value.get("value"))
+            # 字段协议形态是 {value, label}；原始数据（如 values() 查询结果）可能是标量，原样保留
+            if isinstance(value, dict):
+                value = "{}({})".format(value.get("label"), value.get("value"))
         elif isinstance(field, BasePrimaryKeyRelatedField):
             if field.many:
                 value = [self.to_id_name(v) for v in value]
@@ -159,6 +162,9 @@ class BaseFileRenderer(BaseRenderer):
             text = field.get_render_help_text()
         elif isinstance(field, serializers.BooleanField):
             text = _("Yes/No")
+        elif isinstance(field, PhoneField):
+            # 必须排在 CharField 之前：PhoneField 是 CharField 子类，排在后面时提示会退化成通用文本文案
+            text = _("Phone number, format +8612345678901")
         elif isinstance(field, serializers.CharField):
             if field.max_length:
                 text = _("Text, max length {}").format(field.max_length)
@@ -186,10 +192,6 @@ class BaseFileRenderer(BaseRenderer):
                 ).format(",".join(choices))
             else:
                 text = _("Choices, options {}").format(",".join(choices))
-        elif isinstance(field, PhoneField):
-            text = _("Phone number, format +8612345678901")
-        elif isinstance(field, LabeledChoiceField):
-            text = _('Label, format ["key:value"]')
         elif isinstance(field, BasePrimaryKeyRelatedField):
             text = _("Object, format name(id), name is optional for human read, id is requisite")
         elif isinstance(field, serializers.PrimaryKeyRelatedField):

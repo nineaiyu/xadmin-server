@@ -50,6 +50,9 @@ class RedisCacheBase:
     def append_storage_cache(self, value: Any, timeout: int | None = None) -> Any:
         with cache.lock(f"{self.cache_key}_lock", timeout=60, blocking_timeout=60):
             data = cache.get(self.cache_key, [])
+            if not isinstance(data, list):
+                # 键上是非列表值（历史数据 / 类型误用）：明确报错，而不是 AttributeError 兜圈子
+                raise TypeError(f"append_storage_cache expects a list value, got {type(data).__name__}")
             data.append(value)
             return cache.set(self.cache_key, data, timeout if timeout else self._timeout)
 
@@ -63,16 +66,18 @@ class RedisCacheBase:
         return cache.expire(self.cache_key, timeout=timeout)
 
     def iter_keys(self) -> Any:
-        if not self.cache_key.endswith("*"):
-            self.cache_key = f"{self.cache_key}*"
-        return cache.iter_keys(self.cache_key)
+        # 局部变量拼接通配后缀：不能就地改写 self.cache_key，
+        # 否则之后所有 get/set/delete 都会打到带 "*" 的错误键上
+        pattern = self.cache_key if self.cache_key.endswith("*") else f"{self.cache_key}*"
+        return cache.iter_keys(pattern)
 
     def get_many(self) -> Any:
-        return cache.get_many(self.cache_key)
+        # get_many 入参是键列表：传字符串会被 Django 按字符迭代成一批无关键
+        return cache.get_many([self.cache_key])
 
-    def del_many(self) -> bool:
-        cache.delete_pattern(self.cache_key)
-        return True
+    def del_many(self) -> int:
+        """按通配删除并返回删除数量（旧实现丢弃结果硬编码 True，调用方无法感知失败）。"""
+        return int(cache.delete_pattern(self.cache_key) or 0)
 
 
 class TokenManagerCache(RedisCacheBase):

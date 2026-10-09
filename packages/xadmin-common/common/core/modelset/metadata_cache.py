@@ -29,21 +29,45 @@ def cached_payload(cache_key: str, timeout: int, builder: Any, bypass: bool = Fa
 
     ``bypass=True``（`?no_cache=1`）跳过读写直接重建；``builder()`` 返回 None
     视为构建失败——不回写缓存（避免把失败态缓存成"成功但残缺"）。
+
+    缓存后端不可用（无 ``lock()`` 的本地后端、连接抖动等）一律降级为直接重建：
+    读缓存是优化而非正确性要求，不把缓存基础设施故障升级为元数据端点 500；
+    ``builder()`` 自身的异常照常向上抛出（不吞、不重试，避免重复副作用）。
     """
     if bypass:
         return builder()
-    cached = cache.get(cache_key)
+    try:
+        cached = cache.get(cache_key)
+    except Exception as exc:  # noqa: BLE001 缓存读取失败降级为回源
+        logger.warning(f"metadata cache read failed, fallback to direct build. key:{cache_key}, {exc}")
+        return builder()
     if cached is not None:
         return cached
     try:
-        with cache.lock(f"locker_{cache_key}", timeout=METADATA_LOCK_TTL, blocking_timeout=METADATA_LOCK_WAIT):
+        lock = cache.lock(f"locker_{cache_key}", timeout=METADATA_LOCK_TTL, blocking_timeout=METADATA_LOCK_WAIT)
+    except Exception as exc:  # noqa: BLE001 后端不支持锁（如本地内存缓存）：直接重建
+        logger.warning(f"metadata cache lock unavailable, fallback to direct build. key:{cache_key}, {exc}")
+        return builder()
+
+    build_started = False
+    try:
+        with lock:
             cached = cache.get(cache_key)  # 等待锁期间可能已有并发请求完成重建
             if cached is not None:
                 return cached
+            build_started = True
             result = builder()
             if result is not None:
-                cache.set(cache_key, result, timeout)
+                try:
+                    cache.set(cache_key, result, timeout)
+                except Exception as exc:  # noqa: BLE001 回写失败不影响本次响应
+                    logger.warning(f"metadata cache write failed. key:{cache_key}, {exc}")
             return result
     except LockError:
         logger.warning(f"metadata cache lock timeout, fallback to direct build. key:{cache_key}")
+        return builder()
+    except Exception as exc:  # noqa: BLE001
+        if build_started:
+            raise  # builder 自身异常：原样上抛，避免二次构建
+        logger.warning(f"metadata cache lock failed, fallback to direct build. key:{cache_key}, {exc}")
         return builder()

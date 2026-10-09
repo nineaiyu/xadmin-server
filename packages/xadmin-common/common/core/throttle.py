@@ -10,6 +10,10 @@ from typing import Any
 
 from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle, UserRateThrottle
 
+from common.utils import get_logger
+
+logger = get_logger(__name__)
+
 
 def allow_by_identity(ident: Any, scope: str, limit: int, window_seconds: int = 60) -> bool:
     """固定窗口限流（非 DRF 场景通用入口，如原生视图 / WebSocket 消费者）：True = 放行。
@@ -239,7 +243,13 @@ class PatThrottle(SimpleRateThrottle):
         # rate 变更须同步重算 num_requests/duration（DRF 在实例化期解析一次）
         if self.get_cache_key(request, view) is not None:
             self.rate = self.get_rate(request)
-            self.num_requests, self.duration = self.parse_rate(self.rate)
+            try:
+                self.num_requests, self.duration = self.parse_rate(self.rate)
+            except (ValueError, KeyError, IndexError):
+                # 配置写坏（如 "abc" / "60" 缺单位）不能让 PAT 请求全线 500：
+                # 告警并按「不限」放行，等待配置修正（写入侧校验是主防线，此处兜底）
+                logger.warning(f"Invalid PAT rate limit config: {self.rate!r}, treated as unlimited")
+                self.rate = None
         if self.rate is None:
             return True
         return super().allow_request(request, view)

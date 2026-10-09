@@ -51,7 +51,9 @@ def check_database_connection() -> None:
         logger.info(f"Check database connection: {i}")
         try:
             management.call_command("check", "--database", "default")
-            management.call_command("expire_caches", "system")
+            # 清理配置缓存（通配前缀 config_*）：数据库就绪后按库值重建配置缓存。
+            # 传具体键名走精确删除，键名不存在时是空操作（此处曾误传 "system"）
+            management.call_command("expire_caches", "config_*")
             logger.info("Database connect success")
             return
         except OperationalError:
@@ -96,17 +98,19 @@ def collect_static() -> None:
     try:
         management.call_command("collectstatic", "--no-input", "-c", verbosity=0, interactive=False)
         logger.info("Collect static files done")
-    except Exception:
-        # 收集失败仅跳过（不阻断启动；静态缺失可在页面层/部署时发现）
-        pass
+    except Exception as exc:
+        # 收集失败仅跳过（不阻断启动；静态缺失可在页面层/部署时发现），保留告警便于定位
+        logger.warning(f"Collect static files failed: {exc}")
 
 
 def compile_i18n_file() -> None:
-    # django_mo_file = os.path.join(PROJECT_DIR, 'locale', 'zh', 'LC_MESSAGES', 'django.mo')
-    # if os.path.exists(django_mo_file):
-    #     return
+    cwd = os.getcwd()
     os.chdir(os.path.join(APPS_DIR))
-    management.call_command("compilemessages", verbosity=0)
+    try:
+        management.call_command("compilemessages", verbosity=0)
+    finally:
+        # 还原工作目录：调用方（server_prepare / celery_prepare）之后仍按相对路径取文件
+        os.chdir(cwd)
     logger.info("Compile i18n files done")
 
 
@@ -121,7 +125,11 @@ def download_ip_db(force: bool = False) -> None:
             continue
         logger.info(f"Download ip db: {path}")
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        download_file(src, path)
+        try:
+            download_file(src, path)
+        except Exception as exc:
+            # 单库下载失败不阻断启动（IP 归属查询按缺库降级），失败保留告警线索
+            logger.warning(f"Download ip db failed: {path}, {exc}")
 
 
 def expire_caches() -> None:

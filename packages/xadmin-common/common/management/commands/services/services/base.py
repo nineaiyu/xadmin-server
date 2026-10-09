@@ -13,10 +13,14 @@ import psutil
 from ..hands import *
 
 
-class BaseService:
+class BaseService(abc.ABC):
     def __init__(self, **kwargs: Any) -> None:
         self.name = kwargs["name"]
         self._process: Any = None
+        self._log_stream: Any = None
+        # 上一次日志轮转的日期（按自然日触发，替代此前"精确命中 23:59 分钟"的判定：
+        # 监督循环 30s 一次且可能被重启打断，原判定大概率整日不命中）
+        self._last_rotate_date: str | None = None
         self.STOP_TIMEOUT = 10
         self.max_retry = 3
         self.retry = 0
@@ -69,7 +73,12 @@ class BaseService:
 
     @property
     def log_file(self) -> Any:
-        return open(self.log_filepath, "a")
+        # 句柄缓存复用：原实现每次访问都 open 且从不关闭，一次启动/重启泄漏约 4 个 fd；
+        # 路径变化（如测试替换 LOG_DIR）时重新打开，追加模式下多进程共享句柄是安全的
+        path = self.log_filepath
+        if self._log_stream is None or self._log_stream.name != path:
+            self._log_stream = open(path, "a")
+        return self._log_stream
 
     @property
     def log_dir(self) -> Any:
@@ -153,7 +162,7 @@ class BaseService:
         except (ProcessLookupError, PermissionError):
             pass
 
-    def start_other(self) -> None:
+    def start_other(self) -> None:  # noqa: B027 可选钩子：默认无操作，子类按需覆写
         pass
 
     def stop(self, force: bool = False) -> None:
@@ -175,19 +184,26 @@ class BaseService:
             # wait 超时/进程已退出：忽略（后续轮询判定终态）
             pass
 
-        for i in range(self.STOP_TIMEOUT):
-            if i == self.STOP_TIMEOUT - 1:
-                print("\033[31m Error\033[0m")
+        # 轮询等待进程退出：原实现循环体内没有 sleep，10 次判定在微秒内跑完，
+        # 进程还在时直接报 Error 并残留 pid 文件（后续 start 的状态判定随之混乱）
+        deadline = time.monotonic() + self.STOP_TIMEOUT
+        while True:
             if not self.is_running:
                 print("\033[32m Ok\033[0m")
                 self.remove_pid()
-                break
-            else:
-                continue
+                return
+            if time.monotonic() >= deadline:
+                print("\033[31m Error\033[0m")
+                return
+            time.sleep(0.2)
 
     def watch(self) -> None:
         self._check()
-        if not self.is_running:
+        if self.is_running:
+            # retry 是「连续失败计数」：服务稳定运行即复位，避免历史瞬时重启累计
+            # 触发 max_retry 后整个监督进程 clean_up（此前计数只增不减）
+            self.retry = 0
+        else:
             self._restart()
         self._rotate_log()
 
@@ -216,12 +232,18 @@ class BaseService:
         self.start()
 
     def _rotate_log(self) -> None:
+        """按自然日轮转日志：跨天后把当前日志归档到上一日目录并清空。"""
         now = datetime.datetime.now()
-        _time = now.strftime("%H:%M")
-        if _time != "23:59":
+        today = now.strftime("%Y-%m-%d")
+        if self._last_rotate_date is None:
+            # 首次监督可能发生在任意时刻：只登记日期，避免服务启动即归档当日日志
+            self._last_rotate_date = today
+            return
+        if self._last_rotate_date == today:
             return
 
-        backup_date = now.strftime("%Y-%m-%d")
+        backup_date = self._last_rotate_date
+        self._last_rotate_date = today
         backup_log_dir = os.path.join(self.log_dir, backup_date)
         if not os.path.exists(backup_log_dir):
             os.mkdir(backup_log_dir)

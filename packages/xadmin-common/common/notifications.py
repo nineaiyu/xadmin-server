@@ -87,9 +87,13 @@ class ServerPerformanceMessage(SystemMessage):
         subscription.save()
 
     def publish(self, is_async: bool = False) -> None:
-        """发布告警；收件人为空时自愈补齐活跃超管（订阅创建早于超管初始化的存量库）"""
-        subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
-        if not subscription.users.exists():
+        """发布告警；订阅行缺失或收件人为空时自愈（订阅创建早于超管初始化的存量库）。
+
+        与备份/运维告警同范式：用 get_or_create 而非 get——订阅行缺失时抛
+        DoesNotExist 会让周期检查任务持续失败，资源告警永久静默。
+        """
+        subscription, created = SystemMsgSubscription.objects.get_or_create(message_type=self.get_message_type())
+        if created or not subscription.users.exists():
             self.post_insert_to_db(subscription)
         super().publish(is_async=is_async)
 

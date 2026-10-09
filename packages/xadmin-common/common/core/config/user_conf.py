@@ -9,6 +9,7 @@
 import json
 from typing import Any
 
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 from common.cache.storage import UserSystemConfigCache
@@ -19,6 +20,26 @@ from .base import build_config_render_context, render_config_value, serialize_co
 from .system_conf import ConfigCache, SysConfig
 
 logger = get_logger(__name__)
+
+
+def _normalized_owner_ids(owner_ids: Any) -> dict[Any, Any]:
+    """把入参 owner 标识（用户 pk / ``str(pk)``）归一为 ORM 口径（UUID）。
+
+    两种调用形态并存：``UserConfig(user_obj)`` 与 ``UserConfig(str_pk)``，而 owner_id
+    列与 DB 查询返回值恒为 UUID。用入参原值直接与行匹配/做字典键会静默漏掉个人行
+    （表现为批量读取回退系统值，而单读路径正常）。返回 {入参原值: 归一值}，非法值跳过。
+    """
+    pk_field = UserPersonalConfig._meta.pk
+    mapping: dict[Any, Any] = {}
+    for raw in owner_ids:
+        try:
+            mapping[raw] = pk_field.to_python(raw)
+        except (TypeError, ValueError, ValidationError):
+            # 非 UUID 形态的 owner 标识：保留原值（与归一前口径一致，交给 ORM /
+            # 缓存键按既有方式处理），只告警不丢弃——丢弃会让该 owner 整批读不到值
+            logger.warning(f"owner id is not normalized in batch user config: {raw!r}")
+            mapping[raw] = raw
+    return mapping
 
 
 def batch_user_config(user_pks: Any, key: str, default: Any = None) -> Any:
@@ -33,6 +54,7 @@ def batch_user_config(user_pks: Any, key: str, default: Any = None) -> Any:
     pks = list(dict.fromkeys(user_pks))
     if not pks:
         return {}
+    owner_ids = _normalized_owner_ids(pks)
     key_map = {pk: UserSystemConfigCache(f"user_{pk}_{key}").cache_key for pk in pks}
     cached = django_cache.get_many(list(key_map.values()))
     result = {}
@@ -52,7 +74,8 @@ def batch_user_config(user_pks: Any, key: str, default: Any = None) -> Any:
         )
         system_value = SysConfig.get_value(key, default)
         for pk in missing:
-            result[pk] = personal[pk] if pk in personal else system_value
+            # DB 行的 owner_id 是 UUID，入参可能是 str(pk)：按归一键取值，否则静默丢个人行
+            result[pk] = personal.get(owner_ids.get(pk), system_value)
     return result
 
 
@@ -77,6 +100,7 @@ def batch_user_config_values(owner_key_pairs: Any, default_data: Any = None, ign
     pairs = list(dict.fromkeys(owner_key_pairs))
     if not pairs:
         return {}
+    owner_ids = _normalized_owner_ids({owner_id for owner_id, _ in pairs})
     result, pending = {}, []
     slot_keys = {(owner_id, key): UserSystemConfigCache(f"user_{owner_id}_{key}").cache_key for owner_id, key in pairs}
     try:
@@ -103,20 +127,25 @@ def batch_user_config_values(owner_key_pairs: Any, default_data: Any = None, ign
     rows = list(
         UserPersonalConfig.objects.filter(
             is_active=True,
-            owner_id__in={owner_id for owner_id, _ in pending},
+            owner_id__in={owner_ids[owner_id] for owner_id, _ in pending if owner_id in owner_ids},
             key__in={key for _, key in pending},
         )
     )
+    # DB 行的 (owner_id, key) 恒为 UUID 口径，入参 pair 可能是 str(pk)：按归一键反查入参 pair，
+    # 否则行永远匹配不上入参，个人值被静默忽略
+    pair_of = {(owner_ids[owner_id], key): (owner_id, key) for owner_id, key in pending if owner_id in owner_ids}
     context = build_config_render_context(UserPersonalConfig) if rows else {}
     system_pairs, found_pairs = [], set()
     for row, data in zip(rows, serialize_config_rows(UserConfigSerializer, rows), strict=True):
-        pair = (row.owner_id, row.key)
+        matched_pair = pair_of.get((row.owner_id, row.key))
+        if matched_pair is None:  # IN 条件与返回行不匹配（防御）：跳过而不是让整批读取失败
+            continue
         if data.get("key") != row.key:  # 自引用渲染键视同缺席（防渲染递归）
-            system_pairs.append(pair)
+            system_pairs.append(matched_pair)
             continue
         data["value"] = render_config_value(json.dumps(data["value"]), context, UserPersonalConfig)
-        result[pair] = data["value"] if (ignore_access or data.get("access")) else {}
-        found_pairs.add(pair)
+        result[matched_pair] = data["value"] if (ignore_access or data.get("access")) else {}
+        found_pairs.add(matched_pair)
     # 未回源到行的 pair（无行 / 未激活 / 自引用守卫）：回退系统级生效值。
     # 与单读一致：系统级读取不透传 ignore_access（缺席继承始终可读）
     system_pairs.extend(pair for pair in pending if pair not in found_pairs)

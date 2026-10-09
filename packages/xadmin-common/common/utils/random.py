@@ -24,15 +24,18 @@ def random_ip() -> Any:
 
 
 def random_replace_char(seq: Any, chars: Any, length: Any) -> Any:
-    using_index = set()
+    """把 ``seq`` 中 ``length`` 个随机位置（保留首字符）的字符替换为 ``chars`` 中的随机字符。
 
-    while length > 0:
-        index = secrets.randbelow(len(seq) - 1)
-        if index in using_index or index == 0:
-            continue
+    可用位置不足（``length > len(seq) - 1``）时抛 ``ValueError``：调用方（密码生成）
+    应显式失败而不是静默降级——此前的实现会在短序列上死循环或抛 ``randbelow`` 内部异常。
+    """
+    if length <= 0:
+        return seq
+    candidates = list(range(1, len(seq)))  # 首字符固定保留，故从下标 1 起取样
+    if length > len(candidates):
+        raise ValueError("The sequence is too short to replace the requested number of characters")
+    for index in secrets.SystemRandom().sample(candidates, length):
         seq[index] = secrets.choice(chars)
-        using_index.add(index)
-        length -= 1
     return seq
 
 
@@ -87,6 +90,8 @@ def random_string(
         if not special_chars:
             raise ValueError("After excluding characters, no special characters are available.")
         symbol_num = length // 16 + 1
+        if symbol_num > len(seq) - 1:
+            raise ValueError("The length of the string is too short to include special characters")
         seq = random_replace_char(seq, special_chars, symbol_num)
     secret_chars += seq
 

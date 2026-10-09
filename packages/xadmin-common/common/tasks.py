@@ -249,19 +249,30 @@ def background_task_view_set_job(view: str, meta: dict[str, Any], data: str, act
         user=request_user,
     )
     language = translation.get_language_from_request(request)
+    previous_language = translation.get_language()
     translation.activate(language)
     request.LANGUAGE_CODE = translation.get_language()
     # 契约 5：thread-local 请求（creator 信号赋值 + 操作审计 request_uuid），出口处清理
     set_current_request(request)
     try:
         result = view_func.as_view(action_map)(request, task=False)
+        # detail 可能是 gettext 惰性代理（如兜底 500 文案），不物化会让 cache.push 的
+        # json.dumps 崩溃，进而丢掉整批分片结果
+        detail = str(result.data.get("detail", result.data))
+        status = result.data.get("code") == 1000
+    except Exception as exc:
+        # 分片异常必须落一条失败结果：否则 cache.len() 永远凑不满 task_count，
+        # 整批汇总与通知永久挂起（任务中心长期"进行中"，分片结果 24h 后被 TTL 清掉）
+        logger.warning(f"background task shard failed: {view}", exc_info=True)
+        detail = str(exc)
+        status = False
     finally:
         set_current_request(None)
-    # detail 可能是 gettext 惰性代理（如兜底 500 文案），不物化会让 cache.push 的
-    # json.dumps 崩溃，进而丢掉整批分片结果
-    task_info["result"] = str(result.data.get("detail", result.data))
+        # 语言上下文还原：celery 线程池复用线程，不还原会把本分片的语言带给后续任务
+        translation.activate(previous_language)
+    task_info["result"] = detail
     task_info["end_time"] = local_now_display()
-    task_info["status"] = result.data.get("code") == 1000
+    task_info["status"] = status
     cache.push(task_info)
     # 分片结果汇总判定：持锁时长随分片数浮动，看门狗自动续期防锁先于业务失效
     with ReentrantLock(f"view_task_summary_{(meta.get('task_id') or '').split('_')[0]}", timeout=180):

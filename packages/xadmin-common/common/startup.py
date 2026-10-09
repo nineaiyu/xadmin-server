@@ -20,9 +20,12 @@ from common.utils import (
     get_cpu_load,
     get_cpu_percent,
     get_disk_usage,
+    get_logger,
     get_memory_usage,
     get_net_io_bytes,
 )
+
+logger = get_logger(__name__)
 
 
 class BaseTerminal:
@@ -64,10 +67,14 @@ class BaseTerminal:
                     "net_recv_mb": round(net_recv / 1024 / 1024, 3),
                 }
                 status_serializer = contracts.MonitorSerializer(data=heartbeat_data)
-                status_serializer.is_valid()
-                status_serializer.save()
-            except Exception:
-                print("Save status error, close old connections")
+                if status_serializer.is_valid():
+                    status_serializer.save()
+                else:
+                    # 采集数据不满足序列化器契约（切勿静默 save：DRF 会 raise 且被外层吞成 print）：
+                    # 心跳是监控与资源告警的数据源，失败必须留下可定位原因
+                    logger.error(f"Save heartbeat skipped, invalid data: {status_serializer.errors}")
+            except Exception as exc:
+                logger.warning(f"Save status error, close old connections: {exc}")
                 close_old_connections()
             finally:
                 # 单次 sleep：失败时下轮立刻重试（旧实现在成功分支额外 sleep 一次，

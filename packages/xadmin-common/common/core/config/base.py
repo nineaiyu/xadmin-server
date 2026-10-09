@@ -252,6 +252,9 @@ class ConfigCacheBase:
                 if data is not None:
                     resolved[key] = data
                     continue
+                # L1 命中但需回源（如 access=False 而本次要求判定）：清掉陈旧条目，
+                # 否则本进程内在 L1 TTL 到期前会反复回源 Redis/DB（批量读取不回填 L1）
+                self._l1_clear(self._l1_key(key))
             pending.append(key)
         if pending:
             slot_keys = {key: self.cache(f"{self.px}_{key}").cache_key for key in pending}
@@ -357,6 +360,9 @@ class ConfigCacheBase:
     def set_value(self, key: str, value: Any, is_active: Any = None, description: Any = None, **kwargs: Any) -> Any:
         obj = self.save_db(key, value, is_active, description, **kwargs)
         self.cache(f"{self.px}_{key}").del_storage_cache()
+        # 同进程 L1 同步清理：L1 失效原依赖宿主 post_save 信号，未接信号的宿主
+        # （或信号未覆盖的直调路径）会继续读到旧值直到 L1 TTL 到期
+        self._l1_clear(self._l1_key(key))
         return obj
 
     def set_default_value(self, key: str, **kwargs: Any) -> Any:
@@ -365,14 +371,16 @@ class ConfigCacheBase:
     def del_value(self, key: str, **kwargs: Any) -> None:
         self.delete_db(key, **kwargs)
         self.cache(f"{self.px}_{key}").del_storage_cache()
+        self._l1_clear(self._l1_key(key))
 
-    def __getattribute__(self, name: str) -> Any:
+    def __getattr__(self, name: str) -> Any:
+        """未注册属性即"读同名配置"（本类的设计）。
+
+        用 ``__getattr__``（仅正常属性查找失败时触发）而非 ``__getattribute__``：
+        属性访问热路径不再逐次走 Python 级 try/except，且 property 内部抛出的
+        AttributeError 会正常传播，不会被吞成"读一个不存在配置键返回 {}"。
+        """
         if name == "shape":
             return ""
-        try:
-            return object.__getattribute__(self, name)
-        except AttributeError as e:
-            # 属性访问即"读同名配置"是本类的设计；此处只兜底 AttributeError，
-            # 避免把 property 内部的真实异常（TypeError/KeyError 等）也吞成"读配置"
-            logger.debug(f"__getattribute__ fallback to config. name:{name} error:{e}")
-            return self.get_value(name)
+        logger.debug(f"fallback to config value. name:{name}")
+        return self.get_value(name)

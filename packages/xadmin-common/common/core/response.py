@@ -18,6 +18,13 @@ API_SUCCESS_CODE = 1000
 
 
 class ApiResponse(Response):
+    """统一响应壳（``code=API_SUCCESS_CODE`` 表示业务成功）。
+
+    契约：``response.data`` 是**信封 dict**（``code`` / ``detail`` / ``requestId`` /
+    ``timestamp``，业务数据放在可选的 ``data`` 键下）。操作日志等按
+    ``response.data["code"]`` 判定结果，因此不要把它替换成原始业务数据。
+    """
+
     def __init__(
         self,
         code: Any = API_SUCCESS_CODE,
@@ -39,7 +46,6 @@ class ApiResponse(Response):
         if data is not None:
             dic["data"] = data
         dic.update(kwargs)
-        self._data = data
         # 对象来调用对象的绑定方法，会自动传值
         super().__init__(data=dic, status=status, headers=headers, content_type=content_type)
 
