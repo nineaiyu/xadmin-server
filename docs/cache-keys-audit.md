@@ -31,8 +31,13 @@
 | `approval_flow_remind_{task.pk}` | approval/utils/approval_flow/periodic.py | 24h | 单节点任务 | TTL 到期（同一任务每日最多提醒一次的超时占位） |
 | `{DICT_CACHE_PREFIX}{code}` | system/utils/platform/dict.py | 常量 TTL | 字典编码（全局） | 字典写路径 `cache.delete` |
 | `{MASK_CACHE_PREFIX}{model_label}` | audit/utils/mask.py | 常量 TTL | 模型（全局） | 脱敏规则写路径 + roles m2m 信号 |
+| `tag_choice_options_{limit}` | system/services/tags.py | 60s | 全局（标签定义） | Tag 写路径信号（`signal_handler.py`）+ 视图写路径三处 + TTL 兜底 |
 | `magic_cache_response_UploadFileViewSet_stats_{user_pk}` | file/views/admin/file.py | 10s | 用户 | TTL 到期（统计口径可容忍） |
 | `data_permission_grants_{version}_{user_pk}_{dept_pk}_{menu_pk}` | packages/xadmin-common/common/core/filter.py | 300s | 用户 × 部门 × 菜单 | 全局版本号自增（数据权限/部门/授权关系变更，见 signal_handler）；**观察项**：键空间随「用户 × 菜单」增长，维持现状 + `/metrics` 的 `xadmin_authz_grants_cache_keys` gauge 监控；超预期时的收敛方案 = 键去 `menu_pk`（需评估菜单上下文语义）或版本键分段淘汰 |
+| `auth_temp_token_{sha256(token)[:32]}` | packages/xadmin-common/common/utils/token.py | 调用方指定（默认 60s） | 令牌摘要（**不落原文**） | 一次性消费（`success_once`）/ TTL；升级前以原文为键的存量令牌在读取时迁移到摘要键 |
+| `auth_verify_code_{target}` | packages/xadmin-common/common/utils/verify_code.py | `VERIFY_CODE_TTL`（缺省兜底 300s） | 目标（手机 / 邮箱） | 校验成功清理；连续失败达上限作废 |
+| `auth_verify_code_send_at_{target}` | packages/xadmin-common/common/utils/verify_code.py | `VERIFY_CODE_LIMIT`（缺省兜底 60s） | 目标 | TTL（发送间隔闸门，校验失败不清） |
+| `auth_verify_code_{target}_failed` | packages/xadmin-common/common/utils/verify_code.py | `VERIFY_CODE_TTL` | 目标 | 校验成功清理；连续失败达上限作废（在线爆破计数） |
 | 进度/锁类（`import_progress`、`preview` 锁） | task/utils/*、file/utils/* | 短 TTL | 单记录 | 任务结束即删 |
 
 ### 扫描结论
@@ -56,3 +61,18 @@
 1. 新增缓存键先在本表登记（键构成/TTL/维度/失效），再写代码；
 2. 新增键后跑 `python scripts/check_cache_keys.py --strict`，R3 冲突必须归零；
 3. 键前缀冲突的修法：**换前缀**而不是「顺手删别人的失效」——键空间是模块契约。
+
+## 五、季度复核记录
+
+### 2026-10-09（Q4，与 [indexes.md](architecture/indexes.md) §五 同批）
+
+- **扫描**：`python scripts/check_cache_keys.py --strict` 退出码 0——装饰器缓存 17 处
+  （permission 2 / swagger 1 / monitor 6 / dashboard 7 / routes 1）+ 手写键 3 处，**R3 冲突 0**；
+- **R2 维度核对**：`{DICT_CACHE_PREFIX}{code}`（全局）、`tag_choice_options_{limit}`（全局，标签定义）、
+  `office_converting_{upload.pk}`（单文件维度）——均无跨用户歧义；
+- **R4 TTL 核对**：office_converting（`OFFICE_CONVERT_LOCK_TIMEOUT`）、tag_choice_options（60s）、
+  dict（`DICT_CACHE_TIMEOUT`）逐键确认；
+- **R5 失效接线核对**：tag_choice_options = Tag 信号（`signal_handler.py`）+ 视图写路径三处 +
+  TTL 兜底；office_converting = 任务 finally 删除 + 投递失败释放分支；
+- **反向核对**：§二 登记的全部键在代码中仍存在（无过期登记）；
+- **登记表补充**：`tag_choice_options_{limit}` 为本轮新补登记（§二）。

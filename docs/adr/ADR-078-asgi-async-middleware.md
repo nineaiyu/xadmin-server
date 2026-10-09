@@ -49,3 +49,8 @@
 ## 交付记录
 
 - 2026-10-01：D1–D3 落地，`server/middleware.py`（Request/ModuleGate/RefererCheck 双模化，Start/End/SQLCount 显式 sync 声明）、`common/core/middleware.py`（CSPMode 双模化 + 配置读 `sync_to_async` 包裹）、`common/local.py`（contextvars 存储）。新增 async 路径守护测试；后端全量门禁与 E2E fresh 全绿（见 NEXT-DEV-PLAN.md 执行记录四）。
+- 2026-10-09：收口复核——链上 19 项实测 `async_capable` 盘点：生产默认挂载 15 项全部具备
+  async 能力（Request/ModuleGate/CSPMode 双模 + 内置/第三方原生），默认关 / DEBUG-only 4 项
+  维持显式同步边界（RefererCheck 双模默认关；Start/End/SQLCount 生产 MiddlewareNotUsed）；
+  新增 `TestMiddlewareChainAsyncCapability` 2 例守护（生产项须声明 async + 显式同步白名单须
+  保持 DEBUG-only），防新增同步中间件回退。
