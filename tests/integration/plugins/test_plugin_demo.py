@@ -68,6 +68,8 @@ def plugin_importable():
             sys.path.remove(entry)
         for name in [key for key in sys.modules if key == PLUGIN_PACKAGE or key.startswith(f"{PLUGIN_PACKAGE}.")]:
             sys.modules.pop(name, None)
+        # 插件模块已摘除：清模块清单缓存，避免「已声明插件」残留给同 worker 后续用例
+        reset_module_state()
 
 
 @pytest.fixture
@@ -91,9 +93,14 @@ def plugin_installed_as_app(monkeypatch):
     config.apps = django_apps
     config.import_models()
     django_apps.clear_cache()
+    # 模块清单（discovered_modules / all_module_specs / module_index）是进程级 lru 缓存：
+    # 注入后必须清一次——同 worker 其他测试已构建的陈旧缓存会让插件的 modules.py 声明不可见
+    reset_module_state()
     yield config
     django_apps.all_models.pop(PLUGIN_PACKAGE, None)
     django_apps.clear_cache()
+    # 还原后再清一次：不让插件的模块声明残留给同 worker 后续用例
+    reset_module_state()
     # mock 期间若发起 HTTP 请求（404 页渲染），app 模板目录扫描会被进程级缓存污染
     from django.template.utils import get_app_template_dirs
 
