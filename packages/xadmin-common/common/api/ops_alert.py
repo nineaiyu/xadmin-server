@@ -4,30 +4,37 @@
 
 - 调用方：宿主侧 `ops/oom_alert.sh`（监听 `docker events` 的 `oom` 事件，无登录态）；
 - 鉴权：独立共享令牌 `X-Ops-Token`（对应 `SysConfig.OPS_ALERT_TOKEN`，
-  默认空 = 未启用，此时端点恒 403），比较用 `secrets.compare_digest`；
+  默认空 = 未启用，此时端点恒 403）；
 - 不暴露内部信息：令牌不对一律 403 + 通用文案；
-- 频率由 `notify_ops_alert` 的 60s 节流兜底（防 watcher 重连重放刷告警）。
+- 频率由 `notify_ops_alert` 的 60s 节流兜底（防 watcher 重连重放刷告警）；
+- 令牌比较与载荷整形收敛在 `AlertReportAPIView` 基类（与备份告警端点共用）。
 """
 
-import secrets
 from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
-from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny
 
-from common.core.response import ApiResponse
+from common.api.alert_report import AlertReportAPIView
 from common.swagger.utils import get_default_response_schema
 
 
-class OpsAlertAPIView(GenericAPIView):
+class OpsAlertAPIView(AlertReportAPIView):
     """运维告警上报（无登录态：独立令牌鉴权）"""
 
-    permission_classes = (AllowAny,)
-    authentication_classes = ()
+    token_setting = "OPS_ALERT_TOKEN"
+    token_header = "X-Ops-Token"
+    default_source = "ops"
+    default_event = _("Unknown event")
+    invalid_token_detail = _("Invalid ops alert token")
+    received_detail = _("Ops alert received")
+
+    def get_notify(self) -> Any:
+        from common.ops_alert import notify_ops_alert
+
+        return notify_ops_alert
 
     @extend_schema(
         request=OpenApiRequest(
@@ -47,22 +54,4 @@ class OpsAlertAPIView(GenericAPIView):
     )
     def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """上报运维事件：节流发布站内信/邮件告警（60s 同来源同事件去重）"""
-        from common.core.config import SysConfig
-        from common.ops_alert import notify_ops_alert
-
-        expected = str(SysConfig.OPS_ALERT_TOKEN or "")
-        provided = str(request.headers.get("X-Ops-Token") or "")
-        if not expected or not provided or not secrets.compare_digest(provided, expected):
-            return ApiResponse(code=403, status=403, detail=_("Invalid ops alert token"))
-
-        payload = request.data if isinstance(request.data, dict) else {}
-        published = notify_ops_alert(
-            {
-                "source": payload.get("source") or "ops",
-                "event": payload.get("event") or _("Unknown event"),
-                "host": payload.get("host") or "",
-                "time": payload.get("time") or "",
-                "detail": payload.get("detail") or "",
-            }
-        )
-        return ApiResponse(data={"published": published}, detail=_("Ops alert received"))
+        return super().post(request, *args, **kwargs)

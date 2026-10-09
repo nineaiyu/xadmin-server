@@ -106,7 +106,8 @@ def notify_ops_alert(payload: dict[str, Any]) -> bool:
     """
     source = str((payload or {}).get("source") or "ops")[:64]
     event = str((payload or {}).get("event") or "")[:128]
-    ident = hashlib.md5(f"{source}|{event}".encode()).hexdigest()[:16]
+    # usedforsecurity=False：仅作节流键摘要，FIPS 模式 Python 下不带该参数会抛 ValueError
+    ident = hashlib.md5(f"{source}|{event}".encode(), usedforsecurity=False).hexdigest()[:16]
     if not cache.add(f"ops_alert_{ident}", 1, OPS_ALERT_THROTTLE_SECONDS):
         return False
     try:

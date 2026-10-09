@@ -45,6 +45,32 @@ NON_BROWSER_UA_PATTERN = re.compile(
 )
 
 
+def _normalize_host(value: str) -> str:
+    """归一 host：小写、去端口、剥 IPv6 方括号（``[::1]:8000`` → ``::1``）。"""
+    value = str(value or "").strip().lower()
+    if value.startswith("["):
+        end = value.find("]")
+        if end != -1:
+            return value[1:end]
+    if value.count(":") == 1:  # host:port；IPv6 裸地址含多个冒号，不按端口切
+        value = value.split(":")[0]
+    return value
+
+
+def _host_allowed(host: str, allowed: Any) -> bool:
+    """按 ``ALLOWED_HOSTS`` 语义判定 host 归属（支持前导点子域通配）。"""
+    host = _normalize_host(host)
+    for item in allowed:
+        item = _normalize_host(item)
+        if item.startswith("."):
+            # 前导点 = 该域及其子域（Django ALLOWED_HOSTS 语义）
+            if host == item[1:] or host.endswith(item):
+                return True
+        elif host == item:
+            return True
+    return False
+
+
 def _synthetic_reason(document: str, user_agent: str, request_host: str = "") -> str:
     """判定上报是否为「合成上报」（非真实浏览器）。
 
@@ -55,6 +81,8 @@ def _synthetic_reason(document: str, user_agent: str, request_host: str = "") ->
 
     「本站」基准优先取上报请求自身的 Host（report-uri 是同源相对路径，故 document-uri 应同源），
     再并上 `ALLOWED_HOSTS`：后者常为空或通配（无法判定归属），单靠它会让域名判据整体失效。
+    两侧都按 Django 的 host 语义归一比较（端口 / IPv6 字面量 / 前导点子域通配），
+    避免把真实违规误判成合成上报而丢弃判据。
     """
     if document in PLACEHOLDER_DOCUMENTS:
         return "missing-document-uri"
@@ -63,21 +91,23 @@ def _synthetic_reason(document: str, user_agent: str, request_host: str = "") ->
     host = urlparse(document).hostname
     if not host:
         return "unparsable-document-uri"
-    allowed = set()
-    if request_host:
-        allowed.add(request_host.split(":")[0])
+    allowed = {request_host} if request_host else set()
     for item in kernel_setting("ALLOWED_HOSTS") or []:
         item = str(item)
         if item == "*":
             return ""  # 通配配置无法判定归属，宁可多记不漏记真实违规
-        allowed.add(item.split(":")[0])
-    if allowed and host not in allowed:
+        allowed.add(item)
+    if allowed and not _host_allowed(host, allowed):
         return "foreign-document-host"
     return ""
 
 
-def _extract_violation(payload: dict[str, Any]) -> dict[str, Any]:
-    """兼容两种上报信封：`{"csp-report": {...}}`（CSP2）与数组式 reports（CSP3）。"""
+def _extract_violation(payload: Any) -> dict[str, Any]:
+    """兼容两种上报信封：`{"csp-report": {...}}`（CSP2）与数组式 reports（CSP3）。
+
+    非 dict 的中间结果一律收敛回退为 dict：本端点是 AllowAny 公开入口，
+    畸形 body（如 ``{"reports": [{"body": "str"}]}``）不能把非 dict 传给调用方。
+    """
     if not isinstance(payload, dict):
         return {}
     report = payload.get("csp-report")
@@ -85,7 +115,8 @@ def _extract_violation(payload: dict[str, Any]) -> dict[str, Any]:
         return report
     reports = payload.get("reports") or payload.get("body")
     if isinstance(reports, list) and reports and isinstance(reports[0], dict):
-        return reports[0].get("body") or reports[0]
+        body = reports[0].get("body")
+        return body if isinstance(body, dict) else reports[0]
     return payload
 
 
@@ -96,6 +127,8 @@ class CSPReportAPIView(GenericAPIView):
     authentication_classes = ()
 
     def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        # 只取前 CSP_REPORT_MAX_BYTES 字节用于解析（超出部分丢弃）；整体读取上限由
+        # DATA_UPLOAD_MAX_MEMORY_SIZE 兜底
         raw = request.body[:CSP_REPORT_MAX_BYTES]
         try:
             payload = json.loads(raw.decode("utf-8", errors="replace") or "{}")
@@ -126,7 +159,7 @@ class CSPReportAPIView(GenericAPIView):
 
         # 节流键用哈希：directive/document 含空格与引号，直接拼进缓存键对 memcached
         # 非法（CacheKeyWarning），且长度不可控
-        ident = hashlib.md5(f"{directive}|{document}".encode()).hexdigest()[:16]
+        ident = hashlib.md5(f"{directive}|{document}".encode(), usedforsecurity=False).hexdigest()[:16]
         throttle_key = f"csp_report_{ident}"
         if cache.add(throttle_key, 1, CSP_REPORT_LOG_THROTTLE_SECONDS):
             logger.warning("CSP violation: directive=%s blocked=%s document=%s", directive, blocked, document)

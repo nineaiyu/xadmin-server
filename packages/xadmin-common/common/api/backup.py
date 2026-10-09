@@ -4,30 +4,37 @@
 
 - 调用方：`ops/db_backup.sh`（db-backup 容器内的 bash 循环，无 JWT 登录态）；
 - 鉴权：独立共享令牌 `X-Backup-Token`（对应 `SysConfig.BACKUP_ALERT_TOKEN`，
-  默认空 = 未启用，此时端点恒 403），比较用 `secrets.compare_digest`；
+  默认空 = 未启用，此时端点恒 403）；
 - 不暴露内部信息：令牌不对一律 403 + 通用文案；
-- 频率由 `notify_backup_failure` 的 60s 节流兜底（防脚本循环重试刷告警）。
+- 频率由 `notify_backup_failure` 的 60s 节流兜底（防脚本循环重试刷告警）；
+- 令牌比较与载荷整形收敛在 `AlertReportAPIView` 基类（与运维告警端点共用）。
 """
 
-import secrets
 from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
-from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny
 
-from common.core.response import ApiResponse
+from common.api.alert_report import AlertReportAPIView
 from common.swagger.utils import get_default_response_schema
 
 
-class BackupAlertAPIView(GenericAPIView):
+class BackupAlertAPIView(AlertReportAPIView):
     """备份失败上报（无登录态：独立令牌鉴权）"""
 
-    permission_classes = (AllowAny,)
-    authentication_classes = ()
+    token_setting = "BACKUP_ALERT_TOKEN"
+    token_header = "X-Backup-Token"
+    default_source = "db-backup"
+    default_event = _("Backup failure")
+    invalid_token_detail = _("Invalid backup alert token")
+    received_detail = _("Backup alert received")
+
+    def get_notify(self) -> Any:
+        from common.backup_alert import notify_backup_failure
+
+        return notify_backup_failure
 
     @extend_schema(
         request=OpenApiRequest(
@@ -47,22 +54,4 @@ class BackupAlertAPIView(GenericAPIView):
     )
     def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """上报备份失败事件：节流发布站内信/邮件告警（60s 同源去重）"""
-        from common.backup_alert import notify_backup_failure
-        from common.core.config import SysConfig
-
-        expected = str(SysConfig.BACKUP_ALERT_TOKEN or "")
-        provided = str(request.headers.get("X-Backup-Token") or "")
-        if not expected or not provided or not secrets.compare_digest(provided, expected):
-            return ApiResponse(code=403, status=403, detail=_("Invalid backup alert token"))
-
-        payload = request.data if isinstance(request.data, dict) else {}
-        published = notify_backup_failure(
-            {
-                "source": payload.get("source") or "db-backup",
-                "event": payload.get("event") or _("Backup failure"),
-                "host": payload.get("host") or "",
-                "time": payload.get("time") or "",
-                "detail": payload.get("detail") or "",
-            }
-        )
-        return ApiResponse(data={"published": published}, detail=_("Backup alert received"))
+        return super().post(request, *args, **kwargs)

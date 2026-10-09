@@ -95,7 +95,8 @@ def notify_backup_failure(payload: dict[str, Any]) -> bool:
     对部分缓存后端非法的字符（memcached 会抛 CacheKeyWarning）。
     """
     source = str((payload or {}).get("source") or "backup")[:64]
-    ident = hashlib.md5(source.encode("utf-8")).hexdigest()[:16]
+    # usedforsecurity=False：仅作节流键摘要，FIPS 模式 Python 下不带该参数会抛 ValueError
+    ident = hashlib.md5(source.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
     if not cache.add(f"backup_failure_alert_{ident}", 1, BACKUP_ALERT_THROTTLE_SECONDS):
         return False
     try:
