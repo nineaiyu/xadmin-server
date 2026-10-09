@@ -4,6 +4,7 @@
 # filename : verify_code
 # author : ly_13
 # date : 8/6/2024
+import secrets
 import time
 from collections.abc import Callable
 from typing import Any
@@ -18,6 +19,13 @@ from common.tasks import send_mail_async
 from common.utils import get_logger, random_string
 
 logger = get_logger(__name__)
+
+#: 验证码兜底有效期（秒）与发送限流窗口（秒）：配置缺失（None）时使用——
+#: cache.set(..., None) 会让验证码永久有效，cache.add(..., None) 会让发送被永久拒绝
+DEFAULT_VERIFY_CODE_TTL = 300
+DEFAULT_VERIFY_CODE_LIMIT = 60
+#: 单个验证码允许的最大校验失败次数（超过即作废，阻断在线爆破）
+MAX_VERIFY_ATTEMPTS = 5
 
 
 # --- 验证码域异常语义（框架层定义） ---------------------------------------
@@ -94,8 +102,11 @@ class SendAndVerifyCodeUtil:
         self.backend = backend
         self.dryrun = dryrun
         self.key = key or self.KEY_TMPL.format(target)
-        self.timeout = kernel_setting("VERIFY_CODE_TTL") if timeout is None else timeout
-        self.limit = kernel_setting("VERIFY_CODE_LIMIT") if limit is None else limit
+        # 配置缺失（None）时回退兜底常量：None 会让 cache.set 永不过期 / 发送被永久拒绝
+        self.timeout = (
+            timeout if timeout is not None else (kernel_setting("VERIFY_CODE_TTL") or DEFAULT_VERIFY_CODE_TTL)
+        )
+        self.limit = limit if limit is not None else (kernel_setting("VERIFY_CODE_LIMIT") or DEFAULT_VERIFY_CODE_LIMIT)
         self.limit_key = self.RATE_KEY_TMPL.format(target)
         self.other_args = kwargs
 
@@ -117,15 +128,36 @@ class SendAndVerifyCodeUtil:
         if not right:
             raise CodeExpired
 
-        if right != code:
+        # 常量时间比较（避免按字符提前返回的时序侧信道）；两侧都字符串化
+        if not secrets.compare_digest(str(right), str(code)):
+            if self._note_failed_attempt() >= MAX_VERIFY_ATTEMPTS:
+                # 连续错误达上限：作废当前验证码（不动发送限流键，
+                # 否则"输错即重置发送间隔"会变成刷短信的新入口）
+                cache.delete(self.key)
+                cache.delete(self._failed_key)
             raise CodeError
 
         self.__clear()
         return True
 
+    @property
+    def _failed_key(self) -> str:
+        return f"{self.key}_failed"
+
+    def _note_failed_attempt(self) -> int:
+        """累计校验失败次数（缓存不可用时按 1 计：计数是加固，不阻断校验语义）。"""
+        try:
+            if cache.add(self._failed_key, 1, self.timeout):
+                return 1
+            return int(cache.incr(self._failed_key))
+        except Exception:  # noqa: BLE001
+            logger.warning("verify code attempt counter unavailable", exc_info=True)
+            return 1
+
     def __clear(self) -> None:
         cache.delete(self.key)
         cache.delete(self.limit_key)
+        cache.delete(self._failed_key)
 
     def __ttl(self) -> Any:
         return cache.ttl(self.key)
