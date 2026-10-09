@@ -25,7 +25,10 @@ SECRET_KEY = "test-only-secret-key-0123456789abcdef"
 # 论证见全真容器化测试迁移方案 §3.4）
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
-CELERY_BROKER_URL = "memory://"
+# URL 显式带主机名：memory transport 不使用 hostname（解析参数与 "memory://" 等价），
+# 但 eager apply_async 仍会经 producer_or_acquire 克隆一条 kombu 连接，URL 无主机名时
+# kombu 会打 "No hostname was supplied. Reverting to default 'localhost'" 告警。
+CELERY_BROKER_URL = "memory://localhost/"
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
