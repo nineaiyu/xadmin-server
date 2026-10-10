@@ -103,6 +103,8 @@
         "SidebarWidth": 210,
         "SidebarExpandOnHover": true,
         "SidebarDraggable": false,
+        "SidebarCollapsedShowTitle": false,
+        "SidebarAutoActivateChild": false,
         "HeaderFixed": true,
         "BreadcrumbVisible": true,
         "BreadcrumbShowIcon": true,
