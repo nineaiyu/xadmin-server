@@ -90,7 +90,9 @@
         "TagsStyle": "smart",
         "ThemeMode": "light",
         "HideFooter": false,
-        "EpThemeColor": "#409EFF",
+        "HeaderAutoHide": false,
+        "CompactMode": false,
+        "EpThemeColor": "#006BE6",
         "SidebarStatus": true,
         "MultiTagsCache": false,
         "SplitPanes": {}
