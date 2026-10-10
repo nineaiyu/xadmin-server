@@ -32,6 +32,32 @@ from settings.services import (
 logger = get_logger(__name__)
 
 
+def decrypt_submitted_password(
+    user: Any, ciphertext: Any, field: str = "password", log_prefix: str = "password"
+) -> Any:
+    """按密文/明文开关解密提交口令（改密与口令核验共用）。
+
+    前端提交的是 AESCipherV2(username) 加密串；坏 base64 等非法输入不能裸抛成
+    500，须转受控校验异常。``SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED`` 关闭时
+    （导入 / E2E 等场景）解密失败视为「提交值本身是明文」，按明文核验。
+    """
+    if settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED:
+        try:
+            plain = AESCipherV2(user.username).decrypt(ciphertext)
+        except Exception as e:
+            logger.warning(f"{log_prefix} {field} decrypt failed:{e}. rejected")
+            raise ValidationError(PASSWORD_DECRYPT_FAILED_MESSAGE, code=PASSWORD_DECRYPT_FAILED_CODE) from e
+        if not plain:
+            # 解密结果为空 = 密文认证失败（密钥不符/数据被篡改），同解密异常口径拒绝
+            raise ValidationError(PASSWORD_DECRYPT_FAILED_MESSAGE, code=PASSWORD_DECRYPT_FAILED_CODE)
+        return plain
+    try:
+        return AESCipherV2(user.username).decrypt(ciphertext)
+    except Exception as e:
+        logger.warning(f"{log_prefix} {field} decrypt failed:{e}. fallback to submitted plaintext")
+        return ciphertext
+
+
 class UserInfoSerializer(BaseModelSerializer):
     class Meta:
         model = UserInfo
@@ -84,27 +110,8 @@ class ChangePasswordSerializer(serializers.Serializer):
     sure_password = serializers.CharField(max_length=128, required=True, write_only=True, label=_("Confirm password"))
 
     def _decrypt_password(self, instance: Any, ciphertext: Any, field: Any) -> Any:
-        """按密文/明文开关解密提交口令；密文模式解密失败拒绝，明文模式回退提交原文。
-
-        前端提交的是 AESCipherV2(username) 加密串；坏 base64 等非法输入不能
-        裸抛成 500，须转受控校验异常。
-        """
-        if settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED:
-            try:
-                plain = AESCipherV2(instance.username).decrypt(ciphertext)
-            except Exception as e:
-                logger.warning(f"change password {field} decrypt failed:{e}. rejected")
-                raise ValidationError(PASSWORD_DECRYPT_FAILED_MESSAGE, code=PASSWORD_DECRYPT_FAILED_CODE) from e
-            if not plain:
-                # 解密结果为空 = 密文认证失败（密钥不符/数据被篡改），同解密异常口径拒绝
-                raise ValidationError(PASSWORD_DECRYPT_FAILED_MESSAGE, code=PASSWORD_DECRYPT_FAILED_CODE)
-            return plain
-        # 明文模式（导入/E2E 等场景）：解密失败视为提交值本身是明文，按明文核验
-        try:
-            return AESCipherV2(instance.username).decrypt(ciphertext)
-        except Exception as e:
-            logger.warning(f"change password {field} decrypt failed:{e}. fallback to submitted plaintext")
-            return ciphertext
+        """解密提交口令（口径见 `decrypt_submitted_password`，日志前缀保持改密语义）"""
+        return decrypt_submitted_password(instance, ciphertext, field=field, log_prefix="change password")
 
     def update(self, instance: Any, validated_data: Any) -> Any:
         ensure_local_password_changeable(instance)
@@ -127,3 +134,18 @@ class ChangePasswordSerializer(serializers.Serializer):
         instance.save(update_fields=["password", "modifier"])
         record_password_hash(instance, instance.password)
         return instance
+
+
+class VerifyPasswordSerializer(serializers.Serializer):
+    """当前登录用户口令核验（锁屏解锁等场景）。
+
+    只做校验：不签发任何凭证、不改动用户状态、不写二次确认状态缓存——与
+    「敏感操作二次确认」（MFA confirm）刻意区分，避免解锁动作把用户的
+    `UserConfirmStateCache` 顺带续期。
+    """
+
+    password = serializers.CharField(max_length=128, required=True, write_only=True, label=_("Login password"))
+
+    def validate_password(self, value: Any) -> Any:
+        """解密口径与改密链路一致（密文模式失败即拒，明文模式回退提交原文）"""
+        return decrypt_submitted_password(self.instance, value, field="password", log_prefix="verify password")

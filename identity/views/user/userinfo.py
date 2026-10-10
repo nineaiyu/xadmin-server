@@ -4,9 +4,11 @@
 # filename : userinfo
 # author : ly_13
 # date : 6/16/2023
+import json
 from typing import Any
 
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
@@ -14,16 +16,22 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser
 
+from audit.services import OperationLog
 from common.core.modelset import ChoicesAction, DetailUpdateModelSet, UploadFileAction
 from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
+from common.core.throttle import PasswordVerifyThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from common.utils.verify_code import TokenTempCache
 from identity.models import UserInfo
 from identity.notifications import ResetPasswordSuccessMsg
 from identity.serializers.user import PASSWORD_DECRYPT_FAILED_MESSAGE, is_password_decrypt_failure
-from identity.serializers.userinfo import ChangePasswordSerializer, UserInfoSerializer
+from identity.serializers.userinfo import (
+    ChangePasswordSerializer,
+    UserInfoSerializer,
+    VerifyPasswordSerializer,
+)
 from identity.utils.auth import verify_sms_email_code
 from mfa.cache import UserConfirmStateCache
 from mfa.confirm import UserConfirmation
@@ -107,6 +115,41 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         UserConfirmStateCache(request.user).clear()
         ResetPasswordSuccessMsg(instance, request).publish_async()
         return ApiResponse()
+
+    @extend_schema(
+        request=VerifyPasswordSerializer,
+        responses=get_default_response_schema(),
+    )
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+        methods=["post"],
+        detail=False,
+        url_path="verify-password",
+        serializer_class=VerifyPasswordSerializer,
+        throttle_classes=[PasswordVerifyThrottle],
+    )
+    def verify_password(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """核验当前登录用户口令（锁屏解锁等；不签发凭证、不改动任何状态）"""
+        serializer = self.get_serializer(request.user, data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError as exc:
+            if not is_password_decrypt_failure(exc):
+                raise
+            # 密文模式下解密失败：以业务码 1001 应答（与改密/建号拒绝同口径）
+            return ApiResponse(code=1001, detail=PASSWORD_DECRYPT_FAILED_MESSAGE, status=400)
+        if not request.user.check_password(serializer.validated_data["password"]):
+            # 失败留痕：口令核验是敏感入口，连续失败可在操作日志里定位来源
+            try:
+                OperationLog.objects.create(
+                    module="User:verify-password",
+                    object_pk=str(request.user.pk),
+                    path=request.path,
+                    changes=json.dumps({"result": "failed"}, ensure_ascii=False),
+                )
+            except Exception as e:  # 审计失败不阻断主流程
+                logger.warning(f"write verify-password audit failed:{e}")
+            return ApiResponse(code=1002, detail=_("The password is incorrect"), status=400)
+        return ApiResponse(detail=_("Verification successful"))
 
     @extend_schema(
         request=OpenApiRequest(build_object_type(properties={"file": build_basic_type(OpenApiTypes.BINARY)})),

@@ -120,6 +120,16 @@ class UploadThrottle(UserRateThrottle):
     scope = "upload"
 
 
+class PasswordVerifyThrottle(UserRateThrottle):
+    """口令核验（个人口令校验入口，如锁屏解锁）按用户维度限流。
+
+    端点本身要求登录态，防的是「已登录会话被用于在线爆破本人口令」这一类
+    横向利用（会话泄露 / XSS），因此计数维度取用户而非 IP：办公网等共享出口
+    下按 IP 计数会互相牵连。"""
+
+    scope = "password_verify"
+
+
 class Download1Throttle(UserRateThrottle):
     """下载速率限制"""
 

@@ -51,6 +51,9 @@ REST_FRAMEWORK = {
         "download2": "100/h",
         "register": "50/d",
         "reset_password": "50/d",
+        # 个人口令核验（锁屏解锁等）：按用户维度收紧到低于全局用户档，
+        # 正常解锁远低于该速率，连续失败即被挡下
+        "password_verify": "30/m",
         "login": "50/h",
         # 文档站登录（/api-docs/login/）：与主登录同口径接入账号锁定之外的单列
         # 更严限流，避免该入口被用作口令爆破通道

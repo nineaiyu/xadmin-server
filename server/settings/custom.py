@@ -13,6 +13,9 @@ PERMISSION_WHITE_URL = {
     "^/api/identity/login$": ["*"],
     "^/api/identity/logout$": ["*"],
     "^/api/identity/userinfo$": ["GET"],
+    # 个人口令核验（锁屏解锁）：个人安全操作，同改密口径（视图内要求登录态 +
+    # 用户维度限流），不参与菜单权限；新增动作端点须在此显式登记精确 path + method
+    "^/api/identity/userinfo/verify-password$": ["POST"],
     "^/api/system/routes$": ["*"],
     "^/api/system/dashboard/": ["*"],
     # 结构元数据枚举（S7 口径文档化）：choices / search-fields / dict.items 对所有
