@@ -164,8 +164,17 @@ zoom 缩放**）在同日补齐，边界清单里的「旋转后几何命中」�
 - 团队模板与本地模板共用同一套 `FreeTemplate` 视图（`source` 区分来源），因此「应用 / 导出」只有一条实现；
 - 新增 ViewSet 端点必须同步 `loadjson/menu.json` 权限点，否则 `test_permission_seed_coverage` 直接红灯
   （本次按命令输出的精确缺口清单手工补齐，未跑全量 `--update-seed`，避免重排既有种子文件）；
-- **部署侧收尾（需在连得上库的环境执行）**：`python manage.py sync_menu_permissions --dry-run` 先看缺口，
-  再 `python manage.py sync_menu_permissions --grant-roles` 落库——`--grant-roles` 会把新权限点自动授予
-  「已拥有同模块权限点与父菜单」的角色，这正是「非超管角色看不到团队模板」的解法（管理员/超管天然放行，
-  自定义角色还可在角色页单独收回）。本地库里 `--dry-run` 因连不上 PG 未执行，种子侧由
+- **部署侧收尾（2026-10-12 在真实 PG 库上实测过完整流程，口径以此为准）**：
+  1. `python manage.py load_init_json` —— 把种子新增的权限点 / menumeta 导入现网库（幂等；**软删过的同 pk 行会被恢复**），
+     与 `docs/ops/observability.md`「升级后重灌 `load_init_json`」的总口径一致；
+  2. `python manage.py sync_menu_permissions --dry-run` —— 期望「缺口 0」，只剩绑定校正（本次实测：导入后再扫为
+     511 路由 / 645 权限点、缺口 0）；
+  3. 需要补模型绑定就再去掉 `--dry-run` 执行（`--grant-roles` 只对**本次新建**的权限点生效，配合 seed 导入时它无事可做）；
+  4. 角色授予：内置「系统管理员」自动持有全部权限点（实测：种子里就是 14/14），其它角色去角色页勾选——
+     权限层是 **fail-closed**（`IsAuthenticated._resolve_menu_pk` 命中不到权限点直接 403），所以非超管角色不授权就会 403；
+- **`--default-parent` 是陷阱（实测踩到）**：当某个 ViewSet 的权限点**整组缺失**时，`resolve_view_context` 既无同源
+  权限点可复用、`PARENT_MENU_MAP` 又只按 URL 前缀命中，于是回落到 `--default-parent` 给出的**父菜单名当后缀**——
+  本次实测生成的是 `list:DataScreen` / `create:DataScreen` 这类与既有大屏权限点**撞名**的码（撞名的被跳过，未撞名的
+  `versions:DataScreen` / `rollback:DataScreen` 被真实创建，路径对但**名字错**，后面重灌种子还会再生成一对重复行）。
+  正确姿势是**先 `load_init_json` 灌种子**，而不是用兜底父菜单硬凑；种子侧由
   `test_permission_seed_coverage` + `check-menu-permissions.mjs` 双向对账兜住。
