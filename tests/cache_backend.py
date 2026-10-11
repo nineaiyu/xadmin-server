@@ -136,3 +136,12 @@ class FakeRedisCache(LocMemCache):
             key[len(internal_prefix) :] if key.startswith(internal_prefix) else key for key in internal_keys
         ]
         return [key for key in logical_keys if fnmatch.fnmatch(key, pattern)]
+
+    def iter_keys(self, pattern="*", version=None, **kwargs):
+        """django-redis ``cache.iter_keys`` 等价实现（惰性迭代）。
+
+        生产实现走 Redis SCAN 游标增量遍历（避免 KEYS 全库扫描）；测试档键量小，
+        直接复用 ``keys`` 的匹配与还原逻辑产出迭代器——返回**逻辑键**的口径与
+        ``keys`` 完全一致（调用方如安全拦截 IP 列表按同一约定 ``replace(prefix, "")``）。
+        """
+        return iter(self.keys(pattern, version))
