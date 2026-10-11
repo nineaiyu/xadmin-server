@@ -31,9 +31,129 @@ logger = get_logger(__name__)
 HANDLE_ACTIONS = ("notify", "force_change_password", "force_logout", "disable", "ignore", "resolve")
 
 
+def _password_risks(user: Any, now: Any, stale_days: int) -> list[dict[str, Any]]:
+    """密码类风险：已过期（HIGH）+ 超过阈值未修改（MEDIUM，stale_days > 0 时启用）。"""
+    from identity.models import AccountRisk
+
+    items: list[dict[str, Any]] = []
+    if is_password_expired(user):
+        items.append(
+            {
+                "user": user,
+                "risk_type": AccountRisk.RiskType.PASSWORD_EXPIRED,
+                "level": AccountRisk.Level.HIGH,
+                "detail": {
+                    "description": str(_("The password has expired but is still in use")),
+                    "suggestion": str(_("Notify the user or force a password change")),
+                    "date_password_updated": user.date_password_updated.isoformat()
+                    if user.date_password_updated
+                    else "",
+                },
+            }
+        )
+    if stale_days > 0:
+        anchor = user.date_password_updated or user.date_joined
+        if anchor and (now - anchor).days >= stale_days:
+            items.append(
+                {
+                    "user": user,
+                    "risk_type": AccountRisk.RiskType.PASSWORD_STALE,
+                    "level": AccountRisk.Level.MEDIUM,
+                    "detail": {
+                        "description": str(_("The password has not been changed for {} days")).format(stale_days),
+                        "suggestion": str(_("Notify the user to change the password")),
+                        "days": (now - anchor).days,
+                    },
+                }
+            )
+    return items
+
+
+def _login_risks(user: Any, now: Any, idle_days: int) -> list[dict[str, Any]]:
+    """登录活跃风险：从未登录（MEDIUM）+ 长期未登录（LOW）；仅启用账号参与（idle_days > 0 时）。"""
+    from identity.models import AccountRisk
+
+    if idle_days <= 0 or not user.is_active:
+        return []
+    if user.last_login is None:
+        if (now - user.date_joined).days >= idle_days:
+            return [
+                {
+                    "user": user,
+                    "risk_type": AccountRisk.RiskType.NEVER_LOGGED_IN,
+                    "level": AccountRisk.Level.MEDIUM,
+                    "detail": {
+                        "description": str(_("The account has never logged in since creation")),
+                        "suggestion": str(_("Confirm whether the account is still needed, or disable it")),
+                        "days": (now - user.date_joined).days,
+                    },
+                }
+            ]
+        return []
+    if (now - user.last_login).days >= idle_days:
+        return [
+            {
+                "user": user,
+                "risk_type": AccountRisk.RiskType.LOGIN_STALE,
+                "level": AccountRisk.Level.LOW,
+                "detail": {
+                    "description": str(_("No login for {} days")).format(idle_days),
+                    "suggestion": str(_("Confirm whether the account is still needed, or disable it")),
+                    "days": (now - user.last_login).days,
+                },
+            }
+        ]
+    return []
+
+
+def _privilege_risks(user: Any) -> list[dict[str, Any]]:
+    """特权风险：启用中的管理员未绑定 MFA（HIGH）。"""
+    from identity.models import AccountRisk
+
+    if user.is_superuser and user.is_active and not user.mfa_enabled:
+        return [
+            {
+                "user": user,
+                "risk_type": AccountRisk.RiskType.SUPERUSER_NO_MFA,
+                "level": AccountRisk.Level.HIGH,
+                "detail": {
+                    "description": str(_("The administrator has not bound MFA")),
+                    "suggestion": str(_("Guide the administrator to bind OTP or Passkey")),
+                },
+            }
+        ]
+    return []
+
+
+def _superuser_count_risk(max_superusers: int, user_model: Any) -> list[dict[str, Any]]:
+    """全局风险：启用管理员数量超阈值（MEDIUM，max_superusers > 0 时启用）。"""
+    from identity.models import AccountRisk
+
+    if max_superusers <= 0:
+        return []
+    count = user_model.objects.filter(is_superuser=True, is_active=True).count()
+    if count <= max_superusers:
+        return []
+    return [
+        {
+            "user": None,
+            "risk_type": AccountRisk.RiskType.SUPERUSER_COUNT,
+            "level": AccountRisk.Level.MEDIUM,
+            "detail": {
+                "description": str(_("The number of active administrators exceeds the threshold ({})")).format(
+                    max_superusers
+                ),
+                "suggestion": str(_("Review the administrator list and remove redundant accounts")),
+                "count": count,
+                "threshold": max_superusers,
+            },
+        }
+    ]
+
+
 def _collect_risks(now: Any) -> Any:
     """产出当前全部风险项：[{"user", "risk_type", "level", "detail"}]。"""
-    from identity.models import AccountRisk, UserInfo
+    from identity.models import UserInfo
 
     idle_days = int(getattr(settings, "SECURITY_ACCOUNT_IDLE_DAYS", 90) or 0)
     stale_days = int(getattr(settings, "SECURITY_PASSWORD_STALE_DAYS", 180) or 0)
@@ -53,94 +173,10 @@ def _collect_risks(now: Any) -> Any:
         "date_password_updated",
     )
     for user in users:
-        if is_password_expired(user):
-            items.append(
-                {
-                    "user": user,
-                    "risk_type": AccountRisk.RiskType.PASSWORD_EXPIRED,
-                    "level": AccountRisk.Level.HIGH,
-                    "detail": {
-                        "description": str(_("The password has expired but is still in use")),
-                        "suggestion": str(_("Notify the user or force a password change")),
-                        "date_password_updated": user.date_password_updated.isoformat()
-                        if user.date_password_updated
-                        else "",
-                    },
-                }
-            )
-        if stale_days > 0:
-            anchor = user.date_password_updated or user.date_joined
-            if anchor and (now - anchor).days >= stale_days:
-                items.append(
-                    {
-                        "user": user,
-                        "risk_type": AccountRisk.RiskType.PASSWORD_STALE,
-                        "level": AccountRisk.Level.MEDIUM,
-                        "detail": {
-                            "description": str(_("The password has not been changed for {} days")).format(stale_days),
-                            "suggestion": str(_("Notify the user to change the password")),
-                            "days": (now - anchor).days,
-                        },
-                    }
-                )
-        if idle_days > 0 and user.is_active:
-            if user.last_login is None:
-                if (now - user.date_joined).days >= idle_days:
-                    items.append(
-                        {
-                            "user": user,
-                            "risk_type": AccountRisk.RiskType.NEVER_LOGGED_IN,
-                            "level": AccountRisk.Level.MEDIUM,
-                            "detail": {
-                                "description": str(_("The account has never logged in since creation")),
-                                "suggestion": str(_("Confirm whether the account is still needed, or disable it")),
-                                "days": (now - user.date_joined).days,
-                            },
-                        }
-                    )
-            elif (now - user.last_login).days >= idle_days:
-                items.append(
-                    {
-                        "user": user,
-                        "risk_type": AccountRisk.RiskType.LOGIN_STALE,
-                        "level": AccountRisk.Level.LOW,
-                        "detail": {
-                            "description": str(_("No login for {} days")).format(idle_days),
-                            "suggestion": str(_("Confirm whether the account is still needed, or disable it")),
-                            "days": (now - user.last_login).days,
-                        },
-                    }
-                )
-        if user.is_superuser and user.is_active and not user.mfa_enabled:
-            items.append(
-                {
-                    "user": user,
-                    "risk_type": AccountRisk.RiskType.SUPERUSER_NO_MFA,
-                    "level": AccountRisk.Level.HIGH,
-                    "detail": {
-                        "description": str(_("The administrator has not bound MFA")),
-                        "suggestion": str(_("Guide the administrator to bind OTP or Passkey")),
-                    },
-                }
-            )
-    if max_superusers > 0:
-        count = UserInfo.objects.filter(is_superuser=True, is_active=True).count()
-        if count > max_superusers:
-            items.append(
-                {
-                    "user": None,
-                    "risk_type": AccountRisk.RiskType.SUPERUSER_COUNT,
-                    "level": AccountRisk.Level.MEDIUM,
-                    "detail": {
-                        "description": str(_("The number of active administrators exceeds the threshold ({})")).format(
-                            max_superusers
-                        ),
-                        "suggestion": str(_("Review the administrator list and remove redundant accounts")),
-                        "count": count,
-                        "threshold": max_superusers,
-                    },
-                }
-            )
+        items.extend(_password_risks(user, now, stale_days))
+        items.extend(_login_risks(user, now, idle_days))
+        items.extend(_privilege_risks(user))
+    items.extend(_superuser_count_risk(max_superusers, UserInfo))
     return items
 
 
