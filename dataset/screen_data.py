@@ -25,6 +25,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from dataset.utils.dataset import filter_layout_for_user
+from dataset.utils.screen_layout import active_screen_panes
 
 #: 卡片种类：number 卡读 execute 的 total，其余图表卡走 aggregate 的 series
 #: （与前端 ChartCard 的取数分支同口径，见 xadmin-client ChartCard.vue loadData）
@@ -66,8 +67,9 @@ def load_visible_screen(user: Any, screen_pk: Any) -> Any:
 def collect_screen_cards(screen: Any, user: Any = None) -> list[CardRef]:
     """展开大屏引用的全部卡片定义（纯函数核心：不做任何数据集查询）。
 
-    - canvas：``layout`` 内 type=dashboard 的窗格按列表序展开；type=metric 的
-      指标卡窗格直接合成单卡引用（无所属仪表盘，``dashboard`` 置空串）；
+    - canvas（栅格 / 自由两种载荷，判定见 ``screen_layout.active_screen_panes``）：
+      窗格按列表序展开，type=metric 的指标卡窗格直接合成单卡引用
+      （无所属仪表盘，``dashboard`` 置空串）；
     - carousel：``dashboards`` 清单按页序展开（服务端按该原序计页）；
     - ``user`` 传入时按 ``filter_layout_for_user`` 过滤卡片级权限（allowed_roles，
       与仪表盘读取侧同口径）；None（纯函数单测 / 全量展开）不过滤；
@@ -79,8 +81,9 @@ def collect_screen_cards(screen: Any, user: Any = None) -> list[CardRef]:
 
     dashboard_pks: list[str] = []
     metric_refs: list[CardRef] = []
-    if screen.layout:
-        for pane in screen.layout:
+    panes = active_screen_panes(screen)
+    if panes:
+        for pane in panes:
             if not isinstance(pane, dict):
                 continue
             if pane.get("type", "dashboard") == "dashboard" and pane.get("dashboard"):
@@ -151,7 +154,7 @@ def build_screen_data_payload(user: Any, screen: Any, rev: int, page_index: int 
     """
     refs = collect_screen_cards(screen, user=user)
     ts = int(time.time())
-    if screen.layout:
+    if active_screen_panes(screen):
         groups: list[tuple[str | None, list[CardRef]]] = [(None, refs)]
     else:
         # carousel：按首现顺序分仪表盘成帧（dedupe 保序，同清单重复项只推一次）；

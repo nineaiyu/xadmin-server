@@ -27,13 +27,14 @@ from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from dataset.analysis_tasks import schedule_report_run
-from dataset.models.dataset import Report, Screen
+from dataset.models.dataset import Report, Screen, ScreenTemplate
 from dataset.serializers.analysis import (
     IM_NOTIFY_CHANNELS,
     REPORT_NOTIFY_CHANNELS,
     ReportSerializer,
     ScreenCommandSerializer,
     ScreenSerializer,
+    ScreenTemplateSerializer,
 )
 from dataset.ws_screen import (
     apply_screen_command,
@@ -99,6 +100,14 @@ class ScreenFilter(BaseFilterSet):
         fields = ["visibility"]
 
 
+class ScreenTemplateFilter(BaseFilterSet):
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+
+    class Meta:
+        model = ScreenTemplate
+        fields = ["visibility"]
+
+
 class ReportFilter(BaseFilterSet):
     name = filters.CharFilter(field_name="name", lookup_expr="icontains")
 
@@ -151,6 +160,17 @@ class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
             # 触发事件无载荷，各在线展示连接以自身权限聚合后自推，见 ws_screen 模块 docstring
             broadcast_screen_data_trigger(screen.pk)
         return ApiResponse(data={"state": frame}, detail=_("Command sent"))
+
+
+class ScreenTemplateViewSet(BaseAnalysisViewSet):
+    """大屏模板（团队共享）：CRUD 与大屏同口径（可见性 + 行级归属守卫）。
+
+    与 ScreenViewSet 的差异：无远程控制 action、不参与影响预览（删模板不会让谁渲染不出来）。
+    """
+
+    queryset = ScreenTemplate.objects.all()
+    serializer_class = ScreenTemplateSerializer
+    filterset_class = ScreenTemplateFilter
 
 
 class ReportViewSet(BaseAnalysisViewSet):

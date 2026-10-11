@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
-"""大屏画布窗格（Screen.layout）规范化与校验单测（单一事实源）。"""
+"""大屏画布窗格（Screen.layout / Screen.free_layout）规范化与校验单测（单一事实源）。"""
+
+from types import SimpleNamespace
 
 import pytest
 
 from dataset.utils.screen_layout import (
+    SCREEN_FREE_DEFAULT_H,
+    SCREEN_FREE_DEFAULT_W,
+    SCREEN_FREE_MAX_PANES,
+    SCREEN_FREE_MIN_PANE_SIZE,
     SCREEN_GRID_COLS,
     SCREEN_MAX_PANES,
     ScreenLayoutError,
+    active_screen_panes,
     boxes_overlap,
+    normalize_screen_free_layout,
     normalize_screen_layout,
 )
 
@@ -274,3 +282,169 @@ class TestOverlap:
         ]
         with pytest.raises(ScreenLayoutError):
             normalize_screen_layout(raw, [DASH])
+
+
+def _free_pane(pk="p1", pane_type="clock", x=0, y=0, w=100, h=80, **extra):
+    pane = {"pk": pk, "type": pane_type, "x": x, "y": y, "w": w, "h": h}
+    pane.update(extra)
+    return pane
+
+
+class TestFreeLayoutNormalisation:
+    def test_empty_payload_means_not_configured(self):
+        """空载荷（None / "" / {}）= 未启用自由画布，归一化为空字典。"""
+        assert normalize_screen_free_layout(None, [DASH]) == {}
+        assert normalize_screen_free_layout("", [DASH]) == {}
+        assert normalize_screen_free_layout({}, [DASH]) == {}
+
+    def test_design_defaults_with_dashboard_pane(self):
+        raw = {"panes": [_free_pane(pane_type="dashboard", dashboard=DASH, x=10, y=20, w=480, h=320)]}
+        assert normalize_screen_free_layout(raw, [DASH]) == {
+            "design_w": SCREEN_FREE_DEFAULT_W,
+            "design_h": SCREEN_FREE_DEFAULT_H,
+            "panes": [{"pk": "p1", "type": "dashboard", "dashboard": DASH, "x": 10, "y": 20, "w": 480, "h": 320}],
+        }
+
+    def test_explicit_design_kept_without_panes(self):
+        """只改画幅不写窗格：保留设计尺寸（切回自由模式仍记得画幅）。"""
+        assert normalize_screen_free_layout({"design_w": 3840, "design_h": 2160}, [DASH]) == {
+            "design_w": 3840,
+            "design_h": 2160,
+            "panes": [],
+        }
+
+    def test_overlap_allowed_and_array_order_kept(self):
+        """自由画布的核心能力是层叠：完全重叠允许，数组顺序即层级（后者在上）。"""
+        raw = {
+            "panes": [
+                _free_pane(pk="p1", x=0, y=0, w=400, h=300),
+                _free_pane(pk="p2", pane_type="text", x=100, y=100, w=400, h=300, text="叠在上面"),
+            ]
+        }
+        panes = normalize_screen_free_layout(raw, [DASH])["panes"]
+        assert [pane["pk"] for pane in panes] == ["p1", "p2"]
+        assert panes[1]["text"] == "叠在上面"
+
+    def test_unknown_keys_dropped(self):
+        raw = {
+            "design_w": 1920,
+            "design_h": 1080,
+            "junk": "drop-me",
+            "panes": [_free_pane(z=3, junk="drop-me", title="  标题  ")],
+        }
+        normalised = normalize_screen_free_layout(raw, [DASH])
+        assert set(normalised) == {"design_w", "design_h", "panes"}
+        assert normalised["panes"][0] == {
+            "pk": "p1",
+            "type": "clock",
+            "title": "标题",
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 80,
+            "size": 40,
+        }
+
+    def test_pane_body_rules_shared_with_grid(self):
+        """类型字段两版同口径：时钟默认字号、文本对齐、指标数据集、图片协议。"""
+        assert normalize_screen_free_layout({"panes": [_free_pane()]}, [DASH])["panes"][0]["size"] == 40
+        text = _free_pane(pk="t1", pane_type="text", text="标语", align="right")
+        assert normalize_screen_free_layout({"panes": [text]}, [DASH])["panes"][0]["align"] == "right"
+        metric = _free_pane(pk="m1", pane_type="metric", dataset="ds-1", metric="count")
+        assert normalize_screen_free_layout({"panes": [metric]}, [DASH], ["ds-1"])["panes"][0]["metric"] == "count"
+        image = _free_pane(pk="i1", pane_type="image", url="/media/a.png", fit="contain")
+        assert normalize_screen_free_layout({"panes": [image]}, [DASH])["panes"][0]["fit"] == "contain"
+
+    def test_pane_body_rules_reject_same_as_grid(self):
+        for raw in (
+            {"panes": [_free_pane(pane_type="text", align="justify")]},
+            {"panes": [_free_pane(pane_type="text", size=8)]},
+            {"panes": [_free_pane(pane_type="image", url="//evil.com/x.png")]},
+            {"panes": [_free_pane(pane_type="metric", dataset="ds-1", metric="sum")]},
+            {"panes": [_free_pane(pane_type="iframe")]},
+        ):
+            with pytest.raises(ScreenLayoutError):
+                normalize_screen_free_layout(raw, [DASH], ["ds-1"])
+
+
+class TestFreeLayoutRejections:
+    def test_design_width_out_of_range(self):
+        for width in (319, 7681):
+            with pytest.raises(ScreenLayoutError):
+                normalize_screen_free_layout({"design_w": width}, [DASH])
+
+    def test_design_height_out_of_range(self):
+        for height in (239, 4321):
+            with pytest.raises(ScreenLayoutError):
+                normalize_screen_free_layout({"design_h": height}, [DASH])
+
+    def test_design_bool_rejected(self):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout({"design_w": True}, [DASH])
+
+    def test_pane_size_below_minimum(self):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout({"panes": [_free_pane(w=SCREEN_FREE_MIN_PANE_SIZE - 1)]}, [DASH])
+
+    def test_negative_position(self):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout({"panes": [_free_pane(x=-1)]}, [DASH])
+
+    def test_bool_is_not_int(self):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout({"panes": [_free_pane(y=True)]}, [DASH])
+
+    def test_exceeds_canvas_width(self):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout({"design_w": 320, "panes": [_free_pane(x=300, w=100)]}, [DASH])
+
+    def test_exceeds_canvas_height(self):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout({"design_h": 240, "panes": [_free_pane(y=200, h=100)]}, [DASH])
+
+    def test_too_many_panes(self):
+        raw = {
+            "panes": [_free_pane(pk=f"p{i}", x=i % 40, y=i // 40, w=16, h=16) for i in range(SCREEN_FREE_MAX_PANES + 1)]
+        }
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout(raw, [DASH])
+
+    def test_non_dict_payload_and_non_list_panes(self):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout([_free_pane()], [DASH])
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout({"panes": {"pk": "p1"}}, [DASH])
+
+    def test_unknown_dashboard_and_dataset_rejected(self):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout({"panes": [_free_pane(pane_type="dashboard", dashboard="missing")]}, [DASH])
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_free_layout(
+                {"panes": [_free_pane(pane_type="metric", dataset="missing")]}, [DASH], ["ds-1"]
+            )
+
+
+class TestActiveScreenPanes:
+    """投屏形态判定（唯一实现）：自由载荷非空优先 → 栅格载荷非空 → 轮播（空）。"""
+
+    def test_free_panes_take_priority(self):
+        free = {"design_w": 1920, "design_h": 1080, "panes": [_free_pane()]}
+        screen = SimpleNamespace(layout_mode="free", free_layout=free, layout=[{"pk": "g1"}])
+        assert active_screen_panes(screen) == free["panes"]
+
+    def test_free_mode_with_empty_payload_falls_back_to_grid(self):
+        screen = SimpleNamespace(
+            layout_mode="free", free_layout={"design_w": 1920, "design_h": 1080, "panes": []}, layout=[{"pk": "g1"}]
+        )
+        assert active_screen_panes(screen) == [{"pk": "g1"}]
+
+    def test_grid_mode_ignores_free_payload(self):
+        free = {"panes": [_free_pane()]}
+        screen = SimpleNamespace(layout_mode="grid", free_layout=free, layout=[{"pk": "g1"}])
+        assert active_screen_panes(screen) == [{"pk": "g1"}]
+
+    def test_all_empty_means_carousel(self):
+        screen = SimpleNamespace(layout_mode="grid", free_layout={}, layout=[])
+        assert active_screen_panes(screen) == []
+        # 属性缺失（历史调用方 / 未迁移数据）同样按轮播处理，不抛错
+        assert active_screen_panes(SimpleNamespace()) == []

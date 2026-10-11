@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-"""大屏画布窗格 API 集成测试（批次一）。
+"""大屏画布窗格 API 集成测试（批次一 + 自由画布）。
 
 口径：
 1. `layout` 与 `dashboards` 并存——写入窗格即进入画布模式，清空 `layout` 回到轮播模式；
 2. 非法窗格（越界 / 重叠 / 未知仪表盘 / 未知类型）一律 400 且响应体带可读原因，
    不得落库半成品数据；
-3. 列表/详情返回归一化后的窗格（未声明键被丢弃，便于前端直接消费）。
+3. 列表/详情返回归一化后的窗格（未声明键被丢弃，便于前端直接消费）；
+4. 自由画布（`layout_mode=free` + `free_layout`）是并列的第二套载荷：允许重叠、
+   与栅格载荷各自保留，但写入的载荷必须与模式对应（避免静默回退到另一形态）。
 """
 
 import pytest
@@ -162,6 +164,127 @@ class TestLayoutRead:
 
         listed = auth_client.get(SCREEN_URL, {"name": "画布大屏-读"}).json()["data"]["results"]
         assert listed[0]["layout"][0]["pk"] == "p1"
+
+
+def _free_pane(pk, pane_type="clock", x=0, y=0, w=320, h=200, **extra):
+    pane = {"pk": pk, "type": pane_type, "x": x, "y": y, "w": w, "h": h}
+    pane.update(extra)
+    return pane
+
+
+class TestFreeLayoutWrite:
+    """自由画布载荷：写入回读、重叠允许、未声明键丢弃、模式与载荷一致性。"""
+
+    def test_create_with_free_layout(self, auth_client):
+        payload = {
+            "name": "自由画布大屏",
+            "dashboards": [],
+            "layout_mode": "free",
+            "free_layout": {
+                "design_w": 2560,
+                "design_h": 1440,
+                "panes": [
+                    _free_pane("p1", "text", x=40, y=40, w=600, h=120, text="标语"),
+                    _free_pane("p2", x=100, y=100, w=400, h=300),
+                ],
+            },
+        }
+        body = auth_client.post(SCREEN_URL, payload, format="json").json()
+        assert body["code"] == 1000, body
+        data = body["data"]
+        # choices 字段经 BaseModelSerializer 序列化为 labeled choice（{value,label}）
+        assert data["layout_mode"]["value"] == "free"
+        assert data["free_layout"]["design_w"] == 2560
+        # 重叠允许（数组顺序即层级）：两个窗格都落库且顺序保持
+        assert [pane["pk"] for pane in data["free_layout"]["panes"]] == ["p1", "p2"]
+        assert data["free_layout"]["panes"][1]["h"] == 300
+
+    def test_free_layout_unknown_keys_dropped_and_defaults_filled(self, auth_client):
+        created = auth_client.post(
+            SCREEN_URL,
+            {
+                "name": "自由画布大屏-净",
+                "dashboards": [],
+                "layout_mode": "free",
+                "free_layout": {"junk": 1, "panes": [_free_pane("c1", zIndex=9)]},
+            },
+            format="json",
+        ).json()
+        free = created["data"]["free_layout"]
+        assert set(free) == {"design_w", "design_h", "panes"}
+        assert free["design_w"] == 1920 and free["design_h"] == 1080
+        assert free["panes"][0]["size"] == 40
+        assert "zIndex" not in free["panes"][0]
+
+    def test_mode_switch_keeps_both_payloads(self, auth_client, dashboard):
+        created = auth_client.post(
+            SCREEN_URL,
+            {
+                "name": "双载荷大屏",
+                "dashboards": [],
+                "layout": [_pane("g1", str(dashboard.pk))],
+            },
+            format="json",
+        ).json()
+        pk = created["data"]["pk"]
+        # 切到自由模式只写 layout_mode：栅格载荷原样保留
+        resp = auth_client.patch(f"{SCREEN_URL}/{pk}", {"layout_mode": "free"}, format="json").json()
+        assert resp["code"] == 1000, resp
+        assert resp["data"]["layout"][0]["pk"] == "g1"
+        # 写入自由载荷：栅格载荷仍在（切回即可见）
+        resp = auth_client.patch(
+            f"{SCREEN_URL}/{pk}",
+            {"free_layout": {"panes": [_free_pane("f1")]}},
+            format="json",
+        ).json()
+        assert resp["code"] == 1000, resp
+        assert resp["data"]["layout_mode"]["value"] == "free"
+        assert resp["data"]["free_layout"]["panes"][0]["pk"] == "f1"
+        assert resp["data"]["layout"][0]["pk"] == "g1"
+        # 切回栅格模式后可再写栅格载荷（自由载荷保留）
+        resp = auth_client.patch(f"{SCREEN_URL}/{pk}", {"layout_mode": "grid"}, format="json").json()
+        assert resp["code"] == 1000
+        assert resp["data"]["free_layout"]["panes"][0]["pk"] == "f1"
+
+    def test_free_layout_rejections(self, auth_client):
+        cases = {
+            "画幅越界": {"design_w": 99999, "panes": []},
+            "尺寸下限": {"panes": [_free_pane("p1", w=8)]},
+            "超出画幅": {"design_w": 320, "panes": [_free_pane("p1", x=300, w=100)]},
+            "非列表窗格": {"panes": {"pk": "p1"}},
+        }
+        for index, (label, free) in enumerate(cases.items()):
+            resp = auth_client.post(
+                SCREEN_URL,
+                {"name": f"自由画布大屏-非法{index}", "dashboards": [], "layout_mode": "free", "free_layout": free},
+                format="json",
+            )
+            assert resp.status_code == 400, (label, resp.json())
+        assert not Screen.objects.filter(name__startswith="自由画布大屏-非法").exists()
+
+    def test_free_payload_with_grid_mode_rejected(self, auth_client):
+        """模式与载荷不匹配：写进去也永远不会被渲染（静默回退），直接拒绝。"""
+        resp = auth_client.post(
+            SCREEN_URL,
+            {
+                "name": "自由画布大屏-模式不符",
+                "dashboards": [],
+                "free_layout": {"panes": [_free_pane("p1")]},
+            },
+            format="json",
+        )
+        assert resp.status_code == 400, resp.json()
+        assert not Screen.objects.filter(name="自由画布大屏-模式不符").exists()
+
+    def test_legacy_create_without_mode_keeps_grid_default(self, auth_client, dashboard):
+        """旧客户端不传新字段：缺省 grid + 空自由载荷，行为与迁移前一致。"""
+        created = auth_client.post(
+            SCREEN_URL,
+            {"name": "存量形态大屏", "dashboards": [], "layout": [_pane("p1", str(dashboard.pk))]},
+            format="json",
+        ).json()
+        assert created["data"]["layout_mode"]["value"] == "grid"
+        assert created["data"]["free_layout"] == {}
 
 
 @pytest.fixture

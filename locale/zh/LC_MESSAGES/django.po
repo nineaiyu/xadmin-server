@@ -4423,6 +4423,30 @@ msgstr "仪表盘 pk 有序列表"
 msgid "Canvas panes on a 12-column grid (empty = carousel mode)"
 msgstr "画布窗格（12 列栅格；为空 = 轮播模式）"
 
+#: dataset/models/dataset.py:83
+msgid "Grid"
+msgstr "栅格"
+
+#: dataset/models/dataset.py:83
+msgid "Free canvas"
+msgstr "自由画布"
+
+#: dataset/models/dataset.py:84
+msgid "Layout mode"
+msgstr "画布模式"
+
+#: dataset/models/dataset.py:84
+msgid "Canvas mode: grid uses layout, free uses free_layout"
+msgstr "画布模式：grid 用 layout，free 用 free_layout"
+
+#: dataset/models/dataset.py:92
+msgid "Free layout"
+msgstr "自由布局"
+
+#: dataset/models/dataset.py:92
+msgid "Free pixel canvas: {design_w, design_h, panes} (empty = none)"
+msgstr "自由像素画布：{design_w, design_h, panes}（为空 = 未启用）"
+
 #: dataset/models/dataset.py:82 task/serializers/task.py:253
 msgid "Interval"
 msgstr "执行间隔"
@@ -5647,6 +5671,73 @@ msgstr "窗格重叠：{}"
 #, python-brace-format
 msgid "Too many screen panes (max {})"
 msgstr "窗格数量超过上限（最多 {} 个）"
+
+# 自由画布模式（ADR-086）新增文案：手工追加 zh 译文
+#: dataset/utils/screen_layout.py
+msgid "Invalid screen free layout"
+msgstr "自由画布格式不正确"
+
+#: dataset/utils/screen_layout.py
+msgid "Invalid screen free layout panes"
+msgstr "自由画布窗格列表格式不正确"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen design canvas {} must be {}~{}"
+msgstr "设计画幅 {} 必须在 {}~{} 之间"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane size must be at least {}px: {}"
+msgstr "窗格尺寸不得小于 {}px：{}"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane exceeds the canvas width: {}"
+msgstr "窗格超出画布宽度：{}"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane exceeds the canvas height: {}"
+msgstr "窗格超出画布高度：{}"
+
+#: dataset/serializers/analysis.py
+msgid "Grid layout requires grid mode"
+msgstr "栅格载荷需要栅格模式（请先切回栅格模式再保存）"
+
+#: dataset/serializers/analysis.py
+msgid "Free layout requires free mode"
+msgstr "自由画布载荷需要自由模式（请先切换到自由画布再保存）"
+
+# 大屏画布工具集三期（ADR-088）新增文案：团队模板 + 窗格旋转/动画/富文本
+#: dataset/models/dataset.py
+msgid "Screen template"
+msgstr "大屏模板"
+
+#: dataset/models/dataset.py
+msgid "Screen templates"
+msgstr "大屏模板"
+
+#: dataset/models/dataset.py
+msgid "Template canvas: {design_w, design_h, panes} (empty = none)"
+msgstr "模板画布：{design_w, design_h, panes}（为空 = 未启用）"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane rotate must be {}~{}: {}"
+msgstr "窗格旋转角度必须在 {}~{} 之间：{}"
+
+#: dataset/utils/screen_layout.py
+msgid "Invalid screen pane animation: {}"
+msgstr "窗格入场动画不合法：{}"
+
+#: dataset/utils/screen_layout.py
+msgid "Invalid screen pane text format: {}"
+msgstr "窗格文本格式不合法：{}"
+
+#: dataset/utils/screen_layout.py
+msgid "Screen template needs at least one pane"
+msgstr "大屏模板至少需要一个窗格"
 
 #: dataset/views/analysis.py:145
 msgid "Command sent"

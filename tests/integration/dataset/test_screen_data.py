@@ -232,6 +232,54 @@ class TestCollectScreenCards:
         screen = _make_screen(superuser)
         assert collect_screen_cards(screen) == []
 
+    def test_free_canvas_panes_expand_like_grid(self, dashboard_a, dashboard_b, superuser):
+        """自由画布按同一展开口径：自由载荷非空优先，栅格载荷不参与。"""
+        screen = _make_screen(
+            superuser,
+            layout=[
+                {"pk": "g1", "type": "dashboard", "dashboard": str(dashboard_b.pk), "x": 0, "y": 0, "w": 6, "h": 4},
+            ],
+        )
+        screen.layout_mode = "free"
+        screen.free_layout = {
+            "design_w": 1920,
+            "design_h": 1080,
+            "panes": [
+                {
+                    "pk": "f1",
+                    "type": "dashboard",
+                    "dashboard": str(dashboard_a.pk),
+                    "x": 10,
+                    "y": 10,
+                    "w": 400,
+                    "h": 300,
+                },
+                {"pk": "t1", "type": "text", "x": 0, "y": 0, "w": 300, "h": 80, "text": "标语"},
+            ],
+        }
+        screen.save(update_fields=["layout_mode", "free_layout"])
+
+        refs = collect_screen_cards(screen)
+        assert [(ref["dashboard"], ref["card"]) for ref in refs] == [
+            (str(dashboard_a.pk), "c1"),
+            (str(dashboard_a.pk), "c2"),
+        ]
+        payloads = build_screen_data_payload(superuser, screen, rev=1)
+        assert len(payloads) == 1 and payloads[0]["dashboard"] is None
+        assert {item["card"] for item in payloads[0]["cards"]} == {"c1", "c2"}
+
+    def test_free_mode_with_empty_payload_falls_back_to_grid(self, dashboard_a, superuser):
+        screen = _make_screen(
+            superuser,
+            layout=[
+                {"pk": "g1", "type": "dashboard", "dashboard": str(dashboard_a.pk), "x": 0, "y": 0, "w": 6, "h": 4},
+            ],
+        )
+        screen.layout_mode = "free"
+        screen.free_layout = {"design_w": 1920, "design_h": 1080, "panes": []}
+        screen.save(update_fields=["layout_mode", "free_layout"])
+        assert [ref["card"] for ref in collect_screen_cards(screen)] == ["c1", "c2"]
+
 
 class TestBuildScreenDataPayload:
     def test_carousel_one_frame_per_dashboard(self, dashboard_a, dashboard_b, superuser):

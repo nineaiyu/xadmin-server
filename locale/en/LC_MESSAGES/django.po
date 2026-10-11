@@ -4424,6 +4424,30 @@ msgstr ""
 msgid "Canvas panes on a 12-column grid (empty = carousel mode)"
 msgstr ""
 
+#: dataset/models/dataset.py:83
+msgid "Grid"
+msgstr ""
+
+#: dataset/models/dataset.py:83
+msgid "Free canvas"
+msgstr ""
+
+#: dataset/models/dataset.py:84
+msgid "Layout mode"
+msgstr ""
+
+#: dataset/models/dataset.py:84
+msgid "Canvas mode: grid uses layout, free uses free_layout"
+msgstr ""
+
+#: dataset/models/dataset.py:92
+msgid "Free layout"
+msgstr ""
+
+#: dataset/models/dataset.py:92
+msgid "Free pixel canvas: {design_w, design_h, panes} (empty = none)"
+msgstr ""
+
 #: dataset/models/dataset.py:82 task/serializers/task.py:253
 msgid "Interval"
 msgstr ""
@@ -5645,6 +5669,71 @@ msgstr ""
 #: dataset/utils/screen_layout.py:184
 #, python-brace-format
 msgid "Too many screen panes (max {})"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+msgid "Invalid screen free layout"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+msgid "Invalid screen free layout panes"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen design canvas {} must be {}~{}"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane size must be at least {}px: {}"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane exceeds the canvas width: {}"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane exceeds the canvas height: {}"
+msgstr ""
+
+#: dataset/serializers/analysis.py
+msgid "Grid layout requires grid mode"
+msgstr ""
+
+#: dataset/serializers/analysis.py
+msgid "Free layout requires free mode"
+msgstr ""
+
+#: dataset/models/dataset.py
+msgid "Screen template"
+msgstr ""
+
+#: dataset/models/dataset.py
+msgid "Screen templates"
+msgstr ""
+
+#: dataset/models/dataset.py
+msgid "Template canvas: {design_w, design_h, panes} (empty = none)"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane rotate must be {}~{}: {}"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+msgid "Invalid screen pane animation: {}"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+msgid "Invalid screen pane text format: {}"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+msgid "Screen template needs at least one pane"
 msgstr ""
 
 #: dataset/views/analysis.py:145
