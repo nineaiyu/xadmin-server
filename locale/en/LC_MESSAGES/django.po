@@ -11293,3 +11293,23 @@ msgstr ""
 #, python-brace-format
 msgid "Screen pane animation delay must be {}~{}: {}"
 msgstr ""
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Invalid screen pane video url: {}"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Invalid screen pane video poster: {}"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Invalid screen pane video fit: {}"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Invalid screen pane html url: {}"
+msgstr ""

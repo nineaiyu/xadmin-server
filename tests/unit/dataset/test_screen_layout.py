@@ -166,6 +166,78 @@ class TestImagePane:
             normalize_screen_layout(raw, [DASH])
 
 
+class TestVideoAndHtmlPanes:
+    """视频与自定义 HTML 窗格（ADR-090 D3）：只收 http(s)，缺省播放行为不下发。"""
+
+    def test_video_non_default_fields_kept(self):
+        raw = [
+            {
+                "pk": "v1",
+                "type": "video",
+                "x": 0,
+                "y": 0,
+                "w": 6,
+                "h": 4,
+                "url": "https://a.b/c.mp4",
+                "poster": "https://a.b/c.jpg",
+                "fit": "contain",
+                "muted": False,
+                "loop": False,
+                "autoplay": False,
+            }
+        ]
+        assert normalize_screen_layout(raw, [DASH]) == [
+            {
+                "pk": "v1",
+                "type": "video",
+                "x": 0,
+                "y": 0,
+                "w": 6,
+                "h": 4,
+                "url": "https://a.b/c.mp4",
+                "poster": "https://a.b/c.jpg",
+                "fit": "contain",
+                "muted": False,
+                "loop": False,
+                "autoplay": False,
+            }
+        ]
+
+    def test_video_defaults_dropped(self):
+        """缺省（静音 + 循环 + 自动播放 + cover）不下发：旧载荷升级后字节不变。"""
+        raw = [{"pk": "v1", "type": "video", "x": 0, "y": 0, "w": 6, "h": 4, "url": "/media/a.mp4"}]
+        pane = normalize_screen_layout(raw, [DASH])[0]
+        assert pane["url"] == "/media/a.mp4"
+        assert "fit" not in pane
+        assert "muted" not in pane and "loop" not in pane and "autoplay" not in pane
+
+    @pytest.mark.parametrize("url", ["javascript:alert(1)", "//evil.com/x.mp4", "data:video/mp4;x"])
+    def test_video_bad_url_rejected(self, url):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_layout([{"pk": "v1", "type": "video", "x": 0, "y": 0, "w": 6, "h": 4, "url": url}], [DASH])
+
+    def test_video_bad_poster_and_fit_rejected(self):
+        base = {"pk": "v1", "type": "video", "x": 0, "y": 0, "w": 6, "h": 4, "url": "https://a.b/c.mp4"}
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_layout([{**base, "poster": "javascript:alert(1)"}], [DASH])
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_layout([{**base, "fit": "stretch"}], [DASH])
+
+    def test_html_only_accepts_http_absolute(self):
+        """自定义 HTML 只收 http(s) iframe 地址（原样 HTML 与站内相对路径都不收）。"""
+        ok = normalize_screen_layout(
+            [{"pk": "h1", "type": "html", "x": 0, "y": 0, "w": 6, "h": 4, "url": "https://a.b/embed"}],
+            [DASH],
+        )
+        assert ok[0]["url"] == "https://a.b/embed"
+        for url in ("/local/page", "javascript:alert(1)", "//evil.com", ""):
+            with pytest.raises(ScreenLayoutError):
+                normalize_screen_layout(
+                    [{"pk": "h1", "type": "html", "x": 0, "y": 0, "w": 6, "h": 4, "url": url}],
+                    [DASH],
+                )
+
+
 class TestRejections:
     def test_unknown_type(self):
         with pytest.raises(ScreenLayoutError):

@@ -11320,3 +11320,23 @@ msgstr "窗格动画时长必须在 {}~{} 毫秒之间：{}"
 #, python-brace-format
 msgid "Screen pane animation delay must be {}~{}: {}"
 msgstr "窗格动画延迟必须在 {}~{} 毫秒之间：{}"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Invalid screen pane video url: {}"
+msgstr "窗格视频地址不合法：{}"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Invalid screen pane video poster: {}"
+msgstr "窗格视频封面地址不合法：{}"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Invalid screen pane video fit: {}"
+msgstr "窗格视频填充方式不合法：{}"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Invalid screen pane html url: {}"
+msgstr "自定义 HTML 窗格只接受 http(s) 地址：{}"

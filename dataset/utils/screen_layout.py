@@ -29,7 +29,7 @@ from typing import Any
 from django.utils.translation import gettext_lazy as _
 
 #: 允许的窗格类型：仪表盘 / 文本 / 时钟 / 指标卡 / 图片
-SCREEN_PANE_TYPES = ("dashboard", "text", "clock", "metric", "image")
+SCREEN_PANE_TYPES = ("dashboard", "text", "clock", "metric", "image", "video", "html")
 #: 栅格列数（与前端 grid-template-columns 一致）
 SCREEN_GRID_COLS = 12
 #: 行数上限：够大屏纵向堆叠，同时挡住无意义的天文数字
@@ -100,6 +100,15 @@ def _as_int(value: Any, field: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise ScreenLayoutError(_("Invalid screen layout box: {}").format(field))
     return value
+
+
+def _pane_url_allowed(url: str) -> bool:
+    """窗格外链地址是否可收：http(s) 绝对地址，或站内根相对路径（`/` 开头）。
+
+    刻意拒绝 `//` 开头的 protocol-relative 地址（等价「可跳任意 host」的注入向量）
+    与 `javascript:` / `data:` / `vbscript:` 等其它协议。
+    """
+    return url.startswith(("https://", "http://")) or (url.startswith("/") and not url.startswith("//"))
 
 
 def _normalize_pane_body(
@@ -225,10 +234,7 @@ def _normalize_pane_body(
         url = str(item.get("url") or "").strip()
         if not url or len(url) > SCREEN_MAX_IMAGE_URL:
             raise ScreenLayoutError(_("Invalid screen pane image url: {}").format(pane_id))
-        # http(s) 绝对地址或站内根相对路径（/ 开头，站内静态资源）；必须拒绝
-        # // 开头的 protocol-relative 地址（等价可跳任意 host 的注入向量），
-        # javascript:/data: 等其他协议同样不收
-        allowed = url.startswith(("https://", "http://")) or (url.startswith("/") and not url.startswith("//"))
+        allowed = _pane_url_allowed(url)
         if not allowed:
             raise ScreenLayoutError(
                 _("Screen pane image url must be http(s) or a root-relative path: {}").format(pane_id)
@@ -238,6 +244,36 @@ def _normalize_pane_body(
             raise ScreenLayoutError(_("Invalid screen pane image fit: {}").format(pane_id))
         pane["url"] = url
         pane["fit"] = fit
+
+    if pane_type == "video":
+        # 视频：http(s) 直链（mp4 / webm 等），不收站内相对路径以外的退化形态
+        url = str(item.get("url") or "").strip()
+        if not url or len(url) > SCREEN_MAX_IMAGE_URL or not _pane_url_allowed(url):
+            raise ScreenLayoutError(_("Invalid screen pane video url: {}").format(pane_id))
+        pane["url"] = url
+        poster = str(item.get("poster") or "").strip()
+        if len(poster) > SCREEN_MAX_IMAGE_URL:
+            raise ScreenLayoutError(_("Invalid screen pane video poster: {}").format(pane_id))
+        if poster:
+            if not _pane_url_allowed(poster):
+                raise ScreenLayoutError(_("Invalid screen pane video poster: {}").format(pane_id))
+            pane["poster"] = poster
+        fit = str(item.get("fit") or "cover").strip()
+        if fit not in SCREEN_IMAGE_FITS:
+            raise ScreenLayoutError(_("Invalid screen pane video fit: {}").format(pane_id))
+        if fit != "cover":
+            pane["fit"] = fit
+        # 播放行为：缺省「静音 + 循环 + 自动播放」（投屏墙的常态），非缺省才下发
+        for field in ("muted", "loop", "autoplay"):
+            if item.get(field) is False:
+                pane[field] = False
+
+    if pane_type == "html":
+        # 自定义 HTML：**只收 http(s) iframe 地址**，不接受原样 HTML（XSS 面为零）
+        url = str(item.get("url") or "").strip()
+        if not url or len(url) > SCREEN_MAX_IMAGE_URL or not url.startswith(("https://", "http://")):
+            raise ScreenLayoutError(_("Invalid screen pane html url: {}").format(pane_id))
+        pane["url"] = url
 
     return pane
 
