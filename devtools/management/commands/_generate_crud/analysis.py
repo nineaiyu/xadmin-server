@@ -129,9 +129,8 @@ class AnalysisMixin(FieldPlanMixin):
 
     # --------------------------------------------------------------- 产物收集
 
-    def _collect_artifacts(self, ctx: dict[str, Any], options: dict[str, Any]) -> list[dict[str, Any]]:
-        backend_root = Path(options["output"] or settings.PROJECT_DIR)
-        app_dir = backend_root / ctx["app_label"]
+    def _core_artifacts(self, ctx: dict[str, Any], app_dir: Path) -> list[dict[str, Any]]:
+        """核心后端产物：序列化器 / 视图 / 路由 / 应用配置（回填 ctx 模块路径）。"""
         artifacts: list[dict[str, Any]] = []
 
         serializer_package = (app_dir / "serializers").is_dir()
@@ -199,9 +198,16 @@ class AnalysisMixin(FieldPlanMixin):
                 "key": f"config-{ctx['model_snake']}",
             }
         )
+        return artifacts
 
-        # 「生成即接入」：AI 动作声明骨架（只读动作直接可用）+ 可选测试骨架；
-        # --skip-ai 时不产出（纯内部管理表等无需 AI 接入的场景）
+    def _optional_backend_artifacts(
+        self, ctx: dict[str, Any], options: dict[str, Any], app_dir: Path, backend_root: Path
+    ) -> list[dict[str, Any]]:
+        """可选后端产物：「生成即接入」AI 动作声明 + 测试骨架。
+
+        AI 声明在 ``--skip-ai`` 时不产出（纯内部管理表等无需 AI 接入的场景）。
+        """
+        artifacts: list[dict[str, Any]] = []
         if not options.get("skip_ai"):
             artifacts.append(
                 {
@@ -222,6 +228,25 @@ class AnalysisMixin(FieldPlanMixin):
                     "key": f"tests-{ctx['model_snake']}",
                 }
             )
+        return artifacts
+
+    def _menu_seed_artifact(self, ctx: dict[str, Any], options: dict[str, Any], backend_root: Path) -> dict[str, Any]:
+        """菜单种子产物：渲染前解析菜单 model 关联（字段权限数据源），供后续步骤提示复用。"""
+        ctx["model_label_pk"] = self._model_label_pk(ctx["model"])
+        return {
+            "label": "菜单种子",
+            "path": backend_root / "loadjson" / f"seed_{ctx['app_label']}_{ctx['model_snake']}.json",
+            "content": self._render_menu_seed(ctx, options["parent"]),
+            "mode": "create",
+            "key": f"seed-{ctx['model_snake']}",
+        }
+
+    def _collect_artifacts(self, ctx: dict[str, Any], options: dict[str, Any]) -> list[dict[str, Any]]:
+        backend_root = Path(options["output"] or settings.PROJECT_DIR)
+        app_dir = backend_root / ctx["app_label"]
+        artifacts = self._core_artifacts(ctx, app_dir)
+
+        artifacts.extend(self._optional_backend_artifacts(ctx, options, app_dir, backend_root))
 
         if not options["skip_frontend"]:
             artifacts.extend(self._frontend_artifacts(ctx, options))
@@ -230,17 +255,7 @@ class AnalysisMixin(FieldPlanMixin):
             artifacts.append(self._module_artifact(ctx, options))
 
         if not options["skip_menu_seed"]:
-            # 菜单的 model 关联（字段权限数据源）：渲染种子前解析一次，后续步骤提示复用
-            ctx["model_label_pk"] = self._model_label_pk(ctx["model"])
-            artifacts.append(
-                {
-                    "label": "菜单种子",
-                    "path": backend_root / "loadjson" / f"seed_{ctx['app_label']}_{ctx['model_snake']}.json",
-                    "content": self._render_menu_seed(ctx, options["parent"]),
-                    "mode": "create",
-                    "key": f"seed-{ctx['model_snake']}",
-                }
-            )
+            artifacts.append(self._menu_seed_artifact(ctx, options, backend_root))
         return artifacts
 
     def _module_artifact(self, ctx: dict[str, Any], options: dict[str, Any]) -> dict[str, Any]:
