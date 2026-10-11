@@ -137,6 +137,14 @@ class ScreenTemplate(DbAuditModel, DbUuidModel):
         blank=True,
         help_text=_("Template canvas: {design_w, design_h, panes} (empty = none)"),
     )
+    group = models.CharField(
+        _("Group"),
+        max_length=40,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text=_("Template folder/group name (empty = ungrouped)"),
+    )
     visibility = models.CharField(
         _("Visibility"),
         max_length=16,
@@ -152,6 +160,63 @@ class ScreenTemplate(DbAuditModel, DbUuidModel):
 
     def __str__(self) -> str:
         return f"{self.name}({len(self.free_layout.get('panes') or [])})"
+
+
+class ScreenTemplateVersion(DbAuditModel, DbUuidModel):
+    """大屏模板的历史版本（ADR-090 D4）：保存模板内容时自动记一版，可回滚。
+
+    只存「会被编辑的三件事」——名称 / 分组 / 载荷；可见性与归属跟随主表。
+    每个模板保留最近 ``SCREEN_TEMPLATE_VERSION_KEEP`` 版（超出裁剪最旧）。
+    """
+
+    template = models.ForeignKey(
+        ScreenTemplate,
+        on_delete=models.CASCADE,
+        related_name="versions",
+        verbose_name=_("Template"),
+    )
+    version = models.PositiveIntegerField(_("Version"))
+    name = models.CharField(_("Name"), max_length=128)
+    group = models.CharField(_("Group"), max_length=40, blank=True, default="")
+    free_layout = models.JSONField(_("Free layout"), default=dict, blank=True)
+
+    class Meta:
+        verbose_name = _("Screen template version")
+        verbose_name_plural = _("Screen template versions")
+        ordering = ("-version",)
+        constraints = [models.UniqueConstraint(fields=("template", "version"), name="uniq_screen_template_version")]
+
+    def __str__(self) -> str:
+        return f"{self.name}#v{self.version}"
+
+
+class ScreenClipboard(DbAuditModel, DbUuidModel):
+    """云端剪贴板（ADR-090 D4）：按用户单槽，让「复制 → 换设备/浏览器 → 粘贴」成立。
+
+    载荷与自由画布同形（``{design_w, design_h, panes}``），归一化复用
+    ``dataset.utils.screen_layout``；一个用户只有一条记录（``user`` 唯一）。
+    """
+
+    user = models.OneToOneField(
+        "identity.UserInfo",
+        on_delete=models.CASCADE,
+        related_name="screen_clipboard",
+        verbose_name=_("User"),
+    )
+    free_layout = models.JSONField(
+        _("Free layout"),
+        default=dict,
+        blank=True,
+        help_text=_("Clipboard canvas: {design_w, design_h, panes}"),
+    )
+
+    class Meta:
+        verbose_name = _("Screen clipboard")
+        verbose_name_plural = _("Screen clipboards")
+        ordering = ("-updated_time",)
+
+    def __str__(self) -> str:
+        return f"clipboard:{self.user_id}"
 
 
 class Report(DbAuditModel, DbUuidModel):

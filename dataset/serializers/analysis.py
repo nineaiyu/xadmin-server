@@ -13,11 +13,21 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
-from dataset.models.dataset import Dashboard, Dataset, Report, Screen, ScreenTemplate
+from dataset.models.dataset import (
+    Dashboard,
+    Dataset,
+    Report,
+    Screen,
+    ScreenClipboard,
+    ScreenTemplate,
+    ScreenTemplateVersion,
+)
 from dataset.utils.dataset import numeric_columns_of
 from dataset.utils.report_design import ReportDesignError, normalize_report_design
 from dataset.utils.screen_layout import (
+    SCREEN_MAX_GROUP,
     ScreenLayoutError,
+    normalize_screen_clipboard,
     normalize_screen_free_layout,
     normalize_screen_layout,
     normalize_screen_template,
@@ -236,6 +246,7 @@ class ScreenTemplateSerializer(BaseModelSerializer):
         fields = [
             "pk",
             "name",
+            "group",
             "free_layout",
             "visibility",
             "created_time",
@@ -243,7 +254,14 @@ class ScreenTemplateSerializer(BaseModelSerializer):
         ]
         read_only_fields = ["pk", "created_time", "updated_time"]
         # RePlusPage 列表列
-        table_fields = ["name", "visibility", "updated_time"]
+        table_fields = ["name", "group", "visibility", "updated_time"]
+
+    def validate_group(self, value: Any) -> str:
+        """分组名：去空白 + 长度上限（空 = 未分组）。"""
+        group = str(value or "").strip()
+        if len(group) > SCREEN_MAX_GROUP:
+            raise serializers.ValidationError(_("Group name is too long"))
+        return group
 
     def validate_free_layout(self, value: Any) -> Any:
         """模板载荷：像素坐标 + 基准设计画幅（与自由画布同一套白名单与常量）。
@@ -258,6 +276,37 @@ class ScreenTemplateSerializer(BaseModelSerializer):
             raise serializers.ValidationError(str(exc)) from exc
         check_metric_value_fields(free_layout.get("panes") or [], datasets)
         return free_layout
+
+
+class ScreenTemplateVersionSerializer(BaseModelSerializer):
+    """模板历史版本（只读列表形态）：回滚目标选择用，不做写操作。"""
+
+    ignore_field_permission = True
+
+    class Meta:
+        model = ScreenTemplateVersion
+        fields = ["pk", "version", "name", "group", "free_layout", "created_time"]
+        read_only_fields = fields
+
+
+class ScreenClipboardSerializer(BaseModelSerializer):
+    """云端剪贴板（按用户单槽）：载荷与自由画布同形，允许为空（= 已清空）。"""
+
+    ignore_field_permission = True
+
+    class Meta:
+        model = ScreenClipboard
+        fields = ["pk", "free_layout", "updated_time"]
+        read_only_fields = ["pk", "updated_time"]
+
+    def validate_free_layout(self, value: Any) -> Any:
+        """剪贴板载荷：与模板/自由画布同一份白名单；**允许空**（清空剪贴板）。"""
+        panes = value.get("panes") if isinstance(value, dict) else None
+        known_dashboards, known_datasets, datasets = layout_references(request_user(self), panes)
+        try:
+            return normalize_screen_clipboard(value, known_dashboards, known_datasets)
+        except ScreenLayoutError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
 
 class ScreenCommandSerializer(serializers.Serializer):

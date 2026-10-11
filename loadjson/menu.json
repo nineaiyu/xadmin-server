@@ -16956,5 +16956,189 @@
   "method": "POST",
   "model": []
  }
-}
+},
+ {
+  "model": "system.menu",
+  "pk": "5df63722-99a3-48f8-900e-0500b06dc867",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "versions:ScreenTemplate",
+   "rank": 26,
+   "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)/versions$",
+   "component": null,
+   "is_active": true,
+   "meta": "a9df3a37-3546-43fe-a2d3-396cb7a1132f",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2b3f0ed6-af44-46f4-8a96-72178e5b11d2",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "rollback:ScreenTemplate",
+   "rank": 27,
+   "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)/rollback$",
+   "component": null,
+   "is_active": true,
+   "meta": "e05c3b4c-0beb-4bd4-9bdf-ea423f663676",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8698ec57-01d1-4f6e-ba3f-fd7901a29189",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "list:ScreenClipboard",
+   "rank": 28,
+   "path": "api/dataset/screen-clipboard$",
+   "component": null,
+   "is_active": true,
+   "meta": "8574b5f2-af9b-4f54-8195-8ee2e6bc9888",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8c228055-44a4-4ddf-91c0-3595f09d0767",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "create:ScreenClipboard",
+   "rank": 29,
+   "path": "api/dataset/screen-clipboard$",
+   "component": null,
+   "is_active": true,
+   "meta": "e92757fa-0a35-4dd5-84c8-d578e0f0ead6",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0b06fe7f-ca17-474f-bba0-e38035c11cc1",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "retrieve:ScreenClipboard",
+   "rank": 30,
+   "path": "api/dataset/screen-clipboard/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "996d2369-9eae-4c5b-9544-52834b0da10c",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a471cc72-d2b1-4a98-bd1e-7fd1009a13ba",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "partialUpdate:ScreenClipboard",
+   "rank": 31,
+   "path": "api/dataset/screen-clipboard/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "67900e00-5089-4765-b52b-597fb0bc6e5c",
+   "method": "PATCH",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1de9b930-032b-4230-b6ae-adcf2410c89f",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "destroy:ScreenClipboard",
+   "rank": 32,
+   "path": "api/dataset/screen-clipboard/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "cb1de001-45f5-46e7-8d97-4876e9685ac5",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "dc81f4c0-477c-4e3c-bce0-c66c09c81be4",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "batchDestroy:ScreenClipboard",
+   "rank": 33,
+   "path": "api/dataset/screen-clipboard/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "f5838934-e5d4-4566-b795-d4e31b9595e3",
+   "method": "POST",
+   "model": []
+  }
+ }
 ]

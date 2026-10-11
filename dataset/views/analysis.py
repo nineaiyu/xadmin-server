@@ -12,6 +12,7 @@
 
 from typing import Any
 
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -27,15 +28,24 @@ from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from dataset.analysis_tasks import schedule_report_run
-from dataset.models.dataset import Report, Screen, ScreenTemplate
+from dataset.models.dataset import (
+    Report,
+    Screen,
+    ScreenClipboard,
+    ScreenTemplate,
+    ScreenTemplateVersion,
+)
 from dataset.serializers.analysis import (
     IM_NOTIFY_CHANNELS,
     REPORT_NOTIFY_CHANNELS,
     ReportSerializer,
+    ScreenClipboardSerializer,
     ScreenCommandSerializer,
     ScreenSerializer,
     ScreenTemplateSerializer,
+    ScreenTemplateVersionSerializer,
 )
+from dataset.utils.screen_layout import SCREEN_TEMPLATE_VERSION_KEEP
 from dataset.ws_screen import (
     apply_screen_command,
     broadcast_screen_command,
@@ -90,6 +100,35 @@ class BaseAnalysisViewSet(BaseModelSet):
         if guarded:
             return guarded
         return super().destroy(request, *args, **kwargs)
+
+
+def _version_keep() -> int:
+    """版本保留数：允许 settings 覆盖（便于按环境/测试调小），缺省取领域常量。"""
+    return int(getattr(settings, "SCREEN_TEMPLATE_VERSION_KEEP", SCREEN_TEMPLATE_VERSION_KEEP))
+
+
+def snapshot_template_version(template: Any, actor: Any = None) -> Any:
+    """给模板记一版快照，并把超出保留数的旧版本裁掉（ADR-090 D4）。
+
+    只在有窗格时记（空载荷不是有效模板）；版本号沿用「当前最大 + 1」，删除最旧的若干条。
+    """
+    if not (template.free_layout or {}).get("panes"):
+        return None
+    latest = template.versions.first()
+    version = (latest.version if latest else 0) + 1
+    snapshot = ScreenTemplateVersion.objects.create(
+        template=template,
+        version=version,
+        name=template.name,
+        group=template.group,
+        free_layout=template.free_layout,
+        creator=actor,
+        modifier=actor,
+    )
+    stale = list(template.versions.values_list("pk", flat=True)[_version_keep() :])
+    if stale:
+        ScreenTemplateVersion.objects.filter(pk__in=stale).delete()
+    return snapshot
 
 
 class ScreenFilter(BaseFilterSet):
@@ -165,12 +204,79 @@ class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
 class ScreenTemplateViewSet(BaseAnalysisViewSet):
     """大屏模板（团队共享）：CRUD 与大屏同口径（可见性 + 行级归属守卫）。
 
-    与 ScreenViewSet 的差异：无远程控制 action、不参与影响预览（删模板不会让谁渲染不出来）。
+    与 ScreenViewSet 的差异：无远程控制 action、不参与影响预览（删模板不会让谁渲染不出来）；
+    额外提供**版本历史**（保存即记一版，保留最近 N 版）与**回滚**（回滚本身也记一版，可再回滚）。
+
+    版本与回滚都只对**创建者**开放（复用行级归属守卫的 1003 语义）：模板是团队共享资产，
+    但历史属于作者自己的工作台。
     """
 
     queryset = ScreenTemplate.objects.all()
     serializer_class = ScreenTemplateSerializer
     filterset_class = ScreenTemplateFilter
+
+    def perform_create(self, serializer: Any) -> None:
+        super().perform_create(serializer)
+        snapshot_template_version(serializer.instance, actor=self.request.user)
+
+    def perform_update(self, serializer: Any) -> None:
+        super().perform_update(serializer)
+        snapshot_template_version(serializer.instance, actor=self.request.user)
+
+    @extend_schema(responses=get_default_response_schema())
+    @shared_list_action(methods=["get"], detail=True, url_path="versions")  # type: ignore[untyped-decorator]
+    def versions(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """模板历史版本（只读，最新在前）。"""
+        template = self.get_object()
+        rows = template.versions.all()[: _version_keep()]
+        return ApiResponse(data=ScreenTemplateVersionSerializer(rows, many=True).data)
+
+    @extend_schema(responses=get_default_response_schema())
+    @shared_list_action(methods=["post"], detail=True, url_path="rollback")  # type: ignore[untyped-decorator]
+    def rollback(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """回滚到指定版本：恢复名称 / 分组 / 载荷，并**再记一版**（回滚可逆）。"""
+        template = self.get_object()
+        guarded = _creator_guard(request, template)
+        if guarded:
+            return guarded
+        version = request.data.get("version")
+        target = template.versions.filter(version=version).first()
+        if target is None:
+            return ApiResponse(code=1001, detail=_("Template version not found"))
+        template.name = target.name
+        template.group = target.group
+        template.free_layout = target.free_layout
+        template.modifier = request.user
+        template.save(update_fields=["name", "group", "free_layout", "modifier", "updated_time"])
+        snapshot_template_version(template, actor=request.user)
+        return ApiResponse(
+            data=ScreenTemplateSerializer(template, context=self.get_serializer_context()).data,
+            detail=_("Template rolled back"),
+        )
+
+
+class ScreenClipboardViewSet(BaseAnalysisViewSet):
+    """云端剪贴板（ADR-090 D4）：**按用户单槽**，让「复制 → 换设备 → 粘贴」成立。
+
+    - 列表只返回本人槽位（0 或 1 条）；创建即更新本人槽位（upsert，避免前端判空两条路径）；
+    - 删除即清空（按 pk 删本人槽位）；
+    - 权限复用分析域（登录 + 端点权限点），载荷校验与模板/自由画布同一份白名单。
+    """
+
+    serializer_class = ScreenClipboardSerializer
+
+    def get_queryset(self) -> Any:
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return ScreenClipboard.objects.none()
+        return ScreenClipboard.objects.filter(user=user)
+
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """upsert：本人已有槽位则就地更新，否则新建（前端不必区分首次 / 再次复制）。"""
+        serializer = self.get_serializer(self.get_queryset().first(), data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user, creator=request.user, modifier=request.user)
+        return ApiResponse(data=serializer.data)
 
 
 class ReportViewSet(BaseAnalysisViewSet):

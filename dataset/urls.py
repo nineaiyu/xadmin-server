@@ -8,7 +8,12 @@ URL 前缀与 app 对齐：``/api/dataset/...``；Menu.path 权限点、
 
 from rest_framework.routers import SimpleRouter
 
-from dataset.views.analysis import ReportViewSet, ScreenTemplateViewSet, ScreenViewSet
+from dataset.views.analysis import (
+    ReportViewSet,
+    ScreenClipboardViewSet,
+    ScreenTemplateViewSet,
+    ScreenViewSet,
+)
 from dataset.views.dataset import DashboardViewSet as DataDashboardViewSet
 from dataset.views.dataset import DatasetViewSet
 from dataset.views.dform import DynamicFormViewSet
@@ -24,6 +29,8 @@ router.register("dashboards", DataDashboardViewSet, basename="dashboards")
 router.register("screens", ScreenViewSet, basename="screen")
 # 大屏模板（团队共享）：自由画布布局的可复用切片
 router.register("screen-templates", ScreenTemplateViewSet, basename="screen-template")
+# 云端剪贴板（按用户单槽：跨设备复制粘贴）
+router.register("screen-clipboard", ScreenClipboardViewSet, basename="screen-clipboard")
 router.register("reports", ReportViewSet, basename="report")
 # 动态表单
 router.register("dynamic-forms", DynamicFormViewSet, basename="dynamic-form")

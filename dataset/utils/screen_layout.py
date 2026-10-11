@@ -388,6 +388,22 @@ def normalize_screen_free_layout(raw: Any, dashboard_pks: Any, dataset_pks: Any 
     return {"design_w": design_w, "design_h": design_h, "panes": normalised}
 
 
+#: 模板历史版本保留数（ADR-090 D4）：超出裁剪最旧，避免版本表无限增长
+SCREEN_TEMPLATE_VERSION_KEEP = 10
+#: 模板分组名长度上限
+SCREEN_MAX_GROUP = 40
+
+
+def normalize_screen_clipboard(raw: Any, dashboard_pks: Any, dataset_pks: Any = ()) -> dict[str, Any]:
+    """归一化云端剪贴板载荷（``{design_w, design_h, panes}``，与自由画布同形）。
+
+    与模板的差异：**允许没有窗格**（空载荷 = 剪贴板被清空），因此不做「至少一个窗格」
+    的检查，只走同一份白名单与坐标校验。
+    """
+    layout = normalize_screen_free_layout(raw, dashboard_pks, dataset_pks)
+    return layout
+
+
 def normalize_screen_template(raw: Any, dashboard_pks: Any, dataset_pks: Any = ()) -> dict[str, Any]:
     """归一化大屏模板载荷（``{design_w, design_h, panes}``，与自由画布同形）。
 

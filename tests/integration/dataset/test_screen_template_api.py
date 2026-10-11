@@ -36,6 +36,8 @@ def template_urls():
         _make("partialUpdate:ScreenTemplate", detail + "$", "PATCH"),
         _make("destroy:ScreenTemplate", detail + "$", "DELETE"),
         _make("batchDestroy:ScreenTemplate", "api/dataset/screen-templates/batch-destroy$", "POST"),
+        _make("versions:ScreenTemplate", detail + "/versions$", "GET"),
+        _make("rollback:ScreenTemplate", detail + "/rollback$", "POST"),
     ]
 
 
@@ -191,3 +193,127 @@ class TestTemplateValidation:
         )
         assert response.status_code == 400
         assert not ScreenTemplate.objects.filter(name="引用不可见").exists()
+
+
+CLIPBOARD_URL = "/api/dataset/screen-clipboard"
+
+
+@pytest.fixture
+def clipboard_urls():
+    from system.models import Menu, MenuMeta
+
+    def _make(name, path, method):
+        meta = MenuMeta.objects.create(title=name)
+        return Menu.objects.create(
+            name=name, path=path, method=method, menu_type=Menu.MenuChoices.PERMISSION, meta=meta
+        )
+
+    detail = "api/dataset/screen-clipboard/(?P<pk>[^/.]+)"
+    return [
+        _make("list:ScreenClipboard", "api/dataset/screen-clipboard$", "GET"),
+        _make("create:ScreenClipboard", "api/dataset/screen-clipboard$", "POST"),
+        _make("retrieve:ScreenClipboard", detail + "$", "GET"),
+        _make("partialUpdate:ScreenClipboard", detail + "$", "PATCH"),
+        _make("destroy:ScreenClipboard", detail + "$", "DELETE"),
+    ]
+
+
+class TestTemplateVersions:
+    """模板版本历史与回滚（ADR-090 D4）：保存即记版、保留上限裁剪、回滚可逆。"""
+
+    def test_versions_recorded_and_pruned(self, auth_client, settings):
+        settings.SCREEN_TEMPLATE_VERSION_KEEP = 3
+        from dataset.views.analysis import _version_keep, snapshot_template_version
+
+        # 保留数允许 settings 覆盖（生产缺省 10，测试调小到 3 以便验证裁剪）
+        assert _version_keep() == 3
+
+        created = auth_client.post(
+            TEMPLATE_URL, {"name": "版0", "free_layout": {"panes": [_pane()]}}, format="json"
+        ).json()["data"]
+        template = ScreenTemplate.objects.get(pk=created["pk"])
+        assert template.versions.count() == 1
+
+        for index in range(1, 6):
+            template.name = f"版{index}"
+            template.save(update_fields=["name"])
+            snapshot_template_version(template)
+        # 保留最近 3 版：版本号最大的是最新
+        versions = list(template.versions.values_list("version", flat=True))
+        assert versions == [6, 5, 4]
+        assert template.versions.first().name == "版5"
+
+    def test_rollback_restores_and_records_new_version(self, auth_client):
+        created = auth_client.post(
+            TEMPLATE_URL,
+            {"name": "回滚前", "group": "甲组", "free_layout": {"panes": [_pane(text="旧")]}},
+            format="json",
+        ).json()["data"]
+        pk = created["pk"]
+        auth_client.patch(
+            f"{TEMPLATE_URL}/{pk}",
+            {"name": "回滚目标", "free_layout": {"panes": [_pane(text="新")]}},
+            format="json",
+        )
+
+        listed = auth_client.get(f"{TEMPLATE_URL}/{pk}/versions").json()
+        assert listed["code"] == 1000
+        versions = [row["version"] for row in listed["data"]]
+        assert versions == [2, 1]
+
+        rolled = auth_client.post(f"{TEMPLATE_URL}/{pk}/rollback", {"version": 1}, format="json").json()
+        assert rolled["code"] == 1000
+        assert rolled["data"]["name"] == "回滚前"
+        assert rolled["data"]["group"] == "甲组"
+        assert rolled["data"]["free_layout"]["panes"][0]["text"] == "旧"
+        # 回滚本身也记一版 → 可以再回滚回来
+        assert [row["version"] for row in auth_client.get(f"{TEMPLATE_URL}/{pk}/versions").json()["data"]] == [
+            3,
+            2,
+            1,
+        ]
+
+    def test_rollback_unknown_version_rejected(self, auth_client):
+        created = auth_client.post(
+            TEMPLATE_URL, {"name": "缺版本", "free_layout": {"panes": [_pane()]}}, format="json"
+        ).json()["data"]
+        res = auth_client.post(f"{TEMPLATE_URL}/{created['pk']}/rollback", {"version": 99}, format="json").json()
+        assert res["code"] == 1001
+
+
+class TestScreenClipboard:
+    """云端剪贴板（ADR-090 D4）：按用户单槽 upsert、只能看到自己的槽位。"""
+
+    def test_anonymous_rejected(self, api_client):
+        assert api_client.get(CLIPBOARD_URL).status_code == 401
+
+    def test_upsert_single_slot(self, auth_client, clipboard_urls):
+        first = auth_client.post(
+            CLIPBOARD_URL, {"free_layout": {"panes": [_pane(text="第一次")]}}, format="json"
+        ).json()
+        assert first["code"] == 1000
+        pk = first["data"]["pk"]
+
+        second = auth_client.post(
+            CLIPBOARD_URL, {"free_layout": {"panes": [_pane(text="第二次")]}}, format="json"
+        ).json()
+        assert second["code"] == 1000
+        assert second["data"]["pk"] == pk  # 同一个槽位（upsert）
+
+        rows = auth_client.get(CLIPBOARD_URL).json()["data"]["results"]
+        assert len(rows) == 1
+        assert rows[0]["free_layout"]["panes"][0]["text"] == "第二次"
+        assert (rows[0]["free_layout"]["design_w"], rows[0]["free_layout"]["design_h"]) == (1920, 1080)
+
+    def test_empty_payload_allowed_and_cleared(self, auth_client, clipboard_urls):
+        created = auth_client.post(CLIPBOARD_URL, {"free_layout": {}}, format="json").json()
+        assert created["code"] == 1000
+        pk = created["data"]["pk"]
+        assert auth_client.delete(f"{CLIPBOARD_URL}/{pk}").json()["code"] == 1000
+        assert auth_client.get(CLIPBOARD_URL).json()["data"]["results"] == []
+
+    def test_other_user_slot_invisible(self, auth_client, clipboard_urls):
+        auth_client.post(CLIPBOARD_URL, {"free_layout": {"panes": [_pane(text="我的")]}}, format="json")
+        other = UserInfo.objects.create_user(username="clip-other", password="x")
+        other_client = _client_for(other, clipboard_urls)
+        assert other_client.get(CLIPBOARD_URL).json()["data"]["results"] == []

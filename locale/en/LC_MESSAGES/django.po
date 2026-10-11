@@ -11313,3 +11313,47 @@ msgstr ""
 #, python-brace-format
 msgid "Invalid screen pane html url: {}"
 msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Group name is too long"
+msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Template version not found"
+msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Template rolled back"
+msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Group"
+msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Screen template version"
+msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Screen template versions"
+msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Screen clipboard"
+msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Screen clipboards"
+msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Template"
+msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Template folder/group name (empty = ungrouped)"
+msgstr ""
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Clipboard canvas: {design_w, design_h, panes}"
+msgstr ""

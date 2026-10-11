@@ -11340,3 +11340,47 @@ msgstr "窗格视频填充方式不合法：{}"
 #, python-brace-format
 msgid "Invalid screen pane html url: {}"
 msgstr "自定义 HTML 窗格只接受 http(s) 地址：{}"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Group name is too long"
+msgstr "分组名过长"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Template version not found"
+msgstr "模板版本不存在"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Template rolled back"
+msgstr "模板已回滚"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Group"
+msgstr "分组"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Screen template version"
+msgstr "大屏模板版本"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Screen template versions"
+msgstr "大屏模板版本"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Screen clipboard"
+msgstr "云端剪贴板"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Screen clipboards"
+msgstr "云端剪贴板"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Template"
+msgstr "模板"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Template folder/group name (empty = ungrouped)"
+msgstr "模板分组名（为空 = 未分组）"
+
+#: dataset/models/dataset.py dataset/serializers/analysis.py dataset/views/analysis.py
+msgid "Clipboard canvas: {design_w, design_h, panes}"
+msgstr "剪贴板画布：{design_w, design_h, panes}"
