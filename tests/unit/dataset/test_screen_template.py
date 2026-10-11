@@ -19,6 +19,7 @@ from dataset.serializers.analysis import ScreenTemplateSerializer
 from dataset.utils.screen_layout import (
     SCREEN_FREE_DEFAULT_H,
     SCREEN_FREE_DEFAULT_W,
+    SCREEN_MAX_GROUP,
     ScreenLayoutError,
     normalize_screen_template,
 )
@@ -154,3 +155,21 @@ class TestTemplateSerializer:
     def test_empty_panes_rejected(self):
         with pytest.raises(serializers.ValidationError):
             ScreenTemplateSerializer().validate_free_layout({"panes": []})
+
+
+class TestTemplateGroupValidation:
+    """模板分组名（ADR-090 D4）：去空白 + 长度上限，空 = 未分组。"""
+
+    def test_group_trimmed_and_defaulted(self):
+        serializer = ScreenTemplateSerializer()
+        assert serializer.validate_group("  甲组  ") == "甲组"
+        assert serializer.validate_group("") == ""
+        assert serializer.validate_group(None) == ""
+
+    def test_group_at_limit_kept(self):
+        value = "x" * SCREEN_MAX_GROUP
+        assert ScreenTemplateSerializer().validate_group(value) == value
+
+    def test_group_too_long_rejected(self):
+        with pytest.raises(serializers.ValidationError):
+            ScreenTemplateSerializer().validate_group("x" * (SCREEN_MAX_GROUP + 1))
