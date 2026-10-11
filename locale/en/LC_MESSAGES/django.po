@@ -11283,3 +11283,13 @@ msgstr ""
 
 #~ msgid "Map directory group DN/CN (case-insensitive) to platform role code"
 #~ msgstr "Map directory group DN/CN (case-insensitive) to platform role code"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane animation duration must be {}~{}: {}"
+msgstr ""
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane animation delay must be {}~{}: {}"
+msgstr ""

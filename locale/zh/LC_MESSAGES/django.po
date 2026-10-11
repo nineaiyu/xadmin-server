@@ -11310,3 +11310,13 @@ msgstr "测试标签"
 
 #~ msgid "Handled successfully"
 #~ msgstr "处置成功"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane animation duration must be {}~{}: {}"
+msgstr "窗格动画时长必须在 {}~{} 毫秒之间：{}"
+
+#: dataset/utils/screen_layout.py
+#, python-brace-format
+msgid "Screen pane animation delay must be {}~{}: {}"
+msgstr "窗格动画延迟必须在 {}~{} 毫秒之间：{}"

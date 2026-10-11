@@ -70,8 +70,13 @@ SCREEN_FREE_MAX_DESIGN_H = 4320
 #: 窗格旋转角度范围（度）：**视觉旋转**，不参与几何（吸附 / 框选 / 对齐仍按轴对齐盒）
 SCREEN_MIN_ROTATE = -180
 SCREEN_MAX_ROTATE = 180
-#: 入场动画（展示态一次性播放）；none 为缺省且不下发（载荷精简 + 旧版兼容）
+#: 入场动画；none 为缺省且不下发（载荷精简 + 旧版兼容）
 SCREEN_ANIMATIONS = ("none", "fade", "slide-up", "slide-down", "slide-left", "slide-right", "zoom-in")
+#: 动画时长 / 延迟（毫秒）：缺省值不下发（组件基线 = 320ms 无延迟）
+SCREEN_ANIMATION_DURATION_DEFAULT = 320
+SCREEN_ANIMATION_DELAY_DEFAULT = 0
+SCREEN_MIN_ANIMATION_MS = 0
+SCREEN_MAX_ANIMATION_MS = 5000
 #: 文本窗格格式：plain 缺省（不下发）/ rich（受限标记，前端先转义再套白名单渲染）
 SCREEN_TEXT_FORMATS = ("plain", "rich")
 
@@ -133,12 +138,39 @@ def _normalize_pane_body(
     if rotate:
         pane["rotate"] = rotate
 
-    # 入场动画：展示态一次性播放，none 为缺省不下发
+    # 入场动画：展示态播放；none 为缺省不下发
     animation = str(item.get("animation") or "none").strip() or "none"
     if animation not in SCREEN_ANIMATIONS:
         raise ScreenLayoutError(_("Invalid screen pane animation: {}").format(pane_id))
     if animation != "none":
         pane["animation"] = animation
+        # 时长 / 延迟 / 循环：只在真的配了动画时才有意义（none 时静默忽略，不落库）
+        duration = _as_int(
+            item.get("animation_duration", SCREEN_ANIMATION_DURATION_DEFAULT),
+            "animation_duration",
+        )
+        if not SCREEN_MIN_ANIMATION_MS <= duration <= SCREEN_MAX_ANIMATION_MS:
+            raise ScreenLayoutError(
+                _("Screen pane animation duration must be {}~{}: {}").format(
+                    SCREEN_MIN_ANIMATION_MS, SCREEN_MAX_ANIMATION_MS, pane_id
+                )
+            )
+        if duration != SCREEN_ANIMATION_DURATION_DEFAULT:
+            pane["animation_duration"] = duration
+        delay = _as_int(
+            item.get("animation_delay", SCREEN_ANIMATION_DELAY_DEFAULT),
+            "animation_delay",
+        )
+        if not SCREEN_MIN_ANIMATION_MS <= delay <= SCREEN_MAX_ANIMATION_MS:
+            raise ScreenLayoutError(
+                _("Screen pane animation delay must be {}~{}: {}").format(
+                    SCREEN_MIN_ANIMATION_MS, SCREEN_MAX_ANIMATION_MS, pane_id
+                )
+            )
+        if delay != SCREEN_ANIMATION_DELAY_DEFAULT:
+            pane["animation_delay"] = delay
+        if item.get("animation_loop"):
+            pane["animation_loop"] = True
 
     if pane_type == "dashboard":
         dashboard_pk = str(item.get("dashboard") or "").strip()

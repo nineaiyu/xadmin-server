@@ -95,6 +95,47 @@ class TestPaneExtras:
         panes = normalize_screen_template({"panes": [_free_pane(animation=animation)]}, [])["panes"]
         assert panes[0]["animation"] == animation
 
+    def test_animation_duration_delay_loop_only_with_animation(self):
+        """时长 / 延迟 / 循环：配了动画才落库，缺省值与 none 一律不下发。"""
+        panes = normalize_screen_template(
+            {
+                "panes": [
+                    _free_pane(
+                        animation="fade",
+                        animation_duration=800,
+                        animation_delay=200,
+                        animation_loop=True,
+                    ),
+                    _free_pane(pk="p2", animation="fade"),
+                    # none 时静默忽略（不因「配了时长却没动画」报错）
+                    _free_pane(pk="p3", animation="none", animation_duration=800, animation_loop=True),
+                ]
+            },
+            [],
+        )["panes"]
+        assert panes[0]["animation_duration"] == 800
+        assert panes[0]["animation_delay"] == 200
+        assert panes[0]["animation_loop"] is True
+        # 缺省 320ms / 0ms / 不循环 → 不下发（旧载荷字节不变）
+        assert "animation_duration" not in panes[1]
+        assert "animation_delay" not in panes[1]
+        assert "animation_loop" not in panes[1]
+        assert "animation_duration" not in panes[2]
+        assert "animation_loop" not in panes[2]
+
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [
+            ("animation_duration", -1),
+            ("animation_duration", 5001),
+            ("animation_delay", -1),
+            ("animation_delay", 5001),
+        ],
+    )
+    def test_animation_timing_range_guard(self, field, value):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_template({"panes": [_free_pane(animation="fade", **{field: value})]}, [])
+
 
 class TestTemplateSerializer:
     def test_shared_reference_visible_without_request_context(self):
