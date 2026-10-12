@@ -183,6 +183,111 @@ def seed_directory_scene():
     print("directory scene seeded (2 posts + members)")
 
 
+def seed_menu_decoration_scene():
+    """侧栏菜单装饰场景：徽标 / 分组 / 查询参数 / 菜单外页面高亮。
+
+    在既有真实页面上挂一组「E2E菜单演示」菜单（rank 靠后，位于侧栏底部，
+    同时充当「激活项自动滚入可视区」的素材）：
+
+    - 「基础功能」组：文本徽标与红点徽标各一项；
+    - 「高级功能」组：带查询参数（点击后 URL 应携带该参数）；
+    - 隐藏项「E2E详情页」（菜单不可见）：activePath 指向徽标菜单，
+      供「菜单外页面高亮指定菜单」用例直接访问（生产收录示例见
+      loadjson 中个人中心菜单的 active_path 配置）。
+    """
+    from identity.models import UserInfo
+    from system.models import Menu, MenuMeta
+
+    admin = UserInfo.objects.filter(username="xadmin").first()
+
+    def ensure_menu(
+        *,
+        name,
+        path,
+        title,
+        rank,
+        parent=None,
+        menu_type=Menu.MenuChoices.MENU,
+        component="",
+        **meta_extra,
+    ):
+        existing = Menu.objects.filter(name=name).first()
+        if existing:
+            return existing
+        meta = MenuMeta.objects.create(title=title, creator=admin, **meta_extra)
+        return Menu.objects.create(
+            name=name,
+            path=path,
+            component=component,
+            menu_type=menu_type,
+            rank=rank,
+            parent=parent,
+            meta=meta,
+            creator=admin,
+        )
+
+    root = ensure_menu(
+        name="E2EMenuDemo",
+        path="/e2e-menu-demo",
+        title="E2E菜单演示",
+        rank=999800,
+        menu_type=Menu.MenuChoices.DIRECTORY,
+        icon="ep:menu",
+        # 目录自身的红点：折叠态下唯一可见的徽标形态（子项未展开不渲染）
+        badge="1",
+        badge_type="dot",
+    )
+    ensure_menu(
+        name="E2EMenuBadge",
+        path="/e2e-menu-demo/badge",
+        component="system/notice/index",
+        title="E2E徽标菜单",
+        rank=999801,
+        parent=root,
+        icon="ep:notification",
+        badge="12",
+        group_name="基础功能",
+        group_rank=1,
+    )
+    ensure_menu(
+        name="E2EMenuDot",
+        path="/e2e-menu-demo/dot",
+        component="system/user/index",
+        title="E2E红点菜单",
+        rank=999802,
+        parent=root,
+        icon="ep:view",
+        badge="3",
+        badge_type="dot",
+        group_name="基础功能",
+        group_rank=1,
+    )
+    ensure_menu(
+        name="E2EMenuQuery",
+        path="/e2e-menu-demo/query",
+        component="system/role/index",
+        title="E2E查询菜单",
+        rank=999803,
+        parent=root,
+        icon="ep:files",
+        query="tab=e2e",
+        group_name="高级功能",
+        group_rank=2,
+    )
+    ensure_menu(
+        name="E2EMenuDetail",
+        path="/e2e-menu-demo/detail",
+        component="system/dept/index",
+        title="E2E详情页",
+        rank=999804,
+        parent=root,
+        icon="ep:document",
+        is_show_menu=False,
+        active_path="/e2e-menu-demo/badge",
+    )
+    print("menu decoration scene seeded (badge/group/query/activePath)")
+
+
 def disable_login_mfa_policy():
     """停用内置「非工作时间登录需二次验证」策略（22:00-06:00 全用户）。
 

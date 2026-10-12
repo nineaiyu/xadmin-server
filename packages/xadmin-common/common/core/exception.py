@@ -80,6 +80,8 @@ def common_exception_handler(exc: Any, context: Any) -> Any:
         set_rollback()
         # pop() 会改动异常自身、对空集合还会抛 KeyError：缺失时降级为通用文案
         protected = next(iter(exc.protected_objects), None)
+        # 单独成词的 data 在 zh 语言包有独立翻译（数据）；英文站点会显示 "other data"，
+        # 用通用词兜底即可，不把该词与「所有数据」等既有词条合并
         verbose_name = protected._meta.verbose_name if protected is not None else _("data")
         # HTTP 400 + 业务码 998：与同一处理器其它分支的 HTTP 语义对齐——原为 200，
         # 客户端错误被伪装成成功响应，网关/监控无法按状态码统计；前端全局兜底

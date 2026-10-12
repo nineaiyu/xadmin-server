@@ -104,7 +104,63 @@ class TestRoutesResponseCache:
         assert [child["name"] for child in children] == ["用户管理", "角色管理"]
         for child in children:
             assert child["meta"]["title"] == child["name"]
-            assert {"showLink", "keepAlive", "transition", "watermark"} <= set(child["meta"])
+            assert {
+                "showLink",
+                "keepAlive",
+                "transition",
+                "watermark",
+                "activePath",
+                "badge",
+                "badgeType",
+                "query",
+                "groupName",
+                "groupRank",
+            } <= set(child["meta"])
+
+    def test_sidebar_decoration_meta_passthrough(self, auth_client, _menu_tree):
+        """侧栏装饰类 meta（高亮路径 / 徽标 / 查询参数 / 分组）透传到路由 meta"""
+        child = Menu.objects.get(parent=_menu_tree, name="用户管理")
+        child.meta.active_path = "/system/user/index"
+        child.meta.badge = "12"
+        child.meta.badge_type = "dot"
+        child.meta.query = "status=pending&page=1"
+        child.meta.group_name = "基础设置"
+        child.meta.group_rank = 3
+        child.meta.save(update_fields=["active_path", "badge", "badge_type", "query", "group_name", "group_rank"])
+
+        result = payload(auth_client.get(ROUTES_URL))
+        children = {item["name"]: item for item in _fixture_group_children(result)}
+        meta = children["用户管理"]["meta"]
+        assert meta["activePath"] == "/system/user/index"
+        assert meta["badge"] == "12"
+        assert meta["badgeType"] == "dot"
+        assert meta["query"] == {"status": "pending", "page": "1"}
+        assert meta["groupName"] == "基础设置"
+        assert meta["groupRank"] == 3
+
+    def test_default_decoration_meta_is_empty(self, auth_client):
+        """未配置时下发中性值：徽标形态给默认 normal，其余可空字段给 null（前端零判断成本）"""
+        result = payload(auth_client.get(ROUTES_URL))
+        for child in _fixture_group_children(result):
+            meta = child["meta"]
+            assert meta["badgeType"] == "normal"
+            assert meta["activePath"] is None
+            assert meta["badge"] is None
+            assert meta["query"] is None
+            assert meta["groupName"] is None
+            assert meta["groupRank"] is None
+
+    def test_query_parsing_edge_cases(self, auth_client, _menu_tree):
+        """query 存储为 k=v&k2=v2，下发解析为对象：空值项保留、重复键后值生效、空串下发 null"""
+        child = Menu.objects.get(parent=_menu_tree, name="角色管理")
+        child.meta.query = "keyword=&tag=a&tag=b"
+        child.meta.save(update_fields=["query"])
+
+        result = payload(auth_client.get(ROUTES_URL))
+        children = {item["name"]: item for item in _fixture_group_children(result)}
+        assert children["角色管理"]["meta"]["query"] == {"keyword": "", "tag": "b"}
+        # fixture 另一条未配置 query -> null
+        assert children["用户管理"]["meta"]["query"] is None
 
     def test_menu_level_watermark_in_route_meta(self, auth_client, _menu_tree):
         """菜单级水印开关透传到路由 meta（前端据此在路径范围外置顶强制挂载）。"""

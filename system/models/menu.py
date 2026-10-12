@@ -65,6 +65,48 @@ class MenuMeta(DbAuditModel, DbUuidModel):
         verbose_name=_("Dynamic level"), default=0, help_text=_("Maximum number of dynamic routes that can be opened")
     )
 
+    active_path = models.CharField(
+        verbose_name=_("Active path"),
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text=_("Menu path to highlight when visiting a page that is not in the menu tree"),
+    )
+    badge = models.CharField(
+        verbose_name=_("Menu badge"),
+        max_length=32,
+        null=True,
+        blank=True,
+        help_text=_("Badge text shown next to the menu title; numbers greater than 99 show as 99+"),
+    )
+    badge_type = models.CharField(
+        verbose_name=_("Badge type"),
+        max_length=16,
+        default="normal",
+        choices=[("normal", _("Normal")), ("dot", _("Dot"))],
+        help_text=_("Normal shows the badge text, dot shows only a red dot"),
+    )
+    query = models.CharField(
+        verbose_name=_("Menu query"),
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text=_("Query string carried when the menu is clicked, e.g. status=pending&page=1"),
+    )
+    group_name = models.CharField(
+        verbose_name=_("Menu group name"),
+        max_length=64,
+        null=True,
+        blank=True,
+        help_text=_("Sibling menus sharing the same group name are rendered under a group title"),
+    )
+    group_rank = models.IntegerField(
+        verbose_name=_("Menu group rank"),
+        null=True,
+        blank=True,
+        help_text=_("Order of the group among its sibling groups, smaller first"),
+    )
+
     class Meta:
         verbose_name = _("Menu meta")
         verbose_name_plural = verbose_name

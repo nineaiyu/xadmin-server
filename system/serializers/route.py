@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/16/2024
 from typing import Any
+from urllib.parse import parse_qsl
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -34,6 +35,12 @@ class RouteMetaSerializer(ModelSerializer):
             "dynamicLevel",
             "fixedTag",
             "watermark",
+            "activePath",
+            "badge",
+            "badgeType",
+            "query",
+            "groupName",
+            "groupRank",
         ]
 
     showParent = serializers.BooleanField(source="is_show_parent", read_only=True, label=_("Show parent menu"))
@@ -56,6 +63,22 @@ class RouteMetaSerializer(ModelSerializer):
     dynamicLevel = serializers.IntegerField(source="dynamic_level", read_only=True, label=_("Dynamic level"))
     # 菜单级水印开关：置顶「页面强制挂载」，与基本设置的路径前缀范围是或关系
     watermark = serializers.BooleanField(read_only=True, label=_("Page watermark"))
+
+    # 菜单外页面（详情页等）高亮指定菜单
+    activePath = serializers.CharField(source="active_path", read_only=True, label=_("Active path"))
+    badge = serializers.CharField(read_only=True, label=_("Menu badge"))
+    badgeType = serializers.CharField(source="badge_type", read_only=True, label=_("Badge type"))
+
+    query = serializers.SerializerMethodField()
+
+    def get_query(self, obj: Any) -> Any:
+        """查询参数以 ``k=v&k2=v2`` 存储，下发时解析为对象；空值下发 null（前端不附加 query）"""
+        if not obj.query:
+            return None
+        return dict(parse_qsl(obj.query, keep_blank_values=True))
+
+    groupName = serializers.CharField(source="group_name", read_only=True, label=_("Menu group name"))
+    groupRank = serializers.IntegerField(source="group_rank", read_only=True, label=_("Menu group rank"))
 
 
 class RouteSerializer(BaseModelSerializer):

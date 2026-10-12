@@ -25,6 +25,7 @@ from e2e_seed_scenes import (  # noqa: E402
     disable_login_mfa_policy,
     seed_demo_book_scene,
     seed_directory_scene,
+    seed_menu_decoration_scene,
     seed_monitor_scene,
     seed_oauth_im_provider,
     seed_periodic_task,
@@ -330,6 +331,9 @@ def main() -> None:
 
     # ---- 通讯录场景：岗位清单与成员（按岗位视角的真实数据）----
     seed_directory_scene()
+
+    # ---- 侧栏菜单装饰场景：徽标 / 分组 / 查询参数 / 菜单外页面高亮 ----
+    seed_menu_decoration_scene()
 
     # ---- 登录辅助安全项：非工作时间 MFA 策略会让夜间跑批的登录被拦截 ----
     disable_login_mfa_policy()

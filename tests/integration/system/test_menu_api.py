@@ -73,6 +73,39 @@ class TestMenuCrudSmoke:
         assert resp.data["data"]["meta"]["watermark"] is True
         assert Menu.objects.get(pk=pk).meta.watermark is True
 
+    def test_patch_meta_sidebar_decoration(self, auth_client):
+        """侧栏装饰字段（高亮路径/徽标/查询参数/分组）随 meta 部分更新持久化。"""
+        pk = _create_menu(auth_client)
+        resp = auth_client.patch(
+            f"{MENU_URL}/{pk}",
+            {
+                "meta": {
+                    "active_path": "/system/user/index",
+                    "badge": "8",
+                    "badge_type": "dot",
+                    "query": "status=pending",
+                    "group_name": "基础设置",
+                    "group_rank": 2,
+                }
+            },
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        meta = Menu.objects.get(pk=pk).meta
+        assert meta.active_path == "/system/user/index"
+        assert meta.badge == "8"
+        assert meta.badge_type == "dot"
+        assert meta.query == "status=pending"
+        assert meta.group_name == "基础设置"
+        assert meta.group_rank == 2
+
+    def test_badge_type_defaults_to_normal(self, auth_client):
+        """徽标形态默认 normal：仅配徽标文本时前端按文本徽标渲染。"""
+        pk = _create_menu(auth_client, name="badge-default-menu")
+        assert Menu.objects.get(pk=pk).meta.badge_type == "normal"
+        # 详情接口按项目 choices 口径下发 {value,label}（与 menu_type / method 同形）
+        assert auth_client.get(f"{MENU_URL}/{pk}").data["data"]["meta"]["badge_type"]["value"] == "normal"
+
     def test_filter_by_name(self, auth_client):
         _create_menu(auth_client, name="system-user", title="用户管理")
         _create_menu(auth_client, name="system-role", title="角色管理")
