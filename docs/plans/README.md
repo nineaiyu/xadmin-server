@@ -18,6 +18,7 @@
 | [system-services服务层下沉-2026.10.md](system-services服务层下沉-2026.10.md) | **system app 服务层下沉映射清单**：`system/services.py` 转包（契约门面 + token_issue / open_oauth / auth_login / file 四个服务子模块），OAuth 引擎、登录策略流、令牌签发三处统一、文件统计与预览状态机、message 视图编排的逐项归位与行为零变化保证点 |
 | [system四域切分映射-2026.10.md](system四域切分映射-2026.10.md) | **system app 四域切分映射清单（Phase C）**：identity / file / audit / task 四域独立成 app 的模型/视图/序列化器/路由/任务/通知/信号逐文件映射，清库重建口径下的全量迁移重建（identity 0001 真实建表 + trgm 扩展保障 + 跨域 M2M 推迟补加）与契约面重组 |
 | [导出链路统一与杂项归位-2026.10.md](导出链路统一与杂项归位-2026.10.md) | **导出链路统一与杂项归位映射清单（Phase D+E）**：三套导出链路（视图动作 / 任务重放 / 定时报表）统一为 task 域导出服务的 MIME 单源与产物落库/进度/取消协议，顶层 utils 更名 ops、seed_demo 条件注册独立 app、common 非框架内容（sdk 适配器 / generate_crud / Monitor 模型）拆出 integrations/devtools/system 的逐项映射与行为零变化保证点 |
+| [vben-对标六期任务书-2026.10.md](vben-对标六期任务书-2026.10.md) | **vben 对标第六期 · 设计体系六维度系统梳理与迁移**：UI 组件/布局、动效微交互、排版、色彩令牌、响应式主题、复用组件六维全量调研（✅已对齐/🔶需补/➖不做逐项判定）+ 6 项补漏任务（@theme 半径间距字号映射补全 / `--pure-*` 残留清零 / animate.css 裁剪 / 表单校验滚动定位 / 弹层 payload / merge·unique 收敛）的迁移方案、任务拆解排期与验收标准 |
 
 ## 历史归档（archive/，15 份）
 
