@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
 from django.db.models.aggregates import Avg
@@ -98,8 +99,9 @@ class ServerPerformanceMessage(SystemMessage):
         super().publish(is_async=is_async)
 
     @classmethod
-    def gen_test_msg(cls) -> None:
-        pass
+    def gen_test_msg(cls) -> Any:
+        """样例：一条监控阈值告警（供模板预览与「代码默认内容」展示）。"""
+        return cls([(SimpleNamespace(name="CPU"), ["usage 92% >= 90%"])])
 
 
 class ServerPerformanceCheckUtil:
@@ -273,6 +275,11 @@ class ExportDataMessage(TaskMessage, UserMessage):
         self.task = task
         self.subject = _("Export {} data {} message").format(self.task.get("task_name"), self.task.get("status"))
 
+    @classmethod
+    def gen_test_msg(cls) -> Any:
+        """样例：导出任务结果通知（供模板预览与「代码默认内容」展示）。"""
+        return cls(cls.get_test_user(), {"task_name": "demo_task", "status": _("Success")})
+
 
 @register_message
 class ImportDataMessage(TaskMessage, UserMessage):
@@ -285,6 +292,11 @@ class ImportDataMessage(TaskMessage, UserMessage):
         self.task = task
         self.subject = _("Import {} data {} message").format(self.task.get("view_doc"), self.task.get("status"))
 
+    @classmethod
+    def gen_test_msg(cls) -> Any:
+        """样例：导入任务结果通知（供模板预览与「代码默认内容」展示）。"""
+        return cls(cls.get_test_user(), {"view_doc": "demo_import.xlsx", "status": _("Success")})
+
 
 @register_message
 class BatchDeleteDataMessage(TaskMessage, UserMessage):
@@ -296,3 +308,8 @@ class BatchDeleteDataMessage(TaskMessage, UserMessage):
         super().__init__(user)
         self.task = task
         self.subject = _("Batch delete {} data {} message").format(self.task.get("view_doc"), self.task.get("status"))
+
+    @classmethod
+    def gen_test_msg(cls) -> Any:
+        """样例：批量删除任务结果通知（供模板预览与「代码默认内容」展示）。"""
+        return cls(cls.get_test_user(), {"view_doc": "demo_model", "status": _("Success")})
