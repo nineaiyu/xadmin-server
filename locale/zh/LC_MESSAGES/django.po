@@ -11240,6 +11240,10 @@ msgstr "未知配置项"
 msgid "This config is managed by administrators"
 msgstr "该配置由管理员统一管理，请在「用户配置」管理页调整"
 
+#: system/views/user/configs.py:141
+msgid "Only administrators can change site-wide appearance settings"
+msgstr "站点级外观配置仅管理员可修改"
+
 #: task/models/export.py:27 task/models/import_.py:26 task/models/task.py:47
 msgid "Waiting"
 msgstr "等待中"

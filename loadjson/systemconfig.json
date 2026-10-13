@@ -82,6 +82,7 @@
         "Weak": false,
         "Theme": "light",
         "Layout": "vertical",
+        "Title": "xAdmin",
         "AuthPageLayout": "panel-left",
         "ThemeColor": "light",
         "Locale": "zh",

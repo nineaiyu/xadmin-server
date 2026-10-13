@@ -11149,6 +11149,10 @@ msgstr ""
 msgid "This config is managed by administrators"
 msgstr ""
 
+#: system/views/user/configs.py:141
+msgid "Only administrators can change site-wide appearance settings"
+msgstr ""
+
 #: task/models/export.py:27 task/models/import_.py:26 task/models/task.py:47
 msgid "Waiting"
 msgstr ""
