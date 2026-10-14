@@ -34,7 +34,7 @@ from typing import Any
 from django.core.management.base import BaseCommand
 
 from common.core.config import SysConfig
-from system.models import Menu, MenuMeta
+from system.models import Menu, MenuMeta, ModelLabelField
 
 # 固定 pk 段（与其他演示数据的 6eed 段区分）
 DIR_PK = "6eed000c-0000-4000-8000-000000000001"
@@ -212,12 +212,18 @@ class Command(BaseCommand):
                 "meta": menu_meta,
             },
         )
+        # 数据端点权限点绑定 Book 模型：角色页可据此配置字段白名单，字段权限为
+        # fail-closed（无白名单 = 列表/详情输出空对象）。changeHistory 是页面级
+        # 权限（查操作日志端点），不绑定业务模型。
+        book_root = ModelLabelField.objects.filter(
+            name="demo.book", parent__isnull=True, field_type=ModelLabelField.FieldChoices.ROLE
+        ).first()
         for index, (action, method, path, title) in enumerate(PERMISSION_PLAN, start=1):
             meta, _ = MenuMeta.objects.update_or_create(
                 pk=f"{PERMISSION_META_PK_PREFIX}{index:02d}",
                 defaults={"title": title, "icon": "", "is_show_menu": True},
             )
-            Menu.all_objects.update_or_create(
+            menu, _ = Menu.all_objects.update_or_create(
                 pk=f"{PERMISSION_PK_PREFIX}{index:02d}",
                 defaults={
                     "parent_id": MENU_PK,
@@ -232,6 +238,8 @@ class Command(BaseCommand):
                     "meta": meta,
                 },
             )
+            if book_root is not None and action != "changeHistory":
+                menu.model.set([book_root])
         self.stdout.write(f"demo book menu ready: {MENU_PATH}（{len(PERMISSION_PLAN)} 个权限点）")
 
     # ---------------------------------------------------------------- 示例数据 / 周期任务

@@ -13,7 +13,34 @@
       "frequency": "daily",
       "send_time": "08:00",
       "weekday": 0,
-      "recipients": ["admin@example.com"],
+      "recipients": [
+        "admin@example.com"
+      ],
+      "is_active": false,
+      "last_run_at": null,
+      "last_status": "",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null
+    }
+  },
+  {
+    "model": "dataset.report",
+    "pk": "5eed0004-0000-4000-8000-000000000005",
+    "fields": {
+      "name": "示例-表单提交趋势",
+      "dataset": "5eed0001-0000-4000-8000-000000000002",
+      "mode": "aggregate",
+      "group_by": "created_time",
+      "metric": "count",
+      "date_trunc": "day",
+      "value_field": "",
+      "frequency": "weekly",
+      "send_time": "09:00",
+      "weekday": 1,
+      "recipients": [
+        "admin@example.com"
+      ],
       "is_active": false,
       "last_run_at": null,
       "last_status": "",

@@ -21,7 +21,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from identity.models import UserInfo
-from system.models import Menu, MenuMeta, ModelLabelField
+from system.models import FieldPermission, Menu, MenuMeta, ModelLabelField
 from system.services import permission_sync as sync
 from system.services.modelfield import sync_model_field
 
@@ -41,6 +41,11 @@ class Command(BaseCommand):
             help="新建权限点自动授予「已拥有同模块权限点与父菜单」的角色（默认不授予）",
         )
         parser.add_argument("--update-seed", action="store_true", help="把变更合并回 loadjson 种子文件")
+        parser.add_argument(
+            "--fix-field-permissions",
+            action="store_true",
+            help="为「已获模型权限点但无字段白名单」的角色组合补齐全字段白名单（只补缺口）",
+        )
         parser.add_argument("--default-parent", default="", help="无法自动归属时的兜底父菜单 name（默认报告并跳过）")
 
     def handle(self, *args: Any, **options: Any) -> None:
@@ -51,6 +56,11 @@ class Command(BaseCommand):
             self._sync_fields(dry_run)
         if not options["skip_permissions"]:
             self._sync_permissions(options, user, dry_run)
+        elif options["fix_field_permissions"]:
+            # 与权限点扫描解耦的独立入口：迁移/升级后只想补字段白名单时免全量扫描
+            self._report_and_fill_field_permissions(options, dry_run)
+            if options["update_seed"] and not dry_run:
+                self._update_field_permission_seed()
         if dry_run:
             self.stdout.write(self.style.WARNING("dry-run：未写入任何数据"))
 
@@ -117,18 +127,7 @@ class Command(BaseCommand):
         for perm in duplicates[:DETAIL_LIMIT]:
             self.stdout.write(self.style.WARNING(f"  ~ 重复权限点：{perm.name} | {perm.path} | {perm.method}"))
 
-        field_gaps = sync.audit_field_permissions()
-        if field_gaps:
-            self.stdout.write(
-                self.style.WARNING(
-                    f"[字段权限] {len(field_gaps)} 个（角色, 权限点）组合未配置字段权限："
-                    "这些角色在该接口上输出空对象（零字段 fail-closed，去角色页配置字段白名单）"
-                )
-            )
-            for role, menu in field_gaps[:DETAIL_LIMIT]:
-                self.stdout.write(
-                    self.style.WARNING(f"  ~ {role.name} | {menu.name} | {menu.method or '-'} {menu.path}")
-                )
+        self._report_and_fill_field_permissions(options, dry_run)
 
         wide_manager = sync.audit_wide_manager_grants()
         if wide_manager:
@@ -161,20 +160,57 @@ class Command(BaseCommand):
 
         if options["update_seed"]:
             # 回写范围 = 新增 + 方法修正 + 绑定校正（三类变更都必须落盘，否则下次
-            # load_init_json 会用旧种子把它们覆盖回去）
-            self._update_seed(created, [fix.menu for fix in fixes], method_fixed)
+            # load_init_json 会用旧种子把它们覆盖回去）+ 字段权限补齐
+            self._update_seed(created, [fix.menu for fix in fixes], method_fixed, options["fix_field_permissions"])
+
+    # ------------------------------------------------------------------ 字段权限
+
+    def _report_and_fill_field_permissions(self, options: Any, dry_run: Any) -> None:
+        """审计（并可选补齐）「已获模型权限点但无字段白名单」的角色组合。
+
+        字段权限为 fail-closed 的零字段口径：缺口组合的接口输出空对象（列表/详情
+        整块空白）。默认只报告（把静默空输出变成可见告警）；
+        ``--fix-field-permissions`` 才按「权限点绑定模型全字段」补齐，且不改写
+        管理员在角色页已有的收敛配置。
+        """
+        field_gaps = sync.audit_field_permissions()
+        if field_gaps:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"[字段权限] {len(field_gaps)} 个（角色, 权限点）组合未配置字段权限："
+                    "这些角色在该接口上输出空对象（零字段 fail-closed，去角色页配置字段白名单）"
+                )
+            )
+            for role, menu in field_gaps[:DETAIL_LIMIT]:
+                self.stdout.write(
+                    self.style.WARNING(f"  ~ {role.name} | {menu.name} | {menu.method or '-'} {menu.path}")
+                )
+        if options["fix_field_permissions"] and not dry_run and field_gaps:
+            filled = sync.fill_field_permissions()
+            self.stdout.write(
+                f"[字段权限] 已补齐 {len(filled)} 个（角色, 权限点）组合的全字段白名单（已有非空配置未改写）"
+            )
 
     # ------------------------------------------------------------------ 种子
 
-    def _update_seed(self, created_menus: Any, fixed_menus: Any, method_fixed: Any = None) -> None:
+    def _update_seed(
+        self,
+        created_menus: Any,
+        fixed_menus: Any,
+        method_fixed: Any = None,
+        update_field_permissions: Any = False,
+    ) -> None:
         root = Path(settings.PROJECT_DIR) / "loadjson"
         menus = {menu.pk: menu for menu in [*created_menus, *fixed_menus, *(method_fixed or [])]}
-        # 库内新增但种子缺失的权限点一并补写（多次执行间也能收敛，如先执行修复再补种子）
+        # 库内新增但种子缺失的权限点一并补写（多次执行间也能收敛，如先执行修复再补种子）。
+        # 限定「父菜单也在种子中」：父菜单不落种子 = 运行时模块自建（演示/插件等，如
+        # demo book 的 6eed 段权限点），其权限点由模块自身的种子命令维护，不进 loadjson。
         seed_pks = sync.seed_entry_pks(root / "menu.json")
         for menu in Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, deleted_at__isnull=True).exclude(
             pk__in=seed_pks
         ):
-            menus.setdefault(menu.pk, menu)
+            if menu.parent_id and str(menu.parent_id) in seed_pks:
+                menus.setdefault(menu.pk, menu)
         if menus:
             entries = sync.dump_entries(Menu, list(menus.values()))
             meta_entries = sync.dump_entries(MenuMeta, [menu.meta for menu in menus.values()])
@@ -186,4 +222,30 @@ class Command(BaseCommand):
         )
         self.stdout.write(
             f"[种子] modellabelfield.json {sync.merge_seed_file(root / 'modellabelfield.json', field_entries)}"
+        )
+
+        if update_field_permissions:
+            self._update_field_permission_seed()
+
+    def _update_field_permission_seed(self) -> None:
+        """字段权限按「种子内角色 × 种子内权限点」整角色回写。
+
+        不依赖本次是否产生补齐（补齐结果必须落盘，否则下次 load_init_json 用旧
+        白名单覆盖回缺口）。代码兜底的内置角色（SystemAdmin 等）不在 userrole.json
+        内，不回写；运行时模块自建的权限点（demo/插件）不在 menu.json 内，
+        其白名单由模块自身的种子命令维护。
+        """
+        from identity.services import UserRole
+
+        root = Path(settings.PROJECT_DIR) / "loadjson"
+        seed_role_pks = sync.seed_entry_pks(root / "userrole.json")
+        seed_menu_pks = sync.seed_entry_pks(root / "menu.json")
+        seeded_roles = UserRole.objects.filter(pk__in=seed_role_pks)
+        fp_entries = sync.dump_entries(
+            FieldPermission,
+            FieldPermission.objects.filter(role__in=seeded_roles, menu_id__in=seed_menu_pks),
+            exclude_fields=("created_time", "updated_time"),
+        )
+        self.stdout.write(
+            f"[种子] fieldpermission.json {sync.merge_seed_file(root / 'fieldpermission.json', fp_entries)}"
         )

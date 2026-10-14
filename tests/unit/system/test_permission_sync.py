@@ -16,8 +16,9 @@ class TestUrlSampling:
         assert sync.url_to_sample("api/identity/user$") == "/api/identity/user"
 
     def test_path_whitelisted(self):
-        # 登录族在白名单内（任意方法），异步导出不在
-        assert sync.path_whitelisted("/api/identity/login", "POST")
+        # 登出与个人凭证端点在白名单内（任意方法），异步导出不在
+        # （登录端点自带匿名权限类，不登记白名单）
+        assert sync.path_whitelisted("/api/identity/logout", "POST")
         assert sync.path_whitelisted("/api/identity/personal-access-tokens", "GET")
         assert not sync.path_whitelisted("/api/identity/user/export-async", "POST")
 

@@ -15,7 +15,14 @@
 对外导入路径为 ``system.services.permission_sync``（服务型模块，随服务层下沉归位）。
 """
 
-from .apply import apply_binding_fixes, apply_plans, grant_to_roles, plan_binding_fixes
+from .apply import (
+    apply_binding_fixes,
+    apply_plans,
+    fill_field_permissions,
+    grant_to_roles,
+    model_field_nodes,
+    plan_binding_fixes,
+)
 from .audit import audit_field_permissions, audit_permission_menus, audit_wide_manager_grants
 from .constants import (
     AUDIT_KNOWN_DUPLICATES,
@@ -67,10 +74,12 @@ __all__ = [
     "detect_indent",
     "dump_entries",
     "ensure_urlconf_loaded",
+    "fill_field_permissions",
     "find_covering",
     "grant_to_roles",
     "load_permission_menus",
     "merge_seed_file",
+    "model_field_nodes",
     "path_whitelisted",
     "plan_binding_fixes",
     "requires_permission",

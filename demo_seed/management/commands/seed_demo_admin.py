@@ -36,7 +36,8 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from identity.models import DeptInfo, UserInfo, UserRole
-from system.models import Menu
+from system.models import FieldPermission, Menu
+from system.services.permission_sync import fill_field_permissions
 
 #: 演示账号：用户名/密码/昵称。用户名固定 admin（README 承诺对外口径），
 #: 由数据库自增 pk 承载（UserInfo 主键为自增整型，非 UUID）。
@@ -55,16 +56,39 @@ ADMIN_DEPT_CODES = ("demo", "demo_rd")
 #: 演示账号额外补充的页面：loadjson 的「演示模式」角色偏系统管理面，缺业务/
 #: 分析/AI 页；这里补上「有演示数据可看」的页面，让 admin 能最大体验系统。
 #: 这些页面下引出的破坏性写操作同样会被下面统一裁剪。
+#: 页面全量对照内置演示数据（seed_demo_* 家族产出）挑选，不含凭据管理/模块裁剪/
+#: 系统设置/密钥配置等敏感面。
 EXTRA_PAGE_PATHS = (
+    # 审批：内置流程定义、演示实例、轻量审批单、演示委托
     "/approval/index",
     "/approval/instance/index",
     "/approval/leave/index",
+    "/approval/flow/index",
+    "/approval/delegation/index",
+    # 动态表单：内置示例表单、表单数据与我的填报
+    "/form-collection/data/index",
+    "/form-collection/designer/index",
     "/form-collection/my/index",
-    "/integration/ai/index",
-    "/integration/knowledge/index",
+    # 数据分析：内置示例数据集/看板/报表/大屏
     "/analysis/dataset/index",
     "/analysis/dashboard/index",
+    "/analysis/report/index",
     "/analysis/screen/index",
+    # 集成：AI 助手、知识库、Webhook 订阅与投递、开放平台应用
+    "/integration/ai/index",
+    "/integration/knowledge/index",
+    "/integration/subscription/index",
+    "/integration/delivery/index",
+    "/integration/api-app/index",
+    # 系统管理与运营：字典/标签/导出/脱敏/监控/任务日志
+    "/system/dict/index",
+    "/system/tag/index",
+    "/system/export/index",
+    "/system/mask/index",
+    "/system/monitor/index",
+    "/system/celery/logs/index",
+    # 官方示例（demo 模块启用时才有该页面）
+    "/demo/book/index",
 )
 
 #: 精确摘除的权限码：单独列出是因为它们**不是**删除类也非受管模型写操作，
@@ -92,7 +116,8 @@ DENY_PERMISSIONS = {
 DENY_PREFIXES = ("batchDestroy:", "importData:", "resetPassword:", "syncRepo:", "buildEmbeddings:")
 
 #: 定义类模型：其 create/update 属于「改配置」（数据集/看板/大屏/报表/知识库/
-#: AI 供应商与配置），演示账号只保留查看与查询。
+#: AI 供应商与配置/表单与流程定义/字典与脱敏规则/Webhook 与应用配置），
+#: 演示账号只保留查看与查询——改配置会连带影响其他演示者的可见数据面。
 CONFIG_MODELS = {
     "DataDataset",
     "DataDashboard",
@@ -102,6 +127,15 @@ CONFIG_MODELS = {
     "AiProfile",
     "AiAssistantConfig",
     "AiMcp",
+    "ScreenTemplate",
+    "ScreenClipboard",
+    "FormDesigner",
+    "SystemApprovalFlow",
+    "WebhookSubscription",
+    "IntegrationApiApp",
+    "SystemDataDict",
+    "SystemDataMaskRule",
+    "ApprovalDelegation",
 }
 WRITE_ACTIONS = {"create", "partialUpdate", "update"}
 
@@ -149,6 +183,7 @@ class Command(BaseCommand):
 
         role = self._ensure_role_menus()
         self._ensure_admin(role)
+        self._ensure_field_permissions(role)
         self.stdout.write(self.style.SUCCESS("seed_demo_admin done"))
 
     # ---------------------------------------------------------------- 角色菜单（数据面裁剪）
@@ -194,6 +229,39 @@ class Command(BaseCommand):
             # 种子菜单不在库中（测试库/未跑 load_init_json）：不把角色菜单清空
             return
         role.menu.set(existing)
+
+    # ---------------------------------------------------------------- 字段权限（白名单补齐）
+
+    def _ensure_field_permissions(self, role: UserRole | None) -> None:
+        """补齐角色「已授权权限点 × 绑定模型全字段」的字段白名单缺口（幂等）。
+
+        字段权限为 fail-closed 的零字段口径：角色在某权限点上没有非空白名单时，
+        接口输出空对象，前端列表/详情整块空白。演示角色菜单横跨系统管理面与业务/
+        分析/AI 页，白名单依赖种子静态列举，角色菜单新增页面后必然漏配——这里按
+        缺口自动补齐，保证演示账号打开任何已授权页面都有字段展示。
+        """
+        if role is None:
+            return
+        filled = fill_field_permissions(roles=[role])
+        self.stdout.write(f"demo role field permissions: filled {len(filled)} missing (role, menu) pairs")
+
+    def _field_permission_seed_menus(self, role: UserRole) -> set[Any]:
+        """读取 loadjson 种子中该角色的字段权限菜单主键（clean 回滚依据）。"""
+        path = os.path.join(settings.PROJECT_DIR, "loadjson", "fieldpermission.json")
+        try:
+            with open(path, encoding="utf-8") as fp:
+                rows = json.load(fp)
+        except (OSError, ValueError):
+            return set()
+        role_pk = str(role.pk)
+        return {row["fields"]["menu"] for row in rows if str(row["fields"].get("role")) == role_pk}
+
+    def _prune_role_field_permissions(self, role: UserRole) -> None:
+        """回滚字段权限到种子口径：删除种子未声明的补齐项（保留种子既有配置）。"""
+        seed_menus = self._field_permission_seed_menus(role)
+        removed = FieldPermission.objects.filter(role=role).exclude(menu_id__in=seed_menus).delete()[0]
+        if removed:
+            self.stdout.write(f"pruned demo role field permissions: {removed}")
 
     # ---------------------------------------------------------------- 演示账号
 
@@ -257,4 +325,5 @@ class Command(BaseCommand):
         role = self._demo_role()
         if role is not None:
             self._restore_role_menus(role)
+            self._prune_role_field_permissions(role)
             self.stdout.write("restored demo role menus from seed")

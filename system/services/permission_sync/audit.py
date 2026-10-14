@@ -8,8 +8,10 @@ from typing import Any
 from .constants import AUDIT_KNOWN_DUPLICATES, AUDIT_SKIP_PREFIXES
 
 
-def audit_field_permissions() -> Any:
+def audit_field_permissions(roles: Any = None) -> Any:
     """报告「角色已获模型权限点、但未配置字段权限」的组合（只报告不落库）。
+
+    ``roles`` 限定角色范围（默认全部启用角色），供单角色补齐场景复用同一判定口径。
 
     字段权限是 **fail-closed 的零字段口径**：某 (角色, 菜单) 没有字段白名单（无
     FieldPermission 行，或行内字段为空）时，该角色在这些接口上拿到的字段集合为空——
@@ -33,7 +35,10 @@ def audit_field_permissions() -> Any:
     # 行内字段为空的 FieldPermission 与"没有行"等价（都产出空白名单），一并计入缺口
     configured = set(FieldPermission.objects.filter(field__isnull=False).values_list("role_id", "menu_id").distinct())
     items = []
-    for role in UserRole.objects.filter(is_active=True).prefetch_related("menu"):
+    role_queryset = UserRole.objects.filter(is_active=True).prefetch_related("menu")
+    if roles is not None:
+        role_queryset = role_queryset.filter(pk__in=[role.pk for role in roles])
+    for role in role_queryset:
         for menu in role.menu.all():
             if menu.pk in model_menu_pks and (role.pk, menu.pk) not in configured:
                 items.append((role, menu))

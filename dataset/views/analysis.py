@@ -13,6 +13,7 @@
 from typing import Any
 
 from django.conf import settings
+from django.core.exceptions import FieldDoesNotExist, FieldError
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -58,12 +59,32 @@ _EDIT_DENY = "Only the creator can modify it"
 
 
 def _visible_queryset(viewset: Any) -> Any:
-    """两档可见性：personal 仅创建者；shared 全员（superuser 绕过）。"""
+    """两档可见性：personal 仅创建者；shared 全员（superuser 绕过）。
+
+    ``visibility`` 是数据集 / 看板 / 大屏的共享维度；报表等无该字段的资源配置
+    不做可见性收敛（定义类资源本就豁免行级数据权限，写保护由 ``_creator_guard``
+    承担）——不可无条件按 ``visibility`` 过滤，否则非超管访问该类资源直接 500。
+    """
     queryset = viewset.queryset
     user = viewset.request.user
     if getattr(user, "is_superuser", False):
         return queryset
+    if not _supports_visibility(queryset.model):
+        return queryset
     return queryset.filter(Q(visibility="shared") | Q(creator=user))
+
+
+def _supports_visibility(model: Any) -> bool:
+    """模型是否具备可见性维度（`visibility` 字段）。
+
+    ``_meta.get_field`` 对缺失字段抛 ``FieldDoesNotExist``（不是 ``FieldError``
+    的子类），两者都要纳入兜底。
+    """
+    try:
+        model._meta.get_field("visibility")
+    except (FieldError, FieldDoesNotExist):
+        return False
+    return True
 
 
 def _creator_guard(request: Any, instance: Any) -> Any:

@@ -396,3 +396,25 @@ def dashboard_factory(superuser):
         return Dashboard.objects.create(name=name, creator=superuser, visibility="shared")
 
     return _make
+
+
+class TestReportListWithoutVisibilityDimension:
+    """报表无 ``visibility`` 字段：非超管列表不得按 visibility 过滤（FieldError 500 回归）。
+
+    可见性收敛是数据集 / 看板 / 大屏的共享维度；报表是调度配置（模型无该字段）。
+    超管请求绕过收敛路径、既有 E2E 也以超管执行——该缺陷只在「非超管打开报表页」
+    路径暴露。写保护仍由 _creator_guard 承担（非创建者只读）。
+    """
+
+    def test_non_superuser_list_returns_rows(self, normal_user, screen_urls, dataset, superuser):
+        from rest_framework.test import APIClient
+
+        report = _make_report(dataset, superuser)
+        grant(normal_user, screen_urls)
+
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        client.force_authenticate(user=normal_user)
+        response = client.get(REPORT_URL)
+
+        assert response.status_code == 200
+        assert report.name in {item["name"] for item in response.json()["data"]["results"]}

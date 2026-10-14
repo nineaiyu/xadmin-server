@@ -110,6 +110,65 @@ def apply_binding_fixes(fixes: Any) -> Any:
     return len(fixes)
 
 
+def model_field_nodes(menus: Any) -> Any:
+    """按权限点取「绑定模型（角色字段树根节点）下全部字段节点」，无绑定的返回空表。
+
+    字段白名单的取值面就是权限点 ``Menu.model`` 指向的模型：字段权限是角色×权限点
+    ×字段三元组，字段节点取自角色字段树（``field_type=ROLE``），与运行时装载
+    （``get_user_field_queryset`` 按 ``field__parent__name + field__name`` 取值）同源。
+    """
+    root_pks = set()
+    for menu in menus:
+        root_pks.update(menu.model.filter(field_type=ModelLabelField.FieldChoices.ROLE).values_list("pk", flat=True))
+    grouped: dict[Any, list[Any]] = {}
+    if not root_pks:
+        return {}
+    for node in ModelLabelField.objects.filter(
+        parent__in=root_pks, field_type=ModelLabelField.FieldChoices.ROLE
+    ).order_by("name"):
+        grouped.setdefault(node.parent_id, []).append(node)
+    result = {}
+    for menu in menus:
+        fields = []
+        for root in menu.model.all():
+            fields.extend(grouped.get(root.pk, []))
+        result[menu.pk] = fields
+    return result
+
+
+def fill_field_permissions(roles: Any = None) -> Any:
+    """为「已获模型权限点、但无字段白名单」的组合补齐该模型的全字段白名单。
+
+    字段权限为 fail-closed 的零字段口径（见 ``common/core/serializers.py`` 的
+    get_allow_fields）：角色在某权限点上没有非空白名单时，列表/详情输出空对象。
+    演示账号与内置角色的白名单依赖种子静态列举，页面/权限点新增后容易漏配，
+    本函数按缺口审计结果补齐——只补缺口，已有非空白名单的组合不覆盖，保证
+    管理员在角色页的字段裁剪配置不被改写。
+
+    ``roles`` 限定角色范围（默认全部启用角色）。返回补齐的 ``[(role, menu), ...]``。
+    """
+    from system.models import FieldPermission
+
+    from .audit import audit_field_permissions
+
+    items = audit_field_permissions(roles=roles)
+    if not items:
+        return []
+    fields_by_menu = model_field_nodes([menu for _role, menu in items])
+    filled = []
+    with transaction.atomic():
+        for role, menu in items:
+            fields = fields_by_menu.get(menu.pk) or []
+            if not fields:
+                continue
+            fp, _created = FieldPermission.objects.get_or_create(role=role, menu=menu)
+            fp.field.set(fields)
+            filled.append((role, menu))
+    if filled:
+        logger.info(f"filled field permissions: {len(filled)} (role, menu) pairs")
+    return filled
+
+
 def grant_to_roles(created_menus: Any, perms: Any, parent_of_created: Any) -> Any:
     """把新建权限点授予「已拥有同模块权限点且拥有父菜单」的角色（可选，默认不执行）。"""
     granted = []

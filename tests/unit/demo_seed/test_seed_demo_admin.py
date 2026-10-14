@@ -29,7 +29,7 @@ from demo_seed.management.commands.seed_demo_extras import (
     POST_PLAN,
 )
 from identity.models import DeptInfo, Post, UserInfo, UserRole
-from system.models import Menu, MenuMeta, Tag, TaggedItem
+from system.models import FieldPermission, Menu, MenuMeta, ModelLabelField, Tag, TaggedItem
 from task.services import ExportRecord
 
 pytestmark = pytest.mark.django_db
@@ -147,6 +147,106 @@ def test_is_destructive_rule_flags_writes():
     assert not is_destructive(make("approve:SystemApprovalInstance", "POST"))
     assert not is_destructive(make("execute:DataDataset", "POST"))
     assert "create:SystemRole" in DENY_PERMISSIONS
+
+
+# ---------------------------------------------------------------- 字段权限补齐
+
+
+@pytest.fixture
+def field_tree(db):
+    """角色字段树：示例模型 + 两个字段节点。"""
+    root = ModelLabelField.objects.create(
+        name="demo.item", label="示例对象", field_type=ModelLabelField.FieldChoices.ROLE
+    )
+    for name, label in (("title", "标题"), ("amount", "金额")):
+        ModelLabelField.objects.create(
+            name=name, label=label, parent=root, field_type=ModelLabelField.FieldChoices.ROLE
+        )
+    return root
+
+
+def _bound_permission(field_tree, name="list:DemoItem", method="GET"):
+    """建一个绑定模型的权限点（字段白名单的适用范围）。"""
+    meta = MenuMeta.objects.create(title=name)
+    menu = Menu.objects.create(
+        name=name,
+        path=f"api/{name.split(':')[1].lower()}$",
+        menu_type=Menu.MenuChoices.PERMISSION,
+        method=method,
+        meta=meta,
+    )
+    menu.model.set([field_tree])
+    return menu
+
+
+def test_seed_fills_field_permission_gaps(demo_dept, demo_role, superuser, field_tree):
+    """演示角色被授予的权限点缺字段白名单时自动补齐（页面不再空白）。
+
+    字段权限 fail-closed：缺口组合的接口输出空对象。补齐口径 = 权限点绑定模型的
+    角色字段树全字段；已在角色页收敛过的非空白名单不被改写。
+    """
+    bound = _bound_permission(field_tree)
+    narrowed = _bound_permission(field_tree, name="retrieve:DemoItem")
+    demo_role.menu.add(bound, narrowed)
+    # retrieve 上预置一个收敛过的白名单（只给 title）——补齐全流程不得覆盖它
+    kept = FieldPermission.objects.create(role=demo_role, menu=narrowed)
+    title = ModelLabelField.objects.get(name="title", parent=field_tree)
+    kept.field.set([title])
+
+    call_command("seed_demo_admin")
+
+    filled = FieldPermission.objects.get(role=demo_role, menu=bound)
+    assert set(filled.field.values_list("name", flat=True)) == {"title", "amount"}
+    assert set(kept.field.values_list("name", flat=True)) == {"title"}
+
+    # 幂等：重复执行不再产生补齐
+    call_command("seed_demo_admin")
+    assert FieldPermission.objects.filter(role=demo_role, menu=bound).count() == 1
+
+
+def test_seed_clean_prunes_filled_field_permissions(demo_dept, demo_role, superuser, field_tree):
+    """--clean-only 回滚到种子口径：种子未声明的补齐项被删除。"""
+    bound = _bound_permission(field_tree)
+    demo_role.menu.add(bound)
+
+    call_command("seed_demo_admin")
+    assert FieldPermission.objects.filter(role=demo_role, menu=bound).exists()
+
+    call_command("seed_demo_admin", clean_only=True)
+
+    assert not FieldPermission.objects.filter(role=demo_role, menu=bound).exists()
+
+
+def test_seed_grants_extra_pages(demo_dept, demo_role, superuser):
+    """EXTRA_PAGE_PATHS 中的页面及其父级/权限点被授予演示角色（有演示数据的页面可见）。"""
+    from demo_seed.management.commands.seed_demo_admin import EXTRA_PAGE_PATHS
+
+    page_path = EXTRA_PAGE_PATHS[0]
+    parent_meta = MenuMeta.objects.create(title="业务分组")
+    parent = Menu.objects.create(name="业务分组", path="/biz", menu_type=Menu.MenuChoices.MENU, meta=parent_meta)
+    page_meta = MenuMeta.objects.create(title="页面")
+    page = Menu.objects.create(
+        name="BizPage",
+        path=page_path,
+        component="biz/index",
+        menu_type=Menu.MenuChoices.MENU,
+        parent=parent,
+        meta=page_meta,
+    )
+    perm_meta = MenuMeta.objects.create(title="页面动作")
+    perm = Menu.objects.create(
+        name="list:BizItem",
+        path="api/biz/item$",
+        menu_type=Menu.MenuChoices.PERMISSION,
+        method="GET",
+        parent=page,
+        meta=perm_meta,
+    )
+
+    call_command("seed_demo_admin")
+
+    granted = set(demo_role.menu.values_list("pk", flat=True))
+    assert {page.pk, parent.pk, perm.pk} <= granted
 
 
 # ---------------------------------------------------------------- 任务二：补充数据

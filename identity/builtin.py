@@ -26,12 +26,17 @@ BUILTIN_ROLES = [
         "name": _("System Administrator"),
         "description": _("Builtin role: grants all active menus automatically on sync"),
         "grant_all_menus": True,
+        # 字段白名单按「已授权权限点 × 绑定模型」自动补齐（菜单全量同步，白名单
+        # 无法静态列举；缺口会让接口输出空对象，见 _fill_builtin_role_fields）
+        "fill_field_permissions": True,
     },
     {
         "code": "SystemAuditor",
         "name": _("Auditor"),
         "description": _("Builtin role: assign audit menus manually as needed"),
         "grant_all_menus": False,
+        # 菜单由管理员按需分配，字段白名单同样按已授权权限点自动补齐
+        "fill_field_permissions": True,
     },
     {
         # 部门管理员：成员与数据权限规则由部门任命端点维护
@@ -126,7 +131,27 @@ def sync_builtin_roles() -> int:
 
         if spec.get("field_models"):
             _ensure_role_fields(role, spec["field_models"])
+        if spec.get("fill_field_permissions"):
+            changed += _fill_builtin_role_fields(role, spec["code"])
     return changed
+
+
+def _fill_builtin_role_fields(role: Any, code: Any) -> int:
+    """按「已授权权限点 × 绑定模型」自动补齐内置角色的字段白名单缺口。
+
+    字段权限是 fail-closed 的（无白名单 = 读空对象 / 写忽略）：菜单全量同步或
+    手工分配的内置职能角色无法静态列举白名单，缺口会让成员打开页面整块空白。
+    只补缺口（管理员在角色页收敛字段后不回写）。返回 1 表示有变更，0 表示已就绪。
+    """
+    from system.services.permission_sync import fill_field_permissions
+
+    if not role.menu.exists():
+        return 0
+    filled = fill_field_permissions(roles=[role])
+    if filled:
+        logger.info("builtin role field permissions filled: %s (%s pairs)", code, len(filled))
+        return 1
+    return 0
 
 
 def _ensure_role_fields(role: Any, model_names: Any) -> None:
