@@ -1,6 +1,12 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 categories:
+  # 破坏性 / 需要人工动作的变更单独成组，避免被埋在功能列表里
+  - title: '⚠️ 升级注意 Breaking / Upgrade Notes'
+    labels:
+      - 'breaking'
+      - 'major'
+      - '升级注意'
   - title: '🌱 新功能 Features'
     labels:
       - 'feature'
@@ -23,6 +29,10 @@ categories:
     labels:
       - 'chore'
       - 'docs'
+  # 兜底分组：未打标签的变更也出现在发布说明里，避免「这次发了什么」被静默丢条目
+  - title: '📦 未分类变更'
+    labels:
+      - '*'
 exclude-labels:
   - 'no'
   - '无需处理'
@@ -43,3 +53,10 @@ template: |
   ## 版本变化  What’s Changed
 
   $CHANGES
+
+  ## 升级提示  Upgrade Notes
+
+  - **前后端必须同版本发布**（版本号由 CI 三方校验：`server/const.py` ↔ `package.json` ↔ tag）。
+  - 升级前先备份数据库，并执行 `python manage.py upgrade_check` 按结论处置
+    （存量库通道：`docs/ops/upgrade-stock.md`；4.x → 5.0 分步指南：`docs/ops/upgrade-5.0.md`）。
+  - 新增权限点 / 文案 / 缓存变更在 `python manage.py post_upgrade` 中补齐（幂等）。

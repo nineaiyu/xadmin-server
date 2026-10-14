@@ -1,4 +1,4 @@
-// T3.1 性能基线 04：元数据接口（search-columns / search-fields / with_meta=1 内联）。
+// 性能基线 04：元数据接口（search-columns / search-fields / with_meta=1 内联）。
 //
 // 变体口径（VARIANT 环境变量，见 docs/ops/performance-baseline.md §二/§六）：
 //   - columns / fields：纯元数据端点。**元数据目标（P95 < 60ms）以这两个变体为准**——

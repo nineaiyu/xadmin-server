@@ -1,4 +1,4 @@
-// T3.1 性能基线 06：导入接口（POST {LIST_PATH}/import-data?action=...&task=false 同步链路）。
+// 性能基线 06：导入接口（POST {LIST_PATH}/import-data?action=...&task=false 同步链路）。
 // 默认 update 模式：setup 拉取一页种子用户主键，每迭代更新 IMPORT_ROWS 行 nickname（不增长数据）。
 // create 模式（IMPORT_MODE=create）每迭代新增行，仅适合短时测定，跑完需重置种子数据。
 // task=false 固定走同步链路（异步 Celery 链路的耗时受 worker 影响不入基线）。

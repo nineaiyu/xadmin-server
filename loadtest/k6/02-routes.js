@@ -1,4 +1,4 @@
-// T3.1 性能基线 02：菜单/路由接口（GET /api/system/routes，白名单路由）。
+// 性能基线 02：菜单/路由接口（GET /api/system/routes，白名单路由）。
 // 该接口每次请求重建菜单树并使用 MagicCacheData 缓存，可同时观察缓存命中/未命中两档表现。
 import http from 'k6/http';
 import {group} from 'k6';

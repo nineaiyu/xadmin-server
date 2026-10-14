@@ -2,7 +2,7 @@
 
 > 本文档沉淀常用部署方式与运维要点（T6.2 本地化，外站 https://docs.dvcloud.xin/ 降级为补充资料）。
 > 常见故障的「现象 → 定位 → 处置」速查见 [runbook.md](runbook.md)。
-> 适用于 xadmin-server 4.2.5+（含队列拆分与健康检查增强）。
+> 适用于 xadmin-server 5.0.0+（含队列拆分与健康检查增强）。
 
 > **本文为概览页**：本地开发与常见排查见下；
 > 容器部署 / 备份恢复 / 容量 / 可观测 / 国产化见 [deployment-docker.md](deployment-docker.md)，
@@ -155,7 +155,10 @@ python manage.py seed_demo_clean             # 一键卸载（清理演示数据
   内置定义类数据（loadjson 的示例流程/表单/数据集/看板等）不在卸载范围；
 - 内置流程的 leader 节点（请假/采购/用章等首节点）按申请人部门的负责人解析审批人：
   申请人无部门 / 部门无负责人 / 负责人即申请人本人时发起会被 fail-closed 拒绝，
-  按发起失败的提示为申请人配置部门与负责人即可。
+  按发起失败的提示为申请人配置部门与负责人即可；
+- **一键起演示环境**：安装器 `WITH_DEMO_DATA=1 ./xadmin.sh install`，或源码形态
+  `python ops/init_data.py --with-demo`——初始化内置种子后自动灌演示数据并打印演示账号
+  （`admin` / `admin123`）；随时 `python manage.py seed_demo_all --reset` 重置为初始状态。
 
 
 ## 5. 常见问题排查

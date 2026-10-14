@@ -1,4 +1,4 @@
-// T3.1 性能基线：k6 公共库。
+// 性能基线：k6 公共库。
 // 约定：全部参数经环境变量注入（BASE_URL/USERNAME/PASSWORD/VUS/DURATION...），
 // 脚本本身不含环境相关常量；每个脚本只定义「测什么、多大负载、结果写哪里」。
 // 结果统一写入 results/<脚本名>.json（目录由 run-all.sh 创建，或 RESULT_DIR 指定）。

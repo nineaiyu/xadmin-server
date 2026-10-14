@@ -34,7 +34,7 @@ jobs:
         run: uv run --no-sync ruff check .
 
   cross-app-imports:
-    name: Cross-app import gate (T2.2)
+    name: Cross-app import gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -121,7 +121,7 @@ jobs:
         run: python scripts/check_function_length.py
 
   doc-facts:
-    name: Doc facts gate (G4)
+    name: Doc facts gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# T3.1 性能基线：顺序执行六个关键接口的 k6 压测，结果落盘 results/。
+# 性能基线：顺序执行六个关键接口的 k6 压测，结果落盘 results/。
 # 用法（详见 docs/ops/performance-baseline.md）：
 #   cd xadmin-server/loadtest/k6
 #   BASE_URL=http://127.0.0.1:8896 USERNAME=admin PASSWORD=xxx ./run-all.sh

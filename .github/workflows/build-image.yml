@@ -68,7 +68,7 @@ jobs:
           name: sbom-server
           path: sbom/sbom-server.cdx.json
 
-      # 静态 OpenAPI 随版本发布（T6.3）；config.yml 置空与 Dockerfile 同口径，SECRET_KEY 仅为通过拒启校验
+      # 静态 OpenAPI 随版本发布；config.yml 置空与 Dockerfile 同口径，SECRET_KEY 仅为通过拒启校验
       - name: Export OpenAPI schema
         run: |
           echo > config.yml
