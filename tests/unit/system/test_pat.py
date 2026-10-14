@@ -772,3 +772,55 @@ def test_logs_and_stats_scoped_by_token_pk(superuser, normal_user):
         response = PersonalAccessTokenViewSet.as_view({"get": "logs"})(request, pk=other)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.data["code"] == 400
+
+
+# ---------------------------------------------------------------------------
+# scope 覆盖个人凭证端点：绑定管理端点使用统一权限类，scope 不是绕过面
+# ---------------------------------------------------------------------------
+
+
+def test_scope_enforced_on_oauth_binding_endpoints(superuser):
+    """OAuth 绑定端点（白名单个人凭证）同样执行 PAT scope 校验。
+
+    这些端点已在 ``PERMISSION_WHITE_URL`` 中（不依赖菜单权限），但必须走项目
+    统一权限类：scope 限制的是凭证本身，个人端点不应成为绕过面。
+    """
+    from identity.views.auth.oauth import OAuthBindingsAPIView
+
+    view = OAuthBindingsAPIView.as_view()
+    url = "/api/identity/auth/oauth/bindings"
+
+    # scope 不含该路径 → 403（凭证范围外）；异常路径按既有模式包 atomic
+    narrow = _create_token(superuser, name="narrow", scopes=["GET /api/identity/user"]).data["data"]["token"]
+    request = APIRequestFactory().get(url, HTTP_AUTHORIZATION=f"Pat {narrow}")
+    with transaction.atomic():
+        response = view(request)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    # 空 scope = 不限（向后兼容默认口径）→ 放行
+    wide = _create_token(superuser, name="wide").data["data"]["token"]
+    request = APIRequestFactory().get(url, HTTP_AUTHORIZATION=f"Pat {wide}")
+    response = view(request)
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["code"] == 1000
+
+
+def test_scope_entry_length_and_count_limits(superuser):
+    """scope 写入口径：单条长度与条目数设上限（逐请求执行的正则属攻击面）。"""
+    # 超长单条 → 400
+    request = APIRequestFactory().post(TOKENS_URL, {"name": "long-scope", "scopes": ["a" * 300]}, format="json")
+    force_authenticate(request, user=superuser)
+    with transaction.atomic():
+        response = PersonalAccessTokenViewSet.as_view({"post": "create"})(request)
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert not PersonalAccessToken.objects.filter(name="long-scope").exists()
+
+    # 超量条目 → 400
+    request = APIRequestFactory().post(
+        TOKENS_URL, {"name": "many-scope", "scopes": [f"/api/x{i}" for i in range(300)]}, format="json"
+    )
+    force_authenticate(request, user=superuser)
+    with transaction.atomic():
+        response = PersonalAccessTokenViewSet.as_view({"post": "create"})(request)
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert not PersonalAccessToken.objects.filter(name="many-scope").exists()

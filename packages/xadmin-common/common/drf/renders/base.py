@@ -281,8 +281,10 @@ class BaseFileRenderer(BaseRenderer):
             self.serializer = view.get_serializer()
             self.set_response_disposition(response)
         except Exception as e:
-            logger.debug(e, exc_info=True)
-            value = f"The resource not support export! error:{e}".encode()
+            # 渲染初始化失败：产物只给通用文案——异常细节（模型/字段名、内部路径）
+            # 仅进服务端日志，不回显到可下载文件
+            logger.warning(f"export renderer init failed: {e}", exc_info=True)
+            value = b"The resource does not support export."
             return value
 
         try:
@@ -300,8 +302,10 @@ class BaseFileRenderer(BaseRenderer):
             if getattr(view, "export_as_zip", False) and self.template == "export":
                 value = self.compress_into_zip_file(value, request, response)
         except Exception as e:
-            logger.debug(e, exc_info=True)
-            value = f"Render error! media:{self.media_type} \r\nerror:\r\n{e}".encode()
+            # 渲染中途失败：产物只给通用文案（内部异常仅进服务端日志，
+            # 不把堆栈/表名/路径写入用户可下载的文件）
+            logger.warning(f"export render failed: {e}", exc_info=True)
+            value = b"Export failed, please retry or contact the administrator."
             response["Content-Disposition"] = response["Content-Disposition"].replace(self.format, "txt")
             return value
         return value

@@ -6297,7 +6297,17 @@ msgstr ""
 msgid "Please specify the target users or roles"
 msgstr ""
 
-#: identity/serializers/token.py:32
+#: identity/serializers/token.py:43
+#, python-format
+msgid "Too many scope entries: at most %(max)s allowed"
+msgstr ""
+
+#: identity/serializers/token.py:52
+#, python-format
+msgid "Scope entry is too long: at most %(max)s characters"
+msgstr ""
+
+#: identity/serializers/token.py:40
 msgid "Scopes must be a list of path strings"
 msgstr ""
 

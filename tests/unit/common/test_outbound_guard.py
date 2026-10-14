@@ -338,3 +338,91 @@ class TestResolveTargetInternals:
 
         with pytest.raises(RuntimeError):
             resolve_outbound_target("https://x.example.com/a", resolver=boom)
+
+
+class _FakeResponse:
+    """最小响应桩：覆盖重定向跟随所需的字段与方法。"""
+
+    def __init__(self, status_code=200, headers=None):
+        self.status_code = status_code
+        self.headers = headers or {}
+        self.closed = False
+
+    @property
+    def is_redirect(self):
+        return self.status_code in (301, 302, 303, 307, 308) and "Location" in self.headers
+
+    def close(self):
+        self.closed = True
+
+
+class TestPinnedRequestRedirects:
+    """重定向逐跳重新校验：已校验主机的 302 不能把请求导向内网/元数据地址。
+
+    requests 的自动跟随会对新目标自行解析 DNS、绕过固定连接（校验一次、连接
+    另一次），因此 pinned_request 显式禁用自动跟随，改为手动逐跳——每一跳都
+    重新过出站守卫。
+    """
+
+    def test_auto_redirect_disabled(self, monkeypatch):
+        captured = {}
+
+        def fake_request(self, method, url, **kwargs):
+            captured.update(kwargs)
+            return _FakeResponse(200)
+
+        monkeypatch.setattr("requests.Session.request", fake_request)
+        response = pinned_request("GET", f"http://{PUBLIC_IP}/x")
+        assert response.status_code == 200
+        assert captured["allow_redirects"] is False
+
+    def test_redirect_to_metadata_blocked(self, monkeypatch):
+        def fake_request(self, method, url, **kwargs):
+            return _FakeResponse(302, {"Location": "http://169.254.169.254/latest/meta-data/"})
+
+        monkeypatch.setattr("requests.Session.request", fake_request)
+        with pytest.raises(OutboundBlocked):
+            pinned_request("GET", f"http://{PUBLIC_IP}/x")
+
+    def test_redirect_to_private_blocked_without_flag(self, monkeypatch):
+        def fake_request(self, method, url, **kwargs):
+            return _FakeResponse(302, {"Location": "http://10.0.0.5/admin"})
+
+        monkeypatch.setattr("requests.Session.request", fake_request)
+        with pytest.raises(OutboundBlocked):
+            pinned_request("GET", f"http://{PUBLIC_IP}/x")
+
+    def test_redirect_followed_with_revalidation(self, monkeypatch):
+        calls = []
+
+        def fake_request(self, method, url, **kwargs):
+            calls.append((method, url, kwargs.get("allow_redirects")))
+            if len(calls) == 1:
+                return _FakeResponse(302, {"Location": "http://1.1.1.1/next"})
+            return _FakeResponse(200)
+
+        monkeypatch.setattr("requests.Session.request", fake_request)
+        response = pinned_request("GET", f"http://{PUBLIC_IP}/x")
+        assert response.status_code == 200
+        assert len(calls) == 2
+        # 每一跳都显式禁用自动跟随
+        assert all(item[2] is False for item in calls)
+
+    def test_redirect_hop_limit_returns_last_response(self, monkeypatch):
+        calls = []
+
+        def fake_request(self, method, url, **kwargs):
+            calls.append(url)
+            return _FakeResponse(302, {"Location": f"http://{PUBLIC_IP}/loop"})
+
+        monkeypatch.setattr("requests.Session.request", fake_request)
+        response = pinned_request("GET", f"http://{PUBLIC_IP}/x", max_redirects=2)
+        assert response.status_code == 302
+        assert len(calls) == 3  # 初始 + 2 跳
+
+    def test_max_redirects_zero_returns_3xx(self, monkeypatch):
+        def fake_request(self, method, url, **kwargs):
+            return _FakeResponse(302, {"Location": f"http://{PUBLIC_IP}/next"})
+
+        monkeypatch.setattr("requests.Session.request", fake_request)
+        assert pinned_request("GET", f"http://{PUBLIC_IP}/x", max_redirects=0).status_code == 302

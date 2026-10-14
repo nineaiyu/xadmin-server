@@ -6331,7 +6331,17 @@ msgstr "开始时间与结束时间必须同时设置"
 msgid "Please specify the target users or roles"
 msgstr "请指定目标用户或角色"
 
-#: identity/serializers/token.py:32
+#: identity/serializers/token.py:43
+#, python-format
+msgid "Too many scope entries: at most %(max)s allowed"
+msgstr "令牌范围条目过多：最多 %(max)s 条"
+
+#: identity/serializers/token.py:52
+#, python-format
+msgid "Scope entry is too long: at most %(max)s characters"
+msgstr "令牌范围条目过长：最多 %(max)s 个字符"
+
+#: identity/serializers/token.py:40
 msgid "Scopes must be a list of path strings"
 msgstr "接口范围必须是路径字符串清单"
 

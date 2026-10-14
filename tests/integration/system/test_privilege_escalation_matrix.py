@@ -25,6 +25,9 @@
 | M16 | 数据权限 | 菜单作用域授权不跨菜单泄漏 | 他菜单下不可见 |
 | M17 | 字段权限 | 字段白名单同时约束读与写 | 响应裁剪 / 写入忽略 |
 | M18 | 数据权限 | 借 empower 给自己/部门挂取值域外的全量规则 | 规则按取值域过滤（不落库） |
+| M19 | 访问令牌 | 令牌不高于属主（属主无菜单授权 → 令牌同 403） | 403 |
+| M20 | 访问令牌 | scope 在属主菜单权限之上继续收敛 | 403 |
+| M21 | 访问令牌 | scope 声明超过属主菜单仍被菜单权限拦截 | 403（只收敛不提权） |
 
 约定：菜单授权遵循生产种子数据惯例（loadjson/menu.json）——列表路由以
 `$` 精确锚定，详情路由用 `(?P<pk>[^/.]+)$` 正则；权限结果按用户+方法缓存
@@ -361,3 +364,64 @@ class TestEmpowerScopeIsolation:
         resp = api_client.post(f"{USER_LIST_URL}/{normal_user.pk}/empower", {"rules": [str(target.pk)]}, format="json")
         assert resp.status_code == 200, resp.data
         assert target in normal_user.rules.all()
+
+
+def create_pat(user, scopes=None):
+    """以指定用户创建一个 PAT（个人访问令牌），返回明文凭证。
+
+    走真实创建端点（PersonalAccessTokenViewSet.create），确保用例验证的是
+    线上同款凭证形态（哈希存储 + scopes 归一化）。
+    """
+    from rest_framework.test import APIRequestFactory, force_authenticate
+
+    from identity.views.user.token import PersonalAccessTokenViewSet
+
+    request = APIRequestFactory().post(
+        "/api/identity/personal-access-tokens",
+        {"name": "matrix-pat", "scopes": scopes or []},
+        format="json",
+    )
+    force_authenticate(request, user=user)
+    response = PersonalAccessTokenViewSet.as_view({"post": "create"})(request)
+    assert response.data["code"] == 1000
+    return response.data["data"]["token"]
+
+
+class TestPatScopeBoundary:
+    """M19-M21：访问令牌的接口范围边界。
+
+    令牌认证后与普通会话共用同一权限类（菜单 → 数据 → 字段三层同源），
+    因此令牌**不高于属主**：属主没有的菜单权限，令牌同样拿不到；
+    scope 只是在属主权限之上再做一层路径收敛（只收敛、不提权）。
+    """
+
+    def test_pat_cannot_exceed_owner_menu_permission(self, api_client, normal_user):
+        """M19：属主无菜单授权时，令牌访问同接口同样 403。"""
+        token = create_pat(normal_user)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Pat {token}")
+        resp = api_client.get(USER_LIST_URL)
+        assert resp.status_code == 403
+        assert resp.data["code"] == 403
+
+    def test_pat_inherits_owner_menu_permission(self, api_client, normal_user, role, menu_factory):
+        """M19 正向对照：属主菜单授权后令牌放行（同源判定，无需额外授权）。"""
+        grant_menu(role, menu_factory, LIST_PATH, "GET")
+        token = create_pat(normal_user)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Pat {token}")
+        assert api_client.get(BOOK_LIST_URL).status_code == 200
+
+    def test_pat_scope_narrows_below_menu(self, api_client, normal_user, role, menu_factory):
+        """M20：scope 在属主菜单权限之上继续收敛（菜单内有、scope 外 → 403）。"""
+        grant_menu(role, menu_factory, LIST_PATH, "GET")
+        token = create_pat(normal_user, scopes=["GET /api/identity/userinfo"])
+        api_client.credentials(HTTP_AUTHORIZATION=f"Pat {token}")
+        assert api_client.get(BOOK_LIST_URL).status_code == 403
+
+    def test_pat_over_declared_scope_grants_nothing_extra(self, api_client, normal_user, role, menu_factory):
+        """M21：scope 声明超过属主菜单时仍被菜单权限拦截（scope 只收敛、不提权）。"""
+        grant_menu(role, menu_factory, LIST_PATH, "GET")
+        # 声明覆盖全部 API 的宽 scope：不含授权的接口仍不可达
+        token = create_pat(normal_user, scopes=["/api/.*"])
+        api_client.credentials(HTTP_AUTHORIZATION=f"Pat {token}")
+        assert api_client.get(BOOK_LIST_URL).status_code == 200  # 属主菜单内有 → 放行
+        assert api_client.get(USER_LIST_URL).status_code == 403  # 属主菜单内没有 → 拦下

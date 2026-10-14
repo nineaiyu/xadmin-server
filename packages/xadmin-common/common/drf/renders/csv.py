@@ -7,6 +7,7 @@ from typing import Any
 import unicodecsv
 from six import BytesIO
 
+from ...utils.csv_safe import escape_csv_cell
 from ..const import CSV_FILE_ESCAPE_CHARS
 from .base import BaseFileRenderer
 
@@ -27,12 +28,7 @@ class CSVFileRenderer(BaseFileRenderer):
         self.writer = csv_writer
 
     def __render_row(self, row: Any) -> Any:
-        row_escape = []
-        for d in row:
-            if isinstance(d, str) and d.strip().startswith(self.escape_chars):
-                d = f"'{d}"
-            row_escape.append(d)
-        return row_escape
+        return [escape_csv_cell(d) for d in row]
 
     def write_row(self, row: Any) -> None:
         row = self.__render_row(row)

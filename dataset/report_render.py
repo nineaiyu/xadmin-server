@@ -23,6 +23,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+from common.utils.excel import append_text_safe_row
 
 logger = get_logger(__name__)
 
@@ -59,7 +60,7 @@ def _render_component_sheet(wb: Any, report: Any, user: Any, component: Any, ind
     from dataset.utils.dataset import aggregate_dataset
 
     sheet = wb.create_sheet(_sheet_title(component, index))
-    sheet.append([str(_("Name")), str(_("Value"))])
+    append_text_safe_row(sheet, [str(_("Name")), str(_("Value"))])
     try:
         result = aggregate_dataset(
             report.dataset,
@@ -71,10 +72,10 @@ def _render_component_sheet(wb: Any, report: Any, user: Any, component: Any, ind
         )
     except Exception:  # noqa: BLE001 单组件失败不影响其余 sheet
         logger.warning("scheduled report component failed: %s", component.get("id"), exc_info=True)
-        sheet.append([str(_("Chart data unavailable")), ""])
+        append_text_safe_row(sheet, [str(_("Chart data unavailable")), ""])
         return
     for item in result["series"]:
-        sheet.append([_excel_safe(item["name"]), _excel_safe(item["value"])])
+        append_text_safe_row(sheet, [_excel_safe(item["name"]), _excel_safe(item["value"])])
 
 
 def _render_workbook(report: Any, user: Any) -> tuple[Any, ...]:
@@ -103,17 +104,17 @@ def _render_workbook(report: Any, user: Any) -> tuple[Any, ...]:
             value_field=report.value_field or None,
         )
         # openpyxl 只接受 str：gettext_lazy 代理不是 str 实例，必须显式转换
-        ws.append([str(_("Name")), str(_("Value"))])
+        append_text_safe_row(ws, [str(_("Name")), str(_("Value"))])
         rows = [[_excel_safe(item["name"]), _excel_safe(item["value"])] for item in result["series"]]
     else:
         # 明细行数上限随执行下推到 SQL（LIMIT），不再全量物化后在 Python 侧切片
         limit = design_table_limit(design)
         result = execute_dataset(report.dataset, user, max_rows=limit)
         columns = design_export_columns(design, result["columns"])
-        ws.append(list(columns))
+        append_text_safe_row(ws, list(columns))
         rows = [[_excel_safe(row.get(col)) for col in columns] for row in result["rows"]]
     for row in rows:
-        ws.append(row)
+        append_text_safe_row(ws, row)
 
     for index, component in enumerate(design_components(design), start=1):
         _render_component_sheet(wb, report, user, component, index)

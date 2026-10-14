@@ -4,8 +4,9 @@
 
 **URL 白名单说明**：整段 `^/api/identity/auth/oauth/` 已在 `PERMISSION_WHITE_URL` 中，
 因为登录前置的 authorize/callback 必须匿名可达；绑定管理是个人凭证（同 MFA/PAT 口径），
-也不该依赖菜单权限。因此这里显式要求 DRF 的 `IsAuthenticated`，
-不能用项目的自定义 `IsAuthenticated`（后者按菜单权限校验，白名单已被绕过）。
+也不该依赖菜单权限。绑定端点使用项目统一权限类——其对白名单 URL 跳过菜单校验
+（``_match_white_url`` 出口），同时保留 PAT scope 与应用四级授权校验（scope 限制的是
+凭证本身，个人端点不应成为绕过面）。
 
 **state 两种意图**（键空间隔离、一键一用）：登录 `issue_state` / 绑定 `issue_bind_state`；
 回调先判绑定意图，命中即把 IdP 身份绑定到发起绑定的本人（不做登录）。
@@ -20,9 +21,10 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 
 from audit.services import UserLoginLog
+from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger

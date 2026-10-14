@@ -273,5 +273,8 @@ SPECTACULAR_SETTINGS = {
         "common.swagger.utils.OpenApiPrimaryKeyRelatedField",
         "common.swagger.utils.LabeledChoiceFieldExtension",
     ],
-    # 'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
+    # schema / swagger / redoc 的访问控制：与权限点（retrieve:Spectacular*）同源——
+    # 匿名不可枚举 API 结构（接口/字段全貌），登录用户按菜单权限点判定（超管放行）。
+    # 部署侧如需匿名只读文档，应在网关显式放行该前缀（应用层默认收紧）。
+    "SERVE_PERMISSIONS": ["common.core.permission.IsAuthenticated"],
 }

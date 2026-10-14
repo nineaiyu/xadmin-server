@@ -10,7 +10,8 @@ from .base import INSTALLED_APPS
 
 # 访问白名单配置，无需权限配置, key为路由，value为列表，对应的是请求方式， * 表示全部请求方式, 请求方式为大写
 PERMISSION_WHITE_URL = {
-    "^/api/identity/login$": ["*"],
+    # 登录端点（/login/basic、/login/code、/login/mfa/*）视图自带匿名权限类，
+    # 无需且不登记白名单——历史条目 "^/api/identity/login$" 与路由不匹配，已移除
     "^/api/identity/logout$": ["*"],
     "^/api/identity/userinfo$": ["GET"],
     # 个人口令核验（锁屏解锁）：个人安全操作，同改密口径（视图内要求登录态 +

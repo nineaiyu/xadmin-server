@@ -10,6 +10,8 @@ from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
+from common.utils.excel import append_text_safe_row
+
 ERROR_COLUMN_TITLE = "error_message"
 
 
@@ -29,7 +31,7 @@ def build_error_report(file_path: Any, column_titles: Any, failed_rows: Any) -> 
 
     workbook = Workbook()
     worksheet = workbook.active
-    worksheet.append(header)
+    append_text_safe_row(worksheet, header)
     for item in failed_rows:
         row = ["" for _ in header]
         values = item.get("values") or {}
@@ -37,6 +39,6 @@ def build_error_report(file_path: Any, column_titles: Any, failed_rows: Any) -> 
             value = values.get(title, values.get(str(title), ""))
             row[idx] = str(value) if value is not None else ""
         row[error_index] = item.get("error") or _("Validation failed")
-        worksheet.append(row)
+        append_text_safe_row(worksheet, row)
     workbook.save(file_path)
     return file_path

@@ -17,7 +17,7 @@ from common.base.utils import AESCipherV2
 from common.utils.ip import get_ip_city
 from common.utils.request import get_browser, get_os, get_request_ident, get_request_ip, get_user_agent
 from common.utils.token import verify_token_cache
-from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
+from common.utils.verify_code import CodeError, CodeExpired, SendAndVerifyCodeUtil, TokenTempCache
 from identity.models import UserInfo
 from identity.notifications import DifferentCityLoginMessage
 from settings.services import LoginBlockUtil, LoginIpBlockUtil
@@ -143,11 +143,14 @@ def verify_sms_email_code(request: Any, block_utils: Any) -> Any:
         save_login_log(request, login_type=UserLoginLog.get_login_type(query_key), status=False)
         times_remainder = block_util.get_remainder_times()
         if times_remainder > 0:
+            # 只回显验证码业务异常（CodeError/CodeExpired）的既有文案；缓存后端等
+            # 内部异常一律用通用文案，避免把连接串、内部路径带进用户可见提示
+            error = str(e) if isinstance(e, (CodeError, CodeExpired)) else _("The verification code is incorrect")
             detail = _(
                 "{error} please enter it again. "
                 "You can also try {times_try} times "
                 "(The account will be temporarily locked for {block_time} minutes)"
-            ).format(times_try=times_remainder, block_time=settings.SECURITY_LOGIN_LIMIT_TIME, error=str(e))
+            ).format(times_try=times_remainder, block_time=settings.SECURITY_LOGIN_LIMIT_TIME, error=error)
         else:
             detail = _(
                 "The account has been locked (please contact admin to unlock it or try again after {} minutes)"

@@ -32,10 +32,12 @@ class TestApiDocsLoginFlow:
         assert client.get(SCHEMA_URL).status_code == 200
         assert client.get(SWAGGER_URL).status_code == 200
 
-        # 4) 登出：回登录页（闭环完成）；schema 端点对匿名开放是 spectacular 默认行为，
-        #    登录闭环保护的是文档站 UI 流程，schema 的访问控制在网关/部署侧收口
+        # 4) 登出：回登录页（闭环完成）。登出后 schema 恢复不可见——访问控制
+        #    由应用层承担（SERVE_PERMISSIONS 与权限点 retrieve:Spectacular* 同源），
+        #    不依赖网关配置；匿名枚举 API 结构被应用层兜底拦截
         client.get(DOCS_LOGOUT_URL)
         assert client.get(DOCS_LOGIN_URL).status_code == 200
+        assert client.get(SCHEMA_URL).status_code == 401
 
     def test_wrong_password_rejected(self, superuser):
         client = APIClient(HTTP_USER_AGENT="pytest-agent")

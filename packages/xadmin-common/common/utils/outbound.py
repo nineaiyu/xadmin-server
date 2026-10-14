@@ -31,11 +31,15 @@ import ipaddress
 import socket
 from collections.abc import Callable, Iterable
 from typing import Any, NamedTuple
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from requests.adapters import HTTPAdapter
+
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 # 域名解析器签名：host -> IP 字符串列表（默认真实 DNS；测试注入以离线断言）
 Resolver = Callable[[str], Iterable[str]]
@@ -275,11 +279,18 @@ def pinned_request(
     allowed_hosts: Iterable[str] = (),
     resolver: Resolver | None = None,
     headers: dict[str, Any] | None = None,
+    max_redirects: int = 3,
     **kwargs: Any,
 ) -> Any:
     """校验后发起请求：域名目标固定为已校验 IP 连接（Host/SNI 保留域名）。
 
     IP 字面量目标无 DNS 解析环节，直接按原 URL 请求（Host 头交给 requests）。
+
+    重定向**不交给 requests 自动跟随**：自动跟随会对新目标重新解析 DNS、绕过固定
+    连接（校验一次、连接另一次），已校验主机返回 ``302 Location: http://169.254...``
+    即可穿透出站守卫。这里改为逐跳手动跟随——每一跳重新过完整守卫（协议 / 地址
+    归属 / 白名单 / 固定解析），``max_redirects=0`` 关闭跟随（3xx 原样返回）。
+    方法保持调用方原值（API 场景按 307/308 语义处理，不做 301/302 降级）。
     """
     import requests
 
@@ -298,9 +309,33 @@ def pinned_request(
         merged_headers.setdefault("Host", target.host_header)
         if target.scheme == "https":
             session.mount("https://", PinnedHostAdapter(target.host))
+    # 跟随语义由本函数接管（逐跳重新校验），显式禁用 requests 自动跟随
+    kwargs.pop("allow_redirects", None)
     # 不主动 close session：调用方可能以 stream=True 消费响应体，关闭会截断流；
     # Session 生命周期随请求对象回收，连接池由 urllib3 自行清理
-    return session.request(method, request_url, headers=merged_headers, **kwargs)
+    response = session.request(method, request_url, headers=merged_headers, allow_redirects=False, **kwargs)
+
+    hops = 0
+    while max_redirects and hops < max_redirects and response.is_redirect:
+        hops += 1
+        location = response.headers.get("Location")
+        if not location:
+            break
+        next_url = urljoin(url, location)
+        logger.info(f"outbound pinned request following redirect ({hops}/{max_redirects}): {next_url}")
+        response.close()  # 3xx 响应体不消费，先释放连接再走下一跳
+        return pinned_request(
+            method,
+            next_url,
+            allow_private=allow_private,
+            allow_loopback=allow_loopback,
+            allowed_hosts=allowed_hosts,
+            resolver=resolver,
+            headers=headers,
+            max_redirects=max_redirects - hops,
+            **kwargs,
+        )
+    return response
 
 
 def parse_allowed_hosts(value: Any) -> tuple[str, ...]:

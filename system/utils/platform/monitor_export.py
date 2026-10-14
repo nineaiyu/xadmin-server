@@ -14,6 +14,9 @@ from typing import Any
 
 from django.utils import timezone
 
+from common.utils.csv_safe import escape_csv_cell
+from common.utils.excel import append_text_safe_row
+
 CSV_CONTENT_TYPE = "text/csv; charset=utf-8"
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -32,10 +35,10 @@ def _csv_bytes(sheets: Any) -> Any:
         if index:
             writer.writerow([])
         if len(sheets) > 1:
-            writer.writerow([sheet["title"]])
-        writer.writerow(sheet["header"])
+            writer.writerow([escape_csv_cell(sheet["title"])])
+        writer.writerow([escape_csv_cell(value) for value in sheet["header"]])
         for row in sheet["rows"]:
-            writer.writerow(row)
+            writer.writerow([escape_csv_cell(value) for value in row])
     return buffer.getvalue().encode("utf-8-sig")
 
 
@@ -48,11 +51,11 @@ def _xlsx_bytes(sheets: Any) -> Any:
     for index, sheet in enumerate(sheets):
         worksheet = workbook.active if index == 0 else workbook.create_sheet()
         worksheet.title = str(sheet["title"])[:31] or f"Sheet{index + 1}"
-        worksheet.append(sheet["header"])
+        append_text_safe_row(worksheet, sheet["header"])
         for cell in worksheet[1]:
             cell.font = Font(bold=True)
         for row in sheet["rows"]:
-            worksheet.append([_excel_safe(value) for value in row])
+            append_text_safe_row(worksheet, [_excel_safe(value) for value in row])
         for column, title in enumerate(sheet["header"], start=1):
             lengths = [len(str(title))]
             lengths += [len(str(row[column - 1])) for row in sheet["rows"] if column - 1 < len(row)]

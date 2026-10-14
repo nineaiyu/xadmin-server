@@ -26,20 +26,30 @@ def _attach_session(request):
 
 
 class TestSchemaEndpoints:
-    def test_json_schema_rendered(self, api_client):
-        resp = api_client.get(SCHEMA_URL)
+    def test_anonymous_schema_denied(self, api_client):
+        """匿名不可枚举 API 结构：SERVE_PERMISSIONS 与权限点（retrieve:Spectacular*）同源。"""
+        assert api_client.get(SCHEMA_URL).status_code == 401
+        assert api_client.get(SWAGGER_UI_URL).status_code == 401
+
+    def test_logged_in_user_without_permission_denied(self, api_client, normal_user):
+        """登录但未获权限点的用户同样不可见（文档访问是数据面授权，不是登录即得）。"""
+        api_client.force_authenticate(user=normal_user)
+        assert api_client.get(SCHEMA_URL).status_code == 403
+
+    def test_json_schema_rendered(self, auth_client):
+        resp = auth_client.get(SCHEMA_URL)
         assert resp.status_code == 200
         assert "openapi" in resp.json()
         # SchemaMixin 标记了 xframe_options_exempt，不应携带框架禁止头
         assert "X-Frame-Options" not in resp.headers
 
-    def test_json_schema_uses_cache_key_by_user(self, api_client):
+    def test_json_schema_uses_cache_key_by_user(self, auth_client):
         """第二次请求命中响应缓存（缓存键由 get_cache_key 生成）仍应 200。"""
-        assert api_client.get(SCHEMA_URL).status_code == 200
-        assert api_client.get(SCHEMA_URL).status_code == 200
+        assert auth_client.get(SCHEMA_URL).status_code == 200
+        assert auth_client.get(SCHEMA_URL).status_code == 200
 
-    def test_swagger_ui_rendered(self, api_client):
-        resp = api_client.get(SWAGGER_UI_URL)
+    def test_swagger_ui_rendered(self, auth_client):
+        resp = auth_client.get(SWAGGER_UI_URL)
         assert resp.status_code == 200
 
 

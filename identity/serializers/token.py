@@ -17,6 +17,12 @@ from common.core.serializers import BaseModelSerializer
 from identity.models.token import ApiApplication, ApiApplicationGrant, PersonalAccessToken
 from identity.services.token_issue import new_token_secret
 
+#: 单条 scope 的最大长度：scope 按请求逐条执行 ``re.search``，长度上限用于收敛
+#: 灾难性回溯（ReDoS）面——正常路径前缀/正则远小于该值
+MAX_SCOPE_ENTRY_LENGTH = 256
+#: scope 条目数上限：与「接口范围勾选」的菜单量级匹配，超限说明是脚本误用
+MAX_SCOPE_ENTRIES = 200
+
 
 def _clean_scope_entries(value: Any) -> Any:
     """scope 清单写入口径（PAT 与开放平台应用共用，应用 scope 会下发为 OAuth 访问凭证）。
@@ -24,17 +30,26 @@ def _clean_scope_entries(value: Any) -> Any:
     - 非清单/含非字符串项 → 400；
     - 去空白、丢弃空串、去重；
     - 逐条经 :func:`normalize_scope_entry` 锚定（手写 `api/identity/user` 不再粘连
-      命中 `/api/identity/user-logs`），正则非法直接拒绝而非静默跳过。
+      命中 `/api/identity/user-logs`），正则非法直接拒绝而非静默跳过；
+    - 单条长度与条目数设上限（逐请求执行的正则属于攻击面，收敛 ReDoS 与刷量）。
     """
     if value in (None, ""):
         return []
     if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
         raise serializers.ValidationError(_("Scopes must be a list of path strings"))
+    if len(value) > MAX_SCOPE_ENTRIES:
+        raise serializers.ValidationError(
+            _("Too many scope entries: at most %(max)s allowed") % {"max": MAX_SCOPE_ENTRIES}
+        )
     cleaned = []
     for item in value:
         text = item.strip()
         if not text:
             continue
+        if len(text) > MAX_SCOPE_ENTRY_LENGTH:
+            raise serializers.ValidationError(
+                _("Scope entry is too long: at most %(max)s characters") % {"max": MAX_SCOPE_ENTRY_LENGTH}
+            )
         try:
             entry = normalize_scope_entry(text)
         except ValueError as exc:
