@@ -16,6 +16,7 @@ django 标准的 LocMemCache 不支持这些能力，而 django-redis 6.0 又难
 
 import fnmatch
 import threading
+import time
 
 import fakeredis
 from django.core.cache.backends.locmem import LocMemCache
@@ -145,3 +146,19 @@ class FakeRedisCache(LocMemCache):
         ``keys`` 完全一致（调用方如安全拦截 IP 列表按同一约定 ``replace(prefix, "")``）。
         """
         return iter(self.keys(pattern, version))
+
+    def ttl(self, key, version=None):
+        """django-redis ``cache.ttl`` 等价实现。
+
+        生产语义（``django_redis.DefaultClient.ttl``）：键不存在返回 ``0``、
+        无过期时间的键返回 ``None``、其余返回剩余秒数（Redis TTL 向下取整）。
+        调用方（如验证码重复发送的限流闸门）依赖该口径构造「请等待 N 秒」提示。
+        """
+        internal_key = self.make_key(key, version=version)
+        with self._lock:
+            if internal_key not in self._cache or self._has_expired(internal_key):
+                return 0
+            expire_at = self._expire_info.get(internal_key)
+            if expire_at is None:
+                return None
+            return int(expire_at - time.time())
