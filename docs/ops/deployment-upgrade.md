@@ -69,6 +69,17 @@
 > （保留亦不影响，其原为停用状态）；③ 可选新配置 `MEDIA_X_ACCEL_PREFIX`（媒体零拷贝直出）
 > 与 `OUTBOUND_ALLOWED_HOSTS`（出站白名单，内网 Webhook 接收端必配）。
 
+> **2026-10-14（5.0.0）升级注意**：① **迁移链合并**——各业务 app 的分散迁移收敛为初始迁移
+> （`0001_initial` / `0001_initial` + `0002_initial`），表结构与 4.2.5 逐行等价；
+> 4.2.5 起的库升级需先执行 `python manage.py upgrade_ledger --apply` 认领迁移记录
+> （只写 `django_migrations`，不执行 DDL），再 `migrate`（预期 `No migrations to apply`）。
+> 完整步骤与判定见 [upgrade-5.0.md](upgrade-5.0.md)；② `upgrade_check` 新增
+> `legacy-chain-reconcilable` 判定，安装器升级流程已串联「体检 → 认领 → 迁移 → `post_upgrade`」，
+> 升级基线提升到 `v4.2.5`（更早版本请走清库重建）；③ 站点级外观配置（站点标题 / Logo 品牌位 /
+> 登录页布局）改为写系统配置（全局生效、仅超管可改），个人配置里的同名历史值不再生效；
+> ④ 演示环境可用 `WITH_DEMO_DATA=1 ./xadmin.sh install` 一键灌演示数据，演示账号
+> `admin / admin123`（挂「演示模式」角色，破坏性写操作已裁剪）。
+>
 > **2026-10-08 升级注意**：① 菜单种子把执行历史「取消/重跑」权限点改名
 > `cancel/rerun:SystemTaskCenter` → `cancel/rerun:SystemTaskExecution`（pk 未变，
 > `post_upgrade` 灌种子后存量角色授权自动延续，前后端需同批发布——过渡窗口内按钮暂隐）；

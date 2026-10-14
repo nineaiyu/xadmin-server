@@ -18,10 +18,13 @@
 ### 1. 我的库能直接 `migrate` 吗？
 
 - **口径**：以 `upgrade_check` 的结论为准——`up-to-date`（无需迁移）/ `needs-migrate`（标准升级）
-  可继续；`legacy-chain`（旧版链路）/ `schema-drift`（表结构漂移）需人工介入（通常清库重建）。
-- **不要凭「库里有数据 / 之前升过」自行判断**：2026-10 经历过三轮清库重建式迁移整理，旧链库的迁移记录与当前代码链
+  可继续；`legacy-chain-reconcilable`（4.2.5 链的库）先跑 `upgrade_ledger --apply` 认领迁移账本
+  再 `migrate`（5.0 起）；`legacy-chain`（更早版本链路）/ `schema-drift`（表结构漂移）需人工介入
+  （通常清库重建）。
+- **不要凭「库里有数据 / 之前升过」自行判断**：2026-10 经历过四轮清库重建式迁移整理，旧链库的迁移记录与当前代码链
   不再对应，直接 `migrate` 会造成状态错乱。
-- **相关**：[ops/upgrade-stock.md](../ops/upgrade-stock.md) §二 / §三、`system/management/commands/upgrade_check.py`。
+- **相关**：[ops/upgrade-stock.md](../ops/upgrade-stock.md) §二 / §三、[ops/upgrade-5.0.md](../ops/upgrade-5.0.md)、
+  `system/management/commands/upgrade_check.py`、`system/management/commands/upgrade_ledger.py`。
 
 ### 2. 能不能只升级前端，或只升级后端？
 

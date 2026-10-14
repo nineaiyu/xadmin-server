@@ -102,3 +102,4 @@
 | [ADR-090](ADR-090-screen-canvas-advanced-4.md) | 已交付 | 大屏画布进阶四项（**范围经产品确认，分批交付**）：**富文本扩展**（链接 / 列表 / 图片 / 表格 + 选区工具条与实时预览，仍是先转义再套白名单）、**旋转 OBB 几何**（框选按旋转矩形相交、对齐/吸附按旋转盒 AABB，rotate=0 逐值回归）、**视频与 iframe 窗格**（只收 http(s) 地址，不接受原样 HTML）、**模板目录分组 + 版本历史与回滚 + 跨设备剪贴板**（服务端单槽）| 
 | [ADR-091](ADR-091-menu-experience-enhancement.md) | 已交付 | 菜单体验增强：MenuMeta 六字段（高亮路径 / 徽标 / 查询参数 / 分组）全链路、渲染层分组装配、激活项自动滚动、hover 反馈与导航尺寸令牌化 |
 | [ADR-092](ADR-092-site-wide-appearance-config.md) | 已交付 | 站点级外观配置全局生效：站点标题 / Logo 品牌位 / 登录页布局 9 键写系统配置（读取以系统值为权威、个人行不沉淀、仅超管可改、缺键自愈），种子补 Title；面板条件项补禁用（混合宽度 / 半暗顶栏 / 页宽回退） |
+| [ADR-093](ADR-093-migration-consolidation-and-ledger-claim.md) | 已交付 | 5.0 迁移链合并为初始迁移（结构等价以 pg_dump 归一化比对守护）+ 存量库账本认领（`upgrade_ledger` / `upgrade_check` 新判定） |

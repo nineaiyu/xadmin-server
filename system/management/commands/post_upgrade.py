@@ -7,12 +7,14 @@
 陈旧（开关不生效）。
 
 动作（按序，均可重复执行）：
-1. ``migrate_api_prefixes --apply`` —— 存量库里的旧 API 前缀路径平移（四域路由
+1. ``upgrade_ledger --apply`` —— 认领 4.x 迁移账本（5.0 合并链；全新库与已认领库
+   均为 no-op，不执行 DDL）；
+2. ``migrate_api_prefixes --apply`` —— 存量库里的旧 API 前缀路径平移（四域路由
    独立前缀化；全新库为 0 命中 no-op）；
-2. ``load_init_json``     —— 内置种子与新增权限点入库；
-3. ``compilemessages``    —— 编译语言包（缺 gettext 时降级为警告）；
-4. ``expire_caches config_*`` —— 失效配置缓存；
-5. 权限点缺口扫描（只报告，不修改数据；修复命令 sync_menu_permissions）。
+3. ``load_init_json``     —— 内置种子与新增权限点入库；
+4. ``compilemessages``    —— 编译语言包（缺 gettext 时降级为警告）；
+5. ``expire_caches config_*`` —— 失效配置缓存；
+6. 权限点缺口扫描（只报告，不修改数据；修复命令 sync_menu_permissions）。
 
 用法：
     python manage.py post_upgrade
@@ -34,35 +36,41 @@ class Command(BaseCommand):
         parser.add_argument("--skip-permissions", action="store_true", help="跳过权限点缺口扫描")
 
     def handle(self, *args: Any, **options: Any) -> None:
-        self.stdout.write("[1/5] API 前缀平移（存量库 /api/system/<四域> → 独立前缀，幂等）…")
+        self.stdout.write("[1/6] 迁移账本认领（5.0 合并链；全新库与已认领库为 no-op）…")
+        try:
+            management.call_command("upgrade_ledger", apply=True)
+        except (Exception, SystemExit) as exc:  # noqa: BLE001 未知链路只告警，migrate 会给出硬失败
+            self.stdout.write(self.style.WARNING(f"      账本认领失败（若库来自更早版本请先 upgrade_check）：{exc}"))
+
+        self.stdout.write("[2/6] API 前缀平移（存量库 /api/system/<四域> → 独立前缀，幂等）…")
         try:
             management.call_command("migrate_api_prefixes", "--apply")
         except Exception as exc:
             self.stdout.write(self.style.WARNING(f"      前缀平移失败：{exc}"))
 
         if options["skip_seed"]:
-            self.stdout.write("[2/5] 跳过种子导入（--skip-seed）")
+            self.stdout.write("[3/6] 跳过种子导入（--skip-seed）")
         else:
-            self.stdout.write("[2/5] 导入内置种子（load_init_json，幂等）…")
+            self.stdout.write("[3/6] 导入内置种子（load_init_json，幂等）…")
             management.call_command("load_init_json")
 
         if options["skip_compile"]:
-            self.stdout.write("[3/5] 跳过语言包编译（--skip-compile）")
+            self.stdout.write("[4/6] 跳过语言包编译（--skip-compile）")
         else:
-            self.stdout.write("[3/5] 编译语言包（compilemessages）…")
+            self.stdout.write("[4/6] 编译语言包（compilemessages）…")
             try:
                 management.call_command("compilemessages", verbosity=0)
             except Exception as exc:
                 self.stdout.write(self.style.WARNING(f"      编译失败（界面文案可能回退英文）：{exc}"))
 
-        self.stdout.write("[4/5] 失效配置缓存…")
+        self.stdout.write("[5/6] 失效配置缓存…")
         try:
             management.call_command("expire_caches", "config_*")
         except Exception as exc:
             self.stdout.write(self.style.WARNING(f"      缓存失效失败：{exc}"))
 
         if options["skip_permissions"]:
-            self.stdout.write("[5/5] 跳过权限点扫描（--skip-permissions）")
+            self.stdout.write("[6/6] 跳过权限点扫描（--skip-permissions）")
         else:
             self._scan_permissions()
 

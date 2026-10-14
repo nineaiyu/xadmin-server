@@ -12,9 +12,15 @@ from django.db.migrations.recorder import MigrationRecorder
 from system.management.commands.upgrade_check import collect_report, evaluate
 
 
-def _report(orphan=(), pending=(), missing_tables=(), missing_columns=()):
+def _report(orphan=(), legacy_orphan=(), pending=(), missing_tables=(), missing_columns=()):
     return {
-        "migrations": {"applied": 1, "pending": list(pending), "orphan": list(orphan)},
+        "migrations": {
+            "applied": 1,
+            "pending": list(pending),
+            "orphan": list(orphan),
+            "legacy_orphan": list(legacy_orphan),
+            "unknown_orphan": list(orphan),
+        },
         "schema": {
             "tables_checked": 1,
             "missing_tables": list(missing_tables),
@@ -34,11 +40,19 @@ class TestEvaluate:
         report = _report(orphan=["system.0005_ai_profile"], pending=["dataset.0002_x"])
         assert evaluate(report) == ("legacy-chain", 1)
 
+    def test_legacy_orphan_is_reconcilable(self):
+        report = _report(legacy_orphan=["system.0002_monitor_monitoralert"])
+        assert evaluate(report) == ("legacy-chain-reconcilable", 0)
+
     def test_missing_table_marks_schema_drift(self):
         assert evaluate(_report(missing_tables=["dataset_dynamicform"])) == ("schema-drift", 1)
 
     def test_missing_column_marks_schema_drift(self):
         report = _report(missing_columns=[{"table": "identity_userinfo", "columns": ["date_expired"]}])
+        assert evaluate(report) == ("schema-drift", 1)
+
+    def test_schema_drift_beats_reconcilable(self):
+        report = _report(legacy_orphan=["system.0002_monitor_monitoralert"], missing_tables=["system_monitor"])
         assert evaluate(report) == ("schema-drift", 1)
 
 
@@ -58,6 +72,15 @@ class TestAgainstRealDatabase:
         report = collect_report(connection)
         assert "legacy_app.0001_initial" in report["migrations"]["orphan"]
         assert evaluate(report) == ("legacy-chain", 1)
+
+    def test_legacy_4x_record_is_reconcilable(self):
+        """4.2.5 链的游离记录可认领（不阻断升级），与未知链路区分开。"""
+        recorder = MigrationRecorder(connection)
+        recorder.record_applied("task", "0003_periodictaskowner")
+        report = collect_report(connection)
+        assert "task.0003_periodictaskowner" in report["migrations"]["legacy_orphan"]
+        assert report["migrations"]["unknown_orphan"] == []
+        assert evaluate(report) == ("legacy-chain-reconcilable", 0)
 
 
 @pytest.mark.django_db

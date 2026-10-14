@@ -1,25 +1,23 @@
 # ai 域初始迁移：pgvector 扩展先行创建（RunPython 首位），
 # embedding_vector 向量列（无维度 vector）经模型 VectorField 正常建列。
+#
+# 由 4.x 迁移链合并生成（原 ai 0001_initial），表结构与 4.2.5 完全等价
+# （pg_dump --schema-only 逐行比对）。存量库升级由 ``manage.py upgrade_ledger``
+# 认领迁移账本，本文件不参与 DDL 执行。
 
 import logging
 import uuid
 
 import django.core.serializers.json
-import django.db.models.deletion
 import pgvector.django.vector
-from django.conf import settings
 from django.db import migrations, models
 
 logger = logging.getLogger(__name__)
 
 
-def _is_postgresql(schema_editor) -> bool:
-    return schema_editor.connection.vendor == "postgresql"
-
-
 def create_vector_extension(apps, schema_editor):
     """CREATE EXTENSION IF NOT EXISTS vector——失败仅告警，检索运行期回退词频通道。"""
-    if not _is_postgresql(schema_editor):
+    if schema_editor.connection.vendor != "postgresql":
         return
     with schema_editor.connection.cursor() as cursor:
         try:
@@ -33,160 +31,10 @@ def create_vector_extension(apps, schema_editor):
 class Migration(migrations.Migration):
     initial = True
 
-    dependencies = [
-        ("identity", "0001_initial"),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-    ]
+    dependencies = []
 
     operations = [
         migrations.RunPython(create_vector_extension, migrations.RunPython.noop),
-        migrations.CreateModel(
-            name="AiKnowledgeDocument",
-            fields=[
-                ("id", models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False, verbose_name="ID")),
-                ("created_time", models.DateTimeField(auto_now_add=True, null=True, verbose_name="Created time")),
-                ("updated_time", models.DateTimeField(auto_now=True, null=True, verbose_name="Updated time")),
-                ("description", models.CharField(blank=True, max_length=256, null=True, verbose_name="Description")),
-                (
-                    "source_type",
-                    models.CharField(
-                        choices=[("repo", "Repository docs"), ("upload", "Uploaded document")],
-                        db_index=True,
-                        default="repo",
-                        max_length=16,
-                        verbose_name="Source type",
-                    ),
-                ),
-                ("path", models.CharField(max_length=255, unique=True, verbose_name="Storage path")),
-                ("title", models.CharField(blank=True, default="", max_length=255, verbose_name="Title")),
-                ("content", models.TextField(blank=True, default="", verbose_name="Content")),
-                ("content_hash", models.CharField(blank=True, default="", max_length=64, verbose_name="Content hash")),
-                ("chunk_count", models.IntegerField(default=0, verbose_name="Chunk count")),
-                ("is_active", models.BooleanField(db_index=True, default=True, verbose_name="Active")),
-                ("synced_at", models.DateTimeField(auto_now=True, verbose_name="Synced at")),
-                (
-                    "creator",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="creator_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Creator",
-                    ),
-                ),
-                (
-                    "dept_belong",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="dept_belong_query",
-                        to="identity.deptinfo",
-                        verbose_name="Data ownership department",
-                    ),
-                ),
-                (
-                    "modifier",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="modifier_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Modifier",
-                    ),
-                ),
-            ],
-            options={
-                "verbose_name": "AI knowledge document",
-                "verbose_name_plural": "AI knowledge documents",
-                "ordering": ("-synced_at",),
-            },
-        ),
-        migrations.CreateModel(
-            name="McpServer",
-            fields=[
-                ("id", models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False, verbose_name="ID")),
-                ("created_time", models.DateTimeField(auto_now_add=True, null=True, verbose_name="Created time")),
-                ("updated_time", models.DateTimeField(auto_now=True, null=True, verbose_name="Updated time")),
-                ("description", models.CharField(blank=True, max_length=256, null=True, verbose_name="Description")),
-                ("name", models.CharField(max_length=64, unique=True, verbose_name="Server name")),
-                (
-                    "url",
-                    models.CharField(help_text="Streamable HTTP endpoint", max_length=512, verbose_name="Server URL"),
-                ),
-                (
-                    "auth_header",
-                    models.CharField(
-                        blank=True,
-                        default="",
-                        help_text="e.g. Authorization",
-                        max_length=64,
-                        verbose_name="Auth header",
-                    ),
-                ),
-                ("auth_token", models.TextField(blank=True, default="", verbose_name="Auth token")),
-                ("timeout", models.IntegerField(default=30, verbose_name="Timeout (seconds)")),
-                ("allowed_tools", models.JSONField(blank=True, default=list, verbose_name="Allowed tools")),
-                ("enabled", models.BooleanField(db_index=True, default=True, verbose_name="Enabled")),
-                (
-                    "expose_to_ai",
-                    models.BooleanField(db_index=True, default=False, verbose_name="Expose to AI actions"),
-                ),
-                ("tools_snapshot", models.JSONField(blank=True, default=list, verbose_name="Tools snapshot")),
-                ("last_synced_time", models.DateTimeField(blank=True, null=True, verbose_name="Last synced time")),
-                (
-                    "last_sync_error",
-                    models.CharField(blank=True, default="", max_length=255, verbose_name="Last sync error"),
-                ),
-                ("remark", models.CharField(blank=True, default="", max_length=255, verbose_name="Remark")),
-                (
-                    "creator",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="creator_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Creator",
-                    ),
-                ),
-                (
-                    "dept_belong",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="dept_belong_query",
-                        to="identity.deptinfo",
-                        verbose_name="Data ownership department",
-                    ),
-                ),
-                (
-                    "modifier",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="modifier_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Modifier",
-                    ),
-                ),
-            ],
-            options={
-                "verbose_name": "External MCP server",
-                "verbose_name_plural": "External MCP servers",
-                "ordering": ("name",),
-            },
-        ),
         migrations.CreateModel(
             name="AiChatMessage",
             fields=[
@@ -222,48 +70,11 @@ class Migration(migrations.Migration):
                         verbose_name="Extra",
                     ),
                 ),
-                (
-                    "creator",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="creator_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Creator",
-                    ),
-                ),
-                (
-                    "dept_belong",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="dept_belong_query",
-                        to="identity.deptinfo",
-                        verbose_name="Data ownership department",
-                    ),
-                ),
-                (
-                    "modifier",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="modifier_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Modifier",
-                    ),
-                ),
             ],
             options={
                 "verbose_name": "AI chat message",
                 "verbose_name_plural": "AI chat messages",
                 "ordering": ("-id",),
-                "indexes": [models.Index(fields=["creator", "feature", "-id"], name="ai_chat_msg_user_feat_idx")],
             },
         ),
         migrations.CreateModel(
@@ -295,50 +106,42 @@ class Migration(migrations.Migration):
                 ),
                 ("embedding_dim", models.IntegerField(default=0, verbose_name="Embedding dimension")),
                 ("synced_at", models.DateTimeField(auto_now=True, verbose_name="Synced at")),
-                (
-                    "creator",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="creator_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Creator",
-                    ),
-                ),
-                (
-                    "dept_belong",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="dept_belong_query",
-                        to="identity.deptinfo",
-                        verbose_name="Data ownership department",
-                    ),
-                ),
-                (
-                    "modifier",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="modifier_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Modifier",
-                    ),
-                ),
             ],
             options={
                 "verbose_name": "AI knowledge chunk",
                 "verbose_name_plural": "AI knowledge chunks",
                 "ordering": ("source_path", "chunk_index"),
-                "constraints": [
-                    models.UniqueConstraint(fields=("source_path", "chunk_index"), name="uniq_ai_chunk_path_index")
-                ],
+            },
+        ),
+        migrations.CreateModel(
+            name="AiKnowledgeDocument",
+            fields=[
+                ("id", models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_time", models.DateTimeField(auto_now_add=True, null=True, verbose_name="Created time")),
+                ("updated_time", models.DateTimeField(auto_now=True, null=True, verbose_name="Updated time")),
+                ("description", models.CharField(blank=True, max_length=256, null=True, verbose_name="Description")),
+                (
+                    "source_type",
+                    models.CharField(
+                        choices=[("repo", "Repository docs"), ("upload", "Uploaded document")],
+                        db_index=True,
+                        default="repo",
+                        max_length=16,
+                        verbose_name="Source type",
+                    ),
+                ),
+                ("path", models.CharField(max_length=255, unique=True, verbose_name="Storage path")),
+                ("title", models.CharField(blank=True, default="", max_length=255, verbose_name="Title")),
+                ("content", models.TextField(blank=True, default="", verbose_name="Content")),
+                ("content_hash", models.CharField(blank=True, default="", max_length=64, verbose_name="Content hash")),
+                ("chunk_count", models.IntegerField(default=0, verbose_name="Chunk count")),
+                ("is_active", models.BooleanField(db_index=True, default=True, verbose_name="Active")),
+                ("synced_at", models.DateTimeField(auto_now=True, verbose_name="Synced at")),
+            ],
+            options={
+                "verbose_name": "AI knowledge document",
+                "verbose_name_plural": "AI knowledge documents",
+                "ordering": ("-synced_at",),
             },
         ),
         migrations.CreateModel(
@@ -381,54 +184,11 @@ class Migration(migrations.Migration):
                 ("probed_at", models.DateTimeField(blank=True, null=True, verbose_name="Probed at")),
                 ("is_active", models.BooleanField(db_index=True, default=False, verbose_name="Is active")),
                 ("remark", models.CharField(blank=True, default="", max_length=255, verbose_name="Remark")),
-                (
-                    "creator",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="creator_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Creator",
-                    ),
-                ),
-                (
-                    "dept_belong",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="dept_belong_query",
-                        to="identity.deptinfo",
-                        verbose_name="Data ownership department",
-                    ),
-                ),
-                (
-                    "modifier",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="modifier_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Modifier",
-                    ),
-                ),
             ],
             options={
                 "verbose_name": "AI profile",
                 "verbose_name_plural": "AI profiles",
                 "ordering": ("-is_active", "name"),
-                "constraints": [
-                    models.UniqueConstraint(
-                        condition=models.Q(("is_active", True)),
-                        fields=("purpose", "is_active"),
-                        name="uniq_ai_profile_purpose_active",
-                    )
-                ],
             },
         ),
         migrations.CreateModel(
@@ -462,51 +222,55 @@ class Migration(migrations.Migration):
                 ("duration_ms", models.IntegerField(default=0, verbose_name="Duration (ms)")),
                 ("ok", models.BooleanField(db_index=True, default=True, verbose_name="Success")),
                 ("detail", models.CharField(blank=True, default="", max_length=255, verbose_name="Detail")),
-                (
-                    "creator",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="creator_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Creator",
-                    ),
-                ),
-                (
-                    "dept_belong",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="dept_belong_query",
-                        to="identity.deptinfo",
-                        verbose_name="Data ownership department",
-                    ),
-                ),
-                (
-                    "modifier",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        related_query_name="modifier_query",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="Modifier",
-                    ),
-                ),
             ],
             options={
                 "verbose_name": "AI usage record",
                 "verbose_name_plural": "AI usage records",
                 "ordering": ("-created_time",),
-                "indexes": [
-                    models.Index(fields=["creator", "-created_time"], name="ai_usage_user_time_idx"),
-                    models.Index(fields=["feature", "-created_time"], name="ai_usage_feat_time_idx"),
-                ],
+            },
+        ),
+        migrations.CreateModel(
+            name="McpServer",
+            fields=[
+                ("id", models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_time", models.DateTimeField(auto_now_add=True, null=True, verbose_name="Created time")),
+                ("updated_time", models.DateTimeField(auto_now=True, null=True, verbose_name="Updated time")),
+                ("description", models.CharField(blank=True, max_length=256, null=True, verbose_name="Description")),
+                ("name", models.CharField(max_length=64, unique=True, verbose_name="Server name")),
+                (
+                    "url",
+                    models.CharField(help_text="Streamable HTTP endpoint", max_length=512, verbose_name="Server URL"),
+                ),
+                (
+                    "auth_header",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        help_text="e.g. Authorization",
+                        max_length=64,
+                        verbose_name="Auth header",
+                    ),
+                ),
+                ("auth_token", models.TextField(blank=True, default="", verbose_name="Auth token")),
+                ("timeout", models.IntegerField(default=30, verbose_name="Timeout (seconds)")),
+                ("allowed_tools", models.JSONField(blank=True, default=list, verbose_name="Allowed tools")),
+                ("enabled", models.BooleanField(db_index=True, default=True, verbose_name="Enabled")),
+                (
+                    "expose_to_ai",
+                    models.BooleanField(db_index=True, default=False, verbose_name="Expose to AI actions"),
+                ),
+                ("tools_snapshot", models.JSONField(blank=True, default=list, verbose_name="Tools snapshot")),
+                ("last_synced_time", models.DateTimeField(blank=True, null=True, verbose_name="Last synced time")),
+                (
+                    "last_sync_error",
+                    models.CharField(blank=True, default="", max_length=255, verbose_name="Last sync error"),
+                ),
+                ("remark", models.CharField(blank=True, default="", max_length=255, verbose_name="Remark")),
+            ],
+            options={
+                "verbose_name": "External MCP server",
+                "verbose_name_plural": "External MCP servers",
+                "ordering": ("name",),
             },
         ),
     ]
