@@ -64,8 +64,9 @@
 | 恢复默认 | 个人 | 原「重置」语义：清除个人配置行、回落站点生效值；加二次确认 |
 | 恢复站点默认 | 站点（仅超管） | 站点级 9 键写回平台出厂值（写系统配置、对全部账号与登录页生效）；加二次确认 |
 
-- **出厂默认值来源**：`src/utils/platformDefaults.ts` 在启动装配期（早于 `getSiteConfig`
-  合并站点配置）冻结 `getConfig()` 快照 —— 合并后 `getConfig()` 已不等于
+- **出厂默认值来源**：`src/utils/preferences.ts` 的 `capturePlatformDefaults()` 在启动装配期
+  （早于 `getSiteConfig` 合并站点配置）冻结 `getConfig()` 快照，读取走同文件的
+  `getPlatformDefault(key)` —— 合并后 `getConfig()` 已不等于
   `public/platform-config.json`；部署方替换该文件即改默认值，前端不二次硬编码；
 - **站点级键清单单一来源**：`src/layout/hooks/siteWideAppearance.ts`（`storage` ↔ `config`
   双向映射），与后端 `SITE_WIDE_CONFIG_KEYS` 由单测互校（跨仓缺失时跳过该点）；
