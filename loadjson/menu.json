@@ -4047,29 +4047,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "9a9ef582-9eb7-5e89-8516-069ad108ff26",
-  "fields": {
-   "created_time": "2026-09-09T00:00:00Z",
-   "updated_time": "2026-09-09T00:00:00Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": "2026-09-14T14:10:51.469Z",
-   "parent": "74bac617-657c-577f-8a27-ab38a438b930",
-   "menu_type": 2,
-   "name": "batchDestroy:SystemDataDict",
-   "rank": 1,
-   "path": "api/system/dict/batch-destroy$",
-   "component": null,
-   "is_active": true,
-   "meta": "29dc20eb-6b66-52be-8b06-82627a1c4e34",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
   "fields": {
    "created_time": "2024-01-22T09:32:04.487Z",
@@ -6118,29 +6095,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "e9353fc1-cb82-4894-bcc8-e9d3e163a0f6",
-  "fields": {
-   "created_time": "2026-09-08T03:21:30.256Z",
-   "updated_time": "2026-09-08T03:21:30.256Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": "2026-09-14T14:10:51.454Z",
-   "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
-   "menu_type": 2,
-   "name": "recycle:SystemUser",
-   "rank": 10006,
-   "path": "api/identity/user/recycle$",
-   "component": null,
-   "is_active": true,
-   "meta": "951cb09b-8bd2-442f-a6e7-1719a9c5436c",
-   "method": "GET",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "e968ba38-73f1-4f49-81f5-dd0063cbfaad",
   "fields": {
    "created_time": "2024-06-07T10:29:16.111Z",
@@ -7789,29 +7743,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "5de98fb7-85e2-5a5f-a4cd-e2a40d22ab8e",
-  "fields": {
-   "created_time": "2026-09-11T00:00:00Z",
-   "updated_time": "2026-09-11T00:00:00Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": "2026-09-14T14:10:51.465Z",
-   "parent": "76cb05b6-baa8-58b0-bbf4-281452d45116",
-   "menu_type": 2,
-   "name": "batchDestroy:SystemApprovalFlow",
-   "rank": 1,
-   "path": "api/approval/approval-flows/batch-destroy$",
-   "component": "",
-   "is_active": true,
-   "meta": "44faa9f2-2142-53d6-8934-cff245306b4a",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "5feaef1d-2839-5c83-8e37-953a58025d17",
   "fields": {
    "created_time": "2026-09-11T00:00:00Z",
@@ -8502,52 +8433,6 @@
    "is_active": true,
    "meta": "d47992eb-3e29-5906-88fd-1edf23a5dd66",
    "method": "DELETE",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "14ba19ee-856b-515d-84a5-a3516e402528",
-  "fields": {
-   "created_time": "2026-09-13T00:00:00Z",
-   "updated_time": "2026-09-13T00:00:00Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": "2026-09-14T14:10:51.431Z",
-   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
-   "menu_type": 2,
-   "name": "execute:Dataset",
-   "rank": 5,
-   "path": "api/dataset/datasets/(?P<pk>[^/.]+)/execute$",
-   "component": null,
-   "is_active": true,
-   "meta": "213ef0a7-0903-5e92-92ec-19234b1ddfbe",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "181a94da-8b68-594b-8c59-03d18c38f66d",
-  "fields": {
-   "created_time": "2026-09-13T00:00:00Z",
-   "updated_time": "2026-09-13T00:00:00Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": "2026-09-14T14:10:51.447Z",
-   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
-   "menu_type": 2,
-   "name": "aggregate:Dataset",
-   "rank": 6,
-   "path": "api/dataset/datasets/(?P<pk>[^/.]+)/aggregate$",
-   "component": null,
-   "is_active": true,
-   "meta": "e63e8bfe-7cf6-579d-8600-10de79266caf",
-   "method": "POST",
    "model": []
   }
  },
@@ -10251,29 +10136,6 @@
    "is_active": true,
    "meta": "f89424a2-3052-5e63-80f7-7c7291681c3b",
    "method": "DELETE",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "ea1a8850-b1d5-5ceb-b015-1d6c6aede50a",
-  "fields": {
-   "created_time": "2026-09-14T00:00:00Z",
-   "updated_time": "2026-09-14T00:00:00Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": "2026-09-14T14:10:51.460Z",
-   "parent": "655242f9-626e-528e-894e-98179f69a403",
-   "menu_type": 2,
-   "name": "batchDestroy:SystemLeave",
-   "rank": 1,
-   "path": "api/approval/leaves/batch-destroy$",
-   "component": "",
-   "is_active": true,
-   "meta": "9272668b-65ea-532e-af0b-c9817324a27c",
-   "method": "POST",
    "model": []
   }
  },
@@ -16327,7 +16189,9 @@
    "is_active": true,
    "meta": "e23cef4d-45ae-4a26-b8e1-2fad3b87a536",
    "method": "GET",
-   "model": []
+   "model": [
+    "c33df01f-38e2-4d2b-9161-d87cee667d4d"
+   ]
   }
  },
  {
@@ -16350,7 +16214,9 @@
    "is_active": true,
    "meta": "3a637904-9d7d-4e42-ac9a-ea8a85ec1d7c",
    "method": "POST",
-   "model": []
+   "model": [
+    "c33df01f-38e2-4d2b-9161-d87cee667d4d"
+   ]
   }
  },
  {
@@ -16373,7 +16239,9 @@
    "is_active": true,
    "meta": "24d3859d-0406-4145-9428-ff3775350d75",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "c33df01f-38e2-4d2b-9161-d87cee667d4d"
+   ]
   }
  },
  {
@@ -16518,8 +16386,8 @@
   "model": "system.menu",
   "pk": "b1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
   "fields": {
-   "created_time": "2026-09-30T00:00:00.000Z",
-   "updated_time": "2026-09-30T00:00:00.000Z",
+   "created_time": "2026-09-30T00:00:00Z",
+   "updated_time": "2026-09-30T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
@@ -16534,15 +16402,17 @@
    "is_active": true,
    "meta": "c2d3e4f5-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
    "method": "GET",
-   "model": []
+   "model": [
+    "dbc7f447-1eb4-4de8-a18a-fdf17c6981e9"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "d3e4f5a6-7b8c-4d9e-8f0a-1b2c3d4e5f6a",
   "fields": {
-   "created_time": "2026-09-30T00:00:00.000Z",
-   "updated_time": "2026-09-30T00:00:00.000Z",
+   "created_time": "2026-09-30T00:00:00Z",
+   "updated_time": "2026-09-30T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
@@ -16557,15 +16427,17 @@
    "is_active": true,
    "meta": "e4f5a6b7-8c9d-4e0f-9a1b-2c3d4e5f6a7b",
    "method": "POST",
-   "model": []
+   "model": [
+    "dbc7f447-1eb4-4de8-a18a-fdf17c6981e9"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "f5a6b7c8-9d0e-4f1a-8b2c-3d4e5f6a7b8c",
   "fields": {
-   "created_time": "2026-09-30T00:00:00.000Z",
-   "updated_time": "2026-09-30T00:00:00.000Z",
+   "created_time": "2026-09-30T00:00:00Z",
+   "updated_time": "2026-09-30T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
@@ -16580,15 +16452,17 @@
    "is_active": true,
    "meta": "a6b7c8d9-0e1f-4a2b-9c3d-4e5f6a7b8c9d",
    "method": "GET",
-   "model": []
+   "model": [
+    "dbc7f447-1eb4-4de8-a18a-fdf17c6981e9"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "b7c8d9e0-1f2a-4b3c-8d4e-5f6a7b8c9d0e",
   "fields": {
-   "created_time": "2026-09-30T00:00:00.000Z",
-   "updated_time": "2026-09-30T00:00:00.000Z",
+   "created_time": "2026-09-30T00:00:00Z",
+   "updated_time": "2026-09-30T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
@@ -16603,7 +16477,9 @@
    "is_active": true,
    "meta": "c8d9e0f1-2a3b-4c4d-9e5f-6a7b8c9d0e1f",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "dbc7f447-1eb4-4de8-a18a-fdf17c6981e9"
+   ]
   }
  },
  {
@@ -16819,144 +16695,152 @@
    ]
   }
  },
-{
- "model": "system.menu",
- "pk": "73268279-cffe-5194-9aaf-bfdf51445b25",
- "fields": {
-  "created_time": "2026-10-11T00:00:00Z",
-  "updated_time": "2026-10-11T00:00:00Z",
-  "description": null,
-  "creator": 1,
-  "modifier": 1,
-  "dept_belong": null,
-  "deleted_at": null,
-  "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
-  "menu_type": 2,
-  "name": "list:ScreenTemplate",
-  "rank": 20,
-  "path": "api/dataset/screen-templates$",
-  "component": null,
-  "is_active": true,
-  "meta": "b566ab31-ead4-5127-b484-ca7192db0c9c",
-  "method": "GET",
-  "model": []
- }
-},
-{
- "model": "system.menu",
- "pk": "5ecf24ef-0db4-56e8-b1ac-90768afd3d78",
- "fields": {
-  "created_time": "2026-10-11T00:00:00Z",
-  "updated_time": "2026-10-11T00:00:00Z",
-  "description": null,
-  "creator": 1,
-  "modifier": 1,
-  "dept_belong": null,
-  "deleted_at": null,
-  "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
-  "menu_type": 2,
-  "name": "create:ScreenTemplate",
-  "rank": 21,
-  "path": "api/dataset/screen-templates$",
-  "component": null,
-  "is_active": true,
-  "meta": "3a11fc37-7f70-594e-89c0-4309570d183b",
-  "method": "POST",
-  "model": []
- }
-},
-{
- "model": "system.menu",
- "pk": "887d068f-9291-5764-abd9-9d16649687fa",
- "fields": {
-  "created_time": "2026-10-11T00:00:00Z",
-  "updated_time": "2026-10-11T00:00:00Z",
-  "description": null,
-  "creator": 1,
-  "modifier": 1,
-  "dept_belong": null,
-  "deleted_at": null,
-  "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
-  "menu_type": 2,
-  "name": "retrieve:ScreenTemplate",
-  "rank": 22,
-  "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)$",
-  "component": null,
-  "is_active": true,
-  "meta": "36eaf20a-f882-5833-bc95-3d765ef57d0a",
-  "method": "GET",
-  "model": []
- }
-},
-{
- "model": "system.menu",
- "pk": "f4018dec-7b35-515d-ae0c-e64e4a7267e5",
- "fields": {
-  "created_time": "2026-10-11T00:00:00Z",
-  "updated_time": "2026-10-11T00:00:00Z",
-  "description": null,
-  "creator": 1,
-  "modifier": 1,
-  "dept_belong": null,
-  "deleted_at": null,
-  "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
-  "menu_type": 2,
-  "name": "partialUpdate:ScreenTemplate",
-  "rank": 23,
-  "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)$",
-  "component": null,
-  "is_active": true,
-  "meta": "c7487ce4-03d1-5bd0-8ce5-1d7592c4b97b",
-  "method": "PATCH",
-  "model": []
- }
-},
-{
- "model": "system.menu",
- "pk": "9a1fabb6-64a0-50b3-a62b-b7f7e302ff6d",
- "fields": {
-  "created_time": "2026-10-11T00:00:00Z",
-  "updated_time": "2026-10-11T00:00:00Z",
-  "description": null,
-  "creator": 1,
-  "modifier": 1,
-  "dept_belong": null,
-  "deleted_at": null,
-  "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
-  "menu_type": 2,
-  "name": "destroy:ScreenTemplate",
-  "rank": 24,
-  "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)$",
-  "component": null,
-  "is_active": true,
-  "meta": "4bc3522a-b68f-5f79-acc0-6cbf45bdcd03",
-  "method": "DELETE",
-  "model": []
- }
-},
-{
- "model": "system.menu",
- "pk": "7b4c4234-1341-5160-9dfc-2585604151cd",
- "fields": {
-  "created_time": "2026-10-11T00:00:00Z",
-  "updated_time": "2026-10-11T00:00:00Z",
-  "description": null,
-  "creator": 1,
-  "modifier": 1,
-  "dept_belong": null,
-  "deleted_at": null,
-  "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
-  "menu_type": 2,
-  "name": "batchDestroy:ScreenTemplate",
-  "rank": 25,
-  "path": "api/dataset/screen-templates/batch-destroy$",
-  "component": null,
-  "is_active": true,
-  "meta": "4fda0b73-3d8a-527d-b29a-14b98fb6ac36",
-  "method": "POST",
-  "model": []
- }
-},
+ {
+  "model": "system.menu",
+  "pk": "73268279-cffe-5194-9aaf-bfdf51445b25",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "list:ScreenTemplate",
+   "rank": 20,
+   "path": "api/dataset/screen-templates$",
+   "component": null,
+   "is_active": true,
+   "meta": "b566ab31-ead4-5127-b484-ca7192db0c9c",
+   "method": "GET",
+   "model": [
+    "172b31c1-21d5-4712-ba3c-b06f84d74394"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5ecf24ef-0db4-56e8-b1ac-90768afd3d78",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "create:ScreenTemplate",
+   "rank": 21,
+   "path": "api/dataset/screen-templates$",
+   "component": null,
+   "is_active": true,
+   "meta": "3a11fc37-7f70-594e-89c0-4309570d183b",
+   "method": "POST",
+   "model": [
+    "172b31c1-21d5-4712-ba3c-b06f84d74394"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "887d068f-9291-5764-abd9-9d16649687fa",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "retrieve:ScreenTemplate",
+   "rank": 22,
+   "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "36eaf20a-f882-5833-bc95-3d765ef57d0a",
+   "method": "GET",
+   "model": [
+    "172b31c1-21d5-4712-ba3c-b06f84d74394"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f4018dec-7b35-515d-ae0c-e64e4a7267e5",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "partialUpdate:ScreenTemplate",
+   "rank": 23,
+   "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "c7487ce4-03d1-5bd0-8ce5-1d7592c4b97b",
+   "method": "PATCH",
+   "model": [
+    "172b31c1-21d5-4712-ba3c-b06f84d74394"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "9a1fabb6-64a0-50b3-a62b-b7f7e302ff6d",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "destroy:ScreenTemplate",
+   "rank": 24,
+   "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "4bc3522a-b68f-5f79-acc0-6cbf45bdcd03",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7b4c4234-1341-5160-9dfc-2585604151cd",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "batchDestroy:ScreenTemplate",
+   "rank": 25,
+   "path": "api/dataset/screen-templates/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "4fda0b73-3d8a-527d-b29a-14b98fb6ac36",
+   "method": "POST",
+   "model": []
+  }
+ },
  {
   "model": "system.menu",
   "pk": "5df63722-99a3-48f8-900e-0500b06dc867",

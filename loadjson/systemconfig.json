@@ -994,7 +994,7 @@
     "fields": {
       "created_time": "2026-09-11T00:00:00Z",
       "updated_time": "2026-09-11T00:00:00Z",
-      "description": "SCIM 用户目录同步总开关（S1，默认关）：开启且配置 SCIM_TOKEN 后 /api/scim/v2 生效",
+      "description": "SCIM 用户目录同步总开关（默认关）：开启且配置 SCIM_TOKEN 后 /api/scim/v2 生效",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
@@ -1062,7 +1062,7 @@
     "fields": {
       "created_time": "2026-09-11T00:00:00Z",
       "updated_time": "2026-09-11T00:00:00Z",
-      "description": "备份失败告警回调令牌（S2）：db_backup 容器以 X-Backup-Token 上报；空 = 未启用",
+      "description": "备份失败告警回调令牌：db_backup 容器以 X-Backup-Token 上报；空 = 未启用",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
@@ -1079,7 +1079,7 @@
     "fields": {
       "created_time": "2026-09-11T00:00:00Z",
       "updated_time": "2026-09-11T00:00:00Z",
-      "description": "CSP 模式（S3，django-csp 独立方案）：disabled / report-only（观察期，默认）/ enforce",
+      "description": "CSP 模式（django-csp 独立方案）：disabled / report-only（观察期，默认）/ enforce",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
@@ -1147,7 +1147,7 @@
     "fields": {
       "created_time": "2026-09-17T00:00:00Z",
       "updated_time": "2026-09-17T00:00:00Z",
-      "description": "运维告警回调令牌（A1）：宿主侧 watcher（容器 OOM 等）以 X-Ops-Token 上报；空 = 未启用",
+      "description": "运维告警回调令牌：宿主侧 watcher（容器 OOM 等）以 X-Ops-Token 上报；空 = 未启用",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
