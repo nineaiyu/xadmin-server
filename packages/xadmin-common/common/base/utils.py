@@ -53,7 +53,7 @@ class AESCipher:
 
 
 class AESCipherV3:
-    """字段级加密 v3（S5）：HKDF 派生独立数据密钥 + AES-256-GCM，写新读旧。
+    """字段级加密 v3：HKDF 派生独立数据密钥 + AES-256-GCM，写新读旧。
 
     动机：旧 ``AESCipher`` 以 ``sha256(SECRET_KEY)`` 直接派生、AES-CBC 无完整性校验——
     SECRET_KEY 一处泄露即可同时伪造 JWT 并解密全部落库密钥，且密文可被篡改。
@@ -128,7 +128,7 @@ class AESCipherV3:
 
 
 def get_signer() -> AESCipherV3:
-    """字段级加解密器（S5）：写路径统一 v3（HKDF + AES-GCM），读路径兼容旧 v1 密文。
+    """字段级加解密器：写路径统一 v3（HKDF + AES-GCM），读路径兼容旧 v1 密文。
 
     主密钥分离（3.4）：``FIELD_ENCRYPTION_KEY`` 显式配置后作为字段加密主密钥
     （与 JWT 签名 / Django 会话的 SECRET_KEY 解耦，可独立轮换）；

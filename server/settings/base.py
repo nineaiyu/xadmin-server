@@ -90,7 +90,7 @@ from .apps import build_installed_apps, build_middleware  # noqa: E402
 INSTALLED_APPS = build_installed_apps(XADMIN_APPS)
 MIDDLEWARE = build_middleware()
 
-# CSP 策略（S3 落地，独立于 Office 预览）：django-csp 生成，运行期模式由
+# CSP 策略（独立于 Office 预览）：django-csp 生成，运行期模式由
 # CSPModeMiddleware + SysConfig.CSP_MODE 决定（默认 report-only 观察，再切 enforce）。
 # 策略本体见 server/settings/csp.py（三层同源守护：本模块再导出 ↔ 页面层 nginx ↔ 隔离验证服务）。
 from server.settings.csp import (  # noqa: E402,F401

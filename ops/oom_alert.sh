@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 容器 OOM 事件告警（A1）：监听 `docker events` 的 `oom` 事件并回调服务端。
+# 容器 OOM 事件告警：监听 `docker events` 的 `oom` 事件并回调服务端。
 #
 # 部署位置：Docker 宿主机（需可访问 docker socket 与 xadmin 服务端 HTTP）。
 #

@@ -39,7 +39,7 @@ def make_token_cache(
         logger.debug(f"make_token cache exists. token:{token} force_new:{force_new} token_key:{token_key}")
         return token
     else:
-        # 随机段用 secrets 生成（旧实现 uuid1 含网卡 MAC 与时间戳，属信息泄露面，S8）
+        # 随机段用 secrets 生成（旧实现 uuid1 含网卡 MAC 与时间戳，属信息泄露面）
         random_str = secrets.token_urlsafe(16)
         user_ran_str = uuid.uuid5(uuid.NAMESPACE_DNS, key).__str__().split("-")
         token = f"tmp_token_{''.join(user_ran_str)}{random_str}"

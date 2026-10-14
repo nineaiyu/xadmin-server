@@ -10,8 +10,8 @@
 与根级页面下的 ``*.md`` 必须出现在站点导航（``.vitepress/config.mts`` 的 ``link: '...'``）中——
 新增页面忘记接入 sidebar/nav 时 CI 失败（页面无入口可达，只能被站内搜索偶然命中）。
 
-惯例豁免：``README.md``（仓库说明）；``index.md`` 允许以目录 link（如 ``/guide``）指代；
-根级 ``index.md``（站点首页）由 ``link: '/'`` 承载。
+惯例豁免：``README.md``（仓库说明）、``AGENTS.md``（面向 AI 协作者，不进站点）；``index.md``
+允许以目录 link（如 ``/guide``）指代；根级 ``index.md``（站点首页）由 ``link: '/'`` 承载。
 跨仓根（``XADMIN_DOCS_DIR``，默认 ``../xadmin-docs``）缺失时跳过（单仓检出守卫）。
 
 用法::
@@ -52,9 +52,9 @@ def collect_violations(docs_root: Path | None = None) -> list:
         return []  # 跨仓未检出（或站点结构变化）：跳过而非误报
     links = _normalized_links(config.read_text(encoding="utf-8"))
     violations = []
-    # 根级页面（首页由 link: '/' 承载、README 为仓库说明，均豁免）
+    # 根级页面（首页由 link: '/' 承载、README / AGENTS 为仓库级说明，均豁免）
     for path in sorted(root.glob("*.md")):
-        if path.name in ("README.md", "index.md") or path.stem in links:
+        if path.name in ("README.md", "AGENTS.md", "index.md") or path.stem in links:
             continue
         violations.append(f"xadmin-docs:{path.name}: 未接入站点导航（.vitepress/config.mts 的 link）")
     # 内容目录

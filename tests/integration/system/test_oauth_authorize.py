@@ -2,7 +2,7 @@
 """OAuth 2.0 授权码模式：授权流程 / PKCE / refresh 轮换 / 撤销 / 四级授权联动。
 
 纪律：token/revoke 匿名可达（凭证即身份）；access 是 PAT（creator = 授权用户），
-因此 B1 四级授权对 OAuth 凭证同样生效（关键红线：OAuth 不绕过应用授权）。
+因此四级授权对 OAuth 凭证同样生效（关键红线：OAuth 不绕过应用授权）。
 """
 
 import base64
@@ -316,7 +316,7 @@ class TestRefreshAndRevoke:
 
 class TestGrantEnforcementOnOAuthToken:
     def test_oauth_access_respects_application_grants(self, auth_client, menu_factory):
-        """红线：OAuth 凭证不绕过 B1 四级授权（应用有规则时同样白名单）。"""
+        """红线：OAuth 凭证不绕过四级授权（应用有规则时同样白名单）。"""
         from system.models.field import ModelLabelField
 
         model_label = ModelLabelField.objects.create(name="identity.userinfo", label="用户信息")

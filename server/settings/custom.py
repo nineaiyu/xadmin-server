@@ -18,7 +18,7 @@ PERMISSION_WHITE_URL = {
     "^/api/identity/userinfo/verify-password$": ["POST"],
     "^/api/system/routes$": ["*"],
     "^/api/system/dashboard/": ["*"],
-    # 结构元数据枚举（S7 口径文档化）：choices / search-fields / dict.items 对所有
+    # 结构元数据枚举（口径已在文档登记）：choices / search-fields / dict.items 对所有
     # 已登录用户开放，不要求菜单权限——前端表单枚举、通用搜索、引用字段渲染在任意页面
     # 都可能跨菜单消费这些元数据，按菜单收紧会直接破坏渲染。
     # 数据边界：仅返回「字段名 / 枚举 label / 字典项」等结构元数据，不含业务记录行；

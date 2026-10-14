@@ -63,7 +63,7 @@ class OperationLog(DbAuditModel):
     class AuthType(models.TextChoices):
         JWT = "jwt", _("JWT")
         PAT = "pat", _("Personal access token")
-        # SCIM 目录同步（S1）：独立服务凭证，写操作由 system/scim/resources.write_audit 落库
+        # SCIM 目录同步：独立服务凭证，写操作由 system/scim/resources.write_audit 落库
         SCIM = "scim", _("SCIM directory sync")
         # LDAP 目录同步：同步冲突/摘要由 system/ldap/sync 落库
         LDAP = "ldap", _("LDAP directory sync")

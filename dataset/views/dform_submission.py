@@ -4,7 +4,7 @@
 
 填报与本人提交管理——普通用户按 creator 隔离（只见/只改本人提交），超管全量；
 停用表单拒新提交（序列化器校验）；表单可挂审批流（提交门与重提见 dform_flow）。
-导出（C2）：`export-data` 复用导出框架，列 = 固定列（提交号/表单/提交人/时间）+
+导出：`export-data` 复用导出框架，列 = 固定列（提交号/表单/提交人/时间）+
 按涉及表单 schema 展开的动态数据列；导出范围自动跟随列表筛选（含 creator 隔离）。
 定义/提交类资源不做行级数据权限过滤（与 Dataset 同款处理）。
 """
@@ -52,7 +52,7 @@ class SubmissionFilter(MaterializedFilterMixin, BaseFilterSet):
 class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
     """动态表单提交（填报与本人提交管理；表单可挂审批流）。
 
-    导出（C2）：`export-data` 复用导出框架，列 = 固定列（提交号/表单/提交人/时间）+
+    导出：`export-data` 复用导出框架，列 = 固定列（提交号/表单/提交人/时间）+
     按涉及表单 schema 展开的动态数据列；导出范围自动跟随列表筛选（含 creator 隔离）。
     """
 

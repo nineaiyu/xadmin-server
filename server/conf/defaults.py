@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """服务器配置默认值（静态字典部分：通用/基础 + 三方库）。
 
-与 settings_defaults.py（安全/功能/业务域）的物理分离是**有意设计**（R5 已评估
+与 settings_defaults.py（安全/功能/业务域）的物理分离是**有意设计**（已评估
 否决合并）：两者都经 ``server/conf/config.py`` 并入同一 ``Config.defaults``，
 运行期热更（SysConfig.get_value → DB 行覆盖 → CONFIG 兜底）不区分来源文件，
 合并无行为收益；分离保住基础设施键与产品/安全键各自的评审节奏，键不重叠由
@@ -186,7 +186,7 @@ BASE_CONFIG = {
     # AI 二期 NL 查数：2026-10-03 灰度转正；视图侧仍有 is_enabled 双闸
     # 与数据权限（visible_datasets）口径
     "AI_NL_QUERY_ENABLED": True,
-    # AI 四期受限动作（A2：草稿→确认→以用户身份执行）：2026-10-03 灰度转正
+    # AI 受限动作（草稿→确认→以用户身份执行）：2026-10-03 灰度转正
     # 协议自身 fail-closed；白名单动作与审计见 ai/utils/ai_actions.py
     "AI_ACTION_ENABLED": True,
     # AI 三期采样/行为参数（档案未配置的参数按此回落；None = 不下发走供应商默认）

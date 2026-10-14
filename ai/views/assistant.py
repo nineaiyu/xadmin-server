@@ -237,7 +237,7 @@ class AiAssistantViewSet(
         无法再改状态码）。事件载荷：reasoning/delta 为 `{"delta": "..."}`，
         done 为 `{"answer", "sources"}`。
 
-        **异步事件源（S7 根治②）**：LLM 增量经 ``AsyncChatCompletionsClient`` 在
+        **异步事件源**：LLM 增量经 ``AsyncChatCompletionsClient`` 在
         事件循环内 await（帧组装零线程占用，数百并发流不再受线程池上限约束）；
         流内 DB 写（审计/落库）经 ``sync_to_async`` 保持线程本地连接语义。
         """

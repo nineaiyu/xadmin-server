@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """服务器配置默认值（安全/功能/业务配置字典）。
 
-与 defaults.py（通用/基础 + 三方库域）的物理分离是**有意设计**（R5 已评估否决
+与 defaults.py（通用/基础 + 三方库域）的物理分离是**有意设计**（已评估否决
 合并）：两者都经 ``server/conf/config.py`` 并入同一 ``Config.defaults``，运行期
 热更不区分来源文件，合并无行为收益；分离保住产品/安全键与基础设施键各自的
 评审节奏，键不重叠由 ``test_config_defaults_single_source`` 守护。
@@ -195,12 +195,12 @@ SETTINGS_CONFIG = {
     "FILE_OFFICE_CONVERT_TIMEOUT": 60,  # 单次转换超时（秒）
     "FILE_OFFICE_WAIT_SECONDS": 8,  # 请求侧等待产物窗口（秒）：未等到回 1006 由前端重试
     "FILE_OFFICE_SOFFICE_BIN": "",  # 转换器路径：空 = 自动探测 PATH 与常见安装路径
-    # SCIM 2.0 用户目录同步（S1）：默认整体休眠，需显式开启并配置独立 Bearer Token
+    # SCIM 2.0 用户目录同步：默认整体休眠，需显式开启并配置独立 Bearer Token
     "SCIM_ENABLED": False,
     "SCIM_TOKEN": "",
     "SCIM_RATE_LIMIT": "600/min",  # 凭证级限流；空或 0 = 不限
     "SCIM_DEFAULT_ROLE_CODE": "",  # 新建用户默认角色 code（空 = 不分配）
-    # CSP（S3）：django-csp 生成策略，模式与上报地址运行期可配
+    # CSP：django-csp 生成策略，模式与上报地址运行期可配
     # 口径标注：本档默认 report-only 与 nginx 页面层强制头（xadmin-web/default.conf）
     # 的差异是**有意分层**——浏览器页面流量经 nginx 已强制；直连 Django 的仅 JSON API
     # （无脚本执行面）与 swagger/api-docs（django-csp 策略已按 swagger 放行，切 enforce

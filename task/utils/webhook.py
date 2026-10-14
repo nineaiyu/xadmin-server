@@ -115,7 +115,7 @@ EVENT_CATALOG = {
             "host": {"type": "string", "required": False, "description": _("Host name")},
         },
     },
-    # 运维告警（A1）：宿主侧 watcher（容器 OOM 等）事件，由 notify_ops_alert 发射
+    # 运维告警：宿主侧 watcher（容器 OOM 等）事件，由 notify_ops_alert 发射
     "system.ops_alert": {
         "label": _("Ops alert"),
         "version": 1,

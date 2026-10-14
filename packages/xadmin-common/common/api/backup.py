@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""备份失败告警上报端点（S2）。
+"""备份失败告警上报端点。
 
 - 调用方：`ops/db_backup.sh`（db-backup 容器内的 bash 循环，无 JWT 登录态）；
 - 鉴权：独立共享令牌 `X-Backup-Token`（对应 `SysConfig.BACKUP_ALERT_TOKEN`，

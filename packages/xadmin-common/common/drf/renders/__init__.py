@@ -65,7 +65,7 @@ async def async_sse_frames(events: Any) -> AsyncIterator[str]:
 
 
 async def async_sse_frames_async(events: Any) -> AsyncIterator[str]:
-    """异步事件字典序列 → SSE 帧（**零线程占用**形态，承接 S7 根治②）。
+    """异步事件字典序列 → SSE 帧（**零线程占用**形态）。
 
     事件源为 async 生成器（帧组装已是纯 CPU）；LLM 增量由异步 SDK 在事件循环内
     await，不再经 sync_to_async 逐帧占用视图线程——数百并发流不受线程池上限约束。

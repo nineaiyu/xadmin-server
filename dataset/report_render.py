@@ -80,7 +80,7 @@ def _render_component_sheet(wb: Any, report: Any, user: Any, component: Any, ind
 def _render_workbook(report: Any, user: Any) -> tuple[Any, ...]:
     """执行数据集并渲染 xlsx 到内存。返回 (bytes, 明细行数)。
 
-    批次二：`design` 决定明细列与行数上限（空 = 存量全列口径），并为每个聚合组件
+    报表设计：`design` 决定明细列与行数上限（空 = 存量全列口径），并为每个聚合组件
     追加独立 sheet；`mode == "aggregate"` 的存量单表行为不变。
     """
     from openpyxl import Workbook

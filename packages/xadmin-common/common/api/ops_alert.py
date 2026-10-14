@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""运维告警上报端点（A1）。
+"""运维告警上报端点。
 
 - 调用方：宿主侧 `ops/oom_alert.sh`（监听 `docker events` 的 `oom` 事件，无登录态）；
 - 鉴权：独立共享令牌 `X-Ops-Token`（对应 `SysConfig.OPS_ALERT_TOKEN`，

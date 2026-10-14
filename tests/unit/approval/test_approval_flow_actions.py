@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""审批流 P2 三件：超时自动动作（timeout_action）/ 退回指定节点 / 减签。
+"""审批流三件：超时自动动作（timeout_action）/ 退回指定节点 / 减签。
 
 覆盖口径（REFACTORING-PLAN §7.1-2/3/4）：
 - 超时自动动作：approve（系统代通过，节点结算与人工同口径）/ reject（整单终态）/

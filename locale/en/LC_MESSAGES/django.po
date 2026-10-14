@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 11:27+0800\n"
+"POT-Creation-Date: 2026-10-14 09:48+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -279,8 +279,10 @@ msgstr ""
 msgid "Duration (ms)"
 msgstr ""
 
-#: ai/models/ai.py:219 task/models/export.py:29 task/models/import_.py:28
-#: task/models/task.py:49 task/models/webhook.py:37
+#: ai/models/ai.py:219 packages/xadmin-common/common/notifications.py:281
+#: packages/xadmin-common/common/notifications.py:298
+#: packages/xadmin-common/common/notifications.py:315 task/models/export.py:29
+#: task/models/import_.py:28 task/models/task.py:49 task/models/webhook.py:37
 msgid "Success"
 msgstr ""
 
@@ -2607,6 +2609,7 @@ msgid "Methods must be a list"
 msgstr ""
 
 #: approval/serializers/approval_rule.py:104
+#, python-brace-format
 msgid "Invalid method: {}"
 msgstr "Invalid method: {}"
 
@@ -7955,7 +7958,7 @@ msgstr ""
 
 #: packages/xadmin-common/common/backup_alert.py:40
 #: packages/xadmin-common/common/celery/failure_handler.py:35
-#: packages/xadmin-common/common/notifications.py:62
+#: packages/xadmin-common/common/notifications.py:63
 #: packages/xadmin-common/common/ops_alert.py:40 system/models/monitor.py:26
 msgid "Monitor"
 msgstr ""
@@ -8186,20 +8189,20 @@ msgid ""
 "The requested address is incorrect or the data permission is not allowed"
 msgstr ""
 
-#: packages/xadmin-common/common/core/exception.py:83
+#: packages/xadmin-common/common/core/exception.py:85
 msgid "data"
 msgstr ""
 
-#: packages/xadmin-common/common/core/exception.py:90
+#: packages/xadmin-common/common/core/exception.py:92
 #, python-brace-format
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr ""
 
-#: packages/xadmin-common/common/core/exception.py:98
+#: packages/xadmin-common/common/core/exception.py:100
 msgid "Server internal error, please contact administrator or try again later"
 msgstr ""
 
-#: packages/xadmin-common/common/core/exception.py:107
+#: packages/xadmin-common/common/core/exception.py:109
 msgid "Operation failed, please check the submitted data"
 msgstr ""
 
@@ -8516,63 +8519,63 @@ msgstr ""
 msgid "{} is not a valid value for AESCharField"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:63
+#: packages/xadmin-common/common/notifications.py:64
 msgid "Server performance"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:69
+#: packages/xadmin-common/common/notifications.py:70
 msgid "Server health check warning"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:115
+#: packages/xadmin-common/common/notifications.py:117
 #, python-brace-format
 msgid "Disk used more than {max_threshold}%: => {value}"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:120
+#: packages/xadmin-common/common/notifications.py:122
 #, python-brace-format
 msgid "Memory used more than {max_threshold}%: => {value}"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:125
+#: packages/xadmin-common/common/notifications.py:127
 #, python-brace-format
 msgid "CPU load more than {max_threshold}: => {value}"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:130
+#: packages/xadmin-common/common/notifications.py:132
 #, python-brace-format
 msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:268
-#: packages/xadmin-common/common/notifications.py:280
-#: packages/xadmin-common/common/notifications.py:292
+#: packages/xadmin-common/common/notifications.py:270
+#: packages/xadmin-common/common/notifications.py:287
+#: packages/xadmin-common/common/notifications.py:304
 msgid "Task Message"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:269
+#: packages/xadmin-common/common/notifications.py:271
 msgid "Export data message"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:274
+#: packages/xadmin-common/common/notifications.py:276
 #, python-brace-format
 msgid "Export {} data {} message"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:281
+#: packages/xadmin-common/common/notifications.py:288
 msgid "Import data message"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:286
+#: packages/xadmin-common/common/notifications.py:293
 #, python-brace-format
 msgid "Import {} data {} message"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:293
+#: packages/xadmin-common/common/notifications.py:305
 msgid "Batch delete data message"
 msgstr ""
 
-#: packages/xadmin-common/common/notifications.py:298
+#: packages/xadmin-common/common/notifications.py:310
 #, python-brace-format
 msgid "Batch delete {} data {} message"
 msgstr ""
@@ -11141,15 +11144,15 @@ msgstr ""
 msgid "Tags updated: {} objects, {} failed"
 msgstr ""
 
-#: system/views/user/configs.py:75
+#: system/views/user/configs.py:144
 msgid "Unknown config key"
 msgstr ""
 
-#: system/views/user/configs.py:77
+#: system/views/user/configs.py:146
 msgid "This config is managed by administrators"
 msgstr ""
 
-#: system/views/user/configs.py:141
+#: system/views/user/configs.py:157
 msgid "Only administrators can change site-wide appearance settings"
 msgstr ""
 

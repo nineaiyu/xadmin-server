@@ -104,7 +104,7 @@ class TestSendMailAsync:
         assert exhausted.retry_msgs == []
 
     def test_mail_tasks_declare_acks_late(self):
-        """P3 守护：邮件任务开启 acks_late，worker 崩溃时任务不丢。"""
+        """邮件任务开启 acks_late，worker 崩溃时任务不丢。"""
         assert send_mail_async.acks_late is True
         assert send_mail_attachment_async.acks_late is True
         assert ct.MAIL_MAX_RETRIES >= 1

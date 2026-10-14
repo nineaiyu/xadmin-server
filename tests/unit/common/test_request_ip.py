@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""get_request_ip 防伪造测试（S1：XFF 信任策略）。
+"""get_request_ip 防伪造测试（XFF 信任策略）。
 
 口径：只有直连地址命中 TRUSTED_PROXY_IPS 时才解析 X-Forwarded-For，
 否则一律使用直连地址，攻击者伪造 XFF 无法影响 IP 登录封禁 / PAT IP 白名单。

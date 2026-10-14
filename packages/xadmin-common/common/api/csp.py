@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""CSP 违规上报端点（S3 观察期用）。
+"""CSP 违规上报端点（观察期用）。
 
 浏览器按策略里的 `report-uri` 把违规 POST 过来（无登录态，鉴权类不适用）。
 本端点做三件事：

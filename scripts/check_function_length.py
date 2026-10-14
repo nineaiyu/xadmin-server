@@ -58,7 +58,7 @@ EXCLUDED_SEGMENTS = {"migrations", "tests", "__pycache__", ".venv", "node_module
 THRESHOLD = 100
 
 # 存量基线：`相对路径::限定名` -> 基线行数（只减不增；行数降到阈值内即可从此表移除）
-# 2026-10-10 建立：7 项 → 清偿批次一拆分 5 项（metadata_columns / data_scope.compiler /
+# 2026-10-10 建立：7 项 → 清偿拆分 5 项（metadata_columns / data_scope.compiler /
 # task 导入实现 / captcha 绘图 / message ai 流式），余 2 项登记待后续批次。
 # 当前为空：`analysis.py::_collect_artifacts`（113）与 `account_risk.py::_collect_risks`（111）
 # 已按产物族 / 风险族拆分达标（超阈值函数 0 个）

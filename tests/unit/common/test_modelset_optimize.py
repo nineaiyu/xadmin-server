@@ -119,7 +119,7 @@ class TestListQueryCount:
         get_dict_items("user_gender")
         get_dict_items("notice_level")
         # 预热 PAT 限流速率配置（PatThrottle 全局挂载，首个请求会读一次系统配置）
-        # 与 CSP 中间件的两个配置键（S3：所有响应都要读 CSP_MODE / CSP_REPORT_URI，
+        # 与 CSP 中间件的两个配置键（所有响应都要读 CSP_MODE / CSP_REPORT_URI，
         # 首次读取会各查一次 systemconfig；不预热会落进基线窗口使差值漂移）
         from common.core.config import SysConfig
 

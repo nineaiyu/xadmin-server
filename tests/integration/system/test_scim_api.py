@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""S1 SCIM 2.0 用户目录同步：鉴权 / 能力声明 / Users / Groups / 审计 / 限流。
+"""SCIM 2.0 用户目录同步：鉴权 / 能力声明 / Users / Groups / 审计 / 限流。
 
 覆盖 RFC 7644 子集的核心契约：独立 Bearer Token（与 JWT/PAT 分离）、
 filter 子集、PATCH 停用即踢会话、Group ↔ UserRole 成员同步、写操作审计。

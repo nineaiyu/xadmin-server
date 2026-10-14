@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """AI 助手配置序列化器：Setting 体系，category=ai。
 
-API Key write_only ⇒ 值级加密落库、retrieve 回显自动剔除（G12 模式先行）。
+API Key write_only ⇒ 值级加密落库、retrieve 回显自动剔除。
 
 多档案（AiProfile）为主通路后，本序列化器承载「无激活档案时」的回落配置：
 凭据 + 采样/行为参数全集（与档案字段一一对应），None/留空 = 不下发走供应商默认。

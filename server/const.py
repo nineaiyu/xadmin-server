@@ -10,7 +10,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG_DIR = os.path.join(PROJECT_DIR, "data", "logs")
 TMP_DIR = os.path.join(PROJECT_DIR, "tmp")
 CELERY_LOG_DIR = os.path.join(LOG_DIR, "task")
-VERSION = "4.2.5"
+VERSION = "5.0.0"
 CONFIG = ConfigManager.load_user_config()
 
 # 装配产物（静态配置 / 版本号）依赖注入给 common 框架层——common 不再

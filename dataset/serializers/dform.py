@@ -340,7 +340,7 @@ class SubmissionDataField(serializers.Field):
 
 
 class SubmissionExportSerializer(BaseModelSerializer):
-    """动态表单提交导出序列化器（C2）：固定列 + 按表单 schema 展开的动态数据列。
+    """动态表单提交导出序列化器：固定列 + 按表单 schema 展开的动态数据列。
 
     复用导出框架（export-data / 渲染器按 `Meta.model` 定文件名、按 fields 出列）；
     动态字段在 `__init__` 末尾注入（绕开字段权限裁剪：导出列由 schema 决定）。

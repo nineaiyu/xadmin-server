@@ -23,7 +23,7 @@ from message.utils import push_room_event
 
 logger = get_logger(__name__)
 
-# `/kb` 前缀命令：走知识库 RAG；`/do` 前缀命令：受限动作草稿（A2）；否则通用多轮对话
+# `/kb` 前缀命令：走知识库 RAG；`/do` 前缀命令：受限动作草稿；否则通用多轮对话
 KB_COMMAND = "/kb"
 ACTION_COMMAND = "/do"
 
@@ -56,7 +56,7 @@ def strip_action_command(content: str) -> str:
 
 
 def action_reply(user: Any, request_text: str) -> tuple[Any, ...]:
-    """受限动作草稿（A2）：返回 (content, extra, mode)。
+    """受限动作草稿：返回 (content, extra, mode)。
 
     - 可执行 → content 为确认摘要，``extra.action_draft`` 携带白名单动作与规范化参数
       （前端渲染确认卡片，用户二次确认后经 execute 端点以本人身份执行）；

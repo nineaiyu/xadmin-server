@@ -2,7 +2,7 @@
 """
 PG nightly 测试专用配置（容器化 PG 的 nightly 测试档，docs/plans/容器化PG-nightly测试档立项-2026.10.md）。
 
-单变量换库（G2）：与 tests/settings_real（真环境门禁档）唯一的差异是不接真 Redis
+单变量换库：与 tests/settings_real（真环境门禁档）唯一的差异是不接真 Redis
 ——CACHES 仍为进程内 FakeRedis、channel 仍为内存层（本档自有定义，基座有意不含
 三件套分支），DATABASES 指向真实 PostgreSQL（与生产/loadtest 同 17 系大版本），
 作为真环境门禁的回退兜底档（周调度，全真容器化测试迁移方案 §四 回退方案）。

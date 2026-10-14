@@ -168,7 +168,7 @@ class TestTemplateApi:
 
 
 class TestTemplateSanitization:
-    """F5①：HTML 渠道模板渲染净化补链（存量缺口——覆盖渲染路径此前不经净化直落库）。"""
+    """HTML 渠道模板渲染净化补链（存量缺口——覆盖渲染路径此前不经净化直落库）。"""
 
     PAYLOAD = '<script>alert(1)</script><img src=x onerror="alert(1)">'
 

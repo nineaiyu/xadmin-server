@@ -21,7 +21,7 @@ class PersonalAccessToken(DbAuditModel):
     name = models.CharField(_("Token name"), max_length=128)
     token_hash = models.CharField(_("Token hash"), max_length=64, unique=True, db_index=False)
     token_prefix = models.CharField(_("Token prefix"), max_length=16)
-    # scope 语义 = 允许的接口路径前缀/正则清单（一期边界收口）：
+    # scope 语义 = 允许的接口路径前缀/正则清单（边界收口）：
     # 空清单 = 不限（既有 token 向后兼容）；校验内联在统一权限层
     # （common.core.permission.IsAuthenticated），防「显式 permission_classes 覆写」
     # 与「同请求带 JWT+Pat 双 header」两种绕过路径
@@ -105,10 +105,10 @@ class ApiApplication(DbAuditModel):
 
 
 class ApiApplicationGrant(DbAuditModel):
-    """应用资源授权规则（开放平台二期：模型 × 动作 × 字段 × 行四级授权）。
+    """应用资源授权规则（模型 × 动作 × 字段 × 行四级授权）。
 
     生效语义（只收敛不提权，fail-closed）：
-    - 应用不存在任何 is_active 规则 → 兼容模式（维持一期 owner 权限 + scopes，零影响）；
+    - 应用不存在任何 is_active 规则 → 兼容模式（维持 owner 权限 + scopes，零影响）；
     - 存在 ≥1 条规则 → 白名单模式：请求目标模型必须被某条规则覆盖（model 精确或 ``*``），
       动作段必须在覆盖规则的 actions 内（或 ``*``）；fields 非空时收敛字段
       （输出裁剪 + 输入拒绝未授权字段）；row_filter 非空时编译为 Q 叠加在数据权限

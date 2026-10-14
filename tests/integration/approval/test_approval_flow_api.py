@@ -628,7 +628,7 @@ class TestApprovalInstanceApi:
 
 
 class TestApprovalFlowP2Actions:
-    """P2 三件 API 面：超时动作契约（timeout_action 落定义）+ 退回 + 减签。"""
+    """三件 API 面：超时动作契约（timeout_action 落定义）+ 退回 + 减签。"""
 
     @pytest.fixture
     def applicant(self, db):
@@ -644,7 +644,7 @@ class TestApprovalFlowP2Actions:
         client.force_authenticate(user=approver)
         return client
 
-    def _start(self, api_client, flow, title="P2申请"):
+    def _start(self, api_client, flow, title="流程申请"):
         api_client.force_authenticate(user=UserInfo.objects.get(username="flow_p2_applicant"))
         created = api_client.post(INSTANCES_URL, {"flow": str(flow.pk), "title": title, "form_data": {}}, format="json")
         assert created.data["code"] == 1000, created.data

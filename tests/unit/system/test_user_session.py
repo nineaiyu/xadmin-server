@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """用户会话管理：登录登记、sid 精确失效、在线列表统一数据源、过期与清理。
 
-覆盖第一期登记的「纯 HTTP 会话不进在线列表」边界：
+覆盖「纯 HTTP 会话不进在线列表」边界：
 - 登录/WS 接入登记 UserSession，token 携带 sid claim（refresh 派生/轮换继承）；
 - 在线列表 = WS 会话（channel 存活）∪ HTTP 会话（last_active 活跃窗口内）；
 - 行维度下线按 sid 服务端失效，不影响同用户其他登录；

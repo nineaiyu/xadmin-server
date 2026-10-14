@@ -233,7 +233,7 @@ class TestGetFilterQueryset:
 
 
 class TestGrantsCache:
-    """授权池缓存（P2）：命中零 SQL + 变更即时失效守护。"""
+    """授权池缓存：命中零 SQL + 变更即时失效守护。"""
 
     @staticmethod
     def _grant_sql(queries):

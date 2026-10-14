@@ -24,10 +24,10 @@ urlpatterns = [
     # 还会挂到 TCP 重传耗竭）。用 Django 官方 non_atomic_requests 包装 URLconf callback。
     re_path("^api/health$", transaction.non_atomic_requests(HealthCheckAPIView.as_view()), name="health"),
     re_path("^api/metrics$", transaction.non_atomic_requests(MetricsAPIView.as_view()), name="metrics"),
-    # 备份失败告警上报（S2）：独立令牌鉴权，供 db-backup 容器回调
+    # 备份失败告警上报：独立令牌鉴权，供 db-backup 容器回调
     re_path("^api/backup-alert$", BackupAlertAPIView.as_view(), name="backup-alert"),
-    # 运维告警上报（A1）：独立令牌鉴权，供宿主侧 watcher（容器 OOM 等）回调
+    # 运维告警上报：独立令牌鉴权，供宿主侧 watcher（容器 OOM 等）回调
     re_path("^api/ops-alert$", OpsAlertAPIView.as_view(), name="ops-alert"),
-    # CSP 违规上报（S3 观察期）：浏览器 report-uri 目标，只记日志不落库
+    # CSP 违规上报（观察期）：浏览器 report-uri 目标，只记日志不落库
     re_path("^api/csp-report$", transaction.non_atomic_requests(CSPReportAPIView.as_view()), name="csp-report"),
 ]

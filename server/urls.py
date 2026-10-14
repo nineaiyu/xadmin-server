@@ -56,7 +56,7 @@ urlpatterns = [
     re_path("^api/dataset/", include("dataset.urls", namespace="dataset")),
     # 聊天室：会话/历史/私聊/撤回/联系人/AI 助手
     re_path("^api/chat/", include("message.urls", namespace="chat")),
-    # SCIM 2.0 用户目录同步（S1）：独立 Bearer Token 鉴权，不走 JWT/菜单权限链
+    # SCIM 2.0 用户目录同步：独立 Bearer Token 鉴权，不走 JWT/菜单权限链
     re_path("^api/scim/v2/", include("identity.scim.urls", namespace="scim")),
     re_path("^api/settings/", include("settings.urls", namespace="settings")),
     re_path("^api/mfa/", include("mfa.urls", namespace="mfa")),

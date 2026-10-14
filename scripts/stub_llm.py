@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """E2E 桩 LLM 服务器：OpenAI /v1/chat/completions 兼容的最小实现（无外部依赖）。
 
-用途：E2E 环境没有真实 LLM（AI_BASE_URL 指向本桩），AI 动作草稿（A2）等链路
+用途：E2E 环境没有真实 LLM（AI_BASE_URL 指向本桩），AI 动作草稿等链路
 需要一个**确定性**的模型回答。由 playwright.config.ts 的 webServer 拉起，
 端口 E2E_STUB_LLM_PORT（默认 18897）。
 

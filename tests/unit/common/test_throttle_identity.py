@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """固定窗口限流通用入口（allow_by_identity / allow_by_ip）+ DRF 限流类键推导。
 
-allow_by_* 用于非 DRF 场景：Django 原生验证码端点（P0）与 WebSocket 消费者（聊天发送限流）；
-DRF 限流类（IpScopedThrottle / ClientScopedThrottle 及其子类）为 O8 安全收口的
+allow_by_* 用于非 DRF 场景：Django 原生验证码端点与 WebSocket 消费者（聊天发送限流）；
+DRF 限流类（IpScopedThrottle / ClientScopedThrottle 及其子类）为安全收口的
 匿名凭证端点专用档，此处守护键推导口径，429 行为在集成测试守护。
 """
 
@@ -145,7 +145,7 @@ class TestClientScopedThrottle:
 
 
 def test_o8_throttle_scopes_registered_in_rates():
-    """四个 O8 专用档位必须在 DEFAULT_THROTTLE_RATES 登记：漏登记 = 视图挂载即 500。"""
+    """四个专用档位必须在 DEFAULT_THROTTLE_RATES 登记：漏登记 = 视图挂载即 500。"""
     rates = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
     for scope in ("open_client", "oauth_client", "verify_code", "temp_token"):
         assert rates.get(scope), f"throttle scope {scope} not registered"

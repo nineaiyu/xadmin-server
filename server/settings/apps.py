@@ -88,7 +88,7 @@ def build_middleware() -> list[str]:
         "django.middleware.clickjacking.XFrameOptionsMiddleware",
         "server.middleware.RefererCheckMiddleware",
         "server.middleware.SQLCountMiddleware",
-        # CSP（S3）：CSPModeMiddleware 必须排在 csp 中间件之前——响应阶段自内向外执行，
+        # CSP：CSPModeMiddleware 必须排在 csp 中间件之前——响应阶段自内向外执行，
         # 它需要在 django-csp 生成策略头之后按系统配置改写/移除（disabled/report-only/enforce）
         "common.core.middleware.CSPModeMiddleware",
         "csp.middleware.CSPMiddleware",

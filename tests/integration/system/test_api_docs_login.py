@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""文档站登录闭环核验（W1）：未登录引导 → ApiLogin 建 session → schema/swagger 可达 → 登出回登录页。"""
+"""文档站登录闭环核验：未登录引导 → ApiLogin 建 session → schema/swagger 可达 → 登出回登录页。"""
 
 import pytest
 from rest_framework.test import APIClient

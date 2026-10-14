@@ -100,7 +100,7 @@ class SecurityConfMixin(ConfigCacheBase):
 
     @property
     def SCIM_ENABLED(self) -> Any:
-        """SCIM 用户目录同步总开关（默认关，S1）：开启且配置 SCIM_TOKEN 后生效。"""
+        """SCIM 用户目录同步总开关（默认关）：开启且配置 SCIM_TOKEN 后生效。"""
         return self.get_value("SCIM_ENABLED", get_server_config().SCIM_ENABLED)
 
     @property
@@ -130,7 +130,7 @@ class SecurityConfMixin(ConfigCacheBase):
 
     @property
     def CSP_MODE(self) -> Any:
-        """CSP 模式（S3，默认 report-only 观察期）：disabled / report-only / enforce。"""
+        """CSP 模式（默认 report-only 观察期）：disabled / report-only / enforce。"""
         return self.get_value("CSP_MODE", get_server_config().CSP_MODE)
 
     @property

@@ -38,7 +38,7 @@ BACKUP_REMOTE_REQUIRED=${BACKUP_REMOTE_REQUIRED:-0}
 
 BACKUP_ONCE=${BACKUP_ONCE:-0}
 
-# 失败告警回调（可选；S2）：向服务端 POST 失败事件，由服务端节流（60s 同源去重）
+# 失败告警回调（可选）：向服务端 POST 失败事件，由服务端节流（60s 同源去重）
 # 后发站内信/邮件给超管。未配置 URL/TOKEN 时静默跳过（保持纯日志模式）。
 BACKUP_ALERT_URL=${BACKUP_ALERT_URL:-}
 BACKUP_ALERT_TOKEN=${BACKUP_ALERT_TOKEN:-}
@@ -241,7 +241,7 @@ check_wal_archive() {
     log "wal archive check done (failing=${failing} pending=${backlog_count:-?} oldest=${backlog_age:-?}s)"
 }
 
-# 启动自检（P1-35）：生产要求异地副本非空时，缺失必须「可见且可监控」——
+# 启动自检：生产要求异地副本非空时，缺失必须「可见且可监控」——
 # 只报警不阻断（本地备份照常执行），单次模式另以退出码暴露给调度侧
 REMOTE_MISSING=0
 check_remote_required() {

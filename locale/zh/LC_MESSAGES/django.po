@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 11:27+0800\n"
+"POT-Creation-Date: 2026-10-14 09:48+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -274,8 +274,10 @@ msgstr "总 tokens"
 msgid "Duration (ms)"
 msgstr "耗时（毫秒）"
 
-#: ai/models/ai.py:219 task/models/export.py:29 task/models/import_.py:28
-#: task/models/task.py:49 task/models/webhook.py:37
+#: ai/models/ai.py:219 packages/xadmin-common/common/notifications.py:281
+#: packages/xadmin-common/common/notifications.py:298
+#: packages/xadmin-common/common/notifications.py:315 task/models/export.py:29
+#: task/models/import_.py:28 task/models/task.py:49 task/models/webhook.py:37
 msgid "Success"
 msgstr "成功"
 
@@ -2638,6 +2640,7 @@ msgid "Methods must be a list"
 msgstr "请求方式必须是列表"
 
 #: approval/serializers/approval_rule.py:104
+#, python-brace-format
 msgid "Invalid method: {}"
 msgstr "非法请求方式：{}"
 
@@ -7993,7 +7996,7 @@ msgstr "已接收运维告警"
 
 #: packages/xadmin-common/common/backup_alert.py:40
 #: packages/xadmin-common/common/celery/failure_handler.py:35
-#: packages/xadmin-common/common/notifications.py:62
+#: packages/xadmin-common/common/notifications.py:63
 #: packages/xadmin-common/common/ops_alert.py:40 system/models/monitor.py:26
 msgid "Monitor"
 msgstr "资源监控"
@@ -8224,20 +8227,20 @@ msgid ""
 "The requested address is incorrect or the data permission is not allowed"
 msgstr "请求地址不正确或数据权限不允许"
 
-#: packages/xadmin-common/common/core/exception.py:83
+#: packages/xadmin-common/common/core/exception.py:85
 msgid "data"
 msgstr "数据"
 
-#: packages/xadmin-common/common/core/exception.py:90
+#: packages/xadmin-common/common/core/exception.py:92
 #, python-brace-format
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr "被其他 {} 关联，不能删除"
 
-#: packages/xadmin-common/common/core/exception.py:98
+#: packages/xadmin-common/common/core/exception.py:100
 msgid "Server internal error, please contact administrator or try again later"
 msgstr "服务器内部错误，请联系管理员或稍后再试"
 
-#: packages/xadmin-common/common/core/exception.py:107
+#: packages/xadmin-common/common/core/exception.py:109
 msgid "Operation failed, please check the submitted data"
 msgstr "操作失败，请检查提交的数据"
 
@@ -8556,63 +8559,63 @@ msgstr "{} - 未设置加密密码 - 请前往个人信息 -> 文件加密密码
 msgid "{} is not a valid value for AESCharField"
 msgstr "{} 不支持的AES加密类型"
 
-#: packages/xadmin-common/common/notifications.py:63
+#: packages/xadmin-common/common/notifications.py:64
 msgid "Server performance"
 msgstr "监控告警"
 
-#: packages/xadmin-common/common/notifications.py:69
+#: packages/xadmin-common/common/notifications.py:70
 msgid "Server health check warning"
 msgstr "服务健康状况检查警告"
 
-#: packages/xadmin-common/common/notifications.py:115
+#: packages/xadmin-common/common/notifications.py:117
 #, python-brace-format
 msgid "Disk used more than {max_threshold}%: => {value}"
 msgstr "硬盘使用率超过 {max_threshold}%: => {value}"
 
-#: packages/xadmin-common/common/notifications.py:120
+#: packages/xadmin-common/common/notifications.py:122
 #, python-brace-format
 msgid "Memory used more than {max_threshold}%: => {value}"
 msgstr "内存使用率超过 {max_threshold}%: => {value}"
 
-#: packages/xadmin-common/common/notifications.py:125
+#: packages/xadmin-common/common/notifications.py:127
 #, python-brace-format
 msgid "CPU load more than {max_threshold}: => {value}"
 msgstr "CPU 负载超过 {max_threshold}: => {value}"
 
-#: packages/xadmin-common/common/notifications.py:130
+#: packages/xadmin-common/common/notifications.py:132
 #, python-brace-format
 msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr "CPU 使用率超过 {max_threshold}: => {value}"
 
-#: packages/xadmin-common/common/notifications.py:268
-#: packages/xadmin-common/common/notifications.py:280
-#: packages/xadmin-common/common/notifications.py:292
+#: packages/xadmin-common/common/notifications.py:270
+#: packages/xadmin-common/common/notifications.py:287
+#: packages/xadmin-common/common/notifications.py:304
 msgid "Task Message"
 msgstr "任务通知"
 
-#: packages/xadmin-common/common/notifications.py:269
+#: packages/xadmin-common/common/notifications.py:271
 msgid "Export data message"
 msgstr "导出数据通知"
 
-#: packages/xadmin-common/common/notifications.py:274
+#: packages/xadmin-common/common/notifications.py:276
 #, python-brace-format
 msgid "Export {} data {} message"
 msgstr "导出{}数据{}通知"
 
-#: packages/xadmin-common/common/notifications.py:281
+#: packages/xadmin-common/common/notifications.py:288
 msgid "Import data message"
 msgstr "导入数据通知"
 
-#: packages/xadmin-common/common/notifications.py:286
+#: packages/xadmin-common/common/notifications.py:293
 #, python-brace-format
 msgid "Import {} data {} message"
 msgstr "导入{}数据{}通知"
 
-#: packages/xadmin-common/common/notifications.py:293
+#: packages/xadmin-common/common/notifications.py:305
 msgid "Batch delete data message"
 msgstr "批量删除数据通知"
 
-#: packages/xadmin-common/common/notifications.py:298
+#: packages/xadmin-common/common/notifications.py:310
 #, python-brace-format
 msgid "Batch delete {} data {} message"
 msgstr "批量删除{}数据{}通知"
@@ -11232,15 +11235,15 @@ msgstr "标签已更新"
 msgid "Tags updated: {} objects, {} failed"
 msgstr "标签已更新：{} 个对象，{} 个失败"
 
-#: system/views/user/configs.py:75
+#: system/views/user/configs.py:144
 msgid "Unknown config key"
 msgstr "未知配置项"
 
-#: system/views/user/configs.py:77
+#: system/views/user/configs.py:146
 msgid "This config is managed by administrators"
 msgstr "该配置由管理员统一管理，请在「用户配置」管理页调整"
 
-#: system/views/user/configs.py:141
+#: system/views/user/configs.py:157
 msgid "Only administrators can change site-wide appearance settings"
 msgstr "站点级外观配置仅管理员可修改"
 

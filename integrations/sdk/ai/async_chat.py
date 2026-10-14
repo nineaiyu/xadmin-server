@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""OpenAI 兼容 chat/completions **异步**客户端（httpx.AsyncClient，S7 根治②）。
+"""OpenAI 兼容 chat/completions **异步**客户端（httpx.AsyncClient）。
 
 与同步客户端（``integrations/sdk/ai/chat.py``）的分工：
 - 同步 ``ChatCompletionsClient``：非流式链路（聊天室 / 动作草稿 / NL 查数 / 探测）

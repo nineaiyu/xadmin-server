@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""SysConfig 默认值单源守护（A1）。
+"""SysConfig 默认值单源守护。
 
 单一来源 = ``server/conf.py``：
 

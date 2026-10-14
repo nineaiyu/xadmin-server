@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""SCIM 2.0 用户目录同步（S1，RFC 7644 Users/Groups 核心子集）。
+"""SCIM 2.0 用户目录同步（RFC 7644 Users/Groups 核心子集）。
 
 与既有身份体系的衔接：
 - **鉴权**：独立 Bearer Token（`SCIM_TOKEN`，与 JWT/PAT 完全分离，见 auth.py），

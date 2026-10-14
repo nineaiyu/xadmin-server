@@ -81,7 +81,7 @@ class TestTargetSnapshot:
 class TestRelatedObject:
     @staticmethod
     def _flow():
-        return ApprovalFlow.objects.create(name="U1 流程", code="u1_flow")
+        return ApprovalFlow.objects.create(name="决策关联流程", code="decision_flow")
 
     def test_leave_related_object(self, superuser):
         from approval.models.leave import Leave
@@ -92,7 +92,7 @@ class TestRelatedObject:
             start_date="2031-05-01",
             end_date="2031-05-02",
             days=2,
-            reason="U1 关联卡片",
+            reason="关联卡片",
             creator=superuser,
         )
         instance = ApprovalInstance.objects.create(

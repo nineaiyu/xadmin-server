@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""AI 流式链路异步化（S7 根治②）：用量记账 + RAG 问答的 async 对偶实现。
+"""AI 流式链路异步化：用量记账 + RAG 问答的 async 对偶实现。
 
 - ``tracked_chat_stream_async``：``ai_usage.tracked_chat_stream`` 的异步对偶——
   并发信号量（Redis INCR/DECR，微秒级直接同步调用）+ 结束时用量记账（DB 写经

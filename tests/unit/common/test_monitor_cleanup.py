@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Monitor 心跳历史保留期清理：MONITOR_RETENTION_DAYS 配置化 + 分批删除。
 
-第一期边界登记项：Monitor 30s 心跳长期落库无保留期配置（原硬编码 30 天）。
+边界登记项：Monitor 30s 心跳长期落库无保留期配置（原硬编码 30 天）。
 """
 
 import datetime

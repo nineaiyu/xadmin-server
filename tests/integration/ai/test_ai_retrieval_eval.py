@@ -1,6 +1,6 @@
-"""AI 知识库检索评测（A1「评测驱动」）：评测集 hit@5 门禁入 CI。
+"""AI 知识库检索评测（评测驱动）：评测集 hit@5 门禁入 CI。
 
-评测口径（A1「评测驱动」立项时定稿）：
+评测口径（立项时定稿）：
 - 语料 = 仓库文档（ai/utils/ai.py 的 _iter_doc_files，docs/**.md + 根 README/CONTRIBUTING）；
 - 评测集 = tests/data/ai_retrieval_eval.json（问题 + 期望出处），命中 top-5 任一期望出处即 hit；
 - 门禁：hit@5 ≥ 75%（低于阈值按规划升级向量检索）；
@@ -20,7 +20,7 @@ from ai.utils.ai import _iter_doc_files, retrieve, sync_knowledge
 EVAL_FILE = Path(__file__).resolve().parents[2] / "data" / "ai_retrieval_eval.json"
 HIT_RATE_FLOOR = 0.75
 TOP_K = 5
-#: 向量升级触发线（分块规模），见 §四.A1
+#: 向量升级触发线（分块规模），见规划 §四
 VECTOR_TRIGGER_CHUNKS = 500
 
 
@@ -174,5 +174,5 @@ def test_retrieval_scale_gate_recorded(corpus):
     if corpus["chunk_total"] > VECTOR_TRIGGER_CHUNKS:
         pytest.skip(
             f"分块数 {corpus['chunk_total']} 已超向量触发线 {VECTOR_TRIGGER_CHUNKS}——"
-            "按规划 §四.A1 需评估向量检索（本测试仅记录规模，不阻断）"
+            "按规划 §四需评估向量检索（本测试仅记录规模，不阻断）"
         )
