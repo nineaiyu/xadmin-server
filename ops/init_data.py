@@ -94,6 +94,14 @@ def main() -> None:
                 "生产裁剪（未启用 demo app 且非 DEBUG）下不可用，请去掉 --with-demo"
             )
         management.call_command("seed_demo_all")
+        from demo_seed.management.commands import seed_demo_admin
+
+        print(
+            "[init] demo data ready. Demo account (destructive writes pruned by the 'demo' role):\n"
+            f"       username: {seed_demo_admin.ADMIN_USERNAME}\n"
+            f"       password: {seed_demo_admin.ADMIN_PASSWORD}\n"
+            "       reset anytime: python manage.py seed_demo_all --reset"
+        )
 
     print("[init] done. Health check: /api/common/api/health")
 
