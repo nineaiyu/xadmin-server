@@ -12,6 +12,7 @@ get_allow_fields）：角色在某权限点上没有非空白名单时，该接�
 5. 命令入口 --fix-field-permissions 与审计口径同源。
 """
 
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -20,9 +21,11 @@ from django.core.management import call_command
 from identity.models import UserRole
 from system.models import FieldPermission, Menu, MenuMeta, ModelLabelField
 from system.services.permission_sync import (
+    apply_binding_fixes,
     audit_field_permissions,
     fill_field_permissions,
     model_field_nodes,
+    plan_binding_fixes,
 )
 
 pytestmark = pytest.mark.django_db
@@ -98,6 +101,39 @@ def test_fill_keeps_existing_nonempty_whitelist(demo_role: Any, bound_menu: Any,
     assert set(permission.field.values_list("name", flat=True)) == {"title"}
 
 
+def test_audit_flags_whitelist_disjoint_from_binding(demo_role: Any, bound_menu: Any, field_tree: Any) -> None:
+    """白名单与绑定模型完全脱节（数据源模型迁移残留）等价于空白名单，计入缺口。
+
+    运行时按「模型标签 + 字段名」匹配（get_user_field_queryset），旧模型字段
+    不会命中任何当前模型，页面输出空对象；不识别的话脱节配置会把缺口永久掩盖。
+    """
+    legacy_root = ModelLabelField.objects.create(name="demo.legacy", label="旧模型", field_type=ROLE)
+    legacy = ModelLabelField.objects.create(name="legacy_field", label="旧字段", parent=legacy_root, field_type=ROLE)
+    permission = FieldPermission.objects.create(role=demo_role, menu=bound_menu)
+    permission.field.set([legacy])
+
+    assert audit_field_permissions(roles=[demo_role]) == [(demo_role, bound_menu)]
+
+    filled = fill_field_permissions(roles=[demo_role])
+
+    assert len(filled) == 1
+    # 脱节白名单被重写为绑定模型全字段（旧模型字段清除）
+    assert set(permission.field.values_list("name", flat=True)) == {"title", "amount"}
+
+
+def test_fill_keeps_partially_valid_whitelist(demo_role: Any, bound_menu: Any, field_tree: Any) -> None:
+    """白名单含绑定模型字段（哪怕同时残留旧模型字段）视为有效配置，不覆盖。"""
+    permission = FieldPermission.objects.create(role=demo_role, menu=bound_menu)
+    title = ModelLabelField.objects.get(name="title", parent=field_tree)
+    legacy_root = ModelLabelField.objects.create(name="demo.legacy", label="旧模型", field_type=ROLE)
+    legacy = ModelLabelField.objects.create(name="legacy_field", label="旧字段", parent=legacy_root, field_type=ROLE)
+    permission.field.set([title, legacy])
+
+    assert audit_field_permissions(roles=[demo_role]) == []
+    assert fill_field_permissions(roles=[demo_role]) == []
+    assert set(permission.field.values_list("name", flat=True)) == {"title", "legacy_field"}
+
+
 def test_fill_skips_menu_without_model_binding(demo_role: Any) -> None:
     """无模型绑定的权限点（动作类/自定义视图）不进审计面，也不补字段。"""
     meta = MenuMeta.objects.create(title="推送动作")
@@ -150,3 +186,98 @@ def test_command_dry_run_does_not_write(demo_role: Any, bound_menu: Any) -> None
     )
 
     assert not FieldPermission.objects.filter(role=demo_role, menu=bound_menu).exists()
+
+
+class TestBindingShrink:
+    """模型绑定校正：视图数据源迁移后收缩陈旧绑定（旧绑定会掩盖白名单脱节）。"""
+
+    @staticmethod
+    def _route(path: str, view_cls: Any) -> Any:
+        return SimpleNamespace(url=path, actions={"get": "list"}, view_cls=view_cls)
+
+    @staticmethod
+    def _perm_menu(path: str, roots: Any) -> Any:
+        meta = MenuMeta.objects.create(title="在线用户")
+        menu = Menu.objects.create(
+            name="list:SystemUserOnline",
+            path=f"{path}$",
+            menu_type=Menu.MenuChoices.PERMISSION,
+            method="GET",
+            meta=meta,
+        )
+        menu.model.set(roots)
+        return menu
+
+    @staticmethod
+    def _fake_view(model: Any) -> Any:
+        class FakeView:
+            queryset = model.objects.all()
+
+        return FakeView
+
+    def test_shrinks_binding_outside_view_models(self) -> None:
+        """绑定含视图已不再关联的模型（迁移残留）时收缩到当前模型。"""
+        from identity.models import UserSession
+
+        current_root = ModelLabelField.objects.create(name="identity.usersession", label="会话", field_type=ROLE)
+        stale_root = ModelLabelField.objects.create(name="audit.userloginlog", label="登录日志", field_type=ROLE)
+        menu = self._perm_menu("api/identity/online", [current_root, stale_root])
+        route = self._route("api/identity/online$", self._fake_view(UserSession))
+
+        fixes = plan_binding_fixes([route], [menu])
+
+        assert len(fixes) == 1
+        assert fixes[0].mode == "shrink"
+        assert fixes[0].expected == {current_root.pk}
+        apply_binding_fixes(fixes)
+        assert set(menu.model.values_list("pk", flat=True)) == {current_root.pk}
+
+    def test_adjust_adds_missing_and_shrinks_stale(self) -> None:
+        """同时存在缺失与陈旧绑定时一次校正到位（补新 + 收缩旧）。"""
+        from identity.models import UserSession
+
+        current_root = ModelLabelField.objects.create(name="identity.usersession", label="会话", field_type=ROLE)
+        stale_root = ModelLabelField.objects.create(name="audit.userloginlog", label="登录日志", field_type=ROLE)
+        menu = self._perm_menu("api/identity/online", [stale_root])
+        route = self._route("api/identity/online$", self._fake_view(UserSession))
+
+        fixes = plan_binding_fixes([route], [menu])
+
+        assert len(fixes) == 1
+        assert fixes[0].mode == "adjust"
+        apply_binding_fixes(fixes)
+        assert set(menu.model.values_list("pk", flat=True)) == {current_root.pk}
+
+    def test_view_without_model_keeps_binding(self) -> None:
+        """视图无模型（APIView / 自定义端点）时不判定陈旧，手工绑定保留。"""
+        root = ModelLabelField.objects.create(name="demo.manual", label="手工", field_type=ROLE)
+        menu = self._perm_menu("api/demo/manual", [root])
+        route = self._route("api/demo/manual$", SimpleNamespace(queryset=None))
+
+        fixes = plan_binding_fixes([route], [menu])
+
+        assert fixes == []
+
+    def test_fill_after_binding_shrink_rebuilds_whitelist(
+        self, demo_role: Any, bound_menu: Any, field_tree: Any
+    ) -> None:
+        """陈旧绑定会掩盖白名单脱节；收缩绑定后同一组合被识别为缺口并重写。
+
+        命令内的执行顺序即为此语义：先 apply_binding_fixes 收缩绑定，再补齐。
+        """
+        stale_root = ModelLabelField.objects.create(name="demo.legacy", label="旧模型", field_type=ROLE)
+        stale = ModelLabelField.objects.create(name="legacy_field", label="旧字段", parent=stale_root, field_type=ROLE)
+        bound_menu.model.add(stale_root)
+        permission = FieldPermission.objects.create(role=demo_role, menu=bound_menu)
+        permission.field.set([stale])
+
+        # 陈旧绑定仍在：stale 命中绑定模型，不判缺口（正是需要先收缩的原因）
+        assert fill_field_permissions(roles=[demo_role]) == []
+
+        # 等价于 sync_menu_permissions 的绑定校正
+        bound_menu.model.set([field_tree])
+
+        filled = fill_field_permissions(roles=[demo_role])
+
+        assert len(filled) == 1
+        assert set(permission.field.values_list("name", flat=True)) == {"title", "amount"}

@@ -165,11 +165,16 @@ def _ensure_role_fields(role: Any, model_names: Any) -> None:
 
     all_fields = []
     for name in model_names:
-        root = ModelLabelField.objects.filter(name=name, parent__isnull=True).first()
+        # 字段白名单取值面固定为角色字段树（field_type=ROLE）：同名模型在数据权限树
+        # 也有一份根节点，不限定类型会取到 DATA 字段节点——运行时虽按「模型标签 +
+        # 字段名」匹配而碰巧可用，但与补齐/审计口径（model_field_nodes）不一致
+        root = ModelLabelField.objects.filter(
+            name=name, parent__isnull=True, field_type=ModelLabelField.FieldChoices.ROLE
+        ).first()
         if root is None:
             logger.warning("builtin role field whitelist skipped, model tree missing: %s", name)
             continue
-        all_fields.extend(ModelLabelField.objects.filter(parent=root))
+        all_fields.extend(ModelLabelField.objects.filter(parent=root, field_type=ModelLabelField.FieldChoices.ROLE))
     if not all_fields:
         return
     for menu in role.menu.all():

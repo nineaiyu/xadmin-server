@@ -72,3 +72,6 @@ IMPORT_EXPORT_ACTIONS = (
 )
 # 需绑定关联模型的动作（与 get_view_permissions 的 models 口径一致）
 CRUD_BIND_ACTIONS = ("list", "create", "retrieve", "partial_update")
+# 运行时模块自建权限点的 pk 前缀（演示示例 6eed 段等）：绑定与字段白名单由模块自身
+# 的种子命令维护，权限点扫描不校正、种子回写不收录（其菜单/结构不进 loadjson）。
+RUNTIME_PERMISSION_PREFIXES = ("6eed000c",)

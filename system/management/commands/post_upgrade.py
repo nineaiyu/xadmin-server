@@ -95,5 +95,15 @@ class Command(BaseCommand):
                 )
             else:
                 self.stdout.write(self.style.SUCCESS("      权限点完整覆盖"))
+            # 字段白名单缺口（无配置 / 与权限点模型脱节）：零字段 fail-closed 会让
+            # 该角色的列表/详情输出空对象；只报告，修复走 --fix-field-permissions
+            field_gaps = sync.audit_field_permissions()
+            if field_gaps:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"      检测到 {len(field_gaps)} 个（角色, 权限点）字段白名单缺口："
+                        "python manage.py sync_menu_permissions --fix-field-permissions --update-seed"
+                    )
+                )
         except Exception as exc:
             self.stdout.write(self.style.WARNING(f"      扫描失败（跳过）：{exc}"))

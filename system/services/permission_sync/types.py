@@ -46,6 +46,6 @@ class PlanItem:
 class BindingFix:
     menu: Menu
     action: str
-    mode: str  # add / clear
+    mode: str  # add（补绑定）/ shrink（收缩陈旧绑定）/ adjust（补新并收缩）/ clear（清空）
     current: set[Any] = dc_field(default_factory=set[Any])
     expected: set[Any] = dc_field(default_factory=set[Any])

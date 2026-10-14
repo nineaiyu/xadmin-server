@@ -25,6 +25,7 @@ from e2e_seed_scenes import (  # noqa: E402
     disable_login_mfa_policy,
     seed_demo_book_scene,
     seed_directory_scene,
+    seed_file_center_scene,
     seed_menu_decoration_scene,
     seed_monitor_scene,
     seed_oauth_im_provider,
@@ -322,6 +323,9 @@ def main() -> None:
 
     # ---- 我的通知场景：e2e_user 授权通知页 + 未读通知 ----
     seed_user_notice_scene()
+
+    # ---- 文件中心场景：e2e_user 授权文件页 + 页内全部权限点（非超管零 403 守护）----
+    seed_file_center_scene()
 
     # ---- 系统监控场景：心跳历史与告警记录（监控页图表/告警卡数据源）----
     seed_monitor_scene()

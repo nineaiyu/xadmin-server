@@ -313,7 +313,10 @@ class TestMenuPermissionAudit:
         from identity.models import UserRole
         from system.models import FieldPermission, ModelLabelField
 
-        model_root = ModelLabelField.objects.create(name="identity.post", label="岗位")
+        # 字段权限绑定面为角色字段树（ROLE，字段树默认类型是 DATA 需显式指定）
+        model_root = ModelLabelField.objects.create(
+            name="identity.post", label="岗位", field_type=ModelLabelField.FieldChoices.ROLE
+        )
         perm = menu_factory("list:SystemPost", path="api/system/post$", method="GET")
         perm.model.add(model_root)
         role = UserRole.objects.create(name="字段权限缺口角色", code="field_gap_role")
@@ -340,7 +343,9 @@ class TestMenuPermissionAudit:
         assert any(row["pk"] == str(perm.pk) for row in data["field_unconfigured"])
 
         # 配好字段白名单后不再报告
-        child = ModelLabelField.objects.create(name="name", label="名称", parent=model_root)
+        child = ModelLabelField.objects.create(
+            name="name", label="名称", parent=model_root, field_type=ModelLabelField.FieldChoices.ROLE
+        )
         empty_row.field.add(child)
         data = auth_client.get(self.AUDIT_URL).data["data"]
         assert all(row["pk"] != str(perm.pk) for row in data["field_unconfigured"])
@@ -350,7 +355,9 @@ class TestMenuPermissionAudit:
         from identity.models import UserRole
         from system.models import ModelLabelField
 
-        model_root = ModelLabelField.objects.create(name="system.post2", label="岗位2")
+        model_root = ModelLabelField.objects.create(
+            name="system.post2", label="岗位2", field_type=ModelLabelField.FieldChoices.ROLE
+        )
         unbound = menu_factory("list:SystemPost2", path="api/system/post2$", method="GET")
         role = UserRole.objects.create(name="其他角色", code="other_role")
         role.menu.add(unbound)  # 未绑定模型 → 不参与字段权限

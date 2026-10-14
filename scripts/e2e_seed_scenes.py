@@ -91,6 +91,35 @@ def seed_user_notice_scene():
     print("user notice scene seeded for e2e_user")
 
 
+def seed_file_center_scene():
+    """文件中心 E2E 场景：给 e2e_user 授权文件页面与页内全部权限点。
+
+    非超管视角页面加载即请求统计（stats 由 retrieve 权限点覆盖）等接口：任一接口
+    未授权都会产生 403，用例以「零 403 + 配额卡片渲染」断言收口（超管用例看不到
+    这类「页面有授权、接口权限点漏配」的缺口）。字段白名单一并补齐：否则列表列
+    与行内容按零字段 fail-closed 输出为空。
+    """
+    from identity.models import UserInfo, UserRole
+    from system.models import Menu
+    from system.services.permission_sync import fill_field_permissions
+
+    user = UserInfo.objects.filter(username="e2e_user").first()
+    page = Menu.objects.filter(path="/system/file/index", menu_type=Menu.MenuChoices.MENU).first()
+    if user is None or page is None:
+        print("skip file center scene: e2e_user or /system/file/index menu missing")
+        return
+
+    role, _ = UserRole.objects.get_or_create(code="e2e_file", defaults={"name": "E2E-文件中心"})
+    menus = [page]
+    if page.parent_id:
+        menus.append(page.parent)
+    menus.extend(Menu.objects.filter(parent=page, menu_type=Menu.MenuChoices.PERMISSION))
+    role.menu.set(menus)
+    user.roles.add(role)
+    filled = fill_field_permissions(roles=[role])
+    print(f"file center scene seeded for e2e_user (field whitelist filled: {len(filled)})")
+
+
 def seed_monitor_scene():
     """监控页演示数据：近 24 小时心跳（5 分钟粒度）+ 一条未恢复磁盘告警。
 

@@ -517,11 +517,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -567,11 +574,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2495,11 +2509,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -3847,11 +3868,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -4449,11 +4477,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {

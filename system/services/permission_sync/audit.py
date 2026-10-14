@@ -9,38 +9,55 @@ from .constants import AUDIT_KNOWN_DUPLICATES, AUDIT_SKIP_PREFIXES
 
 
 def audit_field_permissions(roles: Any = None) -> Any:
-    """报告「角色已获模型权限点、但未配置字段权限」的组合（只报告不落库）。
+    """报告「角色已获模型权限点、但白名单未覆盖该权限点模型」的组合（只报告不落库）。
 
     ``roles`` 限定角色范围（默认全部启用角色），供单角色补齐场景复用同一判定口径。
 
-    字段权限是 **fail-closed 的零字段口径**：某 (角色, 菜单) 没有字段白名单（无
-    FieldPermission 行，或行内字段为空）时，该角色在这些接口上拿到的字段集合为空——
+    字段权限是 **fail-closed 的零字段口径**：某 (角色, 菜单) 的字段白名单里没有
+    该菜单绑定模型（``Menu.model``）的字段时，该角色在这些接口上拿到的字段集合为空——
     列表/详情输出空对象（不是"默认全字段"，见 ``packages/xadmin-common/common/core/serializers.py`` 的
-    get_allow_fields）。新建角色、批量生成的新权限点最容易漏配，因此列入审计面：
+    get_allow_fields）。两类组合视为缺口：
+    ① 无 FieldPermission 行，或行内字段为空；
+    ② 白名单非空但与绑定模型**完全脱节**（如数据源模型迁移后残留旧模型字段）——
+       运行时按「模型标签 + 字段名」匹配，脱节白名单等价于空。
+    新建角色、批量生成的新权限点、视图模型变更最容易漏配，因此列入审计面：
     不改安全语义，只把「静默空输出」变成可见告警。
 
     返回 ``[(role, menu), ...]``（ORM 实例，供管理命令与只读 API 复用）。
     """
     from identity.services import UserRole
-    from system.models import FieldPermission, Menu
+    from system.models import FieldPermission, Menu, ModelLabelField
 
-    model_menu_pks = set(
+    model_menus = list(
         Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, is_active=True)
         .filter(model__isnull=False)
-        .values_list("pk", flat=True)
         .distinct()
     )
-    if not model_menu_pks:
+    if not model_menus:
         return []
-    # 行内字段为空的 FieldPermission 与"没有行"等价（都产出空白名单），一并计入缺口
-    configured = set(FieldPermission.objects.filter(field__isnull=False).values_list("role_id", "menu_id").distinct())
+    # 菜单 → 绑定模型的角色字段树根节点（白名单字段的 parent 应落在其中）
+    menu_roots: dict[Any, set[Any]] = {}
+    for menu in model_menus:
+        roots = {node.pk for node in menu.model.all() if node.field_type == ModelLabelField.FieldChoices.ROLE}
+        if roots:
+            menu_roots[menu.pk] = roots
+    if not menu_roots:
+        return []
+    # (role, menu) → 白名单字段的 parent 节点集合；行内字段为空的行等价于"没有行"
+    configured: dict[Any, set[Any]] = {}
+    for role_id, menu_id, parent_id in FieldPermission.objects.values_list("role_id", "menu_id", "field__parent_id"):
+        configured.setdefault((role_id, menu_id), set()).add(parent_id)
     items = []
     role_queryset = UserRole.objects.filter(is_active=True).prefetch_related("menu")
     if roles is not None:
         role_queryset = role_queryset.filter(pk__in=[role.pk for role in roles])
     for role in role_queryset:
         for menu in role.menu.all():
-            if menu.pk in model_menu_pks and (role.pk, menu.pk) not in configured:
+            bound_roots = menu_roots.get(menu.pk)
+            if bound_roots is None:
+                continue
+            parents = configured.get((role.pk, menu.pk))
+            if not parents or not (parents & bound_roots):
                 items.append((role, menu))
     return items
 

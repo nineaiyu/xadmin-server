@@ -200,6 +200,31 @@ class TestPostUpgrade:
         assert "权限点缺口扫描" in output
         assert "post_upgrade 完成" in output
 
+    def test_field_permission_gap_reported(self, superuser):
+        """字段白名单缺口（无配置 / 与权限点模型脱节）在升级扫描中给出修复命令提示。"""
+        from identity.models import UserRole
+        from system.models import Menu, MenuMeta, ModelLabelField
+
+        root = ModelLabelField.objects.create(
+            name="demo.upgrade_item", label="升级示例", field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        meta = MenuMeta.objects.create(title="升级示例列表")
+        menu = Menu.objects.create(
+            name="list:UpgradeItem",
+            path="api/demo/upgrade-item$",
+            menu_type=Menu.MenuChoices.PERMISSION,
+            method="GET",
+            meta=meta,
+        )
+        menu.model.set([root])
+        role = UserRole.objects.create(name="升级字段缺口角色", code="upgrade_field_gap_role")
+        role.menu.add(menu)
+
+        output = _run("post_upgrade", "--skip-seed", "--skip-compile")
+
+        assert "字段白名单缺口" in output
+        assert "--fix-field-permissions" in output
+
 
 class _FakeRoute:
     url = "api/demo/book$"

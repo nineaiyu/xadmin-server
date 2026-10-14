@@ -11,7 +11,7 @@ from identity.services import UserRole
 from system.models import Menu, MenuMeta, ModelLabelField
 from system.utils.platform.menu import get_related_models
 
-from .constants import CRUD_BIND_ACTIONS, IMPORT_EXPORT_ACTIONS
+from .constants import CRUD_BIND_ACTIONS, IMPORT_EXPORT_ACTIONS, RUNTIME_PERMISSION_PREFIXES
 from .types import BindingFix
 
 logger = get_logger(__name__)
@@ -77,13 +77,22 @@ def _role_root_pks(labels: Any) -> Any:
 
 
 def plan_binding_fixes(routes: Any, perms: Any) -> Any:
-    """规划模型绑定校正：CRUD 补绑定（只增不减）；导入导出链清空绑定。"""
+    """规划模型绑定校正：CRUD 补绑定 + 陈旧绑定收缩；导入导出链清空绑定。
+
+    陈旧绑定（``current - expected``）是视图数据源模型迁移后的失效残留：它在字段权限
+    补齐时会被当作有效绑定，把「白名单与当前模型脱节」掩盖成"已配置"（见
+    ``audit_field_permissions`` 的判定口径），因此与补绑定一并校正。
+    """
     route_by_path = {}
     for route in routes:
         route_by_path[route.url] = route
         route_by_path[route.url.rstrip("$")] = route
     fixes = []
     for perm in perms:
+        if str(perm.pk).startswith(RUNTIME_PERMISSION_PREFIXES):
+            # 运行时模块权限点（演示示例等）：绑定由模块自身的种子命令维护
+            # （如示例图书的「变更历史」刻意不绑模型，复用系统端点会让扫描误判为 CRUD 动作）
+            continue
         # 权限点路径两种写法并存（种子多带 `$`，生成器产物也带），两种都试
         route = route_by_path.get(perm.path) or route_by_path.get(f"{perm.path}$")
         if not route:
@@ -94,9 +103,22 @@ def plan_binding_fixes(routes: Any, perms: Any) -> Any:
         current = set(perm.model.values_list("pk", flat=True))
         if action in CRUD_BIND_ACTIONS:
             expected = _role_root_pks(related_model_labels(route.view_cls))
-            if expected - current:
+            if not expected:
+                # 视图无模型（APIView / 自定义端点）：无法判定陈旧，不触动手工绑定
+                continue
+            missing = expected - current
+            stale = current - expected
+            if missing or stale:
+                mode = "shrink" if stale and not missing else ("add" if missing and not stale else "adjust")
                 fixes.append(
-                    BindingFix(menu=perm, action=action, mode="add", current=current, expected=current | expected)
+                    BindingFix(
+                        menu=perm,
+                        action=action,
+                        mode=mode,
+                        current=current,
+                        # 保留仍相关的既有绑定 + 补齐缺失；等价于 expected
+                        expected=(current | expected) - stale,
+                    )
                 )
         elif action in IMPORT_EXPORT_ACTIONS and current:
             fixes.append(BindingFix(menu=perm, action=action, mode="clear", current=current, expected=set()))
@@ -137,13 +159,14 @@ def model_field_nodes(menus: Any) -> Any:
 
 
 def fill_field_permissions(roles: Any = None) -> Any:
-    """为「已获模型权限点、但无字段白名单」的组合补齐该模型的全字段白名单。
+    """为「已获模型权限点、但白名单未覆盖该模型」的组合补齐该模型的全字段白名单。
 
     字段权限为 fail-closed 的零字段口径（见 ``common/core/serializers.py`` 的
-    get_allow_fields）：角色在某权限点上没有非空白名单时，列表/详情输出空对象。
-    演示账号与内置角色的白名单依赖种子静态列举，页面/权限点新增后容易漏配，
-    本函数按缺口审计结果补齐——只补缺口，已有非空白名单的组合不覆盖，保证
-    管理员在角色页的字段裁剪配置不被改写。
+    get_allow_fields）：角色在某权限点上没有覆盖绑定模型的白名单（无行 / 行为空 /
+    白名单与绑定模型完全脱节）时，列表/详情输出空对象。演示账号与内置角色的白名单
+    依赖种子静态列举，页面/权限点新增、视图模型迁移后容易漏配，本函数按缺口审计
+    结果补齐——只补缺口；白名单已覆盖绑定模型字段的组合（含部分裁剪、或同时残留
+    旧模型字段的情况）不覆盖，保证管理员在角色页的字段裁剪配置不被改写。
 
     ``roles`` 限定角色范围（默认全部启用角色）。返回补齐的 ``[(role, menu), ...]``。
     """

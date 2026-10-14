@@ -13,10 +13,13 @@ from typing import Any
 
 from django.conf import settings
 
+from system.services.permission_sync import RUNTIME_PERMISSION_PREFIXES
+
 SEED_DIR = Path(settings.PROJECT_DIR) / "loadjson"
 
-#: 运行时模块自建权限点的 pk 前缀（demo_seed 家族固定段，不进 loadjson）
-RUNTIME_MODULE_PREFIXES = ("6eed000c",)
+#: 运行时模块自建权限点的 pk 前缀（demo_seed 家族固定段，不进 loadjson）；
+#: 与扫描/回写内核同源（permission_sync.constants.RUNTIME_PERMISSION_PREFIXES）
+RUNTIME_MODULE_PREFIXES = RUNTIME_PERMISSION_PREFIXES
 
 
 def _load(name: str) -> Any:
@@ -54,3 +57,63 @@ def test_seeded_roles_have_field_permissions() -> None:
     seeded_roles = {row["pk"]: row["fields"].get("name") for row in _load("userrole.json")}
     missing = {name for pk, name in seeded_roles.items() if pk not in covered}
     assert missing == set(), f"种子角色缺字段白名单: {missing}"
+
+
+#: 输出模型与视图主模型不同的动作（序列化器在 action 内手工构造）：白名单取值面
+#: 是「接口实际输出的模型」，此处显式登记该模型标签；未登记的按路由反查视图主模型。
+#: - access-logs：视图主模型为 file.uploadfile，但响应体是文件访问日志行
+OUTPUT_MODEL_OVERRIDES = {
+    "accessLogs:SystemUploadFile": "file.fileaccesslog",
+}
+
+
+def test_seed_whitelist_covers_menu_model() -> None:
+    """种子白名单必须覆盖对应权限点的视图主模型（模型迁移后残留旧模型字段即失效）。
+
+    运行时字段权限按「模型标签 + 字段名」匹配（get_user_field_queryset）：白名单与
+    权限点模型脱节时等价于空白名单，该角色在列表页整块空白（新部署环境用种子导入
+    会直接复现）。此处以 loadjson 静态校验（路由反查视图模型 + 字段树父子关系），
+    与库内状态无关；权限点 path 匹配不到视图（自定义/运行时端点）时跳过。
+    """
+    from system.services.permission_sync import build_route_index
+
+    entries = _load("fieldpermission.json")
+    menus = {row["pk"]: row["fields"] for row in _load("menu.json")}
+    fields = {row["pk"]: row["fields"] for row in _load("modellabelfield.json")}
+    roles = {row["pk"]: row["fields"].get("name") for row in _load("userrole.json")}
+
+    by_path: dict[str, str] = {}
+    for route in build_route_index():
+        model = getattr(getattr(getattr(route, "view_cls", None), "queryset", None), "model", None)
+        if model is None:
+            continue
+        by_path[route.url] = model._meta.label_lower
+        by_path[route.url.rstrip("$")] = model._meta.label_lower
+
+    mismatched = []
+    for entry in entries:
+        payload = entry["fields"]
+        menu = menus.get(payload["menu"])
+        if not menu:
+            continue
+        path = menu.get("path") or ""
+        model_label = (
+            OUTPUT_MODEL_OVERRIDES.get(menu.get("name") or "") or by_path.get(path) or by_path.get(path.rstrip("$"))
+        )
+        if not model_label:
+            continue
+        roots = {
+            pk
+            for pk, row in fields.items()
+            if row["name"] == model_label and row.get("field_type") == 0 and not row.get("parent")
+        }
+        if not roots:
+            continue
+        covered = any(fields.get(fid, {}).get("parent") in roots for fid in payload.get("field") or [])
+        if not covered:
+            mismatched.append(
+                f"{roles.get(payload['role'], payload['role'])} × {menu['name']}（{path}，模型 {model_label}）"
+            )
+    assert mismatched == [], (
+        "字段权限种子的白名单与权限点模型脱节（模型迁移残留，该角色页面将输出空对象）：\n" + "\n".join(mismatched)
+    )

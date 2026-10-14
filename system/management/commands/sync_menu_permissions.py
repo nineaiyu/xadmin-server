@@ -57,10 +57,13 @@ class Command(BaseCommand):
         if not options["skip_permissions"]:
             self._sync_permissions(options, user, dry_run)
         elif options["fix_field_permissions"]:
-            # 与权限点扫描解耦的独立入口：迁移/升级后只想补字段白名单时免全量扫描
-            self._report_and_fill_field_permissions(options, dry_run)
-            if options["update_seed"] and not dry_run:
-                self._update_field_permission_seed()
+            # 与权限点扫描解耦的独立入口：迁移/升级后只想补字段白名单时免全量扫描。
+            # 该入口不做绑定校正，判定与取值基于库内现有绑定（适用已校正过绑定的库）
+            self._report_field_permission_gaps()
+            if not dry_run:
+                self._fill_field_permissions()
+                if options["update_seed"]:
+                    self._update_field_permission_seed()
         if dry_run:
             self.stdout.write(self.style.WARNING("dry-run：未写入任何数据"))
 
@@ -112,7 +115,14 @@ class Command(BaseCommand):
         if fixes:
             self.stdout.write(f"[绑定] 计划校正模型绑定 {len(fixes)} 个权限点")
             for fix in fixes[:DETAIL_LIMIT]:
-                detail = f"补 {len(fix.expected - fix.current)} 个模型" if fix.mode == "add" else "清空模型绑定"
+                if fix.mode == "clear":
+                    detail = "清空模型绑定"
+                elif fix.mode == "shrink":
+                    detail = f"收缩 {len(fix.current - fix.expected)} 个陈旧模型"
+                elif fix.mode == "adjust":
+                    detail = f"补 {len(fix.expected - fix.current)} 个、收缩 {len(fix.current - fix.expected)} 个模型"
+                else:
+                    detail = f"补 {len(fix.expected - fix.current)} 个模型"
                 self.stdout.write(f"  * {fix.menu.name}（{fix.action}，{detail}）")
 
         if exempted or known_duplicates:
@@ -127,7 +137,9 @@ class Command(BaseCommand):
         for perm in duplicates[:DETAIL_LIMIT]:
             self.stdout.write(self.style.WARNING(f"  ~ 重复权限点：{perm.name} | {perm.path} | {perm.method}"))
 
-        self._report_and_fill_field_permissions(options, dry_run)
+        # 报告口径基于「当前库内绑定」：本轮存在绑定校正时，收缩前的陈旧绑定可能
+        # 让「白名单脱节」暂不显形（补齐动作放在绑定校正之后执行，见下方）
+        self._report_field_permission_gaps()
 
         wide_manager = sync.audit_wide_manager_grants()
         if wide_manager:
@@ -153,6 +165,11 @@ class Command(BaseCommand):
         for plan in conflicts[:DETAIL_LIMIT]:
             self.stdout.write(self.style.WARNING(f"  ! 权限码已存在，跳过：{plan.code}（{plan.method} {plan.url}）"))
 
+        # 补齐放在绑定校正之后：判定与取值都基于校正后的绑定模型，
+        # 避免「陈旧绑定掩盖白名单脱节」（补出的白名单混入失效模型字段）
+        if options["fix_field_permissions"]:
+            self._fill_field_permissions()
+
         if options["grant_roles"] and created:
             parent_of_created = {menu.pk: menu.parent_id for menu in created}
             granted = sync.grant_to_roles(created, perms, parent_of_created)
@@ -165,19 +182,18 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 字段权限
 
-    def _report_and_fill_field_permissions(self, options: Any, dry_run: Any) -> None:
-        """审计（并可选补齐）「已获模型权限点但无字段白名单」的角色组合。
+    def _report_field_permission_gaps(self) -> None:
+        """审计「已获模型权限点但白名单未覆盖该模型」的角色组合（只报告不落库）。
 
         字段权限为 fail-closed 的零字段口径：缺口组合的接口输出空对象（列表/详情
-        整块空白）。默认只报告（把静默空输出变成可见告警）；
-        ``--fix-field-permissions`` 才按「权限点绑定模型全字段」补齐，且不改写
-        管理员在角色页已有的收敛配置。
+        整块空白）。报告把静默空输出变成可见告警；``--fix-field-permissions`` 按
+        「权限点绑定模型全字段」补齐，且不改写管理员在角色页已有的收敛配置。
         """
         field_gaps = sync.audit_field_permissions()
         if field_gaps:
             self.stdout.write(
                 self.style.WARNING(
-                    f"[字段权限] {len(field_gaps)} 个（角色, 权限点）组合未配置字段权限："
+                    f"[字段权限] {len(field_gaps)} 个（角色, 权限点）组合的字段白名单未覆盖权限点模型："
                     "这些角色在该接口上输出空对象（零字段 fail-closed，去角色页配置字段白名单）"
                 )
             )
@@ -185,11 +201,10 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.WARNING(f"  ~ {role.name} | {menu.name} | {menu.method or '-'} {menu.path}")
                 )
-        if options["fix_field_permissions"] and not dry_run and field_gaps:
-            filled = sync.fill_field_permissions()
-            self.stdout.write(
-                f"[字段权限] 已补齐 {len(filled)} 个（角色, 权限点）组合的全字段白名单（已有非空配置未改写）"
-            )
+
+    def _fill_field_permissions(self) -> None:
+        filled = sync.fill_field_permissions()
+        self.stdout.write(f"[字段权限] 已补齐 {len(filled)} 个（角色, 权限点）组合的全字段白名单（已有有效配置未改写）")
 
     # ------------------------------------------------------------------ 种子
 
@@ -201,7 +216,11 @@ class Command(BaseCommand):
         update_field_permissions: Any = False,
     ) -> None:
         root = Path(settings.PROJECT_DIR) / "loadjson"
-        menus = {menu.pk: menu for menu in [*created_menus, *fixed_menus, *(method_fixed or [])]}
+        menus = {
+            menu.pk: menu
+            for menu in [*created_menus, *fixed_menus, *(method_fixed or [])]
+            if not str(menu.pk).startswith(sync.RUNTIME_PERMISSION_PREFIXES)
+        }
         # 库内新增但种子缺失的权限点一并补写（多次执行间也能收敛，如先执行修复再补种子）。
         # 限定「父菜单也在种子中」：父菜单不落种子 = 运行时模块自建（演示/插件等，如
         # demo book 的 6eed 段权限点），其权限点由模块自身的种子命令维护，不进 loadjson。
@@ -209,6 +228,8 @@ class Command(BaseCommand):
         for menu in Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, deleted_at__isnull=True).exclude(
             pk__in=seed_pks
         ):
+            if str(menu.pk).startswith(sync.RUNTIME_PERMISSION_PREFIXES):
+                continue
             if menu.parent_id and str(menu.parent_id) in seed_pks:
                 menus.setdefault(menu.pk, menu)
         if menus:
@@ -239,7 +260,12 @@ class Command(BaseCommand):
 
         root = Path(settings.PROJECT_DIR) / "loadjson"
         seed_role_pks = sync.seed_entry_pks(root / "userrole.json")
-        seed_menu_pks = sync.seed_entry_pks(root / "menu.json")
+        # 运行时模块权限点即使误入 menu.json 种子也不回写白名单（模块自身命令维护）
+        seed_menu_pks = {
+            pk
+            for pk in sync.seed_entry_pks(root / "menu.json")
+            if not str(pk).startswith(sync.RUNTIME_PERMISSION_PREFIXES)
+        }
         seeded_roles = UserRole.objects.filter(pk__in=seed_role_pks)
         fp_entries = sync.dump_entries(
             FieldPermission,
