@@ -14,6 +14,7 @@
 """
 
 import importlib
+import pkgutil
 
 from django.contrib.postgres.indexes import GinIndex
 from django.db.models import JSONField
@@ -30,14 +31,31 @@ def _gin_indexes_of_model() -> list[tuple[str, list[str]]]:
     ]
 
 
-def _gin_indexes_in_initial_migration() -> list[tuple[str, list[str]]]:
-    module = importlib.import_module("dataset.migrations.0001_initial")
+def _dataset_migration_modules() -> list:
+    """dataset 域的全部迁移模块（按文件名排序）。
+
+    索引按域折叠而非硬编码文件名：跨 app 依赖会让索引落进 `0002_initial` 一类的补加迁移
+    （`AddIndex`），硬编码 `0001_initial` 会在迁移重排时误报。
+    """
+    package = importlib.import_module("dataset.migrations")
+    names = sorted(item.name for item in pkgutil.iter_modules(package.__path__) if item.name[0].isdigit())
+    return [importlib.import_module(f"dataset.migrations.{name}") for name in names]
+
+
+def _gin_indexes_in_migrations() -> list[tuple[str, list[str]]]:
     found: list[tuple[str, list[str]]] = []
-    for op in module.Migration.operations:
-        if getattr(op, "name", None) != MODEL_NAME:
-            continue
-        for index in (getattr(op, "options", None) or {}).get("indexes") or []:
-            if isinstance(index, GinIndex):
+    for module in _dataset_migration_modules():
+        for op in module.Migration.operations:
+            # CreateModel（建表即带索引，name 为 CamelCase）与 AddIndex（补加索引，model_name 为小写）
+            index = None
+            if str(getattr(op, "model_name", "")).lower() == MODEL_NAME.lower():
+                index = getattr(op, "index", None)
+            elif getattr(op, "name", None) == MODEL_NAME:
+                index = next(
+                    (i for i in (getattr(op, "options", None) or {}).get("indexes") or [] if isinstance(i, GinIndex)),
+                    None,
+                )
+            if isinstance(index, GinIndex) and index.name == GIN_INDEX_NAME:
                 found.append((index.name, list(index.fields)))
     return found
 
@@ -51,9 +69,9 @@ class TestIndexBody:
 
 
 class TestMigrationSnapshot:
-    def test_initial_migration_carries_gin_index(self):
-        """清库重建链路（全新 0001）必须携带同一索引——模型 Meta 与迁移双向锁步。"""
-        assert _gin_indexes_in_initial_migration() == [(GIN_INDEX_NAME, ["filter_data"])]
+    def test_migrations_carry_gin_index(self):
+        """清库重建链路（初始迁移 + 补加迁移）必须携带同一索引——模型 Meta 与迁移双向锁步。"""
+        assert _gin_indexes_in_migrations() == [(GIN_INDEX_NAME, ["filter_data"])]
 
 
 class TestQueryShapeBinding:

@@ -3,14 +3,18 @@
 
 三类守护：
 - **覆盖**：每个搜索提供者的检索字段必须落在「索引清单」或「豁免清单」（新增检索字段
-  忘补索引/豁免时红灯——否则会静默退回顺序扫描，且只有上线后才可能被发现）；
-- **漂移**：迁移快照 ↔ 运行期清单一致（trgm 索引随各域 0001 迁移的模型 Meta GinIndex
+  忘补索引/豁免时红灯——否则会静默退回顺序扫描，且只有上线后可能被发现）；
+- **漂移**：迁移快照 ↔ 运行期清单一致（trgm 索引随各域迁移的模型 Meta GinIndex
   落地，快照即从迁移 operations 提取——只在注册表或只在模型 Meta 出现都会红灯）；
-- **扩展与形态**：pg_trgm 扩展由 identity.0001（迁移链最前端）首操作守护——仅 PG 执行、
+- **扩展与形态**：pg_trgm 扩展由 identity 域首个迁移（迁移链最前端）首操作守护——仅 PG 执行、
   不可用只告警不阻断迁移（检索回退顺序扫描）；建索引 SQL 为幂等形态。
+
+迁移按域折叠而非按文件名硬编码：跨 app 循环依赖会让 Django 把索引落进 `0002_initial`
+一类的补加迁移，硬编码文件名会在迁移重排时误报。
 """
 
 import importlib
+import pkgutil
 
 import pytest
 from django.apps import apps
@@ -19,17 +23,21 @@ from django.db.migrations import AddIndex, CreateModel
 from system import search_indexes
 from system.search import SEARCH_PROVIDERS
 
-# trgm 索引随模型 Meta 分属四个域的初始迁移：identity 侧 4 个 + file 侧 1 个 + approval 侧 4 个
-MIGRATION_MODULES = (
-    "identity.migrations.0001_initial",
-    "file.migrations.0001_initial",
-    "system.migrations.0001_initial",
-    "approval.migrations.0001_initial",
-)
-MIGRATIONS = [importlib.import_module(module_path) for module_path in MIGRATION_MODULES]
+# trgm 索引所属域（system 域的检索模型全部豁免，不参与「必须携带」断言）
+DOMAIN_APPS = ("identity", "file", "system", "approval")
 
-# 扩展守护函数：迁移链最前端（identity.0001）的首个 RunPython，后续所有 GinIndex DDL 依赖它
-_ensure_trgm_extension = importlib.import_module("identity.migrations.0001_initial")._ensure_trgm_extension
+
+def _domain_modules(app_label: str) -> list:
+    """该域的全部迁移模块（按文件名排序；非迁移模块与 __init__ 跳过）。"""
+    package = importlib.import_module(f"{app_label}.migrations")
+    names = sorted(item.name for item in pkgutil.iter_modules(package.__path__) if item.name[0].isdigit())
+    return [importlib.import_module(f"{app_label}.migrations.{name}") for name in names]
+
+
+MIGRATIONS_BY_APP = {app: _domain_modules(app) for app in DOMAIN_APPS}
+
+# 扩展守护函数：迁移链最前端（identity 域首个迁移）的首个 RunPython，后续所有 GinIndex DDL 依赖它
+_ensure_trgm_extension = MIGRATIONS_BY_APP["identity"][0]._ensure_trgm_extension
 
 
 def _trgm_indexes_of(module) -> dict:
@@ -60,7 +68,15 @@ def _trgm_indexes_of(module) -> dict:
 
 def _folded_snapshot() -> dict:
     snapshot = {}
-    for module in MIGRATIONS:
+    for modules in MIGRATIONS_BY_APP.values():
+        for module in modules:
+            snapshot.update(_trgm_indexes_of(module))
+    return snapshot
+
+
+def _app_snapshot(app_label: str) -> dict:
+    snapshot = {}
+    for module in MIGRATIONS_BY_APP[app_label]:
         snapshot.update(_trgm_indexes_of(module))
     return snapshot
 
@@ -111,14 +127,14 @@ class TestMigrationDrift:
             "迁移模型 Meta 与 system/search_indexes.py 清单漂移（新增检索字段请同步模型 Meta）"
         )
 
-    # 携带 trgm 索引的域迁移（system.0001 的检索模型 OperationLog 全部豁免、
+    # 携带 trgm 索引的域（system 域的检索模型 OperationLog 全部豁免、
     # uploadfile 已随 file 域迁出——它合法地不含 trgm 索引，由 fold 等值守护兜底）
-    TRGM_CARRYING = [m for m in MIGRATIONS if not m.__name__.startswith("system.")]
+    TRGM_CARRYING = [app for app in DOMAIN_APPS if app != "system"]
 
-    @pytest.mark.parametrize("module", TRGM_CARRYING, ids=lambda m: m.__name__)
-    def test_every_domain_migration_carries_trgm_indexes(self, module):
-        snapshot = _trgm_indexes_of(module)
-        assert snapshot, f"{module.__name__} 应随模型 Meta 携带 trgm 索引"
+    @pytest.mark.parametrize("app_label", TRGM_CARRYING)
+    def test_every_domain_migration_carries_trgm_indexes(self, app_label):
+        snapshot = _app_snapshot(app_label)
+        assert snapshot, f"{app_label} 域的迁移应随模型 Meta 携带 trgm 索引"
         bad = [name for name in snapshot if not (name.startswith("idx_") and name.endswith("_trgm"))]
         assert bad == [], f"索引名违反 idx_*_trgm 约定：{bad}"
 
