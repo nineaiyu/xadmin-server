@@ -8,7 +8,8 @@
 > 前置能力（缺一不可）：
 > ① 一次性 `migrate` 服务（迁移不随 web 启动，见 deployment-upgrade.md §6.1）；
 > ② nginx 多后端 `upstream + zone + resolve`（`ops/xadmin-backend.multi.conf`，`docker-compose.scale.yml` 挂载）；
-> ③ gunicorn `--graceful-timeout 30` + 服务 `stop_grace_period: 40s`（SIGTERM 后等在途请求跑完）；
+> ③ gunicorn `--graceful-timeout 30` + 服务 `stop_grace_period: 40s`（停止信号经监督进程转发为
+> SIGTERM，等在途请求跑完；信号链见 [deployment-docker.md §3](deployment-docker.md)）；
 > ④ healthcheck `start_period: 90s`（启动期不误判 unhealthy）。
 
 ## 一、原理
@@ -84,7 +85,7 @@ curl -fsS http://127.0.0.1:8896/api/common/api/health && echo "edge ok"
 ```bash
 # 一次摘一个 + 间隔 10s：等 DNS 与 nginx resolver 缓存（valid=10s）刷新
 for c in $(docker compose $FILES ps -q server); do
-  docker stop -t 40 "$c"        # gunicorn 收 SIGTERM：关闭监听 → 等在途请求 → 退出
+  docker stop -t 40 "$c"        # 监督进程收停止信号 → gunicorn 收 SIGTERM：关闭监听 → 等在途请求 → 退出
   sleep 10
 done
 ```
@@ -100,8 +101,9 @@ docker compose $FILES ps --format 'table {{.Service}}\t{{.Name}}\t{{.Status}}'
 ### 7. 任务侧（worker / heavy / beat）
 
 ```bash
-# worker/heavy：compose 检测镜像变化即重建；SIGTERM 走 warm shutdown
-# （stop_grace_period 已放宽：worker 120s / heavy 300s，长任务用 stop -t 覆盖）
+# worker/heavy：compose 检测镜像变化即重建；监督进程转发 SIGTERM 走 warm shutdown
+# （stop_grace_period 已放宽：worker 120s / heavy 300s，长任务用 stop -t 覆盖；
+#  空闲 worker 秒级退出，不必担心重建被宽限期拖住）
 docker compose $FILES up -d --scale celery-worker=2 --scale celery-heavy=1
 
 # beat：单例，先停后起；调度空窗秒级（max-interval 60，不会漏跨窗口的周期任务）

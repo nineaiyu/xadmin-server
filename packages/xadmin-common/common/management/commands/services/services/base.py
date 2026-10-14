@@ -165,18 +165,25 @@ class BaseService(abc.ABC):
     def start_other(self) -> None:  # noqa: B027 可选钩子：默认无操作，子类按需覆写
         pass
 
-    def stop(self, force: bool = False) -> None:
+    def stop(self, force: bool = False, wait_forever: bool = False) -> None:
+        """停止服务。
+
+        wait_forever=True 用于容器停止信号路径：不设内部时限，等服务自行退出
+        （celery warm shutdown 跑完在途任务、gunicorn 等在途请求），上限由 docker
+        stop_grace_period 到点后的 SIGKILL 兜底。命令行 stop 仍按 STOP_TIMEOUT
+        兜底，避免进程卡死时命令无限挂起。
+        """
         if not self.is_running:
             self.show_status()
             # self.remove_pid()
             return
 
-        print(f"Stop service: {self.name}", end="")
+        print(f"Stop service: {self.name}", end="", flush=True)
         sig = 9 if force else 15
         os.kill(self.pid, sig)
 
         if self.process is None:
-            print("\033[31m No process found\033[0m")
+            print("\033[31m No process found\033[0m", flush=True)
             return
         try:
             self.process.wait(1)
@@ -186,14 +193,14 @@ class BaseService(abc.ABC):
 
         # 轮询等待进程退出：原实现循环体内没有 sleep，10 次判定在微秒内跑完，
         # 进程还在时直接报 Error 并残留 pid 文件（后续 start 的状态判定随之混乱）
-        deadline = time.monotonic() + self.STOP_TIMEOUT
+        deadline = None if wait_forever else time.monotonic() + self.STOP_TIMEOUT
         while True:
             if not self.is_running:
-                print("\033[32m Ok\033[0m")
+                print("\033[32m Ok\033[0m", flush=True)
                 self.remove_pid()
                 return
-            if time.monotonic() >= deadline:
-                print("\033[31m Error\033[0m")
+            if deadline is not None and time.monotonic() >= deadline:
+                print("\033[31m Error\033[0m", flush=True)
                 return
             time.sleep(0.2)
 

@@ -94,6 +94,17 @@ class TestZeroDowntimeAssets:
         """启动期不误判 unhealthy（web 启动含 migrate/collectstatic/编译文案）。"""
         assert "start_period: 90s" in _service_block("server", "celery-worker")
 
+    def test_entrypoint_execs_service_process_as_pid1(self):
+        """停止信号必须能直达服务进程：entrypoint 的最终启动必须用 exec。
+
+        以子进程方式启动时 bash 是容器 PID 1（不转发信号、内核也不施加默认动作），
+        docker stop 的 SIGQUIT 被丢弃 → 只能等 stop_grace_period 到点 SIGKILL，
+        空闲容器也要等满宽限期（实测 heavy 300s / worker 120s）。
+        """
+        text = (ROOT / "entrypoint.sh").read_text(encoding="utf-8")
+        assert 'exec python manage.py "${action}" "${service}"' in text
+        assert re.search(r'^\s*python manage\.py "\$\{action\}"', text, re.M) is None
+
     def test_blue_green_doc_registered(self):
         assert "ops/blue-green.md" in (ROOT / "docs/README.md").read_text(encoding="utf-8")
         doc = (ROOT / "docs/ops/blue-green.md").read_text(encoding="utf-8")

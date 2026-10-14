@@ -79,6 +79,14 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
   Docker 内嵌 DNS + 变量形式**运行期**解析 `server:8896`（`resolver 127.0.0.11 valid=10s ipv6=off`）——
   nginx 先于 server 启动不再 `[emerg] host not found` 启动失败，server 容器重建换 IP 后也**无需重启 nginx**
   （10s 内自动跟随）。排查步骤见 [runbook.md](runbook.md) §17。
+- 优雅停止（信号链，2026-10-14 修复）：`docker stop` 发 `STOPSIGNAL SIGQUIT` → 容器 **PID 1 是
+  entrypoint 以 `exec` 启动的服务进程**（`python manage.py start X`，见 `entrypoint.sh`）→ 监督进程把
+  `SIGTERM` 转发给子进程（celery warm shutdown 跑完在途任务、gunicorn 等在途请求）并**无时限等待**，
+  上限交给 `stop_grace_period` 到点后的 SIGKILL（server 40s / worker 120s / heavy 300s）。
+  空闲容器秒级退出（实测 web 0.8s、worker 0.8s、heavy 0.02s）；停止期间再发一次信号（再按一次
+  `docker stop`）直接强杀不等。**不要**把 entrypoint 的 `exec` 改回子进程方式，也不要移除监督进程的
+  信号处理：bash 不转发信号、内核又不对 PID 1 施加信号默认动作，容器会一路等到宽限期结束才被 SIGKILL。
+  发布窗口的用法见 [blue-green.md](blue-green.md)、缩容见 [scale-out.md](scale-out.md)。
 
 ### 3.1 数据库备份与恢复
 

@@ -69,14 +69,18 @@ if [[ "$action" != "bash" && "$action" != "sh" && "$action" != "sleep" ]]; then
     esac
 fi
 
+# exec：让真正的服务进程成为容器 PID 1，停止信号才能直达它。bash 不转发信号，
+# 且内核不对 PID 1 施加信号的默认动作（未注册处理函数即丢弃），因此此前 docker stop
+# 只能等 stop_grace_period 到点后 SIGKILL——空闲容器也要等满宽限期（实测 heavy 300s、
+# worker 120s 才 Stopped）。优雅停止逻辑见 ServicesUtil 的停止信号处理。
 if [[ "${action:0:1}" == "/" ]];then
-    "$@"
+    exec "$@"
 elif [[ "$action" == "bash" || "$action" == "sh" ]];then
     bash
 elif [[ "$action" == "sleep" ]];then
     echo "Sleep 365 days"
-    sleep 365d
+    exec sleep 365d
 else
-    python manage.py "${action}" "${service}"
+    exec python manage.py "${action}" "${service}"
 fi
 

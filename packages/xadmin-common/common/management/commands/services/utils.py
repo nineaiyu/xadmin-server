@@ -1,5 +1,6 @@
 import os
 import signal
+import sys
 import threading
 import time
 from typing import Any
@@ -23,6 +24,7 @@ class ServicesUtil:
         self.check_interval = 30
         self.files_preserve_map: dict[str, str] = {}
         self._daemon_log_file: Any = None
+        self._stop_signal_received = False
 
     def restart(self) -> None:
         self.stop()
@@ -38,6 +40,7 @@ class ServicesUtil:
             with self.daemon_context:
                 self.watch()
         else:
+            self.install_stop_signal_handlers()
             self.watch()
 
     def start(self) -> None:
@@ -55,12 +58,48 @@ class ServicesUtil:
 
         time.sleep(1)
 
-    def stop(self) -> None:
+    def stop(self, force: bool = False, wait_forever: bool = False) -> None:
         for service in self._services:
-            service.stop(force=self.force_stop)
+            service.stop(force=force or self.force_stop, wait_forever=wait_forever)
 
         if self.stop_daemon:
             self._stop_daemon()
+
+    # -- 容器停止信号 --
+    def install_stop_signal_handlers(self) -> None:
+        """注册容器停止信号处理：docker stop 发 SIGQUIT（见 Dockerfile STOPSIGNAL）。
+
+        entrypoint 以 exec 让本进程成为容器 PID 1，因而必须显式注册：内核不对 PID 1
+        施加信号的默认动作（没有处理函数时信号被丢弃），否则 docker 只能等
+        stop_grace_period 到点后 SIGKILL——空闲容器也要等满宽限期。
+        """
+        signal.signal(signal.SIGTERM, self._handle_stop_signal)
+        signal.signal(signal.SIGQUIT, self._handle_stop_signal)
+
+    def _handle_stop_signal(self, signum: int, _frame: Any) -> None:
+        if self._stop_signal_received:
+            # 第二次信号：不再等待（人工加速），强杀子进程后立即退出
+            print(f"Received signal {signum} again, force stop services", flush=True)
+            self.stop(force=True)
+            self.exit_process()
+            return
+        self._stop_signal_received = True
+        print(f"Received signal {signum}, stop services", flush=True)
+        # 信号处理函数运行在主线程：这里同步收尾后直接退出。不能让 handler 返回后
+        # 由 watch 循环收尾——PEP 475 会在 handler 未抛异常时按剩余时长续睡
+        # （check_interval 30s），容器迟迟不退出。
+        self.EXIT_EVENT.set()
+        # 无时限等待子进程自行退出（celery warm shutdown 跑完在途任务、gunicorn 等在途
+        # 请求），上限由 docker stop_grace_period 到点后的 SIGKILL 兜底
+        self.stop(wait_forever=True)
+        self.exit_process()
+
+    @staticmethod
+    def exit_process() -> None:
+        # 容器日志经 stdout 管道（非 tty）是块缓冲：先刷缓冲再退出，避免收尾日志丢失
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(0)
 
     # -- watch --
     def watch(self) -> None:

@@ -68,6 +68,10 @@ docker compose $FILES up -d --scale server=2
 副本 IP 变化由 nginx `resolver ... valid=10s` + `resolve` 自动跟随，**不需要**
 reload/restart nginx。
 
+缩容/重建时的停止走优雅信号链（`docker stop` → 监督进程 → 子进程 SIGTERM → 无时限等待，
+宽限期兜底 SIGKILL；空闲副本秒级退出）：口径与实测见
+[deployment-docker.md §3](deployment-docker.md) 的「优雅停止（信号链）」。
+
 ## 三、限制与边界
 
 - **单机形态**：PostgreSQL / Redis / nginx / 备份服务仍是单点，本 overlay 解决的是
