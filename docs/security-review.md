@@ -347,3 +347,52 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 > 与既有登记的关系：HTTPS 非强制、JWT 存 JS 可读 Cookie、注册占用提示、Django 6.0.8 EOL 停留、
 > CSP Django 侧 enforce 等已在 S-6 / 六期 S-1 / 触发制清单 §三.3 登记，本节不重复，ASVS 对照表以引用方式指回。
 > 归属总表见 [asvs-mapping.md](asvs-mapping.md) §三。
+
+## 九期登记（2026-10-14）：全面安全排查（输入注入面 + 认证授权面）
+
+两条独立扫描线逐项核查后的处置与登记：**已修复 9 项**（含对应守护测试）、**登记 11 项**
+（条件/窗口驱动，未命中不立项）、**确认安全面**一份（结论与证据要点见 S-3）。
+
+### S-1 已处置（9 项）
+
+| 项 | 级别 | 事实 | 处置 |
+|---|---|---|---|
+| 接口文档端点匿名可枚举 | 中 | `/api-docs/schema｜swagger｜redoc` 的 `SERVE_PERMISSIONS` 被注释掉，实际走 drf-spectacular 默认 `AllowAny`——未认证者可拉取全量接口×字段结构 | `server/settings/libs.py` 设为项目统一权限类（与权限点 `retrieve:Spectacular*` 同源）：匿名 401 / 无权限登录 403 / 超管 200；部署侧如需匿名只读文档，应在网关显式放行该前缀 |
+| xlsx 公式注入 | 中 | 报表 / 监控 / 导入错误报告经 `ws.append()` 直写，openpyxl 会把 `=` 开头字符串存为公式（`data_type="f"`），Excel 打开即求值（外链 / DDE） | 新增 `common/utils/excel.py::append_text_safe_row`（字符串单元格强制文本类型，数值 / 日期不受影响），3 处导出点接入；守护 `test_export_injection_guard.py` |
+| CSV 公式注入前缀不全 | 中 | 逃逸前缀仅 `= @ 0`，缺 `+ -`（`+cmd\|' /C calc'!A0` 形态可触发） | 前缀清单补 `+ -`；新增 `escape_csv_cell`（危险前缀加 `'`，数值型负数豁免以保留可计算性），导出与导入共用清单保证往返一致；2 处 CSV 写出点接入 |
+| 出站守卫可被重定向绕过 | 中 | `pinned_request` 未禁用 requests 自动跟随：已校验主机返回 `302 Location: http://169.254.169.254/...` 即可穿透（自动跟随会对新目标重新解析 DNS、绕过固定连接） | 改为逐跳手动跟随 + 每跳完整重新校验（协议 / 地址归属 / 白名单 / 固定解析），`max_redirects` 可关（0 = 原样返回 3xx）；守护 6 例 |
+| 导出产物回显内部异常 | 低 | 渲染失败时把异常字符串写入用户可下载的产物（含模型 / 字段名、内部路径） | 改为通用文案，异常细节仅进服务端日志 |
+| 验证码错误回显内部异常 | 低 | 校验异常 `str(e)` 直接拼入用户提示（缓存后端故障时含连接串） | 仅回显业务异常（`CodeError` / `CodeExpired`）文案，内部异常归一为通用文案 |
+| 白名单死条目 | 低 | `PERMISSION_WHITE_URL` 的 `^/api/identity/login$` 与真实路由（`/login/basic｜code｜mfa/*`）不匹配（历史残留） | 移除（登录视图自带匿名权限类；移除后权限点缺口复扫仍 0 条），对应测试断言改真实路径 `logout` |
+| OAuth 绑定端点跳过凭证级校验 | 低-中 | 3 个绑定端点（bind-authorize / bindings / unbind）用 DRF 原生 `IsAuthenticated`，PAT scope 与应用四级授权校验被跳过（属「收敛不足」，非提权） | 改用项目统一权限类（对白名单 URL 跳过菜单校验、保留 scope / 应用授权校验）；越权矩阵 M19-M21 守护 |
+| PAT scope 写入口径无上限 | 低-中 | scope 条目逐请求执行正则，无长度 / 数量约束（ReDoS 面，凭证属主可控） | 单条 ≤256 字符、条目 ≤200 条（400 拒绝）；同类约束可用于审批规则正则（见 S-2 登记） |
+
+### S-2 登记待办（11 项，条件 / 窗口驱动）
+
+| 项 | 级别 | 处置路径 / 触发条件 |
+|---|---|---|
+| LDAP URI / SMTP host 未接入出站守卫 | 中 | 目标多为内网服务，直接套用守卫会拦断正常功能；需「允许私网但拒元数据 / link-local」模式（可复用 `allowed_hosts` 语义）后接入 |
+| 用户上传 xlsx 的 XML 解析未引入 `defusedxml` | 中 | openpyxl 回退标准库解析（恶意 OOXML 实体展开防护降级）；加依赖 + 锁文件即闭合 |
+| 审批规则路径正则 ReDoS | 中 | 规则作者可控的正则逐请求执行；需超时或复杂度约束（PAT scope 的长度上限为同类手法） |
+| 通知模板 `autoescape=False` 且无标签白名单 | 低-中 | 模板管理权限者可注入标记；`{% debug %}` 类标签可把调试信息写入通知正文 |
+| docx / pdf 解压膨胀无上限 | 低-中 | 仅限制压缩前 2MB；zip bomb 形态的内存 / CPU 放大 |
+| HTTPS / Secure Cookie 默认关闭 | 中 | 已有 `SECURITY_HTTPS_ENABLED` 开关与文档，属部署侧落地（S-6 接受项，此处指向） |
+| 并发会话上限默认 0（不限） | 中 | 策略可配（`SECURITY_LOGIN_MAX_SESSIONS`）；凭证泄露后无会话数量收敛，启用即闭合 |
+| 管理员建号密码下限 6 位 | 低-中 | 自助注册为 10 位；建号侧可提升到同档 |
+| 导出 zip 默认口令 = 用户名 | 低 | 注释已标「后期可配置」；改动影响既有导出流程，需产品确认后切换 |
+| 代码生成产物 zip 条目路径未规范化 | 低 | 仅影响解压者（zip slip 形态）；条目名可交 `PurePosixPath` 规范化 |
+| Pillow `MAX_IMAGE_PIXELS` 未显式设 / 安装器二进制仅 MD5 校验 | 低 | 加固项：前者按部署内存设阈值；后者待「制品签名 / 校验链」触发条件命中时一并处理 |
+
+### S-3 确认安全的面（本轮核查结论）
+
+SQL 注入（0 处 `RawSQL` / `extra` / `raw`；受控 lookup 键名闭集 + 值 `to_python` 参数化；数据集列声明白名单；
+排序字段经 `OrderingFilter` 收敛）、路径穿越（`safe_join` + 存储名由 UUID / 零填充整数构成 + 上传文件名净化）、
+文件上传（扩展名黑白名单 fail-closed + 大小 / 配额 + 头像魔数 + 分片合并二次校验）、命令执行与反序列化
+（0 处用户可控 `eval` / `exec` / `os.system` / `pickle` / `yaml.load`；subprocess 全部列表参数无 shell）、
+富文本 XSS（bleach 标签 / 属性 / 协议 / CSS 白名单净化 + 文本预览强制 `text/plain`）、权限绕过
+（全部覆写 `permission_classes` 的视图逐点核查无绕过面；数据权限 fail-closed）、密钥管理
+（`SECRET_KEY` 生产缺失拒绝启动；字段加密 v3 HKDF+AES-GCM）、安全中间件（0 处 `csrf_exempt`；
+`CORS_ALLOW_ALL_ORIGINS` 与凭证同开拒绝启动）、供应链（`uv.lock` 锁定 + 周度 pip-audit + 依赖一致性门禁）。
+
+> 关联：越权矩阵新增 M19-M21（PAT 不高于属主 / scope 在菜单权限之上继续收敛 / 宽 scope 超声明不提权），
+> 见 `tests/integration/system/test_privilege_escalation_matrix.py`。

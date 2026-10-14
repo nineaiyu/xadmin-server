@@ -47,6 +47,20 @@
 - **2026-10-14 E2E 档缓存替身能力补齐（`ttl`，用户点名顺手修复）**：`FakeRedisCache` 补 `ttl`（对齐 django-redis 口径：键不存在 0 / 无过期 None / 其余剩余秒）——此前缺失时，验证码重复发送的限流闸门 `CodeSendOverRate(cache.ttl(limit_key))` 在入参求值处抛 AttributeError（未预期 500 + Traceback，与既有 `iter_keys` 同类缺口，E2E 跑批日志中被淹没）。守护：单测 `test_fake_redis_cache.py` 新增 2 例（ttl 语义 + 限流链路可读文案，先红后绿）；E2E 新增 `verify-code-resend.e2e.ts`（专属邮箱 `e2e_approver@example.com`，与 reset-password 的 xadmin@dvcloud.xin 隔离限流窗口；幂等断言「限流响应含可读秒数且非未预期异常文案」，`--repeat-each=2` 双路径实测 2 passed）。
 - **限流 HTTP 语义收口（2026-10-14 已完成）**：验证码限流异常 `CodeSendOverRate` / `CodeSendTooFrequently` 覆写 `status_code = 429`——客户端错误不再伪装成 500（daphne 不再记 "Internal Server Error"）；前端无需改动（`errorStrategies` 的 429 策略自动接管：非 GET 走去重提示、文案含剩余秒数）；守护=单测 `test_verify_code_exceptions.py`（含全局异常处理器映射）+ 集成用例「同目标重复发码 → 429 + 剩余秒数」+ E2E `verify-code-resend.e2e.ts` 增加状态码断言；映射已登记 `docs/exception-handling.md`。
 
+- **2026-10-14 演示管理员权限完善 + 全面安全排查（改动留工作区，待提交）**：①**「页面不显示字段」根因修复**——
+  字段权限为 fail-closed 白名单制，`seed_demo_admin` 此前只授菜单不建白名单，演示角色 54 个走序列化器的权限点
+  零字段（数据集 / 报表 / 审批 / 我的填报 / 知识库 / 岗位等整页空白）；新增 `apply.fill_field_permissions`
+  （按「已授权权限点 × 绑定模型 ROLE 树全字段」补缺口，已有非空白名单不覆盖）+ `sync_menu_permissions
+  --fix-field-permissions`（含 `--update-seed` 回写种子），`seed_demo_admin` 自动补齐、新增页面（9 → 26 个）
+  继承同款写权限裁剪、`--clean-only` 对称回滚，`identity.builtin` 内置角色同步兜底；演示账号字段白名单
+  43 → 123 条、全库审计缺口 253 → 0、种子 `fieldpermission.json` 171 → 248 条；②顺带修复报表页对非超管 500
+  （`_visible_queryset` 按 Report 不存在的 `visibility` 字段过滤 → 改按模型能力分支）；③演示数据：新增
+  「示例-表单提交趋势」报表（聚合 / 周频，覆盖第二个数据集）；④**安全排查**（`security-review.md` 九期）：
+  修复 9 项（接口文档端点匿名可枚举 / xlsx 与 CSV 公式注入 / 出站守卫重定向绕过 / 导出与验证码错误回显内部异常 /
+  白名单死条目 / OAuth 绑定端点收敛 / PAT scope 上限）、登记 11 项（含 LDAP-SMTP 出站守卫、defusedxml 等）；
+  ⑤测试：新增 10 个文件 / 用例集（全量 5995 collected 绿、mypy / ruff / 文档门禁 / 迁移漂移全绿），
+  E2E 双浏览器冒烟 9 + 相关面（webhook / data-permission / analysis / api-app）18 全过。
+
 ## 〇-历史
 
 > 2026-10-13 及更早的历史执行记录（2026-09 审查整改收口、2026-10 各批交付与推送明细）
