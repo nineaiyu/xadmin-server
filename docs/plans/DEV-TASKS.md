@@ -45,7 +45,7 @@
   前端 vitest 313 文件 2152 例 + typecheck + lint + 6 项 check 全绿。
 
 - **2026-10-14 E2E 档缓存替身能力补齐（`ttl`，用户点名顺手修复）**：`FakeRedisCache` 补 `ttl`（对齐 django-redis 口径：键不存在 0 / 无过期 None / 其余剩余秒）——此前缺失时，验证码重复发送的限流闸门 `CodeSendOverRate(cache.ttl(limit_key))` 在入参求值处抛 AttributeError（未预期 500 + Traceback，与既有 `iter_keys` 同类缺口，E2E 跑批日志中被淹没）。守护：单测 `test_fake_redis_cache.py` 新增 2 例（ttl 语义 + 限流链路可读文案，先红后绿）；E2E 新增 `verify-code-resend.e2e.ts`（专属邮箱 `e2e_approver@example.com`，与 reset-password 的 xadmin@dvcloud.xin 隔离限流窗口；幂等断言「限流响应含可读秒数且非未预期异常文案」，`--repeat-each=2` 双路径实测 2 passed）。
-- **已知边界（未修，待决策）**：验证码限流异常 `CodeSendOverRate` / `CodeSendTooFrequently` 未覆写 `status_code`，HTTP 语义为 500（前端可读到 detail 文案，但 daphne 日志记 "Internal Server Error"）；若改 400/429 需同步核对前端 `errorStrategies` 与契约文档。
+- **限流 HTTP 语义收口（2026-10-14 已完成）**：验证码限流异常 `CodeSendOverRate` / `CodeSendTooFrequently` 覆写 `status_code = 429`——客户端错误不再伪装成 500（daphne 不再记 "Internal Server Error"）；前端无需改动（`errorStrategies` 的 429 策略自动接管：非 GET 走去重提示、文案含剩余秒数）；守护=单测 `test_verify_code_exceptions.py`（含全局异常处理器映射）+ 集成用例「同目标重复发码 → 429 + 剩余秒数」+ E2E `verify-code-resend.e2e.ts` 增加状态码断言；映射已登记 `docs/exception-handling.md`。
 
 ## 〇-历史
 

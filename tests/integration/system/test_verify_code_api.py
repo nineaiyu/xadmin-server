@@ -5,6 +5,7 @@
 （silent_send 屏蔽邮件/短信任务），响应不回显验证码；验证码真实写入缓存。
 """
 
+import re
 from unittest.mock import Mock
 
 import pytest
@@ -558,3 +559,21 @@ class TestO8EndpointThrottle:
         payload = {"form_type": "email", "target": "throttleuser@example.com"}
         assert api_client.post(SEND_VERIFY_URL + "?category=register", payload, format="json").status_code == 200
         assert api_client.post(SEND_VERIFY_URL + "?category=register", payload, format="json").status_code == 429
+
+
+class TestSendVerifyCodeTargetRateLimit:
+    """目标维度发送间隔限流（CodeSendOverRate）：HTTP 429 + 可读剩余秒数。
+
+    IP 维度限流（VerifyCodeThrottle，业务码 999）之外的第二层——同一目标在
+    `VERIFY_CODE_LIMIT` 窗口内重复发码命中此层；语义是客户端错误，不得回退成 500。
+    """
+
+    def test_repeat_send_hits_target_rate_limit(self, api_client, register_free, silent_send):
+        payload = {"form_type": "email", "target": "target-rate-limit@example.com"}
+        first = api_client.post(SEND_VERIFY_URL + "?category=register", payload, format="json")
+        assert first.status_code == 200, first.data
+
+        second = api_client.post(SEND_VERIFY_URL + "?category=register", payload, format="json")
+        assert second.status_code == 429, second.data
+        assert second.data["code"] == 429, second.data
+        assert re.search(r"\d+", str(second.data["detail"])), second.data

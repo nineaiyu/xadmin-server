@@ -12,6 +12,7 @@ from typing import Any
 from celery import shared_task
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
+from rest_framework import status
 from rest_framework.exceptions import APIException
 
 from common.settings_contract import kernel_setting
@@ -42,6 +43,9 @@ class CodeError(APIException):
 
 
 class CodeSendTooFrequently(APIException):
+    # 传输层归类为 429 Too Many Requests：发送限流是客户端错误，不伪装成 500
+    # （网关与监控按状态码统计）；业务码由全局异常处理器按状态码写回响应体。
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
     default_code = "code_send_too_frequently"
     default_detail = _("Please wait {} seconds before sending")
 
@@ -50,6 +54,8 @@ class CodeSendTooFrequently(APIException):
 
 
 class CodeSendOverRate(APIException):
+    # 同上：目标维度的发送间隔限流（SendAndVerifyCodeUtil.__rata）→ HTTP 429。
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
     default_code = "code_send_over_rate"
     default_detail = _("Please wait {} seconds before sending")
 
