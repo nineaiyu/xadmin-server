@@ -19,6 +19,25 @@
 
 ## 〇、状态快照（2026-10-09，2026-10-14 追加 5.0 发布批次）
 
+- **2026-10-14 列表页操作列按内容收敛（xadmin-client；改动留工作区，待提交）**：起因=用户反馈
+  「未授予某些权限时操作列只剩一个按钮，却仍占着为多个按钮预留的列宽，右侧大片空白」。实现
+  （均在 `src/components/RePlusPage`）：①新增内容实测 `utils/operationContentWidth.ts`——把操作列
+  单元格（表头 + 各行，按 innerHTML 去重）克隆进 `width: max-content` 探测容器量自然宽度，加单元格
+  内边距即所需列宽（不用单元格 rect：`table-layout: fixed` 下内容超出会折行、直接量当前列宽还会
+  自我反馈成持续收缩）；②新增 `utils/useOperationContentWidth.ts`——数据到达后在 **rAF**（与 EP
+  `doLayout` 同帧）实测并有限重试（数据 flush 里 el-table 只有骨架，post-flush 直接量恒为 0）；
+  ③`resolveOperationColumnWidth` 增内容下限：无横向滚动时直接按内容渲染（固定列不覆盖任何内容），
+  有滚动时以内容为「求对齐值」的下限、仍以「页面配置宽度 + 容差」为上限，对齐不划算时保持配置宽度
+  ——两条收敛路径都不引入新的「半个字」，配置放不下内容时也不反向撑宽；④`useTableLayout` 接实测值
+  （`operationConfiguredWidth` / `operationContentWidth`）；`useRecycleBin` 抽出回收站计算属性以守
+  500 行门禁（index.vue 499 → 485）。验证：单测 `operationColumnWidth.spec`（按内容收敛 6 例 + 零回归
+  对照）/ `operationContentWidth.spec`（jsdom 桩布局 6 例）/ `useTableLayout.spec`；E2E
+  `table-column-align` 补三条断言（内容不被裁切、收敛后无跨界列、内容远小于配置时必须收敛）双浏览器
+  26 passed；真实页面抽查：访问日志 140 → 90（只有图标按钮）、用户页「只有管理按钮」时 260 → 170；
+  perf 五页 CLS 均在兜底上限内（system-logs 的 ~0.05 系既有首帧列宽落位——关闭本改动对照实测同样
+  存在）；visual 14 passed（无需重录）；前端 lint 三件套 / typecheck / vitest 2180 / check 系列 / build
+  全绿。教训已录 `xadmin-client/e2e/README.md`（量 el-table 单元格必须在 rAF 后）。
+
 - **2026-10-14 前端入口权限审计 + 内置角色只读授权补齐（改动留工作区，待提交）**：起因=用户追问
   「其它权限是不是都要检查」。审计结论：框架默认按钮由页面级权限位控制，自定义按钮绝大多数已用
   `hasAuth`（未声明 `show` 的按钮不渲染，不构成 403 面）——真缺口 3 处：MCP 工具抽屉「同步 / 调用」
