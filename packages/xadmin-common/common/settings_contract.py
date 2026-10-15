@@ -242,8 +242,8 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
     "CELERY_LOG_DIR": KS("str", "任务日志目录（任务日志文件落盘根）", consumers=("celery/utils.py",)),
     "CELERY_HEAVY_POOL": KS(
         "str",
-        "重任务队列执行池类型（进程管理命令拉起 worker 用）",
-        default="threads",
+        "重任务队列执行池类型（进程管理命令拉起 worker 用；默认 prefork：CPU 密集任务绕开 GIL）",
+        default="prefork",
         consumers=("management/commands/services/services/celery_heavy.py",),
     ),
     "CELERY_HEAVY_CONCURRENCY": KS(
@@ -284,8 +284,8 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
     ),
     "METRICS_ENABLED": KS(
         "bool",
-        "Prometheus 指标端点开关（关闭即 404 / no-op）",
-        default=False,
+        "Prometheus 指标端点开关（默认转正开启；关闭即 404 / no-op）",
+        default=True,
         consumers=("api/metrics.py",),
     ),
     "METRICS_TOKEN": KS("str", "指标端点令牌（空 = 端点拒访）", default="", consumers=("api/metrics.py",)),

@@ -138,9 +138,10 @@ HTTP_LISTEN_PORT: 8896
 GUNICORN_MAX_WORKER: 4
 CELERY_WORKER_COUNT: 4
 # heavy 队列（导入/导出/批量重任务）worker 配置。
-# CPU 密集的 Excel 导出可把 POOL 改为 'prefork' 提升吞吐（threads 池受 GIL 限制）
-# CELERY_HEAVY_POOL: threads
-# CELERY_HEAVY_CONCURRENCY: 4
+# 默认 prefork：本队列承载 CPU 密集任务（Excel 渲染/导入解析/报表生成），
+# 多进程绕开 GIL；需要与 default 队列共享进程内状态时可改回 'threads'
+CELERY_HEAVY_POOL: prefork
+CELERY_HEAVY_CONCURRENCY: 4
 
 # Celery Flower 任务监控（默认关闭外网暴露：仅绑定 127.0.0.1）
 # CELERY_FLOWER_HOST: 127.0.0.1

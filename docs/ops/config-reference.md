@@ -60,7 +60,7 @@
 | `HTTP_BIND_HOST` / `HTTP_LISTEN_PORT` | 同名 | `0.0.0.0` / `8896` | 否 | |
 | `GUNICORN_MAX_WORKER` | 同名 | `4` | 否 | API worker 数；容量规划与实测数据见 §3.3 |
 | `CELERY_WORKER_COUNT` | 同名 | `4` | 否 | 默认队列 worker 并发（模板与代码兜底已对齐） |
-| `CELERY_HEAVY_POOL` / `CELERY_HEAVY_CONCURRENCY` | 同名 | `threads` / `4` | 否 | heavy 队列（导入/导出/批量）worker |
+| `CELERY_HEAVY_POOL` / `CELERY_HEAVY_CONCURRENCY` | 同名 | `prefork` / `4` | 否 | heavy 队列（导入/导出/批量）worker；默认多进程（CPU 密集绕开 GIL），可改 `threads` |
 | `CELERY_FLOWER_HOST` / `CELERY_FLOWER_PORT` | 同名 | `127.0.0.1` / `5566` | 否 | |
 | `CELERY_FLOWER_AUTH` | 同名 | 空 | 非本机访问必填 | 未配置时 Flower 仅允许绑定 `127.0.0.1`，绑其他地址拒绝启动 |
 

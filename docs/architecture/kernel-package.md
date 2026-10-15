@@ -121,7 +121,7 @@ Django 内置键中的身份、媒体与本地化配置（密钥、用户模型�
 | `CELERY_BROKER_URL` | str | '' | celery broker 地址（指标端点脱敏展示用） | `metrics.py` |
 | `CELERY_TASK_ALWAYS_EAGER` | bool | False | 任务是否同步执行（异步导出/导入在 eager 环境直接落结果） | `core/modelset/import_export/export_actions.py`、`core/modelset/import_export/import_actions.py` |
 | `CELERY_LOG_DIR` | str | 必给 | 任务日志目录（任务日志文件落盘根） | `celery/utils.py` |
-| `CELERY_HEAVY_POOL` | str | 'threads' | 重任务队列执行池类型（进程管理命令拉起 worker 用） | `management/commands/services/services/celery_heavy.py` |
+| `CELERY_HEAVY_POOL` | str | 'prefork' | 重任务队列执行池类型（进程管理命令拉起 worker 用；CPU 密集任务默认多进程绕开 GIL，可改 'threads'） | `management/commands/services/services/celery_heavy.py` |
 | `CELERY_HEAVY_CONCURRENCY` | int | 4 | 重任务队列并发度（进程管理命令拉起 worker 用） | `management/commands/services/services/celery_heavy.py` |
 | `CELERY_FLOWER_HOST` | str | '127.0.0.1' | Flower 监听地址（进程管理命令拉起 Flower 用） | `celery/flower.py` |
 | `CELERY_FLOWER_PORT` | int | 5566 | Flower 监听端口 | `celery/flower.py` |
@@ -133,7 +133,7 @@ Django 内置键中的身份、媒体与本地化配置（密钥、用户模型�
 | `SECURITY_MONITOR_MEMORY_USED_MAX` | float | 85 | 内存使用率告警阈值（%） | `notifications.py` |
 | `SECURITY_MONITOR_DISK_USED_MAX` | float | 80 | 磁盘使用率告警阈值（%） | `notifications.py` |
 | `SECURITY_MONITOR_CPU_LOAD_MAX` | float | 5 | CPU 负载告警阈值（load1） | `notifications.py` |
-| `METRICS_ENABLED` | bool | False | Prometheus 指标端点开关（关闭即 404 / no-op） | `api/metrics.py` |
+| `METRICS_ENABLED` | bool | True | Prometheus 指标端点开关（默认开启，端点仍需 token；关闭即 404 / no-op） | `api/metrics.py` |
 | `METRICS_TOKEN` | str | '' | 指标端点令牌（空 = 端点拒访） | `api/metrics.py` |
 | `HEALTH_CHECK_SKIP_CELERY` | bool | False | 健康检查是否跳过 celery 探针（测试/离线环境用） | `utils/health.py` |
 | `MODULE_PRESET` | str | 'full' | 模块发行预设（core / standard / full；与 core/modules/registry.py 的 DEFAULT_PRESET 同值） | `core/modules/registry.py` |

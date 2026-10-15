@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""Prometheus 指标采集（可选启用）。
+"""Prometheus 指标采集（默认开启，端点令牌门控）。
 
 设计取舍：
-- 默认关闭（``METRICS_ENABLED=false``）：未启用时中间件不挂载、端点返回 404，
-  避免指标端点意外对外暴露；
+- 默认开启（``METRICS_ENABLED=true``，转正默认见守护测试）：端点仍要求
+  ``METRICS_TOKEN``（空 = 拒访），未配令牌时不会泄露指标数据；
+  显式关闭时中间件不挂载、端点返回 404；
 - 依赖 ``prometheus-client`` 缺失时降级为 no-op，不影响服务启动与请求链路；
 - 采集失败静默跳过：指标是旁路能力，任何异常都不得影响主流程。
 """

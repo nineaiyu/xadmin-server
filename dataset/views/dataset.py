@@ -25,6 +25,7 @@ from rest_framework.filters import OrderingFilter
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImpactPreviewAction, RelationCountMixin
 from common.core.response import ApiResponse
+from common.core.throttle import DatasetQueryThrottleMixin
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from dataset.models.dataset import Dashboard, Dataset
@@ -42,7 +43,7 @@ class DatasetFilter(BaseFilterSet):
         fields = ["bound_model", "visibility"]
 
 
-class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
+class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, DatasetQueryThrottleMixin):
     """数据集"""
 
     queryset = Dataset.objects.all()
@@ -52,6 +53,8 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
     # 定义类资源不做行级数据权限过滤（可见性语义 = 创建者/共享，见 get_queryset）；
     # 数据权限作用于数据集执行的**业务数据**，而非数据集定义本身
     filter_backends = [DjangoFilterBackend, OrderingFilter]
+    # 执行/聚合是重 DB 操作（大表聚合、明细物化）：按用户维度限流防聚合风暴
+    dataset_query_actions = ("execute", "aggregate")
 
     def get_queryset(self) -> Any:
         queryset = super().get_queryset()

@@ -110,10 +110,15 @@ BASE_CONFIG = {
     # 默认队列 worker 并发：与 config_example.yml 保持一致（模板是唯一事实源，
     # 零配置回落路径直接读模板；此处仅作「配置文件未给该键」时的兜底）
     "CELERY_WORKER_COUNT": 4,
+    # Webhook 投递/写入的环回目标（127.0.0.1/localhost）放行开关。
+    # None = 跟随 DEBUG（生产 fail-closed，本地联调放开）；显式 True/False 可覆盖
+    # （测试栈对本地接收端的真实投递即显式开启，见 tests/settings_base.py）
+    "WEBHOOK_ALLOW_LOOPBACK": None,
     # heavy 队列（导入/导出/批量重任务）worker 配置。
-    # CPU 密集的 Excel 导出可把 POOL 改为 'prefork' 提升吞吐（threads 池受 GIL 限制）；
-    # 默认维持 threads，与 default 队列保持相同的运行时状态共享行为
-    "CELERY_HEAVY_POOL": "threads",
+    # 默认 prefork：本队列承载的是 CPU 密集任务（Excel 渲染 / 导入解析 / 报表
+    # 生成），threads 池受 GIL 限制无法真正多核并行；需要与 default 队列共享
+    # 进程内状态时可显式改回 'threads'
+    "CELERY_HEAVY_POOL": "prefork",
     "CELERY_HEAVY_CONCURRENCY": 4,
     # DRF BasicAuthentication 总开关：base64 明文凭证，默认关闭；
     # 本地调试需要时在 config.yml 显式开启

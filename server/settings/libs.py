@@ -78,6 +78,9 @@ REST_FRAMEWORK = {
         # 导出/导入重 IO 端点（export-data/-async、import-*、下载中心 download）：
         # 按用户维度防突发提交/下载风暴（并发上限另有 EXPORT_ASYNC_MAX_RUNNING 兜底）
         "export_import": "30/m",
+        # 数据集执行/聚合（execute/aggregate）：大表聚合重 DB，按用户维度收敛
+        # 刷新风暴（看板卡片轮询按 10s 档 × 多卡设计，120/m 留足正常余量）
+        "dataset_query": "120/m",
         **CONFIG.DEFAULT_THROTTLE_RATES,
     },
     "DEFAULT_PAGINATION_CLASS": "common.core.pagination.PageNumber",

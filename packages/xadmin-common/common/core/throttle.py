@@ -197,6 +197,33 @@ class ExportImportThrottle(UserRateThrottle):
     scope = "export_import"
 
 
+class DatasetQueryThrottle(UserRateThrottle):
+    """数据集执行/聚合限流：大表聚合与明细拉取是重 DB 操作，按用户维度收敛
+    高频刷新（看板卡片轮询 / 脚本重放造成的聚合风暴）。"""
+
+    scope = "dataset_query"
+
+
+class DatasetQueryThrottleMixin:
+    """数据集执行/聚合端点限流挂载（ExportImportThrottleMixin 同款模式）。
+
+    声明集合 ``dataset_query_actions`` 沿 MRO 取并集；数据集视图按需挂载。
+    """
+
+    dataset_query_actions: tuple[str, ...] = ()
+
+    def get_throttles(self) -> Any:
+        throttles = list(super().get_throttles())  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
+        action = getattr(self, "action", None)
+        if action:
+            declared: set[Any] = set()
+            for klass in type(self).__mro__:
+                declared.update(getattr(klass, "dataset_query_actions", ()) or ())
+            if action in declared:
+                throttles.append(DatasetQueryThrottle())
+        return throttles
+
+
 class ExportImportThrottleMixin:
     """导出/导入端点限流挂载（AiThrottleMixin 同款模式）。
 

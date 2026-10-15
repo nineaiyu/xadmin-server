@@ -62,10 +62,36 @@ class Config(dict[str, Any]):
     def __init__(self, *args: Any) -> None:
         super().__init__(*args)
 
+    @staticmethod
+    def _infer_scalar(v: Any) -> Any:
+        """无类型参照时的字面量推断（仅环境变量注入路径使用）。
+
+        当前 None 默认值键均为数值语义（AI_TOP_P / AI_FREQUENCY_PENALTY /
+        AI_PRESENCE_PENALTY / AI_SEED），按 int → float → 原样推断；
+        非数值串保持字符串，不做 bool 猜测（无此语义的键）。
+        """
+        if not isinstance(v, str):
+            return v
+        text = v.strip()
+        if not text:
+            return v
+        try:
+            return int(text)
+        except ValueError:
+            pass
+        try:
+            return float(text)
+        except ValueError:
+            pass
+        return v
+
     def convert_type(self, k: str, v: Any) -> Any:
         default_value = self.defaults.get(k)
         if default_value is None:
-            return v
+            # 默认值为 None 的键（语义 = 未配置）：环境变量注入时无类型参照，
+            # 按数值字面量推断，否则 "0.9" 会以字符串形态进入消费侧
+            # （AI 采样参数下发即成非数值）
+            return self._infer_scalar(v)
         tp: Callable[[Any], Any] = type(default_value)
         # 对bool特殊处理
         if tp is bool and isinstance(v, str):
