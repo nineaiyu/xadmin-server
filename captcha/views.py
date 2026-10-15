@@ -232,6 +232,18 @@ def captcha_audio(request: HttpRequest, key: str) -> HttpResponse:
         if os.path.isfile(path):
             response = RangedFileResponse(request, open(path, "rb"), content_type="audio/wav")
             response["Content-Disposition"] = f'attachment; filename="{key}.wav"'
+
+            # 响应关闭（发送完毕 / 客户端断开）后清理临时 wav：无 sox 分支下
+            # 该文件会永久滞留 tempdir，长期累积占磁盘
+            # （FileResponse._resource_closers 在 close() 时按序执行，
+            # 文件句柄的关闭器先注册先执行，此处追加的删除器后执行）
+            def _remove_temp_wav(p: str = path) -> None:
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+
+            response._resource_closers.append(_remove_temp_wav)
             return response
     raise Http404
 

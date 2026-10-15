@@ -4,9 +4,9 @@
 # filename : response
 # author : ly_13
 # date : 6/2/2023
-import datetime
 from typing import Any
 
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.response import Response
 
@@ -41,7 +41,8 @@ class ApiResponse(Response):
             if detail
             else (_("Operation successful") if code == API_SUCCESS_CODE else _("Operation failed")),
             "requestId": str(getattr(get_current_request(), "request_uuid", "")),
-            "timestamp": str(datetime.datetime.now()),
+            # aware UTC：与模型字段（timezone.now()）同口径，跨时区部署对账不混淆
+            "timestamp": str(timezone.now()),
         }
         if data is not None:
             dic["data"] = data

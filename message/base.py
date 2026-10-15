@@ -5,12 +5,12 @@
 # author : ly_13
 # date : 3/27/2025
 import asyncio
-import datetime
 import json
 from typing import Any
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.utils import encoders
 
@@ -83,7 +83,8 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
             "detail": detail
             if detail
             else (_("Operation successful") if code == API_SUCCESS_CODE else _("Operation failed")),
-            "timestamp": str(datetime.datetime.now()),
+            # aware UTC：与模型字段（timezone.now()）同口径
+            "timestamp": str(timezone.now()),
             "v": PROTOCOL_VERSION,
         }
         if data:
