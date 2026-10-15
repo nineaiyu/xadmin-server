@@ -3,12 +3,14 @@
 """配置管理器：从 py/json/yaml/对象装配配置并加载用户配置。"""
 
 import errno
+import fcntl
 import json
 import logging
 import os
 import secrets
 import string
 import sys
+import time
 import types
 from typing import Any
 
@@ -38,8 +40,13 @@ def _random_secret_key() -> str:
 def _load_or_create_auto_secret_key(root_path: str) -> tuple[str, bool]:
     """读取或创建自动生成的 SECRET_KEY；返回 ``(value, created)``。
 
-    并发启动（多 worker 同时加载 settings）时用 O_EXCL 抢占，失效方读回既有值，
-    保证全进程使用同一密钥。
+    并发安全（多 worker / migrate 容器同时首启 settings）：
+    文件锁（``flock``）选举唯一写入者，写入用「临时文件 + ``os.replace``」
+    原子发布——等待方要么读到完整密钥、要么在锁释放后读到发布结果，
+    不会出现「O_EXCL 建出空文件 → 抢输方读空 → 各自生成不同密钥」的
+    多进程密钥分叉（那会让 JWT 互签失败、字段加密解密错乱）。
+    ``flock`` 随进程退出自动释放，无陈旧锁；只读文件系统保持旧行为
+    （内存密钥 + 告警）。
     """
     secret_path = os.path.join(root_path, AUTO_SECRET_KEY_FILE)
     try:
@@ -50,25 +57,61 @@ def _load_or_create_auto_secret_key(root_path: str) -> tuple[str, bool]:
     except OSError:
         pass
 
-    value = _random_secret_key()
+    lock_path = f"{secret_path}.lock"
     try:
         os.makedirs(os.path.dirname(secret_path), exist_ok=True)
-        fd = os.open(secret_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    except FileExistsError:
-        try:
-            with open(secret_path, encoding="utf8") as f:
-                exist = f.read().strip()
-            if exist:
-                return exist, False
-        except OSError:
-            pass
-        return value, False
+        lock_fd = os.open(lock_path, os.O_WRONLY | os.O_CREAT, 0o600)
     except OSError as e:
         logger.warning("[xadmin] SECRET_KEY 自动生成后无法持久化（%s），本次仅存于内存。", e)
-        return value, True
-    with os.fdopen(fd, "w", encoding="utf8") as f:
-        f.write(value)
-    return value, True
+        return _random_secret_key(), True
+
+    acquired = False
+    deadline = time.monotonic() + 10
+    try:
+        while not acquired:
+            try:
+                fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                acquired = True
+            except OSError:
+                # 他人正在写入（毫秒级）：有界自旋等待，不做无界阻塞
+                if time.monotonic() >= deadline:
+                    break
+                time.sleep(0.05)
+        if acquired:
+            # 持锁复核：等待期间可能已被他人发布
+            try:
+                with open(secret_path, encoding="utf8") as f:
+                    value = f.read().strip()
+                if value:
+                    return value, False
+            except OSError:
+                pass
+            value = _random_secret_key()
+            tmp_path = f"{secret_path}.{os.getpid()}.tmp"
+            with open(tmp_path, "w", encoding="utf8") as f:
+                f.write(value)
+            os.replace(tmp_path, secret_path)
+            return value, True
+        # 锁长时间不可用（异常持锁方）：尽力读回，仍无则回落内存密钥并告警
+        try:
+            with open(secret_path, encoding="utf8") as f:
+                value = f.read().strip()
+            if value:
+                return value, False
+        except OSError:
+            pass
+        logger.warning("[xadmin] SECRET_KEY 文件锁等待超时，本次使用内存密钥（多进程可能不一致）。")
+        return _random_secret_key(), True
+    finally:
+        try:
+            if acquired:
+                fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        except OSError:
+            pass
+        try:
+            os.close(lock_fd)
+        except OSError:
+            pass
 
 
 class ConfigManager:

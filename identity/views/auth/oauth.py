@@ -34,6 +34,8 @@ from identity.utils.auth import get_token_lifetime
 from identity.utils.oauth import (
     OAuthError,
     build_authorize_url,
+    check_state_cookie,
+    clear_state_cookie,
     consume_bind_state,
     consume_nonce,
     consume_state,
@@ -47,6 +49,7 @@ from identity.utils.oauth import (
     make_unique_username,
     mask_providers,
     resolve_subject,
+    set_state_cookie,
 )
 from identity.utils.oidc import (
     fetch_oidc_identity,
@@ -190,7 +193,11 @@ class OAuthAuthorizeAPIView(GenericAPIView):
             url = _authorize_url_with_nonce(request, provider, config, state)
         except OAuthError as exc:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=exc.detail)
-        return ApiResponse(data={"url": url, "state": state})
+        response = ApiResponse(data={"url": url, "state": state})
+        # 登录 state 与发起授权的浏览器会话绑定：回调时校验一致性，
+        # 阻断「诱导受害者浏览器访问攻击者的 (code, state) 回调」登录 CSRF
+        set_state_cookie(response, state)
+        return response
 
 
 class OAuthBindAuthorizeAPIView(GenericAPIView):
@@ -235,10 +242,14 @@ class OAuthCallbackAPIView(GenericAPIView):
         if bind_payload is not None:
             return _bind_identity(request, provider, code, bind_payload, state or "")
 
+        # 登录 CSRF 防护：state 必须由本浏览器会话的 authorize 下发（Cookie 一致）。
+        # 不一致（含缺失）直接拒绝，且不消费 state（留待自然过期）。
+        if not check_state_cookie(request, state):
+            return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("The login link has expired, please try again"))
+
         bound_provider = consume_state(state or "")
         if not code or bound_provider != provider:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("The login link has expired, please try again"))
-
         config = get_provider(provider, enabled_only=True)
         if not config:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("Third-party login is not enabled"))
@@ -269,6 +280,8 @@ class OAuthCallbackAPIView(GenericAPIView):
 
         mfa_response = complete_login(request, user, login_type=UserLoginLog.LoginTypeChoices.OAUTH)
         if mfa_response:
+            # state 已校验消费完毕，清理会话绑定 Cookie
+            clear_state_cookie(mfa_response)
             return mfa_response
 
         user.last_login = timezone.now()
@@ -278,7 +291,9 @@ class OAuthCallbackAPIView(GenericAPIView):
         # 强制改密标记与本地密码/验证码登录同口径同来源（user.must_change_password）：
         # 第三方登录路径同样不能绕过改密引导
         result["must_change_password"] = bool(getattr(user, "must_change_password", False))
-        return ApiResponse(data=result)
+        response = ApiResponse(data=result)
+        clear_state_cookie(response)
+        return response
 
 
 class OAuthBindingsAPIView(GenericAPIView):

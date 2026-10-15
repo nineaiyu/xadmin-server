@@ -30,6 +30,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from common.cache.storage import atomic_get_delete
 from common.core.auth import hash_pat_token, normalize_scope_entry
 from identity.models.token import ApiApplication, OAuthRefreshToken, PersonalAccessToken
 from identity.services.token_issue import OAUTH_ACCESS_PREFIX, issue_access_token
@@ -74,13 +75,11 @@ def issue_authorize_code(
 
 
 def consume_authorize_code(code: str) -> Any:
-    """消费授权码（一次性）：命中即删除，返回绑定载荷；未命中/已用过返回 None。"""
-    key = _code_cache_key(code)
-    payload = cache.get(key)
-    if payload is None:
-        return None
-    cache.delete(key)
-    return payload
+    """原子消费授权码（一次性）：命中即删除，返回绑定载荷；未命中/已用过返回 None。
+
+    原子「读即删」：并发的两次换码只有一方拿到载荷，落实授权码重用检测。
+    """
+    return atomic_get_delete(_code_cache_key(code))
 
 
 def verify_pkce(code_challenge: str, method: str, verifier: str) -> bool:

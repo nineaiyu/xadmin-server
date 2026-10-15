@@ -44,11 +44,12 @@ PERMISSION_WHITE_URL = {
     "^/api/mfa/otp/recovery-codes/regenerate$": ["POST"],
     "^/api/mfa/otp/start$": ["POST"],
     "^/api/mfa/otp/test$": ["POST"],
-    "^/api/identity/personal-access-tokens": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
+    "^/api/identity/personal-access-tokens(/|$)": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
     # Passkey 凭据：个人凭据个人管，视图内收口为本人（超管可查全量），同 PAT/MFA 口径
-    "^/api/identity/passkeys": ["*"],
+    # 锚定 (/|$)：仅放行本命名空间，同前缀的兄弟路由（如未来 passkeys-admin）不落入
+    "^/api/identity/passkeys(/|$)": ["*"],
     # 列表「我的视图」：个人筛选偏好，视图内收口为「本人 + 共享只读」，同 PAT 口径
-    "^/api/system/saved-views": ["*"],
+    "^/api/system/saved-views(/|$)": ["*"],
     # 登录前 Passkey 挑战值（匿名，凭一次性 mfa_token）：与登录流程同级，不参与菜单权限
     "^/api/identity/login/mfa/passkey/": ["*"],
     # 退出用户模拟：被模拟用户未必有任何菜单权限，退出模拟是安全阀必须无条件可达

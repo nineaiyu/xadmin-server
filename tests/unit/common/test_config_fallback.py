@@ -86,3 +86,33 @@ def test_debug_enables_auto_generation(tmp_path, config_manager_cls):
 
     assert config.get("SECRET_KEY")
     assert (tmp_path / manager_module.AUTO_SECRET_KEY_FILE).is_file()
+
+
+def test_concurrent_first_boot_shares_one_secret_key(tmp_path, config_manager_cls):
+    """多进程同时首启（无既有密钥文件）必须收敛到同一密钥。
+
+    历史缺陷：O_EXCL 建出空文件后、写入前，抢输方读到空内容便各自生成随机值，
+    导致多 worker 持有不同 SECRET_KEY（JWT 互签失败、字段加密不可解）。
+    现在由文件锁选举唯一写入者 + 临时文件原子替换保证一致。
+    """
+    import threading
+
+    _prepare_example(tmp_path)
+    results: list[str] = []
+    barrier = threading.Barrier(8)
+
+    def load() -> None:
+        barrier.wait()
+        value, _created = manager_module._load_or_create_auto_secret_key(str(tmp_path))
+        results.append(value)
+
+    threads = [threading.Thread(target=load) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=30)
+
+    assert len(results) == 8
+    assert len(set(results)) == 1  # 全部收敛到同一密钥
+    secret_file = tmp_path / manager_module.AUTO_SECRET_KEY_FILE
+    assert secret_file.read_text(encoding="utf8").strip() == results[0]

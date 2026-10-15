@@ -27,6 +27,11 @@ FIELD_ENCRYPTION_LEGACY_KEYS = CONFIG.FIELD_ENCRYPTION_LEGACY_KEYS
 
 DEBUG = CONFIG.DEBUG
 
+# Webhook 环回目标放行（127.0.0.1/localhost 本地联调）：None 跟随 DEBUG——
+# 生产 fail-closed（订阅权限不得用于探测本机内部服务），本地开发自动放开；
+# 显式配置可覆盖（测试栈对本地接收端的真实投递即显式开启）
+WEBHOOK_ALLOW_LOOPBACK = CONFIG.WEBHOOK_ALLOW_LOOPBACK if CONFIG.WEBHOOK_ALLOW_LOOPBACK is not None else DEBUG
+
 # SECRET_KEY 同时作为 JWT 签名密钥（SIMPLE_JWT.SIGNING_KEY），
 # 生产环境为空会导致任意伪造 token，直接拒绝启动；DEBUG 模式允许为空便于本地调试。
 # 注：无配置文件回落 config_example.yml、DEBUG=true 或显式 SECRET_KEY_AUTO_GENERATE=true
@@ -55,6 +60,20 @@ USE_X_FORWARDED_HOST = True
 
 # DEBUG 模式默认放行所有 Host；生产环境必须通过 config.yml 配置域名白名单
 ALLOWED_HOSTS = CONFIG.ALLOWED_HOSTS or (["*"] if DEBUG else [])
+
+# 生产空自名单 = 所有请求 400（DisallowedHost），且启动期无任何提示，运维只能在
+# 全站 400 后才发现配错——与上方 SECRET_KEY 缺失即拒绝启动同口径 fail-fast。
+# 例外：测试档（tests/settings_*.py）经 star-import 复用本模块，其自身在导入**后**
+# 才显式设置 ALLOWED_HOSTS（tests/settings_base.py）；此时 DJANGO_SETTINGS_MODULE
+# 已被 pytest-django 指向测试档，据此跳过（生产档 server.settings 不受影响）。
+_under_test_settings = os.environ.get("DJANGO_SETTINGS_MODULE", "").startswith("tests.")
+if not DEBUG and not ALLOWED_HOSTS and not _under_test_settings:
+    raise ImproperlyConfigured(
+        "ALLOWED_HOSTS is required when DEBUG is disabled. Fix it with one of:\n"
+        "  1. Set ALLOWED_HOSTS in config.yml (e.g. ['your-domain.com']);\n"
+        "  2. Export the ALLOWED_HOSTS environment variable before startup;\n"
+        "  3. Set DEBUG=true for local development (not for production)."
+    )
 
 # 反向代理信任清单（防 XFF 伪造，语义见 conf.py）：默认空 = 不信任任何 X-Forwarded-For
 TRUSTED_PROXY_IPS = CONFIG.TRUSTED_PROXY_IPS

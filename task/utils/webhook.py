@@ -266,20 +266,36 @@ def outbound_allowed_hosts() -> tuple[Any, ...]:
     return _load_allowed_hosts()
 
 
+def loopback_allowed() -> bool:
+    """环回目标（127.0.0.1/localhost）是否放行：写入侧与发送侧共用的同一口径。
+
+    生产默认 fail-closed（跟随 DEBUG=False）：持订阅权限的账号不得借投递通道
+    探测本机内部服务；本地联调（DEBUG=true）与测试栈（显式配置）放开。
+    两边必须同源，否则会出现「订阅写得进、投递发不出」的割裂。
+    """
+    from django.conf import settings
+
+    return bool(getattr(settings, "WEBHOOK_ALLOW_LOOPBACK", settings.DEBUG))
+
+
 def validate_url(url: str) -> str:
-    """写入侧 URL 校验：https 强制（loopback http 例外）+ 字面量地址归属校验。
+    """写入侧 URL 校验：https 强制（DEBUG 下 loopback http 联调例外）+ 字面量地址归属校验。
 
     - 域名写入侧不解析（可能尚未上线/仅内网 DNS 可见/被本地 DNS 屏蔽）——
       归属校验统一在发送侧严格执行（`pinned_request` 解析校验 + 固定解析结果连接）；
-    - http 仅 loopback 例外（联调）；Webhook 接收端不接受白名单 http 目标——
-      白名单仅用于放行发送侧的私网地址归属校验（内网自建接收端须登记）；
+    - http 仅 DEBUG 下的 loopback 例外（本地联调）；Webhook 接收端不接受白名单
+      http 目标——白名单仅用于放行发送侧的私网地址归属校验（内网自建接收端须登记）；
     - IP 字面量的私网/环回/link-local 目标（非 loopback http 联调例外）写入即拒绝。
+
+    与发送侧同口径（webhook_tasks._post 的 allow_loopback）：生产环境写入与投递
+    都不放行环回，避免订阅权限被用于探测本机内部服务。
     """
     return validate_outbound_config_url(
         url,
         allowed_hosts=outbound_allowed_hosts(),
         allow_http_whitelist=False,
-        scheme_message=_("Webhook url must use https (loopback http is allowed for testing)"),
+        allow_loopback=loopback_allowed(),
+        scheme_message=_("Webhook url must use https (loopback http is allowed for local testing)"),
     )
 
 

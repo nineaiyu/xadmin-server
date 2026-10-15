@@ -167,7 +167,9 @@ class ServerAccessToken(AccessToken):
         # token 在认证链路为 bytes，兼容 str 入参（测试/工具直调）
         raw_token = self.token if isinstance(self.token, bytes) else str(self.token).encode()
         sid = self.payload.get("sid")
-        black_key = BlackAccessTokenCache(user_id, hashlib.md5(raw_token).hexdigest()).cache_key
+        # 黑名单键派生用 MD5 仅作定长缓存键（非安全用途，usedforsecurity=False
+        # 显式声明并消解扫描器误报）；改算法会让存量黑名单键失配，故保持算法
+        black_key = BlackAccessTokenCache(user_id, hashlib.md5(raw_token, usedforsecurity=False).hexdigest()).cache_key
         revoked_key = UserTokenRevokedCache(user_id).cache_key
         session_key = SessionTokenRevokedCache(sid).cache_key if sid else None
         keys = [black_key, revoked_key] + ([session_key] if session_key else [])

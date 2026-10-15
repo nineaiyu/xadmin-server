@@ -16,6 +16,9 @@
 # code：二次验证提交体里的登录密码/动态验证码（POST /api/mfa/confirm 等），
 # token / verify_token：临时令牌与验证码票据（登录/注册/重置/绑定加密握手），
 # access / refresh：登录响应里的 JWT（响应快照同口径收敛），
+# secret / api_key / access_key / client_secret / private_key：第三方集成与
+# 开放平台凭据（与 credentials.py 的 SENSITIVE_KEY_PATTERN 对齐，异常栈里
+# 以这些名出现的值一律掩码），
 # 严禁明文落日志
 SENSITIVE_FIELDS = frozenset(
     {
@@ -28,5 +31,10 @@ SENSITIVE_FIELDS = frozenset(
         "code",
         "token",
         "verify_token",
+        "secret",
+        "api_key",
+        "access_key",
+        "client_secret",
+        "private_key",
     }
 )

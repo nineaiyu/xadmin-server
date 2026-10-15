@@ -5,7 +5,8 @@
 
 - provider 配置进 SystemConfig（`OAUTH_PROVIDERS`，默认 `[]` = 整体休眠），
   列表接口回传时 `client_secret` 一律掩码，密钥不出服务端；
-- state 一次性（Redis `cache.add` 占位 + 5 分钟 TTL），回调消费即失效；
+- state 一次性（原子「读即删」+ 5 分钟 TTL），且登录 state 与发起授权的浏览器
+  会话绑定（HttpOnly Cookie，回调校验一致性，防登录 CSRF）；
 - 与 IdP 的交互全部走**可注入的 http 客户端**，单测可完全离线覆盖（含异常分支）；
 - IdP 原始报文不回显给前端，所有失败统一映射为可读业务文案；
 - 出站目标统一经 `packages/xadmin-common/common/utils/outbound.py` 口径（与 Webhook / AI base_url / MCP /
@@ -23,6 +24,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from common.cache.storage import atomic_get_delete
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -40,9 +42,12 @@ class OAuthError(Exception):
 
 
 __all__ = [
+    "OAUTH_STATE_COOKIE",
     "OAUTH_STATE_TTL",
     "OAuthError",
     "build_authorize_url",
+    "check_state_cookie",
+    "clear_state_cookie",
     "consume_bind_state",
     "consume_nonce",
     "consume_state",
@@ -56,6 +61,7 @@ __all__ = [
     "mask_providers",
     "make_unique_username",
     "resolve_subject",
+    "set_state_cookie",
     "validate_providers",
 ]
 
@@ -67,6 +73,12 @@ STATE_CACHE_KEY = "oauth_state_{state}"
 BIND_STATE_CACHE_KEY = "oauth_bind_state_{state}"
 # OIDC 的 nonce（防 id_token 重放）与 state 绑定存续：授权请求下发、回调时校验后即失效
 NONCE_CACHE_KEY = "oauth_nonce_{state}"
+# 登录 state 与浏览器会话绑定的 Cookie 名：authorize 时随响应下发，回调时校验
+# 一致性（值本身是一次性随机串，非凭据；HttpOnly + SameSite=Lax——IdP 回调是
+# 顶级 GET 导航，Lax 会随请求发送）。缺失或不一致即拒绝，防「登录 CSRF」：
+# 攻击者拿自己未消费的 (code, state) 诱导受害者浏览器访问回调，也无法让
+# 受害者浏览器带上攻击者的 state Cookie。
+OAUTH_STATE_COOKIE = "xadmin_oauth_state"
 
 # 配置项的必填/可选键
 REQUIRED_KEYS = ("key", "name", "client_id", "authorize_url", "token_url", "userinfo_url")
@@ -203,13 +215,14 @@ def issue_state(provider_key: str) -> str:
 
 
 def consume_state(state: str) -> str | None:
-    """消费 state：返回其绑定的 provider key；已使用/过期返回 None（一次性）。"""
+    """原子消费登录 state：返回其绑定的 provider key；已使用/过期/并发重放返回 None。
+
+    原子「读即删」（互斥标记）：并发的两个回调只有一方能拿到值，
+    杜绝「get 后 delete 前」的重放窗口。
+    """
     if not state:
         return None
-    key = STATE_CACHE_KEY.format(state=state)
-    provider_key = cache.get(key)
-    cache.delete(key)
-    typed_value: str | None = provider_key
+    typed_value: str | None = atomic_get_delete(STATE_CACHE_KEY.format(state=state))
     return typed_value
 
 
@@ -228,12 +241,13 @@ def issue_bind_state(provider_key: str, user_pk: Any) -> str:
 
 
 def consume_bind_state(state: str) -> dict[str, Any] | None:
-    """消费绑定 state：返回载荷 ``{provider, user_pk}``；已使用/过期返回 None（一次性）。"""
+    """原子消费绑定 state：返回载荷 ``{provider, user_pk}``；已使用/过期返回 None。
+
+    绑定意图另有归属校验（载荷 pk == 当前登录用户，见回调视图），双保险。
+    """
     if not state:
         return None
-    key = BIND_STATE_CACHE_KEY.format(state=state)
-    payload = cache.get(key)
-    cache.delete(key)
+    payload = atomic_get_delete(BIND_STATE_CACHE_KEY.format(state=state))
     return payload if isinstance(payload, dict) else None
 
 
@@ -245,15 +259,40 @@ def issue_nonce(state: str) -> str:
 
 
 def consume_nonce(state: str) -> str | None:
-    """消费 nonce：一次性；未下发（非 OIDC）/已使用/过期返回 None。"""
+    """原子消费 nonce：一次性；未下发（非 OIDC）/已使用/过期返回 None。"""
     if not state:
         return None
-    key = NONCE_CACHE_KEY.format(state=state)
-    nonce = cache.get(key)
-    if nonce:
-        cache.delete(key)
-    typed_value: str | None = nonce
+    typed_value: str | None = atomic_get_delete(NONCE_CACHE_KEY.format(state=state))
     return typed_value
+
+
+def set_state_cookie(response: Any, state: str) -> None:
+    """登录 state 写入浏览器会话 Cookie（与发起授权的浏览器绑定）。
+
+    仅在登录 authorize 下发；回调校验一致后才消费 state。
+    """
+    response.set_cookie(
+        OAUTH_STATE_COOKIE,
+        state,
+        max_age=OAUTH_STATE_TTL,
+        httponly=True,
+        samesite="Lax",
+    )
+
+
+def clear_state_cookie(response: Any) -> None:
+    """清除 state Cookie（回调完成后，避免遗留无效值）。"""
+    response.delete_cookie(OAUTH_STATE_COOKIE, samesite="Lax")
+
+
+def check_state_cookie(request: Any, state: str | None) -> bool:
+    """回调侧校验：query 的 state 必须与本浏览器会话 Cookie 中的值一致。"""
+    if not state:
+        return False
+    cookie_state = request.COOKIES.get(OAUTH_STATE_COOKIE)
+    if not cookie_state:
+        return False
+    return secrets.compare_digest(cookie_state, state)
 
 
 def build_authorize_url(provider: dict[str, Any], redirect_uri: str, state: str, nonce: str | None = None) -> str:

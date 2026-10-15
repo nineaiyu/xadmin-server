@@ -13,6 +13,7 @@ from rest_framework.test import APIRequestFactory
 
 from identity.models import UserInfo
 from identity.utils.oauth import (
+    OAUTH_STATE_COOKIE,
     OAuthError,
     build_authorize_url,
     exchange_code,
@@ -397,10 +398,13 @@ def feishu_config():
     cache.clear()
 
 
-def callback(provider="feishu", code="code-1", state=None):
+def callback(provider="feishu", code="code-1", state=None, with_state_cookie=True):
     factory = APIRequestFactory()
-    params = {"code": code, "state": state if state is not None else issue_state(provider)}
+    state_value = state if state is not None else issue_state(provider)
+    params = {"code": code, "state": state_value}
     request = factory.get(f"/api/identity/auth/oauth/{provider}/callback", params)
+    # 登录 CSRF 防护：state 须与 authorize 下发的会话 Cookie 一致
+    request.COOKIES[OAUTH_STATE_COOKIE] = state_value if with_state_cookie else "not-the-issued-state"
     return OAuthCallbackAPIView.as_view()(request, provider=provider)
 
 

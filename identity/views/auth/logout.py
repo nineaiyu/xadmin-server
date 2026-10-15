@@ -41,7 +41,10 @@ class LogoutAPIView(GenericAPIView):
         exp = auth.payload.get("exp")
         user_id = auth.payload.get("user_id")
         timeout = exp - time.time()
-        BlackAccessTokenCache(user_id, hashlib.md5(auth.token).hexdigest()).set_storage_cache(1, timeout)
+        # 黑名单键派生用 MD5 仅作定长缓存键（非安全用途，usedforsecurity=False）
+        BlackAccessTokenCache(user_id, hashlib.md5(auth.token, usedforsecurity=False).hexdigest()).set_storage_cache(
+            1, timeout
+        )
         # 自己的会话（登录时登记，token claim sid 关联）置离线，在线列表立即消失
         sid = auth.payload.get("sid")
         if sid:

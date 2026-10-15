@@ -11,7 +11,7 @@ import time
 import uuid
 from typing import Any
 
-from common.cache.storage import RedisCacheBase, TokenManagerCache
+from common.cache.storage import RedisCacheBase, TokenManagerCache, atomic_get_delete
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -36,7 +36,8 @@ def make_token_cache(
     token_cache = TokenManagerCache(prefix, key)
     token_key, token = token_cache.get_storage_key_and_cache()
     if token and not force_new:
-        logger.debug(f"make_token cache exists. token:{token} force_new:{force_new} token_key:{token_key}")
+        # 令牌原文是凭据，不落日志（与 temp_token_cache_key 的「密钥不落键」同口径）
+        logger.debug(f"make_token cache exists. force_new:{force_new} token_key:{token_key}")
         return token
     else:
         # 随机段用 secrets 生成（旧实现 uuid1 含网卡 MAC 与时间戳，属信息泄露面）
@@ -55,24 +56,35 @@ def make_token_cache(
 
 
 def verify_token_cache(token: Any, key: str, success_once: bool = False) -> Any:
+    """校验临时令牌；``success_once=True`` 时**原子消费**（读即删，防并发重放）。
+
+    一次性语义用互斥标记实现：并发的两个校验只有一方拿到值，其余方判负
+    （fail-closed）。注意消费发生在 key 比对之前——令牌本身是不可猜测的
+    随机 secret，比对失败即焚是可接受的兜底（合法持有方不会拿错 key）。
+    """
     cache_key = temp_token_cache_key(token)
     try:
-        token_cache = RedisCacheBase(cache_key)
-        _, values = token_cache.get_storage_key_and_cache()
-        if values is None:
-            # 兼容窗口：升级前签发的令牌以原文为键，命中后迁移到摘要键
-            # （旧键随自身 TTL 自然消失；迁移幂等，仅存量令牌各发生一次）
-            legacy = RedisCacheBase(token)
-            _, values = legacy.get_storage_key_and_cache()
-            if values is not None:
-                remaining = int(float(values.get("atime") or 0) - time.time())
-                if remaining > 0:
-                    token_cache.set_storage_cache(values, remaining)
-                legacy.del_storage_cache()
+        if success_once:
+            values = atomic_get_delete(cache_key)
+            if values is None:
+                # 兼容窗口：升级前签发的令牌以原文为键（同为原子消费，
+                # 不再做「读到再迁移」的中间态）
+                values = atomic_get_delete(str(token))
+        else:
+            token_cache = RedisCacheBase(cache_key)
+            _, values = token_cache.get_storage_key_and_cache()
+            if values is None:
+                # 兼容窗口：升级前签发的令牌以原文为键，命中后迁移到摘要键
+                # （旧键随自身 TTL 自然消失；迁移幂等，仅存量令牌各发生一次）
+                legacy = RedisCacheBase(token)
+                _, values = legacy.get_storage_key_and_cache()
+                if values is not None:
+                    remaining = int(float(values.get("atime") or 0) - time.time())
+                    if remaining > 0:
+                        token_cache.set_storage_cache(values, remaining)
+                    legacy.del_storage_cache()
         if values and key == values.get("data", None):
             logger.debug(f"verify_token cache_key:{cache_key} success")
-            if success_once:
-                token_cache.del_storage_cache()
             return values
     except Exception as e:
         logger.error(f"verify_token cache_key:{cache_key} failed Exception:{e}")

@@ -16,7 +16,7 @@ from jwt.algorithms import RSAAlgorithm
 from rest_framework.test import APIClient
 
 from identity.models import UserInfo, UserRole
-from identity.utils.oauth import OAuthError, issue_nonce, issue_state, validate_providers
+from identity.utils.oauth import OAUTH_STATE_COOKIE, OAuthError, issue_nonce, issue_state, validate_providers
 from identity.utils.oidc import (
     claims_to_userinfo,
     fetch_oidc_identity,
@@ -352,8 +352,12 @@ class TestCallbackIntegration:
             lambda method, url, **kwargs: getattr(stub, method.lower())(url, **kwargs),
         )
 
-        # 回调是匿名可达端点（白名单整段前缀），这里直接走 APIClient
-        response = APIClient().get(f"/api/identity/auth/oauth/corp/callback?code=code-1&state={state}")
+        # 回调是匿名可达端点（白名单整段前缀），这里直接走 APIClient。
+        # 登录 CSRF 防护：authorize 下发的 state 同步写浏览器会话 Cookie，
+        # 回调请求须回传一致值（与 tests/unit/system/test_oauth.py 的 callback 同口径）
+        client = APIClient()
+        client.cookies[OAUTH_STATE_COOKIE] = state
+        response = client.get(f"/api/identity/auth/oauth/corp/callback?code=code-1&state={state}")
         assert response.status_code == 200, response.data
         assert response.data.get("code") == 1000, response.data
 

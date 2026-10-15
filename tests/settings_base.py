@@ -21,6 +21,15 @@ DEBUG = False
 DEBUG_DEV = False
 SECRET_KEY = "test-only-secret-key-0123456789abcdef"
 
+# 测试档显式放行 Host：生产档（server/settings/base.py）对「DEBUG=False 且
+# ALLOWED_HOSTS 为空」已 fail-fast 拒绝启动，测试客户端（testserver）与本地
+# 服务需在此显式声明；setup_test_environment 亦会追加 testserver
+ALLOWED_HOSTS = ["*"]
+
+# Webhook 环回目标放行：测试栈的 receiver fixture 经 127.0.0.1 本地 socket
+# 验证真实投递链路（生产档默认跟随 DEBUG=False 关闭，见 server/settings/base.py）
+WEBHOOK_ALLOW_LOOPBACK = True
+
 # celery：eager + memory broker（真实 broker 只引入时序 flaky，不改变任务体正确性，
 # 论证见全真容器化测试迁移方案 §3.4）
 CELERY_TASK_ALWAYS_EAGER = True

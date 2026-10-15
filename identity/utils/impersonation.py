@@ -109,7 +109,10 @@ def stop_impersonation(request: Any) -> Any:
     if auth is not None:
         exp = int(auth.payload.get("exp") or 0)
         timeout = max(exp - int(time.time()), 0)
-        BlackAccessTokenCache(request.user.pk, hashlib.md5(auth.token).hexdigest()).set_storage_cache(1, timeout)
+        # 黑名单键派生用 MD5 仅作定长缓存键（非安全用途，usedforsecurity=False）
+        BlackAccessTokenCache(
+            request.user.pk, hashlib.md5(auth.token, usedforsecurity=False).hexdigest()
+        ).set_storage_cache(1, timeout)
         sid = auth.payload.get("sid")
         if sid:
             SessionTokenRevokedCache(sid).set_storage_cache(1)

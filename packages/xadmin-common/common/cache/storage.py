@@ -16,6 +16,31 @@ from common.utils import get_logger
 
 logger = get_logger(__name__)
 
+#: 原子消费互斥标记的 TTL：只需覆盖「先到者读取→删除」的并发窗口，
+#: 取值兼顾重放拦截（标记期内同键二次消费一律判负）与键空间膨胀（随机键按签发速率计）。
+ATOMIC_CONSUME_MARKER_TTL = 60
+#: 互斥标记键后缀（拼接在原缓存键后，与值键同命名空间便于排查）
+ATOMIC_CONSUME_MARKER_SUFFIX = "__consuming__"
+
+
+def atomic_get_delete(cache_key: str) -> Any:
+    """一次性缓存的原子「读取即删除」：并发消费只有一方拿到值，其余方得到 ``None``。
+
+    语义等价 Redis ``GETDEL``，但用后端无关的 ``cache.add`` 互斥标记实现
+    （locmem / django-redis 行为一致）：先抢消费标记，抢不到直接判负
+    （fail-closed），从根上关闭「``cache.get`` 后 ``cache.delete`` 前被
+    并发重放」的窗口。拿到值的一方删除原键，互斥标记随 TTL 自然过期。
+
+    适用于 OAuth state / nonce / 授权码、临时令牌等「一键一用」场景；
+    非一次性读取（可重复校验）不要走本函数。
+    """
+    marker_key = f"{cache_key}{ATOMIC_CONSUME_MARKER_SUFFIX}"
+    if not cache.add(marker_key, 1, ATOMIC_CONSUME_MARKER_TTL):
+        return None
+    value = cache.get(cache_key)
+    cache.delete(cache_key)
+    return value
+
 
 def _key_template() -> dict[str, Any]:
     """缓存键模板表（内核契约读取的单点包装，避免各处 f-string 内嵌双引号）。"""

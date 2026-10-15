@@ -43,16 +43,20 @@ def _post(client: Any, url: Any, body: bytes, headers: dict[str, Any]) -> Any:
     白名单放行），再把连接目标固定为已校验 IP（防 DNS rebinding）；
     注入客户端路径（测试离线桩）保持原样调用，不做固定连接。
     """
-    from task.utils.webhook import outbound_allowed_hosts
+    from task.utils.webhook import loopback_allowed, outbound_allowed_hosts
 
     merged_headers = {"Content-Type": "application/json", **headers}
     try:
         if client is None:
+            # 环回目标（127.0.0.1/localhost）仅本地联调/测试栈放行：生产关闭后，
+            # 持订阅权限的账号也无法借投递通道探测本机内部服务
+            # （写入侧 validate_outbound_config_url 同口径收敛）；
+            # 内网真实目标走 OUTBOUND_ALLOWED_HOSTS 白名单登记
             response = pinned_request(
                 "POST",
                 url,
                 allow_private=False,
-                allow_loopback=True,
+                allow_loopback=loopback_allowed(),
                 allowed_hosts=outbound_allowed_hosts(),
                 data=body,
                 headers=merged_headers,

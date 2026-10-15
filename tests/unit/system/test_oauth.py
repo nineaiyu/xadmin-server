@@ -13,6 +13,7 @@ from audit.models.log import UserLoginLog
 from identity.models.oauth import UserOAuthBinding
 from identity.services.auth_login import complete_login
 from identity.utils.oauth import (
+    OAUTH_STATE_COOKIE,
     OAUTH_STATE_TTL,
     OAuthError,
     build_authorize_url,
@@ -110,11 +111,18 @@ def stub_idp(monkeypatch):
     return install
 
 
-def callback(user, provider=PROVIDER_KEY, code="code-1", state=None, client=None):
+def callback(user, provider=PROVIDER_KEY, code="code-1", state=None, client=None, with_state_cookie=True):
     factory = APIRequestFactory()
     url = f"/api/identity/auth/oauth/{provider}/callback"
-    params = {"code": code, "state": state if state is not None else issue_state(provider)}
+    state_value = state if state is not None else issue_state(provider)
+    params = {"code": code, "state": state_value}
     request = factory.get(url, params)
+    # 登录 CSRF 防护：authorize 下发的 state 写入浏览器会话 Cookie，
+    # 回调请求须回传一致值（with_state_cookie=False 模拟缺失/不一致）
+    if with_state_cookie:
+        request.COOKIES[OAUTH_STATE_COOKIE] = state_value
+    else:
+        request.COOKIES[OAUTH_STATE_COOKIE] = "not-the-issued-state"
     if user is not None:
         force_authenticate(request, user=user)
     return OAuthCallbackAPIView.as_view()(request, provider=provider)
@@ -170,6 +178,18 @@ class TestState:
         stub_idp(FakeClient())
         response = callback(superuser, state=issue_state("other-idp"))
         assert response.data["code"] == OAUTH_ERROR_CODE
+
+    def test_callback_rejects_missing_state_cookie(self, superuser, oauth_config, stub_idp):
+        """登录 CSRF 防护：state 与浏览器会话 Cookie 不一致（缺失/错值）一律拒绝。
+
+        阻断「攻击者拿自己未消费的 (code, state) 诱导受害者浏览器访问回调」
+        把受害者静默登录到攻击者账号的攻击面。
+        """
+        stub_idp(FakeClient())
+        response = callback(superuser, with_state_cookie=False)
+        assert response.data["code"] == OAUTH_ERROR_CODE
+        # 不一致不消费 state：留待自然过期（不能被拒绝路径清掉合法用户的 state）
+        assert not UserOAuthBinding.objects.exists()
 
     def test_callback_rejects_missing_code(self, superuser, oauth_config, stub_idp):
         stub_idp(FakeClient())
