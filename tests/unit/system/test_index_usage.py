@@ -57,15 +57,20 @@ class TestIndexUsage:
         if connection.vendor == "sqlite":
             assert "idx_oplog_module_created" in plan, plan
         else:
-            # oplog 有两个 module 前导复合索引（..._module_created / ..._module_objectpk），
-            # 空表上计划文本不与规划器博弈：守护两者确实已建
+            # oplog 有 module 前导复合索引 ×2（..._module_created / ..._module_objectpk）
+            # 与 icontains trgm 索引 ×1（..._module_trgm），空表上计划文本不与规划器
+            # 博弈：守护三者确实已建
             with connection.cursor() as cursor:
                 cursor.execute(
                     "SELECT indexname FROM pg_indexes WHERE tablename = %s AND indexname LIKE %s",
                     ["audit_operationlog", "idx_oplog_module%"],
                 )
                 built = {row[0] for row in cursor.fetchall()}
-            assert built == {"idx_oplog_module_created", "idx_oplog_module_objectpk"}, sorted(built)
+            assert built == {
+                "idx_oplog_module_created",
+                "idx_oplog_module_objectpk",
+                "idx_oplog_module_trgm",
+            }, sorted(built)
 
     def test_login_log_default_ordering_uses_index(self):
         plan = explain_plan("SELECT id FROM audit_userloginlog ORDER BY created_time DESC")

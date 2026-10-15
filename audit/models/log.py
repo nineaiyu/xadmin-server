@@ -8,6 +8,7 @@
 import datetime
 from typing import Any
 
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -112,6 +113,14 @@ class OperationLog(DbAuditModel):
             models.Index(fields=["path"], name="idx_oplog_path"),
             # 凭证维度召回（PAT 调用记录/统计按 token_pk + 时间窗过滤）
             models.Index(fields=["token_pk", "created_time"], name="idx_oplog_token_created"),
+            # icontains 检索字段（操作日志页四个过滤框 + controlled_lookup 任意字段透传）：
+            # ILIKE '%x%' 用不上 B-tree，高容量表（保留 180-365 天，百万行级）上每次
+            # 过滤都是全表扫描；pg_trgm GIN 对齐 UserInfo 既有范式（见 identity/models/user.py）。
+            # ipaddress 是 inet 类型（gin_trgm_ops 不支持），走普通 B-tree 服务精确过滤
+            GinIndex(fields=["path"], name="idx_oplog_path_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["module"], name="idx_oplog_module_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["system"], name="idx_oplog_system_trgm", opclasses=["gin_trgm_ops"]),
+            models.Index(fields=["ipaddress"], name="idx_oplog_ip"),
         ]
 
     @classmethod
