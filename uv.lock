@@ -2353,11 +2353,11 @@ wheels = [
 
 [[package]]
 name = "pypdf"
-version = "6.1.3"
+version = "6.20.1"
 source = { registry = "https://mirrors.huaweicloud.com/repository/pypi/simple" }
-sdist = { url = "https://mirrors.huaweicloud.com/repository/pypi/packages/13/3d/b6ead84ee437444f96862beb68f9796da8c199793bed08e9397b77579f23/pypdf-6.1.3.tar.gz", hash = "sha256:8d420d1e79dc1743f31a57707cabb6dcd5b17e8b9a302af64b30202c5700ab9d" }
+sdist = { url = "https://mirrors.huaweicloud.com/repository/pypi/packages/e2/c1/da25a099164cf4b210d63b957c902ad687139f4b8c12c20aec7953a4a266/pypdf-6.20.1.tar.gz", hash = "sha256:28f5a9d2fdc2749264612d94e6a58de54c11d730d9f0cabf8ad34117c4942b45" }
 wheels = [
-    { url = "https://mirrors.huaweicloud.com/repository/pypi/packages/fa/ed/494fd0cc1190a7c335e6958eeaee6f373a281869830255c2ed4785dac135/pypdf-6.1.3-py3-none-any.whl", hash = "sha256:eb049195e46f014fc155f566fa20e09d70d4646a9891164ac25fa0cbcfcdbcb5" },
+    { url = "https://mirrors.huaweicloud.com/repository/pypi/packages/71/f8/4cbd09988b4b158260b7e0df38bf16f19e998bf0e257a18661a8da04280e/pypdf-6.20.1-py3-none-any.whl", hash = "sha256:aa5a55ddcffdc5e5ab291d5decb23f6383f4e56f8e3263dc39af41fff03885ad" },
 ]
 
 [[package]]
@@ -3302,7 +3302,7 @@ requires-dist = [
     { name = "pyexcel-xlsx", specifier = "==0.6.1" },
     { name = "pyjwt", specifier = "==2.14.0" },
     { name = "pyotp", specifier = "==2.10.0" },
-    { name = "pypdf", specifier = "==6.1.3" },
+    { name = "pypdf", specifier = ">=6.18.1,<7" },
     { name = "python-daemon", specifier = "==3.1.2" },
     { name = "python-docx", specifier = "==1.2.0" },
     { name = "pyzipper", specifier = "==0.4.0" },

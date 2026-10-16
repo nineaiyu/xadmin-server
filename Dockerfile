@@ -30,12 +30,17 @@ RUN set -ex \
     && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && apt-get update > /dev/null \
     && apt-get -y install --no-install-recommends ${DEPENDENCIES} \
+    && apt-get -y upgrade \
     && echo "no" | dpkg-reconfigure dash \
     && apt-get clean all \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=stage-build /data /data
 COPY --from=stage-build /usr/local/bin /usr/local/bin
+
+# base 镜像预编译的 pycache 不进运行镜像：瘦身 + 消除 secret 扫描对 autobahn
+# docstring 示例私钥（cryptosign.py 的说明文本）的误报来源
+RUN find /data/py3 -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
 
 # 语言包：.mo 为 gitignore 项（不随仓库分发），构建期编译进镜像，
 # 避免部署遗漏 compilemessages 时界面文案回退英文（仅项目 po，不扫描 venv）
