@@ -1,5 +1,17 @@
-# Trivy 忽略清单（结构化）：仅登记误报，附理由与来源。
+# Trivy 忽略清单（结构化）：仅登记「项目侧不可控 / 已核实为误报」的条目，
+# 每条附理由与复查期限（expired_at 到期后 trivy 会重新报出，强制复核）。
 # 用法见 .github/workflows/build-image.yml 的 trivyignores 输入。
+vulnerabilities:
+  # pip 自带 vendored msgpack 固定在 1.1.2（pip 26.2.1 仍是该版本，属 pip 内部
+  # HTTP 缓存实现），非项目依赖面；项目自身的 msgpack 依赖已升至 1.2.2
+  # （见 pyproject/uv.lock/requirements.txt）。待 pip 上游升级 vendored msgpack 后删除本条。
+  - id: GHSA-6v7p-g79w-8964
+    paths:
+      - "**/pip/_vendor/msgpack*"
+      - "**/pip/_vendor/msgpack/**"
+    statement: pip vendored msgpack 1.1.2（第三方工具内部实现，项目依赖已升至 1.2.2）
+    expired_at: 2027-01-31
+
 secrets:
   # autobahn 的 WAMP cryptosign 模块 docstring 内含 OPENSSH 私钥**示例文本**
   # （用于说明 cryptosign 的密钥格式），非本仓库凭据、不参与运行；该文件为
