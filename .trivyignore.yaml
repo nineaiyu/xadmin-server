@@ -5,10 +5,11 @@ vulnerabilities:
   # pip 自带 vendored msgpack 固定在 1.1.2（pip 26.2.1 仍是该版本，属 pip 内部
   # HTTP 缓存实现），非项目依赖面；项目自身的 msgpack 依赖已升至 1.2.2
   # （见 pyproject/uv.lock/requirements.txt）。待 pip 上游升级 vendored msgpack 后删除本条。
+  # paths 用 "**"：trivy 对镜像内 Python 包的聚合 target 不携带可匹配的文件路径
+  # （实测按 pip/_vendor 前缀 glob 无法命中），故按 ID 全路径忽略并靠 expired_at 强制复核。
   - id: GHSA-6v7p-g79w-8964
     paths:
-      - "**/pip/_vendor/msgpack*"
-      - "**/pip/_vendor/msgpack/**"
+      - "**"
     statement: pip vendored msgpack 1.1.2（第三方工具内部实现，项目依赖已升至 1.2.2）
     expired_at: 2027-01-31
 
