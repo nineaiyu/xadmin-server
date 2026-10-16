@@ -36,6 +36,41 @@ jobs:
             exit 1
           fi
 
+  # 按需诊断 job（仅 workflow_dispatch 触发）：打印镜像内包元数据分布，
+  # 用于定位镜像扫描报告的来源（聚合 target 不携带文件路径时使用）
+  inspect-scan-image:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          tags: xadmin-server:inspect
+          build-args: VERSION=inspect
+
+      - name: Inspect package metadata sources
+        run: |
+          docker run --rm --entrypoint sh xadmin-server:inspect -c '
+            echo "=== setuptools named paths ==="
+            find / -xdev -maxdepth 9 -iname "setuptools*" 2>/dev/null | head -40
+            echo "=== METADATA/PKG-INFO declaring setuptools ==="
+            find / -xdev -maxdepth 9 \( -name METADATA -o -name PKG-INFO \) 2>/dev/null \
+              | xargs grep -l "^Name: setuptools" 2>/dev/null | head -20
+            echo "=== site-packages roots ==="
+            ls -d /usr/local/lib/python3*/site-packages /usr/lib/python3*/site-packages /data/py3/lib/python3*/site-packages 2>/dev/null
+            echo "=== dist-info under each root (setuptools/setuptools-like) ==="
+            for d in /usr/local/lib/python3*/site-packages /usr/lib/python3*/site-packages /data/py3/lib/python3*/site-packages; do
+              echo "--- $d"
+              ls "$d" 2>/dev/null | grep -iE "setuptools|pkg_resources|egg-info" | head -20
+            done
+          '
+
   security-scan:
     needs: check-version
     runs-on: ubuntu-latest
