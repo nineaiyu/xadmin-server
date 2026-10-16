@@ -36,6 +36,36 @@ jobs:
             exit 1
           fi
 
+  # 按需诊断 job（仅 workflow_dispatch 触发）：打印镜像内包元数据分布，
+  # 用于定位镜像扫描报告的来源（聚合 target 不携带文件路径时使用）
+  inspect-scan-image:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          tags: xadmin-server:inspect
+          build-args: VERSION=inspect
+
+      - name: Inspect package metadata sources
+        run: |
+          docker run --rm xadmin-server:inspect sh -c '
+            echo "=== setuptools files ==="
+            find / -xdev -iname "setuptools*" -maxdepth 9 2>/dev/null | head -40
+            echo "=== METADATA/PKG-INFO declaring setuptools ==="
+            find / -xdev \( -name METADATA -o -name PKG-INFO \) -maxdepth 9 2>/dev/null \
+              | xargs grep -l "^Name: setuptools$" 2>/dev/null | head -20
+            echo "=== versions in dist-info dirs named setuptools ==="
+            find / -xdev -iname "setuptools-*.dist-info" -maxdepth 9 2>/dev/null | head -20
+          '
+
   security-scan:
     needs: check-version
     runs-on: ubuntu-latest
