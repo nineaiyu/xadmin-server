@@ -27,4 +27,4 @@ ruff==0.16.8
 sortedcontainers==2.4.0
 sqlparse==0.6.0
 typing-extensions==4.16.0
-tzdata==2026.4 ; sys_platform == 'win32'
+tzdata==2026.5 ; sys_platform == 'win32'

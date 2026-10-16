@@ -127,7 +127,7 @@ tornado==6.5.10
 twisted==26.4.0
 txaio==26.6.1
 typing-extensions==4.16.0
-tzdata==2026.4
+tzdata==2026.5
 tzlocal==5.4.4
 u-msgpack-python==2.8.0 ; platform_python_implementation != 'CPython'
 ua-parser==1.0.2
