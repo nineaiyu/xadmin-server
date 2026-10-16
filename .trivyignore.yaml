@@ -10,7 +10,30 @@ vulnerabilities:
   - id: GHSA-6v7p-g79w-8964
     paths:
       - "**"
-    statement: pip vendored msgpack 1.1.2（第三方工具内部实现，项目依赖已升至 1.2.2）
+    statement: pip vendored msgpack 1.1.2（pip 26.2.1 的 _vendor/vendor.txt 明示；项目依赖已 1.2.2）
+    expired_at: 2027-01-31
+
+  # 同源：pip 26.2.1 的 _vendor/vendor.txt 记录 urllib3==2.7.0（pip 内部实现，
+  # 随 pip 发布节奏更新），项目侧依赖 urllib3 已为 2.8.0（高于修复线）。
+  # 两处 pip 副本（/usr/local 与 /data/py3）同版本，升级均不改变其 vendored 版本。
+  - id: CVE-2026-97687
+    paths:
+      - "**"
+    statement: pip vendored urllib3 2.7.0（pip 内部实现；项目依赖已 2.8.0）
+    expired_at: 2027-01-31
+  - id: CVE-2026-97689
+    paths:
+      - "**"
+    statement: pip vendored urllib3 2.7.0（pip 内部实现；项目依赖已 2.8.0）
+    expired_at: 2027-01-31
+
+  # 镜像内实测只有 setuptools 84.0.0（/usr/local 与 /data/py3 两处，见运行镜像
+  # 诊断 job 输出），远高于修复线 78.1.1；报告来自依赖声明解析（如 autobahn 的
+  # Requires-Dist: setuptools>=70.0.0），并非实际安装版本。
+  - id: CVE-2025-47273
+    paths:
+      - "**"
+    statement: 镜像内 setuptools 实为 84.0.0（已实证），报告源于依赖声明解析
     expired_at: 2027-01-31
 
 secrets:
