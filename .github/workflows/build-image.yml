@@ -39,6 +39,22 @@ jobs:
   security-scan:
     needs: check-version
     runs-on: ubuntu-latest
+    # OpenAPI 导出会触达数据库（filterset choices / LabeledChoiceField 查库），
+    # 与 test.yml 同构的真 PG service + migrate 后生成，避免无库环境连不上
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: server
+          POSTGRES_PASSWORD: pgtest
+          POSTGRES_DB: xadmin_realtest
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -74,10 +90,16 @@ jobs:
           name: sbom-server
           path: sbom/sbom-server.cdx.json
 
-      # 静态 OpenAPI 随版本发布；config.yml 置空与 Dockerfile 同口径，SECRET_KEY 仅为通过拒启校验
+      # 静态 OpenAPI 随版本发布：最小 config.yml（DEBUG=false 时 ALLOWED_HOSTS 必填），
+      # 指向 service 容器 PG；SECRET_KEY 仅为通过拒启校验
+      - name: Prepare CI database
+        run: |
+          printf "ALLOWED_HOSTS: ['ci-openapi-export']\nDB_HOST: 127.0.0.1\nDB_PORT: 55433\nDB_USER: server\nDB_PASSWORD: pgtest\nDB_DATABASE: xadmin_realtest\n" > config.yml
+          SECRET_KEY=ci-openapi-export uv run --no-sync python manage.py migrate --no-input
+
       - name: Export OpenAPI schema
         run: |
-          echo > config.yml
+          mkdir -p openapi
           SECRET_KEY=ci-openapi-export uv run --no-sync python manage.py spectacular --file openapi/openapi.json --format openapi-json
 
       - name: Upload OpenAPI artifact
