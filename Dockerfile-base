@@ -54,11 +54,16 @@ RUN --mount=type=cache,target=/root/.cache,id=core \
 # UV_CONCURRENT_DOWNLOADS 默认 50（uv 默认值）；镜像源按 IP 限流明显时调小（如 4~8）总吞吐反而更高。
 ARG UV_CONCURRENT_DOWNLOADS=50
 
+# 用 COPY 而非 --mount=type=bind 传入 requirements.txt：bind mount 的内容不参与
+# 层缓存哈希（只有挂载配置参与），依赖升版后该层仍会命中旧缓存 → 基础镜像静默
+# 停留在旧依赖（曾使 msgpack 漏洞修复线不生效）；COPY 的层哈希随文件内容变化失效
+COPY requirements.txt /tmp/requirements.txt
+
 RUN --mount=type=cache,target=/root/.cache,id=core \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
     set -ex \
     && UV_PYTHON_DOWNLOADS=0 uv venv --python-preference only-system /data/py3 \
     && UV_CONCURRENT_DOWNLOADS=${UV_CONCURRENT_DOWNLOADS} \
        UV_COMPILE_BYTECODE=1 \
-       uv pip install --python /data/py3 -r requirements.txt --index-url ${PIP_MIRROR} \
-    && uv pip install --python /data/py3 pip setuptools --index-url ${PIP_MIRROR}
+       uv pip install --python /data/py3 -r /tmp/requirements.txt --index-url ${PIP_MIRROR} \
+    && uv pip install --python /data/py3 pip setuptools --index-url ${PIP_MIRROR} \
+    && rm -f /tmp/requirements.txt
