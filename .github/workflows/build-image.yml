@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*'
+  # 手动重跑入口：tag 事件偶发不触发（删建同名 tag 会被事件系统合并）时，
+  # 用 gh workflow run "Build and Push Image" --ref <tag> 补跑
+  workflow_dispatch:
 
 jobs:
   check-version:
