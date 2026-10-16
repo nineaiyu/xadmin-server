@@ -19,6 +19,25 @@
 
 ## 〇、状态快照（2026-10-09，2026-10-14 追加 5.0 发布批次）
 
+> 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
+> 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
+
+- **2026-10-17 「清库重建 + 回灌」官方升级路径全面测试 + 操作手册（xadmin-server；改动留工作区待提交）**：
+  在虚拟机（CentOS 7 / Docker 24）用 4.2.5 库（10 部门含停用 / 7 角色含停用 / 11 用户含禁用与超管 /
+  13 数据权限 / 8 系统配置 / 2 个人配置 / 4 附件 / 3 公告 / 5 条日志）跑完整路径九项验收全通过：
+  导出（独立脚本）→ 清库重建（migrate + 先超管后种子 + post_upgrade）→ 回灌 → 计数与状态核对
+  （禁用用户 1、超管 1、操作日志不搬=0）→ 关联核对（多层部门 `D111→D110→D100`、双角色、双数据权限、
+  停用角色、角色菜单 14/5/2、公告定向部门·角色与已读）→ 附件与**旧密码登录成功**（PBKDF2 哈希原样搬运）
+  → 幂等复跑全为「更新」→ `upgrade_check` = `up-to-date`（86 迁移 / 0 待应用 / 0 游离）+
+  `sync_menu_permissions --dry-run` 缺口 0 → 5.0 应用连重建库启动，健康检查 `status`/`db`/`redis`/`storage` 全 true。
+  本轮实测又修出并补齐三处搬运缺口：用户个人配置实体、公告的附件关联（`notice.file`）、用户头像等
+  模型自带文件字段；同时把「单实体失败只跳过该实体（其余与收尾照常）」与「附件物理文件缺失跳过不建坏记录」
+  固化为行为 + 测试。文档：新增 `docs/ops/upgrade-4x-to-5x.md`（操作手册：判定 / 备份 / 导出 / 重建 /
+  回灌 / 十二项验收清单 / 回滚 / 搬运范围 / 实测记录 / 常见问题），索引已登记，`upgrade-stock.md` §七、
+  `upgrade-5.0.md`、`deployment-upgrade.md`、`upgrade-faq.md` 改为引用手册。守护测试 18 例
+  （`test_legacy_transfer.py`）。
+
+
 - **2026-10-16 5.0 发布收口与发布后验证（R1 收尾 / R3 / R4，已提交推送）**：①**发布**：五仓 `v5.0.0` 就位，server/client 镜像构建+推送成功（tag 各一次强推更新，不再删建）；②**发布说明**：Release 原仅 3 条 PR（release-drafter 只汇总 PR，直接推主干的 655/1120 个提交未纳入）→ 按提交类型分组补齐并**修根因**（新增 `scripts/sync_release_notes.py` / `sync-release-notes.mjs` + 发布流水线调用，后续自动完整）；③**发布后验证 6 项全过**：`upgrade_check`=up-to-date（88 迁移/0 待应用/101 表无缺）、`sync_menu_permissions --dry-run` 缺口 0、health 四项 true、认证冒烟 POST 200、操作日志改动真实链路（完整单条 INSERT，并为旧逻辑遗留的 1 条孤儿行提供实证）、`post_upgrade` 幂等；④**发布后验证发现并修复的真实缺陷**：`load_init_json` 重灌种子会覆盖运行期补齐的字段白名单 → 非内置角色（演示角色「示例-主管/示例-员工」在审批接口）缺口 8 个 = 演示账号列表空白 → 收尾新增 `fill_field_permissions` 自愈（只补缺口、不改写人工裁剪；容器实测重灌后归零且幂等）+ 守护测试并入 `TestSeedOrderingFillsBuiltinRoles`；同时回退了误入提交的 `--update-seed` 种子回写（4700 余行，运行时模块权限点不应进种子）；⑤**R3**：逻辑层由 `test_upgrade_check.py`（含真实库 legacy 4x → reconcilable）守护 + 本地栈验证；端到端 4.2.5→5.0 演练登记待执行（需旧实例）；⑥**R4**：文档站本地构建通过（无死链）、5.0 升级要点与实现核对一致、`docs-build.yml` 历史全绿；⑦**衍生修复**：client 多架构构建改 `--platform=$BUILDPLATFORM`（QEMU 下 vite/rolldown 卡死 50 分钟）、构建前显式 `pnpm run prebuild`（图标/动画子集为 gitignore 生成物）、server setuptools 升级改绝对路径（PATH 指向 venv）、trivy 报告逐条定性（apt 构建期升级 / autobahn 示例私钥 / pip vendored msgpack+urllib3 豁免）、pyjwt 升 2.15.1、twisted 无修复漏洞豁免；⑧**建立本地验证闭环**：本地构建 base+运行镜像并用 trivy（ECR 漏洞库源）扫描，两镜像均 exit 0；本地 pip-audit 复验通过。
 
 - **2026-10-16 TG-8 低风险子项收口（R2，两仓改动留工作区，待用户指示提交）**：①**D-6 操作日志占位行事务边界**——先以三个只读探针实验定性（真实中间件链驱动 + Django 源码核对）：`BaseHandler._get_response` 先执行 view middleware（`process_view`）再 `make_view_atomic` 包视图，占位行写在 ATOMIC_REQUESTS 事务**之外**（autocommit 立即提交、与请求事务无关，再包一层 atomic 也无外层事务可加入）；响应阶段同样在事务外，`transaction.on_commit` 在 autocommit 下**立即执行**而非「提交后」；本项目统一异常处理器把视图内未预期异常兜成 500 响应（不向外传播），审查担心的「视图异常逃逸成孤儿行」在 DRF 面上不会发生——旧注释与旧守护测试（模拟占位行在显式 atomic 内、pytest 事务内 on_commit 不回填）描述的都非真实路径，反而掩盖了「并发读方可见半成品行 + 响应阶段缺失时遗留孤儿行 + 每请求多一次往返」三个真实问题。修复 = **取消占位行**：`process_view` 只往 request 挂待写标记（module/object_pk，object_pk 防御性截断 64），`process_response` 经 `oplog_recorder.insert_operation_log` 单条 INSERT（写失败只告警不抛错），不再走 on_commit 中转；`write_operation_log` 随旧路径移除（内核再导出同步换名）。守护 = 中间件单测 4 例真实链路（成功即完整落库 / 异常 500 行非孤儿 / 视图执行期间无半成品行 / DRF 校验失败回滚后行照写）+ 既有 3 个测试文件断言增强（行字段从「仅 module」升级为完整）；探针文件已移 `_delete/d6-oplog-boundary-probe-20261016/`。②**D-5 确认交互三范式成文**——写入 `xadmin-client/src/components/README.md` §五：行内气泡确认（操作按钮 `confirm`/`popconfirm` 声明式，框架内置点击触发与下拉内 popper 兜底）、流程阻断确认（`useConfirm()` promise 化，`danger` 口径）、三态原生（`distinguishCancelAndClose`，「取消≠关闭」才用），附两条反模式（fire-and-forget confirm 取消仍执行、行内按钮滥用模态框）与守护位置。验证：后端全量 pytest（真 PG+Redis，6022 例）0 失败 + mypy 866 文件 0 错 + ruff/format + 行数/函数行数/跨 app/缓存键门禁全绿；前端 prettier（README 与 E2E 注释同步）。台账：`长期任务方案-2026.10.md` §2.1 U8 / §2.2 D-5·D-6 / §3.1 R2 / §五 表、`触发制任务清单-长期.md` TG-8 ⑤⑥ 收口记录。

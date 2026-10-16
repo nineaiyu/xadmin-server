@@ -1,9 +1,13 @@
 # 升级到 5.0（4.x → 5.0 升级指南）
 
-> **一句话结论**：4.2.5 及之后的库**可直接原地升级**——新版本先由
+> **一句话结论**：**四域切分之后**的 4.x 库（表名为 `identity_userinfo` / `file_uploadfile` /
+> `audit_operationlog` 等）**可直接原地升级**——新版本先由
 > `python manage.py upgrade_ledger --apply` 认领迁移账本（不执行 DDL），再
 > `python manage.py migrate`，最后 `python manage.py post_upgrade` 补全种子/文案/缓存。
-> 更早的库（2026-10 迁移链重建之前）按 [upgrade-stock.md §五](upgrade-stock.md) 清库重建。
+> **四域切分之前**的库（表名仍是 `system_userinfo` 等）按 [upgrade-stock.md §五](upgrade-stock.md)
+> 清库重建并用 `legacy_export` / `legacy_import` 回灌——逐步命令与验收清单见
+> [upgrade-4x-to-5x.md](upgrade-4x-to-5x.md)（`upgrade_check` 会判为 `legacy-chain-pre-split`
+> 并拦下，不要按版本号自行判断）。
 >
 > 判据一次说清：**升级前先跑** `python manage.py upgrade_check`，按它的结论行事即可。
 
@@ -11,7 +15,7 @@
 
 | 变化 | 说明 | 对升级的影响 |
 |------|------|--------------|
-| **迁移链合并** | 全部业务 app 的分散迁移收敛为初始迁移（每 app `0001_initial`，跨 app 循环依赖处为 `0001_initial` + `0002_initial`），**表结构与 4.2.5 逐行等价**（`pg_dump --schema-only` 归一化比对） | 库结构无需变更；旧链的迁移记录需认领（见第二节） |
+| **迁移链合并** | 全部业务 app 的分散迁移收敛为初始迁移（每 app `0001_initial`，跨 app 循环依赖处为 `0001_initial` + `0002_initial`），**与四域切分后的 4.x 链逐行等价**（`pg_dump --schema-only` 归一化比对）；四域切分之前（`system_*` 表名）的库不等价 | 等价链的库结构无需变更、认领账本即可；切分前的库需清库重建 + 回灌 |
 | **迁移账本认领** | 新增 `manage.py upgrade_ledger`（`--apply` 认领）+ `upgrade_check` 新增 `legacy-chain-reconcilable` 判定 | 4.2.5 库升级只需一条命令，不再需要清库重建 |
 | **演示模式** | 演示账号 `admin/admin123` 挂「演示模式」角色（破坏性写操作已裁剪）；安装器支持 `WITH_DEMO_DATA=1` 一键灌演示数据 | 体验/演示环境用；生产环境不启用 |
 | **版本号口径** | 平台版本 `server/const.py` 与 `xadmin-client/package.json` 同步为 `5.0.0`（发布 tag 门禁三方校验） | 前后端必须同批发布 |
@@ -40,7 +44,8 @@ docker exec -i xadmin-server python manage.py shell -c "from server.const import
 |----------------------|------|--------|
 | `up-to-date` | 已是当前链 | 直接升级（`migrate` 无动作） |
 | `needs-migrate` | 有未应用迁移 | 常规 `migrate` |
-| `legacy-chain-reconcilable` | 4.2.5 链的库，账本待认领 | 按第三节走（**本指南主场景**） |
+| `legacy-chain-reconcilable` | 四域切分后的 4.x 链的库，账本待认领 | 按第三节走（**本指南主场景**） |
+| `legacy-chain-pre-split` | 四域切分之前的库（旧表名 `system_userinfo` 等） | 清库重建 + 回灌（[upgrade-stock.md](upgrade-stock.md) §五、§七） |
 | `schema-drift` / `legacy-chain` | 结构漂移 / 更早版本链路 | 按 [upgrade-stock.md §五](upgrade-stock.md) 清库重建 |
 
 ## 三、升级步骤
@@ -113,10 +118,12 @@ python manage.py post_upgrade             # 3. 补全种子/文案/缓存
 
 | 现象 | 原因与处置 |
 |------|-----------|
-| `migrate` 输出 `No migrations to apply` | 正常：4.2.5 → 5.0 表结构等价，认领后无需 DDL |
+| `migrate` 输出 `No migrations to apply` | 正常：等价链（四域切分后的 4.x）→ 5.0 表结构等价，认领后无需 DDL |
 | `upgrade_ledger --apply` 报 `unsupported` | 存在白名单之外的游离记录或表结构缺表/缺列：按 [upgrade-stock.md §五](upgrade-stock.md) 清库重建 |
 | 认领后仍提示有 `pending` 迁移 | 先 `upgrade_check` 看是否 `schema-drift`；漂移库不要强行认领 |
 | 升级后新入口 403 / 菜单缺失 | `python manage.py post_upgrade`（灌种子 + 清缓存）后重启后端 |
 | 中文界面回退英文 | `python manage.py compilemessages`（`post_upgrade` 已包含） |
 | 升级后用户/文件/日志/任务接口 404 | 存量库未做 API 前缀平移：`python manage.py migrate_api_prefixes --apply`（`post_upgrade` 已包含） |
+| `upgrade_check` 报 `legacy-chain-pre-split` | 库停留在四域切分之前（`system_userinfo` 等旧表名），不支持原地升级：备份 → 清库重建 → `legacy_export` / `legacy_import` 回灌（[upgrade-stock.md](upgrade-stock.md) §五、§七） |
+| 升级后 PG 容器反复重启、日志报 `database files are incompatible` | 4.x 的 PG 数据目录是 16，而 5.0 起镜像为 `pgvector:pg17`（大版本不兼容）：先用旧镜像 `pg_dump`，再用 pg17 初始化新目录并 `pg_restore`（见 [deployment-upgrade.md](deployment-upgrade.md) 的「PostgreSQL 大版本」段） |
 | 想验证「没漏东西」 | `upgrade_check` = `up-to-date` 且 `sync_menu_permissions --dry-run` 缺口 0，即为完整 |

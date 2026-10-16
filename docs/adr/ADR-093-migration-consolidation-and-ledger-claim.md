@@ -64,3 +64,27 @@
 - 守护测试：`tests/unit/system/test_migration_ledger.py`（判定分支 / 真实库对账 / 幂等 / 拒绝写入）
   与 `tests/unit/system/test_upgrade_check.py`（五分支配色 + 真实库判定），共 25 例。
 - 模型无漂移：`manage.py makemigrations --check --dry-run` → `No changes detected`。
+
+## 修订：四域切分前的库不适用原地升级
+
+发布后的 4.2.5 → 5.0.1 升级演练（虚拟机实测，源码形态 + 官方安装器形态）推翻了本 ADR 原先的
+「4.2.5 及之后均可原地升级」表述，补齐两点事实与对应处置：
+
+1. **表名与列集在四域切分时已变**：v4.2.5（2025-10）的库是 `system_userinfo` / `system_deptinfo` /
+   `system_uploadfile` / `system_operationlog`，而 5.0 的合并链按域建表（`identity_userinfo` /
+   `file_uploadfile` / `audit_operationlog` …），并新增了 `deleted_at`、`system_menumeta`
+   的展示相关列等。合并链的 `0001_initial` 与**四域切分之后的** 4.x 链等价，与此前的库不等价。
+2. **同名迁移会让结构永久停旧**：Django 按迁移名判定「已应用」，旧库里的 `system.0001_initial`
+   与合并链同名，因此合并链的建表/加列永不执行——`migrate` 会在访问新列时中断
+   （实测 `column system_menu.deleted_at does not exist`），随后还会撞
+   `InconsistentMigrationHistory: system.0001_initial is applied before its dependency
+   identity.0001_initial`。
+
+因此新增判定 `legacy-chain-pre-split`（`migration_ledger.PRE_SPLIT_TABLES`：旧表在、当前表不在）
+与拒绝认领的保护；替代路径是「备份 → 清库重建 → 回灌」，回灌由 `legacy_export` /
+`legacy_import` 承担（自然键关联，不依赖主键；覆盖组织 / 角色 / 用户 / 数据权限 / 系统配置 /
+附件 / 公告，日志与任务历史不搬运）。安装器升级的预检文案同步指引该路径。
+
+本轮同时确认的两处运维口径已写进 [ops/deployment-upgrade.md](../ops/deployment-upgrade.md)：
+PG 数据目录 16 → 17 需 `pg_dump` / `pg_restore`（换镜像会因数据目录版本不符循环重启），
+以及切分前旧库的判定与回灌步骤（[ops/upgrade-stock.md](../ops/upgrade-stock.md) §五、§七）。

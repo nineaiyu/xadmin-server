@@ -50,6 +50,7 @@
 |------|------|
 | [ops/deployment.md](ops/deployment.md) | **部署与运维手册（概览）**：本地开发 + 常见问题排查；子页 [deployment-docker.md](ops/deployment-docker.md)（容器 / Celery 队列 / 备份恢复与容量 / 可观测 / 国产化）、[deployment-upgrade.md](ops/deployment-upgrade.md)（升级回滚）、[deployment-csp.md](ops/deployment-csp.md)（安全响应头 CSP）、[config-reference.md](ops/config-reference.md)（配置速查表） |
 | [ops/upgrade-stock.md](ops/upgrade-stock.md) | 存量库升级通道：升级前体检（`upgrade_check`）/ 支持矩阵（可原地升级 vs 清库重建）/ 两条流程 |
+| [ops/upgrade-4x-to-5x.md](ops/upgrade-4x-to-5x.md) | **4.x → 5.x 存量升级操作手册**：清库重建 + `legacy_export` / `legacy_import` 回灌（判定 / 逐步命令 / 验收清单 / 回滚 / 实测记录） |
 | [ops/upgrade-5.0.md](ops/upgrade-5.0.md) | **4.x → 5.0 升级指南**：迁移链合并说明 / 账本认领（`upgrade_ledger --apply`）/ 三步升级（安装器 · compose · 源码）/ 验证与回滚 / FAQ |
 | [ops/runbook.md](ops/runbook.md) | 故障处置（常见故障 → 处置步骤） |
 | [ops/scale-out.md](ops/scale-out.md) | 横向扩展 runbook（单机多副本：迁移一次性 / beat 单例 / nginx 多后端轮询 + 验证与回退） |

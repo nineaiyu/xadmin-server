@@ -21,15 +21,21 @@
 代码中，或同名迁移的内容已变化导致表结构漂移）——直接执行 `migrate` 会造成迁移状态
 错乱。`upgrade_check` 命令就是为识别这两种情况而存在的。
 
-**分界线**：以 4.2.5（2026-10 迁移链重建完成）为**唯一支持原地升级的基线**；5.0 的第四轮
-合并对 4.2.5 链是**账本认领**而非结构重建（表结构等价，见 §三），因此 4.2.5 起的库可持续
-原地升级；更早的库仍需清库重建。
+**分界线**：支持原地升级的基数是**四域切分之后**的 4.x 链——用户 / 文件 / 日志 / 任务已各自成域，
+表名为 `identity_userinfo` / `identity_deptinfo` / `file_uploadfile` / `audit_operationlog` 等。
+5.0 的第四轮合并对这条链是**账本认领**而非结构重建（表结构等价，见 §三），因此它可持续原地升级。
+
+**四域切分之前**的库（表名仍是 `system_userinfo` / `system_deptinfo` / `system_uploadfile` /
+`system_operationlog`，字段集也更少）**不在等价范围内**：账本认领只写迁移记录，既不会重命名表、
+也不会补齐列。这类库由 `upgrade_check` 单独判定为 `legacy-chain-pre-split`，按 §五 清库重建 +
+§七 回灌处置——**不要**按版本号自行判断「版本够了就能原地升级」。
 
 ## 二、支持矩阵（先判断你的库属于哪一档）
 
 | 库的来源 | `upgrade_check` 结论 | 处置 |
 |----------|----------------------|------|
-| 4.2.5 迁移链创建（含全新安装） | `legacy-chain-reconcilable` | **账本认领**（§四 第 4 步）→ `migrate`（5.0 起） |
+| 四域切分之后的 4.x 链创建（含全新安装） | `legacy-chain-reconcilable` | **账本认领**（§四 第 4 步）→ `migrate`（5.0 起） |
+| 四域切分之前的库（`system_userinfo` 等旧表名） | `legacy-chain-pre-split` | 清库重建 + 回灌（§五、§七）；**不要 migrate** |
 | 5.0 迁移链创建（全新安装）或已认领的库 | `up-to-date` / `needs-migrate` | 标准升级流程（§四） |
 | 2026-10 四轮重建之前的旧版库 | `legacy-chain` | 清库重建（§五） |
 | 迁移记录完整但表结构缺表/缺列 | `schema-drift` | 人工排查（§三 处置表；通常是混用旧版代码/库或被人工改过结构） |
@@ -55,9 +61,10 @@ python manage.py upgrade_ledger --apply  # 认领账本（写迁移记录，不�
 |------|------|------|
 | `up-to-date` | 库与当前代码一致 | 无需迁移 |
 | `needs-migrate` | 存在未应用迁移（含全新空库） | 执行 `python manage.py migrate`（§四） |
-| `legacy-chain-reconcilable` | 库来自 4.2.5 链、表结构一致，账本待认领 | `python manage.py upgrade_ledger --apply` → `migrate`（§四） |
+| `legacy-chain-reconcilable` | 库来自四域切分后的 4.x 链、表结构一致，账本待认领 | `python manage.py upgrade_ledger --apply` → `migrate`（§四） |
 | `schema-drift` | 记录完整但缺表/缺列 | 核对库的来源与版本；确认结构被人工改过则先修复，否则按 §五 清库重建 |
-| `legacy-chain` | 存在不在当前代码链中的迁移记录（更早版本的库） | **不要 migrate**，按 §五 清库重建 |
+| `legacy-chain-pre-split` | 库结构停留在四域切分之前（旧表名 `system_userinfo` 等） | **不要 migrate**，按 §五 清库重建 + §七 回灌 |
+| `legacy-chain` | 存在不在当前代码链中的迁移记录（其他旧版链路） | **不要 migrate**，按 §五 清库重建 |
 
 `upgrade_ledger` 的对账/认领口径（幂等）：
 
@@ -114,11 +121,57 @@ python manage.py upgrade_ledger --apply  # 认领账本（写迁移记录，不�
 
 - 结论 `up-to-date` / `needs-migrate` / `legacy-chain-reconcilable`（退出码 0）：继续升级；
   可认领的库随后由 `upgrade_ledger --apply` 自动完成认领（幂等；全新库与已认领库 no-op）；
-- 结论 `legacy-chain` / `schema-drift`（退出码 1）：**中止**并打印本文指引——需人工确认走
+- 结论 `legacy-chain-pre-split` / `legacy-chain` / `schema-drift`（退出码 1）：**中止**并打印本文指引——需人工确认走
   清库重建（或显式跳过预检，见安装器脚本内的环境变量开关）；
 - 升级基线：`verify_upgrade_version` 要求当前版本 ≥ `v4.2.5`（更早版本需先清库重建）。
 
-## 七、常见问题
+## 七、数据回灌（四域切分前的旧库）
+
+> **完整操作手册（逐步命令 / 验收清单 / 回滚 / 实测记录）见 [upgrade-4x-to-5x.md](upgrade-4x-to-5x.md)**；
+> 本节只列要点。
+
+四域切分前的旧库（表名 `system_userinfo` 等）只能「清库重建 + 回灌」：新库由 5.0 代码建出干净
+结构，再用下面两条命令把业务数据搬过去。**关联一律按自然键**（`code` / `username` / `name`），
+旧库的 UUID 不保留；菜单与权限点由种子（`load_init_json`）提供，不参与搬运。
+
+```bash
+# 1) 旧库（4.x，四域切分前）导出：JSON + 附件目录
+#    用独立脚本（只依赖数据库驱动，不依赖旧版本代码有没有这条命令）：
+#    把新版本的 ops/legacy_export.py 拷到旧库容器/任意能连库的机器上执行
+python ops/legacy_export.py --dsn "postgresql://server:pwd@postgresql:5432/xadmin" \
+    --output /tmp/xadmin-legacy --media-root /data/xadmin-server/data/upload
+#    --include users,depts 可只搬部分实体
+
+# 2) 新库（5.0，已 migrate + init_data / load_init_json）回灌
+python manage.py legacy_import --input /tmp/xadmin-legacy --dry-run   # 先空跑核对
+python manage.py legacy_import --input /tmp/xadmin-legacy
+```
+
+> 同版本内也可以用 `manage.py legacy_export`（走模型、按当前结构导出）做工具链自检；
+> **真实升级请用上面的独立脚本**——旧版本代码里没有 `legacy_export` 命令。
+
+搬运范围：
+
+| 实体 | 内容 | 关联键 |
+|------|------|--------|
+| `depts` | 部门树（含父子关系） | `code` |
+| `roles` | 角色 + 菜单授权 | `code` / 菜单 `name` |
+| `users` | 用户（含密码哈希、状态、加入时间、超级用户标记） | `username` |
+| `data_permissions` | 数据权限规则 + 授权菜单 | `name` |
+| `system_configs` | 系统配置键值 | `key` |
+| `files` | 附件记录 + 物理文件 | `filename` + `filesize` |
+| `notices` | 公告 + 目标（用户/部门/角色）+ 已读状态 | `title` |
+
+**不搬运**：登录 / 操作日志、导出记录、任务执行历史、临时文件——体量大且无业务价值，
+需要留档请保留数据库备份。**密码哈希原样搬运**（PBKDF2 / argon2 都能继续验证）。
+
+幂等：按自然键 upsert，重复执行只更新不重复建；同名记录若在回收站（软删）会被恢复。
+引用缺失（例如角色绑定了当前种子中不存在的菜单）会计数并汇总告警而不中断导入，按清单核对即可。
+
+回灌完成后：`python manage.py upgrade_check`（应为 `up-to-date`）→ 重启后端容器 →
+登录冒烟 + 抽查组织 / 角色 / 用户 / 公告。
+
+## 八、常见问题
 
 | 现象 | 原因与处置 |
 |------|-----------|
