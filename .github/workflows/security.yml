@@ -23,4 +23,7 @@ jobs:
       - name: Run pip-audit
         run: |
           pip install pip-audit
-          pip-audit -r requirements.txt
+          # CVE-2026-106454：twisted 26.4.0 的已知漏洞，上游尚未发布修复版本
+          # （advisory 无 Fix Versions）；twisted 由 daphne 引入，无法通过升级消除。
+          # 待上游修复后移除本豁免（2027-01 复查）。
+          pip-audit -r requirements.txt --ignore-vuln CVE-2026-106454
