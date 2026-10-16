@@ -19,6 +19,8 @@
 
 ## 〇、状态快照（2026-10-09，2026-10-14 追加 5.0 发布批次）
 
+- **2026-10-16 TG-8 低风险子项收口（R2，两仓改动留工作区，待用户指示提交）**：①**D-6 操作日志占位行事务边界**——先以三个只读探针实验定性（真实中间件链驱动 + Django 源码核对）：`BaseHandler._get_response` 先执行 view middleware（`process_view`）再 `make_view_atomic` 包视图，占位行写在 ATOMIC_REQUESTS 事务**之外**（autocommit 立即提交、与请求事务无关，再包一层 atomic 也无外层事务可加入）；响应阶段同样在事务外，`transaction.on_commit` 在 autocommit 下**立即执行**而非「提交后」；本项目统一异常处理器把视图内未预期异常兜成 500 响应（不向外传播），审查担心的「视图异常逃逸成孤儿行」在 DRF 面上不会发生——旧注释与旧守护测试（模拟占位行在显式 atomic 内、pytest 事务内 on_commit 不回填）描述的都非真实路径，反而掩盖了「并发读方可见半成品行 + 响应阶段缺失时遗留孤儿行 + 每请求多一次往返」三个真实问题。修复 = **取消占位行**：`process_view` 只往 request 挂待写标记（module/object_pk，object_pk 防御性截断 64），`process_response` 经 `oplog_recorder.insert_operation_log` 单条 INSERT（写失败只告警不抛错），不再走 on_commit 中转；`write_operation_log` 随旧路径移除（内核再导出同步换名）。守护 = 中间件单测 4 例真实链路（成功即完整落库 / 异常 500 行非孤儿 / 视图执行期间无半成品行 / DRF 校验失败回滚后行照写）+ 既有 3 个测试文件断言增强（行字段从「仅 module」升级为完整）；探针文件已移 `_delete/d6-oplog-boundary-probe-20261016/`。②**D-5 确认交互三范式成文**——写入 `xadmin-client/src/components/README.md` §五：行内气泡确认（操作按钮 `confirm`/`popconfirm` 声明式，框架内置点击触发与下拉内 popper 兜底）、流程阻断确认（`useConfirm()` promise 化，`danger` 口径）、三态原生（`distinguishCancelAndClose`，「取消≠关闭」才用），附两条反模式（fire-and-forget confirm 取消仍执行、行内按钮滥用模态框）与守护位置。验证：后端全量 pytest（真 PG+Redis，6022 例）0 失败 + mypy 866 文件 0 错 + ruff/format + 行数/函数行数/跨 app/缓存键门禁全绿；前端 prettier（README 与 E2E 注释同步）。台账：`长期任务方案-2026.10.md` §2.1 U8 / §2.2 D-5·D-6 / §3.1 R2 / §五 表、`触发制任务清单-长期.md` TG-8 ⑤⑥ 收口记录。
+
 - **2026-10-14 列表页操作列按内容收敛（xadmin-client；改动留工作区，待提交）**：起因=用户反馈
   「未授予某些权限时操作列只剩一个按钮，却仍占着为多个按钮预留的列宽，右侧大片空白」。实现
   （均在 `src/components/RePlusPage`）：①新增内容实测 `utils/operationContentWidth.ts`——把操作列

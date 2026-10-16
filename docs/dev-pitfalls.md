@@ -172,3 +172,20 @@
 - **做法**：改用 https 访问（自签证书在自动化里用 `ignoreHTTPSErrors`；手动测试需信任证书），
   或在非生产构建下调试（DEV/未设 PROD 时 Cookie 不带 Secure）。
   细节与实测记录见 [deployment-csp.md §8](ops/deployment-csp.md)。
+
+### 25. 中间件里写库，以为在「请求事务」内（操作日志占位行教训）
+
+- **事实**：Django `BaseHandler._get_response` **先执行 view middleware（`process_view`）再
+  `make_view_atomic` 包视图**——`process_view` 在 ATOMIC_REQUESTS 事务**之外**，此时写库走
+  autocommit 立即提交，与请求事务既不同生也不共死（包一层 `transaction.atomic` 也没有外层
+  事务可加入）；`process_response` 同样在事务外，`transaction.on_commit` 在 autocommit 下
+  **立即执行**而非「提交后」。
+- **后果**：「占位行 + 响应阶段 UPDATE 回填」三段式会有三类真实问题：并发读方（审计列表）
+  可见半成品行；响应阶段缺失（DEBUG 异常传播 / 进程被杀）时遗留孤儿行；每请求多一次往返。
+  且本项目统一异常处理器把视图内未预期异常兜成 500 响应（不向外传播），「视图异常让请求
+  事务回滚、带走占位行」的设想在 DRF 面上根本不发生——相关注释与测试容易写成「模拟路径」
+  而给出虚假信心。
+- **做法**：中间件写审计类旁路数据，用「请求对象挂标记 + 响应阶段单条 INSERT」，不依赖事务
+  边界与提交钩子；写失败只告警不抛错（不能把响应打成 500）。现行实现见
+  `packages/xadmin-common/common/core/oplog_recorder.py::insert_operation_log`，守护见
+  `tests/unit/common/test_operation_log_middleware.py::TestResponseTimeWritePath`。
