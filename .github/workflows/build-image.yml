@@ -214,6 +214,11 @@ jobs:
           file: Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # 关闭镜像内的构建溯源附件（OCI 1.1 artifact，config 为
+          # application/vnd.oci.empty.v1+json）：下游镜像源（阿里云仓）不支持该 manifest
+          # class，带上它会导致该版本镜像无法从 Docker Hub 同步过去。构建溯源仍由下方
+          # attest-build-provenance 步骤在 GitHub 侧签发（与镜像内附件无关）。
+          provenance: false
 
       # 多架构推送时 digest 即镜像索引（manifest list）摘要，作为构建溯源主体
       - name: Attest image build provenance

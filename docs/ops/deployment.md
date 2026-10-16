@@ -2,7 +2,7 @@
 
 > 本文档沉淀常用部署方式与运维要点（T6.2 本地化，外站 https://docs.dvcloud.xin/ 降级为补充资料）。
 > 常见故障的「现象 → 定位 → 处置」速查见 [runbook.md](runbook.md)。
-> 适用于 xadmin-server 5.0.0+（含队列拆分与健康检查增强）。
+> 适用于 xadmin-server 5.0.1+（含队列拆分与健康检查增强）。
 
 > **本文为概览页**：本地开发与常见排查见下；
 > 容器部署 / 备份恢复 / 容量 / 可观测 / 国产化见 [deployment-docker.md](deployment-docker.md)，

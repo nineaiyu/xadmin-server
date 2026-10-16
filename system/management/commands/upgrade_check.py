@@ -58,7 +58,10 @@ def evaluate(report: dict[str, Any]) -> tuple[str, int]:
     legacy_orphan = migrations.get("legacy_orphan", [])
     if unknown_orphan:
         return "legacy-chain", 1
-    if schema["missing_tables"] or schema["missing_columns"]:
+    # 表结构体检只在「已有迁移记录」时有意义：全新空库（首次安装）缺表是 migrate 的正常
+    # 前态（本模块 docstring 也把全新空库归入 needs-migrate），不做此判据会把首次安装
+    # 误判为 schema-drift 并阻断（安装器 preflight 默认中止）
+    if migrations["applied"] and (schema["missing_tables"] or schema["missing_columns"]):
         return "schema-drift", 1
     if legacy_orphan:
         return "legacy-chain-reconcilable", 0
