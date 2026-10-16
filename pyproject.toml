@@ -62,7 +62,7 @@ dependencies = [
     "user-agents==2.2.0",
     "aiofiles==24.1.0",
     "websockets==17.1",
-    "django-imagekit==6.1.0",
+    "django-imagekit==6.1.1",
     "pilkit==3.0",
     "drf-spectacular==0.30.0",
     "drf-spectacular-sidecar==2026.9.1",
