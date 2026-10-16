@@ -63,7 +63,10 @@ jobs:
       # 依赖高危门禁：存量已于 2026-09-07 清零（45→0），移除 `|| true` 切为发布阻断。
       # pip-audit 发现任一已知漏洞即非零退出，阻断后续 build-and-push-image
       - name: Generate SBOM (CycloneDX) and dependency audit
-        run: pip-audit -f cyclonedx-json -o sbom/sbom-server.cdx.json
+        # mkdir -p：新版 pip-audit 不再自动创建输出父目录，缺 sbom/ 时写文件直接 FileNotFound
+        run: |
+          mkdir -p sbom
+          pip-audit -f cyclonedx-json -o sbom/sbom-server.cdx.json
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
