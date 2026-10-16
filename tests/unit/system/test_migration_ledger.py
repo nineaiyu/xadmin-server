@@ -3,6 +3,7 @@
 
 import json
 from io import StringIO
+from unittest import mock
 
 import pytest
 from django.core.management import call_command
@@ -11,15 +12,17 @@ from django.db.migrations.recorder import MigrationRecorder
 
 from system.utils.platform.migration_ledger import (
     LEGACY_4X_CHAIN,
+    PRE_SPLIT_TABLES,
     LedgerError,
     collect_ledger,
+    collect_schema_ledger,
     evaluate_ledger,
     legacy_chain_records,
     reconcile,
 )
 
 
-def _ledger(legacy_orphan=(), unknown_orphan=(), missing_tables=(), missing_columns=(), claimable=()):
+def _ledger(legacy_orphan=(), unknown_orphan=(), missing_tables=(), missing_columns=(), claimable=(), pre_split=()):
     return {
         "migrations": {
             "applied": 1,
@@ -33,6 +36,7 @@ def _ledger(legacy_orphan=(), unknown_orphan=(), missing_tables=(), missing_colu
             "tables_checked": 1,
             "missing_tables": list(missing_tables),
             "missing_columns": list(missing_columns),
+            "pre_split_tables": list(pre_split),
         },
     }
 
@@ -52,11 +56,32 @@ class TestEvaluateLedger:
         ledger = _ledger(legacy_orphan=["system.0002_monitor_monitoralert"], missing_tables=["system_monitor"])
         assert evaluate_ledger(ledger) == "unsupported"
 
+    def test_pre_split_database_is_unsupported(self):
+        """四域切分前的旧库不得认领：认领只写迁移记录，无法改表名与补列。"""
+        ledger = _ledger(
+            legacy_orphan=["system.0002_monitor_monitoralert"],
+            pre_split=[{"legacy": "system_userinfo", "current": "identity_userinfo"}],
+        )
+        assert evaluate_ledger(ledger) == "unsupported"
+
     def test_legacy_whitelist_covers_every_business_app(self):
         """白名单必须覆盖全部迁移合并过的业务 app，且首个迁移都是 0001_initial。"""
         assert legacy_chain_records()
         for app, names in LEGACY_4X_CHAIN.items():
             assert names[0] == "0001_initial", app
+
+    def test_pre_split_current_tables_exist_in_models(self):
+        """切分前判定依赖「当前表名」：它在模型里必须真实存在。
+
+        写错当前表名会让「旧表在、新表不在」在等价库上恒成立，把可认领的库误判为
+        切分前的旧库（升级被无辜拦下）——这里按模型定义逐一比对。
+        """
+        from django.apps import apps
+
+        known = {model._meta.db_table for model in apps.get_models()}
+        for legacy, current in PRE_SPLIT_TABLES:
+            assert current in known, f"{current} 不是当前模型表名"
+            assert legacy not in known, f"{legacy} 已是当前模型表名，不应作为切分前特征"
 
 
 @pytest.mark.django_db
@@ -95,6 +120,34 @@ class TestAgainstRealDatabase:
             reconcile(connection)
         # 未知链路的记录必须原样保留（拒绝写入）
         assert recorder.migration_qs.filter(app="legacy_app", name="0001_initial").exists()
+
+    def test_current_database_has_no_pre_split_signal(self):
+        """等价链的库（四域切分后）：不得出现切分前特征，否则升级被误拦。"""
+        assert collect_schema_ledger(connection)["pre_split_tables"] == []
+
+    def test_pre_split_detected_from_legacy_table(self):
+        """旧表在、当前表不在 → 判定为切分前的旧库。"""
+        original = connection.introspection.table_names
+
+        def fake_table_names(cursor):
+            names = [name for name in original(cursor) if name != "identity_userinfo"]
+            return [*names, "system_userinfo"]
+
+        with mock.patch.object(connection.introspection, "table_names", side_effect=fake_table_names):
+            schema = collect_schema_ledger(connection)
+        assert {"legacy": "system_userinfo", "current": "identity_userinfo"} in schema["pre_split_tables"]
+
+    def test_reconcile_blocks_pre_split_database(self):
+        """切分前的旧库即便游离记录可识别，也必须拒绝认领（不写任何记录）。"""
+        original = connection.introspection.table_names
+
+        def fake_table_names(cursor):
+            names = [name for name in original(cursor) if name != "identity_userinfo"]
+            return [*names, "system_userinfo"]
+
+        with mock.patch.object(connection.introspection, "table_names", side_effect=fake_table_names):
+            with pytest.raises(LedgerError):
+                reconcile(connection)
 
 
 @pytest.mark.django_db

@@ -8,11 +8,14 @@
 
 - ``up-to-date``：迁移记录与表结构均与当前代码一致；
 - ``needs-migrate``：存在未应用迁移（含全新空库），执行 ``manage.py migrate`` 即可；
-- ``legacy-chain-reconcilable``：库来自 4.2.5 迁移链且表结构一致（5.0 合并链的账本
-  未认领）——先执行 ``manage.py upgrade_ledger --apply`` 认领账本（不执行 DDL），
+- ``legacy-chain-reconcilable``：库来自**四域切分之后**的 4.x 链且表结构一致（5.0 合并链
+  的账本未认领）——先执行 ``manage.py upgrade_ledger --apply`` 认领账本（不执行 DDL），
   再 ``migrate``；
 - ``schema-drift``：迁移记录完整但表/列缺失（同名迁移内容已变化的漂移库）——人工排查；
-- ``legacy-chain``：存在不在当前代码链中的迁移记录（更早版本的库）——不支持原地升级，
+- ``legacy-chain-pre-split``：库结构停留在**四域切分之前**（``system_userinfo`` 等旧表名，
+  字段集也更少）——表名与列都与合并链不一致，认领无法收敛，走「备份 + 清库重建 +
+  ``legacy_export`` / ``legacy_import`` 回灌」；
+- ``legacy-chain``：存在不在当前代码链中的迁移记录（其他旧版链路）——不支持原地升级，
   按 ``docs/ops/upgrade-stock.md`` 走「备份 + 清库重建 + 数据回灌」。
 
 退出码：0 = 可继续升级（up-to-date / needs-migrate / legacy-chain-reconcilable）；
@@ -32,8 +35,14 @@ VERDICTS = {
     "up-to-date": ("库已与当前代码一致，无需迁移。", None),
     "needs-migrate": ("存在未应用迁移，执行迁移即可完成升级。", "python manage.py migrate"),
     "legacy-chain-reconcilable": (
-        "库来自 4.2.5 迁移链且表结构一致，迁移账本待认领。",
+        "库来自四域切分后的 4.x 迁移链且表结构一致，迁移账本待认领。",
         "python manage.py upgrade_ledger --apply && python manage.py migrate",
+    ),
+    "legacy-chain-pre-split": (
+        "库结构停留在四域切分之前（用户/文件/日志仍在 system_* 表名下），与 5.0 的表名、"
+        "列集都不一致，账本认领无法收敛。",
+        "按 docs/ops/upgrade-stock.md 走「备份 + 清库重建 + 数据回灌」"
+        "（旧库 python manage.py legacy_export，新库 python manage.py legacy_import）；不要直接 migrate。",
     ),
     "schema-drift": (
         "迁移记录完整但库结构缺表/缺列（疑似旧版同名迁移的漂移库），不要直接 migrate。",
@@ -56,6 +65,11 @@ def evaluate(report: dict[str, Any]) -> tuple[str, int]:
     migrations, schema = report["migrations"], report["schema"]
     unknown_orphan = migrations.get("unknown_orphan", migrations.get("orphan", []))
     legacy_orphan = migrations.get("legacy_orphan", [])
+    # 四域切分前的旧库优先判定：它的表名与列集都与合并链不同，与「游离记录是否可认领」
+    # 无关，必须先于未知游离判定给出结论（否则会被笼统报成 legacy-chain，误导用户以为
+    # 版本号够就能原地升级）。
+    if schema.get("pre_split_tables"):
+        return "legacy-chain-pre-split", 1
     if unknown_orphan:
         return "legacy-chain", 1
     # 表结构体检只在「已有迁移记录」时有意义：全新空库（首次安装）缺表是 migrate 的正常
@@ -104,6 +118,12 @@ class Command(BaseCommand):
         self._detail("待应用", migrations["pending"])
         self._detail("4.x 游离记录（可认领）", legacy_orphan)
         self._detail("未知游离记录（不在当前代码链）", unknown_orphan)
+        pre_split = schema.get("pre_split_tables") or []
+        if pre_split:
+            self._detail(
+                "四域切分前的旧表（表名未迁移）",
+                [f"{item['legacy']} → 现应为 {item['current']}" for item in pre_split],
+            )
         self.stdout.write(
             f"表结构：检查 {schema['tables_checked']} 张表，缺失 {len(schema['missing_tables'])}，"
             f"缺列 {len(schema['missing_columns'])}"
