@@ -152,7 +152,7 @@ jobs:
 
       # 多架构推送时 digest 即镜像索引（manifest list）摘要，作为构建溯源主体
       - name: Attest image build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: nineaiyu/xadmin-server
           subject-digest: ${{ steps.push.outputs.digest }}
