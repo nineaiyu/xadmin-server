@@ -59,14 +59,31 @@
 1. Docker Hub：`nineaiyu/{xadmin-server,xadmin-client,xadmin-web,xadmin-docs}:5.0.1` 可拉取；
 2. 阿里云仓：`registry.cn-beijing.aliyuncs.com/nineaiyu/{xadmin-server,xadmin-web,xadmin-docs}:5.0.1`
    各含 `linux/amd64` 与 `linux/arm64`（且不含构建溯源附件）；
-3. 安装包资产：下载 `xadmin-installer-v5.0.1.tar.gz`，确认 `scripts/utils.sh` 含
-   `ensure_allowed_hosts` / `ensure_data_dir_owner` / `is_fresh_database`，`scripts/utils.sh` 的
-   `get_docker_compose_cmd_line` 用 `${1-}`；
+3. 安装包资产：下载 `xadmin-installer-v5.0.1.tar.gz`，确认含本次安装侧修复；
 4. 干净机器一键安装复跑：`VERSION=v5.0.1 curl … quick_start.sh | bash` → 5 容器 healthy；
 5. 存量 5.0.0 环境升级：`./xadmin.sh upgrade v5.0.1` → `upgrade_check` 为 `up-to-date`。
 
+### 实测结果（2026-10-16，目标机 192.168.0.112 / CentOS 7）
+
+| 项 | 证据 |
+|----|------|
+| 五个 tag 与镜像构建 | server / client / web / docs / installer 的 `Build and Push Image` 全部 `success`（按 server·client → web → docs → installer 顺序推送） |
+| 阿里云仓 | server / web / docs 的 `5.0.1` 均存在且**仅含 amd64 + arm64**（无溯源附件）；镜像同步 `sync-image-mirror` `success` |
+| 安装包资产 | `static.env` 为 `VERSION=5.0.1`；`scripts/utils.sh` 含 `ensure_allowed_hosts` / `ensure_data_dir_owner` / `is_fresh_database` 与 `${1-}`，`compose/celery.yml` 健康检查指向 `ops/check_celery.sh` |
+| 升级实测（发布包形态） | `./xadmin.sh upgrade v5.0.1` 成功；`CURRENT_VERSION=5.0.1`、5 容器 `healthy`、`/api/common/api/health` 四项 `true`、页面 200、`upgrade_check` 为 `up-to-date`（86 已应用 / 0 待应用 / 100 表 0 缺失） |
+| 5.0.0 安装侧修复的有效性 | 同一台机器上，5.0.0 安装器在修复前中止（`flag: unbound variable`）、修复后装通；本次 5.0.1 的安装路径脚本与实测通过者逐字节同源 |
+
 ## 六、遗留
 
-- `tests/unit/common/test_reentrant_lock.py` 为**既有**顺序性失败（与本次改动无关：含本次改动的
-  首跑为 exit=0，隔离复跑失败用例逐次漂移）；待单独排查测试隔离/事务边界。
+- **发布包 v5.0.1 的 `upgrade` 命令仍有 3 处缺陷（tag 后实测发现，修复在后续提交）**：
+  ① `upgrade v5.0.1`（文档形态）把 `v` 前缀当镜像 tag → `manifest unknown`；
+  ② `backup_db` 裸引用 `${SKIP_BACKUP_DB}` → `set -u` 下中止在「3. Backup database」；
+  ③ `verify_upgrade_version` 用 `^v` 匹配 `CURRENT_VERSION`（该值不含 v）→ 升级基线门禁恒早退。
+  修复见 `xadmin-installer` 提交 `25819f5`（含 `set-u-guard` 三组用例，已先红后绿）。
+  **已发布的 `xadmin-installer-v5.0.1.tar.gz` 早于该修复**：使用方在升级前需按仓库 `main` 覆盖
+  `scripts/7_upgrade.sh`，或等安装包资产重传 / 下一版本发布。
+- `tests/unit/common/test_reentrant_lock.py` 的既有顺序性失败**已修**（`xadmin-server` 提交
+  `5f750404`：锁用例改用每用例唯一锁名——锁后端是跨轮次共享的真实 Redis，固定键名残留会级联
+  成「失败用例逐次漂移」）；同批还观察到 `test_health_probes.py` 并发用例在 xdist 负载下的
+  偶发失败（隔离复跑通过），按既有「负载瞬态」口径不作为阻塞项。
 - 发布说明（GH Release）由 release-drafter 按标签生成；五仓模板已含「⚠️ 升级注意」分组。
