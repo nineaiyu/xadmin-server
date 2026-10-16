@@ -120,7 +120,8 @@ jobs:
           build-args: VERSION=${{ github.ref_name }}
           tags: xadmin-server:scan
 
-      # 高危/严重漏洞阻断发布
+      # 高危/严重漏洞阻断发布。误报表经 .trivyignore.yaml 结构化豁免
+      # （--skip-files 仅作用于文件遍历器，对镜像内的 secret 检测不生效）
       - name: Trivy image scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -128,10 +129,7 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: '1'
           ignore-unfixed: true
-          # autobahn 的 cryptosign.py docstring 含 OPENSSH 私钥示例文本，触发
-          # secret 扫描误报；该文件为纯 Python 模块（无 OS 包漏洞记录），跳过
-          # 不影响漏洞覆盖。真实私钥不入库由 git 侧纪律 + GitHub secret scanning 保障
-          skip-files: "/data/py3/lib/python3.14/site-packages/autobahn/wamp/cryptosign.py"
+          trivyignores: .trivyignore.yaml
 
   build-and-push-image:
     needs: [ check-version, security-scan ]

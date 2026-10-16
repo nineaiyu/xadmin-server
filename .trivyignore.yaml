@@ -1,0 +1,11 @@
+# Trivy 忽略清单（结构化）：仅登记误报，附理由与来源。
+# 用法见 .github/workflows/build-image.yml 的 trivyignores 输入。
+secrets:
+  # autobahn 的 WAMP cryptosign 模块 docstring 内含 OPENSSH 私钥**示例文本**
+  # （用于说明 cryptosign 的密钥格式），非本仓库凭据、不参与运行；该文件为
+  # 纯 Python 模块，不影响漏洞扫描覆盖。上游长期未清理，故在此豁免。
+  - id: private-key
+    paths:
+      - "**/autobahn/wamp/cryptosign.py"
+      - "**/autobahn/wamp/__pycache__/*"
+    statement: WAMP cryptosign 的 docstring 示例私钥（第三方包文档文本，非真实凭据）
