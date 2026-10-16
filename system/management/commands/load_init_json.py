@@ -141,6 +141,23 @@ class Command(LoadCommand):
 
         changed = sync_builtin_roles()
         self.stdout.write(f"[内置角色] 种子收尾同步完成（幂等，角色行变更 {changed}）")
+        self._fill_field_permissions_after_seed()
+
+    def _fill_field_permissions_after_seed(self) -> None:
+        """种子收尾补齐非内置角色的字段白名单缺口（幂等）。
+
+        字段权限为 fail-closed 的零字段口径：某 (角色, 权限点) 组合的白名单未覆盖该
+        权限点绑定模型时，该角色在这些接口上输出空对象。内置角色由
+        ``sync_builtin_roles`` 静态配置覆盖，而演示角色与二开新建角色**不在种子里**
+        ——种子按 pk 重灌会覆盖运行期补齐的关系，缺口随之重现（升级后「演示账号审批
+        列表空白」即此）。此处按审计结果补齐：只补无配置 / 与绑定模型脱节的组合，
+        不改写管理员在角色页的人工裁剪。
+        """
+        from system.services.permission_sync import fill_field_permissions
+
+        filled = fill_field_permissions()
+        if filled:
+            self.stdout.write(f"[字段权限] 种子收尾补齐 {len(filled)} 个（角色, 权限点）组合的全字段白名单（幂等）")
 
     @staticmethod
     def _invalidate_route_caches() -> None:

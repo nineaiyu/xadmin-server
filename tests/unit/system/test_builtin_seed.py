@@ -246,3 +246,42 @@ class TestSeedOrderingFillsBuiltinRoles:
         call_command("load_init_json", verbosity=0)
         assert UserRole.objects.get(code="DeptManager").menu.count() == before_menu
         assert FieldPermission.objects.filter(role=manager).count() == before_fp
+
+    @pytest.mark.django_db
+    def test_load_init_json_fills_non_builtin_role_field_gaps(self, seed_creator_user):
+        """非内置角色（演示角色、二开新建角色）的字段白名单缺口同样由收尾补齐。
+
+        内置角色由 sync_builtin_roles 静态配置覆盖，而非内置角色的白名单不在种子里：
+        种子按 pk 重灌会覆盖运行期补齐的关系，字段权限 fail-closed 会让这些角色在
+        对应接口输出空对象（升级后「演示账号审批列表空白」即由此产生）。
+        """
+        from system.management.commands.load_init_json import Command
+        from system.services.permission_sync import audit_field_permissions
+
+        call_command("load_init_json", verbosity=0)
+        menu = (
+            Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, is_active=True)
+            .filter(model__isnull=False)
+            .distinct()
+            .first()
+        )
+        assert menu is not None, "前置：种子应提供已绑定模型的权限点"
+
+        role = UserRole.objects.create(name="自愈守护角色", is_active=True)
+        role.menu.add(menu)
+        assert audit_field_permissions(roles=[role]), "前置：获权限点但无白名单的角色应判为缺口"
+
+        out = StringIO()
+        command = Command(stdout=out)
+        command._fill_field_permissions_after_seed()
+        assert audit_field_permissions(roles=[role]) == [], "收尾应补齐非内置角色的字段白名单"
+        assert "[字段权限]" in out.getvalue(), "收尾补齐应有可见日志（便于运维确认）"
+
+        # 幂等且不覆盖人工裁剪：管理员在角色页收敛到单个字段后，重复收尾保持收敛结果
+        field_permission = FieldPermission.objects.filter(role=role, menu=menu).first()
+        assert field_permission is not None and field_permission.field.exists()
+        kept = field_permission.field.first()
+        field_permission.field.set([kept])
+        command._fill_field_permissions_after_seed()
+        field_permission.refresh_from_db()
+        assert list(field_permission.field.values_list("pk", flat=True)) == [kept.pk], "人工裁剪不应被改写"
