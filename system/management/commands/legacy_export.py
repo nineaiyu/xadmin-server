@@ -87,12 +87,18 @@ class Command(BaseCommand):
             row[field] = str(getattr(related, target_key, "")) if related else ""
 
     def _fill_m2m(self, obj: Any, spec: dict[str, Any], row: dict[str, Any]) -> None:
+        """多对多按自然键导出；自然键可以是单字段或复合键（如模型字段树 名称+类型）。"""
         for field, (_, target_key) in spec.get("m2m", {}).items():
             manager = getattr(obj, field, None)
             if manager is None:
                 row[field] = []
                 continue
-            row[field] = sorted(str(key) for key in manager.all().values_list(target_key, flat=True) if key)
+            keys = lt.normalize_keys(target_key)
+            row[field] = sorted(
+                value
+                for value in (lt.join_key([getattr(item, key, "") for key in keys]) for item in manager.all())
+                if value
+            )
 
     def _dump_file(self, obj: Any, spec: dict[str, Any], row: dict[str, Any], files_dir: Path) -> None:
         field_file = getattr(obj, spec["storage_field"], None)

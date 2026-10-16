@@ -253,6 +253,64 @@ class TestRoundTrip:
         assert restored.avatar and restored.avatar.name.endswith(".png")
         assert UserPersonalConfig.objects.filter(owner=restored, key="table-size").exists()
 
+    def test_settings_and_subscriptions_roundtrip(self, tmp_path, monkeypatch):
+        """系统设置、用户/系统消息订阅也要回灌；加密设置的取值跨库不可解，只搬元信息并告警。"""
+        from identity.models import UserInfo
+        from notifications.models.notification import SystemMsgSubscription, UserMsgSubscription
+        from settings.models import Setting
+
+        _seed()
+        Setting.objects.create(name="drill.plain", value='{"a": 1}', category="drill")
+        Setting.objects.create(name="drill.secret", value="Salted__ciphertext", category="drill", encrypted=True)
+        user = UserInfo.objects.get(username="drill_user_a")
+        UserMsgSubscription.objects.create(user=user, message_type="drill.notice", receive_backends=["system"])
+        system_sub = SystemMsgSubscription.objects.create(
+            message_type="drill.system.notice", receive_backends=["email"]
+        )
+        system_sub.users.set([user])
+
+        payload = self._export(tmp_path / "legacy", monkeypatch)
+        assert payload["counts"]["settings"] >= 2
+        assert payload["counts"]["user_msg_subscriptions"] >= 1
+        assert payload["counts"]["system_msg_subscriptions"] >= 1
+
+        Setting.objects.filter(name__startswith="drill.").delete()
+        UserMsgSubscription.objects.filter(message_type="drill.notice").delete()
+        SystemMsgSubscription.objects.filter(message_type="drill.system.notice").delete()
+
+        out = StringIO()
+        call_command("legacy_import", "--input", str(tmp_path / "legacy"), stdout=out)
+        assert Setting.objects.get(name="drill.plain").value == '{"a": 1}'
+        secret = Setting.objects.get(name="drill.secret")
+        assert secret.encrypted is True
+        assert not secret.value, "加密取值不得原样搬运（旧库密钥签发的密文在新库解不开）"
+        assert "加密设置" in out.getvalue()
+        assert UserMsgSubscription.objects.filter(user=user, message_type="drill.notice").exists()
+        restored = SystemMsgSubscription.objects.get(message_type="drill.system.notice")
+        assert list(restored.users.values_list("username", flat=True)) == [user.username]
+
+    def test_field_permission_roundtrip(self, tmp_path, monkeypatch):
+        """字段权限：角色 × 菜单 + 字段树引用（复合自然键 名称|类型）。"""
+        from identity.models import UserRole
+        from system.models import FieldPermission, Menu, ModelLabelField
+
+        _seed()
+        menu = Menu.objects.get(name="system.userinfo.list")
+        role = UserRole.objects.get(code="R_DRILL_DEV")
+        field = ModelLabelField.objects.create(name="userinfo", label="用户", field_type=1)
+        permission = FieldPermission.objects.create(role=role, menu=menu)
+        permission.field.set([field])
+
+        payload = self._export(tmp_path / "legacy", monkeypatch)
+        assert payload["counts"]["field_permissions"] >= 1
+        row = next(item for item in payload["data"]["field_permissions"] if item["menu"] == menu.name)
+        assert row["field"] == ["userinfo|1"], "字段树应按 名称|类型 复合键导出"
+
+        FieldPermission.objects.filter(role=role, menu=menu).delete()
+        call_command("legacy_import", "--input", str(tmp_path / "legacy"), stdout=StringIO())
+        restored = FieldPermission.objects.get(role=role, menu=menu)
+        assert list(restored.field.values_list("name", flat=True)) == ["userinfo"]
+
     def test_unknown_include_is_command_error(self, tmp_path):
         from django.core.management.base import CommandError
 

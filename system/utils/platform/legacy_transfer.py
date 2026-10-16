@@ -90,6 +90,35 @@ ENTITIES: dict[str, dict[str, Any]] = {
         "fields": ("key", "value", "is_active", "access"),
         "fk": {"owner": ("users", "username")},
     },
+    "settings": {
+        "export_model": ("settings", "Setting"),
+        "import_model": ("settings", "Setting"),
+        "key": "name",
+        "fields": ("name", "value", "category", "encrypted", "is_active"),
+    },
+    "field_permissions": {
+        "export_model": ("system", "FieldPermission"),
+        "import_model": ("system", "FieldPermission"),
+        "key": "signature",
+        "fields": (),
+        "fk": {"role": ("roles", "code"), "menu": ("menus", "name")},
+        # 字段权限引用模型字段树：按「模型/字段名 + 类型」复合键匹配（新库的字段树由迁移自动生成）
+        "m2m": {"field": ("model_fields", ("name", "field_type"))},
+    },
+    "user_msg_subscriptions": {
+        "export_model": ("notifications", "UserMsgSubscription"),
+        "import_model": ("notifications", "UserMsgSubscription"),
+        "key": "signature",
+        "fields": ("message_type", "receive_backends"),
+        "fk": {"user": ("users", "username")},
+    },
+    "system_msg_subscriptions": {
+        "export_model": ("notifications", "SystemMsgSubscription"),
+        "import_model": ("notifications", "SystemMsgSubscription"),
+        "key": "message_type",
+        "fields": ("message_type", "receive_backends"),
+        "m2m": {"users": ("users", "username")},
+    },
     "files": {
         "export_model": ("system", "UploadFile"),
         "import_model": ("file", "UploadFile"),
@@ -114,7 +143,23 @@ ENTITIES: dict[str, dict[str, Any]] = {
 }
 
 # 关联目标实体（menus 由种子提供，只做解析、不搬运）
-REFERENCE_ENTITIES = {"menus": {"import_model": ("system", "Menu"), "key": "name"}}
+REFERENCE_ENTITIES: dict[str, dict[str, Any]] = {
+    "menus": {"import_model": ("system", "Menu"), "key": "name"},
+    # 字段权限引用的模型字段树：由迁移/同步命令在新库自动生成，只做匹配、不搬运
+    "model_fields": {"import_model": ("system", "ModelLabelField"), "key": ("name", "field_type")},
+}
+
+
+def normalize_keys(key: Any) -> tuple[str, ...]:
+    """把自然键规范成元组形态（单键与复合键统一处理）。"""
+    if isinstance(key, (tuple, list)):
+        return tuple(str(item) for item in key)
+    return (str(key),)
+
+
+def join_key(values: list[Any]) -> str:
+    """复合自然键的连接口径（导出与导入两侧一致）。"""
+    return "|".join("" if item is None else str(item) for item in values)
 
 
 def entity_names() -> list[str]:

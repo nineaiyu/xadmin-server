@@ -37,12 +37,19 @@ TABLE_MAP = {
     "data_permissions": ("system_datapermission", "name"),
     "system_configs": ("system_systemconfig", "key"),
     "personal_configs": ("system_userpersonalconfig", "key"),
+    "settings": ("settings_setting", "name"),
+    "field_permissions": ("system_fieldpermission", "id"),
+    "user_msg_subscriptions": ("notifications_usermsgsubscription", "id"),
+    "system_msg_subscriptions": ("notifications_systemmsgsubscription", "message_type"),
     "files": ("system_uploadfile", "filename"),
     "notices": ("notifications_messagecontent", "title"),
 }
 
 # 只做解析、不搬运的引用实体（菜单由新库种子提供）
-REFERENCE_TABLES = {"menus": ("system_menu", "name")}
+REFERENCE_TABLES = {
+    "menus": ("system_menu", "name"),
+    "model_fields": ("system_modellabelfield", ("name", "field_type")),
+}
 
 # 多对多中间表：(实体, 字段, 中间表, 本侧外键列, 目标外键列, 目标实体)
 # 公告的目标用户与已读状态同源（through=MessageUserRead），由 _reads 统一导出，不在此列
@@ -70,6 +77,22 @@ M2M_MAP = (
         "roles",
     ),
     ("notices", "file", "notifications_messagecontent_file", "messagecontent_id", "uploadfile_id", "files"),
+    (
+        "field_permissions",
+        "field",
+        "system_fieldpermission_field",
+        "fieldpermission_id",
+        "modellabelfield_id",
+        "model_fields",
+    ),
+    (
+        "system_msg_subscriptions",
+        "users",
+        "notifications_systemmsgsubscription_users",
+        "systemmsgsubscription_id",
+        "userinfo_id",
+        "users",
+    ),
 )
 
 # 实体 → 直接搬运的标量列（新库导入侧认这些字段名）
@@ -93,6 +116,10 @@ SCALAR_COLUMNS = {
     "data_permissions": ("name", "rules", "is_active"),
     "system_configs": ("key", "value", "is_active", "access", "inherit"),
     "personal_configs": ("key", "value", "is_active", "access"),
+    "settings": ("name", "value", "category", "encrypted", "is_active"),
+    "field_permissions": (),
+    "user_msg_subscriptions": ("message_type", "receive_backends"),
+    "system_msg_subscriptions": ("message_type", "receive_backends"),
     "files": ("filename", "filesize", "mime_type", "is_upload", "is_tmp", "file_url"),
     "notices": ("title", "message", "level", "notice_type", "publish", "created_time"),
 }
@@ -102,6 +129,8 @@ FK_MAP = {
     "depts": {"parent": ("depts", "code", "parent_id")},
     "users": {"dept": ("depts", "code", "dept_id")},
     "personal_configs": {"owner": ("users", "username", "owner_id")},
+    "field_permissions": {"role": ("roles", "code", "role_id"), "menu": ("menus", "name", "menu_id")},
+    "user_msg_subscriptions": {"user": ("users", "username", "user_id")},
 }
 
 # 模型自带文件字段（用户头像等）：随记录导出存储路径，并把物理文件拷进 files/
@@ -115,6 +144,10 @@ EXPORT_ORDER = (
     "system_configs",
     "users",
     "personal_configs",
+    "settings",
+    "user_msg_subscriptions",
+    "system_msg_subscriptions",
+    "field_permissions",
     "files",
     "notices",
 )
@@ -192,7 +225,8 @@ class Exporter:
                 continue
             rows = self.fetch(table)
             self.raw[name] = rows
-            self.keys[name] = {row["id"]: str(row.get(key_column) or "") for row in rows}
+            columns = (key_column,) if isinstance(key_column, str) else tuple(key_column)
+            self.keys[name] = {row["id"]: "|".join(str(row.get(column) or "") for column in columns) for row in rows}
 
         for name in EXPORT_ORDER:
             if name not in self.include:
@@ -222,9 +256,15 @@ class Exporter:
             out["signature"] = f"{row.get('title')}:{jsonable(row.get('created_time')) or ''}"
         if name == "personal_configs":
             out["signature"] = f"{out.get('owner', '')}:{row.get('key') or ''}"
+        if name == "field_permissions":
+            out["signature"] = f"{out.get('role', '')}:{out.get('menu', '')}"
+        if name == "user_msg_subscriptions":
+            out["signature"] = f"{out.get('user', '')}:{row.get('message_type') or ''}"
         for field in MODEL_FILE_FIELDS.get(name, ()):
             out[f"{field}_path"] = str(row.get(field) or "")
-        out[TABLE_MAP[name][1]] = str(row.get(TABLE_MAP[name][1]) or "")
+        key_column = TABLE_MAP[name][1]
+        if isinstance(key_column, str):
+            out[key_column] = str(row.get(key_column) or "")
         return out
 
     # ---------- 关联 ----------
