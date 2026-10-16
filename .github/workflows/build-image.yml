@@ -94,7 +94,7 @@ jobs:
 
       # 高危/严重漏洞阻断发布
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: xadmin-server:scan
           severity: HIGH,CRITICAL
