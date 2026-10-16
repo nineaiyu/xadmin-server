@@ -56,14 +56,19 @@ jobs:
 
       - name: Inspect package metadata sources
         run: |
-          docker run --rm xadmin-server:inspect sh -c '
-            echo "=== setuptools files ==="
-            find / -xdev -iname "setuptools*" -maxdepth 9 2>/dev/null | head -40
+          docker run --rm --entrypoint sh xadmin-server:inspect -c '
+            echo "=== setuptools named paths ==="
+            find / -xdev -maxdepth 9 -iname "setuptools*" 2>/dev/null | head -40
             echo "=== METADATA/PKG-INFO declaring setuptools ==="
-            find / -xdev \( -name METADATA -o -name PKG-INFO \) -maxdepth 9 2>/dev/null \
-              | xargs grep -l "^Name: setuptools$" 2>/dev/null | head -20
-            echo "=== versions in dist-info dirs named setuptools ==="
-            find / -xdev -iname "setuptools-*.dist-info" -maxdepth 9 2>/dev/null | head -20
+            find / -xdev -maxdepth 9 \( -name METADATA -o -name PKG-INFO \) 2>/dev/null \
+              | xargs grep -l "^Name: setuptools" 2>/dev/null | head -20
+            echo "=== site-packages roots ==="
+            ls -d /usr/local/lib/python3*/site-packages /usr/lib/python3*/site-packages /data/py3/lib/python3*/site-packages 2>/dev/null
+            echo "=== dist-info under each root (setuptools/setuptools-like) ==="
+            for d in /usr/local/lib/python3*/site-packages /usr/lib/python3*/site-packages /data/py3/lib/python3*/site-packages; do
+              echo "--- $d"
+              ls "$d" 2>/dev/null | grep -iE "setuptools|pkg_resources|egg-info" | head -20
+            done
           '
 
   security-scan:
