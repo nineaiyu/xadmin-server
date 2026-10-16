@@ -267,18 +267,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -349,18 +342,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -431,18 +417,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -570,18 +549,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -809,18 +781,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -841,18 +806,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -923,18 +881,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -1006,18 +957,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -1053,7 +997,7 @@
    "updated_time": "2026-09-07T13:28:31Z",
    "description": null,
    "creator": 1,
-   "modifier": 1,
+   "modifier": null,
    "dept_belong": null,
    "title": "U-更新MFA二次验证配置",
    "icon": "",
@@ -1063,18 +1007,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -1370,18 +1307,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -1602,18 +1532,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -1660,18 +1583,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -1767,18 +1683,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -2029,13 +1938,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -2231,18 +2134,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -2288,18 +2184,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -2420,18 +2309,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -2477,18 +2359,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -2509,18 +2384,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -2591,18 +2459,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -2730,18 +2591,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -3152,7 +3006,7 @@
    "updated_time": "2024-11-01T03:31:16.185Z",
    "description": null,
    "creator": 1,
-   "modifier": 1,
+   "modifier": null,
    "dept_belong": null,
    "title": "C-部分更新图片验证码信息",
    "icon": null,
@@ -3162,18 +3016,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -3274,13 +3121,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -3316,7 +3157,7 @@
    "updated_time": "2026-09-07T13:55:09Z",
    "description": null,
    "creator": 1,
-   "modifier": 1,
+   "modifier": null,
    "dept_belong": null,
    "title": "U-更新资源告警配置",
    "icon": "",
@@ -3326,18 +3167,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -3508,18 +3342,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -3530,7 +3357,7 @@
    "updated_time": "2024-11-01T03:31:16.167Z",
    "description": null,
    "creator": 1,
-   "modifier": 1,
+   "modifier": null,
    "dept_belong": null,
    "title": "C-获取图片验证码的详情",
    "icon": null,
@@ -3540,18 +3367,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -3602,13 +3422,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -3729,18 +3543,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -3836,18 +3643,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -3893,18 +3693,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -4000,18 +3793,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -4264,18 +4050,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -4336,7 +4115,7 @@
    "updated_time": "2024-11-01T03:31:16.134Z",
    "description": null,
    "creator": 1,
-   "modifier": 1,
+   "modifier": null,
    "dept_belong": null,
    "title": "C-获取验证码规则的详情",
    "icon": null,
@@ -4346,18 +4125,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -4453,18 +4225,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -4590,13 +4355,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -4647,13 +4406,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -4861,13 +4614,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -4893,13 +4640,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -4950,13 +4691,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -5027,18 +4762,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -5289,13 +5017,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -5381,7 +5103,7 @@
    "updated_time": "2026-09-07T13:28:31Z",
    "description": null,
    "creator": 1,
-   "modifier": 1,
+   "modifier": null,
    "dept_belong": null,
    "title": "R-获取MFA二次验证配置",
    "icon": "",
@@ -5391,18 +5113,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -5548,18 +5263,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -5635,13 +5343,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -5662,18 +5364,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -5769,18 +5464,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -5901,18 +5589,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -5923,7 +5604,7 @@
    "updated_time": "2026-09-07T13:55:09Z",
    "description": null,
    "creator": 1,
-   "modifier": 1,
+   "modifier": null,
    "dept_belong": null,
    "title": "R-获取资源告警配置",
    "icon": "",
@@ -5933,18 +5614,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -6015,18 +5689,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -6122,18 +5789,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -6309,13 +5969,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -6436,18 +6090,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -6468,18 +6115,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -6550,18 +6190,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -6707,18 +6340,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -6839,18 +6465,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -6896,18 +6515,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -7068,7 +6680,7 @@
    "updated_time": "2024-11-01T03:31:16.150Z",
    "description": null,
    "creator": 1,
-   "modifier": 1,
+   "modifier": null,
    "dept_belong": null,
    "title": "C-部分更新验证码规则信息",
    "icon": null,
@@ -7078,18 +6690,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -7310,18 +6915,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -7442,18 +7040,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -7549,18 +7140,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -7711,13 +7295,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -7838,18 +7416,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -7870,18 +7441,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8052,18 +7616,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8084,18 +7641,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8116,18 +7666,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8173,18 +7716,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8355,18 +7891,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8387,18 +7916,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8619,18 +8141,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8651,18 +8166,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8683,18 +8191,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8865,18 +8366,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8897,18 +8391,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8929,18 +8416,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -8961,18 +8441,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9073,13 +8546,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9105,13 +8572,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9137,13 +8598,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9464,18 +8919,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9496,18 +8944,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9528,18 +8969,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9560,18 +8994,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9592,18 +9019,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9624,18 +9044,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9731,18 +9144,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9763,18 +9169,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9795,18 +9194,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9902,18 +9294,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9934,18 +9319,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9966,18 +9344,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -9998,18 +9369,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10180,18 +9544,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10212,18 +9569,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10244,18 +9594,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10351,18 +9694,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10383,18 +9719,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10415,18 +9744,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10547,18 +9869,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10579,18 +9894,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10611,18 +9919,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10718,18 +10019,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10875,18 +10169,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10907,18 +10194,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10939,18 +10219,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -10971,18 +10244,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11003,18 +10269,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11135,18 +10394,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11167,18 +10419,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11324,18 +10569,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11356,18 +10594,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11388,18 +10619,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11420,18 +10644,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11632,8 +10849,8 @@
   "model": "system.menumeta",
   "pk": "20c53d45-df68-5f2e-9bdf-c931a464d5b6",
   "fields": {
-   "created_time": "2026-10-16T08:57:14.951Z",
-   "updated_time": "2026-10-16T08:57:14.951Z",
+   "created_time": null,
+   "updated_time": null,
    "description": null,
    "creator": 1,
    "modifier": 1,
@@ -11646,26 +10863,19 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
   "model": "system.menumeta",
   "pk": "4b66de2b-45e0-5db0-9728-ddc708487d41",
   "fields": {
-   "created_time": "2026-10-16T08:57:14.951Z",
-   "updated_time": "2026-10-16T08:57:14.951Z",
+   "created_time": null,
+   "updated_time": null,
    "description": null,
    "creator": 1,
    "modifier": 1,
@@ -11678,26 +10888,19 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
   "model": "system.menumeta",
   "pk": "d6342450-0d8b-5474-be5c-6ead5427127f",
   "fields": {
-   "created_time": "2026-10-16T08:57:14.951Z",
-   "updated_time": "2026-10-16T08:57:14.951Z",
+   "created_time": null,
+   "updated_time": null,
    "description": null,
    "creator": 1,
    "modifier": 1,
@@ -11710,26 +10913,19 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
   "model": "system.menumeta",
   "pk": "89379fee-0457-5c1a-ac59-a3f79ac9baee",
   "fields": {
-   "created_time": "2026-10-16T08:57:14.951Z",
-   "updated_time": "2026-10-16T08:57:14.951Z",
+   "created_time": null,
+   "updated_time": null,
    "description": null,
    "creator": 1,
    "modifier": 1,
@@ -11742,18 +10938,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11820,18 +11009,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11852,18 +11034,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11884,18 +11059,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -11916,18 +11084,11 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -12098,18 +11259,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -12130,18 +11284,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -12162,18 +11309,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -12194,18 +11334,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -12651,18 +11784,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -12708,18 +11834,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -12865,18 +11984,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -12897,18 +12009,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -12954,18 +12059,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -12986,18 +12084,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -13068,18 +12159,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -13125,18 +12209,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -13182,18 +12259,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -14064,18 +13134,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -14646,18 +13709,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -14678,18 +13734,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -14735,18 +13784,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -14767,18 +13809,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -14799,18 +13834,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -15183,18 +14211,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -15215,18 +14236,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -15272,18 +14286,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -15304,18 +14311,11 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
-   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -16026,13 +15026,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -16058,13 +15052,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -16090,13 +15078,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -16122,13 +15104,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -16554,13 +15530,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -16586,13 +15556,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -16618,13 +15582,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -16650,13 +15608,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -17011,13 +15963,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -17329,13 +16275,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -17361,13 +16301,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -17419,13 +16353,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -17451,13 +16379,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -17765,13 +16687,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -17797,13 +16713,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -17855,13 +16765,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -17887,13 +16791,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -18230,13 +17128,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -18262,13 +17154,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -18423,13 +17309,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -18481,13 +17361,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -19323,13 +18197,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
@@ -19355,13 +18223,7 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "active_path": null,
-   "badge": null,
-   "badge_type": "normal",
-   "query": null,
-   "group_name": null,
-   "group_rank": null
+   "dynamic_level": 0
   }
  },
  {
