@@ -89,7 +89,7 @@ dependencies = [
     "ldap3==2.9.1",
     "croniter==6.0.0",
     # OIDC id_token 验签：源码直接 import jwt / cryptography，显式声明防传递依赖漂移
-    "pyjwt==2.14.0",
+    "pyjwt>=2.15.0,<3",
     "cryptography==50.0.1",
     # Passkey CBOR 解析：源码直接 import cbor2，显式声明防传递依赖漂移
     "cbor2==5.9.0",
