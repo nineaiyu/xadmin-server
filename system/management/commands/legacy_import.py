@@ -62,6 +62,13 @@ class Command(BaseCommand):
             self.stdout.write(f"  · {name}: 新建 {created}，更新 {updated}，跳过 {skipped}")
 
         importer.finish()
+        extra = payload.get("extra_tables") or {}
+        if extra:
+            for table, created, skipped in importer.import_extra_tables(extra):
+                self.stdout.write(f"  · [二开表] {table}: 新建 {created}，跳过 {skipped}")
+        reset = importer.reset_sequences()
+        if reset:
+            self.stdout.write(f"  · 已重置 {reset} 张表的自增序列（保留原 ID 的必要收尾）")
         if importer.encrypted_settings:
             names = ", ".join(importer.encrypted_settings[:10])
             self.stdout.write(

@@ -137,6 +137,19 @@ FK_MAP = {
 MODEL_FILE_FIELDS = {"users": ("avatar",)}
 
 READS_TABLE = "notifications_messageuserread"
+
+# 框架自身与常见组件占用的表前缀：其余表按「二开表」候选处理（--extra-tables auto）
+FRAMEWORK_PREFIXES = (
+    "system_",
+    "settings_",
+    "notifications_",
+    "captcha_",
+    "common_",
+    "auth_",
+    "django_",
+    "celery_",
+    "authtoken_",
+)
 EXPORT_ORDER = (
     "depts",
     "roles",
@@ -167,6 +180,15 @@ def connect(dsn):
         return psycopg2.connect(dsn)
     except ImportError as exc:  # pragma: no cover - 环境缺依赖
         raise SystemExit(f"需要 psycopg 或 psycopg2：{exc}") from exc
+
+
+def discover_extra_tables(cursor) -> list[str]:
+    """自动发现二开表：库中不属于框架/常见组件前缀的表（导出时原样整表搬运）。"""
+    cursor.execute("select tablename from pg_tables where schemaname = current_schema() order by tablename")
+    names = [row[0] for row in cursor.fetchall()]
+    known = {item[0] for item in TABLE_MAP.values()} | {item[0] for item in REFERENCE_TABLES.values()}
+    known |= {item[2] for item in M2M_MAP} | {READS_TABLE}
+    return [name for name in names if name not in known and not name.startswith(FRAMEWORK_PREFIXES)]
 
 
 def jsonable(value):
@@ -262,6 +284,7 @@ class Exporter:
             out["signature"] = f"{out.get('user', '')}:{row.get('message_type') or ''}"
         for field in MODEL_FILE_FIELDS.get(name, ()):
             out[f"{field}_path"] = str(row.get(field) or "")
+        out["id"] = str(row["id"])
         key_column = TABLE_MAP[name][1]
         if isinstance(key_column, str):
             out[key_column] = str(row.get(key_column) or "")
@@ -361,6 +384,11 @@ def main(argv=None):
     parser.add_argument("--output", required=True, help="输出目录")
     parser.add_argument("--media-root", default="", help="附件根目录（容器内一般 /data/xadmin-server/data/upload）")
     parser.add_argument("--include", default=",".join(sorted(TABLE_MAP)), help="要导出的实体，逗号分隔")
+    parser.add_argument(
+        "--extra-tables",
+        default="",
+        help="二开 app 自己的表：auto 自动发现，或逗号分隔的表名（整表原样搬运、保留主键）",
+    )
     args = parser.parse_args(argv)
 
     def warn(message):
@@ -373,9 +401,12 @@ def main(argv=None):
         raise SystemExit(f"未知实体 {', '.join(unknown)}；可选：{', '.join(EXPORT_ORDER)}")
 
     connection = connect(args.dsn)
+    extra_tables: dict[str, list[dict]] = {}
     try:
-        exporter = Exporter(connection.cursor(), args.output, args.media_root, include, warn)
+        cursor = connection.cursor()
+        exporter = Exporter(cursor, args.output, args.media_root, include, warn)
         exporter.run()
+        extra_tables = _export_extra_tables(cursor, args.extra_tables, exporter, warn)
     finally:
         connection.close()
 
@@ -386,6 +417,7 @@ def main(argv=None):
         "exported_at": datetime.datetime.now().isoformat(timespec="seconds"),
         "counts": {name: len(rows) for name, rows in exporter.data.items()},
         "data": exporter.data,
+        "extra_tables": extra_tables,
     }
     target = os.path.join(args.output, "export.json")
     with open(target, "w", encoding="utf-8") as handle:
@@ -393,7 +425,32 @@ def main(argv=None):
     print(f"\n导出完成：{target}")
     for name, rows in sorted(exporter.data.items()):
         print(f"  · {name}: {len(rows)} 行")
+    for name, rows in sorted(extra_tables.items()):
+        print(f"  · [二开表] {name}: {len(rows)} 行")
     return 0
+
+
+def _export_extra_tables(cursor, spec, exporter, warn):
+    """二开表整表导出（保留原主键，导入侧按同 id 写回，引用关系不变）。"""
+    if not spec:
+        return {}
+    if spec.strip() == "auto":
+        names = discover_extra_tables(cursor)
+        if not names:
+            print("  · 未发现二开表（--extra-tables auto）")
+        else:
+            print(f"  · 自动识别二开表 {len(names)} 张：{', '.join(names)}")
+    else:
+        names = [item.strip() for item in spec.split(",") if item.strip()]
+    exported = {}
+    for name in names:
+        try:
+            rows = exporter.fetch(name)
+        except Exception as exc:  # noqa: BLE001 - 表不存在/无权限时提示并跳过
+            warn(f"二开表 {name} 读取失败（{exc}），已跳过")
+            continue
+        exported[name] = [{key: jsonable(value) for key, value in row.items()} for row in rows]
+    return exported
 
 
 if __name__ == "__main__":

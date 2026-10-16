@@ -78,6 +78,8 @@ class Command(BaseCommand):
             if "reads" in spec:
                 row["reads"] = self._collect_reads(obj, spec)
             row[spec["key"]] = self._natural_key(obj, spec, row)
+            # 保留原主键：新库干净时可沿用旧 ID，二开表的外键引用与外部系统保存的 ID 都不会失效
+            row["id"] = str(obj.pk)
             rows.append(row)
         return rows
 

@@ -311,6 +311,60 @@ class TestRoundTrip:
         restored = FieldPermission.objects.get(role=role, menu=menu)
         assert list(restored.field.values_list("name", flat=True)) == ["userinfo"]
 
+    def test_primary_keys_are_preserved_and_sequence_reset(self, tmp_path, monkeypatch):
+        """回灌沿用旧库 ID（二开表外键引用才有效），并把自增序列推到最大值。"""
+        from identity.models import DeptInfo, UserInfo, UserRole
+
+        _seed()
+        user = UserInfo.objects.get(username="drill_user_a")
+        dept = DeptInfo.objects.get(code="D110")
+        role = UserRole.objects.get(code="R_DRILL_DEV")
+        old_ids = (user.pk, dept.pk, role.pk)
+        self._export(tmp_path / "legacy", monkeypatch)
+
+        for item in UserInfo.objects.filter(username="drill_user_a"):
+            item.hard_delete()
+        for item in UserRole.objects.filter(code="R_DRILL_DEV"):
+            item.hard_delete()
+        DeptInfo.objects.filter(code="D110").delete()  # DeptInfo 无软删，直接物理删除
+
+        call_command("legacy_import", "--input", str(tmp_path / "legacy"), stdout=StringIO())
+
+        assert UserInfo.objects.get(username="drill_user_a").pk == old_ids[0]
+        assert DeptInfo.objects.get(code="D110").pk == old_ids[1]
+        assert UserRole.objects.get(code="R_DRILL_DEV").pk == old_ids[2]
+        # 序列已推进：新建记录不会撞主键（未重置时这里会 IntegrityError）
+        fresh = UserInfo.objects.create_user(username="after_import_user", password="After@2026!")
+        assert int(fresh.pk) > int(old_ids[0])
+
+    def test_extra_table_without_model_is_reported(self, tmp_path):
+        """二开表在目标库没有对应模型时只告警跳过，不中断导入。"""
+        from system.utils.platform.legacy_importer import Importer
+
+        importer = Importer(tmp_path)
+        results = importer.import_extra_tables({"not_a_real_table": [{"id": 1}]})
+        assert results == [("not_a_real_table", 0, 1)]
+        assert any(key.startswith("extra_table=") for key in importer.skipped_refs)
+
+    def test_discover_extra_tables_filters_framework_tables(self):
+        """自动识别二开表：框架前缀与已映射的表都要排除。"""
+        module = _load_standalone()
+
+        class FakeCursor:
+            def execute(self, *args, **kwargs):
+                return None
+
+            def fetchall(self):
+                return [
+                    ("system_userinfo",),
+                    ("django_migrations",),
+                    ("celery_taskmeta",),
+                    ("myapp_thing",),
+                    ("myapp_other",),
+                ]
+
+        assert sorted(module.discover_extra_tables(FakeCursor())) == ["myapp_other", "myapp_thing"]
+
     def test_unknown_include_is_command_error(self, tmp_path):
         from django.core.management.base import CommandError
 

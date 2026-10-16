@@ -126,7 +126,7 @@ python manage.py legacy_import --input /tmp/xadmin-legacy
 | 数据权限（rules JSON）、系统配置（JSON 与标量）、用户个人配置 | 会话 / 令牌 / 缓存 |
 | 系统设置（`Setting`）；**加密项只搬元信息**，取值需重新填写 | 菜单与权限点（由 `load_init_json` 种子提供） |
 | 字段权限（角色 × 菜单 × 字段树）、用户 / 系统消息订阅 | 性能监控、验证码等临时数据 |
-| 附件记录与物理文件 | **扩展 app 的数据**（自定义 app 的表需自行搬迁） |
+| 附件记录与物理文件 | 二开 app 的表默认不搬（用 `--extra-tables auto` 整表搬运，见文末附录） |
 | 公告（正文 / 目标用户·部门·角色 / 附件 / 已读状态） | |
 
 ## 九、实测记录（2026-10-17，虚拟机 CentOS 7 / Docker 24）
@@ -143,6 +143,32 @@ python manage.py legacy_import --input /tmp/xadmin-legacy
 | 服务冒烟 | 5.0 应用（gunicorn 4 worker）连重建库启动，`/api/common/api/health`：`status` / `db_status` / `redis_status` / `storage_status` 全 `true`（`celery_status=false`，未起 worker） |
 | 引用缺失 | 16 处：附件物理文件缺失（旧库文件已丢失）+ 旧库角色绑定的权限点在新库已调整（预期，核对后忽略） |
 | 补齐说明 | 本轮并补「系统设置 / 字段权限 / 用户·系统消息订阅」三类实体的搬运（含加密设置的特殊处置），守护测试增至 20 例 |
+
+## 附：做过二次开发（自定义 app / 自定义字段）的升级
+
+框架自带的数据按前文回灌即可；**二开部分**按下表处理：
+
+| 你的改动 | 处理方式 |
+|----------|----------|
+| 自己写的 app（自带模型与迁移） | 导出时加 `--extra-tables auto`（自动识别非框架表），导入时**整表原样写回**（保留主键） |
+| 指向框架对象的外键（`user_id` / `dept_id` / `role_id` 等） | **无需处理**：回灌沿用旧库主键（`UserInfo` 自增、部门/角色 UUID），外键值与外部系统保存的 ID 都保持有效 |
+| 在框架模型上新增的字段 | 需要你自己的迁移处理：5.0 把 `system` 域拆成了 `identity` / `file` / `audit` / `task`，原迁移里的 `app_label` 与表名要一起改（如 `system.UserInfo` → `identity.UserInfo`、`system_userinfo` → `identity_userinfo`） |
+| 二开表里的文件字段 | 当前工具只搬框架附件（`UploadFile`）的物理文件；二开表的文件请手工同步媒体目录 |
+| 改了框架自带的 app 名 / 表名 | 属于深度定制：表名对不上时导入会**告警跳过**（不会写错数据），需要你自行扩展映射 |
+
+用法（导出侧）：
+
+```bash
+python ops/legacy_export.py --dsn "postgresql://..." --output /tmp/xadmin-legacy \
+    --media-root <VOLUME_DIR>/server/data/upload --extra-tables auto
+```
+
+> `--extra-tables auto` 会列出识别到的二开表；也可以显式写表名（逗号分隔）。
+> 导入侧（`manage.py legacy_import`）自动处理 `export.json` 里的 `extra_tables` 段：
+> 目标库存在同名表就整表写回（主键相同的行跳过），不存在则告警跳过。
+>
+> 回灌结束会**自动重置自增序列**（按原值写入主键后必须把序列推到最大值，否则新建记录会撞主键）。
+
 
 ## 十、常见问题
 

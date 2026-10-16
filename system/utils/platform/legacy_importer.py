@@ -43,6 +43,7 @@ class Importer:
         self.errors: list[str] = []
         self.encrypted_settings: list[str] = []
         self._ref_index_cache: dict = {}
+        self.touched_tables: set[str] = set()
         self._depts: list[dict[str, Any]] = []
 
     # ---------- 实体分派 ----------
@@ -69,7 +70,7 @@ class Importer:
             if self.dry_run:
                 created += 1
                 continue
-            _, is_created = model._base_manager.update_or_create(code=row["code"], defaults=defaults)
+            _, is_created = self._upsert("depts", row, {"code": row["code"]}, defaults)
             created += int(is_created)
             updated += int(not is_created)
             self._depts.append(row)
@@ -95,13 +96,13 @@ class Importer:
     # ---------- 其余实体 ----------
 
     def _import_roles(self, rows: list[dict[str, Any]]) -> tuple[int, int, int]:
-        model = self._model("roles")
+        self._model("roles")
         created = updated = 0
         for row in rows:
             instance = None
             if not self.dry_run:
-                instance, is_created = model._base_manager.update_or_create(
-                    code=row["code"], defaults=self._scalar_defaults("roles", row)
+                instance, is_created = self._upsert(
+                    "roles", row, {"code": row["code"]}, self._scalar_defaults("roles", row)
                 )
                 created += int(is_created)
                 updated += int(not is_created)
@@ -109,14 +110,14 @@ class Importer:
         return created, updated, 0
 
     def _import_data_permissions(self, rows: list[dict[str, Any]]) -> tuple[int, int, int]:
-        model = self._model("data_permissions")
+        self._model("data_permissions")
         created = updated = 0
         for row in rows:
             if self.dry_run:
                 created += 1
                 continue
-            instance, is_created = model._base_manager.update_or_create(
-                name=row["name"], defaults=self._scalar_defaults("data_permissions", row)
+            instance, is_created = self._upsert(
+                "data_permissions", row, {"name": row["name"]}, self._scalar_defaults("data_permissions", row)
             )
             created += int(is_created)
             updated += int(not is_created)
@@ -124,14 +125,14 @@ class Importer:
         return created, updated, 0
 
     def _import_system_configs(self, rows: list[dict[str, Any]]) -> tuple[int, int, int]:
-        model = self._model("system_configs")
+        self._model("system_configs")
         created = updated = 0
         for row in rows:
             if self.dry_run:
                 created += 1
                 continue
-            _, is_created = model._base_manager.update_or_create(
-                key=row["key"], defaults=self._scalar_defaults("system_configs", row)
+            _, is_created = self._upsert(
+                "system_configs", row, {"key": row["key"]}, self._scalar_defaults("system_configs", row)
             )
             created += int(is_created)
             updated += int(not is_created)
@@ -153,7 +154,7 @@ class Importer:
                     skipped += 1
                 else:
                     defaults["dept"] = dept
-            instance, is_created = model._base_manager.update_or_create(username=row["username"], defaults=defaults)
+            instance, is_created = self._upsert("users", row, {"username": row["username"]}, defaults)
             created += int(is_created)
             updated += int(not is_created)
             self._restore_user_files(row, instance, model)
@@ -177,7 +178,7 @@ class Importer:
             instance.save(update_fields=[field])
 
     def _import_personal_configs(self, rows: list[dict[str, Any]]) -> tuple[int, int, int]:
-        model = self._model("personal_configs")
+        self._model("personal_configs")
         created = updated = skipped = 0
         for row in rows:
             if self.dry_run:
@@ -190,14 +191,14 @@ class Importer:
                 continue
             defaults = self._scalar_defaults("personal_configs", row)
             defaults.pop("owner", None)
-            _, is_created = model._base_manager.update_or_create(owner=owner, key=row["key"], defaults=defaults)
+            _, is_created = self._upsert("personal_configs", row, {"owner": owner, "key": row["key"]}, defaults)
             created += int(is_created)
             updated += int(not is_created)
         return created, updated, skipped
 
     def _import_settings(self, rows: list[dict[str, Any]]) -> tuple[int, int, int]:
         """系统设置（4.x 的主配置表）：加密项的取值跨库不可解，只搬元信息并列告警。"""
-        model = self._model("settings")
+        self._model("settings")
         created = updated = 0
         for row in rows:
             if self.dry_run:
@@ -207,13 +208,13 @@ class Importer:
             if row.get("encrypted"):
                 defaults.pop("value", None)
                 self.encrypted_settings.append(str(row.get("name") or ""))
-            _, is_created = model._base_manager.update_or_create(name=row["name"], defaults=defaults)
+            _, is_created = self._upsert("settings", row, {"name": row["name"]}, defaults)
             created += int(is_created)
             updated += int(not is_created)
         return created, updated, 0
 
     def _import_field_permissions(self, rows: list[dict[str, Any]]) -> tuple[int, int, int]:
-        model = self._model("field_permissions")
+        self._model("field_permissions")
         created = updated = skipped = 0
         for row in rows:
             if self.dry_run:
@@ -225,14 +226,14 @@ class Importer:
                 skipped += 1
                 self._skip(f"field_permissions={row.get('signature')}")
                 continue
-            instance, is_created = model._base_manager.update_or_create(role=role, menu=menu)
+            instance, is_created = self._upsert("field_permissions", row, {"role": role, "menu": menu}, {})
             created += int(is_created)
             updated += int(not is_created)
             self._apply_m2m("field_permissions", row, instance)
         return created, updated, skipped
 
     def _import_user_msg_subscriptions(self, rows: list[dict[str, Any]]) -> tuple[int, int, int]:
-        model = self._model("user_msg_subscriptions")
+        self._model("user_msg_subscriptions")
         created = updated = skipped = 0
         for row in rows:
             if self.dry_run:
@@ -245,22 +246,25 @@ class Importer:
                 continue
             defaults = self._scalar_defaults("user_msg_subscriptions", row)
             defaults.pop("user", None)
-            _, is_created = model._base_manager.update_or_create(
-                user=user, message_type=row["message_type"], defaults=defaults
+            _, is_created = self._upsert(
+                "user_msg_subscriptions", row, {"user": user, "message_type": row["message_type"]}, defaults
             )
             created += int(is_created)
             updated += int(not is_created)
         return created, updated, skipped
 
     def _import_system_msg_subscriptions(self, rows: list[dict[str, Any]]) -> tuple[int, int, int]:
-        model = self._model("system_msg_subscriptions")
+        self._model("system_msg_subscriptions")
         created = updated = 0
         for row in rows:
             if self.dry_run:
                 created += 1
                 continue
-            instance, is_created = model._base_manager.update_or_create(
-                message_type=row["message_type"], defaults=self._scalar_defaults("system_msg_subscriptions", row)
+            instance, is_created = self._upsert(
+                "system_msg_subscriptions",
+                row,
+                {"message_type": row["message_type"]},
+                self._scalar_defaults("system_msg_subscriptions", row),
             )
             created += int(is_created)
             updated += int(not is_created)
@@ -303,20 +307,86 @@ class Importer:
         return created, updated, skipped
 
     def _import_notices(self, rows: list[dict[str, Any]]) -> tuple[int, int, int]:
-        model = self._model("notices")
+        self._model("notices")
         created = updated = 0
         for row in rows:
             if self.dry_run:
                 created += 1
                 continue
-            instance, is_created = model._base_manager.update_or_create(
-                title=row["title"], defaults=self._scalar_defaults("notices", row)
+            instance, is_created = self._upsert(
+                "notices", row, {"title": row["title"]}, self._scalar_defaults("notices", row)
             )
             created += int(is_created)
             updated += int(not is_created)
             self._apply_m2m("notices", row, instance)
             self._apply_reads(row, instance)
         return created, updated, 0
+
+    def _upsert(self, name: str, row: dict[str, Any], lookup: dict[str, Any], defaults: dict[str, Any]):
+        """按原主键优先落库。
+
+        新库是干净的，因此可以沿用旧库的 ID（``UserInfo`` 为自增主键、其余多为 UUID）——
+        二开 app 表里指向用户 / 部门 / 角色的外键值因此仍然有效，外部系统保存的 ID 也不会失效。
+        命中已有记录（主键或自然键）时更新，不覆盖 ID。
+        """
+        model = self._model(name)
+        pk = str(row.get("id") or "")
+        instance = model._base_manager.filter(pk=pk).first() if pk else None
+        if instance is None and lookup:
+            instance = model._base_manager.filter(**lookup).first()
+        if instance is None:
+            # 查询条件同时是创建字段（与原 update_or_create 语义一致：自然键要落进新记录）
+            instance = model(**{**defaults, **lookup})
+            if pk:
+                instance.pk = pk
+            instance.save(force_insert=True)
+            self.touched_tables.add(model._meta.db_table)
+            return instance, True
+        for key, value in defaults.items():
+            setattr(instance, key, value)
+        instance.save()
+        self.touched_tables.add(model._meta.db_table)
+        return instance, False
+
+    def reset_sequences(self) -> int:
+        """把按原值写入的表序列推到最大值，避免后续新建记录撞主键。"""
+        from django.db import connection
+
+        reset = 0
+        with connection.cursor() as cursor:
+            for table in sorted(self.touched_tables):
+                cursor.execute("select pg_get_serial_sequence(%s, 'id')", [table])
+                found = cursor.fetchone()
+                if not found or not found[0]:
+                    continue
+                cursor.execute(f"select setval(%s, coalesce((select max(id) from {table}), 1))", [found[0]])
+                reset += 1
+        return reset
+
+    def import_extra_tables(self, tables: dict[str, list[dict[str, Any]]]) -> list[tuple[str, int, int]]:
+        """二开 app 自己的表：整表原样搬运（表结构由用户 app 的迁移建立，按同 ID 写回）。"""
+        by_table = {model._meta.db_table: model for model in apps.get_models()}
+        results: list[tuple[str, int, int]] = []
+        for table, rows in tables.items():
+            model = by_table.get(table)
+            if model is None:
+                self._skip(f"extra_table={table}")
+                results.append((table, 0, len(rows)))
+                continue
+            fields = {field.name: field for field in model._meta.concrete_fields}
+            fields.update({field.attname: field for field in model._meta.concrete_fields})
+            created = skipped = 0
+            for row in rows:
+                payload = {column: lt.deserialize_value(value) for column, value in row.items() if column in fields}
+                pk = payload.get(model._meta.pk.attname)
+                if pk and model._base_manager.filter(pk=pk).exists():
+                    skipped += 1
+                    continue
+                model._base_manager.create(**payload)
+                created += 1
+            self.touched_tables.add(table)
+            results.append((table, created, skipped))
+        return results
 
     # ---------- 通用助手 ----------
 
