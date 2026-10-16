@@ -36,7 +36,7 @@ click-plugins==1.1.1.2
 click-repl==0.4.0
 constantly==23.10.4
 cron-descriptor==1.4.5
-croniter==6.0.0
+croniter==6.2.4
 cryptography==50.0.1
 daphne==4.2.3
 darabonba-core==1.0.9
