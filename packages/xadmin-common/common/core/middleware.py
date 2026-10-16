@@ -10,10 +10,9 @@ import time
 from typing import Any
 
 from asgiref.sync import iscoroutinefunction, markcoroutinefunction, sync_to_async
-from django.db import transaction
 from django.utils.deprecation import MiddlewareMixin
 
-from common.contracts import OperationLog, maybe_alert_sensitive_operation
+from common.contracts import maybe_alert_sensitive_operation
 from common.core.config import SysConfig
 from common.settings_contract import kernel_setting
 from common.utils import get_logger
@@ -102,7 +101,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         self.enable = kernel_setting("API_LOG_ENABLE") or False
         self.methods = kernel_setting("API_LOG_METHODS") or set()
         self.ignores = kernel_setting("API_LOG_IGNORE") or {}
-        self.operation_log_id = "__operation_log_id"
+        self.operation_log_pending = "__operation_log_pending"
 
     def _should_log(self, request: Any, view_func: Any) -> bool:
         """请求是否落操作日志：``API_LOG_METHODS`` 命中，或敏感 GET action 白名单命中。
@@ -145,23 +144,23 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                 f"{log_body_preview(request.request_data)} "
                 f"request_id:{getattr(request, 'request_uuid', None)}"
             )
-        # 判断有无log_id属性，使用All记录时，会出现此情况
-        operation_log_id = getattr(request, self.operation_log_id, None)
-        if operation_log_id is None:
+        # 判断有无待写标记（process_view 只标记不写库；health 等无 cls 视图、
+        # 未命中 API_LOG_METHODS 的请求不带标记）
+        pending = getattr(request, self.operation_log_pending, None)
+        if pending is None:
             return None
 
-        info = build_operation_log_info(request, response, request_start_time)
+        info = build_operation_log_info(request, response, request_start_time, pending.get("object_pk"))
 
-        def _after_commit() -> None:
-            # Step3：移出请求事务，提交后再写日志；日志落库后做敏感操作告警判定
-            write_operation_log(operation_log_id, info)
-            try:
-                maybe_alert_sensitive_operation(info)
-            except Exception:
-                # 告警链路异常不影响响应，也不影响日志本身
-                logger.warning("sensitive operation alert failed", exc_info=True)
-
-        transaction.on_commit(_after_commit)
+        # Step3：响应阶段已在 ATOMIC_REQUESTS 事务之外（请求事务随视图退出已终结），
+        # 单条 INSERT 即落库——不再经 transaction.on_commit 中转（旧占位行方案的
+        # 事务边界结论见 oplog_recorder.insert_operation_log 文档）。
+        insert_operation_log(info)
+        try:
+            maybe_alert_sensitive_operation(info)
+        except Exception:
+            # 告警链路异常不影响响应，也不影响日志本身
+            logger.warning("sensitive operation alert failed", exc_info=True)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 f"request end. {request.method} {request.path} {log_body_preview(request.request_data)} log:{info}"
@@ -183,14 +182,19 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                     v = kernel_setting("API_MODEL_MAP").get(request.path, v)
                     if not v and model:
                         v = model._meta.label
-                log = OperationLog(
-                    module=str(v)[:OPERATION_LOG_MODULE_MAX],
-                    # 行级变更历史：detail 路由从 URL kwargs 提取对象主键（pk 兜底 id），
-                    # list/create 等无 pk 路由留空；转 str 兼容 UUID/整型主键
-                    object_pk=str(object_pk) if (object_pk := view_kwargs.get("pk") or view_kwargs.get("id")) else None,
+                # 只标记不写库（占位行方案收口）：本方法在 ATOMIC_REQUESTS 事务之外
+                # 执行（Django 先跑 view middleware 再 make_view_atomic），写库即
+                # autocommit 立即提交、与请求事务无关；旧实现先插占位行、响应阶段
+                # UPDATE 回填，带来并发可见的半成品行、响应阶段缺失时的孤儿行与
+                # 每请求一次额外往返。完整结论见 oplog_recorder.insert_operation_log。
+                object_pk = view_kwargs.get("pk") or view_kwargs.get("id")
+                setattr(
+                    request,
+                    self.operation_log_pending,
+                    # 转 str 兼容 UUID/整型主键；防御性截断与 module 同口径——
+                    # 列宽 64，自定义字符型超长主键不能让日志写把请求打成 500
+                    {"object_pk": str(object_pk)[:64] if object_pk else None},
                 )
-                log.save()
-                setattr(request, self.operation_log_id, log.id)
                 request.request_module = v
 
         return
@@ -254,10 +258,10 @@ from common.core.oplog_recorder import (  # noqa: F401  (日志辅助拆至 oplo
     build_operation_log_info,
     desensitize_body,
     desensitize_payload,
+    insert_operation_log,
     log_body_preview,
     resolve_auth_identity,
     sensitive_get_actions,
-    write_operation_log,
 )
 
 # 显式公开面：内核严格类型口径（no_implicit_reexport）下，再导出必须经 __all__ 声明；
@@ -276,8 +280,8 @@ __all__ = (
     "build_operation_log_info",
     "desensitize_body",
     "desensitize_payload",
+    "insert_operation_log",
     "log_body_preview",
     "resolve_auth_identity",
     "sensitive_get_actions",
-    "write_operation_log",
 )

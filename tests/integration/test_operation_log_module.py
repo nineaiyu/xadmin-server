@@ -4,11 +4,12 @@
 OperationLog.module 为 varchar(64)，此前 get_verbose_name 直接取视图类
 docstring 全文，长 docstring（mfa.UserConfirmViewSet 的 412 交互说明、
 MenuViewSet 的回收站说明）导致这些视图集的 POST 在 ApiLoggingMiddleware
-process_view 写占位日志时 DataError，整个请求 500——敏感操作二次验证
+写日志时 DataError，整个请求 500——敏感操作二次验证
 （POST /api/mfa/confirm）链路全断。
 
-注：path/body 等字段由 transaction.on_commit 的 UPDATE 回填，pytest 事务
-内不提交，因此占位行仅 module 有值。
+注：日志行由 process_response 单条 INSERT 落库（占位行方案已收口，
+事务边界结论见 oplog_recorder.insert_operation_log），字段一次装配完整，
+本文件断言可直接校验 method / path 等响应阶段字段。
 """
 
 import pytest
@@ -42,10 +43,15 @@ def test_mfa_confirm_not_broken_by_log_middleware(auth_client, superuser):
     assert resp.status_code == 200
     assert resp.data["code"] == 1000
 
-    # 二次验证必须留痕（path/body 由 on_commit 回填，pytest 事务内断言 module 即可）
-    log = OperationLog.objects.filter(module="敏感操作二次验证").first()
+    # 二次验证必须留痕（响应阶段单条 INSERT，行字段完整）。module 取 handler
+    # docstring 首行（create 的方法文档）——旧实现在 pytest 事务内 on_commit
+    # 不回填，只能见到占位行的类文档值「敏感操作二次验证」，与生产终值不同。
+    log = OperationLog.objects.filter(module="提交验证：校验通过后写入确认状态").first()
     assert log is not None
     assert len(log.module) <= 64
+    assert log.method == "POST"
+    assert log.path == MFA_CONFIRM_URL
+    assert log.response_code == 200
 
 
 def test_confirm_body_password_desensitized(rf, superuser):
@@ -91,3 +97,6 @@ def test_menu_post_module_truncated_not_500(auth_client, superuser):
     log = OperationLog.objects.order_by("-created_time").first()
     assert log is not None
     assert log.module and len(log.module) <= 64
+    assert log.method == "POST"
+    assert log.path == MENU_URL
+    assert log.response_code == 200

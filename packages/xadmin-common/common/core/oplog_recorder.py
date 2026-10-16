@@ -99,17 +99,31 @@ def log_body_preview(payload: Any) -> str:
     return text[:limit] if limit else ""
 
 
-def write_operation_log(operation_log_id: Any, info: Any) -> None:
-    """主键已知，用 UPDATE 替代 update_or_create（省 1 条 SELECT）。
+def insert_operation_log(info: Any) -> Any:
+    """响应阶段一次性落库（单条 INSERT，无占位行、无 UPDATE 回填）。
 
-    该函数通过 transaction.on_commit 在请求事务提交后执行，
-    请求事务回滚时占位行一并消失，UPDATE 影响 0 行，不再产生孤儿日志写；
-    事务中断也不会再连带整个请求失败。
+    事务边界结论（旧「占位行 + on_commit UPDATE」方案的收口，代码实证 +
+    Django 源码核对）：``BaseHandler._get_response`` 先执行 view middleware
+    （``process_view``）再 ``make_view_atomic`` 包视图，``process_view`` 处于
+    ATOMIC_REQUESTS 事务**之外**——在此写库必然走 autocommit 立即提交，与请求
+    事务既不同生也不共死（包一层 ``atomic`` 也没有外层事务可加入）；响应阶段
+    （``process_response``）同样在事务外，``transaction.on_commit`` 在 autocommit
+    下**立即执行**而非「提交后」。旧方案因此有三处与注释不符的实际行为：请求
+    事务回滚带不走占位行、on_commit 并非延迟到提交后、并发读方（审计列表）可
+    见半成品行；且本项目统一异常处理器把视图内未预期异常兜成 500 响应（不向
+    外传播），「视图异常逃逸成孤儿行」在 DRF 面上不会发生，依赖的是隐式框架
+    行为而非结构。
+
+    现改为「process_view 只标记不写库，process_response 单条 INSERT」：行要么
+    完整出现要么不出现——孤儿行与半成品行结构性消除，每请求少一次数据库往返，
+    写失败只告警不抛出（日志是旁路能力，不能把响应打成 500；sqlite 锁表 /
+    数据库瞬时故障同理）。
     """
     try:
-        OperationLog.objects.filter(id=operation_log_id).update(**info)
-    except Exception as e:  # sqlite3 数据库因为锁表可能会导致日志记录失败
-        logger.warning(f"write operation log failed. id:{operation_log_id} error:{e}")
+        return OperationLog.objects.create(**info)
+    except Exception as e:
+        logger.warning(f"insert operation log failed. error:{e}")
+        return None
 
 
 def resolve_auth_identity(request: Any, response: Any) -> Any:
@@ -145,11 +159,12 @@ def resolve_auth_identity(request: Any, response: Any) -> Any:
     return None, None
 
 
-def build_operation_log_info(request: Any, response: Any, request_start_time: Any) -> Any:
-    """组装操作日志字段。
+def build_operation_log_info(request: Any, response: Any, request_start_time: Any, object_pk: Any = None) -> Any:
+    """组装操作日志行（响应阶段一次性求值，单条 INSERT 落库）。
 
     所有字段在此一次性求值（包括 UA 解析与用户主键），返回值不再持有
-    request / ORM 实例引用，因此可以安全地延迟到 on_commit 回调中执行。
+    request / ORM 实例引用；``object_pk`` 由 process_view 从 URL kwargs 提取
+    后随请求透传（detail 路由的行级变更历史定位，list/create 无 pk 路由留空）。
     """
     limit = _log_field_limit()
     body = desensitize_body(getattr(request, "request_data", {}))
@@ -194,6 +209,8 @@ def build_operation_log_info(request: Any, response: Any, request_start_time: An
     auth_type, token_pk = resolve_auth_identity(request, response)
     return {
         "module": action_doc[:OPERATION_LOG_MODULE_MAX] if action_doc else action_doc,
+        # 行级变更历史对象定位：detail 路由由中间件从 URL kwargs 提取后透传
+        "object_pk": object_pk,
         # 凭证标识：PAT 精确审计的数据基础（按 token_pk 归集调用记录）
         "auth_type": auth_type,
         "token_pk": token_pk,

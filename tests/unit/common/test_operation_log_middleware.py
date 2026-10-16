@@ -2,48 +2,125 @@
 """操作日志写入路径测试。
 
 覆盖：
-1. 写入用 UPDATE 而非 update_or_create（主键已知，省 1 条 SELECT）；
+1. 落库用单条 INSERT（响应阶段一次性写，无占位行 / 无 UPDATE 回填）；
 2. 大字段截断到 OPERATION_LOG_FIELD_MAX（默认 4096，可配置，0 = 不落）；
-3. 日志写通过 transaction.on_commit 移出请求事务；
+3. 写路径独立于请求事务（process_view 在 ATOMIC_REQUESTS 事务外，响应阶段
+   同样在事务外；异常 / 回滚路径下日志行照写，见 TestResponseTimeWritePath）；
 4. 缺失 User-Agent 头不再抛 KeyError；
 5. 敏感字段脱敏清单扩展；
-6. 集成：写请求日志真实落库（UPDATE 生效）。
+6. 集成：写请求日志真实落库（INSERT 生效，行字段完整）。
 """
 
 import json
+from typing import Any
 
 import pytest
 from django.db import connection
+from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
+from django.urls import path
+from rest_framework import viewsets
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 
 from audit.models import OperationLog
-from common.core.middleware import MAX_LOG_FIELD, build_operation_log_info, desensitize_body, write_operation_log
+from common.core.middleware import MAX_LOG_FIELD, build_operation_log_info, desensitize_body, insert_operation_log
 from common.utils.request import get_browser, get_os
+from demo.models import Book
+from demo.serializers.book import BookSerializer
 
 pytestmark = pytest.mark.django_db
 
 DEMO_URL = "/api/demo/book"
 
+# --- 真实链路探针视图（占位行事务边界结论的守护，见 TestResponseTimeWritePath） ---
+# 视图内抛未预期异常：经本项目统一异常处理器（common_exception_handler）兜成
+# 500 响应、不向外传播——用于验证异常路径下日志行同样完整落库。
 
-class TestWriteOperationLog:
-    def test_update_instead_of_update_or_create(self, superuser):
-        log = OperationLog(module="demo", method="POST", path=DEMO_URL)
-        log.save()
+
+class _BoomProbeViewSet(viewsets.ModelViewSet):
+    """探针：create 抛未预期异常。"""
+
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        raise ValueError("probe boom")
+
+
+class _ObserveProbeViewSet(viewsets.ModelViewSet):
+    """探针：记录视图执行期间已存在的日志行数（半成品行守护）。"""
+
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        OBSERVED["rows_during_view"] = OperationLog.objects.count()
+        return Response({"code": 1000, "detail": "ok"})
+
+
+OBSERVED: dict[str, Any] = {}
+
+#: 探针路由：仅在本文件作为 ROOT_URLCONF 时生效（override_settings 指定）
+urlpatterns = [
+    path("api/probe/boom/", _BoomProbeViewSet.as_view({"post": "create"})),
+    path("api/probe/observe/", _ObserveProbeViewSet.as_view({"post": "create"})),
+]
+
+
+class TestInsertOperationLog:
+    @staticmethod
+    def _fake_request(user=None):
+        return type(
+            "R",
+            (),
+            {
+                "META": {"HTTP_USER_AGENT": "pytest-agent"},
+                "method": "POST",
+                "path": DEMO_URL,
+                "request_data": {"name": "x"},
+                "request_ip": "127.0.0.1",
+                "request_module": "demo",
+                "request_uuid": None,
+                "user": user,
+            },
+        )()
+
+    def test_single_insert_no_update(self, superuser):
+        info = build_operation_log_info(
+            self._fake_request(superuser),
+            type("R", (), {"status_code": 200, "data": {"code": 1000}})(),
+            0,
+        )
 
         with CaptureQueriesContext(connection) as ctx:
-            write_operation_log(log.id, {"module": "demo-updated", "status_code": 1000})
+            insert_operation_log(info)
 
-        queries = [q["sql"] for q in ctx.captured_queries if "SAVEPOINT" not in q["sql"]]
-        # 仅 1 条 UPDATE，无前置 SELECT
-        assert len(queries) == 1
-        assert queries[0].strip().upper().startswith("UPDATE")
-        log.refresh_from_db()
-        assert log.module == "demo-updated"
-        assert log.status_code == 1000
+        writes = [q["sql"] for q in ctx.captured_queries if q["sql"].strip().upper().startswith(("INSERT", "UPDATE"))]
+        # 单条 INSERT 落库，无占位行 UPDATE 回填（pre_save 信号的 creator 懒加载 SELECT 不计）
+        assert len(writes) == 1
+        assert writes[0].strip().upper().startswith("INSERT")
+        row = OperationLog.objects.get(path=DEMO_URL)
+        assert row.method == "POST"
+        assert row.status_code == 1000
+        assert row.creator_id == superuser.pk
 
-    def test_missing_row_is_noop(self):
-        write_operation_log("00000000-0000-0000-0000-000000000000", {"module": "x"})
-        assert OperationLog.objects.count() == 0
+    def test_insert_failure_does_not_raise(self, monkeypatch):
+        """写失败只告警不抛出：日志是旁路能力，不能把响应打成 500。"""
+        from common.core import oplog_recorder
+
+        class _BoomManager:
+            @staticmethod
+            def create(**kwargs):
+                raise RuntimeError("db down")
+
+        class _BoomModel:
+            objects = _BoomManager
+
+        monkeypatch.setattr(oplog_recorder, "OperationLog", _BoomModel)
+        assert insert_operation_log({"module": "x"}) is None
 
 
 class TestFieldTruncation:
@@ -343,50 +420,74 @@ class TestUserAgent:
 
 class TestDesensitizeIntegration:
     def test_write_request_logs_are_masked(self, superuser):
-        """脱敏在 __handle_response 内完成（通过 write_operation_log 的 info 验证）"""
+        """脱敏在 __handle_response 内完成（通过 insert_operation_log 的 info 验证）"""
         body = {"password": "top-secret", "access": "jwt-token", "name": "alice"}
         masked = desensitize_body(body)
         info = {"body": json.dumps(masked, default=str)}
-        log = OperationLog(module="demo", method="POST", path=DEMO_URL)
-        log.save()
-        write_operation_log(log.id, info)
-        log.refresh_from_db()
+        insert_operation_log({**info, "module": "demo", "method": "POST", "path": DEMO_URL})
+        log = OperationLog.objects.get(path=DEMO_URL)
         payload = json.loads(log.body)
         assert payload["password"] == "**********"
         assert payload["access"] == "*********"
         assert payload["name"] == "alice"
 
 
-class TestOnCommitWritePath:
-    def test_log_written_after_transaction_commit(self, django_capture_on_commit_callbacks, superuser):
-        """ATOMIC_REQUESTS 下日志写在请求事务提交后执行"""
-        from django.db import transaction
+class TestResponseTimeWritePath:
+    """守护：日志改为「process_view 只标记、process_response 单条 INSERT」。
 
-        with django_capture_on_commit_callbacks(execute=True):
-            with transaction.atomic():
-                log = OperationLog(module="demo", method="POST", path=DEMO_URL)
-                log.save()
-                transaction.on_commit(lambda: write_operation_log(log.id, {"status_code": 1000}))
-                # 事务内：尚未写日志
-                assert OperationLog.objects.get(pk=log.pk).status_code is None
+    事务边界结论（Django 源码核对 + 真实链路实证）：``BaseHandler._get_response``
+    先执行 view middleware（``process_view``）再 ``make_view_atomic`` 包视图——
+    ``process_view`` 在 ATOMIC_REQUESTS 事务**之外**，旧「占位行 + on_commit
+    UPDATE」方案在此写库即 autocommit 立即提交，与请求事务无关（包一层 atomic
+    也没有外层事务可加入）；响应阶段同样在事务外，``transaction.on_commit`` 在
+    autocommit 下**立即执行**而非「提交后」。本项目统一异常处理器把视图内未预期
+    异常兜成 500 响应（不向外传播），请求事务随之正常提交——「视图异常逃逸成
+    孤儿行」在 DRF 面上不会发生，但旧实现的多处注释与守护测试描述的并非真实
+    执行路径。新实现把行装配收敛到响应阶段一次 INSERT：行要么完整出现要么不
+    出现，孤儿行 / 半成品行结构性消除，且每请求少一次数据库往返。
+    """
 
-        # 提交后：UPDATE 已执行
-        log.refresh_from_db()
-        assert log.status_code == 1000
+    @override_settings(ROOT_URLCONF=__name__)
+    def test_success_row_written_immediately(self, client, superuser):
+        """成功请求：process_response 返回时行已完整落库（不依赖任何提交钩子）。"""
+        before = OperationLog.objects.count()
+        resp = client.post("/api/probe/observe/", {}, content_type="application/json")
+        assert resp.status_code == 200
+        # 视图执行期间不存在半成品行（并发读方不可见；旧实现此刻已有占位行）
+        assert OBSERVED["rows_during_view"] == before
+        assert OperationLog.objects.count() == before + 1
+        row = OperationLog.objects.order_by("-created_time").first()
+        assert row.method == "POST"
+        assert row.path == "/api/probe/observe/"
+        assert row.response_code == 200
+        assert row.status_code == 1000
+        assert row.module
 
-    def test_rollback_produces_no_log_write(self, superuser):
-        from django.db import transaction
+    @override_settings(ROOT_URLCONF=__name__)
+    def test_view_exception_row_filled_not_orphan(self, client):
+        """视图内未预期异常 → 500 响应 → 行完整落库（非 module-only 孤儿行）。"""
+        before = OperationLog.objects.count()
+        resp = client.post("/api/probe/boom/", {}, content_type="application/json")
+        assert resp.status_code == 500
+        assert OperationLog.objects.count() == before + 1
+        row = OperationLog.objects.order_by("-created_time").first()
+        assert row.response_code == 500
+        assert row.method == "POST"
+        assert row.path == "/api/probe/boom/"
+        assert row.module  # 视图集 docstring 首行，非空即非孤儿占位行
 
-        try:
-            with transaction.atomic():
-                log = OperationLog(module="demo", method="POST", path=DEMO_URL)
-                log.save()
-                transaction.on_commit(lambda: write_operation_log(log.id, {"status_code": 1000}))
-                raise ValueError("rollback")
-        except ValueError:
-            pass
-        # 事务回滚，占位行与日志写一并消失
-        assert not OperationLog.objects.filter(module="demo").exists()
+    def test_row_written_after_request_transaction_rollback(self, auth_client):
+        """DRF 校验失败触发 set_rollback（请求事务回滚）：日志行照写。
+
+        旧注释声称「请求事务回滚时占位行一并消失」——真实执行中占位行写在事务
+        外、回滚带不走它；新实现在响应阶段（事务外）INSERT，回滚同样不影响日志
+        落库。失败请求留痕是审计语义，不是缺陷。
+        """
+        resp = auth_client.post(DEMO_URL, {}, format="json")
+        assert resp.status_code == 400
+        row = OperationLog.objects.filter(path=DEMO_URL, method="POST").order_by("-created_time").first()
+        assert row is not None
+        assert row.response_code == 400
 
 
 class TestLogLevelGuard:
@@ -456,8 +557,7 @@ class TestSensitiveGetAudit:
     """敏感 GET（导出/下载）单列落操作日志。
 
     ``API_LOG_METHODS`` 默认不含 GET——导出/下载等敏感读取由视图侧
-    ``SENSITIVE_GET_ACTIONS`` 声明（沿 MRO 并集），中间件单独放行；普通
-    列表/详情 GET 维持不落库。pytest 事务内 on_commit 不回填，断言占位行。
+    ``SENSITIVE_GET_ACTIONS`` 声明（沿 MRO 并集），中间件单独放行。
     """
 
     def test_export_data_get_creates_log(self, auth_client, superuser):
@@ -468,6 +568,12 @@ class TestSensitiveGetAudit:
         resp = auth_client.get(f"{DEMO_URL}/export-data?type=xlsx")
         assert resp.status_code == 200
         assert OperationLog.objects.count() == before + 1
+        # 响应阶段单条 INSERT：行字段完整（旧实现在 pytest 事务内只落占位行）
+        row = OperationLog.objects.order_by("-created_time").first()
+        assert row.method == "GET"
+        assert "export-data" in row.path
+        assert row.response_code == 200
+        assert row.status_code == 1000
 
     def test_list_get_not_logged(self, auth_client, superuser):
         before = OperationLog.objects.count()
