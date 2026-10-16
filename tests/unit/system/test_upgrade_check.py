@@ -12,10 +12,10 @@ from django.db.migrations.recorder import MigrationRecorder
 from system.management.commands.upgrade_check import collect_report, evaluate
 
 
-def _report(orphan=(), legacy_orphan=(), pending=(), missing_tables=(), missing_columns=()):
+def _report(orphan=(), legacy_orphan=(), pending=(), missing_tables=(), missing_columns=(), applied=1):
     return {
         "migrations": {
-            "applied": 1,
+            "applied": applied,
             "pending": list(pending),
             "orphan": list(orphan),
             "legacy_orphan": list(legacy_orphan),
@@ -54,6 +54,32 @@ class TestEvaluate:
     def test_schema_drift_beats_reconcilable(self):
         report = _report(legacy_orphan=["system.0002_monitor_monitoralert"], missing_tables=["system_monitor"])
         assert evaluate(report) == ("schema-drift", 1)
+
+    def test_empty_database_is_needs_migrate_not_drift(self):
+        """全新空库（首次安装）：没有任何已应用迁移时，缺表是 migrate 的正常前态。
+
+        空库的 django_migrations 为空、业务表一张没有，若按「缺表 = schema-drift」判定，
+        首次安装会被体检拦下（安装器 preflight 默认中止）。
+        """
+        report = _report(
+            applied=0,
+            pending=["system.0001_initial", "dataset.0001_initial"],
+            missing_tables=["system_menu", "identity_userinfo"],
+        )
+        assert evaluate(report) == ("needs-migrate", 0)
+
+    def test_empty_database_with_unknown_orphan_still_blocks(self):
+        """未知游离记录（旧链路的库）即便没有已应用迁移也不能放行。"""
+        report = _report(applied=0, orphan=["legacy_app.0001_initial"])
+        assert evaluate(report) == ("legacy-chain", 1)
+
+    def test_missing_column_on_empty_database_is_needs_migrate(self):
+        report = _report(
+            applied=0,
+            pending=["identity.0001_initial"],
+            missing_columns=[{"table": "identity_userinfo", "columns": ["date_expired"]}],
+        )
+        assert evaluate(report) == ("needs-migrate", 0)
 
 
 @pytest.mark.django_db
