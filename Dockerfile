@@ -38,6 +38,11 @@ RUN set -ex \
 COPY --from=stage-build /data /data
 COPY --from=stage-build /usr/local/bin /usr/local/bin
 
+# 基础镜像（python:3.x-slim）自带的 setuptools 滞后于修复线（CVE-2025-47273 等），
+# 运行镜像内这一份不受项目依赖管理覆盖，故构建期显式升级
+ARG PIP_MIRROR=https://pypi.org/simple
+RUN python -m pip install --no-cache-dir --upgrade "setuptools>=78.1.1" -i ${PIP_MIRROR}
+
 # base 镜像预编译的 pycache 不进运行镜像：瘦身 + 消除 secret 扫描对 autobahn
 # docstring 示例私钥（cryptosign.py 的说明文本）的误报来源
 RUN find /data/py3 -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
