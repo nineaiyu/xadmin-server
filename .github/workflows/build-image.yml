@@ -69,7 +69,7 @@ jobs:
           pip-audit -f cyclonedx-json -o sbom/sbom-server.cdx.json
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-server
           path: sbom/sbom-server.cdx.json
@@ -81,7 +81,7 @@ jobs:
           SECRET_KEY=ci-openapi-export uv run --no-sync python manage.py spectacular --file openapi/openapi.json --format openapi-json
 
       - name: Upload OpenAPI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: openapi-server
           path: openapi/openapi.json

@@ -100,7 +100,7 @@ jobs:
       - name: Upload test report (junit)
         # 失败也上传：junit 逐用例结果供定位（无重试，失败即真失败）
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pytest-junit
           path: test-reports/junit.xml
