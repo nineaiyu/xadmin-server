@@ -22,12 +22,12 @@ jobs:
     name: Validate renovate.json
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version: 24.22.0
 
       # 配置写错直接红：无需任何令牌，纯静态校验
       - name: renovate-config-validator
@@ -61,17 +61,17 @@ jobs:
       - name: Generate App token
         if: steps.token.outputs.mode == 'app'
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
         with:
           app-id: ${{ secrets.RENOVATE_APP_ID }}
           private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         if: steps.token.outputs.mode != 'none'
 
       - name: Renovate (PAT)
         if: steps.token.outputs.mode == 'token'
-        uses: renovatebot/github-action@v46.3.8
+        uses: renovatebot/github-action@f0f41e5f2e706165f6814b1d0f0d0e319de7d1d9 # v46.3.8
         with:
           configurationFile: renovate.json
           token: ${{ secrets.RENOVATE_TOKEN }}
@@ -81,7 +81,7 @@ jobs:
 
       - name: Renovate (GitHub App)
         if: steps.token.outputs.mode == 'app'
-        uses: renovatebot/github-action@v46.3.8
+        uses: renovatebot/github-action@f0f41e5f2e706165f6814b1d0f0d0e319de7d1d9 # v46.3.8
         with:
           configurationFile: renovate.json
           token: ${{ steps.app-token.outputs.token }}
