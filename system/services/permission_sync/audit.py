@@ -25,20 +25,31 @@ def audit_field_permissions(roles: Any = None) -> Any:
 
     返回 ``[(role, menu), ...]``（ORM 实例，供管理命令与只读 API 复用）。
     """
+    from django.db.models import Prefetch
+
     from identity.services import UserRole
     from system.models import FieldPermission, Menu, ModelLabelField
 
+    # 绑定模型按「角色字段树根节点」一次性预取：逐菜单读 menu.model.all() 会把每个
+    # 权限点变成一条查询（数百条 N+1），种子收尾的全量审计每轮都跑这份读取，是大批量
+    # 小往返的主要来源。预取成属性后判定口径不变（仍只取 field_type=ROLE）。
+    role_bindings = Prefetch(
+        "model",
+        queryset=ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE),
+        to_attr="role_bindings",
+    )
     model_menus = list(
         Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, is_active=True)
         .filter(model__isnull=False)
         .distinct()
+        .prefetch_related(role_bindings)
     )
     if not model_menus:
         return []
     # 菜单 → 绑定模型的角色字段树根节点（白名单字段的 parent 应落在其中）
     menu_roots: dict[Any, set[Any]] = {}
     for menu in model_menus:
-        roots = {node.pk for node in menu.model.all() if node.field_type == ModelLabelField.FieldChoices.ROLE}
+        roots = {node.pk for node in menu.role_bindings}
         if roots:
             menu_roots[menu.pk] = roots
     if not menu_roots:

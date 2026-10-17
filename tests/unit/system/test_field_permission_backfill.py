@@ -70,6 +70,49 @@ def test_model_field_nodes_groups_fields_by_binding(demo_role: Any, bound_menu: 
     assert set(node.name for node in grouped[bound_menu.pk]) == {"title", "amount"}
 
 
+def test_audit_and_nodes_queries_do_not_scale_with_menu_count(field_tree: Any) -> None:
+    """绑定模型读取必须批量：查询数不得随菜单数线性增长（N+1 回归护栏）。
+
+    种子收尾对全部权限点做一轮全量审计（``load_init_json`` 收尾 + 内置角色补齐），
+    逐菜单读 ``menu.model`` 会在数百个权限点上放大成数百条小往返。满载机器上一条
+    小查询可被拖到秒级，那份放大就是尾部假死的燃料——这里锁住「不随规模线性增长」。
+    """
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    def _build(count: int, tag: str) -> tuple[Any, list[Any]]:
+        role = UserRole.objects.create(name=f"护栏角色 {tag}", code=f"guard_{tag}", is_active=True)
+        menus = []
+        for index in range(count):
+            meta = MenuMeta.objects.create(title=f"批量菜单 {tag}{index}")
+            menu = Menu.objects.create(
+                name=f"list:Bulk{tag}{index}",
+                path=f"api/bulk/{tag}/{index}$",
+                menu_type=Menu.MenuChoices.PERMISSION,
+                method="GET",
+                meta=meta,
+            )
+            menu.model.set([field_tree])
+            menus.append(menu)
+        role.menu.set(menus)
+        return role, menus
+
+    role_few, few = _build(5, "few")
+    role_many, many = _build(40, "many")
+
+    with CaptureQueriesContext(connection) as ctx_few:
+        audit_field_permissions(roles=[role_few])
+        model_field_nodes(few)
+    with CaptureQueriesContext(connection) as ctx_many:
+        audit_field_permissions(roles=[role_many])
+        model_field_nodes(many)
+
+    assert len(ctx_many.captured_queries) <= len(ctx_few.captured_queries) + 3, (
+        "审计/字段节点读取的查询数随菜单数增长（N+1 回归）："
+        f"{len(ctx_few.captured_queries)} → {len(ctx_many.captured_queries)}"
+    )
+
+
 def test_fill_creates_whitelist_for_missing_pair(demo_role: Any, bound_menu: Any) -> None:
     assert audit_field_permissions(roles=[demo_role]) == [(demo_role, bound_menu)]
 

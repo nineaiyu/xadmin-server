@@ -190,7 +190,7 @@ config.yml（config.py）→ 同名环境变量 → 代码默认值   ← server
 | 我要加…… | 放在 |
 |---|---|
 | 一个部署期配置（重启生效） | `config_example.yml` + `server/conf/defaults.py`（两处同名键） |
-| 一个运行期配置（管理页可改） | `packages/xadmin-common/common/core/config/system_conf.py` 注册 property + `loadjson/systemconfig.json` 种子 + `settings/`（系统设置 app）管理页表单 |
+| 一个运行期配置（管理页可改） | `packages/xadmin-common/common/core/config/system_conf.py` 注册 property + `settings/seeds/systemconfig.json` 种子（按 app 分层，平台层在 `loadjson/`）+ `settings/`（系统设置 app）管理页表单 |
 | 一个个人配置 | `packages/xadmin-common/common/core/config/user_conf.py` + 个人设置页 |
 
 - 取值链细节与配置速查表（键 ↔ 环境变量 ↔ 默认值 ↔ 生效方式）见 [../ops/config-reference.md](../ops/config-reference.md) §9。

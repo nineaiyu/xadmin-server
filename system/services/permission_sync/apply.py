@@ -5,6 +5,7 @@
 from typing import Any
 
 from django.db import transaction
+from django.db.models import Prefetch
 
 from common.utils import get_logger
 from identity.services import UserRole
@@ -132,6 +133,27 @@ def apply_binding_fixes(fixes: Any) -> Any:
     return len(fixes)
 
 
+def _role_bindings_by_menu(menus: Any) -> dict[Any, list[Any]]:
+    """批量取「菜单 → 已绑定的角色字段树根节点」，替代逐菜单的 ``menu.model`` 读取。
+
+    ``menu.model`` 是 m2m：逐菜单读取时「取值为 ROLE 的根节点」与「取全部绑定节点」
+    各发一条查询，菜单数百时即数百条 N+1 小往返（种子收尾的全量审计每轮都跑这份
+    读取）。一次预取把它收敛成 2 条查询，判定口径不变（仍只取 ``field_type=ROLE``）。
+    """
+    if not menus:
+        return {}
+    role_bindings = Prefetch(
+        "model",
+        queryset=ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE),
+        to_attr="role_bindings",
+    )
+    fetched = {
+        menu.pk: menu
+        for menu in Menu.objects.filter(pk__in=[menu.pk for menu in menus]).prefetch_related(role_bindings)
+    }
+    return {menu.pk: getattr(fetched.get(menu.pk), "role_bindings", []) for menu in menus}
+
+
 def model_field_nodes(menus: Any) -> Any:
     """按权限点取「绑定模型（角色字段树根节点）下全部字段节点」，无绑定的返回空表。
 
@@ -139,9 +161,9 @@ def model_field_nodes(menus: Any) -> Any:
     ×字段三元组，字段节点取自角色字段树（``field_type=ROLE``），与运行时装载
     （``get_user_field_queryset`` 按 ``field__parent__name + field__name`` 取值）同源。
     """
-    root_pks = set()
-    for menu in menus:
-        root_pks.update(menu.model.filter(field_type=ModelLabelField.FieldChoices.ROLE).values_list("pk", flat=True))
+    menus = list(menus)
+    bindings = _role_bindings_by_menu(menus)
+    root_pks = {node.pk for nodes in bindings.values() for node in nodes}
     grouped: dict[Any, list[Any]] = {}
     if not root_pks:
         return {}
@@ -152,7 +174,7 @@ def model_field_nodes(menus: Any) -> Any:
     result = {}
     for menu in menus:
         fields = []
-        for root in menu.model.all():
+        for root in bindings.get(menu.pk, []):
             fields.extend(grouped.get(root.pk, []))
         result[menu.pk] = fields
     return result

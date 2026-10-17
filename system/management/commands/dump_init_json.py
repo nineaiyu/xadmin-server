@@ -11,6 +11,7 @@ from typing import Any
 
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
+from django.db.models import Prefetch
 
 from identity.models import DeptInfo, LoginAccessPolicy, UserRole
 from settings.models import Setting
@@ -69,6 +70,27 @@ class Command(BaseCommand):
 
     def save_json(self, queryset: Any, filename: Any) -> None:
         Path(filename).parent.mkdir(parents=True, exist_ok=True)
+        fields = get_fields(queryset.model)
+        # 序列化器对「每个对象的每个 m2m」各发一条查询（handle_m2m_field 读 related
+        # manager）：714 个菜单就是 700+ 条、516 个字段权限又是 500+ 条小查询。PG 一旦
+        # 出现小查询延迟退化（满载/checkpoint 时实测单条墙钟 ~1s，同条 EXPLAIN 仅
+        # 0.6ms），一次导出就爬行到分钟级——全量串行跑时表现为「卡在一个用例里永不结束」。
+        # 先 prefetch，序列化器命中 _prefetched_objects_cache 后不再逐对象查库。
+        # 预取 queryset 与序列化器逐对象查询（``related`` + select_related(None) + only("pk")）
+        # 同形，保证导出内容与顺序逐字节不变。
+        m2m_fields = [
+            field for field in queryset.model._meta.local_many_to_many if field.serialize and field.attname in fields
+        ]
+        if m2m_fields:
+            queryset = queryset.prefetch_related(
+                *[
+                    Prefetch(
+                        field.name,
+                        queryset=field.related_model._default_manager.select_related(None).only("pk"),
+                    )
+                    for field in m2m_fields
+                ]
+            )
         stream = open(filename, "w", encoding="utf8")
         try:
             serializers.serialize(
@@ -77,7 +99,7 @@ class Command(BaseCommand):
                 indent=2,
                 stream=stream or self.stdout,
                 object_count=queryset.count(),
-                fields=get_fields(queryset.model),
+                fields=fields,
             )
         except Exception as e:
             print(f"{queryset.model._meta.model_name} {filename} dump failed {e}")
