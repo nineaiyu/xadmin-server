@@ -168,6 +168,11 @@ def seed_demo_book_scene():
       而前端样板页没跟上时，对应 E2E 用例会立刻失败；
     - demo 已在测试 settings 的 ``XADMIN_APPS`` 内，API 与路由真实可用；
     - 失败只打印跳过（种子脚本的健壮性优先，用例侧断言会暴露缺失）。
+
+    产物发现按**生成器当前布局**：应用级种子分层（ADR-095）后菜单种子落在
+    ``<app>/seeds/menmeta_*.json`` 与 ``<app>/seeds/menu_*.json``（按模型拆文件），
+    不再有旧的 ``loadjson/seed_demo_book.json`` 单文件。装载顺序必须「元数据先于
+    菜单」（菜单 OneToOne 引用 meta），因此按文件名排序后同目录一起 loaddata。
     """
 
     import io
@@ -179,12 +184,14 @@ def seed_demo_book_scene():
     try:
         tmp_root = Path(tempfile.mkdtemp(prefix="e2e_demo_seed_"))
         call_command("generate_crud", "demo.Book", "--skip-frontend", output=str(tmp_root), stdout=io.StringIO())
-        seed = tmp_root / "loadjson" / "seed_demo_book.json"
-        if not seed.exists():
+        seeds = sorted(tmp_root.glob("*/seeds/*_book.json"))
+        seeds = [path for path in seeds if path.name.startswith(("menumeta", "menu"))]
+        if not seeds:
             print("skip demo book scene: 生成器未产出菜单种子")
             return
-        call_command("loaddata", str(seed))
-        print("demo book scene seeded (generator-produced menu + permissions)")
+        # 按文件名排序即分层顺序：menumeta_* 先于 menu_*（单条 loaddata 保持同序）
+        call_command("loaddata", *[str(path) for path in seeds])
+        print(f"demo book scene seeded (generator-produced {len(seeds)} seed files)")
     except Exception as exc:  # noqa: BLE001 场景种子失败不影响主流程
         print(f"skip demo book scene: {exc}")
 
