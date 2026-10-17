@@ -36,6 +36,57 @@ class TestAdrCountSource:
         assert matched.group(1) == check_doc_facts._adr_count()
 
 
+class TestInstallerBaselineSource:
+    """升级基线事实源（installer:required_version）：安装器脚本是唯一事实源。
+
+    文档写「版本门槛 vX.Y.Z」必须等于 ``scripts/7_upgrade.sh`` 真正执行的门槛，
+    否则用户按文档升级会在第一步被拦下（或误以为可原地升级）。
+    """
+
+    BASELINE_FACT = {
+        "doc": "guide/upgrade-installer.md",
+        "external": True,
+        "label": "安装器升级页版本门槛",
+        "pattern": r"当前版本需 ≥ `v(\d+\.\d+\.\d+)`",
+        "source": "installer:required_version",
+    }
+
+    def test_script_constant_is_the_source(self, tmp_path, monkeypatch):
+        script = tmp_path / "scripts" / "7_upgrade.sh"
+        script.parent.mkdir(parents=True)
+        script.write_text('  required_version="4.2.5"\n', encoding="utf-8")
+        monkeypatch.setenv("XADMIN_INSTALLER_DIR", str(tmp_path))
+        assert check_doc_facts._installer_upgrade_baseline() == "4.2.5"
+
+    def test_missing_installer_repo_is_skipped(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("XADMIN_INSTALLER_DIR", str(tmp_path / "none"))
+        assert check_doc_facts._installer_upgrade_baseline() is None
+
+    def test_stale_claim_is_reported(self, tmp_path, monkeypatch):
+        docs = tmp_path / "docs"
+        guide = docs / "guide"
+        guide.mkdir(parents=True)
+        (guide / "upgrade-installer.md").write_text(
+            "2. **确认版本门槛**：当前版本需 ≥ `v3.10.11`（更早的库需走\n", encoding="utf-8"
+        )
+        monkeypatch.setattr(check_doc_facts, "_resolve_source", lambda source: "4.2.5")
+        violations = check_doc_facts.collect_violations(
+            tmp_path,
+            [dict(self.BASELINE_FACT)],
+            docs_root=docs,
+            client_root=tmp_path / "none",
+        )
+        assert len(violations) == 1
+        assert "3.10.11" in violations[0] and "4.2.5" in violations[0]
+
+    def test_baseline_claim_carriers_exist(self):
+        # 三处门槛文案的载体与措辞：正则写死措辞，改版时显式失败而非静默漏检
+        facts = [fact for fact in check_doc_facts.FACTS if fact["source"] == "installer:required_version"]
+        assert len(facts) == 3
+        for fact in facts:
+            assert fact["pattern"].startswith(("当前版本需 ≥", "版本门槛为", "要求当前版本 ≥"))
+
+
 class TestCheckerLogic:
     def test_mismatch_is_reported(self, tmp_path, monkeypatch):
         (tmp_path / "a.md").write_text("当前运行 Django 5.2.9", encoding="utf-8")

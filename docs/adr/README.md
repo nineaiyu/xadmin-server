@@ -103,3 +103,4 @@
 | [ADR-091](ADR-091-menu-experience-enhancement.md) | 已交付 | 菜单体验增强：MenuMeta 六字段（高亮路径 / 徽标 / 查询参数 / 分组）全链路、渲染层分组装配、激活项自动滚动、hover 反馈与导航尺寸令牌化 |
 | [ADR-092](ADR-092-site-wide-appearance-config.md) | 已交付 | 站点级外观配置全局生效：站点标题 / Logo 品牌位 / 登录页布局 9 键写系统配置（读取以系统值为权威、个人行不沉淀、仅超管可改、缺键自愈），种子补 Title；面板条件项补禁用（混合宽度 / 半暗顶栏 / 页宽回退） |
 | [ADR-093](ADR-093-migration-consolidation-and-ledger-claim.md) | 已交付 | 5.0 迁移链合并为初始迁移（结构等价以 pg_dump 归一化比对守护）+ 存量库账本认领（`upgrade_ledger` / `upgrade_check` 新判定） |
+| [ADR-094](ADR-094-inplace-upgrade-for-legacy-libraries.md) | 已接受 | 四域切分前的旧库支持**真·原地升级（立项）**：同库结构对齐（表改名 + 补列回填 + 权限/存量串重指 + 账本重写，单事务）替代清库重建 + 回灌；二开迁移图用历史链兼容包（state-only）解决、改写工具兜底；判定 fail-closed + 预演 + 备份回滚；回灌降级为逃生舱 |

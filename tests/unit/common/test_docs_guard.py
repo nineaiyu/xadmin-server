@@ -22,6 +22,7 @@ check_doc_index = _load_script("check_doc_index")
 check_doc_paths = _load_script("check_doc_paths")
 check_tutorial_mirror = _load_script("check_tutorial_mirror")
 check_docs_site_nav = _load_script("check_docs_site_nav")
+check_docs_site_links = _load_script("check_docs_site_links")
 
 
 class TestRepoState:
@@ -36,6 +37,10 @@ class TestRepoState:
 
     def test_docs_site_nav_clean(self):
         assert check_docs_site_nav.collect_violations() == []
+
+    def test_docs_site_links_clean(self):
+        # 跨仓缺失（单仓检出）或构建产物缺失时脚本自身走跳过分支，仍应无违例
+        assert check_docs_site_links.collect_violations() == []
 
 
 class TestDocIndexLogic:
@@ -200,6 +205,128 @@ class TestTutorialMirrorLogic:
         )
         assert len(violations) == 1
         assert "demo/models.py" in violations[0]
+
+
+class TestDocsSiteLinksLogic:
+    """站点链接与引用可达性：锚点以构建产物为准，跨仓路径引用按归属仓解析。"""
+
+    def _seed(self, tmp_path, rel: str, text: str):
+        page = tmp_path / rel
+        page.parent.mkdir(parents=True, exist_ok=True)
+        page.write_text(text, encoding="utf-8")
+        return page
+
+    def _seed_dist(self, tmp_path, rel: str, ids):
+        html = tmp_path / "dist" / rel
+        html.parent.mkdir(parents=True, exist_ok=True)
+        body = "".join(f'<h2 id="{item}">x</h2>' for item in ids)
+        html.write_text(f"<html><body>{body}</body></html>", encoding="utf-8")
+
+    def _run(self, tmp_path, **kwargs):
+        return check_docs_site_links.collect_violations(
+            docs_root=tmp_path,
+            dist_root=tmp_path / "dist",
+            server_root=kwargs.get("server_root", tmp_path / "server_none"),
+            installer_root=kwargs.get("installer_root", tmp_path / "installer_none"),
+        )
+
+    def test_missing_page_is_reported(self, tmp_path):
+        self._seed(tmp_path, "guide/a.md", "[b](./no-such.md)\n")
+        violations = self._run(tmp_path)
+        assert len(violations) == 1
+        assert "链接目标不存在" in violations[0] and "no-such.md" in violations[0]
+
+    def test_anchor_hit_passes(self, tmp_path):
+        self._seed(tmp_path, "guide/a.md", "[b](./b.md#目标章节)\n")
+        self._seed(tmp_path, "guide/b.md", "## 目标章节\n")
+        self._seed_dist(tmp_path, "guide/b.html", ["目标章节"])
+        assert self._run(tmp_path) == []
+
+    def test_anchor_miss_is_reported(self, tmp_path):
+        # 章节改名后锚点静默失效：vitepress 构建不报错，只有本门禁能拦
+        self._seed(tmp_path, "guide/a.md", "[b](./b.md#旧章节)\n")
+        self._seed(tmp_path, "guide/b.md", "## 新章节\n")
+        self._seed_dist(tmp_path, "guide/b.html", ["新章节"])
+        violations = self._run(tmp_path)
+        assert len(violations) == 1
+        assert "锚点不存在" in violations[0]
+
+    def test_same_page_anchor_is_checked(self, tmp_path):
+        self._seed(tmp_path, "guide/a.md", "[x](#缺失锚点)\n")
+        self._seed_dist(tmp_path, "guide/a.html", ["存在的锚点"])
+        violations = self._run(tmp_path)
+        assert len(violations) == 1
+        assert "锚点不存在" in violations[0]
+
+    def test_missing_dist_skips_anchor_check(self, tmp_path):
+        self._seed(tmp_path, "guide/a.md", "[b](./b.md#任意锚点)\n")
+        self._seed(tmp_path, "guide/b.md", "## x\n")
+        assert self._run(tmp_path) == []
+
+    def test_root_relative_link_resolves_against_docs_root(self, tmp_path):
+        self._seed(tmp_path, "guide/a.md", "[i](/guide/index.md#h)\n")
+        self._seed(tmp_path, "guide/index.md", "## h\n")
+        self._seed_dist(tmp_path, "guide/index.html", ["h"])
+        assert self._run(tmp_path) == []
+
+    def test_missing_image_asset_is_reported(self, tmp_path):
+        self._seed(tmp_path, "guide/a.md", "![图](img_1.png)\n")
+        violations = self._run(tmp_path)
+        assert len(violations) == 1
+        assert "img_1.png" in violations[0]
+        (tmp_path / "guide" / "img_1.png").write_bytes(b"x")
+        assert self._run(tmp_path) == []
+
+    def test_root_relative_asset_falls_back_to_public(self, tmp_path):
+        self._seed(tmp_path, "guide/a.md", "![图](/logo.png)\n")
+        (tmp_path / "public").mkdir()
+        (tmp_path / "public" / "logo.png").write_bytes(b"x")
+        assert self._run(tmp_path) == []
+
+    def test_server_path_reference_is_checked(self, tmp_path):
+        server = tmp_path / "server_root"
+        (server / "ops").mkdir(parents=True)
+        (server / "ops" / "legacy_export.py").write_text("", encoding="utf-8")
+        self._seed(tmp_path, "guide/a.md", "见 `ops/legacy_export.py` 与 `ops/gone.py`。\n")
+        violations = check_docs_site_links.collect_violations(
+            docs_root=tmp_path,
+            dist_root=tmp_path / "dist",
+            server_root=server,
+            installer_root=tmp_path / "installer_none",
+        )
+        assert len(violations) == 1
+        assert "ops/gone.py" in violations[0]
+
+    def test_installer_script_reference_resolves_in_installer_repo(self, tmp_path):
+        # scripts/ 前缀两个仓都有同名目录：安装器脚本只在安装器仓存在时也应放过
+        installer = tmp_path / "installer_root"
+        (installer / "scripts").mkdir(parents=True)
+        (installer / "scripts" / "7_upgrade.sh").write_text("", encoding="utf-8")
+        self._seed(tmp_path, "guide/a.md", "见 `scripts/7_upgrade.sh`。\n")
+        assert self._run(tmp_path, installer_root=installer) == []
+
+    def test_missing_installer_repo_skips_that_prefix(self, tmp_path):
+        self._seed(tmp_path, "guide/a.md", "见 `scripts/7_upgrade.sh` 的说明。\n")
+        assert self._run(tmp_path) == []
+
+    def test_fenced_code_block_is_ignored(self, tmp_path):
+        # 围栏内的反引号与伪链接不渲染成链接：不参与校验
+        self._seed(tmp_path, "guide/a.md", "```bash\n# 见 `ops/not-a-ref.py` 与 [b](./no-such.md)\n```\n")
+        assert self._run(tmp_path) == []
+
+    def test_missing_docs_root_is_skipped(self, tmp_path):
+        assert check_docs_site_links.collect_violations(docs_root=tmp_path / "none") == []
+
+    def test_main_require_dist_fails_without_build(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.setattr(check_docs_site_links, "_docs_root", lambda: tmp_path)
+        (tmp_path / "guide").mkdir()
+        original = check_docs_site_links.sys.argv
+        check_docs_site_links.sys.argv = ["check_docs_site_links.py", "--require-dist"]
+        try:
+            assert check_docs_site_links.main() == 1
+        finally:
+            check_docs_site_links.sys.argv = original
+        assert "构建产物缺失" in capsys.readouterr().out
 
 
 class TestDocsSiteNavLogic:

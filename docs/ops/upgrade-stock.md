@@ -40,6 +40,12 @@
 | 2026-10 四轮重建之前的旧版库 | `legacy-chain` | 清库重建（§五） |
 | 迁移记录完整但表结构缺表/缺列 | `schema-drift` | 人工排查（§三 处置表；通常是混用旧版代码/库或被人工改过结构） |
 
+> **切分前的库将获得原地升级能力（已立项）**：同库结构对齐（表改名 + 补列 + 权限与存量串重指 +
+> 账本重写）替代清库重建，二开迁移图用历史链兼容包解决——决策见
+> [ADR-094](../adr/ADR-094-inplace-upgrade-for-legacy-libraries.md)、方案与分期见
+> [原地升级立项与方案-2026.10.md](../plans/原地升级立项与方案-2026.10.md)。**分批交付前，本文 §五、§七
+> 的清库重建 + 回灌仍是切分前旧库的唯一路径**。
+>
 > 认领的适用边界：**只对 4.2.5 链（白名单见 `system/utils/platform/migration_ledger.py`
 > 的 `LEGACY_4X_CHAIN`）生效**，且要求表结构体检无缺表/缺列——即「库结构与合并链等价」。
 > 白名单之外的游离记录一律拒绝（`legacy-chain`），不做自动认领：更早的重建轮次涉及表改名
@@ -53,6 +59,33 @@ python manage.py upgrade_check --json    # JSON 输出（供脚本 / 安装器�
 python manage.py upgrade_ledger          # 迁移账本对账（只读，默认）
 python manage.py upgrade_ledger --apply  # 认领账本（写迁移记录，不执行 DDL）
 ```
+
+**切分前旧库的原地升级通道（立项推进中，分批交付）**
+
+```bash
+# 结构差异报告（只读）：给出「表改名 / 补列 / 由 migrate 新建 / 阻断项」四类结论
+python manage.py legacy_schema_report --dsn "postgresql://..." --tag v4.2.5 --plan
+# 原地升级（默认 dry-run；--apply 执行结构对齐 + 引用重指 + 账本重写）
+python manage.py legacy_align --dsn "postgresql://..." --tag v4.2.5 [--apply]
+python manage.py legacy_align --probe [--tag v4.2.5]   # 三态退出码：0 需要 / 1 已一致 / 2 阻断 / 3 无法判定
+# 二开 app 的旧引用改写（FK 目标 / 依赖节点），默认只出 diff
+python manage.py legacy_rewrite_app_refs --app-path ../my_app --tag v4.2.5 [--apply]
+# 一键（安装器 v5.0.1+）：判定 → 预演 → 确认 → 执行 → 复检 → 账本 → migrate → post_upgrade
+cd /opt/xa-installer-5x && INPLACE_ALIGN=1 ./xadmin.sh upgrade 5.0.1
+# 旧结构样本库（验证靶）：用历史 tag 的迁移真实建库，可灌样本数据
+python ops/legacy_sample_db.py --tag v4.2.5 --dsn "postgresql://.../xadmin_legacy_sample" --with-data
+```
+
+当前覆盖范围与边界见 [原地升级立项与方案-2026.10.md](../plans/原地升级立项与方案-2026.10.md) §八：
+**结构对齐（表改名 / 补列 / 补表 / 补索引与约束 / 前置扩展）+ 内容类型与存量字符串重指 + 迁移账本重写已可一键执行**
+（实测 4.2.5 结构：改名 14 张 / 建表 78 张 / 补列 178 / 补索引 56 / 补约束 16，数据与主键原样保留，
+复检残留改名 0、缺失表 0）；剩余的人工复核项（可调用默认值的 NOT NULL 列、目标端已删除的旧列、
+列类型变更）与三方 app 的版本增量在报告里逐条列出。
+
+**安装器已接线**（探询 → 预演 → 确认 → 执行；`INPLACE_ALIGN=1` 无人值守、`SKIP_INPLACE_ALIGN=1` 跳过），
+**真实 4.2.5 库已完成一站式实机验证**（2026-10-17：827 用户 / 15.6 万日志 / 二开表；结构复检残留 0、
+数据逐表零差异、`upgrade_check`=up-to-date、收尾自动补字段白名单）；`v4.1.3` / `v4.2.3` / `v4.2.5`
+三代结构样本同样全绿。升级前请务必先备份，并先跑 `upgrade_check --dsn ... --tag ...` 看判定与阻断项。
 
 `upgrade_check` 输出三个层面：迁移记录对账（已应用 / 待应用 / 4.x 游离 / 未知游离）、
 表结构体检（缺失表 / 缺列）、结论与处置建议。退出码：`0` = 可继续升级；`1` = 需人工介入。
@@ -94,6 +127,22 @@ python manage.py upgrade_ledger --apply  # 认领账本（写迁移记录，不�
 
 回滚以**备份恢复**为准（Django 迁移原则上不做反向回滚），见 [deployment-upgrade.md §6.2](deployment-upgrade.md)
 与 [runbook.md](runbook.md) 的「migrate 卡住 / 恢复」条目。
+
+### 升级后「有菜单、没有列」怎么办
+
+5.x 的列表列由接口下发并按**字段权限**裁剪（fail-closed：没配置 = 零字段）。升级库常见两类原因：
+老权限菜单没有「接口自身模型」绑定（`menu.model` 只绑了关联模型）；角色的字段白名单没覆盖该模型。
+
+自本批改动起，`post_upgrade` 收尾会**自动**补「菜单→模型」绑定、按接口自身模型补齐白名单并清缓存
+（只加不减，不动管理员已配置的裁剪）。仍无列时依次排查：
+
+```bash
+docker exec xadmin-server python manage.py post_upgrade    # 幂等；看输出是否补齐
+docker exec xadmin-server python manage.py upgrade_check  # 结构是否 up-to-date
+```
+
+> 5.x 的菜单/字段权限**按角色**生效：**没有任何角色的账号**（4.x 里常见）升级后拿不到字段与菜单权限，
+> 需要绑定角色（或用超管）。这是权限模型的语义变化，不是升级丢数据。
 
 ## 五、清库重建流程（旧链库，或明确不要旧数据）
 

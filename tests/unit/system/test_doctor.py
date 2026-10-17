@@ -197,33 +197,120 @@ class TestPostUpgrade:
 
     def test_permission_scan_branch(self):
         output = _run("post_upgrade", "--skip-seed", "--skip-compile")
-        assert "权限点缺口扫描" in output
+        assert "权限点与字段白名单" in output
         assert "post_upgrade 完成" in output
 
-    def test_field_permission_gap_reported(self, superuser):
-        """字段白名单缺口（无配置 / 与权限点模型脱节）在升级扫描中给出修复命令提示。"""
+    def test_field_permission_gap_is_auto_filled(self, superuser):
+        """升级收尾**自动**补齐字段白名单。
+
+        字段权限是 fail-closed 的零字段口径：白名单为空/脱节时列表输出空对象、
+        ``search-columns`` 返回空数组，表现为「有菜单、没有列」。4.x 没有这道门，
+        存量角色升级后极易命中，因此收尾阶段自动补齐（只补缺口，不改已配置的裁剪）。
+        """
         from identity.models import UserRole
         from system.models import Menu, MenuMeta, ModelLabelField
 
         root = ModelLabelField.objects.create(
-            name="demo.upgrade_item", label="升级示例", field_type=ModelLabelField.FieldChoices.ROLE
+            name="notifications.messagecontent", label="消息中心", field_type=ModelLabelField.FieldChoices.ROLE
         )
-        meta = MenuMeta.objects.create(title="升级示例列表")
+        child = ModelLabelField.objects.create(
+            name="title", label="通知标题", field_type=ModelLabelField.FieldChoices.ROLE, parent=root
+        )
+        meta = MenuMeta.objects.create(title="消息通知列表")
         menu = Menu.objects.create(
-            name="list:UpgradeItem",
-            path="api/demo/upgrade-item$",
+            name="list:GapNotice",
+            path="api/notifications/notice-messages$",
             menu_type=Menu.MenuChoices.PERMISSION,
             method="GET",
             meta=meta,
         )
-        menu.model.set([root])
         role = UserRole.objects.create(name="升级字段缺口角色", code="upgrade_field_gap_role")
         role.menu.add(menu)
 
         output = _run("post_upgrade", "--skip-seed", "--skip-compile")
 
-        assert "字段白名单缺口" in output
-        assert "--fix-field-permissions" in output
+        from system.models import FieldPermission
+
+        assert "字段白名单补齐：1 个（角色, 权限点）" in output
+        assert "字段白名单完整覆盖" in output
+        permission = FieldPermission.objects.get(role=role, menu=menu)
+        assert permission.field.filter(pk=child.pk).exists(), "应把缺失的模型字段节点补进白名单"
+
+    def test_legacy_menu_model_binding_is_backfilled(self, superuser):
+        """升级库的老权限菜单没有 model 绑定 → 按 API 路径回填，白名单才补得出来。
+
+        4.x 的权限菜单行没有「模型」概念，5.x 的字段白名单以 ``menu.model`` 为准；
+        不回填就出现「审计看不到缺口、白名单补不出来、页面没有列」。
+        """
+        from identity.models import UserRole
+        from system.models import Menu, MenuMeta, ModelLabelField
+
+        root = ModelLabelField.objects.create(
+            name="notifications.messagecontent", label="消息中心", field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        child = ModelLabelField.objects.create(
+            name="title", label="通知标题", field_type=ModelLabelField.FieldChoices.ROLE, parent=root
+        )
+        meta = MenuMeta.objects.create(title="消息通知列表")
+        menu = Menu.objects.create(
+            name="list:LegacyNotice",
+            path="api/notifications/notice-messages$",
+            menu_type=Menu.MenuChoices.PERMISSION,
+            method="GET",
+            meta=meta,
+        )
+        role = UserRole.objects.create(name="老库角色", code="legacy_menu_role")
+        role.menu.add(menu)
+        assert not menu.model.exists(), "前置：老菜单没有 model 绑定"
+
+        # 升级库的典型形态：行里只绑了「关联模型」，缺接口自己的模型（部分脱节）
+        from system.models import FieldPermission
+
+        wrong_root = ModelLabelField.objects.create(
+            name="identity.userinfo", label="用户", field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        wrong_child = ModelLabelField.objects.create(
+            name="username", label="账号", field_type=ModelLabelField.FieldChoices.ROLE, parent=wrong_root
+        )
+        permission = FieldPermission.objects.create(role=role, menu=menu)
+        permission.field.set([wrong_child])
+
+        output = _run("post_upgrade", "--skip-seed", "--skip-compile")
+
+        menu.refresh_from_db()
+        assert menu.model.filter(pk=root.pk).exists(), "应按 API 路径回填模型绑定"
+        assert "权限菜单补模型绑定：1 个" in output
+        permission.refresh_from_db()
+        assert permission.field.filter(pk=child.pk).exists(), "应把接口自身模型的字段补进白名单"
+        assert permission.field.filter(pk=wrong_child.pk).exists(), "行内原有配置不能被删"
+
+    def test_field_permission_fix_can_be_skipped(self, superuser):
+        """--skip-field-permissions：只报告不写库（排查/演练时用）。"""
+        from identity.models import UserRole
+        from system.models import FieldPermission, Menu, MenuMeta, ModelLabelField
+
+        root = ModelLabelField.objects.create(
+            name="demo.upgrade_skip", label="跳过示例", field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        ModelLabelField.objects.create(
+            name="title", label="标题", field_type=ModelLabelField.FieldChoices.ROLE, parent=root
+        )
+        meta = MenuMeta.objects.create(title="跳过示例列表")
+        menu = Menu.objects.create(
+            name="list:UpgradeSkip",
+            path="api/demo/upgrade-skip$",
+            menu_type=Menu.MenuChoices.PERMISSION,
+            method="GET",
+            meta=meta,
+        )
+        menu.model.set([root])
+        role = UserRole.objects.create(name="跳过字段角色", code="upgrade_field_skip_role")
+        role.menu.add(menu)
+
+        output = _run("post_upgrade", "--skip-seed", "--skip-compile", "--skip-field-permissions")
+
+        assert "跳过字段白名单补齐" in output
+        assert not FieldPermission.objects.filter(role=role, menu=menu).exists()
 
 
 class _FakeRoute:

@@ -23,6 +23,9 @@
 | `test.yml` | pytest（真 PG + 真 Redis） | 全量单测 + 集成测试 + 守护测试；覆盖率阈值门禁（`--cov-fail-under`，值见 workflow 注释） | `tests/` 全树 | `pytest -n auto`（先 `docker compose -f compose.test.yml up -d`） |
 | `test.yml` | Django system check | 数据库标记检查（索引名超长 / GinIndex 前置条件等仅 `check --database` 可见的模型缺陷） | `manage.py check --database default` | 同左（需真 PG） |
 | `security.yml` | pip-audit | 生产依赖已知漏洞（requirements.txt 口径，PR + 每周定时） | `pip-audit -r requirements.txt` | 同左 |
+| `docs-build.yml`（xadmin-docs） | VitePress build | 对外站点构建：**页级**死链与构建错误（vitepress 不校验 `#fragment`，锚点级由下一行守护） | `xadmin-docs` 全站 markdown | `cd ../xadmin-docs && pnpm docs:build` |
+| `docs-build.yml`（xadmin-docs） | Site links & references | 站点内链接**锚点级**可达性（对构建产物的 `id=` 核对，slug 以产物为准）+ 正文反引号里的跨仓路径引用（`docs/` `ops/` 服务端、`scripts/` 安装器） | `scripts/check_docs_site_links.py` | `cd ../xadmin-docs && pnpm docs:build && python ../xadmin-server/scripts/check_docs_site_links.py` |
+| `docs-build.yml`（xadmin-docs） | Doc facts / Site nav | 跨仓"当前事实"防漂移（含安装器 `scripts/7_upgrade.sh` 的升级基线 `required_version`）+ 站点导航覆盖（防孤儿页面） | `scripts/check_doc_facts.py` · `scripts/check_docs_site_nav.py` | `python scripts/check_doc_facts.py` · `python scripts/check_docs_site_nav.py` |
 
 ## 随 pytest 全量进 CI 的守护测试（专项产出的结构性回归点）
 

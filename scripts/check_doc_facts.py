@@ -13,7 +13,9 @@
 - ``server/const.py`` 的 ``VERSION``（平台版本，``const:VERSION``）；
 - ``.github/workflows/lint.yml`` 的 python-version（``workflow:python``）；
 - ``.github/workflows/test.yml`` 的覆盖率门禁（``workflow:cov_fail_under``）；
-- 客户端仓库 ``package.json`` 的 engines（``client_engine:node`` / ``client_engine:pnpm``，跨仓）。
+- 客户端仓库 ``package.json`` 的 engines（``client_engine:node`` / ``client_engine:pnpm``，跨仓）；
+- 安装器仓库 ``scripts/7_upgrade.sh`` 的升级基线 ``required_version``
+  （``installer:required_version``，跨仓；根由 ``XADMIN_INSTALLER_DIR`` 指定，默认 ``../xadmin-installer``）。
 
 跨仓事实：``"external": True`` = 文档位于 xadmin-docs 仓库（根由 ``XADMIN_DOCS_DIR`` 指定，
 默认 ``../xadmin-docs``）；``"external": "client"`` = 文档位于客户端仓库（``XADMIN_CLIENT_DIR``，
@@ -121,6 +123,24 @@ def _client_engine(key: str):
     return matched.group(1) if matched else None
 
 
+def _installer_root() -> Path:
+    """安装器仓根（跨仓事实源：升级基线 / 版本号约定所在仓）。"""
+    return Path(os.environ.get("XADMIN_INSTALLER_DIR", REPO_ROOT.parent / "xadmin-installer"))
+
+
+def _installer_upgrade_baseline():
+    """安装器脚本里的升级基线 ``required_version``（跨仓；仓库缺失或解析失败返回 None）。
+
+    事实源是**可执行代码**：文档写「版本门槛 vX.Y.Z」必须等于安装器真正使用的常量
+    （``scripts/7_upgrade.sh`` 的 ``verify_upgrade_version``），否则用户按文档升不上去。
+    """
+    script = _installer_root() / "scripts" / "7_upgrade.sh"
+    if not script.is_file():
+        return None
+    matched = re.search(r'required_version="([^"]+)"', script.read_text(encoding="utf-8"))
+    return matched.group(1).lstrip("vV") if matched else None
+
+
 def _resolve_source(source: str):
     """返回事实值；跨仓事实源不可用（目录缺失/解析失败）时返回 None（调用方跳过）。"""
     kind, _, key = source.partition(":")
@@ -142,8 +162,11 @@ def _resolve_source(source: str):
         return _client_engine(key)
     if kind == "adr" and key == "count":
         return _adr_count()
+    if kind == "installer" and key == "required_version":
+        return _installer_upgrade_baseline()
     raise SystemExit(
-        f"未知事实源：{source}（支持 requirements[:minor] / const:VERSION / workflow / client_engine / adr:count）"
+        f"未知事实源：{source}（支持 requirements[:minor] / const:VERSION / workflow / "
+        f"client_engine / adr:count / installer:required_version）"
     )
 
 

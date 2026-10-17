@@ -146,7 +146,10 @@
 | 2 | ~~F6 容器化测试验收终判~~ | **已完成（2026-10-09）：通过（达标）**——时长 ✅ + 9 个红 run 全部分诊收敛（零真库基建故障）；字面「连续 2 周绿」余窗顺延至 10-21 观察；处置方案（回退 sqlite）不适用 |
 | 3 | ~~T5 Renovate 验收~~ | **已完成（2026-10-16）**：修 `renovatebot/github-action@v41` → `v46.3.8`（该 action 无 major tag，此前 workflow 从未成功运行过），两仓 `gh workflow run renovate.yml` 均 success，且已实际开出 PR（`renovate/pypi-pyjwt-vulnerability`） |
 | 4 | T6 SLO 校准 | 数据成熟（满 3 个月）即校准回填 `docs/metrics.md` |
-| 5 | 5.0 端到端升级演练（4.2.5 实例 → 5.0） | 需可复现的 4.2.5 实例（测试服或旧镜像）；本机 Python 3.14 无法复原 4.2.5 依赖。**逻辑层已守护**：`tests/unit/system/test_upgrade_check.py` 覆盖 up-to-date / pending / orphan / `legacy-chain-reconcilable` / schema-drift（含真实库 `test_legacy_4x_record_is_reconcilable`）；**本地栈已验**：`upgrade_check`=up-to-date、`upgrade_ledger --apply` 幂等、`post_upgrade` 两次结果一致 |
+| 5 | ~~5.0 端到端升级演练（4.2.5 实例 → 5.0）~~ | **已完成（2026-10-17）**：虚拟机以 4.2.5 库跑九项验收全通过（导出 → 清库重建 → 回灌 → 计数/关联/附件/旧密码/幂等 → `upgrade_check`=up-to-date + health 四项 true）。**结论 = 切分前旧库原地升级不可行**，当时路径为清库重建 + 回灌（手册 `docs/ops/upgrade-4x-to-5x.md`）；方向已由 #8 改写。**同轮修复升级通道三处缺陷**（installer：镜像 tag 带 `v` → `manifest unknown`、备份开关缺 `${VAR:-}` 缺省、基线门禁误判）+ PG 大版本数据目录迁移。 |
+| 6 | ~~文档站死链与口径守护补强~~ | **已完成（2026-10-17）**：新增 `scripts/check_docs_site_links.py`（锚点级 + 跨仓路径引用校验，进 docs CI），抓出并修复 8 处锚点死链；升级门槛串纳入事实门禁（+3 条）。 |
+| 7 | ~~回灌链路端到端集成测试~~ | **已取消（2026-10-17，用户决策）**：回灌路径对二开损失面过大（旧迁移引用须人工改写、表文件不搬、审批/表单/数据集/日志/任务/PAT 不在搬运面内），转 #8；回灌保留为逃生舱。 |
+| 8 | **真·原地升级立项与分批实施** | **已立项（2026-10-17）**：决策 [ADR-094](../adr/ADR-094-inplace-upgrade-for-legacy-libraries.md) + 方案 [原地升级立项与方案-2026.10.md](原地升级立项与方案-2026.10.md)。**第一~三批已交付**：旧结构样本生成器 + 结构与引用与账本一键对齐（`legacy_align`）+ 差异报告 + 体检新判定 `legacy-inplace-capable` + 安装器接线（`--probe` 三态）+ 二开 app 迁移引用改写工具；`v4.1.3`/`v4.2.3`/`v4.2.5` 三代样本原地对齐全绿（实测数据见方案 §八）。**第四批（实机演练完成）**：真实 4.2.5 库升 5.0.1 跑通、数据零丢失（行数+哈希比对）；修复「容器无 git → common_monitor 未映射」与「有菜单无列（字段白名单 fail-closed）」两个真问题（后者改 post_upgrade 自动补齐+清缓存）。 |
 
 > 2026-11 窗口两项主项（存量库升级通道、HNSW 向量定型实测）已于 2026-10-09 提前完成，无需再排。
 

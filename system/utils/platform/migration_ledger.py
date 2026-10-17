@@ -58,6 +58,12 @@ LEGACY_4X_CHAIN: dict[str, tuple[str, ...]] = {
 # 四域切分（用户 / 文件 / 日志 / 任务各自的 app 与表名）之前的表名 → 当前表名。
 # 旧表在、当前表不在，即证明该库仍停留在切分前的结构：表名与列集都与合并链不一致，
 # 认领（只写迁移记录）无法把它变成 5.0 的库，必须走「清库重建 + 回灌」。
+#
+# 这张表是**部署环境唯一可信的映射来源**：容器镜像里没有 .git，按历史 tag 推断模型归属
+# 的那条路（``legacy_schema.load_tag_models``）在容器内取不到历史，只有这里登记过的框架表
+# 才能改名成功；未登记的表会被原地升级判为阻断项（fail-closed，不猜）。因此 4.x 各版本的
+# 框架表搬迁都必须在这里补全——真实 4.2.5 库演练就是靠这条暴露了 ``common_monitor`` 漏登记
+# （Monitor 从 common 域搬到 system 域）。
 PRE_SPLIT_TABLES: tuple[tuple[str, str], ...] = (
     ("system_userinfo", "identity_userinfo"),
     ("system_deptinfo", "identity_deptinfo"),
@@ -65,6 +71,7 @@ PRE_SPLIT_TABLES: tuple[tuple[str, str], ...] = (
     ("system_uploadfile", "file_uploadfile"),
     ("system_operationlog", "audit_operationlog"),
     ("system_userloginlog", "audit_userloginlog"),
+    ("common_monitor", "system_monitor"),
 )
 
 # 认领后的判定：consistent（无需动作）/ reconcilable（可认领）/ unsupported（未知链路，人工介入）
