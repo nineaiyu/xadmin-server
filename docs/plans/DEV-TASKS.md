@@ -22,20 +22,29 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
+- **2026-10-18 种子分层收口批（server 3 提交 + client 1 提交，已提交推送 dev）**：对
+  `c82452f9`「种子按 app 分层」的衍生问题三处收口。①**尾部假死修复**（`ade554e3`）——分层后
+  65 个新种子测试每个跑完整 `load_init_json`，收尾逐菜单读 `menu.model`（m2m）把数百权限点
+  放大成数百条小往返，满载下单查询墙钟退化到秒级、尾部爬行成假死；`permission_sync` 两处改
+  批量预取、`dump_init_json` 导出预取 m2m、`pytest.ini` 加 `faulthandler_timeout=600`；
+  守护 = 查询数不随菜单数线性增长的 N+1 护栏。②**升级链路 mypy 债务清偿**（`079f9c13`）——
+  升级批次（`3d20e498` 起）提交时未跑 mypy，在已入列严格清单的 `system` / `ops` 留 59 处告警
+  （台账口径漂移）；12 个文件按显式 Any + 泛型补参清零，顺带修 `legacy_import` 变量同名复用
+  与 `fetchone()` None 兜底；`test_kernel_release` 兼容 renovate 锁版的 sha+注释形态
+  （此前字面断言 `@v2`，PR #121 上 3 例假红）。全仓 mypy 回到 896 文件 0 错。③**E2E 场景种子
+  路径断裂**（`31abb97d`）——`generate_crud` 种子产物随分层改为 `<app>/seeds/` 按模型拆分，
+  `seed_demo_book_scene` 仍读旧路径而静默 skip → demo/book 菜单不入库、路由 404，
+  `form-label-width` 与 `demo-book` 双浏览器全挂（重试亦挂，确定性失败）；改为 glob 发现 +
+  按文件名排序装载。**教训**：client E2E 的 `server-ref` 默认 dev，server 结构性改动会以
+  「client spec 挂」现形，双浏览器重试全挂极易误判为 UI 回归——先查 `e2e_seed` 输出的 skip 行。
+  client 侧同批修 `preferenceFieldSync.spec` 种子发现（聚合各层 systemconfig，`97dcee53`）。
+
 - **2026-10-17 「清库重建 + 回灌」官方升级路径全面测试 + 操作手册（xadmin-server；改动留工作区待提交）**：
-  在虚拟机（CentOS 7 / Docker 24）用 4.2.5 库（10 部门含停用 / 7 角色含停用 / 11 用户含禁用与超管 /
-  13 数据权限 / 8 系统配置 / 2 个人配置 / 4 附件 / 3 公告 / 5 条日志）跑完整路径九项验收全通过：
-  导出（独立脚本）→ 清库重建（migrate + 先超管后种子 + post_upgrade）→ 回灌 → 计数与状态核对
-  （禁用用户 1、超管 1、操作日志不搬=0）→ 关联核对（多层部门 `D111→D110→D100`、双角色、双数据权限、
-  停用角色、角色菜单 14/5/2、公告定向部门·角色与已读）→ 附件与**旧密码登录成功**（PBKDF2 哈希原样搬运）
-  → 幂等复跑全为「更新」→ `upgrade_check` = `up-to-date`（86 迁移 / 0 待应用 / 0 游离）+
-  `sync_menu_permissions --dry-run` 缺口 0 → 5.0 应用连重建库启动，健康检查 `status`/`db`/`redis`/`storage` 全 true。
-  本轮实测又修出并补齐三处搬运缺口：用户个人配置实体、公告的附件关联（`notice.file`）、用户头像等
-  模型自带文件字段；同时把「单实体失败只跳过该实体（其余与收尾照常）」与「附件物理文件缺失跳过不建坏记录」
-  固化为行为 + 测试。文档：新增 `docs/ops/upgrade-4x-to-5x.md`（操作手册：判定 / 备份 / 导出 / 重建 /
-  回灌 / 十二项验收清单 / 回滚 / 搬运范围 / 实测记录 / 常见问题），索引已登记，`upgrade-stock.md` §七、
-  `upgrade-5.0.md`、`deployment-upgrade.md`、`upgrade-faq.md` 改为引用手册。守护测试 18 例
-  （`test_legacy_transfer.py`）。
+  全文见 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。要点：虚拟机
+  （CentOS 7 / Docker 24）用 4.2.5 库跑完整路径九项验收全通过；本轮修出并补齐三处搬运缺口（用户个人配置实体、
+  公告的附件关联 `notice.file`、模型自带文件字段），「单实体失败只跳过该实体」与「附件物理文件缺失跳过不建坏记录」
+  固化为行为 + 测试；新增操作手册 `docs/ops/upgrade-4x-to-5x.md`（索引已登记，其余升级文档改为引用手册），
+  守护测试 18 例（`test_legacy_transfer.py`）。
 
 
 - **2026-10-16 5.0 发布收口与发布后验证（R1 收尾 / R3 / R4，已提交推送）**：①**发布**：五仓 `v5.0.0` 就位，server/client 镜像构建+推送成功（tag 各一次强推更新，不再删建）；②**发布说明**：Release 原仅 3 条 PR（release-drafter 只汇总 PR，直接推主干的 655/1120 个提交未纳入）→ 按提交类型分组补齐并**修根因**（新增 `scripts/sync_release_notes.py` / `sync-release-notes.mjs` + 发布流水线调用，后续自动完整）；③**发布后验证 6 项全过**：`upgrade_check`=up-to-date（88 迁移/0 待应用/101 表无缺）、`sync_menu_permissions --dry-run` 缺口 0、health 四项 true、认证冒烟 POST 200、操作日志改动真实链路（完整单条 INSERT，并为旧逻辑遗留的 1 条孤儿行提供实证）、`post_upgrade` 幂等；④**发布后验证发现并修复的真实缺陷**：`load_init_json` 重灌种子会覆盖运行期补齐的字段白名单 → 非内置角色（演示角色「示例-主管/示例-员工」在审批接口）缺口 8 个 = 演示账号列表空白 → 收尾新增 `fill_field_permissions` 自愈（只补缺口、不改写人工裁剪；容器实测重灌后归零且幂等）+ 守护测试并入 `TestSeedOrderingFillsBuiltinRoles`；同时回退了误入提交的 `--update-seed` 种子回写（4700 余行，运行时模块权限点不应进种子）；⑤**R3**：逻辑层由 `test_upgrade_check.py`（含真实库 legacy 4x → reconcilable）守护 + 本地栈验证；端到端 4.2.5→5.0 演练登记待执行（需旧实例）；⑥**R4**：文档站本地构建通过（无死链）、5.0 升级要点与实现核对一致、`docs-build.yml` 历史全绿；⑦**衍生修复**：client 多架构构建改 `--platform=$BUILDPLATFORM`（QEMU 下 vite/rolldown 卡死 50 分钟）、构建前显式 `pnpm run prebuild`（图标/动画子集为 gitignore 生成物）、server setuptools 升级改绝对路径（PATH 指向 venv）、trivy 报告逐条定性（apt 构建期升级 / autobahn 示例私钥 / pip vendored msgpack+urllib3 豁免）、pyjwt 升 2.15.1、twisted 无修复漏洞豁免；⑧**建立本地验证闭环**：本地构建 base+运行镜像并用 trivy（ECR 漏洞库源）扫描，两镜像均 exit 0；本地 pip-audit 复验通过。
