@@ -30,8 +30,9 @@
   「有 list 但没 retrieve」的角色调它必然 403。
 - **做法**：`python manage.py doctor` 查缺口 → `sync_menu_permissions` 补齐 → 角色管理里授权。
   新增端点（自定义 `@action`）同样需要权限点，PUT 方法需**手工登记**（生成器不产出 PUT）。
-  新增 action 后**必须同步给已拥有该页面的内置角色授权**（种子 `userrole.json` 的
-  `menu` 列表），否则非超管打开页面即 403——自查范式见守护测试
+  新增 action 后**必须同步给已拥有该页面的内置角色授权**（在所属 app 的
+  `seeds/grants.json` 里补该权限点名，装载后按并集应用），否则非超管打开页面即 403——
+  自查范式见守护测试
   `tests/unit/system/test_chat_menu_seed.py`、`test_file_menu_seed.py`（把「页面 →
   页内权限点 → 角色授权」三层关钉死）；前端调用这类辅助接口时应加 `hasAuth` 守卫，
   未授权时隐藏入口而不是点了报 403。

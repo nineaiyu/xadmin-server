@@ -14,6 +14,7 @@ from typing import Any
 from django.conf import settings
 
 from system.services.permission_sync import RUNTIME_PERMISSION_PREFIXES
+from system.services.seeding import read_model_rows
 
 SEED_DIR = Path(settings.PROJECT_DIR) / "loadjson"
 
@@ -28,12 +29,12 @@ def _load(name: str) -> Any:
 
 def test_field_permission_seed_references_resolve() -> None:
     """角色 / 权限点 / 字段三侧引用都落在各自种子文件内。"""
-    entries = _load("fieldpermission.json")
+    entries = read_model_rows("system.fieldpermission")
     assert entries, "字段权限种子不应为空"
 
     role_pks = {row["pk"] for row in _load("userrole.json")}
-    menu_pks = {row["pk"] for row in _load("menu.json")}
-    field_pks = {row["pk"] for row in _load("modellabelfield.json")}
+    menu_pks = {row["pk"] for row in read_model_rows("system.menu")}
+    field_pks = {row["pk"] for row in read_model_rows("system.modellabelfield")}
 
     for entry in entries:
         payload = entry["fields"]
@@ -45,14 +46,14 @@ def test_field_permission_seed_references_resolve() -> None:
 
 def test_field_permission_seed_excludes_runtime_modules() -> None:
     """运行时模块自建的权限点不进种子（由模块自身的种子命令维护）。"""
-    entries = _load("fieldpermission.json")
+    entries = read_model_rows("system.fieldpermission")
     leaked = [entry for entry in entries if str(entry["fields"]["menu"]).startswith(RUNTIME_MODULE_PREFIXES)]
     assert leaked == [], f"运行时模块权限点混入字段权限种子: {[e['pk'] for e in leaked]}"
 
 
 def test_seeded_roles_have_field_permissions() -> None:
     """种子内角色都应至少有一条字段白名单（新角色漏配会静默空输出）。"""
-    entries = _load("fieldpermission.json")
+    entries = read_model_rows("system.fieldpermission")
     covered = {entry["fields"]["role"] for entry in entries}
     seeded_roles = {row["pk"]: row["fields"].get("name") for row in _load("userrole.json")}
     missing = {name for pk, name in seeded_roles.items() if pk not in covered}
@@ -77,9 +78,9 @@ def test_seed_whitelist_covers_menu_model() -> None:
     """
     from system.services.permission_sync import build_route_index
 
-    entries = _load("fieldpermission.json")
-    menus = {row["pk"]: row["fields"] for row in _load("menu.json")}
-    fields = {row["pk"]: row["fields"] for row in _load("modellabelfield.json")}
+    entries = read_model_rows("system.fieldpermission")
+    menus = {row["pk"]: row["fields"] for row in read_model_rows("system.menu")}
+    fields = {row["pk"]: row["fields"] for row in read_model_rows("system.modellabelfield")}
     roles = {row["pk"]: row["fields"].get("name") for row in _load("userrole.json")}
 
     by_path: dict[str, str] = {}

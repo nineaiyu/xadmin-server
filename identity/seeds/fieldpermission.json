@@ -1,0 +1,1954 @@
+[
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-009fa855-b1fd-4764-95b6-1f1eb94dd336",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "009fa855-b1fd-4764-95b6-1f1eb94dd336",
+   "field": [
+    "2bf8654c-e052-4e32-a577-738aa1e19acb",
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
+    "af40a41b-d543-4dc7-adf1-b4f6fed66039",
+    "c4443e4a-937c-476c-a7cb-776952c8bdef",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-06c77f1a-dd5f-42a4-a5c9-719d554eb603",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-13a2e23f-6cfb-4992-948b-3477b96591d4",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "13a2e23f-6cfb-4992-948b-3477b96591d4",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-18e700d2-749e-4ae0-ba85-4a601db9c18f",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "18e700d2-749e-4ae0-ba85-4a601db9c18f",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
+    "af40a41b-d543-4dc7-adf1-b4f6fed66039",
+    "c4443e4a-937c-476c-a7cb-776952c8bdef",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-2cd3ca25-e606-4e46-983e-7aef573ef713",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "2cd3ca25-e606-4e46-983e-7aef573ef713",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-3f56972e-5390-4e1b-8f4d-124042fcc31f",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "3f56972e-5390-4e1b-8f4d-124042fcc31f",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-438bd316-a31e-4a2c-b075-9d6a82c4ae24",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-6fc056af-acd8-48dd-91cf-e34053014997",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "6fc056af-acd8-48dd-91cf-e34053014997",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-7595b222-e832-48ad-b91f-234b20043fb3",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "7595b222-e832-48ad-b91f-234b20043fb3",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
+    "af40a41b-d543-4dc7-adf1-b4f6fed66039",
+    "c4443e4a-937c-476c-a7cb-776952c8bdef",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-9c564fba-5120-4953-9653-2a40eeb61414",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "9c564fba-5120-4953-9653-2a40eeb61414",
+   "field": [
+    "7281ebe7-29c5-4c20-8572-b03e2f8a48cd",
+    "a4405bf6-0ed6-4151-a313-d8a9bde768a2",
+    "2510379f-eee9-45eb-a599-9e212b76ba9a",
+    "a9855326-2830-46c0-bd54-49d3a67c397a",
+    "c25406b9-1d64-4490-974b-1a59072fb0b8",
+    "b08e6656-0abc-4abf-bcd1-469d447e5fe7",
+    "d32c56f9-bcc3-4a47-b4ba-c0c78016f864",
+    "5e27c9f2-3eb2-4465-b7fc-df08c632f8a2",
+    "5357fe06-a294-4cec-99bf-b0bad7e3dd2e",
+    "5c98a6d5-2e26-444e-bc6c-fa243a62a081",
+    "e40c93be-2ed8-4d61-a03b-36161da6bc0e",
+    "1c297418-769e-40f0-8b97-f803e6622791"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-bf59ff4d-4a79-46cc-a1e4-8136a588d7fd",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "bf59ff4d-4a79-46cc-a1e4-8136a588d7fd",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-c68fec86-88d6-4511-baa0-01f79d81341b",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "c68fec86-88d6-4511-baa0-01f79d81341b",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
+    "af40a41b-d543-4dc7-adf1-b4f6fed66039",
+    "c4443e4a-937c-476c-a7cb-776952c8bdef",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-c8268327-efb7-45ca-8759-2298828a8dd0",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "c8268327-efb7-45ca-8759-2298828a8dd0",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-c9843844-f855-42a7-90ad-18b94862a3da",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "c9843844-f855-42a7-90ad-18b94862a3da",
+   "field": [
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-d64cc8bd-f860-47e3-8abd-6950953cb072",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "d64cc8bd-f860-47e3-8abd-6950953cb072",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-e5ea342e-0947-4cf4-b6dc-98f155973f50",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "e5ea342e-0947-4cf4-b6dc-98f155973f50",
+   "field": [
+    "7281ebe7-29c5-4c20-8572-b03e2f8a48cd",
+    "a4405bf6-0ed6-4151-a313-d8a9bde768a2",
+    "2510379f-eee9-45eb-a599-9e212b76ba9a",
+    "a9855326-2830-46c0-bd54-49d3a67c397a",
+    "c25406b9-1d64-4490-974b-1a59072fb0b8",
+    "b08e6656-0abc-4abf-bcd1-469d447e5fe7",
+    "d32c56f9-bcc3-4a47-b4ba-c0c78016f864",
+    "5e27c9f2-3eb2-4465-b7fc-df08c632f8a2",
+    "5357fe06-a294-4cec-99bf-b0bad7e3dd2e",
+    "5c98a6d5-2e26-444e-bc6c-fa243a62a081",
+    "e40c93be-2ed8-4d61-a03b-36161da6bc0e",
+    "1c297418-769e-40f0-8b97-f803e6622791"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-f2107787-4453-4bc3-898c-a1449e39bf67",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "f2107787-4453-4bc3-898c-a1449e39bf67",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-f622cdde-dd9b-4733-9db8-f3873c1be1be",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "f622cdde-dd9b-4733-9db8-f3873c1be1be",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "8961cab0-6dca-437b-a16d-8112f67108e1",
+    "decca9e4-dac5-4412-ae6d-e28fc94faf1b",
+    "10b50426-1cae-46da-a8ec-5d2df367a8c7",
+    "98d2c9ba-63e3-445e-af15-5b23216f8bf9",
+    "f86dc3f5-0103-40e3-a305-95b7951cce0d",
+    "c27bb96a-78f1-4c3b-a975-3eae7ba2cb29",
+    "1d711d31-a6b2-4fe2-acc2-264553b8f5ad",
+    "91378f2f-e94c-457d-8b24-044203e6975a",
+    "393f7c7f-4c44-4d17-b4c4-ecc019072da6",
+    "b05e87e2-b62b-4964-9530-b8e1ca97f9d5",
+    "6f7e977e-1904-423d-8f5c-98bf7fe32723",
+    "5a5d282c-d4c1-49d6-adb9-4fac702b7784",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-009fa855-b1fd-4764-95b6-1f1eb94dd336",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "009fa855-b1fd-4764-95b6-1f1eb94dd336",
+   "field": [
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
+    "34fd5418-834d-4103-88f8-9bc08042745a",
+    "27ec7332-34e0-4463-a160-8c53ae1b1685",
+    "33ae5985-4d20-45af-8c05-dd7bb4c2cb5e",
+    "53f442dc-883d-4c3e-bef3-5fab15b60f60",
+    "27d3a5fa-0280-4117-b5fa-9623d47e7cb7",
+    "021005df-4170-4d0a-a63f-3cb24a8cd962",
+    "af40a41b-d543-4dc7-adf1-b4f6fed66039",
+    "c4443e4a-937c-476c-a7cb-776952c8bdef",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-06c77f1a-dd5f-42a4-a5c9-719d554eb603",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-13a2e23f-6cfb-4992-948b-3477b96591d4",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "13a2e23f-6cfb-4992-948b-3477b96591d4",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-2cd3ca25-e606-4e46-983e-7aef573ef713",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "2cd3ca25-e606-4e46-983e-7aef573ef713",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-3f56972e-5390-4e1b-8f4d-124042fcc31f",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "3f56972e-5390-4e1b-8f4d-124042fcc31f",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-438bd316-a31e-4a2c-b075-9d6a82c4ae24",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
+   "field": [
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-6fc056af-acd8-48dd-91cf-e34053014997",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "6fc056af-acd8-48dd-91cf-e34053014997",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-7595b222-e832-48ad-b91f-234b20043fb3",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "7595b222-e832-48ad-b91f-234b20043fb3",
+   "field": [
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
+    "34fd5418-834d-4103-88f8-9bc08042745a",
+    "27ec7332-34e0-4463-a160-8c53ae1b1685",
+    "33ae5985-4d20-45af-8c05-dd7bb4c2cb5e",
+    "53f442dc-883d-4c3e-bef3-5fab15b60f60",
+    "27d3a5fa-0280-4117-b5fa-9623d47e7cb7",
+    "021005df-4170-4d0a-a63f-3cb24a8cd962",
+    "af40a41b-d543-4dc7-adf1-b4f6fed66039",
+    "c4443e4a-937c-476c-a7cb-776952c8bdef",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-9c564fba-5120-4953-9653-2a40eeb61414",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "9c564fba-5120-4953-9653-2a40eeb61414",
+   "field": [
+    "7281ebe7-29c5-4c20-8572-b03e2f8a48cd",
+    "a4405bf6-0ed6-4151-a313-d8a9bde768a2",
+    "2510379f-eee9-45eb-a599-9e212b76ba9a",
+    "a9855326-2830-46c0-bd54-49d3a67c397a",
+    "c25406b9-1d64-4490-974b-1a59072fb0b8",
+    "b08e6656-0abc-4abf-bcd1-469d447e5fe7",
+    "d32c56f9-bcc3-4a47-b4ba-c0c78016f864",
+    "5e27c9f2-3eb2-4465-b7fc-df08c632f8a2",
+    "5357fe06-a294-4cec-99bf-b0bad7e3dd2e",
+    "5c98a6d5-2e26-444e-bc6c-fa243a62a081",
+    "e40c93be-2ed8-4d61-a03b-36161da6bc0e",
+    "1c297418-769e-40f0-8b97-f803e6622791"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-c9843844-f855-42a7-90ad-18b94862a3da",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "c9843844-f855-42a7-90ad-18b94862a3da",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-d64cc8bd-f860-47e3-8abd-6950953cb072",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "d64cc8bd-f860-47e3-8abd-6950953cb072",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-e5ea342e-0947-4cf4-b6dc-98f155973f50",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "e5ea342e-0947-4cf4-b6dc-98f155973f50",
+   "field": [
+    "7281ebe7-29c5-4c20-8572-b03e2f8a48cd",
+    "a4405bf6-0ed6-4151-a313-d8a9bde768a2",
+    "2510379f-eee9-45eb-a599-9e212b76ba9a",
+    "a9855326-2830-46c0-bd54-49d3a67c397a",
+    "c25406b9-1d64-4490-974b-1a59072fb0b8",
+    "b08e6656-0abc-4abf-bcd1-469d447e5fe7",
+    "d32c56f9-bcc3-4a47-b4ba-c0c78016f864",
+    "5e27c9f2-3eb2-4465-b7fc-df08c632f8a2",
+    "5357fe06-a294-4cec-99bf-b0bad7e3dd2e",
+    "5c98a6d5-2e26-444e-bc6c-fa243a62a081",
+    "e40c93be-2ed8-4d61-a03b-36161da6bc0e",
+    "1c297418-769e-40f0-8b97-f803e6622791"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-f2107787-4453-4bc3-898c-a1449e39bf67",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "f2107787-4453-4bc3-898c-a1449e39bf67",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "2d00af57-daa6-4634-952e-30074f09ed68-f622cdde-dd9b-4733-9db8-f3873c1be1be",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "2d00af57-daa6-4634-952e-30074f09ed68",
+   "menu": "f622cdde-dd9b-4733-9db8-f3873c1be1be",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "8961cab0-6dca-437b-a16d-8112f67108e1",
+    "decca9e4-dac5-4412-ae6d-e28fc94faf1b",
+    "10b50426-1cae-46da-a8ec-5d2df367a8c7",
+    "98d2c9ba-63e3-445e-af15-5b23216f8bf9",
+    "f86dc3f5-0103-40e3-a305-95b7951cce0d",
+    "c27bb96a-78f1-4c3b-a975-3eae7ba2cb29",
+    "1d711d31-a6b2-4fe2-acc2-264553b8f5ad",
+    "91378f2f-e94c-457d-8b24-044203e6975a",
+    "393f7c7f-4c44-4d17-b4c4-ecc019072da6",
+    "b05e87e2-b62b-4964-9530-b8e1ca97f9d5",
+    "6f7e977e-1904-423d-8f5c-98bf7fe32723",
+    "5a5d282c-d4c1-49d6-adb9-4fac702b7784",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "852a242e-e976-4475-8a25-7116087f4c78-c9843844-f855-42a7-90ad-18b94862a3da",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "852a242e-e976-4475-8a25-7116087f4c78",
+   "menu": "c9843844-f855-42a7-90ad-18b94862a3da",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-009fa855-b1fd-4764-95b6-1f1eb94dd336",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "009fa855-b1fd-4764-95b6-1f1eb94dd336",
+   "field": [
+    "2bf8654c-e052-4e32-a577-738aa1e19acb",
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
+    "af40a41b-d543-4dc7-adf1-b4f6fed66039",
+    "c4443e4a-937c-476c-a7cb-776952c8bdef",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-06c77f1a-dd5f-42a4-a5c9-719d554eb603",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-13a2e23f-6cfb-4992-948b-3477b96591d4",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "13a2e23f-6cfb-4992-948b-3477b96591d4",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-18e700d2-749e-4ae0-ba85-4a601db9c18f",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "18e700d2-749e-4ae0-ba85-4a601db9c18f",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
+    "af40a41b-d543-4dc7-adf1-b4f6fed66039",
+    "c4443e4a-937c-476c-a7cb-776952c8bdef",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-2cd3ca25-e606-4e46-983e-7aef573ef713",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "2cd3ca25-e606-4e46-983e-7aef573ef713",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-3f56972e-5390-4e1b-8f4d-124042fcc31f",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "3f56972e-5390-4e1b-8f4d-124042fcc31f",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-438bd316-a31e-4a2c-b075-9d6a82c4ae24",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-6fc056af-acd8-48dd-91cf-e34053014997",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "6fc056af-acd8-48dd-91cf-e34053014997",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-7595b222-e832-48ad-b91f-234b20043fb3",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "7595b222-e832-48ad-b91f-234b20043fb3",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
+    "af40a41b-d543-4dc7-adf1-b4f6fed66039",
+    "c4443e4a-937c-476c-a7cb-776952c8bdef",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-9c564fba-5120-4953-9653-2a40eeb61414",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "9c564fba-5120-4953-9653-2a40eeb61414",
+   "field": [
+    "7281ebe7-29c5-4c20-8572-b03e2f8a48cd",
+    "a4405bf6-0ed6-4151-a313-d8a9bde768a2",
+    "2510379f-eee9-45eb-a599-9e212b76ba9a",
+    "a9855326-2830-46c0-bd54-49d3a67c397a",
+    "c25406b9-1d64-4490-974b-1a59072fb0b8",
+    "b08e6656-0abc-4abf-bcd1-469d447e5fe7",
+    "d32c56f9-bcc3-4a47-b4ba-c0c78016f864",
+    "5e27c9f2-3eb2-4465-b7fc-df08c632f8a2",
+    "5357fe06-a294-4cec-99bf-b0bad7e3dd2e",
+    "5c98a6d5-2e26-444e-bc6c-fa243a62a081",
+    "e40c93be-2ed8-4d61-a03b-36161da6bc0e",
+    "1c297418-769e-40f0-8b97-f803e6622791"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-bf59ff4d-4a79-46cc-a1e4-8136a588d7fd",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "bf59ff4d-4a79-46cc-a1e4-8136a588d7fd",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-c68fec86-88d6-4511-baa0-01f79d81341b",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "c68fec86-88d6-4511-baa0-01f79d81341b",
+   "field": [
+    "1aacee92-cc19-4c98-a7ec-9253c238121b",
+    "3654f48b-7aed-4d74-9146-e960bbac5bcb",
+    "aaaae515-1739-4d73-9302-2f182f4b6fcc",
+    "4c84374a-431a-4bcb-9338-a7da1beecca9",
+    "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
+    "3e6f1a9c-4657-4f2a-a976-6efd41859639",
+    "2dd244f1-3273-4e01-856f-56587b59b7c4",
+    "f834b87b-a1eb-42b2-b108-de040442ef4a",
+    "d1107479-6fe0-48bd-ba16-a364776766a0",
+    "191c005e-ee6c-4262-825d-27c88ef23970",
+    "eadf1a93-9212-415b-baa4-e6afb668337a",
+    "58e25471-4562-4b26-a7de-a0e4618ee83a",
+    "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
+    "120a1853-c039-486f-ba71-4916502ef84a",
+    "e8907d07-b7b6-4866-903b-5f9c5771701d",
+    "b578ab7e-7920-4567-975a-b0f88feaac84",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
+    "af40a41b-d543-4dc7-adf1-b4f6fed66039",
+    "c4443e4a-937c-476c-a7cb-776952c8bdef",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-c8268327-efb7-45ca-8759-2298828a8dd0",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "c8268327-efb7-45ca-8759-2298828a8dd0",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-d64cc8bd-f860-47e3-8abd-6950953cb072",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "d64cc8bd-f860-47e3-8abd-6950953cb072",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-e5ea342e-0947-4cf4-b6dc-98f155973f50",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "e5ea342e-0947-4cf4-b6dc-98f155973f50",
+   "field": [
+    "7281ebe7-29c5-4c20-8572-b03e2f8a48cd",
+    "a4405bf6-0ed6-4151-a313-d8a9bde768a2",
+    "2510379f-eee9-45eb-a599-9e212b76ba9a",
+    "a9855326-2830-46c0-bd54-49d3a67c397a",
+    "c25406b9-1d64-4490-974b-1a59072fb0b8",
+    "b08e6656-0abc-4abf-bcd1-469d447e5fe7",
+    "d32c56f9-bcc3-4a47-b4ba-c0c78016f864",
+    "5e27c9f2-3eb2-4465-b7fc-df08c632f8a2",
+    "5357fe06-a294-4cec-99bf-b0bad7e3dd2e",
+    "5c98a6d5-2e26-444e-bc6c-fa243a62a081",
+    "e40c93be-2ed8-4d61-a03b-36161da6bc0e",
+    "1c297418-769e-40f0-8b97-f803e6622791"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-f2107787-4453-4bc3-898c-a1449e39bf67",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "f2107787-4453-4bc3-898c-a1449e39bf67",
+   "field": [
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-f622cdde-dd9b-4733-9db8-f3873c1be1be",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "f622cdde-dd9b-4733-9db8-f3873c1be1be",
+   "field": [
+    "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
+    "8961cab0-6dca-437b-a16d-8112f67108e1",
+    "decca9e4-dac5-4412-ae6d-e28fc94faf1b",
+    "10b50426-1cae-46da-a8ec-5d2df367a8c7",
+    "98d2c9ba-63e3-445e-af15-5b23216f8bf9",
+    "f86dc3f5-0103-40e3-a305-95b7951cce0d",
+    "c27bb96a-78f1-4c3b-a975-3eae7ba2cb29",
+    "1d711d31-a6b2-4fe2-acc2-264553b8f5ad",
+    "91378f2f-e94c-457d-8b24-044203e6975a",
+    "393f7c7f-4c44-4d17-b4c4-ecc019072da6",
+    "b05e87e2-b62b-4964-9530-b8e1ca97f9d5",
+    "6f7e977e-1904-423d-8f5c-98bf7fe32723",
+    "5a5d282c-d4c1-49d6-adb9-4fac702b7784",
+    "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
+    "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
+    "9db6397a-b0be-4871-80af-e3520b92c67a",
+    "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
+    "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
+    "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
+    "65f92651-4105-4727-a2ee-44bbe0512d40",
+    "97117860-e8dc-4d34-964f-6bd86d5a7a8b"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-c7c0a171-916d-4548-9267-7e18b3df708d",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "c7c0a171-916d-4548-9267-7e18b3df708d",
+   "field": [
+    "28778720-3261-485d-8758-7e798cfb46d5",
+    "388afa85-4beb-4c25-9032-ffd92549205c",
+    "1e794b2c-2bef-4f7c-8ec2-4846b32fe269",
+    "c2873234-82a7-4e5c-939c-06e08a7d3c39",
+    "ba3ab89f-bd7a-414f-b3f5-ff60bdb7bead",
+    "30cec1b6-1f76-40bc-9465-b57e618dcd41",
+    "a5f2b582-911b-42ef-8861-86b6e0256c91",
+    "f585d377-d965-4c69-b8e2-47ab0e5cb9ab",
+    "499cc6f1-7c22-4ba8-b740-8638c3d36ad2",
+    "9da106b8-4dba-48db-99ea-79913f0eea5f",
+    "e246bb6d-1426-46ac-9d0e-537b3d55a43c",
+    "4a1b2c3d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-89bf4eec-affd-4c7b-9bdc-a179333d8cad",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "89bf4eec-affd-4c7b-9bdc-a179333d8cad",
+   "field": [
+    "28778720-3261-485d-8758-7e798cfb46d5",
+    "388afa85-4beb-4c25-9032-ffd92549205c",
+    "1e794b2c-2bef-4f7c-8ec2-4846b32fe269",
+    "c2873234-82a7-4e5c-939c-06e08a7d3c39",
+    "ba3ab89f-bd7a-414f-b3f5-ff60bdb7bead",
+    "30cec1b6-1f76-40bc-9465-b57e618dcd41",
+    "a5f2b582-911b-42ef-8861-86b6e0256c91",
+    "f585d377-d965-4c69-b8e2-47ab0e5cb9ab",
+    "499cc6f1-7c22-4ba8-b740-8638c3d36ad2",
+    "9da106b8-4dba-48db-99ea-79913f0eea5f",
+    "e246bb6d-1426-46ac-9d0e-537b3d55a43c",
+    "4a1b2c3d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-152fdcde-7946-477a-b7e9-f8a5eddd5b28",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "152fdcde-7946-477a-b7e9-f8a5eddd5b28",
+   "field": [
+    "28778720-3261-485d-8758-7e798cfb46d5",
+    "388afa85-4beb-4c25-9032-ffd92549205c",
+    "1e794b2c-2bef-4f7c-8ec2-4846b32fe269",
+    "c2873234-82a7-4e5c-939c-06e08a7d3c39",
+    "ba3ab89f-bd7a-414f-b3f5-ff60bdb7bead",
+    "30cec1b6-1f76-40bc-9465-b57e618dcd41",
+    "a5f2b582-911b-42ef-8861-86b6e0256c91",
+    "f585d377-d965-4c69-b8e2-47ab0e5cb9ab",
+    "499cc6f1-7c22-4ba8-b740-8638c3d36ad2",
+    "9da106b8-4dba-48db-99ea-79913f0eea5f",
+    "e246bb6d-1426-46ac-9d0e-537b3d55a43c",
+    "4a1b2c3d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-f9ccd0c3-491a-4f3f-8b9c-ef395e61981c",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+   "menu": "f9ccd0c3-491a-4f3f-8b9c-ef395e61981c",
+   "field": [
+    "28778720-3261-485d-8758-7e798cfb46d5",
+    "388afa85-4beb-4c25-9032-ffd92549205c",
+    "1e794b2c-2bef-4f7c-8ec2-4846b32fe269",
+    "c2873234-82a7-4e5c-939c-06e08a7d3c39",
+    "ba3ab89f-bd7a-414f-b3f5-ff60bdb7bead",
+    "30cec1b6-1f76-40bc-9465-b57e618dcd41",
+    "a5f2b582-911b-42ef-8861-86b6e0256c91",
+    "f585d377-d965-4c69-b8e2-47ab0e5cb9ab",
+    "499cc6f1-7c22-4ba8-b740-8638c3d36ad2",
+    "9da106b8-4dba-48db-99ea-79913f0eea5f",
+    "e246bb6d-1426-46ac-9d0e-537b3d55a43c",
+    "4a1b2c3d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-153ec9eb-5402-5741-b8d4-32ed5efdd99f",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "153ec9eb-5402-5741-b8d4-32ed5efdd99f",
+   "field": [
+    "acb5dde5-26ea-4404-9309-a80d55df7c00",
+    "619f1fca-6101-4094-bf3a-e7f37dcf3a6d",
+    "e3cad2f6-ae45-48e7-88dd-438c35b3c4a8",
+    "0fdd5faf-5422-47e9-a72d-3362e6863400",
+    "22794be3-8648-4649-8457-960fafd25f78",
+    "bb12d0ad-3073-4dc5-9d54-ce68a1a7c0e9",
+    "17bbe4a6-e4a2-407b-8939-81b6975d5ec2",
+    "0db721db-e808-4da4-ae32-f381398e6014",
+    "1a32dad2-34b8-490c-ab47-8c61cdfb5b34",
+    "c545a180-b6a1-4c9e-86a6-b5f1f66cb1f0",
+    "2ec43612-dcfe-4bd1-8be1-5faa0da56fbf",
+    "fd4a4cb0-5209-4876-9e04-72200baa2d99",
+    "1d07fb89-133a-4a65-b24f-38853b0ca901",
+    "30256847-f3d9-4942-9485-578a5985d96e",
+    "f1cea11e-32d5-492c-8eac-f8d10b5fc9ee",
+    "e7ce46dc-9b66-4845-9666-1b0d4de052d2",
+    "e2ad32e3-16fc-4d78-8b4b-a9ccdf2a97a6"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-5c53ec25-e8b8-53be-91b3-f37a6e2094b1",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "5c53ec25-e8b8-53be-91b3-f37a6e2094b1",
+   "field": [
+    "acb5dde5-26ea-4404-9309-a80d55df7c00",
+    "619f1fca-6101-4094-bf3a-e7f37dcf3a6d",
+    "e3cad2f6-ae45-48e7-88dd-438c35b3c4a8",
+    "0fdd5faf-5422-47e9-a72d-3362e6863400",
+    "22794be3-8648-4649-8457-960fafd25f78",
+    "bb12d0ad-3073-4dc5-9d54-ce68a1a7c0e9",
+    "17bbe4a6-e4a2-407b-8939-81b6975d5ec2",
+    "0db721db-e808-4da4-ae32-f381398e6014",
+    "1a32dad2-34b8-490c-ab47-8c61cdfb5b34",
+    "c545a180-b6a1-4c9e-86a6-b5f1f66cb1f0",
+    "2ec43612-dcfe-4bd1-8be1-5faa0da56fbf",
+    "fd4a4cb0-5209-4876-9e04-72200baa2d99",
+    "1d07fb89-133a-4a65-b24f-38853b0ca901",
+    "30256847-f3d9-4942-9485-578a5985d96e",
+    "f1cea11e-32d5-492c-8eac-f8d10b5fc9ee",
+    "e7ce46dc-9b66-4845-9666-1b0d4de052d2",
+    "e2ad32e3-16fc-4d78-8b4b-a9ccdf2a97a6"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-c7c0a171-916d-4548-9267-7e18b3df708d",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "c7c0a171-916d-4548-9267-7e18b3df708d",
+   "field": [
+    "28778720-3261-485d-8758-7e798cfb46d5",
+    "388afa85-4beb-4c25-9032-ffd92549205c",
+    "1e794b2c-2bef-4f7c-8ec2-4846b32fe269",
+    "c2873234-82a7-4e5c-939c-06e08a7d3c39",
+    "ba3ab89f-bd7a-414f-b3f5-ff60bdb7bead",
+    "30cec1b6-1f76-40bc-9465-b57e618dcd41",
+    "a5f2b582-911b-42ef-8861-86b6e0256c91",
+    "f585d377-d965-4c69-b8e2-47ab0e5cb9ab",
+    "499cc6f1-7c22-4ba8-b740-8638c3d36ad2",
+    "9da106b8-4dba-48db-99ea-79913f0eea5f",
+    "e246bb6d-1426-46ac-9d0e-537b3d55a43c",
+    "4a1b2c3d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-89bf4eec-affd-4c7b-9bdc-a179333d8cad",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "89bf4eec-affd-4c7b-9bdc-a179333d8cad",
+   "field": [
+    "28778720-3261-485d-8758-7e798cfb46d5",
+    "388afa85-4beb-4c25-9032-ffd92549205c",
+    "1e794b2c-2bef-4f7c-8ec2-4846b32fe269",
+    "c2873234-82a7-4e5c-939c-06e08a7d3c39",
+    "ba3ab89f-bd7a-414f-b3f5-ff60bdb7bead",
+    "30cec1b6-1f76-40bc-9465-b57e618dcd41",
+    "a5f2b582-911b-42ef-8861-86b6e0256c91",
+    "f585d377-d965-4c69-b8e2-47ab0e5cb9ab",
+    "499cc6f1-7c22-4ba8-b740-8638c3d36ad2",
+    "9da106b8-4dba-48db-99ea-79913f0eea5f",
+    "e246bb6d-1426-46ac-9d0e-537b3d55a43c",
+    "4a1b2c3d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-152fdcde-7946-477a-b7e9-f8a5eddd5b28",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "152fdcde-7946-477a-b7e9-f8a5eddd5b28",
+   "field": [
+    "28778720-3261-485d-8758-7e798cfb46d5",
+    "388afa85-4beb-4c25-9032-ffd92549205c",
+    "1e794b2c-2bef-4f7c-8ec2-4846b32fe269",
+    "c2873234-82a7-4e5c-939c-06e08a7d3c39",
+    "ba3ab89f-bd7a-414f-b3f5-ff60bdb7bead",
+    "30cec1b6-1f76-40bc-9465-b57e618dcd41",
+    "a5f2b582-911b-42ef-8861-86b6e0256c91",
+    "f585d377-d965-4c69-b8e2-47ab0e5cb9ab",
+    "499cc6f1-7c22-4ba8-b740-8638c3d36ad2",
+    "9da106b8-4dba-48db-99ea-79913f0eea5f",
+    "e246bb6d-1426-46ac-9d0e-537b3d55a43c",
+    "4a1b2c3d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ },
+ {
+  "model": "system.fieldpermission",
+  "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c-f9ccd0c3-491a-4f3f-8b9c-ef395e61981c",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
+   "menu": "f9ccd0c3-491a-4f3f-8b9c-ef395e61981c",
+   "field": [
+    "28778720-3261-485d-8758-7e798cfb46d5",
+    "388afa85-4beb-4c25-9032-ffd92549205c",
+    "1e794b2c-2bef-4f7c-8ec2-4846b32fe269",
+    "c2873234-82a7-4e5c-939c-06e08a7d3c39",
+    "ba3ab89f-bd7a-414f-b3f5-ff60bdb7bead",
+    "30cec1b6-1f76-40bc-9465-b57e618dcd41",
+    "a5f2b582-911b-42ef-8861-86b6e0256c91",
+    "f585d377-d965-4c69-b8e2-47ab0e5cb9ab",
+    "499cc6f1-7c22-4ba8-b740-8638c3d36ad2",
+    "9da106b8-4dba-48db-99ea-79913f0eea5f",
+    "e246bb6d-1426-46ac-9d0e-537b3d55a43c",
+    "4a1b2c3d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
+    "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
+    "47c3bf6c-58b3-4e9e-8553-9319e526a734",
+    "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
+    "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
+    "987f7dd8-d6c0-41a9-9097-aea116562c95",
+    "a906331b-3235-49f2-a520-5f13280d585a",
+    "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
+    "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
+    "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
+    "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
+    "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7"
+   ]
+  }
+ }
+]

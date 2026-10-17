@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "roles": {
+    "admin": [
+      "About",
+      "SearchData",
+      "SettingMessage",
+      "SwaggerApiDocs",
+      "SystemFlower",
+      "UserInfo",
+      "config",
+      "logs",
+      "permissions",
+      "settings",
+      "system",
+      "systemNoticeDir"
+    ],
+    "default": [
+      "About",
+      "SwaggerApiDocs",
+      "UserInfo"
+    ],
+    "demo": [
+      "About",
+      "SearchData",
+      "SwaggerApiDocs",
+      "SystemFlower",
+      "UserInfo",
+      "logs",
+      "permissions",
+      "system",
+      "systemNoticeDir"
+    ],
+    "test": [
+      "About",
+      "SearchData",
+      "SwaggerApiDocs",
+      "SystemFlower",
+      "UserInfo",
+      "logs",
+      "permissions",
+      "system"
+    ]
+  }
+}

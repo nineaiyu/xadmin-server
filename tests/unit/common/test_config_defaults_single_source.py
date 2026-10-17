@@ -13,7 +13,6 @@
    的顶层键全部登记（防静默覆盖与示例漂移）。
 """
 
-import json
 import re
 from pathlib import Path
 
@@ -21,6 +20,7 @@ from common.core.config import BaseConfCache, ConfigCache, MessagePushConfCache
 from server.conf import Config
 from server.conf.defaults import BASE_CONFIG, LIBS_CONFIG
 from server.conf.settings_defaults import SETTINGS_CONFIG
+from system.services.seeding import read_model_rows
 
 # 前端站点配置整体 JSON 走 SystemConfig 但非后端 SysConfig 键，种子豁免
 SEED_EXEMPT_KEYS = {"WEB_SITE_CONFIG"}
@@ -46,8 +46,7 @@ def test_every_property_has_conf_default():
 
 def test_seed_values_match_conf_defaults():
     """systemconfig.json 种子初值必须与 conf.py 默认值一致（防两处漂移）。"""
-    seed_path = Path(__file__).resolve().parents[3] / "loadjson" / "systemconfig.json"
-    seeds = json.loads(seed_path.read_text(encoding="utf-8"))
+    seeds = read_model_rows("system.systemconfig")
     drifted = []
     for row in seeds:
         fields = row["fields"]

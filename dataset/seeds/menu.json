@@ -1,0 +1,1879 @@
+[
+ {
+  "model": "system.menu",
+  "pk": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "fc447510-2820-524c-a802-d7241bd71e5f",
+   "menu_type": 1,
+   "name": "DataDashboard",
+   "rank": 1,
+   "path": "/analysis/dashboard/index",
+   "component": "dashboard/index",
+   "is_active": true,
+   "meta": "ba68c910-0460-566c-a2bb-82bc0642e550",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": "护栏：URL 命名空间 /analysis 与组件目录 views/dashboard/ 不同，属既有显式映射（线上菜单行已按此 path 落库）。口径结论：保留映射，勿顺手修齐 URL 或移动组件目录，否则断链。详见 docs/guide/menu-maintenance.md",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "fc447510-2820-524c-a802-d7241bd71e5f",
+   "menu_type": 1,
+   "name": "DataDataset",
+   "rank": 2,
+   "path": "/analysis/dataset/index",
+   "component": "dashboard/dataset/index",
+   "is_active": true,
+   "meta": "58d0c9f1-dd24-50b3-a589-9e75f4686c48",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "9210d58d-7c29-543f-a2a6-8ca491bdfced",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
+   "menu_type": 2,
+   "name": "list:DataDashboard",
+   "rank": 1,
+   "path": "api/dataset/dashboards$",
+   "component": null,
+   "is_active": true,
+   "meta": "03653e08-673f-5958-b92e-7a608d3a6ded",
+   "method": "GET",
+   "model": [
+    "40df3f8e-79c7-43b9-8b9b-d598a72ff15d"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d9eae806-5504-5bc3-83c6-e8ce2f10f007",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
+   "menu_type": 2,
+   "name": "create:DataDashboard",
+   "rank": 2,
+   "path": "api/dataset/dashboards$",
+   "component": null,
+   "is_active": true,
+   "meta": "40bbfd29-f8fe-59db-92d0-123a6ef75cc9",
+   "method": "POST",
+   "model": [
+    "40df3f8e-79c7-43b9-8b9b-d598a72ff15d"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0c2e74dd-a930-5def-9756-2a5825e45518",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
+   "menu_type": 2,
+   "name": "partialUpdate:DataDashboard",
+   "rank": 3,
+   "path": "api/dataset/dashboards/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "7841854c-1e40-5373-aff2-bb58f64d984c",
+   "method": "PATCH",
+   "model": [
+    "40df3f8e-79c7-43b9-8b9b-d598a72ff15d"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8c8f9f3f-0abf-5a29-b6c5-c38e4452a0d2",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
+   "menu_type": 2,
+   "name": "destroy:DataDashboard",
+   "rank": 4,
+   "path": "api/dataset/dashboards/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "d47992eb-3e29-5906-88fd-1edf23a5dd66",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5a8a8c1d-867a-55be-8423-f7c05159487d",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "list:DataDataset",
+   "rank": 1,
+   "path": "api/dataset/datasets$",
+   "component": null,
+   "is_active": true,
+   "meta": "59c5f56f-9659-51bc-ab0c-94a5082e67c4",
+   "method": "GET",
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2f63175e-dced-5597-bb0a-173e803811f9",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "create:DataDataset",
+   "rank": 2,
+   "path": "api/dataset/datasets$",
+   "component": null,
+   "is_active": true,
+   "meta": "ef55d8a3-0224-5887-a1eb-bb085986b498",
+   "method": "POST",
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "95fc9648-64ca-554e-aaa5-e68f8e137ca3",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "retrieve:DataDataset",
+   "rank": 3,
+   "path": "api/dataset/datasets/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "ade6feeb-6d4d-551a-bee8-b1a07fde677d",
+   "method": "GET",
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "e984ffc5-96c1-555b-a3c3-8a4661d40d80",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "partialUpdate:DataDataset",
+   "rank": 4,
+   "path": "api/dataset/datasets/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "5e37d20e-eb03-5b21-ac5d-4d990639928e",
+   "method": "PATCH",
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c498c5f7-7a67-5b8f-86f6-8c405ddcbaa4",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "destroy:DataDataset",
+   "rank": 5,
+   "path": "api/dataset/datasets/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "a160d336-d6ff-5cbc-b9d3-c6f0a4492e62",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7a7b3d1a-369d-5786-a573-d3281467c476",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "execute:DataDataset",
+   "rank": 6,
+   "path": "api/dataset/datasets/(?P<pk>[^/.]+)/execute$",
+   "component": null,
+   "is_active": true,
+   "meta": "25e2c3b4-f3c3-5962-a697-c3a958d8fcfc",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "10948b1f-55f3-5200-8018-dbf70ca37f35",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "aggregate:DataDataset",
+   "rank": 7,
+   "path": "api/dataset/datasets/(?P<pk>[^/.]+)/aggregate$",
+   "component": null,
+   "is_active": true,
+   "meta": "db7061c9-400a-5419-b527-d2c7c3843e24",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "4e76df89-3b77-52f4-933a-5eada2c582c6",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "meta:DataDataset",
+   "rank": 8,
+   "path": "api/dataset/datasets/meta$",
+   "component": null,
+   "is_active": true,
+   "meta": "7208172f-0d80-5a06-8afc-405f08c2c310",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "fc447510-2820-524c-a802-d7241bd71e5f",
+   "menu_type": 1,
+   "name": "DataReport",
+   "rank": 3,
+   "path": "/analysis/report/index",
+   "component": "analysis/report/index",
+   "is_active": true,
+   "meta": "dab41bbb-c37d-5ccd-9ae8-22492650a39d",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "16294c70-614c-50ae-ab48-9c002e293c6b",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "fc447510-2820-524c-a802-d7241bd71e5f",
+   "menu_type": 1,
+   "name": "DataScreen",
+   "rank": 4,
+   "path": "/analysis/screen/index",
+   "component": "analysis/screen/index",
+   "is_active": true,
+   "meta": "ea8c875a-3732-5b3d-8089-eaf4895e74c7",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e111-5f11-4c11-9d11-000000000011",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00.000Z",
+   "updated_time": "2026-09-18T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "command:DataScreen",
+   "rank": 10,
+   "path": "api/dataset/screens/(?P<pk>[^/.]+)/command$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e112-5f12-4c12-9d12-000000000012",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8fa3cac7-e730-5d4b-9aae-1c55eaacc712",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "list:DataReport",
+   "rank": 1,
+   "path": "api/dataset/reports$",
+   "component": null,
+   "is_active": true,
+   "meta": "1b818fd4-aaaf-593d-ae61-9a26a2a69ff2",
+   "method": "GET",
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535",
+    "8e81f53a-efc0-44d4-8362-1bbd9589331b"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1711513e-fbad-5a8a-baf7-54fecb87116e",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "create:DataReport",
+   "rank": 2,
+   "path": "api/dataset/reports$",
+   "component": null,
+   "is_active": true,
+   "meta": "d086ba8d-dd5f-58dd-810b-104f36692601",
+   "method": "POST",
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535",
+    "8e81f53a-efc0-44d4-8362-1bbd9589331b"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d138f67b-cd9f-52f0-99db-f618310f9e43",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "partialUpdate:DataReport",
+   "rank": 3,
+   "path": "api/dataset/reports/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "995c5ce6-322b-5b15-886b-bb9996d79451",
+   "method": "PATCH",
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535",
+    "8e81f53a-efc0-44d4-8362-1bbd9589331b"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "24dc0f70-0e02-50a1-9a7b-8cf83a8ba79d",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "destroy:DataReport",
+   "rank": 4,
+   "path": "api/dataset/reports/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "a2582409-e38e-5e86-9026-6b4e77c5b9a9",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c18fd8de-1c63-5461-b591-9f49a03a844a",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "run:DataReport",
+   "rank": 5,
+   "path": "api/dataset/reports/(?P<pk>[^/.]+)/run$",
+   "component": null,
+   "is_active": true,
+   "meta": "4d3fa837-9015-5f42-8232-f11951721907",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e107-5f07-4c17-9d07-000000000007",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00.000Z",
+   "updated_time": "2026-09-18T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "userOptions:DataReport",
+   "rank": 6,
+   "path": "api/dataset/reports/user-options$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e108-5f08-4c18-9d08-000000000008",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f76e2ec1-12e0-515e-9c76-43d6fba97ea1",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "list:DataScreen",
+   "rank": 1,
+   "path": "api/dataset/screens$",
+   "component": null,
+   "is_active": true,
+   "meta": "a5c1ec94-c80e-5045-b7aa-2f69499e2468",
+   "method": "GET",
+   "model": [
+    "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "70f63167-096a-5937-b4fe-43a50db24dee",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "create:DataScreen",
+   "rank": 2,
+   "path": "api/dataset/screens$",
+   "component": null,
+   "is_active": true,
+   "meta": "9a3c06e2-938a-571c-9f4a-c271c7daf3c3",
+   "method": "POST",
+   "model": [
+    "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d376b906-51f2-5abc-8bc3-3a7b177cf2bb",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "partialUpdate:DataScreen",
+   "rank": 3,
+   "path": "api/dataset/screens/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "149ae23c-2629-5f7f-aac0-3d165a8577ee",
+   "method": "PATCH",
+   "model": [
+    "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "9b63f925-c062-52b6-a2c4-97cda78f75a7",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "destroy:DataScreen",
+   "rank": 4,
+   "path": "api/dataset/screens/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "11189bcb-a181-5eb0-87c0-2e4e7d406bb7",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "f1512129-7889-51f5-8c9d-465097901510",
+   "menu_type": 1,
+   "name": "FormDesigner",
+   "rank": 1,
+   "path": "/form-collection/designer/index",
+   "component": "form/designer/index",
+   "is_active": true,
+   "meta": "340bf31f-ea76-5d80-8af7-62bc58002f1f",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "f1512129-7889-51f5-8c9d-465097901510",
+   "menu_type": 1,
+   "name": "FormMySubmission",
+   "rank": 2,
+   "path": "/form-collection/my/index",
+   "component": "form/my/index",
+   "is_active": true,
+   "meta": "8e9cd067-5863-5809-a540-421ecfd0211b",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "781dc66d-01d4-5492-9e71-2551d7fcdd7b",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "list:FormDesigner",
+   "rank": 1,
+   "path": "api/dataset/dynamic-forms$",
+   "component": null,
+   "is_active": true,
+   "meta": "841c7db3-3474-5cff-9fe7-92c879a66d2a",
+   "method": "GET",
+   "model": [
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3df05ab7-a8f5-5de5-a174-2f59952d42f4",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "create:FormDesigner",
+   "rank": 2,
+   "path": "api/dataset/dynamic-forms$",
+   "component": null,
+   "is_active": true,
+   "meta": "e24aac1f-f2ce-5c15-b7db-5dd4cef136dc",
+   "method": "POST",
+   "model": [
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "df0fc7f7-f499-541d-922c-0144ec866a5b",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "retrieve:FormDesigner",
+   "rank": 3,
+   "path": "api/dataset/dynamic-forms/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "08ea4e1f-63d8-501d-a427-bda11fcbcceb",
+   "method": "GET",
+   "model": [
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "b8bc7344-1e8e-5229-8923-74bc4e8ce4dc",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "partialUpdate:FormDesigner",
+   "rank": 4,
+   "path": "api/dataset/dynamic-forms/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "a5c3f270-59a5-5f65-b5da-e58242e5807a",
+   "method": "PATCH",
+   "model": [
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "ee395fdc-efc0-5bd2-b636-712bc7ce82b5",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "destroy:FormDesigner",
+   "rank": 5,
+   "path": "api/dataset/dynamic-forms/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "152c7ef0-78f4-5044-bf47-cf3232957f85",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0994aedd-8b79-42a8-ac33-22b94c12e4e4",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.665Z",
+   "updated_time": "2026-09-14T13:49:28.665Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "batchDestroy:FormDesigner",
+   "rank": 10000,
+   "path": "api/dataset/dynamic-forms/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "a4104552-3ec4-4568-b96a-fc265eaa3c2b",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "b13e5b15-5b87-45b4-903f-294639266ec9",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.663Z",
+   "updated_time": "2026-09-14T13:49:28.663Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "batchDestroy:FormMySubmission",
+   "rank": 10005,
+   "path": "api/dataset/dynamic-form-submissions/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "0549f58d-742a-4839-a7de-a5f7a7916aff",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7194e9b0-05c4-498e-8bc3-4ce646e207d7",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.660Z",
+   "updated_time": "2026-09-14T13:49:28.660Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "partialUpdate:FormMySubmission",
+   "rank": 10004,
+   "path": "api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "3bf1caaa-b12e-4777-a97b-0b36dd7ee082",
+   "method": "PATCH",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "bddc334f-e59c-4927-a3da-bc813c0dd8a3",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.658Z",
+   "updated_time": "2026-09-14T13:49:28.658Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "retrieve:FormMySubmission",
+   "rank": 10003,
+   "path": "api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "2121c0a4-c517-4f2b-9570-9548a1c0e777",
+   "method": "GET",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "031d4f01-7907-4c09-9ba9-f59b332d016a",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.656Z",
+   "updated_time": "2026-09-14T13:49:28.656Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "destroy:FormMySubmission",
+   "rank": 10002,
+   "path": "api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "61587439-09eb-4a00-9823-8107d1544713",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a48b690f-8baf-4cb1-8610-521e2cccbd71",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.653Z",
+   "updated_time": "2026-09-14T13:49:28.653Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "create:FormMySubmission",
+   "rank": 10001,
+   "path": "api/dataset/dynamic-form-submissions$",
+   "component": null,
+   "is_active": true,
+   "meta": "cc58e579-5e83-4477-8562-5637664c0810",
+   "method": "POST",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "6330cbf8-6a85-428c-a360-edac821ac55d",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.650Z",
+   "updated_time": "2026-09-14T13:49:28.650Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "list:FormMySubmission",
+   "rank": 10000,
+   "path": "api/dataset/dynamic-form-submissions$",
+   "component": null,
+   "is_active": true,
+   "meta": "32a528ed-2e18-450f-bf74-2c565da5ebe6",
+   "method": "GET",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "06f802a5-df5c-4eeb-a007-ceb49ecb2fff",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.648Z",
+   "updated_time": "2026-09-14T13:49:28.648Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "batchDestroy:DataDataset",
+   "rank": 10000,
+   "path": "api/dataset/datasets/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "499c94cd-1cdd-4e41-b945-1c12a75e85f9",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c4cf4cda-92b3-4fee-a78d-35374302a801",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.646Z",
+   "updated_time": "2026-09-14T13:49:28.646Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
+   "menu_type": 2,
+   "name": "batchDestroy:DataDashboard",
+   "rank": 10001,
+   "path": "api/dataset/dashboards/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "1438c2f2-df6f-4127-8571-046975c5d701",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "952898fc-732b-4e94-ba46-1ab610082f54",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.643Z",
+   "updated_time": "2026-09-14T13:49:28.643Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
+   "menu_type": 2,
+   "name": "retrieve:DataDashboard",
+   "rank": 10000,
+   "path": "api/dataset/dashboards/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "1f7d3d7f-9f40-411f-8b9a-27b794bba273",
+   "method": "GET",
+   "model": [
+    "40df3f8e-79c7-43b9-8b9b-d598a72ff15d"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "44338014-cf2b-4567-b8c5-a182fcbd5b98",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.641Z",
+   "updated_time": "2026-09-14T13:49:28.641Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "batchDestroy:DataScreen",
+   "rank": 10001,
+   "path": "api/dataset/screens/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "77ddb46f-9b37-4392-aaf9-10b071d6f35a",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f24d67b7-a821-4638-9340-b6b84f736cd3",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.638Z",
+   "updated_time": "2026-09-14T13:49:28.638Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "retrieve:DataScreen",
+   "rank": 10000,
+   "path": "api/dataset/screens/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "c0594407-d937-499b-958d-ffef571769bb",
+   "method": "GET",
+   "model": [
+    "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c5f818a5-5264-47f4-a400-c7b37685f59c",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.636Z",
+   "updated_time": "2026-09-14T13:49:28.636Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "batchDestroy:DataReport",
+   "rank": 10001,
+   "path": "api/dataset/reports/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "b2afc383-3cfe-43d4-b756-425f6b165991",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7485a3b0-1f64-493a-aa9b-d97c3bcb1bd9",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.633Z",
+   "updated_time": "2026-09-14T13:49:28.633Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "retrieve:DataReport",
+   "rank": 10000,
+   "path": "api/dataset/reports/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "731a596b-de3c-46ba-ae26-6f2963a9dd16",
+   "method": "GET",
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535",
+    "8e81f53a-efc0-44d4-8362-1bbd9589331b"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "64637cdd-286c-51a5-84a5-7b08054999b3",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00Z",
+   "updated_time": "2026-09-15T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "exportData:FormMySubmission",
+   "rank": 10006,
+   "path": "api/dataset/dynamic-form-submissions/export-data$",
+   "component": null,
+   "is_active": true,
+   "meta": "98c082e4-1e21-5342-90d4-db676632536e",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "121c438b-0623-4823-b6c8-383c0f4bc28f",
+  "fields": {
+   "created_time": "2026-09-15T11:49:17.141Z",
+   "updated_time": "2026-09-15T11:49:17.141Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "exportAsync:FormMySubmission",
+   "rank": 10000,
+   "path": "api/dataset/dynamic-form-submissions/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "1e2ae45a-27d6-455b-8034-165bb4b77e42",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e101-5f01-4c11-9d01-000000000001",
+  "fields": {
+   "created_time": "2026-09-17T00:00:00Z",
+   "updated_time": "2026-09-17T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "availableForms:FormMySubmission",
+   "rank": 900,
+   "path": "api/dataset/dynamic-form-submissions/available-forms$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e102-5f02-4c12-9d02-000000000002",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e103-5f03-4c13-9d03-000000000003",
+  "fields": {
+   "created_time": "2026-09-17T00:00:00Z",
+   "updated_time": "2026-09-17T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "resubmit:FormMySubmission",
+   "rank": 900,
+   "path": "api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)/resubmit$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e104-5f04-4c14-9d04-000000000004",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e105-5f05-4c15-9d05-000000000005",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00Z",
+   "updated_time": "2026-09-18T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "userOptions:FormMySubmission",
+   "rank": 900,
+   "path": "api/dataset/dynamic-form-submissions/user-options$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e106-5f06-4c16-9d06-000000000006",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1f001-5a01-4b01-8c01-000000000001",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00Z",
+   "updated_time": "2026-09-18T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "submit:FormMySubmission",
+   "rank": 900,
+   "path": "api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1f002-5a02-4b02-8c02-000000000002",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1f017-5a01-4b01-8c01-000000000017",
+  "fields": {
+   "created_time": "2026-09-22T00:00:00Z",
+   "updated_time": "2026-09-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "impact:DataDataset",
+   "rank": 924,
+   "path": "api/dataset/datasets/impact$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1f018-5a02-4b02-8c02-000000000018",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1f01b-5a01-4b01-8c01-00000000001b",
+  "fields": {
+   "created_time": "2026-09-22T00:00:00Z",
+   "updated_time": "2026-09-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "impact:FormDesigner",
+   "rank": 926,
+   "path": "api/dataset/dynamic-forms/impact$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1f01c-5a02-4b02-8c02-00000000001c",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1f01d-5a01-4b01-8c01-00000000001d",
+  "fields": {
+   "created_time": "2026-09-22T00:00:00Z",
+   "updated_time": "2026-09-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "impact:DataScreen",
+   "rank": 927,
+   "path": "api/dataset/screens/impact$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1f01e-5a02-4b02-8c02-00000000001e",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "158a5476-edac-41ed-9f27-6a6f1076e83c",
+  "fields": {
+   "created_time": "2026-09-27T12:31:09.143Z",
+   "updated_time": "2026-09-27T12:31:09.143Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "schemaHistory:FormDesigner",
+   "rank": 10001,
+   "path": "api/dataset/dynamic-forms/(?P<pk>[^/.]+)/schema-history$",
+   "component": null,
+   "is_active": true,
+   "meta": "2230af0f-b2fb-4c47-b974-4089ca19cc97",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "13963346-dcbb-47c4-9dc5-f609d19f8594",
+  "fields": {
+   "created_time": "2026-09-27T12:31:09.142Z",
+   "updated_time": "2026-09-27T12:31:09.142Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "rollback:FormDesigner",
+   "rank": 10000,
+   "path": "api/dataset/dynamic-forms/(?P<pk>[^/.]+)/rollback$",
+   "component": null,
+   "is_active": true,
+   "meta": "72ceacef-8214-43b6-a9ea-b6fbef39501d",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "34cb7d31-bba4-53c1-b5e5-732632323259",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "f1512129-7889-51f5-8c9d-465097901510",
+   "menu_type": 1,
+   "name": "FormData",
+   "rank": 3,
+   "path": "/form-collection/data/index",
+   "component": "form/data/index",
+   "is_active": true,
+   "meta": "089339dd-ceec-577d-a944-57950daf8a0d",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "91954e2a-ba18-401b-a897-ac203fa523bf",
+  "fields": {
+   "created_time": "2026-09-27T14:03:22.852Z",
+   "updated_time": "2026-09-27T14:03:22.852Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "34cb7d31-bba4-53c1-b5e5-732632323259",
+   "menu_type": 2,
+   "name": "list:FormData",
+   "rank": 10000,
+   "path": "api/dataset/form-data$",
+   "component": null,
+   "is_active": true,
+   "meta": "493693a6-3350-43ee-ae8a-62db84bdc27f",
+   "method": "GET",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a889d17f-b990-4257-b784-4e4e76c86f9e",
+  "fields": {
+   "created_time": "2026-09-27T14:03:23.267Z",
+   "updated_time": "2026-09-27T14:03:23.267Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "34cb7d31-bba4-53c1-b5e5-732632323259",
+   "menu_type": 2,
+   "name": "retrieve:FormData",
+   "rank": 10001,
+   "path": "api/dataset/form-data/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "5c7c25f2-8bcd-4415-87c9-b7543a7cb3ec",
+   "method": "GET",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "dc938b7f-6b85-4edb-937e-1f8c0ab8218a",
+  "fields": {
+   "created_time": "2026-09-27T14:03:23.684Z",
+   "updated_time": "2026-09-27T14:03:23.684Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "34cb7d31-bba4-53c1-b5e5-732632323259",
+   "menu_type": 2,
+   "name": "exportAsync:FormData",
+   "rank": 10002,
+   "path": "api/dataset/form-data/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "d805b8b2-6e80-4cc2-8258-1c165bd465ab",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1ae80dfa-5f86-4137-a7f9-55af432848ae",
+  "fields": {
+   "created_time": "2026-09-27T14:03:24.097Z",
+   "updated_time": "2026-09-27T14:03:24.097Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "34cb7d31-bba4-53c1-b5e5-732632323259",
+   "menu_type": 2,
+   "name": "exportData:FormData",
+   "rank": 10003,
+   "path": "api/dataset/form-data/export-data$",
+   "component": null,
+   "is_active": true,
+   "meta": "0f40e54c-4142-4d5a-b767-bbfdddadfb3f",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1c99ff12-5320-4fe8-b59e-2be24359e48b",
+  "fields": {
+   "created_time": "2026-09-27T14:03:24.510Z",
+   "updated_time": "2026-09-27T14:03:24.510Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "34cb7d31-bba4-53c1-b5e5-732632323259",
+   "menu_type": 2,
+   "name": "formOptions:FormData",
+   "rank": 10004,
+   "path": "api/dataset/form-data/form-options$",
+   "component": null,
+   "is_active": true,
+   "meta": "c37ce526-80d3-4375-9535-780bc4e0fd39",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "73268279-cffe-5194-9aaf-bfdf51445b25",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "list:ScreenTemplate",
+   "rank": 20,
+   "path": "api/dataset/screen-templates$",
+   "component": null,
+   "is_active": true,
+   "meta": "b566ab31-ead4-5127-b484-ca7192db0c9c",
+   "method": "GET",
+   "model": [
+    "172b31c1-21d5-4712-ba3c-b06f84d74394"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5ecf24ef-0db4-56e8-b1ac-90768afd3d78",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "create:ScreenTemplate",
+   "rank": 21,
+   "path": "api/dataset/screen-templates$",
+   "component": null,
+   "is_active": true,
+   "meta": "3a11fc37-7f70-594e-89c0-4309570d183b",
+   "method": "POST",
+   "model": [
+    "172b31c1-21d5-4712-ba3c-b06f84d74394"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "887d068f-9291-5764-abd9-9d16649687fa",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "retrieve:ScreenTemplate",
+   "rank": 22,
+   "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "36eaf20a-f882-5833-bc95-3d765ef57d0a",
+   "method": "GET",
+   "model": [
+    "172b31c1-21d5-4712-ba3c-b06f84d74394"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f4018dec-7b35-515d-ae0c-e64e4a7267e5",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "partialUpdate:ScreenTemplate",
+   "rank": 23,
+   "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "c7487ce4-03d1-5bd0-8ce5-1d7592c4b97b",
+   "method": "PATCH",
+   "model": [
+    "172b31c1-21d5-4712-ba3c-b06f84d74394"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "9a1fabb6-64a0-50b3-a62b-b7f7e302ff6d",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "destroy:ScreenTemplate",
+   "rank": 24,
+   "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "4bc3522a-b68f-5f79-acc0-6cbf45bdcd03",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7b4c4234-1341-5160-9dfc-2585604151cd",
+  "fields": {
+   "created_time": "2026-10-11T00:00:00Z",
+   "updated_time": "2026-10-11T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "batchDestroy:ScreenTemplate",
+   "rank": 25,
+   "path": "api/dataset/screen-templates/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "4fda0b73-3d8a-527d-b29a-14b98fb6ac36",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5df63722-99a3-48f8-900e-0500b06dc867",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "versions:ScreenTemplate",
+   "rank": 26,
+   "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)/versions$",
+   "component": null,
+   "is_active": true,
+   "meta": "a9df3a37-3546-43fe-a2d3-396cb7a1132f",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2b3f0ed6-af44-46f4-8a96-72178e5b11d2",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "rollback:ScreenTemplate",
+   "rank": 27,
+   "path": "api/dataset/screen-templates/(?P<pk>[^/.]+)/rollback$",
+   "component": null,
+   "is_active": true,
+   "meta": "e05c3b4c-0beb-4bd4-9bdf-ea423f663676",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8698ec57-01d1-4f6e-ba3f-fd7901a29189",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "list:ScreenClipboard",
+   "rank": 28,
+   "path": "api/dataset/screen-clipboard$",
+   "component": null,
+   "is_active": true,
+   "meta": "8574b5f2-af9b-4f54-8195-8ee2e6bc9888",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8c228055-44a4-4ddf-91c0-3595f09d0767",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "create:ScreenClipboard",
+   "rank": 29,
+   "path": "api/dataset/screen-clipboard$",
+   "component": null,
+   "is_active": true,
+   "meta": "e92757fa-0a35-4dd5-84c8-d578e0f0ead6",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0b06fe7f-ca17-474f-bba0-e38035c11cc1",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "retrieve:ScreenClipboard",
+   "rank": 30,
+   "path": "api/dataset/screen-clipboard/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "996d2369-9eae-4c5b-9544-52834b0da10c",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a471cc72-d2b1-4a98-bd1e-7fd1009a13ba",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "partialUpdate:ScreenClipboard",
+   "rank": 31,
+   "path": "api/dataset/screen-clipboard/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "67900e00-5089-4765-b52b-597fb0bc6e5c",
+   "method": "PATCH",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1de9b930-032b-4230-b6ae-adcf2410c89f",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "destroy:ScreenClipboard",
+   "rank": 32,
+   "path": "api/dataset/screen-clipboard/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "cb1de001-45f5-46e7-8d97-4876e9685ac5",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "dc81f4c0-477c-4e3c-bce0-c66c09c81be4",
+  "fields": {
+   "created_time": "2026-10-12T00:00:00Z",
+   "updated_time": "2026-10-12T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "batchDestroy:ScreenClipboard",
+   "rank": 33,
+   "path": "api/dataset/screen-clipboard/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "f5838934-e5d4-4566-b795-d4e31b9595e3",
+   "method": "POST",
+   "model": []
+  }
+ }
+]

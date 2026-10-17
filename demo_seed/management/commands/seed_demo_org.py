@@ -15,10 +15,8 @@
 """
 
 import json
-import os
 from typing import Any
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -27,6 +25,7 @@ from approval.utils.approval_flow.versioning import apply_definition
 from dataset.models import DynamicForm
 from identity.models import DeptInfo, UserInfo, UserRole
 from system.models import DataPermission, FieldPermission, Menu, ModelLabelField
+from system.services.seeding import platform_file
 
 DEFAULT_PASSWORD = "Demo@2026!"
 #: 场景模板落版本快照的备注（seed_demo_clean 依赖同名字面量做回滚清理）
@@ -52,7 +51,7 @@ def _builtin_flow_pks() -> set[Any]:
     这些行由 load_init_json 维护，reset 不得删除（原因见 _clean 注释）。
     """
 
-    path = os.path.join(settings.PROJECT_DIR, "loadjson", "approvalflow.json")
+    path = platform_file("approvalflow.json")
     try:
         with open(path, encoding="utf-8") as fp:
             return {row["pk"] for row in json.load(fp)}

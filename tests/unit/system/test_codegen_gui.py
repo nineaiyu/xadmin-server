@@ -73,7 +73,7 @@ class TestPreview:
         assert response.status_code == 200
         artifacts = response.data["data"]
         labels = [row["label"] for row in artifacts]
-        assert "序列化器" in labels and "视图" in labels and "菜单种子" in labels
+        assert "序列化器" in labels and "视图" in labels and any(label.startswith("菜单种子") for label in labels)
         assert "后续步骤" in labels  # zip 附带 NEXT_STEPS.md，预览同步可见
         paths = [row["path"] for row in artifacts]
         assert any(path.startswith("xadmin-server/demo/") for path in paths)
@@ -283,7 +283,7 @@ class TestAdvancedOptions:
 
     def test_menu_title_overrides_seed(self, superuser):
         response = _post(superuser, "preview", {"model": "demo.Book", "menu_title": "书籍管理"})
-        seed = next(row for row in response.data["data"] if row["label"] == "菜单种子")
+        seed = next(row for row in response.data["data"] if row["label"].startswith("菜单种子"))
         assert '"title": "书籍管理"' in seed["content"]
 
     def test_ordering_override_in_views(self, superuser):
@@ -339,7 +339,7 @@ class TestDownload:
             names = archive.namelist()
         assert any(name.startswith("xadmin-server/demo/") for name in names)
         assert any(name.startswith("xadmin-client/src/views/demo/") for name in names)
-        assert any(name.endswith("seed_demo_book.json") for name in names)
+        assert any(name.endswith("demo/seeds/menu_book.json") for name in names)
 
     def test_zip_skips_notice_artifacts(self, superuser, monkeypatch):
         def _fake_build(payload):
@@ -358,7 +358,7 @@ class TestDownload:
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
             content = archive.read("NEXT_STEPS.md").decode("utf-8")
         assert "demo.Book（" in content
-        assert "python manage.py loaddata loadjson/seed_demo_book.json" in content
+        assert "python manage.py loaddata demo/seeds/menu_book.json" in content
         assert "python manage.py doctor" in content
 
 

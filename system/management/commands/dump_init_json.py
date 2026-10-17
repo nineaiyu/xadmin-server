@@ -4,16 +4,19 @@
 # filename : dump_init_json
 # author : ly_13
 # date : 12/25/2023
-import os.path
+import json
+import tempfile
+from pathlib import Path
 from typing import Any
 
-from django.conf import settings
 from django.core import serializers
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from identity.models import DeptInfo, LoginAccessPolicy, UserRole
 from settings.models import Setting
 from system.models import *
+from system.services.seeding import discover, platform_file
+from system.services.seeding.split import bucket_rows, write_buckets
 
 
 def get_fields(model: Any) -> Any:
@@ -21,6 +24,10 @@ def get_fields(model: Any) -> Any:
         exclude_fields = ["updated_time", "created_time"]
     elif issubclass(model, ModelLabelField):
         exclude_fields = ["updated_time"]
+    elif issubclass(model, UserRole):
+        # 角色授权已改为各层 seeds/grants.json 的声明式并集：导出角色行时必须剔除 m2m，
+        # 否则一次 dump 就会把覆盖式菜单列表写回种子，下次装载又把其它层的授权清零。
+        exclude_fields = ["menu"]
     else:
         exclude_fields = []
 
@@ -29,6 +36,7 @@ def get_fields(model: Any) -> Any:
 
 class Command(BaseCommand):
     help = "dump init json data"
+
     model_names: list[Any] = [
         UserRole,
         DeptInfo,
@@ -42,7 +50,25 @@ class Command(BaseCommand):
         Setting,
     ]
 
+    def add_arguments(self, parser: Any) -> None:
+        parser.add_argument(
+            "--split-apps",
+            action="store_true",
+            help="按应用归属导出到各层（平台层 loadjson/ + 各应用 seeds/），默认全量",
+        )
+        parser.add_argument(
+            "--apps",
+            default="",
+            help="配合 --split-apps：只导出这些应用（逗号分隔）；平台层共享行始终包含",
+        )
+        parser.add_argument(
+            "--output",
+            default="",
+            help="导出根目录（默认 PROJECT_DIR；用于生成补丁或测试）",
+        )
+
     def save_json(self, queryset: Any, filename: Any) -> None:
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
         stream = open(filename, "w", encoding="utf8")
         try:
             serializers.serialize(
@@ -60,8 +86,50 @@ class Command(BaseCommand):
                 stream.close()
 
     def handle(self, *args: Any, **options: Any) -> None:
-        file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
+        if options.get("split_apps"):
+            self._dump_split(options.get("apps") or "", options.get("output") or "")
+            return
         for model in self.model_names:
-            self.save_json(
-                model.objects.all().order_by("pk"), os.path.join(file_root, f"{model._meta.model_name}.json")
+            self.save_json(model.objects.all().order_by("pk"), platform_file(f"{model._meta.model_name}.json"))
+        # 不分层时只写平台层。同主键在应用层也存在时，装载顺序会让应用层的旧行覆盖刚导出的内容。
+        self.stdout.write(
+            self.style.WARNING(
+                "已导出到平台层；请运行 python manage.py seed_split 按应用归属重新分层，"
+                "或改用 --split-apps 直接分层导出"
             )
+        )
+
+    def _dump_split(self, raw_apps: str, raw_output: str) -> None:
+        discovery = discover()
+        selected = self._parse_apps(raw_apps, discovery.manifests)
+        rows_by_model: dict[str, list[Any]] = {}
+        with tempfile.TemporaryDirectory(prefix="xadmin_dump_") as tmp:
+            for model in self.model_names:
+                path = Path(tmp) / f"{model._meta.model_name}.json"
+                self.save_json(model.objects.all().order_by("pk"), path)
+                rows_by_model[model._meta.label_lower] = json.loads(path.read_text(encoding="utf-8"))
+
+        buckets = bucket_rows(rows_by_model, discovery.manifests, selected=selected)
+        written = write_buckets(buckets, root=raw_output or None, manifests=discovery.manifests)
+
+        total = sum(len(rows) for rows in rows_by_model.values())
+        self.stdout.write(
+            f"按应用导出完成：{'、'.join(sorted(selected)) if selected else '全部应用'}；"
+            f"共 {total} 行 → {len(written)} 个文件"
+        )
+        for path in written:
+            self.stdout.write(f"  {path}")
+        if selected:
+            self.stdout.write(
+                self.style.WARNING("平台层共享行（角色/部门/站点配置/数据权限）始终导出，便于补丁直接装载")
+            )
+
+    @staticmethod
+    def _parse_apps(raw: str, manifests: dict[str, Any]) -> list[str] | None:
+        if not raw:
+            return None
+        selected = [item.strip() for item in raw.split(",") if item.strip()]
+        unknown = [app for app in selected if app not in manifests]
+        if unknown:
+            raise CommandError(f"未知应用（缺少 seeds/manifest.json）：{'、'.join(unknown)}")
+        return selected

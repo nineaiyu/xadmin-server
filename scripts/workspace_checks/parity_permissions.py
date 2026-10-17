@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """权限种子 ↔ 前端消费点对账。
 
-真源：``xadmin-server/loadjson/menu.json`` + ``menumeta.json``（权限点与菜单元数据）；
+真源：各层菜单种子（平台层 ``loadjson/`` + 各应用 ``<app>/seeds/``）；
 对账脚本：``xadmin-client/scripts/check-menu-permissions.mjs``（种子 ↔ 前端双向对账）；
 另一侧断言：menumeta 下发的菜单 i18n key 必须在前端语言包内（否则英文界面显示 key 原文）。
 """
@@ -53,19 +53,31 @@ def run(ws, tier: str = "fast") -> list:
     return results
 
 
+def _seed_rows(server: Path, filename: str) -> list:
+    """聚合各层种子行：平台层 ``loadjson/`` + 各应用 ``<app>/seeds/``。"""
+
+    roots = [server / "loadjson"]
+    roots.extend(
+        item / "seeds"
+        for item in sorted(server.iterdir())
+        if item.is_dir() and (item / "seeds" / "manifest.json").is_file()
+    )
+    rows: list = []
+    for root in roots:
+        path = root / filename
+        if path.is_file():
+            rows.extend(json.loads(path.read_text(encoding="utf-8")))
+    return rows
+
+
 def _menumeta_locales(ws, server: Path, client: Path) -> report.CheckResult:
     """menumeta 下发的菜单 i18n key 必须存在于前端 zh/en 语言包。"""
-    menu_path = server / MENU_SEED
-    meta_path = server / META_SEED
-    for path in (menu_path, meta_path):
-        if not path.is_file():
-            return report.CheckResult(
-                FACE, "menumeta-locales", report.STATUS_FAIL, findings=[f"未找到种子 {path}"], repo="xadmin-server"
-            )
     try:
-        menus = json.loads(menu_path.read_text(encoding="utf-8"))
-        metas = {item["pk"]: item.get("fields", {}) for item in json.loads(meta_path.read_text(encoding="utf-8"))}
-    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        menus = _seed_rows(server, "menu.json")
+        metas = {item["pk"]: item.get("fields", {}) for item in _seed_rows(server, "menumeta.json")}
+        if not menus or not metas:
+            raise KeyError("菜单种子为空")
+    except (FileNotFoundError, json.JSONDecodeError, KeyError, TypeError) as exc:
         return report.CheckResult(
             FACE, "menumeta-locales", report.STATUS_FAIL, findings=[f"解析菜单种子失败：{exc}"], repo="xadmin-server"
         )

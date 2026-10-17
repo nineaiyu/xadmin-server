@@ -5,16 +5,23 @@
 格式错误只在"新库/CI 重新种子"后才暴露，所以在种子文件层面加校验。
 """
 
-import json
-import os
 import re
 from pathlib import Path
 
 import pytest
 from django.conf import settings
 
-SEED_MENU = os.path.join(settings.PROJECT_DIR, "loadjson", "menu.json")
-SEED_MENU_META = os.path.join(settings.PROJECT_DIR, "loadjson", "menumeta.json")
+from system.services.seeding import read_model_rows
+
+
+def _seed_menus():
+    return read_model_rows("system.menu")
+
+
+def _seed_metas():
+    return read_model_rows("system.menumeta")
+
+
 CLIENT_LOCALES = Path(settings.PROJECT_DIR).parent / "xadmin-client" / "locales"
 
 
@@ -27,7 +34,7 @@ class TestSeedMenuIcons:
     """
 
     def test_icons_use_iconify_colon_format(self):
-        metas = json.load(open(SEED_MENU_META, encoding="utf-8"))
+        metas = _seed_metas()
         invalid = []
         for item in metas:
             fields = item.get("fields", {})
@@ -48,8 +55,8 @@ class TestSeedNavigationTitles:
     """
 
     def test_navigation_titles_are_i18n_keys(self):
-        menus = json.load(open(SEED_MENU, encoding="utf-8"))
-        metas = {item["pk"]: item.get("fields", {}) for item in json.load(open(SEED_MENU_META, encoding="utf-8"))}
+        menus = _seed_menus()
+        metas = {item["pk"]: item.get("fields", {}) for item in _seed_metas()}
         invalid = []
         for row in menus:
             fields = row.get("fields", {})
@@ -72,8 +79,8 @@ class TestMenuI18nKeysExistInClient:
     def test_menu_title_keys_present_in_client_locales(self):
         import yaml
 
-        menus = json.load(open(SEED_MENU, encoding="utf-8"))
-        metas = {item["pk"]: item.get("fields", {}) for item in json.load(open(SEED_MENU_META, encoding="utf-8"))}
+        menus = _seed_menus()
+        metas = {item["pk"]: item.get("fields", {}) for item in _seed_metas()}
         keys = set()
         for row in menus:
             fields = row.get("fields", {})

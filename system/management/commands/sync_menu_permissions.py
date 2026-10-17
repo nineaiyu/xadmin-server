@@ -14,16 +14,15 @@
     python manage.py sync_menu_permissions --update-seed    # 同时回写 loadjson 种子
 """
 
-from pathlib import Path
 from typing import Any
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from identity.models import UserInfo
 from system.models import FieldPermission, Menu, MenuMeta, ModelLabelField
 from system.services import permission_sync as sync
 from system.services.modelfield import sync_model_field
+from system.services.seeding import platform_dir
 
 DETAIL_LIMIT = 100
 
@@ -215,7 +214,7 @@ class Command(BaseCommand):
         method_fixed: Any = None,
         update_field_permissions: Any = False,
     ) -> None:
-        root = Path(settings.PROJECT_DIR) / "loadjson"
+        root = platform_dir()
         menus = {
             menu.pk: menu
             for menu in [*created_menus, *fixed_menus, *(method_fixed or [])]
@@ -258,7 +257,7 @@ class Command(BaseCommand):
         """
         from identity.services import UserRole
 
-        root = Path(settings.PROJECT_DIR) / "loadjson"
+        root = platform_dir()
         seed_role_pks = sync.seed_entry_pks(root / "userrole.json")
         # 运行时模块权限点即使误入 menu.json 种子也不回写白名单（模块自身命令维护）
         seed_menu_pks = {
@@ -274,4 +273,8 @@ class Command(BaseCommand):
         )
         self.stdout.write(
             f"[种子] fieldpermission.json {sync.merge_seed_file(root / 'fieldpermission.json', fp_entries)}"
+        )
+
+        self.stdout.write(
+            self.style.WARNING("[种子] 已写入平台层；请运行 python manage.py seed_split 按应用归属重新分层")
         )

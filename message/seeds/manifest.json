@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "app": "message",
+  "depends": [
+    "system",
+    "identity"
+  ],
+  "url_prefixes": [
+    "api/chat/"
+  ],
+  "config_keys": [
+    "CHAT_HISTORY_DAYS",
+    "PUSH_CHAT_MESSAGE",
+    "PUSH_MESSAGE_NOTICE"
+  ],
+  "files": [
+    {
+      "name": "menumeta.json",
+      "model": "system.menumeta",
+      "kind": "contract",
+      "order": 10
+    },
+    {
+      "name": "menu.json",
+      "model": "system.menu",
+      "kind": "contract",
+      "order": 20
+    },
+    {
+      "name": "systemconfig.json",
+      "model": "system.systemconfig",
+      "kind": "contract",
+      "order": 30
+    }
+  ],
+  "grants": "grants.json"
+}

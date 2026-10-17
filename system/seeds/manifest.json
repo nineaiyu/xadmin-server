@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "app": "system",
+  "depends": [],
+  "url_prefixes": [
+    "api/system/",
+    "api/flower/",
+    "api-docs/"
+  ],
+  "config_keys": [
+    "BACKUP_ALERT_TOKEN",
+    "CSP_MODE",
+    "CSP_REPORT_URI",
+    "MODULE_RESTART_COMMAND",
+    "MONITOR_RETENTION_DAYS",
+    "OPS_ALERT_TOKEN",
+    "OUTBOUND_ALLOWED_HOSTS",
+    "SEARCH_CHOICES_MAX_COUNT",
+    "SLOW_REQUEST_THRESHOLD"
+  ],
+  "files": [
+    {
+      "name": "menumeta.json",
+      "model": "system.menumeta",
+      "kind": "contract",
+      "order": 10
+    },
+    {
+      "name": "menu.json",
+      "model": "system.menu",
+      "kind": "contract",
+      "order": 20
+    },
+    {
+      "name": "systemconfig.json",
+      "model": "system.systemconfig",
+      "kind": "contract",
+      "order": 30
+    },
+    {
+      "name": "fieldpermission.json",
+      "model": "system.fieldpermission",
+      "kind": "contract",
+      "order": 50
+    },
+    {
+      "name": "modellabelfield.json",
+      "model": "system.modellabelfield",
+      "kind": "generated",
+      "order": 60
+    }
+  ],
+  "grants": "grants.json"
+}

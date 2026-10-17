@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 from io import StringIO
+from pathlib import Path
 
 import pytest
 from django.core.management import call_command
@@ -21,15 +22,16 @@ def run_module_remove(*args):
 
 @pytest.fixture
 def scratch_project(tmp_path, settings):
-    """把 loadjson 复制到临时项目目录，避免测试触碰仓库种子。"""
+    """把平台层与各应用层种子复制到临时项目目录，避免测试触碰仓库种子。"""
 
-    file_root = os.path.join(str(tmp_path), "loadjson")
-    os.makedirs(file_root)
-    source_root = os.path.join(settings.PROJECT_DIR, "loadjson")
-    for name in os.listdir(source_root):
-        shutil.copy2(os.path.join(source_root, name), os.path.join(file_root, name))
+    source_root = Path(settings.PROJECT_DIR)
+    shutil.copytree(source_root / "loadjson", tmp_path / "loadjson")
+    for app_dir in sorted(source_root.iterdir()):
+        seeds = app_dir / "seeds"
+        if (seeds / "manifest.json").is_file():
+            shutil.copytree(seeds, tmp_path / app_dir.name / "seeds")
     settings.PROJECT_DIR = str(tmp_path)
-    return file_root
+    return str(tmp_path / "loadjson")
 
 
 def _load(path):
@@ -45,7 +47,7 @@ class TestModuleRemovePlan:
 
         assert before == after, "预演不得修改种子文件"
         assert "物理移除模块：chat" in output
-        assert "loadjson/menu.json" in output
+        assert "menu.json" in output
         assert "--apply" in output
         assert "未加 --apply" in output
 
@@ -108,8 +110,10 @@ class TestModuleRemoveFrontendScan:
 
 class TestModuleRemoveApply:
     def test_apply_rewrites_seed_and_archives_original(self, scratch_project):
-        menu_path = os.path.join(scratch_project, "menu.json")
-        meta_path = os.path.join(scratch_project, "menumeta.json")
+        # 聊天室菜单归属 message 应用：种子已按 app 拆分，裁剪目标在应用层
+        project = Path(scratch_project).parent
+        menu_path = project / "message" / "seeds" / "menu.json"
+        meta_path = project / "message" / "seeds" / "menumeta.json"
         original_menus = _load(menu_path)
         original_metas = _load(meta_path)
 
@@ -121,15 +125,14 @@ class TestModuleRemoveApply:
         # 被剔除的菜单不影响其他模块
         names = {row["fields"]["name"] for row in filtered_menus}
         assert "Chat" not in names
-        assert "SystemUser" in names
         # 只被剔除菜单引用的 meta 一并剔除
         assert len(filtered_metas) < len(original_metas)
 
-        # 原文件归档到工作区回收站（可整体还原）：PROJECT_DIR 的上一级 / _delete
+        # 原文件按相对路径归档到工作区回收站（可整体还原）：PROJECT_DIR 的上一级 / _delete
         archive_root = os.path.join(os.path.dirname(os.path.dirname(scratch_project.rstrip("/"))), "_delete")
         archives = [name for name in os.listdir(archive_root) if name.startswith("module-chat-")]
         assert archives, "缺少归档目录"
-        archived = os.path.join(archive_root, archives[0], "menu.json")
+        archived = os.path.join(archive_root, archives[0], "message", "seeds", "menu.json")
         assert _load(archived) == original_menus
         assert "已改写" in output
 

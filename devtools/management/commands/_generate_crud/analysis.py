@@ -2,7 +2,6 @@
 # -*- coding:utf-8 -*-
 """代码生成器：模型解析、字段规划与产物收集。"""
 
-import json
 import os
 import re
 from pathlib import Path
@@ -12,13 +11,11 @@ from django.apps import apps
 from django.conf import settings
 from django.core.management.base import CommandError
 
-from common.contracts import Menu, UserRole, sync_model_field
-
-from .constants import IMPORT_EXPORT_PERMISSIONS, PERMISSION_ACTIONS
 from .field_plan import FieldPlanMixin
+from .seed_ingest import SeedIngestMixin
 
 
-class AnalysisMixin(FieldPlanMixin):
+class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
     """模型 → 生成上下文与产物清单（不落盘）。"""
 
     if TYPE_CHECKING:  # 宿主 Command（BaseCommand + 兄弟 mixin）提供的接口（mixin 模式）
@@ -230,17 +227,6 @@ class AnalysisMixin(FieldPlanMixin):
             )
         return artifacts
 
-    def _menu_seed_artifact(self, ctx: dict[str, Any], options: dict[str, Any], backend_root: Path) -> dict[str, Any]:
-        """菜单种子产物：渲染前解析菜单 model 关联（字段权限数据源），供后续步骤提示复用。"""
-        ctx["model_label_pk"] = self._model_label_pk(ctx["model"])
-        return {
-            "label": "菜单种子",
-            "path": backend_root / "loadjson" / f"seed_{ctx['app_label']}_{ctx['model_snake']}.json",
-            "content": self._render_menu_seed(ctx, options["parent"]),
-            "mode": "create",
-            "key": f"seed-{ctx['model_snake']}",
-        }
-
     def _collect_artifacts(self, ctx: dict[str, Any], options: dict[str, Any]) -> list[dict[str, Any]]:
         backend_root = Path(options["output"] or settings.PROJECT_DIR)
         app_dir = backend_root / ctx["app_label"]
@@ -255,7 +241,7 @@ class AnalysisMixin(FieldPlanMixin):
             artifacts.append(self._module_artifact(ctx, options))
 
         if not options["skip_menu_seed"]:
-            artifacts.append(self._menu_seed_artifact(ctx, options, backend_root))
+            artifacts.extend(self._menu_seed_artifacts(ctx, options, backend_root))
         return artifacts
 
     def _module_artifact(self, ctx: dict[str, Any], options: dict[str, Any]) -> dict[str, Any]:
@@ -361,71 +347,6 @@ class AnalysisMixin(FieldPlanMixin):
 
     # --------------------------------------------------------------- 后续步骤
 
-    def _bootstrap(self, ctx: dict[str, Any], options: dict[str, Any]) -> None:
-        """--bootstrap：种子一条龙幂等入库。
-
-        步骤：sync_model_field（字段权限树）→ 回填种子 model 关联 → loaddata
-        菜单/权限点 →（显式 --grant-to 时）授予角色。幂等性：种子 pk 为 uuid5
-        确定性生成（loaddata 按主键 upsert）、sync_model_field 幂等、M2M 授权
-        幂等——重复执行内容不变。
-        """
-        if options.get("dry_run"):
-            self.stdout.write("--bootstrap 在 --dry-run 下跳过（只打印产物，不落盘）")
-            return
-        if options.get("skip_menu_seed"):
-            self.stdout.write("--bootstrap 跳过（--skip-menu-seed 无种子可入库）")
-            return
-
-        from django.core.management import call_command
-
-        # 1) 字段权限树先行：模型节点入库后，种子里的权限点才能关联到 model
-        sync_model_field()
-        model_pk = self._model_label_pk(ctx["model"])
-
-        seed_path = (
-            Path(options["output"] or settings.PROJECT_DIR)
-            / "loadjson"
-            / f"seed_{ctx['app_label']}_{ctx['model_snake']}.json"
-        )
-        if model_pk:
-            # 回填生成期未解析到的 model 关联（生成先行、同步在后的时序）；
-            # 若生成时已解析则种子本就带 pk，此处不产生写入（幂等）
-            entries = json.loads(seed_path.read_text(encoding="utf-8"))
-            patched = False
-            for entry in entries:
-                if (
-                    entry["model"] == "system.menu"
-                    and entry["fields"].get("menu_type") == 2
-                    and not entry["fields"].get("model")
-                ):
-                    entry["fields"]["model"] = [str(model_pk)]
-                    patched = True
-            if patched:
-                seed_path.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-        # 2) 菜单与权限点入库（loaddata 幂等 upsert）
-        call_command("loaddata", str(seed_path), verbosity=0)
-        self.stdout.write(f"--bootstrap: 菜单/权限点已入库（{seed_path.name}）")
-
-        # 3) 角色授权：显式 --grant-to 才执行（授权属业务决策，不自动猜）
-        grant_to = [code.strip() for code in (options.get("grant_to") or "").split(",") if code.strip()]
-        if not grant_to:
-            self.stdout.write("--bootstrap: 未指定 --grant-to，跳过角色授权（菜单管理里手工勾选亦可）")
-            return
-        permissions = list(PERMISSION_ACTIONS)
-        if ctx.get("with_import_export"):
-            permissions.extend(IMPORT_EXPORT_PERMISSIONS)
-        menu_names = [ctx["component"]] + [f"{action}:{ctx['component']}" for action, _, _ in permissions]
-        menus = list(Menu.objects.filter(name__in=menu_names, deleted_at__isnull=True))
-        roles = list(UserRole.objects.filter(code__in=grant_to, is_active=True, deleted_at__isnull=True))
-        missing_roles = sorted(set(grant_to) - {role.code for role in roles})
-        if missing_roles:
-            self.stdout.write(self.style.WARNING(f"--bootstrap: 角色不存在或已删除，跳过：{missing_roles}"))
-        if menus and roles:
-            for role in roles:
-                role.menu.add(*menus)
-            self.stdout.write(f"--bootstrap: 已授予角色 {[role.code for role in roles]} 共 {len(menus)} 个菜单/权限点")
-
     def _next_steps(self, ctx: dict[str, Any], options: dict[str, Any]) -> list[str]:
         """后续步骤清单（可复用：CLI 打印 / GUI 生成 NEXT_STEPS.md 同一口径）。
 
@@ -448,8 +369,11 @@ class AnalysisMixin(FieldPlanMixin):
                 f'应用注册：config.yml 的 XADMIN_APPS 加入 "{ctx["app_label"]}"（或重跑本命令加 --register-app；改后需重启进程）'
             )
         if not options["skip_menu_seed"] and not bootstrapped:
-            seed = f"loadjson/seed_{ctx['app_label']}_{ctx['model_snake']}.json"
-            steps.append(f"权限点与菜单入库：python manage.py loaddata {seed}")
+            seed = f"{ctx['app_label']}/seeds/menu_{ctx['model_snake']}.json"
+            steps.append(
+                f"权限点与菜单入库：python manage.py loaddata {seed}"
+                f"（同目录 menumeta_*.json 一并装入；重跑本命令加 --bootstrap 更省事）"
+            )
             if not ctx.get("model_label_pk"):
                 steps.append(
                     "字段权限树：python manage.py sync_model_field 后加 --force 重跑本命令"

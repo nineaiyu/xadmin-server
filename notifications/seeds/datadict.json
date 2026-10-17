@@ -1,0 +1,103 @@
+[
+ {
+  "model": "system.datadict",
+  "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e68",
+  "fields": {
+   "created_time": "2026-09-09T00:00:00.000Z",
+   "updated_time": "2026-09-09T00:00:00.000Z",
+   "description": "通知级别（MessageContent.level 的文案与颜色来源，未维护字典项时回退模型枚举）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": null,
+   "code": "notice_level",
+   "label": "通知级别",
+   "value": null,
+   "sort": 6,
+   "color": null,
+   "is_active": true,
+   "is_locked": true,
+   "label_en": "Notice level"
+  }
+ },
+ {
+  "model": "system.datadict",
+  "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e69",
+  "fields": {
+   "created_time": "2026-09-09T00:00:00.000Z",
+   "updated_time": "2026-09-09T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e68",
+   "code": "info",
+   "label": "普遍通知",
+   "value": "info",
+   "sort": 0,
+   "color": "#909399",
+   "is_active": true,
+   "label_en": "Ordinary notices"
+  }
+ },
+ {
+  "model": "system.datadict",
+  "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6a",
+  "fields": {
+   "created_time": "2026-09-09T00:00:00.000Z",
+   "updated_time": "2026-09-09T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e68",
+   "code": "primary",
+   "label": "一般通知",
+   "value": "primary",
+   "sort": 1,
+   "color": "#409eff",
+   "is_active": true,
+   "label_en": "General notices"
+  }
+ },
+ {
+  "model": "system.datadict",
+  "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6b",
+  "fields": {
+   "created_time": "2026-09-09T00:00:00.000Z",
+   "updated_time": "2026-09-09T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e68",
+   "code": "success",
+   "label": "成功通知",
+   "value": "success",
+   "sort": 2,
+   "color": "#67c23a",
+   "is_active": true,
+   "label_en": "Success notices"
+  }
+ },
+ {
+  "model": "system.datadict",
+  "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6c",
+  "fields": {
+   "created_time": "2026-09-09T00:00:00.000Z",
+   "updated_time": "2026-09-09T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e68",
+   "code": "danger",
+   "label": "重要通知",
+   "value": "danger",
+   "sort": 3,
+   "color": "#f56c6c",
+   "is_active": true,
+   "label_en": "Important notices"
+  }
+ }
+]

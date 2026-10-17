@@ -45,6 +45,11 @@ def test_dump_init_json_writes_valid_seed_files(tmp_path):
     rows = json.loads((tmp_path / "loadjson" / "setting.json").read_text(encoding="utf-8"))
     assert any(item["fields"]["name"] == "DUMP_TEST_FLAG" for item in rows)
 
+    # 角色授权不随角色行导出：它是各层 seeds/grants.json 的声明，导出 m2m 会写回覆盖式列表
+    roles = json.loads((tmp_path / "loadjson" / "userrole.json").read_text(encoding="utf-8"))
+    assert roles
+    assert all("menu" not in item["fields"] for item in roles)
+
 
 def test_dump_init_json_empty_models_still_produce_valid_files(tmp_path):
     """空表模型也要产出文件（post_migrate 种子数据除外，仅验证合法性）。"""

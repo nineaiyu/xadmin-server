@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""菜单种子权限点覆盖守护：所有需要鉴权的 API 端点都必须被 loadjson/menu.json 覆盖。
+"""菜单种子权限点覆盖守护：所有需要鉴权的 API 端点都必须被各层菜单种子覆盖。
 
 把 ``sync_menu_permissions --dry-run`` 的全量扫描口径固化为 CI 门禁（此前只有人工体检）：
 
@@ -13,22 +13,15 @@
   ``python manage.py sync_menu_permissions --update-seed``。
 """
 
-import json
-import os
 from types import SimpleNamespace
 
-from django.conf import settings
-
 from system.services.permission_sync import build_route_index, scan_gaps
-
-MENU_SEED_FILE = "menu.json"
+from system.services.seeding import read_model_rows
 
 
 def _seed_permissions():
-    """loadjson/menu.json 的权限点（menu_type=2），以 (path, method) 载体返回。"""
-    path = os.path.join(settings.PROJECT_DIR, "loadjson", MENU_SEED_FILE)
-    with open(path, encoding="utf-8") as fp:
-        rows = json.load(fp)
+    """各层菜单种子中的权限点（menu_type=2），以 (path, method) 载体返回。"""
+    rows = read_model_rows("system.menu")
     return [
         SimpleNamespace(
             path=row["fields"]["path"], method=row["fields"].get("method") or "", name=row["fields"]["name"]

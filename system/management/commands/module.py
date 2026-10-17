@@ -23,6 +23,7 @@ import json
 import os
 import shutil
 import time
+from pathlib import Path
 from typing import Any
 
 from django.conf import settings
@@ -76,7 +77,7 @@ class Command(BaseCommand):
         if not seed_plan:
             self.stdout.write("    无需改动（该模块在种子里没有可剔除的条目）")
         for name, (before, after) in sorted(seed_plan.items()):
-            self.stdout.write(f"    loadjson/{name}.json：{before} 行 → {after} 行")
+            self.stdout.write(f"    {name}：{before} 行 → {after} 行")
         if apply_changes and seed_plan:
             archive = self._apply_seed(module_id, seed_plan)
             self.stdout.write(f"    ✅ 已改写；原文件归档到：{archive}（可整体还原）")
@@ -120,51 +121,84 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 种子
 
+    @staticmethod
+    def _seed_files() -> list[Path]:
+        """所有层里可能引用菜单主键的种子文件（平台层 + 各 app 的 seeds/）。
+
+        拆分后菜单分散在多层，只清平台层会让 app 层的行在重灌时复活。
+        """
+
+        root = Path(settings.PROJECT_DIR)
+        candidates = list((root / "loadjson").glob("*.json"))
+        for app_dir in sorted(root.iterdir()):
+            seed_dir = app_dir / "seeds"
+            if (seed_dir / "manifest.json").is_file():
+                candidates.extend(seed_dir.glob("*.json"))
+        return sorted(path for path in candidates if path.name != "manifest.json" and path.stem in SEED_MODEL_NAMES)
+
+    @staticmethod
+    def _label(path: Path) -> str:
+        return "identity.userrole" if path.stem == "userrole" else f"system.{path.stem}"
+
+    def _hidden_and_metas(self, seed_filter: Any, files: list[Path]) -> set[str]:
+        """用**各层合并**的菜单行计算隐藏集合，并返回需一并剔除的菜单元数据主键。"""
+
+        menu_rows: list[Any] = []
+        for path in files:
+            if path.stem == "menu":
+                menu_rows.extend(self._read_json(str(path)))
+        seed_filter.hidden = seed_filter.compute_hidden(menu_rows)
+        all_metas = {row["fields"].get("meta") for row in menu_rows if row["fields"].get("meta")}
+        kept_metas = {
+            row["fields"].get("meta")
+            for row in menu_rows
+            if row["pk"] not in seed_filter.hidden and row["fields"].get("meta")
+        }
+        return all_metas - kept_metas
+
+    def _filtered_rows(self, seed_filter: Any, path: Path, rows: list[Any], dropped_metas: set[str]) -> list[Any]:
+        if path.stem == "menumeta":
+            return [row for row in rows if row["pk"] not in dropped_metas]
+        typed_rows: list[Any] = seed_filter.filter_rows(self._label(path), rows)
+        return typed_rows
+
     def _seed_plan(self, module_id: Any) -> Any:
-        """计算种子文件的变化（不写文件）：{文件名: (原行数, 过滤后行数)}。"""
+        """计算种子文件的变化（不写文件）：{相对路径: (原行数, 过滤后行数)}。"""
 
         spec = module_index()[module_id]
         seed_filter = ModuleSeedFilter([spec])
-        file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
-        menu_path = os.path.join(file_root, "menu.json")
-        if not os.path.exists(menu_path):
+        files = self._seed_files()
+        if not files:
             return {}
-        with open(menu_path, encoding="utf-8") as fp:
-            seed_filter.hidden = seed_filter.compute_hidden(json.load(fp))
+        dropped_metas = self._hidden_and_metas(seed_filter, files)
 
         plan = {}
-        for model_name in SEED_MODEL_NAMES:
-            path = os.path.join(file_root, f"{model_name}.json")
-            if not os.path.exists(path):
-                continue
-            with open(path, encoding="utf-8") as fp:
-                rows = json.load(fp)
-            label = f"system.{model_name}"
-            filtered = seed_filter.filter_rows(label, rows)
+        for path in files:
+            rows = self._read_json(str(path))
+            filtered = self._filtered_rows(seed_filter, path, rows, dropped_metas)
             if len(filtered) != len(rows):
-                plan[f"{model_name}"] = (len(rows), len(filtered))
+                plan[str(path.relative_to(settings.PROJECT_DIR))] = (len(rows), len(filtered))
         return plan
 
     def _apply_seed(self, module_id: Any, plan: Any) -> str:
-        """执行种子裁剪：先归档原文件，再就地写回过滤结果。"""
+        """执行种子裁剪：先按相对路径归档原文件，再就地写回过滤结果（覆盖所有层）。"""
 
         spec = module_index()[module_id]
         seed_filter = ModuleSeedFilter([spec])
-        file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
+        files = self._seed_files()
         archive = os.path.join(self._archive_root(), f"module-{module_id}-{time.strftime('%Y%m%d-%H%M%S')}")
         os.makedirs(archive, exist_ok=True)
-        with open(os.path.join(file_root, "menu.json"), encoding="utf-8") as fp:
-            seed_filter.hidden = seed_filter.compute_hidden(json.load(fp))
+        dropped_metas = self._hidden_and_metas(seed_filter, files)
 
-        for model_name in plan:
-            source = os.path.join(file_root, f"{model_name}.json")
-            shutil.copy2(source, os.path.join(archive, f"{model_name}.json"))
-            with open(source, encoding="utf-8") as fp:
-                rows = json.load(fp)
-            filtered = seed_filter.filter_rows(f"system.{model_name}", rows)
-            with open(source, "w", encoding="utf-8") as fp:
-                json.dump(filtered, fp, ensure_ascii=False, indent=1)
-                fp.write("\n")
+        root = Path(settings.PROJECT_DIR)
+        for relative in plan:
+            source = root / relative
+            target = Path(archive) / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+            rows = self._read_json(str(source))
+            filtered = self._filtered_rows(seed_filter, source, rows, dropped_metas)
+            source.write_text(json.dumps(filtered, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         return archive
 
     @staticmethod
@@ -229,16 +263,19 @@ class Command(BaseCommand):
         """
 
         seed_filter = ModuleSeedFilter([module_index()[module_id]])
-        file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
-        menu_path = os.path.join(file_root, "menu.json")
+        seed_files = self._seed_files()
         result = {"files": [], "locale_keys": [], "truncated": 0}
-        if not os.path.exists(menu_path):
+        menu_rows: list[Any] = []
+        metas: dict[str, Any] = {}
+        for seed_path in seed_files:
+            if seed_path.stem == "menu":
+                menu_rows.extend(self._read_json(str(seed_path)))
+            elif seed_path.stem == "menumeta":
+                metas.update({row["pk"]: row["fields"] for row in self._read_json(str(seed_path))})
+        if not menu_rows:
             return result
 
-        with open(menu_path, encoding="utf-8") as fp:
-            menu_rows = json.load(fp)
         hidden = seed_filter.compute_hidden(menu_rows)
-        metas = {row["pk"]: row["fields"] for row in self._read_json(os.path.join(file_root, "menumeta.json"))}
         components, locale_keys = set(), set()
         for row in menu_rows:
             if row["pk"] not in hidden:

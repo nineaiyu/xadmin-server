@@ -3,6 +3,7 @@
 """代码生成器：落盘与共享文件幂等合并。"""
 
 import ast
+import json
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -64,6 +65,8 @@ class MergeMixin:
             return "写入"
         if item["mode"] == "block":
             return self._merge_block(path, item["key"], item["content"], force)
+        if item["mode"] == "seed_manifest":
+            return self._merge_seed_manifest(path, item)
         if item["mode"] == "urls":
             if not path.exists():
                 path.write_text(item["content"], encoding="utf-8")
@@ -93,6 +96,27 @@ class MergeMixin:
         # 文件尾部若为模块级定义，标记前需两个空行（ruff format 口径）
         path.write_text(text.rstrip("\n") + "\n\n\n" + block, encoding="utf-8")
         return "追加生成块"
+
+    def _merge_seed_manifest(self, path: Path, item: dict[str, Any]) -> str:
+        """应用种子清单：登记本次生成的种子文件（按 name 去重，幂等）。"""
+
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+        else:
+            data = {
+                "version": 1,
+                "app": item["app"],
+                "depends": item.get("depends", ["system", "identity"]),
+                "url_prefixes": item.get("url_prefixes", []),
+                "files": [],
+            }
+        names = {entry["name"] for entry in item["files"]}
+        files = [entry for entry in data.get("files", []) if entry.get("name") not in names]
+        files.extend(item["files"])
+        data["files"] = sorted(files, key=lambda entry: (entry.get("order", 900), entry.get("name", "")))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return "写入清单"
 
     def _merge_urls(self, path: Path, item: dict[str, Any]) -> str:
         """urls.py：顶部补 import、urlpatterns 前插入 router.register 注册行（幂等）。"""

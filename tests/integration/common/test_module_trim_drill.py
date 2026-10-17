@@ -19,7 +19,6 @@
 不删除业务数据。
 """
 
-import json
 import os
 import re
 import sys
@@ -50,6 +49,7 @@ from common.core.modules import (
     permission_prefixes_of,
     reset_module_state,
 )
+from system.services.seeding import read_model_rows
 
 TRIMMED = "chat"
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
@@ -122,8 +122,7 @@ def _autodiscover_tasks():
 def _seed_menu_rows():
     """(pk, parent_id, menu_type, name, path) 形态的种子菜单行（与运行期查询同形）。"""
 
-    with open(os.path.join(LOADJSON_DIR, "menu.json"), encoding="utf-8") as fp:
-        data = json.load(fp)
+    data = read_model_rows("system.menu")
     rows = []
     for item in data:
         fields = item["fields"]

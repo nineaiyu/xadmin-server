@@ -21,6 +21,8 @@ import pytest
 from django.conf import settings as dj_settings
 from django.urls import resolve
 
+from system.services.seeding import read_model_rows
+
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 FILE_MENU_PK = "56e7a4c2-97ec-42b1-a8a9-54c3f4e488f3"
 
@@ -54,8 +56,8 @@ FILE_POINTS = {
 STATS_PATH = "api/file/file/stats$"
 STATS_COVER = "retrieve:SystemUploadFile"
 
-ROLE_ADMIN = "069ea080-66b5-4ce3-9047-e3044ee98f30"  # 管理员
-ROLE_DEMO = "9be1b2f6-405c-4978-8bca-093f566b8d3c"  # 演示模式
+ROLE_ADMIN = "admin"  # 管理员
+ROLE_DEMO = "demo"  # 演示模式
 #: 演示模式不持有的写操作面（破坏演示环境或提权通道）
 DEMO_DENIED = {
     "create:SystemUploadFile",
@@ -78,14 +80,25 @@ def _load(name: str):
 
 @pytest.fixture(scope="module")
 def menus_by_name():
-    return {item["fields"]["name"]: item for item in _load("menu.json") if item["fields"].get("menu_type") == 2}
+    return {
+        item["fields"]["name"]: item for item in read_model_rows("system.menu") if item["fields"].get("menu_type") == 2
+    }
 
 
 def permission_pk(name: str) -> str:
-    for item in _load("menu.json"):
+    for item in read_model_rows("system.menu"):
         if item["fields"].get("name") == name and item["fields"].get("menu_type") == 2:
             return item["pk"]
     raise AssertionError(f"权限点 {name} 未登记")
+
+
+def role_menu_pks(code: str) -> set[str]:
+    """种子角色的菜单主键：授权已迁到各层 ``seeds/grants.json``，按名解析回主键。"""
+
+    from system.services.seeding import seed_role_menu_names
+
+    names = set(seed_role_menu_names(code))
+    return {item["pk"] for item in read_model_rows("system.menu") if item["fields"].get("name") in names}
 
 
 def test_file_permission_points_registered(menus_by_name):
@@ -131,9 +144,7 @@ def test_serialized_actions_bind_model(menus_by_name):
 
 def test_admin_role_covers_all_file_points():
     """管理员：文件页面下全部接口权限点均需授权（含回收站与分块上传）。"""
-    roles = {item["pk"]: item for item in _load("userrole.json")}
-    admin = roles[ROLE_ADMIN]
-    menus = set(admin["fields"].get("menu") or [])
+    menus = role_menu_pks(ROLE_ADMIN)
     assert FILE_MENU_PK in menus, "管理员缺少文件页面菜单"
     wanted = {permission_pk(name) for name in FILE_POINTS}
     missing = wanted - menus
@@ -142,9 +153,7 @@ def test_admin_role_covers_all_file_points():
 
 def test_demo_role_grants_readonly_file_points():
     """演示模式：查看与取用类权限点必须授权；写操作与物理清除不得出现。"""
-    roles = {item["pk"]: item for item in _load("userrole.json")}
-    demo = roles[ROLE_DEMO]
-    menus = set(demo["fields"].get("menu") or [])
+    menus = role_menu_pks(ROLE_DEMO)
     assert FILE_MENU_PK in menus, "演示模式缺少文件页面菜单"
 
     wanted = {permission_pk(name) for name in FILE_POINTS if name not in DEMO_DENIED}

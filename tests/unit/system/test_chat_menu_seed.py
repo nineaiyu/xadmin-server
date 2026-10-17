@@ -18,6 +18,8 @@ import pytest
 from django.conf import settings as dj_settings
 from django.urls import resolve
 
+from system.services.seeding import read_model_rows
+
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 CHAT_MENU_PK = "3949728a-8f7c-45a8-b84f-122b82e9c45e"
 
@@ -35,10 +37,10 @@ CHAT_POINTS = {
 }
 # 已授予聊天室权限的内置角色（有聊天室页面授权的角色必须同步授权接口权限点）
 ROLES_WITH_CHAT = [
-    "069ea080-66b5-4ce3-9047-e3044ee98f30",  # 管理员
-    "852a242e-e976-4475-8a25-7116087f4c78",  # 默认权限
-    "9be1b2f6-405c-4978-8bca-093f566b8d3c",  # 演示模式
-    "2d00af57-daa6-4634-952e-30074f09ed68",  # test
+    "admin",  # 管理员
+    "default",  # 默认权限
+    "demo",  # 演示模式
+    "test",  # test
 ]
 
 
@@ -49,7 +51,9 @@ def _load(name: str):
 
 @pytest.fixture(scope="module")
 def menus_by_name():
-    return {item["fields"]["name"]: item for item in _load("menu.json") if item["fields"].get("menu_type") == 2}
+    return {
+        item["fields"]["name"]: item for item in read_model_rows("system.menu") if item["fields"].get("menu_type") == 2
+    }
 
 
 def test_chat_permission_points_registered(menus_by_name):
@@ -73,20 +77,26 @@ def test_chat_permission_points_match_real_endpoints(menus_by_name):
 
 def permission_pk(name: str) -> str:
     """按权限码取菜单主键（供角色授权断言使用）。"""
-    for item in _load("menu.json"):
+    for item in read_model_rows("system.menu"):
         if item["fields"].get("name") == name and item["fields"].get("menu_type") == 2:
             return item["pk"]
     raise AssertionError(f"权限点 {name} 未登记")
 
 
+def role_menu_pks(code: str) -> set[str]:
+    """种子角色的菜单主键：授权已迁到各层 ``seeds/grants.json``，按名解析回主键。"""
+
+    from system.services.seeding import seed_role_menu_names
+
+    names = set(seed_role_menu_names(code))
+    return {item["pk"] for item in read_model_rows("system.menu") if item["fields"].get("name") in names}
+
+
 def test_builtin_roles_granted_chat_permissions():
     """有聊天室页面的内置角色必须同时获得 6 个接口权限点。"""
     wanted = {permission_pk(name) for name in CHAT_POINTS}
-    roles = {item["pk"]: item for item in _load("userrole.json")}
-    for role_pk in ROLES_WITH_CHAT:
-        role = roles.get(role_pk)
-        assert role is not None, f"角色 {role_pk} 不存在"
-        menus = set(role["fields"].get("menu", []))
-        assert CHAT_MENU_PK in menus, "角色缺少聊天室页面菜单"
+    for code in ROLES_WITH_CHAT:
+        menus = role_menu_pks(code)
+        assert CHAT_MENU_PK in menus, f"角色 {code} 缺少聊天室页面菜单"
         missing = wanted - menus
-        assert not missing, f"角色 {role['fields']['name']} 缺少聊天室权限点：{missing}"
+        assert not missing, f"角色 {code} 缺少聊天室权限点：{missing}"

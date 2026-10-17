@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "app": "task",
+  "depends": [
+    "system",
+    "identity"
+  ],
+  "url_prefixes": [
+    "api/task/"
+  ],
+  "config_keys": [
+    "EXPORT_ASYNC_MAX_RUNNING",
+    "EXPORT_FILE_KEEP_DAYS",
+    "IMPORT_ASYNC_MAX_RUNNING",
+    "IMPORT_FAIL_RATE_LIMIT",
+    "IMPORT_RECORD_KEEP_DAYS",
+    "IMPORT_VALIDATE_ERROR_LIMIT",
+    "MANUAL_RUNNABLE_TASKS"
+  ],
+  "files": [
+    {
+      "name": "menumeta.json",
+      "model": "system.menumeta",
+      "kind": "contract",
+      "order": 10
+    },
+    {
+      "name": "menu.json",
+      "model": "system.menu",
+      "kind": "contract",
+      "order": 20
+    },
+    {
+      "name": "systemconfig.json",
+      "model": "system.systemconfig",
+      "kind": "contract",
+      "order": 30
+    },
+    {
+      "name": "datadict.json",
+      "model": "system.datadict",
+      "kind": "contract",
+      "order": 40
+    },
+    {
+      "name": "fieldpermission.json",
+      "model": "system.fieldpermission",
+      "kind": "contract",
+      "order": 50
+    },
+    {
+      "name": "modellabelfield.json",
+      "model": "system.modellabelfield",
+      "kind": "generated",
+      "order": 60
+    }
+  ],
+  "dict_codes": [
+    "export_status",
+    "import_action",
+    "import_status",
+    "task_status"
+  ]
+}

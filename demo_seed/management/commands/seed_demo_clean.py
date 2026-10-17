@@ -28,10 +28,8 @@
 """
 
 import json
-import os
 from typing import Any
 
-from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db.models import ProtectedError
@@ -39,6 +37,7 @@ from django.utils import timezone
 
 from demo_seed.management.commands.seed_demo_org import TEMPLATE_VERSION_REMARK
 from identity.models import DeptInfo, UserInfo
+from system.services.seeding import platform_file
 
 DEMO_USER_PREFIX = "demo_"
 DEMO_ASSIGNEE_MARK = "demo_flow_"
@@ -53,7 +52,7 @@ DEPT_SEED_FILE = "deptinfo.json"
 
 
 def _load_seed(filename: str) -> list[Any]:
-    path = os.path.join(settings.PROJECT_DIR, "loadjson", filename)
+    path = platform_file(filename)
     with open(path, encoding="utf-8") as fp:
         rows: list[Any] = json.load(fp)
     return rows

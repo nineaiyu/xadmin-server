@@ -10,7 +10,6 @@
 """
 
 import ast
-import json
 import pathlib
 
 import pytest
@@ -24,6 +23,7 @@ from common.core.credentials import (
     encryption_status,
     plaintext_sensitive_keys,
 )
+from system.services.seeding import read_model_rows
 
 pytestmark = pytest.mark.django_db
 
@@ -63,8 +63,7 @@ class TestRegistryGuard:
         assert unregistered == [], f"write_only 敏感键未登记 ENCRYPTED_SETTING_KEYS: {unregistered}"
 
     def test_seed_has_no_plaintext_sensitive_values(self):
-        seed_path = SERVER_ROOT / "loadjson" / "systemconfig.json"
-        seeds = json.loads(seed_path.read_text(encoding="utf-8"))
+        seeds = read_model_rows("system.systemconfig")
         offenders = []
         for row in seeds:
             key, value = row["fields"]["key"], row["fields"]["value"]

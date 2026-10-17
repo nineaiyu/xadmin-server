@@ -2,18 +2,16 @@
 """功能模块清单接口（/api/system/modules）单元测试 + 种子权限点守护。"""
 
 import contextlib
-import json
-import os
 import threading
 
 import pytest
-from django.conf import settings as dj_settings
 from django.utils.translation import gettext as _
 from django_redis import get_redis_connection
 
 from common.cache.lock import LOCK_KEY_PREFIX, ReentrantLock
 from common.core.modules import CORE, all_module_specs, override_active
 from system.models import ModuleOverride
+from system.services.seeding import read_model_rows
 from system.views.platform.modules import OVERRIDE_WRITE_LOCK_NAME
 
 pytestmark = pytest.mark.django_db
@@ -211,9 +209,8 @@ class TestModuleSeedRegistration:
 
     @staticmethod
     def _seed(name):
-        path = os.path.join(dj_settings.PROJECT_DIR, "loadjson", name)
-        with open(path, encoding="utf-8") as fp:
-            return json.load(fp)
+        models = {"menu.json": "system.menu", "menumeta.json": "system.menumeta"}
+        return read_model_rows(models[name])
 
     def test_menu_and_permission_registered(self):
         rows = self._seed("menu.json")

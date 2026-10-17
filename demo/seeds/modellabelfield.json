@@ -1,0 +1,812 @@
+[
+ {
+  "model": "system.modellabelfield",
+  "pk": "028c9e55-1d3c-498f-b061-2550b395d598",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.541Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "managers",
+   "label": "操作人员1"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "04d56235-b2b8-4d42-978a-d14056f350a9",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.592Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "book_file",
+   "label": "书籍存储"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "09faf1a3-bf48-43b6-b3c3-9c8cf80e672d",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.542Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "cover",
+   "label": "书籍封面原图"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0b39a973-8990-4ca3-a7dd-e5309a5fc1da",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.539Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "status",
+   "label": "上架状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "10136c32-5486-427d-b637-1f88b46f5da0",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.541Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "admin2",
+   "label": "管理员2"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "10c40420-53d7-490d-998f-4bc75823d814",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.542Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "avatar",
+   "label": "书籍封面缩略图"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "114ff514-42ea-467e-918d-efaa60c93216",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.543Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "files",
+   "label": "书籍多附件"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1fef5164-8f2c-48c1-8964-8869bc4a3042",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.590Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "2756cfa3-5c4c-4077-83a3-86a43e0a5179",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.594Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "publisher",
+   "label": "出版社"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "2c5189d7-cf41-47ed-b42f-b73d7c73f7f0",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.590Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "2e89441a-f500-43e5-aa03-7e04ad3cc60c",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.538Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "deleted_at",
+   "label": "删除时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "377f84da-f7e8-4959-8d13-904f3006640b",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.592Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "admin2",
+   "label": "管理员2"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3bd5ba79-0ca3-44e7-98b5-bea90fd5ccb4",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.593Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "author",
+   "label": "书籍作者"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3df62064-a092-4fde-9150-faf1d1e668ce",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.593Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "isbn",
+   "label": "标准书号"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3fdefa98-dea9-4777-a827-e2d180c06a95",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.542Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "book_file",
+   "label": "书籍存储"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "4b89f27c-8851-48f0-87c7-595101fe204c",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.540Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "price",
+   "label": "书籍售价"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "56ce528c-bdda-4ca9-891f-aee46ef0db88",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.591Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "deleted_at",
+   "label": "删除时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "57dc4e7d-0dea-4a01-9762-6230877b3d1b",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.595Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "on_shelf_time",
+   "label": "上架时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "595319aa-96e7-48e0-bc71-d200d18d1fa3",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.594Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "publication_date",
+   "label": "出版日期"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5c59b469-091f-4b2d-b9a6-fac40ac63152",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.595Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "instance",
+   "label": "审批实例"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "625de55d-aa16-42e0-8705-76633a68e066",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.539Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "publisher",
+   "label": "出版社"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "62a2bb37-facd-46de-b361-2b10df8e0f93",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.543Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "file",
+   "label": "书籍单个附件"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "63d01090-1a09-4edd-b2e5-52c16ec2ec38",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.595Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "managers2",
+   "label": "操作人员2"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "64c5ff4d-2c3a-40a1-b3c6-04c375b5cb49",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.592Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "avatar",
+   "label": "书籍封面缩略图"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6aa2fdf2-a9c7-442d-8133-721b37ae4741",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.537Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "block",
+   "label": "是否启用（自定义 input_type 演示）"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6abe0c22-8573-4130-9634-73df84019677",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.595Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "managers",
+   "label": "操作人员1"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "719bb64f-463b-4616-99b3-e5af8e30f7cf",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.593Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "file",
+   "label": "书籍单个附件"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7264230f-3a41-4eb9-9216-40af2a5ad7d4",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.596Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "files",
+   "label": "书籍多附件"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "83d348ed-eee3-4f0a-a336-694a3f38d34b",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.540Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "on_shelf_time",
+   "label": "上架时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "9194a46e-3d0a-46d9-9880-73b5b75605d5",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.591Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "category",
+   "label": "书籍类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "9252cb0f-f194-4b0c-b2c4-2873888af07d",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.540Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "99013cc9-adf8-48d2-83ce-a6b71b0d6d95",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.542Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "managers2",
+   "label": "操作人员2"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "9aa592e4-323f-4155-8c72-51c062a0988c",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.589Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "demo.book",
+   "label": "书籍名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "9e7f15a6-eb6e-4836-921a-d93007eaf32b",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.540Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "publication_date",
+   "label": "出版日期"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b242780b-59e9-4055-a3ef-ef3083081758",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.539Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "category",
+   "label": "书籍类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b4cf2fba-b379-4592-bf2c-7d0ab5e2f27f",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.537Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "pk",
+   "label": "ID"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b4ea0a05-7bf8-4805-9295-b38ab540afdb",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.589Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "id",
+   "label": "ID"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "bc043a8d-37ba-40ef-a240-c75f3e435054",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.594Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "is_active",
+   "label": "是否启用"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c2010d42-1579-4848-9cdd-2dde1bc952b0",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.590Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c5a9eabc-92f5-467d-b319-95343c0c5ecb",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.541Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "admin",
+   "label": "管理员1"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c97a97eb-1e00-4ddf-8e0f-43b5c5ac667d",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.539Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "is_active",
+   "label": "是否启用"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "df005a7c-bf9a-4e6f-b48d-6807b74556d4",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.541Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e0540951-1734-4600-9aae-2f3e4524bc92",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.590Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e6ec44f9-7ed0-4017-a17c-e54bb451aa99",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.538Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "name",
+   "label": "书籍名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e9c0561b-a7f0-4d9b-8b91-32fc87c70e38",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.592Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "cover",
+   "label": "书籍封面原图"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "eacf690c-489b-4b7c-818d-ef8c629913f7",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.591Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "admin",
+   "label": "管理员1"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.536Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "demo.book",
+   "label": "书籍名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "edbeca66-b709-4aa5-865f-d89449f8b936",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.594Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "price",
+   "label": "书籍售价"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "eeb4ef28-703a-41e7-bb47-b88087e735ff",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.591Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f22aa2f8-fa9f-4d02-8b21-3aef4bee773b",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.538Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "isbn",
+   "label": "标准书号"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f6d0d9d2-f4c7-4c93-a67e-e7460785722b",
+  "fields": {
+   "created_time": "2026-09-24T02:10:08.539Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "ec7b9654-e99a-44b3-b24e-013114711d2d",
+   "name": "author",
+   "label": "书籍作者"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f75fabec-af24-4a7e-aac0-23201b05d79b",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.593Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "name",
+   "label": "书籍名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f84a55b1-496c-41a3-b8f6-cd60b22ee8d7",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.590Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "fa1ad9e6-130f-4062-be69-cae90cb48d6e",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.595Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "9aa592e4-323f-4155-8c72-51c062a0988c",
+   "name": "status",
+   "label": "上架状态"
+  }
+ }
+]

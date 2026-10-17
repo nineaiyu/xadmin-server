@@ -1,0 +1,5417 @@
+[
+ {
+  "model": "system.modellabelfield",
+  "pk": "005a5208-b952-4a4d-8bf9-d9341ede65e6",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.938Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0071bba5-f0ca-46e8-863c-14bf4a530e38",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.229Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "02712f1c-b42c-41db-b5e8-f4fc96ef5755",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.772Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "035f555f-ca60-45df-b434-fb524a720f98",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.770Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "code",
+   "label": "流程编码"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "038dc083-e895-4903-a47c-aa8ba3ade0bd",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.236Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "assignee_value",
+   "label": "审批人取值"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "03a05507-e387-4a2d-adf1-56312f17db8b",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.442Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "end_date",
+   "label": "结束日期"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "03c51b65-5f67-4ed4-a6c5-2261f0291436",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.237Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "approver_display",
+   "label": "审批人显示名"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "044e5ca7-6fc5-4d5f-bf8f-1baa35851108",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.944Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "start_date",
+   "label": "开始日期"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0484a6f5-07e8-43cd-a882-f5ea03fbe8e0",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.244Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "routes",
+   "label": "分支路由"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "04b0639e-5881-407b-a986-ac1246824499",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.267Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalflowversion",
+   "label": "审批流程版本"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "04cd837a-ab5c-4407-9d35-73348c0275fb",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.214Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0511fac9-40df-4776-a26c-669c90da65f7",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.237Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0583700f-ee2a-4214-b95d-96cdfe367311",
+  "fields": {
+   "created_time": "2026-09-24T02:10:01.806Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "approver_display",
+   "label": "审批人显示名"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "059d72ba-78b8-46c6-ae87-771417e7803f",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.438Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "05cd2461-96ed-49c8-a6c8-0707531dd1ec",
+  "fields": {
+   "created_time": "2026-09-24T02:10:01.812Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "current_level",
+   "label": "当前层级"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0612d1e8-584a-4a1b-8e22-ebd897de09c5",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.762Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "name",
+   "label": "节点名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "06d38efe-373b-4d74-98cd-9bea95c4791c",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.221Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "object_pk",
+   "label": "对象主键"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "082c9927-0d13-4242-9d3c-50e90e740fe3",
+  "fields": {
+   "created_time": "2026-09-29T18:17:42.018Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "form_schema_locked",
+   "label": "表单结构已锁定"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "08458e0e-c6c0-4844-8376-46aa38925396",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.688Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "actor_display",
+   "label": "操作人显示名"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "086410dc-dd54-4d59-bced-0ffa087d3859",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.218Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.256Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalnodetask",
+   "label": "审批节点任务"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0b0500c1-1f73-4d28-89c9-95290dc1d644",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.231Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0c4b5f8e-add6-4e98-9a24-7ed970eb35d9",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.255Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "finished_at",
+   "label": "完成时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0c8e77ba-31f5-477b-bffb-9747ffc0f826",
+  "fields": {
+   "created_time": "2026-09-29T18:17:41.397Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "timeout_action",
+   "label": "超时自动动作"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0cb2211f-8671-4b89-8c31-9bac4a66ff79",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.242Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "step",
+   "label": "审批步骤"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0cd9e0a1-efa5-4291-bd9d-86cdac636235",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.583Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "46250abe-5de8-46a2-aa78-bbd6c4b4d02d",
+   "name": "approve_type",
+   "label": "审批方式"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0d2dafff-55a1-42fe-b6db-5ebb0593d1f7",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.696Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b827bac2-53a3-4897-8a3e-9e0cff7c856d",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0dbf3040-a947-4f69-9e8f-7f91c81bd4c1",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.272Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "remark",
+   "label": "备注"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0e1ba3f0-f3d3-452a-a189-3acfed21d42d",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.947Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "current_node_name",
+   "label": "当前节点"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0ea1f57b-a24a-49cc-a95b-cd57a82062ec",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.940Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "start_time",
+   "label": "开始时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0edabb8a-8b1d-4ec9-a5b5-a870a7a30116",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.784Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "my_task",
+   "label": "我的任务"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "10443be1-95e2-4a18-ae33-731d3fb9dc95",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.762Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "pk",
+   "label": "Id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "11a041bf-7a5f-480e-8b1b-c807db38d674",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.765Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "assignee_value",
+   "label": "审批人取值"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "12ddecf5-74d2-406c-bdd5-2e690170b75a",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.247Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "12f87997-ee02-4ef4-86d3-31ebf169d6a0",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.781Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "flow",
+   "label": "流程"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "141f9541-64ac-4efe-9c1e-f7acfa0739d0",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.232Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "assignee_type",
+   "label": "审批人类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "14c40974-11d1-4633-896a-6d2ac1f72c4d",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.244Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "condition",
+   "label": "条件"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1510c677-bfe2-4ea0-9bce-c9e1291da540",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.243Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "assignee_type",
+   "label": "审批人类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1558e9e4-4a9c-45c2-adc3-cfb0c77c704b",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.233Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "16859edf-a48f-4d29-af96-d838f93c11b5",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.252Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "biz_type",
+   "label": "业务类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "183558b0-a255-448f-99c0-aee538259515",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.434Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.leave",
+   "label": "请假申请"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1901bea9-755d-44aa-b173-46b3d122e218",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.261Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "node",
+   "label": "节点"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "19378269-5e21-4046-be22-3a956e84cc17",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.225Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "instance",
+   "label": "实例"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1acd836a-d6af-4220-9c49-acb4160a7e76",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.441Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "start_date",
+   "label": "开始日期"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1acdc27f-c4ac-44dc-9a8f-a23b42ddb284",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.230Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1c512b13-e4f2-4b58-af2e-a9daff2270c2",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.945Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "days",
+   "label": "天数"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.236Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalflownode",
+   "label": "审批流程节点"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1c991a14-e008-44b7-9777-5036119bebf3",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.269Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1dcee58c-e272-4a9b-a38f-2689da3904ed",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.263Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "node_order",
+   "label": "节点顺序"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1df5e320-9be0-4d51-899f-c8d8e202dcd6",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.234Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1eda86ee-dece-43bc-a78c-38803ed06b64",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.240Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "flow",
+   "label": "流程"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1f289e87-41c1-47a6-981f-9f14ebadd598",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.944Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "end_date",
+   "label": "结束日期"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1fb53794-7ac1-41d1-a12d-a743c3c461c0",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.686Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "delegate_from",
+   "label": "委托来源"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "206cf77d-2775-4552-ad10-64b5b913bf60",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.609Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "approval.approvaldelegation",
+   "label": "审批委托"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "210a8318-5464-4e75-a4b0-f5ef5ea81964",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.950Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "214227f3-b28d-4c24-91cd-507afc944f58",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.434Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "id",
+   "label": "主键ID"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "22a3bfde-71e0-4111-812e-905f72c5f0d8",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.130Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "tags",
+   "label": "标签"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "2300720f-8b2a-427b-acbe-97a0fd1b21a6",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.233Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "236b852a-3c21-44aa-897d-227305a4f468",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.264Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "actor",
+   "label": "操作人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "27ee01e4-0baa-4813-855e-c5b304b296a0",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.583Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "46250abe-5de8-46a2-aa78-bbd6c4b4d02d",
+   "name": "order",
+   "label": "层级顺序"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "28896563-422e-4592-85b3-773b4b6e3936",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.231Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "name",
+   "label": "层级名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "294ae62b-6151-48e3-9e51-9fa933230154",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.124Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "node_progress",
+   "label": "节点进度"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "29dae951-dbfc-41f7-8111-707560b42635",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.226Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "2a723667-b4bb-438c-a9d4-9215e67c843c",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.236Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "approve_type",
+   "label": "审批方式"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "2d8de994-ae87-4514-a782-40f531473cd4",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.233Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "code",
+   "label": "流程编码"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "2eaf762f-0094-488c-a904-ab0ff09f7137",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.949Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "creator",
+   "label": "申请人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "2eb15a9e-59aa-4396-b357-405d90ea98ad",
+  "fields": {
+   "created_time": "2026-09-29T18:17:42.014Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "timeout_action",
+   "label": "超时自动动作"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "2ee92356-2fb7-4b43-98c6-44d7413eb10b",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.238Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "2f69462c-3690-475d-8696-f6973f100318",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.758Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "expired_at",
+   "label": "令牌过期时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "30553438-b463-4585-9ae8-5a943ac93734",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.752Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "approval.approvalrequest",
+   "label": "审批单"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "30aad9cd-8fa8-42ee-94f2-dba15ae76c90",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.271Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "flow",
+   "label": "流程"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "30e778a4-e006-432e-99c4-845a0ba45319",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.946Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "instance_pk",
+   "label": "审批实例"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "30eb7d4e-4c55-451c-aa74-5b43a0b61bb2",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.260Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "318e0c28-4631-43c8-a212-8e6d852cea96",
+  "fields": {
+   "created_time": "2026-10-14T01:43:08.932Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "methods",
+   "label": "请求方式"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "323257b4-fbd9-4f90-81bd-9764b83687f7",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.228Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3595153f-3bb0-4d68-805f-b1756dd59fab",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.582Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "46250abe-5de8-46a2-aa78-bbd6c4b4d02d",
+   "name": "pk",
+   "label": "Id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "38a4b57f-2601-4b9e-9555-82e56c5e272c",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.230Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3a2d5dcf-ff20-424e-8bda-12f4d1a776cb",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.225Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "content",
+   "label": "内容"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3a6c1bd2-72f3-4989-8816-434e88d891ca",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.230Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3af51b06-a315-494d-86f2-24b8919786a0",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.241Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "order",
+   "label": "节点顺序"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3b5d04ed-30e2-4428-ab50-76629984d818",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.760Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3be3b617-7c2c-4839-8763-c1743f82ea2f",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.755Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "object_pk",
+   "label": "对象主键"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3c15b499-f506-4b6c-b127-1ddca661a5cb",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.769Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "pk",
+   "label": "Id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3cdb2a3f-dd2f-4ebe-869b-2fa799acc7dd",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.611Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "delegate",
+   "label": "代理人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3cfd15f6-ba05-40f8-9a3c-bf826ce2e063",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.782Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "title",
+   "label": "标题"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3dca64af-46a2-467b-ba73-e4488fa81d14",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.263Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "assignee",
+   "label": "审批人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3dd5ce8c-c4f0-40be-8fc0-9f0a80b25d99",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.612Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "delegate_nickname",
+   "label": "Delegate nickname"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3dff1dc1-8fc1-455f-b89f-d765dbfab8e5",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.175Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "approver_display",
+   "label": "审批人显示名"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3e40b501-3bd8-4b74-9827-84facff22195",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.935Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvaldelegation",
+   "label": "审批委托"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3f79ebdb-d74a-43cd-b0ca-0b71d42dfab3",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.227Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "403ead32-8a38-4dc5-8e32-c34b582cc30f",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.240Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "41f2fafd-b5bb-4b42-86e3-bbd5f4c3741e",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.941Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "flow_codes",
+   "label": "流程范围编码"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "431776b5-ddf2-44ec-b4bc-6dfdfbfcd5a4",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.127Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "biz_type",
+   "label": "业务类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "449cca28-bef0-4d47-8cde-c79102f111dd",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.761Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.942Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "approval.leave",
+   "label": "请假申请"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "45c1c068-6197-4a24-a3e1-8e0534e1b3f0",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.270Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "46250abe-5de8-46a2-aa78-bbd6c4b4d02d",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.581Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "approval.approvalrulelevel",
+   "label": "审批规则层级"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "46d5464d-76a0-4527-9ff9-313f7208f866",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.269Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "471a3846-3107-4fd2-b01c-874a0aec9d23",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.258Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "4811398e-df98-4121-9329-8dac76af53a8",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.128Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "related_object",
+   "label": "关联业务对象"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.213Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalrequest",
+   "label": "审批单"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "4a946e4c-ff0e-4b4e-8a27-f5b576b5c9d4",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.588Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "4abc81db-1b19-4378-b8c7-45a23cf4a3b4",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.242Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "approve_type",
+   "label": "审批方式"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "4addca62-232f-4266-bc55-232227c7bac3",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.227Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "4c6dc126-84ab-4095-9a80-97e010f0b04d",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.585Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "path_patterns",
+   "label": "路径规则"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "4d9f1d59-bba1-4265-a75d-f0b74655df01",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.215Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "4dc57196-cbb6-4817-844b-ccd74ec4acf4",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.443Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "reason",
+   "label": "原因"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "4ea181b9-98e5-4d84-be1f-6b4e0534fd42",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.234Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5018a91d-d878-4d8e-8f1b-0b5f397bbe57",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.224Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "50d07f96-f069-4e3d-bb51-552fbfc39997",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.232Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "order",
+   "label": "层级顺序"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "515ff7c1-85dd-4667-bcd2-b50e36613f2b",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.270Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5201fc87-ad8d-4cbe-9351-89bc0ee53835",
+  "fields": {
+   "created_time": "2026-09-24T02:10:01.812Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "current_assignees",
+   "label": "当前处理人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "52838c9e-7583-45c6-9b80-12c4c40473d0",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.272Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "snapshot",
+   "label": "快照"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5289ce00-d035-4249-b654-57a8d8aecd77",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.229Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "priority",
+   "label": "优先级"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "52a0dfbb-51aa-435c-befe-e8c2d4a73317",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.239Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "assignees",
+   "label": "审批人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "52a907b0-6628-4d43-813d-4c20ff433b76",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.757Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "approved_at",
+   "label": "审批时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "532fc835-f022-47e0-b560-f11e99ba9d0d",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.231Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "rule",
+   "label": "规则"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5351e2ed-3c51-4956-b7a8-d09309cbe63e",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.264Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "status",
+   "label": "状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "53ac0f28-d4ce-46f9-87be-1110cf3a22ba",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.229Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "is_active",
+   "label": "激活状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "543a9d73-ec1b-4dc3-ae08-5a92eed344c3",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.939Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "delegator",
+   "label": "委托人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "559a1b34-8a4f-4849-800d-94cd17a6484c",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.219Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "module",
+   "label": "模块"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "56073851-f337-4f5f-8ec9-c456d86ea952",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.435Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "566746e9-5976-4db5-a388-869a0166fa4c",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.783Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "form_data",
+   "label": "表单数据"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "569cb3bd-cf86-47b5-8381-b7fb538cce88",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.236Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "assignee_type",
+   "label": "审批人类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "56b62280-6a44-4311-9af4-3c0be048b0fb",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.585Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "name",
+   "label": "规则名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "59b6b7bc-020e-4bb0-8555-0bd3be0f18e9",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.440Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "59cd0295-5ba2-4b5d-8b28-233c447b6786",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.758Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "consume_time",
+   "label": "消费时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5a2e35f8-1890-4ec6-bed6-d5780ba8082e",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.254Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "flow_version",
+   "label": "流程版本"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5ac1238b-28a6-42c0-89ca-2e7e1a64220c",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.936Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5c00ac9d-4af0-4fcf-9ed3-d59a80e187dd",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.257Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5cd60fca-40b4-47aa-b55e-2bb1710d9642",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.266Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "is_added",
+   "label": "加签添加"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5dd52e68-95d9-455f-89f0-e26bc9509598",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.247Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5df5639d-b320-4ea9-876a-15a16a66cae4",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.217Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5eb96f1e-9461-4b04-9a99-0540a2128084",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.254Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "current_node",
+   "label": "当前节点"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5f9d4649-8f4d-4939-8bd9-c8f630c731b1",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.610Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "pk",
+   "label": "Id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5ff9fe73-8834-4e35-9400-f53c35fb8d2d",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.788Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "60a13e10-6f29-4f64-b915-2855b7a12bcf",
+  "fields": {
+   "created_time": "2026-09-19T01:34:47.311Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "delegate_from",
+   "label": "委托来源"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "62584f2d-0e26-4788-a57c-6674066511ab",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.754Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "method",
+   "label": "请求方式"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "63ff09c9-2d8b-4eee-8b43-8a8fbf63f662",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.237Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "status",
+   "label": "状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "661e6760-8e32-44a3-9baa-ea32678729d0",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.614Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "flow_codes",
+   "label": "流程范围编码"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "66fe4fc4-23e6-4c78-b8c4-f0d737319c70",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.248Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "67088b5c-f742-4ff1-bc79-17c9be60acb6",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.615Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "remark",
+   "label": "备注"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "67cf4b76-34ce-44be-88f1-bfbbedf5ae55",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.942Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "is_active",
+   "label": "激活状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "69429a50-1b99-4367-9d71-014c48dd6773",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.778Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "acted_at",
+   "label": "处理时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6972bf1e-51d5-47d3-83a5-8f7e130cee53",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.248Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "steps",
+   "label": "审批步骤"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "697b7d80-af52-4466-a090-08b420b65fec",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.759Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "creator",
+   "label": "申请人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6b338324-ec58-4c77-afb4-e098f7613e4e",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.695Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b827bac2-53a3-4897-8a3e-9e0cff7c856d",
+   "name": "mentions",
+   "label": "提及"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6b740b7e-2095-4cc3-a8f9-645e80ff54f6",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.766Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "routes",
+   "label": "分支路由"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6ba30f75-0ad2-45b3-b725-d3994bb20dea",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.784Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "current_node_name",
+   "label": "当前节点"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6ba9954a-ccc4-4297-9e4c-06dff2386c31",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.268Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6c281d55-aff2-479a-ad2d-214cac64ab54",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.228Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "path_patterns",
+   "label": "路径规则"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6c9fbb4d-ae81-4f66-92a0-8dd0677e6c4e",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.945Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "reason",
+   "label": "原因"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6cb224e8-4464-45b0-ac67-fe5b3465a960",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.242Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "approve_ratio",
+   "label": "通过比例"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6d84d4f1-a09a-4c92-b63b-b549e8dea33c",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.943Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "leave_type",
+   "label": "请假类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6e78641f-28ae-45dd-8798-6cb95d7dd445",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.234Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6f9d18b7-91f0-4f6e-b42a-d917543d2f86",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.225Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "expired_at",
+   "label": "令牌过期时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6fb44b6b-a3b3-4e66-a4c4-60b6f00f2362",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.241Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6fc4b5f9-eac5-41a3-b011-b320ba2a1a47",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.231Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "70233d1a-26e5-4102-ba95-67b2205911d4",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.788Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "706e394f-2d66-48e7-9b44-20764facb2ea",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.616Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "70bf5192-255f-4b36-816d-59d2d81c45af",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.587Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "level_count",
+   "label": "层级数量"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "70f0e1db-3d70-4f61-bf71-0cddcb85ec08",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.763Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "order",
+   "label": "节点顺序"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7112e9ee-60e9-44a8-9777-cdd3702a163f",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.775Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "node_name",
+   "label": "节点名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "739a65bf-77ea-41f8-8cb3-9d40467fc054",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.585Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "pk",
+   "label": "Id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "73f99cad-300a-40ba-b8ee-1534d539b589",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.614Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "is_active",
+   "label": "激活状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "74a50696-ded7-44e2-8f03-cc7c15590af4",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.230Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "752747f2-8b6d-4896-9399-79fb46263ad1",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.250Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "75dbc22d-2d89-439d-ab75-24dc97176925",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.122Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "current_assignees",
+   "label": "当前处理人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "769fc781-3b68-4a9b-90a8-60c7f8c95fdb",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.764Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "approve_ratio",
+   "label": "通过比例"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "76a322f8-b3be-4f51-a5c2-d7cb6a9c7bb0",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.232Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "assignee_value",
+   "label": "审批人取值"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7765095f-756d-4bda-8402-8c5c4f8b5f05",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.586Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "is_active",
+   "label": "激活状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "77bbf3af-3d06-4fe9-bd91-a13f65ac4b4d",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.695Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b827bac2-53a3-4897-8a3e-9e0cff7c856d",
+   "name": "content",
+   "label": "内容"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "77e81f51-a415-43e6-b60b-b3bf4ac6f168",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.237Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "approver",
+   "label": "审批人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7a72aba0-cddc-4103-9475-8af00e501eea",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.262Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "node_name",
+   "label": "节点名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7ac555c1-dd3e-4df3-b510-21acd9aa7d35",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.224Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "approved_at",
+   "label": "审批时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7b23747e-ea12-4731-8e78-63b040ff802a",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.234Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "is_active",
+   "label": "激活状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7b557b4d-10b2-4b09-8ef4-6dc7a460faaf",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.258Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7c1149c3-59b4-4032-a210-45be3cca2d46",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.767Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "timeout_hours",
+   "label": "超时小时数"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7cbf3cc5-dd9a-4939-980c-d05fac29b7a4",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.769Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "name",
+   "label": "流程名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7cda2c2e-eb5f-480f-8aa5-b963b66ce585",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.226Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "author_display",
+   "label": "作者显示名"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7d93e386-aae9-4dcf-b945-c6e4e41ee5c9",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.253Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "biz_id",
+   "label": "业务标识"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7da2e7a5-7752-4f7d-8144-c0cada5778df",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.235Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "order",
+   "label": "层级顺序"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7ecc6739-88d3-4b80-bef9-6d8ea852025f",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.767Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "layout",
+   "label": "画布布局"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7f4f8f50-c750-438e-a197-721df46f647c",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.237Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "81732a71-22be-40d4-a3c6-05700d8fd376",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.226Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalrule",
+   "label": "审批规则"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "82aadbc5-25dd-4c3c-9916-3b7ba7294568",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.862Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "auto_completed",
+   "label": "已自动完成"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "831efd46-4895-4428-b6e3-82cf4f060191",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.445Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "instance",
+   "label": "审批实例"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "85d9766b-8d9c-44da-8099-a1a8207eb1d7",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.225Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "86957fb6-bffb-4d44-bbc4-4112201ed93c",
+  "fields": {
+   "created_time": "2026-10-14T01:43:10.480Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "base_updated_time",
+   "label": "Base updated time"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "89752bbf-9e2b-49d9-854b-ae99abcac531",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.786Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "form_schema",
+   "label": "表单结构"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "8bef486a-2fb6-4cda-86a0-163e3ede7b70",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.249Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.584Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "approval.approvalrule",
+   "label": "审批规则"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "8ceadcab-71b0-498a-9f7f-109fe55462b3",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.782Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "flow_name",
+   "label": "流程名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "8d187400-8cc4-4902-99fb-df37c7a594c7",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.241Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "8dda2d6d-dcbe-4298-9385-9fe2133c8b5d",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.242Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "status",
+   "label": "状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "8e74b749-0d93-4da3-a008-fa517bebfa8d",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.232Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "approve_type",
+   "label": "审批方式"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "8f8bde7e-f7ed-4471-b94c-67a2b97d4868",
+  "fields": {
+   "created_time": "2026-09-29T18:17:41.398Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "version_to",
+   "label": "生效截止版本"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "90d81f0e-b24b-45b8-80b6-6c15a1a7586b",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.773Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "9150a126-767d-4381-8297-8b149f1a2acc",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.233Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "form_schema",
+   "label": "表单结构"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "91b94634-888e-4147-9c9e-36fcac55c66f",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.226Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "consume_time",
+   "label": "消费时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "92559cf1-bb90-4270-9c8e-b11918dcf6e0",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.238Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "comment",
+   "label": "审批意见"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "930dbf70-d1ad-4911-b559-2f970bc70733",
+  "fields": {
+   "created_time": "2026-09-29T18:17:41.398Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "version_from",
+   "label": "生效起始版本"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "935080dc-0f3d-454b-b6fb-602add4d60da",
+  "fields": {
+   "created_time": "2026-10-14T01:43:10.494Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "methods",
+   "label": "请求方式"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "962c51f1-d7e5-480d-a2e5-e5f47f5a80c8",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.757Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "approver",
+   "label": "审批人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "968a8fc8-b43e-4d8d-9059-87c866768773",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.251Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "flow_name",
+   "label": "流程名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "982f74f3-9a39-4c95-aabe-262b130d1eb7",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.754Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "module",
+   "label": "模块"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "989f72f5-2c33-496a-8a34-6d611443da8c",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.779Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "is_added",
+   "label": "加签添加"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "98f8a682-950c-4c8d-a27f-f7e57e5f7cff",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.248Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "9933d076-c6d8-4f94-b476-518056450df7",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.265Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "acted_at",
+   "label": "处理时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "9c402795-3baf-4c7b-8266-95bc379f227d",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.129Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "comments",
+   "label": "评论"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "9e2562f0-5819-43d4-a11b-362c817db4bb",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.610Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "delegator",
+   "label": "委托人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "9fa156de-b1f9-4c86-b66a-cfc3f9f66f56",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.238Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "acted_at",
+   "label": "处理时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "9fb9f4d4-094a-40e6-87aa-27f00e942bfb",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.586Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "remark",
+   "label": "备注"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a2c21ec0-9e2b-48c0-ae33-b90e08eb0450",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.241Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a2cd5df5-1a14-43fa-8021-217e87973940",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.940Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "delegate",
+   "label": "代理人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a31de905-8aa7-489d-9731-33d7b53c77ac",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.613Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "end_time",
+   "label": "结束时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a3fe3ecb-9885-474e-878a-2ad3ce1f66ed",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.241Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "name",
+   "label": "节点名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a5c1b33f-0851-4125-a31e-08311efa61c5",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.779Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a5cb4dfd-0b36-4c82-85e9-ba634efd605f",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.942Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "remark",
+   "label": "备注"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a5e5ed5f-3a5d-41ff-ae55-9e4644bafd40",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.218Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a683b675-722c-4511-a5ae-baeff5ccf823",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.936Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a7fe1fce-001b-4377-8ce4-453374b5bdb5",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.756Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "params",
+   "label": "请求参数快照"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a809afcb-bee5-4889-84cb-471d00bf117a",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.764Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "assignee_type",
+   "label": "审批人类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a8c54d77-c279-49b5-85ea-1247ae630ebe",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.439Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a8d597c9-986d-4695-8bbe-0d807c0d0454",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.256Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "reason",
+   "label": "原因"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a9826e8e-10ad-434c-80ed-1efa53af9f97",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.771Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "nodes",
+   "label": "Nodes"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a9c17453-0982-4f42-8537-b78a1519a86f",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.221Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "path",
+   "label": "访问路径"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "a9ebfda0-e569-422d-b06e-217928195a8e",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.770Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "form_schema",
+   "label": "表单结构"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "aa1c5bcc-abcf-43d1-a1ed-5582bb4ac242",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.235Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "name",
+   "label": "层级名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "ababbfbf-64a9-499e-947e-86392df59751",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.224Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "abcdd480-647d-43cd-acdc-0590e7d11622",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.240Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "abd95582-e0b2-45e9-9453-7a3ab82fc550",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.771Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "is_active",
+   "label": "激活状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "ae0bef0d-5ed4-4dba-b704-2e503322de62",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.694Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b827bac2-53a3-4897-8a3e-9e0cff7c856d",
+   "name": "author_display",
+   "label": "作者显示名"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "af494402-364d-484b-b179-93ecdb64089a",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.783Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "status",
+   "label": "Status"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b316759a-0a51-49ba-a31d-4d0a1492457c",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.238Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b3a2fb18-a6c6-49a6-9893-5d229036d7d1",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.937Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b54d1e57-d485-4192-9b92-728fe9aca458",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.271Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "version",
+   "label": "版本"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b5c356e9-098e-491d-ae6a-bfda7c8a630d",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.437Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b74d6e50-8b4e-4fcb-9eae-0f7dda518261",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.175Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "current_assignees",
+   "label": "当前处理人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b7fdc669-0685-4a43-a135-289d1ca168a0",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.756Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "status",
+   "label": "Status"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b827bac2-53a3-4897-8a3e-9e0cff7c856d",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.693Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "approval.approvalinstancecomment",
+   "label": "审批实例评论"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b8b50b49-b20f-4258-9c20-6e8a678228cd",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.267Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b93e3583-6a9d-47b3-b20d-250d994dbbfc",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.586Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "priority",
+   "label": "优先级"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b94b065c-55bd-418b-b2d8-c037891022fa",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.207Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "assignee_display",
+   "label": "处理人显示名"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "bae0769a-e42b-4c67-ab47-625db275f61f",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.261Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "instance",
+   "label": "实例"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "bb1ea8d8-b993-4665-98c8-a9779627bfd3",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.583Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "46250abe-5de8-46a2-aa78-bbd6c4b4d02d",
+   "name": "assignee_type",
+   "label": "审批人类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "bbf00dcf-bce5-415d-ae09-7e49b899b3a9",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.232Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "name",
+   "label": "流程名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "bcb00279-ff94-44a3-96c6-ef98f5b62b19",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.268Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "04b0639e-5881-407b-a986-ac1246824499",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "bce52fc2-bdb9-42be-b229-46d3fab42438",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.587Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "levels",
+   "label": "Levels"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "bd10216e-8730-4b24-81eb-cfb0b2322263",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.440Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "leave_type",
+   "label": "请假类型"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.233Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalrequeststep",
+   "label": "审批单流转"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "be23aae0-5584-4469-9cae-1f93d0bebf15",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.236Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "be46dee2-c288-4243-8106-53e10d87b0b3",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.694Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b827bac2-53a3-4897-8a3e-9e0cff7c856d",
+   "name": "creator",
+   "label": "作者"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "beaa8af1-7921-4f5e-893a-3c53ea95af39",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.248Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "target_snapshot",
+   "label": "变更前快照"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "bf788acf-fdf4-4412-82bd-1d28c71132d9",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.438Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c112e675-94eb-4aaf-99ea-258c04db4e7b",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.763Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "approve_type",
+   "label": "审批方式"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c1b39250-6b7d-4a97-a94a-06bd2ea111b0",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.245Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "layout",
+   "label": "画布布局"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c27bcf82-3278-4dd9-b5e1-fdb05b36150d",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.213Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c3c6a025-1d6b-467f-9994-154985a22ff4",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.228Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c57aa9b9-b7ab-4776-a802-63a995279116",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.224Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c58cab8a-c9c6-4afe-8d0c-2e286d5992ae",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.938Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c5a438f6-0671-4463-92a4-9bd3bd096344",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.443Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "days",
+   "label": "天数"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c69e7f7c-ce3a-4a33-a794-e9f73f771d34",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.235Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "version",
+   "label": "定义版本"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c6ad1c03-3e10-4f6e-8cb0-d1644e600377",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.776Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "assignee",
+   "label": "审批人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c7be36c5-de2e-4826-b1c4-057684610d82",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.216Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c80302a5-5019-4cbb-989a-ba1c5e6972d5",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.227Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.229Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalrulelevel",
+   "label": "审批规则层级"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c9085138-233f-45a9-8638-2a838fa9fd48",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.246Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "timeout_hours",
+   "label": "超时小时数"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c90d053d-0a51-4dc4-96ef-b841b6490bc2",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.694Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b827bac2-53a3-4897-8a3e-9e0cff7c856d",
+   "name": "pk",
+   "label": "Id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "c959143c-3340-407d-8541-0d2c22ea4cce",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.241Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "cb9856c5-96a6-497a-a776-f12f204f47fe",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.234Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "cbac4a63-772b-4db7-8aea-100f9ce46293",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.239Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "cd493b0e-c9c2-4db6-862c-9a79180b7e30",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.191Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "cc_users",
+   "label": "抄送人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "cd595fab-a86e-4602-b84a-94d9f0fd1b70",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.759Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "reason",
+   "label": "原因"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "cde8d0db-0361-4c4b-ae9a-36b493b6c4fd",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.941Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "end_time",
+   "label": "结束时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "ceaf9aa3-a926-43b7-b398-bdc580454a28",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.781Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "pk",
+   "label": "Id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.780Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "approval.approvalinstance",
+   "label": "审批实例"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "cf166e38-276a-49fa-82cb-bc2f98e7d0ee",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.227Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "cf2abce2-6e3c-4af1-8144-f7ce656522bc",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.220Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "method",
+   "label": "请求方式"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "cf41645b-64f8-409d-ac8f-181fc8aca09a",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.222Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "params",
+   "label": "请求参数快照"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "cf8cc27c-f480-4694-b08c-85202dcd9314",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.226Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "mentions",
+   "label": "提及"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d0535609-6158-4b66-8635-5aed327a4ad7",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.227Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "reason",
+   "label": "原因"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d31c052c-e1f6-4e7e-a8f6-05b1849ceccf",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.243Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "assignee_value",
+   "label": "审批人取值"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d3357e58-d58f-4b9a-8e9b-d6fa8650f9b4",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.242Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "approver",
+   "label": "审批人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d345103a-f168-4568-b9db-019138f7b974",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.240Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "1c8f55e9-b96d-4b40-8d91-3f40c40b1576",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d36a46d2-8de7-4e8d-8f79-b9150d43dcea",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.224Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d3cbca45-fef3-4d97-9683-95885a625b78",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.200Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "cc_users",
+   "label": "抄送人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d42eb262-4a60-45da-a3d0-8b677e93940f",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.231Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d46827aa-2fda-49f2-9da0-992f815e3660",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.223Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalinstancecomment",
+   "label": "审批实例评论"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.227Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalflow",
+   "label": "审批流程"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d54fcdfa-f905-48db-a2f0-b0f80d7a0ccd",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.787Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "finished_at",
+   "label": "完成时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d5d08b95-6c61-4225-a023-69bf1de8a363",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.223Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d7039958-d452-4b4b-aac0-6956976c154b",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.587Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8cb76db9-2c2f-4dd3-9932-ab0c162fab38",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.239Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalrequeststepaction",
+   "label": "审批步骤动作"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d81397ae-d188-40b5-856f-41b4a66d9623",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.229Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "remark",
+   "label": "备注"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d8a6f106-345d-42e4-8086-2cbf2e377296",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.753Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "pk",
+   "label": "Id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d8d2f070-3278-4c84-84ba-1961248b9ede",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.582Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "46250abe-5de8-46a2-aa78-bbd6c4b4d02d",
+   "name": "name",
+   "label": "层级名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d8dd7d15-a270-47c7-ae07-0211ef6f0cb7",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.259Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d8f67a41-2a53-4067-89a0-53ebe4f6496c",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.611Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "delegator_name",
+   "label": "Delegator name"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d910a088-d154-4d0a-bf86-3ee9c285c797",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.243Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "comment",
+   "label": "审批意见"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "dbb36b2a-80bc-4bb4-b090-715dac45ee51",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.253Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "status",
+   "label": "状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "dbee712d-385d-4c90-a7f8-25f213603ff1",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.231Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "dbee9566-b77e-4c44-b146-6c776857fe90",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.231Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "dc210974-a783-4a34-a544-2bea16c65585",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.257Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "dc27c55c-3f52-41d7-ad81-a9fe750f8478",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.223Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "status",
+   "label": "状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "dc52fd57-4ad7-4f61-bdab-2791dc2b7afd",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.948Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "finished_at",
+   "label": "完成时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "dcddc642-3171-4e16-af09-22106d16e387",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.572Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "cc_users",
+   "label": "抄送人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "dd427489-8bb0-4bf1-8d23-7d571c84d8f7",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.235Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "request",
+   "label": "审批单"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "dddb60dd-8262-4992-98d9-ad947effa49f",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.766Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+   "name": "condition",
+   "label": "条件"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "de815e97-ab6a-44e3-965e-830761d566d6",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.948Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "reject_reason",
+   "label": "驳回原因"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "df5824af-1a7f-49ca-85ca-9ebf0e4fdb77",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.615Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e07e248b-28e9-4d08-a0d7-6377b04007bb",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.230Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e128f513-e192-48e2-9b7c-a3c36ee69738",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.775Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "pk",
+   "label": "Id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.246Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": null,
+   "name": "approval.approvalinstance",
+   "label": "审批实例"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e27379bb-3a8d-4910-be91-292085cb0129",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.772Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "node_count",
+   "label": "节点数"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e2bf5683-0db3-4c60-acd5-15a5fe17cd36",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.249Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e3f8ed27-1ecb-42de-b9c6-d1f082e4b746",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.233Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "bd96330b-a858-4c9a-85a2-c66374d8caa7",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e5b12cf5-2b5b-41f8-8af7-9bc4a62487f6",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.777Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "actor",
+   "label": "操作人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e5ec1879-9e0e-4d71-adc4-0353b5327fa2",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.939Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "id",
+   "label": "id"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e5f612a1-3f63-4f33-967d-7432f1eb5df3",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.947Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "instance_no",
+   "label": "申请单号"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e651562f-3342-4c6f-8207-d7931680ff70",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.787Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "creator",
+   "label": "申请人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e7b10d6c-5752-4a37-ab1b-0a4f63aa9229",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.259Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e8810a8a-66e1-40d6-8c31-75d2113cfdfc",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.773Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e8db9329-7174-4216-9488-66a7233a1fc7",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.943Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "pk",
+   "label": "主键ID"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e91e7848-c89f-4864-a417-c1284cea1f3e",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.776Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "node_order",
+   "label": "节点顺序"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e950ad9e-4c7e-4f90-b709-e510434f463a",
+  "fields": {
+   "created_time": "2026-09-24T02:10:01.813Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "can_act",
+   "label": "可审批"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e9c3b138-09a0-41b7-ab68-cb7007bb4277",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.252Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "form_data",
+   "label": "表单数据"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e9f90bd0-b938-491e-b50b-6253d22f5998",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.128Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "cc_users",
+   "label": "抄送人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "eb4193f4-744c-49bd-8697-eed2651c2487",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.224Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d46827aa-2fda-49f2-9da0-992f815e3660",
+   "name": "modifier",
+   "label": "修改人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "ec46f16a-eb43-4826-a47c-655d9c360233",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.127Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "biz_id",
+   "label": "业务标识"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "ec9845db-cc60-44be-bff9-d47b7387ee89",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.937Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "3e40b501-3bd8-4b74-9827-84facff22195",
+   "name": "creator",
+   "label": "创建人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "ed8e2400-b268-4241-8b85-4369552fd398",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.785Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "tasks",
+   "label": "Tasks"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "eea12dc9-d972-4c70-b01c-48f6d85d3135",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.228Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "name",
+   "label": "规则名称"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.768Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "approval.approvalflow",
+   "label": "审批流程"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "efad6eb5-fdea-4272-a13e-350544fcc4ce",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.242Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "approver_display",
+   "label": "审批人显示名"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f05a043b-8fef-42b6-916a-1c77dcbe8d55",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.228Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "81732a71-22be-40d4-a3c6-05700d8fd376",
+   "name": "dept_belong",
+   "label": "数据归属部门"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f09aa3a6-75c7-4903-9191-df4805dcfaf5",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.616Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f2603fa5-6adf-42c8-a768-64c29b0ee2eb",
+  "fields": {
+   "created_time": "2026-09-17T10:05:37.857Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "payload",
+   "label": "请求体快照"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f301b002-830b-4774-83cc-efa527183e5f",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.613Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "start_time",
+   "label": "开始时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f3761fee-bd03-4513-8c9c-2e1f31b352f1",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.761Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "approval.approvalflownode",
+   "label": "审批流程节点"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f38edf2b-c3e9-4f18-8c3a-2ba3e4d1c437",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.946Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "status",
+   "label": "状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f41b17ec-32f7-4af6-afaa-182772958074",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.786Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+   "name": "reason",
+   "label": "原因"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f420c84d-2c9a-4ebb-94db-acce7297db1d",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.208Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "actor_display",
+   "label": "操作人显示名"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f5a478f9-b5cb-40bf-88a0-a489815a95a6",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.228Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d4ccadbc-da63-4fad-b203-d6ee5f06c947",
+   "name": "updated_time",
+   "label": "更新时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f5b62d53-5d1d-4e51-bf6e-c955c78f2473",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.265Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "08f80e66-ed8d-466b-bb75-14dc59c4282d",
+   "name": "comment",
+   "label": "审批意见"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f63f8cc8-6c1c-4967-aad4-601cae03dc64",
+  "fields": {
+   "created_time": "2026-09-24T02:10:03.584Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "46250abe-5de8-46a2-aa78-bbd6c4b4d02d",
+   "name": "assignee_value",
+   "label": "审批人取值"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.774Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": null,
+   "name": "approval.approvalnodetask",
+   "label": "审批节点任务"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f71751cf-63c9-4c82-b80a-2ad78f2e9a1c",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.175Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "current_level",
+   "label": "当前层级"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f72525b6-96ee-4417-863b-17ed903faa68",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.240Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "d80455d4-90d7-4bcc-b43e-bc3828237c3b",
+   "name": "description",
+   "label": "描述"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f7e48553-f0fe-48c6-aa5d-b9e9b2b9ffc6",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.175Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "target_snapshot",
+   "label": "变更前快照"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f7f213e8-b3d6-42cf-ab56-9722c72a8468",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.777Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "status",
+   "label": "Status"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f8f8e702-6103-45f4-84f4-8f3fd3a8e8d0",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.223Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "48e1b7ca-f763-4a5f-8d78-2071af57ce7d",
+   "name": "approver",
+   "label": "审批人"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "f8fc6da2-8369-4bcf-9542-732f199cd8fd",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.444Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "183558b0-a255-448f-99c0-aee538259515",
+   "name": "status",
+   "label": "状态"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "fa93e4d0-0771-4d45-be9a-69565d4b26cc",
+  "fields": {
+   "created_time": "2026-09-17T10:05:38.612Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "206cf77d-2775-4552-ad10-64b5b913bf60",
+   "name": "delegate_name",
+   "label": "Delegate name"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "fab95b96-d8e0-4dde-8186-2abdbb76e5dc",
+  "fields": {
+   "created_time": "2026-09-24T02:09:59.230Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c80cbdfe-ba49-4dc5-b9b9-6c6c8da32a8e",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "fb0d1062-37b1-479b-9125-43be901e3489",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.755Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "30553438-b463-4585-9ae8-5a943ac93734",
+   "name": "path",
+   "label": "访问路径"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "fb8a3a11-07e5-4b03-95c6-8509c3254322",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.250Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "flow",
+   "label": "流程"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "fbfd3cc8-2e99-4074-b4e8-6c2c35218987",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.949Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+   "name": "created_time",
+   "label": "创建时间"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "fcd3a385-66bc-4475-9bfc-a7a252e9185b",
+  "fields": {
+   "created_time": "2026-09-24T02:10:02.685Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "assignee_display",
+   "label": "处理人显示名"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "fcfebc40-8ad5-45f0-b01e-b8010efdc8fd",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.778Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "f66c90f4-ece8-4e71-9f3e-1dd597651eae",
+   "name": "comment",
+   "label": "审批意见"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "fe450147-7182-4d62-810e-cb5acc1b111d",
+  "fields": {
+   "created_time": "2026-09-14T00:45:25.251Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e1e25775-94ae-4cbb-85a5-7c7fa2b54b36",
+   "name": "title",
+   "label": "标题"
+  }
+ }
+]
