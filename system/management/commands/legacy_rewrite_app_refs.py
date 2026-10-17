@@ -55,7 +55,7 @@ class Command(BaseCommand):
         if result["unresolved"]:
             raise SystemExit(1)
 
-    def _render(self, result: dict, app_path: Path) -> None:
+    def _render(self, result: dict[str, Any], app_path: Path) -> None:
         mode = "已改写" if not result["dry_run"] else "计划（dry-run）"
         self.stdout.write(f"迁移引用改写{mode}：{app_path}")
         self.stdout.write(f"  · 标签映射 {len(result['moves'])} 条（由 tag 推导）")

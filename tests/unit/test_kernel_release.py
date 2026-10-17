@@ -41,6 +41,27 @@ _VERSION_RE = re.compile(r'^__version__\s*=\s*"([^"]+)"', re.MULTILINE)
 _RELEASE_RE = re.compile(r"^##\s+\[(\d+\.\d+\.\d+)\]\s+-\s+(\d{4}-\d{2}-\d{2})\s*$", re.MULTILINE)
 _SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
+
+def _uses_action(text: str, action: str, major: str) -> bool:
+    """workflow 是否引用了指定 action 的指定大版本（兼容两种锁版形态）。
+
+    Renovate 锁版（``rangeStrategy: pin``）会把 ``uses:`` 改写成
+    ``<action>@<40位sha> # vX.Y.Z`` 注释形态，字面断言 ``@v2`` 会假报缺失——
+    供应链正确实践（锁到不可变引用）不应被守护测试判失败。大版本从注释的
+    版本号或 tag 本身提取（两侧都去掉前导 ``v`` 再比）。
+    """
+    wanted = major.lstrip("v").split(".")[0]
+    pattern = re.compile(rf"uses:\s*{re.escape(action)}@(?P<ref>[^\s#]+)(?:\s*#\s*(?P<comment>v[\d.]+))?")
+    for match in pattern.finditer(text):
+        ref = match.group("ref")
+        comment = match.group("comment")
+        if ref.lstrip("v").split(".")[0] == wanted:
+            return True
+        if comment and comment.lstrip("v").split(".")[0] == wanted:
+            return True
+    return False
+
+
 #: 内核 wheel 必须包含的成员（包本体 + 数据文件）
 FULL_MEMBERS = [
     "common/__init__.py",
@@ -184,9 +205,9 @@ class TestSupplyChainWiring:
 
     def test_publish_workflow_generates_kernel_sbom_and_attests(self):
         text = PUBLISH_WORKFLOW.read_text(encoding="utf-8")
-        assert "anchore/sbom-action@v0" in text, "发布 workflow 缺少内核包 SBOM 生成步骤"
+        assert _uses_action(text, "anchore/sbom-action", "v0"), "发布 workflow 缺少内核包 SBOM 生成步骤"
         assert "cyclonedx-json" in text, "内核包 SBOM 应为 CycloneDX JSON（覆盖 wheel 依赖树）"
-        assert "actions/attest-build-provenance@v2" in text, "发布 workflow 缺少构建溯源 attestation"
+        assert _uses_action(text, "actions/attest-build-provenance", "v2"), "发布 workflow 缺少构建溯源 attestation"
         assert "subject-path:" in text, "内核产物溯源应指定 subject-path（wheel + sdist）"
         assert "dist/*.whl" in text and "dist/*.tar.gz" in text, "内核溯源主体应覆盖 wheel 与 sdist"
 
@@ -194,7 +215,7 @@ class TestSupplyChainWiring:
         text = PUBLISH_WORKFLOW.read_text(encoding="utf-8")
         for scope in ("contents: write", "id-token: write", "attestations: write"):
             assert scope in text, f"发布 workflow 缺少权限 {scope}（attestation / Release 所需）"
-        assert "softprops/action-gh-release@v2" in text, "发布 workflow 缺少内核 Release 步骤"
+        assert _uses_action(text, "softprops/action-gh-release", "v2"), "发布 workflow 缺少内核 Release 步骤"
         assert "common-v" in text, "内核 Release tag 应为 common-v<版本>"
         assert "prerelease: true" in text, "内核 Release 必须标记 prerelease，避免污染平台发布 latest 端点"
         assert "inputs.dry_run == false" in text, "Release 步骤应由 dry-run 开关门控（dry-run 不建 Release）"
@@ -203,12 +224,12 @@ class TestSupplyChainWiring:
         text = BUILD_IMAGE_WORKFLOW.read_text(encoding="utf-8")
         assert "id: push" in text, "镜像构建步骤缺少 id（attestation 需要读取 digest 输出）"
         assert "steps.push.outputs.digest" in text, "镜像溯源应取推送步骤的 digest（多架构为索引摘要）"
-        assert "actions/attest-build-provenance@v2" in text, "镜像 workflow 缺少构建溯源 attestation"
+        assert _uses_action(text, "actions/attest-build-provenance", "v2"), "镜像 workflow 缺少构建溯源 attestation"
         assert "nineaiyu/xadmin-server" in text, "镜像溯源主体应为服务端镜像名"
         for scope in ("id-token: write", "attestations: write"):
             assert scope in text, f"镜像 workflow 缺少权限 {scope}"
         # Release 附件上传仍走 contents：确认既有 softprops 步骤未被破坏
-        assert "contents: write" in text and "softprops/action-gh-release@v2" in text
+        assert "contents: write" in text and _uses_action(text, "softprops/action-gh-release", "v2")
 
     def test_client_build_image_workflow_attests_image_provenance(self):
         if not CLIENT_BUILD_IMAGE_WORKFLOW.is_file():
@@ -216,7 +237,31 @@ class TestSupplyChainWiring:
         text = CLIENT_BUILD_IMAGE_WORKFLOW.read_text(encoding="utf-8")
         assert "id: push" in text, "客户端镜像构建步骤缺少 id"
         assert "steps.push.outputs.digest" in text, "客户端镜像溯源应取推送步骤的 digest"
-        assert "actions/attest-build-provenance@v2" in text, "客户端镜像 workflow 缺少构建溯源 attestation"
+        assert _uses_action(text, "actions/attest-build-provenance", "v2"), (
+            "客户端镜像 workflow 缺少构建溯源 attestation"
+        )
         assert "nineaiyu/xadmin-client" in text, "客户端镜像溯源主体应为客户端镜像名"
         for scope in ("id-token: write", "attestations: write"):
             assert scope in text, f"客户端镜像 workflow 缺少权限 {scope}"
+
+    def test_uses_action_accepts_pinned_sha_and_rejects_wrong_major(self):
+        """锁版形态兼容（renovate pin 成 sha + 版本注释）且 major 判据不放松。
+
+        防两种漂移：把断言写死成 ``@v2`` 字面（锁版即假报缺失，见 renovate
+        PR 实锤），或反过来写松成「出现 action 名即算过」（换 major 也不报警）。
+        """
+        pinned = (
+            "jobs:\n  build:\n    steps:\n"
+            "      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0\n"
+            "      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.0.0\n"
+        )
+        assert _uses_action(pinned, "actions/attest-build-provenance", "v2")
+        assert _uses_action(pinned, "actions/checkout", "v5")
+        assert not _uses_action(pinned, "actions/attest-build-provenance", "v3")
+        assert not _uses_action(pinned, "actions/checkout", "v4")
+        assert not _uses_action(pinned, "actions/sbom-action", "v0")
+
+        tagged = "      - uses: actions/attest-build-provenance@v2\n"
+        assert _uses_action(tagged, "actions/attest-build-provenance", "v2")
+        assert not _uses_action(tagged, "actions/attest-build-provenance", "v1")
+        assert _uses_action("      - uses: anchore/sbom-action@v0\n", "anchore/sbom-action", "v0")

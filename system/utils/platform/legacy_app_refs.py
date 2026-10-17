@@ -30,7 +30,7 @@ _DEP_RE = re.compile(r'\((["\'"])([a-z_][a-z0-9_]*)\1,\s*(["\'"])([^"\']+)\3\)')
 _DEPENDENCIES_START_RE = re.compile(r"^\s*dependencies\s*=\s*\[", re.M)
 
 
-def current_initial(app: str, loader=None) -> str | None:
+def current_initial(app: str, loader: Any = None) -> str | None:
     """该 app 在当前代码链里的初始迁移名（用于替换已消失的依赖节点）。"""
     from django.db.migrations.loader import MigrationLoader
 
@@ -63,7 +63,7 @@ def label_moves_from_tag(tag: str) -> dict[str, str]:
 
 
 def _rewrite_fk(line: str, moves: dict[str, str], findings: dict[str, Any]) -> str:
-    def replace(match: re.Match) -> str:
+    def replace(match: re.Match[str]) -> str:
         prefix, quote, app, model = match.groups()
         old_label = f"{app}.{model.lower()}"
         new_label = moves.get(old_label)
@@ -79,7 +79,7 @@ def _rewrite_fk(line: str, moves: dict[str, str], findings: dict[str, Any]) -> s
 
 
 def _rewrite_dependency(line: str, findings: dict[str, Any]) -> str:
-    def replace(match: re.Match) -> str:
+    def replace(match: re.Match[str]) -> str:
         quote, app, quote2, node = match.groups()
         if app in _MANAGED_LABELS and not node.startswith("0001"):
             initial = current_initial(app)

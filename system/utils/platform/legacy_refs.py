@@ -47,12 +47,12 @@ def content_type_moves(renamed: list[tuple[str, str]], auto_tables: set[str]) ->
     return moves
 
 
-def _alive_tables(cursor) -> set[str]:
+def _alive_tables(cursor: Any) -> set[str]:
     cursor.execute("select table_name from information_schema.tables where table_schema = 'public'")
     return {row[0] for row in cursor.fetchall()}
 
 
-def _columns_of(cursor, table: str) -> set[str]:
+def _columns_of(cursor: Any, table: str) -> set[str]:
     cursor.execute(
         "select column_name from information_schema.columns where table_schema = 'public' and table_name = %s",
         (table,),
@@ -140,7 +140,7 @@ def rewrite_stored_refs(
                     f'select count(*) from "{table}" where "{column}"::text ~ %s',  # noqa: S608 - 标识符来自登记表
                     (_label_pattern(old_label),),
                 )
-                count = cursor.fetchone()[0]
+                count = (cursor.fetchone() or (0,))[0]  # count(*) 聚合必有行；None 兜底防存根误报
                 if count:
                     result["leftovers"].append(f"{table}.{column} 仍有 {count} 行引用 {old_label}")
         if not dry_run:
@@ -148,7 +148,7 @@ def rewrite_stored_refs(
     return result
 
 
-def _rewrite_label_column(cursor, moves: dict[str, str], table: str, column: str, dry_run: bool) -> int:
+def _rewrite_label_column(cursor: Any, moves: dict[str, str], table: str, column: str, dry_run: bool) -> int:
     """单列模型标签改写（整列正则替换，避免逐行往返）。"""
     changed = 0
     for old_label, new_label in moves.items():
@@ -157,7 +157,7 @@ def _rewrite_label_column(cursor, moves: dict[str, str], table: str, column: str
                 f'select count(*) from "{table}" where "{column}" ~ %s',  # noqa: S608
                 (_label_pattern(old_label),),
             )
-            changed += cursor.fetchone()[0]
+            changed += (cursor.fetchone() or (0,))[0]  # count(*) 聚合必有行；None 兜底防存根误报
             continue
         cursor.execute(
             f'update "{table}" set "{column}" = regexp_replace("{column}", %s, %s) where "{column}" ~ %s',  # noqa: S608
@@ -167,7 +167,9 @@ def _rewrite_label_column(cursor, moves: dict[str, str], table: str, column: str
     return changed
 
 
-def _rewrite_label_json(cursor, moves: dict[str, str], table: str, column: str, keys, dry_run: bool) -> int:
+def _rewrite_label_json(
+    cursor: Any, moves: dict[str, str], table: str, column: str, keys: list[str], dry_run: bool
+) -> int:
     """JSON 数组内指定键的模型标签改写（数据权限规则这类小表，逐行处理更直观）。"""
     changed = 0
     cursor.execute(f'select id, "{column}" from "{table}" where "{column}" is not null')  # noqa: S608

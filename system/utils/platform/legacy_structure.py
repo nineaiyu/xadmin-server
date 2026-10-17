@@ -20,7 +20,7 @@ from system.utils.platform import legacy_schema
 LEGACY_CONNECTION_ALIAS = "_legacy_inplace"
 
 
-def is_project_migration(migration) -> bool:
+def is_project_migration(migration: Any) -> bool:
     """迁移是否属于**本仓库**的 app（区别于 auth / celery / token_blacklist 等三方）。
 
     这条区分决定「谁负责」：本仓库 app 的迁移链是清库重建式产物，结构由对齐器负责、账本需要重写；
@@ -42,7 +42,7 @@ def is_project_migration(migration) -> bool:
     return not set(resolved.parts) & {"site-packages", "dist-packages", ".venv", "node_modules"}
 
 
-def _register_connection(dsn: str):
+def _register_connection(dsn: str) -> Any:
     """把旧库以临时别名注册进 Django 连接表并返回连接。
 
     两个约束决定了这个形态：
@@ -82,7 +82,7 @@ def _register_connection(dsn: str):
     return connections[LEGACY_CONNECTION_ALIAS]
 
 
-def dsn_from_connection(connection) -> str:
+def dsn_from_connection(connection: Any) -> str:
     """由 Django 连接配置拼出 DSN（结构引擎走 psycopg，需要连接串）。"""
     from urllib.parse import quote
 
@@ -93,23 +93,23 @@ def dsn_from_connection(connection) -> str:
     )
 
 
-def connect_legacy(dsn: str):
+def connect_legacy(dsn: str) -> Any:
     """对外入口：连接一个外部（旧）库（体检 / 对齐共用同一套连接约定）。"""
     return _register_connection(dsn)
 
 
-def close_legacy(connection) -> None:
+def close_legacy(connection: Any) -> None:
     """对外入口：关闭外部库连接。"""
     _release_connection(connection)
 
 
-def _release_connection(connection) -> None:
+def _release_connection(connection: Any) -> None:
     """关闭临时连接（保留别名注册：连接回收后仍可能被信号处理器按别名反查）。"""
     connection.close()
 
 
 @contextmanager
-def _atomic(connection):
+def _atomic(connection: Any) -> Any:
     """单事务执行（失败整体回滚）：不依赖 ``transaction.atomic`` 的全局别名。"""
     connection.set_autocommit(False)
     try:
@@ -125,13 +125,13 @@ def _atomic(connection):
 PREREQUISITE_CALLABLES = ("create_vector_extension", "_ensure_trgm_extension")
 
 
-def _db_index_names(connection) -> set[str]:
+def _db_index_names(connection: Any) -> set[str]:
     with connection.cursor() as cursor:
         cursor.execute("select indexname from pg_indexes where schemaname = current_schema()")
         return {row[0] for row in cursor.fetchall()}
 
 
-def _db_constraint_names(connection) -> set[str]:
+def _db_constraint_names(connection: Any) -> set[str]:
     """约束名集合。
 
     Django 的 ``UniqueConstraint`` 在 PostgreSQL 上可能落成**唯一索引**（``CREATE UNIQUE INDEX``）
@@ -143,10 +143,10 @@ def _db_constraint_names(connection) -> set[str]:
     return names | _db_index_names(connection)
 
 
-def _ordered_nodes(loader):
+def _ordered_nodes(loader: Any) -> list[tuple[str, str]]:
     """全部迁移节点的拓扑序（各叶子节点的 forwards_plan 合并去重）。"""
     ordered: list[tuple[str, str]] = []
-    seen: set = set()
+    seen: set[tuple[str, str]] = set()
     for leaf in sorted(loader.graph.leaf_nodes()):
         for node in loader.graph.forwards_plan(leaf):
             if node not in seen:
@@ -155,7 +155,7 @@ def _ordered_nodes(loader):
     return ordered
 
 
-def _run_prerequisites(loader, editor, nodes) -> tuple[list, list]:
+def _run_prerequisites(loader: Any, editor: Any, nodes: list[tuple[str, str]]) -> tuple[list[str], list[str]]:
     """执行白名单内的前置 RunPython（扩展创建等）；名单外的一律跳过并报告。"""
     from django.db.migrations.operations.special import RunPython, RunSQL
 
@@ -185,7 +185,7 @@ def _run_prerequisites(loader, editor, nodes) -> tuple[list, list]:
     return ran, skipped
 
 
-def _create_missing_tables(connection, loader, editor, nodes) -> list[str]:
+def _create_missing_tables(connection: Any, loader: Any, editor: Any, nodes: list[tuple[str, str]]) -> list[str]:
     """按迁移顺序执行 ``CreateModel`` 补齐缺失表（DDL 完全出自 Django，含模型级索引/约束）。"""
     from django.db.migrations.operations.models import CreateModel
 
@@ -209,7 +209,7 @@ def _create_missing_tables(connection, loader, editor, nodes) -> list[str]:
     return sorted(created)
 
 
-def _create_missing_through_tables(connection, editor) -> list[str]:
+def _create_missing_through_tables(connection: Any, editor: Any) -> list[str]:
     """补建**已对齐模型**上新增多对多的中间表。
 
     这类表既不在 ``CreateModel``（模型本身已存在、被跳过）里，也不是 ``AddField``（多对多在
@@ -235,7 +235,7 @@ def _create_missing_through_tables(connection, editor) -> list[str]:
     return sorted(created)
 
 
-def _add_missing_model_fields(connection, editor) -> list[str]:
+def _add_missing_model_fields(connection: Any, editor: Any) -> list[str]:
     """按**当前模型**补齐缺失列（用 Django 的 ``add_field``）。
 
     对已对齐的表，迁移链里的 ``CreateModel`` 是「初始态」——后来新增的列（例如默认值可调用、
@@ -247,7 +247,7 @@ def _add_missing_model_fields(connection, editor) -> list[str]:
 
     added: list[str] = []
     tables = set(connection.introspection.table_names())
-    columns_cache: dict[str, set] = {}
+    columns_cache: dict[str, set[str]] = {}
     for model in apps.get_models(include_auto_created=True, include_swapped=True):
         table = model._meta.db_table
         if table not in tables:
@@ -267,7 +267,7 @@ def _add_missing_model_fields(connection, editor) -> list[str]:
     return sorted(added)
 
 
-def _create_missing_indexes(connection, editor) -> list[str]:
+def _create_missing_indexes(connection: Any, editor: Any) -> list[str]:
     """补建模型 ``Meta.indexes`` 里声明、但库里还没有的索引（按名字判存在）。"""
     from django.apps import apps
 
@@ -287,7 +287,7 @@ def _create_missing_indexes(connection, editor) -> list[str]:
     return sorted(created)
 
 
-def _create_missing_constraints(connection, editor) -> list[str]:
+def _create_missing_constraints(connection: Any, editor: Any) -> list[str]:
     """补建模型 ``Meta.constraints`` 里声明、但库里还没有的约束（按名字判存在）。"""
     from django.apps import apps
 

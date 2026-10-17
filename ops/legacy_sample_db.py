@@ -362,7 +362,7 @@ def summarize(dsn: str) -> dict:
 
     with psycopg.connect(dsn) as connection, connection.cursor() as cursor:
         cursor.execute("select count(*) from information_schema.tables where table_schema = 'public'")
-        tables = cursor.fetchone()[0]
+        tables = (cursor.fetchone() or (0,))[0]  # count(*) 聚合必有行；None 兜底防存根误报
         cursor.execute("select app, count(*) from django_migrations group by app order by app")
         ledger = {app: count for app, count in cursor.fetchall()}
     return {"tables": tables, "ledger": ledger}

@@ -103,7 +103,7 @@ class Command(BaseCommand):
             )
 
     def _dump_file(self, obj: Any, spec: dict[str, Any], row: dict[str, Any], files_dir: Path) -> None:
-        field_file = getattr(obj, spec["storage_field"], None)
+        field_file: Any = getattr(obj, spec["storage_field"], None)
         storage_name = getattr(field_file, "name", "") or ""
         row["storage_name"] = storage_name
         if not storage_name:
@@ -118,7 +118,7 @@ class Command(BaseCommand):
 
     def _dump_model_file(self, obj: Any, field: str, row: dict[str, Any], files_dir: Path) -> None:
         """导出模型自带的文件字段（用户头像等）：记录存储路径并拷贝物理文件。"""
-        field_file = getattr(obj, field, None)
+        field_file: Any = getattr(obj, field, None)
         storage_name = getattr(field_file, "name", "") or ""
         row[f"{field}_path"] = storage_name
         if not storage_name:

@@ -50,6 +50,12 @@ INFRA_TABLE_PREFIXES = (
 # 旧版本（四域切分前）的 app 目录：样本库生成与历史目录解析共用
 LEGACY_APPS = ("system", "notifications", "settings", "captcha", "common")
 
+#: 单列结构信息：``{type, nullable, default}``（旧库）或 ``{type, sql_type, nullable, default_sql}``（目标侧）
+ColumnInfo = dict[str, Any]
+
+#: 表目录：``{表: {列: 列信息}}``，旧库与目标侧同形
+TableCatalog = dict[str, dict[str, ColumnInfo]]
+
 # 旧框架表前缀：落在这些前缀下却没命中映射的表按「需登记的框架表」处理（阻断项），
 # 其他前缀视为二开表（原样保留，不进阻断项）
 LEGACY_TABLE_PREFIXES = tuple(f"{app}_" for app in LEGACY_APPS)
@@ -90,11 +96,11 @@ def _is_infra(table: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def introspect_schema(dsn: str, schema: str = "public") -> dict[str, dict[str, dict]]:
+def introspect_schema(dsn: str, schema: str = "public") -> TableCatalog:
     """旧库/任意库的结构目录：``{表: {列: {type, nullable, default}}}``（只读）。"""
     import psycopg
 
-    catalog: dict[str, dict[str, dict]] = {}
+    catalog: TableCatalog = {}
     with psycopg.connect(dsn) as connection, connection.cursor() as cursor:
         cursor.execute(
             "select table_name, column_name, data_type, udt_name, character_maximum_length,"
@@ -122,7 +128,7 @@ def introspect_schema(dsn: str, schema: str = "public") -> dict[str, dict[str, d
     return catalog
 
 
-def target_schema() -> dict[str, dict[str, dict]]:
+def target_schema() -> TableCatalog:
     """当前代码的目标结构：``{表: {列: {type, nullable, default_sql}}}``（含自动 M2M 表）。
 
     ``default_sql`` 只对**可写成 SQL 字面量的默认值**给出（bool / 数字 / 字符串 / JSON）；
@@ -132,12 +138,12 @@ def target_schema() -> dict[str, dict[str, dict]]:
     from django.apps import apps
     from django.db import connection
 
-    catalog: dict[str, dict[str, dict]] = {}
+    catalog: TableCatalog = {}
     for model in apps.get_models(include_auto_created=True, include_swapped=True):
         table = model._meta.db_table
         if _is_infra(table):
             continue
-        columns: dict[str, dict] = {}
+        columns: dict[str, ColumnInfo] = {}
         for field in model._meta.local_fields:
             try:
                 db_type = field.db_type(connection)
@@ -186,7 +192,11 @@ def _literal_default(field: Any, column_type: str) -> str | None:
     return None
 
 
-def load_tag_models(tag: str, repo_root: Path | None = None) -> dict[str, dict]:
+#: 历史模型目录：``{旧表: {app, model, tag}}``
+TagModels = dict[str, dict[str, str]]
+
+
+def load_tag_models(tag: str, repo_root: Path | None = None) -> TagModels:
     """从历史 tag 的迁移文件解析模型目录：``{旧表: {app, model, tag}}``（离线，AST）。
 
     只取 ``CreateModel`` 的名字与 ``db_table`` 选项：足以把旧表对应到模型身份，
@@ -204,7 +214,7 @@ def load_tag_models(tag: str, repo_root: Path | None = None) -> dict[str, dict]:
     except (OSError, subprocess.CalledProcessError):
         return {}
     patterns = tuple(f"{app}/migrations/" for app in LEGACY_APPS)
-    catalog: dict[str, dict] = {}
+    catalog: TagModels = {}
     for path in sorted(listing):
         if not path.endswith(".py") or "/migrations/" not in path or "__init__" in path:
             continue
@@ -256,7 +266,7 @@ def _parse_created_models(source: str) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------
 
 
-def _derive_from_renamed(table: str, renamed: dict[str, str], new: dict) -> str | None:
+def _derive_from_renamed(table: str, renamed: dict[str, str], new: TableCatalog) -> str | None:
     """按「已确认的表改名」派生关联表改名：``system_userinfo_roles`` → ``identity_userinfo_roles``。
 
     自动 M2M / through 表不在 ``CreateModel`` 目录里（历史 AST 抓不到），但它们的名字由
@@ -270,7 +280,13 @@ def _derive_from_renamed(table: str, renamed: dict[str, str], new: dict) -> str 
     return None
 
 
-def _resolve_rename(table: str, new: dict, tag_models: dict, renamed: dict[str, str], new_by_suffix: dict) -> str:
+def _resolve_rename(
+    table: str,
+    new: TableCatalog,
+    tag_models: TagModels,
+    renamed: dict[str, str],
+    new_by_suffix: dict[str, list[str]],
+) -> str:
     """单表改名解析：显式映射 → 模型身份 → 关联表派生；返回空串表示暂时无解。"""
     target = dict(PRE_SPLIT_TABLES).get(table)
     if target and target in new:
@@ -282,7 +298,9 @@ def _resolve_rename(table: str, new: dict, tag_models: dict, renamed: dict[str, 
     return _derive_from_renamed(table, renamed, new) or ""
 
 
-def _map_renamed(old: dict, new: dict, tag_models: dict) -> tuple[dict[str, str], list[str], list[str]]:
+def _map_renamed(
+    old: TableCatalog, new: TableCatalog, tag_models: TagModels
+) -> tuple[dict[str, str], list[str], list[str]]:
     """旧表 → 新表的改名映射（同名天然对应，不进映射表）。
 
     推断顺序：显式映射（``PRE_SPLIT_TABLES``）→ 历史模型身份（AST 目录，按模型段唯一匹配）
@@ -327,9 +345,9 @@ def _map_renamed(old: dict, new: dict, tag_models: dict) -> tuple[dict[str, str]
 
 
 def diff_schemas(
-    old: dict[str, dict[str, dict]],
-    new: dict[str, dict[str, dict]],
-    tag_models: dict | None = None,
+    old: TableCatalog,
+    new: TableCatalog,
+    tag_models: TagModels | None = None,
 ) -> dict[str, Any]:
     """表级 / 列级差异（纯函数，供报告与执行计划复用）。"""
     renamed, blockers, kept_unknown = _map_renamed(old, new, tag_models or {})

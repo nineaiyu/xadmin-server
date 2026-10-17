@@ -24,6 +24,7 @@ import os
 import shutil
 import sys
 import uuid
+from typing import Any
 
 FORMAT = "xadmin-legacy-export"
 FORMAT_VERSION = 1
@@ -166,16 +167,16 @@ EXPORT_ORDER = (
 )
 
 
-def connect(dsn):
+def connect(dsn: str) -> Any:
     """优先 psycopg（v3），回退 psycopg2（旧版本容器里装的是后者）。"""
     try:
-        import psycopg  # type: ignore
+        import psycopg
 
         return psycopg.connect(dsn)
     except ImportError:
         pass
     try:
-        import psycopg2  # type: ignore
+        import psycopg2
 
         return psycopg2.connect(dsn)
     except ImportError as exc:  # pragma: no cover - 环境缺依赖

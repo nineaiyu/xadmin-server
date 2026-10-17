@@ -47,7 +47,7 @@ class Command(BaseCommand):
         if report["blockers"]:
             raise SystemExit(1)
 
-    def _write_human(self, report: dict, limit: int) -> None:
+    def _write_human(self, report: dict[str, Any], limit: int) -> None:
         self.stdout.write(
             f"结构目录：旧库 {report['tables_old']} 张表 ↔ 目标 {report['tables_new']} 张表（框架基础设施表不参与）"
         )

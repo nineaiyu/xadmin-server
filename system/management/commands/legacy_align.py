@@ -101,7 +101,7 @@ class Command(BaseCommand):
         )
         return 0
 
-    def _write_human(self, result: dict, limit: int) -> None:
+    def _write_human(self, result: dict[str, Any], limit: int) -> None:
         mode = "计划（dry-run）" if result["dry_run"] else "已执行"
         self.stdout.write(f"原地升级{mode}：结构步骤 {result['structure']['planned']} 项")
         if result.get("refused"):
@@ -113,7 +113,7 @@ class Command(BaseCommand):
         self._write_references(result, limit)
         self._write_after(result, limit)
 
-    def _write_structure(self, result: dict, limit: int) -> None:
+    def _write_structure(self, result: dict[str, Any], limit: int) -> None:
         for note in result.get("notes", []):
             self.stdout.write(f"注意：{note}")
         structure = result["structure"]
@@ -138,7 +138,7 @@ class Command(BaseCommand):
             for item in structure["skipped"][:limit]:
                 self.stdout.write(f"      {item}")
 
-    def _write_references(self, result: dict, limit: int) -> None:
+    def _write_references(self, result: dict[str, Any], limit: int) -> None:
         content_types = result.get("content_types") or {}
         references = result.get("references") or {}
         self.stdout.write("\n【引用层】")
@@ -159,7 +159,7 @@ class Command(BaseCommand):
         else:
             self.stdout.write(f"  · 迁移账本：删旧链 {ledger['deleted']} 条，补记当前链 {ledger['recorded']} 条")
 
-    def _write_after(self, result: dict, limit: int) -> None:
+    def _write_after(self, result: dict[str, Any], limit: int) -> None:
         after = result.get("after")
         if not after:
             self.stdout.write("\n未执行（dry-run）。确认计划后加 --apply。")

@@ -7,6 +7,7 @@
 因此不依赖旧库主键；引用缺失只计数告警，单实体失败只跳过该实体。
 """
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -42,7 +43,7 @@ class Importer:
         self.skipped_refs: dict[str, int] = {}
         self.errors: list[str] = []
         self.encrypted_settings: list[str] = []
-        self._ref_index_cache: dict = {}
+        self._ref_index_cache: dict[tuple[str, tuple[str, ...]], dict[str, Any]] = {}
         self.touched_tables: set[str] = set()
         self._depts: list[dict[str, Any]] = []
 
@@ -51,7 +52,7 @@ class Importer:
     def import_entity(self, name: str, rows: list[dict[str, Any]]) -> tuple[int, int, int]:
         if name == "depts":
             return self._import_depts(rows)
-        handler = getattr(self, f"_import_{name}", None)
+        handler: Callable[[list[dict[str, Any]]], tuple[int, int, int]] | None = getattr(self, f"_import_{name}", None)
         if handler is None:
             raise ValueError(f"实体 {name} 尚无导入实现")
         return handler(rows)
@@ -322,7 +323,7 @@ class Importer:
             self._apply_reads(row, instance)
         return created, updated, 0
 
-    def _upsert(self, name: str, row: dict[str, Any], lookup: dict[str, Any], defaults: dict[str, Any]):
+    def _upsert(self, name: str, row: dict[str, Any], lookup: dict[str, Any], defaults: dict[str, Any]) -> Any:
         """按原主键优先落库。
 
         新库是干净的，因此可以沿用旧库的 ID（``UserInfo`` 为自增主键、其余多为 UUID）——
@@ -437,7 +438,7 @@ class Importer:
         """引用实体索引：{自然键（复合键用 | 连接）: 实例}。"""
         cache_key = (entity, keys)
         if cache_key not in self._ref_index_cache:
-            index = {}
+            index: dict[str, Any] = {}
             for obj in self._ref_manager(entity).all():
                 index[lt.join_key([getattr(obj, key, "") for key in keys])] = obj
             self._ref_index_cache[cache_key] = index

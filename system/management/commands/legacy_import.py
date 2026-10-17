@@ -70,10 +70,10 @@ class Command(BaseCommand):
         if reset:
             self.stdout.write(f"  · 已重置 {reset} 张表的自增序列（保留原 ID 的必要收尾）")
         if importer.encrypted_settings:
-            names = ", ".join(importer.encrypted_settings[:10])
+            encrypted_names = ", ".join(importer.encrypted_settings[:10])
             self.stdout.write(
                 self.style.WARNING(
-                    f"加密设置 {len(importer.encrypted_settings)} 项未搬运取值：{names}"
+                    f"加密设置 {len(importer.encrypted_settings)} 项未搬运取值：{encrypted_names}"
                     f"{' …' if len(importer.encrypted_settings) > 10 else ''}"
                 )
             )
