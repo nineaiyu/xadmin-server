@@ -11,16 +11,16 @@ jobs:
   ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: "3.14"
+          python-version: "3.14.8"
 
       - name: Install uv
         # ruff 版本取自 uv.lock 的 dev 组，与本地一致（避免 CI 拉到更新版本引入未同步的新规则）
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           enable-cache: true
 
@@ -37,12 +37,12 @@ jobs:
     name: Cross-app import gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: "3.14"
+          python-version: "3.14.8"
 
       - name: Check cross-app direct imports
         run: python scripts/check_cross_app_imports.py
@@ -51,9 +51,9 @@ jobs:
     name: Menu permission reconcile gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         name: Checkout client repo (consumer side)
         with:
           repository: nineaiyu/xadmin-client
@@ -61,9 +61,9 @@ jobs:
           path: xadmin-client
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version: 24.22.0
 
       - name: Reconcile menu.json permission points with frontend consumption
         # 种子权限点 ↔ 前端消费点双向对账（白名单与例外登记见 docs/guide/menu-maintenance.md §5）；
@@ -77,16 +77,16 @@ jobs:
     name: Type check (mypy, common 内核)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: "3.14"
+          python-version: "3.14.8"
 
       - name: Install uv
         # mypy 版本取自 uv.lock 的 dev 组，与本地一致（口径见 pyproject [tool.mypy]）
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           enable-cache: true
 
@@ -105,12 +105,12 @@ jobs:
     name: File length gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: "3.14"
+          python-version: "3.14.8"
 
       - name: Check oversized source files
         # 防巨型文件回潮：>500 行新增即失败；存量基线只减不增
@@ -124,12 +124,12 @@ jobs:
     name: Doc facts gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: "3.14"
+          python-version: "3.14.8"
 
       - name: Check doc facts against code sources
         # 文档单一事实源防漂移：「当前状态」版本串必须与 requirements.txt / server/const.py /
@@ -161,15 +161,15 @@ jobs:
     name: Kernel package (version / build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: "3.14"
+          python-version: "3.14.8"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
 
       - name: Check kernel version consistency
         # 版本四方一致（源码 / 分发元数据 / changelog / 架构文档）+ 契约面就绪；
