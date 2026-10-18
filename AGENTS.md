@@ -89,6 +89,10 @@ bash ops/test_env_reset.sh                     # 重置测试容器（数据脏�
 - **测试隔离**：`transaction=True` 用例的 DDL 不随回滚清理；用例内动态建模型要
   `apps.all_models.pop` + `clear_cache()`；改 `MEDIA_ROOT` 注意存储委托缓存指纹。
 - 断言文案时注意语言环境：CI 无 `.mo` 时是英文——**用双语断言**（历史踩坑：7 例文案断言挂 CI）。
+- **同一测试栈只跑一轮 pytest**：两轮并发会在 `django_db_setup` 里互相 DROP/CREATE
+  测试库（DB CPU 打满、Python 无 CPU、SQL 日志只有几行）。`tests/conftest.py` 用 PG
+  会话级 advisory lock 串行化，第二轮启动即退出；确需并发设
+  `XADMIN_ALLOW_CONCURRENT_PYTEST=1`（不推荐）。
 - 新增行为的守护测试是默认要求；缺陷修复先写复现用例。
 
 ## 六、门禁清单（提交前逐条跑）

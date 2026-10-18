@@ -1,4 +1,4 @@
-# 全真容器化测试档依赖（docs/plans/全真容器化测试迁移方案-2026.10.md §3.5）：
+# 全真容器化测试档依赖（docs/plans/archive/全真容器化测试迁移方案-2026.10.md §3.5）：
 #   docker compose -f compose.test.yml up -d
 # 一次性专用容器：数据不落盘（无 volume），禁止指向日常/生产实例。
 # PG 端口 55433 与 loadtest（55432）错开可共存；Redis 56379 与 loadtest 同端口，
@@ -16,7 +16,30 @@ services:
     # min/max_size 2/8）：18 worker 满负载时连接数轻松越过 PG 默认 max_connections=100，
     # 撞顶表现为随机用例 fixture 阶段报「too many connections」/池超时（容量类偶发红）。
     # 开发栈 docker-compose.yml 已按 200 起配；测试档按满载余量放宽到 300。
-    command: ["postgres", "-c", "max_connections=300"]
+    # SQL 审计日志（定位「哪条 SQL 打满 DB / E2E 假失败根因」用）：**默认关闭**。
+    #   实测代价：全量测试（6000+ 用例）下 PG CPU 被日志 I/O 占满，表现为
+    #   「DB CPU 100% 但 SQL 日志只有几行、Python 侧无 CPU」——worker 全在阻塞等库，
+    #   CPU 烧在逐条语句格式化写 stderr 上，整轮耗时劣化数倍。
+    #   排障时按需开启（重启后生效，无 volume 故 stop/start 即重放）：
+    #     PG_LOG_STATEMENT=all docker compose -f compose.test.yml up -d
+    #   排障完记得关回去：PG_LOG_STATEMENT=none docker compose -f compose.test.yml up -d
+    #   开启后 `docker logs xadmin-test-pg` 实时可见每条语句；log_line_prefix 带
+    #   时间 / 用户 / 库 / 会话来源，便于区分 xdist worker 与 E2E 种子连接。
+    # 若排查「DB 打满但不知道是哪条」之外的场景，勿调 log_min_duration_statement——
+    # 慢查询阈值语义与全量语句不同（见 PG 文档），全量审计即本配置的定位。
+    # 并发跑两轮 pytest 也会造成同样现象（后一轮 DROP/CREATE 测试库，把前一轮连接
+    # 成片掐断）；tests/conftest.py 已用 PG 会话级 advisory lock 串行化，正常不需要
+    # 手工查 pg_stat_activity。
+    command:
+      - postgres
+      - -c
+      - max_connections=300
+      - -c
+      - log_statement=${PG_LOG_STATEMENT:-none}
+      - -c
+      - "log_line_prefix=%m [%p] %u@%d (%a) "
+      - -c
+      - log_timezone=Asia/Shanghai
     environment:
       POSTGRES_USER: server
       POSTGRES_PASSWORD: pgtest
