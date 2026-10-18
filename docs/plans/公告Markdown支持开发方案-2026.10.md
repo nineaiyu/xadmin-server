@@ -12,9 +12,10 @@
 > 否则新增字段灌不进已有库）。二开侧新增一条命令
 > `python manage.py sync_field_permissions --update-seed`：字段树、本次新增字段
 > 的角色白名单与种子一次同步（不动历史裁剪）。前端新增共享
-> `MarkdownView`、`NoticeMessageEditor`、`MarkdownEditor`，详情/我的通知/铃铛/桌面
-> 与应用内预览全部按格式分流；第三阶段完成编辑器内图片/附件上传与
-> `convert_notice_markdown` 存量转换命令（默认 dry-run）。邮件/IM 渠道转换未启用
+> `MarkdownView`、`NoticeMessageEditor`、`MarkdownEditor`（编辑/分栏/预览三态，
+> 分栏复用 `ReSplitPane` 可拖拽调整并持久化宽度），详情/我的通知/铃铛/桌面
+> 与应用内预览全部按格式分流；第三阶段完成编辑器内图片/附件上传（按钮/拖拽/粘贴）
+> 与 `convert_notice_markdown` 存量转换命令（默认 dry-run）。邮件/IM 渠道转换未启用
 > ——当前公告只走站内信，未来接入时按 §10 第 5 条在渠道层分流。
 > 上线动作：`python manage.py migrate`；新增 zh 文案随发布镜像执行
 > `compilemessages`（本地开发容器同样需要，否则中文界面回退英文）。
@@ -189,9 +190,11 @@ def validate_message(self, value):
 | `src/components/MarkdownView/*`（或复用 `AiMarkdown` 的 core） | 文档型 Markdown 渲染；统一净化与高亮 |
 | `src/utils/markdown.ts` | `renderMarkdown` / `markdownToPlainText` 收口 |
 | `src/views/system/components/NoticeShow.vue` | 按 `message_format` 分流；Markdown 分支不加载 WangEditor |
-| `src/views/system/notice/utils/noticeColumns.tsx` | 新增 `message_format` 列处理器；`message` 列改为 `NoticeMessageEditor` |
+| `src/views/system/notice/utils/noticeColumns.tsx` | 新增 `message_format` 列处理器；`message` 列改为 `NoticeMessageEditor`，占满整行 |
 | `src/views/system/notice/components/NoticeMessageEditor.vue` | 按格式切换 WangEditor / MarkdownEditor |
-| `src/views/system/notice/components/MarkdownEditor.vue` | textarea + 实时预览 + 编辑/预览切换 |
+| `src/views/system/notice/components/MarkdownEditor.vue` | 编辑/分栏/预览三态；分栏复用 `ReSplitPane` 可拖拽调整；实时预览 |
+| `src/views/system/notice/components/markdown/MarkdownToolbar.vue` | 格式工具栏（标题/粗斜体/删除线/引用/代码/链接/表格/分割线/上传/视图切换） |
+| `src/views/system/notice/components/markdown/useMarkdownUpload.ts` | 图片/附件上传：按钮、拖拽、粘贴、多文件、大小校验与语法插入 |
 | `src/store/modules/notice.ts` | 推送预览按格式分流；Markdown 转纯文本 |
 | `src/api/system/notice.ts` 或同域类型文件 | 补充 `MessageFormat` 类型与表单载荷 |
 | `locales/zh-CN.yaml` / `locales/en.yaml` | 新增格式、编辑、预览相关词条 |
@@ -260,7 +263,9 @@ def validate_message(self, value):
 
 ### 第三阶段（已完成）
 
-- Markdown 编辑器图片/附件上传，并回填 `files` 供 `AutoCleanFileMixin` 管理（已实现）；
+- Markdown 编辑器图片/附件上传，并回填 `files` 供 `AutoCleanFileMixin` 管理（已实现；
+  编辑器支持按钮、拖拽、粘贴上传，多文件顺序插入，上传按钮只依赖上传权限；
+  E2E 覆盖「选择附件 → 上传 → 插入语法 → 保存 → 详情链接」）；
 - 存量 HTML 公告转 Markdown（有损，默认 dry-run，`--apply` 才写库；
   命令：`python manage.py convert_notice_markdown`）；
 - 若未来公告走邮件/IM，在渠道层增加 Markdown → HTML/纯文本转换（本期未启用：
@@ -284,6 +289,7 @@ def validate_message(self, value):
 - HTML 分支仍走只读 WangEditor；
 - 表单格式切换与编辑态锁定；
 - Markdown 编辑器输入/预览/保存回写；
+- Markdown 编辑器附件上传：接口调用、语法插入、`files` 回填；
 - 通知 store 的 Markdown 预览不出现 Markdown 标记；
 - 组件与 hook 单测覆盖新增分支。
 
