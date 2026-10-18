@@ -88,7 +88,7 @@ docs/
 ├── architecture/         架构与组件（现状文档：组件手册 component-handbook + handbook-backend / handbook-frontend / 协议 / 权限 / 模块化…）
 ├── adr/                  架构决策记录（历史决策，含索引 README）
 ├── ops/                  部署与运维（deployment 概览 + deployment-docker / deployment-upgrade / deployment-csp / config-reference / observability / observability-drills / runbook / 演练记录）
-├── plans/                规划与治理（活跃 15 篇：工作区级台账 4 篇（任务总清单 / 长期任务方案 / 长期开发计划 / 发布清单）+ 长期计划 / 触发制清单 / 四份映射与任务书 / 原地升级立项与方案 / 应用级种子拆分方案与执行计划 + 全量 pytest 假死问题移交；历史归档在 archive/）
+├── plans/                规划与治理（活跃 14 篇：工作区级台账 4 篇（任务总清单 / 长期任务方案 / 长期开发计划 / 发布清单）+ 长期计划 / 触发制清单 / 四份映射与任务书 / 原地升级立项与方案 / 应用级种子拆分方案与执行计划；历史归档在 archive/）
 ├── open-platform/        开放平台接入（指南 + 事件契约）
 ├── schema/               前后端契约 JSON Schema
 ├── imgs/                 文档配图

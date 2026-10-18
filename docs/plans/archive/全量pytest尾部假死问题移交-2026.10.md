@@ -4,6 +4,28 @@
 > 完整调查链、已排除假设与下一步方向，目的是**不复跑已做过的排查**。
 > 台账口径：本文是一次性问题排查记录，结论回填后按「已完结一次性台账」移入 archive/。
 
+## 0. 结论回填（2026-10-18，已结案）
+
+**根因：并发跑两轮 pytest 互踩测试库，不是尾部种子测试写放大，也不是数据库锁/死元组。**
+
+- 单跑全量：6237 passed / 2 skipped / 106.9 秒；种子测试组 93 例 37.5 秒，未复现尾部写放大。
+- 受控复现：A 跑到一半启动 B，B 的 93 个用例全部 setup error（`DuplicateDatabase` /
+  `ObjectInUse` / `SystemExit: 2`）；PG 日志出现 `database ... already exists` →
+  `terminating connection due to administrator command` → `database ... does not exist`；
+  `DROP DATABASE` 在 A 的会话仍写入时持续 4.66 秒，PG CPU 40–63%，A 的 worker 空闲。
+- 现场证据：2026-10-18 13:49–13:52 的 PG 日志在 45 秒内出现 3 组
+  `terminating connection`，中间夹着 `database "test_xadmin_realtest" already exists`。
+- 本文 §5 的「尾部 65 个种子测试」假设未复现；调查期间并发/连续 6~7 轮全量本身
+  就是互踩条件，资源压力（内存压缩 / checkpoint）只是放大器。
+- 已修：`tests/pytest_lock.py` 用 PG 会话级 advisory lock 串行化整轮 pytest；
+  `tests/settings_real.py` / `settings_pg.py` 去掉重复的 `_gwN` 库名后缀。
+- 旧防护（按 `test_xadmin_realtest` 查 `pg_stat_activity`）对 `-n auto` 无效：
+  xdist worker 实际库名是 `test_xadmin_realtest_gwN`，基名库在运行期不存在；
+  且「先查再启动」本身有竞态。
+
+后续排障口径：先看 `ps aux | grep -E 'pytest|py.test'` 与 PG 日志的三段式；
+不要再按「尾部种子测试」方向复跑。
+
 ## 1. 一句话现状
 
 后端全量测试（`cd xadmin-server && uv run pytest -n auto`，6221 个用例）在机器 A
