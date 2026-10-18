@@ -22,8 +22,8 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
-- **2026-10-18 种子分层收口批（server 3 提交 + client 1 提交，已提交推送 dev）**：对
-  `c82452f9`「种子按 app 分层」的衍生问题三处收口。①**尾部假死修复**（`ade554e3`）——分层后
+- **2026-10-18 种子分层收口批（server 5 提交 + client 2 提交，已提交推送 dev）**：对
+  `c82452f9`「种子按 app 分层」的衍生问题四处收口。①**尾部假死修复**（`ade554e3`）——分层后
   65 个新种子测试每个跑完整 `load_init_json`，收尾逐菜单读 `menu.model`（m2m）把数百权限点
   放大成数百条小往返，满载下单查询墙钟退化到秒级、尾部爬行成假死；`permission_sync` 两处改
   批量预取、`dump_init_json` 导出预取 m2m、`pytest.ini` 加 `faulthandler_timeout=600`；
@@ -35,9 +35,22 @@
   路径断裂**（`31abb97d`）——`generate_crud` 种子产物随分层改为 `<app>/seeds/` 按模型拆分，
   `seed_demo_book_scene` 仍读旧路径而静默 skip → demo/book 菜单不入库、路由 404，
   `form-label-width` 与 `demo-book` 双浏览器全挂（重试亦挂，确定性失败）；改为 glob 发现 +
-  按文件名排序装载。**教训**：client E2E 的 `server-ref` 默认 dev，server 结构性改动会以
-  「client spec 挂」现形，双浏览器重试全挂极易误判为 UI 回归——先查 `e2e_seed` 输出的 skip 行。
-  client 侧同批修 `preferenceFieldSync.spec` 种子发现（聚合各层 systemconfig，`97dcee53`）。
+  按文件名排序装载。④**写入侧批量收敛（根治，`0d386d2f`）**——①只修了读取侧，合跑仍卡死；
+  profile 实证单次 `load_init_json` 9.14s 里 `fill_field_permissions` 的逐组合
+  `get_or_create` + `.set()` 占 1257 次调用 / 2.83s（`.set()` 每次 DELETE+INSERT+SELECT 三条
+  往返 = 数千条小查询，叠加 Docker I/O 抖动即分钟级）；改为按「字段集」分组——一次
+  `filter(role__in, menu__in)` 查出全部已存在组合、m2m 按组「一条 DELETE + 一条多值 INSERT」、
+  只对缺口逐个 create（`FieldPermission` 的 id 由 save 路径拼装，`bulk_create` 拿不到主键）。
+  **实测**：同一组合（5 个种子测试文件，`-n 2`）从「分钟级卡死需手动 kill」→ **27.6s / 68 例全过**；
+  全量 pytest **1 分 45 秒 exit 0**（旧基线 5 分 23 秒）。守护 = 幂等路径查询数不随组合数线性增长
+  （与读取侧护栏对称；首次补齐允许随缺口线性，锁死的是种子收尾每轮都走的第二次）。
+  **教训**：①「读侧 N+1」与「写侧 N+1」是两个独立放大源，只修一半不解决合跑卡死；
+  ②性能回归要用 profile 定位而不是凭推断——本次真正的大头一直在写入侧；
+  ③ client E2E 的 `server-ref` 默认 dev，server 结构性改动会以「client spec 挂」现形，
+  双浏览器重试全挂极易误判为 UI 回归——先查 `e2e_seed` 输出的 skip 行。
+  client 侧同批修 `preferenceFieldSync.spec` 种子发现（聚合各层 systemconfig，`97dcee53`）与
+  `viewTransition.spec.ts` 的 `as unknown as`（`f2d17321`，jsdom 无 `MediaQueryList` 全局，
+  改用 `Object.assign` 从全局替身派生结构）。
 
 - **2026-10-17 「清库重建 + 回灌」官方升级路径全面测试 + 操作手册（xadmin-server；改动留工作区待提交）**：
   全文见 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。要点：虚拟机
