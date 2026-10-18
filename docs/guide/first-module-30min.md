@@ -198,7 +198,7 @@ python manage.py sync_menu_permissions --update-seed   # 按应用归属回写�
 | 菜单里看不到新模块 | 种子未装载或未挂上级目录；菜单管理核对 |
 | 非超管 403 / 整页不渲染 | 权限点未授权（角色管理）或未入库（`sync_menu_permissions`）；先跑 `doctor` |
 | 列表有数据但单元格空白 | 序列化器 `table_fields` 未声明该字段（元数据驱动，前端没有本地列定义） |
-| 新增字段前端不显示 | 序列化器 `fields` / `table_fields` 未加；再跑 `sync_model_field` 同步字段权限树 |
+| 新增字段前端不显示 | 序列化器 `fields` / `table_fields` 未加；再跑 `sync_field_permissions --update-seed --app <app>` 同步字段树与角色白名单 |
 | 接口 404 | app 未注册进 `XADMIN_APPS`（`generate_crud --register-app` 可自动写入；改后需重启进程：`docker compose restart server celery-worker celery-heavy celery-beat`，或平时用 `bash ops/dev_up.sh --hot` 启动） |
 | 改代码不生效 | 挂载代码不热加载，重启对应容器即可 |
 

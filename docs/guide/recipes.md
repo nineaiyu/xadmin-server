@@ -20,8 +20,13 @@
 | 2. 迁移 | `python manage.py makemigrations crm && python manage.py migrate crm` |
 | 3. 序列化器 | `Meta.fields` 加字段（进接口）；需要进列表默认列再加 `Meta.table_fields` |
 | 4. 搜索（可选） | 需要搜索 → 过滤器声明 + 列入 `Meta.fields`（见 R4） |
-| 5. 字段权限树 | `python manage.py sync_model_field`（幂等；字段权限/字段树同步） |
+| 5. 字段权限 | `python manage.py sync_field_permissions --update-seed --app <app>`（一条命令：重建字段树 + 把本次新增字段补进已有角色白名单 + 只回写该应用种子） |
 | 6. 重启进程 | 元数据缓存与路由在进程内，必须重启 |
+
+**说明**：字段白名单是 fail-closed 的，漏配会让非超管页面静默缺列。`sync_field_permissions`
+只补「本次同步新增」的字段，不会恢复历史上被管理员裁剪掉的字段（如密码、超管标记）；
+只想预览用 `--dry-run`。旧口径 `sync_model_field` + `sync_menu_permissions
+--fix-field-permissions --update-seed` 仍可用于升级补齐。
 
 **验证**：`python manage.py doctor` 无缺口 → 刷新页面（列表列出现、表单可填、搜索可用）；
 若列仍缺失，按顺序查：`Meta.table_fields` → 重启 → DEV 页面元数据警示条。

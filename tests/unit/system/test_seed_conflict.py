@@ -256,8 +256,43 @@ class TestUniqueChecks:
         assert ("parent", "code") in {names for names, _ in _unique_checks(DataDict)}
 
     def test_unique_together_included(self):
-        """老式 ``unique_together`` 同样进入检查清单（不在 _meta.constraints 里，漏判必崩）。"""
-        assert ("name", "parent") in {names for names, _ in _unique_checks(ModelLabelField)}
+        """老式 ``unique_together`` 同样进入检查清单（不在 _meta.constraints 里，漏判必崩）。
+
+        字段标签树例外：ROLE / DATA 两棵树的模型根节点同名且 ``parent=NULL``，
+        唯一键必须补上 ``field_type``，否则两棵树互相判重并级联剔除整棵子树。
+        """
+        assert {names for names, _ in _unique_checks(ModelLabelField)} == {("field_type", "name", "parent")}
+
+    def test_modellabel_field_role_and_data_roots_are_independent(self):
+        """ROLE 与 DATA 根节点同名不冲突；同 field_type 的真重复仍按冲突跳过。"""
+        existing = ModelLabelField.objects.create(
+            pk="dbce2001-0000-4000-8000-000000000001",
+            name="identity.post",
+            label="Post",
+            field_type=ModelLabelField.FieldChoices.DATA,
+        )
+        role_row = {
+            "model": "system.modellabelfield",
+            "pk": "dbce2002-0000-4000-8000-000000000002",
+            "fields": {
+                "name": "identity.post",
+                "parent": None,
+                "label": "Post",
+                "field_type": ModelLabelField.FieldChoices.ROLE,
+            },
+        }
+        filtered, notes = filter_conflicting_rows({"system.modellabelfield": [role_row]})
+        assert len(filtered["system.modellabelfield"]) == 1
+        assert notes == []
+
+        duplicate_data_row = {
+            **role_row,
+            "pk": "dbce2003-0000-4000-8000-000000000003",
+            "fields": {**role_row["fields"], "field_type": ModelLabelField.FieldChoices.DATA},
+        }
+        filtered, notes = filter_conflicting_rows({"system.modellabelfield": [duplicate_data_row]})
+        assert filtered["system.modellabelfield"] == []
+        assert any(str(existing.pk) in str(note) for note in notes)
 
 
 class TestBuildSeedFixtures:

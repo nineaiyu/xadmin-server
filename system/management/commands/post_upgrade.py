@@ -177,45 +177,14 @@ class Command(BaseCommand):
         return bound
 
     def _complete_field_whitelists(self) -> int:
-        """按「接口自身的模型」逐行补齐白名单（**只加不减**，按需建行）。
+        """按权限点绑定模型补齐白名单（**只加不减**，含新增字段）。
 
-        不用 ``permission_sync.fill_field_permissions`` 的两个原因：它只认「无行 / 空行 /
-        与绑定模型**完全**脱节」，而升级库上更常见的是**部分脱节**（行里绑的全是关联模型
-        `identity.userinfo` 等，唯独缺接口自己的模型 → 页面自己的列被 fail-closed 裁空）；
-        且它用 ``field.set(...)`` 会**替换**整行白名单，把管理员已有的配置抹掉。
+        与 ``sync_field_permissions`` 共用 ``complete_field_permissions``：按
+        「权限点绑定模型下全部 ROLE 字段节点」补缺，不删除管理员已收敛的字段。
         """
-        from django.urls import Resolver404, resolve
+        from system.services.permission_sync import complete_field_permissions
 
-        from identity.models import UserRole
-        from system.models import FieldPermission, Menu, ModelLabelField
-
-        completed = 0
-        for menu in Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION).exclude(path=""):
-            path = (menu.path or "").strip()
-            if not path.startswith("api/") or "(" in path or "?" in path:
-                continue
-            try:
-                matched = resolve("/" + path.rstrip("$").replace("$", ""))
-            except Resolver404:
-                continue
-            view_class = getattr(matched.func, "cls", None) or getattr(matched.func, "view_class", None)
-            serializer_class = getattr(view_class, "serializer_class", None)
-            model = getattr(getattr(serializer_class, "Meta", None), "model", None)
-            if model is None:
-                continue
-            roots = list(ModelLabelField.objects.filter(parent__isnull=True, name=model._meta.label_lower))
-            nodes = roots + list(ModelLabelField.objects.filter(parent__in=roots))
-            if not nodes:
-                continue
-            node_pks = [node.pk for node in nodes]
-            for role in UserRole.objects.filter(menu=menu):
-                permission, _created = FieldPermission.objects.get_or_create(role=role, menu=menu)
-                existing = set(permission.field.values_list("pk", flat=True))
-                missing = [pk for pk in node_pks if pk not in existing]
-                if missing:
-                    permission.field.add(*missing)
-                    completed += 1
-        return completed
+        return len(complete_field_permissions())
 
     def _clear_metadata_cache(self) -> None:
         """清空缓存：列/字段元数据按「用户 + 模型」缓存，白名单变更后必须失效。"""

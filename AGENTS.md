@@ -35,6 +35,8 @@ python manage.py makemigrations --check --dry-run   # 迁移漂移门禁
 python manage.py load_init_json                 # 灌默认数据（幂等）
 python manage.py sync_menu_permissions --dry-run    # 权限点缺口扫描（期望「缺口 0 条」）
 python manage.py sync_menu_permissions --update-seed # 把变更回写种子文件
+python manage.py sync_field_permissions --update-seed # 新增字段后：字段树 + 新增字段白名单 + 种子（不动历史裁剪）
+python manage.py sync_field_permissions --dry-run     # 预览本次新增字段会补到哪些角色白名单
 python manage.py seed_demo_all [--reset]        # 演示数据（演示账号 admin/admin123）
 python manage.py post_upgrade                   # 升级后补全（幂等）
 python manage.py doctor                         # 上线前自检

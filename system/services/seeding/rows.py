@@ -273,6 +273,16 @@ def strip_m2m_fields(rows_by_model: Any) -> tuple[Any, ...]:
     return rows_by_model, notes
 
 
+#: 唯一键覆盖：字段标签树同时存在 ROLE（角色字段权限）与 DATA（数据权限）两棵树，
+#: 模型根节点都叫同一个 ``<app>.<model>`` 且 ``parent=NULL``。模型声明的
+#: ``unique_together=("name","parent")`` 不含 ``field_type``，若按它判冲突，两棵树
+#: 会被互相判成「同名根节点」并整棵级联剔除——新字段因此永远灌不进已有库。
+#: 业务判别列 ``field_type`` 必须进入唯一键（PG 对 NULL 不判重，数据库也拦不住）。
+UNIQUE_KEY_OVERRIDES: dict[str, tuple[str, ...]] = {
+    "system.modellabelfield": ("field_type", "name", "parent"),
+}
+
+
 def _unique_checks(model: Any) -> list[Any]:
     """模型的唯一键清单：``[(字段名元组, 额外过滤 Q), ...]``。
 
@@ -283,7 +293,14 @@ def _unique_checks(model: Any) -> list[Any]:
     3. 老式 ``unique_together``——如字段标签的 ``(name, parent)``。迁移层会把它建成
        数据库唯一约束，但不在 ``_meta.constraints`` 里，漏判会让 ``loaddata`` 撞唯一
        约束，单事务回滚**全部**种子。
+
+    ``UNIQUE_KEY_OVERRIDES`` 中的模型改用业务唯一键（如字段树的
+    ``(field_type, name, parent)``），其余模型保持模型声明不变。
     """
+
+    override = UNIQUE_KEY_OVERRIDES.get(model._meta.label_lower)
+    if override is not None:
+        return [(override, None)]
 
     checks: list[Any] = []
     for field in model._meta.concrete_fields:

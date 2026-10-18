@@ -133,7 +133,8 @@
 - **原因**：前端列完全由后端元数据生成——表格页 ViewSet 需同时混入搜索字段与列元数据动作；
   序列化器没把字段放进 `Meta.fields` / `Meta.table_fields` 就不下发。
 - **处置**：补齐序列化器 `Meta.fields`（进接口）与 `Meta.table_fields`（进默认列）；
-  字段权限树缺失跑 `python manage.py sync_model_field`；改完重启进程。
+  新增字段后跑 `python manage.py sync_field_permissions --update-seed --app <app>`
+  （字段树 + 新增字段白名单 + 种子一次同步）；改完重启进程。
 - **相关**：[dev-pitfalls.md](../dev-pitfalls.md) §1、[architecture/metadata-protocol.md](../architecture/metadata-protocol.md)。
 
 ## 四、模块裁剪

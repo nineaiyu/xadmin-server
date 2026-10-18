@@ -180,6 +180,109 @@ def model_field_nodes(menus: Any) -> Any:
     return result
 
 
+def snapshot_role_field_names() -> dict[str, set[str]]:
+    """当前 ROLE 字段树快照：``{模型标签: {字段名}}``。
+
+    在 ``sync_model_field()`` **之前**调用，用于识别「本次同步新引入的字段」。
+    只统计 ROLE 根节点及其直接子节点（与运行时白名单取值面一致）。
+    """
+    from system.models import ModelLabelField
+
+    roots = list(
+        ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE, parent__isnull=True).values(
+            "pk", "name"
+        )
+    )
+    children: dict[Any, set[str]] = {}
+    if roots:
+        rows = ModelLabelField.objects.filter(
+            parent__in=[root["pk"] for root in roots],
+            field_type=ModelLabelField.FieldChoices.ROLE,
+        ).values_list("parent_id", "name")
+        for parent_id, name in rows:
+            children.setdefault(parent_id, set()).add(name)
+    return {root["name"]: children.get(root["pk"], set()) for root in roots}
+
+
+def complete_field_permissions(
+    roles: Any = None,
+    *,
+    dry_run: bool = False,
+    only_new: bool = False,
+    baseline: dict[str, set[str]] | None = None,
+) -> Any:
+    """把缺失字段补进已有角色白名单（**只增不减**）。
+
+    新增字段后，旧角色的白名单不会自动包含它；字段权限是 fail-closed 的，表现就是
+    新字段在列表/详情/元数据表单里静默消失。本函数按「权限点绑定模型 × 角色」补缺，
+    不删除管理员已收敛的字段，可反复执行。
+
+    两种模式：
+
+    - ``only_new=True``（新增字段场景）：只补「本次同步新引入」的字段，需同时传入
+      ``baseline``（同步前由 :func:`snapshot_role_field_names` 获取）。角色对某模型
+      原本一个字段都没有时不会自动扩权（避免把敏感字段授予未配置该模型的角色）。
+    - ``only_new=False``（升级补齐场景，供 ``post_upgrade`` 使用）：补齐绑定模型下
+      所有缺失字段，语义与历史升级行为一致。
+
+    ``dry_run`` 只返回待补列表、不写库。返回
+    ``[(role, menu, [待补字段节点]), ...]``。
+    """
+    from system.models import FieldPermission
+
+    if only_new and baseline is None:
+        raise ValueError("only_new=True requires a baseline snapshot")
+
+    role_queryset = UserRole.objects.filter(is_active=True).prefetch_related("menu")
+    if roles is not None:
+        role_queryset = role_queryset.filter(pk__in=[role.pk for role in roles])
+    menus = list(
+        Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, is_active=True)
+        .filter(model__isnull=False)
+        .distinct()
+    )
+    bindings = _role_bindings_by_menu(menus)
+    root_pks = {node.pk for nodes in bindings.values() for node in nodes}
+    if not root_pks:
+        return []
+    nodes_by_root: dict[Any, list[Any]] = {}
+    for node in ModelLabelField.objects.filter(
+        parent__in=root_pks, field_type=ModelLabelField.FieldChoices.ROLE
+    ).order_by("name"):
+        nodes_by_root.setdefault(node.parent_id, []).append(node)
+
+    completed: list[Any] = []
+    for role in role_queryset:
+        for menu in role.menu.all():
+            roots = bindings.get(menu.pk) or []
+            if not roots:
+                continue
+            permission = FieldPermission.objects.filter(role=role, menu=menu).first()
+            existing = set(permission.field.values_list("pk", flat=True)) if permission else set()
+            missing: list[Any] = []
+            for root in roots:
+                fields = nodes_by_root.get(root.pk, [])
+                if only_new:
+                    # 角色对该模型原本无任何字段：不自动扩权，交由权限点/白名单初始化处理
+                    if not any(field.pk in existing for field in fields):
+                        continue
+                    known = baseline.get(root.name, set()) if baseline else set()
+                    missing.extend(field for field in fields if field.name not in known and field.pk not in existing)
+                else:
+                    missing.extend(field for field in fields if field.pk not in existing)
+            if not missing:
+                continue
+            completed.append((role, menu, missing))
+            if dry_run:
+                continue
+            if permission is None:
+                permission = FieldPermission.objects.create(role=role, menu=menu)
+            permission.field.add(*missing)
+    if completed and not dry_run:
+        logger.info("completed field permissions: %d (role, menu) pairs", len(completed))
+    return completed
+
+
 def fill_field_permissions(roles: Any = None) -> Any:
     """为「已获模型权限点、但白名单未覆盖该模型」的组合补齐该模型的全字段白名单。
 

@@ -49,7 +49,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--fix-field-permissions",
             action="store_true",
-            help="为「已获模型权限点但无字段白名单」的角色组合补齐全字段白名单（只补缺口）",
+            help="补齐字段白名单（含新增字段；只增不减，不改写已有裁剪）",
         )
         parser.add_argument("--default-parent", default="", help="无法自动归属时的兜底父菜单 name（默认报告并跳过）")
 
@@ -65,7 +65,9 @@ class Command(BaseCommand):
             # 与权限点扫描解耦的独立入口：迁移/升级后只想补字段白名单时免全量扫描。
             # 该入口不做绑定校正，判定与取值基于库内现有绑定（适用已校正过绑定的库）
             self._report_field_permission_gaps()
-            if not dry_run:
+            if dry_run:
+                self._report_pending_field_nodes()
+            else:
                 self._fill_field_permissions()
                 if options["update_seed"]:
                     self._update_field_permission_seed(discover().manifests)
@@ -158,6 +160,8 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"  ~ {user.username} | {rule_name}"))
 
         if dry_run:
+            if options["fix_field_permissions"]:
+                self._report_pending_field_nodes()
             return
 
         created, conflicts, method_fixed = sync.apply_plans(plans, user)
@@ -208,8 +212,23 @@ class Command(BaseCommand):
                 )
 
     def _fill_field_permissions(self) -> None:
-        filled = sync.fill_field_permissions()
-        self.stdout.write(f"[字段权限] 已补齐 {len(filled)} 个（角色, 权限点）组合的全字段白名单（已有有效配置未改写）")
+        completed = sync.complete_field_permissions()
+        self.stdout.write(
+            f"[字段权限] 已补齐 {len(completed)} 个（角色, 权限点）组合的字段白名单（只增不减，含新增字段）"
+        )
+
+    def _report_pending_field_nodes(self) -> None:
+        """dry-run：列出待补的（角色, 权限点）与缺失字段；基于当前库内字段树。"""
+        pending = sync.complete_field_permissions(dry_run=True)
+        if not pending:
+            self.stdout.write(self.style.SUCCESS("[字段权限] 字段白名单完整，无需补齐"))
+            return
+        self.stdout.write(self.style.WARNING(f"[字段权限] 待补齐 {len(pending)} 个（角色, 权限点）组合："))
+        for role, menu, fields in pending[:DETAIL_LIMIT]:
+            names = "、".join(field.name for field in fields)
+            self.stdout.write(f"  ~ {role.name} | {menu.name} | 缺：{names}")
+        if len(pending) > DETAIL_LIMIT:
+            self.stdout.write(f"  ... 其余 {len(pending) - DETAIL_LIMIT} 条略")
 
     # ------------------------------------------------------------------ 种子
 

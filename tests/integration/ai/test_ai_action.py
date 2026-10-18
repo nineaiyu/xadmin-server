@@ -432,6 +432,7 @@ class TestNoticeAction:
         notice = MessageContent.objects.get()
         assert notice.notice_type == MessageContent.NoticeChoices.NOTICE
         assert notice.publish is True
+        assert notice.message_format == MessageContent.MessageFormat.MARKDOWN
         assert notice.title == NOTICE_PARAMS["title"]
         assert notice.message == NOTICE_PARAMS["message"]
         audit = OperationLog.objects.get(module="AI:action")
@@ -468,6 +469,8 @@ class TestNoticeAction:
         catalog = build_catalog(action_user)
         entry = next(item for item in catalog["actions"] if item["action"] == "notice.publish")
         assert "title" in entry["params"] and "notice_type" not in entry["params"]
+        # 正文格式由服务端固定为 markdown（模型只产出 Markdown），不进参数目录
+        assert "message_format" not in entry["params"]
 
     def test_draft_via_chat_command_and_execute(self, auth_client, ai_action_settings, stub_llm):
         """全链路：/do 草稿 → 确认卡片载荷 → 执行落库。"""

@@ -60,6 +60,35 @@ def test_seeded_roles_have_field_permissions() -> None:
     assert missing == set(), f"种子角色缺字段白名单: {missing}"
 
 
+def test_messagecontent_whitelists_cover_all_role_fields() -> None:
+    """通知公告模型的白名单必须覆盖该模型全部 ROLE 字段节点。
+
+    新增字段（如正文格式）只改模型/序列化器而漏同步种子白名单时，非超管角色的
+    列表、详情与元数据表单会因 fail-closed 静默缺列。规则：白名单一旦覆盖该模型
+    （以 message/title/notice_type 任一字段为锚点），就必须覆盖其全部字段节点；
+    未覆盖该模型的最小权限条目（如只读接收人列表）不强制。
+    """
+    entries = read_model_rows("system.fieldpermission")
+    fields = {row["pk"]: row["fields"] for row in read_model_rows("system.modellabelfield")}
+
+    root = next(
+        pk
+        for pk, row in fields.items()
+        if row["name"] == "notifications.messagecontent" and row["field_type"] == 0 and not row.get("parent")
+    )
+    children = {pk: row["name"] for pk, row in fields.items() if row.get("parent") == root and row["field_type"] == 0}
+    assert "message_format" in children.values(), "字段树缺 message_format 节点"
+
+    anchors = {"message", "title", "notice_type"}
+    anchor_pks = {pk for pk, name in children.items() if name in anchors}
+    for entry in entries:
+        actual = set(entry["fields"].get("field") or [])
+        if not actual & anchor_pks:
+            continue
+        missing = sorted(name for pk, name in children.items() if pk not in actual)
+        assert not missing, f"字段白名单缺字段（{entry['pk']}）: {missing}"
+
+
 #: 输出模型与视图主模型不同的动作（序列化器在 action 内手工构造）：白名单取值面
 #: 是「接口实际输出的模型」，此处显式登记该模型标签；未登记的按路由反查视图主模型。
 #: - access-logs：视图主模型为 file.uploadfile，但响应体是文件访问日志行

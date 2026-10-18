@@ -186,3 +186,96 @@ class TestFilesShapeValidation:
         )
         assert resp.status_code == 400
         assert not MessageContent.objects.filter(title="notice-x").exists()
+
+
+class TestMessageFormat:
+    """正文格式分流：html 净化、markdown 保留源码、创建后不可切换。"""
+
+    MARKDOWN_BODY = (
+        "## 维护窗口\n\n"
+        "- 时间：今晚 23:00\n"
+        "- 预计 30 分钟\n\n"
+        "| 指标 | 值 |\n| --- | --- |\n| 时长 | 30m |\n\n"
+        "```bash\nsystemctl restart xadmin\n```"
+    )
+
+    def _create(self, auth_client, superuser, message_format, message):
+        payload = _notice_payload(MessageContent.NoticeChoices.USER, superuser, message=message)
+        payload["message_format"] = message_format
+        return auth_client.post(NOTICE_MSG_URL, payload, format="json")
+
+    def test_markdown_source_preserved(self, auth_client, superuser):
+        resp = self._create(auth_client, superuser, MessageContent.MessageFormat.MARKDOWN, self.MARKDOWN_BODY)
+        assert resp.status_code == 200, resp.data
+        notice = MessageContent.objects.get(pk=resp.data["data"]["pk"])
+        assert notice.message_format == MessageContent.MessageFormat.MARKDOWN
+        # 源码中的 # / ** / 表格 / 围栏代码块必须原样保留（不跑 bleach）
+        assert notice.message == self.MARKDOWN_BODY
+
+    def test_html_is_sanitized_by_default(self, auth_client, superuser):
+        """未传格式按 html 处理，仍走白名单净化（存量行为不变）。"""
+        resp = auth_client.post(
+            NOTICE_MSG_URL,
+            _notice_payload(
+                MessageContent.NoticeChoices.USER,
+                superuser,
+                message='<p onclick="x()">a<script>b</script></p>',
+            ),
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        notice = MessageContent.objects.get(pk=resp.data["data"]["pk"])
+        assert notice.message_format == MessageContent.MessageFormat.HTML
+        assert "onclick" not in notice.message
+        assert "<script" not in notice.message
+
+    def test_invalid_format_rejected(self, auth_client, superuser):
+        resp = self._create(auth_client, superuser, "bogus", "m")
+        assert resp.status_code == 400
+        assert not MessageContent.objects.filter(title="notice-x").exists()
+
+    def test_update_cannot_change_format(self, auth_client, superuser):
+        created = self._create(auth_client, superuser, MessageContent.MessageFormat.MARKDOWN, self.MARKDOWN_BODY)
+        pk = created.data["data"]["pk"]
+        resp = auth_client.patch(f"{NOTICE_MSG_URL}/{pk}", {"message_format": "html"}, format="json")
+        assert resp.status_code == 400
+        assert "message_format" in resp.data
+        notice = MessageContent.objects.get(pk=pk)
+        assert notice.message_format == MessageContent.MessageFormat.MARKDOWN
+
+    def test_update_message_uses_instance_format(self, auth_client, superuser):
+        """PATCH 未传格式：按实例当前格式校验，Markdown 正文不被 HTML 净化改写。"""
+        created = self._create(auth_client, superuser, MessageContent.MessageFormat.MARKDOWN, self.MARKDOWN_BODY)
+        pk = created.data["data"]["pk"]
+        resp = auth_client.patch(f"{NOTICE_MSG_URL}/{pk}", {"message": "<b>x</b>"}, format="json")
+        assert resp.status_code == 200, resp.data
+        notice = MessageContent.objects.get(pk=pk)
+        assert notice.message_format == MessageContent.MessageFormat.MARKDOWN
+        assert notice.message == "<b>x</b>"
+
+    def test_markdown_too_long_rejected(self, auth_client, superuser):
+        from notifications.serializers.message import MAX_MARKDOWN_LENGTH
+
+        resp = self._create(
+            auth_client, superuser, MessageContent.MessageFormat.MARKDOWN, "a" * (MAX_MARKDOWN_LENGTH + 1)
+        )
+        assert resp.status_code == 400
+        assert not MessageContent.objects.filter(title="notice-x").exists()
+
+    def test_announcement_persists_markdown_format(self, auth_client, superuser):
+        payload = _notice_payload(
+            MessageContent.NoticeChoices.NOTICE,
+            superuser,
+            message=self.MARKDOWN_BODY,
+            message_format=MessageContent.MessageFormat.MARKDOWN,
+            notice_user=[],
+            notice_dept=[],
+            notice_role=[],
+            publish=True,
+        )
+        resp = auth_client.post(f"{NOTICE_MSG_URL}/announcement", payload, format="json")
+        assert resp.status_code == 200, resp.data
+        notice = MessageContent.objects.get(pk=resp.data["data"]["pk"])
+        assert notice.notice_type == MessageContent.NoticeChoices.NOTICE
+        assert notice.message_format == MessageContent.MessageFormat.MARKDOWN
+        assert notice.message == self.MARKDOWN_BODY

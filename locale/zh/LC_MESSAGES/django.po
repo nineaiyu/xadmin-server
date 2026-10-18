@@ -11948,3 +11948,18 @@ msgstr "2~50 条；建议 20"
 
 msgid "System prompt; blank uses the builtin default"
 msgstr "系统提示词；留空使用内置默认"
+
+msgid "Rich text"
+msgstr "富文本"
+
+msgid "Markdown"
+msgstr "Markdown"
+
+msgid "Message format"
+msgstr "正文格式"
+
+msgid "The message format cannot be modified after creation"
+msgstr "正文格式创建后不可修改"
+
+msgid "The Markdown content is too long"
+msgstr "Markdown 正文超出长度上限"

@@ -235,7 +235,7 @@ class TestValidate:
         summary = result.ownership
         assert summary is not None
         assert summary.totals["menu"] == 714
-        assert summary.totals["field"] == 2094
+        assert summary.totals["field"] == 2095
         assert summary.totals["grant"] == 253
         assert summary.permission_total == 639
 

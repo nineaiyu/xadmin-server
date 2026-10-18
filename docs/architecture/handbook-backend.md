@@ -222,7 +222,8 @@ config.yml（config.py）→ 同名环境变量 → 代码默认值   ← server
 | `manage.py generate_crud <app>.<Model>` | 模型 → 后端四件套 + 前端页面 + 菜单种子（`--dry-run` 预览、`--with-import-export`、`--with-module`、`--parent`） |
 | `manage.py generate_module` | 生成 `{app}/modules.py` 可裁剪声明 |
 | `manage.py sync_menu_permissions` | 权限点缺口补齐（`--dry-run` 只报告、`--update-seed` 回写种子） |
-| `manage.py sync_model_field` | 同步字段权限树（模型字段变更后） |
+| `manage.py sync_field_permissions` | 新增字段后一键同步：字段树 + 本次新增字段的角色白名单 + 种子（`--dry-run` / `--update-seed --app <app>`） |
+| `manage.py sync_model_field` | 只重建字段权限树（底层能力；日常新增字段用 `sync_field_permissions`） |
 | `manage.py modules` | 模块清单与配置预演 |
 | `manage.py module remove <id>` | 模块硬裁剪（归档可回滚） |
 | `manage.py start/stop/status/restart` | 自研进程管理（启动前自动 migrate / 收集静态 / 编译语言包 / 自检） |
