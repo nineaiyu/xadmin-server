@@ -200,15 +200,49 @@ def fill_field_permissions(roles: Any = None) -> Any:
     if not items:
         return []
     fields_by_menu = model_field_nodes([menu for _role, menu in items])
+    # 按「字段集」分组：同一模型的权限点共享同一份白名单。
+    # 曾经的形态是逐组合 ``get_or_create`` + ``.set()``——前者每个组合一次 SELECT、
+    # 后者每次 DELETE+INSERT+SELECT 三条往返，角色×菜单数百时即数千条小查询，
+    # 与读取侧 N+1 叠加后把种子收尾拖到分钟级（全量 pytest 尾部假死的直接燃料）。
+    # 现在：一次查出全部已存在的组合（1 条 SQL），只对缺口逐个 create
+    # （FieldPermission 的 id 由 save 路径拼装，bulk_create 拿不到，不能走批量插入）；
+    # m2m 按组「一条 DELETE + 一条多值 INSERT」替代逐组合三连。
+    groups: dict[tuple[int, ...], list[tuple[Any, Any, list[Any]]]] = {}
+    for role, menu in items:
+        fields = fields_by_menu.get(menu.pk) or []
+        if not fields:
+            continue
+        key = tuple(sorted(field.pk for field in fields))
+        groups.setdefault(key, []).append((role, menu, fields))
+    if not groups:
+        return []
+    pairs = [(role, menu) for group in groups.values() for role, menu, _fields in group]
+    existing = {
+        (fp.role_id, fp.menu_id): fp
+        for fp in FieldPermission.objects.filter(
+            role__in={role for role, _menu in pairs}, menu__in={menu for _role, menu in pairs}
+        )
+    }
     filled = []
+    through = FieldPermission.field.through
     with transaction.atomic():
-        for role, menu in items:
-            fields = fields_by_menu.get(menu.pk) or []
-            if not fields:
-                continue
-            fp, _created = FieldPermission.objects.get_or_create(role=role, menu=menu)
-            fp.field.set(fields)
-            filled.append((role, menu))
+        for group in groups.values():
+            fields = group[0][2]
+            pks = []
+            for role, menu, _fields in group:
+                fp = existing.get((role.pk, menu.pk))
+                if fp is None:
+                    fp = FieldPermission.objects.create(role=role, menu=menu)
+                    existing[(role.pk, menu.pk)] = fp
+                pks.append(fp.pk)
+                filled.append((role, menu))
+            # 组内统一重写白名单（与 .set() 同语义：先清后插），但一条 DELETE
+            # 加一条 INSERT（多值）替代逐组合的三连往返
+            through.objects.filter(fieldpermission_id__in=pks).delete()
+            through.objects.bulk_create(
+                [through(fieldpermission_id=pk, modellabelfield_id=field.pk) for pk in pks for field in fields],
+                ignore_conflicts=True,
+            )
     if filled:
         logger.info(f"filled field permissions: {len(filled)} (role, menu) pairs")
     return filled

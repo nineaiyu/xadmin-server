@@ -113,6 +113,58 @@ def test_audit_and_nodes_queries_do_not_scale_with_menu_count(field_tree: Any) -
     )
 
 
+def test_fill_writes_do_not_scale_with_menu_count(field_tree: Any) -> None:
+    """补齐的写入必须批量：查询数不得随（角色, 权限点）组合数线性增长。
+
+    写入侧曾经的形态是逐组合 ``get_or_create`` + ``.set()``——后者每次
+    DELETE+INSERT+SELECT 三条往返，角色×菜单数百时即数千条小查询，
+    与读取侧 N+1 叠加后把种子收尾拖到分钟级（全量 pytest 尾部假死的直接燃料）。
+    同一模型的权限点共享一份白名单，因此按「字段集」分组后写入应基本恒定。
+    """
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    def _build(count: int, tag: str) -> Any:
+        role = UserRole.objects.create(name=f"写入护栏 {tag}", code=f"wguard_{tag}", is_active=True)
+        menus = []
+        for index in range(count):
+            meta = MenuMeta.objects.create(title=f"写入门菜单 {tag}{index}")
+            menu = Menu.objects.create(
+                name=f"list:WBulk{tag}{index}",
+                path=f"api/wbulk/{tag}/{index}$",
+                menu_type=Menu.MenuChoices.PERMISSION,
+                method="GET",
+                meta=meta,
+            )
+            menu.model.set([field_tree])
+            menus.append(menu)
+        role.menu.set(menus)
+        return role
+
+    role_few = _build(5, "few")
+    role_many = _build(40, "many")
+
+    # 首次补齐允许随缺口线性（建行是固有成本，FieldPermission 的 id 由 save
+    # 路径拼装、bulk_create 拿不到）；这里锁的是**幂等路径**——种子收尾每轮都走
+    # 第二次，缺口为 0 时查询数必须恒定，否则全量跑批会逐轮线性放大
+    assert fill_field_permissions(roles=[role_few])
+    assert fill_field_permissions(roles=[role_many])
+
+    with CaptureQueriesContext(connection) as ctx_few:
+        assert fill_field_permissions(roles=[role_few]) == []
+    with CaptureQueriesContext(connection) as ctx_many:
+        assert fill_field_permissions(roles=[role_many]) == []
+
+    assert len(ctx_many.captured_queries) <= len(ctx_few.captured_queries) + 3, (
+        "补齐写入的查询数随组合数增长（写入 N+1 回归）："
+        f"{len(ctx_few.captured_queries)} → {len(ctx_many.captured_queries)}"
+    )
+    # 语义不变：每个组合都真的拿到了全字段白名单
+    filled_menus = set(role_many.menu.values_list("pk", flat=True))
+    for permission in FieldPermission.objects.filter(role=role_many, menu_id__in=filled_menus):
+        assert set(permission.field.values_list("name", flat=True)) == {"title", "amount"}
+
+
 def test_fill_creates_whitelist_for_missing_pair(demo_role: Any, bound_menu: Any) -> None:
     assert audit_field_permissions(roles=[demo_role]) == [(demo_role, bound_menu)]
 
