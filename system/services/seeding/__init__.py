@@ -50,6 +50,7 @@ from .rows import build_fixtures as build_fixtures
 from .rows import read_model_rows as read_model_rows
 from .rows import read_seed_rows as read_seed_rows
 from .rows import read_specs as read_specs
+from .rows import strip_m2m_fields as strip_m2m_fields
 from .split import write_layer_model as write_layer_model
 from .types import GRANTS_MODEL as GRANTS_MODEL
 from .types import KIND_CONTRACT as KIND_CONTRACT
@@ -121,6 +122,7 @@ __all__ = [
     "role_menu_names",
     "seed_file",
     "seed_role_menu_names",
+    "strip_m2m_fields",
     "validate_grants",
     "validate_plan",
     "write_layer_model",

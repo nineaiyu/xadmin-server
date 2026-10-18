@@ -2,11 +2,13 @@
 """声明式授权（``seeds/grants.json``）守护测试。
 
 背景：``loaddata`` 对多对多是覆盖式赋值，角色的菜单授权不能拆进各 app 的 fixture——
-否则后装的文件会把先装的授权清零。本模块锁定三条不变量：
+否则后装的文件会把先装的授权清零。本模块锁定四条不变量：
 
 1. **声明完整**：种子角色的菜单集合由各层 grants 并集组成，与改造前逐 role 规模一致；
 2. **只增不删**：装载只补声明的菜单，不撤销运行期额外授予的菜单，重复执行幂等；
-3. **可静态校验**：角色/菜单名写错在 ``--check`` 阶段就报错，而不是装载后静默丢失。
+3. **可静态校验**：角色/菜单名写错在 ``--check`` 阶段就报错，而不是装载后静默丢失；
+4. **存量不清零**：重灌种子不抹掉库内既有授权——覆盖式 m2m（含空数组）已在装配层
+   统一剥离，见 ``test_reseeding_keeps_runtime_granted_menus``。
 """
 
 from pathlib import Path
@@ -57,7 +59,12 @@ class TestDeclarationIntegrity:
         assert validate_grants(declarations, menu_names=menu_names, role_codes=role_codes) == []
 
     def test_userrole_seed_no_longer_carries_m2m_menus(self):
-        """覆盖式列表必须从 fixture 中消失，否则重灌种子会再次清零其它层的授权。"""
+        """覆盖式列表必须从 fixture 中消失，否则重灌种子会再次清零其它层的授权。
+
+        空数组同样致命：``loaddata`` 见到 ``menu`` 键就执行 ``set([])``，与携带
+        一整串菜单名的后果相同。真正的守护在 ``test_reseeding_keeps_runtime_granted_menus``
+        （装配层已统一剥离 m2m），此处仅锁定源文件口径。
+        """
 
         import json
 
@@ -66,6 +73,41 @@ class TestDeclarationIntegrity:
         rows = json.loads(platform_file("userrole.json").read_text(encoding="utf-8"))
         assert rows
         assert all(not row["fields"].get("menu") for row in rows)
+
+    def test_strip_m2m_fields_removes_empty_lists_too(self):
+        """装配层必须连空数组一起剥掉——``set([])`` 与 ``set([...])`` 一样是覆盖。"""
+
+        from system.services.seeding import strip_m2m_fields
+
+        rows = {
+            "identity.userrole": [
+                {"pk": "r1", "fields": {"code": "default", "menu": []}},
+                {"pk": "r2", "fields": {"code": "admin", "menu": ["list:Menu"]}},
+            ]
+        }
+        stripped, notes = strip_m2m_fields(rows)
+        assert all("menu" not in row["fields"] for row in stripped["identity.userrole"])
+        # 授权字段名与角色标识不受影响
+        assert [row["fields"]["code"] for row in stripped["identity.userrole"]] == ["default", "admin"]
+        assert len(notes) == 2
+
+    def test_strip_m2m_fields_leaves_attribute_m2m_alone(self):
+        """属性型 m2m（菜单→模型）是功能契约，覆盖语义正是所需，不能被误剥。
+
+        ``menu.model`` / ``fieldpermission.field`` 决定字段白名单的取值面，种子值即
+        期望值；只有「角色被授予哪些菜单」是客户资产，需要并集语义。
+        """
+
+        from system.services.seeding import strip_m2m_fields
+
+        rows = {
+            "system.menu": [{"pk": "m1", "fields": {"name": "list:X", "model": ["identity.userinfo"]}}],
+            "system.fieldpermission": [{"pk": "f1", "fields": {"field": ["a", "b"]}}],
+        }
+        stripped, notes = strip_m2m_fields(rows)
+        assert stripped["system.menu"][0]["fields"]["model"] == ["identity.userinfo"]
+        assert stripped["system.fieldpermission"][0]["fields"]["field"] == ["a", "b"]
+        assert notes == []
 
     def test_grants_files_are_declared_by_their_layers(self):
         declarations = _plan_grants()
@@ -162,3 +204,37 @@ class TestEndToEnd:
             for role in UserRole.objects.filter(code__in=EXPECTED_ROLE_MENUS, deleted_at__isnull=True)
         }
         assert actual == EXPECTED_ROLE_MENUS
+
+    def test_reseeding_keeps_runtime_granted_menus(self, seed_creator_user):
+        """存量守护：重灌种子不得清零运行期授予的菜单。
+
+        缺陷现场（4.2.5 → 5.0.1 升级实测）：``userrole.json`` 给种子角色带
+        ``"menu": []``，``loaddata`` 的 m2m 覆盖语义对空数组同样执行 ``set([])``，
+        把客户「默认权限」角色人工授予的二开菜单整体抹掉，随后 ``apply_grants``
+        只加回 grants 声明的那几项——数据静默丢失且无任何告警。
+        """
+
+        from django.core.management import call_command
+
+        from identity.models import UserRole
+        from system.models import Menu, MenuMeta
+
+        call_command("load_init_json", verbosity=0)
+        role = UserRole.objects.get(code="default")
+        baseline = role.menu.count()
+        assert baseline == EXPECTED_ROLE_MENUS["default"]
+
+        # 运行期额外授予一个菜单（模拟客户的人工授权 / 二开模块权限点）
+        extra = Menu.objects.create(
+            name="list:RuntimeGranted",
+            path="api/runtime/granted$",
+            menu_type=2,
+            meta=MenuMeta.objects.create(title="运行期"),
+        )
+        role.menu.add(extra)
+
+        call_command("load_init_json", verbosity=0)
+
+        role.refresh_from_db()
+        assert extra.name in set(role.menu.values_list("name", flat=True))
+        assert role.menu.count() == baseline + 1

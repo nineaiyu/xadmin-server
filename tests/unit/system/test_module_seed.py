@@ -145,8 +145,8 @@ class TestSeedFilterOnRealFiles:
         seed_filter = ModuleSeedFilter.build()
         exported = _export(seed_filter, [Menu, UserRole], tmp_path)
 
-        # 种子角色行不再携带 m2m 绑定
-        assert all(not row["fields"]["menu"] for row in exported["userrole"])
+        # 种子角色行不再携带 m2m 绑定（装配层统一剥离，空数组同样会触发 set([]) 清零）
+        assert all(not row["fields"].get("menu") for row in exported["userrole"])
         # 菜单侧仍按模块裁剪：被隐藏的菜单不再出现在导出结果里
         hidden_names = {
             row["fields"]["name"] for row in read_model_rows("system.menu") if row["pk"] in seed_filter.hidden
@@ -241,19 +241,30 @@ class TestLoadInitJsonCommandWiring:
         assert "SystemUser" in captured["menu_names"]
         assert not os.path.exists(labels[0]), "临时目录应随命令结束清理"
 
-    def test_full_preset_passes_raw_fixtures(self, module_config, monkeypatch):
+    def test_full_preset_strips_m2m_then_loads(self, module_config, monkeypatch):
+        """全量预设：授权型 m2m 被剥离，fixture 里不再出现 ``menu`` 键。
+
+        种子 ``userrole.json`` 携带 ``menu`` 键（哪怕为空数组），``loaddata`` 会
+        ``set([])`` 清零存量授权——装配层必须剥离它。
+        """
+
         captured = {}
 
         def fake_handle(self, *labels, **options):
-            captured["labels"] = labels
+            captured["labels"] = [str(label) for label in labels]
+            for label in captured["labels"]:
+                if not label.endswith("userrole.json"):
+                    continue
+                with open(label, encoding="utf-8") as fp:
+                    captured["roles"] = json.load(fp)
 
         monkeypatch.setattr(LoadDataCommand, "handle", fake_handle)
         module_config()
         call_command("load_init_json")
 
-        expected = [str(spec.path) for spec in _non_empty_specs()]
-        assert [str(label) for label in captured["labels"]] == expected
-        assert any(str(dj_settings.PROJECT_DIR) in label for label in expected)
+        assert captured["labels"], "应仍有待导入的种子文件"
+        # 剥离后的角色行不携带授权字段
+        assert all("menu" not in row["fields"] for row in captured["roles"])
 
 
 class TestEmptySeedFilesSkipped:
@@ -264,11 +275,11 @@ class TestEmptySeedFilesSkipped:
     """
 
     def test_labels_exclude_empty_seeds(self, module_config, tmp_path):
-        module_config()  # 无裁剪：原始文件路径分支（按层逐文件）
+        module_config()  # 授权型 m2m 需剥离：同样走落盘分支（不再是原始文件路径）
         labels, _, trimmed = build_fixtures(_all_specs(), str(tmp_path))
-        assert not trimmed
+        assert trimmed
         assert labels
-        assert len(labels) == len(_non_empty_specs())
+        assert len(labels) == len({spec.model for spec in _non_empty_specs()})
 
         module_config(disable=["chat"])  # 有裁剪：过滤后落盘分支（按模型合并）
         labels, _, trimmed = build_fixtures(_all_specs(), str(tmp_path), module_filter=ModuleSeedFilter.build())
