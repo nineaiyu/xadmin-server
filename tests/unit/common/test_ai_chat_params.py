@@ -243,6 +243,38 @@ class TestStreamDecoding:
         events = list(self._client_with_lines(lines).chat_stream([]))
         assert [item["type"] for item in events] == ["reasoning"]
 
+    def test_tool_call_deltas_accumulated(self):
+        """原生工具轨道：tool_calls 分片按 index 累积，流结束后一次性产出完整调用。"""
+        lines = [
+            'data: {"choices": [{"delta": {"tool_calls": [{"index": 0, "id": "call-1", '
+            '"function": {"name": "dashboard.overview", "arguments": "{\\"_summ"}}]}}]}',
+            'data: {"choices": [{"delta": {"tool_calls": [{"index": 0, '
+            '"function": {"arguments": "ary\\": \\"看总览\\"}"}}]}}]}',
+            "data: [DONE]",
+            "",
+        ]
+        client = self._client_with_lines(lines)
+        events = list(client.chat_stream([]))
+        assert [item["type"] for item in events] == ["tool_calls"]
+        assert events[0]["tool_calls"] == [
+            {"id": "call-1", "name": "dashboard.overview", "arguments": '{"_summary": "看总览"}'}
+        ]
+        assert client.last_tool_calls == events[0]["tool_calls"]
+
+    def test_tool_calls_with_reasoning_and_content(self):
+        """工具调用与推理/正文可同时出现：增量照常产出，工具调用在末尾汇总。"""
+        lines = [
+            'data: {"choices": [{"delta": {"reasoning_content": "先查一下"}}]}',
+            'data: {"choices": [{"delta": {"content": "我来看看"}}]}',
+            'data: {"choices": [{"delta": {"tool_calls": [{"index": 0, "id": "call-2", '
+            '"function": {"name": "dashboard.overview", "arguments": "{}"}}]}}]}',
+            "data: [DONE]",
+            "",
+        ]
+        events = list(self._client_with_lines(lines).chat_stream([]))
+        assert [item["type"] for item in events] == ["reasoning", "content", "tool_calls"]
+        assert events[-1]["tool_calls"] == [{"id": "call-2", "name": "dashboard.overview", "arguments": "{}"}]
+
 
 class TestChatReasoningCapture:
     """非流式 chat()：reasoning_content 采集与「只思考未回答」的可读区分。"""

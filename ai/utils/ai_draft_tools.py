@@ -114,11 +114,53 @@ def draft_result_from_chat(result: dict[str, Any], user: Any) -> dict[str, Any]:
     return {"kind": "message", "message": content[:MAX_REASON_LENGTH]}
 
 
+def native_draft_result_stream(user: Any, message: str) -> Any:
+    """原生 function calling 轨道的流式形态：逐段产出 reasoning/content，末帧携带结果。
+
+    与 ``native_draft_result`` 共用同一套工具目录、消息构造与结果校验；差异只在
+    传输形态：思考增量与正文增量实时产出（``{"type": "reasoning"|"content"}``），
+    工具调用分片由 SDK 累积成 ``{"type": "tool_calls"}``，最终产出
+    ``{"type": "result", "result": <draft_result_from_chat 同构结果>}``。
+
+    工具调用本身不逐字上屏（arguments 是 JSON 片段，不是散文）；模型若同时输出
+    推理/正文，前端可立即看到增量，从而避免「长时间无输出」。
+    """
+    from ai.utils.ai_config import structured_chat_client
+    from ai.utils.ai_tool_catalog import openai_tools
+    from ai.utils.ai_usage import tracked_chat_stream
+
+    client, max_tokens = structured_chat_client()
+    tools = openai_tools(user)
+    if not tools:
+        raise DjangoValidationError(_("The model did not return an actionable request"))
+    content_chunks: list[Any] = []
+    tool_calls: list[Any] = []
+    for item in tracked_chat_stream(
+        user,
+        "action",
+        client,
+        build_tool_messages(user, message),
+        track="native",  # 双轨对照：用量账本按轨道统计成功率
+        tools=tools,
+        tool_choice="auto",
+        max_tokens=max_tokens,
+    ):
+        kind = item.get("type")
+        if kind == "tool_calls":
+            tool_calls = item.get("tool_calls") or []
+            continue
+        if kind == "content":
+            content_chunks.append(str(item.get("text") or ""))
+        yield item
+    result = draft_result_from_chat({"content": "".join(content_chunks), "tool_calls": tool_calls}, user)
+    yield {"type": "result", "result": result}
+
+
 def native_draft_result(user: Any, message: str) -> tuple[Any, ...]:
-    """原生 function calling 轨道生成草稿：返回 ``(parse_draft 同构结果, 轨道标记)``。
+    """原生 function calling 轨道生成草稿（非流式入口：聊天室 ``/do`` 等）。
 
     仅在 ``native_tools_enabled()``（能力探测通过 + 开关开启）为真时由调用方进入；
-    工具调用不是散文，无需逐字流式，链路为一次性调用。
+    助手页的流式入口使用 ``native_draft_result_stream``（同一套目录与校验）。
     """
     from ai.utils.ai_config import structured_chat_client
     from ai.utils.ai_tool_catalog import openai_tools

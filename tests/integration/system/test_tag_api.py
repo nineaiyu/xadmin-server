@@ -56,6 +56,13 @@ class TestTagCrud:
         auth_client.post(TAGS_URL, {"name": "重复"}, format="json")
         assert auth_client.post(TAGS_URL, {"name": "重复"}, format="json").status_code == 400
 
+    def test_search_columns_color_renders_picker(self, auth_client):
+        """颜色字段必须下发 input_type=color（ColorField），否则前端退化为纯文本输入。"""
+        data = auth_client.get(f"{TAGS_URL}/search-columns").json()["data"]
+        color = next(item for item in data if item["key"] == "color")
+        assert color["input_type"] == "color"
+        assert color["required"] is False
+
     def test_resources_endpoint(self, auth_client):
         data = auth_client.get(f"{TAGS_URL}/resources").json()["data"]
         assert {item["key"] for item in data["resources"]} == {

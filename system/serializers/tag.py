@@ -8,6 +8,7 @@ from typing import Any
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.core.fields import ColorField
 from common.core.serializers import BaseModelSerializer
 from common.core.validation import trim_required
 from system.models.tag import TAGGABLE_MODELS, Tag
@@ -23,6 +24,9 @@ class TagSerializer(BaseModelSerializer):
     creator = DisplayRelatedField(
         read_only=True, allow_null=True, label=_("Creator"), label_builder=lambda v: v.username
     )
+    # 显式 ColorField（input_type=color）：元数据表单据此渲染颜色选择器；
+    # 落到默认 CharField 会退化为普通文本输入（值仍按下方 validate_color 校验）
+    color = ColorField(required=False, allow_blank=True, max_length=16, label=_("Color"))
     usage_count = serializers.SerializerMethodField(label=_("Usage count"))
 
     class Meta:

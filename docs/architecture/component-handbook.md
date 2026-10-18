@@ -58,7 +58,7 @@
 |---|---|
 | 出一个标准列表页 | `BaseModelSet` + `BaseModelSerializer` + `BaseFilterSet` + `<RePlusPage>` |
 | 加一个按钮触发接口 | 后端 `@action` + 权限点；前端 `BaseApi` 子类方法 + `operationButtonsProps.buttons` |
-| 换单元格/表单控件 | `*Format` 出口（页面级）或渲染器注册（全局级） |
+| 换单元格/表单控件 | `*Format` 出口（页面级）或渲染器注册（全局级）；先按 §六「表单选型判定」确认是否该写表单 |
 | 弹一个表单/详情 | `addDialog` / `addDrawer` / `openDialogDrawer` |
 | 选一个用户/部门/角色 | `api-search-user` 等（表单）或 `RePlusSearch`（独立选择器）或联想（大表搜索） |
 | 大表关联字段搜索 | `PkMultipleFilter` + `SuggestionsAction` + 前端自动 `SuggestSelect` |
@@ -117,3 +117,72 @@
 | [模块化与功能裁剪.md](模块化与功能裁剪.md) | 模块清单、裁剪矩阵、CLI |
 | [../../packages/xadmin-common/common/README.md](../../packages/xadmin-common/common/README.md) | 内核目录地图与边界规则 |
 
+## 六、表单选型判定（元数据表单 vs 手写表单）
+
+新增/改造表单前先在这里选型——**两套契约并存，选错会重复生产「后端有元数据、前端却手写整套
+字段」的页面**。判定顺序自上而下，命中即停：
+
+| 形态 | 选型 | 落点 |
+|---|---|---|
+| 标准模型 CRUD：后端 `BaseModelSet` + 序列化器字段可被元数据 21 键表达 | **元数据表单** | `auth.create/partialUpdate` 保持开启；页面只写 `addOrEditOptions` |
+| 有模型，但含元数据表达不了的结构（嵌套子表 / 三元组行编辑器 / 逗号分隔数组 / 独立端点读写） | **混合**：基础字段走元数据，复杂字段作为扩展字段注入或保留为页面专属弹层 | `addOrEditOptions.props.columns` + `renderField` / `beforeSubmit` / `apiReq` |
+| 无模型元数据（登录、认证动作、内存草稿、预览试算、schema 不同源） | **手写 `XxxForm.vue`** | 必须登记豁免（见本节末） |
+
+### 6.1 标准模式（元数据表单）
+
+```ts
+const addOrEditOptions = shallowRef<RePlusPageProps["addOrEditOptions"]>({
+  props: {
+    columns: {
+      // 就地微调；返回 undefined = 该列不参与表单
+      dept: ({ column }) => { column.valueType = "cascader"; return column; },
+      rank: ({ column }) => { column.fieldProps = { ...column.fieldProps, min: 1 }; return column; }
+    },
+    formProps: { rules: ({ rawFormProps }) => ({ ...rawFormProps.rules, /* 覆写/追加 */ }) },
+    beforeSubmit: ({ formData, formOptions }) => { /* 数组↔文本、空串→null… */ return formData; }
+  }
+});
+```
+
+要点：
+- 字段本体、校验必填、`required`、`max_length`、`read_only` 过滤全部由后端元数据决定；
+- `auth.create/update/partialUpdate` **不再关闭**（关闭后框架默认新增/编辑按钮消失，只能手写弹窗）；
+- 只读字段（`SerializerMethodField`、`read_only=True`）不会进入表单列；确需展示时按 6.2 注入扩展字段；
+- 详情/列表的展示不走表单，另行用 `*Format` 调整。
+
+### 6.2 混合模式（扩展字段）
+
+`addOrEditOptions.props.columns` 的解析器可以接收**元数据未下发**的键：框架会提供一个只有
+`prop` / `_column.key` 的空列（`handle-dialog.ts::resolveFormColumn`），页面可自行建立标签、
+`valueType`、`renderField` 与 `colProps`。适用：独立端点读写的编辑区（如 API 应用的资源授权）、
+需要注入候选集的 JSON 字段、需要跨字段联动校验的控件。
+
+- 自定义控件优先 `renderField`（`registry.ts::registerFormRenderer` 只适合全局新类型）；
+- 提交前用 `beforeSubmit` 做形态转换（数组↔逗号文本、`""`→`null`、去掉扩展字段键）；
+- 主记录 + 附属端点需要在一次保存里完成时，用 `addOrEditOptions.apiReq` 串起来（返回最终主记录响应）；
+  附属写失败要给出可读告警，`grants` 这类「全量替换」端点**加载失败必须跳过写入**，不能覆盖为空。
+
+### 6.3 手写模式（登记豁免）
+
+手写表单只用于 6 表最后一行的形态。门禁 `node scripts/check-handwritten-forms.mjs`
+（`pnpm check:forms`，CI 已接入）在两种情况下要求显式豁免：
+
+1. 文件所在模块存在 RePlusPage 页面（模板里 `<RePlusPage`）；
+2. 单文件 `el-form-item` 超过 12 个。
+
+豁免二选一：登记 `xadmin-client/scripts/handwritten-forms-exempt.json`（推荐，理由集中可审），
+或文件头写 `<!-- @form-exempt: 理由 -->`。登记项文件删除/改名后必须清理，否则门禁失败。
+
+### 6.4 已知边界与踩坑
+
+| 现象 | 原因 / 处置 |
+|---|---|
+| JSONField 在表单里变成 JSON 编辑器 | `input_type=json`；页面用 `columns.<key>` 改 `valueType` 并 `delete column.renderField`（`renderField` 优先级更高） |
+| 关联字段编辑态回显成数字/空白 | 后端 `attrs=["pk"]` 时下发的标量，而 `object_related_field` 默认选项值是对象；改页面为标量 `options`（见 `xadmin-client/src/views/system/post/utils/usePostFormOptions.ts`） |
+| 需要按另一字段显示/隐藏 | 元数据协议无 linkage；改用「始终可见 + 提示文案 + 跨字段校验」（见 `xadmin-client/src/views/settings/login-policy/utils/useLoginPolicyFormOptions.ts`） |
+| 跨字段校验拿不到实时值 | 用 `props.dialogDrawerOptions.onChange` 维护实时快照，规则 validator 读快照 + 当前字段值 |
+| 时间字段提交空串被后端拒绝 | `time` 渲染器提交 `HH:mm:ss`；清空值需在 `beforeSubmit` 归一为 `null` |
+| 表单里想展示只读统计值 | 用 6.2 注入扩展字段（`valueType: "text"` + `renderField` 渲染 tag），随主记录提交但后端忽略只读字段 |
+| 页面只写了跨字段规则，别的必填项不再拦截 | 框架已按字段合并规则（`handle-dialog.ts::mergeFormProps`）；页面 `formProps.rules` 只需声明自己关心的字段，同名覆盖、其余保留 |
+| 复用「就地编辑」的子组件（增删行 / 改行对象）后值不回写 | 字段渲染器拿到的是转换副本，子组件的就地变更父表单看不到；包一层适配组件 `deep watch` 回写服务端载荷并在挂载时归一（见 `xadmin-client/src/views/approval/rule/components/RuleLevelsField.vue`） |
+| LabeledChoiceField 打开即报必填 / 下拉空白 | 显式声明的 `LabeledChoiceField` 默认 `required=True`（模型有默认值时按模型语义改 `required=False`）；元数据默认值是标量而接口回读是 `{value,label}`，新建态在 `row` 解析器里补 `{ value }` |

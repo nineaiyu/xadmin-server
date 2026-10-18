@@ -39,14 +39,26 @@ class BaseService(abc.ABC):
 
     @property
     def is_running(self) -> bool:
-        if self.pid == 0:
+        pid = self.pid
+        if pid == 0:
             return False
         try:
-            os.kill(self.pid, 0)
+            os.kill(pid, 0)
         except (OSError, ProcessLookupError):
             return False
-        else:
-            return True
+        # 僵尸进程仍会响应 kill(pid, 0)：容器内本进程是 PID 1，未 wait 的子进程
+        # 退出后会保持 Z 状态；不判僵尸会让 stop(wait_forever=True) 永远等下去
+        # （实测 celery-heavy 子进程退出后变僵尸，要等满 stop_grace_period 300s
+        # 才被 Docker SIGKILL）。判定为僵尸时顺手 poll 回收，避免僵尸常驻。
+        try:
+            if psutil.Process(pid).status() == psutil.STATUS_ZOMBIE:
+                poll = getattr(self._process, "poll", None)
+                if poll is not None:
+                    poll()
+                return False
+        except psutil.Error:
+            return False
+        return True
 
     def show_status(self) -> None:
         if self.is_running:

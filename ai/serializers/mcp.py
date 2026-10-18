@@ -67,7 +67,8 @@ class McpServerSerializer(BaseModelSerializer):
             "created_time",
             "updated_time",
         ]
-        read_only_fields = ["auth_token_set", "tools_snapshot", "last_synced_time", "last_sync_error"]
+        # pk 由服务端生成：落进 read_only 才不会被元数据表单渲染成可编辑的「ID」输入框
+        read_only_fields = ["pk", "auth_token_set", "tools_snapshot", "last_synced_time", "last_sync_error"]
         table_fields = [
             "name",
             "url",

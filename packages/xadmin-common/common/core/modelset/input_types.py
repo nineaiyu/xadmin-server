@@ -20,12 +20,12 @@ from common.core.serializers import BasePrimaryKeyRelatedField
 
 #: 稳定公共契约：平台可下发的 input_type 全集（封闭核心，不含 api-* 族）。
 #: 构成 = DRF label_lookup 实际可达面（string/field/integer/float/boolean/date/datetime/
-#: choice/multiple choice/email/file upload/image upload/list）+ 自定义字段声明面
+#: time/choice/multiple choice/email/file upload/image upload/list）+ 自定义字段声明面
 #: （labeled_choice/labeled_multiple_choice/object_related_field/m2m_related_field/json/
 #: phone/color）+ 关联族 _file/_image 组合 + columns 覆写 textarea + search 侧 widget
 #: 覆写与合成（select-multiple/datetimerange/select-ordering）+ filter widget 默认面
 #: （text/number/select）+ 业务显式声明且走回退透传的 input。DRF 长尾类型（decimal/url/
-#: time/duration/regex/slug/nested object 等）未实际下发、前端亦无渲染器，**不预登记**——
+#: duration/regex/slug/nested object 等）未实际下发、前端亦无渲染器，**不预登记**——
 #: 出现即被闭包测试拦截，届时按扩展流程有意识处置。
 DECLARED_INPUT_TYPES: frozenset[str] = frozenset(
     {
@@ -37,6 +37,9 @@ DECLARED_INPUT_TYPES: frozenset[str] = frozenset(
         "boolean",
         "date",
         "datetime",
+        # TimeField（如登录访问策略 start_time / end_time）在 search-columns 面经
+        # label_lookup 下发 "time"；前端以 time-picker 编辑，值格式 HH:mm:ss
+        "time",
         "choice",
         "multiple choice",
         "email",

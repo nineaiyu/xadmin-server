@@ -10,7 +10,7 @@ import json as jsonlib
 
 import pytest
 
-from ai.models.ai import AiProfile, AiUsageRecord
+from ai.models.ai import AiChatMessage, AiProfile, AiUsageRecord
 from ai.utils.ai_actions import ACTION_DASHBOARD_OVERVIEW
 from ai.utils.ai_config import PURPOSE_STRUCTURED, set_active_profile
 from audit.models.log import OperationLog
@@ -49,16 +49,54 @@ def _sse_lines(draft_payload):
     return [f"data: {frame}".encode(), b"data: [DONE]"]
 
 
+def _sse_tool_call_lines(arguments: str = '{"_summary": "看总览"}'):
+    """原生工具调用的流式分片：首片 name/id，次片 arguments 片段（真实 OpenAI 形态）。"""
+    first = {
+        "choices": [
+            {
+                "delta": {
+                    "tool_calls": [
+                        {
+                            "index": 0,
+                            "id": "call-stream",
+                            "function": {
+                                "name": ACTION_DASHBOARD_OVERVIEW,
+                                "arguments": arguments[: len(arguments) // 2],
+                            },
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+    second = {
+        "choices": [
+            {"delta": {"tool_calls": [{"index": 0, "function": {"arguments": arguments[len(arguments) // 2 :]}}]}}
+        ]
+    }
+    return [
+        f"data: {jsonlib.dumps(first, ensure_ascii=False)}".encode(),
+        f"data: {jsonlib.dumps(second, ensure_ascii=False)}".encode(),
+        b"data: [DONE]",
+    ]
+
+
 class StubLLM:
     """双轨桩：tools 请求 → tool_calls；流式 → SSE 草稿帧；其余按 prompt 内容分流。"""
 
     def __init__(self):
         self.requests = []
+        #: 非空时流式返回纯文本（模拟模型澄清/追问，不发起工具调用）
+        self.stream_content = ""
 
     def post(self, url, json=None, headers=None, timeout=None, stream=False, **kwargs):
         body = json or {}
         self.requests.append(body)
         if stream:
+            if self.stream_content:
+                return _FakeStreamResponse(_sse_lines(self.stream_content))
+            if body.get("tools"):
+                return _FakeStreamResponse(_sse_tool_call_lines())
             draft = jsonlib.dumps(
                 {"actions": [{"action": ACTION_DASHBOARD_OVERVIEW, "params": {}, "summary": "看总览"}]},
                 ensure_ascii=False,
@@ -204,11 +242,47 @@ class TestNativeToolTrack:
         frames = b"".join(_iter_stream(response)).decode("utf-8")
         assert '"kind": "draft"' in frames or '"kind":"draft"' in frames
         assert ACTION_DASHBOARD_OVERVIEW in frames
-        assert any(request.get("tools") for request in stub_llm.requests)  # 走原生 tools 通道
+        # 原生轨道走流式 tools 通道：请求体带 tools + stream，tool_calls 由分片累积
+        assert any(request.get("tools") and request.get("stream") for request in stub_llm.requests)
         # 原生轨道不再下发动作目录 prompt（同一份 schema 由 tools 定义承载）
         assert all(
             "ALLOWED_ACTIONS_JSON" not in jsonlib.dumps(request.get("messages")) for request in stub_llm.requests
         )
+
+    def test_native_clarification_streamed_and_persisted(self, auth_client, ai_settings, stub_llm):
+        """原生轨道只管追问（无 tool call）时按 message 流式透出，不再 KeyError 断流。"""
+        ai_settings.AI_NATIVE_TOOLS_ENABLED = True
+        make_profile(purpose=PURPOSE_STRUCTURED, capabilities={"tool_calls": {"ok": True}})
+        stub_llm.stream_content = "请补充请假原因"
+        response = auth_client.post(f"{ASSISTANT_URL}/action/interpret/stream", {"message": "帮我请假"}, format="json")
+        assert response.status_code == 200
+        frames = b"".join(_iter_stream(response)).decode("utf-8")
+        assert '"kind": "message"' in frames or '"kind":"message"' in frames
+        assert "请补充请假原因" in frames
+        rows = list(AiChatMessage.objects.filter(feature="action").order_by("id"))
+        assert [row.role for row in rows] == ["user", "assistant"]
+        assert "请补充请假原因" in rows[-1].content
+
+    def test_native_unexpected_error_yields_error_frame(self, auth_client, ai_settings, stub_llm, monkeypatch):
+        """流内未知异常（非 DjangoValidationError/AiSdkError）转 error 帧，不断连接。"""
+        ai_settings.AI_NATIVE_TOOLS_ENABLED = True
+        make_profile(purpose=PURPOSE_STRUCTURED, capabilities={"tool_calls": {"ok": True}})
+        import ai.utils.ai_actions as ai_actions
+
+        def broken_stream(user, message):
+            yield {"type": "reasoning", "text": "先想一下"}
+            raise RuntimeError("unexpected native result")
+
+        monkeypatch.setattr(ai_actions, "native_draft_result_stream", broken_stream)
+        response = auth_client.post(
+            f"{ASSISTANT_URL}/action/interpret/stream", {"message": "看看系统总览"}, format="json"
+        )
+        assert response.status_code == 200
+        frames = b"".join(_iter_stream(response)).decode("utf-8")
+        assert "event: error" in frames
+        rows = list(AiChatMessage.objects.filter(feature="action").order_by("id"))
+        assert [row.role for row in rows] == ["user", "assistant"]
+        assert rows[-1].extra.get("partial")
 
     def test_prompt_track_when_capability_missing(self, auth_client, ai_settings, stub_llm):
         ai_settings.AI_NATIVE_TOOLS_ENABLED = True

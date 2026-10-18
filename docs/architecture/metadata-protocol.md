@@ -68,7 +68,7 @@ search-fields 条目为子集：`key/label/help_text/input_type/choices/default`
 | 通道 | 内置 `input_type` 键 | fallback 行为 |
 |---|---|---|
 | 搜索（`renderers-search.tsx`） | `text`、`datetime`、`datetimerange`、`number`、`select`、`select-multiple`、`select-ordering` | 命中 `api-` 前缀走 `api-search-*` 组件；其余 `valueType = input_type` |
-| 表单（`renderers-form.tsx`） | `integer`、`float`、`string`、`field`、`color`、`datetime`、`date`、`boolean`、`textarea`、`choice`、`multiple choice`、`labeled_choice`、`labeled_multiple_choice`、`object_related_field`、`m2m_related_field`、`object_related_field_file`、`object_related_field_image`、`m2m_related_field_file`、`m2m_related_field_image`、`image upload`、`file upload`、`list`、`phone`、`json` | 命中 `api-` 前缀走 `api-search-*` 组件；`suggest_url` 存在时升级为远程联想 `SuggestSelect` |
+| 表单（`renderers-form.tsx`） | `integer`、`float`、`string`、`field`、`color`、`datetime`、`date`、`time`、`boolean`、`textarea`、`choice`、`multiple choice`、`labeled_choice`、`labeled_multiple_choice`、`object_related_field`、`m2m_related_field`、`object_related_field_file`、`object_related_field_image`、`m2m_related_field_file`、`m2m_related_field_image`、`image upload`、`file upload`、`list`、`phone`、`json` | 命中 `api-` 前缀走 `api-search-*` 组件；`suggest_url` 存在时升级为远程联想 `SuggestSelect` |
 | 详情/表格（`renderers-detail.tsx`） | `labeled_choice`、`color`、`object_related_field`、`m2m_related_field`、`labeled_multiple_choice`、`json`、`object_related_field_image`、`object_related_field_file`、`m2m_related_field_file`、`m2m_related_field_image`、`image upload`、`file upload`、`boolean`、`list` | **无 fallback**——未登记类型不配置渲染，靠 plus-pro/pure-table 按 `valueType` 原生输出 |
 
 > 速查提示（读源码才容易踩的边界）：

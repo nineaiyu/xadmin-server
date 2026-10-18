@@ -88,19 +88,33 @@ class AiActionExecuteMixin:
             yield {"event": "meta", "data": {"message": text, "user_message": message_payload(user_row)}}
             chunks: list[Any] = []
             reasoning_chunks: list[Any] = []
+            result: dict[str, Any] = {}
             try:
                 if quota_hit:
                     raise DjangoValidationError(quota_hit)
                 if native_tools_enabled():
-                    # 原生轨道：能力探测通过 + 开关开启时优先（工具调用非散文，一次性调用）
-                    from ai.utils.ai_actions import native_draft_result
+                    # 原生轨道：能力探测通过 + 开关开启时优先。流式产出 reasoning/content，
+                    # 工具调用分片由 SDK 累积成完整列表后再解析（arguments 是 JSON 片段，
+                    # 不逐字上屏；模型若输出推理/正文则实时可见）
+                    from ai.utils.ai_actions import native_draft_result_stream
 
-                    result, track = native_draft_result(request.user, text)
-                    logger.info("ai action draft track: %s (user=%s)", track, request.user.pk)
-                    yield {
-                        "event": "delta",
-                        "data": {"delta": draft_summary(result.get("drafts") or [result["draft"]])},
-                    }
+                    logger.info("ai action draft track: native (user=%s)", request.user.pk)
+                    for item in native_draft_result_stream(request.user, text):
+                        kind = item.get("type")
+                        if kind == "reasoning":
+                            reasoning_chunks.append(item["text"])
+                            yield {"event": "reasoning", "data": {"delta": item["text"]}}
+                        elif kind == "content":
+                            chunks.append(item["text"])
+                            yield {"event": "delta", "data": {"delta": item["text"]}}
+                        elif kind == "result":
+                            result = item["result"]
+                    if result["kind"] == "draft" and not chunks:
+                        # 工具调用轨道通常没有正文增量：done 前补一条摘要，避免界面空等
+                        yield {
+                            "event": "delta",
+                            "data": {"delta": draft_summary(result.get("drafts") or [result["draft"]])},
+                        }
                 else:
                     # 双轨对照日志：便于按档案/模型统计两条轨道的成功率
                     logger.info("ai action draft track: prompt (user=%s)", request.user.pk)
@@ -128,6 +142,8 @@ class AiActionExecuteMixin:
                             _("The model did not provide a final answer; please retry or switch models")
                         )
                     result = parse_draft(raw, request.user)
+                if not result:
+                    raise DjangoValidationError(_("The model did not return an actionable request"))
             except DjangoValidationError as exc:
                 detail = "; ".join(getattr(exc, "messages", None) or [str(exc)])
                 audit_ai_action(request.user, "", {}, False, detail, {"guard": guard})
@@ -142,6 +158,19 @@ class AiActionExecuteMixin:
                 from ai.utils.ai import readable_ai_error
 
                 detail = readable_ai_error(exc)
+                audit_ai_action(request.user, "", {}, False, detail, {"guard": guard})
+                reasoning = "".join(reasoning_chunks)
+                if chunks or reasoning:
+                    payload = self._persist_assistant(request.user, detail, {"partial": detail}, reasoning)
+                else:
+                    payload = self._persist_system(request.user, detail)
+                yield {"event": "error", "data": {"detail": detail, "message": payload}}
+                return
+            except Exception:  # noqa: BLE001 流内未知异常兜底：转 error 帧，避免 ASGI 直接断流
+                # 典型场景：模型返回了未预期的结构（历史上 native 澄清消息取 result["draft"]
+                # 触发 KeyError，客户端只看到连接被截断）。异常细节只进日志，不返回给前端。
+                logger.exception("ai action draft stream failed")
+                detail = str(_("AI service is temporarily unavailable"))
                 audit_ai_action(request.user, "", {}, False, detail, {"guard": guard})
                 reasoning = "".join(reasoning_chunks)
                 if chunks or reasoning:

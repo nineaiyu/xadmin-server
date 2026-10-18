@@ -80,7 +80,8 @@
               "select-ordering",
               "string",
               "text",
-              "textarea"
+              "textarea",
+              "time"
             ]
           },
           {

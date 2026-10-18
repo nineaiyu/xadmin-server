@@ -288,3 +288,10 @@ class TestUserPosts:
         assert columns["posts"]["read_only"] is False
         assert columns["posts"]["multiple"] is True
         assert "table_show" in columns["posts"]
+
+    def test_search_columns_put_description_last(self, auth_client):
+        """新增/编辑表单按 Meta.fields 顺序装配：备注（长文本）须位于可写字段末尾。"""
+        resp = auth_client.get(f"{USER_URL}/search-columns", {"no_cache": "1"})
+        assert resp.status_code == 200, resp.data
+        writable = [item["key"] for item in resp.data["data"] if not item.get("read_only")]
+        assert writable[-1] == "description", writable

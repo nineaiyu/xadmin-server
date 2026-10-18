@@ -53,6 +53,16 @@ class PostSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
             "updated_time",
         ]
         read_only_fields = ["pk"]
+        extra_kwargs = {
+            # 关联字段默认 attrs 仅 pk，元数据 choices 的 label 会回退成 UUID，
+            # 新增/编辑弹层直接显示主键；显式取 name 作为下拉文案（与用户表单 dept 同口径）
+            "dept": {
+                "required": False,
+                "allow_null": True,
+                "attrs": ["pk", "name"],
+                "format": "{name}",
+            },
+        }
 
     dept_name = serializers.SerializerMethodField(read_only=True, label=_("Dept"))
 

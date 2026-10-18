@@ -42,6 +42,25 @@ class TestPostCrud:
         assert row["user_count"] == 0
         assert row["dept_name"] == ""
 
+    def test_dept_choices_label_use_dept_name(self, auth_client, dept):
+        """新增/编辑弹层的部门下拉必须显示部门名，而不是主键 UUID。
+
+        `dept` 是序列化器隐式生成的关联字段（默认 attrs=["pk"]），元数据 choices
+        的 label 会回退成 pk；显式声明 name 后下拉文案才与部门表一致。
+        """
+        resp = auth_client.get(f"{POST_URL}/search-columns", {"no_cache": "1"})
+        assert resp.json()["code"] == 1000, resp.json()
+        columns = {item["key"]: item for item in resp.json()["data"]}
+        choice = next(item for item in columns["dept"]["choices"] if item["value"] == str(dept.pk))
+        assert choice["label"] == dept.name
+
+    def test_list_dept_label_use_dept_name(self, auth_client, dept):
+        resp = _create(auth_client, dept=str(dept.pk))
+        assert resp.json()["code"] == 1000, resp.json()
+        row = _results(auth_client.get(POST_URL, {"name": "安全"}))[0]
+        assert row["dept"]["label"] == dept.name
+        assert row["dept_name"] == dept.name
+
     def test_name_and_code_must_be_unique(self, auth_client):
         assert _create(auth_client).json()["code"] == 1000
         # DRF 字段级唯一校验（单字段 UniqueConstraint 自动生成校验器）：

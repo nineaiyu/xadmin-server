@@ -120,7 +120,6 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             "is_active",
             "password",
             "dept",
-            "description",
             "last_login",
             "date_joined",
             "date_expired",
@@ -132,6 +131,9 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             "rules",
             "tags",
             "invite",
+            # 备注置于可写字段末尾：新增/编辑表单按 Meta.fields 顺序装配列，
+            # 长文本放最下方，避免夹在部门与权限字段之间打断填写动线
+            "description",
             "deleted_at",
         ]
         read_only_fields = ["pk", "deleted_at"] + list(set([x.name for x in UserInfo._meta.fields]) - set(fields))
