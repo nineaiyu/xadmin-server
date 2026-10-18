@@ -82,6 +82,38 @@ def drafts_from_tool_calls(user: Any, tool_calls: list[Any]) -> dict[str, Any]:
     return {"kind": "draft", "draft": drafts[0], "drafts": drafts}
 
 
+def draft_result_from_chat(result: dict[str, Any], user: Any) -> dict[str, Any]:
+    """原生调用结果 → 草稿或澄清消息（与 ``parse_draft`` 同构）。
+
+    三种模型行为都要接住（提示词约定「不可执行时用追问回复」，但不同模型
+    对 tools 协议的执行程度不同）：
+    1. 发起 tool_calls → 按工具调用映射草稿；
+    2. 未发起工具调用、但按 prompt-JSON 契约输出 ``{"actions"|"action"|"message"}``
+       → 复用 ``parse_draft`` 解析（混合模型：tools 定义在场时仍写 JSON）；
+    3. 仅返回散文/其他 JSON → 按澄清消息透出（截断到 MAX_REASON_LENGTH）。
+    无 tool_calls 且无 content 才是真正的不可执行。
+    """
+    from ai.utils.ai_actions import MAX_REASON_LENGTH, parse_draft
+    from common.utils.ai_parse import AiOutputParseError, extract_json_object
+
+    tool_calls = result.get("tool_calls") or []
+    if tool_calls:
+        return drafts_from_tool_calls(user, tool_calls)
+    content = str(result.get("content") or "").strip()
+    if not content:
+        raise DjangoValidationError(_("The model did not return an actionable request"))
+    try:
+        payload = extract_json_object(content)
+    except AiOutputParseError:
+        return {"kind": "message", "message": content[:MAX_REASON_LENGTH]}
+    if isinstance(payload, dict) and (
+        payload.get("actions") is not None or payload.get("action") or payload.get("message")
+    ):
+        # 契约内 JSON：交给 parse_draft 做白名单/参数校验（校验失败按可读错误上抛）
+        return parse_draft(content, user)
+    return {"kind": "message", "message": content[:MAX_REASON_LENGTH]}
+
+
 def native_draft_result(user: Any, message: str) -> tuple[Any, ...]:
     """原生 function calling 轨道生成草稿：返回 ``(parse_draft 同构结果, 轨道标记)``。
 
@@ -106,4 +138,4 @@ def native_draft_result(user: Any, message: str) -> tuple[Any, ...]:
         tool_choice="auto",
         max_tokens=max_tokens,
     )
-    return drafts_from_tool_calls(user, result.get("tool_calls") or []), "native"
+    return draft_result_from_chat(result, user), "native"
