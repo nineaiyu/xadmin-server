@@ -11906,3 +11906,45 @@ msgstr "投递已重新派发"
 #: tests/unit/common/test_online_stats.py:322
 msgid "Test label"
 msgstr "测试标签"
+
+msgid "Encrypted at rest and never returned; leave blank when editing to keep the current key"
+msgstr "加密存储、永不回传；编辑时留空表示沿用原密钥"
+
+msgid "Only one active profile per purpose; activating one deactivates the previous"
+msgstr "每种用途仅一个激活档案；激活新档案会自动停用旧的"
+
+msgid "Chat serves Q&A; structured serves NL query and action drafts; embedding serves vector retrieval and has no fallback"
+msgstr "对话问答供聊天 / 文档问答；结构化输出供 NL 查数与动作草稿；向量化供知识库向量检索且不做回落"
+
+msgid "Capability probe result, editable manually"
+msgstr "能力探测结果，可人工修正"
+
+msgid "0~2; lower is more deterministic; recommended 0.2"
+msgstr "0~2，越低越稳定；建议 0.2"
+
+msgid "Per-response output cap; recommended 2048"
+msgstr "单次回答上限；建议 2048"
+
+msgid "0~1; 1 = no nucleus restriction"
+msgstr "0~1；1 = 不限制"
+
+msgid "-2~2; 0 = no penalty"
+msgstr "-2~2；0 = 不惩罚"
+
+msgid "Comma separated, e.g. END,STOP"
+msgstr "逗号分隔，如：结束,STOP"
+
+msgid "Leave blank for random"
+msgstr "留空 = 随机"
+
+msgid "5~300 seconds; recommended 60"
+msgstr "5~300 秒；建议 60"
+
+msgid "Retries for network errors and 5xx; recommended 2"
+msgstr "网络异常 / 5xx 重试次数；建议 2"
+
+msgid "2~50 messages; recommended 20"
+msgstr "2~50 条；建议 20"
+
+msgid "System prompt; blank uses the builtin default"
+msgstr "系统提示词；留空使用内置默认"
