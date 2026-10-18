@@ -97,6 +97,7 @@
 | **运行期参数** | `SysConfig` 属性键：`FILE_UPLOAD_SIZE` / `PICTURE_UPLOAD_SIZE` / `PAT_RATE_LIMIT` / `CSP_MODE` / `CSP_REPORT_URI` / `OAUTH_PROVIDERS` / `SCIM_*` / `AUDIT_DIFF_MODELS` / `OUTBOUND_ALLOWED_HOSTS` / 审批相关 / 文件预览与保留期 / 导入导出保留期 / `CHAT_HISTORY_DAYS` / `BACKUP_ALERT_TOKEN` / `OPS_ALERT_TOKEN` 等 | 管理页「系统管理 → 系统配置」修改后**即时生效**（保存即失效缓存）。这些键的默认值单源回读 `config.yml`（即上表值可作为初值），有 DB 行时以行值为准 |
 | **用户级配置** | `WEB_SITE_CONFIG` / `PUSH_MESSAGE_NOTICE` / `PUSH_CHAT_MESSAGE` | 用户可在「账户设置」页覆盖个人值，即时生效 |
 
-> 完整运行期参数清单与语义见 `loadjson/systemconfig.json`（种子初值）与
+> 完整运行期参数清单与语义见各层 `systemconfig` 种子（应用层 `<app>/seeds/systemconfig.json` +
+> 平台层 `loadjson/systemconfig.json`，种子初值）与
 > [packages/xadmin-common/common/README.md](../../packages/xadmin-common/common/README.md)；用户级覆盖的读取链路见
 > [architecture/cache.md](../architecture/cache.md)。

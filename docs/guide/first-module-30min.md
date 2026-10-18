@@ -97,7 +97,7 @@ python manage.py generate_crud crm.Customer             # 落盘
 | 路由 | `crm/urls.py` |
 | 应用配置 | `crm/config.py`（随 `XADMIN_APPS` 自动注入路由） |
 | 前端页面 | `xadmin-client/src/views/crm/customer/index.vue` + `utils/{api.ts,hook.tsx}` |
-| 菜单种子 | `crm/seeds/menu_customer.json` + `menumeta_customer.json`（菜单 + 全部权限点，pk 由 uuid5 派生，可重复装载；同目录 `manifest.json` 自动登记，`load_init_json` 会装载） |
+| 菜单种子 | `crm/seeds/menu.json` + `menumeta.json`（菜单 + 全部权限点，pk 由 uuid5 派生，按主键合并，可重复装载；同目录 `manifest.json` 自动登记，`load_init_json` 会装载） |
 
 补充参数：`--register-app`（自动写入 `XADMIN_APPS` 注册）、`--with-import-export`（加导入导出）、
 `--component CrmCustomer`（自定义组件名）、`--parent <菜单pk>`（挂到指定目录）、
@@ -119,7 +119,7 @@ python manage.py generate_crud crm.Customer --bootstrap --grant-to admin --force
 或按传统方式手工执行：
 
 ```bash
-python manage.py loaddata crm/seeds/menumeta_customer.json crm/seeds/menu_customer.json
+python manage.py loaddata crm/seeds/menumeta.json crm/seeds/menu.json
 ```
 
 然后在管理后台完成三步（超管操作）：
@@ -141,7 +141,7 @@ python manage.py doctor
 
 ```bash
 python manage.py sync_menu_permissions          # 补齐（幂等）
-python manage.py sync_menu_permissions --update-seed   # 回写平台层种子；随后跑 seed_split 按应用分层
+python manage.py sync_menu_permissions --update-seed   # 按应用归属回写各层种子（无需再跑 seed_split）
 ```
 
 前端 `pnpm dev` → 从菜单进入「客户」→ 验证新增 / 编辑 / 搜索 / 删除。

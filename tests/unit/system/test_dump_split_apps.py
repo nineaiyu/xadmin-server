@@ -92,3 +92,33 @@ class TestDumpSplitApps:
         settings.PROJECT_DIR = str(tmp_path)
         call_command("dump_init_json", verbosity=0)
         assert (tmp_path / "loadjson" / "menu.json").is_file()
+
+    def test_registered_app_without_manifest_is_initialized(self, seeded, tmp_path, monkeypatch):
+        """新应用还没有 seeds/manifest.json 时，显式 --apps 直接初始化（免手写）。"""
+
+        from django.apps import apps as django_apps
+
+        from system.management.commands import dump_init_json as dump_cmd
+
+        real_get = django_apps.get_app_config
+
+        class _Config:
+            label = "newapp"
+            path = str(tmp_path / "newapp")
+
+        def _get_app_config(label, *args, **kwargs):
+            if label == "newapp":
+                return _Config()
+            return real_get(label, *args, **kwargs)
+
+        monkeypatch.setattr(django_apps, "get_app_config", _get_app_config)
+        monkeypatch.setattr(dump_cmd, "_is_local_app", lambda label: label == "newapp")
+        monkeypatch.setattr(dump_cmd, "_app_url_prefixes", lambda label: ("api/newapp/",))
+
+        out = tmp_path / "patch"
+        call_command("dump_init_json", split_apps=True, apps="newapp", output=str(out), verbosity=0)
+
+        manifest = json.loads((out / "newapp" / "seeds" / "manifest.json").read_text(encoding="utf-8"))
+        assert manifest["app"] == "newapp"
+        assert manifest["url_prefixes"] == ["api/newapp/"]
+        assert manifest["depends"] == ["system", "identity"]

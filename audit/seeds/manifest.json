@@ -44,6 +44,12 @@
       "model": "system.modellabelfield",
       "kind": "generated",
       "order": 60
+    },
+    {
+      "name": "datamaskrule.json",
+      "model": "audit.datamaskrule",
+      "kind": "contract",
+      "order": 70
     }
   ],
   "grants": "grants.json"

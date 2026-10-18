@@ -55,6 +55,24 @@
       "model": "system.modellabelfield",
       "kind": "generated",
       "order": 60
+    },
+    {
+      "name": "approvalflow.json",
+      "model": "approval.approvalflow",
+      "kind": "contract",
+      "order": 65
+    },
+    {
+      "name": "approvalflownode.json",
+      "model": "approval.approvalflownode",
+      "kind": "contract",
+      "order": 70
+    },
+    {
+      "name": "approvalflowversion.json",
+      "model": "approval.approvalflowversion",
+      "kind": "contract",
+      "order": 75
     }
   ],
   "dict_codes": [

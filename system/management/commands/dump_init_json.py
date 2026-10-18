@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from django.conf import settings
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Prefetch
@@ -124,6 +125,14 @@ class Command(BaseCommand):
     def _dump_split(self, raw_apps: str, raw_output: str) -> None:
         discovery = discover()
         selected = self._parse_apps(raw_apps, discovery.manifests)
+        manifests = {**discovery.manifests}
+        if selected:
+            target_root = Path(raw_output) if raw_output else Path(settings.PROJECT_DIR)
+            for app in selected:
+                if app in manifests:
+                    continue
+                manifests[app] = self._init_manifest(app, target_root)
+
         rows_by_model: dict[str, list[Any]] = {}
         with tempfile.TemporaryDirectory(prefix="xadmin_dump_") as tmp:
             for model in self.model_names:
@@ -131,8 +140,8 @@ class Command(BaseCommand):
                 self.save_json(model.objects.all().order_by("pk"), path)
                 rows_by_model[model._meta.label_lower] = json.loads(path.read_text(encoding="utf-8"))
 
-        buckets = bucket_rows(rows_by_model, discovery.manifests, selected=selected)
-        written = write_buckets(buckets, root=raw_output or None, manifests=discovery.manifests)
+        buckets = bucket_rows(rows_by_model, manifests, selected=selected)
+        written = write_buckets(buckets, root=raw_output or None, manifests=manifests)
 
         total = sum(len(rows) for rows in rows_by_model.values())
         self.stdout.write(
@@ -146,12 +155,89 @@ class Command(BaseCommand):
                 self.style.WARNING("平台层共享行（角色/部门/站点配置/数据权限）始终导出，便于补丁直接装载")
             )
 
+    def _init_manifest(self, app_label: str, target_root: Path) -> Any:
+        """为「已注册但还没有 seeds/manifest.json」的应用初始化清单（幂等）。
+
+        ``url_prefixes`` 从路由反查（视图模块前缀 == app label），它是权限点归属的判定依据；
+        推导为空时保留空数组并告警，避免瞎猜一个前缀把别的应用的行吸过来。
+        """
+        from django.apps import apps as django_apps
+
+        from system.services.seeding import SeedManifest
+
+        try:
+            django_apps.get_app_config(app_label)
+        except LookupError as exc:
+            raise CommandError(
+                f"未知应用：{app_label}（既没有 seeds/manifest.json，也不是已注册的 Django 应用）"
+            ) from exc
+
+        prefixes = _app_url_prefixes(app_label)
+        path = target_root / app_label / "seeds" / "manifest.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "app": app_label,
+                    "depends": ["system", "identity"],
+                    "url_prefixes": list(prefixes),
+                    "files": [],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        self.stdout.write(f"已初始化应用种子清单：{path}")
+        if not prefixes:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"{app_label} 的 url_prefixes 未能从路由推导（请手工补充），否则其权限点会被归到平台层"
+                )
+            )
+        return SeedManifest(app=app_label, depends=("system", "identity"), url_prefixes=prefixes)
+
     @staticmethod
     def _parse_apps(raw: str, manifests: dict[str, Any]) -> list[str] | None:
         if not raw:
             return None
         selected = [item.strip() for item in raw.split(",") if item.strip()]
-        unknown = [app for app in selected if app not in manifests]
+        unknown = [app for app in selected if app not in manifests and not _is_local_app(app)]
         if unknown:
-            raise CommandError(f"未知应用（缺少 seeds/manifest.json）：{'、'.join(unknown)}")
+            raise CommandError(f"未知应用（缺少 seeds/manifest.json 且未注册）：{'、'.join(unknown)}")
         return selected
+
+
+def _is_local_app(app_label: str) -> bool:
+    """是否为本仓库内注册的本地应用（跨仓/三方应用不允许隐式生成清单）。"""
+
+    from django.apps import apps as django_apps
+
+    try:
+        config = django_apps.get_app_config(app_label)
+    except LookupError:
+        return False
+    root = Path(settings.PROJECT_DIR).resolve()
+    try:
+        Path(config.path).resolve().relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
+def _app_url_prefixes(app_label: str) -> tuple[str, ...]:
+    """从路由反查应用占用的 ``api/<segment>/`` 前缀（权限点归属判定依据）。"""
+
+    from system.services.permission_sync import build_route_index
+
+    prefixes: set[str] = set()
+    for route in build_route_index():
+        view = str(getattr(route, "view", ""))
+        if not view.startswith(f"{app_label}."):
+            continue
+        segments = str(getattr(route, "url", "")).strip("/").split("/")
+        if len(segments) >= 2 and segments[0] == "api":
+            prefixes.add(f"api/{segments[1]}/")
+    return tuple(sorted(prefixes))

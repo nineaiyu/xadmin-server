@@ -4,8 +4,9 @@
 
 种子已按应用分层（ADR-095），生成器因此做两件事：
 
-1. **产物落到本应用** ``<app>/seeds/``：按模型拆成 ``menumeta_*.json`` / ``menu_*.json``，
-   并登记进同目录 ``manifest.json``——不再往平台层 ``loadjson/`` 塞文件；
+1. **产物落到本应用** ``<app>/seeds/``：文件名与分层工具一致（``menumeta.json`` /
+   ``menu.json``），按主键合并后登记进同目录 ``manifest.json``——不再往平台层
+   ``loadjson/`` 塞文件，也不产生与 ``seed_split`` 重名冲突的 ``menu_<model>.json``；
 2. **``--bootstrap`` 一条龙**：字段权限树 → 回填 model 关联 → loaddata →（显式
    ``--grant-to``）角色授权，全链路幂等。
 """
@@ -42,11 +43,15 @@ class SeedIngestMixin:
     def _menu_seed_artifacts(
         self, ctx: dict[str, Any], options: dict[str, Any], backend_root: Path
     ) -> list[dict[str, Any]]:
-        """菜单/权限种子产物：落进**本应用**的 ``seeds/``，并按模型拆成多个文件。
+        """菜单/权限种子产物：落进**本应用**的 ``seeds/``，文件名与分层工具一致。
 
         不能再往平台层 ``loadjson/`` 塞：那会让新模块的菜单依赖共享文件，也绕过归属校验
-        （一个文件只登记一个模型）。按模型拆开后可直接登记进本应用 manifest，
-        ``load_init_json`` 自动装载。
+        （一个文件只登记一个模型）。同一模型的所有生成产物合并进同一个规范文件
+        （``menu.json`` / ``menumeta.json``，按主键 upsert），避免与 ``seed_split`` /
+        ``dump_init_json --split-apps`` 的落点不一致产生「同层同主键两份」。
+
+        已存在按模型拆分的旧文件（``menu_<model>.json``）时沿用其文件名，保证老项目
+        重复生成不产生第二份。
         """
         ctx["model_label_pk"] = self._model_label_pk(ctx["model"])
         entries = json.loads(self._render_menu_seed(ctx, options["parent"]))
@@ -61,13 +66,13 @@ class SeedIngestMixin:
             rows = by_model.get(model)
             if not rows:
                 continue
-            filename = f"{stem}_{ctx['model_snake']}.json"
+            filename = _seed_target_name(seed_dir, model, f"{stem}.json")
             artifacts.append(
                 {
                     "label": f"菜单种子（{stem}）",
                     "path": seed_dir / filename,
                     "content": json.dumps(rows, ensure_ascii=False, indent=2) + "\n",
-                    "mode": "create",
+                    "mode": "seed_rows",
                     "key": f"seed-{model}-{ctx['model_snake']}",
                 }
             )
@@ -116,7 +121,7 @@ class SeedIngestMixin:
 
         # 2) 菜单与权限点入库（loaddata 幂等 upsert）
         call_command("loaddata", *[str(path) for path in seed_paths], verbosity=0)
-        self.stdout.write(f"--bootstrap: 菜单/权限点已入库（{ctx['app_label']}/seeds/{ctx['model_snake']}）")
+        self.stdout.write(f"--bootstrap: 菜单/权限点已入库（{ctx['app_label']}/seeds/）")
 
         # 3) 角色授权：显式 --grant-to 才执行（授权属业务决策，不自动猜）
         grant_to = [code.strip() for code in (options.get("grant_to") or "").split(",") if code.strip()]
@@ -127,14 +132,36 @@ class SeedIngestMixin:
 
     @staticmethod
     def _seed_paths(ctx: dict[str, Any], options: dict[str, Any]) -> list[Path]:
-        """本应用种子文件（menumeta 先于 menu：meta 被菜单 OneToOne 引用）。"""
+        """本应用种子文件（menumeta 先于 menu：meta 被菜单 OneToOne 引用）。
+
+        文件名以 ``manifest.json`` 的登记为准（兼容早期按模型拆分的 ``menu_<model>.json``），
+        未登记时用规范名。
+        """
 
         seed_dir = Path(options["output"] or settings.PROJECT_DIR) / ctx["app_label"] / "seeds"
-        paths = [seed_dir / f"{stem}_{ctx['model_snake']}.json" for _model, stem, _order in _SEED_FILES]
+        paths = [seed_dir / _seed_target_name(seed_dir, model, f"{stem}.json") for model, stem, _order in _SEED_FILES]
         found = [path for path in paths if path.is_file()]
         if not found:
             raise CommandError(f"未找到应用种子文件：{seed_dir}（先去掉 --skip-menu-seed 生成）")
         return found
+
+    @staticmethod
+    def _seed_relpath(ctx: dict[str, Any]) -> str:
+        """生成产物在仓库内的相对路径（后续步骤提示用；未落盘时给规范名）。
+
+        返回**两个文件的命令行参数**（menumeta 先于 menu）：菜单行引用 meta 主键，
+        单装 ``menu.json`` 会因外键缺失失败。
+        """
+
+        seed_dir = Path(settings.PROJECT_DIR) / ctx["app_label"] / "seeds"
+        existing: list[str] = []
+        for model, stem, _order in _SEED_FILES:
+            name = _seed_target_name(seed_dir, model, f"{stem}.json")
+            if (seed_dir / name).is_file():
+                existing.append(f"{ctx['app_label']}/seeds/{name}")
+        if existing:
+            return " ".join(existing)
+        return f"{ctx['app_label']}/seeds/menumeta.json {ctx['app_label']}/seeds/menu.json"
 
     @staticmethod
     def _backfill_model_links(seed_paths: list[Path], model_pk: Any) -> None:
@@ -171,3 +198,24 @@ class SeedIngestMixin:
             for role in roles:
                 role.menu.add(*menus)
             self.stdout.write(f"--bootstrap: 已授予角色 {[role.code for role in roles]} 共 {len(menus)} 个菜单/权限点")
+
+
+def _seed_target_name(seed_dir: Path, model: str, default: str) -> str:
+    """本模型在种子清单里登记的文件名；未登记（或清单损坏）时用规范名。"""
+
+    manifest_path = seed_dir / "manifest.json"
+    if not manifest_path.is_file():
+        return default
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return default
+    entries = manifest.get("files")
+    if not isinstance(entries, list):
+        return default
+    for entry in entries:
+        if isinstance(entry, dict) and entry.get("model") == model:
+            name = entry.get("name")
+            if isinstance(name, str) and name:
+                return name
+    return default

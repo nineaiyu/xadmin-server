@@ -12,8 +12,10 @@ doctor 是「只读自检 + 修复命令提示」，本文件钉死：
 """
 
 import json
+import shutil
 import sys
 from io import StringIO
+from pathlib import Path
 
 import pytest
 from django.conf import settings
@@ -54,6 +56,33 @@ class TestDoctor:
         # 测试环境 DB（sqlite）与缓存（FakeRedis）均可用：不应有任何 ❌ 导致退出
         output = _run("doctor")
         assert "失败 0" in output
+
+    def test_seeds_section_passes(self):
+        """内置种子自检：分层清单/归属可解析时通过（仓库种子应保持 0 error）。"""
+
+        output = _run("doctor")
+        assert "内置种子" in output
+        assert "0 error" in output
+
+
+class TestSeedCheck:
+    """种子层被静默忽略是「写了种子不生效」的典型现场，doctor 必须点出来。"""
+
+    def test_unregistered_seed_dir_warns(self, monkeypatch, tmp_path):
+        # 平台层要一起搬进临时目录：种子校验需要 userrole/grants 等平台行
+        shutil.copytree(Path(settings.PROJECT_DIR) / "loadjson", tmp_path / "loadjson")
+        seed_dir = tmp_path / "orphanapp" / "seeds"
+        seed_dir.mkdir(parents=True)
+        (seed_dir / "manifest.json").write_text(
+            json.dumps({"version": 1, "app": "orphanapp", "files": []}), encoding="utf-8"
+        )
+        monkeypatch.setattr(settings, "PROJECT_DIR", str(tmp_path))
+
+        output = _run("doctor")
+
+        assert "未注册" in output
+        assert "orphanapp" in output
+        assert "失败 0" in output  # 只是告警，不判失败
 
 
 class TestLocaleCheck:

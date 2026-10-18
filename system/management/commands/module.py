@@ -12,7 +12,7 @@
     python manage.py module remove chat              # 只输出执行计划（不动任何文件）
     python manage.py module remove chat --apply       # 执行「种子裁剪」：原文件先归档再改写
 
-`--apply` 只做一件事：把该模块的菜单/权限点/字段权限/角色菜单绑定从 `loadjson/` 里剔除
+`--apply` 只做一件事：把该模块的菜单/权限点/字段权限/角色菜单绑定从各层种子里剔除
 （原文件先移动到工作区回收站 `_delete/module-<id>-<时间戳>/`，可整体还原）。代码目录、
 路由与 INSTALLED_APPS 的删除由人工按计划清单执行——命令不做源码改写。
 

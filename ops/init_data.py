@@ -83,7 +83,10 @@ def main() -> None:
                 f"change it after first login): {admin_password}"
             )
 
-    management.call_command("load_init_json")
+    # 新装环境保持「装了就有」：示例数据（数据集/看板/大屏/报表/表单/提交）在
+    # `<app>/seeds/sample/`，只有这里显式 --with-sample；升级/复灌走 load_init_json
+    # 默认不装载，避免把使用方删掉的示例又塞回去。
+    management.call_command("load_init_json", with_sample=True)
 
     if args.with_demo:
         import django.apps

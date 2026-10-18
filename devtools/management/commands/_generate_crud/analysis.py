@@ -369,10 +369,10 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
                 f'应用注册：config.yml 的 XADMIN_APPS 加入 "{ctx["app_label"]}"（或重跑本命令加 --register-app；改后需重启进程）'
             )
         if not options["skip_menu_seed"] and not bootstrapped:
-            seed = f"{ctx['app_label']}/seeds/menu_{ctx['model_snake']}.json"
+            seed = self._seed_relpath(ctx)
             steps.append(
                 f"权限点与菜单入库：python manage.py loaddata {seed}"
-                f"（同目录 menumeta_*.json 一并装入；重跑本命令加 --bootstrap 更省事）"
+                f"（menumeta 先于 menu；重跑本命令加 --bootstrap 更省事）"
             )
             if not ctx.get("model_label_pk"):
                 steps.append(

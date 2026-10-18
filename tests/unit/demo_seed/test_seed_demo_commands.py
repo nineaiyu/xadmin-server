@@ -8,11 +8,7 @@
 4. seed_demo_users --clean-only 只清理批量演示用户，不误删命令专用账号。
 """
 
-import json
-import os
-
 import pytest
-from django.conf import settings
 from django.core.management import call_command
 
 from ai.models.ai import AiKnowledgeDocument
@@ -35,6 +31,7 @@ from identity.models.token import ApiApplication
 from message.models import ChatMessage
 from notifications.models import MessageContent
 from system.models import Menu, MenuMeta, ModelLabelField
+from system.services.seeding import read_model_rows
 from task.models.webhook import WebhookDelivery, WebhookSubscription
 
 pytestmark = pytest.mark.django_db
@@ -48,9 +45,16 @@ PAGE_PATHS = [
 ]
 
 
+#: 种子文件 → 模型 label（按应用分层，读取走聚合入口并包含示例层）
+SEED_MODELS = {
+    "approvalflow.json": "approval.approvalflow",
+    "approvalflownode.json": "approval.approvalflownode",
+    "dynamicform.json": "dataset.dynamicform",
+}
+
+
 def _load_seed(name):
-    with open(os.path.join(settings.PROJECT_DIR, "loadjson", name), encoding="utf-8") as fp:
-        return json.load(fp)
+    return read_model_rows(SEED_MODELS[name], include_sample=True)
 
 
 @pytest.fixture
@@ -82,7 +86,7 @@ def field_trees(db):
 
 @pytest.fixture
 def builtin_flows(db):
-    """按 loadjson 真实种子建内置流程与节点（demo_leave / leave / demo_expense 等）。"""
+    """按真实种子建内置流程与节点（demo_leave / leave / demo_expense 等）。"""
     flows = {}
     for row in _load_seed("approvalflow.json"):
         fields = row["fields"]

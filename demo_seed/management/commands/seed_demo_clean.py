@@ -13,13 +13,13 @@
 6. ``seed_demo_flows --clean-only``    演示流程实例/轻量审批单/表单提交；
 7. ``seed_demo_org --clean-only``      示例组织/角色/四层权限/场景模板；
 8. ``seed_demo_users --clean-only``    批量演示用户（demo_数字 前缀，硬删）；
-9. 回滚流程节点审批人改写（恢复 loadjson/approvalflownode.json 种子值）与
+9. 回滚流程节点审批人改写（恢复 approval/seeds/approvalflownode.json 种子值）与
    演示版本快照（remark="演示审批人配置"，version 回落到现存快照）；
-10. 回滚「演示部门」负责人（恢复 loadjson/deptinfo.json 种子值）；
+10. 回滚「演示部门」负责人（恢复 deptinfo 种子值）；
 11. 清理残余演示用户（demo_flow_* 等，硬删；被业务数据引用拦截时降级软删并提示）。
 
-内置定义类数据（loadjson 的示例流程/表单/数据集/看板等）**不属于卸载范围**：
-它们由 ``load_init_json`` 维护，属于系统内置示例而非本批演示数据。
+内置定义类数据（``approval/seeds/`` 的流程定义、``dataset/seeds/sample/`` 的示例表单/数据集/看板等）
+**不属于卸载范围**：它们由 ``load_init_json`` 维护，属于系统内置示例而非本批演示数据。
 演示账号 admin 的清理严格限定用户名与非超管，绝不误伤 xadmin/isummer 等真实超管。
 
 用法：
@@ -27,7 +27,6 @@
     python manage.py seed_demo_clean            # 卸载全部演示数据
 """
 
-import json
 from typing import Any
 
 from django.core.management import call_command
@@ -37,7 +36,7 @@ from django.utils import timezone
 
 from demo_seed.management.commands.seed_demo_org import TEMPLATE_VERSION_REMARK
 from identity.models import DeptInfo, UserInfo
-from system.services.seeding import platform_file
+from system.services.seeding import read_model_rows
 
 DEMO_USER_PREFIX = "demo_"
 DEMO_ASSIGNEE_MARK = "demo_flow_"
@@ -45,17 +44,15 @@ DEMO_DEPT_CODE = "demo"
 DEMO_VERSION_REMARK = "演示审批人配置"
 #: 演示命令落下的版本快照备注（回滚时一并删除）
 DEMO_VERSION_REMARKS = (DEMO_VERSION_REMARK, TEMPLATE_VERSION_REMARK)
-# 内置种子文件（回滚依据：与 load_init_json 同一来源，保证口径一致）
-NODE_SEED_FILE = "approvalflownode.json"
-FLOW_SEED_FILE = "approvalflow.json"
-DEPT_SEED_FILE = "deptinfo.json"
+# 内置种子模型（回滚依据：与 load_init_json 同一来源，保证口径一致；按层聚合）
+NODE_SEED_MODEL = "approval.approvalflownode"
+DEPT_SEED_MODEL = "identity.deptinfo"
 
 
-def _load_seed(filename: str) -> list[Any]:
-    path = platform_file(filename)
-    with open(path, encoding="utf-8") as fp:
-        rows: list[Any] = json.load(fp)
-    return rows
+def _load_seed(model_label: str) -> list[Any]:
+    """读某模型各层全部种子行（含示例层）：回滚依据必须覆盖整条装载链。"""
+
+    return read_model_rows(model_label, include_sample=True)
 
 
 class Command(BaseCommand):
@@ -106,7 +103,7 @@ class Command(BaseCommand):
         self.stdout.write(f"removed demo flow version snapshots: {removed}")
 
         # 种子 pk 是字符串、ORM 主键是 UUID 对象：统一按字符串比对
-        seed = {str(row["pk"]): row["fields"].get("assignee_value", "") for row in _load_seed(NODE_SEED_FILE)}
+        seed = {str(row["pk"]): row["fields"].get("assignee_value", "") for row in _load_seed(NODE_SEED_MODEL)}
         restored = 0
         with transaction.atomic():
             # 先退役演示落的新行，再复活种子行：同 order 不能在收口的瞬间并存
@@ -144,7 +141,7 @@ class Command(BaseCommand):
         """恢复「演示部门」负责人为种子值（seed_demo_leave 曾改写为演示审批人）。"""
         seed = {
             str(row["pk"]): row["fields"].get("leader")
-            for row in _load_seed(DEPT_SEED_FILE)
+            for row in _load_seed(DEPT_SEED_MODEL)
             if row["fields"].get("code") == DEMO_DEPT_CODE
         }
         restored = 0

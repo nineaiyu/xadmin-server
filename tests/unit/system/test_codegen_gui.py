@@ -339,7 +339,7 @@ class TestDownload:
             names = archive.namelist()
         assert any(name.startswith("xadmin-server/demo/") for name in names)
         assert any(name.startswith("xadmin-client/src/views/demo/") for name in names)
-        assert any(name.endswith("demo/seeds/menu_book.json") for name in names)
+        assert any(name.endswith("demo/seeds/menu.json") for name in names)
 
     def test_zip_skips_notice_artifacts(self, superuser, monkeypatch):
         def _fake_build(payload):
@@ -358,7 +358,8 @@ class TestDownload:
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
             content = archive.read("NEXT_STEPS.md").decode("utf-8")
         assert "demo.Book（" in content
-        assert "python manage.py loaddata demo/seeds/menu_book.json" in content
+        assert "python manage.py loaddata" in content
+        assert "demo/seeds/menu.json" in content
         assert "python manage.py doctor" in content
 
 

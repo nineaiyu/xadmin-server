@@ -16,7 +16,8 @@
 | `message/` `notifications/` `mfa/` `captcha/` `settings/` | 聊天室 / 消息通知 / 多因子 / 验证码 / 系统设置模型 |
 | `integrations/` `devtools/` `demo/` `demo_seed/` | 第三方适配 / 代码生成器 / demo 官方示例 / 演示数据命令（条件注册） |
 | `packages/xadmin-common/` | 框架内核分发包 `xadmin-common`（导入名仍是 `common`）：ORM 基类、DRF 基座、元数据、缓存、通知内核、设置契约 |
-| `loadjson/` | **默认数据种子**（菜单 / 权限点 / 字典 / 系统配置 / 数据集 / 审批流程定义…），由 `load_init_json` 导入 |
+| `loadjson/` | **平台共享层种子**（目录菜单 / 平台级页面与权限点 / 角色 / 站点配置 / 跨域字典 / 内置流程定义…），由 `load_init_json` 导入 |
+| `<app>/seeds/` | **应用层种子**：`manifest.json` 自声明 `depends` / `url_prefixes` / `config_keys` / `dict_codes`，菜单与权限点、字段白名单、字段树、配置、字典按归属落在这里 |
 | `ops/` | 运维脚本（`init_data.py` / `dev_up.sh` / `db_backup.sh` / `test_env_reset.sh` / nginx 配置…） |
 | `docs/` | 文档中心（`docs/README.md` 是索引；`docs/schema/` 是接口契约真源） |
 | `tests/` | `unit/` + `integration/`，按 app 分目录 |
@@ -48,9 +49,11 @@ python manage.py upgrade_check / upgrade_ledger # 存量库升级判定 / 迁移
    字典驱动字段（`DictChoiceField` / `LabeledChoiceField`）写入路径要测（历史缺陷：choices 反向映射写坏）。
 3. **模型**：`DbAuditModel` / `DbUuidModel` 基类；需要回收站用软删模型；`Meta.ordering` 影响列表默认序；
    `select_related` + `prefetch_related` 是列表性能默认要求。
-4. **权限点是数据不是代码**：新增接口 → `loadjson/menu.json`（权限点，`动作:组件名`）+
-   `loadjson/menumeta.json`（前端路由 / 按钮元数据）；改完 `sync_menu_permissions --update-seed`
-   回写并用 `--dry-run` 验证缺口 0。
+4. **权限点是数据不是代码**：新增接口 → **所属应用**的 `seeds/menu.json`（权限点，`动作:组件名`）+
+   `seeds/menumeta.json`（前端路由 / 按钮元数据）；平台级目录/跨域页面才落 `loadjson/`。
+   `sync_menu_permissions --update-seed` 按归属回写各层，改完用 `--dry-run` 验证缺口 0；
+   外部/新应用还可 `dump_init_json --split-apps --apps <app>` 直接生成整层种子。
+
 5. **契约**：改接口响应结构 → 先改 `docs/schema/*.json` → 再改代码 → 前端 `pnpm sync:contract`。
 6. **错误码**：新增错误码先在 `docs/exception-handling.md` 登记；业务失败用 `ApiResponse` 的
    `code != 1000` + `detail`（前端依赖 `detail` 展示）。
@@ -67,7 +70,9 @@ python manage.py upgrade_check / upgrade_ledger # 存量库升级判定 / 迁移
   失败只告警不阻断（检索能力降级）。
 - 存量库升级走账本认领：`upgrade_ledger --apply`（只写 `django_migrations`，不执行 DDL）→ `migrate`；
   白名单在 `system/utils/platform/migration_ledger.py`。
-- 改了 `loadjson/` 种子后：`load_init_json` 复灌 + 重启容器（种子文件改动不会自动生效）。
+- 改了种子（平台层 `loadjson/` 或应用层 `<app>/seeds/`）后：先 `load_init_json --check`
+  （0 error），再 `load_init_json` 复灌 + 重启容器（种子文件改动不会自动生效）。新增应用
+  必须先进 `XADMIN_APPS`，否则其 `seeds/` 会被静默忽略（`doctor` 会告警）。
 
 ## 五、测试
 

@@ -45,6 +45,10 @@
 - **做法**：`config.yml` 的 `XADMIN_APPS: [your_app]`（或 `generate_crud` 加 `--register-app` 自动写入）；
   `python manage.py generate_crud <app>.<Model>` 会写出 `config.py`（已存在则需 `--force`）；
   改配置后**重启进程**（挂载代码不热加载：`docker compose restart server celery-worker celery-heavy celery-beat`）。
+- **种子同样不生效**：`<app>/seeds/` 只在 app 进入 `INSTALLED_APPS` 后才被发现（未注册时整层
+  静默忽略）。自检看 `python manage.py doctor` 的「内置种子」项（会列出有 `seeds/manifest.json`
+  但未注册的目录）或 `python manage.py load_init_json --check`；装载 `--apps <app>` 会自动补
+  `depends` 闭包。
 
 ### 4. 数据权限"消失"：手写 `Model.objects.filter(...)` 绕过数据权限
 

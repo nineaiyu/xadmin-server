@@ -18,19 +18,19 @@
 
 import json
 from collections import defaultdict
+from pathlib import Path
 from typing import Any
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from system.services.seeding import (
     PLATFORM,
-    app_seed_file,
     build_plan,
     discover,
-    platform_file,
     row_owners,
 )
-from system.services.seeding.split import SPLIT_MODELS, sync_manifest, write_rows
+from system.services.seeding.split import SPLIT_MODELS, write_layer_model
 
 LayerRows = dict[str, list[tuple[str, dict[str, Any]]]]
 Bucket = dict[str, dict[str, list[dict[str, Any]]]]
@@ -70,7 +70,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("等价性校验通过（未写文件）"))
             return
 
-        self._write(buckets)
+        self._write(buckets, discovery.manifests)
         self.stdout.write(self.style.SUCCESS("拆分完成，迁移前后行集合一致"))
 
     @staticmethod
@@ -126,16 +126,18 @@ class Command(BaseCommand):
                 f"（示例：{(missing or extra or changed)[:3]}）"
             )
 
-    def _write(self, buckets: Bucket) -> None:
-        """按「层 × 模型」全量重写：某模型的行全部迁走后，原层文件必须写成空数组。"""
+    def _write(self, buckets: Bucket, manifests: dict[str, Any]) -> None:
+        """按「层 × 模型」全量重写：某模型的行全部迁走后，原层文件必须写成空数组。
 
+        落盘统一走 :func:`write_layer_model`：规范文件名 + 收敛同模型的旧拆分文件
+        （``menu_<model>.json`` 等），避免同层同主键出现两份。
+        """
+
+        base = Path(settings.PROJECT_DIR)
         targets = set(buckets) | {PLATFORM}
         for app in sorted(targets):
             for model in SPLIT_MODELS:
                 rows = buckets.get(app, {}).get(model, [])
                 if app != PLATFORM and not rows:
                     continue
-                filename = SPLIT_MODELS[model][0]
-                path = platform_file(filename) if app == PLATFORM else app_seed_file(app, filename)
-                write_rows(path, rows)
-                sync_manifest(path.parent / "manifest.json", model, kept=bool(rows), app=app, manifests=None)
+                write_layer_model(base, app, model, rows, manifests=manifests)

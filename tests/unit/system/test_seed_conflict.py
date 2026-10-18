@@ -10,27 +10,48 @@
 """
 
 import json
-import os
+from pathlib import Path
 
 import pytest
-from django.conf import settings as dj_settings
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
 from identity.models import UserRole
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
 from system.models import DataDict, ModelLabelField
 from system.services.seed import _unique_checks, build_seed_fixtures, filter_conflicting_rows
+from system.services.seeding import read_model_rows
 
 pytestmark = pytest.mark.django_db
 
-LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 EXPENSE_SEED_PK = "5eed0006-0000-4000-8000-000000000002"
 LEAVE_SEED_PK = "5eed0006-0000-4000-8000-000000000003"
+#: legacy 装配器按「一个模型一个文件」读单根目录，这里从分层种子还原该形态
+LEGACY_FILES = {
+    "approval.approvalflow": "approvalflow.json",
+    "approval.approvalflownode": "approvalflownode.json",
+    "approval.approvalflowversion": "approvalflowversion.json",
+}
+
+
+@pytest.fixture()
+def legacy_root(tmp_path):
+    root = tmp_path / "legacy"
+    root.mkdir()
+    for model_label, name in LEGACY_FILES.items():
+        rows = read_model_rows(model_label, include_sample=True)
+        (root / name).write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
+    return root
+
+
+#: 测试读取口径（分层后按模型聚合）
+READ_MODELS = {
+    "userrole.json": "identity.userrole",
+    "approvalflownode.json": "approval.approvalflownode",
+}
 
 
 def _read(name):
-    with open(os.path.join(LOADJSON_DIR, name), encoding="utf-8") as fp:
-        return json.load(fp)
+    return read_model_rows(READ_MODELS[name], include_sample=True)
 
 
 class TestFilterConflictingRows:
@@ -231,28 +252,31 @@ class TestUniqueChecks:
 
 
 class TestBuildSeedFixtures:
-    def test_clean_db_uses_original_files(self, tmp_path):
-        labels, notes, trimmed = build_seed_fixtures(LoadInitJsonCommand.model_names, LOADJSON_DIR, str(tmp_path))
+    def test_clean_db_uses_original_files(self, tmp_path, legacy_root):
+        labels, notes, trimmed = build_seed_fixtures(
+            LoadInitJsonCommand.model_names, str(legacy_root), str(tmp_path / "out")
+        )
         assert trimmed is False
         assert notes == []
-        # 无裁剪无冲突：直接用仓库里的种子文件（不产生临时文件）
-        assert all(label.startswith(LOADJSON_DIR) for label in labels)
-        assert not list(tmp_path.iterdir())
+        # 无裁剪无冲突：直接用原始种子文件（不产生临时文件）
+        assert all(label.startswith(str(legacy_root)) for label in labels)
+        assert not (tmp_path / "out").exists()
 
-    def test_conflict_trims_seed_and_cascades(self, tmp_path):
+    def test_conflict_trims_seed_and_cascades(self, tmp_path, legacy_root):
         ApprovalFlow.objects.create(pk="cd81e9b1-f744-495d-b0ba-5d3b2273752a", code="demo_expense", name="库内对象")
-        labels, notes, trimmed = build_seed_fixtures(LoadInitJsonCommand.model_names, LOADJSON_DIR, str(tmp_path))
+        out = tmp_path / "out"
+        labels, notes, trimmed = build_seed_fixtures(LoadInitJsonCommand.model_names, str(legacy_root), str(out))
 
         assert trimmed is True
         assert notes
-        assert all(label.startswith(str(tmp_path)) for label in labels)
-        flows = json.load(open(tmp_path / "approvalflow.json", encoding="utf-8"))
+        assert all(label.startswith(str(out)) for label in labels)
+        flows = json.load(open(out / "approvalflow.json", encoding="utf-8"))
         codes = {row["fields"]["code"] for row in flows}
         assert "demo_expense" not in codes
         assert {"leave", "demo_leave"} <= codes
 
-        nodes = json.load(open(tmp_path / "approvalflownode.json", encoding="utf-8"))
+        nodes = json.load(open(out / "approvalflownode.json", encoding="utf-8"))
         original_nodes = _read("approvalflownode.json")
         assert 0 < len(nodes) < len(original_nodes)
         assert all(row["fields"]["flow"] != EXPENSE_SEED_PK for row in nodes)
-        assert "approvalflowversion" in {os.path.basename(label).removesuffix(".json") for label in labels}
+        assert "approvalflowversion" in {Path(label).stem for label in labels}

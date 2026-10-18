@@ -58,12 +58,31 @@
 
 - **正面**：二开 app 的种子自包含（不再改共享文件）；`dump_init_json --apps identity`
   直接产出可装载补丁；`module remove` 改为多层扫描后，停用模块的菜单不会在应用层复活。
-- **代价**：新增一层目录约定与 12 个 `manifest.json`；`sync_menu_permissions
-  --update-seed` / `dump_init_json`（不分层模式）写平台层后需跑 `seed_split` 重新分层
-  （命令已输出提示）；客户端对账脚本需聚合多文件。
+- **代价**：新增一层目录约定与 12 个 `manifest.json`；`dump_init_json` 的**不分层模式**
+  仍写平台层，之后需跑 `seed_split` 重新分层（命令已输出提示）；客户端对账脚本需聚合多文件。
 - **不变量（守护测试）**：`test_seed_plan`（覆盖与层内顺序）、`test_seed_ownership`
   （归属规则边界）、`test_seed_references`（跨层引用）、`test_seed_grants`
   （授权规模与端到端）、`test_dump_split_apps`（按 app 导出幂等）。
+
+### 修订（2026-10-18）：工具链与分层对齐
+
+- **`sync_menu_permissions --update-seed` 改为按归属回写**：复用 `row_owners` +
+  `write_layer_model`，直接写 `<app>/seeds/` 与 `loadjson/`，不再「先写平台层、再人工
+  `seed_split`」。字段树/字段白名单同样按归属落层（此前会把整表字段树合并回平台层，
+  造成同主键跨层两份、只有 `SEED_PK_OVERRIDE` warning 兜底）。
+- **生成器与分层工具统一规范文件名**：`generate_crud` 改为写 `seeds/menu.json` /
+  `seeds/menumeta.json`（按主键 upsert），不再产出 `menu_<model>.json`；已有的旧文件在
+  下次回写/导出时被吸收并清空（`write_layer_model` 的 `merge` / `removed` 语义）。
+- **`dump_init_json --split-apps --apps <新应用>` 可初始化清单**：目标 app 已注册但没有
+  `seeds/manifest.json` 时，按路由反查 `url_prefixes` 自动生成（推导为空则告警），
+  不再要求先手写清单。
+- **自检补位**：`doctor` 新增「内置种子」项（清单/归属/引用 + 有 `seeds/` 但未注册的应用）；
+  守护测试 `test_seed_layer_writeback`（落层/收敛/幂等）。
+- **示例层落地**：数据分析示例（数据集/看板/大屏/报表/表单/提交）迁入
+  `dataset/seeds/sample/`；内置流程定义与脱敏规则分别迁入 `approval/seeds/`、`audit/seeds/`
+  （**契约**，默认装载）。`init_data`（新装）显式 `--with-sample`，保持「装了就有」；
+  `load_init_json` 默认不装示例，`--with-sample` 可补；`--list/--check` 始终展开示例层
+  （否则 CI 会静默漏检 `seeds/sample/`）。
 
 ## 触发制
 

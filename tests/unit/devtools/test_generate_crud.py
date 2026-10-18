@@ -82,7 +82,7 @@ def _seed_entries(workspace) -> list[dict]:
 
     seed_dir = workspace[0] / "demo" / "seeds"
     entries: list[dict] = []
-    for name in ("menumeta_book.json", "menu_book.json"):
+    for name in ("menumeta.json", "menu.json"):
         path = seed_dir / name
         if path.is_file():
             entries.extend(json.loads(path.read_text(encoding="utf-8")))
@@ -97,7 +97,7 @@ class TestArtifacts:
             backend / "demo" / "views.py",
             backend / "demo" / "urls.py",
             backend / "demo" / "config.py",
-            backend / "demo" / "seeds" / "menu_book.json",
+            backend / "demo" / "seeds" / "menu.json",
             client / "src" / "views" / "demo" / "book" / "index.vue",
             client / "src" / "views" / "demo" / "book" / "utils" / "api.ts",
             client / "src" / "views" / "demo" / "book" / "utils" / "hook.tsx",
@@ -258,7 +258,7 @@ class TestUrlsMerge:
 class TestMenuSeed:
     def test_seed_structure_and_deterministic_pk(self, workspace):
         backend, _ = _generate(workspace)
-        seed_path = backend / "demo" / "seeds" / "menu_book.json"
+        seed_path = backend / "demo" / "seeds" / "menu.json"
         entries = json.loads(seed_path.read_text(encoding="utf-8"))
         permissions = [item for item in entries if item["model"] == "system.menu" and item["fields"]["menu_type"] == 2]
         assert [item["fields"]["name"] for item in permissions] == [
@@ -420,7 +420,8 @@ class TestNextSteps:
         _generate(workspace)
         output = capsys.readouterr().out
         assert "后续步骤" in output
-        assert "python manage.py loaddata demo/seeds/menu_book.json" in output
+        assert "python manage.py loaddata" in output
+        assert "demo/seeds/menu.json" in output
         assert "python manage.py doctor" in output
         assert "*:DemoBook" in output
 

@@ -73,14 +73,17 @@ class Command(LoadCommand):
         with_sample = bool(options.pop("with_sample", False))
         apps = self._parse_apps(options.pop("apps", ""))
 
+        # --list / --check 是只读诊断：始终展开示例层，否则 `--check` 会静默漏检
+        # `<app>/seeds/sample/`（CI 门禁就失去意义）；真正装载仍按 --with-sample。
+        inspect = want_list or want_check
         try:
             discovery = discover()
-            plan = build_plan(discovery, apps=apps, include_sample=with_sample)
+            plan = build_plan(discovery, apps=apps, include_sample=with_sample or inspect)
         except SeedPlanError as exc:
             raise CommandError(str(exc)) from exc
 
         if want_list:
-            self.stdout.write(format_plan(plan, with_sample=with_sample))
+            self.stdout.write(format_plan(plan, with_sample=with_sample or inspect))
 
         if want_list or want_check:
             result = validate_plan(plan, manifests=discovery.manifests)

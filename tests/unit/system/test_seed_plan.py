@@ -51,9 +51,9 @@ class TestPlatformPlan:
     """平台层顺序即历史顺序：这是「拆分不改变任何行为」的基线。"""
 
     def test_plan_covers_every_legacy_model(self):
-        """拆分后模型分散在各层，但覆盖的模型集合必须与历史清单完全一致。"""
+        """拆分后模型分散在各层（示例层也算），但覆盖的模型集合必须与历史清单一致。"""
 
-        plan = build_plan(discover())
+        plan = build_plan(discover(), include_sample=True)
         expected = [model._meta.label_lower for model in LoadInitJsonCommand.model_names]
         assert sorted(plan.model_labels()) == sorted(expected)
         assert len(plan.model_labels()) == len(expected)

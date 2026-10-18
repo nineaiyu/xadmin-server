@@ -200,14 +200,18 @@ config.yml（config.py）→ 同名环境变量 → 代码默认值   ← server
 
 | 组件 | 职责 |
 |---|---|
-| `loadjson/*.json` | 初始种子（菜单/权限点/字典/系统配置/流程模板…… 21 份） |
-| `manage.py load_init_json` | 幂等装载：模块裁剪过滤 → 自然键冲突预检（跳过并告警）→ 导入 → 时间戳回填 → 缓存失效 |
-| `manage.py dump_init_json` | 反向导出种子 |
-| `loaddata loadjson/seed_<app>_<model>.json` | 生成器产出的模块种子（pk 由 uuid5 派生，可重复装载） |
+| `loadjson/*.json` | 平台共享层种子（目录菜单 / 平台级页面与权限点 / 角色 / 站点配置 / 登录策略 / 跨域字典 / 公共字段节点） |
+| `<app>/seeds/*.json` | 应用层契约种子（菜单与权限点、字段白名单、字段树、配置、字典、内置流程定义），`manifest.json` 声明 `depends` / `url_prefixes` / `config_keys` / `dict_codes`，按依赖拓扑顺序装载 |
+| `<app>/seeds/sample/*.json` | 应用层**示例数据**（数据集/看板/大屏/报表/表单/提交）：默认不装，`init_data` 与 `load_init_json --with-sample` 才装 |
+| `manage.py load_init_json` | 幂等装载：发现两层 → 依赖拓扑 → 模块裁剪 → 自然键冲突预检（跳过并告警）→ 导入 → 授权并集 → 时间戳回填 → 缓存失效；`--check` 只校验、`--apps` 单域装载 |
+| `manage.py dump_init_json` | 反向导出；`--split-apps [--apps] [--output]` 直接按归属分层（新应用会自动初始化 `seeds/manifest.json`） |
+| `manage.py seed_split` | 纯文件重排（写盘前逐行等价校验），把扁平种子收敛到各层 |
+| `loaddata <app>/seeds/menu.json <app>/seeds/menumeta.json` | 生成器产出的模块种子（pk 由 uuid5 派生，可重复装载；menumeta 先于 menu） |
 | `ops/init_data.py` | 新库初始化：migrate → load_init_json → 建超管（幂等） |
 | `seed_demo_*` 命令族 | 演示数据一键装载 / 卸载（`--clean-only` 对称） |
 
-- 纪律：种子禁引特定环境用户；新权限点要么进生成器种子、要么 `sync_menu_permissions --update-seed` 回写。
+- 纪律：种子禁引特定环境用户；新权限点要么进生成器种子、要么 `sync_menu_permissions --update-seed` 回写（
+  该命令已按归属写各层，无需再跑 `seed_split`）；新增应用必须先进 `XADMIN_APPS`，否则 `seeds/` 被静默忽略。
 
 ### 1.13 管理命令（自检与脚手架）
 

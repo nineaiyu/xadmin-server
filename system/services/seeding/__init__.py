@@ -50,6 +50,7 @@ from .rows import build_fixtures as build_fixtures
 from .rows import read_model_rows as read_model_rows
 from .rows import read_seed_rows as read_seed_rows
 from .rows import read_specs as read_specs
+from .split import write_layer_model as write_layer_model
 from .types import GRANTS_MODEL as GRANTS_MODEL
 from .types import KIND_CONTRACT as KIND_CONTRACT
 from .types import KIND_GENERATED as KIND_GENERATED
@@ -122,4 +123,5 @@ __all__ = [
     "seed_role_menu_names",
     "validate_grants",
     "validate_plan",
+    "write_layer_model",
 ]

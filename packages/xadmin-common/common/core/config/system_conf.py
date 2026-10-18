@@ -30,7 +30,7 @@ class BaseConfCache(UploadConfMixin, SecurityConfMixin, OpsConfMixin):
 
     默认值单一来源：全部回读 server 装配的静态配置实例 ``CONFIG``
     （经 common.injection 注入，即 config.yml / 环境变量的值或代码默认值），
-    本类不再硬编码任何默认值；``loadjson/systemconfig.json`` 的种子初值须与
+    本类不再硬编码任何默认值；各层 ``systemconfig`` 种子的初值须与
     conf.py 一致（守护测试校验）。
     """
 
