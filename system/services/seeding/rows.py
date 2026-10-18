@@ -15,7 +15,8 @@
 3. **多对多剥离**（``strip_m2m_fields``）：种子行不携带任何 m2m 字段——``loaddata``
    对 m2m 是覆盖式赋值，空数组也会 ``set([])`` 清零库内既有关系（见该函数 docstring）。
 
-语义：**库内数据优先，种子让位**；跳过项全部落日志与命令输出，便于人工核对。
+语义：**库内数据优先，种子让位**；跳过项与剥离项按类别落日志与命令输出
+（真冲突/引用修剪 WARNING，策略性剥离 INFO），便于人工核对且不把预期行为报成故障。
 无裁剪、无冲突时原样使用仓库里的种子文件（零改动、无临时文件）。
 """
 
@@ -32,7 +33,15 @@ from django.utils import timezone
 
 from common.utils import get_logger
 
-from .types import KIND_CONTRACT, PLATFORM, SeedFileSpec
+from .types import (
+    KIND_CONTRACT,
+    NOTE_CONFLICT,
+    NOTE_PRUNE,
+    NOTE_STRIP,
+    PLATFORM,
+    SeedFileSpec,
+    SeedNote,
+)
 
 logger = get_logger(__name__)
 
@@ -192,7 +201,12 @@ def filter_conflicting_rows(rows_by_model: Any, *, using: Any = DEFAULT_DB_ALIAS
                 if owner is not None and str(owner) != str(row["pk"]):
                     desc = "、".join(f"{name}={value}" for name, value in zip(field_names, values, strict=True))
                     _mark_dropped(dropped, label, row["pk"])
-                    notes.append(f"跳过 {label}({row['pk']})：{desc} 已被库内对象占用（pk={owner}）")
+                    notes.append(
+                        SeedNote(
+                            f"跳过 {label}({row['pk']})：{desc} 已被库内对象占用（pk={owner}）",
+                            NOTE_CONFLICT,
+                        )
+                    )
                     continue
                 kept.append(row)
             pending[label] = kept
@@ -210,7 +224,7 @@ def filter_conflicting_rows(rows_by_model: Any, *, using: Any = DEFAULT_DB_ALIAS
             for row in rows:
                 if _row_references_dropped(model, row, dropped, notes):
                     _mark_dropped(dropped, label, row["pk"])
-                    notes.append(f"跳过 {label}({row['pk']})：引用了已被跳过的数据")
+                    notes.append(SeedNote(f"跳过 {label}({row['pk']})：引用了已被跳过的数据", NOTE_CONFLICT))
                     continue
                 kept.append(row)
             if len(kept) != len(rows):
@@ -251,7 +265,10 @@ def strip_m2m_fields(rows_by_model: Any) -> tuple[Any, ...]:
                 if name in fields:
                     del fields[name]
                     notes.append(
-                        f"{label}({row.get('pk')})：剥离多对多字段 {name}（改由声明式授权应用，避免覆盖库内数据）"
+                        SeedNote(
+                            f"{label}({row.get('pk')})：剥离多对多字段 {name}（改由声明式授权应用，避免覆盖库内数据）",
+                            NOTE_STRIP,
+                        )
                     )
     return rows_by_model, notes
 
@@ -328,7 +345,10 @@ def _row_references_dropped(model: Any, row: Any, dropped: dict[str, Any], notes
         remaining = [item for item in value if not (isinstance(item, str) and item in removed)]
         if len(remaining) != len(value):
             notes.append(
-                f"{model._meta.label_lower}({row['pk']})：{field.name} 移除 {len(value) - len(remaining)} 个已跳过主键"
+                SeedNote(
+                    f"{model._meta.label_lower}({row['pk']})：{field.name} 移除 {len(value) - len(remaining)} 个已跳过主键",
+                    NOTE_PRUNE,
+                )
             )
             fields[field.name] = remaining
     return False
@@ -395,7 +415,12 @@ def build_fixtures(
 
     models = [apps.get_model(label) for label in rows_by_model if rows_by_model[label]]
     for note in notes:
-        logger.warning("seed conflict: %s", note)
+        # 策略性剥离行照常导入，降为 INFO；真冲突/引用修剪保持 WARNING，
+        # 未标类别的普通字符串按冲突处理（不能把真问题藏起来）
+        if getattr(note, "kind", NOTE_CONFLICT) == NOTE_STRIP:
+            logger.info("seed strip: %s", note)
+        else:
+            logger.warning("seed conflict: %s", note)
     return write_seed_rows(rows_by_model, models, target_dir), notes, True
 
 

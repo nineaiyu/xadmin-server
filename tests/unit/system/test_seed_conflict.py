@@ -19,7 +19,7 @@ from identity.models import UserRole
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
 from system.models import DataDict, ModelLabelField
 from system.services.seed import _unique_checks, build_seed_fixtures, filter_conflicting_rows
-from system.services.seeding import read_model_rows
+from system.services.seeding import NOTE_CONFLICT, NOTE_PRUNE, read_model_rows
 
 pytestmark = pytest.mark.django_db
 
@@ -99,6 +99,8 @@ class TestFilterConflictingRows:
         assert filtered["approval.approvalflow"] == []
         assert len(notes) == 1
         assert "demo_expense" in notes[0] and "demo_expense" in notes[0]
+        # 真冲突必须标记为 conflict：命令层据此保持 WARNING 并计入「跳过」数
+        assert notes[0].kind == NOTE_CONFLICT
 
     def test_cascade_drops_referencing_rows(self):
         ApprovalFlow.objects.create(pk="cd81e9b1-f744-495d-b0ba-5d3b2273752a", code="demo_expense", name="库内对象")
@@ -132,6 +134,7 @@ class TestFilterConflictingRows:
         assert [row["pk"] for row in filtered["approval.approvalflow"]] == [LEAVE_SEED_PK]
         assert [row["pk"] for row in filtered["approval.approvalflownode"]] == ["node-b"]
         assert len(notes) == 2
+        assert {note.kind for note in notes} == {NOTE_CONFLICT}
 
     def test_m2m_reference_trimmed(self):
         role = _read("userrole.json")[0]
@@ -153,6 +156,11 @@ class TestFilterConflictingRows:
         assert filtered["identity.userrole"] == []
         assert filtered["audit.datamaskrule"][0]["fields"]["roles"] == []
         assert any("datamaskrule" in note for note in notes)
+        # 引用修剪（保留行内移除被跳过主键）与整行跳过是不同类别：
+        # 两者都必须可见，但修剪不计入「跳过行数」
+        prune_notes = [note for note in notes if "datamaskrule" in note]
+        assert [note.kind for note in prune_notes] == [NOTE_PRUNE]
+        assert [note.kind for note in notes if note not in prune_notes] == [NOTE_CONFLICT]
 
     def test_composite_unique_conflict_dropped(self):
         """组合唯一键 ``(flow, order)`` 被占用时同样跳过。
@@ -177,6 +185,7 @@ class TestFilterConflictingRows:
         assert filtered["approval.approvalflownode"] == []
         assert len(notes) == 1
         assert "flow=" in notes[0] and "order=1" in notes[0]
+        assert notes[0].kind == NOTE_CONFLICT
 
     def test_composite_unique_same_pk_kept(self):
         ApprovalFlow.objects.create(pk=LEAVE_SEED_PK, code="leave", name="请假审批")

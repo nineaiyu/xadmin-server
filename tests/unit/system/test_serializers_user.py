@@ -105,15 +105,24 @@ class TestUserSerializerPasswordTransport:
         assert not serializer.is_valid()
         assert not UserInfo.objects.filter(username=self.USERNAME).exists()
 
-    def test_plaintext_mode_accepts_submitted_password(self, post_request, superuser, settings):
+    @pytest.mark.parametrize(
+        "password",
+        [
+            # 解密抛 Incorrect padding 的明文
+            "Test@123456",
+            # 解密不抛异常、返回空串的明文（曾因只捕获异常而漏回退，被规则校验拒绝）
+            "E2E-Reset-2026!",
+        ],
+    )
+    def test_plaintext_mode_accepts_submitted_password(self, post_request, superuser, settings, password):
         settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False
         serializer = UserSerializer(
-            data={"username": self.USERNAME, "nickname": "明文", "password": "Test@123456"},
+            data={"username": self.USERNAME, "nickname": "明文", "password": password},
             ignore_field_permission=True,
         )
         assert serializer.is_valid(), serializer.errors
         instance = serializer.save()
-        assert instance.check_password("Test@123456")
+        assert instance.check_password(password)
 
     def test_plaintext_mode_still_decrypts_ciphertext(self, post_request, superuser, settings):
         settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False

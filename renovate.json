@@ -36,6 +36,12 @@
       "before 6am on the first day of the month"
     ]
   },
+  "ignoreDeps": [
+    "registry.cn-beijing.aliyuncs.com/nineaiyu/nginx",
+    "registry.cn-beijing.aliyuncs.com/nineaiyu/redis",
+    "registry.cn-beijing.aliyuncs.com/nineaiyu/python",
+    "registry.cn-beijing.aliyuncs.com/nineaiyu/pgvector"
+  ],
   "packageRules": [
     {
       "description": "补丁版本自动合并（门禁全绿为前提）",

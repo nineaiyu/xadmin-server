@@ -59,11 +59,15 @@ from .types import KIND_SAMPLE as KIND_SAMPLE
 from .types import KINDS as KINDS
 from .types import LEVEL_ERROR as LEVEL_ERROR
 from .types import LEVEL_WARNING as LEVEL_WARNING
+from .types import NOTE_CONFLICT as NOTE_CONFLICT
+from .types import NOTE_PRUNE as NOTE_PRUNE
+from .types import NOTE_STRIP as NOTE_STRIP
 from .types import PLATFORM as PLATFORM
 from .types import LoadReport as LoadReport
 from .types import Problem as Problem
 from .types import SeedFileSpec as SeedFileSpec
 from .types import SeedManifest as SeedManifest
+from .types import SeedNote as SeedNote
 from .types import SeedPlan as SeedPlan
 from .types import SeedPlanError as SeedPlanError
 from .validate import ValidationResult as ValidationResult
@@ -83,11 +87,15 @@ __all__ = [
     "LEVEL_ERROR",
     "LEVEL_WARNING",
     "LoadReport",
+    "NOTE_CONFLICT",
+    "NOTE_PRUNE",
+    "NOTE_STRIP",
     "OwnershipSummary",
     "PLATFORM",
     "Problem",
     "SeedFileSpec",
     "SeedManifest",
+    "SeedNote",
     "SeedPlan",
     "SeedPlanError",
     "ValidationResult",

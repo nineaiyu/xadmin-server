@@ -16,8 +16,13 @@ from pathlib import Path
 import pytest
 
 from system.services.seeding import (
+    NOTE_CONFLICT,
+    NOTE_PRUNE,
+    NOTE_STRIP,
     PLATFORM,
     GrantDeclaration,
+    LoadReport,
+    SeedNote,
     build_plan,
     discover,
     load_grants,
@@ -90,6 +95,8 @@ class TestDeclarationIntegrity:
         # 授权字段名与角色标识不受影响
         assert [row["fields"]["code"] for row in stripped["identity.userrole"]] == ["default", "admin"]
         assert len(notes) == 2
+        # 剥离是策略行为（行照常导入），不能标记成「冲突」
+        assert {note.kind for note in notes} == {NOTE_STRIP}
 
     def test_strip_m2m_fields_leaves_attribute_m2m_alone(self):
         """属性型 m2m（菜单→模型）是功能契约，覆盖语义正是所需，不能被误剥。
@@ -113,6 +120,30 @@ class TestDeclarationIntegrity:
         declarations = _plan_grants()
         assert PLATFORM in {item.app for item in declarations}
         assert "identity" in {item.app for item in declarations}
+
+
+class TestLoadReportNotes:
+    """装配说明的类别分流：只有真冲突计入「跳过」，剥离不冒充冲突。"""
+
+    def test_notes_are_partitioned_by_kind(self):
+        report = LoadReport(
+            notes=[
+                SeedNote("跳过 x：自然键被占用", NOTE_CONFLICT),
+                SeedNote("x：移除 1 个已跳过主键", NOTE_PRUNE),
+                SeedNote("x：剥离多对多字段 menu", NOTE_STRIP),
+            ]
+        )
+        assert [str(note) for note in report.conflict_notes] == ["跳过 x：自然键被占用"]
+        assert [str(note) for note in report.prune_notes] == ["x：移除 1 个已跳过主键"]
+        assert [str(note) for note in report.strip_notes] == ["x：剥离多对多字段 menu"]
+
+    def test_untyped_note_defaults_to_conflict(self):
+        """未标类别的普通字符串按冲突处理——宁可多报，不可把真问题降级。"""
+
+        report = LoadReport(notes=["跳过 x：未标类别"])
+        assert report.conflict_notes == ["跳过 x：未标类别"]
+        assert report.prune_notes == []
+        assert report.strip_notes == []
 
 
 class TestMerge:

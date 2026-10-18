@@ -134,12 +134,7 @@ class Command(LoadCommand):
         # 未做任何裁剪且无冲突时直接用仓库里的原始种子文件
         with tempfile.TemporaryDirectory(prefix="xadmin_seed_") as target_dir:
             report = prepare(plan, target_dir, module_filter=ModuleSeedFilter.build(), using=DEFAULT_DB_ALIAS)
-            if report.notes:
-                for note in report.notes:
-                    self.stdout.write(self.style.WARNING(f"[种子冲突] {note}"))
-                self.stdout.write(
-                    self.style.WARNING(f"[种子冲突] 共跳过 {len(report.notes)} 处（库内数据优先，未改动库内对象）")
-                )
+            self._report_notes(report, verbosity=int(options.get("verbosity", 1)))
             super().handle(*[str(label) for label in report.fixture_labels], **options)
 
         self._apply_grants(plan)
@@ -162,6 +157,34 @@ class Command(LoadCommand):
         # post_save 失效钩子同样被屏蔽：不清路由与权限点缓存时，存量用户最长
         # 24 小时仍看到旧菜单树（改了种子却"没生效"的典型表现）
         self._invalidate_route_caches()
+
+    def _report_notes(self, report: Any, *, verbosity: int = 1) -> None:
+        """装配说明分流：真冲突保持 WARNING 并计数，策略性剥离只给普通提示。
+
+        m2m 剥离是每次装载都会发生的预期行为（行照常导入），历史实现把它和唯一键
+        冲突混在一起打印成「种子冲突 / 共跳过 N 处」，新装环境也会刷 4 条警告。
+        这里按 ``SeedNote.kind`` 分开；未标类别的说明仍按冲突处理，避免把真问题
+        降级成提示。
+        """
+
+        conflicts = report.conflict_notes
+        prunes = report.prune_notes
+        if conflicts or prunes:
+            for note in [*conflicts, *prunes]:
+                self.stdout.write(self.style.WARNING(f"[种子冲突] {note}"))
+            summary = f"共跳过 {len(conflicts)} 行"
+            if prunes:
+                summary += f"、修剪 {len(prunes)} 处引用"
+            self.stdout.write(self.style.WARNING(f"[种子冲突] {summary}（库内数据优先，未改动库内对象）"))
+
+        strips = report.strip_notes
+        if strips:
+            self.stdout.write(
+                f"[种子装配] 剥离 {len(strips)} 处角色菜单授权字段（行照常导入，授权由 grants.json 并集应用）"
+            )
+            if verbosity >= 2:
+                for note in strips:
+                    self.stdout.write(f"[种子装配] {note}")
 
     def _apply_grants(self, plan: SeedPlan) -> None:
         """装载后并集应用角色授权（``grants.json`` 声明）。

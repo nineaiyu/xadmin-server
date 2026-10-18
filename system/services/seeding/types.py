@@ -26,6 +26,32 @@ KINDS = (KIND_CONTRACT, KIND_GENERATED, KIND_SAMPLE)
 LEVEL_ERROR = "error"
 LEVEL_WARNING = "warning"
 
+# 装配说明类别：决定命令行级别与计数口径。
+# - conflict：自然键被库内占用，整行跳过（必须 WARNING + 计入「跳过」数）；
+# - prune：被跳过行的引用从保留行里移除（数据被改写，同样 WARNING）；
+# - strip：覆盖式 m2m 字段被剥离，行照常导入（策略行为，不是冲突）。
+NOTE_CONFLICT = "conflict"
+NOTE_PRUNE = "prune"
+NOTE_STRIP = "strip"
+
+
+class SeedNote(str):
+    """装配说明：字符串兼容，附带类别 ``kind``。
+
+    历史上所有装配说明都被命令层当作「种子冲突」打印，新装环境因此出现 4 条
+    「剥离 menu」WARNING 和一句「共跳过 4 处」——实际一行未跳过。继承 ``str``
+    是为了不破坏既有调用方（测试、二开脚本按字符串比较/拼接）；``kind`` 让命令
+    层按类别决定级别与计数。未标类别的普通字符串按 ``conflict`` 处理：宁可多报，
+    不可把真冲突降级成提示。
+    """
+
+    kind: str
+
+    def __new__(cls, message: str, kind: str = NOTE_CONFLICT) -> "SeedNote":
+        obj = super().__new__(cls, message)
+        obj.kind = kind
+        return obj
+
 
 @dataclass(frozen=True)
 class SeedFileSpec:
@@ -119,11 +145,39 @@ class Problem:
 
 @dataclass
 class LoadReport:
-    """装载准备结果：交给 ``loaddata`` 的文件清单与装配说明。"""
+    """装载准备结果：交给 ``loaddata`` 的文件清单与装配说明。
+
+    ``notes`` 保留全部说明（兼容既有调用方）；命令层按类别取用：
+    ``conflict_notes`` / ``prune_notes`` 是必须让用户看见的数据让位，
+    ``strip_notes`` 是行照常导入的策略性字段剥离。
+    """
 
     fixture_labels: list[Path] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     trimmed: bool = False
+
+    def notes_of(self, kind: str) -> list[str]:
+        """按类别筛选说明；未标类别的普通字符串按 ``conflict`` 处理。"""
+
+        return [note for note in self.notes if getattr(note, "kind", NOTE_CONFLICT) == kind]
+
+    @property
+    def conflict_notes(self) -> list[str]:
+        """与库内数据冲突、整行被跳过的说明。"""
+
+        return self.notes_of(NOTE_CONFLICT)
+
+    @property
+    def prune_notes(self) -> list[str]:
+        """被跳过行的引用从保留行中移除的说明（行本身仍导入）。"""
+
+        return self.notes_of(NOTE_PRUNE)
+
+    @property
+    def strip_notes(self) -> list[str]:
+        """策略性剥离覆盖式 m2m 字段的说明（行照常导入）。"""
+
+        return self.notes_of(NOTE_STRIP)
 
 
 class SeedPlanError(ValueError):
