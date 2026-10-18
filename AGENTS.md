@@ -27,7 +27,8 @@
 ```bash
 uv sync --all-groups                            # 依赖（唯一入口：pyproject.toml + uv.lock）
 docker compose up -d                            # 开发栈（nginx:8896）
-docker compose restart server celery-worker celery-heavy celery-beat   # 改后端后必做
+bash ops/dev_restart.sh                         # 改后端后必做（-t 3 快速重启；改 celery 任务/配置时加 beat）
+docker compose restart server celery-worker celery-heavy celery-beat   # 生产语义：按 compose 宽限期优雅停机
 python manage.py migrate                        # 迁移
 python manage.py makemigrations --check --dry-run   # 迁移漂移门禁
 python manage.py load_init_json                 # 灌默认数据（幂等）
