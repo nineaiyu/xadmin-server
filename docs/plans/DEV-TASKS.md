@@ -30,9 +30,9 @@
   `audit/seeds/` 脱敏规则），`init_data` 显式 `--with-sample` 保持新装观感。补齐两份 AGENTS/
   二开文档站 3 页/架构运维 5 处口径，修复两处只读平台层的空转测试。验证：后端全量（含示例层
   校验 `--check` 0 error）+ 静态门禁全绿；前端 typecheck/vitest 2262/i18n/contract/
-  menu-permissions 全绿；E2E analysis/dashboard/approval/smoke chromium 13 passed；
-  清库 `init_data` 新装实测 samples 全在（数据集 2/看板 1/大屏 1/报表 2/表单 2/提交 4）、
-  默认复灌不删示例且幂等。
+  menu-permissions 全绿；全量 E2E（6 分片隔离库）724 passed/8 failed/16.1min（失败为既有
+  flake），顺带修「场景种子产物发现」与「启动静默窗口吞保存」两处；清库 `init_data` 新装
+  实测 samples 全在（数据集 2/看板 1/大屏 1/报表 2/表单 2/提交 4）、默认复灌不删示例且幂等。
 
 - **2026-10-18 种子分层收口批（server 5 提交 + client 2 提交，已推送 dev）**：`c82452f9`
   「种子按 app 分层」的衍生问题四处收口。①**读取侧 N+1**（`ade554e3`）：`permission_sync`
