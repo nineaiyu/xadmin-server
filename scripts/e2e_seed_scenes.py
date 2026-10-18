@@ -160,6 +160,40 @@ def seed_monitor_scene():
     print(f"monitor scene seeded: {points} heartbeat points + 1 firing alert")
 
 
+def _generator_seed_files(root):
+    """从生成器产物里挑出菜单/菜单元数据种子文件（按清单顺序，meta 先于 menu）。
+
+    清单（``<app>/seeds/manifest.json``）是权威：应用级种子分层后规范文件名为
+    ``menumeta.json`` / ``menu.json``，早期生成器写过 ``menumeta_<model>.json`` /
+    ``menu_<model>.json``——两种命名都要能发现，否则场景种子会静默不装载
+    （表现为二开样板页整页空白）。
+    """
+
+    import json
+
+    manifests = sorted(root.glob("*/seeds/manifest.json"))
+    if manifests:
+        manifest = manifests[0]
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        entries = [
+            entry
+            for entry in data.get("files", [])
+            if isinstance(entry, dict) and entry.get("model") in ("system.menumeta", "system.menu")
+        ]
+        entries.sort(key=lambda entry: (entry.get("order", 900), entry.get("name", "")))
+        found = [path for path in (manifest.parent / str(entry["name"]) for entry in entries) if path.is_file()]
+        if found:
+            return found
+
+    # 兼容旧布局：按模型拆分的 menu_<model>.json / menumeta_<model>.json
+    # （「menumeta」也以 menu 开头，必须显式分档排序，否则菜单先装会因 meta 外键失败）
+    legacy = [path for path in root.glob("*/seeds/*.json") if path.name != "manifest.json"]
+    return sorted(
+        (path for path in legacy if path.name.startswith(("menumeta", "menu"))),
+        key=lambda path: (0 if path.name.startswith("menumeta") else 1, path.name),
+    )
+
+
 def seed_demo_book_scene():
     """「二开样板页」场景：把生成器产出的菜单/权限点种子入库（防样板腐烂）。
 
@@ -169,10 +203,7 @@ def seed_demo_book_scene():
     - demo 已在测试 settings 的 ``XADMIN_APPS`` 内，API 与路由真实可用；
     - 失败只打印跳过（种子脚本的健壮性优先，用例侧断言会暴露缺失）。
 
-    产物发现按**生成器当前布局**：应用级种子分层（ADR-095）后菜单种子落在
-    ``<app>/seeds/menmeta_*.json`` 与 ``<app>/seeds/menu_*.json``（按模型拆文件），
-    不再有旧的 ``loadjson/seed_demo_book.json`` 单文件。装载顺序必须「元数据先于
-    菜单」（菜单 OneToOne 引用 meta），因此按文件名排序后同目录一起 loaddata。
+    产物发现见 :func:`_generator_seed_files`（读清单，兼容旧命名）。
     """
 
     import io
@@ -184,12 +215,10 @@ def seed_demo_book_scene():
     try:
         tmp_root = Path(tempfile.mkdtemp(prefix="e2e_demo_seed_"))
         call_command("generate_crud", "demo.Book", "--skip-frontend", output=str(tmp_root), stdout=io.StringIO())
-        seeds = sorted(tmp_root.glob("*/seeds/*_book.json"))
-        seeds = [path for path in seeds if path.name.startswith(("menumeta", "menu"))]
+        seeds = _generator_seed_files(tmp_root)
         if not seeds:
             print("skip demo book scene: 生成器未产出菜单种子")
             return
-        # 按文件名排序即分层顺序：menumeta_* 先于 menu_*（单条 loaddata 保持同序）
         call_command("loaddata", *[str(path) for path in seeds])
         print(f"demo book scene seeded (generator-produced {len(seeds)} seed files)")
     except Exception as exc:  # noqa: BLE001 场景种子失败不影响主流程
