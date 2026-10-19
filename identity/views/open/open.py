@@ -182,7 +182,9 @@ def application_usage_stats(application: ApiApplication, days: int) -> dict[str,
 
 
 class ApiApplicationTokenAPIView(APIView):
-    """换发端点（client-credentials）：凭 client_id/client_secret 换 PAT 凭证。
+    """换发端点
+
+    client-credentials：凭 client_id/client_secret 换 PAT 凭证
 
     匿名可达（白名单 + AllowAny）：凭证即身份，与登录接口同口径。
     保留全局匿名限流（IP 维度），叠加 client 维度专用限流——
@@ -238,7 +240,10 @@ class ApiApplicationViewSet(BaseModelSet):
     filterset_class = ApiApplicationFilter
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """创建应用：client_id / client_secret / callback_secret 由服务端生成，明文仅此一次。"""
+        """创建应用
+
+        client_id / client_secret / callback_secret 由服务端生成，明文仅此一次
+        """
         client_id, raw_secret, secret_hash, secret_prefix = build_client_credentials()
         raw_callback_secret, callback_secret_encrypted = build_callback_secret()
         serializer = self.get_serializer(data=request.data)
@@ -263,7 +268,10 @@ class ApiApplicationViewSet(BaseModelSet):
 
     @action(methods=["post"], detail=True, url_path="regenerate-secret")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def regenerate_secret(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """重置应用密钥：旧凭证与旧密钥即时失效，新密钥明文仅本次返回。"""
+        """重置应用密钥
+
+        旧凭证与旧密钥即时失效，新密钥明文仅本次返回
+        """
         application = self.get_object()
         client_id, raw_secret, secret_hash, secret_prefix = build_client_credentials()
         raw_callback_secret, callback_secret_encrypted = build_callback_secret()
@@ -288,7 +296,10 @@ class ApiApplicationViewSet(BaseModelSet):
 
     @action(methods=["post"], detail=True, url_path="test-callback")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def test_callback(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """向登记的回调地址逐一投递签名探测（HMAC-SHA256 时间戳签名，同出站 webhook 口径）。"""
+        """向登记的回调地址逐一投递签名探测
+
+        HMAC-SHA256 时间戳签名，同出站 webhook 口径
+        """
         application = self.get_object()
         urls = [str(url) for url in (application.callback_urls or [])]
         if not urls:
@@ -308,7 +319,9 @@ class ApiApplicationViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="scope-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def scope_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """应用可授权的接口范围（按菜单分组，供应用「接口范围」勾选）
+        """应用可授权的接口范围
+
+        按菜单分组，供应用「接口范围」勾选
 
         口径与个人访问令牌同源（`identity/utils/pat_scope.py`）：权限菜单 × 请求用户角色
         （超管为全部启用的权限菜单）；条目是锚定正则（如 ``GET ^/api/identity/user/?$``），
@@ -351,7 +364,9 @@ class ApiApplicationViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="stats")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def stats(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """应用用量报表（近 N 天，默认 7 / 上限 30）。
+        """应用用量报表
+
+        近 N 天，默认 7 / 上限 30
 
         按天调用量、失败数、平均耗时 + Top 路径 + 业务码分布 + 当日配额用量
         （配额软口径：只告警不阻断）。
@@ -367,7 +382,9 @@ class ApiApplicationViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="grant-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def grant_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """应用资源授权目录（模型 → 动作段 / 字段，粒度与「接口范围」同源）。
+        """应用资源授权目录
+
+        模型 → 动作段 / 字段，粒度与「接口范围」同源
 
         只返回当前用户可授权面（超管为全部启用权限菜单 + 全部模型标签），不含业务
         数据行；路径登记白名单（表单枚举元数据口径，与 scope-options 同处理）。

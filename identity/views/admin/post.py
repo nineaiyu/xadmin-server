@@ -76,7 +76,9 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="members")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def members(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """岗位成员（查看）：在用用户清单（≤500，超出截断）。
+        """岗位成员
+
+        查看：在用用户清单（≤500，超出截断）
 
         total 为全量在用成员数，truncated 标记本次是否截断（向后兼容新增字段）。
         """
@@ -87,7 +89,9 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
     @extend_schema(request=PostMemberSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="assign")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def assign(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """岗位成员分配：`{add, remove}` 增量变更（幂等）。
+        """岗位成员分配
+
+        `{add, remove}` 增量变更（幂等）
 
         新增只接受在用用户（失效/不存在的 pk 跳过不阻断，跳过明细经 skipped
         返回，与 tags 批量打标的 failures 同口径）；查看（members，GET）与
@@ -120,7 +124,9 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def user_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """成员候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
+        """成员候选
+
+        按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）
 
         与选人控件同源（identity/utils/user_options.py）；权限与 list 同口径
         （框架 shared_list 注册表，无需新增权限点）。

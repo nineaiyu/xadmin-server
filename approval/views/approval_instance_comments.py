@@ -81,7 +81,10 @@ class ApprovalInstanceCommentMixin:
     )
     @action(methods=["post"], detail=True, url_path="comment")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def add_comment(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """发表评论（参与人 = 可见域内用户；@ 提及者收提醒）"""
+        """发表评论
+
+        参与人 = 可见域内用户；@ 提及者收提醒
+        """
         instance = self.get_object()
         content = str(request.data.get("content") or "").strip()
         if not content:

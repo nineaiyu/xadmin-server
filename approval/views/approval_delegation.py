@@ -28,8 +28,9 @@ class ApprovalDelegationFilter(BaseFilterSet):
 
 
 class ApprovalDelegationViewSet(BaseModelSet, SuggestionsAction):
-    """审批委托（审批流三期）：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。
+    """审批委托
 
+    维度：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。
     只影响「待办归属」（生效委托用代理人替换原审批人），不改变节点定义；
     取值域默认收敛为「本人作为委托人」，委托记录属个人审批权处置，他人无权查看/修改。
     """

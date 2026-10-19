@@ -22,6 +22,12 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
+- **2026-10-19 AI 动作声明按应用下沉（已提交 server `3fb264ae`/`ee383140`/`3ad0b54d`、client `eda26830`）**：
+  各应用 `ai_declarations.py` 自动发现合并，动作 60 → 105（102 声明式 + 3 内置）；内置动作回归
+  所属应用；`modules` 对齐模块裁剪；生成器改 `AI_ACTIONS`、`--with-module` 标注、多模型分块合并。
+  验证：pytest/ruff/mypy/行数/跨 app/文档全绿；AI E2E 双浏览器 36 passed；容器重启后巡检
+  105 动作 / 候选 0 / 缺口 0。
+
 - **2026-10-18 种子分层工具链对齐（留工作区待提交）**：三处收口——`sync_menu_permissions
   --update-seed` 按归属回写各层（免人工 `seed_split`，字段树不再整表塞回平台层）；生成器与
   分层工具统一 `menu.json`/`menumeta.json`（旧 `menu_<model>.json` 吸收清空）；
@@ -64,25 +70,6 @@
 
 - **2026-10-16 TG-8 低风险子项收口（R2，两仓改动留工作区，待提交）**：D-6 操作日志取消占位行（单条 INSERT）、D-5 确认交互三范式成文；详见
   [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
-
-- **2026-10-14 列表页操作列按内容收敛（xadmin-client；改动留工作区，待提交）**：起因=用户反馈
-  「未授予某些权限时操作列只剩一个按钮，却仍占着为多个按钮预留的列宽，右侧大片空白」。实现
-  （均在 `src/components/RePlusPage`）：①新增内容实测 `utils/operationContentWidth.ts`——把操作列
-  单元格（表头 + 各行，按 innerHTML 去重）克隆进 `width: max-content` 探测容器量自然宽度，加单元格
-  内边距即所需列宽（不用单元格 rect：`table-layout: fixed` 下内容超出会折行、直接量当前列宽还会
-  自我反馈成持续收缩）；②新增 `utils/useOperationContentWidth.ts`——数据到达后在 **rAF**（与 EP
-  `doLayout` 同帧）实测并有限重试（数据 flush 里 el-table 只有骨架，post-flush 直接量恒为 0）；
-  ③`resolveOperationColumnWidth` 增内容下限：无横向滚动时直接按内容渲染（固定列不覆盖任何内容），
-  有滚动时以内容为「求对齐值」的下限、仍以「页面配置宽度 + 容差」为上限，对齐不划算时保持配置宽度
-  ——两条收敛路径都不引入新的「半个字」，配置放不下内容时也不反向撑宽；④`useTableLayout` 接实测值
-  （`operationConfiguredWidth` / `operationContentWidth`）；`useRecycleBin` 抽出回收站计算属性以守
-  500 行门禁（index.vue 499 → 485）。验证：单测 `operationColumnWidth.spec`（按内容收敛 6 例 + 零回归
-  对照）/ `operationContentWidth.spec`（jsdom 桩布局 6 例）/ `useTableLayout.spec`；E2E
-  `table-column-align` 补三条断言（内容不被裁切、收敛后无跨界列、内容远小于配置时必须收敛）双浏览器
-  26 passed；真实页面抽查：访问日志 140 → 90（只有图标按钮）、用户页「只有管理按钮」时 260 → 170；
-  perf 五页 CLS 均在兜底上限内（system-logs 的 ~0.05 系既有首帧列宽落位——关闭本改动对照实测同样
-  存在）；visual 14 passed（无需重录）；前端 lint 三件套 / typecheck / vitest 2180 / check 系列 / build
-  全绿。教训已录 `xadmin-client/e2e/README.md`（量 el-table 单元格必须在 rAF 后）。
 
 - **2026-10-14 前端入口权限审计 + 内置角色只读授权补齐（改动留工作区，待提交）**：起因=用户追问
   「其它权限是不是都要检查」。审计结论：框架默认按钮由页面级权限位控制，自定义按钮绝大多数已用
@@ -232,7 +219,7 @@
 |---|---|---|---|
 | D1 | Django | 6.0.8 → 6.2 LTS | 唯一阻断：`django-celery-beat 2.9.0` 声明 `Django<6.1`；声明放宽或 6.2 全家桶覆盖即动 |
 | D2 | TypeScript | 6.0.3 → 7.1 后重评 | 预计 2026-12（受 vue-tsc 阻断）；准备项已交付（`typecheck:tsc` / `typecheck:vue` 拆分） |
-| D3 | Node | 24 → 26 LTS | 2026-Q4 转正后（晋升一般在 10 月下旬）；`.nvmrc` / `Dockerfile-base` / `engines` 三处同步 |
+| D3 | Node | 24 → 26 LTS | 2026-Q4 转正后（晋升一般在 10 月下旬）；`.nvmrc` / `Dockerfile-base` / `engines` 三处同步。**2026-10-19 复核：未到点**——本机 nvm 最新 v24.20.0、无 v26；等 LTS 公告后动 |
 | D4 | Vue | 3.5 → 3.6 stable | stable 发布后；Vapor opt-in，约 0.5 人日 |
 | D5 | 跟踪项 | Celery 6 / Python 3.15 | 2027-12 / 3.15.1+；触发即评估 |
 

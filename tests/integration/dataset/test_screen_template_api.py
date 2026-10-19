@@ -219,7 +219,7 @@ def clipboard_urls():
 
 
 class TestTemplateVersions:
-    """模板版本历史与回滚（ADR-090 D4）：保存即记版、保留上限裁剪、回滚可逆。"""
+    """模板版本历史与回滚：保存即记版、保留上限裁剪、回滚可逆。"""
 
     def test_versions_recorded_and_pruned(self, auth_client, settings):
         settings.SCREEN_TEMPLATE_VERSION_KEEP = 3
@@ -282,7 +282,7 @@ class TestTemplateVersions:
 
 
 class TestScreenClipboard:
-    """云端剪贴板（ADR-090 D4）：按用户单槽 upsert、只能看到自己的槽位。"""
+    """云端剪贴板：按用户单槽 upsert、只能看到自己的槽位。"""
 
     def test_anonymous_rejected(self, api_client):
         assert api_client.get(CLIPBOARD_URL).status_code == 401

@@ -83,7 +83,10 @@ class SuggestionsAction:
     )
     @shared_list_action(methods=["get"], detail=False, url_path="suggestions")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def suggestions(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """获取{cls}关联字段的联想候选（候选集与写入校验同源）"""
+        """获取{cls}关联字段的联想候选
+
+        候选集与写入校验同源
+        """
         field_name = (request.query_params.get("field") or "").strip()
         search = (request.query_params.get("search") or "").strip()
         pks = [pk for pk in (request.query_params.get("pks") or "").split(",") if pk]

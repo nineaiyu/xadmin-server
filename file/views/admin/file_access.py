@@ -63,7 +63,9 @@ class FileAccessActionMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="download")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def download(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """下载文件（DRF 鉴权 + 数据权限 + 访问审计，替代 /media/ 直链）
+        """下载文件
+
+        DRF 鉴权 + 数据权限 + 访问审计，替代 /media/ 直链
 
         ``?direct=1``（预签名直连）：s3 后端且 boto3 可用时返回短时效预签名 URL
         （大文件不经服务端中转）；鉴权与审计先于签发完成，不可用时返回 ``direct=false``
@@ -97,7 +99,9 @@ class FileAccessActionMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="access-logs")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def access_logs(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """文件访问记录：最近 100 条 + 各动作计数"""
+        """文件访问记录
+
+        最近 100 条 + 各动作计数。"""
         upload = self.get_object()
         queryset = FileAccessLog.objects.filter(file=upload).order_by("-created_time")
         counts = {row["action"]: row["count"] for row in queryset.values("action").annotate(count=Count("pk"))}

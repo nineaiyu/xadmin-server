@@ -67,7 +67,9 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="available-flows")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def available_flows(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """可发起流程（启用中）：发起申请弹窗的数据源（无需流程定义管理权限）。
+        """可发起流程
+
+        启用中：发起申请弹窗的数据源（无需流程定义管理权限）
 
         普通申请人通常没有「流程定义」页权限，因此单独开一个轻量只读入口，
         只回传发起所需的 pk/name/form_schema，不暴露节点审批人配置。
@@ -92,13 +94,19 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="pending-count")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def pending_count(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """待我审批数（轻量接口：供顶栏/页签角标轮询，服务端 10s 短缓存）"""
+        """待我审批数
+
+        轻量接口：供顶栏/页签角标轮询，服务端 10s 短缓存
+        """
         return ApiResponse(data={"pending": pending_count_for(request.user)})
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def stats(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """流程审批统计（近 30 天：我提交 / 我通过 / 我驳回 / 我的待办）"""
+        """流程审批统计
+
+        近 30 天：我提交 / 我通过 / 我驳回 / 我的待办
+        """
         return ApiResponse(data=instance_stats(request.user, days=FLOW_STATS_WINDOW_DAYS))
 
     @extend_schema(
@@ -115,7 +123,10 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
     )
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def approve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """通过（或签任一通过 / 会签全部通过后流转下一节点）"""
+        """通过
+
+        或签任一通过 / 会签全部通过后流转下一节点
+        """
         ensure_approval_action_confirmed(request, "approve")
         instance = self.get_object()
         task = self._resolve_task(instance, request)
@@ -162,7 +173,10 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
     )
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def urge(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """催办（仅申请人/超管、仅审批中）：通知当前节点审批人，10 分钟节流"""
+        """催办
+
+        仅申请人/超管、仅审批中：通知当前节点审批人，10 分钟节流
+        """
         instance = self.get_object()
         ok, detail = urge_instance(instance, request.user, (request.data.get("message") or "").strip())
         if not ok:
@@ -195,7 +209,10 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
     )
     @action(methods=["post"], detail=True, url_path="add-sign")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def add_sign_action(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """加签：在当前节点追加审批人（当前节点参与人或超管可操作）"""
+        """加签
+
+        在当前节点追加审批人（当前节点参与人或超管可操作）
+        """
         ensure_approval_action_confirmed(request, "add_sign")
         instance = self.get_object()
         if not (
@@ -227,7 +244,10 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
     )
     @action(methods=["post"], detail=True, url_path="remove-sign")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def remove_sign(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """减签：移除加签追加的候选（仅 is_added 的 PENDING 任务；或签节点拒绝）"""
+        """减签
+
+        移除加签追加的候选（仅 is_added 的 PENDING 任务；或签节点拒绝）
+        """
         ensure_approval_action_confirmed(request, "remove_sign")
         instance = self.get_object()
         if not (
@@ -249,7 +269,10 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="return-targets")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def return_targets(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """可退回节点（已途经、非当前，按 order 降序）：退回弹窗数据源"""
+        """可退回节点
+
+        已途经、非当前，按 order 降序：退回弹窗数据源
+        """
         instance = self.get_object()
         return ApiResponse(data=returnable_nodes(instance))
 
@@ -269,7 +292,10 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
     )
     @action(methods=["post"], detail=True, url_path="return")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def return_node(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """退回：当前节点待办作废，实例回退到已途经节点重新审批（处理人或超管）"""
+        """退回
+
+        当前节点待办作废，实例回退到已途经节点重新审批（处理人或超管）
+        """
         ensure_approval_action_confirmed(request, "return")
         instance = self.get_object()
         reason = (request.data.get("reason") or "").strip()
@@ -306,7 +332,10 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
     )
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def transfer(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """转交：把当前待办转给指定用户处理（处理人本人或超管）"""
+        """转交
+
+        把当前待办转给指定用户处理（处理人本人或超管）
+        """
         ensure_approval_action_confirmed(request, "transfer")
         instance = self.get_object()
         task = self._resolve_task(instance, request)

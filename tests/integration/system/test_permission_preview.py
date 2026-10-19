@@ -667,6 +667,23 @@ def test_decode_dirty_value_falls_back(normal_user):
     assert decoded["rules"][2]["value_text"] == "（无）"
 
 
+def test_decode_long_structured_value_is_truncated(normal_user):
+    """超大结构化值压成单行并截断：预览规则表不被一条 JSON 值撑成正文墙。"""
+    big_value = [{"pk": f"pk-{index}", "table": "demo.book", "fields": []} for index in range(40)]
+    dp = DataPermission.objects.create(
+        name="长 JSON 值",
+        rules=[{"table": "demo.book", "field": "*", "type": "value.json", "value": big_value, "match": "exact"}],
+    )
+    from system.utils.platform.permission_preview import decode_data_permission
+
+    decoded = decode_data_permission(dp, normal_user)
+    text = decoded["rules"][0]["value_text"]
+    assert text.startswith('[{"pk":"pk-0"')
+    assert "…（共 " in text
+    assert text.endswith("字符）")
+    assert len(text) < 400
+
+
 def test_trial_rejects_malformed_menu_pk(api_client, normal_user, role, menu_factory):
     """非法菜单 pk（非 UUID）归一为 400：诊断工具不应因非法入参抛 500。"""
     grant_preview_menus(role, menu_factory)

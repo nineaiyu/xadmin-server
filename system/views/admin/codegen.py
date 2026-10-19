@@ -50,7 +50,10 @@ _PAYLOAD_PROPERTIES = {
 
 
 class SystemCodeGenViewSet(viewsets.ViewSet):
-    """代码生成器（GUI 化 generate_crud）：只读引擎适配，产物预览与下载"""
+    """代码生成器
+
+    GUI 化的 ``generate_crud``：只读引擎适配；产物预览与下载。
+    """
 
     @extend_schema(
         description="可生成 CRUD 的模型清单（仓库内一级 app 的普通模型）",

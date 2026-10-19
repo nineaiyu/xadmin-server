@@ -58,7 +58,10 @@ class DeptViewSet(
 
     @ApprovalRequired()
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """删除{cls}数据（高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批）"""
+        """删除{cls}数据
+
+        高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批。
+        """
         return super().destroy(request, *args, **kwargs)
 
     @ApprovalRequired()
@@ -70,7 +73,9 @@ class DeptViewSet(
     @extend_schema(request=DeptManagerAssignSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="assign-managers")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def assign_managers(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """部门管理员任命：`{add, remove}` 增量变更（幂等）。
+        """部门管理员任命
+
+        `{add, remove}` 增量变更（幂等）
 
         任命同时装配预置角色与用户级数据权限规则（解任按「不再管理任何部门」回收），
         唯一写口；管理员清单随响应回显。
@@ -93,7 +98,9 @@ class DeptViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def user_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """管理员候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
+        """管理员候选
+
+        按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）
 
         与选人控件同源（identity/utils/user_options.py）；权限与 list 同口径
         （框架 shared_list 注册表，无需新增权限点）。
@@ -109,7 +116,9 @@ class DeptViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="managed")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def managed(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """我的管辖：当前用户任管理员的部门（含全部下级）与成员统计（恒定本人范围，只读）。
+        """我的管辖
+
+        当前用户任管理员的部门（含全部下级）与成员统计（恒定本人范围，只读）
 
         部门行附带主管（leader）与管理员清单（managers，含共管同事），供管辖页
         直接展示联系人；user_count 为直属在册成员数（未删除、含停用），与成员

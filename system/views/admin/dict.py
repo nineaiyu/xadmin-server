@@ -76,7 +76,9 @@ class DataDictViewSet(
     )
     @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """批量删除：内置字典（is_locked）排除并点名，不因单条受保护而整批失败。
+        """批量删除
+
+        内置字典（is_locked）排除并点名，不因单条受保护而整批失败
 
         被排除项进 `data.failures` 明细（此前静默跳过，用户只知数量少了对不上）。
 

@@ -1855,12 +1855,12 @@
   "pk": "1a7a9e9d-6b58-4d31-adac-072e2a4a5696",
   "fields": {
    "created_time": "2026-09-14T13:49:28.667Z",
-   "updated_time": "2026-09-14T13:49:28.667Z",
+   "updated_time": "2026-10-19T08:05:04.709Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "后台任务健康度（近 1 天聚合：成功率 / 健康色 / 高频任务 / 近期失败）",
+   "title": "后台任务健康度",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1868,11 +1868,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1880,12 +1887,12 @@
   "pk": "fd69f69a-fb63-4110-b842-c9bd1512a011",
   "fields": {
    "created_time": "2026-09-14T13:49:28.614Z",
-   "updated_time": "2026-09-14T13:49:28.614Z",
+   "updated_time": "2026-10-19T08:05:04.743Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "导入前校验数据权限数据（逐行校验不落库，返回字段级错误定位）",
+   "title": "导入前校验数据权限数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1893,11 +1900,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1905,12 +1919,12 @@
   "pk": "1694a1ea-18bc-46b6-808d-5e6aeb16d259",
   "fields": {
    "created_time": "2026-09-14T13:49:28.612Z",
-   "updated_time": "2026-09-14T13:49:28.612Z",
+   "updated_time": "2026-10-19T08:05:04.746Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "读取导入文件首行表头并给出列映射候选数据权限（列映射步骤，不落库）",
+   "title": "读取导入表头并给出列映射候选数据权限",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1918,11 +1932,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1930,12 +1951,12 @@
   "pk": "12ded7c9-303d-4bc4-91a2-78d6132c9de5",
   "fields": {
    "created_time": "2026-09-14T13:49:28.610Z",
-   "updated_time": "2026-09-14T13:49:28.610Z",
+   "updated_time": "2026-10-19T08:05:04.748Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导入数据权限数据（大数据量，进度与错误报告在下载中心获取）",
+   "title": "异步导入数据权限数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1943,11 +1964,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1980,12 +2008,12 @@
   "pk": "702fb309-f109-4f41-b451-c4917b5a8f16",
   "fields": {
    "created_time": "2026-09-14T13:49:28.602Z",
-   "updated_time": "2026-09-14T13:49:28.602Z",
+   "updated_time": "2026-10-19T08:05:04.754Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "导入前校验模型字段数据（逐行校验不落库，返回字段级错误定位）",
+   "title": "导入前校验模型字段数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1993,11 +2021,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2005,12 +2040,12 @@
   "pk": "31fb41fc-abbe-4c5c-b39d-05281a57abba",
   "fields": {
    "created_time": "2026-09-14T13:49:28.601Z",
-   "updated_time": "2026-09-14T13:49:28.601Z",
+   "updated_time": "2026-10-19T08:05:04.756Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "读取导入文件首行表头并给出列映射候选模型字段（列映射步骤，不落库）",
+   "title": "读取导入表头并给出列映射候选模型字段",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2018,11 +2053,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2030,12 +2072,12 @@
   "pk": "4cb674b6-270f-4e80-82e0-00dee599b0d4",
   "fields": {
    "created_time": "2026-09-14T13:49:28.599Z",
-   "updated_time": "2026-09-14T13:49:28.599Z",
+   "updated_time": "2026-10-19T08:05:04.759Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导入模型字段数据（大数据量，进度与错误报告在下载中心获取）",
+   "title": "异步导入模型字段数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2043,11 +2085,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2205,12 +2254,12 @@
   "pk": "fb293840-caa6-47d6-9f73-0281eaff1d06",
   "fields": {
    "created_time": "2026-09-14T13:49:28.582Z",
-   "updated_time": "2026-09-14T13:49:28.582Z",
+   "updated_time": "2026-10-19T08:05:04.761Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "物理清除菜单回收站数据（不传 pks 时清除全部超过保留期的数据）",
+   "title": "物理清除菜单回收站数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2218,11 +2267,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2230,12 +2286,12 @@
   "pk": "f020517b-de76-45f2-ba5e-aa9337aceb1b",
   "fields": {
    "created_time": "2026-09-14T13:49:28.580Z",
-   "updated_time": "2026-09-14T13:49:28.580Z",
+   "updated_time": "2026-10-19T08:05:04.763Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "导入前校验菜单数据（逐行校验不落库，返回字段级错误定位）",
+   "title": "导入前校验菜单数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2243,11 +2299,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2255,12 +2318,12 @@
   "pk": "53e57e41-9716-4f58-8c03-40e2a3493494",
   "fields": {
    "created_time": "2026-09-14T13:49:28.578Z",
-   "updated_time": "2026-09-14T13:49:28.578Z",
+   "updated_time": "2026-10-19T08:05:04.765Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "读取导入文件首行表头并给出列映射候选菜单（列映射步骤，不落库）",
+   "title": "读取导入表头并给出列映射候选菜单",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2268,11 +2331,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2280,12 +2350,12 @@
   "pk": "6f6a31b6-978e-42f9-b1a5-72cab37d8be0",
   "fields": {
    "created_time": "2026-09-14T13:49:28.576Z",
-   "updated_time": "2026-09-14T13:49:28.576Z",
+   "updated_time": "2026-10-19T08:05:04.768Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导入菜单数据（大数据量，进度与错误报告在下载中心获取）",
+   "title": "异步导入菜单数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2293,11 +2363,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2330,12 +2407,12 @@
   "pk": "9cdb2307-ab78-4018-9f28-7af0b327eb20",
   "fields": {
    "created_time": "2026-09-14T13:49:28.554Z",
-   "updated_time": "2026-09-14T13:49:28.554Z",
+   "updated_time": "2026-10-19T08:05:04.784Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "导入前校验数据字典管理数据（逐行校验不落库，返回字段级错误定位）",
+   "title": "导入前校验数据字典管理数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2343,11 +2420,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2355,12 +2439,12 @@
   "pk": "ec1b37e7-1a6c-40fe-ac2a-82a50f6dab3a",
   "fields": {
    "created_time": "2026-09-14T13:49:28.552Z",
-   "updated_time": "2026-09-14T13:49:28.552Z",
+   "updated_time": "2026-10-19T08:05:04.787Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "读取导入文件首行表头并给出列映射候选数据字典管理（列映射步骤，不落库）",
+   "title": "读取导入表头并给出列映射候选数据字典管理",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2368,11 +2452,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2380,12 +2471,12 @@
   "pk": "1c07742a-2be5-43cc-875c-335c6f689345",
   "fields": {
    "created_time": "2026-09-14T13:49:28.550Z",
-   "updated_time": "2026-09-14T13:49:28.550Z",
+   "updated_time": "2026-10-19T08:05:04.790Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导入数据字典管理数据（大数据量，进度与错误报告在下载中心获取）",
+   "title": "异步导入数据字典管理数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2393,11 +2484,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2430,12 +2528,12 @@
   "pk": "781e36e1-cb91-414c-ada7-9960896e50ad",
   "fields": {
    "created_time": "2026-09-14T13:49:28.539Z",
-   "updated_time": "2026-09-14T13:49:28.539Z",
+   "updated_time": "2026-10-19T08:05:04.800Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "导入前校验用户配置数据（逐行校验不落库，返回字段级错误定位）",
+   "title": "导入前校验用户配置数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2443,11 +2541,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2455,12 +2560,12 @@
   "pk": "24395e8c-ca52-4637-be04-705db385a431",
   "fields": {
    "created_time": "2026-09-14T13:49:28.537Z",
-   "updated_time": "2026-09-14T13:49:28.537Z",
+   "updated_time": "2026-10-19T08:05:04.802Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "读取导入文件首行表头并给出列映射候选用户配置（列映射步骤，不落库）",
+   "title": "读取导入表头并给出列映射候选用户配置",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2468,11 +2573,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2480,12 +2592,12 @@
   "pk": "2fc749fc-fcc6-4961-a26f-4819d35bac90",
   "fields": {
    "created_time": "2026-09-14T13:49:28.536Z",
-   "updated_time": "2026-09-14T13:49:28.536Z",
+   "updated_time": "2026-10-19T08:05:04.804Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导入用户配置数据（大数据量，进度与错误报告在下载中心获取）",
+   "title": "异步导入用户配置数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2493,11 +2605,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2530,12 +2649,12 @@
   "pk": "6889fc1f-d2df-4dd4-9500-932b9c9ca345",
   "fields": {
    "created_time": "2026-09-14T13:49:28.532Z",
-   "updated_time": "2026-09-14T13:49:28.532Z",
+   "updated_time": "2026-10-19T08:05:04.807Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "导入前校验系统配置数据（逐行校验不落库，返回字段级错误定位）",
+   "title": "导入前校验系统配置数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2543,11 +2662,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2555,12 +2681,12 @@
   "pk": "c62fb31d-aba6-4082-9137-493ccd44e84b",
   "fields": {
    "created_time": "2026-09-14T13:49:28.530Z",
-   "updated_time": "2026-09-14T13:49:28.530Z",
+   "updated_time": "2026-10-19T08:05:04.809Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "读取导入文件首行表头并给出列映射候选系统配置（列映射步骤，不落库）",
+   "title": "读取导入表头并给出列映射候选系统配置",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2568,11 +2694,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2580,12 +2713,12 @@
   "pk": "cbf69b0e-0a36-492d-b09f-480b313ad91e",
   "fields": {
    "created_time": "2026-09-14T13:49:28.528Z",
-   "updated_time": "2026-09-14T13:49:28.528Z",
+   "updated_time": "2026-10-19T08:05:04.811Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导入系统配置数据（大数据量，进度与错误报告在下载中心获取）",
+   "title": "异步导入系统配置数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2593,11 +2726,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2705,12 +2845,12 @@
   "pk": "679eab6e-63bb-4ffa-8860-a8e72dce17df",
   "fields": {
    "created_time": "2026-09-19T01:34:48.011Z",
-   "updated_time": "2026-09-19T01:34:48.011Z",
+   "updated_time": "2026-10-19T08:05:04.676Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "批量删除：内置字典静默排除，不因单条受保护而整批失败。",
+   "title": "批量删除",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2723,7 +2863,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -3368,12 +3514,12 @@
   "pk": "591c5eb0-1164-493b-8928-78324fd40c65",
   "fields": {
    "created_time": "2026-09-29T18:17:42.286Z",
-   "updated_time": "2026-09-29T18:17:42.286Z",
+   "updated_time": "2026-10-19T08:06:33.415Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "代码生成器（模型清单 / 字段勾选 / 预览 / 下载产物）",
+   "title": "代码生成器",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -3386,7 +3532,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -3394,12 +3546,12 @@
   "pk": "677a5819-b8a4-4bb9-8bc0-2b4fb13676d6",
   "fields": {
    "created_time": "2026-09-29T18:17:42.288Z",
-   "updated_time": "2026-09-29T18:17:42.288Z",
+   "updated_time": "2026-10-19T08:06:33.412Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "代码生成器（模型清单 / 字段勾选 / 预览 / 下载产物）",
+   "title": "代码生成器",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -3412,7 +3564,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -3420,12 +3578,12 @@
   "pk": "1a0b63a7-b009-4522-83b7-ef94c8b74204",
   "fields": {
    "created_time": "2026-09-29T18:17:42.288Z",
-   "updated_time": "2026-09-29T18:17:42.288Z",
+   "updated_time": "2026-10-19T08:06:33.410Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "代码生成器（模型清单 / 字段勾选 / 预览 / 下载产物）",
+   "title": "代码生成器",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -3438,7 +3596,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -3446,12 +3610,12 @@
   "pk": "d24e3d0f-2099-4c4a-b2c9-278b23644f19",
   "fields": {
    "created_time": "2026-09-29T18:17:42.289Z",
-   "updated_time": "2026-09-29T18:17:42.289Z",
+   "updated_time": "2026-10-19T08:06:33.405Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "代码生成器（模型清单 / 字段勾选 / 预览 / 下载产物）",
+   "title": "代码生成器",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -3464,7 +3628,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {

@@ -58,7 +58,7 @@
 | 序列化 | `notifications/serializers/message.py` | `NoticeMessageSerializer.validate_message` 统一按 HTML 净化；`UserNoticeSerializer`、`NoticeUserReadMessageSerializer` 下发 `message` |
 | 视图 | `notifications/views/message.py` | `NoticeMessageViewSet` + `announcement` 动作复用创建链路 |
 | 推送 | `notifications/message.py` | `SiteMessageUtil.push_notice_messages` 显式序列化 `pk/level/title/notice_type/message` |
-| AI 动作 | `ai/utils/ai_api_registry.py` | `notice.publish` 复用 announcement 端点，`message` 参数为纯文本说明 |
+| AI 动作 | `notifications/ai_declarations.py` | `notice.publish` 复用 announcement 端点，`message` 参数为纯文本说明 |
 | 前端表单 | `src/views/system/notice/utils/noticeColumns.tsx` | `message` 列固定渲染 `WangEditor` |
 | 前端展示 | `src/views/system/components/NoticeShow.vue` | 系统通知 `v-html`；普通通知只读 WangEditor |
 | 前端推送 | `src/store/modules/notice.ts` | 桌面通知/`ElNotification` 预览按 HTML 处理 |
@@ -157,7 +157,7 @@ Markdown 源码中的原始 HTML 不会被执行：`html: false` 会转义，展
 | `notifications/seeds/fieldpermission.json` | 通知公告相关白名单补 `message_format`，并补齐历史遗漏的 `notice_post` / `deleted_at` |
 | `notifications/serializers/message.py` | 字段下发；格式感知的 `validate_message`；编辑期格式不可变；用户通知序列化器补字段 |
 | `notifications/message.py` | 推送载荷补 `message_format` |
-| `ai/utils/ai_api_registry.py` | `notice.publish` 的 const 默认值与参数说明改为 Markdown |
+| `notifications/ai_declarations.py` | `notice.publish` 的 const 默认值与参数说明改为 Markdown |
 | `tests/unit/notifications/test_notice_input_validation.py` | HTML 净化、Markdown 保留、非法格式、格式不可变 |
 | `tests/integration/ai/test_ai_action.py` | AI 公告落库 `message_format="markdown"` |
 
@@ -344,4 +344,4 @@ def validate_message(self, value):
 - 公告展示：`xadmin-client/src/views/system/components/NoticeShow.vue`
 - 公告表单元数据：`xadmin-client/src/views/system/notice/utils/noticeColumns.tsx`
 - 公告序列化与净化：`xadmin-server/notifications/serializers/message.py`
-- AI 动作声明：`xadmin-server/ai/utils/ai_api_registry.py`
+- AI 动作声明：`xadmin-server/notifications/ai_declarations.py`

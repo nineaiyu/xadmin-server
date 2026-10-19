@@ -211,8 +211,9 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
                     "label": "AI 动作声明",
                     "path": app_dir / "ai_declarations.py",
                     "content": self._render_ai_declarations(ctx, options),
-                    "mode": "create",
-                    "key": f"ai-declarations-{ctx['model_snake']}",
+                    # 同一应用多模型按生成块合并（dict 内分块，重复生成幂等）
+                    "mode": "ai_actions",
+                    "key": f"ai-actions-{ctx['model_snake']}",
                 }
             )
         if options.get("with_tests"):

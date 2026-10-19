@@ -163,7 +163,7 @@ class ScreenTemplate(DbAuditModel, DbUuidModel):
 
 
 class ScreenTemplateVersion(DbAuditModel, DbUuidModel):
-    """大屏模板的历史版本（ADR-090 D4）：保存模板内容时自动记一版，可回滚。
+    """大屏模板的历史版本：保存模板内容时自动记一版，可回滚。
 
     只存「会被编辑的三件事」——名称 / 分组 / 载荷；可见性与归属跟随主表。
     每个模板保留最近 ``SCREEN_TEMPLATE_VERSION_KEEP`` 版（超出裁剪最旧）。
@@ -191,7 +191,7 @@ class ScreenTemplateVersion(DbAuditModel, DbUuidModel):
 
 
 class ScreenClipboard(DbAuditModel, DbUuidModel):
-    """云端剪贴板（ADR-090 D4）：按用户单槽，让「复制 → 换设备/浏览器 → 粘贴」成立。
+    """云端剪贴板：按用户单槽，让「复制 → 换设备/浏览器 → 粘贴」成立。
 
     载荷与自由画布同形（``{design_w, design_h, panes}``），归一化复用
     ``dataset.utils.screen_layout``；一个用户只有一条记录（``user`` 唯一）。

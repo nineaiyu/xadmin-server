@@ -23,7 +23,9 @@ class AiObservabilityMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="usage")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def usage(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """AI 用量账本：按天 / 链路 / 档案 / 模型 / Top 用户 + 成功率与延迟 + 配额与并发占用。
+        """AI 用量账本
+
+        按天 / 链路 / 档案 / 模型 / Top 用户 + 成功率与延迟 + 配额与并发占用
 
         数据源 = AiUsageRecord（逐次记账，保留期随 MONITOR_RETENTION_DAYS 清理）；
         合计与档案 / 模型维度带成功率与延迟（均值恒给，P95 样本足够才给）；
@@ -43,7 +45,9 @@ class AiObservabilityMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="metrics")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def metrics(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """AI 调用观测：近 N 天用量 / 成功率 / 类型分布 / Top 用户。
+        """AI 调用观测
+
+        近 N 天用量 / 成功率 / 类型分布 / Top 用户
 
         数据源 = OperationLog(auth_type=ai)：AI:ask（文档问答）/ AI:nl_query（NL 查数）/
         AI:action（受限动作）；权限点与 status 共用同一路径正则（`(status|metrics)$`，

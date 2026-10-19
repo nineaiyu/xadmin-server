@@ -34,9 +34,9 @@ class SearchPostSerializer(PostSerializer):
 
 
 class SearchPostViewSet(RelationCountMixin, OnlyListModelSet):
-    """岗位搜索（通知选人等场景的远程搜索候选，仅启用岗位）
+    """岗位搜索
 
-    候选清单带成员数（``user_count``，与岗位管理页同口径），供人员名录类页面
+    通知选人等场景的远程搜索候选；仅返回启用岗位。候选清单带成员数（``user_count``，与岗位管理页同口径），供人员名录类页面
     展示岗位规模；成员数注解由 RelationCountMixin 按序列化器声明预聚合。
     """
 

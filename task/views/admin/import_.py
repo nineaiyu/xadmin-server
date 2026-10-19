@@ -107,7 +107,10 @@ class ImportTemplateScopeFilter(BaseFilterBackend):
 
 
 class ImportTemplateViewSet(BaseModelSet):
-    """导入列映射模板（个人 / 全局共享两档，按目标模型隔离）"""
+    """导入列映射模板
+
+    个人 / 全局共享两档；按目标模型隔离。
+    """
 
     queryset = ImportTemplate.objects.all()
     serializer_class = ImportTemplateSerializer

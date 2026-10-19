@@ -50,7 +50,10 @@ def _get_mfa_user(request: Any) -> Any:
 
 
 class LoginMFAPasskeyChallengeAPIView(APIView):
-    """获取 Passkey 登录验证的挑战值（匿名，凭一次性 mfa_token 识别待验证用户）"""
+    """Passkey 登录验证挑战
+
+    匿名接口：凭一次性 ``mfa_token`` 识别待验证用户。
+    """
 
     permission_classes: list[type] = []
     authentication_classes: list[type] = []

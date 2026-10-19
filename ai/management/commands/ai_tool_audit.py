@@ -13,7 +13,8 @@
 
 - 路由面 = ``build_route_index()``（与权限点巡检同源：仅 api/ 前缀、需鉴权、跳过
   PUT/HEAD）；
-- 声明面 = ``API_ACTION_SPECS``（唯一白名单注册表，MCP / 助手页 / function calling 同源）；
+- 声明面 = ``ai_registry.action_specs()``（各应用 ``ai_declarations.py`` 合并的
+  唯一白名单注册表，MCP / 助手页 / function calling 同源）；
 - 豁免清单 = ``EXEMPT_PREFIXES``（AI 自身端点 / 认证 / 文档 / 实时通道等明确不打算
   AI 化的面），与权限点 ``EXCLUDE_PERMISSION_NAMES`` 同口径；
 - 未注册 ≠ 缺陷：本命令默认只报告（避免强迫注册无意义动作），``--fail-on-gap``
@@ -79,14 +80,17 @@ class Command(BaseCommand):
         import json
         import re
 
-        from ai.utils.ai_api_registry import API_ACTION_SPECS
+        from ai.utils.ai_registry import action_specs
         from ai.utils.ai_tool_triage import triage_for
         from common.swagger.ai_meta import normalize_path
         from system.services.permission_sync import build_route_index
 
         routes = [route for route in build_route_index() if route.requires_permission]
         declared = {}
-        for spec in API_ACTION_SPECS.values():
+        for spec in action_specs().values():
+            if not hasattr(spec, "path"):
+                # 内置动作（validate/execute）不是声明式端点，不参与路由面比对
+                continue
             declared[(str(spec.method).upper(), normalize_path(spec.path))] = spec
 
         candidates, exempted, covered_declared = [], [], set()

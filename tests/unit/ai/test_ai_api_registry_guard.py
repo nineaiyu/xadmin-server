@@ -12,9 +12,12 @@ import re
 import pytest
 from django.urls import resolve
 
-from ai.utils.ai_actions import ACTION_SPECS
 from ai.utils.ai_api_actions import PATH_PLACEHOLDER, build_action_url
+from ai.utils.ai_registry import action_specs
 from system.services.seeding import read_model_rows
+
+#: 发现结果（各应用 ai_declarations.py 合并；本模块导入时 django 已完成 setup）
+ACTION_SPECS = action_specs()
 
 #: 声明式动作参数的合法类型（builtin 动作的 validate 为自定义函数，不受此约束）
 VALID_DECLARED_TYPES = {"user", "role", "menu", "pk", "string", "int", "bool", "enum", "json"}
@@ -151,3 +154,72 @@ class TestRegistryGuard:
             properties = set(entry["inputSchema"]["properties"])
             declared = {name for name, rule in spec.params.items() if "const" not in rule}
             assert properties == declared, f"工具目录参数与声明不一致: {key}"
+
+
+class TestRegistryDiscovery:
+    """按应用自动发现：声明下沉后注册表仍须覆盖全量能力且规则不退化。"""
+
+    def test_registry_non_empty_and_sorted(self):
+        assert ACTION_SPECS, "注册表为空：各应用 ai_declarations.py 未被发现"
+        assert list(ACTION_SPECS) == sorted(ACTION_SPECS), "注册表顺序不稳定（应为 key 排序）"
+        assert len(ACTION_SPECS) >= 100, f"动作数量异常下降：{len(ACTION_SPECS)}"
+
+    def test_core_actions_present_after_migration(self):
+        """抽样守护：各应用声明的动作都在（防止搬迁时漏文件）。"""
+        for key in (
+            "user.set_active",
+            "role.grant",
+            "dept.delete",
+            "online.force_logout",
+            "config.set",
+            "monitor.overview",
+            "dashboard.overview",
+            "task.run",
+            "export.list",
+            "webhook.list",
+            "log.operation",
+            "file.stats",
+            "notice.publish",
+            "message.mark_all_read",
+            "dataset.aggregate",
+            "dform.submit",
+            "approval.approve",
+            "leave.submit",
+            "knowledge.list",
+            "ai.metrics",
+        ):
+            assert key in ACTION_SPECS, f"动作声明丢失: {key}"
+
+    def test_duplicate_key_within_module_rejected(self):
+        from types import SimpleNamespace
+
+        from django.core.exceptions import ImproperlyConfigured
+
+        from ai.utils.ai_registry import _declared_specs
+
+        module = SimpleNamespace(
+            AI_ACTIONS={"a.b": SimpleNamespace(key="a.b")},
+            AI_READ_ACTIONS={"a.b": SimpleNamespace(key="a.b")},
+        )
+        with pytest.raises(ImproperlyConfigured, match="重复"):
+            _declared_specs(module, "fake_module")
+
+    def test_key_mismatch_rejected(self):
+        from types import SimpleNamespace
+
+        from django.core.exceptions import ImproperlyConfigured
+
+        from ai.utils.ai_registry import _declared_specs
+
+        module = SimpleNamespace(AI_ACTIONS={"a.b": SimpleNamespace(key="a.c")})
+        with pytest.raises(ImproperlyConfigured, match="不一致"):
+            _declared_specs(module, "fake_module")
+
+    def test_disabled_module_hides_action(self, monkeypatch):
+        """停用模块的动作不进目录（内部 dispatch 绕过 ASGI 模块网关，须在此收敛）。"""
+        from ai.utils.ai_action_types import module_allows
+
+        spec = ACTION_SPECS["dataset.list"]
+        assert module_allows(spec) is True
+        monkeypatch.setattr("common.core.modules.is_module_enabled", lambda module_id: module_id != "analysis")
+        assert module_allows(spec) is False

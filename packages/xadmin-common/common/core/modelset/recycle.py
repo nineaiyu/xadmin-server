@@ -98,7 +98,10 @@ class RecycleBinAction:
     )
     @action(methods=["delete"], detail=False, url_path="recycle/purge")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def recycle_purge(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """物理清除{cls}回收站数据（不传 pks 时清除全部超过保留期的数据）"""
+        """物理清除{cls}回收站数据
+
+        不传 pks 时清除全部超过保留期的数据
+        """
         queryset = self.get_recycle_purge_queryset(request.data.get("pks") or [])
         count = 0
         # 经 filter_queryset 后不保证是 QuerySet（过滤器/取值域可返回 list），

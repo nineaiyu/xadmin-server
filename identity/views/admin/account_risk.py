@@ -91,7 +91,10 @@ class AccountRiskViewSet(OnlyListModelSet):
     )
     @action(methods=["post"], detail=False, url_path="batch-handle")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_handle(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """批量处置风险项（逐项隔离，返回成功 / 失败明细）"""
+        """批量处置风险项
+
+        逐项隔离，返回成功 / 失败明细
+        """
         pks = request.data.get("pks") or []
         if not isinstance(pks, (list, tuple)) or not pks:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))

@@ -154,12 +154,12 @@
   "pk": "7a857366-1641-4b52-886c-ea1dcbc81287",
   "fields": {
    "created_time": "2026-09-10T00:00:00Z",
-   "updated_time": "2026-09-10T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.852Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "ApprovalRequestBatchApprove",
+   "title": "批量通过审批单",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -167,11 +167,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -179,12 +186,12 @@
   "pk": "5577737c-dfaa-4412-b3f4-a7008e6b77b2",
   "fields": {
    "created_time": "2026-09-10T00:00:00Z",
-   "updated_time": "2026-09-10T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.849Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "ApprovalRequestBatchReject",
+   "title": "批量驳回审批单",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -192,11 +199,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -204,12 +218,12 @@
   "pk": "c79a6cfc-d797-474d-9599-c9173c80732e",
   "fields": {
    "created_time": "2026-09-10T00:00:00Z",
-   "updated_time": "2026-09-10T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.846Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "ApprovalRequestPendingCount",
+   "title": "待我审批数",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -217,11 +231,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -354,12 +375,12 @@
   "pk": "f3052814-8880-5da1-8f8d-fcfb92fdb744",
   "fields": {
    "created_time": "2026-09-11T00:00:00Z",
-   "updated_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.840Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "ApprovalFlowPartialupdate",
+   "title": "部分更新审批流程定义信息",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -367,11 +388,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -607,12 +635,12 @@
   "pk": "36d15b17-c4c6-52ee-b1e4-1e6fd5d65c30",
   "fields": {
    "created_time": "2026-09-11T00:00:00Z",
-   "updated_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.829Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "ApprovalInstanceBatchapprove",
+   "title": "批量通过",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -620,11 +648,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -632,12 +667,12 @@
   "pk": "c736e4b9-0b22-5ef0-8c48-bb653842a2fa",
   "fields": {
    "created_time": "2026-09-11T00:00:00Z",
-   "updated_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.832Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "ApprovalInstanceBatchreject",
+   "title": "批量驳回（原因必填）",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -645,11 +680,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -657,12 +699,12 @@
   "pk": "1df25981-c524-5deb-8c34-c1dc44a56d0f",
   "fields": {
    "created_time": "2026-09-11T00:00:00Z",
-   "updated_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.837Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "ApprovalInstancePendingcount",
+   "title": "待我审批数",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -670,11 +712,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -707,12 +756,12 @@
   "pk": "56d75ec7-c504-5ff2-90e7-1f8445d70b7d",
   "fields": {
    "created_time": "2026-09-11T00:00:00Z",
-   "updated_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.842Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "ApprovalInstanceAvailableFlows",
+   "title": "可发起流程",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -720,11 +769,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -957,12 +1013,12 @@
   "pk": "b7e4473b-8b9a-444e-b32c-e3c05d2140eb",
   "fields": {
    "created_time": "2026-09-14T13:49:28.524Z",
-   "updated_time": "2026-09-14T13:49:28.524Z",
+   "updated_time": "2026-10-19T08:05:04.814Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "流程定义版本列表（快照审计追溯）。",
+   "title": "流程定义版本列表（快照审计追溯）",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -970,11 +1026,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -982,12 +1045,12 @@
   "pk": "2fa5bf6a-a35e-4161-8c03-8be4e298d8a7",
   "fields": {
    "created_time": "2026-09-14T13:49:28.522Z",
-   "updated_time": "2026-09-14T13:49:28.522Z",
+   "updated_time": "2026-10-19T08:05:04.817Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "回滚到历史版本：快照写入活定义并落新版本；有 PENDING 实例时拒绝。",
+   "title": "回滚到历史版本",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -995,11 +1058,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1057,12 +1127,12 @@
   "pk": "2b606fea-cf43-454c-bd06-1894d8a49be4",
   "fields": {
    "created_time": "2026-09-15T13:17:32.172Z",
-   "updated_time": "2026-09-15T13:17:32.172Z",
+   "updated_time": "2026-10-19T08:05:04.703Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "获取审批委托（审批流三期）：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。的列表",
+   "title": "获取审批委托的列表",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1070,11 +1140,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1082,12 +1159,12 @@
   "pk": "bdfa28b4-0c90-4e68-8d03-fda708c3f61d",
   "fields": {
    "created_time": "2026-09-15T13:17:32.179Z",
-   "updated_time": "2026-09-15T13:17:32.179Z",
+   "updated_time": "2026-10-19T08:05:04.700Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "添加审批委托（审批流三期）：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。数据",
+   "title": "添加审批委托数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1095,11 +1172,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1107,12 +1191,12 @@
   "pk": "d7509a2b-b969-47ff-a8c6-ab21abaeea66",
   "fields": {
    "created_time": "2026-09-15T13:17:32.182Z",
-   "updated_time": "2026-09-15T13:17:32.182Z",
+   "updated_time": "2026-10-19T08:05:04.697Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "删除审批委托（审批流三期）：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。数据",
+   "title": "删除审批委托数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1120,11 +1204,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1132,12 +1223,12 @@
   "pk": "3c9a70a5-771b-4e63-95e2-860729468e13",
   "fields": {
    "created_time": "2026-09-15T13:17:32.183Z",
-   "updated_time": "2026-09-15T13:17:32.183Z",
+   "updated_time": "2026-10-19T08:05:04.695Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "获取审批委托（审批流三期）：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。的详情",
+   "title": "获取审批委托的详情",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1145,11 +1236,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1157,12 +1255,12 @@
   "pk": "8593dbd0-e0b3-4e97-a883-816d3a959d2b",
   "fields": {
    "created_time": "2026-09-15T13:17:32.185Z",
-   "updated_time": "2026-09-15T13:17:32.186Z",
+   "updated_time": "2026-10-19T08:05:04.692Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "部分更新审批委托（审批流三期）：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。信息",
+   "title": "部分更新审批委托信息",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1170,11 +1268,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1182,12 +1287,12 @@
   "pk": "03f078a1-0fd5-4872-8113-f4d5a27120b7",
   "fields": {
    "created_time": "2026-09-15T13:17:32.188Z",
-   "updated_time": "2026-09-15T13:17:32.188Z",
+   "updated_time": "2026-10-19T08:05:04.689Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "批量删除审批委托（审批流三期）：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。",
+   "title": "批量删除审批委托",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1195,11 +1300,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1232,12 +1344,12 @@
   "pk": "42e5d4c8-c873-4f50-931e-36e8e9dc2bff",
   "fields": {
    "created_time": "2026-09-19T01:34:48.009Z",
-   "updated_time": "2026-09-19T01:34:48.009Z",
+   "updated_time": "2026-10-19T08:05:04.678Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "批量删除：静默排除有历史实例的流程，不因单条受保护而整批失败。",
+   "title": "批量删除",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1250,7 +1362,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1258,12 +1376,12 @@
   "pk": "cfe94f73-e9de-4640-aa8d-8093088e2b3c",
   "fields": {
    "created_time": "2026-09-19T01:34:48.012Z",
-   "updated_time": "2026-09-19T01:34:48.012Z",
+   "updated_time": "2026-10-19T08:05:04.673Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "批量删除：静默排除审批中/已批准的申请，不因单条受保护而整批失败。",
+   "title": "批量删除",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1276,7 +1394,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1460,12 +1584,12 @@
   "pk": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c403",
   "fields": {
    "created_time": "2026-09-21T00:00:00Z",
-   "updated_time": "2026-09-21T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.660Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "create:SystemApprovalRule",
+   "title": "添加审批规则数据",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -1478,7 +1602,13 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1486,12 +1616,12 @@
   "pk": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c404",
   "fields": {
    "created_time": "2026-09-21T00:00:00Z",
-   "updated_time": "2026-09-21T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.662Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "retrieve:SystemApprovalRule",
+   "title": "获取审批规则的详情",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -1504,7 +1634,13 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1512,12 +1648,12 @@
   "pk": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c405",
   "fields": {
    "created_time": "2026-09-21T00:00:00Z",
-   "updated_time": "2026-09-21T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.665Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "partialUpdate:SystemApprovalRule",
+   "title": "部分更新审批规则信息",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -1530,7 +1666,13 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1538,12 +1680,12 @@
   "pk": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c406",
   "fields": {
    "created_time": "2026-09-21T00:00:00Z",
-   "updated_time": "2026-09-21T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.657Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "destroy:SystemApprovalRule",
+   "title": "删除审批规则数据",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -1551,11 +1693,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1563,12 +1712,12 @@
   "pk": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c407",
   "fields": {
    "created_time": "2026-09-21T00:00:00Z",
-   "updated_time": "2026-09-21T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.667Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "batchDestroy:SystemApprovalRule",
+   "title": "批量删除审批规则",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -1576,11 +1725,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1588,12 +1744,12 @@
   "pk": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c408",
   "fields": {
    "created_time": "2026-09-21T00:00:00Z",
-   "updated_time": "2026-09-21T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.670Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "candidateOptions:SystemApprovalRule",
+   "title": "审批人候选目录",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -1601,11 +1757,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1638,12 +1801,12 @@
   "pk": "89447bdf-3708-4ce7-bb31-0d76987e4894",
   "fields": {
    "created_time": "2026-09-23T02:13:28.239Z",
-   "updated_time": "2026-09-23T02:13:28.239Z",
+   "updated_time": "2026-10-19T08:05:04.649Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "发表评论（参与人 = 可见域内用户；@ 提及者收提醒）",
+   "title": "发表评论",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1656,7 +1819,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1716,12 +1885,12 @@
   "pk": "309f8363-b258-4940-996a-fc64fddb8a5b",
   "fields": {
    "created_time": "2026-09-29T00:00:00Z",
-   "updated_time": "2026-09-29T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.614Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "ApprovalInstanceReturnTargets",
+   "title": "可退回节点",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -1729,11 +1898,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1766,12 +1942,12 @@
   "pk": "29294c42-f556-499b-87e5-ae4e4a8a7e16",
   "fields": {
    "created_time": "2026-09-29T00:00:00Z",
-   "updated_time": "2026-09-29T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.618Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "ApprovalInstanceRemoveSign",
+   "title": "减签",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -1779,11 +1955,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  }
 ]

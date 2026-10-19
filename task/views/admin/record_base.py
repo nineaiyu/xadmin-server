@@ -47,7 +47,9 @@ class RecordStatsMixin:
     @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=RECORD_STATS_CACHE_SECONDS, key_func="get_stats_cache_key")
     def stats(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """近 N 天记录统计（总数 / 进行中 / 失败 / 最近一次），按「我的」收口。"""
+        """近 N 天记录统计
+
+        总数 / 进行中 / 失败 / 最近一次；按「我的」收口。"""
         model = self.queryset.model
         return ApiResponse(data=record_stats(model.objects.all(), request.user, **self.record_stats_kwargs))
 

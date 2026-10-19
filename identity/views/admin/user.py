@@ -127,7 +127,9 @@ class UserViewSet(
         return instance.delete()
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """创建用户；`invite=true` 一步完成邀请开户（无需密码 + 邮件邀请链接）。
+        """创建用户
+
+        `invite=true` 一步完成邀请开户（无需密码 + 邮件邀请链接）
 
         前置校验（fail-closed，不满足则不创建，避免产生「收不到邀请又无法登录」的死号）：
         邮件渠道已配置 + 具备邀请权限点 `invite:SystemUser`。
@@ -195,7 +197,10 @@ class UserViewSet(
     @extend_schema(responses=get_default_response_schema(), request=None)
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def invite(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """发送/重发邀请激活邮件（重置为待激活 + 一次性链接；权限点 invite:SystemUser）"""
+        """发送/重发邀请激活邮件
+
+        重置为待激活 + 一次性链接；权限点 invite:SystemUser
+        """
         instance = self.get_object()
         if not user_invite.mail_channel_configured():
             return ApiResponse(code=1001, detail=user_invite.INVITE_MAIL_UNAVAILABLE_MESSAGE)
@@ -218,7 +223,10 @@ class UserViewSet(
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
     def reset_mfa(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """重置{cls}MFA（清除 OTP 绑定，敏感操作：需密码二次确认）"""
+        """重置{cls}MFA
+
+        清除 OTP 绑定，敏感操作：需密码二次确认
+        """
         instance = self.get_object()
         instance.otp_secret_key = ""
         instance.mfa_level = UserInfo.MFALevelChoices.DISABLED
@@ -249,7 +257,10 @@ class UserViewSet(
     @extend_schema(responses=get_default_response_schema(), request=None)
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def impersonate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """模拟用户（签发被模拟用户的 token，以其身份使用后台；impersonate 权限点 + 密码二次确认）"""
+        """模拟用户
+
+        签发被模拟用户的 token，以其身份使用后台；impersonate 权限点 + 密码二次确认
+        """
         if is_impersonating(request):
             return ApiResponse(code=1001, detail=_("You are already impersonating another user, exit first"))
         target = self.get_object()
@@ -278,7 +289,9 @@ class UserViewSet(
     )
     @action(methods=["get", "post"], detail=True, url_path="im-binding")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def im_binding(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """管理员代录 IM 身份（免扫码）：GET 查看绑定，POST 创建或更新。
+        """管理员代录 IM 身份
+
+        免扫码：GET 查看绑定，POST 创建或更新
 
         与自助扫码绑定（identity/views/auth/oauth.py）共用 UserOAuthBinding；
         钉钉的 subject 必须是 unionId（发消息前再换算 userid，见 notifications/backends/dingtalk.py）。
@@ -327,7 +340,10 @@ class UserViewSet(
     )
     @action(methods=["post"], detail=True, url_path="im-unbind")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def im_unbind(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """管理员解绑 IM 身份（防自锁：解绑后无其它登录方式则拒绝）。"""
+        """管理员解绑 IM 身份
+
+        防自锁：解绑后无其它登录方式则拒绝
+        """
         user = self.get_object()
         provider = (request.data.get("provider") or "").strip()
         binding = user.oauth_bindings.filter(provider=provider).first()

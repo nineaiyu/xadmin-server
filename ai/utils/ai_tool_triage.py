@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """AI 工具面 triage（收口）：候选资源域的「注册 / 不 AI 化」显式决策清单。
 
-`manage.py ai_tool_audit` 对“未在 `API_ACTION_SPECS` 声明”的路由做三态判定：
+`manage.py ai_tool_audit` 对“未在各应用 `ai_declarations.py` 声明”的路由做三态判定：
 
 1. **已声明**：被 AI 统一工具层覆盖（正常态，不进入候选）；
 2. **triage 命中 exempt**：已确认**不 AI 化**（本清单登记理由，审计可查）；

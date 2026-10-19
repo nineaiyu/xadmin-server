@@ -152,7 +152,10 @@ class UserOTPViewSet(GenericViewSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="start")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def start(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """发起绑定：生成候选密钥与 otpauth URI（前端渲染二维码）"""
+        """发起绑定
+
+        生成候选密钥与 otpauth URI（前端渲染二维码）
+        """
         if _binding_disallowed(request.user, OtpBackend.name):
             return ApiResponse(code=1001, detail=_("MFA method is not allowed by account policy"))
         if request.user.mfa_enabled:
@@ -171,7 +174,9 @@ class UserOTPViewSet(GenericViewSet):
     @extend_schema(request=OtpBindConfirmSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="confirm", serializer_class=OtpBindConfirmSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def confirm(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """确认绑定：校验动态码后写入密钥，并自动开启登录 MFA
+        """确认绑定
+
+        校验动态码后写入密钥，并自动开启登录 MFA
 
         绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。
         """
@@ -214,7 +219,9 @@ class UserOTPViewSet(GenericViewSet):
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
     def close(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """关闭登录二次验证（敏感操作：需先通过二次验证，未验证时返回 412）。
+        """关闭登录二次验证
+
+        敏感操作：需先通过二次验证，未验证时返回 412
 
         仅停用开关，保留已绑定的密钥，重新开启时校验动态码即可，无需重新扫码。
         """
@@ -228,7 +235,10 @@ class UserOTPViewSet(GenericViewSet):
     @extend_schema(request=OtpBindConfirmSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="open", serializer_class=OtpBindConfirmSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def open(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """重新开启登录二次验证（密钥保留时校验一次动态码证明持有，无需重新扫码）"""
+        """重新开启登录二次验证
+
+        密钥保留时校验一次动态码证明持有，无需重新扫码
+        """
         user = request.user
         if not user.otp_secret_key:
             return ApiResponse(code=1001, detail=_("Please start binding first"))
@@ -251,7 +261,9 @@ class UserOTPViewSet(GenericViewSet):
     @extend_schema(request=OtpBindConfirmSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="test", serializer_class=OtpBindConfirmSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def test(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """校验已绑定密钥的动态码是否正确（不改变任何状态，失败计入防爆破锁定）。
+        """校验动态码
+
+        不改变任何状态，失败计入防爆破锁定
 
         供关闭登录二次验证后自检密钥可用性（换设备 / 手机时间漂移场景），
         避免重新开启时才发现码不对而连续失败触发锁定。
@@ -280,7 +292,9 @@ class UserOTPViewSet(GenericViewSet):
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
     def disable(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """解绑 OTP（敏感操作：需先通过二次验证，未验证时返回 412）
+        """解绑 OTP
+
+        敏感操作：需先通过二次验证，未验证时返回 412
 
         恢复码随解绑一并作废——它是当前 OTP 密钥的配套自救凭据，密钥不在即无意义。
         """
@@ -308,7 +322,9 @@ class UserOTPViewSet(GenericViewSet):
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
     def regenerate_recovery_codes(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """重新生成恢复码（敏感操作：需先通过密码二次验证，未验证时返回 412）
+        """重新生成恢复码
+
+        敏感操作：需先通过密码二次验证，未验证时返回 412
 
         旧码整批作废，新码明文仅本次响应内出现一次。
         """

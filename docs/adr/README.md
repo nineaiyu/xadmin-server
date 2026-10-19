@@ -105,3 +105,4 @@
 | [ADR-093](ADR-093-migration-consolidation-and-ledger-claim.md) | 已交付 | 5.0 迁移链合并为初始迁移（结构等价以 pg_dump 归一化比对守护）+ 存量库账本认领（`upgrade_ledger` / `upgrade_check` 新判定） |
 | [ADR-094](ADR-094-inplace-upgrade-for-legacy-libraries.md) | 已接受 | 四域切分前的旧库支持**真·原地升级（立项）**：同库结构对齐（表改名 + 补列回填 + 权限/存量串重指 + 账本重写，单事务）替代清库重建 + 回灌；二开迁移图用历史链兼容包（state-only）解决、改写工具兜底；判定 fail-closed + 预演 + 备份回滚；回灌降级为逃生舱 |
 | [ADR-095](ADR-095-per-app-seed-layering.md) | 已交付 | 内置种子按应用分层（**已交付**）：平台层 `loadjson/`（目录菜单 / 平台级页面权限点 / 角色 / 配置 / 字典）+ 各应用 `<app>/seeds/`（manifest 自声明 depends / url_prefixes / config_keys / grants，依赖拓扑排序）。归属规则可穷尽（前缀最长匹配 / 页面众数 ≥80% / 字段树根前缀），实测与路由解析口径 0 偏差；角色授权改「声明式 grants + 装载后并集」（破除 loaddata m2m 覆盖式清零）；迁移用 `seed_split` 写盘前逐行等价校验；导入导出共用 `split.py` 唯一实现；生成器直接写本应用 `seeds/` |
+| [ADR-096](ADR-096-ai-action-declaration-discovery.md) | 已交付 | AI 动作声明按应用下沉 + 自动发现：各应用 `ai_declarations.py` 声明、注册表合并唯一；内置动作回归业务应用；`modules` 字段对齐功能模块裁剪；明确不按路由自动生成动作 |

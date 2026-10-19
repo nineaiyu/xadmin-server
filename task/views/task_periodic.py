@@ -289,7 +289,10 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
     )
     @action(methods=["get"], detail=False, url_path="registered")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def registered(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """已注册任务列表（附 runnable 标记：是否在可手动执行白名单内）"""
+        """已注册任务列表
+
+        附 runnable 标记：是否在可手动执行白名单内
+        """
         # 全量 autodiscover 开销大，进程内只做一次；新装 app 后需立即可见时
         # 带 refresh=1 强制重扫，缺省行为与既往接口保持兼容
         refresh = str(request.query_params.get("refresh", "")).strip().lower() in ("1", "true", "yes")
@@ -392,7 +395,10 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
     )
     @action(methods=["post"], detail=True, url_path="clone")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def clone(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """克隆{cls}任务（复制计划与参数，默认停用，避免克隆即执行）"""
+        """克隆{cls}任务
+
+        复制计划与参数，默认停用，避免克隆即执行
+        """
         instance = self.get_object()
         clone = _clone_periodic_task(instance)
         return ApiResponse(

@@ -167,7 +167,7 @@ class TestImagePane:
 
 
 class TestVideoAndHtmlPanes:
-    """视频与自定义 HTML 窗格（ADR-090 D3）：只收 http(s)，缺省播放行为不下发。"""
+    """视频与自定义 HTML 窗格：只收 http(s)，缺省播放行为不下发。"""
 
     def test_video_non_default_fields_kept(self):
         raw = [

@@ -1474,16 +1474,16 @@
    "modifier": 1,
    "dept_belong": null,
    "deleted_at": null,
-   "is_active": true,
-   "method": "DELETE",
-   "model": [],
    "parent": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c400",
    "menu_type": 2,
    "name": "destroy:SystemApprovalRule",
    "rank": 5,
    "path": "api/approval/approval-rules/(?P<pk>[^/.]+)$",
    "component": null,
-   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c406"
+   "is_active": true,
+   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c406",
+   "method": "DELETE",
+   "model": []
   }
  },
  {
@@ -1497,16 +1497,16 @@
    "modifier": 1,
    "dept_belong": null,
    "deleted_at": null,
-   "is_active": true,
-   "method": "POST",
-   "model": [],
    "parent": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c400",
    "menu_type": 2,
    "name": "batchDestroy:SystemApprovalRule",
    "rank": 6,
    "path": "api/approval/approval-rules/batch-destroy$",
    "component": null,
-   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c407"
+   "is_active": true,
+   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c407",
+   "method": "POST",
+   "model": []
   }
  },
  {

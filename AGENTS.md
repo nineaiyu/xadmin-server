@@ -106,6 +106,7 @@ uv run ruff format --check . && uv run ruff check .
 python scripts/check_cross_app_imports.py
 python scripts/check_file_length.py && python scripts/check_function_length.py
 python scripts/check_cache_keys.py --strict
+python scripts/check_ledger_ids.py && python scripts/check_menu_titles.py
 python manage.py makemigrations --check --dry-run
 python scripts/check_doc_facts.py && python scripts/check_doc_index.py && python scripts/check_doc_paths.py
 python scripts/check_adr_status.py && python scripts/check_doc_size.py && python scripts/check_docs_site_nav.py
@@ -117,6 +118,10 @@ CI 另有 `uv lock --check`、覆盖率门禁（`--cov-fail-under=85`）、Trivy
 ## 七、提交纪律
 
 - 只有用户明确要求才 `git commit`；提交信息 `type(scope): 中文描述`（subject 中文开头）。
-- 源码注释 / docstring / 测试名 / 种子 JSON 里**不写台账编号**（`T03-01` / `O10-2` / `TG-3` 一类），
-  需要交代来龙去脉时写一句自足的语义说明。
+- 源码注释 / docstring / 测试名 / 种子 JSON 里**不写台账编号**（`ADR-090` 决策编号、
+  `T03-01` / `O10-2` / `TG-3` 一类），需要交代来龙去脉时写一句自足的语义说明。
+  守护：`python scripts/check_ledger_ids.py`。
+- **docstring 首行 = 菜单显示名**：视图类与 `@action` 方法的 docstring 首行必须是精炼的
+  名词短语（≤24 字、不带句号），详细说明下沉到空行之后的段落。首行会被权限点同步取作
+  `MenuMeta.title`，写长会撑破菜单树与授权选择器。守护：`python scripts/check_menu_titles.py`。
 - 改后端运行时代码后必须重启容器再验证，不要只凭单测通过就报「已完成」。

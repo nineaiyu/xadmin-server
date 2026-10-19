@@ -1074,12 +1074,12 @@
   "pk": "b0aef262-3899-4646-b42f-edd121a31883",
   "fields": {
    "created_time": "2024-08-11T08:07:33.562Z",
-   "updated_time": "2026-09-08T03:19:42.111Z",
+   "updated_time": "2026-10-19T08:05:04.866Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
-   "title": "U-绑定个人邮箱或手机（敏感操作：需密码二次确认）",
+   "title": "绑定个人邮箱或手机",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -1087,11 +1087,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1690,12 +1697,12 @@
   "pk": "817d4f9c-4714-4ff2-87e4-cf9d9224b9d7",
   "fields": {
    "created_time": "2026-09-14T13:49:28.631Z",
-   "updated_time": "2026-09-14T13:49:28.631Z",
+   "updated_time": "2026-10-19T08:05:04.729Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "导入前校验用户数据（逐行校验不落库，返回字段级错误定位）",
+   "title": "导入前校验用户数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1703,11 +1710,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1715,12 +1729,12 @@
   "pk": "f151f8db-0d71-45a4-bc13-62f354981f1d",
   "fields": {
    "created_time": "2026-09-14T13:49:28.629Z",
-   "updated_time": "2026-09-14T13:49:28.629Z",
+   "updated_time": "2026-10-19T08:05:04.732Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "读取导入文件首行表头并给出列映射候选用户（列映射步骤，不落库）",
+   "title": "读取导入表头并给出列映射候选用户",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1728,11 +1742,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1740,12 +1761,12 @@
   "pk": "ed87bc25-cc94-4037-8337-7a4ae5c2fdc3",
   "fields": {
    "created_time": "2026-09-14T13:49:28.627Z",
-   "updated_time": "2026-09-14T13:49:28.627Z",
+   "updated_time": "2026-10-19T08:05:04.734Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导入用户数据（大数据量，进度与错误报告在下载中心获取）",
+   "title": "异步导入用户数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1753,11 +1774,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1790,12 +1818,12 @@
   "pk": "ecb7affd-86e2-4810-90db-1b666625bf7f",
   "fields": {
    "created_time": "2026-09-14T13:49:28.622Z",
-   "updated_time": "2026-09-14T13:49:28.622Z",
+   "updated_time": "2026-10-19T08:05:04.736Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "导入前校验角色数据（逐行校验不落库，返回字段级错误定位）",
+   "title": "导入前校验角色数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1803,11 +1831,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1815,12 +1850,12 @@
   "pk": "fd36685d-1a34-4ff3-b720-3a3dba06b382",
   "fields": {
    "created_time": "2026-09-14T13:49:28.620Z",
-   "updated_time": "2026-09-14T13:49:28.620Z",
+   "updated_time": "2026-10-19T08:05:04.739Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "读取导入文件首行表头并给出列映射候选角色（列映射步骤，不落库）",
+   "title": "读取导入表头并给出列映射候选角色",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1828,11 +1863,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1840,12 +1882,12 @@
   "pk": "08c0a2e0-2a84-49c7-b90a-6cfbfc2eb751",
   "fields": {
    "created_time": "2026-09-14T13:49:28.618Z",
-   "updated_time": "2026-09-14T13:49:28.618Z",
+   "updated_time": "2026-10-19T08:05:04.741Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导入角色数据（大数据量，进度与错误报告在下载中心获取）",
+   "title": "异步导入角色数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1853,11 +1895,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1890,12 +1939,12 @@
   "pk": "30a22c1c-5db3-487e-97ee-ee2c7516c1ec",
   "fields": {
    "created_time": "2026-09-14T13:49:28.604Z",
-   "updated_time": "2026-09-14T13:49:28.604Z",
+   "updated_time": "2026-10-19T08:05:04.751Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导出在线用户会话（WS 连接 + 纯 HTTP 会话统一视图）数据",
+   "title": "异步导出在线用户会话数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1903,11 +1952,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1915,12 +1971,12 @@
   "pk": "ad291e83-128c-4e61-aca9-4be616b6960c",
   "fields": {
    "created_time": "2026-09-14T13:49:28.546Z",
-   "updated_time": "2026-09-14T13:49:28.546Z",
+   "updated_time": "2026-10-19T08:05:04.792Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "导入前校验部门数据（逐行校验不落库，返回字段级错误定位）",
+   "title": "导入前校验部门数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1928,11 +1984,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1940,12 +2003,12 @@
   "pk": "0d64ef9a-49d0-47c7-ba8c-f24183045b52",
   "fields": {
    "created_time": "2026-09-14T13:49:28.545Z",
-   "updated_time": "2026-09-14T13:49:28.545Z",
+   "updated_time": "2026-10-19T08:05:04.795Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "读取导入文件首行表头并给出列映射候选部门（列映射步骤，不落库）",
+   "title": "读取导入表头并给出列映射候选部门",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1953,11 +2016,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1965,12 +2035,12 @@
   "pk": "8f2005d7-b354-4893-91e6-16cb0746646e",
   "fields": {
    "created_time": "2026-09-14T13:49:28.543Z",
-   "updated_time": "2026-09-14T13:49:28.543Z",
+   "updated_time": "2026-10-19T08:05:04.797Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导入部门数据（大数据量，进度与错误报告在下载中心获取）",
+   "title": "异步导入部门数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1978,11 +2048,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2054,12 +2131,12 @@
   "pk": "1b7109cb-2025-4460-9249-516d2489b682",
   "fields": {
    "created_time": "2026-09-15T13:33:38.724Z",
-   "updated_time": "2026-09-15T13:33:38.724Z",
+   "updated_time": "2026-10-19T08:05:04.687Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "管理员代录 IM 身份（免扫码）：GET 查看绑定，POST 创建或更新。",
+   "title": "管理员代录 IM 身份",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2067,11 +2144,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2079,12 +2163,12 @@
   "pk": "af81eadd-17b3-44a6-be0d-14adcd692a5c",
   "fields": {
    "created_time": "2026-09-15T13:33:38.734Z",
-   "updated_time": "2026-09-15T13:33:38.734Z",
+   "updated_time": "2026-10-19T08:05:04.684Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "管理员解绑 IM 身份（防自锁：解绑后无其它登录方式则拒绝）。",
+   "title": "管理员解绑 IM 身份",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2092,11 +2176,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2206,12 +2297,12 @@
   "pk": "5b69671d-f822-4b55-847f-02c1374c1627",
   "fields": {
    "created_time": "2026-09-23T02:13:28.237Z",
-   "updated_time": "2026-09-23T02:13:28.237Z",
+   "updated_time": "2026-10-19T08:05:04.652Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "批量处置风险项（逐项隔离，返回成功 / 失败明细）",
+   "title": "批量处置风险项",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2224,7 +2315,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -2906,12 +3003,12 @@
   "pk": "071625cd-8700-4365-b13a-dac80ccb56fc",
   "fields": {
    "created_time": "2026-09-27T10:07:20.511Z",
-   "updated_time": "2026-09-27T10:07:20.511Z",
+   "updated_time": "2026-10-19T08:05:04.641Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "物理清除岗位回收站数据（不传 pks 时清除全部超过保留期的数据）",
+   "title": "物理清除岗位回收站数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -2924,7 +3021,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {

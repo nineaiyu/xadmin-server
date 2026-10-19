@@ -26,7 +26,10 @@ from message.views import _validation_detail  # 聊天室视图共用校验文�
 
 
 class ChatAiViewSet(AiThrottleMixin, SseRendererMixin, GenericViewSet):
-    """聊天室 AI 助手（通用多轮 + `/kb` 知识库问答）"""
+    """聊天室 AI 助手
+
+    通用多轮 + `/kb` 知识库问答
+    """
 
     queryset = ChatRoom.objects.none()
 
@@ -39,7 +42,9 @@ class ChatAiViewSet(AiThrottleMixin, SseRendererMixin, GenericViewSet):
     @extend_schema(request=ChatAiMessageSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="message")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def message(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """提问：用户消息与 AI 回复双条落库并广播（刷新可续聊，附引用来源）。
+        """提问
+
+        用户消息与 AI 回复双条落库并广播（刷新可续聊，附引用来源）
 
         降级口径：LLM 失败/知识库无命中 → 落一条 system 消息（前端可见），
         REST 同时返回 code=1001 与可读 detail，不静默吞掉。
@@ -99,7 +104,9 @@ class ChatAiViewSet(AiThrottleMixin, SseRendererMixin, GenericViewSet):
     @extend_schema(request=ChatAiMessageSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="stream")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def stream(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """流式提问（二期）：`text/event-stream`，事件序 meta → delta* → done | error。
+        """流式提问
+
+        二期：`text/event-stream`，事件序 meta → delta* → done | error
 
         事件载荷均为 JSON（``data: {...}\\n\\n``）；业务落库与 WS 广播与 `message` 同口径
         （前端实时气泡 + 多端同步），失败带内下发光 error 事件（头已发出，不能再改状态码）。

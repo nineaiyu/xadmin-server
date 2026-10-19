@@ -122,7 +122,9 @@ class PermissionPreviewAction:
     )
     @action(methods=["post"], detail=True, url_path="preview/trial")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def preview_trial(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """试算{cls}的数据权限/字段权限（只读 dry-run，不落库）
+        """试算{cls}的数据权限/字段权限
+
+        只读 dry-run，不落库
 
         scope=data（默认）：数据权限试算 → 命中行数 + 样本行 + 授权诊断 + 最终 SQL；
         scope=field：字段权限试算 → 指定菜单下的生效字段矩阵（含未配置=裁空提示）。

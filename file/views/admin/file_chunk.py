@@ -87,6 +87,7 @@ class ChunkUploadActionMixin:
     )
     @parent_fallback_action(methods=["post"], detail=False, throttle_classes=[UploadThrottle], url_path="chunk/init")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def chunk_init(self, request: Request, *args: Any, **kwargs: Any) -> Any:
+        """初始化分片上传"""
         data = request.data or {}
         try:
             session, received, created = init_session(
@@ -137,6 +138,7 @@ class ChunkUploadActionMixin:
         url_path="chunk/part",
     )
     def chunk_part(self, request: Request, *args: Any, **kwargs: Any) -> Any:
+        """上传分片"""
         session_pk = _parse_session_pk(request.data.get("session"))
         index = request.data.get("index")
         file_obj = request.FILES.get("file")
@@ -166,6 +168,7 @@ class ChunkUploadActionMixin:
         methods=["post"], detail=False, throttle_classes=[UploadThrottle], url_path="chunk/complete"
     )
     def chunk_complete(self, request: Request, *args: Any, **kwargs: Any) -> Any:
+        """完成分片上传"""
         data = request.data or {}
         session_pk = _parse_session_pk(data.get("pk"))
         if session_pk is None:
@@ -192,6 +195,7 @@ class ChunkUploadActionMixin:
     )
     @parent_fallback_action(methods=["post"], detail=False, throttle_classes=[UploadThrottle], url_path="chunk/abort")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def chunk_abort(self, request: Request, *args: Any, **kwargs: Any) -> Any:
+        """中止分片上传"""
         session_pk = _parse_session_pk((request.data or {}).get("pk"))
         if session_pk is None:
             return ApiResponse(code=SESSION_MISSING_CODE, detail=_("Missing session"))

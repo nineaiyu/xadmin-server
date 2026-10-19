@@ -114,7 +114,10 @@ class MenuViewSet(
     )
     @action(methods=["get"], detail=False, url_path="api-url")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def api_url(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """获取后端API列表（仅业务接口路由，供菜单/权限点配置选择）"""
+        """获取后端API列表
+
+        仅业务接口路由，供菜单/权限点配置选择
+        """
         urls = [
             item
             for item in get_all_url_dict("")
@@ -182,7 +185,9 @@ class MenuViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="permission-audit")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def permission_audit(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """菜单权限检测：只读报告代码路由与库内权限点之间的四类问题。
+        """菜单权限检测
+
+        只读报告代码路由与库内权限点之间的四类问题
 
         复用同步内核（``scan_gaps`` / ``audit_permission_menus`` /
         ``audit_field_permissions``），仅报告不落库：正向缺口、游离权限点（无对应路由）、

@@ -388,7 +388,7 @@ def normalize_screen_free_layout(raw: Any, dashboard_pks: Any, dataset_pks: Any 
     return {"design_w": design_w, "design_h": design_h, "panes": normalised}
 
 
-#: 模板历史版本保留数（ADR-090 D4）：超出裁剪最旧，避免版本表无限增长
+#: 模板历史版本保留数：超出裁剪最旧，避免版本表无限增长
 SCREEN_TEMPLATE_VERSION_KEEP = 10
 #: 模板分组名长度上限
 SCREEN_MAX_GROUP = 40

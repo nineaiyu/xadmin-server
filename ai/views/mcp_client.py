@@ -70,7 +70,10 @@ class McpServerViewSet(
     SearchColumnsAction,
     GenericViewSet,
 ):
-    """外部 MCP 服务器（Streamable HTTP）：配置管理 + 工具同步 + 白名单工具调用。"""
+    """外部 MCP 服务器
+
+    Streamable HTTP 传输；配置管理 + 工具同步 + 白名单工具调用。
+    """
 
     queryset = McpServer.objects.all()
     serializer_class = McpServerSerializer
@@ -87,7 +90,10 @@ class McpServerViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="sync")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def sync(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """同步工具清单（initialize → tools/list），结果存快照。"""
+        """同步工具清单
+
+        initialize → tools/list，结果存快照
+        """
         server = self.get_object()
         if not server.enabled:
             return ApiResponse(code=1001, detail=_("MCP server is disabled"))
@@ -107,7 +113,10 @@ class McpServerViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="call")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def call(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """调用白名单内工具：body ``{tool, arguments}``（参数对象可选）。"""
+        """调用白名单内工具
+
+        body ``{tool, arguments}``（参数对象可选）
+        """
         from rest_framework.exceptions import ValidationError
 
         server = self.get_object()

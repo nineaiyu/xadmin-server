@@ -729,12 +729,12 @@
   "pk": "b12d2cf5-64a8-449e-b2ee-78f92467af5b",
   "fields": {
    "created_time": "2026-09-27T12:31:09.141Z",
-   "updated_time": "2026-09-27T12:31:09.141Z",
+   "updated_time": "2026-10-19T08:05:04.639Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "构建/刷新知识块向量（显式触发；未配置 embedding 档案时拒绝并给出引导）。",
+   "title": "提交向量构建后台任务",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -747,20 +747,26 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
   "model": "system.menumeta",
   "pk": "3425475a-8968-5f9a-a7e0-9e4ba728ca11",
   "fields": {
-   "created_time": "2026-09-29T00:00:00.000Z",
-   "updated_time": "2026-09-29T00:00:00.000Z",
+   "created_time": "2026-09-29T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.621Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "向量构建运行状态（轮询端点；单飞锁与终态摘要随状态通道保留）。",
+   "title": "向量构建运行状态",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -773,7 +779,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -1008,13 +1020,13 @@
   "model": "system.menumeta",
   "pk": "7c08ab58-cc44-4e26-9794-c0afa3275b84",
   "fields": {
-   "created_time": "2026-10-06T00:00:00.000Z",
-   "updated_time": "2026-10-06T00:00:00.000Z",
+   "created_time": "2026-10-06T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.592Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "仓库文档同步运行状态（后台任务轮询端点）。",
+   "title": "仓库文档同步运行状态",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -1027,7 +1039,13 @@
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  }
 ]

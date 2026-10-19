@@ -99,5 +99,8 @@ class OperationLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction):
 
     @shared_list_action(methods=["get"], detail=False, url_path="slow-threshold")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def slow_threshold(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """慢请求标红阈值（SysConfig 单源）；供本页无监控权限的查看者读取。"""
+        """慢请求标红阈值
+
+        SysConfig 单源；供本页无监控权限的查看者读取
+        """
         return ApiResponse(data={"threshold": SysConfig.SLOW_REQUEST_THRESHOLD})

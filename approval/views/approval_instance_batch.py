@@ -66,7 +66,10 @@ class ApprovalInstanceBatchMixin:
     )
     @action(methods=["post"], detail=False, url_path="batch-approve")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_approve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """批量通过（逐个定位当前用户的待办任务，返回成功数与被拒明细）"""
+        """批量通过
+
+        逐个定位当前用户的待办任务，返回成功数与被拒明细
+        """
         ensure_approval_action_confirmed(request, "batch_approve")
         pks = request.data.get("pks") or []
         if not pks:
@@ -153,7 +156,9 @@ class ApprovalInstanceBatchMixin:
     )
     @action(methods=["post"], detail=False, url_path="batch-transfer")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_transfer(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """批量转交：把我的多条待办一次性转给同一用户（逐条独立，返回成功数 + 失败明细）。
+        """批量转交
+
+        把我的多条待办一次性转给同一用户（逐条独立，返回成功数 + 失败明细）
 
         与单条同口径：仅「我的当前待办」可转；无待办的实例计入失败明细而非整体拒绝
         （勾选里混入他人任务/已流转实例时，仍完成可转的部分）。

@@ -162,7 +162,7 @@ python manage.py sync_menu_permissions --update-seed   # 按应用归属回写�
 | ruff check / format | 一次通过（import 按「标准库 → 第三方 → 第一方」分组，新 app 名自动归入第一方） | 生成后可直接提交 |
 | 列表默认排序 | 模型未声明 `Meta.ordering` 时自动生成 `ordering = ["-created_time"]`（无该字段则退回 `-pk`） | 满足 `tests/unit/system/test_viewset_ordering.py` 门禁，分页结果稳定 |
 | 关联字段形态 | `api-search-user`（远程搜索）＋ `format` 展示 | 数据量大时按 cookbook 换形态 |
-| AI 动作声明 | 生成只读动作骨架（写动作在注释中给出注册指引） | 按需注册到 `ai/utils/ai_api_registry.py` |
+| AI 动作声明 | 生成只读动作骨架（写动作在注释中给出注册指引） | 放在应用根即由 `ai.utils.ai_registry` 自动发现，无需改 ai 应用；`--with-module` 时自动标注 `modules` 跟随裁剪；同一应用多模型按生成块合并（重复生成幂等） |
 | 迁移文件 | `makemigrations` 产物与 ruff 格式略有差异 | 仓库 pre-commit 会自动格式化，无需手工处理 |
 | 批量删除保护 | 生成的 ViewSet 只继承 `BaseModelSet`，不自行覆写批删：基类的 `batch-destroy` 与单删都从 `get_queryset()` 取数，子类对 `get_queryset` 的收口（如内置角色排除，见 `identity/views/admin/role.py`）对两个入口同口径生效 | 生成物无需修补；需要引用保护时按同一 `get_queryset` 收口范式写 |
 | 菜单种子幂等 | pk 由固定 uuid5 命名空间按 `app:model:角色` 派生，重复生成结果一致，重复 `loaddata` 覆盖同一批行不产生新行 | 可放心反复生成与装载 |

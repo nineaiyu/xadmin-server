@@ -34,7 +34,10 @@ class OnlyExportDataAction(ExportImportThrottleMixin, ListAction):
     )
     @parent_fallback_action(methods=["get"], detail=False, url_path="export-data")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def export_data(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """导出{cls}数据（type=csv|xlsx，缺省 xlsx）"""
+        """导出{cls}数据
+
+        type=csv|xlsx，缺省 xlsx
+        """
         file_format = request.query_params.get("type", "xlsx")
         self.format_kwarg = file_format
         request.no_cache = True  # 防止自定义缓存数据

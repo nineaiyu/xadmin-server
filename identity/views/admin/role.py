@@ -72,7 +72,10 @@ class RoleViewSet(
 
     @ApprovalRequired()
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """删除{cls}数据（高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批）"""
+        """删除{cls}数据
+
+        高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批。
+        """
         return super().destroy(request, *args, **kwargs)
 
     @ApprovalRequired()

@@ -46,7 +46,10 @@ class AiNlQueryMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="nl-query/interpret")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def nl_interpret(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """NL → 数据集 DSL（白名单校验）+ 试算预览计数（数据权限随调用者）。"""
+        """NL → 数据集 DSL
+
+        白名单校验 + 试算预览计数（数据权限随调用者）
+        """
         from ai.utils.ai import is_enabled as ai_enabled_check
         from ai.utils.ai import structured_chat_client
         from ai.utils.ai_chat import message_payload, persist_message, system_error_message
@@ -133,7 +136,9 @@ class AiNlQueryMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="nl-query/interpret/stream")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def nl_interpret_stream(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """NL 查数解释流式（SSE）：meta → reasoning* → delta* → done | error。
+        """NL 查数解释流式
+
+        SSE：meta → reasoning* → delta* → done | error
 
         与 `nl_interpret` 同口径：灰度/门禁/参数错误在响应头前返回 JSON 1001；
         流内以 reasoning 展示模型思考（本地思考型模型常见），done 携带与
@@ -260,7 +265,10 @@ class AiNlQueryMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="nl-query/run")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def nl_run(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """执行试算确认后的 DSL：服务端重校验（不信任客户端回传）+ 审计。"""
+        """执行试算确认后的 DSL
+
+        服务端重校验（不信任客户端回传）+ 审计
+        """
         from ai.utils.ai import is_enabled as ai_enabled_check
         from ai.utils.ai_chat import message_payload, persist_message, system_error_message
         from ai.utils.nl_query import audit_nl_query, validate_dsl

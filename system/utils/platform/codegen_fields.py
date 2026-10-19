@@ -10,7 +10,7 @@
    serializer_fields / table_fields / extra_kwargs / 过滤字段面——与
    ``_apply_field_selection`` 同口径，只收敛不改变推导语义。
 
-两条框架约束（越界即报错，理由见 ADR-027 增量）：
+两条框架约束（越界即报错）：
 
 - ``input_type`` 覆盖仅限**关联字段**：``fields_related`` 只在关系字段声明上
   pop ``input_type``；非关联字段的渲染器由序列化器字段类型决定，extra_kwargs

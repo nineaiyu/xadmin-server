@@ -127,6 +127,14 @@ jobs:
         # 防超长函数回潮：≥100 行新增即失败；存量基线只减不增（AST 计行）
         run: python scripts/check_function_length.py
 
+      - name: Check ledger ids in source
+        # 防台账编号回潮：ADR 决策编号与任务编号只允许出现在提交信息与 docs/ 台账本体
+        run: python scripts/check_ledger_ids.py
+
+      - name: Check menu title docstrings
+        # 菜单显示名取自 docstring 首行：首行超 24 字会撑破菜单树与授权选择器
+        run: python scripts/check_menu_titles.py
+
   doc-facts:
     name: Doc facts gate
     runs-on: ubuntu-latest

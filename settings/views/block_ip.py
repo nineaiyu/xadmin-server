@@ -84,7 +84,9 @@ class SecurityBlockIpViewSet(ListDeleteModelSet):
     )
     @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_destroy(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """批量解除拦截：数据源是 Redis 键列表（非 ORM queryset），逐条走 perform_destroy。
+        """批量解除拦截
+
+        数据源是 Redis 键列表（非 ORM queryset），逐条走 perform_destroy
 
         框架批量删除的非逐行分支直接调 ``queryset.delete()``——列表没有该方法，
         且解除拦截的副作用只在 perform_destroy 中；故此处自担批量语义。
