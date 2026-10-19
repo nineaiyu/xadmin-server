@@ -1,93 +1,29 @@
 #!/usr/bin/env python
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
 # project : xadmin-server
-# filename : view
-# author : ly_13
-# date : 8/6/2024
+# filename : auth_login_log
+"""登录日志、短信/邮件验证码核验与异地登录提醒。
+
+``save_login_log`` 写审计域登录日志（LoginLogSerializer 调用期惰性导入，避免
+``identity`` → ``audit.serializers`` 的导入环）；``verify_sms_email_code`` 是
+验证码类登录/注册/重置链路的前置核验（失败计数与失败日志在此收口）。
+"""
+
 import ipaddress
 from typing import Any
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import APIException
 
 from audit.services import UserLoginLog
-from captcha.services import CaptchaAuth
-from common.base.utils import AESCipherV2
 from common.utils.ip import get_ip_city
-from common.utils.request import get_browser, get_os, get_request_ident, get_request_ip, get_user_agent
-from common.utils.token import verify_token_cache
+from common.utils.request import get_browser, get_os, get_request_ip, get_user_agent
 from common.utils.verify_code import CodeError, CodeExpired, SendAndVerifyCodeUtil, TokenTempCache
 from identity.models import UserInfo
 from identity.notifications import DifferentCityLoginMessage
-from settings.services import LoginBlockUtil, LoginIpBlockUtil
-
-
-class ValidateError(APIException):
-    """校验类失败统一返回 HTTP 400，避免登录失败触发前端 401 处理导致页面刷新"""
-
-    status_code = 400
-
-
-def get_token_lifetime(user_obj: Any) -> Any:
-    access_token_lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
-    refresh_token_lifetime = settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME")
-    return {
-        "access_token_lifetime": int(access_token_lifetime.total_seconds()),
-        "refresh_token_lifetime": int(refresh_token_lifetime.total_seconds()),
-        # 'username': user_obj.username
-    }
-
-
-def check_captcha(need: Any, captcha_key: Any, captcha_code: Any) -> Any:
-    if not need or (captcha_key and CaptchaAuth(captcha_key=captcha_key).valid(captcha_code)):
-        return True
-    raise ValidateError(_("Captcha validation failed. Please try again"))
-
-
-def check_tmp_token(need: Any, token: Any, client_id: Any, success_once: Any = True) -> Any:
-    if not need or (client_id and token and verify_token_cache(token, client_id, success_once)):
-        return True
-    raise ValidateError(_("Temporary Token validation failed. Please try again"))
-
-
-def check_token_and_captcha(request: Any, token_enable: Any, captcha_enable: Any, success_once: Any = True) -> Any:
-    client_id = get_request_ident(request)
-    token = request.data.get("token")
-    captcha_key = request.data.get("captcha_key")
-    captcha_code = request.data.get("captcha_code")
-
-    check_tmp_token(token_enable, token, client_id, success_once)
-    check_captcha(captcha_enable, captcha_key, captcha_code)
-    return client_id, token
-
-
-def get_username_password(need: Any, request: Any, token: Any) -> Any:
-    username = request.data.get("username")
-    password = request.data.get("password")
-    if need:
-        username = AESCipherV2(token).decrypt(username)
-        password = AESCipherV2(token).decrypt(password)
-    return username, password
-
-
-def check_is_block(
-    username: Any, ipaddr: Any, ip_block: Any = LoginIpBlockUtil, login_block: Any = LoginBlockUtil
-) -> None:
-    if ip_block and ip_block(ipaddr).is_block():
-        ip_block(ipaddr).set_block_if_need()
-        raise ValidateError(
-            _("The address has been locked (please contact admin to unlock it or try again after {} minutes)").format(
-                settings.SECURITY_LOGIN_IP_LIMIT_TIME
-            )
-        )
-
-    if login_block and login_block(username, ipaddr).is_block():
-        raise ValidateError(
-            _("The account has been locked (please contact admin to unlock it or try again after {} minutes)").format(
-                settings.SECURITY_LOGIN_LIMIT_TIME
-            )
-        )
+from identity.utils.auth.block import check_is_block
+from identity.utils.auth.captcha import ValidateError
+from settings.services import LoginIpBlockUtil
 
 
 def save_login_log(

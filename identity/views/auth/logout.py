@@ -31,8 +31,9 @@ class LogoutAPIView(GenericAPIView):
     )
     def post(self, request: Any) -> Any:
         """用户登出"""
-        # 登出同时清除敏感操作二次确认状态，避免下个会话在有效期内绕过二次验证
-        # （放在 auth 判断之前：session 等非 JWT 认证方式下 request.auth 为空）
+        # 登出同时清除敏感操作二次确认状态，避免下个会话在有效期内绕过二次验证。
+        # 只需清一次：放在 auth 判断之前（session 等非 JWT 认证方式下 request.auth 为空）；
+        # 勿在文末 logout() 之后再清一次——那时 request.user 已可能是 AnonymousUser。
         if getattr(request, "user", None) and request.user.is_authenticated:
             UserConfirmStateCache(request.user).clear()
         auth = request.auth
@@ -63,6 +64,4 @@ class LogoutAPIView(GenericAPIView):
             except Exception:  # noqa: BLE001 refresh 缺失/已失效/已黑名单不阻断登出（本地登出仍完成）
                 pass
         logout(request)
-        # 登出同时清除敏感操作二次确认状态，避免下个会话在有效期内绕过二次验证
-        UserConfirmStateCache(request.user).clear()
         return ApiResponse()

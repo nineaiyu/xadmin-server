@@ -112,7 +112,10 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(seconds=CONFIG.REFRESH_TOKEN_LIFETIME),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
-    "UPDATE_LAST_LOGIN": True,  # 在登录的时候更新user表  last_login 字段
+    # 登录态 token 的 last_login 已由 identity.services.token_issue_login.issue_session_token
+    # 显式写入（账密/验证码/注册/MFA/OAuth/模拟统一口径）；本项仅作 simplejwt refresh
+    # 轮换路径的兜底，两者写同值（多一次 UPDATE 无害），勿依赖它作为登录链路唯一写入点
+    "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
     # 密钥分离（3.4）：显式配置 JWT_SIGNING_KEY 后与 Django SECRET_KEY 解耦，
     # 轮换 SECRET_KEY（会话/CSRF）不再连带踢掉全部登录态；留空沿用 SECRET_KEY

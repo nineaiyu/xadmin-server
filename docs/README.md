@@ -33,7 +33,7 @@
 | 菜单维护口径 | [guide/menu-maintenance.md](guide/menu-maintenance.md)：种子 path↔组件目录基本口径 / URL≠目录 例外清单（对账门禁白名单）/ 新增页面规范 |
 | 模块化与裁剪 | [architecture/模块化与功能裁剪.md](architecture/模块化与功能裁剪.md)：三级分层 / 发行预设 / 六层裁剪 / CLI 与管理页 |
 | **二开插件开发** | [guide/plugin-development.md](guide/plugin-development.md)：契约注入（`register_contract` / entry points）/ 应用级扩展点 / 模块声明与发行预设 / 验证清单（可运行样本 `examples/plugins/xadmin-demo-plugin`） |
-| 认证扩展 | [architecture/mfa.md](architecture/mfa.md)（MFA / 412 协议）、[architecture/oauth-login.md](architecture/oauth-login.md)（第三方登录 / IM 扫码） |
+| 认证扩展 | [architecture/auth-flows.md](architecture/auth-flows.md)（登录 / 注册 / 找回密码全链路、签发与处置两大收口、防枚举口径）、[architecture/mfa.md](architecture/mfa.md)（MFA / 412 协议）、[architecture/oauth-login.md](architecture/oauth-login.md)（第三方登录 / IM 扫码） |
 | 目录同步 | [architecture/ldap-readiness.md](architecture/ldap-readiness.md)、[architecture/scim.md](architecture/scim.md)、[architecture/scim-idp-readiness.md](architecture/scim-idp-readiness.md) |
 | 通知渠道 | [architecture/notification-channels.md](architecture/notification-channels.md)（新增渠道 = 新增一个文件） |
 | 缓存 / 索引 | [architecture/cache.md](architecture/cache.md)（含键规范与失效矩阵）、[architecture/indexes.md](architecture/indexes.md) |

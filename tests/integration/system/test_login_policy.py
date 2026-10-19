@@ -15,6 +15,7 @@ import pytest
 from django.utils import timezone
 
 from audit.models import UserLoginLog
+from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
 from identity.models import LoginAccessPolicy, UserSession
 from identity.utils.login_policy import evaluate_login_policy, match_ip, match_time, preview_login_policy
 
@@ -23,6 +24,20 @@ pytestmark = pytest.mark.django_db
 BASIC_LOGIN_URL = "/api/identity/login/basic"
 POLICY_URL = "/api/identity/login-policies"
 PREVIEW_URL = "/api/identity/login-policies/preview"
+
+
+def _send_login_code(api_client, target, query_key="username"):
+    """构造验证码登录的验证码前置：缓存写码 + 生成 verify_token。
+
+    query_key 决定登录分支：username 走「账号 + 密码」组合，email 走纯验证码。
+    """
+    code = "654321"
+    SendAndVerifyCodeUtil(target, code=code, backend="email", dryrun=True).gen_and_send()
+    verify_token = TokenTempCache.generate_cache_token(
+        300,
+        {"target": target, "form_type": query_key, "query_key": query_key, "extra": {}},
+    )
+    return verify_token, code
 
 
 @pytest.fixture
@@ -162,6 +177,35 @@ class TestLoginBlockedByPolicy:
         assert "仅工作时间可登录" in str(resp.data["detail"])
         log = UserLoginLog.objects.filter(creator=normal_user).first()
         assert log is not None and log.policy_result.startswith("reject:")
+
+    def test_reject_policy_blocks_verify_code_login(self, api_client, normal_user, login_free):
+        """验证码登录同样收口 reject_login：失败日志的 login_type 记真实来源。
+
+        历史缺陷：策略拒绝分支漏传 login_type，验证码登录的失败日志被记成
+        USERNAME；收口后短信/邮件来源由 reject_login 统一按 query_key 取。
+        """
+        LoginAccessPolicy.objects.create(
+            name="禁止验证码登录",
+            priority=100,
+            target_type=LoginAccessPolicy.TargetType.ALL,
+            action=LoginAccessPolicy.Action.REJECT,
+        )
+        # email 分支：query_key=email → 日志 login_type 应为 EMAIL
+        normal_user.email = "zhangsan@example.com"
+        normal_user.save(update_fields=["email"])
+        verify_token, verify_code = _send_login_code(api_client, "zhangsan@example.com", query_key="email")
+        resp = api_client.post(
+            "/api/identity/login/code",
+            {"verify_token": verify_token, "verify_code": verify_code},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1001
+        assert "禁止验证码登录" in str(resp.data["detail"])
+        log = UserLoginLog.objects.filter(creator=normal_user, status=False).first()
+        assert log is not None
+        assert log.login_type == UserLoginLog.LoginTypeChoices.EMAIL
+        assert log.policy_result.startswith("reject:")
 
     def test_record_policy_allows_login(self, api_client, normal_user, login_free):
         LoginAccessPolicy.objects.create(

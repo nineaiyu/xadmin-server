@@ -8,13 +8,12 @@ from typing import Any
 
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
+from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from audit.services import UserLoginLog
@@ -22,7 +21,6 @@ from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
-from common.utils import get_logger
 from common.utils.request import get_request_ip
 from identity.models import UserInfo
 from identity.services.auth_login import (
@@ -32,28 +30,16 @@ from identity.services.auth_login import (
     evaluate_login_policy_for_request,
     login_failed,
     login_success,
+    reject_login,
 )
+from identity.services.token_issue_login import issue_session_token
 from identity.utils.auth import (
     check_is_block,
     check_token_and_captcha,
-    get_token_lifetime,
     get_username_password,
-    save_login_log,
     verify_sms_email_code,
 )
-from identity.utils.session import bind_session_claim, register_user_session
 from settings.services import LoginBlockUtil
-
-logger = get_logger(__name__)
-
-
-def _register_session_safe(request: Any, user: Any, login_type: Any) -> Any:
-    """登记会话（失败仅告警不影响登录）。返回 UserSession 或 None。"""
-    try:
-        return register_user_session(request, user, login_type)
-    except Exception:  # noqa: BLE001 会话管理属附加能力
-        logger.warning("register user session failed", exc_info=True)
-        return None
 
 
 def _login_type_for(user: Any) -> "UserLoginLog.LoginTypeChoices":
@@ -64,32 +50,21 @@ def _login_type_for(user: Any) -> "UserLoginLog.LoginTypeChoices":
 
 
 class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """账密登录用：签发后登记会话，并把 sid claim 写入 token（refresh/access 同源继承）。
+    """账密登录用序列化器：只保留类型标识，校验外无副作用。
 
-    super().validate 返回的是已编码 token 串，按原串重新解码补 claim 再编码
-    （jti/exp 均保留，OutstandingToken 按 jti 关联不受影响）。
+    会话登记与 token 签发（含 sid claim、生命周期、改密标记、last_login）已收敛到
+    :func:`identity.services.token_issue_login.issue_session_token`，在
+    ``BasicLoginAPIView.post()`` 的 ``complete_login`` 之后调用——serializer 的
+    ``validate`` 不再创建数据库行或改写 token 编码。
     """
-
-    def validate(self, attrs: Any) -> Any:
-        data = super().validate(attrs)
-        # LDAP bind 认证的登录（LdapBindBackend 成功）在登录日志中标记独立来源；
-        # 本地/验证码路径不受影响
-        login_type = _login_type_for(self.user)
-        session = _register_session_safe(self.context.get("request"), self.user, login_type)
-        if session:
-            try:
-                # simplejwt 标注入参为 Token，运行期接受已编码串
-                refresh = RefreshToken(data["refresh"])  # type: ignore[arg-type]  # simplejwt 标注入参为 Token，运行期接受已编码串
-                data["refresh"], data["access"] = bind_session_claim(refresh, session.pk)
-            except Exception:  # noqa: BLE001 claim 注入失败退回无 sid 行为
-                logger.warning("bind session claim failed", exc_info=True)
-        return data
 
 
 class BasicLoginAPIView(TokenObtainPairView):
     """用户登录"""
 
     throttle_classes = [LoginThrottle]
+    # 纯校验子类：会话登记与 token 签发已移到 post()（经 issue_session_token），
+    # serializer 不再承担数据库副作用
     serializer_class = SessionTokenObtainPairSerializer
 
     @extend_schema(
@@ -142,17 +117,11 @@ class BasicLoginAPIView(TokenObtainPairView):
         # 登录访问策略：密码校验通过后判定（避免匿名探测策略信息），命中写入登录日志
         force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
         if reject_detail:
-            # 记失败日志前绑定用户（登录日志 creator 归属被策略拒绝的账号）
-            request.user = user
-            save_login_log(request, status=False)
-            return ApiResponse(code=1001, detail=reject_detail)
+            return reject_login(request, user, reject_detail, login_type=_login_type_for(user))
         mfa_response = complete_login(request, user, login_type=_login_type_for(user), force_mfa=force_mfa)
         if mfa_response:
             return mfa_response
-        data = serializer.validated_data
-        data.update(get_token_lifetime(user))
-        # 强制改密标记：前端登录后引导改密（改密成功自动清除）
-        data["must_change_password"] = bool(getattr(user, "must_change_password", False))
+        data = issue_session_token(request, user, _login_type_for(user))
         return ApiResponse(data=data)
 
     @extend_schema(
@@ -186,10 +155,17 @@ class BasicLoginAPIView(TokenObtainPairView):
         return ApiResponse(data=config)
 
 
-class VerifyCodeLoginAPIView(TokenObtainPairView):
-    """用户验证码登录"""
+class VerifyCodeLoginAPIView(GenericAPIView):
+    """用户验证码登录
+
+    GenericAPIView：本视图不使用 simplejwt 序列化器（authenticate + 手签 token），
+    继承 TokenObtainPairView 只会额外暴露其 GET 配置行为。登录前置须匿名可达，
+    故显式清空认证与权限链（与 TokenObtainPairView 家族同口径）。
+    """
 
     throttle_classes = [LoginThrottle]
+    permission_classes: list[type] = []
+    authentication_classes: list[type] = []
 
     @extend_schema(
         request=OpenApiRequest(
@@ -229,13 +205,12 @@ class VerifyCodeLoginAPIView(TokenObtainPairView):
                 password = AESCipherV2(verify_token).decrypt(password)
             user = authenticate(**{query_key: target}, password=password)
             if not user:
-                login_failed(request, target)
+                # login_failed 内部抛异常，return 仅为显式终止（语义不依赖栈展开）
+                return login_failed(request, target)
             # 登录访问策略（验证码 + 密码组合登录同样收口）
             force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
             if reject_detail:
-                request.user = user
-                save_login_log(request, status=False)
-                return ApiResponse(code=1001, detail=reject_detail)
+                return reject_login(request, user, reject_detail, login_type=UserLoginLog.get_login_type(query_key))
             mfa_response = complete_login(
                 request, user, login_type=UserLoginLog.LoginTypeChoices.USERNAME, force_mfa=force_mfa
             )
@@ -246,25 +221,9 @@ class VerifyCodeLoginAPIView(TokenObtainPairView):
             user = UserInfo.objects.get(**{query_key: target})
             force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
             if reject_detail:
-                request.user = user
-                save_login_log(request, status=False, login_type=UserLoginLog.get_login_type(query_key))
-                return ApiResponse(code=1001, detail=reject_detail)
+                return reject_login(request, user, reject_detail, login_type=UserLoginLog.get_login_type(query_key))
 
         login_type = UserLoginLog.get_login_type(query_key)
-        session = _register_session_safe(request, user, login_type)
-        refresh = RefreshToken.for_user(user)
-        if session:
-            try:
-                refresh_str, access_str = bind_session_claim(refresh, session.pk)
-                result = {"refresh": refresh_str, "access": access_str}
-            except Exception:  # noqa: BLE001 claim 注入失败退回无 sid 行为
-                logger.warning("bind session claim failed", exc_info=True)
-                result = {"refresh": str(refresh), "access": str(refresh.access_token)}
-        else:
-            result = {"refresh": str(refresh), "access": str(refresh.access_token)}
-        user.last_login = timezone.now()
-        user.save(update_fields=["last_login"])
-        result.update(**get_token_lifetime(user))
-        result["must_change_password"] = bool(getattr(user, "must_change_password", False))
+        result = issue_session_token(request, user, login_type)
         login_success(request, user, login_type=login_type)
         return ApiResponse(data=result)

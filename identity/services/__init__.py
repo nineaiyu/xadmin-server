@@ -5,8 +5,9 @@
 其他 app 需要使用 identity 的业务能力时，只允许从本模块导入，
 禁止直接 import identity.views / identity.serializers / identity.models 等内部实现，
 避免 app 间横向依赖扩散。业务逻辑实现在本包的服务子模块
-（``identity.services.auth_login`` / ``open_oauth`` / ``token_issue``），
-本模块只做契约面：跨 app 消费方从这里 import，系统内部视图直接消费子模块。
+（``identity.services.auth_login`` / ``open_oauth`` / ``token_issue`` /
+``token_issue_login``），本模块只做契约面：跨 app 消费方从这里 import，系统内部
+视图直接消费子模块。
 
 模型再导出说明：跨 app 关联（isinstance 判断、类型标注、related field
 queryset、serializer Meta.model 等场景）统一经由本模块引用，禁止绕过
