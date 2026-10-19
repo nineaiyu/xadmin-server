@@ -80,6 +80,7 @@
       "list:UserMsgSubscription",
       "list:UserNotice",
       "partialUpdate:UserMsgSubscription",
+      "retrieve:UserMsgSubscription",
       "unread:UserNotice"
     ]
   }

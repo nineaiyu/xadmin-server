@@ -108,6 +108,7 @@
       "list:SystemModelLabelField",
       "lookups:SystemModelLabelField",
       "partialUpdate:SystemDataPermission",
+      "retrieve:SystemModelLabelField",
       "retrieve:Spectacular",
       "retrieve:SpectacularRedocView",
       "retrieve:SpectacularSwaggerView",

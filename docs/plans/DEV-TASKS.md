@@ -22,6 +22,33 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
+- **2026-10-19 内置角色授权缺口全面审计（test 角色补缺 + 守护扩容，改动留工作区待提交）**：
+  对 10-14 文件中心批登记的「其余页面同类授权缺口 43 处」做全面对账（种子层 + 运行库双层）。
+  **结论一（登记消化确认）**：只读与取用类缺口经 10-16 `fill_field_permissions` 自愈与
+  10-18 种子分层 grants 化两批修复后，守护规则下 管理员 / 演示模式 两角色种子层缺口 0；
+  43 处登记中属「前端有 hasAuth 守卫的按需写能力」部分维持原口径（按需评估，不批量补授）。
+  **结论二（demo「漂移」澄清）**：demo 角色种子 grants 153 项与库 343 项的差异**不是漂移**——
+  `seed_demo_admin` 以种子为回滚基线、运行期按 `is_destructive` 摘除 30 项破坏类并补
+  演示页面 220 项，行为与守护测试 docstring 口径一致，登记免复核。
+  **结论三（真缺口 5 处，已修）**：test 角色不在守护范围（`GUARDED_ROLES` 只有
+  管理员/演示模式），种子层存在 5 个只读缺口——角色页 `preview/recycleList/recycleRestore:SystemRole`、
+  `retrieve:SystemModelLabelField`、`retrieve:UserMsgSubscription`（test 拥有对应页面与写操作却缺只读点）。
+  修复：`identity/` `system/` `notifications/` 三个 `seeds/grants.json` 补 5 项声明
+  （test 75 → 80，`test_seed_grants.py` 基线同步）；`test_builtin_role_readonly_coverage.py`
+  的 `GUARDED_ROLES` 纳入 test 角色防再漂移。`retrieve:UserInfo`（白名单端点）与
+  `previewTrial:`（试算动作前缀不在守护口径）确认非缺口。
+  验证：守护测试 + `test_seed_grants.py` 17 例全绿；全量 pytest 6316 passed；开发库复灌后
+  库内 test 80 项、5 点全落地；`sync_menu_permissions --dry-run` 缺口 0、`load_init_json --check`
+  0 error；ruff / ledger-ids / doc-facts 绿。
+
+- **2026-10-19 登录注册找回密码链路重构（已提交并推送 server `d08e7b6e`、client `9069f0fb`）**：
+  后端 `issue_session_token` 签发唯一收口（7 处拷贝收敛）、`reject_login` 收口、
+  `verify_code.py` 表驱动、`utils/auth.py` 拆包；前端 `useAuthInfo` / `RememberLogin` /
+  `PasswordFields` / `useVerifyCodeSubmit` 四共享件、错误处理四风格归一；接口契约不变。
+  方案与执行记录：[登录注册找回密码链路重构方案-2026.10.md](登录注册找回密码链路重构方案-2026.10.md)。
+  推送后复核：后端 pytest 6316 passed（9m57s）+ 全部脚本门禁绿；前端 vitest 2392 passed +
+  typecheck 绿。
+
 - **2026-10-19 AI 动作声明按应用下沉（已提交 server `3fb264ae`/`ee383140`/`3ad0b54d`、client `eda26830`）**：
   各应用 `ai_declarations.py` 自动发现合并，动作 60 → 105（102 声明式 + 3 内置）；内置动作回归
   所属应用；`modules` 对齐模块裁剪；生成器改 `AI_ACTIONS`、`--with-module` 标注、多模型分块合并。

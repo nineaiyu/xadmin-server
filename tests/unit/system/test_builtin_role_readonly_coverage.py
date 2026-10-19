@@ -28,8 +28,10 @@ from system.services.seeding import read_model_rows
 
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 
-#: 参与守护的角色（内置演示角色，按种子 name 匹配）
-GUARDED_ROLES = ("管理员", "演示模式")
+#: 参与守护的角色（内置角色，按种子 name 匹配）。test 为开发自测角色，
+#: 2026-10 审计发现其「页面 ⇒ 只读子权限点」缺口（角色页预览/回收站、模型字段
+#: 详情、消息订阅详情）后纳入守护，与另两角色同规则。
+GUARDED_ROLES = ("管理员", "演示模式", "test")
 
 #: 只读与取用类动作名前缀
 READONLY_PREFIXES = (

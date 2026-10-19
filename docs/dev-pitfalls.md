@@ -46,6 +46,18 @@
   页内权限点 → 角色授权」三层关钉死）；前端调用这类辅助接口时应加 `hasAuth` 守卫，
   未授权时隐藏入口而不是点了报 403。
 
+### 2.1 手动复灌种子后，演示账号出现破坏类写权限
+
+- **现象**：手动单独执行 `python manage.py load_init_json` 复灌种子后，用演示账号
+  admin/admin123 登录，发现可以删数据 / 重置密码 / 清回收站（破坏类权限点复活）。
+- **原因**：种子授权装载是**并集、只增不删**（防 loaddata m2m 覆盖清零）——复灌会把
+  `seed_demo_admin` 运行期从「演示模式」角色摘掉的破坏类权限点（种子 grants 是含写操作
+  的回滚基线）原样加回角色。
+- **正确做法**：官方链路无此问题（`ops/init_data.py` 先 `load_init_json` 再
+  `seed_demo_all`，最后一步 `seed_demo_admin` 自动重裁剪）；**手动复灌后补一条**
+  `python manage.py seed_demo_admin`（幂等，秒级）即可恢复裁剪面。
+  判定已恢复：演示角色菜单数回到 ~343 且破坏类权限点为 0。
+
 ### 3. 新 app 接口 404
 
 - **原因**：app 未注册，或注册了但没有 `your_app/config.py::URLPATTERNS`（此时启动日志有一条
