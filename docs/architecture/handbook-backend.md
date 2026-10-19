@@ -217,7 +217,7 @@ config.yml（config.py）→ 同名环境变量 → 代码默认值   ← server
 
 | 命令 | 一句话 |
 |---|---|
-| `manage.py doctor` | 八项自检：配置密钥 / 数据库 / Redis / 语言包 / 权限点缺口 / 模块裁剪 / 契约镜像 / 版本一致性，输出问题 + 修复命令，失败非零退出 |
+| `manage.py doctor` | 十项自检：配置密钥 / 数据库 / Redis / 语言包 / 权限点缺口 / 内置种子 / 模块裁剪 / AI 声明 / 契约镜像 / 版本一致性，输出问题 + 修复命令，失败非零退出 |
 | `manage.py post_upgrade` | 升级后三件套（种子 + 语言包 + 缓存 + 权限缺口扫描），幂等 |
 | `manage.py generate_crud <app>.<Model>` | 模型 → 后端四件套 + 前端页面 + 菜单种子（`--dry-run` 预览、`--with-import-export`、`--with-module`、`--parent`） |
 | `manage.py generate_module` | 生成 `{app}/modules.py` 可裁剪声明 |

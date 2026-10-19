@@ -246,7 +246,7 @@ def clean_xxx_job(): ...
 
 ```bash
 python manage.py post_upgrade      # 种子 + 语言包 + 缓存失效 + 权限缺口扫描（幂等）
-python manage.py doctor            # 八项自检，修到全绿
+python manage.py doctor            # 十项自检，修到全绿
 ```
 
 新增权限点必须在发布前入库：`sync_menu_permissions --update-seed`（回写种子，随版本发布）或生成器种子 `loaddata`。
