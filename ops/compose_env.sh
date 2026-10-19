@@ -31,7 +31,9 @@ sync_compose_credentials() {
   if [ -z "$db_pass" ]; then
     db_pass="$env_db"
     if [ -z "$db_pass" ]; then
-      db_pass="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)"
+      # 先限界读取再过滤：无界 `tr </dev/urandom | head` 在 head 提前退出时
+      # 偶发 SIGPIPE（退出码 141，set -o pipefail 的调用方会整脚本报错）
+      db_pass="$(LC_ALL=C head -c 512 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | head -c 24)"
       echo "[compose-env] config.yml 未定义 DB_PASSWORD：已随机生成并持久化到 .env"
       echo "[compose-env] （在 config.yml 定义同名键后即可单文件管理，届时 .env 会自动跟随）"
     fi
@@ -39,7 +41,7 @@ sync_compose_credentials() {
   if [ -z "$redis_pass" ]; then
     redis_pass="$env_redis"
     if [ -z "$redis_pass" ]; then
-      redis_pass="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)"
+      redis_pass="$(LC_ALL=C head -c 512 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | head -c 24)"
       echo "[compose-env] config.yml 未定义 REDIS_PASSWORD：已随机生成并持久化到 .env"
     fi
   fi
