@@ -117,6 +117,7 @@ def get_active_superuser_queryset():
 | `routing.py::urlpatterns` | WS 通道 | `server/asgi.py` → `collect_app_ws_urls`（按 INSTALLED_APPS 收集） |
 | `tasks.py` | 周期任务声明 | `{app}.tasks` 被 celery autodiscover；`@register_as_period_task(module=...)` 声明归属模块 |
 | `modules.py::MODULES` | 功能模块声明 | `common/core/modules/registry.py::discovered_modules` |
+| `ai_declarations.py::AI_ACTIONS` | AI 动作声明（白名单，随应用安装自动发现） | `ai/utils/ai_registry.py::action_specs`（工具目录 / MCP / function calling 同源） |
 | `migrations/` | 自有数据面 | `manage.py migrate <app>`（与宿主迁移链解耦） |
 
 三条实现要点：
@@ -127,6 +128,31 @@ def get_active_superuser_queryset():
    不按 `routing.py` 推导——不声明就没有裁剪层，通道会在模块停用后仍可连接。
 3. **消费者自行鉴权**：内核 ASGI 栈注入 `scope["user"]`，准入判断在消费者一侧
    （未登录 `close(4401)`，与内核既有口径一致）。
+
+### 4.1 AI 动作声明（让插件能力进入 AI 工具目录）
+
+`ai_declarations.py` 与 `config.py` 同处于应用根，声明**只做数据**（不查库、不 import
+业务模型），执行一律复用业务接口：
+
+```python
+# my_plugin/ai_declarations.py
+from ai.utils.ai_api_actions import api_action
+
+AI_ACTIONS = {
+    "myplugin.item.list": api_action(
+        key="myplugin.item.list",
+        label="查询条目",  # 支持 gettext_lazy
+        description="列出插件的条目（关键字过滤）",
+        method="GET",
+        path="/api/my-plugin/items",
+        params={"search": {"type": "string", "in": "query", "description": "关键字"}},
+        modules=("my_plugin",),  # 可选：随功能模块裁剪
+    ),
+}
+```
+
+发现器遍历已安装应用并合并声明，key 全局唯一（重复直接启动失败）；声明文件不存在
+即跳过，不影响内核。新增写动作前先确认审批口径（`requires_approval`）与字段权限。
 
 ## 五、功能模块声明与发行预设
 

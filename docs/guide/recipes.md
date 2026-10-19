@@ -274,37 +274,42 @@ python manage.py doctor            # 十项自检，修到全绿
 
 ### R23 加一个 AI 受限动作（AI 助手可执行）
 
-AI 助手只产出「动作草稿」，用户确认后才以**本人身份**执行——新增动作 = 在注册表加一条 `ActionSpec`：
+AI 助手只产出「动作草稿」，用户确认后才以**本人身份**执行。新增动作 = **在能力所属应用**
+加一条声明（不再改 ai 应用）：
 
-1. 注册表：`ai/utils/ai_actions.py::ACTION_SPECS`（唯一白名单，LLM 输出按不可信输入处理）；
-2. 实现三件套（同文件内私有函数即可）：
-   - `validate(user, params)`：逐项校验，返回 `(JSON 安全参数, 错误文案)`（错误文案会展示给用户）；
-   - `execute(user, params)`：执行并返回 `{ok, detail, data}`；creator / 申请人恒为发起用户，**不接受任何「替他人」参数**；
-   - `requires_approval(user, params)`（是否需 412 二次确认）与 `available(user)`（动作对当前用户是否可用）；
-3. 登记 `ActionSpec`（`params` 是给 LLM 构造草稿的参数 schema）：
+1. 声明文件：`<app>/ai_declarations.py`（应用根，随 `django.apps` 自动发现；key 全局唯一）；
+2. 优先用声明式动作（`api_action`）复用既有业务接口——权限链 / 序列化校验 / 事务 /
+   审批 / 审计全部与浏览器同一条代码路径：
 
    ```python
-   AI_XXX_KEY = "xxx.submit"
+   from ai.utils.ai_api_actions import IN_QUERY, api_action
 
-   ACTION_SPECS[AI_XXX_KEY] = ActionSpec(
-       key=AI_XXX_KEY,
-       label=_("..."),
-       description=_("..."),  # 进 LLM 目录，同时展示在确认卡片
-       params={...},
-       required_visits=(("POST", "/api/system/xxx"),),  # 所需底层业务权限点（与菜单 path 同口径）
-       validate=_validate_xxx,
-       execute=_execute_xxx,
-       requires_approval=_never_requires_approval,
-       available=_always_available,
-   )
+   AI_ACTIONS = {
+       "xxx.submit": api_action(
+           key="xxx.submit",
+           label=_("Submit an xxx request"),
+           description=_("Create one xxx record for the current user"),
+           method="POST",
+           path="/api/system/xxx",
+           params={
+               "reason": {"type": "string", "required": True, "in": "body", "description": "Reason"},
+           },
+           requires_approval=requires_approval_high_risk,  # 高危动作走 412 审批
+           modules=("xxx",),  # 可选：随功能模块裁剪
+       ),
+   }
    ```
 
-4. 三条红线（与注册表模块 docstring 同源）：
+3. 需要复杂校验/副作用编排时用 `ActionSpec`（内置动作）：`validate(user, params)` 返回
+   `(JSON 安全参数, 错误文案)`、`execute(user, params)` 返回 `{ok, detail, data}`；
+   creator / 申请人恒为发起用户，**不接受任何「替他人」参数**；
+4. 三条红线：
    - **权限双门**：AI 执行端点权限 × `required_visits` 业务权限点（`user_can_visit` 与菜单权限同一匹配函数），缺一不可；
    - **可审计**：执行落 `OperationLog(module=AI:action, auth_type=ai)`；需要二次确认的复用敏感操作审批 412 协议；
    - **灰度**：`AI_ACTION_ENABLED`（AI 配置页开关）默认关，打开后动作才会进入 prompt 目录。
-5. 验证：与 AI 对话发起动作（聊天 `/do` 命令或自然语言）→ 出现草稿卡片 → 确认后执行成功；
-   补单测覆盖 `validate` 边界与 `has_permission` 双门（仓库既有测试可抄）。
+5. 验证：`python manage.py ai_tool_audit`（声明的 path 必须可解析）→ 与 AI 对话发起动作
+   （聊天 `/do` 或自然语言）→ 草稿卡片 → 确认后执行成功；守护测试见
+   `tests/unit/ai/test_ai_api_registry_guard.py`。
 
 ## 五、相关文档
 

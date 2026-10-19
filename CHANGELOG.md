@@ -10,6 +10,30 @@
 
 ## [Unreleased]
 
+### 新增
+
+- **AI 动作声明按应用自动发现**：各应用可在根目录提供 `ai_declarations.py`
+  （`AI_ACTIONS`，兼容 `AI_READ_ACTIONS` / `AI_WRITE_ACTIONS`），由
+  `ai/utils/ai_registry.py` 在首次构建工具目录时合并；key 全局唯一、重复 fail-fast。
+  二开应用随安装自动接入，无需改动 ai 应用。
+- **AI 动作面补全**：动作由 60 个扩至 105 个（102 声明式 + 3 内置），补充岗位 / 登录策略 /
+  账号巡检 / 开放平台 / 任务中心 / 审批流实例与定义 / 报表与大屏 / 表单提交 / 通知模板 /
+  文件访问记录 / 安全策略读取等只读能力；新增 `settings/ai_declarations.py`。
+- **AI 动作跟随模块裁剪**：声明可标注 `modules`，停用模块后动作从工具目录移除且拒绝执行
+  （内部 dispatch 绕过 ASGI 模块网关，故在目录/草稿/执行三处统一判定）。
+- **代码生成器**：产物改用 `AI_ACTIONS`；`--with-module` 时自动标注 `modules`；
+  同一应用多模型按生成块合并（重复生成幂等），修复多模型场景共享文件多空行导致的
+  ruff format 失败。
+
+### 变更
+
+- **AI 动作注册表位置变更**：集中声明文件 `ai/utils/ai_api_registry.py` /
+  `ai_registry_ops.py` / `ai_registry_infra.py` / `ai_registry_org.py` /
+  `ai_builtin_actions.py` 移除，声明下沉到所属应用（请假→`approval`、动态表单→`dataset`、
+  首页统计→`system`）；`ai/utils/ai_actions.py` 只保留目录构建 / 草稿解析 / 权限双门 /
+  执行收口 / 审计。`ai.services.api_action_specs()` 与 OpenAPI 元数据派生仍为同一入口。
+- 新增 90 条 AI 动作文案的中文翻译（`locale/zh`），en 目录同步登记。
+
 ## [5.0.2] - 2026-10-19
 
 ### 新增
