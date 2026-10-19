@@ -10,6 +10,44 @@
 
 ## [Unreleased]
 
+## [5.0.2] - 2026-10-19
+
+### 新增
+
+- **公告正文支持 Markdown**：`Notice.message` 之外新增 `message_format` 字段（`html` /
+  `markdown`），详情 / 我的通知 / 铃铛 / 桌面与应用内预览按格式分流；Markdown 分支不加载
+  WangEditor，统一经 `MarkdownView` 渲染（净化 + 高亮）；通知 store 的列表预览将 Markdown
+  转纯文本。存量 HTML 公告可用 `python manage.py convert_notice_markdown` 有损转换
+  （默认 dry-run，`--apply` 才写库）。
+- **字段权限种子同步命令**：`python manage.py sync_field_permissions --update-seed`
+  按归属把字段树与角色白名单一次写回种子（不动历史裁剪），与 `sync_menu_permissions`
+  同口径。
+- **存量 4.x 库的数据回灌**：`upgrade_ledger` 之外新增回灌工具（保留原主键、支持二开表
+  整表搬运、系统设置 / 字段权限 / 消息订阅补齐），升级后可用 `INPLACE_ALIGN=1` 走
+  原地结构对齐与字段白名单自愈。
+
+### 变更
+
+- **内置种子按应用分层**：种子拆到各 `<app>/seeds/`（应用级）与 `loadjson/`（平台级），
+  导入 / 导出 / 工具链按归属收口；`doctor` 自检由八项扩为十项（新增内置种子、AI 声明）。
+- **种子装载行为修正**：装载前剥离角色菜单 m2m，避免重灌时清零存量授权；字段权限补齐的
+  写入侧改为批量收敛，消除种子收尾阶段的放大；种子导出与收尾的批量读取收敛，消除尾部 N+1。
+- **AI 助手**：修复指令执行追问丢失与双层 JSON 解析；AI 配置字段补充表单帮助文案；
+  服务端元数据配合前端表单收敛。
+- **测试基建**：全量 pytest 默认并行度降至 8；pytest 改用 PG 会话锁串行化，消除跨轮次
+  共享 Redis 锁键导致的假失败。
+
+### 说明
+
+- 本版本**无表结构变更**（公告 `message_format` 字段随 5.0 的初始迁移一并表达），升级沿用
+  5.0 通道：`./xadmin.sh upgrade v5.0.2`（全新安装 `./xadmin.sh install`）。
+- 前端同步发布公告 Markdown 编辑器（编辑 / 分栏 / 预览三态、工具栏、按钮 / 拖拽 / 粘贴
+  附件上传），变更见 [xadmin-client](https://github.com/nineaiyu/xadmin-client)。
+- 安装器侧：升级链路接入存量库原地结构对齐，升级流程内置 PostgreSQL 大版本数据目录迁移，
+  并修复升级路径的 v 前缀、备份开关与基线门禁三处缺陷。
+- 发布顺序：server / client 镜像构建成功 → web（依赖 client 镜像）→ docs → installer
+  （其镜像同步会等待 server / web / docs 镜像产出）。
+
 ## [5.0.1] - 2026-10-16
 
 ### 修复

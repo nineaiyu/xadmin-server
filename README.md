@@ -4,7 +4,7 @@ xadmin-基于Django+vue3的rbac权限管理系统
 
 前端 [xadmin-client](https://github.com/nineaiyu/xadmin-client)
 
-> **版本 5.0.1**：变更总览见 [CHANGELOG.md](CHANGELOG.md)；4.x → 5.0 升级步骤见
+> **版本 5.0.2**：变更总览见 [CHANGELOG.md](CHANGELOG.md)；4.x → 5.0 升级步骤见
 > [docs/ops/upgrade-5.0.md](docs/ops/upgrade-5.0.md)（迁移链收敛为初始迁移 +
 > `upgrade_ledger` 账本认领，**4.2.5 起可原地升级**，更早的库走清库重建）。
 > 前后端**必须同版本发布**（CI 三方校验 `server/const.py` ↔ `xadmin-client/package.json` ↔ 发布 tag）。
