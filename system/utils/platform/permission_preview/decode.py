@@ -12,10 +12,25 @@ from system.models import DataPermission, Menu
 from system.services import ModeTypeAbstract
 from system.utils.platform.rule_meta import MATCH_TEXTS, MODE_AND_TEXT, MODE_OR_TEXT, RULE_TYPE_TEXTS
 
-from .constants import PREVIEW_VALUE_NAME_LIMIT
+from .constants import PREVIEW_VALUE_NAME_LIMIT, PREVIEW_VALUE_TEXT_LIMIT
 from .labels import _field_label, _humanize_seconds, _join_names, _model_label, _pks_of
 
 logger = get_logger(__name__)
+
+
+def _short_value_text(value: Any) -> str:
+    """自由值文案：结构化值压成单行 JSON，并统一截断到展示上限。
+
+    数据权限规则允许自由 JSON 值（value.json）与历史结构化脏值，整段回显会把
+    预览规则表撑成正文墙，故只展示前 PREVIEW_VALUE_TEXT_LIMIT 个字符。
+    """
+    if isinstance(value, (dict, list)):
+        text = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    else:
+        text = str(value)
+    if len(text) > PREVIEW_VALUE_TEXT_LIMIT:
+        return f"{text[:PREVIEW_VALUE_TEXT_LIMIT]}…（共 {len(text)} 字符）"
+    return text
 
 
 def _resolve_value_text(rule: dict[str, Any], user_obj: UserInfo | None, subject: str = "user") -> str:
@@ -32,7 +47,7 @@ def _resolve_value_text(rule: dict[str, Any], user_obj: UserInfo | None, subject
         return _resolve_value_text_inner(rule, user_obj, subject)
     except Exception as exc:  # noqa: BLE001 预览是只读展示，任何脏数据都不应 500
         logger.warning("decode rule value failed, fallback to raw. type:%s error:%s", rule.get("type"), exc)
-        return str(rule.get("value"))
+        return _short_value_text(rule.get("value"))
 
 
 def _resolve_dept_subject_text(f_type: Any, val: Any) -> str:
@@ -60,7 +75,7 @@ def _resolve_value_text_inner(rule: dict[str, Any], user_obj: UserInfo | None, s
         return _resolve_dept_subject_text(f_type, val)
     if user_obj is None:
         # 缺目标用户上下文时退化为原值（预览文案不应因上下文缺失而抛异常）
-        return str(val)
+        return _short_value_text(val)
     if f_type == "value.user.id":
         return f"目标用户本人（{user_obj.username}）"
     if f_type == "value.user.dept.id":
@@ -139,7 +154,7 @@ def _resolve_value_text_inner(rule: dict[str, Any], user_obj: UserInfo | None, s
         return "{} ~ {}".format(*val) if isinstance(val, list) and len(val) == 2 else str(val)
     if val == "*":
         return "不限（全部）"
-    return str(val)
+    return _short_value_text(val)
 
 
 def decode_rule(

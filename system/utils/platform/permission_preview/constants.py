@@ -8,6 +8,10 @@ PREVIEW_USER_SAMPLE_LIMIT = 20
 # 预览里「关联对象名称」列表的展示上限（大部门/大授权集不拉全量、不撑爆响应）
 PREVIEW_VALUE_NAME_LIMIT = 50
 
+# 预览里自由值文案的展示上限（value.json / 结构化值压缩为单行后截断，
+# 避免一条超大 JSON 规则把表格撑成正文墙）
+PREVIEW_VALUE_TEXT_LIMIT = 300
+
 # 试算样本行展示上限（只读诊断：给出行标识即可，不展开字段内容）
 TRIAL_SAMPLE_LIMIT = 5
 
