@@ -64,7 +64,10 @@ class WebhookSubscriptionViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="test")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def test(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """发送 ping 测试事件（走真实投递管线，配置自检）。"""
+        """发送 ping 测试事件
+
+        走真实投递管线，配置自检
+        """
         subscription = self.get_object()
         from task.utils.webhook import emit_webhook_event
 
@@ -88,7 +91,7 @@ class WebhookDeliveryViewSet(ListDeleteModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="retry")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def retry(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """重置 exhausted/failed 投递并立即重派。"""
+        """重置投递"""
         delivery = self.get_object()
         if delivery.status not in ("exhausted", "failed"):
             return ApiResponse(code=1001, detail=_("Only failed or exhausted deliveries can be retried"))

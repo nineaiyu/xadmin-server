@@ -50,7 +50,9 @@ class SubmissionFilter(MaterializedFilterMixin, BaseFilterSet):
 
 
 class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
-    """动态表单提交（填报与本人提交管理；表单可挂审批流）。
+    """动态表单提交
+
+    填报与本人提交管理；表单可挂审批流。
 
     导出：`export-data` 复用导出框架，列 = 固定列（提交号/表单/提交人/时间）+
     按涉及表单 schema 展开的动态数据列；导出范围自动跟随列表筛选（含 creator 隔离）。
@@ -76,7 +78,9 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
     @extend_schema(responses=get_default_response_schema())
     @shared_list_action(methods=["get"], detail=False, url_path="available-forms")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def available_forms(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """可填报表单（启用中）：填报页数据源。
+        """可填报表单
+
+        启用中的表单；填报页数据源。
 
         表单定义属定义类资源，取值域不做行级数据权限过滤——否则普通员工必须先被
         授予「表单设计器」的接口权限才能填报（定义与填报共用同一个列表接口的历史
@@ -104,7 +108,9 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
     @extend_schema(responses=get_default_response_schema())
     @shared_list_action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def user_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """选人控件数据源：关键字搜索或按主键回显（≤20 条，仅基本展示字段）。
+        """选人控件数据源
+
+        关键字搜索或按主键回显（≤20 条，仅基本展示字段）
 
         填报链路的轻量数据源：关键字必填（不做通讯录全量枚举）；编辑既有提交时
         可带 pks 批量回显已选用户（同样字段收敛，仅主键命中）。
@@ -120,7 +126,10 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def resubmit(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """重新提交被驳回的填报（仅申请人、仅驳回态；按当前数据重新发起流程实例）"""
+        """重新提交被驳回的填报
+
+        仅申请人、仅驳回态；按当前数据重新发起流程实例
+        """
         instance = self.get_object()
         ok, detail = resubmit_submission(instance, request.user)
         if not ok:
@@ -163,7 +172,9 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         return ApiResponse(data=self.get_serializer(submission).data, detail=_("Application submitted"))
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """提交：数据校验先行 → 审批门 → 创建。
+        """提交
+
+        数据校验先行 → 审批门 → 创建。
 
         审批分四支：
         - 草稿（as_draft=true）：暂存不提交，跳过审批（数据只做轻校验，提交时按 schema 严格校验）；
@@ -210,7 +221,9 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
     )
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def submit(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """提交草稿：严格校验数据 → 流程引擎 / 操作审批 / 直接生效 三分支。
+        """提交草稿
+
+        严格校验数据 → 流程引擎 / 操作审批 / 直接生效 三分支
 
         草稿本身允许缺必填（暂存语义），因此提交时在服务端统一补一次完整校验；
         校验通过后才写库或发起审批，失败返回 1001（草稿保持原样，用户可继续修改）。

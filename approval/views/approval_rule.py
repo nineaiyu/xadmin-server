@@ -56,7 +56,9 @@ class ApprovalRuleViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="candidate-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def candidate_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """审批人候选目录：启用用户 + 启用角色 + 启用岗位（审批模块自给自足，不依赖搜索模块）。
+        """审批人候选目录
+
+        启用用户 + 启用角色 + 启用岗位（审批模块自给自足，不依赖搜索模块）
 
         配置审批人是审批模块的核心操作：全局搜索（/api/identity/search/user）属于
         独立可裁剪模块，standard 预设下被禁用会让审批人下拉永远搜不到、退化为

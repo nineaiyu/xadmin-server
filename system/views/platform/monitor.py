@@ -48,7 +48,9 @@ class MonitorViewSet(GenericViewSet):
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
     @action(methods=["get"], detail=False, url_path="overview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def overview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """主机资源概览：实时快照 + 心跳最新值 + 最近趋势 + 健康总览
+        """主机资源概览
+
+        实时快照 + 心跳最新值 + 最近趋势 + 健康总览。
 
         - live：直读 psutil（与心跳同源工具函数），卡片秒级新鲜；
         - latest/trend：common.Monitor 心跳表 30s 落盘，供趋势回看与兜底；
@@ -70,14 +72,19 @@ class MonitorViewSet(GenericViewSet):
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
     @action(methods=["get"], detail=False, url_path="services")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def services(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """核心服务健康：DB / Redis / Celery 状态与探测耗时"""
+        """核心服务健康
+
+        DB / Redis / Celery 状态与探测耗时
+        """
         return ApiResponse(data=metrics.collect_services())
 
     @extend_schema(responses=get_default_response_schema())
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
     @action(methods=["get"], detail=False, url_path="redis-info")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def redis_info(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """缓存 Redis 实例关键指标（INFO 解析）与 Celery 队列长度"""
+        """缓存 Redis 实例指标
+
+        关键指标（INFO 解析）与 Celery 队列长度。"""
         return ApiResponse(data=metrics.collect_redis_info())
 
     @extend_schema(responses=get_default_response_schema())
@@ -91,20 +98,27 @@ class MonitorViewSet(GenericViewSet):
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
     @action(methods=["get"], detail=False, url_path="task-health")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def task_health(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """后台任务健康度（近 1 天聚合：成功率 / 健康色 / 高频任务 / 近期失败）"""
+        """后台任务健康度
+
+        近 1 天聚合：成功率 / 健康色 / 高频任务 / 近期失败
+        """
         return ApiResponse(data=metrics.collect_task_health())
 
     @extend_schema(responses=get_default_response_schema())
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
     @action(methods=["get"], detail=False, url_path="slow")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def slow(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """慢请求 Top N（最近窗口内 exec_time 超阈值的操作日志）"""
+        """慢请求 Top N
+
+        最近窗口内 exec_time 超阈值的操作日志。"""
         return ApiResponse(data=metrics.collect_slow_requests())
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="history")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def history(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """指标历史趋势：时间范围（range=1h/6h/24h/7d/30d 或 start/end）、
+        """指标历史趋势
+
+        时间范围（range=1h/6h/24h/7d/30d 或 start/end）、
 
         聚合粒度（interval=auto/1m/5m/15m/1h/1d）、多指标（metrics 逗号分隔）
         与环比对比。查询参数多，不套短缓存（避免不同窗口互相污染）。
@@ -122,7 +136,10 @@ class MonitorViewSet(GenericViewSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get", "put"], detail=False, url_path="thresholds")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def thresholds(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """资源告警阈值：GET 读取 / PUT 更新（与安全设置同源 Setting 表）"""
+        """资源告警阈值
+
+        GET 读取 / PUT 更新（与安全设置同源 Setting 表）
+        """
         from settings.serializers.security import SecurityMonitorSerializer
 
         if request.method == "PUT":
@@ -172,7 +189,9 @@ class MonitorViewSet(GenericViewSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="events")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def events(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """事件记录查询：kind=alert（告警）/ error（异常请求）/ task（任务失败）
+        """事件记录查询
+
+        kind=alert（告警）/ error（异常请求）/ task（任务失败）
 
         分页参数 limit（默认按 kind 为 200/50，封顶 1000）与 offset；响应带
         total 与 truncated 标记，窗口内数据超出当页时不再静默截断。
@@ -190,7 +209,10 @@ class MonitorViewSet(GenericViewSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="export")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def export(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """报表导出：kind=history（趋势数据+汇总）/ alerts（告警记录），type=csv|xlsx"""
+        """报表导出
+
+        kind=history（趋势数据+汇总）/ alerts（告警记录），type=csv|xlsx
+        """
         file_format = "xlsx" if request.query_params.get("type") == "xlsx" else "csv"
         if request.query_params.get("kind") == "alerts":
             # 导出按块循环取全量：不静默截断，单次查询行数仍受 EXPORT_CHUNK_SIZE 约束

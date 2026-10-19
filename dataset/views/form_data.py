@@ -96,7 +96,9 @@ class DynamicFormDataViewSet(
     @extend_schema(responses=get_default_response_schema())
     @shared_list_action(methods=["get"], detail=False, url_path="form-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def form_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """表单选项（全部非模板表单，含停用）：管理端「选择表单」数据源。
+        """表单选项
+
+        全部非模板表单，含停用：管理端「选择表单」数据源
 
         返回 schema 供前端渲染动态列；定义类资源不做行级数据权限过滤
         （与 available-forms 同口径），行可见性只作用于提交记录。
@@ -126,7 +128,9 @@ class DynamicFormDataViewSet(
     @extend_schema(responses=get_default_response_schema())
     @shared_list_action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def user_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """选人控件数据源（关键字搜索 / 按主键回显，≤20 条）：列表内选人字段回显。
+        """选人控件数据源
+
+        关键字搜索 / 按主键回显，≤20 条：列表内选人字段回显
 
         与「我的填报」的 user-options 同源（common 轻量数据源），供管理端列表把
         选人字段的 pk 展示为用户名；权限与对应 list 权限同口径。

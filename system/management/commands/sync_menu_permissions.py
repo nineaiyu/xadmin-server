@@ -47,6 +47,11 @@ class Command(BaseCommand):
             help="把变更按应用归属回写各层种子（平台层 loadjson/ + <app>/seeds/）",
         )
         parser.add_argument(
+            "--refresh-titles",
+            action="store_true",
+            help="按当前 docstring 首行重算已有权限点标题（只改不一致项；跳过 i18n key 与运行时权限点）",
+        )
+        parser.add_argument(
             "--fix-field-permissions",
             action="store_true",
             help="补齐字段白名单（含新增字段；只增不减，不改写已有裁剪）",
@@ -149,15 +154,9 @@ class Command(BaseCommand):
         self._report_field_permission_gaps()
 
         wide_manager = sync.audit_wide_manager_grants()
-        if wide_manager:
-            self.stdout.write(
-                self.style.WARNING(
-                    f"[宽授权] {len(wide_manager)} 个（部门管理员, 宽规则）组合：数据权限并集取最宽，"
-                    "管理员持有「全部数据」等宽规则时部门边界失效（去数据权限页调整或确认有意为之）"
-                )
-            )
-            for user, rule_name in wide_manager[:DETAIL_LIMIT]:
-                self.stdout.write(self.style.WARNING(f"  ~ {user.username} | {rule_name}"))
+        self._report_wide_manager(wide_manager)
+
+        refreshed = self._refresh_titles(routes, perms, dry_run) if options["refresh_titles"] else []
 
         if dry_run:
             if options["fix_field_permissions"]:
@@ -185,9 +184,31 @@ class Command(BaseCommand):
             self.stdout.write(f"[授权] 已为 {len(granted)} 个（角色, 权限点）组合补授")
 
         if options["update_seed"]:
-            # 回写范围 = 新增 + 方法修正 + 绑定校正（三类变更都必须落盘，否则下次
+            # 回写范围 = 新增 + 方法修正 + 绑定校正 + 标题重算（四类变更都必须落盘，否则下次
             # load_init_json 会用旧种子把它们覆盖回去）+ 字段权限补齐
-            self._update_seed(created, [fix.menu for fix in fixes], method_fixed, options["fix_field_permissions"])
+            fixed_menus = [fix.menu for fix in fixes] + [menu for menu, _old, _new in refreshed]
+            self._update_seed(created, fixed_menus, method_fixed, options["fix_field_permissions"])
+
+    def _refresh_titles(self, routes: Any, perms: Any, dry_run: Any) -> Any:
+        """按当前 docstring 重算存量权限点标题，返回变更列表（供种子回写复用）。"""
+        refreshed = sync.refresh_titles(routes, perms, dry_run=dry_run)
+        self.stdout.write(f"[标题] 重算 {len(refreshed)} 个权限点标题（跳过 i18n key 与运行时权限点）")
+        for menu, old_title, new_title in refreshed[:DETAIL_LIMIT]:
+            self.stdout.write(f"  ~ {menu.name}: {old_title} → {new_title}")
+        return refreshed
+
+    def _report_wide_manager(self, wide_manager: Any) -> None:
+        """报告「部门管理员 × 宽数据规则」组合（并集取最宽会让部门边界失效）。"""
+        if not wide_manager:
+            return
+        self.stdout.write(
+            self.style.WARNING(
+                f"[宽授权] {len(wide_manager)} 个（部门管理员, 宽规则）组合：数据权限并集取最宽，"
+                "管理员持有「全部数据」等宽规则时部门边界失效（去数据权限页调整或确认有意为之）"
+            )
+        )
+        for user, rule_name in wide_manager[:DETAIL_LIMIT]:
+            self.stdout.write(self.style.WARNING(f"  ~ {user.username} | {rule_name}"))
 
     # ------------------------------------------------------------------ 字段权限
 

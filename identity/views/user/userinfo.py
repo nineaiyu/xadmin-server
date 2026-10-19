@@ -128,7 +128,10 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         throttle_classes=[PasswordVerifyThrottle],
     )
     def verify_password(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """核验当前登录用户口令（锁屏解锁等；不签发凭证、不改动任何状态）"""
+        """核验当前登录用户口令
+
+        锁屏解锁等；不签发凭证、不改动任何状态
+        """
         serializer = self.get_serializer(request.user, data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
@@ -179,7 +182,10 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
     def bind(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """绑定{cls}邮箱或手机（敏感操作：需密码二次确认）"""
+        """绑定{cls}邮箱或手机
+
+        敏感操作：需密码二次确认
+        """
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
         instance = UserInfo.objects.filter(**{query_key: target}).first()
         if instance:

@@ -76,9 +76,10 @@ class TaskExecutionFilter(filters.FilterSet):
 
 
 class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
-    """任务日志：所有 celery 任务的执行记录（定时调度 + 即时执行 + 导出/导入/报表产物任务）。
+    """Celery 任务执行日志
 
-    产物任务（导出/导入）与执行记录共用主键（pk = celery task_id），列表按 pk 子查询
+    覆盖所有 celery 任务的执行记录（定时调度 + 即时执行 + 导出/导入/报表
+    产物任务）。产物任务（导出/导入）与执行记录共用主键（pk = celery task_id），列表按 pk 子查询
     带出产物信息（类型 / 进度 / 阶段 / 错误 / 产物文件），因此一个任务只有一行，
     同时具备「查看日志 / 取消 / 重跑 / 下载产物 / 清理」的完整入口。
     """

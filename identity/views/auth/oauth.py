@@ -158,7 +158,10 @@ def _bind_identity(request: Any, provider: str, code: str, payload: dict[str, An
 
 
 class OAuthProvidersAPIView(GenericAPIView):
-    """登录页可见的第三方登录入口（未启用 / 未配置的不返回）。"""
+    """可用第三方登录入口
+
+    登录页可见的入口；未启用 / 未配置的不返回。
+    """
 
     # 登录前置：必须匿名可达（项目默认权限类对匿名用户直接 401）
     permission_classes = [AllowAny]
@@ -178,7 +181,10 @@ class OAuthProvidersAPIView(GenericAPIView):
 
 
 class OAuthAuthorizeAPIView(GenericAPIView):
-    """返回 IdP 授权跳转地址（含一次性 state）。"""
+    """第三方登录授权跳转
+
+    返回 IdP 授权地址（含一次性 state）。
+    """
 
     # 登录前置：必须匿名可达（项目默认权限类对匿名用户直接 401）
     permission_classes = [AllowAny]
@@ -201,7 +207,7 @@ class OAuthAuthorizeAPIView(GenericAPIView):
 
 
 class OAuthBindAuthorizeAPIView(GenericAPIView):
-    """已登录用户发起绑定：返回带「绑定意图」state 的授权地址。
+    """发起第三方账号绑定
 
     与登录 `authorize` 的唯一差别是 state 载荷（记录发起人 pk）：回调据此把 IdP 身份
     绑定到本人而不是登录换 token。跳转地址（redirect_uri）与登录一致，管理员无需额外配置。
@@ -223,7 +229,7 @@ class OAuthBindAuthorizeAPIView(GenericAPIView):
 
 
 class OAuthCallbackAPIView(GenericAPIView):
-    """IdP 回调：校验 state → 换 token → 取 userinfo → 绑定建立 / 绑定判定 → `complete_login`。
+    """第三方登录回调
 
     state 命中绑定意图时只建立绑定（不登录换 token）；否则走登录链路，
     登录成功后**必须**走 `complete_login`（登录后置链路唯一入口），
@@ -316,7 +322,10 @@ class OAuthBindingsAPIView(GenericAPIView):
 
 
 class OAuthUnbindAPIView(GenericAPIView):
-    """解绑第三方账号：口令二次确认 + 禁止解掉最后一种登录方式（防自锁）。"""
+    """解绑第三方账号
+
+    口令二次确认 + 禁止解掉最后一种登录方式（防自锁）。
+    """
 
     permission_classes = [IsAuthenticated]
 

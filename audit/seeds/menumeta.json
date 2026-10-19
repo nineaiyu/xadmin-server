@@ -425,12 +425,12 @@
   "pk": "482a1ed2-9fe5-46fe-9885-df8924a9698a",
   "fields": {
    "created_time": "2026-09-09T00:00:00Z",
-   "updated_time": "2026-09-09T00:00:00Z",
+   "updated_time": "2026-10-19T08:05:04.855Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "DataMaskRulePartialUpdate",
+   "title": "部分更新脱敏规则信息",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
@@ -438,11 +438,18 @@
    "is_keepalive": true,
    "frame_url": "",
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": "",
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -600,12 +607,12 @@
   "pk": "30eff2b0-49c9-4691-82ac-615c89ca30e3",
   "fields": {
    "created_time": "2026-09-14T13:49:28.570Z",
-   "updated_time": "2026-09-14T13:49:28.570Z",
+   "updated_time": "2026-10-19T08:05:04.770Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "导入前校验脱敏规则数据（逐行校验不落库，返回字段级错误定位）",
+   "title": "导入前校验脱敏规则数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -613,11 +620,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -625,12 +639,12 @@
   "pk": "62dba736-13e5-433a-8c97-16584a1cda1f",
   "fields": {
    "created_time": "2026-09-14T13:49:28.569Z",
-   "updated_time": "2026-09-14T13:49:28.569Z",
+   "updated_time": "2026-10-19T08:05:04.773Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "读取导入文件首行表头并给出列映射候选脱敏规则（列映射步骤，不落库）",
+   "title": "读取导入表头并给出列映射候选脱敏规则",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -638,11 +652,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {
@@ -650,12 +671,12 @@
   "pk": "0b7efabc-49de-4b20-8dc0-ba4a9207dd42",
   "fields": {
    "created_time": "2026-09-14T13:49:28.567Z",
-   "updated_time": "2026-09-14T13:49:28.567Z",
+   "updated_time": "2026-10-19T08:05:04.776Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "title": "异步导入脱敏规则数据（大数据量，进度与错误报告在下载中心获取）",
+   "title": "异步导入脱敏规则数据",
    "icon": null,
    "r_svg_name": null,
    "is_show_menu": true,
@@ -663,11 +684,18 @@
    "is_keepalive": true,
    "frame_url": null,
    "frame_loading": false,
+   "watermark": false,
    "transition_enter": null,
    "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
   }
  },
  {

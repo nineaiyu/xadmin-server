@@ -56,7 +56,9 @@ class AiProfileViewSet(
     SearchColumnsAction,
     GenericViewSet,
 ):
-    """AI 配置档案：多套凭据 + 采样/行为参数，至多一个激活。
+    """AI 配置档案
+
+    多套凭据 + 采样/行为参数，至多一个激活。
 
     - 激活（activate）后供对应用途的 AI 链路使用；删除激活行 / 停用（deactivate）
       后回落 Setting 体系历史配置（category=ai）；
@@ -107,21 +109,30 @@ class AiProfileViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="activate")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def activate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """激活档案（事务内清掉其余激活行，全局至多一个激活档案）。"""
+        """激活档案
+
+        事务内清掉其余激活行，全局至多一个激活档案
+        """
         set_active_profile(self.get_object(), True)
         return ApiResponse(detail=_("Profile activated"))
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="deactivate")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def deactivate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """停用档案：AI 全链路回落 Setting 体系历史配置。"""
+        """停用档案
+
+        AI 全链路回落 Setting 体系历史配置
+        """
         set_active_profile(self.get_object(), False)
         return ApiResponse(detail=_("Profile deactivated"))
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="test")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def test(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """按档案持久化值真实 ping 一次 LLM（api_key 用已存密钥）。"""
+        """档案连通性探测
+
+        api_key 用已存密钥
+        """
         profile = self.get_object()
         if not profile.is_configured:
             return ApiResponse(code=1001, detail=_("Fill in base URL, API key and model before testing"))
@@ -137,7 +148,9 @@ class AiProfileViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="probe")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def probe(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """能力探测：按序验证 JSON / tool_calls / reasoning（可选 vision）并落 capabilities。
+        """能力探测
+
+        按序验证 JSON / tool_calls / reasoning（可选 vision）并落 capabilities
 
         - 请求体可选 ``capabilities``（能力子集）与 ``vision``（是否追加多模态探测）；
         - 探测不阻断：单项失败只记录 ok=False + 可读原因，返回结果供前端提示与人工修正；

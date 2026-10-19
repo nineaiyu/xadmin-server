@@ -95,13 +95,18 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="meta")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def meta(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """设计器元数据：模型白名单、字段清单与可用的 JSON 路径根字段（短 TTL 缓存）。"""
+        """设计器元数据
+
+        模型白名单、字段清单与可用的 JSON 路径根字段（短 TTL 缓存）
+        """
         return ApiResponse(data=designer_meta_payload())
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="execute")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def execute(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """执行数据集（行级数据权限随调用者过滤，fail-closed）。
+        """执行数据集
+
+        行级数据权限随调用者过滤，fail-closed
 
         ``count_only=true``：仅取行数（数字卡场景，跳过行物化）。
         """
@@ -115,7 +120,10 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="aggregate")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def aggregate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """聚合序列（图表数据源）：group_by + metric(+value_field) + date_trunc。"""
+        """聚合序列
+
+        图表数据源：group_by + metric(+value_field) + date_trunc
+        """
         dataset = self.get_object()
         try:
             result = aggregate_dataset(

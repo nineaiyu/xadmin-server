@@ -14,7 +14,9 @@ from common.settings_contract import kernel_setting
 
 
 class MetricsAPIView(APIView):
-    """``GET /api/common/api/metrics``：Prometheus 指标。
+    """Prometheus 指标
+
+    Prometheus 指标
 
     启用条件（缺一不可，避免匿名暴露系统内部指标）：
     1. ``METRICS_ENABLED=true``：未启用时返回 404（不暴露端点存在性）；

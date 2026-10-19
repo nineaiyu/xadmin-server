@@ -59,7 +59,10 @@ class PasskeyViewSet(BaseViewSet, ListAction, SearchColumnsAction, DestroyAction
     )
     @action(methods=["post"], detail=False, url_path="challenge")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def challenge(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """获取 WebAuthn 挑战值（一次性，5 分钟有效）"""
+        """获取 WebAuthn 挑战值
+
+        一次性，5 分钟有效
+        """
         scene = str(request.data.get("scene") or SCENE_REGISTER)
         if scene not in (SCENE_REGISTER, SCENE_AUTHENTICATE):
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))

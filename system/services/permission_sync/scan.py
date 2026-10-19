@@ -7,13 +7,20 @@ from collections import Counter
 from typing import Any
 
 from django.conf import settings
+from django.utils.module_loading import import_string
 
-from common.core.utils import get_all_url_dict, permission_path_matches
+from common.core.utils import get_all_url_dict, get_doc_first_line, permission_path_matches
 from common.utils import get_logger
 from system.models import Menu, ModelLabelField
-from system.utils.platform.menu import get_view_permissions
+from system.utils.platform.menu import MENU_TITLE_MAX, get_view_permissions
 
-from .constants import DEAD_ENDPOINT_PREFIXES, PARENT_MENU_MAP, SHARED_METHOD_PATHS, SKIP_ROUTE_PREFIXES
+from .constants import (
+    DEAD_ENDPOINT_PREFIXES,
+    PARENT_MENU_MAP,
+    RUNTIME_PERMISSION_PREFIXES,
+    SHARED_METHOD_PATHS,
+    SKIP_ROUTE_PREFIXES,
+)
 from .types import PERMISSION_MENU_RANK_BASE, PlanItem, RouteInfo
 
 logger = get_logger(__name__)
@@ -94,7 +101,9 @@ def build_route_index() -> Any:
 
 
 def load_permission_menus() -> Any:
-    return list(Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, deleted_at__isnull=True))
+    return list(
+        Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, deleted_at__isnull=True).select_related("meta")
+    )
 
 
 def _method_covers(perm: Any, path: Any, method: Any) -> Any:
@@ -244,3 +253,70 @@ def build_plans(gaps: Any, routes: Any, perms: Any, default_parent: Any = None) 
                 )
             )
     return plans, unresolved
+
+
+def refresh_titles(routes: Any, perms: Any = None, *, dry_run: bool = False) -> Any:
+    """按当前 docstring 重算已有权限点标题（存量库/种子修复）。
+
+    生成器只负责新增权限点；docstring 首行口径变化（例如长句拆成「短标题 +
+    详细段落」）后，存量 ``MenuMeta.title`` 不会自动跟随。本函数按
+    ``(path, method)`` 找回路由，复用与新建同一套 ``get_view_permissions`` 口径
+    重算标题，仅更新与现状不一致的项。
+
+    跳过：运行时模块权限点、i18n key 形式（``menus.*``）的标题——前者由模块
+    自身维护，后者是人工维护的翻译键。返回 ``[(menu, old_title, new_title), ...]``。
+    """
+    perms = perms if perms is not None else load_permission_menus()
+    route_by_path = {}
+    for route in routes:
+        route_by_path[route.url] = route
+        route_by_path[route.url.rstrip("$")] = route
+
+    canonical_cache: dict[tuple[str, str], dict[tuple[str, str], Any]] = {}
+    changed = []
+    for perm in perms:
+        if str(perm.pk).startswith(RUNTIME_PERMISSION_PREFIXES):
+            continue
+        route = route_by_path.get(perm.path) or route_by_path.get(f"{perm.path}$")
+        if route is None:
+            continue
+        method = (perm.method or "").upper()
+        if not (route.actions or {}).get(method.lower()):
+            continue
+        suffix = perm.name.split(":", 1)[1] if ":" in perm.name else ""
+        cache_key = (route.view, suffix)
+        if cache_key not in canonical_cache:
+            canonical_cache[cache_key] = {
+                (entry["url"], str(entry["method"]).upper()): entry
+                for entry in get_view_permissions(route.view, suffix)
+            }
+        entry = canonical_cache[cache_key].get((route.url, method))
+        if entry is not None:
+            new_title = entry["description"] or route.view
+        else:
+            # 普通 ViewSet（非 GenericViewSet）的 action 不在 get_view_permissions
+            # 的映射面内：按与生成器相同的回落顺序（action 首行 → 视图首行）取值。
+            try:
+                view_cls = import_string(route.view)
+            except Exception:
+                continue
+            action = getattr(view_cls, (route.actions or {}).get(method.lower()) or "", None)
+            new_title = (
+                get_doc_first_line(getattr(action, "__doc__", None))
+                or get_doc_first_line(getattr(view_cls, "__doc__", None))
+                or route.view
+            ).rstrip("。")
+        meta = perm.meta
+        if meta is None or not meta.title or meta.title.startswith("menus."):
+            continue
+        # 只修超限标题（含历史句号/省略号形态）：短标题可能是管理员在菜单页
+        # 人工收敛过的，不能按生成器口径全量覆盖。
+        if len(meta.title) <= MENU_TITLE_MAX and not meta.title.endswith(("。", "…")):
+            continue
+        if new_title == meta.title:
+            continue
+        changed.append((perm, meta.title, new_title))
+        if not dry_run:
+            meta.title = new_title
+            meta.save(update_fields=["title", "updated_time"])
+    return changed

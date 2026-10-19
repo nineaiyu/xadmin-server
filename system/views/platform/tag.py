@@ -75,7 +75,10 @@ class TagViewSet(
     SearchColumnsAction,
     GenericViewSet,
 ):
-    """标签定义管理：CRUD + 使用计数 + 删除保护 + 打标端点。"""
+    """标签
+
+    CRUD + 使用计数 + 删除保护 + 打标端点。
+    """
 
     queryset = Tag.objects.annotate(usage_count=Count("tagged_items")).all()
     serializer_class = TagSerializer
@@ -110,13 +113,19 @@ class TagViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="resources")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def resources(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """可打标对象白名单（前端选择器数据源；非白名单对象不出现）。"""
+        """可打标对象白名单
+
+        前端选择器数据源；非白名单对象不出现
+        """
         return ApiResponse(data={"resources": taggable_resources()})
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="objects")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def objects(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """查询某对象的标签：``?resource=identity.userinfo&pk=<对象主键>``。"""
+        """查询某对象的标签
+
+        ``?resource=identity.userinfo&pk=<对象主键>``
+        """
         model = taggable_model(request.query_params.get("resource"))
         if model is None:
             return ApiResponse(code=1001, detail=_("The object type cannot be tagged"))
@@ -130,7 +139,10 @@ class TagViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="assign")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def assign(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """单对象打标（全量替换语义）：权限回落业务对象 update 权限点。"""
+        """单对象打标
+
+        全量替换语义：权限回落业务对象 update 权限点
+        """
         serializer = TagAssignSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data
@@ -145,7 +157,10 @@ class TagViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="batch-assign")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_assign(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """批量打标：``mode=replace|add|remove``（逐对象回落 update 权限点校验）。"""
+        """批量打标
+
+        ``mode=replace|add|remove``（逐对象回落 update 权限点校验）
+        """
         serializer = TagBatchAssignSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data

@@ -72,7 +72,9 @@ class DataMaskRuleViewSet(BaseModelSet, ImportExportDataAction):
     @extend_schema(description="脱敏预览：传入样例值与规则参数，返回逐条脱敏结果（供前端表单实时预览）")
     @action(methods=["post"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def preview(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """给定样例值与规则参数，返回脱敏结果（供前端表单实时预览）。
+        """给定样例值与规则参数，返回脱敏结果
+
+        供前端表单实时预览
 
         样例可为 ``values`` 数组，或 ``value`` 内含换行（按行拆分）；``result``
         保留首条结果以兼容单值调用方，逐条结果统一在 ``results``。

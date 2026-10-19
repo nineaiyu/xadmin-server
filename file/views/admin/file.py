@@ -75,7 +75,10 @@ class UploadFileFilter(TagFilterMixin, BaseFilterSet):
 class UploadFileViewSet(
     FileAccessActionMixin, ChunkUploadActionMixin, TaggedPrefetchMixin, RecycleBinAction, BaseModelSet
 ):
-    """文件（含分片上传 / 断点续传：chunk/* 子动作见 file_chunk.py）"""
+    """文件
+
+    含分片上传 / 断点续传；``chunk/*`` 子动作见 ``file_chunk.py``。
+    """
 
     queryset = UploadFile.objects.all()
     serializer_class = UploadFileSerializer
@@ -143,7 +146,9 @@ class UploadFileViewSet(
     @action(methods=["get"], detail=False, url_path="stats")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=10, key_func="get_stats_cache_key")
     def stats(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """个人文件统计（数量/总大小/配额使用率 + 分类分布/近 7 天趋势/最大文件）。
+        """个人文件统计
+
+        数量 / 总大小 / 配额使用率 + 分类分布 / 近 7 天趋势 / 最大文件。
 
         顶部统计面板的数据源：列表口径（活动记录）+ 一次聚合出多组维度，
         由 10s 短缓存兜住重复刷新；`?no_cache=1` 可穿透缓存取即时值。
@@ -153,7 +158,9 @@ class UploadFileViewSet(
 
     @action(methods=["get"], detail=True, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def preview(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """在线预览：走 DRF 鉴权与数据权限（不暴露 /media/ 直链）。
+        """在线预览
+
+        走 DRF 鉴权与数据权限（不暴露 /media/ 直链）
 
         类型分派由后端单一判定（序列化器同步下发 `preview_kind`）：
         - 图片：`?size=thumb|preview`，按需生成 JPEG 缓存后 `inline` 返回；

@@ -47,7 +47,9 @@ class AiActionExecuteMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="action/interpret/stream")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def action_interpret_stream(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """指令执行草稿（SSE）：事件序 meta → reasoning* → delta* → done | error。
+        """指令执行草稿
+
+        SSE：事件序 meta → reasoning* → delta* → done | error
 
         LLM 只产出草稿（白名单动作 + 服务端校验后的规范化参数），**不执行**；
         done 载荷 ``{kind: "draft"|"message", draft?, message}``——draft 渲染确认卡片，
@@ -240,7 +242,9 @@ class AiActionExecuteMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="action/execute")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def action_execute(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """执行已确认的动作草稿：白名单 + 参数重校验（不信任前端回传）+ 权限双门 + 审批协议 + 审计。
+        """执行已确认的动作草稿
+
+        白名单 + 参数重校验（不信任前端回传）+ 权限双门 + 审批协议 + 审计
 
         审批口径：动作声明需要审批（如需审批的动态表单）时复用 412 协议——
         首次确认建 PENDING 单并返回 412；审批通过后前端原样重发（指纹一致）

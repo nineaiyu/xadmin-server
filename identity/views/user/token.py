@@ -64,7 +64,10 @@ class PersonalAccessTokenViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="logs")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def logs(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """凭证调用记录（精确口径：按凭证标识 token_pk 归集）"""
+        """凭证调用记录
+
+        精确口径：按凭证标识 token_pk 归集
+        """
         from audit.serializers.log import OperationLogSerializer  # 审计域序列化器，调用期惰性
 
         token = self.get_object()  # 取值域保护：他人凭证 404
@@ -79,7 +82,9 @@ class PersonalAccessTokenViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="scope-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def scope_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """当前用户可授权的接口范围（按菜单分组，供令牌接口范围勾选）
+        """当前用户可授权的接口范围
+
+        按菜单分组，供令牌接口范围勾选
 
         口径 = 请求鉴权同源的权限菜单 × 本人角色（超管为全部启用的权限菜单）；
         条目为锚定正则（如 ``GET ^/api/identity/user/?$``），只放行勾选的那一个接口。
@@ -89,7 +94,10 @@ class PersonalAccessTokenViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="stats")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def stats(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """调用统计（近 7 天调用数 / 失败数 / 末次调用时间，按凭证精确归集）"""
+        """调用统计
+
+        近 7 天调用数 / 失败数 / 末次调用时间，按凭证精确归集
+        """
         token = self.get_object()
         queryset = self._call_log_queryset(
             request, token, since=timezone.now() - timezone.timedelta(days=PAT_STATS_WINDOW_DAYS)

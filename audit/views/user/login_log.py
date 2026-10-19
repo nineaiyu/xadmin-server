@@ -41,7 +41,10 @@ class UserLoginLogFilter(BaseFilterSet):
 
 
 class UserLoginLogViewSet(ListModelMixin, SearchFieldsAction, SearchColumnsAction, GenericViewSet):
-    """用户登录日志（个人安全日志：视图内限定 creator=当前用户）"""
+    """我的登录日志
+
+    个人安全日志：视图内限定 ``creator=当前用户``。
+    """
 
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer

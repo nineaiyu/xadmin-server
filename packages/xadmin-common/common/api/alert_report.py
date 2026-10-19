@@ -24,7 +24,10 @@ from common.core.response import ApiResponse
 
 
 class AlertReportAPIView(GenericAPIView):
-    """告警上报端点基类（无登录态：独立令牌鉴权；子类声明差异属性）。"""
+    """告警上报端点基类
+
+    无登录态：独立令牌鉴权；子类声明差异属性
+    """
 
     permission_classes = (AllowAny,)
     authentication_classes = ()

@@ -3836,7 +3836,7 @@ msgstr "分组"
 msgid "Template folder/group name (empty = ungrouped)"
 msgstr "模板分组名（为空 = 未分组）"
 
-# 大屏画布工具集三期（ADR-088）新增文案：团队模板 + 窗格旋转/动画/富文本
+# 大屏画布工具集三期新增文案：团队模板 + 窗格旋转/动画/富文本
 #: dataset/models/dataset.py:157
 msgid "Screen template"
 msgstr "大屏模板"
@@ -5135,7 +5135,7 @@ msgstr "窗格数量超过上限（最多 {} 个）"
 msgid "Screen design canvas {} must be {}~{}"
 msgstr "设计画幅 {} 必须在 {}~{} 之间"
 
-# 自由画布模式（ADR-086）新增文案：手工追加 zh 译文
+# 自由画布模式新增文案：手工追加 zh 译文
 #: dataset/utils/screen_layout.py:345
 msgid "Invalid screen free layout"
 msgstr "自由画布格式不正确"

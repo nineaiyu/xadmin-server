@@ -90,6 +90,15 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
     pagination_class = DynamicPageNumber(1000)  # 缺省最大 100 条
 ```
 
+**docstring 首行口径**（`check_menu_titles.py` 守护）：
+
+- 首行是**精炼的名词短语**（≤24 字、不带句号），例如 `书籍` / `审批委托` / `文件`；
+- 视图类首行还会被 `@action` 的 `{cls}` 模板复用（`获取{cls}的列表`），因此写成纯名词，
+  不要写「XX 管理」——否则会拼成「获取文件管理器的列表」；
+- 详细说明、协议、边界条件全部下沉到空行之后的段落；
+- 权限点自动同步（`sync_menu_permissions`）会把首行写入 `MenuMeta.title`；写长会撑破菜单树
+  与批量授权选择器，过度依赖生成器截断还会出现省略号。
+
 - 依赖：`packages/xadmin-common/common/core/modelset/` 各模块 + `packages/xadmin-common/common/core/response.py`。
 - 配置项（类属性）：`queryset` / `serializer_class` / `filterset_class` / `pagination_class` / `ordering_fields` / `select_related_fields` / `prefetch_related_fields` / `{action}_serializer_class`。
 - 扩展点：覆写点表与红线见 [framework-cookbook.md](framework-cookbook.md) §四；自定义动作 `@action` + `@extend_schema` + `ApiResponse`。

@@ -42,7 +42,10 @@ class UserOnlineFilter(BaseFilterSet):
 
 
 class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
-    """在线用户会话（WS 连接 + 纯 HTTP 会话统一视图）"""
+    """在线用户会话
+
+    WS 连接 + 纯 HTTP 会话统一视图。
+    """
 
     queryset = UserSession.objects.all()
     serializer_class = UserSessionSerializer
@@ -82,7 +85,9 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
     )
     @action(methods=["post"], detail=True, url_path="force-logout")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def force_logout(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """强制下线该用户全部会话（服务端令牌失效 + WS 踢线）
+        """强制下线该用户全部会话
+
+        服务端令牌失效 + WS 踢线
 
         detail pk 为用户主键（非会话行主键）：踢的是「用户全部会话」，
         与行维度的下线（destroy 单会话）互补。

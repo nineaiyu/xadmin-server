@@ -75,7 +75,10 @@ def _tool_requires_approval(spec: Any, user: Any) -> bool:
 
 
 class McpEndpointAPIView(AiThrottleMixin, APIView):
-    """MCP Streamable HTTP 端点（无状态，JSON 响应，无 SSE 流）"""
+    """MCP Streamable HTTP 端点
+
+    无状态，JSON 响应，无 SSE 流
+    """
 
     permission_classes = [IsAuthenticated]
 

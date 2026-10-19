@@ -33,11 +33,17 @@ def _int_param(value: Any, default: int, minimum: int = 1, maximum: int = 100) -
 
 
 class SystemTaskCenterViewSet(GenericViewSet):
-    """任务中心：统一列表 / 取消 / 重跑（三类记录聚合，不建新表）。"""
+    """任务中心
+
+    统一列表 / 取消 / 重跑；三类记录聚合，不建新表。
+    """
 
     @extend_schema(responses=get_default_response_schema())
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """统一任务列表：``type`` 多选（task/export/import）、``status``/``keyword``/时间范围可过滤。"""
+        """统一任务列表
+
+        ``type`` 多选（task/export/import）、``status``/``keyword``/时间范围可过滤
+        """
         types = [item.strip() for item in str(request.query_params.get("type") or "").split(",") if item.strip()]
         params = request.query_params
         # 时间范围同时接受列表页惯例的 created_time_after/before 与简写 start/end
@@ -57,7 +63,10 @@ class SystemTaskCenterViewSet(GenericViewSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="cancel")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def cancel(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """取消任务：PENDING 立即置 REVOKED；RUNNING 下 revoke 并在安全点收敛（协作式）。"""
+        """取消任务
+
+        PENDING 立即置 REVOKED；RUNNING 下 revoke 并在安全点收敛（协作式）
+        """
         result = task_center.cancel_record(
             request.user,
             str(request.data.get("type") or "").strip(),
@@ -70,7 +79,10 @@ class SystemTaskCenterViewSet(GenericViewSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="rerun")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def rerun(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """重跑任务（白名单：导出 / 导入 / 报表）：新记录 + 同链路重放，产物与审计同源。"""
+        """重跑任务
+
+        白名单：导出 / 导入 / 报表：新记录 + 同链路重放，产物与审计同源
+        """
         result = task_center.rerun_record(
             request.user,
             str(request.data.get("type") or "").strip(),

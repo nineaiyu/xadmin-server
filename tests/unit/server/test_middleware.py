@@ -245,16 +245,15 @@ class TestAsyncMiddlewareChain:
 
 
 class TestMiddlewareChainAsyncCapability:
-    """链上中间件 async 能力盘点（ADR-078 收口守护）。
+    """链上中间件 async 能力盘点守护。
 
     口径：生产挂载的每一项必须声明 async 能力（双模或原生 async），防新增同步
     中间件悄悄回退到「每请求 sync→async 线程交接」（容量膝点回退）；DEBUG-only
-    三项（ADR-078 D3）显式保持同步，以白名单固化「有意为之」——白名单项若将来
-    变成生产挂载（测试设置下不再 MiddlewareNotUsed），盘点会直接失败，强制按
-    ADR 口径重新评估。
+    三项显式保持同步，以白名单固化「有意为之」——白名单项若将来
+    变成生产挂载（测试设置下不再 MiddlewareNotUsed），盘点会直接失败，强制重新评估。
     """
 
-    #: ADR-078 D3：DEBUG-only 三项显式保持同步（生产 MiddlewareNotUsed，改造零收益）
+    #: DEBUG-only 三项显式保持同步（生产 MiddlewareNotUsed，改造零收益）
     EXPLICIT_SYNC_ALLOWLIST = {
         "server.middleware.StartMiddleware",
         "server.middleware.EndMiddleware",
@@ -275,7 +274,7 @@ class TestMiddlewareChainAsyncCapability:
                 continue
             if not getattr(clazz, "async_capable", False):
                 sync_gaps.append(path)
-        assert not sync_gaps, f"生产链上中间件未声明 async 能力（须双模化，ADR-078 D1）：{sync_gaps}"
+        assert not sync_gaps, f"生产链上中间件未声明 async 能力（须双模化）：{sync_gaps}"
 
     def test_explicit_sync_allowlist_stays_debug_only(self):
         """白名单项必须保持「生产不挂载 + 未声明 async」的显式同步边界。"""

@@ -106,7 +106,9 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
     )
     @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """批量删除：静默排除有历史实例的流程，不因单条受保护而整批失败。
+        """批量删除
+
+        静默排除有历史实例的流程，不因单条受保护而整批失败
 
         ⚠️ 覆写基类 `BatchDestroyAction.batch_destroy` 必须保留 `@action`
         装饰器（DRF 靠其 `.mapping` 注册路由），否则端点丢失、请求 405。
@@ -135,7 +137,10 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
     )
     @action(methods=["post"], detail=True, url_path="rollback")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def rollback(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """回滚到历史版本：快照写入活定义并落新版本；有 PENDING 实例时拒绝。"""
+        """回滚到历史版本
+
+        快照写入活定义并落新版本；有 PENDING 实例时拒绝
+        """
         ensure_approval_action_confirmed(request, "rollback")
         version = request.data.get("version")
         try:
@@ -239,7 +244,10 @@ class ApprovalInstanceViewSet(
         return super().optimize_queryset(queryset)
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """发起申请（按流程 form_schema 填写，落实例并进入首节点）"""
+        """发起申请
+
+        按流程 form_schema 填写，落实例并进入首节点
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         flow = serializer.validated_data["flow"]

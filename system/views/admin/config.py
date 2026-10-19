@@ -56,7 +56,10 @@ class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDa
 
     @shared_list_action(methods=["get"], detail=False, url_path="registered-keys")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def registered_keys(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """注册配置键清单（键名 + 期望值类型名）：配置页键枚举提示的数据源。"""
+        """注册配置键清单
+
+        键名 + 期望值类型名：配置页键枚举提示的数据源
+        """
         return ApiResponse(data={"keys": [{"key": k, "type": t} for k, t in registered_config_key_types().items()]})
 
 

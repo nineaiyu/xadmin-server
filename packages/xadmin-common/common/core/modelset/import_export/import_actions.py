@@ -202,7 +202,10 @@ class ImportAsyncAction(ExportImportThrottleMixin):
     )
     @parent_fallback_action(methods=["post"], detail=False, url_path="import-headers")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def import_headers(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """读取导入文件首行表头并给出列映射候选{cls}（列映射步骤，不落库）"""
+        """读取导入表头并给出列映射候选{cls}
+
+        列映射步骤，不落库
+        """
         from rest_framework.exceptions import ParseError
 
         from common.drf.parsers.base import BaseFileParser, FileContentOverflowedError
@@ -258,7 +261,10 @@ class ImportAsyncAction(ExportImportThrottleMixin):
     )
     @parent_fallback_action(methods=["post"], detail=False, url_path="import-validate")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def import_validate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """导入前校验{cls}数据（逐行校验不落库，返回字段级错误定位）"""
+        """导入前校验{cls}数据
+
+        逐行校验不落库，返回字段级错误定位
+        """
         from common.core.config import SysConfig
 
         rows, _column_titles = self._get_rows_and_titles(request)
@@ -293,7 +299,10 @@ class ImportAsyncAction(ExportImportThrottleMixin):
     )
     @parent_fallback_action(methods=["post"], detail=False, url_path="import-async")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def import_async(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """异步导入{cls}数据（大数据量，进度与错误报告在下载中心获取）"""
+        """异步导入{cls}数据
+
+        大数据量，进度与错误报告在下载中心获取
+        """
         from django.db import transaction
         from django.utils.module_loading import import_string
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""大屏模板（ScreenTemplate）载荷与窗格新字段（ADR-088）单测。
+"""大屏模板（ScreenTemplate）载荷与窗格新字段单测。
 
 锁三件事：
 
@@ -158,7 +158,7 @@ class TestTemplateSerializer:
 
 
 class TestTemplateGroupValidation:
-    """模板分组名（ADR-090 D4）：去空白 + 长度上限，空 = 未分组。"""
+    """模板分组名：去空白 + 长度上限，空 = 未分组。"""
 
     def test_group_trimmed_and_defaulted(self):
         serializer = ScreenTemplateSerializer()

@@ -85,7 +85,10 @@ class LeaveViewSet(BaseModelSet):
         serializer.save(creator=user, modifier=user, dept_belong=getattr(user, "dept", None))
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """新增请假申请（保存后立即提交审批；无可用审批人时保留草稿并以业务码 1008 返回）"""
+        """新增请假申请
+
+        保存后立即提交审批；无可用审批人时保留草稿并以业务码 1008 返回
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -113,7 +116,9 @@ class LeaveViewSet(BaseModelSet):
     )
     @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """批量删除：静默排除审批中/已批准的申请，不因单条受保护而整批失败。
+        """批量删除
+
+        静默排除审批中/已批准的申请，不因单条受保护而整批失败
 
         ⚠️ 覆写基类 `BatchDestroyAction.batch_destroy` 必须保留 `@action`
         装饰器（DRF 靠其 `.mapping` 注册路由），否则端点丢失、请求 405。
@@ -144,5 +149,8 @@ class LeaveViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def stats(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """我的请假统计（近 30 天：提交 / 审批中 / 已通过 / 已驳回）"""
+        """我的请假统计
+
+        近 30 天：提交 / 审批中 / 已通过 / 已驳回
+        """
         return ApiResponse(data=leave_stats(request.user))

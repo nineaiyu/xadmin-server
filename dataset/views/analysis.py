@@ -94,7 +94,10 @@ def _creator_guard(request: Any, instance: Any) -> Any:
 
 
 class BaseAnalysisViewSet(BaseModelSet):
-    """公共：可见性过滤 + 创建者写保护 + 定义类资源豁免行级数据权限。"""
+    """分析域视图基类
+
+    可见性过滤 + 创建者写保护 + 定义类资源豁免行级数据权限
+    """
 
     filter_backends = [DjangoFilterBackend, OrderingFilter]
 
@@ -129,7 +132,7 @@ def _version_keep() -> int:
 
 
 def snapshot_template_version(template: Any, actor: Any = None) -> Any:
-    """给模板记一版快照，并把超出保留数的旧版本裁掉（ADR-090 D4）。
+    """给模板记一版快照，并把超出保留数的旧版本裁掉。
 
     只在有窗格时记（空载荷不是有效模板）；版本号沿用「当前最大 + 1」，删除最旧的若干条。
     """
@@ -177,7 +180,10 @@ class ReportFilter(BaseFilterSet):
 
 
 class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
-    """大屏模板（含远程控制：管理端下发指令，展示端经 ws/screen/<pk> 接收）"""
+    """大屏
+
+    含远程控制：管理端下发指令，展示端经 ``ws/screen/<pk>`` 接收。
+    """
 
     queryset = Screen.objects.all()
     serializer_class = ScreenSerializer
@@ -186,7 +192,9 @@ class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
     @extend_schema(request=ScreenCommandSerializer, responses=get_default_response_schema())
     @action(methods=["get", "post"], detail=True, url_path="command")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def command(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """GET 当前控制态（+仪表盘清单）；POST 下发切换/翻页/刷新/恢复轮播。
+        """大屏远程控制
+
+        +仪表盘清单；POST 下发切换/翻页/刷新/恢复轮播
 
         控制权口径（与 report.run 的创建者守卫刻意不同，评估结论=维持现状并明确）：
         - personal 大屏：取值域仅创建者（或超管）→ 即仅创建者可控制；
@@ -223,7 +231,7 @@ class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
 
 
 class ScreenTemplateViewSet(BaseAnalysisViewSet):
-    """大屏模板（团队共享）：CRUD 与大屏同口径（可见性 + 行级归属守卫）。
+    """大屏模板
 
     与 ScreenViewSet 的差异：无远程控制 action、不参与影响预览（删模板不会让谁渲染不出来）；
     额外提供**版本历史**（保存即记一版，保留最近 N 版）与**回滚**（回滚本身也记一版，可再回滚）。
@@ -255,7 +263,10 @@ class ScreenTemplateViewSet(BaseAnalysisViewSet):
     @extend_schema(responses=get_default_response_schema())
     @shared_list_action(methods=["post"], detail=True, url_path="rollback")  # type: ignore[untyped-decorator]
     def rollback(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """回滚到指定版本：恢复名称 / 分组 / 载荷，并**再记一版**（回滚可逆）。"""
+        """回滚到指定版本
+
+        恢复名称 / 分组 / 载荷，并**再记一版**（回滚可逆）
+        """
         template = self.get_object()
         guarded = _creator_guard(request, template)
         if guarded:
@@ -277,7 +288,9 @@ class ScreenTemplateViewSet(BaseAnalysisViewSet):
 
 
 class ScreenClipboardViewSet(BaseAnalysisViewSet):
-    """云端剪贴板（ADR-090 D4）：**按用户单槽**，让「复制 → 换设备 → 粘贴」成立。
+    """大屏云端剪贴板
+
+    **按用户单槽**，让「复制 → 换设备 → 粘贴」成立。
 
     - 列表只返回本人槽位（0 或 1 条）；创建即更新本人槽位（upsert，避免前端判空两条路径）；
     - 删除即清空（按 pk 删本人槽位）；
@@ -293,11 +306,18 @@ class ScreenClipboardViewSet(BaseAnalysisViewSet):
         return ScreenClipboard.objects.filter(user=user)
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """upsert：本人已有槽位则就地更新，否则新建（前端不必区分首次 / 再次复制）。"""
+        """保存云端剪贴板
+
+        本人已有槽位则就地更新，否则新建（前端不必区分首次 / 再次复制）
+        """
         serializer = self.get_serializer(self.get_queryset().first(), data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user, creator=request.user, modifier=request.user)
         return ApiResponse(data=serializer.data)
+
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """清空云端剪贴板"""
+        return super().destroy(request, *args, **kwargs)
 
 
 class ReportViewSet(BaseAnalysisViewSet):
@@ -310,7 +330,9 @@ class ReportViewSet(BaseAnalysisViewSet):
     @extend_schema(responses=get_default_response_schema())
     @shared_list_action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def user_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """IM 收件人候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
+        """IM 收件人候选
+
+        按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）
 
         口径与选人控件同源（identity/utils/user_options.py）；权限与该视图 list
         权限同口径（packages/xadmin-common/common/core/permission.py 的 user-options 特例）。
@@ -324,7 +346,9 @@ class ReportViewSet(BaseAnalysisViewSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="choices")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def choices(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """投递渠道枚举（结构元数据）：值集单源在本模块常量，前端不再手抄选项表。
+        """投递渠道枚举
+
+        结构元数据：值集单源在本模块常量，前端不再手抄选项表
 
         与其它 choices 消费方同口径（``choices_dict`` 在响应顶层）；路径命中
         ``^/api/.*choices$`` 结构元数据白名单，无需独立权限点。``im_notify_channels``
@@ -340,7 +364,10 @@ class ReportViewSet(BaseAnalysisViewSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="run")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def run(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """立即运行一次报表（预创建 ExportRecord 并按契约派发）。"""
+        """立即运行一次报表
+
+        预创建 ExportRecord 并按契约派发
+        """
         report = self.get_object()
         guarded = _creator_guard(request, report)
         if guarded:

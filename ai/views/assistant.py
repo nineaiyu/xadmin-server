@@ -83,7 +83,10 @@ class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
         }
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """测试{cls}：按表单当前值实际 ping 一次 LLM（表单缺省项按档案/Setting 兜底）。"""
+        """测试{cls}
+
+        按表单当前值实际 ping 一次 LLM（表单缺省项按档案/Setting 兜底）
+        """
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
         creds = self._test_credentials(dict(request.data))
@@ -105,7 +108,7 @@ class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
 class AiAssistantViewSet(
     AiThrottleMixin, AiNlQueryMixin, AiActionExecuteMixin, AiObservabilityMixin, SseRendererMixin, GenericViewSet
 ):
-    """AI 使用/二开助手（基于 docs/ 知识库的 RAG 问答，不触生产数据）
+    """AI 助手。
 
     actions：status/metrics/ask/ask_stream（本文件）+ nl-query/*（nl_query.py mixin）
     + action/execute（actions.py mixin），组合后 URL 与拆分前一致。
@@ -131,7 +134,10 @@ class AiAssistantViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="status")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def status(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """助手状态：开关/配置/知识库规模/动作可用性（前端渲染未配置引导与 /do 提示）。"""
+        """助手状态
+
+        开关/配置/知识库规模/动作可用性（前端渲染未配置引导与 /do 提示）
+        """
         from ai.utils.ai_actions import ai_action_enabled, available_actions
 
         last_synced = AiKnowledgeChunk.objects.order_by("-synced_at").values_list("synced_at", flat=True).first()
@@ -152,7 +158,9 @@ class AiAssistantViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="history")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def history(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """助手页对话历史：按入口（feature）分页，只返回当前用户自己的消息流。
+        """助手页对话历史
+
+        按入口（feature）分页，只返回当前用户自己的消息流
 
         契约：时间正序返回最近一页，``has_more`` 为真时用 ``before_id=最早一条 id``
         继续向上翻页（与聊天室历史同口径）。
@@ -170,7 +178,9 @@ class AiAssistantViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="tools")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def tools(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """统一工具目录（MCP tools/list 等价的标准化描述）。
+        """统一工具目录
+
+        MCP tools/list 等价的标准化描述
 
         输出当前用户**有权执行**的全部系统动作（白名单注册表），每条包含
         ``name / description / inputSchema``（JSON Schema）；LLM 的 function
@@ -191,7 +201,9 @@ class AiAssistantViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="ask")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def ask(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """文档问答（非流式）：回答引用文档出处；未启用/未配置/无命中/LLM 失败均转可读文案。
+        """文档问答
+
+        非流式：回答引用文档出处；未启用/未配置/无命中/LLM 失败均转可读文案
 
         对话持久化与流式端点同口径（user 消息 + assistant/system 消息）。
         """
@@ -230,7 +242,9 @@ class AiAssistantViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="ask/stream")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def ask_stream(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """文档问答流式（SSE）：事件序 meta → reasoning* → delta* → done | error。
+        """文档问答流式
+
+        SSE：事件序 meta → reasoning* → delta* → done | error
 
         与 `ask` 同口径：门禁/校验错误在响应头发出前返回 JSON 1001（前端按普通
         接口错误提示）；流内失败（LLM 中断/只有思考）转 error 事件（头已发出，

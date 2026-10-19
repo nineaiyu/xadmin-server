@@ -62,7 +62,10 @@ class BookViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction):
     # （申请人不能自审；前端已内置令牌暂存与自动携带）。演示环境由 seed_demo_book 写入拦截清单。
     @ApprovalRequired()
     def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Any:
-        """删除{cls}数据（高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批）"""
+        """删除{cls}数据
+
+        高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批。
+        """
         return super().destroy(request, *args, **kwargs)
 
     @ApprovalRequired()
