@@ -11815,3 +11815,273 @@ msgstr ""
 #: tests/unit/common/test_online_stats.py:322
 msgid "Test label"
 msgstr ""
+
+msgid "List AI model profiles"
+msgstr ""
+
+msgid "Configured AI model profiles (name, purpose, model, active state)"
+msgstr ""
+
+msgid "List external MCP servers"
+msgstr ""
+
+msgid "External MCP servers connected to the assistant (name, endpoint, enabled, last sync)"
+msgstr ""
+
+msgid "Show a knowledge base document"
+msgstr ""
+
+msgid "One knowledge document with content summary, chunk count and source"
+msgstr ""
+
+msgid "List approval flow instances"
+msgstr ""
+
+msgid "Approval flow instances visible to the caller (title, flow, status, current node)"
+msgstr ""
+
+msgid "Show an approval flow instance"
+msgstr ""
+
+msgid "One approval flow instance with form data, node trail and comments"
+msgstr ""
+
+msgid "Count my pending flow tasks"
+msgstr ""
+
+msgid "Number of approval flow tasks waiting for the current user"
+msgstr ""
+
+msgid "List approval flow definitions"
+msgstr ""
+
+msgid "Approval flow definitions (name, code, enabled state, current version)"
+msgstr ""
+
+msgid "List approval delegations"
+msgstr ""
+
+msgid "Approval delegations (delegator, delegate, flow scope, time range)"
+msgstr ""
+
+msgid "List leave requests"
+msgstr ""
+
+msgid "Leave requests visible to the caller (type, date range, days, status)"
+msgstr ""
+
+msgid "Show an operation log entry"
+msgstr ""
+
+msgid "One operation log entry with request payload, response and change details"
+msgstr ""
+
+msgid "Show my login history"
+msgstr ""
+
+msgid "Login history of the current user (time, IP, device, result)"
+msgstr ""
+
+msgid "Show a dataset"
+msgstr ""
+
+msgid "One dataset definition (bound model, columns, filters, visibility)"
+msgstr ""
+
+msgid "List dashboards"
+msgstr ""
+
+msgid "Dashboards available to the caller (name, visibility, updated time)"
+msgstr ""
+
+msgid "List scheduled reports"
+msgstr ""
+
+msgid "Scheduled reports (name, dataset, frequency, last status)"
+msgstr ""
+
+msgid "List data screens"
+msgstr ""
+
+msgid "Data screens (name, visibility, refresh interval, updated time)"
+msgstr ""
+
+msgid "List dynamic forms"
+msgstr ""
+
+msgid "Dynamic forms (name, enabled state, approval required, updated time)"
+msgstr ""
+
+msgid "List dynamic form submissions"
+msgstr ""
+
+msgid "Submissions of dynamic forms visible to the caller (form, creator, created time)"
+msgstr ""
+
+msgid "Show an uploaded file"
+msgstr ""
+
+msgid "One uploaded file with size, type, uploader and reference state"
+msgstr ""
+
+msgid "Show file access logs"
+msgstr ""
+
+msgid "Access audit of one file (download, preview, delete, uploader)"
+msgstr ""
+
+msgid "List positions"
+msgstr ""
+
+msgid "List positions (name, code, rank, member count)"
+msgstr ""
+
+msgid "List login access policies"
+msgstr ""
+
+msgid "Login access policies (priority, time window, network, effect)"
+msgstr ""
+
+msgid "List account risk findings"
+msgstr ""
+
+msgid "Account security findings (risk type, level, account, handled state)"
+msgstr ""
+
+msgid "List open platform applications"
+msgstr ""
+
+msgid "Open platform applications (name, client id, scopes, rate limit, enabled state)"
+msgstr ""
+
+msgid "List my personal access tokens"
+msgstr ""
+
+msgid "Personal access tokens of the current user (name, scopes, expiry, last used)"
+msgstr ""
+
+msgid "Invite a user to activate the account"
+msgstr ""
+
+msgid "Send an activation email to a pending user; the account stays unusable until accepted"
+msgstr ""
+
+msgid "Show an announcement"
+msgstr ""
+
+msgid "One announcement with its full body and publishing metadata"
+msgstr ""
+
+msgid "List my messages"
+msgstr ""
+
+msgid "Messages of the current user with read state and source channel"
+msgstr ""
+
+msgid "List notification templates"
+msgstr ""
+
+msgid "Notification templates per channel and event (name, channel, updated time)"
+msgstr ""
+
+msgid "List registered config keys"
+msgstr ""
+
+msgid "All registered system config keys with defaults and descriptions (no values)"
+msgstr ""
+
+msgid "Show a dictionary type"
+msgstr ""
+
+msgid "One data dictionary type with its configuration"
+msgstr ""
+
+msgid "List field permission entries"
+msgstr ""
+
+msgid "Field-level permission tree entries (model, field, permission type)"
+msgstr ""
+
+msgid "List feature modules"
+msgstr ""
+
+msgid "Feature modules with level, enabled state and dependency info"
+msgstr ""
+
+msgid "Audit menu permissions"
+msgstr ""
+
+msgid "Permission point audit of menus (missing or unreachable points)"
+msgstr ""
+
+msgid "Show monitor history"
+msgstr ""
+
+msgid "Resource metric history with range and aggregation interval; compare with the previous window"
+msgstr ""
+
+msgid "List webhook deliveries"
+msgstr ""
+
+msgid "Delivery history of outbound webhooks (event, status, attempts, response code)"
+msgstr ""
+
+msgid "List all background tasks"
+msgstr ""
+
+msgid "Unified task list across executions, exports and imports (type, status, keyword)"
+msgstr ""
+
+msgid "Cancel a background task"
+msgstr ""
+
+msgid "Cancel a pending task immediately or ask a running task to stop at a safe point"
+msgstr ""
+
+msgid "Rerun a background task"
+msgstr ""
+
+msgid "Create and dispatch a new run of an export or import record (same pipeline, audited)"
+msgstr ""
+
+msgid "Show an export record"
+msgstr ""
+
+msgid "One download-center export record with status, product file and error message"
+msgstr ""
+
+msgid "List import records"
+msgstr ""
+
+msgid "Data import records (template, status, progress, creator)"
+msgstr ""
+
+msgid "Show login rate-limit settings"
+msgstr ""
+
+msgid "Login attempt limits and lockout policy (thresholds and windows)"
+msgstr ""
+
+msgid "Show password rules"
+msgstr ""
+
+msgid "Password strength policy (length, character classes, history and expiry)"
+msgstr ""
+
+msgid "Show MFA policy"
+msgstr ""
+
+msgid "Multi-factor authentication policy (enabled factors and required scope)"
+msgstr ""
+
+msgid "List blocked IPs"
+msgstr ""
+
+msgid "IP addresses blocked by the security policy (reason, block time)"
+msgstr ""
+
+msgid "Show LDAP directory settings"
+msgstr ""
+
+msgid "LDAP/AD directory sync configuration status (server, base DN, sync state; no credentials)"
+msgstr ""

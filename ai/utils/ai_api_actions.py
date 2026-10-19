@@ -8,7 +8,8 @@
 新增能力（如"禁用某用户"）必须在 AI 侧再实现一遍业务规则，与既有
 ViewSet / Serializer 双写，必然漂移。这里改为**声明式复用业务接口**：
 
-- 新增能力 = 在 ``API_ACTION_SPECS`` 里声明 (method, path, 参数类型)，零业务代码；
+- 新增能力 = 在所属应用的 ``ai_declarations.py`` 里声明 (method, path, 参数类型)，
+  由 ``ai.utils.ai_registry`` 自动发现，零业务代码；
 - 执行 = 构造 DRF 请求 → ``resolve()`` 反解到现有 ViewSet 的 view 函数 → 直接
   dispatch——权限链（含菜单权限点）、序列化器校验、写入事务、缓存失效、操作日志
   与浏览器请求**完全同一代码路径**，不存在"AI 专用分支"；
@@ -31,6 +32,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.request import Request  # noqa: F401  （类型语义保留：dispatch 接收 DRF 请求）
 from rest_framework.test import APIRequestFactory
 
+from ai.utils.ai_action_types import module_allows, user_can_visit
 from ai.utils.ai_api_params import (  # noqa: F401  (参数解析/URL 构建拆出，再导出保持调用面)
     IN_BODY,
     IN_PATH,
@@ -75,6 +77,10 @@ class ApiActionSpec:
     params: dict[str, Any]
     requires_approval: Callable[..., bool]
     available: Callable[..., bool]
+    #: 目录附加信息（当前声明式动作未使用，与 ActionSpec 协议对齐）
+    catalog: Callable[..., dict[str, Any]] | None = None
+    #: 所属功能模块（停用即从目录移除并拒绝执行；空 = 不受模块裁剪）
+    modules: tuple[str, ...] = ()
 
     @property
     def required_visits(self) -> tuple[Any, ...]:
@@ -82,11 +88,11 @@ class ApiActionSpec:
         return ((self.method.upper(), self.path),)
 
     def has_permission(self, user: Any) -> bool:
-        """与 ActionSpec 同口径双门：业务权限点 + 可用性。"""
-        from ai.utils.ai_actions import user_can_visit
-
-        return all(user_can_visit(user, method, path) for method, path in self.required_visits) and bool(
-            self.available(user)
+        """与 ActionSpec 同口径三合一：模块启用 + 业务权限点 + 可用性。"""
+        return (
+            module_allows(self)
+            and all(user_can_visit(user, method, path) for method, path in self.required_visits)
+            and bool(self.available(user))
         )
 
     def validate(self, user: Any, params: Any) -> Any:
@@ -137,6 +143,8 @@ def api_action(
     defaults: dict[str, Any] | None = None,
     requires_approval: Any = None,
     available: Any = None,
+    catalog: Any = None,
+    modules: tuple[str, ...] = (),
 ) -> ApiActionSpec:
     """构造声明式动作。
 
@@ -152,6 +160,8 @@ def api_action(
     defaults：接口的隐含必填字段固定值（同样不进 LLM 目录），例如公告端点的
     ``notice_type/publish/notice_user/files``——业务接口的既有契约原样满足，
     仅声明不改写。
+    modules：所属功能模块（停用即从 AI 目录移除并拒绝执行）；跨模块端点可声明多个，
+    全部启用才可见。
     """
     merged = dict(params)
     for name, value in (defaults or {}).items():
@@ -165,6 +175,8 @@ def api_action(
         params=merged,
         requires_approval=requires_approval or (lambda user, params: False),
         available=available or (lambda user: True),
+        catalog=catalog,
+        modules=tuple(modules),
     )
 
 

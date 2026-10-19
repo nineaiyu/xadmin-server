@@ -11,22 +11,22 @@
 - 默认关闭：SysConfig.AI_ACTION_ENABLED（灰度开关，见 AI 配置页）。
 
 结构：
-- ACTION_SPECS：动作注册表（唯一白名单），新增动作 = 新增 ActionSpec；
-- build_catalog / build_draft_prompt / parse_draft：LLM 草稿链路（v1 仅请假与动态表单两个动作）；
+- 注册表由各应用 ``ai_declarations.py`` 声明、``ai_registry.action_specs()`` 发现合并
+  （唯一白名单，新增动作 = 在所属应用加一条声明）；
+- build_catalog / build_draft_prompt / parse_draft：LLM 草稿链路；
+- execute_action：唯一执行收口（白名单 + 参数重校验 + 权限双门 + 模块裁剪 + 审计）；
 - user_can_visit：业务权限点判定（复用菜单权限匹配函数，与 IsAuthenticated 同源）。
 """
 
 import datetime
 import json
-from collections.abc import Callable
-from dataclasses import dataclass
 from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
-# 注册表是唯一白名单入口（再导出：调用方只 import 本模块）
+# 注册表是唯一白名单入口（ACTION_SPECS 经模块 __getattr__ 惰性取数）
 from ai.utils.ai_action_audit import (
     audit_ai_action as audit_ai_action,  # noqa: F401 显式再导出（PEP 484 语义）
 )
@@ -34,20 +34,20 @@ from ai.utils.ai_action_audit import (
     audit_ai_ask as audit_ai_ask,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from ai.utils.ai_action_target import verify_action_target
-from ai.utils.ai_api_registry import API_ACTION_SPECS  # noqa: F401
-from ai.utils.ai_builtin_actions import (
-    DASHBOARD_ENDPOINTS,
-    _dform_requires_approval,  # noqa: F401 私有实现再导出（ACTION_SPECS 引用）
-    _execute_dashboard,
-    _execute_dform,
-    _execute_leave,
-    _form_fields,
-    _validate_dashboard,
-    _validate_dform,
-    _validate_leave,
+from ai.utils.ai_action_types import (
+    MAX_CATALOG_FORMS as MAX_CATALOG_FORMS,  # noqa: F401 再导出：声明文件按此限幅
 )
-from ai.utils.ai_builtin_actions import (
-    available_forms as available_forms,  # noqa: F401 显式再导出（PEP 484 语义）
+from ai.utils.ai_action_types import (
+    MAX_REASON_LENGTH as MAX_REASON_LENGTH,  # noqa: F401 再导出：声明文件按此限幅
+)
+from ai.utils.ai_action_types import (
+    ActionSpec as ActionSpec,  # noqa: F401 再导出：声明文件构造内置动作
+)
+from ai.utils.ai_action_types import (
+    module_allows,
+)
+from ai.utils.ai_action_types import (
+    user_can_visit as user_can_visit,  # noqa: F401 再导出：调用方只 import 本模块
 )
 from ai.utils.ai_draft_tools import (
     native_draft_result as native_draft_result,  # noqa: F401 显式再导出（PEP 484 语义）
@@ -63,10 +63,6 @@ logger = get_logger(__name__)
 ALLOWED_ACTIONS_MARKER = "ALLOWED_ACTIONS_JSON:"
 #: 用户单条请求长度上限（与知识库问答同量级）
 MAX_MESSAGE_LENGTH = 500
-#: 事由/文本参数上限（与 Leave.reason 字段一致）
-MAX_REASON_LENGTH = 500
-#: 动态表单目录最多列出的表单数（防 prompt 过大）
-MAX_CATALOG_FORMS = 20
 #: 单次请求最多产出的动作草稿数（多步串联：如「新增用户组 → 配权限」）
 MAX_DRAFTS_PER_REQUEST = 3
 
@@ -84,29 +80,6 @@ def ai_action_enabled() -> bool:
     return bool(getattr(settings, "AI_ACTION_ENABLED", False))
 
 
-def user_can_visit(user: Any, method: str, path: str) -> bool:
-    """按菜单权限点口径判定用户能否访问「方法 + 路径」（与 IsAuthenticated 同一匹配函数）。
-
-    业务动作执行前的第二道门：仅有 AI 执行端点权限、而没有底层业务权限的用户不得执行。
-    白名单端点（登录即可访问、无菜单权限点，如 /api/system/dashboard/*）与运行时
-    访问控制同口径视为有权限——否则这类动作对普通用户永久不可见/不可执行。
-    """
-    if not getattr(user, "is_authenticated", False) or not getattr(user, "pk", None):
-        return False
-    if getattr(user, "is_superuser", False):
-        return True
-    from common.core.permission import get_menu_pk, get_user_permission, match_permission_white_url
-
-    if match_permission_white_url(method, path):
-        return True
-    try:
-        permission_data = get_user_permission(user, method.upper())
-    except Exception:  # noqa: BLE001 权限查询失败按无权限处理（fail-closed）
-        logger.warning("check ai action permission failed. user:%s", getattr(user, "pk", ""), exc_info=True)
-        return False
-    return bool(permission_data and get_menu_pk(permission_data, path))
-
-
 def _extract_json_object(text: str) -> dict[str, Any]:
     """robust 解析 LLM 输出：剥 markdown 码栅后取首个 JSON 对象（公共实现在 ai_parse）。"""
     from common.utils.ai_parse import AiOutputParseError, extract_json_object
@@ -119,102 +92,22 @@ def _extract_json_object(text: str) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# 注册表
+# 注册表（各应用 ai_declarations.py 声明 → 自动发现合并）
 # ---------------------------------------------------------------------------
 
 
-def _never_requires_approval(user: Any, params: Any) -> bool:
-    return False
+def _registry() -> dict[str, Any]:
+    """动作注册表（进程级缓存；发现规则见 ai.utils.ai_registry）。"""
+    from ai.utils.ai_registry import action_specs
+
+    return action_specs()
 
 
-def _always_available(user: Any) -> bool:
-    return True
-
-
-def _dform_available(user: Any) -> bool:
-    return bool(available_forms(user))
-
-
-@dataclass(frozen=True)
-class ActionSpec:
-    """受限动作规格（白名单条目）。"""
-
-    key: str
-    label: object
-    description: object
-    params: dict[str, Any]
-    #: ((method, path), ...)：执行所需底层业务权限点（路径与菜单权限点 path 同口径）
-    required_visits: tuple[Any, ...]
-    validate: Callable[..., Any]
-    execute: Callable[..., Any]
-    requires_approval: Callable[..., bool]
-    available: Callable[..., bool]
-
-    def has_permission(self, user: Any) -> bool:
-        """业务权限 + 可用性双门（执行前与草稿生成前共用）。"""
-        return all(user_can_visit(user, method, path) for method, path in self.required_visits) and bool(
-            self.available(user)
-        )
-
-
-ACTION_SPECS: dict[str, Any] = {
-    ACTION_LEAVE_SUBMIT: ActionSpec(
-        key=ACTION_LEAVE_SUBMIT,
-        label=_("Submit a leave request"),
-        description=_("Create a leave request for the current user and submit it into the leave approval flow"),
-        params={
-            "leave_type": {
-                "type": "string",
-                "required": False,
-                "enum": ["annual", "sick", "personal", "comp_time", "marriage", "other"],
-                "description": "Leave type, default annual",
-            },
-            "start_date": {"type": "string", "required": True, "description": "Start date, YYYY-MM-DD"},
-            "end_date": {"type": "string", "required": True, "description": "End date, YYYY-MM-DD"},
-            "days": {"type": "number", "required": False, "description": "Days, default the full range"},
-            "reason": {"type": "string", "required": True, "description": "Reason, max 500 chars"},
-        },
-        required_visits=(("POST", "/api/approval/leaves"),),
-        validate=_validate_leave,
-        execute=_execute_leave,
-        requires_approval=_never_requires_approval,
-        available=_always_available,
-    ),
-    ACTION_DFORM_SUBMIT: ActionSpec(
-        key=ACTION_DFORM_SUBMIT,
-        label=_("Submit a dynamic form"),
-        description=_("Submit one record to an active dynamic form; field values must match the form fields"),
-        params={
-            "form_id": {"type": "string", "required": True, "description": "Target form id from the catalog"},
-            "data": {
-                "type": "object",
-                "required": True,
-                "description": "Field key -> value, keys from the form fields",
-            },
-        },
-        required_visits=(("POST", "/api/dataset/dynamic-form-submissions"),),
-        validate=_validate_dform,
-        execute=_execute_dform,
-        requires_approval=_dform_requires_approval,
-        available=_dform_available,
-    ),
-    # ---- 声明式动作（复用业务接口）：声明见 ai/utils/ai_api_actions.py ----
-    **API_ACTION_SPECS,
-    ACTION_DASHBOARD_OVERVIEW: ActionSpec(
-        key=ACTION_DASHBOARD_OVERVIEW,
-        label=_("Show dashboard overview"),
-        description=_(
-            "One-shot dashboard statistics: total users, logins, registration/login trends, "
-            "today's operations and active users (aggregates six endpoints in a single call)"
-        ),
-        params={},
-        required_visits=tuple(("GET", path) for __, path in DASHBOARD_ENDPOINTS),
-        validate=_validate_dashboard,
-        execute=_execute_dashboard,
-        requires_approval=_never_requires_approval,
-        available=_always_available,
-    ),
-}
+def __getattr__(name: str) -> Any:
+    """兼容 ``from ai.utils.ai_actions import ACTION_SPECS`` 的历史调用面。"""
+    if name == "ACTION_SPECS":
+        return _registry()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def get_action(key: str, user: Any = None) -> Any:
@@ -232,23 +125,22 @@ def get_action(key: str, user: Any = None) -> Any:
         dynamic = mcp_action_specs(user).get(key)
         if dynamic is not None:
             return dynamic
-    return ACTION_SPECS.get(key)
+    return _registry().get(key)
 
 
 def available_actions(user: Any) -> list[Any]:
-    """当前用户可用的动作（权限 + 可用性双门；静态注册表 + 外接 MCP 动态目录）。
+    """当前用户可用的动作（模块启用 + 权限 + 可用性；注册表 + 外接 MCP 动态目录）。
 
     动态部分（``mcp_action_specs``）内部已做等价双门（服务器开关 + 权限点 +
     白名单 + 快照完整性），这里不再逐 spec 重复求值（目录构建期避免 N 次查库）。
     """
     from ai.utils.ai_mcp_actions import mcp_action_specs
 
-    return [spec for spec in ACTION_SPECS.values() if spec.has_permission(user)] + list(mcp_action_specs(user).values())
+    return [spec for spec in _registry().values() if spec.has_permission(user)] + list(mcp_action_specs(user).values())
 
 
 def build_catalog(user: Any) -> dict[str, Any]:
     """动作目录（进 LLM prompt 的 JSON；不含任何敏感配置）。"""
-    forms = available_forms(user)
     entries = []
     for spec in available_actions(user):
         entry = {
@@ -258,10 +150,10 @@ def build_catalog(user: Any) -> dict[str, Any]:
             # const 字段是服务端固定值（如公告 notice_type），不下发给模型
             "params": {name: rule for name, rule in spec.params.items() if "const" not in rule},
         }
-        if spec.key == ACTION_DFORM_SUBMIT:
-            entry["forms"] = [
-                {"form_id": str(form.pk), "name": form.name, "fields": _form_fields(form)} for form in forms
-            ]
+        # 声明方可附带目录信息（如动态表单的可选表单与字段），由所属应用维护
+        extra_catalog = getattr(spec, "catalog", None)
+        if callable(extra_catalog):
+            entry.update(extra_catalog(user) or {})
         entries.append(entry)
     return {"actions": entries}
 
@@ -381,6 +273,10 @@ def execute_action(user: Any, action_key: str, params: Any) -> dict[str, Any]:
     if spec is None:
         typed_value: dict[str, Any] = {"ok": False, "detail": str(_("Unknown action")), "data": {}}
         return typed_value
+    if not module_allows(spec):
+        # 停用模块的动作内部 dispatch 会绕过 ASGI 模块网关（直调视图函数），
+        # 必须在执行收口显式拒绝，否则超管仍可执行已停用模块的动作。
+        return {"ok": False, "detail": str(_("The action is not available")), "data": {}}
     clean, error = spec.validate(user, params if isinstance(params, dict) else {})
     if error:
         return {"ok": False, "detail": error, "data": {}}

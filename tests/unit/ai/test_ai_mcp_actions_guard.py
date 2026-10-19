@@ -163,4 +163,7 @@ class TestSpecProtocolGuard:
             "execute",
             "requires_approval",
             "available",
+            # 目录附加信息与模块裁剪归属（可选字段，动态 spec 用 getattr 默认值）
+            "catalog",
+            "modules",
         }

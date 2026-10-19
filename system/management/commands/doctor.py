@@ -282,52 +282,57 @@ class Command(BaseCommand):
             )
 
     def _check_ai_declarations(self) -> None:
-        """生成物自检：`<app>/ai_declarations.py` 的声明路径必须能对上路由面。
+        """AI 动作声明自检：发现结果与路由面对齐（各应用 ``ai_declarations.py``）。
 
-        - 无声明文件：跳过（不是所有模块都需要 AI 化）；
-        - 声明路径无法 resolve：失败（生成物与会话/路由漂移，AI 工具目录会指向不存在的端点）。
+        - 无声明：跳过（不是所有模块都需要 AI 化）；
+        - 声明式动作 path / 内置动作权限点路径无法 resolve：失败（工具目录会指向
+          不存在的端点，执行端静默降级为「动作不可用」）。
         """
-        from django.apps import apps as django_apps
         from django.urls import Resolver404, resolve
-        from django.utils.module_loading import import_string
 
-        from common.swagger.ai_meta import normalize_path
+        from ai.utils.ai_api_params import PATH_PLACEHOLDER, build_action_url
+        from ai.utils.ai_registry import action_specs
 
-        checked, broken, modules = 0, [], []
-        for config in django_apps.get_app_configs():
-            module_path = f"{config.name}.ai_declarations"
-            try:
-                module = import_string(module_path)
-            except ImportError:
-                continue
-            except Exception as exc:  # noqa: BLE001 声明文件本身导入失败即生成物坏了
-                broken.append(f"{module_path}: {exc}")
-                continue
-            modules.append(config.name)
-            for name in dir(module):
-                if not name.endswith("_ACTIONS"):
+        checked, broken = 0, []
+        try:
+            specs = action_specs()
+        except Exception as exc:  # noqa: BLE001 声明合并失败（重复 key / 声明形状非法）即缺陷
+            self._report(
+                FAIL,
+                "AI 动作声明",
+                f"注册表构建失败：{exc}",
+                "检查各应用 ai_declarations.py 的声明（key 唯一、形状合法）",
+            )
+            return
+        for key, spec in specs.items():
+            if hasattr(spec, "path"):
+                url = build_action_url(spec, {m.group(1): "1" for m in PATH_PLACEHOLDER.finditer(spec.path)})
+                if url is None:
+                    broken.append(f"{key}: 存在未覆盖的 path 占位 {spec.path}")
                     continue
-                specs = getattr(module, name)
-                for spec in specs.values() if isinstance(specs, dict) else specs:
-                    path = normalize_path(getattr(spec, "path", ""))
-                    if not path:
-                        continue
-                    checked += 1
-                    try:
-                        resolve(path.lstrip("/").replace("<pk>", "1"))
-                    except Resolver404:
-                        broken.append(f"{module_path}::{getattr(spec, 'key', path)} -> {path}")
+                checked += 1
+                try:
+                    resolve(url.split("?", 1)[0])
+                except Resolver404:
+                    broken.append(f"{key} -> {spec.path}")
+                continue
+            for _method, path in spec.required_visits:
+                checked += 1
+                try:
+                    resolve(str(path).replace("<pk>", "1"))
+                except Resolver404:
+                    broken.append(f"{key} -> {path}")
         if broken:
             self._report(
                 FAIL,
-                "AI 声明（生成物）",
+                "AI 动作声明",
                 f"{len(broken)} 条声明对不上路由：{broken[:3]}",
-                "跑 generate_crud 重新生成，或修正声明 path（口径见 ai/utils/ai_api_actions.py）",
+                "修正所属应用 ai_declarations.py 的声明 path（口径见 ai/utils/ai_api_actions.py）",
             )
         elif checked:
-            self._report(PASS, "AI 声明（生成物）", f"{checked} 条声明路径可解析（模块 {modules} 个）")
+            self._report(PASS, "AI 动作声明", f"{checked} 条声明路径可解析（动作 {len(specs)} 个）")
         else:
-            self._report(PASS, "AI 声明（生成物）", "无声明文件（非 AI 化模块，跳过）")
+            self._report(PASS, "AI 动作声明", "无声明（非 AI 化模块，跳过）")
 
     def _check_frontend_contract(self) -> None:
         local = Path(settings.BASE_DIR) / "docs" / "schema"

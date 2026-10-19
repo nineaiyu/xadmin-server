@@ -11963,3 +11963,273 @@ msgstr "正文格式创建后不可修改"
 
 msgid "The Markdown content is too long"
 msgstr "Markdown 正文超出长度上限"
+
+msgid "List AI model profiles"
+msgstr "列出 AI 模型档案"
+
+msgid "Configured AI model profiles (name, purpose, model, active state)"
+msgstr "已配置的 AI 模型档案（名称、用途、模型、激活状态）"
+
+msgid "List external MCP servers"
+msgstr "列出外部 MCP 服务器"
+
+msgid "External MCP servers connected to the assistant (name, endpoint, enabled, last sync)"
+msgstr "助手接入的外部 MCP 服务器（名称、地址、启用状态、最近同步）"
+
+msgid "Show a knowledge base document"
+msgstr "查看知识库文档"
+
+msgid "One knowledge document with content summary, chunk count and source"
+msgstr "单篇知识库文档的内容摘要、分块数量与来源"
+
+msgid "List approval flow instances"
+msgstr "列出审批流实例"
+
+msgid "Approval flow instances visible to the caller (title, flow, status, current node)"
+msgstr "当前用户可见的审批流实例（标题、流程、状态、当前节点）"
+
+msgid "Show an approval flow instance"
+msgstr "查看审批流实例"
+
+msgid "One approval flow instance with form data, node trail and comments"
+msgstr "单个审批流实例的表单数据、节点流转与评论"
+
+msgid "Count my pending flow tasks"
+msgstr "统计我的待办审批流任务"
+
+msgid "Number of approval flow tasks waiting for the current user"
+msgstr "等待当前用户处理的审批流任务数"
+
+msgid "List approval flow definitions"
+msgstr "列出审批流定义"
+
+msgid "Approval flow definitions (name, code, enabled state, current version)"
+msgstr "审批流定义（名称、编码、启用状态、当前版本）"
+
+msgid "List approval delegations"
+msgstr "列出审批委托"
+
+msgid "Approval delegations (delegator, delegate, flow scope, time range)"
+msgstr "审批委托（委托人、代理人、适用范围、时间区间）"
+
+msgid "List leave requests"
+msgstr "列出请假单"
+
+msgid "Leave requests visible to the caller (type, date range, days, status)"
+msgstr "当前用户可见的请假单（类型、日期范围、天数、状态）"
+
+msgid "Show an operation log entry"
+msgstr "查看操作日志详情"
+
+msgid "One operation log entry with request payload, response and change details"
+msgstr "单条操作日志的请求参数、响应与变更明细"
+
+msgid "Show my login history"
+msgstr "查看我的登录记录"
+
+msgid "Login history of the current user (time, IP, device, result)"
+msgstr "当前用户的登录记录（时间、IP、设备、结果）"
+
+msgid "Show a dataset"
+msgstr "查看数据集"
+
+msgid "One dataset definition (bound model, columns, filters, visibility)"
+msgstr "单个数据集定义（绑定模型、字段、过滤条件、可见范围）"
+
+msgid "List dashboards"
+msgstr "列出仪表盘"
+
+msgid "Dashboards available to the caller (name, visibility, updated time)"
+msgstr "当前用户可见的仪表盘（名称、可见范围、更新时间）"
+
+msgid "List scheduled reports"
+msgstr "列出定时报表"
+
+msgid "Scheduled reports (name, dataset, frequency, last status)"
+msgstr "定时报表（名称、数据集、频率、最近状态）"
+
+msgid "List data screens"
+msgstr "列出数据大屏"
+
+msgid "Data screens (name, visibility, refresh interval, updated time)"
+msgstr "数据大屏（名称、可见范围、刷新间隔、更新时间）"
+
+msgid "List dynamic forms"
+msgstr "列出动态表单"
+
+msgid "Dynamic forms (name, enabled state, approval required, updated time)"
+msgstr "动态表单（名称、启用状态、是否需要审批、更新时间）"
+
+msgid "List dynamic form submissions"
+msgstr "列出表单提交记录"
+
+msgid "Submissions of dynamic forms visible to the caller (form, creator, created time)"
+msgstr "当前用户可见的表单提交记录（表单、提交人、提交时间）"
+
+msgid "Show an uploaded file"
+msgstr "查看上传文件"
+
+msgid "One uploaded file with size, type, uploader and reference state"
+msgstr "单个上传文件的大小、类型、上传人与引用状态"
+
+msgid "Show file access logs"
+msgstr "查看文件访问记录"
+
+msgid "Access audit of one file (download, preview, delete, uploader)"
+msgstr "单个文件的访问审计（下载、预览、删除、上传人）"
+
+msgid "List positions"
+msgstr "列出岗位"
+
+msgid "List positions (name, code, rank, member count)"
+msgstr "岗位列表（名称、编码、排序、成员数）"
+
+msgid "List login access policies"
+msgstr "列出登录访问策略"
+
+msgid "Login access policies (priority, time window, network, effect)"
+msgstr "登录访问策略（优先级、时间窗口、网段、处置方式）"
+
+msgid "List account risk findings"
+msgstr "列出账号风险项"
+
+msgid "Account security findings (risk type, level, account, handled state)"
+msgstr "账号安全风险项（风险类型、等级、账号、处置状态）"
+
+msgid "List open platform applications"
+msgstr "列出开放平台应用"
+
+msgid "Open platform applications (name, client id, scopes, rate limit, enabled state)"
+msgstr "开放平台应用（名称、客户端 ID、授权范围、限流、启用状态）"
+
+msgid "List my personal access tokens"
+msgstr "列出我的个人访问令牌"
+
+msgid "Personal access tokens of the current user (name, scopes, expiry, last used)"
+msgstr "当前用户的个人访问令牌（名称、范围、过期时间、最近使用）"
+
+msgid "Invite a user to activate the account"
+msgstr "邀请用户激活账号"
+
+msgid "Send an activation email to a pending user; the account stays unusable until accepted"
+msgstr "向待激活用户发送激活邮件；接受前账号不可用"
+
+msgid "Show an announcement"
+msgstr "查看公告"
+
+msgid "One announcement with its full body and publishing metadata"
+msgstr "单条公告的完整正文与发布信息"
+
+msgid "List my messages"
+msgstr "列出我的消息"
+
+msgid "Messages of the current user with read state and source channel"
+msgstr "当前用户的消息及已读状态与来源渠道"
+
+msgid "List notification templates"
+msgstr "列出通知模板"
+
+msgid "Notification templates per channel and event (name, channel, updated time)"
+msgstr "按渠道与事件的通知模板（名称、渠道、更新时间）"
+
+msgid "List registered config keys"
+msgstr "列出已注册配置键"
+
+msgid "All registered system config keys with defaults and descriptions (no values)"
+msgstr "全部已注册的系统配置键（默认值与说明，不含实际值）"
+
+msgid "Show a dictionary type"
+msgstr "查看字典类型"
+
+msgid "One data dictionary type with its configuration"
+msgstr "单个数据字典类型及其配置"
+
+msgid "List field permission entries"
+msgstr "列出字段权限项"
+
+msgid "Field-level permission tree entries (model, field, permission type)"
+msgstr "字段级权限树条目（模型、字段、权限类型）"
+
+msgid "List feature modules"
+msgstr "列出功能模块"
+
+msgid "Feature modules with level, enabled state and dependency info"
+msgstr "功能模块及其等级、启用状态与依赖信息"
+
+msgid "Audit menu permissions"
+msgstr "巡检菜单权限"
+
+msgid "Permission point audit of menus (missing or unreachable points)"
+msgstr "菜单权限点巡检（缺失或不可达的权限点）"
+
+msgid "Show monitor history"
+msgstr "查看监控历史"
+
+msgid "Resource metric history with range and aggregation interval; compare with the previous window"
+msgstr "指定范围与聚合间隔的资源指标历史，并与上一等长窗口对比"
+
+msgid "List webhook deliveries"
+msgstr "列出 Webhook 投递记录"
+
+msgid "Delivery history of outbound webhooks (event, status, attempts, response code)"
+msgstr "出站 Webhook 投递历史（事件、状态、尝试次数、响应码）"
+
+msgid "List all background tasks"
+msgstr "列出全部后台任务"
+
+msgid "Unified task list across executions, exports and imports (type, status, keyword)"
+msgstr "跨执行记录、导出与导入的统一任务列表（类型、状态、关键字）"
+
+msgid "Cancel a background task"
+msgstr "取消后台任务"
+
+msgid "Cancel a pending task immediately or ask a running task to stop at a safe point"
+msgstr "立即取消待执行任务，或让运行中任务在安全点停止"
+
+msgid "Rerun a background task"
+msgstr "重跑后台任务"
+
+msgid "Create and dispatch a new run of an export or import record (same pipeline, audited)"
+msgstr "为导出或导入记录创建并派发一次新执行（同链路、可审计）"
+
+msgid "Show an export record"
+msgstr "查看导出记录"
+
+msgid "One download-center export record with status, product file and error message"
+msgstr "单条下载中心导出记录的状态、产物文件与错误信息"
+
+msgid "List import records"
+msgstr "列出导入记录"
+
+msgid "Data import records (template, status, progress, creator)"
+msgstr "数据导入记录（模板、状态、进度、创建人）"
+
+msgid "Show login rate-limit settings"
+msgstr "查看登录限流设置"
+
+msgid "Login attempt limits and lockout policy (thresholds and windows)"
+msgstr "登录尝试限制与锁定策略（阈值与时间窗口）"
+
+msgid "Show password rules"
+msgstr "查看密码规则"
+
+msgid "Password strength policy (length, character classes, history and expiry)"
+msgstr "密码强度策略（长度、字符类型、历史与有效期）"
+
+msgid "Show MFA policy"
+msgstr "查看多因素认证策略"
+
+msgid "Multi-factor authentication policy (enabled factors and required scope)"
+msgstr "多因素认证策略（启用的因子与适用范围）"
+
+msgid "List blocked IPs"
+msgstr "列出封禁 IP"
+
+msgid "IP addresses blocked by the security policy (reason, block time)"
+msgstr "被安全策略封禁的 IP 地址（原因、封禁时间）"
+
+msgid "Show LDAP directory settings"
+msgstr "查看 LDAP 目录设置"
+
+msgid "LDAP/AD directory sync configuration status (server, base DN, sync state; no credentials)"
+msgstr "LDAP/AD 目录同步配置状态（服务器、基准 DN、同步状态；不含凭据）"

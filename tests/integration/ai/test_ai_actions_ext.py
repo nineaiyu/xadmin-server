@@ -299,15 +299,16 @@ class TestMultiDrafts:
 
     def test_multiple_drafts_chained(self, actor_client, ai_action_settings, actor, monkeypatch, menu_factory):
         """两步串联：查监控 + 查告警事件，一次产出两张确认卡片。"""
-        from ai.utils.ai_registry_ops import ACTION_MONITOR_EVENTS, ACTION_MONITOR_OVERVIEW
+        action_monitor_overview = "monitor.overview"
+        action_monitor_events = "monitor.events"
 
         grant_perms(actor.roles.first(), menu_factory, MONITOR_PERMS)
         grant_perms(actor.roles.first(), menu_factory, MONITOR_EVENTS_PERMS)
         text = json.dumps(
             {
                 "actions": [
-                    {"action": ACTION_MONITOR_OVERVIEW, "params": {}, "summary": "看总览"},
-                    {"action": ACTION_MONITOR_EVENTS, "params": {}, "summary": "看告警"},
+                    {"action": action_monitor_overview, "params": {}, "summary": "看总览"},
+                    {"action": action_monitor_events, "params": {}, "summary": "看告警"},
                 ]
             },
             ensure_ascii=False,
@@ -317,8 +318,8 @@ class TestMultiDrafts:
         frames = _parse_sse_frames(response)
         done = frames[-1][1]
         assert done["kind"] == "draft"
-        assert [item["action"] for item in done["drafts"]] == [ACTION_MONITOR_OVERVIEW, ACTION_MONITOR_EVENTS]
-        assert done["draft"]["action"] == ACTION_MONITOR_OVERVIEW  # draft 恒为首个（旧渲染兜底）
+        assert [item["action"] for item in done["drafts"]] == [action_monitor_overview, action_monitor_events]
+        assert done["draft"]["action"] == action_monitor_overview  # draft 恒为首个（旧渲染兜底）
 
     def test_over_limit_rejected(self, actor_client, ai_action_settings, actor, monkeypatch, menu_factory):
         grant_perms(actor.roles.first(), menu_factory, MONITOR_PERMS)

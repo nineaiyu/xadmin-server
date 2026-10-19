@@ -43,6 +43,9 @@ def declared_actions() -> dict[tuple[str, str], Any]:
     """
     index = {}
     for spec in API_ACTION_SPECS.values():
+        # 内置动作（validate/execute，无声明式 path）不绑定具体 operation
+        if not hasattr(spec, "path"):
+            continue
         index[(str(spec.method).upper(), normalize_path(spec.path))] = spec
     return index
 

@@ -50,7 +50,7 @@ def tool_catalog(user: Any, exclude_mcp: bool = False) -> list[Any]:
     不得经此再暴露给外部客户端（防递归代理与能力二次扩散）。助手 tools 端点、
     openai_tools 与 prompt 目录默认含外接 MCP 工具（动作面）。
     """
-    from ai.utils.ai_actions import ACTION_DFORM_SUBMIT, MCP_ACTION_PREFIX, available_actions, available_forms
+    from ai.utils.ai_actions import MCP_ACTION_PREFIX, available_actions
 
     tools = []
     for spec in available_actions(user):
@@ -79,9 +79,10 @@ def tool_catalog(user: Any, exclude_mcp: bool = False) -> list[Any]:
             "description": str(spec.description),
             "inputSchema": {"type": "object", "properties": properties, "required": required},
         }
-        if spec.key == ACTION_DFORM_SUBMIT:
-            # 动态表单提交：可用表单目录（含字段）随条目下发，供模型选择 form_id
-            entry["forms"] = [{"form_id": str(form.pk), "name": form.name} for form in available_forms(user)]
+        # 声明方可附带目录信息（如动态表单可选表单），由所属应用维护
+        extra_catalog = getattr(spec, "catalog", None)
+        if callable(extra_catalog):
+            entry.update(extra_catalog(user) or {})
         tools.append(entry)
     return tools
 
