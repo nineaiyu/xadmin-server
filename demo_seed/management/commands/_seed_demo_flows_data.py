@@ -19,7 +19,7 @@ from approval.utils.approval_flow import approve_task, create_instance, reject_t
 from approval.utils.approval_flow.versioning import apply_definition
 from identity.services import DeptInfo, UserInfo
 
-# 内置示例流程 code（loadjson/approvalflow.json）
+# 内置示例流程 code（approval/seeds/approvalflow.json）
 FLOW_CODES = ("demo_leave", "demo_expense")
 # 演示用户：申请人 / 审批人。**必须可登录**（与其他演示账号同口径）：演示实例的
 # 在途单需要本人处理/撤回——不可登录账号会让演示单永久卡死，并因「在途实例存在时
@@ -35,7 +35,7 @@ DEMO_STAFF = "demo_staff"
 # 节点审批人改写目标：双用户互审——任一演示用户发起，另一人必有待办
 DEMO_ASSIGNEE_VALUE = f"{DEMO_APPLIER},{DEMO_APPROVER}"
 
-# 演示数据固定 pk（6eed 段与 loadjson 的 5eed 段区分）：幂等 + 可精确清理
+# 演示数据固定 pk（6eed 段与内置种子的 5eed 段区分）：幂等 + 可精确清理
 INSTANCE_PKS = [f"6eed0001-0000-4000-8000-00000000000{i}" for i in range(1, 6)]
 REQUEST_PKS = [f"6eed0002-0000-4000-8000-00000000000{i}" for i in range(1, 6)]
 SUBMISSION_PKS = [f"6eed0003-0000-4000-8000-00000000000{i}" for i in range(1, 3)]
@@ -146,7 +146,7 @@ class DemoDataMixin:
         now = timezone.now()
         # 注意：form_data 必须与流程「当前」form_schema 的必填字段对齐——
         # demo_expense 的 schema 会被 seed_demo_org 场景模板改写为 amount + reason(必填)，
-        # 若仍按 loadjson 原始字段（invoice_no/remark）构造，实例会被引擎校验拒绝而跳过
+        # 若仍按种子原始字段（invoice_no/remark）构造，实例会被引擎校验拒绝而跳过
         plan = [
             # (固定 pk, 流程, 申请人, 标题, form_data, 基线时间, 推进脚本)
             (

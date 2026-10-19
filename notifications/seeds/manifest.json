@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "app": "notifications",
+  "depends": [
+    "system",
+    "identity"
+  ],
+  "url_prefixes": [
+    "api/notifications/"
+  ],
+  "config_keys": [],
+  "files": [
+    {
+      "name": "menumeta.json",
+      "model": "system.menumeta",
+      "kind": "contract",
+      "order": 10
+    },
+    {
+      "name": "menu.json",
+      "model": "system.menu",
+      "kind": "contract",
+      "order": 20
+    },
+    {
+      "name": "datadict.json",
+      "model": "system.datadict",
+      "kind": "contract",
+      "order": 40
+    },
+    {
+      "name": "fieldpermission.json",
+      "model": "system.fieldpermission",
+      "kind": "contract",
+      "order": 50
+    },
+    {
+      "name": "modellabelfield.json",
+      "model": "system.modellabelfield",
+      "kind": "generated",
+      "order": 60
+    }
+  ],
+  "grants": "grants.json",
+  "dict_codes": [
+    "notice_level"
+  ]
+}

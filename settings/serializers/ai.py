@@ -38,7 +38,13 @@ class AiAssistantSettingSerializer(SettingSaveContractMixin, serializers.Seriali
     AI_MODEL = serializers.CharField(
         max_length=128, required=False, allow_blank=True, label=_("Model"), help_text=_("e.g. deepseek-chat")
     )
-    AI_TIMEOUT = serializers.IntegerField(default=60, min_value=5, max_value=300, label=_("Timeout (seconds)"))
+    AI_TIMEOUT = serializers.IntegerField(
+        default=60,
+        min_value=5,
+        max_value=300,
+        label=_("Timeout (seconds)"),
+        help_text=_("5~300 seconds; recommended 60"),
+    )
     AI_NL_QUERY_ENABLED = serializers.BooleanField(
         default=False,
         label=_("NL query"),
@@ -53,9 +59,20 @@ class AiAssistantSettingSerializer(SettingSaveContractMixin, serializers.Seriali
     )
     # 采样/行为参数（回落通路；与 AiProfile 档案字段同义）
     AI_TEMPERATURE = serializers.FloatField(
-        required=False, allow_null=True, min_value=0, max_value=2, label=_("Temperature")
+        required=False,
+        allow_null=True,
+        min_value=0,
+        max_value=2,
+        label=_("Temperature"),
+        help_text=_("0~2; lower is more deterministic; recommended 0.2"),
     )
-    AI_MAX_TOKENS = serializers.IntegerField(required=False, allow_null=True, min_value=0, label=_("Max tokens"))
+    AI_MAX_TOKENS = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=0,
+        label=_("Max tokens"),
+        help_text=_("Per-response output cap; recommended 2048"),
+    )
     AI_STRUCTURED_MAX_TOKENS = serializers.IntegerField(
         required=False,
         allow_null=True,

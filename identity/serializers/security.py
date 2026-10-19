@@ -85,8 +85,11 @@ def validate_login_policy_ip_ranges(value: Any) -> None:
 
 
 class LoginAccessPolicySerializer(BaseModelSerializer):
-    action = LabeledChoiceField(choices=LoginAccessPolicy.Action.choices)
-    target_type = LabeledChoiceField(choices=LoginAccessPolicy.TargetType.choices)
+    # 模型层有默认值（Action.REJECT / TargetType.ALL）：显式声明的 LabeledChoiceField
+    # 默认 required=True，会让元数据表单把「未选」判成必填错误——按模型语义放开必填，
+    # 省略时由模型默认值落库（表单侧仍给出默认选中项，避免出现空选择）
+    action = LabeledChoiceField(choices=LoginAccessPolicy.Action.choices, required=False)
+    target_type = LabeledChoiceField(choices=LoginAccessPolicy.TargetType.choices, required=False)
 
     class Meta:
         model = LoginAccessPolicy

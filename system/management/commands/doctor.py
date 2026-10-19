@@ -8,9 +8,10 @@
 3. Redis 缓存读写；
 4. 语言包编译（locale/*/LC_MESSAGES/*.mo 缺失或过期 → 界面回退英文）；
 5. 权限点缺口（代码路由 ↔ 库内权限点，非超管 403 的根因）；
-6. 模块裁剪配置（config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE 有效性）；
-7. 前端契约镜像（contract/schema ↔ docs/schema；单仓检出自动跳过）；
-8. 前后端版本一致性（server/const.py ↔ xadmin-client/package.json；单仓检出自动跳过）。
+6. 内置种子（平台层 ``loadjson/`` + 各应用 ``seeds/``：清单/归属/引用，未注册应用告警）；
+7. 模块裁剪配置（config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE 有效性）；
+8. 前端契约镜像（contract/schema ↔ docs/schema；单仓检出自动跳过）；
+9. 前后端版本一致性（server/const.py ↔ xadmin-client/package.json；单仓检出自动跳过）。
 
 退出码：存在失败项返回 1（可用于 CI）；仅警告返回 0。
 
@@ -57,6 +58,7 @@ class Command(BaseCommand):
         self._check_locale()
         if not options["skip_permissions"]:
             self._check_permissions()
+        self._check_seeds()
         self._check_modules()
         self._check_ai_declarations()
         self._check_frontend_contract()
@@ -186,6 +188,68 @@ class Command(BaseCommand):
                 self._report(PASS, "权限点", "代码路由与库内权限点一致")
         except Exception as exc:
             self._report(WARN, "权限点", f"扫描失败（跳过）：{exc}")
+
+    def _check_seeds(self) -> None:
+        """内置种子自检：分层清单可解析、归属/引用无错误、磁盘上的种子层没有被静默忽略。
+
+        ``load_init_json`` 只发现 ``INSTALLED_APPS`` 里的应用——新应用写了 ``seeds/``
+        但没进 ``XADMIN_APPS`` 时会被静默跳过（表现为「种子写了但没生效」）。
+        """
+
+        try:
+            from system.services.seeding import build_plan, discover, validate_plan
+
+            discovery = discover()
+            plan = build_plan(discovery)
+            result = validate_plan(plan, manifests=discovery.manifests)
+            problems = [*discovery.problems, *result.problems]
+        except Exception as exc:
+            self._report(WARN, "内置种子", f"校验失败（跳过）：{exc}", "python manage.py load_init_json --list")
+            return
+
+        layers = len(discovery.manifests) + 1
+        files = len(plan.all_specs())
+        errors = [problem for problem in problems if problem.level == "error"]
+        warnings = [problem for problem in problems if problem.level != "error"]
+        if errors:
+            self._report(
+                FAIL,
+                "内置种子",
+                f"{layers} 层 / {files} 个文件，{len(errors)} 处错误（示例：{errors[0]}）",
+                "python manage.py load_init_json --check 查看全部问题",
+            )
+            return
+
+        ignored = self._ignored_seed_apps()
+        if ignored:
+            self._report(
+                WARN,
+                "内置种子",
+                f"{layers} 层 / {files} 个文件；以下目录有 seeds/ 但应用未注册，装载时被忽略：{'、'.join(ignored)}",
+                "config.yml 的 XADMIN_APPS 加入应用名后重启进程",
+            )
+            return
+        self._report(PASS, "内置种子", f"{layers} 层 / {files} 个文件，0 error / {len(warnings)} warning")
+
+    @staticmethod
+    def _ignored_seed_apps() -> list[str]:
+        """磁盘上有 ``seeds/manifest.json`` 但应用未注册的目录（按 app label 口径）。"""
+
+        from django.apps import apps as django_apps
+
+        root = Path(settings.PROJECT_DIR)
+        registered = {config.label for config in django_apps.get_app_configs()}
+        ignored: list[str] = []
+        try:
+            candidates = sorted(path for path in root.iterdir() if path.is_dir())
+        except OSError:
+            return ignored
+        for candidate in candidates:
+            if candidate.name in registered or candidate.name.startswith((".", "_")):
+                continue
+            if (candidate / "seeds" / "manifest.json").is_file():
+                ignored.append(candidate.name)
+        return ignored
 
     def _check_modules(self) -> None:
         try:

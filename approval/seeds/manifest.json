@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "app": "approval",
+  "depends": [
+    "system",
+    "identity"
+  ],
+  "url_prefixes": [
+    "api/approval/"
+  ],
+  "config_keys": [
+    "APPROVAL_APPROVER_ROLES",
+    "APPROVAL_FLOW_KEEP_DAYS",
+    "APPROVAL_KEEP_DAYS",
+    "APPROVAL_MFA_REQUIRED_ACTIONS",
+    "APPROVAL_PENDING_TIMEOUT",
+    "APPROVAL_REMIND_HOURS",
+    "APPROVAL_REQUIRED_PATHS",
+    "APPROVAL_TOKEN_TTL",
+    "LEAVE_APPROVAL_FLOW_CODE"
+  ],
+  "files": [
+    {
+      "name": "menumeta.json",
+      "model": "system.menumeta",
+      "kind": "contract",
+      "order": 10
+    },
+    {
+      "name": "menu.json",
+      "model": "system.menu",
+      "kind": "contract",
+      "order": 20
+    },
+    {
+      "name": "systemconfig.json",
+      "model": "system.systemconfig",
+      "kind": "contract",
+      "order": 30
+    },
+    {
+      "name": "datadict.json",
+      "model": "system.datadict",
+      "kind": "contract",
+      "order": 40
+    },
+    {
+      "name": "fieldpermission.json",
+      "model": "system.fieldpermission",
+      "kind": "contract",
+      "order": 50
+    },
+    {
+      "name": "modellabelfield.json",
+      "model": "system.modellabelfield",
+      "kind": "generated",
+      "order": 60
+    },
+    {
+      "name": "approvalflow.json",
+      "model": "approval.approvalflow",
+      "kind": "contract",
+      "order": 65
+    },
+    {
+      "name": "approvalflownode.json",
+      "model": "approval.approvalflownode",
+      "kind": "contract",
+      "order": 70
+    },
+    {
+      "name": "approvalflowversion.json",
+      "model": "approval.approvalflowversion",
+      "kind": "contract",
+      "order": 75
+    }
+  ],
+  "dict_codes": [
+    "approval_status",
+    "leave_status",
+    "leave_type"
+  ]
+}

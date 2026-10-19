@@ -28,6 +28,10 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         SUCCESS = "success", _("Success notices")
         DANGER = "danger", _("Important notices")
 
+    class MessageFormat(models.TextChoices):
+        HTML = "html", _("Rich text")
+        MARKDOWN = "markdown", _("Markdown")
+
     notice_user = models.ManyToManyField(
         "identity.UserInfo",
         through="MessageUserRead",
@@ -46,6 +50,14 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         verbose_name=_("Notice type"), choices=NoticeChoices, default=NoticeChoices.USER
     )
     title = models.CharField(verbose_name=_("Notice title"), max_length=255)
+    # 正文格式在创建时确定、编辑期不可切换：HTML 与 Markdown 语义不同，
+    # 互相转换会丢失源码（附件/视频等富文本结构在 Markdown 中无对应表达）
+    message_format = models.CharField(
+        verbose_name=_("Message format"),
+        max_length=16,
+        choices=MessageFormat.choices,
+        default=MessageFormat.HTML,
+    )
     message = models.TextField(verbose_name=_("Notice message"), blank=True, null=True)
     extra_json = models.JSONField(verbose_name=_("Additional json data"), blank=True, null=True)
     file = models.ManyToManyField("file.UploadFile", verbose_name=_("Uploaded attachments"))

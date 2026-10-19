@@ -26,6 +26,16 @@ class TestExtractJsonObject:
         text = '好的，这是你要的草稿：\n{"a": 1}\n还需要我做什么？'
         assert extract_json_object(text) == {"a": 1}
 
+    def test_double_braced_object_tolerated(self):
+        """思考型模型实测会多包一层花括号（{{"message": ...}}）：取内层对象。"""
+        text = '{{"message": "请补充请假原因"}}'
+        assert extract_json_object(text) == {"message": "请补充请假原因"}
+
+    def test_object_followed_by_second_object(self):
+        """取首个可解析对象，不因尾随第二个对象而整体失败。"""
+        text = '{"a": 1} 补充说明 {"b": 2}'
+        assert extract_json_object(text) == {"a": 1}
+
     def test_array_payload_rejected(self):
         with pytest.raises(AiOutputParseError):
             extract_json_object("[1, 2, 3]")

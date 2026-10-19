@@ -56,7 +56,12 @@ API_ACTION_SPECS = {
         path="/api/notifications/notice-messages/announcement",
         params={
             "title": {"type": "string", "required": True, "in": "body", "description": "Announcement title"},
-            "message": {"type": "string", "required": True, "in": "body", "description": "Announcement body text"},
+            "message": {
+                "type": "string",
+                "required": True,
+                "in": "body",
+                "description": "Announcement body in Markdown (headings, lists, tables and fenced code supported)",
+            },
             "level": {
                 "type": "enum",
                 "values": ["info", "primary", "success", "danger"],
@@ -66,10 +71,12 @@ API_ACTION_SPECS = {
             },
         },
         # 公告端点的隐含必填字段（业务接口既有契约，原样满足）：全员公告类型 +
-        # 立即可见 + 无指定接收人/附件
+        # 立即可见 + 无指定接收人/附件；模型输出天然是 Markdown，故固定按
+        # markdown 格式落库（展示端按格式渲染，避免把 **/# 原样显示）
         defaults={
             "notice_type": 1,
             "publish": True,
+            "message_format": "markdown",
             "notice_user": [],
             "notice_dept": [],
             "notice_role": [],

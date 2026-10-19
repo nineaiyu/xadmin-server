@@ -50,6 +50,7 @@
 |------|------|
 | [ops/deployment.md](ops/deployment.md) | **部署与运维手册（概览）**：本地开发 + 常见问题排查；子页 [deployment-docker.md](ops/deployment-docker.md)（容器 / Celery 队列 / 备份恢复与容量 / 可观测 / 国产化）、[deployment-upgrade.md](ops/deployment-upgrade.md)（升级回滚）、[deployment-csp.md](ops/deployment-csp.md)（安全响应头 CSP）、[config-reference.md](ops/config-reference.md)（配置速查表） |
 | [ops/upgrade-stock.md](ops/upgrade-stock.md) | 存量库升级通道：升级前体检（`upgrade_check`）/ 支持矩阵（可原地升级 vs 清库重建）/ 两条流程 |
+| [ops/upgrade-4x-to-5x.md](ops/upgrade-4x-to-5x.md) | **4.x → 5.x 存量升级操作手册**：清库重建 + `legacy_export` / `legacy_import` 回灌（判定 / 逐步命令 / 验收清单 / 回滚 / 实测记录） |
 | [ops/upgrade-5.0.md](ops/upgrade-5.0.md) | **4.x → 5.0 升级指南**：迁移链合并说明 / 账本认领（`upgrade_ledger --apply`）/ 三步升级（安装器 · compose · 源码）/ 验证与回滚 / FAQ |
 | [ops/runbook.md](ops/runbook.md) | 故障处置（常见故障 → 处置步骤） |
 | [ops/scale-out.md](ops/scale-out.md) | 横向扩展 runbook（单机多副本：迁移一次性 / beat 单例 / nginx 多后端轮询 + 验证与回退） |
@@ -70,7 +71,7 @@
 
 | 文档 | 内容 |
 |------|------|
-| [adr/README.md](adr/README.md) | **架构决策记录索引（87 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
+| [adr/README.md](adr/README.md) | **架构决策记录索引（89 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
 | [plans/README.md](plans/README.md) | 规划与治理：活跃台账（**工作区级**开发任务总清单 / 长期任务方案 / 长期开发计划 / 5.0 发布清单 + 触发制任务清单与域切分映射）；**已完成的一次性台账在 `plans/archive/`**，预生成未来年度的填充文档已于 2026-10-03 清理 |
 | [ci-gates.md](ci-gates.md) | **CI 门禁统一清单**：全部流水线门禁与守护测试的登记处（守护语义 / 所在 workflow / 本地复跑；新增门禁必须登记） |
 | [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线概览）；履历见 [metrics-history.md](metrics-history.md)（阶段回填 + 依赖安全审计）、[metrics-perf-history.md](metrics-perf-history.md)（性能 / 前端基线实测） |
@@ -87,7 +88,7 @@ docs/
 ├── architecture/         架构与组件（现状文档：组件手册 component-handbook + handbook-backend / handbook-frontend / 协议 / 权限 / 模块化…）
 ├── adr/                  架构决策记录（历史决策，含索引 README）
 ├── ops/                  部署与运维（deployment 概览 + deployment-docker / deployment-upgrade / deployment-csp / config-reference / observability / observability-drills / runbook / 演练记录）
-├── plans/                规划与治理（活跃 11 篇：工作区级台账 4 篇（任务总清单 / 长期任务方案 / 长期开发计划 / 发布清单）+ 长期计划 / 触发制清单 / 四份映射与任务书；历史归档在 archive/）
+├── plans/                规划与治理（活跃 16 篇：工作区级台账 4 篇（任务总清单 / 长期任务方案 / 长期开发计划 / 发布清单）+ 长期计划 / 触发制清单 / 四份映射与任务书 / 原地升级立项与方案 / 应用级种子拆分方案与执行计划 + 前端框架一致性调查与收敛方案 + 公告 Markdown 支持开发方案；历史归档在 archive/）
 ├── open-platform/        开放平台接入（指南 + 事件契约）
 ├── schema/               前后端契约 JSON Schema
 ├── imgs/                 文档配图
@@ -108,6 +109,8 @@ docs/
 3. 教程中的命令 / 参数 / demo 路径由 `scripts/check_tutorial_mirror.py` 守护；
    组件手册与活跃开发文档的引用路径由 `scripts/check_doc_paths.py` 守护；
    对外站点导航由 `scripts/check_docs_site_nav.py` 守护；
+   站点内链接（**含锚点级死链**，构建产物核对）与跨仓路径引用由
+   `scripts/check_docs_site_links.py` 守护（`docs:build` 只拦页级死链）；
 4. **已完成的一次性方案 / 台账**移入 `plans/archive/`（[plans/README.md](plans/README.md) 登记去向），
    活跃区只保留"在维护"的文档；ADR 状态变更同步更新 [adr/README.md](adr/README.md)；
 5. API 文档随版本固化：每次 release 附带静态 `openapi.json`，部署环境可访问 `/api-docs/` 交互查阅。

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "app": "dataset",
+  "depends": [
+    "system",
+    "identity"
+  ],
+  "url_prefixes": [
+    "api/dataset/"
+  ],
+  "config_keys": [],
+  "files": [
+    {
+      "name": "menumeta.json",
+      "model": "system.menumeta",
+      "kind": "contract",
+      "order": 10
+    },
+    {
+      "name": "menu.json",
+      "model": "system.menu",
+      "kind": "contract",
+      "order": 20
+    },
+    {
+      "name": "fieldpermission.json",
+      "model": "system.fieldpermission",
+      "kind": "contract",
+      "order": 50
+    },
+    {
+      "name": "modellabelfield.json",
+      "model": "system.modellabelfield",
+      "kind": "generated",
+      "order": 60
+    }
+  ],
+  "sample": [
+    {
+      "name": "sample/dataset.json",
+      "model": "dataset.dataset",
+      "order": 10
+    },
+    {
+      "name": "sample/dashboard.json",
+      "model": "dataset.dashboard",
+      "order": 20
+    },
+    {
+      "name": "sample/screen.json",
+      "model": "dataset.screen",
+      "order": 30
+    },
+    {
+      "name": "sample/report.json",
+      "model": "dataset.report",
+      "order": 40
+    },
+    {
+      "name": "sample/dynamicform.json",
+      "model": "dataset.dynamicform",
+      "order": 50
+    },
+    {
+      "name": "sample/dynamicformsubmission.json",
+      "model": "dataset.dynamicformsubmission",
+      "order": 60
+    }
+  ]
+}

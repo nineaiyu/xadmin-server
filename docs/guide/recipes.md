@@ -20,8 +20,13 @@
 | 2. 迁移 | `python manage.py makemigrations crm && python manage.py migrate crm` |
 | 3. 序列化器 | `Meta.fields` 加字段（进接口）；需要进列表默认列再加 `Meta.table_fields` |
 | 4. 搜索（可选） | 需要搜索 → 过滤器声明 + 列入 `Meta.fields`（见 R4） |
-| 5. 字段权限树 | `python manage.py sync_model_field`（幂等；字段权限/字段树同步） |
+| 5. 字段权限 | `python manage.py sync_field_permissions --update-seed --app <app>`（一条命令：重建字段树 + 把本次新增字段补进已有角色白名单 + 只回写该应用种子） |
 | 6. 重启进程 | 元数据缓存与路由在进程内，必须重启 |
+
+**说明**：字段白名单是 fail-closed 的，漏配会让非超管页面静默缺列。`sync_field_permissions`
+只补「本次同步新增」的字段，不会恢复历史上被管理员裁剪掉的字段（如密码、超管标记）；
+只想预览用 `--dry-run`。旧口径 `sync_model_field` + `sync_menu_permissions
+--fix-field-permissions --update-seed` 仍可用于升级补齐。
 
 **验证**：`python manage.py doctor` 无缺口 → 刷新页面（列表列出现、表单可填、搜索可用）；
 若列仍缺失，按顺序查：`Meta.table_fields` → 重启 → DEV 页面元数据警示条。
@@ -83,7 +88,8 @@
 **场景**：状态/类型等枚举的文案与颜色需要管理员在线维护（不发版）。
 
 1. 服务端：序列化器字段用 `DictChoiceField(dict_code="xxx", fallback_choices=Model.Choices.choices, value_cast=int, merge_fallback=True)`——`fallback_choices` 必传（字典未配置时回退模型枚举）；
-2. 被代码按 code 引用的字典类型在 `loadjson/datadict.json` 登记（类型行 `is_locked=true`）；
+2. 被代码按 code 引用的字典类型在**所属应用**的 `seeds/datadict.json` 登记（类型行 `is_locked=true`；
+   跨应用共用的类型留平台层 `loadjson/datadict.json`，归属由 `manage.py load_init_json --check` 判定）；
 3. 前端零成本（元数据自动下发；非元数据场景用 `useDict(code)` / `getDictItems(code)`）；
 4. 完整口径（展示型 vs 写入型、`merge_fallback` 语义、缓存失效）见 [框架开发遵循准则.md](../框架开发遵循准则.md) §1.9。
 
@@ -240,7 +246,7 @@ def clean_xxx_job(): ...
 
 ```bash
 python manage.py post_upgrade      # 种子 + 语言包 + 缓存失效 + 权限缺口扫描（幂等）
-python manage.py doctor            # 八项自检，修到全绿
+python manage.py doctor            # 十项自检，修到全绿
 ```
 
 新增权限点必须在发布前入库：`sync_menu_permissions --update-seed`（回写种子，随版本发布）或生成器种子 `loaddata`。

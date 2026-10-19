@@ -77,6 +77,18 @@ def _generate(workspace, *extra):
     return backend, client
 
 
+def _seed_entries(workspace) -> list[dict]:
+    """生成的应用种子：menumeta 与 menu 两个文件按装载序合并（种子已按应用分层）。"""
+
+    seed_dir = workspace[0] / "demo" / "seeds"
+    entries: list[dict] = []
+    for name in ("menumeta.json", "menu.json"):
+        path = seed_dir / name
+        if path.is_file():
+            entries.extend(json.loads(path.read_text(encoding="utf-8")))
+    return entries
+
+
 class TestArtifacts:
     def test_backend_and_frontend_artifacts(self, workspace):
         backend, client = _generate(workspace)
@@ -85,7 +97,7 @@ class TestArtifacts:
             backend / "demo" / "views.py",
             backend / "demo" / "urls.py",
             backend / "demo" / "config.py",
-            backend / "loadjson" / "seed_demo_book.json",
+            backend / "demo" / "seeds" / "menu.json",
             client / "src" / "views" / "demo" / "book" / "index.vue",
             client / "src" / "views" / "demo" / "book" / "utils" / "api.ts",
             client / "src" / "views" / "demo" / "book" / "utils" / "hook.tsx",
@@ -246,7 +258,7 @@ class TestUrlsMerge:
 class TestMenuSeed:
     def test_seed_structure_and_deterministic_pk(self, workspace):
         backend, _ = _generate(workspace)
-        seed_path = backend / "loadjson" / "seed_demo_book.json"
+        seed_path = backend / "demo" / "seeds" / "menu.json"
         entries = json.loads(seed_path.read_text(encoding="utf-8"))
         permissions = [item for item in entries if item["model"] == "system.menu" and item["fields"]["menu_type"] == 2]
         assert [item["fields"]["name"] for item in permissions] == [
@@ -272,7 +284,7 @@ class TestMenuSeed:
     def test_seed_importable_by_loaddata(self, workspace):
         """种子必须是 Django fixture 可加载形态（这里校验必需字段已齐备）。"""
         backend, _ = _generate(workspace)
-        entries = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        entries = _seed_entries(workspace)
         menus = [item for item in entries if item["model"] == "system.menu"]
         for menu in menus:
             for required in ("name", "path", "menu_type", "meta", "is_active"):
@@ -291,7 +303,7 @@ class TestBootstrap:
         role = UserRole.objects.create(name="Ops", code="ops")
         backend, _ = _generate(workspace, "--bootstrap", "--grant-to", "ops")
 
-        seed = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        seed = _seed_entries(workspace)
         menu_pks = [entry["pk"] for entry in seed if entry["model"] == "system.menu"]
         assert Menu.objects.filter(pk__in=menu_pks).count() == len(menu_pks)
         # 权限点已关联模型节点（字段权限可用）：bootstrap 内先跑 sync_model_field 并回填种子
@@ -408,7 +420,8 @@ class TestNextSteps:
         _generate(workspace)
         output = capsys.readouterr().out
         assert "后续步骤" in output
-        assert "python manage.py loaddata loadjson/seed_demo_book.json" in output
+        assert "python manage.py loaddata" in output
+        assert "demo/seeds/menu.json" in output
         assert "python manage.py doctor" in output
         assert "*:DemoBook" in output
 
@@ -455,7 +468,7 @@ class TestOptions:
             frontend_root=str(client),
             parent=parent,
         )
-        entries = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        entries = _seed_entries(workspace)
         page_menu = next(item for item in entries if item["fields"].get("menu_type") == 1)
         assert page_menu["fields"]["parent"] == parent
 
@@ -463,7 +476,7 @@ class TestOptions:
         backend, _ = _generate(workspace, "--with-import-export")
         views = (backend / "demo" / "views.py").read_text(encoding="utf-8")
         assert "class BookViewSet(BaseModelSet, ImportExportDataAction):" in views
-        entries = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        entries = _seed_entries(workspace)
         names = [item["fields"]["name"] for item in entries if item["fields"].get("menu_type") == 2]
         assert "exportData:DemoBook" in names
         assert "importData:DemoBook" in names
@@ -473,7 +486,7 @@ class TestOptions:
         backend, client = _generate(workspace, "--skip-frontend", "--skip-menu-seed")
         assert (backend / "demo" / "urls.py").exists()
         assert not (client / "src").exists()
-        assert not (backend / "loadjson").exists()
+        assert not (backend / "demo" / "seeds").exists()
 
     def test_unknown_model_rejected(self, workspace):
         from django.core.management.base import CommandError
@@ -588,7 +601,7 @@ class TestMenuIcon:
     @staticmethod
     def _page_meta_icon(workspace, *extra):
         backend, _ = _generate(workspace, *extra)
-        entries = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        entries = _seed_entries(workspace)
         page_meta = next(
             item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
         )
@@ -606,7 +619,7 @@ class TestMenuTitleAndOrdering:
 
     def test_menu_title_overrides_seed_title(self, workspace):
         backend, _ = _generate(workspace, "--menu-title", "书籍管理")
-        entries = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        entries = _seed_entries(workspace)
         page_meta = next(
             item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
         )
@@ -618,7 +631,7 @@ class TestMenuTitleAndOrdering:
 
     def test_menu_title_defaults_to_verbose_name(self, workspace):
         backend, _ = _generate(workspace)
-        entries = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        entries = _seed_entries(workspace)
         page_meta = next(
             item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
         )

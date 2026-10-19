@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "app": "__platform__",
+  "files": [
+    {
+      "name": "menumeta.json",
+      "model": "system.menumeta",
+      "kind": "contract",
+      "order": 10
+    },
+    {
+      "name": "menu.json",
+      "model": "system.menu",
+      "kind": "contract",
+      "order": 20
+    },
+    {
+      "name": "datadict.json",
+      "model": "system.datadict",
+      "kind": "contract",
+      "order": 40
+    },
+    {
+      "name": "datapermission.json",
+      "model": "system.datapermission",
+      "kind": "contract",
+      "order": 50
+    },
+    {
+      "name": "modellabelfield.json",
+      "model": "system.modellabelfield",
+      "kind": "generated",
+      "order": 60
+    },
+    {
+      "name": "userrole.json",
+      "model": "identity.userrole",
+      "kind": "contract",
+      "order": 60
+    }
+  ],
+  "grants": "grants.json"
+}

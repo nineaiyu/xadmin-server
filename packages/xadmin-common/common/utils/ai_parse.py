@@ -25,22 +25,27 @@ class AiOutputParseError(ValueError):
 
 
 def extract_json_object(text: str) -> dict[str, Any]:
-    """从 LLM 输出中提取 JSON 对象（robust：容忍码栅与前后废话）。
+    """从 LLM 输出中提取 JSON 对象（robust：容忍码栅、前后废话与多余花括号）。
 
-    策略：优先取 markdown 码栅内的首个大括号块；否则取全文第一个 ``{`` 到
-    最后一个 ``}`` 的区间；解析失败或结果不是对象时抛 ``AiOutputParseError``。
+    策略：优先取 markdown 码栅内的内容；再从每个 ``{`` 起点尝试
+    ``JSONDecoder.raw_decode``（解析到对象结束即止，忽略尾随内容）。
+    这样既能跳过前后废话，也能容忍模型多包一层花括号
+    （实测思考型模型会输出 ``{{"message": "..."}}``）——旧实现取
+    「首个 { 到最后一个 }」在双层括号下必然 JSONDecodeError。
+    解析失败或结果不是对象时抛 ``AiOutputParseError``。
     """
     text = (text or "").strip()
     fenced = _FENCED.search(text)
     if fenced:
         text = fenced.group(1)
-    else:
-        start, end = text.find("{"), text.rfind("}")
-        text = text[start : end + 1] if (start >= 0 and end > start) else text
-    try:
-        payload = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise AiOutputParseError("the model returned malformed JSON") from exc
-    if not isinstance(payload, dict):
-        raise AiOutputParseError("the model returned malformed JSON")
-    return payload
+    decoder = json.JSONDecoder()
+    for index, char in enumerate(text):
+        if char != "{":
+            continue
+        try:
+            payload, _ = decoder.raw_decode(text, index)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            return payload
+    raise AiOutputParseError("the model returned malformed JSON")

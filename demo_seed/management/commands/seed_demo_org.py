@@ -14,11 +14,8 @@
 重复执行按编码/用户名幂等更新，不产生重复数据。
 """
 
-import json
-import os
 from typing import Any
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -27,6 +24,7 @@ from approval.utils.approval_flow.versioning import apply_definition
 from dataset.models import DynamicForm
 from identity.models import DeptInfo, UserInfo, UserRole
 from system.models import DataPermission, FieldPermission, Menu, ModelLabelField
+from system.services.seeding import read_model_rows
 
 DEFAULT_PASSWORD = "Demo@2026!"
 #: 场景模板落版本快照的备注（seed_demo_clean 依赖同名字面量做回滚清理）
@@ -47,17 +45,12 @@ def _template_applied(flow: Any, specs: Any) -> bool:
 
 
 def _builtin_flow_pks() -> set[Any]:
-    """内置种子（loadjson/approvalflow.json）里的固定主键集合。
+    """内置种子（``approval/seeds/approvalflow.json`` 及各层）里的固定主键集合。
 
     这些行由 load_init_json 维护，reset 不得删除（原因见 _clean 注释）。
     """
 
-    path = os.path.join(settings.PROJECT_DIR, "loadjson", "approvalflow.json")
-    try:
-        with open(path, encoding="utf-8") as fp:
-            return {row["pk"] for row in json.load(fp)}
-    except (OSError, ValueError, KeyError):  # pragma: no cover - 种子文件缺失/损坏
-        return set()
+    return {row["pk"] for row in read_model_rows("approval.approvalflow", include_sample=True)}
 
 
 # 示例组织：部门（code, 名称, 主管用户名）
@@ -168,7 +161,7 @@ class Command(BaseCommand):
         DeptInfo.objects.filter(code__in=[d[0] for d in DEPTS]).delete()
         UserRole.objects.filter(code__in=list(ROLE_NAMES)).delete()
         DataPermission.objects.filter(name__startswith="示例-").delete()
-        # 内置种子（loadjson/approvalflow.json）里的固定主键行由 load_init_json 维护，
+        # 内置种子（approval/seeds/approvalflow.json）里的固定主键行由 load_init_json 维护，
         # reset 不得删除：删掉后按 code 重建会换主键，之后 load_init_json 导入同一 code
         # 会撞唯一约束并回滚**整次**导入（loaddata 单事务）。存在内置行时本命令
         # 通过 update_or_create 复用它（主键保持稳定）。

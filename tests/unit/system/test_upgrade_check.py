@@ -12,7 +12,7 @@ from django.db.migrations.recorder import MigrationRecorder
 from system.management.commands.upgrade_check import collect_report, evaluate
 
 
-def _report(orphan=(), legacy_orphan=(), pending=(), missing_tables=(), missing_columns=(), applied=1):
+def _report(orphan=(), legacy_orphan=(), pending=(), missing_tables=(), missing_columns=(), applied=1, pre_split=()):
     return {
         "migrations": {
             "applied": applied,
@@ -25,6 +25,7 @@ def _report(orphan=(), legacy_orphan=(), pending=(), missing_tables=(), missing_
             "tables_checked": 1,
             "missing_tables": list(missing_tables),
             "missing_columns": list(missing_columns),
+            "pre_split_tables": list(pre_split),
         },
     }
 
@@ -80,6 +81,24 @@ class TestEvaluate:
             missing_columns=[{"table": "identity_userinfo", "columns": ["date_expired"]}],
         )
         assert evaluate(report) == ("needs-migrate", 0)
+
+    def test_pre_split_database_is_blocked_with_dedicated_verdict(self):
+        """四域切分前的旧库（表名仍是 system_*）单独判定，不做账本认领。
+
+        这类库的表名与列集都与合并链不一致——认领只写迁移记录，无法把它变成 5.0 的库，
+        必须走「清库重建 + 回灌」；判定也不能笼统归到 legacy-chain（那样会误导用户以为
+        版本号够就能原地升级）。
+        """
+        report = _report(pre_split=[{"legacy": "system_userinfo", "current": "identity_userinfo"}])
+        assert evaluate(report) == ("legacy-chain-pre-split", 1)
+
+    def test_pre_split_wins_over_reconcilable(self):
+        """即使游离记录全部命中白名单，切分前的旧库也不得进入认领路径。"""
+        report = _report(
+            legacy_orphan=["system.0002_monitor_monitoralert"],
+            pre_split=[{"legacy": "system_userinfo", "current": "identity_userinfo"}],
+        )
+        assert evaluate(report) == ("legacy-chain-pre-split", 1)
 
 
 @pytest.mark.django_db

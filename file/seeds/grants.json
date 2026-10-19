@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "roles": {
+    "admin": [
+      "SystemUploadFile",
+      "accessLogs:SystemUploadFile",
+      "batchDestroy:SystemUploadFile",
+      "chunkAbort:SystemUploadFile",
+      "chunkComplete:SystemUploadFile",
+      "chunkInit:SystemUploadFile",
+      "chunkPart:SystemUploadFile",
+      "config:SystemUploadFile",
+      "create:SystemUploadFile",
+      "destroy:SystemUploadFile",
+      "download:SystemUploadFile",
+      "list:SystemUploadFile",
+      "partialUpdate:SystemUploadFile",
+      "preview:SystemUploadFile",
+      "recycleList:SystemUploadFile",
+      "recyclePurge:SystemUploadFile",
+      "recycleRestore:SystemUploadFile",
+      "retrieve:SystemUploadFile",
+      "upload:SystemUploadFile"
+    ],
+    "demo": [
+      "SystemUploadFile",
+      "accessLogs:SystemUploadFile",
+      "config:SystemUploadFile",
+      "download:SystemUploadFile",
+      "list:SystemUploadFile",
+      "preview:SystemUploadFile",
+      "recycleList:SystemUploadFile",
+      "recycleRestore:SystemUploadFile",
+      "retrieve:SystemUploadFile"
+    ]
+  }
+}

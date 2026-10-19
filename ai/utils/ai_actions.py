@@ -52,6 +52,9 @@ from ai.utils.ai_builtin_actions import (
 from ai.utils.ai_draft_tools import (
     native_draft_result as native_draft_result,  # noqa: F401 显式再导出（PEP 484 语义）
 )
+from ai.utils.ai_draft_tools import (
+    native_draft_result_stream as native_draft_result_stream,  # noqa: F401 显式再导出（PEP 484 语义）
+)
 from common.utils import get_logger
 
 logger = get_logger(__name__)

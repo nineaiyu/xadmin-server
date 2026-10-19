@@ -2,7 +2,6 @@
 """system/services/modelfield.py：字段 lookup 说明与模型字段同步。"""
 
 import pytest
-from django.conf import settings
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.services.modelfield import get_extra_field_lookups, get_field_lookup_info
@@ -139,17 +138,17 @@ class TestSyncModelField:
         见 test_module_seed.py 的既有约定），在测试进程里调用会污染后续所有
         依赖信号失效的用例。
         """
-        import json
-        from pathlib import Path
-
         from django.core.management import call_command
 
         from system.models import ModelLabelField
         from system.services.modelfield import sync_model_field
+        from system.services.seeding import build_plan, discover, read_model_rows
 
-        seed_path = Path(settings.PROJECT_DIR) / "loadjson" / "modellabelfield.json"
-        seed_rows = json.loads(seed_path.read_text(encoding="utf-8"))
+        seed_rows = read_model_rows("system.modellabelfield")
         seed_pks = {row["pk"] for row in seed_rows}
+        seed_paths = [
+            str(spec.path) for spec in build_plan(discover()).all_specs() if spec.model == "system.modellabelfield"
+        ]
 
         # 种子内容自身守护（静态、与运行进程无关）：拆分自 system 的 app 必须留在
         # 数据权限表树里，否则规则选择器看不到这些模型（历史回归即发生在此）
@@ -162,7 +161,7 @@ class TestSyncModelField:
             assert model_label in roots, f"数据权限表树种子缺模型：{model_label}"
 
         # 种子行 creator=1 为约定值：测试库首个用户即 pk=1（superuser fixture）
-        call_command("loaddata", str(seed_path), verbosity=0)
+        call_command("loaddata", *seed_paths, verbosity=0)
         sync_model_field()
 
         live_pks = {str(pk) for pk in ModelLabelField.objects.values_list("pk", flat=True)}

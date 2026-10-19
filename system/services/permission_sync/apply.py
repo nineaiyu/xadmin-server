@@ -5,6 +5,7 @@
 from typing import Any
 
 from django.db import transaction
+from django.db.models import Prefetch
 
 from common.utils import get_logger
 from identity.services import UserRole
@@ -132,6 +133,27 @@ def apply_binding_fixes(fixes: Any) -> Any:
     return len(fixes)
 
 
+def _role_bindings_by_menu(menus: Any) -> dict[Any, list[Any]]:
+    """批量取「菜单 → 已绑定的角色字段树根节点」，替代逐菜单的 ``menu.model`` 读取。
+
+    ``menu.model`` 是 m2m：逐菜单读取时「取值为 ROLE 的根节点」与「取全部绑定节点」
+    各发一条查询，菜单数百时即数百条 N+1 小往返（种子收尾的全量审计每轮都跑这份
+    读取）。一次预取把它收敛成 2 条查询，判定口径不变（仍只取 ``field_type=ROLE``）。
+    """
+    if not menus:
+        return {}
+    role_bindings = Prefetch(
+        "model",
+        queryset=ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE),
+        to_attr="role_bindings",
+    )
+    fetched = {
+        menu.pk: menu
+        for menu in Menu.objects.filter(pk__in=[menu.pk for menu in menus]).prefetch_related(role_bindings)
+    }
+    return {menu.pk: getattr(fetched.get(menu.pk), "role_bindings", []) for menu in menus}
+
+
 def model_field_nodes(menus: Any) -> Any:
     """按权限点取「绑定模型（角色字段树根节点）下全部字段节点」，无绑定的返回空表。
 
@@ -139,9 +161,9 @@ def model_field_nodes(menus: Any) -> Any:
     ×字段三元组，字段节点取自角色字段树（``field_type=ROLE``），与运行时装载
     （``get_user_field_queryset`` 按 ``field__parent__name + field__name`` 取值）同源。
     """
-    root_pks = set()
-    for menu in menus:
-        root_pks.update(menu.model.filter(field_type=ModelLabelField.FieldChoices.ROLE).values_list("pk", flat=True))
+    menus = list(menus)
+    bindings = _role_bindings_by_menu(menus)
+    root_pks = {node.pk for nodes in bindings.values() for node in nodes}
     grouped: dict[Any, list[Any]] = {}
     if not root_pks:
         return {}
@@ -152,10 +174,113 @@ def model_field_nodes(menus: Any) -> Any:
     result = {}
     for menu in menus:
         fields = []
-        for root in menu.model.all():
+        for root in bindings.get(menu.pk, []):
             fields.extend(grouped.get(root.pk, []))
         result[menu.pk] = fields
     return result
+
+
+def snapshot_role_field_names() -> dict[str, set[str]]:
+    """当前 ROLE 字段树快照：``{模型标签: {字段名}}``。
+
+    在 ``sync_model_field()`` **之前**调用，用于识别「本次同步新引入的字段」。
+    只统计 ROLE 根节点及其直接子节点（与运行时白名单取值面一致）。
+    """
+    from system.models import ModelLabelField
+
+    roots = list(
+        ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE, parent__isnull=True).values(
+            "pk", "name"
+        )
+    )
+    children: dict[Any, set[str]] = {}
+    if roots:
+        rows = ModelLabelField.objects.filter(
+            parent__in=[root["pk"] for root in roots],
+            field_type=ModelLabelField.FieldChoices.ROLE,
+        ).values_list("parent_id", "name")
+        for parent_id, name in rows:
+            children.setdefault(parent_id, set()).add(name)
+    return {root["name"]: children.get(root["pk"], set()) for root in roots}
+
+
+def complete_field_permissions(
+    roles: Any = None,
+    *,
+    dry_run: bool = False,
+    only_new: bool = False,
+    baseline: dict[str, set[str]] | None = None,
+) -> Any:
+    """把缺失字段补进已有角色白名单（**只增不减**）。
+
+    新增字段后，旧角色的白名单不会自动包含它；字段权限是 fail-closed 的，表现就是
+    新字段在列表/详情/元数据表单里静默消失。本函数按「权限点绑定模型 × 角色」补缺，
+    不删除管理员已收敛的字段，可反复执行。
+
+    两种模式：
+
+    - ``only_new=True``（新增字段场景）：只补「本次同步新引入」的字段，需同时传入
+      ``baseline``（同步前由 :func:`snapshot_role_field_names` 获取）。角色对某模型
+      原本一个字段都没有时不会自动扩权（避免把敏感字段授予未配置该模型的角色）。
+    - ``only_new=False``（升级补齐场景，供 ``post_upgrade`` 使用）：补齐绑定模型下
+      所有缺失字段，语义与历史升级行为一致。
+
+    ``dry_run`` 只返回待补列表、不写库。返回
+    ``[(role, menu, [待补字段节点]), ...]``。
+    """
+    from system.models import FieldPermission
+
+    if only_new and baseline is None:
+        raise ValueError("only_new=True requires a baseline snapshot")
+
+    role_queryset = UserRole.objects.filter(is_active=True).prefetch_related("menu")
+    if roles is not None:
+        role_queryset = role_queryset.filter(pk__in=[role.pk for role in roles])
+    menus = list(
+        Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, is_active=True)
+        .filter(model__isnull=False)
+        .distinct()
+    )
+    bindings = _role_bindings_by_menu(menus)
+    root_pks = {node.pk for nodes in bindings.values() for node in nodes}
+    if not root_pks:
+        return []
+    nodes_by_root: dict[Any, list[Any]] = {}
+    for node in ModelLabelField.objects.filter(
+        parent__in=root_pks, field_type=ModelLabelField.FieldChoices.ROLE
+    ).order_by("name"):
+        nodes_by_root.setdefault(node.parent_id, []).append(node)
+
+    completed: list[Any] = []
+    for role in role_queryset:
+        for menu in role.menu.all():
+            roots = bindings.get(menu.pk) or []
+            if not roots:
+                continue
+            permission = FieldPermission.objects.filter(role=role, menu=menu).first()
+            existing = set(permission.field.values_list("pk", flat=True)) if permission else set()
+            missing: list[Any] = []
+            for root in roots:
+                fields = nodes_by_root.get(root.pk, [])
+                if only_new:
+                    # 角色对该模型原本无任何字段：不自动扩权，交由权限点/白名单初始化处理
+                    if not any(field.pk in existing for field in fields):
+                        continue
+                    known = baseline.get(root.name, set()) if baseline else set()
+                    missing.extend(field for field in fields if field.name not in known and field.pk not in existing)
+                else:
+                    missing.extend(field for field in fields if field.pk not in existing)
+            if not missing:
+                continue
+            completed.append((role, menu, missing))
+            if dry_run:
+                continue
+            if permission is None:
+                permission = FieldPermission.objects.create(role=role, menu=menu)
+            permission.field.add(*missing)
+    if completed and not dry_run:
+        logger.info("completed field permissions: %d (role, menu) pairs", len(completed))
+    return completed
 
 
 def fill_field_permissions(roles: Any = None) -> Any:
@@ -178,15 +303,49 @@ def fill_field_permissions(roles: Any = None) -> Any:
     if not items:
         return []
     fields_by_menu = model_field_nodes([menu for _role, menu in items])
+    # 按「字段集」分组：同一模型的权限点共享同一份白名单。
+    # 曾经的形态是逐组合 ``get_or_create`` + ``.set()``——前者每个组合一次 SELECT、
+    # 后者每次 DELETE+INSERT+SELECT 三条往返，角色×菜单数百时即数千条小查询，
+    # 与读取侧 N+1 叠加后把种子收尾拖到分钟级（全量 pytest 尾部假死的直接燃料）。
+    # 现在：一次查出全部已存在的组合（1 条 SQL），只对缺口逐个 create
+    # （FieldPermission 的 id 由 save 路径拼装，bulk_create 拿不到，不能走批量插入）；
+    # m2m 按组「一条 DELETE + 一条多值 INSERT」替代逐组合三连。
+    groups: dict[tuple[int, ...], list[tuple[Any, Any, list[Any]]]] = {}
+    for role, menu in items:
+        fields = fields_by_menu.get(menu.pk) or []
+        if not fields:
+            continue
+        key = tuple(sorted(field.pk for field in fields))
+        groups.setdefault(key, []).append((role, menu, fields))
+    if not groups:
+        return []
+    pairs = [(role, menu) for group in groups.values() for role, menu, _fields in group]
+    existing = {
+        (fp.role_id, fp.menu_id): fp
+        for fp in FieldPermission.objects.filter(
+            role__in={role for role, _menu in pairs}, menu__in={menu for _role, menu in pairs}
+        )
+    }
     filled = []
+    through = FieldPermission.field.through
     with transaction.atomic():
-        for role, menu in items:
-            fields = fields_by_menu.get(menu.pk) or []
-            if not fields:
-                continue
-            fp, _created = FieldPermission.objects.get_or_create(role=role, menu=menu)
-            fp.field.set(fields)
-            filled.append((role, menu))
+        for group in groups.values():
+            fields = group[0][2]
+            pks = []
+            for role, menu, _fields in group:
+                fp = existing.get((role.pk, menu.pk))
+                if fp is None:
+                    fp = FieldPermission.objects.create(role=role, menu=menu)
+                    existing[(role.pk, menu.pk)] = fp
+                pks.append(fp.pk)
+                filled.append((role, menu))
+            # 组内统一重写白名单（与 .set() 同语义：先清后插），但一条 DELETE
+            # 加一条 INSERT（多值）替代逐组合的三连往返
+            through.objects.filter(fieldpermission_id__in=pks).delete()
+            through.objects.bulk_create(
+                [through(fieldpermission_id=pk, modellabelfield_id=field.pk) for pk in pks for field in fields],
+                ignore_conflicts=True,
+            )
     if filled:
         logger.info(f"filled field permissions: {len(filled)} (role, menu) pairs")
     return filled

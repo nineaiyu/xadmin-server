@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PG nightly 测试专用配置（容器化 PG 的 nightly 测试档，docs/plans/容器化PG-nightly测试档立项-2026.10.md）。
+PG nightly 测试专用配置（容器化 PG 的 nightly 测试档，docs/plans/archive/容器化PG-nightly测试档立项-2026.10.md）。
 
 单变量换库：与 tests/settings_real（真环境门禁档）唯一的差异是不接真 Redis
 ——CACHES 仍为进程内 FakeRedis、channel 仍为内存层（本档自有定义，基座有意不含
@@ -8,10 +8,10 @@ PG nightly 测试专用配置（容器化 PG 的 nightly 测试档，docs/plans/
 作为真环境门禁的回退兜底档（周调度，全真容器化测试迁移方案 §四 回退方案）。
 方言盲区已由门禁档收口（2026-10-01 起该档从「nightly 主动发现」转为「兜底」角色）。
 
-xdist 每 worker 独立库（禁止共享库）：DB_DATABASE 按 PYTEST_XDIST_WORKER 加后缀，
-settings 按 worker 进程各导入一次、pytest-django 自动建 test_<库名> 并跑迁移，天然
-隔离。多进程共享同一文件库/真库的历史 flaky 见 docs/metrics.md 2026-09-08 行
-（2026-09-08 教训）。
+xdist 每 worker 独立库（禁止共享库）：pytest-django 的 xdist 扩展会为每个 worker
+的测试库追加 _gwN 后缀（test_<DB_DATABASE>_gwN），settings 按 worker 进程各导入一次、
+自动建库并跑迁移，天然隔离。多进程共享同一文件库/真库的历史 flaky 见 docs/metrics.md
+2026-09-08 行（2026-09-08 教训）。
 
 注意：本模块不能放在 server/settings/ 包内——父包 __init__ 会强制加载 config.yml。
 连接参数默认对齐 compose.test.yml（端口 55433 与 loadtest 的 55432 错开，
@@ -22,10 +22,8 @@ import os
 
 from server.conf import Config, ConfigManager
 
-_worker = os.environ.get("PYTEST_XDIST_WORKER", "")
 _pg_database = os.environ.get("DB_DATABASE", "xadmin_pgtest")
-if _worker:
-    _pg_database = f"{_pg_database}_{_worker}"
+# 测试库的 _gwN 后缀由 pytest-django 的 xdist 扩展统一追加，这里不再重复。
 
 _pg_config = Config()
 _pg_config["SECRET_KEY"] = "test-only-secret-key-0123456789abcdef"

@@ -33,6 +33,7 @@ from common.core.modelset.input_types import (
     INPUT_TYPE_PREFIX_FAMILIES,
 )
 from demo.views import BookViewSet
+from identity.views.admin.login_policy import LoginAccessPolicyViewSet
 from identity.views.admin.user import UserViewSet
 
 pytestmark = pytest.mark.django_db
@@ -74,7 +75,13 @@ def _input_type_schema_property(schema_name: str) -> dict:
 
 @pytest.mark.parametrize(
     "viewset_cls,base_url",
-    [(BookViewSet, "/api/demo/book"), (UserViewSet, "/api/identity/user")],
+    [
+        (BookViewSet, "/api/demo/book"),
+        (UserViewSet, "/api/identity/user"),
+        # TimeField 覆盖：登录策略的 start_time/end_time 经 label_lookup 下发 "time"，
+        # 该类型的词表 / Schema / 前端渲染器在扩展流程中同步补齐
+        (LoginAccessPolicyViewSet, "/api/identity/login-policies"),
+    ],
 )
 class TestMetadataContract:
     def test_search_fields_matches_schema(self, viewset_cls, base_url, superuser):

@@ -1,35 +1,39 @@
 # -*- coding: utf-8 -*-
 """数据分析内置示例种子守护测试。
 
-loadjson/dataset.json、dashboard.json、report.json、screen.json 是新装环境
-的内置示例（load_init_json 按 loaddata upsert 灌入）。固定 pk 之间存在引用：
-仪表盘卡片 → 数据集、报表外键 → 数据集、大屏 → 仪表盘。这里锁定三件事：
+示例数据在 ``dataset/seeds/sample/``（``load_init_json`` 默认不装，
+``init_data`` 与 ``--with-sample`` 才装）。固定 pk 之间存在引用：
+仪表盘卡片 → 数据集、报表外键 → 数据集、大屏 → 仪表盘。这里锁定四件事：
 
 1. 数据集定义必须能通过白名单校验（绑定模型/列/排序/limit 与
    ModelLabelField 注册表一致，否则执行期 validate 直接失败）；
 2. 种子间 pk 引用完整（改 pk 或漏文件时尽早暴露）；
 3. 内置示例全部共享可见（普通用户打开即见），且报表默认停用
-   （is_active=false，避免向占位邮箱定时发邮件）。
+   （is_active=false，避免向占位邮箱定时发邮件）；
+4. 示例只存在于 sample 层：默认装载计划不得包含它们（防止误把示例塞回契约层）。
 """
 
-import json
-import os
-
 import pytest
-from django.conf import settings as dj_settings
+from django.core.management import call_command
 
 from dataset.models.dataset import Dataset
 from dataset.utils.dataset import validate_dataset
 from system.models import ModelLabelField
+from system.services.seeding import build_plan, discover, read_model_rows
 
-LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
+#: 示例文件 → 模型 label
+SAMPLE_MODELS = {
+    "dataset.json": "dataset.dataset",
+    "dashboard.json": "dataset.dashboard",
+    "screen.json": "dataset.screen",
+    "report.json": "dataset.report",
+}
 
 DATASET_FIELDS_EXCLUDED = ("creator", "modifier", "dept_belong")
 
 
 def _load(name: str):
-    with open(os.path.join(LOADJSON_DIR, name), encoding="utf-8") as f:
-        return json.load(f)
+    return read_model_rows(SAMPLE_MODELS[name], include_sample=True)
 
 
 @pytest.fixture
@@ -46,6 +50,14 @@ def userinfo_whitelist(db):
             defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": name},
         )
     return root
+
+
+def test_examples_live_in_sample_layer_only():
+    """默认装载计划不含示例数据；加 --with-sample 后才出现在 samples 里。"""
+
+    assert not any(spec.model in SAMPLE_MODELS.values() for spec in build_plan(discover()).all_specs())
+    plan = build_plan(discover(), include_sample=True)
+    assert set(SAMPLE_MODELS.values()) <= {spec.model for spec in plan.samples}
 
 
 def test_seed_dataset_passes_whitelist_validation(userinfo_whitelist):
@@ -88,3 +100,11 @@ def test_seed_shared_visibility_and_report_inactive():
             assert item["fields"]["visibility"] == "shared", f"{name} 应为共享可见"
     for report in _load("report.json"):
         assert report["fields"]["is_active"] is False, "内置报表示例必须停用"
+
+
+@pytest.mark.django_db
+def test_with_sample_loads_examples(seed_creator_user):
+    """``--with-sample`` 装载示例数据（新装 init_data 走这条链路）。"""
+
+    call_command("load_init_json", with_sample=True, verbosity=0)
+    assert Dataset.objects.filter(name__startswith="示例-").exists()

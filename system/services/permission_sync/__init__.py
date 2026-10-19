@@ -18,10 +18,12 @@
 from .apply import (
     apply_binding_fixes,
     apply_plans,
+    complete_field_permissions,
     fill_field_permissions,
     grant_to_roles,
     model_field_nodes,
     plan_binding_fixes,
+    snapshot_role_field_names,
 )
 from .audit import audit_field_permissions, audit_permission_menus, audit_wide_manager_grants
 from .constants import (
@@ -73,6 +75,7 @@ __all__ = [
     "audit_wide_manager_grants",
     "build_plans",
     "build_route_index",
+    "complete_field_permissions",
     "detect_indent",
     "dump_entries",
     "ensure_urlconf_loaded",
@@ -88,6 +91,7 @@ __all__ = [
     "resolve_view_context",
     "sample_path",
     "scan_gaps",
+    "snapshot_role_field_names",
     "scan_permission_gaps",
     "seed_entry_pks",
     "url_to_sample",

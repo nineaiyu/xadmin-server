@@ -3,7 +3,7 @@
 """请假业务演示数据：真实审批闭环，不是造状态。
 
 与 seed_demo_flows 的分工：
-- 流程定义（code=leave）随 ``load_init_json`` 作为内置示例灌入（loadjson/*.json）；
+- 流程定义（code=leave）随 ``load_init_json`` 作为内置契约灌入（``approval/seeds/``）；
 - 请假的**实例类**数据必须「申请人 ≠ 审批人」且审批轨迹自洽，种子造不出合规数据，
   由本命令用真实引擎（``submit_leave`` → ``approve_task`` / ``reject_task``）推进。
 

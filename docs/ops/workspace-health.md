@@ -13,7 +13,7 @@
 | 面 | 真源 | 副本 / 对账 | 覆盖仓 |
 |----|------|-------------|--------|
 | `csp` | `server/settings/csp.py` 的 `_CSP_DIRECTIVES` | `xadmin-web/default.conf` 强制头、`xadmin-client/scripts/csp-page-server.mjs` 内嵌串 | server / web / client |
-| `permissions` | `loadjson/menu.json` + `menumeta.json` | 前端 `scripts/check-menu-permissions.mjs` 退出码；menumeta 下发 i18n key ⊆ 前端 zh/en 语言包 | server / client |
+| `permissions` | 各层菜单种子（平台层 `loadjson/menu.json` + 应用层 `<app>/seeds/menu.json`）与 `menumeta` | 前端 `scripts/check-menu-permissions.mjs` 聚合各层退出码；menumeta 下发 i18n key ⊆ 前端 zh/en 语言包 | server / client |
 | `contract` | `docs/schema/*.schema.json` | 客户端镜像 `contract/schema/`（按 normalize 口径忽略缩进/键序）+ `check-contract-sync.mjs` / `check-contract-usage.mjs` | server / client |
 | `locale` | `xadmin-client/locales/zh-CN.yaml` ↔ `en.yaml` | 前端 `check-i18n-keys.mjs`；服务端 po 仅作 informational（语义不同，不判失败） | client / server |
 | `versions` | `server/const.py` 的 `VERSION` | 客户端 `package.json`、`docs/guide/demo.md`、`installer/static.env`（`dev` 为开发豁免） | server / client / docs / installer |

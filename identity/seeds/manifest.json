@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "app": "identity",
+  "depends": [
+    "system"
+  ],
+  "url_prefixes": [
+    "api/identity/"
+  ],
+  "config_keys": [
+    "ACCOUNT_EXPIRY_REMIND_DAYS",
+    "OAUTH_PROVIDERS",
+    "PAT_RATE_LIMIT",
+    "SCIM_DEFAULT_ROLE_CODE",
+    "SCIM_ENABLED",
+    "SCIM_RATE_LIMIT",
+    "SCIM_TOKEN",
+    "SENSITIVE_OPERATION_METHODS",
+    "SENSITIVE_OPERATION_PATHS",
+    "SESSION_ONLINE_TIMEOUT",
+    "USER_SESSION_RETENTION_DAYS"
+  ],
+  "files": [
+    {
+      "name": "menumeta.json",
+      "model": "system.menumeta",
+      "kind": "contract",
+      "order": 10
+    },
+    {
+      "name": "menu.json",
+      "model": "system.menu",
+      "kind": "contract",
+      "order": 20
+    },
+    {
+      "name": "systemconfig.json",
+      "model": "system.systemconfig",
+      "kind": "contract",
+      "order": 30
+    },
+    {
+      "name": "datadict.json",
+      "model": "system.datadict",
+      "kind": "contract",
+      "order": 40
+    },
+    {
+      "name": "fieldpermission.json",
+      "model": "system.fieldpermission",
+      "kind": "contract",
+      "order": 50
+    },
+    {
+      "name": "modellabelfield.json",
+      "model": "system.modellabelfield",
+      "kind": "generated",
+      "order": 60
+    }
+  ],
+  "grants": "grants.json",
+  "dict_codes": [
+    "user_gender"
+  ]
+}

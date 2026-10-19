@@ -24,6 +24,8 @@ from typing import Any
 
 from django.conf import settings as dj_settings
 
+from system.services.seeding import read_model_rows
+
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 
 #: 参与守护的角色（内置演示角色，按种子 name 匹配）
@@ -90,11 +92,20 @@ def _whitelisted(point: dict[str, Any]) -> bool:
     return False
 
 
+def role_menu_pks(code: str) -> set[str]:
+    """种子角色的菜单主键：授权已迁到各层 ``seeds/grants.json``，按名解析回主键。"""
+
+    from system.services.seeding import seed_role_menu_names
+
+    names = set(seed_role_menu_names(code))
+    return {row["pk"] for row in read_model_rows("system.menu") if row["fields"].get("name") in names}
+
+
 def test_demo_roles_cover_readonly_points_of_owned_pages() -> None:
-    menus = [row["fields"] | {"pk": row["pk"]} for row in _load("menu.json")]
+    menus = [row["fields"] | {"pk": row["pk"]} for row in read_model_rows("system.menu")]
     by_pk = {row["pk"]: row for row in menus}
     points = [row for row in menus if row.get("menu_type") == 2]
-    roles = {row["fields"].get("name"): set(row["fields"].get("menu") or []) for row in _load("userrole.json")}
+    roles = {row["fields"].get("name"): role_menu_pks(row["fields"].get("code")) for row in _load("userrole.json")}
 
     missing: list[str] = []
     for role_name in GUARDED_ROLES:

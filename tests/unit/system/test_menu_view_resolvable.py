@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """菜单 component 可解析守护：后端下发的每个页面组件路径必须命中前端真实视图。
 
-背景：菜单由 `loadjson/menu.json` 下发、前端按 `component` 懒加载视图；组件路径
-写错或视图改名后，菜单只是"点进去 404/空白"（历史遗留：任务中心菜单指向的
+背景：菜单由平台层 `loadjson/` + 各应用 `seeds/` 下发、前端按 `component` 懒加载视图；
+组件路径写错或视图改名后，菜单只是"点进去 404/空白"（历史遗留：任务中心菜单指向的
 `system/task/index` 视图已不存在，属死配置）。
 
 判定与前端 `resolveComponentKey` 同源：精确候选（.vue/.tsx/index.vue/index.tsx）
@@ -10,14 +10,13 @@
 单仓检出（无 xadmin-client）时自动跳过，与 CSP 策略同步守护同口径。
 """
 
-import json
-import os
 from pathlib import Path
 
 import pytest
 from django.conf import settings
 
-SEED_MENU = os.path.join(settings.PROJECT_DIR, "loadjson", "menu.json")
+from system.services.seeding import read_model_rows
+
 CLIENT_VIEWS = Path(settings.PROJECT_DIR).parent / "xadmin-client" / "src" / "views"
 
 
@@ -42,7 +41,7 @@ def _resolvable(component: str, keys: set) -> bool:
 class TestMenuViewResolvable:
     def test_every_menu_component_resolves_to_view(self):
         keys = _view_keys()
-        menus = json.load(open(SEED_MENU, encoding="utf-8"))
+        menus = read_model_rows("system.menu")
         missing = []
         for row in menus:
             fields = row.get("fields", {})

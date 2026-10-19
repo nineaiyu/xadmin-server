@@ -44,14 +44,74 @@ class AiProfileSerializer(BaseModelSerializer):
         read_only=True, allow_null=True, label=_("Creator"), label_builder=lambda v: v.username
     )
     api_key = serializers.CharField(
-        required=False, allow_blank=True, write_only=True, max_length=512, label=_("API Key")
+        required=False,
+        allow_blank=True,
+        write_only=True,
+        max_length=512,
+        label=_("API Key"),
+        help_text=_("Encrypted at rest and never returned; leave blank when editing to keep the current key"),
     )
     api_key_set = serializers.SerializerMethodField(label=_("API Key set"))
     # 显式声明绕开 DRF 3.16 对单字段 UniqueConstraint 自动生成的 UniqueValidator：
     # 激活互斥由 service 层 set_active_profile「自动顶掉旧档案」保证，不是报错语义
-    is_active = serializers.BooleanField(required=False, default=False, label=_("Is active"))
-    purpose = serializers.ChoiceField(choices=AiProfile.Purpose.choices, required=False, label=_("Purpose"))
-    capabilities = serializers.JSONField(required=False, label=_("Capabilities"))
+    is_active = serializers.BooleanField(
+        required=False,
+        default=False,
+        label=_("Is active"),
+        help_text=_("Only one active profile per purpose; activating one deactivates the previous"),
+    )
+    purpose = serializers.ChoiceField(
+        choices=AiProfile.Purpose.choices,
+        required=False,
+        label=_("Purpose"),
+        help_text=_(
+            "Chat serves Q&A; structured serves NL query and action drafts; "
+            "embedding serves vector retrieval and has no fallback"
+        ),
+    )
+    capabilities = serializers.JSONField(
+        required=False, label=_("Capabilities"), help_text=_("Capability probe result, editable manually")
+    )
+    # 采样/行为参数：help_text 供前端表单 label 旁的问号帮助（元数据协议下发）
+    temperature = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        label=_("Temperature"),
+        help_text=_("0~2; lower is more deterministic; recommended 0.2"),
+    )
+    max_tokens = serializers.IntegerField(
+        required=False, allow_null=True, label=_("Max tokens"), help_text=_("Per-response output cap; recommended 2048")
+    )
+    top_p = serializers.FloatField(
+        required=False, allow_null=True, label=_("Top P"), help_text=_("0~1; 1 = no nucleus restriction")
+    )
+    frequency_penalty = serializers.FloatField(
+        required=False, allow_null=True, label=_("Frequency penalty"), help_text=_("-2~2; 0 = no penalty")
+    )
+    presence_penalty = serializers.FloatField(
+        required=False, allow_null=True, label=_("Presence penalty"), help_text=_("-2~2; 0 = no penalty")
+    )
+    stop = serializers.CharField(
+        required=False, allow_blank=True, label=_("Stop sequences"), help_text=_("Comma separated, e.g. END,STOP")
+    )
+    seed = serializers.IntegerField(
+        required=False, allow_null=True, label=_("Seed"), help_text=_("Leave blank for random")
+    )
+    timeout = serializers.IntegerField(
+        required=False, label=_("Timeout (seconds)"), help_text=_("5~300 seconds; recommended 60")
+    )
+    max_retries = serializers.IntegerField(
+        required=False, label=_("Max retries"), help_text=_("Retries for network errors and 5xx; recommended 2")
+    )
+    context_limit = serializers.IntegerField(
+        required=False, label=_("Context messages"), help_text=_("2~50 messages; recommended 20")
+    )
+    persona = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        label=_("Persona"),
+        help_text=_("System prompt; blank uses the builtin default"),
+    )
 
     class Meta:
         model = AiProfile

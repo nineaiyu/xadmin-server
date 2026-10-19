@@ -1,0 +1,1519 @@
+[
+ {
+  "model": "system.menu",
+  "pk": "0082624f-63f6-4421-85a3-2329a212d541",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.233Z",
+   "updated_time": "2024-11-01T03:31:16.282Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityRegisterAuth",
+   "rank": 200,
+   "path": "api/settings/register/auth$",
+   "component": null,
+   "is_active": true,
+   "meta": "6161002e-9b8f-499f-911c-280cf9103457",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+  "fields": {
+   "created_time": "2024-10-25T01:41:54.794Z",
+   "updated_time": "2024-10-30T11:19:23.918Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+   "menu_type": 1,
+   "name": "SystemSetting",
+   "rank": 44,
+   "path": "/system/setting/index",
+   "component": "system/setting/index",
+   "is_active": true,
+   "meta": "4c19dbf7-b8ac-4585-8d19-e0c852000b2a",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "04e6d9dc-46db-44fc-aa22-e653c6ab7e6e",
+  "fields": {
+   "created_time": "2024-11-01T01:40:55.049Z",
+   "updated_time": "2024-11-01T03:31:16.484Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "destroy:SecurityBlockIp",
+   "rank": 220,
+   "path": "api/settings/ip/block/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "6acd4b4f-24aa-46b2-b9d7-b4ab09030a0a",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "055e0b43-c6e7-46a9-9be0-fe64056c902c",
+  "fields": {
+   "created_time": "2024-11-01T02:47:52.696Z",
+   "updated_time": "2024-11-01T02:49:09.277Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+   "menu_type": 2,
+   "name": "retrieve:SmsConfig",
+   "rank": 227,
+   "path": "api/settings/sms/config$",
+   "component": null,
+   "is_active": true,
+   "meta": "25ec41f4-b92d-44aa-8ac3-437fd4b5fedc",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "13b2992d-21c1-4090-9540-367488332f8d",
+  "fields": {
+   "created_time": "2024-11-01T03:31:16.168Z",
+   "updated_time": "2024-11-01T03:31:16.168Z",
+   "description": null,
+   "creator": 1,
+   "modifier": null,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityCaptchaCode",
+   "rank": 202,
+   "path": "api/settings/captcha$",
+   "component": null,
+   "is_active": true,
+   "meta": "8b7e9f97-3aa7-4f93-ba63-0a665c1c354f",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "140ca964-fe1f-4200-9056-89cea529f2c8",
+  "fields": {
+   "created_time": "2024-11-01T02:47:52.639Z",
+   "updated_time": "2024-11-01T02:49:09.192Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+   "menu_type": 2,
+   "name": "retrieve:SmsSetting",
+   "rank": 224,
+   "path": "api/settings/sms$",
+   "component": null,
+   "is_active": true,
+   "meta": "91b80c11-13c5-44b4-a2d4-719ead7eefa6",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "21b7eb97-df47-46b8-a8fd-eba8f0b02024",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.186Z",
+   "updated_time": "2024-11-01T03:31:16.375Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityBindEmailAuth",
+   "rank": 218,
+   "path": "api/settings/bind/email$",
+   "component": null,
+   "is_active": true,
+   "meta": "60b8c31c-6064-4437-8e49-beee4038af71",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "24a69ec9-c2ee-48e8-8fe8-2bd3457eccbf",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.266Z",
+   "updated_time": "2024-11-01T03:31:16.245Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityLoginAuth",
+   "rank": 201,
+   "path": "api/settings/login/auth$",
+   "component": null,
+   "is_active": true,
+   "meta": "e63e6fa0-317b-438d-89c5-c4c3bae8c4bb",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "270803fc-8159-41fc-b531-588c2e7a7fe1",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.248Z",
+   "updated_time": "2024-11-01T03:31:16.302Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityRegisterAuth",
+   "rank": 211,
+   "path": "api/settings/register/auth$",
+   "component": null,
+   "is_active": true,
+   "meta": "1e65cfba-db67-4bb6-bd5f-990b5fb6e4ce",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2f639b6f-4de4-4dc9-9962-94e4726ab363",
+  "fields": {
+   "created_time": "2026-09-07T13:55:09Z",
+   "updated_time": "2026-09-07T13:55:09Z",
+   "description": null,
+   "creator": 1,
+   "modifier": null,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "98b2b6ce-348e-4717-9140-204646324978",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityMonitor",
+   "rank": 190,
+   "path": "api/settings/monitor/auth$",
+   "component": null,
+   "is_active": true,
+   "meta": "81b26af5-f7c8-4a98-a0ca-3a7fc057e7af",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "31f8bd94-d987-4d36-80b3-c41e97f8a777",
+  "fields": {
+   "created_time": "2024-11-01T01:40:54.993Z",
+   "updated_time": "2024-11-01T03:31:16.429Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "list:SecurityBlockIp",
+   "rank": 206,
+   "path": "api/settings/ip/block$",
+   "component": null,
+   "is_active": true,
+   "meta": "af9b972d-58a1-4b6f-88bc-36c9ea8f463e",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "389d9b86-6379-4ba4-aa0b-1e2640f31929",
+  "fields": {
+   "created_time": "2024-11-01T02:47:52.656Z",
+   "updated_time": "2024-11-01T02:49:09.212Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+   "menu_type": 2,
+   "name": "partialUpdate:SmsSetting",
+   "rank": 226,
+   "path": "api/settings/sms$",
+   "component": null,
+   "is_active": true,
+   "meta": "6a6af7af-95be-4b98-8e7b-88b64fdd3f82",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3da7f84e-4378-4ca3-b9e4-da416135cd84",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.338Z",
+   "updated_time": "2024-11-01T03:31:16.121Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityPasswordRule",
+   "rank": 217,
+   "path": "api/settings/password$",
+   "component": null,
+   "is_active": true,
+   "meta": "254cac60-8217-48db-9e02-ad93c7095300",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3e66faba-41c0-42c8-af56-60204956104b",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.218Z",
+   "updated_time": "2024-11-01T03:31:16.339Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityResetPasswordAuth",
+   "rank": 212,
+   "path": "api/settings/reset/auth$",
+   "component": null,
+   "is_active": true,
+   "meta": "d3a28fb4-ba0f-4b09-bca5-a2d2be5d5820",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3e72bf19-4080-416e-b7aa-0a40be940963",
+  "fields": {
+   "created_time": "2026-09-07T13:28:31Z",
+   "updated_time": "2026-09-07T13:28:31Z",
+   "description": null,
+   "creator": 1,
+   "modifier": null,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityMFA",
+   "rank": 221,
+   "path": "api/settings/mfa/auth$",
+   "component": null,
+   "is_active": true,
+   "meta": "b795db6c-8454-4cd3-8692-52cdf8843dfb",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "4baa5cde-5bf5-4d7d-a017-213a2949bc5e",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.203Z",
+   "updated_time": "2024-11-01T03:31:16.323Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityResetPasswordAuth",
+   "rank": 199,
+   "path": "api/settings/reset/auth$",
+   "component": null,
+   "is_active": true,
+   "meta": "fad787d8-f070-4af2-91ac-c22f4d058b11",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+  "fields": {
+   "created_time": "2024-08-01T10:37:29.889Z",
+   "updated_time": "2024-11-01T08:25:24.247Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
+   "menu_type": 1,
+   "name": "SettingSecurity",
+   "rank": 198,
+   "path": "/settings/security/index",
+   "component": "settings/security/index",
+   "is_active": true,
+   "meta": "5377a608-2ad6-477e-b131-c51362861df9",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "54df6d2f-97af-4aee-a935-424e0a10dbbe",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.173Z",
+   "updated_time": "2024-11-01T03:31:16.356Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityBindEmailAuth",
+   "rank": 203,
+   "path": "api/settings/bind/email$",
+   "component": null,
+   "is_active": true,
+   "meta": "42396cec-f9c6-48b9-97cd-dabec75c207c",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "69ad22f7-cb20-4fda-bbd9-3e6e20b0d545",
+  "fields": {
+   "created_time": "2024-10-25T04:42:42.877Z",
+   "updated_time": "2024-10-31T08:06:00.561Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "batchDestroy:SystemSetting",
+   "rank": 46,
+   "path": "api/settings/setting/batch-destroy$",
+   "component": "",
+   "is_active": true,
+   "meta": "2ccd3b62-462f-4868-8736-b8c276c8fff5",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "6e889c66-fa31-48c6-9581-0fef7b1d5f20",
+  "fields": {
+   "created_time": "2024-11-01T03:31:16.151Z",
+   "updated_time": "2024-11-01T03:31:16.151Z",
+   "description": null,
+   "creator": 1,
+   "modifier": null,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityVerifyCode",
+   "rank": 209,
+   "path": "api/settings/verify$",
+   "component": null,
+   "is_active": true,
+   "meta": "ec1d6a10-8026-4138-9828-09ff27a6007f",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "74f8f9a8-9d62-4900-ab13-a57f8dad43fb",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.140Z",
+   "updated_time": "2024-11-01T03:31:16.394Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityBindPhoneAuth",
+   "rank": 205,
+   "path": "api/settings/bind/phone$",
+   "component": null,
+   "is_active": true,
+   "meta": "5f71eb19-0ecc-4b56-8dc4-e316235ed80c",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "76893f41-9ae7-4775-903b-cb0e53b0b5c2",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.157Z",
+   "updated_time": "2024-11-01T03:31:16.411Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityBindPhoneAuth",
+   "rank": 216,
+   "path": "api/settings/bind/phone$",
+   "component": null,
+   "is_active": true,
+   "meta": "31e91a36-5e51-4950-ac0e-9659140f3012",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "772071fa-7053-447b-b86d-8c91a76a0e94",
+  "fields": {
+   "created_time": "2024-08-06T03:36:57.509Z",
+   "updated_time": "2024-11-01T01:32:55.012Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
+   "menu_type": 1,
+   "name": "SettingSms",
+   "rank": 223,
+   "path": "/settings/sms",
+   "component": "settings/sms",
+   "is_active": true,
+   "meta": "770e67d6-a742-47b5-bec4-6ed97c99c795",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "78c0c388-42a6-4ccf-986b-b1749db060a7",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.311Z",
+   "updated_time": "2024-11-01T03:31:16.225Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityLoginLimit",
+   "rank": 215,
+   "path": "api/settings/login/limit$",
+   "component": null,
+   "is_active": true,
+   "meta": "9cddd2f2-ccd1-4ad5-a6f3-872d6c2aac9e",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "859581e1-77db-4752-b02b-8936fe62d0aa",
+  "fields": {
+   "created_time": "2024-11-01T04:33:26.007Z",
+   "updated_time": "2024-11-02T05:49:37.613Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
+   "menu_type": 2,
+   "name": "retrieve:EmailServerSetting",
+   "rank": 193,
+   "path": "api/settings/email$",
+   "component": null,
+   "is_active": true,
+   "meta": "e0158905-2fa4-4eae-b6d4-247f207594db",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "87f1d3e8-b4f7-46bd-9b0b-35761dff228b",
+  "fields": {
+   "created_time": "2024-11-01T04:33:26.127Z",
+   "updated_time": "2024-11-01T08:27:39.030Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
+   "menu_type": 2,
+   "name": "partialUpdate:EmailServerSetting",
+   "rank": 194,
+   "path": "api/settings/email$",
+   "component": null,
+   "is_active": true,
+   "meta": "92ce7d40-b0e6-4202-a5f3-c783465daa3b",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8a8b1998-8f22-4ed6-b7d2-baf89cd0c8c5",
+  "fields": {
+   "created_time": "2024-08-02T07:45:35.361Z",
+   "updated_time": "2024-11-01T02:06:45.777Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "98b2b6ce-348e-4717-9140-204646324978",
+   "menu_type": 2,
+   "name": "retrieve:SettingBasic",
+   "rank": 187,
+   "path": "api/settings/basic$",
+   "component": "",
+   "is_active": true,
+   "meta": "deb1cd0e-bc27-41b6-81d8-581f57053aed",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8e84b889-9a72-4af3-b5b5-8d1180781306",
+  "fields": {
+   "created_time": "2024-11-01T01:40:55.029Z",
+   "updated_time": "2024-11-01T03:31:16.467Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityBlockIp",
+   "rank": 219,
+   "path": "api/settings/ip/block/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "c8919295-9b95-4df3-b583-2995822423c6",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "98b2b6ce-348e-4717-9140-204646324978",
+  "fields": {
+   "created_time": "2024-08-01T10:23:38.748Z",
+   "updated_time": "2024-08-02T01:55:48.439Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
+   "menu_type": 1,
+   "name": "SettingBasic",
+   "rank": 186,
+   "path": "/settings/basic",
+   "component": "settings/basic",
+   "is_active": true,
+   "meta": "db8ed02a-3a4f-40b1-a3cd-8b1f89710ef2",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "99f15c2c-e9ca-4b17-bfa4-1e6efb77f4e4",
+  "fields": {
+   "created_time": "2024-11-01T03:31:16.185Z",
+   "updated_time": "2024-11-01T03:31:16.186Z",
+   "description": null,
+   "creator": 1,
+   "modifier": null,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityCaptchaCode",
+   "rank": 210,
+   "path": "api/settings/captcha$",
+   "component": null,
+   "is_active": true,
+   "meta": "7a036b80-8410-4012-8988-239751775233",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a386ce52-0363-4e09-afad-a6bf8684183e",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.280Z",
+   "updated_time": "2024-11-01T03:31:16.263Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityLoginAuth",
+   "rank": 214,
+   "path": "api/settings/login/auth$",
+   "component": null,
+   "is_active": true,
+   "meta": "0e7c76f5-a818-4197-bd7a-c906cd7201de",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "aac5fe06-79b0-439f-80a1-5f8e494114c2",
+  "fields": {
+   "created_time": "2026-09-07T13:28:31Z",
+   "updated_time": "2026-09-07T13:28:31Z",
+   "description": null,
+   "creator": 1,
+   "modifier": null,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityMFA",
+   "rank": 222,
+   "path": "api/settings/mfa/auth$",
+   "component": null,
+   "is_active": true,
+   "meta": "295f33fc-046d-47aa-a63a-102168002771",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "b0b1ef73-4304-46e2-b223-6ccc82000358",
+  "fields": {
+   "created_time": "2024-10-25T01:48:39.750Z",
+   "updated_time": "2024-10-31T08:06:00.584Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "exportData:SystemSetting",
+   "rank": 47,
+   "path": "api/settings/setting/export-data$",
+   "component": "",
+   "is_active": true,
+   "meta": "3327c071-8aef-4f54-bec5-8dbb37f5c941",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "bd1e50ca-8688-4d81-ac3b-3be94d574ec3",
+  "fields": {
+   "created_time": "2024-10-25T01:45:45.287Z",
+   "updated_time": "2024-10-31T08:06:00.514Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "list:SystemSetting",
+   "rank": 45,
+   "path": "api/settings/setting$",
+   "component": "",
+   "is_active": true,
+   "meta": "92b12d9b-b384-4dd6-8ad2-8fd6a66d601e",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "be438ec0-eda8-483e-ad02-8f6f61ebd15c",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.297Z",
+   "updated_time": "2024-11-01T03:31:16.204Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityLoginLimit",
+   "rank": 204,
+   "path": "api/settings/login/limit$",
+   "component": null,
+   "is_active": true,
+   "meta": "1ca7660f-9767-4210-ab3a-22911c752155",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "cc5dc590-85e8-4f21-970f-73b45b3e2ab6",
+  "fields": {
+   "created_time": "2026-09-07T13:55:09Z",
+   "updated_time": "2026-09-07T13:55:09Z",
+   "description": null,
+   "creator": 1,
+   "modifier": null,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "98b2b6ce-348e-4717-9140-204646324978",
+   "menu_type": 2,
+   "name": "retrieve:SecurityMonitor",
+   "rank": 189,
+   "path": "api/settings/monitor/auth$",
+   "component": null,
+   "is_active": true,
+   "meta": "cd656a71-aa50-425c-99d4-e80fc093c4e7",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d29bfc9a-3334-4e12-84f3-65de82b0862c",
+  "fields": {
+   "created_time": "2024-11-01T04:33:25.988Z",
+   "updated_time": "2024-11-01T08:27:38.992Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
+   "menu_type": 2,
+   "name": "create:EmailServerSetting",
+   "rank": 192,
+   "path": "api/settings/email$",
+   "component": null,
+   "is_active": true,
+   "meta": "8b75973b-a838-4d83-8f6a-3ed520d89af9",
+   "method": "POST",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d31941a6-6068-44ba-9e36-ca55007a412f",
+  "fields": {
+   "created_time": "2024-11-01T01:36:38.324Z",
+   "updated_time": "2024-11-01T03:31:16.097Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityPasswordRule",
+   "rank": 207,
+   "path": "api/settings/password$",
+   "component": null,
+   "is_active": true,
+   "meta": "96609dd0-e50c-4c55-a891-0ccb7d4cd4f6",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d548ec7d-3105-4639-9a82-fb745e6789fe",
+  "fields": {
+   "created_time": "2024-11-01T03:31:16.135Z",
+   "updated_time": "2024-11-01T03:31:16.135Z",
+   "description": null,
+   "creator": 1,
+   "modifier": null,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "retrieve:SecurityVerifyCode",
+   "rank": 208,
+   "path": "api/settings/verify$",
+   "component": null,
+   "is_active": true,
+   "meta": "9b8e45f1-42ac-40ce-845e-7e245c702de8",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d5bf9c52-2ece-4208-a878-3e4e85894b23",
+  "fields": {
+   "created_time": "2024-11-01T02:47:52.710Z",
+   "updated_time": "2024-11-01T02:49:09.294Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+   "menu_type": 2,
+   "name": "partialUpdate:SmsConfig",
+   "rank": 228,
+   "path": "api/settings/sms/config$",
+   "component": null,
+   "is_active": true,
+   "meta": "e4d4ca55-48eb-462c-8801-09aa4e8b3e77",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d90c84c4-b81b-499c-b481-d98851dcc742",
+  "fields": {
+   "created_time": "2024-11-01T02:47:52.669Z",
+   "updated_time": "2024-11-01T02:49:09.235Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+   "menu_type": 2,
+   "name": "backends:SmsSetting",
+   "rank": 229,
+   "path": "api/settings/sms/backends$",
+   "component": null,
+   "is_active": true,
+   "meta": "208e25a3-6aa7-4d55-b9d4-f069c3940815",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "e0ca0938-d2bc-4113-a4f4-dbd9dc080370",
+  "fields": {
+   "created_time": "2024-08-02T07:48:04.196Z",
+   "updated_time": "2024-11-01T02:06:45.932Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "98b2b6ce-348e-4717-9140-204646324978",
+   "menu_type": 2,
+   "name": "partialUpdate:SettingBasic",
+   "rank": 188,
+   "path": "api/settings/basic$",
+   "component": "",
+   "is_active": true,
+   "meta": "109d8247-ac89-4599-8e22-ac476f4fa163",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "e2ce31f9-8a39-4101-9cb1-e1ed9d8b173b",
+  "fields": {
+   "created_time": "2024-11-01T02:47:52.683Z",
+   "updated_time": "2024-11-01T02:49:09.255Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+   "menu_type": 2,
+   "name": "create:SmsConfig",
+   "rank": 225,
+   "path": "api/settings/sms/config$",
+   "component": null,
+   "is_active": true,
+   "meta": "6776f6e7-20e4-4e61-a451-19a4cc883d2d",
+   "method": "POST",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "ef3948c8-7dbc-4740-957c-90957b3944e4",
+  "fields": {
+   "created_time": "2024-10-25T01:49:03.863Z",
+   "updated_time": "2024-10-31T08:06:00.611Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "importData:SystemSetting",
+   "rank": 48,
+   "path": "api/settings/setting/import-data$",
+   "component": "",
+   "is_active": true,
+   "meta": "0ff63b85-a8cf-4481-a003-773334f5bcf9",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "fee5e55f-3171-4ca8-a1e1-6b5cd52919e0",
+  "fields": {
+   "created_time": "2024-11-01T01:40:55.008Z",
+   "updated_time": "2024-11-01T03:31:16.449Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+   "menu_type": 2,
+   "name": "batchDestroy:SecurityBlockIp",
+   "rank": 213,
+   "path": "api/settings/ip/block/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "91c4f6bf-2dc1-4e37-a7eb-e93e8142f955",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "27f49261-6173-506d-a820-f543b1c5302b",
+  "fields": {
+   "created_time": "2026-09-12T12:00:00.000Z",
+   "updated_time": "2026-09-12T12:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
+   "menu_type": 1,
+   "name": "SettingLdap",
+   "rank": 224,
+   "path": "/settings/ldap",
+   "component": "settings/ldap",
+   "is_active": true,
+   "meta": "f29c5d6b-a626-5030-b5a8-6c043cd6f989",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "109ef89f-fe47-5835-a9a1-8c545233d85e",
+  "fields": {
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "27f49261-6173-506d-a820-f543b1c5302b",
+   "menu_type": 2,
+   "name": "retrieve:LdapServerSetting",
+   "rank": 1,
+   "path": "api/settings/ldap$",
+   "component": null,
+   "is_active": true,
+   "meta": "111165b1-c019-5bef-a140-f47aa3994efb",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "089355f2-6feb-5cf4-bb71-726c85247d95",
+  "fields": {
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "27f49261-6173-506d-a820-f543b1c5302b",
+   "menu_type": 2,
+   "name": "partialUpdate:LdapServerSetting",
+   "rank": 2,
+   "path": "api/settings/ldap$",
+   "component": null,
+   "is_active": true,
+   "meta": "b63debdf-8937-5231-885e-c88bc5d8b406",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "e6606c90-048c-5170-a40b-e013b718ba09",
+  "fields": {
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "27f49261-6173-506d-a820-f543b1c5302b",
+   "menu_type": 2,
+   "name": "create:LdapServerSetting",
+   "rank": 3,
+   "path": "api/settings/ldap$",
+   "component": null,
+   "is_active": true,
+   "meta": "b59c58af-5a8b-5645-8ca1-223c1103183a",
+   "method": "POST",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "643050a1-ae93-55e1-9cc4-7f98c2e984ad",
+  "fields": {
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
+   "menu_type": 2,
+   "name": "retrieve:ImNotifySetting",
+   "rank": 1,
+   "path": "api/settings/notify/im$",
+   "component": null,
+   "is_active": true,
+   "meta": "0070871c-a67b-52ed-92a4-f9311e52877c",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "6e95dfc1-c6f9-56cc-8f14-022b2b50766e",
+  "fields": {
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
+   "menu_type": 2,
+   "name": "partialUpdate:ImNotifySetting",
+   "rank": 2,
+   "path": "api/settings/notify/im$",
+   "component": null,
+   "is_active": true,
+   "meta": "17aa62b6-3c09-5e5d-9aa8-3067723ae3fa",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "11bfd985-ed17-5c80-af0a-c3334c35c7d6",
+  "fields": {
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
+   "menu_type": 2,
+   "name": "create:ImNotifySetting",
+   "rank": 3,
+   "path": "api/settings/notify/im$",
+   "component": null,
+   "is_active": true,
+   "meta": "c2172b38-098e-501c-ba17-9f1fc4d90d52",
+   "method": "POST",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "008d66c6-db87-40b6-b51a-b698070cad7a",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.520Z",
+   "updated_time": "2026-09-14T13:49:28.520Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "importValidate:SystemSetting",
+   "rank": 10007,
+   "path": "api/settings/setting/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "48d14e95-11d2-4174-8815-57f9808af755",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5f05fc2d-e272-4757-aac3-ff51252a1490",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.518Z",
+   "updated_time": "2026-09-14T13:49:28.518Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "importHeaders:SystemSetting",
+   "rank": 10006,
+   "path": "api/settings/setting/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "70bafd25-398d-4d7c-aba8-03a0de280136",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "96356211-581e-4846-a25c-cddc6a4c0e0e",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.516Z",
+   "updated_time": "2026-09-14T13:49:28.516Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "importAsync:SystemSetting",
+   "rank": 10005,
+   "path": "api/settings/setting/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "8aede353-a2f0-4b9c-9e12-64f93ffa84e8",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7e7dd673-9b59-4b32-8ae7-3f579834eb36",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.513Z",
+   "updated_time": "2026-09-14T13:49:28.513Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "exportAsync:SystemSetting",
+   "rank": 10004,
+   "path": "api/settings/setting/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "63e5215e-ca42-4761-b422-2d6a3eaa9eb5",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d6c34bc6-ef4b-4ff8-b0b9-c8a96e776397",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.510Z",
+   "updated_time": "2026-09-14T13:49:28.510Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "partialUpdate:SystemSetting",
+   "rank": 10003,
+   "path": "api/settings/setting/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "0c25670c-2ddf-4f97-aab7-e6c3b6eb9154",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7cab67af-01bd-438d-afc4-8b24dbda2682",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.507Z",
+   "updated_time": "2026-09-14T13:49:28.507Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "retrieve:SystemSetting",
+   "rank": 10002,
+   "path": "api/settings/setting/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "aad54e01-02b0-4f11-8143-0e433aa50987",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "36b94b2b-43b8-4633-8a47-f5e258eb2334",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.505Z",
+   "updated_time": "2026-09-14T13:49:28.505Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "destroy:SystemSetting",
+   "rank": 10001,
+   "path": "api/settings/setting/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "df679492-2501-4375-8400-8acb281338a5",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0e7029d4-fa92-4165-9093-6e0b0e0ec6be",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.502Z",
+   "updated_time": "2026-09-14T13:49:28.502Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "create:SystemSetting",
+   "rank": 10000,
+   "path": "api/settings/setting$",
+   "component": null,
+   "is_active": true,
+   "meta": "a9bdd387-b062-4e3b-be2c-34d8f4adc1ec",
+   "method": "POST",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "571b7df6-043b-4c6e-ab24-804ab1e61e28",
+  "fields": {
+   "created_time": "2026-10-08T00:00:00Z",
+   "updated_time": "2026-10-08T00:00:00Z",
+   "description": "水印页签独立权限位（读写同一 /api/settings/basic，仅前端授权粒度拆分；存量角色需显式勾选后才可见水印页签）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "98b2b6ce-348e-4717-9140-204646324978",
+   "menu_type": 2,
+   "name": "retrieve:SettingWatermark",
+   "rank": 191,
+   "path": "api/settings/basic$",
+   "component": null,
+   "is_active": true,
+   "meta": "bb09e1a0-062a-4676-994a-92b54986723f",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1ef60f62-24f7-4a42-ad06-c5c5781ad373",
+  "fields": {
+   "created_time": "2026-10-08T00:00:00Z",
+   "updated_time": "2026-10-08T00:00:00Z",
+   "description": "水印页签独立权限位（与 SettingBasic 同端点，后端按 path+method 鉴权为 OR 语义，字段级隔离不做）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "98b2b6ce-348e-4717-9140-204646324978",
+   "menu_type": 2,
+   "name": "partialUpdate:SettingWatermark",
+   "rank": 192,
+   "path": "api/settings/basic$",
+   "component": null,
+   "is_active": true,
+   "meta": "c4869272-579b-4139-ad30-f87911dd1909",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ }
+]

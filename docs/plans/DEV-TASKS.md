@@ -19,9 +19,51 @@
 
 ## 〇、状态快照（2026-10-09，2026-10-14 追加 5.0 发布批次）
 
+> 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
+> 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
+
+- **2026-10-18 种子分层工具链对齐（留工作区待提交）**：三处收口——`sync_menu_permissions
+  --update-seed` 按归属回写各层（免人工 `seed_split`，字段树不再整表塞回平台层）；生成器与
+  分层工具统一 `menu.json`/`menumeta.json`（旧 `menu_<model>.json` 吸收清空）；
+  `dump_init_json --split-apps --apps <新应用>` 自动初始化 `manifest.json` + `doctor` 新增
+  「内置种子」自检；示例层落地（`dataset/seeds/sample/` 六个文件、`approval/seeds/` 流程定义、
+  `audit/seeds/` 脱敏规则），`init_data` 显式 `--with-sample` 保持新装观感。补齐两份 AGENTS/
+  二开文档站 3 页/架构运维 5 处口径，修复两处只读平台层的空转测试。验证：后端全量（含示例层
+  校验 `--check` 0 error）+ 静态门禁全绿；前端 typecheck/vitest 2262/i18n/contract/
+  menu-permissions 全绿；全量 E2E（6 分片隔离库）724 passed/8 failed/16.1min（失败为既有
+  flake），顺带修「场景种子产物发现」与「启动静默窗口吞保存」两处；清库 `init_data` 新装
+  实测 samples 全在（数据集 2/看板 1/大屏 1/报表 2/表单 2/提交 4）、默认复灌不删示例且幂等。
+
+- **2026-10-18 种子分层收口批（server 5 提交 + client 2 提交，已推送 dev）**：`c82452f9`
+  「种子按 app 分层」的衍生问题四处收口。①**读取侧 N+1**（`ade554e3`）：`permission_sync`
+  两处 + `dump_init_json` 改批量预取，`pytest.ini` 加 `faulthandler_timeout=600`。②**写入侧
+  批量收敛（根治卡死，`0d386d2f`）**：profile 实证单次 `load_init_json` 9.14s 里
+  `fill_field_permissions` 的逐组合 `get_or_create` + `.set()` 占 1257 次 / 2.83s；改为按
+  「字段集」分组——一次 `filter(role__in, menu__in)` 查全部已存在组合、m2m 按组「一条 DELETE
+  + 一条多值 INSERT」、只对缺口逐个 create（`FieldPermission` 的 id 由 save 路径拼装，
+  `bulk_create` 拿不到主键）。**实测**：5 个种子测试文件合跑从「分钟级卡死需手动 kill」→
+  **27.6s / 68 例全过**；全量 pytest **1 分 45 秒 exit 0**（旧基线 5 分 23 秒）。守护 = 幂等
+  路径查询数不随组合数线性增长（与读取侧护栏对称）。③**升级链路 mypy 债务**（`079f9c13`）：
+  升级批次提交时未跑 mypy、在已入列严格清单的 `system` / `ops` 留 59 处告警，12 个文件清零，
+  全仓回到 896 文件 0 错；顺带修 `legacy_import` 变量同名复用，并让 `test_kernel_release`
+  兼容 renovate 锁版的 sha+注释形态（PR #121 上 3 例假红）。④**E2E 场景种子路径断裂**
+  （`31abb97d`）：`seed_demo_book_scene` 仍读旧路径而静默 skip → demo/book 路由 404、两条 spec
+  双浏览器全挂；改为 glob 发现 + 按文件名排序装载。client 侧同批修 `preferenceFieldSync.spec`
+  种子发现（`97dcee53`）与 `viewTransition.spec.ts` 的 `as unknown as`（`f2d17321`）。
+  **教训**：①读侧与写侧 N+1 是两个独立放大源，只修一半不解决合跑卡死；②性能回归要用 profile
+  定位而非凭推断；③client E2E 的 `server-ref` 默认 dev，server 改动会以「client spec 挂」现形。
+
+- **2026-10-17 「清库重建 + 回灌」官方升级路径全面测试 + 操作手册（改动留工作区待提交）**：全文见
+  [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。虚拟机用 4.2.5 库跑完整
+  路径九项验收全通过；补齐三处搬运缺口（个人配置实体、公告附件关联 `notice.file`、模型自带文件字段），
+  「单实体失败只跳过该实体」与「附件缺失跳过不建坏记录」固化为行为 + 测试；新增操作手册
+  `docs/ops/upgrade-4x-to-5x.md`，守护测试 18 例（`test_legacy_transfer.py`）。
+
+
 - **2026-10-16 5.0 发布收口与发布后验证（R1 收尾 / R3 / R4，已提交推送）**：①**发布**：五仓 `v5.0.0` 就位，server/client 镜像构建+推送成功（tag 各一次强推更新，不再删建）；②**发布说明**：Release 原仅 3 条 PR（release-drafter 只汇总 PR，直接推主干的 655/1120 个提交未纳入）→ 按提交类型分组补齐并**修根因**（新增 `scripts/sync_release_notes.py` / `sync-release-notes.mjs` + 发布流水线调用，后续自动完整）；③**发布后验证 6 项全过**：`upgrade_check`=up-to-date（88 迁移/0 待应用/101 表无缺）、`sync_menu_permissions --dry-run` 缺口 0、health 四项 true、认证冒烟 POST 200、操作日志改动真实链路（完整单条 INSERT，并为旧逻辑遗留的 1 条孤儿行提供实证）、`post_upgrade` 幂等；④**发布后验证发现并修复的真实缺陷**：`load_init_json` 重灌种子会覆盖运行期补齐的字段白名单 → 非内置角色（演示角色「示例-主管/示例-员工」在审批接口）缺口 8 个 = 演示账号列表空白 → 收尾新增 `fill_field_permissions` 自愈（只补缺口、不改写人工裁剪；容器实测重灌后归零且幂等）+ 守护测试并入 `TestSeedOrderingFillsBuiltinRoles`；同时回退了误入提交的 `--update-seed` 种子回写（4700 余行，运行时模块权限点不应进种子）；⑤**R3**：逻辑层由 `test_upgrade_check.py`（含真实库 legacy 4x → reconcilable）守护 + 本地栈验证；端到端 4.2.5→5.0 演练登记待执行（需旧实例）；⑥**R4**：文档站本地构建通过（无死链）、5.0 升级要点与实现核对一致、`docs-build.yml` 历史全绿；⑦**衍生修复**：client 多架构构建改 `--platform=$BUILDPLATFORM`（QEMU 下 vite/rolldown 卡死 50 分钟）、构建前显式 `pnpm run prebuild`（图标/动画子集为 gitignore 生成物）、server setuptools 升级改绝对路径（PATH 指向 venv）、trivy 报告逐条定性（apt 构建期升级 / autobahn 示例私钥 / pip vendored msgpack+urllib3 豁免）、pyjwt 升 2.15.1、twisted 无修复漏洞豁免；⑧**建立本地验证闭环**：本地构建 base+运行镜像并用 trivy（ECR 漏洞库源）扫描，两镜像均 exit 0；本地 pip-audit 复验通过。
 
-- **2026-10-16 TG-8 低风险子项收口（R2，两仓改动留工作区，待用户指示提交）**：①**D-6 操作日志占位行事务边界**——先以三个只读探针实验定性（真实中间件链驱动 + Django 源码核对）：`BaseHandler._get_response` 先执行 view middleware（`process_view`）再 `make_view_atomic` 包视图，占位行写在 ATOMIC_REQUESTS 事务**之外**（autocommit 立即提交、与请求事务无关，再包一层 atomic 也无外层事务可加入）；响应阶段同样在事务外，`transaction.on_commit` 在 autocommit 下**立即执行**而非「提交后」；本项目统一异常处理器把视图内未预期异常兜成 500 响应（不向外传播），审查担心的「视图异常逃逸成孤儿行」在 DRF 面上不会发生——旧注释与旧守护测试（模拟占位行在显式 atomic 内、pytest 事务内 on_commit 不回填）描述的都非真实路径，反而掩盖了「并发读方可见半成品行 + 响应阶段缺失时遗留孤儿行 + 每请求多一次往返」三个真实问题。修复 = **取消占位行**：`process_view` 只往 request 挂待写标记（module/object_pk，object_pk 防御性截断 64），`process_response` 经 `oplog_recorder.insert_operation_log` 单条 INSERT（写失败只告警不抛错），不再走 on_commit 中转；`write_operation_log` 随旧路径移除（内核再导出同步换名）。守护 = 中间件单测 4 例真实链路（成功即完整落库 / 异常 500 行非孤儿 / 视图执行期间无半成品行 / DRF 校验失败回滚后行照写）+ 既有 3 个测试文件断言增强（行字段从「仅 module」升级为完整）；探针文件已移 `_delete/d6-oplog-boundary-probe-20261016/`。②**D-5 确认交互三范式成文**——写入 `xadmin-client/src/components/README.md` §五：行内气泡确认（操作按钮 `confirm`/`popconfirm` 声明式，框架内置点击触发与下拉内 popper 兜底）、流程阻断确认（`useConfirm()` promise 化，`danger` 口径）、三态原生（`distinguishCancelAndClose`，「取消≠关闭」才用），附两条反模式（fire-and-forget confirm 取消仍执行、行内按钮滥用模态框）与守护位置。验证：后端全量 pytest（真 PG+Redis，6022 例）0 失败 + mypy 866 文件 0 错 + ruff/format + 行数/函数行数/跨 app/缓存键门禁全绿；前端 prettier（README 与 E2E 注释同步）。台账：`长期任务方案-2026.10.md` §2.1 U8 / §2.2 D-5·D-6 / §3.1 R2 / §五 表、`触发制任务清单-长期.md` TG-8 ⑤⑥ 收口记录。
+- **2026-10-16 TG-8 低风险子项收口（R2，两仓改动留工作区，待提交）**：D-6 操作日志取消占位行（单条 INSERT）、D-5 确认交互三范式成文；详见
+  [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
 - **2026-10-14 列表页操作列按内容收敛（xadmin-client；改动留工作区，待提交）**：起因=用户反馈
   「未授予某些权限时操作列只剩一个按钮，却仍占着为多个按钮预留的列宽，右侧大片空白」。实现
@@ -127,7 +169,12 @@
 | 2 | ~~F6 容器化测试验收终判~~ | **已完成（2026-10-09）：通过（达标）**——时长 ✅ + 9 个红 run 全部分诊收敛（零真库基建故障）；字面「连续 2 周绿」余窗顺延至 10-21 观察；处置方案（回退 sqlite）不适用 |
 | 3 | ~~T5 Renovate 验收~~ | **已完成（2026-10-16）**：修 `renovatebot/github-action@v41` → `v46.3.8`（该 action 无 major tag，此前 workflow 从未成功运行过），两仓 `gh workflow run renovate.yml` 均 success，且已实际开出 PR（`renovate/pypi-pyjwt-vulnerability`） |
 | 4 | T6 SLO 校准 | 数据成熟（满 3 个月）即校准回填 `docs/metrics.md` |
-| 5 | 5.0 端到端升级演练（4.2.5 实例 → 5.0） | 需可复现的 4.2.5 实例（测试服或旧镜像）；本机 Python 3.14 无法复原 4.2.5 依赖。**逻辑层已守护**：`tests/unit/system/test_upgrade_check.py` 覆盖 up-to-date / pending / orphan / `legacy-chain-reconcilable` / schema-drift（含真实库 `test_legacy_4x_record_is_reconcilable`）；**本地栈已验**：`upgrade_check`=up-to-date、`upgrade_ledger --apply` 幂等、`post_upgrade` 两次结果一致 |
+| 5 | ~~5.0 端到端升级演练（4.2.5 实例 → 5.0）~~ | **已完成（2026-10-17）**：虚拟机以 4.2.5 库跑九项验收全通过（导出 → 清库重建 → 回灌 → 计数/关联/附件/旧密码/幂等 → `upgrade_check`=up-to-date + health 四项 true）。**结论 = 切分前旧库原地升级不可行**，当时路径为清库重建 + 回灌（手册 `docs/ops/upgrade-4x-to-5x.md`）；方向已由 #8 改写。**同轮修复升级通道三处缺陷**（installer：镜像 tag 带 `v` → `manifest unknown`、备份开关缺 `${VAR:-}` 缺省、基线门禁误判）+ PG 大版本数据目录迁移。 |
+| 6 | ~~文档站死链与口径守护补强~~ | **已完成（2026-10-17）**：新增 `scripts/check_docs_site_links.py`（锚点级 + 跨仓路径引用校验，进 docs CI），抓出并修复 8 处锚点死链；升级门槛串纳入事实门禁（+3 条）。 |
+| 7 | ~~回灌链路端到端集成测试~~ | **已取消（2026-10-17，用户决策）**：回灌路径对二开损失面过大（旧迁移引用须人工改写、表文件不搬、审批/表单/数据集/日志/任务/PAT 不在搬运面内），转 #8；回灌保留为逃生舱。 |
+| 8 | **真·原地升级立项与分批实施** | **已立项（2026-10-17）**：决策 [ADR-094](../adr/ADR-094-inplace-upgrade-for-legacy-libraries.md) + 方案 [原地升级立项与方案-2026.10.md](原地升级立项与方案-2026.10.md)。**第一~三批已交付**：旧结构样本生成器 + 结构与引用与账本一键对齐（`legacy_align`）+ 差异报告 + 体检新判定 `legacy-inplace-capable` + 安装器接线（`--probe` 三态）+ 二开 app 迁移引用改写工具；`v4.1.3`/`v4.2.3`/`v4.2.5` 三代样本原地对齐全绿（实测数据见方案 §八）。**第四批（实机演练完成）**：真实 4.2.5 库升 5.0.1 跑通、数据零丢失（行数+哈希比对）；修复「容器无 git → common_monitor 未映射」与「有菜单无列（字段白名单 fail-closed）」两个真问题（后者改 post_upgrade 自动补齐+清缓存）。 |
+| 9 | ~~应用级种子拆分（五批次）~~ | **已交付（2026-10-17）**：种子按 app 落 `<app>/seeds/`（平台层保留 `loadjson/`），12 个 manifest 自声明依赖与归属；`load_init_json --list/--check/--apps` + `seed_split` + `dump_init_json --split-apps`；角色授权改声明式 grants 并集（破除 loaddata m2m 覆盖清零）；决策 [ADR-095](../adr/ADR-095-per-app-seed-layering.md)，方案与执行记录见 [应用级种子拆分方案-2026.10.md](应用级种子拆分方案-2026.10.md) / [执行计划](应用级种子拆分执行计划-2026.10.md) |
+| 10 | ~~前端框架一致性收敛（表单字段元数据化 + 弹窗全屏按钮体验缺口）~~ | **已完成（2026-10-18）**：调查、迁移与验证证据见 [方案](前端框架一致性调查与收敛方案-2026.10.md) §九。① ReDialog 全屏按钮默认渲染；② `check-handwritten-forms.mjs` 门禁 + 豁免登记进 CI；③ post / tag / login-policy / subscription / mcp / api-app / screen / approval-rule 八页迁至元数据表单（混合形态用字段渲染器或扩展字段）；④ 选型判定写入 component-handbook §六；⑤ 顺带修 `headerRenderer` DOM 泄漏、`time` 协议、`tag.color` 类型、MCP `pk` 只读、`formProps.rules` 整块覆盖；⑥ 最大化态强制显示还原按钮（`lay-tag/index.vue`，避免进入最大化后无可见出口）。数据集/报表因联动列维持豁免。验证：vitest 2312、后端 103 passed、E2E 双浏览器 60+（含 `tag-bar` 最大化还原 6 例） |
 
 > 2026-11 窗口两项主项（存量库升级通道、HNSW 向量定型实测）已于 2026-10-09 提前完成，无需再排。
 
@@ -242,7 +289,6 @@
 | print.ts 前端打印 | 零依赖，待有打印需求时引入 |
 | 二开脚手架复评 | 2026-10-09 现状更新：示例分发包 + 教程章节已交付（2027-02 窗口），复评条件收窄为「出现多人协作诉求」 |
 | 移动端填报 / 审批 | 触发条件：移动端访问占比超阈值（15%~20% 区间届时取值）或出现外勤 / 巡检 / 车间审批真实诉求；命中后最小切片 = 审批待办 + 一张 dform 表单提交的 H5 渲染 PoC |
-| ~~大屏画布（ADR-086 ~ ADR-090）~~ **五期均已交付（2026-10-12）** | 栅格画布之外新增「自由像素布局」模式（`layout_mode` + `free_layout` 双载荷、允许重叠、`ReResize` 承接八向缩放 + 参考线吸附、投屏按设计画幅等比缩放）；二期补编辑效率四项（zoom-to-fit 缩放编辑 + `Ctrl+滚轮` 指针锚点、多选与对齐分布、复制粘贴跨屏剪贴板、内置模板 + 我的模板）。三期补「团队模板（服务端 `ScreenTemplate`） + 模板 JSON 导入 + 旋转/入场动画/富文本 + 元素级网格吸附 + zoom 键盘档位 + 多选批量改属性 + 手柄屏幕尺寸恒定」。四期（[ADR-089](../adr/ADR-089-screen-canvas-boundary-followups.md)）收回动画时序（时长/延迟/循环）与「多元素批量对齐网格」，其余条目登记为触发制。五期（[ADR-090](../adr/ADR-090-screen-canvas-advanced-4.md)）交付进阶四项：富文本扩展（链接/列表/图片/表格 + 选区工具条）、旋转 OBB 几何（框选按旋转矩形 / 对齐与吸附按视觉盒）、视频与自定义 HTML 窗格、模板分组 + 版本回滚 + 跨设备云端剪贴板。落地记录见 `docs/adr/ADR-086-screen-free-canvas.md` ~ `ADR-090-screen-canvas-advanced-4.md` §落地记录；E2E 覆盖 `screen-designer` / `screen-free-canvas`（一期）/ `screen-free-canvas-2`（二期）/ `screen-canvas-toolkit`（三期）/ `screen-canvas-advanced`（五期：旋转几何 / 版本回滚 / 云端剪贴板） |
 
 > 2026-10-09 完成 / 核销两项：**ASGI 异步中间件链迁移**已于 2026-10-02 交付
 > （ADR-078，`33b941e1`：4 项双模化 + 3 项显式同步边界；本日收口复核 + 链能力守护 2 例）；

@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "app": "settings",
+  "depends": [
+    "system"
+  ],
+  "url_prefixes": [
+    "api/settings/"
+  ],
+  "config_keys": [
+    "WEB_SITE_CONFIG",
+    "WEB_SITE_URL"
+  ],
+  "files": [
+    {
+      "name": "menumeta.json",
+      "model": "system.menumeta",
+      "kind": "contract",
+      "order": 10
+    },
+    {
+      "name": "menu.json",
+      "model": "system.menu",
+      "kind": "contract",
+      "order": 20
+    },
+    {
+      "name": "systemconfig.json",
+      "model": "system.systemconfig",
+      "kind": "contract",
+      "order": 30
+    },
+    {
+      "name": "fieldpermission.json",
+      "model": "system.fieldpermission",
+      "kind": "contract",
+      "order": 50
+    },
+    {
+      "name": "modellabelfield.json",
+      "model": "system.modellabelfield",
+      "kind": "generated",
+      "order": 60
+    }
+  ],
+  "grants": "grants.json"
+}

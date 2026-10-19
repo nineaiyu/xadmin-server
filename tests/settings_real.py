@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-真环境测试专用配置（全真容器化测试迁移方案，docs/plans/全真容器化测试迁移方案-2026.10.md §3.1）。
+真环境测试专用配置（全真容器化测试迁移方案，docs/plans/archive/全真容器化测试迁移方案-2026.10.md §3.1）。
 
 真实 PostgreSQL 17 + Redis 8 容器全面替换 sqlite/FakeRedis：DATABASES / CACHES /
 CHANNEL_LAYERS 全部指向真实后端（生产同款 backend 与参数），celery 保持 eager +
@@ -15,7 +15,8 @@ tests/conftest.py 预检 fail-fast 并给出恢复指引。
 环境变量驱动（CI services 与本地 compose.test.yml 容器同构）：
 - DB_HOST/DB_PORT/DB_DATABASE/DB_USER/DB_PASSWORD —— PostgreSQL（settings_pg 已验证形态）
 - REDIS_HOST/REDIS_PORT/REDIS_PASSWORD            —— Redis（新增）
-- PYTEST_XDIST_WORKER —— xdist 每 worker 独立库 + Redis 隔离参数（见下）
+- PYTEST_XDIST_WORKER —— xdist 每 worker 独立 Redis 逻辑库/前缀；PG 测试库的
+  _gwN 后缀由 pytest-django 的 xdist 扩展统一追加（见下）
 
 Redis 的 xdist 隔离（方案 §3.2，本迁移核心风险点）：FakeRedis 是进程内的天然隔离，
 真 Redis 被全部 worker 共享，采用「db 编号 + 键前缀」双保险：
@@ -27,7 +28,8 @@ Redis 的 xdist 隔离（方案 §3.2，本迁移核心风险点）：FakeRedis 
   走 KEY_FUNCTION 覆盖而非 KEY_PREFIX；delete_pattern / keys 经 make_pattern /
   reverse_key 同源拼前缀，SCAN 命中范围与逻辑键回读天然自洽。**裸连接自管键不经
   前缀**（locker / pending / 限流等自管键名），跨 worker 唯一性依赖独库——pytest.ini
-  以 --maxprocesses=15 把 worker 数封顶在库容量内（db0 兜底保留），共库复用分支不发生；
+  以 --maxprocesses 把 worker 数封顶在 15（默认 8）的库容量内（db0 兜底保留），
+  共库复用分支不发生；
   conftest._clean_cache 只按前缀清理、永不 flushdb；
 - channel layer：共享 CHANNEL_LAYERS_CACHE_ID 逻辑库，按 worker 加 asgi 前缀隔离
   （channels_redis prefix 参数）；在线用户索引键 online_users_key 同源于 prefix，
@@ -48,8 +50,9 @@ _worker_num = int(_worker[2:]) if _worker.startswith("gw") else 0
 TEST_REDIS_KEY_PREFIX = f"t{_worker_num}"
 
 _pg_database = os.environ.get("DB_DATABASE", "xadmin_realtest")
-if _worker:
-    _pg_database = f"{_pg_database}_{_worker}"
+# 测试库的 _gwN 后缀由 pytest-django 的 django_db_modify_db_settings_xdist_suffix
+# 统一追加（test_<DB_DATABASE>_gwN）；这里再加一次会得到 test_..._gwN_gwN，
+# 既无必要，也让按库名做的并发防护失效。
 
 _real_config = Config()
 _real_config["SECRET_KEY"] = "test-only-secret-key-0123456789abcdef"

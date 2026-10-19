@@ -217,6 +217,9 @@ class TestBatchPush:
         assert len(pushes) == 1
         assert pushes[0][0] == [1, 2]
         assert pushes[0][1]["message_type"] == "notify_message"
+        # 推送载荷带正文格式，前端按格式生成纯文本预览（Markdown 不原样显示 **/#）
+        assert pushes[0][1]["message_format"]["value"] == "html"
+        assert isinstance(pushes[0][1]["message_format"]["label"], str)
 
     def test_push_notice_messages_skips_disabled_users(self, monkeypatch):
         msg = self._make_message()

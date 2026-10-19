@@ -120,7 +120,6 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             "is_active",
             "password",
             "dept",
-            "description",
             "last_login",
             "date_joined",
             "date_expired",
@@ -132,6 +131,9 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             "rules",
             "tags",
             "invite",
+            # 备注置于可写字段末尾：新增/编辑表单按 Meta.fields 顺序装配列，
+            # 长文本放最下方，避免夹在部门与权限字段之间打断填写动线
+            "description",
             "deleted_at",
         ]
         read_only_fields = ["pk", "deleted_at"] + list(set([x.name for x in UserInfo._meta.fields]) - set(fields))
@@ -282,12 +284,16 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
                         # 解密结果为空 = 密文认证失败（密钥不符/数据被篡改），同解密异常口径拒绝
                         raise ValidationError(PASSWORD_DECRYPT_FAILED_MESSAGE, code=PASSWORD_DECRYPT_FAILED_CODE)
                 else:
-                    # 明文模式（导入/E2E 等场景）：解密失败视为提交值本身是明文，按明文落库
+                    # 明文模式（导入/E2E 等场景）：解密失败视为提交值本身是明文，按明文落库。
+                    # AESCipherV2.decrypt 对认证失败/格式非法返回空串而不抛异常，空结果同样
+                    # 必须回退——否则明文会以空密码参与规则校验被拒（如 "E2E-Reset-2026!"
+                    # 解码后恰好走到空串分支，而非抛 Incorrect padding）。
                     try:
-                        plain_password = AESCipherV2(attrs.get("username")).decrypt(password)
+                        plain_password = AESCipherV2(attrs.get("username")).decrypt(password) or password
                     except Exception as e:
                         plain_password = password
-                        logger.warning(f"create user password decrypt failed:{e}. fallback to submitted plaintext")
+                        # 明文模式下解密失败是预期分支（导入/脚本/E2E），不按 warning 刷日志
+                        logger.debug(f"create user password decrypt failed:{e}. fallback to submitted plaintext")
                 if not check_password_rules(plain_password):
                     raise ValidationError(_("Password does not match security rules"))
                 if check_leak_password(plain_password):

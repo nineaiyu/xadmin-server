@@ -10,27 +10,48 @@
 """
 
 import json
-import os
+from pathlib import Path
 
 import pytest
-from django.conf import settings as dj_settings
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
 from identity.models import UserRole
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
 from system.models import DataDict, ModelLabelField
 from system.services.seed import _unique_checks, build_seed_fixtures, filter_conflicting_rows
+from system.services.seeding import NOTE_CONFLICT, NOTE_PRUNE, read_model_rows
 
 pytestmark = pytest.mark.django_db
 
-LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 EXPENSE_SEED_PK = "5eed0006-0000-4000-8000-000000000002"
 LEAVE_SEED_PK = "5eed0006-0000-4000-8000-000000000003"
+#: legacy 装配器按「一个模型一个文件」读单根目录，这里从分层种子还原该形态
+LEGACY_FILES = {
+    "approval.approvalflow": "approvalflow.json",
+    "approval.approvalflownode": "approvalflownode.json",
+    "approval.approvalflowversion": "approvalflowversion.json",
+}
+
+
+@pytest.fixture()
+def legacy_root(tmp_path):
+    root = tmp_path / "legacy"
+    root.mkdir()
+    for model_label, name in LEGACY_FILES.items():
+        rows = read_model_rows(model_label, include_sample=True)
+        (root / name).write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
+    return root
+
+
+#: 测试读取口径（分层后按模型聚合）
+READ_MODELS = {
+    "userrole.json": "identity.userrole",
+    "approvalflownode.json": "approval.approvalflownode",
+}
 
 
 def _read(name):
-    with open(os.path.join(LOADJSON_DIR, name), encoding="utf-8") as fp:
-        return json.load(fp)
+    return read_model_rows(READ_MODELS[name], include_sample=True)
 
 
 class TestFilterConflictingRows:
@@ -78,6 +99,8 @@ class TestFilterConflictingRows:
         assert filtered["approval.approvalflow"] == []
         assert len(notes) == 1
         assert "demo_expense" in notes[0] and "demo_expense" in notes[0]
+        # 真冲突必须标记为 conflict：命令层据此保持 WARNING 并计入「跳过」数
+        assert notes[0].kind == NOTE_CONFLICT
 
     def test_cascade_drops_referencing_rows(self):
         ApprovalFlow.objects.create(pk="cd81e9b1-f744-495d-b0ba-5d3b2273752a", code="demo_expense", name="库内对象")
@@ -111,6 +134,7 @@ class TestFilterConflictingRows:
         assert [row["pk"] for row in filtered["approval.approvalflow"]] == [LEAVE_SEED_PK]
         assert [row["pk"] for row in filtered["approval.approvalflownode"]] == ["node-b"]
         assert len(notes) == 2
+        assert {note.kind for note in notes} == {NOTE_CONFLICT}
 
     def test_m2m_reference_trimmed(self):
         role = _read("userrole.json")[0]
@@ -132,6 +156,11 @@ class TestFilterConflictingRows:
         assert filtered["identity.userrole"] == []
         assert filtered["audit.datamaskrule"][0]["fields"]["roles"] == []
         assert any("datamaskrule" in note for note in notes)
+        # 引用修剪（保留行内移除被跳过主键）与整行跳过是不同类别：
+        # 两者都必须可见，但修剪不计入「跳过行数」
+        prune_notes = [note for note in notes if "datamaskrule" in note]
+        assert [note.kind for note in prune_notes] == [NOTE_PRUNE]
+        assert [note.kind for note in notes if note not in prune_notes] == [NOTE_CONFLICT]
 
     def test_composite_unique_conflict_dropped(self):
         """组合唯一键 ``(flow, order)`` 被占用时同样跳过。
@@ -156,6 +185,7 @@ class TestFilterConflictingRows:
         assert filtered["approval.approvalflownode"] == []
         assert len(notes) == 1
         assert "flow=" in notes[0] and "order=1" in notes[0]
+        assert notes[0].kind == NOTE_CONFLICT
 
     def test_composite_unique_same_pk_kept(self):
         ApprovalFlow.objects.create(pk=LEAVE_SEED_PK, code="leave", name="请假审批")
@@ -226,33 +256,71 @@ class TestUniqueChecks:
         assert ("parent", "code") in {names for names, _ in _unique_checks(DataDict)}
 
     def test_unique_together_included(self):
-        """老式 ``unique_together`` 同样进入检查清单（不在 _meta.constraints 里，漏判必崩）。"""
-        assert ("name", "parent") in {names for names, _ in _unique_checks(ModelLabelField)}
+        """老式 ``unique_together`` 同样进入检查清单（不在 _meta.constraints 里，漏判必崩）。
+
+        字段标签树例外：ROLE / DATA 两棵树的模型根节点同名且 ``parent=NULL``，
+        唯一键必须补上 ``field_type``，否则两棵树互相判重并级联剔除整棵子树。
+        """
+        assert {names for names, _ in _unique_checks(ModelLabelField)} == {("field_type", "name", "parent")}
+
+    def test_modellabel_field_role_and_data_roots_are_independent(self):
+        """ROLE 与 DATA 根节点同名不冲突；同 field_type 的真重复仍按冲突跳过。"""
+        existing = ModelLabelField.objects.create(
+            pk="dbce2001-0000-4000-8000-000000000001",
+            name="identity.post",
+            label="Post",
+            field_type=ModelLabelField.FieldChoices.DATA,
+        )
+        role_row = {
+            "model": "system.modellabelfield",
+            "pk": "dbce2002-0000-4000-8000-000000000002",
+            "fields": {
+                "name": "identity.post",
+                "parent": None,
+                "label": "Post",
+                "field_type": ModelLabelField.FieldChoices.ROLE,
+            },
+        }
+        filtered, notes = filter_conflicting_rows({"system.modellabelfield": [role_row]})
+        assert len(filtered["system.modellabelfield"]) == 1
+        assert notes == []
+
+        duplicate_data_row = {
+            **role_row,
+            "pk": "dbce2003-0000-4000-8000-000000000003",
+            "fields": {**role_row["fields"], "field_type": ModelLabelField.FieldChoices.DATA},
+        }
+        filtered, notes = filter_conflicting_rows({"system.modellabelfield": [duplicate_data_row]})
+        assert filtered["system.modellabelfield"] == []
+        assert any(str(existing.pk) in str(note) for note in notes)
 
 
 class TestBuildSeedFixtures:
-    def test_clean_db_uses_original_files(self, tmp_path):
-        labels, notes, trimmed = build_seed_fixtures(LoadInitJsonCommand.model_names, LOADJSON_DIR, str(tmp_path))
+    def test_clean_db_uses_original_files(self, tmp_path, legacy_root):
+        labels, notes, trimmed = build_seed_fixtures(
+            LoadInitJsonCommand.model_names, str(legacy_root), str(tmp_path / "out")
+        )
         assert trimmed is False
         assert notes == []
-        # 无裁剪无冲突：直接用仓库里的种子文件（不产生临时文件）
-        assert all(label.startswith(LOADJSON_DIR) for label in labels)
-        assert not list(tmp_path.iterdir())
+        # 无裁剪无冲突：直接用原始种子文件（不产生临时文件）
+        assert all(label.startswith(str(legacy_root)) for label in labels)
+        assert not (tmp_path / "out").exists()
 
-    def test_conflict_trims_seed_and_cascades(self, tmp_path):
+    def test_conflict_trims_seed_and_cascades(self, tmp_path, legacy_root):
         ApprovalFlow.objects.create(pk="cd81e9b1-f744-495d-b0ba-5d3b2273752a", code="demo_expense", name="库内对象")
-        labels, notes, trimmed = build_seed_fixtures(LoadInitJsonCommand.model_names, LOADJSON_DIR, str(tmp_path))
+        out = tmp_path / "out"
+        labels, notes, trimmed = build_seed_fixtures(LoadInitJsonCommand.model_names, str(legacy_root), str(out))
 
         assert trimmed is True
         assert notes
-        assert all(label.startswith(str(tmp_path)) for label in labels)
-        flows = json.load(open(tmp_path / "approvalflow.json", encoding="utf-8"))
+        assert all(label.startswith(str(out)) for label in labels)
+        flows = json.load(open(out / "approvalflow.json", encoding="utf-8"))
         codes = {row["fields"]["code"] for row in flows}
         assert "demo_expense" not in codes
         assert {"leave", "demo_leave"} <= codes
 
-        nodes = json.load(open(tmp_path / "approvalflownode.json", encoding="utf-8"))
+        nodes = json.load(open(out / "approvalflownode.json", encoding="utf-8"))
         original_nodes = _read("approvalflownode.json")
         assert 0 < len(nodes) < len(original_nodes)
         assert all(row["fields"]["flow"] != EXPENSE_SEED_PK for row in nodes)
-        assert "approvalflowversion" in {os.path.basename(label).removesuffix(".json") for label in labels}
+        assert "approvalflowversion" in {Path(label).stem for label in labels}

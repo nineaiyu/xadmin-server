@@ -280,17 +280,20 @@ class ChatCompletionsClient:
             "reasoning": self.last_reasoning,
         }
 
-    def chat_stream(self, messages: list[Any], **overrides: Any) -> Iterator[dict[str, str]]:
+    def chat_stream(self, messages: list[Any], **overrides: Any) -> Iterator[dict[str, Any]]:
         """流式多轮：产出结构化增量事件（OpenAI `stream=true` SSE 兼容）。
 
         产出 ``{"type": "reasoning"|"content", "text": <增量>}``：
         - ``reasoning``：思考型模型的思考过程增量（`delta.reasoning_content`），
           供前端「思考过程」面板实时展示；
-        - ``content``：正式回答增量（`delta.content`）。
+        - ``content``：正式回答增量（`delta.content`）；
+        - ``tool_calls``：带 ``tools`` 调用时，在流结束后一次性产出的完整工具调用
+          列表（``[{id, name, arguments}]``；片段按 ``index`` 累积，arguments 为
+          JSON 字符串）。工具调用本身不是散文，不逐字上屏。
 
         与 ``chat()`` 同源凭据与错误口径：连接/协议/空回答失败抛 AiSdkError；
         已经产出过增量后再失败（流中断）同样抛错，由调用方按部分回答处理；
-        「只有思考、没有回答」不算空回答（已有 reasoning 增量），由调用方决定展示口径。
+        「只有思考/工具调用、没有正文」不算空回答。
         """
         if not (self.base_url and self.api_key and self.model):
             raise AiSdkError("AI client is not configured (base_url/api_key/model)")
@@ -303,6 +306,8 @@ class ChatCompletionsClient:
 
         produced = False
         produced_reasoning = False
+        # tool_calls 分片累积：index → {id, function: {name, arguments}}
+        tool_call_slots: dict[int, dict[str, Any]] = {}
         try:
             # 不依赖 requests 的 decode_unicode：SSE 响应头常见 `text/event-stream`
             # 不带 charset，requests 会按 text/* 把编码推断成 ISO-8859-1，导致中文
@@ -324,6 +329,9 @@ class ChatCompletionsClient:
                     continue
                 choices = chunk.get("choices") or []
                 delta = ((choices[0] or {}).get("delta") or {}) if choices else {}
+                usage = chunk.get("usage")
+                if isinstance(usage, dict):
+                    self.last_usage = usage
                 reasoning = delta.get("reasoning_content")
                 if reasoning:
                     produced_reasoning = True
@@ -332,11 +340,37 @@ class ChatCompletionsClient:
                 if content:
                     produced = True
                     yield {"type": "content", "text": str(content)}
+                for call_delta in delta.get("tool_calls") or []:
+                    if not isinstance(call_delta, dict):
+                        continue
+                    index = int(call_delta.get("index") or 0)
+                    slot = tool_call_slots.setdefault(index, {"id": "", "function": {"name": "", "arguments": ""}})
+                    if call_delta.get("id"):
+                        slot["id"] = str(call_delta["id"])
+                    function = call_delta.get("function") or {}
+                    if isinstance(function, dict):
+                        # name 通常只出现在首片；arguments 会跨多片拼接
+                        if function.get("name") and not slot["function"]["name"]:
+                            slot["function"]["name"] = str(function["name"])
+                        arguments = function.get("arguments")
+                        if arguments:
+                            slot["function"]["arguments"] += str(arguments)
         except AiSdkError:
             raise
         except Exception as exc:
             logger.warning("ai chat stream interrupted: %s", exc)
             raise AiSdkError("The AI provider stream was interrupted") from exc
-        if not produced and not produced_reasoning:
+        raw_tool_calls = [
+            {
+                "id": slot["id"],
+                "function": {"name": slot["function"]["name"], "arguments": slot["function"]["arguments"]},
+            }
+            for __, slot in sorted(tool_call_slots.items())
+        ]
+        tool_calls = self._normalize_tool_calls(raw_tool_calls)
+        if tool_calls:
+            self.last_tool_calls = tool_calls
+            yield {"type": "tool_calls", "tool_calls": tool_calls}
+        if not produced and not produced_reasoning and not tool_calls:
             logger.warning("ai chat stream empty answer")
             raise AiSdkError("The AI provider returned an empty answer")

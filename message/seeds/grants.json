@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "roles": {
+    "admin": [
+      "Chat",
+      "ask:ChatRoom",
+      "create:ChatRoom",
+      "file:ChatMessage",
+      "list:ChatContact",
+      "list:ChatMessage",
+      "list:ChatRoom",
+      "recall:ChatMessage",
+      "stream:ChatRoom",
+      "upload:ChatMessage"
+    ],
+    "default": [
+      "Chat",
+      "ask:ChatRoom",
+      "create:ChatRoom",
+      "file:ChatMessage",
+      "list:ChatContact",
+      "list:ChatMessage",
+      "list:ChatRoom",
+      "recall:ChatMessage",
+      "stream:ChatRoom",
+      "upload:ChatMessage"
+    ],
+    "demo": [
+      "Chat",
+      "ask:ChatRoom",
+      "create:ChatRoom",
+      "file:ChatMessage",
+      "list:ChatContact",
+      "list:ChatMessage",
+      "list:ChatRoom",
+      "recall:ChatMessage",
+      "stream:ChatRoom",
+      "upload:ChatMessage"
+    ],
+    "test": [
+      "Chat",
+      "ask:ChatRoom",
+      "create:ChatRoom",
+      "file:ChatMessage",
+      "list:ChatContact",
+      "list:ChatMessage",
+      "list:ChatRoom",
+      "recall:ChatMessage",
+      "stream:ChatRoom",
+      "upload:ChatMessage"
+    ]
+  }
+}

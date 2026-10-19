@@ -11,7 +11,7 @@
 
     python manage.py sync_menu_permissions --dry-run        # 只报告，不写库
     python manage.py sync_menu_permissions                  # 字段树 + 权限点修复
-    python manage.py sync_menu_permissions --update-seed    # 同时回写 loadjson 种子
+    python manage.py sync_menu_permissions --update-seed    # 同时按应用归属回写各层种子
 """
 
 from pathlib import Path
@@ -24,6 +24,7 @@ from identity.models import UserInfo
 from system.models import FieldPermission, Menu, MenuMeta, ModelLabelField
 from system.services import permission_sync as sync
 from system.services.modelfield import sync_model_field
+from system.services.seeding import PLATFORM, discover, read_model_rows, row_owners, write_layer_model
 
 DETAIL_LIMIT = 100
 
@@ -40,11 +41,15 @@ class Command(BaseCommand):
             action="store_true",
             help="新建权限点自动授予「已拥有同模块权限点与父菜单」的角色（默认不授予）",
         )
-        parser.add_argument("--update-seed", action="store_true", help="把变更合并回 loadjson 种子文件")
+        parser.add_argument(
+            "--update-seed",
+            action="store_true",
+            help="把变更按应用归属回写各层种子（平台层 loadjson/ + <app>/seeds/）",
+        )
         parser.add_argument(
             "--fix-field-permissions",
             action="store_true",
-            help="为「已获模型权限点但无字段白名单」的角色组合补齐全字段白名单（只补缺口）",
+            help="补齐字段白名单（含新增字段；只增不减，不改写已有裁剪）",
         )
         parser.add_argument("--default-parent", default="", help="无法自动归属时的兜底父菜单 name（默认报告并跳过）")
 
@@ -60,10 +65,12 @@ class Command(BaseCommand):
             # 与权限点扫描解耦的独立入口：迁移/升级后只想补字段白名单时免全量扫描。
             # 该入口不做绑定校正，判定与取值基于库内现有绑定（适用已校正过绑定的库）
             self._report_field_permission_gaps()
-            if not dry_run:
+            if dry_run:
+                self._report_pending_field_nodes()
+            else:
                 self._fill_field_permissions()
                 if options["update_seed"]:
-                    self._update_field_permission_seed()
+                    self._update_field_permission_seed(discover().manifests)
         if dry_run:
             self.stdout.write(self.style.WARNING("dry-run：未写入任何数据"))
 
@@ -153,6 +160,8 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"  ~ {user.username} | {rule_name}"))
 
         if dry_run:
+            if options["fix_field_permissions"]:
+                self._report_pending_field_nodes()
             return
 
         created, conflicts, method_fixed = sync.apply_plans(plans, user)
@@ -203,8 +212,23 @@ class Command(BaseCommand):
                 )
 
     def _fill_field_permissions(self) -> None:
-        filled = sync.fill_field_permissions()
-        self.stdout.write(f"[字段权限] 已补齐 {len(filled)} 个（角色, 权限点）组合的全字段白名单（已有有效配置未改写）")
+        completed = sync.complete_field_permissions()
+        self.stdout.write(
+            f"[字段权限] 已补齐 {len(completed)} 个（角色, 权限点）组合的字段白名单（只增不减，含新增字段）"
+        )
+
+    def _report_pending_field_nodes(self) -> None:
+        """dry-run：列出待补的（角色, 权限点）与缺失字段；基于当前库内字段树。"""
+        pending = sync.complete_field_permissions(dry_run=True)
+        if not pending:
+            self.stdout.write(self.style.SUCCESS("[字段权限] 字段白名单完整，无需补齐"))
+            return
+        self.stdout.write(self.style.WARNING(f"[字段权限] 待补齐 {len(pending)} 个（角色, 权限点）组合："))
+        for role, menu, fields in pending[:DETAIL_LIMIT]:
+            names = "、".join(field.name for field in fields)
+            self.stdout.write(f"  ~ {role.name} | {menu.name} | 缺：{names}")
+        if len(pending) > DETAIL_LIMIT:
+            self.stdout.write(f"  ... 其余 {len(pending) - DETAIL_LIMIT} 条略")
 
     # ------------------------------------------------------------------ 种子
 
@@ -215,7 +239,18 @@ class Command(BaseCommand):
         method_fixed: Any = None,
         update_field_permissions: Any = False,
     ) -> None:
-        root = Path(settings.PROJECT_DIR) / "loadjson"
+        """把变更按**应用归属**回写各层种子（平台层 ``loadjson/`` + ``<app>/seeds/``）。
+
+        归属与 ``seed_split`` / ``dump_init_json --split-apps`` 同源（``row_owners``），
+        因此写完不需要再跑一次 ``seed_split``；同一层的规范文件名由
+        ``write_layer_model`` 统一（并把遗留的按模型拆分文件收敛掉）。
+        """
+
+        manifests = discover().manifests
+        seed_menu_rows = read_model_rows("system.menu")
+        seed_meta_rows = read_model_rows("system.menumeta")
+        seed_pks = {str(row["pk"]) for row in seed_menu_rows}
+
         menus = {
             menu.pk: menu
             for menu in [*created_menus, *fixed_menus, *(method_fixed or [])]
@@ -223,8 +258,7 @@ class Command(BaseCommand):
         }
         # 库内新增但种子缺失的权限点一并补写（多次执行间也能收敛，如先执行修复再补种子）。
         # 限定「父菜单也在种子中」：父菜单不落种子 = 运行时模块自建（演示/插件等，如
-        # demo book 的 6eed 段权限点），其权限点由模块自身的种子命令维护，不进 loadjson。
-        seed_pks = sync.seed_entry_pks(root / "menu.json")
+        # demo book 的 6eed 段权限点），其权限点由模块自身的种子命令维护，不进种子。
         for menu in Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, deleted_at__isnull=True).exclude(
             pk__in=seed_pks
         ):
@@ -233,38 +267,64 @@ class Command(BaseCommand):
             if menu.parent_id and str(menu.parent_id) in seed_pks:
                 menus.setdefault(menu.pk, menu)
         if menus:
-            entries = sync.dump_entries(Menu, list(menus.values()))
+            menu_entries = sync.dump_entries(Menu, list(menus.values()))
             meta_entries = sync.dump_entries(MenuMeta, [menu.meta for menu in menus.values()])
-            self.stdout.write(f"[种子] menu.json {sync.merge_seed_file(root / 'menu.json', entries)}")
-            self.stdout.write(f"[种子] menumeta.json {sync.merge_seed_file(root / 'menumeta.json', meta_entries)}")
+            owners = row_owners(
+                {
+                    "system.menu": _merged_rows(seed_menu_rows, menu_entries),
+                    "system.menumeta": _merged_rows(seed_meta_rows, meta_entries),
+                },
+                manifests,
+            )
+            self._write_seed_layers(owners["system.menu"], "system.menu", menu_entries, manifests)
+            self._write_seed_layers(owners["system.menumeta"], "system.menumeta", meta_entries, manifests)
 
         field_entries = sync.dump_entries(
             ModelLabelField, ModelLabelField.objects.all(), exclude_fields=("updated_time",)
         )
-        self.stdout.write(
-            f"[种子] modellabelfield.json {sync.merge_seed_file(root / 'modellabelfield.json', field_entries)}"
-        )
+        field_owners = row_owners(
+            {"system.modellabelfield": _merged_rows(read_model_rows("system.modellabelfield"), field_entries)},
+            manifests,
+        )["system.modellabelfield"]
+        self._write_seed_layers(field_owners, "system.modellabelfield", field_entries, manifests)
 
         if update_field_permissions:
-            self._update_field_permission_seed()
+            self._update_field_permission_seed(manifests)
 
-    def _update_field_permission_seed(self) -> None:
-        """字段权限按「种子内角色 × 种子内权限点」整角色回写。
+    def _write_seed_layers(
+        self,
+        owners: dict[str, str],
+        model: str,
+        entries: list[dict[str, Any]],
+        manifests: dict[str, Any],
+    ) -> None:
+        """按归属把条目分发到各层文件，并登记清单（``merge=True`` 保留同层其它行）。"""
+
+        base = Path(settings.PROJECT_DIR)
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for entry in entries:
+            app = owners.get(str(entry["pk"]), PLATFORM)
+            groups.setdefault(app, []).append(entry)
+        for app, rows in sorted(groups.items()):
+            path = write_layer_model(base, app, model, rows, manifests=manifests, merge=True)
+            label = "平台层" if app == PLATFORM else app
+            self.stdout.write(f"[种子] {label} {path.relative_to(base)}（新增/更新 {len(rows)} 行）")
+
+    def _update_field_permission_seed(self, manifests: dict[str, Any]) -> None:
+        """字段权限按「种子内角色 × 种子内权限点」整角色回写（跟随权限点所属应用）。
 
         不依赖本次是否产生补齐（补齐结果必须落盘，否则下次 load_init_json 用旧
         白名单覆盖回缺口）。代码兜底的内置角色（SystemAdmin 等）不在 userrole.json
-        内，不回写；运行时模块自建的权限点（demo/插件）不在 menu.json 内，
+        内，不回写；运行时模块自建的权限点（demo/插件）不在菜单种子里，
         其白名单由模块自身的种子命令维护。
         """
         from identity.services import UserRole
 
-        root = Path(settings.PROJECT_DIR) / "loadjson"
-        seed_role_pks = sync.seed_entry_pks(root / "userrole.json")
-        # 运行时模块权限点即使误入 menu.json 种子也不回写白名单（模块自身命令维护）
+        seed_role_pks = {row["pk"] for row in read_model_rows("identity.userrole")}
+        menu_rows = read_model_rows("system.menu")
+        # 运行时模块权限点即使误入种子也不回写白名单（模块自身命令维护）
         seed_menu_pks = {
-            pk
-            for pk in sync.seed_entry_pks(root / "menu.json")
-            if not str(pk).startswith(sync.RUNTIME_PERMISSION_PREFIXES)
+            str(row["pk"]) for row in menu_rows if not str(row["pk"]).startswith(sync.RUNTIME_PERMISSION_PREFIXES)
         }
         seeded_roles = UserRole.objects.filter(pk__in=seed_role_pks)
         fp_entries = sync.dump_entries(
@@ -272,6 +332,20 @@ class Command(BaseCommand):
             FieldPermission.objects.filter(role__in=seeded_roles, menu_id__in=seed_menu_pks),
             exclude_fields=("created_time", "updated_time"),
         )
-        self.stdout.write(
-            f"[种子] fieldpermission.json {sync.merge_seed_file(root / 'fieldpermission.json', fp_entries)}"
-        )
+        owners = row_owners(
+            {
+                "system.menu": menu_rows,
+                "system.fieldpermission": _merged_rows(read_model_rows("system.fieldpermission"), fp_entries),
+            },
+            manifests,
+        )["system.fieldpermission"]
+        self._write_seed_layers(owners, "system.fieldpermission", fp_entries, manifests)
+
+
+def _merged_rows(seed_rows: list[Any], entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """种子行与本次变更按主键合并（本次变更覆盖同名主键，用于归属计算）。"""
+
+    merged: dict[str, dict[str, Any]] = {str(row["pk"]): row for row in seed_rows}
+    for entry in entries:
+        merged[str(entry["pk"])] = entry
+    return list(merged.values())

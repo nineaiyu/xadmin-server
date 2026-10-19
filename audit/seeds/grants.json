@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "roles": {
+    "admin": [
+      "SystemOperationLog",
+      "SystemUserLoginLog",
+      "exportData:SystemOperationLog",
+      "exportData:SystemUserLoginLog",
+      "list:SystemOperationLog",
+      "list:SystemUserLoginLog",
+      "list:UserLoginLog",
+      "logout:SystemUserLoginLog",
+      "retrieve:SystemOperationLog",
+      "retrieve:SystemUserLoginLog"
+    ],
+    "default": [
+      "list:UserLoginLog"
+    ],
+    "demo": [
+      "SystemOperationLog",
+      "SystemUserLoginLog",
+      "exportData:SystemOperationLog",
+      "exportData:SystemUserLoginLog",
+      "list:SystemOperationLog",
+      "list:SystemUserLoginLog",
+      "list:UserLoginLog",
+      "logout:SystemUserLoginLog",
+      "retrieve:SystemOperationLog",
+      "retrieve:SystemUserLoginLog"
+    ],
+    "test": [
+      "SystemOperationLog",
+      "SystemUserLoginLog",
+      "exportData:SystemOperationLog",
+      "exportData:SystemUserLoginLog",
+      "list:SystemOperationLog",
+      "list:SystemUserLoginLog",
+      "list:UserLoginLog",
+      "retrieve:SystemOperationLog",
+      "retrieve:SystemUserLoginLog"
+    ]
+  }
+}

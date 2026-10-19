@@ -1,0 +1,70 @@
+[
+ {
+  "model": "system.systemconfig",
+  "pk": "e6a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b01",
+  "fields": {
+   "created_time": "2026-09-09T00:00:00Z",
+   "updated_time": "2026-09-09T00:00:00Z",
+   "description": "错误操作日志额外保留天数（0 = 跟随全量保留期）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 365,
+   "is_active": true,
+   "access": false,
+   "key": "OPERATION_LOG_ERROR_RETENTION_DAYS",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b2f",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00Z",
+   "updated_time": "2026-09-18T00:00:00Z",
+   "description": "操作日志大字段（请求体/响应/变更 diff）截断上限（字符，0 = 不落大字段内容）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 4096,
+   "is_active": true,
+   "access": false,
+   "key": "OPERATION_LOG_FIELD_MAX",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b04",
+  "fields": {
+   "created_time": "2026-09-09T00:00:00Z",
+   "updated_time": "2026-09-09T00:00:00Z",
+   "description": "操作日志全量保留天数（超过由清理任务分批删除）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 180,
+   "is_active": true,
+   "access": false,
+   "key": "OPERATION_LOG_RETENTION_DAYS",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "7b0c0000-0000-4000-8000-000000000001",
+  "fields": {
+   "created_time": "2026-09-09T00:00:00Z",
+   "updated_time": "2026-09-09T00:00:00Z",
+   "description": "登录日志保留天数（冷归档自动面：归档水位驱动清理；0 = 不自动清理）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 365,
+   "is_active": true,
+   "access": false,
+   "key": "LOGIN_LOG_RETENTION_DAYS",
+   "inherit": false
+  }
+ }
+]

@@ -1,0 +1,376 @@
+[
+ {
+  "model": "system.systemconfig",
+  "pk": "0c2be308-7fce-4bf1-ad72-1d55f3262345",
+  "fields": {
+   "created_time": "2024-01-08T09:40:40.434Z",
+   "updated_time": "2024-09-05T07:20:58.507Z",
+   "description": "图片上传大小，默认为500kb",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 524288,
+   "is_active": true,
+   "access": false,
+   "key": "PICTURE_UPLOAD_SIZE",
+   "inherit": true
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "79f49339-bd81-42c1-95ca-a7032f540d57",
+  "fields": {
+   "created_time": "2024-01-08T09:34:10.182Z",
+   "updated_time": "2024-09-05T07:21:04.140Z",
+   "description": "文件上传大小限制,默认10兆",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 10485760,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_UPLOAD_SIZE",
+   "inherit": true
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b15",
+  "fields": {
+   "created_time": "2026-09-10T00:00:00Z",
+   "updated_time": "2026-09-10T00:00:00Z",
+   "description": "个人文件存储配额（MB，按上传人聚合校验；0 = 不限）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 0,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_STORAGE_QUOTA_MB",
+   "inherit": true
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b16",
+  "fields": {
+   "created_time": "2026-09-10T00:00:00Z",
+   "updated_time": "2026-09-10T00:00:00Z",
+   "description": "个人上传文件数量上限（按上传人计数校验；0 = 不限）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 0,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_UPLOAD_COUNT_LIMIT",
+   "inherit": true
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b17",
+  "fields": {
+   "created_time": "2026-09-10T00:00:00Z",
+   "updated_time": "2026-09-10T00:00:00Z",
+   "description": "正式上传文件保留天数（0 = 不清理）：仅清理非临时、无业务引用的历史文件；物理文件删除走磁盘引用守护",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 180,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_KEEP_DAYS",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b19",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "文本预览读取上限（字节）：超出即截断并提示下载查看，避免大文件整份读进内存",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 262144,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_PREVIEW_TEXT_MAX_BYTES",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1a",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "预览缩略图宽度（像素）：列表行内缩略图，按原图比例等比缩放",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 240,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_PREVIEW_THUMB_WIDTH",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1b",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "预览大图宽度（像素）：抽屉内大图，原图更小时不放大",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 1280,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_PREVIEW_IMAGE_WIDTH",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1c",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "预览缓存保留天数：缩略图等派生产物的缓存保留期，过期删除后按需重建",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 7,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_PREVIEW_CACHE_KEEP_DAYS",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "7b0b0000-0000-4000-8000-000000000001",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "文件存储后端（local=本地磁盘 / s3=对象存储，声明式可插拔；s3 需安装可选依赖 django-storages+boto3）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": "local",
+   "is_active": true,
+   "access": false,
+   "key": "FILE_STORAGE_BACKEND",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "7b0b0000-0000-4000-8000-000000000002",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "S3 兼容对象存储端点（如 https://minio.example.com；AWS 可留空用区域默认端点）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": "",
+   "is_active": true,
+   "access": false,
+   "key": "FILE_S3_ENDPOINT",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "7b0b0000-0000-4000-8000-000000000003",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "对象存储桶名（backend=s3 时必填，缺省回退本地）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": "",
+   "is_active": true,
+   "access": false,
+   "key": "FILE_S3_BUCKET",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "7b0b0000-0000-4000-8000-000000000004",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "对象存储 access key（敏感值，落库经 signer 加密）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": "",
+   "is_active": true,
+   "access": false,
+   "key": "FILE_S3_ACCESS_KEY",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "7b0b0000-0000-4000-8000-000000000005",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "对象存储 secret key（敏感值，落库经 signer 加密）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": "",
+   "is_active": true,
+   "access": false,
+   "key": "FILE_S3_SECRET_KEY",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "7b0b0000-0000-4000-8000-000000000006",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "对象存储区域（默认空 = 由 SDK / 端点决定）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": "",
+   "is_active": true,
+   "access": false,
+   "key": "FILE_S3_REGION",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "7b0b0000-0000-4000-8000-000000000007",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "对象存储访问域名（CDN / 公开桶；非空时文件 URL 不签名）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": "",
+   "is_active": true,
+   "access": false,
+   "key": "FILE_S3_CUSTOM_DOMAIN",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "7b0b0000-0000-4000-8000-000000000008",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "S3 寻址风格（path / virtual；空 = 由 SDK 决定，MinIO 常需 path）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": "",
+   "is_active": true,
+   "access": false,
+   "key": "FILE_S3_ADDRESSING_STYLE",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b20",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "Office 在线预览开关：关闭或未安装 LibreOffice 时按「不支持预览」降级",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": true,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_OFFICE_PREVIEW_ENABLED",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b2e",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "Office 预览转换大小上限（字节，默认 20MB）：超过不转换（保护转换进程）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 20971520,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_OFFICE_MAX_BYTES",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b21",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "LibreOffice 单次转换超时（秒，默认 60）：超时杀进程并降级为不可预览",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 60,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_OFFICE_CONVERT_TIMEOUT",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b22",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "请求侧等待 Office 转换产物的窗口（秒，默认 8）：未等到返回 1006 由前端重试",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": 8,
+   "is_active": true,
+   "access": false,
+   "key": "FILE_OFFICE_WAIT_SECONDS",
+   "inherit": false
+  }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b23",
+  "fields": {
+   "created_time": "2026-09-11T00:00:00Z",
+   "updated_time": "2026-09-11T00:00:00Z",
+   "description": "LibreOffice 可执行文件路径（默认空 = 自动探测 PATH 与常见安装路径）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": "",
+   "is_active": true,
+   "access": false,
+   "key": "FILE_OFFICE_SOFFICE_BIN",
+   "inherit": false
+  }
+ }
+]

@@ -205,4 +205,27 @@ FACTS = [
         "pattern": r"pnpm ≥ (\d+)",
         "source": "client_engine:pnpm",
     },
+    # —— 跨仓：安装器仓库（xadmin-installer）的升级基线 ——
+    # 事实源是安装器真正执行的常量（scripts/7_upgrade.sh 的 required_version），
+    # 文档若写了别的版本号，用户按文档升级会在第一步被拦下（或误以为可原地升级）。
+    {
+        "doc": "guide/upgrade-installer.md",
+        "external": True,
+        "label": "安装器升级页版本门槛",
+        "pattern": r"当前版本需 ≥ `v(\d+\.\d+\.\d+)`",
+        "source": "installer:required_version",
+    },
+    {
+        "doc": "problem/installer.md",
+        "external": True,
+        "label": "安装器 FAQ 版本门槛",
+        "pattern": r"版本门槛为 `v(\d+\.\d+\.\d+)`",
+        "source": "installer:required_version",
+    },
+    {
+        "doc": "docs/ops/upgrade-stock.md",
+        "label": "存量升级基线（verify_upgrade_version）",
+        "pattern": r"要求当前版本 ≥ `v(\d+\.\d+\.\d+)`",
+        "source": "installer:required_version",
+    },
 ]

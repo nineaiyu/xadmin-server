@@ -69,6 +69,35 @@
 > （保留亦不影响，其原为停用状态）；③ 可选新配置 `MEDIA_X_ACCEL_PREFIX`（媒体零拷贝直出）
 > 与 `OUTBOUND_ALLOWED_HOSTS`（出站白名单，内网 Webhook 接收端必配）。
 
+> **PostgreSQL 大版本（16 → 17，5.0 起）**：4.x 的 PG 数据目录由 `postgres:16.8` 初始化，5.0 起
+> 镜像为 `pgvector:pg17`（知识库向量检索需要 vector 扩展）——**大版本的数据目录不兼容**：直接换
+> 镜像启动会得到 `FATAL: database files are incompatible with server` 并循环重启，server / worker
+> 因依赖 PG 健康也一起起不来。处置（数据量小时分钟级）：
+>
+> ```bash
+> # 1) 用旧镜像导出（数据目录仍挂在原路径）；容器角色由 compose 的 POSTGRES_USER 决定
+> docker run --rm -v "${VOLUME_DIR}/postgresql/data:/var/lib/postgresql/data" \
+>   registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:16.8 \
+>   sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > /tmp/xadmin-pg16.dump
+>
+> # 2) 归档旧目录，让 pg17 初始化新目录（空目录即可，容器会自动 initdb）
+> mv "${VOLUME_DIR}/postgresql/data" "${VOLUME_DIR}/postgresql/data.pg16-$(date +%F)"
+> mkdir -p "${VOLUME_DIR}/postgresql/data"
+>
+> # 3) 起 pg17 并恢复
+> docker compose up -d postgresql && sleep 15
+> docker exec -i xadmin-postgresql \
+>   pg_restore -U <DB_USER> -d <DB_DATABASE> --no-owner --no-acl < /tmp/xadmin-pg16.dump
+> ```
+>
+> 安装器形态可直接在升级前手工执行同样三步（安装器的预检在 PG 起来之后才运行，PG 不通会卡在
+> 等待健康检查）。Redis 7.4 → 8.10 的数据目录兼容，无需处置；数据量很大时改用 `pg_upgrade`。
+
+> **四域切分之前的库（表名 `system_userinfo` 等）**：5.0 已按域划分表名（`identity_userinfo` /
+> `file_uploadfile` / `audit_operationlog`），这类库无法通过迁移收敛——`upgrade_check` 判定为
+> `legacy-chain-pre-split`，按 [upgrade-4x-to-5x.md](upgrade-4x-to-5x.md) 做「备份 → 清库重建 →
+> `legacy_export` / `legacy_import` 回灌 → 验收」。
+
 > **2026-10-14（5.0.0）升级注意**：① **迁移链合并**——各业务 app 的分散迁移收敛为初始迁移
 > （`0001_initial` / `0001_initial` + `0002_initial`），表结构与 4.2.5 逐行等价；
 > 4.2.5 起的库升级需先执行 `python manage.py upgrade_ledger --apply` 认领迁移记录

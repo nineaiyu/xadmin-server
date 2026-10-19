@@ -18,8 +18,10 @@
 ### 1. 我的库能直接 `migrate` 吗？
 
 - **口径**：以 `upgrade_check` 的结论为准——`up-to-date`（无需迁移）/ `needs-migrate`（标准升级）
-  可继续；`legacy-chain-reconcilable`（4.2.5 链的库）先跑 `upgrade_ledger --apply` 认领迁移账本
-  再 `migrate`（5.0 起）；`legacy-chain`（更早版本链路）/ `schema-drift`（表结构漂移）需人工介入
+  可继续；`legacy-chain-reconcilable`（四域切分后的 4.x 链）先跑 `upgrade_ledger --apply` 认领迁移
+  账本再 `migrate`（5.0 起）；`legacy-chain-pre-split`（四域切分前的库，表名 `system_userinfo` 等）
+  走清库重建 + `legacy_export` / `legacy_import` 回灌（步骤见 [ops/upgrade-4x-to-5x.md](../ops/upgrade-4x-to-5x.md)）；`legacy-chain`（其他旧链路）/ `schema-drift`
+  （表结构漂移）需人工介入
   （通常清库重建）。
 - **不要凭「库里有数据 / 之前升过」自行判断**：2026-10 经历过四轮清库重建式迁移整理，旧链库的迁移记录与当前代码链
   不再对应，直接 `migrate` 会造成状态错乱。
@@ -181,7 +183,8 @@ python manage.py upgrade_check          # 预期 up-to-date
 ### 20. `migrate` 报 `Table ... already exists` 或卡住
 
 - **报「已存在」**：库不是当前链（或上次迁移中途失败）。按 [ops/upgrade-stock.md](../ops/upgrade-stock.md) §七
-  的处置（`upgrade_check` 判定 `legacy-chain` / `schema-drift` → 清库重建；`needs-migrate` → 查并发迁移实例）。
+  的处置（`upgrade_check` 判定 `legacy-chain-pre-split` / `legacy-chain` / `schema-drift` → 清库重建，
+  切分前的库另加 `legacy_export` / `legacy_import` 回灌；`needs-migrate` → 查并发迁移实例）。
 - **卡住**：多为 PG 锁等待（`select * from pg_stat_activity where wait_event is not null`）；杀掉挂起的 DDL 会话后重试。
 - **相关**：[ops/runbook.md §13](../ops/runbook.md)。
 

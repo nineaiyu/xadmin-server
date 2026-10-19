@@ -97,7 +97,7 @@ python manage.py generate_crud crm.Customer             # 落盘
 | 路由 | `crm/urls.py` |
 | 应用配置 | `crm/config.py`（随 `XADMIN_APPS` 自动注入路由） |
 | 前端页面 | `xadmin-client/src/views/crm/customer/index.vue` + `utils/{api.ts,hook.tsx}` |
-| 菜单种子 | `loadjson/seed_crm_customer.json`（菜单 + 全部权限点，pk 由 uuid5 派生，可重复装载） |
+| 菜单种子 | `crm/seeds/menu.json` + `menumeta.json`（菜单 + 全部权限点，pk 由 uuid5 派生，按主键合并，可重复装载；同目录 `manifest.json` 自动登记，`load_init_json` 会装载） |
 
 补充参数：`--register-app`（自动写入 `XADMIN_APPS` 注册）、`--with-import-export`（加导入导出）、
 `--component CrmCustomer`（自定义组件名）、`--parent <菜单pk>`（挂到指定目录）、
@@ -119,7 +119,7 @@ python manage.py generate_crud crm.Customer --bootstrap --grant-to admin --force
 或按传统方式手工执行：
 
 ```bash
-python manage.py loaddata loadjson/seed_crm_customer.json
+python manage.py loaddata crm/seeds/menumeta.json crm/seeds/menu.json
 ```
 
 然后在管理后台完成三步（超管操作）：
@@ -141,7 +141,7 @@ python manage.py doctor
 
 ```bash
 python manage.py sync_menu_permissions          # 补齐（幂等）
-python manage.py sync_menu_permissions --update-seed   # 同时回写 loadjson 种子
+python manage.py sync_menu_permissions --update-seed   # 按应用归属回写各层种子（无需再跑 seed_split）
 ```
 
 前端 `pnpm dev` → 从菜单进入「客户」→ 验证新增 / 编辑 / 搜索 / 删除。
@@ -198,7 +198,7 @@ python manage.py sync_menu_permissions --update-seed   # 同时回写 loadjson �
 | 菜单里看不到新模块 | 种子未装载或未挂上级目录；菜单管理核对 |
 | 非超管 403 / 整页不渲染 | 权限点未授权（角色管理）或未入库（`sync_menu_permissions`）；先跑 `doctor` |
 | 列表有数据但单元格空白 | 序列化器 `table_fields` 未声明该字段（元数据驱动，前端没有本地列定义） |
-| 新增字段前端不显示 | 序列化器 `fields` / `table_fields` 未加；再跑 `sync_model_field` 同步字段权限树 |
+| 新增字段前端不显示 | 序列化器 `fields` / `table_fields` 未加；再跑 `sync_field_permissions --update-seed --app <app>` 同步字段树与角色白名单 |
 | 接口 404 | app 未注册进 `XADMIN_APPS`（`generate_crud --register-app` 可自动写入；改后需重启进程：`docker compose restart server celery-worker celery-heavy celery-beat`，或平时用 `bash ops/dev_up.sh --hot` 启动） |
 | 改代码不生效 | 挂载代码不热加载，重启对应容器即可 |
 

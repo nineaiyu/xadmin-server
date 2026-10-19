@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "app": "demo",
+  "depends": [
+    "system",
+    "identity"
+  ],
+  "url_prefixes": [
+    "api/demo/"
+  ],
+  "config_keys": [],
+  "files": [
+    {
+      "name": "modellabelfield.json",
+      "model": "system.modellabelfield",
+      "kind": "generated",
+      "order": 60
+    }
+  ]
+}

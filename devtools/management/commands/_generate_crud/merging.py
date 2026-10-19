@@ -3,6 +3,7 @@
 """代码生成器：落盘与共享文件幂等合并。"""
 
 import ast
+import json
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -64,6 +65,10 @@ class MergeMixin:
             return "写入"
         if item["mode"] == "block":
             return self._merge_block(path, item["key"], item["content"], force)
+        if item["mode"] == "seed_rows":
+            return self._merge_seed_rows(path, item["content"])
+        if item["mode"] == "seed_manifest":
+            return self._merge_seed_manifest(path, item)
         if item["mode"] == "urls":
             if not path.exists():
                 path.write_text(item["content"], encoding="utf-8")
@@ -93,6 +98,93 @@ class MergeMixin:
         # 文件尾部若为模块级定义，标记前需两个空行（ruff format 口径）
         path.write_text(text.rstrip("\n") + "\n\n\n" + block, encoding="utf-8")
         return "追加生成块"
+
+    def _merge_seed_rows(self, path: Path, content: str) -> str:
+        """按主键合并种子行（同一模型的多个生成产物写进同一个规范文件，幂等）。"""
+
+        rows = json.loads(content)
+        existing: list[dict[str, Any]] = []
+        if path.exists():
+            try:
+                loaded = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                loaded = []
+            if isinstance(loaded, list):
+                existing = loaded
+        index = {str(item.get("pk")): position for position, item in enumerate(existing)}
+        added = updated = 0
+        for row in rows:
+            key = str(row.get("pk"))
+            if key in index:
+                existing[index[key]] = row
+                updated += 1
+            else:
+                existing.append(row)
+                added += 1
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(existing, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        return f"写入种子（新增 {added} / 更新 {updated}）"
+
+    def _merge_seed_manifest(self, path: Path, item: dict[str, Any]) -> str:
+        """应用种子清单：登记本次生成的种子文件（按 name 去重，幂等）。
+
+        同一模型只保留一个文件：早期生成器写过 ``menu_<model>.json``，现在统一为
+        ``menu.json``。登记新文件时把同模型的旧条目移除，并将其行迁移进新文件
+        （否则旧条目继续生效会造成同层同主键两份）。
+        """
+
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+        else:
+            data = {
+                "version": 1,
+                "app": item["app"],
+                "depends": item.get("depends", ["system", "identity"]),
+                "url_prefixes": item.get("url_prefixes", []),
+                "files": [],
+            }
+        names = {entry["name"] for entry in item["files"]}
+        models = {entry["model"] for entry in item["files"]}
+        kept: list[dict[str, Any]] = []
+        for entry in data.get("files", []):
+            if entry.get("name") in names:
+                continue
+            if entry.get("model") in models:
+                self._absorb_seed_file(path.parent, entry, item["files"])
+                continue
+            kept.append(entry)
+        kept.extend(item["files"])
+        data["files"] = sorted(kept, key=lambda entry: (entry.get("order", 900), entry.get("name", "")))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return "写入清单"
+
+    @staticmethod
+    def _absorb_seed_file(seed_dir: Path, entry: dict[str, Any], targets: list[dict[str, Any]]) -> None:
+        """把旧条目文件里未出现在新规范文件中的行迁移过去，并清空旧文件。"""
+
+        model = entry.get("model")
+        name = entry.get("name")
+        if not isinstance(name, str) or not name:
+            return
+        target_name = next((item["name"] for item in targets if item.get("model") == model), None)
+        if not target_name or target_name == name:
+            return
+        source = seed_dir / name
+        target = seed_dir / target_name
+        if not source.is_file() or not target.is_file():
+            return
+        try:
+            source_rows = json.loads(source.read_text(encoding="utf-8"))
+            target_rows = json.loads(target.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return
+        if not isinstance(source_rows, list) or not isinstance(target_rows, list):
+            return
+        seen = {str(row.get("pk")) for row in target_rows}
+        merged = target_rows + [row for row in source_rows if str(row.get("pk")) not in seen]
+        target.write_text(json.dumps(merged, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        source.write_text("[]\n", encoding="utf-8")
 
     def _merge_urls(self, path: Path, item: dict[str, Any]) -> str:
         """urls.py：顶部补 import、urlpatterns 前插入 router.register 注册行（幂等）。"""

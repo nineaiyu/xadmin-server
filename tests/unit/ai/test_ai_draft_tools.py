@@ -11,6 +11,7 @@ import pytest
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 from ai.utils.ai_actions import ACTION_DASHBOARD_OVERVIEW, drafts_from_tool_calls
+from ai.utils.ai_draft_tools import draft_result_from_chat
 from ai.utils.ai_tool_catalog import SUMMARY_PARAM, openai_tools, tool_catalog
 
 pytestmark = pytest.mark.django_db
@@ -92,3 +93,65 @@ class TestDraftsFromToolCalls:
             drafts_from_tool_calls(superuser, [])
         with pytest.raises(DjangoValidationError):
             drafts_from_tool_calls(superuser, [{"id": "a", "name": "", "arguments": "{}"}])
+
+
+class TestDraftResultFromChat:
+    """原生调用结果分流：tool_calls → 草稿；仅 content → 澄清消息（与 prompt 轨道同构）。
+
+    提示词约定「不可执行时用追问回复」，模型照做时不能被当作解析失败——
+    这是「配置了 AI 反而提示模型没有返回可执行请求」的根因护栏。
+    """
+
+    def test_tool_calls_map_to_draft(self, superuser):
+        result = draft_result_from_chat(
+            {"content": "", "tool_calls": [_call(ACTION_DASHBOARD_OVERVIEW, {}, "看看总览")]},
+            superuser,
+        )
+        assert result["kind"] == "draft"
+        assert result["draft"]["action"] == ACTION_DASHBOARD_OVERVIEW
+
+    def test_content_only_returns_clarification_message(self, superuser):
+        result = draft_result_from_chat(
+            {"content": "创建请假申请缺少必填的请假原因（reason），请补充。", "tool_calls": []},
+            superuser,
+        )
+        assert result["kind"] == "message"
+        assert "请假原因" in result["message"]
+
+    def test_prompt_json_content_parsed_as_draft(self, superuser):
+        """混合模型：未发起工具调用，但按 prompt-JSON 契约输出动作 → 仍解析为草稿。"""
+        content = json.dumps(
+            {"action": ACTION_DASHBOARD_OVERVIEW, "params": {}, "summary": "看看总览"},
+            ensure_ascii=False,
+        )
+        result = draft_result_from_chat({"content": content, "tool_calls": []}, superuser)
+        assert result["kind"] == "draft"
+        assert result["draft"]["action"] == ACTION_DASHBOARD_OVERVIEW
+
+    def test_prompt_json_message_content_parsed_as_message(self, superuser):
+        content = json.dumps({"message": "请补充请假原因"}, ensure_ascii=False)
+        result = draft_result_from_chat({"content": content, "tool_calls": []}, superuser)
+        assert result["kind"] == "message"
+        assert result["message"] == "请补充请假原因"
+
+    def test_non_contract_json_falls_back_to_message(self, superuser):
+        result = draft_result_from_chat({"content": json.dumps({"foo": "bar"}), "tool_calls": []}, superuser)
+        assert result["kind"] == "message"
+        assert "foo" in result["message"]
+
+    def test_contract_json_with_unknown_action_raises(self, superuser):
+        """契约内 JSON 的非法动作按可读校验错误上抛（不伪装成普通气泡）。"""
+        content = json.dumps({"action": "no.such.action", "params": {}})
+        with pytest.raises(DjangoValidationError):
+            draft_result_from_chat({"content": content, "tool_calls": []}, superuser)
+
+    def test_content_is_truncated_to_reason_limit(self, superuser):
+        result = draft_result_from_chat({"content": "追问" * 1000, "tool_calls": None}, superuser)
+        assert result["kind"] == "message"
+        assert len(result["message"]) == 500
+
+    def test_no_tool_calls_and_no_content_rejected(self, superuser):
+        with pytest.raises(DjangoValidationError):
+            draft_result_from_chat({"content": "", "tool_calls": []}, superuser)
+        with pytest.raises(DjangoValidationError):
+            draft_result_from_chat({"content": "   ", "tool_calls": []}, superuser)

@@ -3,13 +3,19 @@
 """迁移账本认领：4.x 分散迁移链 ↔ 合并链的对账与认领（幂等，只写迁移记录）。
 
 5.0 起各业务 app 的迁移链合并为初始迁移（``0001_initial`` / ``0002_initial``），
-表结构与 4.2.5 逐行等价（``pg_dump --schema-only`` 比对结论）。存量库的
-``django_migrations`` 里仍留着 4.x 的旧迁移名——它们在合并链中不存在，会被升级
-体检判为「游离记录」，同时合并链新增的初始迁移被判为「待应用」。
+与它在表结构上等价的存量库可以「认领」账本（只改迁移记录，不执行 DDL）。等价前提是
+**四域切分之后**的 4.x 链：用户 / 文件 / 日志 / 任务已各自成域（``identity_*`` /
+``file_*`` / ``audit_*`` / ``task_*`` 表名），5.0 的合并链只改变迁移文件的组织方式。
+
+**四域切分之前**的库（表名仍是 ``system_userinfo`` 等，字段集也更少）不在等价范围内：
+认领只写迁移记录，既不会重命名表、也不会补齐列，强行认领会得到一个「记录看着对、
+结构不对」的库。这类库由 ``PRE_SPLIT_TABLES`` 精确识别并拒绝认领，改为走
+「备份 + 清库重建 + ``legacy_export`` / ``legacy_import`` 回灌」。
 
 本模块在**表结构校验通过**的前提下完成认领：
 
-1. 校验：游离记录全部命中 4.2.5 全链白名单（``LEGACY_4X_CHAIN``），且表结构无缺表/缺列；
+1. 校验：不属于四域切分前的旧库，游离记录全部命中等价链白名单（``LEGACY_4X_CHAIN``），
+   且表结构无缺表/缺列；
 2. 认领：删除游离记录，并把同 app 待应用的合并链迁移记为已应用（不执行 DDL）。
 
 全新库（迁移记录即合并链）与已认领的库均为 no-op；白名单之外的游离记录（未知链路）
@@ -18,7 +24,7 @@
 
 from typing import Any
 
-# 4.2.5 迁移链白名单：app → 该 app 在 4.2.5 释放版本中的全部迁移名。
+# 等价链白名单：app → 该 app 在「四域切分之后、5.0 合并之前」的 4.x 链中的全部迁移名。
 # 合并链的初始迁移与它在表结构上等价，因此这些记录可被安全认领（删除）。
 LEGACY_4X_CHAIN: dict[str, tuple[str, ...]] = {
     "ai": ("0001_initial",),
@@ -48,6 +54,25 @@ LEGACY_4X_CHAIN: dict[str, tuple[str, ...]] = {
     ),
     "task": ("0001_initial", "0002_webhookdelivery_generation", "0003_periodictaskowner"),
 }
+
+# 四域切分（用户 / 文件 / 日志 / 任务各自的 app 与表名）之前的表名 → 当前表名。
+# 旧表在、当前表不在，即证明该库仍停留在切分前的结构：表名与列集都与合并链不一致，
+# 认领（只写迁移记录）无法把它变成 5.0 的库，必须走「清库重建 + 回灌」。
+#
+# 这张表是**部署环境唯一可信的映射来源**：容器镜像里没有 .git，按历史 tag 推断模型归属
+# 的那条路（``legacy_schema.load_tag_models``）在容器内取不到历史，只有这里登记过的框架表
+# 才能改名成功；未登记的表会被原地升级判为阻断项（fail-closed，不猜）。因此 4.x 各版本的
+# 框架表搬迁都必须在这里补全——真实 4.2.5 库演练就是靠这条暴露了 ``common_monitor`` 漏登记
+# （Monitor 从 common 域搬到 system 域）。
+PRE_SPLIT_TABLES: tuple[tuple[str, str], ...] = (
+    ("system_userinfo", "identity_userinfo"),
+    ("system_deptinfo", "identity_deptinfo"),
+    ("system_userrole", "identity_userrole"),
+    ("system_uploadfile", "file_uploadfile"),
+    ("system_operationlog", "audit_operationlog"),
+    ("system_userloginlog", "audit_userloginlog"),
+    ("common_monitor", "system_monitor"),
+)
 
 # 认领后的判定：consistent（无需动作）/ reconcilable（可认领）/ unsupported（未知链路，人工介入）
 VERDICTS = {
@@ -109,6 +134,11 @@ def collect_schema_ledger(connection: Any) -> dict[str, Any]:
     with connection.cursor() as cursor:
         existing = set(connection.introspection.table_names(cursor))
     missing_tables = sorted(name for name in tables if name not in existing)
+    pre_split_tables = [
+        {"legacy": legacy, "current": current}
+        for legacy, current in PRE_SPLIT_TABLES
+        if legacy in existing and current not in existing
+    ]
     missing_columns = []
     for name, model in tables.items():
         if name not in existing:
@@ -130,6 +160,7 @@ def collect_schema_ledger(connection: Any) -> dict[str, Any]:
         "tables_checked": len(tables),
         "missing_tables": missing_tables,
         "missing_columns": missing_columns,
+        "pre_split_tables": pre_split_tables,
     }
 
 
@@ -146,6 +177,8 @@ def evaluate_ledger(ledger: dict[str, Any]) -> str:
     仅「待应用迁移」而无游离记录属正常待迁移（例如合并链自身中途失败），不认领。
     """
     migrations, schema = ledger["migrations"], ledger["schema"]
+    if schema.get("pre_split_tables"):
+        return "unsupported"
     if migrations["unknown_orphan"]:
         return "unsupported"
     if schema["missing_tables"] or schema["missing_columns"]:
@@ -167,8 +200,10 @@ def reconcile(connection: Any) -> dict[str, Any]:
     ledger = collect_ledger(connection)
     verdict = evaluate_ledger(ledger)
     if verdict == "unsupported":
+        pre_split = ledger["schema"].get("pre_split_tables") or []
         raise LedgerError(
             "迁移账本认领前置校验失败："
+            f"四域切分前的旧表 {[item['legacy'] for item in pre_split][:5]}，"
             f"未知链路游离记录 {ledger['migrations']['unknown_orphan'][:5]}，"
             f"缺表 {ledger['schema']['missing_tables'][:5]}，"
             f"缺列 {[item['table'] for item in ledger['schema']['missing_columns']][:5]}"

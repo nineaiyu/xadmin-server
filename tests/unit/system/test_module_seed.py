@@ -19,21 +19,21 @@ from identity.models import UserRole
 from settings.models import Setting
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
 from system.models import FieldPermission, Menu, MenuMeta, SystemConfig
-from system.services.seed import build_seed_fixtures, write_seed_rows
+from system.services.seed import write_seed_rows
+from system.services.seeding import build_fixtures, build_plan, discover, read_model_rows
 
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 TRIMMED_MODULES = ("chat", "analysis")
 
 
-def _non_empty_model_names():
-    """装配清单会跳过空种子模型（loaddata 对空 fixture 报 "No fixture data found"）。"""
-    result = []
-    for model in LoadInitJsonCommand.model_names:
-        path = os.path.join(LOADJSON_DIR, f"{model._meta.model_name}.json")
-        with open(path, encoding="utf-8") as fp:
-            if json.load(fp):
-                result.append(model)
-    return result
+def _all_specs():
+    """各层（平台 + 应用）的种子文件清单：拆分后同一模型可能来自多个文件。"""
+
+    return build_plan(discover()).all_specs()
+
+
+def _non_empty_specs():
+    return [spec for spec in _all_specs() if spec.path.is_file() and json.loads(spec.path.read_text(encoding="utf-8"))]
 
 
 # 种子装配（build_seed_fixtures）要查库判定自然键冲突，故整模块需要数据库
@@ -46,9 +46,10 @@ def _read(name):
 
 
 def _export(seed_filter, models, target_dir):
-    """把过滤结果落到 target_dir，返回 {文件名: rows}（空种子模型不落盘，视作空）。"""
+    """把过滤结果落到 target_dir，返回 {模型: rows}（空种子不落盘，视作空）。"""
 
-    build_seed_fixtures(models, LOADJSON_DIR, str(target_dir), module_filter=seed_filter)
+    wanted = {model._meta.label_lower for model in models}
+    build_fixtures([spec for spec in _all_specs() if spec.model in wanted], str(target_dir), module_filter=seed_filter)
     exported = {}
     for model in models:
         path = target_dir / f"{model._meta.model_name}.json"
@@ -98,8 +99,8 @@ class TestSeedFilterOnRealFiles:
         # 与命令的真实顺序一致：menumeta 排在 menu 之前（顺序敏感，历史缺陷已修）
         exported = _export(seed_filter, [MenuMeta, Menu], tmp_path)
 
-        original_menus = {row["pk"]: row["fields"] for row in _read("menu.json")}
-        original_metas = {row["pk"] for row in _read("menumeta.json")}
+        original_menus = {row["pk"]: row["fields"] for row in read_model_rows("system.menu")}
+        original_metas = {row["pk"] for row in read_model_rows("system.menumeta")}
         filtered_menus = {row["pk"]: row["fields"] for row in exported["menu"]}
         filtered_metas = {row["pk"] for row in exported["menumeta"]}
 
@@ -134,19 +135,24 @@ class TestSeedFilterOnRealFiles:
             assert name not in names
         assert "SystemUser" in names
 
-    def test_role_menu_binding_trimmed(self, module_config, tmp_path):
+    def test_role_menu_binding_moved_to_grants(self, module_config, tmp_path):
+        """角色菜单授权已改为 grants 声明 + 装载期并集，不再随 userrole.json 裁剪。
+
+        停用模块的菜单不入库，``apply_grants`` 按名查找时自然跳过——与「从绑定列表里
+        移除」等价，且不会误删其它层声明的授权（覆盖式 m2m 无法表达这一点）。
+        """
         module_config(disable=list(TRIMMED_MODULES))
         seed_filter = ModuleSeedFilter.build()
         exported = _export(seed_filter, [Menu, UserRole], tmp_path)
 
-        original = {row["pk"]: row["fields"]["menu"] for row in _read("userrole.json")}
-        removed_total = 0
-        for row in exported["userrole"]:
-            bound = row["fields"]["menu"]
-            assert not (set(bound) & seed_filter.hidden)
-            removed_total += len(original[row["pk"]]) - len(bound)
-        assert removed_total > 0, "停用模块的菜单绑定应被移除"
-        assert all(row["fields"]["menu"] for row in exported["userrole"])
+        # 种子角色行不再携带 m2m 绑定（装配层统一剥离，空数组同样会触发 set([]) 清零）
+        assert all(not row["fields"].get("menu") for row in exported["userrole"])
+        # 菜单侧仍按模块裁剪：被隐藏的菜单不再出现在导出结果里
+        hidden_names = {
+            row["fields"]["name"] for row in read_model_rows("system.menu") if row["pk"] in seed_filter.hidden
+        }
+        kept_names = {row["fields"]["name"] for row in exported["menu"]}
+        assert hidden_names & kept_names == set()
 
     def test_field_permission_rows_dropped(self, module_config, tmp_path):
         # 字段权限绑定在菜单（权限点行）上：全局搜索模块的 9 条绑定随模块停用被剔除
@@ -157,7 +163,7 @@ class TestSeedFilterOnRealFiles:
         rows = exported["fieldpermission"]
         assert rows, "过滤后仍应保留内核页面的字段权限"
         assert all(row["fields"]["menu"] not in seed_filter.hidden for row in rows)
-        assert len(_read("fieldpermission.json")) - len(rows) > 0
+        assert len(read_model_rows("system.fieldpermission")) - len(rows) > 0
 
     def test_filtered_seed_referential_integrity(self, module_config, tmp_path):
         """过滤后仍是一套自洽的种子（loaddata 不会撞外键）。
@@ -228,24 +234,37 @@ class TestLoadInitJsonCommandWiring:
 
         labels = captured["labels"]
         # 空种子模型（无行）不进清单：loaddata 对空 fixture 会告警且无可导入内容
-        assert len(labels) == len(_non_empty_model_names())
+        assert len(labels) == len({spec.model for spec in _non_empty_specs()})
         # 传的是过滤后的临时文件（不再是 loadjson/ 原始路径）
         assert all(label.startswith(tempfile.gettempdir()) for label in labels)
         assert "Chat" not in captured["menu_names"]
         assert "SystemUser" in captured["menu_names"]
         assert not os.path.exists(labels[0]), "临时目录应随命令结束清理"
 
-    def test_full_preset_passes_raw_fixtures(self, module_config, monkeypatch):
+    def test_full_preset_strips_m2m_then_loads(self, module_config, monkeypatch):
+        """全量预设：授权型 m2m 被剥离，fixture 里不再出现 ``menu`` 键。
+
+        种子 ``userrole.json`` 携带 ``menu`` 键（哪怕为空数组），``loaddata`` 会
+        ``set([])`` 清零存量授权——装配层必须剥离它。
+        """
+
         captured = {}
 
         def fake_handle(self, *labels, **options):
-            captured["labels"] = labels
+            captured["labels"] = [str(label) for label in labels]
+            for label in captured["labels"]:
+                if not label.endswith("userrole.json"):
+                    continue
+                with open(label, encoding="utf-8") as fp:
+                    captured["roles"] = json.load(fp)
 
         monkeypatch.setattr(LoadDataCommand, "handle", fake_handle)
         module_config()
         call_command("load_init_json")
 
-        assert all(label.startswith(LOADJSON_DIR) for label in captured["labels"])
+        assert captured["labels"], "应仍有待导入的种子文件"
+        # 剥离后的角色行不携带授权字段
+        assert all("menu" not in row["fields"] for row in captured["roles"])
 
 
 class TestEmptySeedFilesSkipped:
@@ -256,16 +275,14 @@ class TestEmptySeedFilesSkipped:
     """
 
     def test_labels_exclude_empty_seeds(self, module_config, tmp_path):
-        module_config()  # 无裁剪：原始文件路径分支
-        labels, _, trimmed = build_seed_fixtures(LoadInitJsonCommand.model_names, LOADJSON_DIR, str(tmp_path))
-        assert not trimmed
+        module_config()  # 授权型 m2m 需剥离：同样走落盘分支（不再是原始文件路径）
+        labels, _, trimmed = build_fixtures(_all_specs(), str(tmp_path))
+        assert trimmed
         assert labels
-        assert len(labels) == len(_non_empty_model_names())
+        assert len(labels) == len({spec.model for spec in _non_empty_specs()})
 
-        module_config(disable=["chat"])  # 有裁剪：过滤后落盘分支
-        labels, _, trimmed = build_seed_fixtures(
-            LoadInitJsonCommand.model_names, LOADJSON_DIR, str(tmp_path), module_filter=ModuleSeedFilter.build()
-        )
+        module_config(disable=["chat"])  # 有裁剪：过滤后落盘分支（按模型合并）
+        labels, _, trimmed = build_fixtures(_all_specs(), str(tmp_path), module_filter=ModuleSeedFilter.build())
         assert trimmed
         assert labels
         for label in labels:

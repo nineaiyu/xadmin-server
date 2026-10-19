@@ -24,6 +24,9 @@ from notifications.models import MessageContent, MessageUserRead
 
 logger = get_logger(__name__)
 
+# Markdown 正文长度上限：源码原样入库，不做 HTML 净化，长度校验是唯一的体积防线
+MAX_MARKDOWN_LENGTH = 100_000
+
 
 class NoticeMessageSerializer(BaseModelSerializer):
     # 通知级别字典化（notice_level）：管理员可维护文案/颜色，默认项随种子下发
@@ -47,6 +50,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
             "notice_dept",
             "notice_role",
             "notice_post",
+            "message_format",
             "message",
             "created_time",
             "user_count",
@@ -77,11 +81,34 @@ class NoticeMessageSerializer(BaseModelSerializer):
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
     read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read user count"))
 
+    def _requested_format(self) -> Any:
+        """本次写入的正文格式（对象形态 ``{value,label}`` 与标量均兼容）。
+
+        - 新建未传：模型默认 ``html``；
+        - 更新未传：沿用实例当前格式，消息正文按既有格式校验（避免把 Markdown
+          公告的正文误当 HTML 净化）。
+        """
+        initial = getattr(self, "initial_data", None) or {}
+        value = initial.get("message_format")
+        if isinstance(value, dict):
+            value = value.get("value")
+        if value:
+            return value
+        if self.instance is not None:
+            return self.instance.message_format
+        return MessageContent.MessageFormat.HTML
+
     def validate_message(self, value: Any) -> Any:
-        # 公告/站内信内容以 v-html 渲染（前端 NoticeShow），入库前按白名单净化，
-        # 防止持权账号之间注入脚本（存储型 XSS）
+        # 公告/站内信内容按格式分流：
+        # - html：入库前按白名单净化（前端 NoticeShow 以 v-html 渲染，防存储型 XSS）；
+        # - markdown：保留源码（净化会破坏 #/**/表格/围栏代码块），安全由展示层
+        #   markdown-it(html:false) + DOMPurify 保证，这里只做长度上限。
         from common.utils.sanitize import sanitize_rich_text
 
+        if self._requested_format() == MessageContent.MessageFormat.MARKDOWN:
+            if len(value or "") > MAX_MARKDOWN_LENGTH:
+                raise ValidationError(_("The Markdown content is too long"))
+            return value
         return sanitize_rich_text(value)
 
     @extend_schema_field(serializers.IntegerField)
@@ -274,6 +301,11 @@ class NoticeMessageSerializer(BaseModelSerializer):
         return value
 
     def validate(self, attrs: Any) -> Any:
+        # 格式创建后不可修改：同一份正文换格式会改变解释方式（HTML 源码按 Markdown
+        # 渲染会丢排版，反之亦然），故编辑期直接拒绝而不是静默覆盖
+        if self.instance is not None and self._requested_format() != self.instance.message_format:
+            raise ValidationError({"message_format": _("The message format cannot be modified after creation")})
+
         notice_type = attrs.get("notice_type")
 
         if notice_type == MessageContent.NoticeChoices.ROLE:
@@ -349,7 +381,7 @@ class NoticeUserReadMessageSerializer(BaseModelSerializer):
     notice_type = serializers.CharField(source="notice.get_notice_type_display", read_only=True, label=_("Notice type"))
 
     notice_info = NoticeMessageSerializer(
-        fields=["pk", "level", "title", "notice_type", "message", "publish"],
+        fields=["pk", "level", "title", "notice_type", "message_format", "message", "publish"],
         read_only=True,
         source="notice",
         label=_("Notice message"),
@@ -369,7 +401,7 @@ class UserNoticeSerializer(BaseModelSerializer):
 
     class Meta:
         model = MessageContent
-        fields = ["pk", "level", "title", "message", "created_time", "unread", "notice_type"]
+        fields = ["pk", "level", "title", "message_format", "message", "created_time", "unread", "notice_type"]
         table_fields = ["pk", "title", "unread", "notice_type", "created_time"]
         read_only_fields = ["pk", "notice_user", "notice_type"]
 

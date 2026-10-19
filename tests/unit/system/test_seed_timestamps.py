@@ -12,8 +12,8 @@ from django.core.management import call_command
 from django.core.management.commands.loaddata import Command as LoadDataCommand
 
 from dataset.models import Dataset
-from system.management.commands.load_init_json import Command as LoadInitJsonCommand
 from system.services.seed import backfill_null_timestamps
+from system.services.seeding import build_plan, discover
 
 pytestmark = pytest.mark.django_db
 
@@ -73,4 +73,6 @@ class TestLoadInitJsonBackfillWiring:
         call_command("load_init_json")
 
         assert captured.get("called") is True
-        assert captured["model_count"] == len(LoadInitJsonCommand.model_names)
+        # 回填面 = 装载计划里的模型（平台层 + 应用层；示例层默认不装）
+        expected = len(build_plan(discover()).model_labels())
+        assert captured["model_count"] == expected

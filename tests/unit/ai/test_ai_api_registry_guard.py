@@ -7,16 +7,14 @@
 遍历 ACTION_SPECS 全部声明逐项校验（思路同 test_config_key_guard 的键守护）。
 """
 
-import json
 import re
-from pathlib import Path
 
 import pytest
-from django.conf import settings
 from django.urls import resolve
 
 from ai.utils.ai_actions import ACTION_SPECS
 from ai.utils.ai_api_actions import PATH_PLACEHOLDER, build_action_url
+from system.services.seeding import read_model_rows
 
 #: 声明式动作参数的合法类型（builtin 动作的 validate 为自定义函数，不受此约束）
 VALID_DECLARED_TYPES = {"user", "role", "menu", "pk", "string", "int", "bool", "enum", "json"}
@@ -95,11 +93,10 @@ class TestRegistryGuard:
         """
         from common.core.permission import match_permission_white_url
 
-        seed_path = Path(settings.BASE_DIR) / "loadjson" / "menu.json"
-        seed = json.loads(seed_path.read_text(encoding="utf-8"))
+        seed_rows = read_model_rows("system.menu")
         entries = [
             (item["fields"].get("method"), item["fields"].get("path"))
-            for item in seed
+            for item in seed_rows
             if item.get("model") == "system.menu"
             and item["fields"].get("menu_type") == 2
             and not item["fields"].get("deleted_at")

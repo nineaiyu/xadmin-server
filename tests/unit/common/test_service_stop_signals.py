@@ -18,6 +18,7 @@ import os
 import re
 import signal
 import sys
+import threading
 import time
 import types
 from pathlib import Path
@@ -40,6 +41,17 @@ time.sleep(60)
 IGNORE_TERM = """
 import signal, sys, time
 signal.signal(signal.SIGTERM, signal.SIG_IGN)
+open(sys.argv[1], "w").write("ready")
+time.sleep(60)
+"""
+
+# 收到 SIGTERM 后 1.4s 才退出（超过 stop() 里的 wait(1)）：必然走僵尸判定路径
+ZOMBIE_EXIT_ON_TERM = """
+import signal, sys, time
+def _term(*_args):
+    time.sleep(1.4)
+    sys.exit(0)
+signal.signal(signal.SIGTERM, _term)
 open(sys.argv[1], "w").write("ready")
 time.sleep(60)
 """
@@ -208,5 +220,31 @@ class TestBaseServiceStopWaiting:
             service.stop(force=True)
             assert not service.is_running
             assert not (tmp_path / "probe.pid").exists()
+        finally:
+            self._reap(service)
+
+    def test_zombie_child_treated_as_stopped(self, tmp_path):
+        """子进程退出后保持 Z 状态：is_running 必须判 False 并回收。
+
+        容器内 supervisor 是 PID 1，未 wait 的子进程退出后不会自动回收；僵尸仍响应
+        kill(pid, 0)，旧实现据此判「运行中」，wait_forever=True 会一直等到 Docker
+        宽限期结束（实测 celery-heavy 300s）。这里用 1.4s 延迟退出越过 stop() 的
+        wait(1)，确保走到僵尸判定路径；无修复时 stop 会挂起，用线程 join 限时兜底。
+        """
+        service = self._start(tmp_path, ZOMBIE_EXIT_ON_TERM)
+        done: list[bool] = []
+        try:
+            thread = threading.Thread(
+                target=lambda: (service.stop(wait_forever=True), done.append(True)),
+                daemon=True,
+            )
+            started = time.monotonic()
+            thread.start()
+            thread.join(timeout=5)
+            elapsed = time.monotonic() - started
+            assert done, "僵尸未被识别：stop(wait_forever=True) 一直挂起"
+            assert not service.is_running
+            assert not (tmp_path / "probe.pid").exists()
+            assert elapsed < 5
         finally:
             self._reap(service)

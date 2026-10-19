@@ -35,7 +35,9 @@ class SiteMessageUtil:
     @classmethod
     def push_notice_messages(cls, notify_obj: Any, pks: Any) -> Any:
         notice_message = NoticeMessageSerializer(
-            fields=["pk", "level", "title", "notice_type", "message"], instance=notify_obj, ignore_field_permission=True
+            fields=["pk", "level", "title", "notice_type", "message_format", "message"],
+            instance=notify_obj,
+            ignore_field_permission=True,
         ).data
         notice_message["message_type"] = "notify_message"
         online_pks = set(get_online_users())

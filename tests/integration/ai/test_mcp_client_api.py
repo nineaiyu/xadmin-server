@@ -150,6 +150,12 @@ class TestServerCrud:
         assert res.status_code == 200
         assert McpServer.objects.get(pk=res.data["data"]["pk"]).timeout == 45
 
+    def test_search_columns_pk_read_only(self, client):
+        """pk 由服务端生成：必须 read_only，否则元数据表单会渲染出可编辑的「ID」输入框。"""
+        rows = client.get(f"{MCP_URL}/search-columns").json()["data"]
+        pk = next(item for item in rows if item["key"] == "pk")
+        assert pk["read_only"] is True
+
 
 class TestSync:
     def test_sync_stores_snapshot_and_session(self, client, stub):

@@ -58,6 +58,15 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("title", models.CharField(max_length=255, verbose_name="Notice title")),
+                (
+                    "message_format",
+                    models.CharField(
+                        choices=[("html", "Rich text"), ("markdown", "Markdown")],
+                        default="html",
+                        max_length=16,
+                        verbose_name="Message format",
+                    ),
+                ),
                 ("message", models.TextField(blank=True, null=True, verbose_name="Notice message")),
                 ("extra_json", models.JSONField(blank=True, null=True, verbose_name="Additional json data")),
                 ("publish", models.BooleanField(default=True, verbose_name="Publish")),

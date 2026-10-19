@@ -152,7 +152,8 @@ python manage.py seed_demo_clean             # 一键卸载（清理演示数据
 - 各命令全部幂等（固定标识 / 固定主键），可重复执行；`--clean-only` 只清理不生成
   （`seed_demo_clean` 的编排入口）；
 - `seed_demo_clean` 会回滚对内置种子的改写（流程节点审批人、演示部门负责人、演示版本快照），
-  内置定义类数据（loadjson 的示例流程/表单/数据集/看板等）不在卸载范围；
+  内置定义类数据（`approval/seeds/` 的流程定义、`dataset/seeds/sample/` 的示例表单/数据集/看板等）
+  不在卸载范围；示例层由 `init_data`（新装）装载，`load_init_json` 默认不装、`--with-sample` 可补；
 - 内置流程的 leader 节点（请假/采购/用章等首节点）按申请人部门的负责人解析审批人：
   申请人无部门 / 部门无负责人 / 负责人即申请人本人时发起会被 fail-closed 拒绝，
   按发起失败的提示为申请人配置部门与负责人即可；

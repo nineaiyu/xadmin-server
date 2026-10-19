@@ -5,9 +5,6 @@
 菜单与权限点隐藏、周期任务不注册（含历史条目清理）。
 """
 
-import json
-import os
-
 import pytest
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ImproperlyConfigured
@@ -30,6 +27,7 @@ from common.core.modules import (
     resolve_modules,
 )
 from system.models import Menu
+from system.services.seeding import read_model_rows
 
 WS_SCREEN_PK = "5eed0001-0000-0000-0000-000000000002"
 
@@ -53,12 +51,8 @@ class TestModuleDeclaration:
 
     def test_declared_menu_names_exist_in_seed(self):
         """声明的菜单 name 必须真实存在于 loadjson/menu.json（拼错即裁剪失效）。"""
-        from django.conf import settings as dj_settings
-
-        seed = os.path.join(dj_settings.PROJECT_DIR, "loadjson", "menu.json")
-        with open(seed, encoding="utf-8") as fp:
-            rows = json.load(fp)
-        names = {row["fields"]["name"] for row in rows if row.get("model") == "system.menu"}
+        seed_rows = read_model_rows("system.menu")
+        names = {row["fields"]["name"] for row in seed_rows if row.get("model") == "system.menu"}
         missing = {name for spec in MODULES for name in spec.menus if name not in names}
         assert not missing, f"模块声明了不存在的菜单：{sorted(missing)}"
 

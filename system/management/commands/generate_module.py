@@ -35,7 +35,10 @@ class Command(BaseCommand):
         parser.add_argument("--label", default="", help="模块中文名（展示用，默认取模块 id）")
         parser.add_argument("--level", choices=(CORE, "standard", "optional"), default="optional", help="模块等级")
         parser.add_argument(
-            "--menu", action="append", default=[], help="菜单根 name（可多次；需已在 loadjson/menu.json 登记）"
+            "--menu",
+            action="append",
+            default=[],
+            help="菜单根 name（可多次；需已在内置种子 <app>/seeds/menu.json 登记）",
         )
         parser.add_argument("--route", action="append", default=[], help="请求路由前缀正则（可多次，如 ^/api/demo/）")
         parser.add_argument("--permission", action="append", default=[], help="补充权限点 path 前缀（可多次）")
@@ -79,12 +82,12 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.WARNING(
                     f"注意：菜单 name {unknown_menus} 不在内置模块清单中——"
-                    "需确认它已在 loadjson/menu.json 登记，否则裁剪不会命中"
+                    "需确认它已在应用层 seeds/menu.json 登记，否则裁剪不会命中"
                 )
             )
         self.stdout.write("")
         self.stdout.write("后续步骤：")
-        self.stdout.write("  1) 菜单：loadjson/menu.json 登记菜单根 + src/views 下放页面组件")
+        self.stdout.write("  1) 菜单：<app>/seeds/menu.json 登记菜单根 + src/views 下放页面组件")
         self.stdout.write(f'  2) 周期任务：@register_as_period_task(..., module="{module_id}")')
         self.stdout.write("  3) 验证：python manage.py modules  # 清单中应出现该模块")
         self.stdout.write("  4) 裁剪：config.yml 配 MODULE_PRESET / MODULE_DISABLE，重启生效")

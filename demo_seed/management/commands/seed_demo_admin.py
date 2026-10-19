@@ -29,15 +29,14 @@
 """
 
 import json
-import os
 from typing import Any
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from identity.models import DeptInfo, UserInfo, UserRole
 from system.models import FieldPermission, Menu
 from system.services.permission_sync import fill_field_permissions
+from system.services.seeding import platform_file
 
 #: 演示账号：用户名/密码/昵称。用户名固定 admin（README 承诺对外口径），
 #: 由数据库自增 pk 承载（UserInfo 主键为自增整型，非 UUID）。
@@ -154,17 +153,17 @@ def is_destructive(menu: Menu) -> bool:
 
 
 def _load_demo_role_menu_seed() -> list[Any]:
-    """读取 loadjson 种子中「演示模式」角色的菜单主键（clean 回滚依据）。"""
-    path = os.path.join(settings.PROJECT_DIR, "loadjson", "userrole.json")
-    try:
-        with open(path, encoding="utf-8") as fp:
-            rows = json.load(fp)
-    except (OSError, ValueError):
+    """读取种子授权声明中「演示模式」角色的菜单主键（clean 回滚依据）。
+
+    授权已从 ``userrole.json`` 的 m2m 列表改为各层 ``grants.json`` 的声明式并集，
+    这里按菜单名解析回库内主键。
+    """
+    from system.services.seeding import seed_role_menu_names
+
+    names = seed_role_menu_names(DEMO_ROLE_CODE)
+    if not names:
         return []
-    for row in rows:
-        if row["fields"].get("code") == DEMO_ROLE_CODE:
-            return list(row["fields"].get("menu") or [])
-    return []
+    return list(Menu.objects.filter(name__in=names, deleted_at__isnull=True).values_list("pk", flat=True))
 
 
 class Command(BaseCommand):
@@ -247,7 +246,7 @@ class Command(BaseCommand):
 
     def _field_permission_seed_menus(self, role: UserRole) -> set[Any]:
         """读取 loadjson 种子中该角色的字段权限菜单主键（clean 回滚依据）。"""
-        path = os.path.join(settings.PROJECT_DIR, "loadjson", "fieldpermission.json")
+        path = platform_file("fieldpermission.json")
         try:
             with open(path, encoding="utf-8") as fp:
                 rows = json.load(fp)

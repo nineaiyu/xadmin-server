@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 """脱敏/审批/表单采集内置示例种子守护测试。
 
-loadjson/datamaskrule.json、approvalflow*.json、dynamicform*.json 是新装环境
-的内置示例（load_init_json 按 loaddata upsert 灌入），与数据分析示例
-（test_analysis_seed.py）同套纪律。这里锁定五件事：
+种子已按应用分层：脱敏规则在 ``audit/seeds/``，流程定义在 ``approval/seeds/``，
+表单与数据分析示例在 ``dataset/seeds/sample/``（默认不装载，``init_data`` 与
+``load_init_json --with-sample`` 才装）。与 ``test_analysis_seed.py`` 同套纪律，
+这里锁定五件事：
 
-1. 注册完整：load_init_json 注册了全部示例模型，且实例类模型
+1. 装载面完整：上述模型全部出现在装载计划中（契约层）或示例层，且实例类模型
    （ApprovalInstance/ApprovalNodeTask/ApprovalRequest）不在其中——它们需要
    「申请人 ≠ 审批人」，种子造不出合规数据，由 seed_demo_flows 命令动态生成，
-   误入 loadjson 会在新库（只有首个超管）loaddata 时炸外键；
+   误入种子会在新库（只有首个超管）loaddata 时炸外键；
 2. 审计字段安全：creator/modifier 只允许 1 或 null（init_data 新库首个超管），
    禁止引用 admin(pk=2) 等特定环境用户；
 3. 脱敏规则指向真实模型字段（model label 可解析、field 存在）；
@@ -18,12 +19,10 @@ loadjson/datamaskrule.json、approvalflow*.json、dynamicform*.json 是新装环
 """
 
 import json
-import os
 from io import StringIO
 
 import pytest
 from django.apps import apps
-from django.conf import settings as dj_settings
 from django.core.management import call_command
 
 from approval.serializers.approval_flow import FORM_FIELD_TYPES
@@ -31,14 +30,26 @@ from approval.utils.approval_flow import CONDITION_OPS
 from dataset.utils.dform import validate_schema, validate_submission_data
 from identity.builtin import BUILTIN_ROLES
 from identity.models import UserRole
-from system.management.commands.load_init_json import Command as LoadInitJsonCommand
 from system.models import FieldPermission, Menu, ModelLabelField
+from system.services.seeding import build_plan, discover, read_model_rows
 
-LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
+#: 文件 stem → 模型 label（种子按应用分层后，读取一律走聚合入口）
+SEED_MODELS = {
+    "datamaskrule": "audit.datamaskrule",
+    "approvalflow": "approval.approvalflow",
+    "approvalflownode": "approval.approvalflownode",
+    "approvalflowversion": "approval.approvalflowversion",
+    "dynamicform": "dataset.dynamicform",
+    "dynamicformsubmission": "dataset.dynamicformsubmission",
+    "dataset": "dataset.dataset",
+    "dashboard": "dataset.dashboard",
+    "screen": "dataset.screen",
+    "report": "dataset.report",
+}
 
 # 实例类演示数据必须走 seed_demo_flows（申请人 ≠ 审批人，种子无法合规构造）
 INSTANCE_MODEL_NAMES = ("approvalinstance", "approvalnodetask", "approvalrequest")
-# load_init_json 新增注册的示例模型
+# 内置示例 / 契约模型的文件 stem（装载面必须覆盖）
 SEED_MODEL_NAMES = (
     "datamaskrule",
     "approvalflow",
@@ -50,47 +61,47 @@ SEED_MODEL_NAMES = (
 
 
 def _load(name: str):
-    with open(os.path.join(LOADJSON_DIR, name), encoding="utf-8") as f:
-        return json.load(f)
+    return read_model_rows(SEED_MODELS[name], include_sample=True)
 
 
-def _registered_names() -> list:
-    return [model._meta.model_name for model in LoadInitJsonCommand.model_names]
+def _plan_specs():
+    plan = build_plan(discover(), include_sample=True)
+    return [*plan.all_specs(), *plan.samples]
 
 
-def test_seed_models_are_registered():
-    """示例模型必须全部注册进 load_init_json（漏注册 = 新库无示例数据）。"""
-    registered = _registered_names()
+def test_seed_models_are_in_load_plan():
+    """示例模型必须出现在装载计划（契约层或示例层；漏登记 = 新库无示例数据）。"""
+    planned = {spec.model for spec in _plan_specs()}
     for name in SEED_MODEL_NAMES:
-        assert name in registered, f"{name} 未注册进 load_init_json"
+        assert SEED_MODELS[name] in planned, f"{SEED_MODELS[name]} 未出现在装载计划中"
     for name in INSTANCE_MODEL_NAMES:
-        assert name not in registered, f"实例类模型 {name} 禁止进入 load_init_json"
+        assert not any(model.endswith(f".{name}") for model in planned), (
+            f"实例类模型 {name} 禁止进入种子（由 seed_demo_flows 动态生成）"
+        )
 
 
-def test_seed_files_exist_and_instance_files_absent():
-    """注册模型的种子文件必须存在；实例类模型不得有种子文件。"""
+def test_seed_rows_exist_and_instance_files_absent():
+    """注册模型的种子行必须存在；实例类模型不得有种子行。"""
     for name in SEED_MODEL_NAMES:
-        assert os.path.exists(os.path.join(LOADJSON_DIR, f"{name}.json")), f"缺少 {name}.json"
-    for name in INSTANCE_MODEL_NAMES:
-        assert not os.path.exists(os.path.join(LOADJSON_DIR, f"{name}.json")), f"{name}.json 不应存在"
+        assert _load(name), f"缺少 {name} 的种子行"
+    instance_models = {f"approval.{name}" for name in INSTANCE_MODEL_NAMES}
+    assert not instance_models & {spec.model for spec in _plan_specs()}
 
 
 def test_seed_fixture_pks_unique_per_model():
-    """同一模型的 fixture pk 不得重复：loaddata 对重复 pk 走 UPDATE，后一条会静默覆盖前一条。"""
+    """同一模型的主键不得重复：loaddata 对重复 pk 走 UPDATE，后一条会静默覆盖前一条。"""
     seen: dict = {}
-    for name in sorted(f for f in os.listdir(LOADJSON_DIR) if f.endswith(".json")):
-        for item in _load(name):
-            if not isinstance(item, dict) or "model" not in item or "pk" not in item:
-                continue
-            key = (item["model"], str(item["pk"]))
-            assert key not in seen, f"{key} 在 {name} 与 {seen[key]} 中重复（loaddata 会静默覆盖）"
-            seen[key] = name
+    for spec in _plan_specs():
+        for item in json.loads(spec.path.read_text(encoding="utf-8")):
+            key = (item.get("model"), str(item.get("pk")))
+            assert key not in seen, f"{key} 在 {spec.path} 与 {seen[key]} 中重复（loaddata 会静默覆盖）"
+            seen[key] = str(spec.path)
 
 
 @pytest.mark.parametrize("name", [*SEED_MODEL_NAMES, "dataset", "dashboard", "screen", "report"])
 def test_seed_audit_fields_reference_first_superuser_only(name):
     """种子审计字段只允许 creator/modifier = 1 或 null（新库仅有首个超管）。"""
-    for item in _load(f"{name}.json"):
+    for item in _load(name):
         for key in ("creator", "modifier"):
             value = item["fields"].get(key)
             assert value in (1, None), f"{name}.json 的 {key}={value} 在新库不存在，loaddata 会炸外键"
@@ -98,7 +109,7 @@ def test_seed_audit_fields_reference_first_superuser_only(name):
 
 def test_seed_mask_rules_target_real_fields():
     """脱敏规则的 (model, field) 必须指向真实模型字段，否则规则永远不生效。"""
-    for item in _load("datamaskrule.json"):
+    for item in _load("datamaskrule"):
         fields = item["fields"]
         model_class = apps.get_model(fields["model"])
         assert fields["field"] in {f.name for f in model_class._meta.get_fields()}, (
@@ -124,11 +135,11 @@ def _snapshot_node_keys():
 
 def test_seed_flow_definitions_consistent():
     """节点引用/顺序/审批人配置/条件表达式合法，且 v1 快照与活定义一致。"""
-    flows = {item["pk"]: item for item in _load("approvalflow.json")}
-    versions = _load("approvalflowversion.json")
+    flows = {item["pk"]: item for item in _load("approvalflow")}
+    versions = _load("approvalflowversion")
 
     nodes_by_flow: dict = {}
-    for node in _load("approvalflownode.json"):
+    for node in _load("approvalflownode"):
         fields = node["fields"]
         assert fields["flow"] in flows, f"节点 {node['pk']} 引用了不存在的流程"
         assert fields["name"].strip(), "节点名必填"
@@ -160,7 +171,7 @@ def test_seed_flow_definitions_consistent():
 
 def test_seed_flow_form_schema_valid():
     """流程 form_schema：key 唯一、type 白名单、select 必须带 options。"""
-    for flow in _load("approvalflow.json"):
+    for flow in _load("approvalflow"):
         seen = set()
         for item in flow["fields"]["form_schema"]:
             key = (item.get("key") or "").strip()
@@ -174,14 +185,14 @@ def test_seed_flow_form_schema_valid():
 
 def test_seed_dynamic_form_schema_passes_validation():
     """表单定义 schema 必须通过写入侧同一套校验（validate_schema，纯函数无需 db）。"""
-    for form in _load("dynamicform.json"):
+    for form in _load("dynamicform"):
         validate_schema(form["fields"]["schema"])
 
 
 def test_seed_submissions_pass_validation():
     """内置提交数据必须能过对应表单 schema 的提交侧校验（引用 + 内容同源）。"""
-    forms = {item["pk"]: item for item in _load("dynamicform.json")}
-    for submission in _load("dynamicformsubmission.json"):
+    forms = {item["pk"]: item for item in _load("dynamicform")}
+    for submission in _load("dynamicformsubmission"):
         fields = submission["fields"]
         form = forms.get(fields["form"])
         assert form is not None, f"提交 {submission['pk']} 引用了不存在的表单"
@@ -192,7 +203,7 @@ def test_seed_demo_flows_command_aligns_with_seed():
     """seed_demo_flows 的流程 code / 审批人改写目标必须与种子对齐（防改名静默失效）。"""
     from demo_seed.management.commands import seed_demo_flows as command
 
-    codes = {item["fields"]["code"] for item in _load("approvalflow.json")}
+    codes = {item["fields"]["code"] for item in _load("approvalflow")}
     assert set(command.FLOW_CODES) <= codes, "seed_demo_flows.FLOW_CODES 与种子流程 code 不一致"
     # 互审配置：目标审批人列表必须同时包含申请人侧与审批人侧演示用户，
     # 否则其中一人发起申请时全节点候选为空（fail-closed）

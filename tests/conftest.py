@@ -19,7 +19,8 @@ def pytest_configure(config):
     flaky（#15）难以区分。此处用裸 socket 探测（不触碰 Django 连接层，避开
     pytest-django 阻断器），环境变量读取与缺省值同 settings_real 口径；
     只对真环境档生效、只由非 xdist worker 进程执行；E2E（settings_e2e）不经 pytest
-    启动，不受影响。
+    启动，不受影响。预检通过后由 master 进程持有 PG 会话级 advisory lock，串行化
+    整轮测试，避免两轮 pytest 互踩测试库。
     """
     import os
     import socket
@@ -43,6 +44,21 @@ def pytest_configure(config):
             "真环境档依赖不可达：{}\n先起依赖：docker compose -f compose.test.yml up -d".format("、".join(down)),
             returncode=1,
         )
+
+    # 并发跑第二轮 pytest 会在 django_db_setup 里 DROP/CREATE 同名测试库，把第一轮
+    # 在用的连接成片掐断——现场是「DB CPU 100% 但 SQL 日志只有几行、Python 无 CPU」。
+    # 用 PG 会话级 advisory lock 串行化：比按库名查 pg_stat_activity 可靠——xdist
+    # worker 库带 _gwN 后缀，基名库在运行期不存在；且「先查再启动」本身仍有竞态。
+    from tests.pytest_lock import acquire as acquire_pytest_lock
+
+    acquire_pytest_lock(config)
+
+
+def pytest_unconfigure(config):
+    """释放 pytest 会话锁（master 进程；worker 无该属性时 no-op）。"""
+    from tests.pytest_lock import release as release_pytest_lock
+
+    release_pytest_lock(config)
 
 
 @pytest.fixture(autouse=True)

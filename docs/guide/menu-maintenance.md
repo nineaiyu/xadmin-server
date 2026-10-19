@@ -1,12 +1,14 @@
 # 菜单维护口径（种子 / 路径 / 映射）
 
-> 本文是菜单种子（`loadjson/menu.json`）与前端路由目录关系的维护口径登记处，
+> 本文是菜单种子与前端路由目录关系的维护口径登记处。种子自 2026-10 起按应用分层：
+> 平台共享层 `loadjson/`（目录菜单、平台级页面/权限点、角色/配置/字典）+ 各应用
+> `<app>/seeds/menu.json`；归属由 `manage.py load_init_json --check` 校验，禁止手工跨层搬行。
 > 防止后续"顺手修齐"造成断链。权限点双向对账 CI 门禁落地时，
 > 以本文登记的例外清单为白名单依据。
 
 ## 1. 基本口径
 
-- 菜单种子 `loadjson/menu.json` 是唯一权威：`path` = 前端路由 URL，
+- 菜单种子（平台层 `loadjson/menu.json` + 各应用 `seeds/menu.json`）是唯一权威：`path` = 前端路由 URL，
   `component` = `src/views/` 下组件相对路径。二者**默认相等**（URL=目录），
   不相等属历史显式映射，必须登记于本文第 3 节例外清单，禁止未登记就改。
 - 种子经 `load_init_json`（loaddata 按 pk 覆盖）落库；线上库菜单行已按既有
@@ -15,19 +17,20 @@
 
 ### 1.1 例外：demo 模块的菜单与权限点是运行期注入
 
-`demo`（示例 app）的菜单与权限点**不在 `loadjson/menu.json` 里**：由
+`demo`（示例 app）的菜单与权限点**不由 JSON 种子装载**：由
 `python manage.py seed_demo_book`（`demo_seed/management/commands/seed_demo_book.py`）
 在运行期幂等灌入（`update_or_create`：目录「示例」+ 页面「图书管理」+
 `PERMISSION_PLAN` 的 19 个权限点，含 `batchDestroy` / 回收站 / 导入导出等
 `generate_crud` 默认种子之外的 action）。口径上它仍是"种子"，只是载体是命令而非 JSON：
 
 - **对账覆盖**：客户端对账门禁 `xadmin-client/scripts/check-menu-permissions.mjs`
-  除解析 `loadjson/menu.json` 外，还解析 `seed_demo_book.py` 的 `MENU_NAME` /
+  除解析各层菜单种子（平台层 + 应用层）外，还解析 `seed_demo_book.py` 的 `MENU_NAME` /
   `PERMISSION_PLAN` 作为第二种子源，demo 页面的权限检查（`push:DemoBook` 等）
   不会按"种子无码"误报；
-- **与 loadjson 的关系**：`loadjson/menu.json` 仍是平台内置菜单的唯一权威，
+- **与分层种子的关系**：平台层 `loadjson/` 仍是共享菜单的唯一权威，
   demo 注入是该口径唯一的运行期例外；其余业务 app 一律按 §4 新增页面规范
-  走平台种子或 `generate_crud` 生成的 `loadjson/seed_*.json`。
+  用 `generate_crud` 生成到本应用 `seeds/`（自动登记 manifest），**不再往
+  `loadjson/` 塞新文件**。
 
 ## 2. 分析域 URL≠目录 映射（口径结论，2026-10）
 

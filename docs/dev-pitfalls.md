@@ -14,10 +14,19 @@
   序列化器没声明就不会下发。「表头无列 + 字段全 null」的变体：该角色的**字段白名单与
   权限点模型脱节**——视图数据源模型迁移过（如在线用户页由登录日志换成用户会话）而
   白名单仍是旧模型字段，运行时按「模型标签 + 字段名」匹配，脱节白名单等价于空白名单。
-- **做法**：字段进接口 → `Meta.fields`；进列表默认列 → `Meta.table_fields`；
-  字段权限树缺失 → `python manage.py sync_model_field`；白名单脱节 / 表头无列 →
-  `python manage.py sync_menu_permissions --fix-field-permissions --update-seed`
-  （先收缩陈旧模型绑定，再按绑定模型补齐白名单）。改完重启进程。
+- **做法（一条命令）**：字段进接口 → `Meta.fields`；进列表默认列 → `Meta.table_fields`；
+  然后执行 `python manage.py sync_field_permissions --update-seed`
+  （重建字段树 + 只把本次新增字段补进已有角色白名单 + 回写各应用 seeds），再重启进程。
+  只想预览用 `python manage.py sync_field_permissions --dry-run`。
+  命令只补「本次同步新增」的字段，不会恢复历史上被管理员裁剪掉的字段（如密码、超管标记）。
+- **为什么字段权限这么容易漏**：字段权限是 fail-closed 的「角色 × 权限点 × 字段」白名单，
+  新字段不会自动进入旧角色的白名单；另外 `system.modellabelfield` 的 ROLE（角色字段权限）
+  与 DATA（数据权限）两棵树都有同名的 `<app>.<model>` 根节点（`parent=NULL`），若只按模型
+  声明的 `(name, parent)` 判唯一，种子冲突预检会把另一棵树当成「同名根节点」整棵级联剔除。
+  唯一键判定已覆盖为 `(field_type, name, parent)`（`system/services/seeding/rows.py` 的
+  `UNIQUE_KEY_OVERRIDES`）。上述命令以「同步前字段树快照」为基线，只补本次新增的字段，
+  因此不会动历史裁剪；完整性由 `tests/unit/system/test_fieldpermission_seed.py`
+  与 `tests/unit/system/test_sync_field_permissions.py` 守护。
 
 ### 2. 非超管 403 / 整个页面不渲染 / 页面能开但某接口 403
 
@@ -30,8 +39,9 @@
   「有 list 但没 retrieve」的角色调它必然 403。
 - **做法**：`python manage.py doctor` 查缺口 → `sync_menu_permissions` 补齐 → 角色管理里授权。
   新增端点（自定义 `@action`）同样需要权限点，PUT 方法需**手工登记**（生成器不产出 PUT）。
-  新增 action 后**必须同步给已拥有该页面的内置角色授权**（种子 `userrole.json` 的
-  `menu` 列表），否则非超管打开页面即 403——自查范式见守护测试
+  新增 action 后**必须同步给已拥有该页面的内置角色授权**（在所属 app 的
+  `seeds/grants.json` 里补该权限点名，装载后按并集应用），否则非超管打开页面即 403——
+  自查范式见守护测试
   `tests/unit/system/test_chat_menu_seed.py`、`test_file_menu_seed.py`（把「页面 →
   页内权限点 → 角色授权」三层关钉死）；前端调用这类辅助接口时应加 `hasAuth` 守卫，
   未授权时隐藏入口而不是点了报 403。
@@ -44,6 +54,10 @@
 - **做法**：`config.yml` 的 `XADMIN_APPS: [your_app]`（或 `generate_crud` 加 `--register-app` 自动写入）；
   `python manage.py generate_crud <app>.<Model>` 会写出 `config.py`（已存在则需 `--force`）；
   改配置后**重启进程**（挂载代码不热加载：`docker compose restart server celery-worker celery-heavy celery-beat`）。
+- **种子同样不生效**：`<app>/seeds/` 只在 app 进入 `INSTALLED_APPS` 后才被发现（未注册时整层
+  静默忽略）。自检看 `python manage.py doctor` 的「内置种子」项（会列出有 `seeds/manifest.json`
+  但未注册的目录）或 `python manage.py load_init_json --check`；装载 `--apps <app>` 会自动补
+  `depends` 闭包。
 
 ### 4. 数据权限"消失"：手写 `Model.objects.filter(...)` 绕过数据权限
 

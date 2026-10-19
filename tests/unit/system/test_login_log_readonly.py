@@ -5,15 +5,12 @@
 登录成功记录可经 API 抹除即等于审计灭迹通道，强退（会话管理）保留。
 """
 
-import json
-from pathlib import Path
-
 import pytest
-from django.conf import settings
 from rest_framework.test import APIClient
 
 from audit.models.log import UserLoginLog
 from identity.models import UserInfo
+from system.services.seeding import read_model_rows
 
 pytestmark = pytest.mark.django_db
 
@@ -77,8 +74,7 @@ class TestLoginLogReadOnly:
 
     def test_seed_no_longer_registers_delete_permission_points(self):
         """种子库（menu.json）不再登记两条删除权限点：新装库与存量库迁移后口径一致。"""
-        menu_json = Path(settings.PROJECT_DIR) / "loadjson" / "menu.json"
-        names = [entry["fields"]["name"] for entry in json.loads(menu_json.read_text())]
+        names = [entry["fields"]["name"] for entry in read_model_rows("system.menu")]
         for name in RETIRED_PERMISSION_NAMES:
             assert name not in names
 

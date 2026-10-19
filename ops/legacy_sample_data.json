@@ -1,0 +1,245 @@
+{
+  "comment": "旧结构样本数据（占位符由 ops/legacy_sample_db.py 填充）",
+  "rows": {
+    "system_menu": [
+      {
+        "id": "44444444-4444-4444-4444-444444444401",
+        "name": "identity.userinfo.list",
+        "menu_type": 1,
+        "rank": 1,
+        "path": "api/identity/userinfo",
+        "is_active": true,
+        "meta_id": "44444444-4444-4444-4444-444444444402"
+      }
+    ],
+    "system_menumeta": [
+      {
+        "id": "44444444-4444-4444-4444-444444444402",
+        "title": "用户管理",
+        "is_show_menu": true,
+        "is_show_parent": false,
+        "is_keepalive": false,
+        "frame_loading": false,
+        "is_hidden_tag": false,
+        "fixed_tag": false,
+        "dynamic_level": 0
+      }
+    ],
+    "system_deptinfo": [
+      {
+        "id": "11111111-1111-1111-1111-111111111100",
+        "name": "研发中心",
+        "code": "D100",
+        "rank": 1,
+        "is_active": true,
+        "auto_bind": true,
+        "mode_type": 0
+      },
+      {
+        "id": "11111111-1111-1111-1111-111111111101",
+        "name": "平台部",
+        "code": "D110",
+        "rank": 2,
+        "is_active": true,
+        "auto_bind": true,
+        "mode_type": 0,
+        "parent_id": "11111111-1111-1111-1111-111111111100"
+      },
+      {
+        "id": "11111111-1111-1111-1111-111111111102",
+        "name": "前端组",
+        "code": "D111",
+        "rank": 3,
+        "is_active": true,
+        "auto_bind": true,
+        "mode_type": 0,
+        "parent_id": "11111111-1111-1111-1111-111111111101"
+      }
+    ],
+    "system_userrole": [
+      {
+        "id": "22222222-2222-2222-2222-222222222200",
+        "name": "研发角色",
+        "code": "R_SAMPLE_DEV",
+        "is_active": true,
+        "mode_type": 0
+      },
+      {
+        "id": "22222222-2222-2222-2222-222222222201",
+        "name": "停用角色",
+        "code": "R_SAMPLE_QA",
+        "is_active": false,
+        "mode_type": 0
+      }
+    ],
+    "system_datapermission": [
+      {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "name": "样本-仅本部门",
+        "rules": "[{\"type\": \"value.table.dept.ids\", \"field\": \"id\", \"match\": \"in\", \"table\": \"system.deptinfo\", \"value\": \"[]\"}]",
+        "is_active": true,
+        "mode_type": 0
+      }
+    ],
+    "system_userinfo": [
+      {
+        "id": 900001,
+        "username": "legacy_sample_a",
+        "password": "pbkdf2_sha256$600000$Cay+FRRbB5VK$DxzfYGV4dGFEUtjrLHskwcdyQ9kZg3aus5I9v6wn9q4=",
+        "nickname": "张样本",
+        "gender": 1,
+        "email": "sample_a@drill.local",
+        "phone": "13800000001",
+        "first_name": "",
+        "last_name": "",
+        "is_active": true,
+        "is_staff": false,
+        "is_superuser": false,
+        "date_joined": "2025-10-01 08:00:00+08",
+        "dept_id": "11111111-1111-1111-1111-111111111102",
+        "mode_type": 0
+      },
+      {
+        "id": 900002,
+        "username": "legacy_sample_b",
+        "password": "pbkdf2_sha256$600000$Cay+FRRbB5VK$DxzfYGV4dGFEUtjrLHskwcdyQ9kZg3aus5I9v6wn9q4=",
+        "nickname": "李停用",
+        "gender": 1,
+        "email": "sample_b@drill.local",
+        "phone": "13800000002",
+        "first_name": "",
+        "last_name": "",
+        "is_active": false,
+        "is_staff": false,
+        "is_superuser": false,
+        "date_joined": "2025-10-02 08:00:00+08",
+        "dept_id": "11111111-1111-1111-1111-111111111101",
+        "mode_type": 0
+      }
+    ],
+    "system_userinfo_roles": [
+      {
+        "id": 1,
+        "userinfo_id": 900001,
+        "userrole_id": "22222222-2222-2222-2222-222222222200"
+      }
+    ],
+    "system_userinfo_rules": [
+      {
+        "id": 1,
+        "userinfo_id": 900001,
+        "datapermission_id": "33333333-3333-3333-3333-333333333333"
+      }
+    ],
+    "system_deptinfo_roles": [
+      {
+        "id": 1,
+        "deptinfo_id": "11111111-1111-1111-1111-111111111102",
+        "userrole_id": "22222222-2222-2222-2222-222222222200"
+      }
+    ],
+    "system_userrole_menu": [
+      {
+        "id": 1,
+        "userrole_id": "22222222-2222-2222-2222-222222222200",
+        "menu_id": "44444444-4444-4444-4444-444444444401"
+      }
+    ],
+    "system_systemconfig": [
+      {
+        "id": "55555555-5555-5555-5555-555555555501",
+        "key": "SAMPLE_BANNER",
+        "value": "{\"text\": \"\\u65e7\\u5e93\", \"enabled\": true}",
+        "is_active": true,
+        "access": false,
+        "inherit": true,
+        "mode_type": 0
+      }
+    ],
+    "system_userpersonalconfig": [
+      {
+        "id": 900001,
+        "key": "sample_theme",
+        "value": "\"dark\"",
+        "is_active": true,
+        "access": false,
+        "owner_id": 900001,
+        "mode_type": 0
+      }
+    ],
+    "system_uploadfile": [
+      {
+        "id": 900001,
+        "filename": "legacy-sample.txt",
+        "filesize": "__FILESIZE__",
+        "mime_type": "text/plain",
+        "filepath": "upload/legacy-sample.txt",
+        "md5sum": "__MD5__",
+        "is_upload": true,
+        "is_tmp": false
+      }
+    ],
+    "notifications_messagecontent": [
+      {
+        "id": 900001,
+        "title": "旧库公告-结构对齐样本",
+        "message": "旧库公告正文",
+        "level": "primary",
+        "notice_type": 1,
+        "publish": true
+      }
+    ],
+    "notifications_messagecontent_notice_dept": [
+      {
+        "id": 1,
+        "messagecontent_id": 900001,
+        "deptinfo_id": "11111111-1111-1111-1111-111111111101"
+      }
+    ],
+    "notifications_messagecontent_notice_role": [
+      {
+        "id": 1,
+        "messagecontent_id": 900001,
+        "userrole_id": "22222222-2222-2222-2222-222222222200"
+      }
+    ],
+    "notifications_messagecontent_file": [
+      {
+        "id": 1,
+        "messagecontent_id": 900001,
+        "uploadfile_id": 900001
+      }
+    ],
+    "notifications_messageuserread": [
+      {
+        "id": 1,
+        "notice_id": 900001,
+        "owner_id": 900001,
+        "unread": false
+      },
+      {
+        "id": 2,
+        "notice_id": 900001,
+        "owner_id": 900002,
+        "unread": true
+      }
+    ],
+    "system_modellabelfield": [
+      {
+        "id": "66666666-6666-6666-6666-666666666601",
+        "name": "system.userinfo",
+        "label": "用户",
+        "field_type": 0,
+        "mode_type": 0
+      },
+      {
+        "id": "66666666-6666-6666-6666-666666666602",
+        "name": "system.userinfo.username",
+        "label": "用户名",
+        "field_type": 1,
+        "mode_type": 0,
+        "parent_id": "66666666-6666-6666-6666-666666666601"
+      }
+    ]
+  }
+}
