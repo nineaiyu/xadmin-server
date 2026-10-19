@@ -2,8 +2,8 @@
 # -*- coding:utf-8 -*-
 """[[verbose_name]] 的 AI 动作声明骨架（generate_crud 生成）。
 
-注册方式：在 ai/utils/ai_api_registry.py 里 import 本模块的 AI_READ_ACTIONS，并并入 API_ACTION_SPECS；
-只读动作可直接注册（AI 工具目录 / MCP / 原生 function calling 三者同源）。
+注册方式：本文件位于应用根目录，声明由 ai.utils.ai_registry 自动发现并合并
+（无需改动 ai 应用）；只读动作可直接启用（AI 工具目录 / MCP / 原生 function calling 三者同源）。
 
 写动作（create/update/destroy）启用前需确认：412 审批口径、字段权限、幂等语义，
 格式见文件末尾注释。
@@ -15,7 +15,8 @@ from ai.utils.ai_api_actions import api_action
 
 RESOURCE_PATH = "[[resource]]"
 
-AI_READ_ACTIONS = {
+AI_ACTIONS = {
+[[block_start]]
     "[[model_snake]].list": api_action(
         key="[[model_snake]].list",
         label=_("[[verbose_name]]列表"),
@@ -26,7 +27,7 @@ AI_READ_ACTIONS = {
             "search": {"type": "string", "in": "query", "description": "关键字"},
             "page": {"type": "int", "in": "query", "description": "页码"},
             "size": {"type": "int", "in": "query", "description": "每页条数"},
-        },
+        },[[modules]]
     ),
     "[[model_snake]].detail": api_action(
         key="[[model_snake]].detail",
@@ -36,8 +37,9 @@ AI_READ_ACTIONS = {
         path=f"{RESOURCE_PATH}/<pk>",
         params={
             "pk": {"type": "pk", "in": "path", "required": True, "description": "主键"},
-        },
+        },[[modules]]
     ),
+[[block_end]]
 }
 
 # 写动作（确认审批与权限后放开）：

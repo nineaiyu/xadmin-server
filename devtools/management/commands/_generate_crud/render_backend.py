@@ -35,7 +35,9 @@ class RenderBackendMixin:
         作为 ``[[header]]`` 行块填充进各产物模板。
         """
         if not standalone:
-            return [f"# {ctx['verbose_name']} {title}（generate_crud 生成）：{note}", ""]
+            # 生成块内不补空行：模板在 [[imports]] 之后已留两个空行；块内 imports 为空时
+            # （同一应用第二个模型的常见情形）再补一行会变成 3 个空行，ruff format 不通过
+            return [f"# {ctx['verbose_name']} {title}（generate_crud 生成）：{note}"]
         return [
             "#!/usr/bin/env python",
             "# -*- coding:utf-8 -*-",

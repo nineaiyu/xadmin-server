@@ -113,11 +113,52 @@ class TestArtifacts:
         path = backend / "demo" / "ai_declarations.py"
         assert path.exists(), "缺少 AI 声明产物"
         text = path.read_text(encoding="utf8")
-        assert "AI_READ_ACTIONS" in text
+        assert "AI_ACTIONS" in text
+        assert "AI_READ_ACTIONS" not in text  # 统一使用 AI_ACTIONS 约定
         assert '"/api/demo/book"' in text
         assert "api_action(" in text
         assert "# AI_WRITE_ACTIONS" in text  # 写动作以注释给出
         assert "TAGGABLE_MODEL_KEYS" not in text  # 未加 --with-tags 时不出现标签声明
+        _assert_python_compiles(backend)
+        _assert_ruff_clean(backend)
+
+    def test_ai_declarations_follow_module_trim(self, workspace):
+        """--with-module 时声明自带 modules 归属（停用模块即从 AI 目录移除）。"""
+        backend, _ = _generate(workspace, "--with-module", "--module-id", "crm")
+        text = (backend / "demo" / "ai_declarations.py").read_text(encoding="utf8")
+        assert 'modules=("crm",)' in text
+        _assert_python_compiles(backend)
+        _assert_ruff_clean(backend)
+
+    def test_ai_declarations_merge_multiple_models(self, workspace):
+        """同一应用多模型按生成块合并，不产生第二个 AI_ACTIONS 覆盖前者。"""
+        backend, client = workspace
+        for model in ("task.ExportRecord", "task.ImportRecord"):
+            call_command(
+                "generate_crud",
+                model,
+                "--skip-frontend",
+                "--skip-menu-seed",
+                output=str(backend),
+                frontend_root=str(client),
+            )
+        path = backend / "task" / "ai_declarations.py"
+        text = path.read_text(encoding="utf8")
+        assert text.count("AI_ACTIONS = {") == 1
+        assert "export_record.list" in text and "import_record.list" in text
+        assert text.count("xadmin:generated:ai-actions-export_record:start") == 1
+        assert text.count("xadmin:generated:ai-actions-import_record:start") == 1
+        # 重复生成同一模型：跳过且不改内容（幂等）
+        before = path.read_text(encoding="utf8")
+        call_command(
+            "generate_crud",
+            "task.ImportRecord",
+            "--skip-frontend",
+            "--skip-menu-seed",
+            output=str(backend),
+            frontend_root=str(client),
+        )
+        assert path.read_text(encoding="utf8") == before
         _assert_python_compiles(backend)
         _assert_ruff_clean(backend)
 

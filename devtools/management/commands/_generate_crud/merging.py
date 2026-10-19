@@ -4,6 +4,7 @@
 
 import ast
 import json
+import re
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -65,6 +66,8 @@ class MergeMixin:
             return "写入"
         if item["mode"] == "block":
             return self._merge_block(path, item["key"], item["content"], force)
+        if item["mode"] == "ai_actions":
+            return self._merge_ai_actions(path, item["key"], item["content"], force)
         if item["mode"] == "seed_rows":
             return self._merge_seed_rows(path, item["content"])
         if item["mode"] == "seed_manifest":
@@ -98,6 +101,62 @@ class MergeMixin:
         # 文件尾部若为模块级定义，标记前需两个空行（ruff format 口径）
         path.write_text(text.rstrip("\n") + "\n\n\n" + block, encoding="utf-8")
         return "追加生成块"
+
+    @staticmethod
+    def _block_span(text: str, key: str) -> Any:
+        """定位带缩进的生成块（AI 声明嵌在 dict 内，标记行前有缩进）；返回 (start, end)。"""
+        start = BLOCK_START.format(key=key)
+        end = BLOCK_END.format(key=key)
+        first = re.search(rf"^[ \t]*{re.escape(start)}[ \t]*$", text, re.M)
+        if first is None:
+            return None
+        second = re.search(rf"^[ \t]*{re.escape(end)}[ \t]*$", text[first.end() :], re.M)
+        if second is None:
+            return None
+        return first.start(), first.end() + second.end()
+
+    def _merge_ai_actions(self, path: Path, key: str, content: str, force: bool) -> str:
+        """AI 声明按模型分块合并：同一应用多模型共存，重复生成幂等。
+
+        ``ai_declarations.py`` 的 ``AI_ACTIONS`` 是一个 dict，无法用整文件生成块
+        （第二个模型会覆盖第一个）；这里以 dict 内注释块为锚点，向内追加/替换。
+        """
+        if not path.exists():
+            path.write_text(content, encoding="utf-8")
+            return "写入"
+        text = path.read_text(encoding="utf-8")
+        new_span = self._block_span(content, key)
+        if new_span is None:
+            raise CommandError(f"AI 声明产物缺少生成块标记：{key}")
+        new_block = content[new_span[0] : new_span[1]]
+        old_span = self._block_span(text, key)
+        if old_span is not None:
+            if not force:
+                return "跳过（AI 动作已存在，--force 替换）"
+            path.write_text(text[: old_span[0]] + new_block + text[old_span[1] :], encoding="utf-8")
+            return "更新 AI 动作"
+        # 追加位置：最后一个 AI 生成块之后（文末还有写动作注释块，不能用 rfind("}")）；
+        # 兼容旧文件（无生成块）时插到 AI_ACTIONS / AI_READ_ACTIONS 的起始行之后
+        last_end = None
+        for match in re.finditer(r"^[ \t]*# --- xadmin:generated:ai-actions-[^:]+:end ---[ \t]*$", text, re.M):
+            last_end = match
+        if last_end is not None:
+            head = text[: last_end.end()].rstrip("\n")
+            tail = text[last_end.end() :].lstrip("\n")
+            new_text = head + "\n" + new_block.rstrip("\n") + "\n" + tail
+        else:
+            # 旧版生成物（无生成块）：已含本模型声明时不再追加，避免 dict 重复 key
+            model_snake = key.removeprefix("ai-actions-")
+            if f'"{model_snake}.list"' in text:
+                return "跳过（检测到旧格式 AI 声明，未重复追加）"
+            anchor = re.search(r"^AI_(?:READ_)?ACTIONS\s*=\s*\{[ \t]*$", text, re.M)
+            if anchor is None:
+                raise CommandError(f"AI 声明文件缺少 AI_ACTIONS 字典：{path}")
+            head = text[: anchor.end()].rstrip("\n")
+            tail = text[anchor.end() :].lstrip("\n")
+            new_text = head + "\n" + new_block.rstrip("\n") + "\n" + tail
+        path.write_text(new_text, encoding="utf-8")
+        return "追加 AI 动作"
 
     def _merge_seed_rows(self, path: Path, content: str) -> str:
         """按主键合并种子行（同一模型的多个生成产物写进同一个规范文件，幂等）。"""
