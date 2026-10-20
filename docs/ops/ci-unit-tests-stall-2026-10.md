@@ -315,8 +315,10 @@ master 栈：`queue.get(timeout=2.0)`（空转等事件）。
    改为 session 级 seed（每 worker 一次）+ 测试内事务回滚，或至少用 `--apps` 限定装载面。
 2. **批量写权限同步**：`_ensure_role_fields` / `fill_field_permissions` 的 per-menu
    `.set()` 收敛为「收集缺口 → bulk_create / 按角色一次 set」，削掉峰值。
-3. CI 兜底（本批已具备）：看门狗 150s + 10min 上限（已验证可转储）；PG service 增加
-   `--log-min-duration-statement=10s` 与 `--log-lock-waits=on`——下次复现时容器日志
-   （失败时由 Stop containers 步骤倾出）直接给出服务端慢查询/锁等待视角。
+3. CI 兜底（本批已具备）：看门狗 150s + 10min 上限（已验证可转储）；新增步骤在测试前
+   执行 `ALTER SYSTEM SET log_min_duration_statement='10s'` 与 `log_lock_waits=on`
+   并 `pg_reload_conf()`（service 的 `options` 只接受 docker create 参数，不能直传
+   postgres 启动参数）——下次复现时容器日志（失败时由 Stop containers 步骤倾出）
+   直接给出服务端慢查询/锁等待视角。
 4. 短期止血：失败 job 重跑换 runner（同 runner 内两次 attempt 高度相关，attempt 内重试
    帮助有限）。

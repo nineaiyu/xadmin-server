@@ -31,8 +31,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
-          --log-min-duration-statement=10s
-          --log-lock-waits=on
       redis:
         # 真 Redis（生产同款 django_redis backend 与 channel layer），同 perf.yml 既有形态
         image: redis:8.10.2
@@ -91,6 +89,18 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq gettext
           uv run --no-sync python manage.py compilemessages
+
+      - name: Tune PG logging (slow queries / lock waits)
+        # service 的 options 只接受 docker create 参数（不是 postgres 启动参数），
+        # 只能用运行时 ALTER SYSTEM + reload 打开服务端视角：卡死复现时，
+        # >10s 的语句与 >1s 的锁等待会随 Stop containers 步骤的容器日志倾出，
+        # 直接给出「PG 慢查询 / 锁等待」还是「客户端侧阻塞」的判据。
+        run: |
+          psql "host=127.0.0.1 port=55433 user=server password=pgtest dbname=xadmin_realtest" \
+            -v ON_ERROR_STOP=1 \
+            -c "ALTER SYSTEM SET log_min_duration_statement = '10s'" \
+            -c "ALTER SYSTEM SET log_lock_waits = on" \
+            -c "SELECT pg_reload_conf()"
 
       - name: Run tests (parallel, real PostgreSQL + Redis)
         # 口径不变：-n auto + --cov-fail-under=85（2026-09-18 上调 82 → 85）。
