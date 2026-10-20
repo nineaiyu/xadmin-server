@@ -85,9 +85,16 @@ class TestSeedDemoBook:
         from demo.models import Book
         from demo_seed.management.commands.seed_demo_book import DEMO_BOOKS, PERIODIC_TASK_NAME, PERIODIC_TASK_PATH
 
-        names = [item[0] for item in DEMO_BOOKS]
+        names = [item["name"] for item in DEMO_BOOKS]
         call_command("seed_demo_book")
         assert Book.objects.filter(name__in=names).count() == len(DEMO_BOOKS)
+        # 专用字段教学样本随种子带值（phone / color / rich_text）
+        payloads = {item["name"]: item for item in DEMO_BOOKS}
+        for name, payload in payloads.items():
+            book = Book.objects.get(name=name)
+            assert book.contact_phone == payload["contact_phone"]
+            assert book.theme_color == payload["theme_color"]
+            assert book.introduction == payload["introduction"]
         task = PeriodicTask.objects.get(name=PERIODIC_TASK_NAME)
         assert task.task == PERIODIC_TASK_PATH
         assert task.enabled is False  # 默认停用，任务管理页手动启用/立即运行
@@ -96,6 +103,16 @@ class TestSeedDemoBook:
         call_command("seed_demo_book")
         assert Book.all_objects.filter(name__in=names).count() == len(DEMO_BOOKS)
         assert PeriodicTask.objects.filter(name=PERIODIC_TASK_NAME).count() == 1
+
+        # 存量演示书（升级前旧数据）：新字段空值重跑补齐；已编辑过的值不被覆盖
+        legacy = Book.objects.get(name=names[1])
+        legacy.contact_phone = ""
+        legacy.theme_color = "#123456"
+        legacy.save()
+        call_command("seed_demo_book")
+        refreshed = Book.objects.get(pk=legacy.pk)
+        assert refreshed.contact_phone != ""  # 空值兜底补上演示值
+        assert refreshed.theme_color == "#123456"  # 用户改过的颜色保留
 
         # 曾在回收站的示例书籍重复执行后自动复活
         pk = Book.objects.get(name=names[0]).pk

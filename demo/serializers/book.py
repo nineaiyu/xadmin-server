@@ -86,6 +86,9 @@ class BookSerializer(BaseModelSerializer):
             "isbn",
             "author",
             "publisher",
+            # phone / color 进列表列展示四通道渲染；introduction 为长富文本，只留表单与详情
+            "contact_phone",
+            "theme_color",
             "publication_date",
             "price",
             "on_shelf_time",

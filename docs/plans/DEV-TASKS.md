@@ -30,7 +30,7 @@
   `*_image` filterKind、新增 field-types.md；demo.Book 活样本；CHANGELOG 记 PhoneField 口径变更。
   偏差：公告正文 rich_text 试点暂缓。验证：后端全量 pytest exit 0、前端 2439 passed、
   各门禁与 smoke/tag/demo E2E 全绿；全量并行 E2E 首轮暴露的 theme-dark/global-search
-  竞态已修（重载后等路由就绪、搜索权限改 computed）并隔离复跑通过。
+  竞态已修（重载后等路由就绪、搜索权限改 computed）；最终全量并行 E2E 741 passed（4 shard exit 0）。
 
 - **2026-10-19 内置角色授权缺口全面审计（test 角色补缺 + 守护扩容，改动留工作区待提交）**：
   对 10-14 文件中心批登记的「其余页面同类授权缺口 43 处」做全面对账（种子层 + 运行库双层）。
