@@ -31,6 +31,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
+          --log-min-duration-statement=10s
+          --log-lock-waits=on
       redis:
         # 真 Redis（生产同款 django_redis backend 与 channel layer），同 perf.yml 既有形态
         image: redis:8.10.2
@@ -136,14 +138,16 @@ jobs:
                   && [ "$idle" -ge 150 ] && [ ! -f "$LOG.stalled" ]; then
                   echo "!!! 连续 ${idle}s 无输出，判定假死：转储线程栈 !!!" | tee -a "$LOG"
                   touch "$LOG.stalled"
-                  # 进程快照：STAT（D=不可中断内核态）与 wchan 直接区分阻塞位置。
+                  # 进程快照写独立文件：pytest 系的 stdout 是「非 O_APPEND」文件
+                  # 描述符，与看门狗的 >> 追加写共用同一文件会因偏移竞争互相覆盖
+                  # （2026-10-20 run 39371081711 的快照即因此被后续转储覆盖丢失）。
                   # worker 命令行是 "…/python -u -c import sys;exec(…)"（execnet
                   # bootstrap，不含 pytest/execnet 字样），须按该特征匹配
                   {
                     echo "--- 转储时刻进程快照 ---"
                     ps -eo pid,ppid,stat,wchan:32,etime,cmd \
                       | grep -E 'pytest -n auto|python -u -c' | grep -v grep
-                  } >> "$LOG" 2>&1
+                  } > "test-reports/snapshot-${attempt}.log" 2>&1
                   # uv run 会再包一层：pid 最大的匹配项才是 pytest 主进程，其直接
                   # 子进程是 execnet worker（worker 命令行不含 pytest 字样）
                   PY=$(pgrep -f "pytest -n auto" | sort -n | tail -1)
@@ -195,6 +199,8 @@ jobs:
             test-reports/junit-1.xml
             test-reports/junit-2.xml
             test-reports/pytest.log
+            test-reports/snapshot-1.log
+            test-reports/snapshot-2.log
           if-no-files-found: warn
           retention-days: 7
 

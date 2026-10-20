@@ -1,9 +1,11 @@
 # CI「Unit Tests 跑到 92% 停摆后超时」排查记录（2026-10）
 
 > 用途：把**已掌握的证据、已排除的方向、已做的处置与待判定的疑点**集中成一份可交接材料。
-> 结论状态：**根因未定**，属间歇性；本机无法复现，取证手段已随流程内置（见 §6）。
-> **2026-10-20 下午续查见 §10**：已证伪磁盘慢盘假说、排除「用例内阻塞」，机制收敛到
-> xdist 用例间隙的事件管线（两个候选帧）；同时发现并修复了看门狗「永远无法触发」的缺陷。
+> 结论状态：**已定谳（2026-10-20 夜间，见 §11）**——卡点是尾部种子测试 fixture 内的
+> PostgreSQL 查询等待（`load_init_json → sync_builtin_roles → permission.field.set()`），
+> PG 被 4 worker 并发的 permission-sync 写风暴压到饱和；runner 间差异为 PG 吞吐的宿主级
+> 差异。§10 的「用例之外」结论已被 §11 推翻（当时复查转储用的格式串写错），保留原文留痕。
+> 取证链路（看门狗 150s + 10min 上限）已在 run 39371081711 验证可用。
 
 ## 1. 现象
 
@@ -167,7 +169,10 @@ gh run download <run-id> -n pytest-junit      # 内含 pytest.log（含卡点线
    `write=88s` 系 `checkpoint_completion_target` 按设计摊匀，不是慢盘信号。慢盘/IO 退化方向终结。
 5. **冻结窗口业务写入塌陷 ~30 倍**：运行期 WAL 约 168MB/5min（≈34MB/min），冻结期掉到
    ~2.2MB/2.2min（≈1MB/min，且零 `test_*` 会话）→ worker 是**真的停了**，不是在慢速干活。
-6. **worker 在静默期不在任何用例内（铁证）**：`faulthandler_timeout=600` 自 10-18 提交
+6. **worker 在静默期不在任何用例内（铁证）**：**〔2026-10-20 夜间修正：本段结论错误，
+   已被 §11 推翻——复查用 grep 模式写错（faulthandler 实际输出为 `Timeout (0:10:00)!`，
+   不含 "detected"），旧运行确有 600s 转储，worker 就在用例内。保留原文以留痕。〕**
+   `faulthandler_timeout=600` 自 10-18 提交
    （18ac9548）起对全部 10-19/10-20 取消运行生效（已按各 run 的 headSha 核对 pytest.ini），
    对这些运行全量复查转储特征（`Timeout … detected` / `Current thread 0x` / `Fatal Python error`）
    **零命中**。17-33 分钟零完成 + 零转储，在「用例/夹具内阻塞」下不可能成立（任一 worker 在单个
@@ -186,6 +191,9 @@ gh run download <run-id> -n pytest-junit      # 内含 pytest.log（含卡点线
    **当前最有效的止血是重跑失败 job（换 runner）**。
 
 ### 10.2 机制收敛（两个候选帧，都在 master 侧事件管线上）
+
+> **〔已被 §11 推翻：现场栈证明卡点在 worker 的 fixture 内 PG 查询等待，候选 A/B 均排除。
+> 本节保留以留痕。〕**
 
 读本仓 `.venv` 的 xdist 3.8.0 源码确认：worker 用例间隙只有两处可无限期阻塞，且都不在
 faulthandler 计时范围内（`xdist/remote.py::run_one_test`）：
@@ -238,3 +246,77 @@ SIGINT 前应先出现积压消化导致的 dots 爆发，实际是连续静默�
 3. 若两周内转储仍未触发（阈值仍偏高或形态变化），改用 py-spy dump（Linux 同用户可 attach，
    不依赖进程自身信号处理）。
 4. 业务侧不受影响：这是 CI 门禁链路问题，正式库/容器栈无关联改动。
+
+## 11. 定谳（2026-10-20 run 39371081711：看门狗首次成功转储）
+
+### 11.1 事件
+
+推送 `7c48ad95`（看门狗参数修复）后 run 39371081711：两次 attempt 均在约 6min、
+92-94% 处断流；**看门狗在 150s 静默处正常触发**（04:53:53 / 05:03:31），对全部
+worker 与 master 发 SIGABRT 后 exit 134；job 于 05:03:43 失败（20min，符合预算）。
+artifact 的 `pytest.log` 内含 `Fatal Python error: Aborted` 全线程栈。
+
+### 11.2 卡点栈（决定性证据）
+
+worker gw0 的主线程（`Current thread`）：
+
+```
+psycopg/connection.py:484 wait
+psycopg/cursor.py:113 execute
+django/db/backends/utils.py:105 _execute        （... results_iter / Query.__iter__）
+django/db/models/fields/related_descriptors.py:1309 set
+identity/builtin.py:185 _ensure_role_fields
+identity/builtin.py:133 sync_builtin_roles
+system/management/commands/load_init_json.py:228 _sync_builtin_roles_after_seed
+system/management/commands/load_init_json.py:113 handle
+tests/unit/system/test_dump_split_apps.py:30 seeded        ← 测试 fixture
+_pytest/fixtures.py:1005 call_fixture_func
+（...→ xdist/remote.py:227 run_one_test）
+```
+
+C 栈同时给出 `libc poll+0x4d`——**客户端在 socket 上等 PostgreSQL 响应**。
+master 栈：`queue.get(timeout=2.0)`（空转等事件）。
+
+结论：**卡点 = 尾部种子测试 fixture 内的 PG 查询等待**。不是 xdist 调度饿死、
+不是 send 背压、不是磁盘/VM/CPU 冻结。
+
+### 11.3 对 §10 的修正（留痕）
+
+1. **「faulthandler 从未触发」不成立**：`dump_traceback_later` 的真实输出是
+   `Timeout (0:10:00)!`（**无 "detected" 字样**），§10 复查用的模式串写错。
+   用正确模式重扫旧运行：`39179235398` 在 2026-10-19T00:21:54 即有 600s 转储
+   （另有 3 个旧运行同样命中）。旧运行的静默期 worker 就在用例内，与今天同源。
+2. §10.2 的候选 A（worker 空队列饿死）/ B（协议后 send 背压）均被现场栈排除。
+
+### 11.4 完整机制
+
+1. 尾部区（约 92-94%，`tests/unit/system/` 的种子测试组）**每个测试的 fixture 都跑
+   完整 `load_init_json`**：`sync_builtin_roles` → `_ensure_role_fields` 对角色授权的
+   **每个菜单**执行「查/建 FieldPermission → `permission.field.set(all_fields)`」
+   （每菜单一次 M2M DELETE+INSERT），收尾还有 `fill_field_permissions()` 全量补缺。
+2. 4 个 worker 并发进入同一区域 → 4 vCPU runner 上的 PG service 容器被 permission-sync
+   写风暴饱和；单条查询从 ms 级劣化到几十秒~分钟级（客户端观测即 psycopg `poll` 等待），
+   单个 fixture 可超 10 分钟。
+3. 期间无任何 pytest 事件 → master 空转、进度冻结。旧 40min 上限下靠「偶尔跑完」收尾
+   （14m29s / 39min 的绿运行与「爆发式进度」），8/10min 上限下必然失败。
+4. 每次 attempt 约 6min 处的「4 条连接被 `administrator command` 终止 + 立即
+   checkpoint（DROP DATABASE 特征）」= **某个跑得快的 worker 已清空自己的队列、正常
+   session 收尾**：conftest 的 `_terminate_other_sessions` 终止自己池上的连接，
+   pytest-django 随后销毁自己的测试库——是「其它 worker 还在磨」的症状而非原因；
+   attempt 2 的 `test_xadmin_realtest_gw0 already exists` = attempt 1 的 gw0 被 ABRT
+   未收尾的遗留库（pytest-django 建库重试会 DROP 重建，无害）。
+5. runner 间差异 = **PG 吞吐的宿主级差异**（同规格实例的 CPU steal / 数据文件读延迟等）：
+   同一提交双实例一绿一卡；绿 4m46s、慢跑 14m/39m；本次 attempt 1 前 92% 只用 6min
+   （约 1.3x），进入尾巴后崩塌到单测试 10min+。
+
+### 11.5 处置建议（按性价比）
+
+1. **根治：砍掉种子测试的重复全量装载**——65+ 个测试每个都 `call_command("load_init_json")`；
+   改为 session 级 seed（每 worker 一次）+ 测试内事务回滚，或至少用 `--apps` 限定装载面。
+2. **批量写权限同步**：`_ensure_role_fields` / `fill_field_permissions` 的 per-menu
+   `.set()` 收敛为「收集缺口 → bulk_create / 按角色一次 set」，削掉峰值。
+3. CI 兜底（本批已具备）：看门狗 150s + 10min 上限（已验证可转储）；PG service 增加
+   `--log-min-duration-statement=10s` 与 `--log-lock-waits=on`——下次复现时容器日志
+   （失败时由 Stop containers 步骤倾出）直接给出服务端慢查询/锁等待视角。
+4. 短期止血：失败 job 重跑换 runner（同 runner 内两次 attempt 高度相关，attempt 内重试
+   帮助有限）。
