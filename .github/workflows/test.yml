@@ -11,8 +11,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     # 时长预算 ≤ 20 min（容器启动 + uv sync 占大头，pytest 本体真库实测分钟级）；
-    # 40 min 为安全天花板，超时即门禁红
-    timeout-minutes: 40
+    # 2 次尝试 × 8 min + 环境准备 ≈ 19 min，仍在预算内
+    timeout-minutes: 20
 
     services:
       postgres:
@@ -90,54 +90,68 @@ jobs:
           uv run --no-sync python manage.py compilemessages
 
       - name: Run tests (parallel, real PostgreSQL + Redis)
-        # 口径不变：-n auto + --cov-fail-under=85；--cov-fail-under=85 覆盖率门禁：
-        # 2026-09-18 上调 82 → 85（实测 87%，满足 ≤ 实测 -2pp 上移规则），2026-09-27
-        # 测量口径扩至拆分后的全部 app，真环境档实测 89%，门禁维持不变
-        # 不引入 pytest-rerunfailures：失败即暴露，真抖动靠客户端 E2E 抖动榜单定位
-        # （scripts/e2e-flaky-report.mjs），重试只会把真回归伪装成通过
+        # 口径不变：-n auto + --cov-fail-under=85（2026-09-18 上调 82 → 85）。
         #
-        # 假死自愈（2026-10-20）：
-        #   现场：进度线在 92% 处断流 17~30 分钟后「一次性爆发 3~5 行」，PG 全程空闲，
-        #   job 撞 40 分钟超时被杀；纯文档提交同样命中，本机同命令 2~5 分钟稳定通过。
-        #   形态与「pytest 主进程写 stdout 被日志收集端卡住」一致（worker 事件经主进程
-        #   输出，主进程阻塞时所有 worker 一并停摆，恢复后集中打印）。
+        # 假死自愈 + 现场取证（2026-10-20）：
+        #   现场：进度线在 92% 处断流 17~30 分钟后「一次性爆发 3~5 行」，PG 侧零写入，
+        #   主进程停在 xdist dsession 等待事件（worker 不再上报）；本机同命令 2~5 分钟
+        #   稳定通过。faulthandler 的按用例看门狗不触发，说明卡点在用例之外（fixture /
+        #   worker 内部等待）。
         # 处理：
-        #   1) pytest 输出重定向到文件（文件写入不会阻塞），每分钟回显一行进度；
-        #   2) 单次尝试 15 分钟硬上限，超时（退出码 124）视为假死自动重试一次，
-        #      真失败（断言/覆盖率）原样退出不重试；
-        #   3) 结束后打印输出尾部，失败时仍可定位；junit 与完整日志作为 artifact 上传。
+        #   1) pytest 输出写文件（不再经 stdout 管道），每分钟回显一行进度；
+        #   2) 后台看门狗：连续 240s 日志无增长即判定假死，对 pytest 主进程与全部 worker
+        #      发 SIGABRT，由 faulthandler 把所有线程栈写入日志，再结束本次尝试 —— 下一次
+        #      红灯直接带卡点栈，不再靠猜；
+        #   3) 单次尝试 8 分钟硬上限（正常 2~3 分钟），假死/超时自动重试一次；
+        #      真失败（断言/覆盖率）原样退出不重试；完整日志与 junit 一并作为 artifact 上传。
         run: |
-          # 写在 workspace 内：失败时随 artifact 一起上传，便于回溯卡住位置
           LOG=test-reports/pytest.log
           for attempt in 1 2; do
             echo "=== pytest attempt ${attempt} ==="
-            rm -f "$LOG" "$LOG.done"
+            rm -f "$LOG" "$LOG.done" "$LOG.stalled"
+            timeout --signal=INT --kill-after=60 8m \
+              uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85 \
+                --junitxml="test-reports/junit-${attempt}.xml" > "$LOG" 2>&1 &
+            TPID=$!
             (
+              last=0; idle=0
               while [ ! -f "$LOG.done" ]; do
-                sleep 60
+                sleep 30
                 [ -f "$LOG.done" ] && break
-                printf '  [watch] 进度行 %s，末尾：%s\n' \
-                  "$(grep -c '%]' "$LOG" 2>/dev/null || echo 0)" \
+                cur=$(stat -c %s "$LOG" 2>/dev/null || echo 0)
+                if [ "$cur" -eq "$last" ]; then idle=$((idle + 30)); else idle=0; last=$cur; fi
+                printf '  [watch] 进度行 %s，静默 %ss，末尾：%s\n' \
+                  "$(grep -c '%]' "$LOG" 2>/dev/null || echo 0)" "$idle" \
                   "$(tail -c 160 "$LOG" 2>/dev/null | tr '\n' ' ')"
+                if [ "$idle" -ge 240 ] && [ ! -f "$LOG.stalled" ]; then
+                  echo "!!! 连续 ${idle}s 无输出，判定假死：转储线程栈 !!!" | tee -a "$LOG"
+                  touch "$LOG.stalled"
+                  PY=$(pgrep -P "$TPID" | head -1)
+                  for w in $(pgrep -P "$PY"); do kill -ABRT "$w" 2>/dev/null; done
+                  sleep 4
+                  kill -ABRT "$PY" 2>/dev/null
+                  sleep 3
+                  kill -TERM "$TPID" 2>/dev/null
+                fi
               done
             ) &
             WATCH=$!
-            timeout --signal=INT --kill-after=60 15m \
-              uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85 \
-                --junitxml="test-reports/junit-${attempt}.xml" > "$LOG" 2>&1
+            wait "$TPID"
             code=$?
             touch "$LOG.done"
             wait "$WATCH" 2>/dev/null || true
             echo "--- pytest 输出尾部（attempt ${attempt}, exit ${code}）---"
-            tail -n 120 "$LOG"
+            # 卡点栈可能很长：完整日志随 artifact 上传，这里回显尾部 300 行
+            tail -n 300 "$LOG"
             [ "$code" -eq 0 ] && exit 0
-            if [ "$code" -ne 124 ]; then
-              echo "pytest failed with exit ${code}（真失败，不重试）" >&2
-              exit "$code"
+            if [ -f "$LOG.stalled" ] || [ "$code" -eq 124 ]; then
+              echo "pytest 假死或超时（已转储卡点栈），重试…" >&2
+              continue
             fi
-            echo "pytest 超时（疑似日志收集阻断导致的假死），重试…" >&2
+            echo "pytest failed with exit ${code}（真失败，不重试）" >&2
+            exit "$code"
           done
-          echo "pytest 连续两次超时" >&2
+          echo "pytest 连续两次假死/超时" >&2
           exit 124
 
       - name: Upload test report (junit)
