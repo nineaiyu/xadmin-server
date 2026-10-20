@@ -105,6 +105,7 @@ jobs:
         #   3) 单次尝试 8 分钟硬上限（正常 2~3 分钟），假死/超时自动重试一次；
         #      真失败（断言/覆盖率）原样退出不重试；完整日志与 junit 一并作为 artifact 上传。
         run: |
+          mkdir -p test-reports
           LOG=test-reports/pytest.log
           for attempt in 1 2; do
             echo "=== pytest attempt ${attempt} ==="
