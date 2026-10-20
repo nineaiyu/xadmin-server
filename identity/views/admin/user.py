@@ -160,7 +160,7 @@ class UserViewSet(
 
     def perform_update(self, serializer: Any) -> None:
         self._assert_target_mutable(serializer.instance)
-        return super().perform_update(serializer)
+        super().perform_update(serializer)
 
     def perform_destroy(self, instance: Any) -> Any:
         # 抛 ValidationError（400 + 可读文案）而不是裸 Exception（会归一成 500，

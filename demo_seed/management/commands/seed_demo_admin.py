@@ -130,7 +130,8 @@ def is_destructive(menu: Menu) -> bool:
 
 
 def _demo_dept() -> DeptInfo | None:
-    return DeptInfo.objects.filter(code=DEMO_DEPT_CODE).first()
+    dept: DeptInfo | None = DeptInfo.objects.filter(code=DEMO_DEPT_CODE).first()
+    return dept
 
 
 def ensure_demo_dept_tree() -> None:
@@ -184,7 +185,8 @@ def _backfill_dept_belong(model_label: str, *, creator_scoped: bool) -> int:
 
     queryset = model.objects.filter(dept_belong__isnull=True)
     if not creator_scoped:
-        return queryset.update(dept_belong=demo_dept)
+        updated: int = queryset.update(dept_belong=demo_dept)
+        return updated
 
     queryset = queryset.filter(
         Q(creator__username__startswith="demo_") | Q(creator__username=ADMIN_USERNAME, creator__is_superuser=False)
