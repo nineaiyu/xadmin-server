@@ -24,6 +24,7 @@
 ``_normalize_pane_body`` 归一化，杜绝「同一字段在两套模式两套规则」。
 """
 
+import re
 from typing import Any
 
 from django.utils.translation import gettext_lazy as _
@@ -79,10 +80,49 @@ SCREEN_MIN_ANIMATION_MS = 0
 SCREEN_MAX_ANIMATION_MS = 5000
 #: 文本窗格格式：plain 缺省（不下发）/ rich（受限标记，前端先转义再套白名单渲染）
 SCREEN_TEXT_FORMATS = ("plain", "rich")
+#: 大屏主题取值（与 ``Screen.ScreenTheme`` 同值；本模块刻意不依赖模型）
+SCREEN_THEMES = ("dark", "light", "auto")
+#: 大屏主题色：三/六位 hex（`#rgb` / `#rrggbb`），空串 = 跟随站点主色
+SCREEN_THEME_COLOR_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
 
 class ScreenLayoutError(ValueError):
     """窗格载荷非法（消息可直接回给调用方）。"""
+
+
+def normalize_screen_theme(raw: Any) -> str:
+    """大屏主题归一化：空值回落 ``dark``（存量观感），白名单外拒绝。
+
+    主题不是画布载荷（不进窗格链路），但校验失败与窗格同通道回 ``ScreenLayoutError``，
+    序列化器统一转成 400。
+    """
+    if raw is None:
+        return SCREEN_THEMES[0]
+    value = str(raw).strip().lower()
+    if not value:
+        return SCREEN_THEMES[0]
+    if value not in SCREEN_THEMES:
+        raise ScreenLayoutError(_("Invalid screen theme: {}").format(value))
+    return value
+
+
+def normalize_screen_theme_color(raw: Any) -> str:
+    """大屏主题色归一化：空值 = 跟随站点主色；``#rgb`` 展开为小写 ``#rrggbb``。
+
+    只收 hex（``#rgb`` / ``#rrggbb``）：主题色最终写进 CSS 主色令牌，收 rgb()/hsl()
+    之类形态会让「同一份配置在不同浏览器解析出不同色」。
+    """
+    if raw is None:
+        return ""
+    value = str(raw).strip()
+    if not value:
+        return ""
+    if not SCREEN_THEME_COLOR_RE.match(value):
+        raise ScreenLayoutError(_("Invalid screen theme color: {}").format(value))
+    value = value.lower()
+    if len(value) == 4:
+        value = "#" + "".join(char * 2 for char in value[1:])
+    return value
 
 
 def boxes_overlap(first: dict[str, Any], second: dict[str, Any]) -> bool:

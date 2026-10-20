@@ -440,4 +440,28 @@ class Migration(migrations.Migration):
             model_name="screentemplateversion",
             constraint=models.UniqueConstraint(fields=("template", "version"), name="uniq_screen_template_version"),
         ),
+        # 大屏主题（深色缺省，存量观感不变）与主题色（空 = 跟随站点主色）：
+        # 纯加列、带默认值，存量库由 docs/ops/sql/dataset-screen-theme.sql 手工补齐。
+        migrations.AddField(
+            model_name="screen",
+            name="theme",
+            field=models.CharField(
+                choices=[("dark", "Dark"), ("light", "Light"), ("auto", "Follow site")],
+                default="dark",
+                help_text="Display theme: dark / light / follow site",
+                max_length=8,
+                verbose_name="Theme",
+            ),
+        ),
+        migrations.AddField(
+            model_name="screen",
+            name="theme_color",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Screen accent color (hex); empty = follow site primary",
+                max_length=9,
+                verbose_name="Theme color",
+            ),
+        ),
     ]

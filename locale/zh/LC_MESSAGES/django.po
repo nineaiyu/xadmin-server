@@ -12238,3 +12238,30 @@ msgstr "查看 LDAP 目录设置"
 
 msgid "LDAP/AD directory sync configuration status (server, base DN, sync state; no credentials)"
 msgstr "LDAP/AD 目录同步配置状态（服务器、基准 DN、同步状态；不含凭据）"
+
+msgid "Dark"
+msgstr "深色"
+
+msgid "Light"
+msgstr "浅色"
+
+msgid "Follow site"
+msgstr "跟随站点"
+
+msgid "Theme"
+msgstr "主题"
+
+msgid "Theme color"
+msgstr "主题色"
+
+msgid "Display theme: dark / light / follow site"
+msgstr "投屏主题：深色 / 浅色 / 跟随站点"
+
+msgid "Screen accent color (hex); empty = follow site primary"
+msgstr "大屏主题色（hex，如 #006be6）：空 = 跟随站点主色"
+
+msgid "Invalid screen theme: {}"
+msgstr "无效的大屏主题：{}"
+
+msgid "Invalid screen theme color: {}"
+msgstr "无效的大屏主题色：{}（仅支持 #rgb / #rrggbb）"
