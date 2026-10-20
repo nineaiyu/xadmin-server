@@ -132,21 +132,27 @@ jobs:
                 --junitxml="test-reports/junit-${attempt}.xml" > "$LOG" 2>&1 &
             TPID=$!
             (
-              last=0; idle=0
+              last=0; idle=0; elapsed=0
               while [ ! -f "$LOG.done" ]; do
                 sleep 30
                 [ -f "$LOG.done" ] && break
+                elapsed=$((elapsed + 30))
                 cur=$(stat -c %s "$LOG" 2>/dev/null || echo 0)
                 if [ "$cur" -eq "$last" ]; then idle=$((idle + 30)); else idle=0; last=$cur; fi
+                # grep -c 无匹配时先输出 0 再以非零退出，|| echo 0 会拼成两行，
+                # 触发 "[: 0 0: integer expression expected"；|| true 保留单个 0
+                progress=$(grep -c '%]' "$LOG" 2>/dev/null || true)
+                progress=${progress:-0}
                 printf '  [watch] 进度行 %s，静默 %ss，末尾：%s\n' \
-                  "$(grep -c '%]' "$LOG" 2>/dev/null || echo 0)" "$idle" \
+                  "$progress" "$idle" \
                   "$(tail -c 160 "$LOG" 2>/dev/null | tr '\n' ' ')"
-                # 首个进度行出现后才武装（跳过 worker 建库/迁移启动期）。阈值必须
-                # 显著早于单次尝试上限：实测断流点 ~5.5-6min，静默只累计到 120-150s
-                # 就被上限杀掉，240s 的旧阈值永远无法触发转储
-                if [ "$(grep -c '%]' "$LOG" 2>/dev/null || echo 0)" -gt 0 ] \
-                  && [ "$idle" -ge 150 ] && [ ! -f "$LOG.stalled" ]; then
-                  echo "!!! 连续 ${idle}s 无输出，判定假死：转储线程栈 !!!" | tee -a "$LOG"
+                # 触发条件（首个进度行之后）：
+                #   a) 静默 ≥150s——硬冻结形态（run 39371081711 已验证可转储）；
+                #   b) 已运行 ≥570s——慢磨形态（run 39374822846 在 93.7% 磨到 10min
+                #      上限，静默从未到 150s，此前拿不到栈）：上限前 30s 主动转储。
+                if [ "$progress" -gt 0 ] && [ ! -f "$LOG.stalled" ] \
+                  && { [ "$idle" -ge 150 ] || [ "$elapsed" -ge 570 ]; }; then
+                  echo "!!! 触发取证转储（静默 ${idle}s / 已运行 ${elapsed}s）!!!" | tee -a "$LOG"
                   touch "$LOG.stalled"
                   # 进程快照写独立文件：pytest 系的 stdout 是「非 O_APPEND」文件
                   # 描述符，与看门狗的 >> 追加写共用同一文件会因偏移竞争互相覆盖
@@ -157,6 +163,13 @@ jobs:
                     echo "--- 转储时刻进程快照 ---"
                     ps -eo pid,ppid,stat,wchan:32,etime,cmd \
                       | grep -E 'pytest -n auto|python -u -c' | grep -v grep
+                    echo "--- 转储时刻 CPU/负载（st=steal 判断宿主抢占）---"
+                    cat /proc/loadavg
+                    top -bn1 | sed -n '1,4p'
+                    vmstat 1 3 2>/dev/null | tail -4
+                    echo "--- 转储时刻 PG 会话（state/wait_event 区分服端执行/锁等待/ClientRead）---"
+                    psql "host=127.0.0.1 port=55433 user=server password=pgtest dbname=xadmin_realtest" \
+                      -At -c "select pid, datname, state, coalesce(wait_event_type,'-'), coalesce(wait_event,'-'), now()-query_start, left(regexp_replace(query,'\s+',' ','g'),160) from pg_stat_activity where datname like 'test_%' order by query_start" 2>&1
                   } > "test-reports/snapshot-${attempt}.log" 2>&1
                   # uv run 会再包一层：pid 最大的匹配项才是 pytest 主进程，其直接
                   # 子进程是 execnet worker（worker 命令行不含 pytest 字样）

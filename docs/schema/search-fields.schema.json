@@ -45,6 +45,7 @@
               "date",
               "datetime",
               "datetimerange",
+              "decimal",
               "email",
               "field",
               "file upload",
@@ -64,14 +65,17 @@
               "object_related_field",
               "object_related_field_file",
               "object_related_field_image",
+              "password",
               "phone",
+              "rich_text",
               "select",
               "select-multiple",
               "select-ordering",
               "string",
               "text",
               "textarea",
-              "time"
+              "time",
+              "url"
             ]
           },
           {

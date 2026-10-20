@@ -15,14 +15,16 @@ input_type 词表（稳定公共契约）由本模块两面守护：
 跨栈的「词表 ⇄ 前端渲染器注册表」双向覆盖对账在 client 仓库 vitest
 （RePlusPage __tests__）执行，本模块不读 client 源码。
 
-覆盖两个真实视图集：demo.BookViewSet（演示模型，字段形态最全）与
-system.UserViewSet（业务模型，字段最复杂）。
+覆盖：demo.BookViewSet（演示模型，字段形态最全）、system.UserViewSet（业务模型，
+字段最复杂），以及 URLconf 递归收集到的全部带 ``search-columns`` / ``search-fields``
+动作的视图集（新增类型逃逸即 CI 失败）。
 """
 
 import json
 from pathlib import Path
 
 import pytest
+from django.urls import get_resolver
 from jsonschema import Draft7Validator
 from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.utils import encoders
@@ -55,6 +57,60 @@ def _fetch_data_payload(viewset_cls, action_map, url, superuser):
     assert response.status_code == 200, response.data
     assert response.data["code"] == 1000
     return response.data["data"]
+
+
+#: 无法脱离请求上下文构造的视图集（逐项写理由；保持最小，禁止用它掩盖未登记类型）
+SKIPPED_METADATA_VIEWSETS: dict[str, str] = {}
+
+_METADATA_ENDPOINTS = {"search_columns": "search-columns", "search_fields": "search-fields"}
+
+
+def _collect_metadata_targets() -> list[dict]:
+    """递归遍历 URLconf，收集全部暴露元数据动作的视图集（类去重）。
+
+    只认路由回调里实际注册的动作（``callback.actions``），避免把仅继承 mixin
+    但未挂路由的类纳入；完整路径仅用于构造请求，不做 URL resolve。
+    """
+    targets: dict[type, dict] = {}
+
+    def walk(patterns, prefix: str) -> None:
+        for pattern in patterns:
+            part = str(getattr(pattern, "pattern", ""))
+            if hasattr(pattern, "url_patterns"):
+                walk(pattern.url_patterns, prefix + part)
+                continue
+            callback = getattr(pattern, "callback", None)
+            cls = getattr(callback, "cls", None)
+            actions = getattr(callback, "actions", None) or {}
+            endpoints = {_METADATA_ENDPOINTS[action] for action in actions.values() if action in _METADATA_ENDPOINTS}
+            if cls is None or not endpoints:
+                continue
+            entry = targets.setdefault(
+                cls,
+                {
+                    "cls": cls,
+                    "url": "/" + (prefix + part).lstrip("^").rstrip("$"),
+                    "endpoints": set(),
+                },
+            )
+            entry["endpoints"] |= endpoints
+
+    walk(get_resolver().url_patterns, "")
+    return list(targets.values())
+
+
+def _emit_metadata(target: dict, superuser) -> set[tuple[str, str]]:
+    cls, url = target["cls"], target["url"]
+    emitted: set[tuple[str, str]] = set()
+    for action, endpoint in _METADATA_ENDPOINTS.items():
+        if endpoint not in target["endpoints"]:
+            continue
+        payload = _fetch_data_payload(cls, {"get": action}, f"{url.rstrip('/')}/{endpoint}", superuser)
+        emitted |= {(endpoint, item["input_type"]) for item in payload}
+    return emitted
+
+
+METADATA_TARGETS = _collect_metadata_targets()
 
 
 def _assert_matches_schema(payload, schema_name: str):
@@ -141,3 +197,27 @@ class TestVocabularyLockstep:
 
     def test_prefix_family_guard_nonempty(self):
         assert INPUT_TYPE_PREFIX_FAMILIES == ("api-",), "api-* 族例外与 Schema pattern / client 守护强耦合"
+
+
+@pytest.mark.parametrize(
+    "target",
+    METADATA_TARGETS,
+    ids=lambda target: target["cls"].__name__,
+)
+def test_all_metadata_viewsets_input_type_closure(target, superuser):
+    """全量视图集闭包：URLconf 中每个暴露元数据动作的视图集都不许下发未登记类型。
+
+    这是「后端定义了字段、前端没渲染」从线上现形提前到 CI 拦截的关键门禁；
+    无法脱离请求上下文构造的视图集走 ``SKIPPED_METADATA_VIEWSETS``（逐项写理由）。
+    """
+    assert target["cls"].__name__ not in SKIPPED_METADATA_VIEWSETS, (
+        f"{target['cls'].__name__} 已登记 skip：{SKIPPED_METADATA_VIEWSETS[target['cls'].__name__]}"
+    )
+    emitted = _emit_metadata(target, superuser)
+    assert emitted, "元数据载荷不应为空"
+    undeclared = {t for _, t in emitted if not t.startswith(INPUT_TYPE_PREFIX_FAMILIES)} - DECLARED_INPUT_TYPES
+    assert not undeclared, (
+        f"{target['cls'].__name__} 下发了未登记的 input_type：{sorted(undeclared)}——"
+        "先在 packages/xadmin-common/common/core/modelset/input_types.py 词表登记（连同呈现归宿），"
+        "再同步 docs/schema 枚举与前端渲染器（扩展流程）；确需豁免时在 SKIPPED_METADATA_VIEWSETS 写明理由"
+    )

@@ -55,6 +55,7 @@
               "date",
               "datetime",
               "datetimerange",
+              "decimal",
               "email",
               "field",
               "file upload",
@@ -74,14 +75,17 @@
               "object_related_field",
               "object_related_field_file",
               "object_related_field_image",
+              "password",
               "phone",
+              "rich_text",
               "select",
               "select-multiple",
               "select-ordering",
               "string",
               "text",
               "textarea",
-              "time"
+              "time",
+              "url"
             ]
           },
           {
@@ -164,6 +168,17 @@
       "tabs_label": {
         "type": "string",
         "description": "表单分组 tabs 名称"
+      },
+      "decimal_places": {
+        "type": "integer",
+        "description": "小数位数（DRF DecimalField 标准属性，字段声明时下发；前端推导 step / precision）"
+      },
+      "predefine": {
+        "type": "array",
+        "description": "颜色预设色板（ColorField 显式声明 predefine 时下发；前端色板组件消费）",
+        "items": {
+          "type": "string"
+        }
       }
     }
   }

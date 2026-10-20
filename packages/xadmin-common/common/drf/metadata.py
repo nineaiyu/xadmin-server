@@ -77,6 +77,11 @@ class SimpleMetadataWithFilters(SimpleMetadata):
             # 输入框并把对象值字符串化成 "[object Object]"（如 LDAP 组到角色映射）；
             # 语义是自由键值 JSON，复用 JSON 编辑器（isinstance 同时覆盖 HStoreField）
             tp = "json"
+        elif isinstance(field, serializers.BaseSerializer):
+            # 嵌套 Serializer / ListSerializer：元数据协议没有嵌套表单能力，
+            # 统一按 JSON 呈现（只读详情为 pretty JSON，写入由 JsonInput 提交对象）。
+            # 不隐式展开为子字段表单——嵌套写入契约（create/update）仍由业务序列化器负责。
+            tp = "json"
         elif isinstance(field, BasePrimaryKeyRelatedField):
             # isinstance 而非精确类名匹配，业务侧子类（如 DisplayRelatedField）同样生效
             tp = "object_related_field"

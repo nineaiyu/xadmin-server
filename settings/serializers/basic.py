@@ -4,17 +4,13 @@
 # filename : basic
 # author : ly_13
 # date : 8/1/2024
-import re
-
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.fields import ColorField, StepFloatField
+from common.core.validators import COLOR_PATTERN as WATERMARK_COLOR_RE
 from identity.services import invalid_user_cache_signal
 from settings.serializers.contract import SettingSaveContractMixin
-
-# 水印文字颜色：#rgb/#rrggbbaa 十六进制、rgb()/rgba()/hsl()/hsla() 函数、CSS 颜色名
-WATERMARK_COLOR_RE = re.compile(r"^(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\([^)]*\)|[a-zA-Z]+)$")
 
 
 class BasicSettingSerializer(SettingSaveContractMixin, serializers.Serializer):

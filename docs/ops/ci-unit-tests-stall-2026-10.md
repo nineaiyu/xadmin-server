@@ -1,11 +1,14 @@
 # CI「Unit Tests 跑到 92% 停摆后超时」排查记录（2026-10）
 
 > 用途：把**已掌握的证据、已排除的方向、已做的处置与待判定的疑点**集中成一份可交接材料。
-> 结论状态：**已定谳（2026-10-20 夜间，见 §11）**——卡点是尾部种子测试 fixture 内的
-> PostgreSQL 查询等待（`load_init_json → sync_builtin_roles → permission.field.set()`），
-> PG 被 4 worker 并发的 permission-sync 写风暴压到饱和；runner 间差异为 PG 吞吐的宿主级
-> 差异。§10 的「用例之外」结论已被 §11 推翻（当时复查转储用的格式串写错），保留原文留痕。
-> 取证链路（看门狗 150s + 10min 上限）已在 run 39371081711 验证可用。
+> 结论状态：**卡点位置已定、触发源待收口**——卡点栈确定在 worker 的种子测试 fixture 内
+> （`load_init_json → sync_builtin_roles → permission.field.set → psycopg wait`，见 §11.2），
+> 但第三次运行（§11.6）打开了 PG 慢查询/锁等待日志后**零命中**，说明服务端不是慢在
+> 「长语句/锁等待」；当前指向 runner 的 CPU 吞吐（客户端侧大量小往返爬行），已补
+> CPU/steal 与 `pg_stat_activity` 快照待下次复现收口。§10 的「用例之外」结论已被 §11
+> 推翻（当时复查转储用的格式串写错），保留原文留痕。
+> 取证链路（看门狗 150s + 9m30s 到期前转储 + 10min 上限）已在 run 39371081711/39374822846
+> 部分验证，最新一批增强见 §11.6。
 
 ## 1. 现象
 
@@ -322,3 +325,32 @@ master 栈：`queue.get(timeout=2.0)`（空转等事件）。
    直接给出服务端慢查询/锁等待视角。
 4. 短期止血：失败 job 重跑换 runner（同 runner 内两次 attempt 高度相关，attempt 内重试
    帮助有限）。
+
+### 11.6 第三次运行（39374822846）的新证据：服务端不是瓶颈
+
+在 `474335eb` 上运行 39374822846（首次带 PG 慢查询取证）：
+
+1. **attempt 1 是「慢磨」而非冻结**：`5958 passed, 46 skipped in 600.95s`，进度到 93% 后
+   被 10 分钟上限 SIGINT——全程无 150s 静默，看门狗未触发（旧脚本没有到期转储）。
+2. **attempt 2 在 91% 出现新症状**：日志尾部反复出现
+   `reentrant lock watchdog exit: ('xadmin:lock:test:lock:<uuid>', LockNotOwnedError)`
+   ——阻塞期间 Redis 锁 TTL 过期、看门狗线程退出（是「慢」的次生症状，不是原因）；
+   之后仍每 30~60s 零星出一个点，最后 150s 静默时看门狗与 10min 上限**同时刻**触发，
+   timeout 的 SIGINT 先把 worker 优雅带走，只留下 master 栈（`pytest_sessionfinish`）。
+3. **PG 侧决定性反转**：本运行 `ALTER SYSTEM SET log_min_duration_statement='10s'` 与
+   `log_lock_waits=on` 已生效（步骤输出 `ALTER SYSTEM`×2 + `pg_reload_conf = t`），
+   但整个 20 分钟里 **零条 `duration:` 慢语句、零条 `still waiting for` 锁等待**；
+   只有 3 次 worker 正常收尾的 `terminating connection` + 立即 checkpoint（§11.4.4 的解释成立）。
+   → **「PG 被写风暴压饱和到单语句几十秒」不成立**：服务端从未执行 ≥10s 的语句。
+4. **修正后的机制判断**：worker 栈里的 `psycopg wait → poll()` 只说明「采样时在等
+   socket」，不代表单次等待很长；服务端既没长语句也没锁等待、PG 为空闲态，
+   最符合证据的是 **runner 的 CPU 吞吐塌陷**（宿主 steal/配额），使尾部区域成千上万次
+   小往返被拉长成分钟级——与「同一提交双实例一绿一卡」「绿 4m46s vs 慢跑 14m/39m」
+   的宿主级差异一致。
+5. **本批新增取证**（下次复现即可定案）：
+   - 看门狗触发条件增加「已运行 ≥570s」的到期转储（解决本案中「上限与看门狗同时刻、
+     worker 被 SIGINT 先带走」的竞态）；
+   - 快照增加 `/proc/loadavg`、`top`（含 `st` steal）、`vmstat`、以及
+     `pg_stat_activity`（state / wait_event / query_start / query 摘要）——
+     可直接区分「服端执行/锁等待」与「backend 空闲（ClientRead）→ 客户端侧」；
+   - 修复看门狗里 `grep -c` 无匹配时输出两行导致的 `[: 0 0: integer expression expected`。
