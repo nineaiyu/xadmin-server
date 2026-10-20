@@ -126,7 +126,8 @@ jobs:
                 if [ "$idle" -ge 240 ] && [ ! -f "$LOG.stalled" ]; then
                   echo "!!! 连续 ${idle}s 无输出，判定假死：转储线程栈 !!!" | tee -a "$LOG"
                   touch "$LOG.stalled"
-                  PY=$(pgrep -P "$TPID" | head -1)
+                  # uv run 会再套一层：直接按命令行找 pytest 主进程，再取其 worker 子进程
+                  PY=$(pgrep -f "pytest -n auto" | head -1)
                   for w in $(pgrep -P "$PY"); do kill -ABRT "$w" 2>/dev/null; done
                   sleep 4
                   kill -ABRT "$PY" 2>/dev/null
