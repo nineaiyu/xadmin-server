@@ -174,10 +174,15 @@ def get_active_user_pk_by_username(username: Any) -> Any:
 
 
 def serialize_user_info(user: Any) -> dict[str, Any]:
-    """按对外契约序列化用户信息（供 WebSocket 等非 DRF 场景使用）。"""
+    """按对外契约序列化用户信息（供 WebSocket 等非 DRF 场景使用）。
+
+    本人身份信息必须绕开字段权限：WS 认证请求是裸 ASGIRequest，没有 HTTP
+    权限中间件挂载的 ``request.fields``，字段权限 fail-closed 会把载荷裁成
+    空对象——客户端拿不到 pk，聊天室「自己的消息」左右对齐随之失效。
+    """
     from identity.serializers.userinfo import UserInfoSerializer
 
-    typed_value: dict[str, Any] = UserInfoSerializer(instance=user).data
+    typed_value: dict[str, Any] = UserInfoSerializer(instance=user, ignore_field_permission=True).data
     return typed_value
 
 
