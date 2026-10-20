@@ -70,10 +70,25 @@ get_env_key() {
 # 注释占位只取第一处：模板里 DB_PASSWORD 在「本地非 Docker 开发」备用注释块还有一份
 # 占位，必须保持注释态，否则产生重复键（YAML 后者胜出，改主段会静默不生效）。
 # 地址范围 1,/re/ 在 GNU 与 BSD sed 下语义一致（只到首次匹配），不能用 GNU 专有的 0,/re/。
+#
+# 块序列/块映射形态（KEY: 换行缩进子项，数组类配置常见的手工写法）不能只替换键行——
+# 残留的缩进子项会直接产生非法 YAML（实测：ALLOWED_HOSTS 被手工配为块序列域名后
+# 重跑本脚本，容器解析 config 崩溃）。键行存在但无内联值时先删块再追加标量值。
 set_yaml_key() {
   local key=$1 value=$2
-  if grep -qE "^${key}:" config.yml; then
+  if grep -qE "^${key}:[[:space:]]*[^[:space:]]" config.yml; then
+    # 键行有内联值：原位改值，不动其他行
     sed -i.bak "s@^${key}:.*@${key}: ${value}@" config.yml && rm -f config.yml.bak
+  elif grep -qE "^${key}:" config.yml; then
+    if grep -A1 -E "^${key}:" config.yml | grep -qE '^[[:space:]]+[^[:space:]#]'; then
+      # 块形态（键行下方紧跟缩进子项）：删键行与子项后追加标量值
+      remove_yaml_key_block "$key" >config.yml.tmp
+      printf '\n%s: %s\n' "${key}" "${value}" >>config.yml.tmp
+      mv config.yml.tmp config.yml
+    else
+      # 真空值行（无子项）：原位改值，键保持在原配置段位置
+      sed -i.bak "s@^${key}:.*@${key}: ${value}@" config.yml && rm -f config.yml.bak
+    fi
   elif grep -qE "^#[[:space:]]*${key}:" config.yml; then
     sed -i.bak "1,/^#[[:space:]]*${key}:/s@^#[[:space:]]*${key}:.*@${key}: ${value}@" config.yml && rm -f config.yml.bak
   else
@@ -84,6 +99,30 @@ set_yaml_key() {
 get_yaml_key() {
   [ -f config.yml ] || return 0
   sed -n -E "s/^${1}:[[:space:]]*//p" config.yml | head -n1 | tr -d "\"'"
+}
+
+# 键是否已配置（块感知）：键行有内联值，或键行存在且下方紧跟缩进子项（块序列/块映射）。
+# get_yaml_key 对块形态返回空串，直接判空会把用户已配置的块形态键误判为未配置
+# （进而覆盖成推导值）——判定"是否动用户配置"必须用本函数。
+yaml_key_configured() {
+  [ -f config.yml ] || return 1
+  if grep -qE "^${1}:[[:space:]]*[^[:space:]]" config.yml; then
+    return 0
+  fi
+  # 键行存在但无内联值：仅当下方紧跟缩进子项（首个非空白字符非 #）才算已配置
+  grep -A1 -E "^${1}:" config.yml | grep -qE '^[[:space:]]+[^[:space:]#]'
+}
+
+# 删除顶层键行及其连续缩进子项（块序列/块映射），输出到 stdout。
+# awk 而非 sed：sed 的相对地址区间（,+N）与多行删除在 GNU/BSD 下行为不一致；
+# awk 逐行状态机两端语义一致。首个非缩进行（含注释/空行/下一顶层键）即块结束。
+remove_yaml_key_block() {
+  awk -v key="^${1}:" '
+    $0 ~ key { in_block = 1; next }
+    in_block && /^[[:space:]]/ { next }
+    in_block { in_block = 0 }
+    { print }
+  ' config.yml
 }
 
 # 从 docker-compose.yml 解析 ipam 固定子网（compose 网段的事实源）：网络 down/up 重建后
@@ -151,8 +190,9 @@ fi
 
 # 服务端 5.0 起 DEBUG=false 且 ALLOWED_HOSTS 为空即拒绝启动（fail-fast）；
 # config_example.yml 中该键是注释占位， fresh 部署若不补上，容器一起来就重启循环。
-# 与安装器 ensure_allowed_hosts 同口径：本机 IP + 回环推导 JSON 数组；已配置则不覆盖。
-if [ "$NO_SECRETS" != "1" ] && [ -z "$(get_yaml_key ALLOWED_HOSTS)" ]; then
+# 与安装器 ensure_allowed_hosts 同口径：本机 IP + 回环推导 JSON 数组；已配置则不覆盖
+# （块感知判定：手工配置的块序列域名形态 get_yaml_key 返回空，不能据此判未配置）。
+if [ "$NO_SECRETS" != "1" ] && ! yaml_key_configured ALLOWED_HOSTS; then
   host_ip="$(get_host_ip)"
   entries="\"127.0.0.1\", \"localhost\""
   if [ -n "$host_ip" ]; then
@@ -167,10 +207,10 @@ fi
 # 零手工即取到访客真实 IP；解析不到子网（无 compose 文件 / 自定义网络）时不猜值，
 # 降级为漏配提示（代理在别的网段时需手工补充其地址）。
 compose_subnet="$(get_compose_subnet)"
-if [ "$NO_SECRETS" != "1" ] && [ -n "$compose_subnet" ] && [ -z "$(get_yaml_key TRUSTED_PROXY_IPS)" ]; then
+if [ "$NO_SECRETS" != "1" ] && [ -n "$compose_subnet" ] && ! yaml_key_configured TRUSTED_PROXY_IPS; then
   set_yaml_key TRUSTED_PROXY_IPS "[\"${compose_subnet}\"]"
   echo "[init-config]   TRUSTED_PROXY_IPS: 已按 compose 固定子网写入 [\"${compose_subnet}\"]（网络重建不失效）"
-elif [ -z "$(get_yaml_key TRUSTED_PROXY_IPS)" ]; then
+elif ! yaml_key_configured TRUSTED_PROXY_IPS; then
   echo "[init-config]   TRUSTED_PROXY_IPS: 未配置（默认不信任 X-Forwarded-For；直连部署无需配置）"
   echo "[init-config]   ↳ 若通过 HTTP 反代（宿主机 nginx / xadmin-web 容器）访问，请在 config.yml 配置"
   echo "[init-config]     该项为后端看到的直连地址（如 docker 网桥网段），否则审计日志记录代理内网 IP"

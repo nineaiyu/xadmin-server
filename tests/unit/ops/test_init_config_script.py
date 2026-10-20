@@ -17,6 +17,7 @@
 """
 
 import os
+import re
 import stat
 import subprocess
 
@@ -253,6 +254,58 @@ def test_trusted_proxy_ips_hint_without_compose_subnet(tmp_path):
     assert result.returncode == 0, result.stderr
     assert "TRUSTED_PROXY_IPS" not in result.stdout
     assert _yaml_value(_read(config_path), "TRUSTED_PROXY_IPS") == "['172.18.0.0/16']"
+
+
+def _to_block(text: str, key: str, item: str) -> str:
+    """把 config 文本中的内联数组键改写为块序列形态（模拟用户手工配置的常见写法）。"""
+    return re.sub(rf"^{key}: .+$", f"{key}:\n  - {item}", text, count=1, flags=re.M)
+
+
+def test_block_sequence_keys_survive_rerun(tmp_path):
+    """块序列键（数组类配置的常见手工形态）重跑不覆盖、不残留缩进子项。
+
+    复现修复前炸点：set_yaml_key 只替换键行，块形态的 ALLOWED_HOSTS 被改写为内联
+    数组后缩进子项残留 → 容器解析 config.yml 直接 ParserError。
+    """
+    import yaml
+
+    run_init_config(tmp_path)
+    config_path = tmp_path / "config.yml"
+    text = _to_block(_read(config_path), "ALLOWED_HOSTS", "xadmin.dvcloud.xin")
+    text = _to_block(text, "TRUSTED_PROXY_IPS", "10.0.0.0/8")
+    config_path.write_text(text)
+
+    result = run_init_config(tmp_path)
+    assert result.returncode == 0, result.stderr
+
+    # 修复前此处 ParserError（键行改内联数组 + 子项残留 = 非法 YAML）
+    parsed = yaml.safe_load(_read(config_path))
+    assert parsed["ALLOWED_HOSTS"] == ["xadmin.dvcloud.xin"]  # 手工域名不被推导值覆盖
+    assert parsed["TRUSTED_PROXY_IPS"] == ["10.0.0.0/8"]  # 手工网段不被自动写入覆盖
+
+    # 幂等：再跑一次仍不覆盖、YAML 仍合法
+    run_init_config(tmp_path)
+    parsed = yaml.safe_load(_read(config_path))
+    assert parsed["ALLOWED_HOSTS"] == ["xadmin.dvcloud.xin"]
+    assert parsed["TRUSTED_PROXY_IPS"] == ["10.0.0.0/8"]
+
+
+def test_block_form_empty_value_key_gets_scalar_backfilled(tmp_path):
+    """键行存在但真为空值（无子项）：判定未配置，删除键行后追加标量值且 YAML 合法。"""
+    import yaml
+
+    run_init_config(tmp_path)
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(_to_block(_read(config_path), "ALLOWED_HOSTS", "xadmin.dvcloud.xin"))
+    # 把块序列改成真空值形态（键行下方无缩进子项）
+    config_path.write_text(_read(config_path).replace("ALLOWED_HOSTS:\n  - xadmin.dvcloud.xin", "ALLOWED_HOSTS:"))
+
+    result = run_init_config(tmp_path)
+    assert result.returncode == 0, result.stderr
+
+    parsed = yaml.safe_load(_read(config_path))
+    assert isinstance(parsed["ALLOWED_HOSTS"], list) and parsed["ALLOWED_HOSTS"]
+    assert not (_read(config_path)).count("ALLOWED_HOSTS:") > 1  # 无重复键
 
 
 def test_fallback_appends_when_template_has_no_placeholder(tmp_path):
