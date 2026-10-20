@@ -44,11 +44,14 @@ def _env_value(env_text: str, key: str) -> str:
     return ""
 
 
-def run_init_config(tmp_path, *args: str, template: str | None = None) -> subprocess.CompletedProcess:
-    """在 tmp_path 搭最小环境（脚本 + 模板 + compose_env.sh）并执行。
+def run_init_config(
+    tmp_path, *args: str, template: str | None = None, compose_file: str | None = "repo"
+) -> subprocess.CompletedProcess:
+    """在 tmp_path 搭最小环境（脚本 + 模板 + compose_env.sh + docker-compose.yml）并执行。
 
-    template 传入时使用自定义 config_example.yml（fallback 用例验证无占位模板），
-    否则拷贝真实仓库模板。
+    template 传入时使用自定义 config_example.yml（fallback 用例验证无占位模板）；
+    compose_file="repo" 拷贝真实 docker-compose.yml（TRUSTED_PROXY_IPS 自动写入依赖
+    解析其 ipam 子网），None 时不拷贝（验证无 compose 文件的降级提示分支）。
     """
     ops_dir = tmp_path / "ops"
     ops_dir.mkdir(exist_ok=True)
@@ -57,6 +60,10 @@ def run_init_config(tmp_path, *args: str, template: str | None = None) -> subpro
     if template is None:
         template = open(os.path.join(REPO, "config_example.yml"), "rb").read().decode()
     (tmp_path / "config_example.yml").write_text(template)
+    if compose_file == "repo":
+        compose_path = os.path.join(REPO, "docker-compose.yml")
+        if os.path.exists(compose_path):
+            (tmp_path / "docker-compose.yml").write_bytes(open(compose_path, "rb").read())
     return subprocess.run(
         ["bash", "ops/init_config.sh", *args],
         cwd=tmp_path,
@@ -203,6 +210,51 @@ def test_no_secrets_only_syncs_env(tmp_path):
     assert _env_value(env, "REDIS_PASSWORD")
 
 
+def test_trusted_proxy_ips_autofilled_from_compose_subnet(tmp_path):
+    """compose 固定子网是网段事实源：空值时自动写入，重跑幂等、已有自定义值保留。"""
+    result = run_init_config(tmp_path)
+    assert result.returncode == 0, result.stderr
+    config = _read(tmp_path / "config.yml")
+    # 写入值来自 docker-compose.yml 的 ipam.config.subnet（网络重建后恒定，不失效）
+    assert _yaml_value(config, "TRUSTED_PROXY_IPS") == '["192.168.196.0/24"]'
+    # 注释占位的子项保持注释态（主键行已有值，不产生重复键）
+    assert config.count("#   - 192.168.196.0/24") == 1
+    assert config.count("TRUSTED_PROXY_IPS:") == 1
+
+    # 幂等：重跑值不变
+    run_init_config(tmp_path)
+    assert _yaml_value(_read(tmp_path / "config.yml"), "TRUSTED_PROXY_IPS") == '["192.168.196.0/24"]'
+
+    # 已有自定义值保留（代理在别的网段时用户手工补充的地址不被覆盖）
+    config_path = tmp_path / "config.yml"
+    text = _read(config_path).replace('["192.168.196.0/24"]', '["10.0.0.0/8"]', 1)
+    config_path.write_text(text)
+    run_init_config(tmp_path)
+    assert _yaml_value(_read(config_path), "TRUSTED_PROXY_IPS") == '["10.0.0.0/8"]'
+
+
+def test_trusted_proxy_ips_hint_without_compose_subnet(tmp_path):
+    """解析不到子网（无 compose 文件）时不猜值，打印漏配提示；显式配置后静默。"""
+    result = run_init_config(tmp_path, compose_file=None)
+    assert result.returncode == 0, result.stderr
+    config = _read(tmp_path / "config.yml")
+    # 不注入值：无事实源不可猜（写错网段反而引入伪造面）
+    assert _yaml_value(config, "TRUSTED_PROXY_IPS") == ""
+    # 模板注释占位保持注释态
+    assert "# TRUSTED_PROXY_IPS:" in config
+    # 输出含漏配症状指引（HTTP 反代场景必填，日志记录代理内网 IP）
+    assert "TRUSTED_PROXY_IPS" in result.stdout
+    assert "审计日志" in result.stdout
+
+    # 已配置时静默：解注释填值后重跑，提示消失
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(config.replace("# TRUSTED_PROXY_IPS:", "TRUSTED_PROXY_IPS: ['172.18.0.0/16']", 1))
+    result = run_init_config(tmp_path, compose_file=None)
+    assert result.returncode == 0, result.stderr
+    assert "TRUSTED_PROXY_IPS" not in result.stdout
+    assert _yaml_value(_read(config_path), "TRUSTED_PROXY_IPS") == "['172.18.0.0/16']"
+
+
 def test_fallback_appends_when_template_has_no_placeholder(tmp_path):
     """模板连占位都没有：退化为末尾追加，值仍生成且两处一致。"""
     template = "\n".join(
@@ -215,7 +267,7 @@ def test_fallback_appends_when_template_has_no_placeholder(tmp_path):
         ]
     )
 
-    result = run_init_config(tmp_path, template=template)
+    result = run_init_config(tmp_path, template=template, compose_file=None)
     assert result.returncode == 0, result.stderr
 
     config = _read(tmp_path / "config.yml")

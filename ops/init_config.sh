@@ -86,6 +86,14 @@ get_yaml_key() {
   sed -n -E "s/^${1}:[[:space:]]*//p" config.yml | head -n1 | tr -d "\"'"
 }
 
+# 从 docker-compose.yml 解析 ipam 固定子网（compose 网段的事实源）：网络 down/up 重建后
+# 仍按声明创建该段，容器 IP 只在段内重排——TRUSTED_PROXY_IPS 按此网段信任永不失效。
+# 无 compose 文件 / 未声明子网时返回空（调用方降级为提示，不猜值）。
+get_compose_subnet() {
+  [ -f docker-compose.yml ] || return 0
+  sed -n 's/^[[:space:]]*- subnet:[[:space:]]*//p' docker-compose.yml | head -n1
+}
+
 echo "[init-config] 1/3 检查 config.yml ..."
 if [ ! -f config.yml ]; then
   cp config_example.yml config.yml
@@ -152,6 +160,20 @@ if [ "$NO_SECRETS" != "1" ] && [ -z "$(get_yaml_key ALLOWED_HOSTS)" ]; then
   fi
   set_yaml_key ALLOWED_HOSTS "[${entries}]"
   echo "[init-config]   ALLOWED_HOSTS: 已按本机 IP / 回环推导（[${entries}]），域名部署时改为 [\"你的域名\"]"
+fi
+
+# TRUSTED_PROXY_IPS：compose 固定子网是网段事实源（ipam.config.subnet，网络重建后恒定），
+# 解析到即可安全自动写入——宿主机 nginx 反代容器时 REMOTE_ADDR（docker 网关）必在该段内，
+# 零手工即取到访客真实 IP；解析不到子网（无 compose 文件 / 自定义网络）时不猜值，
+# 降级为漏配提示（代理在别的网段时需手工补充其地址）。
+compose_subnet="$(get_compose_subnet)"
+if [ "$NO_SECRETS" != "1" ] && [ -n "$compose_subnet" ] && [ -z "$(get_yaml_key TRUSTED_PROXY_IPS)" ]; then
+  set_yaml_key TRUSTED_PROXY_IPS "[\"${compose_subnet}\"]"
+  echo "[init-config]   TRUSTED_PROXY_IPS: 已按 compose 固定子网写入 [\"${compose_subnet}\"]（网络重建不失效）"
+elif [ -z "$(get_yaml_key TRUSTED_PROXY_IPS)" ]; then
+  echo "[init-config]   TRUSTED_PROXY_IPS: 未配置（默认不信任 X-Forwarded-For；直连部署无需配置）"
+  echo "[init-config]   ↳ 若通过 HTTP 反代（宿主机 nginx / xadmin-web 容器）访问，请在 config.yml 配置"
+  echo "[init-config]     该项为后端看到的直连地址（如 docker 网桥网段），否则审计日志记录代理内网 IP"
 fi
 
 echo "[init-config] 3/3 同步 .env（compose 凭据派生缓存）..."
