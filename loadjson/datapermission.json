@@ -701,5 +701,207 @@
       "is_active": true,
       "menu": []
     }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "9678b554-0659-4ca1-a9a0-c17d283cd774",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2026-10-20T00:00:00.000Z",
+      "updated_time": "2026-10-20T00:00:00.000Z",
+      "description": "演示租户：系统治理/日志/文件/导出/监控/任务/Webhook/开放平台只读展示",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "演示只读扩展",
+      "rules": [
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "system.menu",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "system.datapermission",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "system.modellabelfield",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "audit.datamaskrule",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "approval.approvalrule",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "approval.approvalrulelevel",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "task.importtemplate",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "audit.operationlog",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "audit.userloginlog",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "file.uploadfile",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "task.exportrecord",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "task.importrecord",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "notifications.messagecontent",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "notifications.messageuserread",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "task.webhooksubscription",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "task.webhookdelivery",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "identity.apiapplication",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "task.taskexecution",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "identity.accountrisk",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "approval.approvaldelegation",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "django_celery_beat.periodictask",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "django_celery_beat.intervalschedule",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "django_celery_beat.crontabschedule",
+          "value": "*",
+          "exclude": false
+        }
+      ],
+      "is_active": true,
+      "menu": []
+    }
   }
 ]

@@ -88,6 +88,7 @@ def test_demo_dept_is_isolated_top_level_tenant():
         "31ea340e-0c81-4d62-a141-90efc61f17e6",
         "86dc227d-6676-4c22-a28d-c98b77d0def6",
         "7218022d-0141-4df4-a134-c2d0f2676dc9",
+        "9678b554-0659-4ca1-a9a0-c17d283cd774",
     } <= set(demo["rules"])
 
 
@@ -129,6 +130,26 @@ def test_demo_scope_permissions_cover_userinfo_and_business_rows():
         "identity.deptinfo",
         "identity.post",
     } <= read_scope
+
+    read_ext = {rule["table"] for rule in by_name["演示只读扩展"]["rules"]}
+    assert {
+        "system.menu",
+        "system.datapermission",
+        "system.modellabelfield",
+        "audit.operationlog",
+        "audit.userloginlog",
+        "file.uploadfile",
+        "task.exportrecord",
+        "task.importrecord",
+        "notifications.messagecontent",
+        "task.webhooksubscription",
+        "task.webhookdelivery",
+        "identity.apiapplication",
+        "task.taskexecution",
+        "identity.accountrisk",
+        "approval.approvaldelegation",
+        "django_celery_beat.periodictask",
+    } <= read_ext
 
 
 def test_demo_role_has_avatar_upload_but_no_identity_writes():

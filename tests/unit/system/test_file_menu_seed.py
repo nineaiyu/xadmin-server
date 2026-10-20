@@ -9,8 +9,8 @@
 2. 权限点 path 正则覆盖真实端点（`django.urls.resolve` 可解析 + 正则命中），
    含 `stats` 的**隐性覆盖**语义（无独立权限点，由 `retrieve` 覆盖，前端按
    retrieve 判定是否请求）；
-3. 有文件页面授权的内置角色同步授权接口权限点——管理员全量；演示模式不进入
-   文件中心（文件列表可能包含真实文件），整页从演示角色摘除。
+3. 有文件页面授权的内置角色同步授权接口权限点——管理员全量；演示模式只读展示，
+   写操作（建改删/上传/物理清除）不出现在其 allow-list。
 """
 
 import json
@@ -57,7 +57,6 @@ STATS_PATH = "api/file/file/stats$"
 STATS_COVER = "retrieve:SystemUploadFile"
 
 ROLE_ADMIN = "admin"  # 管理员
-ROLE_DEMO = "demo"  # 演示模式
 
 
 def _load(name: str):
@@ -138,8 +137,31 @@ def test_admin_role_covers_all_file_points():
     assert not missing, f"管理员缺少文件权限点：{missing}"
 
 
-def test_demo_role_has_no_file_center_access():
-    """演示模式不进入文件中心：文件列表可能包含真实文件，整页从演示角色摘除。"""
-    menus = role_menu_pks(ROLE_DEMO)
-    assert FILE_MENU_PK not in menus, "演示模式不应持有文件页面菜单"
-    assert not ({permission_pk(name) for name in FILE_POINTS} & menus), "演示模式不应持有文件权限点"
+def test_demo_allow_list_grants_readonly_file_points():
+    """演示模式保留文件中心只读展示；上传/建改删/物理清除仍不得进入 allow-list。"""
+    from demo_seed.permissions import DEMO_ALLOWED_PERMISSION_NAMES, DEMO_PAGE_NAMES
+
+    assert "SystemUploadFile" in DEMO_PAGE_NAMES
+    read_only = {
+        "accessLogs:SystemUploadFile",
+        "config:SystemUploadFile",
+        "download:SystemUploadFile",
+        "list:SystemUploadFile",
+        "preview:SystemUploadFile",
+        "retrieve:SystemUploadFile",
+    }
+    assert read_only <= DEMO_ALLOWED_PERMISSION_NAMES
+
+    writes = {
+        "create:SystemUploadFile",
+        "partialUpdate:SystemUploadFile",
+        "destroy:SystemUploadFile",
+        "batchDestroy:SystemUploadFile",
+        "upload:SystemUploadFile",
+        "recyclePurge:SystemUploadFile",
+        "chunkInit:SystemUploadFile",
+        "chunkPart:SystemUploadFile",
+        "chunkComplete:SystemUploadFile",
+        "chunkAbort:SystemUploadFile",
+    }
+    assert not (writes & DEMO_ALLOWED_PERMISSION_NAMES)
