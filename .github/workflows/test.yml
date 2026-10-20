@@ -96,25 +96,46 @@ jobs:
         # 不引入 pytest-rerunfailures：失败即暴露，真抖动靠客户端 E2E 抖动榜单定位
         # （scripts/e2e-flaky-report.mjs），重试只会把真回归伪装成通过
         #
-        # 基础设施假死自愈（2026-10-20）：runner 磁盘 I/O 偶发劣化会让 pytest 在
-        # 90%+ 区间断流直到撞 40 分钟 job 超时（PG checkpoint 写 9MB 耗时 120s+，
-        # 纯文档提交同样命中，本机同命令稳定 2~5 分钟跑完）——纯环境抖动，不是回归。
-        # 处理：单次尝试 15 分钟硬上限（timeout SIGINT 触发 graceful 退出），超时
-        # （退出码 124）视为环境抖动自动重试一次；真失败（断言/覆盖率）原样退出
-        # 不重试。15+15+安装开销 ≤ 40 分钟 job 上限。
+        # 假死自愈（2026-10-20）：
+        #   现场：进度线在 92% 处断流 17~30 分钟后「一次性爆发 3~5 行」，PG 全程空闲，
+        #   job 撞 40 分钟超时被杀；纯文档提交同样命中，本机同命令 2~5 分钟稳定通过。
+        #   形态与「pytest 主进程写 stdout 被日志收集端卡住」一致（worker 事件经主进程
+        #   输出，主进程阻塞时所有 worker 一并停摆，恢复后集中打印）。
+        # 处理：
+        #   1) pytest 输出重定向到文件（文件写入不会阻塞），每分钟回显一行进度；
+        #   2) 单次尝试 15 分钟硬上限，超时（退出码 124）视为假死自动重试一次，
+        #      真失败（断言/覆盖率）原样退出不重试；
+        #   3) 结束后打印输出尾部，失败时仍可定位；junit 与完整日志作为 artifact 上传。
         run: |
-          PYTEST_ARGS=(-n auto --cov --cov-report=term-missing --cov-fail-under=85)
+          # 写在 workspace 内：失败时随 artifact 一起上传，便于回溯卡住位置
+          LOG=test-reports/pytest.log
           for attempt in 1 2; do
             echo "=== pytest attempt ${attempt} ==="
+            rm -f "$LOG" "$LOG.done"
+            (
+              while [ ! -f "$LOG.done" ]; do
+                sleep 60
+                [ -f "$LOG.done" ] && break
+                printf '  [watch] 进度行 %s，末尾：%s\n' \
+                  "$(grep -c '%]' "$LOG" 2>/dev/null || echo 0)" \
+                  "$(tail -c 160 "$LOG" 2>/dev/null | tr '\n' ' ')"
+              done
+            ) &
+            WATCH=$!
             timeout --signal=INT --kill-after=60 15m \
-              uv run --no-sync pytest "${PYTEST_ARGS[@]}" --junitxml="test-reports/junit-${attempt}.xml"
+              uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85 \
+                --junitxml="test-reports/junit-${attempt}.xml" > "$LOG" 2>&1
             code=$?
+            touch "$LOG.done"
+            wait "$WATCH" 2>/dev/null || true
+            echo "--- pytest 输出尾部（attempt ${attempt}, exit ${code}）---"
+            tail -n 120 "$LOG"
             [ "$code" -eq 0 ] && exit 0
             if [ "$code" -ne 124 ]; then
               echo "pytest failed with exit ${code}（真失败，不重试）" >&2
               exit "$code"
             fi
-            echo "pytest 超时（基础设施抖动），重试…" >&2
+            echo "pytest 超时（疑似日志收集阻断导致的假死），重试…" >&2
           done
           echo "pytest 连续两次超时" >&2
           exit 124
@@ -128,6 +149,7 @@ jobs:
           path: |
             test-reports/junit-1.xml
             test-reports/junit-2.xml
+            test-reports/pytest.log
           if-no-files-found: warn
           retention-days: 7
 
