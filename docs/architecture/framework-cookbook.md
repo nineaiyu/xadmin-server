@@ -184,6 +184,10 @@ config.yml              XADMIN_APPS 注册 app
 5. **门禁**：`pnpm vitest`（成对守护）+ `pnpm typecheck`（strict 全仓单轨）+ `pnpm check:contract`；
    改后端元数据后重启容器再跑 `pnpm test:e2e:fresh` 覆盖该字段的列表与详情。
 
+> 类型全集（Django 模型字段 → DRF → `input_type` → 四通道归宿）与逐类型校验归属见
+> [field-types.md](field-types.md)；全量视图集的词表闭包 + Schema 校验由
+> `tests/unit/common/test_metadata_schema.py` 守护。
+
 ### 权限
 
 - 页面级：`usePageAuth([...自定义动作])` 生成权限 map；

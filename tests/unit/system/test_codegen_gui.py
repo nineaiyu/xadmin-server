@@ -5,6 +5,7 @@
 （include/exclude 与未知字段拒绝）、产物预览（不落盘）、zip 下载。
 """
 
+import ast
 import io
 import zipfile
 
@@ -269,6 +270,48 @@ class TestDictBinding:
         }
         response = _post(superuser, "preview", payload)
         assert response.status_code == 200
+
+
+class TestFieldClass:
+    """专用字段类：显式声明生成 + 非关联字段约束。"""
+
+    def test_plan_exposes_field_class_options(self, superuser):
+        data = _get(superuser, "model_fields", {"label": "demo.Book"}).data["data"]
+        fields = {field["name"]: field for field in data["fields"]}
+        assert fields["name"]["can_field_class"] is True
+        assert "PhoneField" in fields["name"]["field_class_options"]
+        assert fields["admin"]["can_field_class"] is False
+
+    def test_field_class_generates_declaration(self, superuser):
+        payload = {
+            "model": "demo.Book",
+            "fields": [{"name": "isbn", "field_class": "PhoneField"}],
+        }
+        serializer = _serializer(_post(superuser, "preview", payload).data["data"])
+        assert "from common.core.fields import PhoneField" in serializer
+        assert "isbn = PhoneField(" in serializer
+        # 显式声明字段不能同时留在 extra_kwargs（DRF 会断言失败）
+        assert '"isbn"' not in serializer.split("extra_kwargs = {", 1)[1]
+        # 生成物必须是可编译的 Python（防止声明片段拼接坏语法）
+        ast.parse(serializer)
+
+    def test_field_class_on_relation_rejected(self, superuser):
+        payload = {
+            "model": "demo.Book",
+            "fields": [{"name": "admin", "field_class": "PhoneField"}],
+        }
+        response = _post(superuser, "preview", payload)
+        assert response.data["code"] == 1001
+        assert "非关联字段" in response.data["detail"]
+
+    def test_unknown_field_class_rejected(self, superuser):
+        payload = {
+            "model": "demo.Book",
+            "fields": [{"name": "name", "field_class": "MagicField"}],
+        }
+        response = _post(superuser, "preview", payload)
+        assert response.data["code"] == 1001
+        assert "MagicField" in response.data["detail"]
 
 
 class TestWithTestsOption:

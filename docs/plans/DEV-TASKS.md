@@ -22,6 +22,16 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
+- **2026-10-20 字段类型全量自动渲染四批次落地（改动留工作区待提交）**：
+  phone/color 缺陷修复（默认值不篡改、PhoneField 默认校验与空值收口、不再补 +86、
+  color 共享 COLOR_PATTERN、phone 详情/列表/rule）；闭包 + Schema 校验扩到 URLconf 全量
+  80 个视图集，修复 5 处逃逸（nested object→JSON、url/decimal 登记）并收口 child/children 契约；
+  词表新增 rich_text/password/url/decimal；color predefine、PhoneInput 缓存、详情对象兜底、
+  `*_image` filterKind、新增 field-types.md；demo.Book 活样本；CHANGELOG 记 PhoneField 口径变更。
+  偏差：公告正文 rich_text 试点暂缓。验证：后端全量 pytest exit 0、前端 2439 passed、
+  各门禁与 smoke/tag/demo E2E 全绿；全量并行 E2E 首轮暴露的 theme-dark/global-search
+  竞态已修（重载后等路由就绪、搜索权限改 computed）并隔离复跑通过。
+
 - **2026-10-19 内置角色授权缺口全面审计（test 角色补缺 + 守护扩容，改动留工作区待提交）**：
   对 10-14 文件中心批登记的「其余页面同类授权缺口 43 处」做全面对账（种子层 + 运行库双层）。
   **结论一（登记消化确认）**：只读与取用类缺口经 10-16 `fill_field_permissions` 自愈与

@@ -29,14 +29,17 @@ from jsonschema import Draft7Validator
 from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.utils import encoders
 
+from approval.views.leave import LeaveViewSet
 from common.core.modelset.input_types import (
     DECLARED_INPUT_TYPES,
     FALLBACK_RENDERED_INPUT_TYPES,
     INPUT_TYPE_PREFIX_FAMILIES,
 )
 from demo.views import BookViewSet
+from file.views.admin.file import UploadFileViewSet
 from identity.views.admin.login_policy import LoginAccessPolicyViewSet
 from identity.views.admin.user import UserViewSet
+from settings.views.basic import BasicSettingViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -99,13 +102,19 @@ def _collect_metadata_targets() -> list[dict]:
     return list(targets.values())
 
 
-def _emit_metadata(target: dict, superuser) -> set[tuple[str, str]]:
+def _metadata_payloads(target: dict, superuser) -> dict[str, list]:
     cls, url = target["cls"], target["url"]
-    emitted: set[tuple[str, str]] = set()
+    payloads: dict[str, list] = {}
     for action, endpoint in _METADATA_ENDPOINTS.items():
         if endpoint not in target["endpoints"]:
             continue
-        payload = _fetch_data_payload(cls, {"get": action}, f"{url.rstrip('/')}/{endpoint}", superuser)
+        payloads[endpoint] = _fetch_data_payload(cls, {"get": action}, f"{url.rstrip('/')}/{endpoint}", superuser)
+    return payloads
+
+
+def _emit_metadata(target: dict, superuser) -> set[tuple[str, str]]:
+    emitted: set[tuple[str, str]] = set()
+    for endpoint, payload in _metadata_payloads(target, superuser).items():
         emitted |= {(endpoint, item["input_type"]) for item in payload}
     return emitted
 
@@ -204,6 +213,24 @@ class TestVocabularyLockstep:
     METADATA_TARGETS,
     ids=lambda target: target["cls"].__name__,
 )
+def test_all_metadata_viewsets_match_schema(target, superuser):
+    """全量视图集载荷 Schema 校验：契约真源不仅锁词表，也锁键形状。
+
+    「词表闭包」只保证 input_type 合法；本用例保证每个真实载荷符合
+    ``docs/schema/*.schema.json``（含 child / predefine / decimal_places 等扩展键），
+    防止新增键或嵌套字段展开在无人察觉时漂移出契约。
+    """
+    payloads = _metadata_payloads(target, superuser)
+    assert payloads, "元数据载荷不应为空"
+    for endpoint, payload in payloads.items():
+        _assert_matches_schema(payload, f"{endpoint}.schema.json")
+
+
+@pytest.mark.parametrize(
+    "target",
+    METADATA_TARGETS,
+    ids=lambda target: target["cls"].__name__,
+)
 def test_all_metadata_viewsets_input_type_closure(target, superuser):
     """全量视图集闭包：URLconf 中每个暴露元数据动作的视图集都不许下发未登记类型。
 
@@ -221,3 +248,29 @@ def test_all_metadata_viewsets_input_type_closure(target, superuser):
         "先在 packages/xadmin-common/common/core/modelset/input_types.py 词表登记（连同呈现归宿），"
         "再同步 docs/schema 枚举与前端渲染器（扩展流程）；确需豁免时在 SKIPPED_METADATA_VIEWSETS 写明理由"
     )
+
+
+class TestRegisteredLongTailTypes:
+    """存量长尾登记的回归锚点：url / decimal 必须持续以正式类型下发。"""
+
+    def test_url_field_emits_registered_type(self, superuser):
+        payload = _fetch_data_payload(
+            BasicSettingViewSet, {"get": "search_columns"}, "/api/settings/basic/search-columns", superuser
+        )
+        site_url = next(item for item in payload if item["key"] == "SITE_URL")
+        assert site_url["input_type"] == "url"
+
+    def test_upload_file_url_emits_registered_type(self, superuser):
+        payload = _fetch_data_payload(
+            UploadFileViewSet, {"get": "search_columns"}, "/api/file/file/search-columns", superuser
+        )
+        file_url = next(item for item in payload if item["key"] == "file_url")
+        assert file_url["input_type"] == "url"
+
+    def test_decimal_field_emits_places_metadata(self, superuser):
+        payload = _fetch_data_payload(
+            LeaveViewSet, {"get": "search_columns"}, "/api/approval/leaves/search-columns", superuser
+        )
+        days = next(item for item in payload if item["key"] == "days")
+        assert days["input_type"] == "decimal"
+        assert days["decimal_places"] == 1

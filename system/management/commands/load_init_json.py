@@ -16,6 +16,7 @@ from common.core.modules import ModuleSeedFilter
 from system.services.seeding import (
     SeedPlan,
     SeedPlanError,
+    apply_m2m_relations,
     build_plan,
     discover,
     format_ownership,
@@ -136,6 +137,11 @@ class Command(LoadCommand):
             report = prepare(plan, target_dir, module_filter=ModuleSeedFilter.build(), using=DEFAULT_DB_ALIAS)
             self._report_notes(report, verbosity=int(options.get("verbosity", 1)))
             super().handle(*[str(label) for label in report.fixture_labels], **options)
+            # 属性型 m2m 已从 fixture 抽出，装载后一次落库：与 loaddata 逐行 set() 等价，
+            # 但把近 500 行的「JOIN + DELETE + INSERT」三连收敛成每组两条语句
+            written = apply_m2m_relations(report.m2m)
+            if written:
+                self.stdout.write(f"[种子装配] 批量写入 {written} 条多对多关系（{len(report.m2m)} 组）")
 
         self._apply_grants(plan)
 

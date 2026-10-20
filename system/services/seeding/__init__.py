@@ -11,6 +11,7 @@
 - :mod:`validate` —— 结构 / 主键 / 模型校验
 - :mod:`loader` —— 装配与装载准备
 - :mod:`rows` —— 读文件、模块裁剪、冲突预检、落盘
+- :mod:`m2m` —— 多对多关系的剥离、批量抽取与落库
 - :mod:`report` —— 命令行输出
 """
 
@@ -28,6 +29,9 @@ from .legacy import LEGACY_MODEL_LABELS as LEGACY_MODEL_LABELS
 from .legacy import legacy_models as legacy_models
 from .loader import model_classes as model_classes
 from .loader import prepare as prepare
+from .m2m import apply_m2m_relations as apply_m2m_relations
+from .m2m import extract_m2m_relations as extract_m2m_relations
+from .m2m import strip_m2m_fields as strip_m2m_fields
 from .manifest import parse_manifest as parse_manifest
 from .manifest import platform_manifest_path as platform_manifest_path
 from .ownership import OwnershipSummary as OwnershipSummary
@@ -50,7 +54,6 @@ from .rows import build_fixtures as build_fixtures
 from .rows import read_model_rows as read_model_rows
 from .rows import read_seed_rows as read_seed_rows
 from .rows import read_specs as read_specs
-from .rows import strip_m2m_fields as strip_m2m_fields
 from .split import write_layer_model as write_layer_model
 from .types import GRANTS_MODEL as GRANTS_MODEL
 from .types import KIND_CONTRACT as KIND_CONTRACT
@@ -66,6 +69,7 @@ from .types import PLATFORM as PLATFORM
 from .types import LoadReport as LoadReport
 from .types import Problem as Problem
 from .types import SeedFileSpec as SeedFileSpec
+from .types import SeedM2MBatch as SeedM2MBatch
 from .types import SeedManifest as SeedManifest
 from .types import SeedNote as SeedNote
 from .types import SeedPlan as SeedPlan
@@ -94,12 +98,14 @@ __all__ = [
     "PLATFORM",
     "Problem",
     "SeedFileSpec",
+    "SeedM2MBatch",
     "SeedManifest",
     "SeedNote",
     "SeedPlan",
     "SeedPlanError",
     "ValidationResult",
     "analyse_ownership",
+    "apply_m2m_relations",
     "app_seed_dir",
     "app_seed_file",
     "apply_grants",
@@ -108,6 +114,7 @@ __all__ = [
     "collect_problems",
     "count_rows",
     "discover",
+    "extract_m2m_relations",
     "format_ownership",
     "format_plan",
     "format_problems",

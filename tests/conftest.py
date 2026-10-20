@@ -291,6 +291,32 @@ def superuser(db):
     return UserInfo.objects.create_superuser(username="admin", email="admin@example.com", password="Admin@123456")
 
 
+@pytest.fixture(scope="module")
+def seeded_module(django_db_setup, django_db_blocker):
+    """模块级种子：整模块共享一次装载，模块结束时随外层事务整体回滚。
+
+    完整种子装载是重查询（近四千行 + 字段白名单同步），逐用例重装会把耗时放大成
+    用例数的倍数——全量 pytest 尾部集中了这类种子测试，慢 runner 上直接堆成分钟级
+    静默。这里在一个外层事务里装载一次：用例自身的 ``django_db`` 事务以 savepoint
+    回滚，互不污染；模块结束回滚外层事务，种子数据不会泄漏给后续模块。
+
+    只适用于「只读种子」的模块；需要验证重复装载语义（幂等、覆盖入库数据）的用例
+    必须保持 function 级装载，不能请求本 fixture。
+    """
+
+    from django.core.management import call_command
+    from django.db import transaction
+
+    with django_db_blocker.unblock():
+        with transaction.atomic():
+            # 种子里的 creator/modifier 硬编码为 pk=1（新装环境的首个超管）
+            if not UserInfo.objects.filter(pk=1).exists():
+                UserInfo.objects.create(pk=1, username="init-admin", password="!")
+            call_command("load_init_json", verbosity=0)
+            yield
+            transaction.set_rollback(True)
+
+
 @pytest.fixture
 def seed_creator_user(superuser):
     """loadjson 种子把 creator/modifier 硬编码为 1（生产口径：新装环境 init_data 的首个超管）。

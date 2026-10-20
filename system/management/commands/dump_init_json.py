@@ -78,7 +78,9 @@ class Command(BaseCommand):
         # 0.6ms），一次导出就爬行到分钟级——全量串行跑时表现为「卡在一个用例里永不结束」。
         # 先 prefetch，序列化器命中 _prefetched_objects_cache 后不再逐对象查库。
         # 预取 queryset 与序列化器逐对象查询（``related`` + select_related(None) + only("pk")）
-        # 同形，保证导出内容与顺序逐字节不变。
+        # 同形，保证导出内容与顺序逐字节不变。关系列表按主键排序：模型默认排序多是
+        # ``-created_time``，而种子行该列为 NULL（loaddata 跳过 pre_save），等值键的
+        # 排序不稳定——同一份数据连续两次导出会得到不同的 m2m 顺序，破坏「导出幂等」。
         m2m_fields = [
             field for field in queryset.model._meta.local_many_to_many if field.serialize and field.attname in fields
         ]
@@ -87,7 +89,7 @@ class Command(BaseCommand):
                 *[
                     Prefetch(
                         field.name,
-                        queryset=field.related_model._default_manager.select_related(None).only("pk"),
+                        queryset=field.related_model._default_manager.select_related(None).only("pk").order_by("pk"),
                     )
                     for field in m2m_fields
                 ]

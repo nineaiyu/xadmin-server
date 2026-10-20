@@ -7,12 +7,24 @@
 
 from rest_framework import serializers
 
+from common.core.fields import ColorField, PhoneField, RichTextField
 from common.core.serializers import BaseModelSerializer, TabsColumn
 from common.fields.utils import input_wrapper
 from demo import models
 
 
 class BookSerializer(BaseModelSerializer):
+    # 专用字段类教学样本：元数据自动下发 phone / color / rich_text，
+    # 前端四通道（搜索/表单/详情/列表）无需手写页面即可正确渲染。
+    contact_phone = PhoneField(required=False, allow_blank=True, label="联系电话")
+    theme_color = ColorField(
+        required=False,
+        allow_blank=True,
+        label="主题色",
+        predefine=["#409EFF", "#67C23A", "#E6A23C", "#F56C6C", "#909399"],
+    )
+    introduction = RichTextField(required=False, allow_blank=True, label="图书简介")
+
     class Meta:
         model = models.Book
         ## pk 字段用于前端删除，更新等标识，如果有删除更新等，必须得加上 pk 字段
@@ -30,6 +42,9 @@ class BookSerializer(BaseModelSerializer):
                     "is_active",
                     "author",
                     "publisher",
+                    "contact_phone",
+                    "theme_color",
+                    "introduction",
                     "publication_date",
                     "price",
                     "on_shelf_time",
@@ -41,7 +56,14 @@ class BookSerializer(BaseModelSerializer):
             TabsColumn("文件信息", ["avatar", "cover", "book_file", "file", "files"]),
         ]
         # deleted_at 随接口返回，供回收站抽屉展示删除时间（软删除模型专用）
-        fields = ["pk", "block", "deleted_at"]
+        fields = [
+            "pk",
+            "contact_phone",
+            "theme_color",
+            "introduction",
+            "block",
+            "deleted_at",
+        ]
         ########### 单表单结束 ################
 
         ############### 2.默认的单表单 ##############

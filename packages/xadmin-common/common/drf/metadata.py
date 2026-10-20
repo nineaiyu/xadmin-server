@@ -119,11 +119,14 @@ class SimpleMetadataWithFilters(SimpleMetadata):
             if value is not None and value != "":
                 field_info[attr] = force_str(value, strings_only=True)
 
-        if getattr(field, "child", None):
+        if isinstance(field, serializers.BaseSerializer):
+            # 嵌套 Serializer / ListSerializer：元数据按 json 呈现（见 get_field_type），
+            # 不展开子字段——契约没有 children/child 键，展开会让真实载荷违反 Schema。
+            # 嵌套写入契约仍由业务序列化器负责。
+            pass
+        elif getattr(field, "child", None):
+            # ListField 的子字段元信息（child.choices 供前端多选下拉渲染），契约已登记 child 键
             field_info["child"] = self.get_field_info(field.child)
-        elif getattr(field, "fields", None):
-            field_info["children"] = self.get_serializer_info(field)
-
         elif isinstance(field, serializers.ChoiceField):
             self.set_choices_field(field, field_info)
             # 数据字典驱动字段（DictChoiceField）携带的颜色映射：choices 附带

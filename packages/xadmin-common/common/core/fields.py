@@ -141,15 +141,12 @@ class PhoneField(serializers.CharField):
             phone = phonenumbers.parse(str(data), region)
             return f"+{phone.country_code}{phone.national_number}"
         except phonenumbers.NumberParseException:
-            # 历史行为（解析失败盲目补地区码）仅在消费方显式声明 country 时保留
+            # 历史行为（解析失败盲目补地区码）仅在消费方显式声明 country 时保留；
+            # 需同时关闭默认校验（validate=False）才能完整复现旧口径。
             if self.country:
                 calling_code = phonenumbers.country_code_for_region(self.country)
                 if calling_code:
-                    try:
-                        phone = phonenumbers.parse(f"+{calling_code}{data}", None)
-                        return f"+{phone.country_code}{phone.national_number}"
-                    except phonenumbers.NumberParseException:
-                        pass
+                    return f"+{calling_code}{data}"
             raise serializers.ValidationError(self.error_messages["invalid"]) from None
 
     def to_internal_value(self, data: Any) -> Any:

@@ -143,6 +143,20 @@ class Problem:
         return f"[{self.level}] {self.code} {location}: {self.message}"
 
 
+@dataclass(frozen=True)
+class SeedM2MBatch:
+    """一组待批量落库的多对多关系：父行清单 + 声明的关系对。
+
+    ``parents`` 记录**出现过该键**的全部父行（含空列表），批量写入时据此清空并重写，
+    与 ``loaddata`` 的覆盖式语义一致；``pairs`` 为空即「只清空、不新增」。
+    """
+
+    model: str
+    field_name: str
+    parents: list[str] = field(default_factory=list)
+    pairs: list[tuple[str, str]] = field(default_factory=list)
+
+
 @dataclass
 class LoadReport:
     """装载准备结果：交给 ``loaddata`` 的文件清单与装配说明。
@@ -155,6 +169,8 @@ class LoadReport:
     fixture_labels: list[Path] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     trimmed: bool = False
+    #: 从 fixture 抽出的多对多关系：装载完成后由命令层批量落库（见 ``seeding.m2m``）
+    m2m: list[SeedM2MBatch] = field(default_factory=list)
 
     def notes_of(self, kind: str) -> list[str]:
         """按类别筛选说明；未标类别的普通字符串按 ``conflict`` 处理。"""

@@ -1,14 +1,13 @@
 # CI「Unit Tests 跑到 92% 停摆后超时」排查记录（2026-10）
 
 > 用途：把**已掌握的证据、已排除的方向、已做的处置与待判定的疑点**集中成一份可交接材料。
-> 结论状态：**卡点位置已定、触发源待收口**——卡点栈确定在 worker 的种子测试 fixture 内
-> （`load_init_json → sync_builtin_roles → permission.field.set → psycopg wait`，见 §11.2），
-> 但第三次运行（§11.6）打开了 PG 慢查询/锁等待日志后**零命中**，说明服务端不是慢在
-> 「长语句/锁等待」；当前指向 runner 的 CPU 吞吐（客户端侧大量小往返爬行），已补
-> CPU/steal 与 `pg_stat_activity` 快照待下次复现收口。§10 的「用例之外」结论已被 §11
-> 推翻（当时复查转储用的格式串写错），保留原文留痕。
-> 取证链路（看门狗 150s + 9m30s 到期前转储 + 10min 上限）已在 run 39371081711/39374822846
-> 部分验证，最新一批增强见 §11.6。
+> **结论状态（2026-10-20 收口）**：机制已定谳并完成根治（§12.2 四项交付，见 §13）——
+> 尾部种子测试逐用例全量装载，`loaddata` 对 m2m 逐行 `set()`（JOIN + DELETE + INSERT），
+> 慢 runner 上被放大成分钟级；`--dist worksteal` + 种子 m2m 批量化 + 种子测试模块级装载
+> 已落地，**剩余动作只有 CI 观察 2~3 次（需推送）**。
+> 取证链路（看门狗 150s + 570s 到期转储 + 10min 上限）已在 run 39371081711/39374822846
+> 验证；快照新增 `pg_stat_user_tables`（§12.3 P3）。
+> 下文 §10 的「用例之外」结论已被 §11 推翻（当时复查转储用的格式串写错），保留原文留痕。
 
 ## 1. 现象
 
@@ -354,3 +353,196 @@ master 栈：`queue.get(timeout=2.0)`（空转等事件）。
      `pg_stat_activity`（state / wait_event / query_start / query 摘要）——
      可直接区分「服端执行/锁等待」与「backend 空闲（ClientRead）→ 客户端侧」；
    - 修复看门狗里 `grep -c` 无匹配时输出两行导致的 `[: 0 0: integer expression expected`。
+
+## 12. 根治方案、排期与交接（2026-10-20，交给下一棒）
+
+### 12.1 一句话现状
+
+- **卡死已定性**：worker 停在种子测试 fixture 内的 PG 查询等待（`test_dump_split_apps::seeded`
+  → `call_command(load_init_json)` → `_load_seed` 的 `loaddata` M2M `.set()` → `psycopg wait`，
+  见 §11.2）；master 空转在 `queue.get`。
+- **失败结构** = 尾部重查询 × 尾部集中到最后一个 worker × 10 分钟上限。run 39376962747 的
+  快照显示转储时**只剩 1 个 worker**，其余 3 个已跑完退出；CPU 72~76% 空闲、steal=0、
+  内存充足；PG 里该 worker 正在跑的 M2M JOIN 查询 **active 1.18~1.43s**、无锁等待。
+- **本机复现不了「1.2s/条」**：探针库 `EXPLAIN (ANALYZE)` = 0.19~0.26ms（Bitmap Index Scan +
+  Hash Join，索引正常）；CI 侧的 1.2s 属环境/规模放大，待补测（§12.7）。
+- 当前 CI 仍红（39376962747 两次 attempt 均在静默 150s 处转储后失败，15 分钟）。
+
+### 12.2 已拍板的根治路线
+
+| 批次 | 内容 | 状态 |
+|------|------|------|
+| P0 | pytest 加 `--dist worksteal`：空闲 worker 偷活，尾部不再堆到最后一个 worker | **已落地**（工作区，未提交）；本地 `-n 4` exit 0 |
+| P1 | **种子装载 M2M 写入批量化**（主项）：fixtures 的 M2M 列表从 `loaddata` 抽出，装载后按表 `bulk_create(ignore_conflicts=True)` | **已交付**（§13.2），语句数 980 → 26 |
+| P2 | **种子测试装载瘦身（取 B1）**：`seeded` 改为模块级装载一次 + 每测事务回滚；仅「重复装载幂等」用例保留 function 级 | **试点已交付**（§13.3，`test_dump_split_apps` 8 次 → 1 次）；其余模块按需 |
+| P3 | 护栏与观测：SQL 条数守护断言、快照补 `pg_stat_user_tables`、保留看门狗 | **已交付**（§13.4） |
+| P4 | 触发制：种子装载收尾 `ANALYZE`（仅当 P1 后仍有慢查询） | 备选（未触发，保留） |
+
+### 12.3 任务清单（文件级定位与验收）
+
+**P0（1 行）**
+
+- 文件：`.github/workflows/test.yml` 的 pytest 命令，`-n auto` 后加 `--dist worksteal`（已改）。
+- 验收：本地 `-n 4 --dist worksteal` exit 0（已做）；CI 观察 2~3 次。
+
+**P1（主项）**
+
+- 代码点：
+  - `system/management/commands/load_init_json.py::_load_seed`（约 138 行，`super().handle(...)` 即 loaddata）；
+  - `system/services/seeding/`（装配层，`prepare/plan/ownership/grants`）；
+  - `identity/builtin.py::_ensure_role_fields`、`_fill_builtin_role_fields`；
+  - `system/services/permission_sync/`（`fill_field_permissions`）。
+- 做法：装配阶段把 fixtures 里的 M2M 列表剥离（与现有「剥离角色菜单授权字段」同思路，见
+  `[种子装配] 剥离 N 处角色菜单授权字段` 日志），装载后用 through 表
+  `bulk_create(..., ignore_conflicts=True)` 一次写入；保留幂等语义（与库内已有关系做差异同步）。
+- 验收：`test_seed_*` / `test_builtin_seed` / `test_dump_split_apps` 全绿；新增「批量写入与逐行写入
+  等价」「二次装载幂等」守护测试；本地串行尾组耗时对比（当前 ~50s）。
+- 基线量化（先做）：见 §12.5 脚本（统计 `load_init_json` 的 SQL 条数、M2M 相关条数与耗时）。
+
+**P2（B1）**
+
+- 文件：`tests/unit/system/test_dump_split_apps.py`（`seeded` fixture）、`test_seed_*.py`、
+  `test_builtin_seed.py`、`test_modelfield.py`、`test_sync_field_permissions.py`。
+- 做法：session 级 fixture 装载一次；需要「重复装载」语义的用例显式再跑；其余靠事务回滚隔离。
+- 验收：本地 `-n 0` 与 `-n 4` 双跑全绿；抽样打乱顺序验证无顺序依赖；耗时对比。
+
+**P3**
+
+- 快照补：`select relname, n_live_tup from pg_stat_user_tables where relname in
+  ('system_fieldpermission_field','system_modellabelfield','system_fieldpermission','system_menu');`
+- 守护：给 `load_init_json` 加 `CaptureQueriesContext` 条数上限断言（防止批量化成果回退）。
+
+### 12.4 排期（按「本地可验证」粒度，尽量不烧 CI）
+
+| 时间 | 产出 | 验证 | 状态 |
+|------|------|------|------|
+| D1 | P1 基线数字（SQL 条数/M2M 占比）+ 批量化实现点确认 | 探针库脚本（30s） | 完成（§13.1） |
+| D2 | P1 实现 + 等价性守护测试 | 本地 `-n 0` 尾组耗时对比 | 完成（§13.2） |
+| D3 | P2-B1 试点 1~2 个文件并确认语义 | 本地 `-n 0` / `-n 4` 双跑 | 完成（§13.3） |
+| D4 | P2 推广 + P3 守护断言 | 本地全量 pytest + 相关 E2E 子集 | P3 完成；P2 其余模块按需 |
+| D5 | P0 推送 + 观察 CI 2~3 次；本文档定稿 | CI 与本地双向核对 | 待推送后观察 |
+
+### 12.5 本地迭代手册（不占 CI）
+
+```bash
+# ① 模拟「只剩一个 worker」——每次改动后的主回归（当前基线 ~50s）
+.venv/bin/python -m pytest -n 0 -q --durations=25 \
+  tests/unit/system/test_dump_split_apps.py tests/unit/system/test_builtin_seed.py \
+  tests/unit/system/test_seed_*.py tests/unit/system/test_modelfield.py \
+  tests/unit/system/test_sync_field_permissions.py
+
+# ② 调度修复验证
+.venv/bin/python -m pytest -n 4 --dist worksteal -q <同一组>
+
+# ③ 装载成本探针（独立库，先建 pk=1 超管，否则 menumeta creator_id 外键失败）
+psql "host=127.0.0.1 port=55433 user=server password=pgtest dbname=postgres" \
+  -c 'DROP DATABASE IF EXISTS xadmin_seedprobe' -c 'CREATE DATABASE xadmin_seedprobe'
+DB_DATABASE=xadmin_seedprobe .venv/bin/python - <<'PY'
+import os; os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tests.settings_real")
+import django; django.setup()
+from django.core.management import call_command
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
+from identity.models import UserInfo
+call_command("migrate", verbosity=0)
+UserInfo.objects.create_superuser(username="probe", password="Probe@2026!")
+with CaptureQueriesContext(connection) as ctx:
+    call_command("load_init_json", verbosity=0)
+qs = ctx.captured_queries
+print("queries:", len(qs), "M2M(SQL含 through 表):",
+      sum(1 for q in qs if "fieldpermission_field" in q["sql"]))
+PY
+psql "host=127.0.0.1 port=55433 user=server password=pgtest dbname=postgres" \
+  -c 'DROP DATABASE IF EXISTS xadmin_seedprobe'
+```
+
+### 12.6 交接注意（坑，按优先级）
+
+1. **并发会话 + 提交污染**：本仓库可能有另一会话同时改代码并 `git add`；本仓库的 pre-commit 钩子
+   会对暂存 py 文件跑 `ruff format` 并**自动重新 add**。`5b6ba40d` 就是这样混入了 12 个非本任务
+   文件（字段类型方案）。**提交前必须 `git diff --cached --stat` 核对清单**，或先让对方提交。
+2. **本次会话约定不提交**：所有改动留工作区（P0 的 workflow 改动也在工作区未暂存/未提交）。
+3. macOS 无 `timeout`：长跑用 `nohup ... &` + 轮询日志（单次 sleep ≤30s）。
+4. faulthandler 输出格式是 `Timeout (0:10:00)!`（**没有 "detected"**），复查日志别用错模式。
+5. 看门狗参数：150s 静默 + 570s 到期转储 + 10min 单次上限 + 24min job；产物
+   `test-reports/pytest.log` 与 `snapshot-N.log`（快照写独立文件，避开 pytest 非 append 文件
+   描述符与追加写的偏移竞争）。
+6. 探针库/测试库注意：`load_init_json` 前必须有 pk=1 超管；测试栈是 `compose.test.yml`
+   （PG 55433 / Redis 56379），与开发栈（8896）互不影响；`tests/conftest.py` 的 advisory lock
+   会把并发 pytest 串行化。
+
+### 12.7 未解问题（2026-10-20 收口后）
+
+1. ~~CI 单条 M2M JOIN 1.2s 的成因~~ → **已量化**：本地同语句 0.2~1.2ms，CI 的 1.2s 是宿主级
+   放大（同提交双实例一绿一卡、`steal=0` 但 CPU 空闲）；处置不走「调优语句」，而是把这批
+   语句**减到 26 条**（§13.2）。剩余对照数据由快照新增的 `pg_stat_user_tables` 提供。
+2. ~~SQL 总条数与 M2M 占比尚未量化~~ → 见 §13.1（首次装载 8443 / m2m 60；重复装载
+   4128 / m2m 26；改前重复装载 5088 / m2m ~980）。
+3. ~~P2-B1 逐文件语义核对~~ → `test_dump_split_apps` 已试点（§13.3）；`test_seed_grants` /
+   `test_builtin_seed` 验证的是「重复装载语义」与「装载前空库前提」，**必须保留** function 级
+   装载，不纳入 B1。
+4. `--dist worksteal` 的 CI 实测（待推送后观察 2~3 次，见 §13.5）。
+
+## 13. 交付记录（2026-10-20 收口，改动留工作区未提交）
+
+### 13.1 P1 基线量化（探针库：真 PG + `tests.settings_real`）
+
+测量口径：独立库 `migrate` + 建 pk=1 超管，`CaptureQueriesContext` 统计整次
+`load_init_json`（含 `migrate` 之后的所有语句；`queries_log` 上限 9000，需临时换成
+无上限 deque 才拿得到全量）。
+
+| 阶段 | 装载总语句 | 其中 m2m through 表语句 | 说明 |
+|------|-----------|------------------------|------|
+| 改前·首次（空库） | >9000（日志上限截断；按「每行 UPDATE+INSERT + 逐行 m2m」估算约 9.6k） | ~1500 | 每行 m2m 一次 JOIN + DELETE + INSERT |
+| 改前·重复装载 | 5088 | ~980（menu_model 718 / fp_field 261 / dp_menu 14） | 行本身只发 UPDATE，m2m 仍逐行重写 |
+| **改后·首次（空库）** | **8443** | **60** | 关系数 4901 条一次批量写入 |
+| **改后·重复装载** | **4128** | **26** | 覆盖式重写但只有「查父行 + 清空 + 多值插入」 |
+
+本地墙钟差别不大（2.7s / 1.8s，本地 PG 单语句亚毫秒）；**收益在语句数**——CI 的
+1.2s/条是宿主级放大，减去近千条 JOIN 才是对卡死的直接作用。
+
+### 13.2 P1 实现：种子 m2m 批量化
+
+- 新增 `system/services/seeding/m2m.py`：`strip_m2m_fields`（授权型剥离，原在 `rows.py`）
+  + `extract_m2m_relations`（属性型列表从 fixture 抽出）+ `apply_m2m_relations`（装载后批量落库）。
+- `rows.build_fixtures` 返回 `(labels, notes, trimmed, m2m)`；`LoadReport.m2m` 承载载荷；
+  `load_init_json._load_seed` 在 `loaddata` 之后调用一次，并打印
+  `[种子装配] 批量写入 N 条多对多关系（M 组）`。
+- **语义等价**：先按父行 `DELETE` 再 `bulk_create(ignore_conflicts=True)` = `loaddata` 的
+  `set()`（覆盖式）；空列表同样记父行 ⇒ 清空关系；显式 `through` 模型（部门主管任命）
+  不抽取，留给 `loaddata`；父行不存在时跳过（单元测试替换 `loaddata` 的标签捕获场景），
+  子行缺失仍抛外键错误。
+- 顺带把 `fill_field_permissions` 从「逐组一条 DELETE + 一条 INSERT」收敛成
+  「全部缺口一条 DELETE + 一条多值 INSERT」（原分组去重逻辑保留，只合写语句）。
+- 同时修复导出顺序缺陷：`dump_init_json` 的 m2m 预取加 `order_by("pk")`——模型默认排序是
+  `-created_time`，种子行该列为 NULL，等值键排序不稳定会让「同一份数据连续两次导出」
+  顺序漂移（`test_export_is_idempotent` 在多模块合跑时暴露）。副作用：下次人工
+  `dump_init_json` 时各层种子文件的 m2m 数组会按主键重排（一次性、此后稳定）。
+
+### 13.3 P2 试点：模块级种子装载
+
+`tests/conftest.py` 新增 `seeded_module`（module 作用域）：在外层 `transaction.atomic()`
+里装一次种子、模块结束 `set_rollback(True)` 整体回滚。用例自身的 `django_db` 事务以
+savepoint 回滚，**种子不会泄漏到后续模块**（已验证：紧随其后的空库前提用例照常通过）。
+
+试点 `test_dump_split_apps.py`（全部用例只读种子）：装载 8 次 → 1 次，该文件耗时
+23.3s → 2.3s。`test_seed_grants` / `test_builtin_seed` 验证「重复装载语义」与「装载前空库
+前提」，保留 function 级装载。
+
+### 13.4 P3 护栏与观测
+
+- 新增 `tests/unit/system/test_seed_m2m.py`（9 例）：抽取语义（空列表记父行、显式 through
+  不抽取、非 m2m 列表不动）、落库语义（覆盖式、空列表清空、缺失父行跳过）、整体装载
+  护栏（**库内关系 == 种子声明**、`fp_field` 子集、**重复装载幂等**、**through 语句数上限
+  ≤8/≤60**——退回逐行写立即失败）。
+- CI 快照新增 `pg_stat_user_tables`（`n_live_tup/seq_scan/idx_scan/n_tup_ins/n_tup_upd`），
+  供下次复现区分「统计信息/规模」与「客户端侧」。
+
+### 13.5 验证与待办
+
+- 后端：`tests/unit` 4607 passed（100s）、`tests/integration` 1915 passed / 2 skipped（64s）、
+  ruff check/format、mypy（seeding/permission_sync 全绿）、行数 / 函数行数 / 跨 app 门禁全绿。
+- 本地尾组（§12.5 ①）：78.7s → 73.7s（`-n 0`，种子装载 23 次 → 16 次）；
+  本地不是瓶颈，CI 才是观察面。
+- **待办（需用户决定）**：推送后观察 CI 2~3 次；若仍出现慢磨，按快照的
+  `pg_stat_user_tables` + `steal` 判断是否启用 P4（装载收尾 `ANALYZE`）。

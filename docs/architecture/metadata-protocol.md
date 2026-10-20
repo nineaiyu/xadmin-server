@@ -48,6 +48,11 @@ search-fields 条目为子集：`key/label/help_text/input_type/choices/default`
      `BasePrimaryKeyRelatedField → object_related_field`、`ManyRelated → m2m_related_field`；
      类名精确匹配会让业务子类退化成 `choice`/未知，前端拿到对象值渲染空白（历史缺陷，已加守护）；
    - 其余回退 DRF `label_lookup`；
+   - 嵌套 `Serializer` / `ListSerializer` 统一按 `json` 呈现：**元数据协议不支持嵌套表单**
+     （不隐式展开为子字段），只读详情展示 pretty JSON、写入由 JsonInput 提交对象，
+     嵌套写入契约（create/update）仍由业务序列化器负责；
+   - `ListField` 下发 `child`（子字段元信息，`child.choices` 供多选下拉）；嵌套序列化器
+     不再下发旧的 `children` 展开键，两者均受 `search-columns` Schema 约束；
 4. choice 字段附加 `choices`；`DictChoiceField.choice_colors` 把颜色映射并进每个选项（前端彩色 tag）。
 
 **客户端注册表**（四通道互不兜底，漏一侧即空白/`[object Object]`）：
@@ -68,8 +73,8 @@ search-fields 条目为子集：`key/label/help_text/input_type/choices/default`
 | 通道 | 内置 `input_type` 键 | fallback 行为 |
 |---|---|---|
 | 搜索（`renderers-search.tsx`） | `text`、`datetime`、`datetimerange`、`number`、`select`、`select-multiple`、`select-ordering` | 命中 `api-` 前缀走 `api-search-*` 组件；其余 `valueType = input_type` |
-| 表单（`renderers-form.tsx`） | `integer`、`float`、`string`、`field`、`color`、`datetime`、`date`、`time`、`boolean`、`textarea`、`choice`、`multiple choice`、`labeled_choice`、`labeled_multiple_choice`、`object_related_field`、`m2m_related_field`、`object_related_field_file`、`object_related_field_image`、`m2m_related_field_file`、`m2m_related_field_image`、`image upload`、`file upload`、`list`、`phone`、`json` | 命中 `api-` 前缀走 `api-search-*` 组件；`suggest_url` 存在时升级为远程联想 `SuggestSelect` |
-| 详情/表格（`renderers-detail.tsx`） | `labeled_choice`、`color`、`object_related_field`、`m2m_related_field`、`labeled_multiple_choice`、`json`、`object_related_field_image`、`object_related_field_file`、`m2m_related_field_file`、`m2m_related_field_image`、`image upload`、`file upload`、`boolean`、`list` | **无 fallback**——未登记类型不配置渲染，靠 plus-pro/pure-table 按 `valueType` 原生输出 |
+| 表单（`renderers-form.tsx`） | `integer`、`float`、`decimal`、`string`、`field`、`url`、`password`、`rich_text`、`color`、`datetime`、`date`、`time`、`boolean`、`textarea`、`choice`、`multiple choice`、`labeled_choice`、`labeled_multiple_choice`、`object_related_field`、`m2m_related_field`、`object_related_field_file`、`object_related_field_image`、`m2m_related_field_file`、`m2m_related_field_image`、`image upload`、`file upload`、`list`、`phone`、`json` | 命中 `api-` 前缀走 `api-search-*` 组件；`suggest_url` 存在时升级为远程联想 `SuggestSelect` |
+| 详情/表格（`renderers-detail.tsx`） | `labeled_choice`、`color`、`phone`、`url`、`rich_text`、`object_related_field`、`m2m_related_field`、`labeled_multiple_choice`、`json`、`object_related_field_image`、`object_related_field_file`、`m2m_related_field_file`、`m2m_related_field_image`、`image upload`、`file upload`、`boolean`、`list` | **无登记时走通用兜底**：对象/数组值 DEV 告警并降级 JSON 文本（防 `[object Object]`），标量按原生输出 |
 
 > 速查提示（读源码才容易踩的边界）：
 > - **基础类型不占详情通道**：`integer`/`float`/`string`/`date`/`datetime`/布尔/`choice` 等由服务端
@@ -77,8 +82,9 @@ search-fields 条目为子集：`key/label/help_text/input_type/choices/default`
 >   `datetime`/`date` 的列表格式化 `cellRenderer` 实为表单通道一并下发（同文件内）。
 > - **`api-search-*` 是「业务启动时注册」的全局表**（`main.ts` 引入 `@/views/system/apiSearch` 完成登记）；
 >   自定义该类类型必须同步 `registerApiSearchComponents`，否则 DEV 告警且字段静默空。
-> - **详情无 fallback**：对象/数组值类型若漏登记详情 `render`，会退化成 `[object Object]`——这是四通道"
->   "互不兜底"最易翻车的一侧（`renderers-pairing.spec.ts` 用成对守护拦截）。
+> - **详情兜底**：未登记类型的对象/数组值会在 DEV 告警并降级为 JSON 文本（防 `[object Object]`），
+>   但这只是防线，不是归宿——对象/数组类型仍必须补详情 `render` 与列表 `cellRenderer`，
+>   由 `renderers-pairing.spec.ts` 拦截。
 
 ### 新增 `input_type` 五步清单
 

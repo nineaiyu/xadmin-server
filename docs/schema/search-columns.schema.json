@@ -179,6 +179,11 @@
         "items": {
           "type": "string"
         }
+      },
+      "child": {
+        "type": "object",
+        "description": "ListField 子字段的元信息（child.choices 供前端多选下拉渲染）",
+        "additionalProperties": true
       }
     }
   }

@@ -8421,6 +8421,10 @@ msgstr ""
 msgid "The phone number format is incorrect"
 msgstr ""
 
+#: packages/xadmin-common/common/core/validators.py:39
+msgid "Invalid color value: use hex like #409EFF or rgb(...)"
+msgstr ""
+
 #: packages/xadmin-common/common/drf/parsers/axios_form_data.py:136
 #, python-brace-format
 msgid "Multipart form parse error - {}"

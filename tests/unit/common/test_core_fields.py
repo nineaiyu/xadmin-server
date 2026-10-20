@@ -52,6 +52,14 @@ class TestPhoneField:
     def test_validator_can_be_disabled(self):
         assert PhoneField(validate=False).run_validation("+86123") == "+86123"
 
+    def test_explicit_country_restores_legacy_prefix_fallback(self):
+        """显式 country + validate=False 才恢复历史「解析失败补地区码」行为。"""
+        field = PhoneField(country="CN", validate=False)
+        assert field.to_internal_value("not-a-phone") == "+86not-a-phone"
+        assert field.run_validation("not-a-phone") == "+86not-a-phone"
+        with pytest.raises(ValidationError):
+            PhoneField(country="CN").run_validation("not-a-phone")
+
     def test_empty_dict_follows_allow_blank(self):
         assert PhoneField(allow_blank=True).to_internal_value({"code": "+86", "phone": ""}) == ""
 

@@ -7,17 +7,22 @@
 而运营完全可能用同一自然键（``code`` / ``name`` 等）建过对象——典型现场：开箱模板命令
 ``seed_demo_org`` 重建了与内置种子同 code 的示例流程。
 
-本模块在导入前做三道处理，前两道只「剔除待导入的行」，不动库内数据：
+本模块在导入前做四道处理，前两道只「剔除待导入的行」，不动库内数据：
 
 1. **模块裁剪**（``ModuleSeedFilter``）：停用模块的菜单/权限点不入库；
 2. **冲突预检**（``filter_conflicting_rows``）：自然键已被库内其他主键占用 → 跳过该行，
    并级联跳过引用它的行（FK）或从 m2m 列表中移除该主键；
-3. **多对多剥离**（``strip_m2m_fields``）：种子行不携带任何 m2m 字段——``loaddata``
-   对 m2m 是覆盖式赋值，空数组也会 ``set([])`` 清零库内既有关系（见该函数 docstring）。
+3. **授权型多对多剥离**（``strip_m2m_fields``）：角色菜单授权是客户资产，
+   ``loaddata`` 的覆盖式赋值（空数组也会 ``set([])``）会清零存量，改由 ``grants.json``
+   的并集通道落地；
+4. **属性型多对多抽取**（``extract_m2m_relations``）：菜单模型绑定、字段白名单等
+   契约关系的列表从 fixture 移出，装载后由命令层批量落库——``loaddata`` 逐行
+   ``set()`` 是「JOIN + DELETE + INSERT」三连，完整种子近五百行 m2m 会放大成上千条
+   小往返。
 
 语义：**库内数据优先，种子让位**；跳过项与剥离项按类别落日志与命令输出
 （真冲突/引用修剪 WARNING，策略性剥离 INFO），便于人工核对且不把预期行为报成故障。
-无裁剪、无冲突时原样使用仓库里的种子文件（零改动、无临时文件）。
+无裁剪、无冲突、无 m2m 时原样使用仓库里的种子文件（零改动、无临时文件）。
 """
 
 import json
@@ -33,6 +38,7 @@ from django.utils import timezone
 
 from common.utils import get_logger
 
+from .m2m import extract_m2m_relations, strip_m2m_fields
 from .types import (
     KIND_CONTRACT,
     NOTE_CONFLICT,
@@ -51,14 +57,6 @@ _MAX_CASCADE_ROUNDS = 5
 # 唯一键占用查询每批的键数：上千个键一次 OR 拼接会超 SQLite 表达式树深度
 # （单元测试环境即崩），分批查询顺带规避超长 SQL。
 _QUERY_CHUNK = 150
-
-# 装载前必须剥离的多对多字段：{模型 label: [字段名, ...]}。
-# 这些关系是**客户资产**（角色被授予哪些菜单），种子只能声明基线、不能覆盖存量；
-# 期望值由 ``grants.json`` + ``apply_grants`` 的并集语义落地。新增授权型 m2m 时
-# 登记到这里——``loaddata`` 见到键就 set，空数组也会清零，漏登记即数据丢失。
-_M2M_STRIP_FIELDS: dict[str, tuple[str, ...]] = {
-    "identity.userrole": ("menu",),
-}
 
 
 def read_seed_rows(model_names: Any, file_root: Any) -> dict[str, Any]:
@@ -237,42 +235,6 @@ def filter_conflicting_rows(rows_by_model: Any, *, using: Any = DEFAULT_DB_ALIAS
     return rows_by_model, notes
 
 
-def strip_m2m_fields(rows_by_model: Any) -> tuple[Any, ...]:
-    """从种子行中剥离角色菜单授权，返回 ``(rows_by_model, notes)``。
-
-    ``loaddata`` 对多对多是**覆盖式赋值**：只要 fixture 里出现该键（哪怕是空数组
-    ``[]``），反序列化就执行 ``set(object_list)``，把库内既有关系整体替换成种子值。
-    现场后果：存量库升级后「默认权限」角色丢失了全部人工授予的菜单——种子
-    ``userrole.json`` 给 4 个种子角色带的是 ``"menu": []``，重灌即清零，随后
-    ``apply_grants`` 只加回 grants 声明的那 17 项，种子里没有的二开菜单永久丢失。
-
-    只剥离角色菜单授权，不做全模型 m2m 剥离：``menu.model``（权限菜单→模型）、
-    ``fieldpermission.field``（角色×权限点→字段）等属性型 m2m 是功能契约，种子值即
-    期望值，覆盖语义正是所需；而授权是**客户资产**，必须走 ``grants.json`` +
-    ``apply_grants`` 的并集通道。两类语义相反，故按模型显式声明，不用「凡是 m2m 就剥」。
-    """
-
-    notes: list[Any] = []
-    for label in _M2M_STRIP_FIELDS:
-        rows = rows_by_model.get(label)
-        if not rows:
-            continue
-        for row in rows:
-            fields = row.get("fields")
-            if not isinstance(fields, dict):
-                continue
-            for name in _M2M_STRIP_FIELDS[label]:
-                if name in fields:
-                    del fields[name]
-                    notes.append(
-                        SeedNote(
-                            f"{label}({row.get('pk')})：剥离多对多字段 {name}（改由声明式授权应用，避免覆盖库内数据）",
-                            NOTE_STRIP,
-                        )
-                    )
-    return rows_by_model, notes
-
-
 #: 唯一键覆盖：字段标签树同时存在 ROLE（角色字段权限）与 DATA（数据权限）两棵树，
 #: 模型根节点都叫同一个 ``<app>.<model>`` 且 ``parent=NULL``。模型声明的
 #: ``unique_together=("name","parent")`` 不含 ``field_type``，若按它判冲突，两棵树
@@ -399,12 +361,13 @@ def build_fixtures(
     module_filter: Any = None,
     using: Any = DEFAULT_DB_ALIAS,
 ) -> tuple[Any, ...]:
-    """装配待导入的种子：读文件 → 模块裁剪（可选）→ 冲突预检 → 落盘。
+    """装配待导入的种子：读文件 → 模块裁剪（可选）→ 冲突预检 → m2m 抽取 → 落盘。
 
-    :return: ``(fixture_labels, notes, trimmed)``；``trimmed=False`` 时 ``fixture_labels``
-        是仓库里的原始文件路径（无裁剪、无冲突，零改动）。空种子文件不进清单：
-        没有可导入内容，loaddata 还会对空 fixture 报 "No fixture data found"
-        （RuntimeWarning 噪音），跳过语义等价。
+    :return: ``(fixture_labels, notes, trimmed, m2m)``；``m2m`` 是抽出的多对多关系，
+        由命令层在 ``loaddata`` 之后批量落库（见 :mod:`system.services.seeding.m2m`）。
+        ``trimmed=False`` 时 ``fixture_labels`` 是仓库里的原始文件路径（无裁剪、无冲突、
+        无 m2m，零改动）。空种子文件不进清单：没有可导入内容，loaddata 还会对空
+        fixture 报 "No fixture data found"（RuntimeWarning 噪音），跳过语义等价。
     """
 
     rows_by_model, non_empty = read_specs(specs)
@@ -426,9 +389,15 @@ def build_fixtures(
         notes.extend(m2m_notes)
         trimmed = True
 
+    # 属性型 m2m 从 fixture 中抽出：loaddata 逐行 set() 是「JOIN + DELETE + INSERT」
+    # 三连，完整种子近 500 行 m2m 会放大成上千条小往返（并发跑种子测试时的数据库尖峰）。
+    rows_by_model, m2m_batches = extract_m2m_relations(rows_by_model)
+    if m2m_batches:
+        trimmed = True
+
     if not trimmed:
         # 返回字符串路径：既有调用方（命令 / 测试 / 二开脚本）按 str 处理标签
-        return [str(spec.path) for spec in non_empty], notes, False
+        return [str(spec.path) for spec in non_empty], notes, False, []
 
     models = [apps.get_model(label) for label in rows_by_model if rows_by_model[label]]
     for note in notes:
@@ -438,7 +407,8 @@ def build_fixtures(
             logger.info("seed strip: %s", note)
         else:
             logger.warning("seed conflict: %s", note)
-    return write_seed_rows(rows_by_model, models, target_dir), notes, True
+    labels = write_seed_rows(rows_by_model, models, target_dir)
+    return labels, notes, True, m2m_batches
 
 
 def build_seed_fixtures(

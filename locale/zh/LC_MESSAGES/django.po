@@ -8459,6 +8459,10 @@ msgstr "令牌授权范围不包含该接口"
 msgid "The phone number format is incorrect"
 msgstr "手机号格式不正确"
 
+#: packages/xadmin-common/common/core/validators.py:39
+msgid "Invalid color value: use hex like #409EFF or rgb(...)"
+msgstr "颜色值无效：请使用十六进制（如 #409EFF）或 rgb(...)"
+
 #: packages/xadmin-common/common/drf/parsers/axios_form_data.py:136
 #, python-brace-format
 msgid "Multipart form parse error - {}"

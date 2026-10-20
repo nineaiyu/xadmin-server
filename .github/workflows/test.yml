@@ -105,11 +105,12 @@ jobs:
       - name: Run tests (parallel, real PostgreSQL + Redis)
         # 口径不变：-n auto + --cov-fail-under=85（2026-09-18 上调 82 → 85）。
         #
-        # 假死自愈 + 现场取证（2026-10-20，机制收敛见 docs/ops/ci-unit-tests-stall-2026-10.md §10）：
-        #   现场：进度在 ~5.5-6min 处（92%，tests/unit/system 尾部）断流，静默仅累计
-        #   120~150s 就被单次上限 SIGINT；worker 不在用例内（faulthandler 600s 零触发）、
-        #   master 空转在 queue.get、PG 侧零会话零写入、磁盘健康（checkpoint sync=0.02s）。
-        #   卡点收敛在 xdist 用例间隙（worker 空队列等待 / 协议后 send 背压）。
+        # 假死自愈 + 现场取证（机制与交接见 docs/ops/ci-unit-tests-stall-2026-10.md）：
+        #   现场：进度在 ~92%（tests/unit/system 尾部种子测试区）断流；SIGABRT 转储证明
+        #   worker 主线程停在「种子 fixture → load_init_json → 字段权限 m2m」的 psycopg
+        #   等待，master 空转在 queue.get；PG 侧无长语句/锁等待（快查询在慢 runner 上被
+        #   放大）。处置：种子 m2m 批量化（装载一次写一组关系）、种子测试模块级装载、
+        #   --dist worksteal 削峰。
         # 处理：
         #   1) pytest 输出写文件（不再经 stdout 管道），每 30s 回显一行进度；
         #   2) 后台看门狗：首个进度行出现后，连续 150s 日志无增长即判定假死（旧阈值
@@ -128,7 +129,8 @@ jobs:
             echo "=== pytest attempt ${attempt} ==="
             rm -f "$LOG" "$LOG.done" "$LOG.stalled"
             timeout --signal=INT --kill-after=60 10m \
-              uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85 \
+              uv run --no-sync pytest -n auto --dist worksteal \
+                --cov --cov-report=term-missing --cov-fail-under=85 \
                 --junitxml="test-reports/junit-${attempt}.xml" > "$LOG" 2>&1 &
             TPID=$!
             (
@@ -170,6 +172,9 @@ jobs:
                     echo "--- 转储时刻 PG 会话（state/wait_event 区分服端执行/锁等待/ClientRead）---"
                     psql "host=127.0.0.1 port=55433 user=server password=pgtest dbname=xadmin_realtest" \
                       -At -c "select pid, datname, state, coalesce(wait_event_type,'-'), coalesce(wait_event,'-'), now()-query_start, left(regexp_replace(query,'\s+',' ','g'),160) from pg_stat_activity where datname like 'test_%' order by query_start" 2>&1
+                    echo "--- 转储时刻 PG 表规模（种子 m2m 四表：判断是否统计信息/规模问题）---"
+                    psql "host=127.0.0.1 port=55433 user=server password=pgtest dbname=xadmin_realtest" \
+                      -At -c "select relname, n_live_tup, seq_scan, idx_scan, n_tup_ins, n_tup_upd from pg_stat_user_tables where relname in ('system_fieldpermission_field','system_modellabelfield','system_fieldpermission','system_menu') order by relname" 2>&1
                   } > "test-reports/snapshot-${attempt}.log" 2>&1
                   # uv run 会再包一层：pid 最大的匹配项才是 pytest 主进程，其直接
                   # 子进程是 execnet worker（worker 命令行不含 pytest 字样）

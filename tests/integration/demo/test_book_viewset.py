@@ -94,8 +94,13 @@ class TestBookMetadataSmoke:
         resp = auth_client.get(f"{BOOK_LIST_URL}/search-columns")
         assert resp.status_code == 200
         assert resp.data["code"] == 1000
-        keys = {item["key"] for item in resp.data["data"]}
-        assert {"name", "isbn", "admin"} <= keys
+        columns = {item["key"]: item for item in resp.data["data"]}
+        assert {"name", "isbn", "admin"} <= set(columns)
+        # 专用字段类教学样本：矩阵文档的活样本，四通道类型契约不可漂移
+        assert columns["contact_phone"]["input_type"] == "phone"
+        assert columns["theme_color"]["input_type"] == "color"
+        assert columns["theme_color"]["predefine"]  # 色板随元数据下发
+        assert columns["introduction"]["input_type"] == "rich_text"
 
     def test_search_fields(self, auth_client):
         resp = auth_client.get(f"{BOOK_LIST_URL}/search-fields")
