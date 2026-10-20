@@ -95,7 +95,29 @@ jobs:
         # 测量口径扩至拆分后的全部 app，真环境档实测 89%，门禁维持不变
         # 不引入 pytest-rerunfailures：失败即暴露，真抖动靠客户端 E2E 抖动榜单定位
         # （scripts/e2e-flaky-report.mjs），重试只会把真回归伪装成通过
-        run: uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85 --junitxml=test-reports/junit.xml
+        #
+        # 基础设施假死自愈（2026-10-20）：runner 磁盘 I/O 偶发劣化会让 pytest 在
+        # 90%+ 区间断流直到撞 40 分钟 job 超时（PG checkpoint 写 9MB 耗时 120s+，
+        # 纯文档提交同样命中，本机同命令稳定 2~5 分钟跑完）——纯环境抖动，不是回归。
+        # 处理：单次尝试 15 分钟硬上限（timeout SIGINT 触发 graceful 退出），超时
+        # （退出码 124）视为环境抖动自动重试一次；真失败（断言/覆盖率）原样退出
+        # 不重试。15+15+安装开销 ≤ 40 分钟 job 上限。
+        run: |
+          PYTEST_ARGS=(-n auto --cov --cov-report=term-missing --cov-fail-under=85)
+          for attempt in 1 2; do
+            echo "=== pytest attempt ${attempt} ==="
+            timeout --signal=INT --kill-after=60 15m \
+              uv run --no-sync pytest "${PYTEST_ARGS[@]}" --junitxml="test-reports/junit-${attempt}.xml"
+            code=$?
+            [ "$code" -eq 0 ] && exit 0
+            if [ "$code" -ne 124 ]; then
+              echo "pytest failed with exit ${code}（真失败，不重试）" >&2
+              exit "$code"
+            fi
+            echo "pytest 超时（基础设施抖动），重试…" >&2
+          done
+          echo "pytest 连续两次超时" >&2
+          exit 124
 
       - name: Upload test report (junit)
         # 失败也上传：junit 逐用例结果供定位（无重试，失败即真失败）
@@ -103,7 +125,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pytest-junit
-          path: test-reports/junit.xml
+          path: |
+            test-reports/junit-1.xml
+            test-reports/junit-2.xml
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Django system checks (database-tagged, real PostgreSQL)
