@@ -21,17 +21,6 @@
       "recycleRestore:SystemUploadFile",
       "retrieve:SystemUploadFile",
       "upload:SystemUploadFile"
-    ],
-    "demo": [
-      "SystemUploadFile",
-      "accessLogs:SystemUploadFile",
-      "config:SystemUploadFile",
-      "download:SystemUploadFile",
-      "list:SystemUploadFile",
-      "preview:SystemUploadFile",
-      "recycleList:SystemUploadFile",
-      "recycleRestore:SystemUploadFile",
-      "retrieve:SystemUploadFile"
     ]
   }
 }

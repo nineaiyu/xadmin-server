@@ -38,7 +38,7 @@ pytestmark = pytest.mark.django_db
 SAFE_PERMISSIONS = [
     ("list:SystemUser", "GET"),
     ("retrieve:SystemUser", "GET"),
-    ("exportData:SystemUser", "GET"),
+    ("upload:SystemUser", "POST"),
     ("list:SystemRole", "GET"),
     ("list:SystemPost", "GET"),
     ("list:SystemApprovalInstance", "GET"),
@@ -165,7 +165,7 @@ def field_tree(db):
     return root
 
 
-def _bound_permission(field_tree, name="list:DemoItem", method="GET"):
+def _bound_permission(field_tree, name="list:SystemApprovalFlow", method="GET"):
     """建一个绑定模型的权限点（字段白名单的适用范围）。"""
     meta = MenuMeta.objects.create(title=name)
     menu = Menu.objects.create(
@@ -186,7 +186,7 @@ def test_seed_fills_field_permission_gaps(demo_dept, demo_role, superuser, field
     角色字段树全字段；已在角色页收敛过的非空白名单不被改写。
     """
     bound = _bound_permission(field_tree)
-    narrowed = _bound_permission(field_tree, name="retrieve:DemoItem")
+    narrowed = _bound_permission(field_tree, name="retrieve:SystemApprovalFlow")
     demo_role.menu.add(bound, narrowed)
     # retrieve 上预置一个收敛过的白名单（只给 title）——补齐全流程不得覆盖它
     kept = FieldPermission.objects.create(role=demo_role, menu=narrowed)
@@ -217,26 +217,26 @@ def test_seed_clean_prunes_filled_field_permissions(demo_dept, demo_role, superu
     assert not FieldPermission.objects.filter(role=demo_role, menu=bound).exists()
 
 
-def test_seed_grants_extra_pages(demo_dept, demo_role, superuser):
-    """EXTRA_PAGE_PATHS 中的页面及其父级/权限点被授予演示角色（有演示数据的页面可见）。"""
-    from demo_seed.management.commands.seed_demo_admin import EXTRA_PAGE_PATHS
+def test_seed_grants_allow_listed_pages(demo_dept, demo_role, superuser):
+    """allow-list 页面及其父级/权限点被授予演示角色（有演示数据的页面可见）。"""
+    from demo_seed.permissions import DEMO_PAGE_PATHS
 
-    page_path = EXTRA_PAGE_PATHS[0]
+    page_path = DEMO_PAGE_PATHS[0]
     parent_meta = MenuMeta.objects.create(title="业务分组")
     parent = Menu.objects.create(name="业务分组", path="/biz", menu_type=Menu.MenuChoices.MENU, meta=parent_meta)
     page_meta = MenuMeta.objects.create(title="页面")
     page = Menu.objects.create(
-        name="BizPage",
+        name="SystemUser",
         path=page_path,
-        component="biz/index",
+        component="system/user/index",
         menu_type=Menu.MenuChoices.MENU,
         parent=parent,
         meta=page_meta,
     )
     perm_meta = MenuMeta.objects.create(title="页面动作")
     perm = Menu.objects.create(
-        name="list:BizItem",
-        path="api/biz/item$",
+        name="list:SystemApprovalFlow",
+        path="api/approval/approval-flows$",
         menu_type=Menu.MenuChoices.PERMISSION,
         method="GET",
         parent=page,
@@ -247,6 +247,49 @@ def test_seed_grants_extra_pages(demo_dept, demo_role, superuser):
 
     granted = set(demo_role.menu.values_list("pk", flat=True))
     assert {page.pk, parent.pk, perm.pk} <= granted
+
+
+def test_seed_isolates_demo_dept_tree(demo_role, superuser):
+    """演示部门必须是顶层；示例研发/财务部挂到演示部门；test 部门移出。"""
+
+    xadmin = DeptInfo.objects.create(name="xAdmin管理团队", code="xadmin")
+    demo = DeptInfo.objects.create(name="演示部门", code="demo", parent=xadmin)
+    rd = DeptInfo.objects.create(name="示例-研发部", code="demo_rd")
+    test = DeptInfo.objects.create(name="测试部门", code="test", parent=demo)
+    default = DeptInfo.objects.create(name="默认部门", code="default", parent=xadmin)
+
+    call_command("seed_demo_admin")
+
+    demo.refresh_from_db()
+    rd.refresh_from_db()
+    test.refresh_from_db()
+    default.refresh_from_db()
+    assert demo.parent_id is None
+    assert rd.parent_id == demo.pk
+    assert test.parent_id is None
+    assert default.parent_id is None
+
+
+def test_seed_backfills_demo_book_scope(demo_role, superuser):
+    """演示图书的 dept_belong 为空时回填到演示部门（数据权限可见）。"""
+
+    from demo.models import Book
+
+    demo = DeptInfo.objects.create(name="演示部门", code="demo")
+    book = Book.objects.create(
+        name="演示图书",
+        isbn="978-0-000-00000-0",
+        author="demo",
+        price=1.0,
+        admin=superuser,
+        admin2=superuser,
+    )
+    assert book.dept_belong_id is None
+
+    call_command("seed_demo_admin")
+
+    book.refresh_from_db()
+    assert book.dept_belong_id == demo.pk
 
 
 # ---------------------------------------------------------------- 任务二：补充数据

@@ -12,7 +12,7 @@ from django.contrib.auth.hashers import make_password
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.validators import UniqueValidator
 
 from common.base.utils import AESCipherV2
@@ -259,7 +259,21 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
                 DataPermission.objects.filter(pk__in=pks), user, _("Data permission is outside your assignable scope")
             )
 
+    def _assert_target_mutable(self) -> None:
+        """非超管不得修改超管账号（序列化器兜底，覆盖批量/导入等入口）。"""
+
+        request = self.context.get("request") or self.request
+        actor = getattr(request, "user", None) if request is not None else None
+        if (
+            self.instance is not None
+            and getattr(self.instance, "is_superuser", False)
+            and actor is not None
+            and not getattr(actor, "is_superuser", False)
+        ):
+            raise PermissionDenied(_("The super administrator cannot be modified"))
+
     def validate(self, attrs: Any) -> Any:
+        self._assert_target_mutable()
         self._assert_scope_fields(attrs)
         if attrs.get("invite"):
             # 邀请模式：密码由被邀请人自行设置（服务端置不可用），提交中的密码一律忽略

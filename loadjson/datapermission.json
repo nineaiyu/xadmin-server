@@ -383,5 +383,323 @@
       "is_active": true,
       "menu": []
     }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "31ea340e-0c81-4d62-a141-90efc61f17e6",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2026-10-20T00:00:00.000Z",
+      "updated_time": "2026-10-20T00:00:00.000Z",
+      "description": "演示租户：仅演示部门及下级用户",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "演示部门用户范围",
+      "rules": [
+        {
+          "type": "value.user.dept.ids",
+          "field": "dept",
+          "match": "in",
+          "table": "identity.userinfo",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "dept_belong",
+          "match": "in",
+          "table": "identity.userinfo",
+          "value": "",
+          "exclude": false
+        }
+      ],
+      "is_active": true,
+      "menu": []
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "86dc227d-6676-4c22-a28d-c98b77d0def6",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2026-10-20T00:00:00.000Z",
+      "updated_time": "2026-10-20T00:00:00.000Z",
+      "description": "演示租户：仅演示部门及下级的业务数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "演示写入数据范围",
+      "rules": [
+        {
+          "type": "value.user.dept.ids",
+          "field": "dept_belong",
+          "match": "in",
+          "table": "approval.approvalinstance",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "creator__dept",
+          "match": "in",
+          "table": "approval.approvalinstance",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "dept_belong",
+          "match": "in",
+          "table": "approval.approvalrequest",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "creator__dept",
+          "match": "in",
+          "table": "approval.approvalrequest",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "dept_belong",
+          "match": "in",
+          "table": "approval.approvalnodetask",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "creator__dept",
+          "match": "in",
+          "table": "approval.approvalnodetask",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "dept_belong",
+          "match": "in",
+          "table": "approval.leave",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "creator__dept",
+          "match": "in",
+          "table": "approval.leave",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "dept_belong",
+          "match": "in",
+          "table": "dataset.dynamicformsubmission",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "creator__dept",
+          "match": "in",
+          "table": "dataset.dynamicformsubmission",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "dept_belong",
+          "match": "in",
+          "table": "demo.book",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.ids",
+          "field": "creator__dept",
+          "match": "in",
+          "table": "demo.book",
+          "value": "",
+          "exclude": false
+        }
+      ],
+      "is_active": true,
+      "menu": []
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "7218022d-0141-4df4-a134-c2d0f2676dc9",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2026-10-20T00:00:00.000Z",
+      "updated_time": "2026-10-20T00:00:00.000Z",
+      "description": "演示租户：只读演示配置与示例定义",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "演示只读数据范围",
+      "rules": [
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "approval.approvalflow",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "approval.approvalflownode",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "approval.approvalflowversion",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "dataset.dynamicform",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "dataset.dataset",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "dataset.dashboard",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "dataset.report",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "dataset.screen",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "dataset.screentemplate",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "dataset.screentemplateversion",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "dataset.screenclipboard",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "ai.aiknowledgedocument",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "ai.aiknowledgechunk",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "system.datadict",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "system.tag",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "system.taggeditem",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "system.userrole",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "identity.deptinfo",
+          "value": "*",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "all",
+          "table": "identity.post",
+          "value": "*",
+          "exclude": false
+        }
+      ],
+      "is_active": true,
+      "menu": []
+    }
   }
 ]

@@ -157,6 +157,14 @@ class Command(LoadCommand):
         # post_save 失效钩子同样被屏蔽：不清路由与权限点缓存时，存量用户最长
         # 24 小时仍看到旧菜单树（改了种子却"没生效"的典型表现）
         self._invalidate_route_caches()
+        # 部门树 / 数据权限关系同样按 pk 覆盖且信号被屏蔽：种子改部门层级或
+        # 部门-授权关系后，必须主动失效递归缓存与授权池，否则权限判定会继续
+        # 使用旧祖先链（演示部门曾因此继续继承 xAdmin 团队的「全部数据」）。
+        from common.core.filter import invalidate_data_permission_grants_cache
+        from identity.models import DeptInfo
+
+        DeptInfo.invalid_dept_tree_cache()
+        invalidate_data_permission_grants_cache()
 
     def _report_notes(self, report: Any, *, verbosity: int = 1) -> None:
         """装配说明分流：真冲突保持 WARNING 并计数，策略性剥离只给普通提示。

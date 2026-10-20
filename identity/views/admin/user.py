@@ -29,7 +29,7 @@ from common.core.permission import IsAuthenticated, user_has_permission
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from identity.models import Post, UserInfo, UserOAuthBinding
+from identity.models import DeptInfo, Post, UserInfo, UserOAuthBinding
 from identity.serializers.user import (
     PASSWORD_DECRYPT_FAILED_MESSAGE,
     ResetPasswordSerializer,
@@ -54,6 +54,10 @@ logger = get_logger(__name__)
 
 #: 邀请权限点 path（与 loadjson/menumeta.json 同源）：创建即邀请需同时具备该权限
 INVITE_PERMISSION_PATH = "api/identity/user/1/invite"
+
+#: 演示角色 code：演示账号的用户可见范围强制收敛到其部门子树（数据权限之外
+#: 的兜底，防止数据权限配置漂移后再次看到真实用户）。
+DEMO_ROLE_CODE = "demo"
 
 
 class UserFilter(TagFilterMixin, BaseFilterSet):
@@ -118,6 +122,45 @@ class UserViewSet(
         if self.action in ("destroy", "batch_destroy", "impersonate"):
             permissions.append(UserConfirmation.require(ConfirmType.PASSWORD)())
         return permissions
+
+    def get_queryset(self) -> Any:
+        """演示账号的用户范围强制收敛到其部门子树。
+
+        数据权限已配置「演示部门用户范围」，这里再做一层视图级兜底：即使日后
+        授权池被误改成全量，演示账号也看不到/改不到演示部门之外的真实用户。
+        超管与非演示账号不受影响。
+        """
+
+        queryset = super().get_queryset()
+        request = getattr(self, "request", None)
+        user = getattr(request, "user", None) if request is not None else None
+        if user is None or not user.is_authenticated or user.is_superuser:
+            return queryset
+        if not user.roles.filter(code=DEMO_ROLE_CODE).exists():
+            return queryset
+        if not user.dept_id:
+            return queryset.none()
+        return queryset.filter(dept_id__in=DeptInfo.dept_tree_pks([user.dept_id]))
+
+    def _assert_target_mutable(self, instance: Any) -> None:
+        """非超管不得修改超管账号（与删除/模拟用户的保护口径一致）。"""
+
+        if instance.is_superuser and not self.request.user.is_superuser:
+            raise PermissionDenied(_("The super administrator cannot be modified"))
+
+    def assert_can_upload(self, instance: Any) -> None:
+        """头像上传目标校验：非超管不得改超管头像。"""
+
+        self._assert_target_mutable(instance)
+
+    def assert_can_change_permissions(self, instance: Any) -> None:
+        """角色/数据权限分配目标校验：非超管不得改超管授权。"""
+
+        self._assert_target_mutable(instance)
+
+    def perform_update(self, serializer: Any) -> None:
+        self._assert_target_mutable(serializer.instance)
+        return super().perform_update(serializer)
 
     def perform_destroy(self, instance: Any) -> Any:
         # 抛 ValidationError（400 + 可读文案）而不是裸 Exception（会归一成 500，
@@ -184,6 +227,7 @@ class UserViewSet(
     def reset_password(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """重置用户密码"""
         instance = self.get_object()
+        self._assert_target_mutable(instance)
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -202,6 +246,7 @@ class UserViewSet(
         重置为待激活 + 一次性链接；权限点 invite:SystemUser
         """
         instance = self.get_object()
+        self._assert_target_mutable(instance)
         if not user_invite.mail_channel_configured():
             return ApiResponse(code=1001, detail=user_invite.INVITE_MAIL_UNAVAILABLE_MESSAGE)
         user_invite.send_invite(instance, request=request)
@@ -212,6 +257,7 @@ class UserViewSet(
     def unblock(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """解禁用户"""
         instance = self.get_object()
+        self._assert_target_mutable(instance)
         LoginBlockUtil.unblock_user(instance.username)
         return ApiResponse()
 
@@ -228,6 +274,7 @@ class UserViewSet(
         清除 OTP 绑定，敏感操作：需密码二次确认
         """
         instance = self.get_object()
+        self._assert_target_mutable(instance)
         instance.otp_secret_key = ""
         instance.mfa_level = UserInfo.MFALevelChoices.DISABLED
         instance.save(update_fields=["otp_secret_key", "mfa_level"])
@@ -250,6 +297,7 @@ class UserViewSet(
     def logout(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """强退用户"""
         instance = self.get_object()
+        self._assert_target_mutable(instance)
         channel_names = request.data.get("channel_names", [])
         send_logout_msg(instance.pk, channel_names)
         return ApiResponse()
@@ -298,6 +346,8 @@ class UserViewSet(
         写操作落 OperationLog（module=IM:binding）。
         """
         user = self.get_object()
+        if request.method.upper() != "GET":
+            self._assert_target_mutable(user)
         if request.method.upper() == "GET":
             rows = list(user.oauth_bindings.values("pk", "provider", "subject", "profile", "created_time"))
             return ApiResponse(data=rows)
@@ -345,6 +395,7 @@ class UserViewSet(
         防自锁：解绑后无其它登录方式则拒绝
         """
         user = self.get_object()
+        self._assert_target_mutable(user)
         provider = (request.data.get("provider") or "").strip()
         binding = user.oauth_bindings.filter(provider=provider).first()
         if binding is None:

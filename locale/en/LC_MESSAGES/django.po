@@ -6955,6 +6955,11 @@ msgstr ""
 msgid "The super administrator disallows deletion"
 msgstr ""
 
+#: identity/serializers/user.py:267
+#: identity/views/admin/user.py:143
+msgid "The super administrator cannot be modified"
+msgstr ""
+
 #: identity/views/admin/user.py:190
 msgid "Password reset successful"
 msgstr ""

@@ -275,7 +275,7 @@ class Command(BaseCommand):
             self.stdout.write("skip demo books: demo app 未启用（XADMIN_APPS 不含 demo；先启用再灌数据）")
             return
         from demo.models import Book
-        from identity.models import UserInfo
+        from identity.models import DeptInfo, UserInfo
 
         admin = (
             UserInfo.objects.filter(is_superuser=True).order_by("pk").first() or UserInfo.objects.order_by("pk").first()
@@ -283,6 +283,8 @@ class Command(BaseCommand):
         if admin is None:
             self.stdout.write("skip demo books: 当前库无可用用户（先创建超级管理员）")
             return
+        demo_dept = DeptInfo.objects.filter(code="demo").first()
+        dept_belong = demo_dept or admin.dept
         created = 0
         for name, isbn, author, price, category in DEMO_BOOKS:
             book = Book.all_objects.filter(name=name).first()
@@ -295,7 +297,7 @@ class Command(BaseCommand):
                     category=category,
                     admin=admin,
                     admin2=admin,
-                    dept_belong=admin.dept,
+                    dept_belong=dept_belong,
                     creator=admin,
                     modifier=admin,
                 ).save()

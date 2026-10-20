@@ -34,8 +34,9 @@ from system.services.seeding.grants import apply_grants
 pytestmark = pytest.mark.django_db
 
 # 改造前 userrole.json 的逐角色菜单数（等价性基线）：改动授权时同步更新
-# （2026-10 审计：test 角色补齐「页面 ⇒ 只读子权限点」缺口 75 → 80）
-EXPECTED_ROLE_MENUS = {"admin": 255, "test": 80, "default": 29, "demo": 153}
+# （2026-10 审计：test 角色补齐「页面 ⇒ 只读子权限点」缺口 75 → 80；
+#  2026-10 演示角色改为 allow-list：153 → 63，身份治理/系统配置/日志/文件等整页摘除）
+EXPECTED_ROLE_MENUS = {"admin": 255, "test": 80, "default": 29, "demo": 63}
 
 
 def _plan_grants():

@@ -6993,6 +6993,11 @@ msgstr "成员已更新"
 msgid "The super administrator disallows deletion"
 msgstr "超级管理员禁止删除"
 
+#: identity/serializers/user.py:267
+#: identity/views/admin/user.py:143
+msgid "The super administrator cannot be modified"
+msgstr "超级管理员禁止修改"
+
 #: identity/views/admin/user.py:190
 msgid "Password reset successful"
 msgstr "密码重置成功"

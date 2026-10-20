@@ -51,6 +51,9 @@ class ChangeRolePermissionAction:
 
         def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
+    def assert_can_change_permissions(self, instance: Any) -> None:
+        """授权目标校验钩子（宿主视图按对象级策略覆写，默认放行）。"""
+
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
@@ -67,6 +70,7 @@ class ChangeRolePermissionAction:
     def empower(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """给{cls}分配角色-数据权限"""
         instance = self.get_object()
+        self.assert_can_change_permissions(instance)
         roles = request.data.get("roles")
         rules = request.data.get("rules")
         if roles is not None or rules is not None:

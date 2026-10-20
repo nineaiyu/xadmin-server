@@ -33,6 +33,7 @@
       "list:ChatContact",
       "list:ChatMessage",
       "list:ChatRoom",
+      "members:ChatRoom",
       "recall:ChatMessage",
       "stream:ChatRoom",
       "upload:ChatMessage"

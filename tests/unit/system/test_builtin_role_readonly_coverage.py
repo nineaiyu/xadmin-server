@@ -24,6 +24,7 @@ from typing import Any
 
 from django.conf import settings as dj_settings
 
+from demo_seed.permissions import DEMO_ALLOWED_PERMISSION_NAMES
 from system.services.seeding import read_model_rows
 
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
@@ -116,6 +117,9 @@ def test_demo_roles_cover_readonly_points_of_owned_pages() -> None:
         for point in points:
             name = point.get("name") or ""
             if not name.startswith(READONLY_PREFIXES) or name in EXEMPT_POINTS:
+                continue
+            # 演示模式按 allow-list 收敛：清单外的只读点（回收站/导出等）刻意不授予
+            if role_name == "演示模式" and name not in DEMO_ALLOWED_PERMISSION_NAMES:
                 continue
             if point["pk"] in owned or _whitelisted(point):
                 continue
