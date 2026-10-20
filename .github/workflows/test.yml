@@ -10,9 +10,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # 时长预算 ≤ 20 min（容器启动 + uv sync 占大头，pytest 本体真库实测分钟级）；
-    # 2 次尝试 × 8 min + 环境准备 ≈ 19 min，仍在预算内
-    timeout-minutes: 20
+    # 时长预算 ≤ 24 min（容器启动 + uv sync 占大头，pytest 本体真库实测分钟级）；
+    # 2 次尝试 × 10 min + 环境准备 ≈ 22 min（单次上限须大于「断流点 ~6min +
+    # 假死阈值 150s」的转储窗口，否则取证永远打不出来）
+    timeout-minutes: 24
 
     services:
       postgres:
@@ -92,25 +93,29 @@ jobs:
       - name: Run tests (parallel, real PostgreSQL + Redis)
         # 口径不变：-n auto + --cov-fail-under=85（2026-09-18 上调 82 → 85）。
         #
-        # 假死自愈 + 现场取证（2026-10-20）：
-        #   现场：进度线在 92% 处断流 17~30 分钟后「一次性爆发 3~5 行」，PG 侧零写入，
-        #   主进程停在 xdist dsession 等待事件（worker 不再上报）；本机同命令 2~5 分钟
-        #   稳定通过。faulthandler 的按用例看门狗不触发，说明卡点在用例之外（fixture /
-        #   worker 内部等待）。
+        # 假死自愈 + 现场取证（2026-10-20，机制收敛见 docs/ops/ci-unit-tests-stall-2026-10.md §10）：
+        #   现场：进度在 ~5.5-6min 处（92%，tests/unit/system 尾部）断流，静默仅累计
+        #   120~150s 就被单次上限 SIGINT；worker 不在用例内（faulthandler 600s 零触发）、
+        #   master 空转在 queue.get、PG 侧零会话零写入、磁盘健康（checkpoint sync=0.02s）。
+        #   卡点收敛在 xdist 用例间隙（worker 空队列等待 / 协议后 send 背压）。
         # 处理：
-        #   1) pytest 输出写文件（不再经 stdout 管道），每分钟回显一行进度；
-        #   2) 后台看门狗：连续 240s 日志无增长即判定假死，对 pytest 主进程与全部 worker
-        #      发 SIGABRT，由 faulthandler 把所有线程栈写入日志，再结束本次尝试 —— 下一次
-        #      红灯直接带卡点栈，不再靠猜；
-        #   3) 单次尝试 8 分钟硬上限（正常 2~3 分钟），假死/超时自动重试一次；
-        #      真失败（断言/覆盖率）原样退出不重试；完整日志与 junit 一并作为 artifact 上传。
+        #   1) pytest 输出写文件（不再经 stdout 管道），每 30s 回显一行进度；
+        #   2) 后台看门狗：首个进度行出现后，连续 150s 日志无增长即判定假死（旧阈值
+        #      240s 在 8min 上限下永远等不到——实测断流点 ~6min，静默最大只到 150s），
+        #      先落 ps 快照（STAT/wchan 区分内核态阻塞），再对全部 execnet worker 与
+        #      pytest 主进程发 SIGABRT，由 faulthandler 把所有线程栈写入日志；
+        #   3) 单次尝试 10 分钟硬上限（正常 2~5 分钟，须晚于断流点+150s），假死/超时
+        #      自动重试一次（同一 runner 上两次 attempt 高度相关，重试止血有限，失败
+        #      job 重跑换 runner 才有效）；转储后先 TERM pytest 主进程并等其退出，否则
+        #      孤儿进程持有 PG advisory lock 会让 attempt 2 快速失败；
+        #   4) 真失败（断言/覆盖率）原样退出不重试；完整日志与 junit 一并作为 artifact 上传。
         run: |
           mkdir -p test-reports
           LOG=test-reports/pytest.log
           for attempt in 1 2; do
             echo "=== pytest attempt ${attempt} ==="
             rm -f "$LOG" "$LOG.done" "$LOG.stalled"
-            timeout --signal=INT --kill-after=60 8m \
+            timeout --signal=INT --kill-after=60 10m \
               uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85 \
                 --junitxml="test-reports/junit-${attempt}.xml" > "$LOG" 2>&1 &
             TPID=$!
@@ -124,15 +129,32 @@ jobs:
                 printf '  [watch] 进度行 %s，静默 %ss，末尾：%s\n' \
                   "$(grep -c '%]' "$LOG" 2>/dev/null || echo 0)" "$idle" \
                   "$(tail -c 160 "$LOG" 2>/dev/null | tr '\n' ' ')"
-                if [ "$idle" -ge 240 ] && [ ! -f "$LOG.stalled" ]; then
+                # 首个进度行出现后才武装（跳过 worker 建库/迁移启动期）。阈值必须
+                # 显著早于单次尝试上限：实测断流点 ~5.5-6min，静默只累计到 120-150s
+                # 就被上限杀掉，240s 的旧阈值永远无法触发转储
+                if [ "$(grep -c '%]' "$LOG" 2>/dev/null || echo 0)" -gt 0 ] \
+                  && [ "$idle" -ge 150 ] && [ ! -f "$LOG.stalled" ]; then
                   echo "!!! 连续 ${idle}s 无输出，判定假死：转储线程栈 !!!" | tee -a "$LOG"
                   touch "$LOG.stalled"
-                  # uv run 会再套一层：直接按命令行找 pytest 主进程，再取其 worker 子进程
-                  PY=$(pgrep -f "pytest -n auto" | head -1)
+                  # 进程快照：STAT（D=不可中断内核态）与 wchan 直接区分阻塞位置。
+                  # worker 命令行是 "…/python -u -c import sys;exec(…)"（execnet
+                  # bootstrap，不含 pytest/execnet 字样），须按该特征匹配
+                  {
+                    echo "--- 转储时刻进程快照 ---"
+                    ps -eo pid,ppid,stat,wchan:32,etime,cmd \
+                      | grep -E 'pytest -n auto|python -u -c' | grep -v grep
+                  } >> "$LOG" 2>&1
+                  # uv run 会再包一层：pid 最大的匹配项才是 pytest 主进程，其直接
+                  # 子进程是 execnet worker（worker 命令行不含 pytest 字样）
+                  PY=$(pgrep -f "pytest -n auto" | sort -n | tail -1)
                   for w in $(pgrep -P "$PY"); do kill -ABRT "$w" 2>/dev/null; done
                   sleep 4
                   kill -ABRT "$PY" 2>/dev/null
                   sleep 3
+                  # 只 TERM timeout 包装会孤儿化 pytest：先 TERM 主进程本身——
+                  # PG advisory lock 在 pytest_unconfigure 才释放，进程不退锁不松，
+                  # 下一轮 attempt 会撞「另一个 pytest 会话正在使用同一测试栈」
+                  kill -TERM "$PY" 2>/dev/null
                   kill -TERM "$TPID" 2>/dev/null
                 fi
               done
@@ -141,11 +163,17 @@ jobs:
             # run 步骤是 bash -e：wait 返回非零会直接中断脚本，这里显式吞掉
             code=0
             wait "$TPID" || code=$?
+            # attempt 结束后等 pytest 进程组完全退出（上限 40s）：SIGINT 优雅退出
+            # 也需数秒收尾（worker 关停 + junit 落盘），不等会让 attempt 2 撞锁
+            for _ in $(seq 1 20); do
+              pgrep -f "pytest -n auto" >/dev/null 2>&1 || break
+              sleep 2
+            done
             touch "$LOG.done"
             wait "$WATCH" 2>/dev/null || true
             echo "--- pytest 输出尾部（attempt ${attempt}, exit ${code}）---"
-            # 卡点栈可能很长：完整日志随 artifact 上传，这里回显尾部 300 行
-            tail -n 300 "$LOG"
+            # 卡点栈可能很长：完整日志随 artifact 上传，这里回显尾部 600 行
+            tail -n 600 "$LOG"
             if [ "$code" -eq 0 ]; then exit 0; fi
             if [ -f "$LOG.stalled" ] || [ "$code" -eq 124 ]; then
               echo "pytest 假死或超时（已转储卡点栈），重试…" >&2
