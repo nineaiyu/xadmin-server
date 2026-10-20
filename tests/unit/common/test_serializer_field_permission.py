@@ -136,3 +136,18 @@ class TestFieldPermissionIntegration:
         request.fields = data
         serializer = BookSerializer()
         assert set(serializer.fields.keys()) == {"name", "author"}
+
+    def test_list_and_detail_field_permissions_stay_independent(self, normal_user, role, menu_factory):
+        """字段权限按精确接口隔离：数据权限的 list 回退不得影响字段白名单。"""
+        from common.core.permission import get_user_field_queryset
+
+        list_menu = menu_factory("list:Book", path="api/demo/book$", method="GET")
+        detail_menu = menu_factory("retrieve:Book", path=r"api/demo/book/(?P<pk>[^/.]+)$", method="GET")
+        _, children = make_field_tree()
+        list_fp = FieldPermission.objects.create(role=role, menu=list_menu)
+        list_fp.field.add(children[0])  # name
+        detail_fp = FieldPermission.objects.create(role=role, menu=detail_menu)
+        detail_fp.field.add(children[1])  # author
+
+        assert get_user_field_queryset(normal_user, list_menu.pk) == {"demo.book": {"name"}}
+        assert get_user_field_queryset(normal_user, detail_menu.pk) == {"demo.book": {"author"}}

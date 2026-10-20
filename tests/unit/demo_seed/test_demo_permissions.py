@@ -126,7 +126,7 @@ def test_demo_scope_permissions_cover_userinfo_and_business_rows():
         "ai.aiknowledgedocument",
         "system.datadict",
         "system.tag",
-        "system.userrole",
+        "identity.userrole",
         "identity.deptinfo",
         "identity.post",
     } <= read_scope
@@ -179,3 +179,42 @@ def test_grant_files_are_valid_json(path):
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     assert data.get("version") == 1
     assert isinstance(data.get("roles"), dict)
+
+
+def test_data_permission_rule_tables_reference_real_models():
+    """规则表名必须是当前模型 label：领域拆分后残留旧表名会让规则静默失效。"""
+    from django.apps import apps
+
+    valid = {model._meta.label_lower for model in apps.get_models()}
+    rows = json.loads((LOADJSON / "datapermission.json").read_text(encoding="utf-8"))
+    stale = [
+        (row["fields"]["name"], rule.get("table"))
+        for row in rows
+        for rule in row["fields"].get("rules", [])
+        if rule.get("table") not in (None, "*") and rule["table"] not in valid
+    ]
+    assert stale == []
+
+
+def _seed_menu_pks() -> set[str]:
+    pks = set()
+    for path in [*SERVER_ROOT.glob("*/seeds/menu.json"), *LOADJSON.glob("menu*.json")]:
+        for row in json.loads(path.read_text(encoding="utf-8")):
+            if row.get("model") == "system.menu":
+                pks.add(row["pk"])
+    return pks
+
+
+def test_data_permission_menu_refs_exist_in_seed():
+    """``value.table.menu.ids`` 引用的菜单必须仍在种子中，防止删菜单后留下失效主键。"""
+    known = _seed_menu_pks()
+    rows = json.loads((LOADJSON / "datapermission.json").read_text(encoding="utf-8"))
+    missing = []
+    for row in rows:
+        for rule in row["fields"].get("rules", []):
+            if rule.get("type") != "value.table.menu.ids":
+                continue
+            for item in json.loads(rule.get("value") or "[]"):
+                if item.get("pk") not in known:
+                    missing.append((row["fields"]["name"], item.get("pk"), item.get("label")))
+    assert missing == []

@@ -84,7 +84,8 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 
 - **且模式（AND）**：行必须满足规则列表中的每一条；
 - **或模式（OR）**：满足任意一条即可（`ModeTypeAbstract.ModeChoices`）。
-- 规则可绑定菜单：仅对所选菜单对应的接口生效。
+- 规则可绑定菜单：当前 action 有可编译的显式授权时只用它，未配置时回退同资源 `list` 权限点；
+  显式 action 与 list 互不影响；通用授权始终参与（授权只放宽、不改变动作权限）。
 - 部门维度的规则依赖 `DeptInfo.recursion_dept_info` 展开部门树。
 
 ### 3.2 规则类型速查表（`ModelLabelField.KeyChoices`，共 18 种）
@@ -193,7 +194,7 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
 |--------------|-------------------------------------------------------------------------------------------------------------------------------|
 | 403 但用户确有角色  | 1) 检查菜单 `is_active` 与 `menu_type`；2) 检查角色/部门挂载关系；3) 打印 `get_user_permission(user, method)` 结果；4) 确认 URL 匹配（精确 `$` 后缀 vs 前缀正则） |
 | 改了角色/菜单权限未生效 | 确认请求经 API 发起（信号已挂 `m2m_changed`）；若绕过 ORM 直改，触发 `system.signal_handler.clean_cache_handler` 或调 `MagicCacheData.invalid_caches` |
-| 列表有数据但详情 403 | 数据权限规则绑定了菜单，检查规则所挂菜单是否覆盖详情路由                                                                                                  |
+| 列表有数据但详情 400/403 | 数据权限按「显式 action 覆盖 + list 缺省回退」：1) 若 detail 配了显式规则，detail 只认它，可能比 list 更窄（预期行为）；2) 若未配 detail，检查同资源 `list` 权限点是否绑定了授权；3) 显式规则只针对其它模型时视为未配置，仍回退 list |
 | 字段输出比预期少     | 1) `request.fields` 是否被 FieldPermission 收敛；2) 字段所在模型是否在 `ModelLabelField` 树中正确挂载；3) 前端传参字段与后端字段名大小写                           |
 | 列表空集但用户确有授权 | 1) 跑 `python manage.py audit_data_permission_rules`（非法规则 + 不生效提示：未绑定 / 主管部门规则无主管 / 引用对象已删除）；2) 数据权限页「试算」按目标用户实跑过滤，看实际生效授权与命中（排障口径见 [data-permission.md](data-permission.md) 排障节） |
 | 导入/导出 403    | 未绑定模型的菜单回退到 list/create 权限——检查菜单的「绑定模型」配置                                                                                     |

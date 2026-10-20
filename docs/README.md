@@ -64,6 +64,7 @@
 | [ops/monitoring-stack.md](ops/monitoring-stack.md) | 监控参考栈（Prometheus + Grafana + blackbox + 告警桥接 + systemd 单元） |
 | [ops/release-checklist.md](ops/release-checklist.md) | 发布窗口 checklist（基线门禁 + 执行记录） |
 | [ops/fix-bind-phone-setting-keys-2026-10.md](ops/fix-bind-phone-setting-keys-2026-10.md) | 安全设置「绑定手机」配置键错写（P0）修复的数据核查与清理 SQL |
+| [ops/ci-unit-tests-stall-2026-10.md](ops/ci-unit-tests-stall-2026-10.md) | CI「Unit Tests 跑到 92% 停摆 17~33 分钟后超时」的排查记录：现象与运行轨迹、已确认证据（卡点不在用例内 / 主进程等 worker / PG 空闲 / 磁盘疑似极慢）、已排除方向、本机排障陷阱、已内置的假死取证与重试机制、待判定疑点与复现入口 |
 | [ops/performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（silk + k6） |
 | [ops/backup-drill-2026-09.md](ops/backup-drill-2026-09.md)、[ops/backup-drill-2026-09-16.md](ops/backup-drill-2026-09-16.md)、[ops/backup-drill-2026-Q4.md](ops/backup-drill-2026-Q4.md)、[ops/backup-drill-2027-03.md](ops/backup-drill-2027-03.md) | 备份恢复演练记录（历史归档） |
 
@@ -71,7 +72,7 @@
 
 | 文档 | 内容 |
 |------|------|
-| [adr/README.md](adr/README.md) | **架构决策记录索引（90 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
+| [adr/README.md](adr/README.md) | **架构决策记录索引（91 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
 | [plans/README.md](plans/README.md) | 规划与治理：活跃台账（**工作区级**开发任务总清单 / 长期任务方案 / 长期开发计划 / 5.0 发布清单 + 触发制任务清单与域切分映射）；**已完成的一次性台账在 `plans/archive/`**，预生成未来年度的填充文档已于 2026-10-03 清理 |
 | [ci-gates.md](ci-gates.md) | **CI 门禁统一清单**：全部流水线门禁与守护测试的登记处（守护语义 / 所在 workflow / 本地复跑；新增门禁必须登记） |
 | [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线概览）；履历见 [metrics-history.md](metrics-history.md)（阶段回填 + 依赖安全审计）、[metrics-perf-history.md](metrics-perf-history.md)（性能 / 前端基线实测） |

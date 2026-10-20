@@ -13,6 +13,14 @@ from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 
 from common.core.data_scope import ScopeResult, compile_grant, validate_rules
+from common.core.data_scope.menu_scope import (
+    MenuScope,
+    binding_permission_pks,
+    menu_binding_matches_context,
+    resolve_menu_scope,
+    scope_mode,
+    select_compiled_grants,
+)
 from common.core.filter import get_filter_queryset
 from common.utils import get_logger
 from identity.services import DeptInfo, UserInfo
@@ -38,7 +46,8 @@ def _build_draft_grant(draft: Any, menu_ctx: Any) -> Any:
 
     草稿只用于本次试算（不落库），但仍走写入侧同一套 validate_rules，
     保证「试算能过的规则保存也能过」，不成为绕过校验的后门。
-    draft.menu 支持单个 pk 或 pk 列表（表单可多选绑定菜单）：上下文命中其一即参与。
+    draft.menu 支持单个 pk 或 pk 列表（表单可多选绑定菜单）：与运行时菜单上下文
+    （显式 action 覆盖 + 同资源 list 缺省回退；页面上下文为其下 list 权限点）有交集即参与。
     """
     if not draft or not isinstance(draft, dict):
         return None
@@ -54,19 +63,34 @@ def _build_draft_grant(draft: Any, menu_ctx: Any) -> Any:
     if mode not in (ModeTypeAbstract.ModeChoices.OR, ModeTypeAbstract.ModeChoices.AND):
         raise ValidationError("试算草稿的模式不合法")
     draft_menus = _normalize_pk_list(draft.get("menu"))
-    if draft_menus and str(menu_ctx or "") not in draft_menus:
-        # 草稿绑定了菜单：仅在该菜单上下文下参与试算，否则与运行期语义不符
+    if draft_menus and not any(menu_binding_matches_context(pk, menu_ctx) for pk in draft_menus):
+        # 草稿绑定了菜单：仅在与当前上下文有交集时参与试算，否则与运行期语义不符
         return None
-    return DataPermission(name="__draft__", rules=rules, mode_type=mode, is_active=True)
+    menu_ids: set[str] = set()
+    for pk in draft_menus:
+        # 页面/目录按保存时的展开口径归一为接口权限点
+        menu_ids.update(binding_permission_pks(pk))
+    grant = DataPermission(name="__draft__", rules=rules, mode_type=mode, is_active=True)
+    grant.menu_ids = frozenset(menu_ids)
+    return grant
 
 
-def _grants_for_user(user_obj: UserInfo, menu_ctx: Any) -> list[Any]:
+def _attach_menu_ids(dp: Any) -> Any:
+    dp.menu_ids = frozenset(str(menu.pk) for menu in dp.menu.all())
+    return dp
+
+
+def _grants_for_user(user_obj: UserInfo, scope: MenuScope | None) -> list[Any]:
     """按 get_filter_queryset 的口径收集 (授权组, 来源, 部门名) 三元组。
 
     与运行时同一数据源与过滤条件（启用授权 / 菜单上下文 / 启用部门祖先链），
     仅用于试算诊断展示；实际过滤仍由 get_filter_queryset 独立完成。
     """
-    dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=menu_ctx)
+    candidates = scope.candidate_pks if scope else frozenset()
+    if candidates:
+        dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk__in=candidates)
+    else:
+        dq = Q(menu__isnull=True)
     rows: list[tuple[Any, ...]] = []
     dept = user_obj.dept
     if dept and dept.pk:
@@ -76,32 +100,48 @@ def _grants_for_user(user_obj: UserInfo, menu_ctx: Any) -> list[Any]:
         ]
         if active_chain:
             queryset = (
-                DataPermission.objects.filter(is_active=True).filter(deptinfo__in=active_chain).filter(dq).distinct()
+                DataPermission.objects.filter(is_active=True)
+                .filter(deptinfo__in=active_chain)
+                .filter(dq)
+                .distinct()
+                .prefetch_related("menu")
             )
-            rows.extend((dp, "dept", dept.name) for dp in queryset)
+            rows.extend((_attach_menu_ids(dp), "dept", dept.name) for dp in queryset)
     rows.extend(
-        (dp, "personal", None)
-        for dp in DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
+        (_attach_menu_ids(dp), "personal", None)
+        for dp in DataPermission.objects.filter(is_active=True)
+        .filter(userinfo=user_obj)
+        .filter(dq)
+        .prefetch_related("menu")
     )
     return rows
 
 
-def _source_grant_diagnosis(user_obj: UserInfo, model: Any, menu_ctx: Any, draft_grant: Any) -> list[Any]:
-    """试算诊断：列出本次参与编译的授权组与判定结果（解释 count 从何而来）。
+def _source_grant_diagnosis(
+    user_obj: UserInfo, model: Any, scope: MenuScope | None, draft_grant: Any
+) -> tuple[list[Any], str]:
+    """试算诊断：列出授权组与判定结果（解释 count 从何而来）。
 
     kind：all=「全部数据」放行 / condition=条件过滤 / deny=恒假 / none=与当前模型无关（不参与）。
+    selected：本次是否按「显式覆盖 + list 回退」进入合并集合。
     历史脏规则编译失败时按 none 展示，不让诊断信息使试算接口失败。
     """
-    rows = _grants_for_user(user_obj, menu_ctx)
+    rows = _grants_for_user(user_obj, scope)
     if draft_grant is not None:
         rows.append((draft_grant, "draft", None))
-    diagnosis = []
+    compiled_rows = []
     for dp, source, dept_name in rows:
         try:
             compiled = compile_grant(dp, model, user_obj)
         except Exception as exc:  # noqa: BLE001 诊断项失败不应让只读试算 500
             logger.warning("diagnose grant failed. name:%s error:%s", dp.name, exc)
             compiled = None
+        compiled_rows.append((dp, source, dept_name, compiled))
+    compiled_pairs = [(dp, compiled) for dp, _, _, compiled in compiled_rows]
+    selected_ids = {id(dp) for dp, _ in select_compiled_grants(compiled_pairs, scope)}
+
+    diagnosis = []
+    for dp, source, dept_name, compiled in compiled_rows:
         if compiled is None:
             kind = "none"
         elif compiled.kind == ScopeResult.KIND_ALLOW:
@@ -116,10 +156,11 @@ def _source_grant_diagnosis(user_obj: UserInfo, model: Any, menu_ctx: Any, draft
                 "name": dp.name,
                 "dept_name": dept_name,
                 "applied": compiled is not None,
+                "selected": id(dp) in selected_ids,
                 "kind": kind,
             }
         )
-    return diagnosis
+    return diagnosis, scope_mode(compiled_pairs, scope)
 
 
 def run_data_trial(user_obj: UserInfo, model_label: Any, menu_pk: Any, draft: Any = None) -> dict[str, Any]:
@@ -154,6 +195,7 @@ def run_data_trial(user_obj: UserInfo, model_label: Any, menu_pk: Any, draft: An
         menu_ctx = str(menu_pk)
 
     started = time.perf_counter()
+    scope = resolve_menu_scope(menu_ctx)
     draft_grant = _build_draft_grant(draft, menu_ctx)
     # 与 IsAuthenticated 的 request.user.menu 注入同构（UserInfo 无 menu 字段，纯属性）
     user_obj.menu = menu_ctx
@@ -177,15 +219,17 @@ def run_data_trial(user_obj: UserInfo, model_label: Any, menu_pk: Any, draft: An
         except Exception:  # noqa: BLE001 异常 __str__ 不应让诊断工具失败
             label = ""
         sample.append({"pk": str(obj.pk), "label": label})
+    diagnosis, mode = _source_grant_diagnosis(user_obj, model, scope, draft_grant)
     return {
         "scope": "data",
         "model": model_label,
         "menu": menu_ctx,
+        "scope_mode": mode,
         "count": count,
         "sql": sql,
         "sample": sample,
         "sample_limit": TRIAL_SAMPLE_LIMIT,
-        "grants": _source_grant_diagnosis(user_obj, model, menu_ctx, draft_grant),
+        "grants": diagnosis,
         "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
         "is_superuser": user_obj.is_superuser,
         "data_enabled": settings.PERMISSION_DATA_ENABLED,
