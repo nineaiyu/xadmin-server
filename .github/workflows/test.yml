@@ -138,14 +138,15 @@ jobs:
               done
             ) &
             WATCH=$!
-            wait "$TPID"
-            code=$?
+            # run 步骤是 bash -e：wait 返回非零会直接中断脚本，这里显式吞掉
+            code=0
+            wait "$TPID" || code=$?
             touch "$LOG.done"
             wait "$WATCH" 2>/dev/null || true
             echo "--- pytest 输出尾部（attempt ${attempt}, exit ${code}）---"
             # 卡点栈可能很长：完整日志随 artifact 上传，这里回显尾部 300 行
             tail -n 300 "$LOG"
-            [ "$code" -eq 0 ] && exit 0
+            if [ "$code" -eq 0 ]; then exit 0; fi
             if [ -f "$LOG.stalled" ] || [ "$code" -eq 124 ]; then
               echo "pytest 假死或超时（已转储卡点栈），重试…" >&2
               continue
