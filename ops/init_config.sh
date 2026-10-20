@@ -2,13 +2,14 @@
 # 源码部署配置引导（对齐安装器 xadmin.sh install 的「自动生成配置」体验）：
 #   bash ops/init_config.sh [--force] [--no-secrets]
 #
-# 做三件事（全部幂等）：
+# 做四件事（全部幂等）：
 #   1. config.yml 缺失时从 config_example.yml 复制，并把 SECRET_KEY / DB_PASSWORD /
-#      REDIS_PASSWORD 写成随机值（已存在的 config.yml 完全不动）；
-#   2. .env 缺失时从 config.yml 同步 DB_PASSWORD / REDIS_PASSWORD
+#      REDIS_PASSWORD 写成随机值（已有值完全不动）；
+#   2. ALLOWED_HOSTS 为空时按本机 IP + 回环推导（5.0 fail-fast：缺失即拒绝启动）；
+#   3. .env 缺失时从 config.yml 同步 DB_PASSWORD / REDIS_PASSWORD
 #      （compose 变量插值读不了 YAML，缺 .env 时 docker compose up 直接报错拒启；
 #      .env 是派生缓存——之后任何时候重跑本脚本或 dev_up.sh 都会以 config.yml 为准回写）；
-#   3. 打印后续步骤。
+#   4. 打印后续步骤。
 #
 # 已有配置想全部重新生成：mv config.yml config.yml.bak.$(date +%s) 后重跑（脚本不删除文件）。
 # 只想补 .env、不动 config.yml：bash ops/init_config.sh --no-secrets。
@@ -23,7 +24,7 @@ for arg in "$@"; do
     --force) FORCE=1 ;;          # 预留：覆盖式重生成（当前实现保守，不覆盖既有文件）
     --no-secrets) NO_SECRETS=1 ;;
     -h|--help)
-      sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *) echo "[init-config] 未知参数: $arg"; exit 1 ;;
@@ -38,6 +39,24 @@ random_str() {
   LC_ALL=C head -c 512 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | head -c "$n"
 }
 
+# 本机首个 IPv4（与安装器 ensure_allowed_hosts 同源逻辑）。
+# 探测链 hostname -I（Linux）→ ip addr（Linux 备选）→ ifconfig（macOS/BSD），
+# 全部落空（如纯回环环境）返回空 → 白名单退化为纯回环。
+# 每段管道都带 || true / 2>/dev/null：hostname -I 在 BSD 下直接报错退出，
+# set -e + pipefail 会把非零退出放大成整个脚本中止（退出码 1，输出被吞）
+get_host_ip() {
+  local ip=""
+  ip="$(hostname -I 2>/dev/null | grep -Eo '(^|[[:space:]])[0-9]+(\.[0-9]+){3}' | head -n1 | tr -d '[:space:]' || true)"
+  if [ -z "$ip" ] && command -v ip >/dev/null 2>&1; then
+    ip="$(ip -4 addr 2>/dev/null | awk '/inet / && $2 !~ /^127\./ {print $2}' | head -n1 | cut -d/ -f1 || true)"
+  fi
+  if [ -z "$ip" ] && command -v ifconfig >/dev/null 2>&1; then
+    ip="$(ifconfig 2>/dev/null | awk '/inet / && $2 !~ /^127\./ {print $2}' | head -n1 || true)"
+  fi
+  [ -n "$ip" ] && printf '%s\n' "$ip"
+  return 0
+}
+
 # 从 .env 读派生缓存的凭据（config.yml 重建时回读用，避免换密码锁死存量库卷）。
 # 文件存在守卫：set -e + pipefail 下 sed 读不存在文件的非零退出码不会被 2>/dev/null 吞掉
 get_env_key() {
@@ -45,12 +64,18 @@ get_env_key() {
   sed -n -E "s/^${1}=//p" .env | head -n1
 }
 
-# 在 config.yml 中把顶层键 KEY 的值替换为 $2（无该行时在文件末尾追加）。
-# 只匹配行首的 KEY（config.yml 无缩进语法），带 # 前缀的注释行不动。
+# 在 config.yml 中把顶层键 KEY 的值替换为 $2。
+# 优先级：已有未注释行原位改值 > 模板注释占位行（如 #DB_PASSWORD: <your-db-password>）
+# 原位解注释填值（密码落在对应配置段里，而不是追加到文件末尾）> 都没有才追加末尾。
+# 注释占位只取第一处：模板里 DB_PASSWORD 在「本地非 Docker 开发」备用注释块还有一份
+# 占位，必须保持注释态，否则产生重复键（YAML 后者胜出，改主段会静默不生效）。
+# 地址范围 1,/re/ 在 GNU 与 BSD sed 下语义一致（只到首次匹配），不能用 GNU 专有的 0,/re/。
 set_yaml_key() {
   local key=$1 value=$2
   if grep -qE "^${key}:" config.yml; then
     sed -i.bak "s@^${key}:.*@${key}: ${value}@" config.yml && rm -f config.yml.bak
+  elif grep -qE "^#[[:space:]]*${key}:" config.yml; then
+    sed -i.bak "1,/^#[[:space:]]*${key}:/s@^#[[:space:]]*${key}:.*@${key}: ${value}@" config.yml && rm -f config.yml.bak
   else
     printf '\n%s: %s\n' "${key}" "${value}" >>config.yml
   fi
@@ -114,6 +139,19 @@ if [ "$NO_SECRETS" != "1" ]; then
   fi
 else
   echo "[init-config] 2/3 跳过密钥写入（--no-secrets）"
+fi
+
+# 服务端 5.0 起 DEBUG=false 且 ALLOWED_HOSTS 为空即拒绝启动（fail-fast）；
+# config_example.yml 中该键是注释占位， fresh 部署若不补上，容器一起来就重启循环。
+# 与安装器 ensure_allowed_hosts 同口径：本机 IP + 回环推导 JSON 数组；已配置则不覆盖。
+if [ "$NO_SECRETS" != "1" ] && [ -z "$(get_yaml_key ALLOWED_HOSTS)" ]; then
+  host_ip="$(get_host_ip)"
+  entries="\"127.0.0.1\", \"localhost\""
+  if [ -n "$host_ip" ]; then
+    entries="\"${host_ip}\", ${entries}"
+  fi
+  set_yaml_key ALLOWED_HOSTS "[${entries}]"
+  echo "[init-config]   ALLOWED_HOSTS: 已按本机 IP / 回环推导（[${entries}]），域名部署时改为 [\"你的域名\"]"
 fi
 
 echo "[init-config] 3/3 同步 .env（compose 凭据派生缓存）..."
