@@ -31,6 +31,8 @@ from dataset.utils.screen_layout import (
     normalize_screen_free_layout,
     normalize_screen_layout,
     normalize_screen_template,
+    normalize_screen_theme,
+    normalize_screen_theme_color,
 )
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -145,12 +147,14 @@ class ScreenSerializer(BaseModelSerializer):
             "interval",
             "refresh",
             "visibility",
+            "theme",
+            "theme_color",
             "created_time",
             "updated_time",
         ]
         read_only_fields = ["pk", "created_time", "updated_time"]
-        # RePlusPage 列表列
-        table_fields = ["name", "dashboards", "interval", "refresh", "visibility", "updated_time"]
+        # RePlusPage 列表列（主题色不进列表：色彩单元格无可读信息）
+        table_fields = ["name", "dashboards", "interval", "refresh", "visibility", "theme", "updated_time"]
 
     def _visible_dashboard_pks(self, referenced: Any) -> set[Any]:
         """当前用户可见的仪表盘主键交集（实现见模块级 ``visible_dashboard_pks``）。"""
@@ -228,6 +232,20 @@ class ScreenSerializer(BaseModelSerializer):
         if not (10 <= int(value) <= 3600):
             raise serializers.ValidationError(_("Refresh must be between 10 and 3600 seconds"))
         return value
+
+    def validate_theme(self, value: Any) -> str:
+        """投屏主题：深色 / 浅色 / 跟随站点（空值回落深色，非法值 400）。"""
+        try:
+            return normalize_screen_theme(value)
+        except ScreenLayoutError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
+    def validate_theme_color(self, value: Any) -> str:
+        """大屏主题色：hex（空 = 跟随站点主色）；``#rgb`` 统一展开为小写 ``#rrggbb``。"""
+        try:
+            return normalize_screen_theme_color(value)
+        except ScreenLayoutError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
 
 class ScreenTemplateSerializer(BaseModelSerializer):

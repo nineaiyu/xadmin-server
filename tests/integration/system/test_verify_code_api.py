@@ -14,7 +14,7 @@ from django.core.cache import cache
 from common.base.utils import AESCipherV2
 from common.utils.verify_code import SendAndVerifyCodeUtil
 from identity.models import UserInfo
-from identity.views.auth.verify_code import SendVerifyCodeAPIView
+from identity.views.auth.verify_code import CATEGORIES
 from integrations.sdk.sms.exceptions import CodeError, CodeExpired
 
 pytestmark = pytest.mark.django_db
@@ -509,7 +509,8 @@ class TestSendVerifyCodeFailurePaths:
         def boom(request, form_type, query_key, target):
             raise RuntimeError("boom")
 
-        monkeypatch.setattr(SendVerifyCodeAPIView, "check_register_config", staticmethod(boom))
+        # 场景表驱动后 patch 点从「类方法」改为「场景表项」：定向替换 register 场景的校验函数
+        monkeypatch.setattr(CATEGORIES["register"], "check", boom)
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=register",
             {"form_type": "email", "target": "whoever@example.com"},

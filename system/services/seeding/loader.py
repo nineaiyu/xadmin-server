@@ -25,11 +25,12 @@ def prepare(
     """装配待导入种子：模块裁剪 → 冲突预检 → （必要时）落临时目录。"""
 
     specs = [*plan.all_specs(), *plan.samples]
-    labels, notes, trimmed = build_fixtures(specs, target_dir, module_filter=module_filter, using=using)
+    labels, notes, trimmed, m2m = build_fixtures(specs, target_dir, module_filter=module_filter, using=using)
     return LoadReport(
         fixture_labels=[Path(label) for label in labels],
         notes=list(notes),
         trimmed=trimmed,
+        m2m=list(m2m),
     )
 
 

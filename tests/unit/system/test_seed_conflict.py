@@ -297,11 +297,12 @@ class TestUniqueChecks:
 
 class TestBuildSeedFixtures:
     def test_clean_db_uses_original_files(self, tmp_path, legacy_root):
-        labels, notes, trimmed = build_seed_fixtures(
+        labels, notes, trimmed, m2m = build_seed_fixtures(
             LoadInitJsonCommand.model_names, str(legacy_root), str(tmp_path / "out")
         )
         assert trimmed is False
         assert notes == []
+        assert m2m == []
         # 无裁剪无冲突：直接用原始种子文件（不产生临时文件）
         assert all(label.startswith(str(legacy_root)) for label in labels)
         assert not (tmp_path / "out").exists()
@@ -309,7 +310,7 @@ class TestBuildSeedFixtures:
     def test_conflict_trims_seed_and_cascades(self, tmp_path, legacy_root):
         ApprovalFlow.objects.create(pk="cd81e9b1-f744-495d-b0ba-5d3b2273752a", code="demo_expense", name="库内对象")
         out = tmp_path / "out"
-        labels, notes, trimmed = build_seed_fixtures(LoadInitJsonCommand.model_names, str(legacy_root), str(out))
+        labels, notes, trimmed, m2m = build_seed_fixtures(LoadInitJsonCommand.model_names, str(legacy_root), str(out))
 
         assert trimmed is True
         assert notes

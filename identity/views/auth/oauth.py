@@ -16,7 +16,6 @@ from typing import Any
 
 from django.contrib.auth import authenticate
 from django.db import IntegrityError
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
@@ -30,7 +29,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from identity.models.oauth import UserOAuthBinding
 from identity.serializers.oauth import OAuthBindingSerializer
-from identity.utils.auth import get_token_lifetime
+from identity.services.token_issue_login import issue_session_token
 from identity.utils.oauth import (
     OAuthError,
     build_authorize_url,
@@ -57,8 +56,7 @@ from identity.utils.oidc import (
     prepare_oidc_provider,
     sync_group_roles,
 )
-from identity.utils.session import bind_session_claim
-from identity.views.auth.login import _register_session_safe, complete_login
+from identity.views.auth.login import complete_login
 
 logger = get_logger(__name__)
 
@@ -290,13 +288,8 @@ class OAuthCallbackAPIView(GenericAPIView):
             clear_state_cookie(mfa_response)
             return mfa_response
 
-        user.last_login = timezone.now()
-        user.save(update_fields=["last_login"])
-        result = _issue_token(request, user)
-        result.update(get_token_lifetime(user))
-        # 强制改密标记与本地密码/验证码登录同口径同来源（user.must_change_password）：
-        # 第三方登录路径同样不能绕过改密引导
-        result["must_change_password"] = bool(getattr(user, "must_change_password", False))
+        # 会话登记 + sid claim + 生命周期 + 改密标记 + last_login（与本地登录同口径）
+        result = issue_session_token(request, user, UserLoginLog.LoginTypeChoices.OAUTH)
         response = ApiResponse(data=result)
         clear_state_cookie(response)
         return response
@@ -365,18 +358,3 @@ def _create_user_and_binding(provider: Any, config: Any, subject: Any, userinfo:
         subject=subject,
         profile=_profile_snapshot(userinfo),
     )
-
-
-def _issue_token(request: Any, user: Any) -> Any:
-    """签发会话 token（与本地登录同口径：登记 UserSession 并写入 sid claim）。"""
-    from rest_framework_simplejwt.tokens import RefreshToken
-
-    refresh = RefreshToken.for_user(user)
-    try:
-        session = _register_session_safe(request, user, UserLoginLog.LoginTypeChoices.OAUTH)
-        if session:
-            refresh_str, access_str = bind_session_claim(refresh, session.pk)
-            return {"refresh": refresh_str, "access": access_str}
-    except Exception:  # noqa: BLE001 会话登记失败不应阻断登录，退回无 sid 行为
-        logger.warning("bind oauth session failed", exc_info=True)
-    return {"refresh": str(refresh), "access": str(refresh.access_token)}

@@ -24,9 +24,17 @@
 - **代码生成器**：产物改用 `AI_ACTIONS`；`--with-module` 时自动标注 `modules`；
   同一应用多模型按生成块合并（重复生成幂等），修复多模型场景共享文件多空行导致的
   ruff format 失败。
+- **字段类型补全**：元数据词表新增 `url` / `decimal` / `rich_text` / `password`；
+  新增 `RichTextField`（入库 bleach 白名单净化）与 `PasswordField`；`DecimalField`
+  随元数据下发 `decimal_places`，`ColorField` 支持 `predefine` 预设色板。
 
 ### 变更
 
+- **`PhoneField` 写入口径收紧**：默认捆绑格式校验；解析失败不再静默补 `+86`，改为
+  抛出校验错误；空值统一按 `allow_blank` / `allow_null` 收口。依赖历史「解析失败补
+  地区码」行为的二开字段须显式声明 `country="CN"` 并关闭默认校验（`validate=False`）。
+- **`ColorField` 增加服务端格式校验**：仅接受 `#rgb/#rgba/#rrggbb/#rrggbbaa`、
+  `rgb()/rgba()/hsl()/hsla()` 与 CSS 颜色名，与水印颜色校验共用同一常量。
 - **AI 动作注册表位置变更**：集中声明文件 `ai/utils/ai_api_registry.py` /
   `ai_registry_ops.py` / `ai_registry_infra.py` / `ai_registry_org.py` /
   `ai_builtin_actions.py` 移除，声明下沉到所属应用（请假→`approval`、动态表单→`dataset`、

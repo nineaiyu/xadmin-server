@@ -50,6 +50,13 @@ class UploadFileAction:
             return min(SysConfig.PICTURE_UPLOAD_SIZE, personal_data["value"])
         return SysConfig.PICTURE_UPLOAD_SIZE
 
+    def assert_can_upload(self, instance: Any) -> None:
+        """上传目标授权钩子（宿主视图按对象级策略覆写）。
+
+        数据权限只决定「哪些行可见」，不区分「当前用户能不能改这个对象」。
+        需要额外约束的视图（如用户管理禁止非超管改超管）在此拒绝，默认放行。
+        """
+
     @extend_schema(
         request=OpenApiRequest(build_object_type(properties={"file": build_basic_type(OpenApiTypes.BINARY)})),
         responses=get_default_response_schema(),
@@ -62,6 +69,7 @@ class UploadFileAction:
         if not files:
             return ApiResponse(code=1002, detail=_("Please select the file to upload"))
         instance = self.get_object()
+        self.assert_can_upload(instance)
         file_obj = files[0]
         wrong_type_detail = _("Wrong image type, the type should be {}").format(",".join(self.FILE_UPLOAD_TYPE))
         file_type = file_obj.name.split(".")[-1].lower()

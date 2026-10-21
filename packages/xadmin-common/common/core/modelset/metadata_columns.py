@@ -177,6 +177,14 @@ class SearchColumnsAction:
         step = getattr(value, "step", None)
         if step is not None:
             info["step"] = step
+        # DecimalField 小数位：前端 input-number 据此推导 step / precision
+        decimal_places = getattr(value, "decimal_places", None)
+        if decimal_places is not None:
+            info["decimal_places"] = decimal_places
+        # ColorField 预设色板（字段显式声明才下发；缺省由前端既有 9 色兜底）
+        predefine = getattr(value, "predefine", None)
+        if predefine is not None:
+            info["predefine"] = predefine
         # 混入 SuggestionsAction 的视图，对 api-search-* 关联字段下发联想地址
         expose_suggest_url(self, request, info, info["input_type"])
         del info["type"]

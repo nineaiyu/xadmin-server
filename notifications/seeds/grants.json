@@ -46,30 +46,14 @@
       "unread:UserNotice"
     ],
     "demo": [
-      "SystemNotice",
-      "SystemNoticeRead",
       "UserNotice",
       "allRead:UserNotice",
       "backends:UserMsgSubscription",
-      "batchDestroy:SystemNotice",
-      "batchDestroy:SystemNoticeRead",
       "batchRead:UserNotice",
-      "create:SystemNotice",
-      "destroy:SystemNotice",
-      "destroy:SystemNoticeRead",
-      "list:SystemNotice",
-      "list:SystemNoticeRead",
       "list:UserMsgSubscription",
       "list:UserNotice",
-      "partialUpdate:SystemNotice",
       "partialUpdate:UserMsgSubscription",
-      "publish:SystemNotice",
-      "recycleList:SystemNotice",
-      "recycleRestore:SystemNotice",
-      "retrieve:SystemNotice",
-      "retrieve:SystemNoticeRead",
       "retrieve:UserMsgSubscription",
-      "state:SystemNoticeRead",
       "unread:UserNotice"
     ],
     "test": [
@@ -80,6 +64,7 @@
       "list:UserMsgSubscription",
       "list:UserNotice",
       "partialUpdate:UserMsgSubscription",
+      "retrieve:UserMsgSubscription",
       "unread:UserNotice"
     ]
   }

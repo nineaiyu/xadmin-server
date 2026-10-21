@@ -43,7 +43,15 @@ DOC_SIZE_EXEMPT_PREFIXES = {
 }
 
 # 单篇豁免：rel -> {"reason": 理由, "baseline_kb": 基线 KB}（只减不增）
-DOC_SIZE_EXEMPT = {}
+DOC_SIZE_EXEMPT = {
+    "docs/plans/DEV-TASKS.md": {
+        "reason": (
+            "工作区唯一待办入口（滚动台账）：状态快照按批次累积、逐批回写执行记录与验证证据，"
+            "历史批次滚动归档至 docs/plans/archive/；登记基线为快照区扩容当日的实际体积"
+        ),
+        "baseline_kb": 42,
+    },
+}
 
 
 def _relative(path: Path) -> str:

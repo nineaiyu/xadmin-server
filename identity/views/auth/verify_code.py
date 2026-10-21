@@ -4,6 +4,8 @@
 # filename : code
 # author : ly_13
 # date : 8/10/2024
+from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 from django.conf import settings
@@ -30,6 +32,147 @@ from settings.services import LoginIpBlockUtil, SendVerifyCodeBlockUtil, get_pas
 logger = get_logger(__name__)
 
 
+def get_register_config(request: Any) -> Any:
+    config = {
+        "access": settings.SECURITY_REGISTER_ACCESS_ENABLED,
+        "captcha": settings.SECURITY_REGISTER_CAPTCHA_ENABLED,
+        "token": settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED,
+        "encrypted": settings.SECURITY_REGISTER_ENCRYPTED_ENABLED,
+        "email": settings.SECURITY_REGISTER_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
+        "sms": settings.SECURITY_REGISTER_BY_SMS_ENABLED and settings.SMS_ENABLED,
+        "rate": settings.VERIFY_CODE_LIMIT,
+        "password": get_password_check_rules(request.user),
+    }
+    return config
+
+
+def get_login_config(request: Any) -> Any:
+    config = {
+        "access": settings.SECURITY_LOGIN_ACCESS_ENABLED,
+        "captcha": settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
+        "token": settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
+        "encrypted": settings.SECURITY_LOGIN_ENCRYPTED_ENABLED,
+        "email": settings.SECURITY_LOGIN_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
+        "sms": settings.SECURITY_LOGIN_BY_SMS_ENABLED and settings.SMS_ENABLED,
+        "rate": settings.VERIFY_CODE_LIMIT,
+        "lifetime": settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME").days,
+        "reset": settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED,
+        "register": settings.SECURITY_REGISTER_ACCESS_ENABLED,
+    }
+    return config
+
+
+def get_reset_config(request: Any) -> Any:
+    config = {
+        "access": settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED,
+        "captcha": settings.SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED,
+        "token": settings.SECURITY_RESET_PASSWORD_TEMP_TOKEN_ENABLED,
+        "encrypted": settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED,
+        "email": settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
+        "sms": settings.SECURITY_RESET_PASSWORD_BY_SMS_ENABLED and settings.SMS_ENABLED,
+        "rate": settings.VERIFY_CODE_LIMIT,
+        "password": get_password_check_rules(request.user),
+    }
+    return config
+
+
+def check_register_config(request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
+    """注册场景：目标已存在时明确告知（注册流程必须提示占用，否则用户无法完成注册）。
+
+    返回 ``(username, extra, should_send)``；注册链路始终发送验证码。
+    """
+    extra = request.data.get("extra", {})
+    if form_type == "sms":
+        detail = _("Phone already exist")
+    elif form_type == "email":
+        detail = _("Email already exist")
+    else:
+        detail = _("Username already exist")
+
+    user = UserInfo.objects.filter(**{query_key: target}).exists()
+    if user:
+        raise ValidateError(detail)
+    return "", extra, True
+
+
+def check_reset_config(request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
+    """重置/登录场景：不区分账号是否存在（防用户枚举）。
+
+    账号不存在（或已停用）时不发送验证码，但同样返回成功与统一文案，
+    后续验证码校验必然失败——攻击者无法据此判断账号是否存在；
+    注册场景（check_register_config）保留明确文案。
+    """
+    extra = request.data.get("extra", {})
+    user = UserInfo.objects.filter(is_active=True, **{query_key: target}).first()
+    if not user:
+        return "", extra, False
+    return user.username, extra, True
+
+
+def get_bind_email_config(request: Any) -> Any:
+    config = {
+        "access": settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED,
+        "captcha": settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED,
+        "token": settings.SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED,
+        "encrypted": settings.SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED,
+        "email": settings.EMAIL_ENABLED,
+        "rate": settings.VERIFY_CODE_LIMIT,
+    }
+    return config
+
+
+def check_bind_email_config(request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
+    """绑定场景：回显目标用户资料（绑定流程需要展示「绑定到哪个账号」）。"""
+    extra = request.data.get("extra", {})
+    user = UserInfo.objects.filter(**{query_key: target}).first()
+    if user:
+        extra["avatar"] = get_file_absolute_uri(user.avatar, request)
+        extra["username"] = user.username
+        extra["nickname"] = user.nickname
+    return "", extra, True
+
+
+def get_bind_phone_config(request: Any) -> Any:
+    config = {
+        "access": settings.SECURITY_BIND_PHONE_ACCESS_ENABLED,
+        "captcha": settings.SECURITY_BIND_PHONE_CAPTCHA_ENABLED,
+        "token": settings.SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED,
+        "encrypted": settings.SECURITY_BIND_PHONE_ENCRYPTED_ENABLED,
+        "sms": settings.SMS_ENABLED,
+        "rate": settings.VERIFY_CODE_LIMIT,
+    }
+    return config
+
+
+@dataclass
+class VerifyCodeCategory:
+    """验证码场景（category）的配置与校验入口。
+
+    ``config`` 取场景开关配置；``check`` 返回 ``(username, extra, should_send)``。
+    非 frozen：集成测试按场景定向替换 ``check``（monkeypatch 表项）后需可还原。
+    """
+
+    key: str
+    #: (request) -> dict：场景开关配置
+    config: Callable[[Any], dict[str, Any]]
+    #: (request, form_type, query_key, target) -> (username, extra, should_send)
+    check: Callable[..., tuple[str, dict[str, Any], bool]]
+
+
+#: 场景表：新增场景只需在此登记一行（CATEGORY_KEYS 与 swagger enum 均从本表派生）。
+#: 「登录与重置同口径（不区分账号存在性，防枚举）」在此显式表达，不再靠转发方法隐藏。
+CATEGORIES: dict[str, VerifyCodeCategory] = {
+    "register": VerifyCodeCategory("register", get_register_config, check_register_config),
+    "login": VerifyCodeCategory("login", get_login_config, check_reset_config),
+    "reset": VerifyCodeCategory("reset", get_reset_config, check_reset_config),
+    "bind_email": VerifyCodeCategory("bind_email", get_bind_email_config, check_bind_email_config),
+    "bind_phone": VerifyCodeCategory("bind_phone", get_bind_phone_config, check_bind_email_config),
+}
+
+#: 允许的场景键（单一事实源，与 CATEGORIES 键集一致）
+CATEGORY_KEYS: tuple[str, ...] = tuple(CATEGORIES)
+
+
 @extend_schema_view(
     get=extend_schema(
         description="获取发送验证码配置信息",
@@ -38,7 +181,7 @@ logger = get_logger(__name__)
                 name="category",
                 required=True,
                 type=OpenApiTypes.STR,
-                enum=["login", "register", "reset", "bind_phone", "bind_email"],
+                enum=list(CATEGORY_KEYS),
             )
         ],
         responses=get_default_response_schema(
@@ -75,7 +218,7 @@ logger = get_logger(__name__)
                 name="category",
                 required=True,
                 type=OpenApiTypes.STR,
-                enum=["login", "register", "reset", "bind_phone", "bind_email"],
+                enum=list(CATEGORY_KEYS),
             )
         ],
         request=OpenApiRequest(
@@ -121,21 +264,16 @@ class SendVerifyCodeAPIView(GenericAPIView):
         content = {"subject": subject, "message": message}
         return content, code
 
-    #: 允许的验证码场景（与 get_*_config 方法一一对应）；白名单校验避免缺参/拼错时 500
-    CATEGORY_KEYS = ("register", "login", "reset", "bind_email", "bind_phone")
-
-    def _get_category_config(self, request: Any) -> Any:
-        """按 category 取场景配置；未知/缺失 category 返回 None（由调用方给可读错误）。"""
-        category = request.query_params.get("category")
-        if category not in self.CATEGORY_KEYS:
-            return None
-        return getattr(self, f"get_{category}_config")(request)
+    @staticmethod
+    def get_category(request: Any) -> "VerifyCodeCategory | None":
+        """按 category 取场景表项；未知/缺失 category 返回 None（由调用方给可读错误）。"""
+        return CATEGORIES.get(request.query_params.get("category"))
 
     def get(self, request: Any) -> Any:
-        config = self._get_category_config(request)
-        if config is None:
+        category = self.get_category(request)
+        if category is None:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
-        return ApiResponse(data=config)
+        return ApiResponse(data=category.config(request))
 
     def get_throttles(self) -> Any:
         """IP 维度专用限流只打在发送动作上（GET 配置读取便宜且页面加载必调）；
@@ -147,10 +285,10 @@ class SendVerifyCodeAPIView(GenericAPIView):
 
     def post(self, request: Any) -> Any:
         """发送验证码"""
-        category = request.query_params.get("category")
-        config = self._get_category_config(request)
-        if config is None:
+        category = self.get_category(request)
+        if category is None:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+        config = category.config(request)
         if not config.get("access"):
             return ApiResponse(code=1001, detail=_("Forbidden send verification code"))
 
@@ -184,9 +322,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         SendVerifyCodeBlockUtil(target, ipaddr).incr_failed_count()
 
         try:
-            username, extra, should_send = getattr(self, f"check_{category}_config")(
-                request, form_type, query_key, target
-            )
+            username, extra, should_send = category.check(request, form_type, query_key, target)
         except APIException as e:
             # 业务校验失败（ValidateError 等），异常文案本身面向用户
             LoginIpBlockUtil(ipaddr).set_block_if_need()
@@ -203,7 +339,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
                 content, code = self.prepare_code_data(username)
                 SendAndVerifyCodeUtil(target, code, backend=form_type, **content).gen_and_send_async()
             except ValueError as e:
-                # 发送工具抛出的 ValueError 为业务校验文案
+                # 发送工具抛出的 ValueError 为业务文案
                 logger.warning("Send verify code failed: %s", e)
                 return ApiResponse(code=1002, detail=str(e))
         else:
@@ -215,121 +351,3 @@ class SendVerifyCodeAPIView(GenericAPIView):
         data = {"verify_token": verify_token, "extra": extra}
 
         return ApiResponse(data=data, detail=_("The verification code has been sent"))
-
-    @staticmethod
-    def get_register_config(request: Any) -> Any:
-        config = {
-            "access": settings.SECURITY_REGISTER_ACCESS_ENABLED,
-            "captcha": settings.SECURITY_REGISTER_CAPTCHA_ENABLED,
-            "token": settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED,
-            "encrypted": settings.SECURITY_REGISTER_ENCRYPTED_ENABLED,
-            "email": settings.SECURITY_REGISTER_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
-            "sms": settings.SECURITY_REGISTER_BY_SMS_ENABLED and settings.SMS_ENABLED,
-            "rate": settings.VERIFY_CODE_LIMIT,
-            "password": get_password_check_rules(request.user),
-        }
-        return config
-
-    @staticmethod
-    def get_login_config(request: Any) -> Any:
-        config = {
-            "access": settings.SECURITY_LOGIN_ACCESS_ENABLED,
-            "captcha": settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
-            "token": settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
-            "encrypted": settings.SECURITY_LOGIN_ENCRYPTED_ENABLED,
-            "email": settings.SECURITY_LOGIN_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
-            "sms": settings.SECURITY_LOGIN_BY_SMS_ENABLED and settings.SMS_ENABLED,
-            "rate": settings.VERIFY_CODE_LIMIT,
-            "lifetime": settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME").days,
-            "reset": settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED,
-            "register": settings.SECURITY_REGISTER_ACCESS_ENABLED,
-        }
-        return config
-
-    @staticmethod
-    def get_reset_config(request: Any) -> Any:
-        config = {
-            "access": settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED,
-            "captcha": settings.SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED,
-            "token": settings.SECURITY_RESET_PASSWORD_TEMP_TOKEN_ENABLED,
-            "encrypted": settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED,
-            "email": settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
-            "sms": settings.SECURITY_RESET_PASSWORD_BY_SMS_ENABLED and settings.SMS_ENABLED,
-            "rate": settings.VERIFY_CODE_LIMIT,
-            "password": get_password_check_rules(request.user),
-        }
-        return config
-
-    @staticmethod
-    def check_register_config(request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
-        """注册场景：目标已存在时明确告知（注册流程必须提示占用，否则用户无法完成注册）。
-
-        返回 ``(username, extra, should_send)``；注册链路始终发送验证码。
-        """
-        extra = request.data.get("extra", {})
-        if form_type == "sms":
-            detail = _("Phone already exist")
-        elif form_type == "email":
-            detail = _("Email already exist")
-        else:
-            detail = _("Username already exist")
-
-        user = UserInfo.objects.filter(**{query_key: target}).exists()
-        if user:
-            raise ValidateError(detail)
-        return "", extra, True
-
-    @staticmethod
-    def check_reset_config(request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
-        """重置/登录场景：不区分账号是否存在（防用户枚举）。
-
-        账号不存在（或已停用）时不发送验证码，但同样返回成功与统一文案，
-        后续验证码校验必然失败——攻击者无法据此判断账号是否存在；
-        注册场景（check_register_config）保留明确文案。
-        """
-        extra = request.data.get("extra", {})
-        user = UserInfo.objects.filter(is_active=True, **{query_key: target}).first()
-        if not user:
-            return "", extra, False
-        return user.username, extra, True
-
-    def check_login_config(self, request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
-        return self.check_reset_config(request, form_type, query_key, target)
-
-    @staticmethod
-    def get_bind_email_config(request: Any) -> Any:
-        config = {
-            "access": settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED,
-            "captcha": settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED,
-            "token": settings.SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED,
-            "encrypted": settings.SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED,
-            "email": settings.EMAIL_ENABLED,
-            "rate": settings.VERIFY_CODE_LIMIT,
-        }
-        return config
-
-    @staticmethod
-    def check_bind_email_config(request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
-        """绑定场景：回显目标用户资料（绑定流程需要展示「绑定到哪个账号」）。"""
-        extra = request.data.get("extra", {})
-        user = UserInfo.objects.filter(**{query_key: target}).first()
-        if user:
-            extra["avatar"] = get_file_absolute_uri(user.avatar, request)
-            extra["username"] = user.username
-            extra["nickname"] = user.nickname
-        return "", extra, True
-
-    @staticmethod
-    def get_bind_phone_config(request: Any) -> Any:
-        config = {
-            "access": settings.SECURITY_BIND_PHONE_ACCESS_ENABLED,
-            "captcha": settings.SECURITY_BIND_PHONE_CAPTCHA_ENABLED,
-            "token": settings.SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED,
-            "encrypted": settings.SECURITY_BIND_PHONE_ENCRYPTED_ENABLED,
-            "sms": settings.SMS_ENABLED,
-            "rate": settings.VERIFY_CODE_LIMIT,
-        }
-        return config
-
-    def check_bind_phone_config(self, request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
-        return self.check_bind_email_config(request, form_type, query_key, target)

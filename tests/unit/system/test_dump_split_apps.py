@@ -25,9 +25,11 @@ def _rows(path: Path) -> list:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-@pytest.fixture()
-def seeded(seed_creator_user):
-    call_command("load_init_json", verbosity=0)
+@pytest.fixture(scope="module")
+def seeded(seeded_module):
+    """模块级装载：本文件全部用例只读种子（导出/统计），无需逐用例重装。"""
+
+    return seeded_module
 
 
 class TestDumpSplitApps:

@@ -117,7 +117,9 @@ jobs:
       - name: Run k6 suites
         working-directory: loadtest/k6
         run: |
-          env BASE_URL=http://127.0.0.1:8896 USERNAME=admin PASSWORD="$LOADTEST_PASSWORD" \
+          # init_data 建的超管是 xadmin（不是 admin）：压测账号必须与种子对齐，
+          # 否则登录全量 401、http_req_failed 阈值必然击穿
+          env BASE_URL=http://127.0.0.1:8896 USERNAME=xadmin PASSWORD="$LOADTEST_PASSWORD" \
             RESULT_DIR=results ./run-all.sh
 
       - name: Compare with baseline (CI 断崖档)

@@ -66,11 +66,50 @@ APPROVAL_PATTERNS = (
 )
 
 # 示例书籍：固定名称清单（幂等识别 + --clean-only 精准移除）；开箱即可演示
-# 「提交上架 / 删除审批 / 回收站 / 变更历史」，无需先手工造数据
+# 「提交上架 / 删除审批 / 回收站 / 变更历史」，无需先手工造数据。
+# contact_phone 与 PhoneField 的 E.164 入库形态一致；theme_color 取 ColorField
+# predefine 色板；introduction 为 bleach 白名单内的简单 HTML（富文本教学样本）。
 DEMO_BOOKS = (
-    ("《示例·快速开始》", "978-7-111-00001-1", "xadmin", 59.90, 0),
-    ("《示例·权限与审批》", "978-7-111-00002-8", "xadmin", 79.90, 1),
-    ("《示例·回收站与变更历史》", "978-7-111-00003-5", "xadmin", 99.90, 2),
+    {
+        "name": "《示例·快速开始》",
+        "isbn": "978-7-111-00001-1",
+        "author": "xadmin",
+        "price": 59.90,
+        "category": 0,
+        "contact_phone": "+8613800000001",
+        "theme_color": "#409EFF",
+        "introduction": (
+            "<p>五分钟跑通<strong>登录 → 建书 → 提交上架</strong>的完整审批链路，"
+            "适合<em>首次体验</em>的读者。</p>"
+            "<ul><li>提交后进入「图书管理员审批」单节点流程</li><li>驳回可重新提交</li></ul>"
+        ),
+    },
+    {
+        "name": "《示例·权限与审批》",
+        "isbn": "978-7-111-00002-8",
+        "author": "xadmin",
+        "price": 79.90,
+        "category": 1,
+        "contact_phone": "+8613900000002",
+        "theme_color": "#67C23A",
+        "introduction": (
+            "<p>演示<strong>数据 / 字段 / 应用三级权限</strong>与审批协作：</p>"
+            "<ul><li>角色授权 → 模型字段树</li><li>列表页高级筛选与我的视图</li></ul>"
+        ),
+    },
+    {
+        "name": "《示例·回收站与变更历史》",
+        "isbn": "978-7-111-00003-5",
+        "author": "xadmin",
+        "price": 99.90,
+        "category": 2,
+        "contact_phone": "+8613700000003",
+        "theme_color": "#E6A23C",
+        "introduction": (
+            "<p>Book 为软删除模型：删除进入<em>回收站</em>，可恢复或物理清除；"
+            "行级<strong>变更历史</strong>记录每次修改前后值。</p>"
+        ),
+    },
 )
 
 # 周期任务种子（默认停用）：任务管理页可启停 / 立即运行，见 demo/tasks.py
@@ -253,7 +292,7 @@ class Command(BaseCommand):
             return
         from demo.models import Book
 
-        names = [item[0] for item in DEMO_BOOKS]
+        names = [item["name"] for item in DEMO_BOOKS]
         # all_objects 返回标准 QuerySet：delete() 为物理删除，关闭演示不留回收站残留
         removed = Book.all_objects.filter(name__in=names).delete()[0]
         self.stdout.write(f"removed demo books: {removed}")
@@ -275,7 +314,7 @@ class Command(BaseCommand):
             self.stdout.write("skip demo books: demo app 未启用（XADMIN_APPS 不含 demo；先启用再灌数据）")
             return
         from demo.models import Book
-        from identity.models import UserInfo
+        from identity.models import DeptInfo, UserInfo
 
         admin = (
             UserInfo.objects.filter(is_superuser=True).order_by("pk").first() or UserInfo.objects.order_by("pk").first()
@@ -283,28 +322,44 @@ class Command(BaseCommand):
         if admin is None:
             self.stdout.write("skip demo books: 当前库无可用用户（先创建超级管理员）")
             return
+        demo_dept = DeptInfo.objects.filter(code="demo").first()
+        dept_belong = demo_dept or admin.dept
         created = 0
-        for name, isbn, author, price, category in DEMO_BOOKS:
-            book = Book.all_objects.filter(name=name).first()
+        backfilled = 0
+        for payload in DEMO_BOOKS:
+            book = Book.all_objects.filter(name=payload["name"]).first()
             if book is None:
                 Book(
-                    name=name,
-                    isbn=isbn,
-                    author=author,
-                    price=price,
-                    category=category,
+                    name=payload["name"],
+                    isbn=payload["isbn"],
+                    author=payload["author"],
+                    price=payload["price"],
+                    category=payload["category"],
+                    contact_phone=payload["contact_phone"],
+                    theme_color=payload["theme_color"],
+                    introduction=payload["introduction"],
                     admin=admin,
                     admin2=admin,
-                    dept_belong=admin.dept,
+                    dept_belong=dept_belong,
                     creator=admin,
                     modifier=admin,
                 ).save()
                 created += 1
-            elif book.deleted_at is not None:
+                continue
+            changed: list[str] = []
+            if book.deleted_at is not None:
                 # 曾在回收站的示例数据自动复活（deleted_at 清空；遵守软删基类 save 语义）
                 book.deleted_at = None
-                book.save(update_fields=["deleted_at"])
-        self.stdout.write(f"demo books ready: {len(DEMO_BOOKS)} 条（新建 {created}）")
+                changed.append("deleted_at")
+            # 存量演示书补齐新增字段样本：仅空值兜底，不覆盖已编辑过的内容
+            for field in ("contact_phone", "theme_color", "introduction"):
+                if getattr(book, field) == "":
+                    setattr(book, field, payload[field])
+                    changed.append(field)
+            if changed:
+                book.save(update_fields=changed)
+                backfilled += 1
+        self.stdout.write(f"demo books ready: {len(DEMO_BOOKS)} 条（新建 {created}，补字段 {backfilled}）")
 
     def _ensure_periodic_task(self) -> None:
         """周期任务种子（默认停用）：任务管理页可启停 / 立即运行（见 demo/tasks.py）。"""

@@ -6955,6 +6955,11 @@ msgstr ""
 msgid "The super administrator disallows deletion"
 msgstr ""
 
+#: identity/serializers/user.py:267
+#: identity/views/admin/user.py:143
+msgid "The super administrator cannot be modified"
+msgstr ""
+
 #: identity/views/admin/user.py:190
 msgid "Password reset successful"
 msgstr ""
@@ -8414,6 +8419,10 @@ msgstr ""
 
 #: packages/xadmin-common/common/core/validators.py:16
 msgid "The phone number format is incorrect"
+msgstr ""
+
+#: packages/xadmin-common/common/core/validators.py:39
+msgid "Invalid color value: use hex like #409EFF or rgb(...)"
 msgstr ""
 
 #: packages/xadmin-common/common/drf/parsers/axios_form_data.py:136

@@ -276,13 +276,13 @@ class TestEmptySeedFilesSkipped:
 
     def test_labels_exclude_empty_seeds(self, module_config, tmp_path):
         module_config()  # 授权型 m2m 需剥离：同样走落盘分支（不再是原始文件路径）
-        labels, _, trimmed = build_fixtures(_all_specs(), str(tmp_path))
+        labels, _, trimmed, _m2m = build_fixtures(_all_specs(), str(tmp_path))
         assert trimmed
         assert labels
         assert len(labels) == len({spec.model for spec in _non_empty_specs()})
 
         module_config(disable=["chat"])  # 有裁剪：过滤后落盘分支（按模型合并）
-        labels, _, trimmed = build_fixtures(_all_specs(), str(tmp_path), module_filter=ModuleSeedFilter.build())
+        labels, _, trimmed, _m2m = build_fixtures(_all_specs(), str(tmp_path), module_filter=ModuleSeedFilter.build())
         assert trimmed
         assert labels
         for label in labels:

@@ -66,7 +66,7 @@ def websocket_login_success(user_obj: Any, channel_name: Any) -> None:
     request.channel_name = channel_name
     login_success(request, user_obj, UserLoginLog.LoginTypeChoices.WEBSOCKET)
     # 会话登记（UserSession）：WS 会话在线判定走 channel 存活，登记供在线列表
-    # 统一数据源与会话管理使用；失败仅告警不影响 WS 接入
+    # 统一数据源与会话管理使用；失败仅告警不影响 WS 接入（降级口径与登录态签发同源）
     try:
         register_user_session(request, user_obj, UserLoginLog.LoginTypeChoices.WEBSOCKET, channel_name=channel_name)
     except Exception:  # noqa: BLE001 会话管理属附加能力

@@ -24,9 +24,10 @@ from common.core.serializers import BasePrimaryKeyRelatedField
 #: （labeled_choice/labeled_multiple_choice/object_related_field/m2m_related_field/json/
 #: phone/color）+ 关联族 _file/_image 组合 + columns 覆写 textarea + search 侧 widget
 #: 覆写与合成（select-multiple/datetimerange/select-ordering）+ filter widget 默认面
-#: （text/number/select）+ 业务显式声明且走回退透传的 input。DRF 长尾类型（decimal/url/
-#: duration/regex/slug/nested object 等）未实际下发、前端亦无渲染器，**不预登记**——
-#: 出现即被闭包测试拦截，届时按扩展流程有意识处置。
+#: （text/number/select）+ 业务显式声明且走回退透传的 input。DRF 长尾中的 url /
+#: decimal 已实际下发并正式登记（表单 + 校验 + 展示归属），rich_text / password 为
+#: 显式声明面；duration / regex / slug 等零消费类型仍不预登记——出现即被闭包测试
+#: 拦截，届时按扩展流程有意识处置。
 DECLARED_INPUT_TYPES: frozenset[str] = frozenset(
     {
         # DRF label_lookup 实际可达面
@@ -54,6 +55,12 @@ DECLARED_INPUT_TYPES: frozenset[str] = frozenset(
         "json",
         "phone",
         "color",
+        # DRF 可达长尾的显式登记：url（URLField）/ decimal（DecimalField）
+        # 与自定义字段声明面（rich_text / password）
+        "url",
+        "decimal",
+        "rich_text",
+        "password",
         # 关联族 _file / _image 组合（get_upload_input_type_suffix 合成）
         "object_related_field_file",
         "object_related_field_image",

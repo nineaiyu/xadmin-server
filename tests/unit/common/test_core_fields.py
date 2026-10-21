@@ -9,7 +9,13 @@
 import pytest
 from rest_framework.exceptions import ValidationError
 
-from common.core.fields import LabeledChoiceField, LabeledMultipleChoiceField, PhoneField
+from common.core.fields import (
+    ColorField,
+    LabeledChoiceField,
+    LabeledMultipleChoiceField,
+    PhoneField,
+    RichTextField,
+)
 
 
 class TestPhoneField:
@@ -30,6 +36,73 @@ class TestPhoneField:
 
     def test_internal_value_normalizes_plain_number(self):
         assert PhoneField().to_internal_value("13800138000") == "+8613800138000"
+
+    def test_internal_value_accepts_code_object(self):
+        assert PhoneField().to_internal_value({"code": "+86", "phone": "13800138000"}) == "+8613800138000"
+
+    def test_invalid_value_rejected_instead_of_prefixing_region(self):
+        """解析失败不再盲目补 ``+86`` 入库（历史行为会放过 ``+86abc`` 类脏值）。"""
+        with pytest.raises(ValidationError):
+            PhoneField().to_internal_value("+86abc")
+
+    def test_default_validator_rejects_invalid_number(self):
+        with pytest.raises(ValidationError):
+            PhoneField().run_validation("+86123")
+
+    def test_validator_can_be_disabled(self):
+        assert PhoneField(validate=False).run_validation("+86123") == "+86123"
+
+    def test_explicit_country_restores_legacy_prefix_fallback(self):
+        """显式 country + validate=False 才恢复历史「解析失败补地区码」行为。"""
+        field = PhoneField(country="CN", validate=False)
+        assert field.to_internal_value("not-a-phone") == "+86not-a-phone"
+        assert field.run_validation("not-a-phone") == "+86not-a-phone"
+        with pytest.raises(ValidationError):
+            PhoneField(country="CN").run_validation("not-a-phone")
+
+    def test_empty_dict_follows_allow_blank(self):
+        assert PhoneField(allow_blank=True).to_internal_value({"code": "+86", "phone": ""}) == ""
+
+    def test_empty_dict_follows_allow_null(self):
+        assert PhoneField(allow_null=True).to_internal_value({"code": "+86", "phone": ""}) is None
+
+    def test_empty_dict_rejected_when_blank_and_null_disallowed(self):
+        with pytest.raises(ValidationError):
+            PhoneField().to_internal_value({"code": "+86", "phone": ""})
+
+    def test_empty_serializer_validation_respects_allow_blank(self):
+        field = PhoneField(allow_blank=True, allow_null=True)
+        assert field.run_validation({"code": "+86", "phone": ""}) == ""
+
+
+class TestColorField:
+    @pytest.mark.parametrize("value", ["#409EFF", "#fff", "#409EFF80", "rgb(64, 158, 255)", "red"])
+    def test_valid_colors_accepted(self, value):
+        assert ColorField().run_validation(value) == value
+
+    @pytest.mark.parametrize("value", ["#zzzzzz", "409EFF", "#409EF", "rgb(1,2,3);"])
+    def test_invalid_colors_rejected(self, value):
+        with pytest.raises(ValidationError):
+            ColorField().run_validation(value)
+
+    def test_blank_allowed(self):
+        assert ColorField(allow_blank=True).run_validation("") == ""
+
+
+class TestRichTextField:
+    def test_plain_html_retained(self):
+        value = "<p><strong>公告</strong></p>"
+        assert RichTextField().run_validation(value) == value
+
+    def test_dangerous_html_sanitized_on_write(self):
+        value = '<p onclick="evil()">x</p><script>alert(1)</script>'
+        cleaned = RichTextField().run_validation(value)
+        assert "script" not in cleaned
+        assert "onclick" not in cleaned
+        assert "<p>x</p>" in cleaned
+
+    def test_blank_allowed(self):
+        assert RichTextField(allow_blank=True).run_validation("") == ""
 
 
 class TestLabeledChoiceField:

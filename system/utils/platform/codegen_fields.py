@@ -10,13 +10,15 @@
    serializer_fields / table_fields / extra_kwargs / 过滤字段面——与
    ``_apply_field_selection`` 同口径，只收敛不改变推导语义。
 
-两条框架约束（越界即报错）：
+三条框架约束（越界即报错）：
 
 - ``input_type`` 覆盖仅限**关联字段**：``fields_related`` 只在关系字段声明上
   pop ``input_type``；非关联字段的渲染器由序列化器字段类型决定，extra_kwargs
   传入 input_type 会在 DRF 建字段时 TypeError；
 - **字典绑定**（生成 ``DictChoiceField`` 显式声明）仅限**非关联字段**：
-  DictChoiceField 是 LabeledChoiceField 子类，值为普通标量而非关联对象。
+  DictChoiceField 是 LabeledChoiceField 子类，值为普通标量而非关联对象；
+- **专用字段类**（Phone/Color/RichText/StepFloat）仅限非关联字段，生成显式
+  字段声明（与字典绑定同范式），使生成物直接获得该类型的四通道渲染与校验。
 """
 
 from typing import Any
@@ -26,6 +28,9 @@ from system.models.dict import DataDict
 
 #: 关联字段开放前缀族（api-search-* 等），与词表共同构成 input_type 合法面
 INPUT_TYPE_PREFIX_FAMILY = "api-"
+
+#: 非关联字段可选的专用字段类（渲染能力随字段类下发，见 common/core/fields.py）
+FIELD_CLASS_OPTIONS = ("PhoneField", "ColorField", "RichTextField", "StepFloatField")
 
 
 class CodegenError(Exception):
@@ -73,6 +78,8 @@ def plan_fields(ctx: Any, model: Any) -> list[dict[str, Any]]:
                     "has_choices": False,
                     "default_input_type": "",
                     "can_filter_custom": False,
+                    "can_field_class": False,
+                    "field_class_options": [],
                 }
             )
             continue
@@ -91,6 +98,8 @@ def plan_fields(ctx: Any, model: Any) -> list[dict[str, Any]]:
                     "has_choices": False,
                     "default_input_type": "",
                     "can_filter_custom": False,
+                    "can_field_class": False,
+                    "field_class_options": [],
                 }
             )
             continue
@@ -114,6 +123,8 @@ def plan_fields(ctx: Any, model: Any) -> list[dict[str, Any]]:
                 "has_choices": bool(getattr(field, "choices", None)),
                 "default_input_type": str(kwargs.get("input_type") or ""),
                 "can_filter_custom": name in ctx["filter_custom_fields"],
+                "can_field_class": not field.is_relation,
+                "field_class_options": list(FIELD_CLASS_OPTIONS) if not field.is_relation else [],
             }
         )
     return fields
@@ -173,7 +184,9 @@ def apply_field_overrides(ctx: Any, fields_cfg: Any) -> None:
     - **extra_kwargs**：label / required / read_only（DRF 原生 kwargs；
       read_only=True 时顺带清掉 required，避免二者并存的语义噪声）；
     - **input_type**：仅关联字段，词表 + api- 前缀族校验；
-    - **dict_code**：仅非关联字段，生成 DictChoiceField 显式声明（ctx["dict_fields"]）。
+    - **dict_code**：仅非关联字段，生成 DictChoiceField 显式声明（ctx["dict_fields"]）；
+    - **field_class**：仅非关联字段，生成专用字段类显式声明（ctx["field_declarations"]，
+      Phone/Color/RichText 自动带上渲染所需的 input_type 与校验）。
     """
     overrides = _normalize_overrides(ctx, fields_cfg)
     excluded = {name for name, cfg in overrides if cfg.get("include") is False}
@@ -229,3 +242,30 @@ def apply_field_overrides(ctx: Any, fields_cfg: Any) -> None:
             if name in (ctx.get("dict_fields") or {}):
                 raise CodegenError(f"{name}：已绑定字典，不再支持 input_type 覆盖（字典渲染器自带 input_type）")
             kwargs["input_type"] = input_type
+        field_class = str(cfg.get("field_class") or "").strip()
+        if field_class:
+            field = all_fields.get(name)
+            if name == "pk" or field is None or field.is_relation:
+                raise CodegenError(f"{name}：专用字段类仅支持非关联字段")
+            if field_class not in FIELD_CLASS_OPTIONS:
+                raise CodegenError(f"{name}：非法专用字段类「{field_class}」（可选：{', '.join(FIELD_CLASS_OPTIONS)}）")
+            if name in (ctx.get("dict_fields") or {}):
+                raise CodegenError(f"{name}：已绑定字典，不能同时声明专用字段类")
+            declaration: dict[str, Any] = {"label": kwargs.get("label") or str(field.verbose_name or name)}
+            if kwargs.get("read_only"):
+                declaration["read_only"] = True
+            else:
+                declaration["required"] = kwargs.get("required", not field.blank and not field.null)
+            if field_class in {"PhoneField", "ColorField", "RichTextField"}:
+                if getattr(field, "max_length", None):
+                    declaration["max_length"] = field.max_length
+                if field.blank and not declaration.get("read_only"):
+                    declaration["allow_blank"] = True
+                if field.null:
+                    declaration["allow_null"] = True
+            ctx.setdefault("field_declarations", {})[name] = {
+                "class": field_class,
+                "kwargs": declaration,
+            }
+            # 显式声明的字段不能再出现在 extra_kwargs（DRF 会直接断言失败）
+            ctx["extra_kwargs"].pop(name, None)

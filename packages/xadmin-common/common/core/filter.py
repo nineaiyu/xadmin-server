@@ -22,6 +22,7 @@ from common.base.magic import count_sql_queries, timeit
 from common.cache.storage import CommonResourceIDsCache
 from common.contracts import DataPermission, DeptInfo, apply_grant_row_scope
 from common.core.data_scope import ScopeResult, combine, compile_grant
+from common.core.data_scope.menu_scope import resolve_scope_for_user, select_compiled_grants
 from common.settings_contract import kernel_required_setting
 from common.utils import get_logger
 
@@ -64,27 +65,35 @@ def _grants_cache_version() -> Any:
     return version
 
 
-def _load_grants(user_obj: Any, dq: Any) -> Any:
+def _load_grants(user_obj: Any, dq: Any, scope_key: str = "") -> Any:
     """加载授权池（部门祖先链授权 + 个人授权）。
 
     单次 OR 查询取代旧实现的「部门 / 个人」两次查询；结果按
-    (版本, 用户, 部门, 菜单) 短缓存，命中时零 SQL。同一授权行同时命中部门与个人时由
+    (版本, 用户, 部门, 菜单上下文) 短缓存，命中时零 SQL。同一授权行同时命中部门与个人时由
     distinct 去重——同池 OR 合并对重复授权不敏感，编译结果与旧实现等价。
     """
     dept = user_obj.dept
     dept_pk = dept.pk if dept and dept.pk else ""
     menu_pk = getattr(user_obj, "menu", None) or ""
     version = _grants_cache_version()
-    cache_key = f"data_permission_grants_{version}_{user_obj.pk}_{dept_pk}_{menu_pk}"
+    cache_key = f"data_permission_grants_{version}_{user_obj.pk}_{dept_pk}_{menu_pk}_{scope_key}"
     if version is not None:
         try:
             cached = cache.get(cache_key)
         except Exception:
             cached = None
             logger.warning("read data permission grants cache failed", exc_info=True)
-        if cached is not None:
-            # rules / mode_type 是编译所需全部字段：构造轻量对象，避免逐行取 ORM 实例
-            return [SimpleNamespace(rules=item["rules"], mode_type=item["mode_type"]) for item in cached]
+        if cached is not None and all(isinstance(item, dict) and "menu_ids" in item for item in cached):
+            # rules / mode_type / menu_ids 是编译与范围选择所需全部字段：
+            # 构造轻量对象，避免逐行取 ORM 实例
+            return [
+                SimpleNamespace(
+                    rules=item["rules"],
+                    mode_type=item["mode_type"],
+                    menu_ids=frozenset(item["menu_ids"]),
+                )
+                for item in cached
+            ]
 
     conditions = Q(userinfo=user_obj)
     if dept_pk:
@@ -95,10 +104,24 @@ def _load_grants(user_obj: Any, dq: Any) -> Any:
         ]
         if active_chain:
             conditions |= Q(deptinfo__in=active_chain)
-    grants = list(DataPermission.objects.filter(is_active=True).filter(conditions).filter(dq).distinct())
+    grant_rows = list(
+        DataPermission.objects.filter(is_active=True).filter(conditions).filter(dq).distinct().prefetch_related("menu")
+    )
+    grants = [
+        SimpleNamespace(
+            rules=g.rules,
+            mode_type=g.mode_type,
+            menu_ids=frozenset(str(menu.pk) for menu in g.menu.all()),
+        )
+        for g in grant_rows
+    ]
     if version is not None:
         try:
-            cache.set(cache_key, [{"rules": g.rules, "mode_type": g.mode_type} for g in grants], GRANTS_CACHE_TTL)
+            cache.set(
+                cache_key,
+                [{"rules": g.rules, "mode_type": g.mode_type, "menu_ids": sorted(g.menu_ids)} for g in grants],
+                GRANTS_CACHE_TTL,
+            )
         except Exception:
             logger.warning("cache data permission grants failed", exc_info=True)
     return grants
@@ -112,8 +135,9 @@ def get_filter_queryset(queryset: QuerySet, user_obj: Any, extra_grants: Any = N
     合并语义（对齐行业「取最宽生效」）：
     - 部门祖先链（含本部门，仅启用部门）与个人授权汇入同一授权池；
     - 池内各授权组的结果统一「或」合并，组内多规则仍按授权自身 mode_type；
-    - 菜单上下文：授权 menu 为空 = 通用，否则须匹配当前菜单（menu 属性由
-      IsAuthenticated 在权限校验时写入 request.user）；
+    - 菜单上下文：授权 menu 为空 = 通用；否则按「显式 action 覆盖 + 同资源 list
+      缺省回退」选择（menu 属性由 IsAuthenticated 在权限校验时写入 request.user）——
+      当前 action 有可用显式授权时只用它，list 不参与；没有时才回退同资源 list；
     - 无任何适用授权 → none()（fail-closed 保留）；
     - 「全部数据」规则 = ALLOW_ALL 哨兵，在任何层级正确生效。
 
@@ -127,29 +151,37 @@ def get_filter_queryset(queryset: QuerySet, user_obj: Any, extra_grants: Any = N
         logger.info(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.label_lower}")
         return queryset
 
-    dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, "menu", None))
+    # 候选范围 = 当前 action + 同资源 list；具体用哪一组由 select_compiled_grants
+    # 按「显式配置优先、未配置回退 list」决定（显式授权以对当前模型可编译为准）。
+    scope = resolve_scope_for_user(user_obj)
+    candidate_menus = scope.candidate_pks if scope else frozenset()
+    if candidate_menus:
+        dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk__in=candidate_menus)
+        scope_key = "|".join(sorted(candidate_menus))
+    else:
+        dq = Q(menu__isnull=True)
+        scope_key = ""
 
     # 部门授权与个人授权同池「或」合并（单次查询 + 版本化缓存，见 _load_grants）
-    grants = _load_grants(user_obj, dq)
-    if extra_grants:
-        # 试算草稿等临时授权：不落库，直接参与本次编译
-        grants.extend(extra_grants)
+    grants = _load_grants(user_obj, dq, scope_key)
+    for grant in extra_grants or []:
+        # 试算草稿等临时授权：不落库，直接参与本次编译；menu_ids 由调用方按草稿绑定设置
+        if not hasattr(grant, "menu_ids"):
+            grant.menu_ids = frozenset()
+        grants.append(grant)
 
     if not grants:
         logger.info(f"get filter end. {queryset.model._meta.label} : no grant, return none")
         return queryset.none()
 
     model = queryset.model
-    results = []
-    for dp in grants:
-        result = compile_grant(dp, model, user_obj)
-        if result is None:
-            # 组内规则均与当前模型无关（或全部无效被跳过），该授权不参与
-            continue
-        results.append(result)
-    if not results:
+    compiled = [(dp, compile_grant(dp, model, user_obj)) for dp in grants]
+    selected = select_compiled_grants(compiled, scope)
+    if not selected:
+        logger.info(f"get filter end. {model._meta.label} : no applicable grant, return none")
         return queryset.none()
 
+    results = [result for _, result in selected]
     combined = combine(results)
     if combined.kind == ScopeResult.KIND_ALLOW:
         logger.info(f"{model._meta.label_lower} : all queryset")

@@ -311,6 +311,27 @@ def test_trial_generic_context_without_menu(api_client, normal_user, role, menu_
     assert response.data["data"]["count"] == 1
 
 
+def test_trial_page_context_includes_list_bound_grant(api_client, normal_user, role, menu_factory, books):
+    """试算传页面菜单时，其下 list 权限点绑定的授权应参与（与运行时 list 同口径）。"""
+    grant_preview_menus(role, menu_factory)
+    make_book_registry()
+    # 试算入口是 UserViewSet 的 detail action：目标用户本身必须先落在调用者数据范围内
+    normal_user.rules.add(make_user_self_scope())
+    page_menu = menu_factory(name="SystemBook", path="/demo/book/index", method=None, menu_type=1)
+    role.menu.add(page_menu)
+    list_menu = menu_factory(name="list:SystemBook", path="api/demo/book$", method="GET", parent=page_menu)
+    grant = make_owner_book_permission("列表绑定书籍范围")
+    grant.menu.add(list_menu)
+    normal_user.rules.add(grant)
+
+    api_client.force_authenticate(user=normal_user)
+    response = api_client.post(trial_url(normal_user), {"model": "demo.book", "menu": str(page_menu.pk)}, format="json")
+    assert response.status_code == 200
+    data = response.data["data"]
+    assert data["count"] == 1
+    assert "列表绑定书籍范围" in {item["name"] for item in data["grants"]}
+
+
 # ---------- 角色预览 ----------
 
 

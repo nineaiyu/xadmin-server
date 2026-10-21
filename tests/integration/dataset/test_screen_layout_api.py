@@ -150,6 +150,46 @@ class TestLayoutRejections:
         assert Screen.objects.get(pk=pk).layout[0]["pk"] == "p1"
 
 
+class TestScreenThemeApi:
+    """投屏主题字段全链路：创建缺省深色、PATCH 改主题/主题色、列表回读、非法值 400。"""
+
+    def test_create_defaults_to_dark(self, auth_client):
+        body = auth_client.post(SCREEN_URL, {"name": "主题缺省大屏", "dashboards": []}, format="json").json()
+        assert body["code"] == 1000, body
+        data = body["data"]
+        # choices 字段经 BaseModelSerializer 序列化为 labeled choice（{value,label}）
+        assert data["theme"]["value"] == "dark"
+        assert data["theme_color"] == ""
+
+    def test_patch_theme_and_color(self, auth_client):
+        created = auth_client.post(SCREEN_URL, {"name": "主题大屏", "dashboards": []}, format="json").json()
+        pk = created["data"]["pk"]
+
+        body = auth_client.patch(f"{SCREEN_URL}/{pk}", {"theme": "light", "theme_color": "#ABC"}, format="json").json()
+        assert body["code"] == 1000, body
+        assert body["data"]["theme"]["value"] == "light"
+        assert body["data"]["theme_color"] == "#aabbcc"
+        assert Screen.objects.get(pk=pk).theme_color == "#aabbcc"
+
+        listed = auth_client.get(SCREEN_URL, {"name": "主题大屏"}).json()["data"]["results"]
+        assert listed[0]["theme"]["value"] == "light"
+        assert listed[0]["theme_color"] == "#aabbcc"
+
+    def test_patch_invalid_theme_rejected(self, auth_client):
+        created = auth_client.post(SCREEN_URL, {"name": "主题非法", "dashboards": []}, format="json").json()
+        pk = created["data"]["pk"]
+        resp = auth_client.patch(f"{SCREEN_URL}/{pk}", {"theme": "night"}, format="json")
+        assert resp.status_code == 400
+        assert Screen.objects.get(pk=pk).theme == "dark"
+
+    def test_patch_invalid_theme_color_rejected(self, auth_client):
+        created = auth_client.post(SCREEN_URL, {"name": "主题色非法", "dashboards": []}, format="json").json()
+        pk = created["data"]["pk"]
+        resp = auth_client.patch(f"{SCREEN_URL}/{pk}", {"theme_color": "rgb(1,2,3)"}, format="json")
+        assert resp.status_code == 400
+        assert Screen.objects.get(pk=pk).theme_color == ""
+
+
 class TestLayoutRead:
     def test_list_and_detail_return_layout(self, auth_client, dashboard):
         created = auth_client.post(

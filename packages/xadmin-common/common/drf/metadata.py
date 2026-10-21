@@ -77,6 +77,11 @@ class SimpleMetadataWithFilters(SimpleMetadata):
             # 输入框并把对象值字符串化成 "[object Object]"（如 LDAP 组到角色映射）；
             # 语义是自由键值 JSON，复用 JSON 编辑器（isinstance 同时覆盖 HStoreField）
             tp = "json"
+        elif isinstance(field, serializers.BaseSerializer):
+            # 嵌套 Serializer / ListSerializer：元数据协议没有嵌套表单能力，
+            # 统一按 JSON 呈现（只读详情为 pretty JSON，写入由 JsonInput 提交对象）。
+            # 不隐式展开为子字段表单——嵌套写入契约（create/update）仍由业务序列化器负责。
+            tp = "json"
         elif isinstance(field, BasePrimaryKeyRelatedField):
             # isinstance 而非精确类名匹配，业务侧子类（如 DisplayRelatedField）同样生效
             tp = "object_related_field"
@@ -114,11 +119,14 @@ class SimpleMetadataWithFilters(SimpleMetadata):
             if value is not None and value != "":
                 field_info[attr] = force_str(value, strings_only=True)
 
-        if getattr(field, "child", None):
+        if isinstance(field, serializers.BaseSerializer):
+            # 嵌套 Serializer / ListSerializer：元数据按 json 呈现（见 get_field_type），
+            # 不展开子字段——契约没有 children/child 键，展开会让真实载荷违反 Schema。
+            # 嵌套写入契约仍由业务序列化器负责。
+            pass
+        elif getattr(field, "child", None):
+            # ListField 的子字段元信息（child.choices 供前端多选下拉渲染），契约已登记 child 键
             field_info["child"] = self.get_field_info(field.child)
-        elif getattr(field, "fields", None):
-            field_info["children"] = self.get_serializer_info(field)
-
         elif isinstance(field, serializers.ChoiceField):
             self.set_choices_field(field, field_info)
             # 数据字典驱动字段（DictChoiceField）携带的颜色映射：choices 附带

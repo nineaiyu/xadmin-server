@@ -75,6 +75,23 @@ class RenderBackendMixin:
         return lines
 
     @staticmethod
+    def _render_field_declarations(ctx: dict[str, Any]) -> list[str]:
+        """专用字段类声明：PhoneField / ColorField / RichTextField / StepFloatField。
+
+        显式声明放在 class 体首、Meta 之前（与字典绑定同范式）；未选择返回空列表
+        （产物与未启用时逐字节一致，保证幂等）。
+        """
+        declarations = ctx.get("field_declarations") or {}
+        if not declarations:
+            return []
+        lines: list[str] = []
+        for name, spec in declarations.items():
+            args = ", ".join(f"{key}={RenderBackendMixin._py_value(value)}" for key, value in spec["kwargs"].items())
+            lines.append(f"    {name} = {spec['class']}({args})")
+        lines.append("")
+        return lines
+
+    @staticmethod
     def _render_kwargs(name: str, kwargs: dict[str, Any]) -> str:
         """extra_kwargs 条目：逐键展开 + magic trailing comma（ruff format 幂等）。"""
         lines = [f'            "{name}": {{']
@@ -89,18 +106,25 @@ class RenderBackendMixin:
             return "[" + ", ".join(f'"{item}"' for item in value) + "]"
         if isinstance(value, bool):
             return "True" if value else "False"
+        if isinstance(value, (int, float)):
+            return str(value)
+        if value is None:
+            return "None"
         return f'"{value}"'
 
     # ------------------------------------------------------------ 产物模板
 
     def _render_serializer_module(self, ctx: dict[str, Any], existing: str, standalone: bool) -> Any:
         dict_fields = ctx.get("dict_fields") or {}
+        field_declarations = ctx.get("field_declarations") or {}
         specs: list[tuple[str, list[tuple[str, str | None]]]] = [
             ("common.core.serializers", [("BaseModelSerializer", None)]),
             (ctx["app_label"], [("models", None)]),
         ]
         if dict_fields:
             specs.append(("common.core.fields_dict", [("DictChoiceField", None)]))
+        if field_declarations:
+            specs.append(("common.core.fields", [(spec["class"], None) for spec in field_declarations.values()]))
         imports = self._render_imports(specs, self._imported_names(existing))
         return render_template(
             "backend_serializer.tmpl",
@@ -115,6 +139,7 @@ class RenderBackendMixin:
                 "imports": self._group_imports(imports, frozenset({ctx["app_label"]})),
                 "model_name": ctx["model_name"],
                 "dict_declarations": self._render_dict_declarations(ctx, dict_fields),
+                "field_declarations": self._render_field_declarations(ctx),
                 "serializer_fields": [f'            "{name}",' for name in ctx["serializer_fields"]],
                 "table_fields": [f'            "{name}",' for name in ctx["table_fields"]],
                 "extra_kwargs": [self._render_kwargs(name, kwargs) for name, kwargs in ctx["extra_kwargs"].items()],

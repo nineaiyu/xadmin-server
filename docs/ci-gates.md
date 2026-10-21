@@ -44,6 +44,7 @@
 | 内核 settings 契约锁步 | 框架内核读取的 settings 键 ↔ 契约面（`packages/xadmin-common/common/settings_contract.py`）双向一致：缺省表达式 / 消费方清单 / 文档表（[kernel-package.md](architecture/kernel-package.md) §三）逐项锁步 | `tests/unit/common/test_settings_contract.py` |
 | mypy 严格度试点配置 | 内核与业务 app 覆盖块逐项 flag 齐备且同口径、**未改用 `strict = true`**（mypy 2.x per-module strict 会全局生效）、已推广 app 清单（`PROMOTED_APPS`）与配置块双向一致、全局段不含试点 flag | `tests/unit/test_mypy_strict_pilot.py` |
 | 二开插件三通道装配 | 示例插件（entry point / `AppConfig.ready()` / 应用级扩展点）三条通道真实驱动：契约面解析到插件实现、模块声明进清单并随预设开关、停用后路由 404 / WS 4404 / 权限点前缀拦截（清理纪律：注册表与 app registry 复原） | `tests/integration/plugins/test_plugin_demo.py` |
+| 数据权限菜单范围与种子表名 | 显式 action 授权覆盖同资源 list 回退（可编译才算已配置）；list 未配置时详情/预览回退 list；字段权限保持精确隔离；规则表名必须是当前 app registry 中的有效模型 label | `tests/unit/common/test_data_scope_menu.py` · `tests/unit/common/test_data_permission_filter.py` · `tests/unit/common/test_serializer_field_permission.py` · `tests/unit/demo_seed/test_demo_permissions.py` |
 
 ## 非阻塞 / 定时档
 

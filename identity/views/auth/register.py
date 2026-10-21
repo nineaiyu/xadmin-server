@@ -7,13 +7,11 @@
 from typing import Any
 
 from django.conf import settings
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from audit.services import UserLoginLog
 from common.base.utils import AESCipherV2
@@ -22,8 +20,8 @@ from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
 from common.swagger.utils import get_default_response_schema
 from identity.models import DeptInfo, UserInfo
-from identity.utils.auth import get_token_lifetime, save_login_log, verify_sms_email_code
-from identity.utils.session import bind_session_claim, register_user_session
+from identity.services.token_issue_login import issue_session_token
+from identity.utils.auth import save_login_log, verify_sms_email_code
 from settings.services import RegisterBlockUtil, check_leak_password, check_password_rules, record_password_hash
 
 
@@ -96,8 +94,6 @@ class RegisterViewAPIView(GenericAPIView):
         # 注册即留存首条密码历史（建号链路统一口径）；后续改密的「最近 N 次不可复用」覆盖初始密码
         record_password_hash(user, user.password)
 
-        update_fields = ["last_login"]
-
         if channel and user:
             dept = DeptInfo.objects.filter(is_active=True, auto_bind=True, code=channel).first()
             if not dept:
@@ -106,26 +102,10 @@ class RegisterViewAPIView(GenericAPIView):
                 user.dept = dept
                 user.creator = user
                 user.dept_belong = dept
-                update_fields.extend(["dept_belong", "dept", "creator"])
+                user.save(update_fields=["dept_belong", "dept", "creator"])
 
-        # 注册即登录：登记会话并绑定 sid claim（失败不影响注册主流程）
-        session = None
-        try:
-            session = register_user_session(request, user, UserLoginLog.LoginTypeChoices.USERNAME)
-        except Exception:  # noqa: BLE001 会话管理属附加能力
-            pass
-        refresh = RefreshToken.for_user(user)
-        if session:
-            try:
-                refresh_str, access_str = bind_session_claim(refresh, session.pk)
-                result = {"refresh": refresh_str, "access": access_str}
-            except Exception:  # noqa: BLE001 sid 绑定失败降级为无 sid 令牌（注册流程不阻断；该令牌不参与按会话吊销）
-                result = {"refresh": str(refresh), "access": str(refresh.access_token)}
-        else:
-            result = {"refresh": str(refresh), "access": str(refresh.access_token)}
-        user.last_login = timezone.now()
-        user.save(update_fields=update_fields)
-        result.update(**get_token_lifetime(user))
+        # 注册即登录：登记会话并绑定 sid claim（失败不影响注册主流程）；last_login 由签发函数统一刷新
+        result = issue_session_token(request, user, UserLoginLog.LoginTypeChoices.USERNAME)
         request.user = user
         save_login_log(request)
         return ApiResponse(data=result)

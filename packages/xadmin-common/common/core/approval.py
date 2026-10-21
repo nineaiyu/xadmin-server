@@ -17,12 +17,16 @@ approval/services.py（common 层经 common.contracts 惰性导入，跨 app 门
 """
 
 import functools
-from typing import Any
+from collections.abc import Callable
+from typing import Any, TypeVar, cast
 
 from common.contracts import process_approval
 from common.utils import get_logger
 
 logger = get_logger(__name__)
+
+# 保留被装饰函数的完整类型：装饰器不改签名，视图方法标注不因挂载而降级
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 class ApprovalRequired:
@@ -32,7 +36,7 @@ class ApprovalRequired:
         # enabled 预留按需硬开关（如调试期临时摘除），默认恒真
         self.enabled = enabled
 
-    def __call__(self, func: Any) -> Any:
+    def __call__(self, func: F) -> F:
         @functools.wraps(func)
         def wrapper(view_instance: Any, request: Any, *args: Any, **kwargs: Any) -> Any:
             if self.enabled:
@@ -41,4 +45,4 @@ class ApprovalRequired:
                     return response
             return func(view_instance, request, *args, **kwargs)
 
-        return wrapper
+        return cast(F, wrapper)

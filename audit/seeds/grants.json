@@ -17,16 +17,7 @@
       "list:UserLoginLog"
     ],
     "demo": [
-      "SystemOperationLog",
-      "SystemUserLoginLog",
-      "exportData:SystemOperationLog",
-      "exportData:SystemUserLoginLog",
-      "list:SystemOperationLog",
-      "list:SystemUserLoginLog",
-      "list:UserLoginLog",
-      "logout:SystemUserLoginLog",
-      "retrieve:SystemOperationLog",
-      "retrieve:SystemUserLoginLog"
+      "list:UserLoginLog"
     ],
     "test": [
       "SystemOperationLog",

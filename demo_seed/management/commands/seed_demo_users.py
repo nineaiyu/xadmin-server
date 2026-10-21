@@ -56,9 +56,24 @@ class Command(BaseCommand):
             deleted, _ = user_model.objects.filter(username__startswith=DEMO_PREFIX).delete()
             self.stdout.write(f"removed existing demo users: {deleted}")
 
-        depts = list(DeptInfo.objects.order_by("pk"))
+        demo_dept = DeptInfo.objects.filter(code="demo").first()
+        depts = list(DeptInfo.objects.filter(code__in=("demo", "demo_rd", "demo_fin")).order_by("pk"))
+        if not depts and demo_dept is not None:
+            depts = [demo_dept]
         if not depts:
-            self.stdout.write(self.style.WARNING("no dept found; demo users will have no dept"))
+            self.stdout.write(self.style.WARNING("no demo dept found; demo users will have no dept"))
+        elif demo_dept is not None:
+            # 存量演示用户可能被旧种子轮询分配到真实部门：统一迁回演示子树，
+            # 避免演示管理员的数据范围覆盖真实组织。
+            subtree = set(DeptInfo.dept_tree_pks([demo_dept.pk])) | {dept.pk for dept in depts}
+            stale = user_model.objects.filter(username__startswith=DEMO_PREFIX).exclude(dept_id__in=subtree)
+            moved = 0
+            for user in stale:
+                user.dept = demo_dept
+                user.save(update_fields=["dept", "updated_time"])
+                moved += 1
+            if moved:
+                self.stdout.write(f"demo users moved into demo subtree: {moved}")
 
         # 固定随机种子：重复执行产出一致，便于文档/截图复现
         rng = random.Random(20260913)

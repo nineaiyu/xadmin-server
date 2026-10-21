@@ -75,6 +75,13 @@ class Book(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
     price = models.FloatField(verbose_name="书籍售价", default=999.99)
     is_active = models.BooleanField(verbose_name="是否启用", default=False)
 
+    # 专用字段类教学样本（序列化器显式声明）：
+    # PhoneField → 国码 + 号码；ColorField → 颜色选择器（predefine 色板）；
+    # RichTextField → 富文本编辑器 + 入库 bleach 净化 + 详情净化渲染。
+    contact_phone = models.CharField(verbose_name="联系电话", max_length=32, blank=True, default="")
+    theme_color = models.CharField(verbose_name="主题色", max_length=32, blank=True, default="")
+    introduction = models.TextField(verbose_name="图书简介", blank=True, default="")
+
     # 上架状态：草稿 →（提交上架）→ 审批中 →（审批通过）→ 已上架 /（驳回）→ 已驳回
     status = models.CharField(
         verbose_name="上架状态",

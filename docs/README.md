@@ -28,12 +28,13 @@
 | 主题 | 文档 |
 |------|------|
 | 元数据协议 | [architecture/metadata-protocol.md](architecture/metadata-protocol.md)：字段语义 / `input_type` 推断链 / 四通道注册表 / 失败可见性 |
+| 字段类型矩阵 | [architecture/field-types.md](architecture/field-types.md)：Django 模型字段 → DRF → `input_type` 全量映射、逐类型四通道归宿、校验归属与候选池 |
 | 框架内核发包 | [architecture/kernel-package.md](architecture/kernel-package.md)：`xadmin-common` 工作区布局 / 构建与宿主接线 / **内核 settings 契约表**（宿主必给与缺省键）/ 升级注记 |
 | 权限体系 | [architecture/permission.md](architecture/permission.md)（三层 + 应用级授权）；配置操作教程 [architecture/data-permission.md](architecture/data-permission.md) / [architecture/field-permission.md](architecture/field-permission.md) |
 | 菜单维护口径 | [guide/menu-maintenance.md](guide/menu-maintenance.md)：种子 path↔组件目录基本口径 / URL≠目录 例外清单（对账门禁白名单）/ 新增页面规范 |
 | 模块化与裁剪 | [architecture/模块化与功能裁剪.md](architecture/模块化与功能裁剪.md)：三级分层 / 发行预设 / 六层裁剪 / CLI 与管理页 |
 | **二开插件开发** | [guide/plugin-development.md](guide/plugin-development.md)：契约注入（`register_contract` / entry points）/ 应用级扩展点 / 模块声明与发行预设 / 验证清单（可运行样本 `examples/plugins/xadmin-demo-plugin`） |
-| 认证扩展 | [architecture/mfa.md](architecture/mfa.md)（MFA / 412 协议）、[architecture/oauth-login.md](architecture/oauth-login.md)（第三方登录 / IM 扫码） |
+| 认证扩展 | [architecture/auth-flows.md](architecture/auth-flows.md)（登录 / 注册 / 找回密码全链路、签发与处置两大收口、防枚举口径）、[architecture/mfa.md](architecture/mfa.md)（MFA / 412 协议）、[architecture/oauth-login.md](architecture/oauth-login.md)（第三方登录 / IM 扫码） |
 | 目录同步 | [architecture/ldap-readiness.md](architecture/ldap-readiness.md)、[architecture/scim.md](architecture/scim.md)、[architecture/scim-idp-readiness.md](architecture/scim-idp-readiness.md) |
 | 通知渠道 | [architecture/notification-channels.md](architecture/notification-channels.md)（新增渠道 = 新增一个文件） |
 | 缓存 / 索引 | [architecture/cache.md](architecture/cache.md)（含键规范与失效矩阵）、[architecture/indexes.md](architecture/indexes.md) |
@@ -64,6 +65,7 @@
 | [ops/monitoring-stack.md](ops/monitoring-stack.md) | 监控参考栈（Prometheus + Grafana + blackbox + 告警桥接 + systemd 单元） |
 | [ops/release-checklist.md](ops/release-checklist.md) | 发布窗口 checklist（基线门禁 + 执行记录） |
 | [ops/fix-bind-phone-setting-keys-2026-10.md](ops/fix-bind-phone-setting-keys-2026-10.md) | 安全设置「绑定手机」配置键错写（P0）修复的数据核查与清理 SQL |
+| [ops/ci-unit-tests-stall-2026-10.md](ops/ci-unit-tests-stall-2026-10.md) | CI「Unit Tests 跑到 92% 停摆 17~33 分钟后超时」的排查与根治记录：卡点栈（种子测试 fixture 内 PG 查询等待）与失败结构（尾部集中到单 worker）、已被证伪的方向（磁盘/CPU/PG 饱和）与机制反转过程、看门狗取证链路（150s 静默 + 570s 到期转储）、根治方案 P0~P4、排期与交接注意 |
 | [ops/performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（silk + k6） |
 | [ops/backup-drill-2026-09.md](ops/backup-drill-2026-09.md)、[ops/backup-drill-2026-09-16.md](ops/backup-drill-2026-09-16.md)、[ops/backup-drill-2026-Q4.md](ops/backup-drill-2026-Q4.md)、[ops/backup-drill-2027-03.md](ops/backup-drill-2027-03.md) | 备份恢复演练记录（历史归档） |
 
@@ -71,7 +73,7 @@
 
 | 文档 | 内容 |
 |------|------|
-| [adr/README.md](adr/README.md) | **架构决策记录索引（90 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
+| [adr/README.md](adr/README.md) | **架构决策记录索引（91 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
 | [plans/README.md](plans/README.md) | 规划与治理：活跃台账（**工作区级**开发任务总清单 / 长期任务方案 / 长期开发计划 / 5.0 发布清单 + 触发制任务清单与域切分映射）；**已完成的一次性台账在 `plans/archive/`**，预生成未来年度的填充文档已于 2026-10-03 清理 |
 | [ci-gates.md](ci-gates.md) | **CI 门禁统一清单**：全部流水线门禁与守护测试的登记处（守护语义 / 所在 workflow / 本地复跑；新增门禁必须登记） |
 | [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线概览）；履历见 [metrics-history.md](metrics-history.md)（阶段回填 + 依赖安全审计）、[metrics-perf-history.md](metrics-perf-history.md)（性能 / 前端基线实测） |

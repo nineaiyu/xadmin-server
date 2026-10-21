@@ -39,6 +39,12 @@ logger = get_logger(__name__)
 
 
 def login_failed(request: Any, username: Any) -> None:
+    """登录失败处置：本函数总是抛异常（ValidateError），调用方无需再 return。
+
+    失败计数 + IP 封禁 + 失败日志 + 出站 Webhook；文案不回显「账号不存在 /
+    密码错误」差异（防账号枚举）。调用点写 ``return login_failed(...)`` 只是形式，
+    控制流不依赖它——任何分支不得依赖「本函数返回后继续执行」。
+    """
     ipaddr = get_request_ip(request)
     login_block_util = LoginBlockUtil(username, ipaddr)
     login_ip_block = LoginIpBlockUtil(ipaddr)
@@ -104,6 +110,21 @@ def login_success(
             get_os(request),
         )
     save_login_log(request, login_type=login_type)
+
+
+def reject_login(
+    request: Any, user_obj: Any, reject_detail: str, login_type: Any = UserLoginLog.LoginTypeChoices.USERNAME
+) -> Any:
+    """登录策略拒绝：绑定用户归属后记失败日志，返回可读文案响应。
+
+    收口各登录入口重复的「request.user = user + save_login_log(status=False) +
+    返回文案」三段写法，并修正漏传 login_type 导致的日志来源不准（账密登录
+    记 LDAP / 验证码登录记短信邮件来源）。``reject_detail`` 由
+    :func:`evaluate_login_policy_for_request` 生成（含策略名）。
+    """
+    request.user = user_obj
+    save_login_log(request, login_type=login_type, status=False)
+    return ApiResponse(code=1001, detail=reject_detail)
 
 
 def evaluate_login_policy_for_request(request: Any, user_obj: Any, ipaddr: Any) -> Any:

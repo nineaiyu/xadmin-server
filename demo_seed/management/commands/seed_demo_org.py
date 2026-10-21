@@ -173,10 +173,12 @@ class Command(BaseCommand):
 
     # ---------- 组织 ----------
     def _ensure_org(self) -> dict[str, Any]:
+        demo_dept = DeptInfo.objects.filter(code="demo").first()
         depts = {}
         for code, name, _leader in DEPTS:
             dept, _ = DeptInfo.objects.update_or_create(
-                code=code, defaults={"name": name, "rank": 900, "is_active": True}
+                code=code,
+                defaults={"name": name, "rank": 900, "is_active": True, "parent": demo_dept},
             )
             depts[code] = dept
         for username, nickname, dept_code, _role, phone in USERS:

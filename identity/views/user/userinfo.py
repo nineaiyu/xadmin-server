@@ -56,7 +56,7 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         return UserInfo.objects.filter(pk=self.request.user.pk)
 
     def retrieve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """获取{cls}信息"""
+        """获取个人信息"""
         data = super().retrieve(request, *args, **kwargs).data
         # 巡检处置联动：管理员要求改密时随用户信息下发（刷新页面后仍能引导改密；
         # 改密成功由 record_password_hash 自动清除标记）。注意写入 data 子字典——

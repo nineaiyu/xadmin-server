@@ -46,31 +46,20 @@ def start_impersonation(request: Any, target: Any, impersonator: Any) -> dict[st
     """以 target 身份签发模拟 token：登记模拟会话 + 登录日志留痕。
 
     返回登录载荷（refresh / access / 生存期 / 目标用户摘要），由调用方下发；
-    ``UPDATE_LAST_LOGIN`` 只作用于账密登录链路，模拟不污染 target 的 last_login。
+    ``touch_last_login=False``：模拟不是 target 的真实登录，不刷新其 last_login
+    （``UPDATE_LAST_LOGIN`` 也只作用于账密登录链路）。
     """
     from audit.services import UserLoginLog
-    from identity.utils.auth import get_token_lifetime, save_login_log
-    from identity.utils.session import bind_session_claim, register_user_session
+    from identity.services.token_issue_login import issue_session_token
+    from identity.utils.auth import save_login_log
 
-    session = None
-    try:
-        session = register_user_session(request, target, UserLoginLog.LoginTypeChoices.IMPERSONATE)
-    except Exception:  # noqa: BLE001 会话登记失败不影响签发（与登录链路同口径）
-        logger.warning("register impersonation session failed", exc_info=True)
-
-    refresh = RefreshToken.for_user(target)
-    refresh[IMPERSONATOR_CLAIM] = str(impersonator.pk)
-    if session:
-        try:
-            refresh_str, access_str = bind_session_claim(refresh, session.pk)
-        except Exception:  # noqa: BLE001 claim 注入失败退回无 sid 行为
-            logger.warning("bind impersonation session claim failed", exc_info=True)
-            refresh_str, access_str = str(refresh), str(refresh.access_token)
-    else:
-        refresh_str, access_str = str(refresh), str(refresh.access_token)
-
-    data = {"refresh": refresh_str, "access": access_str}
-    data.update(get_token_lifetime(target))
+    data = issue_session_token(
+        request,
+        target,
+        UserLoginLog.LoginTypeChoices.IMPERSONATE,
+        extra_claims={IMPERSONATOR_CLAIM: str(impersonator.pk)},
+        touch_last_login=False,
+    )
     data["user"] = {
         "pk": str(target.pk),
         "username": target.username,
@@ -92,6 +81,11 @@ def start_impersonation(request: Any, target: Any, impersonator: Any) -> dict[st
 
 def stop_impersonation(request: Any) -> Any:
     """退出模拟：失效当前模拟会话 + 为发起人重签 token。
+
+    重签不经过 :func:`identity.services.token_issue_login.issue_session_token`：
+    这是「恢复发起人原有登录态」而非一次新登录，有意不登记新会话（复用发起人
+    既有会话语义）、不写 last_login、不带 must_change_password（响应键与登录
+    载荷一致的部分仅为前端兼容）。
 
     :return: (impersonator, data)；发起人不存在或已停用时返回 (None, None)，
              调用方需给出「请重新登录」类可读文案（此时只能重新登录恢复身份）。

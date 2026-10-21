@@ -185,6 +185,82 @@ class TestGetFilterQueryset:
         normal_user.menu = str(menu.pk)
         assert get_filter_queryset(Book.objects.all(), normal_user).count() == 3
 
+    def test_list_scope_applies_to_sibling_actions(self, normal_user, books, menu_factory):
+        """绑定 list 的数据授权对同资源详情/预览等兄弟动作同样生效。"""
+        list_menu = menu_factory("list:Book", path="api/demo/book$", method="GET")
+        preview_menu = menu_factory("preview:Book", path=r"api/demo/book/(?P<pk>[^/.]+)/preview$", method="GET")
+        perm = make_permission("list-scope", [make_rule("admin", "value.all")])
+        perm.menu.add(list_menu)
+        normal_user.rules.add(perm)
+
+        normal_user.menu = str(list_menu.pk)
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 3
+        normal_user.menu = str(preview_menu.pk)
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 3
+
+    def test_sibling_scope_does_not_leak_to_other_resources(self, normal_user, books, menu_factory):
+        """别的资源的 list 授权不会串到当前资源。"""
+        other_list = menu_factory("list:Other", path="api/demo/other$", method="GET")
+        preview_menu = menu_factory("preview:Book", path=r"api/demo/book/(?P<pk>[^/.]+)/preview$", method="GET")
+        perm = make_permission("other-scope", [make_rule("admin", "value.all")])
+        perm.menu.add(other_list)
+        normal_user.rules.add(perm)
+
+        normal_user.menu = str(preview_menu.pk)
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 0
+
+    def test_action_specific_scope_does_not_leak_to_list(self, normal_user, books, menu_factory):
+        """只绑定 preview 的授权不会反向放大 list（继承是单向的）。"""
+        list_menu = menu_factory("list:Book", path="api/demo/book$", method="GET")
+        preview_menu = menu_factory("preview:Book", path=r"api/demo/book/(?P<pk>[^/.]+)/preview$", method="GET")
+        perm = make_permission("preview-scope", [make_rule("admin", "value.all")])
+        perm.menu.add(preview_menu)
+        normal_user.rules.add(perm)
+
+        normal_user.menu = str(list_menu.pk)
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 0
+        normal_user.menu = str(preview_menu.pk)
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 3
+
+    def test_explicit_action_scope_overrides_list_scope(self, normal_user, books, menu_factory):
+        """显式绑定当前 action 的授权覆盖 list：detail 不再叠加 list 规则。"""
+        list_menu = menu_factory("list:Book", path="api/demo/book$", method="GET")
+        preview_menu = menu_factory("preview:Book", path=r"api/demo/book/(?P<pk>[^/.]+)/preview$", method="GET")
+        list_perm = make_permission("list-all", [make_rule("admin", "value.all")])
+        list_perm.menu.add(list_menu)
+        preview_perm = make_permission("preview-own", [make_rule("admin", "value.user.id")])
+        preview_perm.menu.add(preview_menu)
+        normal_user.rules.add(list_perm, preview_perm)
+
+        normal_user.menu = str(preview_menu.pk)
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 1
+        normal_user.menu = str(list_menu.pk)
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 3
+
+    def test_non_applicable_explicit_scope_falls_back_to_list(self, normal_user, books, menu_factory):
+        """显式规则只针对其它模型时不算“已配置”，继续回退 list。"""
+        list_menu = menu_factory("list:Book", path="api/demo/book$", method="GET")
+        preview_menu = menu_factory("preview:Book", path=r"api/demo/book/(?P<pk>[^/.]+)/preview$", method="GET")
+        list_perm = make_permission("list-all", [make_rule("admin", "value.all")])
+        list_perm.menu.add(list_menu)
+        other_perm = make_permission("preview-other-table", [make_rule("admin", "value.all", table="other.model")])
+        other_perm.menu.add(preview_menu)
+        normal_user.rules.add(list_perm, other_perm)
+
+        normal_user.menu = str(preview_menu.pk)
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 3
+
+    def test_generic_grant_still_participates_with_explicit_action(self, normal_user, books, menu_factory):
+        """通用授权不受显式 action 覆盖影响：始终参与并集。"""
+        preview_menu = menu_factory("preview:Book", path=r"api/demo/book/(?P<pk>[^/.]+)/preview$", method="GET")
+        generic = make_permission("generic-all", [make_rule("admin", "value.all")])
+        preview_perm = make_permission("preview-own", [make_rule("admin", "value.user.id")])
+        preview_perm.menu.add(preview_menu)
+        normal_user.rules.add(generic, preview_perm)
+
+        normal_user.menu = str(preview_menu.pk)
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 3
+
     def test_leader_departments_rule(self, dept, normal_user, superuser, books, upload_file):
         """value.leader.dept.ids：主管按「主管部门及下级」圈数据（dept_belong 维度）。"""
         child = type(dept).objects.create(name="子部门", code="sub-l", parent=dept)

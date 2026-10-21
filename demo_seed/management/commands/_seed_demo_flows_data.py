@@ -202,6 +202,9 @@ class DemoDataMixin:
             if error or instance is None:
                 self.stdout.write(self.style.WARNING(f"skip instance {title}: {error}"))
                 continue
+            # 演示租户数据范围：实例归属申请人部门（管理命令无请求上下文，
+            # pre_save 的自动 dept_belong 不会触发）
+            ApprovalInstance.objects.filter(pk=instance.pk).update(dept_belong=applicant.dept)
             # 引擎造的实例是随机 uuid，改绑为固定 pk 以便幂等与清理
             ApprovalInstance.objects.filter(pk=instance.pk).update(created_time=baseline)
             ApprovalNodeTask.objects.filter(instance=instance).update(created_time=baseline)
@@ -340,6 +343,7 @@ class DemoDataMixin:
             ApprovalRequest.objects.create(
                 pk=pk,
                 creator=applier,
+                dept_belong=applier.dept,
                 module="演示：敏感操作审批",
                 method=method,
                 path=path,
@@ -400,7 +404,7 @@ class DemoDataMixin:
             )
         now = timezone.now()
         for index, (pk, form, data) in enumerate(rows):
-            DynamicFormSubmission.objects.create(pk=pk, form=form, data=data, creator=applier)
+            DynamicFormSubmission.objects.create(pk=pk, form=form, data=data, creator=applier, dept_belong=applier.dept)
             baseline = now - timedelta(days=1, hours=index)
             DynamicFormSubmission.objects.filter(pk=pk).update(created_time=baseline)
         self.stdout.write(f"demo form submissions created: {len(rows)}")

@@ -46,6 +46,20 @@
   页内权限点 → 角色授权」三层关钉死）；前端调用这类辅助接口时应加 `hasAuth` 守卫，
   未授权时隐藏入口而不是点了报 403。
 
+### 2.1 手动复灌种子后，演示账号权限面回弹
+
+- **现象**：手动单独执行 `python manage.py load_init_json` 复灌种子后，用演示账号
+  admin/admin123 登录，发现角色菜单回到 grants.json 的静态子集，allow-list 之外的
+  权限点（以及被摘除的页面）重新出现。
+- **原因**：种子授权装载是**并集、只增不删**（防 loaddata m2m 覆盖清零）——复灌只会
+  追加 `grants.json` 声明的菜单，不会执行 `seed_demo_admin` 的精确收敛。
+- **正确做法**：官方链路无此问题（`ops/init_data.py` 先 `load_init_json` 再
+  `seed_demo_all`，最后一步 `seed_demo_admin` 自动收敛）；**手动复灌后补一条**
+  `python manage.py seed_demo_admin`（幂等，秒级）即可恢复 allow-list，并回填演示
+  用户/业务数据的部门范围。
+  判定已恢复：演示角色菜单数回到 allow-list 规模（全量模块约 167），且 allow-list
+  之外的权限点为 0；演示管理员用户列表只含演示部门子树用户。
+
 ### 3. 新 app 接口 404
 
 - **原因**：app 未注册，或注册了但没有 `your_app/config.py::URLPATTERNS`（此时启动日志有一条

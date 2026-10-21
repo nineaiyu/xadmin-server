@@ -78,6 +78,11 @@ class Screen(DbAuditModel, DbUuidModel):
         GRID = "grid", _("Grid")
         FREE = "free", _("Free canvas")
 
+    class ScreenTheme(models.TextChoices):
+        DARK = "dark", _("Dark")
+        LIGHT = "light", _("Light")
+        AUTO = "auto", _("Follow site")
+
     name = models.CharField(_("Name"), max_length=128, unique=True)
     dashboards = models.JSONField(_("Dashboards"), default=list, help_text=_("Ordered dashboard pks"))
     #: 画布窗格（12 列栅格绝对定位）：空 = 维持仪表盘轮播（存量数据与旧客户端零影响）
@@ -110,6 +115,22 @@ class Screen(DbAuditModel, DbUuidModel):
         choices=Dataset.Visibility.choices,
         default=Dataset.Visibility.PERSONAL,
         db_index=True,
+    )
+    #: 投屏主题：dark 恒深色（缺省，存量观感）/ light 浅色画布 / auto 跟随站点明暗
+    theme = models.CharField(
+        _("Theme"),
+        max_length=8,
+        choices=ScreenTheme.choices,
+        default=ScreenTheme.DARK,
+        help_text=_("Display theme: dark / light / follow site"),
+    )
+    #: 大屏主题色（hex，如 #006be6）：空 = 跟随站点主色
+    theme_color = models.CharField(
+        _("Theme color"),
+        max_length=9,
+        blank=True,
+        default="",
+        help_text=_("Screen accent color (hex); empty = follow site primary"),
     )
 
     class Meta:

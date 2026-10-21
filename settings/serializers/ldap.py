@@ -12,7 +12,7 @@ from django.db.models import TextChoices
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.fields import LabeledChoiceField
+from common.core.fields import LabeledChoiceField, PasswordField
 from settings.serializers.contract import SettingSaveContractMixin
 
 
@@ -62,7 +62,7 @@ class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         label=_("Bind DN"),
         help_text=_("Service account DN used to search the directory; empty for anonymous bind"),
     )
-    LDAP_BIND_PASSWORD = serializers.CharField(
+    LDAP_BIND_PASSWORD = PasswordField(
         max_length=512,
         required=False,
         allow_blank=True,

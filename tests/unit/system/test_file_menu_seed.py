@@ -9,8 +9,8 @@
 2. 权限点 path 正则覆盖真实端点（`django.urls.resolve` 可解析 + 正则命中），
    含 `stats` 的**隐性覆盖**语义（无独立权限点，由 `retrieve` 覆盖，前端按
    retrieve 判定是否请求）；
-3. 有文件页面授权的内置角色同步授权接口权限点——管理员全量；演示模式按只读与
-   取用口径，写操作（建改删/上传/物理清除）不出现在其授权面。
+3. 有文件页面授权的内置角色同步授权接口权限点——管理员全量；演示模式只读展示，
+   写操作（建改删/上传/物理清除）不出现在其 allow-list。
 """
 
 import json
@@ -57,20 +57,6 @@ STATS_PATH = "api/file/file/stats$"
 STATS_COVER = "retrieve:SystemUploadFile"
 
 ROLE_ADMIN = "admin"  # 管理员
-ROLE_DEMO = "demo"  # 演示模式
-#: 演示模式不持有的写操作面（破坏演示环境或提权通道）
-DEMO_DENIED = {
-    "create:SystemUploadFile",
-    "partialUpdate:SystemUploadFile",
-    "destroy:SystemUploadFile",
-    "batchDestroy:SystemUploadFile",
-    "upload:SystemUploadFile",
-    "recyclePurge:SystemUploadFile",
-    "chunkInit:SystemUploadFile",
-    "chunkPart:SystemUploadFile",
-    "chunkComplete:SystemUploadFile",
-    "chunkAbort:SystemUploadFile",
-}
 
 
 def _load(name: str):
@@ -151,14 +137,31 @@ def test_admin_role_covers_all_file_points():
     assert not missing, f"管理员缺少文件权限点：{missing}"
 
 
-def test_demo_role_grants_readonly_file_points():
-    """演示模式：查看与取用类权限点必须授权；写操作与物理清除不得出现。"""
-    menus = role_menu_pks(ROLE_DEMO)
-    assert FILE_MENU_PK in menus, "演示模式缺少文件页面菜单"
+def test_demo_allow_list_grants_readonly_file_points():
+    """演示模式保留文件中心只读展示；上传/建改删/物理清除仍不得进入 allow-list。"""
+    from demo_seed.permissions import DEMO_ALLOWED_PERMISSION_NAMES, DEMO_PAGE_NAMES
 
-    wanted = {permission_pk(name) for name in FILE_POINTS if name not in DEMO_DENIED}
-    missing = wanted - menus
-    assert not missing, f"演示模式缺少只读/取用类文件权限点：{missing}"
+    assert "SystemUploadFile" in DEMO_PAGE_NAMES
+    read_only = {
+        "accessLogs:SystemUploadFile",
+        "config:SystemUploadFile",
+        "download:SystemUploadFile",
+        "list:SystemUploadFile",
+        "preview:SystemUploadFile",
+        "retrieve:SystemUploadFile",
+    }
+    assert read_only <= DEMO_ALLOWED_PERMISSION_NAMES
 
-    leaked = {permission_pk(name) for name in DEMO_DENIED} & menus
-    assert not leaked, f"演示模式不应持有写操作文件权限点：{leaked}"
+    writes = {
+        "create:SystemUploadFile",
+        "partialUpdate:SystemUploadFile",
+        "destroy:SystemUploadFile",
+        "batchDestroy:SystemUploadFile",
+        "upload:SystemUploadFile",
+        "recyclePurge:SystemUploadFile",
+        "chunkInit:SystemUploadFile",
+        "chunkPart:SystemUploadFile",
+        "chunkComplete:SystemUploadFile",
+        "chunkAbort:SystemUploadFile",
+    }
+    assert not (writes & DEMO_ALLOWED_PERMISSION_NAMES)

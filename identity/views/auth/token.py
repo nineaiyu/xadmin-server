@@ -36,7 +36,7 @@ class TempTokenAPIView(GenericAPIView):
 
     @extend_schema(responses=get_default_response_schema({"token": build_basic_type(OpenApiTypes.STR)}))
     def get(self, request: Any) -> Any:
-        """获取{cls}"""
+        """获取临时令牌"""
         time_limit = int(getattr(settings, "SECURITY_TEMP_TOKEN_EXPIRE", 600) or 600)
         token = make_token_cache(get_request_ident(request), time_limit=time_limit, force_new=True).encode("utf-8")
         return ApiResponse(token=token)
@@ -58,7 +58,7 @@ class CaptchaAPIView(GenericAPIView):
         )
     )
     def get(self, request: Any) -> Any:
-        """获取{cls}"""
+        """获取图形验证码"""
         return ApiResponse(**CaptchaAuth(request=request).generate())
 
 

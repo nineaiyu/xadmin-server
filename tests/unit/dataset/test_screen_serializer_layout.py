@@ -121,6 +121,46 @@ class TestFreeLayoutValidation:
             ScreenSerializer().validate_free_layout({"panes": [_free_pane("p1", "text", w=15, h=100)]})
 
 
+class TestThemeValidation:
+    """投屏主题字段：深色缺省（存量观感）、非白名单拒绝、主题色 hex 归一。"""
+
+    def test_theme_defaults_to_dark(self):
+        screen = Screen(name="主题缺省")
+        assert screen.theme == "dark"
+        assert screen.theme_color == ""
+
+    @pytest.mark.parametrize("value", ["dark", "light", "auto"])
+    def test_theme_accepts_whitelist(self, value):
+        assert ScreenSerializer().validate_theme(value) == value
+
+    @pytest.mark.parametrize("value", [None, "", "  "])
+    def test_blank_theme_falls_back_to_dark(self, value):
+        assert ScreenSerializer().validate_theme(value) == "dark"
+
+    def test_theme_case_and_padding_normalised(self):
+        assert ScreenSerializer().validate_theme(" LIGHT ") == "light"
+
+    @pytest.mark.parametrize("value", ["system", "night", "default"])
+    def test_invalid_theme_rejected(self, value):
+        with pytest.raises(serializers.ValidationError):
+            ScreenSerializer().validate_theme(value)
+
+    def test_theme_color_short_hex_expanded_lowercase(self):
+        assert ScreenSerializer().validate_theme_color("#ABC") == "#aabbcc"
+
+    def test_theme_color_full_hex_lowercased(self):
+        assert ScreenSerializer().validate_theme_color("#006BE6") == "#006be6"
+
+    @pytest.mark.parametrize("value", [None, "", "   "])
+    def test_blank_theme_color_means_follow_site(self, value):
+        assert ScreenSerializer().validate_theme_color(value) == ""
+
+    @pytest.mark.parametrize("value", ["blue", "#12345", "rgb(1,2,3)", "#gggggg", "006be6"])
+    def test_invalid_theme_color_rejected(self, value):
+        with pytest.raises(serializers.ValidationError):
+            ScreenSerializer().validate_theme_color(value)
+
+
 class TestLayoutModeConsistency:
     """写入载荷必须与（合并后的）layout_mode 对应，避免静默回退到另一形态。"""
 

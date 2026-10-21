@@ -10,9 +10,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # 时长预算 ≤ 20 min（容器启动 + uv sync 占大头，pytest 本体真库实测分钟级）；
-    # 40 min 为安全天花板，超时即门禁红
-    timeout-minutes: 40
+    # 时长预算 ≤ 24 min（容器启动 + uv sync 占大头，pytest 本体真库实测分钟级）；
+    # 2 次尝试 × 10 min + 环境准备 ≈ 22 min（单次上限须大于「断流点 ~6min +
+    # 假死阈值 150s」的转储窗口，否则取证永远打不出来）
+    timeout-minutes: 24
 
     services:
       postgres:
@@ -89,13 +90,132 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq gettext
           uv run --no-sync python manage.py compilemessages
 
+      - name: Tune PG logging (slow queries / lock waits)
+        # service 的 options 只接受 docker create 参数（不是 postgres 启动参数），
+        # 只能用运行时 ALTER SYSTEM + reload 打开服务端视角：卡死复现时，
+        # >10s 的语句与 >1s 的锁等待会随 Stop containers 步骤的容器日志倾出，
+        # 直接给出「PG 慢查询 / 锁等待」还是「客户端侧阻塞」的判据。
+        run: |
+          psql "host=127.0.0.1 port=55433 user=server password=pgtest dbname=xadmin_realtest" \
+            -v ON_ERROR_STOP=1 \
+            -c "ALTER SYSTEM SET log_min_duration_statement = '10s'" \
+            -c "ALTER SYSTEM SET log_lock_waits = on" \
+            -c "SELECT pg_reload_conf()"
+
       - name: Run tests (parallel, real PostgreSQL + Redis)
-        # 口径不变：-n auto + --cov-fail-under=85；--cov-fail-under=85 覆盖率门禁：
-        # 2026-09-18 上调 82 → 85（实测 87%，满足 ≤ 实测 -2pp 上移规则），2026-09-27
-        # 测量口径扩至拆分后的全部 app，真环境档实测 89%，门禁维持不变
-        # 不引入 pytest-rerunfailures：失败即暴露，真抖动靠客户端 E2E 抖动榜单定位
-        # （scripts/e2e-flaky-report.mjs），重试只会把真回归伪装成通过
-        run: uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85 --junitxml=test-reports/junit.xml
+        # 口径不变：-n auto + --cov-fail-under=85（2026-09-18 上调 82 → 85）。
+        #
+        # 假死自愈 + 现场取证（机制与交接见 docs/ops/ci-unit-tests-stall-2026-10.md）：
+        #   现场：进度在 ~92%（tests/unit/system 尾部种子测试区）断流；SIGABRT 转储证明
+        #   worker 主线程停在「种子 fixture → load_init_json → 字段权限 m2m」的 psycopg
+        #   等待，master 空转在 queue.get；PG 侧无长语句/锁等待（快查询在慢 runner 上被
+        #   放大）。处置：种子 m2m 批量化（装载一次写一组关系）、种子测试模块级装载、
+        #   --dist worksteal 削峰。
+        # 处理：
+        #   1) pytest 输出写文件（不再经 stdout 管道），每 30s 回显一行进度；
+        #   2) 后台看门狗：首个进度行出现后，连续 150s 日志无增长即判定假死（旧阈值
+        #      240s 在 8min 上限下永远等不到——实测断流点 ~6min，静默最大只到 150s），
+        #      先落 ps 快照（STAT/wchan 区分内核态阻塞），再对全部 execnet worker 与
+        #      pytest 主进程发 SIGABRT，由 faulthandler 把所有线程栈写入日志；
+        #   3) 单次尝试 10 分钟硬上限（正常 2~5 分钟，须晚于断流点+150s），假死/超时
+        #      自动重试一次（同一 runner 上两次 attempt 高度相关，重试止血有限，失败
+        #      job 重跑换 runner 才有效）；转储后先 TERM pytest 主进程并等其退出，否则
+        #      孤儿进程持有 PG advisory lock 会让 attempt 2 快速失败；
+        #   4) 真失败（断言/覆盖率）原样退出不重试；完整日志与 junit 一并作为 artifact 上传。
+        run: |
+          mkdir -p test-reports
+          LOG=test-reports/pytest.log
+          for attempt in 1 2; do
+            echo "=== pytest attempt ${attempt} ==="
+            rm -f "$LOG" "$LOG.done" "$LOG.stalled"
+            timeout --signal=INT --kill-after=60 10m \
+              uv run --no-sync pytest -n auto --dist worksteal \
+                --cov --cov-report=term-missing --cov-fail-under=85 \
+                --junitxml="test-reports/junit-${attempt}.xml" > "$LOG" 2>&1 &
+            TPID=$!
+            (
+              last=0; idle=0; elapsed=0
+              while [ ! -f "$LOG.done" ]; do
+                sleep 30
+                [ -f "$LOG.done" ] && break
+                elapsed=$((elapsed + 30))
+                cur=$(stat -c %s "$LOG" 2>/dev/null || echo 0)
+                if [ "$cur" -eq "$last" ]; then idle=$((idle + 30)); else idle=0; last=$cur; fi
+                # grep -c 无匹配时先输出 0 再以非零退出，|| echo 0 会拼成两行，
+                # 触发 "[: 0 0: integer expression expected"；|| true 保留单个 0
+                progress=$(grep -c '%]' "$LOG" 2>/dev/null || true)
+                progress=${progress:-0}
+                printf '  [watch] 进度行 %s，静默 %ss，末尾：%s\n' \
+                  "$progress" "$idle" \
+                  "$(tail -c 160 "$LOG" 2>/dev/null | tr '\n' ' ')"
+                # 触发条件（首个进度行之后）：
+                #   a) 静默 ≥150s——硬冻结形态（run 39371081711 已验证可转储）；
+                #   b) 已运行 ≥570s——慢磨形态（run 39374822846 在 93.7% 磨到 10min
+                #      上限，静默从未到 150s，此前拿不到栈）：上限前 30s 主动转储。
+                if [ "$progress" -gt 0 ] && [ ! -f "$LOG.stalled" ] \
+                  && { [ "$idle" -ge 150 ] || [ "$elapsed" -ge 570 ]; }; then
+                  echo "!!! 触发取证转储（静默 ${idle}s / 已运行 ${elapsed}s）!!!" | tee -a "$LOG"
+                  touch "$LOG.stalled"
+                  # 进程快照写独立文件：pytest 系的 stdout 是「非 O_APPEND」文件
+                  # 描述符，与看门狗的 >> 追加写共用同一文件会因偏移竞争互相覆盖
+                  # （2026-10-20 run 39371081711 的快照即因此被后续转储覆盖丢失）。
+                  # worker 命令行是 "…/python -u -c import sys;exec(…)"（execnet
+                  # bootstrap，不含 pytest/execnet 字样），须按该特征匹配
+                  {
+                    echo "--- 转储时刻进程快照 ---"
+                    ps -eo pid,ppid,stat,wchan:32,etime,cmd \
+                      | grep -E 'pytest -n auto|python -u -c' | grep -v grep
+                    echo "--- 转储时刻 CPU/负载（st=steal 判断宿主抢占）---"
+                    cat /proc/loadavg
+                    top -bn1 | sed -n '1,4p'
+                    vmstat 1 3 2>/dev/null | tail -4
+                    echo "--- 转储时刻 PG 会话（state/wait_event 区分服端执行/锁等待/ClientRead）---"
+                    psql "host=127.0.0.1 port=55433 user=server password=pgtest dbname=xadmin_realtest" \
+                      -At -c "select pid, datname, state, coalesce(wait_event_type,'-'), coalesce(wait_event,'-'), now()-query_start, left(regexp_replace(query,'\s+',' ','g'),160) from pg_stat_activity where datname like 'test_%' order by query_start" 2>&1
+                    echo "--- 转储时刻 PG 表规模（种子 m2m 四表：判断是否统计信息/规模问题）---"
+                    psql "host=127.0.0.1 port=55433 user=server password=pgtest dbname=xadmin_realtest" \
+                      -At -c "select relname, n_live_tup, seq_scan, idx_scan, n_tup_ins, n_tup_upd from pg_stat_user_tables where relname in ('system_fieldpermission_field','system_modellabelfield','system_fieldpermission','system_menu') order by relname" 2>&1
+                  } > "test-reports/snapshot-${attempt}.log" 2>&1
+                  # uv run 会再包一层：pid 最大的匹配项才是 pytest 主进程，其直接
+                  # 子进程是 execnet worker（worker 命令行不含 pytest 字样）
+                  PY=$(pgrep -f "pytest -n auto" | sort -n | tail -1)
+                  for w in $(pgrep -P "$PY"); do kill -ABRT "$w" 2>/dev/null; done
+                  sleep 4
+                  kill -ABRT "$PY" 2>/dev/null
+                  sleep 3
+                  # 只 TERM timeout 包装会孤儿化 pytest：先 TERM 主进程本身——
+                  # PG advisory lock 在 pytest_unconfigure 才释放，进程不退锁不松，
+                  # 下一轮 attempt 会撞「另一个 pytest 会话正在使用同一测试栈」
+                  kill -TERM "$PY" 2>/dev/null
+                  kill -TERM "$TPID" 2>/dev/null
+                fi
+              done
+            ) &
+            WATCH=$!
+            # run 步骤是 bash -e：wait 返回非零会直接中断脚本，这里显式吞掉
+            code=0
+            wait "$TPID" || code=$?
+            # attempt 结束后等 pytest 进程组完全退出（上限 40s）：SIGINT 优雅退出
+            # 也需数秒收尾（worker 关停 + junit 落盘），不等会让 attempt 2 撞锁
+            for _ in $(seq 1 20); do
+              pgrep -f "pytest -n auto" >/dev/null 2>&1 || break
+              sleep 2
+            done
+            touch "$LOG.done"
+            wait "$WATCH" 2>/dev/null || true
+            echo "--- pytest 输出尾部（attempt ${attempt}, exit ${code}）---"
+            # 卡点栈可能很长：完整日志随 artifact 上传，这里回显尾部 600 行
+            tail -n 600 "$LOG"
+            if [ "$code" -eq 0 ]; then exit 0; fi
+            if [ -f "$LOG.stalled" ] || [ "$code" -eq 124 ]; then
+              echo "pytest 假死或超时（已转储卡点栈），重试…" >&2
+              continue
+            fi
+            echo "pytest failed with exit ${code}（真失败，不重试）" >&2
+            exit "$code"
+          done
+          echo "pytest 连续两次假死/超时" >&2
+          exit 124
 
       - name: Upload test report (junit)
         # 失败也上传：junit 逐用例结果供定位（无重试，失败即真失败）
@@ -103,7 +223,13 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pytest-junit
-          path: test-reports/junit.xml
+          path: |
+            test-reports/junit-1.xml
+            test-reports/junit-2.xml
+            test-reports/pytest.log
+            test-reports/snapshot-1.log
+            test-reports/snapshot-2.log
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Django system checks (database-tagged, real PostgreSQL)

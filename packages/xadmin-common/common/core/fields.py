@@ -7,6 +7,7 @@
 from typing import Any
 
 import phonenumbers
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.fields_related import (  # noqa: F401 再导出：关联字段族导入面保持不变
@@ -15,6 +16,7 @@ from common.core.fields_related import (  # noqa: F401 再导出：关联字段�
 from common.core.fields_related import (
     get_search_choices_max_count as get_search_choices_max_count,
 )
+from common.core.validators import ColorValidator, PhoneValidator
 
 
 class LabeledChoiceField(serializers.ChoiceField):
@@ -103,27 +105,66 @@ class LabeledMultipleChoiceField(serializers.MultipleChoiceField):
 
 
 class PhoneField(serializers.CharField):
+    """手机号字段：``{code, phone}`` 对象或标量写入，E.164 存储、``{code, phone}`` 回显。
+
+    写入契约：
+
+    - 对象形态 ``{code, phone}`` 拼为 E.164（``+`` 可省略），``{code, phone:""}``
+      与空串等价；
+    - 空值按 ``allow_blank`` / ``allow_null`` 收口（优先空串，其次 ``None``，
+      两者都不允许时抛标准 ``blank`` 错）——不再取决于消费方是否记得额外声明；
+    - 默认捆绑 :class:`PhoneValidator`（``validate=False`` 可关闭），解析失败直接
+      抛 ``ValidationError``，不再静默补 ``+86`` 入库；
+    - 依赖历史「解析失败补地区码」行为的消费方须显式传 ``country="CN"``。
+    """
+
+    default_error_messages = {"invalid": _("The phone number format is incorrect")}
+
     def __init__(self, **kwargs: Any) -> None:
         self.input_type = "phone"
+        self.country = kwargs.pop("country", None)
+        validate = kwargs.pop("validate", True)
         super().__init__(**kwargs)
+        if validate and not any(isinstance(validator, PhoneValidator) for validator in self.validators):
+            self.validators.append(PhoneValidator())
+
+    def _empty_value(self) -> Any:
+        if self.allow_blank:
+            return ""
+        if self.allow_null:
+            return None
+        self.fail("blank")
+
+    def _normalize(self, data: Any) -> Any:
+        region = self.country or "CN"
+        try:
+            phone = phonenumbers.parse(str(data), region)
+            return f"+{phone.country_code}{phone.national_number}"
+        except phonenumbers.NumberParseException:
+            # 历史行为（解析失败盲目补地区码）仅在消费方显式声明 country 时保留；
+            # 需同时关闭默认校验（validate=False）才能完整复现旧口径。
+            if self.country:
+                calling_code = phonenumbers.country_code_for_region(self.country)
+                if calling_code:
+                    return f"+{calling_code}{data}"
+            raise serializers.ValidationError(self.error_messages["invalid"]) from None
 
     def to_internal_value(self, data: Any) -> Any:
         if isinstance(data, dict):
             code = data.get("code")
             phone = data.get("phone", "")
-            if code and phone:
-                code = code.replace("+", "")
-                data = f"+{code}{phone}"
-            else:
-                data = phone
-        if data:
-            try:
-                phone = phonenumbers.parse(data, "CN")
-                data = f"+{phone.country_code}{phone.national_number}"
-            except phonenumbers.NumberParseException:
-                data = f"+86{data}"
-
-        return super().to_internal_value(data)
+            data = f"{code}{phone}" if code and phone else phone
+        if data is None:
+            if self.allow_null:
+                return None
+            self.fail("null")
+        if not isinstance(data, (str, int, float)):
+            self.fail("invalid")
+        if isinstance(data, str):
+            data = data.strip()
+        if not data:
+            return self._empty_value()
+        return super().to_internal_value(self._normalize(data))
 
     def to_representation(self, value: Any) -> Any:
         if not value:
@@ -139,8 +180,40 @@ class PhoneField(serializers.CharField):
 
 
 class ColorField(serializers.CharField):
+    """颜色值字段：默认捆绑格式校验（``#rgb``/``#rrggbbaa``、``rgb()``/``hsl()``、颜色名）。
+
+    ``predefine`` 为前端色板预设（随元数据下发，缺省不影响既有 9 色兜底）。
+    """
+
     def __init__(self, **kwargs: Any) -> None:
         self.input_type = "color"
+        self.predefine = kwargs.pop("predefine", None)
+        super().__init__(**kwargs)
+        self.validators.append(ColorValidator())
+
+
+class RichTextField(serializers.CharField):
+    """富文本字段：入库前按 bleach 白名单净化（前端展示层再以 DOMPurify 兜底）。
+
+    仅处理字符串内容；空值 / 非字符串由 ``CharField`` 原有语义接管。
+    """
+
+    def __init__(self, **kwargs: Any) -> None:
+        self.input_type = "rich_text"
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data: Any) -> Any:
+        value = super().to_internal_value(data)
+        from common.utils.sanitize import sanitize_rich_text
+
+        return sanitize_rich_text(value)
+
+
+class PasswordField(serializers.CharField):
+    """密码字段：仅标记 ``input_type=password``（前端遮蔽输入），加密与校验由消费方负责。"""
+
+    def __init__(self, **kwargs: Any) -> None:
+        self.input_type = "password"
         super().__init__(**kwargs)
 
 

@@ -329,22 +329,27 @@ def fill_field_permissions(roles: Any = None) -> Any:
     filled = []
     through = FieldPermission.field.through
     with transaction.atomic():
+        # 全部缺口一次性重写白名单（与逐组 .set() 同语义：先清后插）。分组只用于
+        # 复用字段清单，DELETE 与 INSERT 都按「全部目标组合」合并成各一条多值语句——
+        # 逐组发语句时，角色×菜单上百个缺口就是几百条 DELETE/INSERT 小往返。
+        pks: list[Any] = []
+        relations: list[tuple[Any, Any]] = []
         for group in groups.values():
             fields = group[0][2]
-            pks = []
             for role, menu, _fields in group:
                 fp = existing.get((role.pk, menu.pk))
                 if fp is None:
                     fp = FieldPermission.objects.create(role=role, menu=menu)
                     existing[(role.pk, menu.pk)] = fp
                 pks.append(fp.pk)
+                relations.extend((fp.pk, field.pk) for field in fields)
                 filled.append((role, menu))
-            # 组内统一重写白名单（与 .set() 同语义：先清后插），但一条 DELETE
-            # 加一条 INSERT（多值）替代逐组合的三连往返
+        if pks:
             through.objects.filter(fieldpermission_id__in=pks).delete()
             through.objects.bulk_create(
-                [through(fieldpermission_id=pk, modellabelfield_id=field.pk) for pk in pks for field in fields],
+                [through(fieldpermission_id=pk, modellabelfield_id=field_pk) for pk, field_pk in relations],
                 ignore_conflicts=True,
+                batch_size=1000,
             )
     if filled:
         logger.info(f"filled field permissions: {len(filled)} (role, menu) pairs")
