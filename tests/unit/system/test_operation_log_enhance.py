@@ -251,3 +251,71 @@ class TestSlowThresholdEndpoint:
         api_client.force_authenticate(user=normal_user)
         resp = api_client.get(self.THRESHOLD_URL)
         assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------- keyset 深分页
+
+
+class TestOperationLogCursorPagination:
+    """审计日志 keyset：顺序翻页不重复、不依赖 OFFSET；非法游标 400。"""
+
+    PATH_PREFIX = "/api/cursor-test/"
+
+    @staticmethod
+    def _seed(superuser, count=5, same_time_count=0):
+        base = timezone.now() - timedelta(minutes=10)
+        logs = [_make_log(path=f"{TestOperationLogCursorPagination.PATH_PREFIX}{index}") for index in range(count)]
+        for index, log in enumerate(logs):
+            OperationLog.objects.filter(pk=log.pk).update(created_time=base + timedelta(seconds=index))
+        tied = [
+            _make_log(path=f"{TestOperationLogCursorPagination.PATH_PREFIX}tie-{index}")
+            for index in range(same_time_count)
+        ]
+        tie_time = base + timedelta(seconds=count)
+        for log in tied:
+            OperationLog.objects.filter(pk=log.pk).update(created_time=tie_time)
+        return logs + tied
+
+    def test_cursor_pages_without_duplicates(self, superuser):
+        self._seed(superuser, count=5)
+        page1 = _list(superuser, {"path": self.PATH_PREFIX, "size": 2})
+        first = page1.data["data"]
+        assert first["total"] == 5
+        assert len(first["results"]) == 2
+        assert first["has_more"] is True
+        assert first["next_cursor"]
+
+        page2 = _list(superuser, {"path": self.PATH_PREFIX, "size": 2, "cursor": first["next_cursor"]})
+        second = page2.data["data"]
+        assert "total" not in second
+        assert len(second["results"]) == 2
+        assert second["has_more"] is True
+
+        page3 = _list(superuser, {"path": self.PATH_PREFIX, "size": 2, "cursor": second["next_cursor"]})
+        third = page3.data["data"]
+        assert len(third["results"]) == 1
+        assert third["has_more"] is False
+        assert third["next_cursor"] is None
+
+        paths = [row["path"] for page in (first, second, third) for row in page["results"]]
+        assert len(paths) == len(set(paths)) == 5
+        assert paths[0] == f"{self.PATH_PREFIX}4"
+
+    def test_cursor_tiebreaker_keeps_same_timestamp_rows(self, superuser):
+        self._seed(superuser, count=2, same_time_count=3)
+        seen = []
+        cursor = None
+        while True:
+            params = {"path": self.PATH_PREFIX, "size": 2}
+            if cursor:
+                params["cursor"] = cursor
+            data = _list(superuser, params).data["data"]
+            seen.extend(row["path"] for row in data["results"])
+            cursor = data["next_cursor"]
+            if not cursor:
+                break
+        assert len(seen) == len(set(seen)) == 5
+
+    def test_invalid_cursor_returns_400(self, superuser):
+        response = _list(superuser, {"cursor": "not-a-valid-cursor"})
+        assert response.status_code == 400

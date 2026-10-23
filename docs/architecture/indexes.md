@@ -101,6 +101,10 @@ Post.name/code（岗位分组，管理配置类小表——百级以内，顺序
 新增索引请同时在本文件登记 + 补 EXPLAIN 断言；回滚方式：删除对应迁移文件
 或 `migrate <app> <previous>`。
 
+> 审计深分页已切 keyset（`cursor` 模式）：`(created_time, pk)` 比较复用
+> `idx_oplog_created` / `idx_loginlog_created` 的范围扫描，避免 COUNT + OFFSET；
+> 顺序翻页不再随页码加深而线性变慢，无需新增索引。
+
 守护测试全集（2026-10-09 复核核对）：
 
 - `tests/unit/system/test_index_usage.py`：上列 6 项的 EXPLAIN 断言（sqlite 断言计划名 /

@@ -17,6 +17,7 @@ from audit.serializers.log import OperationLogListSerializer, OperationLogSerial
 from common.core.config import SysConfig
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend, PkMultipleFilter
 from common.core.modelset import DetailAction, OnlyExportDataAction, OnlyListModelSet
+from common.core.pagination import KeysetPageNumber
 from common.core.permission_meta import shared_list_action
 from common.core.response import API_SUCCESS_CODE, ApiResponse
 
@@ -88,6 +89,7 @@ class OperationLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction):
 
     queryset = OperationLog.objects.all()
     serializer_class = OperationLogSerializer
+    pagination_class = KeysetPageNumber
     list_serializer_class = OperationLogListSerializer
 
     ordering_fields = ["created_time", "updated_time", "exec_time"]

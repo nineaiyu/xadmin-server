@@ -101,6 +101,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 
 - 依赖：`packages/xadmin-common/common/core/modelset/` 各模块 + `packages/xadmin-common/common/core/response.py`。
 - 配置项（类属性）：`queryset` / `serializer_class` / `filterset_class` / `pagination_class` / `ordering_fields` / `select_related_fields` / `prefetch_related_fields` / `{action}_serializer_class`。
+- 审计大表（OperationLog / UserLoginLog）使用 `KeysetPageNumber`：顺序翻页传 `cursor`，跳页或自定义 `ordering` 自动回退 page 模式；cursor 响应含 `next_cursor` / `has_more`，可能省略 `total`（沿用上一页）。
 - 扩展点：覆写点表与红线见 [framework-cookbook.md](framework-cookbook.md) §四；自定义动作 `@action` + `@extend_schema` + `ApiResponse`。
 - 权威源：`packages/xadmin-common/common/core/modelset/viewsets.py`、`packages/xadmin-common/common/core/modelset/base.py`。
 

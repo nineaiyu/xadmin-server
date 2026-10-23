@@ -18,6 +18,7 @@ from audit.models import UserLoginLog
 from audit.serializers.log import LoginLogSerializer
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import OnlyExportDataAction, OnlyListModelSet
+from common.core.pagination import KeysetPageNumber
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from message.services import send_logout_msg
@@ -45,6 +46,7 @@ class LoginLogViewSet(OnlyListModelSet, OnlyExportDataAction):
 
     queryset = UserLoginLog.objects.all()
     serializer_class = LoginLogSerializer
+    pagination_class = KeysetPageNumber
 
     ordering_fields = ["created_time"]
     filterset_class = LoginLogFilter
