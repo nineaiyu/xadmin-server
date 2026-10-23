@@ -22,6 +22,16 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
+- **2026-10-23 审查整改批次提交（server `24d01e98` / client `c9490c53` / installer `3f45a34`）**：
+  2026-10-21 审查包 P0 13 + P1 90 + P2 339 共 **442 条全部「已验收」**，代码与文档收口后提交到
+  server/client `dev`（installer 按其默认分支 `main`）。后端全量 **6795 passed / 2 skipped**、
+  前端 **405 files / 2645 tests**；ruff、mypy、行数、跨 app、缓存键、台账编号、菜单标题、文档门禁、
+  `makemigrations --check`、`load_init_json --check` 全绿；权限对账 **路由 516 / 权限点 660 / 缺口 0**。
+  结构性收尾同批入库：ai/approval 服务层迁移、dataset 模型/视图拆分、system 工具域归位、webhook
+  服务拆分、通知渠道注册表、OpenAPI 类型生成、开放平台控制台、文档站登录信任面收窄。
+  **剩余发布门禁**：4.2.5 → 5.x 目标机复跑（阿里云仓缺 `xadmin-web:4.2.5` / `postgres:16.8` /
+  `redis:7.4.3`）；5.0.2 全新安装 + 幂等升级已在 CentOS 7 通过。
+
 - **2026-10-20 字段类型全量自动渲染四批次落地（改动留工作区待提交）**：
   phone/color 缺陷修复（默认值不篡改、PhoneField 默认校验与空值收口、不再补 +86、
   color 共享 COLOR_PATTERN、phone 详情/列表/rule）；闭包 + Schema 校验扩到 URLconf 全量
@@ -65,17 +75,8 @@
   验证：pytest/ruff/mypy/行数/跨 app/文档全绿；AI E2E 双浏览器 36 passed；容器重启后巡检
   105 动作 / 候选 0 / 缺口 0。
 
-- **2026-10-18 种子分层工具链对齐（留工作区待提交）**：三处收口——`sync_menu_permissions
-  --update-seed` 按归属回写各层（免人工 `seed_split`，字段树不再整表塞回平台层）；生成器与
-  分层工具统一 `menu.json`/`menumeta.json`（旧 `menu_<model>.json` 吸收清空）；
-  `dump_init_json --split-apps --apps <新应用>` 自动初始化 `manifest.json` + `doctor` 新增
-  「内置种子」自检；示例层落地（`dataset/seeds/sample/` 六个文件、`approval/seeds/` 流程定义、
-  `audit/seeds/` 脱敏规则），`init_data` 显式 `--with-sample` 保持新装观感。补齐两份 AGENTS/
-  二开文档站 3 页/架构运维 5 处口径，修复两处只读平台层的空转测试。验证：后端全量（含示例层
-  校验 `--check` 0 error）+ 静态门禁全绿；前端 typecheck/vitest 2262/i18n/contract/
-  menu-permissions 全绿；全量 E2E（6 分片隔离库）724 passed/8 failed/16.1min（失败为既有
-  flake），顺带修「场景种子产物发现」与「启动静默窗口吞保存」两处；清库 `init_data` 新装
-  实测 samples 全在（数据集 2/看板 1/大屏 1/报表 2/表单 2/提交 4）、默认复灌不删示例且幂等。
+- **2026-10-18 种子分层工具链对齐**：工具链三处收口、示例层落地与 `init_data --with-sample`
+  验证已归档，详见 [工作区开发任务执行记录](archive/工作区开发任务执行记录-2026.10.md)。
 
 - **2026-10-18 种子分层收口批（server 5 提交 + client 2 提交，已推送 dev）**：`c82452f9`
   「种子按 app 分层」的衍生问题四处收口。①**读取侧 N+1**（`ade554e3`）：`permission_sync`
@@ -103,7 +104,8 @@
   `docs/ops/upgrade-4x-to-5x.md`，守护测试 18 例（`test_legacy_transfer.py`）。
 
 
-- **2026-10-16 5.0 发布收口与发布后验证（R1 收尾 / R3 / R4，已提交推送）**：①**发布**：五仓 `v5.0.0` 就位，server/client 镜像构建+推送成功（tag 各一次强推更新，不再删建）；②**发布说明**：Release 原仅 3 条 PR（release-drafter 只汇总 PR，直接推主干的 655/1120 个提交未纳入）→ 按提交类型分组补齐并**修根因**（新增 `scripts/sync_release_notes.py` / `sync-release-notes.mjs` + 发布流水线调用，后续自动完整）；③**发布后验证 6 项全过**：`upgrade_check`=up-to-date（88 迁移/0 待应用/101 表无缺）、`sync_menu_permissions --dry-run` 缺口 0、health 四项 true、认证冒烟 POST 200、操作日志改动真实链路（完整单条 INSERT，并为旧逻辑遗留的 1 条孤儿行提供实证）、`post_upgrade` 幂等；④**发布后验证发现并修复的真实缺陷**：`load_init_json` 重灌种子会覆盖运行期补齐的字段白名单 → 非内置角色（演示角色「示例-主管/示例-员工」在审批接口）缺口 8 个 = 演示账号列表空白 → 收尾新增 `fill_field_permissions` 自愈（只补缺口、不改写人工裁剪；容器实测重灌后归零且幂等）+ 守护测试并入 `TestSeedOrderingFillsBuiltinRoles`；同时回退了误入提交的 `--update-seed` 种子回写（4700 余行，运行时模块权限点不应进种子）；⑤**R3**：逻辑层由 `test_upgrade_check.py`（含真实库 legacy 4x → reconcilable）守护 + 本地栈验证；端到端 4.2.5→5.0 演练登记待执行（需旧实例）；⑥**R4**：文档站本地构建通过（无死链）、5.0 升级要点与实现核对一致、`docs-build.yml` 历史全绿；⑦**衍生修复**：client 多架构构建改 `--platform=$BUILDPLATFORM`（QEMU 下 vite/rolldown 卡死 50 分钟）、构建前显式 `pnpm run prebuild`（图标/动画子集为 gitignore 生成物）、server setuptools 升级改绝对路径（PATH 指向 venv）、trivy 报告逐条定性（apt 构建期升级 / autobahn 示例私钥 / pip vendored msgpack+urllib3 豁免）、pyjwt 升 2.15.1、twisted 无修复漏洞豁免；⑧**建立本地验证闭环**：本地构建 base+运行镜像并用 trivy（ECR 漏洞库源）扫描，两镜像均 exit 0；本地 pip-audit 复验通过。
+- **2026-10-16 5.0 发布收口与发布后验证**：发布、发布说明根因修复、发布后 6 项验证与
+  `fill_field_permissions` 自愈已归档，详见 [工作区开发任务执行记录](archive/工作区开发任务执行记录-2026.10.md)。
 
 - **2026-10-16 TG-8 低风险子项收口（R2，两仓改动留工作区，待提交）**：D-6 操作日志取消占位行（单条 INSERT）、D-5 确认交互三范式成文；详见
   [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
@@ -199,6 +201,9 @@
 | 8 | **真·原地升级立项与分批实施** | **已立项（2026-10-17）**：决策 [ADR-094](../adr/ADR-094-inplace-upgrade-for-legacy-libraries.md) + 方案 [原地升级立项与方案-2026.10.md](原地升级立项与方案-2026.10.md)。**第一~三批已交付**：旧结构样本生成器 + 结构与引用与账本一键对齐（`legacy_align`）+ 差异报告 + 体检新判定 `legacy-inplace-capable` + 安装器接线（`--probe` 三态）+ 二开 app 迁移引用改写工具；`v4.1.3`/`v4.2.3`/`v4.2.5` 三代样本原地对齐全绿（实测数据见方案 §八）。**第四批（实机演练完成）**：真实 4.2.5 库升 5.0.1 跑通、数据零丢失（行数+哈希比对）；修复「容器无 git → common_monitor 未映射」与「有菜单无列（字段白名单 fail-closed）」两个真问题（后者改 post_upgrade 自动补齐+清缓存）。 |
 | 9 | ~~应用级种子拆分（五批次）~~ | **已交付（2026-10-17）**：种子按 app 落 `<app>/seeds/`（平台层保留 `loadjson/`），12 个 manifest 自声明依赖与归属；`load_init_json --list/--check/--apps` + `seed_split` + `dump_init_json --split-apps`；角色授权改声明式 grants 并集（破除 loaddata m2m 覆盖清零）；决策 [ADR-095](../adr/ADR-095-per-app-seed-layering.md)，方案与执行记录见 [应用级种子拆分方案-2026.10.md](应用级种子拆分方案-2026.10.md) / [执行计划](应用级种子拆分执行计划-2026.10.md) |
 | 10 | ~~前端框架一致性收敛（表单字段元数据化 + 弹窗全屏按钮体验缺口）~~ | **已完成（2026-10-18）**：调查、迁移与验证证据见 [方案](前端框架一致性调查与收敛方案-2026.10.md) §九。① ReDialog 全屏按钮默认渲染；② `check-handwritten-forms.mjs` 门禁 + 豁免登记进 CI；③ post / tag / login-policy / subscription / mcp / api-app / screen / approval-rule 八页迁至元数据表单（混合形态用字段渲染器或扩展字段）；④ 选型判定写入 component-handbook §六；⑤ 顺带修 `headerRenderer` DOM 泄漏、`time` 协议、`tag.color` 类型、MCP `pk` 只读、`formProps.rules` 整块覆盖；⑥ 最大化态强制显示还原按钮（`lay-tag/index.vue`，避免进入最大化后无可见出口）。数据集/报表因联动列维持豁免。验证：vitest 2312、后端 103 passed、E2E 双浏览器 60+（含 `tag-bar` 最大化还原 6 例） |
+| 11 | **下一补丁版本发布（含审查整改批次）** | 版本号三方同步（`server/const.py` ↔ `client/package.json` ↔ tag）→ 变更日志/Release notes → 按 server·client → web → docs → installer 顺序构建镜像 → `sync-image-mirror` → 目标机复测；发布前跑一次干净机安装 + 幂等升级 |
+| 12 | **4.2.5 旧镜像回填 + 目标机旧库升级复跑** | 把 `xadmin-web:4.2.5`、`postgres:16.8`、`redis:7.4.3` 补进 `xadmin-installer/utils/base-images.yml` / 镜像仓；目标机 `./xadmin.sh upgrade v<version>` 复跑，验收 `upgrade_check=up-to-date`、健康全 true、数据保留 |
+| 13 | **R5 首屏 LCP 靶心优化（提前启动）** | 基于 `e2e/perf-baseline.json` firstscreen 画像定位首屏瓶颈；每项改动附前后指标与 `perf` 用例；目标 LCP 改善 ≥10% 或输出「无空间」结论 |
 
 > 2026-11 窗口两项主项（存量库升级通道、HNSW 向量定型实测）已于 2026-10-09 提前完成，无需再排。
 
@@ -208,9 +213,10 @@
 
 | 窗口 | 主项 | 说明 / 验收口径 |
 |---|---|---|
+| 2026-10 | 审查整改收口 + 下一补丁发布 | **审查批次已提交（2026-10-23）**；主项为下一补丁版本发布与 4.2.5 旧镜像回填；R5 首屏 LCP 作为工具类副项提前启动 |
 | 2026-12 | 依赖窗口 | D2 TS 7.1 重评 / D3 Node 26 转正 / O9-6 停维依赖季度复核；独立分支 + 全量门禁 |
 | 2027-01 | mypy 严格度提升试点 | **✅ 内核 2026-10-09 完成**（9 flag 子集；**不可写 `strict = true`**——mypy 2.x per-module strict 会全局生效；守护测试 `tests/unit/test_mypy_strict_pilot.py`）；**✅ 业务 app 全量收口（2026-10-09）**：第一批 7 个（captcha/demo/devtools/integrations/mfa/server/settings，722 处）+ 第二批 11 个（audit/file/demo_seed/notifications/task/message/dataset/approval/ai/system/identity，4092 处）存量告警清零入列；全仓 mypy **860 文件 0 错**（无未推广面，`PROMOTED_APPS` 与配置块双向校验） |
-| 2027-01 | 基线清偿批次一 | **✅ 2026-10-09 提前完成**：新增 `scripts/check_function_length.py`（AST ≥100 行即失败，基线只减不增；CI + PR 模板 + 6 例自测）；函数净减 7 → 2（余 113/111 登记基线） |
+| 2027-01 | 基线清偿批次一 | **✅ 2026-10-09 提前完成**：新增 `scripts/check_function_length.py`（AST ≥100 行即失败，基线只减不增；CI + PR 模板 + 6 例自测）；函数净减 7 → 2（余 113/111 登记基线）。**2026-10-23 复核：超阈值函数 0 个、巨型文件 0 个，基线正式清零** |
 | 2027-02 | 二开实战验证 | **✅ 2026-10-09 提前完成**：示例分发包 `examples/plugins/xadmin-demo-plugin`（entry point + `ready()` 双路径、路由 / WS / 周期任务 / 自有迁移 / 模块声明）+ 教程 `docs/guide/plugin-development.md`；真机 `pip install` 与 `XADMIN_APPS` 注册双进程实证 + 停用三层拦截实证，11 例守卫测试 |
 | 2027-03 | 备份恢复季度演练 + 半年复盘 | 按既有演练脚本口径执行，回填 `docs/ops/backup-drill-*`；对账本计划半年执行度 |
 
