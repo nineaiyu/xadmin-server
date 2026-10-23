@@ -273,6 +273,42 @@ class TestTemplateVersions:
             1,
         ]
 
+    def test_creator_rollback_with_dedicated_permission(self, normal_user, template_urls):
+        """非超管创建者持 rollback:ScreenTemplate 即可回滚（该动作不再按父级 list 权限解析）。"""
+        client = _client_for(normal_user, template_urls)
+        created = client.post(
+            TEMPLATE_URL,
+            {"name": "普通用户模板", "free_layout": {"panes": [_pane(text="旧")]}},
+            format="json",
+        ).json()["data"]
+        client.patch(
+            f"{TEMPLATE_URL}/{created['pk']}",
+            {"free_layout": {"panes": [_pane(text="新")]}},
+            format="json",
+        )
+
+        rolled = client.post(f"{TEMPLATE_URL}/{created['pk']}/rollback", {"version": 1}, format="json").json()
+
+        assert rolled["code"] == 1000, rolled
+        assert rolled["data"]["free_layout"]["panes"][0]["text"] == "旧"
+        # 版本历史同样按独立权限点可读
+        listed = client.get(f"{TEMPLATE_URL}/{created['pk']}/versions").json()
+        assert listed["code"] == 1000
+        assert [row["version"] for row in listed["data"]] == [3, 2, 1]
+
+    def test_non_creator_rollback_rejected(self, auth_client, normal_user, template_urls):
+        """非创建者即便持 rollback 权限点也被行级归属守卫拒绝（1003）。"""
+        created = auth_client.post(
+            TEMPLATE_URL,
+            {"name": "他人模板", "visibility": "shared", "free_layout": {"panes": [_pane(text="x")]}},
+            format="json",
+        ).json()["data"]
+        client = _client_for(normal_user, template_urls)
+
+        res = client.post(f"{TEMPLATE_URL}/{created['pk']}/rollback", {"version": 1}, format="json").json()
+
+        assert res["code"] == 1003
+
     def test_rollback_unknown_version_rejected(self, auth_client):
         created = auth_client.post(
             TEMPLATE_URL, {"name": "缺版本", "free_layout": {"panes": [_pane()]}}, format="json"

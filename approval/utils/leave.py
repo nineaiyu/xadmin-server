@@ -141,7 +141,7 @@ def submit_leave(leave: Any, user: Any) -> tuple[bool, str | None]:
     # 避免 Decimal/date 直接进 JSONField 时悄悄降级（引擎条件节点按 key 取这些值）
     form_data = leave.form_data
 
-    from approval.utils.approval_flow import create_instance
+    from approval.services.approval_flow import create_instance
 
     with transaction.atomic():
         _lock_creator_submissions(leave.creator_id)
@@ -190,7 +190,7 @@ def cancel_leave(leave: Any, user: Any) -> Any:
         leave.save(update_fields=["status", "updated_time"])
         return True, None
 
-    from approval.utils.approval_flow import cancel_instance
+    from approval.services.approval_flow import cancel_instance
 
     ok, detail = cancel_instance(leave.instance, user)
     if not ok:

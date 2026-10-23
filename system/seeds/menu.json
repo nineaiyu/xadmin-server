@@ -602,29 +602,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "5182fd14-9e8f-4313-94c9-1363ad7825e6",
-  "fields": {
-   "created_time": "2024-10-24T11:45:59.712Z",
-   "updated_time": "2024-10-31T08:07:57.832Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
-   "menu_type": 2,
-   "name": "importData:SystemModelLabelField",
-   "rank": 97,
-   "path": "api/system/field/import-data$",
-   "component": "",
-   "is_active": true,
-   "meta": "a8578d6e-2480-43d5-8f4b-88be88cbc372",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "54f3dbcf-4600-49e4-8e3c-dee3350b2d06",
   "fields": {
    "created_time": "2024-05-04T14:37:38.634Z",
@@ -1236,29 +1213,6 @@
     "ab6ae020-1de6-4695-925b-56456769b7aa",
     "14071ee3-6725-4fcc-962d-ad7898efa284"
    ]
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "cc4b51b7-c96a-4c31-a3dd-8599567e0fce",
-  "fields": {
-   "created_time": "2024-10-24T11:46:44.678Z",
-   "updated_time": "2024-10-31T08:07:57.794Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
-   "menu_type": 2,
-   "name": "batchDestroy:SystemModelLabelField",
-   "rank": 95,
-   "path": "api/system/field/batch-destroy$",
-   "component": "",
-   "is_active": true,
-   "meta": "4b4f9531-988d-4df9-9927-a5eecfdf84d3",
-   "method": "POST",
-   "model": []
   }
  },
  {
@@ -1880,75 +1834,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "534020ab-99c7-4a1e-9166-e924534915aa",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.603Z",
-   "updated_time": "2026-09-14T13:49:28.603Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
-   "menu_type": 2,
-   "name": "importValidate:SystemModelLabelField",
-   "rank": 10007,
-   "path": "api/system/field/import-validate$",
-   "component": null,
-   "is_active": true,
-   "meta": "702fb309-f109-4f41-b451-c4917b5a8f16",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "0eb471f5-7143-4337-a9a0-5aa000ccdac3",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.601Z",
-   "updated_time": "2026-09-14T13:49:28.601Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
-   "menu_type": 2,
-   "name": "importHeaders:SystemModelLabelField",
-   "rank": 10006,
-   "path": "api/system/field/import-headers$",
-   "component": null,
-   "is_active": true,
-   "meta": "31fb41fc-abbe-4c5c-b39d-05281a57abba",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "b9a01fc1-a675-420e-a573-d1d92876ffa1",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.599Z",
-   "updated_time": "2026-09-14T13:49:28.599Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
-   "menu_type": 2,
-   "name": "importAsync:SystemModelLabelField",
-   "rank": 10005,
-   "path": "api/system/field/import-async$",
-   "component": null,
-   "is_active": true,
-   "meta": "4cb674b6-270f-4e80-82e0-00dee599b0d4",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "89c4bc2a-ba47-45ea-bb45-1e3a7f11d56d",
   "fields": {
    "created_time": "2026-09-14T13:49:28.597Z",
@@ -1972,31 +1857,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "75c257a9-5ad6-497a-905d-afa2adc09cf7",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.594Z",
-   "updated_time": "2026-09-14T13:49:28.594Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
-   "menu_type": 2,
-   "name": "partialUpdate:SystemModelLabelField",
-   "rank": 10003,
-   "path": "api/system/field/(?P<pk>[^/.]+)$",
-   "component": null,
-   "is_active": true,
-   "meta": "d6f2d017-a7d3-4232-b1c8-0d0774275b43",
-   "method": "PATCH",
-   "model": [
-    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
-   ]
-  }
- },
- {
-  "model": "system.menu",
   "pk": "fc0d1000-6c70-4fba-90e5-b7507daa597f",
   "fields": {
    "created_time": "2026-09-14T13:49:28.591Z",
@@ -2015,54 +1875,6 @@
    "is_active": true,
    "meta": "cb342587-a16f-4e98-804e-47cae30a4f1a",
    "method": "GET",
-   "model": [
-    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
-   ]
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "f31b2187-6736-426f-93ec-4038000cfd17",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.589Z",
-   "updated_time": "2026-09-14T13:49:28.589Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
-   "menu_type": 2,
-   "name": "destroy:SystemModelLabelField",
-   "rank": 10001,
-   "path": "api/system/field/(?P<pk>[^/.]+)$",
-   "component": null,
-   "is_active": true,
-   "meta": "342358b2-f912-41f1-a3bb-16a3b33cb1e4",
-   "method": "DELETE",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "f19a1d3d-ac69-4175-82b6-4539cf1acc66",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.586Z",
-   "updated_time": "2026-09-14T13:49:28.586Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
-   "menu_type": 2,
-   "name": "create:SystemModelLabelField",
-   "rank": 10000,
-   "path": "api/system/field$",
-   "component": null,
-   "is_active": true,
-   "meta": "7dad51c8-7b17-4ec7-947b-c1943c60b055",
-   "method": "POST",
    "model": [
     "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
    ]

@@ -30,7 +30,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from ai.utils.ai_chat import persist_message
+from ai.services.assistant.ai_chat import persist_message
 from approval.models import ApprovalInstance
 from demo_seed.management.commands.seed_demo_admin import ADMIN_USERNAME
 from file.models import UploadFile

@@ -36,7 +36,7 @@ import pytest
 from django.apps import apps
 from django.db.migrations.loader import MigrationLoader
 
-from system.utils.platform import legacy_align
+from ops.legacy import align as legacy_align
 
 DUMP_ENV = "XADMIN_LEGACY_DUMP"
 TAG_ENV = "XADMIN_LEGACY_DUMP_TAG"

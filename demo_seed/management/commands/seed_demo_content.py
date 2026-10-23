@@ -33,7 +33,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from ai.models.ai import AiKnowledgeDocument
-from ai.utils.ai import remove_chunks, upsert_upload_document
+from ai.services.assistant.ai import remove_chunks, upsert_upload_document
 from approval.models.approval import ApprovalDelegation
 from file.models.upload import UploadFile
 from identity.models import UserInfo

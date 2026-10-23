@@ -24,8 +24,8 @@ from typing import Any
 from django.apps import apps
 from django.core.management.base import BaseCommand, CommandError
 
+from ops.legacy import transfer as lt
 from server.const import VERSION
-from system.utils.platform import legacy_transfer as lt
 
 DEFAULT_INCLUDE = ",".join(lt.entity_names())
 

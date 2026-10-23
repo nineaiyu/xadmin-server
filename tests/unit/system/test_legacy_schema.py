@@ -8,7 +8,7 @@
 4. 目标结构采集口径（排除框架基础设施表、含自动 M2M 表）变化 → 报告面错误。
 """
 
-from system.utils.platform import legacy_schema
+from ops.legacy import schema as legacy_schema
 
 
 def _column(type_name: str, nullable: bool = True) -> dict:

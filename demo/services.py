@@ -66,7 +66,7 @@ def submit_book(book: Book, user: UserInfo) -> tuple[bool, str | None]:
             "code": BOOK_FLOW_CODE
         }
 
-    from approval.utils.approval_flow import create_instance
+    from approval.services.approval_flow import create_instance
 
     instance, error = create_instance(
         flow=flow,

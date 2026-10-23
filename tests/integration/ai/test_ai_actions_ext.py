@@ -257,7 +257,7 @@ class TestHighRiskApproval:
         grant_perms(
             role,
             menu_factory,
-            (("mcp:AiMcp", r"api/ai/mcp$", "POST"),) + DELETE_ROLE_PERMS,
+            (("mcp:AiMcpServers", r"api/ai/mcp$", "POST"),) + DELETE_ROLE_PERMS,
         )
         api_client.force_authenticate(user=user)
         payload = {

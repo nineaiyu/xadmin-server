@@ -26,7 +26,7 @@ from django.apps import apps
 from django.core.management import call_command
 
 from approval.serializers.approval_flow import FORM_FIELD_TYPES
-from approval.utils.approval_flow import CONDITION_OPS
+from approval.services.approval_flow import CONDITION_OPS
 from dataset.utils.dform import validate_schema, validate_submission_data
 from identity.builtin import BUILTIN_ROLES
 from identity.models import UserRole

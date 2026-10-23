@@ -4,7 +4,6 @@
 # filename : sms
 # author : ly_13
 # date : 8/6/2024
-import phonenumbers
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -38,23 +37,11 @@ class BaseSMSSettingSerializer(SettingSaveContractMixin, serializers.Serializer)
         help_text=_("The phone is used for testing the SMS server's connectivity"),
     )
 
-    def post_save(self) -> None:
-        # 响应整形（契约）：把 SMS_TEST_PHONE 归一为 {code, phone} 便于前端回显
-        value = self.response_data["SMS_TEST_PHONE"]
-        if isinstance(value, dict):
-            return
-        try:
-            phone = phonenumbers.parse(value, "CN")
-            value = {"code": f"+{phone.country_code}", "phone": phone.national_number}
-        except phonenumbers.NumberParseException:
-            value = {"code": "+86", "phone": value}
-        self.response_data["SMS_TEST_PHONE"] = value
-
 
 class AlibabaSMSSettingSerializer(BaseSMSSettingSerializer):
     ALIBABA_ACCESS_KEY_ID = serializers.CharField(max_length=256, required=True, label="Access Key ID")
     ALIBABA_ACCESS_KEY_SECRET = serializers.CharField(
-        max_length=256, required=False, label="Access Key Secret", write_only=True
+        max_length=256, required=False, allow_blank=True, label="Access Key Secret", write_only=True
     )
     ALIBABA_VERIFY_SIGN_NAME = serializers.CharField(max_length=256, required=True, label=_("Signature"))
     ALIBABA_VERIFY_TEMPLATE_CODE = serializers.CharField(max_length=256, required=True, label=_("Template code"))

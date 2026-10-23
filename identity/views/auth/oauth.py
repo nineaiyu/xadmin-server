@@ -25,10 +25,12 @@ from rest_framework.permissions import AllowAny
 from audit.services import UserLoginLog
 from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
+from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from identity.models.oauth import UserOAuthBinding
 from identity.serializers.oauth import OAuthBindingSerializer
+from identity.serializers.userinfo import decrypt_submitted_password
 from identity.services.token_issue_login import issue_session_token
 from identity.utils.oauth import (
     OAuthError,
@@ -47,6 +49,7 @@ from identity.utils.oauth import (
     issue_state,
     make_unique_username,
     mask_providers,
+    peek_bind_state,
     resolve_subject,
     set_state_cookie,
 )
@@ -163,6 +166,7 @@ class OAuthProvidersAPIView(GenericAPIView):
 
     # 登录前置：必须匿名可达（项目默认权限类对匿名用户直接 401）
     permission_classes = [AllowAny]
+    throttle_classes = [LoginThrottle]
 
     @extend_schema(responses=get_default_response_schema({"data": {"providers": [{"key": "str", "name": "str"}]}}))
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -186,6 +190,7 @@ class OAuthAuthorizeAPIView(GenericAPIView):
 
     # 登录前置：必须匿名可达（项目默认权限类对匿名用户直接 401）
     permission_classes = [AllowAny]
+    throttle_classes = [LoginThrottle]
 
     @extend_schema(responses=get_default_response_schema({"data": {"url": "str", "state": "str"}}))
     def get(self, request: Any, provider: Any, *args: Any, **kwargs: Any) -> Any:
@@ -236,14 +241,25 @@ class OAuthCallbackAPIView(GenericAPIView):
 
     # 登录前置：必须匿名可达（项目默认权限类对匿名用户直接 401）
     permission_classes = [AllowAny]
+    throttle_classes = [LoginThrottle]
 
     @extend_schema(responses=get_default_response_schema())
     def get(self, request: Any, provider: Any, *args: Any, **kwargs: Any) -> Any:
         code = request.query_params.get("code")
         state = request.query_params.get("state")
-        # 先判绑定意图：绑定 state 与登录 state 键空间隔离，互不通用
-        bind_payload = consume_bind_state(state or "")
+        # 先判绑定意图：绑定 state 与登录 state 键空间隔离，互不通用。
+        # 先只读校验登录态，通过后再消费 state——会话过期的用户重登后仍可重试
+        bind_payload = peek_bind_state(state or "")
         if bind_payload is not None:
+            user = getattr(request, "user", None)
+            if not user or not user.is_authenticated or str(bind_payload.get("user_pk")) != str(user.pk):
+                return ApiResponse(
+                    code=OAUTH_ERROR_CODE,
+                    detail=_("The binding link does not belong to the current account, please login and retry"),
+                )
+            bind_payload = consume_bind_state(state or "")
+            if bind_payload is None:
+                return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("The login link has expired, please try again"))
             return _bind_identity(request, provider, code, bind_payload, state or "")
 
         # 登录 CSRF 防护：state 必须由本浏览器会话的 authorize 下发（Cookie 一致）。
@@ -332,7 +348,12 @@ class OAuthUnbindAPIView(GenericAPIView):
             return ApiResponse(code=1001, detail=_("The binding does not exist"))
         serializer = self.UnbindSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if not authenticate(username=request.user.username, password=serializer.validated_data["password"]):
+        # 与改密/口令核验同口径：前端提交 AESCipherV2(username) 密文；关闭加密开关时
+        # 解密失败回退明文，兼容旧客户端与脚本调用。
+        password = decrypt_submitted_password(
+            request.user, serializer.validated_data["password"], field="password", log_prefix="oauth unbind"
+        )
+        if not authenticate(username=request.user.username, password=password):
             return ApiResponse(code=1001, detail=_("Incorrect password"))
         if not UserOAuthBinding.user_has_other_login_method(request.user, exclude_pk=binding.pk):
             return ApiResponse(

@@ -12,6 +12,7 @@ import json
 import pytest
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.utils.translation import gettext as _
 
 from message import chat as chat_service
 from message.consumers import ChatNotify
@@ -252,6 +253,23 @@ class TestSendPublic:
             assert captured[0]["code"] == 1001
 
         async_to_sync(scenario)()
+
+    def test_forged_bot_message_type_rejected(self, ws_layer, superuser):
+        """客户端伪造 system / ai 类型被拒：不落库、不广播（站内钓鱼入口）。"""
+        room = chat_service.get_public_room()
+
+        async def scenario():
+            consumer, captured, __ = _make_consumer(ws_layer, superuser)
+            for message_type in ("system", "ai"):
+                await consumer.handle_send(
+                    {"room_id": room.pk, "content": "官方通知：请点击链接", "message_type": message_type}
+                )
+            return captured
+
+        captured = async_to_sync(scenario)()
+        assert [item["code"] for item in captured] == [1001, 1001]
+        assert all(str(item["detail"]) == str(_("Unsupported message type")) for item in captured)
+        assert ChatMessage.objects.filter(room=room).count() == 0
 
     def test_empty_content_rejected(self, ws_layer, superuser):
         room = chat_service.get_public_room()

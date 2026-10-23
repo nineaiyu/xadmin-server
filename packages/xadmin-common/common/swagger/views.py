@@ -24,9 +24,16 @@ from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
 
 from common.base.magic import cache_response
-from common.contracts import LoginBlockUtil, LoginIpBlockUtil
+from common.contracts import (
+    LoginBlockUtil,
+    LoginIpBlockUtil,
+    evaluate_login_policy_for_request,
+    get_login_mfa_methods,
+    is_login_mfa_required,
+)
 from common.core.response import ApiResponse
 from common.settings_contract import kernel_setting
+from common.swagger.auth import API_DOCS_SESSION_FLAG
 from common.utils.request import get_request_ip
 
 # 文档站登录默认回跳（next 缺失或校验不通过时使用）
@@ -78,13 +85,30 @@ class ApiLogin(GenericAPIView):
         try:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            login(request, serializer.user)
         except Exception:
             # 凭证错误与登录链路异常统一按失败处理（计数 + 限流），不回显差异避免账号枚举
             login_block.incr_failed_count()
             ip_block.set_block_if_need()
             return ApiResponse(code=1001, detail=_("Incorrect username/password"))
 
+        user = serializer.user
+        # 与主登录链路同口径：访问策略拒绝不建 session；要求 MFA 的账号引导到主登录页
+        # （文档站登录没有二次验证交互面，不能在这里静默放行）。
+        force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
+        if reject_detail:
+            return ApiResponse(code=1001, detail=reject_detail)
+        methods = get_login_mfa_methods(user, request)
+        mfa_required = is_login_mfa_required(user)
+        if not mfa_required and force_mfa and methods:
+            mfa_required = True
+        if mfa_required and methods:
+            return ApiResponse(
+                code=1001,
+                detail=_("This account requires MFA; please sign in from the main login page"),
+            )
+
+        login(request, user)
+        request.session[API_DOCS_SESSION_FLAG] = True
         login_block.clean_failed_count()
         ip_block.clean_block_if_need()
         return redirect(_safe_next_url(request))

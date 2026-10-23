@@ -14,6 +14,11 @@ URL = "/api/system/credentials"
 
 
 class TestCredentialOverview:
+    def test_setting_default_entry_points_to_settings_ledger(self):
+        from system.services.credential import DEFAULT_SETTING_ENTRY
+
+        assert DEFAULT_SETTING_ENTRY == "/settings/ledger/index"
+
     def test_requires_auth(self, api_client):
         assert api_client.get(f"{URL}/overview").status_code == 401
 
@@ -111,14 +116,14 @@ class TestCredentialRotate:
 class TestModelFieldRotate:
     def _make_subscription(self, secret="old-secret"):
         from task.services import WebhookSubscription
-        from task.utils.webhook import encrypt_secret
+        from task.services.webhook import encrypt_secret
 
         return WebhookSubscription.objects.create(
             name=f"sub-{secret}", url="https://example.com/hook", secret=encrypt_secret(secret), events=[]
         )
 
     def test_rotate_model_field_regenerates_and_encrypts(self, auth_client):
-        from task.utils.webhook import decrypt_secret
+        from task.services.webhook import decrypt_secret
 
         sub = self._make_subscription("old-secret")
         body = auth_client.post(

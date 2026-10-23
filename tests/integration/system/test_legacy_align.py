@@ -8,7 +8,8 @@
 4. 对齐可重复执行（第二次全部跳过，不产生副作用）。
 """
 
-from system.utils.platform import legacy_align, legacy_schema
+from ops.legacy import align as legacy_align
+from ops.legacy import schema as legacy_schema
 
 
 def _rows(dsn: str, sql: str) -> list:

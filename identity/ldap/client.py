@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from django.conf import settings
+from django.utils.translation import gettext as _
 from ldap3 import ALL, SUBTREE, Connection, Server
 from ldap3.core.exceptions import LDAPException
 from ldap3.utils.conv import escape_filter_chars
@@ -117,7 +118,7 @@ def build_server(config: "LdapConfig | None" = None) -> Any:
     cfg = _resolve(config)
     uri = cfg.server_uri
     if not uri:
-        raise LdapConfigError("LDAP_SERVER_URI is empty")
+        raise LdapConfigError(str(_("LDAP_SERVER_URI is empty")))
     return Server(
         uri,
         use_ssl=uri.lower().startswith("ldaps://"),
@@ -156,7 +157,7 @@ def paged_search_entries(
 ) -> Any:
     """分页搜索，返回条目属性 dict 列表（每条含 dn 与 attributes）。"""
     if not search_base:
-        raise LdapConfigError("LDAP search base is empty")
+        raise LdapConfigError(str(_("LDAP search base is empty")))
     entries = conn.extend.standard.paged_search(
         search_base=search_base,
         search_filter=search_filter,

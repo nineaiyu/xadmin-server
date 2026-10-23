@@ -5,7 +5,12 @@
 import re
 from typing import Any
 
-from .constants import AUDIT_KNOWN_DUPLICATES, AUDIT_SKIP_PREFIXES
+from .constants import (
+    AUDIT_KNOWN_DUPLICATES,
+    AUDIT_SKIP_PREFIXES,
+    FRAMEWORK_PERMISSION_ACTIONS,
+    RUNTIME_PERMISSION_PREFIXES,
+)
 
 
 def audit_field_permissions(roles: Any = None) -> Any:
@@ -108,6 +113,23 @@ def audit_wide_manager_grants() -> Any:
     return findings
 
 
+def audit_custom_permissions(perms: Any) -> Any:
+    """报告页面自定义动作权限点（非框架自动按钮），用于核对命名约定。
+
+    框架动作清单见 ``FRAMEWORK_PERMISSION_ACTIONS``；其余动作为页面自有能力
+    （rank / permissions / impact / enable 等），约定仍为
+    ``<lowerCamelAction>:<PascalComponent>``。本报告只提示、不自动改名，
+    避免破坏既有角色授权与路径匹配。
+    """
+    custom = []
+    for perm in perms:
+        code = str(perm.name or "")
+        action = code.split(":", 1)[0]
+        if action and action not in FRAMEWORK_PERMISSION_ACTIONS:
+            custom.append(perm)
+    return custom
+
+
 def audit_permission_menus(routes: Any, perms: Any) -> Any:
     """报告：未匹配任何路由的权限点 / 重复的 (path, method)。
 
@@ -117,6 +139,10 @@ def audit_permission_menus(routes: Any, perms: Any) -> Any:
     unmatched, duplicates, exempted, known_duplicates = [], [], [], []
     seen = {}
     for perm in perms:
+        # 运行时模块自建权限点（demo 等）：绑定/生命周期由模块自身命令维护，
+        # 不参与种子审计——否则未安装该模块的环境会把它们误报成孤儿。
+        if str(perm.pk).startswith(RUNTIME_PERMISSION_PREFIXES):
+            continue
         key = (perm.path, (perm.method or "").upper())
         if key in seen:
             if key in AUDIT_KNOWN_DUPLICATES:

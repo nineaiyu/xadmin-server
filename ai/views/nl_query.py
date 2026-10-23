@@ -13,7 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
-from ai.utils.ai import readable_ai_error
+from ai.services.assistant.ai import readable_ai_error
 from common.core.response import ApiResponse
 from common.drf.renders import sse_response
 from common.swagger.utils import get_default_response_schema
@@ -22,7 +22,7 @@ from integrations.sdk.ai.chat import AiSdkError
 
 def _persist_nl_partial(user: Any, reasoning_chunks: list[Any], detail: str) -> dict[str, Any]:
     """NL 解释流中断（已有增量）：保留思考与可读原因（extra.partial），返回消息载荷。"""
-    from ai.utils.ai_chat import message_payload, persist_message
+    from ai.services.assistant.ai_chat import message_payload, persist_message
 
     row = persist_message(
         user,
@@ -36,7 +36,7 @@ def _persist_nl_partial(user: Any, reasoning_chunks: list[Any], detail: str) -> 
 
 
 def _preview_text(count: int, capped: bool) -> str:
-    """预览计数文案：截断时标注「≥ N」（探测上限见 ai.utils.nl_query.PREVIEW_PROBE_LIMIT）。"""
+    """预览计数文案：截断时标注「≥ N」（探测上限见 ai.services.nl_query.nl_query.PREVIEW_PROBE_LIMIT）。"""
     return f"≥{count}" if capped else str(count)
 
 
@@ -50,11 +50,11 @@ class AiNlQueryMixin:
 
         白名单校验 + 试算预览计数（数据权限随调用者）
         """
-        from ai.utils.ai import is_enabled as ai_enabled_check
-        from ai.utils.ai import structured_chat_client
-        from ai.utils.ai_chat import message_payload, persist_message, system_error_message
-        from ai.utils.ai_guard import guard_summary
-        from ai.utils.nl_query import (
+        from ai.services.assistant.ai import is_enabled as ai_enabled_check
+        from ai.services.assistant.ai import structured_chat_client
+        from ai.services.assistant.ai_chat import message_payload, persist_message, system_error_message
+        from ai.services.assistant.ai_guard import guard_summary
+        from ai.services.nl_query.nl_query import (
             audit_nl_query,
             bounded_preview_count,
             build_interpret_prompt,
@@ -72,7 +72,7 @@ class AiNlQueryMixin:
         if not ai_enabled_check():
             return ApiResponse(code=1001, detail=_("AI assistant is not enabled or configured"))
 
-        from ai.utils.ai_usage import quota_error, tracked_chat
+        from ai.services.assistant.ai_usage import quota_error, tracked_chat
 
         quota = quota_error(request.user, "nl")
         if quota:
@@ -101,11 +101,11 @@ class AiNlQueryMixin:
             usage = getattr(client, "last_usage", None)
             dsl = parse_llm_json(raw)
             normalized = validate_dsl(dsl, request.user)
-            from dataset.services import Dataset
+            from dataset.contracts import Dataset
 
             dataset = Dataset.objects.get(pk=normalized["dataset"])
             extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
-            from dataset.services import build_queryset
+            from dataset.contracts import build_queryset
 
             queryset, model, __ = build_queryset(dataset, request.user, extra_filters=extra)
             preview_count, preview_capped = bounded_preview_count(queryset, model)
@@ -144,11 +144,11 @@ class AiNlQueryMixin:
         流内以 reasoning 展示模型思考（本地思考型模型常见），done 携带与
         nl_interpret 相同结构的 `{dsl, dataset_name, preview_count, mode}`。
         """
-        from ai.utils.ai import is_enabled as ai_enabled_check
-        from ai.utils.ai import structured_chat_client
-        from ai.utils.ai_chat import message_payload, persist_message, system_error_message
-        from ai.utils.ai_guard import guard_summary
-        from ai.utils.nl_query import (
+        from ai.services.assistant.ai import is_enabled as ai_enabled_check
+        from ai.services.assistant.ai import structured_chat_client
+        from ai.services.assistant.ai_chat import message_payload, persist_message, system_error_message
+        from ai.services.assistant.ai_guard import guard_summary
+        from ai.services.nl_query.nl_query import (
             audit_nl_query,
             bounded_preview_count,
             build_interpret_prompt,
@@ -169,7 +169,7 @@ class AiNlQueryMixin:
                 detail=_("AI assistant is not enabled or configured"),
                 content_type="application/json",
             )
-        from ai.utils.ai_usage import quota_error, tracked_chat_stream
+        from ai.services.assistant.ai_usage import quota_error, tracked_chat_stream
 
         quota = quota_error(request.user, "nl")
         if quota:
@@ -210,11 +210,11 @@ class AiNlQueryMixin:
                     )
                 dsl = parse_llm_json(raw)
                 normalized = validate_dsl(dsl, request.user)
-                from dataset.services import Dataset
+                from dataset.contracts import Dataset
 
                 dataset = Dataset.objects.get(pk=normalized["dataset"])
                 extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
-                from dataset.services import build_queryset
+                from dataset.contracts import build_queryset
 
                 queryset, model, __ = build_queryset(dataset, request.user, extra_filters=extra)
                 preview_count, preview_capped = bounded_preview_count(queryset, model)
@@ -269,10 +269,10 @@ class AiNlQueryMixin:
 
         服务端重校验（不信任客户端回传）+ 审计
         """
-        from ai.utils.ai import is_enabled as ai_enabled_check
-        from ai.utils.ai_chat import message_payload, persist_message, system_error_message
-        from ai.utils.nl_query import audit_nl_query, validate_dsl
-        from dataset.services import aggregate_dataset
+        from ai.services.assistant.ai import is_enabled as ai_enabled_check
+        from ai.services.assistant.ai_chat import message_payload, persist_message, system_error_message
+        from ai.services.nl_query.nl_query import audit_nl_query, validate_dsl
+        from dataset.contracts import aggregate_dataset
 
         dsl = request.data.get("dsl")
         if not settings.AI_NL_QUERY_ENABLED:
@@ -281,7 +281,7 @@ class AiNlQueryMixin:
             return ApiResponse(code=1001, detail=_("AI assistant is not enabled or configured"))
         try:
             normalized = validate_dsl(dsl if isinstance(dsl, dict) else {}, request.user)
-            from dataset.services import Dataset
+            from dataset.contracts import Dataset
 
             dataset = Dataset.objects.get(pk=normalized["dataset"])
             if normalized["mode"] == "aggregate":
@@ -296,7 +296,7 @@ class AiNlQueryMixin:
                 rows = len(result["series"])
                 summary = str(_("Query finished: {} groups")).format(rows)
             else:
-                from dataset.services import build_queryset
+                from dataset.contracts import build_queryset
 
                 extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
                 queryset, model, columns = build_queryset(dataset, request.user, extra_filters=extra)

@@ -14,7 +14,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from ai.models.ai import AiProfile
 from ai.serializers.ai import AiProfileSerializer
-from ai.utils.ai import profile_credentials, set_active_profile
+from ai.services.assistant.ai import profile_credentials, set_active_profile
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseViewSet,
@@ -111,7 +111,8 @@ class AiProfileViewSet(
     def activate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """激活档案
 
-        事务内清掉其余激活行，全局至多一个激活档案
+        同一 purpose 内至多一个激活档案（chat / structured / embedding 各自独立）；
+        全局激活数可大于一，按用途分别清理。
         """
         set_active_profile(self.get_object(), True)
         return ApiResponse(detail=_("Profile activated"))
@@ -158,7 +159,7 @@ class AiProfileViewSet(
         """
         from django.utils import timezone
 
-        from ai.utils.ai_probe import ALL_CAPABILITIES, probe_profile
+        from ai.services.assistant.ai_probe import ALL_CAPABILITIES, probe_profile
 
         profile = self.get_object()
         if not profile.is_configured:

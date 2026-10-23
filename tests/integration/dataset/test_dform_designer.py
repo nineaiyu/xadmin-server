@@ -9,6 +9,7 @@
 """
 
 import pytest
+from django.utils.translation import gettext as _
 
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 
@@ -61,6 +62,29 @@ class TestSchemaNormalization:
         assert resp.data["code"] != 1000
         # 断言用户数据（非法字段名）回显，不依赖 i18n 文案（本地 .mo 与 CI 语言不同）
         assert "nope" in str(resp.data)
+
+
+class TestOptimisticLock:
+    def test_rendered_baseline_accepted_and_stale_rejected(self, auth_client):
+        created = _create_form(auth_client, name="锁表单")
+        pk = created["pk"]
+
+        stale = auth_client.patch(
+            f"{FORMS_URL}/{pk}",
+            {"name": "后写覆盖", "base_updated_time": "2000-01-01 00:00:00"},
+            format="json",
+        )
+        assert stale.status_code == 400, stale.data
+        assert DynamicForm.objects.get(pk=pk).name == "锁表单"
+
+        baseline = auth_client.get(f"{FORMS_URL}/{pk}").data["data"]["updated_time"]
+        ok = auth_client.patch(
+            f"{FORMS_URL}/{pk}",
+            {"name": "刷新后再改", "base_updated_time": baseline},
+            format="json",
+        )
+        assert ok.data["code"] == 1000, ok.data
+        assert DynamicForm.objects.get(pk=pk).name == "刷新后再改"
 
 
 class TestSchemaVersioning:
@@ -261,6 +285,26 @@ class TestCreatorGuard:
         resp = api_client.patch(f"{FORMS_URL}/{pk}", {"description": "自用"}, format="json")
         assert resp.data["code"] == 1000, resp.data
 
+    def test_rollback_requires_creator(self, auth_client, api_client, normal_user, menu_factory):
+        """schema 回滚是写操作：非创建者即便持 rollback 权限点也被 1003 拒绝。"""
+        from identity.models import UserRole
+
+        created = _create_form(auth_client, name="回滚守卫表单")
+        rollback_point = menu_factory(
+            "rollback:FormDesigner",
+            path="api/dataset/dynamic-forms/(?P<pk>[^/.]+)/rollback$",
+            method="POST",
+        )
+        role = UserRole.objects.create(name=f"rollback-{normal_user.username}", code=f"rollback-{normal_user.pk}")
+        role.menu.set([rollback_point])
+        normal_user.roles.add(role)
+        api_client.force_authenticate(user=normal_user)
+
+        res = api_client.post(f"{FORMS_URL}/{created['pk']}/rollback", {"version": 1}, format="json")
+
+        assert res.json()["code"] == 1003
+        assert DynamicForm.objects.get(pk=created["pk"]).name == "回滚守卫表单"
+
     def test_batch_destroy_reports_guard_failures(self, auth_client, api_client, normal_user, menu_factory):
         others = _create_form(auth_client, name="他人表单")
         self._grant(normal_user, menu_factory, with_batch=True)
@@ -288,3 +332,52 @@ class TestCreatorGuard:
         api_client.force_authenticate(user=normal_user)
         rows = {item["pk"]: item for item in api_client.get(FORMS_URL).json()["data"]["results"]}
         assert rows[pk]["is_owner"] is False  # 非创建者（可读但不可写）
+
+
+class TestFormDeleteDamageControl:
+    """删除表单的数据损伤防护：外键 CASCADE 会物理清空全部填报，有提交时拒绝删除。"""
+
+    def test_form_with_submissions_cannot_be_deleted(self, auth_client):
+        created = _create_form(auth_client, name="有提交表单")
+        claimed = auth_client.post(SUBMISSIONS_URL, {"form": created["pk"], "data": {"kind": "A"}}, format="json")
+        assert claimed.data["code"] == 1000, claimed.data
+
+        response = auth_client.delete(f"{FORMS_URL}/{created['pk']}")
+
+        assert response.json()["code"] == 1001
+        assert str(response.json()["detail"]) == str(
+            _("The form has {} submissions and cannot be deleted; export or archive them first").format(1)
+        )
+        assert DynamicForm.objects.filter(pk=created["pk"]).exists()
+        assert DynamicFormSubmission.objects.filter(form_id=created["pk"]).count() == 1
+
+    def test_batch_destroy_reports_forms_with_submissions(self, auth_client):
+        kept = _create_form(auth_client, name="有提交表单")
+        empty = _create_form(auth_client, name="空表单")
+        auth_client.post(SUBMISSIONS_URL, {"form": kept["pk"], "data": {"kind": "A"}}, format="json")
+
+        response = auth_client.post(f"{FORMS_URL}/batch-destroy", [str(kept["pk"]), str(empty["pk"])], format="json")
+
+        body = response.json()
+        assert body["code"] == 1000
+        assert [item["pk"] for item in body["data"]["failures"]] == [str(kept["pk"])]
+        assert body["data"]["success"] == [str(empty["pk"])]
+        assert DynamicForm.objects.filter(pk=kept["pk"]).exists()
+        assert DynamicFormSubmission.objects.filter(form_id=kept["pk"]).count() == 1
+        assert not DynamicForm.objects.filter(pk=empty["pk"]).exists()
+
+    def test_impact_preview_states_real_consequence(self, auth_client):
+        created = _create_form(auth_client, name="影响面表单")
+        auth_client.post(SUBMISSIONS_URL, {"form": created["pk"], "data": {"kind": "A"}}, format="json")
+
+        response = auth_client.post(f"{FORMS_URL}/impact", {"pks": [created["pk"]]}, format="json")
+
+        items = response.json()["data"]["results"][0]["items"]
+        checks = {item["key"]: item for item in items}
+        assert checks["form_submissions"]["count"] == 1
+        assert str(checks["form_submissions"]["hint"]) == str(
+            _(
+                "Submissions will be permanently deleted together with the form; "
+                "a form with submissions cannot be deleted"
+            )
+        )

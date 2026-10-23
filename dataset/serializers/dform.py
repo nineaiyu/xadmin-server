@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """动态表单序列化器。定义类资源豁免字段权限裁剪。"""
 
+SENSITIVE_MASK = "******"
+
 from typing import Any
 
 from django.utils.translation import gettext_lazy as _
@@ -20,7 +22,7 @@ from dataset.utils.dform_filter import build_filter_data
 from dataset.utils.dform_history import key_of, merged_fields_of_forms, submission_schema
 
 
-def export_dynamic_fields(queryset: Any) -> list[tuple[str, str]]:
+def export_dynamic_fields(queryset: Any) -> list[tuple[str, str, bool]]:
     """导出动态列：按行集合涉及的表单合并字段（key 去重、保留出现顺序）。
 
     「我的填报」与「表单数据」（管理端）两个导出口径共用：列集合跟随过滤后的行
@@ -31,7 +33,10 @@ def export_dynamic_fields(queryset: Any) -> list[tuple[str, str]]:
     if not form_ids:
         return []
     forms = DynamicForm.objects.filter(pk__in=form_ids, is_template=False)
-    return [(key_of(item), str(item.get("label") or key_of(item))) for item in merged_fields_of_forms(forms)]
+    return [
+        (key_of(item), str(item.get("label") or key_of(item)), bool(item.get("sensitive")))
+        for item in merged_fields_of_forms(forms)
+    ]
 
 
 def form_schema_of(obj: Any) -> list[Any]:
@@ -75,6 +80,9 @@ class DynamicFormSerializer(BaseModelSerializer):
         required=False, allow_null=True, attrs=["pk", "name"], format="{name}", label=_("Approval flow")
     )
 
+    # 乐观锁基线（write_only）：客户端原样回传 updated_time 渲染串，与当前行同款渲染后比对
+    base_updated_time = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = DynamicForm
         # approval_required：开启后提交走敏感操作审批（412 → 通过 → 携令牌重放）
@@ -88,6 +96,7 @@ class DynamicFormSerializer(BaseModelSerializer):
             "approval_required",
             "approval_flow",
             "is_template",
+            "base_updated_time",
             "created_time",
             "updated_time",
         ]
@@ -108,11 +117,21 @@ class DynamicFormSerializer(BaseModelSerializer):
         return normalize_schema(value if isinstance(value, dict) else {})
 
     def validate(self, attrs: Any) -> Any:
-        """模板约束：创建后不可改模板标记；模板不绑定审批流程（只做 schema 复用）。
+        """模板约束 + 乐观锁：base_updated_time 与库内版本不一致时拒绝后写覆盖。
 
         流程引用检查：绑定流程的表单删除「被流程引用」的字段 → 拒绝（改版后
         条件失效节点会被静默跳过，见 dform_flow.assert_schema_safe_for_flow）。
         """
+        base_updated_time = attrs.pop("base_updated_time", None)
+        if (
+            base_updated_time
+            and self.instance is not None
+            and self.instance.updated_time is not None
+            and str(base_updated_time) != serializers.DateTimeField().to_representation(self.instance.updated_time)
+        ):
+            raise serializers.ValidationError(
+                {"base_updated_time": _("The form has been modified by another user; reload before saving")}
+            )
         if self.instance is not None:
             requested = attrs.get("is_template", self.instance.is_template)
             if bool(requested) != bool(self.instance.is_template):
@@ -287,7 +306,8 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
             raise serializers.ValidationError(_("Dynamic form is required"))
         if form.is_template:
             raise serializers.ValidationError(_("A form template cannot accept submissions"))
-        if not form.is_active:
+        # 新建提交要求表单启用；已有 DRAFT/REJECTED 提交允许在表单停用后继续编辑/重提
+        if not form.is_active and self.instance is None:
             raise serializers.ValidationError(_("This form is no longer accepting submissions"))
         data = attrs.get("data")
         if data is None and self.instance:
@@ -328,14 +348,18 @@ class SubmissionDataField(serializers.Field):
     未在 schema 声明的历史 data 键不导出（表单已删除字段的旧值不再出现在表头）。
     """
 
-    def __init__(self, data_key: Any, **kwargs: Any) -> None:
+    def __init__(self, data_key: Any, sensitive: bool = False, **kwargs: Any) -> None:
         self.data_key = data_key
+        self.sensitive = sensitive
+        self.mask_sensitive = False
         super().__init__(**kwargs)
 
     def get_attribute(self, instance: Any) -> Any:
         return (instance.data or {}).get(self.data_key)
 
     def to_representation(self, value: Any) -> Any:
+        if self.sensitive and self.mask_sensitive:
+            return SENSITIVE_MASK
         return value
 
 
@@ -357,9 +381,13 @@ class SubmissionExportSerializer(BaseModelSerializer):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        for key, label in self.context.get("dynamic_fields") or []:
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        mask_sensitive = self.context.get("mask_sensitive_fields", not getattr(user, "is_superuser", False))
+        for key, label, sensitive in self.context.get("dynamic_fields") or []:
             # required=False：导出列标题不带 *（required 标记只对导入模板有意义）
-            field = SubmissionDataField(data_key=key, label=label, required=False)
+            field = SubmissionDataField(data_key=key, label=label, sensitive=sensitive, required=False)
+            field.mask_sensitive = mask_sensitive
             # 手动绑定 field_name：渲染器按 field.field_name 取值与出列名
             field.field_name = key
             self.fields[key] = field
@@ -406,6 +434,15 @@ class FormDataListSerializer(BaseModelSerializer):
         allowed = self.context.get("data_fields")
         if allowed and isinstance(data.get("data"), dict):
             data["data"] = {key: value for key, value in data["data"].items() if key in allowed}
+        # 敏感字段掩码：schema 级 sensitive 标记；超管可见，其余角色一律掩码
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not getattr(user, "is_superuser", False) and isinstance(data.get("data"), dict):
+            sensitive = {str(item.get("key")) for item in form_schema_of(instance) if item.get("sensitive")}
+            if sensitive:
+                data["data"] = {
+                    key: SENSITIVE_MASK if key in sensitive else value for key, value in data["data"].items()
+                }
         return data
 
 

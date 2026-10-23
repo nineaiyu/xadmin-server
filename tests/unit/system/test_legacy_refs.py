@@ -9,7 +9,9 @@
 
 from django.db.migrations.loader import MigrationLoader
 
-from system.utils.platform import legacy_align, legacy_refs, legacy_structure
+from ops.legacy import align as legacy_align
+from ops.legacy import refs as legacy_refs
+from ops.legacy import structure as legacy_structure
 
 
 class TestContentTypeMoves:

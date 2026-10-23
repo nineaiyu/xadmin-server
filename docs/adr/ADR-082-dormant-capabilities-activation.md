@@ -4,7 +4,7 @@
 
 > **日期**：2026-10-03
 > **关联**：NEXT-DEV-PLAN §三.C（F7 原始登记）；触发制台账 TG-4；ADR-065/074（向量构建与 pgvector 链路）；ADR-023/024/038/048（AI 一~四期能力）；security-review 七期 S-2（ldap3 停维口径）
-> **代码路径**：`server/conf/defaults.py`、`server/conf/settings_defaults.py`、`loadjson/systemconfig.json`（默认值转正）；`ai/utils/ai_embeddings.py`、`ai/utils/ai_knowledge.py`（自动重算调度与挂点）；`tests/`（守护）
+> **代码路径**：`server/conf/defaults.py`、`server/conf/settings_defaults.py`、`loadjson/systemconfig.json`（默认值转正）；`ai/services/knowledge/ai_embeddings.py`、`ai/services/knowledge/ai_knowledge.py`（自动重算调度与挂点）；`tests/`（守护）
 > **背景**：TG-4 触发命中（2026-10-03 用户点名启动「开箱可用/演示态」批次）。六项能力代码齐备、默认休眠（F7-1~F7-6）；原始登记提示：转默认开启须同步补 ①向量自动重算（F7-6 即缺口本身）②渠道密钥管理，否则「能开但不好用」，按完整批次立项。
 
 **对账记录（触发命中流程第一步）**：红线表逐项核对无触碰——AI 成本计价（ADR-076 触发制）不涉及：本批只动灰度准入开关与构建触发方式，用量账本 `record_usage` 既有口径不变，不引入定价/结算语义；多租户 / 移动端 / BPMN / 在线建表 / SSO / 多供应商 / common 包化 / pgbouncer 均无关。候选池无同域在办项。供应链 S-2 对 ldap3 的口径（「LDAP 功能默认关」）与 F7-3 决策一致并由此维持。
@@ -17,7 +17,7 @@
 - **D3（F7-5 部分转）：保留期卫生默认值**。`CHAT_HISTORY_DAYS` 0→365（活协作数据取保守一年，与 `LOGIN_LOG_RETENTION_DAYS=365` 同档）；`FILE_KEEP_DAYS` 0→180（清理面只删「非临时、无业务引用」文件，与 `FILE_ACCESS_LOG_KEEP_DAYS=180` 同档）；`FILE_STORAGE_QUOTA_MB` / `FILE_UPLOAD_COUNT_LIMIT` **维持 0**——配额是分配策略不是卫生默认，非零默认会阻断上传（恰是「能开但不好用」）。清理任务已在位（`clean_chat_history_job` 03:23 / `auto_clean_upload_file_job` 02:56），本批只动默认值并同步种子 `systemconfig.json`（单源守护闭环）。存量部署其种子行（0）优先于代码默认，行为不变；全新安装获得保留期默认。**升级说明**：新装环境聊天历史保留 365 天、无引用上传文件保留 180 天，部署方可在系统配置页调整。
 - **D4（F7-2/F7-3 维持关；配套②核实结论：管理面已齐备，无代码缺口）**：邮件/短信/钉钉/企微/飞书与 LDAP/SCIM/OAuth 维持默认关。判据：凭据是硬前置，转开无净增益且制造「开了但没配」的用户可见失败面（如 `EMAIL_ENABLED=True` 未配 SMTP 时验证码/找回密码链路报错——verify_code 配置回显把该开关直接下发前端展示入口）。渠道密钥管理配套逐面核实：邮件（message 页内嵌 tab）/ 短信（独立页）/ 企业 IM 三渠道（message 页三 tab）均 UI 可管（开关 + 凭据 write-only 值级加密落库 + 连通性测试动作），LDAP 有独立设置页，SCIM 令牌走凭据管理台原地轮换，OAuth 供应商走系统配置页（凭据台账 `change_entry` 已接线）。原登记「邮件/短信/IM 密钥目前手配」与代码不符（登记时未核实 UI 面），本批修正台账与 NEXT-DEV-PLAN §三.C 表述——「手配」的不可消除部分只剩「向供应商申请凭据」这一天然人工动作。
 - **D5（F7-6 实现）：向量自动重算（本批核心工程交付）**。缺口（ADR-065 建立的显式语义）：正文变更后旧向量按 `embedding_hash` 判定陈旧、向量通道跳过该块，**无任何自动补齐**——AI 检索静默过期，依赖管理员记得点构建。设计：
-  - 调度入口 `schedule_auto_rebuild(document=None)`（`ai/utils/ai_embeddings.py`）：embedding 档案未配置直接返回（向量链路未启用的部署零变化）；无待建块不调度（避免空转占锁）；构建单飞锁被占不排队（与手工构建互斥，防重复消耗供应商预算）；复用既有单飞锁 + `build_embeddings_task` 状态机（锁 → 任务 → 进度 → 终态 → 释放，与手工构建完全同一条链路）；eager（`.apply`）与 `transaction.on_commit(apply_async)` 双模与视图同口径。
+  - 调度入口 `schedule_auto_rebuild(document=None)`（`ai/services/knowledge/ai_embeddings.py`）：embedding 档案未配置直接返回（向量链路未启用的部署零变化）；无待建块不调度（避免空转占锁）；构建单飞锁被占不排队（与手工构建互斥，防重复消耗供应商预算）；复用既有单飞锁 + `build_embeddings_task` 状态机（锁 → 任务 → 进度 → 终态 → 释放，与手工构建完全同一条链路）；eager（`.apply`）与 `transaction.on_commit(apply_async)` 双模与视图同口径。
   - 挂点三处（内容变更事实发生、文档行已落库之后）：上传/覆盖文档 `upsert_upload_document`（单文档调度）；停用→启用 `set_document_active`（停用期分块被清，启用重建后全为待建）；仓库同步 `sync_knowledge`（变更可能跨多文档，调度一次**全量增量**构建——一次任务吃掉全部陈旧块，不逐文档排队）。删除路径无需挂点（分块即删，SQL 检索天然反映）。
   - 语义边界：自动重算是**增量补齐**（force=False，只补缺失/陈旧块）；**模型换档不自动触发全量重嵌**（成本不可控，仍走构建按钮 force）——换档后的旧模型块由 `vector_index` 模型一致性判据跳过（词频通道兜底），自动调度只保证「正文新鲜度」不保证「模型一致性」。
   - 成本控制：增量口径 + 单飞锁互斥 + 无档案零触发；不新增配置开关——embedding 档案激活本身就是 opt-in，再加开关等于制造第七项休眠能力。

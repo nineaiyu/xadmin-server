@@ -10,10 +10,19 @@ from typing import Any
 from django.conf import settings
 from django_filters import rest_framework as filters
 from rest_framework.request import Request
+from rest_framework.viewsets import GenericViewSet
 
 from common.core.credentials import filter_out_sensitive_rows
 from common.core.filter import BaseFilterSet
-from common.core.modelset import ImportExportDataAction, ListDeleteModelSet, NoDetailModelSet
+from common.core.modelset import (
+    DetailAction,
+    ListAction,
+    NoDetailModelSet,
+    OnlyExportDataAction,
+    SearchColumnsAction,
+    SearchFieldsAction,
+)
+from common.core.modelset.base import BaseViewSet
 from common.utils import get_logger
 from settings.models import Setting
 from settings.serializers.basic import BasicSettingSerializer
@@ -31,16 +40,17 @@ class BaseSettingViewSet(NoDetailModelSet):
     def get_serializer_class(self) -> Any:
         if not self.serializer_class_mapper:
             return super().get_serializer_class()
-        self.category = self.request.query_params.get("category", "basic")
+        # 未带 ?category= 时回落到端点自身的默认渠道（SMS=alibaba），不再一律 basic
+        self.category = self.request.query_params.get("category", self.category)
         cls = self.serializer_class_mapper.get(self.category, self.serializer_class)
         return cls
 
     def metadata_extra_cache_key(self, request: Request) -> str:
         """元数据字段面随 `?category=` 变化（get_serializer_class 收敛），并入缓存键。"""
-        return str(self.request.query_params.get("category") or "")
+        return str(request.query_params.get("category") or self.category)
 
     def get_fields(self) -> dict[str, Any]:
-        serializer = self.get_serializer_class()()
+        serializer = self.get_serializer_class()(context=self.get_serializer_context())
         fields: dict[str, Any] = serializer.get_fields()
         return fields
 
@@ -119,8 +129,25 @@ class SettingFilter(BaseFilterSet):
         fields = ["pk", "is_active", "name", "category", "value"]
 
 
-class SettingViewSet(ListDeleteModelSet, ImportExportDataAction):
-    """系统设置"""
+class SettingViewSet(
+    BaseViewSet,
+    # OnlyExportDataAction 继承 ListAction：必须排在 ListAction 之前，否则 MRO 冲突
+    OnlyExportDataAction,
+    ListAction,
+    DetailAction,
+    SearchFieldsAction,
+    SearchColumnsAction,
+    GenericViewSet,
+):
+    """系统设置
+
+    只读台账（页面名「设置台账」）：写入唯一入口是各 typed 设置页（``/api/settings/*`` 的序列化器：字段白名单 +
+    write_only 加密 + 保存契约）。本视图只保留 list / retrieve / 导出：
+    历史继承 ImportExportDataAction 时，任一持 create/partialUpdate 的角色都能
+    直接向 Setting 表写任意 name，并显式 ``encrypted=false`` 绕过 typed 校验与
+    敏感键加密，属「第二条写路径」缺陷。需要清理存量脏行时使用维护命令而不是
+    管理页删除入口，避免误删运行期配置。
+    """
 
     queryset = Setting.objects.all()
     serializer_class = SettingSerializer

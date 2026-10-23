@@ -39,8 +39,9 @@
 
 1. **内核 = 被两个以上 app 复用、且不含业务语义**：通用模型基类、ViewSet Mixin、字段、
    缓存基建、任务基建、SDK、纯工具。判据：把代码挪到使用方 app 里，它是否还能工作且不反向 import？
-2. **业务 app 持有业务语义**：模型/接口/权限点/菜单/种子/迁移，以及围绕它们的 `services` 契约层。
-   跨 app 调用一律走 `<app>.services`（`check_cross_app_imports.py` 扫描坏味道）。
+2. **业务 app 持有业务语义**：模型/接口/权限点/菜单/种子/迁移，以及围绕它们的 `contracts`
+   契约层与 `services` 业务层。跨 app 调用一律走 `<app>.contracts`（`<app>.services`
+   仅过渡兼容；`check_cross_app_imports.py` 扫描坏味道）。
 3. **工程层只装配**：`server/` 负责 settings 拼装、总路由、celery 装配、中间件链；
    内核不 import `server`（`server.const.CONFIG` 的读取通过参数注入或在 settings 层完成后下发）。
 4. **依赖方向**：业务 → 工程 → 内核；禁止内核 import 业务、禁止业务 import 业务（services 除外）。

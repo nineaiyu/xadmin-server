@@ -33,8 +33,8 @@ from approval.serializers.approval_instance import (
 from approval.serializers.approval_instance import (
     ApprovalNodeTaskSerializer as ApprovalNodeTaskSerializer,  # noqa: F401 显式再导出（PEP 484 语义）
 )
-from approval.utils.approval_flow import CONDITION_OPS, MAX_FLOW_NODES
-from approval.utils.approval_flow.versioning import apply_definition, build_snapshot
+from approval.services.approval_flow import CONDITION_OPS, MAX_FLOW_NODES
+from approval.services.approval_flow.versioning import apply_definition, build_snapshot
 from common.core.serializers import BaseModelSerializer
 from task.services import DisplayRelatedField
 

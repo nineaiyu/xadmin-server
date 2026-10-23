@@ -316,7 +316,7 @@ def _seed_approval(users, admin, covered: dict) -> None:
     """流程 + 实例 + 请假单 + 操作审批（ApprovalRequest）+ 审批规则。"""
     try:
         from approval.models.approval import ApprovalFlow, ApprovalFlowNode
-        from approval.utils.approval_flow import create_instance
+        from approval.services.approval_flow import create_instance
 
         flows = []
         for i in range(45):

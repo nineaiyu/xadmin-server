@@ -165,8 +165,6 @@ class ApprovalRequestViewSet(
             data={
                 "succeeded": succeeded,
                 "failures": failures,
-                # 兼容字段（过渡期保留）：旧客户端按 单号+原因 展示失败明细
-                "failed": [{"no": item["pk"][:8].upper(), "reason": item["detail"]} for item in failures],
             },
             detail=_("Operation successful. Approved {} data").format(succeeded),
         )
@@ -214,8 +212,6 @@ class ApprovalRequestViewSet(
             data={
                 "succeeded": succeeded,
                 "failures": failures,
-                # 兼容字段（过渡期保留）：旧客户端按 单号+原因 展示失败明细
-                "failed": [{"no": item["pk"][:8].upper(), "reason": item["detail"]} for item in failures],
             },
             detail=_("Operation successful. Rejected {} data").format(succeeded),
         )

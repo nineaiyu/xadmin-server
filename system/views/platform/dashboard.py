@@ -27,6 +27,17 @@ from identity.services import UserInfo
 TOTAL_COUNT_CACHE_TIMEOUT = 600
 
 
+def scope_limited(queryset: Any) -> bool:
+    """统计 queryset 是否因「无数据授权」被收敛为空集。
+
+    只认 ``queryset.none()``（数据权限无授权 / 显式拒绝返回的空 queryset）；
+    有授权但确实没有行时是普通 ``filter`` 结果，``query.is_empty()`` 为 False，
+    仍按真实 0 展示，避免把空库误报成无权限。
+    """
+    query = getattr(queryset, "query", None)
+    return bool(query is not None and query.is_empty())
+
+
 def trend_points(queryset: Any, limit_day: Any = 30) -> Any:
     """按天聚合趋势点与环比增长率，返回 (results, percent, 趋势窗口 queryset)。
 
@@ -59,12 +70,17 @@ def trend_points(queryset: Any, limit_day: Any = 30) -> Any:
     return results, percent, window_queryset
 
 
-@MagicCacheData.make_cache(timeout=TOTAL_COUNT_CACHE_TIMEOUT, key_func=lambda scope_key, queryset: scope_key)
+@MagicCacheData.make_cache(
+    timeout=TOTAL_COUNT_CACHE_TIMEOUT,
+    key_func=lambda scope_key, queryset: f"{scope_key}:{queryset.model._meta.label_lower}",
+)
 def cached_total_count(scope_key: Any, queryset: Any) -> Any:
     """全量计数走数据缓存（走既有 MagicCacheData 基建，单飞 + 占位保护）。
 
     scope_key 为用户主键：统计 queryset 经默认数据权限过滤（非超管按授权收敛、
-    无授权返回空集），计数随用户不同，缓存键必须携带用户维度。
+    无授权返回空集），计数随用户不同，缓存键必须携带用户维度；同一用户会命中
+    多个统计 action（登录总数 / 用户总数），键还必须带模型标识，否则两个接口
+    会互相复用对方的 count。
     """
     return queryset.count()
 
@@ -87,6 +103,7 @@ def get_schema_response(has_count: Any = True) -> Any:
             "percent": build_basic_type(OpenApiTypes.NUMBER),
             "count": build_basic_type(OpenApiTypes.NUMBER),
         }
+    ext["scope_limited"] = build_basic_type(OpenApiTypes.BOOL)
     return get_default_response_schema(
         {
             "results": build_array_type(
@@ -125,7 +142,12 @@ class DashboardViewSet(GenericViewSet):
         queryset = self.filter_queryset(self.get_queryset())
         results, percent, _ = trend_points(queryset, 7)
         # count 口径不变（累计登录总数），仅走独立数据缓存避免全表 COUNT 高频回源
-        return ApiResponse(results=results, percent=percent, count=cached_total_count(request.user.pk, queryset))
+        return ApiResponse(
+            results=results,
+            percent=percent,
+            count=cached_total_count(request.user.pk, queryset),
+            scope_limited=scope_limited(queryset),
+        )
 
     @extend_schema(responses=get_schema_response())
     @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-total")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -134,21 +156,28 @@ class DashboardViewSet(GenericViewSet):
         """{cls}-用户数量"""
         queryset = self.filter_queryset(self.get_queryset())
         results, percent, _ = trend_points(queryset, 7)
-        return ApiResponse(results=results, percent=percent, count=cached_total_count(request.user.pk, queryset))
+        return ApiResponse(
+            results=results,
+            percent=percent,
+            count=cached_total_count(request.user.pk, queryset),
+            scope_limited=scope_limited(queryset),
+        )
 
     @extend_schema(responses=get_schema_response(False))
     @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-registered-trend")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
     def user_registered_trend(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-注册报表"""
-        return ApiResponse(data=trend_points(self.filter_queryset(self.get_queryset()))[0])
+        queryset = self.filter_queryset(self.get_queryset())
+        return ApiResponse(data=trend_points(queryset)[0], scope_limited=scope_limited(queryset))
 
     @extend_schema(responses=get_schema_response(False))
     @action(methods=["GET"], detail=False, url_path="user-login-trend")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
     def user_login_trend(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-登录报表"""
-        return ApiResponse(data=trend_points(self.filter_queryset(self.get_queryset()))[0])
+        queryset = self.filter_queryset(self.get_queryset())
+        return ApiResponse(data=trend_points(queryset)[0], scope_limited=scope_limited(queryset))
 
     @extend_schema(responses=get_schema_response())
     @action(methods=["GET"], detail=False, queryset=OperationLog.objects.all(), url_path="today-operate-total")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -156,12 +185,21 @@ class DashboardViewSet(GenericViewSet):
     def today_operate_total(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-最近操作日志"""
         # 前端该卡片只使用 results/percent，不使用 count，故按趋势窗口计数，避免全表 COUNT
-        results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7, total_count=False)
-        return ApiResponse(results=results, percent=percent, count=count)
+        queryset = self.filter_queryset(self.get_queryset())
+        results, percent, count = trend_info(queryset, 7, total_count=False)
+        return ApiResponse(
+            results=results,
+            percent=percent,
+            count=count,
+            scope_limited=scope_limited(queryset),
+        )
 
     @extend_schema(
         responses=get_default_response_schema(
-            {"data": build_array_type(build_array_type(build_basic_type(OpenApiTypes.NUMBER) or {}))}
+            {
+                "data": build_array_type(build_array_type(build_basic_type(OpenApiTypes.NUMBER) or {})),
+                "scope_limited": build_basic_type(OpenApiTypes.BOOL),
+            }
         )
     )
     @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-active")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -186,4 +224,4 @@ class DashboardViewSet(GenericViewSet):
             # 同一秒登录的多个用户会被合并成 1，导致活跃用户数被系统性低估
             x_day_active_user = queryset.filter(last_login__gte=x_day).count()
             results.append([date, x_day_register_user, x_day_active_user])
-        return ApiResponse(data=results)
+        return ApiResponse(data=results, scope_limited=scope_limited(queryset))

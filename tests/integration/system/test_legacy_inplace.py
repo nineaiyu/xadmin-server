@@ -17,7 +17,8 @@ import pytest
 from django.conf import settings
 from django.db.migrations.loader import MigrationLoader
 
-from system.utils.platform import legacy_align, legacy_schema
+from ops.legacy import align as legacy_align
+from ops.legacy import schema as legacy_schema
 
 # 对齐器需要 Django 连接能力（schema editor / migration loader）连**样本库**：
 # 用 django_db_blocker 临时解除访问拦截即可（不用 django_db 标记——那会把样本库别名拉进
@@ -170,7 +171,7 @@ class TestConnectionSwitching:
     """一个进程连续处理多个库：连接必须跟着目标库切换（否则 DDL 会打到上一个库）。"""
 
     def test_register_connection_switches_targets(self, legacy_sample_fresh):
-        from system.utils.platform import legacy_structure
+        from ops.legacy import structure as legacy_structure
 
         dsn, _meta = legacy_sample_fresh
         first = legacy_structure.connect_legacy(dsn)

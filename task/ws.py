@@ -44,11 +44,16 @@ def next_push_interval(current: float, has_new_content: bool) -> float:
 
 
 def can_read_task_log(user: Any, pk: Any) -> bool:
-    """日志读取权限（同步，供 connect 线程化调用与单测）：超管全量，
-    普通用户仅本人提交的记录（未知 pk 一律拒绝）。"""
+    """日志读取权限（同步，供 connect 线程化调用与单测）：超管全量；
+    持日志权限点者可读（与 HTTP log/download 权限面同口径）；否则仅本人记录。"""
     if not user or not getattr(user, "is_authenticated", False):
         return False
     if user.is_superuser:
+        return True
+    from common.core.permission import get_user_menu_queryset
+
+    menus = get_user_menu_queryset(user)
+    if menus is not None and menus.filter(name__in=("log:SystemTaskExecution", "log:SystemExportRecord")).exists():
         return True
     from task.models.export import ExportRecord
 

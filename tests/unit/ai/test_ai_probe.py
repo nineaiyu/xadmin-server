@@ -11,14 +11,14 @@ import json
 import pytest
 
 from ai.models.ai import AiProfile
-from ai.utils.ai_config import (
+from ai.services.assistant.ai_config import (
     PURPOSE_CHAT,
     PURPOSE_STRUCTURED,
     native_tools_enabled,
     profile_for,
     set_active_profile,
 )
-from ai.utils.ai_probe import (
+from ai.services.assistant.ai_probe import (
     CAPABILITY_JSON,
     CAPABILITY_REASONING,
     CAPABILITY_TOOL_CALLS,
@@ -121,7 +121,7 @@ class TestProbeFunctions:
             calls.append(credentials)
             return FakeClient(content='{"status": "ok", "score": 1}', reasoning="r")
 
-        import ai.utils.ai_probe as probe_module
+        import ai.services.assistant.ai_probe as probe_module
 
         original = probe_module.ChatCompletionsClient
         probe_module.ChatCompletionsClient = _factory

@@ -39,6 +39,7 @@ from identity.utils.user_options import search_user_options
 
 _EDIT_DENY = _("Only the creator can modify a submission")
 _PENDING_DENY = _("The submission is in approval and cannot be modified")
+_TERMINAL_DENY = _("The submission is finished (approved or cancelled) and cannot be modified")
 
 
 class SubmissionFilter(MaterializedFilterMixin, BaseFilterSet):
@@ -317,6 +318,13 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         # 审批中的提交不可改动：流程实例按提交快照推进，改动会造成两处数据不一致
         if instance and instance.status == DynamicFormSubmission.Status.PENDING:
             return ApiResponse(code=1003, detail=_PENDING_DENY)
+        # 终态只读：已通过/已撤回的提交是审批留痕，申请人不得再改写或删除
+        # （只允许草稿与驳回态继续编辑；需要「重新填写」时复制为新单）
+        if instance and instance.status in (
+            DynamicFormSubmission.Status.APPROVED,
+            DynamicFormSubmission.Status.CANCELLED,
+        ):
+            return ApiResponse(code=1003, detail=_TERMINAL_DENY)
         return None
 
     def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:

@@ -12,7 +12,7 @@ import uuid
 
 import pytest
 
-from system.utils.platform import legacy_schema
+from ops.legacy import schema as legacy_schema
 
 
 class TestLegacySampleStructure:

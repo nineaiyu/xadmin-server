@@ -161,6 +161,63 @@ class TestFormDataExport:
         assert "张三" in lines[1]
 
 
+class TestFormDataSensitiveMask:
+    """schema 级 sensitive：非超管列表/详情/导出统一掩码，超管可见原值。"""
+
+    def _form(self):
+        return _make_form(
+            schema={
+                "fields": [
+                    {"key": "name", "label": "姓名", "type": "input", "required": True},
+                    {"key": "phone", "label": "联系电话", "type": "input", "sensitive": True},
+                ]
+            }
+        )
+
+    def test_list_and_detail_mask_for_non_superuser(
+        self, api_client, auth_client, normal_user, role, menu_factory, superuser
+    ):
+        form = self._form()
+        submission = _make_submission(form, superuser)
+        _grant_list(role, menu_factory)
+        role.menu.add(
+            menu_factory(
+                "retrieve:FormData",
+                path="api/dataset/form-data/(?P<pk>[^/.]+)$",
+                method="GET",
+            )
+        )
+        _all_permission(normal_user)
+
+        api_client.force_authenticate(user=normal_user)
+        row = _rows(api_client.get(LIST_URL))[0]
+        assert row["data"]["name"] == "张三"
+        assert row["data"]["phone"] == "******"
+        detail = api_client.get(f"{LIST_URL}/{submission.pk}")
+        assert detail.data["data"]["data"]["phone"] == "******"
+
+        # 超管不受掩码影响（api_client/auth_client 是同一个实例，先切回超管）
+        api_client.force_authenticate(user=superuser)
+        admin_row = _rows(api_client.get(LIST_URL))[0]
+        assert admin_row["data"]["phone"] == "13800000000"
+
+    def test_export_masks_for_non_superuser(self, api_client, auth_client, normal_user, role, menu_factory, superuser):
+        form = self._form()
+        _make_submission(form, superuser)
+        role.menu.add(menu_factory("exportData:FormData", path="api/dataset/form-data/export-data$", method="GET"))
+        _grant_list(role, menu_factory)
+        _all_permission(normal_user)
+
+        api_client.force_authenticate(user=normal_user)
+        content = api_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}").content.decode("utf-8-sig")
+        assert "13800000000" not in content
+        assert "******" in content
+
+        api_client.force_authenticate(user=superuser)
+        admin_content = api_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}").content.decode("utf-8-sig")
+        assert "13800000000" in admin_content
+
+
 class TestFormDataDataPermission:
     def test_without_grant_returns_empty(self, api_client, normal_user, role, menu_factory, superuser):
         """数据权限 fail-closed：有页面权限但无任何授权 → 空集（不泄露行存在性）。"""

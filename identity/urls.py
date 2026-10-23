@@ -51,6 +51,10 @@ from identity.views.search.dept import SearchDeptViewSet
 from identity.views.search.post import SearchPostViewSet
 from identity.views.search.role import SearchRoleViewSet
 from identity.views.search.user import SearchUserViewSet
+from identity.views.user.authorized_app import (
+    AuthorizedApplicationViewSet,
+    MyAuthorizedApplicationViewSet,
+)
 from identity.views.user.directory import DirectoryViewSet
 from identity.views.user.token import PersonalAccessTokenViewSet
 from identity.views.user.userinfo import UserInfoViewSet
@@ -116,6 +120,8 @@ router_url: list[str] = []
 # 个人用户信息
 no_detail_router.register("userinfo", UserInfoViewSet, basename="userinfo")
 router.register("personal-access-tokens", PersonalAccessTokenViewSet, basename="personal_access_token")
+router.register("my-authorized-applications", MyAuthorizedApplicationViewSet, basename="my_authorized_application")
+router.register("authorized-applications", AuthorizedApplicationViewSet, basename="authorized_application")
 
 # 系统组织与认证相关路由
 router.register("user", UserViewSet, basename="user")

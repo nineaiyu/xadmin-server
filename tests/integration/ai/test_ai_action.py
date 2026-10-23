@@ -282,7 +282,7 @@ class TestLeaveAction:
 
     def test_draft_structured_max_tokens(self, action_client, ai_action_settings, stub_llm, action_user, menu_factory):
         """未配置 max_tokens 时 /do 草稿调用携带结构化安全上限（防思考型模型无界推理）。"""
-        from ai.utils.ai import ai_structured_max_tokens
+        from ai.services.assistant.ai import ai_structured_max_tokens
 
         grant_perms(action_user.roles.first(), menu_factory, LEAVE_CREATE_PERMS)
         stub = stub_llm["install"](draft_answer("leave.submit", LEAVE_PARAMS))
@@ -463,7 +463,7 @@ class TestNoticeAction:
 
     def test_catalog_hides_const_fields(self, action_user, menu_factory):
         """动作目录（进 LLM prompt）不下发 const 固定值字段（notice_type 等由服务端注入）。"""
-        from ai.utils.ai_actions import build_catalog
+        from ai.services.actions.ai_actions import build_catalog
 
         grant_perms(action_user.roles.first(), menu_factory, NOTICE_PERMS)
         catalog = build_catalog(action_user)
@@ -544,7 +544,7 @@ class TestUserSetActiveAction:
         assert target.is_active is True
 
     def test_catalog_lists_action(self, action_user, menu_factory):
-        from ai.utils.ai_actions import available_actions
+        from ai.services.actions.ai_actions import available_actions
 
         grant_perms(action_user.roles.first(), menu_factory, USER_UPDATE_PERMS)
         keys = [spec.key for spec in available_actions(action_user)]
@@ -594,7 +594,7 @@ class TestCatalogExtensions:
 
     def test_user_search_read_action(self, ai_action_settings, superuser):
         """读类动作（GET + query 参数）dispatch 列表接口：分页响应按成功处理。"""
-        from ai.utils.ai_actions import execute_action
+        from ai.services.actions.ai_actions import execute_action
 
         result = execute_action(superuser, "user.search", {"username": "admin"})
         assert result["ok"] is True, result
@@ -602,14 +602,14 @@ class TestCatalogExtensions:
 
     def test_user_search_requires_business_permission(self, ai_action_settings, action_user):
         """权限双门：无 list:UserInfo 的用户不得查询用户（数据权限随调用者收窄）。"""
-        from ai.utils.ai_actions import execute_action
+        from ai.services.actions.ai_actions import execute_action
 
         result = execute_action(action_user, "user.search", {"username": "admin"})
         assert result["ok"] is False
 
     def test_user_update_partial_fields(self, ai_action_settings, superuser, normal_user):
         """部分字段更新：只改提供的字段（数据权限随调用者；以超管验证功能链路）。"""
-        from ai.utils.ai_actions import execute_action
+        from ai.services.actions.ai_actions import execute_action
 
         result = execute_action(superuser, "user.update", {"pk": "zhangsan", "nickname": "新昵称"})
         assert result["ok"] is True, result
@@ -618,7 +618,7 @@ class TestCatalogExtensions:
 
     def test_role_create(self, ai_action_settings, superuser):
         """角色管理动作以超管验证（普通用户受字段级权限裁剪，属业务接口既有约束）。"""
-        from ai.utils.ai_actions import execute_action
+        from ai.services.actions.ai_actions import execute_action
         from identity.models import UserRole
 
         result = execute_action(superuser, "role.create", {"name": "运营组", "code": "ops"})
@@ -627,7 +627,7 @@ class TestCatalogExtensions:
 
     def test_role_grant_menu_subtree(self, ai_action_settings, superuser, menu_factory):
         """菜单名解析为「菜单 + 子树全量权限点」（与授权树勾选父节点同语义）。"""
-        from ai.utils.ai_actions import execute_action
+        from ai.services.actions.ai_actions import execute_action
         from identity.models import UserRole
 
         parent = menu_factory("AI授权测试父菜单", menu_type=Menu.MenuChoices.MENU)

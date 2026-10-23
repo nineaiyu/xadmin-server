@@ -31,6 +31,7 @@ from rest_framework.views import APIView
 from common.core.auth import hash_pat_token
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
+from common.core.permission_meta import shared_list_action
 from common.core.response import API_SUCCESS_CODE, ApiResponse
 from common.core.throttle import OpenClientThrottle
 from common.swagger.utils import get_default_response_schema
@@ -39,7 +40,7 @@ from identity.serializers.token import ApiApplicationGrantSerializer, ApiApplica
 from identity.services.token_issue import issue_application_token, revoke_application_tokens
 from identity.utils.api_grant import grant_options_for_user
 from identity.utils.pat_scope import scope_options_for_user
-from task.services import decrypt_secret, encrypt_secret, sign_payload
+from task.services import decrypt_secret, encrypt_secret, loopback_allowed, sign_payload
 
 CLIENT_SECRET_PREFIX = "aps"
 CALLBACK_TIMEOUT_SECONDS = 10
@@ -116,7 +117,9 @@ def send_test_callback(
                 "POST",
                 url,
                 allow_private=False,
-                allow_loopback=True,
+                # 与 Webhook 投递同一放行口径：生产 fail-closed，
+                # 仅 DEBUG / 显式 WEBHOOK_ALLOW_LOOPBACK 时允许环回联调
+                allow_loopback=loopback_allowed(),
                 allowed_hosts=outbound_allowed_hosts(),
                 data=body,
                 headers=headers,
@@ -317,7 +320,7 @@ class ApiApplicationViewSet(BaseModelSet):
         return ApiResponse(data={"results": results})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="scope-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @shared_list_action(methods=["get"], detail=False, url_path="scope-options")  # type: ignore[untyped-decorator]
     def scope_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """应用可授权的接口范围
 
@@ -380,7 +383,7 @@ class ApiApplicationViewSet(BaseModelSet):
         return ApiResponse(data=application_usage_stats(application, days))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="grant-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @shared_list_action(methods=["get"], detail=False, url_path="grant-options")  # type: ignore[untyped-decorator]
     def grant_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """应用资源授权目录
 

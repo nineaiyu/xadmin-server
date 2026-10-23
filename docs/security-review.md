@@ -350,10 +350,14 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 
 ## 九期登记（2026-10-14）：全面安全排查（输入注入面 + 认证授权面）
 
-两条独立扫描线逐项核查后的处置与登记：**已修复 9 项**（含对应守护测试）、**登记 11 项**
+两条独立扫描线逐项核查后的处置与登记：**已修复 10 项**（含对应守护测试）、**登记 11 项**
 （条件/窗口驱动，未命中不立项）、**确认安全面**一份（结论与证据要点见 S-3）。
 
-### S-1 已处置（9 项）
+### S-1 已处置（10 项）
+
+| 项 | 级别 | 事实 | 处置 |
+|---|---|---|---|
+| 文档站登录绕过 MFA / 登录策略 | 中 | `ApiLogin` 用 `TokenObtainSerializer` + Django `login()` 建立普通 session，未走主登录 MFA / 访问策略；该 session 还能被 `SessionAuthentication` 当通用 API session 使用 | `ApiLogin` 复用主登录策略 / MFA 判定（要求 MFA 的账号引导主登录页）；docs session 打 `api_docs_only` 标记，`ApiDocsSessionAuthentication` 仅放行 `/api-docs/*`，其余路径交回 JWT / PAT；守护 `test_api_docs_login.py` 5 例 |
 
 | 项 | 级别 | 事实 | 处置 |
 |---|---|---|---|

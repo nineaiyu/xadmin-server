@@ -15,7 +15,7 @@
 
 from types import SimpleNamespace
 
-from system.services.permission_sync import build_route_index, scan_gaps
+from system.services.permission_sync import audit_permission_menus, build_route_index, scan_gaps
 from system.services.seeding import read_model_rows
 
 
@@ -24,7 +24,10 @@ def _seed_permissions():
     rows = read_model_rows("system.menu")
     return [
         SimpleNamespace(
-            path=row["fields"]["path"], method=row["fields"].get("method") or "", name=row["fields"]["name"]
+            pk=row["pk"],
+            path=row["fields"]["path"],
+            method=row["fields"].get("method") or "",
+            name=row["fields"]["name"],
         )
         for row in rows
         if row["fields"].get("menu_type") == 2
@@ -50,4 +53,18 @@ class TestSeedCoverage:
         detail = "\n".join(f"  {method:6s} {route.url} -> {action}" for route, method, action in gaps)
         assert gaps == [], (
             f"以下 {len(gaps)} 个端点缺少菜单种子权限点（跑 sync_menu_permissions --update-seed 补齐）：\n{detail}"
+        )
+
+
+class TestSeedOrphans:
+    def test_seed_permissions_all_match_routes(self):
+        """反向覆盖：种子里的权限点必须有真实路由，防止「只增不删」的空转权限。"""
+        routes = build_route_index()
+        unmatched, duplicates, _exempted, _known = audit_permission_menus(routes, _seed_permissions())
+        detail = "\n".join(f"  {perm.name} | {perm.path} | {perm.method or '-'}" for perm in unmatched)
+        assert unmatched == [], (
+            f"以下 {len(unmatched)} 个菜单种子权限点没有真实路由（疑似已删端点，需清理种子）：\n{detail}"
+        )
+        assert duplicates == [], "菜单种子存在未登记的重复权限点（同 path+method）：" + ", ".join(
+            f"{perm.name} | {perm.path}" for perm in duplicates
         )

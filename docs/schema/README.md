@@ -9,6 +9,20 @@
 | `api-response.schema.json` | 统一响应信封（`packages/xadmin-common/common/core/response.py`） | `test_contract_schemas.py` |
 | `routes-payload.schema.json` | 动态路由接口完整载荷（路由树 + auths 权限码） | `test_contract_schemas.py` |
 | `ws-frame.schema.json` | WebSocket 消息协议 v1 帧（`message/protocol.py`） | `test_contract_schemas.py` / `test_ws_frame_schema.py` |
+| `openapi.json` | 全量 OpenAPI 3 契约（路径 / 组件 schema），前端类型生成真源 | `dump_openapi --check`（导出幂等） |
+
+## OpenAPI 全量契约（`openapi.json`）
+
+- **生成**：`python manage.py dump_openapi`（默认写入本目录；`--check` 只校验漂移）。
+  导出时剔除 `uuid4` 主键与 `timezone.now` 等**运行期默认值**（见
+  `devtools/services/openapi.py`），保证同一份代码两次导出逐字节一致。
+- **消费**：client 仓库 `contract/openapi.json` 为镜像，`pnpm gen:openapi-types`
+  生成 `src/api/types/openapi.d.ts`；`pnpm check:contract` 校验镜像、
+  `pnpm check:openapi-types` 校验生成物未被手改。
+- **边界**：手写 API 模块与既有契约类型保持现状；OpenAPI 生成类型用于新增接口的
+  请求/响应类型与前后端契约对账，不替代元数据协议的五份手写契约。
+- **变更流程**：接口/schema 变更 → `python manage.py dump_openapi` →
+  client `pnpm sync:contract` → 连同 `contract/openapi.json` 与生成类型一起提交。
 
 ## 契约镜像关系
 

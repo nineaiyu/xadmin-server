@@ -932,5 +932,30 @@
    "fixed_tag": false,
    "dynamic_level": 0
   }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "7382fc6d-98c2-4f83-81b9-ab5b7364148c",
+  "fields": {
+   "created_time": "2026-10-22T00:00:00Z",
+   "updated_time": "2026-10-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "全部已读消息",
+   "icon": "",
+   "r_svg_name": "",
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": "",
+   "frame_loading": false,
+   "transition_enter": "",
+   "transition_leave": "",
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
  }
 ]

@@ -10,7 +10,7 @@
 import pytest
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
-from approval.utils.approval_flow import cancel_instance, create_instance, urge_instance
+from approval.services.approval_flow import cancel_instance, create_instance, urge_instance
 from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
@@ -53,7 +53,7 @@ def notify_spy(monkeypatch):
     """捕获引擎通知调用；发起实例时的 submitted 通知在用例内先清空。"""
     calls = []
     monkeypatch.setattr(
-        "approval.utils.approval_flow.engine._notify",
+        "approval.services.approval_flow.engine._notify",
         lambda users, event, instance, extra=None: calls.append(
             {"users": list(users), "event": event, "extra": extra, "instance": instance.pk}
         ),

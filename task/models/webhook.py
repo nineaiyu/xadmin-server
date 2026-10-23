@@ -43,10 +43,14 @@ class WebhookDelivery(DbAuditModel, DbUuidModel):
     )
     event = models.CharField(_("Event"), max_length=64, db_index=True)
     payload = models.JSONField(_("Payload"), default=dict)
+    # 发送时的签名头快照（事件/投递 id/时间戳/签名）：审计页据此自证「发了什么、怎么签的」
+    request_headers = models.JSONField(_("Request headers"), default=dict, blank=True)
     status = models.CharField(_("Status"), max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
     attempt = models.IntegerField(_("Attempt"), default=0)
     response_code = models.IntegerField(_("Response code"), null=True, blank=True)
-    response_body = models.CharField(_("Response body"), max_length=500, blank=True, default="")
+    response_body = models.TextField(_("Response body"), blank=True, default="")
+    #: 响应体超过审计存储上限（发送侧保留完整文本的前 8KB）
+    response_body_truncated = models.BooleanField(_("Response body truncated"), default=False)
     duration = models.FloatField(_("Duration"), null=True, blank=True, help_text=_("Seconds"))
     next_retry_at = models.DateTimeField(_("Next retry at"), null=True, blank=True)
     # 派发代际号：每次派发（首投/倒计时重试/人工重试）事务内 +1，任务只认领

@@ -475,10 +475,10 @@ class TestApprovalOperations:
         )
         assert response.data["code"] == 1000
         assert response.data["data"]["succeeded"] == 1
-        failed = response.data["data"]["failed"]
-        assert [item["no"] for item in failed] == [str(second)[:8].upper()]
+        failures = response.data["data"]["failures"]
+        assert [item["pk"] for item in failures] == [str(second)]
         # 明细带上服务端可读原因（具体文案随语言，断言非空即可）
-        assert failed[0]["reason"]
+        assert failures[0]["detail"]
         approval = ApprovalRequest.objects.get(pk=first)
         assert approval.status == ApprovalRequest.Status.REJECTED
         assert approval.reason == "风险操作"
@@ -495,10 +495,10 @@ class TestApprovalOperations:
         )
         assert response.data["code"] == 1000
         assert response.data["data"]["succeeded"] == 1
-        failed = response.data["data"]["failed"]
-        assert [item["no"] for item in failed] == [str(ghost_pk)[:8].upper()]
+        failures = response.data["data"]["failures"]
+        assert [item["pk"] for item in failures] == [str(ghost_pk)]
         # 明细带上可读原因（具体文案随语言，断言非空即可）
-        assert failed[0]["reason"]
+        assert failures[0]["detail"]
         assert ApprovalRequest.objects.get(pk=approval_id).status == APPROVED_STATUS
 
     def test_batch_reject_missing_pk_counted_as_failed(self, superuser, normal_user, api_client):
@@ -515,9 +515,9 @@ class TestApprovalOperations:
         )
         assert response.data["code"] == 1000
         assert response.data["data"]["succeeded"] == 1
-        failed = response.data["data"]["failed"]
-        assert [item["no"] for item in failed] == [str(ghost_pk)[:8].upper()]
-        assert failed[0]["reason"]
+        failures = response.data["data"]["failures"]
+        assert [item["pk"] for item in failures] == [str(ghost_pk)]
+        assert failures[0]["detail"]
         approval = ApprovalRequest.objects.get(pk=approval_id)
         assert approval.status == ApprovalRequest.Status.REJECTED
 

@@ -20,6 +20,9 @@
 - [ ] **E2E**：改后端必跑 `pnpm test:e2e:fresh`（防旧进程假失败）；新功能主链路双浏览器 + a11y/smoke 门禁
 - [ ] **数据/部署**：新权限点重灌 `python manage.py load_init_json`（幂等验证）→ 重启 `server`/`celery-worker`/`celery-heavy`
       （代码挂载不热加载）；迁移在全新库重建验证
+- [ ] **目标 Linux 安装/升级实测**：按 [保留任务决策 §3](../plans/保留任务决策-2026.10.md) 在干净 Linux
+      执行 `./xadmin.sh install` / `upgrade v<version>`，记录容器健康 / `upgrade_check` / 备份与回滚证据；
+      macOS 与本机隔离 compose 演练不能替代目标机验证
 - [ ] **依赖窗口**（12/03/06/09）：client `pnpm audit --registry=https://registry.npmjs.org`、
       server `pip-audit` 零高危；Renovate 挂起项见 §3
 - [ ] **Django 线安全公告核对**（6.0.8 停留期，2026-09-29 起）：Django 6.0 线已退出安全支持而升级被

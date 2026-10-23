@@ -156,6 +156,15 @@ class TestServerCrud:
         pk = next(item for item in rows if item["key"] == "pk")
         assert pk["read_only"] is True
 
+    def test_list_exposes_ai_surface_and_tool_count(self, client, stub):
+        """列表直接可见「是否接入动作面」与工具数，无需打开抽屉。"""
+        url, _ = stub
+        pk = _create_server(client, url)
+        assert client.post(f"{MCP_URL}/{pk}/sync").data["code"] == 1000
+        row = next(item for item in client.get(MCP_URL).json()["data"]["results"] if item["pk"] == pk)
+        assert row["expose_to_ai"] is False
+        assert row["tools_count"] == 2
+
 
 class TestSync:
     def test_sync_stores_snapshot_and_session(self, client, stub):

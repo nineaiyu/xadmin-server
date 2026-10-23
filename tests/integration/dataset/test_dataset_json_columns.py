@@ -200,3 +200,17 @@ class TestSaveValidation:
             format="json",
         )
         assert response.status_code == 400
+
+    def test_rejects_non_date_root_trend_field(self, auth_client, registry):
+        """根字段趋势只接受 Date/DateTime，整型字段不再被当作时间桶。"""
+        response = auth_client.post(
+            DATASET_URL,
+            {
+                "name": "整数趋势字段",
+                "bound_model": BOUND,
+                "columns": ["schema_version"],
+                "config": {"date_field": "schema_version"},
+            },
+            format="json",
+        )
+        assert response.status_code == 400

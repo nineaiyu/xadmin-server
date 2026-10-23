@@ -7,7 +7,7 @@ force=True 跳过幂等（用户确认后的「仍要执行」）。
 
 import pytest
 
-from ai.utils.ai_idempotency import (
+from ai.services.assistant.ai_idempotency import (
     IDEMPOTENCY_TTL,
     draft_id,
     execute_idempotent,

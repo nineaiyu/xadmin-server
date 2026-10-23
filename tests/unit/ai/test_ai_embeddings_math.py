@@ -3,7 +3,7 @@
 
 import math
 
-from ai.utils.ai_embeddings import (
+from ai.services.knowledge.ai_embeddings import (
     RRF_K,
     TOKEN_WEIGHT,
     VECTOR_WEIGHT,

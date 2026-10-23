@@ -237,6 +237,56 @@ def auth_client_list(superuser):
 # ---------------------------------------------------------------- 审批挂接
 
 
+class TestTerminalSubmissionReadOnly:
+    """终态（已通过 / 已撤回）提交只读：审批留痕不得被申请人改写或删除。
+
+    仅草稿与驳回态可继续编辑；需要重新填写时复制为新单。
+    """
+
+    @staticmethod
+    def _create(form, user, status):
+        return DynamicFormSubmission.objects.create(form=form, data={"name": "张三"}, status=status, creator=user)
+
+    @pytest.mark.parametrize(
+        "status",
+        [DynamicFormSubmission.Status.APPROVED, DynamicFormSubmission.Status.CANCELLED],
+    )
+    def test_terminal_cannot_be_edited_or_deleted(self, form, normal_user, status):
+        grant_form_menus(normal_user)
+        submission = self._create(form, normal_user, status)
+        client = client_for(normal_user)
+
+        patched = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"name": "李四"}}, format="json")
+        assert patched.json()["code"] == 1003
+
+        deleted = client.delete(f"{SUBMISSION_URL}/{submission.pk}")
+        assert deleted.json()["code"] == 1003
+
+        submission.refresh_from_db()
+        assert submission.data["name"] == "张三"
+        assert DynamicFormSubmission.objects.filter(pk=submission.pk).exists()
+
+    def test_rejected_can_still_be_edited(self, form, normal_user):
+        grant_form_menus(normal_user)
+        submission = self._create(form, normal_user, DynamicFormSubmission.Status.REJECTED)
+        client = client_for(normal_user)
+
+        response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"name": "李四"}}, format="json")
+
+        assert response.status_code == 200, response.data
+        submission.refresh_from_db()
+        assert submission.data["name"] == "李四"
+
+    def test_pending_cannot_be_edited(self, form, normal_user):
+        grant_form_menus(normal_user)
+        submission = self._create(form, normal_user, DynamicFormSubmission.Status.PENDING)
+        client = client_for(normal_user)
+
+        response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"name": "李四"}}, format="json")
+
+        assert response.json()["code"] == 1003
+
+
 class TestFormApproval:
     """approval_required 表单走审批流（提交 412 → 通过 → 令牌重放落库）。"""
 

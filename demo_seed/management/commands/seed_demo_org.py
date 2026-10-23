@@ -20,7 +20,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode
-from approval.utils.approval_flow.versioning import apply_definition
+from approval.services.approval_flow.versioning import apply_definition
 from dataset.models import DynamicForm
 from identity.models import DeptInfo, UserInfo, UserRole
 from system.models import DataPermission, FieldPermission, Menu, ModelLabelField
@@ -106,11 +106,11 @@ LEGACY_GRANT_MODELS = ("system.approvalflow", "system.approvalrequest", "system.
 
 
 #: 页面授权时排除的权限点：
-#: - mcp:AiMcp：MCP 协议端点是外部客户端接入通道，不对演示业务角色开放（面向机器凭证，
+#: - mcp:AiMcpServers：MCP 协议端点是外部客户端接入通道，不对演示业务角色开放（面向机器凭证，
 #:   与 AI 动作执行不同——后者有业务权限双门保护）；
 #: - ongoing:SystemApprovalInstance：「全部在途」是管理视角（巡看/催办全部申请），
 #:   仅管理员（超管或显式授权）可用，随页面授权自动下发会越权。
-EXCLUDE_PERMISSION_NAMES = {"mcp:AiMcp", "ongoing:SystemApprovalInstance"}
+EXCLUDE_PERMISSION_NAMES = {"mcp:AiMcpServers", "ongoing:SystemApprovalInstance"}
 
 
 def _page_menus(paths: Any) -> list[Any]:

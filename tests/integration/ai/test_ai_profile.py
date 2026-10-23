@@ -10,7 +10,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from ai.models.ai import AiProfile
-from ai.utils.ai import (
+from ai.services.assistant.ai import (
     ai_context_limit,
     ai_credentials,
     ai_persona,

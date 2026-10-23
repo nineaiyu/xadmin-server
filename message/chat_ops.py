@@ -14,12 +14,25 @@ import re
 import uuid
 from typing import Any
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
-from message.models import ChatMessage
+from message.models import MAX_CONTENT_LENGTH, ChatMessage
 
 logger = get_logger(__name__)
+
+
+def validate_content(content: str, limit: int = MAX_CONTENT_LENGTH) -> str:
+    """消息正文归一与长度校验（空内容/超上限由 ValueError 语义的校验异常拒绝）。"""
+    content = (content or "").strip()
+    if not content:
+        raise DjangoValidationError(_("Message content cannot be empty"))
+    if len(content) > limit:
+        raise DjangoValidationError(_("Message is too long (max {} characters)").format(limit))
+    return content
+
 
 # @提及解析：@username（用户名允许字符集见 Django UnicodeUsernameValidator）
 MENTION_PATTERN = re.compile(r"@([\w.\-]+)")

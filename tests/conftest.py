@@ -69,7 +69,7 @@ def _clean_index_meta():
     清理必须挂在不被覆盖的名字上才能对所有测试生效。
     """
     try:
-        from ai.utils.index_meta import invalidate_index_meta
+        from ai.services.knowledge.index_meta import invalidate_index_meta
     except ImportError:  # ai 应用被模块裁剪时不阻断
         yield
         return

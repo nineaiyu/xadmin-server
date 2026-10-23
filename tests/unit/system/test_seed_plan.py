@@ -234,10 +234,17 @@ class TestValidate:
         result = validate_plan(build_plan(discovery), manifests=discovery.manifests)
         summary = result.ownership
         assert summary is not None
-        assert summary.totals["menu"] == 714
+        # 2026-10 字段/设置页改只读台账 + 投递审计禁删：菜单 714 → 696、权限点 623 → 621；
+        # 2026-10 我的管辖独立权限点：菜单 696 → 697、权限点 621 → 622；
+        # 2026-10 Webhook 密钥轮换权限点：菜单 697 → 698、权限点 622 → 623
+        # 2026-10 文件中心独立 stats 权限点：菜单 698 → 699、权限点 623 → 624
+        # 2026-10 定时任务拆批量路由 + cron 预览/引用、巡检进度、规则/委托影响面、
+        # 通知全读：菜单 +6（并移除重复 batchUpdate 权限点）、权限点 +6
+        # 2026-10 开放平台设置页：菜单 +11（1 页面 + 10 权限点）、权限点 +10
+        assert summary.totals["menu"] == 717
         assert summary.totals["field"] == 2095
         assert summary.totals["grant"] == 253
-        assert summary.permission_total == 639
+        assert summary.permission_total == 641
 
 
 class TestRows:

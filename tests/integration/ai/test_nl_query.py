@@ -223,7 +223,7 @@ class TestInterpret:
 
     def test_structured_max_tokens_default(self, auth_client, dataset, nl_enabled, stub_llm):
         """未配置 max_tokens 时结构化调用携带安全上限：防思考型模型无界推理挂起。"""
-        from ai.utils.ai import STRUCTURED_MAX_TOKENS
+        from ai.services.assistant.ai import STRUCTURED_MAX_TOKENS
 
         stub = stub_llm([json.dumps(dsl_of(dataset))])
         auth_client.post(INTERPRET_URL, {"question": "列出用户"}, format="json")

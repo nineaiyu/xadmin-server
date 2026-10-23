@@ -3,8 +3,8 @@
 - 日期：2026-09-21
 - 状态：**已交付**
 - 关联：[ADR-038](ADR-038-ai-actions.md)（受限动作白名单）、[ADR-047](ADR-047-ai-console-persistence-and-tools.md)（助手页改版）、
-  [ADR-048](ADR-048-ai-unified-tool-layer.md)（统一工具层）、`approval/utils/approval_flow/`、
-  `ai/utils/ai_actions.py`、`common/core/permission.py`
+  [ADR-048](ADR-048-ai-unified-tool-layer.md)（统一工具层）、`approval/services/approval_flow/`、
+  `ai/services/actions/ai_actions.py`、`common/core/permission.py`
 
 ## 背景
 

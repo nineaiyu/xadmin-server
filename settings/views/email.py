@@ -43,6 +43,7 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
                 "EMAIL_HOST_USER",
                 "EMAIL_HOST_PASSWORD",
                 "EMAIL_SUBJECT_PREFIX",
+                "EMAIL_FROM",
                 "EMAIL_USE_SSL",
                 "EMAIL_USE_TLS",
             ],
@@ -56,6 +57,8 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
             subject = (values["EMAIL_SUBJECT_PREFIX"] or "") + "Test"
             message = _("Test smtp setting")
             email_recipient = email_recipient or values["EMAIL_HOST_USER"]
+            # 发件人口径与真实发送一致：EMAIL_FROM 优先，留空回落登录账号
+            sender = values.get("EMAIL_FROM") or values["EMAIL_HOST_USER"]
             connection = get_connection(
                 host=values["EMAIL_HOST"],
                 port=int(values["EMAIL_PORT"]),
@@ -64,7 +67,7 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
                 use_tls=bool(values["EMAIL_USE_TLS"]),
                 use_ssl=bool(values["EMAIL_USE_SSL"]),
             )
-            send_mail(subject, message, values["EMAIL_HOST_USER"], [email_recipient], connection=connection)
+            send_mail(subject, message, sender, [email_recipient], connection=connection)
         except SMTPSenderRefused as e:
             error = e.smtp_error
             if isinstance(error, bytes):

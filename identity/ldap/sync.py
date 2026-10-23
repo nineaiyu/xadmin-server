@@ -17,6 +17,7 @@ import json
 from typing import Any
 
 from django.conf import settings
+from django.utils.translation import gettext as _
 
 from audit.services import OperationLog
 from common.core.response import API_SUCCESS_CODE
@@ -125,7 +126,7 @@ def test_ldap_connection(config: Any = None) -> dict[str, Any]:
 
     cfg = config if config is not None else LdapConfig.from_settings()
     if not cfg.server_uri:
-        raise LdapConfigError("LDAP_SERVER_URI is empty")
+        raise LdapConfigError(str(_("LDAP_SERVER_URI is empty")))
     with service_connection(cfg) as conn:
         user_count = 0
         if cfg.user_search_base:

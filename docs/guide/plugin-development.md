@@ -117,7 +117,7 @@ def get_active_superuser_queryset():
 | `routing.py::urlpatterns` | WS 通道 | `server/asgi.py` → `collect_app_ws_urls`（按 INSTALLED_APPS 收集） |
 | `tasks.py` | 周期任务声明 | `{app}.tasks` 被 celery autodiscover；`@register_as_period_task(module=...)` 声明归属模块 |
 | `modules.py::MODULES` | 功能模块声明 | `common/core/modules/registry.py::discovered_modules` |
-| `ai_declarations.py::AI_ACTIONS` | AI 动作声明（白名单，随应用安装自动发现） | `ai/utils/ai_registry.py::action_specs`（工具目录 / MCP / function calling 同源） |
+| `ai_declarations.py::AI_ACTIONS` | AI 动作声明（白名单，随应用安装自动发现） | `ai/services/actions/ai_registry.py::action_specs`（工具目录 / MCP / function calling 同源） |
 | `migrations/` | 自有数据面 | `manage.py migrate <app>`（与宿主迁移链解耦） |
 
 三条实现要点：
@@ -136,7 +136,7 @@ def get_active_superuser_queryset():
 
 ```python
 # my_plugin/ai_declarations.py
-from ai.utils.ai_api_actions import api_action
+from ai.services.actions.ai_api_actions import api_action
 
 AI_ACTIONS = {
     "myplugin.item.list": api_action(
@@ -153,6 +153,46 @@ AI_ACTIONS = {
 
 发现器遍历已安装应用并合并声明，key 全局唯一（重复直接启动失败）；声明文件不存在
 即跳过，不影响内核。新增写动作前先确认审批口径（`requires_approval`）与字段权限。
+
+### 4.2 5 分钟四类扩展
+
+四类扩展都有可直接复制的样板：照「复制 → 改 3 处 → 验证」做完即可，机制细节沿链接回看。
+
+#### ① 自定义 action + 权限点
+
+| 步骤 | 做什么 |
+| --- | --- |
+| 复制 | `demo/views.py::push`（`@action` 方法 + 审计写入的最小样板） |
+| 改 3 处 | ① 方法名与 `url_path` 改成业务语义；② docstring 首行写成 ≤24 字名词短语（会被取作菜单标题，见 `scripts/check_menu_titles.py`）；③ 在 `<app>/seeds/menu.json` 登记权限点（`name: push:BookPush`、`path: api/demo/book/{pk}/push$`、`method: POST`），并在 `<app>/seeds/menumeta.json` 补标题 |
+| 验证 | `python manage.py sync_menu_permissions --update-seed` 后 `python manage.py sync_menu_permissions --dry-run`（缺口 0 条）；再跑 `uv run pytest tests/integration/demo/test_book_viewset.py -q` |
+
+未入库的权限点 = 非超管恒 403，登记这一步不能省。
+
+#### ② 自定义 `input_type` 渲染器
+
+| 步骤 | 做什么 |
+| --- | --- |
+| 复制 | `xadmin-client/src/components/RePlusPage/src/utils/renderers-detail.tsx` 中同类渲染器（按搜索 / 表单 / 详情通道选） |
+| 改 3 处 | ① 用 `registerSearchRenderer` / `registerFormRenderer` / `registerDetailRenderer` 在模块顶层注册（放在 `xadmin-client/src/extensions/` 作为构建期扩展）；② 在 `xadmin-client/src/components/RePlusPage/src/utils/__tests__/renderers-pairing.spec.ts` 的分类清单登记新 type（四通道配对守护，未登记即失败）；③ 后端若引入新字段类，在 `packages/xadmin-common/common/drf/metadata.py::get_field_type` 加 isinstance 分支，契约变更后跑 `pnpm sync:contract` |
+| 验证 | `pnpm test:run -- src/components/RePlusPage/src/utils/__tests__/renderers-pairing.spec.ts` + `pnpm typecheck`；四通道细节见 [recipes R10](recipes.md) |
+
+#### ③ 通知渠道（宿主级扩展）
+
+| 步骤 | 做什么 |
+| --- | --- |
+| 复制 | `notifications/backends/email.py` → `notifications/backends/<name>.py`，模块级保留 `backend = YourBackend` |
+| 改 3 处 | ① `notifications/backends/specs.py::CHANNEL_SPECS` 增一条 `ChannelSpec`（`code` / `module` / `renderer` / `html`）；② 在 `notifications/notifications.py::Message` 补 `get_<name>_msg` 渲染方法（`get_email_msg` / `get_text_msg` 二选一）；③ 在 `notifications/backends/__init__.py::BACKEND` 枚举加值——**这是宿主级扩展，目前仍需改枚举**，否则渠道无法被订阅与选择 |
+| 验证 | `uv run pytest tests/unit/notifications/test_channel_specs.py tests/unit/notifications/test_backend_loading.py -q`（缺 spec 或 client 会被守护拦下） |
+
+#### ④ 审批 biz sync（终态回写业务单）
+
+| 步骤 | 做什么 |
+| --- | --- |
+| 复制 | `demo/services.py::sync_book_instance` → `<app>/services.py` |
+| 改 3 处 | ① `<app>/config.py::APPROVAL_BIZ_SYNCERS` 增 `{"<biz_type>": "<app>.services.sync_xxx"}`（注册表按声明收集，零核心文件改动）；② 提交端 `create_instance(..., biz_type=..., biz_id=...)` 绑定业务单；③ 回写函数按 APPROVED / REJECTED / CANCELLED 幂等映射业务状态，只写状态字段、不动 `modifier` |
+| 验证 | `uv run pytest tests/integration/demo/test_book_flow.py -q`；或前端走一遍「提交 → 审批通过 → 业务状态回写」 |
+
+跨 app 调用引擎一律函数内惰性导入（跨 app import 门禁），样板已按此组织。
 
 ## 五、功能模块声明与发行预设
 

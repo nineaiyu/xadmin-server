@@ -24,6 +24,7 @@ from rest_framework.filters import OrderingFilter
 
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImpactPreviewAction, RelationCountMixin
+from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.core.throttle import DatasetQueryThrottleMixin
 from common.swagger.utils import get_default_response_schema
@@ -93,11 +94,13 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         return super().destroy(request, *args, **kwargs)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="meta")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @shared_list_action(methods=["get"], detail=False, url_path="meta")  # type: ignore[untyped-decorator]
     def meta(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """设计器元数据
 
         模型白名单、字段清单与可用的 JSON 路径根字段（短 TTL 缓存）
+
+        与数据集 list 同权限口径：只读定义元数据不额外要求独立权限点。
         """
         return ApiResponse(data=designer_meta_payload())
 
@@ -139,7 +142,7 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         return ApiResponse(data=result)
 
 
-class DashboardViewSet(BaseModelSet):
+class DashboardViewSet(ImpactPreviewAction, BaseModelSet):
     """仪表盘"""
 
     queryset = Dashboard.objects.all()

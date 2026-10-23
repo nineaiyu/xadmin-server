@@ -186,12 +186,14 @@ def resolve_view_context(view: Any, view_route_urls: Any, perms: Any, default_pa
         parent = Counter(parents).most_common(1)[0][0] if parents else None
         return suffix, parent, "existing"
 
-    for prefix, menu_name in PARENT_MENU_MAP.items():
+    for prefix, target in PARENT_MENU_MAP.items():
         if not any(url.startswith(prefix) for url in view_route_urls):
             continue
+        # 兼容两种声明：字符串 = 权限码后缀与父菜单同名；元组 = (后缀, 父菜单 name)
+        suffix, menu_name = target if isinstance(target, tuple) else (target, target)
         parent = Menu.objects.filter(name=menu_name, menu_type=Menu.MenuChoices.MENU, deleted_at__isnull=True).first()
         if parent:
-            return parent.name, parent, "prefix-map"
+            return suffix, parent, "prefix-map"
 
     if default_parent:
         return default_parent.name, default_parent, "default"

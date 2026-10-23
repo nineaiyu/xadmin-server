@@ -200,7 +200,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         """当前节点进度（比例会签达标线预览）：列表不计算（字段已裁剪）。"""
         if getattr(self.context.get("view"), "action", None) == "list":
             return None
-        from approval.utils.approval_flow import node_progress_for
+        from approval.services.approval_flow import node_progress_for
 
         return node_progress_for(obj, tasks=obj.tasks.all())
 
@@ -228,7 +228,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         """关联业务对象当前状态（白名单渲染器）：仅详情返回，列表零业务表查询。"""
         if getattr(self.context.get("view"), "action", None) != "retrieve":
             return None
-        from approval.utils.approval_flow.biz import biz_summary
+        from approval.services.approval_flow.biz import biz_summary
 
         return biz_summary(obj)
 

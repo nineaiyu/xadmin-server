@@ -4,7 +4,7 @@
 覆盖：
 1. 列表 unread 字段的查询数与页内消息条数解耦；
 2. 优化前后响应数据逐字段一致（unread / read_user_count）；
-3. read_message 固定 3 条 SQL，与 pks 数量无关；
+3. read_message 固定 4 条 SQL（含可见域校验），与 pks 数量无关；
 4. read_message 幂等且结果正确；
 5. DEPT/ROLE/POST 目标人数与公告类已读人数的整页聚合（含软删除边界）。
 """
@@ -116,7 +116,7 @@ class TestUnreadSummaryCache:
 
 
 class TestReadMessage:
-    def test_fixed_three_queries(self, api_client, normal_user, message_page):
+    def test_fixed_query_count(self, api_client, normal_user, message_page):
         pks = [m.pk for m in message_page]
         view = UserSiteMessageViewSet()
 
@@ -127,7 +127,7 @@ class TestReadMessage:
             resp = view.read_message(pks, FakeRequest())
         assert resp.status_code == 200
 
-        assert len(_business_queries(ctx)) <= 3
+        assert len(_business_queries(ctx)) <= 4
 
     def test_marks_all_as_read(self, api_client, normal_user, message_page):
         pks = [m.pk for m in message_page]
@@ -165,6 +165,30 @@ class TestReadMessage:
         assert resp.status_code == 200
         assert MessageUserRead.objects.count() == 0
 
+    def test_batch_read_ignores_other_users_private_notice(self, normal_user):
+        """他人私信不可被当前用户标记已读：写操作必须先过可见域。"""
+        other = UserInfo.objects.create_user(username="msg-other", password="Test@123456")
+        others_msg = _make_message(other, MessageContent.NoticeChoices.USER, "other-private", unread=True)
+        view = UserSiteMessageViewSet()
+
+        class FakeRequest:
+            user = normal_user
+
+        resp = view.read_message([others_msg.pk], FakeRequest())
+        assert resp.status_code == 200
+        assert not MessageUserRead.objects.filter(owner=normal_user, notice=others_msg).exists()
+        assert MessageUserRead.objects.get(owner=other, notice=others_msg).unread is True
+
+    def test_batch_read_invalid_pk_returns_1001(self, normal_user):
+        view = UserSiteMessageViewSet()
+
+        class FakeRequest:
+            user = normal_user
+
+        resp = view.read_message(["not-a-uuid"], FakeRequest())
+        assert resp.data["code"] == 1001
+        assert MessageUserRead.objects.count() == 0
+
     def test_queryset_path_matches_explicit_pks_semantics(self, normal_user):
         """queryset 形态（all-read 口径）：pk 过滤与「尚无已读行」差集下推 DB，端态等价。
 
@@ -190,7 +214,7 @@ class TestReadMessage:
         with CaptureQueriesContext(connection) as ctx:
             resp = view.read_message(scope, FakeRequest())
         assert resp.status_code == 200
-        assert len(_business_queries(ctx)) <= 3
+        assert len(_business_queries(ctx)) <= 4
 
         # 端态与显式 pks 路径一致：每条消息恰一行已读，无重复行
         assert MessageUserRead.objects.filter(owner=normal_user).count() == 4

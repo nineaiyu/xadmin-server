@@ -600,12 +600,12 @@ def test_move_swaps_sibling_sort(superuser):
     assert [item["value"] for item in get_dict_items("move_type")] == ["a", "b"]
 
 
-def test_move_at_boundary_is_noop(superuser):
+def test_move_at_boundary_returns_business_error(superuser):
     parent = DataDict.objects.create(code="edge_type", label="边界类型")
     first = DataDict.objects.create(parent=parent, code="a", label="A", value="a", sort=0)
     DataDict.objects.create(parent=parent, code="b", label="B", value="b", sort=1)
     response = _call("move", superuser, method="post", data={"direction": "up"}, pk=first.pk)
-    assert response.data["code"] == 1000
+    assert response.data["code"] == 1001
     first.refresh_from_db()
     assert first.sort == 0
 
@@ -680,3 +680,18 @@ def test_dict_items_localized_by_language():
     with translation.override("en"):
         labels = {item["value"]: item["label"] for item in get_dict_items("i18n_type")}
     assert labels == {"on": "Enabled", "off": "停用"}
+
+
+def test_items_records_consumption_usage():
+    """消费观测：items 每次读取累计次数与最近使用时间（Redis 计数，失败不影响消费）"""
+    from system.utils.platform.dict import dict_usage
+
+    cache.clear()
+    parent = DataDict.objects.create(code="usage_type", label="使用统计")
+    DataDict.objects.create(parent=parent, code="on", label="启用", value="on")
+    assert get_dict_items("usage_type")
+    assert get_dict_items("usage_type")
+    usage = dict_usage("usage_type")
+    assert usage["usage_count"] == 2
+    assert usage["last_used_at"]
+    assert usage["load_failure_count"] == 0

@@ -14,7 +14,7 @@ from typing import Any
 
 from django.apps import apps
 from django.core.exceptions import ValidationError
-from django.db.models import BooleanField, F
+from django.db.models import BooleanField, CharField, DateField, DateTimeField, F, Q, TextField
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
@@ -126,8 +126,68 @@ def _check_fields(bound_model: str, fields: Any, allow_empty: Any = True) -> Non
         raise ValidationError(_("Dataset columns cannot be empty"))
 
 
+#: 仅文本字段支持的匹配类运算符（整数/布尔/日期列上 PostgreSQL 直接报
+#: ``operator does not exist``，此前保存成功、执行 500）
+TEXT_ONLY_OPS = ("contains", "startswith")
+
+
+def _filter_values(op: str, value: Any) -> list[Any]:
+    """参与类型校验的取值清单（isnull 不取值；in 逐项校验）。"""
+    if op == "isnull":
+        return []
+    if op == "in":
+        return list(value or [])
+    return [value]
+
+
+def _check_text_op(spec: Any, op: str, model: Any) -> None:
+    if op not in TEXT_ONLY_OPS:
+        return
+    if spec.is_json:
+        if spec.value_type and spec.value_type != "text":
+            raise ValidationError(_("Filter op {} requires a text field: {}").format(op, spec.raw))
+        return
+    field = model._meta.get_field(spec.path)
+    if not isinstance(field, (CharField, TextField)):
+        raise ValidationError(_("Filter op {} requires a text field: {}").format(op, spec.raw))
+
+
+def _check_json_values(spec: Any, values: Any) -> None:
+    """JSON 路径列按显式类型标注校验取值（|number / |date 的坏值执行期必炸）。"""
+    if spec.value_type == "number":
+        for item in values:
+            if isinstance(item, bool) or item in (None, ""):
+                continue
+            try:
+                float(item)
+            except (TypeError, ValueError):
+                raise ValidationError(_("Filter value does not match field type: {}").format(item)) from None
+    elif spec.value_type == "date":
+        from django.utils.dateparse import parse_date
+
+        for item in values:
+            if item in (None, ""):
+                continue
+            if parse_date(str(item)) is None:
+                raise ValidationError(_("Filter value does not match field type: {}").format(item))
+
+
+def _check_model_values(model: Any, spec: Any, op: str, values: Any) -> None:
+    field = model._meta.get_field(spec.path)
+    for item in values:
+        try:
+            field.get_prep_value(item)
+        except (ValidationError, ValueError, TypeError):
+            raise ValidationError(_("Filter value does not match field type: {}").format(item)) from None
+
+
 def validate_filters(bound_model: str, filters: Any) -> None:
-    """filters: [{field, op, value}]；field 在白名单、op 在白名单、value 形态合法。"""
+    """filters: [{field, op, value}]；field 在白名单、op 在白名单、op 与字段类型匹配、
+    value 能按字段类型转换。
+
+    保存侧与执行侧共用本函数：执行侧同样跑一遍，存量脏配置（本校验上线前保存的）
+    会得到可读的 1001，而不是 500。
+    """
     if not filters:
         return
     if not isinstance(filters, list):
@@ -137,13 +197,19 @@ def validate_filters(bound_model: str, filters: Any) -> None:
     for item in filters:
         if not isinstance(item, dict) or not item.get("field") or not item.get("op"):
             raise ValidationError(_("Invalid dataset filters"))
-        parse_column(model, item["field"], whitelist)
+        spec = parse_column(model, item["field"], whitelist)
         if item["op"] not in ALLOWED_OPS:
             raise ValidationError(_("Filter op {} is not allowed").format(item["op"]))
         if item["op"] == "in" and not isinstance(item.get("value"), (list, tuple)):
             raise ValidationError(_("Filter op in requires a list value"))
         if item["op"] == "isnull" and not isinstance(item.get("value"), bool):
             raise ValidationError(_("Filter op isnull requires a boolean value"))
+        _check_text_op(spec, item["op"], model)
+        values = _filter_values(item["op"], item.get("value"))
+        if spec.is_json:
+            _check_json_values(spec, values)
+        else:
+            _check_model_values(model, spec, item["op"], values)
 
 
 def validate_dataset(instance: Any) -> None:
@@ -171,6 +237,13 @@ def validate_dataset(instance: Any) -> None:
             raise ValidationError(_("Trend field must be in columns"))
     elif date_field not in whitelist:
         raise ValidationError(_("Field {}.{} is not available for datasets").format(instance.bound_model, date_field))
+    else:
+        try:
+            model_field = model._meta.get_field(spec.raw)
+        except Exception:  # noqa: BLE001 历史列失配由 parse_column 兜底
+            model_field = None
+        if model_field is not None and not isinstance(model_field, (DateField, DateTimeField)):
+            raise ValidationError(_("Trend field must be a date or datetime field: {}").format(date_field))
 
 
 def _group_label(value: Any, model_field: Any = None) -> str:
@@ -320,6 +393,28 @@ def viewer_visible_fields(bound_model: str, user_obj: Any) -> Any:
 
     cached = _request_memo(("viewer_visible_fields", bound_model, getattr(user_obj, "pk", None)), _load)
     return set(cached) if cached is not None else None
+
+
+def visible_dataset_queryset(user_obj: Any) -> Any:
+    """数据集可见域：``personal`` 仅创建者、``shared`` 全员；超管全量。
+
+    与 ``DatasetViewSet.get_queryset`` 读侧同口径（定义类资源不做行级数据权限
+    过滤）。报表等「引用数据集但不经数据集视图取对象」的链路必须复用它，
+    否则只校验存在性就能绑定他人的个人数据集。
+    """
+    from dataset.models.dataset import Dataset
+
+    queryset = Dataset.objects.all()
+    if user_obj is None or not getattr(user_obj, "is_superuser", False):
+        queryset = queryset.filter(Q(visibility=Dataset.Visibility.SHARED) | Q(creator=user_obj))
+    return queryset
+
+
+def dataset_visible_to(user_obj: Any, dataset_pk: Any) -> bool:
+    """该用户是否可见指定数据集（保存侧与执行侧共用的 fail-closed 判定）。"""
+    if not dataset_pk:
+        return False
+    return bool(visible_dataset_queryset(user_obj).filter(pk=dataset_pk).exists())
 
 
 # 执行 / 聚合 / 卡片级布局过滤拆至 dataset_query（仅行数门禁）：经模块级 __getattr__

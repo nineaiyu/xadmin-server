@@ -4,8 +4,11 @@
 
 协议（全部挂在 ``/api/file/file/chunk/*``，权限口径与文件中心父级一致）：
 
-    POST chunk/init      {filename, filesize, total_chunks, chunk_size, md5?}
+    POST chunk/init      {filename, filesize, total_chunks, chunk_size, content_hash, md5?}
                           → {pk, received:[已收分片索引]}（断点续传入口）
+
+``content_hash`` = 客户端整文件 SHA-256（64 位十六进制），是断点续传的会话键：
+命中条件为「同属主 + 同名同大小 + 同内容指纹」，complete 合并后复算比对。
     POST chunk/part      multipart: session, index, file（单分片，幂等重传）
     POST chunk/complete  {pk, md5?} → UploadFile 载荷（与单请求 upload 同一序列化器）
     POST chunk/abort     {pk} → 清理分片与会话
@@ -26,6 +29,7 @@
 import hashlib
 import mimetypes
 import os
+import re
 import tempfile
 from typing import Any
 
@@ -63,6 +67,29 @@ STORAGE_DIR = "upload_sessions"
 
 # complete 一致性校验失败业务码：分片拼合结果与声明不符（内容损坏/串分片）
 CHECKSUM_MISMATCH_CODE = 1007
+
+
+class ContentHashMismatch(UploadError):
+    """合并结果与 init 声明的内容指纹不一致：会话里的分片属于另一份内容，不可复用。"""
+
+
+# 内容指纹：客户端整文件 SHA-256 的十六进制（与前端 utils/upload/chunked.ts 同算法）
+CONTENT_HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+
+
+def normalize_content_hash(value: Any) -> str:
+    """校验并归一内容指纹（小写十六进制 SHA-256）。
+
+    init 必填：断点续传的命中条件必须是「同一份内容」，只按同名同大小命中的
+    旧口径会把两个文件的分片拼在一起。旧客户端（不传指纹）在这里被拒绝，
+    提示刷新后重试，不给「静默降级成不安全口径」的余地。
+    """
+    raw = str(value or "").strip().lower()
+    if not raw:
+        raise UploadError(INVALID_CODE, _("File fingerprint is required, please refresh the page and retry"))
+    if not CONTENT_HASH_PATTERN.match(raw):
+        raise UploadError(INVALID_CODE, _("Invalid file fingerprint"))
+    return raw
 
 
 def part_storage_name(session_pk: Any, index: int) -> str:
@@ -124,21 +151,28 @@ def init_session(
     chunk_size: int,
     md5sum: str = "",
     mime_type: str = "",
+    content_hash: str = "",
 ) -> tuple[Any, list[Any], bool]:
     """创建或命中（断点续传）分片会话，返回 ``(session, received_indices, created)``。
 
-    命中条件：同属主 + 同名同大小 + pending 的既有会话（刷新页面 / 网络中断后
-    重新 init 即续传，不需要额外查询端点）。
+    命中条件：同属主 + 同名同大小 + **同内容指纹** + pending 的既有会话（刷新页面 /
+    网络中断后重新 init 即续传，不需要额外查询端点）。内容指纹必填（见
+    ``normalize_content_hash``）：同名同大小但内容不同的两个文件必须落到两个会话。
     """
     filename = sanitize_filename(filename)
     chunk_size = min(max(int(chunk_size), MIN_CHUNK_SIZE), MAX_CHUNK_SIZE)
     _validate_plan(filename, filesize, int(total_chunks), chunk_size, user_obj)
+    content_hash = normalize_content_hash(content_hash)
     # 防双击/并发重复 init：同用户每秒一次；命中续传路径本就幂等，仅收敛写放大
     if not allow_by_identity(user_obj.pk, scope="upload_chunk_init", limit=5, window_seconds=1):
         raise UploadError(INVALID_CODE, _("Too many requests, please retry later"))
     existing = (
         UploadSession.objects.filter(
-            creator=user_obj, filename=filename, filesize=filesize, status=UploadSession.Status.PENDING
+            creator=user_obj,
+            filename=filename,
+            filesize=filesize,
+            content_hash=content_hash,
+            status=UploadSession.Status.PENDING,
         )
         .order_by("-created_time")
         .first()
@@ -153,6 +187,7 @@ def init_session(
         total_chunks=int(total_chunks),
         chunk_size=chunk_size,
         md5sum=str(md5sum or "")[:36],
+        content_hash=content_hash,
         mime_type=str(mime_type or "")[:255],
         status=UploadSession.Status.PENDING,
     )
@@ -182,14 +217,30 @@ def store_part(user_obj: Any, session: Any, index: Any, file_obj: Any) -> int:
     return received
 
 
-@transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def complete_session(user_obj: Any, session_pk: Any, *, declared_md5: str = "") -> tuple[Any, Any]:
     """合并分片并走既有上传内核落库；会话行锁内串行（与并发 complete/abort 互斥）。
 
-    校验分片完整性（行数 / 尺寸和 / 逐片尺寸）→ 流式合并并计算 md5 → 声明指纹
-    一致性校验（可选）→ ``store_upload_file``（配额 / 去重 / 分类 / 落库）→
-    清理分片（存储 + 行）→ 会话置 completed。
+    校验分片完整性（行数 / 尺寸和 / 逐片尺寸）→ 流式合并并计算 md5 / SHA-256 →
+    与 init 声明的内容指纹比对（强制）→ 声明 md5 一致性校验（可选）→
+    ``store_upload_file``（配额 / 去重 / 分类 / 落库）→ 清理分片（存储 + 行）→
+    会话置 completed。指纹不一致说明分片属于另一份内容（串会话/损坏）：整个会话
+    已不可复用，置 aborted 并清理分片后抛错。
     """
+    try:
+        # 事务装饰器无类型存根（返回 Any）：显式标注收敛 mypy no-any-return
+        result: tuple[Any, Any] = _complete_session(user_obj, session_pk, declared_md5=declared_md5)
+        return result
+    except ContentHashMismatch:
+        # 内层事务已回滚（会话仍是 pending）：在独立事务里作废并清理，
+        # 否则同指纹重新 init 会命中这条永远合不出来的会话。
+        # 仅内容指纹不符才作废；声明 md5 不符属客户端传错，会话本身仍可复用。
+        abort_session(user_obj, session_pk)
+        raise
+
+
+@transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def _complete_session(user_obj: Any, session_pk: Any, *, declared_md5: str = "") -> tuple[Any, Any]:
+    """complete 的事务主体（行锁 + 完整性校验 + 落库），异常由外层统一收敛。"""
     # 注意：锁定查询不得 select_related("upload")——upload 为可空 FK，会生成
     # LEFT OUTER JOIN，PG 拒绝对外连接可空侧加行锁（FOR UPDATE cannot be applied
     # to the nullable side of an outer join；sqlite 无锁语义静默通过，2026-10-01
@@ -225,8 +276,9 @@ def complete_session(user_obj: Any, session_pk: Any, *, declared_md5: str = "") 
 
 
 def _merge_and_store(user_obj: Any, session: Any, declared_md5: str) -> tuple[str, Any]:
-    """合并分片到临时文件并落库；md5 在合并时同步计算（整文件只读一遍）。"""
+    """合并分片到临时文件并落库；md5 与内容指纹在合并时同步计算（整文件只读一遍）。"""
     digest = hashlib.md5()
+    content_digest = hashlib.sha256()
     fd, temp_path = tempfile.mkstemp(prefix="xadmin-merge-")
     os.close(fd)
     try:
@@ -239,6 +291,11 @@ def _merge_and_store(user_obj: Any, session: Any, declared_md5: str) -> tuple[st
                     for chunk in iter(lambda: part_file.read(1024 * 1024), b""):
                         target.write(chunk)
                         digest.update(chunk)
+                        content_digest.update(chunk)
+        # 内容指纹是断点续传的唯一正确性依据：合并结果必须与 init 声明一致，
+        # 否则说明这份会话里的分片属于另一份内容（同名同大小也不能复用）
+        if content_digest.hexdigest() != session.content_hash:
+            raise ContentHashMismatch(CHECKSUM_MISMATCH_CODE, _("Upload checksum mismatch, please retry"))
         md5sum = digest.hexdigest()
         if declared_md5 and declared_md5 != md5sum:
             raise UploadError(CHECKSUM_MISMATCH_CODE, _("Upload checksum mismatch, please retry"))

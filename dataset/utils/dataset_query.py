@@ -183,16 +183,20 @@ def aggregate_dataset(
     return {"name": group_by, "metric": metric, "series": series}
 
 
-def filter_layout_for_user(layout: Any, user: Any) -> list[Any]:
+def filter_layout_for_user(layout: Any, user: Any, owner_id: Any = None) -> list[Any]:
     """卡片级权限过滤（仪表盘读取侧）：allowed_roles 空 = 全员可见；非空要求浏览者命中其一。
 
     - 超管全量可见（旁路，与数据权限口径一致）；
+    - 创建者本人全量可见：卡片级授权用于「限制他人可见」，不能把创建者自己
+      过滤掉（否则保存后响应丢卡，下一次保存布局会把该卡从库里删掉）；
     - 匿名/未认证 → 空布局（fail-closed，路由层已拦截，此处兜底）。
     """
     if user is None or not getattr(user, "is_authenticated", False):
         return []
     cards = list(layout or [])
     if getattr(user, "is_superuser", False):
+        return cards
+    if owner_id is not None and str(getattr(user, "pk", "")) == str(owner_id):
         return cards
     role_codes = set(user.roles.filter(is_active=True).values_list("code", flat=True))
     return [

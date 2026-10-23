@@ -7,6 +7,7 @@
   缓存由 DataMaskRule 的 post_save/post_delete/m2m_changed 信号失效（signal_handler.py）。
 """
 
+import json
 import re
 from typing import Any
 
@@ -65,8 +66,15 @@ def custom_pattern_error(pattern: Any) -> re.error | None:
 def apply_mask(value: Any, rule: dict[str, Any]) -> Any:
     """按规则对单个值脱敏。空值/非字符串/规则缺省时原样返回。
 
+    dict / list 递归处理（JSON 字段内部同样生效）：规则挂在 JSON 列上时，逐个字符串
+    元素应用同一规则——此前非字符串值原样返回，规则对 JSON 字段是静默空操作。
+
     :param rule: get_mask_rules 产出的规则 dict（mask_type/keep_head/keep_tail/mask_char/pattern）
     """
+    if isinstance(value, dict):
+        return {key: apply_mask(item, rule) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [apply_mask(item, rule) for item in value]
     if value is None or not isinstance(value, str) or not value:
         return value
     mask_type = rule.get("mask_type")
@@ -87,6 +95,60 @@ def apply_mask(value: Any, rule: dict[str, Any]) -> Any:
             return value
     # phone / idcard / name / bankcard 及默认路径统一走分段掩码
     return _segment(value, keep_head, keep_tail, mask_char)
+
+
+def _first_applicable_rule(field: str, rules: list[dict[str, Any]], role_pks: set[Any]) -> Any:
+    """同字段「sort 小者优先」+ 角色交集判定（与 apply_output_mask 同口径）。"""
+    for rule in rules:
+        if rule.get("field") != field:
+            continue
+        if rule.get("roles") and not bool(role_pks & set(rule["roles"])):
+            continue
+        return rule
+    return None
+
+
+def mask_operation_changes(value: Any, model_label: Any, request: Any, user: Any) -> Any:
+    """操作日志 ``changes``（``{field: {old, new}}`` JSON）按源模型规则脱敏。
+
+    ``changes`` 是整段 JSON 文本，字段级规则直接套在文本上是空操作（或把整段
+    文本当成一个手机号掩码）；这里先解析，再按「源模型 + 变更字段」取规则，对
+    old/new 分别掩码，最后重新序列化。查看者角色与原文通道口径与列表脱敏一致：
+    超管 / ``?mask=false`` + 更新权限 / 无规则时原样返回。
+
+    历史行没有 ``model_label``（本字段上线前落库）或 JSON 解析失败时原样返回，
+    不阻断日志读取。
+    """
+    from common.core.mask import mask_exempt, mask_role_pks
+
+    if not value or not model_label:
+        return value
+    if mask_exempt(request, user):
+        return value
+    try:
+        data = json.loads(value) if isinstance(value, str) else value
+    except (TypeError, ValueError):
+        return value
+    if not isinstance(data, dict):
+        return value
+    rules = get_mask_rules(str(model_label))
+    if not rules:
+        return value
+    role_pks = mask_role_pks(request, user)
+    masked: dict[str, Any] = {}
+    for field, diff in data.items():
+        if not isinstance(diff, dict):
+            masked[field] = diff
+            continue
+        rule = _first_applicable_rule(field, rules, role_pks)
+        if rule is None:
+            masked[field] = diff
+            continue
+        masked[field] = {
+            "old": apply_mask(diff.get("old"), rule),
+            "new": apply_mask(diff.get("new"), rule),
+        }
+    return json.dumps(masked, ensure_ascii=False, default=str)
 
 
 def get_mask_rules(model_label: str) -> list[dict[str, Any]]:

@@ -65,6 +65,11 @@ class TestFilterLayout:
         normal_user.roles.add(role)
         assert [item["id"] for item in filter_layout_for_user(layout, normal_user)] == ["c1"]
 
+    def test_creator_sees_own_restricted_card(self, dataset, normal_user):
+        """创建者不能被自己的卡片级授权过滤掉（否则保存响应丢卡 → 再保存即删卡）。"""
+        layout = [card("c1", dataset, ["other_role"])]
+        assert filter_layout_for_user(layout, normal_user, owner_id=normal_user.pk) == layout
+
     def test_superuser_sees_all(self, dataset):
         admin = UserInfo.objects.create_superuser(
             username="card_admin", email="card_admin@example.com", password="Test@123456"
@@ -98,6 +103,72 @@ class TestCardRoleValidation:
             format="json",
         )
         assert resp.data["code"] == 1000, resp.data
+
+    def _layout_dataset(self):
+        return Dataset.objects.create(
+            name=f"layout_ds_{timezone.now().timestamp()}",
+            bound_model="identity.userinfo",
+            columns=["username", "gender"],
+            visibility="shared",
+        )
+
+    def test_api_rejects_unknown_metric(self, auth_client, dataset):
+        item = card("c1", dataset)
+        item["metric"] = "median"
+        resp = auth_client.post(
+            DASHBOARDS_URL,
+            {
+                "name": f"卡片校验-{timezone.now().timestamp()}",
+                "visibility": "personal",
+                "layout": [item],
+            },
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
+
+    def test_api_rejects_non_numeric_value_field(self, auth_client, dataset):
+        item = card("c1", self._layout_dataset())
+        item["metric"] = "sum"
+        item["value_field"] = "username"
+        resp = auth_client.post(
+            DASHBOARDS_URL,
+            {
+                "name": f"卡片校验-{timezone.now().timestamp()}",
+                "visibility": "personal",
+                "layout": [item],
+            },
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
+
+    def test_api_accepts_numeric_value_field(self, auth_client, dataset):
+        item = card("c1", self._layout_dataset())
+        item["metric"] = "sum"
+        item["value_field"] = "gender"
+        resp = auth_client.post(
+            DASHBOARDS_URL,
+            {
+                "name": f"卡片校验-{timezone.now().timestamp()}",
+                "visibility": "personal",
+                "layout": [item],
+            },
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+
+    def test_api_rejects_group_by_outside_columns(self, auth_client, dataset):
+        item = card("c1", self._layout_dataset())
+        item["group_by"] = "phone"
+        resp = auth_client.post(
+            DASHBOARDS_URL,
+            {
+                "name": f"卡片校验-{timezone.now().timestamp()}",
+                "visibility": "personal",
+                "layout": [item],
+            },
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
 
 
 class TestFieldPermissionOverlay:

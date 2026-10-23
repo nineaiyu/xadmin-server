@@ -62,6 +62,24 @@ class TestImpactPreview:
         assert counts["dataset_cards"] == 1
         assert counts["dataset_screens"] == 1
 
+    def test_dashboard_impact_screens(self, auth_client, superuser):
+        """仪表盘删除预检：dashboards 清单 + 栅格/自由窗格三类引用都要计数。"""
+        dashboard = Dashboard.objects.create(name="影响面仪表盘", creator=superuser)
+        pane = {"id": "p1", "dashboard": str(dashboard.pk)}
+        Screen.objects.create(name="清单引用屏", dashboards=[str(dashboard.pk)], creator=superuser)
+        Screen.objects.create(name="栅格引用屏", layout=[pane], creator=superuser)
+        Screen.objects.create(
+            name="自由引用屏",
+            layout_mode=Screen.LayoutMode.FREE,
+            free_layout={"panes": [pane]},
+            creator=superuser,
+        )
+        body = auth_client.post("/api/dataset/dashboards/impact", {"pks": [str(dashboard.pk)]}, format="json").json()
+        assert body["code"] == 1000
+        check = body["data"]["results"][0]["items"][0]
+        assert check["key"] == "dashboard_screens"
+        assert check["count"] == 3
+
     def test_dict_impact_form_refs(self, auth_client, superuser):
         dict_row = DataDict.objects.create(label="影响面字典", code="impact_dict")
         DynamicForm.objects.create(
@@ -100,6 +118,7 @@ class TestImpactRegistryAlignment:
         ("identity.views.admin.dept", "DeptViewSet"),
         ("system.views.admin.dict", "DataDictViewSet"),
         ("dataset.views.dataset", "DatasetViewSet"),
+        ("dataset.views.dataset", "DashboardViewSet"),
         ("approval.views.approval_flow", "ApprovalFlowViewSet"),
         ("dataset.views.dform", "DynamicFormViewSet"),
         ("dataset.views.analysis", "ScreenViewSet"),

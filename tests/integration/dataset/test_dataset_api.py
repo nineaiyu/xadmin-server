@@ -102,6 +102,60 @@ def make_permission(user, table="identity.userinfo", field="id", value_type="val
     return dp
 
 
+class TestFilterTypeValidation:
+    """filter 的 op / 取值必须与字段类型匹配（否则执行期 DB 报错变 500）。"""
+
+    @staticmethod
+    def _payload(filters):
+        return {
+            "name": "过滤类型校验",
+            "bound_model": "identity.userinfo",
+            "columns": ["username"],
+            "filters": filters,
+        }
+
+    def test_text_op_on_boolean_field_rejected(self, auth_client, model_registry):
+        response = auth_client.post(
+            DATASET_URL,
+            self._payload([{"field": "is_active", "op": "contains", "value": "true"}]),
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert not Dataset.objects.filter(name="过滤类型校验").exists()
+
+    def test_value_type_mismatch_rejected(self, auth_client, model_registry):
+        response = auth_client.post(
+            DATASET_URL,
+            self._payload([{"field": "is_active", "op": "exact", "value": "not-a-bool"}]),
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert not Dataset.objects.filter(name="过滤类型校验").exists()
+
+    def test_text_op_on_text_field_allowed(self, auth_client, model_registry):
+        response = auth_client.post(
+            DATASET_URL,
+            self._payload([{"field": "username", "op": "contains", "value": "ad"}]),
+            format="json",
+        )
+
+        assert response.status_code == 200, response.data
+        assert Dataset.objects.filter(name="过滤类型校验").exists()
+
+    def test_legacy_bad_filter_executes_with_readable_error(self, auth_client, dataset):
+        """本校验上线前保存的脏配置：执行返回 1001 可读原因，不再 500。"""
+        Dataset.objects.filter(pk=dataset.pk).update(
+            filters=[{"field": "is_active", "op": "contains", "value": "true"}]
+        )
+
+        response = auth_client.post(f"{DATASET_URL}/{dataset.pk}/execute", {}, format="json")
+
+        assert response.json()["code"] == 1001
+        assert "text field" in str(response.json()["detail"])
+
+
 class TestDatasetCrud:
     def test_anonymous_rejected(self, api_client):
         assert api_client.get(DATASET_URL).status_code == 401

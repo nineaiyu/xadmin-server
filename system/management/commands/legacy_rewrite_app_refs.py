@@ -23,7 +23,7 @@ from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError
 
-from system.utils.platform import legacy_app_refs
+from ops.legacy import app_refs as legacy_app_refs
 
 
 class Command(BaseCommand):

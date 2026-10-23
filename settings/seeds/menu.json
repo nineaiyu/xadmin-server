@@ -35,12 +35,12 @@
    "modifier": 1,
    "dept_belong": null,
    "deleted_at": null,
-   "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+   "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
    "menu_type": 1,
    "name": "SystemSetting",
-   "rank": 44,
-   "path": "/system/setting/index",
-   "component": "system/setting/index",
+   "rank": 230,
+   "path": "/settings/ledger/index",
+   "component": "settings/ledger/index",
    "is_active": true,
    "meta": "4c19dbf7-b8ac-4585-8d19-e0c852000b2a",
    "method": "",
@@ -441,29 +441,6 @@
    "model": [
     "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
    ]
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "69ad22f7-cb20-4fda-bbd9-3e6e20b0d545",
-  "fields": {
-   "created_time": "2024-10-25T04:42:42.877Z",
-   "updated_time": "2024-10-31T08:06:00.561Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
-   "menu_type": 2,
-   "name": "batchDestroy:SystemSetting",
-   "rank": 46,
-   "path": "api/settings/setting/batch-destroy$",
-   "component": "",
-   "is_active": true,
-   "meta": "2ccd3b62-462f-4868-8736-b8c276c8fff5",
-   "method": "POST",
-   "model": []
   }
  },
  {
@@ -1060,29 +1037,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "ef3948c8-7dbc-4740-957c-90957b3944e4",
-  "fields": {
-   "created_time": "2024-10-25T01:49:03.863Z",
-   "updated_time": "2024-10-31T08:06:00.611Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
-   "menu_type": 2,
-   "name": "importData:SystemSetting",
-   "rank": 48,
-   "path": "api/settings/setting/import-data$",
-   "component": "",
-   "is_active": true,
-   "meta": "0ff63b85-a8cf-4481-a003-773334f5bcf9",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "fee5e55f-3171-4ca8-a1e1-6b5cd52919e0",
   "fields": {
    "created_time": "2024-11-01T01:40:55.008Z",
@@ -1278,75 +1232,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "008d66c6-db87-40b6-b51a-b698070cad7a",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.520Z",
-   "updated_time": "2026-09-14T13:49:28.520Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
-   "menu_type": 2,
-   "name": "importValidate:SystemSetting",
-   "rank": 10007,
-   "path": "api/settings/setting/import-validate$",
-   "component": null,
-   "is_active": true,
-   "meta": "48d14e95-11d2-4174-8815-57f9808af755",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "5f05fc2d-e272-4757-aac3-ff51252a1490",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.518Z",
-   "updated_time": "2026-09-14T13:49:28.518Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
-   "menu_type": 2,
-   "name": "importHeaders:SystemSetting",
-   "rank": 10006,
-   "path": "api/settings/setting/import-headers$",
-   "component": null,
-   "is_active": true,
-   "meta": "70bafd25-398d-4d7c-aba8-03a0de280136",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "96356211-581e-4846-a25c-cddc6a4c0e0e",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.516Z",
-   "updated_time": "2026-09-14T13:49:28.516Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
-   "menu_type": 2,
-   "name": "importAsync:SystemSetting",
-   "rank": 10005,
-   "path": "api/settings/setting/import-async$",
-   "component": null,
-   "is_active": true,
-   "meta": "8aede353-a2f0-4b9c-9e12-64f93ffa84e8",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "7e7dd673-9b59-4b32-8ae7-3f579834eb36",
   "fields": {
    "created_time": "2026-09-14T13:49:28.513Z",
@@ -1370,31 +1255,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "d6c34bc6-ef4b-4ff8-b0b9-c8a96e776397",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.510Z",
-   "updated_time": "2026-09-14T13:49:28.510Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
-   "menu_type": 2,
-   "name": "partialUpdate:SystemSetting",
-   "rank": 10003,
-   "path": "api/settings/setting/(?P<pk>[^/.]+)$",
-   "component": null,
-   "is_active": true,
-   "meta": "0c25670c-2ddf-4f97-aab7-e6c3b6eb9154",
-   "method": "PATCH",
-   "model": [
-    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
-   ]
-  }
- },
- {
-  "model": "system.menu",
   "pk": "7cab67af-01bd-438d-afc4-8b24dbda2682",
   "fields": {
    "created_time": "2026-09-14T13:49:28.507Z",
@@ -1413,54 +1273,6 @@
    "is_active": true,
    "meta": "aad54e01-02b0-4f11-8143-0e433aa50987",
    "method": "GET",
-   "model": [
-    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
-   ]
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "36b94b2b-43b8-4633-8a47-f5e258eb2334",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.505Z",
-   "updated_time": "2026-09-14T13:49:28.505Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
-   "menu_type": 2,
-   "name": "destroy:SystemSetting",
-   "rank": 10001,
-   "path": "api/settings/setting/(?P<pk>[^/.]+)$",
-   "component": null,
-   "is_active": true,
-   "meta": "df679492-2501-4375-8400-8acb281338a5",
-   "method": "DELETE",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "0e7029d4-fa92-4165-9093-6e0b0e0ec6be",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.502Z",
-   "updated_time": "2026-09-14T13:49:28.502Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
-   "menu_type": 2,
-   "name": "create:SystemSetting",
-   "rank": 10000,
-   "path": "api/settings/setting$",
-   "component": null,
-   "is_active": true,
-   "meta": "a9bdd387-b062-4e3b-be2c-34d8f4adc1ec",
-   "method": "POST",
    "model": [
     "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
    ]
@@ -1514,6 +1326,223 @@
    "model": [
     "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
    ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+  "fields": {
+   "created_time": "2026-10-23T00:00:00Z",
+   "updated_time": "2026-10-23T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
+   "menu_type": 1,
+   "name": "SettingOpenPlatform",
+   "rank": 225,
+   "path": "/settings/open-platform",
+   "component": "settings/open-platform",
+   "is_active": true,
+   "meta": "9577c1a7-82c7-4dcd-9b87-6149e8862494",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "13e64fc9-258a-4818-b38b-e8f15b5723a4",
+  "fields": {
+   "created_time": "2026-10-22T23:01:14.180Z",
+   "updated_time": "2026-10-22T23:01:14.180Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+   "menu_type": 2,
+   "name": "retrieve:OAuthProviderSetting",
+   "rank": 10000,
+   "path": "api/settings/oauth/providers$",
+   "component": null,
+   "is_active": true,
+   "meta": "41ac40f4-32eb-4ea9-be20-4f18c3124cc7",
+   "method": "GET",
+   "model": [
+    "0f57a580-952e-4751-a110-9e447a08768d"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5ab2cf71-c0ec-4306-a855-e26c64e04337",
+  "fields": {
+   "created_time": "2026-10-22T23:01:14.187Z",
+   "updated_time": "2026-10-22T23:01:14.187Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+   "menu_type": 2,
+   "name": "partialUpdate:OAuthProviderSetting",
+   "rank": 10001,
+   "path": "api/settings/oauth/providers$",
+   "component": null,
+   "is_active": true,
+   "meta": "937aaa04-7448-45ad-aa4b-65bc352e5c48",
+   "method": "PATCH",
+   "model": [
+    "0f57a580-952e-4751-a110-9e447a08768d"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2ad442c3-0839-48ec-8560-38b07f077bed",
+  "fields": {
+   "created_time": "2026-10-22T23:01:14.191Z",
+   "updated_time": "2026-10-22T23:01:14.191Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+   "menu_type": 2,
+   "name": "test:OAuthProviderSetting",
+   "rank": 10002,
+   "path": "api/settings/oauth/providers/test$",
+   "component": null,
+   "is_active": true,
+   "meta": "deb36eac-e39e-492b-9623-95ad52414179",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "15ac5669-a3e1-4dd7-9c31-c751c2b1d325",
+  "fields": {
+   "created_time": "2026-10-22T23:01:14.194Z",
+   "updated_time": "2026-10-22T23:01:14.194Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+   "menu_type": 2,
+   "name": "retrieve:ScimSetting",
+   "rank": 10000,
+   "path": "api/settings/scim$",
+   "component": null,
+   "is_active": true,
+   "meta": "721d9bf9-8450-48e4-8c2d-a84a2d46cf74",
+   "method": "GET",
+   "model": [
+    "0f57a580-952e-4751-a110-9e447a08768d"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "eefbffe1-9e27-4c94-8dc5-94c99bca3c54",
+  "fields": {
+   "created_time": "2026-10-22T23:01:14.198Z",
+   "updated_time": "2026-10-22T23:01:14.198Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+   "menu_type": 2,
+   "name": "partialUpdate:ScimSetting",
+   "rank": 10001,
+   "path": "api/settings/scim$",
+   "component": null,
+   "is_active": true,
+   "meta": "01a5779d-0267-4529-96dd-ed8f822c29d1",
+   "method": "PATCH",
+   "model": [
+    "0f57a580-952e-4751-a110-9e447a08768d"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "fc52dbe7-2d83-4570-a081-1453835ee463",
+  "fields": {
+   "created_time": "2026-10-22T23:01:14.202Z",
+   "updated_time": "2026-10-22T23:01:14.202Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+   "menu_type": 2,
+   "name": "create:ScimSetting",
+   "rank": 10002,
+   "path": "api/settings/scim$",
+   "component": null,
+   "is_active": true,
+   "meta": "05d36d14-fb33-4f85-a77d-e5b4dcf3918c",
+   "method": "POST",
+   "model": [
+    "0f57a580-952e-4751-a110-9e447a08768d"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f3b9b10e-c63e-49c6-8df4-3c96ea99eec0",
+  "fields": {
+   "created_time": "2026-10-22T23:01:14.204Z",
+   "updated_time": "2026-10-22T23:01:14.204Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+   "menu_type": 2,
+   "name": "rotateToken:ScimSetting",
+   "rank": 10003,
+   "path": "api/settings/scim/rotate-token$",
+   "component": null,
+   "is_active": true,
+   "meta": "dc14abee-54d9-441b-b73a-2d7b546d33c9",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d06f0a62-21a2-4a1d-a6e8-0e1497b9399d",
+  "fields": {
+   "created_time": "2026-10-22T23:01:14.207Z",
+   "updated_time": "2026-10-22T23:01:14.207Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+   "menu_type": 2,
+   "name": "syncStatus:ScimSetting",
+   "rank": 10004,
+   "path": "api/settings/scim/sync-status$",
+   "component": null,
+   "is_active": true,
+   "meta": "7e637dfd-199f-4fa0-8dfd-353b900c2890",
+   "method": "GET",
+   "model": []
   }
  }
 ]

@@ -166,6 +166,16 @@ def sync_model_field() -> Any:
     return {"data": data, "role": role}
 
 
+def model_field_known(model: str, field: str) -> bool:
+    """字段注册表已同步时校验 model.field 是否存在；尚未同步时放行。"""
+    model_node = ModelLabelField.objects.filter(
+        name=model, parent=None, field_type=ModelLabelField.FieldChoices.ROLE
+    ).first()
+    if not model_node or not model_node.children.exists():
+        return True
+    return bool(model_node.children.filter(name=field).exists())
+
+
 def get_field_lookup_info(fields: Any) -> Any:
     field_info = {
         "exact": _("Exact match, the field value must be exactly the same as the given value."),
@@ -175,6 +185,7 @@ def get_field_lookup_info(fields: Any) -> Any:
             "Case-insensitive containment, the field value must contain the given substring (case-insensitive)."
         ),
         "in": _("The field value must be within the given list, tuple, or queryset."),
+        "ne": _("Not equal to, the field value must differ from the given value."),
         "gt": _("Greater than, the field value must be greater than the given value."),
         "gte": _("Greater than or equal to, the field value must be greater than or equal to the given value."),
         "lt": _("Less than, the field value must be less than the given value."),

@@ -14,7 +14,7 @@ import pytest
 from django.utils import timezone
 
 from approval.models.approval import ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
-from approval.utils.approval_flow import (
+from approval.services.approval_flow import (
     add_sign,
     approve_task,
     create_instance,
@@ -499,7 +499,7 @@ class TestRemoveSignRatio:
             ],
         )
         instance, _ = create_instance(flow=flow, applicant=applicant, title="x", form_data={})
-        from approval.utils.approval_flow import node_progress_for
+        from approval.services.approval_flow import node_progress_for
 
         progress = node_progress_for(instance)
         assert progress["total"] == 2

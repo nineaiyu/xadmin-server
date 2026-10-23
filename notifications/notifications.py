@@ -11,7 +11,7 @@ from html2text import HTML2Text
 from common.utils import get_logger
 from common.utils.sanitize import sanitize_rich_text
 from identity.services import UserInfo, get_superusers, get_users_by_pks
-from notifications.backends import BACKEND
+from notifications.backends import BACKEND, CHANNEL_SPECS
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 
 logger = get_logger(__name__)
@@ -35,7 +35,7 @@ BACKEND_MSG_RENDERERS: dict[Any, str] = {}
 # 用户可控数据）都可能携带 <script>/on* 注入 payload，落库 MessageContent 后即成
 # 存储型 XSS。SMS/IM 渠道正文是纯文本（get_text_msg 已用 html2text 剥离标签），
 # 不做 HTML 净化（净化反而会把纯文本当片段转义）。
-HTML_MESSAGE_BACKENDS = frozenset({BACKEND.SITE_MSG, BACKEND.EMAIL})
+HTML_MESSAGE_BACKENDS = frozenset(BACKEND(spec.code) for spec in CHANNEL_SPECS if spec.html)
 
 
 def register_backend_msg(backend: Any, method_name: str) -> str:

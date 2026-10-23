@@ -5,12 +5,12 @@
 - 关联：[ADR-038](ADR-038-ai-actions.md)（受限动作：白名单 + 用户确认 + 权限双门）、
   [ADR-048](ADR-048-ai-unified-tool-layer.md)（统一工具层：注册表 / MCP / function calling 同源）、
   [ADR-045](ADR-045-modular-trimmable-architecture.md)（功能模块裁剪）、
-  `ai/utils/ai_registry.py`、`ai/utils/ai_action_types.py`
+  `ai/services/actions/ai_registry.py`、`ai/services/actions/ai_action_types.py`
 
 ## 背景
 
 ADR-038/048 把 AI 能力收口为「注册表 → 工具目录 → 执行收口」的统一链路，但注册表与
-声明全部住在 ai 应用内（`ai/utils/ai_registry_*.py` + `ai_builtin_actions.py`）：
+声明全部住在 ai 应用内（`ai/services/actions/ai_registry.py` + `ai_builtin_actions.py`）：
 
 - 业务能力的所有权在各自应用，声明却由 ai 应用维护——新增/调整动作要改 ai 应用，
   二开插件更是无法在不改宿主源码的前提下接入；
@@ -40,7 +40,7 @@ ADR-038/048 把 AI 能力收口为「注册表 → 工具目录 → 执行收口
 
 ### D2 自动发现，注册表仍唯一
 
-`ai/utils/ai_registry.py::action_specs()` 遍历 `apps.get_app_configs()` 导入
+`ai/services/actions/ai_registry.py::action_specs()` 遍历 `apps.get_app_configs()` 导入
 `{app}.ai_declarations` 并合并：
 
 - 无声明文件即跳过；文件存在但内部 import 失败必须冒泡（声明坏了不能静默）；
@@ -50,14 +50,14 @@ ADR-038/048 把 AI 能力收口为「注册表 → 工具目录 → 执行收口
 - **不在 `AppConfig.ready()` 构建**——app registry 与数据库可能未就绪。
 
 `ACTION_SPECS` 改为模块级 `__getattr__` 惰性取数，历史导入面（测试、巡检、契约）
-零改动；`ai.services.api_action_specs()` 继续作为框架层（`common.contracts`）的
-唯一契约出口。
+零改动；`ai.contracts.api_action_specs()` 继续作为框架层（`common.contracts`）的
+唯一契约出口（`ai.services` 保留兼容转发）。
 
 ### D3 机制与声明分层
 
-`ActionSpec` 与 `user_can_visit` / `module_allows` 抽到 `ai/utils/ai_action_types.py`
+`ActionSpec` 与 `user_can_visit` / `module_allows` 抽到 `ai/services/actions/ai_action_types.py`
 （只依赖 common 与标准库），避免「声明 import 注册表、注册表 import 声明」的循环。
-`ai/utils/ai_actions.py` 只保留机制：目录构建、草稿解析、权限双门、执行收口、审计。
+`ai/services/actions/ai_actions.py` 只保留机制：目录构建、草稿解析、权限双门、执行收口、审计。
 
 ### D4 模块裁剪对齐
 

@@ -37,6 +37,7 @@
 | 认证扩展 | [architecture/auth-flows.md](architecture/auth-flows.md)（登录 / 注册 / 找回密码全链路、签发与处置两大收口、防枚举口径）、[architecture/mfa.md](architecture/mfa.md)（MFA / 412 协议）、[architecture/oauth-login.md](architecture/oauth-login.md)（第三方登录 / IM 扫码） |
 | 目录同步 | [architecture/ldap-readiness.md](architecture/ldap-readiness.md)、[architecture/scim.md](architecture/scim.md)、[architecture/scim-idp-readiness.md](architecture/scim-idp-readiness.md) |
 | 通知渠道 | [architecture/notification-channels.md](architecture/notification-channels.md)（新增渠道 = 新增一个文件） |
+| **开放平台控制台** | [architecture/open-platform-console.md](architecture/open-platform-console.md)：SCIM / 第三方登录 typed 配置、令牌轮换与自检、用户侧已授权应用撤销、权限点与安全边界 |
 | 缓存 / 索引 | [architecture/cache.md](architecture/cache.md)（含键规范与失效矩阵）、[architecture/indexes.md](architecture/indexes.md) |
 | 错误码 | [exception-handling.md](exception-handling.md)（新增错误码必须先登记） |
 | 契约 Schema | [schema/README.md](schema/README.md)（search-columns / search-fields 真源） |
@@ -90,7 +91,7 @@ docs/
 ├── architecture/         架构与组件（现状文档：组件手册 component-handbook + handbook-backend / handbook-frontend / 协议 / 权限 / 模块化…）
 ├── adr/                  架构决策记录（历史决策，含索引 README）
 ├── ops/                  部署与运维（deployment 概览 + deployment-docker / deployment-upgrade / deployment-csp / config-reference / observability / observability-drills / runbook / 演练记录）
-├── plans/                规划与治理（活跃 16 篇：工作区级台账 4 篇（任务总清单 / 长期任务方案 / 长期开发计划 / 发布清单）+ 长期计划 / 触发制清单 / 四份映射与任务书 / 原地升级立项与方案 / 应用级种子拆分方案与执行计划 + 前端框架一致性调查与收敛方案 + 公告 Markdown 支持开发方案；历史归档在 archive/）
+├── plans/                规划与治理（活跃 20 篇：工作区级台账 + 长期计划 / 触发制清单 / 域拆分映射 / 各专项方案 / 保留任务决策与发布清单，逐篇清单见 plans/README.md；历史归档在 archive/）
 ├── open-platform/        开放平台接入（指南 + 事件契约）
 ├── schema/               前后端契约 JSON Schema
 ├── imgs/                 文档配图

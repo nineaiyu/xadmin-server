@@ -15,8 +15,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from approval.models import ApprovalInstance, ApprovalNodeTask, ApprovalRequest
-from approval.utils.approval_flow import approve_task, create_instance, reject_task
-from approval.utils.approval_flow.versioning import apply_definition
+from approval.services.approval_flow import approve_task, create_instance, reject_task
+from approval.services.approval_flow.versioning import apply_definition
 from identity.services import DeptInfo, UserInfo
 
 # 内置示例流程 code（approval/seeds/approvalflow.json）

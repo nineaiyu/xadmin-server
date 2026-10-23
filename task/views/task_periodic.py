@@ -4,8 +4,11 @@
 
 import json
 import threading
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
+from croniter import croniter
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -17,7 +20,7 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schem
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 
-from common.core.modelset import BaseModelSet, BatchPartialUpdateAction
+from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from server.celery import app
@@ -37,10 +40,12 @@ class PeriodicTaskFilter(filters.FilterSet):
 
     name = filters.CharFilter(field_name="name", lookup_expr="icontains")
     task = filters.CharFilter(field_name="task", lookup_expr="icontains")
+    crontab = filters.NumberFilter(field_name="crontab_id")
+    interval = filters.NumberFilter(field_name="interval_id")
 
     class Meta:
         model = PeriodicTask
-        fields = ["name", "task", "enabled", "one_off", "queue"]
+        fields = ["name", "task", "enabled", "one_off", "queue", "crontab", "interval"]
 
 
 class CrontabScheduleFilter(filters.FilterSet):
@@ -76,6 +81,19 @@ class ScheduleDeleteGuardMixin:
     # PeriodicTask 关联本调度模型的外键字段名（子类声明：crontab / interval）
     schedule_field = ""
 
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """单删被拒绝时返回结构化受影响任务，供前端弹窗展示并可跳转筛选。"""
+        instance = self.get_object()  # type: ignore[attr-defined]  # 宿主 ViewSet 提供
+        references = self._referencing_tasks(instance)
+        if references["total"]:
+            return ApiResponse(
+                code=1001,
+                status=400,
+                detail=self._reference_message(references),
+                data=references,
+            )
+        return super().destroy(request, *args, **kwargs)  # type: ignore[misc]  # 宿主 ViewSet 提供同名方法
+
     def perform_destroy(self, instance: Any) -> Any:
         self._ensure_schedule_unreferenced(instance)
         # 必须回传删除结果：batch_destroy 逐行分支以返回值区分 success / failures，
@@ -85,21 +103,42 @@ class ScheduleDeleteGuardMixin:
     def _needs_rowwise_delete(self) -> Any:
         return True
 
-    def _ensure_schedule_unreferenced(self, instance: Any) -> None:
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="references")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def references(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """引用当前调度的周期任务清单（删除前的持久入口）。"""
+        return ApiResponse(data=self._referencing_tasks(self.get_object()))  # type: ignore[attr-defined]  # 宿主 ViewSet 提供
+
+    def _referencing_tasks(self, instance: Any) -> dict[str, Any]:
         if not self.schedule_field:  # pragma: no cover - 子类未声明时 fail-closed 不放行
             raise ValidationError(_("Schedule reference guard is not configured"))
-        queryset = PeriodicTask.objects.filter(**{self.schedule_field: instance})
+        queryset = PeriodicTask.objects.filter(**{self.schedule_field: instance}).order_by("name")
         total = queryset.count()
-        if not total:
-            return
-        names = list(queryset.order_by("name").values_list("name", flat=True)[:SCHEDULE_REF_PREVIEW_LIMIT])
-        preview = ", ".join(names)
-        if total > len(names):
-            preview = _("%(names)s and %(count)s more") % {"names": preview, "count": total - len(names)}
-        raise ValidationError(
+        tasks = list(queryset.values("pk", "name")[:50])
+        return {
+            "total": total,
+            "tasks": [{"pk": str(item["pk"]), "name": item["name"]} for item in tasks],
+            "truncated": total > len(tasks),
+        }
+
+    def _reference_message(self, references: dict[str, Any]) -> str:
+        total = references["total"]
+        names = ", ".join(item["name"] for item in references["tasks"][:SCHEDULE_REF_PREVIEW_LIMIT])
+        if total > SCHEDULE_REF_PREVIEW_LIMIT:
+            names = _("%(names)s and %(count)s more") % {
+                "names": names,
+                "count": total - SCHEDULE_REF_PREVIEW_LIMIT,
+            }
+        return str(
             _("Cannot delete: %(count)s periodic task(s) reference this schedule: %(tasks)s")
-            % {"count": total, "tasks": preview}
+            % {"count": total, "tasks": names}
         )
+
+    def _ensure_schedule_unreferenced(self, instance: Any) -> None:
+        references = self._referencing_tasks(instance)
+        if not references["total"]:
+            return
+        raise ValidationError(self._reference_message(references))
 
 
 class CrontabScheduleViewSet(ScheduleDeleteGuardMixin, BaseModelSet):
@@ -112,6 +151,39 @@ class CrontabScheduleViewSet(ScheduleDeleteGuardMixin, BaseModelSet):
     ordering = ["id"]
     ordering_fields = ["id"]
 
+    @extend_schema(
+        request=CrontabScheduleSerializer,
+        responses=get_default_response_schema(
+            {
+                "expression": build_basic_type(OpenApiTypes.STR),
+                "timezone": build_basic_type(OpenApiTypes.STR),
+                "next_runs": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+            }
+        ),
+    )
+    @action(methods=["post"], detail=False, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def preview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """预览未来五次触发时间
+
+        按当前五字段计算，并按声明时区换算。
+        """
+        serializer = CrontabScheduleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        schedule = CrontabSchedule(**serializer.validated_data)
+        timezone_name = str(getattr(schedule.timezone, "key", schedule.timezone) or settings.CELERY_TIMEZONE)
+        try:
+            tzinfo = ZoneInfo(timezone_name)
+        except Exception:  # noqa: BLE001 时区已在序列化器校验，防御第三方数据异常
+            return ApiResponse(code=1001, detail=_("Unknown timezone: {}").format(timezone_name))
+        fields = ("minute", "hour", "day_of_month", "month_of_year", "day_of_week")
+        expression = " ".join(str(getattr(schedule, field)) for field in fields)
+        try:
+            iterator = croniter(expression, datetime.now(tzinfo))
+            next_runs = [iterator.get_next(datetime).isoformat() for _ in range(5)]
+        except (ValueError, KeyError) as exc:
+            return ApiResponse(code=1001, detail=_("Invalid crontab expression: {}").format(exc))
+        return ApiResponse(data={"expression": expression, "timezone": timezone_name, "next_runs": next_runs})
+
 
 class IntervalScheduleViewSet(ScheduleDeleteGuardMixin, BaseModelSet):
     """固定间隔调度管理"""
@@ -122,6 +194,11 @@ class IntervalScheduleViewSet(ScheduleDeleteGuardMixin, BaseModelSet):
     filterset_class = IntervalScheduleFilter
     ordering = ["id"]
     ordering_fields = ["id"]
+
+    def get_queryset(self) -> Any:
+        from django.db.models import Count
+
+        return super().get_queryset().annotate(reference_count=Count("periodictask"))
 
 
 # 全量 autodiscover 要遍历全部 INSTALLED_APPS 并 import 各 app 的 tasks 模块，
@@ -251,7 +328,7 @@ def _clone_periodic_task(instance: PeriodicTask) -> PeriodicTask:
     return clone
 
 
-class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
+class PeriodicTaskViewSet(BaseModelSet):
     """周期任务管理"""
 
     queryset = PeriodicTask.objects.all().order_by("name")
@@ -259,8 +336,6 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
     filterset_class = PeriodicTaskFilter
     ordering = ["name"]
     ordering_fields = ["name", "enabled", "date_changed"]
-    # 批量更新白名单：批量启停用
-    batch_update_fields = ("enabled",)
 
     @extend_schema(
         request=build_object_type(properties={"enabled": build_basic_type(OpenApiTypes.BOOL)}),
@@ -343,24 +418,34 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
 
     @extend_schema(
         request=build_object_type(
-            properties={
-                "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
-                "enabled": build_basic_type(OpenApiTypes.BOOL),
-            }
+            properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {})},
         ),
         responses=get_default_response_schema(),
     )
     @action(methods=["post"], detail=False, url_path="batch-enable")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_enable(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """批量启用或停用{cls}任务
+        """批量启用{cls}任务
 
-        body: {"pks": [...], "enabled": bool}；enabled 省略时按各任务当前状态取反。
-        逐个 save 而非 queryset.update：触发 django_celery_beat 信号让 beat 感知变更。
-        非法主键、未命中（不存在或被过滤）与保存失败的项进入 failed 明细，
-        结构与 batch-run 的失败口径一致（pk/name + 原因）。
+        独立权限点，与批量停用分路由。
         """
+        return self._batch_set_enabled(request, enabled=True)
+
+    @extend_schema(
+        request=build_object_type(
+            properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {})},
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="batch-disable")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_disable(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """批量停用{cls}任务
+
+        独立权限点，与批量启用分路由。
+        """
+        return self._batch_set_enabled(request, enabled=False)
+
+    def _batch_set_enabled(self, request: Any, enabled: bool) -> Any:
         pks = request.data.get("pks") or []
-        enabled = request.data.get("enabled")
         success = 0
         failed = []
         # 主键类型安全规范化：非法值不静默丢弃，归入失败明细（与批量删除/更新口径一致）
@@ -375,7 +460,7 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
         for instance in queryset:
             matched_pks.add(instance.pk)
             try:
-                instance.enabled = (not instance.enabled) if enabled is None else bool(enabled)
+                instance.enabled = enabled
                 instance.save()
                 success += 1
             except Exception as exc:  # noqa: BLE001 单项失败不影响其余项（部分成功语义）

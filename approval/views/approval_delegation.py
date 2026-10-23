@@ -3,19 +3,26 @@
 """审批委托视图集（自 approval_flow.py 拆出，仅因文件行数门禁；行为与拆分前一致）。
 
 委托只影响「待办归属」（生效委托用代理人替换原审批人），不改变节点定义；
-解析语义见 approval/utils/approval_flow/conditions.py::resolve_assignee_pairs 的委托展开。
+解析语义见 approval/services/approval_flow/conditions.py::resolve_assignee_pairs 的委托展开。
 """
 
 from typing import Any
 
+from django.db.models import Q
+from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
 from approval.models.approval import ApprovalDelegation
+from approval.models.approval_request import ApprovalRequest
 from approval.serializers.approval_delegation import ApprovalDelegationSerializer
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, SuggestionsAction
 from common.core.permission import user_has_permission
+from common.core.response import ApiResponse
+from common.swagger.utils import get_default_response_schema
 
 #: 「查看全部委托记录」管理视角的权限点 path（无独立路由的功能授权，登记于 loadjson/menu.json）
 ALL_DELEGATIONS_PERMISSION_PATH = "api/approval/approval-delegations/all$"
@@ -58,3 +65,41 @@ class ApprovalDelegationViewSet(BaseModelSet, SuggestionsAction):
         if user.is_superuser or user_has_permission(user, ALL_DELEGATIONS_PERMISSION_PATH, "GET"):
             return queryset
         return queryset.filter(delegator=user)
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="impact")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def impact(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """委托停用影响面
+
+        当前在途审批单中挂在该委托人或代理人名下的待办。停用委托不会自动改派既有待办（建单/进节点时已按快照分配），
+        这里只把「哪些在途单会受影响」显式列出，供停用前确认。
+        """
+        delegation = self.get_object()
+        pending = ApprovalRequest.objects.filter(status=ApprovalRequest.Status.PENDING).filter(
+            Q(current_assignees=delegation.delegator) | Q(current_assignees=delegation.delegate)
+        )
+        total = pending.distinct().count()
+        rows = (
+            pending.select_related("creator")
+            .distinct()
+            .order_by("-created_time")
+            .values("pk", "module", "path", "method", "creator__username")[:20]
+        )
+        return ApiResponse(
+            data={
+                "total": total,
+                "delegator_pending": pending.filter(current_assignees=delegation.delegator).distinct().count(),
+                "delegate_pending": pending.filter(current_assignees=delegation.delegate).distinct().count(),
+                "items": [
+                    {
+                        "pk": str(item["pk"]),
+                        "module": item["module"] or "",
+                        "path": item["path"],
+                        "method": item["method"],
+                        "applicant": item["creator__username"] or "",
+                    }
+                    for item in rows
+                ],
+                "note": str(_("Existing assignments stay unchanged after disabling")),
+            }
+        )

@@ -1,7 +1,7 @@
 """AI 知识库检索评测（评测驱动）：评测集 hit@5 门禁入 CI。
 
 评测口径（立项时定稿）：
-- 语料 = 仓库文档（ai/utils/ai.py 的 _iter_doc_files，docs/**.md + 根 README/CONTRIBUTING）；
+- 语料 = 仓库文档（ai/services/assistant/ai.py 的 _iter_doc_files，docs/**.md + 根 README/CONTRIBUTING）；
 - 评测集 = tests/data/ai_retrieval_eval.json（问题 + 期望出处），命中 top-5 任一期望出处即 hit；
 - 门禁：hit@5 ≥ 75%（低于阈值按规划升级向量检索）；
 - 向量触发条件（分块数 > 500 或 hit@5 < 75%）的实测值随本测试输出，结论回填 docs/metrics.md。
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from ai.utils.ai import _iter_doc_files, retrieve, sync_knowledge
+from ai.services.assistant.ai import _iter_doc_files, retrieve, sync_knowledge
 
 EVAL_FILE = Path(__file__).resolve().parents[2] / "data" / "ai_retrieval_eval.json"
 HIT_RATE_FLOOR = 0.75
@@ -107,8 +107,8 @@ def test_hybrid_hit_rate_with_stub_embeddings(corpus, monkeypatch):
     本用例的打印值可作为对照基线。
     """
     from ai.models.ai import AiProfile
-    from ai.utils.ai_embeddings import build_embeddings, invalidate_vector_index, vector_index
-    from ai.utils.ai_index import _tokenize
+    from ai.services.knowledge.ai_embeddings import build_embeddings, invalidate_vector_index, vector_index
+    from ai.services.knowledge.ai_index import _tokenize
 
     class _HashBagEmbeddingClient:
         """确定性假客户端：token 哈希袋 → 64 维计数向量（余弦 ≈ 词元重合度）。"""

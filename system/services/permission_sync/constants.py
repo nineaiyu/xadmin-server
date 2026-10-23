@@ -19,6 +19,11 @@ PARENT_MENU_MAP = {
     "api/notifications/message-templates": "SettingMessage",
     # 代码生成器 GUI（generate_crud 引擎的只读端点）
     "api/system/codegen": "SystemCodeGen",
+    # 开放平台设置页（SCIM / 第三方登录）：typed 配置端点无同源权限点，按前缀归属。
+    # 值是 (权限码后缀, 父菜单 name)：同一页面下多个视图集需要各自的权限码后缀。
+    "api/settings/scim": ("ScimSetting", "SettingOpenPlatform"),
+    "api/settings/oauth/providers": ("OAuthProviderSetting", "SettingOpenPlatform"),
+    "api/identity/authorized-applications": ("AuthorizedApplication", "SettingOpenPlatform"),
 }
 # 审计豁免（有权限点但不在可扫描路由面内，运行期经权限链正则回退命中，权限点有效）：
 # - api/chat/*：不在 PERMISSION_SHOW_PREFIX（框架未纳入菜单生成面），权限点手工维护；
@@ -42,16 +47,47 @@ AUDIT_SKIP_PREFIXES = (
 # - tasks/executions GET：任务页「日志」按钮(log:SystemTask) 与任务中心抽屉(list:SystemTaskExecution)；
 # - logs/operation GET：操作日志页(list:SystemOperationLog)、用户页「变更历史」
 #   (changeHistory:SystemUser) 与部门页「变更历史」(changeHistory:SystemDept)；
-# - tasks/periodic/batch-enable POST：批量启用/停用共用端点（batchEnable / batchDisable 两码，
-#   授权不区分方向，属已知边界）。
 AUDIT_KNOWN_DUPLICATES = {
     ("api/task/executions$", "GET"),
     ("api/audit/logs/operation$", "GET"),
-    ("api/task/periodic/batch-enable$", "POST"),
+    # 基本设置与水印同端点：水印是独立页签权限位（读写同 `/api/settings/basic`，
+    # 后端按 path+method 鉴权为 OR 语义，字段级隔离不做）。
+    ("api/settings/basic$", "GET"),
+    ("api/settings/basic$", "PATCH"),
 }
+# 框架自动按钮/标准 CRUD 的权限动作（与 components/RePlusPage 的自动按钮同源）。
+# 其余动作属于「页面自定义能力」（rank/permissions/impact/enable/...），审计单列
+# custom_action 组提示管理员按 `<lowerCamelAction>:<PascalComponent>` 约定命名；
+# 权限码保持兼容，不强制重命名存量数据。
+FRAMEWORK_PERMISSION_ACTIONS = frozenset(
+    {
+        "list",
+        "retrieve",
+        "create",
+        "update",
+        "partial_update",
+        "destroy",
+        "batch_destroy",
+        "batch_update",
+        "export_data",
+        "export_async",
+        "import_data",
+        "import_async",
+        "import_validate",
+        "import_headers",
+        "recycle_list",
+        "recycle_restore",
+        "recycle_purge",
+        "choices",
+        "fields",
+        "columns",
+    }
+)
 # 已知「单权限码覆盖同端点多方法」：前端以同一权限码驱动查看/保存（拆分权限点会改变页面
 # hasAuth 口径），扫描按本表视为全覆盖；键 = 路由正则原文（含 `$`，与权限点 path 同口径），
 # 值 = 该权限码覆盖的方法集合。
+# 运行时不再读本表：同 handler 多方法按视图 action_map 自动回退
+# （common/core/permission.py::_shared_method_menu_pk），因此新增此类端点无需登记。
 # - user/{pk}/im-binding GET+POST：管理员代录 IM 身份（查看绑定 / 创建或更新），
 #   前端统一用 `imBinding:SystemUser` 判定入口可见性。
 SHARED_METHOD_PATHS = {

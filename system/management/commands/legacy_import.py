@@ -22,8 +22,8 @@ from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError
 
-from system.utils.platform import legacy_transfer as lt
-from system.utils.platform.legacy_importer import ORDER, Importer
+from ops.legacy import transfer as lt
+from ops.legacy.importer import ORDER, Importer
 
 
 class Command(BaseCommand):

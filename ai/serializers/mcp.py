@@ -15,7 +15,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from ai.models.mcp import McpServer
-from ai.utils.mcp_client import tools_with_callable, validate_server_url
+from ai.services.mcp.mcp_client import tools_with_callable, validate_server_url
 from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
 from common.core.validation import trim_required
@@ -45,6 +45,7 @@ class McpServerSerializer(BaseModelSerializer):
     # 工具快照在序列化时逐条补 callable 标记（与 call 端点准入规则同口径），
     # 后端规则变更后列表标记即时生效；原始快照不入此逻辑（read_only 展示面）
     tools_snapshot = serializers.SerializerMethodField(label=_("Tools snapshot"))
+    tools_count = serializers.SerializerMethodField(label=_("Tools count"))
 
     class Meta:
         model = McpServer
@@ -60,6 +61,7 @@ class McpServerSerializer(BaseModelSerializer):
             "enabled",
             "expose_to_ai",
             "tools_snapshot",
+            "tools_count",
             "last_synced_time",
             "last_sync_error",
             "remark",
@@ -68,11 +70,20 @@ class McpServerSerializer(BaseModelSerializer):
             "updated_time",
         ]
         # pk 由服务端生成：落进 read_only 才不会被元数据表单渲染成可编辑的「ID」输入框
-        read_only_fields = ["pk", "auth_token_set", "tools_snapshot", "last_synced_time", "last_sync_error"]
+        read_only_fields = [
+            "pk",
+            "auth_token_set",
+            "tools_snapshot",
+            "tools_count",
+            "last_synced_time",
+            "last_sync_error",
+        ]
         table_fields = [
             "name",
             "url",
             "enabled",
+            "expose_to_ai",
+            "tools_count",
             "last_synced_time",
             "last_sync_error",
             "remark",
@@ -84,6 +95,9 @@ class McpServerSerializer(BaseModelSerializer):
 
     def get_tools_snapshot(self, obj: Any) -> list[Any]:
         return tools_with_callable(obj, obj.tools_snapshot or [])
+
+    def get_tools_count(self, obj: Any) -> int:
+        return len(obj.tools_snapshot or [])
 
     def validate_name(self, value: Any) -> Any:
         return trim_required(value, _("Server name is required"))

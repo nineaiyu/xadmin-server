@@ -31,6 +31,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from identity.serializers.user import PASSWORD_DECRYPT_FAILED_MESSAGE
 from identity.utils import user_invite
+from identity.utils.auth.captcha import check_captcha
 
 logger = get_logger(__name__)
 
@@ -51,6 +52,7 @@ class InviteValidateAPIView(GenericAPIView):
                         "state": build_basic_type(OpenApiTypes.STR),
                         "username": build_basic_type(OpenApiTypes.STR),
                         "encrypted": build_basic_type(OpenApiTypes.BOOL),
+                        "captcha_required": build_basic_type(OpenApiTypes.BOOL),
                     }
                 )
             }
@@ -64,6 +66,8 @@ class InviteValidateAPIView(GenericAPIView):
                 "state": state,
                 "username": getattr(user, "username", ""),
                 "encrypted": settings.SECURITY_INVITE_ENCRYPTED_ENABLED,
+                # 匿名激活必须通过图形验证码：客户端脚本无法自行伪造服务端校验
+                "captcha_required": True,
             }
         )
 
@@ -87,6 +91,8 @@ class InviteAcceptAPIView(GenericAPIView):
                             "plaintext is only accepted when the encrypted switch is off"
                         ),
                     },
+                    "captcha_key": build_basic_type(OpenApiTypes.STR),
+                    "captcha_code": build_basic_type(OpenApiTypes.STR),
                 }
             )
         ),
@@ -95,6 +101,8 @@ class InviteAcceptAPIView(GenericAPIView):
     def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         token = str(request.data.get("token") or "").strip()
         password = str(request.data.get("password") or "")
+        # 服务端人机校验：失败直接 400（ValidateError），不进入令牌解析与密码校验
+        check_captcha(True, request.data.get("captcha_key"), request.data.get("captcha_code"))
         user, state = user_invite.resolve_invite_token(token)
         if state == "invalid":
             return ApiResponse(code=1001, detail=user_invite.INVITE_INVALID_MESSAGE)

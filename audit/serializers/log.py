@@ -11,7 +11,9 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from audit.models import OperationLog, UserLoginLog
+from audit.utils.mask import mask_operation_changes
 from common.core.fields import DictChoiceField, LabeledChoiceField
+from common.core.oplog_recorder import _log_field_limit
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from message.services import get_online_users_layers
@@ -25,6 +27,7 @@ class OperationLogSerializer(BaseModelSerializer):
         fields = [
             "pk",
             "module",
+            "model_label",
             "creator",
             "ipaddress",
             "path",
@@ -66,6 +69,19 @@ class OperationLogSerializer(BaseModelSerializer):
     body = serializers.JSONField()
     changes = serializers.JSONField(required=False, allow_null=True)
 
+    def to_representation(self, instance: Any) -> Any:
+        """changes 按源模型规则与查看者角色脱敏（超管/原文通道原样返回）。"""
+        data = super().to_representation(instance)
+        changes = data.get("changes")
+        if changes:
+            data["changes"] = mask_operation_changes(
+                changes,
+                getattr(instance, "model_label", ""),
+                getattr(self, "request", None),
+                getattr(getattr(self, "request", None), "user", None),
+            )
+        return data
+
 
 # 列表行大 JSON 字段的预览上限：三字段落库时已按 OPERATION_LOG_FIELD_MAX 截断，
 # 列表再收一道有界预览，避免整页载荷被请求/响应正文撑爆（详情/导出走全量口径）
@@ -84,9 +100,17 @@ class OperationLogListSerializer(OperationLogSerializer):
 
     body_truncated = serializers.SerializerMethodField(label=_("Request body truncated"))
     response_result_truncated = serializers.SerializerMethodField(label=_("Response result truncated"))
+    body_dropped = serializers.SerializerMethodField(label=_("Request body dropped"))
+    response_result_dropped = serializers.SerializerMethodField(label=_("Response result dropped"))
 
     class Meta(OperationLogSerializer.Meta):
-        fields = [*OperationLogSerializer.Meta.fields, "body_truncated", "response_result_truncated"]
+        fields = [
+            *OperationLogSerializer.Meta.fields,
+            "body_truncated",
+            "response_result_truncated",
+            "body_dropped",
+            "response_result_dropped",
+        ]
         table_fields = OperationLogSerializer.Meta.table_fields
 
     def get_body_truncated(self, obj: Any) -> bool:
@@ -94,6 +118,13 @@ class OperationLogListSerializer(OperationLogSerializer):
 
     def get_response_result_truncated(self, obj: Any) -> bool:
         return isinstance(obj.response_result, str) and len(obj.response_result) > OPERATION_LOG_LIST_PREVIEW_MAX
+
+    def get_body_dropped(self, obj: Any) -> bool:
+        """OPERATION_LOG_FIELD_MAX=0 时正文按配置不落库，不是「没有正文」。"""
+        return _log_field_limit() == 0 and not obj.body
+
+    def get_response_result_dropped(self, obj: Any) -> bool:
+        return _log_field_limit() == 0 and not obj.response_result
 
     def to_representation(self, instance: Any) -> dict[str, Any]:
         data: dict[str, Any] = super().to_representation(instance)
@@ -128,7 +159,6 @@ class LoginLogSerializer(BaseModelSerializer):
             "ipaddress",
             "city",
             "online",
-            "channel_name",
             "login_type",
             "browser",
             "system",

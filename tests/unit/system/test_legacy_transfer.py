@@ -8,7 +8,7 @@ import pytest
 from django.core.files.base import ContentFile
 from django.core.management import call_command
 
-from system.utils.platform import legacy_transfer as lt
+from ops.legacy import transfer as lt
 
 
 def _patch_export_models(monkeypatch):
@@ -339,7 +339,7 @@ class TestRoundTrip:
 
     def test_extra_table_without_model_is_reported(self, tmp_path):
         """二开表在目标库没有对应模型时只告警跳过，不中断导入。"""
-        from system.utils.platform.legacy_importer import Importer
+        from ops.legacy.importer import Importer
 
         importer = Importer(tmp_path)
         results = importer.import_extra_tables({"not_a_real_table": [{"id": 1}]})

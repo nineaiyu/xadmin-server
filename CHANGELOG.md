@@ -14,7 +14,7 @@
 
 - **AI 动作声明按应用自动发现**：各应用可在根目录提供 `ai_declarations.py`
   （`AI_ACTIONS`，兼容 `AI_READ_ACTIONS` / `AI_WRITE_ACTIONS`），由
-  `ai/utils/ai_registry.py` 在首次构建工具目录时合并；key 全局唯一、重复 fail-fast。
+  `ai/services/actions/ai_registry.py` 在首次构建工具目录时合并；key 全局唯一、重复 fail-fast。
   二开应用随安装自动接入，无需改动 ai 应用。
 - **AI 动作面补全**：动作由 60 个扩至 105 个（102 声明式 + 3 内置），补充岗位 / 登录策略 /
   账号巡检 / 开放平台 / 任务中心 / 审批流实例与定义 / 报表与大屏 / 表单提交 / 通知模板 /
@@ -38,7 +38,7 @@
 - **AI 动作注册表位置变更**：集中声明文件 `ai/utils/ai_api_registry.py` /
   `ai_registry_ops.py` / `ai_registry_infra.py` / `ai_registry_org.py` /
   `ai_builtin_actions.py` 移除，声明下沉到所属应用（请假→`approval`、动态表单→`dataset`、
-  首页统计→`system`）；`ai/utils/ai_actions.py` 只保留目录构建 / 草稿解析 / 权限双门 /
+  首页统计→`system`）；`ai/services/actions/ai_actions.py` 只保留目录构建 / 草稿解析 / 权限双门 /
   执行收口 / 审计。`ai.services.api_action_specs()` 与 OpenAPI 元数据派生仍为同一入口。
 - 新增 90 条 AI 动作文案的中文翻译（`locale/zh`），en 目录同步登记。
 

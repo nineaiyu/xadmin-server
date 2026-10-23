@@ -228,10 +228,14 @@ def build_operation_log_info(request: Any, response: Any, request_start_time: An
         "status_code": response_data.get("code"),
         "request_uuid": getattr(request, "request_uuid", None),
         "exec_time": time.time() - request_start_time,
-        # 字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径由视图集挂载）
-        "changes": json.dumps(changes, cls=encoders.JSONEncoder, default=str)[:limit]
+        # 字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径由视图集挂载）。
+        # 写入前先跑凭据名脱敏（password / token 等字段名，与请求体同口径），字段级
+        # 业务脱敏（手机号等）由输出侧按源模型规则完成（见 audit.serializers.log）。
+        "changes": json.dumps(desensitize_payload(changes), cls=encoders.JSONEncoder, default=str)[:limit]
         if (changes := getattr(request, "operation_log_changes", None))
         else None,
+        # 变更来源模型：输出侧据此套用源模型的脱敏规则
+        "model_label": str(getattr(request, "operation_log_model_label", "") or "")[:128],
         # 响应体同口径脱敏：登录响应（access/refresh）与临时令牌响应（token）等
         # 敏感值不落操作日志（与请求体 body 共用 desensitize_payload）
         "response_result": json.dumps(

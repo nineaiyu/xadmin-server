@@ -12,6 +12,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.core.credentials import MASK
 from common.core.serializers import BaseModelSerializer
 from dataset.models.dataset import (
     Dashboard,
@@ -22,7 +23,7 @@ from dataset.models.dataset import (
     ScreenTemplate,
     ScreenTemplateVersion,
 )
-from dataset.utils.dataset import numeric_columns_of
+from dataset.utils.dataset import dataset_visible_to, numeric_columns_of, visible_dataset_queryset
 from dataset.utils.report_design import ReportDesignError, normalize_report_design
 from dataset.utils.screen_layout import (
     SCREEN_MAX_GROUP,
@@ -70,9 +71,9 @@ def visible_dashboard_pks(user: Any, referenced: Any) -> set[Any]:
 def layout_references(user: Any, panes: Any) -> tuple[set[Any], Collection[object], dict[str, Any]]:
     """收集窗格引用并装载校验白名单（大屏栅格 / 自由载荷 / 模板载荷共用）。
 
-    只查窗格引用到的仪表盘主键（可见性交集，不整表加载）与指标卡数据集
-    （存在性与数值列校验都不需要整表）；引用串先过主键形态校验，非法形态
-    按「不存在」处理（主键查询遇非法值会抛错）。
+    只查窗格引用到的仪表盘主键与指标卡数据集（都按当前用户可见域取交集，
+    不整表加载；存在性与数值列校验都不需要整表）；引用串先过主键形态校验，
+    非法形态按「不存在」处理（主键查询遇非法值会抛错）。
 
     返回 ``(known_dashboards, known_datasets, datasets)``：``datasets`` 键为
     ``str(pk)``，供 sum/avg 数值列校验复用。
@@ -101,8 +102,11 @@ def layout_references(user: Any, panes: Any) -> tuple[set[Any], Collection[objec
         except ValidationError:
             continue
         valid_pks.append(dataset_pk)
+    # 数据集按当前用户的可见域取交集（与仪表盘同口径）：存在但不可见的 personal
+    # 数据集一律按「未知引用」拒绝，否则低权用户能把他人数据集挂进自己的大屏。
     datasets = {
-        str(item.pk): item for item in Dataset.objects.filter(pk__in=valid_pks).only("pk", "bound_model", "columns")
+        str(item.pk): item
+        for item in visible_dataset_queryset(user).filter(pk__in=valid_pks).only("pk", "bound_model", "columns")
     }
     # 容器统一为「成员对象集合」视角：keys 视图与占位单元素集共用一个类型面
     known_datasets: Collection[object] = datasets.keys()
@@ -135,6 +139,16 @@ class ScreenSerializer(BaseModelSerializer):
     # 非创建者修改/删除被写守卫拒绝（1003）：下发 is_owner 供行内按钮显隐
     row_owner_guard = True
 
+    # 列表形态派生：canvas-grid / canvas-free / carousel（与投屏端 active_screen_panes 同源）
+    render_mode = serializers.SerializerMethodField(label=_("Render mode"))
+
+    def get_render_mode(self, obj: Any) -> str:
+        from dataset.utils.screen_layout import SCREEN_LAYOUT_MODE_FREE, active_screen_panes
+
+        if not active_screen_panes(obj):
+            return "carousel"
+        return "canvas-free" if obj.layout_mode == SCREEN_LAYOUT_MODE_FREE else "canvas-grid"
+
     class Meta:
         model = Screen
         fields = [
@@ -144,6 +158,7 @@ class ScreenSerializer(BaseModelSerializer):
             "layout",
             "layout_mode",
             "free_layout",
+            "render_mode",
             "interval",
             "refresh",
             "visibility",
@@ -154,7 +169,16 @@ class ScreenSerializer(BaseModelSerializer):
         ]
         read_only_fields = ["pk", "created_time", "updated_time"]
         # RePlusPage 列表列（主题色不进列表：色彩单元格无可读信息）
-        table_fields = ["name", "dashboards", "interval", "refresh", "visibility", "theme", "updated_time"]
+        table_fields = [
+            "name",
+            "render_mode",
+            "dashboards",
+            "interval",
+            "refresh",
+            "visibility",
+            "theme",
+            "updated_time",
+        ]
 
     def _visible_dashboard_pks(self, referenced: Any) -> set[Any]:
         """当前用户可见的仪表盘主键交集（实现见模块级 ``visible_dashboard_pks``）。"""
@@ -354,6 +378,11 @@ class ReportSerializer(BaseModelSerializer):
     """定时报表。执行以创建者权限上下文进行（menu 上下文为空 = 仅全局授权）。"""
 
     ignore_field_permission = True
+    # 数据集是「定义资源」：绑定路径只校验可见性（validate_dataset），不再叠加
+    # dataset.dataset 数据权限——否则只有报表菜单权限的用户能看到下拉、保存却
+    # 报 "Invalid pk ... or the current role has no data permission"。执行期仍
+    # 按创建者数据权限 fail-closed 收敛行集。
+    dataset = serializers.PrimaryKeyRelatedField(queryset=Dataset.objects.all(), label=_("Dataset"))
     # 非创建者修改/删除被写守卫拒绝（1003）：下发 is_owner 供行内按钮显隐
     row_owner_guard = True
 
@@ -392,14 +421,38 @@ class ReportSerializer(BaseModelSerializer):
             "send_time",
             "recipients",
             "notify_channels",
+            "last_run_at",
             "last_status",
             "updated_time",
         ]
 
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """非创建者只看收件人占位：调度配置可见不等于邮箱/IM 账号明细可见。"""
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if (
+            user is not None
+            and getattr(user, "is_authenticated", False)
+            and not getattr(user, "is_superuser", False)
+            and instance.creator_id != getattr(user, "pk", None)
+        ):
+            for field in ("recipients", "im_recipients"):
+                values = data.get(field)
+                if isinstance(values, list):
+                    data[field] = [MASK] * len(values)
+        return dict(data)
+
     def validate_dataset(self, value: Any) -> Any:
-        if Dataset.objects.filter(pk=value.pk).exists():
-            return value
-        raise serializers.ValidationError(_("Unknown dataset in layout"))
+        if not Dataset.objects.filter(pk=value.pk).exists():
+            raise serializers.ValidationError(_("Unknown dataset in layout"))
+        # 存在性不等于可见性：绑定他人 personal 数据集会把对方的数据口径
+        # （列 / 过滤 / 排序）复制进自己的报表，运行后还能拿到结果数据。
+        request = self.context.get("request")
+        viewer = getattr(request, "user", None) or getattr(self.instance, "creator", None)
+        if not dataset_visible_to(viewer, value.pk):
+            raise serializers.ValidationError(_("The dataset is not visible to you (personal dataset of another user)"))
+        return value
 
     def validate_recipients(self, value: Any) -> Any:
         if not isinstance(value, list):

@@ -4,7 +4,7 @@
 
 两条链路：
 - 草稿生成：聊天室 `/do`（message/ai.py，非流式）与助手页 `action/interpret/stream`
-  （本文件，SSE 思考 + 结构化草稿），共用 ai/utils/ai_actions.py 的注册表与校验；
+  （本文件，SSE 思考 + 结构化草稿），共用 ai/services/actions/ai_actions.py 的注册表与校验；
 - 执行：`action/execute`（用户确认后），白名单 + 参数重校验 + 权限双门 + 审批协议 + 审计。
 
 对话持久化：助手页来源（未携带 room_id）的草稿与执行结果落 AiChatMessage；
@@ -33,14 +33,14 @@ class AiActionExecuteMixin:
     @staticmethod
     def _persist_assistant(user: Any, content: str, extra: dict[str, Any], reasoning: str = "") -> dict[str, Any]:
         """落助手页 assistant 消息（返回载荷；持久化失败返回空 dict）。"""
-        from ai.utils.ai_chat import message_payload, persist_message
+        from ai.services.assistant.ai_chat import message_payload, persist_message
 
         row = persist_message(user, "action", "assistant", content=content, reasoning=reasoning, extra=extra)
         return message_payload(row)
 
     @staticmethod
     def _persist_system(user: Any, detail: str) -> dict[str, Any]:
-        from ai.utils.ai_chat import system_error_message
+        from ai.services.assistant.ai_chat import system_error_message
 
         return system_error_message(user, "action", detail)
 
@@ -56,18 +56,18 @@ class AiActionExecuteMixin:
         用户确认后走 `action/execute`。门禁（灰度关闭/未配置/空请求）在响应头前
         返回 JSON 1001，与助手页其他流式端点同口径。
         """
-        from ai.utils.ai import is_enabled as ai_enabled_check
-        from ai.utils.ai import native_tools_enabled, structured_chat_client
-        from ai.utils.ai_actions import (
+        from ai.services.actions.ai_actions import (
             ai_action_enabled,
             audit_ai_action,
             build_draft_prompt,
             draft_summary,
             parse_draft,
         )
-        from ai.utils.ai_chat import message_payload, persist_message
-        from ai.utils.ai_guard import guard_summary
-        from ai.utils.ai_usage import quota_error, tracked_chat_stream
+        from ai.services.assistant.ai import is_enabled as ai_enabled_check
+        from ai.services.assistant.ai import native_tools_enabled, structured_chat_client
+        from ai.services.assistant.ai_chat import message_payload, persist_message
+        from ai.services.assistant.ai_guard import guard_summary
+        from ai.services.assistant.ai_usage import quota_error, tracked_chat_stream
         from integrations.sdk.ai.chat import AiSdkError
 
         text = str(request.data.get("message") or "").strip()
@@ -98,7 +98,7 @@ class AiActionExecuteMixin:
                     # 原生轨道：能力探测通过 + 开关开启时优先。流式产出 reasoning/content，
                     # 工具调用分片由 SDK 累积成完整列表后再解析（arguments 是 JSON 片段，
                     # 不逐字上屏；模型若输出推理/正文则实时可见）
-                    from ai.utils.ai_actions import native_draft_result_stream
+                    from ai.services.actions.ai_actions import native_draft_result_stream
 
                     logger.info("ai action draft track: native (user=%s)", request.user.pk)
                     for item in native_draft_result_stream(request.user, text):
@@ -157,7 +157,7 @@ class AiActionExecuteMixin:
                 yield {"event": "error", "data": {"detail": detail, "message": payload}}
                 return
             except AiSdkError as exc:
-                from ai.utils.ai import readable_ai_error
+                from ai.services.assistant.ai import readable_ai_error
 
                 detail = readable_ai_error(exc)
                 audit_ai_action(request.user, "", {}, False, detail, {"guard": guard})
@@ -250,10 +250,10 @@ class AiActionExecuteMixin:
         首次确认建 PENDING 单并返回 412；审批通过后前端原样重发（指纹一致）
         由拦截器携带 X-Approval-Id，消费成功才真正执行。
         """
-        from ai.utils.ai import is_enabled
-        from ai.utils.ai_actions import ai_action_enabled, audit_ai_action, execute_action, get_action
-        from ai.utils.ai_idempotency import execute_idempotent
-        from ai.utils.ai_usage import quota_error
+        from ai.services.actions.ai_actions import ai_action_enabled, audit_ai_action, execute_action, get_action
+        from ai.services.assistant.ai import is_enabled
+        from ai.services.assistant.ai_idempotency import execute_idempotent
+        from ai.services.assistant.ai_usage import quota_error
 
         assistant_console = not request.data.get("room_id")
 
@@ -323,7 +323,7 @@ class AiActionExecuteMixin:
                 persist_failure(str(_("Waiting for approval")))
                 return approval_response
 
-        from ai.utils.ai_guard import guard_summary
+        from ai.services.assistant.ai_guard import guard_summary
 
         # 幂等：同一意图（用户 + 动作 + 规范化参数）在 TTL 内重复提交返回首次结果，
         # force=true 为用户确认后的「仍要执行」显式通道

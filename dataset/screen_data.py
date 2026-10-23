@@ -22,6 +22,7 @@ import time
 from typing import Any, TypedDict
 
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from dataset.utils.dataset import filter_layout_for_user
@@ -107,7 +108,12 @@ def collect_screen_cards(screen: Any, user: Any = None) -> list[CardRef]:
         dashboard_pks = [str(item) for item in (screen.dashboards or [])]
 
     # in_bulk 的键是字段原值（UUID），统一 str(pk) 自建映射，避免类型不一致漏查
-    dashboards = {str(item.pk): item for item in Dashboard.objects.filter(pk__in=dashboard_pks)}
+    dashboard_qs = Dashboard.objects.filter(pk__in=dashboard_pks)
+    if user is not None and not getattr(user, "is_superuser", False):
+        # 与 REST 读侧同口径：personal 仅创建者可见，shared 全员可见；
+        # 展示层虽会丢不可见窗格，但帧不应把他人 personal 仪表盘数据推到浏览器
+        dashboard_qs = dashboard_qs.filter(Q(visibility=Dashboard.Visibility.SHARED) | Q(creator=user))
+    dashboards = {str(item.pk): item for item in dashboard_qs}
 
     refs: list[CardRef] = list(metric_refs)
     seen: set[tuple[str, str]] = {("", ref["card"]) for ref in metric_refs}

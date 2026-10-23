@@ -4,12 +4,11 @@
 # filename : block_ip
 # author : ly_13
 # date : 8/12/2024
-import socket
-import struct
 from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
+from django.http import Http404
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type
 from drf_spectacular.types import OpenApiTypes
@@ -20,27 +19,11 @@ from rest_framework.request import Request
 from common.core.modelset import ListDeleteModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils.ip.utils import contains_ip
 from settings.models import Setting
 from settings.serializers.security import SecurityBlockIPSerializer
+from settings.utils.ip_block import FilterIps, IpUtils
 from settings.utils.security import LoginIpBlockUtil
-
-
-class FilterIps(list[Any]):
-    def filter(self, pk__in: Any = None) -> list[Any]:
-        if pk__in is None:
-            pk__in = []
-        return [obj.get("ip") for obj in self.__iter__() if obj.get("pk")() in pk__in]
-
-
-class IpUtils:
-    def __init__(self, ip: str) -> None:
-        self.ip = ip
-
-    def ip_to_int(self) -> str:
-        return str(struct.unpack("!I", socket.inet_aton(self.ip))[0])
-
-    def int_to_ip(self) -> str:
-        return socket.inet_ntoa(struct.pack("!I", int(self.ip)))
 
 
 class SecurityBlockIpViewSet(ListDeleteModelSet):
@@ -66,13 +49,17 @@ class SecurityBlockIpViewSet(ListDeleteModelSet):
         for key in keys:
             ips.append(key.replace(prefix, ""))
 
-        white_list = settings.SECURITY_LOGIN_IP_WHITE_LIST
-        ips = list(set(ips) - set(white_list))
-        ips = [ip for ip in ips if ip != "*"]
+        white_list = [str(item) for item in settings.SECURITY_LOGIN_IP_WHITE_LIST if str(item).strip()]
+        ips = [ip for ip in set(ips) if ip != "*" and not contains_ip(ip, white_list)]
         return ips
 
     def get_object(self) -> str:
-        return IpUtils(self.kwargs.get("pk")).int_to_ip()
+        pk = str(self.kwargs.get("pk") or "")
+        try:
+            return IpUtils(pk).int_to_ip()
+        except (ValueError, OSError) as exc:
+            # URL 段允许任意非斜杠字符：非法整数按「不存在」处理，不把 500 暴露给扫描器
+            raise Http404 from exc
 
     def perform_destroy(self, ip: str) -> tuple[int, int]:
         LoginIpBlockUtil(ip).clean_block_if_need()

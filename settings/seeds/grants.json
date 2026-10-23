@@ -3,20 +3,22 @@
   "roles": {
     "admin": [
       "SettingBasic",
+      "SettingOpenPlatform",
       "SettingSecurity",
       "SettingSms",
       "SystemSetting",
       "backends:SmsSetting",
       "batchDestroy:SecurityBlockIp",
-      "batchDestroy:SystemSetting",
       "create:EmailServerSetting",
+      "create:ScimSetting",
       "create:SmsConfig",
       "destroy:SecurityBlockIp",
       "exportData:SystemSetting",
-      "importData:SystemSetting",
       "list:SecurityBlockIp",
       "list:SystemSetting",
       "partialUpdate:EmailServerSetting",
+      "partialUpdate:OAuthProviderSetting",
+      "partialUpdate:ScimSetting",
       "partialUpdate:SecurityBindEmailAuth",
       "partialUpdate:SecurityBindPhoneAuth",
       "partialUpdate:SecurityCaptchaCode",
@@ -31,6 +33,8 @@
       "partialUpdate:SmsSetting",
       "retrieve:EmailServerSetting",
       "retrieve:ImNotifySetting",
+      "retrieve:OAuthProviderSetting",
+      "retrieve:ScimSetting",
       "retrieve:SecurityBindEmailAuth",
       "retrieve:SecurityBindPhoneAuth",
       "retrieve:SecurityBlockIp",
@@ -46,7 +50,10 @@
       "retrieve:SettingBasic",
       "retrieve:SmsConfig",
       "retrieve:SmsSetting",
-      "retrieve:SystemSetting"
+      "retrieve:SystemSetting",
+      "rotateToken:ScimSetting",
+      "syncStatus:ScimSetting",
+      "test:OAuthProviderSetting"
     ]
   }
 }

@@ -89,13 +89,29 @@ class DashboardSerializer(BaseModelSerializer):
         from identity.models import UserRole
 
         known_role_codes = set(UserRole.objects.values_list("code", flat=True))
+        dataset_cache: dict[str, Dataset] = {}
         for card in value or []:
             if not isinstance(card, dict) or not card.get("id") or not card.get("dataset"):
                 raise serializers.ValidationError(_("Invalid dashboard layout"))
             if card.get("chart_type", "number") not in ALLOWED_CHART_TYPES:
                 raise serializers.ValidationError(_("Invalid chart type: {}").format(card.get("chart_type")))
-            if str(card["dataset"]) not in dataset_pks:
+            dataset_pk = str(card["dataset"])
+            if dataset_pk not in dataset_pks:
                 raise serializers.ValidationError(_("Unknown dataset in layout"))
+            dataset = dataset_cache.get(dataset_pk)
+            if dataset is None:
+                dataset = Dataset.objects.get(pk=dataset_pk)
+                dataset_cache[dataset_pk] = dataset
+            metric = card.get("metric", "count")
+            if metric not in ("count", "sum", "avg"):
+                raise serializers.ValidationError(_("Invalid metric: {}").format(metric))
+            if metric in ("sum", "avg") and card.get("value_field") not in numeric_columns_of(dataset):
+                raise serializers.ValidationError(
+                    _("Value field is not numeric in dashboard card: {}").format(card["id"])
+                )
+            group_by = card.get("group_by")
+            if group_by and group_by not in (dataset.columns or []):
+                raise serializers.ValidationError(_("Group field is not in dataset columns: {}").format(card["id"]))
             # 卡片级权限（allowed_roles）：空 = 全员可见；非空须为已知角色 code
             allowed_roles = card.get("allowed_roles") or []
             if not isinstance(allowed_roles, list) or any(not isinstance(item, str) for item in allowed_roles):
@@ -109,5 +125,9 @@ class DashboardSerializer(BaseModelSerializer):
         """读取侧按浏览者过滤卡片（卡片级权限；超管全量，匿名 fail-closed）。"""
         data = super().to_representation(instance)
         request = self.context.get("request")
-        data["layout"] = filter_layout_for_user(instance.layout, getattr(request, "user", None))
+        data["layout"] = filter_layout_for_user(
+            instance.layout,
+            getattr(request, "user", None),
+            owner_id=getattr(instance, "creator_id", None),
+        )
         return data

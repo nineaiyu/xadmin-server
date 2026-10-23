@@ -32,7 +32,7 @@
 - 13 个权限点由 `sync_menu_permissions --update-seed` 生成（`PARENT_MENU_MAP` 登记 `api/system/posts` → 页面菜单 `SystemPost`），
   权限码形如 `list:SystemPost` / `assign:SystemPost` / `recyclePurge:SystemPost`；
 - 页面菜单与全部权限点授予「管理员 / 演示模式」两个内置角色（与部门管理的授权面一致）；
-- AI 工具面：`ai/utils/ai_tool_triage.py` 登记 `system/posts` 为 exempt（组织配置面，不 AI 直调），缺口守护保持清零。
+- AI 工具面：`ai/services/actions/ai_tool_triage.py` 登记 `system/posts` 为 exempt（组织配置面，不 AI 直调），缺口守护保持清零。
 
 ### D5 前端
 

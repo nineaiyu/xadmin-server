@@ -509,5 +509,37 @@
    "group_name": null,
    "group_rank": null
   }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "d55c4aa7-4f34-400d-b346-3f00092884f6",
+  "fields": {
+   "created_time": "2026-10-22T00:00:00Z",
+   "updated_time": "2026-10-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "文件统计",
+   "icon": null,
+   "r_svg_name": null,
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": null,
+   "frame_loading": false,
+   "watermark": false,
+   "transition_enter": null,
+   "transition_leave": null,
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0,
+   "active_path": null,
+   "badge": null,
+   "badge_type": "normal",
+   "query": null,
+   "group_name": null,
+   "group_rank": null
+  }
  }
 ]

@@ -19,7 +19,7 @@ from django.utils import timezone
 
 from audit.models import OperationLog, UserLoginLog
 from identity.models import UserInfo
-from system.views.platform.dashboard import cached_total_count, trend_info, trend_points
+from system.views.platform.dashboard import cached_total_count, scope_limited, trend_info, trend_points
 
 pytestmark = pytest.mark.django_db
 
@@ -163,6 +163,14 @@ class TestTotalCountCache:
         assert second == 1
         assert all("COUNT" not in q["sql"].upper() for q in ctx.captured_queries)
 
+    def test_cached_total_count_keyed_by_model(self, superuser):
+        """同一用户的不同统计模型不串数：键必须带 model label。"""
+        _make_login_log(superuser, days_ago=0)
+        _make_login_log(superuser, days_ago=0)
+
+        assert cached_total_count("model-key-probe", UserLoginLog.objects.all()) == 2
+        assert cached_total_count("model-key-probe", UserInfo.objects.all()) == UserInfo.objects.count()
+
     def test_cached_total_count_keyed_by_user(self, superuser, normal_user):
         """数据权限收敛后的计数随用户不同：缓存键携带用户维度，互不串值。"""
         _make_login_log(superuser, days_ago=0)
@@ -171,6 +179,28 @@ class TestTotalCountCache:
         assert cached_total_count(normal_user.pk, UserLoginLog.objects.none()) == 0
         # superuser 键命中自身缓存，不受其他用户键影响
         assert cached_total_count(superuser.pk, UserLoginLog.objects.all()) == 1
+
+
+class TestScopeLimited:
+    def test_none_queryset_is_limited(self):
+        """数据权限无授权返回 queryset.none()：必须标记为受限，而不是真实 0。"""
+        assert scope_limited(UserInfo.objects.none()) is True
+
+    def test_filtered_empty_is_not_limited(self):
+        """有授权但没数据是普通 filter 结果：仍按真实 0 展示，不能误报无权限。"""
+        assert scope_limited(UserInfo.objects.filter(username="no-such-user")) is False
+
+    def test_dashboard_marks_no_data_scope(self, api_client, normal_user):
+        api_client.force_authenticate(user=normal_user)
+        response = api_client.get(f"{DASHBOARD_URL}/user-total")
+        assert response.status_code == 200
+        assert response.data["scope_limited"] is True
+        assert response.data["count"] == 0
+
+    def test_dashboard_superuser_is_not_limited(self, auth_client):
+        response = auth_client.get(f"{DASHBOARD_URL}/user-total")
+        assert response.status_code == 200
+        assert response.data["scope_limited"] is False
 
 
 class TestDashboardCache:

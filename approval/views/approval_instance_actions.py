@@ -17,7 +17,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from approval.models.approval import ApprovalFlow, ApprovalNodeTask
-from approval.utils.approval_flow import (
+from approval.services.approval_flow import (
     FLOW_STATS_WINDOW_DAYS,
     add_sign,
     approve_task,
@@ -31,7 +31,7 @@ from approval.utils.approval_flow import (
     transfer_task,
     urge_instance,
 )
-from approval.utils.approval_flow import (
+from approval.services.approval_flow import (
     remove_sign as remove_sign_task,
 )
 from approval.utils.approval_mfa import ensure_approval_action_confirmed

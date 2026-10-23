@@ -296,13 +296,14 @@ class TestMenuPermissionAudit:
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000
         data = resp.data["data"]
-        assert {"summary", "missing", "orphan", "duplicate", "field_unconfigured"} <= set(data)
+        assert {"summary", "missing", "orphan", "duplicate", "custom_action", "field_unconfigured"} <= set(data)
         # 库内无权限点时，代码路由全部计入正向缺口
         assert data["summary"]["missing"] == len(data["missing"]) > 0
         summary = data["summary"]
         assert summary["total"] == (
             summary["missing"] + summary["orphan"] + summary["duplicate"] + summary["field_unconfigured"]
         )
+        assert summary["custom_action"] == len(data["custom_action"])
         assert set(data["missing"][0]) == self.ITEM_KEYS
         assert data["missing"][0]["problem"] == "missing"
         # 只读：检测不得写入/改动任何菜单

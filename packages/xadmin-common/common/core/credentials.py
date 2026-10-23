@@ -91,6 +91,37 @@ def filter_out_sensitive_rows(queryset: Any) -> Any:
     return queryset.exclude(Q(encrypted=True) | Q(name__in=ENCRYPTED_SETTING_KEYS))
 
 
+def mask_sensitive_config_value(key: Any, value: Any) -> Any:
+    """生效值的出口掩码：敏感键只表达「已配置」，不外发明文。
+
+    整值加密键（``SENSITIVE_SETTING_KEYS[key] == ()``）→ 非空即 ``MASK``；
+    字段级键（如 ``OAUTH_PROVIDERS`` 的 ``client_secret``）→ 同构副本里只把
+    声明字段替换为 ``MASK``，其余字段照常展示（页面仍需看到 provider 名称等）。
+    非敏感键原样返回：``cache_value`` 是配置页的「生效值」列，掩码只针对凭据。
+    """
+    if not is_sensitive_key(str(key or "")):
+        return value
+    fields = SENSITIVE_SETTING_KEYS.get(str(key)) or ()
+    if not fields:
+        return MASK if not _is_empty(value) else value
+    if isinstance(value, list):
+        return [_mask_dict_fields(item, fields) for item in value]
+    if isinstance(value, dict):
+        return _mask_dict_fields(value, fields)
+    return value
+
+
+def _mask_dict_fields(item: Any, fields: Any) -> Any:
+    """字典副本内把声明字段替换为掩码（不改原对象，调用方可能缓存了生效值）。"""
+    if not isinstance(item, dict):
+        return item
+    masked = dict(item)
+    for field in fields:
+        if not _is_empty(masked.get(field)):
+            masked[field] = MASK
+    return masked
+
+
 def is_cipher_str(value: Any) -> bool:
     """值是否为本仓字段级密文（v3: 前缀）。"""
     return isinstance(value, str) and value.startswith(CIPHER_PREFIX)

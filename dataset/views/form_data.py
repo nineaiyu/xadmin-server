@@ -82,6 +82,9 @@ class DynamicFormDataViewSet(
         context = super().get_serializer_context()
         if getattr(self, "action", None) == "export_data":
             context["dynamic_fields"] = export_dynamic_fields(self.filter_queryset(self.get_queryset()))
+            # 导出链路在 ExportAction 内复用 list，request 上下文可能不是 DRF Request；
+            # 显式下发掩码开关，避免超管被误掩码
+            context["mask_sensitive_fields"] = not getattr(self.request.user, "is_superuser", False)
             return context
         # ?data_fields=key1,key2：行内 data 载荷收缩（列表页只渲染所需动态列）
         raw = str(self.request.query_params.get("data_fields") or "")

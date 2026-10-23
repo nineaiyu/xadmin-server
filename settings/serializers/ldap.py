@@ -141,6 +141,14 @@ class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         help_text=_("Hourly sync of users/departments/status from the directory"),
     )
     LDAP_SYNC_AUTO_CREATE = serializers.BooleanField(default=True, label=_("Auto create user on sync"))
+    LDAP_SYNC_PAGE_SIZE = serializers.IntegerField(
+        required=False,
+        default=500,
+        min_value=10,
+        max_value=5000,
+        label=_("Sync page size"),
+        help_text=_("Directory page size per search request during scheduled sync (10-5000)"),
+    )
 
     class SyncMissingPolicyChoices(TextChoices):
         """缺失用户处置策略取值：value 为存量存储值，label 供 API 元数据与前端下拉展示。"""
@@ -186,7 +194,21 @@ class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     }
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # 全量校验沿用「留空/缺失收敛默认」；partial update 只处理显式提交的空白键，
+        # 不把未提交键注入 validated_data（契约不依赖视图侧再过滤一次）
         for key, default in self._BLANK_DEFAULTS.items():
-            if attrs.get(key) in (None, ""):
-                attrs[key] = default
+            if key in attrs or not self.partial:
+                if attrs.get(key) in (None, ""):
+                    attrs[key] = default
+        mapping = attrs.get("LDAP_GROUP_ROLE_MAP")
+        if mapping:
+            from identity.models import UserRole
+
+            codes = {str(code).strip() for code in mapping.values() if str(code).strip()}
+            existing = set(UserRole.objects.filter(code__in=codes).values_list("code", flat=True))
+            invalid = sorted(codes - existing)
+            if invalid:
+                raise serializers.ValidationError(
+                    _("Unknown role codes in group mapping: {}").format(", ".join(invalid))
+                )
         return attrs

@@ -48,6 +48,10 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
 
         def _render_client_page(self, *args: Any, **kwargs: Any) -> Any: ...
 
+        def _client_locale(self, *args: Any, **kwargs: Any) -> dict[str, Any]: ...
+
+        def _render_client_locale(self, *args: Any, **kwargs: Any) -> str: ...
+
     # ------------------------------------------------------------- 上下文构建
 
     def _resolve_model(self, label: str) -> Any:
@@ -68,6 +72,7 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
         component = options["component"] or f"{app_label.title()}{model.__name__}"
         router_path = model_snake.replace("_", "-")
         ordering = self._parse_ordering(options)
+        client_root = Path(options["frontend_root"]) if options["frontend_root"] else self._default_client_root()
         ctx = {
             "model": model,
             "app_label": app_label,
@@ -84,6 +89,9 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
             "with_import_export": options["with_import_export"],
             "menu_icon": str(options.get("menu_icon") or "").strip(),
             "default_ordering": ordering or self._default_ordering(model),
+            # 只有确实会写前端词条时才把菜单标题落 key；--skip-frontend 或找不到
+            # 前端仓库时保留中文标题，避免生成一个无人翻译的 menus.<Component>
+            "use_locale_title": not options["skip_frontend"] and client_root is not None,
         }
         ctx.update(self._field_plan(model))
         return ctx
@@ -329,6 +337,17 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
                 "mode": "create",
                 "key": f"client-hook-{ctx['model_snake']}",
             },
+            *[
+                {
+                    "label": f"前端词条（{locale}）",
+                    "path": client_root / "locales" / f"{locale}.yaml",
+                    "content": self._render_client_locale(ctx, locale),
+                    "mode": "locale_yaml",
+                    "key": f"client-locale-{locale}-{ctx['model_snake']}",
+                    "locale": self._client_locale(ctx, locale),
+                }
+                for locale in ("zh-CN", "en")
+            ],
         ]
 
     @staticmethod

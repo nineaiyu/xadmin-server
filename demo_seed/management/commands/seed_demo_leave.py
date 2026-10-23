@@ -181,7 +181,7 @@ class Command(BaseCommand):
 
     def _drive(self, leave: Leave, approver: UserInfo, action: str, baseline: datetime.datetime) -> None:
         """按剧本推进（真实引擎）：approve / reject / pending（停首节点待办）。"""
-        from approval.utils.approval_flow import approve_task, reject_task
+        from approval.services.approval_flow import approve_task, reject_task
 
         task = ApprovalNodeTask.objects.filter(
             instance_id=leave.instance_id, status=ApprovalNodeTask.Status.PENDING, assignee=approver

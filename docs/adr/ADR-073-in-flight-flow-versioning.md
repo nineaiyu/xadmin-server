@@ -10,7 +10,7 @@
 |---|---|
 | 节点物理删除重建：`flow.nodes.all().delete()` + `_replace_nodes` | `approval/serializers/approval_flow.py:248-251,313-315,318-333` |
 | PENDING 实例锁：改节点 / 回滚一律拒绝 | `serializers/approval_flow.py:232-234,249,307` |
-| 推进读活定义：`next_node(instance.flow, node.order, ...)` 每次从 `flow.nodes` 现查 | `approval/utils/approval_flow/engine.py:270`、`conditions.py:169-193` |
+| 推进读活定义：`next_node(instance.flow, node.order, ...)` 每次从 `flow.nodes` 现查 | `approval/services/approval_flow/engine.py:270`、`conditions.py:169-193` |
 | 任务节点 FK 兜底 SET_NULL + 名称快照 | `approval/models/approval.py:288-298`；`engine.py:320-322`（「节点被删除」fail-closed 提示） |
 | 版本快照已具备（审计 + 回滚），明确声明「不做在途实例绑版本」 | `models/approval.py:347-352` |
 | 唯一约束 `(flow, order)` 无条件 | `models/approval.py:196-198` |

@@ -48,6 +48,11 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 3. **特例重定向**：
     - `/search-columns` 与所属资源共享 list 权限（元数据接口不单独授权）；
     - `/import-data`、`/export-data` 在菜单**未绑定模型**时，回退匹配去掉后缀的 list / create 菜单。
+4. **同端点双方法回退**：一个 `@action(methods=["get", "post"])` 的 handler 在权限点生成器里
+   只产出一个权限码（如 `members:ChatRoom`），但运行时按 `(method, path)` 取权限。当前方法
+   没有独立权限点时，按视图 `action_map` 回退到**同 handler 兄弟方法**的权限点——只认同尾部
+   路径（`/members$`），不做前缀放宽（见 `_shared_method_menu_pk`）。新增此类端点无需登记；
+   `system/services/permission_sync/constants.py::SHARED_METHOD_PATHS` 只服务扫描器的缺口口径。
 
 ### 2.3 关键行为
 

@@ -142,7 +142,7 @@ def test_is_destructive_rule_flags_writes():
     assert is_destructive(make("resetPassword:SystemUser", "POST"))
     assert is_destructive(make("create:SystemRole", "POST"))
     assert is_destructive(make("create:DataDataset", "POST"))
-    assert is_destructive(make("mcp:AiMcp", "POST"))
+    assert is_destructive(make("mcp:AiMcpServers", "POST"))
     assert not is_destructive(make("list:SystemUser", "GET"))
     assert not is_destructive(make("approve:SystemApprovalInstance", "POST"))
     assert not is_destructive(make("execute:DataDataset", "POST"))

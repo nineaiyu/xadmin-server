@@ -117,13 +117,13 @@ def stub_llm(monkeypatch):
 class TestKnowledgeSync:
     def test_sync_creates_chunks(self, tmp_path, monkeypatch, settings):
         from ai.models.ai import AiKnowledgeDocument
-        from ai.utils import ai as ai_utils
-        from ai.utils import ai_knowledge
+        from ai.services.assistant import ai as ai_utils
+        from ai.services.knowledge import ai_knowledge
 
         doc = tmp_path / "docs"
         doc.mkdir()
         (doc / "demo.md").write_text("# Demo\n\n## Alpha\n\n内容甲\n\n## Beta\n\n内容乙", encoding="utf-8")
-        # 实现位于 ai_knowledge（ai.utils.ai 仅再导出），patch 目标须与实现同源
+        # 实现位于 ai_knowledge（ai.services.assistant.ai 仅再导出），patch 目标须与实现同源
         monkeypatch.setattr(ai_knowledge, "DOCS_DIR", doc)
         monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
 
@@ -141,8 +141,8 @@ class TestKnowledgeSync:
         assert again["created"] == 0 and again["total"] == 3
 
     def test_sync_removes_stale(self, tmp_path, monkeypatch):
-        from ai.utils import ai as ai_utils
-        from ai.utils import ai_knowledge
+        from ai.services.assistant import ai as ai_utils
+        from ai.services.knowledge import ai_knowledge
 
         AiKnowledgeChunk.objects.create(source_path="docs/gone.md", chunk_index=0, content="旧", content_hash="x" * 64)
         doc = tmp_path / "docs"
@@ -156,14 +156,14 @@ class TestKnowledgeSync:
 
 class TestRetrieve:
     def test_relevant_chunk_first(self, knowledge):
-        from ai.utils.ai import retrieve
+        from ai.services.assistant.ai import retrieve
 
         results = retrieve("数据集怎么过滤数据？")
         assert results
         assert "数据集" in results[0]["chunk"].content
 
     def test_no_match_empty(self, knowledge):
-        from ai.utils.ai import retrieve
+        from ai.services.assistant.ai import retrieve
 
         assert retrieve("完全无关的量子力学问题") == []
 
@@ -296,7 +296,7 @@ class TestConfigApi:
     @staticmethod
     def _activate_profile(base_url="https://profile.example.com/v1", model="profile-model"):
         from ai.models.ai import AiProfile
-        from ai.utils.ai import set_active_profile
+        from ai.services.assistant.ai import set_active_profile
 
         profile = AiProfile.objects.create(name="激活档案", base_url=base_url, model=model)
         profile.api_key_plain = "sk-profile"

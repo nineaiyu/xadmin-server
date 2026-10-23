@@ -185,6 +185,16 @@ CELERY_HEAVY_CONCURRENCY: 4
 
 # 需要将创建的应用写到里面（第三方/自有 app 必须在此注册才会参与
 # makemigrations / migrate / 路由自动注入）。
+#
+# 最小二开清单（新增 app 时逐项确认，缺一项就会出现「装上了但不可用」）：
+#   1) <app>/config.py::URLPATTERNS          路由前缀声明（server/urls.py 自动注入）
+#   2) <app>/modules.py::MODULES              功能模块声明（模块裁剪 / 发行预设）
+#   3) <app>/seeds/menu.json + menumeta.json  菜单与权限点种子（未登记 = 非超管恒 403）
+#   4) <app>/migrations/                      自有数据面迁移（与宿主迁移链解耦）
+#   另：分发包走契约注入时，entry point 声明在 pyproject.toml 的
+#   [project.entry-points."xadmin.contracts"]，由 common.ready() 装配。
+#   完整边界与验证命令见 docs/guide/plugin-development.md。
+#
 # 官方二开范例 demo（Book 四件套，「两行代码一个页面」）默认开启，作为开箱即用的
 # 活样例（教程见 docs/guide/first-module-30min.md）；仅影响「未创建 config.yml 时的
 # 开发兜底」路径，生产镜像（空配置）与显式配置不受影响。

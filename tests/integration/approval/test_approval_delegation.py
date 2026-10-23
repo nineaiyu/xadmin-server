@@ -9,7 +9,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from approval.models.approval import ApprovalDelegation, ApprovalFlow, ApprovalFlowNode
-from approval.utils.approval_flow import resolve_assignees
+from approval.services.approval_flow import resolve_assignees
 from identity.models import UserInfo, UserRole
 from system.models import DataPermission, FieldPermission, Menu, MenuMeta, ModelLabelField
 
@@ -117,7 +117,7 @@ class TestResolveWithDelegation:
 
     def test_delegated_task_records_source(self, applicant, target, agent):
         """委托代审落任务时记录 delegate_from（审批轨迹标注「由 X 代理」）。"""
-        from approval.utils.approval_flow import create_instance
+        from approval.services.approval_flow import create_instance
 
         flow, _node = make_flow()
         make_delegation(target, agent)

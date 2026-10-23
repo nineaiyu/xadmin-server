@@ -9,7 +9,7 @@
 import pytest
 
 from ai.models.ai import AiKnowledgeChunk, AiKnowledgeDocument
-from ai.utils.ai import retrieve
+from ai.services.assistant.ai import retrieve
 
 pytestmark = pytest.mark.django_db
 
@@ -130,13 +130,13 @@ class TestDeleteAndToggle:
 class TestSyncIsolation:
     def test_sync_keeps_upload_documents(self, tmp_path, monkeypatch, auth_client):
         """关键守护：仓库同步（含清理）不得触碰上传文档及其分块。"""
-        from ai.utils import ai as ai_utils
-        from ai.utils import ai_knowledge
+        from ai.services.assistant import ai as ai_utils
+        from ai.services.knowledge import ai_knowledge
 
         _upload(auth_client)
         empty_docs = tmp_path / "docs"
         empty_docs.mkdir()
-        # 实现位于 ai_knowledge（ai.utils.ai 仅再导出），patch 目标须与实现同源
+        # 实现位于 ai_knowledge（ai.services.assistant.ai 仅再导出），patch 目标须与实现同源
         monkeypatch.setattr(ai_knowledge, "DOCS_DIR", empty_docs)
         monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
         summary = ai_utils.sync_knowledge()
@@ -147,12 +147,12 @@ class TestSyncIsolation:
 
 class TestRepoRebuildAction:
     def test_sync_repo_action(self, auth_client, tmp_path, monkeypatch):
-        from ai.utils import ai_knowledge
+        from ai.services.knowledge import ai_knowledge
 
         docs = tmp_path / "docs"
         docs.mkdir()
         (docs / "guide.md").write_text("# Guide\n\n## Setup\n\n安装说明内容", encoding="utf-8")
-        # 实现位于 ai_knowledge（ai.utils.ai 仅再导出），patch 目标须与实现同源
+        # 实现位于 ai_knowledge（ai.services.assistant.ai 仅再导出），patch 目标须与实现同源
         monkeypatch.setattr(ai_knowledge, "DOCS_DIR", docs)
         monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
         response = auth_client.post(f"{KNOWLEDGE_URL}/sync-repo", {}, format="json")
@@ -168,7 +168,7 @@ class TestRepoRebuildAction:
 
     def test_sync_repo_conflict_when_already_running(self, auth_client):
         """单飞：已有同步在跑时返回 1001，不排队、不重复扫盘。"""
-        from ai.utils.sync_progress import try_acquire_lock
+        from ai.services.knowledge.sync_progress import try_acquire_lock
 
         assert try_acquire_lock()
         response = auth_client.post(f"{KNOWLEDGE_URL}/sync-repo", {}, format="json")
@@ -176,9 +176,9 @@ class TestRepoRebuildAction:
 
     def test_sync_repo_task_error_releases_lock(self, monkeypatch):
         """任务级兜底：同步异常落 error 终态并释放单飞锁（同步入口不会永久卡死）。"""
+        from ai.services.knowledge import ai_knowledge
+        from ai.services.knowledge.sync_progress import get_status, try_acquire_lock
         from ai.tasks import sync_repo_task
-        from ai.utils import ai_knowledge
-        from ai.utils.sync_progress import get_status, try_acquire_lock
 
         def _boom():
             raise RuntimeError("sync exploded")
@@ -194,7 +194,7 @@ class TestRepoRebuildAction:
         首轮轮询（任务尚未被 worker 拉起）读到的只能是 running，而非旧摘要。"""
         from django.core.cache import cache
 
-        from ai.utils.sync_progress import SYNC_STATUS_KEY, release_lock
+        from ai.services.knowledge.sync_progress import SYNC_STATUS_KEY, release_lock
 
         cache.set(
             SYNC_STATUS_KEY,
@@ -212,8 +212,8 @@ class TestRepoRebuildAction:
 
 
 class TestBatchOperations:
-    def test_batch_destroy_only_uploads_and_clears_chunks(self, auth_client):
-        """批量删除：只删上传文档（repo 静默保留），分块随删除清理。"""
+    def test_batch_destroy_only_uploads_and_reports_skipped_repo(self, auth_client):
+        """批量删除：只删上传文档，仓库文档按 failures 明示跳过（不再静默）。"""
         _upload(auth_client, name="批量甲")
         _upload(auth_client, name="批量乙")
         repo = AiKnowledgeDocument.objects.create(
@@ -229,8 +229,11 @@ class TestBatchOperations:
             )
         ]
         assert len(pks) == 2
-        response = auth_client.post(f"{KNOWLEDGE_URL}/batch-destroy", pks, format="json")
+        response = auth_client.post(f"{KNOWLEDGE_URL}/batch-destroy", pks + [str(repo.pk)], format="json")
         assert response.status_code == 200, response.data
+        body = response.json()
+        assert body["data"]["deleted"] == 2
+        assert [item["pk"] for item in body["data"]["failures"]] == [str(repo.pk)]
         assert not AiKnowledgeDocument.objects.filter(source_type=AiKnowledgeDocument.SourceType.UPLOAD).exists()
         # 分块必须随删除清理（框架批量删除不触发 perform_destroy，此处逐条清理）
         assert not AiKnowledgeChunk.objects.filter(source_path__startswith="upload/").exists()
@@ -257,7 +260,7 @@ class TestBatchOperations:
 
     def test_batch_toggle_merged_rebuild(self, auth_client, monkeypatch):
         """批量启用走合并重建：多文档只触发一次批量重建，不逐文档循环。"""
-        from ai.utils import ai_knowledge
+        from ai.services.knowledge import ai_knowledge
 
         _upload(auth_client, name="合并启停甲")
         _upload(auth_client, name="合并启停乙")

@@ -1,5 +1,9 @@
 # system app utils/views 域归位映射清单（Phase A）
 
+> 2026-10-22 后续：本文 platform 域中的 `codegen_*` / `monitor_*` / `legacy_*` 已按归属
+> 进一步迁出（`devtools/services/codegen/`、`system/services/monitor/`、`ops/legacy/`），
+> 当前目录映射以 `system/utils/platform/README.md` 为准。
+
 > 对应任务台账《CODE-REVIEW-TASKS/04-system-app域拆分与服务层下沉.md》Phase A（T04-01 / T04-02 / T04-03）。
 > 总原则：**行为零变化**——接口路径、权限码、celery 任务名、菜单种子全部不变；仅移动模块与更新 import 面。
 > 子包按 identity / file / audit / task / platform 五域划分，与 Phase C 四域切分（+平台通用）对齐，

@@ -10,6 +10,7 @@ from django.core.cache import cache
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from audit.models.log import UserLoginLog
+from common.base.utils import AESCipherV2
 from identity.models.oauth import UserOAuthBinding
 from identity.services.auth_login import complete_login
 from identity.utils.oauth import (
@@ -277,6 +278,11 @@ class TestCallbackBinding:
         assert response.data["code"] == OAUTH_ERROR_CODE
 
 
+def _encrypted_password(user, raw: str) -> str:
+    """按前端口径加密口令（测试设置默认开启传输加密）。"""
+    return AESCipherV2(user.username).encrypt(raw.encode("utf-8")).decode()
+
+
 class TestBindingsAndUnbind:
     def test_bindings_scoped_to_self(self, superuser, normal_user, oauth_config):
         UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="s-admin")
@@ -291,7 +297,9 @@ class TestBindingsAndUnbind:
     def test_unbind_requires_password(self, superuser, oauth_config):
         binding = UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="s1")
         request = APIRequestFactory().delete(
-            "/api/identity/auth/oauth/bindings", {"password": "wrong-password"}, format="json"
+            "/api/identity/auth/oauth/bindings",
+            {"password": _encrypted_password(superuser, "wrong-password")},
+            format="json",
         )
         force_authenticate(request, user=superuser)
         response = OAuthUnbindAPIView.as_view()(request, pk=str(binding.pk))
@@ -304,7 +312,11 @@ class TestBindingsAndUnbind:
         superuser.save(update_fields=["password"])
         binding = UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="s1")
 
-        request = APIRequestFactory().delete("/api/identity/auth/oauth/bindings", {"password": "any"}, format="json")
+        request = APIRequestFactory().delete(
+            "/api/identity/auth/oauth/bindings",
+            {"password": _encrypted_password(superuser, "any")},
+            format="json",
+        )
         force_authenticate(request, user=superuser)
         # 口令校验用的是真实 authenticate，无密码账号必然失败；此处断言"不会因解绑而失联"
         response = OAuthUnbindAPIView.as_view()(request, pk=str(binding.pk))
@@ -318,7 +330,26 @@ class TestBindingsAndUnbind:
         binding = UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="s1")
 
         request = APIRequestFactory().delete(
-            "/api/identity/auth/oauth/bindings", {"password": "Unbind-Pwd-2026!"}, format="json"
+            "/api/identity/auth/oauth/bindings",
+            {"password": _encrypted_password(superuser, "Unbind-Pwd-2026!")},
+            format="json",
+        )
+        force_authenticate(request, user=superuser)
+        response = OAuthUnbindAPIView.as_view()(request, pk=str(binding.pk))
+        assert response.data["code"] == 1000
+        assert not UserOAuthBinding.objects.filter(pk=binding.pk).exists()
+
+    def test_unbind_accepts_encrypted_password(self, superuser, oauth_config, settings):
+        """传输加密开启时按密文解绑：前端提交 AESCipherV2(username) 加密串。"""
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = True
+        superuser.set_password("Unbind-Pwd-2026!")
+        superuser.save(update_fields=["password"])
+        binding = UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="s1")
+        cipher = AESCipherV2(superuser.username)
+        encrypted = cipher.encrypt(b"Unbind-Pwd-2026!").decode()
+
+        request = APIRequestFactory().delete(
+            "/api/identity/auth/oauth/bindings", {"password": encrypted}, format="json"
         )
         force_authenticate(request, user=superuser)
         response = OAuthUnbindAPIView.as_view()(request, pk=str(binding.pk))

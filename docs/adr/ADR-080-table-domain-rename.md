@@ -27,7 +27,7 @@
 - 全仓（server / installer / client / web / docs / scripts / loadjson）**无** `CREATE VIEW | PROCEDURE | FUNCTION | TRIGGER | MATERIALIZED`；
 - 业务代码无 raw SQL / cursor 触达这些表：dataset 报表与数据集执行、AI NL 查数、全局搜索（`system/search.py` 提供者）均走 ORM，表名经 `_meta.db_table` 动态解析，自动跟随；
 - loadjson 种子用 model label（如 `approval.approvalrequest`），content_type / 权限点 / Menu.path / ModuleSpec 均不依赖物理表名（ADR-057 已把 app_label 类持久化状态平移收口）；
-- 代码内手写 DDL 两处同源化：`ai/utils/ai_vector_ddl.py` 表名改从模型 Meta 取（`_chunk_table()`，不再硬编码）；trgm 索引建在迁移内、随表跟随。
+- 代码内手写 DDL 两处同源化：`ai/services/knowledge/ai_vector_ddl.py` 表名改从模型 Meta 取（`_chunk_table()`，不再硬编码）；trgm 索引建在迁移内、随表跟随。
 
 → 兼容期 / 兼容视图**无对象，不设**（避免引入只读转发层的长期债）。若某部署侧存在仓外备份脚本、外接报表直连旧表名，属部署资产：PG rename 后旧名直接失效（不会静默错读），随发布 checklist 自查。
 

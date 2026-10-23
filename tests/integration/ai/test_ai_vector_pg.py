@@ -16,9 +16,9 @@ import pytest
 from django.db import connection
 
 from ai.models.ai import AiKnowledgeChunk, AiProfile
-from ai.utils import ai_vector_ddl
-from ai.utils.ai_embedding_math import encode_vector
-from ai.utils.ai_embeddings import build_embeddings, invalidate_vector_index, search_vectors, vector_index
+from ai.services.knowledge import ai_vector_ddl
+from ai.services.knowledge.ai_embedding_math import encode_vector
+from ai.services.knowledge.ai_embeddings import build_embeddings, invalidate_vector_index, search_vectors, vector_index
 
 pytestmark = pytest.mark.django_db
 

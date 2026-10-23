@@ -95,6 +95,35 @@ def get_menu_pk(permission_data: Any, url: Any) -> Any:
     return p_data
 
 
+def _shared_method_menu_pk(request: Any, view: Any, url: str) -> Any:
+    """单 action 绑定多方法时的权限点回退：按视图 action_map 找同 handler 的兄弟方法。
+
+    DRF 路由会把同一个 action 的多个方法绑定到同一个 handler（如聊天室的
+    ``members`` 同时服务 GET/POST），权限点生成器也只产出这一个权限码；但运行时
+    按 ``(method, path)`` 取权限，种子只登记了其中一个方法时另一个方法必然
+    fail-closed（表现为「能看不能改」）。这里只回退到**同 handler** 的兄弟方法，
+    并要求权限点 path 与当前请求地址尾部同段（``/members$``）——不做前缀放宽，
+    避免把列表级权限放大成详情级写权限。
+    """
+    action_map = getattr(view, "action_map", None) or {}
+    method = (request.method or "").upper()
+    handler = action_map.get(method.lower())
+    if not handler:
+        return None
+    tail = "/" + str(url).rstrip("/").rsplit("/", 1)[-1] + "$"
+    for sibling_method, sibling_handler in action_map.items():
+        if sibling_handler != handler or sibling_method.upper() == method:
+            continue
+        try:
+            sibling_data = get_user_permission(request.user, sibling_method.upper())
+        except Exception:  # noqa: BLE001 回退失败按无权限处理（主路径已 fail-closed）
+            continue
+        for path, value in sibling_data.items():
+            if str(path).endswith(tail) and permission_path_matches(path, url):
+                return value
+    return None
+
+
 def user_has_permission(user: Any, path: str, method: str = "GET") -> bool:
     """按权限点 path 判定用户是否具备该权限（与运行时访问控制同源）。
 
@@ -281,7 +310,7 @@ class IsAuthenticated(BasePermission):
             return True
 
         permission_data = self._load_user_permission(request)
-        menu_pk = self._resolve_menu_pk(request, permission_data)
+        menu_pk = self._resolve_menu_pk(request, permission_data, view)
         request.user.menu = menu_pk
         self._load_field_permission(request, menu_pk)
         self._check_application_grant(request, view)
@@ -315,7 +344,7 @@ class IsAuthenticated(BasePermission):
             raise PermissionDenied(_("Permission denied")) from None
 
     @staticmethod
-    def _resolve_menu_pk(request: Any, permission_data: Any) -> Any:
+    def _resolve_menu_pk(request: Any, permission_data: Any, view: Any = None) -> Any:
         """解析当前请求命中的权限菜单主键（``permission_data[path] = (pk, model)``）。
 
         子 action 的权限口径为声明式元数据（common/core/permission_meta.py），
@@ -324,6 +353,8 @@ class IsAuthenticated(BasePermission):
            user-options 等）：剥掉 URL 尾部后缀，按父级 list 权限同口径解析；
         2. ``parent_fallback``（export|import 系）：优先按自身权限点解析，
            未单独绑定模型时回退到父级 list / create 菜单。
+        3. ``shared_method``（单 action 绑定多方法，如 GET+POST 的群成员/大屏指令/
+           IM 绑定）：同一 handler 只产出一个权限码，按声明回退到兄弟方法的权限点。
         二开新增同类子 action 时，在 ViewSet 声明处改用对应装饰器即可，无需改本类。
         """
         url = request.path_info
@@ -331,6 +362,8 @@ class IsAuthenticated(BasePermission):
         if shared:
             url = shared.sub("", url, count=1)
         p_data = menu_data = get_menu_pk(permission_data, url)
+        if not p_data:
+            p_data = menu_data = _shared_method_menu_pk(request, view, url)
         if not p_data:
             raise PermissionDenied(_("Permission denied"))
         fallback = permission_meta.parent_fallback_pattern()

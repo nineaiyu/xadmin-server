@@ -206,6 +206,13 @@ class TestTutorialMirrorLogic:
         assert len(violations) == 1
         assert "demo/models.py" in violations[0]
 
+    def test_nested_tests_demo_path_is_not_mistaken_for_app_path(self, tmp_path):
+        self._write_doc(tmp_path, "uv run pytest tests/integration/demo/test_book_viewset.py -q\n")
+        violations = check_tutorial_mirror.collect_violations(
+            tmp_path, client_root=tmp_path / "none", docs_root=tmp_path / "none"
+        )
+        assert violations == []
+
 
 class TestDocsSiteLinksLogic:
     """站点链接与引用可达性：锚点以构建产物为准，跨仓路径引用按归属仓解析。"""

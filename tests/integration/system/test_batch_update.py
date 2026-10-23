@@ -96,9 +96,10 @@ class TestBatchPartialUpdate:
         dept.refresh_from_db()
         assert dept.leader_id == normal_user.pk
 
-    def test_periodic_task_whitelist_rejects_other_fields(self, auth_client):
+    def test_periodic_task_batch_update_removed(self, auth_client):
+        """定时任务启停已有独立路由/权限，通用批量更新入口移除（405）"""
         resp = auth_client.post(TASK_URL, {"pks": ["1"], "fields": {"name": "x"}}, format="json")
-        assert resp.data["code"] == 1004
+        assert resp.status_code == 405
 
 
 class TestBatchDestroyDetail:

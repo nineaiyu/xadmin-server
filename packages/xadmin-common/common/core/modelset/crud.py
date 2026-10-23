@@ -163,6 +163,8 @@ class UpdateAction(mixins.UpdateModelMixin):
                 # DRF Request.__getattr__ 代理 _request，读侧不受影响
                 target = getattr(current_request, "_request", current_request)
                 target.operation_log_changes = changes
+                # 输出侧按源模型取脱敏规则（changes 是 JSON 文本，字段级规则无法直接套）
+                target.operation_log_model_label = self.queryset.model._meta.label_lower
 
     def partial_update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """部分更新{cls}信息"""

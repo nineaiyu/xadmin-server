@@ -89,8 +89,9 @@ TOOL_PARAMS = {
     "--check",
 }
 
-DEMO_SERVER_RE = re.compile(r"\b(demo/[a-zA-Z0-9_/]+\.py)\b")
-DEMO_CLIENT_RE = re.compile(r"\b(src/views/demo/[a-zA-Z0-9_/]*)")
+# 只匹配仓库根下的 demo/ 路径：`tests/integration/demo/...` 是测试目录，不是 app 路径
+DEMO_SERVER_RE = re.compile(r"(?<![\w/.-])(demo/[a-zA-Z0-9_/]+\.py)\b")
+DEMO_CLIENT_RE = re.compile(r"(?<![\w/.-])(src/views/demo/[a-zA-Z0-9_/]*)")
 MANAGE_CMD_RE = re.compile(r"manage\.py\s+([a-z_][a-z0-9_]*)")
 PARAM_RE = re.compile(r"(?<![\w-])(--[a-z][a-z0-9-]*)")
 

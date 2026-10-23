@@ -125,6 +125,21 @@ LDAP bind 认证成功时登录日志来源记 `LDAP`（`_login_type_for` 读
 `impersonator` claim（发起人 pk），登录日志归属被模拟账号、类型 `IMPERSONATE`；
 `touch_last_login=False`（不污染目标账号 `last_login`）。退出模拟见 §一例外。
 
+### 2.7 文档站登录（`/api-docs/login/`）
+
+文档站（Swagger / Redoc）的登录入口由 `ApiLogin` 处理，安全口径与主登录对齐：
+
+- **访问策略 / MFA**：密码校验通过后先走 `evaluate_login_policy_for_request`；
+  策略拒绝直接返回可读文案；`is_login_mfa_required` 命中且存在可用验证方式时，
+  拒绝在文档站静默建 session，提示到主登录页完成二次验证（文档站没有 MFA 交互面）；
+- **session 信任面**：登录成功后在 session 写 `api_docs_only=True`；
+  `ApiDocsSessionAuthentication` 只允许该 session 访问 `/api-docs/*`，访问业务 API
+  时返回 None，交回 JWT / PAT 认证（无凭证即 401）。主站 session 不带该标记，
+  行为不变；文档站的「Try it out」请使用 JWT / PAT；
+- **锁定 / 限流**：沿用与主登录同源的账号锁定、IP 锁定与独立 `api_docs_login` 限流；
+- 守护：`tests/integration/system/test_api_docs_login.py`（登录闭环 / 业务 API 隔离 /
+  MFA 拒绝 / 策略拒绝 / 错误口令）。
+
 ## 三、验证码场景开关矩阵
 
 `GET/POST /api/identity/auth/verify?category=<key>` 由 `verify_code.py` 的

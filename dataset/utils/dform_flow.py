@@ -187,7 +187,7 @@ def create_flow_instance(submission: Any, applicant: Any) -> Any:
     PENDING——只有一次尝试能占到（Postgres 下调用方另有行锁），失败路径整体回滚
     本次尝试的写入（含刚创建的实例），不留下状态与实例不一致的提交行。
     """
-    from approval.utils.approval_flow import create_instance
+    from approval.services.approval_flow import create_instance
 
     form = submission.form
     if form.approval_flow_id is None:

@@ -14,9 +14,9 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from ai.models.ai import AiKnowledgeChunk, AiKnowledgeDocument, AiProfile
-from ai.utils.ai import MAX_UPLOAD_CONTENT_LENGTH, MAX_UPLOAD_NAME_LENGTH, set_document_active
-from ai.utils.ai_config import outbound_allowed_hosts
-from ai.utils.doc_extract import PARSABLE_EXTENSIONS
+from ai.services.assistant.ai import MAX_UPLOAD_CONTENT_LENGTH, MAX_UPLOAD_NAME_LENGTH, set_document_active
+from ai.services.assistant.ai_config import outbound_allowed_hosts
+from ai.services.knowledge.doc_extract import PARSABLE_EXTENSIONS
 from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
 from common.core.validation import trim_required
@@ -261,7 +261,7 @@ class KnowledgeUploadSerializer(serializers.Serializer):
         import base64
         import binascii
 
-        from ai.utils.doc_extract import extract_text
+        from ai.services.knowledge.doc_extract import extract_text
 
         try:
             raw = base64.b64decode(file_b64, validate=True)

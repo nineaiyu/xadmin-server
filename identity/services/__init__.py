@@ -6,7 +6,7 @@
 禁止直接 import identity.views / identity.serializers / identity.models 等内部实现，
 避免 app 间横向依赖扩散。业务逻辑实现在本包的服务子模块
 （``identity.services.auth_login`` / ``open_oauth`` / ``token_issue`` /
-``token_issue_login``），本模块只做契约面：跨 app 消费方从这里 import，系统内部
+``token_issue_login`` / ``user_admin``），本模块只做契约面：跨 app 消费方从这里 import，系统内部
 视图直接消费子模块。
 
 模型再导出说明：跨 app 关联（isinstance 判断、类型标注、related field
@@ -57,6 +57,9 @@ __all__ = [
     "register_user_session",
     "websocket_session_logout",
     "login_success",  # noqa: F822
+    "evaluate_login_policy_for_request",  # noqa: F822
+    "is_login_mfa_required",  # noqa: F822
+    "get_login_mfa_methods",  # noqa: F822
     "invalidate_menu_user_caches",  # noqa: F822
     # 契约委托函数（common 侧函数级业务 import 的模块级替代）
     "publish_api_quota_warning",
@@ -89,6 +92,9 @@ _LAZY_EXPORTS = {
     "invalid_user_cache_signal": "identity.signal",
     # 登录成功处置（服务子模块；import 链重，按需加载）
     "login_success": "identity.services.auth_login",
+    "evaluate_login_policy_for_request": "identity.services.auth_login",
+    "is_login_mfa_required": "identity.services.auth_login",
+    "get_login_mfa_methods": "identity.services.auth_login",
     # 菜单变更联动的用户缓存失效（identity.signal_handler；Menu 接收器跨域消费）
     "invalidate_menu_user_caches": "identity.signal_handler",
 }

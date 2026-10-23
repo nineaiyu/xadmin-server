@@ -6,7 +6,7 @@ import json
 import pytest
 from django.core.exceptions import ValidationError
 
-from ai.utils import mcp_client as mcp
+from ai.services.mcp import mcp_client as mcp
 
 
 @pytest.fixture(autouse=True)

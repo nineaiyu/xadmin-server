@@ -15,7 +15,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
-from ai.utils.ai_chat import clip_reasoning as _clip_reasoning
+from ai.services.assistant.ai_chat import clip_reasoning as _clip_reasoning
 from common.utils import get_logger
 from message import chat as chat_service
 from message.models import ChatMessage, ChatRoom
@@ -30,7 +30,7 @@ ACTION_COMMAND = "/do"
 
 def is_enabled() -> bool:
     """AI 助手可用性：开关开启 + 凭据齐全（复用 system.utils.ai 单一判定）。"""
-    from ai.utils.ai import is_enabled as _is_enabled
+    from ai.services.assistant.ai import is_enabled as _is_enabled
 
     return bool(_is_enabled())
 
@@ -63,9 +63,9 @@ def action_reply(user: Any, request_text: str) -> tuple[Any, ...]:
     - 请求不可执行/缺参数 → 返回澄清文本（mode=chat，按普通 AI 气泡渲染，不落草稿）；
     - 灰度关闭/LLM 失败 → 抛可读校验错误（调用方落 system 消息降级，不静默）。
     """
-    from ai.utils.ai import native_tools_enabled, structured_chat_client
-    from ai.utils.ai_actions import ai_action_enabled, build_draft_prompt, draft_summary, parse_draft
-    from ai.utils.ai_guard import mask_text
+    from ai.services.actions.ai_actions import ai_action_enabled, build_draft_prompt, draft_summary, parse_draft
+    from ai.services.assistant.ai import native_tools_enabled, structured_chat_client
+    from ai.services.assistant.ai_guard import mask_text
     from integrations.sdk.ai.chat import AiSdkError
 
     if not ai_action_enabled():
@@ -74,7 +74,7 @@ def action_reply(user: Any, request_text: str) -> tuple[Any, ...]:
         raise DjangoValidationError(_("Please describe the request after /do"))
     if native_tools_enabled():
         # 原生 function calling 轨道（能力探测通过 + 开关开启时优先）
-        from ai.utils.ai_actions import native_draft_result
+        from ai.services.actions.ai_actions import native_draft_result
 
         try:
             result, track = native_draft_result(user, request_text)
@@ -83,7 +83,7 @@ def action_reply(user: Any, request_text: str) -> tuple[Any, ...]:
             logger.warning("chat ai native action draft failed: %s", exc)
             raise DjangoValidationError(_("AI service is temporarily unavailable")) from exc
     else:
-        from ai.utils.ai_usage import tracked_chat
+        from ai.services.assistant.ai_usage import tracked_chat
 
         logger.info("chat ai action draft track: prompt (user=%s)", getattr(user, "pk", ""))
 
@@ -123,7 +123,7 @@ def history_messages(room: ChatRoom, limit: int | None = None, drop_last_user: b
     drop_last_user：本轮提问已先落库，裁剪上下文时去掉末条 user 消息，避免重复一轮。
     """
     if limit is None:
-        from ai.utils.ai import ai_context_limit
+        from ai.services.assistant.ai import ai_context_limit
 
         limit = ai_context_limit()
     rows = list(ChatMessage.objects.filter(room=room).order_by("-id")[: limit * 2])
@@ -141,7 +141,7 @@ def history_messages(room: ChatRoom, limit: int | None = None, drop_last_user: b
 
 def build_chat_messages(room: ChatRoom, question: str) -> list[Any]:
     """通用多轮上下文：人设 + 历史（不含本轮提问）+ 本轮提问。"""
-    from ai.utils.ai import ai_persona
+    from ai.services.assistant.ai import ai_persona
 
     return (
         [{"role": "system", "content": ai_persona()}]
@@ -152,8 +152,8 @@ def build_chat_messages(room: ChatRoom, question: str) -> list[Any]:
 
 def _llm_reply(messages: list[Any], user: Any = None) -> tuple[Any, ...]:
     """普通多轮：返回 ``(脱敏后文本, 脱敏命中数)``（输出护栏 + 用量记账）。"""
-    from ai.utils.ai_guard import mask_text
-    from ai.utils.ai_usage import tracked_chat
+    from ai.services.assistant.ai_guard import mask_text
+    from ai.services.assistant.ai_usage import tracked_chat
     from integrations.sdk.ai.chat import AiSdkError
 
     try:
@@ -169,7 +169,7 @@ def kb_answer(question: str, user: Any = None) -> tuple[Any, ...]:
 
     answer 已由 ``system.utils.ai.ask`` 走输出护栏脱敏。
     """
-    from ai.utils.ai import ask
+    from ai.services.assistant.ai import ask
 
     result = ask(question, user=user)
     return result["answer"], result.get("sources") or []
@@ -177,7 +177,7 @@ def kb_answer(question: str, user: Any = None) -> tuple[Any, ...]:
 
 def ai_reply_content(room: ChatRoom, question: str) -> tuple[Any, ...]:
     """按命令分流生成回复，返回 (content, extra, mode)（输出文本统一过护栏脱敏）。"""
-    from ai.utils.ai_usage import quota_error
+    from ai.services.assistant.ai_usage import quota_error
 
     quota = quota_error(room.owner, "chat")
     if quota:
@@ -203,8 +203,8 @@ def _llm_reply_stream(messages: list[Any], user: Any = None) -> Any:
 
     AiSdkError 转可读校验错误（在生成器内抛出）；用量记账由 ``tracked_chat_stream`` 收口。
     """
-    from ai.utils.ai import ai_credentials
-    from ai.utils.ai_usage import tracked_chat_stream
+    from ai.services.assistant.ai import ai_credentials
+    from ai.services.assistant.ai_usage import tracked_chat_stream
     from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
     client = ChatCompletionsClient(ai_credentials())
@@ -230,8 +230,8 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict[str, 
     输出护栏：正文与思考增量均经 ``StreamMasker`` 逐段脱敏（hold-back 防
     跨帧敏感串泄漏），落库与广播用脱敏后文本；命中数写 extra.guard。
     """
-    from ai.utils.ai_guard import StreamMasker
-    from ai.utils.ai_usage import quota_error
+    from ai.services.assistant.ai_guard import StreamMasker
+    from ai.services.assistant.ai_usage import quota_error
 
     yield {"event": "meta", "data": {"question": question_payload}}
 

@@ -67,6 +67,15 @@ class TestBookCrudSmoke:
         resp = auth_client.post(BOOK_LIST_URL, payload, format="json")
         assert resp.data["code"] != 1000
 
+    def test_push_writes_audit(self, auth_client, book_payload):
+        """示例 push 不再是假成功：真实落一条推送审计。"""
+        from audit.models import OperationLog
+
+        created = auth_client.post(BOOK_LIST_URL, book_payload, format="json").data["data"]
+        resp = auth_client.post(f"{BOOK_LIST_URL}/{created['pk']}/push", format="json")
+        assert resp.data["code"] == 1000
+        assert OperationLog.objects.filter(module="DEMO:BookPush", object_pk=str(created["pk"])).exists()
+
     def test_batch_destroy(self, auth_client, superuser, upload_file):
         pks = [
             Book.objects.create(

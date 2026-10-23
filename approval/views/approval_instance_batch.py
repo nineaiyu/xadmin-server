@@ -16,7 +16,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 
 from approval.models.approval import ApprovalInstance, ApprovalNodeTask
-from approval.utils.approval_flow import approve_task, reject_task, transfer_task, visible_instances_for
+from approval.services.approval_flow import approve_task, reject_task, transfer_task, visible_instances_for
 from approval.utils.approval_mfa import ensure_approval_action_confirmed
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
@@ -175,7 +175,7 @@ class ApprovalInstanceBatchMixin:
         # 取值域收敛：只能对自己可见的实例操作（越权 pk 直接计失败，不泄露存在性）
         visible = visible_instances_for(request.user).filter(pk__in=pks)
         instance_map = {str(instance.pk): instance for instance in visible}
-        success, failures = 0, []
+        succeeded, failures = 0, []
         for pk in pks:
             instance = instance_map.get(str(pk))
             if instance is None:
@@ -187,14 +187,14 @@ class ApprovalInstanceBatchMixin:
                 continue
             ok, detail = transfer_task(task.pk, request.user, username, comment)
             if ok:
-                success += 1
+                succeeded += 1
             else:
                 failures.append({"pk": str(pk), "detail": detail})
-        if not success:
+        if not succeeded:
             # 全失败：以整体失败返回（前端按普通业务失败提示，明细随 data 带回）
             detail = failures[0]["detail"] if failures else str(_("The approval task has been transferred"))
-            return ApiResponse(code=1001, detail=detail, data={"success": 0, "failures": failures})
+            return ApiResponse(code=1001, detail=detail, data={"succeeded": 0, "failures": failures})
         return ApiResponse(
-            data={"success": success, "failures": failures},
-            detail=_("{success} transferred, {failed} failed").format(success=success, failed=len(failures)),
+            data={"succeeded": succeeded, "failures": failures},
+            detail=_("{succeeded} transferred, {failed} failed").format(succeeded=succeeded, failed=len(failures)),
         )

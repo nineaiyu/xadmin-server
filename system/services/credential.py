@@ -55,7 +55,7 @@ SETTING_CATEGORY_ENTRY = {
     "sms": "/settings/sms",
     "basic": "/settings/basic",
 }
-DEFAULT_SETTING_ENTRY = "/system/setting/index"
+DEFAULT_SETTING_ENTRY = "/settings/ledger/index"
 
 #: 模型字段级凭据白名单（轮换入参只认这里的键，杜绝任意模型字段注入）。
 #: ``rotatable=True`` 仅限服务端生成、可安全重生的密钥；外部签发字段只标注更换入口。

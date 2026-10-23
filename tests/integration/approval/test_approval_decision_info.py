@@ -98,7 +98,7 @@ class TestRelatedObject:
         instance = ApprovalInstance.objects.create(
             flow=flow, flow_name=flow.name, title="请假申请", creator=superuser, biz_type="leave", biz_id=str(leave.pk)
         )
-        from approval.utils.approval_flow.biz import biz_summary
+        from approval.services.approval_flow.biz import biz_summary
 
         summary = biz_summary(instance)
         assert summary["type"] == "leave"
@@ -108,7 +108,7 @@ class TestRelatedObject:
         assert "年假" in title or "annual" in title
 
     def test_unknown_biz_type_degrades(self, superuser):
-        from approval.utils.approval_flow.biz import biz_summary
+        from approval.services.approval_flow.biz import biz_summary
 
         flow = self._flow()
         instance = ApprovalInstance.objects.create(
@@ -125,7 +125,7 @@ class TestRelatedObject:
         }
 
     def test_missing_business_row_degrades(self, superuser):
-        from approval.utils.approval_flow.biz import biz_summary
+        from approval.services.approval_flow.biz import biz_summary
 
         flow = self._flow()
         instance = ApprovalInstance.objects.create(
@@ -160,7 +160,7 @@ class TestRelatedObject:
 
 class TestAssigneeSnapshot:
     def test_node_task_and_actor_display(self, superuser, approver):
-        from approval.utils.approval_flow.engine import _enter_node, approve_task
+        from approval.services.approval_flow.engine import _enter_node, approve_task
 
         flow = ApprovalFlow.objects.create(name="快照流程", code="u1_snapshot_flow")
         node = ApprovalFlowNode.objects.create(

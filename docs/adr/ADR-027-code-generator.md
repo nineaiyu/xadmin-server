@@ -84,8 +84,10 @@ python manage.py generate_crud demo.Book \
   - 断言关键结构：序列化器字段/`table_fields`/`extra_kwargs`、FilterSet 字段、权限码集合、
     种子 JSON 结构（menumeta/menu/permission）、uuid5 幂等（同输入两次生成内容一致）；
   - 覆盖保护：二次执行不改内容；`--force` 才覆盖（`views.py`/`urls.py` 的生成块为幂等合并而非覆盖）；
-- 生成的前端页面 `locale-name` 缺省时按 `RePlusPage` 既有回退（后端 label）渲染，**不强制新增语言包词条**；
-  需要中英词条的按教程补 `locales/{zh-CN,en}.yaml`（可选）；
+- 生成器同步写入 `xadmin-client/locales/{zh-CN,en}.yaml`：页面菜单标题落 `menus.<Component>` 词条 key，
+  表格字段 label 落 `<localeName>.<field>`；按顶层块幂等合并，不重排人工维护的大文件。
+  en 侧字段名按标识符生成可读占位（`is_active` → `Is Active`），需开发者按业务润色；
+  `--skip-frontend` 或找不到前端仓库时保留中文菜单标题，不生成无人翻译的 `menus.<Component>` key；
 - 生成物需要开发者复核的前两点（命令输出中提示）：关联字段 `input_type` 是否符合数据量、
   菜单是否需要挂到已有目录（`--parent`）。
 

@@ -82,7 +82,7 @@ class AiKnowledgeChunk(DbAuditModel, DbUuidModel):
     chunk_index = models.IntegerField(_("Chunk index"), default=0)
     content = models.TextField(_("Content"))
     content_hash = models.CharField(_("Content hash"), max_length=64)
-    # 向量以 float32 小端二进制落库（见 ai/utils/ai_embeddings.py 的编解码），
+    # 向量以 float32 小端二进制落库（见 ai/services/knowledge/ai_embeddings.py 的编解码），
     # 比 JSON 文本省 ~5 倍体积且省去检索时的文本解析
     embedding = models.BinaryField(_("Embedding"), null=True, blank=True, editable=False)
     # pgvector 向量列：与 embedding 二进制列**双写**（迁移窗口，回滚=代码回退）
@@ -189,7 +189,7 @@ class AiProfile(DbAuditModel, DbUuidModel):
 class AiUsageRecord(DbAuditModel, DbUuidModel):
     """AI 调用用量账本：逐次记录 token / 耗时 / 成败，供用量端点与配额判定。
 
-    写入口收敛（``ai/utils/ai_usage.py`` 的 ``tracked_chat`` / ``tracked_chat_stream``），
+    写入口收敛（``ai/services/assistant/ai_usage.py`` 的 ``tracked_chat`` / ``tracked_chat_stream``），
     不在各链路散落；保留期随 ``MONITOR_RETENTION_DAYS`` 由周期任务清理。
     ``feature`` 区分链路（文档问答 / 聊天室 / NL 查数 / 动作草稿），用于成本归因。
     """

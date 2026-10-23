@@ -663,7 +663,7 @@
    "deleted_at": null,
    "parent": "21c88c48-6624-5cff-b85f-952e130e06e0",
    "menu_type": 2,
-   "name": "mcp:AiMcp",
+   "name": "mcp:AiMcpServers",
    "rank": 6,
    "path": "api/ai/mcp$",
    "component": null,

@@ -22,6 +22,7 @@
 
 import pytest
 
+from common.base.utils import AESCipherV2
 from identity.models.oauth import UserOAuthBinding
 from task.models.export import ExportRecord
 from task.models.import_ import ImportRecord, ImportTemplate
@@ -80,7 +81,7 @@ class TestOAuthBindings:
         api_client.force_authenticate(user=alice)
         resp = api_client.delete(
             OAUTH_BINDINGS_URL.replace("bindings", f"bindings/{binding.pk}"),
-            {"password": "wrong"},
+            {"password": AESCipherV2(alice.username).encrypt(b"wrong").decode()},
             format="json",
         )
         assert resp.status_code == 200

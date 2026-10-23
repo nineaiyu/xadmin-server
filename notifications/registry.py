@@ -5,7 +5,7 @@
 from typing import Any
 
 from common.utils import get_logger
-from notifications.backends import BACKEND
+from notifications.backends import CHANNEL_SPECS
 from notifications.notifications import (
     SYSTEM_MESSAGE_REGISTRY,
     USER_MESSAGE_REGISTRY,
@@ -54,11 +54,13 @@ def register_message(cls: Any) -> Any:
     return cls
 
 
-# 内置后端渲染方法注册（新增后端时在各自模块加一行 register_backend_msg 即可）
-register_backend_msg(BACKEND.EMAIL, "get_email_msg")
-register_backend_msg(BACKEND.SITE_MSG, "get_site_msg_msg")
-register_backend_msg(BACKEND.SMS, "get_sms_msg")
-# IM 渠道：文本消息共用 HTML 转纯文本渲染
-register_backend_msg(BACKEND.DINGTALK, "get_text_msg")
-register_backend_msg(BACKEND.WECOM, "get_text_msg")
-register_backend_msg(BACKEND.FEISHU, "get_text_msg")
+# 内置后端渲染方法注册：渠道 → 渲染方法由 backends/specs.py 单一声明派生
+for _spec in CHANNEL_SPECS:
+    if not hasattr(Message, _spec.renderer):
+        logger.error(
+            "Notification channel %s declares missing renderer %s, fallback to common message",
+            _spec.code,
+            _spec.renderer,
+        )
+        continue
+    register_backend_msg(_spec.code, _spec.renderer)

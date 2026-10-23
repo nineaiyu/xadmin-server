@@ -356,7 +356,7 @@ class TestAiChat:
 
     def test_kb_command_returns_sources(self, auth_client, ai_enabled, monkeypatch):
         monkeypatch.setattr(
-            "ai.utils.ai.ask",
+            "ai.services.assistant.ai.ask",
             lambda question, user=None: {
                 "answer": "根据文档，重置密码见 [1]。",
                 "sources": [{"title": "手册", "path": "upload/manual.md", "chunk_index": 0}],
@@ -430,3 +430,64 @@ class TestPermissionGate:
         assert client.get(f"{MESSAGE_URL}?room={chat_service.get_public_room().pk}").status_code == 200
         # 未授予的撤回接口仍拒绝
         assert client.post(f"{MESSAGE_URL}/1/recall", {}, format="json").status_code == 403
+
+
+class TestSharedMethodPermission:
+    """群成员端点同属一个 action（GET+POST）：一条 `members:ChatRoom` 权限点同时覆盖增删。
+
+    权限点生成器按 handler 产出单个权限码，运行时若只认 (method, path) 精确匹配，
+    只登记 GET 的端点会让群主的增删成员必然 403；这里守护「能看即能按业务规则改」。
+    """
+
+    @staticmethod
+    def _grant(user, name, path, method="GET"):
+        from identity.models import UserRole
+        from system.models import Menu, MenuMeta
+
+        perm = Menu.objects.create(
+            name=name,
+            path=path,
+            method=method,
+            menu_type=Menu.MenuChoices.PERMISSION,
+            meta=MenuMeta.objects.create(title=name),
+        )
+        role = user.roles.first()
+        if role is None:
+            role = UserRole.objects.create(name=f"角色-{user.username}", code=f"role-{user.username}")
+            user.roles.add(role)
+        role.menu.set([perm])
+
+    @staticmethod
+    def _client(user):
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        client.force_authenticate(user=user)
+        return client
+
+    def test_group_owner_can_manage_members_with_get_only_point(self, bob, alice):
+        """非超管群主：仅持 GET 权限点即可查看并增删成员（不再 403）。"""
+        self._grant(bob, "members:ChatRoom", "api/chat/room/(?P<pk>[^/.]+)/members$")
+        group = chat_service.create_group(bob, "权限群", [alice.pk])
+        client = self._client(bob)
+
+        listed = client.get(f"{ROOM_URL}/{group.pk}/members")
+        assert listed.status_code == 200, listed.data
+
+        added = client.post(f"{ROOM_URL}/{group.pk}/members", {"add": [alice.pk]}, format="json")
+        assert added.status_code == 200, added.data
+        assert added.json()["data"]["member_count"] >= 2
+
+    def test_shared_method_fallback_does_not_widen_unrelated_paths(self, bob, alice):
+        """回退只认同尾部路径：只有列表权限的用户仍不能调成员端点。"""
+        self._grant(bob, "list:ChatRoom", "api/chat/room$")
+        group = chat_service.create_group(bob, "权限群", [alice.pk])
+        client = self._client(bob)
+        assert client.post(f"{ROOM_URL}/{group.pk}/members", {"add": [alice.pk]}, format="json").status_code == 403
+
+    def test_non_owner_still_blocked_by_business_rule(self, bob, alice):
+        """能过权限闸门 ≠ 能改：非群主 POST 由业务层拒绝（可读业务码，非 403）。"""
+        self._grant(alice, "members:ChatRoom", "api/chat/room/(?P<pk>[^/.]+)/members$")
+        group = chat_service.create_group(bob, "权限群", [alice.pk])
+        client = self._client(alice)
+        response = client.post(f"{ROOM_URL}/{group.pk}/members", {"add": [bob.pk]}, format="json")
+        assert response.status_code == 200, response.data
+        assert response.json()["code"] == 1001

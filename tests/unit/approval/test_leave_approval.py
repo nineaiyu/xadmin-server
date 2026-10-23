@@ -127,7 +127,7 @@ class TestLeaveSubmitAndSync:
         assert instance.form_data["reason"] == "年假出行"
 
         task = ApprovalNodeTask.objects.get(instance=instance, assignee=approver)
-        from approval.utils.approval_flow import approve_task
+        from approval.services.approval_flow import approve_task
 
         ok, detail = approve_task(task.pk, approver, "同意")
         assert ok, detail
@@ -139,7 +139,7 @@ class TestLeaveSubmitAndSync:
         leave = make_leave(applicant)
         assert submit_leave(leave, applicant)[0] is True
         task = ApprovalNodeTask.objects.get(instance=leave.instance, assignee=approver)
-        from approval.utils.approval_flow import reject_task
+        from approval.services.approval_flow import reject_task
 
         ok, detail = reject_task(task.pk, approver, "材料不全")
         assert ok, detail
@@ -200,7 +200,7 @@ class TestLeaveSubmitAndSync:
     def test_unbound_instance_skips_business_callback(self, applicant, approver):
         """未绑业务的实例（历史用法）不触发业务回写，引擎行为保持不变。"""
         make_leave_flow()
-        from approval.utils.approval_flow import approve_task, create_instance
+        from approval.services.approval_flow import approve_task, create_instance
 
         instance, error = create_instance(
             flow=ApprovalFlow.objects.get(code="leave"),
@@ -270,7 +270,7 @@ class TestLeaveSubmitCriticalSection:
 
     def test_failed_submit_leaves_no_partial_state(self, applicant, approver, monkeypatch):
         """临界区整体事务化：中途失败不留「PENDING 但无实例」的半成品。"""
-        from approval.utils import approval_flow
+        from approval.services import approval_flow
 
         make_leave_flow()
         leave = make_leave(applicant)

@@ -5,6 +5,7 @@ from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 from rest_framework.request import Request
 
+from audit.services import OperationLog
 from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ImportExportDataAction, RecycleBinAction
@@ -78,8 +79,19 @@ class BookViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction):
     def push(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """推送到其他服务"""  # 这个 推送到其他服务 的注释得写， 否则菜单中可能会显示null，访问日志记录中也可能显示异常
 
-        # 自定义一个请求为post的 push 路由行为，执行自定义操作， action装饰器有好多参数，可以查看源码自行分析
+        # 自定义 POST 动作示例：真实写入一条推送审计（可追溯），不再是「只返回成功」的假交互
         instance = self.get_object()
+        OperationLog.objects.create(
+            module="DEMO:BookPush",
+            object_pk=str(instance.pk),
+            path=request.path,
+            method="POST",
+            status_code=1000,
+            response_code=1000,
+            response_result=f"push {instance.name}",
+            creator=request.user,
+            modifier=request.user,
+        )
         return ApiResponse(detail=_("%(name)s push succeeded") % {"name": instance.name})
 
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

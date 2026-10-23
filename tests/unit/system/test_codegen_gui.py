@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""代码生成器 GUI 端点守护测试（适配层 system/utils/platform/codegen_gui.py）。
+"""代码生成器 GUI 端点守护测试（适配层 devtools/services/codegen/gui.py）。
 
 覆盖：模型清单过滤（仓库内 / 非抽象）、字段计划回显、字段选择收敛
 （include/exclude 与未知字段拒绝）、产物预览（不落盘）、zip 下载。
@@ -12,7 +12,7 @@ import zipfile
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.utils.platform import codegen_gui
+from devtools.services.codegen import gui as codegen_gui
 from system.views.admin.codegen import SystemCodeGenViewSet
 
 pytestmark = pytest.mark.django_db
@@ -327,7 +327,8 @@ class TestAdvancedOptions:
     def test_menu_title_overrides_seed(self, superuser):
         response = _post(superuser, "preview", {"model": "demo.Book", "menu_title": "书籍管理"})
         seed = next(row for row in response.data["data"] if row["label"].startswith("菜单种子"))
-        assert '"title": "书籍管理"' in seed["content"]
+        assert '"title": "menus.DemoBook"' in seed["content"]
+        assert '"title": "书籍管理-list"' in seed["content"]
 
     def test_ordering_override_in_views(self, superuser):
         response = _post(superuser, "preview", {"model": "demo.Book", "ordering": "isbn"})

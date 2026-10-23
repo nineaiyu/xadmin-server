@@ -14,13 +14,13 @@ from typing import Any
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
-from ai.utils.ai_action_types import MAX_CATALOG_FORMS, ActionSpec
-from ai.utils.ai_api_actions import IN_QUERY, api_action
+from ai.services.actions.ai_action_types import MAX_CATALOG_FORMS, ActionSpec
+from ai.services.actions.ai_api_actions import IN_QUERY, api_action
 
 
 def available_forms(user: Any) -> list[Any]:
     """可提交的动态表单（启用中，目录按创建时间倒序取前 N 个）。"""
-    from dataset.services import DynamicForm
+    from dataset.contracts import DynamicForm
 
     return list(DynamicForm.objects.filter(is_active=True).order_by("-created_time")[:MAX_CATALOG_FORMS])
 
@@ -51,7 +51,7 @@ def _catalog(user: Any) -> dict[str, Any]:
 
 def _resolve_form(params: dict[str, Any]) -> Any:
     """按 form_id 取启用中的表单；返回 (form, 错误文案)。"""
-    from dataset.services import DynamicForm
+    from dataset.contracts import DynamicForm
 
     form_id = str(params.get("form_id") or "").strip()
     if not form_id:
@@ -69,7 +69,7 @@ def _resolve_form(params: dict[str, Any]) -> Any:
 
 def _validate_dform(user: Any, params: dict[str, Any]) -> Any:
     """校验动态表单提交参数：返回 (JSON 安全的规范化参数, 错误文案)。"""
-    from dataset.services import validate_submission_data
+    from dataset.contracts import validate_submission_data
 
     form, error = _resolve_form(params)
     if error:
@@ -94,7 +94,7 @@ def _dform_requires_approval(user: Any, params: dict[str, Any]) -> bool:
 
 
 def _execute_dform(user: Any, params: dict[str, Any]) -> dict[str, Any]:
-    from dataset.services import DynamicFormSubmission
+    from dataset.contracts import DynamicFormSubmission
 
     form, error = _resolve_form(params)
     if error:

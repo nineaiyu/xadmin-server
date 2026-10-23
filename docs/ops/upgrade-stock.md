@@ -67,11 +67,15 @@ python manage.py upgrade_ledger --apply  # 认领账本（写迁移记录，不�
 python manage.py legacy_schema_report --dsn "postgresql://..." --tag v4.2.5 --plan
 # 原地升级（默认 dry-run；--apply 执行结构对齐 + 引用重指 + 账本重写）
 python manage.py legacy_align --dsn "postgresql://..." --tag v4.2.5 [--apply]
-python manage.py legacy_align --probe [--tag v4.2.5]   # 三态退出码：0 需要 / 1 已一致 / 2 阻断 / 3 无法判定
+python manage.py legacy_align --probe [--tag v4.2.5]   # 四态退出码：0 需要 / 1 已一致 / 2 阻断 / 3 无法判定
+# 安装器消费 `inplace-needed` / `inplace-none` / `inplace-blocked` / `inplace-unknown` 标记行，
+# 不只看退出码：目标镜像没有该命令时 manage.py 以 1 退出，与「已一致」同码。
 # 二开 app 的旧引用改写（FK 目标 / 依赖节点），默认只出 diff
 python manage.py legacy_rewrite_app_refs --app-path ../my_app --tag v4.2.5 [--apply]
-# 一键（安装器 v5.0.1+）：判定 → 预演 → 确认 → 执行 → 复检 → 账本 → migrate → post_upgrade
-cd /opt/xa-installer-5x && INPLACE_ALIGN=1 ./xadmin.sh upgrade 5.0.1
+# 一键（安装器 + 含原地升级能力的目标镜像）：判定 → 预演 → 确认 → 执行 → 复检 → 账本 → migrate → post_upgrade
+cd /opt/xa-installer-5x && INPLACE_ALIGN=1 ./xadmin.sh upgrade <目标版本>
+# 注意：5.0.1 及更早镜像不含 legacy_align，探询会判为「无法判定」并降级为标准路径；
+# 切分前旧库请升级到 5.0.2+（或按 §五 / §七 清库重建 + 回灌）。
 # 旧结构样本库（验证靶）：用历史 tag 的迁移真实建库，可灌样本数据
 python ops/legacy_sample_db.py --tag v4.2.5 --dsn "postgresql://.../xadmin_legacy_sample" --with-data
 ```

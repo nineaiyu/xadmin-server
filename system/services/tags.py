@@ -61,7 +61,7 @@ def taggable_visit(model: Any) -> tuple[str, str]:
 
 def ensure_tag_permission(user: Any, model: Any, pk: Any) -> None:
     """打标权限校验：回落业务对象的写权限点（fail-closed，模板见 TAGGABLE_MODELS）。"""
-    from ai.utils.ai_actions import user_can_visit
+    from ai.services.actions.ai_actions import user_can_visit
 
     method, visit = taggable_visit(model)
     if not visit:
@@ -79,7 +79,7 @@ def _data_scope_queryset(model: Any, user: Any) -> Any:
 
 def _approval_instance_queryset(model: Any, user: Any) -> Any:
     """审批实例可见域：我发起 ∪ 待我审批 ∪ 我参与过 ∪ 我被抄送（列表页缺省页签同源）。"""
-    from approval.utils.approval_flow.queries import visible_instances_for
+    from approval.services.approval_flow.queries import visible_instances_for
 
     return visible_instances_for(user)
 

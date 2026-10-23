@@ -21,7 +21,14 @@ from common.core.config import (
     UserConfig,
     batch_user_config_values,
 )
-from common.core.credentials import encrypt_setting_value
+from common.core.credentials import (
+    MASK,
+    SENSITIVE_SETTING_KEYS,
+    decrypt_setting_value,
+    encrypt_setting_value,
+    is_sensitive_key,
+    mask_sensitive_config_value,
+)
 from common.core.fields import BasePrimaryKeyRelatedField
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
@@ -163,6 +170,48 @@ def validate_config_value(key: Any, value: Any) -> Any:
     return _coerce_config_value(key, value, expected_type)
 
 
+def _restore_masked_fields(key: Any, value: Any, existing: Any) -> Any:
+    """把编辑表单回传的掩码字段替换为库内已解密原值（字段级敏感键）。
+
+    列表优先按条目的 ``key`` 字段匹配，缺失时按同下标兜底；找不到原值就移除该
+    掩码字段（宁可视为未配置，也不把掩码占位加密落库）。
+    """
+    fields = SENSITIVE_SETTING_KEYS.get(str(key or ""))
+    if not fields:
+        return value
+    existing = decrypt_setting_value(key, existing)
+
+    def merge(item: Any, source: Any) -> Any:
+        if not isinstance(item, dict):
+            return item
+        result = dict(item)
+        for field in fields:
+            if result.get(field) == MASK:
+                if isinstance(source, dict) and source.get(field) is not None:
+                    result[field] = source[field]
+                else:
+                    result.pop(field, None)
+        return result
+
+    if isinstance(value, list):
+        source_list = existing if isinstance(existing, list) else []
+        source_by_key = {
+            str(item.get("key")): item for item in source_list if isinstance(item, dict) and item.get("key") is not None
+        }
+        result = []
+        for index, item in enumerate(value):
+            source = None
+            if isinstance(item, dict) and item.get("key") is not None:
+                source = source_by_key.get(str(item.get("key")))
+            if source is None:
+                source = source_list[index] if index < len(source_list) else {}
+            result.append(merge(item, source))
+        return result
+    if isinstance(value, dict):
+        return merge(value, existing if isinstance(existing, dict) else {})
+    return value
+
+
 class SystemConfigSerializer(BaseModelSerializer):
     class Meta:
         model = SystemConfig
@@ -170,10 +219,27 @@ class SystemConfigSerializer(BaseModelSerializer):
         read_only_fields = ["pk"]
         fields_unexport = ["cache_value"]  # 导入导出文件时，忽略该字段
 
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """敏感键的编辑值走掩码：密文不外发，字段级键只掩码声明字段。"""
+        ret: dict[str, Any] = super().to_representation(instance)
+        key = getattr(instance, "key", "")
+        if is_sensitive_key(key) and "value" in ret:
+            ret["value"] = mask_sensitive_config_value(key, decrypt_setting_value(key, ret["value"]))
+        return ret
+
     def validate(self, attrs: Any) -> Any:
         # 键取请求值，缺省回退实例行键（PATCH 只改 value 时同样过校验）
         key = attrs.get("key") or getattr(self.instance, "key", None)
         if key and "value" in attrs:
+            if is_sensitive_key(key):
+                # 掩码占位 = 「已配置但值不下发」：更新保留原值，新建视为未配置
+                if attrs["value"] == MASK:
+                    attrs.pop("value")
+                    return attrs
+                # 字段级敏感值：回传的掩码字段用库内已解密原值回填，避免把占位加密落库
+                existing = getattr(self.instance, "value", None)
+                if existing is not None:
+                    attrs["value"] = _restore_masked_fields(key, attrs["value"], existing)
             # 类型校验先行：自定义校验器拿到的是已收敛类型的值
             attrs["value"] = validate_config_value(key, attrs["value"])
             validator = CONFIG_KEY_VALIDATORS.get(key)
@@ -209,8 +275,8 @@ class SystemConfigSerializer(BaseModelSerializer):
             cached = SysConfig.get_values([row.key for row in page])
             self.context["_page_system_cache_values"] = cached
         if cached is not None and obj.key in cached:
-            return cached[obj.key]
-        return SysConfig.get_value(obj.key)
+            return mask_sensitive_config_value(obj.key, cached[obj.key])
+        return mask_sensitive_config_value(obj.key, SysConfig.get_value(obj.key))
 
 
 class UserPersonalConfigExportImportSerializer(SystemConfigSerializer):
@@ -274,11 +340,8 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
         from django.db import IntegrityError, transaction
 
         config_user = validated_data.pop("config_user", [])
-        owner = validated_data.pop("owner", None)
-        if not config_user and not owner:
+        if not config_user:
             raise ValidationError(_("User cannot be null"))
-        if owner:
-            config_user.append(owner)
         users = self._dedupe_users(config_user)
         key = validated_data.get("key")
         try:
@@ -287,7 +350,9 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
                 instance = None
                 for user in users:
                     validated_data["owner"] = user
-                    instance = super().create(validated_data)
+                    created = super().create(validated_data)
+                    if instance is None:
+                        instance = created
                 return instance
         except IntegrityError:
             raise ValidationError(_("Config key already exists for some user(s), please check and retry")) from None
@@ -307,5 +372,5 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
             self.context["_page_user_cache_values"] = cached
         pair = (obj.owner_id, obj.key)
         if cached is not None and pair in cached:
-            return cached[pair]
-        return UserConfig(obj.owner).get_value(obj.key)
+            return mask_sensitive_config_value(obj.key, cached[pair])
+        return mask_sensitive_config_value(obj.key, UserConfig(obj.owner).get_value(obj.key))

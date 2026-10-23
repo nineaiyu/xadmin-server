@@ -6,6 +6,7 @@
 # date : 9/15/2024
 from typing import Any
 
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
@@ -86,6 +87,29 @@ class NoticeUserReadMessageViewSet(ListDeleteModelSet):
     choices_models = [MessageContent]
     ordering_fields = ["updated_time", "created_time"]
     filterset_class = NoticeUserReadMessageFilter
+
+    @extend_schema(request=None, responses=get_default_response_schema())
+    @action(methods=["patch"], detail=False, url_path="all-read")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def all_read(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """私信全部标记为已读
+
+        只处理当前筛选结果；公告族不持久化已读，不在此列。
+        """
+        queryset = self.filter_queryset(self.get_queryset()).filter(
+            owner=request.user,
+            unread=True,
+            notice__notice_type__in=MessageContent.get_user_choices(),
+        )
+        from django.utils import timezone
+
+        updated = queryset.update(unread=False, modifier=request.user, updated_time=timezone.now())
+        from notifications.views.user_site_msg import invalidate_unread_summary
+
+        invalidate_unread_summary(request.user)
+        return ApiResponse(
+            data={"updated": updated},
+            detail=_("Marked {} message(s) as read").format(updated),
+        )
 
     @extend_schema(
         request=NoticeUserReadStateSerializer,

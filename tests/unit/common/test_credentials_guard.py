@@ -18,6 +18,7 @@ from common.core.credentials import (
     ENCRYPTED_SETTING_KEYS,
     PLAINTEXT_EXEMPT_KEYS,
     SENSITIVE_KEY_PATTERN,
+    SENSITIVE_SETTING_KEYS,
     decrypt_setting_value,
     encrypt_setting_value,
     encryption_status,
@@ -57,10 +58,12 @@ class TestRegistryGuard:
         assert missing == [], f"以下键声明为加密但不是 write_only（不会加密落库）: {missing}"
 
     def test_sensitive_write_only_keys_are_registered(self):
-        """新增 write_only 敏感键必须登记注册表（先落「防新增明文」机制）。"""
+        """新增 write_only 敏感键必须登记注册表（Setting 或 SystemConfig 之一）。"""
         declared = {key for key in _write_only_keys() if SENSITIVE_KEY_PATTERN.search(key)}
-        unregistered = sorted(declared - set(ENCRYPTED_SETTING_KEYS))
-        assert unregistered == [], f"write_only 敏感键未登记 ENCRYPTED_SETTING_KEYS: {unregistered}"
+        unregistered = sorted(declared - set(ENCRYPTED_SETTING_KEYS) - set(SENSITIVE_SETTING_KEYS))
+        assert unregistered == [], (
+            f"write_only 敏感键未登记 ENCRYPTED_SETTING_KEYS / SENSITIVE_SETTING_KEYS: {unregistered}"
+        )
 
     def test_seed_has_no_plaintext_sensitive_values(self):
         seeds = read_model_rows("system.systemconfig")

@@ -10,7 +10,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from common.celery.routing import celery_task_route
 
-from ..const import CONFIG
+from ..const import CONFIG, VERSION
 from .base import CACHES, CELERY_BROKER_CACHE_ID, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, SECRET_KEY
 
 REST_FRAMEWORK = {
@@ -30,7 +30,9 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "common.core.auth.CookieJWTAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+        # 文档站 session 只信任 /api-docs/*：其余路径返回 None 交给 JWT / PAT；
+        # 普通主站 session（无 docs 标记）行为不变
+        "common.swagger.auth.ApiDocsSessionAuthentication",
         # Basic 认证为 base64 明文凭证，仅限本地调试按需开启（BASIC_AUTH_ENABLED）
         *(["rest_framework.authentication.BasicAuthentication"] if CONFIG.BASIC_AUTH_ENABLED else []),
         # PAT 认证（机器集成凭证）：无 Pat 头静默跳过，带 Pat 头时按凭证认证
@@ -261,7 +263,7 @@ CELERY_TASK_SERIALIZER = "json"
 SPECTACULAR_SETTINGS = {
     "TITLE": "Xadmin Server API",
     "DESCRIPTION": "Django Xadmin Server",
-    "VERSION": "1.0.0",
+    "VERSION": VERSION,
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PUBLIC": False,
     "SWAGGER_UI_DIST": "SIDECAR",  # shorthand to use the sidecar instead

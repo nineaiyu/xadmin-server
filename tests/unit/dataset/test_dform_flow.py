@@ -303,7 +303,7 @@ class TestFieldAssigneeDualResolution:
             assignee_type=ApprovalFlowNode.AssigneeType.FIELD,
             assignee_value="approver_field",
         )
-        from approval.utils.approval_flow.conditions import resolve_assignees
+        from approval.services.approval_flow.conditions import resolve_assignees
 
         resolved = resolve_assignees(flow.nodes.get(order=2), applicant, {"approver_field": approver.pk})
         assert [user.pk for user in resolved] == [approver.pk]
@@ -318,7 +318,7 @@ class TestFieldAssigneeDualResolution:
             assignee_type=ApprovalFlowNode.AssigneeType.FIELD,
             assignee_value="approver_field",
         )
-        from approval.utils.approval_flow.conditions import resolve_assignees
+        from approval.services.approval_flow.conditions import resolve_assignees
 
         resolved = resolve_assignees(flow.nodes.get(order=2), applicant, {"approver_field": approver.username})
         assert [user.pk for user in resolved] == [approver.pk]
@@ -333,7 +333,7 @@ class TestFieldAssigneeDualResolution:
             assignee_type=ApprovalFlowNode.AssigneeType.FIELD,
             assignee_value="approver_field",
         )
-        from approval.utils.approval_flow.conditions import resolve_assignees
+        from approval.services.approval_flow.conditions import resolve_assignees
 
         resolved = resolve_assignees(
             flow.nodes.get(order=2), applicant, {"approver_field": [approver.pk, "flow_approver1"]}
@@ -350,7 +350,7 @@ class TestFieldAssigneeDualResolution:
             assignee_type=ApprovalFlowNode.AssigneeType.FIELD,
             assignee_value="approver_field",
         )
-        from approval.utils.approval_flow.conditions import resolve_assignees
+        from approval.services.approval_flow.conditions import resolve_assignees
 
         assert resolve_assignees(flow.nodes.get(order=2), applicant, {"approver_field": "ghost_user"}) == []
 

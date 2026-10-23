@@ -101,6 +101,8 @@ class TestArtifacts:
             client / "src" / "views" / "demo" / "book" / "index.vue",
             client / "src" / "views" / "demo" / "book" / "utils" / "api.ts",
             client / "src" / "views" / "demo" / "book" / "utils" / "hook.tsx",
+            client / "locales" / "zh-CN.yaml",
+            client / "locales" / "en.yaml",
         ]
         for path in expected:
             assert path.exists(), f"缺少产物：{path}"
@@ -664,7 +666,7 @@ class TestMenuTitleAndOrdering:
         page_meta = next(
             item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
         )
-        assert page_meta["fields"]["title"] == "书籍管理"
+        assert page_meta["fields"]["title"] == "menus.DemoBook"
         permission_meta = next(
             item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" not in item["fields"]
         )
@@ -676,7 +678,39 @@ class TestMenuTitleAndOrdering:
         page_meta = next(
             item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
         )
+        assert page_meta["fields"]["title"] == "menus.DemoBook"
+
+
+class TestClientLocale:
+    """生成产物带 zh/en 词条：菜单标题 + 表格字段 label（幂等合并）。"""
+
+    def test_locale_files_generated(self, workspace):
+        _, client = _generate(workspace)
+        zh = yaml.safe_load((client / "locales" / "zh-CN.yaml").read_text(encoding="utf-8"))
+        en = yaml.safe_load((client / "locales" / "en.yaml").read_text(encoding="utf-8"))
+        assert zh["menus"]["DemoBook"] == "书籍名称"
+        assert zh["demoBook"]["name"] == "书籍名称"
+        assert zh["demoBook"]["isbn"] == "标准书号"
+        assert en["menus"]["DemoBook"] == "Book"
+        assert en["demoBook"]["name"] == "Name"
+
+    def test_locale_merge_is_idempotent(self, workspace):
+        _, client = _generate(workspace)
+        path = client / "locales" / "zh-CN.yaml"
+        _generate(workspace, "--force")
+        text = path.read_text(encoding="utf-8")
+        assert text.count("menus:") == 1
+        assert text.count("demoBook:") == 1
+
+    def test_skip_frontend_keeps_chinese_title(self, workspace):
+        """--skip-frontend 不生成词条：菜单标题保留中文，不落无人翻译的 key。"""
+        backend, client = _generate(workspace, "--skip-frontend")
+        entries = _seed_entries(workspace)
+        page_meta = next(
+            item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
+        )
         assert page_meta["fields"]["title"] == "书籍名称"
+        assert not (client / "locales" / "zh-CN.yaml").exists()
 
     def test_ordering_override_in_views(self, workspace):
         backend, _ = _generate(workspace, "--ordering", "isbn")

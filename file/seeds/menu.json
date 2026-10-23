@@ -360,6 +360,29 @@
  },
  {
   "model": "system.menu",
+  "pk": "aae662e8-d79a-4de5-b38d-64370a37fe7e",
+  "fields": {
+   "created_time": "2026-10-22T00:00:00Z",
+   "updated_time": "2026-10-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "56e7a4c2-97ec-42b1-a8a9-54c3f4e488f3",
+   "menu_type": 2,
+   "name": "stats:SystemUploadFile",
+   "rank": 10002,
+   "path": "api/file/file/stats$",
+   "component": null,
+   "is_active": true,
+   "meta": "d55c4aa7-4f34-400d-b346-3f00092884f6",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
   "pk": "c3c15eab-c56c-4019-b045-8cff8ff7cc6f",
   "fields": {
    "created_time": "2026-09-29T18:17:42.291Z",

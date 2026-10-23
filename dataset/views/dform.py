@@ -80,14 +80,18 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
         serializer.save(creator=self.request.user, modifier=self.request.user)
 
     def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        from django.db import transaction
+
         partial = kwargs.pop("partial", False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        guarded = _creator_guard(request, instance)
-        if guarded:
-            return guarded
-        self.perform_update(serializer)
+        # 行锁 + 版本比对：两个管理员并发编辑时，后写者拿到的是更新后的 updated_time
+        with transaction.atomic():
+            instance = self.get_queryset().select_for_update().get(pk=kwargs["pk"])
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            guarded = _creator_guard(request, instance)
+            if guarded:
+                return guarded
+            self.perform_update(serializer)
         return ApiResponse(data=serializer.data)
 
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -95,6 +99,16 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
         guarded = _creator_guard(request, instance)
         if guarded:
             return guarded
+        # 有提交的表单禁止删除：外键 CASCADE 会物理清空全部填报（审批留痕），
+        # 而删除入口只是一次确认弹层。需要清理时先导出归档，再联系维护方处理。
+        count = instance.submissions.count()
+        if count:
+            return ApiResponse(
+                code=1001,
+                detail=_("The form has {} submissions and cannot be deleted; export or archive them first").format(
+                    count
+                ),
+            )
         return super().destroy(request, *args, **kwargs)
 
     def _needs_rowwise_delete(self) -> Any:
@@ -112,6 +126,11 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
         """
         if not getattr(self.request.user, "is_superuser", False) and instance.creator_id != self.request.user.pk:
             raise ValidationError(_("Only the creator can modify a form"))
+        count = instance.submissions.count()
+        if count:
+            raise ValidationError(
+                _("The form has {} submissions and cannot be deleted; export or archive them first").format(count)
+            )
         from dataset.utils.dform_flow import resync_flow_after_unbind
 
         flow_id = instance.approval_flow_id
@@ -156,6 +175,11 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
         写入校验与常规编辑同源（规范化 + 字段/联动校验），避免历史脏数据绕过校验落库。
         """
         form = self.get_object()
+        # 回滚是写操作：与编辑/删除同口径的创建者守卫（此前只校验权限点，
+        # 任何持 rollback 权限的角色都能改他人表单结构）
+        guarded = _creator_guard(request, form)
+        if guarded:
+            return guarded
         try:
             version = int(request.data.get("version"))
         except (TypeError, ValueError) as exc:

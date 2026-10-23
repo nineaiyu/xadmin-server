@@ -187,23 +187,30 @@ class DataDictViewSet(
         )
         index = pks.index(instance.pk)
         target = index - 1 if direction == "up" else index + 1
-        if 0 <= target < len(pks):
-            pks[index], pks[target] = pks[target], pks[index]
-            # Case/When 单条 SQL 落库（同 RankAction）；不触发信号，缓存手动失效
-            DataDict.objects.filter(pk__in=pks).update(
-                sort=Case(
-                    *[When(pk=pk, then=Value(order)) for order, pk in enumerate(pks)],
-                    output_field=IntegerField(),
-                )
+        if not (0 <= target < len(pks)):
+            return ApiResponse(
+                code=1001,
+                detail=_("Already at the first position") if direction == "up" else _("Already at the last position"),
             )
-            invalid_dict_cache(instance.parent.code if instance.parent_id else None)
+        pks[index], pks[target] = pks[target], pks[index]
+        # Case/When 单条 SQL 落库（同 RankAction）；不触发信号，缓存手动失效
+        DataDict.objects.filter(pk__in=pks).update(
+            sort=Case(
+                *[When(pk=pk, then=Value(order)) for order, pk in enumerate(pks)],
+                output_field=IntegerField(),
+            )
+        )
+        invalid_dict_cache(instance.parent.code if instance.parent_id else None)
         return ApiResponse(detail=_("Sorting saved successfully"))
 
     @extend_schema(request=None, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="refresh-cache")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def refresh_cache(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """清空全部字典缓存
-        直连改库等绕过信号的场景手动触发立即生效。
+        """清空字典缓存
+        直连改库等绕过信号的场景手动触发立即生效；传 code 时只失效该类型。
         """
-        invalid_dict_cache()
+        code = None
+        if isinstance(request.data, dict):
+            code = str(request.data.get("code") or "").strip() or None
+        invalid_dict_cache(code)
         return ApiResponse(detail=_("Operation successful"))

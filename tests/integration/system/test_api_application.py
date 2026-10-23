@@ -12,6 +12,7 @@
 
 import pytest
 from django.core.cache import cache
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -231,9 +232,10 @@ class TestCallbackProbe:
         assert calls[0]["headers"]["X-Webhook-Signature"].startswith("sha256=")
         assert calls[0]["headers"]["X-Webhook-Timestamp"]
 
+    @override_settings(WEBHOOK_ALLOW_LOOPBACK=False)
     def test_test_callback_keeps_outbound_guard(self, auth_client, monkeypatch):
         """探测与投递链路同口径过出站守卫：私网拒绝（allow_private=False），
-        OUTBOUND_ALLOWED_HOSTS 透传放行；守卫拒绝按失败结果返回而非 500。"""
+        环回跟随 WEBHOOK_ALLOW_LOOPBACK；守卫拒绝按失败结果返回而非 500。"""
         seen_kwargs = {}
 
         def fake_pinned_request(method, url, **kwargs):
@@ -248,8 +250,23 @@ class TestCallbackProbe:
         assert results[0]["success"] is False
         assert "blocked by outbound guard" in results[0]["detail"]
         assert seen_kwargs["allow_private"] is False
-        assert seen_kwargs["allow_loopback"] is True
+        assert seen_kwargs["allow_loopback"] is False
         assert isinstance(seen_kwargs["allowed_hosts"], tuple)
+
+    @override_settings(WEBHOOK_ALLOW_LOOPBACK=True)
+    def test_test_callback_loopback_allowed_by_policy(self, auth_client, monkeypatch):
+        """本地联调/测试栈显式放行环回时，回调测试与 Webhook 投递同口径放行。"""
+        seen_kwargs = {}
+
+        def fake_pinned_request(method, url, **kwargs):
+            seen_kwargs.update(kwargs)
+            raise ConnectionError("blocked by outbound guard")
+
+        monkeypatch.setattr("common.utils.outbound.pinned_request", fake_pinned_request)
+        application = _create_application(auth_client, callback_urls=["https://example.com/hook"])
+        resp = auth_client.post(f"{APPS_URL}/{application['pk']}/test-callback")
+        assert resp.data["code"] == 1000
+        assert seen_kwargs["allow_loopback"] is True
 
     def test_test_callback_without_urls(self, auth_client):
         application = _create_application(auth_client)

@@ -12,6 +12,9 @@
 | **OAuth 授权码** | 「代表某位 xadmin 用户」访问 | 授权码 / refresh_token | 授权用户本人 |
 
 三条链路的凭证统一走 `Authorization: Pat <token>` 头，权限判定完全一致。
+用户在 `账户设置 → 已授权应用` 可查看并撤销自己的 OAuth 授权；
+管理员在 `系统设置 → 开放平台` 配置 SCIM 与第三方登录（见
+[open-platform-console.md](../architecture/open-platform-console.md)）。
 
 ## 2. 快速开始（client-credentials）
 

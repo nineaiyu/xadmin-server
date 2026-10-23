@@ -47,6 +47,27 @@ class TestContractWhitelist:
 
 
 @pytest.mark.django_db
+class TestServicesCompatibilityShim:
+    """``<app>.services`` 过渡兼容层：存量 import 与 contracts 解析同一对象。"""
+
+    def test_shim_forwards_contract_members(self):
+        from ai import contracts as ai_contracts
+        from ai import services as ai_services
+        from approval import contracts as approval_contracts
+        from approval import services as approval_services
+
+        assert ai_services.api_action_specs is ai_contracts.api_action_specs
+        assert approval_services.process_approval is approval_contracts.process_approval
+
+    def test_shim_forwards_lazy_models(self):
+        from dataset import contracts as dataset_contracts
+        from dataset import services as dataset_services
+
+        assert dataset_services.Dataset is dataset_contracts.Dataset
+        assert dataset_services.DynamicForm is dataset_contracts.DynamicForm
+
+
+@pytest.mark.django_db
 class TestProtocolSurface:
     """属性访问式消费面的 Protocol 消费面在提供方上真实存在（结构漂移守护）。"""
 

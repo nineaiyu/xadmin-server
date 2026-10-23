@@ -9,6 +9,8 @@
   式存在，界面与 API 元数据据此区分两类留空含义，文案指向运行时真实行为。
 """
 
+import pytest
+
 from common.core.fields import LabeledChoiceField
 from settings.serializers.ldap import LdapSettingSerializer
 
@@ -71,6 +73,7 @@ def test_blank_semantic_fields_documented():
         assert semantic in ("keep", "default", "disabled"), name
 
 
+@pytest.mark.django_db
 def test_existing_payload_parse_unchanged():
     """既有合法载荷解析结果不变：choice 字段取原 value，留空字段收敛到默认值。"""
     payload = {
@@ -91,6 +94,9 @@ def test_existing_payload_parse_unchanged():
         "LDAP_ATTR_GROUPS": "memberOf",
         "LDAP_GROUP_ROLE_MAP": {"cn=ldap-admins,dc=corp,dc=com": "admin"},
     }
+    from identity.models import UserRole
+
+    UserRole.objects.get_or_create(name="Admin", defaults={"code": "admin"})
     validated = LdapSettingSerializer().run_validation(payload)
     assert validated["LDAP_AUTH_PRIORITY"] == "local_first"
     assert validated["LDAP_SYNC_MISSING_POLICY"] == "deactivate"

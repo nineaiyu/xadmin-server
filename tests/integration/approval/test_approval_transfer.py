@@ -16,7 +16,7 @@ from django.utils.translation import gettext as _
 from rest_framework.test import APIClient
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
-from approval.utils.approval_flow import add_sign, create_instance, transfer_task
+from approval.services.approval_flow import add_sign, create_instance, transfer_task
 from identity.models import UserInfo, UserRole
 from system.models import Menu, MenuMeta
 
@@ -97,7 +97,7 @@ def notify_spy(monkeypatch):
     """捕获引擎通知调用（extra_actions 经 engine 模块属性访问，单一 patch 点）。"""
     calls = []
     monkeypatch.setattr(
-        "approval.utils.approval_flow.engine._notify",
+        "approval.services.approval_flow.engine._notify",
         lambda users, event, instance, extra=None: calls.append(
             {"users": list(users), "event": event, "extra": extra, "instance": instance.pk}
         ),
@@ -155,7 +155,7 @@ class TestTransferEngine:
         assert ok is False
 
     def test_transfer_processed_task_fails(self, applicant, approver, target):
-        from approval.utils.approval_flow import approve_task
+        from approval.services.approval_flow import approve_task
 
         instance = make_instance(applicant, approver, code="transfer_processed")
         task = instance.tasks.first()
@@ -282,7 +282,7 @@ class TestOngoingScopeApi:
         assert response.json()["data"]["total"] == 1
 
         # 只含审批中：终止（撤回）后不再出现
-        from approval.utils.approval_flow import cancel_instance
+        from approval.services.approval_flow import cancel_instance
 
         cancel_instance(instance, applicant)
         response = client.get(f"{LIST_URL}?scope=ongoing")
@@ -314,7 +314,7 @@ class TestOngoingScopeApi:
         assert response.status_code == 200, response.data
         body = response.json()
         assert body["code"] == 1000
-        assert body["data"]["success"] == 2
+        assert body["data"]["succeeded"] == 2
         assert body["data"]["failures"] == []
         for instance in (first, second):
             assert instance.tasks.filter(
@@ -338,7 +338,7 @@ class TestOngoingScopeApi:
         )
         body = response.json()
         assert body["code"] == 1000
-        assert body["data"]["success"] == 1
+        assert body["data"]["succeeded"] == 1
         assert [item["pk"] for item in body["data"]["failures"]] == [str(other.pk)]
         assert body["data"]["failures"][0]["detail"]
 

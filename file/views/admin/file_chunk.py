@@ -68,9 +68,10 @@ class ChunkUploadActionMixin:
                     "filesize": build_basic_type(OpenApiTypes.NUMBER),
                     "total_chunks": build_basic_type(OpenApiTypes.NUMBER),
                     "chunk_size": build_basic_type(OpenApiTypes.NUMBER),
+                    "content_hash": build_basic_type(OpenApiTypes.STR),
                     "md5": build_basic_type(OpenApiTypes.STR),
                 },
-                required=["filename", "filesize", "total_chunks", "chunk_size"],
+                required=["filename", "filesize", "total_chunks", "chunk_size", "content_hash"],
             )
         ),
         responses={
@@ -98,6 +99,7 @@ class ChunkUploadActionMixin:
                 chunk_size=data.get("chunk_size") or DEFAULT_CHUNK_SIZE,
                 md5sum=data.get("md5") or "",
                 mime_type=data.get("mime_type") or "",
+                content_hash=data.get("content_hash") or "",
             )
         except UploadError as exc:
             return ApiResponse(code=exc.code, detail=exc.detail)

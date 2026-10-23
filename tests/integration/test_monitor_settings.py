@@ -197,7 +197,7 @@ class TestThresholdReconcile:
         """面板健康总览（web 进程消费路径）同样经对账读到新阈值。"""
         import django.conf
 
-        from system.utils.platform.monitor_metrics import collect_health_summary
+        from system.services.monitor.metrics import collect_health_summary
 
         self._persist_without_broadcast("SECURITY_MONITOR_DISK_USED_MAX", 90)
         django.conf.settings.SECURITY_MONITOR_DISK_USED_MAX = 80

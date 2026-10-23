@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """定时报表任务：调度分发 + 执行渲染 + 多渠道路送达（邮件 + IM）。
 
-- 分发器每小时跑一次（crontab "5 * * * *"）派发三档报表、每分钟一次派发 cron 报表；
+- 分发器每分钟跑一次派发三档报表（send_time 精确到分钟）与 cron 报表；
   到期判定 = 「最近一次应当执行的时刻」晚于「上次执行时刻（首次执行前取建单时刻）」，
   因此 beat 延迟 / worker 停机 / 任务积压时会在恢复后补跑漏掉的期次；执行与分发解耦
   （长渲染不阻塞扫描）；
@@ -143,7 +143,7 @@ def _precreate_record(report: Any) -> str:
 
 
 @shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
-@register_as_period_task(crontab="5 * * * *", description="定时报表调度分发", module="analysis")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="* * * * *", description="定时报表调度分发", module="analysis")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def dispatch_scheduled_reports() -> Any:
     """每小时扫描 active 报表并派发到期的执行任务（三档频次；cron 报表由每分钟任务负责）。"""
     from dataset.models.dataset import Report
@@ -225,6 +225,20 @@ def run_scheduled_report(self: Any, report_id: str, bookkeep_schedule: bool = Tr
             update_fields.append("last_run_at")
         report.last_status = status
         report.save(update_fields=update_fields)
+
+    # 执行侧 fail-closed 复核：数据集可见性可能在建单后被改（personal 化 / 转移
+    # 创建者），调度链路不经过 run 动作的前置校验，必须在这里再判一次。判定为
+    # 配置态问题（非瞬时故障）：记 FAILURE 后正常返回，不进入重试/告警风暴。
+    from dataset.utils.dataset import dataset_visible_to
+
+    if not dataset_visible_to(user, report.dataset_id):
+        detail = str(_("The dataset is not visible to the report creator, run cancelled"))
+        record.status = ExportRecord.Status.FAILURE
+        record.error = detail
+        record.save(update_fields=["status", "error", "updated_time"])
+        bookkeep("FAILURE")
+        logger.warning("scheduled report dataset invisible to creator: %s", report.pk)
+        return 0
 
     try:
         # 统一进度：报表此前只有终态 100，此处补中间里程碑（查询 → 渲染 → 落盘）；

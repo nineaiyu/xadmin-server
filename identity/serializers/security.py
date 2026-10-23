@@ -90,6 +90,22 @@ class LoginAccessPolicySerializer(BaseModelSerializer):
     # 省略时由模型默认值落库（表单侧仍给出默认选中项，避免出现空选择）
     action = LabeledChoiceField(choices=LoginAccessPolicy.Action.choices, required=False)
     target_type = LabeledChoiceField(choices=LoginAccessPolicy.TargetType.choices, required=False)
+    condition_summary = serializers.SerializerMethodField(label=_("Condition summary"))
+
+    def get_condition_summary(self, obj: Any) -> str:
+        """列表可读条件摘要：对象 + 时段 + 网段，避免逐条打开编辑核对生效范围。"""
+        parts = []
+        if obj.target_type == LoginAccessPolicy.TargetType.ALL:
+            parts.append(str(_("All users")))
+        elif obj.target_value:
+            parts.append(str(obj.target_value))
+        if obj.weekdays:
+            parts.append(str(_("Weekdays: {}")).format(",".join(str(day) for day in obj.weekdays)))
+        if obj.start_time and obj.end_time:
+            parts.append(f"{obj.start_time:%H:%M}-{obj.end_time:%H:%M}")
+        if obj.ip_ranges:
+            parts.append(str(obj.ip_ranges).replace("\n", " / "))
+        return "; ".join(parts) or "-"
 
     class Meta:
         model = LoginAccessPolicy
@@ -105,11 +121,21 @@ class LoginAccessPolicySerializer(BaseModelSerializer):
             "end_time",
             "ip_ranges",
             "action",
+            "condition_summary",
             "remark",
             "created_time",
             "updated_time",
         ]
-        table_fields = ["name", "priority", "is_active", "target_type", "action", "remark", "updated_time"]
+        table_fields = [
+            "name",
+            "priority",
+            "condition_summary",
+            "is_active",
+            "target_type",
+            "action",
+            "remark",
+            "updated_time",
+        ]
 
     def validate(self, attrs: Any) -> Any:
         instance = self.instance
@@ -124,6 +150,25 @@ class LoginAccessPolicySerializer(BaseModelSerializer):
             and not str(target_value or "").strip()
         ):
             raise serializers.ValidationError(_("Please specify the target users or roles"))
+        values = {item.strip() for item in str(target_value or "").replace("\n", ",").split(",") if item.strip()}
+        if target_type == LoginAccessPolicy.TargetType.USER and values:
+            from identity.models import UserInfo
+
+            existing = set(UserInfo.objects.filter(username__in=values).values_list("username", flat=True))
+            invalid = sorted(values - existing)
+            if invalid:
+                raise serializers.ValidationError(
+                    _("Unknown usernames in policy target: {}").format(", ".join(invalid))
+                )
+        elif target_type == LoginAccessPolicy.TargetType.ROLE and values:
+            from identity.models import UserRole
+
+            existing = set(UserRole.objects.filter(code__in=values).values_list("code", flat=True))
+            invalid = sorted(values - existing)
+            if invalid:
+                raise serializers.ValidationError(
+                    _("Unknown role codes in policy target: {}").format(", ".join(invalid))
+                )
         return attrs
 
     def validate_ip_ranges(self, value: Any) -> Any:

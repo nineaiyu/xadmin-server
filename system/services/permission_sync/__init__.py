@@ -25,7 +25,12 @@ from .apply import (
     plan_binding_fixes,
     snapshot_role_field_names,
 )
-from .audit import audit_field_permissions, audit_permission_menus, audit_wide_manager_grants
+from .audit import (
+    audit_custom_permissions,
+    audit_field_permissions,
+    audit_permission_menus,
+    audit_wide_manager_grants,
+)
 from .constants import (
     AUDIT_KNOWN_DUPLICATES,
     AUDIT_SKIP_PREFIXES,
@@ -71,6 +76,7 @@ __all__ = [
     "RouteInfo",
     "apply_binding_fixes",
     "apply_plans",
+    "audit_custom_permissions",
     "audit_field_permissions",
     "audit_permission_menus",
     "audit_wide_manager_grants",

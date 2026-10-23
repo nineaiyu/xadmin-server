@@ -118,6 +118,11 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             default="",
             help="仅 --bootstrap 生效：把本页菜单与权限点授予指定角色（逗号分隔角色 code，如 admin,ops）；授权属业务决策，不传则跳过",
         )
+        parser.add_argument(
+            "--verify",
+            action="store_true",
+            help="生成后运行权限缺口与 OpenAPI 契约漂移检查（只报告，不阻断生成）",
+        )
 
     # ------------------------------------------------------------------ 入口
 
@@ -132,4 +137,39 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             ctx["app_registered"] = self._register_app(ctx, options)
         if options.get("bootstrap"):
             self._bootstrap(ctx, options)
+        if options.get("verify") and not options.get("dry_run"):
+            self._verify_generated()
         self._print_next_steps(ctx, options)
+
+    def _verify_generated(self) -> None:
+        """生成后自检：权限缺口 + OpenAPI 契约漂移（问题只报告，不阻断生成）。"""
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        self.stdout.write("\n生成后自检：")
+        buffer = StringIO()
+        try:
+            call_command("check", stdout=buffer, stderr=buffer)
+            self.stdout.write("  - Django system check：通过")
+        except Exception as exc:  # noqa: BLE001 只报告，生成物已落盘
+            self.stdout.write(f"  - Django system check：失败（{exc}）")
+
+        buffer = StringIO()
+        try:
+            call_command("sync_menu_permissions", dry_run=True, stdout=buffer)
+            summary = [line for line in buffer.getvalue().splitlines() if "缺口" in line or "路由" in line]
+            self.stdout.write("  - 权限点：")
+            for line in summary[-3:]:
+                self.stdout.write(f"      {line.strip()}")
+        except Exception as exc:  # noqa: BLE001 应用未注册 / URLconf 导入失败等
+            self.stdout.write(f"  - 权限点检查跳过（{exc}）")
+
+        buffer = StringIO()
+        try:
+            call_command("dump_openapi", check=True, stdout=buffer, stderr=buffer)
+            self.stdout.write("  - OpenAPI 契约：与 docs/schema/openapi.json 一致")
+        except Exception:  # noqa: BLE001 新增端点后 schema 尚未重导出属预期
+            self.stdout.write(
+                "  - OpenAPI 契约：已漂移（运行 python manage.py dump_openapi 后执行 pnpm sync:contract）"
+            )

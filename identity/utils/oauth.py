@@ -49,6 +49,7 @@ __all__ = [
     "check_state_cookie",
     "clear_state_cookie",
     "consume_bind_state",
+    "peek_bind_state",
     "consume_nonce",
     "consume_state",
     "exchange_code",
@@ -238,6 +239,14 @@ def issue_bind_state(provider_key: str, user_pk: Any) -> str:
         OAUTH_STATE_TTL,
     )
     return state
+
+
+def peek_bind_state(state: str) -> dict[str, Any] | None:
+    """只读绑定 state（不删除）：回调先校验登录态，通过后再原子消费。"""
+    if not state:
+        return None
+    payload = cache.get(BIND_STATE_CACHE_KEY.format(state=state))
+    return payload if isinstance(payload, dict) else None
 
 
 def consume_bind_state(state: str) -> dict[str, Any] | None:

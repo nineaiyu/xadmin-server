@@ -4,13 +4,14 @@
 
 扫描所有 app 内模块级（顶格）对其他 app 的 models / serializers / views /
 notifications / backends / signal(s) 直接 import——这是契约层收口的坏味道。
-跨 app 引用一律走 `<app>.services` 契约层；确实无法立即收口的存量，
-显式登记在 ALLOWLIST 并注明原因，禁止无台账新增。
+跨 app 引用一律走 `<app>.contracts` 契约层；`<app>.services` 作为过渡期兼容
+转发仍被接受，但新代码只允许 `contracts`。确实无法立即收口的存量，显式登记在
+ALLOWLIST 并注明原因，禁止无台账新增。
 
 框架层方向规则（单缝收敛）：common 消费业务 app 的唯一出口是
 `packages/xadmin-common/common/contracts.py`（声明式契约面）——common 内除该文件外，任何模块级
-业务 import（含 `*.services` 形态）一律违例；contracts.py 自身仍受
-「仅 `*.services`」+ CONTRACT_SEAMS 登记约束（双向漂移校验）。
+业务 import（含 `*.contracts` / `*.services` 形态）一律违例；contracts.py 自身仍受
+「仅 `*.contracts`（过渡期兼容 `*.services`）」+ CONTRACT_SEAMS 登记约束（双向漂移校验）。
 函数级惰性 import 属逃生门，作为观察项打印。
 
 反向依赖规则：common（框架层）禁止 import server（工程层）——
@@ -90,7 +91,7 @@ CONTRACTS_MODULE = f"{FRAMEWORK_DIR}/contracts.py"
 
 # contracts.py 的缝以 _CONTRACT_PROVIDERS 白名单声明（PEP 562 惰性解析，文件无
 # 模块级业务 import），漂移校验对照白名单的提供方声明而非 import 语句：
-# 条目形如 `"Name": ("app.services", "原因"),`，捕获提供方模块
+# 条目形如 `"Name": ("app.contracts", "原因"),`，捕获提供方模块
 CONTRACT_PROVIDER_RE = re.compile(r'^\s*"[A-Za-z_]\w*": \("([a-z_]+\.[a-z_]+)",', re.M)
 
 CONTRACT_SEAMS = {
@@ -100,8 +101,8 @@ CONTRACT_SEAMS = {
         "audit.services": "框架层业务消费唯一显式契约出口：审计域模型与掩码/影响面委托（Phase C 四域切分）",
         "task.services": "框架层业务消费唯一显式契约出口：任务域 Webhook 事件投递（Phase C 四域切分）",
         "system.services": "框架层业务消费唯一显式契约出口：platform 域模型契约 + 审计/任务委托过渡缝",
-        "approval.services": "框架层业务消费唯一显式契约出口：审批流拦截入口",
-        "ai.services": "框架层业务消费唯一显式契约出口：AI 动作声明注册表",
+        "approval.contracts": "框架层业务消费唯一显式契约出口：审批流拦截入口",
+        "ai.contracts": "框架层业务消费唯一显式契约出口：AI 动作声明注册表",
         "settings.services": "框架层业务消费唯一显式契约出口：Setting 启动自检 + 文档站登录锁定",
     },
 }
@@ -157,9 +158,14 @@ def scan_framework_direction():
                     (rel, line, f"框架层业务消费须统一经 {CONTRACTS_MODULE}，禁止直接 import {module_path}")
                 )
                 continue
-            if not module_path.startswith(f"{app}.services"):
+            if not module_path.startswith((f"{app}.contracts", f"{app}.services")):
                 violations.append(
-                    (rel, line, f"框架层须经 <app>.services 契约层消费业务 app，禁止直接 import {module_path}")
+                    (
+                        rel,
+                        line,
+                        f"框架层须经 <app>.contracts 契约层消费业务 app（services 仅过渡兼容），"
+                        f"禁止直接 import {module_path}",
+                    )
                 )
                 continue
             found_seams.add(module_path)
@@ -264,7 +270,7 @@ def main() -> int:
         for rel, line, stmt in sorted(violations):
             print(f"  {rel}:{line}  {stmt}")
         print(
-            "\n跨 app 引用请改走 <app>.services 契约层；确需保留的，"
+            "\n跨 app 引用请改走 <app>.contracts 契约层（services 仅过渡兼容）；确需保留的，"
             "在 scripts/check_cross_app_imports.py 的 ALLOWLIST 登记原因。\n"
             "common（框架层）→ 业务 app 的消费统一经 packages/xadmin-common/common/contracts.py 契约面："
             "在 _CONTRACT_PROVIDERS 声明名字，并在 CONTRACT_SEAMS 登记提供方缝。\n"

@@ -24,6 +24,28 @@ class SecurityPasswordRuleSerializer(SettingSaveContractMixin, serializers.Seria
     SECURITY_PASSWORD_LOWER_CASE = serializers.BooleanField(required=False, label=_("Lowercase"))
     SECURITY_PASSWORD_NUMBER = serializers.BooleanField(required=False, label=_("Digits"))
     SECURITY_PASSWORD_SPECIAL_CHAR = serializers.BooleanField(required=False, label=_("Special characters"))
+    SECURITY_PASSWORD_HISTORY_COUNT = serializers.IntegerField(
+        required=False,
+        min_value=0,
+        max_value=50,
+        default=3,
+        label=_("Password history count"),
+        help_text=_("Recent passwords that cannot be reused (0 = disabled)"),
+    )
+    SECURITY_PASSWORD_EXPIRATION_DAYS = serializers.IntegerField(
+        required=False,
+        min_value=0,
+        max_value=3650,
+        default=90,
+        label=_("Password expiration (days)"),
+        help_text=_("Force password change after N days (0 = never)"),
+    )
+    SECURITY_PASSWORD_LEAK_CHECK_ENABLED = serializers.BooleanField(
+        required=False,
+        default=True,
+        label=_("Password leak check"),
+        help_text=_("Reject passwords found in known breach corpora"),
+    )
 
 
 login_ip_limit_time_help_text = _(
@@ -107,6 +129,14 @@ class SecurityLoginLimitSerializer(SettingSaveContractMixin, serializers.Seriali
         allow_empty=True,
         child=serializers.CharField(max_length=1024, validators=[ip_group_child_validator]),
         help_text=ip_group_help_text,
+    )
+    SECURITY_LOGIN_MAX_SESSIONS = serializers.IntegerField(
+        required=False,
+        min_value=0,
+        max_value=100,
+        default=0,
+        label=_("Max concurrent sessions"),
+        help_text=_("Kick the least recently active session beyond this limit (0 = unlimited)"),
     )
 
 
@@ -289,6 +319,10 @@ class SecurityBlockIPSerializer(serializers.Serializer):
     pk = serializers.CharField(required=False, label=_("ID"))
     ip = serializers.CharField(max_length=1024, required=False, allow_blank=True, label=_("Block IP"))
     created_time = serializers.DateTimeField(label=_("Created time"))
+
+    class Meta:
+        # pk 是整数串内部标识，不作为列表列展示（前端 selection 仍可用行数据）
+        table_fields = ["ip", "created_time"]
 
 
 class SecurityVerifyCodeSerializer(SettingSaveContractMixin, serializers.Serializer):

@@ -18,7 +18,7 @@
 | 审计 UserLoginLog | `idx_loginlog_created`(created_time) | 登录日志列表默认排序 |
 | 审计 DataMaskRule | `idx_datamask_model_field`(model, field) | 脱敏规则每请求查找 |
 | 文件 UploadFile | `idx_uploadfile_tmp_created`(is_tmp, created_time)、`idx_uploadfile_md5sum`、`idx_uploadfile_creator_created`(creator, created_time)、`idx_uploadfile_filename_trgm`（§三） | 每日清理任务（PERF-13）、秒传去重、我的文件列表、文件名检索 |
-| 文件 UploadSession | `idx_upsess_resume`(creator, filename, filesize, status)、`idx_upsess_status_created`(status, created_time) | 断点续传恢复、过期会话清理 |
+| 文件 UploadSession | `idx_upsess_resume`(creator, filename, filesize, status)（命中另需 `content_hash` 相等）、`idx_upsess_status_created`(status, created_time) | 断点续传恢复、过期会话清理 |
 | 文件 FileAccessLog | `idx_file_log_file_created`(file, created_time)、`idx_file_log_user_action`(user, action) | 文件访问记录（按文件 / 按用户+动作） |
 | 身份 UserInfo | 4×trgm（§三）；username unique、phone/email db_index | 登录、全局检索 |
 | 身份 UserSession | `idx_session_status_active`(status, last_active) | 在线列表 / 会话活跃度扫描 |

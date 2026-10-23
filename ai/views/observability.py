@@ -32,7 +32,7 @@ class AiObservabilityMixin:
         与 status/metrics 共用权限点路径正则（`(status|metrics|history|tools|usage)$`），
         不新增权限点。
         """
-        from ai.utils.ai_usage import usage_summary
+        from ai.services.assistant.ai_usage import usage_summary
 
         days = request.query_params.get("days") or 7
         feature = str(request.query_params.get("feature") or "").strip()
@@ -58,7 +58,7 @@ class AiObservabilityMixin:
         from django.db.models import Count
         from django.utils import timezone
 
-        from ai.utils.ai_usage import USAGE_MAX_DAYS
+        from ai.services.assistant.ai_usage import USAGE_MAX_DAYS
         from audit.services import OperationLog
         from identity.models import UserInfo
 
@@ -104,7 +104,7 @@ class AiObservabilityMixin:
             )
         }
         # token 用量（成本维度）：DB 侧聚合 AI 用量账本（不再逐行解析审计 changes JSON）
-        from ai.utils.ai_usage import usage_tokens_since
+        from ai.services.assistant.ai_usage import usage_tokens_since
 
         return ApiResponse(
             data={

@@ -12,10 +12,10 @@ import re
 import pytest
 
 from ai.models.mcp import McpServer
-from ai.utils import ai_mcp_actions as mcp_actions
-from ai.utils.ai_actions import ACTION_SPECS, get_action
-from ai.utils.ai_mcp_actions import McpActionSpec, mcp_action_specs
-from ai.utils.ai_tool_catalog import openai_tools, tool_catalog
+from ai.services.actions.ai_actions import ACTION_SPECS, get_action
+from ai.services.actions.ai_tool_catalog import openai_tools, tool_catalog
+from ai.services.mcp import ai_mcp_actions as mcp_actions
+from ai.services.mcp.ai_mcp_actions import McpActionSpec, mcp_action_specs
 
 pytestmark = [pytest.mark.django_db]
 
@@ -141,7 +141,7 @@ class TestSpecProtocolGuard:
     """动态 spec 与 ActionSpec 协议同形（混装目录的最低要求）。"""
 
     def test_protocol_surface(self, superuser):
-        from ai.utils.ai_actions import ActionSpec
+        from ai.services.actions.ai_actions import ActionSpec
 
         _make_server("s", ["echo"])
         spec: McpActionSpec = next(iter(mcp_action_specs(superuser).values()))

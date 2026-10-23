@@ -15,7 +15,7 @@ from django.test.utils import CaptureQueriesContext
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 from approval.models.leave import Leave
-from approval.utils.approval_flow import create_instance
+from approval.services.approval_flow import create_instance
 from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
@@ -167,7 +167,7 @@ class TestInstanceListFieldContract:
             return None
 
         # 序列化器内部按函数级 import 取 biz_summary，patch 其来源模块属性
-        monkeypatch.setattr("approval.utils.approval_flow.biz.biz_summary", spy)
+        monkeypatch.setattr("approval.services.approval_flow.biz.biz_summary", spy)
 
         assert api_client.get(INSTANCES_URL, {"scope": "mine"}).data["code"] == 1000
         assert called == []

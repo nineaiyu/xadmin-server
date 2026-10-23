@@ -11,8 +11,10 @@
 
 上行 action（protocol.MessageAction）：
 - `chat_message {room_id, content, client_msg_id, message_type?, file_pk?}` → 落库后广播
-  （幂等：同 client_msg_id 不重复落库/广播）；message_type=image/video/audio/file 时
-  携带 `file_pk`（先经 `POST /api/chat/message/upload` 取得，服务端校验归属后引用）；
+  （幂等：同 client_msg_id 不重复落库/广播）；message_type 只接受
+  text/image/video/audio/file（附件类型携带 `file_pk`，先经
+  `POST /api/chat/message/upload` 取得，服务端校验归属后引用）；ai/system 是服务端
+  生成语义（sender=None 的内部路径），客户端上行伪造一律 1001 拒绝；
 - `chat_reaction {message, emoji, op}` → 表情回应落库（extra.reactions 全量表）后
   向房间广播；消息不存在/已撤回/非成员/机器消息静默忽略（fail-closed）；
 - `chat_read {room_id}` → 清零未读并回执最新已读游标。
@@ -33,7 +35,7 @@ from django.utils.translation import gettext_lazy as _
 from common.utils import get_logger
 from message import chat as chat_service
 from message.base import AsyncJsonWebsocket
-from message.models import ChatMessage, ChatRoom, ChatRoomMember
+from message.models import UPLINK_MESSAGE_TYPES, ChatMessage, ChatRoom, ChatRoomMember
 from message.protocol import MessageAction
 from message.utils import (
     async_push_message,
@@ -171,10 +173,17 @@ class ChatNotify(AsyncJsonWebsocket):
             return
 
         # 消息类型：text（缺省）/ image / video / audio / file；附件消息携带 file_pk
-        # （先经 REST 上传取得）
+        # （先经 REST 上传取得）。ai / system 属服务端生成语义：客户端伪造「官方通知 /
+        # 模型回复」是站内钓鱼入口，直接拒绝而不是静默降级（降级会吞掉内容差异）。
         message_type = str(data.get("message_type") or ChatMessage.MessageType.TEXT)
-        if message_type not in ChatMessage.MessageType.values:
-            message_type = str(ChatMessage.MessageType.TEXT)
+        if message_type not in UPLINK_MESSAGE_TYPES:
+            logger.warning("chat send rejected invalid message_type=%s user=%s", message_type, self.user.pk)
+            await self.send_base_json(
+                MessageAction.CHAT_MESSAGE.value,
+                code=1001,
+                detail=str(_("Unsupported message type")),
+            )
+            return
         try:
             room = await database_sync_to_async(chat_service.accessible_room)(data.get("room_id"), self.user)
             attachment = None

@@ -105,7 +105,10 @@ class BasicSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     )
 
     EXPORT_MAX_LIMIT = serializers.IntegerField(
-        required=False, label=_("Export max limit"), help_text=_("Limit the maximum number of rows of exported data")
+        required=False,
+        min_value=1,
+        label=_("Export max limit"),
+        help_text=_("Limit the maximum number of rows of exported data (>=1)"),
     )
 
     @staticmethod

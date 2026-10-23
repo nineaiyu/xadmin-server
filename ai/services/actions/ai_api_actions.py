@@ -1,0 +1,252 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""声明式 AI API 动作：复用现有业务接口执行（零 AI 专用业务代码）。
+
+**为什么这样设计（重要）**
+
+受限动作第一版为每个能力手写「校验 + 执行」函数（请假、动态表单），代价是：
+新增能力（如"禁用某用户"）必须在 AI 侧再实现一遍业务规则，与既有
+ViewSet / Serializer 双写，必然漂移。这里改为**声明式复用业务接口**：
+
+- 新增能力 = 在所属应用的 ``ai_declarations.py`` 里声明 (method, path, 参数类型)，
+  由 ``ai.services.actions.ai_registry`` 自动发现，零业务代码；
+- 执行 = 构造 DRF 请求 → ``resolve()`` 反解到现有 ViewSet 的 view 函数 → 直接
+  dispatch——权限链（含菜单权限点）、序列化器校验、写入事务、缓存失效、操作日志
+  与浏览器请求**完全同一代码路径**，不存在"AI 专用分支"；
+- 安全：只能命中白名单声明的 (method, path)；path 模板由服务端持有，LLM 只填
+  参数值；执行前 ``user_can_visit`` 预检 + 视图自带 permission_classes 双门；
+  仍需用户确认卡片二次确认，并落 AI:action 审计（与既有动作同口径）。
+
+协议：本模块的 ``ApiActionSpec`` 与 ``ai_actions.ActionSpec`` 同形状
+（key/label/description/params/required_visits/has_permission/validate/execute/
+requires_approval/available），可直接混装进同一注册表，调用方无需区分两类动作。
+"""
+
+import json
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
+
+from django.urls import Resolver404, resolve
+from django.utils.translation import gettext_lazy as _
+from rest_framework.request import Request  # noqa: F401  （类型语义保留：dispatch 接收 DRF 请求）
+from rest_framework.test import APIRequestFactory
+
+from ai.services.actions.ai_action_types import module_allows, user_can_visit
+from ai.services.actions.ai_api_params import (  # noqa: F401  (参数解析/URL 构建拆出，再导出保持调用面)
+    IN_BODY,
+    IN_PATH,
+    PATH_PLACEHOLDER,
+    _menu_display,
+    _role_display,
+    _user_display,
+)
+from ai.services.actions.ai_api_params import (
+    IN_QUERY as IN_QUERY,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.services.actions.ai_api_params import (
+    build_action_url as build_action_url,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.services.actions.ai_api_params import (
+    resolve_api_params as resolve_api_params,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from common.core.response import API_SUCCESS_CODE
+from common.utils import get_logger
+
+logger = get_logger(__name__)
+
+
+def requires_approval_high_risk(user: Any, params: Any) -> bool:
+    """高危动作共享谓词：非超管一律进 412 审批协议（审批单 module=AI 动作）。
+
+    超管豁免与 dform 动作同口径：审批协议要求「申请人不能自审」，而超管通常
+    是唯一管理员——若超管也强制审批，动作会因审批人缺失/自审禁止而永久挂起。
+    """
+    return not getattr(user, "is_superuser", False)
+
+
+@dataclass(frozen=True)
+class ApiActionSpec:
+    """声明式 API 动作（协议对齐 ai_actions.ActionSpec，可混装注册表）。"""
+
+    key: str
+    label: object
+    description: object
+    method: str
+    path: str
+    params: dict[str, Any]
+    requires_approval: Callable[..., bool]
+    available: Callable[..., bool]
+    #: 目录附加信息（当前声明式动作未使用，与 ActionSpec 协议对齐）
+    catalog: Callable[..., dict[str, Any]] | None = None
+    #: 所属功能模块（停用即从目录移除并拒绝执行；空 = 不受模块裁剪）
+    modules: tuple[str, ...] = ()
+
+    @property
+    def required_visits(self) -> tuple[Any, ...]:
+        """执行所需业务权限点（method + path 模板，与菜单权限点 path 同口径）。"""
+        return ((self.method.upper(), self.path),)
+
+    def has_permission(self, user: Any) -> bool:
+        """与 ActionSpec 同口径三合一：模块启用 + 业务权限点 + 可用性。"""
+        return (
+            module_allows(self)
+            and all(user_can_visit(user, method, path) for method, path in self.required_visits)
+            and bool(self.available(user))
+        )
+
+    def validate(self, user: Any, params: Any) -> Any:
+        """参数解析（类型转换 + 必填/枚举校验）。
+
+        契约与 ``ai_actions.ActionSpec.validate`` 一致：返回 ``(扁平参数, 错误文案)``。
+        扁平参数用于「确认卡片展示 + 前端回传执行」；``const`` 固定值不出现在其中
+        （执行期由声明重新注入）。解析是幂等的（已解析出的用户主键可再次通过校验），
+        因此回传参数可直接执行。
+        """
+        path_params, body, query, error = resolve_api_params(self, user, params)
+        if error:
+            return {}, error
+        clean = {}
+        for field, rule in self.params.items():
+            if "const" in rule:
+                continue
+            where = rule.get("in", IN_BODY)
+            target_key = rule.get("target", field)
+            if where == IN_PATH:
+                clean[field] = path_params.get(field)
+            elif where == IN_QUERY:
+                clean[field] = query.get(target_key)
+            else:
+                clean[field] = body.get(target_key)
+            # user/role 类型字段：确认卡片展示可读文本（昵称(用户名)/角色名），
+            # 执行期宽容解析回主键（解析幂等）；menu 保持主键列表（执行期原样可解析）
+            if rule.get("type") == "user" and clean.get(field):
+                clean[field] = _user_display(clean[field])
+            if rule.get("type") == "role" and clean.get(field):
+                clean[field] = _role_display(clean[field])
+            if rule.get("type") == "menu" and clean.get(field):
+                clean[field] = _menu_display(clean[field])
+        return clean, None
+
+    def execute(self, user: Any, params: Any) -> Any:
+        """dispatch 到现有业务接口，返回 {ok, detail, data}。"""
+        return execute_api_action(self, user, params)
+
+
+def api_action(
+    key: str,
+    label: Any,
+    description: Any,
+    method: str,
+    path: str,
+    params: dict[str, Any],
+    defaults: dict[str, Any] | None = None,
+    requires_approval: Any = None,
+    available: Any = None,
+    catalog: Any = None,
+    modules: tuple[str, ...] = (),
+) -> ApiActionSpec:
+    """构造声明式动作。
+
+    params 的每个字段：
+    - ``type``：``user``（用户名/昵称 → 用户，解析出 pk 供 path 占位）/ ``pk`` /
+      ``string`` / ``int`` / ``bool`` / ``enum``（配合 ``values``）/ ``json``；
+    - ``in``：``body``（默认）或 ``path``（字段名须与 path 里的 ``<占位>`` 同名）；
+    - ``target``：发送到业务接口时的字段名（缺省与参数名相同）——参数名可以
+      对 LLM 友好（如 ``menus``），落到请求体时改写为接口契约字段（``menu``）；
+    - ``required`` / ``default`` / ``description``（给 LLM 的说明）；
+    - ``const``：服务端固定值（不进 LLM 目录、不接受模型提供，如公告 notice_type）。
+
+    defaults：接口的隐含必填字段固定值（同样不进 LLM 目录），例如公告端点的
+    ``notice_type/publish/notice_user/files``——业务接口的既有契约原样满足，
+    仅声明不改写。
+    modules：所属功能模块（停用即从 AI 目录移除并拒绝执行）；跨模块端点可声明多个，
+    全部启用才可见。
+    """
+    merged = dict(params)
+    for name, value in (defaults or {}).items():
+        merged.setdefault(name, {"const": value, "in": IN_BODY})
+    return ApiActionSpec(
+        key=key,
+        label=label,
+        description=description,
+        method=method.upper(),
+        path=path,
+        params=merged,
+        requires_approval=requires_approval or (lambda user, params: False),
+        available=available or (lambda user: True),
+        catalog=catalog,
+        modules=tuple(modules),
+    )
+
+
+def execute_api_action(spec: ApiActionSpec, user: Any, params: dict[str, Any]) -> dict[str, Any]:
+    """执行声明式动作：解析参数 → 反解 URL → dispatch 现有视图。
+
+    返回与专用动作一致的 ``{ok, detail, data}`` 语义（错误一律可读文案）。
+    """
+    from urllib.parse import urlencode
+
+    path_params, body, query, error = resolve_api_params(spec, user, params)
+    if error:
+        return {"ok": False, "detail": error, "data": {}}
+
+    url = build_action_url(spec, path_params)
+    if url is None:
+        logger.warning("ai api action bad declaration (unfilled placeholder). key:%s", spec.key)
+        return {"ok": False, "detail": str(_("The action is not available")), "data": {}}
+    if query:
+        url = f"{url}?{urlencode(query, doseq=True)}"
+
+    try:
+        # resolve 只接受纯 path（带 query string 会 Resolver404），query 只进请求
+        match = resolve(url.split("?", 1)[0])
+    except Resolver404:
+        logger.warning("ai api action path not resolvable. key:%s url:%s", spec.key, url)
+        return {"ok": False, "detail": str(_("The action is not available")), "data": {}}
+
+    factory = APIRequestFactory()
+    if spec.method == "GET":
+        # GET（列表/查询类动作）：参数走 query string，不带请求体（DRF 会把 body 解析进
+        # request.data，与 query_params 混淆，且分页/过滤只认 query）
+        request = factory.get(url)
+    else:
+        # 注意：generic() 默认 content_type=application/octet-stream（且无 format 参数），
+        # 必须显式给 JSON content_type + 手写序列化，否则 DRF 解析器 415 拒绝。
+        request = factory.generic(
+            spec.method,
+            url,
+            data=json.dumps(body, ensure_ascii=False, default=str),
+            content_type="application/json",
+        )
+    # 注入已认证用户（等价 DRF 的 force_authenticate）：视图的权限链照常执行，
+    # 不给 AI 动作开后门；不经过认证链仅因请求由服务端内部构造。
+    request._force_auth_user = user
+    if spec.requires_approval(user, params):
+        # 高危动作预授权：AI 层强制审批已在 action/execute 完成（412 协议消费
+        # 一次性令牌后才可能走到这里），内部 dispatch 标记放行业务层
+        # @ApprovalRequired，避免同一操作被重复拦截建单（见 process_approval）。
+        request._approval_pre_authorized = True
+    try:
+        response = match.func(request, **match.kwargs)
+    except Exception as exc:  # noqa: BLE001 内部 dispatch 失败一律转可读错误
+        logger.warning("ai api action dispatch failed. key:%s url:%s", spec.key, url, exc_info=True)
+        return {"ok": False, "detail": str(_("The action failed: {}").format(str(exc)[:200])), "data": {}}
+
+    payload = getattr(response, "data", None) or {}
+    status_code = int(getattr(response, "status_code", 500) or 500)
+    code = payload.get("code") if isinstance(payload, dict) else None
+    if status_code < 400 and code == API_SUCCESS_CODE:
+        detail = payload.get("detail")
+        return {
+            "ok": True,
+            "detail": str(detail) if detail else str(_("Operation successful")),
+            "data": payload.get("data") or {},
+        }
+    if status_code < 400 and code is None and isinstance(payload, dict) and "results" in payload:
+        # 读类动作命中列表接口：分页响应无 ApiResponse 包装（{total, results}），
+        # 结果本体即数据（data=整个分页载荷，前端表格直接渲染 results）
+        return {"ok": True, "detail": str(_("Operation successful")), "data": payload}
+    detail = payload.get("detail") if isinstance(payload, dict) else None
+    logger.info("ai api action rejected. key:%s url:%s status:%s", spec.key, url, status_code)
+    return {"ok": False, "detail": str(detail) if detail else str(_("Operation failed")), "data": {}}

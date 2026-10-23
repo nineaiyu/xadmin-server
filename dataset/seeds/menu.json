@@ -1357,6 +1357,29 @@
  },
  {
   "model": "system.menu",
+  "pk": "5353e5c1-fe11-438e-a9a1-630803c04044",
+  "fields": {
+   "created_time": "2026-09-22T00:00:00Z",
+   "updated_time": "2026-09-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
+   "menu_type": 2,
+   "name": "impact:DataDashboard",
+   "rank": 925,
+   "path": "api/dataset/dashboards/impact$",
+   "component": null,
+   "is_active": true,
+   "meta": "e78c30a7-6d61-4ad8-bfe3-e42f332160b1",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
   "pk": "158a5476-edac-41ed-9f27-6a6f1076e83c",
   "fields": {
    "created_time": "2026-09-27T12:31:09.143Z",

@@ -25,7 +25,7 @@ from django.core.cache import cache
 from dataset.analysis_tasks import _screen_has_viewers, push_screen_data
 from dataset.models.dataset import Dashboard, Dataset, Screen
 from dataset.screen_data import build_screen_data_payload, collect_screen_cards
-from dataset.views import analysis as analysis_views
+from dataset.views import screen as screen_views
 from dataset.ws_screen import (
     MIN_DATA_PUSH_INTERVAL,
     SCREEN_TRIGGER_MERGE_WINDOW,
@@ -179,6 +179,16 @@ class TestCollectScreenCards:
             (str(dashboard_a.pk), "c1"),
             (str(dashboard_a.pk), "c2"),
         ]
+
+    def test_personal_dashboard_not_pushed_to_other_viewer(self, dashboard_a, superuser, normal_user):
+        """personal 仪表盘只对创建者可见：帧展开不把卡片数据推给其他浏览者。"""
+        dashboard_a.visibility = "personal"
+        dashboard_a.creator = superuser
+        dashboard_a.save(update_fields=["visibility", "creator"])
+        screen = _make_screen(superuser, [dashboard_a])
+
+        assert [ref["card"] for ref in collect_screen_cards(screen, user=superuser)] == ["c1", "c2"]
+        assert collect_screen_cards(screen, user=normal_user) == []
 
     def test_card_level_permission_filter(self, dashboard_a, superuser, normal_user):
         dashboard_a.layout[0]["allowed_roles"] = ["nobody_role"]
@@ -461,7 +471,7 @@ class TestGroupBroadcastTrigger:
     def test_switch_page_auto_do_not_trigger_data_push(self, dashboard_a, superuser, auth_client, monkeypatch):
         screen = _make_screen(superuser, [dashboard_a])
         called = []
-        monkeypatch.setattr(analysis_views, "broadcast_screen_data_trigger", lambda pk: called.append(str(pk)))
+        monkeypatch.setattr(screen_views, "broadcast_screen_data_trigger", lambda pk: called.append(str(pk)))
         for payload in (
             {"command": "switch", "dashboard_pk": str(dashboard_a.pk)},
             {"command": "page", "index": 0},
@@ -474,7 +484,7 @@ class TestGroupBroadcastTrigger:
     def test_refresh_command_triggers_data_push(self, dashboard_a, superuser, auth_client, monkeypatch):
         screen = _make_screen(superuser, [dashboard_a])
         called = []
-        monkeypatch.setattr(analysis_views, "broadcast_screen_data_trigger", lambda pk: called.append(str(pk)))
+        monkeypatch.setattr(screen_views, "broadcast_screen_data_trigger", lambda pk: called.append(str(pk)))
         resp = auth_client.post(f"{SCREEN_URL}/{screen.pk}/command", {"command": "refresh"}, format="json").json()
         assert resp["code"] == 1000, resp
         assert called == [str(screen.pk)]

@@ -24,11 +24,13 @@ from django.utils import timezone
 
 from common.utils import get_logger
 from common.utils.outbound import pinned_request
-from task.utils.webhook import MAX_ATTEMPTS, RETRY_BASE_SECONDS, RETRY_MAX_SECONDS, decrypt_secret, sign_payload
+from task.services.webhook import MAX_ATTEMPTS, RETRY_BASE_SECONDS, RETRY_MAX_SECONDS, decrypt_secret, sign_payload
 
 logger = get_logger(__name__)
 
 DELIVER_TIMEOUT = 10
+#: 响应体审计存储上限：完整保留到 8KB，超出置 response_body_truncated
+RESPONSE_BODY_LIMIT = 8192
 
 
 def _default_client() -> Any:
@@ -43,7 +45,7 @@ def _post(client: Any, url: Any, body: bytes, headers: dict[str, Any]) -> Any:
     白名单放行），再把连接目标固定为已校验 IP（防 DNS rebinding）；
     注入客户端路径（测试离线桩）保持原样调用，不做固定连接。
     """
-    from task.utils.webhook import loopback_allowed, outbound_allowed_hosts
+    from task.services.webhook import loopback_allowed, outbound_allowed_hosts
 
     merged_headers = {"Content-Type": "application/json", **headers}
     try:
@@ -65,12 +67,33 @@ def _post(client: Any, url: Any, body: bytes, headers: dict[str, Any]) -> Any:
         else:
             response = client.post(url, data=body, headers=merged_headers, timeout=DELIVER_TIMEOUT)
         try:
-            text = response.text[:500]
+            # 审计存储上限 8KB：完整响应保留到该上限，超出部分丢弃并置截断标记
+            text = response.text[:RESPONSE_BODY_LIMIT]
         except Exception:  # noqa: BLE001 仅取审计文本，读取失败不影响投递结果判定
             text = ""
         return response.status_code, text
     except Exception as exc:  # noqa: BLE001 网络异常与拒绝同语义
         return 0, str(exc)[:500]
+
+
+def _finish_success(delivery: Any, subscription: Any, claimed_generation: int, result_fields: dict[str, Any]) -> int:
+    """成功投递收尾：条件更新（代际不匹配则作废）+ 清空历史失败。"""
+    from task.models.webhook import WebhookDelivery
+
+    updated = WebhookDelivery.objects.filter(pk=delivery.pk, generation=claimed_generation).update(
+        status="success", next_retry_at=None, **result_fields
+    )
+    if not updated:
+        # 期间发生重派，本任务已过期：结果作废，不覆盖新状态
+        logger.warning("webhook delivery superseded, result dropped: %s", delivery.pk)
+        return 0
+    # 恢复成功即清空旧失败：last_failure 表示「当前仍处于耗尽态」，
+    # 不能把几天前已恢复的故障一直挂在订阅列表上
+    if subscription.last_failure:
+        subscription.last_failure = ""
+        subscription.save(update_fields=["last_failure", "updated_time"])
+    logger.info("webhook delivered: %s -> %s in %ss", delivery.pk, subscription.name, result_fields["duration"])
+    return 1
 
 
 # 任务名显式钉住：模块迁位后默认名会变为 task.webhook_tasks.deliver_webhook，
@@ -126,20 +149,14 @@ def deliver_webhook(self: Any, delivery_id: str, generation: int | None = None) 
         "attempt": F("attempt") + 1,
         "response_code": status_code or None,
         "response_body": response_text,
+        "response_body_truncated": len(response_text) >= RESPONSE_BODY_LIMIT,
         "duration": duration,
+        "request_headers": headers,
         "updated_time": timezone.now(),
     }
 
     if 200 <= status_code < 300:
-        updated = WebhookDelivery.objects.filter(pk=delivery.pk, generation=claimed_generation).update(
-            status="success", next_retry_at=None, **result_fields
-        )
-        if not updated:
-            # 期间发生重派，本任务已过期：结果作废，不覆盖新状态
-            logger.warning("webhook delivery superseded, result dropped: %s", delivery.pk)
-            return 0
-        logger.info("webhook delivered: %s -> %s in %ss", delivery.pk, subscription.name, duration)
-        return 1
+        return _finish_success(delivery, subscription, claimed_generation, result_fields)
 
     exhausted = new_attempt >= MAX_ATTEMPTS
     countdown = None if exhausted else min(RETRY_BASE_SECONDS * (2 ** (new_attempt - 1)), RETRY_MAX_SECONDS)

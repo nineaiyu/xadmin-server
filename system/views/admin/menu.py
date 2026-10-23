@@ -205,6 +205,7 @@ class MenuViewSet(
         missing = self._serialize_gap_items(gaps, routes, perms)
         orphan = self._serialize_perm_items(unmatched, "orphan", "verify")
         duplicate = self._serialize_perm_items(duplicates, "duplicate", "merge")
+        custom_action = self._serialize_perm_items(sync.audit_custom_permissions(perms), "custom_action", "verify")
         field_unconfigured = self._serialize_field_audit_items(sync.audit_field_permissions())
         return ApiResponse(
             data={
@@ -212,6 +213,7 @@ class MenuViewSet(
                     "missing": len(missing),
                     "orphan": len(orphan),
                     "duplicate": len(duplicate),
+                    "custom_action": len(custom_action),
                     "field_unconfigured": len(field_unconfigured),
                     "total": len(missing) + len(orphan) + len(duplicate) + len(field_unconfigured),
                     "routes": len(routes),
@@ -220,6 +222,7 @@ class MenuViewSet(
                 "missing": missing,
                 "orphan": orphan,
                 "duplicate": duplicate,
+                "custom_action": custom_action,
                 "field_unconfigured": field_unconfigured,
             }
         )

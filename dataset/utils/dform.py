@@ -165,6 +165,9 @@ def validate_schema(schema: dict[str, Any]) -> list[Any]:
             value = item.get(bound)
             if value is not None and not isinstance(value, (int, float)):
                 raise ValidationError(_("Field {} {} must be numeric").format(key, bound))
+        sensitive = item.get("sensitive")
+        if sensitive is not None and not isinstance(sensitive, bool):
+            raise ValidationError(_("Field {} sensitive must be boolean").format(key))
         filterable = item.get("filterable")
         if filterable is not None and not isinstance(filterable, bool):
             raise ValidationError(_("Field {} filterable must be boolean").format(key))

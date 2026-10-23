@@ -140,7 +140,12 @@ class TestAccountRiskDispose:
     def test_scan_and_stats_endpoints(self, auth_client, superuser):
         resp = auth_client.post(SCAN_URL, format="json")
         assert resp.data["code"] == 1000, resp.data
-        assert "total" in resp.data["data"]
+        task_id = resp.data["data"]["task_id"]
+        status = auth_client.get(f"{SCAN_URL}-status", {"task_id": task_id})
+        assert status.data["code"] == 1000, status.data
+        assert status.data["data"]["status"] == "SUCCESS"
+        assert status.data["data"]["progress"] == 100
+        assert status.data["data"]["result"]["total"] >= 1
         resp = auth_client.get(STATS_URL)
         assert resp.data["code"] == 1000, resp.data
         assert resp.data["data"]["pending"] >= 1

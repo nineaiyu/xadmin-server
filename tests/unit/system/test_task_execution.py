@@ -736,7 +736,7 @@ def test_batch_enable_reports_unmatched_and_invalid_pks():
     factory = APIRequestFactory()
     request = factory.post(
         "/api/task/periodic/batch-enable",
-        data={"pks": [str(instance.pk), "abc", "999999", bogus], "enabled": True},
+        data={"pks": [str(instance.pk), "abc", "999999", bogus]},
         format="json",
     )
     force_authenticate(request, user=user)
@@ -765,12 +765,12 @@ def test_batch_enable_reports_save_failure():
 
     factory = APIRequestFactory()
     request = factory.post(
-        "/api/task/periodic/batch-enable",
-        data={"pks": [str(ok_task.pk), str(doomed.pk)], "enabled": False},
+        "/api/task/periodic/batch-disable",
+        data={"pks": [str(ok_task.pk), str(doomed.pk)]},
         format="json",
     )
     force_authenticate(request, user=user)
-    view = PeriodicTaskViewSet.as_view({"post": "batch_enable"})
+    view = PeriodicTaskViewSet.as_view({"post": "batch_disable"})
     with mock.patch.object(PeriodicTask, "save", _flaky_save):
         response = view(request)
     assert response.data["code"] == 1000

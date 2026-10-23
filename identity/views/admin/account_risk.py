@@ -11,7 +11,7 @@ from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiRequest, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
 from common.core.filter import BaseFilterSet
@@ -20,7 +20,8 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from identity.models import AccountRisk
 from identity.serializers.security import AccountRiskSerializer
-from identity.utils.account_risk import HANDLE_ACTIONS, handle_account_risk, scan_account_risks
+from identity.utils.account_risk import HANDLE_ACTIONS, handle_account_risk
+from identity.utils.account_risk_scan import dispatch_account_risk_scan, scan_task_status
 
 
 class AccountRiskFilter(BaseFilterSet):
@@ -41,9 +42,33 @@ class AccountRiskViewSet(OnlyListModelSet):
     @extend_schema(request=None, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="scan")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def scan(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """立即执行一次账号安全巡检"""
-        result = scan_account_risks(operator=request.user)
-        return ApiResponse(data=result, detail=_("Scan completed: {} risk item(s)").format(result["total"]))
+        """投递一次账号安全巡检
+
+        异步执行；轮询 scan-status 获取进度与结果。
+        """
+        execution = dispatch_account_risk_scan(request.user)
+        return ApiResponse(
+            data={"task_id": str(execution.pk)},
+            detail=_("Scan task submitted"),
+        )
+
+    @extend_schema(
+        parameters=[OpenApiParameter(name="task_id", required=True, type=OpenApiTypes.STR)],
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["get"], detail=False, url_path="scan-status")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def scan_status(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """查询巡检任务进度与结果
+
+        运行期返回 progress/stage，终态返回 result。
+        """
+        task_id = str(request.query_params.get("task_id") or "").strip()
+        if not task_id:
+            return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+        data = scan_task_status(task_id)
+        if data is None:
+            return ApiResponse(code=400, detail=_("Scan task not found"))
+        return ApiResponse(data=data)
 
     @extend_schema(
         request=OpenApiRequest(

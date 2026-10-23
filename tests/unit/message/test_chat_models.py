@@ -107,6 +107,20 @@ class TestMessageCreate:
         assert len(message.content) == 5000
         assert message.sender_id is None
 
+    @pytest.mark.parametrize("message_type", ["system", "ai"])
+    def test_user_sender_cannot_create_bot_message(self, alice, bob, message_type):
+        """官方语义（系统通知 / 模型回复）只能由服务端 sender=None 路径产出。"""
+        room = chat_service.get_or_create_private_room(alice, bob)
+        with pytest.raises(DjangoValidationError):
+            chat_service.create_message(room, alice, "官方通知", message_type=message_type)
+        assert ChatMessage.objects.filter(room=room).count() == 0
+
+    def test_unknown_message_type_rejected(self, alice, bob):
+        room = chat_service.get_or_create_private_room(alice, bob)
+        with pytest.raises(DjangoValidationError):
+            chat_service.create_message(room, alice, "内容", message_type="video2")
+        assert ChatMessage.objects.filter(room=room).count() == 0
+
     def test_message_payload_shape(self, alice, bob):
         room = chat_service.get_or_create_private_room(alice, bob)
         message, __ = chat_service.create_message(room, alice, "payload")

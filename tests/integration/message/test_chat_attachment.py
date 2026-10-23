@@ -23,6 +23,7 @@ import pytest
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils.translation import gettext as _
 from rest_framework.test import APIClient
 
 from file.models import UploadFile
@@ -30,7 +31,7 @@ from identity.models import UserRole
 from message import chat as chat_service
 from message.attachments import attachment_kind
 from message.consumers import ChatNotify
-from message.models import ChatMessage
+from message.models import MAX_CONTENT_LENGTH, ChatMessage
 from message.utils import get_chat_user_group_name, get_public_chat_group_name
 
 pytestmark = pytest.mark.django_db
@@ -305,6 +306,31 @@ class TestAttachmentMessage:
         assert payload["message_type"] == "image"
         assert payload["extra"]["file"]["url"].startswith("/api/chat/message/")
         assert payload["extra"]["file"]["missing"] is False
+
+    def test_attachment_caption_uses_user_length_limit(self, ws_layer, alice, chat_perms):
+        """附件消息的文案也受用户长度上限约束（不能借 message_type=image 绕过）。"""
+        room = chat_service.get_public_room()
+        chat_perms["grant"](alice)
+        file_pk = _upload(_api_client(alice), kind="image").data["data"]["pk"]
+
+        __, captured = _send(
+            ws_layer,
+            alice,
+            {
+                "room_id": room.pk,
+                "message_type": "image",
+                "file_pk": file_pk,
+                "content": "x" * (MAX_CONTENT_LENGTH + 1),
+                "client_msg_id": "c-img-long",
+            },
+        )
+
+        assert captured[0]["code"] == 1001
+        assert str(captured[0]["detail"]) == str(_("Message is too long (max {} characters)")).format(
+            MAX_CONTENT_LENGTH
+        )
+        assert ChatMessage.objects.filter(room=room).count() == 0
+        assert UploadFile.objects.get(pk=file_pk).is_tmp is True, "校验失败的附件不应被转正"
 
     def test_attachment_must_belong_to_sender(self, ws_layer, alice, bob, chat_perms):
         room = chat_service.get_public_room()

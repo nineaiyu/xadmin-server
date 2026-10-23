@@ -83,7 +83,7 @@ class TestProtocol:
 
 class TestToolsList:
     def test_catalog_matches_registry(self, auth_client, ai_action_settings, superuser):
-        from ai.utils.ai_actions import available_actions
+        from ai.services.actions.ai_actions import available_actions
 
         response = auth_client.post(MCP_URL, _rpc("tools/list"), format="json")
         tools = response.json()["result"]["tools"]

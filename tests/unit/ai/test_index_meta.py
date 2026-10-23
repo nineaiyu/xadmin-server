@@ -3,7 +3,7 @@
 
 import pytest
 
-from ai.utils import index_meta
+from ai.services.knowledge import index_meta
 
 
 class TestCachedMetaRows:

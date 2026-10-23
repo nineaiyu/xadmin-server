@@ -16,7 +16,7 @@ from typing import Any
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.plumbing import build_array_type, build_basic_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
@@ -49,7 +49,7 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
 
     queryset = UserSession.objects.all()
     serializer_class = UserSessionSerializer
-    pagination_class = DynamicPageNumber(1000)
+    pagination_class = DynamicPageNumber(100)
     filterset_class = UserOnlineFilter
     ordering_fields = ["last_active", "created_time"]
 
@@ -80,23 +80,25 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         return True
 
     @extend_schema(
-        request=None,
+        request=OpenApiRequest(
+            build_object_type(
+                properties={"user_pk": build_basic_type(OpenApiTypes.NUMBER)},
+                required=["user_pk"],
+                description="用户主键（踢该用户全部会话，不是会话行主键）",
+            )
+        ),
         responses=get_default_response_schema({"channels": build_basic_type(OpenApiTypes.NUMBER)}),
     )
-    @action(methods=["post"], detail=True, url_path="force-logout")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @action(methods=["post"], detail=False, url_path="force-logout")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def force_logout(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """强制下线该用户全部会话
 
-        服务端令牌失效 + WS 踢线
-
-        detail pk 为用户主键（非会话行主键）：踢的是「用户全部会话」，
-        与行维度的下线（destroy 单会话）互补。
+        显式 user_pk 契约。服务端令牌失效 + WS 踢线。URL 不再把用户主键挂在会话资源下，
+        避免与行维度的单会话下线（destroy）混淆。
         """
-        user_pk = kwargs.get("pk")
-        # 该 action 的 pk 是「用户主键」（UserInfo 为 BigAutoField 整型，非会话行 UUID）：
-        # 非法入参先返回可读 400，避免 pk 字段校验抛 ValidationError 500
+        raw_pk = request.data.get("user_pk") if isinstance(request.data, dict) else None
         try:
-            user_pk = int(user_pk or 0)
+            user_pk = int(raw_pk or 0)
         except (TypeError, ValueError):
             return ApiResponse(code=400, detail=_("User not found"))
         if (

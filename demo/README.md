@@ -87,6 +87,7 @@ python manage.py seed_demo_book
   走 worker，本地演示需 worker 在线；
 - **审批人**：种子默认 `xadmin,isummer`（双环境占位），提交时按实际存在的用户生效；
   全都不存在时提交会被引擎 fail-closed 拒绝（提示无可用审批人）；
+- **分页**：`DynamicPageNumber(1000)` 仅为示例展示自定义分页上限，业务页请按数据量取 100 或更小；
 - **`block`** 为可写开关字段（`input_type="boolean"` 的渲染与提交示意）。
 
 ## 文档引用

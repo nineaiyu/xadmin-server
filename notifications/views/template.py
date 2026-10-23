@@ -90,9 +90,9 @@ class MessageTemplateViewSet(GenericViewSet):
                     # 无样例消息（gen_test_msg 未实现）的消息类型无法预览：前端据此禁用预览按钮
                     "has_preview": sample is not None,
                     "variables": [*COMMON_VARIABLES, *cls.template_variables()],
-                    "has_override": bool(
-                        row and ((row.subject_template or "").strip() or (row.body_template or "").strip())
-                    ),
+                    # 覆盖状态以「存在覆盖行」为准：只关 is_active / 只填 remark 的行
+                    # 也是可重置的覆盖，不能因为正文为空就假装还是代码默认
+                    "has_override": row is not None,
                     "override": {
                         "subject_template": row.subject_template if row else "",
                         "body_template": row.body_template if row else "",

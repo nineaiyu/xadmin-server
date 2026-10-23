@@ -45,6 +45,8 @@ PERMISSION_WHITE_URL = {
     "^/api/mfa/otp/start$": ["POST"],
     "^/api/mfa/otp/test$": ["POST"],
     "^/api/identity/personal-access-tokens(/|$)": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
+    # 我的已授权应用：个人授权个人管（视图内收口为本人），同 PAT 口径
+    "^/api/identity/my-authorized-applications(/|$)": ["*"],
     # Passkey 凭据：个人凭据个人管，视图内收口为本人（超管可查全量），同 PAT/MFA 口径
     # 锚定 (/|$)：仅放行本命名空间，同前缀的兄弟路由（如未来 passkeys-admin）不落入
     "^/api/identity/passkeys(/|$)": ["*"],
@@ -83,6 +85,7 @@ ROUTE_IGNORE_URL = [
     "^/api/identity/api-applications/scope-options$",  # 接口范围选项：白名单元数据，无需再配权限点
     "^/api/identity/api-applications/grant-options$",  # 资源授权目录：白名单元数据，无需再配权限点
     "^/api/identity/passkeys",  # Passkey 个人凭据：白名单路由，无需再配权限点
+    "^/api/identity/my-authorized-applications",  # 我的已授权应用：白名单路由，无需再配权限点
     "^/api/system/saved-views",  # 我的视图：白名单路由，无需再配权限点
 ]
 

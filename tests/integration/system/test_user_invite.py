@@ -134,6 +134,17 @@ class TestCreateWithInvite:
 
 
 class TestAcceptInvite:
+    @pytest.fixture(autouse=True)
+    def _captcha_ok(self, monkeypatch):
+        monkeypatch.setattr("captcha.services.CaptchaAuth.valid", lambda self, code: True)
+
+    def test_accept_requires_server_captcha(self, api_client, invited_user, monkeypatch):
+        monkeypatch.setattr("captcha.services.CaptchaAuth.valid", lambda self, code: False)
+        token = user_invite.send_invite(invited_user)
+        payload = {"token": token, "password": "Invite@2026Abc", "captcha_key": "k", "captcha_code": "bad"}
+        resp = api_client.post(ACCEPT_URL, payload, format="json")
+        assert resp.status_code == 400
+
     @staticmethod
     def _accept(api_client, token, password, *, encrypt=True):
         """默认按生产契约提交密文：密钥 = 邀请令牌原文（与 register/reset 同库同参序）。
@@ -144,6 +155,8 @@ class TestAcceptInvite:
         payload = {
             "token": token,
             "password": AESCipherV2(token).encrypt(password.encode("utf-8")).decode() if encrypt else password,
+            "captcha_key": "test-key",
+            "captcha_code": "test-code",
         }
         return api_client.post(ACCEPT_URL, payload, format="json")
 
@@ -169,7 +182,11 @@ class TestAcceptInvite:
         assert invited_user.check_password(NEW_PASSWORD)
 
     def test_invalid_token_rejected(self, api_client):
-        resp = api_client.post(ACCEPT_URL, {"token": "not-a-token", "password": NEW_PASSWORD}, format="json")
+        resp = api_client.post(
+            ACCEPT_URL,
+            {"token": "not-a-token", "password": NEW_PASSWORD, "captcha_key": "test-key", "captcha_code": "test-code"},
+            format="json",
+        )
         assert resp.json()["code"] == 1001
 
     def test_weak_password_rejected(self, api_client, invited_user):
@@ -188,7 +205,11 @@ class TestAcceptInvite:
     def test_plaintext_rejected_when_encryption_enabled(self, api_client, invited_user):
         """开关默认开启：明文提交解密必然失败，受控拒绝（非 500、密码不落库）。"""
         token = user_invite.send_invite(invited_user)
-        resp = api_client.post(ACCEPT_URL, {"token": token, "password": NEW_PASSWORD}, format="json")
+        resp = api_client.post(
+            ACCEPT_URL,
+            {"token": token, "password": NEW_PASSWORD, "captcha_key": "test-key", "captcha_code": "test-code"},
+            format="json",
+        )
         assert resp.status_code == 200, resp.content
         assert resp.json()["code"] == 1003
         assert any(k in str(resp.json()["detail"]) for k in ("decrypt", "解密"))
@@ -200,7 +221,14 @@ class TestAcceptInvite:
         """密钥不符的密文（GCM 认证失败解密为空）：同受控拒绝口径，非 500。"""
         token = user_invite.send_invite(invited_user)
         resp = api_client.post(
-            ACCEPT_URL, {"token": token, "password": _encrypt_v2("other-token", NEW_PASSWORD)}, format="json"
+            ACCEPT_URL,
+            {
+                "token": token,
+                "password": _encrypt_v2("other-token", NEW_PASSWORD),
+                "captcha_key": "test-key",
+                "captcha_code": "test-code",
+            },
+            format="json",
         )
         assert resp.status_code == 200, resp.content
         assert resp.json()["code"] == 1003

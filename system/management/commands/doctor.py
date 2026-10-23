@@ -33,6 +33,9 @@ PASS = "✅"
 WARN = "⚠️"
 FAIL = "❌"
 DETAIL_LIMIT = 8
+# 官方示例 app：按需注册（XADMIN_APPS），未注册时其 seeds 被忽略是预期行为，
+# 不在 doctor 里报「种子写了但没生效」的告警（二开 app 仍按未注册告警）。
+OPTIONAL_UNREGISTERED_SEED_APPS = {"demo"}
 # 探针缓存键：仅本文件使用（缓存键审计门禁按「单文件前缀」判定）
 CACHE_PROBE_KEY = "xadmin_doctor_probe"
 
@@ -172,7 +175,10 @@ class Command(BaseCommand):
                 return
             from system.services import permission_sync as sync
 
-            gaps = sync.scan_permission_gaps()
+            routes = sync.build_route_index()
+            perms = sync.load_permission_menus()
+            gaps = sync.scan_gaps(routes, perms)
+            orphans, duplicates, _exempted, _known = sync.audit_permission_menus(routes, perms)
             if gaps:
                 self._report(
                     WARN,
@@ -184,7 +190,25 @@ class Command(BaseCommand):
                     self.stdout.write(f"        · {method:<6s} {route.url}")
                 if len(gaps) > DETAIL_LIMIT:
                     self.stdout.write(f"        · ……其余 {len(gaps) - DETAIL_LIMIT} 条略")
-            else:
+            if orphans:
+                self._report(
+                    WARN,
+                    "权限点",
+                    f"检测到 {len(orphans)} 个库内孤儿权限点（种子已无对应端点）",
+                    "python manage.py sync_menu_permissions --prune（建议先加 --dry-run 核对）",
+                )
+                for perm in orphans[:DETAIL_LIMIT]:
+                    self.stdout.write(f"        · {perm.name} | {perm.path} | {perm.method or '-'}")
+                if len(orphans) > DETAIL_LIMIT:
+                    self.stdout.write(f"        · ……其余 {len(orphans) - DETAIL_LIMIT} 条略")
+            if duplicates:
+                self._report(
+                    WARN,
+                    "权限点",
+                    f"检测到 {len(duplicates)} 个未登记的重复权限点（同 path+method）",
+                    "确认是否为页签级独立权限位；是则登记 AUDIT_KNOWN_DUPLICATES，否则清理",
+                )
+            if not gaps and not orphans and not duplicates:
                 self._report(PASS, "权限点", "代码路由与库内权限点一致")
         except Exception as exc:
             self._report(WARN, "权限点", f"扫描失败（跳过）：{exc}")
@@ -247,6 +271,8 @@ class Command(BaseCommand):
         for candidate in candidates:
             if candidate.name in registered or candidate.name.startswith((".", "_")):
                 continue
+            if candidate.name in OPTIONAL_UNREGISTERED_SEED_APPS:
+                continue
             if (candidate / "seeds" / "manifest.json").is_file():
                 ignored.append(candidate.name)
         return ignored
@@ -290,8 +316,8 @@ class Command(BaseCommand):
         """
         from django.urls import Resolver404, resolve
 
-        from ai.utils.ai_api_params import PATH_PLACEHOLDER, build_action_url
-        from ai.utils.ai_registry import action_specs
+        from ai.services.actions.ai_api_params import PATH_PLACEHOLDER, build_action_url
+        from ai.services.actions.ai_registry import action_specs
 
         checked, broken = 0, []
         try:
@@ -327,7 +353,7 @@ class Command(BaseCommand):
                 FAIL,
                 "AI 动作声明",
                 f"{len(broken)} 条声明对不上路由：{broken[:3]}",
-                "修正所属应用 ai_declarations.py 的声明 path（口径见 ai/utils/ai_api_actions.py）",
+                "修正所属应用 ai_declarations.py 的声明 path（口径见 ai/services/actions/ai_api_actions.py）",
             )
         elif checked:
             self._report(PASS, "AI 动作声明", f"{checked} 条声明路径可解析（动作 {len(specs)} 个）")

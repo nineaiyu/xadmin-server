@@ -121,7 +121,7 @@ class TestAiMetrics:
 
     def test_token_usage_aggregation(self, metrics_client, metrics_user):
         """token 用量来自 AI 用量账本（DB 侧聚合列），不逐行解析审计 changes JSON。"""
-        from ai.utils.ai_usage import record_usage
+        from ai.services.assistant.ai_usage import record_usage
 
         base, _ = self._query(metrics_client)
         record_usage(metrics_user, "docs", usage={"prompt_tokens": 120, "completion_tokens": 30})
