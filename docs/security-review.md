@@ -299,6 +299,11 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 
 **窗口纪律**：本表每季度依赖窗口（与六期 S-1 监控动作同窗口）复核一次「最近发布」列与各包 CVE 公告，结论追加到 [ops/release-checklist.md](ops/release-checklist.md) 执行记录。
 
+**季度复核（2026-10-23）**：PyPI 最新版本与上表一致——`unicodecsv` 0.14.1（2015-09-22）、
+`django-ranged-response` 0.2.0（2017-07-18）、`user-agents` 2.2.0（2020-08-23）、
+`ldap3` 2.9.1（2021-07-18）、`pilkit` 3.0（2023-09-27）、`pyexcel` 0.7.6（2026-06-29，仍活跃）、
+`pyexcel-xlsx` 0.6.1（2025-03-05）；六包均无新发布，维持现口径。
+
 ### S-3 前端供应链：wangEditor 停维登记与 @iconify/vue 锁版口径（O9-7 / O9-8）
 
 **wangEditor（`@wangeditor/editor` 5.1.23，`xadmin-client`）—— 停维已登记**
@@ -318,6 +323,10 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 **@iconify/vue（`5.0.1` 精确锁版，`xadmin-client/package.json`）—— 评估结论：维持，无需放开**
 
 「唯一精确锁版项」并非漂移：renovate 配置 `rangeStrategy: "pin"`（`xadmin-client/renovate.json`）的既定终态就是精确锁版，该版本号即 renovate 更新时写回的形态；renovate 对精确锁版依赖照常自动提单升级，「升级需手工」的前提不成立。放开 `^` 区间反而与配置的锁版策略相悖。维持现状，无动作。
+
+**2026-10-23 季度审计（`pnpm audit`）**：初始 4 high → 升级 `follow-redirects` 1.16.1 /
+`vite` 8.3.5 / `vitest` 5.0.5 后 **0 活跃漏洞**（仅剩已登记忽略的 `braces` 无修复 high）；
+明细见 [release-checklist](ops/release-checklist.md) 2026-10-23 记录。
 
 ## 八期登记（2026-10-09）：OWASP ASVS 轻量映射与差距项归属
 

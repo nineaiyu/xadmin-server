@@ -32,6 +32,13 @@
   **剩余发布门禁**：4.2.5 → 5.x 目标机复跑（阿里云仓缺 `xadmin-web:4.2.5` / `postgres:16.8` /
   `redis:7.4.3`）；5.0.2 全新安装 + 幂等升级已在 CentOS 7 通过。
 
+- **2026-10-23 依赖安全补丁（提前，Q4 季度窗口）**：`pnpm audit` 初始 4 high / 6 moderate /
+  1 low → `follow-redirects` 1.16.1（workspace override）/ `vite` 8.3.5 / `vitest` +
+  `@vitest/coverage-v8` 5.0.5 后 **0 活跃漏洞**（仅剩已登记忽略的 `braces` 无修复 high）；
+  后端 `pip-audit --local` 0 漏洞；O9-6 六包复核无新发布。验证：build / typecheck / lint /
+  vitest **405 files / 2646 tests** / 全部 `check:*` 通过；smoke 9 passed；visual 15 passed +
+  1 flaky（welcome 数据/菜单竞态，重试通过）。
+
 - **2026-10-20 字段类型全量自动渲染四批次落地（改动留工作区待提交）**：
   phone/color 缺陷修复（默认值不篡改、PhoneField 默认校验与空值收口、不再补 +86、
   color 共享 COLOR_PATTERN、phone 详情/列表/rule）；闭包 + Schema 校验扩到 URLconf 全量
@@ -202,8 +209,8 @@
 | 9 | ~~应用级种子拆分（五批次）~~ | **已交付（2026-10-17）**：种子按 app 落 `<app>/seeds/`（平台层保留 `loadjson/`），12 个 manifest 自声明依赖与归属；`load_init_json --list/--check/--apps` + `seed_split` + `dump_init_json --split-apps`；角色授权改声明式 grants 并集（破除 loaddata m2m 覆盖清零）；决策 [ADR-095](../adr/ADR-095-per-app-seed-layering.md)，方案与执行记录见 [应用级种子拆分方案-2026.10.md](应用级种子拆分方案-2026.10.md) / [执行计划](应用级种子拆分执行计划-2026.10.md) |
 | 10 | ~~前端框架一致性收敛（表单字段元数据化 + 弹窗全屏按钮体验缺口）~~ | **已完成（2026-10-18）**：调查、迁移与验证证据见 [方案](前端框架一致性调查与收敛方案-2026.10.md) §九。① ReDialog 全屏按钮默认渲染；② `check-handwritten-forms.mjs` 门禁 + 豁免登记进 CI；③ post / tag / login-policy / subscription / mcp / api-app / screen / approval-rule 八页迁至元数据表单（混合形态用字段渲染器或扩展字段）；④ 选型判定写入 component-handbook §六；⑤ 顺带修 `headerRenderer` DOM 泄漏、`time` 协议、`tag.color` 类型、MCP `pk` 只读、`formProps.rules` 整块覆盖；⑥ 最大化态强制显示还原按钮（`lay-tag/index.vue`，避免进入最大化后无可见出口）。数据集/报表因联动列维持豁免。验证：vitest 2312、后端 103 passed、E2E 双浏览器 60+（含 `tag-bar` 最大化还原 6 例） |
 | 11 | **下一补丁版本发布（含审查整改批次）** | 版本号三方同步（`server/const.py` ↔ `client/package.json` ↔ tag）→ 变更日志/Release notes → 按 server·client → web → docs → installer 顺序构建镜像 → `sync-image-mirror` → 目标机复测；发布前跑一次干净机安装 + 幂等升级 |
-| 12 | **4.2.5 旧镜像回填 + 目标机旧库升级复跑** | 把 `xadmin-web:4.2.5`、`postgres:16.8`、`redis:7.4.3` 补进 `xadmin-installer/utils/base-images.yml` / 镜像仓；目标机 `./xadmin.sh upgrade v<version>` 复跑，验收 `upgrade_check=up-to-date`、健康全 true、数据保留 |
-| 13 | **R5 首屏 LCP 靶心优化（提前启动）** | 基于 `e2e/perf-baseline.json` firstscreen 画像定位首屏瓶颈；每项改动附前后指标与 `perf` 用例；目标 LCP 改善 ≥10% 或输出「无空间」结论 |
+| 12 | **4.2.5 旧镜像回填 + 目标机旧库升级复跑** | **已登记（2026-10-23）**：`postgres:16.8` / `redis:7.4.3` 已入 `xadmin-installer/utils/base-images.yml`；待 push 触发 `sync-base-image-mirror` + `gh workflow run sync-image-mirror.yml -f version=4.2.5` 补 `xadmin-web`，再目标机 `./xadmin.sh upgrade v<version>` 复跑，验收 `upgrade_check=up-to-date`、健康全 true、数据保留 |
+| 13 | ~~R5 首屏 LCP 靶心优化~~ | **✅ 已完成（2026-10-23）**：welcome 生产口径 LCP **792 → 244 ms（-69%）**、CLS 0.0095 → 0.0088–0.0095、FCP/TBT 持平；改动 = 移除欢迎卡片入场动画 + 活跃用户卡预占位；证据见 `xadmin-client/docs/perf-firstscreen.md` §六 |
 
 > 2026-11 窗口两项主项（存量库升级通道、HNSW 向量定型实测）已于 2026-10-09 提前完成，无需再排。
 
