@@ -282,7 +282,7 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 3. Django 直出 HTML 仅 swagger/api-docs：django-csp 策略按 swagger 资源放行（S3 落地收口），切 enforce 是行为变更（可能打断 swagger 内联脚本面），需独立观察窗口，不由默认值翻转完成；
 4. 需要对 API 面强制的部署，运行期把系统配置 `CSP_MODE=enforce` 即可，无需改代码。
 
-**重开条件**：django-csp 策略对 swagger 的 enforce 兼容性完成一轮观察验证（CI 含 api-docs 页面用例全绿），或出现「绕过 nginx 直连 Django 的 HTML 面」的新部署形态。
+**重开条件（2026-10-23 收窄）**：仅保留「绕过 nginx 直连 Django 的 HTML 面」；swagger enforce 不再单独立项（页面层已强制，直连仅 JSON API/swagger）。
 
 ### S-2 供应链：疑似停维依赖核实台账（O9-6，季度依赖窗口执行）
 
