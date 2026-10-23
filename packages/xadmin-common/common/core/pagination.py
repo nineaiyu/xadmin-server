@@ -83,8 +83,12 @@ class KeysetPageNumber(PageNumber):
         if page is not None and self.page is not None:
             # DRF 的 paginate_queryset 返回 list；分页状态在 self.page
             self._has_more = self.page.has_next()
+            # 自定义排序下 next_cursor 不可续（keyset 固定按 created_time/pk），
+            # 返回 None 避免调用方误用；前端排序时也回退 page 模式。
             self._next_cursor = (
-                self._encode(self.page.object_list[-1]) if self._has_more and self.page.object_list else None
+                self._encode(self.page.object_list[-1])
+                if not custom_ordering and self._has_more and self.page.object_list
+                else None
             )
         return page
 

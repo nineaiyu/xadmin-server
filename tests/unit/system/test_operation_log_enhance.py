@@ -319,3 +319,12 @@ class TestOperationLogCursorPagination:
     def test_invalid_cursor_returns_400(self, superuser):
         response = _list(superuser, {"cursor": "not-a-valid-cursor"})
         assert response.status_code == 400
+
+    def test_custom_ordering_returns_page_mode_without_cursor(self, superuser):
+        self._seed(superuser, count=3)
+        data = _list(
+            superuser,
+            {"path": self.PATH_PREFIX, "size": 2, "ordering": "created_time"},
+        ).data["data"]
+        assert "total" in data
+        assert data["next_cursor"] is None
