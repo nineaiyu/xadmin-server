@@ -32,12 +32,11 @@
   **剩余发布门禁**：4.2.5 → 5.x 目标机复跑（阿里云仓缺 `xadmin-web:4.2.5` / `postgres:16.8` /
   `redis:7.4.3`）；5.0.2 全新安装 + 幂等升级已在 CentOS 7 通过。
 
-- **2026-10-23 依赖安全补丁（提前，Q4 季度窗口）**：`pnpm audit` 初始 4 high / 6 moderate /
-  1 low → `follow-redirects` 1.16.1（workspace override）/ `vite` 8.3.5 / `vitest` +
-  `@vitest/coverage-v8` 5.0.5 后 **0 活跃漏洞**（仅剩已登记忽略的 `braces` 无修复 high）；
-  后端 `pip-audit --local` 0 漏洞；O9-6 六包复核无新发布。验证：build / typecheck / lint /
-  vitest **405 files / 2646 tests** / 全部 `check:*` 通过；smoke 9 passed；visual 15 passed +
-  1 flaky（welcome 数据/菜单竞态，重试通过）。
+- **2026-10-23 依赖安全补丁（提前，Q4 季度窗口）**：`pnpm audit` 4 high / 6 moderate / 1 low →
+  `follow-redirects` 1.16.1（override）/ `vite` 8.3.5 / `vitest` + `@vitest/coverage-v8` 5.0.5 后
+  **0 活跃漏洞**（仅剩已忽略的 `braces` 无修复 high）；后端 `pip-audit --local` 0 漏洞；
+  O9-6 六包无新发布。验证：build/typecheck/lint/vitest **405/2646**、`check:*` 全绿；
+  smoke 9、visual 16/16、并行全量 E2E **749 passed / 0 failed**；另修 webkit a11y 顶栏徽标对比度。
 
 - **2026-10-20 字段类型全量自动渲染四批次落地（改动留工作区待提交）**：
   phone/color 缺陷修复（默认值不篡改、PhoneField 默认校验与空值收口、不再补 +86、
