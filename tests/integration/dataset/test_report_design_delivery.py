@@ -139,3 +139,31 @@ def test_component_failure_is_fail_soft(dataset, superuser, monkeypatch):
     assert [cell.value for cell in sheet[1]] == [_t("Name"), _t("Value")]
     assert sheet.max_row == 2
     assert sheet.cell(row=2, column=1).value == _t("Chart data unavailable")
+
+
+def test_duplicate_components_share_one_aggregate_call(dataset, superuser, monkeypatch):
+    """同参数组件复用聚合结果：两个相同口径的图表只执行一次查询。"""
+    import dataset.utils.dataset as dataset_utils
+
+    calls = []
+    original = dataset_utils.aggregate_dataset
+
+    def counting(*args, **kwargs):
+        calls.append(kwargs)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(dataset_utils, "aggregate_dataset", counting)
+    wb, _ = _workbook(
+        dataset,
+        superuser,
+        {
+            "columns": ["username"],
+            "components": [
+                {"id": "c1", "type": "bar", "title": "性别分布 A", "group_by": "gender", "metric": "count"},
+                {"id": "c2", "type": "pie", "title": "性别分布 B", "group_by": "gender", "metric": "count"},
+            ],
+        },
+    )
+
+    assert len(wb.sheetnames) == 3
+    assert len(calls) == 1

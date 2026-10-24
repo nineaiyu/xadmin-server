@@ -21,6 +21,7 @@ from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
 from common.utils.request import get_request_ip
 from identity.models import UserInfo
 from identity.services.auth_login import (
@@ -40,6 +41,8 @@ from identity.utils.auth import (
     verify_sms_email_code,
 )
 from settings.services import LoginBlockUtil
+
+logger = get_logger(__name__)
 
 
 def _login_type_for(user: Any) -> "UserLoginLog.LoginTypeChoices":
@@ -110,8 +113,10 @@ class BasicLoginAPIView(TokenObtainPairView):
         serializer = self.get_serializer(data={"username": username, "password": password})
         try:
             serializer.is_valid(raise_exception=True)
-        except Exception:
-            # 校验失败（含凭证错误）：统一按登录失败计数并返回通用文案（不回显差异，防账号枚举）
+        except Exception as exc:
+            # 校验失败（含凭证错误）：统一按登录失败计数并返回通用文案（不回显差异，防账号枚举）。
+            # debug 级留异常类型线索（不含凭证/口令），供排障区分「凭证错误」与「序列化器层编程错误」
+            logger.debug("login serializer validation failed: %s: %s", type(exc).__name__, exc)
             return login_failed(request, username)
         user = serializer.user
         # 登录访问策略：密码校验通过后判定（避免匿名探测策略信息），命中写入登录日志
@@ -217,8 +222,13 @@ class VerifyCodeLoginAPIView(GenericAPIView):
             if mfa_response:
                 return mfa_response
         else:
-            # 验证码登录本身已通过动态因子（短信/邮件验证码）验证，无需再走 MFA
-            user = UserInfo.objects.get(**{query_key: target})
+            # 验证码登录本身已通过动态因子（短信/邮件验证码）验证，无需再走 MFA。
+            # is_active 复核：发码端点已按启用态过滤，这里兜底「发码后到提交前
+            # 被禁用/删除」的窗口——禁用或不存在同走 login_failed 统一文案
+            # （防枚举），不 500、不签发 token
+            user = UserInfo.objects.filter(is_active=True, **{query_key: target}).first()
+            if user is None:
+                return login_failed(request, target)
             force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
             if reject_detail:
                 return reject_login(request, user, reject_detail, login_type=UserLoginLog.get_login_type(query_key))

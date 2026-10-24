@@ -12,7 +12,6 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.utils.translation import gettext_lazy as _
 
-from message.chat_ops import _normalize_user_pks, _user_pk
 from message.models import (
     MAX_GROUP_MEMBERS,
     ChatRoom,
@@ -21,6 +20,8 @@ from message.models import (
     group_room_key,
     private_room_key,
 )
+
+from .chat_ops import _normalize_user_pks, _user_pk
 
 # ------------------------------------------------------- 房间开通与群组管理
 

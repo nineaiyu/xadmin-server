@@ -151,76 +151,52 @@ def _pane_url_allowed(url: str) -> bool:
     return url.startswith(("https://", "http://")) or (url.startswith("/") and not url.startswith("//"))
 
 
-def _normalize_pane_body(
-    item: dict[str, Any],
-    index: int,
-    known_dashboards: set[str],
-    known_datasets: set[str],
-) -> dict[str, Any]:
-    """窗格公共体（栅格与自由画布共用同一套字段口径）。
-
-    返回 ``{"pk", "type", ...类型专属字段}``（不含坐标）；坐标段（栅格下标 vs 像素）
-    与重叠判定由两个 ``normalize_*`` 各自处理——两版只差这两处，类型字段不会分叉。
-    """
-    pane_type = str(item.get("type") or "dashboard")
-    if pane_type not in SCREEN_PANE_TYPES:
-        raise ScreenLayoutError(_("Unknown screen pane type: {}").format(pane_type))
-
-    pane_id = str(item.get("pk") or "").strip()
-    if not pane_id or len(pane_id) > SCREEN_MAX_PANE_ID:
-        raise ScreenLayoutError(_("Invalid screen pane id: {}").format(index + 1))
-
-    pane: dict[str, Any] = {"pk": pane_id, "type": pane_type}
-
-    title = str(item.get("title") or "").strip()
-    if len(title) > SCREEN_MAX_TITLE:
-        raise ScreenLayoutError(_("Screen pane title is too long: {}").format(pane_id))
-    if title:
-        pane["title"] = title
-
-    # 旋转：视觉旋转（-180~180 度），0 为缺省不下发（载荷精简 + 旧版字节级兼容）
-    rotate = _as_int(item.get("rotate", 0), "rotate")
-    if not SCREEN_MIN_ROTATE <= rotate <= SCREEN_MAX_ROTATE:
-        raise ScreenLayoutError(
-            _("Screen pane rotate must be {}~{}: {}").format(SCREEN_MIN_ROTATE, SCREEN_MAX_ROTATE, pane_id)
-        )
-    if rotate:
-        pane["rotate"] = rotate
-
-    # 入场动画：展示态播放；none 为缺省不下发
+def _normalize_pane_animation(item: dict[str, Any], pane: dict[str, Any], pane_id: str) -> None:
+    """入场动画段归一化（展示态播放）；none 为缺省不下发，时长/延迟/循环仅配了动画才收。"""
     animation = str(item.get("animation") or "none").strip() or "none"
     if animation not in SCREEN_ANIMATIONS:
         raise ScreenLayoutError(_("Invalid screen pane animation: {}").format(pane_id))
-    if animation != "none":
-        pane["animation"] = animation
-        # 时长 / 延迟 / 循环：只在真的配了动画时才有意义（none 时静默忽略，不落库）
-        duration = _as_int(
-            item.get("animation_duration", SCREEN_ANIMATION_DURATION_DEFAULT),
-            "animation_duration",
-        )
-        if not SCREEN_MIN_ANIMATION_MS <= duration <= SCREEN_MAX_ANIMATION_MS:
-            raise ScreenLayoutError(
-                _("Screen pane animation duration must be {}~{}: {}").format(
-                    SCREEN_MIN_ANIMATION_MS, SCREEN_MAX_ANIMATION_MS, pane_id
-                )
+    if animation == "none":
+        return
+    pane["animation"] = animation
+    # 时长 / 延迟 / 循环：只在真的配了动画时才有意义（none 时静默忽略，不落库）
+    duration = _as_int(
+        item.get("animation_duration", SCREEN_ANIMATION_DURATION_DEFAULT),
+        "animation_duration",
+    )
+    if not SCREEN_MIN_ANIMATION_MS <= duration <= SCREEN_MAX_ANIMATION_MS:
+        raise ScreenLayoutError(
+            _("Screen pane animation duration must be {}~{}: {}").format(
+                SCREEN_MIN_ANIMATION_MS, SCREEN_MAX_ANIMATION_MS, pane_id
             )
-        if duration != SCREEN_ANIMATION_DURATION_DEFAULT:
-            pane["animation_duration"] = duration
-        delay = _as_int(
-            item.get("animation_delay", SCREEN_ANIMATION_DELAY_DEFAULT),
-            "animation_delay",
         )
-        if not SCREEN_MIN_ANIMATION_MS <= delay <= SCREEN_MAX_ANIMATION_MS:
-            raise ScreenLayoutError(
-                _("Screen pane animation delay must be {}~{}: {}").format(
-                    SCREEN_MIN_ANIMATION_MS, SCREEN_MAX_ANIMATION_MS, pane_id
-                )
+    if duration != SCREEN_ANIMATION_DURATION_DEFAULT:
+        pane["animation_duration"] = duration
+    delay = _as_int(
+        item.get("animation_delay", SCREEN_ANIMATION_DELAY_DEFAULT),
+        "animation_delay",
+    )
+    if not SCREEN_MIN_ANIMATION_MS <= delay <= SCREEN_MAX_ANIMATION_MS:
+        raise ScreenLayoutError(
+            _("Screen pane animation delay must be {}~{}: {}").format(
+                SCREEN_MIN_ANIMATION_MS, SCREEN_MAX_ANIMATION_MS, pane_id
             )
-        if delay != SCREEN_ANIMATION_DELAY_DEFAULT:
-            pane["animation_delay"] = delay
-        if item.get("animation_loop"):
-            pane["animation_loop"] = True
+        )
+    if delay != SCREEN_ANIMATION_DELAY_DEFAULT:
+        pane["animation_delay"] = delay
+    if item.get("animation_loop"):
+        pane["animation_loop"] = True
 
+
+def _normalize_basic_pane_fields(
+    item: dict[str, Any],
+    pane: dict[str, Any],
+    pane_type: str,
+    pane_id: str,
+    known_dashboards: set[str],
+    known_datasets: set[str],
+) -> None:
+    """基础类型窗格字段：仪表盘引用 / 文本 / 时钟字号 / 指标卡（按需就地写入 pane）。"""
     if pane_type == "dashboard":
         dashboard_pk = str(item.get("dashboard") or "").strip()
         if not dashboard_pk or dashboard_pk not in known_dashboards:
@@ -270,6 +246,9 @@ def _normalize_pane_body(
         if value_field:
             pane["value_field"] = value_field
 
+
+def _normalize_media_pane_fields(item: dict[str, Any], pane: dict[str, Any], pane_type: str, pane_id: str) -> None:
+    """媒体类型窗格字段：图片 / 视频 / 自定义 HTML iframe（按需就地写入 pane）。"""
     if pane_type == "image":
         url = str(item.get("url") or "").strip()
         if not url or len(url) > SCREEN_MAX_IMAGE_URL:
@@ -314,6 +293,49 @@ def _normalize_pane_body(
         if not url or len(url) > SCREEN_MAX_IMAGE_URL or not url.startswith(("https://", "http://")):
             raise ScreenLayoutError(_("Invalid screen pane html url: {}").format(pane_id))
         pane["url"] = url
+
+
+def _normalize_pane_body(
+    item: dict[str, Any],
+    index: int,
+    known_dashboards: set[str],
+    known_datasets: set[str],
+) -> dict[str, Any]:
+    """窗格公共体（栅格与自由画布共用同一套字段口径）。
+
+    返回 ``{"pk", "type", ...类型专属字段}``（不含坐标）；坐标段（栅格下标 vs 像素）
+    与重叠判定由两个 ``normalize_*`` 各自处理——两版只差这两处，类型字段不会分叉。
+    """
+    pane_type = str(item.get("type") or "dashboard")
+    if pane_type not in SCREEN_PANE_TYPES:
+        raise ScreenLayoutError(_("Unknown screen pane type: {}").format(pane_type))
+
+    pane_id = str(item.get("pk") or "").strip()
+    if not pane_id or len(pane_id) > SCREEN_MAX_PANE_ID:
+        raise ScreenLayoutError(_("Invalid screen pane id: {}").format(index + 1))
+
+    pane: dict[str, Any] = {"pk": pane_id, "type": pane_type}
+
+    title = str(item.get("title") or "").strip()
+    if len(title) > SCREEN_MAX_TITLE:
+        raise ScreenLayoutError(_("Screen pane title is too long: {}").format(pane_id))
+    if title:
+        pane["title"] = title
+
+    # 旋转：视觉旋转（-180~180 度），0 为缺省不下发（载荷精简 + 旧版字节级兼容）
+    rotate = _as_int(item.get("rotate", 0), "rotate")
+    if not SCREEN_MIN_ROTATE <= rotate <= SCREEN_MAX_ROTATE:
+        raise ScreenLayoutError(
+            _("Screen pane rotate must be {}~{}: {}").format(SCREEN_MIN_ROTATE, SCREEN_MAX_ROTATE, pane_id)
+        )
+    if rotate:
+        pane["rotate"] = rotate
+
+    # 入场动画：展示态播放；none 为缺省不下发
+    _normalize_pane_animation(item, pane, pane_id)
+
+    _normalize_basic_pane_fields(item, pane, pane_type, pane_id, known_dashboards, known_datasets)
+    _normalize_media_pane_fields(item, pane, pane_type, pane_id)
 
     return pane
 

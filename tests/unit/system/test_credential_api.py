@@ -277,3 +277,46 @@ class TestSettingPlaintextRemediation:
         assert row.encrypted is True
         assert row.value.startswith("v3:")
         assert "[encrypt] Setting AI_API_KEY" in out.getvalue()
+
+
+class TestCredentialOverviewQueryBatching:
+    """总览聚合的查询收敛：轮换时间批量回溯（单次审计查询），不再逐键查询。"""
+
+    @staticmethod
+    def _audit(key, action, ok=True):
+        import json
+
+        from audit.models import OperationLog
+
+        OperationLog.objects.create(
+            module="system:credential",
+            object_pk=key,
+            status_code=1000,
+            response_code=1000,
+            changes=json.dumps({"action": action, "ok": ok}),
+        )
+
+    def test_rotation_lookup_is_one_query_for_all_keys(self):
+        """多个可轮换键（system_config + model_field）的轮换时间一次扫描全部回填。"""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from system.services.credential import credential_overview
+
+        SystemConfig.objects.update_or_create(key="SCIM_TOKEN", defaults={"value": "v1"})
+        # 噪音行：重加密（encrypt）不算轮换，批量口径与逐键口径一致地跳过
+        self._audit("SCIM_TOKEN", "encrypt")
+        self._audit("SCIM_TOKEN", "rotate")
+        self._audit("WebhookSubscription.secret", "rotate")
+        with CaptureQueriesContext(connection) as ctx:
+            overview = credential_overview()
+        # iterator() 在 PG 上以服务端游标执行（DECLARE ... CURSOR FOR SELECT ...），两种形态都算
+        selects = [
+            q["sql"] for q in ctx.captured_queries if q["sql"].lstrip().lower().startswith(("select", "declare"))
+        ]
+        assert sum("audit_operationlog" in sql.lower() for sql in selects) == 1
+        configs = {row["name"]: row for row in overview["system_configs"]}
+        fields = {row["name"]: row for row in overview["model_fields"]}
+        assert configs["SCIM_TOKEN"]["last_rotated"] != ""
+        assert configs["SCIM_TOKEN"]["rotate_overdue"] is False
+        assert fields["WebhookSubscription.secret"]["last_rotated"] != ""

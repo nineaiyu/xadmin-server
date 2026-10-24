@@ -194,7 +194,7 @@ def scan_account_risks(operator: Any = None, progress: Any = None) -> dict[str, 
     自动解除一次 queryset update——避免用户量大时「逐风险项 SELECT + 逐行写」
     的 N 次往返把同步请求拖长（巡检语义与逐行处理完全一致）。
     """
-    from approval.utils.approval.display import user_display
+    from approval.services.approval.display import user_display
     from identity.models import AccountRisk
 
     now = timezone.now()

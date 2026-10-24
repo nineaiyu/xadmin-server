@@ -62,6 +62,16 @@ class ApprovalInstance(DbAuditModel):
         verbose_name=_("CC users"),
         blank=True,
     )
+    # 驳回重提链：新实例指回被驳回的原实例（同一申请人 + 同一流程才建立），
+    # 用于追溯「第几次提交」；原实例被删时置空，不影响新单。
+    source_instance = models.ForeignKey(
+        "self",
+        related_name="resubmitted_instances",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_("Source instance"),
+    )
 
     class Meta:
         ordering = ["-created_time"]

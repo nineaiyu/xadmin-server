@@ -6,6 +6,7 @@ from typing import Any
 
 from common.utils import get_logger
 from notifications.backends import CHANNEL_SPECS
+from notifications.backends.specs import ChannelSpec, register_channel_spec
 from notifications.notifications import (
     SYSTEM_MESSAGE_REGISTRY,
     USER_MESSAGE_REGISTRY,
@@ -64,3 +65,17 @@ for _spec in CHANNEL_SPECS:
         )
         continue
     register_backend_msg(_spec.code, _spec.renderer)
+
+
+def register_channel(spec: ChannelSpec) -> ChannelSpec:
+    """登记通知渠道（二开扩展点）：spec 清单 + 渲染方法接线一次完成。
+
+    与内置渠道的导入期注册不同，本入口在运行期调用并立即生效；渲染方法必须
+    已定义（fail-fast——静默回退公共渲染会让新渠道的排版问题难排查）。
+    spec 清单的登记/冲突判定见 ``notifications.backends.specs.register_channel_spec``。
+    """
+    if not hasattr(Message, spec.renderer):
+        raise ValueError(f"Notification channel {spec.code!r} declares missing renderer {spec.renderer!r}")
+    register_channel_spec(spec)
+    register_backend_msg(spec.code, spec.renderer)
+    return spec

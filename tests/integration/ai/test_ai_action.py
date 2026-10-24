@@ -20,7 +20,7 @@ import pytest
 from ai.models.ai import AiChatMessage
 from approval.models.approval import ApprovalRequest
 from approval.models.leave import Leave
-from approval.utils.approval import approve_request
+from approval.services.approval import approve_request
 from audit.models import OperationLog
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 from identity.models import UserInfo

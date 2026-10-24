@@ -217,68 +217,27 @@ def _pending_rows(qs: Any, model: str, force: bool) -> Any:
     return pending, skipped
 
 
-def build_embeddings(
-    document: Any = None,
-    force: bool = False,
-    batch_size: int = EMBED_BATCH_SIZE,
-    dry_run: bool = False,
-    progress_cb: Any = None,
-) -> dict[str, Any]:
-    """批量构建/刷新知识块向量，返回摘要（``enabled/ok/model/dim/total/embedded/skipped/failed``）。
+def _embed_batches(
+    client: Any,
+    pending: list[Any],
+    batch_size: int,
+    model: str,
+    summary: dict[str, Any],
+    progress_cb: Any,
+) -> tuple[int, dict[str, Any]]:
+    """逐批嵌入并落库（二进制 + pgvector 双写）；单批失败即停（failed 计入 summary）。
 
-    - ``document``：限定单个文档（``source_path`` 匹配）；缺省全库；
-    - ``force``：忽略既有向量全量重算；缺省只补缺失/陈旧块（幂等、可反复执行）；
-    - ``dry_run``：只统计待构建条数，不调用供应商、不写库；
-    - ``progress_cb``：批次级进度回调 ``cb(percent, stage, embedded)``（异步任务
-      经 embedding_progress 通道上报；同步调用/命令不传 = 零开销）；
-    - 失败语义：单批失败即停止（供应商多半整体不可用），已成功的批次保留，
-      ``ok=False`` + ``failed`` 计数返回，调用方据此给出可读提示；
-    - 写入为 ``embedding``（二进制）+ ``embedding_vector``（pgvector）**双写**：
-      二进制列在迁移窗口保留（步骤④后半段「删二进制列与内存索引代码」
-      登记为稳定一个版本后的独立清理项），回滚 = 代码回退，数据无需重建。
+    返回 ``(观测到的向量维度, 累计 token 用量)``；维度不一致 / 供应商失败都按
+    「已成功批次保留、剩余计入 failed」的口径中断。
     """
     from ai.models.ai import AiKnowledgeChunk
-    from ai.services.assistant.ai_config import embedding_credentials
-
-    summary: dict[str, Any] = {
-        "enabled": False,
-        "ok": True,
-        "model": "",
-        "dim": 0,
-        "total": 0,
-        "embedded": 0,
-        "skipped": 0,
-        "failed": 0,
-        "detail": "",
-    }
-    credentials = embedding_credentials()
-    if credentials is None:
-        summary["detail"] = "no active embedding profile"
-        return summary
-
-    from integrations.sdk.ai.embeddings import AiSdkError, EmbeddingClient
-
-    client = EmbeddingClient(credentials)
-    model = client.model
-    qs = AiKnowledgeChunk.objects.all()
-    if document is not None:
-        qs = qs.filter(source_path=document.path)
-    summary["enabled"] = True
-    summary["model"] = model
-    summary["total"] = qs.count()
-
-    pending, skipped = _pending_rows(qs.order_by("source_path", "chunk_index"), model, force)
-    summary["skipped"] = skipped
-    if dry_run or not pending:
-        return summary
+    from integrations.sdk.ai.embeddings import AiSdkError
 
     def _report(done: int, stage: str) -> None:
         if progress_cb is not None:
             progress_cb(int(done * 100 / max(1, len(pending))), stage=stage, embedded=done)
 
     _report(0, stage="embed")
-    batch_size = max(1, min(int(batch_size or EMBED_BATCH_SIZE), 256))
-    started = time.monotonic()
     usage_total: dict[str, Any] = {}
     dim = 0
     for start in range(0, len(pending), batch_size):
@@ -327,6 +286,67 @@ def build_embeddings(
         summary["embedded"] += len(rows)
         _report(summary["embedded"], stage="embed")
         usage_total = _accumulate_usage(usage_total, client.last_usage)
+    return dim, usage_total
+
+
+def build_embeddings(
+    document: Any = None,
+    force: bool = False,
+    batch_size: int = EMBED_BATCH_SIZE,
+    dry_run: bool = False,
+    progress_cb: Any = None,
+) -> dict[str, Any]:
+    """批量构建/刷新知识块向量，返回摘要（``enabled/ok/model/dim/total/embedded/skipped/failed``）。
+
+    - ``document``：限定单个文档（``source_path`` 匹配）；缺省全库；
+    - ``force``：忽略既有向量全量重算；缺省只补缺失/陈旧块（幂等、可反复执行）；
+    - ``dry_run``：只统计待构建条数，不调用供应商、不写库；
+    - ``progress_cb``：批次级进度回调 ``cb(percent, stage, embedded)``（异步任务
+      经 embedding_progress 通道上报；同步调用/命令不传 = 零开销）；
+    - 失败语义：单批失败即停止（供应商多半整体不可用），已成功的批次保留，
+      ``ok=False`` + ``failed`` 计数返回，调用方据此给出可读提示；
+    - 写入为 ``embedding``（二进制）+ ``embedding_vector``（pgvector）**双写**：
+      二进制列在迁移窗口保留（步骤④后半段「删二进制列与内存索引代码」
+      登记为稳定一个版本后的独立清理项），回滚 = 代码回退，数据无需重建。
+    """
+    from ai.models.ai import AiKnowledgeChunk
+    from ai.services.assistant.ai_config import embedding_credentials
+
+    summary: dict[str, Any] = {
+        "enabled": False,
+        "ok": True,
+        "model": "",
+        "dim": 0,
+        "total": 0,
+        "embedded": 0,
+        "skipped": 0,
+        "failed": 0,
+        "detail": "",
+    }
+    credentials = embedding_credentials()
+    if credentials is None:
+        summary["detail"] = "no active embedding profile"
+        return summary
+
+    from integrations.sdk.ai.embeddings import EmbeddingClient
+
+    client = EmbeddingClient(credentials)
+    model = client.model
+    qs = AiKnowledgeChunk.objects.all()
+    if document is not None:
+        qs = qs.filter(source_path=document.path)
+    summary["enabled"] = True
+    summary["model"] = model
+    summary["total"] = qs.count()
+
+    pending, skipped = _pending_rows(qs.order_by("source_path", "chunk_index"), model, force)
+    summary["skipped"] = skipped
+    if dry_run or not pending:
+        return summary
+
+    batch_size = max(1, min(int(batch_size or EMBED_BATCH_SIZE), 256))
+    started = time.monotonic()
+    dim, usage_total = _embed_batches(client, pending, batch_size, model, summary, progress_cb)
     summary["dim"] = dim
     invalidate_vector_index()
     if summary["embedded"]:

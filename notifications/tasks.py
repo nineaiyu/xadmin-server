@@ -34,7 +34,7 @@ def push_messages_job(user_pks: Any, message: Any, message_type: Any = "push_mes
     返回目标人数，便于任务日志核对；推送异常吞掉（站内信已持久化，
     WS 推送是即时提醒，失败不影响业务语义）。
     """
-    from message.utils import push_messages
+    from message.ws.utils import push_messages
 
     pks = list(user_pks)
     if not pks:

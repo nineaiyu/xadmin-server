@@ -71,6 +71,51 @@ def execute_dataset(dataset: Any, user_obj: Any, count_only: bool = False, max_r
     return {"columns": [spec.raw for spec in specs], "rows": rows, "total": queryset.count(), "limit": limit}
 
 
+def _trend_series(
+    queryset: Any, annotation: Any, model: Any, group_spec: Any, group_by: str, date_trunc: Any
+) -> list[Any]:
+    """时间桶序列（趋势图）：JSON 日期列 Substr 前缀分桶，DateTime 列 Trunc 分桶后 strftime。"""
+    if date_trunc not in ALLOWED_DATE_TRUNC:
+        raise ValidationError(_("Date trunc {} is not allowed").format(date_trunc))
+    if group_spec.is_json:
+        # JSON 日期列：Substr 前缀即桶（桶名与模型字段路径同格式，无需 Python 再格式化）
+        rows = (
+            queryset.annotate(bucket_name=date_bucket_expression(group_spec, date_trunc))
+            .values("bucket_name")
+            .annotate(agg_value=annotation)
+            .order_by("bucket_name")
+            .values("bucket_name", "agg_value")[:AGGREGATE_BUCKET_LIMIT]
+        )
+        return [
+            {
+                "name": row["bucket_name"] or "",
+                "value": row["agg_value"] if row["agg_value"] is not None else 0,
+            }
+            for row in rows
+        ]
+    model_field = model._meta.get_field(group_spec.root)
+    if not isinstance(model_field, DateTimeField):
+        raise ValidationError(_("Field {} is not a datetime, cannot trend").format(group_spec.raw))
+    # Django 6：values(kw=注解别名) 的字符串引用被拒，统一用位置式 values；
+    # 必须先 values(桶) 再 annotate 聚合（GROUP BY 桶），顺序颠倒会按
+    # (桶, 聚合值) 联合分组——每桶裂成多行，趋势图出现重复数据点
+    fmt = "%Y-%m" if date_trunc == "month" else "%Y-%m-%d"
+    rows = (
+        queryset.annotate(bucket_name=Trunc(group_by, date_trunc))
+        .values("bucket_name")
+        .annotate(agg_value=annotation)
+        .order_by("bucket_name")
+        .values("bucket_name", "agg_value")[:AGGREGATE_BUCKET_LIMIT]
+    )
+    return [
+        {
+            "name": row["bucket_name"].strftime(fmt) if row["bucket_name"] else "",
+            "value": row["agg_value"] if row["agg_value"] is not None else 0,
+        }
+        for row in rows
+    ]
+
+
 def aggregate_dataset(
     dataset: Any, user_obj: Any, group_by: Any, metric: Any = "count", date_trunc: Any = None, value_field: Any = None
 ) -> Any:
@@ -124,49 +169,7 @@ def aggregate_dataset(
         raise ValidationError(_("Field {} is not available for datasets").format(group_by))
 
     if date_trunc:
-        if date_trunc not in ALLOWED_DATE_TRUNC:
-            raise ValidationError(_("Date trunc {} is not allowed").format(date_trunc))
-        if group_spec.is_json:
-            # JSON 日期列：Substr 前缀即桶（桶名与模型字段路径同格式，无需 Python 再格式化）
-            rows = (
-                queryset.annotate(bucket_name=date_bucket_expression(group_spec, date_trunc))
-                .values("bucket_name")
-                .annotate(agg_value=annotation)
-                .order_by("bucket_name")
-                .values("bucket_name", "agg_value")[:AGGREGATE_BUCKET_LIMIT]
-            )
-            return {
-                "name": group_by,
-                "metric": metric,
-                "series": [
-                    {
-                        "name": row["bucket_name"] or "",
-                        "value": row["agg_value"] if row["agg_value"] is not None else 0,
-                    }
-                    for row in rows
-                ],
-            }
-        model_field = model._meta.get_field(group_spec.root)
-        if not isinstance(model_field, DateTimeField):
-            raise ValidationError(_("Field {} is not a datetime, cannot trend").format(group_spec.raw))
-        # Django 6：values(kw=注解别名) 的字符串引用被拒，统一用位置式 values；
-        # 必须先 values(桶) 再 annotate 聚合（GROUP BY 桶），顺序颠倒会按
-        # (桶, 聚合值) 联合分组——每桶裂成多行，趋势图出现重复数据点
-        fmt = "%Y-%m" if date_trunc == "month" else "%Y-%m-%d"
-        rows = (
-            queryset.annotate(bucket_name=Trunc(group_by, date_trunc))
-            .values("bucket_name")
-            .annotate(agg_value=annotation)
-            .order_by("bucket_name")
-            .values("bucket_name", "agg_value")[:AGGREGATE_BUCKET_LIMIT]
-        )
-        series = [
-            {
-                "name": row["bucket_name"].strftime(fmt) if row["bucket_name"] else "",
-                "value": row["agg_value"] if row["agg_value"] is not None else 0,
-            }
-            for row in rows
-        ]
+        series = _trend_series(queryset, annotation, model, group_spec, group_by, date_trunc)
     else:
         # 分组标签走字段元数据映射：布尔 → 启用/禁用、choices → display 文案；
         # JSON 路径列无字段元数据 → 原始值（_group_label(value, None) 同口径）

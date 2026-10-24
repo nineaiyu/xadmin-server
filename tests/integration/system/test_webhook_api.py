@@ -263,7 +263,7 @@ class TestEventWiring:
         url, handler = receiver
         for event in ("approval.submitted", "approval.approved", "approval.cancelled"):
             make_subscription(url=url, event=event)
-        from approval.utils.approval import approve_request, cancel_request, create_approval
+        from approval.services.approval import approve_request, cancel_request, create_approval
         from common.core.config import SysConfig
 
         SysConfig.set_value("APPROVAL_ENABLED", True)

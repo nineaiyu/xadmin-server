@@ -31,13 +31,12 @@ from .audit import (
     audit_permission_menus,
     audit_wide_manager_grants,
 )
-from .constants import (
+from .constants import CRUD_BIND_ACTIONS, DEAD_ENDPOINT_PREFIXES, IMPORT_EXPORT_ACTIONS
+from .declarations import (
     AUDIT_KNOWN_DUPLICATES,
     AUDIT_SKIP_PREFIXES,
-    CRUD_BIND_ACTIONS,
-    DEAD_ENDPOINT_PREFIXES,
-    IMPORT_EXPORT_ACTIONS,
     PARENT_MENU_MAP,
+    PERMISSION_EXEMPT_VIEWS,
     RUNTIME_PERMISSION_PREFIXES,
     SHARED_METHOD_PATHS,
     SKIP_ROUTE_PREFIXES,
@@ -49,12 +48,14 @@ from .scan import (
     find_covering,
     load_permission_menus,
     path_whitelisted,
+    permission_face,
     refresh_titles,
     requires_permission,
     resolve_view_context,
     sample_path,
     scan_gaps,
     scan_permission_gaps,
+    unclassified_views,
     url_to_sample,
 )
 from .seed import detect_indent, dump_entries, merge_seed_file, seed_entry_pks
@@ -67,6 +68,7 @@ __all__ = [
     "DEAD_ENDPOINT_PREFIXES",
     "IMPORT_EXPORT_ACTIONS",
     "PARENT_MENU_MAP",
+    "PERMISSION_EXEMPT_VIEWS",
     "PERMISSION_MENU_RANK_BASE",
     "RUNTIME_PERMISSION_PREFIXES",
     "SHARED_METHOD_PATHS",
@@ -82,6 +84,8 @@ __all__ = [
     "audit_wide_manager_grants",
     "build_plans",
     "build_route_index",
+    "permission_face",
+    "unclassified_views",
     "complete_field_permissions",
     "detect_indent",
     "dump_entries",

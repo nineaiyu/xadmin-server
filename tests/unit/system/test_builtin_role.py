@@ -126,3 +126,41 @@ class TestBuiltinRoleProtection:
             format="json",
         )
         assert resp.status_code == 400
+
+
+class TestBuiltinRoleWriteProtection:
+    """内置角色的写入口收口：code/is_active 不可改，展示信息仍可编辑。"""
+
+    def test_deactivate_blocked(self, superuser, api_client):
+        sync_builtin_roles()
+        role = UserRole.objects.get(code="SystemAdmin")
+        api_client.force_authenticate(user=superuser)
+        resp = api_client.patch(f"/api/identity/role/{role.pk}", {"is_active": False}, format="json")
+        assert resp.status_code == 400, resp.data
+        role.refresh_from_db()
+        assert role.is_active is True
+
+    def test_batch_deactivate_reports_failure(self, superuser, api_client):
+        sync_builtin_roles()
+        role = UserRole.objects.get(code="SystemAdmin")
+        api_client.force_authenticate(user=superuser)
+        resp = api_client.post(
+            "/api/identity/role/batch-update",
+            {"pks": [str(role.pk)], "fields": {"is_active": False}},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        data = resp.data["data"]
+        assert data["success"] == []
+        assert data["failures"] and data["failures"][0]["pk"] == str(role.pk)
+        role.refresh_from_db()
+        assert role.is_active is True
+
+    def test_display_fields_still_editable(self, superuser, api_client):
+        sync_builtin_roles()
+        role = UserRole.objects.get(code="SystemAdmin")
+        api_client.force_authenticate(user=superuser)
+        resp = api_client.patch(f"/api/identity/role/{role.pk}", {"description": "更新说明"}, format="json")
+        assert resp.status_code == 200, resp.data
+        role.refresh_from_db()
+        assert role.description == "更新说明"

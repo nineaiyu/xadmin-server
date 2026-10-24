@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+from common.utils.display import user_label
 
 from .constants import FLOW_REMIND_CACHE_SECONDS, _models
 from .engine import (
@@ -101,8 +102,17 @@ def cancel_stuck_instances(timeout_minutes: int = STUCK_INSTANCE_TIMEOUT_MINUTES
     return cancelled
 
 
+#: 可清理的终态集合：在途实例（PENDING）无论多旧都必须保留。
+#: 只按 created_time 过滤会把跨年未办结的审批连同任务/评论一并级联删除。
+_CLEANABLE_STATUSES = (
+    "APPROVED",
+    "REJECTED",
+    "CANCELLED",
+)
+
+
 def clean_finished_instances(keep_days: int | None = None, batch_size: int = 2000) -> int:
-    """清理超过保留期的流程实例（APPROVAL_FLOW_KEEP_DAYS，默认 365 天；级联任务）。"""
+    """清理超过保留期的终态流程实例（APPROVAL_FLOW_KEEP_DAYS，默认 365 天；级联任务）。"""
     from common.core.config import SysConfig
 
     if keep_days is None:
@@ -114,11 +124,17 @@ def clean_finished_instances(keep_days: int | None = None, batch_size: int = 200
     deadline = timezone.now() - datetime.timedelta(days=keep_days)
     total = 0
     while True:
-        pks = list(ApprovalInstance.objects.filter(created_time__lt=deadline).values_list("pk", flat=True)[:batch_size])
+        pks = list(
+            ApprovalInstance.objects.filter(created_time__lt=deadline, status__in=_CLEANABLE_STATUSES).values_list(
+                "pk", flat=True
+            )[:batch_size]
+        )
         if not pks:
             break
         with transaction.atomic():
-            deleted, _rows = ApprovalInstance.objects.filter(pk__in=pks).delete()
+            # 二次过滤状态：命中 SELECT 与 DELETE 之间实例可能被推进，
+            # 仅按 pk 删除会误删刚变为在途的记录
+            deleted, _rows = ApprovalInstance.objects.filter(pk__in=pks, status__in=_CLEANABLE_STATUSES).delete()
         total += deleted
     return total
 
@@ -195,7 +211,7 @@ def _auto_transfer_up(task: Any, instance: Any, now: Any) -> bool:
         )
         return False
 
-    note = str(_("Escalated to {} on timeout")).format(getattr(leader, "nickname", "") or leader.username)
+    note = str(_("Escalated to {} on timeout")).format(user_label(leader))
     updated = ApprovalNodeTask.objects.filter(pk=task.pk, status=ApprovalNodeTask.Status.PENDING).update(
         status=ApprovalNodeTask.Status.CANCELLED,
         comment=note[:255],
@@ -209,7 +225,7 @@ def _auto_transfer_up(task: Any, instance: Any, now: Any) -> bool:
         node_name=task.node_name,
         node_order=task.node_order,
         assignee=leader,
-        assignee_display=str(getattr(leader, "nickname", "") or leader.username),
+        assignee_display=str(user_label(leader)),
         delegate_from=task.assignee,
         comment=str(_("Auto escalated on timeout")),
     )

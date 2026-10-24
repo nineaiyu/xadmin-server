@@ -123,6 +123,7 @@ class TestImpactRegistryAlignment:
         ("dataset.views.dform", "DynamicFormViewSet"),
         ("dataset.views.analysis", "ScreenViewSet"),
         ("system.views.admin.menu", "MenuViewSet"),
+        ("system.views.admin.permission", "DataPermissionViewSet"),
     )
 
     def test_viewset_models_match_calculators(self):

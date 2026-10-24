@@ -176,6 +176,11 @@ def complete_login(
     :return: 需要 MFA 二次验证时返回可直接下发的 ``ApiResponse``；否则返回 ``None``，
              由调用方继续下发自己的 token 载荷。
     """
+    if not getattr(user_obj, "is_active", False):
+        # 防御纵深：各登录路径各自校验后仍在此兜底（发码/IdP 认证到提交之间
+        # 账号被禁用的窗口）；未来新增登录路径漏做 is_active 校验也在此拦截。
+        # 文案与 OAuth 登录的禁用拦截同源（identity/views/auth/oauth.py）
+        raise ValidateError(_("The account has been disabled"))
     if login_mfa_if_required(request, user_obj, force_mfa=force_mfa):
         return ApiResponse(
             data={

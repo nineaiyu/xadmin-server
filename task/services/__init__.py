@@ -75,7 +75,7 @@ _LAZY_EXPORTS = {
     "WebhookSubscription": "task.models",
     "WebhookDelivery": "task.models",
     "CeleryTaskRecordModel": "task.models",
-    "DisplayRelatedField": "task.serializers.task",
+    "DisplayRelatedField": "common.core.fields",  # 展示增强关联字段已下沉内核（task 侧保留再导出）
     "emit_webhook_event": "task.services.webhook",
     "deliver_webhook": "task.webhook_tasks",
     "EVENT_CATALOG": "task.services.webhook",

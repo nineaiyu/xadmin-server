@@ -23,8 +23,8 @@ from typing import Any
 from channels.db import database_sync_to_async
 
 from common.utils import get_logger
-from message.base import AsyncJsonWebsocket
-from message.protocol import MessageAction
+from message.ws.base import AsyncJsonWebsocket
+from message.ws.protocol import MessageAction
 from system.services.monitor import metrics
 
 logger = get_logger(__name__)

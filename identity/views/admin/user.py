@@ -38,10 +38,8 @@ from identity.serializers.user import (
 from identity.services import user_admin
 from identity.utils import user_invite
 from identity.utils.impersonation import is_impersonating
-from message.services import send_logout_msg
 from mfa.confirm import UserConfirmation
 from mfa.const import ConfirmType
-from settings.services import LoginBlockUtil
 from system.services.modelset import ChangeRolePermissionAction, PermissionPreviewAction
 from system.services.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 
@@ -236,10 +234,10 @@ class UserViewSet(
         """
         instance = self.get_object()
         self._assert_target_mutable(instance)
-        if not user_invite.mail_channel_configured():
-            return ApiResponse(code=1001, detail=user_invite.INVITE_MAIL_UNAVAILABLE_MESSAGE)
-        user_invite.send_invite(instance, request=request)
-        return ApiResponse(detail=_("Invitation sent"))
+        sent, detail = user_admin.invite_user(instance, request)
+        if not sent:
+            return ApiResponse(code=1001, detail=detail)
+        return ApiResponse(detail=detail)
 
     @extend_schema(responses=get_default_response_schema(), request=None)
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -247,7 +245,7 @@ class UserViewSet(
         """解禁用户"""
         instance = self.get_object()
         self._assert_target_mutable(instance)
-        LoginBlockUtil.unblock_user(instance.username)
+        user_admin.unblock_user(instance)
         return ApiResponse()
 
     @extend_schema(responses=get_default_response_schema(), request=None)
@@ -282,8 +280,7 @@ class UserViewSet(
         """强退用户"""
         instance = self.get_object()
         self._assert_target_mutable(instance)
-        channel_names = request.data.get("channel_names", [])
-        send_logout_msg(instance.pk, channel_names)
+        user_admin.logout_user(instance, request.data.get("channel_names", []))
         return ApiResponse()
 
     @extend_schema(responses=get_default_response_schema(), request=None)
@@ -328,8 +325,7 @@ class UserViewSet(
         if request.method.upper() != "GET":
             self._assert_target_mutable(user)
         if request.method.upper() == "GET":
-            rows = list(user.oauth_bindings.values("pk", "provider", "subject", "profile", "created_time"))
-            return ApiResponse(data=rows)
+            return ApiResponse(data=user_admin.im_bindings(user))
 
         data, detail, error = user_admin.bind_im_identity(user, request)
         if error is not None:

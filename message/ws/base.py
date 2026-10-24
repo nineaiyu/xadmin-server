@@ -18,8 +18,9 @@ from common.core.response import API_SUCCESS_CODE
 from common.decorators import cached_method
 from common.utils import get_logger
 from identity.services import serialize_user_info
-from message.protocol import PROTOCOL_VERSION, MessageAction
-from message.utils import set_mid_result_to_cache
+
+from .protocol import PROTOCOL_VERSION, MessageAction
+from .utils import set_mid_result_to_cache
 
 logger = get_logger(__name__)
 

@@ -8,7 +8,7 @@
 import pytest
 from asgiref.sync import async_to_sync
 
-from message.notify import MessageNotify
+from message.ws.notify import MessageNotify
 
 pytestmark = pytest.mark.django_db
 
@@ -63,7 +63,7 @@ class TestLegacyGate:
         async def _fake_notify(data, username):
             notified.append((data, username))
 
-        monkeypatch.setattr("message.notify.notify_at_user_msg", _fake_notify)
+        monkeypatch.setattr("message.ws.notify.notify_at_user_msg", _fake_notify)
         consumer = _consumer()
         _send(consumer, {"text": "hello", "pk": 999})
 

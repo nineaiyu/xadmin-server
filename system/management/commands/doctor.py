@@ -9,7 +9,8 @@
 4. 语言包编译（locale/*/LC_MESSAGES/*.mo 缺失或过期 → 界面回退英文）；
 5. 权限点缺口（代码路由 ↔ 库内权限点，非超管 403 的根因）；
 6. 内置种子（平台层 ``loadjson/`` + 各应用 ``seeds/``：清单/归属/引用，未注册应用告警）；
-7. 模块裁剪配置（config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE 有效性）；
+7. 模块裁剪配置（config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE 有效性，
+   含停用模块的周期任务条目残留——重启后由启动期对账自动清理）；
 8. 前端契约镜像（contract/schema ↔ docs/schema；单仓检出自动跳过）；
 9. 前后端版本一致性（server/const.py ↔ xadmin-client/package.json；单仓检出自动跳过）。
 
@@ -299,12 +300,53 @@ class Command(BaseCommand):
                 )
             else:
                 self._report(PASS, "模块裁剪", detail)
+            self._check_module_periodic_tasks()
         except Exception as exc:
             self._report(
                 FAIL,
                 "模块裁剪",
                 f"配置非法：{exc}",
                 "检查 config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE",
+            )
+
+    def _check_module_periodic_tasks(self) -> None:
+        """任务层切片自检：停用模块的周期任务不应仍有启用条目。
+
+        注册期由 ``create_or_update_registered_periodic_tasks`` 跳过停用模块并清理
+        历史条目——本检查抓的是「改了配置还没重启」的窗口期残留，只提示不判失败。
+        """
+
+        from common.celery.decorator import get_register_period_tasks
+        from common.core.modules import resolve_modules
+        from task.services.periodic import ensure_tasks_registered
+
+        try:
+            from django_celery_beat.models import PeriodicTask
+        except ImportError:  # pragma: no cover - beat 未安装
+            return
+        disabled = resolve_modules().disabled
+        if not disabled:
+            return
+        ensure_tasks_registered()
+        disabled_paths = {
+            detail["task"]
+            for entry in get_register_period_tasks()
+            for _name, detail in entry.items()
+            if detail.get("module") in disabled
+        }
+        if not disabled_paths:
+            return
+        stale = list(
+            PeriodicTask.objects.filter(enabled=True, task__in=disabled_paths).values_list("name", flat=True)[
+                :DETAIL_LIMIT
+            ]
+        )
+        if stale:
+            self._report(
+                WARN,
+                "模块裁剪",
+                f"停用模块的周期任务仍启用：{'、'.join(stale)}",
+                "重启进程（启动期对账会自动清理重建周期任务）",
             )
 
     def _check_ai_declarations(self) -> None:

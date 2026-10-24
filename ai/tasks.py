@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 
 @shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
-@register_as_period_task(crontab="12 3 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="12 3 * * *", module="ai")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def auto_clean_ai_usage_job() -> None:
     """AI 用量账本保留期清理（保留期随 MONITOR_RETENTION_DAYS）。"""
     from ai.services.assistant.ai_usage import auto_clean_ai_usage
@@ -68,3 +68,33 @@ def sync_repo_task(self: Any) -> Any:
         raise
     finally:
         release_lock()
+
+
+@shared_task(bind=True, verbose_name="Ingest uploaded knowledge document")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def ingest_upload_document_task(self: Any, document_pk: Any) -> Any:
+    """异步摄取上传文档：重建分块并推进状态（失败保留可读原因）。"""
+    from ai.models.ai import AiKnowledgeDocument
+    from ai.services.knowledge.ai_knowledge import rebuild_chunks
+
+    doc = AiKnowledgeDocument.objects.filter(pk=document_pk).first()
+    if doc is None or doc.source_type != AiKnowledgeDocument.SourceType.UPLOAD:
+        return None
+    doc.ingest_status = AiKnowledgeDocument.IngestStatus.PROCESSING
+    doc.save(update_fields=["ingest_status"])
+    try:
+        count = rebuild_chunks(doc)
+        doc.chunk_count = count
+        doc.ingest_status = AiKnowledgeDocument.IngestStatus.SUCCESS
+        doc.ingest_error = ""
+        doc.save(update_fields=["chunk_count", "ingest_status", "ingest_error", "synced_at"])
+        from ai.services.knowledge.ai_embeddings import schedule_auto_rebuild
+
+        schedule_auto_rebuild(doc)
+        return {"ok": True, "chunks": count}
+    except Exception as exc:  # noqa: BLE001 任务失败落状态，前端可见并可重传
+        logger.warning("knowledge ingest failed. doc:%s", document_pk, exc_info=True)
+        doc.ingest_status = AiKnowledgeDocument.IngestStatus.FAILED
+        doc.ingest_error = str(exc)[:500]
+        doc.chunk_count = 0
+        doc.save(update_fields=["chunk_count", "ingest_status", "ingest_error", "synced_at"])
+        return {"ok": False, "detail": str(exc)[:255]}

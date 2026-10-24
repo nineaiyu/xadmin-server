@@ -358,7 +358,7 @@ class TestFormApproval:
         response = client.post(SUBMISSION_URL, {"form": str(gated_form.pk), "data": {"name": "张三"}}, format="json")
         approval_id = response.data["data"]["approval_id"]
         from approval.models.approval import ApprovalRequest
-        from approval.utils.approval import approve_request
+        from approval.services.approval import approve_request
 
         approval = ApprovalRequest.objects.get(pk=approval_id)
         assert approve_request(approval, superuser)[0] is True
@@ -382,7 +382,7 @@ class TestFormApproval:
         response = client.post(SUBMISSION_URL, {"form": str(gated_form.pk), "data": {"name": "张三"}}, format="json")
         approval_id = response.data["data"]["approval_id"]
         from approval.models.approval import ApprovalRequest
-        from approval.utils.approval import approve_request
+        from approval.services.approval import approve_request
 
         approval = ApprovalRequest.objects.get(pk=approval_id)
         assert approve_request(approval, superuser)[0] is True

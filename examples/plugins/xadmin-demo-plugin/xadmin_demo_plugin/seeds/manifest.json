@@ -1,0 +1,26 @@
+{
+ "version": 1,
+ "app": "xadmin_demo_plugin",
+ "depends": [
+  "system",
+  "identity"
+ ],
+ "url_prefixes": [
+  "api/plugin-demo/"
+ ],
+ "config_keys": [],
+ "files": [
+  {
+   "name": "menu.json",
+   "model": "system.menu",
+   "kind": "menu",
+   "order": 40
+  },
+  {
+   "name": "menumeta.json",
+   "model": "system.menumeta",
+   "kind": "menumeta",
+   "order": 41
+  }
+ ]
+}

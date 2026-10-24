@@ -34,8 +34,8 @@ def cc_user(db):
     return UserInfo.objects.create_user(username="collab_cc", password="Test@123456", nickname="抄送人")
 
 
-def make_flow(approver, cc_users=None):
-    flow = ApprovalFlow.objects.create(name="协作流程", code="collab_flow")
+def make_flow(approver, cc_users=None, code="collab_flow"):
+    flow = ApprovalFlow.objects.create(name="协作流程", code=code)
     ApprovalFlowNode.objects.create(
         flow=flow,
         name="初审",
@@ -119,6 +119,22 @@ class TestInstanceCc:
         instance = ApprovalInstance.objects.get(pk=resp.data["data"]["pk"])
         assert list(instance.cc_users.values_list("pk", flat=True)) == [cc_user.pk]
         assert resp.data["data"]["cc_users"][0]["label"] == cc_user.nickname
+
+    def test_cc_scope_lists_only_cc_instances(self, auth_client, applicant, approver, superuser):
+        """「抄送我」页签：只列 cc_users 含当前用户的实例，不混入其他可见实例。"""
+        cc_flow = make_flow(approver, cc_users=[superuser])
+        cc_instance, _error = create_instance(flow=cc_flow, applicant=applicant, title="抄送我页签", form_data={})
+        other_flow = make_flow(approver, code="collab_flow_other")
+        create_instance(flow=other_flow, applicant=applicant, title="不在抄送", form_data={})
+
+        resp = auth_client.get(INSTANCES_URL, {"scope": "cc"})
+
+        assert resp.data["code"] == 1000, resp.data
+        rows = resp.data["data"]["results"]
+        assert [row["title"] for row in rows] == ["抄送我页签"]
+        detail = auth_client.get(f"{INSTANCES_URL}/{cc_instance.pk}")
+        assert detail.data["code"] == 1000
+        assert [str(item["pk"]) for item in detail.data["data"]["cc_users"]] == [str(superuser.pk)]
 
 
 class TestDiscussion:

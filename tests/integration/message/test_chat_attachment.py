@@ -29,10 +29,10 @@ from rest_framework.test import APIClient
 from file.models import UploadFile
 from identity.models import UserRole
 from message import chat as chat_service
-from message.attachments import attachment_kind
-from message.consumers import ChatNotify
+from message.chat import attachment_kind
 from message.models import MAX_CONTENT_LENGTH, ChatMessage
-from message.utils import get_chat_user_group_name, get_public_chat_group_name
+from message.ws.consumers import ChatNotify
+from message.ws.utils import get_chat_user_group_name, get_public_chat_group_name
 
 pytestmark = pytest.mark.django_db
 

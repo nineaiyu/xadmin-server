@@ -3160,5 +3160,97 @@
    "method": "DELETE",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1f011-5a01-4b01-8c01-000000000041",
+  "fields": {
+   "created_time": "2026-10-24T00:00:00Z",
+   "updated_time": "2026-10-24T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+   "menu_type": 2,
+   "name": "impact:SystemDataPermission",
+   "rank": 941,
+   "path": "api/system/permission/impact$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1f012-5a02-4b02-8c02-000000000041",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1f011-5a01-4b01-8c01-000000000042",
+  "fields": {
+   "created_time": "2026-10-24T00:00:00Z",
+   "updated_time": "2026-10-24T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+   "menu_type": 2,
+   "name": "recycleList:SystemDataPermission",
+   "rank": 942,
+   "path": "api/system/permission/recycle$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1f012-5a02-4b02-8c02-000000000042",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1f011-5a01-4b01-8c01-000000000043",
+  "fields": {
+   "created_time": "2026-10-24T00:00:00Z",
+   "updated_time": "2026-10-24T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+   "menu_type": 2,
+   "name": "recycleRestore:SystemDataPermission",
+   "rank": 943,
+   "path": "api/system/permission/recycle/restore$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1f012-5a02-4b02-8c02-000000000043",
+   "method": "PATCH",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1f011-5a01-4b01-8c01-000000000044",
+  "fields": {
+   "created_time": "2026-10-24T00:00:00Z",
+   "updated_time": "2026-10-24T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+   "menu_type": 2,
+   "name": "recyclePurge:SystemDataPermission",
+   "rank": 944,
+   "path": "api/system/permission/recycle/purge$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1f012-5a02-4b02-8c02-000000000044",
+   "method": "DELETE",
+   "model": []
+  }
  }
 ]

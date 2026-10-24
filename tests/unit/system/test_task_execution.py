@@ -120,7 +120,7 @@ def test_run_action_creates_execution_and_publishes(monkeypatch, django_capture_
     request = factory.post(f"/api/task/periodic/{instance.pk}/run")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "run"})
-    with mock.patch("task.views.task_periodic.app.send_task") as send_task:
+    with mock.patch("task.services.periodic.app.send_task") as send_task:
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request, pk=str(instance.pk))
     assert response.data["code"] == 1000
@@ -228,7 +228,7 @@ def test_registered_action_lists_user_tasks():
 
 def test_ensure_tasks_registered_scans_once_per_process(monkeypatch):
     """全量 autodiscover 开销大：进程内只扫一次，后续调用直接复用已注册任务。"""
-    from task.views import task_periodic
+    from task.services import periodic as task_periodic
 
     monkeypatch.setattr(task_periodic, "_autodiscovered", False)
     with mock.patch.object(task_periodic.app, "autodiscover_tasks") as autodiscover:
@@ -238,7 +238,7 @@ def test_ensure_tasks_registered_scans_once_per_process(monkeypatch):
 
 
 def test_ensure_tasks_registered_force_rescans(monkeypatch):
-    from task.views import task_periodic
+    from task.services import periodic as task_periodic
 
     monkeypatch.setattr(task_periodic, "_autodiscovered", True)
     with mock.patch.object(task_periodic.app, "autodiscover_tasks") as autodiscover:
@@ -248,7 +248,7 @@ def test_ensure_tasks_registered_force_rescans(monkeypatch):
 
 def test_registered_action_reuses_scanned_tasks_by_default(monkeypatch):
     """缺省（不带 refresh）复用进程内已注册任务，不再重复全量扫描。"""
-    from task.views import task_periodic
+    from task.services import periodic as task_periodic
 
     monkeypatch.setattr(task_periodic, "_autodiscovered", True)
     user = _make_user()
@@ -264,7 +264,7 @@ def test_registered_action_reuses_scanned_tasks_by_default(monkeypatch):
 
 def test_registered_action_refresh_forces_rescan(monkeypatch):
     """refresh=1 强制重新扫描任务模块（新装 app 后立即可见的逃生口）。"""
-    from task.views import task_periodic
+    from task.services import periodic as task_periodic
 
     monkeypatch.setattr(task_periodic, "_autodiscovered", True)
     user = _make_user()
@@ -379,8 +379,8 @@ def test_batch_run_action_dispatches_selected(monkeypatch, django_capture_on_com
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
     with (
-        mock.patch("task.views.task_periodic.app.send_task") as send_task,
-        mock.patch("task.views.task_periodic.app.autodiscover_tasks"),
+        mock.patch("task.services.periodic.app.send_task") as send_task,
+        mock.patch("task.services.periodic.app.autodiscover_tasks"),
     ):
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request)
@@ -398,7 +398,7 @@ def test_batch_run_action_reports_unregistered(monkeypatch):
     request = factory.post("/api/task/periodic/batch-run", data=[str(instance.pk)], format="json")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
-    with mock.patch("task.views.task_periodic.app.autodiscover_tasks"):
+    with mock.patch("task.services.periodic.app.autodiscover_tasks"):
         response = view(request)
     assert response.data["code"] == 1000
     assert response.data["data"]["success"] == 0

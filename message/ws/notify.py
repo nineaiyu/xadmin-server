@@ -22,9 +22,10 @@ from identity.services import (
     register_user_session,
     websocket_session_logout,
 )
-from message.base import AsyncJsonWebsocket
-from message.utils import async_push_message, get_user_layer_group_name
 from server.utils import get_current_request
+
+from .base import AsyncJsonWebsocket
+from .utils import async_push_message, get_user_layer_group_name
 
 logger = get_logger(__name__)
 

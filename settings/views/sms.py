@@ -70,6 +70,8 @@ class SmsConfigViewSet(BaseSettingViewSet):
     serializer_class_mapper = {
         "alibaba": AlibabaSMSSettingSerializer,
     }
+    # 已注册供应商（含未收录专属字段面、回落公共字段面的渠道）均可作为 category
+    category_whitelist = frozenset(value for value, _label in BACKENDS.choices)
 
     def get_serializer_class(self) -> Any:
         requested = self.request.query_params.get("category")

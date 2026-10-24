@@ -5,12 +5,11 @@ from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 from rest_framework.request import Request
 
-from audit.services import OperationLog
 from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ImportExportDataAction, RecycleBinAction
 from common.core.pagination import DynamicPageNumber
-from common.core.response import ApiResponse
+from common.core.response import API_SUCCESS_CODE, ApiResponse
 from common.utils import get_logger
 from demo.models import Book
 from demo.serializers.book import BookSerializer
@@ -80,14 +79,18 @@ class BookViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction):
         """推送到其他服务"""  # 这个 推送到其他服务 的注释得写， 否则菜单中可能会显示null，访问日志记录中也可能显示异常
 
         # 自定义 POST 动作示例：真实写入一条推送审计（可追溯），不再是「只返回成功」的假交互
+        # （落库走 audit.services.record：截断/creator 解析/异常兜底内建）
+        from audit.services import record
+
         instance = self.get_object()
-        OperationLog.objects.create(
+        record(
             module="DEMO:BookPush",
             object_pk=str(instance.pk),
             path=request.path,
             method="POST",
-            status_code=1000,
-            response_code=1000,
+            # 审计字段口径与 oplog_recorder 一致：status_code=业务码、response_code=HTTP 状态
+            status_code=API_SUCCESS_CODE,
+            response_code=200,
             response_result=f"push {instance.name}",
             creator=request.user,
             modifier=request.user,
@@ -101,5 +104,7 @@ class BookViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction):
         instance = self.get_object()
         ok, detail = submit_book(instance, request.user)
         if not ok:
-            return ApiResponse(code=1001, detail=detail)
+            # 业务拒绝统一传输口径：HTTP 400 + 业务码（前端 badRequestStrategy 提示 detail），
+            # 不再走 200+1001 双轨
+            return ApiResponse(code=1001, detail=detail, status=400)
         return ApiResponse(detail=detail)

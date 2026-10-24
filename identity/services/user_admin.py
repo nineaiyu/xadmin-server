@@ -15,6 +15,7 @@ from django.utils.translation import gettext_lazy as _
 from audit.services import OperationLog
 from identity.models import UserInfo, UserOAuthBinding
 from identity.utils.impersonation import start_impersonation
+from message.services import send_logout_msg
 from mfa.cache import UserConfirmStateCache
 from mfa.services import clear_recovery_codes
 from notifications.message import SiteMessageUtil
@@ -110,3 +111,31 @@ def unbind_im_identity(user: Any, request: Any) -> tuple[Any, Any]:
         changes=json.dumps({"provider": provider, "action": "unbind"}, ensure_ascii=False)[:4096],
     )
     return _("IM identity unbound"), None
+
+
+def invite_user(instance: Any, request: Any) -> tuple[bool, Any]:
+    """发送/重发邀请激活邮件：邮件通道未配置时返回可读原因，不抛异常。
+
+    :return: ``(是否已发送, 失败文案)``。
+    """
+    from identity.utils import user_invite
+
+    if not user_invite.mail_channel_configured():
+        return False, user_invite.INVITE_MAIL_UNAVAILABLE_MESSAGE
+    user_invite.send_invite(instance, request=request)
+    return True, _("Invitation sent")
+
+
+def unblock_user(instance: Any) -> None:
+    """解除登录封锁（连续失败计数与锁定窗口）。"""
+    LoginBlockUtil.unblock_user(instance.username)
+
+
+def logout_user(instance: Any, channel_names: Any) -> None:
+    """强制下线指定会话（channel_names 为空由底层按全部会话处理）。"""
+    send_logout_msg(instance.pk, channel_names or [])
+
+
+def im_bindings(instance: Any) -> list[dict[str, Any]]:
+    """管理端查看 IM 绑定（只读）。"""
+    return list(instance.oauth_bindings.values("pk", "provider", "subject", "profile", "created_time"))

@@ -38,7 +38,7 @@ from dataset.ws_screen import (
     screen_push_due,
     screen_push_ts_key,
 )
-from message.protocol import MessageAction
+from message.ws.protocol import MessageAction
 from system.models import ModelLabelField
 
 pytestmark = pytest.mark.django_db
@@ -768,3 +768,74 @@ class TestBeatPushAtomicClaim:
         # 占位键 TTL = 该屏推送周期：到期自动放行下一轮，无需清理
         assert cache.get(screen_push_claim_key(screen.pk)) is not None
         assert cache.ttl(screen_push_claim_key(screen.pk)) <= data_push_interval(screen)
+
+
+class TestScreenDataQueryBatching:
+    """同一帧内的取数收敛：数据集 in_bulk + 同参卡片结果复用。"""
+
+    def test_datasets_loaded_in_bulk(self, dashboard_a, dashboard_b, superuser, dataset):
+        """两张卡引用同一数据集时，本帧只查一次 dataset 表（不再逐卡 filter）。"""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from dataset.models.dataset import Dataset as DatasetModel
+
+        other = DatasetModel.objects.create(
+            name="第二数据集",
+            bound_model=dataset.bound_model,
+            columns=["username"],
+            filters=[],
+            row_limit=100,
+            visibility="shared",
+            creator=superuser,
+        )
+        dashboard_b.layout = [
+            {
+                "id": "c9",
+                "dataset": str(other.pk),
+                "title": "另一个数据集",
+                "chart_type": "bar",
+                "group_by": "username",
+                "metric": "count",
+            }
+        ]
+        dashboard_b.save(update_fields=["layout"])
+        screen = _make_screen(superuser, [dashboard_a, dashboard_b])
+
+        with CaptureQueriesContext(connection) as captured:
+            build_screen_data_payload(superuser, screen, rev=1)
+
+        dataset_selects = [
+            query["sql"]
+            for query in captured.captured_queries
+            if 'FROM "dataset_dataset"' in query["sql"] and " IN (" in query["sql"].upper()
+        ]
+        assert len(dataset_selects) == 1
+
+    def test_identical_card_params_execute_once(self, superuser, dataset, monkeypatch):
+        """同数据集 + 同取数参数的多张卡只执行一次，结果复用给每一张卡。"""
+        import dataset.screen_data as screen_data
+
+        dashboard = Dashboard.objects.create(
+            name="重复指标看板",
+            layout=[
+                {"id": "n1", "dataset": str(dataset.pk), "title": "总数1", "chart_type": "number"},
+                {"id": "n2", "dataset": str(dataset.pk), "title": "总数2", "chart_type": "number"},
+            ],
+            visibility="shared",
+            creator=superuser,
+        )
+        screen = _make_screen(superuser, [dashboard])
+
+        calls: list[str] = []
+        real_execute = screen_data._execute_card
+
+        def counting(ref, user, ds):
+            calls.append(ref["card"])
+            return real_execute(ref, user, ds)
+
+        monkeypatch.setattr(screen_data, "_execute_card", counting)
+        payload = build_screen_data_payload(superuser, screen, rev=1)
+
+        assert calls == ["n1"]
+        assert [card["data"] for card in payload[0]["cards"]] == [payload[0]["cards"][0]["data"]] * 2

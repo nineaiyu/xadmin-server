@@ -16,7 +16,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from approval.utils.approval.display import user_display
+from approval.services.approval.display import user_display
 
 from . import engine
 from .conditions import _split_values

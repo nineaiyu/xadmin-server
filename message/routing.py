@@ -7,7 +7,7 @@
 
 from django.urls import re_path
 
-from . import consumers, notify
+from .ws import consumers, notify
 
 app_name = "message"
 

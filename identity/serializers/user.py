@@ -4,7 +4,6 @@
 # filename : user
 # author : ly_13
 # date : 8/10/2024
-import json
 from typing import Any
 
 from django.conf import settings
@@ -61,27 +60,21 @@ def record_create_password_decrypt_failure(request: Any, username: Any) -> None:
     与 SCIM 目录同步的操作审计同口径（module 打域内标签、changes 记结构化摘要、
     不携带提交的密码原文、审计失败仅告警不阻断主流程）。创建被拒时对象不存在，
     object_pk 留空，以 changes.username 定位目标账号。
+    落库统一走 :func:`audit.services.record`（截断/creator 解析/异常兜底内建）。
     """
-    from audit.services import OperationLog
+    from audit.services import record
     from common.utils.request import get_request_ip
 
-    try:
-        user = getattr(request, "user", None)
-        OperationLog.objects.create(
-            module="identity:user",
-            path=(getattr(request, "path", "") or "")[:400],
-            method=(getattr(request, "method", "") or "")[:8],
-            ipaddress=get_request_ip(request),
-            creator=user if getattr(user, "pk", None) else None,
-            status_code=1001,
-            response_code=1001,
-            changes=json.dumps(
-                {"action": "create", "error": "password_decrypt_failed", "username": str(username or "")[:64]},
-                ensure_ascii=False,
-            )[:4096],
-        )
-    except Exception:  # noqa: BLE001 审计链路故障不影响主流程
-        logger.warning("record create password decrypt failure audit failed", exc_info=True)
+    record(
+        module="identity:user",
+        path=getattr(request, "path", "") or "",
+        method=getattr(request, "method", "") or "",
+        ipaddress=get_request_ip(request),
+        creator=getattr(request, "user", None),
+        status_code=1001,
+        response_code=1001,
+        changes={"action": "create", "error": "password_decrypt_failed", "username": str(username or "")[:64]},
+    )
 
 
 def ensure_local_password_changeable(user: Any) -> None:

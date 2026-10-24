@@ -115,7 +115,7 @@ class ApprovalRequestMessage(UserMessage):
         "submitted": _("New approval request"),
         "approved": _("Approval request approved"),
         "rejected": _("Approval request rejected"),
-        # 超时未处理提醒（每日任务补发一次，见 system.utils.approval.remind_pending_approvals）
+        # 超时未处理提醒（每日任务补发一次，见 approval.services.approval.remind_pending_approvals）
         "remind": _("Approval request pending reminder"),
     }
 

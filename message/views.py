@@ -42,9 +42,9 @@ from common.core.throttle import UploadThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from identity.utils.user_options import search_user_options
-from message import ai as chat_ai
 from message import chat as chat_service
-from message.attachments import attachment_response
+from message.chat import ai as chat_ai
+from message.chat import attachment_response
 from message.models import ChatMessage, ChatRoom
 from message.serializers import (
     CreateGroupSerializer,
@@ -52,7 +52,8 @@ from message.serializers import (
     OpenPrivateRoomSerializer,
     RenameGroupSerializer,
 )
-from message.utils import broadcast_message_recall
+from message.ws.protocol import MessageAction
+from message.ws.utils import broadcast_message_recall, push_room_event
 
 logger = get_logger(__name__)
 
@@ -154,6 +155,9 @@ class ChatRoomViewSet(GenericViewSet):
             room = chat_service.group_room_or_deny(kwargs.get("pk"), request.user)
         except DjangoValidationError as exc:
             return ApiResponse(code=1001, detail=_validation_detail(exc))
+        # 成员变化通知房间内其他成员重拉会话列表（人数/成员名单），
+        # 否则只有操作者本地行更新，其他人需重进页面才看到。
+        push_room_event(room, {"room_id": room.pk, "change": "members"}, MessageAction.CHAT_ROOM.value)
         return ApiResponse(data=chat_service.room_to_dict(room, request.user, 0, chat_service.online_user_pks()))
 
     @extend_schema(request=RenameGroupSerializer, responses=get_default_response_schema())
@@ -166,6 +170,7 @@ class ChatRoomViewSet(GenericViewSet):
             room = chat_service.rename_group(kwargs.get("pk"), request.user, serializer.validated_data["name"])
         except DjangoValidationError as exc:
             return ApiResponse(code=1001, detail=_validation_detail(exc))
+        push_room_event(room, {"room_id": room.pk, "change": "rename"}, MessageAction.CHAT_ROOM.value)
         return ApiResponse(
             data=chat_service.room_to_dict(room, request.user, 0, chat_service.online_user_pks()),
             detail=_("Group renamed"),

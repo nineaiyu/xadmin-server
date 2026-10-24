@@ -13,8 +13,9 @@ chat.py 再导出本模块符号，历史调用面保持不变。
 from typing import Any
 
 from common.utils import get_logger
-from message.chat_ops import _user_pk, user_brief
 from message.models import GROUP_MEMBERS_PREVIEW, ChatRoom, ChatRoomMember
+
+from .chat_ops import _user_pk, user_brief
 
 logger = get_logger(__name__)
 
@@ -25,7 +26,7 @@ UNSET = object()
 def online_user_pks() -> set[Any]:
     """在线用户快照（失败降级为空集：在线态属增强展示，不应阻断会话列表）。"""
     try:
-        from message.utils import get_online_users
+        from message.ws.utils import get_online_users
 
         return set(get_online_users())
     except Exception:  # noqa: BLE001

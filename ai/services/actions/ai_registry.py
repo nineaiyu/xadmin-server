@@ -74,19 +74,46 @@ def _app_declarations(app_config: Any) -> dict[str, Any]:
     return _declared_specs(module, module_path)
 
 
+#: 运行期登记的扩展动作（register_action 写入；reset_action_specs_cache 一并清空）
+_EXTRA_ACTIONS: dict[str, Any] = {}
+
+
+def register_action(spec: Any) -> Any:
+    """运行期登记 AI 动作（二开插件扩展点）：声明式 app 用 ``ai_declarations.py``，
+    动态装配（运行期才知道动作面）用本函数——立即生效（失效发现缓存）。
+
+    :param spec: 与声明文件同形态的动作 spec（须含唯一 ``key``）；
+        与既有 key 冲突 fail-fast（静默覆盖会让两套动作随机胜出）。
+    """
+    key = str(getattr(spec, "key", None) or (spec.get("key") if isinstance(spec, dict) else "") or "")
+    if not key:
+        raise ImproperlyConfigured("AI 动作必须携带 key")
+    if key in _EXTRA_ACTIONS:
+        raise ImproperlyConfigured(f"AI 动作 key 重复：{key}（register_action）")
+    _EXTRA_ACTIONS[key] = spec
+    action_specs.cache_clear()
+    return spec
+
+
 @lru_cache(maxsize=1)
 def action_specs() -> dict[str, Any]:
-    """全量动作注册表（各应用声明合并；key 排序保证多环境一致）。"""
+    """全量动作注册表（各应用声明 + 运行期登记合并；key 排序保证多环境一致）。"""
     merged: dict[str, Any] = {}
-    for app_config in django_apps.get_app_configs():
-        for key, spec in _app_declarations(app_config).items():
+    for source in (dict(_iter_app_declarations()), dict(_EXTRA_ACTIONS)):
+        for key, spec in source.items():
             if key in merged:
-                raise ImproperlyConfigured(f"AI 动作 key 重复：{key}（应用 {app_config.name}）")
+                raise ImproperlyConfigured(f"AI 动作 key 重复：{key}")
             merged[key] = spec
     logger.debug("ai action registry discovered: %s actions", len(merged))
     return dict(sorted(merged.items()))
 
 
+def _iter_app_declarations() -> Any:
+    for app_config in django_apps.get_app_configs():
+        yield from _app_declarations(app_config).items()
+
+
 def reset_action_specs_cache() -> None:
-    """清空发现缓存（测试 / 声明热改后的显式重建入口）。"""
+    """清空发现缓存与运行期登记（测试 / 声明热改后的显式重建入口）。"""
+    _EXTRA_ACTIONS.clear()
     action_specs.cache_clear()

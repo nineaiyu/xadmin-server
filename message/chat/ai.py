@@ -19,7 +19,7 @@ from ai.services.assistant.ai_chat import clip_reasoning as _clip_reasoning
 from common.utils import get_logger
 from message import chat as chat_service
 from message.models import ChatMessage, ChatRoom
-from message.utils import push_room_event
+from message.ws.utils import push_room_event
 
 logger = get_logger(__name__)
 

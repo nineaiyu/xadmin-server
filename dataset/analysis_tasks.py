@@ -34,7 +34,6 @@ from common.utils import get_logger
 from dataset.report_render import (  # noqa: F401  (渲染/投递拆至 report_render，此处再导出保持调用面)
     _deliver_email,
     _deliver_im,
-    _excel_safe,
     _render_workbook,
     report_notify_channels,
 )

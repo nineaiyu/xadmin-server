@@ -208,7 +208,7 @@ class TestBatchForceLogoutUsers:
         from common.cache.storage import UserTokenRevokedCache
         from identity.models import UserSession
         from identity.utils.session import force_logout_users
-        from message.utils import get_user_layer_group_name
+        from message.ws.utils import get_user_layer_group_name
         from tests.channel_layer import beat_layer
 
         targets = [

@@ -15,9 +15,9 @@ from channels.layers import get_channel_layer
 from django.utils.translation import gettext as _
 
 from message import chat as chat_service
-from message.consumers import ChatNotify
 from message.models import ChatMessage, ChatRoom
-from message.utils import get_chat_user_group_name, get_public_chat_group_name
+from message.ws.consumers import ChatNotify
+from message.ws.utils import get_chat_user_group_name, get_public_chat_group_name
 
 pytestmark = pytest.mark.django_db
 
@@ -90,7 +90,7 @@ def fast_close(monkeypatch):
     async def fake_sleep(*args, **kwargs):
         return None
 
-    monkeypatch.setattr("message.consumers.asyncio.sleep", fake_sleep)
+    monkeypatch.setattr("message.ws.consumers.asyncio.sleep", fake_sleep)
 
 
 @pytest.fixture
@@ -161,7 +161,7 @@ class TestConnect:
     def test_ping_keeps_chat_groups_without_online_index(self, ws_layer, superuser):
         """聊天连接心跳只续期聊天组：不写入在线索引（在线列表不重复计数）。"""
 
-        from message.utils import get_online_info
+        from message.ws.utils import get_online_info
 
         async def scenario():
             consumer, captured, __ = _make_consumer(ws_layer, superuser)
@@ -189,7 +189,7 @@ class TestSendPublic:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append((user_pk, message))
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.consumers.async_push_message", fake_push)
 
         async def scenario():
             consumer, __, ___ = _make_consumer(ws_layer, superuser)
@@ -227,7 +227,7 @@ class TestSendPublic:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append((user_pk, message))
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.consumers.async_push_message", fake_push)
 
         async def scenario():
             consumer, __, ___ = _make_consumer(ws_layer, superuser)
@@ -296,7 +296,7 @@ class TestSendPrivate:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append((user_pk, message))
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.consumers.async_push_message", fake_push)
 
         async def scenario():
             consumer, __, ___ = _make_consumer(ws_layer, alice)
@@ -326,7 +326,7 @@ class TestSendPrivate:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append(user_pk)
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.consumers.async_push_message", fake_push)
 
         async def scenario():
             # 对端聊天连接在线（页面打开）：消息已实时送达，不再重复弹站内信
@@ -344,7 +344,7 @@ class TestSendPrivate:
         async def fake_push(*args, **kwargs):
             return None
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.consumers.async_push_message", fake_push)
 
         async def scenario():
             consumer, captured, __ = _make_consumer(ws_layer, alice)
@@ -383,7 +383,7 @@ class TestGroupFanoutBatch:
     def test_single_batch_query_for_layer_and_preference(
         self, ws_layer, alice, group_room, monkeypatch, chat_push_enabled
     ):
-        from message import consumers as consumers_module
+        from message.ws import consumers as consumers_module
 
         room, members = group_room
         calls = {"layers": 0, "groups": [], "pref": 0}
@@ -406,7 +406,7 @@ class TestGroupFanoutBatch:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append(user_pk)
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.consumers.async_push_message", fake_push)
 
         async def scenario():
             consumer, __, ___ = _make_consumer(ws_layer, alice)
@@ -428,7 +428,7 @@ class TestGroupFanoutBatch:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append(user_pk)
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.consumers.async_push_message", fake_push)
 
         async def scenario():
             # 该成员聊天室页面在线（连接在其个人聊天组）：实时可达，不再重复弹站内信
@@ -442,7 +442,7 @@ class TestGroupFanoutBatch:
         assert sorted(pushes) == sorted(user.pk for user in members[1:])
 
     def test_preference_off_skips_target(self, ws_layer, alice, group_room, monkeypatch, chat_push_enabled):
-        from message import consumers as consumers_module
+        from message.ws import consumers as consumers_module
 
         room, members = group_room
         muted = members[-1]
@@ -451,7 +451,7 @@ class TestGroupFanoutBatch:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append(user_pk)
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.consumers.async_push_message", fake_push)
 
         original_batch = consumers_module.batch_push_chat_enabled
 
@@ -516,7 +516,7 @@ class TestSendRateLimit:
     """WS 上行发送限流（每用户每秒 N 条）：恶意连接高频灌消息会放大成 DB 写与推送风暴。"""
 
     def test_over_limit_rejected_without_persisting(self, ws_layer, superuser, monkeypatch):
-        monkeypatch.setattr("message.consumers.CHAT_SEND_LIMIT_PER_SECOND", 2)
+        monkeypatch.setattr("message.ws.consumers.CHAT_SEND_LIMIT_PER_SECOND", 2)
         room = chat_service.get_public_room()
         sent = _capture_group_send(ws_layer, monkeypatch)
 
@@ -548,7 +548,7 @@ class TestSendRateLimit:
         assert rejected[0]["detail"]
 
     def test_limit_is_per_user(self, ws_layer, alice, bob, monkeypatch):
-        monkeypatch.setattr("message.consumers.CHAT_SEND_LIMIT_PER_SECOND", 1)
+        monkeypatch.setattr("message.ws.consumers.CHAT_SEND_LIMIT_PER_SECOND", 1)
         room = chat_service.get_public_room()
         _capture_group_send(ws_layer, monkeypatch)
 
@@ -579,7 +579,7 @@ class TestRecallFlagBroadcast:
         async def fake_push(*args, **kwargs):
             return None
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.consumers.async_push_message", fake_push)
 
     def test_sender_frame_carries_field_public_shared_frame_does_not(self, ws_layer, superuser, monkeypatch):
         room = chat_service.get_public_room()
@@ -650,7 +650,7 @@ class TestChatNoticePersistence:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append((user_pk, message))
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.consumers.async_push_message", fake_push)
         return pushes
 
     def test_private_message_persists_notice(self, ws_layer, alice, bob, monkeypatch, chat_push_enabled):

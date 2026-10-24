@@ -15,6 +15,7 @@
         "chat_reaction",
         "chat_read",
         "chat_unread",
+        "chat_room",
         "task_log",
         "monitor",
         "screen_command",
@@ -163,6 +164,24 @@
         }
       },
       "additionalProperties": true
+    },
+    "chatRoomChangedPayload": {
+      "type": "object",
+      "description": "群资料变更帧（成员增删/改名；客户端据此重拉会话列表）",
+      "required": [
+        "room_id"
+      ],
+      "properties": {
+        "room_id": {
+          "type": "integer",
+          "description": "变更的群聊主键"
+        },
+        "change": {
+          "type": "string",
+          "description": "变更类型：members / rename"
+        }
+      },
+      "additionalProperties": false
     },
     "chatReactionPayload": {
       "type": "object",

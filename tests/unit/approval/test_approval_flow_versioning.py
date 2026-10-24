@@ -11,6 +11,7 @@ from django.utils.translation import gettext as _gettext
 from approval.models.approval import ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 from approval.serializers.approval_flow import ApprovalFlowSerializer
 from approval.services.approval_flow import approve_task, create_instance
+from approval.services.approval_flow.definition import rollback_flow
 from identity.models import UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
@@ -130,7 +131,7 @@ class TestInFlightVersioning:
                 {"name": "归档", "order": 3, **NODE_CORE},
             ],
         )
-        ok, detail = ApprovalFlowSerializer().rollback_to_version(flow, 1)
+        ok, detail = rollback_flow(flow, 1)
         assert ok is True and not detail
         assert flow.nodes.count() == 2
 

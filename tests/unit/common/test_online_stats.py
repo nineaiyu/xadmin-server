@@ -15,8 +15,8 @@ import time
 import pytest
 from django.core.cache import cache
 
-from message import utils as msg_utils
-from message.utils import get_online_info, get_online_users, parse_online_user_pk
+from message.ws import utils as msg_utils
+from message.ws.utils import get_online_info, get_online_users, parse_online_user_pk
 from notifications.message import SiteMessageUtil
 from notifications.models import MessageContent
 
@@ -205,7 +205,7 @@ class TestBatchPush:
         monkeypatch.setattr("notifications.message.get_online_users", lambda: [1, 2, 3])
         pushes = []
         monkeypatch.setattr(
-            "message.utils.push_messages",
+            "message.ws.utils.push_messages",
             lambda pks, message, message_type="push_message": pushes.append((list(pks), message)),
         )
         monkeypatch.setattr(
@@ -227,9 +227,9 @@ class TestBatchPush:
         monkeypatch.setattr("notifications.message.get_online_users", lambda: [1, 2])
         pushes = []
         monkeypatch.setattr(
-            "message.utils.push_messages", lambda pks, message, message_type="push_message": pushes.append(list(pks))
+            "message.ws.utils.push_messages", lambda pks, message, message_type="push_message": pushes.append(list(pks))
         )
-        # 推送任务内 from-import message.utils.push_messages，patch 源头模块命名空间
+        # 推送任务内 from-import message.ws.utils.push_messages，patch 源头模块命名空间
         monkeypatch.setattr(
             "notifications.message.batch_user_config", lambda pks, key, default=None: {1: False, 2: True}
         )
@@ -242,7 +242,7 @@ class TestBatchPush:
         monkeypatch.setattr("notifications.message.get_online_users", lambda: [])
         pushes = []
         monkeypatch.setattr(
-            "message.utils.push_messages", lambda pks, message, message_type="push_message": pushes.append(list(pks))
+            "message.ws.utils.push_messages", lambda pks, message, message_type="push_message": pushes.append(list(pks))
         )
 
         SiteMessageUtil.push_notice_messages(msg, [1, 2])
@@ -254,7 +254,7 @@ class TestBatchPush:
         monkeypatch.setattr("notifications.message.get_online_users", lambda: list(range(50)))
         calls = {"push_messages": 0}
         monkeypatch.setattr(
-            "message.utils.push_messages",
+            "message.ws.utils.push_messages",
             lambda pks, message, message_type="push_message": calls.__setitem__(
                 "push_messages", calls["push_messages"] + 1
             ),
@@ -300,7 +300,7 @@ class TestPushMessagesJob:
         def fake_push(pks, message, message_type="push_message"):
             pushes.append((list(pks), message, message_type))
 
-        monkeypatch.setattr("message.utils.push_messages", fake_push)
+        monkeypatch.setattr("message.ws.utils.push_messages", fake_push)
         assert push_messages_job([1, 2], {"a": 1}) == 2
         assert pushes == [([1, 2], {"a": 1}, "push_message")]
 
@@ -308,7 +308,7 @@ class TestPushMessagesJob:
         from notifications.tasks import push_messages_job
 
         monkeypatch.setattr(
-            "message.utils.push_messages", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError)
+            "message.ws.utils.push_messages", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError)
         )
         assert push_messages_job([], {}) == 0
 
@@ -368,7 +368,7 @@ class TestLogoutKick:
     def test_hit_pushes_logout_and_discards_group(self, layer):
         from asgiref.sync import async_to_sync
 
-        from message.utils import get_user_layer_group_name, send_logout_msg
+        from message.ws.utils import get_user_layer_group_name, send_logout_msg
 
         _beat(layer, 11, "ch-live")
         assert send_logout_msg(11, ["ch-live"]) is True
@@ -377,13 +377,13 @@ class TestLogoutKick:
 
     def test_stale_channel_misses_without_push(self, layer):
         """已下线会话（channel 不在推送组）：计为未命中，不再做无效投递。"""
-        from message.utils import send_logout_msg
+        from message.ws.utils import send_logout_msg
 
         assert send_logout_msg(12, ["ch-gone"]) is False
 
     def test_auto_resolve_group_channels_reports_hit(self, layer):
         """不传 channel 名时取推送组存活 channel：在线命中、离线未命中。"""
-        from message.utils import send_logout_msg
+        from message.ws.utils import send_logout_msg
 
         _beat(layer, 13, "ch-auto")
         assert send_logout_msg(13) is True

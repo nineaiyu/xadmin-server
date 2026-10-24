@@ -261,6 +261,40 @@ def _impact_menu(obj: Any) -> list[ImpactCheck]:
 
 
 #: 影响面计算器注册表：模型 label_lower → 计算器（返回 ImpactCheck 列表）
+
+
+def _impact_datapermission(obj: Any) -> list[ImpactCheck]:
+    """数据权限规则：绑定的用户 / 部门 / 菜单范围。"""
+    from identity.models.department import DeptInfo
+    from identity.services import UserInfo
+
+    users = UserInfo.objects.filter(rules=obj, is_active=True)
+    depts = DeptInfo.objects.filter(rules=obj, is_active=True)
+    return [
+        _check(
+            "dp_users",
+            _("Users bound to this data rule"),
+            users.count(),
+            hint=_("Reassign these users before deleting the rule"),
+            samples=users.values_list("username", flat=True)[:SAMPLE_LIMIT],
+        ),
+        _check(
+            "dp_depts",
+            _("Departments bound to this data rule"),
+            depts.count(),
+            hint=_("Reassign these departments before deleting the rule"),
+            samples=depts.values_list("name", flat=True)[:SAMPLE_LIMIT],
+        ),
+        _check(
+            "dp_menus",
+            _("Menus scoped by this data rule"),
+            obj.menu.count(),
+            hint=_("Remove the rule from these menus first if they must keep current visibility"),
+            samples=obj.menu.values_list("name", flat=True)[:SAMPLE_LIMIT],
+        ),
+    ]
+
+
 IMPACT_CALCULATORS: dict[str, Callable[[Any], list[ImpactCheck]]] = {
     "identity.userrole": _impact_userrole,
     "identity.deptinfo": _impact_deptinfo,
@@ -271,6 +305,7 @@ IMPACT_CALCULATORS: dict[str, Callable[[Any], list[ImpactCheck]]] = {
     "dataset.dynamicform": _impact_dynamicform,
     "dataset.screen": _impact_screen,
     "system.menu": _impact_menu,
+    "system.datapermission": _impact_datapermission,
 }
 
 

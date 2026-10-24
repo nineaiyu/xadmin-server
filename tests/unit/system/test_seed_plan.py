@@ -241,10 +241,10 @@ class TestValidate:
         # 2026-10 定时任务拆批量路由 + cron 预览/引用、巡检进度、规则/委托影响面、
         # 通知全读：菜单 +6（并移除重复 batchUpdate 权限点）、权限点 +6
         # 2026-10 开放平台设置页：菜单 +11（1 页面 + 10 权限点）、权限点 +10
-        assert summary.totals["menu"] == 717
+        assert summary.totals["menu"] == 721
         assert summary.totals["field"] == 2095
         assert summary.totals["grant"] == 253
-        assert summary.permission_total == 641
+        assert summary.permission_total == 645
 
 
 class TestRows:

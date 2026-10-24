@@ -30,9 +30,6 @@ from common.core.credentials import (
     plaintext_setting_names,
 )
 from common.core.response import API_SUCCESS_CODE
-from common.utils import get_logger
-
-logger = get_logger(__name__)
 
 AUDIT_MODULE = "system:credential"
 
@@ -129,68 +126,88 @@ def _timestamp(value: Any) -> str:
         return str(value)[:19].replace("T", " ")
 
 
-def _last_rotated_time(key: str) -> Any:
-    """最近一次成功「原地轮换」时间（回溯审计台账）；从未轮换返回 None。
+#: 轮换时间回溯的每键审计窗口（条）：action 在 changes JSON 内（无法 SQL 过滤），
+#: 窗口过小会被近期 encrypt/其他动作挤掉而漏掉真正的轮换行；超出窗口按未知处理。
+ROTATION_AUDIT_WINDOW = 200
+
+
+def _last_rotated_times(keys: Any) -> dict[str, Any]:
+    """一组凭据键的最近一次成功「原地轮换」时间（单次审计查询批量回溯）。
 
     审计行由 :func:`write_credential_audit` 落库（object_pk=凭据键，changes JSON 带
     action），重加密（encrypt 动作）不算轮换——值没变，不产生新的安全有效期。
+    总览不再逐键查询（键数增长时线性劣化）：一次查询按时间倒序流式扫描，
+    每键命中轮换行或扫满 :data:`ROTATION_AUDIT_WINDOW` 条即收口，与逐键口径一致。
     """
     import json
 
     from audit.services import OperationLog
 
-    # 窗口 200 条：action 在 changes JSON 内（无法 SQL 过滤），窗口过小会被
-    # 近期 encrypt/其他动作挤掉而漏掉真正的轮换行；超出窗口时按未知处理。
+    result: dict[str, Any] = {key: None for key in keys}
+    if not result:
+        return result
+    scanned: dict[str, int] = dict.fromkeys(result, 0)
     rows = (
-        OperationLog.objects.filter(module=AUDIT_MODULE, object_pk=key, response_code=API_SUCCESS_CODE)
+        OperationLog.objects.filter(module=AUDIT_MODULE, object_pk__in=result, response_code=API_SUCCESS_CODE)
         .order_by("-created_time")
-        .values_list("changes", "created_time")[:200]
+        .values_list("object_pk", "changes", "created_time")
+        .iterator()
     )
-    for changes, created in rows:
-        try:
-            detail = json.loads(changes or "{}")
-        except Exception:  # noqa: BLE001 非法历史行跳过
+    for object_pk, changes, created in rows:
+        if result.get(object_pk) is not None:
             continue
-        if detail.get("action") == "rotate" and detail.get("ok", True):
-            return created
-    return None
+        scanned[object_pk] += 1
+        if scanned[object_pk] <= ROTATION_AUDIT_WINDOW:
+            try:
+                detail = json.loads(changes or "{}")
+            except Exception:  # noqa: BLE001 非法历史行跳过
+                continue
+            if detail.get("action") == "rotate" and detail.get("ok", True):
+                result[object_pk] = created
+        if all(result[key] is not None or scanned[key] >= ROTATION_AUDIT_WINDOW for key in result):
+            break
+    return result
 
 
-def _rotation_fields(key: str, *, rotatable: bool, configured: bool) -> dict[str, Any]:
+def _rotation_fields(*, rotatable: bool, configured: bool, last: Any = None) -> dict[str, Any]:
     """总览行的轮换追踪字段：上次轮换时间 + 建议轮换标记（仅自生成可轮换键有意义）。"""
     if not rotatable:
         return {"last_rotated": "", "rotate_overdue": False}
-    last = _last_rotated_time(key)
     overdue = configured and (last is None or (timezone.now() - last).days >= CREDENTIAL_ROTATE_SUGGEST_DAYS)
     return {"last_rotated": _timestamp(last), "rotate_overdue": overdue}
 
 
 def write_credential_audit(detail: dict[str, Any], user: Any = None) -> None:
-    """凭据操作审计（module=system:credential）；失败只记日志不影响主流程。"""
-    import json
+    """凭据操作审计（module=system:credential）；失败只记日志不影响主流程。
 
-    from audit.services import OperationLog
+    落库统一走 :func:`audit.services.record`（changes 序列化/截断、creator
+    解析、异常只告警均内建）；本函数保留签名作为薄委托，调用面不变。
+    """
+    from audit.services import record
 
-    try:
-        OperationLog.objects.create(
-            module=AUDIT_MODULE,
-            object_pk=str(detail.get("key") or ""),
-            creator=user if getattr(user, "pk", None) else None,
-            status_code=API_SUCCESS_CODE if detail.get("ok", True) else 1001,
-            response_code=API_SUCCESS_CODE if detail.get("ok", True) else 1001,
-            changes=json.dumps(detail, ensure_ascii=False, default=str)[:4096],
-        )
-    except Exception:  # noqa: BLE001 审计失败不影响轮换本身
-        logger.warning("write credential audit failed", exc_info=True)
+    ok_code = API_SUCCESS_CODE if detail.get("ok", True) else 1001
+    record(
+        module=AUDIT_MODULE,
+        object_pk=str(detail.get("key") or ""),
+        creator=user,
+        status_code=ok_code,
+        response_code=ok_code,
+        changes=detail,
+    )
 
 
 def credential_overview() -> dict[str, Any]:
     """凭据聚合清单（只读）：不返回任何密文或明文值，只给状态与可运维动作。"""
     plaintext = sorted(set(plaintext_sensitive_keys()) | {f"Setting:{name}" for name in plaintext_setting_names()})
+    # 轮换时间单次批量回溯（system_config 与 model_field 两侧可轮换键合并成一次审计查询）
+    rotation = _last_rotated_times(
+        [key for key in SENSITIVE_SETTING_KEYS if key in ROTATABLE_SYSTEM_CONFIG_KEYS]
+        + [name for name, meta, _model in _resolved_model_credentials() if meta.get("rotatable")]
+    )
     return {
         "settings": _setting_rows(),
-        "system_configs": _system_config_rows(),
-        "model_fields": _model_credential_rows(),
+        "system_configs": _system_config_rows(rotation),
+        "model_fields": _model_credential_rows(rotation),
         "plaintext": plaintext,
     }
 
@@ -232,13 +249,27 @@ def _setting_rows() -> list[Any]:
     return rows
 
 
-def _system_config_rows() -> list[Any]:
+def _resolved_model_credentials() -> list[tuple[str, dict[str, Any], Any]]:
+    """MODEL_CREDENTIAL_FIELDS 解析出 (name, meta, model)；模块裁剪缺失的模型跳过。"""
+    from django.apps import apps
+
+    resolved = []
+    for name, meta in MODEL_CREDENTIAL_FIELDS.items():
+        try:
+            resolved.append((name, meta, apps.get_model(meta["app_label"], meta["model"])))
+        except Exception:  # noqa: BLE001 模型缺失（模块裁剪）不阻断聚合
+            continue
+    return resolved
+
+
+def _system_config_rows(rotation: dict[str, Any]) -> list[Any]:
     """SystemConfig 敏感键：区分「自生成可轮换」与「外部签发只能替换」。"""
     from system.models import SystemConfig
 
+    configs = SystemConfig.objects.filter(key__in=SENSITIVE_SETTING_KEYS).in_bulk(field_name="key")
     rows = []
     for key, fields in SENSITIVE_SETTING_KEYS.items():
-        row = SystemConfig.objects.filter(key=key).first()
+        row = configs.get(key)
         status = encryption_status(key, row.value if row else None)
         configured = status != "empty"
         rotatable = key in ROTATABLE_SYSTEM_CONFIG_KEYS
@@ -258,22 +289,16 @@ def _system_config_rows() -> list[Any]:
                 "used_by": str(SYSTEM_CONFIG_USAGE_HINTS.get(key, "")),
                 "masked": MASK if configured else "",
                 "updated_time": _timestamp(row.updated_time) if row else "",
-                **_rotation_fields(key, rotatable=rotatable, configured=configured),
+                **_rotation_fields(rotatable=rotatable, configured=configured, last=rotation.get(key)),
             }
         )
     return rows
 
 
-def _model_credential_rows() -> list[Any]:
+def _model_credential_rows(rotation: dict[str, Any]) -> list[Any]:
     """模型字段级凭据（值级加密，按「已配置数量」聚合，不暴露任何值）。"""
-    from django.apps import apps
-
     rows = []
-    for name, meta in MODEL_CREDENTIAL_FIELDS.items():
-        try:
-            model = apps.get_model(meta["app_label"], meta["model"])
-        except Exception:  # noqa: BLE001 模型缺失（模块裁剪）不阻断聚合
-            continue
+    for name, meta, model in _resolved_model_credentials():
         field = meta["field"]
         queryset = model.objects.exclude(**{field: ""}).exclude(**{f"{field}__isnull": True})
         configured = queryset.count()
@@ -294,7 +319,11 @@ def _model_credential_rows() -> list[Any]:
                 "used_by": str(MODEL_CREDENTIAL_USAGE_HINTS.get(name, "")),
                 "masked": MASK if configured else "",
                 "updated_time": _timestamp(latest),
-                **_rotation_fields(name, rotatable=bool(meta.get("rotatable")), configured=configured > 0),
+                **_rotation_fields(
+                    rotatable=bool(meta.get("rotatable")),
+                    configured=configured > 0,
+                    last=rotation.get(name),
+                ),
             }
         )
     return rows

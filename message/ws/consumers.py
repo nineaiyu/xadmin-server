@@ -34,10 +34,11 @@ from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
 from message import chat as chat_service
-from message.base import AsyncJsonWebsocket
 from message.models import UPLINK_MESSAGE_TYPES, ChatMessage, ChatRoom, ChatRoomMember
-from message.protocol import MessageAction
-from message.utils import (
+
+from .base import AsyncJsonWebsocket
+from .protocol import MessageAction
+from .utils import (
     async_push_message,
     get_chat_user_group_name,
     get_public_chat_group_name,
@@ -278,10 +279,13 @@ class ChatNotify(AsyncJsonWebsocket):
     async def chat_unread(self, event: Any) -> None:
         await self._send_base(event)
 
+    async def chat_room(self, event: Any) -> None:
+        await self._send_base(event)
+
     # ------------------------------------------------------------ 内部
 
     async def broadcast(self, room: Any, message_type: str, payload: dict[str, Any]) -> None:
-        """按房间类型广播（目标组口径见 message.utils.room_event_groups，REST 侧同源）。"""
+        """按房间类型广播（目标组口径见 message.ws.utils.room_event_groups，REST 侧同源）。"""
         groups = await database_sync_to_async(room_event_groups)(room)
         for group in groups:
             await self.channel_layer.group_send(group, {"type": message_type, "data": payload})
@@ -309,19 +313,24 @@ class ChatNotify(AsyncJsonWebsocket):
         if not targets:
             return
         title = str(_("New private message from {}").format(payload.get("sender_name") or ""))
-        for user_pk in targets:
-            await async_push_message(
-                user_pk,
-                {
-                    "title": title,
-                    "message": payload.get("content", ""),
-                    "level": "info",
-                    "notice_type": {"label": str(_("Private chat")), "value": 0},
-                    "message_type": "chat_private",
-                    "room_id": room.pk,
-                    "sender_pk": self.user.pk,
-                },
+        # 逐用户串行 await 会让扇出延迟随人数线性增长：纯 Redis group_send 可并发
+        await asyncio.gather(
+            *(
+                async_push_message(
+                    user_pk,
+                    {
+                        "title": title,
+                        "message": payload.get("content", ""),
+                        "level": "info",
+                        "notice_type": {"label": str(_("Private chat")), "value": 0},
+                        "message_type": "chat_private",
+                        "room_id": room.pk,
+                        "sender_pk": self.user.pk,
+                    },
+                )
+                for user_pk in targets
             )
+        )
         # 落库兜底：目标不在聊天室页面（含离线）时通知中心可回看（群聊普通消息不落）
         await database_sync_to_async(chat_service.store_chat_notices)(
             targets,
@@ -345,19 +354,23 @@ class ChatNotify(AsyncJsonWebsocket):
         if not targets:
             return
         title = str(_("New group message from {} in {}").format(payload.get("sender_name") or "", room.name))
-        for user_pk in targets:
-            await async_push_message(
-                user_pk,
-                {
-                    "title": title,
-                    "message": payload.get("content", ""),
-                    "level": "info",
-                    "notice_type": {"label": str(_("Group chat")), "value": 0},
-                    "message_type": "chat_group",
-                    "room_id": room.pk,
-                    "sender_pk": self.user.pk,
-                },
+        await asyncio.gather(
+            *(
+                async_push_message(
+                    user_pk,
+                    {
+                        "title": title,
+                        "message": payload.get("content", ""),
+                        "level": "info",
+                        "notice_type": {"label": str(_("Group chat")), "value": 0},
+                        "message_type": "chat_group",
+                        "room_id": room.pk,
+                        "sender_pk": self.user.pk,
+                    },
+                )
+                for user_pk in targets
             )
+        )
 
     async def notify_mentions(self, payload: dict[str, Any]) -> None:
         """@提及站内信：全位置、多目标（不含自己）；受用户 PUSH_CHAT_MESSAGE 偏好约束。"""
@@ -372,22 +385,24 @@ class ChatNotify(AsyncJsonWebsocket):
             return
         enabled = await database_sync_to_async(batch_push_chat_enabled)(pks)
         title = str(_("User {} mentioned you in the chat room").format(self.user.username))
-        pushed_pks = []
-        for target in targets:
-            if target.pk == self.user.pk or not enabled.get(target.pk, True):
-                continue
-            pushed_pks.append(target.pk)
-            await async_push_message(
-                target.pk,
-                {
-                    "title": title,
-                    "message": content,
-                    "level": "info",
-                    "notice_type": {"label": str(_("Chat room")), "value": 0},
-                    "message_type": "chat_message",
-                    "room_id": payload.get("room_id"),
-                    "sender_pk": self.user.pk,
-                },
+        pushed_pks = [target.pk for target in targets if target.pk != self.user.pk and enabled.get(target.pk, True)]
+        if pushed_pks:
+            await asyncio.gather(
+                *(
+                    async_push_message(
+                        pk,
+                        {
+                            "title": title,
+                            "message": content,
+                            "level": "info",
+                            "notice_type": {"label": str(_("Chat room")), "value": 0},
+                            "message_type": "chat_message",
+                            "room_id": payload.get("room_id"),
+                            "sender_pk": self.user.pk,
+                        },
+                    )
+                    for pk in pushed_pks
+                )
             )
         # 落库兜底：与推送同批目标（离线/不在聊天室时通知中心可回看）
         await database_sync_to_async(chat_service.store_chat_notices)(

@@ -447,3 +447,46 @@ class TestBinaryDocumentUpload:
     def test_text_upload_contract_unchanged(self, auth_client):
         """文本直传路径零变化（回归护栏）。"""
         assert _upload(auth_client, name="纯文本回归").status_code == 200
+
+
+class TestUploadAsyncIngest:
+    def test_defer_marks_pending_before_task(self, monkeypatch):
+        """异步入口：先落库为 PENDING，任务完成前不假装已生成分块。"""
+        from ai.services.knowledge import ai_knowledge
+
+        monkeypatch.setattr(ai_knowledge, "schedule_upload_ingest", lambda _doc: None)
+
+        doc, created = ai_knowledge.upsert_upload_document("异步文档", "# 标题\n\n## 小节\n\n正文", defer_chunks=True)
+
+        assert created is True
+        assert doc.ingest_status == AiKnowledgeDocument.IngestStatus.PENDING
+        assert doc.chunk_count == 0
+
+    def test_task_marks_success(self, superuser):
+        from ai.services.knowledge import ai_knowledge
+        from ai.tasks import ingest_upload_document_task
+
+        doc, _ = ai_knowledge.upsert_upload_document(
+            "任务文档", "# 标题\n\n## 小节\n\n正文", superuser, defer_chunks=True
+        )
+        ingest_upload_document_task.apply(args=[str(doc.pk)])
+
+        doc.refresh_from_db()
+        assert doc.ingest_status == AiKnowledgeDocument.IngestStatus.SUCCESS
+        assert doc.chunk_count >= 1
+
+    def test_task_failure_keeps_reason(self, superuser, monkeypatch):
+        from ai.services.knowledge import ai_knowledge
+        from ai.tasks import ingest_upload_document_task
+
+        doc, _ = ai_knowledge.upsert_upload_document("失败文档", "# 标题\n\n正文", superuser, defer_chunks=True)
+
+        def boom(_doc):
+            raise RuntimeError("chunk build failed")
+
+        monkeypatch.setattr(ai_knowledge, "rebuild_chunks", boom)
+        ingest_upload_document_task.apply(args=[str(doc.pk)])
+
+        doc.refresh_from_db()
+        assert doc.ingest_status == AiKnowledgeDocument.IngestStatus.FAILED
+        assert "chunk build failed" in doc.ingest_error

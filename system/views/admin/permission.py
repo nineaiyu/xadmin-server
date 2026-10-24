@@ -9,8 +9,9 @@ from typing import Any
 from django.db.models import Count
 from django_filters import rest_framework as filters
 
+from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, ImportExportDataAction
+from common.core.modelset import BaseModelSet, ImpactPreviewAction, ImportExportDataAction, RecycleBinAction
 from common.utils import get_logger
 from system.models import DataPermission
 from system.serializers.permission import DataPermissionSerializer
@@ -27,13 +28,21 @@ class DataPermissionFilter(BaseFilterSet):
         fields = ["pk", "name", "mode_type", "is_active", "description"]
 
 
-class DataPermissionViewSet(BaseModelSet, ImportExportDataAction):
+class DataPermissionViewSet(BaseModelSet, ImportExportDataAction, RecycleBinAction, ImpactPreviewAction):
     """数据权限"""
 
     queryset = DataPermission.objects.all()
     serializer_class = DataPermissionSerializer
     ordering_fields = ["created_time"]
     filterset_class = DataPermissionFilter
+
+    @ApprovalRequired()
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """删除{cls}数据
+
+        高危：行为变更立即影响被授权用户可见数据，可经 APPROVAL_REQUIRED_PATHS 纳入审批。
+        """
+        return super().destroy(request, *args, **kwargs)
 
     def get_queryset(self) -> Any:
         queryset = super().get_queryset()

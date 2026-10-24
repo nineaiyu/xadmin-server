@@ -239,6 +239,64 @@ class AiAssistantViewSet(
         )
         return ApiResponse(data={**result, "message": message_payload(row)})
 
+    @staticmethod
+    def _ask_stream_finishers(user: Any, question: str, content_chunks: list[Any], reasoning_chunks: list[Any]) -> Any:
+        """流式收尾三件套（done / error / interrupted）：DB 写经 sync_to_async 保线程本地连接语义。"""
+        from asgiref.sync import sync_to_async
+
+        from ai.services.actions.ai_actions import audit_ai_ask
+        from ai.services.assistant.ai_chat import message_payload, persist_message, system_error_message
+
+        @sync_to_async
+        def _finish_done(item: Any) -> Any:
+            audit_ai_ask(user, question, ok=True, guard=item.get("guard"))
+            row = persist_message(
+                user,
+                "docs",
+                "assistant",
+                content=item["answer"],
+                reasoning="".join(reasoning_chunks),
+                extra={"sources": item["sources"]},
+            )
+            return message_payload(row)
+
+        @sync_to_async
+        def _finish_error(detail: Any) -> Any:
+            audit_ai_ask(user, question, ok=False, detail=detail)
+            if content_chunks or reasoning_chunks:
+                # 已有增量后中断：保留部分内容（与前端「已到达增量保留」一致）
+                row = persist_message(
+                    user,
+                    "docs",
+                    "assistant",
+                    content="".join(content_chunks) or detail,
+                    reasoning="".join(reasoning_chunks),
+                    extra={"partial": detail},
+                )
+                return {"detail": detail, "message": message_payload(row)}
+            return {"detail": detail, "message": system_error_message(user, "docs", detail)}
+
+        @sync_to_async
+        def _finish_interrupted() -> Any:
+            """客户端中途断开（刷新/离开页）的收尾：按「已到达增量保留」口径落部分回答。
+
+            无增量（还在思考/未首帧）不落任何行——此时历史里只有本轮提问，与流前
+            断开语义一致。尽力而为：清理期再次被取消则放弃保留。
+            """
+            if not content_chunks and not reasoning_chunks:
+                return None
+            row = persist_message(
+                user,
+                "docs",
+                "assistant",
+                content="".join(content_chunks),
+                reasoning="".join(reasoning_chunks),
+                extra={"partial": str(_("Answer stream interrupted; partial content retained"))},
+            )
+            return message_payload(row)
+
+        return _finish_done, _finish_error, _finish_interrupted
+
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="ask/stream")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def ask_stream(self, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -255,8 +313,6 @@ class AiAssistantViewSet(
         事件循环内 await（帧组装零线程占用，数百并发流不再受线程池上限约束）；
         流内 DB 写（审计/落库）经 ``sync_to_async`` 保持线程本地连接语义。
         """
-        from asgiref.sync import sync_to_async
-
         from ai.services.actions.ai_actions import audit_ai_ask
         from ai.services.assistant.ai import prepare_ask
         from ai.services.assistant.ai_async import ask_stream_async as ai_ask_stream_async
@@ -285,53 +341,9 @@ class AiAssistantViewSet(
         content_chunks: list[Any] = []
         reasoning_chunks: list[Any] = []
 
-        @sync_to_async
-        def _finish_done(item: Any) -> Any:
-            audit_ai_ask(request.user, question, ok=True, guard=item.get("guard"))
-            row = persist_message(
-                request.user,
-                "docs",
-                "assistant",
-                content=item["answer"],
-                reasoning="".join(reasoning_chunks),
-                extra={"sources": item["sources"]},
-            )
-            return message_payload(row)
-
-        @sync_to_async
-        def _finish_error(detail: Any) -> Any:
-            audit_ai_ask(request.user, question, ok=False, detail=detail)
-            if content_chunks or reasoning_chunks:
-                # 已有增量后中断：保留部分内容（与前端「已到达增量保留」一致）
-                row = persist_message(
-                    request.user,
-                    "docs",
-                    "assistant",
-                    content="".join(content_chunks) or detail,
-                    reasoning="".join(reasoning_chunks),
-                    extra={"partial": detail},
-                )
-                return {"detail": detail, "message": message_payload(row)}
-            return {"detail": detail, "message": system_error_message(request.user, "docs", detail)}
-
-        @sync_to_async
-        def _finish_interrupted() -> Any:
-            """客户端中途断开（刷新/离开页）的收尾：按「已到达增量保留」口径落部分回答。
-
-            无增量（还在思考/未首帧）不落任何行——此时历史里只有本轮提问，与流前
-            断开语义一致。尽力而为：清理期再次被取消则放弃保留。
-            """
-            if not content_chunks and not reasoning_chunks:
-                return None
-            row = persist_message(
-                request.user,
-                "docs",
-                "assistant",
-                content="".join(content_chunks),
-                reasoning="".join(reasoning_chunks),
-                extra={"partial": str(_("Answer stream interrupted; partial content retained"))},
-            )
-            return message_payload(row)
+        _finish_done, _finish_error, _finish_interrupted = self._ask_stream_finishers(
+            request.user, question, content_chunks, reasoning_chunks
+        )
 
         # meta 载荷在同步段预构建（message_payload 可能触发 FK 懒加载，异步段禁止 DB 访问）
         user_payload = message_payload(user_row)

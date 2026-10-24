@@ -143,7 +143,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         - 携令牌：消费一次性令牌（校验指纹/归属/有效期），成功放行；
         - 未携令牌：复用同一内容的在途审批单，否则新建并返回 412 待审批。
         """
-        from approval.utils.approval import (
+        from approval.contracts import (
             APPROVAL_HEADER,
             APPROVAL_QUERY_PARAM,
             consume_approval,
@@ -245,7 +245,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         # 在此返回成功语义，而不是被「仅草稿可提交」拒绝（自动完成时状态已不是草稿）
         approved_replay = False
         if needs_approval:
-            from approval.utils.approval import APPROVAL_HEADER, APPROVAL_QUERY_PARAM, consume_approval
+            from approval.contracts import APPROVAL_HEADER, APPROVAL_QUERY_PARAM, consume_approval
 
             token = request.headers.get(APPROVAL_HEADER) or request.query_params.get(APPROVAL_QUERY_PARAM)
             if token:
@@ -288,6 +288,10 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
             if form.approval_flow_id:
                 ok, detail = create_flow_instance(instance, request.user)
                 if not ok:
+                    # 流程发起失败必须回滚：此时 data/filter_data 已写入（草稿回填时
+                    # 还经过 trim_stale_schema_keys 裁剪），直接 return 会正常提交事务，
+                    # 用户看到失败但历史键已被丢弃。
+                    transaction.set_rollback(True)
                     return ApiResponse(code=1001, detail=detail)
                 return ApiResponse(detail=_("Application submitted"))
 

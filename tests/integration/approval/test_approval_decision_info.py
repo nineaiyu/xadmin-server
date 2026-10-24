@@ -53,7 +53,7 @@ class TestTargetSnapshot:
 
     def test_patch_style_changes_diff_rendered(self):
         """变更类请求（PATCH body）→ 快照含「变更前 → 变更后」对照。"""
-        from approval.utils.approval.snapshot import build_target_snapshot
+        from approval.services.approval.snapshot import build_target_snapshot
         from identity.views.admin.role import RoleViewSet
 
         role = UserRole.objects.create(name="原角色名", code="u1_role3")
@@ -69,7 +69,7 @@ class TestTargetSnapshot:
         assert changes["name"]["label"]  # label 可读（序列化器 label 或字段名兜底）
 
     def test_snapshot_missing_for_unreachable_object(self):
-        from approval.utils.approval.snapshot import build_target_snapshot
+        from approval.services.approval.snapshot import build_target_snapshot
         from identity.views.admin.role import RoleViewSet
 
         view = RoleViewSet()
@@ -184,7 +184,7 @@ class TestAssigneeSnapshot:
         role = UserRole.objects.create(name="快照角色", code="u1_role4")
         auth_client.delete(f"/api/identity/role/{role.pk}")
         approval = ApprovalRequest.objects.get(status=ApprovalRequest.Status.PENDING)
-        from approval.utils.approval import approve_request
+        from approval.services.approval import approve_request
 
         ok, detail = approve_request(approval, approver)
         assert ok is True, detail

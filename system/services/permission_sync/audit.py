@@ -5,10 +5,10 @@
 import re
 from typing import Any
 
-from .constants import (
+from .constants import FRAMEWORK_PERMISSION_ACTIONS
+from .declarations import (
     AUDIT_KNOWN_DUPLICATES,
     AUDIT_SKIP_PREFIXES,
-    FRAMEWORK_PERMISSION_ACTIONS,
     RUNTIME_PERMISSION_PREFIXES,
 )
 

@@ -270,7 +270,26 @@ python manage.py doctor                             # 启动自检（含权限�
 | 迁移报依赖缺失 | 插件迁移引用了宿主 app 的中间状态迁移 | 依赖写到宿主**已发布**的迁移上，或改用抽象基类字段 |
 | 周期任务停用后仍在跑 | 装饰器漏写 `module=` | 补 `module="<id>"` 并重启 beat |
 
-## 八、参考
+## 八、前端页面配套（`xadmin-client/src/extensions/`）
+
+插件的后端接口就绪后，前端页面落在宿主前端仓的 `src/extensions/<module>/`
+（不污染 `src/views/`；该目录已被动态路由 glob 覆盖，**无需改前端路由文件**）。
+活样本：`src/extensions/demo-plugin/` + 本插件种子，最小三件——
+
+1. 页面组件 `extensions/<module>/index.vue`：`defineOptions({ name })` 是路由
+   匹配键，必须与菜单种子的 `name`、权限点 `<动作>:<组件名>` 后缀一致；
+   列表页用 `RePlusPage`，列 / 表单 / 按钮可全部来自插件后端的
+   `search-columns` / `search-fields` 元数据（后端加字段 → 前端免改）。
+2. 插件种子 `xadmin_demo_plugin/seeds/menu.json`：页面菜单（`menu_type=1`、
+   `component="extensions/<module>/index"`）+ 权限点（`menu_type=2`）；宿主把
+   插件写进 `XADMIN_APPS` 后 `load_init_json` 自动收集，未装插件则不残留菜单。
+3. 断链守护：`xadmin-client` 的 `pnpm check:menu-components` 会校验插件种子
+   引用的页面文件真实存在（含 `examples/plugins/*/*/seeds/`）——插件改组件名
+   / 移页面而种子未同步，CI 直接拦截。
+
+接线细节与约定见 `xadmin-client/src/extensions/README.md`。
+
+## 九、参考
 
 - 契约面与白名单：`packages/xadmin-common/common/contracts.py`
 - 模块声明 / 解析 / 裁剪：`packages/xadmin-common/common/core/modules/`

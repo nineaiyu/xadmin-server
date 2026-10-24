@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from dataset.models.dataset import Dashboard, Dataset, Report, Screen
-from dataset.serializers.analysis import IM_NOTIFY_CHANNELS, REPORT_NOTIFY_CHANNELS
+from dataset.serializers.report import IM_NOTIFY_CHANNELS, REPORT_NOTIFY_CHANNELS
 from identity.models import UserInfo
 from system.models import ModelLabelField
 

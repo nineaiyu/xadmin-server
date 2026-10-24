@@ -17,7 +17,7 @@ from django.utils.translation import gettext
 from rest_framework import serializers
 
 from dataset.models.dataset import Dashboard, Dataset, Screen
-from dataset.serializers.analysis import ScreenSerializer
+from dataset.serializers.screen import ScreenSerializer
 
 pytestmark = pytest.mark.django_db
 

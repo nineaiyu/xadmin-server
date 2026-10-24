@@ -14,10 +14,9 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from approval.models.approval import ApprovalFlow, ApprovalInstance, ApprovalNodeTask
-from common.core.fields import DictChoiceField
+from common.core.fields import DictChoiceField, DisplayRelatedField
 from common.core.serializers import BaseModelSerializer
 from system.services import TaggedObjectSerializerMixin
-from task.services import DisplayRelatedField
 
 
 def _username(value: Any) -> Any:
@@ -106,6 +105,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         "reason",
         "biz_type",
         "biz_id",
+        "source_instance",
     )
 
     flow = DisplayRelatedField(queryset=ApprovalFlow.objects.all(), label=_("Flow"), label_builder=lambda v: v.name)
@@ -127,6 +127,10 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
     form_schema = serializers.SerializerMethodField(label=_("Form schema"))
     # 关联业务对象当前状态（biz_type 白名单渲染；无关联返回 null，前端不渲染卡片）
     related_object = serializers.SerializerMethodField(label=_("Related object"))
+    # 驳回重提的原单（不存在/跨流程 / 非本人时为 null）
+    source_instance = DisplayRelatedField(
+        read_only=True, allow_null=True, label=_("Source instance"), label_builder=lambda v: v.title
+    )
     # 抄送人（只读回显；发起时经 create_instance 的 cc_users 参数追加）
     cc_users = DisplayRelatedField(
         read_only=True, many=True, label=_("CC users"), label_builder=lambda v: v.nickname or v.username
@@ -151,6 +155,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
             "form_schema",
             "biz_type",
             "biz_id",
+            "source_instance",
             "related_object",
             "cc_users",
             "comments",
@@ -182,6 +187,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
             "updated_time",
             "biz_type",
             "biz_id",
+            "source_instance",
             "related_object",
         ]
 

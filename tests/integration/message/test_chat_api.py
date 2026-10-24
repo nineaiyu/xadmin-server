@@ -163,7 +163,7 @@ class TestRecall:
         message, __ = chat_service.create_message(room, superuser, "撤回我")
         calls = []
         monkeypatch.setattr(
-            "message.utils.push_room_event", lambda room, payload, message_type=None: calls.append(payload)
+            "message.ws.utils.push_room_event", lambda room, payload, message_type=None: calls.append(payload)
         )
 
         response = auth_client.post(f"{MESSAGE_URL}/{message.pk}/recall", {}, format="json")
@@ -180,7 +180,7 @@ class TestRecall:
         message, __ = chat_service.create_message(room, superuser, "只撤一次")
         calls = []
         monkeypatch.setattr(
-            "message.utils.push_room_event", lambda room, payload, message_type=None: calls.append(payload)
+            "message.ws.utils.push_room_event", lambda room, payload, message_type=None: calls.append(payload)
         )
 
         first = auth_client.post(f"{MESSAGE_URL}/{message.pk}/recall", {}, format="json")
@@ -303,6 +303,25 @@ class TestGroups:
         assert response.json()["code"] == 1000
         group.refresh_from_db()
         assert group.name == "新名"
+
+    def test_member_change_and_rename_push_room_event(self, auth_client, superuser, bob, alice, monkeypatch):
+        """群资料变更：成员增删/改名后向房间推 chat_room 帧（其他成员据此重拉列表）。"""
+        from message import views as chat_views
+
+        calls = []
+        monkeypatch.setattr(
+            chat_views,
+            "push_room_event",
+            lambda room, payload, message_type: calls.append((room.pk, payload, message_type)),
+        )
+        group = self._create(superuser, [bob])
+
+        auth_client.post(f"{ROOM_URL}/{group.pk}/members", {"add": [alice.pk]}, format="json")
+        auth_client.post(f"{ROOM_URL}/{group.pk}/rename", {"name": "新名"}, format="json")
+
+        assert [payload["change"] for _pk, payload, _type in calls] == ["members", "rename"]
+        assert all(message_type == "chat_room" for _pk, _payload, message_type in calls)
+        assert all(payload["room_id"] == group.pk for _pk, payload, _type in calls)
 
     def test_leave_transfers_owner_then_dissolves(self, superuser, bob, alice):
         group = self._create(superuser, [bob, alice])

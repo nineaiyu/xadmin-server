@@ -390,3 +390,25 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         获取对象属性的 OpenAPI schema
         """
         return self._get_openapi_object_schema()["properties"]
+
+
+class DisplayRelatedField(BasePrimaryKeyRelatedField):
+    """对象关联字段展示增强：补充 label（默认 str(instance)）。
+
+    供前端列表/详情/下拉直接可读，避免展示裸外键主键（周期任务页的
+    crontab/interval 原先显示 1/2/3 这种数字主键，无法辨认）。
+    本体自 task/serializers/task.py 下沉内核（ai / approval 跨 app 引用它的
+    先前形态是 ``from task.services import ...``，属越层）；task 侧与
+    ``common.core.fields`` 均保留导入面。
+    """
+
+    def __init__(self, *args: Any, label_builder: Any = str, **kwargs: Any) -> None:
+        self.label_builder = label_builder
+        super().__init__(*args, **kwargs)
+
+    def to_representation(self, value: Any) -> Any:
+        data = super().to_representation(value)
+        if isinstance(data, dict):
+            # 基类已把 label 兜底为 pk，这里必须覆盖而非 setdefault，否则 label_builder 永不生效
+            data["label"] = self.label_builder(value)
+        return data

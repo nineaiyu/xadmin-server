@@ -38,6 +38,12 @@ class AiKnowledgeDocument(DbAuditModel, DbUuidModel):
         REPO = "repo", _("Repository docs")
         UPLOAD = "upload", _("Uploaded document")
 
+    class IngestStatus(models.TextChoices):
+        PENDING = "PENDING", _("Pending")
+        PROCESSING = "PROCESSING", _("Processing")
+        SUCCESS = "SUCCESS", _("Succeeded")
+        FAILED = "FAILED", _("Failed")
+
     source_type = models.CharField(
         _("Source type"), max_length=16, choices=SourceType.choices, default=SourceType.REPO, db_index=True
     )
@@ -48,6 +54,11 @@ class AiKnowledgeDocument(DbAuditModel, DbUuidModel):
     chunk_count = models.IntegerField(_("Chunk count"), default=0)
     is_active = models.BooleanField(_("Active"), default=True, db_index=True)
     synced_at = models.DateTimeField(_("Synced at"), auto_now=True)
+    # 上传文档的分块摄取状态（异步任务）；存量/仓库文档默认 SUCCESS。
+    ingest_status = models.CharField(
+        _("Ingest status"), max_length=16, choices=IngestStatus.choices, default=IngestStatus.SUCCESS, db_index=True
+    )
+    ingest_error = models.CharField(_("Ingest error"), max_length=500, blank=True, default="")
 
     class Meta:
         verbose_name = _("AI knowledge document")

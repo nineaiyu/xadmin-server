@@ -97,13 +97,47 @@ from ai.services.knowledge.ai_retrieval import (  # noqa: F401 检索链路拆�
     retrieve,
 )
 
+#: 带入模型的历史消息条数（约 4 轮问答）：与知识库上下文条数解耦，
+#: 只影响「追问能否接上」，不改变检索范围。
+HISTORY_MESSAGE_LIMIT = 8
+#: 单条历史消息进入 prompt 的字符上限（防止旧长回答挤占上下文窗口）
+HISTORY_TEXT_LIMIT = 2000
 
-def _prepare_rag(question: str, user: Any = None) -> tuple[Any, ...]:
+
+def conversation_history(user: Any, feature: str = "docs", limit: int = HISTORY_MESSAGE_LIMIT) -> list[dict[str, str]]:
+    """读取同一用户同一入口的最近对话（时间正序），供追问接续。
+
+    只取 user/assistant 两类角色：system 角色承载的是错误提示，喂回模型会
+    诱导复读失败原因。空内容行跳过。
+    """
+    if user is None or not getattr(user, "pk", None) or limit <= 0:
+        return []
+    from ai.models.ai import AiChatMessage
+
+    rows = (
+        AiChatMessage.objects.filter(creator=user, feature=feature, role__in=("user", "assistant"))
+        .exclude(content="")
+        .order_by("-id")
+        .values_list("role", "content")[:limit]
+    )
+    messages: list[dict[str, str]] = []
+    for role, content in reversed(list(rows)):
+        text = (content or "").strip()
+        if not text:
+            continue
+        messages.append({"role": role, "content": text[:HISTORY_TEXT_LIMIT]})
+    return messages
+
+
+def _prepare_rag(question: str, user: Any = None, history: list[dict[str, str]] | None = None) -> tuple[Any, ...]:
     """问答链路公共部分：问题校验 + 检索 + prompt 构造（引用数据块 + 注入标记）。
 
     返回 ``(messages, sources, injection_hits)``；问题为空/未启用/无命中抛可读
     ValidationError。检索片段以引用数据块包裹（护栏），命中可疑指令模式时
     打标 + 落 AI:security 告警（不阻断，避免误杀）。
+
+    ``history`` 为同一入口的历史对话（时间正序），拼在 system 与当前问题之间，
+    使追问（「那它的默认值呢？」）能接上前文；检索仍按当前问题独立执行。
     """
     from ai.services.assistant.ai_guard import REFERENCE_GUARD_INSTRUCTION, annotate_reference
 
@@ -148,10 +182,10 @@ def _prepare_rag(question: str, user: Any = None) -> tuple[Any, ...]:
         "\n\n".join(context_blocks),
         str(_("Question: {}").format(question)),
     )
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt},
-    ]
+    messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
+    if history:
+        messages.extend(history)
+    messages.append({"role": "user", "content": user_prompt})
     return messages, sources, injection_hits
 
 
@@ -183,7 +217,7 @@ def prepare_ask(question: str, user: Any = None) -> tuple[Any, ...]:
 
     与 ask / ask_stream 校验完全同源（空问题 / 未启用 / 无命中 → 可读 ValidationError）。
     """
-    messages, sources, __hits = _prepare_rag(question, user=user)
+    messages, sources, __hits = _prepare_rag(question, user=user, history=conversation_history(user))
     return messages, sources
 
 
@@ -197,7 +231,7 @@ def ask(question: str, user: Any = None) -> dict[str, Any]:
     from ai.services.assistant.ai_usage import tracked_chat
     from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
-    messages, sources, injection_hits = _prepare_rag(question, user=user)
+    messages, sources, injection_hits = _prepare_rag(question, user=user, history=conversation_history(user))
     try:
         client = ChatCompletionsClient(ai_credentials())
         answer = tracked_chat(user, "docs", messages, client=client)

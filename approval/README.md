@@ -53,8 +53,8 @@
 | 你要做的 | 抄哪里 | 说明 |
 |---|---|---|
 | 高危操作挂审批（拦截式） | `demo/views.py` 的 `destroy` / `batch_destroy` + `@ApprovalRequired()` | 412 协议、令牌重放前端自动处理 |
-| 审批通过后自动落库 | `approval/utils/approval/approved_actions.py` 的 `register_on_approved` | 按请求路径正则注册 handler |
-| 多级审批链（按路径配级次） | `approval/utils/approval/chains.py` + 审批规则页 | 命中规则的单按级次快照逐级推进 |
+| 审批通过后自动落库 | `approval/services/approval/approved_actions.py` 的 `register_on_approved` | 按请求路径正则注册 handler |
+| 多级审批链（按路径配级次） | `approval/services/approval/chains.py` + 审批规则页 | 命中规则的单按级次快照逐级推进 |
 | 业务单挂流程（全量接入） | `approval/utils/leave.py`（请假，注释版四步） | 校验 → 提交 → 绑定 → 回写 |
 | 最小流程接入示例 | `demo/services.py` + `views.py::submit` | `create_instance(biz_type="demo_book")` + 回写 |
 | 表单驱动的流程接入 | `dataset/utils/dform_flow.py` | 动态表单提交走流程引擎 + 条件收敛 |

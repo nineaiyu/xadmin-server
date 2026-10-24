@@ -22,7 +22,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from approval.models.approval import ApprovalRequest
 from approval.serializers.approval import ApprovalRequestDetailSerializer, ApprovalRequestSerializer
-from approval.utils.approval import (
+from approval.services.approval import (
     approval_stats,
     approve_request,
     can_act,

@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from identity.models import UserInfo
 from system.models import FieldPermission, Menu, MenuMeta, ModelLabelField
@@ -106,6 +106,18 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 权限点
 
+    def _ensure_no_unclassified_views(self, routes: Any) -> None:
+        """custom 权限面必须显式豁免：fail-loud（此前静默跳过，未登记 = 非超管恒 403 无告警）。"""
+        unclassified = sync.unclassified_views(routes)
+        if not unclassified:
+            return
+        for view in unclassified:
+            self.stdout.write(self.style.ERROR(f"  ! 未分类权限面：{view}（自定义权限类且未登记豁免）"))
+        raise CommandError(
+            "存在未登记豁免的 custom 权限面视图：请在 constants.PERMISSION_EXEMPT_VIEWS "
+            "登记（注明自管原因）或改回标准权限链后重试"
+        )
+
     def _sync_permissions(self, options: Any, user: Any, dry_run: Any) -> None:
         default_parent = None
         if options["default_parent"]:
@@ -114,6 +126,7 @@ class Command(BaseCommand):
             ).first()
 
         routes = sync.build_route_index()
+        self._ensure_no_unclassified_views(routes)
         perms = sync.load_permission_menus()
         gaps = sync.scan_gaps(routes, perms)
         plans, unresolved = sync.build_plans(gaps, routes, perms, default_parent)

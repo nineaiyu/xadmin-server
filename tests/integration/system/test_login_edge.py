@@ -7,6 +7,8 @@ from django.core.cache import cache
 from audit.models.log import UserLoginLog
 from common.base.utils import AESCipherV2
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
+from identity.services.auth_login import complete_login
+from identity.utils.auth import ValidateError
 from settings.services import LoginBlockUtil
 
 pytestmark = pytest.mark.django_db
@@ -87,6 +89,18 @@ class TestBasicLoginEdge:
         )
         assert resp.status_code == 400, resp.data
         _assert_bilingual(str(resp.data["detail"]), "The account has been locked", "账号已被锁定")
+
+    def test_complete_login_rejects_inactive_user(self, normal_user):
+        """防御纵深：禁用账号在任何经 complete_login 收口的登录路径兜底拒绝。
+
+        发码 / IdP 认证到提交之间存在「账号随后被禁用」的窗口，且文档约定
+        complete_login 是所有（含未来）登录路径的唯一收口——is_active 校验
+        在此兜底，新增登录方式漏做校验也不会放行。
+        """
+        normal_user.is_active = False
+        normal_user.save(update_fields=["is_active"])
+        with pytest.raises(ValidateError):
+            complete_login(None, normal_user)
 
 
 class TestTempTokenExpire:
@@ -242,6 +256,45 @@ class TestVerifyCodeLogin:
         assert resp.status_code == 400, resp.data
         # 失败计数按验证目标（邮箱）累加
         assert cache.get("_LOGIN_LIMIT_zhangsan@example.com_127.0.0.1") == 1
+
+    def test_login_code_email_disabled_after_send(self, api_client, normal_user, login_free):
+        """发码后账号被禁用：提交时兜底复核 is_active，统一失败文案（防枚举），不签发 token。"""
+        normal_user.email = "zhangsan@example.com"
+        normal_user.save(update_fields=["email"])
+        code = "654321"
+        SendAndVerifyCodeUtil(normal_user.email, code=code, backend="email", dryrun=True).gen_and_send()
+        verify_token = TokenTempCache.generate_cache_token(
+            300,
+            {"target": normal_user.email, "form_type": "email", "query_key": "email", "extra": {}},
+        )
+        # 模拟「发码成功之后、提交之前」账号被管理员禁用
+        normal_user.is_active = False
+        normal_user.save(update_fields=["is_active"])
+        resp = api_client.post(
+            LOGIN_CODE_URL,
+            {"verify_token": verify_token, "verify_code": code},
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
+        assert "access" not in (resp.data.get("data") or {})
+
+    def test_login_code_email_deleted_after_send(self, api_client, normal_user, login_free):
+        """发码后账号被删除：走统一失败文案，不再抛未处理的 DoesNotExist（500）。"""
+        normal_user.email = "zhangsan@example.com"
+        normal_user.save(update_fields=["email"])
+        code = "654321"
+        SendAndVerifyCodeUtil(normal_user.email, code=code, backend="email", dryrun=True).gen_and_send()
+        verify_token = TokenTempCache.generate_cache_token(
+            300,
+            {"target": normal_user.email, "form_type": "email", "query_key": "email", "extra": {}},
+        )
+        normal_user.delete()
+        resp = api_client.post(
+            LOGIN_CODE_URL,
+            {"verify_token": verify_token, "verify_code": code},
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
 
     def test_login_code_encrypted_password(self, api_client, normal_user, settings):
         """encrypted 开启：密码用 verify_token 解密（target 从 verify_token 缓存取回）。

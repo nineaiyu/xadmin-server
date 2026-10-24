@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""聊天室领域服务：会话开通 / 消息落库 / 未读游标 / 联系人 / @提及。
+"""聊天消息域实现：消息落库 / 未读游标 / 撤回 / 历史 / 表情回应 / 会话列表。
 
-分层约定：
-- 本模块只做同步 DB 与纯函数逻辑（REST 视图与 WS consumer 共用同一套语义）：
-  WS consumer 经 `database_sync_to_async` 调用，REST 视图直接调用；
-- 消息广播（channel layer）不在本模块，由 message/utils.py 与 ws/chat consumer 负责，
-  避免同步/异步边界混杂；
-- 可访问性一律 fail-closed：非成员访问私聊、非归属访问他人 AI 会话均按「房间不存在」拒绝。
+自 chat 门面拆出（控制单文件体量）：对外调用面 ``from message import chat as
+chat_service`` 的属性访问经门面 ``__init__`` 再导出保持不变；本模块只做同步
+DB 与纯函数逻辑，消息广播（channel layer）仍在 ws 层。
 """
 
 from typing import Any
@@ -18,44 +15,6 @@ from django.db.models import F, Max, Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from common.utils import get_logger
-
-# 再导出（PEP 484 显式形式，跨模块调用面保持不变）：附件链路 / chat_service 调用面 / 房间与群组管理 / 会话列表构造 / 撤回审计
-from message.attachments import ATTACHMENT_MESSAGE_TYPES as ATTACHMENT_MESSAGE_TYPES
-from message.attachments import AttachmentUploadError as AttachmentUploadError
-from message.attachments import attachment_extra as attachment_extra
-from message.attachments import attachment_payload as attachment_payload
-from message.attachments import mark_attachment_used as mark_attachment_used
-from message.attachments import resolve_sender_attachment as resolve_sender_attachment
-from message.attachments import store_message_attachment as store_message_attachment
-from message.attachments import validate_attachment_kind as validate_attachment_kind
-from message.chat_ops import _normalize_user_pks as _normalize_user_pks
-from message.chat_ops import _user_pk as _user_pk
-from message.chat_ops import avatar_url as avatar_url
-from message.chat_ops import clean_expired_history as clean_expired_history
-from message.chat_ops import display_name as display_name
-from message.chat_ops import mention_users as mention_users
-from message.chat_ops import new_client_msg_id as new_client_msg_id
-from message.chat_ops import parse_mentions as parse_mentions
-from message.chat_ops import store_chat_notices as store_chat_notices
-from message.chat_ops import user_brief as user_brief
-from message.chat_ops import validate_content as validate_content
-from message.chat_room_ops import accessible_room as accessible_room
-from message.chat_room_ops import add_group_members as add_group_members
-from message.chat_room_ops import create_group as create_group
-from message.chat_room_ops import get_or_create_ai_room as get_or_create_ai_room
-from message.chat_room_ops import get_or_create_private_room as get_or_create_private_room
-from message.chat_room_ops import get_or_create_private_room_by_pk as get_or_create_private_room_by_pk
-from message.chat_room_ops import get_public_room as get_public_room
-from message.chat_room_ops import group_room_or_deny as group_room_or_deny
-from message.chat_room_ops import leave_group as leave_group
-from message.chat_room_ops import remove_group_members as remove_group_members
-from message.chat_room_ops import rename_group as rename_group
-from message.chat_room_ops import room_member_pks as room_member_pks
-from message.chat_rooms import UNSET as UNSET
-from message.chat_rooms import online_user_pks as online_user_pks
-from message.chat_rooms import prefetch_room_context as prefetch_room_context
-from message.chat_rooms import room_to_dict as room_to_dict
 from message.models import (
     AI_MAX_CONTENT_LENGTH,
     BOT_MESSAGE_TYPES,
@@ -70,16 +29,21 @@ from message.models import (
     ChatRoomMember,
 )
 
-# 再导出：撤回审计常量与快照写入（调用面/测试沿用 chat_service 常量）
-from message.recall_audit import RECALL_AUDIT_MODULE as RECALL_AUDIT_MODULE
-from message.recall_audit import write_recall_snapshot as write_recall_snapshot
-
-logger = get_logger(__name__)
+from .attachments import (
+    ATTACHMENT_MESSAGE_TYPES,
+    attachment_extra,
+    attachment_payload,
+    mark_attachment_used,
+    validate_attachment_kind,
+)
+from .chat_ops import _user_pk, avatar_url, display_name, user_brief, validate_content
+from .chat_room_ops import accessible_room, get_or_create_ai_room, get_public_room
+from .chat_rooms import UNSET, online_user_pks, prefetch_room_context, room_to_dict
+from .recall_audit import write_recall_snapshot
 
 # 会话列表 / 联系人默认条数
 ROOM_LIST_LIMIT = 100
 CONTACT_LIMIT = 100
-
 
 # ---------------------------------------------------------------- 消息
 
@@ -472,7 +436,7 @@ def recent_contacts(user: Any, limit: int = CONTACT_LIMIT) -> list[Any]:
     """最近在线联系人：按最近活跃倒序（在线优先），含在线态。
 
     数据源 = UserSession.last_active（登录即登记，WS/HTTP 会话统一），
-    在线态 = message.utils 在线快照（WS 心跳口径）。
+    在线态 = message.ws.utils 在线快照（WS 心跳口径）。
     """
     from identity.models import UserInfo, UserSession
 

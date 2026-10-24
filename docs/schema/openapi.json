@@ -317,6 +317,24 @@
             "title": "创建人",
             "type": "string"
           },
+          "ingest_error": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "ingest_status": {
+            "description": null,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "readOnly": true,
+            "title": "Ingest status",
+            "type": "object"
+          },
           "is_active": {
             "default": true,
             "title": "启用",
@@ -372,6 +390,8 @@
           "content",
           "created_time",
           "creator",
+          "ingest_error",
+          "ingest_status",
           "path",
           "pk",
           "source_type",
@@ -1992,6 +2012,7 @@
             "writeOnly": true
           },
           "sure_password": {
+            "description": "Legacy contract name: this field carries the NEW password itself (not a repeat/confirm value)",
             "maxLength": 128,
             "title": "确认密码",
             "type": "string",
@@ -7741,6 +7762,24 @@
             "readOnly": true,
             "title": "创建人",
             "type": "string"
+          },
+          "ingest_error": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "ingest_status": {
+            "description": null,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "readOnly": true,
+            "title": "Ingest status",
+            "type": "object"
           },
           "is_active": {
             "default": true,
@@ -80825,6 +80864,115 @@
         ]
       }
     },
+    "/api/system/permission/impact": {
+      "post": {
+        "description": "获取{cls}的影响面预览",
+        "operationId": "api_system_permission_impact_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "pks": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "pks": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "pks": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "properties": {
+                  "pks": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "properties": {
+                  "pks": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "DataPermissionViewSet"
+        ]
+      }
+    },
     "/api/system/permission/import-async": {
       "post": {
         "description": "异步导入{cls}数据\n\n大数据量，进度与错误报告在下载中心获取",
@@ -81154,6 +81302,195 @@
         ]
       }
     },
+    "/api/system/permission/recycle": {
+      "get": {
+        "description": "获取{cls}回收站列表",
+        "operationId": "api_system_permission_recycle_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "DataPermissionViewSet"
+        ]
+      }
+    },
+    "/api/system/permission/recycle/purge": {
+      "delete": {
+        "description": "物理清除{cls}回收站数据\n\n不传 pks 时清除全部超过保留期的数据",
+        "operationId": "api_system_permission_recycle_purge_destroy",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "DataPermissionViewSet"
+        ]
+      }
+    },
+    "/api/system/permission/recycle/restore": {
+      "patch": {
+        "description": "从回收站恢复{cls}数据",
+        "operationId": "api_system_permission_recycle_restore_partial_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "pks": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "pks": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "pks": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "properties": {
+                  "pks": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "properties": {
+                  "pks": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "DataPermissionViewSet"
+        ]
+      }
+    },
     "/api/system/permission/search-columns": {
       "get": {
         "description": "获取{cls}的展示字段",
@@ -81354,7 +81691,7 @@
     },
     "/api/system/permission/{id}": {
       "delete": {
-        "description": "删除{cls}数据",
+        "description": "删除{cls}数据\n\n高危：行为变更立即影响被授权用户可见数据，可经 APPROVAL_REQUIRED_PATHS 纳入审批。",
         "operationId": "api_system_permission_destroy",
         "parameters": [
           {

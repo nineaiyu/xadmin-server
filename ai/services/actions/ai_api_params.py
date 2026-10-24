@@ -39,29 +39,28 @@ def _resolve_user(value: Any) -> Any:
     宽容解析保证两段式幂等：``validate`` 输出的可读展示值（``昵称(用户名)``）与
     前端回传的主键都能在 ``execute`` 阶段解析回同一个用户。
     """
-    from identity.models import UserInfo
+    from identity.contracts import resolve_user
 
     text = str(value or "").strip()
     if not text:
         raise ApiActionError(_("A user must be specified"))
     if text.endswith(")") and "(" in text:
         text = text.rsplit("(", 1)[-1].rstrip(")")
-    user = UserInfo.objects.filter(username=text).first() or UserInfo.objects.filter(nickname=text).first()
-    if user is None:
-        try:
-            user = UserInfo.objects.filter(pk=text).first()
-        except (DjangoValidationError, ValueError, TypeError):
-            user = None
+    user = resolve_user(text)
     if user is None:
         raise ApiActionError(_("No such user: {}").format(text))
     return str(user.pk)
 
 
 def _user_display(pk: str) -> str:
-    """用户主键 → 确认卡片展示文本 ``昵称(用户名)``（昵称缺失则仅用户名）。"""
-    from identity.models import UserInfo
+    """用户主键 → 确认卡片展示文本 ``昵称(用户名)``（昵称缺失则仅用户名）。
 
-    user = UserInfo.objects.filter(pk=pk).first()
+    与内核显示名 :func:`common.utils.display.user_label`（单值口径）刻意不同：
+    确认卡片需要同时呈现昵称与账号，避免重名用户无法区分。
+    """
+    from identity.contracts import get_user
+
+    user = get_user(pk)
     if user is None:
         return str(pk)
     nickname = (user.nickname or "").strip()
@@ -70,16 +69,12 @@ def _user_display(pk: str) -> str:
 
 def _resolve_role(value: Any) -> Any:
     """角色名/主键 → 角色主键（确认卡片回显用展示文本，与 user 同口径）。"""
-    from identity.models import UserRole
+    from identity.contracts import resolve_role
 
     text = str(value or "").strip()
     if not text:
         raise ApiActionError(_("A role must be specified"))
-    role = None
-    if re.fullmatch(r"[0-9a-fA-F-]{32,36}", text):
-        role = UserRole.objects.filter(pk=text).first()
-    if role is None:
-        role = UserRole.objects.filter(name=text).first()
+    role = resolve_role(text)
     if role is None:
         raise ApiActionError(_("No such role: {}").format(text))
     return str(role.pk)
@@ -87,9 +82,9 @@ def _resolve_role(value: Any) -> Any:
 
 def _role_display(pk: str) -> str:
     """角色主键 → 确认卡片展示文本（角色名）。"""
-    from identity.models import UserRole
+    from identity.contracts import get_role
 
-    role = UserRole.objects.filter(pk=pk).first()
+    role = get_role(pk)
     return role.name if role else str(pk)
 
 

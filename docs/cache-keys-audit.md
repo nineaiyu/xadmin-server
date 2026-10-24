@@ -26,7 +26,7 @@
 
 | 键 | 位置 | TTL | 维度 | 失效 |
 |---|---|---|---|---|
-| `approval_pending_count_{user.pk}` | approval/utils/approval/queries.py | 10s | 用户 | `invalidate_pending_count_cache()`（审批状态变化全量删） |
+| `approval_pending_count_{user.pk}` | approval/services/approval/queries.py | 10s | 用户 | `invalidate_pending_count_cache()`（审批状态变化全量删） |
 | `approval_flow_pending_count_{user.pk}` | approval/services/approval_flow/engine_events.py | 10s | 用户 | `_invalidate_pending_count()`（节点推进/任务处理：全量或指定用户删） |
 | `approval_flow_remind_{task.pk}` | approval/services/approval_flow/periodic.py | 24h | 单节点任务 | TTL 到期（同一任务每日最多提醒一次的超时占位） |
 | `{DICT_CACHE_PREFIX}{code}` | system/utils/platform/dict.py | 常量 TTL | 字典编码（全局） | 字典写路径 `cache.delete` |

@@ -17,9 +17,9 @@ from rest_framework import serializers
 from ai.models.mcp import McpServer
 from ai.services.mcp.mcp_client import tools_with_callable, validate_server_url
 from common.base.utils import signer
+from common.core.fields import DisplayRelatedField
 from common.core.serializers import BaseModelSerializer
 from common.core.validation import trim_required
-from task.services import DisplayRelatedField
 
 MAX_ALLOWED_TOOLS = 100
 MAX_TOOL_NAME_LENGTH = 128

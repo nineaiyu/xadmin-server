@@ -75,7 +75,7 @@
 | 文档 | 内容 |
 |------|------|
 | [adr/README.md](adr/README.md) | **架构决策记录索引（91 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
-| [plans/README.md](plans/README.md) | 规划与治理：活跃台账（**工作区级**开发任务总清单 / 长期任务方案 / 长期开发计划 / 5.0 发布清单 + 触发制任务清单与域切分映射）；**已完成的一次性台账在 `plans/archive/`**，预生成未来年度的填充文档已于 2026-10-03 清理 |
+| [plans/README.md](plans/README.md) | 规划与治理：活跃台账（**工作区级**开发任务总清单 / 长期任务方案 / 长期开发计划 / 5.0 发布清单 + 触发制任务清单与域切分映射）；含 [全站代码功能审查](plans/code-review-2026.10/README.md)（65 页逐页 + 前后端分层与复用结论）；**已完成的一次性台账在 `plans/archive/`**，预生成未来年度的填充文档已于 2026-10-03 清理 |
 | [ci-gates.md](ci-gates.md) | **CI 门禁统一清单**：全部流水线门禁与守护测试的登记处（守护语义 / 所在 workflow / 本地复跑；新增门禁必须登记） |
 | [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线概览）；履历见 [metrics-history.md](metrics-history.md)（阶段回填 + 依赖安全审计）、[metrics-perf-history.md](metrics-perf-history.md)（性能 / 前端基线实测） |
 | [security-review.md](security-review.md) | 安全自查归档（按轮次追加，含接受项台账与重开条件） |
@@ -91,7 +91,7 @@ docs/
 ├── architecture/         架构与组件（现状文档：组件手册 component-handbook + handbook-backend / handbook-frontend / 协议 / 权限 / 模块化…）
 ├── adr/                  架构决策记录（历史决策，含索引 README）
 ├── ops/                  部署与运维（deployment 概览 + deployment-docker / deployment-upgrade / deployment-csp / config-reference / observability / observability-drills / runbook / 演练记录）
-├── plans/                规划与治理（活跃 20 篇：工作区级台账 + 长期计划 / 触发制清单 / 域拆分映射 / 各专项方案 / 保留任务决策与发布清单，逐篇清单见 plans/README.md；历史归档在 archive/）
+├── plans/                规划与治理（活跃 21 篇：工作区级台账 + 长期计划 / 触发制清单 / 域拆分映射 / 各专项方案 / 全站代码功能审查 / 保留任务决策与发布清单，逐篇清单见 plans/README.md；历史归档在 archive/）
 ├── open-platform/        开放平台接入（指南 + 事件契约）
 ├── schema/               前后端契约 JSON Schema
 ├── imgs/                 文档配图

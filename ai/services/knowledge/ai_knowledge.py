@@ -163,7 +163,21 @@ def remove_chunks(path: str) -> None:
     remove_chunks_bulk([path])
 
 
-def upsert_upload_document(name: str, content: str, creator: Any = None) -> Any:
+def schedule_upload_ingest(doc: Any) -> None:
+    """调度上传文档的分块摄取任务（eager 下同步执行，生产 on_commit 后投递）。"""
+    from django.conf import settings
+    from django.db import transaction
+
+    from ai.tasks import ingest_upload_document_task
+
+    args = [str(doc.pk)]
+    if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+        ingest_upload_document_task.apply(args=args)
+    else:
+        transaction.on_commit(lambda: ingest_upload_document_task.apply_async(args=args))
+
+
+def upsert_upload_document(name: str, content: str, creator: Any = None, defer_chunks: bool = False) -> Any:
     """创建/覆盖上传文档并重建分块，返回 (doc, created)。
 
     同名（稳定 path）视为更新——「重新上传即覆盖」，列表不会出现同名多份；
@@ -182,16 +196,29 @@ def upsert_upload_document(name: str, content: str, creator: Any = None) -> Any:
     doc.content = content
     doc.content_hash = AiKnowledgeDocument.hash_content(content)
     doc.is_active = True
-    doc.chunk_count = rebuild_chunks(doc)
+    doc.ingest_error = ""
+    if defer_chunks:
+        # 大文本分块/向量化移出请求线程：先落库并置 PENDING，任务完成后再更新
+        doc.chunk_count = 0
+        doc.ingest_status = AiKnowledgeDocument.IngestStatus.PENDING
+    else:
+        doc.chunk_count = rebuild_chunks(doc)
+        doc.ingest_status = AiKnowledgeDocument.IngestStatus.SUCCESS
     if creator is not None and getattr(creator, "pk", None):
         doc.modifier = creator
         if created:
             doc.creator = creator
     doc.save()
-    # 正文变更自动补齐向量：文档行已落库后调度，无档案/无待建静默跳过
-    from ai.services.knowledge.ai_embeddings import schedule_auto_rebuild
+    if defer_chunks:
+        schedule_upload_ingest(doc)
+        # eager（测试/E2E）下任务同步执行，回读一行以返回真实状态；
+        # 生产为 PENDING，由前端轮询列表推进。
+        doc.refresh_from_db()
+    else:
+        # 正文变更自动补齐向量：文档行已落库后调度，无档案/无待建静默跳过
+        from ai.services.knowledge.ai_embeddings import schedule_auto_rebuild
 
-    schedule_auto_rebuild(doc)
+        schedule_auto_rebuild(doc)
     return doc, created
 
 

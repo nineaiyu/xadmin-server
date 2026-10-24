@@ -8,11 +8,18 @@
 
 from typing import Any
 
-from ..contracts import *  # noqa: F403
-from ..contracts import __all__ as __all__  # noqa: F401
+# 纯 PEP 562 惰性转发：不做模块级 ``from ..contracts import *``——contracts 模块级
+# 引用本包子包（如 services.approval 的协议常量），模块级转发会与之成环
+# （contracts → services.approval → services/__init__ → contracts）。
 
 
 def __getattr__(name: Any) -> Any:
     from .. import contracts
 
     return getattr(contracts, name)
+
+
+def __dir__() -> list[str]:
+    from .. import contracts
+
+    return dir(contracts)

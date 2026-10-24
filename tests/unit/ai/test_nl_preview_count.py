@@ -65,7 +65,7 @@ class TestBoundedPreviewCount:
 
 class TestPreviewText:
     def test_capped_text_marks_lower_bound(self):
-        from ai.views.nl_query import _preview_text
+        from ai.services.nl_query.orchestrator import preview_text
 
-        assert _preview_text(200, True) == "≥200"
-        assert _preview_text(7, False) == "7"
+        assert preview_text(200, True) == "≥200"
+        assert preview_text(7, False) == "7"

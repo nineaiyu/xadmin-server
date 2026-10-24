@@ -40,6 +40,7 @@ class MessageAction(StrEnum):
     CHAT_REACTION = "chat_reaction"  # 消息表情回应（双向，ws/chat/）
     CHAT_READ = "chat_read"  # 已读回执（上行 chat_read → 下行游标）
     CHAT_UNREAD = "chat_unread"  # 未读红点推送（下行，ws/chat/）
+    CHAT_ROOM = "chat_room"  # 群资料变更通知（成员/名称；下行，ws/chat/，客户端重拉会话列表）
     TASK_LOG = "task_log"  # 任务执行日志增量推送（task/ws.py）
     MONITOR = "monitor"  # 监控面板指标推送（system/ws_monitor.py）
     SCREEN_COMMAND = "screen_command"  # 大屏远程控制指令（dataset/ws_screen.py，下行单向）
@@ -183,6 +184,13 @@ class ChatUnreadPayload(TypedDict, total=False):
 
     room_id: int
     unread_count: int
+
+
+class ChatRoomChangedPayload(TypedDict, total=False):
+    """群资料变更帧（下行；成员增删/改名后推给房间成员）。"""
+
+    room_id: int
+    change: str
 
 
 class PushMessagePayload(TypedDict, total=False):

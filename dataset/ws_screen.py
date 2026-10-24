@@ -32,8 +32,8 @@ from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
 from dataset.screen_data import build_screen_data_payload, load_visible_screen
-from message.base import AsyncJsonWebsocket
-from message.protocol import MessageAction
+from message.ws.base import AsyncJsonWebsocket
+from message.ws.protocol import MessageAction
 
 logger = get_logger(__name__)
 

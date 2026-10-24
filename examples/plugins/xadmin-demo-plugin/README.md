@@ -33,8 +33,13 @@ python manage.py migrate xadmin_demo_plugin
 # 4. 重启进程（装配与模块组合在启动期解析；celery worker/beat 同重启）
 ```
 
-菜单与权限点：插件自己的菜单/权限点按宿主既有流程入库
-（`python manage.py sync_menu_permissions --update-seed` 或直接在后台配置）。
+菜单与权限点：随包分发静态种子（`xadmin_demo_plugin/seeds/`，页面菜单 + 标准动作权限点），
+宿主把它写进 `XADMIN_APPS` 后 `python manage.py load_init_json` 自动收集（未装插件则不收集，
+菜单不残留）；后续新增 action 照宿主流程 `sync_menu_permissions --update-seed` 回写。
+**配套前端页面**在宿主前端仓 `xadmin-client/src/extensions/demo-plugin/`
+（最小 RePlusPage 形态，约定见该目录上级 `src/extensions/README.md`；菜单种子的
+`component="extensions/demo-plugin/index"` 与组件 `defineOptions({ name: "PluginNote" })`
+对齐，断链由 `pnpm check:menu-components` 守护）。
 模块清单可随时用 `python manage.py module --list` 核对 `demo_plugin` 的等级与开关状态。
 
 ## 验证清单（装完即可对照执行）

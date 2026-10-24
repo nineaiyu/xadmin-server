@@ -107,7 +107,15 @@ class ChangePasswordSerializer(serializers.Serializer):
     # 密码下限不在字段上硬编码：与改密链路其他序列化器同口径，唯一由
     # check_password_rules 按长度/复杂度开关判定（旧密码仅做核验，不设策略下限）
     old_password = serializers.CharField(max_length=128, required=True, write_only=True, label=_("Old password"))
-    sure_password = serializers.CharField(max_length=128, required=True, write_only=True, label=_("Confirm password"))
+    # 契约命名遗留：本字段语义是**新密码**（非二次确认值），help_text 同步标注防二开误用；
+    # 改名会同时触碰前后端契约与已发布客户端，保持现状（见类 docstring 消歧说明）
+    sure_password = serializers.CharField(
+        max_length=128,
+        required=True,
+        write_only=True,
+        label=_("Confirm password"),
+        help_text=_("Legacy contract name: this field carries the NEW password itself (not a repeat/confirm value)"),
+    )
 
     def _decrypt_password(self, instance: Any, ciphertext: Any, field: Any) -> Any:
         """解密提交口令（口径见 `decrypt_submitted_password`，日志前缀保持改密语义）"""

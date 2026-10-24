@@ -7,8 +7,8 @@
 
 from asgiref.sync import async_to_sync
 
-from message.base import AsyncJsonWebsocket
-from message.protocol import (
+from message.ws.base import AsyncJsonWebsocket
+from message.ws.protocol import (
     PROTOCOL_VERSION,
     MessageAction,
 )
@@ -45,7 +45,7 @@ def test_action_enum_matches_ws_frame_schema():
 
 def test_chat_payloads_registered():
     """聊天室新增载荷类型必须在协议模块中有定义。"""
-    from message import protocol
+    from message.ws import protocol
 
     for name in (
         "ChatRoomMessagePayload",
@@ -65,7 +65,7 @@ def test_chat_reaction_payloads_match_schema():
 
     from django.conf import settings
 
-    from message import protocol
+    from message.ws import protocol
 
     schema_path = os.path.join(settings.PROJECT_DIR, "docs", "schema", "ws-frame.schema.json")
     with open(schema_path, encoding="utf-8") as fp:
@@ -85,7 +85,7 @@ def test_screen_command_payload_matches_schema():
 
     from django.conf import settings
 
-    from message import protocol
+    from message.ws import protocol
 
     schema_path = os.path.join(settings.PROJECT_DIR, "docs", "schema", "ws-frame.schema.json")
     with open(schema_path, encoding="utf-8") as fp:

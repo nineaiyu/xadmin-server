@@ -25,7 +25,7 @@ from approval.models.approval_rule import (
     ApprovalRule,
     ApprovalRuleLevel,
 )
-from approval.utils.approval import (
+from approval.services.approval import (
     approve_request,
     can_act,
     cancel_request,
@@ -157,7 +157,7 @@ class TestResolveRuleMethod:
 
     def test_create_approval_passes_request_method(self, applicant, chain_users, monkeypatch):
         """建单链路把请求方法传入匹配（锁定唯一调用点的传参口径）。"""
-        import approval.utils.approval.lifecycle as lifecycle
+        import approval.services.approval.lifecycle as lifecycle
 
         seen = {}
         original = lifecycle.resolve_rule
@@ -233,7 +233,7 @@ class TestPostLevel:
 
     def test_soft_deleted_post_excluded(self, db):
         """软删除（回收站）岗位不参与级次解析；未知 code 同样为空（fail-closed 由 build_steps 兜底）。"""
-        from approval.utils.approval.chains import resolve_level_users
+        from approval.services.approval.chains import resolve_level_users
         from identity.models import Post
 
         post = Post.objects.create(name="财务专员", code="chain_post_finance")

@@ -17,7 +17,8 @@ from approval.models.approval import (
     ApprovalInstance,
     ApprovalRequest,
 )
-from approval.utils.approval import approve_request
+from approval.services.approval import approve_request
+from approval.services.approval_flow.definition import rollback_flow
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 from dataset.utils.dform_flow import (
     DFORM_BIZ_TYPE,
@@ -602,6 +603,48 @@ class TestFlowFormSchemaProjection:
         flow.refresh_from_db()
         assert not [item for item in flow.form_schema if item["key"] == "hacked"]
         assert ApprovalFlowSerializer(flow).data["form_schema_locked"] is True
+
+    def test_rollback_keeps_projected_schema_when_locked(self, form, approver):
+        """回滚尊重表单锁：绑定期 form_schema 保留投影（仅节点回滚），新版本快照带现值。
+
+        旧快照里的历史表单结构不能借回滚写回——否则投影被破坏，之后发起的新单
+        会拿到与绑定表单不一致的字段定义。
+        """
+        from approval.services.approval_flow.versioning import apply_definition
+
+        def node_def(name):
+            return {
+                "name": name,
+                "order": 1,
+                "approve_type": ApprovalFlowNode.ApproveType.OR,
+                "assignee_type": ApprovalFlowNode.AssigneeType.USER,
+                "assignee_value": approver.username,
+            }
+
+        flow = form.approval_flow
+        # 现状 = 绑定表单的投影（落库，模拟投影维护后的活定义）
+        projected = [{"key": "name", "label": "姓名", "type": "input", "required": True}]
+        flow.form_schema = projected
+        flow.save(update_fields=["form_schema"])
+        apply_definition(flow, [node_def("旧节点")], remark="历史版本")
+        flow.refresh_from_db()
+        legacy_version = flow.version
+        # 历史快照里是绑定前的旧表单结构（与投影不同）
+        legacy_snapshot = flow.versions.get(version=legacy_version).snapshot
+        legacy_snapshot["form_schema"] = [{"key": "legacy", "label": "旧字段", "type": "text"}]
+        flow.versions.filter(version=legacy_version).update(snapshot=legacy_snapshot)
+        # 当前版本：投影 + 新节点
+        flow.form_schema = projected
+        apply_definition(flow, [node_def("新节点")], remark="当前版本")
+
+        ok, detail = rollback_flow(flow, legacy_version)
+        assert ok is True
+        assert detail  # 明示「仅回滚了节点」而非静默吞掉表单差异
+        flow.refresh_from_db()
+        assert [item["key"] for item in flow.form_schema] == ["name"]
+        assert list(flow.nodes.values_list("name", flat=True)) == ["旧节点"]
+        latest_snapshot = flow.versions.order_by("-version").values_list("snapshot", flat=True).first()
+        assert [item["key"] for item in latest_snapshot["form_schema"]] == ["name"]
 
     def test_unbound_flow_unlocked(self):
         """未绑定流程可自由编辑 form_schema（存量行为）。"""

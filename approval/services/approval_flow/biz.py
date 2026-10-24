@@ -14,6 +14,7 @@ from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
+from common.core.registry import Registry
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -96,11 +97,35 @@ def _render_demo_book(instance: Any) -> dict[str, Any]:
     }
 
 
-RENDERERS = {
-    "dform_submission": _render_dform_submission,
-    "leave": _render_leave,
-    "demo_book": _render_demo_book,
-}
+#: biz_type → 摘要渲染器注册表（内置三类 + 运行期扩展，键冲突 fail-fast、可重置）
+RENDERERS = Registry(
+    "approval_biz_renderers",
+    {
+        "dform_submission": _render_dform_submission,
+        "leave": _render_leave,
+        "demo_book": _render_demo_book,
+    },
+)
+
+
+def register_biz_renderer(biz_type: str) -> Any:
+    """装饰器：登记 biz_type 的关联对象摘要渲染器（二开接入新业务类型的扩展点）。
+
+    新业务类型此前需要改本模块源码；现在业务 app 在自己的模块里::
+
+        from approval.services.approval_flow.biz import register_biz_renderer
+
+        @register_biz_renderer("my_biz")
+        def _render_my_biz(instance): ...
+
+    渲染协议与内置一致：返回摘要 dict；抛异常按「对象不可达」降级，不影响实例详情。
+    """
+
+    def wrap(func: Any) -> Any:
+        RENDERERS.register(biz_type, func)
+        return func
+
+    return wrap
 
 
 def biz_summary(instance: Any) -> dict[str, Any] | None:
@@ -113,7 +138,9 @@ def biz_summary(instance: Any) -> dict[str, Any] | None:
     if renderer is None:
         return _missing(biz_type)
     try:
-        return renderer(instance)
+        # Registry.get 返回 Any；渲染协议固定返回摘要 dict（见 register_biz_renderer 注释）
+        summary: dict[str, Any] | None = renderer(instance)
+        return summary
     except Exception:  # noqa: BLE001 渲染失败按不可达降级，不影响实例详情
         logger.warning("render biz summary failed. type:%s id:%s", biz_type, biz_id, exc_info=True)
         return _missing(biz_type)

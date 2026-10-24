@@ -8,24 +8,16 @@ CSV 带 UTF-8 BOM 供 Excel 正确识别中文；Excel 走 openpyxl，datetime �
 """
 
 import csv
-import datetime
 import io
 from typing import Any
 
 from django.utils import timezone
 
 from common.utils.csv_safe import escape_csv_cell
-from common.utils.excel import append_text_safe_row
+from common.utils.excel import to_xlsx
 
 CSV_CONTENT_TYPE = "text/csv; charset=utf-8"
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-
-
-def _excel_safe(value: Any) -> Any:
-    """openpyxl 兼容转换：aware datetime → 本地朴素时间；其余原样。"""
-    if isinstance(value, datetime.datetime) and timezone.is_aware(value):
-        return timezone.localtime(value).replace(tzinfo=None)
-    return value
 
 
 def _csv_bytes(sheets: Any) -> Any:
@@ -43,26 +35,8 @@ def _csv_bytes(sheets: Any) -> Any:
 
 
 def _xlsx_bytes(sheets: Any) -> Any:
-    from openpyxl import Workbook
-    from openpyxl.styles import Font
-    from openpyxl.utils import get_column_letter
-
-    workbook = Workbook()
-    for index, sheet in enumerate(sheets):
-        worksheet = workbook.active if index == 0 else workbook.create_sheet()
-        worksheet.title = str(sheet["title"])[:31] or f"Sheet{index + 1}"
-        append_text_safe_row(worksheet, sheet["header"])
-        for cell in worksheet[1]:
-            cell.font = Font(bold=True)
-        for row in sheet["rows"]:
-            append_text_safe_row(worksheet, [_excel_safe(value) for value in row])
-        for column, title in enumerate(sheet["header"], start=1):
-            lengths = [len(str(title))]
-            lengths += [len(str(row[column - 1])) for row in sheet["rows"] if column - 1 < len(row)]
-            worksheet.column_dimensions[get_column_letter(column)].width = min(max(lengths) + 2, 40)
-    stream = io.BytesIO()
-    workbook.save(stream)
-    return stream.getvalue()
+    # 装配单源走内核（表头加粗 + 列宽自适应 + 全行防公式注入 + 值收敛）
+    return to_xlsx({sheet["title"]: [sheet["header"], *sheet["rows"]] for sheet in sheets})
 
 
 def render_table_export(prefix: Any, sheets: Any, file_format: Any = "csv") -> Any:

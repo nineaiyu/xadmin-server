@@ -22,6 +22,7 @@ from approval.services.approval_flow import (
     resolve_assignees,
     validate_form,
 )
+from approval.services.approval_flow.definition import rollback_flow
 from common.core.config import SysConfig
 from identity.models import DeptInfo, Post, UserInfo, UserRole
 
@@ -464,9 +465,15 @@ class TestEngineFlow:
         assert remind_pending_tasks() == 1
         assert remind_pending_tasks() == 0
 
-        # 保留期清理：实例超过保留期即删除（级联任务）
+        # 保留期清理：在途实例即使超过保留期也必须保留
         monkeypatch.setattr(type(SysConfig), "APPROVAL_FLOW_KEEP_DAYS", property(lambda self: 1), raising=False)
         ApprovalInstance.objects.filter(pk=instance.pk).update(created_time=old - datetime.timedelta(days=3))
+        assert clean_finished_instances() == 0
+        assert ApprovalInstance.objects.filter(pk=instance.pk).exists()
+        assert ApprovalNodeTask.objects.filter(instance_id=instance.pk).exists()
+
+        # 仅终态实例可清理（级联任务）
+        ApprovalInstance.objects.filter(pk=instance.pk).update(status=ApprovalInstance.Status.APPROVED)
         removed = clean_finished_instances()
         assert removed >= 1
         assert not ApprovalInstance.objects.filter(pk=instance.pk).exists()
@@ -750,7 +757,7 @@ class TestFlowVersions:
         assert ApprovalFlowNode.all_objects.filter(flow=flow).count() == 3  # v1 行收口留档
 
         # 回滚到 v1 → 生效定义恢复单节点 + 落 v3（回滚也是一次变更）
-        ok, detail = serializer.rollback_to_version(flow, 1)
+        ok, detail = rollback_flow(flow, 1)
         assert ok is True
         assert not detail
         assert flow.nodes.count() == 1
@@ -760,7 +767,7 @@ class TestFlowVersions:
     def test_rollback_missing_version(self, applicant):
 
         flow, serializer = self._flow_with_nodes("ver_missing")
-        ok, _detail = serializer.rollback_to_version(flow, 99)
+        ok, _detail = rollback_flow(flow, 99)
         assert ok is False
 
     def test_rollback_allowed_with_pending_instance(self, applicant, approver):
@@ -769,7 +776,7 @@ class TestFlowVersions:
         flow, serializer = self._flow_with_nodes("ver_pending")
         instance, error = create_instance(flow=flow, applicant=applicant, title="在途", form_data={})
         assert error is None
-        ok, detail = serializer.rollback_to_version(flow, 1)
+        ok, detail = rollback_flow(flow, 1)
         assert ok is True
         assert not detail
 
@@ -1108,3 +1115,51 @@ class TestNodeLimitAndBatchPaths:
         task = ApprovalNodeTask.objects.get(instance=instance, node=node)
         assert task.status == ApprovalNodeTask.Status.APPROVED
         assert task.assignee is None
+
+
+class TestResubmitSourceLink:
+    """驳回重提的原单关联：只接受同申请人 + 同流程的原实例。"""
+
+    def _start(self, flow, applicant, title="申请"):
+        instance, error = create_instance(flow=flow, applicant=applicant, title=title, form_data={})
+        assert error is None
+        assert instance is not None
+        return instance
+
+    def test_links_same_creator_and_flow(self, applicant, approver):
+        flow = make_flow(code="resubmit_same", nodes=[{"name": "初审"}])
+        first = self._start(flow, applicant, "首次提交")
+        second = self._start(flow, applicant, "重新提交")
+
+        linked, error = create_instance(
+            flow=flow, applicant=applicant, title="关联提交", form_data={}, source_instance=first.pk
+        )
+
+        assert error is None
+        assert linked is not None
+        assert linked.source_instance_id == first.pk
+        assert second.source_instance_id is None
+
+    def test_ignores_other_flow_and_other_creator(self, applicant, approver, approver2):
+        flow = make_flow(code="resubmit_base", nodes=[{"name": "初审"}])
+        other_flow = make_flow(code="resubmit_other", nodes=[{"name": "初审"}])
+        source = self._start(flow, applicant)
+
+        cross_flow, _ = create_instance(
+            flow=other_flow, applicant=applicant, title="跨流程", form_data={}, source_instance=source.pk
+        )
+        assert cross_flow is not None and cross_flow.source_instance_id is None
+
+        foreign_source = self._start(flow, approver2, "他人申请")
+        foreign, _ = create_instance(
+            flow=flow, applicant=applicant, title="关联他人单", form_data={}, source_instance=foreign_source.pk
+        )
+        assert foreign is not None and foreign.source_instance_id is None
+
+    def test_invalid_pk_is_ignored(self, applicant, approver):
+        flow = make_flow(code="resubmit_invalid", nodes=[{"name": "初审"}])
+        instance, error = create_instance(
+            flow=flow, applicant=applicant, title="非法关联", form_data={}, source_instance="not-a-uuid"
+        )
+        assert error is None
+        assert instance is not None and instance.source_instance_id is None

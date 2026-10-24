@@ -18,7 +18,7 @@ import pytest
 from django.urls import resolve
 
 from approval.models.approval import ApprovalRequest
-from approval.utils.approval import approve_request
+from approval.services.approval import approve_request
 from audit.models import OperationLog
 from common.core.config import SysConfig
 from identity.models import UserRole

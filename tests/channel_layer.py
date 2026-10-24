@@ -3,7 +3,7 @@
 
 生产环境使用 common.cache.channel.RedisChannelLayer（带 get_layers /
 get_groups / get_online_user_pks / get_layers_for_groups 用于在线状态统计）。
-内存版补齐同名方法，以便 message.utils 等模块在测试中可复用，并按
+内存版补齐同名方法，以便 message.ws.utils 等模块在测试中可复用，并按
 反向索引语义维护在线用户表。
 """
 
@@ -115,7 +115,7 @@ def beat_layer(layer, user_pk, channel="chan"):
     """模拟一次前端心跳：update_active_layers 为双栈同名的公开 API。"""
     from asgiref.sync import async_to_sync
 
-    from message.utils import get_user_layer_group_name
+    from message.ws.utils import get_user_layer_group_name
 
     async_to_sync(layer.update_active_layers)(get_user_layer_group_name(user_pk), channel)
 

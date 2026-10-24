@@ -84,7 +84,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | 缓存        | `packages/xadmin-common/common/cache/` + `packages/xadmin-common/common/base/magic.py`   | 四套缓存键规范/TTL/失效矩阵见 [cache.md](cache.md)；MagicCacheData 函数级 + cache_response 视图级                  |
 | 信号失效      | `system/signal_handler.py`                 | Menu/UserRole/DeptInfo/UserInfo/SystemConfig/登出 变更即失效权限与路由缓存，含 m2m_changed 挂钩                   |
 | 通知        | `notifications/`                           | `@register_message` 显式注册 + `BACKEND_MSG_RENDERERS` 集中注册（T2.4）；站内信/邮件/短信后端；新增后端 1 文件 + 1 行       |
-| WebSocket | `message/base.py`                          | 自定义 `{action, data, mid}` 协议，补类型约束后保持（ADR-003）；action 全集见 `message/protocol.py`（ping/userinfo/push_message/chat_message/chat_recall/chat_read/chat_unread/task_log/monitor/screen_command） |
+| WebSocket | `message/ws/base.py`                          | 自定义 `{action, data, mid}` 协议，补类型约束后保持（ADR-003）；action 全集见 `message/ws/protocol.py`（ping/userinfo/push_message/chat_message/chat_recall/chat_read/chat_unread/task_log/monitor/screen_command） |
 | Celery    | `packages/xadmin-common/common/celery/`                           | `@register_as_period_task` 声明式定时任务；default/heavy 队列分离；批量导入分片异步、无 Worker 自动降级同步                  |
 | 导入导出      | `packages/xadmin-common/common/drf/parsers                        | renders`                                                                                        | CSV(编码探测)/Excel(下拉验证/列宽/样式)/ZIP(AES 加密)；AxiosMultiPartParser 反解 dot-notation（TD-19 登记，更换 HTTP 库需评估） |
 | 限流        | `packages/xadmin-common/common/core/throttle.py`                  | login/register/reset_password/upload/download 分类限流（login 50/h 等 6 类）                            |

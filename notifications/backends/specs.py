@@ -71,6 +71,44 @@ CHANNEL_SPECS = (
     ),
 )
 
+#: 运行期登记的扩展渠道 spec（register_channel_spec 写入；reset_channel_specs 清空）
+_EXTRA_CHANNEL_SPECS: list[ChannelSpec] = []
+
+
+def all_channel_specs() -> tuple["ChannelSpec", ...]:
+    """内置 + 运行期登记的全部渠道 spec（消费侧统一入口，勿直接遍历 CHANNEL_SPECS）。"""
+    return (*CHANNEL_SPECS, *_EXTRA_CHANNEL_SPECS)
+
+
+def register_channel_spec(spec: "ChannelSpec") -> "ChannelSpec":
+    """登记渠道 spec（二开渠道扩展点）：与内置/既有扩展 code 冲突 fail-fast。
+
+    约束：``code`` 必须已存在于 :class:`BACKEND` 枚举（渠道枚举是序列化契约，
+    运行期不扩枚举）；渲染方法接线由 ``notifications.registry.register_channel``
+    一并完成，本函数只管 spec 清单（订阅页渠道列表 / 净化与 HTML 名单等消费面）。
+    """
+    from notifications.backends import BACKEND  # 延迟导入：枚举定义在包 __init__（避免循环）
+
+    if spec.code not in BACKEND.values:
+        raise ValueError(f"channel spec code {spec.code!r} not in BACKEND enum")
+    if spec.code in {item.code for item in all_channel_specs()}:
+        raise ValueError(f"channel spec code {spec.code!r} already declared")
+    _EXTRA_CHANNEL_SPECS.append(spec)
+    return spec
+
+
+def reset_channel_specs() -> None:
+    """清空运行期登记的渠道 spec（测试隔离用；内置清单不受影响）。"""
+    _EXTRA_CHANNEL_SPECS.clear()
+
+
 SPEC_BY_CODE = {spec.code: spec for spec in CHANNEL_SPECS}
 
-__all__ = ["CHANNEL_SPECS", "SPEC_BY_CODE", "ChannelSpec"]
+__all__ = [
+    "CHANNEL_SPECS",
+    "SPEC_BY_CODE",
+    "ChannelSpec",
+    "all_channel_specs",
+    "register_channel_spec",
+    "reset_channel_specs",
+]

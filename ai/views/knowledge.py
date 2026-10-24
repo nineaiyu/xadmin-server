@@ -88,8 +88,12 @@ class AiKnowledgeDocumentViewSet(
         """
         serializer = KnowledgeUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        # 分块/向量化走后台任务：大文档不再阻塞请求线程；状态随列表下发
         doc, created = upsert_upload_document(
-            serializer.validated_data["name"], serializer.validated_data["content"], creator=request.user
+            serializer.validated_data["name"],
+            serializer.validated_data["content"],
+            creator=request.user,
+            defer_chunks=True,
         )
         return ApiResponse(
             data=self.get_serializer(doc).data,

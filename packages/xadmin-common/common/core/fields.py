@@ -14,6 +14,9 @@ from common.core.fields_related import (  # noqa: F401 再导出：关联字段�
     BasePrimaryKeyRelatedField as BasePrimaryKeyRelatedField,
 )
 from common.core.fields_related import (
+    DisplayRelatedField as DisplayRelatedField,  # noqa: F401 展示增强关联字段（自 task 下沉内核）
+)
+from common.core.fields_related import (
     get_search_choices_max_count as get_search_choices_max_count,
 )
 from common.core.validators import ColorValidator, PhoneValidator

@@ -17,12 +17,12 @@ from common.core.response import ApiResponse
 from common.core.throttle import AiThrottleMixin
 from common.drf.renders import SseRendererMixin, sse_response
 from common.swagger.utils import get_default_response_schema
-from message import ai as chat_ai
 from message import chat as chat_service
+from message.chat import ai as chat_ai
 from message.models import ChatMessage, ChatRoom
 from message.serializers import ChatAiMessageSerializer
-from message.utils import push_room_event
 from message.views import _validation_detail  # 聊天室视图共用校验文案助手（views 不反向依赖本模块）
+from message.ws.utils import push_room_event
 
 
 class ChatAiViewSet(AiThrottleMixin, SseRendererMixin, GenericViewSet):

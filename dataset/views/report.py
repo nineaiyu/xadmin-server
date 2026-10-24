@@ -15,7 +15,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from dataset.analysis_tasks import schedule_report_run
 from dataset.models.report import Report
-from dataset.serializers.analysis import (
+from dataset.serializers.report import (
     IM_NOTIFY_CHANNELS,
     REPORT_NOTIFY_CHANNELS,
     ReportSerializer,

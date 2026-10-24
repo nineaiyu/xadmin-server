@@ -2584,6 +2584,9 @@ msgid "The flow version does not exist"
 msgstr "流程版本不存在"
 
 #: approval/serializers/approval_flow.py:366
+msgid "Form schema is locked by a bound form; only nodes were rolled back"
+msgstr "表单结构已被绑定表单锁定，仅回滚了节点定义"
+
 #, python-brace-format
 msgid "Rollback from version {}"
 msgstr "从版本 {} 回滚"
@@ -6490,6 +6493,10 @@ msgstr "确认密码"
 #: identity/serializers/userinfo.py:121
 msgid "Old password verification failed"
 msgstr "旧密码校验失败"
+
+#: identity/serializers/userinfo.py:115
+msgid "Legacy contract name: this field carries the NEW password itself (not a repeat/confirm value)"
+msgstr "契约命名遗留：本字段承载的就是新密码本身（不是二次确认值）"
 
 #: identity/serializers/userinfo.py:147 mfa/backends/password.py:18
 #: settings/serializers/security_mfa.py:33
@@ -12518,3 +12525,11 @@ msgstr "SCIM 令牌轮换失败"
 #: settings/serializers/scim.py settings/views/scim.py settings/views/oauth.py
 msgid "Unknown role code: {}"
 msgstr "未知角色编码：{}"
+
+#: identity/views/admin/role.py settings/views/settings.py
+msgid "Built-in role cannot be modified: {}"
+msgstr "内置角色不允许修改：{}"
+
+#: identity/views/admin/role.py settings/views/settings.py
+msgid "Unsupported category: {}"
+msgstr "不支持的配置分类：{}"

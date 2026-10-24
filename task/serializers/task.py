@@ -18,8 +18,13 @@ from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
 from rest_framework import serializers
 
-from common.core.fields import DictChoiceField
-from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField
+from common.core.fields import (
+    DictChoiceField,
+)
+from common.core.fields import (
+    DisplayRelatedField as DisplayRelatedField,  # noqa: F401 序列化器族既有导入面经本模块再导出
+)
+from common.core.serializers import BaseModelSerializer
 from task.models.task import TaskExecution
 from task.utils.task_center import ACTIVE_STATUSES
 
@@ -34,23 +39,6 @@ _CRONTAB_STEPS = {
 
 # 时区候选一次加载（ZoneInfo 数据库），写入侧 fail-closed
 _AVAILABLE_TIMEZONES = frozenset(available_timezones())
-
-
-class DisplayRelatedField(BasePrimaryKeyRelatedField):
-    """对象关联字段展示增强：补充 label（默认 str(instance)），
-    供前端列表/详情/下拉直接可读，避免展示裸外键主键（周期任务页的
-    crontab/interval 原先显示 1/2/3 这种数字主键，无法辨认）。"""
-
-    def __init__(self, *args: Any, label_builder: Any = str, **kwargs: Any) -> None:
-        self.label_builder = label_builder
-        super().__init__(*args, **kwargs)
-
-    def to_representation(self, value: Any) -> Any:
-        data = super().to_representation(value)
-        if isinstance(data, dict):
-            # 基类已把 label 兜底为 pk，这里必须覆盖而非 setdefault，否则 label_builder 永不生效
-            data["label"] = self.label_builder(value)
-        return data
 
 
 def crontab_display(value: CrontabSchedule) -> str:

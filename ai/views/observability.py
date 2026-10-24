@@ -60,7 +60,7 @@ class AiObservabilityMixin:
 
         from ai.services.assistant.ai_usage import USAGE_MAX_DAYS
         from audit.services import OperationLog
-        from identity.models import UserInfo
+        from identity.contracts import username_map
 
         try:
             days = int(request.query_params.get("days") or 30)
@@ -97,12 +97,7 @@ class AiObservabilityMixin:
             .annotate(count=Count("id"))
             .order_by("-count")[:10]
         )
-        name_map = {
-            str(pk): username
-            for pk, username in UserInfo.objects.filter(pk__in=[row["object_pk"] for row in top_rows]).values_list(
-                "pk", "username"
-            )
-        }
+        name_map = username_map(row["object_pk"] for row in top_rows)
         # token 用量（成本维度）：DB 侧聚合 AI 用量账本（不再逐行解析审计 changes JSON）
         from ai.services.assistant.ai_usage import usage_tokens_since
 

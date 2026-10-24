@@ -1,60 +1,15 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""菜单权限点同步内核：扫描/审计/绑定常量与登记表。"""
+"""菜单权限点同步内核：框架级约定常量。
+
+app 侧例外（扫描跳过 / 审计豁免 / 父菜单归属 / 运行期自建权限点 / custom 权限面
+豁免）已迁至各 app 的 ``declarations.py``，聚合视图见同包 ``declarations.py``；
+本模块只保留与具体 app 无关的动作口径约定。
+"""
 
 # 死端点（前端无消费方）：登记豁免，不生成权限点。
 # 2026-09-14：`api/task/interval` 及其前端死代码已删除，此处清空备查。
 DEAD_ENDPOINT_PREFIXES = ()
-# 不参与扫描的路由前缀（demo 应用按既定决策不投入）
-SKIP_ROUTE_PREFIXES = ("api/demo/",)
-# 无同源权限点时，按路由前缀指定父菜单（Menu.name，必须为页面菜单）
-PARENT_MENU_MAP = {
-    "api/dataset/dynamic-form-submissions": "FormMySubmission",
-    "api/dataset/form-data": "FormData",
-    "api/approval/approval-delegations": "SystemApprovalDelegation",
-    # 组织与安全域
-    "api/identity/posts": "SystemPost",
-    "api/identity/account-risks": "SystemAccountRisk",
-    "api/identity/login-policies": "SystemLoginPolicy",
-    "api/notifications/message-templates": "SettingMessage",
-    # 代码生成器 GUI（generate_crud 引擎的只读端点）
-    "api/system/codegen": "SystemCodeGen",
-    # 开放平台设置页（SCIM / 第三方登录）：typed 配置端点无同源权限点，按前缀归属。
-    # 值是 (权限码后缀, 父菜单 name)：同一页面下多个视图集需要各自的权限码后缀。
-    "api/settings/scim": ("ScimSetting", "SettingOpenPlatform"),
-    "api/settings/oauth/providers": ("OAuthProviderSetting", "SettingOpenPlatform"),
-    "api/identity/authorized-applications": ("AuthorizedApplication", "SettingOpenPlatform"),
-}
-# 审计豁免（有权限点但不在可扫描路由面内，运行期经权限链正则回退命中，权限点有效）：
-# - api/chat/*：不在 PERMISSION_SHOW_PREFIX（框架未纳入菜单生成面），权限点手工维护；
-# - api-docs/*、api/flower/*、api/system/global-search：路由以无名 pattern / 代理注册，
-#   get_all_url_dict 忽略无名路由，故不出现在扫描面内；
-# - api/ai/mcp：MCP 端点是无 actions 的 APIView，审计按 route.actions 过滤方法时
-#   恒不匹配；运行期由 IsAuthenticated 权限链按 path 正则命中权限点（非超管未授权即 403）；
-# - api/approval/approval-instances/ongoing：页签级权限点（scope=ongoing 管理视角，无独立端点），
-#   经 packages/xadmin-common/common/core/permission.user_has_permission 按 path 授权，属设计内的功能开关权限点；
-# - api/approval/approval-delegations/all：同款功能开关权限点（列表取值域「查看全部委托记录」）。
-AUDIT_SKIP_PREFIXES = (
-    "api/chat/",
-    "api-docs/",
-    "api/flower/",
-    "api/system/global-search",
-    "api/ai/mcp",
-    "api/approval/approval-instances/ongoing",
-    "api/approval/approval-delegations/all",
-)
-# 已知「同端点双权限码」重复点：各自服务不同 UI 入口/动作（非脏数据，不报告、不合并）：
-# - tasks/executions GET：任务页「日志」按钮(log:SystemTask) 与任务中心抽屉(list:SystemTaskExecution)；
-# - logs/operation GET：操作日志页(list:SystemOperationLog)、用户页「变更历史」
-#   (changeHistory:SystemUser) 与部门页「变更历史」(changeHistory:SystemDept)；
-AUDIT_KNOWN_DUPLICATES = {
-    ("api/task/executions$", "GET"),
-    ("api/audit/logs/operation$", "GET"),
-    # 基本设置与水印同端点：水印是独立页签权限位（读写同 `/api/settings/basic`，
-    # 后端按 path+method 鉴权为 OR 语义，字段级隔离不做）。
-    ("api/settings/basic$", "GET"),
-    ("api/settings/basic$", "PATCH"),
-}
 # 框架自动按钮/标准 CRUD 的权限动作（与 components/RePlusPage 的自动按钮同源）。
 # 其余动作属于「页面自定义能力」（rank/permissions/impact/enable/...），审计单列
 # custom_action 组提示管理员按 `<lowerCamelAction>:<PascalComponent>` 约定命名；
@@ -83,20 +38,6 @@ FRAMEWORK_PERMISSION_ACTIONS = frozenset(
         "columns",
     }
 )
-# 已知「单权限码覆盖同端点多方法」：前端以同一权限码驱动查看/保存（拆分权限点会改变页面
-# hasAuth 口径），扫描按本表视为全覆盖；键 = 路由正则原文（含 `$`，与权限点 path 同口径），
-# 值 = 该权限码覆盖的方法集合。
-# 运行时不再读本表：同 handler 多方法按视图 action_map 自动回退
-# （common/core/permission.py::_shared_method_menu_pk），因此新增此类端点无需登记。
-# - user/{pk}/im-binding GET+POST：管理员代录 IM 身份（查看绑定 / 创建或更新），
-#   前端统一用 `imBinding:SystemUser` 判定入口可见性。
-SHARED_METHOD_PATHS = {
-    "api/identity/user/(?P<pk>[^/.]+)/im-binding$": ("GET", "POST"),
-    # chat/room/{pk}/members GET+POST：查看成员 / 增删成员共用 members:ChatRoom 权限码
-    "api/chat/room/(?P<pk>[^/.]+)/members$": ("GET", "POST"),
-    # screens/{pk}/command GET+POST：查询控制态 / 下发控制指令共用 command:DataScreen 权限码
-    "api/dataset/screens/(?P<pk>[^/.]+)/command$": ("GET", "POST"),
-}
 # 需保持「模型绑定为空」的动作：导入导出链（字段权限回退到 list/create 菜单的口径）
 IMPORT_EXPORT_ACTIONS = (
     "export_data",
@@ -108,6 +49,3 @@ IMPORT_EXPORT_ACTIONS = (
 )
 # 需绑定关联模型的动作（与 get_view_permissions 的 models 口径一致）
 CRUD_BIND_ACTIONS = ("list", "create", "retrieve", "partial_update")
-# 运行时模块自建权限点的 pk 前缀（演示示例 6eed 段等）：绑定与字段白名单由模块自身
-# 的种子命令维护，权限点扫描不校正、种子回写不收录（其菜单/结构不进 loadjson）。
-RUNTIME_PERMISSION_PREFIXES = ("6eed000c",)

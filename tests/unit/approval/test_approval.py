@@ -15,8 +15,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.viewsets import ViewSet
 
 from approval.models.approval import ApprovalRequest
-from approval.tasks import auto_clean_approval_job, auto_expire_approval_job, auto_remind_approval_job
-from approval.utils.approval import (
+from approval.services.approval import (
     approval_stats,
     approve_request,
     can_approve,
@@ -29,6 +28,7 @@ from approval.utils.approval import (
     reject_request,
     remind_pending_approvals,
 )
+from approval.tasks import auto_clean_approval_job, auto_expire_approval_job, auto_remind_approval_job
 from approval.views.approval import ApprovalRequestViewSet
 from common.core.approval import ApprovalRequired
 from common.core.response import ApiResponse

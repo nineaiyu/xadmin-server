@@ -8,7 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from approval.utils.approval.display import user_display
+from approval.services.approval.display import user_display
 from common.utils import get_logger
 
 if TYPE_CHECKING:  # 仅类型检查期导入：运行期模型一律经 _models() 惰性取数
@@ -113,6 +113,22 @@ def _instance_version(instance: Any) -> Any:
     return version if version and version > 0 else None
 
 
+def _validated_source_instance(source_instance: Any, applicant: Any, flow: Any) -> Any:
+    """驳回重提的原单关联：只接受「同申请人 + 同流程」的原实例，否则忽略。"""
+    if not source_instance:
+        return None
+    ApprovalInstance = _models().Instance
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    try:
+        source = ApprovalInstance.objects.filter(pk=source_instance).first()
+    except (TypeError, ValueError, DjangoValidationError):
+        return None
+    if source is None or source.creator_id != applicant.pk or source.flow_id != flow.pk:
+        return None
+    return source
+
+
 def create_instance(
     *,
     flow: ApprovalFlow,
@@ -122,6 +138,7 @@ def create_instance(
     biz_type: str = "",
     biz_id: str = "",
     cc_users: list[str] | None = None,
+    source_instance: Any = None,
 ) -> tuple[ApprovalInstance | None, str | None]:
     """发起申请：校验表单与全部可达节点候选，建实例并进入首节点。
 
@@ -134,6 +151,9 @@ def create_instance(
 
     cc_users：发起时追加的抄送人（用户 pk 列表）；实例抄送人 = 可达节点
     ``cc_users`` 并集 + 本参数，落实例快照并即时知会（终态再次知会）。
+
+    source_instance：驳回重提时的原实例（仅当原单属于同一申请人且同一流程时
+    建立关联，避免被伪造 pk 关联他人单据）。
 
     事务边界：发起链路整体在一个事务内（校验失败提前返回，不产生写入），中途异常
     整体回滚——不会留下「PENDING 但无任何节点任务」的卡死单；业务接入方无需自行
@@ -162,6 +182,7 @@ def create_instance(
             if not resolve_assignees(node, applicant, form_data):
                 return None, _no_approver_detail(node, applicant)
 
+        source = _validated_source_instance(source_instance, applicant, flow)
         instance = ApprovalInstance.objects.create(
             flow=flow,
             flow_name=flow.name,
@@ -172,6 +193,7 @@ def create_instance(
             flow_version=flow.version,
             biz_type=(biz_type or "")[:64],
             biz_id=str(biz_id or "")[:64],
+            source_instance=source,
         )
         cc_list = _resolve_instance_cc(path, applicant, cc_users)
         if cc_list:

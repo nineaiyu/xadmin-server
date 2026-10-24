@@ -8,7 +8,9 @@
 from typing import Any
 
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
+from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.viewsets import GenericViewSet
 
@@ -36,12 +38,24 @@ class BaseSettingViewSet(NoDetailModelSet):
     serializer_class = BasicSettingSerializer
     category = "basic"
     serializer_class_mapper: dict[str, Any] = {}
+    #: ?category= 允许的取值域；None = 由 mapper 键与端点默认 category 推导。
+    #: 显式声明用于「mapper 只覆盖部分渠道、其余渠道走公共字段面」的端点（如短信）。
+    category_whitelist: frozenset[str] | None = None
 
     def get_serializer_class(self) -> Any:
         if not self.serializer_class_mapper:
             return super().get_serializer_class()
         # 未带 ?category= 时回落到端点自身的默认渠道（SMS=alibaba），不再一律 basic
-        self.category = self.request.query_params.get("category", self.category)
+        requested = str(self.request.query_params.get("category") or "").strip()
+        if requested:
+            allowed = self.category_whitelist
+            if allowed is None:
+                allowed = frozenset(self.serializer_class_mapper) | {self.category}
+            if requested not in allowed:
+                # 校验取值域：parse_serializer_data 会把 self.category 写进 Setting，
+                # 未校验时拼错的 category 会静默落到新分区，读侧永远查不到。
+                raise ValidationError({"category": _("Unsupported category: {}").format(requested)})
+            self.category = requested
         cls = self.serializer_class_mapper.get(self.category, self.serializer_class)
         return cls
 

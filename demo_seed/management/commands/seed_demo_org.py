@@ -241,24 +241,28 @@ class Command(BaseCommand):
                 permission.field.set(all_fields)
 
         # 数据权限：全量放行规则（fail-closed：无授权则列表为空）
-        DataPermission.objects.filter(name__in=[f"示例-{name}" for name in LEGACY_GRANT_MODELS]).delete()
+        # DataPermission 已软删（回收站可恢复）：name 唯一约束不受 deleted_at 影响，
+        # 旧数据须走 all_objects 复用/复活；死规则（LEGACY）物理清除。
+        for row in DataPermission.all_objects.filter(name__in=[f"示例-{name}" for name in LEGACY_GRANT_MODELS]):
+            row.hard_delete()
         for model_name in GRANT_MODELS:
-            DataPermission.objects.update_or_create(
-                name=f"示例-{model_name}",
-                defaults={
-                    "is_active": True,
-                    "rules": [
-                        {
-                            "table": model_name,
-                            "field": "id",
-                            "type": "value.all",
-                            "match": "all",
-                            "value": "",
-                            "exclude": False,
-                        }
-                    ],
-                },
-            )
+            name = f"示例-{model_name}"
+            perm = DataPermission.all_objects.filter(name=name).first()
+            if perm is None:
+                perm = DataPermission(name=name)
+            perm.is_active = True
+            perm.rules = [
+                {
+                    "table": model_name,
+                    "field": "id",
+                    "type": "value.all",
+                    "match": "all",
+                    "value": "",
+                    "exclude": False,
+                }
+            ]
+            perm.deleted_at = None
+            perm.save()
 
     def _bind_users(self, roles: dict[str, Any], depts: dict[str, Any]) -> None:
         rules = list(DataPermission.objects.filter(name__startswith="示例-"))

@@ -24,8 +24,8 @@ from channels.db import database_sync_to_async
 
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 from common.utils import get_logger
-from message.base import AsyncJsonWebsocket
-from message.protocol import MessageAction
+from message.ws.base import AsyncJsonWebsocket
+from message.ws.protocol import MessageAction
 from task.models.task import TaskExecution
 
 logger = get_logger(__name__)

@@ -7,7 +7,7 @@
 
 单源结构（消除此前的"枚举/TypedDict ↔ schema 手工双写"）：
 
-- action 枚举由 ``message.protocol.MessageAction`` 生成——新增动作只改枚举；
+- action 枚举由 ``message.ws.protocol.MessageAction`` 生成——新增动作只改枚举；
 - payload 的 properties 键集合与类型由 ``message/protocol.py`` 对应 TypedDict
   经 ``typing.get_type_hints`` 自动导出（改字段名/类型后重跑生成脚本即同步）；
 - payload 的 required / additionalProperties / 字段描述 / 载荷所在通道说明无法由
@@ -21,7 +21,7 @@
 import json
 from typing import Any, get_args, get_origin, get_type_hints
 
-from message import protocol
+from . import protocol
 
 SCHEMA_ID = "xadmin/schemas/ws-frame.schema.json"
 SCHEMA_TITLE = "WebSocketFrameV1"
@@ -100,6 +100,16 @@ PAYLOAD_DECLARATIONS: dict[str, dict[str, Any]] = {
             "message_type": "text / ai / system / image / video / audio / file",
             "client_msg_id": "客户端幂等键",
             "can_recall": "撤回资格（仅发送者定向帧下发，与 REST 历史同一判定；房间共享广播帧不带）",
+        },
+    },
+    "chatRoomChangedPayload": {
+        "typed_dict": "ChatRoomChangedPayload",
+        "description": "群资料变更帧（成员增删/改名；客户端据此重拉会话列表）",
+        "required": ["room_id"],
+        "open": False,
+        "fields": {
+            "room_id": "变更的群聊主键",
+            "change": "变更类型：members / rename",
         },
     },
     "chatReactionPayload": {

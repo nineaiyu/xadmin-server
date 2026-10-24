@@ -15,7 +15,7 @@ from common.core.modelset import ImpactPreviewAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from dataset.models.screen import Screen, ScreenClipboard, ScreenTemplate
-from dataset.serializers.analysis import (
+from dataset.serializers.screen import (
     ScreenClipboardSerializer,
     ScreenCommandSerializer,
     ScreenSerializer,

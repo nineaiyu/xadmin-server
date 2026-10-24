@@ -35,7 +35,9 @@ pytestmark = pytest.mark.skipif(
 PATH_PATTERN = re.compile(r"""["'`](/api/[A-Za-z0-9_\-/$.{}\\]+)["'`]""")
 TEMPLATE_VAR = re.compile(r"\$\{[^}]*\}")
 
-SKIP_PARTS = ("/__tests__/", "/mock/", "/node_modules/", "/coverage/")
+# ``src/extensions/`` 是可选插件的前端配套页（如 demo-plugin）：其后端路由随插件
+# 安装与否存在，未装时不可解析是预期，不参与对账（插件页存活由装包流程保证）
+SKIP_PARTS = ("/__tests__/", "/mock/", "/node_modules/", "/coverage/", "/src/extensions/")
 
 
 def _iter_source_files():

@@ -72,26 +72,8 @@ def extract_catalog(text: str) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
-def build_answer(messages: list) -> str:
-    user_text = ""
-    for message in reversed(messages or []):
-        if message.get("role") == "user":
-            user_text = str(message.get("content") or "")
-            break
-
-    # 动作草稿仅服务于 `/do` 草稿链路（prompt 携带动作目录标记）；文档问答 / NL
-    # 解释等无标记请求一律返回固定问答文案（否则会被 NL 解析为未知结构）。
-    if ALLOWED_ACTIONS_MARKER not in user_text:
-        if STREAM_PROBE_MARKER in user_text:
-            return LONG_ANSWER
-        return FALLBACK_ANSWER
-
-    # 意图判断只看用户原始请求（marker 之前的部分）：动作目录里的中文描述
-    # （如"向全部用户发布一条系统公告"）会干扰关键字判断
-    request_text = user_text.split(ALLOWED_ACTIONS_MARKER, 1)[0]
-    catalog = extract_catalog(user_text.split(ALLOWED_ACTIONS_MARKER, 1)[1])
-
-    # 动作草稿：优先命中 E2E 动作表单（按名字前缀）
+def _draft_dform_submit(catalog: dict) -> str | None:
+    """动作草稿：优先命中 E2E 动作表单（按名字前缀）。"""
     for action in catalog.get("actions", []) if isinstance(catalog, dict) else []:
         if action.get("action") != "dform.submit":
             continue
@@ -116,93 +98,109 @@ def build_answer(messages: list) -> str:
                 },
                 ensure_ascii=False,
             )
+    return None
 
-    # 多步串联草稿：请求含「串联」且目录具备公告 + 站内信动作 → 两步一起产出
+
+def _draft_chained(request_text: str, catalog: dict) -> str | None:
+    """多步串联草稿：请求含「串联」且目录具备公告 + 站内信动作 → 两步一起产出。"""
     chained = "串联" in request_text and {
         "notice.publish",
         "message.mark_all_read",
     }.issubset({action.get("action") for action in catalog.get("actions", [])} if isinstance(catalog, dict) else set())
-    if chained:
-        return json.dumps(
-            {
-                "actions": [
-                    {
-                        "action": "notice.publish",
-                        "params": {
-                            "title": "E2E 串联公告",
-                            "message": "大家好，这是 E2E 桩生成的串联公告内容。",
-                            "level": "info",
-                        },
-                        "summary": "发布一条系统公告",
+    if not chained:
+        return None
+    return json.dumps(
+        {
+            "actions": [
+                {
+                    "action": "notice.publish",
+                    "params": {
+                        "title": "E2E 串联公告",
+                        "message": "大家好，这是 E2E 桩生成的串联公告内容。",
+                        "level": "info",
                     },
-                    {"action": "message.mark_all_read", "params": {}, "summary": "标记全部消息已读"},
-                ]
-            },
-            ensure_ascii=False,
-        )
+                    "summary": "发布一条系统公告",
+                },
+                {"action": "message.mark_all_read", "params": {}, "summary": "标记全部消息已读"},
+            ]
+        },
+        ensure_ascii=False,
+    )
 
-    # 只读查询草稿：请求含「用户数」且目录具备 dashboard 聚合动作（结果表渲染链路）
-    if "用户数" in request_text and any(
-        action.get("action") == "dashboard.overview" for action in catalog.get("actions", [])
-    ):
-        return json.dumps(
-            {
-                "actions": [
-                    {
-                        "action": "dashboard.overview",
-                        "params": {},
-                        "summary": "查询首页统计获取用户数量",
-                    }
-                ]
-            },
-            ensure_ascii=False,
-        )
 
-    # 公告草稿：目录含公告动作且用户请求出现"公告"关键字
-    if "公告" in request_text and any(
-        action.get("action") == "notice.publish" for action in catalog.get("actions", [])
-    ):
-        return json.dumps(
-            {
-                "actions": [
-                    {
-                        "action": "notice.publish",
-                        "params": {
-                            "title": "E2E 系统公告",
-                            "message": "大家好，这是 E2E 桩生成的公告内容。",
-                            "level": "info",
-                        },
-                        "summary": "发布一条系统公告",
-                    }
-                ]
-            },
-            ensure_ascii=False,
-        )
+def _draft_dashboard(request_text: str, catalog: dict) -> str | None:
+    """只读查询草稿：请求含「用户数」且目录具备 dashboard 聚合动作（结果表渲染链路）。"""
+    if "用户数" not in request_text:
+        return None
+    if not any(action.get("action") == "dashboard.overview" for action in catalog.get("actions", [])):
+        return None
+    return json.dumps(
+        {
+            "actions": [
+                {
+                    "action": "dashboard.overview",
+                    "params": {},
+                    "summary": "查询首页统计获取用户数量",
+                }
+            ]
+        },
+        ensure_ascii=False,
+    )
 
-    # 用户启停草稿：目录含 user.set_active 且请求里出现 E2E 目标用户名
+
+def _draft_notice(request_text: str, catalog: dict) -> str | None:
+    """公告草稿：目录含公告动作且用户请求出现"公告"关键字。"""
+    if "公告" not in request_text:
+        return None
+    if not any(action.get("action") == "notice.publish" for action in catalog.get("actions", [])):
+        return None
+    return json.dumps(
+        {
+            "actions": [
+                {
+                    "action": "notice.publish",
+                    "params": {
+                        "title": "E2E 系统公告",
+                        "message": "大家好，这是 E2E 桩生成的公告内容。",
+                        "level": "info",
+                    },
+                    "summary": "发布一条系统公告",
+                }
+            ]
+        },
+        ensure_ascii=False,
+    )
+
+
+def _draft_user_set_active(request_text: str, catalog: dict) -> str | None:
+    """用户启停草稿：目录含 user.set_active 且请求里出现 E2E 目标用户名。"""
     target_match = TARGET_USERNAME_RE.search(request_text)
-    if target_match and any(action.get("action") == "user.set_active" for action in catalog.get("actions", [])):
-        target = target_match.group(0)
-        return json.dumps(
-            {
-                "actions": [
-                    {
-                        "action": "user.set_active",
-                        "params": {"pk": target, "is_active": False},
-                        "summary": f"禁用用户 {target}",
-                    }
-                ]
-            },
-            ensure_ascii=False,
-        )
+    if not target_match:
+        return None
+    if not any(action.get("action") == "user.set_active" for action in catalog.get("actions", [])):
+        return None
+    target = target_match.group(0)
+    return json.dumps(
+        {
+            "actions": [
+                {
+                    "action": "user.set_active",
+                    "params": {"pk": target, "is_active": False},
+                    "summary": f"禁用用户 {target}",
+                }
+            ]
+        },
+        ensure_ascii=False,
+    )
 
-    # 请假草稿：日期取用户消息中的首个日期（E2E 保证唯一），缺省用明天
+
+def _draft_leave(request_text: str) -> str:
+    """请假草稿：日期取用户消息中的首个日期（E2E 保证唯一），缺省用明天。"""
     matched = DATE_RE.search(request_text)
     if matched:
         start = datetime.date.fromisoformat(matched.group(0))
     else:
         start = datetime.date.today() + datetime.timedelta(days=1)
-    reason = "E2E AI 动作请假"
     return json.dumps(
         {
             "actions": [
@@ -213,7 +211,7 @@ def build_answer(messages: list) -> str:
                         "start_date": start.isoformat(),
                         "end_date": start.isoformat(),
                         "days": 1,
-                        "reason": reason,
+                        "reason": "E2E AI 动作请假",
                     },
                     "summary": f"提交 {start.isoformat()} 的年假申请",
                 }
@@ -221,6 +219,37 @@ def build_answer(messages: list) -> str:
         },
         ensure_ascii=False,
     )
+
+
+def build_answer(messages: list) -> str:
+    user_text = ""
+    for message in reversed(messages or []):
+        if message.get("role") == "user":
+            user_text = str(message.get("content") or "")
+            break
+
+    # 动作草稿仅服务于 `/do` 草稿链路（prompt 携带动作目录标记）；文档问答 / NL
+    # 解释等无标记请求一律返回固定问答文案（否则会被 NL 解析为未知结构）。
+    if ALLOWED_ACTIONS_MARKER not in user_text:
+        if STREAM_PROBE_MARKER in user_text:
+            return LONG_ANSWER
+        return FALLBACK_ANSWER
+
+    # 意图判断只看用户原始请求（marker 之前的部分）：动作目录里的中文描述
+    # （如"向全部用户发布一条系统公告"）会干扰关键字判断
+    request_text, _, catalog_text = user_text.partition(ALLOWED_ACTIONS_MARKER)
+    catalog = extract_catalog(catalog_text)
+
+    for draft in (
+        _draft_dform_submit(catalog),
+        _draft_chained(request_text, catalog),
+        _draft_dashboard(request_text, catalog),
+        _draft_notice(request_text, catalog),
+        _draft_user_set_active(request_text, catalog),
+    ):
+        if draft:
+            return draft
+    return _draft_leave(request_text)
 
 
 class StubLLMHandler(BaseHTTPRequestHandler):

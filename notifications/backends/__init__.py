@@ -14,6 +14,9 @@ from notifications.backends.specs import (
 from notifications.backends.specs import (
     ChannelSpec as ChannelSpec,
 )
+from notifications.backends.specs import (
+    all_channel_specs as all_channel_specs,  # noqa: F401 消费侧统一入口（内置 + 运行期登记）
+)
 
 logger = get_logger(__name__)
 

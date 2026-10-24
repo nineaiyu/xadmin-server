@@ -136,7 +136,7 @@ def _refresh_latest_snapshot_form_schema(flow: Any) -> None:
     """最新版本快照的 form_schema 对齐当前投影（无快照/无变化跳过）。"""
     import json
 
-    from approval.models.approval import ApprovalFlowVersion
+    from approval.contracts import ApprovalFlowVersion
 
     row = ApprovalFlowVersion.objects.filter(flow=flow).order_by("-version").first()
     if row is None:
@@ -166,7 +166,7 @@ def resync_flow_after_unbind(previous_flow_id: Any) -> None:
     """
     if not previous_flow_id:
         return
-    from approval.models.approval import ApprovalFlow
+    from approval.contracts import ApprovalFlow
 
     flow = ApprovalFlow.objects.filter(pk=previous_flow_id).first()
     if flow is None or not flow.bound_forms.filter(is_template=False).exists():
@@ -187,7 +187,7 @@ def create_flow_instance(submission: Any, applicant: Any) -> Any:
     PENDING——只有一次尝试能占到（Postgres 下调用方另有行锁），失败路径整体回滚
     本次尝试的写入（含刚创建的实例），不留下状态与实例不一致的提交行。
     """
-    from approval.services.approval_flow import create_instance
+    from approval.contracts import create_instance
 
     form = submission.form
     if form.approval_flow_id is None:
@@ -342,7 +342,7 @@ def register_approval_handlers() -> None:
 
     两条链路：新建提交（POST 列表）与草稿提交（POST {pk}/submit）——后者更新既有行。
     """
-    from approval.utils.approval import register_on_approved
+    from approval.contracts import register_on_approved
 
     register_on_approved(r"^/api/dataset/dynamic-form-submissions/?$", submit_from_approval)
     register_on_approved(r"^/api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$", update_from_approval)
@@ -350,12 +350,12 @@ def register_approval_handlers() -> None:
 
 def sync_dform_instance(instance: Any, status: Any, reason: str = "") -> None:
     """流程实例终态回写表单提交状态：由信号接收器调用（幂等）。"""
-    from approval.models.approval import ApprovalInstance
+    from approval.contracts import instance_status_choices
 
     if getattr(instance, "biz_type", "") != DFORM_BIZ_TYPE or not instance.biz_id:
         return
     status = str(status)
-    if status not in dict(ApprovalInstance.Status.choices):
+    if status not in dict(instance_status_choices()):
         return
 
     submission = DynamicFormSubmission.objects.filter(pk=instance.biz_id).first()

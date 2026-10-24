@@ -18,7 +18,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from approval.utils.approval.display import user_display
+from approval.services.approval.display import user_display
 
 from .conditions import nodes_effective_at, resolve_assignee_pairs
 from .constants import _models

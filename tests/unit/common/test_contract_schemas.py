@@ -16,8 +16,8 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.utils import encoders
 
 from demo.views import BookViewSet
-from message.base import AsyncJsonWebsocket
-from message.protocol import MessageAction
+from message.ws.base import AsyncJsonWebsocket
+from message.ws.protocol import MessageAction
 from system.views.user.routes import UserRoutesAPIView
 
 pytestmark = pytest.mark.django_db

@@ -17,7 +17,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from approval.models.approval import ApprovalInstanceComment
 from approval.serializers.approval_instance import ApprovalInstanceCommentSerializer
-from approval.utils.approval.display import user_display
+from approval.services.approval.display import user_display
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 

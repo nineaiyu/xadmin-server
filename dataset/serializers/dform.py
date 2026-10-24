@@ -19,7 +19,12 @@ from dataset.utils.dform import (
     validate_submission_data,
 )
 from dataset.utils.dform_filter import build_filter_data
-from dataset.utils.dform_history import key_of, merged_fields_of_forms, submission_schema
+from dataset.utils.dform_history import (
+    key_of,
+    merged_fields_of_forms,
+    schema_for_version,
+    submission_schema,
+)
 
 
 def export_dynamic_fields(queryset: Any) -> list[tuple[str, str, bool]]:
@@ -54,18 +59,18 @@ def approval_trail_of(obj: Any, context: Any) -> list[Any]:
     """审批轨迹：实例任务的展示口径（状态/审批人/意见/时间/加签/委托来源）。"""
     if not obj.instance_id:
         return []
-    from approval.serializers.approval_flow import ApprovalNodeTaskSerializer
+    from approval.contracts import serialize_instance_tasks
 
     tasks = obj.instance.tasks.all()
-    data: list[Any] = ApprovalNodeTaskSerializer(tasks, many=True, context=context).data
-    return data
+    payload: list[Any] = serialize_instance_tasks(tasks, context)
+    return payload
 
 
 class ApprovalFlowRelatedField(BasePrimaryKeyRelatedField):
     """审批流程外键：取值域不做行级数据权限过滤（定义类资源，与表单定义同口径）。"""
 
     def get_queryset(self) -> Any:
-        from approval.models.approval import ApprovalFlow
+        from approval.contracts import ApprovalFlow
 
         return ApprovalFlow.objects.all()
 
@@ -309,6 +314,16 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
         # 新建提交要求表单启用；已有 DRAFT/REJECTED 提交允许在表单停用后继续编辑/重提
         if not form.is_active and self.instance is None:
             raise serializers.ValidationError(_("This form is no longer accepting submissions"))
+        # 编辑历史提交（未换表单）：按提交时的 schema 快照校验与物化。
+        # 前端按快照渲染字段（我的填报编辑、历史详情），后端若按当前 schema 校验，
+        # 改版后删字段会被判「未知键」、新增必填会被判「必填缺失」——两侧口径必须同源。
+        schema = form.schema
+        schema_version = form.schema_version or 1
+        if self.instance is not None and form.pk == self.instance.form_id:
+            # 用纯快照（不并入 data 中的未知键）：编辑时未知键仍需被裁剪，
+            # 只有快照里声明过的字段才参与校验与物化。
+            schema = schema_for_version(form, self.instance.schema_version)
+            schema_version = self.instance.schema_version or schema_version
         data = attrs.get("data")
         if data is None and self.instance:
             data = self.instance.data
@@ -321,10 +336,10 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
             # PATCH 局部更新：data 先与库内数据合并再整份校验——只校验提交子集会把
             # 未提交的必填字段判成缺失（必填误报）。PUT（非 partial）维持整份替换
             # 语义（省略键 = 删除该键）。
-            # 合并底数先按当前 schema 裁剪历史键：schema 演进后旧提交
+            # 合并底数先按生效 schema 裁剪历史键：schema 演进后旧提交
             # 的已删字段键无法经表单清理，合并不裁剪会随载荷重新入库并被拒绝
             data = {
-                **trim_stale_schema_keys(form.schema, self.instance.data or {}),
+                **trim_stale_schema_keys(schema, self.instance.data or {}),
                 **data,
             }
         # 草稿（DRAFT）：轻校验（结构/体积），必填与取值在提交时按完整规则校验
@@ -333,11 +348,11 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
         else:
             # 提交侧校验：与 schema 定义同源（未知键/required/选项/边界；字典字段读字典值；
             # 联动规则参与：隐藏字段跳过校验且不落库、动态必填覆盖字段定义）
-            attrs["data"] = validate_submission_data(form.schema, data, user=getattr(self.request, "user", None))
+            attrs["data"] = validate_submission_data(schema, data, user=getattr(self.request, "user", None))
         # 记录保存时的表单版本（审计与展示；校验始终按提交当时的 schema）
-        attrs["schema_version"] = form.schema_version or 1
+        attrs["schema_version"] = schema_version
         # 物化筛选列：勾选「可筛选」的字段取值（列表筛选走 JSON 包含查询，可命中 GIN）
-        attrs["filter_data"] = build_filter_data(form.schema, attrs["data"])
+        attrs["filter_data"] = build_filter_data(schema, attrs["data"])
         return attrs
 
 

@@ -15,7 +15,7 @@ from django.utils.translation import gettext
 from rest_framework import serializers
 
 from dataset.models.dataset import Dashboard
-from dataset.serializers.analysis import ScreenTemplateSerializer
+from dataset.serializers.screen import ScreenTemplateSerializer
 from dataset.utils.screen_layout import (
     SCREEN_FREE_DEFAULT_H,
     SCREEN_FREE_DEFAULT_W,
