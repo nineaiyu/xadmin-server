@@ -311,6 +311,68 @@ class TestDatasetExecute:
         assert drill["code"] == 1000
         assert drill["data"]["total"] >= 1
 
+    def test_aggregate_request_filters(self, auth_client, dataset, normal_user):
+        """请求级 filters（卡片联动）：聚合序列随过滤收敛，口径同 execute。"""
+        all_rows = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "username", "metric": "count"},
+            format="json",
+        ).json()
+        assert all_rows["code"] == 1000
+        assert len(all_rows["data"]["series"]) >= 2, "至少超管与普通用户两桶，过滤收敛才有对照"
+        filtered = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {
+                "group_by": "username",
+                "metric": "count",
+                "filters": [{"field": "username", "op": "exact", "value": normal_user.username}],
+            },
+            format="json",
+        ).json()
+        assert filtered["code"] == 1000
+        assert [row["name"] for row in filtered["data"]["series"]] == [normal_user.username]
+        assert filtered["data"]["series"][0]["value"] == 1
+
+    def test_aggregate_request_filters_validated(self, auth_client, dataset):
+        """非法请求级 filters 拒绝（白名单外字段 / 非法 op），口径同 execute。"""
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "username", "filters": [{"field": "password", "op": "exact", "value": "x"}]},
+            format="json",
+        ).json()
+        assert body["code"] == 1001
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "username", "filters": [{"field": "username", "op": "regex", "value": "x"}]},
+            format="json",
+        ).json()
+        assert body["code"] == 1001
+
+    def test_aggregate_raw_filters_linkage(self, auth_client, dataset, model_registry):
+        """raw 原值回灌 aggregate 请求级 filters（卡片联动闭环）：布尔分组
+        label 经元数据映射（≠raw），过滤必须用 raw 才能命中同桶。"""
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "is_active", "metric": "count"},
+            format="json",
+        ).json()
+        assert body["code"] == 1000
+        target = body["data"]["series"][0]
+        assert isinstance(target["raw"], bool), "raw 必须是分组原始布尔值"
+        assert target["name"] != str(target["raw"]), "label 走元数据映射，与 raw 分离"
+        linked = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {
+                "group_by": "is_active",
+                "metric": "count",
+                "filters": [{"field": "is_active", "op": "exact", "value": target["raw"]}],
+            },
+            format="json",
+        ).json()
+        assert linked["code"] == 1000
+        assert len(linked["data"]["series"]) == 1
+        assert linked["data"]["series"][0]["value"] == target["value"]
+
     def test_aggregate_trend(self, auth_client, dataset, model_registry):
         root = ModelLabelField.objects.get(name="identity.userinfo")
         ModelLabelField.objects.get_or_create(

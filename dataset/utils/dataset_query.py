@@ -126,7 +126,13 @@ def _trend_series(
 
 
 def aggregate_dataset(
-    dataset: Any, user_obj: Any, group_by: Any, metric: Any = "count", date_trunc: Any = None, value_field: Any = None
+    dataset: Any,
+    user_obj: Any,
+    group_by: Any,
+    metric: Any = "count",
+    date_trunc: Any = None,
+    value_field: Any = None,
+    extra_filters: Any = None,
 ) -> Any:
     """聚合：图表卡片数据源。输出 [{name, raw, value}]（桶上限 365；raw 为分组
     原始值，供卡片下钻过滤，趋势/单桶序列无 raw）。
@@ -134,6 +140,8 @@ def aggregate_dataset(
     - group_by 为空 = 无分组纯聚合（NL 查数「一共有多少个」等）：单桶输出，name 为「总计」；
     - date_trunc（day/month）仅对 DateTime 字段生效：按时间桶分组（趋势），需 group_by；
     - metric: count / sum / avg（sum、avg 仅数值字段，value_field 必填且在白名单）；
+    - extra_filters：请求级行过滤（卡片联动），与数据集定义 filters 叠加，
+      校验口径由视图层 ``validate_filters`` 负责；
     - 字段权限叠加：分组/取值字段必须对浏览者可见，否则聚合结果
       会绕过列白名单泄露隐藏字段（如薪酬求和），fail-closed 报错。
     """
@@ -155,7 +163,7 @@ def aggregate_dataset(
             if visible_root_of(value_visible) not in visible:
                 raise ValidationError(_("No field permission for {}.{}").format(dataset.bound_model, value_visible.raw))
 
-    queryset, __, __ = build_queryset(dataset, user_obj, extra_filters=[])
+    queryset, __, __ = build_queryset(dataset, user_obj, extra_filters=extra_filters)
     annotation = Count("pk")
     if metric in ("sum", "avg"):
         if not value_field:

@@ -136,9 +136,15 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         """聚合序列
 
         图表数据源：group_by + metric(+value_field) + date_trunc
+
+        ``filters``：请求级行过滤（卡片联动），与数据集定义 filters 叠加，
+        校验口径同 ``execute``（``validate_filters``：字段白名单 + op 白名单 + 类型）。
         """
         dataset = self.get_object()
         try:
+            extra_filters = request.data.get("filters")
+            if extra_filters:
+                validate_filters(dataset.bound_model, extra_filters)
             result = aggregate_dataset(
                 dataset,
                 request.user,
@@ -146,6 +152,7 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
                 metric=request.data.get("metric", "count"),
                 date_trunc=request.data.get("date_trunc"),
                 value_field=request.data.get("value_field"),
+                extra_filters=extra_filters or None,
             )
         except ValidationError as exc:
             return ApiResponse(code=1001, detail="; ".join(exc.messages), status_code=status.HTTP_400_BAD_REQUEST)

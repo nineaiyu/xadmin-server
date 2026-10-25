@@ -34802,7 +34802,7 @@
     },
     "/api/dataset/datasets/{id}/aggregate": {
       "post": {
-        "description": "聚合序列\n\n图表数据源：group_by + metric(+value_field) + date_trunc",
+        "description": "聚合序列\n\n图表数据源：group_by + metric(+value_field) + date_trunc\n\n``filters``：请求级行过滤（卡片联动），与数据集定义 filters 叠加，\n校验口径同 ``execute``（``validate_filters``：字段白名单 + op 白名单 + 类型）。",
         "operationId": "api_dataset_datasets_aggregate_create",
         "parameters": [
           {
