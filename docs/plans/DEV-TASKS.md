@@ -22,6 +22,45 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
+- **2026-10-25 提案候选第五批（B-3 外观包 + P1 联动二期 + D-2 工作台 WS 推送，改动已提交
+  client `de446dbd` / server `6d4c0f07` + client `cc42d6a1` / server `e7041372` + client `e24371de`，
+  两份提案可立项候选至此全部消化）**：
+  ①**B-3 站点级外观包导入导出（纯前端零后端，client `de446dbd`）**：偏好面板「更多」新增
+  「导出 / 导入外观包」——导出落 JSON 文件（类型信封 + 剔除 `Version` / 存储命名空间构建期键）；
+  导入（仅超管，入口菜单门控）校验从严（未知键 / 值形态不符 / 版本过新整体拒绝，不做部分导入），
+  合并写回系统配置行 `WEB_SITE_CONFIG`（站点级键唯一权威源，含 Title/Logo 等站点身份键）→
+  失效缓存 → 重同步站点配置 → 重挂载面板组件；个人已自定义偏好仍以个人值为准（默认值迁移
+  而非强制下发）。vitest 11 例（round-trip / 构建期键剔除 / 校验拒绝 / 合并语义）。
+  ②**P1 联动二期（卡片间联动过滤，server `6d4c0f07` / client `cc42d6a1`）**：后端 aggregate
+  端点接受请求级 `filters`（`validate_filters` 口径同 execute，线程穿透 `aggregate_dataset →
+  build_queryset`，大屏 / 报表既有调用不受影响）；前端 `useDashboardLinkage` 状态机——带 raw
+  的分组点击设置 / 切换联动（来源卡排除、数据集缺维度字段静默跳过、趋势 / 无分组点击不改变
+  联动），`ChartCard` 新增 `linkageFilter` prop 随取数下发，联动 chip 展示来源卡与维度值可
+  一键清除（kiosk 展板亦可见），编辑态 / 切盘复位；点击行为 = 下钻抽屉 + 联动伴生。集成测试
+  3 例 + vitest 11 例 + E2E 联动用例。
+  ③**D-2 看板 WS 数据推送·工作台半边（server `e7041372` / client `e24371de`；大屏半边已在位）**：
+  新通道 `ws/dashboard/<pk>`（`DashboardDataNotify`：连接即自推首帧、准入与 HTTP 可见性同口径
+  超管 / 创建者 / shared、合并窗口合并背靠背触发）+ `dataset/dashboard_data.py` 按观察者聚合
+  整盘（复用大屏取数内核 execute_card / load_datasets 改公开名，卡片级 allowed_roles 过滤、
+  同帧同参数去重、单卡失败进 errors 不中断——数据权限 fail-closed 与逐卡 HTTP 重拉等价）+
+  beat 任务 `push_dashboard_data`（15s，离盘不占位不落键、`cache.add` 原子占位）+ 协议新增
+  `dashboard_data` 帧与 `DashboardDataPayload`（ws-frame.schema 再生成，双端同步）；前端自动
+  刷新新增「实时（推送）」档（-1）——`useDashboardChannel` 开合连接（切盘重连、编辑态不吃
+  推送）、帧按卡片 id 路由 `ChartCard.applyData`（与令牌重拉共用渲染路径）。集成测试 25 例 +
+  vitest 8 例 + E2E 实时档用例（断言 ws 连接建立与首帧到达）。
+  **同批门禁清偿**：`check:hook-length` 存量越线 4 处——`usePanelActions`（本批扩出 237 行）
+  拆出 `useAppearancePackActions`；`useScreenExport`（156）实现域下沉 `screenExportFiles`；
+  `useOverlayFooter`（121）/ `useCommandPalette`（120）注释归并回落（近期批次只跑了 check 子集
+  未覆盖该门禁，本轮全量口径补齐）。
+  **验证**：后端全量 `PYTEST_EXIT=0`（真 PG / Redis，pipefail 取真实退出码）；ruff、行数 / 函数 /
+  缓存键 / 菜单标题 / 台账编号门禁、`makemigrations --check`、`dump_openapi --check`、
+  `gen_ws_frame_schema --check` 全绿；前端 vitest 425 文件 / 2781 例、typecheck / lint /
+  `check:*` 全量 15 项全绿；dashboard E2E fresh 双浏览器全过（含联动 + 实时推送新例）；
+  容器重启 + 容器内冒烟：ws/dashboard 路由注册、beat 注册（interval=15 / module=analysis）、
+  带鉴权 WS 连接收 `dashboard_data` 首帧（4 卡 0 错误）、匿名连接被拒、aggregate filters 生效。
+  **未做（维持提案归位）**：A-2/B-2/C-1/C-2/D-3/E-1 等触发制项、移动端 / print.ts / RePlusPage
+  包化（触发制）、P8 PDF 快照二期（再议）、红线项不触碰。
+
 - **2026-10-25 提案候选第四批（P2 AI 日报 + P4-2 AI 字段草案 + P5 MCP 治理 + B-1 组件 Playground，均默认关/纯前端增量）**：
   ①**P2 AI 主动日报**：`ai/services/daily_report.py` 只读聚合（审批待办 / 监控 firing /
   24h 异常请求 / 任务失败 / AI 用量——单指标失败按 0 兜底不拖垮整份）→ `structured_chat_client +
@@ -440,7 +479,7 @@
 | print.ts 前端打印 | 零依赖，待有打印需求时引入 |
 | 二开脚手架复评 | 2026-10-09 现状更新：示例分发包 + 教程章节已交付（2027-02 窗口），复评条件收窄为「出现多人协作诉求」 |
 | 移动端填报 / 审批 | 触发条件：移动端访问占比超阈值（15%~20% 区间届时取值）或出现外勤 / 巡检 / 车间审批真实诉求；命中后最小切片 = 审批待办 + 一张 dform 表单提交的 H5 渲染 PoC |
-| 两份 2026.10 新功能提案（P1~P8 / A~E） | 指针行：论证完成、待产品优先级裁决，[产品向](新功能方向提案-2026.10.md) / [前端专项](前端新功能对标与候选提案-2026.10.md)；确认前不占窗口、不做预备 |
+| ~~两份 2026.10 新功能提案（P1~P8 / A~E）~~ | **已全部消化（2026-10-25 五批交付，见状态快照）**：可立项候选 P1~P8 / A-1 / B-1 / B-3 / D-2 / E-2 及 T4 / T11 前置全部交付，P1 联动二期随第五批补齐；剩余项均属触发制 / 不立项清单（见两提案 §四 / §五），按各自触发条件待命 |
 
 > 2026-10-09 核销两项：**ASGI 异步中间件链迁移**（ADR-078 `33b941e1`，2026-10-02 交付：
 > 4 项双模化 + 3 显式同步边界 + 收口复核与链能力守护 2 例）；**缓存与索引季度复核**
