@@ -137,13 +137,21 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
     @extend_schema(responses={200: UserMsgSubscriptionByCategorySerializer})
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取用户消息订阅列表"""
+        # 数据源 = 用户消息 + 开放自选订阅的系统消息（如主机资源告警）：
+        # 系统订阅页的管理员兜底收件不变，个人订阅页是「额外自选」的叠加面
+        subscribable_msgs = [
+            *user_msgs,
+            *(msg for msg in system_msgs if msg.get("user_subscribable")),
+        ]
         msg_type_sub_mapper = {sub.message_type: sub for sub in self.get_queryset()}
 
         # GET 请求补齐缺失订阅（隐含批量写）：并发首访会同时查空、同时逐条
         # create，撞 (user, message_type) 唯一约束而 500。改为一次 bulk_create
         # 并 ignore_conflicts（谁先插入谁生效，后来者静默跳过），随后重查全量
         # 订阅重建映射再组装响应树，保证双方都拿到完整且一致的返回。
-        missing_types = [msg["message_type"] for msg in user_msgs if msg["message_type"] not in msg_type_sub_mapper]
+        missing_types = [
+            msg["message_type"] for msg in subscribable_msgs if msg["message_type"] not in msg_type_sub_mapper
+        ]
         if missing_types:
             UserMsgSubscription.objects.bulk_create(
                 [
@@ -156,7 +164,7 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
 
         data = []
         category_children_mapper = {}
-        for msg in user_msgs:
+        for msg in subscribable_msgs:
             message_type = msg["message_type"]
             message_type_label = msg["message_type_label"]
             category = msg["category"]

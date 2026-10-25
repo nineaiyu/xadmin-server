@@ -43,6 +43,8 @@ def register_message(cls: Any) -> Any:
         "message_type_label": cls.message_type_label,
         "category": cls.category,
         "category_label": cls.category_label,
+        # 系统消息是否开放个人订阅页自选（视图层据此合并展示，默认 False）
+        "user_subscribable": bool(getattr(cls, "user_subscribable", False)),
         # 类引用：post_migrate 补建订阅时回调 cls.post_insert_to_db
         "cls": cls,
     }

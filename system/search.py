@@ -87,6 +87,10 @@ class SearchProvider:
     limit: int = GROUP_LIMIT
     superuser_only: bool = False
     row_scope: Callable[[Any, QuerySet], QuerySet] | None = None
+    # 命中跳转承接字段：分组路由对应列表页的搜索字段名（RePlusPage 的
+    # route.query → 搜索默认值装配）。跳转带 ?<search_field>=<关键词> 让列表页
+    # 直接过滤到命中；None = 列表页无对齐搜索字段，跳转不带 query
+    search_field: str | None = None
 
     def visible_to(self, user: Any, permission_data: dict[str, Any]) -> bool:
         """页面权限门：按 list 权限 URL 匹配用户的菜单权限码集合（超管与全局 URL 门同口径直通）。"""
@@ -123,6 +127,7 @@ class SearchProvider:
             "key": self.key,
             "label": self.label,
             "route": self.route,
+            "search_field": self.search_field,
             "total": total,
             "items": self._mask_items(items, queryset.model, request, user),
         }
@@ -145,7 +150,8 @@ class SearchProvider:
         return masked_items
 
 
-SEARCH_PROVIDERS = (
+# 内置实体清单（运行期可通过 register_search_provider 追加业务模型分组）
+SEARCH_PROVIDERS: list[SearchProvider] = [
     SearchProvider(
         key="user",
         label="用户",
@@ -155,6 +161,7 @@ SEARCH_PROVIDERS = (
         text_fields=("username", "nickname", "email", "phone"),
         display_field="username",
         meta_fields=("nickname",),
+        search_field="username",
     ),
     SearchProvider(
         key="dept",
@@ -164,6 +171,7 @@ SEARCH_PROVIDERS = (
         queryset=lambda: DeptInfo.objects.all().order_by("name"),
         text_fields=("name", "code"),
         display_field="name",
+        search_field="name",
     ),
     SearchProvider(
         key="post",
@@ -174,6 +182,7 @@ SEARCH_PROVIDERS = (
         text_fields=("name", "code"),
         display_field="name",
         meta_fields=("code",),
+        search_field="name",
     ),
     SearchProvider(
         key="file",
@@ -183,6 +192,7 @@ SEARCH_PROVIDERS = (
         queryset=lambda: UploadFile.objects.all().order_by("-created_time"),
         text_fields=("filename",),
         display_field="filename",
+        search_field="filename",
     ),
     SearchProvider(
         key="tag",
@@ -192,6 +202,7 @@ SEARCH_PROVIDERS = (
         queryset=lambda: Tag.objects.all().order_by("name"),
         text_fields=("name", "remark"),
         display_field="name",
+        search_field="name",
     ),
     SearchProvider(
         key="approval",
@@ -226,7 +237,21 @@ SEARCH_PROVIDERS = (
         meta_fields=("method", "status_code"),
         superuser_only=True,
     ),
-)
+]
+
+
+def register_search_provider(provider: SearchProvider) -> SearchProvider:
+    """二开扩展点：注册业务模型的搜索分组（AppConfig.ready 等导入期调用）。
+
+    两道权限门口径与内置实体一致（页面权限门按 list_url 匹配、数据权限门
+    get_filter_queryset fail-closed）；trgm 索引登记清单不含二开实体（小规模
+    顺序扫描可接受，量级上来后按 system/search_indexes.py 的清单口径补登记）。
+    key 冲突 fail-fast，防止静默覆盖内置分组。
+    """
+    if any(item.key == provider.key for item in SEARCH_PROVIDERS):
+        raise ValueError(f"duplicate global search provider key: {provider.key}")
+    SEARCH_PROVIDERS.append(provider)
+    return provider
 
 
 def run_global_search(user: Any, keyword: str, scope: str | None = None) -> list[dict[str, Any]]:

@@ -28,10 +28,16 @@ from dataset.utils.dataset import (
 )
 
 
-def execute_dataset(dataset: Any, user_obj: Any, count_only: bool = False, max_rows: int | None = None) -> Any:
+def execute_dataset(
+    dataset: Any,
+    user_obj: Any,
+    count_only: bool = False,
+    max_rows: int | None = None,
+    extra_filters: Any = None,
+) -> Any:
     """执行数据集：返回白名单列的行数据（row_limit 上限）。
 
-    输出列 = 数据集 columns ∩ 浏览者字段权限白名单（JSON 路径列按根字段收敛；
+    输入列 = 数据集 columns ∩ 浏览者字段权限白名单（JSON 路径列按根字段收敛；
     超管/无字段配置 = 全量，显式授权即收敛）；交集为空返回空结果（不泄露行数等
     任何业务数据）。JSON 列经别名注解后重命名回列声明，行键与列头始终一致。
 
@@ -43,8 +49,11 @@ def execute_dataset(dataset: Any, user_obj: Any, count_only: bool = False, max_r
     ``max_rows``：外部行数上限（如报表设计的明细行数上限），与数据集 row_limit
     取小者一并下推到 SQL，避免为 Python 侧切片而全量物化；LIMIT 取行必须有
     确定排序才可复现，数据集与绑定模型均未声明排序时按主键稳定排序。
+
+    ``extra_filters``：请求级行过滤（卡片下钻「按维度值看明细」），与数据集
+    定义 filters 叠加；调用方（视图层）须先经 ``validate_filters`` 完整校验。
     """
-    queryset, model, columns = build_queryset(dataset, user_obj)
+    queryset, model, columns = build_queryset(dataset, user_obj, extra_filters=extra_filters)
     whitelist = set(available_fields(dataset.bound_model))
     limit = min(int(dataset.row_limit or 1000), ROW_LIMIT_CAP)
     if max_rows is not None:
@@ -119,7 +128,8 @@ def _trend_series(
 def aggregate_dataset(
     dataset: Any, user_obj: Any, group_by: Any, metric: Any = "count", date_trunc: Any = None, value_field: Any = None
 ) -> Any:
-    """聚合：图表卡片数据源。输出 [{name, value}]（桶上限 365）。
+    """聚合：图表卡片数据源。输出 [{name, raw, value}]（桶上限 365；raw 为分组
+    原始值，供卡片下钻过滤，趋势/单桶序列无 raw）。
 
     - group_by 为空 = 无分组纯聚合（NL 查数「一共有多少个」等）：单桶输出，name 为「总计」；
     - date_trunc（day/month）仅对 DateTime 字段生效：按时间桶分组（趋势），需 group_by；
@@ -179,6 +189,9 @@ def aggregate_dataset(
         series = [
             {
                 "name": _group_label(row[group_spec.alias], group_field),
+                # 原始分组值（下钻过滤用）：name 经字段元数据映射（布尔/choices），
+                # 与过滤所需原值可能不同；趋势序列无 raw（时间桶无单值等值语义）
+                "raw": row[group_spec.alias],
                 "value": row["agg_value"] if row["agg_value"] is not None else 0,
             }
             for row in rows

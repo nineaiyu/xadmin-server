@@ -258,6 +258,59 @@ class TestDatasetExecute:
         body = auth_client.post(f"{DATASET_URL}/{dataset.pk}/execute", {}, format="json").json()
         assert [row["username"] for row in body["data"]["rows"]] == ["admin"]
 
+    def test_execute_request_filters_drilldown(self, auth_client, dataset):
+        """请求级 filters（卡片下钻）：与数据集定义 filters 叠加，同口径过滤。"""
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/execute",
+            {"filters": [{"field": "username", "op": "exact", "value": "admin"}]},
+            format="json",
+        ).json()
+        assert body["code"] == 1000
+        assert [row["username"] for row in body["data"]["rows"]] == ["admin"]
+
+    def test_execute_request_filters_validated(self, auth_client, dataset):
+        """非法请求级 filters 拒绝（白名单外字段 / 非法 op），口径同保存侧。"""
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/execute",
+            {"filters": [{"field": "password", "op": "exact", "value": "x"}]},
+            format="json",
+        ).json()
+        assert body["code"] == 1001
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/execute",
+            {"filters": [{"field": "username", "op": "regex", "value": "x"}]},
+            format="json",
+        ).json()
+        assert body["code"] == 1001
+
+    def test_aggregate_series_carries_raw_value(self, auth_client, dataset, model_registry):
+        """分组序列带 raw 原始值（卡片下钻过滤依据）：label 走元数据映射，raw 保持原值，
+        且 raw 可直接回灌 execute 的请求级 filters（下钻闭环）。"""
+        root = ModelLabelField.objects.get(name="identity.userinfo")
+        ModelLabelField.objects.get_or_create(
+            name="gender",
+            parent=root,
+            defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "性别"},
+        )
+        UserInfo.objects.update(gender=1)
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "gender", "metric": "count"},
+            format="json",
+        ).json()
+        assert body["code"] == 1000
+        series = body["data"]["series"]
+        assert len(series) == 1
+        assert series[0]["raw"] == 1, "raw 必须是分组原始值（下钻过滤用）"
+        assert series[0]["name"] != "1", "label 走元数据映射，与 raw 分离"
+        drill = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/execute",
+            {"filters": [{"field": "gender", "op": "exact", "value": series[0]["raw"]}]},
+            format="json",
+        ).json()
+        assert drill["code"] == 1000
+        assert drill["data"]["total"] >= 1
+
     def test_aggregate_trend(self, auth_client, dataset, model_registry):
         root = ModelLabelField.objects.get(name="identity.userinfo")
         ModelLabelField.objects.get_or_create(

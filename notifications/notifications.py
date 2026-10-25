@@ -293,24 +293,52 @@ class Message:
 
 
 class SystemMessage(Message):
+    #: 该系统消息是否允许用户在个人订阅页自选订阅（publish 时并入自选者，
+    #: 各自按勾选渠道投递）。默认关闭：仅运维类告警等明确开放的消息置 True。
+    user_subscribable = False
+
+    def _subscriber_groups(self, subscription: Any) -> dict[frozenset[str], list[Any]]:
+        """收件人按渠道集合分组：系统订阅者用订阅行渠道；自选订阅者（仅
+        user_subscribable 消息）用各自勾选渠道；两边都登记的用户渠道取并集。
+        站内信不参与分组（get_backend_msg_mapper 内恒发兜底）。
+        """
+        system_backends = frozenset(BACKEND.filter_enable_backends(subscription.receive_backends))
+        # 必须物化为 list：软删除模型的 related manager 返回 SoftDeleteQuerySet，
+        # 直接把 QuerySet 传给 celery delay 会因 JSON 序列化失败抛 EncodeError
+        system_user_ids = list(subscription.users.values_list("pk", flat=True))
+        user_backends_map: dict[Any, frozenset[str]] = {}
+        if self.user_subscribable:
+            for sub in UserMsgSubscription.objects.filter(message_type=self.get_message_type()):
+                backends = frozenset(BACKEND.filter_enable_backends(sub.receive_backends))
+                if backends:
+                    user_backends_map[sub.user_id] = backends
+        groups: dict[frozenset[str], list[Any]] = {}
+        system_id_set = set(system_user_ids)
+        for user_id in system_user_ids:
+            merged = system_backends | user_backends_map.get(user_id, frozenset())
+            groups.setdefault(merged, []).append(user_id)
+        for user_id, backends in user_backends_map.items():
+            if user_id not in system_id_set:
+                groups.setdefault(backends, []).append(user_id)
+        return groups
+
     def publish(self, is_async: bool = False) -> None:
         subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
 
-        # 只发送当前有效后端
-        receive_backends = subscription.receive_backends
-        receive_backends = BACKEND.filter_enable_backends(receive_backends)
-
-        # 必须物化为 list：软删除模型的 related manager 返回 SoftDeleteQuerySet，
-        # 直接把 QuerySet 传给 celery delay 会因 JSON 序列化失败抛 EncodeError
-        receive_user_ids = list(subscription.users.values_list("pk", flat=True))
-        if not receive_user_ids:
+        # 按渠道集合分组的收件人（组数 = 渠道组合数，通常 1 组；行为与
+        # 「单一收件人集合 + 单一渠道集合」的旧实现等价，除非有自选订阅者）
+        groups = self._subscriber_groups(subscription)
+        if not any(user_ids for user_ids in groups.values()):
             logger.warning(f"send system msg failed. No receive users found for {self}")
             return
-        backends_msg_mapper = self.get_backend_msg_mapper(receive_backends)
-        if is_async:
-            publish_task.delay(receive_user_ids, self._json_safe_backends_msg_mapper(backends_msg_mapper))
-        else:
-            self.send_msg(receive_user_ids, backends_msg_mapper)
+        for receive_backends, receive_user_ids in groups.items():
+            if not receive_user_ids:
+                continue
+            backends_msg_mapper = self.get_backend_msg_mapper(receive_backends)
+            if is_async:
+                publish_task.delay(receive_user_ids, self._json_safe_backends_msg_mapper(backends_msg_mapper))
+            else:
+                self.send_msg(receive_user_ids, backends_msg_mapper)
 
     @classmethod
     def post_insert_to_db(cls, subscription: SystemMsgSubscription) -> None:

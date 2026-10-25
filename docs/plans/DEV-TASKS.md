@@ -22,6 +22,36 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
+- **2026-10-25 提案候选首批交付（改动留工作区待提交，来源=两份 2026.10 提案近期窗口小件 + 前端 Top3）**：
+  ①**P1 仪表盘卡片下钻（单向下钻，联动二期）**：聚合序列带 `raw` 原始分组值、`execute_dataset`
+  增 `extra_filters`（下钻「按维度值看明细」，视图层先 `validate_filters`）；前端 `CardDrillDrawer`
+  复用数据集预览表格，可清过滤回全量；顺带聚合卡片度量字段（sum）可配置。T4（dashboard 拆分）
+  未随本批做（`index.vue` 为增量而非拆分，拆分另批）。
+  ②**P3 增量（ADR-028 §7）**：分组带 `search_field`，命中跳转 `?<field>=<关键词>` 经 RePlusPage
+  route.query 装配直滤到命中（对齐面由 `test_search_field_aligned_with_list_page_filter` 钉住）；
+  `register_search_provider` 二开注册扩展点（key 冲突 fail-fast，两道权限门与内置一致）。
+  ③**P6 全局密度偏好**：`UiSize`（default/large/small）入 systemconfig 种子 + 偏好面板 + 表格
+  size 全局注入（`useTablePrefs`/`tablePrefsApply`），与内容区紧凑模式分层（非 padding 口径）。
+  ④**P7①系统消息订阅化基建**：`SystemMessage.user_subscribable` 标志 + 收件人按渠道集合并集分组
+  （系统订阅者 ∪ 自选订阅者，站内信恒兜底）；registry 增 `user_subscribable` 键，视图层合并展示；
+  阈值类消息开放自选（monitor 侧），②@提及 / ③webhook 渠道未做。
+  ⑤**P8 仪表盘/大屏快照导出（纯前端）**：`snapshotComposite.ts`（逐卡 `getDataURL` 合成 + 标题/
+  时间戳/水印叠加）+ `useDashboardSnapshot`；大屏 `useScreenExport` 改走同一合成链，非图表窗格
+  首版降级说明；落下载中心，零新端点零新依赖。
+  ⑥**A-1 命令面板「问 AI」**：⌘K 面板新增「问 AI」入口，经 `?q=` 直达 AI 控制台问答并预填
+  输入框（`initial-draft` seq 保重复触发；消费后 URL 移除防刷新重复预填）。
+  ⑦**E-2 axe-core 无障碍门禁**：`test:e2e:a11y` 定向档（wcag2a/2aa，只阻断 critical/serious，
+  豁免表 `ALLOWED_VIOLATIONS` 只减不增、扩白须先登记 `docs/accessibility-audit.md`）；基线 3 页 +
+  扩面 4 页（流程配置抽屉 / 菜单树行 / welcome / AI 控制台），spec 随全量档执行。
+  **验证**：后端全量 pytest exit 0（真 PG/Redis，`-n auto`）；前端 vitest 417 文件 / 2717 例、
+  typecheck、lint、`check:i18n/contract/ledger-ids/version` 全绿；ruff format+check、行数/函数/
+  缓存键/菜单标题门禁、`makemigrations --check`、`load_init_json --check`（0 error）全绿；
+  E2E passed（dashboard 下钻 + 快照导出 2 新例、a11y 7 例、命令面板问 AI、全局搜索命中跳转）；
+  容器重启 + 开发库复灌后冒烟 4 项通过（global-search API `search_field=username` 生效、
+  `UiSize=default` 落库、注册表含 `user_subscribable`、`register_search_provider` 可调用）。
+  **未做（维持提案归位）**：P2 AI 日报（观察窗口）、P4 生成器合流（中期，先 T11）、P5 MCP 治理
+  （观察窗口）、P7②③、T4 拆分。
+
 - **2026-10-23 审查整改批次提交（server `24d01e98` / client `c9490c53` / installer `3f45a34`）**：
   2026-10-21 审查包 P0 13 + P1 90 + P2 339 共 **442 条全部「已验收」**，代码与文档收口后提交到
   server/client `dev`（installer 按其默认分支 `main`）。后端全量 **6795 passed / 2 skipped**、

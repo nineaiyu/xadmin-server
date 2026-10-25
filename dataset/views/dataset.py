@@ -31,7 +31,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from dataset.models.dataset import Dashboard, Dataset
 from dataset.serializers.dataset import DashboardSerializer, DatasetSerializer
-from dataset.utils.dataset import aggregate_dataset, designer_meta_payload, execute_dataset
+from dataset.utils.dataset import aggregate_dataset, designer_meta_payload, execute_dataset, validate_filters
 
 logger = get_logger(__name__)
 
@@ -112,10 +112,20 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         行级数据权限随调用者过滤，fail-closed
 
         ``count_only=true``：仅取行数（数字卡场景，跳过行物化）。
+        ``filters``：请求级行过滤（卡片下钻），与数据集定义 filters 叠加，
+        校验口径同保存侧（``validate_filters``：字段白名单 + op 白名单 + 类型）。
         """
         dataset = self.get_object()
         try:
-            result = execute_dataset(dataset, request.user, count_only=bool(request.data.get("count_only")))
+            extra_filters = request.data.get("filters")
+            if extra_filters:
+                validate_filters(dataset.bound_model, extra_filters)
+            result = execute_dataset(
+                dataset,
+                request.user,
+                count_only=bool(request.data.get("count_only")),
+                extra_filters=extra_filters or None,
+            )
         except ValidationError as exc:
             return ApiResponse(code=1001, detail="; ".join(exc.messages), status_code=status.HTTP_400_BAD_REQUEST)
         return ApiResponse(data=result)

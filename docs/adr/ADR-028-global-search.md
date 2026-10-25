@@ -109,3 +109,18 @@ P2 评估出口，触发条件未命中但按需启动）。本 ADR 同步修订
 - 既有 12 例检索契约（分组结构/通配符/403/fail-closed/行级收紧）全部保持——语义零变更由它们背书；
 - PG 库上的可用性断言（`enable_seqscan=off` + EXPLAIN）在 `test_index_usage.py` 内按 vendor
   门控（本地/CI SQLite 跳过）；库上手工验证 SQL 见 [indexes.md](../architecture/indexes.md) §三。
+
+## 7. 增量（2026-10-25）：命中跳转承接 + 提供者注册扩展点
+
+- **命中跳转承接**：分组新增 `search_field`（列表页真实搜索字段名），前端命中跳转带
+  `?<search_field>=<关键词>`，由 RePlusPage 的 `route.query → 搜索默认值装配` 直接过滤到
+  命中（此前跳转不带任何参数，列表页需要二次手工检索）。未配置 `search_field` 的实体
+  （approval/leave/log——列表页搜索字段与检索字段未对齐）跳转不带 query，维持旧行为；
+  承接字段与列表页过滤器的对齐由 `test_search_field_aligned_with_list_page_filter` 钉住。
+- **提供者注册扩展点**：`SEARCH_PROVIDERS` 由模块级元组改为可变清单 +
+  `register_search_provider(provider)`（AppConfig.ready 等导入期调用），key 冲突
+  fail-fast。两道权限门口径与内置实体一致；二开实体不进 trgm 索引清单（小规模顺序
+  扫描可接受，量级上来后按 `system/search_indexes.py` 的清单口径补登记）。
+  这收口了 2026.09 盘点登记的「无业务数据自定义扩展点」缺口。
+- **明示不做（维持 §5）**：不做「按 modellabelfield 注册表自动全模型可搜」——自动白名单
+  会扩大权限面（任意模型默认可搜），注册制（显式声明 + 两道门）是更谨慎的白名单形态。

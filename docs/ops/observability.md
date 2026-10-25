@@ -150,7 +150,7 @@ tail -5 <仓库>/tmp/slo_cron.log                                 # 执行日志
 | 敏感操作 | 操作日志中间件 | 站内信 + 邮件 | ✅ 已接 |
 | Webhook 投递耗尽 | 投递任务 | 站内信 | ✅ 已接 |
 | API 应用配额软告警 | 开放平台 | 站内信 | ✅ 已接 |
-| 主机资源阈值（CPU / 内存 / 磁盘） | 主机监控心跳 + 周期检查 | 站内信 / 邮件（`ServerPerformanceMessage`）；2026-09-19 起同时落 `MonitorAlert` 流水（监控页可查/可导出） | ✅ 已接 |
+| 主机资源阈值（CPU / 内存 / 磁盘） | 主机监控心跳 + 周期检查 | 站内信 / 邮件（`ServerPerformanceMessage`）；2026-09-19 起同时落 `MonitorAlert` 流水（监控页可查/可导出）；2026-10-25 起开放个人订阅页自选（`user_subscribable`：任何用户可勾选该消息与自选渠道，publish 时并入投递；未勾选 = 不订阅） | ✅ 已接 |
 | **容器 OOM** | `docker events` 的 `oom` 事件 | `ops/oom_alert.sh` → `/api/common/api/ops-alert` → 站内信 + 邮件 + Webhook `system.ops_alert` | ✅ 新增（A1，第十六轮验证） |
 | HTTP 可用性 / P95 延迟 / 任务成功率 / 队列积压 | Prometheus 指标 + SLO 阈值（`ops/monitoring/alerts.yml`） | 参考栈抓取判定 → 宿主侧 `scripts/prometheus_alert_bridge.py` → `ops-alert`（站内信 + 邮件 + Webhook `system.ops_alert`），与 OOM 告警同链路 | ✅ 已接（P1-36，见 [monitoring-stack.md](monitoring-stack.md)） |
 | 端点级 P95（登录/路由/列表/元数据列·字段/导出/导入） | `xadmin_http_request_duration_seconds{view}` 的 `histogram_quantile`，阈值 = 基线 P95 × 3（`XadminCaseLatency*`） | 同上（Prometheus 判定 → 告警桥接 → `ops-alert`） | ✅ 已接（阈值口径见 [monitoring-stack.md](monitoring-stack.md) §三） |

@@ -62,6 +62,9 @@ class ServerPerformanceMessage(SystemMessage):
     category = "Monitor"
     category_label = _("Monitor")
     message_type_label = _("Server performance")
+    # 主机资源阈值告警开放个人自选订阅：系统订阅页的超管兜底收件不变，
+    # 任何用户都可在个人订阅页勾选该消息与自选渠道（publish 时并入投递）
+    user_subscribable = True
 
     def __init__(self, terms_with_errors: Any) -> None:
         self.terms_with_errors = terms_with_errors
