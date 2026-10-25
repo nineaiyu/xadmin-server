@@ -11,7 +11,7 @@ from common.core.modelset import DetailUpdateModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from notifications.backends import BACKEND
+from notifications.backends import BACKEND, all_channel_specs
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 from notifications.notifications import get_message_cls, system_msgs, user_msgs
 from notifications.serializers import (
@@ -25,6 +25,10 @@ logger = get_logger(__name__)
 
 
 class MsgSubscriptionBackend:
+    #: 个人订阅页只展示 user_selectable 渠道：站点级渠道（webhook）由管理员统一配置，
+    #: 个人勾选等于把自己的通知转发到站点端点（越权外发面）
+    only_user_selectable = False
+
     @extend_schema(
         parameters=None,
         responses=get_default_response_schema(
@@ -43,11 +47,14 @@ class MsgSubscriptionBackend:
     @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def backends(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取消息通知后端"""
+        allowed = None
+        if self.only_user_selectable:
+            allowed = {spec.code for spec in all_channel_specs() if spec.user_selectable}
         return ApiResponse(
             data=[
                 {"value": backend, "label": backend.label}
                 for backend in BACKEND  # type: ignore[attr-defined]  # TextChoices 迭代由元类提供
-                if backend.is_enable
+                if backend.is_enable and (allowed is None or str(backend) in allowed)
             ]
         )
 
@@ -126,6 +133,8 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
 
     # 个人订阅页的「发送测试」发给自己（系统订阅页则发给全部超管）
     test_msg_to_request_user = True
+    # 站点级渠道不在个人页展示（webhook 端点管理员统一配置）
+    only_user_selectable = True
     lookup_field = "message_type"
     list_serializer_class = UserMsgSubscriptionByCategorySerializer
     serializer_class = UserMsgSubscriptionSerializer

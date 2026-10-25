@@ -22,7 +22,7 @@ def auto_clean_ai_usage_job() -> None:
 
 
 @shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
-@register_as_period_task(crontab="31 7 * * *", module="ai")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="31 7 * * *", description="生成 AI 站点日报（首页日报卡）", module="ai")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def ai_daily_report_job() -> None:
     """AI 日报定时生成（首页日报卡；开关关闭时空转）。"""
     from ai.services.daily_report import generate_daily_report

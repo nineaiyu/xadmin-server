@@ -4375,6 +4375,11 @@ msgstr "JSON 趋势列需要 |date 类型标注：{}"
 msgid "No field permission for {}.{}"
 msgstr "无 {}.{} 的字段权限"
 
+#: dataset/utils/dataset.py:196
+#, python-brace-format
+msgid "Too many dataset filters (max {})"
+msgstr "过滤条件过多（最多 {} 条）"
+
 #: dataset/utils/dataset_query.py:107
 msgid "Value field is required for aggregation"
 msgstr "聚合需要指定取值字段"
@@ -12762,6 +12767,11 @@ msgstr "草案已截断为 {count} 个字段"
 #: devtools/services/codegen/ai_draft.py
 msgid "AI field draft is disabled (enable it on the AI settings page)"
 msgstr "AI 字段草案未启用（请在 AI 配置页开启）"
+
+#: devtools/services/codegen/ai_draft.py
+#, python-brace-format
+msgid "Description is too long (max {} characters)"
+msgstr "描述过长（最多 {} 个字符）"
 
 #: devtools/services/codegen/ai_draft.py system/views/admin/codegen.py
 msgid "Description is required"

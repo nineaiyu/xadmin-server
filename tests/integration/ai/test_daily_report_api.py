@@ -14,8 +14,10 @@ URL = "/api/ai/assistant/daily-report"
 @pytest.fixture(autouse=True)
 def _clear_report_cache():
     cache.delete(daily_report.REPORT_CACHE_KEY)
+    cache.delete(daily_report.METRICS_CACHE_KEY)
     yield
     cache.delete(daily_report.REPORT_CACHE_KEY)
+    cache.delete(daily_report.METRICS_CACHE_KEY)
 
 
 @pytest.fixture()

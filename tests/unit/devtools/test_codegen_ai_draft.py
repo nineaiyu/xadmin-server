@@ -109,6 +109,22 @@ class TestGenerateAiDraft:
         with pytest.raises(CodegenError):
             ai_draft.generate_ai_draft(None, "demo.Book", "书籍管理页")
 
+    def test_quota_rejected_before_llm(self, monkeypatch: pytest.MonkeyPatch):
+        """配额与其他 AI 端点同口径：超限直接拒绝，不进入 LLM 调用。"""
+        from ai.services.assistant import ai_usage
+
+        monkeypatch.setattr(ai_draft, "draft_enabled", lambda: True)
+        monkeypatch.setattr(ai_usage, "quota_error", lambda user, feature="": "quota hit")
+        with pytest.raises(CodegenError) as exc:
+            ai_draft.generate_ai_draft("user-obj", "demo.Book", "书籍管理页")
+        assert "quota hit" in str(exc.value)
+
+    def test_description_length_capped(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(ai_draft, "draft_enabled", lambda: True)
+        with pytest.raises(CodegenError) as exc:
+            ai_draft.generate_ai_draft("user-obj", "demo.Book", "x" * (ai_draft.MAX_DESCRIPTION_LENGTH + 1))
+        assert str(ai_draft.MAX_DESCRIPTION_LENGTH) in str(exc.value)
+
     def test_enabled_but_not_configured(self, monkeypatch: pytest.MonkeyPatch):
         from ai.services.assistant import ai_config
 

@@ -17,9 +17,16 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture(autouse=True)
 def _clean_usage():
+    from django.core.cache import cache
+
+    def _clear():
+        cache.delete(daily_report.METRICS_CACHE_KEY)
+
     AiUsageRecord.objects.all().delete()
+    _clear()
     yield
     AiUsageRecord.objects.all().delete()
+    _clear()
 
 
 @pytest.fixture()
@@ -135,6 +142,21 @@ class TestSummarizeMetrics:
 
 
 class TestDailyReportPayload:
+    def test_metrics_served_from_short_cache(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """首页高频读取：TTL 内复用缓存，不再触发 5 组聚合。"""
+        from django.core.cache import cache
+        from django.test import override_settings
+
+        cache.set(daily_report.METRICS_CACHE_KEY, {"monitor_firing": 9}, daily_report.METRICS_CACHE_TTL)
+
+        def boom() -> Any:
+            raise AssertionError("collect_metrics should not run while cache is warm")
+
+        monkeypatch.setattr(daily_report, "collect_metrics", boom)
+        with override_settings(AI_DAILY_REPORT_ENABLED=True):
+            data = daily_report.daily_report_payload()
+        assert data["metrics"] == {"monitor_firing": 9}
+
     def test_disabled_returns_minimal(self) -> None:
         from django.test import override_settings
 
@@ -143,6 +165,7 @@ class TestDailyReportPayload:
         assert data["enabled"] is False
         assert "metrics" not in data
         assert data["links"]["approvals"] == "/approval/index"
+        assert data["links"]["tasks"] == "/system/celery/logs/index"
 
     def test_enabled_merges_cached_summary_and_live_metrics(
         self, fake_events: None, monkeypatch: pytest.MonkeyPatch

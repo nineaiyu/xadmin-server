@@ -40,6 +40,35 @@
 | `auth_verify_code_{target}_failed` | packages/xadmin-common/common/utils/verify_code.py | `VERIFY_CODE_TTL` | 目标 | 校验成功清理；连续失败达上限作废（在线爆破计数） |
 | 进度/锁类（`import_progress`、`preview` 锁） | task/utils/*、file/utils/* | 短 TTL | 单记录 | 任务结束即删 |
 
+### 手写键（键常量声明形态，2026-10-25 补登）
+
+> 这类键由模块级常量拼接（`cache.set(REPORT_CACHE_KEY, ...)`），调用点正则看不到
+> 字面量；`check_cache_keys.py` 的「键常量」段单独列出供本表核对。
+
+| 键 | 位置 | TTL | 维度 | 失效 |
+|---|---|---|---|---|
+| `ai_daily_report_latest` | ai/services/daily_report.py | 48h | 全局（站点级摘要） | 每日任务覆盖写 + TTL |
+| `ai_daily_report_metrics` | ai/services/daily_report.py | 120s | 全局（首页指标） | 每日任务回填 + TTL（首页高频读取免重复聚合） |
+| `dashboard_data_push_{pk}` / `dashboard_data_push_claim_{pk}` | dataset/ws_dashboard.py | 2h / 10s | 单仪表盘 | 每轮覆盖写 / 原子占位到期放行 |
+| `ai_stream_slots` | ai/services/assistant/ai_stream_slots.py | 1800s（touch 续期） | 全局（并发流式计数） | 释放减一 + TTL 兜底 |
+| `ai_action_idem*` | ai/services/assistant/ai_idempotency.py | 600s | 用户 × 意图键 | TTL（与审批令牌口径一致） |
+| `ai_repo_sync_lock` / `ai_repo_sync_status` | ai/services/knowledge/sync_progress.py | 1800s / 3600s | 全局（知识库同步） | 终态写入 + 锁释放 + TTL 自愈 |
+| `ai_embedding_build_lock` / `ai_embedding_build_status` | ai/services/knowledge/embedding_progress.py | 1800s / 3600s | 全局（向量构建） | 终态写入 + 锁释放 + TTL 自愈 |
+| `dataset:designer_meta:v1` | dataset/utils/dataset.py | 60s | 全局（设计器元数据） | 版本号换 key（v1 → v2）+ TTL |
+| `online_info_snapshot` / `online_layers_snapshot` | message/ws/utils.py | 5s | 全局（在线快照） | TTL（在线列表 5 秒收敛一次） |
+| `api_grant_catalog_v1` | identity/utils/api_grant_catalog.py | 60s | 全局（应用授权目录） | TTL |
+| `api_grant_menu_meta_{pk}` / `api_grant_menu_paths_{method}` | identity/utils/api_grant.py | 60s | 菜单 | TTL |
+| `account_risk_scan_result_{task_id}` / `account_risk_scan_error_{task_id}` | identity/utils/account_risk_scan.py | 3600s | 单次扫描任务 | TTL |
+| `passkey_challenge_{scene}_{user_pk}` | identity/utils/webauthn.py | 300s | 用户 × 场景 | 一次性消费（校验即删） |
+| `oauth_state_{state}` / `oauth_bind_state_{state}` / `oauth_nonce_{state}` | identity/utils/oauth.py | 300s | 授权会话 | 一次性消费 |
+| `oauth_authorize_code_{digest}` | identity/services/open_oauth.py | 300s | 授权码摘要（不落原文） | 一次性消费 |
+| `notify_unread_summary_{user_pk}` | notifications/views/user_site_msg.py | 30s | 用户 | 标记已读删除 + TTL |
+| `message_template_overrides` | notifications/template_registry.py | 60s | 全局（通知模板覆盖） | 模板写路径删除 + TTL |
+| `xadmin_doctor_probe` | system/management/commands/doctor.py | 10s | 全局 | 探测后立即删除 |
+| `celery_active_worker_probe` | packages/xadmin-common/common/core/modelset/import_export/celery_utils.py | 15s | 全局 | TTL |
+| `data_permission_grants_version` | packages/xadmin-common/common/core/filter.py | 无（版本计数器） | 全局 | 授权变更 incr（键本身即失效信号） |
+| `xadmin:lock:*` | packages/xadmin-common/common/cache/lock.py | 各调用方指定 | 资源 | 释放 / TTL 自愈 |
+
 ### 扫描结论
 
 - **R3 冲突：0**（`--strict` 退出码 0）；
@@ -63,6 +92,17 @@
 3. 键前缀冲突的修法：**换前缀**而不是「顺手删别人的失效」——键空间是模块契约。
 
 ## 五、季度复核记录
+
+### 2026-10-25（扫描面扩域 + 键常量形态补登）
+
+- **扫描面**：`SCAN_DIRS` 由 4 个目录扩到 14 个（新增 `ai` / `dataset` / `message` /
+  `identity` / `file` / `task` / `audit` / `approval` / `notifications` / `devtools`）——
+  此前 `ai` / `dataset` / `message` 的手写键在扫描面之外，`--strict` 结构上发现不了；
+- **新增能力**：「键常量」段输出模块级键常量（`REPORT_CACHE_KEY` 这类），调用点用变量名
+  的键由此可核对登记表；
+- **登记**：补登 20 类此前未登记的键（见 §二 第二张表），含本轮新增的
+  `ai_daily_report_metrics` 与 `dashboard_data_push_*`；
+- **R3 冲突 0**（`--strict` 退出码 0）。
 
 ### 2026-10-09（Q4，与 [indexes.md](architecture/indexes.md) §五 同批）
 

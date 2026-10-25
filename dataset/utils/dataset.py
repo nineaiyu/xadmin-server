@@ -23,6 +23,7 @@ from dataset.utils.columns import (
     json_fields_of_bound_model,
     parse_column,
     resolve_columns,
+    visible_root_of,
 )
 
 logger = get_logger(__name__)
@@ -32,6 +33,9 @@ ALLOWED_METRICS = ("count", "sum", "avg")
 ALLOWED_DATE_TRUNC = ("day", "month")
 AGGREGATE_BUCKET_LIMIT = 365
 ROW_LIMIT_CAP = 5000
+#: 单次 filters 条件数上限：请求级过滤是无状态二分探测的入口，条数不设限时
+#: 深度嵌套 / 超长条件列表可放大查询开销（与受控 lookup 的上限同口径）
+FILTER_LIMIT = 20
 NUMERIC_FIELD_CLASSES = ("IntegerField", "BigIntegerField", "SmallIntegerField", "FloatField", "DecimalField")
 
 # 设计器元数据短缓存（meta 端点）：载荷只读 ModelLabelField 与模型内省，与请求用户
@@ -181,23 +185,34 @@ def _check_model_values(model: Any, spec: Any, op: str, values: Any) -> None:
             raise ValidationError(_("Filter value does not match field type: {}").format(item)) from None
 
 
-def validate_filters(bound_model: str, filters: Any) -> None:
+def validate_filters(bound_model: str, filters: Any, user_obj: Any = None) -> None:
     """filters: [{field, op, value}]；field 在白名单、op 在白名单、op 与字段类型匹配、
     value 能按字段类型转换。
 
     保存侧与执行侧共用本函数：执行侧同样跑一遍，存量脏配置（本校验上线前保存的）
     会得到可读的 1001，而不是 500。
+
+    ``user_obj``：请求级 filters（execute / aggregate 的 ``filters``）必须传入浏览者，
+    字段面与浏览者可见字段（``viewer_visible_fields``）求交——否则无该列字段权限的
+    用户可用过滤条件反复二分，推断隐藏列的分布（聚合侧的 fail-closed 口径已按同
+    一安全模型处理）。数据集定义内的 filters 是创建者的显式取数范围，保存侧与
+    执行侧均不传 user（不随浏览者变化）。
     """
     if not filters:
         return
     if not isinstance(filters, list):
         raise ValidationError(_("Invalid dataset filters"))
+    if len(filters) > FILTER_LIMIT:
+        raise ValidationError(_("Too many dataset filters (max {})").format(FILTER_LIMIT))
     model = get_whitelisted_model(bound_model)
     whitelist = set(available_fields(bound_model))
+    visible = viewer_visible_fields(bound_model, user_obj) if user_obj is not None else None
     for item in filters:
         if not isinstance(item, dict) or not item.get("field") or not item.get("op"):
             raise ValidationError(_("Invalid dataset filters"))
         spec = parse_column(model, item["field"], whitelist)
+        if visible is not None and visible_root_of(spec) not in visible:
+            raise ValidationError(_("No field permission for {}.{}").format(bound_model, spec.raw))
         if item["op"] not in ALLOWED_OPS:
             raise ValidationError(_("Filter op {} is not allowed").format(item["op"]))
         if item["op"] == "in" and not isinstance(item.get("value"), (list, tuple)):
@@ -318,6 +333,9 @@ def build_queryset(dataset: Any, user_obj: Any, extra_filters: Any = None) -> An
 
     JSON 路径列统一注解为 ``json_<根>_<键>`` 别名：筛选 / 排序 / 分组全部走别名，
     使 ``|number`` 标注列的比较与聚合作用于 Cast 表达式（跨库语义一致）。
+    **filter / ordering 引用到的 JSON 路径同样按需注解**：条件字段不要求出现在
+    ``columns`` 里（请求级过滤按维度值取明细时本就如此），缺注解会让
+    ``queryset.filter(json_xxx__...)`` 抛 FieldError 变成 500。
     数据权限过滤 fail-closed（无授权 → none()）。
     """
     model = get_whitelisted_model(dataset.bound_model)
@@ -326,18 +344,23 @@ def build_queryset(dataset: Any, user_obj: Any, extra_filters: Any = None) -> An
     validate_filters(dataset.bound_model, dataset.filters)
 
     columns = [spec.raw for spec in specs]
+    conditions = list(dataset.filters or []) + list(extra_filters or [])
+    condition_specs = [parse_column(model, item["field"], whitelist) for item in conditions]
+    ordering_spec = parse_column(model, dataset.ordering.lstrip("-"), whitelist) if dataset.ordering else None
+    annotation_specs = [*specs, *condition_specs]
+    if ordering_spec is not None:
+        annotation_specs.append(ordering_spec)
+    # 同一路径在 columns / filters / ordering 里重复出现时按别名去重（dict 天然合并）
+    annotations = annotations_for(annotation_specs)
     queryset = model.objects.all()
-    annotations = annotations_for(specs)
     if annotations:
         queryset = queryset.annotate(**annotations)
-    conditions = list(dataset.filters or []) + list(extra_filters or [])
-    for item in conditions:
-        alias = parse_column(model, item["field"], whitelist).alias
-        queryset = queryset.filter(**{f"{alias}__{item['op']}": item.get("value")})
-    if dataset.ordering:
+    for item, spec in zip(conditions, condition_specs, strict=True):
+        queryset = queryset.filter(**{f"{spec.alias}__{item['op']}": item.get("value")})
+    if ordering_spec is not None:
         ordering = str(dataset.ordering)
         descending = ordering.startswith("-")
-        alias = parse_column(model, ordering.lstrip("-"), whitelist).alias
+        alias = ordering_spec.alias
         # 显式 NULLS LAST：PG 对 DESC 默认 NULLS FIRST、sqlite 把 NULL 当最小值排最后，
         # 两侧默认相反（nightly PG 档首轮暴露）。JSON 缺键行的契约是「缺键不参与数值
         # 列」，排序必须与缺省方向解耦；sqlite ≥3.30 起支持 NULLS FIRST/LAST。

@@ -28,6 +28,9 @@ logger = get_logger(__name__)
 # 最近一期日报缓存键（手写键带命名空间前缀；站点级无用户维度，TTL 即失效面）
 REPORT_CACHE_KEY = "ai_daily_report_latest"
 REPORT_CACHE_TTL = 48 * 3600
+# 结构化指标短缓存：首页是访问最密集页面，5 组聚合不必每个请求都跑一遍
+METRICS_CACHE_KEY = "ai_daily_report_metrics"
+METRICS_CACHE_TTL = 120
 # 指标窗口：与监控事件面板同口径取近 24h
 METRIC_WINDOW = datetime.timedelta(hours=24)
 
@@ -36,6 +39,7 @@ REPORT_LINKS = {
     "approvals": "/approval/index",
     "monitor": "/system/monitor/index",
     "operation_log": "/system/logs/operation/index",
+    "tasks": "/system/celery/logs/index",
     "ai_usage": "/integration/ai/index",
 }
 
@@ -90,6 +94,23 @@ def collect_metrics() -> dict[str, Any]:
     }
 
 
+def cached_metrics() -> dict[str, Any]:
+    """指标短缓存（首页高频读取）：TTL 内复用上轮聚合，过期或缓存不可用即回源。"""
+    try:
+        cached = cache.get(METRICS_CACHE_KEY)
+    except Exception:  # noqa: BLE001 缓存不可用：直接回源，不影响可用性
+        logger.debug("cache read AI daily report metrics failed", exc_info=True)
+        return collect_metrics()
+    if isinstance(cached, dict):
+        return cached
+    metrics = collect_metrics()
+    try:
+        cache.set(METRICS_CACHE_KEY, metrics, METRICS_CACHE_TTL)
+    except Exception:  # noqa: BLE001 写缓存失败只影响下轮命中
+        logger.debug("cache write AI daily report metrics failed", exc_info=True)
+    return metrics
+
+
 def _build_messages(metrics: dict[str, Any]) -> list[dict[str, str]]:
     """摘要 prompt：指标清单 + 输出纪律（先异常、带数字、纯句子、不编造）。"""
     from django.utils.translation import get_language
@@ -139,13 +160,15 @@ def generate_daily_report() -> dict[str, Any]:
         payload["summary_error"] = str(exc)[:255]
     try:
         cache.set(REPORT_CACHE_KEY, payload, REPORT_CACHE_TTL)
+        # 定时任务已聚合过一次：顺手刷新指标短缓存，首页首访不必再跑一遍
+        cache.set(METRICS_CACHE_KEY, metrics, METRICS_CACHE_TTL)
     except Exception:  # noqa: BLE001 缓存不可用：仅本轮无摘要，指标仍实时可看
         logger.debug("cache AI daily report failed", exc_info=True)
     return payload
 
 
 def daily_report_payload() -> dict[str, Any]:
-    """首页日报卡数据：指标实时聚合 + 最近一期摘要（缓存，无则空串）。"""
+    """首页日报卡数据：指标（短缓存）+ 最近一期摘要（缓存，无则空串）。"""
     enabled = daily_report_enabled()
     data: dict[str, Any] = {"enabled": enabled, "links": REPORT_LINKS}
     if not enabled:
@@ -160,5 +183,5 @@ def daily_report_payload() -> dict[str, Any]:
         summary_error=str(report.get("summary_error") or ""),
         generated_at=str(report.get("generated_at") or ""),
     )
-    data["metrics"] = collect_metrics()
+    data["metrics"] = cached_metrics()
     return data

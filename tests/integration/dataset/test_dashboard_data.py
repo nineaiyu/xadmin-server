@@ -317,6 +317,71 @@ class TestGroupBroadcastDashboard:
             assert frames[0]["data"]["errors"] == []
 
 
+class TestObserverDataIsolation:
+    """按观察者聚合的核心安全承诺：同一帧结构，不同数据权限拿到不同数据。"""
+
+    def test_each_observer_gets_own_aggregation(self, dashboard_a, superuser, normal_user):
+        from identity.models import UserInfo
+        from system.models import DataPermission
+
+        other = UserInfo.objects.create_user(username="observer_other", password="Test@123456")
+        normal_user.rules.add(
+            DataPermission.objects.create(
+                name="observer-self",
+                rules=[
+                    {
+                        "table": "identity.userinfo",
+                        "field": "id",
+                        "type": "value.user.id",
+                        "match": "exact",
+                        "value": "",
+                        "exclude": False,
+                    }
+                ],
+            )
+        )
+        other.rules.add(
+            DataPermission.objects.create(
+                name="observer-all",
+                rules=[
+                    {
+                        "table": "identity.userinfo",
+                        "field": "id",
+                        "type": "value.all",
+                        "match": "all",
+                        "value": "",
+                        "exclude": False,
+                    }
+                ],
+            )
+        )
+
+        layer = get_channel_layer()
+        consumer_self, captured_self, _ = _make_consumer(layer, normal_user, dashboard_a.pk)
+        consumer_all, captured_all, _ = _make_consumer(layer, other, dashboard_a.pk)
+        async_to_sync(consumer_self.connect)()
+        async_to_sync(consumer_all.connect)()
+
+        def frame(captured):
+            return [item for item in captured if item["action"] == "dashboard_data"][-1]["data"]
+
+        def card_data(payload, card_id):
+            return next(card["data"] for card in payload["cards"] if card["card"] == card_id)
+
+        self_frame, all_frame = frame(captured_self), frame(captured_all)
+        self_total = card_data(self_frame, "c1")["total"]
+        all_total = card_data(all_frame, "c1")["total"]
+        # 自限观察者只看到自己一行；全量观察者看到全部（含超管 / 自己）
+        assert self_total == 1
+        assert all_total == UserInfo.objects.count()
+        assert all_total > self_total
+        # 分组序列同样按各自行集聚合（不是同一份缓存数据换壳）
+        assert [item["name"] for item in card_data(self_frame, "c2")["series"]] == [normal_user.username]
+        assert {item["name"] for item in card_data(all_frame, "c2")["series"]} == set(
+            UserInfo.objects.values_list("username", flat=True)
+        )
+
+
 class TestPushDashboardDataTask:
     def test_offline_dashboard_not_triggered_and_not_marked(self, dashboard_a, monkeypatch):
         triggered = []

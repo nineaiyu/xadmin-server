@@ -9,6 +9,7 @@
 import hashlib
 import hmac
 import json
+import logging
 from unittest.mock import patch
 
 import pytest
@@ -95,6 +96,22 @@ class TestSendMsg:
         """出站失败只记日志（渠道尽力而为），不阻断其他渠道投递。"""
         deliver.side_effect = TimeoutError("boom")
         assert Webhook().send_msg([UserStub(1, "alice")], "内容") is None
+
+    @override_settings(WEBHOOK_URL="https://ops.example.com/hook")
+    def test_non_2xx_response_logged_as_warning(self, deliver, caplog):
+        """4xx/5xx 由 requests 正常返回：端点故障必须可观测，不能当成功静默。"""
+        deliver.return_value = type("ResponseStub", (), {"status_code": 502})()
+        with caplog.at_level(logging.WARNING, logger="xadmin.notifications.backends.webhook"):
+            Webhook().send_msg([UserStub(1, "alice")], "内容")
+        assert "status=502" in caplog.text
+
+    @override_settings(WEBHOOK_URL="https://ops.example.com/hook")
+    def test_2xx_response_not_warned(self, deliver, caplog):
+        deliver.return_value = type("ResponseStub", (), {"status_code": 204})()
+        with caplog.at_level(logging.WARNING, logger="xadmin.notifications.backends.webhook"):
+            response = Webhook().send_msg([UserStub(1, "alice")], "内容")
+        assert response.status_code == 204
+        assert "status=" not in caplog.text
 
 
 class TestSignPayloadParity:

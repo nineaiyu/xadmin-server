@@ -16,7 +16,9 @@ class ChannelSpec:
     ``code`` 对应 ``BACKEND`` 枚举值；``module`` 为 ``notifications/backends/`` 下的
     模块名；``renderer`` 是 ``Message`` 上的正文渲染方法名；``html`` 标记正文按
     HTML 处理（渲染收口做白名单净化）；``account_field`` / ``enable_setting`` 用于
-    与渠道客户端类声明做一致性校验。
+    与渠道客户端类声明做一致性校验；``user_selectable`` 标记个人订阅页能否勾选——
+    站点级渠道（webhook 等，管理员统一配置端点）只在系统订阅页管理，个人自选会把
+    自己的通知转发到管理员端点，属越权外发面。
     """
 
     code: str
@@ -25,6 +27,7 @@ class ChannelSpec:
     html: bool = False
     account_field: str = ""
     enable_setting: str = ""
+    user_selectable: bool = True
 
 
 CHANNEL_SPECS = (
@@ -69,12 +72,14 @@ CHANNEL_SPECS = (
         renderer="get_text_msg",
         enable_setting="FEISHU_ENABLED",
     ),
-    # 站点级转发渠道：无逐用户绑定（消息与目标用户整体出站），account_field 留空
+    # 站点级转发渠道：无逐用户绑定（消息与目标用户整体出站），account_field 留空；
+    # 端点与密钥由管理员统一配置，个人订阅页不得勾选（避免个人通知被转发到站点端点）
     ChannelSpec(
         code="webhook",
         module="webhook",
         renderer="get_text_msg",
         enable_setting="WEBHOOK_ENABLED",
+        user_selectable=False,
     ),
 )
 

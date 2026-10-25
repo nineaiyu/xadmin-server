@@ -82,7 +82,7 @@ class Webhook(BackendBase):
             headers["X-Webhook-Timestamp"] = str(timestamp)
         # 渠道语义「尽力而为」：失败记日志（与 IM 渠道同口径），不阻断其他渠道投递
         try:
-            return pinned_request(
+            response = pinned_request(
                 "POST",
                 url,
                 allow_private=False,
@@ -94,6 +94,11 @@ class Webhook(BackendBase):
         except Exception:  # noqa: BLE001 通知失败不影响发布链路
             logger.warning("Webhook notification delivery failed for %s", url, exc_info=True)
             return None
+        # 4xx/5xx 由 requests 正常返回（不抛错）：端点故障必须可观测，不能静默当成功
+        status_code = int(getattr(response, "status_code", 0) or 0)
+        if not 200 <= status_code < 300:
+            logger.warning("Webhook notification rejected by %s: status=%s", url, status_code)
+        return response
 
 
 backend = Webhook

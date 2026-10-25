@@ -13,6 +13,8 @@
 - 请求含「串联」关键字 → 返回公告 + 已读两步串联草稿（多动作契约覆盖）；
 - 否则取用户消息中的首个 YYYY-MM-DD 日期（没有就用明天）→ 返回 leave.submit 草稿
   （E2E 用例在消息里携带唯一日期，保证多次运行不产生区间重叠）；
+- 请求携带 ``Field catalog:``（代码生成器 AI 字段草案）→ 取目录首个非 pk 字段
+  返回确定性草案 JSON（``{"fields": [...], "summary": ...}``）；
 - 其余（/kb 问答、普通多轮）返回固定文案。
 输出契约：多草稿 ``{"actions": [...]}``（新契约；服务端 parse 兼容旧单对象）。
 
@@ -32,6 +34,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 ALLOWED_ACTIONS_MARKER = "ALLOWED_ACTIONS_JSON:"
+CODEGEN_CATALOG_MARKER = "Field catalog:"
+CODEGEN_FIELD_RE = re.compile(r"^- ([A-Za-z0-9_]+) \|", re.MULTILINE)
 #: 护栏的引用数据块边界（目录被包裹后仍可解析；与 ai/services/assistant/ai_guard.py 同口径）
 REFERENCE_BEGIN = "<<<REFERENCE_DATA>>>"
 REFERENCE_END = "<<<END_REFERENCE_DATA>>>"
@@ -221,12 +225,35 @@ def _draft_leave(request_text: str) -> str:
     )
 
 
+def _draft_codegen(user_text: str) -> str | None:
+    """代码生成器 AI 字段草案：按目录首个非 pk 字段返回确定性覆盖草案。"""
+    if CODEGEN_CATALOG_MARKER not in user_text:
+        return None
+    names = CODEGEN_FIELD_RE.findall(user_text)
+    # 优先业务可读字段（demo.Book 的 name），保证 E2E 能按字段名定位回填结果
+    target = "name" if "name" in names else next((name for name in names if name != "pk"), "")
+    if not target:
+        return None
+    return json.dumps(
+        {
+            "fields": [{"name": target, "label": "E2E 草案字段", "required": True}],
+            "summary": "E2E 桩草案",
+        },
+        ensure_ascii=False,
+    )
+
+
 def build_answer(messages: list) -> str:
     user_text = ""
     for message in reversed(messages or []):
         if message.get("role") == "user":
             user_text = str(message.get("content") or "")
             break
+
+    # 代码生成器字段草案有自己的目录标记（Field catalog:），先于动作草稿判定
+    codegen_draft = _draft_codegen(user_text)
+    if codegen_draft:
+        return codegen_draft
 
     # 动作草稿仅服务于 `/do` 草稿链路（prompt 携带动作目录标记）；文档问答 / NL
     # 解释等无标记请求一律返回固定问答文案（否则会被 NL 解析为未知结构）。

@@ -436,14 +436,20 @@ def daily_quota_error(server: Any) -> str:
     limit = int(getattr(server, "daily_call_limit", 0) or 0)
     if limit <= 0:
         return ""
+    import datetime as dt
+
     from django.utils import timezone
 
     from audit.services import OperationLog
 
+    # 本地零点作为下界（sargable：可走 created_time 索引；__date= 会在列上套函数）。
+    # 「先查后调」的并发超发窗口（同秒多请求同时通过）作为治理护栏可接受：
+    # 配额是成本护栏而非硬性事务约束，超发上限 = 并发数 - 1 次调用。
+    since = timezone.make_aware(dt.datetime.combine(timezone.localdate(), dt.time.min))
     used = OperationLog.objects.filter(
         module=MCP_AUDIT_MODULE,
         object_pk=str(getattr(server, "pk", "")),
-        created_time__date=timezone.localdate(),
+        created_time__gte=since,
     ).count()
     if used >= limit:
         return str(_("MCP daily call quota reached ({}/{}); it resets tomorrow").format(used, limit))

@@ -103,6 +103,26 @@ class TestSubscriptionViews:
         assert other.data["code"] == 1000
 
 
+class TestSubscriptionBackends:
+    """渠道清单按订阅面收敛：站点级渠道只在系统订阅页出现。"""
+
+    def test_system_page_lists_all_enabled_channels(self, auth_client):
+        from notifications.backends import BACKEND
+
+        values = {item["value"] for item in auth_client.get(f"{SYSTEM_SUB_URL}/backends").data["data"]}
+        assert values == {str(item) for item in BACKEND if item.is_enable}
+
+    def test_personal_page_hides_site_level_webhook(self, auth_client):
+        from django.test import override_settings
+
+        with override_settings(WEBHOOK_ENABLED=True, WEBHOOK_URL="https://ops.example.com/hook"):
+            system = {item["value"] for item in auth_client.get(f"{SYSTEM_SUB_URL}/backends").data["data"]}
+            personal = {item["value"] for item in auth_client.get(f"{USER_SUB_URL}/backends").data["data"]}
+        assert "webhook" in system
+        assert "webhook" not in personal
+        assert "site_msg" in personal
+
+
 class TestSendTestMessageAPI:
     """「发送测试消息」入口：按 message_type 走真实发送链路（渠道连通性自检）。"""
 

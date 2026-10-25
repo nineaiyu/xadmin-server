@@ -113,13 +113,14 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
 
         ``count_only=true``：仅取行数（数字卡场景，跳过行物化）。
         ``filters``：请求级行过滤（卡片下钻），与数据集定义 filters 叠加，
-        校验口径同保存侧（``validate_filters``：字段白名单 + op 白名单 + 类型）。
+        校验口径同保存侧（``validate_filters``：字段白名单 + op 白名单 + 类型），
+        并按浏览者字段权限收敛（无该列权限即 1001，防隐藏列布尔预言机）。
         """
         dataset = self.get_object()
         try:
             extra_filters = request.data.get("filters")
             if extra_filters:
-                validate_filters(dataset.bound_model, extra_filters)
+                validate_filters(dataset.bound_model, extra_filters, user_obj=request.user)
             result = execute_dataset(
                 dataset,
                 request.user,
@@ -138,13 +139,14 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         图表数据源：group_by + metric(+value_field) + date_trunc
 
         ``filters``：请求级行过滤（卡片联动），与数据集定义 filters 叠加，
-        校验口径同 ``execute``（``validate_filters``：字段白名单 + op 白名单 + 类型）。
+        校验口径同 ``execute``（``validate_filters``：字段白名单 + op 白名单 + 类型
+        + 浏览者字段权限收敛）。
         """
         dataset = self.get_object()
         try:
             extra_filters = request.data.get("filters")
             if extra_filters:
-                validate_filters(dataset.bound_model, extra_filters)
+                validate_filters(dataset.bound_model, extra_filters, user_obj=request.user)
             result = aggregate_dataset(
                 dataset,
                 request.user,

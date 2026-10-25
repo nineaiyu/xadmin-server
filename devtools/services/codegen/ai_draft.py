@@ -28,6 +28,8 @@ from devtools.services.codegen.gui import model_plan
 
 # 草案条目数上限：超出部分丢弃并告警（防模型复读机输出刷屏）
 MAX_DRAFT_FIELDS = 64
+# 用户描述长度上限：原文直入 prompt，无上限时超长文本会放大 token 成本并挤占输出预算
+MAX_DESCRIPTION_LENGTH = 2000
 
 
 def draft_enabled() -> bool:
@@ -158,16 +160,24 @@ def parse_draft(raw: str, plan: dict[str, Any]) -> dict[str, Any]:
 
 
 def generate_ai_draft(user: Any, label: str, description: str) -> dict[str, Any]:
-    """自然语言 → 字段覆盖草案（开关 + 配置双闸；用量记账 feature=codegen）。"""
+    """自然语言 → 字段覆盖草案（开关 + 配额 + 配置三闸；用量记账 feature=codegen）。"""
     if not draft_enabled():
         raise CodegenError(str(_("AI field draft is disabled (enable it on the AI settings page)")))
-    if not description.strip():
+    text = description.strip()
+    if not text:
         raise CodegenError(str(_("Description is required")))
+    if len(text) > MAX_DESCRIPTION_LENGTH:
+        raise CodegenError(str(_("Description is too long (max {} characters)")).format(MAX_DESCRIPTION_LENGTH))
     from ai.models.ai import AiUsageRecord
     from ai.services.assistant.ai_config import is_configured, structured_chat_client
     from ai.services.assistant.ai_guard import annotate_reference
-    from ai.services.assistant.ai_usage import tracked_chat
+    from ai.services.assistant.ai_usage import quota_error, tracked_chat
 
+    # 配额与其他 AI 端点同口径：草案也是 LLM 调用，不能绕过日调用 / token 上限
+    if user is not None:
+        quota = quota_error(user, "codegen")
+        if quota:
+            raise CodegenError(quota)
     if not is_configured():
         raise CodegenError(str(_("AI provider is not configured")))
 
@@ -179,7 +189,7 @@ def generate_ai_draft(user: Any, label: str, description: str) -> dict[str, Any]
     raw = tracked_chat(
         user,
         str(AiUsageRecord.Feature.CODEGEN),
-        _messages(str(reference), description.strip()),
+        _messages(str(reference), text),
         client=client,
         max_tokens=max_tokens,
     )

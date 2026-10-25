@@ -29,8 +29,25 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-# 框架内核源码在 packages/xadmin-common/common/（工作区成员），扫描路径与业务 app 同口径
-SCAN_DIRS = ("packages/xadmin-common/common", "system", "settings", "captcha")
+# 框架内核源码在 packages/xadmin-common/common/（工作区成员），扫描路径与业务 app 同口径。
+# 业务 app 全量纳入：曾有 ai / dataset / message 的手写键落在扫描面之外，
+# --strict 永远发现不了未登记键（新增域必须同步登记进来）。
+SCAN_DIRS = (
+    "packages/xadmin-common/common",
+    "system",
+    "settings",
+    "captcha",
+    "ai",
+    "dataset",
+    "message",
+    "identity",
+    "file",
+    "task",
+    "audit",
+    "approval",
+    "notifications",
+    "devtools",
+)
 IGNORE_PARTS = ("/tests/", "/migrations/")
 
 # MagicCacheData / MagicCacheResponse 自动加的前缀（packages/xadmin-common/common/decorators/cache.py）
@@ -38,6 +55,10 @@ DECORATOR_PREFIXES = ("magic_cache_data_", "magic_cache_response_")
 
 # 手写键的调用形态（DOTALL：容忍多行调用，键与调用同行或紧随其后）
 KEY_CALL_RE = re.compile(r"cache\.(?:get_or_set|set|get|delete)\(\s*(f?)(['\"])([^'\"\n]+)\2")
+# 键常量声明（``cache.set(REPORT_CACHE_KEY, ...)`` 这类把键抽成常量的写法）：
+# 调用点正则看不到键字面量，只有登记表核对能发现；单独列出供人工登记
+KEY_CONST_RE = re.compile(r"^([A-Z][A-Z0-9_]*)\s*=\s*(f?)(['\"])([^'\"\n]+)\3", re.MULTILINE)
+KEY_CONST_NAME_RE = re.compile(r"CACHE|(?:_KEY|_KEY_PREFIX|_KEY_TEMPLATE|_KEY_PATTERN|_LOCK_KEY|_STATUS_KEY)$")
 # 已知合法的「非缓存语义」键（信号量 / 幂等标记 / 字典字段名，不属于键空间命名规则）
 KNOWN_NON_CACHE_KEYS = {
     "CELERY_APP_READY",
@@ -73,9 +94,10 @@ def normalize(key: str) -> str:
 
 
 def scan():
-    """返回 (decorator_rows, manual_keys, invalidations)。"""
+    """返回 (decorator_rows, manual_keys, key_constants, invalidations)。"""
     decorators: list[tuple[str, int, str]] = []
     manual: dict[str, list[tuple[str, int, str]]] = {}
+    key_constants: list[tuple[str, int, str, str]] = []
     invalidations: list[str] = []
 
     for path in iter_py_files():
@@ -83,7 +105,6 @@ def scan():
         text = path.read_text(encoding="utf-8")
         for lineno, line in enumerate(text.splitlines(), start=1):
             stripped = line.strip()
-            _ = lineno
             if "make_cache(" in stripped and "def make_cache" not in stripped:
                 decorators.append((rel, lineno, stripped))
             elif "cache_response(" in stripped and "def process_cache_response" not in stripped:
@@ -98,7 +119,12 @@ def scan():
                 site = (rel, key_lineno, key)
                 if site not in manual.setdefault(normalize(key), []):
                     manual[normalize(key)].append(site)
-    return decorators, manual, invalidations
+        for match in KEY_CONST_RE.finditer(text):
+            name, value = match.group(1), match.group(4)
+            if not KEY_CONST_NAME_RE.search(name) or " " in value:
+                continue
+            key_constants.append((rel, text[: match.start()].count("\n") + 1, name, value))
+    return decorators, manual, key_constants, invalidations
 
 
 def main() -> int:
@@ -106,11 +132,15 @@ def main() -> int:
     parser.add_argument("--strict", action="store_true", help="违规即退出码 1")
     args = parser.parse_args()
 
-    decorators, manual, invalidations = scan()
+    decorators, manual, key_constants, invalidations = scan()
 
     print(f"== 装饰器缓存（自动前缀 {DECORATOR_PREFIXES}）==")
     for rel, lineno, line in decorators:
         print(f"  {rel}:{lineno}  {line[:110]}")
+
+    print("\n== 键常量（模块级声明；调用点用变量名时由本节核对登记）==")
+    for rel, lineno, name, value in key_constants:
+        print(f"  {rel}:{lineno}  {name} = {value}")
 
     print("\n== 手写键（按归一化前缀分组）==")
     violations = []

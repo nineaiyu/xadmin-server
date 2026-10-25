@@ -92,7 +92,7 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
     # ---------------------------------------------------------------
     "SECRET_KEY": KS(
         "str",
-        "Django 密钥；内核用于字段级加密派生材料与签名（base/utils.py::signer、fields/char.py）",
+        "Django 密钥；内核用于字段级加密派生材料与签名（base/crypto.py::get_signer、fields/char.py）",
         consumers=("base/crypto.py", "fields/char.py"),
         framework=True,
     ),
