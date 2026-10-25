@@ -57,7 +57,9 @@
   `gen_ws_frame_schema --check` 全绿；前端 vitest 425 文件 / 2781 例、typecheck / lint /
   `check:*` 全量 15 项全绿；dashboard E2E fresh 双浏览器全过（含联动 + 实时推送新例）；
   容器重启 + 容器内冒烟：ws/dashboard 路由注册、beat 注册（interval=15 / module=analysis）、
-  带鉴权 WS 连接收 `dashboard_data` 首帧（4 卡 0 错误）、匿名连接被拒、aggregate filters 生效。
+  带鉴权 WS 连接收 `dashboard_data` 首帧（4 卡 0 错误）、匿名连接被拒、aggregate filters 生效；
+  真机浏览器（vite dev + 开发库）实测：实时档选择 → 父子模型同步 → ws/dashboard 建连（探针
+  记录 URL）、选择器正确回显「实时（推送）」。
   **未做（维持提案归位）**：A-2/B-2/C-1/C-2/D-3/E-1 等触发制项、移动端 / print.ts / RePlusPage
   包化（触发制）、P8 PDF 快照二期（再议）、红线项不触碰。
 
