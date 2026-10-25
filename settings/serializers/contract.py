@@ -33,10 +33,15 @@ import warnings
 from typing import Any
 
 from django.utils.translation import gettext_lazy as _
+from rest_framework.serializers import Serializer
 
 
-class SettingReadonlyValuesMixin:
-    """序列化输出注入视图侧只读派生字段（不进列元数据、不参与保存校验）。"""
+class SettingReadonlyValuesMixin(Serializer):
+    """序列化输出注入视图侧只读派生字段（不进列元数据、不参与保存校验）。
+
+    继承 Serializer 而非裸 mixin：to_representation / context 由宿主提供，
+    类型检查可校验；所有使用点均与 serializers.Serializer 组合，MRO 线性不受影响。
+    """
 
     def to_representation(self, instance: Any) -> Any:
         data = super().to_representation(instance)

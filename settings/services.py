@@ -122,18 +122,18 @@ def _ldap_state() -> tuple[bool, list[str]]:
 def _email_channel_reason(scenario_switch_key: str) -> str | None:
     """邮箱通道在给定场景下不可用的原因;可用返回 None（开关级口径）。"""
     if not getattr(django_settings, scenario_switch_key, False):
-        return _("Email verify code switch is off")
+        return str(_("Email verify code switch is off"))
     if not django_settings.EMAIL_ENABLED:
-        return _("Email service is disabled")
+        return str(_("Email service is disabled"))
     return None
 
 
 def _sms_channel_reason(scenario_switch_key: str) -> str | None:
     """短信通道在给定场景下不可用的原因;可用返回 None（开关级口径）。"""
     if not getattr(django_settings, scenario_switch_key, False):
-        return _("Sms verify code switch is off")
+        return str(_("Sms verify code switch is off"))
     if not django_settings.SMS_ENABLED:
-        return _("Sms service is disabled")
+        return str(_("Sms service is disabled"))
     return None
 
 

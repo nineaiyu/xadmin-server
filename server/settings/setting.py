@@ -185,6 +185,10 @@ FORWARD_KEYS = [
     "FEISHU_ENABLED",
     "FEISHU_APP_ID",
     "FEISHU_APP_SECRET",
+    # Webhook 通知渠道（notifications/backends/webhook.py 消费）
+    "WEBHOOK_ENABLED",
+    "WEBHOOK_URL",
+    "WEBHOOK_SECRET",
     # 聊天：历史 ws/message 通道的直广播兼容开关（默认关闭，见 message/notify.py）
     "CHAT_LEGACY_WS_BROADCAST_ENABLED",
     # AI 助手

@@ -109,6 +109,7 @@ class TestMigrationParity:
             "api/system/codegen": "SystemCodeGen",
             "api/settings/scim": ("ScimSetting", "SettingOpenPlatform"),
             "api/settings/oauth/providers": ("OAuthProviderSetting", "SettingOpenPlatform"),
+            "api/settings/notify/webhook": ("WebhookNotifySetting", "SettingMessage"),
             "api/identity/authorized-applications": ("AuthorizedApplication", "SettingOpenPlatform"),
         }
 

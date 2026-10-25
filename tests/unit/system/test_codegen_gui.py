@@ -454,3 +454,53 @@ class TestBatchDownload:
         assert response.status_code == 200
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
             assert "NEXT_STEPS.md" in archive.namelist()
+
+
+class TestSameSourceAsCli:
+    """同源守护（模板单一事实源）：GUI 预览与 CLI 引擎管线产物一致。
+
+    口径分两层：①零覆盖基线（GUI 不带 fields / CLI 不带旗标）字段序恒等，
+    全部产物逐字符断言——守护模板与 options 组装不漂移；②专用字段类推导
+    同源——GUI 表单与 CLI --field-class 生成同一声明行（GUI 的表单序重排是
+    其特性，不断言全文件逐字符）。
+    """
+
+    def test_baseline_artifacts_match_cli_pipeline(self, superuser):
+        from pathlib import Path
+
+        engine = codegen_gui._engine()
+        _, gui_artifacts, _ = codegen_gui._prepare(engine, {"model": "demo.Book"})
+        gui_by_name = {Path(row["path"]).name: row["content"] for row in gui_artifacts if row.get("content")}
+
+        options = codegen_gui._base_options({})
+        ctx = engine._build_context(engine._resolve_model("demo.Book"), options)
+        cli_artifacts = engine._collect_artifacts(ctx, options)
+        cli_by_name = {Path(row["path"]).name: row["content"] for row in cli_artifacts if row.get("content")}
+        assert set(gui_by_name) == set(cli_by_name)
+        for key in sorted(gui_by_name):
+            assert gui_by_name[key] == cli_by_name[key], key
+
+    def test_field_class_declaration_matches_cli_flag(self, superuser):
+        from devtools.management.commands._generate_crud.analysis import apply_field_classes
+
+        engine = codegen_gui._engine()
+        payload = {
+            "model": "demo.Book",
+            "fields": [{"name": "name", "field_class": "ColorField"}],
+        }
+        _, gui_artifacts, _ = codegen_gui._prepare(engine, payload)
+        gui_serializer = _serializer(gui_artifacts)
+
+        options = codegen_gui._base_options({})
+        ctx = engine._build_context(engine._resolve_model("demo.Book"), options)
+        apply_field_classes(ctx, ["name=ColorField"])
+        cli_serializer = _serializer(engine._collect_artifacts(ctx, options))
+
+        def declaration_lines(text):
+            return [line for line in text.splitlines() if "ColorField" in line and "import" not in line]
+
+        # 同一声明行（label/required/max_length 由引擎单一推导，两侧共用）
+        assert declaration_lines(gui_serializer) == declaration_lines(cli_serializer)
+        assert declaration_lines(gui_serializer) == [
+            '    name = ColorField(label="书籍名称", required=True, max_length=100)'
+        ]

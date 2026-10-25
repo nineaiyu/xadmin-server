@@ -51,6 +51,7 @@
       "retrieve:SmsConfig",
       "retrieve:SmsSetting",
       "retrieve:SystemSetting",
+      "retrieve:WebhookNotifySetting",
       "rotateToken:ScimSetting",
       "syncStatus:ScimSetting",
       "test:OAuthProviderSetting"

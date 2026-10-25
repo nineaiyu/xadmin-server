@@ -964,3 +964,66 @@ class TestTemplates:
             "fixed_tag",
             "dynamic_level",
         ]
+
+
+class TestFieldClasses:
+    """--field-class：字段声明为专用字段类（GUI 表单同源能力对齐 CLI 旗标）。"""
+
+    def test_color_field_declaration(self, workspace):
+        backend, _ = _generate(workspace, "--field-class", "name=ColorField")
+        serializer = (backend / "demo" / "serializers.py").read_text(encoding="utf-8")
+        assert "from common.core.fields import ColorField" in serializer
+        assert 'name = ColorField(label="书籍名称", required=True, max_length=100)' in serializer
+        _assert_python_compiles(backend)
+        _assert_ruff_clean(backend)
+
+    def test_relation_field_rejected(self, workspace):
+        from django.core.management.base import CommandError
+
+        backend, client = workspace
+        with pytest.raises(CommandError):
+            call_command(
+                "generate_crud",
+                "demo.Book",
+                "--field-class",
+                "admin=ColorField",
+                output=str(backend),
+                frontend_root=str(client),
+            )
+
+    def test_unknown_class_rejected(self, workspace):
+        from django.core.management.base import CommandError
+
+        backend, client = workspace
+        with pytest.raises(CommandError):
+            call_command(
+                "generate_crud",
+                "demo.Book",
+                "--field-class",
+                "name=NotAField",
+                output=str(backend),
+                frontend_root=str(client),
+            )
+
+    def test_dict_binding_conflict_rejected(self, workspace):
+        """字典绑定与专用字段类互斥（同一字段只能有一种显式声明形态）。"""
+        from django.core.management.base import CommandError
+
+        backend, client = workspace
+        with pytest.raises(CommandError):
+            call_command(
+                "generate_crud",
+                "demo.Book",
+                "--dict-field",
+                "name=book_tag",
+                "--field-class",
+                "name=ColorField",
+                output=str(backend),
+                frontend_root=str(client),
+            )
+
+    def test_without_field_class_no_declaration(self, workspace):
+        """未声明时产物与历史形态一致（幂等回归保护）。"""
+        backend, _ = _generate(workspace)
+        serializer = (backend / "demo" / "serializers.py").read_text(encoding="utf-8")
+        assert "ColorField" not in serializer

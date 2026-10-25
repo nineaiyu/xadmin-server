@@ -24,7 +24,7 @@ from typing import Any
 
 from django.core.management.base import BaseCommand
 
-from .analysis import AnalysisMixin
+from .analysis import FIELD_CLASS_OPTIONS, AnalysisMixin
 from .constants import (
     AUDIT_FIELDS,
     BLOCK_END,
@@ -87,6 +87,14 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             metavar="字段=字典code",
             help="字段绑定数据字典（生成 DictChoiceField 声明，可多次）：如 --dict-field status=task_status",
         )
+        parser.add_argument(
+            "--field-class",
+            action="append",
+            default=[],
+            metavar="字段=字段类",
+            help="字段声明为专用字段类（GUI 表单同源能力，可多次）：如 --field-class phone=PhoneField，"
+            f"可选 {' / '.join(FIELD_CLASS_OPTIONS)}",
+        )
         parser.add_argument("--with-import-export", action="store_true", help="ViewSet 追加导入导出 Mixin 与权限码")
         parser.add_argument("--with-tags", action="store_true", help="AI 声明文件附带标签接入声明（白名单）")
         parser.add_argument("--with-tests", action="store_true", help="生成 pytest 测试骨架（tests/unit/<app>/）")
@@ -130,6 +138,7 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
         model = self._resolve_model(options["model"])
         ctx = self._build_context(model, options)
         self._apply_dict_fields(ctx, options.get("dict_field") or [])
+        self._apply_field_classes(ctx, options.get("field_class") or [])
         artifacts = self._collect_artifacts(ctx, options)
         self._emit(artifacts, options)
         ctx["app_registered"] = False

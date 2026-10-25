@@ -52,6 +52,7 @@ ENCRYPTED_SETTING_KEYS = (
     "DINGTALK_APP_SECRET",
     "WECOM_CORP_SECRET",
     "FEISHU_APP_SECRET",
+    "WEBHOOK_SECRET",
 )
 
 #: 敏感键名模式（守护测试用：新配置键命中模式必须显式声明加密或豁免）

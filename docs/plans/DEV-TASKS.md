@@ -22,7 +22,33 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
-- **2026-10-25 提案候选第二批（P7 收尾两件：@提及联想 + webhook 渠道，改动留工作区待提交）**：
+- **2026-10-25 第三批：T4 仪表盘编辑态拆分 + T11 生成器同源收口（client `2d10b12d` / server 本批）**：
+  ①**T4（client `2d10b12d`）**：`DashboardToolbar`（工具栏整体：选择器 + 编辑/浏览按钮组 +
+  自动刷新 v-model）与 `CardHeaderActions`（卡片头按钮组按 editing 分支）组件化，下钻状态机
+  下沉 `useCardDrill`；index.vue 430 → 273 行纯编排层；拖拽手柄留页面卡片头（sortable handle
+  选择器定位不变）、data-testid 全保持——行为零变更。验证：typecheck/lint/vitest dashboard
+  34 例 + E2E dashboard 4 例（主链路含编辑态/快照/下钻/聚合配置）全过。
+  ②**T11（P4 第一阶段）**：调查结论 = **模板完全同源（单一事实源）**——GUI 无自有模板，
+  是 CLI 引擎（`_build_context → _collect_artifacts`）之上的只读适配层，中间表示（ctx）与
+  渲染管线 100% 共享，git 历史呈同步演进、无「改一边忘一边」；无需「统一模板源」改造。
+  收口两件：**CLI 补 `--field-class` 旗标**（专用字段类此前仅 GUI 可达）——推导单源化到引擎
+  `analysis.apply_field_classes`（模块级函数，CLI 旗标与 GUI 表单共用，GUI fields.py 改调引擎
+  并消掉内嵌推导块）；**同源守护测试**两条（`TestSameSourceAsCli`）——零覆盖基线产物逐字符
+  相等（守护模板与 options 组装不漂移）+ 专用字段类声明行与 CLI 旗标等价（守护推导同源；
+  GUI 表单序重排为其特性，不断言全文件逐字符）。
+  验证：生成器 120 例（含 CLI 旗标 5 例新用例）全绿、ruff/mypy（devtools）绿。
+  **P4 第二阶段（AI 字段草案）未启动**——涉及 LLM 调用成本与 AI 域新接线，建议独立批次。
+  **同批修复（第二批遗留）**：①五个种子守护红灯（FORWARD_KEYS 未登记 WEBHOOK 三键 /
+  declarations 奇偶清单 / 管理员缺 `retrieve:WebhookNotifySetting` 授权 / 种子基线
+  菜单 721→724·字段 2095→2134·权限点 645→648 / `WEBHOOK_SECRET` 未登记
+  ENCRYPTED_SETTING_KEYS）——全部为第二批 webhook 权限点与配置键的配套面漏跑守护；
+  `settings/seeds/grants.json` admin 补 1 项声明、`test_seed_grants` 基线 admin 283→284。
+  ②**mypy 6 错既有债修复**（stash 对照证明系 10-23 审查批次 `9db884f2` 引入、与本轮无关，
+  但挡全仓门禁）：`contract.py` 混入改继承 Serializer（运行期 MRO 线性，类型面可校验）+
+  `services.py` 4 处懒代理返回按既有 `str(_())` 口径收敛；mypy 997 文件 0 错。
+  **最终验证（真实退出码口径）**：后端全量 PYTEST_EXIT=0；ruff format/check、
+  mypy 全仓、种子守护五件套全绿。
+- **2026-10-25 提案候选第二批（P7 收尾两件：@提及联想 + webhook 渠道，已提交 server `83d9cda0` / client `413b3392`）**：
   ①**P7② 审批讨论 @提及（纯前端，后端解析/通知既有）**：`InstanceDetail` 收集参与人
   （申请人/各节点处理人/代理人/实际处理者/抄送人，label 即 username）传入讨论区；`useMentionSuggest`
   （末尾 `@片段` 触发、包含过滤、插入补空格终结——正则与后端 `MENTION_PATTERN` 同口径）；
@@ -34,10 +60,16 @@
   secret 值级加密）+ 消息设置页新页签（复用 settings-shell）；「开而 URL 缺」自动降级不可用；
   权限点 3 个经 `parent_menu_map`（settings/declarations.py）归属 SettingMessage，`sync_menu_permissions
   --dry-run` 缺口 0。
-  **验证**：后端全量 pytest exit 0；前端 vitest 418 文件 / 2730 例、typecheck/lint/i18n/contract 门禁全绿；
+  **验证**：前端 vitest 418 文件 / 2730 例、typecheck/lint/i18n/contract 门禁全绿；
   ruff、脚本门禁、`load_init_json --check`（0 error）绿；E2E approval-depth 4 例 + 设置/订阅面 5 例过；
   容器重启 + 冒烟：渠道注册表加载、默认降级、retrieve/patch 热更生效、订阅渠道列表含 webhook（配置后）；
   冒烟假配置已清理并重启容器。zh 译文按准则手工补 po + compilemessages（不跑 makemessages）。
+  **纠正（2026-10-25 晚）**：本批「后端全量 exit 0」结论有误——管道 tail 掩盖了 pytest 退出码，
+  实际 4 个种子守护红（FORWARD_KEYS 未登记 3 键 / declarations 奇偶 / 管理员缺
+  retrieve:WebhookNotifySetting 授权 / 种子基线 721→724·2095→2134·645→648），同日在第三批修复
+  （follow-up commit）并复跑全量取证。教训：**全量判定必须落退出码（`echo PYTEST_EXIT=$?`），
+  不能以管道尾部输出代判**；新增权限点后须跑的守护是 `test_seed_plan` / `test_app_declarations` /
+  `test_builtin_role_readonly_coverage` / `test_settings_forwarding` / `test_seed_grants` 五件套。
 - **2026-10-25 提案候选首批交付（改动已提交 server `57e4d8b0` / client `27772388`，来源=两份 2026.10 提案近期窗口小件 + 前端 Top3）**：
   ①**P1 仪表盘卡片下钻（单向下钻，联动二期）**：聚合序列带 `raw` 原始分组值、`execute_dataset`
   增 `extra_filters`（下钻「按维度值看明细」，视图层先 `validate_filters`）；前端 `CardDrillDrawer`

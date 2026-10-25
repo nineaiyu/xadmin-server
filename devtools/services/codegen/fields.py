@@ -23,14 +23,21 @@
 
 from typing import Any
 
+from django.core.management.base import CommandError
+
 from common.core.modelset.input_types import DECLARED_INPUT_TYPES
+
+# 引擎侧单一推导：专用字段类选项清单与声明构造（CLI --field-class 同源）
+from devtools.management.commands._generate_crud.analysis import (
+    FIELD_CLASS_OPTIONS as FIELD_CLASS_OPTIONS,  # noqa: F401 显式再导出（选项清单数据源）
+)
+from devtools.management.commands._generate_crud.analysis import (
+    apply_field_classes as _engine_apply_field_classes,
+)
 from system.services import list_dict_types as _dict_type_options
 
 #: 关联字段开放前缀族（api-search-* 等），与词表共同构成 input_type 合法面
 INPUT_TYPE_PREFIX_FAMILY = "api-"
-
-#: 非关联字段可选的专用字段类（渲染能力随字段类下发，见 common/core/fields.py）
-FIELD_CLASS_OPTIONS = ("PhoneField", "ColorField", "RichTextField", "StepFloatField")
 
 
 class CodegenError(Exception):
@@ -243,28 +250,10 @@ def apply_field_overrides(ctx: Any, fields_cfg: Any) -> None:
             kwargs["input_type"] = input_type
         field_class = str(cfg.get("field_class") or "").strip()
         if field_class:
-            field = all_fields.get(name)
-            if name == "pk" or field is None or field.is_relation:
-                raise CodegenError(f"{name}：专用字段类仅支持非关联字段")
-            if field_class not in FIELD_CLASS_OPTIONS:
-                raise CodegenError(f"{name}：非法专用字段类「{field_class}」（可选：{', '.join(FIELD_CLASS_OPTIONS)}）")
-            if name in (ctx.get("dict_fields") or {}):
-                raise CodegenError(f"{name}：已绑定字典，不能同时声明专用字段类")
-            declaration: dict[str, Any] = {"label": kwargs.get("label") or str(field.verbose_name or name)}
-            if kwargs.get("read_only"):
-                declaration["read_only"] = True
-            else:
-                declaration["required"] = kwargs.get("required", not field.blank and not field.null)
-            if field_class in {"PhoneField", "ColorField", "RichTextField"}:
-                if getattr(field, "max_length", None):
-                    declaration["max_length"] = field.max_length
-                if field.blank and not declaration.get("read_only"):
-                    declaration["allow_blank"] = True
-                if field.null:
-                    declaration["allow_null"] = True
-            ctx.setdefault("field_declarations", {})[name] = {
-                "class": field_class,
-                "kwargs": declaration,
-            }
-            # 显式声明的字段不能再出现在 extra_kwargs（DRF 会直接断言失败）
+            # 推导单源于引擎 apply_field_classes（CLI --field-class 旗标同源）；
+            # overrides 携带本字段已收敛的表单覆盖（label / read_only / required）
+            try:
+                _engine_apply_field_classes(ctx, [f"{name}={field_class}"], {name: kwargs})
+            except CommandError as exc:
+                raise CodegenError(str(exc)) from exc
             ctx["extra_kwargs"].pop(name, None)
