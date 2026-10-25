@@ -61,6 +61,19 @@ class TestMenuPermissionGenerateApi:
         assert resp.json()["code"] == 1001
         assert not Menu.objects.filter(parent=parent, menu_type=Menu.MenuChoices.PERMISSION).exists()
 
+    def test_unknown_view_name_rejected(self, auth_client, menu_factory):
+        """过期/拼错的视图名不得静默成功（0 条新增会误导管理员）。"""
+        parent = _make_parent(menu_factory)
+
+        resp = auth_client.post(
+            PERMISSIONS_URL.format(parent.pk),
+            {"views": ["system.views.admin.legacy.GoneViewSet"], "component": "PermGen"},
+            format="json",
+        )
+
+        assert resp.json()["code"] == 1001
+        assert not Menu.objects.filter(parent=parent, menu_type=Menu.MenuChoices.PERMISSION).exists()
+
     def test_dry_run_previews_without_persisting(self, auth_client, menu_factory):
         parent = _make_parent(menu_factory)
 

@@ -34,6 +34,7 @@ def dispatch_account_risk_scan(operator: Any) -> Any:
     execution = TaskExecution.objects.create(
         name=SCAN_TASK_NAME,
         kwargs={"operator_pk": getattr(operator, "pk", None)},
+        creator=operator,
     )
 
     def _dispatch() -> None:
@@ -53,12 +54,17 @@ def dispatch_account_risk_scan(operator: Any) -> Any:
     return execution
 
 
-def scan_task_status(task_id: Any) -> dict[str, Any] | None:
+def scan_task_status(task_id: Any, operator: Any = None) -> dict[str, Any] | None:
+    """按 task_id 取巡检进度；非本人且非超管一律当「不存在」处理（不泄露任务是否存在）。"""
     from task.models.task import TaskExecution
 
     execution = TaskExecution.objects.filter(pk=task_id, name=SCAN_TASK_NAME).first()
     if execution is None:
         return None
+    if operator is not None and not getattr(operator, "is_superuser", False):
+        owner_pk = execution.creator_id or (execution.kwargs or {}).get("operator_pk")
+        if str(owner_pk) != str(getattr(operator, "pk", "")):
+            return None
     return {
         "task_id": str(execution.pk),
         "status": execution.status,

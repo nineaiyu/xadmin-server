@@ -70,8 +70,10 @@ class ApprovalScopeFilter(BaseFilterBackend):
         scope = request.query_params.get("scope")
         if scope == "pending":
             # 待办口径与 pending_count_for 共用同一函数（角标数与页签行数必须一致）：
-            # 扁平单给全局审批人，多级链单只给当前级候选人，本人发起恒排除
-            return pending_queryset_for(user)
+            # 扁平单给全局审批人，多级链单只给当前级候选人，本人发起恒排除。
+            # 以 pk 子查询与传入 queryset 求交：保留 DjangoFilterBackend 的筛选、
+            # OrderingFilter 的排序与 get_queryset 的取值域，不能直接返回新 queryset。
+            return queryset.filter(pk__in=pending_queryset_for(user).values("pk"))
         if scope == "mine":
             return queryset.filter(creator=user)
         if user.is_superuser:

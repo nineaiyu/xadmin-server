@@ -13,7 +13,7 @@ from rest_framework.request import Request
 
 from audit.models.mask import DataMaskRule
 from audit.serializers.mask import DataMaskRuleSerializer
-from audit.utils.mask import apply_mask, custom_pattern_error
+from audit.utils.mask import apply_mask, apply_masks_with_timeout, custom_pattern_error
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImportExportDataAction
 from common.core.response import ApiResponse
@@ -107,7 +107,14 @@ class DataMaskRuleViewSet(BaseModelSet, ImportExportDataAction):
         # 非法性属于规则本身而非逐条样例。
         pattern = rule.get("pattern") if rule.get("mask_type") == DataMaskRule.MaskType.CUSTOM else None
         invalid_pattern = custom_pattern_error(pattern) is not None
-        results = [{"input": value, "output": apply_mask(value, rule) if applies else value} for value in values]
+        if applies and pattern and not invalid_pattern:
+            # 自定义正则走子进程硬超时：灾难性回溯不能占住业务 worker
+            outputs = apply_masks_with_timeout(values, rule)
+            if outputs is None:
+                raise ValidationError(_("Mask preview timed out; simplify the custom regex"))
+        else:
+            outputs = [apply_mask(value, rule) if applies else value for value in values]
+        results = [{"input": value, "output": output} for value, output in zip(values, outputs, strict=True)]
         return ApiResponse(
             data={
                 "result": results[0]["output"] if results else "",

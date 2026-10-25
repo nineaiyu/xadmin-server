@@ -20,6 +20,7 @@ from rest_framework.exceptions import ValidationError
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils import parse_bool
 from server.celery import app
 from task.serializers.task import (
     CrontabScheduleSerializer,
@@ -233,7 +234,12 @@ class PeriodicTaskViewSet(BaseModelSet):
         """启用或停用{cls}任务"""
         instance = self.get_object()
         enabled = request.data.get("enabled")
-        instance.enabled = (not instance.enabled) if enabled is None else bool(enabled)
+        if enabled is not None:
+            try:
+                enabled = parse_bool(enabled)
+            except ValueError:
+                raise ValidationError({"enabled": _("Invalid boolean value")}) from None
+        instance.enabled = (not instance.enabled) if enabled is None else enabled
         instance.save()
         return ApiResponse(data={"pk": instance.pk, "enabled": instance.enabled})
 

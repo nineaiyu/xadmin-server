@@ -284,13 +284,22 @@ class MenuViewSet(
         if isinstance(views, list) and len(views) > 0:
             instance = self.get_object()
             items = []
+            matched_views = 0
             for view in views:
                 code_suffix = view.split(".")[-1].replace("ViewSet", " ").replace("APIView", " ")
                 if len(views) == 1 and component:
                     code_suffix = component
-                items.extend(
-                    self._build_permission_items(instance, get_view_permissions(view, code_suffix), skip_existing)
-                )
+                permissions = get_view_permissions(view, code_suffix)
+                if not permissions:
+                    continue
+                matched_views += 1
+                items.extend(self._build_permission_items(instance, permissions, skip_existing))
+
+            # 视图名过期/拼错时 get_view_permissions 返回空：不能以「0 条新增」静默成功，
+            # 否则管理员以为权限点已生成。全部视图零匹配才报错；匹配到但被 skip_existing
+            # 全部跳过仍属正常幂等结果。
+            if matched_views == 0:
+                return ApiResponse(code=1001, detail=_("No matched api views for permission generation"))
 
             if dry_run:
                 return ApiResponse(data=sync.serialize_permission_items(items))

@@ -23,6 +23,7 @@ from common.core.modelset import (
 )
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils import parse_bool
 from system.models.dict import DataDict
 from system.serializers.dict import DataDictSerializer
 from system.utils.platform.dict import get_dict_items, invalid_dict_cache
@@ -145,6 +146,11 @@ class DataDictViewSet(
         data = request.data if isinstance(request.data, dict) else {}
         pks = data.get("pks") or []
         is_active = data.get("is_active")
+        if is_active is not None:
+            try:
+                is_active = parse_bool(is_active)
+            except ValueError:
+                raise serializers.ValidationError({"is_active": _("Invalid boolean value")}) from None
         queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
         parent_codes = set(queryset.exclude(parent=None).values_list("parent__code", flat=True))
         has_type_row = queryset.filter(parent=None).exists()

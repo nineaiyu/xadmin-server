@@ -28,6 +28,9 @@ M2M_CHANGED_ACTIONS = ("post_add", "post_remove", "post_clear")
 def get_cache_data_keys(pks: Any) -> Any:
     for pk in pks:
         for method in ["GET", "PUT", "DELETE", "POST", "PATCH"]:
+            # 同 path 多权限码的全量清单与主权限点字典必须一起失效，否则主字典刷新后
+            # 仍会从旧清单里选权限点（字段权限上下文也会停留在旧授权）
+            yield f"get_user_permission_menus_{pk}_{method}"
             yield f"get_user_permission_{pk}_{method}"
 
 

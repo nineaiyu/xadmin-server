@@ -8,6 +8,7 @@ from typing import Any
 
 from django.db.models import Count
 from django_filters import rest_framework as filters
+from rest_framework.decorators import action
 
 from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet
@@ -43,6 +44,12 @@ class DataPermissionViewSet(BaseModelSet, ImportExportDataAction, RecycleBinActi
         高危：行为变更立即影响被授权用户可见数据，可经 APPROVAL_REQUIRED_PATHS 纳入审批。
         """
         return super().destroy(request, *args, **kwargs)
+
+    @ApprovalRequired()
+    @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """批量删除{cls}（高危：与删除同口径纳入审批）"""
+        return super().batch_destroy(request, *args, **kwargs)
 
     def get_queryset(self) -> Any:
         queryset = super().get_queryset()

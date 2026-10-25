@@ -12,6 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 
 from audit.models import UserLoginLog
@@ -56,6 +57,9 @@ class LoginLogViewSet(OnlyListModelSet, OnlyExportDataAction):
     def logout(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """强退用户"""
         instance = self.get_object()
+        # 超管会话只有超管能踢：登录日志强退与在线用户管理同口径
+        if instance.creator is not None and instance.creator.is_superuser and not request.user.is_superuser:
+            raise PermissionDenied(_("Cannot force logout a superuser"))
         # creator / channel_name 可能为空（历史日志、系统记录）：空值返回可读错误，避免 AttributeError 500
         if not instance.creator_id or not instance.channel_name:
             return ApiResponse(code=400, detail=_("This login record cannot be forcibly logged out"))

@@ -25,6 +25,7 @@ from common.core.modelset import (
     SearchFieldsAction,
 )
 from common.core.modelset.base import BaseViewSet
+from common.core.permission import get_user_permission_codes
 from common.utils import get_logger
 from settings.models import Setting
 from settings.serializers.basic import BasicSettingSerializer
@@ -87,6 +88,33 @@ class BaseSettingViewSet(NoDetailModelSet):
         """
         return {}
 
+    def get_permission_field_groups(self) -> dict[str, set[str]]:
+        """按权限码分组的字段面（默认不做字段级隔离）。
+
+        同一 ``path+method`` 登记多个权限点的端点（如基本/水印设置）覆写本方法，
+        未持有对应权限码却提交组内字段时返回 400；权限码按当前 HTTP 方法取。
+        """
+        return {}
+
+    def enforce_field_permission_groups(self) -> None:
+        groups = self.get_permission_field_groups()
+        if not groups:
+            return
+        user = self.request.user
+        if getattr(user, "is_superuser", False):
+            return
+        submitted = set(self.request.data.keys())
+        held = get_user_permission_codes(user, self.request.method)
+        errors: dict[str, str] = {}
+        for code, fields in groups.items():
+            denied = submitted & fields
+            if not denied or code in held:
+                continue
+            for name in denied:
+                errors[name] = _("No permission to modify this setting")
+        if errors:
+            raise ValidationError(errors)
+
     def parse_serializer_data(self, serializer: Any) -> list[dict[str, Any]]:
         data: list[dict[str, Any]] = []
         fields = self.get_fields()
@@ -112,6 +140,7 @@ class BaseSettingViewSet(NoDetailModelSet):
         未经契约混入的序列化器（二开存量）维持旧 _data/_change_fields 写入一个
         版本周期。
         """
+        self.enforce_field_permission_groups()
         post_data_names = set(self.request.data.keys())
         settings_items = self.parse_serializer_data(serializer)
         serializer_data = serializer.data

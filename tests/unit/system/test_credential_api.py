@@ -70,46 +70,58 @@ class TestCredentialOverview:
         assert client.get(f"{URL}/overview").status_code == 403
 
 
+@pytest.fixture
+def confirmed_client(auth_client):
+    """已通过密码二次确认的超管客户端（轮换动作的服务端门禁）。"""
+    resp = auth_client.post(
+        "/api/mfa/confirm",
+        {"confirm_type": "password", "method": "password", "code": "Admin@123456"},
+        format="json",
+    )
+    assert resp.data["code"] == 1000, resp.data
+    return auth_client
+
+
 class TestCredentialRotate:
-    def test_rotate_regenerates_and_encrypts(self, auth_client):
+    def test_rotate_regenerates_and_encrypts(self, confirmed_client):
         """系统自生成键：轮换 = 重新生成随机值并加密落库（不是重加密同一值）。"""
         from common.core.auth.credentials import decrypt_setting_value
 
         SystemConfig.objects.update_or_create(key="SCIM_TOKEN", defaults={"value": "plain-token"})
-        body = auth_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN"}, format="json").json()
+        body = confirmed_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN"}, format="json").json()
         assert body["code"] == 1000
         assert body["data"]["action"] == "rotate"
         value = SystemConfig.objects.get(key="SCIM_TOKEN").value
         assert value.startswith("v3:")
         assert decrypt_setting_value("SCIM_TOKEN", value) != "plain-token"
 
-    def test_rotate_rejects_replace_only_key(self, auth_client):
+    def test_rotate_rejects_replace_only_key(self, confirmed_client):
         """外部签发键拒绝原地轮换（避免生成对端不认的假值）。"""
-        body = auth_client.post(f"{URL}/rotate", {"key": "OAUTH_PROVIDERS"}, format="json").json()
+        body = confirmed_client.post(f"{URL}/rotate", {"key": "OAUTH_PROVIDERS"}, format="json").json()
         assert body["code"] == 1001
 
-    def test_rotate_rejects_setting_scope(self, auth_client):
+    def test_rotate_rejects_setting_scope(self, confirmed_client):
         """scope 枚举收口：Setting 凭据不在轮换入参面（只能去设置页更换），非法值 400。"""
-        resp = auth_client.post(f"{URL}/rotate", {"key": "AI_API_KEY", "scope": "setting"}, format="json")
+        resp = confirmed_client.post(f"{URL}/rotate", {"key": "AI_API_KEY", "scope": "setting"}, format="json")
         assert resp.status_code == 400
 
-    def test_rotate_rejects_unknown_scope(self, auth_client):
+    def test_rotate_rejects_unknown_scope(self, confirmed_client):
         """未知 scope 直接 400，不落入「不可轮换」的业务分支伪装语义。"""
-        resp = auth_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN", "scope": "nope"}, format="json")
+        resp = confirmed_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN", "scope": "nope"}, format="json")
         assert resp.status_code == 400
 
-    def test_rotate_missing_key(self, auth_client):
-        assert auth_client.post(f"{URL}/rotate", {}, format="json").json()["code"] == 1001
+    def test_rotate_missing_key(self, confirmed_client):
+        assert confirmed_client.post(f"{URL}/rotate", {}, format="json").json()["code"] == 1001
 
-    def test_rotate_unregistered_key(self, auth_client):
-        body = auth_client.post(f"{URL}/rotate", {"key": "WEB_SITE_CONFIG"}, format="json").json()
+    def test_rotate_unregistered_key(self, confirmed_client):
+        body = confirmed_client.post(f"{URL}/rotate", {"key": "WEB_SITE_CONFIG"}, format="json").json()
         assert body["code"] == 1001
 
-    def test_rotate_writes_audit(self, auth_client):
+    def test_rotate_writes_audit(self, confirmed_client):
         from audit.models import OperationLog
 
         SystemConfig.objects.update_or_create(key="SCIM_TOKEN", defaults={"value": "plain-token"})
-        auth_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN"}, format="json")
+        confirmed_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN"}, format="json")
         assert OperationLog.objects.filter(module="system:credential").exists()
 
 
@@ -122,11 +134,11 @@ class TestModelFieldRotate:
             name=f"sub-{secret}", url="https://example.com/hook", secret=encrypt_secret(secret), events=[]
         )
 
-    def test_rotate_model_field_regenerates_and_encrypts(self, auth_client):
+    def test_rotate_model_field_regenerates_and_encrypts(self, confirmed_client):
         from task.services.webhook import decrypt_secret
 
         sub = self._make_subscription("old-secret")
-        body = auth_client.post(
+        body = confirmed_client.post(
             f"{URL}/rotate",
             {"key": "WebhookSubscription.secret", "scope": "model_field"},
             format="json",
@@ -137,19 +149,19 @@ class TestModelFieldRotate:
         assert sub.secret.startswith("v3:")
         assert decrypt_secret(sub.secret) != "old-secret"
 
-    def test_rotate_model_field_rejects_non_whitelisted(self, auth_client):
+    def test_rotate_model_field_rejects_non_whitelisted(self, confirmed_client):
         """拒绝任意模型字段注入。"""
         self._make_subscription()
-        body = auth_client.post(
+        body = confirmed_client.post(
             f"{URL}/rotate",
             {"key": "WebhookSubscription.url", "scope": "model_field"},
             format="json",
         ).json()
         assert body["code"] == 1001
 
-    def test_rotate_model_field_rejects_non_rotatable(self, auth_client):
+    def test_rotate_model_field_rejects_non_rotatable(self, confirmed_client):
         """外部签发字段（AI api_key）不可原地轮换。"""
-        body = auth_client.post(
+        body = confirmed_client.post(
             f"{URL}/rotate",
             {"key": "AiProfile.api_key", "scope": "model_field"},
             format="json",
@@ -187,12 +199,14 @@ class TestCredentialRotationTracking:
         assert row["rotate_overdue"] is True
         assert row["last_rotated"] == ""
 
-    def test_after_rotate_overdue_cleared(self, auth_client):
+    def test_after_rotate_overdue_cleared(self, confirmed_client):
         SystemConfig.objects.update_or_create(key="SCIM_TOKEN", defaults={"value": "v1"})
-        resp = auth_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN", "scope": "system_config"}, format="json")
+        resp = confirmed_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN", "scope": "system_config"}, format="json")
         assert resp.json()["code"] == 1000
         row = next(
-            r for r in auth_client.get(f"{URL}/overview").json()["data"]["system_configs"] if r["name"] == "SCIM_TOKEN"
+            r
+            for r in confirmed_client.get(f"{URL}/overview").json()["data"]["system_configs"]
+            if r["name"] == "SCIM_TOKEN"
         )
         assert row["last_rotated"] != ""
         assert row["rotate_overdue"] is False
@@ -320,3 +334,14 @@ class TestCredentialOverviewQueryBatching:
         assert configs["SCIM_TOKEN"]["last_rotated"] != ""
         assert configs["SCIM_TOKEN"]["rotate_overdue"] is False
         assert fields["WebhookSubscription.secret"]["last_rotated"] != ""
+
+
+class TestCredentialRotateConfirmation:
+    """服务端二次确认门禁：未确认不执行轮换；确认后正常轮换。"""
+
+    def test_rotate_requires_password_confirmation(self, auth_client):
+        SystemConfig.objects.update_or_create(key="SCIM_TOKEN", defaults={"value": "plain-token"})
+        resp = auth_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN"}, format="json")
+        assert resp.status_code == 412
+        assert resp.data["type"] == "user_confirm_required"
+        assert SystemConfig.objects.get(key="SCIM_TOKEN").value == "plain-token"

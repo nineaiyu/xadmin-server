@@ -13,6 +13,7 @@ from drf_spectacular.plumbing import build_array_type, build_basic_type, build_o
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 
 from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
@@ -65,9 +66,10 @@ class AccountRiskViewSet(OnlyListModelSet):
         task_id = str(request.query_params.get("task_id") or "").strip()
         if not task_id:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
-        data = scan_task_status(task_id)
+        # 他人任务与不存在任务同口径 404：避免用 task_id 枚举他人巡检任务
+        data = scan_task_status(task_id, request.user)
         if data is None:
-            return ApiResponse(code=400, detail=_("Scan task not found"))
+            raise NotFound(_("Scan task not found"))
         return ApiResponse(data=data)
 
     @extend_schema(

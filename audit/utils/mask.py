@@ -8,7 +8,9 @@
 """
 
 import json
+import multiprocessing
 import re
+import threading
 from typing import Any
 
 from django.apps import apps
@@ -21,6 +23,13 @@ logger = get_logger(__name__)
 
 MASK_CACHE_PREFIX = "data_mask_"
 MASK_CACHE_TIMEOUT = 300
+#: 自定义正则长度上限（预览会先截断样例；超长表达式本身也意味着高风险回溯）
+MAX_CUSTOM_PATTERN_LENGTH = 200
+#: 预览自定义正则的子进程超时（秒）：灾难性回溯不能占住业务 worker
+PREVIEW_REGEX_TIMEOUT = 0.5
+#: spawn 子进程需要先导入本模块，启动成本高于 fork；超时只约束「计算」上限，
+#: 不会让正常请求被误杀（正常正则远低于该值）
+PREVIEW_SPAWN_TIMEOUT = 2.0
 #: 原文通道审计的 OperationLog 模块名（可按 module 检索）
 ORIGINAL_CHANNEL_MODULE = "mask:original"
 
@@ -56,11 +65,62 @@ def custom_pattern_error(pattern: Any) -> re.error | None:
     """
     if not pattern or not isinstance(pattern, str):
         return None
+    if len(pattern) > MAX_CUSTOM_PATTERN_LENGTH:
+        return re.error(f"pattern exceeds {MAX_CUSTOM_PATTERN_LENGTH} characters")
     try:
         re.compile(pattern)
     except re.error as exc:
         return exc
     return None
+
+
+def _apply_masks_worker(conn: Any, values: list[str], rule: dict[str, Any]) -> None:
+    """预览子进程：只跑纯函数，不触碰数据库/缓存。"""
+    try:
+        conn.send([apply_mask(value, rule) for value in values])
+    except Exception:  # noqa: BLE001 子进程异常由父进程按超时/失败处理
+        conn.send(None)
+    finally:
+        conn.close()
+
+
+def _preview_process_context() -> tuple[Any, float]:
+    """主线程用 fork（快），请求线程用 spawn（避免多线程进程内 fork 的锁风险）。"""
+    methods = multiprocessing.get_all_start_methods()
+    if "fork" in methods and threading.current_thread() is threading.main_thread():
+        return multiprocessing.get_context("fork"), PREVIEW_REGEX_TIMEOUT
+    return multiprocessing.get_context("spawn"), PREVIEW_SPAWN_TIMEOUT
+
+
+def apply_masks_with_timeout(values: list[str], rule: dict[str, Any], timeout: float | None = None) -> list[Any] | None:
+    """在子进程中执行自定义正则脱敏；超时/失败返回 None（调用方转 400）。
+
+    自定义正则来自用户输入，灾难性回溯（如 ``(a+)+$``）会让正则引擎长时间占用
+    worker；进程级硬超时是唯一可靠的止损手段（线程/信号都杀不掉正在执行的 re）。
+    """
+    if not values:
+        return []
+    ctx, effective_timeout = _preview_process_context()
+    if timeout is not None:
+        effective_timeout = timeout
+    parent_conn, child_conn = ctx.Pipe(duplex=False)
+    process = ctx.Process(target=_apply_masks_worker, args=(child_conn, values, dict(rule)), daemon=True)
+    process.start()
+    child_conn.close()
+    process.join(effective_timeout)
+    if process.is_alive():
+        process.terminate()
+        process.join(1)
+        parent_conn.close()
+        return None
+    result: list[Any] | None
+    try:
+        result = parent_conn.recv()
+    except (EOFError, OSError):
+        result = None
+    finally:
+        parent_conn.close()
+    return result
 
 
 def apply_mask(value: Any, rule: dict[str, Any]) -> Any:

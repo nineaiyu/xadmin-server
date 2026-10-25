@@ -72,14 +72,95 @@ def get_user_field_queryset(user_obj: Any, menu: Any) -> Any:
     return dict(data)
 
 
+def get_user_field_queryset_for_menus(user_obj: Any, menus: Any) -> Any:
+    """同端点多个权限点的字段权限并集（用户同时持有多个码时取并集）。"""
+    merged: dict[str, set[str]] = defaultdict(set)
+    for menu in menus:
+        for parent_name, field_names in get_user_field_queryset(user_obj, menu).items():
+            merged[parent_name].update(field_names)
+    return dict(merged)
+
+
+#: 同一 (path, method) 登记多个权限码时的显式主权限点优先级。
+#: 运行时 `request.user.menu` / 数据权限菜单上下文必须稳定，不能随数据库返回顺序漂移；
+#: 未登记的共享端点按权限码名排序兜底（仍然确定，但新增共享端点应在此显式登记）。
+SHARED_PERMISSION_PRIORITY: dict[tuple[str, str], tuple[str, ...]] = {
+    ("api/settings/basic$", "GET"): ("retrieve:SettingBasic", "retrieve:SettingWatermark"),
+    ("api/settings/basic$", "PATCH"): ("partialUpdate:SettingBasic", "partialUpdate:SettingWatermark"),
+    ("api/audit/logs/operation$", "GET"): (
+        "list:SystemOperationLog",
+        "changeHistory:SystemUser",
+        "changeHistory:SystemDept",
+    ),
+    ("api/task/executions$", "GET"): ("list:SystemTaskExecution", "log:SystemTask"),
+}
+
+
+@MagicCacheData.make_cache(timeout=3600 * 24, key_func=lambda x, y: f"{x.pk}_{y}")
+def get_user_permission_menus(user_obj: Any, method: Any) -> dict[str, list[tuple[Any, str, Any]]]:
+    """用户在各权限 path 上持有的全部权限点：``path -> [(menu_pk, code, model), ...]``。
+
+    运行时访问控制只需一个主权限点（见 ``get_user_permission``），但字段权限上下文
+    需要该端点用户持有的全部权限码做并集，避免同 path 多码时只命中其中一个。
+    ``model`` 保留权限点绑定的模型 id（无绑定为 ``None``），供父级回退判定使用。
+    """
+    menu_queryset = get_user_menu_queryset(user_obj)
+    if not menu_queryset:
+        return {}
+    rows = (
+        menu_queryset.filter(menu_type=Menu.MenuChoices.PERMISSION, method=method)
+        .values_list("path", "pk", "name", "model")
+        .distinct()
+    )
+    grouped: dict[str, dict[tuple[Any, str], Any]] = defaultdict(dict)
+    for path, menu_pk, name, model in rows:
+        key = (menu_pk, str(name))
+        if grouped[path].get(key) is None:
+            grouped[path][key] = model
+    return {
+        path: [(menu_pk, name, model) for (menu_pk, name), model in entries.items()]
+        for path, entries in grouped.items()
+    }
+
+
+def select_shared_permission(path: str, method: Any, entries: list[tuple[Any, str, Any]]) -> tuple[Any, str, Any]:
+    """从同 path 多权限码中选一个确定的主权限点（显式优先级 → 码名 → pk）。"""
+    method_key = str(method or "").upper()
+    priority = SHARED_PERMISSION_PRIORITY.get((path, method_key), ())
+
+    def sort_key(entry: tuple[Any, str, Any]) -> tuple[int, str, str]:
+        menu_pk, name, _model = entry
+        rank = priority.index(name) if name in priority else len(priority)
+        return rank, name, str(menu_pk)
+
+    return sorted(entries, key=sort_key)[0]
+
+
 @MagicCacheData.make_cache(timeout=3600 * 24, key_func=lambda x, y: f"{x.pk}_{y}")
 def get_user_permission(user_obj: Any, method: Any) -> Any:
-    menus = []
-    menu_queryset = get_user_menu_queryset(user_obj)
-    if menu_queryset:
-        filter_kwargs = {"menu_type": Menu.MenuChoices.PERMISSION, "method": method}
-        menus = menu_queryset.filter(**filter_kwargs).values_list("path", "pk", "model").distinct()
-    return dict([(menu[0], menu[1:]) for menu in menus])
+    menus = get_user_permission_menus(user_obj, method)
+    return {
+        path: (entry[0], entry[2])
+        for path, entries in menus.items()
+        for entry in [select_shared_permission(path, method, entries)]
+    }
+
+
+def get_user_permission_codes(user: Any, method: str | None = None) -> set[str]:
+    """用户持有的权限码集合（``动作:模型名``），供同一 path+method 多权限点的字段面隔离。
+
+    运行时访问控制按 path 建字典（同 path 的多个码会互相覆盖），无法回答「用户
+    持有的是哪一个码」；这里直接按角色/部门菜单授权取码，不经过 path 字典。
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return set()
+    menu_queryset = get_user_menu_queryset(user)
+    if menu_queryset is None:
+        return set()
+    filters: dict[str, Any] = {"menu_type": Menu.MenuChoices.PERMISSION}
+    if method:
+        filters["method"] = method.upper()
+    return set(menu_queryset.filter(**filters).values_list("name", flat=True))
 
 
 def get_menu_pk(permission_data: Any, url: Any) -> Any:
@@ -377,12 +458,29 @@ class IsAuthenticated(BasePermission):
         return menu_data[0]
 
     @staticmethod
-    def _load_field_permission(request: Any, menu_pk: Any) -> None:
+    def _resolve_field_menu_pks(request: Any, menu_pk: Any) -> list[Any]:
+        """当前端点用户持有的全部权限点（字段权限按并集装载；单码端点即自身）。"""
+        if menu_pk is None:
+            return []
+        try:
+            menu_map = get_user_permission_menus(request.user, request.method)
+        except Exception:  # noqa: BLE001 权限查询失败由主链 fail-closed，这里回退主权限点
+            return [menu_pk]
+        for entries in menu_map.values():
+            menu_pks = [item[0] for item in entries]
+            if menu_pk in menu_pks:
+                return menu_pks
+        return [menu_pk]
+
+    @classmethod
+    def _load_field_permission(cls, request: Any, menu_pk: Any) -> None:
         """装载字段级权限到 ``request.fields``（未启用字段权限时跳过）。"""
         if not kernel_required_setting("PERMISSION_FIELD_ENABLED"):
             return
         try:
-            request.fields = get_user_field_queryset(request.user, menu_pk)
+            request.fields = get_user_field_queryset_for_menus(
+                request.user, cls._resolve_field_menu_pks(request, menu_pk)
+            )
         except Exception as e:
             logger.error(f"get user field permission failed. user:{request.user} menu:{menu_pk} error:{e}")
             raise PermissionDenied(_("Permission denied")) from None

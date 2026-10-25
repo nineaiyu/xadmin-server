@@ -12817,3 +12817,19 @@ msgstr "渠道"
 msgid "MCP server"
 msgstr "MCP 服务器"
 
+
+#: settings/views/settings.py
+msgid "No permission to modify this setting"
+msgstr "无权修改该设置项"
+
+#: identity/views/admin/online.py audit/views/admin/loginlog.py identity/utils/session.py
+msgid "Cannot force logout a superuser"
+msgstr "不能强制下线超级管理员"
+
+#: system/views/admin/dict.py task/views/task_periodic.py
+msgid "Invalid boolean value"
+msgstr "布尔值不合法"
+
+#: audit/views/admin/mask.py
+msgid "Mask preview timed out; simplify the custom regex"
+msgstr "脱敏预览超时，请简化自定义正则"

@@ -296,3 +296,18 @@ class TestSeedOrderingFillsBuiltinRoles:
         command._fill_field_permissions_after_seed()
         field_permission.refresh_from_db()
         assert list(field_permission.field.values_list("pk", flat=True)) == [kept.pk], "人工裁剪不应被改写"
+
+
+def test_dept_assign_managers_menu_title_is_readable():
+    """部门「管理员任命」权限点的标题必须是具体动作，不能退化成父级名词「部门」。"""
+    import json
+    from pathlib import Path
+
+    from django.conf import settings
+
+    root = Path(settings.PROJECT_DIR)
+    menus = json.loads((root / "identity/seeds/menu.json").read_text(encoding="utf-8"))
+    metas = json.loads((root / "identity/seeds/menumeta.json").read_text(encoding="utf-8"))
+    menu = next(row for row in menus if row["fields"].get("name") == "assignManagers:SystemDept")
+    meta = next(row for row in metas if row["pk"] == menu["fields"]["meta"])
+    assert meta["fields"]["title"] == "部门管理员任命"

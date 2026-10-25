@@ -702,3 +702,28 @@ class TestPreviewPermission:
         role.menu.add(menu_factory(name="wrong-method", path=self.PREVIEW_PERM_PATH, method="GET"))
         api_client.force_authenticate(user=normal_user)
         assert self._post(api_client).status_code == 403
+
+
+class TestMaskPreviewRegexSafety:
+    """自定义正则预览的输入上限与灾难性回溯保护。"""
+
+    def test_preview_rejects_overlong_pattern(self, auth_client):
+        from audit.utils.mask import MAX_CUSTOM_PATTERN_LENGTH
+
+        resp = auth_client.post(
+            "/api/audit/mask-rules/preview",
+            {"value": PHONE, "rule": {"mask_type": "custom", "pattern": "a" * (MAX_CUSTOM_PATTERN_LENGTH + 1)}},
+            format="json",
+        )
+        assert resp.data["code"] == 1000
+        assert resp.data["data"]["invalid_pattern"] is True
+
+    def test_preview_catastrophic_pattern_times_out(self, auth_client):
+        # (a+)+$ 对 500 个 a 后接非 a 字符是指数级回溯；子进程超时应转 400 而不是挂住 worker
+        resp = auth_client.post(
+            "/api/audit/mask-rules/preview",
+            {"value": "a" * 499 + "!", "rule": {"mask_type": "custom", "pattern": "(a+)+$"}},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert "timed out" in str(resp.data).lower() or "超时" in str(resp.data)

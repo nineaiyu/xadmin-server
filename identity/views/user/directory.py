@@ -19,15 +19,19 @@ from common.core.modelset import OnlyListModelSet
 from common.core.pagination import DynamicPageNumber
 from identity.models import DeptInfo, UserInfo
 from identity.serializers.directory import DirectorySerializer
+from system.services.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin
 
 
-class DirectoryFilter(BaseFilterSet):
+class DirectoryFilter(TagFilterMixin, BaseFilterSet):
     keyword = filters.CharFilter(method="filter_keyword")
+    # 显式声明：django-filter 只收集本类命名空间里的声明过滤字段（mixin 的 tag 不计入
+    # declared_filters，Meta.fields 含 tag 会报 non-model field）
+    tag = TagChoiceFilter()
     dept = filters.UUIDFilter(method="filter_dept")
 
     class Meta:
         model = UserInfo
-        fields = ["posts", "gender"]
+        fields = ["posts", "gender", "tag"]
 
     def filter_keyword(self, queryset: Any, name: Any, value: Any) -> Any:
         value = str(value or "").strip()
@@ -58,3 +62,5 @@ class DirectoryViewSet(OnlyListModelSet):
     pagination_class = DynamicPageNumber(1000)
     ordering_fields = ["username", "date_joined", "last_login"]
     filterset_class = DirectoryFilter
+    # 标签筛选与用户管理同口径：?tag=<名称|主键>（逗号/多值 AND）
+    extra_filter_class = [TagFilterBackend]

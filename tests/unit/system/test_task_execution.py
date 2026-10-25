@@ -852,3 +852,23 @@ def test_periodic_create_accepts_registered_task_path(monkeypatch):
     response = view(request)
     assert response.data["code"] == 1000, response.data
     assert PeriodicTask.objects.filter(pk=response.data["data"]["pk"]).exists() is True
+
+
+def test_periodic_enable_parses_string_boolean():
+    """字符串 "false" 不得被当成启用；非法值返回 400 而不是静默切换。"""
+    user = _make_user()
+    instance = _make_periodic_task()
+    factory = APIRequestFactory()
+    view = PeriodicTaskViewSet.as_view({"patch": "enable"})
+
+    request = factory.patch(f"/api/task/periodic/{instance.pk}/enable", data={"enabled": "false"}, format="json")
+    force_authenticate(request, user=user)
+    response = view(request, pk=instance.pk)
+    assert response.data["code"] == 1000, response.data
+    instance.refresh_from_db()
+    assert instance.enabled is False
+
+    request = factory.patch(f"/api/task/periodic/{instance.pk}/enable", data={"enabled": "abc"}, format="json")
+    force_authenticate(request, user=user)
+    response = view(request, pk=instance.pk)
+    assert response.status_code == 400

@@ -695,3 +695,23 @@ def test_items_records_consumption_usage():
     assert usage["usage_count"] == 2
     assert usage["last_used_at"]
     assert usage["load_failure_count"] == 0
+
+
+def test_batch_active_parses_string_boolean(superuser):
+    """字符串 "false"/"0" 必须按 False 处理，不能落成 bool("false") == True。"""
+    cache.clear()
+    parent = DataDict.objects.create(code="ba_string_bool", label="字符串布尔")
+    item = DataDict.objects.create(parent=parent, code="a", label="A", value="a")
+
+    response = _call("batch_active", superuser, method="post", data={"pks": [str(item.pk)], "is_active": "false"})
+    assert response.data["code"] == 1000, response.data
+    item.refresh_from_db()
+    assert item.is_active is False
+
+    response = _call("batch_active", superuser, method="post", data={"pks": [str(item.pk)], "is_active": "1"})
+    assert response.data["code"] == 1000, response.data
+    item.refresh_from_db()
+    assert item.is_active is True
+
+    response = _call("batch_active", superuser, method="post", data={"pks": [str(item.pk)], "is_active": "abc"})
+    assert response.status_code == 400

@@ -10,8 +10,10 @@
 import pytest
 
 from approval.models.approval import ApprovalRequest
+from approval.services.approval.lifecycle import approve_request
 from common.core.config import SysConfig
 from identity.models import DeptInfo, UserInfo, UserRole
+from system.models import DataPermission
 
 pytestmark = pytest.mark.django_db
 
@@ -27,6 +29,11 @@ def approver(db):
 @pytest.fixture
 def target_role(db):
     return UserRole.objects.create(name="待删角色", code="to_be_removed")
+
+
+@pytest.fixture
+def target_data_permission(db):
+    return DataPermission.objects.create(name="待删数据权限", rules=[])
 
 
 def enable(paths):
@@ -64,3 +71,28 @@ class TestSensitiveApprovalMounts:
         assert response.status_code == 412
         assert DeptInfo.objects.filter(pk=dept.pk).exists()
         assert ApprovalRequest.objects.filter(status=ApprovalRequest.Status.PENDING).count() == 1
+
+    def test_data_permission_batch_destroy_requires_approval(self, auth_client, approver, target_data_permission):
+        """数据权限批删与单删同口径：配置审批路径后建单，业务不执行。"""
+        enable([r"^/api/system/permission/"])
+        url = "/api/system/permission/batch-destroy"
+        response = auth_client.post(url, [str(target_data_permission.pk)], format="json")
+        assert response.status_code == 412
+        assert response.data["code"] == 1002
+        target_data_permission.refresh_from_db()
+        assert target_data_permission.deleted_at is None
+        assert ApprovalRequest.objects.filter(status=ApprovalRequest.Status.PENDING).count() == 1
+
+        approval = ApprovalRequest.objects.get(status=ApprovalRequest.Status.PENDING)
+        ok, detail = approve_request(approval, approver)
+        assert ok, detail
+        retry = auth_client.post(
+            url,
+            [str(target_data_permission.pk)],
+            format="json",
+            HTTP_X_APPROVAL_ID=str(approval.pk),
+        )
+        assert retry.status_code == 200, retry.data
+        assert retry.data["code"] == 1000
+        target_data_permission.refresh_from_db()
+        assert target_data_permission.deleted_at is not None

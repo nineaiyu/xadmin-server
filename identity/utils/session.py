@@ -20,6 +20,25 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
+def filter_force_logout_targets(operator: Any, user_pks: Any) -> tuple[list[Any], list[dict[str, Any]]]:
+    """超管会话只有超管能强制下线：返回 (允许处理的用户 pk, 被拒明细)。
+
+    批量入口逐用户过滤并回传失败，避免「一个超管目标导致整批不可用」或
+    「部分成功但前端只看到成功」。
+    """
+    from identity.models import UserInfo
+
+    pks = list(dict.fromkeys(user_pks))
+    if getattr(operator, "is_superuser", False) or not pks:
+        return pks, []
+    protected = set(UserInfo.objects.filter(pk__in=pks, is_superuser=True).values_list("pk", flat=True))
+    if not protected:
+        return pks, []
+    allowed = [pk for pk in pks if pk not in protected]
+    failures = [{"pk": str(pk), "reason": str(_("Cannot force logout a superuser"))} for pk in pks if pk in protected]
+    return allowed, failures
+
+
 def force_logout_user(user_pk: Any, operator: Any = None) -> Any:
     """强制某用户全部会话下线，返回被踢掉的 WS channel 数。
 

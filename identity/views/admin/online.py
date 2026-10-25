@@ -20,6 +20,7 @@ from drf_spectacular.plumbing import build_array_type, build_basic_type, build_o
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 
 from common.core.config import SysConfig
 from common.core.filter import BaseFilterSet, PkMultipleFilter
@@ -29,7 +30,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from identity.models import UserInfo, UserSession
 from identity.serializers.session import UserSessionSerializer
-from identity.utils.session import force_logout_user, force_logout_users
+from identity.utils.session import filter_force_logout_targets, force_logout_user, force_logout_users
 from message.services import get_online_info, send_logout_msg
 
 
@@ -52,6 +53,8 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
     pagination_class = DynamicPageNumber(100)
     filterset_class = UserOnlineFilter
     ordering_fields = ["last_active", "created_time"]
+    # 行/批量下线要读会话所属用户的超管标记，避免逐行查询
+    select_related_fields = ("creator",)
 
     def get_queryset(self) -> Any:
         online_user_pks, online_user_sockets = get_online_info()
@@ -61,8 +64,18 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
             Q(channel_name__in=online_user_sockets) | Q(channel_name="", last_active__gte=cutoff)
         )
 
+    def _ensure_target_logout_allowed(self, creator: Any) -> None:
+        request = getattr(self, "request", None)
+        # 无请求上下文 = 进程内直接调用（单测/内部清理），不属于 HTTP 越权面
+        if request is None:
+            return
+        if creator is not None and creator.is_superuser and not request.user.is_superuser:
+            raise PermissionDenied(_("Cannot force logout a superuser"))
+
     def perform_destroy(self, instance: Any) -> Any:
         """行维度「下线」：WS 会话踢 channel；HTTP 会话按 sid 服务端失效 token。"""
+        # 批量删除逐行调用：越权目标在这里抛错，由 BatchDestroyAction 记入 failures
+        self._ensure_target_logout_allowed(instance.creator)
         if instance.channel_name:
             send_logout_msg(instance.creator_id, [instance.channel_name])
         else:
@@ -101,11 +114,10 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
             user_pk = int(raw_pk or 0)
         except (TypeError, ValueError):
             return ApiResponse(code=400, detail=_("User not found"))
-        if (
-            not UserSession.objects.filter(creator_id=user_pk).exists()
-            and not UserInfo.objects.filter(pk=user_pk).exists()
-        ):
+        target = UserInfo.objects.filter(pk=user_pk).only("is_superuser").first()
+        if target is None and not UserSession.objects.filter(creator_id=user_pk).exists():
             return ApiResponse(code=400, detail=_("User not found"))
+        self._ensure_target_logout_allowed(target)
         channels = force_logout_user(user_pk, operator=request.user)
         return ApiResponse(
             data={"channels": channels},
@@ -127,19 +139,27 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         from audit.services import UserLoginLog
 
         session_pks = []
+        user_or_log_pks = []
         for pk in pks:
             try:
                 session_pks.append(str(uuid.UUID(pk)))
+                continue
+            except ValueError:
+                pass
+            try:
+                user_or_log_pks.append(int(pk))
             except ValueError:
                 continue
         user_pks = (
             set(UserSession.objects.filter(pk__in=session_pks).values_list("creator_id", flat=True))
-            | set(UserSession.objects.filter(creator_id__in=pks).values_list("creator_id", flat=True))
-            | set(UserLoginLog.objects.filter(pk__in=pks).values_list("creator_id", flat=True))
+            | set(UserSession.objects.filter(creator_id__in=user_or_log_pks).values_list("creator_id", flat=True))
+            | set(UserLoginLog.objects.filter(pk__in=user_or_log_pks).values_list("creator_id", flat=True))
         )
-        # 批量踢线走批量原语（缓存/黑名单/WS 逐用户循环收敛为整批一次），响应结构不变
-        channels = force_logout_users(user_pks, operator=request.user)
+        # 超管目标逐用户过滤：非超管整批踢超管属于提权，过滤项回传 failures
+        allowed_pks, failures = filter_force_logout_targets(request.user, user_pks)
+        # 批量踢线走批量原语（缓存/黑名单/WS 逐用户循环收敛为整批一次）
+        channels = force_logout_users(allowed_pks, operator=request.user)
         return ApiResponse(
-            data={"users": len(user_pks), "channels": channels},
-            detail=_("Batch force offline submitted: {} users").format(len(user_pks)),
+            data={"users": len(allowed_pks), "channels": channels, "failures": failures},
+            detail=_("Batch force offline submitted: {} users").format(len(allowed_pks)),
         )
