@@ -1544,5 +1544,80 @@
    "method": "GET",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "dc53a1f0-2327-458c-b63b-8c266f38f081",
+  "fields": {
+   "created_time": "2026-10-25T07:40:11.258Z",
+   "updated_time": "2026-10-25T07:40:11.258Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
+   "menu_type": 2,
+   "name": "retrieve:WebhookNotifySetting",
+   "rank": 10000,
+   "path": "api/settings/notify/webhook$",
+   "component": null,
+   "is_active": true,
+   "meta": "c9833aae-e7ae-4b2b-8892-43e0e2be670f",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "e2fff7a3-9cad-4b6a-98d7-01e8e3662fe9",
+  "fields": {
+   "created_time": "2026-10-25T07:40:11.264Z",
+   "updated_time": "2026-10-25T07:40:11.264Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
+   "menu_type": 2,
+   "name": "partialUpdate:WebhookNotifySetting",
+   "rank": 10001,
+   "path": "api/settings/notify/webhook$",
+   "component": null,
+   "is_active": true,
+   "meta": "ddf60613-5703-483e-b469-f1dcbefbb998",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "245f3561-4cca-4073-8da1-0f1bba958316",
+  "fields": {
+   "created_time": "2026-10-25T07:40:11.267Z",
+   "updated_time": "2026-10-25T07:40:11.267Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
+   "menu_type": 2,
+   "name": "create:WebhookNotifySetting",
+   "rank": 10002,
+   "path": "api/settings/notify/webhook$",
+   "component": null,
+   "is_active": true,
+   "meta": "697c07b5-50d6-4306-a0ee-2478b8aa6b29",
+   "method": "POST",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
  }
 ]

@@ -69,6 +69,13 @@ CHANNEL_SPECS = (
         renderer="get_text_msg",
         enable_setting="FEISHU_ENABLED",
     ),
+    # 站点级转发渠道：无逐用户绑定（消息与目标用户整体出站），account_field 留空
+    ChannelSpec(
+        code="webhook",
+        module="webhook",
+        renderer="get_text_msg",
+        enable_setting="WEBHOOK_ENABLED",
+    ),
 )
 
 #: 运行期登记的扩展渠道 spec（register_channel_spec 写入；reset_channel_specs 清空）

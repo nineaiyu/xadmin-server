@@ -6238,5 +6238,20 @@
    "name": "id",
    "label": "id"
   }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "bd5c9b95-44c3-4716-9a14-45bd0e413a7b",
+  "fields": {
+   "created_time": "2026-10-25T07:38:07.940Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "79783ad2-aa29-489f-a8b0-f61b3aff5edc",
+   "name": "condition_summary",
+   "label": "条件摘要"
+  }
  }
 ]

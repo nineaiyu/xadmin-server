@@ -12923,6 +12923,32 @@
         },
         "type": "object"
       },
+      "PatchedWebhookNotifySetting": {
+        "description": "Webhook 转发端点：URL + 签名密钥",
+        "properties": {
+          "WEBHOOK_ENABLED": {
+            "default": false,
+            "description": "将通知转发到配置的 Webhook 端点",
+            "title": "Webhook 通知",
+            "type": "boolean"
+          },
+          "WEBHOOK_SECRET": {
+            "description": "HMAC-SHA256 签名密钥；落库加密且接口不回显",
+            "maxLength": 256,
+            "title": "Webhook 签名密钥",
+            "type": "string",
+            "writeOnly": true
+          },
+          "WEBHOOK_URL": {
+            "description": "接收通知载荷的 HTTPS 端点",
+            "format": "uri",
+            "maxLength": 512,
+            "title": "Webhook 地址",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "PatchedWebhookSubscription": {
         "properties": {
           "created_time": {
@@ -16602,6 +16628,35 @@
           "status",
           "subscription",
           "subscription_name"
+        ],
+        "type": "object"
+      },
+      "WebhookNotifySetting": {
+        "description": "Webhook 转发端点：URL + 签名密钥",
+        "properties": {
+          "WEBHOOK_ENABLED": {
+            "default": false,
+            "description": "将通知转发到配置的 Webhook 端点",
+            "title": "Webhook 通知",
+            "type": "boolean"
+          },
+          "WEBHOOK_SECRET": {
+            "description": "HMAC-SHA256 签名密钥；落库加密且接口不回显",
+            "maxLength": 256,
+            "title": "Webhook 签名密钥",
+            "type": "string",
+            "writeOnly": true
+          },
+          "WEBHOOK_URL": {
+            "description": "接收通知载荷的 HTTPS 端点",
+            "format": "uri",
+            "maxLength": 512,
+            "title": "Webhook 地址",
+            "type": "string"
+          }
+        },
+        "required": [
+          "WEBHOOK_URL"
         ],
         "type": "object"
       },
@@ -68554,6 +68609,310 @@
         ],
         "tags": [
           "ImNotifySettingViewSet"
+        ]
+      }
+    },
+    "/api/settings/notify/webhook": {
+      "get": {
+        "description": "获取{cls}的详情",
+        "operationId": "api_settings_notify_webhook_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookNotifySetting"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "WebhookNotifySettingViewSet"
+        ]
+      },
+      "patch": {
+        "description": "部分更新{cls}信息",
+        "operationId": "api_settings_notify_webhook_partial_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedWebhookNotifySetting"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedWebhookNotifySetting"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedWebhookNotifySetting"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedWebhookNotifySetting"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedWebhookNotifySetting"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookNotifySetting"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "WebhookNotifySettingViewSet"
+        ]
+      },
+      "post": {
+        "description": "测试{cls}",
+        "operationId": "api_settings_notify_webhook_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookNotifySetting"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookNotifySetting"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookNotifySetting"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookNotifySetting"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookNotifySetting"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookNotifySetting"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "WebhookNotifySettingViewSet"
+        ]
+      },
+      "put": {
+        "description": "整体更新{cls}信息",
+        "operationId": "api_settings_notify_webhook_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookNotifySetting"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookNotifySetting"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookNotifySetting"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookNotifySetting"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookNotifySetting"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookNotifySetting"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "WebhookNotifySettingViewSet"
+        ]
+      }
+    },
+    "/api/settings/notify/webhook/search-columns": {
+      "get": {
+        "description": "获取{cls}的展示字段",
+        "operationId": "api_settings_notify_webhook_search_columns_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "items": {
+                        "properties": {
+                          "choices": {
+                            "items": {
+                              "properties": {
+                                "label": {
+                                  "type": "string"
+                                },
+                                "pk": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "choices_truncated": {
+                            "type": "boolean"
+                          },
+                          "default": {},
+                          "help_text": {
+                            "type": "string"
+                          },
+                          "input_type": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "lookups": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "max_length": {
+                            "type": "number"
+                          },
+                          "max_value": {
+                            "type": "number"
+                          },
+                          "min_value": {
+                            "type": "number"
+                          },
+                          "multiple": {
+                            "type": "boolean"
+                          },
+                          "read_only": {
+                            "type": "boolean"
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "sortable": {
+                            "type": "boolean"
+                          },
+                          "step": {
+                            "type": "number"
+                          },
+                          "table_show": {
+                            "type": "number"
+                          },
+                          "write_only": {
+                            "type": "boolean"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "WebhookNotifySettingViewSet"
         ]
       }
     },

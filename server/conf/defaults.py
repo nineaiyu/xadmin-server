@@ -173,6 +173,11 @@ BASE_CONFIG = {
     "FEISHU_ENABLED": False,
     "FEISHU_APP_ID": "",
     "FEISHU_APP_SECRET": "",
+    # Webhook 通知渠道：站点级转发端点（category=notify_webhook 热更新覆盖，
+    # secret 值级加密落库）。URL 必填才真正启用；出站走 pinned_request 统一出口
+    "WEBHOOK_ENABLED": False,
+    "WEBHOOK_URL": "",
+    "WEBHOOK_SECRET": "",
     # AI 助手：OpenAI 兼容协议；API Key 值级加密落库。
     # 多档案（AiProfile）为主通路：激活档案供全部 AI 链路使用；
     # 以下键是「无激活档案时」的 Setting 回落默认值（category=ai 可热更新覆盖）。

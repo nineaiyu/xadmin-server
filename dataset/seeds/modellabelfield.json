@@ -3568,5 +3568,95 @@
    "name": "cron_expression",
    "label": "Cron 表达式"
   }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1d725793-7867-4d7a-9444-ff736711bebd",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.619Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "9a41849c-1791-4420-b6cd-1b59f90034bc",
+   "name": "base_updated_time",
+   "label": "Base updated time"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "ed64dc22-bb72-46f7-8d67-8f1a0df25ae4",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.571Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36",
+   "name": "theme_color",
+   "label": "主题色"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "b5739c4c-5d08-455c-a7c2-1d626f0f0758",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.570Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36",
+   "name": "theme",
+   "label": "主题"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1154120b-6095-48f8-a383-1db1b2e886a3",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.567Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36",
+   "name": "render_mode",
+   "label": "Render mode"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3a788dc0-fc97-4784-b225-86cd6a18bff0",
+  "fields": {
+   "created_time": "2026-10-25T07:38:07.472Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "646c35cd-d782-4dfb-9371-b9611c860b7a",
+   "name": "theme_color",
+   "label": "主题色"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "d8c169fd-4ee0-45dc-80d1-8114d68c0b6c",
+  "fields": {
+   "created_time": "2026-10-25T07:38:07.471Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "646c35cd-d782-4dfb-9371-b9611c860b7a",
+   "name": "theme",
+   "label": "主题"
+  }
  }
 ]

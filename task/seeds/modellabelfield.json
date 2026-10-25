@@ -2968,5 +2968,125 @@
    "name": "status",
    "label": "Status"
   }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1cc9db88-29a7-4109-a723-9afbecc7465b",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.301Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8108f7ab-cefc-4048-849d-dcfbb821e4a9",
+   "name": "response_body_truncated",
+   "label": "Response body truncated"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "7b1323f5-0908-4085-b34e-eaaaab7ca2ef",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.296Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8108f7ab-cefc-4048-849d-dcfbb821e4a9",
+   "name": "request_headers",
+   "label": "Request headers"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "ad8a6f66-098c-4645-8b5a-e0a5187c9d6f",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.296Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "8108f7ab-cefc-4048-849d-dcfbb821e4a9",
+   "name": "payload",
+   "label": "载荷"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1e5959fc-2c8f-4f3a-b9ad-5c072b3481e4",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.283Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "d76a6bbf-c662-47a8-9c67-bc719d50c999",
+   "name": "has_secret",
+   "label": "Secret configured"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e3e0c29f-593c-466b-a79b-f1bc2f20ae6a",
+  "fields": {
+   "created_time": "2026-10-25T07:38:06.961Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "8d6b8a11-4d4c-4171-87c7-1f1d789fa44d",
+   "name": "response_body_truncated",
+   "label": "Response body truncated"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "30ebe81d-269b-473d-90ae-0574ef3e941c",
+  "fields": {
+   "created_time": "2026-10-25T07:38:06.957Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "8d6b8a11-4d4c-4171-87c7-1f1d789fa44d",
+   "name": "request_headers",
+   "label": "Request headers"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "6a8d67a6-1568-47c0-9eaf-fb79ca67f47f",
+  "fields": {
+   "created_time": "2026-10-25T07:38:06.880Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c71422fe-0367-4798-b32e-9307945f39b2",
+   "name": "stage",
+   "label": "进度阶段"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0c5a0e6e-8c4f-4181-b1f8-db7f5b3b5311",
+  "fields": {
+   "created_time": "2026-10-25T07:38:06.880Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "c71422fe-0367-4798-b32e-9307945f39b2",
+   "name": "progress",
+   "label": "进度"
+  }
  }
 ]

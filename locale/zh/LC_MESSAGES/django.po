@@ -12638,3 +12638,43 @@ msgstr "短信服务"
 msgid "LDAP login"
 msgstr "LDAP 登录"
 
+
+#: notifications/backends/__init__.py
+msgid "Webhook"
+msgstr "Webhook 通知"
+
+#: settings/serializers/notify_webhook.py
+msgid "Webhook notification"
+msgstr "Webhook 通知"
+
+#: settings/serializers/notify_webhook.py
+msgid "Forward notifications to the configured webhook endpoint"
+msgstr "将通知转发到配置的 Webhook 端点"
+
+#: settings/serializers/notify_webhook.py
+msgid "Webhook URL"
+msgstr "Webhook 地址"
+
+#: settings/serializers/notify_webhook.py
+msgid "HTTPS endpoint that receives notification payloads"
+msgstr "接收通知载荷的 HTTPS 端点"
+
+#: settings/serializers/notify_webhook.py
+msgid "Webhook secret"
+msgstr "Webhook 签名密钥"
+
+#: settings/serializers/notify_webhook.py
+msgid "HMAC-SHA256 signing secret; encrypted at rest and never returned"
+msgstr "HMAC-SHA256 签名密钥；落库加密且接口不回显"
+
+#: settings/views/notify_webhook.py
+msgid "Target rejected by outbound guard: {}"
+msgstr "目标被出站守卫拒绝：{}"
+
+#: settings/views/notify_webhook.py
+msgid "Endpoint returned HTTP {}"
+msgstr "端点返回 HTTP {}"
+
+#: settings/views/notify_webhook.py
+msgid "Test delivery delivered to the endpoint, please check"
+msgstr "测试投递已送达端点，请查收"

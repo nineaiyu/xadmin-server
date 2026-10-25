@@ -22,7 +22,23 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
-- **2026-10-25 提案候选首批交付（改动留工作区待提交，来源=两份 2026.10 提案近期窗口小件 + 前端 Top3）**：
+- **2026-10-25 提案候选第二批（P7 收尾两件：@提及联想 + webhook 渠道，改动留工作区待提交）**：
+  ①**P7② 审批讨论 @提及（纯前端，后端解析/通知既有）**：`InstanceDetail` 收集参与人
+  （申请人/各节点处理人/代理人/实际处理者/抄送人，label 即 username）传入讨论区；`useMentionSuggest`
+  （末尾 `@片段` 触发、包含过滤、插入补空格终结——正则与后端 `MENTION_PATTERN` 同口径）；
+  评论正文按 `@用户名` 分段高亮（文本节点直出不走 v-html）；候选排除自己（与后端 @自己不提醒对齐）。
+  ②**P7③ Webhook 通知渠道（站点级转发端点）**：`BACKEND` 枚举 + `ChannelSpec` + `backends/webhook.py`
+  （消息与目标用户整体 POST，签名与开放平台事件投递同口径 `sha256=HMAC("{ts}."+body)` +
+  `X-Webhook-Signature/Timestamp` 头；出站走 `pinned_request` 统一出口，私网默认拒绝、白名单放行；
+  收件人截断 200；失败吞掉不阻断其他渠道）；配置面 `notify/webhook` ViewSet（category=notify_webhook，
+  secret 值级加密）+ 消息设置页新页签（复用 settings-shell）；「开而 URL 缺」自动降级不可用；
+  权限点 3 个经 `parent_menu_map`（settings/declarations.py）归属 SettingMessage，`sync_menu_permissions
+  --dry-run` 缺口 0。
+  **验证**：后端全量 pytest exit 0；前端 vitest 418 文件 / 2730 例、typecheck/lint/i18n/contract 门禁全绿；
+  ruff、脚本门禁、`load_init_json --check`（0 error）绿；E2E approval-depth 4 例 + 设置/订阅面 5 例过；
+  容器重启 + 冒烟：渠道注册表加载、默认降级、retrieve/patch 热更生效、订阅渠道列表含 webhook（配置后）；
+  冒烟假配置已清理并重启容器。zh 译文按准则手工补 po + compilemessages（不跑 makemessages）。
+- **2026-10-25 提案候选首批交付（改动已提交 server `57e4d8b0` / client `27772388`，来源=两份 2026.10 提案近期窗口小件 + 前端 Top3）**：
   ①**P1 仪表盘卡片下钻（单向下钻，联动二期）**：聚合序列带 `raw` 原始分组值、`execute_dataset`
   增 `extra_filters`（下钻「按维度值看明细」，视图层先 `validate_filters`）；前端 `CardDrillDrawer`
   复用数据集预览表格，可清过滤回全量；顺带聚合卡片度量字段（sum）可配置。T4（dashboard 拆分）

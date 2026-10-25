@@ -4828,5 +4828,65 @@
    "name": "dept_belong",
    "label": "数据归属部门"
   }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e66d804a-8453-414d-b454-54b6679b06a3",
+  "fields": {
+   "created_time": "2026-10-25T07:38:07.743Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "a6742831-3bb4-4e32-b0d9-d5643122fd1c",
+   "name": "load_failure_count",
+   "label": "Consumption failures"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "af7f8f3f-bb51-497e-a465-d8b4d8eb9249",
+  "fields": {
+   "created_time": "2026-10-25T07:38:07.742Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "a6742831-3bb4-4e32-b0d9-d5643122fd1c",
+   "name": "last_used_at",
+   "label": "Last consumed at"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "442b9cdb-c76c-428d-a596-ca1800177d45",
+  "fields": {
+   "created_time": "2026-10-25T07:38:07.742Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "a6742831-3bb4-4e32-b0d9-d5643122fd1c",
+   "name": "usage_count",
+   "label": "Consumption count"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "ab34c199-6a72-4c0d-a47d-b85a3ccf5025",
+  "fields": {
+   "created_time": "2026-10-25T07:38:07.079Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "fa760e60-8ae4-4d0a-9728-419f191e83d1",
+   "name": "deleted_at",
+   "label": "删除时间"
+  }
  }
 ]

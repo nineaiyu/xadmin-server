@@ -11,6 +11,8 @@ DECLARATIONS = AppDeclarations(
         # 值是 (权限码后缀, 父菜单 name)：同一页面下多个视图集需要各自的权限码后缀。
         "api/settings/scim": ("ScimSetting", "SettingOpenPlatform"),
         "api/settings/oauth/providers": ("OAuthProviderSetting", "SettingOpenPlatform"),
+        # Webhook 通知渠道（消息设置页新页签）：与 IM 渠道页签同页归属
+        "api/settings/notify/webhook": ("WebhookNotifySetting", "SettingMessage"),
     },
     audit_known_duplicates=(
         # 基本设置与水印同端点：水印是独立页签权限位（读写同 `/api/settings/basic`，

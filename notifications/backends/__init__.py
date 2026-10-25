@@ -31,6 +31,8 @@ class BACKEND(models.TextChoices):
     DINGTALK = "dingtalk", _("DingTalk")
     WECOM = "wecom", _("WeCom")
     FEISHU = "feishu", _("FeiShu")
+    # 站点级转发渠道：消息与目标用户整体 POST 到管理员配置的端点（见 backends/webhook.py）
+    WEBHOOK = "webhook", _("Webhook")
 
     @property
     def client(self) -> Any:
