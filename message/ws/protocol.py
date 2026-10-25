@@ -46,6 +46,7 @@ class MessageAction(StrEnum):
     SCREEN_COMMAND = "screen_command"  # 大屏远程控制指令（dataset/ws_screen.py，下行单向）
     SCREEN_DATA = "screen_data"  # 大屏服务端聚合数据推送（dataset/ws_screen.py，下行单向）
     SCREEN_PAGE_STATE = "screen_page_state"  # 大屏展示端当前页上报（dataset/ws_screen.py，上行单向）
+    DASHBOARD_DATA = "dashboard_data"  # 仪表盘服务端聚合数据推送（dataset/ws_dashboard.py，下行单向）
 
 
 class InboundMessage(TypedDict, total=False):
@@ -261,6 +262,22 @@ class ScreenPageStatePayload(TypedDict, total=False):
     """
 
     index: int
+
+
+class DashboardDataPayload(TypedDict, total=False):
+    """仪表盘聚合数据帧（ws/dashboard/<pk> 下行，按观察者各自计算后自推）。
+
+    与 ScreenDataPayload 同一推送模型（dataset/ws_dashboard.py）：服务端不做组
+    广播数据，触发事件到达各连接后以**连接自身用户**视角聚合（数据权限 fail-closed
+    与逐卡 HTTP 重拉等价），再只发给自己——M 卡 × N 观察者的 HTTP 请求收敛为
+    每观察者每轮 1 帧。卡片集 = 该仪表盘 layout（卡片级 allowed_roles 过滤）。
+    cards.data 为 execute/aggregate 的返回结构；单卡失败进 errors，不中断整帧。
+    """
+
+    dashboard: str
+    cards: list[dict[str, Any]]
+    errors: list[dict[str, Any]]
+    ts: int
 
 
 class MonitorPushPayload(TypedDict, total=False):

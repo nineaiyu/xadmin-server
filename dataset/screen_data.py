@@ -171,7 +171,7 @@ def build_screen_data_payload(user: Any, screen: Any, rev: int, page_index: int 
             current_pk = ordered[int(page_index)]
             groups = [(current_pk, [ref for ref in refs if ref["dashboard"] == current_pk])]
 
-    datasets = _load_datasets(refs)
+    datasets = load_datasets(refs)
     # 同帧内相同取数参数（同数据集 + 同分组/度量/分桶）只执行一次：
     # 多张卡展示同一指标是常见配置，逐卡执行会让查询量随卡片数线性放大。
     result_cache: dict[tuple[str, ...], dict[str, Any]] = {}
@@ -193,11 +193,11 @@ def build_screen_data_payload(user: Any, screen: Any, rev: int, page_index: int 
                 if cache_key in result_cache:
                     data = result_cache[cache_key]
                 else:
-                    data = _execute_card(ref, user, datasets.get(ref["dataset"]))
+                    data = execute_card(ref, user, datasets.get(ref["dataset"]))
                     result_cache[cache_key] = data
                 cards.append({"card": ref["card"], "kind": ref["kind"], "data": data})
             except Exception as exc:  # noqa: BLE001 单卡失败只记 errors，不中断整帧（旧链路单卡 4xx 同语义）
-                errors.append({"card": ref["card"], "detail": _error_detail(exc)})
+                errors.append({"card": ref["card"], "detail": error_detail(exc)})
         payloads.append(
             {
                 "screen": str(screen.pk),
@@ -211,7 +211,7 @@ def build_screen_data_payload(user: Any, screen: Any, rev: int, page_index: int 
     return payloads
 
 
-def _load_datasets(refs: list[CardRef]) -> dict[str, Any]:
+def load_datasets(refs: list[CardRef]) -> dict[str, Any]:
     """批量载入本帧引用的数据集：一次 in_bulk 替代逐卡 filter。"""
     if not refs:
         return {}
@@ -236,7 +236,7 @@ def _visible_dataset(dataset: Any, user: Any) -> Any:
     return dataset
 
 
-def _execute_card(ref: CardRef, user: Any, dataset: Any = None) -> dict[str, Any]:
+def execute_card(ref: CardRef, user: Any, dataset: Any = None) -> dict[str, Any]:
     """执行单卡：按 kind 路由到 execute/aggregate（权限过滤在 dataset_query 内 fail-closed）。
 
     ``dataset`` 可由整帧构建方批量载入后传入；缺省时按 pk 单查（兼容直接调用方）。
@@ -266,7 +266,7 @@ def _execute_card(ref: CardRef, user: Any, dataset: Any = None) -> dict[str, Any
     return aggregated
 
 
-def _error_detail(exc: Exception) -> str:
+def error_detail(exc: Exception) -> str:
     """单卡失败的可读原因：ValidationError 取 messages（与 REST execute/aggregate 出口同款拼接）。"""
     if isinstance(exc, ValidationError):
         return "; ".join(exc.messages)

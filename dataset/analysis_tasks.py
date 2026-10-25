@@ -301,7 +301,7 @@ def schedule_report_run(report_id: str) -> Any:
     return task_id
 
 
-def _screen_has_viewers(layer: Any, group: Any) -> bool:
+def _group_has_viewers(layer: Any, group: Any) -> bool:
     """组内是否有在线展示连接（get_layers 为自定义 channel layer 扩展）。
 
     层未提供 get_layers（极简内存层）时保守视为在线：宁可多触发一次空推送，
@@ -343,7 +343,7 @@ def push_screen_data() -> Any:
             # 先判节流（一次 cache get）再查在线（一次 Redis 往返），离屏不占位不落节流键
             if not screen_push_due(screen):
                 continue
-            if not _screen_has_viewers(layer, screen_group_name(screen.pk)):
+            if not _group_has_viewers(layer, screen_group_name(screen.pk)):
                 continue
             # 原子占位（cache.add）：双 beat / 并发扫描只有一个赢者取得本轮广播权，
             # 落选者直接跳过——「查占用 + 占用」两步拆开会有双触发竞态窗口
@@ -356,4 +356,49 @@ def push_screen_data() -> Any:
             logger.warning("screen data push trigger failed: %s", screen.pk, exc_info=True)
     if pushed:
         logger.info("triggered screen data push for %s screen(s)", pushed)
+    return pushed
+
+
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(interval=15, description="仪表盘在线观察端周期数据推送", module="analysis")  # type: ignore[untyped-decorator]  # 第三方装饰器无类型存根
+def push_dashboard_data() -> Any:
+    """扫描仪表盘：向「有在线观察端且已过节流窗口」的盘投递数据触发事件。
+
+    与 push_screen_data 同款分工：beat 只做「谁该刷」的节流判定（逐盘 last_push
+    缓存键 + cache.add 原子占位，见 ws_dashboard.dashboard_push_due /
+    claim_dashboard_push），不做任何数据集查询；离盘（组内无连接）不触发也不占位，
+    观察者上线后能尽快收到首帧（连接即自推首帧，不依赖本轮触发）。
+    """
+    from channels.layers import get_channel_layer
+
+    from dataset.models.dataset import Dashboard
+    from dataset.ws_dashboard import (
+        broadcast_dashboard_data_trigger,
+        claim_dashboard_push,
+        dashboard_group_name,
+        dashboard_push_due,
+        mark_dashboard_pushed,
+    )
+
+    layer = get_channel_layer()
+    if layer is None:
+        return 0
+    pushed = 0
+    for dashboard in Dashboard.objects.iterator():
+        try:
+            # 先判节流（一次 cache get）再查在线（一次 Redis 往返），离盘不占位不落节流键
+            if not dashboard_push_due(dashboard.pk):
+                continue
+            if not _group_has_viewers(layer, dashboard_group_name(dashboard.pk)):
+                continue
+            # 原子占位（cache.add）：双 beat / 并发扫描只有一个赢者取得本轮广播权
+            if not claim_dashboard_push(dashboard.pk):
+                continue
+            broadcast_dashboard_data_trigger(dashboard.pk)
+            mark_dashboard_pushed(dashboard.pk)
+            pushed += 1
+        except Exception:  # noqa: BLE001 单盘失败不中断扫描（与大屏/报表分发同口径）
+            logger.warning("dashboard data push trigger failed: %s", dashboard.pk, exc_info=True)
+    if pushed:
+        logger.info("triggered dashboard data push for %s dashboard(s)", pushed)
     return pushed

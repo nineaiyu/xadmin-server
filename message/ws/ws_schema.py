@@ -178,6 +178,21 @@ PAYLOAD_DECLARATIONS: dict[str, dict[str, Any]] = {
             "index": "当前页码（0 基，按 Screen.dashboards 原序；canvas 模式不上报，非法/越界回退全页聚合）",
         },
     },
+    "dashboardDataPayload": {
+        "typed_dict": "DashboardDataPayload",
+        "description": (
+            "仪表盘聚合数据帧载荷（ws/dashboard/<pk> 下行；按观察者权限各自聚合后自推，"
+            "dataset/ws_dashboard.py 的 dashboard_data_trigger，不做组广播）"
+        ),
+        "required": ["dashboard", "cards", "errors", "ts"],
+        "open": False,
+        "fields": {
+            "dashboard": "仪表盘 pk",
+            "cards": "卡片数据 {card, kind: execute|aggregate, data}；data 为 execute/aggregate 返回结构",
+            "errors": "失败卡片 {card, detail}：数据集被删 / 字段权限 fail-closed 等，不影响其余卡片",
+            "ts": "推送时刻（epoch 秒）",
+        },
+    },
 }
 
 

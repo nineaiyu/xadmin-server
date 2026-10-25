@@ -22,7 +22,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core.cache import cache
 
-from dataset.analysis_tasks import _screen_has_viewers, push_screen_data
+from dataset.analysis_tasks import _group_has_viewers, push_screen_data
 from dataset.models.dataset import Dashboard, Dataset, Screen
 from dataset.screen_data import build_screen_data_payload, collect_screen_cards
 from dataset.views import screen as screen_views
@@ -562,7 +562,7 @@ class TestPushHelpers:
         assert data_push_interval(screen) == 120
 
     def test_layer_without_get_layers_assumes_online(self):
-        assert _screen_has_viewers(object(), "any_group") is True
+        assert _group_has_viewers(object(), "any_group") is True
 
 
 class TestCarouselPageState:
@@ -828,13 +828,13 @@ class TestScreenDataQueryBatching:
         screen = _make_screen(superuser, [dashboard])
 
         calls: list[str] = []
-        real_execute = screen_data._execute_card
+        real_execute = screen_data.execute_card
 
         def counting(ref, user, ds):
             calls.append(ref["card"])
             return real_execute(ref, user, ds)
 
-        monkeypatch.setattr(screen_data, "_execute_card", counting)
+        monkeypatch.setattr(screen_data, "execute_card", counting)
         payload = build_screen_data_payload(superuser, screen, rev=1)
 
         assert calls == ["n1"]
