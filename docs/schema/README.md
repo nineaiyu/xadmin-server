@@ -6,7 +6,7 @@
 | Schema | 契约 | 校验测试 |
 |--------|------|----------|
 | `search-columns.schema.json` / `search-fields.schema.json` | 元数据接口（RePlusPage 渲染契约，T2.3） | `test_metadata_schema.py` |
-| `api-response.schema.json` | 统一响应信封（`packages/xadmin-common/common/core/response.py`） | `test_contract_schemas.py` |
+| `api-response.schema.json` | 统一响应信封（`packages/xadmin-common/common/core/response/__init__.py`） | `test_contract_schemas.py` |
 | `routes-payload.schema.json` | 动态路由接口完整载荷（路由树 + auths 权限码） | `test_contract_schemas.py` |
 | `ws-frame.schema.json` | WebSocket 消息协议 v1 帧（`message/protocol.py`） | `test_contract_schemas.py` / `test_ws_frame_schema.py` |
 | `openapi.json` | 全量 OpenAPI 3 契约（路径 / 组件 schema），前端类型生成真源 | `dump_openapi --check`（导出幂等） |

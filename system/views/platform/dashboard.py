@@ -17,8 +17,8 @@ from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
 from audit.services import LoginLogSerializer, OperationLog, UserLoginLog
-from common.base.magic import MagicCacheData, cache_response
 from common.core.response import ApiResponse
+from common.decorators import MagicCacheData, cache_response
 from common.swagger.utils import get_default_response_schema
 from identity.services import UserInfo
 

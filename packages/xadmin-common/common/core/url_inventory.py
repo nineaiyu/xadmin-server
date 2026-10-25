@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
+"""URL 清单与权限路径匹配（get_all_url_dict / permission_path_matches / get_doc_first_line）。
+
+原名 core/utils.py，按域更名为 url_inventory（主职责是运行期 URL 枚举与路径
+匹配；get_doc_first_line 等权限辅助就近归位，见调用方 scripts/check_menu_titles.py）。
+"""
+
 # project : server
 # filename : utils
 # author : ly_13
@@ -18,9 +24,9 @@ from django.urls import URLPattern, URLResolver
 from django.utils.module_loading import import_string
 from django.utils.termcolors import make_style
 
-from common.base.magic import import_from_string
 from common.decorators import cached_method
 from common.settings_contract import kernel_required_setting, kernel_setting
+from common.utils.importing import import_from_string
 
 logger = logging.getLogger(__name__)
 

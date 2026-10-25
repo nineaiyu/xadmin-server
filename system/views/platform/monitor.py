@@ -24,8 +24,8 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
-from common.base.magic import cache_response
 from common.core.response import ApiResponse
+from common.decorators import cache_response
 from common.swagger.utils import get_default_response_schema
 from system.services.monitor import events as monitor_events
 from system.services.monitor import history as monitor_history

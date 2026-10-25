@@ -161,7 +161,7 @@ def _top_level_paths(text: str) -> list:
     """全文提取"以已知仓库顶层目录开头"的反引号路径（示例简写 / 占位符自动豁免）。"""
     paths = []
     for raw in TOKEN_RE.findall(text):
-        # "文件::符号" 写法（如 packages/xadmin-common/common/base/utils.py::signer）只校验文件部分
+        # "文件::符号" 写法（如 packages/xadmin-common/common/base/crypto.py::signer）只校验文件部分
         token = raw.split("::")[0].strip()
         if not token or " " in token:
             continue

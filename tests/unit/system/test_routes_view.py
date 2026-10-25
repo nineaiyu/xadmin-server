@@ -21,7 +21,7 @@ from rest_framework.response import Response
 from rest_framework.test import APIRequestFactory
 from rest_framework.views import APIView
 
-from common.base.magic import cache_response
+from common.decorators import cache_response
 from system.models import Menu, MenuMeta
 
 pytestmark = pytest.mark.django_db

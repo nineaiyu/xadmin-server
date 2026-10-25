@@ -44,6 +44,34 @@ python manage.py sync_menu_permissions --update-seed
 包装完必须能回答三个问题，否则不算接完：**契约有没有生效**（§三）、**路由/通道/任务有没有接线**
 （§四）、**模块开关能不能一起管住它们**（§五）。§六 给了逐条验证命令。
 
+## 二点五、种子该放哪：决策树
+
+种子双轨（静态 `<app>/seeds/` 与运行期命令播种）并存带来的第一个问题就是「我的新模块种子放哪」。
+按下面的决策树走（判断顺序自上而下，命中即停）：
+
+```text
+你的数据是产品功能的一部分（菜单 / 权限点 / 字段树 / 应用配置 / 字典）？
+├─ 是 → 静态种子：<app>/seeds/ 三件套（manifest.json + menu.json + menumeta.json）
+│        · 内置业务 app 与二开插件同口径（demo 插件即活样本）
+│        · `sync_menu_permissions --update-seed` 会按归属回写，改完 `--dry-run` 验证缺口 0
+│        · 平台级目录 / 跨域页面才落 loadjson/（平台共享层）
+└─ 否（演示 / 可选样例 / 开箱体验数据）？
+    └─ 运行期命令播种：写 seed_<名称> management command
+         · demo app 的 seed_demo_book 是活样本（菜单与权限点由命令播种，随模块可裁剪）
+         · 命令需幂等（唯一名 + 存在即跳过），生产默认不执行
+```
+
+判定口诀：**装完系统就该有的 → 静态种子；管理员可选开启的 → 命令播种**。
+两轨都经 `load_init_json --check`（0 error）与权限点缺口扫描把关。
+
+## 二点六、代码生成：CLI 与 GUI 同源
+
+`generate_crud`（CLI）与「系统管理 → 代码生成」（GUI 页）**不是两套实现**：
+GUI 适配层 `devtools/services/codegen/gui.py` 直接实例化 CLI 命令类
+（`from devtools.management.commands._generate_crud import Command`），
+预览 / 下载产物与 CLI 落盘走同一引擎与同一套模板——GUI 是 CLI 的参数化视图，
+不存在「双入口产物漂移」的面。改动生成逻辑只改 `_generate_crud/`（唯一事实源）。
+
 ## 三、契约注入（`register_contract`）
 
 ### 3.1 白名单与解析序
@@ -113,7 +141,7 @@ def get_active_superuser_queryset():
 
 | 文件 | 契约 | 宿主消费点 |
 | --- | --- | --- |
-| `config.py::URLPATTERNS` | 路由前缀声明 | `server/urls.py` → `common/core/utils.py::auto_register_app_url`（同时并入 `PERMISSION_SHOW_PREFIX` / `PERMISSION_DATA_AUTH_APPS`） |
+| `config.py::URLPATTERNS` | 路由前缀声明 | `server/urls.py` → `common/core/url_inventory.py::auto_register_app_url`（同时并入 `PERMISSION_SHOW_PREFIX` / `PERMISSION_DATA_AUTH_APPS`） |
 | `routing.py::urlpatterns` | WS 通道 | `server/asgi.py` → `collect_app_ws_urls`（按 INSTALLED_APPS 收集） |
 | `tasks.py` | 周期任务声明 | `{app}.tasks` 被 celery autodiscover；`@register_as_period_task(module=...)` 声明归属模块 |
 | `modules.py::MODULES` | 功能模块声明 | `common/core/modules/registry.py::discovered_modules` |

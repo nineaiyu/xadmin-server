@@ -41,6 +41,12 @@ from .declarations import (
     SHARED_METHOD_PATHS,
     SKIP_ROUTE_PREFIXES,
 )
+from .generate import (
+    build_permission_items,
+    save_permission_items,
+    serialize_permission_items,
+    sync_permission_models,
+)
 from .scan import (
     build_plans,
     build_route_index,
@@ -63,6 +69,10 @@ from .types import PERMISSION_MENU_RANK_BASE, BindingFix, PlanItem, RouteInfo
 
 __all__ = [
     "AUDIT_KNOWN_DUPLICATES",
+    "build_permission_items",
+    "save_permission_items",
+    "serialize_permission_items",
+    "sync_permission_models",
     "AUDIT_SKIP_PREFIXES",
     "CRUD_BIND_ACTIONS",
     "DEAD_ENDPOINT_PREFIXES",

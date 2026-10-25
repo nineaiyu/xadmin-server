@@ -19,7 +19,7 @@ from common.core.fields_related import (
 from common.core.fields_related import (
     get_search_choices_max_count as get_search_choices_max_count,
 )
-from common.core.validators import ColorValidator, PhoneValidator
+from common.core.response.validators import ColorValidator, PhoneValidator
 
 
 class LabeledChoiceField(serializers.ChoiceField):

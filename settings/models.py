@@ -9,7 +9,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import IntegrityError, models, transaction
 from django.utils.translation import gettext_lazy as _
 
-from common.base.utils import signer
+from common.base.crypto import signer
 from common.core.models import DbAuditModel, DbUuidModel
 from common.utils import get_logger
 

@@ -12,8 +12,8 @@ import json
 
 import pytest
 
-from common.base.utils import signer
-from common.core.credentials import MASK
+from common.base.crypto import signer
+from common.core.auth.credentials import MASK
 from settings.models import Setting
 from settings.serializers.setting import SettingSerializer
 

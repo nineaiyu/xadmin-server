@@ -14,7 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
 
 from captcha.services import CaptchaAuth
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from common.utils.request import get_request_ident
 from common.utils.token import verify_token_cache
 

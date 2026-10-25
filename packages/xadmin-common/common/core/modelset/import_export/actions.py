@@ -14,7 +14,7 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiRespo
 from common.core.modelset.crud import CreateAction, UpdateAction
 from common.core.permission_meta import parent_fallback_action
 from common.core.response import ApiResponse
-from common.core.utils import has_self_fields, topological_sort
+from common.core.url_inventory import has_self_fields, topological_sort
 from common.utils import get_logger
 
 from .celery_utils import CELERY_IMPORT_DEFAULT_BATCH, CELERY_IMPORT_SINGLE_BATCH, run_view_by_celery_task

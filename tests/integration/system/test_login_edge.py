@@ -5,7 +5,7 @@ import pytest
 from django.core.cache import cache
 
 from audit.models.log import UserLoginLog
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
 from identity.services.auth_login import complete_login
 from identity.utils.auth import ValidateError
@@ -29,6 +29,13 @@ def login_free(settings):
     settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
     settings.SECURITY_LOGIN_ENCRYPTED_ENABLED = False
     settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
+
+
+@pytest.fixture
+def email_channel_on(settings):
+    """email 通道开放(场景开关 + 投递通道):提交侧复核通道后,email 用例需显式打开。"""
+    settings.SECURITY_LOGIN_BY_EMAIL_ENABLED = True
+    settings.EMAIL_ENABLED = True
 
 
 class TestBasicLoginEdge:
@@ -217,7 +224,7 @@ class TestVerifyCodeLogin:
         assert data["mfa_token"]
         assert "access" not in data
 
-    def test_login_code_email_success(self, api_client, normal_user, login_free):
+    def test_login_code_email_success(self, api_client, normal_user, login_free, email_channel_on):
         """email 动态因子登录：验证码通过即视为已验证，直接签发 token（不再走 MFA）。"""
         normal_user.email = "zhangsan@example.com"
         normal_user.save(update_fields=["email"])
@@ -239,7 +246,7 @@ class TestVerifyCodeLogin:
         normal_user.refresh_from_db()
         assert normal_user.last_login is not None
 
-    def test_login_code_email_wrong_code(self, api_client, normal_user, login_free):
+    def test_login_code_email_wrong_code(self, api_client, normal_user, login_free, email_channel_on):
         """验证码错误：计入重置/登录防爆破计数并拒绝。"""
         normal_user.email = "zhangsan@example.com"
         normal_user.save(update_fields=["email"])
@@ -257,7 +264,7 @@ class TestVerifyCodeLogin:
         # 失败计数按验证目标（邮箱）累加
         assert cache.get("_LOGIN_LIMIT_zhangsan@example.com_127.0.0.1") == 1
 
-    def test_login_code_email_disabled_after_send(self, api_client, normal_user, login_free):
+    def test_login_code_email_disabled_after_send(self, api_client, normal_user, login_free, email_channel_on):
         """发码后账号被禁用：提交时兜底复核 is_active，统一失败文案（防枚举），不签发 token。"""
         normal_user.email = "zhangsan@example.com"
         normal_user.save(update_fields=["email"])
@@ -278,7 +285,7 @@ class TestVerifyCodeLogin:
         assert resp.status_code == 400, resp.data
         assert "access" not in (resp.data.get("data") or {})
 
-    def test_login_code_email_deleted_after_send(self, api_client, normal_user, login_free):
+    def test_login_code_email_deleted_after_send(self, api_client, normal_user, login_free, email_channel_on):
         """发码后账号被删除：走统一失败文案，不再抛未处理的 DoesNotExist（500）。"""
         normal_user.email = "zhangsan@example.com"
         normal_user.save(update_fields=["email"])

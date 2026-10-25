@@ -8,8 +8,8 @@
 
 import pytest
 
+from common.core.auth.credentials import MASK, decrypt_setting_value, encrypt_setting_value
 from common.core.config import SysConfig, UserConfig
-from common.core.credentials import MASK, decrypt_setting_value, encrypt_setting_value
 from system.models import SystemConfig, UserPersonalConfig
 
 pytestmark = pytest.mark.django_db

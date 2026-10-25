@@ -10,9 +10,9 @@ from django.contrib.auth.models import AnonymousUser
 from rest_framework.utils import encoders
 
 from common.contracts import OperationLog, PersonalAccessToken
+from common.core.auth.sensitive import SENSITIVE_FIELDS as SENSITIVE_FIELDS
 from common.core.config import SysConfig
-from common.core.sensitive import SENSITIVE_FIELDS as SENSITIVE_FIELDS
-from common.core.utils import get_doc_first_line
+from common.core.url_inventory import get_doc_first_line
 from common.utils import get_logger
 from common.utils.request import (
     get_browser,
@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 # 日志大字段截断上限（系统配置 OPERATION_LOG_FIELD_MAX 的默认值），
 # 避免大请求体/大响应整包入库；运行期取值见 _log_field_limit()
 MAX_LOG_FIELD = 4096
-# 操作日志脱敏字段清单单一事实源在 common.core.sensitive（拆出，顶部导入
+# 操作日志脱敏字段清单单一事实源在 common.core.auth.sensitive（拆出，顶部导入
 # SENSITIVE_FIELDS 随之再导出保持既有导入路径不变）
 
 

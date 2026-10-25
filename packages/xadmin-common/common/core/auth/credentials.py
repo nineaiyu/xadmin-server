@@ -22,7 +22,7 @@ from typing import Any
 from django.db.models import Q
 
 import common.contracts as contracts
-from common.base.utils import signer
+from common.base.crypto import signer
 from common.utils import get_logger
 
 logger = get_logger(__name__)

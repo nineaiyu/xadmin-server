@@ -17,7 +17,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from audit.services import UserLoginLog
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
@@ -100,6 +100,9 @@ class BasicLoginAPIView(TokenObtainPairView):
         """用户名密码登录"""
         if not settings.SECURITY_LOGIN_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Login forbidden"))
+        # 账密开关强校验:关闭后接口层同样拒绝(开关不能只拦前端入口)
+        if not settings.SECURITY_LOGIN_BY_BASIC_ENABLED:
+            return ApiResponse(code=1001, detail=_("Login forbidden"))
 
         ipaddr = get_request_ip(request)
         client_id, token = check_token_and_captcha(
@@ -128,36 +131,6 @@ class BasicLoginAPIView(TokenObtainPairView):
             return mfa_response
         data = issue_session_token(request, user, _login_type_for(user))
         return ApiResponse(data=data)
-
-    @extend_schema(
-        responses=get_default_response_schema(
-            {
-                "data": build_object_type(
-                    properties={
-                        "access": build_basic_type(OpenApiTypes.BOOL),
-                        "captcha": build_basic_type(OpenApiTypes.BOOL),
-                        "token": build_basic_type(OpenApiTypes.BOOL),
-                        "encrypted": build_basic_type(OpenApiTypes.BOOL),
-                        "lifetime": build_basic_type(OpenApiTypes.NUMBER),
-                        "reset": build_basic_type(OpenApiTypes.BOOL),
-                        "basic": build_basic_type(OpenApiTypes.BOOL),
-                    }
-                )
-            }
-        )
-    )
-    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """获取登录配置信息"""
-        config = {
-            "access": settings.SECURITY_LOGIN_ACCESS_ENABLED,
-            "captcha": settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
-            "token": settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
-            "encrypted": settings.SECURITY_LOGIN_ENCRYPTED_ENABLED,
-            "lifetime": settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME").days,
-            "reset": settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED,
-            "basic": settings.SECURITY_LOGIN_BY_BASIC_ENABLED,
-        }
-        return ApiResponse(data=config)
 
 
 class VerifyCodeLoginAPIView(GenericAPIView):
@@ -202,6 +175,14 @@ class VerifyCodeLoginAPIView(GenericAPIView):
             return ApiResponse(code=1001, detail=_("Login forbidden"))
         ipaddr = get_request_ip(request)
         query_key, target, verify_token = verify_sms_email_code(request, LoginBlockUtil)
+        # 通道开关复核:发码后到提交前开关被关闭(或旧 token 绕过发码端校验)时,
+        # 提交侧同样拒绝——通道开关不能只拦发码入口
+        channel_enabled = {
+            "email": settings.SECURITY_LOGIN_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
+            "phone": settings.SECURITY_LOGIN_BY_SMS_ENABLED and settings.SMS_ENABLED,
+        }.get(query_key)
+        if channel_enabled is False:
+            return ApiResponse(code=1001, detail=_("Login forbidden"))
         check_is_block(target, ipaddr)
 
         if query_key == "username":

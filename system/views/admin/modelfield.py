@@ -17,7 +17,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
-from common.base.utils import get_choices_dict
+from common.base.crypto import get_choices_dict
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     DetailAction,

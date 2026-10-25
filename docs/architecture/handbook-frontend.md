@@ -58,7 +58,7 @@ const { api, auth } = useCustomer();
 - 定制：`addOrEditOptions.props.columns/row/formProps`（列解析器 ctx 含 `column / isAdd / formValue`）+ `beforeSubmit`（提交前加工）+ `apiReq`（换接口）。
 - 服务端校验失败自动内联到表单项（`src/components/RePlusPage/src/utils/serverErrors.ts`）。
 
-**复用列装配**（非 RePlusPage 页面）：`useBaseColumns(localeName)` 产出六组列/规则，范例 `src/views/settings/components/settings/SettingItem.vue`。
+**复用列装配**（非 RePlusPage 页面）：`useBaseColumns(localeName)` 产出六组列/规则，范例 `src/views/settings/components/settings-shell/SettingItem.vue`。
 
 - 依赖：`@pureadmin/table`（PureTable/PureTableBar，必需）、`plus-pro-components`（PlusSearch/PlusForm，必需）、`src/utils/http`、图标方案。
 - 扩展点：渲染器注册（§4.2）、`openDialogDrawer`（复用弹层表单能力）、`handleOperation`（请求 + 提示 + 回调的标准封装）。

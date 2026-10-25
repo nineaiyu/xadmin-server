@@ -10,8 +10,8 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.core.response.validation import ActiveUniqueValidationMixin
 from common.core.serializers import BaseModelSerializer
-from common.core.validation import ActiveUniqueValidationMixin
 from common.utils import get_logger
 from system.models import Menu, MenuMeta
 

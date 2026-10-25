@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 
-from common.base.utils import menu_list_to_tree
+from common.base.crypto import menu_list_to_tree
 from common.core.permission import get_user_menu_queryset
 from identity.services import UserInfo
 from system.models import DataPermission, FieldPermission, Menu, ModelLabelField

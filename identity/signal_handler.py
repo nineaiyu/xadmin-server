@@ -13,8 +13,8 @@ from django.contrib.auth import user_logged_out
 from django.db.models.signals import m2m_changed, post_migrate, post_save, pre_delete
 from django.dispatch import receiver
 
-from common.base.magic import MagicCacheData, cache_response
 from common.core.filter import invalidate_data_permission_grants_cache
+from common.decorators import MagicCacheData, cache_response
 from common.utils import get_logger
 from identity.models import DeptInfo, UserInfo, UserRole
 from identity.signal import invalid_user_cache_signal

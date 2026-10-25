@@ -14,7 +14,7 @@ from django.core.validators import validate_email
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.credentials import MASK
+from common.core.auth.credentials import MASK
 from common.core.serializers import BaseModelSerializer
 from dataset.models.dataset import Dataset, Report
 from dataset.utils.dataset import dataset_visible_to, numeric_columns_of

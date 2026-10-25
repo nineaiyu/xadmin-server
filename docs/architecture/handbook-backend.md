@@ -15,13 +15,13 @@
 | `SoftDeleteModel` | 软删（`deleted_at` + `objects`/`all_objects`），配套回收站三通道 | **必须放 MRO 首位**：`class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel)` |
 | `AutoCleanFileMixin` | 保存/删除时自动清理旧文件 | 模型含 `FileField`/`ImageField` 或关联 `system.UploadFile` 时混入 |
 | `AESCharField` / `AESTextField` | 模型字段级加密（`aes:::` 前缀，落库密文） | 少量高敏字段：`from common.fields.char import AESCharField` |
-| `signer`（值级加密） | HKDF+AES-GCM（`v3:` 前缀），用于 JSON 值内的敏感键 | `packages/xadmin-common/common/base/utils.py::signer.encrypt/decrypt`（webhook secret / AI api_key 同款） |
+| `signer`（值级加密） | HKDF+AES-GCM（`v3:` 前缀），用于 JSON 值内的敏感键 | `packages/xadmin-common/common/base/crypto.py::signer.encrypt/decrypt`（webhook secret / AI api_key 同款） |
 | `upload_directory_path` | 统一上传路径 `{app}/{model}/{creator}/{pk}/{uuid5}.{ext}` | `upload_to=upload_directory_path` |
 
 - 依赖：仅依赖 `django.db`；`DbAuditModel.dept_belong` 关联 `system.DeptInfo`（数据权限的归属字段）。
 - 配置项：无需配置；`Meta.ordering` 必须给默认排序（列表分页依赖，缺失有告警）。
 - 扩展点：新增通用字段时在 `packages/xadmin-common/common/core/models.py` 加抽象基类（内核），**不要**改 `DbAuditModel` 既有字段语义。
-- 权威源：`packages/xadmin-common/common/core/models.py`、`packages/xadmin-common/common/fields/char.py`、`packages/xadmin-common/common/base/utils.py`。
+- 权威源：`packages/xadmin-common/common/core/models.py`、`packages/xadmin-common/common/fields/char.py`、`packages/xadmin-common/common/base/crypto.py`。
 
 ### 1.2 序列化器与字段形态（`BaseModelSerializer`）
 
@@ -99,7 +99,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 - 权限点自动同步（`sync_menu_permissions`）会把首行写入 `MenuMeta.title`；写长会撑破菜单树
   与批量授权选择器，过度依赖生成器截断还会出现省略号。
 
-- 依赖：`packages/xadmin-common/common/core/modelset/` 各模块 + `packages/xadmin-common/common/core/response.py`。
+- 依赖：`packages/xadmin-common/common/core/modelset/` 各模块 + `packages/xadmin-common/common/core/response/__init__.py`。
 - 配置项（类属性）：`queryset` / `serializer_class` / `filterset_class` / `pagination_class` / `ordering_fields` / `select_related_fields` / `prefetch_related_fields` / `{action}_serializer_class`。
 - 审计大表（OperationLog / UserLoginLog）使用 `KeysetPageNumber`：顺序翻页传 `cursor`，跳页或自定义 `ordering` 自动回退 page 模式；cursor 响应含 `next_cursor` / `has_more`，可能省略 `total`（沿用上一页）。
 - 扩展点：覆写点表与红线见 [framework-cookbook.md](framework-cookbook.md) §四；自定义动作 `@action` + `@extend_schema` + `ApiResponse`。

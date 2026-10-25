@@ -85,3 +85,16 @@ curl -i http://127.0.0.1:8896/api/plugin-demo/note     # ④ 路由层：404 + {
 # 2. 数据面按需保留：插件表与迁移记录不动，回滚后重新启用即可继续用
 pip uninstall xadmin-demo-plugin
 ```
+
+
+## 内核契约三连改 checklist（给内核维护者）
+
+在 `packages/xadmin-common/common/contracts.py` 新增一条 common → 业务契约时，三处必须同步改
+（漏任何一处都会被对应门禁拦下）：
+
+1. **白名单登记**：`contracts.py` 的 `_CONTRACT_PROVIDERS` 增加契约名与默认提供方说明；
+2. **门禁登记**：`scripts/check_cross_app_imports.py` 的 `CONTRACT_SEAMS` 增加对应缝名；
+3. **守护测试**：契约消费方测试（`tests/unit/common/test_contracts.py`）补注入面用例。
+
+二开插件侧只需照 `providers.py` 的形态 `register_contract` 注册实现——白名单外的
+契约名注入会被拒绝（缝面不扩散是刻意保守）。

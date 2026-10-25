@@ -10,7 +10,7 @@ from typing import Any
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.base.utils import AESCipher
+from common.base.crypto import AESCipher
 from common.settings_contract import kernel_required_setting
 
 

@@ -111,8 +111,12 @@ def get_providers(enabled_only: bool = False) -> list[dict[str, Any]]:
 
     flavor 预设合并优先级：显式配置 > flavor 官方端点预设 > 通用默认值
     （IM flavor 管理员只需填应用三元组）。
+
+    「配置完整」= flavor 必填键（FLAVOR_REQUIRED_KEYS，通用 oauth2 兜底
+    key/name/client_id/client_secret）全部非空：缺 client_secret 等必填项的
+    provider 授权流程必然失败，不再下发到登录页（避免「显示入口但点了就失败」）。
     """
-    from identity.utils.oauth_flavors import FLAVOR_PRESETS
+    from identity.utils.oauth_flavors import FLAVOR_PRESETS, FLAVOR_REQUIRED_KEYS
 
     providers = []
     for item in _config_providers():
@@ -120,8 +124,10 @@ def get_providers(enabled_only: bool = False) -> list[dict[str, Any]]:
             continue
         flavor = item.get("flavor") or "oauth2"
         provider = {**OPTIONAL_DEFAULTS, **FLAVOR_PRESETS.get(flavor, {}), **item, "flavor": flavor}
-        if enabled_only and not (provider.get("enabled") and provider.get("client_id")):
-            continue
+        if enabled_only:
+            required = FLAVOR_REQUIRED_KEYS.get(flavor, ("key", "name", "client_id", "client_secret"))
+            if not provider.get("enabled") or not all(provider.get(key) for key in required):
+                continue
         providers.append(provider)
     return providers
 

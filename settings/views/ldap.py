@@ -17,6 +17,7 @@ from common.core.response import ApiResponse
 from common.utils import get_logger
 from identity.ldap.client import LdapConfig, LdapConfigError, LDAPException
 from settings.serializers.ldap import LdapSettingSerializer
+from settings.services import build_setting_effective
 from settings.utils.test_connection import build_test_values
 from settings.views.settings import BaseSettingViewSet
 
@@ -47,6 +48,10 @@ class LdapServerSettingViewSet(BaseSettingViewSet):
 
     serializer_class = LdapSettingSerializer
     category = "ldap"
+
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(开关与服务器配置完整性,硬判定)。"""
+        return {"effective": build_setting_effective("ldap")}
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """测试{cls}"""

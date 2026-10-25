@@ -14,7 +14,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.viewsets import GenericViewSet
 
-from common.core.credentials import filter_out_sensitive_rows
+from common.core.auth.credentials import filter_out_sensitive_rows
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     DetailAction,
@@ -77,6 +77,15 @@ class BaseSettingViewSet(NoDetailModelSet):
             else:
                 obj[item] = None
         return obj
+
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """只读派生字段钩子（默认无）：子类覆写以在 GET/PUT 响应中附加计算值。
+
+        经 SettingSaveContractMixin.to_representation 注入序列化输出——不声明
+        为 serializer 字段，列元数据与保存契约均不受影响。典型用途：设置 tab
+        的「实际生效状态」诊断（settings.services.build_setting_effective）。
+        """
+        return {}
 
     def parse_serializer_data(self, serializer: Any) -> list[dict[str, Any]]:
         data: list[dict[str, Any]] = []

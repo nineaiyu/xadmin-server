@@ -5,7 +5,7 @@
 - 关联：代码审查报告 2026-09-14（A3 API versioning、A5 basename 混用）；
   `docs/schema/*.schema.json`（契约唯一真源）、`xadmin-client/contract/schema`（镜像）、
   `xadmin-client/scripts/check-contract-sync.mjs`、`tests/unit/common/test_contract_schemas.py`、
-  `tests/unit/common/test_metadata_schema.py`、`common/core/utils.py::auto_register_app_url`
+  `tests/unit/common/test_metadata_schema.py`、`common/core/url_inventory.py::auto_register_app_url`
 
 ## 背景
 
@@ -56,7 +56,7 @@
     - basename 唯一外部可见处是监控 label（`common/core/middleware.py` → `record_http_request(view_name)` →
       Prometheus `view` 维度）：改名造成历史时间序列断档，且无功能收益；
     - 结论：纯 churn；存量在后续迭代中就近收敛（触及哪个文件顺带统一哪个），不做批量重命名。
-- `auto_register_app_url`（`common/core/utils.py`）在导入期扩展 `PERMISSION_SHOW_PREFIX` /
+- `auto_register_app_url`（`common/core/url_inventory.py`）在导入期扩展 `PERMISSION_SHOW_PREFIX` /
   `PERMISSION_DATA_AUTH_APPS`：保持现状（仅对 `XADMIN_APPS` 中新注册的 app **追加**，不覆盖既有值），
   副作用范围与登记要求已在函数注释中说明。
 

@@ -58,7 +58,7 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 
 - **白名单**：`settings.PERMISSION_WHITE_URL`（正则 → 方法集合），命中则完全跳过权限。
   - 命名提示：`PERMISSION_WHITE_REURL` 是各业务 app 的 `config.py` 导出的扩展变量（形如
-    `PERMISSION_WHITE_REURL = [("^/api/demo/", ["GET", "POST"])]`），由 `packages/xadmin-common/common/core/utils.py`
+    `PERMISSION_WHITE_REURL = [("^/api/demo/", ["GET", "POST"])]`），由 `packages/xadmin-common/common/core/url_inventory.py`
     的 `auto_register_app_url` 在注册路由时合并进 `settings.PERMISSION_WHITE_URL`——运行时真正直读的
     只有后者。
 - **fail-closed**：权限缓存或 DB 查询抛异常时返回 403，绝不放行（PERF-01 修复项）。
@@ -173,7 +173,7 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
 
 ## 五、缓存与失效
 
-### 5.1 缓存 key 一览（`packages/xadmin-common/common/base/magic.py`）
+### 5.1 缓存 key 一览（`packages/xadmin-common/common/decorators/cache.py`）
 
 | 数据                  | key 形态                                        | TTL  |
 |---------------------|-----------------------------------------------|------|

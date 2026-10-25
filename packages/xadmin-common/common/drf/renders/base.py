@@ -12,7 +12,7 @@ from rest_framework.renderers import BaseRenderer
 from rest_framework.utils import encoders, json
 
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField, PhoneField
-from common.core.utils import has_self_fields
+from common.core.url_inventory import has_self_fields
 from common.settings_contract import kernel_required_setting, kernel_setting
 from common.utils import get_logger
 from common.utils.timezone import local_now

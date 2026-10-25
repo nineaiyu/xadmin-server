@@ -21,7 +21,7 @@ from django.conf import settings as dj_settings
 from django.core import mail
 from django.utils import timezone
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from identity.models import UserInfo
 from identity.services.auth_login import login_success
 from identity.utils import account_expiry, user_invite

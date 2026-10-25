@@ -93,26 +93,26 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
     "SECRET_KEY": KS(
         "str",
         "Django 密钥；内核用于字段级加密派生材料与签名（base/utils.py::signer、fields/char.py）",
-        consumers=("base/utils.py", "fields/char.py"),
+        consumers=("base/crypto.py", "fields/char.py"),
         framework=True,
     ),
     "FIELD_ENCRYPTION_KEY": KS(
         "str",
         "字段级加密主密钥（AESCipherV3 根材料；空 = 回落到 SECRET_KEY 派生并告警）",
         default="",
-        consumers=("base/utils.py",),
+        consumers=("base/crypto.py",),
     ),
     "FIELD_ENCRYPTION_LEGACY_KEYS": KS(
         "list[str]",
         "字段级加密历史密钥（轮换期解密旧密文）",
         default=(),
-        consumers=("base/utils.py",),
+        consumers=("base/crypto.py",),
     ),
     "SECURITY_AES_V1_DECRYPT_ENABLED": KS(
         "bool",
         "是否允许解密 AES v1（Salted__）旧格式请求体；关闭即 fail-closed",
         default=True,
-        consumers=("base/utils.py",),
+        consumers=("base/crypto.py",),
     ),
     "AUTH_USER_MODEL": KS(
         "str", "用户模型标签（内核模型基类/权限组件解析用户模型用）", consumers=("core/models.py",), framework=True
@@ -152,13 +152,13 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
         "dict[str, list[str]]",
         "免鉴权 URL 白名单（path 正则 → 方法清单；缺省空表 = 无免鉴权端点，fail-closed）",
         default={},
-        consumers=("core/permission.py", "core/utils.py"),
+        consumers=("core/permission.py", "core/url_inventory.py"),
     ),
     "PERMISSION_SHOW_PREFIX": KS(
         "list[str]",
         "需要展示按钮级权限码的 URL 前缀正则（路由收集时附带 auths；缺省空表 = 不附带）",
         default=[],
-        consumers=("core/utils.py",),
+        consumers=("core/url_inventory.py",),
     ),
     "PERMISSION_DATA_ENABLED": KS(
         "bool", "数据权限总开关（关闭即所有查询不做行级裁剪）", consumers=("core/filter.py",)
@@ -167,7 +167,7 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
         "list[str]",
         "纳入数据权限编译的 app 白名单（其余 app 不注册模型维度；缺省空表 = 不注册）",
         default=[],
-        consumers=("core/utils.py",),
+        consumers=("core/url_inventory.py",),
     ),
     "PERMISSION_FIELD_ENABLED": KS(
         "bool",
@@ -319,18 +319,18 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
     # ---------------------------------------------------------------
     # 九、路由与工程装配
     # ---------------------------------------------------------------
-    "ROOT_URLCONF": KS("str", "根 URLConf（路由收集/OpenAPI 生成用）", consumers=("core/utils.py",)),
+    "ROOT_URLCONF": KS("str", "根 URLConf（路由收集/OpenAPI 生成用）", consumers=("core/url_inventory.py",)),
     "ROUTE_IGNORE_URL": KS(
         "list[str]",
         "路由收集忽略表（正则，不纳入权限点/路由树；缺省空表 = 不忽略）",
         default=[],
-        consumers=("core/utils.py",),
+        consumers=("core/url_inventory.py",),
     ),
     "XADMIN_APPS": KS(
         "list[str]",
         "二开 app 注册表（路由/WS/周期任务自动发现；缺省空表 = 不自动发现）",
         default=[],
-        consumers=("core/utils.py",),
+        consumers=("core/url_inventory.py",),
     ),
     "DB_PREFIX": KS(
         "str",
@@ -352,7 +352,7 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
         "bool",
         "开发态增强开关（额外诊断输出/演示能力）",
         default=False,
-        consumers=("base/decorators.py", "core/exception.py", "signal_handlers.py"),
+        consumers=("base/decorators.py", "core/response/exception.py", "signal_handlers.py"),
     ),
     "API_LOG_ENABLE": KS(
         "bool",

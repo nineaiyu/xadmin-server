@@ -96,8 +96,9 @@ class UpdateAction(mixins.UpdateModelMixin):
     def _audit_diff_old_values(self, pk: Any) -> Any:
         """AUDIT_DIFF_MODELS 白名单模型的 update 路径，取更新前快照用于计算 diff。
 
-        白名单为空（默认）时零开销直接返回；命中白名单的更新额外产生 2 次查询
-        （更新前快照 + 更新后回读），按需开启。白名单走 SysConfig.AUDIT_DIFF_MODELS
+        白名单为空（默认）时零开销直接返回；命中白名单的更新额外产生最多 4 次
+        实例查询（更新前标量快照 + M2M 快照实例 + 更新后回读 + M2M 再快照实例，
+        各 M2M 字段另有 1 次 values_list），按需开启。白名单走 SysConfig.AUDIT_DIFF_MODELS
         （系统配置优先，未登记回退 settings），管理员可运行时扩容。
 
         M2M 关系（roles 授权、角色菜单等治理操作）一并纳入快照：挂在返回行的

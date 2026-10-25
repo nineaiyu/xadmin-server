@@ -18,7 +18,7 @@ from rest_framework.exceptions import NotAuthenticated
 from rest_framework.exceptions import ValidationError as RestValidationError
 from rest_framework.filters import BaseFilterBackend
 
-from common.base.magic import count_sql_queries, timeit
+from common.base.decorators import count_sql_queries, timeit
 from common.cache.storage import CommonResourceIDsCache
 from common.contracts import DataPermission, DeptInfo, apply_grant_row_scope
 from common.core.data_scope import ScopeResult, combine, compile_grant

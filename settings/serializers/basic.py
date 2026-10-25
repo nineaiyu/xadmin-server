@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.fields import ColorField, StepFloatField
-from common.core.validators import COLOR_PATTERN as WATERMARK_COLOR_RE
+from common.core.response.validators import COLOR_PATTERN as WATERMARK_COLOR_RE
 from identity.services import invalid_user_cache_signal
 from settings.serializers.contract import SettingSaveContractMixin
 

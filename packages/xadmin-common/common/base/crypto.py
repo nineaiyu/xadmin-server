@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
+"""加密与签名基座（多 master 密钥派生 / AES / 签名 / 缓存键函数）。
+
+原名 base/utils.py，按域更名为 crypto（「三处 utils 同名异义」收敛：本文件只做
+加密，URL 枚举在 core/url_inventory.py，杂项在 common/utils/ 包）。
+"""
+
 # project : server
 # filename : utils
 # author : ly_13

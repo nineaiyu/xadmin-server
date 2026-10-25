@@ -4,7 +4,7 @@
 
 注入条件：本 app 出现在宿主 ``config.yml`` 的 ``XADMIN_APPS`` 中
 （``server/settings/apps.py::build_installed_apps`` 把它装配进 INSTALLED_APPS，
-``common/core/utils.py::auto_register_app_url`` 再读取下面的 URLPATTERNS）。
+``common/core/url_inventory.py::auto_register_app_url`` 再读取下面的 URLPATTERNS）。
 新增前缀还会被自动并入 ``PERMISSION_SHOW_PREFIX``（权限点可见性前缀）与
 ``PERMISSION_DATA_AUTH_APPS``（数据权限候选 app）——与业务 app 完全同通路。
 """

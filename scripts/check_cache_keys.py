@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SCAN_DIRS = ("packages/xadmin-common/common", "system", "settings", "captcha")
 IGNORE_PARTS = ("/tests/", "/migrations/")
 
-# MagicCacheData / MagicCacheResponse 自动加的前缀（packages/xadmin-common/common/base/magic.py）
+# MagicCacheData / MagicCacheResponse 自动加的前缀（packages/xadmin-common/common/decorators/cache.py）
 DECORATOR_PREFIXES = ("magic_cache_data_", "magic_cache_response_")
 
 # 手写键的调用形态（DOTALL：容忍多行调用，键与调用同行或紧随其后）

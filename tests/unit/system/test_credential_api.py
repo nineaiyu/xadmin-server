@@ -73,7 +73,7 @@ class TestCredentialOverview:
 class TestCredentialRotate:
     def test_rotate_regenerates_and_encrypts(self, auth_client):
         """系统自生成键：轮换 = 重新生成随机值并加密落库（不是重加密同一值）。"""
-        from common.core.credentials import decrypt_setting_value
+        from common.core.auth.credentials import decrypt_setting_value
 
         SystemConfig.objects.update_or_create(key="SCIM_TOKEN", defaults={"value": "plain-token"})
         body = auth_client.post(f"{URL}/rotate", {"key": "SCIM_TOKEN"}, format="json").json()
@@ -224,7 +224,7 @@ class TestSettingPlaintextRemediation:
         assert "sk-plain-secret" not in json.dumps(data, ensure_ascii=False)
 
     def test_rotate_setting_encrypts_plaintext_row(self):
-        from common.core.credentials import plaintext_setting_names
+        from common.core.auth.credentials import plaintext_setting_names
         from system.services.credential import rotate_setting
 
         row = self._plain_row()
@@ -251,7 +251,7 @@ class TestSettingPlaintextRemediation:
 
     def test_rotate_setting_fixes_drifted_flag(self):
         """值已是密文但 encrypted=False（标记漂移）：只校正标记，不重复加密。"""
-        from common.base.utils import signer
+        from common.base.crypto import signer
         from settings.models import Setting
         from system.services.credential import rotate_setting
 

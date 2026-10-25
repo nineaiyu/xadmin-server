@@ -166,7 +166,7 @@ def _prepare_import_rows(record: Any, view_path: Any, user: Any) -> Any:
     column_titles = (record.params or {}).get("column_titles") or []
     if rows:
         # 自关联依赖拓扑排序（与同步导入 import_data 同口径，父行先建）
-        from common.core.utils import has_self_fields, topological_sort
+        from common.core.url_inventory import has_self_fields, topological_sort
 
         self_field = has_self_fields(view.get_queryset().model, rows[0].keys())
         if self_field:

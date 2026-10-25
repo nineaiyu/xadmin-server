@@ -70,7 +70,7 @@
 
 - 入口：`system/views/admin/menu.py:142-161` `POST {pk}/permissions`（"自动添加API权限"）；
 - 前端：抽屉内「视图」多选下拉（`xadmin-client/src/views/system/menu/utils/useMenuPermissions.tsx:45-78`），`filterable + multiple`，按 `item.view.split(".").pop()` 本地匹配；
-- 数据源：`GET {prefix}/api-url` → `get_all_url_dict()`（`common/core/utils.py:90-98`）递归遍历 `ROOT_URLCONF`，返回 `{name, url, view, label}` 全量；前端进页面时拉一次（`useMenuData.ts:32-46`）。
+- 数据源：`GET {prefix}/api-url` → `get_all_url_dict()`（`common/core/url_inventory.py:90-98`）递归遍历 `ROOT_URLCONF`，返回 `{name, url, view, label}` 全量；前端进页面时拉一次（`useMenuData.ts:32-46`）。
 
 不需要的四条理由：
 
@@ -100,7 +100,7 @@
 
 与 suggestions 同批被问及，但不属本 ADR 范围，结论登记在候选池：
 
-- 261 行实为 4 组语义、仅 3 个 import 点：`cached_method`（2 处：`message/base.py`、`common/core/utils.py`）、`Singleton`（1 处：`common/startup.py`）、
+- 261 行实为 4 组语义、仅 3 个 import 点：`cached_method`（2 处：`message/base.py`、`common/core/url_inventory.py`）、`Singleton`（1 处：`common/startup.py`）、
   防抖/延迟执行基础设置（**0 业务消费**，仅 `tests/unit/common/test_decorators.py`）、`on_transaction_commit`（**0 消费**）；
 - 真正值得做的是把 `common/decorators.py:64-70` 的**模块级副作用**（import 即起守护线程 + `ThreadPoolExecutor(10)`）改为惰性初始化 —— 每个进程都能少一个常驻线程和 10 个 worker；
 - 按域拆包（cache / debounce / transaction / singleton + `__init__` re-export 兼容）只有绑在惰性化一起做才有意义，单独拆是纯 churn；

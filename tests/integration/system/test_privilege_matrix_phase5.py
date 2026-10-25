@@ -22,7 +22,7 @@
 
 import pytest
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from identity.models.oauth import UserOAuthBinding
 from task.models.export import ExportRecord
 from task.models.import_ import ImportRecord, ImportTemplate

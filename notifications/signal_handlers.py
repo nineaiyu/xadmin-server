@@ -31,7 +31,7 @@ def create_system_messages(app_config: AppConfig, **kwargs: Any) -> None:
     # （生产运行期它们由登录/改密/任务链路自然导入）。
     import approval.notifications  # noqa: F401
     import audit.notifications  # noqa: F401
-    import common.backup_alert  # noqa: F401
+    import common.alerts  # noqa: F401
     import common.celery.failure_handler  # noqa: F401
     import common.notifications  # noqa: F401
     import identity.notifications  # noqa: F401

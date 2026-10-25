@@ -6,7 +6,7 @@ import pytest
 from django.core import mail
 from django.core.cache import cache
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from tests.integration.aes_v2 import encrypt_v2
 
 pytestmark = pytest.mark.django_db

@@ -78,10 +78,10 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 
 | 子系统       | 入口                                         | 要点                                                                                              |
 |-----------|--------------------------------------------|-------------------------------------------------------------------------------------------------|
-| 认证        | `packages/xadmin-common/common/core/auth.py`                      | access+refresh 双 Token、登出黑名单（Redis）、AES 加密登录、验证码前置                                              |
-| 统一响应      | `packages/xadmin-common/common/core/response.py`                  | `{code, detail, requestId, timestamp, data}`，code 表见 exception-handling.md；错误码登记制               |
-| 异常处理      | `packages/xadmin-common/common/core/exception.py`                 | 全局兜底脱敏（未预期异常返回通用文案），JWT 40001/40002 协议码                                                         |
-| 缓存        | `packages/xadmin-common/common/cache/` + `packages/xadmin-common/common/base/magic.py`   | 四套缓存键规范/TTL/失效矩阵见 [cache.md](cache.md)；MagicCacheData 函数级 + cache_response 视图级                  |
+| 认证        | `packages/xadmin-common/common/core/auth/authentication.py`                      | access+refresh 双 Token、登出黑名单（Redis）、AES 加密登录、验证码前置                                              |
+| 统一响应      | `packages/xadmin-common/common/core/response/__init__.py`                  | `{code, detail, requestId, timestamp, data}`，code 表见 exception-handling.md；错误码登记制               |
+| 异常处理      | `packages/xadmin-common/common/core/response/exception.py`                 | 全局兜底脱敏（未预期异常返回通用文案），JWT 40001/40002 协议码                                                         |
+| 缓存        | `packages/xadmin-common/common/cache/` + `packages/xadmin-common/common/decorators/cache.py`   | 四套缓存键规范/TTL/失效矩阵见 [cache.md](cache.md)；MagicCacheData 函数级 + cache_response 视图级                  |
 | 信号失效      | `system/signal_handler.py`                 | Menu/UserRole/DeptInfo/UserInfo/SystemConfig/登出 变更即失效权限与路由缓存，含 m2m_changed 挂钩                   |
 | 通知        | `notifications/`                           | `@register_message` 显式注册 + `BACKEND_MSG_RENDERERS` 集中注册（T2.4）；站内信/邮件/短信后端；新增后端 1 文件 + 1 行       |
 | WebSocket | `message/ws/base.py`                          | 自定义 `{action, data, mid}` 协议，补类型约束后保持（ADR-003）；action 全集见 `message/ws/protocol.py`（ping/userinfo/push_message/chat_message/chat_recall/chat_read/chat_unread/task_log/monitor/screen_command） |

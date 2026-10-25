@@ -19,7 +19,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from pgvector.django import VectorField
 
-from common.base.utils import signer
+from common.base.crypto import signer
 from common.core.models import DbAuditModel, DbUuidModel
 
 # 上传文档的存储路径前缀（与仓库文档路径隔离，同步清理时不越界）

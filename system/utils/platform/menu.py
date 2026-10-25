@@ -13,7 +13,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from common.core.modelset import NoDetailModelSet
 from common.core.routers import NoDetailRouter
-from common.core.utils import get_all_url_dict, get_doc_first_line
+from common.core.url_inventory import get_all_url_dict, get_doc_first_line
 from common.utils import get_logger
 
 router = SimpleRouter(False)

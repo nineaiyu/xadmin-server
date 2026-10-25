@@ -9,7 +9,7 @@ from typing import Any
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-from common.core.utils import get_all_url_dict, get_doc_first_line, permission_path_matches
+from common.core.url_inventory import get_all_url_dict, get_doc_first_line, permission_path_matches
 from common.utils import get_logger
 from system.models import Menu, ModelLabelField
 from system.utils.platform.menu import MENU_TITLE_MAX, get_view_permissions
@@ -153,7 +153,7 @@ def _method_covers(perm: Any, path: Any, method: Any) -> Any:
 def find_covering(perms: Any, path: Any, method: Any) -> Any:
     """与运行时 get_menu_pk 同口径：精确 `path$` 优先，其次段边界前缀回退。
 
-    回退匹配复用 ``common.core.utils.permission_path_matches``（单点口径），
+    回退匹配复用 ``common.core.url_inventory.permission_path_matches``（单点口径），
     无 `$` 的 `api/user` 不粘连命中 `/api/userfoo`——扫描器口径比运行时宽
     会产生「已覆盖」的漏报。
     """

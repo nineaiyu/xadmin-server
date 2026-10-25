@@ -7110,6 +7110,10 @@ msgstr "已退出对用户 {} 的模拟"
 msgid "Login forbidden"
 msgstr "禁止登录"
 
+#: identity/views/auth/reset.py:57 identity/views/auth/reset.py:66
+msgid "Reset password forbidden"
+msgstr "禁止重置密码"
+
 #: identity/views/auth/mfa.py:46
 msgid "Login verification expired, please log in again"
 msgstr "登录验证已过期，请重新登录"
@@ -12533,3 +12537,104 @@ msgstr "内置角色不允许修改：{}"
 #: identity/views/admin/role.py settings/views/settings.py
 msgid "Unsupported category: {}"
 msgstr "不支持的配置分类：{}"
+
+#: settings/services.py
+msgid "SMTP server address (EMAIL_HOST) is empty; emails may fail to be delivered"
+msgstr "SMTP 服务器地址（EMAIL_HOST）未配置，邮件可能无法发出"
+
+#: settings/services.py
+msgid "SMS provider credentials are incomplete; verify codes may fail to be sent"
+msgstr "短信服务凭据不完整，验证码可能无法发出"
+
+#: settings/services.py
+msgid "LDAP server address (LDAP_SERVER_URI) is not configured"
+msgstr "LDAP 服务器地址（LDAP_SERVER_URI）未配置"
+
+#: settings/services.py
+msgid "LDAP user search base (LDAP_USER_SEARCH_BASE) is not configured"
+msgstr "LDAP 用户搜索基线（LDAP_USER_SEARCH_BASE）未配置"
+
+#: settings/services.py
+msgid "Email verify code switch is off"
+msgstr "邮箱验证码开关未开启"
+
+#: settings/services.py
+msgid "Email service is disabled"
+msgstr "邮件服务未开启"
+
+#: settings/services.py
+msgid "Sms verify code switch is off"
+msgstr "短信验证码开关未开启"
+
+#: settings/services.py
+msgid "Sms service is disabled"
+msgstr "短信服务未开启"
+
+#: settings/services.py
+msgid "Verify code login requires at least one available channel (email or sms)"
+msgstr "验证码登录依赖可用的邮箱或短信验证码通道"
+
+#: settings/services.py
+msgid "Register requires at least one available channel (email or sms)"
+msgstr "注册依赖可用的邮箱或短信验证码通道"
+
+#: settings/services.py
+msgid "Reset password requires at least one available channel (email or sms)"
+msgstr "重置密码依赖可用的邮箱或短信验证码通道"
+
+#: settings/services.py
+msgid "Basic login"
+msgstr "账号密码登录"
+
+#: settings/services.py
+msgid "Basic login switch is off"
+msgstr "账号密码登录开关未开启"
+
+#: settings/services.py
+msgid "Verify code login"
+msgstr "验证码登录"
+
+#: settings/services.py
+msgid "Register"
+msgstr "注册"
+
+#: settings/services.py
+msgid "Register switch is off"
+msgstr "注册开关未开启"
+
+#: settings/services.py
+msgid "Reset password"
+msgstr "重置密码"
+
+#: settings/services.py
+msgid "Reset password switch is off"
+msgstr "重置密码开关未开启"
+
+#: settings/services.py
+msgid "Bind email"
+msgstr "绑定邮箱"
+
+#: settings/services.py
+msgid "Bind email switch is off"
+msgstr "绑定邮箱开关未开启"
+
+#: settings/services.py
+msgid "Bind phone"
+msgstr "绑定手机"
+
+#: settings/services.py
+msgid "Bind phone switch is off"
+msgstr "绑定手机开关未开启"
+
+#: settings/services.py
+msgid "Email service"
+msgstr "邮件服务"
+
+#: settings/services.py
+msgid "Sms service"
+msgstr "短信服务"
+
+#: settings/services.py
+msgid "LDAP login"
+msgstr "LDAP 登录"
+

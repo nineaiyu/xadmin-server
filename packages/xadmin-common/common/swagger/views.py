@@ -23,7 +23,6 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
 
-from common.base.magic import cache_response
 from common.contracts import (
     LoginBlockUtil,
     LoginIpBlockUtil,
@@ -32,6 +31,7 @@ from common.contracts import (
     is_login_mfa_required,
 )
 from common.core.response import ApiResponse
+from common.decorators import cache_response
 from common.settings_contract import kernel_setting
 from common.swagger.auth import API_DOCS_SESSION_FLAG
 from common.utils.request import get_request_ip

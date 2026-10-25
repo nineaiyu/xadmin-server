@@ -50,7 +50,7 @@ def can_approve(user: Any) -> bool:
 
 def build_module(view: Any) -> str:
     """module 取视图 docstring 首行（同操作日志口径），缺省回退「敏感操作」。"""
-    from common.core.utils import get_doc_first_line
+    from common.core.url_inventory import get_doc_first_line
 
     first_line: str = get_doc_first_line(getattr(view, "__doc__", None)) or _("Sensitive operation")
     return first_line

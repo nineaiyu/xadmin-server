@@ -16,7 +16,7 @@ def delete_task_execution_log_handler(sender: Any, **kwargs: Any) -> None:
     # 执行历史删除（含批量删除）时联动清理落盘日志文件
     instance = kwargs.get("instance")
     if instance:
-        from common.base.utils import remove_file
+        from common.base.crypto import remove_file
         from common.celery.utils import get_celery_task_log_path
 
         remove_file(get_celery_task_log_path(str(instance.pk)))

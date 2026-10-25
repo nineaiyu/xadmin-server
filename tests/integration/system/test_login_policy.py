@@ -47,6 +47,13 @@ def login_free(settings):
     settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
 
 
+@pytest.fixture
+def email_channel_on(settings):
+    """email 通道开放:提交侧通道复核上线后,email 类型用例需显式打开。"""
+    settings.SECURITY_LOGIN_BY_EMAIL_ENABLED = True
+    settings.EMAIL_ENABLED = True
+
+
 def _login(api_client):
     return api_client.post(BASIC_LOGIN_URL, {"username": "zhangsan", "password": "Test@123456"}, format="json")
 
@@ -178,7 +185,7 @@ class TestLoginBlockedByPolicy:
         log = UserLoginLog.objects.filter(creator=normal_user).first()
         assert log is not None and log.policy_result.startswith("reject:")
 
-    def test_reject_policy_blocks_verify_code_login(self, api_client, normal_user, login_free):
+    def test_reject_policy_blocks_verify_code_login(self, api_client, normal_user, login_free, email_channel_on):
         """验证码登录同样收口 reject_login：失败日志的 login_type 记真实来源。
 
         历史缺陷：策略拒绝分支漏传 login_type，验证码登录的失败日志被记成

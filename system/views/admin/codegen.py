@@ -142,6 +142,7 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
                             "path": build_basic_type(OpenApiTypes.STR),
                             "content": build_basic_type(OpenApiTypes.STR),
                             "mode": build_basic_type(OpenApiTypes.STR),
+                            "kind": build_basic_type(OpenApiTypes.STR),
                             "key": build_basic_type(OpenApiTypes.STR),
                             "notice": build_basic_type(OpenApiTypes.STR),
                         }

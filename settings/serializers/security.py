@@ -179,7 +179,7 @@ class SecurityLoginAuthSerializer(SettingSaveContractMixin, serializers.Serializ
     )
 
     SECURITY_LOGIN_BY_SMS_ENABLED = serializers.BooleanField(
-        required=False, default=True, label=_("Login by sms"), help_text=_("Enable send sms verify code to user")
+        required=False, default=False, label=_("Login by sms"), help_text=_("Enable send sms verify code to user")
     )
 
     SECURITY_LOGIN_BY_BASIC_ENABLED = serializers.BooleanField(
@@ -217,7 +217,7 @@ class SecurityRegisterAuthSerializer(SettingSaveContractMixin, serializers.Seria
     )
 
     SECURITY_REGISTER_BY_SMS_ENABLED = serializers.BooleanField(
-        required=False, default=True, label=_("Register by sms"), help_text=_("Enable send sms verify code to user")
+        required=False, default=False, label=_("Register by sms"), help_text=_("Enable send sms verify code to user")
     )
 
 
@@ -255,7 +255,7 @@ class SecurityResetPasswordAuthSerializer(SettingSaveContractMixin, serializers.
 
     SECURITY_RESET_PASSWORD_BY_SMS_ENABLED = serializers.BooleanField(
         required=False,
-        default=True,
+        default=False,
         label=_("Reset password by sms"),
         help_text=_("Enable send sms verify code to user"),
     )

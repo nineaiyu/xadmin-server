@@ -79,7 +79,7 @@ class TestChangeFieldsContract:
 class TestWriteOnlySecretFallback:
     def test_empty_secret_keeps_stored_value(self, auth_client):
         """write_only 密文提交空值 = 不修改（回退已存值）。"""
-        from common.base.utils import signer
+        from common.base.crypto import signer
 
         stored = "stored-ldap-password"
         Setting.objects.create(

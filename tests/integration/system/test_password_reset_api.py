@@ -34,8 +34,13 @@ def email_user(normal_user):
 
 
 @pytest.fixture
-def verified(monkeypatch, email_user):
-    """打桩验证码校验：视为已完成「邮箱验证码已下发且校验通过」。"""
+def verified(monkeypatch, email_user, settings):
+    """打桩验证码校验：视为已完成「邮箱验证码已下发且校验通过」。
+
+    email 通道开关显式打开：提交侧通道复核上线后,通道关闭的提交先行拒绝。
+    """
+    settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED = True
+    settings.EMAIL_ENABLED = True
     monkeypatch.setattr(
         reset_view,
         "verify_sms_email_code",

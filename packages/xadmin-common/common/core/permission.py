@@ -14,7 +14,6 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from rest_framework.permissions import BasePermission
 
-from common.base.magic import MagicCacheData
 from common.contracts import (
     FieldPermission,
     Menu,
@@ -24,7 +23,8 @@ from common.contracts import (
 )
 from common.core import permission_meta
 from common.core.modules import filter_menu_queryset
-from common.core.utils import permission_path_matches
+from common.core.url_inventory import permission_path_matches
+from common.decorators import MagicCacheData
 from common.local import get_current_request, set_current_request
 from common.settings_contract import kernel_required_setting, kernel_setting
 from common.utils import get_logger

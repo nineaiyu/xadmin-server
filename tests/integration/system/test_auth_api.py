@@ -60,7 +60,8 @@ class TestBasicLogin:
         assert resp.data["code"] == 1000
 
     def test_login_config(self, api_client, login_free):
-        resp = api_client.get(BASIC_LOGIN_URL)
+        """登录配置改由能力清单端点下发(GET /login/basic 配置已下线)。"""
+        resp = api_client.get("/api/identity/auth/capabilities")
         assert resp.status_code == 200
         assert resp.data["data"]["access"] is True
 

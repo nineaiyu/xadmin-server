@@ -14,6 +14,7 @@ from rest_framework.request import Request
 from common.core.response import ApiResponse
 from common.utils import get_logger
 from settings.serializers.email import EmailSettingSerializer
+from settings.services import build_setting_effective
 from settings.utils.test_connection import build_test_values
 from settings.views.settings import BaseSettingViewSet
 
@@ -25,6 +26,10 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
 
     serializer_class = EmailSettingSerializer
     category = "email"
+
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(服务开关 + SMTP 配置完整性软提示)。"""
+        return {"effective": build_setting_effective("email")}
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """测试{cls}"""

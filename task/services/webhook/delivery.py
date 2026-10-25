@@ -22,7 +22,7 @@ from django.db import connection
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from common.base.utils import signer
+from common.base.crypto import signer
 from common.utils import get_logger
 from common.utils.outbound import validate_outbound_config_url
 from task.services.webhook.events import EVENT_CATALOG

@@ -32,7 +32,7 @@ class OpsAlertAPIView(AlertReportAPIView):
     received_detail = _("Ops alert received")
 
     def get_notify(self) -> Any:
-        from common.ops_alert import notify_ops_alert
+        from common.alerts import notify_ops_alert
 
         return notify_ops_alert
 

@@ -81,7 +81,7 @@
 | 弹窗表单复用 | `openDialogDrawer` | 页面级 | `useUserColumnFormats.tsx::handleRoleRules` |
 | 内置图标集扩展 | `iconRegistry.ts::SET_LOADERS` / `offlineIcon.ts` | 离线约束：不得回退在线 | 双形态注册 |
 | 全局 `el-*` 组件 | `src/plugins/elementPlus.ts` | 有单测比对清单 | — |
-| 值级加密 | `packages/xadmin-common/common/base/utils.py::signer` | 敏感字段入库前 | webhook secret / AI api_key |
+| 值级加密 | `packages/xadmin-common/common/base/crypto.py::signer` | 敏感字段入库前 | webhook secret / AI api_key |
 | 新增缓存类 | `packages/xadmin-common/common/cache/storage.py::RedisCacheBase` | 键名过 `check_cache_keys.py` | — |
 | 周期任务 | `@register_as_period_task(module=...)` | module 归属可裁剪 | `system/tasks/` |
 | 通知渠道 | `notifications/backends/<name>.py`（模块级 `backend`） | 渠道枚举补 `BACKEND` | `notifications/backends/email.py` |

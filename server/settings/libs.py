@@ -38,7 +38,7 @@ REST_FRAMEWORK = {
         # PAT 认证（机器集成凭证）：无 Pat 头静默跳过，带 Pat 头时按凭证认证
         "common.core.auth.PersonalAccessTokenAuthentication",
     ],
-    "EXCEPTION_HANDLER": "common.core.exception.common_exception_handler",
+    "EXCEPTION_HANDLER": "common.core.response.exception.common_exception_handler",
     "DEFAULT_METADATA_CLASS": "common.drf.metadata.SimpleMetadataWithFilters",
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",

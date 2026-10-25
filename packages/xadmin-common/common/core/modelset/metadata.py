@@ -18,7 +18,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
-from common.base.utils import get_choices_dict
+from common.base.crypto import get_choices_dict
 from common.core.fields import get_search_choices_max_count
 from common.core.modelset.input_types import get_format_intput_type
 from common.core.modelset.metadata_cache import cached_payload

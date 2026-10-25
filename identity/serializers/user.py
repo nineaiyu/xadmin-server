@@ -14,7 +14,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.validators import UniqueValidator
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from common.core.fields import DictChoiceField
 from common.core.filter import assert_within_data_scope
 from common.core.serializers import BaseModelSerializer

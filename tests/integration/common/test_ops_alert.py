@@ -11,8 +11,8 @@ from pathlib import Path
 import pytest
 from django.utils.translation import gettext as _gettext
 
+from common.alerts import OpsAlertMessage
 from common.core.config import SysConfig
-from common.ops_alert import OpsAlertMessage
 from notifications.models import MessageContent
 from notifications.notifications import SYSTEM_MESSAGE_REGISTRY
 

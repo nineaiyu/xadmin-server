@@ -4,7 +4,7 @@
 import pytest
 from rest_framework import serializers
 
-from common.core.validators import PhoneValidator
+from common.core.response.validators import PhoneValidator
 
 
 class TestPhoneValidator:

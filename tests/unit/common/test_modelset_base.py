@@ -18,13 +18,13 @@ from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.utils import encoders
 
-from common.base.magic import cache_response
 from common.core.modelset import (
     BaseModelSet,
     CacheDetailResponseMixin,
     CacheListResponseMixin,
     run_view_by_celery_task,
 )
+from common.decorators import cache_response
 from demo.models import Book
 from demo.serializers.book import BookSerializer
 from demo.views import BookViewSet

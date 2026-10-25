@@ -95,11 +95,12 @@ class TestBindPhoneEmailIsolation:
         assert resp.status_code == 200
         data = resp.data.get("data") or {}
         assert PHONE_KEY in data
-        assert all(key.startswith("SECURITY_BIND_PHONE_") for key in data)
+        # effective 是只读派生诊断(实际生效状态),非配置键
+        assert all(key.startswith("SECURITY_BIND_PHONE_") for key in data if key != "effective")
 
     def test_email_tab_retrieve_returns_email_keys(self, auth_client):
         resp = auth_client.get(EMAIL_URL)
         assert resp.status_code == 200
         data = resp.data.get("data") or {}
         assert EMAIL_KEY in data
-        assert all(key.startswith("SECURITY_BIND_EMAIL_") for key in data)
+        assert all(key.startswith("SECURITY_BIND_EMAIL_") for key in data if key != "effective")

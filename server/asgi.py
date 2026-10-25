@@ -22,7 +22,7 @@ from django.utils.module_loading import import_string
 
 from common.core.atomic_read import SafeMethodAtomicSkipMixin
 from common.core.modules import ModuleTrimWebsocketMiddleware
-from common.core.utils import collect_app_ws_urls
+from common.core.url_inventory import collect_app_ws_urls
 from common.utils import get_logger
 from server.utils import set_current_request
 

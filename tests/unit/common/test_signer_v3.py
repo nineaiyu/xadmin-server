@@ -14,7 +14,7 @@ import base64
 import pytest
 from django.conf import settings
 
-from common.base.utils import AESCipher, AESCipherV3, signer
+from common.base.crypto import AESCipher, AESCipherV3, signer
 
 KEY = "unit-test-secret-key"
 
@@ -78,7 +78,7 @@ def test_master_key_rotation_reads_old_ciphertext():
     存量 v3 密文仍可读（写新读旧），新写入用新主密钥。"""
     from django.conf import settings
 
-    from common.base.utils import AESCipherV3
+    from common.base.crypto import AESCipherV3
 
     old_master = settings.SECRET_KEY
     legacy_cipher_text = AESCipherV3(old_master).encrypt("存量密文")
@@ -95,7 +95,7 @@ def test_master_key_rotation_reads_old_ciphertext():
 
 def test_legacy_master_chain_walks_in_order():
     """多级轮换：legacy_masters 按序逐个试钥，两级历史密文均可读。"""
-    from common.base.utils import AESCipherV3
+    from common.base.crypto import AESCipherV3
 
     k1, k2, k3 = "master-v1", "master-v2", "master-v3"
     c1 = AESCipherV3(k1).encrypt("一代")
@@ -107,7 +107,7 @@ def test_legacy_master_chain_walks_in_order():
 
 def test_all_masters_failed_still_raises():
     """全部主密钥（含历史）认证失败：抛 ValueError，由调用方按解密失败降级。"""
-    from common.base.utils import AESCipherV3
+    from common.base.crypto import AESCipherV3
 
     cipher_text = AESCipherV3("master-a").encrypt("secret")
     walker = AESCipherV3("master-b", legacy_masters=("master-c",))
@@ -119,7 +119,7 @@ def test_get_signer_uses_field_encryption_key_with_secret_fallback():
     """FIELD_ENCRYPTION_KEY 配置后：写用新主密钥，读回退 SECRET_KEY 存量。"""
     from django.conf import settings
 
-    from common.base.utils import AESCipherV3, get_signer
+    from common.base.crypto import AESCipherV3, get_signer
 
     stock = AESCipherV3(settings.SECRET_KEY).encrypt("存量数据")  # 轮换前的存量 v3 密文
     settings.FIELD_ENCRYPTION_KEY = "dedicated-field-key"

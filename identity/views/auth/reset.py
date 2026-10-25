@@ -13,7 +13,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import ResetPasswordThrottle
 from common.swagger.utils import get_default_response_schema
@@ -50,7 +50,17 @@ class ResetPasswordAPIView(GenericAPIView):
     )
     def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """重置密码"""
+        # 重置开关强校验:关闭后接口层同样拒绝(关闭前已发出的验证码一并作废)
+        if not settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED:
+            return ApiResponse(code=1001, detail=_("Reset password forbidden"))
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
+        # 通道开关复核:与验证码登录同口径,防止发码后关闭通道绕过
+        channel_enabled = {
+            "email": settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
+            "phone": settings.SECURITY_RESET_PASSWORD_BY_SMS_ENABLED and settings.SMS_ENABLED,
+        }.get(query_key)
+        if channel_enabled is False:
+            return ApiResponse(code=1001, detail=_("Reset password forbidden"))
         password = request.data.get("password")
         if not password:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))

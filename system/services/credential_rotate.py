@@ -10,7 +10,7 @@ from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
-from common.core.credentials import (
+from common.core.auth.credentials import (
     SENSITIVE_SETTING_KEYS,
     decrypt_setting_value,
     encrypt_setting_value,
@@ -153,8 +153,8 @@ def rotate_setting(name: str, user: Any = None) -> dict[str, Any]:
       （``rotate_credential`` 命令口径与 SystemConfig 侧一致）；
     - 值已是 v3 密文但标记为明文（标记漂移）：只校正 encrypted 标记，不重复加密。
     """
-    from common.base.utils import signer
-    from common.core.credentials import is_cipher_str
+    from common.base.crypto import signer
+    from common.core.auth.credentials import is_cipher_str
     from settings.models import Setting
 
     name = str(name or "").strip()

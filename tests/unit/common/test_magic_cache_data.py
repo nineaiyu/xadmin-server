@@ -13,7 +13,7 @@ import time
 import pytest
 from django.core.cache import cache
 
-from common.base.magic import MagicCacheData
+from common.decorators import MagicCacheData
 
 pytestmark = pytest.mark.django_db
 

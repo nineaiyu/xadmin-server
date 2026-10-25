@@ -615,7 +615,7 @@ class TestReportListWithoutVisibilityDimension:
         """列表全员可见不变，但非创建者拿不到收件人原文；last_run_at 随列表下发。"""
         from rest_framework.test import APIClient
 
-        from common.core.credentials import MASK
+        from common.core.auth.credentials import MASK
 
         report = _make_report(dataset, superuser, recipients=["boss@corp.com"])
         Report.objects.filter(pk=report.pk).update(last_run_at=timezone.now())

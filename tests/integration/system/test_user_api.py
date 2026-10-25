@@ -4,7 +4,7 @@
 import pytest
 
 from audit.services import OperationLog
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from identity.models import Post, UserInfo
 from tests.integration.aes_v2 import encrypt_v2
 

@@ -20,9 +20,13 @@ API_SUCCESS_CODE = 1000
 class ApiResponse(Response):
     """统一响应壳（``code=API_SUCCESS_CODE`` 表示业务成功）。
 
-    契约：``response.data`` 是**信封 dict**（``code`` / ``detail`` / ``requestId`` /
-    ``timestamp``，业务数据放在可选的 ``data`` 键下）。操作日志等按
-    ``response.data["code"]`` 判定结果，因此不要把它替换成原始业务数据。
+        契约：``response.data`` 是**信封 dict**（``code`` / ``detail`` / ``requestId`` /
+        ``timestamp``，业务数据放在可选的 ``data`` 键下）。操作日志等按
+        ``response.data["code"]`` 判定结果，因此不要把它替换成原始业务数据。
+
+    归组说明：响应族包（原顶层 response.py 的内容即本 ``__init__``，历史调用点
+    ``from common.core.response import X`` 不感知归组）；异常处理 / 校验器族在
+    兄弟模块 ``exception`` / ``validation`` / ``validators``。
     """
 
     def __init__(

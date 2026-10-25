@@ -30,12 +30,12 @@
 | 条目 | 要求摘要 | 状态 | 证据（实现与守护） | 备注 |
 |---|---|---|---|---|
 | V1.1 | 安全开发生命周期 | 部分满足 | ADR 机制（`docs/adr/README.md` 索引，篇数由 `scripts/check_doc_facts.py` 计数守护）、CI 门禁统一登记（`docs/ci-gates.md`）、提交与回归纪律红线（`docs/plans/README.md`） | 无正式威胁建模流程 → §三.②接受项 |
-| V1.2 | 认证架构 | 满足 | JWT-only（ADR-001）；认证 backend 链显式（`server/settings/libs.py` `AUTHENTICATION_BACKENDS`）+ LDAP/OAuth/OIDC/Passkey 多通道（`packages/xadmin-common/common/core/auth.py`） | |
+| V1.2 | 认证架构 | 满足 | JWT-only（ADR-001）；认证 backend 链显式（`server/settings/libs.py` `AUTHENTICATION_BACKENDS`）+ LDAP/OAuth/OIDC/Passkey 多通道（`packages/xadmin-common/common/core/auth/authentication.py`） | |
 | V1.3 | 会话管理架构 | 满足 | JWT 双 Token 轮换 + 黑名单 + `sid` 会话失效（ADR 见 `docs/security-review.md` 三期 JWT 专项）；会话存储 `SESSION_ENGINE=cached_db`（`server/settings/libs.py`） | |
 | V1.4 | 访问控制架构 | 满足 | 权限点 + 菜单 + 数据/字段权限三层，默认拒绝（`docs/architecture/permission.md`、`packages/xadmin-common/common/core/permission.py`） | |
 | V1.5 | 输入/输出架构 | 满足 | DRF 序列化器 + 元数据协议；受控查询字段/lookup 白名单 fail-closed（`docs/architecture/metadata-protocol.md`） | |
-| V1.6 | 密码学架构 | 满足 | 传输加密 AES v2（ADR-011）；字段级加密 signer v3（`packages/xadmin-common/common/core/credentials.py`）；密码哈希 argon2id（`server/settings/libs.py`） | |
-| V1.7 | 错误、日志与审计架构 | 满足 | 统一异常处理（`docs/exception-handling.md`、`packages/xadmin-common/common/core/exception.py`）、操作日志 + 运行日志脱敏（ADR-072） | |
+| V1.6 | 密码学架构 | 满足 | 传输加密 AES v2（ADR-011）；字段级加密 signer v3（`packages/xadmin-common/common/core/auth/credentials.py`）；密码哈希 argon2id（`server/settings/libs.py`） | |
+| V1.7 | 错误、日志与审计架构 | 满足 | 统一异常处理（`docs/exception-handling.md`、`packages/xadmin-common/common/core/response/exception.py`）、操作日志 + 运行日志脱敏（ADR-072） | |
 | V1.8 | 数据保护与隐私架构 | 满足 | 数据权限 / 字段权限 / 脱敏规则（ADR-009，`packages/xadmin-common/common/core/mask.py`） | |
 | V1.9 | 通信安全架构 | 部分满足 | HTTPS/HSTS/Secure Cookie 开关（`server/settings/security_https.py`） | 默认 HTTP 直连可用 → §三.②接受项 |
 | V1.10 | 恶意软件架构 | 满足 | 依赖审计（`.github/workflows/security.yml` pip-audit）+ 镜像扫描（`docs/ops/deployment-upgrade.md` §6.3 trivy/SBOM）；CELERY 仅 JSON 序列化（`server/settings/libs.py`） | |
@@ -90,7 +90,7 @@
 
 | 条目 | 要求摘要 | 状态 | 证据（实现与守护） | 备注 |
 |---|---|---|---|---|
-| V6.1 | 数据分类与静态加密 | 部分满足 | 密钥类字段级加密（signer v3，HKDF/AES-GCM）；凭据注册表（`packages/xadmin-common/common/core/credentials.py`） | 数据库无透明加密（依赖部署层磁盘加密）→ §三.②接受项 |
+| V6.1 | 数据分类与静态加密 | 部分满足 | 密钥类字段级加密（signer v3，HKDF/AES-GCM）；凭据注册表（`packages/xadmin-common/common/core/auth/credentials.py`） | 数据库无透明加密（依赖部署层磁盘加密）→ §三.②接受项 |
 | V6.2 | 算法 | 满足 | argon2id、AES-256-GCM、HMAC-SHA256（Webhook 签名）、HS256（JWT）；守护 `tests/unit/common/test_aes_cipher_v2.py`、`tests/unit/common/test_signer_v3.py` | |
 | V6.3 | 随机值 | 满足 | 前端 WebCrypto / 服务端 `secrets`；AES v2 salt/iv 由 CSPRNG 生成（ADR-011） | |
 | V6.4 | 密钥管理 | 满足 | 凭据注册表 + 轮换命令 + 只读凭据页；`SENSITIVE_SETTING_KEYS` 写侧加密、读侧不回传明文 | |

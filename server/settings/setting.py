@@ -47,7 +47,7 @@ FORWARD_KEYS = [
     "SECURITY_PASSWORD_HISTORY_COUNT",
     # 密码有效期（天数，0 = 永不过期；date_password_updated 为空的存量用户 = 宽限期）
     "SECURITY_PASSWORD_EXPIRATION_DAYS",
-    # AES 旧格式（Salted__）解密灰度开关：读取方 packages/xadmin-common/common/base/utils.py 走
+    # AES 旧格式（Salted__）解密灰度开关：读取方 packages/xadmin-common/common/base/crypto.py 走
     # getattr(settings, ...)——漏转发会让开关永远落默认值（形同虚设）
     "SECURITY_AES_V1_DECRYPT_ENABLED",
     # 用户登录限制的规则

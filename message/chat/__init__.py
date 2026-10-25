@@ -80,20 +80,20 @@ from .chat_rooms import prefetch_room_context as prefetch_room_context
 from .chat_rooms import room_to_dict as room_to_dict
 
 # 再导出：消息域实现（自本包 messaging 拆出，调用面 chat_service.<fn> 保持不变）
-from .messaging import CONTACT_LIMIT as CONTACT_LIMIT
-from .messaging import ROOM_LIST_LIMIT as ROOM_LIST_LIMIT
-from .messaging import bump_unread as bump_unread
+from .chat_sessions import CONTACT_LIMIT as CONTACT_LIMIT
+from .chat_sessions import ROOM_LIST_LIMIT as ROOM_LIST_LIMIT
+from .chat_sessions import bump_unread as bump_unread
+from .chat_sessions import list_user_rooms as list_user_rooms
+from .chat_sessions import mark_read as mark_read
+from .chat_sessions import recent_contacts as recent_contacts
 from .messaging import can_recall_for as can_recall_for
 from .messaging import create_message as create_message
 from .messaging import get_attachment_message as get_attachment_message
 from .messaging import history_messages as history_messages
-from .messaging import list_user_rooms as list_user_rooms
-from .messaging import mark_read as mark_read
 from .messaging import message_payload as message_payload
 from .messaging import recall_message as recall_message
-from .messaging import recent_contacts as recent_contacts
 from .messaging import sender_avatar_map as sender_avatar_map
-from .messaging import toggle_reaction as toggle_reaction
+from .reactions import toggle_reaction as toggle_reaction
 
 # 再导出：撤回审计常量与快照写入（调用面/测试沿用 chat_service 常量）
 from .recall_audit import RECALL_AUDIT_MODULE as RECALL_AUDIT_MODULE

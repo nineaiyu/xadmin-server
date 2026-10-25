@@ -4,8 +4,10 @@
 # filename : user
 # author : ly_13
 # date : 6/16/2023
+from functools import lru_cache
 from typing import Any
 
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -46,8 +48,17 @@ from system.services.tags import TagChoiceFilter, TagFilterBackend, TagFilterMix
 logger = get_logger(__name__)
 
 
-#: 邀请权限点 path（与 loadjson/menumeta.json 同源）：创建即邀请需同时具备该权限
-INVITE_PERMISSION_PATH = "api/identity/user/1/invite"
+@lru_cache(maxsize=1)
+def invite_permission_path() -> str:
+    """邀请权限点 path（伪 pk=1，与种子正则同源）。
+
+    按路由反解派生而非硬编码字符串：路由 url_path 改名时本检查随路由同步，
+    不会像字面量那样与种子正则形状静默脱钩（fail-closed 方向，脱钩表现为
+    邀请被误拦）。本模块在 URLconf 装配期被导入，reverse 不能在导入期执行，
+    故惰性到首次调用。
+    """
+    return str(reverse("identity:user-invite", kwargs={"pk": 1})).lstrip("/")
+
 
 #: 演示角色 code：演示账号的用户可见范围强制收敛到其部门子树（数据权限之外
 #: 的兜底，防止数据权限配置漂移后再次看到真实用户）。
@@ -126,6 +137,10 @@ class UserViewSet(
         """
 
         queryset = super().get_queryset()
+        if self.action == "batch_destroy":
+            # 批量删除不作用于超管账号：按 get_queryset 分支收口（与 RoleViewSet
+            # 同风格，不靠实例属性遮蔽类属性）；单删由 perform_destroy 给可读错误
+            queryset = queryset.filter(is_superuser=False)
         request = getattr(self, "request", None)
         user = getattr(request, "user", None) if request is not None else None
         if user is None or not user.is_authenticated or user.is_superuser:
@@ -174,7 +189,7 @@ class UserViewSet(
         if user_invite.invite_requested(request.data):
             if not user_invite.mail_channel_configured():
                 return ApiResponse(code=1001, detail=user_invite.INVITE_MAIL_UNAVAILABLE_MESSAGE)
-            if not user_has_permission(request.user, INVITE_PERMISSION_PATH, "POST"):
+            if not user_has_permission(request.user, invite_permission_path(), "POST"):
                 raise PermissionDenied(
                     str(_("You do not have permission to perform the action: {}").format(str(_("Invite activation"))))
                 )
@@ -208,7 +223,6 @@ class UserViewSet(
     @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除{cls}"""
-        self.queryset = self.queryset.filter(is_superuser=False)
         return super().batch_destroy(request, *args, **kwargs)
 
     @ApprovalRequired()

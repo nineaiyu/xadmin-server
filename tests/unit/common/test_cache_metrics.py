@@ -13,7 +13,7 @@ from types import SimpleNamespace
 import pytest
 from django.core.cache import cache
 
-from common.base.magic import MagicCacheData, MagicCacheResponse
+from common.decorators import MagicCacheData, MagicCacheResponse
 
 pytestmark = pytest.mark.django_db
 

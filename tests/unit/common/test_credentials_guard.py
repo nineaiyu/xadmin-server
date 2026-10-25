@@ -14,7 +14,7 @@ import pathlib
 
 import pytest
 
-from common.core.credentials import (
+from common.core.auth.credentials import (
     ENCRYPTED_SETTING_KEYS,
     PLAINTEXT_EXEMPT_KEYS,
     SENSITIVE_KEY_PATTERN,

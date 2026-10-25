@@ -7,7 +7,7 @@
 
 from typing import Any
 
-from common.core.credentials import ENCRYPTED_SETTING_KEYS, MASK, is_sensitive_setting_row
+from common.core.auth.credentials import ENCRYPTED_SETTING_KEYS, MASK, is_sensitive_setting_row
 from common.core.serializers import BaseModelSerializer
 from settings.models import Setting
 

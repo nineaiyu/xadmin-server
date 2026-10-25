@@ -13,6 +13,14 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from common.core.auth.credentials import (
+    MASK,
+    SENSITIVE_SETTING_KEYS,
+    decrypt_setting_value,
+    encrypt_setting_value,
+    is_sensitive_key,
+    mask_sensitive_config_value,
+)
 from common.core.config import (
     BaseConfCache,
     ConfigCache,
@@ -20,14 +28,6 @@ from common.core.config import (
     SysConfig,
     UserConfig,
     batch_user_config_values,
-)
-from common.core.credentials import (
-    MASK,
-    SENSITIVE_SETTING_KEYS,
-    decrypt_setting_value,
-    encrypt_setting_value,
-    is_sensitive_key,
-    mask_sensitive_config_value,
 )
 from common.core.fields import BasePrimaryKeyRelatedField
 from common.core.serializers import BaseModelSerializer

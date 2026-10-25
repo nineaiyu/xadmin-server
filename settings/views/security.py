@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 8/1/2024
 
+from typing import Any
+
 from common.utils import get_logger
 from settings.serializers.security import (
     SecurityBindEmailAuthSerializer,
@@ -19,6 +21,7 @@ from settings.serializers.security import (
     SecurityResetPasswordAuthSerializer,
     SecurityVerifyCodeSerializer,
 )
+from settings.services import build_setting_effective
 from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__name__)
@@ -44,12 +47,20 @@ class SecurityLoginAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityLoginAuthSerializer
     category = "security_login_auth"
 
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(与登录页能力清单同口径)。"""
+        return {"effective": build_setting_effective("security_login_auth")}
+
 
 class SecurityRegisterAuthViewSet(BaseSettingViewSet):
     """注册安全"""
 
     serializer_class = SecurityRegisterAuthSerializer
     category = "security_register_auth"
+
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(与登录页能力清单同口径)。"""
+        return {"effective": build_setting_effective("security_register_auth")}
 
 
 class SecurityResetPasswordAuthViewSet(BaseSettingViewSet):
@@ -58,6 +69,10 @@ class SecurityResetPasswordAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityResetPasswordAuthSerializer
     category = "security_reset_password_auth"
 
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(与登录页能力清单同口径)。"""
+        return {"effective": build_setting_effective("security_reset_password_auth")}
+
 
 class SecurityBindEmailAuthViewSet(BaseSettingViewSet):
     """绑定邮件"""
@@ -65,12 +80,20 @@ class SecurityBindEmailAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityBindEmailAuthSerializer
     category = "security_bind_email_auth"
 
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(与登录页能力清单同口径)。"""
+        return {"effective": build_setting_effective("security_bind_email_auth")}
+
 
 class SecurityBindPhoneAuthViewSet(BaseSettingViewSet):
     """绑定手机"""
 
     serializer_class = SecurityBindPhoneAuthSerializer
     category = "security_bind_phone_auth"
+
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(与登录页能力清单同口径)。"""
+        return {"effective": build_setting_effective("security_bind_phone_auth")}
 
 
 class SecurityVerifyCodeViewSet(BaseSettingViewSet):

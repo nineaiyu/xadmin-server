@@ -15,9 +15,9 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
 from rest_framework.filters import BaseFilterBackend
 
-from common.base.magic import cache_response
 from common.core.response import ApiResponse
 from common.core.throttle import ExportImportThrottleMixin
+from common.decorators import cache_response
 from common.storage import storage_exists, storage_open
 from task.utils.record_stats import (
     RECORD_STATS_CACHE_SECONDS,

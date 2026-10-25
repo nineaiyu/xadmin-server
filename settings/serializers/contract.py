@@ -22,6 +22,11 @@
 
 二开兼容：旧名 ``_change_fields`` / ``_data`` 保留读写别名并告
 DeprecationWarning，一个版本周期后移除。
+
+响应扩展：本混入同时承担「视图侧只读派生字段」的输出注入——序列化时调用
+视图的 ``get_readonly_values(data)``（如设置 tab 的「实际生效状态」诊断）,
+把计算值合并进响应载荷。不声明为 serializer 字段,列元数据与保存契约均不受
+影响;视图未实现该钩子时为零开销跳过。
 """
 
 import warnings
@@ -30,7 +35,20 @@ from typing import Any
 from django.utils.translation import gettext_lazy as _
 
 
-class SettingSaveContractMixin:
+class SettingReadonlyValuesMixin:
+    """序列化输出注入视图侧只读派生字段（不进列元数据、不参与保存校验）。"""
+
+    def to_representation(self, instance: Any) -> Any:
+        data = super().to_representation(instance)
+        getter = getattr(self.context.get("view"), "get_readonly_values", None)
+        if callable(getter):
+            extra = getter(data)
+            if extra:
+                data.update(extra)
+        return data
+
+
+class SettingSaveContractMixin(SettingReadonlyValuesMixin):
     """与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。"""
 
     change_fields: list[str] = []

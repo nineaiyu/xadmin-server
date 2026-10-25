@@ -10,8 +10,8 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from common.core.response.validation import ActiveUniqueValidationMixin
 from common.core.serializers import BaseModelSerializer
-from common.core.validation import ActiveUniqueValidationMixin
 from identity.models import Post
 
 

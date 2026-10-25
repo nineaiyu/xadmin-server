@@ -19,11 +19,11 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 
-from common.base.magic import cache_response
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend
 from common.core.modelset import BaseModelSet, RecycleBinAction
 from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
+from common.decorators import cache_response
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from file.models import FileAccessLog, UploadFile

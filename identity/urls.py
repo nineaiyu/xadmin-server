@@ -18,6 +18,7 @@ from identity.views.admin.passkey import PasskeyViewSet
 from identity.views.admin.post import PostViewSet
 from identity.views.admin.role import RoleViewSet
 from identity.views.admin.user import UserViewSet
+from identity.views.auth.capabilities import LoginCapabilitiesAPIView
 from identity.views.auth.impersonation import ImpersonateExitAPIView
 from identity.views.auth.invite import InviteAcceptAPIView, InviteValidateAPIView
 from identity.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
@@ -77,6 +78,11 @@ no_auth_url = [
     re_path("^register$", RegisterViewAPIView.as_view(), name="register"),
     re_path("^auth/captcha$", CaptchaAPIView.as_view(), name="captcha"),
     re_path("^auth/token$", TempTokenAPIView.as_view(), name="temp_token"),
+    re_path(
+        "^auth/capabilities$",
+        LoginCapabilitiesAPIView.as_view(),
+        name="login-capabilities",
+    ),
     re_path("^auth/verify$", SendVerifyCodeAPIView.as_view(), name="send-verify-code"),
     re_path("^auth/reset$", ResetPasswordAPIView.as_view(), name="reset-password"),
     # 邀请激活：令牌即凭据，激活页未登录，必须匿名可达

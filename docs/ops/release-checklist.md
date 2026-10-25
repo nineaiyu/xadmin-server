@@ -75,7 +75,7 @@
 ## 2.（硬门禁）AES v1 解密关闭
 
 **背景**：`SECURITY_AES_V1_DECRYPT_ENABLED` 默认 `True`（`server/conf/`）；关闭后旧 `Salted__` 格式密文
-一律按非法输入返回空串（`packages/xadmin-common/common/base/utils.py` 的 `AESCipherV2.decrypt`）。前端 `aes.ts` 默认走 v2。
+一律按非法输入返回空串（`packages/xadmin-common/common/base/crypto.py` 的 `AESCipherV2.decrypt`）。前端 `aes.ts` 默认走 v2。
 
 **前置（核对前端版本分布）**：
 
@@ -164,7 +164,7 @@
    **下一步**：隔离上线后重新起算 7 天窗口，`CSP violation:` 连续 7 天为 0 即可切 enforce。
 2. **项 2（AES v1 关闭）**：**澄清一个此前的口径错误**——v1（`Salted__`）只出现在**前端请求体**加密
    （`AESCipherV2`，key 为 username/token 的一次性密文），**不落库**；落库字段级加密是另一套
-   `AESCipherV3`（`v3:` 前缀 + HKDF/AES-GCM，`packages/xadmin-common/common/base/utils.py`），且 `AESCharField/AESTextField`
+   `AESCipherV3`（`v3:` 前缀 + HKDF/AES-GCM，`packages/xadmin-common/common/base/crypto.py`），且 `AESCharField/AESTextField`
    全仓无模型使用。因此**不存在「扫库重写 v1 密文」这条路径**，命中必然来自仍在提交旧格式密文的客户端或遗留调用点。
    处置：观测点日志新增 `caller=`（调用方 `文件名:行号 函数名`），使 572 条/天的命中可收敛到具体入口。
    **下一步**：部署后按 `caller` 聚合定位，收敛来源并清零后再置 `SECURITY_AES_V1_DECRYPT_ENABLED=false`。

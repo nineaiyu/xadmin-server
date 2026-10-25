@@ -57,9 +57,10 @@ class TestLoginCaptchaEnforced:
     """登录强开验证码：无码 / 错码拒绝，正确码放行，消费一次性。"""
 
     def test_login_config_reports_captcha_on(self, api_client, captcha_on):
-        resp = api_client.get(LOGIN_URL)
+        """登录配置改由能力清单端点下发(GET /login/basic 配置已下线)。"""
+        resp = api_client.get("/api/identity/auth/capabilities")
         assert resp.data["code"] == 1000
-        assert resp.data["data"]["captcha"] is True
+        assert resp.data["data"]["basic"]["captcha"] is True
 
     def test_login_without_captcha_rejected(self, api_client, normal_user, captcha_on):
         resp = api_client.post(LOGIN_URL, _login_payload(), format="json")

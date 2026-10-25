@@ -14,7 +14,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 
 from audit.services import UserLoginLog
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from common.cache.lock import ReentrantLock
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle

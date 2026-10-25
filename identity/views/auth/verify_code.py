@@ -17,7 +17,7 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schem
 from rest_framework.exceptions import APIException
 from rest_framework.generics import GenericAPIView
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import VerifyCodeThrottle
 from common.fields.utils import get_file_absolute_uri
@@ -47,6 +47,7 @@ def get_register_config(request: Any) -> Any:
 
 
 def get_login_config(request: Any) -> Any:
+    """验证码登录场景的发码配置(方式级入口可见性见 auth/capabilities)。"""
     config = {
         "access": settings.SECURITY_LOGIN_ACCESS_ENABLED,
         "captcha": settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
@@ -56,8 +57,6 @@ def get_login_config(request: Any) -> Any:
         "sms": settings.SECURITY_LOGIN_BY_SMS_ENABLED and settings.SMS_ENABLED,
         "rate": settings.VERIFY_CODE_LIMIT,
         "lifetime": settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME").days,
-        "reset": settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED,
-        "register": settings.SECURITY_REGISTER_ACCESS_ENABLED,
     }
     return config
 

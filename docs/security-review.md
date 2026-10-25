@@ -99,7 +99,7 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 
 ## 三期自查（2026-09-11）：JWT 专项审计（N5）
 
-范围：签发/校验/吊销全链路（`packages/xadmin-common/common/core/auth.py`、`identity/views/auth/`、
+范围：签发/校验/吊销全链路（`packages/xadmin-common/common/core/auth/authentication.py`、`identity/views/auth/`、
 `server/settings/libs.py` SIMPLE_JWT 配置、client 侧 token 消费）。
 
 ### 审计结论：11 项达标，3 项已知边界（无需改动，记录触发条件）

@@ -22,7 +22,7 @@ from typing import Any
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from common.core.credentials import (
+from common.core.auth.credentials import (
     MASK,
     SENSITIVE_SETTING_KEYS,
     encryption_status,

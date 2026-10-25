@@ -21,7 +21,7 @@ from django.urls import include, re_path
 from django.views.static import serve as static_serve
 
 from common.celery.flower import CeleryFlowerAPIView
-from common.core.utils import auto_register_app_url
+from common.core.url_inventory import auto_register_app_url
 from common.swagger.views import ApiLogin, ApiLogout, JsonApi, Redoc, SwaggerUI
 from common.utils.media import media_serve
 

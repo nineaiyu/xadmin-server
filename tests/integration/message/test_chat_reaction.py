@@ -277,7 +277,7 @@ class TestReactionValidation:
 
     def test_max_emoji_keys_enforced(self, ws_layer, alice, monkeypatch):
         # 上限常量经 chat_service 按值导入，需 patch 使用方模块的绑定
-        monkeypatch.setattr("message.chat.messaging.REACTION_MAX_EMOJI_KEYS", 2)
+        monkeypatch.setattr("message.chat.reactions.REACTION_MAX_EMOJI_KEYS", 2)
         room = chat_service.get_public_room()
         message, __ = chat_service.create_message(room, alice, "emoji 键上限")
         for emoji in ("👍", "🎉"):
@@ -290,7 +290,7 @@ class TestReactionValidation:
         assert captured == []
 
     def test_max_users_per_emoji_enforced(self, ws_layer, alice, monkeypatch):
-        monkeypatch.setattr("message.chat.messaging.REACTION_MAX_USERS_PER_EMOJI", 1)
+        monkeypatch.setattr("message.chat.reactions.REACTION_MAX_USERS_PER_EMOJI", 1)
         room = chat_service.get_public_room()
         message, __ = chat_service.create_message(room, alice, "单 emoji 用户上限")
         chat_service.toggle_reaction(alice, message.pk, "👍", "add")

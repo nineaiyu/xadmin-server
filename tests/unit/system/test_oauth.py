@@ -10,7 +10,7 @@ from django.core.cache import cache
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from audit.models.log import UserLoginLog
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from identity.models.oauth import UserOAuthBinding
 from identity.services.auth_login import complete_login
 from identity.utils.oauth import (

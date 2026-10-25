@@ -17,10 +17,10 @@ from ai.models.ai import AiKnowledgeChunk, AiKnowledgeDocument, AiProfile
 from ai.services.assistant.ai import MAX_UPLOAD_CONTENT_LENGTH, MAX_UPLOAD_NAME_LENGTH, set_document_active
 from ai.services.assistant.ai_config import outbound_allowed_hosts
 from ai.services.knowledge.doc_extract import PARSABLE_EXTENSIONS
-from common.base.utils import signer
+from common.base.crypto import signer
 from common.core.fields import DisplayRelatedField
+from common.core.response.validation import trim_required
 from common.core.serializers import BaseModelSerializer
-from common.core.validation import trim_required
 from common.utils.outbound import OutboundBlocked, validate_outbound_config_url
 
 # 名称中的路径分隔符会破坏 upload/ 前缀隔离，统一拒绝

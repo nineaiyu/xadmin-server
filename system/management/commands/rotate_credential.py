@@ -25,7 +25,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Q
 from django.utils import timezone
 
-from common.core.credentials import (
+from common.core.auth.credentials import (
     SENSITIVE_SETTING_KEYS,
     encryption_status,
     plaintext_sensitive_keys,

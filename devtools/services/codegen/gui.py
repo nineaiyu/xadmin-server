@@ -211,6 +211,9 @@ def _next_steps_artifact(content: str, suffix: str = "") -> dict[str, Any]:
         "path": Path("NEXT_STEPS.md"),
         "content": content,
         "mode": "readme",
+        # 结构化标识：前端按 kind 识别 MD 产物，不按中文 label 匹配（label 是
+        # 展示文案，可随 i18n 调整；kind 才是前后端契约）
+        "kind": "next-steps",
         "key": f"next-steps{suffix}",
     }
 
@@ -262,7 +265,9 @@ def _relative_artifacts(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]
     rows = []
     for artifact in artifacts:
         path = artifact.get("path")
-        row: dict[str, Any] = {key: artifact[key] for key in ("label", "content", "mode", "key") if key in artifact}
+        row: dict[str, Any] = {
+            key: artifact[key] for key in ("label", "content", "mode", "kind", "key") if key in artifact
+        }
         if artifact.get("notice"):
             row["notice"] = artifact["notice"]
         row["path"] = "" if path is None else _relative_path(Path(path))

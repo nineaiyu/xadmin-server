@@ -11,7 +11,7 @@ from unittest.mock import Mock
 import pytest
 from django.core.cache import cache
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from common.utils.verify_code import SendAndVerifyCodeUtil
 from identity.models import UserInfo
 from identity.views.auth.verify_code import CATEGORIES
@@ -148,9 +148,10 @@ class TestVerifyCodeConfig:
             "sms",
             "rate",
             "lifetime",
-            "reset",
-            "register",
         } <= set(data)
+        # 方式级入口可见性(reset/register)已上移到 auth/capabilities,不再随 verify 下发
+        assert "reset" not in data
+        assert "register" not in data
         # email 开关 = 业务开关 且 邮件通道可用
         assert data["email"] is True
         assert data["lifetime"] == settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].days

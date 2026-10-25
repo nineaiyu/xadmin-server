@@ -17,7 +17,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from user_agents import parse
 
 from common.core.auth import GetUserFromAccessToken
-from common.core.utils import get_doc_first_line
+from common.core.url_inventory import get_doc_first_line
 from common.settings_contract import kernel_required_setting, kernel_setting
 
 #: multipart 请求体解析上限（只解析小表单的字段名；超大请求不读正文，避免整包进内存）

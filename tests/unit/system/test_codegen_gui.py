@@ -76,6 +76,8 @@ class TestPreview:
         labels = [row["label"] for row in artifacts]
         assert "序列化器" in labels and "视图" in labels and any(label.startswith("菜单种子") for label in labels)
         assert "后续步骤" in labels  # zip 附带 NEXT_STEPS.md，预览同步可见
+        # 前端按结构化 kind 识别 MD 产物（不按中文 label 匹配），契约字段缺失会回退到字符串暗耦合
+        assert "next-steps" in [row.get("kind") for row in artifacts]
         paths = [row["path"] for row in artifacts]
         assert any(path.startswith("xadmin-server/demo/") for path in paths)
         assert any(path.startswith("xadmin-client/src/views/demo/") for path in paths)

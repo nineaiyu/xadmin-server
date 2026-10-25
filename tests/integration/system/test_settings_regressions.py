@@ -114,7 +114,11 @@ class TestSmsDefaults:
                 return None
 
         fake = SimpleNamespace(client=_Client)
-        monkeypatch.setattr("settings.views.sms.importlib.import_module", lambda *_a, **_kw: fake)
+        # 只替换 sms 视图模块里的 importlib 名字绑定：直接 patch
+        # importlib.import_module 会改到全局 stdlib 模块，补丁窗口内任何
+        # 「调用期 from importlib import import_module」的惰性导入（契约
+        # PEP 562 解析等）都会拿到 fake，首次请求懒加载中间件即 ImportError
+        monkeypatch.setattr("settings.views.sms.importlib", SimpleNamespace(import_module=lambda *_a, **_kw: fake))
         response = auth_client.post(
             "/api/settings/sms/config",
             {

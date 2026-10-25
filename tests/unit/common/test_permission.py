@@ -14,7 +14,7 @@ from common.core.permission import (
     match_permission_white_url,
     user_has_permission,
 )
-from common.core.utils import permission_path_matches
+from common.core.url_inventory import permission_path_matches
 from identity.models import UserInfo
 from system.models import Menu
 
@@ -141,7 +141,7 @@ class TestPermissionPathCompileCache:
     """编译缓存与字面量前缀剪枝：回退遍历不因 re 模块编译缓存冲刷而反复重编译。"""
 
     def test_pattern_compiled_once_across_calls(self):
-        from common.core.utils import _compile_permission_pattern
+        from common.core.url_inventory import _compile_permission_pattern
 
         pattern = "api/demo/compile-cache-probe$"
         _compile_permission_pattern.cache_clear()
@@ -153,7 +153,7 @@ class TestPermissionPathCompileCache:
         assert info.hits >= 1
 
     def test_invalid_regex_cached_as_no_match(self):
-        from common.core.utils import _compile_permission_pattern
+        from common.core.url_inventory import _compile_permission_pattern
 
         _compile_permission_pattern.cache_clear()
         assert permission_path_matches("api/demo/[", "/api/demo/book") is False
@@ -162,7 +162,7 @@ class TestPermissionPathCompileCache:
         assert info.misses == 1 and info.hits >= 1  # 坏正则结果同样入缓存
 
     def test_literal_prefix_stops_before_regex_metachar(self):
-        from common.core.utils import _compile_permission_pattern
+        from common.core.url_inventory import _compile_permission_pattern
 
         prefix, compiled = _compile_permission_pattern(r"api/identity/user/(?P<pk>[^/.]+)$")
         assert prefix == "/api/identity/user/"

@@ -16,13 +16,14 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.request import Request
 
-from common.base.utils import get_choices_dict
+from common.base.crypto import get_choices_dict
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from integrations.sdk.sms.endpoint import BACKENDS
 from settings.models import Setting
 from settings.serializers.sms import AlibabaSMSSettingSerializer, BaseSMSSettingSerializer, SMSSettingSerializer
+from settings.services import build_setting_effective
 from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__name__)
@@ -72,6 +73,10 @@ class SmsConfigViewSet(BaseSettingViewSet):
     }
     # 已注册供应商（含未收录专属字段面、回落公共字段面的渠道）均可作为 category
     category_whitelist = frozenset(value for value, _label in BACKENDS.choices)
+
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(服务开关 + 凭据完整性软提示)。"""
+        return {"effective": build_setting_effective("sms")}
 
     def get_serializer_class(self) -> Any:
         requested = self.request.query_params.get("category")
