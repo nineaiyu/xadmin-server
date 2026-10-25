@@ -686,7 +686,7 @@
    "field_type": 0,
    "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
    "name": "changes",
-   "label": "Changes"
+   "label": "变更字段"
   }
  },
  {
@@ -1677,6 +1677,81 @@
    "parent": "3b21a613-85f9-4f0c-a9ae-98371ec662b2",
    "name": "model_label",
    "label": "Source model"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "1b0549ca-712d-4092-a93f-53e1f45c764a",
+  "fields": {
+   "created_time": "2026-10-25T09:56:04.659Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
+   "name": "detail",
+   "label": "详情"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "e8655b62-491c-412b-9041-bac9f678f257",
+  "fields": {
+   "created_time": "2026-10-25T09:56:04.659Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
+   "name": "ok",
+   "label": "成功"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0cf46dfd-f3bd-420d-a251-1de4214ba95a",
+  "fields": {
+   "created_time": "2026-10-25T09:56:04.657Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
+   "name": "channel",
+   "label": "渠道"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0ead09bf-8f7a-4e1c-9de9-7706c48c2e04",
+  "fields": {
+   "created_time": "2026-10-25T09:56:04.657Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
+   "name": "tool",
+   "label": "工具"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "0243cbb3-e35d-444e-9e56-0b5c9a17ed8e",
+  "fields": {
+   "created_time": "2026-10-25T09:56:04.656Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
+   "name": "server_name",
+   "label": "服务器"
   }
  }
 ]

@@ -39,6 +39,7 @@ from ai.services.mcp.mcp_client import (
     McpClientError,
     audit_mcp_call,
     client_for,
+    daily_quota_error,
     summarize_tool_result,
 )
 from common.utils import get_logger
@@ -176,6 +177,11 @@ class McpActionSpec:
             detail = str(_("Tool {} is not in the allowed list").format(self.tool_name))
             audit_mcp_call(user, server, self.tool_name, False, detail, params, extra={"channel": "mcp_tool"})
             return {"ok": False, "detail": detail, "data": {}}
+        quota = daily_quota_error(server)
+        if quota:
+            # 服务器级日配额（与 mcp-servers/call 端点共用同一配额与计数口径）
+            audit_mcp_call(user, server, self.tool_name, False, quota, params, extra={"channel": "mcp_tool"})
+            return {"ok": False, "detail": quota, "data": {}}
         timeout = min(int(server.timeout or 30), AI_CALL_TIMEOUT_CAP)
         try:
             result = client_for(server, timeout=timeout).call_tool(self.tool_name, params)

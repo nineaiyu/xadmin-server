@@ -159,12 +159,24 @@
             "title": "接口地址",
             "type": "string"
           },
+          "AI_CODEGEN_DRAFT_ENABLED": {
+            "default": false,
+            "description": "代码生成器的自然语言字段草案：AI 给出字段覆盖建议，人工审核采纳（绝不直接写代码）",
+            "title": "AI codegen draft",
+            "type": "boolean"
+          },
           "AI_CONTEXT_LIMIT": {
             "default": 20,
             "maximum": 50,
             "minimum": 2,
             "title": "聊天上下文条数",
             "type": "integer"
+          },
+          "AI_DAILY_REPORT_ENABLED": {
+            "default": false,
+            "description": "首页每日站点摘要：聚合审批/监控/审计/AI 用量指标并经 LLM 生成摘要（定时任务，只读、不触发动作）",
+            "title": "AI 日报",
+            "type": "boolean"
           },
           "AI_FREQUENCY_PENALTY": {
             "format": "double",
@@ -4733,6 +4745,13 @@
             "title": "创建人",
             "type": "string"
           },
+          "daily_call_limit": {
+            "default": 0,
+            "maximum": 2147483647,
+            "minimum": -2147483648,
+            "title": "日调用配额",
+            "type": "integer"
+          },
           "enabled": {
             "default": true,
             "title": "启用",
@@ -7605,12 +7624,24 @@
             "title": "接口地址",
             "type": "string"
           },
+          "AI_CODEGEN_DRAFT_ENABLED": {
+            "default": false,
+            "description": "代码生成器的自然语言字段草案：AI 给出字段覆盖建议，人工审核采纳（绝不直接写代码）",
+            "title": "AI codegen draft",
+            "type": "boolean"
+          },
           "AI_CONTEXT_LIMIT": {
             "default": 20,
             "maximum": 50,
             "minimum": 2,
             "title": "聊天上下文条数",
             "type": "integer"
+          },
+          "AI_DAILY_REPORT_ENABLED": {
+            "default": false,
+            "description": "首页每日站点摘要：聚合审批/监控/审计/AI 用量指标并经 LLM 生成摘要（定时任务，只读、不触发动作）",
+            "title": "AI 日报",
+            "type": "boolean"
           },
           "AI_FREQUENCY_PENALTY": {
             "format": "double",
@@ -10263,6 +10294,13 @@
             "readOnly": true,
             "title": "创建人",
             "type": "string"
+          },
+          "daily_call_limit": {
+            "default": 0,
+            "maximum": 2147483647,
+            "minimum": -2147483648,
+            "title": "日调用配额",
+            "type": "integer"
           },
           "enabled": {
             "default": true,
@@ -17386,6 +17424,46 @@
         ]
       }
     },
+    "/api/ai/assistant/daily-report": {
+      "get": {
+        "description": "AI 日报\n\n首页日报卡数据：观测指标实时聚合 + 最近一期 LLM 摘要（缓存，无同步\nLLM 调用）；开关 AI_DAILY_REPORT_ENABLED 默认关，关闭时仅返回\n``enabled: false``。摘要由周期任务每日生成（ai/tasks.py），只读聚合、\n不触发任何写动作；权限点与 status 共用同一路径正则（见菜单种子）。",
+        "operationId": "api_ai_assistant_daily_report_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "AiAssistantViewSet"
+        ]
+      }
+    },
     "/api/ai/assistant/history": {
       "get": {
         "description": "助手页对话历史\n\n按入口（feature）分页，只返回当前用户自己的消息流\n\n契约：时间正序返回最近一页，``has_more`` 为真时用 ``before_id=最早一条 id``\n继续向上翻页（与聊天室历史同口径）。",
@@ -18927,6 +19005,574 @@
         ],
         "tags": [
           "McpEndpointAPIView"
+        ]
+      }
+    },
+    "/api/ai/mcp-call-logs": {
+      "get": {
+        "description": "调用流水列表",
+        "operationId": "api_ai_mcp_call_logs_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "created_time_after",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_time_before",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "creator",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dept_belong",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "description",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "modifier",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "MCP 服务器",
+            "in": "query",
+            "name": "object_pk",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "成功",
+            "in": "query",
+            "name": "ok",
+            "schema": {}
+          },
+          {
+            "description": "用于排序结果的字段。",
+            "in": "query",
+            "name": "ordering",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "分页结果集中的页码。",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pk",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "每页返回的结果数量。",
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "spm",
+            "schema": {}
+          },
+          {
+            "in": "query",
+            "name": "updated_time_after",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "updated_time_before",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "properties": {
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "next_cursor": {
+                          "type": "string"
+                        },
+                        "results": {
+                          "items": {
+                            "properties": {
+                              "code": {
+                                "type": "number"
+                              },
+                              "detail": {
+                                "type": "string"
+                              },
+                              "requestId": {
+                                "type": "string"
+                              },
+                              "timestamp": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "total": {
+                          "type": "number"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "McpCallLogViewSet"
+        ]
+      }
+    },
+    "/api/ai/mcp-call-logs/export-async": {
+      "post": {
+        "description": "异步导出{cls}数据",
+        "operationId": "api_ai_mcp_call_logs_export_async_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "McpCallLogViewSet"
+        ]
+      }
+    },
+    "/api/ai/mcp-call-logs/export-data": {
+      "get": {
+        "description": "导出{cls}数据\n\ntype=csv|xlsx，缺省 xlsx",
+        "operationId": "api_ai_mcp_call_logs_export_data_retrieve",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "enum": [
+                "csv",
+                "xlsx"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "McpCallLogViewSet"
+        ]
+      }
+    },
+    "/api/ai/mcp-call-logs/search-columns": {
+      "get": {
+        "description": "获取{cls}的展示字段",
+        "operationId": "api_ai_mcp_call_logs_search_columns_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "items": {
+                        "properties": {
+                          "choices": {
+                            "items": {
+                              "properties": {
+                                "label": {
+                                  "type": "string"
+                                },
+                                "pk": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "choices_truncated": {
+                            "type": "boolean"
+                          },
+                          "default": {},
+                          "help_text": {
+                            "type": "string"
+                          },
+                          "input_type": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "lookups": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "max_length": {
+                            "type": "number"
+                          },
+                          "max_value": {
+                            "type": "number"
+                          },
+                          "min_value": {
+                            "type": "number"
+                          },
+                          "multiple": {
+                            "type": "boolean"
+                          },
+                          "read_only": {
+                            "type": "boolean"
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "sortable": {
+                            "type": "boolean"
+                          },
+                          "step": {
+                            "type": "number"
+                          },
+                          "table_show": {
+                            "type": "number"
+                          },
+                          "write_only": {
+                            "type": "boolean"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "McpCallLogViewSet"
+        ]
+      }
+    },
+    "/api/ai/mcp-call-logs/search-fields": {
+      "get": {
+        "description": "获取{cls}的查询字段",
+        "operationId": "api_ai_mcp_call_logs_search_fields_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "items": {
+                        "properties": {
+                          "choices": {
+                            "items": {
+                              "properties": {
+                                "label": {
+                                  "type": "string"
+                                },
+                                "pk": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "choices_truncated": {
+                            "type": "boolean"
+                          },
+                          "default": {},
+                          "help_text": {
+                            "type": "string"
+                          },
+                          "input_type": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "McpCallLogViewSet"
+        ]
+      }
+    },
+    "/api/ai/mcp-call-logs/{id}": {
+      "get": {
+        "description": "调用详情",
+        "operationId": "api_ai_mcp_call_logs_retrieve",
+        "parameters": [
+          {
+            "description": "标识此 操作日志 的 唯一整数值。",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "McpCallLogViewSet"
         ]
       }
     },
@@ -71891,6 +72537,74 @@
         ],
         "tags": [
           "CodegenPlanViewSet"
+        ]
+      }
+    },
+    "/api/system/codegen/ai-draft": {
+      "post": {
+        "description": "AI 字段草案：自然语言 → 字段覆盖草案（服务端按字段表格同套约束过滤，人审采纳后进既有预览/下载管线）",
+        "operationId": "api_system_codegen_ai_draft_create",
+        "requestBody": {
+          "content": {
+            "properties": {
+              "schema": {
+                "description": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": {
+              "schema": {
+                "additionalProperties": {},
+                "description": "Unspecified request body",
+                "type": "object"
+              }
+            },
+            "type": {
+              "schema": {
+                "additionalProperties": {},
+                "description": "Unspecified request body",
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SystemCodeGenViewSet"
         ]
       }
     },

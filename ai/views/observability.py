@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 """AI 观测端点（自 assistant.py 拆分，URL 路径 / 权限点 / 行为不变）。
 
-含 usage（用量账本汇总：按天 / 按链路 / Top 用户 + 配额与并发占用）与
-metrics（AI 调用观测：近 N 天用量 / 成功率 / 类型分布 / Top 用户）。
-两个 action 与 status 共用同一权限点路径正则，不新增权限点。
+含 usage（用量账本汇总：按天 / 按链路 / Top 用户 + 配额与并发占用）、
+metrics（AI 调用观测：近 N 天用量 / 成功率 / 类型分布 / Top 用户）与
+daily_report（首页 AI 日报卡：观测指标实时聚合 + 最近一期 LLM 摘要）。
+三个 action 与 status 共用同一权限点路径正则，不新增权限点。
 """
 
 from typing import Any
@@ -115,3 +116,17 @@ class AiObservabilityMixin:
                 "tokens": usage_tokens_since(since),
             }
         )
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="daily-report")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def daily_report(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """AI 日报
+
+        首页日报卡数据：观测指标实时聚合 + 最近一期 LLM 摘要（缓存，无同步
+        LLM 调用）；开关 AI_DAILY_REPORT_ENABLED 默认关，关闭时仅返回
+        ``enabled: false``。摘要由周期任务每日生成（ai/tasks.py），只读聚合、
+        不触发任何写动作；权限点与 status 共用同一路径正则（见菜单种子）。
+        """
+        from ai.services.daily_report import daily_report_payload
+
+        return ApiResponse(data=daily_report_payload())

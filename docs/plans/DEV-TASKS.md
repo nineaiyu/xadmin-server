@@ -22,6 +22,42 @@
 > 2026-10-17 两条执行记录（「4.2.5 → 5.0.1 升级演练与升级通道修复」「清库重建 + 回灌全面测试与操作手册」）
 > 已归档到 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
 
+- **2026-10-25 提案候选第四批（P2 AI 日报 + P4-2 AI 字段草案 + P5 MCP 治理 + B-1 组件 Playground，均默认关/纯前端增量）**：
+  ①**P2 AI 主动日报**：`ai/services/daily_report.py` 只读聚合（审批待办 / 监控 firing /
+  24h 异常请求 / 任务失败 / AI 用量——单指标失败按 0 兜底不拖垮整份）→ `structured_chat_client +
+  tracked_chat`（feature=新增 `daily`，不落会话表）→ 缓存 48h；周期任务 `ai_daily_report_job`
+  （07:31，module=ai，开关关时空转）；端点 `GET /api/ai/assistant/daily-report`（指标实时聚合 +
+  摘要走缓存，请求路径零同步 LLM；权限点并入 status 正则）+ welcome 新卡（指标芯片异常着色、
+  点击直达对应页面，fetcher 静默降级、无权限不发请求）；开关 `AI_DAILY_REPORT_ENABLED` 默认关。
+  ②**P4 第二阶段 AI 字段草案**：`devtools/services/codegen/ai_draft.py`——自然语言 →
+  `CodegenFieldOverride[]` 草案，与 GUI 字段表格同套约束逐项过滤（未知字段/非法 input_type/
+  字典绑定与字段类互斥等非法项剥成 warnings 而非整体拒绝，pk 不可排除）；模型字段目录经
+  `annotate_reference` 注入防护；端点 `POST /api/system/codegen/ai-draft`（权限点
+  `aiDraft:SystemCodeGen`）+ 前端两段式人审弹窗（逐项勾选采纳 → 合并进字段表走既有
+  preview/download 管线，AI 不直写代码）；`AiUsageRecord.Feature` 增 `daily`/`codegen`（合并迁移
+  0004）；开关 `AI_CODEGEN_DRAFT_ENABLED` 默认关。
+  ③**P5 MCP 工具治理**：服务器级日配额 `McpServer.daily_call_limit`（0=不限，迁移 0005）——
+  计数源=审计流水（`OperationLog` module=AI:mcp:client 当日行数，拒绝行同样计入），
+  `daily_quota_error` 收敛两处拦截（管理面 call + AI 动作链路 McpActionSpec.execute，TOCTOU
+  后白名单后置）；审计报表 `McpCallLogViewSet`（预过滤 module，只读+详情+导出、无删除端点，
+  server/tool/channel/result 从 changes JSON 提取，权限面独立 `list/retrieve/exportAsync/
+  exportData:McpCallLog` 挂 AiMcpServers 页）+ 行级「调用记录」抽屉（结果过滤/分页/渠道翻译）。
+  ④**B-1 组件 Playground**：静态路由组 `/playground`（showLink=false，二开者从手册进入，
+  无需权限点、不撞 entry-closure/bundle-size）+ 43 组件注册表 `registry.ts`（分组/用途一句话/
+  样例归属）+ 索引页（分组浏览+搜索）+ 三张 demo 页（展示/布局/输入，16 组件活样例 + props
+  速查取自各组件真实类型定义）；`src/components/README.md` 漂移修复（7 组件补登记、删已不存在的
+  ReAuth）；vitest 守护：注册表 ↔ README 分组表名字集合一致、demo 页引用组件全部已注册。
+  **同批框架修复**：`get_view_permissions` 对纯 `viewsets.ViewSet + @action`（无 queryset 的
+  非 GenericViewSet，如代码生成器）动态路由 mapping 由 get_urls 期才装配——新增「URL 名→动作
+  函数名」分支，动作标题取自 action docstring（此前回退成视图名字符串，会被菜单 i18n 守护拦下），
+  回归测试落 `test_menu_utils`；连带发现上一批遗留 `settings→notifications.backends` 模块级
+  import 违例，改函数级惰性导入（`check_cross_app_imports` 复绿）。
+  **验证**：后端全量 PYTEST_EXIT=0（7014 passed / 2 skipped，真实退出码）；ruff format/check、
+  mypy 1001 文件 0 错、脚本门禁 11 件、`makemigrations --check` 无漂移、`load_init_json --check`
+  0 error；E2E fresh（dashboard 4 + ai 5 + mcp 2）11 例全过；前端 vitest 422 文件 / 2751 例、
+  typecheck/lint/i18n/contract 等 check:* 11 项全绿；容器重启 + 容器内实测三端点（超管 200 /
+  未授权角色 403 / 开关关只回 enabled=false）；种子基线 菜单 724→729、字段 2134→2141、
+  权限点 648→653（新增 5 权限点：aiDraft + McpCallLog×4，无法归属 0）。
 - **2026-10-25 第三批：T4 仪表盘编辑态拆分 + T11 生成器同源收口（client `2d10b12d` / server 本批）**：
   ①**T4（client `2d10b12d`）**：`DashboardToolbar`（工具栏整体：选择器 + 编辑/浏览按钮组 +
   自动刷新 v-model）与 `CardHeaderActions`（卡片头按钮组按 editing 分支）组件化，下钻状态机

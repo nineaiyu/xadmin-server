@@ -3252,5 +3252,28 @@
    "method": "DELETE",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "6772ff16-35cd-4b3c-80db-4a9f8676ce99",
+  "fields": {
+   "created_time": "2026-10-25T10:09:46.230Z",
+   "updated_time": "2026-10-25T10:09:46.230Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "402ae34b-1d96-5e11-8c1f-3328f3ecae9f",
+   "menu_type": 2,
+   "name": "aiDraft:SystemCodeGen",
+   "rank": 10000,
+   "path": "api/system/codegen/ai-draft$",
+   "component": null,
+   "is_active": true,
+   "meta": "9a1ef015-1691-46eb-a8de-7ff4e22b7f9a",
+   "method": "POST",
+   "model": []
+  }
  }
 ]

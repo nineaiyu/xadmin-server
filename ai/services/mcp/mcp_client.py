@@ -37,6 +37,8 @@ MAX_BODY_BYTES = 2 * 1024 * 1024
 RESULT_TEXT_LIMIT = 4000
 #: 工具调用参数 JSON 体积上限（AI 动作链路与 mcp-servers/call 端点同一口径）
 MAX_ARGUMENTS_BYTES = 32 * 1024
+#: MCP client 侧调用审计的 module 名（审计报表与配额计数共用同一口径）
+MCP_AUDIT_MODULE = "AI:mcp:client"
 
 # ---------------------------------------------------------------------------
 # 快照 input_schema 有界化（快照要喂给 LLM 工具目录，必须收敛体积与形态）
@@ -422,6 +424,32 @@ def tools_with_callable(server: Any, tools: Any) -> list[Any]:
     return rows
 
 
+def daily_quota_error(server: Any) -> str:
+    """服务器级日调用配额：超限返回可读拒绝文案（空串 = 放行）。
+
+    计数源 = 审计流水（``OperationLog`` module=AI:mcp:client、object_pk=server.pk
+    的当日行数）——与 ``audit_mcp_call`` 同一落点，成功与被拒的调用都计数，
+    Redis 重启不丢配额口径；配额为 0（缺省不限）时零查询成本直接放行。
+    管理面直调（mcp-servers/call）与 AI 动作链路（McpActionSpec.execute）
+    共用本函数，两条入口同一配额。
+    """
+    limit = int(getattr(server, "daily_call_limit", 0) or 0)
+    if limit <= 0:
+        return ""
+    from django.utils import timezone
+
+    from audit.services import OperationLog
+
+    used = OperationLog.objects.filter(
+        module=MCP_AUDIT_MODULE,
+        object_pk=str(getattr(server, "pk", "")),
+        created_time__date=timezone.localdate(),
+    ).count()
+    if used >= limit:
+        return str(_("MCP daily call quota reached ({}/{}); it resets tomorrow").format(used, limit))
+    return ""
+
+
 def audit_mcp_call(
     user: Any,
     server: Any,
@@ -443,8 +471,9 @@ def audit_mcp_call(
     logger = logging.getLogger(__name__)
     try:
         OperationLog.objects.create(
-            module="AI:mcp:client",
+            module=MCP_AUDIT_MODULE,
             object_pk=str(getattr(server, "pk", "")),
+            creator=user if getattr(user, "pk", None) else None,
             auth_type=OperationLog.AuthType.AI,
             status_code=API_SUCCESS_CODE if ok else 1001,
             response_code=API_SUCCESS_CODE if ok else 1001,

@@ -200,6 +200,8 @@ FORWARD_KEYS = [
     "AI_NL_QUERY_ENABLED",
     # 灰度开关：不转发则 config.yml 里配置不生效（只能靠 Setting 表热更新注入）
     "AI_ACTION_ENABLED",
+    "AI_DAILY_REPORT_ENABLED",
+    "AI_CODEGEN_DRAFT_ENABLED",
     # AI 采样/行为参数（多档案回落通路）
     "AI_TEMPERATURE",
     "AI_MAX_TOKENS",

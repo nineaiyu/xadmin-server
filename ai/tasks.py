@@ -21,6 +21,15 @@ def auto_clean_ai_usage_job() -> None:
     auto_clean_ai_usage()
 
 
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(crontab="31 7 * * *", module="ai")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def ai_daily_report_job() -> None:
+    """AI 日报定时生成（首页日报卡；开关关闭时空转）。"""
+    from ai.services.daily_report import generate_daily_report
+
+    generate_daily_report()
+
+
 @shared_task(bind=True, verbose_name="Build knowledge embeddings")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def build_embeddings_task(self: Any, document_pk: Any = "", force: bool = False) -> Any:
     """异步构建知识库向量（7.3）：进度经缓存通道上报，供知识库页轮询。

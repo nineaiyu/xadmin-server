@@ -60,6 +60,7 @@ class McpServerSerializer(BaseModelSerializer):
             "allowed_tools",
             "enabled",
             "expose_to_ai",
+            "daily_call_limit",
             "tools_snapshot",
             "tools_count",
             "last_synced_time",
@@ -118,6 +119,16 @@ class McpServerSerializer(BaseModelSerializer):
         if not 5 <= timeout <= 120:
             raise serializers.ValidationError(_("Timeout must be between 5 and 120 seconds"))
         return timeout
+
+    def validate_daily_call_limit(self, value: Any) -> Any:
+        # 0 = 不限（缺省）；配额是治理护栏不是限流器，上限给到宽裕的六位数
+        try:
+            limit = int(value or 0)
+        except (TypeError, ValueError):
+            raise serializers.ValidationError(_("Daily call limit must be an integer between 0 and 999999")) from None
+        if not 0 <= limit <= 999999:
+            raise serializers.ValidationError(_("Daily call limit must be between 0 and 999999"))
+        return limit
 
     def validate_auth_header(self, value: Any) -> Any:
         header = (value or "").strip()

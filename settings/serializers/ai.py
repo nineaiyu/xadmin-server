@@ -57,6 +57,22 @@ class AiAssistantSettingSerializer(SettingSaveContractMixin, serializers.Seriali
             "Enable AI action drafts (whitelisted actions executed as the current user after confirmation, audited)"
         ),
     )
+    AI_DAILY_REPORT_ENABLED = serializers.BooleanField(
+        default=False,
+        label=_("AI daily report"),
+        help_text=_(
+            "Daily site digest on the welcome page: aggregate approval/monitor/audit/AI usage metrics "
+            "and summarize via LLM (scheduled task, read-only, no actions)"
+        ),
+    )
+    AI_CODEGEN_DRAFT_ENABLED = serializers.BooleanField(
+        default=False,
+        label=_("AI codegen draft"),
+        help_text=_(
+            "Natural-language field draft in the code generator: AI proposes field overrides for "
+            "human review (never writes code directly)"
+        ),
+    )
     # 采样/行为参数（回落通路；与 AiProfile 档案字段同义）
     AI_TEMPERATURE = serializers.FloatField(
         required=False,

@@ -97,6 +97,18 @@ def get_view_permissions(view_string: Any, code_suffix: Any = "") -> Any:
             except Exception as e:
                 logger.error(f"get_related_models {view_set} failed {e}", exc_info=True)
                 pass
+        elif hasattr(view_set, "get_extra_actions") and view_set.get_extra_actions():
+            # 纯 viewsets.ViewSet + @action（无 queryset 的非 GenericViewSet，如代码生成器）：
+            # 动态路由的 mapping 由 router.get_urls 期才装配，这里按
+            # 「URL 名（basename-url_path）→ 动作函数名」自建方法面，
+            # 保证动作标题取自 action docstring，而非回退成视图名字符串
+            is_view_set = False
+            route_info = {
+                f"{basename}-{extra.url_path.replace('_', '-')}": {
+                    method.lower(): extra.__name__ for method in extra.mapping
+                }
+                for extra in view_set.get_extra_actions()
+            }
         else:
             is_view_set = False
             route_mapping = no_detail_router.routes[0].mapping
@@ -117,7 +129,9 @@ def get_view_permissions(view_string: Any, code_suffix: Any = "") -> Any:
             if is_view_set and method.lower() == "put":  # 忽略view set的put请求，使用patch请求
                 continue
             try:
-                action_doc = get_doc_first_line(getattr(view_set, func_name if is_view_set else method).__doc__)
+                # func_name 恒为函数名（ViewSet 分支来自路由 mapping；APIView 分支
+                # 即 HTTP 方法名本身，同样是视图的方法属性），docstring 首行即标题
+                action_doc = get_doc_first_line(getattr(view_set, func_name).__doc__)
             except Exception as e:
                 logger.warning(f"Exception while getting action doc for {view_string}: {e}")
                 continue

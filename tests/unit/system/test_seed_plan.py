@@ -242,10 +242,11 @@ class TestValidate:
         # 通知全读：菜单 +6（并移除重复 batchUpdate 权限点）、权限点 +6
         # 2026-10 开放平台设置页：菜单 +11（1 页面 + 10 权限点）、权限点 +10
         # 2026-10 Webhook 通知渠道权限点（归属 SettingMessage）：菜单 +3、权限点 +3
-        assert summary.totals["menu"] == 724
-        assert summary.totals["field"] == 2134
+        # 2026-10 AI 日报/字段草案 + MCP 调用审计报表：菜单 +5、权限点 +5；字段 +7
+        assert summary.totals["menu"] == 729
+        assert summary.totals["field"] == 2141
         assert summary.totals["grant"] == 253
-        assert summary.permission_total == 648
+        assert summary.permission_total == 653
 
 
 class TestRows:

@@ -27,6 +27,7 @@ from ai.services.mcp.mcp_client import (
     McpClientError,
     audit_mcp_call,
     client_for,
+    daily_quota_error,
     summarize_tool_result,
     tools_with_callable,
 )
@@ -137,6 +138,11 @@ class McpServerViewSet(
         if tool not in server.tool_names:
             audit_mcp_call(request.user, server, tool, False, "tool is not in the allowed list", arguments)
             return ApiResponse(code=1001, detail=_("Tool {} is not in the allowed list").format(tool))
+        quota = daily_quota_error(server)
+        if quota:
+            # 配额拒绝也落审计（计数即审计流水，拒绝行同样计入当日用量）
+            audit_mcp_call(request.user, server, tool, False, quota, arguments)
+            return ApiResponse(code=1001, detail=quota)
         try:
             result = client_for(server).call_tool(tool, arguments)
         except McpClientError as exc:

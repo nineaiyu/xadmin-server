@@ -110,6 +110,7 @@ class TestMigrationParity:
             "api/settings/scim": ("ScimSetting", "SettingOpenPlatform"),
             "api/settings/oauth/providers": ("OAuthProviderSetting", "SettingOpenPlatform"),
             "api/settings/notify/webhook": ("WebhookNotifySetting", "SettingMessage"),
+            "api/ai/mcp-call-logs": ("McpCallLog", "AiMcpServers"),
             "api/identity/authorized-applications": ("AuthorizedApplication", "SettingOpenPlatform"),
         }
 

@@ -409,6 +409,44 @@ class TestDownload:
         assert "python manage.py doctor" in content
 
 
+class TestAiDraft:
+    """AI 字段草案端点：服务层打桩（LLM 不真连），验门禁与透传契约。"""
+
+    def test_missing_description_rejected(self, superuser):
+        response = _post(superuser, "ai_draft", {"model": "demo.Book"})
+        assert response.data["code"] == 1001
+
+    def test_disabled_returns_readable_error(self, superuser, monkeypatch):
+        from devtools.services.codegen import ai_draft as codegen_ai_draft
+
+        def _boom(user, label, description):
+            raise codegen_gui.CodegenError("AI field draft is disabled")
+
+        monkeypatch.setattr(codegen_ai_draft, "generate_ai_draft", _boom)
+        response = _post(superuser, "ai_draft", {"model": "demo.Book", "description": "书籍页"})
+        assert response.data["code"] == 1001
+        assert "disabled" in response.data["detail"]
+
+    def test_draft_result_passthrough(self, superuser, monkeypatch):
+        from devtools.services.codegen import ai_draft as codegen_ai_draft
+
+        def _fake(user, label, description):
+            return {
+                "model": label,
+                "summary": "草案就绪",
+                "warnings": ["status: unknown dict code x dropped"],
+                "fields": [{"name": "name", "label": "书名", "required": True}],
+            }
+
+        monkeypatch.setattr(codegen_ai_draft, "generate_ai_draft", _fake)
+        response = _post(superuser, "ai_draft", {"model": "demo.Book", "description": "书籍页"})
+        assert response.status_code == 200
+        data = response.data["data"]
+        assert data["model"] == "demo.Book"
+        assert data["fields"][0]["label"] == "书名"
+        assert len(data["warnings"]) == 1
+
+
 class TestBatchDownload:
     """批量多模型打包：共享选项 + 逐模型默认字段计划 + 合并 NEXT_STEPS.md。"""
 

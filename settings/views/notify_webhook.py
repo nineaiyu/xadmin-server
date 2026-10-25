@@ -15,7 +15,6 @@ from rest_framework.request import Request
 
 from common.core.response import ApiResponse
 from common.utils import get_logger
-from notifications.backends.webhook import DELIVER_TIMEOUT, sign_webhook_payload
 from settings.serializers.notify_webhook import WebhookNotifySettingSerializer
 from settings.utils.test_connection import build_test_values
 from settings.views.settings import BaseSettingViewSet
@@ -29,6 +28,7 @@ _SECRET_KEYS = {"WEBHOOK_SECRET"}
 def _test_delivery(url: str, secret: str) -> str:
     """按生效配置投递一条测试载荷：返回可直接展示的结果文本。"""
     from common.utils.outbound import OutboundBlocked, pinned_request
+    from notifications.backends.webhook import DELIVER_TIMEOUT, sign_webhook_payload
     from task.services import outbound_allowed_hosts
 
     body = b'{"subject": "webhook notification test", "message": "This is a test delivery from xadmin", "users": []}'

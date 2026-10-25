@@ -211,6 +211,8 @@ class AiUsageRecord(DbAuditModel, DbUuidModel):
         NL = "nl", _("NL query")
         ACTION = "action", _("Action execution")
         EMBEDDING = "embedding", _("Knowledge embedding")
+        DAILY = "daily", _("AI daily report")
+        CODEGEN = "codegen", _("Codegen field draft")
 
     class Track(models.TextChoices):
         """草稿链路轨道（双轨对照）：原生 function calling / prompt-JSON。"""

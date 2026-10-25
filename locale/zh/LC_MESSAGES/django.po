@@ -12678,3 +12678,132 @@ msgstr "端点返回 HTTP {}"
 #: settings/views/notify_webhook.py
 msgid "Test delivery delivered to the endpoint, please check"
 msgstr "测试投递已送达端点，请查收"
+
+#: ai/models/ai.py ai/migrations/0004_alter_aiusagerecord_feature.py
+#: settings/serializers/ai.py
+msgid "AI daily report"
+msgstr "AI 日报"
+
+#: settings/serializers/ai.py
+msgid ""
+"Daily site digest on the welcome page: aggregate approval/monitor/audit/AI "
+"usage metrics and summarize via LLM (scheduled task, read-only, no actions)"
+msgstr ""
+"首页每日站点摘要：聚合审批/监控/审计/AI 用量指标并经 LLM 生成摘要（定时任务"
+"，只读、不触发动作）"
+
+#: ai/models/ai.py ai/migrations/0004_alter_aiusagerecord_feature.py
+#: settings/serializers/ai.py
+msgid "Codegen field draft"
+msgstr "生成器字段草案"
+
+#: settings/serializers/ai.py
+msgid ""
+"Natural-language field draft in the code generator: AI proposes field "
+"overrides for human review (never writes code directly)"
+msgstr "代码生成器的自然语言字段草案：AI 给出字段覆盖建议，人工审核采纳（绝不直接写代码）"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "AI draft is not valid JSON: {}"
+msgstr "AI 草案不是合法 JSON：{}"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "AI draft must contain a fields array"
+msgstr "AI 草案必须包含 fields 数组"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "Skipped a non-object draft entry"
+msgstr "已跳过非对象形态的草案条目"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "Unknown field skipped: {name}"
+msgstr "已跳过未知字段：{name}"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "Duplicate field config skipped: {name}"
+msgstr "已跳过重复的字段配置：{name}"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "pk cannot be excluded; flag dropped"
+msgstr "主键 pk 不可排除，已丢弃该标记"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "{name}: input_type only applies to relation fields; dropped"
+msgstr "{name}：input_type 仅适用于关联字段，已丢弃"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "{name}: invalid input_type {value} dropped"
+msgstr "{name}：非法 input_type「{value}」已丢弃"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "{name}: dict bind only applies to non-relation fields; dropped"
+msgstr "{name}：字典绑定仅适用于非关联字段，已丢弃"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "{name}: field_class only applies to non-relation fields; dropped"
+msgstr "{name}：字段类仅适用于非关联字段，已丢弃"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "{name}: unknown dict code {value} dropped"
+msgstr "{name}：未知字典编码「{value}」已丢弃"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "{name}: unknown field class {value} dropped"
+msgstr "{name}：未知字段类「{value}」已丢弃"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "{name}: dict_code and field_class are exclusive; field_class dropped"
+msgstr "{name}：字典绑定与字段类互斥，已丢弃字段类"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "Draft truncated to {count} fields"
+msgstr "草案已截断为 {count} 个字段"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "AI field draft is disabled (enable it on the AI settings page)"
+msgstr "AI 字段草案未启用（请在 AI 配置页开启）"
+
+#: devtools/services/codegen/ai_draft.py system/views/admin/codegen.py
+msgid "Description is required"
+msgstr "描述不能为空"
+
+#: devtools/services/codegen/ai_draft.py
+msgid "AI provider is not configured"
+msgstr "AI 供应商未配置"
+
+#: system/views/admin/codegen.py
+msgid "AI draft failed, please retry"
+msgstr "AI 草案生成失败，请重试"
+
+#: ai/models/mcp.py ai/serializers/mcp.py ai/views/mcp_audit.py
+msgid "Daily call limit"
+msgstr "日调用配额"
+
+#: ai/services/mcp/mcp_client.py
+msgid "MCP daily call quota reached ({}/{}); it resets tomorrow"
+msgstr "MCP 日调用配额已达上限（{}/{}），明天重置"
+
+#: ai/serializers/mcp.py
+msgid "Daily call limit must be an integer between 0 and 999999"
+msgstr "日调用配额必须是 0~999999 的整数"
+
+#: ai/serializers/mcp.py
+msgid "Daily call limit must be between 0 and 999999"
+msgstr "日调用配额须在 0~999999 之间"
+
+#: ai/serializers/mcp_audit.py
+msgid "Server"
+msgstr "服务器"
+
+#: ai/serializers/mcp_audit.py
+msgid "Tool"
+msgstr "工具"
+
+#: ai/serializers/mcp_audit.py
+msgid "Channel"
+msgstr "渠道"
+
+#: ai/views/mcp_audit.py
+msgid "MCP server"
+msgstr "MCP 服务器"
+
