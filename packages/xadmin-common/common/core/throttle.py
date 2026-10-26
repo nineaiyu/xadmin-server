@@ -114,6 +114,18 @@ class TempTokenThrottle(IpScopedThrottle):
     scope = "temp_token"
 
 
+class CaptchaChallengeThrottle(IpScopedThrottle):
+    """交互式验证码出题限流：每次请求生成底图并写缓存，按 IP 收敛刷题。"""
+
+    scope = "captcha_challenge"
+
+
+class CaptchaVerifyThrottle(IpScopedThrottle):
+    """交互式验证码校验限流：按 IP 收敛坐标枚举与缓存读写风暴。"""
+
+    scope = "captcha_verify"
+
+
 class UploadThrottle(UserRateThrottle):
     """上传速率限制"""
 

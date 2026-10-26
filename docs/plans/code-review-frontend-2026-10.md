@@ -182,7 +182,7 @@ C 级待验证 6 项记 §7。**框架级发现 1 项升级**：fe-sys-P2-01（�
 2. **playground 中文口径**：fe-E-04「用户可见 1 处」与 other 分册「registry 42 处」的豁免范围需维护者确认（§6.4）。
 3. **视觉/暗色实渲染**：全部暗色与布局结论为静态核对（令牌链路完整），实际渲染效果待视觉基线（`pnpm test:e2e:visual`）。
 4. **体积当前值**：本轮按铁律未 build，引用的是 2026-10-20 基线；当前工作区体积待下次构建取值。
-5. **a11y 全量**：axe E2E 覆盖 9 场景，未覆盖页面的实际可达性待扩面。
+5. **a11y 全量**：axe E2E 已扩至 12 场景（含表单设计器实时预览、元数据密集弹窗），未覆盖页面的实际可达性仍按滚动口径继续扩面。
 6. **审查期间并行窗口**：client 工作区存在未提交改动且审查期间持续变化（hook-length 红灯在会话内被修复即为例证）——各结论以对应文件被读取时点为准，提交前建议以最终工作区复跑 `pnpm lint && pnpm typecheck && for g in … do pnpm check:$g; done` 全量门禁。
 
 ## 8. 整改执行状态（2026-10-26）
@@ -190,7 +190,9 @@ C 级待验证 6 项记 §7。**框架级发现 1 项升级**：fe-sys-P2-01（�
 | 编号 | 状态 | 落地内容 / 证据 |
 |---|---|---|
 | fe-sys-P2-01 + fe-F-01 | ✅ | RePlusPage 新增 `PageState`（denied/error+retry）与 `statePolicy`（默认 framework）；错误原因由请求层 `loadError` 提供；全站列表页不再「无权限整页空白 / 失败只剩空表」 |
-| fe-C-01 | ✅ | `check:overlays` 基线门禁（21 文件，只减不增）+ `handbook-frontend` 弹层判定 |
+| fe-C-01 | ✅ | `check:overlays` 基线门禁（21 文件，只减不增）+ `handbook-frontend` 弹层判定；后续收口：声明式壳 `OverlayDialog` / `OverlayDrawer`，视图/封装层 19 处内联弹层迁移，基线降至 4（仅内核壳体） |
+| fe-other-E-01 | ✅ | 设计器新增「设计 / 预览」页签：预览复用填报组件消费当前未保存 schema（字段、选项、联动求值实时生效，不可提交）；E2E 覆盖未保存行内改动与联动隐藏/动态必填 |
+| fe-F-03 | ✅ | a11y E2E 扩面到表单设计器（设计 + 实时预览）与用户新增弹窗（10 → 12 场景）；修复字段表行内控件可访问名与空态/占位/字数统计/plain 按钮对比度；双浏览器 24 例全绿 |
 | fe-C-02 | ✅ | 新增 `useMessageBox`（`usePrompt` / `useAlert` / `closeMessageBox`）；15 处 prompt/alert 已迁移（模板/设计器/审批/账号/开放平台/调度引用等），视图层直用清零；保留三态 confirm 例外 |
 | fe-C-03 | ✅ | `components/README.md` §七：emit camelCase、`defineModel` 统一、弹层/确认选型 |
 | fe-C-04 | ✅ | 补 DataTable / ReReadonlyTable / ReMfaConfirm（并发 412 去重与取消）单测 |
@@ -231,5 +233,5 @@ C 级待验证 6 项记 §7。**框架级发现 1 项升级**：fe-sys-P2-01（�
 | fe-E-04 | ✅ | playground 42 条 description 全部入 i18n（zh/en 对称），不再保留中文硬编码 |
 | arch §4 插件渠道 | ✅ | `notification-channels.md` §七登记运行期扩展边界（枚举外 code 不可注册）；既有 fail-fast 守护测试覆盖 |
 
-> 本轮验证：前端 vitest **437 文件 / 2831 例**、typecheck/lint、23 项 `check:*` + 行数/hook 门禁全绿；E2E codegen/system-pages/chat/dashboard/ai 双浏览器 **39 + 38 通过**（WebKit chat 上传首轮 flaky、隔离复跑 5/5 通过，按负载瞬态处理）。
-> 仍维持触发制/视觉待核：fe-other-E-01 设计器实时预览（增强项）、fe-sys-E-03 / E-05（C 级视觉）、fe-F-03（a11y 滚动扩面）。
+> 本轮验证：前端 vitest **437 文件 / 2831 例**、typecheck/lint、23 项 `check:*` + 行数/hook 门禁全绿；E2E codegen/system-pages/chat/dashboard/ai 双浏览器 **39 + 38 通过**（WebKit chat 上传首轮 flaky、隔离复跑 5/5 通过，按负载瞬态处理）；dform-data / dform-depth 双浏览器各 **7 例**通过。
+> 仍维持触发制/视觉待核：fe-sys-E-03 / E-05（C 级视觉）。fe-other-E-01（设计器实时预览）与 fe-F-03（a11y 扩面）已于 2026-10-26 交付。

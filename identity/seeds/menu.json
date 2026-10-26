@@ -2512,7 +2512,7 @@
    "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
    "menu_type": 1,
    "name": "SystemLoginPolicy",
-   "rank": 911,
+   "rank": 201,
    "path": "/settings/login-policy/index",
    "component": "settings/login-policy/index",
    "is_active": true,

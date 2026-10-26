@@ -38,6 +38,10 @@ class SmsSettingViewSet(BaseSettingViewSet):
     serializer_class = SMSSettingSerializer
     category = "sms"
 
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(服务开关 + 凭据完整性软提示)。"""
+        return {"effective": build_setting_effective("sms")}
+
     @extend_schema(
         parameters=None,
         responses=get_default_response_schema(
@@ -73,10 +77,6 @@ class SmsConfigViewSet(BaseSettingViewSet):
     }
     # 已注册供应商（含未收录专属字段面、回落公共字段面的渠道）均可作为 category
     category_whitelist = frozenset(value for value, _label in BACKENDS.choices)
-
-    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
-        """附加「实际生效状态」诊断(服务开关 + 凭据完整性软提示)。"""
-        return {"effective": build_setting_effective("sms")}
 
     def get_serializer_class(self) -> Any:
         requested = self.request.query_params.get("category")

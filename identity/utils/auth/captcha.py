@@ -10,12 +10,14 @@
 
 from typing import Any
 
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
 
-from captcha.services import CaptchaAuth
+from captcha.const import CAPTCHA_MODE_INTERACTIVE, current_captcha_mode
+from captcha.contracts import CaptchaAuth, InteractiveCaptcha, captcha_globally_enabled
 from common.base.crypto import AESCipherV2
-from common.utils.request import get_request_ident
+from common.utils.request import get_request_ident, get_request_ip
 from common.utils.token import verify_token_cache
 
 
@@ -25,8 +27,29 @@ class ValidateError(APIException):
     status_code = 400
 
 
-def check_captcha(need: Any, captcha_key: Any, captcha_code: Any) -> Any:
-    if not need or (captcha_key and CaptchaAuth(captcha_key=captcha_key).valid(captcha_code)):
+def check_captcha(
+    need: Any,
+    captcha_key: Any,
+    captcha_code: Any,
+    captcha_ticket: Any = None,
+    scene: str = "login",
+    request: Any = None,
+) -> Any:
+    """按当前模式校验人机凭据：图片码（key+code）或交互式 ticket，二选一。"""
+    if not need or not captcha_globally_enabled():
+        return True
+    if current_captcha_mode() == CAPTCHA_MODE_INTERACTIVE:
+        ip = get_request_ip(request) if request is not None else ""
+        if captcha_ticket and InteractiveCaptcha().consume_ticket(str(captcha_ticket), scene, ip=ip):
+            return True
+        # 无障碍回退：显式开启后图片码仍可通过（默认关闭，避免 OCR 绕过交互式题型）
+        if (
+            getattr(settings, "CAPTCHA_IMAGE_FALLBACK_ENABLED", False)
+            and captcha_key
+            and CaptchaAuth(captcha_key=captcha_key).valid(captcha_code)
+        ):
+            return True
+    elif captcha_key and CaptchaAuth(captcha_key=captcha_key).valid(captcha_code):
         return True
     raise ValidateError(_("Captcha validation failed. Please try again"))
 
@@ -37,14 +60,17 @@ def check_tmp_token(need: Any, token: Any, client_id: Any, success_once: Any = T
     raise ValidateError(_("Temporary Token validation failed. Please try again"))
 
 
-def check_token_and_captcha(request: Any, token_enable: Any, captcha_enable: Any, success_once: Any = True) -> Any:
+def check_token_and_captcha(
+    request: Any, token_enable: Any, captcha_enable: Any, success_once: Any = True, scene: str = "login"
+) -> Any:
     client_id = get_request_ident(request)
     token = request.data.get("token")
     captcha_key = request.data.get("captcha_key")
     captcha_code = request.data.get("captcha_code")
+    captcha_ticket = request.data.get("captcha_ticket")
 
     check_tmp_token(token_enable, token, client_id, success_once)
-    check_captcha(captcha_enable, captcha_key, captcha_code)
+    check_captcha(captcha_enable, captcha_key, captcha_code, captcha_ticket, scene=scene, request=request)
     return client_id, token
 
 

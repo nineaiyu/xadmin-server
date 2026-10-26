@@ -7,11 +7,26 @@
 
 from typing import Any
 
+from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework.decorators import action
+
+from captcha.contracts import (
+    CaptchaInvalidError,
+    preview_image_captcha,
+    preview_interactive_challenge,
+)
+from common.core.response import ApiResponse
 from common.utils import get_logger
 from settings.serializers.security import (
+    CaptchaImagePreviewResponseSerializer,
+    CaptchaInteractivePreviewInSerializer,
+    CaptchaInteractivePreviewResponseSerializer,
     SecurityBindEmailAuthSerializer,
     SecurityBindPhoneAuthSerializer,
     SecurityCaptchaCodeSerializer,
+    SecurityCaptchaGeneralSerializer,
+    SecurityCaptchaInteractiveSerializer,
     SecurityLoginAuthSerializer,
     SecurityLoginLimitSerializer,
     SecurityMFASerializer,
@@ -103,11 +118,54 @@ class SecurityVerifyCodeViewSet(BaseSettingViewSet):
     category = "verify"
 
 
+class SecurityCaptchaGeneralViewSet(BaseSettingViewSet):
+    """验证码总配置"""
+
+    serializer_class = SecurityCaptchaGeneralSerializer
+    category = "captcha_general"
+
+
 class SecurityCaptchaCodeViewSet(BaseSettingViewSet):
     """图片验证码"""
 
     serializer_class = SecurityCaptchaCodeSerializer
     category = "captcha"
+
+    @extend_schema(
+        request=None,
+        responses={200: OpenApiResponse(response=CaptchaImagePreviewResponseSerializer)},
+    )
+    @action(detail=False, methods=["post"], url_path="preview")  # type: ignore[untyped-decorator]
+    def preview(self, request: Any) -> Any:
+        """预览图片验证码"""
+        return ApiResponse(data=preview_image_captcha())
+
+
+class SecurityCaptchaInteractiveViewSet(BaseSettingViewSet):
+    """交互式验证码"""
+
+    serializer_class = SecurityCaptchaInteractiveSerializer
+    category = "captcha_interactive"
+
+    @extend_schema(
+        request=CaptchaInteractivePreviewInSerializer,
+        responses={200: OpenApiResponse(response=CaptchaInteractivePreviewResponseSerializer)},
+    )
+    @action(detail=False, methods=["post"], url_path="preview")  # type: ignore[untyped-decorator]
+    def preview(self, request: Any) -> Any:
+        """预览交互式验证码"""
+        serializer = CaptchaInteractivePreviewInSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        captcha_type = str(serializer.validated_data.get("type") or "").strip()
+        try:
+            data = preview_interactive_challenge(captcha_type)
+        except CaptchaInvalidError:
+            return ApiResponse(
+                code=1004,
+                status=400,
+                detail=_("Operation failed. Abnormal data"),
+            )
+        return ApiResponse(data=data)
 
 
 class SecurityMFAViewSet(BaseSettingViewSet):

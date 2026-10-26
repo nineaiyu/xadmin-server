@@ -124,3 +124,20 @@ sum by (cache) (rate(xadmin_cache_requests_total{result="hit"}[5m]))
 **登记项（独立最小改动）**：`MagicCacheResponse` 读/锁/写三处 `try → 直渲`（读缓存是优化、
 不是正确性要求），配套 +1 守护测试；待后续窗口单独实施，避免与本轮指标接入混提。
 另登记观察项：授权池版本切换瞬间无锁保护，若监控（`xadmin_cache_requests_total` 回源率）见尖峰再评估。
+
+
+## 十、交互式验证码挑战缓存（2026-10-26）
+
+挑战 / 尝试计数 / 一次性 ticket 均为 2 分钟级短命数据，走 Django cache（Redis），
+与图片验证码的 DB 表 `CaptchaStore` 并存、互不影响。键前缀集中登记在
+`captcha/cache.py`，并纳入 `scripts/check_cache_keys.py --strict`。
+
+| 键 | TTL | 说明 |
+|----|-----|------|
+| `captcha_challenge_{challenge_id}` | `CAPTCHA_CHALLENGE_TTL`（默认 120s） | 题型 + scene + 服务端答案（JSON），答案永不下发客户端 |
+| `captcha_attempt_{challenge_id}` | 与挑战同 TTL | 已尝试次数；超 `CAPTCHA_MAX_ATTEMPTS` 即删挑战 |
+| `captcha_ticket_{sha256}` | `CAPTCHA_TICKET_TTL`（默认 120s） | 一次性 ticket 的 sha256 + scene；消费走 `atomic_get_delete` |
+| `captcha_ticket_inflight_{ip}` | 300s | 同 IP 未消费 ticket 计数，上限 3（防囤票重放） |
+
+失效语义：Redis 不可用时 challenge / verify / ticket 消费一律 **fail-closed**
+（拒绝），不降级为放行；挑战通过后立即删除挑战键，ticket 消费即删除，不做主动失效。

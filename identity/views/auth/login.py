@@ -79,6 +79,7 @@ class BasicLoginAPIView(TokenObtainPairView):
                     "token": build_basic_type(OpenApiTypes.STR),
                     "captcha_key": build_basic_type(OpenApiTypes.STR),
                     "captcha_code": build_basic_type(OpenApiTypes.STR),
+                    "captcha_ticket": build_basic_type(OpenApiTypes.STR),
                 },
                 required=["username", "password"],
             )
@@ -106,7 +107,10 @@ class BasicLoginAPIView(TokenObtainPairView):
 
         ipaddr = get_request_ip(request)
         client_id, token = check_token_and_captcha(
-            request, settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED, settings.SECURITY_LOGIN_CAPTCHA_ENABLED
+            request,
+            settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
+            settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
+            scene="login",
         )
 
         username, password = get_username_password(settings.SECURITY_LOGIN_ENCRYPTED_ENABLED, request, token)

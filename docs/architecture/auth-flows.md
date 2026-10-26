@@ -47,7 +47,7 @@
   → POST /login/basic  {username, password, token, captcha_key, captcha_code}
 后端 BasicLoginAPIView.post：
   1. SECURITY_LOGIN_ACCESS_ENABLED 开关判定（关闭即 1001）
-  2. check_token_and_captcha：临时令牌 + 图形验证码（按开关）
+  2. check_token_and_captcha：临时令牌 + 人机校验（图片码 key/code 或交互式 ticket，按 CAPTCHA_MODE 与场景开关）
   3. get_username_password：AES v2 解密（按 SECURITY_LOGIN_ENCRYPTED_ENABLED）
   4. check_is_block：IP 维度 + 账号维度锁定前置
   5. SessionTokenObtainPairSerializer.is_valid：纯校验（无副作用）
@@ -140,6 +140,37 @@ LDAP bind 认证成功时登录日志来源记 `LDAP`（`_login_type_for` 读
 - 守护：`tests/integration/system/test_api_docs_login.py`（登录闭环 / 业务 API 隔离 /
   MFA 拒绝 / 策略拒绝 / 错误口令）。
 
+### 2.8 交互式验证码（slide / rotate / click）
+
+验证码总开关为 `CAPTCHA_ENABLED`（默认 True，关闭后所有场景跳过人机校验）；类型由
+`CAPTCHA_MODE`（默认 `image`）选择，场景开关仍为 `SECURITY_<场景>_CAPTCHA_ENABLED`。
+管理端「系统设置 → 验证码设置」按短信设置同构：总配置（开关 + 类型）+ 图片 / 交互式分页签。
+
+```
+GET  /api/identity/auth/capabilities
+  → basic.captcha / captcha_mode / captcha_types / captcha_image_fallback
+POST /api/identity/auth/captcha/challenge  {type?, scene}
+  → {challenge_id, type, background, [piece|tip], width/height, ttl}   # 答案永不下发
+POST /api/identity/auth/captcha/verify     {challenge_id, type, scene, answer, track}
+  → 200 {passed:true, ticket, expires_in} | 200 {passed:false, attempts_left}
+  | 400 {code:400, error:"captcha_invalid"|"captcha_exhausted"}
+业务请求（登录 / 发码 / 邀请激活）携带 captcha_ticket
+  → check_token_and_captcha 原子消费一次性 ticket（绑定 scene）
+```
+
+- 题型插件：`captcha/backends/{slider,rotate,wordclick}.py`，注册表在 `base.py`；
+  新增题型只需实现 `ChallengeBackend` 并注册；
+- 五层防护：服务端容差（slide 4px / rotate 4° / click 20px）、单题 3 次尝试、
+  挑战与 ticket 各 120s TTL、轨迹启发式（点数 / 时长 / 瞬移）、
+  challenge 30/min + verify 60/min 的 IP 限流；
+- 同 IP 未消费 ticket ≤ 3，防囤票慢速重放；
+- Redis 不可用时 verify / ticket 消费 fail-closed（拒绝），挑战缓存键见
+  [cache.md](cache.md) §十；
+- 无障碍回退：`CAPTCHA_IMAGE_FALLBACK_ENABLED=true` 时挑战弹层提供「使用图片验证码」，
+  服务端在交互式模式下同样接受图片码（默认关闭，避免 OCR 绕过交互式题型）；
+- E2E 专用答案检查端点 `GET /api/identity/auth/captcha/inspect` 仅在
+  `CAPTCHA_INSPECT_ENABLED=true`（`tests/settings_e2e.py`）时挂载，生产默认配置无该路由。
+
 ## 三、验证码场景开关矩阵
 
 `GET/POST /api/identity/auth/verify?category=<key>` 由 `verify_code.py` 的
@@ -154,7 +185,8 @@ LDAP bind 认证成功时登录日志来源记 `LDAP`（`_login_type_for` 读
 | `bind_email` | `SECURITY_BIND_EMAIL_ACCESS_ENABLED` | 回显目标用户资料（绑定到哪个账号） | email |
 | `bind_phone` | `SECURITY_BIND_PHONE_ACCESS_ENABLED` | 同上 | sms |
 
-辅助开关（各场景独立）：`SECURITY_<场景>_CAPTCHA_ENABLED`（图形验证码）、
+辅助开关（各场景独立）：`SECURITY_<场景>_CAPTCHA_ENABLED`（人机校验总开关，
+`CAPTCHA_MODE=interactive` 时切换为交互式题型）、
 `SECURITY_<场景>_TEMP_TOKEN_ENABLED`（临时令牌）、
 `SECURITY_<场景>_ENCRYPTED_ENABLED`（AES v2 传输加密）、
 `SECURITY_<场景>_BY_EMAIL_ENABLED` / `_BY_SMS_ENABLED`（叠加 `EMAIL_ENABLED` /

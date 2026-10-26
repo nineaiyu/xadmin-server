@@ -14,6 +14,7 @@ from typing import Any
 
 from django.conf import settings
 
+from captcha.contracts import build_captcha_meta, captcha_globally_enabled
 from identity.utils.oauth import get_providers
 
 
@@ -39,12 +40,16 @@ def build_login_capabilities() -> dict[str, Any]:
     reset_email = _channel(settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED, settings.EMAIL_ENABLED)
     reset_sms = _channel(settings.SECURITY_RESET_PASSWORD_BY_SMS_ENABLED, settings.SMS_ENABLED)
     # 注册/重置流程必须经短信或邮箱验证码完成,通道全关时流程走不通,入口即隐藏
+    captcha_meta = build_captcha_meta("login")
     return {
         "access": settings.SECURITY_LOGIN_ACCESS_ENABLED,
         "lifetime": settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME").days,
         "basic": {
             "enabled": settings.SECURITY_LOGIN_BY_BASIC_ENABLED,
-            "captcha": settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
+            "captcha": captcha_globally_enabled() and settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
+            "captcha_mode": captcha_meta["mode"],
+            "captcha_types": captcha_meta["types"],
+            "captcha_image_fallback": captcha_meta["image_fallback"],
             "token": settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
             "encrypted": settings.SECURITY_LOGIN_ENCRYPTED_ENABLED,
         },

@@ -60,7 +60,7 @@ def captcha_image(request: HttpRequest, key: str, scale: int = 1) -> HttpRespons
         return HttpResponse(status=410)
 
     random.seed(key)  # Do not generate different images for the same key
-    image = _render_challenge(store.challenge, scale)
+    image = render_challenge(store.challenge, scale)
 
     out = BytesIO()
     image.save(out, "PNG")
@@ -111,7 +111,7 @@ def _split_challenge_chars(text: str) -> list[str]:
     return charlist
 
 
-def _render_challenge(text: str, scale: int) -> Image.Image:
+def render_challenge(text: str, scale: int) -> Image.Image:
     """绘制挑战文本：尺寸解析 → 逐字符合成 → 居中裁剪 → 噪声与滤镜。
 
     随机序列由调用方按 key 播种（同 key 同图），本函数只做确定性绘制。

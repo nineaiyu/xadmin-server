@@ -19,11 +19,12 @@ AES 密文（``AesEncrypted(token, password)``，与 register/reset 同库同参
 from typing import Any
 
 from django.conf import settings
-from drf_spectacular.plumbing import build_basic_type, build_object_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 
+from captcha.contracts import build_captcha_meta, captcha_globally_enabled
 from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import ResetPasswordThrottle
@@ -53,6 +54,9 @@ class InviteValidateAPIView(GenericAPIView):
                         "username": build_basic_type(OpenApiTypes.STR),
                         "encrypted": build_basic_type(OpenApiTypes.BOOL),
                         "captcha_required": build_basic_type(OpenApiTypes.BOOL),
+                        "captcha_mode": build_basic_type(OpenApiTypes.STR),
+                        "captcha_types": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+                        "captcha_image_fallback": build_basic_type(OpenApiTypes.BOOL),
                     }
                 )
             }
@@ -61,13 +65,17 @@ class InviteValidateAPIView(GenericAPIView):
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         token = str(request.query_params.get("token") or "").strip()
         user, state = user_invite.resolve_invite_token(token)
+        captcha_meta = build_captcha_meta("invite")
         return ApiResponse(
             data={
                 "state": state,
                 "username": getattr(user, "username", ""),
                 "encrypted": settings.SECURITY_INVITE_ENCRYPTED_ENABLED,
-                # 匿名激活必须通过图形验证码：客户端脚本无法自行伪造服务端校验
-                "captcha_required": True,
+                # 匿名激活默认必须通过人机校验；总开关关闭时随全局一起停用
+                "captcha_required": captcha_globally_enabled(),
+                "captcha_mode": captcha_meta["mode"],
+                "captcha_types": captcha_meta["types"],
+                "captcha_image_fallback": captcha_meta["image_fallback"],
             }
         )
 
@@ -93,6 +101,7 @@ class InviteAcceptAPIView(GenericAPIView):
                     },
                     "captcha_key": build_basic_type(OpenApiTypes.STR),
                     "captcha_code": build_basic_type(OpenApiTypes.STR),
+                    "captcha_ticket": build_basic_type(OpenApiTypes.STR),
                 }
             )
         ),
@@ -102,7 +111,14 @@ class InviteAcceptAPIView(GenericAPIView):
         token = str(request.data.get("token") or "").strip()
         password = str(request.data.get("password") or "")
         # 服务端人机校验：失败直接 400（ValidateError），不进入令牌解析与密码校验
-        check_captcha(True, request.data.get("captcha_key"), request.data.get("captcha_code"))
+        check_captcha(
+            True,
+            request.data.get("captcha_key"),
+            request.data.get("captcha_code"),
+            request.data.get("captcha_ticket"),
+            scene="invite",
+            request=request,
+        )
         user, state = user_invite.resolve_invite_token(token)
         if state == "invalid":
             return ApiResponse(code=1001, detail=user_invite.INVITE_INVALID_MESSAGE)

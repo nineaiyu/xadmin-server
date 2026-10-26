@@ -1994,6 +1994,31 @@
         ],
         "type": "string"
       },
+      "CAPTCHACLICKCHARSETEnum": {
+        "description": "* `chinese` - 常用汉字\n* `ascii` - 字母数字",
+        "enum": [
+          "chinese",
+          "ascii"
+        ],
+        "type": "string"
+      },
+      "CAPTCHAINTERACTIVETYPESEnum": {
+        "description": "* `slide` - 滑动拼图\n* `rotate` - 旋转回正\n* `click` - 文字点选",
+        "enum": [
+          "slide",
+          "rotate",
+          "click"
+        ],
+        "type": "string"
+      },
+      "CAPTCHAMODEEnum": {
+        "description": "* `image` - 图片验证码\n* `interactive` - 交互式验证码",
+        "enum": [
+          "image",
+          "interactive"
+        ],
+        "type": "string"
+      },
       "CAPTCHANOISEFUNCTIONSEnum": {
         "description": "* `captcha.helpers.noise_null` - 无噪声函数\n* `captcha.helpers.noise_arcs` - 弧噪声函数\n* `captcha.helpers.noise_dots` - 点噪声函数",
         "enum": [
@@ -2002,6 +2027,340 @@
           "captcha.helpers.noise_dots"
         ],
         "type": "string"
+      },
+      "CaptchaChallengeIn": {
+        "properties": {
+          "scene": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SceneEnum"
+              }
+            ],
+            "title": "验证码场景"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypeEnum"
+              }
+            ],
+            "description": "留空则由服务端从启用题型中随机选择\n\n* `slide` - slide\n* `rotate` - rotate\n* `click` - click",
+            "title": "验证码题型"
+          }
+        },
+        "required": [
+          "scene"
+        ],
+        "type": "object"
+      },
+      "CaptchaChallengeOut": {
+        "properties": {
+          "background": {
+            "title": "底图",
+            "type": "string"
+          },
+          "challenge_id": {
+            "title": "挑战 ID",
+            "type": "string"
+          },
+          "count": {
+            "title": "点选数量",
+            "type": "integer"
+          },
+          "height": {
+            "title": "图片高度",
+            "type": "integer"
+          },
+          "piece": {
+            "title": "拼图块",
+            "type": "string"
+          },
+          "piece_size": {
+            "title": "拼图块尺寸",
+            "type": "integer"
+          },
+          "tip": {
+            "title": "点选提示图",
+            "type": "string"
+          },
+          "ttl": {
+            "title": "有效期（秒）",
+            "type": "integer"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypeEnum"
+              }
+            ],
+            "title": "验证码题型"
+          },
+          "width": {
+            "title": "图片宽度",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "background",
+          "challenge_id",
+          "ttl",
+          "type"
+        ],
+        "type": "object"
+      },
+      "CaptchaChallengeResponse": {
+        "properties": {
+          "code": {
+            "title": "业务码",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CaptchaChallengeOut"
+          },
+          "detail": {
+            "title": "详情",
+            "type": "string"
+          },
+          "error": {
+            "title": "错误码",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "data"
+        ],
+        "type": "object"
+      },
+      "CaptchaImagePreviewData": {
+        "properties": {
+          "image": {
+            "title": "Preview image",
+            "type": "string"
+          },
+          "length": {
+            "title": "Answer length",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "image",
+          "length"
+        ],
+        "type": "object"
+      },
+      "CaptchaImagePreviewResponse": {
+        "properties": {
+          "code": {
+            "title": "业务码",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CaptchaImagePreviewData"
+          },
+          "detail": {
+            "title": "详情",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "data"
+        ],
+        "type": "object"
+      },
+      "CaptchaInteractivePreviewData": {
+        "properties": {
+          "background": {
+            "title": "底图",
+            "type": "string"
+          },
+          "count": {
+            "title": "点选数量",
+            "type": "integer"
+          },
+          "height": {
+            "title": "图片高度",
+            "type": "integer"
+          },
+          "piece": {
+            "title": "拼图块",
+            "type": "string"
+          },
+          "piece_size": {
+            "title": "拼图块尺寸",
+            "type": "integer"
+          },
+          "tip": {
+            "title": "点选提示图",
+            "type": "string"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypeEnum"
+              }
+            ],
+            "title": "验证码题型"
+          },
+          "width": {
+            "title": "图片宽度",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "background",
+          "type"
+        ],
+        "type": "object"
+      },
+      "CaptchaInteractivePreviewIn": {
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypeEnum"
+              }
+            ],
+            "title": "验证码题型"
+          }
+        },
+        "type": "object"
+      },
+      "CaptchaInteractivePreviewResponse": {
+        "properties": {
+          "code": {
+            "title": "业务码",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CaptchaInteractivePreviewData"
+          },
+          "detail": {
+            "title": "详情",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "data"
+        ],
+        "type": "object"
+      },
+      "CaptchaTrackPoint": {
+        "properties": {
+          "t": {
+            "format": "double",
+            "title": "时间戳（毫秒）",
+            "type": "number"
+          },
+          "x": {
+            "format": "double",
+            "title": "X 坐标",
+            "type": "number"
+          },
+          "y": {
+            "format": "double",
+            "title": "Y 坐标",
+            "type": "number"
+          }
+        },
+        "required": [
+          "t",
+          "x",
+          "y"
+        ],
+        "type": "object"
+      },
+      "CaptchaVerifyIn": {
+        "properties": {
+          "answer": {
+            "title": "答案"
+          },
+          "challenge_id": {
+            "maxLength": 64,
+            "title": "挑战 ID",
+            "type": "string"
+          },
+          "scene": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SceneEnum"
+              }
+            ],
+            "title": "验证码场景"
+          },
+          "track": {
+            "items": {
+              "$ref": "#/components/schemas/CaptchaTrackPoint"
+            },
+            "title": "指针轨迹",
+            "type": "array"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypeEnum"
+              }
+            ],
+            "title": "验证码题型"
+          }
+        },
+        "required": [
+          "answer",
+          "challenge_id",
+          "scene",
+          "type"
+        ],
+        "type": "object"
+      },
+      "CaptchaVerifyOut": {
+        "properties": {
+          "attempts_left": {
+            "title": "剩余尝试次数",
+            "type": "integer"
+          },
+          "expires_in": {
+            "title": "票据有效期（秒）",
+            "type": "integer"
+          },
+          "passed": {
+            "title": "是否通过",
+            "type": "boolean"
+          },
+          "ticket": {
+            "title": "一次性票据",
+            "type": "string"
+          }
+        },
+        "required": [
+          "passed"
+        ],
+        "type": "object"
+      },
+      "CaptchaVerifyResponse": {
+        "properties": {
+          "code": {
+            "title": "业务码",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CaptchaVerifyOut"
+          },
+          "detail": {
+            "title": "详情",
+            "type": "string"
+          },
+          "error": {
+            "title": "错误码",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "data"
+        ],
+        "type": "object"
       },
       "CategoryEnum": {
         "description": "* `image` - 图片\n* `document` - 文档\n* `video` - 视频\n* `archive` - 压缩包\n* `other` - 其他",
@@ -11683,7 +12042,7 @@
             "title": "图片算法模式"
           },
           "CAPTCHA_FONT_SIZE": {
-            "default": 22,
+            "default": 26,
             "description": "图片验证码字体大小",
             "maximum": 50,
             "minimum": 10,
@@ -11705,21 +12064,8 @@
           },
           "CAPTCHA_NOISE_FUNCTIONS": {
             "default": [
-              "c",
-              "a",
-              "p",
-              "t",
-              "h",
-              ".",
-              "e",
-              "l",
-              "r",
-              "s",
-              "n",
-              "o",
-              "i",
-              "_",
-              "u"
+              "captcha.helpers.noise_arcs",
+              "captcha.helpers.noise_dots"
             ],
             "items": {
               "$ref": "#/components/schemas/CAPTCHANOISEFUNCTIONSEnum"
@@ -11733,6 +12079,136 @@
             "minimum": 1,
             "title": "验证码过期时间 (分)",
             "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PatchedSecurityCaptchaGeneral": {
+        "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
+        "properties": {
+          "CAPTCHA_ENABLED": {
+            "default": true,
+            "description": "全局开关；关闭后所有场景不再要求验证码",
+            "title": "启用验证码",
+            "type": "boolean"
+          },
+          "CAPTCHA_MODE": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CAPTCHAMODEEnum"
+              }
+            ],
+            "default": "image",
+            "description": "所有场景使用的验证码类型；新增类型可按独立页签扩展\n\n* `image` - 图片验证码\n* `interactive` - 交互式验证码",
+            "title": "验证码模式"
+          }
+        },
+        "type": "object"
+      },
+      "PatchedSecurityCaptchaInteractive": {
+        "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
+        "properties": {
+          "CAPTCHA_CHALLENGE_TTL": {
+            "default": 120,
+            "maximum": 600,
+            "minimum": 30,
+            "title": "挑战有效期（秒）",
+            "type": "integer"
+          },
+          "CAPTCHA_CLICK_CHARSET": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CAPTCHACLICKCHARSETEnum"
+              }
+            ],
+            "default": "chinese",
+            "title": "点选字符集"
+          },
+          "CAPTCHA_CLICK_RADIUS": {
+            "default": 20,
+            "maximum": 80,
+            "minimum": 5,
+            "title": "点选命中半径（像素）",
+            "type": "integer"
+          },
+          "CAPTCHA_IMAGE_FALLBACK_ENABLED": {
+            "default": false,
+            "description": "交互式模式下允许用户切换为图片验证码（无障碍回退；对 OCR 的防护较弱）",
+            "title": "图片验证码回退",
+            "type": "boolean"
+          },
+          "CAPTCHA_INTERACTIVE_TYPES": {
+            "default": [
+              "slide",
+              "rotate",
+              "click"
+            ],
+            "description": "交互式模式下启用的题型",
+            "items": {
+              "$ref": "#/components/schemas/CAPTCHAINTERACTIVETYPESEnum"
+            },
+            "title": "交互式题型",
+            "type": "array"
+          },
+          "CAPTCHA_MAX_ATTEMPTS": {
+            "default": 3,
+            "maximum": 10,
+            "minimum": 1,
+            "title": "单题最大尝试次数",
+            "type": "integer"
+          },
+          "CAPTCHA_ROTATE_SIZE": {
+            "default": [
+              240,
+              240
+            ],
+            "items": {
+              "maximum": 800,
+              "minimum": 160,
+              "type": "integer"
+            },
+            "title": "旋转图片尺寸（像素）",
+            "type": "array"
+          },
+          "CAPTCHA_ROTATE_TOLERANCE": {
+            "default": 4,
+            "maximum": 30,
+            "minimum": 1,
+            "title": "旋转容差（度）",
+            "type": "integer"
+          },
+          "CAPTCHA_SLIDE_SIZE": {
+            "default": [
+              320,
+              180
+            ],
+            "items": {
+              "maximum": 800,
+              "minimum": 120,
+              "type": "integer"
+            },
+            "title": "滑动底图尺寸（像素）",
+            "type": "array"
+          },
+          "CAPTCHA_SLIDE_TOLERANCE": {
+            "default": 4,
+            "maximum": 30,
+            "minimum": 1,
+            "title": "滑动容差（像素）",
+            "type": "integer"
+          },
+          "CAPTCHA_TICKET_TTL": {
+            "default": 120,
+            "maximum": 600,
+            "minimum": 30,
+            "title": "验证票据有效期（秒）",
+            "type": "integer"
+          },
+          "CAPTCHA_TRACK_CHECK_ENABLED": {
+            "default": true,
+            "description": "拒绝缺少合理指针轨迹的答案",
+            "title": "指针轨迹校验",
+            "type": "boolean"
           }
         },
         "type": "object"
@@ -13879,6 +14355,18 @@
         ],
         "type": "object"
       },
+      "SceneEnum": {
+        "description": "* `login` - login\n* `register` - register\n* `reset` - reset\n* `bind_email` - bind_email\n* `bind_phone` - bind_phone\n* `invite` - invite",
+        "enum": [
+          "login",
+          "register",
+          "reset",
+          "bind_email",
+          "bind_phone",
+          "invite"
+        ],
+        "type": "string"
+      },
       "ScimSetting": {
         "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
         "properties": {
@@ -14651,7 +15139,7 @@
             "title": "图片算法模式"
           },
           "CAPTCHA_FONT_SIZE": {
-            "default": 22,
+            "default": 26,
             "description": "图片验证码字体大小",
             "maximum": 50,
             "minimum": 10,
@@ -14673,21 +15161,8 @@
           },
           "CAPTCHA_NOISE_FUNCTIONS": {
             "default": [
-              "c",
-              "a",
-              "p",
-              "t",
-              "h",
-              ".",
-              "e",
-              "l",
-              "r",
-              "s",
-              "n",
-              "o",
-              "i",
-              "_",
-              "u"
+              "captcha.helpers.noise_arcs",
+              "captcha.helpers.noise_dots"
             ],
             "items": {
               "$ref": "#/components/schemas/CAPTCHANOISEFUNCTIONSEnum"
@@ -14708,6 +15183,136 @@
           "CAPTCHA_FOREGROUND_COLOR",
           "CAPTCHA_TIMEOUT"
         ],
+        "type": "object"
+      },
+      "SecurityCaptchaGeneral": {
+        "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
+        "properties": {
+          "CAPTCHA_ENABLED": {
+            "default": true,
+            "description": "全局开关；关闭后所有场景不再要求验证码",
+            "title": "启用验证码",
+            "type": "boolean"
+          },
+          "CAPTCHA_MODE": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CAPTCHAMODEEnum"
+              }
+            ],
+            "default": "image",
+            "description": "所有场景使用的验证码类型；新增类型可按独立页签扩展\n\n* `image` - 图片验证码\n* `interactive` - 交互式验证码",
+            "title": "验证码模式"
+          }
+        },
+        "type": "object"
+      },
+      "SecurityCaptchaInteractive": {
+        "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
+        "properties": {
+          "CAPTCHA_CHALLENGE_TTL": {
+            "default": 120,
+            "maximum": 600,
+            "minimum": 30,
+            "title": "挑战有效期（秒）",
+            "type": "integer"
+          },
+          "CAPTCHA_CLICK_CHARSET": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CAPTCHACLICKCHARSETEnum"
+              }
+            ],
+            "default": "chinese",
+            "title": "点选字符集"
+          },
+          "CAPTCHA_CLICK_RADIUS": {
+            "default": 20,
+            "maximum": 80,
+            "minimum": 5,
+            "title": "点选命中半径（像素）",
+            "type": "integer"
+          },
+          "CAPTCHA_IMAGE_FALLBACK_ENABLED": {
+            "default": false,
+            "description": "交互式模式下允许用户切换为图片验证码（无障碍回退；对 OCR 的防护较弱）",
+            "title": "图片验证码回退",
+            "type": "boolean"
+          },
+          "CAPTCHA_INTERACTIVE_TYPES": {
+            "default": [
+              "slide",
+              "rotate",
+              "click"
+            ],
+            "description": "交互式模式下启用的题型",
+            "items": {
+              "$ref": "#/components/schemas/CAPTCHAINTERACTIVETYPESEnum"
+            },
+            "title": "交互式题型",
+            "type": "array"
+          },
+          "CAPTCHA_MAX_ATTEMPTS": {
+            "default": 3,
+            "maximum": 10,
+            "minimum": 1,
+            "title": "单题最大尝试次数",
+            "type": "integer"
+          },
+          "CAPTCHA_ROTATE_SIZE": {
+            "default": [
+              240,
+              240
+            ],
+            "items": {
+              "maximum": 800,
+              "minimum": 160,
+              "type": "integer"
+            },
+            "title": "旋转图片尺寸（像素）",
+            "type": "array"
+          },
+          "CAPTCHA_ROTATE_TOLERANCE": {
+            "default": 4,
+            "maximum": 30,
+            "minimum": 1,
+            "title": "旋转容差（度）",
+            "type": "integer"
+          },
+          "CAPTCHA_SLIDE_SIZE": {
+            "default": [
+              320,
+              180
+            ],
+            "items": {
+              "maximum": 800,
+              "minimum": 120,
+              "type": "integer"
+            },
+            "title": "滑动底图尺寸（像素）",
+            "type": "array"
+          },
+          "CAPTCHA_SLIDE_TOLERANCE": {
+            "default": 4,
+            "maximum": 30,
+            "minimum": 1,
+            "title": "滑动容差（像素）",
+            "type": "integer"
+          },
+          "CAPTCHA_TICKET_TTL": {
+            "default": 120,
+            "maximum": 600,
+            "minimum": 30,
+            "title": "验证票据有效期（秒）",
+            "type": "integer"
+          },
+          "CAPTCHA_TRACK_CHECK_ENABLED": {
+            "default": true,
+            "description": "拒绝缺少合理指针轨迹的答案",
+            "title": "指针轨迹校验",
+            "type": "boolean"
+          }
+        },
         "type": "object"
       },
       "SecurityLoginAuth": {
@@ -15615,6 +16220,15 @@
           "refresh"
         ],
         "type": "object"
+      },
+      "TypeEnum": {
+        "description": "* `slide` - slide\n* `rotate` - rotate\n* `click` - click",
+        "enum": [
+          "slide",
+          "rotate",
+          "click"
+        ],
+        "type": "string"
       },
       "UploadFile": {
         "description": "可打标对象的序列化器混入：只读 ``tags`` 字段（列表/详情通用）。\n\n依赖视图声明 ``prefetch_related_fields = (\"tagged_items__tag\",)`` 消除 N+1。",
@@ -45996,6 +46610,18 @@
                             "captcha": {
                               "type": "boolean"
                             },
+                            "captcha_image_fallback": {
+                              "type": "boolean"
+                            },
+                            "captcha_mode": {
+                              "type": "string"
+                            },
+                            "captcha_types": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            },
                             "enabled": {
                               "type": "boolean"
                             },
@@ -46145,6 +46771,108 @@
         ]
       }
     },
+    "/api/identity/auth/captcha/challenge": {
+      "post": {
+        "description": "获取交互式验证码挑战",
+        "operationId": "api_identity_auth_captcha_challenge_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaChallengeIn"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaChallengeIn"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaChallengeIn"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaChallengeIn"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaChallengeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptchaChallengeResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": [
+          "CaptchaChallengeAPIView"
+        ]
+      }
+    },
+    "/api/identity/auth/captcha/verify": {
+      "post": {
+        "description": "校验答案并换取一次性 ticket",
+        "operationId": "api_identity_auth_captcha_verify_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaVerifyIn"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaVerifyIn"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaVerifyIn"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaVerifyIn"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaVerifyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptchaVerifyResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": [
+          "CaptchaVerifyAPIView"
+        ]
+      }
+    },
     "/api/identity/auth/invite/accept": {
       "post": {
         "description": "邀请激活：设置密码（令牌一次性）",
@@ -46158,6 +46886,9 @@
                     "type": "string"
                   },
                   "captcha_key": {
+                    "type": "string"
+                  },
+                  "captcha_ticket": {
                     "type": "string"
                   },
                   "password": {
@@ -46180,6 +46911,9 @@
                   "captcha_key": {
                     "type": "string"
                   },
+                  "captcha_ticket": {
+                    "type": "string"
+                  },
                   "password": {
                     "description": "Submit an AESCipherV2(token) ciphertext keyed by the invite token; plaintext is only accepted when the encrypted switch is off",
                     "type": "string"
@@ -46198,6 +46932,9 @@
                     "type": "string"
                   },
                   "captcha_key": {
+                    "type": "string"
+                  },
+                  "captcha_ticket": {
                     "type": "string"
                   },
                   "password": {
@@ -46220,6 +46957,9 @@
                   "captcha_key": {
                     "type": "string"
                   },
+                  "captcha_ticket": {
+                    "type": "string"
+                  },
                   "password": {
                     "description": "Submit an AESCipherV2(token) ciphertext keyed by the invite token; plaintext is only accepted when the encrypted switch is off",
                     "type": "string"
@@ -46238,6 +46978,9 @@
                     "type": "string"
                   },
                   "captcha_key": {
+                    "type": "string"
+                  },
+                  "captcha_ticket": {
                     "type": "string"
                   },
                   "password": {
@@ -46299,8 +47042,20 @@
                     },
                     "data": {
                       "properties": {
+                        "captcha_image_fallback": {
+                          "type": "boolean"
+                        },
+                        "captcha_mode": {
+                          "type": "string"
+                        },
                         "captcha_required": {
                           "type": "boolean"
+                        },
+                        "captcha_types": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
                         },
                         "encrypted": {
                           "type": "boolean"
@@ -46819,6 +47574,18 @@
                         "captcha": {
                           "type": "boolean"
                         },
+                        "captcha_image_fallback": {
+                          "type": "boolean"
+                        },
+                        "captcha_mode": {
+                          "type": "string"
+                        },
+                        "captcha_types": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
                         "email": {
                           "type": "boolean"
                         },
@@ -46912,6 +47679,9 @@
                   "captcha_key": {
                     "type": "string"
                   },
+                  "captcha_ticket": {
+                    "type": "string"
+                  },
                   "form_type": {
                     "type": "string"
                   },
@@ -46932,6 +47702,9 @@
                     "type": "string"
                   },
                   "captcha_key": {
+                    "type": "string"
+                  },
+                  "captcha_ticket": {
                     "type": "string"
                   },
                   "form_type": {
@@ -46956,6 +47729,9 @@
                   "captcha_key": {
                     "type": "string"
                   },
+                  "captcha_ticket": {
+                    "type": "string"
+                  },
                   "form_type": {
                     "type": "string"
                   },
@@ -46978,6 +47754,9 @@
                   "captcha_key": {
                     "type": "string"
                   },
+                  "captcha_ticket": {
+                    "type": "string"
+                  },
                   "form_type": {
                     "type": "string"
                   },
@@ -46998,6 +47777,9 @@
                     "type": "string"
                   },
                   "captcha_key": {
+                    "type": "string"
+                  },
+                  "captcha_ticket": {
                     "type": "string"
                   },
                   "form_type": {
@@ -49143,6 +49925,12 @@
             "schema": {}
           },
           {
+            "description": "标签",
+            "in": "query",
+            "name": "tag",
+            "schema": {}
+          },
+          {
             "in": "query",
             "name": "updated_time_after",
             "schema": {
@@ -50330,6 +51118,9 @@
                   "captcha_key": {
                     "type": "string"
                   },
+                  "captcha_ticket": {
+                    "type": "string"
+                  },
                   "password": {
                     "type": "string"
                   },
@@ -50354,6 +51145,9 @@
                     "type": "string"
                   },
                   "captcha_key": {
+                    "type": "string"
+                  },
+                  "captcha_ticket": {
                     "type": "string"
                   },
                   "password": {
@@ -50382,6 +51176,9 @@
                   "captcha_key": {
                     "type": "string"
                   },
+                  "captcha_ticket": {
+                    "type": "string"
+                  },
                   "password": {
                     "type": "string"
                   },
@@ -50408,6 +51205,9 @@
                   "captcha_key": {
                     "type": "string"
                   },
+                  "captcha_ticket": {
+                    "type": "string"
+                  },
                   "password": {
                     "type": "string"
                   },
@@ -50432,6 +51232,9 @@
                     "type": "string"
                   },
                   "captcha_key": {
+                    "type": "string"
+                  },
+                  "captcha_ticket": {
                     "type": "string"
                   },
                   "password": {
@@ -66798,6 +67601,585 @@
         ]
       }
     },
+    "/api/settings/captcha/general": {
+      "get": {
+        "description": "获取{cls}的详情",
+        "operationId": "api_settings_captcha_general_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityCaptchaGeneral"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SecurityCaptchaGeneralViewSet"
+        ]
+      },
+      "patch": {
+        "description": "部分更新{cls}信息",
+        "operationId": "api_settings_captcha_general_partial_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedSecurityCaptchaGeneral"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedSecurityCaptchaGeneral"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedSecurityCaptchaGeneral"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedSecurityCaptchaGeneral"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedSecurityCaptchaGeneral"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityCaptchaGeneral"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SecurityCaptchaGeneralViewSet"
+        ]
+      },
+      "put": {
+        "description": "整体更新{cls}信息",
+        "operationId": "api_settings_captcha_general_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityCaptchaGeneral"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityCaptchaGeneral"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityCaptchaGeneral"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityCaptchaGeneral"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityCaptchaGeneral"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityCaptchaGeneral"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SecurityCaptchaGeneralViewSet"
+        ]
+      }
+    },
+    "/api/settings/captcha/general/search-columns": {
+      "get": {
+        "description": "获取{cls}的展示字段",
+        "operationId": "api_settings_captcha_general_search_columns_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "items": {
+                        "properties": {
+                          "choices": {
+                            "items": {
+                              "properties": {
+                                "label": {
+                                  "type": "string"
+                                },
+                                "pk": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "choices_truncated": {
+                            "type": "boolean"
+                          },
+                          "default": {},
+                          "help_text": {
+                            "type": "string"
+                          },
+                          "input_type": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "lookups": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "max_length": {
+                            "type": "number"
+                          },
+                          "max_value": {
+                            "type": "number"
+                          },
+                          "min_value": {
+                            "type": "number"
+                          },
+                          "multiple": {
+                            "type": "boolean"
+                          },
+                          "read_only": {
+                            "type": "boolean"
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "sortable": {
+                            "type": "boolean"
+                          },
+                          "step": {
+                            "type": "number"
+                          },
+                          "table_show": {
+                            "type": "number"
+                          },
+                          "write_only": {
+                            "type": "boolean"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SecurityCaptchaGeneralViewSet"
+        ]
+      }
+    },
+    "/api/settings/captcha/interactive": {
+      "get": {
+        "description": "获取{cls}的详情",
+        "operationId": "api_settings_captcha_interactive_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityCaptchaInteractive"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SecurityCaptchaInteractiveViewSet"
+        ]
+      },
+      "patch": {
+        "description": "部分更新{cls}信息",
+        "operationId": "api_settings_captcha_interactive_partial_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedSecurityCaptchaInteractive"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedSecurityCaptchaInteractive"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedSecurityCaptchaInteractive"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedSecurityCaptchaInteractive"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchedSecurityCaptchaInteractive"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityCaptchaInteractive"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SecurityCaptchaInteractiveViewSet"
+        ]
+      },
+      "put": {
+        "description": "整体更新{cls}信息",
+        "operationId": "api_settings_captcha_interactive_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityCaptchaInteractive"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityCaptchaInteractive"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityCaptchaInteractive"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityCaptchaInteractive"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityCaptchaInteractive"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityCaptchaInteractive"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SecurityCaptchaInteractiveViewSet"
+        ]
+      }
+    },
+    "/api/settings/captcha/interactive/preview": {
+      "post": {
+        "description": "预览交互式验证码",
+        "operationId": "api_settings_captcha_interactive_preview_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaInteractivePreviewIn"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaInteractivePreviewIn"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaInteractivePreviewIn"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaInteractivePreviewIn"
+              }
+            },
+            "text/xlsx": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptchaInteractivePreviewIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptchaInteractivePreviewResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SecurityCaptchaInteractiveViewSet"
+        ]
+      }
+    },
+    "/api/settings/captcha/interactive/search-columns": {
+      "get": {
+        "description": "获取{cls}的展示字段",
+        "operationId": "api_settings_captcha_interactive_search_columns_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "items": {
+                        "properties": {
+                          "choices": {
+                            "items": {
+                              "properties": {
+                                "label": {
+                                  "type": "string"
+                                },
+                                "pk": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "choices_truncated": {
+                            "type": "boolean"
+                          },
+                          "default": {},
+                          "help_text": {
+                            "type": "string"
+                          },
+                          "input_type": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "lookups": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "max_length": {
+                            "type": "number"
+                          },
+                          "max_value": {
+                            "type": "number"
+                          },
+                          "min_value": {
+                            "type": "number"
+                          },
+                          "multiple": {
+                            "type": "boolean"
+                          },
+                          "read_only": {
+                            "type": "boolean"
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "sortable": {
+                            "type": "boolean"
+                          },
+                          "step": {
+                            "type": "number"
+                          },
+                          "table_show": {
+                            "type": "number"
+                          },
+                          "write_only": {
+                            "type": "boolean"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SecurityCaptchaInteractiveViewSet"
+        ]
+      }
+    },
+    "/api/settings/captcha/preview": {
+      "post": {
+        "description": "预览图片验证码",
+        "operationId": "api_settings_captcha_preview_create",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptchaImagePreviewResponse"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "SecurityCaptchaCodeViewSet"
+        ]
+      }
+    },
     "/api/settings/captcha/search-columns": {
       "get": {
         "description": "获取{cls}的展示字段",
@@ -81792,72 +83174,44 @@
     },
     "/api/system/permission/batch-destroy": {
       "post": {
-        "description": "批量删除{cls}",
+        "description": "批量删除{cls}（高危：与删除同口径纳入审批）",
         "operationId": "api_system_permission_batch_destroy_create",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
+                "$ref": "#/components/schemas/DataPermission"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
+                "$ref": "#/components/schemas/DataPermission"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
+                "$ref": "#/components/schemas/DataPermission"
               }
             },
             "text/csv": {
               "schema": {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
+                "$ref": "#/components/schemas/DataPermission"
               }
             },
             "text/xlsx": {
               "schema": {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
+                "$ref": "#/components/schemas/DataPermission"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    },
-                    "requestId": {
-                      "type": "string"
-                    },
-                    "timestamp": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
+                  "$ref": "#/components/schemas/DataPermission"
                 }
               }
             },

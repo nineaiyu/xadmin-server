@@ -17,6 +17,7 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schem
 from rest_framework.exceptions import APIException
 from rest_framework.generics import GenericAPIView
 
+from captcha.contracts import build_captcha_meta, captcha_globally_enabled
 from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import VerifyCodeThrottle
@@ -27,15 +28,37 @@ from common.utils.request import get_request_ip
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
 from identity.models import UserInfo
 from identity.utils.auth import ValidateError, check_is_block, check_token_and_captcha
-from settings.services import LoginIpBlockUtil, SendVerifyCodeBlockUtil, get_password_check_rules
+from settings.services import (
+    LoginIpBlockUtil,
+    SendVerifyCodeBlockUtil,
+    email_service_ready,
+    get_password_check_rules,
+    sms_service_ready,
+)
 
 logger = get_logger(__name__)
+
+
+def _captcha_switch(switch: Any) -> bool:
+    """场景开关叠加全局总开关：总开关关闭后所有场景都不再要求验证码。"""
+    return captcha_globally_enabled() and bool(switch)
+
+
+def _captcha_meta(scene: str) -> dict[str, Any]:
+    """场景配置附带的验证码形态：前端据此选择图片码或交互式组件。"""
+    meta = build_captcha_meta(scene)
+    return {
+        "captcha_mode": meta["mode"],
+        "captcha_types": meta["types"],
+        "captcha_image_fallback": meta["image_fallback"],
+    }
 
 
 def get_register_config(request: Any) -> Any:
     config = {
         "access": settings.SECURITY_REGISTER_ACCESS_ENABLED,
-        "captcha": settings.SECURITY_REGISTER_CAPTCHA_ENABLED,
+        "captcha": _captcha_switch(settings.SECURITY_REGISTER_CAPTCHA_ENABLED),
+        **_captcha_meta("register"),
         "token": settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED,
         "encrypted": settings.SECURITY_REGISTER_ENCRYPTED_ENABLED,
         "email": settings.SECURITY_REGISTER_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
@@ -50,7 +73,8 @@ def get_login_config(request: Any) -> Any:
     """验证码登录场景的发码配置(方式级入口可见性见 auth/capabilities)。"""
     config = {
         "access": settings.SECURITY_LOGIN_ACCESS_ENABLED,
-        "captcha": settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
+        "captcha": _captcha_switch(settings.SECURITY_LOGIN_CAPTCHA_ENABLED),
+        **_captcha_meta("login"),
         "token": settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
         "encrypted": settings.SECURITY_LOGIN_ENCRYPTED_ENABLED,
         "email": settings.SECURITY_LOGIN_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
@@ -64,7 +88,8 @@ def get_login_config(request: Any) -> Any:
 def get_reset_config(request: Any) -> Any:
     config = {
         "access": settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED,
-        "captcha": settings.SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED,
+        "captcha": _captcha_switch(settings.SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED),
+        **_captcha_meta("reset"),
         "token": settings.SECURITY_RESET_PASSWORD_TEMP_TOKEN_ENABLED,
         "encrypted": settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED,
         "email": settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
@@ -111,10 +136,11 @@ def check_reset_config(request: Any, form_type: Any, query_key: Any, target: Any
 def get_bind_email_config(request: Any) -> Any:
     config = {
         "access": settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED,
-        "captcha": settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED,
+        "captcha": _captcha_switch(settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED),
+        **_captcha_meta("bind_email"),
         "token": settings.SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED,
         "encrypted": settings.SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED,
-        "email": settings.EMAIL_ENABLED,
+        "email": email_service_ready(),
         "rate": settings.VERIFY_CODE_LIMIT,
     }
     return config
@@ -134,10 +160,11 @@ def check_bind_email_config(request: Any, form_type: Any, query_key: Any, target
 def get_bind_phone_config(request: Any) -> Any:
     config = {
         "access": settings.SECURITY_BIND_PHONE_ACCESS_ENABLED,
-        "captcha": settings.SECURITY_BIND_PHONE_CAPTCHA_ENABLED,
+        "captcha": _captcha_switch(settings.SECURITY_BIND_PHONE_CAPTCHA_ENABLED),
+        **_captcha_meta("bind_phone"),
         "token": settings.SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED,
         "encrypted": settings.SECURITY_BIND_PHONE_ENCRYPTED_ENABLED,
-        "sms": settings.SMS_ENABLED,
+        "sms": sms_service_ready(),
         "rate": settings.VERIFY_CODE_LIMIT,
     }
     return config
@@ -189,6 +216,9 @@ CATEGORY_KEYS: tuple[str, ...] = tuple(CATEGORIES)
                     properties={
                         "access": build_basic_type(OpenApiTypes.BOOL),
                         "captcha": build_basic_type(OpenApiTypes.BOOL),
+                        "captcha_mode": build_basic_type(OpenApiTypes.STR),
+                        "captcha_types": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+                        "captcha_image_fallback": build_basic_type(OpenApiTypes.BOOL),
                         "token": build_basic_type(OpenApiTypes.BOOL),
                         "encrypted": build_basic_type(OpenApiTypes.BOOL),
                         "email": build_basic_type(OpenApiTypes.BOOL),
@@ -228,6 +258,7 @@ CATEGORY_KEYS: tuple[str, ...] = tuple(CATEGORIES)
                     "token": build_basic_type(OpenApiTypes.STR),
                     "captcha_key": build_basic_type(OpenApiTypes.STR),
                     "captcha_code": build_basic_type(OpenApiTypes.STR),
+                    "captcha_ticket": build_basic_type(OpenApiTypes.STR),
                 }
             )
         ),
@@ -305,7 +336,9 @@ class SendVerifyCodeAPIView(GenericAPIView):
         if not target or form_type not in form_types:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 
-        client_id, token = check_token_and_captcha(request, config.get("token"), config.get("captcha"))
+        client_id, token = check_token_and_captcha(
+            request, config.get("token"), config.get("captcha"), scene=category.key
+        )
 
         if config.get("encrypted"):
             target = AESCipherV2(token).decrypt(target)

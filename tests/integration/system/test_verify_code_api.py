@@ -180,10 +180,28 @@ class TestVerifyCodeConfig:
         assert data["email"] is False
         assert data["rate"] == settings.VERIFY_CODE_LIMIT
 
-    def test_get_bind_phone_config(self, api_client):
+        # 开关开着但 SMTP 主机缺失：邮件通道不可投递，绑定入口同样不可用
+        settings.EMAIL_ENABLED = True
+        settings.EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        settings.EMAIL_HOST = ""
+        resp = api_client.get(SEND_VERIFY_URL, {"category": "bind_email"})
+        assert resp.data["data"]["email"] is False
+
+    def test_get_bind_phone_config(self, api_client, settings):
+        settings.SMS_ENABLED = False
         resp = api_client.get(SEND_VERIFY_URL, {"category": "bind_phone"})
         assert resp.data["code"] == 1000
-        # 默认 SMS_ENABLED=False，sms 开关跟随通道可用性
+        # SMS_ENABLED=False，sms 开关跟随通道可用性
+        assert resp.data["data"]["sms"] is False
+
+        # 开关开着但阿里云凭据缺失：发不出验证码，绑定入口同样不可用
+        settings.SMS_ENABLED = True
+        settings.SMS_BACKEND = "alibaba"
+        settings.ALIBABA_ACCESS_KEY_ID = ""
+        settings.ALIBABA_ACCESS_KEY_SECRET = ""
+        settings.ALIBABA_VERIFY_SIGN_NAME = ""
+        settings.ALIBABA_VERIFY_TEMPLATE_CODE = ""
+        resp = api_client.get(SEND_VERIFY_URL, {"category": "bind_phone"})
         assert resp.data["data"]["sms"] is False
 
     def test_get_config_category_missing(self, api_client):
@@ -485,6 +503,12 @@ class TestSendVerifyCodeBind:
 
     def test_bind_phone_existing_user_extra(self, api_client, normal_user, settings, monkeypatch):
         settings.SMS_ENABLED = True
+        settings.SMS_BACKEND = "alibaba"
+        # 绑定发码要求短信通道可实际投递：补齐已收录服务商凭据
+        settings.ALIBABA_ACCESS_KEY_ID = "ak"
+        settings.ALIBABA_ACCESS_KEY_SECRET = "sk"
+        settings.ALIBABA_VERIFY_SIGN_NAME = "sign"
+        settings.ALIBABA_VERIFY_TEMPLATE_CODE = "SMS_1"
         settings.SECURITY_BIND_PHONE_CAPTCHA_ENABLED = False
         settings.SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_BIND_PHONE_ENCRYPTED_ENABLED = False

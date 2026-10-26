@@ -6,6 +6,7 @@ URL 前缀与 app 对齐：``/api/identity/...``；Menu.path 权限点、前端 
 模块裁剪 ModuleSpec 的 routes 正则已同步平移。
 """
 
+from django.conf import settings
 from django.urls import path, re_path
 from rest_framework.routers import SimpleRouter
 
@@ -19,6 +20,11 @@ from identity.views.admin.post import PostViewSet
 from identity.views.admin.role import RoleViewSet
 from identity.views.admin.user import UserViewSet
 from identity.views.auth.capabilities import LoginCapabilitiesAPIView
+from identity.views.auth.captcha_challenge import (
+    CaptchaChallengeAPIView,
+    CaptchaInspectAPIView,
+    CaptchaVerifyAPIView,
+)
 from identity.views.auth.impersonation import ImpersonateExitAPIView
 from identity.views.auth.invite import InviteAcceptAPIView, InviteValidateAPIView
 from identity.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
@@ -77,6 +83,9 @@ no_auth_url = [
     ),
     re_path("^register$", RegisterViewAPIView.as_view(), name="register"),
     re_path("^auth/captcha$", CaptchaAPIView.as_view(), name="captcha"),
+    # 交互式验证码：匿名出题 / 校验，答案永不下发；inspect 仅 E2E 配置挂载
+    re_path("^auth/captcha/challenge$", CaptchaChallengeAPIView.as_view(), name="captcha-challenge"),
+    re_path("^auth/captcha/verify$", CaptchaVerifyAPIView.as_view(), name="captcha-verify"),
     re_path("^auth/token$", TempTokenAPIView.as_view(), name="temp_token"),
     re_path(
         "^auth/capabilities$",
@@ -113,6 +122,10 @@ no_auth_url = [
         name="oauth-unbind",
     ),
 ]
+
+if getattr(settings, "CAPTCHA_INSPECT_ENABLED", False):
+    # E2E 专用：生产默认配置不定义该键，路由不存在（守护测试断言）
+    no_auth_url.append(re_path("^auth/captcha/inspect$", CaptchaInspectAPIView.as_view(), name="captcha-inspect"))
 
 auth_url = [
     re_path("^logout$", LogoutAPIView.as_view(), name="logout"),

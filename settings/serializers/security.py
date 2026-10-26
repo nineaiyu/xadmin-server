@@ -4,11 +4,9 @@
 # filename : security
 # author : ly_13
 # date : 8/1/2024
-from django.db.models import TextChoices
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.fields import ColorField
 from common.utils.ip import is_ip_address, is_ip_network, is_ip_segment
 from settings.serializers.contract import SettingSaveContractMixin
 
@@ -355,51 +353,25 @@ class SecurityVerifyCodeSerializer(SettingSaveContractMixin, serializers.Seriali
     VERIFY_CODE_DIGIT_CASE = serializers.BooleanField(required=False, label=_("Digits"))
 
 
-class SecurityCaptchaCodeSerializer(SettingSaveContractMixin, serializers.Serializer):
-    class ChallengeChoices(TextChoices):
-        RANDOM_CHAR = "captcha.helpers.random_char_challenge", _("Random char")
-        MATH_CHALLENGE = "captcha.helpers.math_challenge", _("Math challenge")
-
-    class NoiseFunctionsChoices(TextChoices):
-        FUNCTION_NULL = "captcha.helpers.noise_null", _("Noise function null")
-        FUNCTION_ARCS = "captcha.helpers.noise_arcs", _("Noise function arcs")
-        FUNCTION_DOTS = "captcha.helpers.noise_dots", _("Noise function dots")
-
-    CAPTCHA_CHALLENGE_FUNCT = serializers.ChoiceField(
-        choices=ChallengeChoices.choices,
-        default=ChallengeChoices.MATH_CHALLENGE,
-        label=_("Challenge generator"),
-        help_text=_("Image verification code generation mode"),
-    )
-
-    CAPTCHA_LENGTH = serializers.IntegerField(
-        default=4, min_value=2, max_value=16, label=_("Captcha code length"), help_text=_("Length of the captcha code")
-    )
-
-    CAPTCHA_FONT_SIZE = serializers.IntegerField(
-        default=22,
-        min_value=10,
-        max_value=50,
-        label=_("Captcha font size"),
-        help_text=_("Font size of the captcha code"),
-    )
-
-    CAPTCHA_TIMEOUT = serializers.IntegerField(
-        min_value=1,
-        max_value=60 * 24 * 7,
-        label=_("Captcha timeout (minute)"),
-        help_text=_("Captcha code expiration time"),
-    )
-
-    CAPTCHA_BACKGROUND_COLOR = ColorField(max_length=256, required=True, label=_("Captcha background color"))
-    CAPTCHA_FOREGROUND_COLOR = ColorField(max_length=256, required=True, label=_("Captcha foreground color"))
-
-    CAPTCHA_NOISE_FUNCTIONS = serializers.MultipleChoiceField(
-        label=_("Noise functions"), default=NoiseFunctionsChoices.FUNCTION_NULL, choices=NoiseFunctionsChoices.choices
-    )
-
-
 # MFA / 监控阈值序列化器拆分至 security_mfa.py（文件行数门禁），此处再导出保持既有导入面
+from settings.serializers.security_captcha import (  # noqa: E402,F401 显式再导出（no_implicit_reexport）
+    CaptchaImagePreviewResponseSerializer as CaptchaImagePreviewResponseSerializer,
+)
+from settings.serializers.security_captcha import (
+    CaptchaInteractivePreviewInSerializer as CaptchaInteractivePreviewInSerializer,
+)
+from settings.serializers.security_captcha import (
+    CaptchaInteractivePreviewResponseSerializer as CaptchaInteractivePreviewResponseSerializer,
+)
+from settings.serializers.security_captcha import (
+    SecurityCaptchaCodeSerializer as SecurityCaptchaCodeSerializer,
+)
+from settings.serializers.security_captcha import (
+    SecurityCaptchaGeneralSerializer as SecurityCaptchaGeneralSerializer,
+)
+from settings.serializers.security_captcha import (
+    SecurityCaptchaInteractiveSerializer as SecurityCaptchaInteractiveSerializer,
+)
 from settings.serializers.security_mfa import (  # noqa: E402,F401 显式再导出（no_implicit_reexport）
     SecurityMFASerializer as SecurityMFASerializer,
 )

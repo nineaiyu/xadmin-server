@@ -72,6 +72,10 @@ REST_FRAMEWORK = {
         # 临时令牌（/api/identity/auth/token）：每次调用强制生成新缓存令牌
         # 收紧到低于全局匿名档
         "temp_token": "30/m",
+        # 交互式验证码出题 / 校验：生成底图与坐标枚举都需服务端算力，
+        # 与图片码同量级收紧（challenge 30/min、verify 60/min）
+        "captcha_challenge": "30/m",
+        "captcha_verify": "60/m",
         # AI 对话类端点（问答/NL/受限动作/聊天室 AI，含流式）：LLM 外呼是最高成本入口，
         # 按用户维度防突发（人工问答远低于该值；批量跑批/多浏览器回归不触顶）
         "ai_chat": "120/m",

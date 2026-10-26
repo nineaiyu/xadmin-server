@@ -29,7 +29,15 @@ class TestCapabilitiesEndpoint:
         assert resp.data["code"] == 1000
         data = resp.data["data"]
         assert set(data) == {"access", "lifetime", "basic", "code", "register", "reset", "oauth"}
-        assert set(data["basic"]) == {"enabled", "captcha", "token", "encrypted"}
+        assert set(data["basic"]) == {
+            "enabled",
+            "captcha",
+            "captcha_mode",
+            "captcha_types",
+            "captcha_image_fallback",
+            "token",
+            "encrypted",
+        }
         for way in ("code", "register", "reset"):
             assert set(data[way]) == {"enabled", "email", "sms"}
 

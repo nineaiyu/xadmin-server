@@ -241,13 +241,16 @@ class TestValidate:
         # 2026-10 定时任务拆批量路由 + cron 预览/引用、巡检进度、规则/委托影响面、
         # 通知全读：菜单 +6（并移除重复 batchUpdate 权限点）、权限点 +6
         # 2026-10 开放平台设置页：菜单 +11（1 页面 + 10 权限点）、权限点 +10
-        # 2026-10 Webhook 通知渠道权限点（归属 SettingMessage）：菜单 +3、权限点 +3
+        # 2026-10 Webhook 通知渠道权限点（归属通知渠道页）：菜单 +3、权限点 +3
         # 2026-10 AI 日报/字段草案 + MCP 调用审计报表：菜单 +5、权限点 +5；字段 +7
         # 2026-10 清理死权限点 retrieve:SystemUserLoginLog（无 detail 路由）：菜单 -1、权限点 -1、白名单 -3
-        assert summary.totals["menu"] == 728
+        # 2026-10 验证码设置拆总配置/图片/交互式：菜单 +5（1 页面 + 4 权限点）、权限点 +4
+        # 2026-10 验证码预览端点：菜单 +2、权限点 +2
+        # 2026-10 设置页归类：新增通知渠道/账号安全 2 个页面（权限点仅换父菜单）
+        assert summary.totals["menu"] == 737
         assert summary.totals["field"] == 2141
         assert summary.totals["grant"] == 250
-        assert summary.permission_total == 652
+        assert summary.permission_total == 658
 
 
 class TestRows:

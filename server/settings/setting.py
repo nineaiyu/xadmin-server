@@ -256,6 +256,21 @@ FORWARD_KEYS = [
     "CAPTCHA_BACKGROUND_COLOR",
     "CAPTCHA_FOREGROUND_COLOR",
     "CAPTCHA_NOISE_FUNCTIONS",
+    # 交互式验证码（滑动 / 旋转 / 点选）
+    "CAPTCHA_ENABLED",
+    "CAPTCHA_MODE",
+    "CAPTCHA_INTERACTIVE_TYPES",
+    "CAPTCHA_SLIDE_TOLERANCE",
+    "CAPTCHA_ROTATE_TOLERANCE",
+    "CAPTCHA_CLICK_RADIUS",
+    "CAPTCHA_CHALLENGE_TTL",
+    "CAPTCHA_TICKET_TTL",
+    "CAPTCHA_MAX_ATTEMPTS",
+    "CAPTCHA_TRACK_CHECK_ENABLED",
+    "CAPTCHA_SLIDE_SIZE",
+    "CAPTCHA_ROTATE_SIZE",
+    "CAPTCHA_CLICK_CHARSET",
+    "CAPTCHA_IMAGE_FALLBACK_ENABLED",
 ]
 
 for _key in FORWARD_KEYS:
@@ -277,6 +292,8 @@ CAPTCHA_OUTPUT_FORMAT = "%(image)s %(text_field)s %(hidden_field)s "
 # CAPTCHA_NOISE_FUNCTIONS = ("captcha.helpers.noise_arcs", "captcha.helpers.noise_dots")
 # CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.random_char_challenge'
 CAPTCHA_FONT_PATH = os.path.join(PROJECT_DIR, "captcha", "fonts", "Vera.ttf")
+# 交互式点选题的中文字体（OFL 许可，GB2312 一级字库子集）；缺失时出题 fail-fast
+CAPTCHA_CLICK_FONT_PATH = os.path.join(PROJECT_DIR, "captcha", "resources", "fonts", "NotoSansSC-Captcha.ttf")
 CAPTCHA_LETTER_ROTATION = (-35, 35)
 CAPTCHA_FILTER_FUNCTIONS = ("captcha.helpers.post_smooth",)
 CAPTCHA_PUNCTUATION = """_"',.;:-"""

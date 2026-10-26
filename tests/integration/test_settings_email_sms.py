@@ -156,6 +156,37 @@ class TestSmsSettingView:
         values = {item["value"] for item in resp.data["data"]}
         assert "alibaba" in values
 
+    def test_general_endpoint_carries_effective_diagnostic(self, auth_client, settings):
+        """总开关诊断挂在「短信设置」页签（/api/settings/sms），不混入服务商页签。"""
+        settings.SMS_ENABLED = False
+        resp = auth_client.get("/api/settings/sms")
+
+        assert resp.status_code == 200
+        item = resp.data["data"]["effective"]["items"][0]
+        assert item["enabled"] is False
+        assert item["reasons"]
+
+    def test_general_endpoint_reports_missing_credentials_as_blocked(self, auth_client, settings):
+        """开关开着但凭据不完整时不能报“已生效”（发不出验证码）。"""
+        settings.SMS_ENABLED = True
+        settings.SMS_BACKEND = "alibaba"
+        settings.ALIBABA_ACCESS_KEY_ID = ""
+        settings.ALIBABA_ACCESS_KEY_SECRET = ""
+        settings.ALIBABA_VERIFY_SIGN_NAME = ""
+        settings.ALIBABA_VERIFY_TEMPLATE_CODE = ""
+        resp = auth_client.get("/api/settings/sms")
+
+        item = resp.data["data"]["effective"]["items"][0]
+        assert item["enabled"] is False
+        assert item["reasons"] == [str(_("SMS provider credentials are incomplete; verify codes may fail to be sent"))]
+
+    def test_provider_endpoint_does_not_carry_general_effective(self, auth_client):
+        """阿里云页签只负责服务商凭据，不应显示短信服务总开关的生效诊断。"""
+        resp = auth_client.get(f"{SMS_CONFIG_URL}?category=alibaba")
+
+        assert resp.status_code == 200
+        assert "effective" not in resp.data["data"]
+
     @pytest.mark.parametrize("backend", BACKENDS.values)
     def test_config_field_face_for_every_registered_backend(self, auth_client, backend):
         resp = auth_client.get(f"{SMS_CONFIG_URL}?category={backend}")

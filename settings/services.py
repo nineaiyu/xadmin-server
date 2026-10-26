@@ -49,6 +49,8 @@ __all__ = [
     "ResetBlockUtil",
     "SendVerifyCodeBlockUtil",
     "build_setting_effective",
+    "email_service_ready",
+    "sms_service_ready",
 ]
 
 
@@ -77,34 +79,35 @@ def __getattr__(name: str) -> Any:
 # 口径约束：login / register / reset 三场景的 ``enabled`` 直接取自登录页能力
 # 清单（identity.services.auth_capabilities，惰性 import 以避免模块级互引成环），
 # 管理端诊断与登录页入口显隐永不漂移；通道判定为开关级（与能力清单同口径）。
-# 投递服务的深层配置完整性（SMTP / 阿里云凭据）只做软提示（notices）——测试与
-# E2E 环境以 locmem 后端运行、无 EMAIL_HOST 属正常形态，不能作为硬阻断；
-# LDAP 配置缺失无此类测试语义，为硬阻断（与 LdapConfigError 口径一致）。
+# 投递服务就绪判定要求可实际投递：邮件 SMTP 缺 EMAIL_HOST 即未生效（locmem /
+# console / dummy 测试后端视为就绪）；短信需开关 + 已收录服务商凭据齐全（阿里云）；
+# LDAP 配置缺失同理为硬阻断（与 LdapConfigError 口径一致）。
 
 
 def _email_service_state() -> tuple[bool, list[str]]:
-    """邮件投递服务状态:(服务开关是否开启, 开启后仍存在的配置风险提示)。"""
+    """邮件投递服务状态：开关 + SMTP 主机（测试用 locmem/console 视为可用）。"""
     if not django_settings.EMAIL_ENABLED:
         return False, []
-    notices: list[str] = []
+    backend = str(getattr(django_settings, "EMAIL_BACKEND", "") or "")
+    if any(marker in backend for marker in ("locmem", "console", "dummy")):
+        return True, []
     if not django_settings.EMAIL_HOST:
-        notices.append(_("SMTP server address (EMAIL_HOST) is empty; emails may fail to be delivered"))
-    return True, notices
+        return False, [_("SMTP server address (EMAIL_HOST) is empty; emails may fail to be delivered")]
+    return True, []
 
 
 def _sms_service_state() -> tuple[bool, list[str]]:
-    """短信投递服务状态:同上;凭据完整性仅对已收录专属字段面的后端可判(阿里云)。"""
+    """短信投递服务状态：开关 + 凭据完整性（阿里云可判，缺失即未生效）。"""
     if not django_settings.SMS_ENABLED:
         return False, []
-    notices: list[str] = []
     if django_settings.SMS_BACKEND == "alibaba" and not (
         django_settings.ALIBABA_ACCESS_KEY_ID
         and django_settings.ALIBABA_ACCESS_KEY_SECRET
         and django_settings.ALIBABA_VERIFY_SIGN_NAME
         and django_settings.ALIBABA_VERIFY_TEMPLATE_CODE
     ):
-        notices.append(_("SMS provider credentials are incomplete; verify codes may fail to be sent"))
-    return True, notices
+        return False, [_("SMS provider credentials are incomplete; verify codes may fail to be sent")]
+    return True, []
 
 
 def _ldap_state() -> tuple[bool, list[str]]:
@@ -234,35 +237,39 @@ def _reset_effective_items() -> list[dict[str, Any]]:
 
 
 def _bind_email_effective_items() -> list[dict[str, Any]]:
-    enabled = django_settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED and django_settings.EMAIL_ENABLED
+    ready, service_reasons = _email_service_state()
+    enabled = django_settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED and ready
     reasons: list[str] = []
     if not django_settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED:
         reasons.append(_("Bind email switch is off"))
-    if not django_settings.EMAIL_ENABLED:
-        reasons.append(_("Email service is disabled"))
+    if not ready:
+        reasons.extend(service_reasons or [_("Email service is disabled")])
     return [{"title": _("Bind email"), "enabled": enabled, "reasons": reasons, "notices": []}]
 
 
 def _bind_phone_effective_items() -> list[dict[str, Any]]:
-    enabled = django_settings.SECURITY_BIND_PHONE_ACCESS_ENABLED and django_settings.SMS_ENABLED
+    ready, service_reasons = _sms_service_state()
+    enabled = django_settings.SECURITY_BIND_PHONE_ACCESS_ENABLED and ready
     reasons: list[str] = []
     if not django_settings.SECURITY_BIND_PHONE_ACCESS_ENABLED:
         reasons.append(_("Bind phone switch is off"))
-    if not django_settings.SMS_ENABLED:
-        reasons.append(_("Sms service is disabled"))
+    if not ready:
+        reasons.extend(service_reasons or [_("Sms service is disabled")])
     return [{"title": _("Bind phone"), "enabled": enabled, "reasons": reasons, "notices": []}]
 
 
 def _email_effective_items() -> list[dict[str, Any]]:
-    enabled, notices = _email_service_state()
-    reasons = [] if enabled else [_("Email service is disabled")]
-    return [{"title": _("Email service"), "enabled": enabled, "reasons": reasons, "notices": notices}]
+    enabled, reasons = _email_service_state()
+    if not enabled and not reasons:
+        reasons = [_("Email service is disabled")]
+    return [{"title": _("Email service"), "enabled": enabled, "reasons": reasons, "notices": []}]
 
 
 def _sms_effective_items() -> list[dict[str, Any]]:
-    enabled, notices = _sms_service_state()
-    reasons = [] if enabled else [_("Sms service is disabled")]
-    return [{"title": _("Sms service"), "enabled": enabled, "reasons": reasons, "notices": notices}]
+    enabled, reasons = _sms_service_state()
+    if not enabled and not reasons:
+        reasons = [_("Sms service is disabled")]
+    return [{"title": _("Sms service"), "enabled": enabled, "reasons": reasons, "notices": []}]
 
 
 def _ldap_effective_items() -> list[dict[str, Any]]:
@@ -286,9 +293,20 @@ def build_setting_effective(category: str) -> dict[str, Any] | None:
     """构建设置 tab 的「实际生效状态」诊断载荷;未登记的 tab 返回 None（不下发）。
 
     形状:``{"items": [{"title", "enabled", "reasons", "notices"}]}``——
-    reasons 为未生效原因（硬阻断）,notices 为已生效但存在配置风险的软提示。
+    reasons 为未生效原因；notices 为兼容软提示的保留字段（当前投递服务
+    均按可实际投递硬判定，恒为空）。
     """
     builder = _EFFECTIVE_BUILDERS.get(category)
     if builder is None:
         return None
     return {"items": builder()}
+
+
+def email_service_ready() -> bool:
+    """邮件通道是否可实际投递（测试后端视为已就绪）。"""
+    return _email_service_state()[0]
+
+
+def sms_service_ready() -> bool:
+    """短信通道是否可实际投递（开关 + 已收录服务商凭据完整性）。"""
+    return _sms_service_state()[0]

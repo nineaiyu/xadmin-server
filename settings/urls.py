@@ -19,6 +19,8 @@ from settings.views.security import (
     SecurityBindEmailAuthViewSet,
     SecurityBindPhoneAuthViewSet,
     SecurityCaptchaCodeViewSet,
+    SecurityCaptchaGeneralViewSet,
+    SecurityCaptchaInteractiveViewSet,
     SecurityLoginAuthViewSet,
     SecurityLoginLimitViewSet,
     SecurityMFAViewSet,
@@ -47,7 +49,9 @@ no_detail_router.register("oauth/providers", OAuthProviderSettingViewSet, basena
 no_detail_router.register("basic", BasicSettingViewSet, basename="basic")
 no_detail_router.register("password", SecurityPasswordRuleViewSet, basename="security-password")
 no_detail_router.register("verify", SecurityVerifyCodeViewSet, basename="verify-code")
+no_detail_router.register("captcha/general", SecurityCaptchaGeneralViewSet, basename="captcha-general")
 no_detail_router.register("captcha", SecurityCaptchaCodeViewSet, basename="captcha-code")
+no_detail_router.register("captcha/interactive", SecurityCaptchaInteractiveViewSet, basename="captcha-interactive")
 
 no_detail_router.register("login/limit", SecurityLoginLimitViewSet, basename="security-login-limit")
 no_detail_router.register("login/auth", SecurityLoginAuthViewSet, basename="security-login-auth")

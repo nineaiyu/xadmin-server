@@ -110,3 +110,4 @@ hasAuth 校验不得回退删除。
 | `list:SystemImportRecord` | 下载中心「导入记录」页签显隐开关（`views/system/export/index.vue`），挂在 SystemExportRecord 菜单下；权限点标题已注明「控制导入页签显隐」 |
 | `retrieve/partialUpdate:SettingWatermark` | 基本设置「水印设置」页签独立权限位，与 `SettingBasic` 两点同 path（`api/settings/basic$`）：读取仍为 OR 语义（任一点授权即可读全部设置字段；设置项非敏感值，读隔离需按角色分片元数据缓存，收益低）；写入时后端按提交字段校验所属权限码——水印前缀字段需 Watermark 码、其余字段需 Basic 码，越权字段返回 400；前端页签按 Watermark 码独立判权。存量自定义角色需显式勾选后水印页签才可见 |
 | `cancel/rerun:SystemTaskExecution` | 执行历史页取消/重跑按钮，走聚合端点 `/api/task/unified/{cancel,rerun}`；权限码归执行历史资源名（2026-10 由 `SystemTaskCenter` 改名，任务中心菜单已删除，pk 未变故存量授权自动延续） |
+| `SettingChannel` / `SettingAccountSecurity` | 设置页重组：渠道配置从 `SettingMessage` 拆到「通知渠道」，账号策略从 `SettingSecurity` 拆到「账号安全」；权限码不变，仅换父菜单。升级时 `post_upgrade` 按「旧页面 + 被迁移权限点」为自定义角色回填新页面授权（幂等，只增不删） |

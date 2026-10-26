@@ -92,9 +92,11 @@ addDrawer({ title, size: "55%", props: { pk: row.pk }, contentRenderer: () => h(
 **声明式弹层判定**（模板里直接写 `<el-dialog>` / `<el-drawer>`）：
 
 - 默认走 `addDialog` / `addDrawer`：overlay 内核统一滚动锁、页脚与尺寸，且与全站弹层行为一致；
-- 仅以下情形允许内联声明：① 弹层封装组件本体（ReDialog / ReDrawer / ReMfaConfirm 等）；
-  ② 随页面/设计器生命周期存续的常驻面板或编辑器内部交互；③ 轻量只读展示且无页脚/提交；
-  ④ 不套布局的登录流程页；
+- **常驻面板 / 组件内部交互**（随页面或设计器生命周期存续、不适合命令式开关）走声明式壳
+  `OverlayDialog` / `OverlayDrawer`（`src/components/overlay/`）——与命令式弹层共用滚动锁与
+  尺寸档位，禁止直接写 EP 弹层；
+- 仅以下情形允许内联 EP 声明：① 弹层内核封装本体（ReDialog / ReDrawer / OverlayDialog /
+  OverlayDrawer）；② 移动端导航抽屉等非业务弹层基础设施；
 - 内联用法必须登记 `xadmin-client/scripts/declarative-overlays-baseline.json`（处数 + 理由），
   `pnpm check:overlays` 按文件只减不增；新增文件未登记即红。
 

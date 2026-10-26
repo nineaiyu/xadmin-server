@@ -2,9 +2,8 @@
 """设置项「实际生效状态」诊断(build_setting_effective)的组合矩阵守护。
 
 口径:场景 enabled 与登录页能力清单(identity.services.auth_capabilities)
-同源(直接读取),reasons 解释未生效原因(仅未生效时给出),notices 为已生效
-但存在配置风险的软提示(SMTP / 阿里云凭据);LDAP 配置缺失为硬阻断(与
-LdapConfigError 一致)。
+同源(直接读取),reasons 解释未生效原因(仅未生效时给出);邮件 SMTP、短信
+凭据缺失均为硬阻断(无法实际投递,不能报“已生效”);LDAP 配置缺失同理。
 
 开关一律经 pytest-django settings fixture 修改(用例间自动还原,避免进程内
 顺序泄漏);测试库种子可能带入非默认通道开关,不依赖环境默认值作断言前提。
@@ -92,22 +91,53 @@ class TestBindEffective:
         assert item["enabled"] is False
         assert str(_("Email service is disabled")) in item["reasons"]
 
+    def test_bind_email_blocked_by_missing_smtp(self, settings, channels_off, no_oauth):
+        settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED = True
+        settings.EMAIL_ENABLED = True
+        settings.EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        settings.EMAIL_HOST = ""
+        item = build_setting_effective("security_bind_email_auth")["items"][0]
+        assert item["enabled"] is False
+        assert "EMAIL_HOST" in item["reasons"][0]
+
     def test_bind_phone_blocked_by_service(self, settings, channels_off, no_oauth):
         settings.SECURITY_BIND_PHONE_ACCESS_ENABLED = True
         item = build_setting_effective("security_bind_phone_auth")["items"][0]
         assert item["enabled"] is False
 
+    def test_bind_phone_blocked_by_missing_sms_credentials(self, settings, channels_off, no_oauth):
+        settings.SECURITY_BIND_PHONE_ACCESS_ENABLED = True
+        settings.SMS_ENABLED = True
+        settings.SMS_BACKEND = "alibaba"
+        settings.ALIBABA_ACCESS_KEY_ID = ""
+        settings.ALIBABA_ACCESS_KEY_SECRET = ""
+        settings.ALIBABA_VERIFY_SIGN_NAME = ""
+        settings.ALIBABA_VERIFY_TEMPLATE_CODE = ""
+        item = build_setting_effective("security_bind_phone_auth")["items"][0]
+        assert item["enabled"] is False
+        assert item["reasons"] == [str(_("SMS provider credentials are incomplete; verify codes may fail to be sent"))]
+
 
 class TestDeliveryServiceAdvisory:
-    def test_email_service_on_without_host_is_notice_not_blocker(self, settings, channels_off, no_oauth):
-        """SMTP 缺失是软提示:服务开关开着就算生效,风险以 notices 表达。"""
+    def test_email_service_on_without_host_is_blocked(self, settings, channels_off, no_oauth):
+        """SMTP 主机缺失时无法投递：未生效 + 原因，而不是“已生效 + 软提示”。"""
         settings.EMAIL_ENABLED = True
+        settings.EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        settings.EMAIL_HOST = ""
+        item = build_setting_effective("email")["items"][0]
+        assert item["enabled"] is False
+        assert item["reasons"]
+        assert "EMAIL_HOST" in item["reasons"][0]
+        assert item["notices"] == []
+
+    def test_email_service_locmem_is_ready_without_host(self, settings, channels_off, no_oauth):
+        """测试后端（locmem）可投递：无 SMTP 主机也应视为已生效。"""
+        settings.EMAIL_ENABLED = True
+        settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
         settings.EMAIL_HOST = ""
         item = build_setting_effective("email")["items"][0]
         assert item["enabled"] is True
         assert item["reasons"] == []
-        assert item["notices"]
-        assert "EMAIL_HOST" in item["notices"][0]
 
     def test_email_service_off(self, settings, channels_off, no_oauth):
         settings.EMAIL_ENABLED = False
@@ -116,12 +146,29 @@ class TestDeliveryServiceAdvisory:
         assert item["notices"] == []
 
     def test_sms_service_on_without_alibaba_creds(self, settings, channels_off, no_oauth):
+        """短信开关开了但凭据缺失：发不出验证码 → 未生效（硬阻断），不是软提示。"""
         settings.SMS_ENABLED = True
         settings.SMS_BACKEND = "alibaba"
         settings.ALIBABA_ACCESS_KEY_ID = ""
+        settings.ALIBABA_ACCESS_KEY_SECRET = ""
+        settings.ALIBABA_VERIFY_SIGN_NAME = ""
+        settings.ALIBABA_VERIFY_TEMPLATE_CODE = ""
+        item = build_setting_effective("sms")["items"][0]
+        assert item["enabled"] is False
+        assert item["reasons"] == [str(_("SMS provider credentials are incomplete; verify codes may fail to be sent"))]
+        assert item["notices"] == []
+
+    def test_sms_service_on_with_alibaba_creds(self, settings, channels_off, no_oauth):
+        settings.SMS_ENABLED = True
+        settings.SMS_BACKEND = "alibaba"
+        settings.ALIBABA_ACCESS_KEY_ID = "ak"
+        settings.ALIBABA_ACCESS_KEY_SECRET = "sk"
+        settings.ALIBABA_VERIFY_SIGN_NAME = "sign"
+        settings.ALIBABA_VERIFY_TEMPLATE_CODE = "SMS_1"
         item = build_setting_effective("sms")["items"][0]
         assert item["enabled"] is True
-        assert item["notices"]
+        assert item["reasons"] == []
+        assert item["notices"] == []
 
 
 class TestLdapHardBlock:

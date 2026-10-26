@@ -78,6 +78,9 @@ VERIFY_CODE_LIMIT = 1000
 # 投递留在服务端进程内，浏览器内不可读取
 EMAIL_ENABLED = True
 SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = False
+# 交互式验证码 E2E：仅挂载受控答案检查端点（默认配置不定义该键，路由不存在）；
+# 模式仍在用例内按需切换，既有套件继续走图片码关闭的登录链路。
+CAPTCHA_INSPECT_ENABLED = True
 # IP 限流必须放宽：E2E 全套件共享 127.0.0.1，且登录锁定用例会连续失败 50 次，
 # 默认阈值（50 次/30min）会把本机 IP 整体封禁，导致后续所有用例无法登录
 SECURITY_LOGIN_IP_LIMIT_COUNT = 100000
@@ -116,6 +119,8 @@ REST_FRAMEWORK = {  # noqa: F405  # star-import 覆写
         # 端点的 E2E 用例同样高频匿名请求，收紧档会先于业务断言打满（429 雪崩）
         "temp_token": "100000/m",
         "verify_code": "100000/m",
+        "captcha_challenge": "100000/m",
+        "captcha_verify": "100000/m",
         "open_client": "100000/m",
         "oauth_client": "100000/m",
         # 导出/导入与下载中心：多套件共享同一后端，连续导入导出/下载用例

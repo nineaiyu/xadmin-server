@@ -12833,3 +12833,223 @@ msgstr "布尔值不合法"
 #: audit/views/admin/mask.py
 msgid "Mask preview timed out; simplify the custom regex"
 msgstr "脱敏预览超时，请简化自定义正则"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Captcha type"
+msgstr "验证码题型"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Omit to let the server pick one from the enabled types"
+msgstr "留空则由服务端从启用题型中随机选择"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Captcha scene"
+msgstr "验证码场景"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "X coordinate"
+msgstr "X 坐标"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Y coordinate"
+msgstr "Y 坐标"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Timestamp (ms)"
+msgstr "时间戳（毫秒）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Challenge ID"
+msgstr "挑战 ID"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Answer"
+msgstr "答案"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Pointer track"
+msgstr "指针轨迹"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Background image"
+msgstr "底图"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Puzzle piece"
+msgstr "拼图块"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Click tip image"
+msgstr "点选提示图"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Image width"
+msgstr "图片宽度"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Image height"
+msgstr "图片高度"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Piece size"
+msgstr "拼图块尺寸"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Click count"
+msgstr "点选数量"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Validity period (second)"
+msgstr "有效期（秒）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Passed"
+msgstr "是否通过"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "One-time ticket"
+msgstr "一次性票据"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Ticket TTL (second)"
+msgstr "票据有效期（秒）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Attempts left"
+msgstr "剩余尝试次数"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Business code"
+msgstr "业务码"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Too many attempts or pending captcha tickets, please refresh"
+msgstr "尝试次数过多或有未使用的验证票据，请刷新后重试"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Captcha expired or invalid, please refresh"
+msgstr "验证码已过期或无效，请刷新"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Image captcha"
+msgstr "图片验证码"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Interactive captcha"
+msgstr "交互式验证码"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Slide puzzle"
+msgstr "滑动拼图"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Rotate upright"
+msgstr "旋转回正"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Word click"
+msgstr "文字点选"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Common Chinese characters"
+msgstr "常用汉字"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Letters and digits"
+msgstr "字母数字"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Captcha mode"
+msgstr "验证码模式"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Image character captcha or interactive (slide / rotate / click)"
+msgstr "图片字符验证码或交互式（滑动 / 旋转 / 点选）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Interactive captcha types"
+msgstr "交互式题型"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Enabled challenge types when the mode is interactive"
+msgstr "交互式模式下启用的题型"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Slide tolerance (px)"
+msgstr "滑动容差（像素）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Rotate tolerance (degree)"
+msgstr "旋转容差（度）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Click hit radius (px)"
+msgstr "点选命中半径（像素）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Challenge validity (second)"
+msgstr "挑战有效期（秒）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Captcha ticket validity (second)"
+msgstr "验证票据有效期（秒）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Max attempts per challenge"
+msgstr "单题最大尝试次数"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Pointer track check"
+msgstr "指针轨迹校验"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Reject answers without a plausible pointer trajectory"
+msgstr "拒绝缺少合理指针轨迹的答案"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Slide background size (px)"
+msgstr "滑动底图尺寸（像素）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Rotate image size (px)"
+msgstr "旋转图片尺寸（像素）"
+
+#: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
+msgid "Click charset"
+msgstr "点选字符集"
+
+#: settings/serializers/security_captcha.py
+msgid "Image captcha fallback"
+msgstr "图片验证码回退"
+
+#: settings/serializers/security_captcha.py
+msgid "Allow users to switch to the image captcha when the interactive mode is enabled (accessibility fallback; weaker against OCR)"
+msgstr "交互式模式下允许用户切换为图片验证码（无障碍回退；对 OCR 的防护较弱）"
+
+#: settings/serializers/security_captcha.py
+msgid "Size must contain width and height"
+msgstr "尺寸必须包含宽度和高度"
+
+#: captcha/serializers.py
+msgid "Error code"
+msgstr "错误码"
+
+#: settings/serializers/security_captcha.py
+msgid "Enable captcha"
+msgstr "启用验证码"
+
+#: settings/serializers/security_captcha.py
+msgid "Global switch: when disabled, no scene requires a captcha"
+msgstr "全局开关；关闭后所有场景不再要求验证码"
+
+#: settings/serializers/security_captcha.py
+msgid "Captcha type used by all scenes; new types can be added as separate tabs"
+msgstr "所有场景使用的验证码类型；新增类型可按独立页签扩展"
+
+#: settings/serializers/security_captcha.py
+msgid "Preview image"
+msgstr "预览图片"
+
+#: settings/serializers/security_captcha.py
+msgid "Answer length"
+msgstr "答案长度"

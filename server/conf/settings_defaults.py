@@ -300,6 +300,26 @@ SETTINGS_CONFIG = {
     "CAPTCHA_BACKGROUND_COLOR": "#ffffff",
     "CAPTCHA_FOREGROUND_COLOR": "#001100",
     "CAPTCHA_NOISE_FUNCTIONS": ("captcha.helpers.noise_arcs", "captcha.helpers.noise_dots"),
+    # 交互式验证码（滑动拼图 / 旋转回正 / 文字点选）：模式默认 image，
+    # 升级零行为变化；场景总开关仍由 SECURITY_<场景>_CAPTCHA_ENABLED 控制
+    # 验证码总开关：关闭后所有场景不再人机校验（各场景开关仍独立保留）
+    "CAPTCHA_ENABLED": True,
+    "CAPTCHA_MODE": "image",
+    "CAPTCHA_INTERACTIVE_TYPES": ["slide", "rotate", "click"],
+    "CAPTCHA_SLIDE_TOLERANCE": 4,
+    "CAPTCHA_ROTATE_TOLERANCE": 4,
+    "CAPTCHA_CLICK_RADIUS": 20,
+    "CAPTCHA_CHALLENGE_TTL": 120,
+    "CAPTCHA_TICKET_TTL": 120,
+    "CAPTCHA_MAX_ATTEMPTS": 3,
+    "CAPTCHA_TRACK_CHECK_ENABLED": True,
+    "CAPTCHA_SLIDE_SIZE": (320, 180),
+    "CAPTCHA_ROTATE_SIZE": (240, 240),
+    # chinese = 内置 GB2312 一级字库（3755 常用字）；ascii = 字母数字
+    "CAPTCHA_CLICK_CHARSET": "chinese",
+    # 无障碍回退：交互式模式下允许用户显式切换到图片验证码（默认关闭；
+    # 开启后图片码同样可通过服务端校验，脚本也可利用该通道，故不默认启用）
+    "CAPTCHA_IMAGE_FALLBACK_ENABLED": False,
     # ------------------------------------------------------------------
     # 运行期系统配置（SysConfig 热更新）的代码默认值唯一源：
     # packages/xadmin-common/common/core/config.py 的 SysConfig property 一律回读这里（CONFIG.<KEY>），

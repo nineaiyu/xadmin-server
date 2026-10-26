@@ -154,7 +154,7 @@
 | 阶段 0（立即，S） | 三个门禁补齐：①声明式弹层基线（arch-P1-04①）②module-cycles 补 3 条反向边（arch-P2-01）③出站 requests 直用复核收口（§3.2） | 纯冻结/防扩散，零行为变更 | 门禁跑通 + 存量清点 |
 | 阶段 1（S-M） | 内核字段可见性 resolver 二合一（arch-P1-02，走内核 prerelease 发包）+ 共享端点声明式收口（arch-P1-03，双读迁移 4 组） | 安全语义去重 | 字段权限/数据集 fail-closed 守护测试 + test_shared_permission_endpoints |
 | 阶段 2（M） | RePlusPage 四态框架化（arch-P1-01，绞杀者+opt-out） | 框架能力升格 | 双浏览器 E2E + 视觉基线重录 + 分批迁移 |
-| 阶段 3（触发制） | 弹层内核统一（P1-04②）/ 仪表盘服务端聚合（arch-P2-03）/ keep-alive 粒度（arch-P2-04）——触发条件未命中不立项 | 按台账纪律 | 各自独立验证 |
+| 阶段 3（触发制） | 仪表盘服务端聚合（arch-P2-03）/ keep-alive 粒度（arch-P2-04）——触发条件未命中不立项；弹层内核统一（arch-P1-04②）已提前交付 | 按台账纪律 | 各自独立验证 |
 | 随手项（S） | arch-P2-05 AGENTS daphne→gunicorn 文档修正、arch-P2-02 领域归属约定入 handbook、arch-P2-06 generate_crud --strict、二开两处 M 级缺口（白名单文档专篇 + 插件通知渠道样板） | 文档/小工具 | 文档门禁 + 教程实跑 |
 
 ### 5.3 DEV-TASKS.md 候选条目（按其叙事格式预写，可直接并入）
@@ -182,7 +182,7 @@
 | arch-P1-02 字段可见性 resolver | ✅ | 内核 `_role_dept_q` 公开为 `role_dept_q`（docstring 明确业务侧复用）；dataset `viewer_visible_fields` 删除手工镜像改委托内核；数据集/字段权限测试全绿 |
 | arch-P1-03 共享端点声明式 | ✅ | `shared_permissions`（类装饰器）与 `shared_permission`（方法装饰器）；4 组共享端点迁移；注册表优先 + 兜底表兼容；种子/声明/兜底表三方一致性守护 |
 | arch-P1-04① 弹层基线 | ✅ | 门禁 + 21 条存量登记（14 视图 + 7 封装/全局件）；`handbook-frontend` §2.2 补「声明式弹层判定」 |
-| arch-P1-04② 弹层内核统一 | ⏸ 触发制 | 触发条件未命中，不立项 |
+| arch-P1-04② 弹层内核统一 | ✅ | 新增声明式壳 `OverlayDialog` / `OverlayDrawer`（与命令式弹层共用滚动锁）；视图层与封装层 19 处内联弹层全部迁移，声明式弹层基线 21 → 4（仅剩 ReDialog / ReDrawer / 两个壳组件）；`check:overlays` 提示文案与 `handbook-frontend` §2.2 同步 |
 | arch-P2-01 前端反向边 | ✅ | `Motion` 下沉 `components/ReMotion`；站内信详情弹窗下沉 `components/ReNoticeShow`；权限预览组件改由页面层注入（presets 不再 import views）；反向边 0 条，门禁锁 2 条前缀边 |
 | arch-P2-02 领域归属约定 | ✅ | `handbook-backend.md` §1.15（services vs utils 判定与反例） |
 | arch-P2-03 仪表盘服务端聚合 | ⏸ 触发制 | 触发条件未命中，不立项 |
