@@ -32,11 +32,14 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def _role_dept_q(user_obj: Any, role_field: str) -> tuple[Q, bool]:
+def role_dept_q(user_obj: Any, role_field: str) -> tuple[Q, bool]:
     """「角色 ∪ 部门」授权 Q（菜单与字段权限两张表的关系名不同，按 ``role_field`` 参数化）。
 
     角色列表只取一次复用（原逐个 exists()/count() + all() 会对同一关系重复查询）。
     返回 (Q, 是否有授权来源)。
+
+    业务侧的字段白名单解析（如数据集 ``viewer_visible_fields``）必须复用本函数，
+    不要镜像同一安全谓词——两处漂移会让「谁能看到哪些字段」出现静默差异。
     """
     q = Q()
     has_role = False
@@ -51,7 +54,7 @@ def _role_dept_q(user_obj: Any, role_field: str) -> tuple[Q, bool]:
 
 
 def get_user_menu_queryset(user_obj: Any) -> Any:
-    q, has_role = _role_dept_q(user_obj, "userrole")
+    q, has_role = role_dept_q(user_obj, "userrole")
     if has_role:
         # return get_filter_queryset(Menu.objects.filter(is_active=True).filter(q), user_obj)
         # 菜单通过角色控制，就不用再次通过数据权限过滤了，要不然还得两个地方都得配置
@@ -62,7 +65,7 @@ def get_user_menu_queryset(user_obj: Any) -> Any:
 
 @MagicCacheData.make_cache(timeout=10, key_func=lambda *args: f"{args[0].pk}_{args[1]}")
 def get_user_field_queryset(user_obj: Any, menu: Any) -> Any:
-    q, has_q = _role_dept_q(user_obj, "role")
+    q, has_q = role_dept_q(user_obj, "role")
     data: dict[str, set[str]] = defaultdict(set)
     if has_q:
         # queryset = get_filter_queryset(FieldPermission.objects.filter(q), user_obj).filter(menu=menu)
@@ -81,9 +84,9 @@ def get_user_field_queryset_for_menus(user_obj: Any, menus: Any) -> Any:
     return dict(merged)
 
 
-#: 同一 (path, method) 登记多个权限码时的显式主权限点优先级。
-#: 运行时 `request.user.menu` / 数据权限菜单上下文必须稳定，不能随数据库返回顺序漂移；
-#: 未登记的共享端点按权限码名排序兜底（仍然确定，但新增共享端点应在此显式登记）。
+#: 同一 (path, method) 登记多个权限码时的兜底主权限点优先级（兼容期）。
+#: 新代码应在视图声明处用 ``@shared_permissions`` 登记（注册表优先）；
+#: 本表仅为「URLconf 尚未装载 / 离线扫描」时 import 顺序兜底，与注册表由守护测试锁定一致。
 SHARED_PERMISSION_PRIORITY: dict[tuple[str, str], tuple[str, ...]] = {
     ("api/settings/basic$", "GET"): ("retrieve:SettingBasic", "retrieve:SettingWatermark"),
     ("api/settings/basic$", "PATCH"): ("partialUpdate:SettingBasic", "partialUpdate:SettingWatermark"),
@@ -124,9 +127,11 @@ def get_user_permission_menus(user_obj: Any, method: Any) -> dict[str, list[tupl
 
 
 def select_shared_permission(path: str, method: Any, entries: list[tuple[Any, str, Any]]) -> tuple[Any, str, Any]:
-    """从同 path 多权限码中选一个确定的主权限点（显式优先级 → 码名 → pk）。"""
+    """从同 path 多权限码中选一个确定的主权限点（声明注册表 → 硬编码表 → 码名 → pk）。"""
     method_key = str(method or "").upper()
-    priority = SHARED_PERMISSION_PRIORITY.get((path, method_key), ())
+    priority = permission_meta.shared_priority(path, method_key)
+    if priority is None:
+        priority = SHARED_PERMISSION_PRIORITY.get((path, method_key), ())
 
     def sort_key(entry: tuple[Any, str, Any]) -> tuple[int, str, str]:
         menu_pk, name, _model = entry

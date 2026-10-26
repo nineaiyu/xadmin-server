@@ -8,6 +8,7 @@
 样本用 `demo.Book`（demo 仅在测试 settings 启用，见 tests/settings_real.py 的 XADMIN_APPS 注入）。
 """
 
+import io
 import json
 import shutil
 import subprocess
@@ -22,6 +23,7 @@ from devtools.management.commands.generate_crud import (
     BLOCK_END,
     BLOCK_START,
     PERMISSION_ACTIONS,
+    Command,
 )
 
 pytestmark = pytest.mark.django_db
@@ -403,6 +405,52 @@ class TestBootstrap:
         assert Menu.objects.filter(name="DemoBook").exists()
         assert UserRole.objects.get(code="ops").menu.count() == 0
         assert "跳过角色授权" in capsys.readouterr().out
+
+
+class TestGenerateVerifyStrict:
+    """--strict：生成后自检失败必须以非零码退出（只报告模式保持原行为）。"""
+
+    def test_verify_reports_gap_and_drift_as_failures(self, monkeypatch):
+        command = Command()
+        command.stdout = io.StringIO()
+
+        def fake_call_command(name, **kwargs):
+            if name == "sync_menu_permissions":
+                kwargs["stdout"].write("扫描到 10 条路由，缺口 2 条 → 计划新增 2 个（无法归属 0）\n")
+                return None
+            if name == "dump_openapi":
+                raise RuntimeError("schema drift")
+            return None
+
+        monkeypatch.setattr("django.core.management.call_command", fake_call_command)
+        failures = command._verify_generated()
+        assert failures == ["权限点缺口 2 条", "OpenAPI 契约已漂移"]
+
+    def test_verify_passes_when_checks_are_clean(self, monkeypatch):
+        command = Command()
+        command.stdout = io.StringIO()
+
+        def fake_call_command(name, **kwargs):
+            if name == "sync_menu_permissions":
+                kwargs["stdout"].write("扫描到 10 条路由，缺口 0 条 → 计划新增 0 个（无法归属 0）\n")
+            return None
+
+        monkeypatch.setattr("django.core.management.call_command", fake_call_command)
+        assert command._verify_generated() == []
+
+    def test_strict_implies_verify_and_raises(self, workspace, monkeypatch):
+        from django.core.management.base import CommandError
+
+        called = []
+
+        def fake_verify(self):
+            called.append(True)
+            return ["权限点缺口 1 条"]
+
+        monkeypatch.setattr(Command, "_verify_generated", fake_verify)
+        with pytest.raises(CommandError, match="生成后自检未通过"):
+            _generate(workspace, "--strict")
+        assert called == [True]
 
 
 class TestModuleDeclaration:

@@ -89,6 +89,18 @@ addDrawer({ title, size: "55%", props: { pk: row.pk }, contentRenderer: () => h(
 
 - 项目内已收敛模式（新弹窗照抄）：`addDialog({...}) + components/XxxForm.vue（reactive 表单 + getPayload() 校验）`，范例 `views/integration/knowledge/`、`views/integration/api-app/`。
 
+**声明式弹层判定**（模板里直接写 `<el-dialog>` / `<el-drawer>`）：
+
+- 默认走 `addDialog` / `addDrawer`：overlay 内核统一滚动锁、页脚与尺寸，且与全站弹层行为一致；
+- 仅以下情形允许内联声明：① 弹层封装组件本体（ReDialog / ReDrawer / ReMfaConfirm 等）；
+  ② 随页面/设计器生命周期存续的常驻面板或编辑器内部交互；③ 轻量只读展示且无页脚/提交；
+  ④ 不套布局的登录流程页；
+- 内联用法必须登记 `xadmin-client/scripts/declarative-overlays-baseline.json`（处数 + 理由），
+  `pnpm check:overlays` 按文件只减不增；新增文件未登记即红。
+
+**确认框选型**：二值确认（含危险操作）用 `useConfirm`；`ElMessageBox.prompt / alert`
+尚无统一封装，新增前先评估是否能用 `useConfirm` + 表单弹层替代（该收敛项在滚动清偿中）。
+
 ### 2.3 图标：ReIcon / LocalIcon（全离线）
 
 ```ts

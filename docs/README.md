@@ -29,6 +29,7 @@
 |------|------|
 | 元数据协议 | [architecture/metadata-protocol.md](architecture/metadata-protocol.md)：字段语义 / `input_type` 推断链 / 四通道注册表 / 失败可见性 |
 | 字段类型矩阵 | [architecture/field-types.md](architecture/field-types.md)：Django 模型字段 → DRF → `input_type` 全量映射、逐类型四通道归宿、校验归属与候选池 |
+| 数据集白名单 | [architecture/dataset-field-whitelist.md](architecture/dataset-field-whitelist.md)：模型/字段白名单来源、保存与执行双侧 fail-closed、新模型登记步骤与守护测试 |
 | 框架内核发包 | [architecture/kernel-package.md](architecture/kernel-package.md)：`xadmin-common` 工作区布局 / 构建与宿主接线 / **内核 settings 契约表**（宿主必给与缺省键）/ 升级注记 |
 | 权限体系 | [architecture/permission.md](architecture/permission.md)（三层 + 应用级授权）；配置操作教程 [architecture/data-permission.md](architecture/data-permission.md) / [architecture/field-permission.md](architecture/field-permission.md) |
 | 菜单维护口径 | [guide/menu-maintenance.md](guide/menu-maintenance.md)：种子 path↔组件目录基本口径 / URL≠目录 例外清单（对账门禁白名单）/ 新增页面规范 |
@@ -79,6 +80,7 @@
 | **2026-10 全栈功能审查（内部审查资料）** | 主册 [plans/code-review-2026-10.md](plans/code-review-2026-10.md)（说明 / 总览 / 三张清单 / 专项汇总 / 行动建议）+ 分册：[系统域 A](plans/code-review-2026-10-pages-system-a.md) · [系统域 B](plans/code-review-2026-10-pages-system-b.md) · [系统域 C](plans/code-review-2026-10-pages-system-c.md) · [设置域](plans/code-review-2026-10-pages-settings.md) · [审批域](plans/code-review-2026-10-pages-approval.md) · [分析与集成](plans/code-review-2026-10-pages-analysis-integration.md) · [任务域](plans/code-review-2026-10-pages-task.md) · [表单与聊天](plans/code-review-2026-10-pages-form-chat.md) · [其余页面](plans/code-review-2026-10-pages-misc.md) · [行动与未验证](plans/code-review-2026-10-actions.md)；只读审查产物，结论以源码为准，编号只在审查文档内使用 |
 | **2026-10 前端专项审查（内部审查资料）** | 主册 [plans/code-review-frontend-2026-10.md](plans/code-review-frontend-2026-10.md)（横切 A–F / 量化指标 / 行动）+ 逐页分册：[系统域](plans/code-review-frontend-2026-10-pages-system.md) · [平台域](plans/code-review-frontend-2026-10-pages-platform.md) · [其他](plans/code-review-frontend-2026-10-pages-other.md)；只读审查产物，视觉结论以运行时为准 |
 | **2026-10 交付链路审查（内部审查资料）** | [plans/code-review-delivery-2026-10.md](plans/code-review-delivery-2026-10.md)：installer / web / docs 与六条跨仓一致性、发布与镜像链路、失败模式表；只读审查产物，安装/升级/镜像构建未实测 |
+| **2026-10 架构与扩展性审查（内部审查资料）** | [plans/code-review-arch-2026-10.md](plans/code-review-arch-2026-10.md)：现状依赖图（84 边矩阵）与部署拓扑 / 重构候选 4 必须 + 6 可选（含迁移步骤与回滚）/ 三方组件治理（双仓锁与审计机制）/ 二开能力矩阵（11 扩展点评级）/ 目标架构与演进路线（含 DEV-TASKS 候选条目）；只读审查产物，CVE 现状以 CI 周期审计为准 |
 | [ci-gates.md](ci-gates.md) | **CI 门禁统一清单**：全部流水线门禁与守护测试的登记处（守护语义 / 所在 workflow / 本地复跑；新增门禁必须登记） |
 | [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线概览）；履历见 [metrics-history.md](metrics-history.md)（阶段回填 + 依赖安全审计）、[metrics-perf-history.md](metrics-perf-history.md)（性能 / 前端基线实测） |
 | [security-review.md](security-review.md) | 安全自查归档（按轮次追加，含接受项台账与重开条件） |

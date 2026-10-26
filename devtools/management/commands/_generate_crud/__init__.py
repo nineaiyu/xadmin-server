@@ -22,7 +22,7 @@ Django 命令发现只识别模块、跳过包目录，命令入口是同目录�
 
 from typing import Any
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from .analysis import FIELD_CLASS_OPTIONS, AnalysisMixin
 from .constants import (
@@ -131,6 +131,11 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             action="store_true",
             help="生成后运行权限缺口与 OpenAPI 契约漂移检查（只报告，不阻断生成）",
         )
+        parser.add_argument(
+            "--strict",
+            action="store_true",
+            help="自检失败即以非零码退出（隐含 --verify，用于教程与 CI 的生成后校验）",
+        )
 
     # ------------------------------------------------------------------ 入口
 
@@ -146,16 +151,20 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             ctx["app_registered"] = self._register_app(ctx, options)
         if options.get("bootstrap"):
             self._bootstrap(ctx, options)
-        if options.get("verify") and not options.get("dry_run"):
-            self._verify_generated()
+        if (options.get("verify") or options.get("strict")) and not options.get("dry_run"):
+            failures = self._verify_generated()
+            if failures and options.get("strict"):
+                raise CommandError("生成后自检未通过：" + "；".join(failures))
         self._print_next_steps(ctx, options)
 
-    def _verify_generated(self) -> None:
-        """生成后自检：权限缺口 + OpenAPI 契约漂移（问题只报告，不阻断生成）。"""
+    def _verify_generated(self) -> list[str]:
+        """生成后自检：system check + 权限缺口 + OpenAPI 漂移；返回失败项供 --strict 阻断。"""
         from io import StringIO
+        from re import search
 
         from django.core.management import call_command
 
+        failures: list[str] = []
         self.stdout.write("\n生成后自检：")
         buffer = StringIO()
         try:
@@ -163,6 +172,7 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             self.stdout.write("  - Django system check：通过")
         except Exception as exc:  # noqa: BLE001 只报告，生成物已落盘
             self.stdout.write(f"  - Django system check：失败（{exc}）")
+            failures.append("Django system check 失败")
 
         buffer = StringIO()
         try:
@@ -171,8 +181,12 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             self.stdout.write("  - 权限点：")
             for line in summary[-3:]:
                 self.stdout.write(f"      {line.strip()}")
+            gap = search(r"缺口 (\d+) 条", buffer.getvalue())
+            if gap and int(gap.group(1)):
+                failures.append(f"权限点缺口 {gap.group(1)} 条")
         except Exception as exc:  # noqa: BLE001 应用未注册 / URLconf 导入失败等
             self.stdout.write(f"  - 权限点检查跳过（{exc}）")
+            failures.append("权限点检查无法执行")
 
         buffer = StringIO()
         try:
@@ -182,3 +196,5 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             self.stdout.write(
                 "  - OpenAPI 契约：已漂移（运行 python manage.py dump_openapi 后执行 pnpm sync:contract）"
             )
+            failures.append("OpenAPI 契约已漂移")
+        return failures

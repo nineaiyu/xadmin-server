@@ -14,14 +14,17 @@ from common.core import permission_meta
 def _isolate_registry():
     """注册表是「导入期状态」：装饰器随视图模块导入执行一次，清空后不可通过
     重新触发 URLconf 恢复（模块已缓存于 sys.modules）。因此用例隔离只移除
-    本用例新增的后缀，绝不整体清空。"""
+    本用例新增的后缀与声明，绝不整体清空。"""
     before_shared = set(permission_meta.SHARED_LIST_SUFFIXES)
     before_fallback = set(permission_meta.PARENT_FALLBACK_SUFFIXES)
+    before_shared_permissions = dict(permission_meta.SHARED_PERMISSION_REGISTRY)
     yield
     permission_meta.SHARED_LIST_SUFFIXES -= before_shared
     permission_meta.SHARED_LIST_SUFFIXES |= before_shared
     permission_meta.PARENT_FALLBACK_SUFFIXES -= before_fallback
     permission_meta.PARENT_FALLBACK_SUFFIXES |= before_fallback
+    permission_meta.SHARED_PERMISSION_REGISTRY.clear()
+    permission_meta.SHARED_PERMISSION_REGISTRY.update(before_shared_permissions)
 
 
 def test_framework_default_suffixes_registered():
@@ -69,3 +72,49 @@ def test_custom_suffix_extends_without_touching_core():
     permission_meta.register_shared_list("region-stats")
     pattern = permission_meta.shared_list_pattern()
     assert pattern.sub("", "/api/crm/customer/region-stats", count=1) == "/api/crm/customer"
+
+
+def test_shared_permissions_declares_priority_and_field_groups():
+    """类装饰器：按方法登记优先级与字段面分组，路径归一后可按 $ 形式查询。"""
+
+    class _View:
+        def get_fields(self):
+            return {"NAME": 1, "FRONT_END_WEB_WATERMARK_TEXT": 2}
+
+    @permission_meta.shared_permissions(
+        path="/api/demo/shared/",
+        methods={"GET": ("list:Demo", "retrieve:Demo"), "PATCH": ("partialUpdate:Demo",)},
+        field_groups={"PATCH": lambda view: {"partialUpdate:Demo": set(view.get_fields())}},
+    )
+    class DemoView:
+        pass
+
+    assert DemoView.shared_permission_path == "api/demo/shared"
+    assert permission_meta.shared_priority("api/demo/shared$", "get") == ("list:Demo", "retrieve:Demo")
+    assert permission_meta.shared_priority("api/demo/shared", "PATCH") == ("partialUpdate:Demo",)
+    assert permission_meta.shared_priority("api/other", "GET") is None
+
+    class _Request:
+        path = "/api/demo/shared"
+
+    view = _View()
+    view.request = _Request()
+    assert permission_meta.shared_field_groups(view, "PATCH") == {
+        "partialUpdate:Demo": {"NAME", "FRONT_END_WEB_WATERMARK_TEXT"}
+    }
+    assert permission_meta.shared_field_groups(view, "GET") == {}
+
+
+def test_shared_permission_method_decorator_registers_action():
+    """方法装饰器：声明即登记（同一 path+method 的冲突声明 fail-fast）。"""
+
+    @permission_meta.shared_permission(path="api/demo/item", method="GET", priority=("list:DemoItem",))
+    def list_items(self, request):
+        return None
+
+    assert permission_meta.shared_priority("api/demo/item$", "GET") == ("list:DemoItem",)
+    with pytest.raises(ValueError, match="duplicate shared permission declaration"):
+
+        @permission_meta.shared_permission(path="api/demo/item", method="GET", priority=("other:DemoItem",))
+        def another(self, request):
+            return None

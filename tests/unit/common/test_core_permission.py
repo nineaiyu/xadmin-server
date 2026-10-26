@@ -161,11 +161,12 @@ class TestSharedPathPermissionSelection:
 
 
 def test_every_duplicate_seed_permission_is_registered():
-    """所有 seeds 中重复的 (path, method) 必须显式登记主权限点优先级。
+    """所有 seeds 中重复的 (path, method) 必须在视图声明处登记，且与兜底表一致。
 
     运行时按 path 建字典只能保留一个权限点；未登记的共享端点会退化为按码名排序，
-    字段权限上下文与数据权限菜单上下文都不可预期。新增共享权限点时必须同步
-    SHARED_PERMISSION_PRIORITY（含该端点下的全部权限码）。
+    字段权限上下文与数据权限菜单上下文都不可预期。新增共享权限点必须在视图上用
+    ``@shared_permissions`` 声明（含该端点下的全部权限码）；兼容期兜底表
+    ``SHARED_PERMISSION_PRIORITY`` 仍保留，但必须与声明注册表完全一致。
     """
     import json
     from collections import defaultdict
@@ -173,7 +174,12 @@ def test_every_duplicate_seed_permission_is_registered():
 
     from django.conf import settings
 
+    # 注册表由视图模块导入时填充：显式导入四组声明方，避免依赖测试执行顺序
+    from audit.views.admin.operationlog import OperationLogViewSet  # noqa: F401
     from common.core.permission import SHARED_PERMISSION_PRIORITY
+    from common.core.permission_meta import SHARED_PERMISSION_REGISTRY, normalize_shared_path
+    from settings.views.basic import BasicSettingViewSet  # noqa: F401
+    from task.views.task import TaskExecutionViewSet  # noqa: F401
 
     root = Path(settings.PROJECT_DIR)
     ignored_parts = {".venv", "node_modules", "_delete", "dist"}
@@ -197,4 +203,20 @@ def test_every_duplicate_seed_permission_is_registered():
     for key, names in duplicates.items():
         assert set(names) == set(SHARED_PERMISSION_PRIORITY[key]), (
             f"{key} 的权限码未完整登记：seeds={sorted(names)} priority={sorted(SHARED_PERMISSION_PRIORITY[key])}"
+        )
+
+    declared = {
+        (normalize_shared_path(path), method.upper()): spec
+        for (path, method), spec in SHARED_PERMISSION_REGISTRY.items()
+    }
+    missing_views = {(normalize_shared_path(path), method.upper()) for path, method in duplicates} - set(declared)
+    assert not missing_views, f"共享权限点未在视图声明处登记: {sorted(missing_views)}"
+    for key, names in duplicates.items():
+        normalized = (normalize_shared_path(key[0]), key[1].upper())
+        spec = declared[normalized]
+        assert set(spec.priority) == set(names), (
+            f"{key} 的视图声明未覆盖全部权限码：seeds={sorted(names)} declared={sorted(spec.priority)}"
+        )
+        assert spec.priority == SHARED_PERMISSION_PRIORITY[key], (
+            f"{key} 的视图声明与兜底表顺序不一致：declared={spec.priority} table={SHARED_PERMISSION_PRIORITY[key]}"
         )

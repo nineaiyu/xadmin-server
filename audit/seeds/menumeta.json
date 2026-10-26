@@ -222,31 +222,6 @@
  },
  {
   "model": "system.menumeta",
-  "pk": "e3fabbc2-58ff-4fec-a092-c2efaed4d267",
-  "fields": {
-   "created_time": "2024-10-30T11:30:25.438Z",
-   "updated_time": "2024-10-31T09:36:33.126Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "title": "U-获取登录日志的详情",
-   "icon": null,
-   "r_svg_name": null,
-   "is_show_menu": true,
-   "is_show_parent": false,
-   "is_keepalive": true,
-   "frame_url": null,
-   "frame_loading": false,
-   "transition_enter": null,
-   "transition_leave": null,
-   "is_hidden_tag": false,
-   "fixed_tag": false,
-   "dynamic_level": 0
-  }
- },
- {
-  "model": "system.menumeta",
   "pk": "f06236b5-e3fb-48fa-bfe3-4f0e87eaab47",
   "fields": {
    "created_time": "2024-01-22T09:32:01.522Z",

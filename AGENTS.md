@@ -153,15 +153,3 @@ docs-build 里对构建产物跑）。全量清单以 `docs/ci-gates.md` 为准�
 - 改后端运行时代码后必须重启容器再验证，不要只凭单测通过就报「已完成」。
 - 本地钩子：`.pre-commit-config.yaml`（ruff）与 `scripts/hooks/pre-commit`（对暂存 py 文件
   format + check），用 `ln -sf ../../scripts/hooks/pre-commit .git/hooks/pre-commit` 启用。
-
-## 八、当前已知功能缺口（2026-10 审查，修复后删除本节）
-
-以下是审查已复核、尚未修复的权限/筛选缺口；改动相邻代码时不要把它们当成「已支持」：
-
-1. **同 path+method 权限点**：设置 basic（GET/PATCH）、操作日志（GET）、任务执行（GET）
-   各登记了多个权限码；运行时按 path 建字典会互相覆盖，字段权限上下文可能取错。
-   新增共享端点前先读 `packages/xadmin-common/common/core/permission.py` 的
-   `get_user_permission`（设置写入已按权限码做字段面隔离，读取仍为 OR 语义）。
-
-完整证据与逐页记录见 `docs/plans/code-review-2026-10.md` 与各分册；修复顺序与验证方式见
-`docs/plans/code-review-2026-10-actions.md`。

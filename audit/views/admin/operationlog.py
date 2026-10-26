@@ -18,7 +18,7 @@ from common.core.config import SysConfig
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend, PkMultipleFilter
 from common.core.modelset import DetailAction, OnlyExportDataAction, OnlyListModelSet
 from common.core.pagination import KeysetPageNumber
-from common.core.permission_meta import shared_list_action
+from common.core.permission_meta import shared_list_action, shared_permissions
 from common.core.response import API_SUCCESS_CODE, ApiResponse
 
 
@@ -75,6 +75,12 @@ class OperationLogFilter(BaseFilterSet):
         ]
 
 
+@shared_permissions(
+    path="api/audit/logs/operation",
+    methods={
+        "GET": ("list:SystemOperationLog", "changeHistory:SystemUser", "changeHistory:SystemDept"),
+    },
+)
 class OperationLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction):
     """操作日志（只读 + 详情 + 导出）
 

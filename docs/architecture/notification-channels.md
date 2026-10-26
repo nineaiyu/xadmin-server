@@ -79,3 +79,13 @@ token/userid 缓存按凭据摘要隔离（改密换 key）。SDK 收口 `integr
 - **没收到邮件/短信**：确认订阅 `receive_backends` 含该渠道 → 渠道级开关 → 用户级 `account_field` 是否绑定（warning 日志 `skip N user(s) without ...`）；
 - **订阅页渠道列表**：`/api/notifications/` 的 backends 接口只下发 `is_enable` 为真的渠道（`notifications/views/notifications.py`）;
 - **发送异常不外抛**：`Message.send_msg` 对单渠道异常打印堆栈并继续其他渠道（`NotImplementedError` 直接跳过）。
+
+## 七、运行期扩展边界（插件渠道）
+
+`register_channel` / `register_channel_spec` 的 `code` 必须已存在于 `BACKEND` 枚举
+（渠道枚举是序列化契约，运行期不扩枚举）；插件只能复用现有渠道码，**不能新增渠道码**。
+二开接入全新渠道需要随宿主版本同时提交：`BACKEND` 枚举 + `CHANNEL_SPECS` + `backends/<module>.py`
++ 客户端加载；插件侧可选路径是复用 `webhook` 渠道转发到自有服务。
+
+守护：`tests/unit/common/test_registry_primitives.py::TestNotificationChannelRegistration`
+覆盖「枚举外 code fail-fast / 重复 code fail-fast / 缺渲染方法 fail-fast」。

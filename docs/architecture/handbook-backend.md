@@ -248,3 +248,16 @@ config.yml（config.py）→ 同名环境变量 → 代码默认值   ← server
 
 业务调用 AI/IM/短信一律走 SDK，不要自己拼 HTTP。
 
+### 1.15 领域逻辑归属（services vs utils）
+
+| 位置 | 放什么 | 判定 |
+|------|--------|------|
+| `<app>/services/` | 有状态编排、跨模型事务、外部副作用（重试 / 缓存失效 / 审批回写 / 审计） | 一个用例一个入口，ViewSet 只做参数校验与响应 |
+| `<app>/utils/` | 纯函数、单模型查询装配、无副作用格式化 | 可被 services 与视图共同复用 |
+
+- 存量差异：`dataset` 的领域逻辑主要落 `utils/`（历史形态），`ai` / `identity` 以
+  `services/` 为中心；新增逻辑按上表口径放 `services/`，不要继续扩大 `utils/` 的事务面。
+- 反例：在 `utils/` 里写跨模型写库 + 重试 —— 重试/回滚语义会散落在调用方，
+  `check_cross_app_imports` 管不到，只能靠 review。
+- 新 app 由 `generate_crud` 生成的骨架默认按 services 分层，照生成的目录放业务实现。
+

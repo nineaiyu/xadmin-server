@@ -193,7 +193,6 @@ DEMO_ALLOWED_PERMISSION_NAMES: frozenset[str] = frozenset(
         "list:SystemOperationLog",
         "retrieve:SystemOperationLog",
         "list:SystemUserLoginLog",
-        "retrieve:SystemUserLoginLog",
         "list:SystemUploadFile",
         "retrieve:SystemUploadFile",
         "preview:SystemUploadFile",

@@ -10,6 +10,7 @@
 |---|---|---|---|---|
 | `lint.yml` | ruff | 代码风格（format --check + check） | — | `ruff format --check . && ruff check .` |
 | `lint.yml` | Cross-app import gate | app 间依赖方向：框架层 `common` 禁止 import `server` 及越权横向依赖（allowlist 只减不增） | `scripts/check_cross_app_imports.py` | `python scripts/check_cross_app_imports.py` |
+| `lint-code.yml`（xadmin-client） | Declarative overlay gate | 弹层选型收口：直接手写 `<el-dialog>` / `<el-drawer>` 必须改走 addDialog / addDrawer；存量按文件基线只减不增（理由登记在 `xadmin-client/scripts/declarative-overlays-baseline.json`） | `xadmin-client/scripts/check-declarative-overlays.mjs` | `cd ../xadmin-client && pnpm check:overlays` |
 | `lint.yml` | Menu permission reconcile gate | 菜单种子权限点 ↔ 前端消费点双向对账（种子无消费 / 前端无种子 / 页面 URL=目录例外），白名单见 `docs/guide/menu-maintenance.md` §5，脚本归前端仓 | `xadmin-client/scripts/check-menu-permissions.mjs`（本仓检出客户端就地执行） | `XADMIN_SERVER_DIR=.. node ../xadmin-client/scripts/check-menu-permissions.mjs` |
 | `lint.yml` | Type check | 全仓 mypy；**common 框架层 + 全部业务 app 启用 strict 子集**（`[[tool.mypy.overrides]]` 逐 app 入列：captcha / demo / devtools / integrations / mfa / server / settings + audit / file / demo_seed / notifications / task / message / dataset / approval / ai / system / identity；2026-10-09 收口，无未推广面） | `pyproject.toml [tool.mypy]` + 守护 `tests/unit/test_mypy_strict_pilot.py` | `mypy` |
 | `lint.yml` | File length gate | 单文件 >500 行新增即失败（存量基线只减不增） | `scripts/check_file_length.py` | `python scripts/check_file_length.py` |

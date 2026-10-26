@@ -14,6 +14,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
+from common.utils.file import download_file
 from common.utils.outbound import (
     OutboundBlocked,
     parse_allowed_hosts,
@@ -426,3 +427,42 @@ class TestPinnedRequestRedirects:
 
         monkeypatch.setattr("requests.Session.request", fake_request)
         assert pinned_request("GET", f"http://{PUBLIC_IP}/x", max_redirects=0).status_code == 302
+
+
+class TestDownloadFile:
+    """download_file 走 pinned_request：固定解析连接，不再留二次 DNS 窗口。"""
+
+    def test_uses_pinned_request_and_streams_body(self, monkeypatch, tmp_path):
+        from common.utils import file as file_module
+
+        captured = {}
+
+        class _StreamResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def raise_for_status(self):
+                return None
+
+            def iter_content(self, chunk_size):
+                assert chunk_size == 8192
+                yield b"abc"
+                yield b"def"
+
+        def fake_pinned_request(method, url, **kwargs):
+            captured.update(method=method, url=url, kwargs=kwargs)
+            return _StreamResponse()
+
+        monkeypatch.setattr("common.utils.outbound.pinned_request", fake_pinned_request)
+        target = tmp_path / "payload.bin"
+        file_module.download_file("https://example.com/payload.bin", str(target))
+        assert target.read_bytes() == b"abcdef"
+        assert captured["method"] == "GET"
+        assert captured["kwargs"]["stream"] is True
+
+    def test_blocked_target_is_rejected_before_request(self, tmp_path):
+        with pytest.raises(OutboundBlocked):
+            download_file("http://127.0.0.1/payload.bin", str(tmp_path / "payload.bin"))

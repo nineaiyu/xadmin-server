@@ -91,10 +91,13 @@ class BaseSettingViewSet(NoDetailModelSet):
     def get_permission_field_groups(self) -> dict[str, set[str]]:
         """按权限码分组的字段面（默认不做字段级隔离）。
 
-        同一 ``path+method`` 登记多个权限点的端点（如基本/水印设置）覆写本方法，
-        未持有对应权限码却提交组内字段时返回 400；权限码按当前 HTTP 方法取。
+        同一 ``path+method`` 登记多个权限点的端点，在视图声明处用
+        ``@shared_permissions(..., field_groups={...})`` 登记分组；未持有对应
+        权限码却提交组内字段时返回 400，权限码按当前 HTTP 方法取。
         """
-        return {}
+        from common.core.permission_meta import shared_field_groups
+
+        return shared_field_groups(self, self.request.method)
 
     def enforce_field_permission_groups(self) -> None:
         groups = self.get_permission_field_groups()

@@ -389,21 +389,12 @@ def viewer_visible_fields(bound_model: str, user_obj: Any) -> Any:
     """
 
     def _load() -> Any:
-        from django.db.models import Q
-
+        from common.core.permission import role_dept_q
         from system.models import FieldPermission
 
         if getattr(user_obj, "is_superuser", False):
             return None
-        conditions = Q()
-        has_role = False
-        roles = list(user_obj.roles.all())
-        if roles:
-            conditions |= Q(role__in=roles) & Q(role__is_active=True)
-            has_role = True
-        if getattr(user_obj, "dept", None):
-            conditions |= Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True)
-            has_role = True
+        conditions, has_role = role_dept_q(user_obj, "role")
         if not has_role:
             return None
         fields = set(
