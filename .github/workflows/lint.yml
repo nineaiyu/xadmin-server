@@ -102,9 +102,10 @@ jobs:
         run: uv run --no-sync mypy
 
       - name: Captcha coverage gate
-        # 匿名写端点必须过人机校验或显式豁免；新增漏挂 = CI 红
+        # 匿名写端点必须过人机校验或显式豁免；新增漏挂 = CI 红。
+        # 与下方种子检查同档：CI 无 config.yml，server.settings 会因缺 ALLOWED_HOSTS 拒绝启动
         env:
-          DJANGO_SETTINGS_MODULE: server.settings
+          DJANGO_SETTINGS_MODULE: tests.settings_real
         run: uv run --no-sync python scripts/check_captcha_coverage.py
 
       - name: Check seed plan and ownership

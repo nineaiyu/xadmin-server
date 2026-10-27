@@ -42,6 +42,37 @@ class TestRiskSettings:
     def test_rejects_invalid_fail_step(self, auth_client):
         assert auth_client.patch(RISK_URL, {"CAPTCHA_FAIL_STEP": "3,8"}).status_code == 400
 
+    def test_columns_expose_help_text(self, auth_client):
+        resp = auth_client.get(f"{RISK_URL}/search-columns")
+        assert resp.status_code == 200, resp.data
+        raw = resp.data["data"]
+        columns = raw if isinstance(raw, list) else raw.get("results", [])
+        mapping = {item["key"]: item for item in columns}
+        for key in (
+            "CAPTCHA_RISK_MODE",
+            "CAPTCHA_RISK_T_ALLOW",
+            "CAPTCHA_RISK_T_LIGHT",
+            "CAPTCHA_RISK_T_HARD",
+            "CAPTCHA_RISK_T_DENY",
+            "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS",
+            "CAPTCHA_RISK_DATACENTER_CIDRS",
+            "CAPTCHA_RISK_PROXY_CIDRS",
+            "CAPTCHA_POW_ENABLED",
+            "CAPTCHA_POW_BITS_LIGHT",
+            "CAPTCHA_POW_BITS_HARD",
+            "CAPTCHA_POW_BITS_MAX",
+            "CAPTCHA_POW_IP_BUDGET",
+            "CAPTCHA_FAIL_STEP",
+            "CAPTCHA_FAILURE_LINK_LOCK",
+            "CAPTCHA_HONEYPOT_ENABLED",
+            "CAPTCHA_ALERT_ENABLED",
+            "CAPTCHA_ALERT_WINDOW_MINUTES",
+            "CAPTCHA_ALERT_DENY_RATE",
+            "CAPTCHA_ALERT_MIN_SAMPLES",
+            "CAPTCHA_LOG_RETENTION_DAYS",
+        ):
+            assert mapping[key].get("help_text"), key
+
 
 class TestRiskRules:
     def test_rules_are_seeded(self, auth_client):

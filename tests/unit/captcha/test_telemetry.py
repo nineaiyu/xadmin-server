@@ -15,12 +15,18 @@ from captcha.tasks import flush_captcha_logs
 pytestmark = pytest.mark.django_db
 
 
-@pytest.fixture(autouse=True)
-def _reset_telemetry_state():
-    yield
+def _reset_state() -> None:
     with telemetry._lock:
         telemetry._fallback.clear()
         telemetry._stats.update(emitted=0, dispatched=0, buffered=0, dropped=0)
+
+
+@pytest.fixture(autouse=True)
+def _reset_telemetry_state():
+    # 进程级计数器会被同 worker 的其他用例污染，用例前必须归零
+    _reset_state()
+    yield
+    _reset_state()
 
 
 def _emit_ok(**extra):

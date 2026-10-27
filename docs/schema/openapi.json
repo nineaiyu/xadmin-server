@@ -13017,6 +13017,7 @@
         "properties": {
           "CAPTCHA_ALERT_DENY_RATE": {
             "default": 0.5,
+            "description": "窗口内 deny 占比达到该值时触发告警（0~1）",
             "format": "double",
             "maximum": 1.0,
             "minimum": 0.0,
@@ -13025,11 +13026,13 @@
           },
           "CAPTCHA_ALERT_ENABLED": {
             "default": true,
+            "description": "拦截率或同 IP 挑战突增超过阈值时发送站点通知",
             "title": "启用告警",
             "type": "boolean"
           },
           "CAPTCHA_ALERT_MIN_SAMPLES": {
             "default": 50,
+            "description": "窗口内样本数不足时不告警，避免低流量误报",
             "maximum": 100000,
             "minimum": 1,
             "title": "告警最小样本数",
@@ -13037,6 +13040,7 @@
           },
           "CAPTCHA_ALERT_WINDOW_MINUTES": {
             "default": 10,
+            "description": "告警统计窗口；同一窗口同类告警只发一次",
             "maximum": 1440,
             "minimum": 1,
             "title": "告警窗口（分钟）",
@@ -13044,23 +13048,26 @@
           },
           "CAPTCHA_FAILURE_LINK_LOCK": {
             "default": false,
+            "description": "验证码失败达到阶梯阈值时同时锁定登录账号；默认关闭，避免误锁",
             "title": "验证码失败联动登录锁定",
             "type": "boolean"
           },
           "CAPTCHA_FAIL_STEP": {
             "default": "3,8,20",
-            "description": "例如 3,8,20；0,0,0 停用",
+            "description": "失败阶梯：3,8,20 表示第 3 次强制难题、第 8 次冷却 15 分钟、第 20 次冷却 1 小时；0,0,0 停用",
             "maxLength": 32,
             "title": "失败阶梯",
             "type": "string"
           },
           "CAPTCHA_HONEYPOT_ENABLED": {
             "default": true,
+            "description": "前端隐藏诱饵字段；被填写即判定自动化并拒绝（零误杀）",
             "title": "启用蜜罐",
             "type": "boolean"
           },
           "CAPTCHA_LOG_RETENTION_DAYS": {
             "default": 30,
+            "description": "CaptchaLog 保留天数；0 = 永久保留；每日 beat 任务清理过期行",
             "maximum": 365,
             "minimum": 0,
             "title": "观测日志保留期（天）",
@@ -13068,6 +13075,7 @@
           },
           "CAPTCHA_POW_BITS_HARD": {
             "default": 20,
+            "description": "hard 档 PoW 前导零位数；默认 20，受位数上限约束",
             "maximum": 20,
             "minimum": 1,
             "title": "PoW 位数（难题）",
@@ -13075,6 +13083,7 @@
           },
           "CAPTCHA_POW_BITS_LIGHT": {
             "default": 18,
+            "description": "light 档 PoW 前导零位数；18 约需数万次哈希，越高越慢",
             "maximum": 20,
             "minimum": 1,
             "title": "PoW 位数（轻验证）",
@@ -13082,6 +13091,7 @@
           },
           "CAPTCHA_POW_BITS_MAX": {
             "default": 20,
+            "description": "服务端硬上限（最大 24）；防止把服务端变成算力放大器",
             "maximum": 24,
             "minimum": 1,
             "title": "PoW 位数上限",
@@ -13089,11 +13099,13 @@
           },
           "CAPTCHA_POW_ENABLED": {
             "default": true,
+            "description": "light 档是否下发 PoW 算力题；关闭后 light 退化为常规题",
             "title": "启用工作量证明",
             "type": "boolean"
           },
           "CAPTCHA_POW_IP_BUDGET": {
             "default": 600,
+            "description": "单 IP 每小时 PoW 验证预算；0 = 不限；超出后该 IP 的 PoW 请求被拒",
             "maximum": 100000,
             "minimum": 0,
             "title": "单 IP 每小时 PoW 预算",
@@ -13101,6 +13113,7 @@
           },
           "CAPTCHA_RISK_DATACENTER_CIDRS": {
             "default": "",
+            "description": "机房 / 云网段，逗号分隔 CIDR；命中加 20 分；留空不启用",
             "maxLength": 4096,
             "title": "机房网段（CIDR）",
             "type": "string"
@@ -13112,23 +13125,25 @@
               }
             ],
             "default": "off",
-            "description": "off 保持现状；shadow 只记录决策；enforce 实际执行\n\n* `off` - 关闭（保持现状）\n* `shadow` - 影子（只评分留痕）\n* `enforce` - 强制执行决策",
+            "description": "off = 风险层不运行；shadow = 只评分记日志、不改变放行；enforce = 按决策执行（建议先跑 shadow ≥3 天）\n\n* `off` - 关闭（保持现状）\n* `shadow` - 影子（只评分留痕）\n* `enforce` - 强制执行决策",
             "title": "风险模式"
           },
           "CAPTCHA_RISK_PROXY_CIDRS": {
             "default": "",
+            "description": "已知代理 / TOR 出口网段，逗号分隔 CIDR；命中加 30 分；留空不启用",
             "maxLength": 4096,
             "title": "代理网段（CIDR）",
             "type": "string"
           },
           "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS": {
             "default": true,
-            "description": "将 RFC1918 与回环地址视为可信（enforce 下无题直过）",
+            "description": "将 RFC1918 与回环地址视为可信（enforce 下无题直过）；除非办公网已进白名单，否则保持开启",
             "title": "信任私网",
             "type": "boolean"
           },
           "CAPTCHA_RISK_T_ALLOW": {
             "default": 20,
+            "description": "分数低于该值：无题直接发票（allow）；默认 20",
             "maximum": 100,
             "minimum": 0,
             "title": "放行阈值",
@@ -13136,6 +13151,7 @@
           },
           "CAPTCHA_RISK_T_DENY": {
             "default": 90,
+            "description": "分数达到该值：直接拒绝，响应与答案错误同形（deny）；默认 90",
             "maximum": 100,
             "minimum": 0,
             "title": "拒绝阈值",
@@ -13143,6 +13159,7 @@
           },
           "CAPTCHA_RISK_T_HARD": {
             "default": 70,
+            "description": "分数达到该值：难题型 / 语序点选，容差收紧（hard）；默认 70",
             "maximum": 100,
             "minimum": 0,
             "title": "难题阈值",
@@ -13150,6 +13167,7 @@
           },
           "CAPTCHA_RISK_T_LIGHT": {
             "default": 40,
+            "description": "分数达到该值：一次点击 + PoW（light）；默认 40，必须大于放行阈值",
             "maximum": 100,
             "minimum": 0,
             "title": "轻验证阈值",
@@ -16265,6 +16283,7 @@
         "properties": {
           "CAPTCHA_ALERT_DENY_RATE": {
             "default": 0.5,
+            "description": "窗口内 deny 占比达到该值时触发告警（0~1）",
             "format": "double",
             "maximum": 1.0,
             "minimum": 0.0,
@@ -16273,11 +16292,13 @@
           },
           "CAPTCHA_ALERT_ENABLED": {
             "default": true,
+            "description": "拦截率或同 IP 挑战突增超过阈值时发送站点通知",
             "title": "启用告警",
             "type": "boolean"
           },
           "CAPTCHA_ALERT_MIN_SAMPLES": {
             "default": 50,
+            "description": "窗口内样本数不足时不告警，避免低流量误报",
             "maximum": 100000,
             "minimum": 1,
             "title": "告警最小样本数",
@@ -16285,6 +16306,7 @@
           },
           "CAPTCHA_ALERT_WINDOW_MINUTES": {
             "default": 10,
+            "description": "告警统计窗口；同一窗口同类告警只发一次",
             "maximum": 1440,
             "minimum": 1,
             "title": "告警窗口（分钟）",
@@ -16292,23 +16314,26 @@
           },
           "CAPTCHA_FAILURE_LINK_LOCK": {
             "default": false,
+            "description": "验证码失败达到阶梯阈值时同时锁定登录账号；默认关闭，避免误锁",
             "title": "验证码失败联动登录锁定",
             "type": "boolean"
           },
           "CAPTCHA_FAIL_STEP": {
             "default": "3,8,20",
-            "description": "例如 3,8,20；0,0,0 停用",
+            "description": "失败阶梯：3,8,20 表示第 3 次强制难题、第 8 次冷却 15 分钟、第 20 次冷却 1 小时；0,0,0 停用",
             "maxLength": 32,
             "title": "失败阶梯",
             "type": "string"
           },
           "CAPTCHA_HONEYPOT_ENABLED": {
             "default": true,
+            "description": "前端隐藏诱饵字段；被填写即判定自动化并拒绝（零误杀）",
             "title": "启用蜜罐",
             "type": "boolean"
           },
           "CAPTCHA_LOG_RETENTION_DAYS": {
             "default": 30,
+            "description": "CaptchaLog 保留天数；0 = 永久保留；每日 beat 任务清理过期行",
             "maximum": 365,
             "minimum": 0,
             "title": "观测日志保留期（天）",
@@ -16316,6 +16341,7 @@
           },
           "CAPTCHA_POW_BITS_HARD": {
             "default": 20,
+            "description": "hard 档 PoW 前导零位数；默认 20，受位数上限约束",
             "maximum": 20,
             "minimum": 1,
             "title": "PoW 位数（难题）",
@@ -16323,6 +16349,7 @@
           },
           "CAPTCHA_POW_BITS_LIGHT": {
             "default": 18,
+            "description": "light 档 PoW 前导零位数；18 约需数万次哈希，越高越慢",
             "maximum": 20,
             "minimum": 1,
             "title": "PoW 位数（轻验证）",
@@ -16330,6 +16357,7 @@
           },
           "CAPTCHA_POW_BITS_MAX": {
             "default": 20,
+            "description": "服务端硬上限（最大 24）；防止把服务端变成算力放大器",
             "maximum": 24,
             "minimum": 1,
             "title": "PoW 位数上限",
@@ -16337,11 +16365,13 @@
           },
           "CAPTCHA_POW_ENABLED": {
             "default": true,
+            "description": "light 档是否下发 PoW 算力题；关闭后 light 退化为常规题",
             "title": "启用工作量证明",
             "type": "boolean"
           },
           "CAPTCHA_POW_IP_BUDGET": {
             "default": 600,
+            "description": "单 IP 每小时 PoW 验证预算；0 = 不限；超出后该 IP 的 PoW 请求被拒",
             "maximum": 100000,
             "minimum": 0,
             "title": "单 IP 每小时 PoW 预算",
@@ -16349,6 +16379,7 @@
           },
           "CAPTCHA_RISK_DATACENTER_CIDRS": {
             "default": "",
+            "description": "机房 / 云网段，逗号分隔 CIDR；命中加 20 分；留空不启用",
             "maxLength": 4096,
             "title": "机房网段（CIDR）",
             "type": "string"
@@ -16360,23 +16391,25 @@
               }
             ],
             "default": "off",
-            "description": "off 保持现状；shadow 只记录决策；enforce 实际执行\n\n* `off` - 关闭（保持现状）\n* `shadow` - 影子（只评分留痕）\n* `enforce` - 强制执行决策",
+            "description": "off = 风险层不运行；shadow = 只评分记日志、不改变放行；enforce = 按决策执行（建议先跑 shadow ≥3 天）\n\n* `off` - 关闭（保持现状）\n* `shadow` - 影子（只评分留痕）\n* `enforce` - 强制执行决策",
             "title": "风险模式"
           },
           "CAPTCHA_RISK_PROXY_CIDRS": {
             "default": "",
+            "description": "已知代理 / TOR 出口网段，逗号分隔 CIDR；命中加 30 分；留空不启用",
             "maxLength": 4096,
             "title": "代理网段（CIDR）",
             "type": "string"
           },
           "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS": {
             "default": true,
-            "description": "将 RFC1918 与回环地址视为可信（enforce 下无题直过）",
+            "description": "将 RFC1918 与回环地址视为可信（enforce 下无题直过）；除非办公网已进白名单，否则保持开启",
             "title": "信任私网",
             "type": "boolean"
           },
           "CAPTCHA_RISK_T_ALLOW": {
             "default": 20,
+            "description": "分数低于该值：无题直接发票（allow）；默认 20",
             "maximum": 100,
             "minimum": 0,
             "title": "放行阈值",
@@ -16384,6 +16417,7 @@
           },
           "CAPTCHA_RISK_T_DENY": {
             "default": 90,
+            "description": "分数达到该值：直接拒绝，响应与答案错误同形（deny）；默认 90",
             "maximum": 100,
             "minimum": 0,
             "title": "拒绝阈值",
@@ -16391,6 +16425,7 @@
           },
           "CAPTCHA_RISK_T_HARD": {
             "default": 70,
+            "description": "分数达到该值：难题型 / 语序点选，容差收紧（hard）；默认 70",
             "maximum": 100,
             "minimum": 0,
             "title": "难题阈值",
@@ -16398,6 +16433,7 @@
           },
           "CAPTCHA_RISK_T_LIGHT": {
             "default": 40,
+            "description": "分数达到该值：一次点击 + PoW（light）；默认 40，必须大于放行阈值",
             "maximum": 100,
             "minimum": 0,
             "title": "轻验证阈值",

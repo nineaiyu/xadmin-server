@@ -13397,3 +13397,74 @@ msgstr "需要三个逗号分隔的整数"
 
 msgid "Verify latency P50 (ms)"
 msgstr "校验 P50 耗时（毫秒）"
+
+msgid ""
+"off = risk layer disabled; shadow = score and log only (no behavior change); "
+"enforce = apply decisions (run shadow for at least 3 days first)"
+msgstr "off = 风险层不运行；shadow = 只评分记日志、不改变放行；enforce = 按决策执行（建议先跑 shadow ≥3 天）"
+
+msgid "Score below this value: no puzzle, ticket issued directly (allow); default 20"
+msgstr "分数低于该值：无题直接发票（allow）；默认 20"
+
+msgid ""
+"Score at or above this value: one click + PoW (light); default 40; must be "
+"greater than allow"
+msgstr "分数达到该值：一次点击 + PoW（light）；默认 40，必须大于放行阈值"
+
+msgid "Score at or above this value: hard puzzle / word order with tighter tolerance; default 70"
+msgstr "分数达到该值：难题型 / 语序点选，容差收紧（hard）；默认 70"
+
+msgid "Score at or above this value: reject with the same response as a wrong answer; default 90"
+msgstr "分数达到该值：直接拒绝，响应与答案错误同形（deny）；默认 90"
+
+msgid ""
+"Treat RFC1918 and loopback addresses as trusted (no puzzle in enforce mode); "
+"keep enabled unless the office network is in the whitelist"
+msgstr "将 RFC1918 与回环地址视为可信（enforce 下无题直过）；除非办公网已进白名单，否则保持开启"
+
+msgid "Comma-separated CIDRs for datacenter/cloud ranges; a hit adds 20 points; empty disables"
+msgstr "机房 / 云网段，逗号分隔 CIDR；命中加 20 分；留空不启用"
+
+msgid "Comma-separated CIDRs for known proxy/TOR exits; a hit adds 30 points; empty disables"
+msgstr "已知代理 / TOR 出口网段，逗号分隔 CIDR；命中加 30 分；留空不启用"
+
+msgid "Issue a PoW challenge for the light decision; disabling it degrades light to a normal puzzle"
+msgstr "light 档是否下发 PoW 算力题；关闭后 light 退化为常规题"
+
+msgid "Leading-zero bits for light PoW; 18 means tens of thousands of hashes; higher is slower"
+msgstr "light 档 PoW 前导零位数；18 约需数万次哈希，越高越慢"
+
+msgid "Leading-zero bits for hard PoW; default 20; capped by the bits cap"
+msgstr "hard 档 PoW 前导零位数；默认 20，受位数上限约束"
+
+msgid "Server-side hard cap (max 24); prevents turning the server into a hash amplifier"
+msgstr "服务端硬上限（最大 24）；防止把服务端变成算力放大器"
+
+msgid "PoW verifications allowed per IP per hour; 0 = unlimited; requests over budget are rejected"
+msgstr "单 IP 每小时 PoW 验证预算；0 = 不限；超出后该 IP 的 PoW 请求被拒"
+
+msgid ""
+"Failure ladder: 3,8,20 means 3 failures -> force hard, 8 -> 15 min cooldown, "
+"20 -> 1 hour cooldown; 0,0,0 disables"
+msgstr "失败阶梯：3,8,20 表示第 3 次强制难题、第 8 次冷却 15 分钟、第 20 次冷却 1 小时；0,0,0 停用"
+
+msgid "Also lock the login account when captcha failures reach the ladder threshold; off by default"
+msgstr "验证码失败达到阶梯阈值时同时锁定登录账号；默认关闭，避免误锁"
+
+msgid "Hidden decoy field; filling it proves automation and is denied (no false positives)"
+msgstr "前端隐藏诱饵字段；被填写即判定自动化并拒绝（零误杀）"
+
+msgid "Send a site notification when the deny rate or IP challenge spike crosses the threshold"
+msgstr "拦截率或同 IP 挑战突增超过阈值时发送站点通知"
+
+msgid "Statistics window for alerting; the same alert fires at most once per window"
+msgstr "告警统计窗口；同一窗口同类告警只发一次"
+
+msgid "Trigger when deny decisions reach this share of the window (0-1)"
+msgstr "窗口内 deny 占比达到该值时触发告警（0~1）"
+
+msgid "Do not alert until the window has enough samples; avoids false alarms on low traffic"
+msgstr "窗口内样本数不足时不告警，避免低流量误报"
+
+msgid "CaptchaLog retention in days; 0 = keep forever; a daily beat task purges expired rows"
+msgstr "CaptchaLog 保留天数；0 = 永久保留；每日 beat 任务清理过期行"

@@ -4,10 +4,20 @@
 import pytest
 from django.core.cache import cache
 
+from captcha import telemetry
 from captcha.models import CaptchaLog
 from captcha.stats import STATS_CACHE_KEY_PREFIX, captcha_stats
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def _reset_telemetry_counters():
+    # telemetry 健康度是进程级计数器；同 worker 其他用例的历史事件会污染断言
+    with telemetry._lock:
+        telemetry._fallback.clear()
+        telemetry._stats.update(emitted=0, dispatched=0, buffered=0, dropped=0)
+    yield
 
 
 @pytest.fixture(autouse=True)

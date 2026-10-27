@@ -219,68 +219,165 @@ class SecurityCaptchaRiskSerializer(SettingSaveContractMixin, serializers.Serial
         required=False,
         default=RiskModeChoices.OFF,
         label=_("Risk mode"),
-        help_text=_("off keeps today's behavior; shadow logs decisions; enforce applies them"),
+        help_text=_(
+            "off = risk layer disabled; shadow = score and log only (no behavior change); "
+            "enforce = apply decisions (run shadow for at least 3 days first)"
+        ),
     )
     CAPTCHA_RISK_T_ALLOW = serializers.IntegerField(
-        required=False, default=20, min_value=0, max_value=100, label=_("Allow threshold")
+        required=False,
+        default=20,
+        min_value=0,
+        max_value=100,
+        label=_("Allow threshold"),
+        help_text=_("Score below this value: no puzzle, ticket issued directly (allow); default 20"),
     )
     CAPTCHA_RISK_T_LIGHT = serializers.IntegerField(
-        required=False, default=40, min_value=0, max_value=100, label=_("Light threshold")
+        required=False,
+        default=40,
+        min_value=0,
+        max_value=100,
+        label=_("Light threshold"),
+        help_text=_("Score at or above this value: one click + PoW (light); default 40; must be greater than allow"),
     )
     CAPTCHA_RISK_T_HARD = serializers.IntegerField(
-        required=False, default=70, min_value=0, max_value=100, label=_("Hard threshold")
+        required=False,
+        default=70,
+        min_value=0,
+        max_value=100,
+        label=_("Hard threshold"),
+        help_text=_("Score at or above this value: hard puzzle / word order with tighter tolerance; default 70"),
     )
     CAPTCHA_RISK_T_DENY = serializers.IntegerField(
-        required=False, default=90, min_value=0, max_value=100, label=_("Deny threshold")
+        required=False,
+        default=90,
+        min_value=0,
+        max_value=100,
+        label=_("Deny threshold"),
+        help_text=_("Score at or above this value: reject with the same response as a wrong answer; default 90"),
     )
     CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS = serializers.BooleanField(
         required=False,
         default=True,
         label=_("Trust private networks"),
-        help_text=_("Treat RFC1918 and loopback addresses as trusted (no puzzle in enforce mode)"),
+        help_text=_(
+            "Treat RFC1918 and loopback addresses as trusted (no puzzle in enforce mode); "
+            "keep enabled unless the office network is in the whitelist"
+        ),
     )
     CAPTCHA_RISK_DATACENTER_CIDRS = serializers.CharField(
-        required=False, allow_blank=True, default="", label=_("Datacenter CIDRs"), max_length=4096
+        required=False,
+        allow_blank=True,
+        default="",
+        label=_("Datacenter CIDRs"),
+        max_length=4096,
+        help_text=_("Comma-separated CIDRs for datacenter/cloud ranges; a hit adds 20 points; empty disables"),
     )
     CAPTCHA_RISK_PROXY_CIDRS = serializers.CharField(
-        required=False, allow_blank=True, default="", label=_("Proxy CIDRs"), max_length=4096
+        required=False,
+        allow_blank=True,
+        default="",
+        label=_("Proxy CIDRs"),
+        max_length=4096,
+        help_text=_("Comma-separated CIDRs for known proxy/TOR exits; a hit adds 30 points; empty disables"),
     )
-    CAPTCHA_POW_ENABLED = serializers.BooleanField(required=False, default=True, label=_("Enable PoW"))
+    CAPTCHA_POW_ENABLED = serializers.BooleanField(
+        required=False,
+        default=True,
+        label=_("Enable PoW"),
+        help_text=_("Issue a PoW challenge for the light decision; disabling it degrades light to a normal puzzle"),
+    )
     CAPTCHA_POW_BITS_LIGHT = serializers.IntegerField(
-        required=False, default=18, min_value=1, max_value=20, label=_("PoW bits (light)")
+        required=False,
+        default=18,
+        min_value=1,
+        max_value=20,
+        label=_("PoW bits (light)"),
+        help_text=_("Leading-zero bits for light PoW; 18 means tens of thousands of hashes; higher is slower"),
     )
     CAPTCHA_POW_BITS_HARD = serializers.IntegerField(
-        required=False, default=20, min_value=1, max_value=20, label=_("PoW bits (hard)")
+        required=False,
+        default=20,
+        min_value=1,
+        max_value=20,
+        label=_("PoW bits (hard)"),
+        help_text=_("Leading-zero bits for hard PoW; default 20; capped by the bits cap"),
     )
     CAPTCHA_POW_BITS_MAX = serializers.IntegerField(
-        required=False, default=20, min_value=1, max_value=24, label=_("PoW bits cap")
+        required=False,
+        default=20,
+        min_value=1,
+        max_value=24,
+        label=_("PoW bits cap"),
+        help_text=_("Server-side hard cap (max 24); prevents turning the server into a hash amplifier"),
     )
     CAPTCHA_POW_IP_BUDGET = serializers.IntegerField(
-        required=False, default=600, min_value=0, max_value=100000, label=_("PoW budget per IP/hour")
+        required=False,
+        default=600,
+        min_value=0,
+        max_value=100000,
+        label=_("PoW budget per IP/hour"),
+        help_text=_("PoW verifications allowed per IP per hour; 0 = unlimited; requests over budget are rejected"),
     )
     CAPTCHA_FAIL_STEP = serializers.CharField(
         required=False,
         default="3,8,20",
         max_length=32,
         label=_("Failure ladder"),
-        help_text=_("e.g. 3,8,20; 0,0,0 disables"),
+        help_text=_(
+            "Failure ladder: 3,8,20 means 3 failures -> force hard, 8 -> 15 min cooldown, "
+            "20 -> 1 hour cooldown; 0,0,0 disables"
+        ),
     )
     CAPTCHA_FAILURE_LINK_LOCK = serializers.BooleanField(
-        required=False, default=False, label=_("Link failures to login lock")
+        required=False,
+        default=False,
+        label=_("Link failures to login lock"),
+        help_text=_("Also lock the login account when captcha failures reach the ladder threshold; off by default"),
     )
-    CAPTCHA_HONEYPOT_ENABLED = serializers.BooleanField(required=False, default=True, label=_("Enable honeypot"))
-    CAPTCHA_ALERT_ENABLED = serializers.BooleanField(required=False, default=True, label=_("Enable alerting"))
+    CAPTCHA_HONEYPOT_ENABLED = serializers.BooleanField(
+        required=False,
+        default=True,
+        label=_("Enable honeypot"),
+        help_text=_("Hidden decoy field; filling it proves automation and is denied (no false positives)"),
+    )
+    CAPTCHA_ALERT_ENABLED = serializers.BooleanField(
+        required=False,
+        default=True,
+        label=_("Enable alerting"),
+        help_text=_("Send a site notification when the deny rate or IP challenge spike crosses the threshold"),
+    )
     CAPTCHA_ALERT_WINDOW_MINUTES = serializers.IntegerField(
-        required=False, default=10, min_value=1, max_value=1440, label=_("Alert window (minutes)")
+        required=False,
+        default=10,
+        min_value=1,
+        max_value=1440,
+        label=_("Alert window (minutes)"),
+        help_text=_("Statistics window for alerting; the same alert fires at most once per window"),
     )
     CAPTCHA_ALERT_DENY_RATE = serializers.FloatField(
-        required=False, default=0.5, min_value=0.0, max_value=1.0, label=_("Alert deny rate")
+        required=False,
+        default=0.5,
+        min_value=0.0,
+        max_value=1.0,
+        label=_("Alert deny rate"),
+        help_text=_("Trigger when deny decisions reach this share of the window (0-1)"),
     )
     CAPTCHA_ALERT_MIN_SAMPLES = serializers.IntegerField(
-        required=False, default=50, min_value=1, max_value=100000, label=_("Alert minimum samples")
+        required=False,
+        default=50,
+        min_value=1,
+        max_value=100000,
+        label=_("Alert minimum samples"),
+        help_text=_("Do not alert until the window has enough samples; avoids false alarms on low traffic"),
     )
     CAPTCHA_LOG_RETENTION_DAYS = serializers.IntegerField(
-        required=False, default=30, min_value=0, max_value=365, label=_("Log retention (days)")
+        required=False,
+        default=30,
+        min_value=0,
+        max_value=365,
+        label=_("Log retention (days)"),
+        help_text=_("CaptchaLog retention in days; 0 = keep forever; a daily beat task purges expired rows"),
     )
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
