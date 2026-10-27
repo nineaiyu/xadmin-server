@@ -108,6 +108,14 @@ jobs:
           DJANGO_SETTINGS_MODULE: tests.settings_real
         run: uv run --no-sync python scripts/check_captcha_coverage.py
 
+      - name: Captcha clean-cut gate
+        # 旧图片码模式 / 字段 / 模型不得复活：统一协议是唯一路径。
+        run: uv run --no-sync python scripts/check_captcha_legacy.py
+
+      - name: Captcha asset gate
+        # 背景图库 manifest 的许可 / 哈希 / 路径 / 体积校验。
+        run: uv run --no-sync python scripts/check_captcha_assets.py
+
       - name: Check seed plan and ownership
         # 种子归属 / 引用完整性 / 主键重复的结构校验（不连数据库，因此可放在静态检查 job）。
         # 判定口径：任一 error 即失败；warning 只提示（混合归属页面、未声明字典编码等）。

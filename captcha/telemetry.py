@@ -34,6 +34,7 @@ _FIELDS = (
     "mode",
     "type",
     "difficulty",
+    "asset_id",
     "decision",
     "would_decision",
     "risk_score",

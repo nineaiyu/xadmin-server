@@ -49,7 +49,6 @@ def _captcha_meta(scene: str) -> dict[str, Any]:
     """场景配置附带的验证码形态：前端据此选择图片码或交互式组件。"""
     meta = build_captcha_meta(scene)
     return {
-        "captcha_mode": meta["mode"],
         "captcha_types": meta["types"],
         "captcha_image_fallback": meta["image_fallback"],
         "captcha_flow": meta.get("captcha_flow", "always"),
@@ -218,7 +217,6 @@ CATEGORY_KEYS: tuple[str, ...] = tuple(CATEGORIES)
                     properties={
                         "access": build_basic_type(OpenApiTypes.BOOL),
                         "captcha": build_basic_type(OpenApiTypes.BOOL),
-                        "captcha_mode": build_basic_type(OpenApiTypes.STR),
                         "captcha_types": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                         "captcha_image_fallback": build_basic_type(OpenApiTypes.BOOL),
                         "captcha_flow": build_basic_type(OpenApiTypes.STR),
@@ -259,8 +257,6 @@ CATEGORY_KEYS: tuple[str, ...] = tuple(CATEGORIES)
                     "form_type": build_basic_type(OpenApiTypes.STR),
                     "target": build_basic_type(OpenApiTypes.STR),
                     "token": build_basic_type(OpenApiTypes.STR),
-                    "captcha_key": build_basic_type(OpenApiTypes.STR),
-                    "captcha_code": build_basic_type(OpenApiTypes.STR),
                     "captcha_ticket": build_basic_type(OpenApiTypes.STR),
                 }
             )

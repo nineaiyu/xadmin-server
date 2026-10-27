@@ -3,8 +3,6 @@
 
 import pytest
 
-from captcha.models import CaptchaStore
-
 pytestmark = pytest.mark.django_db
 
 IMAGE_PREVIEW_URL = "/api/settings/captcha/preview"
@@ -12,13 +10,11 @@ INTERACTIVE_PREVIEW_URL = "/api/settings/captcha/interactive/preview"
 
 
 class TestImagePreview:
-    def test_returns_png_without_creating_captcha_store(self, auth_client):
-        before = CaptchaStore.objects.count()
+    def test_returns_png_without_creating_challenge(self, auth_client):
         resp = auth_client.post(IMAGE_PREVIEW_URL, {}, format="json")
         assert resp.data["code"] == 1000, resp.data
         assert resp.data["data"]["image"].startswith("data:image/png;base64,")
         assert resp.data["data"]["length"] > 0
-        assert CaptchaStore.objects.count() == before
 
     def test_anonymous_denied(self, api_client):
         resp = api_client.post(IMAGE_PREVIEW_URL, {}, format="json")
@@ -26,8 +22,7 @@ class TestImagePreview:
 
 
 class TestInteractivePreview:
-    def test_works_even_when_mode_is_image_and_disabled(self, auth_client, settings):
-        settings.CAPTCHA_MODE = "image"
+    def test_works_even_when_captcha_disabled(self, auth_client, settings):
         settings.CAPTCHA_ENABLED = False
         resp = auth_client.post(INTERACTIVE_PREVIEW_URL, {"type": "rotate"}, format="json")
         assert resp.data["code"] == 1000, resp.data

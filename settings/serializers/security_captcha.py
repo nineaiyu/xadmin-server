@@ -19,23 +19,11 @@ from settings.serializers.contract import SettingSaveContractMixin
 
 
 class SecurityCaptchaGeneralSerializer(SettingSaveContractMixin, serializers.Serializer):
-    class ModeChoices(TextChoices):
-        IMAGE = "image", _("Image captcha")
-        INTERACTIVE = "interactive", _("Interactive captcha")
-
     CAPTCHA_ENABLED = serializers.BooleanField(
         required=False,
         default=True,
         label=_("Enable captcha"),
         help_text=_("Global switch: when disabled, no scene requires a captcha"),
-    )
-
-    CAPTCHA_MODE = serializers.ChoiceField(
-        choices=ModeChoices.choices,
-        required=False,
-        default=ModeChoices.IMAGE,
-        label=_("Captcha mode"),
-        help_text=_("Captcha type used by all scenes; new types can be added as separate tabs"),
     )
 
 
@@ -90,21 +78,25 @@ class SecurityCaptchaCodeSerializer(SettingSaveContractMixin, serializers.Serial
 
 class SecurityCaptchaInteractiveSerializer(SettingSaveContractMixin, serializers.Serializer):
     class InteractiveTypeChoices(TextChoices):
+        IMAGE = "image", _("Image characters (fallback)")
         SLIDE = "slide", _("Slide puzzle")
         ROTATE = "rotate", _("Rotate upright")
         CLICK = "click", _("Word click")
         WORDORDER = "wordorder", _("Word order")
+        ICON = "icon", _("Icon click")
 
     class ClickCharsetChoices(TextChoices):
-        CHINESE = "chinese", _("Common Chinese characters")
+        SIMPLIFIED = "simplified", _("Simplified Chinese characters")
+        TRADITIONAL = "traditional", _("Traditional Chinese characters")
+        MIXED = "mixed", _("Mixed simplified / traditional per challenge")
         ASCII = "ascii", _("Letters and digits")
 
-    CAPTCHA_INTERACTIVE_TYPES = serializers.MultipleChoiceField(
+    CAPTCHA_ENABLED_TYPES = serializers.MultipleChoiceField(
         choices=InteractiveTypeChoices.choices,
         required=False,
         default=["slide", "rotate", "click"],
-        label=_("Interactive captcha types"),
-        help_text=_("Enabled challenge types when the mode is interactive"),
+        label=_("Enabled captcha types"),
+        help_text=_("Challenge types eligible for random selection; image stays opt-in fallback"),
     )
 
     CAPTCHA_SLIDE_TOLERANCE = serializers.IntegerField(
@@ -179,18 +171,31 @@ class SecurityCaptchaInteractiveSerializer(SettingSaveContractMixin, serializers
     CAPTCHA_CLICK_CHARSET = serializers.ChoiceField(
         choices=ClickCharsetChoices.choices,
         required=False,
-        default=ClickCharsetChoices.CHINESE,
+        default=ClickCharsetChoices.SIMPLIFIED,
         label=_("Click charset"),
+    )
+
+    CAPTCHA_BACKGROUND_PACK = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="builtin",
+        max_length=64,
+        label=_("Background pack"),
+        help_text=_("builtin = bundled manifest (procedural when empty); procedural = disable photo pack"),
     )
 
     CAPTCHA_IMAGE_FALLBACK_ENABLED = serializers.BooleanField(
         required=False,
-        default=False,
+        default=True,
         label=_("Image captcha fallback"),
-        help_text=_(
-            "Allow users to switch to the image captcha when the interactive mode is enabled "
-            "(accessibility fallback; weaker against OCR)"
-        ),
+        help_text=_("Expose the image type as an accessibility fallback; it never enters the random pool"),
+    )
+
+    CAPTCHA_POW_FOR_IMAGE_FALLBACK = serializers.BooleanField(
+        required=False,
+        default=True,
+        label=_("PoW for image fallback"),
+        help_text=_("Require a low-difficulty PoW before accepting an image fallback challenge"),
     )
 
     @staticmethod
@@ -217,11 +222,11 @@ class SecurityCaptchaRiskSerializer(SettingSaveContractMixin, serializers.Serial
     CAPTCHA_RISK_MODE = serializers.ChoiceField(
         choices=RiskModeChoices.choices,
         required=False,
-        default=RiskModeChoices.OFF,
+        default=RiskModeChoices.ENFORCE,
         label=_("Risk mode"),
         help_text=_(
-            "off = risk layer disabled; shadow = score and log only (no behavior change); "
-            "enforce = apply decisions (run shadow for at least 3 days first)"
+            "off = risk layer disabled; shadow = score and log only; "
+            "enforce = apply decisions (default for the hardened profile)"
         ),
     )
     CAPTCHA_RISK_T_ALLOW = serializers.IntegerField(
@@ -285,7 +290,29 @@ class SecurityCaptchaRiskSerializer(SettingSaveContractMixin, serializers.Serial
         required=False,
         default=True,
         label=_("Enable PoW"),
-        help_text=_("Issue a PoW challenge for the light decision; disabling it degrades light to a normal puzzle"),
+        help_text=_("Issue a PoW challenge for allow/light decisions; disabling it weakens the cost axis"),
+    )
+    CAPTCHA_POW_BITS_ALLOW = serializers.IntegerField(
+        required=False,
+        default=16,
+        min_value=1,
+        max_value=24,
+        label=_("PoW bits (allow)"),
+        help_text=_("Silent PoW difficulty for low-risk allow decisions; default 16"),
+    )
+    CAPTCHA_STRICT_BINDING = serializers.BooleanField(
+        required=False,
+        default=True,
+        label=_("Strict ticket binding"),
+        help_text=_("Require matching sid cookie and X-Captcha-Fp fingerprint when consuming a ticket"),
+    )
+    CAPTCHA_TICKET_AUDIENCE = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        max_length=255,
+        label=_("Ticket audience"),
+        help_text=_("Deployment identifier bound into tickets; empty = site URL / first allowed host"),
     )
     CAPTCHA_POW_BITS_LIGHT = serializers.IntegerField(
         required=False,

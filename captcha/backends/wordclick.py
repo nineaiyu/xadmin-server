@@ -15,7 +15,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from PIL import Image, ImageDraw, ImageFont
 
-from captcha.backends.art import make_background, png_data_uri, size_setting
+from captcha.backends.art import make_background_asset, png_data_uri, size_setting
 from captcha.backends.base import CaptchaChallenge, ChallengeBackend, difficulty_factor
 
 CLICK_COUNT = 3
@@ -39,18 +39,47 @@ def _gb2312_level1_chars() -> str:
     return "".join(dict.fromkeys(chars))
 
 
+def _big5_level1_chars() -> str:
+    chars: list[str] = []
+    for lead in range(0xA4, 0xC7):
+        for trail in [*range(0x40, 0x7F), *range(0xA1, 0xFF)]:
+            try:
+                char = bytes((lead, trail)).decode("big5")
+            except UnicodeDecodeError:
+                continue
+            if "\u4e00" <= char <= "\u9fff":
+                chars.append(char)
+    return "".join(dict.fromkeys(chars))
+
+
 COMMON_CHARS = _gb2312_level1_chars()
+TRADITIONAL_CHARS = _big5_level1_chars()
 
 
-def click_charset() -> str:
-    charset = str(getattr(settings, "CAPTCHA_CLICK_CHARSET", "chinese") or "chinese").strip().lower()
-    if charset == "ascii":
+def selected_charset() -> str:
+    """当前题目的脚本：mixed 按整题随机，不在同一题内混排简繁。"""
+    configured = str(getattr(settings, "CAPTCHA_CLICK_CHARSET", "simplified") or "simplified").strip().lower()
+    if configured == "ascii":
+        return "ascii"
+    if configured == "traditional":
+        return "traditional"
+    if configured == "mixed":
+        return random.choice(("simplified", "traditional"))
+    return "simplified"
+
+
+def click_charset(script: str | None = None) -> str:
+    script = script or selected_charset()
+    if script == "ascii":
         return ASCII_CHARS
+    if script == "traditional":
+        return "".join(char for char in TRADITIONAL_CHARS if char not in CONFUSABLE_CHARS)
     return "".join(char for char in COMMON_CHARS if char not in CONFUSABLE_CHARS)
 
 
-def _font_path() -> str:
-    path = Path(str(getattr(settings, "CAPTCHA_CLICK_FONT_PATH", "")))
+def _font_path(script: str = "simplified") -> str:
+    key = "CAPTCHA_CLICK_TRADITIONAL_FONT_PATH" if script == "traditional" else "CAPTCHA_CLICK_FONT_PATH"
+    path = Path(str(getattr(settings, key, "")))
     if not path.is_file():
         raise ImproperlyConfigured(f"Captcha click font not found: {path}")
     return str(path)
@@ -109,7 +138,8 @@ class WordClickBackend(ChallengeBackend):
     def generate(self, difficulty: str = "normal") -> CaptchaChallenge:
         rng = random.Random()
         width, height = size_setting(getattr(settings, "CAPTCHA_SLIDE_SIZE", None), (320, 180))
-        charset = click_charset()
+        script = selected_charset()
+        charset = click_charset(script)
         count = CLICK_COUNT
         if difficulty == "hard":
             count = max(int(getattr(settings, "CAPTCHA_CLICK_COUNT_HARD", 5) or 5), CLICK_COUNT)
@@ -118,11 +148,12 @@ class WordClickBackend(ChallengeBackend):
         if len(charset) < count:
             raise ImproperlyConfigured("CAPTCHA_CLICK_CHARSET needs at least 3 characters")
         chars = rng.sample(charset, count)
-        font_path = _font_path()
+        font_path = _font_path(script)
         positions = _sample_positions(rng, (width, height), count)
         color = rng.choice([(32, 52, 120), (118, 42, 52), (36, 92, 66), (96, 58, 24), (74, 44, 110)])
 
-        background = make_background((width, height), rng).convert("RGBA")
+        background, asset_id = make_background_asset((width, height), rng, soft=True)
+        background = background.convert("RGBA")
         for char, (x, y) in zip(chars, positions, strict=True):
             font = ImageFont.truetype(font_path, rng.randint(28, 40))
             glyph = _render_glyph(char, font, color)
@@ -133,7 +164,7 @@ class WordClickBackend(ChallengeBackend):
         tip = _render_tip(chars, color, font_path)
         return CaptchaChallenge(
             type=self.type,
-            secret={"points": [{"x": x, "y": y} for x, y in positions]},
+            secret={"points": [{"x": x, "y": y} for x, y in positions], "asset_id": asset_id},
             payload={
                 "background": png_data_uri(background),
                 "tip": png_data_uri(tip),

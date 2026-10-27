@@ -8,17 +8,11 @@ from typing import Any
 
 from celery import shared_task
 
-from captcha.models import CaptchaLog, CaptchaStore
+from captcha.models import CaptchaLog
 from common.celery.decorator import register_as_period_task
 from common.utils import get_logger
 
 logger = get_logger(__name__)
-
-
-@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
-@register_as_period_task(crontab="12 2 * * *")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
-def auto_clean_expired_captcha_job() -> None:
-    CaptchaStore.remove_expired()
 
 
 @shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

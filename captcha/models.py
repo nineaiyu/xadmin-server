@@ -1,91 +1,10 @@
 import datetime
-import hashlib
-import random
-import time
-from typing import Any
 
-from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import smart_str
-
-from captcha.helpers import get_challenge
-
-# Heavily based on session key generation in Django
-# Use the system (hardware-based) random number generator if it exists.
-if hasattr(random, "SystemRandom"):
-    randrange = random.SystemRandom().randrange
-else:
-    randrange = random.randrange
-MAX_RANDOM_KEY = 18446744073709551616  # 2 << 63
-
 from django.utils.translation import gettext_lazy as _
 
 from common.core.models import DbUuidModel
-from common.utils import get_logger
-
-logger = get_logger(__name__)
-
-
-class CaptchaStore(models.Model):
-    id = models.AutoField(primary_key=True)
-    challenge = models.CharField(blank=False, max_length=32)
-    response = models.CharField(blank=False, max_length=32)
-    hashkey = models.CharField(blank=False, max_length=40, unique=True)
-    expiration = models.DateTimeField(blank=False)
-
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        self.response = self.response.lower()
-        if not self.expiration:
-            self.expiration = timezone.now() + datetime.timedelta(minutes=int(settings.CAPTCHA_TIMEOUT))
-        if not self.hashkey:
-            key_ = (
-                smart_str(randrange(0, MAX_RANDOM_KEY))
-                + smart_str(time.time())
-                + smart_str(self.challenge, errors="ignore")
-                + smart_str(self.response, errors="ignore")
-            ).encode("utf8")
-            self.hashkey = hashlib.sha1(key_).hexdigest()
-            del key_
-        super().save(*args, **kwargs)
-
-    def __str__(self) -> str:
-        return str(self.challenge)
-
-    @classmethod
-    def remove_expired(cls) -> None:
-        cls.objects.filter(expiration__lte=timezone.now()).delete()
-
-    @classmethod
-    def generate_key(cls, generator: Any = None) -> str:
-        challenge, response = get_challenge(generator)()
-        store = cls.objects.create(challenge=challenge, response=response)
-
-        hashkey: str = store.hashkey
-        return hashkey
-
-    @classmethod
-    def pick(cls) -> str:
-        if not settings.CAPTCHA_GET_FROM_POOL:
-            return cls.generate_key()
-
-        def fallback() -> str:
-            logger.error("Couldn't get a captcha from pool, generating")
-            return cls.generate_key()
-
-        # Pick up a random item from pool
-        minimum_expiration = timezone.now() + datetime.timedelta(minutes=int(settings.CAPTCHA_GET_FROM_POOL_TIMEOUT))
-        store = cls.objects.filter(expiration__gt=minimum_expiration).order_by("?").first()
-
-        hashkey: str = (store and store.hashkey) or fallback()
-        return hashkey
-
-    @classmethod
-    def create_pool(cls, count: int = 1000) -> None:
-        assert count > 0
-        while count > 0:
-            cls.generate_key()
-            count -= 1
 
 
 class CaptchaLog(DbUuidModel):
@@ -109,6 +28,7 @@ class CaptchaLog(DbUuidModel):
     mode = models.CharField(verbose_name=_("Risk mode"), max_length=16, blank=True, default="")
     type = models.CharField(verbose_name=_("Captcha type"), max_length=16, blank=True, default="")
     difficulty = models.CharField(verbose_name=_("Difficulty"), max_length=8, blank=True, default="")
+    asset_id = models.CharField(verbose_name=_("Asset ID"), max_length=64, blank=True, default="")
     decision = models.CharField(verbose_name=_("Decision"), max_length=16, blank=True, default="")
     would_decision = models.CharField(verbose_name=_("Shadow decision"), max_length=16, blank=True, default="")
     risk_score = models.IntegerField(verbose_name=_("Risk score"), null=True, blank=True)

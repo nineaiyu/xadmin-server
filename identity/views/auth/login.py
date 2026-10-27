@@ -78,8 +78,6 @@ class BasicLoginAPIView(TokenObtainPairView):
                     "username": build_basic_type(OpenApiTypes.STR),
                     "password": build_basic_type(OpenApiTypes.STR),
                     "token": build_basic_type(OpenApiTypes.STR),
-                    "captcha_key": build_basic_type(OpenApiTypes.STR),
-                    "captcha_code": build_basic_type(OpenApiTypes.STR),
                     "captcha_ticket": build_basic_type(OpenApiTypes.STR),
                 },
                 required=["username", "password"],

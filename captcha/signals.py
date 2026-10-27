@@ -22,6 +22,13 @@ FREQ_IP_PREFIX = "captcha_freq_ip"
 FREQ_FP_PREFIX = "captcha_freq_fp"
 HIST_PREFIX = "captcha_hist"
 ACCT_FAIL_PREFIX = "captcha_acct_fail"
+PHASE_CHALLENGE_PREFIX = "captcha_phase_challenge"
+PHASE_VERIFY_PREFIX = "captcha_phase_verify"
+TYPE_MIX_PREFIX = "captcha_type_mix"
+AUDIO_PREFIX = "captcha_audio"
+TICKET_RATE_PREFIX = "captcha_ticket_rate"
+SPREAD_IP_PREFIX = "captcha_spread_ip"
+SPREAD_FP_PREFIX = "captcha_spread_fp"
 
 _MOBILE_RE = re.compile(r"Mobile|Android|iPhone|iPad|iPod", re.I)
 _CHROME_RE = re.compile(r"Chrome/|Chromium/|Edg/|OPR/", re.I)
@@ -307,6 +314,115 @@ def record_hist(fp: str, success: bool, window: int = 7 * 24 * 3600) -> None:
         cache.set(key, data, window)
     except Exception:  # noqa: BLE001
         pass
+
+
+def _counter(key: str, window: int = 600) -> int:
+    try:
+        value = int(cache.get(key, 0) or 0) + 1
+        cache.set(key, value, window)
+        return value
+    except Exception:  # noqa: BLE001
+        return 0
+
+
+def record_challenge(ip: str, fp: str = "", captcha_type: str = "") -> None:
+    """挑战期计数：abandon 比、题型固定化、IP/指纹扩散。"""
+    if ip:
+        _counter(f"{PHASE_CHALLENGE_PREFIX}_{hash_ip(ip)}")
+    if ip and captcha_type:
+        key = f"{TYPE_MIX_PREFIX}_{hash_ip(ip)}"
+        try:
+            data = dict(cache.get(key) or {})
+            data[captcha_type] = int(data.get(captcha_type, 0) or 0) + 1
+            data["_total"] = int(data.get("_total", 0) or 0) + 1
+            cache.set(key, data, 600)
+        except Exception:  # noqa: BLE001
+            pass
+    if ip and fp:
+        _spread_add(f"{SPREAD_IP_PREFIX}_{hash_ip(ip)}", fp)
+        _spread_add(f"{SPREAD_FP_PREFIX}_{fp}", hash_ip(ip))
+
+
+def record_verify(ip: str) -> None:
+    if ip:
+        _counter(f"{PHASE_VERIFY_PREFIX}_{hash_ip(ip)}")
+
+
+def record_audio(ip: str) -> None:
+    if ip:
+        _counter(f"{AUDIO_PREFIX}_{hash_ip(ip)}")
+
+
+def record_ticket_consume(ip: str) -> None:
+    if ip:
+        _counter(f"{TICKET_RATE_PREFIX}_{hash_ip(ip)}")
+
+
+def _spread_add(key: str, value: str) -> int:
+    try:
+        client = cache.client.get_client()
+        client.sadd(key, value)
+        client.expire(key, 600)
+        return int(client.scard(key))
+    except Exception:  # noqa: BLE001 非 Redis / 故障 = 不判定
+        return 0
+
+
+def _spread_count(key: str) -> int:
+    try:
+        return int(cache.client.get_client().scard(key))
+    except Exception:  # noqa: BLE001
+        return 0
+
+
+def challenge_abandon_hit(ip: str) -> bool:
+    if not ip:
+        return False
+    try:
+        challenges = int(cache.get(f"{PHASE_CHALLENGE_PREFIX}_{hash_ip(ip)}", 0) or 0)
+        verifies = int(cache.get(f"{PHASE_VERIFY_PREFIX}_{hash_ip(ip)}", 0) or 0)
+        return challenges >= 10 and challenges > max(verifies, 1) * 5
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def type_fixation_hit(ip: str) -> bool:
+    if not ip:
+        return False
+    try:
+        data = dict(cache.get(f"{TYPE_MIX_PREFIX}_{hash_ip(ip)}") or {})
+        total = int(data.pop("_total", 0) or 0)
+        if total < 10 or not data:
+            return False
+        return max(int(value or 0) for value in data.values()) / total >= 0.9
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def audio_abuse_hit(ip: str) -> bool:
+    if not ip:
+        return False
+    try:
+        return int(cache.get(f"{AUDIO_PREFIX}_{hash_ip(ip)}", 0) or 0) > 20
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def ticket_velocity_hit(ip: str) -> bool:
+    if not ip:
+        return False
+    try:
+        return int(cache.get(f"{TICKET_RATE_PREFIX}_{hash_ip(ip)}", 0) or 0) > 5
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def ip_fp_spread_hit(ip: str, limit: int = 5) -> bool:
+    return bool(ip) and _spread_count(f"{SPREAD_IP_PREFIX}_{hash_ip(ip)}") > limit
+
+
+def fp_ip_spread_hit(fp: str, limit: int = 5) -> bool:
+    return bool(fp) and _spread_count(f"{SPREAD_FP_PREFIX}_{fp}") > limit
 
 
 def env_version(env: Any) -> str:

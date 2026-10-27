@@ -14,7 +14,7 @@ from typing import Any
 from django.conf import settings
 from PIL import Image, ImageDraw
 
-from captcha.backends.art import make_orientation_scene, png_data_uri, size_setting
+from captcha.backends.art import make_orientation_scene_asset, png_data_uri, size_setting
 from captcha.backends.base import CaptchaChallenge, ChallengeBackend, difficulty_factor
 
 ANGLE_RANGES = ((15, 75), (105, 165), (195, 255), (285, 345))
@@ -36,7 +36,7 @@ class RotateBackend(ChallengeBackend):
         # 先生成 sqrt(2) 倍大的场景再中心裁切：任意角度旋转后，目标方形完全落在
         # 原图内容内，不会露出 Pillow 扩边填充的黑色三角。
         source_size = (math.ceil(width * math.sqrt(2)) + 4, math.ceil(height * math.sqrt(2)) + 4)
-        scene = make_orientation_scene(source_size, rng)
+        scene, asset_id = make_orientation_scene_asset(source_size, rng)
         low, high = rng.choice(ANGLE_RANGES)
         theta = rng.randint(low, high)
         rotated = scene.rotate(
@@ -52,7 +52,7 @@ class RotateBackend(ChallengeBackend):
         draw.rectangle((0, 0, width - 1, height - 1), outline=(255, 255, 255), width=2)
         return CaptchaChallenge(
             type=self.type,
-            secret={"angle": normalize_angle(theta), "pre_rotation": theta},
+            secret={"angle": normalize_angle(theta), "pre_rotation": theta, "asset_id": asset_id},
             payload={
                 "background": png_data_uri(rotated),
                 "width": width,

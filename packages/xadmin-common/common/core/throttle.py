@@ -35,7 +35,7 @@ def allow_by_identity(ident: Any, scope: str, limit: int, window_seconds: int = 
 def allow_by_ip(request: Any, scope: str, limit: int, window_seconds: int = 60) -> bool:
     """IP 固定窗口限流（非 DRF 视图用，如 Django 原生验证码端点）：True = 放行。
 
-    验证码图片/刷新每次都会生成并写入 CaptchaStore 行，匿名可刷即等于可灌库；
+    验证码出题 / 音频每次都会写挑战缓存并消耗 Pillow / TTS 资源，匿名可刷即等于可灌库；
     DRF 的限流类只能在 DRF 视图上挂载，此函数提供同等语义的独立入口。
     """
     from common.utils.request import get_request_ip

@@ -14,7 +14,6 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from captcha.services import CaptchaAuth
 from common.core.response import ApiResponse
 from common.core.throttle import TempTokenThrottle
 from common.swagger.utils import get_default_response_schema
@@ -40,26 +39,6 @@ class TempTokenAPIView(GenericAPIView):
         time_limit = int(getattr(settings, "SECURITY_TEMP_TOKEN_EXPIRE", 600) or 600)
         token = make_token_cache(get_request_ident(request), time_limit=time_limit, force_new=True).encode("utf-8")
         return ApiResponse(token=token)
-
-
-class CaptchaAPIView(GenericAPIView):
-    """图片验证码"""
-
-    permission_classes: list[type] = []
-    authentication_classes: list[type] = []
-
-    @extend_schema(
-        responses=get_default_response_schema(
-            {
-                "captcha_image": build_basic_type(OpenApiTypes.STR),
-                "captcha_key": build_basic_type(OpenApiTypes.STR),
-                "length": build_basic_type(OpenApiTypes.NUMBER),
-            }
-        )
-    )
-    def get(self, request: Any) -> Any:
-        """获取图形验证码"""
-        return ApiResponse(**CaptchaAuth(request=request).generate())
 
 
 class RefreshTokenAPIView(TokenRefreshView):

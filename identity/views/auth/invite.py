@@ -55,7 +55,6 @@ class InviteValidateAPIView(GenericAPIView):
                         "username": build_basic_type(OpenApiTypes.STR),
                         "encrypted": build_basic_type(OpenApiTypes.BOOL),
                         "captcha_required": build_basic_type(OpenApiTypes.BOOL),
-                        "captcha_mode": build_basic_type(OpenApiTypes.STR),
                         "captcha_types": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                         "captcha_image_fallback": build_basic_type(OpenApiTypes.BOOL),
                         "captcha_flow": build_basic_type(OpenApiTypes.STR),
@@ -75,7 +74,6 @@ class InviteValidateAPIView(GenericAPIView):
                 "encrypted": settings.SECURITY_INVITE_ENCRYPTED_ENABLED,
                 # 匿名激活默认必须通过人机校验；总开关关闭时随全局一起停用
                 "captcha_required": captcha_globally_enabled(),
-                "captcha_mode": captcha_meta["mode"],
                 "captcha_types": captcha_meta["types"],
                 "captcha_image_fallback": captcha_meta["image_fallback"],
                 "captcha_flow": captcha_meta.get("captcha_flow", "always"),
@@ -102,8 +100,6 @@ class InviteAcceptAPIView(GenericAPIView):
                             "plaintext is only accepted when the encrypted switch is off"
                         ),
                     },
-                    "captcha_key": build_basic_type(OpenApiTypes.STR),
-                    "captcha_code": build_basic_type(OpenApiTypes.STR),
                     "captcha_ticket": build_basic_type(OpenApiTypes.STR),
                 }
             )

@@ -9,13 +9,7 @@ from django.core.cache import cache
 from captcha import cache as captcha_cache
 from captcha import tickets
 from captcha.const import CAPTCHA_ACTION_LOGIN, verify_code_send_action
-from captcha.services import (
-    CaptchaExhaustedError,
-    CaptchaInvalidError,
-    InteractiveCaptcha,
-    build_captcha_meta,
-    inspect_challenge,
-)
+from captcha.services import CaptchaInvalidError, InteractiveCaptcha, build_captcha_meta
 
 _SCENE_ACTION = {
     "login": CAPTCHA_ACTION_LOGIN,
@@ -24,9 +18,9 @@ _SCENE_ACTION = {
 
 
 def _answer_for(challenge_id: str):
-    data = inspect_challenge(challenge_id)
-    assert data is not None
-    return data["type"], data["answer"]
+    stored = captcha_cache.load_challenge(challenge_id)
+    assert stored is not None
+    return stored["type"], stored["secret"]
 
 
 def _solve(service: InteractiveCaptcha, challenge: dict, scene: str = "login", ip: str = "10.0.0.8"):
@@ -39,6 +33,7 @@ def _solve(service: InteractiveCaptcha, challenge: dict, scene: str = "login", i
         track=None,
         ip=ip,
         action=_SCENE_ACTION[scene],
+        sid=challenge.get("_sid", ""),
     )
 
 
@@ -57,8 +52,8 @@ def _clean_captcha_cache():
 
 @pytest.fixture
 def interactive(settings):
-    settings.CAPTCHA_MODE = "interactive"
-    settings.CAPTCHA_INTERACTIVE_TYPES = ["slide", "rotate", "click"]
+    settings.CAPTCHA_ENABLED_TYPES = ["slide", "rotate", "click"]
+    settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = False
     settings.CAPTCHA_TRACK_CHECK_ENABLED = False
     settings.CAPTCHA_MAX_ATTEMPTS = 3
     settings.CAPTCHA_INFLIGHT_TICKET_LIMIT = 3
@@ -66,17 +61,11 @@ def interactive(settings):
 
 
 class TestChallenge:
-    def test_image_mode_rejects(self, settings):
-        settings.CAPTCHA_MODE = "image"
-        with pytest.raises(CaptchaInvalidError):
-            InteractiveCaptcha().challenge(scene="login")
-
     def test_global_switch_off_disables_everything(self, settings, interactive):
         settings.CAPTCHA_ENABLED = False
         with pytest.raises(CaptchaInvalidError):
             interactive.challenge(scene="login")
         assert build_captcha_meta("login") == {
-            "mode": "interactive",
             "types": [],
             "image_fallback": False,
             "captcha_flow": "always",
@@ -92,23 +81,21 @@ class TestChallenge:
             interactive.challenge(scene="login")
 
     def test_disabled_type_rejects(self, settings, interactive):
-        settings.CAPTCHA_INTERACTIVE_TYPES = ["rotate"]
+        settings.CAPTCHA_ENABLED_TYPES = ["rotate"]
         with pytest.raises(CaptchaInvalidError):
             interactive.challenge(captcha_type="slide", scene="login")
 
-    def test_meta_only_exposes_types_in_interactive_mode(self, settings):
-        settings.CAPTCHA_MODE = "image"
-        assert build_captcha_meta("login") == {
-            "mode": "image",
-            "types": [],
-            "image_fallback": False,
-            "captcha_flow": "always",
-        }
-        settings.CAPTCHA_MODE = "interactive"
+    def test_meta_exposes_types_and_image_fallback(self, settings):
+        # 显式固定基线，避免并行/顺序导致的全局 settings 残留
+        settings.CAPTCHA_ENABLED = True
+        settings.CAPTCHA_ENABLED_TYPES = ["slide", "rotate", "click"]
+        settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = False
+        settings.SECURITY_LOGIN_CAPTCHA_ENABLED = True
         assert build_captcha_meta("login")["types"] == ["slide", "rotate", "click"]
         assert build_captcha_meta("login")["image_fallback"] is False
         settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = True
         assert build_captcha_meta("login")["image_fallback"] is True
+        assert "image" in build_captcha_meta("login")["types"]
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
         assert build_captcha_meta("login")["types"] == []
         assert build_captcha_meta("login")["image_fallback"] is False
@@ -149,7 +136,7 @@ class TestVerifyAndTicket:
 
     def test_attempts_limit(self, interactive):
         challenge = interactive.challenge(captcha_type="slide", scene="login")
-        for expected_left in (2, 1):
+        for _ in range(2):
             result = interactive.verify(
                 challenge_id=challenge["challenge_id"],
                 captcha_type=challenge["type"],
@@ -158,8 +145,8 @@ class TestVerifyAndTicket:
                 track=None,
                 action=CAPTCHA_ACTION_LOGIN,
             )
-            assert result == {"passed": False, "attempts_left": expected_left}
-        with pytest.raises(CaptchaExhaustedError):
+            assert result == {"passed": False}
+        with pytest.raises(CaptchaInvalidError):
             interactive.verify(
                 challenge_id=challenge["challenge_id"],
                 captcha_type=challenge["type"],
@@ -197,14 +184,14 @@ class TestVerifyAndTicket:
             track=None,
             action=CAPTCHA_ACTION_LOGIN,
         )
-        assert result == {"passed": False, "attempts_left": 2}
+        assert result == {"passed": False}
 
     def test_inflight_ticket_limit(self, interactive):
         for _ in range(3):
             challenge = interactive.challenge(captcha_type="slide", scene="login")
             assert _solve(interactive, challenge, ip="10.0.0.9")["passed"] is True
         fourth = interactive.challenge(captcha_type="slide", scene="login")
-        with pytest.raises(CaptchaExhaustedError):
+        with pytest.raises(CaptchaInvalidError):
             _solve(interactive, fourth, ip="10.0.0.9")
 
     def test_cache_failure_is_fail_closed(self, monkeypatch, interactive):

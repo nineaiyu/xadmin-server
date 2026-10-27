@@ -46,7 +46,6 @@ class LoginCapabilitiesAPIView(GenericAPIView):
                         "lifetime": build_basic_type(OpenApiTypes.NUMBER),
                         "basic": _way_schema(
                             ("captcha", build_basic_type(OpenApiTypes.BOOL)),
-                            ("captcha_mode", build_basic_type(OpenApiTypes.STR)),
                             ("captcha_types", build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
                             ("captcha_image_fallback", build_basic_type(OpenApiTypes.BOOL)),
                             ("captcha_flow", build_basic_type(OpenApiTypes.STR)),

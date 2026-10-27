@@ -55,6 +55,7 @@ class TestCaptchaStats:
             "latency_p50": 0,
         }
         assert data["by_type"] == []
+        assert data["by_asset"] == []
         assert data["by_decision"] == []
         assert data["risk_distribution"] == [
             {"bucket": "0-19", "total": 0},
@@ -98,6 +99,20 @@ class TestCaptchaStats:
         assert len(data["trend"]) == 1
         assert data["trend"][0]["total"] == 3
         assert data["trend"][0]["passed"] == 2
+
+    def test_groups_by_asset(self):
+        _log(type="slide", passed=True, asset_id="scene-05")
+        _log(type="slide", passed=False, asset_id="scene-05")
+        _log(type="click", passed=True, asset_id="abstract-01")
+        data = captcha_stats(24)
+        by_asset = {row["asset_id"]: row for row in data["by_asset"]}
+        assert by_asset["scene-05"] == {
+            "asset_id": "scene-05",
+            "total": 2,
+            "passed": 1,
+            "pass_rate": 0.5,
+        }
+        assert by_asset["abstract-01"]["pass_rate"] == 1.0
 
     def test_risk_distribution_and_top_deny_breakdowns(self):
         _log(

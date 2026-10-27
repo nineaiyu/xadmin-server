@@ -300,12 +300,11 @@ SETTINGS_CONFIG = {
     "CAPTCHA_BACKGROUND_COLOR": "#ffffff",
     "CAPTCHA_FOREGROUND_COLOR": "#001100",
     "CAPTCHA_NOISE_FUNCTIONS": ("captcha.helpers.noise_arcs", "captcha.helpers.noise_dots"),
-    # 交互式验证码（滑动拼图 / 旋转回正 / 文字点选）：模式默认 image，
-    # 升级零行为变化；场景总开关仍由 SECURITY_<场景>_CAPTCHA_ENABLED 控制
+    # 统一人机验证（图片 / 滑动 / 旋转 / 点选 / 语序 / PoW）：
+    # 场景总开关仍由 SECURITY_<场景>_CAPTCHA_ENABLED 控制
     # 验证码总开关：关闭后所有场景不再人机校验（各场景开关仍独立保留）
     "CAPTCHA_ENABLED": True,
-    "CAPTCHA_MODE": "image",
-    "CAPTCHA_INTERACTIVE_TYPES": ["slide", "rotate", "click"],
+    "CAPTCHA_ENABLED_TYPES": ["slide", "rotate", "click"],
     "CAPTCHA_SLIDE_TOLERANCE": 4,
     "CAPTCHA_ROTATE_TOLERANCE": 4,
     "CAPTCHA_CLICK_RADIUS": 20,
@@ -315,20 +314,32 @@ SETTINGS_CONFIG = {
     "CAPTCHA_TRACK_CHECK_ENABLED": True,
     "CAPTCHA_SLIDE_SIZE": (320, 180),
     "CAPTCHA_ROTATE_SIZE": (240, 240),
-    # chinese = 内置 GB2312 一级字库（3755 常用字）；ascii = 字母数字
-    "CAPTCHA_CLICK_CHARSET": "chinese",
-    # 无障碍回退：交互式模式下允许用户显式切换到图片验证码（默认关闭；
-    # 开启后图片码同样可通过服务端校验，脚本也可利用该通道，故不默认启用）
-    "CAPTCHA_IMAGE_FALLBACK_ENABLED": False,
-    # 票据层加固（结构化签名票据）：密钥未配置时由 SECRET_KEY 派生并告警一次
+    # simplified = 内置 GB2312 一级字库（3755 常用字）；ascii = 字母数字
+    "CAPTCHA_CLICK_CHARSET": "simplified",
+    # 背景图库：builtin = 读 captcha/resources/backgrounds/manifest.json（空则程序化）；
+    # procedural = 强制程序化；自定义只读目录用 CAPTCHA_ASSET_DIR
+    "CAPTCHA_BACKGROUND_PACK": "builtin",
+    "CAPTCHA_ASSET_DIR": "",
+    # 无障碍回退：图片题型只作为显式回退 / 低风险兜底，默认权重 0；
+    # 图片题请求必须付低难度 PoW，避免成为 OCR 农场入口
+    "CAPTCHA_IMAGE_FALLBACK_ENABLED": True,
+    "CAPTCHA_POW_FOR_IMAGE_FALLBACK": True,
+    # 票据层加固：生产必须显式配置，缺失即拒绝启动
     "CAPTCHA_TICKET_SECRET": "",
     # 当前签名密钥 id（轮换期与 CAPTCHA_TICKET_SECRET_PREVIOUS 并行验签）
     "CAPTCHA_TICKET_SECRET_KEY_ID": "k1",
     # 轮换期旧密钥（"key_id:secret"，如 "k0:<旧密钥>"；空 = 无轮换）
     "CAPTCHA_TICKET_SECRET_PREVIOUS": "",
-    # 票据动作绑定：关掉即回退到只绑 scene 的旧语义
+    # 票据 audience：防止 A 部署票据在 B 部署使用（空 = 站点 URL / 首 Host）
+    "CAPTCHA_TICKET_AUDIENCE": "",
+    # 票据动作绑定：关掉即只绑 scene（不推荐）
     "CAPTCHA_ACTION_BIND": True,
-    # verify 请求加签（风险层 off 档不强制，便于渐进灰度）
+    # sid + fp 强绑定；缺失或不一致一律拒绝
+    "CAPTCHA_STRICT_BINDING": True,
+    # 浏览器请求 Origin 校验：缺 Origin 的 API 客户端放行；有 Origin 时必须同源或命中白名单
+    "CAPTCHA_ORIGIN_CHECK_ENABLED": True,
+    "CAPTCHA_ALLOWED_ORIGINS": "",
+    # verify 请求加签常开
     "CAPTCHA_VERIFY_SIGN_REQUIRED": True,
     # verify 签名时间窗与 nonce 防重放窗口（秒）
     "CAPTCHA_VERIFY_SIGN_WINDOW": 300,
@@ -336,8 +347,8 @@ SETTINGS_CONFIG = {
     "CAPTCHA_TICKET_TTL_ALLOW": 60,
     "CAPTCHA_TICKET_TTL_LIGHT": 90,
     "CAPTCHA_TICKET_TTL_HARD": 90,
-    # 风险分级三档：off = 升级零行为变化（默认）；shadow / enforce 由信号层启用
-    "CAPTCHA_RISK_MODE": "off",
+    # 风险分级三档：上线默认 enforce；shadow 仅用于基线观察
+    "CAPTCHA_RISK_MODE": "enforce",
     # 决策阈值（allow < 20 ≤ light < 40 ≤ challenge < 70 ≤ hard < 90 ≤ deny）
     "CAPTCHA_RISK_T_ALLOW": 20,
     "CAPTCHA_RISK_T_LIGHT": 40,
@@ -352,6 +363,7 @@ SETTINGS_CONFIG = {
     "CAPTCHA_FP_SALT": "",
     # 算力轴：PoW 开关、分档位数与单 IP 每小时预算
     "CAPTCHA_POW_ENABLED": True,
+    "CAPTCHA_POW_BITS_ALLOW": 16,
     "CAPTCHA_POW_BITS_LIGHT": 18,
     "CAPTCHA_POW_BITS_HARD": 20,
     "CAPTCHA_POW_BITS_MAX": 20,
@@ -361,7 +373,15 @@ SETTINGS_CONFIG = {
     "CAPTCHA_FAILURE_LINK_LOCK": False,
     "CAPTCHA_HONEYPOT_ENABLED": True,
     # 题型加权轮换与难度系数（easy/hard 相对 normal 的容差倍数；点选数量默认 3/4/5）
-    "CAPTCHA_TYPE_WEIGHTS": {"slide": 30, "rotate": 30, "click": 30, "wordorder": 10, "pow": 0},
+    "CAPTCHA_TYPE_WEIGHTS": {
+        "image": 0,
+        "slide": 30,
+        "rotate": 30,
+        "click": 30,
+        "wordorder": 10,
+        "icon": 0,
+        "pow": 0,
+    },
     "CAPTCHA_DIFFICULTY_EASY_FACTOR": 1.5,
     "CAPTCHA_DIFFICULTY_HARD_FACTOR": 0.5,
     # 按题型的难度容差倍数（覆盖全局 easy/hard factor；normal 恒 1.0）

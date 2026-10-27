@@ -3,7 +3,7 @@
 
 import pytest
 
-from captcha.backends.wordorder import WordOrderBackend
+from captcha.backends.wordorder import TRADITIONAL_PHRASES, WordOrderBackend
 
 
 @pytest.fixture(autouse=True)
@@ -20,6 +20,12 @@ class TestWordOrderBackend:
         assert challenge.payload["count"] == count
         assert len(challenge.secret["points"]) == count
         assert len(challenge.secret["order"]) == count
+
+    def test_traditional_phrases(self, settings):
+        settings.CAPTCHA_CLICK_CHARSET = "traditional"
+        challenge = WordOrderBackend().generate("normal")
+        assert challenge.secret["order"] in TRADITIONAL_PHRASES["normal"]
+        assert challenge.secret["asset_id"]
 
     def test_ordered_points_pass(self):
         backend = WordOrderBackend()

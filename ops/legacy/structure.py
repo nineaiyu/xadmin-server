@@ -125,10 +125,21 @@ def _atomic(connection: Any) -> Any:
 PREREQUISITE_CALLABLES = (
     "create_vector_extension",
     "_ensure_trgm_extension",
-    # 幂等数据清理（删除已废弃的登录日志 retrieve 权限点），存量库结构对齐时执行
+)
+
+#: 幂等数据迁移白名单。当前为空：它们通过 ORM 查询默认连接，在「旧库别名」
+#: 对齐场景下会命中错误库；结构与账本对齐后由 post_upgrade / load_init_json
+#: 统一补齐，不在对齐器内执行（此前误跑会直接报 relation 不存在）。
+DATA_CLEANUP_CALLABLES: tuple[str, ...] = ()
+
+#: 明确「跳过」的数据迁移登记（仅用于白名单守护：新增数据迁移必须在这里表态，
+#: 避免结构对齐路径静默漏执行或误执行）。
+DEFERRED_CALLABLES: tuple[str, ...] = (
     "remove_dead_permission",
-    # 验证码风险规则默认行（bulk_create + ignore_conflicts，幂等）
     "seed_rules",
+    "seed_more_rules",
+    # 设置键迁移走 ORM/默认连接，旧库别名对齐时不执行；账本对齐后由 migrate/升级流程处理
+    "migrate_captcha_settings",
 )
 
 
@@ -164,6 +175,21 @@ def _ordered_nodes(loader: Any) -> list[tuple[str, str]]:
 
 def _run_prerequisites(loader: Any, editor: Any, nodes: list[tuple[str, str]]) -> tuple[list[str], list[str]]:
     """执行白名单内的前置 RunPython（扩展创建等）；名单外的一律跳过并报告。"""
+    return _run_callables(loader, editor, nodes, PREREQUISITE_CALLABLES, "前置操作")
+
+
+def _run_data_cleanups(loader: Any, editor: Any, nodes: list[tuple[str, str]]) -> tuple[list[str], list[str]]:
+    """在建表之后执行幂等数据迁移（删除废权限点 / 补风险规则默认行）。"""
+    return _run_callables(loader, editor, nodes, DATA_CLEANUP_CALLABLES, "数据迁移")
+
+
+def _run_callables(
+    loader: Any,
+    editor: Any,
+    nodes: list[tuple[str, str]],
+    allowed: tuple[str, ...],
+    label: str,
+) -> tuple[list[str], list[str]]:
     from django.db.migrations.operations.special import RunPython, RunSQL
 
     ran: list[str] = []
@@ -175,18 +201,18 @@ def _run_prerequisites(loader: Any, editor: Any, nodes: list[tuple[str, str]]) -
         state = loader.project_state([node])
         for operation in migration.operations:
             if isinstance(operation, RunSQL):
-                skipped.append(f"{node[0]}.{node[1]}: RunSQL 未登记为前置操作，跳过")
+                skipped.append(f"{node[0]}.{node[1]}: RunSQL 未登记为{label}，跳过")
             elif isinstance(operation, RunPython):
                 name = getattr(operation.code, "__name__", "")
                 if not is_project_migration(migration):
                     # 三方 app 的数据迁移由它们自己的增量链负责（升级时按常规 migrate 执行）
                     skipped.append(f"{node[0]}.{node[1]}: RunPython {name} 属三方 app，交由 migrate 处理")
                     continue
-                if name not in PREREQUISITE_CALLABLES:
-                    skipped.append(f"{node[0]}.{node[1]}: RunPython {name or '<lambda>'} 未登记为前置操作，跳过")
+                if name not in allowed:
+                    skipped.append(f"{node[0]}.{node[1]}: RunPython {name or '<lambda>'} 未登记为{label}，跳过")
                     continue
-                # 前置操作只做 SQL（扩展创建）：from/to 传同一状态，避免 initial 迁移
-                # 空依赖导致状态里没有自身 app；白名单守护保证不会跑数据回填类操作
+                # 白名单操作均幂等；from/to 传同一状态，避免 initial 迁移空依赖导致
+                # 状态里没有自身 app。建表后执行的数据迁移此时表已就绪。
                 operation.database_forwards(node[0], editor, state, state)
                 ran.append(name)
     return ran, skipped
@@ -208,6 +234,8 @@ def _create_missing_tables(connection: Any, loader: Any, editor: Any, nodes: lis
                 continue
             model = state.apps.get_model(node[0], operation.name)
             table = model._meta.db_table
+            if table in legacy_schema.REMOVED_TABLES:
+                continue
             if table in existing or not operation.allow_migrate_model(connection.alias, model):
                 continue
             operation.database_forwards(node[0], editor, None, state)
@@ -335,6 +363,8 @@ def complete_structure(dsn: str) -> dict[str, Any]:
                 result["tables"] = _create_missing_tables(connection, loader, editor, nodes)
                 result["through_tables"] = _create_missing_through_tables(connection, editor)
                 result["fields"] = _add_missing_model_fields(connection, editor)
+                result["data_cleanups"], skipped_cleanups = _run_data_cleanups(loader, editor, nodes)
+                result["skipped"] += skipped_cleanups
             with connection.schema_editor(atomic=False) as editor:
                 result["indexes"] = _create_missing_indexes(connection, editor)
                 result["constraints"] = _create_missing_constraints(connection, editor)
@@ -366,8 +396,12 @@ def missing_columns(dsn: str) -> list[str]:
 
 
 def missing_tables(dsn: str) -> list[str]:
-    """目标结构里存在、当前库中缺失的表（只读）。"""
-    target = legacy_schema.target_schema()
+    """目标结构里存在、当前库中缺失的表（只读；clean cut 删除表不计入目标）。"""
+    target = {
+        table: info
+        for table, info in legacy_schema.target_schema().items()
+        if table not in legacy_schema.REMOVED_TABLES
+    }
     existing = set(legacy_schema.introspect_schema(dsn))
     return sorted(set(target) - existing)
 

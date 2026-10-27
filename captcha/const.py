@@ -8,24 +8,30 @@
 
 from django.conf import settings
 
-CAPTCHA_MODE_IMAGE = "image"
-CAPTCHA_MODE_INTERACTIVE = "interactive"
-CAPTCHA_MODES = (CAPTCHA_MODE_IMAGE, CAPTCHA_MODE_INTERACTIVE)
-
+CAPTCHA_TYPE_IMAGE = "image"
 CAPTCHA_TYPE_SLIDE = "slide"
 CAPTCHA_TYPE_ROTATE = "rotate"
 CAPTCHA_TYPE_CLICK = "click"
 CAPTCHA_TYPE_POW = "pow"
 CAPTCHA_TYPE_WORDORDER = "wordorder"
+CAPTCHA_TYPE_ICON = "icon"
 CAPTCHA_TYPES = (
+    CAPTCHA_TYPE_IMAGE,
     CAPTCHA_TYPE_SLIDE,
     CAPTCHA_TYPE_ROTATE,
     CAPTCHA_TYPE_CLICK,
     CAPTCHA_TYPE_POW,
     CAPTCHA_TYPE_WORDORDER,
+    CAPTCHA_TYPE_ICON,
 )
 #: 可参与常规出题的题型（pow 由决策层按档位驱动，不在随机池里）
-CAPTCHA_PUZZLE_TYPES = (CAPTCHA_TYPE_SLIDE, CAPTCHA_TYPE_ROTATE, CAPTCHA_TYPE_CLICK, CAPTCHA_TYPE_WORDORDER)
+CAPTCHA_PUZZLE_TYPES = (
+    CAPTCHA_TYPE_SLIDE,
+    CAPTCHA_TYPE_ROTATE,
+    CAPTCHA_TYPE_CLICK,
+    CAPTCHA_TYPE_WORDORDER,
+    CAPTCHA_TYPE_ICON,
+)
 
 CAPTCHA_DIFFICULTY_EASY = "easy"
 CAPTCHA_DIFFICULTY_NORMAL = "normal"
@@ -108,12 +114,6 @@ CAPTCHA_SCENE_ACTIONS: dict[str, tuple[str, ...]] = {
     CAPTCHA_SCENE_BIND_PHONE: (verify_code_send_action(CAPTCHA_SCENE_BIND_PHONE),),
     CAPTCHA_SCENE_INVITE: (CAPTCHA_ACTION_INVITE_ACCEPT,),
 }
-
-
-def current_captcha_mode() -> str:
-    """当前出题模式：非法/空值回退 image（升级零行为变化）。"""
-    mode = str(getattr(settings, "CAPTCHA_MODE", CAPTCHA_MODE_IMAGE) or "").strip().lower()
-    return mode if mode in CAPTCHA_MODES else CAPTCHA_MODE_IMAGE
 
 
 def current_risk_mode() -> str:

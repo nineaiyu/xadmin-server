@@ -227,6 +227,7 @@ def align_full(
         return result
 
     outcome = execute_steps(dsn, prepared["steps"])
+    result["dropped_tables"] = drop_removed_tables(dsn)
     structure = complete_structure(dsn)
     result["structure"]["executed"] = len(outcome["executed"])
     result["structure"]["skipped"] += outcome["skipped"]
@@ -245,6 +246,24 @@ def align_full(
     result["after"] = _verify(dsn, tag=tag)
     result["aligned"] = result["after"]["structure_complete"] and not result["after"]["blockers"]
     return result
+
+
+def drop_removed_tables(dsn: str) -> list[str]:
+    """删除 clean cut 后不再存在的旧表（只允许 schema.REMOVED_TABLES 白名单）。"""
+    import psycopg
+    from psycopg import sql
+
+    from ops.legacy.schema import REMOVED_TABLES
+
+    dropped: list[str] = []
+    with psycopg.connect(dsn) as connection, connection.cursor() as cursor, connection.transaction():
+        for table in sorted(REMOVED_TABLES):
+            cursor.execute("select to_regclass(%s)", (table,))
+            if cursor.fetchone()[0] is None:
+                continue
+            cursor.execute(sql.SQL("DROP TABLE IF EXISTS {} CASCADE").format(sql.Identifier(table)))
+            dropped.append(table)
+    return dropped
 
 
 def _verify(dsn: str, tag: str | None = None) -> dict[str, Any]:

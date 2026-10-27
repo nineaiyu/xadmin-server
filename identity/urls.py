@@ -21,6 +21,7 @@ from identity.views.admin.role import RoleViewSet
 from identity.views.admin.user import UserViewSet
 from identity.views.auth.capabilities import LoginCapabilitiesAPIView
 from identity.views.auth.captcha_challenge import (
+    CaptchaAudioAPIView,
     CaptchaChallengeAPIView,
     CaptchaInspectAPIView,
     CaptchaVerifyAPIView,
@@ -45,7 +46,7 @@ from identity.views.auth.oauth import (
 from identity.views.auth.register import RegisterViewAPIView
 from identity.views.auth.reset import ResetPasswordAPIView
 from identity.views.auth.rule import PasswordRulesAPIView
-from identity.views.auth.token import CaptchaAPIView, RefreshTokenAPIView, TempTokenAPIView
+from identity.views.auth.token import RefreshTokenAPIView, TempTokenAPIView
 from identity.views.auth.verify_code import SendVerifyCodeAPIView
 from identity.views.open.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
 from identity.views.open.open_oauth import (
@@ -82,10 +83,14 @@ no_auth_url = [
         name="login-mfa-passkey-challenge",
     ),
     re_path("^register$", RegisterViewAPIView.as_view(), name="register"),
-    re_path("^auth/captcha$", CaptchaAPIView.as_view(), name="captcha"),
-    # 交互式验证码：匿名出题 / 校验，答案永不下发；inspect 仅 E2E 配置挂载
+    # 统一人机验证：匿名出题 / 校验 / 图片题音频，答案永不下发
     re_path("^auth/captcha/challenge$", CaptchaChallengeAPIView.as_view(), name="captcha-challenge"),
     re_path("^auth/captcha/verify$", CaptchaVerifyAPIView.as_view(), name="captcha-verify"),
+    re_path(
+        "^auth/captcha/audio/(?P<challenge_id>[0-9a-f]+)$",
+        CaptchaAudioAPIView.as_view(),
+        name="captcha-audio",
+    ),
     re_path("^auth/token$", TempTokenAPIView.as_view(), name="temp_token"),
     re_path(
         "^auth/capabilities$",
@@ -124,7 +129,8 @@ no_auth_url = [
 ]
 
 if getattr(settings, "CAPTCHA_INSPECT_ENABLED", False):
-    # E2E 专用：生产默认配置不定义该键，路由不存在（守护测试断言）
+    # E2E 专用：必须同时配置 CAPTCHA_INSPECT_TOKEN，且请求头匹配才返回答案；
+    # 生产默认配置不定义该键，路由不存在。
     no_auth_url.append(re_path("^auth/captcha/inspect$", CaptchaInspectAPIView.as_view(), name="captcha-inspect"))
 
 auth_url = [

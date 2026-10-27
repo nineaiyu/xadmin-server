@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-"""交互式验证码端到端语义：出题 → 校验 → ticket → 登录消费。
+"""统一人机验证端到端语义：出题 → 校验 → ticket → 登录消费。
 
-图片验证码链路由 ``test_captcha_login.py`` 守护；本文件只覆盖交互式分支，
-以及「默认配置不挂载 inspect 路由」的生产安全边界。
+覆盖 slide 常规题、image 回退题（含 PoW）、一次性票据、统一失败、动作绑定、
+旧图片码路由/字段已删除。
 """
+
+import hashlib
 
 import pytest
 from django.core.cache import cache
-from django.test import override_settings
 from django.urls import Resolver404, resolve
 
-from captcha.models import CaptchaStore
-from captcha.services import CaptchaAuth, inspect_challenge
+from captcha import cache as captcha_cache
+from captcha.backends.pow import leading_zero_bits
 
 pytestmark = pytest.mark.django_db
 
@@ -27,12 +28,18 @@ def _clean_captcha_cache():
     except AttributeError:
         pass
     yield
+    try:
+        cache.delete_pattern("captcha_*")
+    except AttributeError:
+        pass
 
 
 @pytest.fixture
-def interactive_login(settings):
-    settings.CAPTCHA_MODE = "interactive"
-    settings.CAPTCHA_INTERACTIVE_TYPES = ["slide", "rotate", "click"]
+def unified_login(settings):
+    settings.CAPTCHA_ENABLED = True
+    settings.CAPTCHA_ENABLED_TYPES = ["slide", "rotate", "click"]
+    settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = False
+    settings.CAPTCHA_POW_FOR_IMAGE_FALLBACK = True
     settings.CAPTCHA_TRACK_CHECK_ENABLED = False
     settings.SECURITY_LOGIN_CAPTCHA_ENABLED = True
     settings.SECURITY_LOGIN_ENCRYPTED_ENABLED = False
@@ -43,53 +50,57 @@ def _challenge(api_client, captcha_type="slide", scene="login"):
     resp = api_client.post(CHALLENGE_URL, {"type": captcha_type, "scene": scene}, format="json")
     assert resp.status_code == 200, resp.data
     assert resp.data["code"] == 1000
-    return resp.data["data"]
+    data = resp.data["data"]
+    assert "decision" not in data and "difficulty" not in data
+    return data
 
 
-def _image_captcha():
-    data = CaptchaAuth().generate()
-    return data["captcha_key"], CaptchaStore.objects.get(hashkey=data["captcha_key"]).response
+def _stored(challenge_id):
+    stored = captcha_cache.load_challenge(challenge_id)
+    assert stored is not None
+    return stored
 
 
 def _answer(challenge_id):
-    data = inspect_challenge(challenge_id)
-    assert data is not None
-    return data["answer"]
+    return _stored(challenge_id)["secret"]
 
 
-def _verify(api_client, challenge, answer=None):
-    return api_client.post(
-        VERIFY_URL,
-        {
-            "challenge_id": challenge["challenge_id"],
-            "type": challenge["type"],
-            "scene": "login",
-            "answer": _answer(challenge["challenge_id"]) if answer is None else answer,
-            "action": "identity.login.basic",
-        },
-        format="json",
-    )
+def _solve_pow(pow_payload):
+    challenge = str(pow_payload["challenge"])
+    bits = int(pow_payload["difficulty_bits"])
+    nonce = 0
+    while leading_zero_bits(hashlib.sha256(f"{challenge}{nonce}".encode()).hexdigest()) < bits:
+        nonce += 1
+    return {"nonce": str(nonce)}
+
+
+def _verify(api_client, challenge, answer=None, action="identity.login.basic", scene="login"):
+    body = {
+        "challenge_id": challenge["challenge_id"],
+        "type": challenge["type"],
+        "scene": scene,
+        "answer": _answer(challenge["challenge_id"]) if answer is None else answer,
+    }
+    if action is not None:
+        body["action"] = action
+    return api_client.post(VERIFY_URL, body, format="json")
 
 
 class TestCapabilities:
-    def test_capabilities_expose_types_in_interactive_mode(self, api_client, interactive_login):
-        resp = api_client.get("/api/identity/auth/capabilities")
-        basic = resp.data["data"]["basic"]
+    def test_capabilities_expose_types_without_mode(self, api_client, unified_login):
+        basic = api_client.get("/api/identity/auth/capabilities").data["data"]["basic"]
         assert basic["captcha"] is True
-        assert basic["captcha_mode"] == "interactive"
         assert basic["captcha_types"] == ["slide", "rotate", "click"]
+        assert "captcha_mode" not in basic
 
-    def test_capabilities_empty_in_image_mode(self, api_client):
-        resp = api_client.get("/api/identity/auth/capabilities")
-        basic = resp.data["data"]["basic"]
-        assert basic["captcha_mode"] == "image"
-        assert basic["captcha_types"] == []
+    def test_image_fallback_appears_in_types_when_enabled(self, api_client, unified_login, settings):
+        settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = True
+        basic = api_client.get("/api/identity/auth/capabilities").data["data"]["basic"]
+        assert "image" in basic["captcha_types"]
+        assert basic["captcha_image_fallback"] is True
 
-    def test_global_switch_off_hides_captcha_everywhere(self, api_client, settings):
+    def test_global_switch_off_hides_captcha_everywhere(self, api_client, unified_login, settings):
         settings.CAPTCHA_ENABLED = False
-        settings.CAPTCHA_MODE = "interactive"
-        settings.CAPTCHA_INTERACTIVE_TYPES = ["slide", "rotate", "click"]
-        settings.SECURITY_LOGIN_CAPTCHA_ENABLED = True
         basic = api_client.get("/api/identity/auth/capabilities").data["data"]["basic"]
         assert basic["captcha"] is False
         assert basic["captcha_types"] == []
@@ -100,30 +111,17 @@ class TestCapabilities:
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = True
         data = api_client.get("/api/identity/auth/verify?category=login").data["data"]
         assert data["captcha"] is False
-
-    def test_capabilities_types_follow_login_scene_switch(self, api_client, settings):
-        settings.CAPTCHA_MODE = "interactive"
-        settings.CAPTCHA_INTERACTIVE_TYPES = ["slide", "rotate", "click"]
-        settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = True
-        settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
-        basic = api_client.get("/api/identity/auth/capabilities").data["data"]["basic"]
-        assert basic["captcha_types"] == []
-        assert basic["captcha_image_fallback"] is False
-
-    def test_verify_code_config_exposes_types(self, api_client, interactive_login):
-        resp = api_client.get("/api/identity/auth/verify?category=login")
-        assert resp.data["data"]["captcha_types"] == ["slide", "rotate", "click"], resp.data
-        assert resp.data["data"]["captcha_mode"] == "interactive"
+        assert "captcha_mode" not in data
 
 
 class TestChallengeVerifyLogin:
-    def test_full_flow_issues_ticket_and_login_succeeds(self, api_client, normal_user, interactive_login):
+    def test_full_flow_issues_ticket_and_login_succeeds(self, api_client, normal_user, unified_login):
         challenge = _challenge(api_client)
         verify = _verify(api_client, challenge)
         assert verify.status_code == 200
         assert verify.data["data"]["passed"] is True
+        assert verify.data["data"]["expires_in"] > 0
         ticket = verify.data["data"]["ticket"]
-
         login = api_client.post(
             LOGIN_URL,
             {"username": "zhangsan", "password": "Test@123456", "captcha_ticket": ticket},
@@ -132,7 +130,7 @@ class TestChallengeVerifyLogin:
         assert login.status_code == 200
         assert login.data["code"] == 1000, login.data
 
-    def test_ticket_is_one_time(self, api_client, normal_user, interactive_login):
+    def test_ticket_is_one_time(self, api_client, normal_user, unified_login):
         challenge = _challenge(api_client, captcha_type="rotate")
         ticket = _verify(api_client, challenge).data["data"]["ticket"]
         payload = {"username": "zhangsan", "password": "Test@123456", "captcha_ticket": ticket}
@@ -140,25 +138,26 @@ class TestChallengeVerifyLogin:
         second = api_client.post(LOGIN_URL, payload, format="json")
         assert second.status_code == 400
 
-    def test_wrong_answer_returns_attempts_left(self, api_client, interactive_login):
+    def test_wrong_answer_has_uniform_shape(self, api_client, unified_login):
         challenge = _challenge(api_client)
         first = _verify(api_client, challenge, answer={"x": -99999})
         assert first.status_code == 200
-        assert first.data["data"] == {"passed": False, "attempts_left": 2}
+        assert first.data["data"] == {"passed": False}
         second = _verify(api_client, challenge)
         assert second.data["data"]["passed"] is True
 
-    def test_attempts_exhausted_returns_400(self, api_client, interactive_login):
+    def test_attempts_exhausted_is_uniform_400(self, api_client, unified_login):
         challenge = _challenge(api_client)
-        for expected in (2, 1):
+        for _ in range(2):
             resp = _verify(api_client, challenge, answer={"x": -99999})
-            assert resp.data["data"]["attempts_left"] == expected
+            assert resp.data["data"] == {"passed": False}
         exhausted = _verify(api_client, challenge, answer={"x": -99999})
         assert exhausted.status_code == 400
         assert exhausted.data["code"] == 400
-        assert exhausted.data["error"] == "captcha_exhausted"
+        assert exhausted.data["error"] == "captcha_invalid"
+        assert "attempts_left" not in exhausted.data.get("data", {})
 
-    def test_global_switch_off_skips_login_captcha(self, api_client, normal_user, interactive_login, settings):
+    def test_global_switch_off_skips_login_captcha(self, api_client, normal_user, unified_login, settings):
         settings.CAPTCHA_ENABLED = False
         login = api_client.post(
             LOGIN_URL,
@@ -167,13 +166,13 @@ class TestChallengeVerifyLogin:
         )
         assert login.data["code"] == 1000, login.data
 
-    def test_global_switch_off_rejects_challenge(self, api_client, interactive_login, settings):
+    def test_global_switch_off_rejects_challenge(self, api_client, unified_login, settings):
         settings.CAPTCHA_ENABLED = False
         resp = api_client.post(CHALLENGE_URL, {"type": "slide", "scene": "login"}, format="json")
         assert resp.status_code == 400
         assert resp.data["error"] == "captcha_invalid"
 
-    def test_unknown_challenge_returns_400(self, api_client, interactive_login):
+    def test_unknown_challenge_returns_400(self, api_client, unified_login):
         resp = api_client.post(
             VERIFY_URL,
             {
@@ -189,111 +188,95 @@ class TestChallengeVerifyLogin:
         assert resp.data["code"] == 400
         assert resp.data["error"] == "captcha_invalid"
 
-    def test_challenge_rejected_in_image_mode(self, api_client):
-        resp = api_client.post(CHALLENGE_URL, {"type": "slide", "scene": "login"}, format="json")
-        assert resp.status_code == 400
-        assert resp.data["code"] == 400
-        assert resp.data["error"] == "captcha_invalid"
-
-    def test_image_fallback_login_when_enabled(self, api_client, normal_user, interactive_login, settings):
+    def test_image_backend_requires_pow_and_issues_ticket(self, api_client, normal_user, unified_login, settings):
         settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = True
-        key, answer = _image_captcha()
+        challenge = _challenge(api_client, captcha_type="image")
+        assert challenge["type"] == "image"
+        assert challenge["background"].startswith("data:image/png;base64,")
+        assert challenge["pow"]["difficulty_bits"] > 0
+        secret = _answer(challenge["challenge_id"])
+        answer = {"code": secret["answer"], "pow_answer": _solve_pow(challenge["pow"])}
+        verify = _verify(api_client, challenge, answer=answer)
+        assert verify.data["data"]["passed"] is True
         login = api_client.post(
             LOGIN_URL,
-            {"username": "zhangsan", "password": "Test@123456", "captcha_key": key, "captcha_code": answer},
+            {"username": "zhangsan", "password": "Test@123456", "captcha_ticket": verify.data["data"]["ticket"]},
             format="json",
         )
         assert login.data["code"] == 1000, login.data
 
-    def test_image_fallback_rejected_when_disabled(self, api_client, normal_user, interactive_login, settings):
-        settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = False
-        key, answer = _image_captcha()
-        login = api_client.post(
-            LOGIN_URL,
-            {"username": "zhangsan", "password": "Test@123456", "captcha_key": key, "captcha_code": answer},
+    def test_image_fallback_rejected_when_disabled(self, api_client, unified_login):
+        resp = api_client.post(CHALLENGE_URL, {"type": "image", "scene": "login"}, format="json")
+        assert resp.status_code == 400
+        assert resp.data["error"] == "captcha_invalid"
+
+    def test_cross_origin_challenge_rejected(self, api_client, unified_login):
+        resp = api_client.post(
+            CHALLENGE_URL,
+            {"type": "slide", "scene": "login", "action": "identity.login.basic"},
             format="json",
+            HTTP_ORIGIN="http://evil.example",
         )
-        assert login.status_code == 400
+        assert resp.status_code == 400
+        assert resp.data["error"] == "captcha_invalid"
+
+    def test_same_origin_challenge_allowed(self, api_client, unified_login):
+        resp = api_client.post(
+            CHALLENGE_URL,
+            {"type": "slide", "scene": "login", "action": "identity.login.basic"},
+            format="json",
+            HTTP_ORIGIN="http://testserver",
+        )
+        assert resp.status_code == 200, resp.data
 
 
 class TestActionBindingAPI:
-    """action 强绑定：缺失 / 越权与答案错误同形失败；跨动作消费必败。"""
-
-    def test_verify_without_action_rejected(self, api_client, interactive_login):
+    def test_verify_without_action_rejected(self, api_client, unified_login):
         challenge = _challenge(api_client)
-        resp = api_client.post(
-            VERIFY_URL,
-            {
-                "challenge_id": challenge["challenge_id"],
-                "type": challenge["type"],
-                "scene": "login",
-                "answer": _answer(challenge["challenge_id"]),
-            },
-            format="json",
-        )
+        resp = _verify(api_client, challenge, action=None)
         assert resp.status_code == 400
         assert resp.data["error"] == "captcha_invalid"
 
-    def test_verify_with_foreign_action_rejected(self, api_client, interactive_login):
+    def test_verify_with_foreign_action_rejected(self, api_client, unified_login):
         challenge = _challenge(api_client)
-        resp = api_client.post(
-            VERIFY_URL,
-            {
-                "challenge_id": challenge["challenge_id"],
-                "type": challenge["type"],
-                "scene": "login",
-                "answer": _answer(challenge["challenge_id"]),
-                "action": "invite.accept",
-            },
-            format="json",
-        )
+        resp = _verify(api_client, challenge, action="invite.accept")
         assert resp.status_code == 400
         assert resp.data["error"] == "captcha_invalid"
 
-    def test_send_code_ticket_rejected_for_login(self, api_client, normal_user, interactive_login):
-        # 挪用方向：发码端点换来的票（scene=login, action=verify_code.send）
-        # 拿去做账密登录必须失败；业务请求伪造 action 字段不影响结果
-        # （消费动作由服务端常量单源，恒为 identity.login.basic）
+    def test_send_code_ticket_rejected_for_login(self, api_client, normal_user, unified_login):
         challenge = _challenge(api_client)
-        verify = api_client.post(
-            VERIFY_URL,
-            {
-                "challenge_id": challenge["challenge_id"],
-                "type": challenge["type"],
-                "scene": "login",
-                "answer": _answer(challenge["challenge_id"]),
-                "action": "auth.verify_code.send:login",
-            },
-            format="json",
-        )
+        verify = _verify(api_client, challenge, action="auth.verify_code.send:login")
         assert verify.data["data"]["passed"] is True
-        ticket = verify.data["data"]["ticket"]
         login = api_client.post(
             LOGIN_URL,
             {
                 "username": "zhangsan",
                 "password": "Test@123456",
-                "captcha_ticket": ticket,
-                "action": "identity.login.basic",
+                "captcha_ticket": verify.data["data"]["ticket"],
             },
             format="json",
         )
         assert login.status_code == 400
 
 
-class TestInspectRouteGuard:
-    def test_route_absent_under_default_settings(self):
-        assert not hasattr(__import__("django.conf", fromlist=["settings"]).settings, "CAPTCHA_INSPECT_ENABLED")
+class TestLegacyRemoved:
+    def test_old_image_route_absent(self, api_client):
+        assert api_client.get("/api/identity/auth/captcha").status_code == 404
+        assert api_client.get("/api/system/captcha/refresh/").status_code == 404
+
+    def test_inspect_route_absent(self):
         with pytest.raises(Resolver404):
             resolve("/api/identity/auth/captcha/inspect")
 
-    @override_settings(CAPTCHA_INSPECT_ENABLED=False)
-    def test_view_rejects_when_flag_missing(self, api_client):
-        # 直接命中视图（路由未挂载时的兜底防御）：视图内部同样 fail-closed
-        from identity.views.auth.captcha_challenge import CaptchaInspectAPIView
-
-        view = CaptchaInspectAPIView.as_view()
-        from django.test import RequestFactory
-
-        response = view(RequestFactory().get("/api/identity/auth/captcha/inspect?challenge_id=x"))
-        assert response.status_code == 400
+    def test_old_captcha_fields_rejected(self, api_client, normal_user, unified_login):
+        login = api_client.post(
+            LOGIN_URL,
+            {
+                "username": "zhangsan",
+                "password": "Test@123456",
+                "captcha_key": "legacy",
+                "captcha_code": "1234",
+            },
+            format="json",
+        )
+        assert login.status_code == 400

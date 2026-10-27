@@ -11,7 +11,3 @@ class CaptchaServiceError(Exception):
 
 class CaptchaInvalidError(CaptchaServiceError):
     code = "captcha_invalid"
-
-
-class CaptchaExhaustedError(CaptchaServiceError):
-    code = "captcha_exhausted"

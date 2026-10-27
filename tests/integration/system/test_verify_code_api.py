@@ -359,7 +359,7 @@ class TestSendVerifyCodeLoginReset:
         _assert_bilingual(str(resp.data["detail"]), "Temporary Token validation failed", "临时Token校验失败")
 
     def test_login_send_captcha_missing(self, api_client, normal_user, settings):
-        """图片验证码开启但缺 captcha_key/captcha_code → 校验失败。"""
+        """人机校验开启但缺 captcha_ticket → 校验失败。"""
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = True
         settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
         settings.EMAIL_ENABLED = True

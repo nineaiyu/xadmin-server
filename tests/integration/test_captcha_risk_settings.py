@@ -79,7 +79,9 @@ class TestRiskRules:
         resp = auth_client.get(RULES_URL)
         assert resp.status_code == 200, resp.data
         rules = resp.data["data"]
-        assert len(rules) == 16
+        from captcha.risk import DEFAULT_RULES
+
+        assert len(rules) == len(DEFAULT_RULES)
         assert {rule["code"] for rule in rules} >= {"env_headless", "honeypot", "hist_good"}
 
     def test_update_score_and_switch(self, auth_client):

@@ -50,6 +50,10 @@ INFRA_TABLE_PREFIXES = (
 # 旧版本（四域切分前）的 app 目录：样本库生成与历史目录解析共用
 LEGACY_APPS = ("system", "notifications", "settings", "captcha", "common")
 
+#: 统一人机验证 clean cut 后不再存在的旧表：升级时直接删除，不参与结构差异/阻断判定。
+#: 旧图片码是一次性短命数据，删除不影响业务。
+REMOVED_TABLES = frozenset({"captcha_captchastore"})
+
 #: 单列结构信息：``{type, nullable, default}``（旧库）或 ``{type, sql_type, nullable, default_sql}``（目标侧）
 ColumnInfo = dict[str, Any]
 
@@ -350,6 +354,7 @@ def diff_schemas(
     tag_models: TagModels | None = None,
 ) -> dict[str, Any]:
     """表级 / 列级差异（纯函数，供报告与执行计划复用）。"""
+    old = {table: columns for table, columns in old.items() if table not in REMOVED_TABLES}
     renamed, blockers, kept_unknown = _map_renamed(old, new, tag_models or {})
     pairs = [(table, table) for table in sorted(old) if table in new]
     pairs += [(source, target) for source, target in sorted(renamed.items())]

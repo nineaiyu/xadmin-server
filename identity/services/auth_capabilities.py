@@ -47,7 +47,6 @@ def build_login_capabilities() -> dict[str, Any]:
         "basic": {
             "enabled": settings.SECURITY_LOGIN_BY_BASIC_ENABLED,
             "captcha": captcha_globally_enabled() and settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
-            "captcha_mode": captcha_meta["mode"],
             "captcha_types": captcha_meta["types"],
             "captcha_image_fallback": captcha_meta["image_fallback"],
             "captcha_flow": captcha_meta.get("captcha_flow", "always"),

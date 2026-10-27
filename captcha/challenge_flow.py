@@ -8,11 +8,10 @@
 import time
 from typing import Any
 
-from captcha import alerts, disposal, flow, risk, telemetry, tickets
-from captcha import cache as captcha_cache
+from captcha import alerts, disposal, flow, risk, telemetry
 from captcha import signals as sig
-from captcha.const import CAPTCHA_DECISION_ALLOW, CAPTCHA_DECISION_DENY
-from captcha.errors import CaptchaExhaustedError, CaptchaInvalidError
+from captcha.const import CAPTCHA_DECISION_DENY
+from captcha.errors import CaptchaInvalidError
 
 
 def failure_dims(ctx: flow.RiskContext, action: str) -> list[tuple[str, str]]:
@@ -27,6 +26,7 @@ def emit_decision(
     captcha_type: str = "",
     difficulty: str = "",
     passed: bool = False,
+    asset_id: str = "",
 ) -> None:
     from captcha.const import current_risk_mode
 
@@ -37,6 +37,7 @@ def emit_decision(
         mode=current_risk_mode(),
         type=captcha_type,
         difficulty=difficulty,
+        asset_id=asset_id,
         decision=result.decision,
         would_decision=result.decision if current_risk_mode() == "shadow" else "",
         risk_score=result.score,
@@ -56,7 +57,7 @@ def emit_decision(
 def early_decision(
     ctx: flow.RiskContext, assessed: risk.RiskResult | None, scene: str, action: str
 ) -> dict[str, Any] | None:
-    """enforce 下处理冷却 / deny / allow；非提前返回场景返回 None。"""
+    """enforce 下处理冷却 / deny；allow 走静默 PoW，不在此提前发票。"""
     from captcha.const import current_risk_mode
 
     if current_risk_mode() != "enforce" or assessed is None:
@@ -68,32 +69,7 @@ def early_decision(
     if assessed.decision == CAPTCHA_DECISION_DENY:
         emit_decision(ctx, assessed, phase="decision")
         raise CaptchaInvalidError()
-    if assessed.decision != CAPTCHA_DECISION_ALLOW:
-        return None
-    ttl = tickets.ticket_ttl_for("allow")
-    # 无题直过也必须受「同 IP 未消费票据 ≤3」约束，防低风险票被批量囤积
-    if not captcha_cache.reserve_ticket_slot(ctx.ip):
-        raise CaptchaExhaustedError()
-    try:
-        ticket = tickets.issue_ticket(scene=scene, action=action, mode="allow", ttl=ttl, fp=ctx.fp, ip_hash=ctx.ip_hash)
-    except Exception:
-        captcha_cache.release_ticket_slot(ctx.ip)
-        raise
-    emit_decision(ctx, assessed, phase="decision", passed=True)
-    telemetry.emit(
-        phase="challenge",
-        scene=scene,
-        action=action,
-        mode=current_risk_mode(),
-        type="",
-        decision=assessed.decision,
-        risk_score=assessed.score,
-        risk_reasons=assessed.reasons,
-        fp_hash=ctx.fp,
-        ip_hash=ctx.ip_hash,
-        env_version=sig.env_version(ctx.env),
-    )
-    return flow.allow_response(ticket, ttl)
+    return None
 
 
 def emit_verify(
@@ -118,6 +94,7 @@ def emit_verify(
         mode=mode,
         type=stored.get("type") or "",
         difficulty=stored.get("difficulty") or "",
+        asset_id=str(stored.get("asset_id") or ""),
         decision=decision,
         would_decision=merged.decision if (merged and mode == "shadow") else "",
         risk_score=merged.score if merged else None,

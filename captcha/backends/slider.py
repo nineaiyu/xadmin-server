@@ -12,7 +12,7 @@ from typing import Any
 from django.conf import settings
 from PIL import Image, ImageDraw, ImageFilter
 
-from captcha.backends.art import make_background, png_data_uri, size_setting
+from captcha.backends.art import make_background_asset, png_data_uri, size_setting
 from captcha.backends.base import CaptchaChallenge, ChallengeBackend, difficulty_factor
 
 PIECE_SIZE = 56
@@ -75,7 +75,7 @@ class SlideBackend(ChallengeBackend):
     def generate(self, difficulty: str = "normal") -> CaptchaChallenge:
         rng = random.Random()
         width, height = size_setting(getattr(settings, "CAPTCHA_SLIDE_SIZE", None), (320, 180))
-        background = make_background((width, height), rng)
+        background, asset_id = make_background_asset((width, height), rng)
         margin = 6
         # 窄图（设置页允许 120px 起）下 0.25w 可能大于可放置上限：先夹紧再采样
         upper_x = max(width - PIECE_SIZE - margin, 0)
@@ -89,7 +89,7 @@ class SlideBackend(ChallengeBackend):
         background = _paint_hole(background, mask, x, y)
         return CaptchaChallenge(
             type=self.type,
-            secret={"x": x},
+            secret={"x": x, "asset_id": asset_id},
             payload={
                 "background": png_data_uri(background),
                 "piece": png_data_uri(piece_canvas),

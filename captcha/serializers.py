@@ -87,19 +87,9 @@ class CaptchaChallengeOutSerializer(serializers.Serializer):
     height = serializers.IntegerField(required=False, label=_("Image height"))
     piece_size = serializers.IntegerField(required=False, label=_("Piece size"))
     count = serializers.IntegerField(required=False, label=_("Click count"))
+    length = serializers.IntegerField(required=False, label=_("Image answer length"))
+    audio = serializers.BooleanField(required=False, label=_("Audio available"))
     ttl = serializers.IntegerField(label=_("Validity period (second)"))
-    ticket = serializers.CharField(
-        required=False,
-        label=_("One-time ticket"),
-        help_text=_("Present when the risk decision allows a no-puzzle pass"),
-    )
-    decision = serializers.ChoiceField(
-        choices=("allow", "light", "challenge", "hard", "deny"),
-        required=False,
-        label=_("Risk decision"),
-        help_text=_("Only exposed in enforce mode; never includes the risk score"),
-    )
-    difficulty = serializers.ChoiceField(choices=("easy", "normal", "hard"), required=False, label=_("Difficulty"))
     pow = serializers.JSONField(required=False, label=_("PoW challenge"))
     ck = serializers.CharField(
         required=False,
@@ -112,7 +102,6 @@ class CaptchaVerifyOutSerializer(serializers.Serializer):
     passed = serializers.BooleanField(label=_("Passed"))
     ticket = serializers.CharField(required=False, label=_("One-time ticket"))
     expires_in = serializers.IntegerField(required=False, label=_("Ticket TTL (second)"))
-    attempts_left = serializers.IntegerField(required=False, label=_("Attempts left"))
 
 
 class CaptchaChallengeResponseSerializer(serializers.Serializer):
@@ -143,6 +132,7 @@ class CaptchaLogSerializer(BaseModelSerializer):
             "mode",
             "type",
             "difficulty",
+            "asset_id",
             "decision",
             "would_decision",
             "risk_score",
@@ -164,6 +154,7 @@ class CaptchaLogSerializer(BaseModelSerializer):
             "scene",
             "action",
             "type",
+            "asset_id",
             "decision",
             "passed",
             "risk_score",
@@ -211,6 +202,13 @@ class CaptchaStatsInSerializer(serializers.Serializer):
 
 class CaptchaStatsTypeRowSerializer(serializers.Serializer):
     type = serializers.CharField(label=_("Captcha type"))
+    total = serializers.IntegerField(label=_("Verify count"))
+    passed = serializers.IntegerField(label=_("Passed count"))
+    pass_rate = serializers.FloatField(label=_("Pass rate"))
+
+
+class CaptchaStatsAssetRowSerializer(serializers.Serializer):
+    asset_id = serializers.CharField(label=_("Asset ID"))
     total = serializers.IntegerField(label=_("Verify count"))
     passed = serializers.IntegerField(label=_("Passed count"))
     pass_rate = serializers.FloatField(label=_("Pass rate"))
@@ -275,6 +273,7 @@ class CaptchaStatsSerializer(serializers.Serializer):
     policy = CaptchaStatsPolicySerializer(label=_("Policy snapshot"))
     summary = CaptchaStatsSummarySerializer(label=_("Summary"))
     by_type = CaptchaStatsTypeRowSerializer(many=True, label=_("By captcha type"))
+    by_asset = CaptchaStatsAssetRowSerializer(many=True, label=_("By asset"))
     by_decision = CaptchaStatsDecisionRowSerializer(many=True, label=_("By decision"))
     risk_distribution = CaptchaStatsRiskBucketSerializer(many=True, label=_("Risk score distribution"))
     top_reasons = CaptchaStatsTopReasonSerializer(many=True, label=_("Top deny reasons"))

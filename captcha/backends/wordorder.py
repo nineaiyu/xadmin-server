@@ -12,7 +12,7 @@ from typing import Any
 from django.conf import settings
 from PIL import Image, ImageFont
 
-from captcha.backends.art import make_background, png_data_uri, size_setting
+from captcha.backends.art import make_background_asset, png_data_uri, size_setting
 from captcha.backends.base import CaptchaChallenge
 from captcha.backends.wordclick import (
     WordClickBackend,
@@ -20,12 +20,18 @@ from captcha.backends.wordclick import (
     _render_glyph,
     _render_tip,
     _sample_positions,
+    selected_charset,
 )
 
 PHRASES = {
     "easy": ("春江花", "秋月夜", "山川美", "风林火"),
     "normal": ("春夏秋冬", "风花雪月", "东西南北", "金木水火", "琴棋书画", "梅兰竹菊"),
     "hard": ("日月星辰海", "山河湖海风", "金木水火土", "东西南北中"),
+}
+TRADITIONAL_PHRASES = {
+    "easy": ("春江花", "秋月夜", "山川美", "風林火"),
+    "normal": ("春夏秋冬", "風花雪月", "東西南北", "金木水火", "琴棋書畫", "梅蘭竹菊"),
+    "hard": ("日月星辰海", "山河湖海風", "金木水火土", "東西南北中"),
 }
 
 
@@ -36,13 +42,15 @@ class WordOrderBackend(WordClickBackend):
         rng = random.Random()
         width, height = size_setting(getattr(settings, "CAPTCHA_SLIDE_SIZE", None), (320, 180))
         tier = difficulty if difficulty in PHRASES else "normal"
-        phrase = rng.choice(PHRASES[tier])
+        script = selected_charset()
+        phrase = rng.choice(TRADITIONAL_PHRASES[tier] if script == "traditional" else PHRASES[tier])
         chars = list(phrase)
-        font_path = _font_path()
+        font_path = _font_path(script)
         positions = _sample_positions(rng, (width, height), len(chars))
         color = rng.choice([(32, 52, 120), (118, 42, 52), (36, 92, 66), (96, 58, 24), (74, 44, 110)])
 
-        background = make_background((width, height), rng).convert("RGBA")
+        background, asset_id = make_background_asset((width, height), rng, soft=True)
+        background = background.convert("RGBA")
         for char, (x, y) in zip(chars, positions, strict=True):
             font = ImageFont.truetype(font_path, rng.randint(28, 40))
             glyph = _render_glyph(char, font, color)
@@ -53,7 +61,11 @@ class WordOrderBackend(WordClickBackend):
         tip = _render_tip(chars, color, font_path)
         return CaptchaChallenge(
             type=self.type,
-            secret={"points": [{"x": x, "y": y} for x, y in positions], "order": phrase},
+            secret={
+                "points": [{"x": x, "y": y} for x, y in positions],
+                "order": phrase,
+                "asset_id": asset_id,
+            },
             payload={
                 "background": png_data_uri(background),
                 "tip": png_data_uri(tip),

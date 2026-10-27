@@ -5,19 +5,20 @@
 票据从「不记名代金券」升级为自证式签名票据：
 
 - ``ticket = b64url(payload) + "." + hex(hmac_sha256(key, payload_b64))``；
-- payload 携带 ``v/tid/kid/scene/action/mode/type/risk/fp/ip/iat/exp/n``；
+- payload 携带 ``v/tid/kid/aud/scene/action/mode/type/sid/fp/ip/iat/exp/n``；
 - Redis 只存 ``captcha_nonce_{n} -> exp``（一次性消费），票据内容不进缓存；
-- 消费校验顺序：验签 -> ``exp`` -> ``atomic_get_delete(nonce)`` -> ``scene``
-  -> ``action`` -> ``fp``/``ip`` 弱绑定（弱绑定：不一致按需重验，不硬拒）。
+- 消费校验顺序：验签 -> ``exp`` -> ``atomic_get_delete(nonce)`` -> ``aud``
+  -> ``scene`` -> ``action`` -> ``sid``/``fp`` 强绑定 -> ``ip`` 网段弱绑定。
 
-密钥：``CAPTCHA_TICKET_SECRET`` 为唯一定义处（config.yml）；未配置时由
-``SECRET_KEY`` 派生并告警一次；``CAPTCHA_TICKET_SECRET_PREVIOUS``
-（``key_id:secret``）与当前密钥并行验签，实现轮换不断流。
+密钥：``CAPTCHA_TICKET_SECRET`` 为唯一定义处（config.yml）；生产缺失即拒绝
+启动（``DEBUG=True`` 才允许从 ``SECRET_KEY`` 派生并告警）。
+``CAPTCHA_TICKET_SECRET_PREVIOUS``（``key_id:secret``）与当前密钥并行验签，
+实现轮换不断流。
 
 verify 请求自身加签（协议轴，防离线重放一次 verify 调用）：
 ``sign = hmac_sha256(ck, "{challenge_id}|{type}|{scene}|{answer_digest}|{gen_time}")``；
 ``ck`` 由 challenge 下发并随挑战缓存同寿，``captcha_seen_{nonce}`` 挡重放。
-默认 ``CAPTCHA_RISK_MODE=off`` 时不强制（升级零行为变化）。
+``CAPTCHA_VERIFY_SIGN_REQUIRED`` 默认 True，与风险档解耦。
 """
 
 import base64
@@ -30,18 +31,15 @@ import uuid
 from typing import Any
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
-from captcha.const import (
-    CAPTCHA_RISK_MODE_OFF,
-    CAPTCHA_SCENE_ACTIONS,
-    current_risk_mode,
-)
+from captcha.const import CAPTCHA_SCENE_ACTIONS
 from common.cache.storage import atomic_get_delete
 from common.utils import get_logger
 
 logger = get_logger(__name__)
 
-TICKET_VERSION = 1
+TICKET_VERSION = 2
 NONCE_KEY_PREFIX = "captcha_nonce"
 SEEN_NONCE_KEY_PREFIX = "captcha_seen"
 #: verify 签名 nonce 的防重放窗口（与时间窗一致）
@@ -63,9 +61,11 @@ def ticket_keys() -> dict[str, str]:
     secret = str(getattr(settings, "CAPTCHA_TICKET_SECRET", "") or "").strip()
     key_id = str(getattr(settings, "CAPTCHA_TICKET_SECRET_KEY_ID", "") or "k1").strip() or "k1"
     if not secret:
+        if not bool(getattr(settings, "DEBUG", False)):
+            raise ImproperlyConfigured("CAPTCHA_TICKET_SECRET is required when DEBUG=False")
         global _secret_warned
         if not _secret_warned:
-            logger.warning("CAPTCHA_TICKET_SECRET unset; deriving from SECRET_KEY (set it in config.yml to pin)")
+            logger.warning("CAPTCHA_TICKET_SECRET unset; deriving from SECRET_KEY (development only)")
             _secret_warned = True
         key_id = "derived"
         secret = _derived_secret()
@@ -76,6 +76,18 @@ def ticket_keys() -> dict[str, str]:
         if prev_id.strip() and prev_secret.strip():
             keys[prev_id.strip()] = prev_secret.strip()
     return keys
+
+
+def ticket_audience() -> str:
+    """票据 audience：防止 A 部署票据在 B 部署使用。"""
+    value = str(getattr(settings, "CAPTCHA_TICKET_AUDIENCE", "") or "").strip()
+    if value:
+        return value
+    site = str(getattr(settings, "SITE_URL", "") or "").strip()
+    if site:
+        return site
+    hosts = getattr(settings, "ALLOWED_HOSTS", []) or []
+    return str(hosts[0]) if hosts else "xadmin"
 
 
 def ticket_ttl_for(mode: str) -> int:
@@ -124,6 +136,7 @@ def issue_ticket(
     ttl: int | None = None,
     fp: str = "",
     ip_hash: str = "",
+    sid_hash: str = "",
 ) -> str:
     """签发结构化票据并在 Redis 登记一次性 nonce；缓存写入失败由调用方 fail-closed。"""
     from django.core.cache import cache
@@ -135,10 +148,12 @@ def issue_ticket(
         "v": TICKET_VERSION,
         "tid": uuid.uuid4().hex,
         "kid": next(iter(ticket_keys())),
+        "aud": ticket_audience(),
         "scene": scene,
         "action": action or "",
         "mode": mode,
         "type": captcha_type or "",
+        "sid": sid_hash or "",
         "fp": fp or "",
         "ip": ip_hash or "",
         "iat": now,
@@ -172,14 +187,21 @@ def parse_ticket(ticket: str) -> dict[str, Any] | None:
 
 
 def consume_ticket_payload(
-    ticket: str, scene: str, action: str = "", ip_hash: str = "", fp_hash: str = ""
+    ticket: str,
+    scene: str,
+    action: str = "",
+    ip_hash: str = "",
+    fp_hash: str = "",
+    sid_hash: str = "",
 ) -> dict[str, Any] | None:
-    """一次性消费票据并校验 (scene, action) 绑定；成功返回票据载荷（供留痕）。"""
+    """一次性消费票据并校验 (aud, scene, action, sid, fp) 绑定。"""
 
     payload = parse_ticket(ticket)
     if payload is None:
         return None
     if int(payload.get("exp") or 0) <= int(time.time()):
+        return None
+    if str(payload.get("aud") or "") != ticket_audience():
         return None
     # 一次性：并发只有一方能 atomic 取回 nonce（取不回 = 已消费 / 从未签发）
     try:
@@ -198,24 +220,45 @@ def consume_ticket_payload(
     bound = str(payload.get("action") or "")
     if not bound or not action or bound != action:
         return None
-    # IP / 指纹弱绑定：不一致时要求重新验证（不硬拒其它票据）
-    if _weak_binding_drifted(payload, ip_hash, fp_hash):
+    if _binding_rejected(payload, ip_hash, fp_hash, sid_hash):
         return None
     return payload
 
 
-def consume_ticket(ticket: str, scene: str, action: str = "", ip_hash: str = "", fp_hash: str = "") -> bool:
-    """一次性消费票据并校验 (scene, action) 绑定；网段漂移按需重验。"""
-    return consume_ticket_payload(ticket, scene, action=action, ip_hash=ip_hash, fp_hash=fp_hash) is not None
+def consume_ticket(
+    ticket: str,
+    scene: str,
+    action: str = "",
+    ip_hash: str = "",
+    fp_hash: str = "",
+    sid_hash: str = "",
+) -> bool:
+    """一次性消费票据并校验 (aud, scene, action, sid, fp) 绑定。"""
+    return (
+        consume_ticket_payload(ticket, scene, action=action, ip_hash=ip_hash, fp_hash=fp_hash, sid_hash=sid_hash)
+        is not None
+    )
 
 
-def _weak_binding_drifted(payload: dict[str, Any], ip_hash: str = "", fp_hash: str = "") -> bool:
-    """IP / 指纹弱绑定漂移：两端都有值且不同 → 需重新验证（不硬拒其它票据）。"""
-    bound_ip = str(payload.get("ip") or "")
-    if bound_ip and ip_hash and bound_ip != ip_hash:
+def _binding_rejected(payload: dict[str, Any], ip_hash: str = "", fp_hash: str = "", sid_hash: str = "") -> bool:
+    """sid / fp 强绑定（默认）；ip 网段弱绑定（移动网络换 IP 不硬拒）。"""
+    strict = bool(getattr(settings, "CAPTCHA_STRICT_BINDING", True))
+    bound_sid = str(payload.get("sid") or "")
+    if strict:
+        if not bound_sid or not sid_hash or bound_sid != sid_hash:
+            return True
+    elif bound_sid and sid_hash and bound_sid != sid_hash:
         return True
+
     bound_fp = str(payload.get("fp") or "")
-    return bool(bound_fp and fp_hash and bound_fp != fp_hash)
+    if strict:
+        if not bound_fp or not fp_hash or bound_fp != fp_hash:
+            return True
+    elif bound_fp and fp_hash and bound_fp != fp_hash:
+        return True
+
+    bound_ip = str(payload.get("ip") or "")
+    return bool(bound_ip and ip_hash and bound_ip != ip_hash)
 
 
 # ---------------------------------------------------------------------------
@@ -224,9 +267,8 @@ def _weak_binding_drifted(payload: dict[str, Any], ip_hash: str = "", fp_hash: s
 
 
 def verify_sign_enforced() -> bool:
-    """verify 签名只在风险层非 off 档时强制（off = 升级零行为变化）。"""
-    required = bool(getattr(settings, "CAPTCHA_VERIFY_SIGN_REQUIRED", True))
-    return required and current_risk_mode() != CAPTCHA_RISK_MODE_OFF
+    """verify 签名常开；与风险档解耦。"""
+    return bool(getattr(settings, "CAPTCHA_VERIFY_SIGN_REQUIRED", True))
 
 
 def new_session_key() -> str:

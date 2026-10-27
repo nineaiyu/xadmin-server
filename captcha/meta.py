@@ -6,14 +6,13 @@ from typing import Any
 
 from django.conf import settings
 
-from captcha import cache as captcha_cache
 from captcha.backends import all_backends, get_backend
-from captcha.backends.art import png_data_uri
 from captcha.const import (
-    CAPTCHA_MODE_INTERACTIVE,
+    CAPTCHA_PUZZLE_TYPES,
+    CAPTCHA_TYPE_IMAGE,
+    CAPTCHA_TYPE_POW,
     captcha_globally_enabled,
     captcha_scene_enabled,
-    current_captcha_mode,
     current_risk_mode,
 )
 
@@ -35,39 +34,57 @@ def track_required() -> bool:
 
 
 def enabled_captcha_types(scene: str | None = None) -> list[str]:
-    """当前启用的交互式题型；总开关关闭、图片模式或场景关闭时返回空列表。"""
-    if not captcha_globally_enabled() or current_captcha_mode() != CAPTCHA_MODE_INTERACTIVE:
+    """当前启用的题型；图片题型仅在显式回退开关开启时加入（权重 0，不进随机池）。"""
+    if not captcha_globally_enabled():
         return []
     if scene is not None and not captcha_scene_enabled(scene):
         return []
-    configured = getattr(settings, "CAPTCHA_INTERACTIVE_TYPES", None)
+    configured = getattr(settings, "CAPTCHA_ENABLED_TYPES", None)
     if isinstance(configured, str):
         configured = [item.strip() for item in configured.split(",") if item.strip()]
-    if not isinstance(configured, (list, tuple)) or not configured:
-        configured = list(all_backends())
     available = all_backends()
-    return [captcha_type for captcha_type in configured if captcha_type in available]
+    if not isinstance(configured, (list, tuple)) or not configured:
+        configured = list(CAPTCHA_PUZZLE_TYPES)
+    types = [
+        captcha_type for captcha_type in configured if captcha_type in available and captcha_type != CAPTCHA_TYPE_POW
+    ]
+    if not types:
+        types = [captcha_type for captcha_type in CAPTCHA_PUZZLE_TYPES if captcha_type in available]
+    if bool(getattr(settings, "CAPTCHA_IMAGE_FALLBACK_ENABLED", True)) and CAPTCHA_TYPE_IMAGE in available:
+        if CAPTCHA_TYPE_IMAGE not in types:
+            types.append(CAPTCHA_TYPE_IMAGE)
+    return types
 
 
 def build_captcha_meta(scene: str | None = None) -> dict[str, Any]:
-    """能力清单投影：模式 + 当前可用题型 + 图片码回退 + 中性 flow 标记。"""
-    mode = current_captcha_mode()
-    interactive = mode == CAPTCHA_MODE_INTERACTIVE
-    types = enabled_captcha_types(scene) if interactive else []
+    """能力清单投影：当前可用题型 + 图片回退 + 中性 flow 标记。"""
+    types = enabled_captcha_types(scene)
     scene_enabled = captcha_globally_enabled() and (scene is None or captcha_scene_enabled(scene))
-    image_fallback = interactive and scene_enabled and bool(getattr(settings, "CAPTCHA_IMAGE_FALLBACK_ENABLED", False))
+    image_fallback = scene_enabled and CAPTCHA_TYPE_IMAGE in types
     captcha_flow = "adaptive" if current_risk_mode() != "off" else "always"
-    return {"mode": mode, "types": types, "image_fallback": image_fallback, "captcha_flow": captcha_flow}
+    return {"types": types, "image_fallback": image_fallback, "captcha_flow": captcha_flow}
 
 
 def preview_image_captcha() -> dict[str, Any]:
-    """按已保存的图片验证码配置生成一张预览图（不写 CaptchaStore）。"""
-    from captcha.helpers import get_challenge
-    from captcha.views import render_challenge
+    """按已保存的图片验证码配置生成一张预览图（不写挑战缓存）。"""
+    from captcha.backends.image import ImageBackend
 
-    challenge, response = get_challenge()()
-    image = render_challenge(challenge, 1)
-    return {"image": png_data_uri(image), "length": len(str(response))}
+    generated = ImageBackend().generate()
+    payload = generated.payload
+    return {"image": payload.get("background", ""), "length": int(payload.get("length") or 0)}
+
+
+def inspect_challenge(challenge_id: str) -> dict[str, Any] | None:
+    """E2E 受控检查：返回挑战答案；仅 CAPTCHA_INSPECT_ENABLED + 专用 token 可达。"""
+    from captcha import cache as captcha_cache
+
+    try:
+        stored = captcha_cache.load_challenge(challenge_id)
+    except Exception:  # noqa: BLE001 检查端点失败按不存在处理
+        return None
+    if not stored:
+        return None
+    return {"type": stored.get("type"), "scene": stored.get("scene"), "answer": stored.get("secret")}
 
 
 def preview_interactive_challenge(captcha_type: str) -> dict[str, Any]:
@@ -79,14 +96,3 @@ def preview_interactive_challenge(captcha_type: str) -> dict[str, Any]:
         raise CaptchaInvalidError()
     generated = backend.generate()
     return {"type": generated.type, **generated.payload}
-
-
-def inspect_challenge(challenge_id: str) -> dict[str, Any] | None:
-    """受控检查端点专用：返回挑战答案（仅 E2E 配置开启时路由可达）。"""
-    try:
-        stored = captcha_cache.load_challenge(challenge_id)
-    except Exception:  # noqa: BLE001 检查端点失败按不存在处理
-        return None
-    if not stored:
-        return None
-    return {"type": stored.get("type"), "scene": stored.get("scene"), "answer": stored.get("secret")}

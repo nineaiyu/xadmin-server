@@ -9,6 +9,7 @@
 
 from captcha.const import CAPTCHA_TYPES, captcha_globally_enabled, captcha_scene_enabled
 from captcha.filters import CaptchaLogFilter
+from captcha.meta import inspect_challenge
 from captcha.models import CaptchaLog, CaptchaRule
 from captcha.serializers import (
     CaptchaChallengeInSerializer,
@@ -25,14 +26,11 @@ from captcha.serializers import (
     CaptchaVerifyResponseSerializer,
 )
 from captcha.services import (
-    CaptchaAuth,
-    CaptchaExhaustedError,
     CaptchaInvalidError,
     CaptchaServiceError,
     InteractiveCaptcha,
     build_captcha_meta,
     enabled_captcha_types,
-    inspect_challenge,
     preview_image_captcha,
     preview_interactive_challenge,
 )
@@ -40,11 +38,9 @@ from captcha.signals import xff_inconsistent
 from captcha.stats import captcha_stats
 
 __all__ = [
-    "CaptchaAuth",
     "CaptchaChallengeInSerializer",
     "CaptchaChallengeOutSerializer",
     "CaptchaChallengeResponseSerializer",
-    "CaptchaExhaustedError",
     "CaptchaInvalidError",
     "CaptchaLog",
     "CaptchaLogFilter",

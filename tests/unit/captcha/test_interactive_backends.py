@@ -29,7 +29,6 @@ def _drag_track(duration: float = 200.0) -> list[dict[str, float]]:
 @pytest.mark.parametrize("backend_type", ["slide", "rotate", "click"])
 class TestGeneration:
     def test_payload_has_no_answer_and_image_is_png(self, settings, backend_type):
-        settings.CAPTCHA_MODE = "interactive"
         settings.CAPTCHA_SLIDE_SIZE = (320, 180)
         settings.CAPTCHA_ROTATE_SIZE = (240, 240)
         backend = {"slide": SlideBackend(), "rotate": RotateBackend(), "click": WordClickBackend()}[backend_type]
@@ -48,7 +47,6 @@ class TestGeneration:
             assert len(challenge.secret["points"]) == 3
 
     def test_two_generations_differ(self, settings, backend_type):
-        settings.CAPTCHA_MODE = "interactive"
         backend = {"slide": SlideBackend(), "rotate": RotateBackend(), "click": WordClickBackend()}[backend_type]
         first = backend.generate()
         second = backend.generate()

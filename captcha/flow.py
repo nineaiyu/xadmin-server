@@ -23,11 +23,11 @@ from captcha.const import (
     CAPTCHA_DIFFICULTY_EASY,
     CAPTCHA_DIFFICULTY_HARD,
     CAPTCHA_DIFFICULTY_NORMAL,
-    CAPTCHA_MODE_INTERACTIVE,
     CAPTCHA_TYPE_CLICK,
+    CAPTCHA_TYPE_ICON,
+    CAPTCHA_TYPE_IMAGE,
     CAPTCHA_TYPE_POW,
     CAPTCHA_TYPE_WORDORDER,
-    current_captcha_mode,
     current_risk_mode,
 )
 
@@ -61,8 +61,8 @@ class RiskContext:
 
 
 def risk_active() -> bool:
-    """风险层是否运行：off 档完全不评估（升级零行为变化）。"""
-    return current_risk_mode() != "off" and current_captcha_mode() == CAPTCHA_MODE_INTERACTIVE
+    """风险层是否运行：off 档完全不评估。"""
+    return current_risk_mode() != "off"
 
 
 def assess_challenge(ctx: RiskContext) -> risk.RiskResult | None:
@@ -142,19 +142,10 @@ def _recent_type_key(ctx: RiskContext) -> str:
     return f"{RECENT_TYPE_PREFIX}_{ctx.fp or ctx.ip_hash or 'anonymous'}"
 
 
-def pick_type(ctx: RiskContext, types: list[str], requested: str | None, decision: str) -> tuple[str, str]:
-    """返回 (type, difficulty)：light 走 PoW；hard 优先语序点选；其余加权轮换。"""
-    difficulty = difficulty_for(decision)
-    if decision == CAPTCHA_DECISION_LIGHT and bool(getattr(settings, "CAPTCHA_POW_ENABLED", True)):
-        return CAPTCHA_TYPE_POW, CAPTCHA_DIFFICULTY_HARD
-    if requested and requested in types and requested != CAPTCHA_TYPE_POW:
-        return requested, difficulty
-    candidates = [item for item in types if item != CAPTCHA_TYPE_POW]
-    if decision == CAPTCHA_DECISION_HARD and CAPTCHA_TYPE_WORDORDER in candidates:
-        return CAPTCHA_TYPE_WORDORDER, CAPTCHA_DIFFICULTY_HARD
-    if not candidates:
-        candidates = types or [CAPTCHA_TYPE_CLICK]
-    pool = _weighted_types(candidates)
+def _choose(ctx: RiskContext, pool: list[str]) -> str:
+    """加权池内随机，并做短窗防重复；池为空时退回 click。"""
+    if not pool:
+        return CAPTCHA_TYPE_CLICK
     selected = random.choice(pool)
     try:
         recent = cache.get(_recent_type_key(ctx))
@@ -163,7 +154,61 @@ def pick_type(ctx: RiskContext, types: list[str], requested: str | None, decisio
         cache.set(_recent_type_key(ctx), selected, 60)
     except Exception:  # noqa: BLE001 轮换缓存不可用不影响出题
         pass
-    return selected, difficulty
+    return selected
+
+
+def _weight_positive(captcha_type: str) -> bool:
+    weights = getattr(settings, "CAPTCHA_TYPE_WEIGHTS", None)
+    if not isinstance(weights, dict):
+        return True
+    try:
+        return int(weights.get(captcha_type, 0) or 0) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def pick_type(ctx: RiskContext, types: list[str], requested: str | None, decision: str) -> tuple[str, str]:
+    """返回 (type, difficulty)。
+
+    决策优先：allow/light 恒走 PoW；hard 忽略客户端请求并强制难题型；
+    challenge 才允许在启用池内尊重请求；image 只作为显式回退且永不进 hard。
+    """
+    if decision in (CAPTCHA_DECISION_ALLOW, CAPTCHA_DECISION_LIGHT):
+        # 显式图片回退优先于静默 PoW：无障碍用户需要看到图片题本身；
+        # 图片题自带 PoW（CAPTCHA_POW_FOR_IMAGE_FALLBACK），不会白嫖。
+        if requested == CAPTCHA_TYPE_IMAGE and bool(getattr(settings, "CAPTCHA_IMAGE_FALLBACK_ENABLED", True)):
+            return CAPTCHA_TYPE_IMAGE, difficulty_for(decision)
+        if bool(getattr(settings, "CAPTCHA_POW_ENABLED", True)):
+            difficulty = CAPTCHA_DIFFICULTY_EASY if decision == CAPTCHA_DECISION_ALLOW else CAPTCHA_DIFFICULTY_HARD
+            return CAPTCHA_TYPE_POW, difficulty
+        return CAPTCHA_TYPE_CLICK, CAPTCHA_DIFFICULTY_NORMAL
+
+    candidates = [item for item in types if item != CAPTCHA_TYPE_POW]
+    if decision == CAPTCHA_DECISION_HARD:
+        hard_pool = [
+            item for item in candidates if item in (CAPTCHA_TYPE_WORDORDER, CAPTCHA_TYPE_CLICK, CAPTCHA_TYPE_ICON)
+        ]
+        if CAPTCHA_TYPE_WORDORDER in hard_pool:
+            return CAPTCHA_TYPE_WORDORDER, CAPTCHA_DIFFICULTY_HARD
+        if hard_pool:
+            return _choose(ctx, hard_pool), CAPTCHA_DIFFICULTY_HARD
+        fallback = [item for item in candidates if item != CAPTCHA_TYPE_IMAGE]
+        return _choose(ctx, fallback or [CAPTCHA_TYPE_CLICK]), CAPTCHA_DIFFICULTY_HARD
+
+    if (
+        requested == CAPTCHA_TYPE_IMAGE
+        and bool(getattr(settings, "CAPTCHA_IMAGE_FALLBACK_ENABLED", True))
+        and CAPTCHA_TYPE_IMAGE in candidates
+    ):
+        return CAPTCHA_TYPE_IMAGE, difficulty_for(decision)
+
+    if requested and requested in candidates and _weight_positive(requested):
+        return requested, difficulty_for(decision)
+
+    pool = _weighted_types(candidates)
+    if not pool:
+        pool = [item for item in candidates if item != CAPTCHA_TYPE_IMAGE] or [CAPTCHA_TYPE_CLICK]
+    return _choose(ctx, pool), difficulty_for(decision)
 
 
 def pow_budget_ok(ip_hash: str) -> bool:
@@ -182,20 +227,8 @@ def pow_budget_ok(ip_hash: str) -> bool:
         return True
 
 
-def allow_response(ticket: str, ttl: int) -> dict[str, Any]:
-    """无题直过：返回与「做过题」同构的票据载荷（无挑战字段）。"""
-    return {
-        "challenge_id": "",
-        "type": "",
-        "ttl": ttl,
-        "ticket": ticket,
-        "decision": CAPTCHA_DECISION_ALLOW,
-    }
-
-
 __all__ = [
     "RiskContext",
-    "allow_response",
     "assess_challenge",
     "assess_verify",
     "difficulty_for",

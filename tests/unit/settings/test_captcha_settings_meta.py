@@ -10,7 +10,7 @@ from settings.serializers.security import (
     SecurityCaptchaInteractiveSerializer,
 )
 
-GENERAL_FIELDS = ("CAPTCHA_ENABLED", "CAPTCHA_MODE")
+GENERAL_FIELDS = ("CAPTCHA_ENABLED",)
 IMAGE_FIELDS = (
     "CAPTCHA_CHALLENGE_FUNCT",
     "CAPTCHA_LENGTH",
@@ -21,7 +21,7 @@ IMAGE_FIELDS = (
     "CAPTCHA_NOISE_FUNCTIONS",
 )
 INTERACTIVE_FIELDS = (
-    "CAPTCHA_INTERACTIVE_TYPES",
+    "CAPTCHA_ENABLED_TYPES",
     "CAPTCHA_SLIDE_TOLERANCE",
     "CAPTCHA_ROTATE_TOLERANCE",
     "CAPTCHA_CLICK_RADIUS",
@@ -33,6 +33,7 @@ INTERACTIVE_FIELDS = (
     "CAPTCHA_ROTATE_SIZE",
     "CAPTCHA_CLICK_CHARSET",
     "CAPTCHA_IMAGE_FALLBACK_ENABLED",
+    "CAPTCHA_POW_FOR_IMAGE_FALLBACK",
 )
 
 
@@ -60,7 +61,7 @@ def test_field_sets_are_split_by_type():
     _assert_fields(SecurityCaptchaCodeSerializer, IMAGE_FIELDS)
     _assert_fields(SecurityCaptchaInteractiveSerializer, INTERACTIVE_FIELDS)
     assert "CAPTCHA_MODE" not in SecurityCaptchaCodeSerializer().fields
-    assert "CAPTCHA_INTERACTIVE_TYPES" not in SecurityCaptchaCodeSerializer().fields
+    assert "CAPTCHA_ENABLED_TYPES" not in SecurityCaptchaCodeSerializer().fields
 
 
 def test_serializer_defaults_match_settings_defaults():
@@ -81,10 +82,10 @@ def test_global_switch_defaults_on():
     assert CONFIG.defaults["CAPTCHA_ENABLED"] is True
 
 
-def test_mode_and_charset_choices_are_closed():
+def test_charset_and_type_choices_are_closed():
     for serializer_class, name, value in (
-        (SecurityCaptchaGeneralSerializer, "CAPTCHA_MODE", "unknown"),
         (SecurityCaptchaInteractiveSerializer, "CAPTCHA_CLICK_CHARSET", "emoji"),
+        (SecurityCaptchaInteractiveSerializer, "CAPTCHA_ENABLED_TYPES", ["unknown"]),
     ):
         serializer = serializer_class(data={name: value}, partial=True)
         assert not serializer.is_valid()

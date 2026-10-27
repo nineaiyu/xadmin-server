@@ -95,6 +95,26 @@ def _by_type(logs: Any) -> list[dict[str, Any]]:
     ]
 
 
+def _by_asset(logs: Any) -> list[dict[str, Any]]:
+    """按背景资产统计通过率（资产被打穿的第一预警信号）。"""
+    rows = (
+        logs.filter(phase="verify")
+        .exclude(asset_id="")
+        .values("asset_id")
+        .annotate(total=Count("pk"), passed=Count("pk", filter=Q(passed=True)))
+        .order_by("-total")[:20]
+    )
+    return [
+        {
+            "asset_id": row["asset_id"],
+            "total": row["total"],
+            "passed": row["passed"],
+            "pass_rate": _pass_rate(row["total"], row["passed"]),
+        }
+        for row in rows
+    ]
+
+
 def _by_decision(logs: Any) -> list[dict[str, Any]]:
     rows = (
         logs.filter(phase="verify")
@@ -184,6 +204,7 @@ def _build(hours: int) -> dict[str, Any]:
         "policy": _policy(),
         "summary": _summary(logs),
         "by_type": _by_type(logs),
+        "by_asset": _by_asset(logs),
         "by_decision": _by_decision(logs),
         "risk_distribution": _risk_distribution(logs),
         "top_reasons": _top_reasons(logs),

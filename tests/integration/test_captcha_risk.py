@@ -7,10 +7,10 @@ import uuid
 
 import pytest
 
+from captcha import cache as captcha_cache
 from captcha import tickets
 from captcha.backends.pow import leading_zero_bits
 from captcha.models import CaptchaLog
-from captcha.services import inspect_challenge
 
 pytestmark = pytest.mark.django_db
 
@@ -27,16 +27,24 @@ ENV = {
 
 @pytest.fixture
 def interactive(settings):
-    settings.CAPTCHA_MODE = "interactive"
-    settings.CAPTCHA_INTERACTIVE_TYPES = ["slide", "rotate", "click", "wordorder"]
+    settings.CAPTCHA_ENABLED_TYPES = ["slide", "rotate", "click", "wordorder"]
+    settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = False
+    settings.CAPTCHA_VERIFY_SIGN_REQUIRED = True
     settings.CAPTCHA_TRACK_CHECK_ENABLED = False
     settings.SECURITY_LOGIN_CAPTCHA_ENABLED = True
     settings.SECURITY_LOGIN_ENCRYPTED_ENABLED = False
     settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
     settings.CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS = False
     settings.CAPTCHA_TYPE_WEIGHTS = {"slide": 30, "rotate": 30, "click": 30, "wordorder": 10, "pow": 0}
+    settings.CAPTCHA_POW_BITS_ALLOW = 6
     settings.CAPTCHA_POW_BITS_LIGHT = 6
     settings.CAPTCHA_POW_BITS_HARD = 6
+
+
+def _secret(challenge_id):
+    stored = captcha_cache.load_challenge(challenge_id)
+    assert stored is not None
+    return stored["secret"]
 
 
 def _challenge(api_client, env=None, **extra):
@@ -81,8 +89,9 @@ class TestOffParity:
         resp = _challenge(api_client)
         assert resp.status_code == 200, resp.data
         data = resp.data["data"]
-        for key in ("decision", "difficulty", "ck", "ticket"):
+        for key in ("decision", "difficulty", "ticket"):
             assert key not in data
+        assert data["ck"]
         assert {"challenge_id", "type", "background", "ttl"} <= set(data)
 
 
@@ -103,18 +112,19 @@ class TestShadow:
 
 
 class TestEnforce:
-    def test_trusted_network_gets_ticket_without_puzzle(self, api_client, interactive, settings):
+    def test_trusted_network_gets_allow_pow_ticket(self, api_client, interactive, settings):
         settings.CAPTCHA_RISK_MODE = "enforce"
-        # 回环地址在默认信任网段内：enforce 也必须无题直过
+        # 回环地址在默认信任网段内：allow 仍走静默 PoW，不再无题直接发票
         settings.CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS = True
         resp = _challenge(api_client)
         assert resp.status_code == 200, resp.data
         data = resp.data["data"]
-        assert data["decision"] == "allow"
-        assert data["ticket"]
-        from captcha.services import InteractiveCaptcha
-
-        assert InteractiveCaptcha().consume_ticket(data["ticket"], "login", action=ACTION) is True
+        assert data["type"] == "pow"
+        secret = _secret(data["challenge_id"])
+        verify = _verify(api_client, data, _solve_pow(secret), env=ENV)
+        assert verify.data["data"]["passed"] is True
+        payload = tickets.parse_ticket(verify.data["data"]["ticket"])
+        assert payload["mode"] == "allow"
 
     def test_allow_path_server_latency_p50_under_300ms(self, api_client, interactive, settings):
         import statistics
@@ -128,10 +138,18 @@ class TestEnforce:
             resp = _challenge(api_client)
             assert resp.status_code == 200, (len(samples), resp.data)
             data = resp.data["data"]
-            assert data["decision"] == "allow"
+            assert data["type"] == "pow"
+            secret = _secret(data["challenge_id"])
+            verify = _verify(api_client, data, _solve_pow(secret), env=ENV)
+            assert verify.data["data"]["passed"] is True
             from captcha.services import InteractiveCaptcha
 
-            assert InteractiveCaptcha().consume_ticket(data["ticket"], "login", ip="127.0.0.1", action=ACTION) is True
+            assert (
+                InteractiveCaptcha().consume_ticket(
+                    verify.data["data"]["ticket"], "login", ip="127.0.0.1", action=ACTION
+                )
+                is True
+            )
             samples.append((time.perf_counter() - started) * 1000)
         assert statistics.median(samples) < 300, samples
 
@@ -141,10 +159,9 @@ class TestEnforce:
         resp = _challenge(api_client, env={**ENV, "timezone": "Not/AZone"})
         assert resp.status_code == 200, resp.data
         data = resp.data["data"]
-        assert data["decision"] == "light"
         assert data["type"] == "pow"
         assert data["pow"]["difficulty_bits"] > 0
-        secret = inspect_challenge(data["challenge_id"])["answer"]
+        secret = _secret(data["challenge_id"])
         answer = _solve_pow(secret)
         verify = _verify(api_client, data, answer, env={**ENV, "timezone": "Not/AZone"})
         assert verify.status_code == 200, verify.data
@@ -159,10 +176,8 @@ class TestEnforce:
         resp = _challenge(api_client, env=env)
         assert resp.status_code == 200, resp.data
         data = resp.data["data"]
-        assert data["decision"] == "hard"
-        assert data["difficulty"] == "hard"
         assert data["type"] == "wordorder"
-        secret = inspect_challenge(data["challenge_id"])["answer"]
+        secret = _secret(data["challenge_id"])
         verify = _verify(api_client, data, {"points": secret["points"]}, env=env)
         assert verify.status_code == 200, verify.data
         payload = tickets.parse_ticket(verify.data["data"]["ticket"])
@@ -190,11 +205,18 @@ class TestEnforce:
         try:
             first = _challenge(api_client)
             assert first.status_code == 200, first.data
-            assert first.data["data"]["decision"] == "allow"
-            assert first.data["data"]["ticket"]
+            first_data = first.data["data"]
+            assert first_data["type"] == "pow"
+            secret = _secret(first_data["challenge_id"])
+            assert _verify(api_client, first_data, _solve_pow(secret), env=ENV).data["data"]["passed"] is True
+
             second = _challenge(api_client)
-            assert second.status_code == 400
-            assert second.data["error"] == "captcha_exhausted"
+            assert second.status_code == 200, second.data
+            second_data = second.data["data"]
+            secret = _secret(second_data["challenge_id"])
+            blocked = _verify(api_client, second_data, _solve_pow(secret), env=ENV)
+            assert blocked.status_code == 400
+            assert blocked.data["error"] == "captcha_invalid"
         finally:
             cache.delete_pattern("captcha_ticket_inflight_*")
 
@@ -204,7 +226,7 @@ class TestEnforce:
         data = _challenge(api_client, env={**ENV, "timezone": "Not/AZone"}).data["data"]
         assert data["type"] == "pow"
         assert data["ck"]
-        secret = inspect_challenge(data["challenge_id"])["answer"]
+        secret = _secret(data["challenge_id"])
         body = {
             "challenge_id": data["challenge_id"],
             "type": data["type"],
@@ -257,8 +279,6 @@ class TestEnforce:
         next_challenge = _challenge(api_client, env=clean_env)
         assert next_challenge.status_code == 200, next_challenge.data
         data = next_challenge.data["data"]
-        assert data["decision"] == "hard"
-        assert data["difficulty"] == "hard"
         assert data["type"] == "wordorder"
         row = CaptchaLog.objects.filter(phase="challenge").order_by("-ts").first()
         assert row is not None

@@ -14,14 +14,20 @@ from typing import Any
 from django.conf import settings
 
 from captcha.backends.base import CaptchaChallenge, ChallengeBackend
-from captcha.const import CAPTCHA_DIFFICULTY_HARD
+from captcha.const import CAPTCHA_DIFFICULTY_EASY, CAPTCHA_DIFFICULTY_HARD
 
 
 def bits_for(difficulty: str = "") -> int:
     hard = int(getattr(settings, "CAPTCHA_POW_BITS_HARD", 20) or 20)
     light = int(getattr(settings, "CAPTCHA_POW_BITS_LIGHT", 18) or 18)
+    allow = int(getattr(settings, "CAPTCHA_POW_BITS_ALLOW", 16) or 16)
     cap = int(getattr(settings, "CAPTCHA_POW_BITS_MAX", 20) or 20)
-    value = hard if difficulty == CAPTCHA_DIFFICULTY_HARD else light
+    if difficulty == CAPTCHA_DIFFICULTY_HARD:
+        value = hard
+    elif difficulty == CAPTCHA_DIFFICULTY_EASY:
+        value = allow
+    else:
+        value = light
     return max(1, min(value, cap, 24))
 
 

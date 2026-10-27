@@ -29,7 +29,7 @@ class TestFlow:
         ctx = flow.RiskContext(scene="login", ip="8.8.8.8")
         selected, difficulty = flow.pick_type(ctx, ["slide", "click"], None, "light")
         assert selected in ("slide", "click")
-        assert difficulty == "easy"
+        assert difficulty == "normal"
 
     def test_hard_prefers_wordorder(self):
         ctx = flow.RiskContext(scene="login", ip="8.8.8.8")
@@ -61,11 +61,31 @@ class TestFlow:
         second, _ = flow.pick_type(ctx, ["slide", "click"], None, "challenge")
         assert first != second
 
-    def test_allow_response_shape(self):
-        payload = flow.allow_response("ticket-1", 60)
-        assert payload["ticket"] == "ticket-1"
-        assert payload["decision"] == "allow"
-        assert payload["ttl"] == 60
+    def test_allow_uses_easy_pow(self):
+        ctx = flow.RiskContext(scene="login", ip="8.8.8.8")
+        selected, difficulty = flow.pick_type(ctx, ["slide", "click"], None, "allow")
+        assert selected == "pow"
+        assert difficulty == "easy"
+
+    def test_explicit_image_fallback_wins_over_allow_and_light(self, settings):
+        settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = True
+        ctx = flow.RiskContext(scene="login", ip="8.8.8.8")
+        for decision in ("allow", "light"):
+            selected, difficulty = flow.pick_type(ctx, ["slide", "click", "image"], "image", decision)
+            assert selected == "image"
+            assert difficulty == ("normal" if decision == "allow" else "easy")
+
+    def test_hard_never_downgrades_to_image(self, settings):
+        settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = True
+        ctx = flow.RiskContext(scene="login", ip="8.8.8.8")
+        selected, _ = flow.pick_type(ctx, ["slide", "click", "image"], "image", "hard")
+        assert selected != "image"
+
+    def test_hard_ignores_requested_easy_type(self):
+        ctx = flow.RiskContext(scene="login", ip="8.8.8.8")
+        selected, difficulty = flow.pick_type(ctx, ["slide", "click", "wordorder"], "slide", "hard")
+        assert selected == "wordorder"
+        assert difficulty == "hard"
 
     def test_stored_result_roundtrip(self):
         result = flow.stored_result({"decision": "hard", "risk": 75, "risk_reasons": ["env_headless"]})

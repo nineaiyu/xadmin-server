@@ -129,7 +129,7 @@ useRenderIcon("ep:user")       // 后端元数据下发的图标名 → LocalIco
 | `ReCropper` / `RePictureUpload` | 图片裁剪 / 头像裁剪上传 | — |
 | `ReMfaConfirm` | 412 敏感操作二次验证弹窗 | `confirmMfa()`，http 层自动接线 |
 | `ReSplitPane` | 可拖拽分栏（宽度持久化） | 配合 `src/hooks/useSplitPaneConfig.ts` |
-| `ReCountTo` / `ReFlicker` / `ReQrcode` / `ReImageVerify` / `ReSendVerifyCode` / `ReTypeit` / `ReTreeLine` / `ReAnimateSelector` | 数字滚动 / 闪烁点 / 二维码 / 图形验证码 / 验证码倒计时 / 打字机 / 树形连接线 / 动画选择器 | 按需引用 |
+| `ReCountTo` / `ReFlicker` / `ReQrcode` / `ReImageCaptcha` / `ReSendVerifyCode` / `ReTypeit` / `ReTreeLine` / `ReAnimateSelector` | 数字滚动 / 闪烁点 / 二维码 / 图片题型验证码 / 验证码倒计时 / 打字机 / 树形连接线 / 动画选择器 | 按需引用 |
 
 ### 2.5 请求层：BaseApi / http
 

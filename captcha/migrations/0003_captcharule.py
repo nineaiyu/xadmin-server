@@ -25,6 +25,11 @@ DEFAULT_RULES = (
 
 
 def seed_rules(apps, schema_editor):
+    # 原地升级在补表前可能尚无该表：数据迁移不是结构前置，缺表时跳过即可（迁移可重入）。
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute("select to_regclass(%s)", ("captcha_captcharule",))
+        if cursor.fetchone()[0] is None:
+            return
     rule_model = apps.get_model("captcha", "CaptchaRule")
     existing = set(rule_model.objects.values_list("code", flat=True))
     rule_model.objects.bulk_create(

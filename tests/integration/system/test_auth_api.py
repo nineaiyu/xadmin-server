@@ -67,9 +67,6 @@ class TestBasicLogin:
 
 
 class TestCaptchaApi:
-    def test_get_captcha(self, api_client):
+    def test_legacy_captcha_route_removed(self, api_client):
         resp = api_client.get(CAPTCHA_URL)
-        assert resp.status_code == 200
-        assert resp.data["code"] == 1000
-        assert resp.data["captcha_key"]
-        assert resp.data["captcha_image"]
+        assert resp.status_code == 404

@@ -3,7 +3,7 @@
 """交互式验证码的挑战 / 尝试计数缓存（票务签发与消费见 ``captcha.tickets``）。
 
 挑战是 2 分钟级短命数据，走 django-redis（与 oauth_state /
-passkey challenge 同类）；图片验证码的 DB 版 CaptchaStore 保持原样不动。
+passkey challenge 同类）；图片题型同样只写挑战缓存，不再落 DB。
 
 键空间（均已登记 check_cache_keys 与 docs/architecture/cache.md）：
 

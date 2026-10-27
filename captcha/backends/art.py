@@ -65,11 +65,45 @@ def _decorate(image: Image.Image, rng: random.Random) -> Image.Image:
     return Image.blend(image, noise, 0.035)
 
 
-def make_background(size: tuple[int, int], rng: random.Random | None = None) -> Image.Image:
+def make_background_asset(
+    size: tuple[int, int],
+    rng: random.Random | None = None,
+    soft: bool = False,
+) -> tuple[Image.Image, str]:
+    """生成底图并返回资产 id；soft=True 时叠加浅色蒙层保证文字对比度。"""
     rng = rng or random.Random()
-    start, end = rng.choice(BACKGROUND_PALETTES)
-    image = _gradient(size, start, end)
-    return _decorate(image, rng)
+    from captcha.assets import select_background
+
+    photo, asset_id = select_background(size, rng)
+    if photo is not None:
+        image = _decorate(photo, rng)
+    else:
+        start, end = rng.choice(BACKGROUND_PALETTES)
+        image = _decorate(_gradient(size, start, end), rng)
+        asset_id = "procedural"
+    if soft:
+        image = Image.blend(image, Image.new("RGB", size, (250, 250, 252)), 0.42)
+    return image, asset_id
+
+
+def make_background(
+    size: tuple[int, int],
+    rng: random.Random | None = None,
+    soft: bool = False,
+) -> Image.Image:
+    image, _asset_id = make_background_asset(size, rng, soft)
+    return image
+
+
+def make_orientation_scene_asset(size: tuple[int, int], rng: random.Random | None = None) -> tuple[Image.Image, str]:
+    """旋转题场景图 + 资产 id（图库图或程序化场景）。"""
+    rng = rng or random.Random()
+    from captcha.assets import select_background
+
+    photo, asset_id = select_background(size, rng, orientation="landscape")
+    if photo is not None:
+        return _decorate(photo, rng), asset_id
+    return make_orientation_scene(size, rng), "procedural-scene"
 
 
 def make_orientation_scene(size: tuple[int, int], rng: random.Random | None = None) -> Image.Image:

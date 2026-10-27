@@ -79,8 +79,11 @@ VERIFY_CODE_LIMIT = 1000
 EMAIL_ENABLED = True
 SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = False
 # 交互式验证码 E2E：仅挂载受控答案检查端点（默认配置不定义该键，路由不存在）；
-# 模式仍在用例内按需切换，既有套件继续走图片码关闭的登录链路。
+# 必须同时配置专用 token，请求头不匹配一律 404。
 CAPTCHA_INSPECT_ENABLED = True
+CAPTCHA_INSPECT_TOKEN = "e2e-captcha-inspect-token"
+# Vite 前端源与测试 API 源不同，显式放行本地前端 Origin
+CAPTCHA_ALLOWED_ORIGINS = "http://localhost:8848,http://127.0.0.1:8848"
 # 风险层固定 off：E2E 的验证流量全部落日志，不能让影子决策/加签强制影响既有用例
 CAPTCHA_RISK_MODE = "off"
 # IP 限流必须放宽：E2E 全套件共享 127.0.0.1，且登录锁定用例会连续失败 50 次，

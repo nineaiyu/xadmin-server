@@ -63,7 +63,7 @@ class TestPrerequisiteAllowlist:
     """前置 RunPython 白名单必须覆盖迁移链（否则结构对齐会静默漏掉扩展创建）。"""
 
     def test_every_project_run_python_in_chain_is_registered(self):
-        """本仓库 app 的 ``RunPython`` 全部要在白名单里（三方 app 由 migrate 负责，不在此列）。"""
+        """本仓库 app 的 ``RunPython`` 必须明确「执行 / 建表后执行 / 明确跳过」之一。"""
         from django.db.migrations.operations.special import RunPython
 
         loader = MigrationLoader(None, ignore_no_migrations=False)
@@ -74,7 +74,12 @@ class TestPrerequisiteAllowlist:
             for operation in migration.operations:
                 if isinstance(operation, RunPython) and operation.code is not None:
                     function_name = getattr(operation.code, "__name__", "")
-                    if function_name not in legacy_structure.PREREQUISITE_CALLABLES:
+                    registered = {
+                        *legacy_structure.PREREQUISITE_CALLABLES,
+                        *legacy_structure.DATA_CLEANUP_CALLABLES,
+                        *legacy_structure.DEFERRED_CALLABLES,
+                    }
+                    if function_name not in registered:
                         unregistered.append(f"{app}.{name}:{function_name}")
         assert unregistered == [], (
             "本仓库迁移链出现未登记的前置 RunPython：结构对齐路径不会执行它（新增数据回填类操作时"

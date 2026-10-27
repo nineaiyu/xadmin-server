@@ -126,12 +126,12 @@ sum by (cache) (rate(xadmin_cache_requests_total{result="hit"}[5m]))
 另登记观察项：授权池版本切换瞬间无锁保护，若监控（`xadmin_cache_requests_total` 回源率）见尖峰再评估。
 
 
-## 十、交互式验证码挑战缓存（2026-10-26）
+## 十、统一人机验证挑战缓存（2026-10-27）
 
-挑战 / 尝试计数 / 一次性 ticket 均为 2 分钟级短命数据，走 Django cache（Redis），
-与图片验证码的 DB 表 `CaptchaStore` 并存、互不影响。挑战 / 尝试计数 / 未消费计数的键前缀
-集中登记在 `captcha/cache.py`；签名票据与 verify 加签的键前缀登记在 `captcha/tickets.py`，
-均纳入 `scripts/check_cache_keys.py --strict`。
+挑战 / 尝试计数 / 一次性 ticket 均为 2 分钟级短命数据，走 Django cache（Redis）。
+统一协议下图片题型也只写挑战缓存，**不再有 DB `CaptchaStore`**。挑战 / 尝试计数 /
+未消费计数的键前缀集中登记在 `captcha/cache.py`；签名票据与 verify 加签的键前缀登记在
+`captcha/tickets.py`，均纳入 `scripts/check_cache_keys.py --strict`。
 
 | 键 | TTL | 说明 |
 |----|-----|------|
@@ -142,6 +142,11 @@ sum by (cache) (rate(xadmin_cache_requests_total{result="hit"}[5m]))
 | `captcha_ticket_inflight_{ip}` | 300s | 同 IP 未消费 ticket 计数，上限 3（防囤票重放） |
 | `captcha_stats_{hours}` | 60s | 观测大盘聚合缓存（`captcha/stats.py`，键为窗口小时数；缓存故障直接现算，fail-open） |
 | `captcha_freq_ip_{ip_hash}` / `captcha_freq_fp_{fp}` | 60s | 挑战频率信号（同 IP >10/分、同指纹并发 >3） |
+| `captcha_phase_challenge_{ip_hash}` / `captcha_phase_verify_{ip_hash}` | 600s | 挑战/校验计数，派生 `challenge_abandon`（挑战远多于校验 = 枚举/爬题） |
+| `captcha_type_mix_{ip_hash}` | 600s | 同 IP 题型分布，派生 `type_fixation`（>90% 单一题型） |
+| `captcha_audio_{ip_hash}` | 600s | 音频请求计数，派生 `audio_abuse` |
+| `captcha_ticket_rate_{ip_hash}` | 600s | ticket 消费计数，派生 `ticket_velocity` |
+| `captcha_spread_ip_{ip_hash}` / `captcha_spread_fp_{fp}` | 600s | Redis Set：同 IP 指纹数 / 同指纹 IP 数，派生扩散规则 |
 | `captcha_hist_{fp}` | 7d | 指纹历史信誉（成功 ≥3 且无失败 → `hist_good` 负分） |
 | `captcha_acct_fail_{account_hash}` | 900s | 账号近期失败计数（`acct_fail` 信号） |
 | `captcha_type_recent_{fp/ip}` | 60s | 题型轮换防重复（同指纹/IP 短时间内不重复同型题） |

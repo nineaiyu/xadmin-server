@@ -6,6 +6,7 @@ import time
 
 import pytest
 from django.core.cache import cache
+from django.core.exceptions import ImproperlyConfigured
 
 from captcha import tickets
 from captcha.const import (
@@ -50,9 +51,16 @@ class TestIssueAndParse:
         secret = tickets.ticket_keys()[payload["kid"]]
         assert tickets._sign(secret, body) == signature
 
-    def test_unconfigured_secret_derives_from_secret_key(self, settings):
+    def test_unconfigured_secret_derives_only_in_debug(self, settings):
         settings.CAPTCHA_TICKET_SECRET = ""
+        settings.DEBUG = True
         assert "derived" in tickets.ticket_keys()
+
+    def test_production_requires_explicit_secret(self, settings):
+        settings.CAPTCHA_TICKET_SECRET = ""
+        settings.DEBUG = False
+        with pytest.raises(ImproperlyConfigured):
+            tickets.ticket_keys()
 
     def test_configured_secret_wins(self, settings):
         settings.CAPTCHA_TICKET_SECRET = "k-s1"
@@ -77,8 +85,8 @@ class TestIssueAndParse:
         settings.CAPTCHA_TICKET_SECRET = "k-s1"
         settings.CAPTCHA_TICKET_SECRET_KEY_ID = "k1"
         secret = tickets.ticket_keys()["k1"]
-        base = {"v": 1, "kid": "k1", "n": "x" * 32, "exp": int(time.time()) + 60, "scene": "login"}
-        assert tickets.parse_ticket(_craft_ticket({**base, "v": 2}, "k1", secret)) is None
+        base = {"v": tickets.TICKET_VERSION, "kid": "k1", "n": "x" * 32, "exp": int(time.time()) + 60, "scene": "login"}
+        assert tickets.parse_ticket(_craft_ticket({**base, "v": 1}, "k1", secret)) is None
         assert tickets.parse_ticket(_craft_ticket({**base, "kid": "k9"}, "k9", secret)) is None
 
     def test_ticket_ttl_for_modes(self, settings):
@@ -177,10 +185,10 @@ class TestVerifySign:
     def _nonce(self) -> str:
         return "n" * 24
 
-    def test_sign_off_mode_not_enforced(self, settings):
+    def test_sign_always_enforced(self, settings):
         settings.CAPTCHA_VERIFY_SIGN_REQUIRED = True
         settings.CAPTCHA_RISK_MODE = CAPTCHA_RISK_MODE_OFF
-        assert tickets.verify_sign_enforced() is False
+        assert tickets.verify_sign_enforced() is True
         settings.CAPTCHA_RISK_MODE = CAPTCHA_RISK_MODE_ENFORCE
         assert tickets.verify_sign_enforced() is True
 

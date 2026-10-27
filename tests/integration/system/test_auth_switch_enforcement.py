@@ -32,7 +32,6 @@ class TestCapabilitiesEndpoint:
         assert set(data["basic"]) == {
             "enabled",
             "captcha",
-            "captcha_mode",
             "captcha_types",
             "captcha_image_fallback",
             "captcha_flow",

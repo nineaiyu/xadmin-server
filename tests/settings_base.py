@@ -21,6 +21,14 @@ DEBUG = False
 DEBUG_DEV = False
 SECRET_KEY = "test-only-secret-key-0123456789abcdef"
 
+# 验证码测试基座：保持既有用例的最小语义（风险层/强绑定由专项用例显式打开），
+# 生产默认值仍是 enforce + 强绑定（见 server/conf/settings_defaults.py）。
+CAPTCHA_TICKET_SECRET = "test-only-captcha-ticket-secret"
+CAPTCHA_RISK_MODE = "off"
+CAPTCHA_VERIFY_SIGN_REQUIRED = False
+CAPTCHA_STRICT_BINDING = False
+CAPTCHA_IMAGE_FALLBACK_ENABLED = False
+
 # 测试档显式放行 Host：生产档（server/settings/base.py）对「DEBUG=False 且
 # ALLOWED_HOSTS 为空」已 fail-fast 拒绝启动，测试客户端（testserver）与本地
 # 服务需在此显式声明；setup_test_environment 亦会追加 testserver

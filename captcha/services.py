@@ -4,14 +4,13 @@
 
 其他 app 需要使用验证码能力时，只允许从本模块导入：
 
-- ``CaptchaAuth``：既有图片验证码（DB 存储、一次性消费）；
-- ``InteractiveCaptcha``：交互式验证码编排（挑战 / 校验 / ticket 消费）；
+- ``InteractiveCaptcha``：统一题型编排（挑战 / 校验 / ticket 消费 / 音频）；
 - ``build_captcha_meta`` / ``enabled_captcha_types``：能力清单投影。
 
-禁止直接 import ``captcha.utils`` / ``captcha.backends`` 等内部实现，
-避免 app 间横向依赖扩散。
+禁止直接 import ``captcha.backends`` 等内部实现，避免 app 间横向依赖扩散。
 """
 
+import secrets
 import time
 import uuid
 from typing import Any
@@ -29,36 +28,41 @@ from captcha.const import (
     CAPTCHA_DECISION_DENY,
     CAPTCHA_DECISION_HARD,
     CAPTCHA_DECISION_LIGHT,
-    CAPTCHA_MODE_INTERACTIVE,
     CAPTCHA_SCENE_SWITCHES,
     CAPTCHA_TYPE_CLICK,
+    CAPTCHA_TYPE_IMAGE,
     CAPTCHA_TYPE_POW,
     captcha_globally_enabled,
     captcha_scene_enabled,
-    current_captcha_mode,
     current_risk_mode,
 )
-from captcha.errors import CaptchaExhaustedError, CaptchaInvalidError, CaptchaServiceError
+from captcha.errors import CaptchaInvalidError, CaptchaServiceError
 from captcha.meta import (
     build_captcha_meta,
     challenge_ttl,
     enabled_captcha_types,
-    inspect_challenge,
     max_attempts,
     preview_image_captcha,
     preview_interactive_challenge,
     track_required,
 )
-from captcha.utils import CaptchaAuth
 
 
-def _load_stored(challenge_id: str, captcha_type: str, scene: str) -> dict[str, Any]:
+def _strict_binding() -> bool:
+    return bool(getattr(settings, "CAPTCHA_STRICT_BINDING", True))
+
+
+def _load_stored(challenge_id: str, captcha_type: str, scene: str, sid: str = "") -> dict[str, Any]:
     try:
         stored = captcha_cache.load_challenge(challenge_id)
     except Exception as exc:  # noqa: BLE001 缓存不可用 = 无法校验（fail-closed）
         raise CaptchaInvalidError() from exc
     if not stored or stored.get("type") != captcha_type or stored.get("scene") != scene:
         raise CaptchaInvalidError()
+    if _strict_binding():
+        expected = str(stored.get("sid_hash") or "")
+        if not sid or not expected or expected != sig.hash_value(sid):
+            raise CaptchaInvalidError()
     return stored
 
 
@@ -69,7 +73,7 @@ def _attempts(challenge_id: str) -> int:
         raise CaptchaInvalidError() from exc
     if attempts > max_attempts():
         captcha_cache.delete_challenge(challenge_id)
-        raise CaptchaExhaustedError()
+        raise CaptchaInvalidError()
     return attempts
 
 
@@ -83,7 +87,12 @@ def _answer_passed(
     input_mode: str,
 ) -> bool:
     passed = bool(backend.verify(stored.get("secret") or {}, answer, difficulty=difficulty))
-    if passed and track_required() and captcha_type != CAPTCHA_TYPE_POW and input_mode != "keyboard":
+    if (
+        passed
+        and track_required()
+        and captcha_type not in (CAPTCHA_TYPE_POW, CAPTCHA_TYPE_IMAGE)
+        and input_mode != "keyboard"
+    ):
         min_points = 3 if captcha_type == CAPTCHA_TYPE_CLICK else 2
         passed = bool(validate_track(track, min_points=min_points))
     return passed
@@ -99,6 +108,7 @@ def _build_payload(
     decision: str,
     assessed: risk.RiskResult | None,
     enforce: bool,
+    sid_hash: str = "",
 ) -> dict[str, Any]:
     return {
         "type": generated.type,
@@ -111,6 +121,8 @@ def _build_payload(
         "fp": ctx.fp,
         "ip_hash": ctx.ip_hash,
         "difficulty": difficulty,
+        "sid_hash": sid_hash,
+        "asset_id": str((generated.secret or {}).get("asset_id") or ""),
     }
 
 
@@ -133,7 +145,7 @@ class InteractiveCaptcha:
     ) -> dict[str, Any]:
         if scene not in CAPTCHA_SCENE_SWITCHES:
             raise CaptchaInvalidError()
-        if current_captcha_mode() != CAPTCHA_MODE_INTERACTIVE or not captcha_scene_enabled(scene):
+        if not captcha_globally_enabled() or not captcha_scene_enabled(scene):
             raise CaptchaInvalidError()
         if action and not tickets.action_allowed_for_scene(scene, action):
             raise CaptchaInvalidError()
@@ -179,6 +191,7 @@ class InteractiveCaptcha:
         generated = backend.generate(difficulty)
         challenge_id = uuid.uuid4().hex
         ttl = challenge_ttl()
+        sid = secrets.token_urlsafe(32)
         payload = _build_payload(
             ctx,
             scene=scene,
@@ -188,6 +201,7 @@ class InteractiveCaptcha:
             decision=decision,
             assessed=assessed,
             enforce=enforce,
+            sid_hash=sig.hash_value(sid),
         )
         ck = ""
         if tickets.verify_sign_enforced():
@@ -197,7 +211,10 @@ class InteractiveCaptcha:
             captcha_cache.store_challenge(challenge_id, payload, ttl)
         except Exception as exc:  # noqa: BLE001 缓存不可用 = 无法出题（fail-closed）
             raise CaptchaInvalidError() from exc
-        return self._challenge_result(challenge_id, generated, ttl, ck, enforce, decision, difficulty, ctx, assessed)
+        sig.record_challenge(ip, fp=ctx.fp, captcha_type=generated.type)
+        result = self._challenge_result(challenge_id, generated, ttl, ck, enforce, decision, difficulty, ctx, assessed)
+        result["_sid"] = sid
+        return result
 
     def _challenge_result(
         self,
@@ -222,11 +239,15 @@ class InteractiveCaptcha:
             result = {"challenge_id": challenge_id, "type": generated.type, "ttl": ttl, **generated.payload}
         if ck:
             result["ck"] = ck
-        if enforce:
-            result["decision"] = decision
-            result["difficulty"] = difficulty
         if assessed is not None:
-            emit_decision(ctx, assessed, phase="challenge", captcha_type=generated.type, difficulty=difficulty)
+            emit_decision(
+                ctx,
+                assessed,
+                phase="challenge",
+                captcha_type=generated.type,
+                difficulty=difficulty,
+                asset_id=str((generated.secret or {}).get("asset_id") or ""),
+            )
         else:
             telemetry.emit(
                 phase="challenge", scene=ctx.scene, action=ctx.action, mode=current_risk_mode(), type=generated.type
@@ -254,11 +275,13 @@ class InteractiveCaptcha:
         accept_language: str = "",
         sec_ch_ua: str = "",
         xff_inconsistent: bool = False,
+        sid: str = "",
     ) -> dict[str, Any]:
         started = time.monotonic()
+        sig.record_verify(ip)
         if not self._validate_action(scene, action):
             raise CaptchaInvalidError()
-        stored = _load_stored(challenge_id, captcha_type, scene)
+        stored = _load_stored(challenge_id, captcha_type, scene, sid)
         backend = get_backend(captcha_type)
         if backend is None:
             captcha_cache.delete_challenge(challenge_id)
@@ -312,6 +335,9 @@ class InteractiveCaptcha:
             ip=ip,
             merged=merged,
             enforce=enforce,
+            sid=sid,
+            ticket_fp=str(stored.get("fp") or ctx.fp),
+            ticket_ip=str(stored.get("ip_hash") or ctx.ip_hash),
         )
 
     @staticmethod
@@ -361,11 +387,10 @@ class InteractiveCaptcha:
         disposal.link_login_lock(account, ip)
         sig.record_account_fail(account)
         sig.record_hist(ctx.fp, False)
-        attempts_left = max(limit - attempts, 0)
-        if attempts_left <= 0:
+        if attempts >= limit:
             captcha_cache.delete_challenge(challenge_id)
-            raise CaptchaExhaustedError()
-        return {"passed": False, "attempts_left": attempts_left}
+            raise CaptchaInvalidError()
+        return {"passed": False}
 
     def _verify_passed(
         self,
@@ -378,6 +403,9 @@ class InteractiveCaptcha:
         ip: str,
         merged: risk.RiskResult | None,
         enforce: bool,
+        sid: str = "",
+        ticket_fp: str = "",
+        ticket_ip: str = "",
     ) -> dict[str, Any]:
         from captcha import disposal
 
@@ -389,15 +417,16 @@ class InteractiveCaptcha:
         ttl = tickets.ticket_ttl_for(ticket_mode)
         try:
             if not captcha_cache.reserve_ticket_slot(ip):
-                raise CaptchaExhaustedError()
+                raise CaptchaInvalidError()
             ticket = tickets.issue_ticket(
                 scene=scene,
                 action=action,
                 mode=ticket_mode,
                 captcha_type=captcha_type,
                 ttl=ttl,
-                fp=ctx.fp,
-                ip_hash=ctx.ip_hash,
+                fp=ticket_fp or ctx.fp,
+                ip_hash=ticket_ip or ctx.ip_hash,
+                sid_hash=sig.hash_value(sid),
             )
         except CaptchaServiceError:
             raise
@@ -406,13 +435,22 @@ class InteractiveCaptcha:
             raise CaptchaInvalidError() from exc
         return {"passed": True, "ticket": ticket, "expires_in": ttl}
 
-    def consume_ticket(self, ticket: str, scene: str, ip: str = "", action: str = "", fp: str = "") -> bool:
-        """一次性消费签名 ticket 并校验 (scene, action) 绑定；缓存故障按 fail-closed 拒绝。"""
+    def consume_ticket(
+        self, ticket: str, scene: str, ip: str = "", action: str = "", fp: str = "", sid: str = ""
+    ) -> bool:
+        """一次性消费签名 ticket 并校验 (scene, action, sid, fp) 强绑定。"""
         ticket = str(ticket or "").strip()
         if not ticket:
             return False
         try:
-            payload = tickets.consume_ticket_payload(ticket, scene, action=action, ip_hash=sig.hash_ip(ip))
+            payload = tickets.consume_ticket_payload(
+                ticket,
+                scene,
+                action=action,
+                ip_hash=sig.hash_ip(ip),
+                fp_hash=sig.hash_value(fp),
+                sid_hash=sig.hash_value(sid),
+            )
         except Exception:  # noqa: BLE001 缓存不可用 = 拒绝
             return False
         passed = payload is not None
@@ -426,19 +464,34 @@ class InteractiveCaptcha:
             key_id=str((payload or {}).get("kid") or ""),
         )
         if ip:
+            sig.record_ticket_consume(ip)
             captcha_cache.release_ticket_slot(ip)
         return passed
 
+    def audio(self, challenge_id: str, sid: str = "") -> str:
+        """读取图片题音频文本；题型 / sid 不符一律按无效挑战处理。"""
+        try:
+            stored = captcha_cache.load_challenge(challenge_id)
+        except Exception as exc:  # noqa: BLE001
+            raise CaptchaInvalidError() from exc
+        if not stored or stored.get("type") != CAPTCHA_TYPE_IMAGE:
+            raise CaptchaInvalidError()
+        if _strict_binding():
+            expected = str(stored.get("sid_hash") or "")
+            if not sid or not expected or expected != sig.hash_value(sid):
+                raise CaptchaInvalidError()
+        text = str((stored.get("secret") or {}).get("audio_text") or "")
+        if not text:
+            raise CaptchaInvalidError()
+        return text
+
 
 __all__ = [
-    "CaptchaAuth",
-    "CaptchaExhaustedError",
     "CaptchaInvalidError",
     "CaptchaServiceError",
     "InteractiveCaptcha",
     "build_captcha_meta",
     "enabled_captcha_types",
-    "inspect_challenge",
     "preview_image_captcha",
     "preview_interactive_challenge",
 ]

@@ -35,6 +35,22 @@ python manage.py sync_menu_permissions --dry-run   # 权限点缺口 0
 - **PoW 预算**：`CAPTCHA_POW_IP_BUDGET`（默认 600/h）防止算力放大器；低配设备可通过
   `CAPTCHA_POW_BITS_LIGHT/HARD` 下调，但不要超过 `CAPTCHA_POW_BITS_MAX`（默认 20）。
 
+## 二·补充：影子基线与压测脚本
+
+```bash
+# 合成流量（按画像轮换：干净 / headless / 非法时区 / 缺 env；默认 2.1s 间隔避开 30/min）
+python loadtest/captcha_shadow_baseline.py --base-url http://127.0.0.1:8896 --rounds 50
+
+# 独立环境 k6 压测（只压 challenge；429 是限流预期，5xx 必须为 0）
+k6 run -e BASE_URL=https://example.com loadtest/captcha_k6.js
+
+# 协议红队烟雾（旧路由 404 / 无签名 verify / 未知 challenge / 旧字段登录）
+python loadtest/captcha_attack.py --base-url http://127.0.0.1:8896
+```
+
+影子期真实基线仍以 `CaptchaLog.would_decision` 与「验证数据」页签为准；脚本只用于
+预发/合成流量，不替代真实流量观察。
+
 ## 三、观测与告警
 
 - 页面：系统设置 → 验证码 → 验证数据（需要 `list:SecurityCaptchaStats` / `list:SecurityCaptchaLog`）。
@@ -64,7 +80,7 @@ python manage.py sync_menu_permissions --dry-run   # 权限点缺口 0
 1. 设置页把 `CAPTCHA_RISK_MODE` 改为 `shadow`（保留观测、恢复历史体验）或 `off`（风险层完全停跑）。
 2. `CAPTCHA_LOG_ENABLED=False` 可进一步停止写入（纯观测开关）。
 3. 阶梯处置可置 `CAPTCHA_FAIL_STEP=0,0,0`（只记录不处置）。
-4. 题型回退：从 `CAPTCHA_INTERACTIVE_TYPES` 摘除 `pow` / `wordorder` 即可。
+4. 题型回退：从 `CAPTCHA_ENABLED_TYPES` 摘除对应题型即可（`image` 由回退开关单独控制）。
 
 ## 六、升级注意
 
@@ -87,5 +103,5 @@ python manage.py sync_menu_permissions --dry-run   # 权限点缺口 0
   allow 路径另有 <300ms 服务端用例；「无感路径端到端 P50」仍需结合 APM/前端 RUM。
 - **零第三方外发**：验证码 E2E 监听登录 + PoW 全链路请求，断言目标均为同源；
   CSP `connect-src 'self'` 与 `pnpm test:e2e:csp` 双重守护。
-- **`icon` 题型 / ML 设备标识**：按方案明确不做；`register` / `reset` 依赖上游发码
-  端点的人机校验（覆盖门禁中显式豁免）。
+- **`icon` 题型**：已提供程序化矢量图标（默认权重 0，按需启用）；ML 设备标识仍不做。
+  `register` / `reset` 依赖上游发码端点的人机校验（覆盖门禁中显式豁免）。
