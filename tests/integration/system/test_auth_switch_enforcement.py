@@ -35,6 +35,7 @@ class TestCapabilitiesEndpoint:
             "captcha_mode",
             "captcha_types",
             "captcha_image_fallback",
+            "captcha_flow",
             "token",
             "encrypted",
         }

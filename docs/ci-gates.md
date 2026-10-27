@@ -16,6 +16,7 @@
 | `lint.yml` | File length gate | 单文件 >500 行新增即失败（存量基线只减不增） | `scripts/check_file_length.py` | `python scripts/check_file_length.py` |
 | `lint.yml` | Function length gate | 单函数 ≥100 行新增即失败（存量基线只减不增，AST 计行） | `scripts/check_function_length.py` | `python scripts/check_function_length.py` |
 | `lint.yml` | Ledger id gate | 源码 / 测试 / 种子 / 配置里禁止出现 `ADR-090`、`T03-01`、`O10-2`、`TG-3` 一类台账编号（只允许提交信息与 `docs/` 台账本体） | `scripts/check_ledger_ids.py` | `python scripts/check_ledger_ids.py` |
+| `lint.yml` | Captcha coverage gate | 匿名写端点必须调用 `require_human` / `check_token_and_captcha`，或在脚本 `EXEMPTIONS` 写明豁免理由（新增匿名接口漏挂人机校验 = CI 红） | `scripts/check_captcha_coverage.py` | `python scripts/check_captcha_coverage.py` |
 | `lint.yml` | Menu title gate | 视图类与 `@action` 的 docstring 首行 ≤24 字（首行 = 菜单显示名 / 操作日志 module，详细说明下沉后续段落） | `scripts/check_menu_titles.py` | `python scripts/check_menu_titles.py` |
 | `lint.yml` | Doc facts gate | 文档"当前事实"防漂移（版本 / 端口 / workflow 参数等，FACTS 表逐条登记） | `scripts/check_doc_facts.py` | `python scripts/check_doc_facts.py` |
 | `lint.yml` | Doc index gate | 文档索引覆盖（防孤儿文档：`docs/` 内容型文档必须登记索引）；`plans/archive/` 双向登记（逐篇登记 plans/README，且不得出现在 docs/README 主索引） | `scripts/check_doc_index.py` | `python scripts/check_doc_index.py` |

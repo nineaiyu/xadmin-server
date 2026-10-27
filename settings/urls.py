@@ -9,6 +9,7 @@ from rest_framework.routers import SimpleRouter
 from common.core.routers import NoDetailRouter
 from settings.views.basic import BasicSettingViewSet
 from settings.views.block_ip import SecurityBlockIpViewSet
+from settings.views.captcha_insight import SecurityCaptchaLogViewSet, SecurityCaptchaStatsViewSet
 from settings.views.email import EmailServerSettingViewSet
 from settings.views.ldap import LdapServerSettingViewSet
 from settings.views.notify_im import ImNotifySettingViewSet
@@ -21,6 +22,7 @@ from settings.views.security import (
     SecurityCaptchaCodeViewSet,
     SecurityCaptchaGeneralViewSet,
     SecurityCaptchaInteractiveViewSet,
+    SecurityCaptchaRiskViewSet,
     SecurityLoginAuthViewSet,
     SecurityLoginLimitViewSet,
     SecurityMFAViewSet,
@@ -52,6 +54,11 @@ no_detail_router.register("verify", SecurityVerifyCodeViewSet, basename="verify-
 no_detail_router.register("captcha/general", SecurityCaptchaGeneralViewSet, basename="captcha-general")
 no_detail_router.register("captcha", SecurityCaptchaCodeViewSet, basename="captcha-code")
 no_detail_router.register("captcha/interactive", SecurityCaptchaInteractiveViewSet, basename="captcha-interactive")
+no_detail_router.register("captcha/risk", SecurityCaptchaRiskViewSet, basename="captcha-risk")
+
+# 观测面是集合 / 聚合端点（list 语义），走标准 router 而不是 NoDetailRouter
+router.register("captcha/log", SecurityCaptchaLogViewSet, basename="captcha-log")
+router.register("captcha/stats", SecurityCaptchaStatsViewSet, basename="captcha-stats")
 
 no_detail_router.register("login/limit", SecurityLoginLimitViewSet, basename="security-login-limit")
 no_detail_router.register("login/auth", SecurityLoginAuthViewSet, basename="security-login-auth")

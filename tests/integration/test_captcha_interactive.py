@@ -65,6 +65,7 @@ def _verify(api_client, challenge, answer=None):
             "type": challenge["type"],
             "scene": "login",
             "answer": _answer(challenge["challenge_id"]) if answer is None else answer,
+            "action": "identity.login.basic",
         },
         format="json",
     )
@@ -175,7 +176,13 @@ class TestChallengeVerifyLogin:
     def test_unknown_challenge_returns_400(self, api_client, interactive_login):
         resp = api_client.post(
             VERIFY_URL,
-            {"challenge_id": "does-not-exist", "type": "slide", "scene": "login", "answer": {"x": 1}},
+            {
+                "challenge_id": "does-not-exist",
+                "type": "slide",
+                "scene": "login",
+                "answer": {"x": 1},
+                "action": "identity.login.basic",
+            },
             format="json",
         )
         assert resp.status_code == 400
@@ -204,6 +211,71 @@ class TestChallengeVerifyLogin:
         login = api_client.post(
             LOGIN_URL,
             {"username": "zhangsan", "password": "Test@123456", "captcha_key": key, "captcha_code": answer},
+            format="json",
+        )
+        assert login.status_code == 400
+
+
+class TestActionBindingAPI:
+    """action 强绑定：缺失 / 越权与答案错误同形失败；跨动作消费必败。"""
+
+    def test_verify_without_action_rejected(self, api_client, interactive_login):
+        challenge = _challenge(api_client)
+        resp = api_client.post(
+            VERIFY_URL,
+            {
+                "challenge_id": challenge["challenge_id"],
+                "type": challenge["type"],
+                "scene": "login",
+                "answer": _answer(challenge["challenge_id"]),
+            },
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert resp.data["error"] == "captcha_invalid"
+
+    def test_verify_with_foreign_action_rejected(self, api_client, interactive_login):
+        challenge = _challenge(api_client)
+        resp = api_client.post(
+            VERIFY_URL,
+            {
+                "challenge_id": challenge["challenge_id"],
+                "type": challenge["type"],
+                "scene": "login",
+                "answer": _answer(challenge["challenge_id"]),
+                "action": "invite.accept",
+            },
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert resp.data["error"] == "captcha_invalid"
+
+    def test_send_code_ticket_rejected_for_login(self, api_client, normal_user, interactive_login):
+        # 挪用方向：发码端点换来的票（scene=login, action=verify_code.send）
+        # 拿去做账密登录必须失败；业务请求伪造 action 字段不影响结果
+        # （消费动作由服务端常量单源，恒为 identity.login.basic）
+        challenge = _challenge(api_client)
+        verify = api_client.post(
+            VERIFY_URL,
+            {
+                "challenge_id": challenge["challenge_id"],
+                "type": challenge["type"],
+                "scene": "login",
+                "answer": _answer(challenge["challenge_id"]),
+                "action": "auth.verify_code.send:login",
+            },
+            format="json",
+        )
+        assert verify.data["data"]["passed"] is True
+        ticket = verify.data["data"]["ticket"]
+        login = api_client.post(
+            LOGIN_URL,
+            {
+                "username": "zhangsan",
+                "password": "Test@123456",
+                "captcha_ticket": ticket,
+                "action": "identity.login.basic",
+            },
             format="json",
         )
         assert login.status_code == 400

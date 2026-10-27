@@ -476,3 +476,33 @@ class TestAdrStatus:
         )
         violations, _, _ = cas.collect_violations(tmp_path)
         assert any("与文件内状态" in item for item in violations)
+
+
+# ---------------------------------------------------------------------------
+# check_captcha_coverage.py
+# ---------------------------------------------------------------------------
+
+
+class _CoveredHumanView:
+    def post(self):
+        return require_human(self.request, "login", "identity.login.basic")  # noqa: F821
+
+
+class _UncoveredHumanView:
+    def post(self):
+        return None
+
+
+class TestCaptchaCoverageGate:
+    @pytest.fixture
+    def gate(self):
+        return load_gate("captcha_coverage_gate_under_test", "check_captcha_coverage")
+
+    def test_covered_view_detected_by_source(self, gate):
+        assert gate.is_covered(_CoveredHumanView) is True
+        assert gate.is_covered(_UncoveredHumanView) is False
+
+    def test_exemption_table_has_reasons(self, gate):
+        assert gate.is_exempt("api/identity/^auth/captcha/challenge$") is True
+        assert gate.is_exempt("api/identity/^some/new/write$") is False
+        assert all(reason for _pattern, reason in gate.EXEMPTIONS)

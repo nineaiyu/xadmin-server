@@ -372,6 +372,9 @@ from settings.serializers.security_captcha import (
 from settings.serializers.security_captcha import (
     SecurityCaptchaInteractiveSerializer as SecurityCaptchaInteractiveSerializer,
 )
+from settings.serializers.security_captcha import (
+    SecurityCaptchaRiskSerializer as SecurityCaptchaRiskSerializer,
+)
 from settings.serializers.security_mfa import (  # noqa: E402,F401 显式再导出（no_implicit_reexport）
     SecurityMFASerializer as SecurityMFASerializer,
 )

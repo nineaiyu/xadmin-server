@@ -1834,5 +1834,126 @@
    "method": "",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "015bfdf2-9b11-436e-b450-4f076da6e854",
+  "fields": {
+   "created_time": "2026-10-26T13:13:49.278Z",
+   "updated_time": "2026-10-26T13:13:49.278Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4d302dbd-d4d8-43be-ab62-1bbdcffc7abd",
+   "menu_type": 2,
+   "name": "list:SecurityCaptchaLog",
+   "rank": 10000,
+   "path": "api/settings/captcha/log$",
+   "component": null,
+   "is_active": true,
+   "meta": "d23533b5-2d9e-46d2-8f2b-56d9311cd6d7",
+   "method": "GET",
+   "model": [
+    "5f8bdae6-bbac-4866-880c-20cfd04ef2f0"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "ae9bb300-203b-4531-9c7a-268fbb95d124",
+  "fields": {
+   "created_time": "2026-10-26T13:13:49.283Z",
+   "updated_time": "2026-10-26T13:13:49.283Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4d302dbd-d4d8-43be-ab62-1bbdcffc7abd",
+   "menu_type": 2,
+   "name": "list:SecurityCaptchaStats",
+   "rank": 10000,
+   "path": "api/settings/captcha/stats$",
+   "component": null,
+   "is_active": true,
+   "meta": "f3769ba5-5198-4851-849f-df4cec1256e9",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5790f17b-7acb-4dc7-804c-b57d62b372fb",
+  "fields": {
+   "created_time": "2026-10-26T14:57:08.251Z",
+   "updated_time": "2026-10-26T14:57:08.251Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4d302dbd-d4d8-43be-ab62-1bbdcffc7abd",
+   "menu_type": 2,
+   "name": "retrieve:SecurityCaptchaRisk",
+   "rank": 10000,
+   "path": "api/settings/captcha/risk$",
+   "component": null,
+   "is_active": true,
+   "meta": "54e67674-1c00-49fa-bf3a-5506196ea548",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a69af74c-4bae-4251-b1e8-2d68a6685d0b",
+  "fields": {
+   "created_time": "2026-10-26T14:57:08.256Z",
+   "updated_time": "2026-10-26T14:57:08.256Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4d302dbd-d4d8-43be-ab62-1bbdcffc7abd",
+   "menu_type": 2,
+   "name": "partialUpdate:SecurityCaptchaRisk",
+   "rank": 10001,
+   "path": "api/settings/captcha/risk$",
+   "component": null,
+   "is_active": true,
+   "meta": "0754d905-99ac-40ee-807d-6767c88e3fbb",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "897924e0-959a-403e-8e24-1029bc62e49d",
+  "fields": {
+   "created_time": "2026-10-26T14:57:08.258Z",
+   "updated_time": "2026-10-26T14:57:08.258Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4d302dbd-d4d8-43be-ab62-1bbdcffc7abd",
+   "menu_type": 2,
+   "name": "rules:SecurityCaptchaRisk",
+   "rank": 10002,
+   "path": "api/settings/captcha/risk/rules$",
+   "component": null,
+   "is_active": true,
+   "meta": "d9ff56ba-f8ad-47ea-b9a6-31e31fa407ce",
+   "method": "GET",
+   "model": []
+  }
  }
 ]

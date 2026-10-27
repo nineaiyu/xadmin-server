@@ -64,6 +64,7 @@ class Command(BaseCommand):
             self._check_permissions()
         self._check_seeds()
         self._check_modules()
+        self._check_captcha_risk()
         self._check_ai_declarations()
         self._check_frontend_contract()
         self._check_version_sync()
@@ -348,6 +349,41 @@ class Command(BaseCommand):
                 f"停用模块的周期任务仍启用：{'、'.join(stale)}",
                 "重启进程（启动期对账会自动清理重建周期任务）",
             )
+
+    def _check_captcha_risk(self) -> None:
+        """enforce 档的信任网段兜底：白名单为空且私网信任关闭 → 可能误拦办公网。"""
+        mode = str(getattr(settings, "CAPTCHA_RISK_MODE", "off") or "off").strip().lower()
+        if mode not in ("shadow", "enforce"):
+            self._report(PASS, "验证码风险档", f"{mode}（风险决策未启用）")
+            return
+        whitelist = list(getattr(settings, "SECURITY_LOGIN_IP_WHITE_LIST", []) or [])
+        trust_private = bool(getattr(settings, "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS", True))
+        if mode == "enforce" and not whitelist and not trust_private:
+            self._report(
+                WARN,
+                "验证码风险档",
+                "enforce 且信任网段为空（私网兜底已关闭）",
+                "配置 SECURITY_LOGIN_IP_WHITE_LIST，或在验证码风险策略中开启「信任私网」",
+            )
+            return
+        if mode == "enforce":
+            try:
+                from captcha.models import CaptchaLog
+
+                shadow = CaptchaLog.objects.filter(mode="shadow")
+                samples = shadow.count()
+                days = shadow.values("ts__date").distinct().count()
+                if samples < 1000 or days < 3:
+                    self._report(
+                        WARN,
+                        "验证码影子期",
+                        f"样本 {samples} / 覆盖 {days} 天（建议 ≥1000 / ≥3 天）",
+                        "先切 shadow 积累基线并人工核对 deny 误拦，再开 enforce",
+                    )
+                    return
+            except Exception:  # noqa: BLE001 数据库不可用时由数据库自检项报告
+                pass
+        self._report(PASS, "验证码风险档", f"{mode}（信任网段 {len(whitelist)} 条 / 私网兜底 {trust_private}）")
 
     def _check_ai_declarations(self) -> None:
         """AI 动作声明自检：发现结果与路由面对齐（各应用 ``ai_declarations.py``）。

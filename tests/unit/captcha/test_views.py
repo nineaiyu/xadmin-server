@@ -2,6 +2,7 @@
 """captcha 视图集成测试（图片 / 刷新 / 过期处理）。"""
 
 import pytest
+from django.test import override_settings
 
 from captcha.models import CaptchaStore
 from captcha.utils import CaptchaAuth
@@ -49,6 +50,7 @@ class TestCaptchaRefresh:
 
 
 class TestCaptchaAudio:
+    @override_settings(CAPTCHA_FLITE_PATH=None)
     def test_no_flite_returns_404(self, api_client):
         _, key = _make_store()
         resp = api_client.get(f"/api/system/captcha/audio/{key}.wav")

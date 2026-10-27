@@ -129,15 +129,28 @@ sum by (cache) (rate(xadmin_cache_requests_total{result="hit"}[5m]))
 ## 十、交互式验证码挑战缓存（2026-10-26）
 
 挑战 / 尝试计数 / 一次性 ticket 均为 2 分钟级短命数据，走 Django cache（Redis），
-与图片验证码的 DB 表 `CaptchaStore` 并存、互不影响。键前缀集中登记在
-`captcha/cache.py`，并纳入 `scripts/check_cache_keys.py --strict`。
+与图片验证码的 DB 表 `CaptchaStore` 并存、互不影响。挑战 / 尝试计数 / 未消费计数的键前缀
+集中登记在 `captcha/cache.py`；签名票据与 verify 加签的键前缀登记在 `captcha/tickets.py`，
+均纳入 `scripts/check_cache_keys.py --strict`。
 
 | 键 | TTL | 说明 |
 |----|-----|------|
 | `captcha_challenge_{challenge_id}` | `CAPTCHA_CHALLENGE_TTL`（默认 120s） | 题型 + scene + 服务端答案（JSON），答案永不下发客户端 |
 | `captcha_attempt_{challenge_id}` | 与挑战同 TTL | 已尝试次数；超 `CAPTCHA_MAX_ATTEMPTS` 即删挑战 |
-| `captcha_ticket_{sha256}` | `CAPTCHA_TICKET_TTL`（默认 120s） | 一次性 ticket 的 sha256 + scene；消费走 `atomic_get_delete` |
+| `captcha_nonce_{n}` | 票据 TTL + 60s | 结构化签名票据的一次性 nonce（`captcha/tickets.py`）；消费走 `atomic_get_delete` |
+| `captcha_seen_{nonce}` | 300s | verify 请求签名的 nonce 防重放登记（`cache.add`，重复即拒） |
 | `captcha_ticket_inflight_{ip}` | 300s | 同 IP 未消费 ticket 计数，上限 3（防囤票重放） |
+| `captcha_stats_{hours}` | 60s | 观测大盘聚合缓存（`captcha/stats.py`，键为窗口小时数；缓存故障直接现算，fail-open） |
+| `captcha_freq_ip_{ip_hash}` / `captcha_freq_fp_{fp}` | 60s | 挑战频率信号（同 IP >10/分、同指纹并发 >3） |
+| `captcha_hist_{fp}` | 7d | 指纹历史信誉（成功 ≥3 且无失败 → `hist_good` 负分） |
+| `captcha_acct_fail_{account_hash}` | 900s | 账号近期失败计数（`acct_fail` 信号） |
+| `captcha_type_recent_{fp/ip}` | 60s | 题型轮换防重复（同指纹/IP 短时间内不重复同型题） |
+| `captcha_pow_budget_{ip_hash}` | 3600s | 单 IP 每小时 PoW 验签预算（防算力放大器） |
+| `captcha_dim_fail_{dim}_{value}` | 3600s | 三维度失败阶梯计数（支撑「20 次/1h」档） |
+| `captcha_cooldown_{dim}_{value}` | 900s / 3600s | 冷却期（第二/第三档），冷却内一律同形失败 |
+| `captcha_alert_total_{window}` / `_deny_{window}` | 告警窗口 | 窗口内决策/拦截量与拦截率 |
+| `captcha_alert_sent_{kind}` | 告警窗口 | 告警去重（同窗口只发一次） |
 
 失效语义：Redis 不可用时 challenge / verify / ticket 消费一律 **fail-closed**
-（拒绝），不降级为放行；挑战通过后立即删除挑战键，ticket 消费即删除，不做主动失效。
+（拒绝），不降级为放行；挑战通过后立即删除挑战键，ticket 消费即删除（nonce
+一次性取回），不做主动失效。

@@ -81,6 +81,7 @@ ROUTE_IGNORE_URL = [
     "^/api/settings/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
     "^/api/system/dashboard/",  # 忽略dashboard路由
     "^/api/system/captcha",  # 忽略图片验证码路由
+    "^/api/identity/auth/captcha",  # 忽略挑战/校验/检查端点（高 QPS 匿名流量，独立观测）
     "^/api/mfa/",  # 忽略 MFA 二次验证路由
     "^/api/identity/api-applications/scope-options$",  # 接口范围选项：白名单元数据，无需再配权限点
     "^/api/identity/api-applications/grant-options$",  # 资源授权目录：白名单元数据，无需再配权限点

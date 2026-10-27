@@ -56,6 +56,7 @@
 | [ops/upgrade-4x-to-5x.md](ops/upgrade-4x-to-5x.md) | **4.x → 5.x 存量升级操作手册**：清库重建 + `legacy_export` / `legacy_import` 回灌（判定 / 逐步命令 / 验收清单 / 回滚 / 实测记录） |
 | [ops/upgrade-5.0.md](ops/upgrade-5.0.md) | **4.x → 5.0 升级指南**：迁移链合并说明 / 账本认领（`upgrade_ledger --apply`）/ 三步升级（安装器 · compose · 源码）/ 验证与回滚 / FAQ |
 | [ops/runbook.md](ops/runbook.md) | 故障处置（常见故障 → 处置步骤） |
+| [ops/captcha-risk-runbook.md](ops/captcha-risk-runbook.md) | **验证码风险分级运行手册**：`off/shadow/enforce` 切换顺序与硬前置、观测指标与告警、误拦/票据失效/音频/PoW/Redis/Celery 故障处置、回退与升级注意 |
 | [ops/scale-out.md](ops/scale-out.md) | 横向扩展 runbook（单机多副本：迁移一次性 / beat 单例 / nginx 多后端轮询 + 验证与回退） |
 | [ops/blue-green.md](ops/blue-green.md) | 零停机发布 runbook（叠加滚动：迁移兼容性 / 加新摘旧 / 回滚与边界） |
 | [ops/pitr.md](ops/pitr.md) | WAL 归档与时间点恢复（PITR） |

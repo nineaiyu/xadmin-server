@@ -115,7 +115,9 @@ class TestCaptchaAudioBranches:
         resp = api_client.get("/api/system/captcha/audio/notexistkey.wav")
         assert resp.status_code == 410
 
-    @override_settings(CAPTCHA_FLITE_PATH=FLITE, CAPTCHA_CHALLENGE_FUNCT="captcha.helpers.random_char_challenge")
+    @override_settings(
+        CAPTCHA_FLITE_PATH=FLITE, CAPTCHA_SOX_PATH=None, CAPTCHA_CHALLENGE_FUNCT="captcha.helpers.random_char_challenge"
+    )
     def test_non_math_challenge_text_joined_by_comma(self, api_client):
         """非算数挑战时应把挑战文本逐字符用逗号拼接后交给 flite。"""
         key = _make_store(challenge="ab")
@@ -130,6 +132,7 @@ class TestCaptchaAudioBranches:
 
     @override_settings(
         CAPTCHA_FLITE_PATH=FLITE,
+        CAPTCHA_SOX_PATH=None,
         CAPTCHA_CHALLENGE_FUNCT="captcha.helpers.math_challenge",
     )
     def test_math_challenge_words_replaced(self, api_client):
@@ -141,7 +144,9 @@ class TestCaptchaAudioBranches:
         args = fake_call.call_args[0][0]
         assert args[:3] == [FLITE, "-t", "3minus1="]
 
-    @override_settings(CAPTCHA_FLITE_PATH=FLITE, CAPTCHA_CHALLENGE_FUNCT="captcha.helpers.random_char_challenge")
+    @override_settings(
+        CAPTCHA_FLITE_PATH=FLITE, CAPTCHA_SOX_PATH=None, CAPTCHA_CHALLENGE_FUNCT="captcha.helpers.random_char_challenge"
+    )
     def test_wav_generated_returns_audio_response(self, api_client):
         """flite 产出 wav 文件时应以 audio/wav 附件返回。"""
         key = _make_store(challenge="cd")

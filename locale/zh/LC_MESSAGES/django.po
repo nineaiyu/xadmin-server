@@ -12918,6 +12918,202 @@ msgstr "票据有效期（秒）"
 msgid "Attempts left"
 msgstr "剩余尝试次数"
 
+#: captcha/serializers.py
+msgid "Server action"
+msgstr "服务端动作"
+
+#: captcha/serializers.py
+msgid "Server-side action constant the issued ticket binds to"
+msgstr "票据绑定的服务端动作常量"
+
+#: captcha/serializers.py
+msgid "Generation time"
+msgstr "生成时间"
+
+#: captcha/serializers.py
+msgid "Client epoch seconds; validated within the verify sign time window"
+msgstr "客户端时间戳（秒）；在 verify 签名时间窗内校验"
+
+#: captcha/serializers.py
+msgid "Nonce"
+msgstr "随机数"
+
+#: captcha/serializers.py
+msgid "One-time random string bound to the signed verify request"
+msgstr "绑定签名 verify 请求的一次性随机串"
+
+#: captcha/serializers.py
+msgid "HMAC signature over the canonical verify payload keyed by ck"
+msgstr "以 ck 为密钥对规范化 verify 载荷的 HMAC 签名"
+
+#: captcha/serializers.py
+msgid "Session key"
+msgstr "会话密钥"
+
+#: captcha/serializers.py
+msgid "One-time verify sign key; present only when verify signing is enforced"
+msgstr "一次性验签会话密钥；仅在启用 verify 加签时下发"
+
+#: captcha/models.py
+msgid "Challenge issued"
+msgstr "签发挑战"
+
+#: captcha/models.py
+msgid "Answer verified"
+msgstr "答案校验"
+
+#: captcha/models.py
+msgid "Ticket consumed"
+msgstr "票据消费"
+
+#: captcha/models.py
+msgid "Risk decision"
+msgstr "风险决策"
+
+#: captcha/models.py
+msgid "Event time"
+msgstr "事件时间"
+
+#: captcha/models.py
+msgid "Phase"
+msgstr "阶段"
+
+#: captcha/models.py
+msgid "Scene"
+msgstr "场景"
+
+#: captcha/models.py
+msgid "Difficulty"
+msgstr "难度"
+
+#: captcha/models.py
+msgid "Decision"
+msgstr "决策"
+
+#: captcha/models.py
+msgid "Shadow decision"
+msgstr "影子决策"
+
+#: captcha/models.py
+msgid "Risk score"
+msgstr "风险分"
+
+#: captcha/models.py
+msgid "Risk reasons"
+msgstr "风险原因"
+
+#: captcha/models.py
+msgid "Attempts"
+msgstr "尝试次数"
+
+#: captcha/models.py
+msgid "Latency (ms)"
+msgstr "耗时（毫秒）"
+
+#: captcha/models.py
+msgid "IP hash"
+msgstr "IP 哈希"
+
+#: captcha/models.py
+msgid "Fingerprint hash"
+msgstr "指纹哈希"
+
+#: captcha/models.py
+msgid "UA class"
+msgstr "UA 类别"
+
+#: captcha/models.py
+msgid "Env version"
+msgstr "环境版本"
+
+#: captcha/models.py
+msgid "PoW bits"
+msgstr "工作量证明位数"
+
+#: captcha/models.py
+msgid "Key ID"
+msgstr "密钥 ID"
+
+#: captcha/models.py
+msgid "Captcha log"
+msgstr "验证码日志"
+
+#: captcha/serializers.py
+msgid "Window (hours)"
+msgstr "时间窗（小时）"
+
+#: captcha/serializers.py
+msgid "Aggregation window in hours; default 24, max 168"
+msgstr "聚合时间窗（小时）；默认 24，最大 168"
+
+#: captcha/serializers.py
+msgid "Verify count"
+msgstr "校验次数"
+
+#: captcha/serializers.py
+msgid "Passed count"
+msgstr "通过次数"
+
+#: captcha/serializers.py
+msgid "Pass rate"
+msgstr "通过率"
+
+#: captcha/serializers.py
+msgid "Count"
+msgstr "数量"
+
+#: captcha/serializers.py
+msgid "Hour bucket"
+msgstr "小时分桶"
+
+#: captcha/serializers.py
+msgid "Challenge count"
+msgstr "出题次数"
+
+#: captcha/serializers.py
+msgid "Verify passed"
+msgstr "校验通过"
+
+#: captcha/serializers.py
+msgid "Verify failed"
+msgstr "校验失败"
+
+#: captcha/serializers.py
+msgid "By captcha type"
+msgstr "按题型"
+
+#: captcha/serializers.py
+msgid "By decision"
+msgstr "按决策"
+
+#: captcha/serializers.py
+msgid "Hourly trend"
+msgstr "小时趋势"
+
+#: captcha/serializers.py
+msgid "Telemetry health"
+msgstr "遥测健康度"
+
+#: captcha/serializers.py
+msgid "Generated at"
+msgstr "生成时间"
+
+#: captcha/models.py
+msgid "Risk mode"
+msgstr "风险模式"
+
+#: captcha/serializers.py
+msgid "Log enabled"
+msgstr "日志开关"
+
+#: captcha/serializers.py
+msgid "Retention days"
+msgstr "保留天数"
+
+#: captcha/serializers.py
+msgid "Policy snapshot"
+msgstr "策略快照"
+
 #: captcha/serializers.py settings/serializers/security.py identity/views/auth/captcha_challenge.py
 msgid "Business code"
 msgstr "业务码"
@@ -13053,3 +13249,151 @@ msgstr "预览图片"
 #: settings/serializers/security_captcha.py
 msgid "Answer length"
 msgstr "答案长度"
+
+#: captcha B3/B4/B5 风险策略与题型
+msgid "Intent action from the scene registry; required when action binding is enabled"
+msgstr "出题换票的意图动作（scene 登记表内）；动作绑定开启时必填"
+
+msgid "Client environment"
+msgstr "客户端环境包"
+
+msgid "Account hash"
+msgstr "账号哈希"
+
+msgid "Honeypot"
+msgstr "蜜罐字段"
+
+msgid "Input mode"
+msgstr "输入方式"
+
+msgid "Keyboard-driven answers must not be scored as bot behavior"
+msgstr "键盘操作不得按脚本特征扣分"
+
+msgid "PoW answer"
+msgstr "工作量证明答案"
+
+msgid "Present when the risk decision allows a no-puzzle pass"
+msgstr "风险决策放行（无题直过）时下发"
+
+msgid "Only exposed in enforce mode; never includes the risk score"
+msgstr "仅在 enforce 档下发；绝不包含风险分"
+
+msgid "PoW challenge"
+msgstr "工作量证明题面"
+
+msgid "Rule code"
+msgstr "规则编码"
+
+msgid "Score"
+msgstr "分值"
+
+msgid "Parameters"
+msgstr "参数"
+
+msgid "Scope"
+msgstr "作用域"
+
+msgid "Empty = all scenes"
+msgstr "空 = 全部场景"
+
+msgid "Captcha rule"
+msgstr "验证码规则"
+
+msgid "Security"
+msgstr "安全"
+
+msgid "Captcha risk alert"
+msgstr "验证码风险告警"
+
+msgid "Captcha risk alert: {}"
+msgstr "验证码风险告警：{}"
+
+msgid "Word order"
+msgstr "语序点选"
+
+msgid "Off (freeze current behavior)"
+msgstr "关闭（保持现状）"
+
+msgid "Shadow (score and log only)"
+msgstr "影子（只评分留痕）"
+
+msgid "Enforce (apply decisions)"
+msgstr "强制执行决策"
+
+msgid "off keeps today's behavior; shadow logs decisions; enforce applies them"
+msgstr "off 保持现状；shadow 只记录决策；enforce 实际执行"
+
+msgid "Allow threshold"
+msgstr "放行阈值"
+
+msgid "Light threshold"
+msgstr "轻验证阈值"
+
+msgid "Hard threshold"
+msgstr "难题阈值"
+
+msgid "Deny threshold"
+msgstr "拒绝阈值"
+
+msgid "Trust private networks"
+msgstr "信任私网"
+
+msgid "Treat RFC1918 and loopback addresses as trusted (no puzzle in enforce mode)"
+msgstr "将 RFC1918 与回环地址视为可信（enforce 下无题直过）"
+
+msgid "Datacenter CIDRs"
+msgstr "机房网段（CIDR）"
+
+msgid "Proxy CIDRs"
+msgstr "代理网段（CIDR）"
+
+msgid "Enable PoW"
+msgstr "启用工作量证明"
+
+msgid "PoW bits (light)"
+msgstr "PoW 位数（轻验证）"
+
+msgid "PoW bits (hard)"
+msgstr "PoW 位数（难题）"
+
+msgid "PoW bits cap"
+msgstr "PoW 位数上限"
+
+msgid "PoW budget per IP/hour"
+msgstr "单 IP 每小时 PoW 预算"
+
+msgid "Failure ladder"
+msgstr "失败阶梯"
+
+msgid "e.g. 3,8,20; 0,0,0 disables"
+msgstr "例如 3,8,20；0,0,0 停用"
+
+msgid "Link failures to login lock"
+msgstr "验证码失败联动登录锁定"
+
+msgid "Enable honeypot"
+msgstr "启用蜜罐"
+
+msgid "Enable alerting"
+msgstr "启用告警"
+
+msgid "Alert window (minutes)"
+msgstr "告警窗口（分钟）"
+
+msgid "Alert deny rate"
+msgstr "告警拦截率"
+
+msgid "Alert minimum samples"
+msgstr "告警最小样本数"
+
+msgid "Log retention (days)"
+msgstr "观测日志保留期（天）"
+
+msgid "Thresholds must be strictly ascending"
+msgstr "阈值必须严格递增"
+
+msgid "Expected three comma-separated integers"
+msgstr "需要三个逗号分隔的整数"
+
+msgid "Verify latency P50 (ms)"
+msgstr "校验 P50 耗时（毫秒）"

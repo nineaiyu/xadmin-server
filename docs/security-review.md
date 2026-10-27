@@ -291,7 +291,7 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 | 包 | 锁定版本 | 最近发布 | 用途（代码位置） | 核实结论 | 处置 / 重开条件 |
 |---|---|---|---|---|---|
 | `unicodecsv` | 0.14.1 | **2015-09-22** | CSV 导入解析/导出渲染（`packages/xadmin-common/common/drf/parsers/csv.py`、`packages/xadmin-common/common/drf/renders/csv.py`） | **停维**（11 年无发布，作者已弃） | 出现 CVE 或需 Python 3.15 兼容时替换为 stdlib `csv`（手工包 encoding，改动面 2 文件）；无 CVE 前不动 |
-| `django-ranged-response` | 0.2.0 | **2017-07-18** | 验证码图片 Range 响应（`captcha/views.py`） | **停维**（9 年无发布） | 跟随 `django-simple-captcha` 生态决策；出现 CVE 时用 Django 原生 `FileResponse` Range 支持替换（改动面 1 文件） |
+| `django-ranged-response` | 0.2.0 | **2017-07-18** | 验证码图片 Range 响应（`captcha/views.py`） | **已移除（2026-10-26）** | 由 `captcha/http.py` 自实现单段 Range（200/206/416 + 临时文件清理），依赖与 `uv.lock` 同步移除；守护：`tests/unit/captcha/test_audio_range.py` |
 | `user-agents` | 2.2.0 | **2020-08-23** | UA 解析（操作日志 system/browser 列，`packages/xadmin-common/common/utils/request.py`） | **停维**（6 年无发布；底层 ua-parser 亦低频） | UA 解析仅做日志展示非安全判定；出现解析错乱面扩大或 CVE 时评估换 `ua-parser` 直连/自维护精简正则 |
 | `ldap3` | 2.9.1 | **2021-07-18** | LDAP 登录/同步客户端（`identity/ldap/client.py`） | **事实停维**（5 年无稳定版；2.10.2 停在 rc；无官方公告，上游 issue 1169 证实停滞） | LDAP 功能默认关闭（F7-3）；启用部署出现 CVE 时补丁后移（六期 S-1 同款流程）或换 `python-ldap`/社区 fork，走独立立项 |
 | `pilkit` | 3.0 | 2023-09-27 | 图片处理器（缩略图 ResizeToFill，`packages/xadmin-common/common/fields/image.py`、`identity/models/user.py`） | **低频维护**（3 年无发布，非弃维信号明确） | 随 PIL 生态观察；Pillow 大版本升级门禁若报 pilkit 不兼容，届时评估 |
@@ -300,7 +300,7 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 **窗口纪律**：本表每季度依赖窗口（与六期 S-1 监控动作同窗口）复核一次「最近发布」列与各包 CVE 公告，结论追加到 [ops/release-checklist.md](ops/release-checklist.md) 执行记录。
 
 **季度复核（2026-10-23）**：PyPI 最新版本与上表一致——`unicodecsv` 0.14.1（2015-09-22）、
-`django-ranged-response` 0.2.0（2017-07-18）、`user-agents` 2.2.0（2020-08-23）、
+`user-agents` 2.2.0（2020-08-23）、
 `ldap3` 2.9.1（2021-07-18）、`pilkit` 3.0（2023-09-27）、`pyexcel` 0.7.6（2026-06-29，仍活跃）、
 `pyexcel-xlsx` 0.6.1（2025-03-05）；六包均无新发布，维持现口径。
 

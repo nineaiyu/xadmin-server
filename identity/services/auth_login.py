@@ -50,6 +50,10 @@ def login_failed(request: Any, username: Any) -> None:
     login_ip_block = LoginIpBlockUtil(ipaddr)
     request.user = UserInfo.objects.filter(username=username).first()
     save_login_log(request, status=False)
+    # 风险层账号维度失败计数（只存加盐哈希；不改变登录失败语义）
+    from captcha import signals as captcha_signals
+
+    captcha_signals.record_account_fail(str(username or ""))
     # 出站 Webhook：登录失败事件
     from task.services import emit_webhook_event
 

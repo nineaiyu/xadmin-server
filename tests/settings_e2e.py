@@ -81,6 +81,8 @@ SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = False
 # 交互式验证码 E2E：仅挂载受控答案检查端点（默认配置不定义该键，路由不存在）；
 # 模式仍在用例内按需切换，既有套件继续走图片码关闭的登录链路。
 CAPTCHA_INSPECT_ENABLED = True
+# 风险层固定 off：E2E 的验证流量全部落日志，不能让影子决策/加签强制影响既有用例
+CAPTCHA_RISK_MODE = "off"
 # IP 限流必须放宽：E2E 全套件共享 127.0.0.1，且登录锁定用例会连续失败 50 次，
 # 默认阈值（50 次/30min）会把本机 IP 整体封禁，导致后续所有用例无法登录
 SECURITY_LOGIN_IP_LIMIT_COUNT = 100000

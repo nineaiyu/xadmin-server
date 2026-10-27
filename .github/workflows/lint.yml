@@ -101,6 +101,12 @@ jobs:
         # 增量收口模式：受检范围与存量豁免清单见 pyproject [tool.mypy]（豁免只减不增）
         run: uv run --no-sync mypy
 
+      - name: Captcha coverage gate
+        # 匿名写端点必须过人机校验或显式豁免；新增漏挂 = CI 红
+        env:
+          DJANGO_SETTINGS_MODULE: server.settings
+        run: uv run --no-sync python scripts/check_captcha_coverage.py
+
       - name: Check seed plan and ownership
         # 种子归属 / 引用完整性 / 主键重复的结构校验（不连数据库，因此可放在静态检查 job）。
         # 判定口径：任一 error 即失败；warning 只提示（混合归属页面、未声明字典编码等）。

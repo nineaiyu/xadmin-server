@@ -58,7 +58,6 @@ dependencies = [
     "daphne==4.2.3",
     "channels==4.3.2",
     "channels-redis==4.3.0",
-    "django-ranged-response==0.2.0",
     "user-agents==2.2.0",
     "aiofiles==24.1.0",
     "websockets==17.1",

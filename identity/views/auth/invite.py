@@ -24,6 +24,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 
+from captcha.const import CAPTCHA_ACTION_INVITE_ACCEPT
 from captcha.contracts import build_captcha_meta, captcha_globally_enabled
 from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
@@ -32,7 +33,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from identity.serializers.user import PASSWORD_DECRYPT_FAILED_MESSAGE
 from identity.utils import user_invite
-from identity.utils.auth.captcha import check_captcha
+from identity.utils.auth.captcha import require_human
 
 logger = get_logger(__name__)
 
@@ -57,6 +58,7 @@ class InviteValidateAPIView(GenericAPIView):
                         "captcha_mode": build_basic_type(OpenApiTypes.STR),
                         "captcha_types": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                         "captcha_image_fallback": build_basic_type(OpenApiTypes.BOOL),
+                        "captcha_flow": build_basic_type(OpenApiTypes.STR),
                     }
                 )
             }
@@ -76,6 +78,7 @@ class InviteValidateAPIView(GenericAPIView):
                 "captcha_mode": captcha_meta["mode"],
                 "captcha_types": captcha_meta["types"],
                 "captcha_image_fallback": captcha_meta["image_fallback"],
+                "captcha_flow": captcha_meta.get("captcha_flow", "always"),
             }
         )
 
@@ -111,14 +114,7 @@ class InviteAcceptAPIView(GenericAPIView):
         token = str(request.data.get("token") or "").strip()
         password = str(request.data.get("password") or "")
         # 服务端人机校验：失败直接 400（ValidateError），不进入令牌解析与密码校验
-        check_captcha(
-            True,
-            request.data.get("captcha_key"),
-            request.data.get("captcha_code"),
-            request.data.get("captcha_ticket"),
-            scene="invite",
-            request=request,
-        )
+        require_human(request, "invite", CAPTCHA_ACTION_INVITE_ACCEPT, need=True)
         user, state = user_invite.resolve_invite_token(token)
         if state == "invalid":
             return ApiResponse(code=1001, detail=user_invite.INVITE_INVALID_MESSAGE)

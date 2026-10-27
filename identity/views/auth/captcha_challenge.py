@@ -26,6 +26,7 @@ from captcha.contracts import (
     CaptchaVerifyResponseSerializer,
     InteractiveCaptcha,
     inspect_challenge,
+    xff_inconsistent,
 )
 from common.core.response import ApiResponse
 from common.core.throttle import CaptchaChallengeThrottle, CaptchaVerifyThrottle
@@ -61,7 +62,19 @@ class CaptchaChallengeAPIView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         scene = serializer.validated_data.get("scene", CAPTCHA_SCENE_LOGIN)
         try:
-            data = InteractiveCaptcha().challenge(captcha_type=serializer.validated_data.get("type"), scene=scene)
+            data = InteractiveCaptcha().challenge(
+                captcha_type=serializer.validated_data.get("type"),
+                scene=scene,
+                action=str(serializer.validated_data.get("action") or ""),
+                env=serializer.validated_data.get("env"),
+                ip=get_request_ip(request),
+                ua=str(request.META.get("HTTP_USER_AGENT") or ""),
+                accept_language=str(request.META.get("HTTP_ACCEPT_LANGUAGE") or ""),
+                sec_ch_ua=str(request.META.get("HTTP_SEC_CH_UA") or ""),
+                account=str(serializer.validated_data.get("account") or ""),
+                honeypot=bool(serializer.validated_data.get("hp")),
+                xff_inconsistent=xff_inconsistent(request.META),
+            )
         except CaptchaServiceError as exc:
             return _service_error(exc)
         return ApiResponse(data=data)
@@ -92,6 +105,19 @@ class CaptchaVerifyAPIView(GenericAPIView):
                 answer=data.get("answer"),
                 track=data.get("track"),
                 ip=get_request_ip(request),
+                action=str(data.get("action") or ""),
+                gen_time=data.get("gen_time"),
+                nonce=data.get("nonce"),
+                sign=data.get("sign"),
+                ua=str(request.META.get("HTTP_USER_AGENT") or ""),
+                env=data.get("env"),
+                pow_answer=data.get("pow_answer"),
+                input_mode=str(data.get("input") or ""),
+                honeypot=bool(data.get("hp")),
+                account=str(data.get("account") or ""),
+                accept_language=str(request.META.get("HTTP_ACCEPT_LANGUAGE") or ""),
+                sec_ch_ua=str(request.META.get("HTTP_SEC_CH_UA") or ""),
+                xff_inconsistent=xff_inconsistent(request.META),
             )
         except CaptchaServiceError as exc:
             return _service_error(exc)

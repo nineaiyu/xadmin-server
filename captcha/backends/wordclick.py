@@ -16,7 +16,7 @@ from django.core.exceptions import ImproperlyConfigured
 from PIL import Image, ImageDraw, ImageFont
 
 from captcha.backends.art import make_background, png_data_uri, size_setting
-from captcha.backends.base import CaptchaChallenge, ChallengeBackend
+from captcha.backends.base import CaptchaChallenge, ChallengeBackend, difficulty_factor
 
 CLICK_COUNT = 3
 MIN_DISTANCE = 48
@@ -106,15 +106,20 @@ def _render_tip(chars: list[str], color: tuple[int, int, int], font_path: str) -
 class WordClickBackend(ChallengeBackend):
     type = "click"
 
-    def generate(self) -> CaptchaChallenge:
+    def generate(self, difficulty: str = "normal") -> CaptchaChallenge:
         rng = random.Random()
         width, height = size_setting(getattr(settings, "CAPTCHA_SLIDE_SIZE", None), (320, 180))
         charset = click_charset()
-        if len(charset) < CLICK_COUNT:
+        count = CLICK_COUNT
+        if difficulty == "hard":
+            count = max(int(getattr(settings, "CAPTCHA_CLICK_COUNT_HARD", 5) or 5), CLICK_COUNT)
+        elif difficulty == "easy":
+            count = max(int(getattr(settings, "CAPTCHA_CLICK_COUNT_EASY", 3) or 3), 2)
+        if len(charset) < count:
             raise ImproperlyConfigured("CAPTCHA_CLICK_CHARSET needs at least 3 characters")
-        chars = rng.sample(charset, CLICK_COUNT)
+        chars = rng.sample(charset, count)
         font_path = _font_path()
-        positions = _sample_positions(rng, (width, height), CLICK_COUNT)
+        positions = _sample_positions(rng, (width, height), count)
         color = rng.choice([(32, 52, 120), (118, 42, 52), (36, 92, 66), (96, 58, 24), (74, 44, 110)])
 
         background = make_background((width, height), rng).convert("RGBA")
@@ -134,18 +139,18 @@ class WordClickBackend(ChallengeBackend):
                 "tip": png_data_uri(tip),
                 "width": width,
                 "height": height,
-                "count": CLICK_COUNT,
+                "count": count,
             },
         )
 
-    def verify(self, secret: dict[str, Any], answer: Any) -> bool:
+    def verify(self, secret: dict[str, Any], answer: Any, difficulty: str = "normal") -> bool:
         if not isinstance(answer, dict):
             return False
         points = answer.get("points")
         expected = secret.get("points")
         if not isinstance(points, list) or not isinstance(expected, list) or len(points) != len(expected):
             return False
-        radius = float(getattr(settings, "CAPTCHA_CLICK_RADIUS", 20) or 20)
+        radius = float(getattr(settings, "CAPTCHA_CLICK_RADIUS", 20) or 20) * difficulty_factor(difficulty, "click")
         for point, target in zip(points, expected, strict=True):
             if not isinstance(point, dict):
                 return False

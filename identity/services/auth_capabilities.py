@@ -50,6 +50,7 @@ def build_login_capabilities() -> dict[str, Any]:
             "captcha_mode": captcha_meta["mode"],
             "captcha_types": captcha_meta["types"],
             "captcha_image_fallback": captcha_meta["image_fallback"],
+            "captcha_flow": captcha_meta.get("captcha_flow", "always"),
             "token": settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
             "encrypted": settings.SECURITY_LOGIN_ENCRYPTED_ENABLED,
         },

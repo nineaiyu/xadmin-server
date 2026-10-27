@@ -127,6 +127,8 @@ PREREQUISITE_CALLABLES = (
     "_ensure_trgm_extension",
     # 幂等数据清理（删除已废弃的登录日志 retrieve 权限点），存量库结构对齐时执行
     "remove_dead_permission",
+    # 验证码风险规则默认行（bulk_create + ignore_conflicts，幂等）
+    "seed_rules",
 )
 
 

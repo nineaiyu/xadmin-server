@@ -17,6 +17,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from audit.services import UserLoginLog
+from captcha.const import CAPTCHA_ACTION_LOGIN
 from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
@@ -111,6 +112,7 @@ class BasicLoginAPIView(TokenObtainPairView):
             settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
             settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
             scene="login",
+            action=CAPTCHA_ACTION_LOGIN,
         )
 
         username, password = get_username_password(settings.SECURITY_LOGIN_ENCRYPTED_ENABLED, request, token)

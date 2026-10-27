@@ -212,6 +212,27 @@ AI_ACTIONS = {
 | 改 3 处 | ① `notifications/backends/specs.py::CHANNEL_SPECS` 增一条 `ChannelSpec`（`code` / `module` / `renderer` / `html`）；② 在 `notifications/notifications.py::Message` 补 `get_<name>_msg` 渲染方法（`get_email_msg` / `get_text_msg` 二选一）；③ 在 `notifications/backends/__init__.py::BACKEND` 枚举加值——**这是宿主级扩展，目前仍需改枚举**，否则渠道无法被订阅与选择 |
 | 验证 | `uv run pytest tests/unit/notifications/test_channel_specs.py tests/unit/notifications/test_backend_loading.py -q`（缺 spec 或 client 会被守护拦下） |
 
+#### ⑤ 匿名写接口挂人机校验（`require_human`）
+
+匿名可达且有副作用的接口必须过人机校验，统一入口：
+
+```python
+from identity.utils.auth.captcha import require_human
+
+
+class YourAnonymousAPIView(GenericAPIView):
+    def post(self, request, *args, **kwargs):
+        # scene 取 captcha.const 的已登记场景；action 必须在该 scene 的动作表内
+        require_human(request, "login", "your.action", need=True)
+        ...
+```
+
+- 业务请求不携带 `action`：消费点用服务端常量（`captcha.const`）声明；
+- 新场景/动作先扩 `CAPTCHA_SCENES` / `CAPTCHA_SCENE_ACTIONS`，再在
+  `<app>/declarations.py` 登记权限点归属；
+- 门禁：`python scripts/check_captcha_coverage.py` 会扫描全部匿名写端点；确有上游
+  人机校验等例外时，在脚本 `EXEMPTIONS` 写明理由（并在 `docs/ci-gates.md` 登记变更）。
+
 #### ④ 审批 biz sync（终态回写业务单）
 
 | 步骤 | 做什么 |

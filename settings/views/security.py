@@ -13,6 +13,9 @@ from rest_framework.decorators import action
 
 from captcha.contracts import (
     CaptchaInvalidError,
+    CaptchaRule,
+    CaptchaRuleSerializer,
+    CaptchaRuleUpdateSerializer,
     preview_image_captcha,
     preview_interactive_challenge,
 )
@@ -27,6 +30,7 @@ from settings.serializers.security import (
     SecurityCaptchaCodeSerializer,
     SecurityCaptchaGeneralSerializer,
     SecurityCaptchaInteractiveSerializer,
+    SecurityCaptchaRiskSerializer,
     SecurityLoginAuthSerializer,
     SecurityLoginLimitSerializer,
     SecurityMFASerializer,
@@ -166,6 +170,30 @@ class SecurityCaptchaInteractiveViewSet(BaseSettingViewSet):
                 detail=_("Operation failed. Abnormal data"),
             )
         return ApiResponse(data=data)
+
+
+class SecurityCaptchaRiskViewSet(BaseSettingViewSet):
+    """验证码风险策略"""
+
+    serializer_class = SecurityCaptchaRiskSerializer
+    category = "captcha_risk"
+
+    @extend_schema(
+        request=CaptchaRuleUpdateSerializer,
+        responses={200: OpenApiResponse(response=CaptchaRuleSerializer(many=True))},
+    )
+    @action(detail=False, methods=["get", "put"], url_path="rules")  # type: ignore[untyped-decorator]
+    def rules(self, request: Any) -> Any:
+        """风险规则列表与更新"""
+        if request.method == "PUT":
+            serializer = CaptchaRuleUpdateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            for item in serializer.validated_data["rules"]:
+                updates = {key: value for key, value in item.items() if key != "code" and value is not None}
+                if updates:
+                    CaptchaRule.objects.filter(code=item["code"]).update(**updates)
+        queryset = CaptchaRule.objects.all()
+        return ApiResponse(data=CaptchaRuleSerializer(queryset, many=True).data)
 
 
 class SecurityMFAViewSet(BaseSettingViewSet):

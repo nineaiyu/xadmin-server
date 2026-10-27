@@ -320,6 +320,73 @@ SETTINGS_CONFIG = {
     # 无障碍回退：交互式模式下允许用户显式切换到图片验证码（默认关闭；
     # 开启后图片码同样可通过服务端校验，脚本也可利用该通道，故不默认启用）
     "CAPTCHA_IMAGE_FALLBACK_ENABLED": False,
+    # 票据层加固（结构化签名票据）：密钥未配置时由 SECRET_KEY 派生并告警一次
+    "CAPTCHA_TICKET_SECRET": "",
+    # 当前签名密钥 id（轮换期与 CAPTCHA_TICKET_SECRET_PREVIOUS 并行验签）
+    "CAPTCHA_TICKET_SECRET_KEY_ID": "k1",
+    # 轮换期旧密钥（"key_id:secret"，如 "k0:<旧密钥>"；空 = 无轮换）
+    "CAPTCHA_TICKET_SECRET_PREVIOUS": "",
+    # 票据动作绑定：关掉即回退到只绑 scene 的旧语义
+    "CAPTCHA_ACTION_BIND": True,
+    # verify 请求加签（风险层 off 档不强制，便于渐进灰度）
+    "CAPTCHA_VERIFY_SIGN_REQUIRED": True,
+    # verify 签名时间窗与 nonce 防重放窗口（秒）
+    "CAPTCHA_VERIFY_SIGN_WINDOW": 300,
+    # 分档票据时效（challenge 档沿用 CAPTCHA_TICKET_TTL；0/非法回退默认）
+    "CAPTCHA_TICKET_TTL_ALLOW": 60,
+    "CAPTCHA_TICKET_TTL_LIGHT": 90,
+    "CAPTCHA_TICKET_TTL_HARD": 90,
+    # 风险分级三档：off = 升级零行为变化（默认）；shadow / enforce 由信号层启用
+    "CAPTCHA_RISK_MODE": "off",
+    # 决策阈值（allow < 20 ≤ light < 40 ≤ challenge < 70 ≤ hard < 90 ≤ deny）
+    "CAPTCHA_RISK_T_ALLOW": 20,
+    "CAPTCHA_RISK_T_LIGHT": 40,
+    "CAPTCHA_RISK_T_HARD": 70,
+    "CAPTCHA_RISK_T_DENY": 90,
+    # 私网 / 回环默认按可信处理（enforce 首日不误伤客户办公网；可在设置页关闭）
+    "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS": True,
+    # 机房 / 代理网段清单（可热更，不发版）：逗号分隔 CIDR
+    "CAPTCHA_RISK_DATACENTER_CIDRS": "",
+    "CAPTCHA_RISK_PROXY_CIDRS": "",
+    # 指纹/网段哈希盐（空 = 由票据密钥派生；轮换盐可切断历史关联）
+    "CAPTCHA_FP_SALT": "",
+    # 算力轴：PoW 开关、分档位数与单 IP 每小时预算
+    "CAPTCHA_POW_ENABLED": True,
+    "CAPTCHA_POW_BITS_LIGHT": 18,
+    "CAPTCHA_POW_BITS_HARD": 20,
+    "CAPTCHA_POW_BITS_MAX": 20,
+    "CAPTCHA_POW_IP_BUDGET": 600,
+    # 阶梯处置：失败阈值（IP/动作标识/指纹三维度）与联动登录锁定
+    "CAPTCHA_FAIL_STEP": "3,8,20",
+    "CAPTCHA_FAILURE_LINK_LOCK": False,
+    "CAPTCHA_HONEYPOT_ENABLED": True,
+    # 题型加权轮换与难度系数（easy/hard 相对 normal 的容差倍数；点选数量默认 3/4/5）
+    "CAPTCHA_TYPE_WEIGHTS": {"slide": 30, "rotate": 30, "click": 30, "wordorder": 10, "pow": 0},
+    "CAPTCHA_DIFFICULTY_EASY_FACTOR": 1.5,
+    "CAPTCHA_DIFFICULTY_HARD_FACTOR": 0.5,
+    # 按题型的难度容差倍数（覆盖全局 easy/hard factor；normal 恒 1.0）
+    "CAPTCHA_DIFFICULTY_MAP": {
+        "slide": {"easy": 1.5, "normal": 1.0, "hard": 0.5},
+        "rotate": {"easy": 1.5, "normal": 1.0, "hard": 0.5},
+        "click": {"easy": 1.5, "normal": 1.0, "hard": 0.5},
+        "wordorder": {"easy": 1.5, "normal": 1.0, "hard": 0.5},
+    },
+    "CAPTCHA_CLICK_COUNT_EASY": 3,
+    "CAPTCHA_CLICK_COUNT_HARD": 5,
+    # 无障碍音频验证码：镜像内置 flite/sox，路径可覆盖（空 = 禁用音频回退）
+    "CAPTCHA_FLITE_PATH": "/usr/bin/flite",
+    "CAPTCHA_SOX_PATH": "/usr/bin/sox",
+    # 告警（接既有通知渠道）：窗口内拦截率异常 / 同 IP 挑战突增
+    "CAPTCHA_ALERT_ENABLED": True,
+    "CAPTCHA_ALERT_WINDOW_MINUTES": 10,
+    "CAPTCHA_ALERT_DENY_RATE": 0.5,
+    "CAPTCHA_ALERT_MIN_SAMPLES": 50,
+    # 观测层：全链路留痕（异步写，遥测故障不影响验证结果）
+    "CAPTCHA_LOG_ENABLED": True,
+    # 观测日志保留期（天；0 = 只记录不清理）
+    "CAPTCHA_LOG_RETENTION_DAYS": 30,
+    # 成功事件采样率（0~1；失败恒 100% 记录）
+    "CAPTCHA_LOG_SUCCESS_SAMPLE_RATE": 1.0,
     # ------------------------------------------------------------------
     # 运行期系统配置（SysConfig 热更新）的代码默认值唯一源：
     # packages/xadmin-common/common/core/config.py 的 SysConfig property 一律回读这里（CONFIG.<KEY>），

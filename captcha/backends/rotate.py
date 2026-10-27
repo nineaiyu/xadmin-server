@@ -15,7 +15,7 @@ from django.conf import settings
 from PIL import Image, ImageDraw
 
 from captcha.backends.art import make_orientation_scene, png_data_uri, size_setting
-from captcha.backends.base import CaptchaChallenge, ChallengeBackend
+from captcha.backends.base import CaptchaChallenge, ChallengeBackend, difficulty_factor
 
 ANGLE_RANGES = ((15, 75), (105, 165), (195, 255), (285, 345))
 
@@ -29,7 +29,7 @@ def normalize_angle(angle: float) -> float:
 class RotateBackend(ChallengeBackend):
     type = "rotate"
 
-    def generate(self) -> CaptchaChallenge:
+    def generate(self, difficulty: str = "normal") -> CaptchaChallenge:
         rng = random.Random()
         size = size_setting(getattr(settings, "CAPTCHA_ROTATE_SIZE", None), (240, 240))
         width, height = size
@@ -60,13 +60,15 @@ class RotateBackend(ChallengeBackend):
             },
         )
 
-    def verify(self, secret: dict[str, Any], answer: Any) -> bool:
+    def verify(self, secret: dict[str, Any], answer: Any, difficulty: str = "normal") -> bool:
         if not isinstance(answer, dict):
             return False
         value = answer.get("angle")
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             return False
-        tolerance = float(getattr(settings, "CAPTCHA_ROTATE_TOLERANCE", 4) or 4)
+        tolerance = float(getattr(settings, "CAPTCHA_ROTATE_TOLERANCE", 4) or 4) * difficulty_factor(
+            difficulty, "rotate"
+        )
         expected = float(secret.get("angle", 0.0))
         difference = abs(normalize_angle(float(value) - expected))
         return difference <= tolerance

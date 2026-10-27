@@ -144,30 +144,70 @@ LDAP bind 认证成功时登录日志来源记 `LDAP`（`_login_type_for` 读
 
 验证码总开关为 `CAPTCHA_ENABLED`（默认 True，关闭后所有场景跳过人机校验）；类型由
 `CAPTCHA_MODE`（默认 `image`）选择，场景开关仍为 `SECURITY_<场景>_CAPTCHA_ENABLED`。
-管理端「系统设置 → 验证码设置」按短信设置同构：总配置（开关 + 类型）+ 图片 / 交互式分页签。
+管理端「系统设置 → 验证码设置」：总配置（开关 + 类型）+ 图片 / 交互式分页签 +
+「验证数据」页签（大盘聚合 + 观测日志，独立权限位 `list:SecurityCaptchaStats` /
+`list:SecurityCaptchaLog`）。
 
 ```
 GET  /api/identity/auth/capabilities
   → basic.captcha / captcha_mode / captcha_types / captcha_image_fallback
 POST /api/identity/auth/captcha/challenge  {type?, scene}
-  → {challenge_id, type, background, [piece|tip], width/height, ttl}   # 答案永不下发
-POST /api/identity/auth/captcha/verify     {challenge_id, type, scene, answer, track}
+  → {challenge_id, type, background, [piece|tip], width/height, ttl, [ck]}  # 答案永不下发
+POST /api/identity/auth/captcha/verify     {challenge_id, type, scene, answer, track,
+                                            action, [gen_time, nonce, sign]}
   → 200 {passed:true, ticket, expires_in} | 200 {passed:false, attempts_left}
   | 400 {code:400, error:"captcha_invalid"|"captcha_exhausted"}
 业务请求（登录 / 发码 / 邀请激活）携带 captcha_ticket
-  → check_token_and_captcha 原子消费一次性 ticket（绑定 scene）
+  → check_token_and_captcha 原子消费一次性 ticket（绑定 scene + action）
+GET  /api/settings/captcha/stats  ?hours=1..168        # 观测大盘（只读，60s 缓存）
+GET  /api/settings/captcha/log    ?phase=&scene=&...   # 观测日志（只读，元数据协议）
 ```
 
+- **票据层（加固）**：`ticket = b64url(payload) + "." + HMAC-SHA256`，payload 内嵌
+  `v/kid/scene/action/mode/type/fp/ip/iat/exp/nonce`（风险分不入票据，只落
+  `CaptchaLog`）；Redis 只登记
+  `captcha_nonce_{n}` 做一次性消费，票据自身不落缓存；`exp` / `kid` / `scene` /
+  `action` 任一不符即拒；业务请求携带 `X-Captcha-Fp`（前端环境摘要指纹）时做 IP / 指纹
+  弱绑定，漂移按需重新验证（无该头时跳过）。分档 TTL：`allow 60s / light 90s / challenge 120s / hard 90s`；
+  `CAPTCHA_TICKET_SECRET`（config.yml）为密钥单源，未配置时由 `SECRET_KEY` 派生并告警一次，
+  `CAPTCHA_TICKET_SECRET_PREVIOUS` 支持双密钥轮换不断流。
+- **动作绑定**：业务消费请求**不得携带** action，由消费点引用 `captcha/const.py` 常量；
+  verify 由前端声明意图动作（必须落在该 scene 的登记表内）。`CAPTCHA_ACTION_BIND=true`
+  （默认）时 verify 缺失 / 越权 action 与答案错误同形失败，消费端两端完全一致才放行，
+  未绑票据一律拒绝；关掉开关即回退只绑 scene 的旧语义。
+- **verify 加签**：`CAPTCHA_RISK_MODE` 非 `off` 时 challenge 下发一次性 `ck`，verify 必须携带
+  `gen_time`（±300s 时间窗）、一次性 `nonce`（`captcha_seen_` 防重放）与
+  `sign = HMAC-SHA256(ck, "challenge_id|type|scene|answer_digest|gen_time")`；
+  `answer_digest = sha256(紧凑 JSON)`，前后端同口径。
 - 题型插件：`captcha/backends/{slider,rotate,wordclick}.py`，注册表在 `base.py`；
   新增题型只需实现 `ChallengeBackend` 并注册；
 - 五层防护：服务端容差（slide 4px / rotate 4° / click 20px）、单题 3 次尝试、
-  挑战与 ticket 各 120s TTL、轨迹启发式（点数 / 时长 / 瞬移）、
+  挑战 120s TTL、轨迹启发式（点数 / 时长 / 瞬移）、
   challenge 30/min + verify 60/min 的 IP 限流；
 - 同 IP 未消费 ticket ≤ 3，防囤票慢速重放；
 - Redis 不可用时 verify / ticket 消费 fail-closed（拒绝），挑战缓存键见
   [cache.md](cache.md) §十；
+- **观测层**：`CaptchaLog` 异步留痕（Celery 批量落库，遥测故障不影响验证结果），
+  失败 100% 记录、成功可采样；`captcha_purge_logs` 按保留期（默认 30 天）清理；
+  日志只存加盐 IP 哈希与 UA 类别，不含明文个体字段；
 - 无障碍回退：`CAPTCHA_IMAGE_FALLBACK_ENABLED=true` 时挑战弹层提供「使用图片验证码」，
   服务端在交互式模式下同样接受图片码（默认关闭，避免 OCR 绕过交互式题型）；
+- **风险分级（off/shadow/enforce）**：`CAPTCHA_RISK_MODE` 默认 off；shadow 只评分留痕
+  （`would_decision`），enforce 按 `allow / light / challenge / hard / deny` 执行：
+  allow 无题直接发票、light 一次点击 + PoW、challenge 常规题、hard 语序点选/收紧容差、
+  deny 与答案错误同形。分数 0~100 只进日志，不回显客户端（票据可解码，不携带分数）。
+- **信号与规则**：前端 `src/utils/captchaSignal/env.ts` 采集环境摘要（时区/语言/屏幕/
+  DPR/webdriver/Canvas/WebGL 摘要，不采 cookie/明文账号）；服务端补充 UA/Client Hints
+  一致性、挑战频率、账号失败、机房/代理网段、蜜罐与历史信誉；16 条规则落 `CaptchaRule`
+  （分值/开关/优先级热更，设置页「风险策略」可调），键盘操作不参与轨迹扣分。
+- **处置**：IP / 动作 / 指纹三维度失败阶梯（默认 3/8/20：强制难题 → 15min 冷却 →
+  1h 冷却），冷却期与失败同形；`CAPTCHA_FAILURE_LINK_LOCK` 可联动登录锁定；蜜罐命中直接 deny；
+  拦截率/同 IP 突增接既有通知渠道告警（`CaptchaRiskAlertMessage`）。
+- **挂载面**：业务消费统一走 `require_human(request, scene, action)`（服务端动作常量单源）；
+  匿名写端点漏挂由 `scripts/check_captcha_coverage.py` 门禁拦截（豁免需写明理由）。
+- **无障碍**：镜像内置 `flite`/`sox`，`CAPTCHA_FLITE_PATH` 默认可用；音频 Range 响应
+  自实现（移除停维 `django-ranged-response`）；allow/light 对读屏可完成，成功状态
+  `aria-live` 播报；键盘路径（方向键/Home/End）不扣分。
 - E2E 专用答案检查端点 `GET /api/identity/auth/captcha/inspect` 仅在
   `CAPTCHA_INSPECT_ENABLED=true`（`tests/settings_e2e.py`）时挂载，生产默认配置无该路由。
 
@@ -177,13 +217,25 @@ POST /api/identity/auth/captcha/verify     {challenge_id, type, scene, answer, t
 `CATEGORIES` 表驱动（新增场景只登记一行，`CATEGORY_KEYS` 与 swagger enum 均从
 表派生）：
 
-| category | access 开关 | 目标已存在时 | 投递通道 |
-|----------|-------------|--------------|----------|
-| `register` | `SECURITY_REGISTER_ACCESS_ENABLED` | **明确告知**（注册必须提示占用） | email/sms |
-| `login` | `SECURITY_LOGIN_ACCESS_ENABLED` | 静默成功但不发送（同 reset） | email/sms |
-| `reset` | `SECURITY_RESET_PASSWORD_ACCESS_ENABLED` | 静默成功但不发送（防枚举） | email/sms |
-| `bind_email` | `SECURITY_BIND_EMAIL_ACCESS_ENABLED` | 回显目标用户资料（绑定到哪个账号） | email |
-| `bind_phone` | `SECURITY_BIND_PHONE_ACCESS_ENABLED` | 同上 | sms |
+| category | access 开关 | 目标已存在时 | 投递通道 | 人机校验（scene / action） |
+|----------|-------------|--------------|----------|---------------------------|
+| `register` | `SECURITY_REGISTER_ACCESS_ENABLED` | **明确告知**（注册必须提示占用） | email/sms | 发码端点：`register` / `auth.verify_code.send:register` |
+| `login` | `SECURITY_LOGIN_ACCESS_ENABLED` | 静默成功但不发送（同 reset） | email/sms | 发码端点：`login` / `auth.verify_code.send:login` |
+| `reset` | `SECURITY_RESET_PASSWORD_ACCESS_ENABLED` | 静默成功但不发送（防枚举） | email/sms | 发码端点：`reset` / `auth.verify_code.send:reset` |
+| `bind_email` | `SECURITY_BIND_EMAIL_ACCESS_ENABLED` | 回显目标用户资料（绑定到哪个账号） | email | 发码端点：`bind_email` / `auth.verify_code.send:bind_email` |
+| `bind_phone` | `SECURITY_BIND_PHONE_ACCESS_ENABLED` | 同上 | sms | 发码端点：`bind_phone` / `auth.verify_code.send:bind_phone` |
+
+业务动作侧的另外两个入口：账密登录 `identity.login.basic`（登录视图直接消费票据）、
+邀请激活 `invite.accept`（匿名激活恒定校验）。风险档（`off/shadow/enforce`）只改变
+「是否出题 / 出什么题」，不改变上表的动作绑定与消费点。
+
+| 决策 | 客户端表现 | 票据 mode / TTL |
+|------|-----------|-----------------|
+| `allow` | 无题，challenge 响应直接带 ticket | `allow` / `CAPTCHA_TICKET_TTL_ALLOW`（60s） |
+| `light` | 一个「点击验证」按钮 + 后台 PoW | `light` / `CAPTCHA_TICKET_TTL_LIGHT`（90s） |
+| `challenge` | 常规题型（slide/rotate/click/wordorder） | `challenge` / `CAPTCHA_TICKET_TTL`（120s） |
+| `hard` | 语序点选或收紧容差/加难 | `hard` / `CAPTCHA_TICKET_TTL_HARD`（90s） |
+| `deny` | 与答案错误同形的失败响应 | 不发票 |
 
 辅助开关（各场景独立）：`SECURITY_<场景>_CAPTCHA_ENABLED`（人机校验总开关，
 `CAPTCHA_MODE=interactive` 时切换为交互式题型）、

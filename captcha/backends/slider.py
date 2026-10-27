@@ -13,7 +13,7 @@ from django.conf import settings
 from PIL import Image, ImageDraw, ImageFilter
 
 from captcha.backends.art import make_background, png_data_uri, size_setting
-from captcha.backends.base import CaptchaChallenge, ChallengeBackend
+from captcha.backends.base import CaptchaChallenge, ChallengeBackend, difficulty_factor
 
 PIECE_SIZE = 56
 MASK_SHAPES = 3
@@ -72,7 +72,7 @@ def _cut_piece(background: Image.Image, mask: Image.Image, x: int, y: int) -> Im
 class SlideBackend(ChallengeBackend):
     type = "slide"
 
-    def generate(self) -> CaptchaChallenge:
+    def generate(self, difficulty: str = "normal") -> CaptchaChallenge:
         rng = random.Random()
         width, height = size_setting(getattr(settings, "CAPTCHA_SLIDE_SIZE", None), (320, 180))
         background = make_background((width, height), rng)
@@ -99,11 +99,13 @@ class SlideBackend(ChallengeBackend):
             },
         )
 
-    def verify(self, secret: dict[str, Any], answer: Any) -> bool:
+    def verify(self, secret: dict[str, Any], answer: Any, difficulty: str = "normal") -> bool:
         if not isinstance(answer, dict):
             return False
         value = answer.get("x")
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             return False
-        tolerance = int(getattr(settings, "CAPTCHA_SLIDE_TOLERANCE", 4) or 4)
+        tolerance = int(
+            round(int(getattr(settings, "CAPTCHA_SLIDE_TOLERANCE", 4) or 4) * difficulty_factor(difficulty, "slide"))
+        )
         return abs(float(value) - float(secret.get("x", -9999))) <= tolerance

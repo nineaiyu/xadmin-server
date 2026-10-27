@@ -17,6 +17,7 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schem
 from rest_framework.exceptions import APIException
 from rest_framework.generics import GenericAPIView
 
+from captcha.const import verify_code_send_action
 from captcha.contracts import build_captcha_meta, captcha_globally_enabled
 from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
@@ -51,6 +52,7 @@ def _captcha_meta(scene: str) -> dict[str, Any]:
         "captcha_mode": meta["mode"],
         "captcha_types": meta["types"],
         "captcha_image_fallback": meta["image_fallback"],
+        "captcha_flow": meta.get("captcha_flow", "always"),
     }
 
 
@@ -219,6 +221,7 @@ CATEGORY_KEYS: tuple[str, ...] = tuple(CATEGORIES)
                         "captcha_mode": build_basic_type(OpenApiTypes.STR),
                         "captcha_types": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                         "captcha_image_fallback": build_basic_type(OpenApiTypes.BOOL),
+                        "captcha_flow": build_basic_type(OpenApiTypes.STR),
                         "token": build_basic_type(OpenApiTypes.BOOL),
                         "encrypted": build_basic_type(OpenApiTypes.BOOL),
                         "email": build_basic_type(OpenApiTypes.BOOL),
@@ -337,7 +340,11 @@ class SendVerifyCodeAPIView(GenericAPIView):
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 
         client_id, token = check_token_and_captcha(
-            request, config.get("token"), config.get("captcha"), scene=category.key
+            request,
+            config.get("token"),
+            config.get("captcha"),
+            scene=category.key,
+            action=verify_code_send_action(category.key),
         )
 
         if config.get("encrypted"):

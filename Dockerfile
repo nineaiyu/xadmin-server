@@ -23,6 +23,8 @@ ARG DEPENDENCIES="                    \
         gettext                       \
         curl                          \
         procps                        \
+        flite                         \
+        sox                           \
         libmariadb-dev"
 
 RUN set -ex \

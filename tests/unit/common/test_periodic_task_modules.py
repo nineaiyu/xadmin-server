@@ -42,8 +42,9 @@ CORE_PERIODIC_TASKS = frozenset(
         "system.tasks.scan_account_risk_job",
         # 公开演示账号自愈：无演示数据时零成本跳过（内核常驻，非 demo 模块开关）
         "system.tasks.demo_account_selfheal_job",
-        # 验证码存储清理（core_auth）
+        # 验证码存储清理 / 观测日志保留期清理（core_auth）
         "captcha.tasks.auto_clean_expired_captcha_job",
+        "captcha.tasks.purge_captcha_logs_job",
         # 回收站软删数据物理清除（core_rbac）
         "common.tasks.purge_soft_deleted",
     }

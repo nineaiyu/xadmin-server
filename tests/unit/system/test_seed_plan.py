@@ -247,10 +247,10 @@ class TestValidate:
         # 2026-10 验证码设置拆总配置/图片/交互式：菜单 +5（1 页面 + 4 权限点）、权限点 +4
         # 2026-10 验证码预览端点：菜单 +2、权限点 +2
         # 2026-10 设置页归类：新增通知渠道/账号安全 2 个页面（权限点仅换父菜单）
-        assert summary.totals["menu"] == 737
-        assert summary.totals["field"] == 2141
+        assert summary.totals["menu"] == 742
+        assert summary.totals["field"] == 2164
         assert summary.totals["grant"] == 250
-        assert summary.permission_total == 658
+        assert summary.permission_total == 663
 
 
 class TestRows:

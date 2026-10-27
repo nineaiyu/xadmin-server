@@ -6,6 +6,9 @@
 自己的参数；后续新增验证码类型时，新增一个 Serializer + ViewSet + 前端页签即可。
 """
 
+from typing import Any
+
+from django.conf import settings
 from django.db.models import TextChoices
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -90,6 +93,7 @@ class SecurityCaptchaInteractiveSerializer(SettingSaveContractMixin, serializers
         SLIDE = "slide", _("Slide puzzle")
         ROTATE = "rotate", _("Rotate upright")
         CLICK = "click", _("Word click")
+        WORDORDER = "wordorder", _("Word order")
 
     class ClickCharsetChoices(TextChoices):
         CHINESE = "chinese", _("Common Chinese characters")
@@ -200,6 +204,96 @@ class SecurityCaptchaInteractiveSerializer(SettingSaveContractMixin, serializers
 
     def validate_CAPTCHA_ROTATE_SIZE(self, value: list[int]) -> list[int]:
         return self._validate_size(value)
+
+
+class SecurityCaptchaRiskSerializer(SettingSaveContractMixin, serializers.Serializer):
+    """风险策略：模式 / 阈值 / 算力 / 阶梯 / 告警 / 保留期。"""
+
+    class RiskModeChoices(TextChoices):
+        OFF = "off", _("Off (freeze current behavior)")
+        SHADOW = "shadow", _("Shadow (score and log only)")
+        ENFORCE = "enforce", _("Enforce (apply decisions)")
+
+    CAPTCHA_RISK_MODE = serializers.ChoiceField(
+        choices=RiskModeChoices.choices,
+        required=False,
+        default=RiskModeChoices.OFF,
+        label=_("Risk mode"),
+        help_text=_("off keeps today's behavior; shadow logs decisions; enforce applies them"),
+    )
+    CAPTCHA_RISK_T_ALLOW = serializers.IntegerField(
+        required=False, default=20, min_value=0, max_value=100, label=_("Allow threshold")
+    )
+    CAPTCHA_RISK_T_LIGHT = serializers.IntegerField(
+        required=False, default=40, min_value=0, max_value=100, label=_("Light threshold")
+    )
+    CAPTCHA_RISK_T_HARD = serializers.IntegerField(
+        required=False, default=70, min_value=0, max_value=100, label=_("Hard threshold")
+    )
+    CAPTCHA_RISK_T_DENY = serializers.IntegerField(
+        required=False, default=90, min_value=0, max_value=100, label=_("Deny threshold")
+    )
+    CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS = serializers.BooleanField(
+        required=False,
+        default=True,
+        label=_("Trust private networks"),
+        help_text=_("Treat RFC1918 and loopback addresses as trusted (no puzzle in enforce mode)"),
+    )
+    CAPTCHA_RISK_DATACENTER_CIDRS = serializers.CharField(
+        required=False, allow_blank=True, default="", label=_("Datacenter CIDRs"), max_length=4096
+    )
+    CAPTCHA_RISK_PROXY_CIDRS = serializers.CharField(
+        required=False, allow_blank=True, default="", label=_("Proxy CIDRs"), max_length=4096
+    )
+    CAPTCHA_POW_ENABLED = serializers.BooleanField(required=False, default=True, label=_("Enable PoW"))
+    CAPTCHA_POW_BITS_LIGHT = serializers.IntegerField(
+        required=False, default=18, min_value=1, max_value=20, label=_("PoW bits (light)")
+    )
+    CAPTCHA_POW_BITS_HARD = serializers.IntegerField(
+        required=False, default=20, min_value=1, max_value=20, label=_("PoW bits (hard)")
+    )
+    CAPTCHA_POW_BITS_MAX = serializers.IntegerField(
+        required=False, default=20, min_value=1, max_value=24, label=_("PoW bits cap")
+    )
+    CAPTCHA_POW_IP_BUDGET = serializers.IntegerField(
+        required=False, default=600, min_value=0, max_value=100000, label=_("PoW budget per IP/hour")
+    )
+    CAPTCHA_FAIL_STEP = serializers.CharField(
+        required=False,
+        default="3,8,20",
+        max_length=32,
+        label=_("Failure ladder"),
+        help_text=_("e.g. 3,8,20; 0,0,0 disables"),
+    )
+    CAPTCHA_FAILURE_LINK_LOCK = serializers.BooleanField(
+        required=False, default=False, label=_("Link failures to login lock")
+    )
+    CAPTCHA_HONEYPOT_ENABLED = serializers.BooleanField(required=False, default=True, label=_("Enable honeypot"))
+    CAPTCHA_ALERT_ENABLED = serializers.BooleanField(required=False, default=True, label=_("Enable alerting"))
+    CAPTCHA_ALERT_WINDOW_MINUTES = serializers.IntegerField(
+        required=False, default=10, min_value=1, max_value=1440, label=_("Alert window (minutes)")
+    )
+    CAPTCHA_ALERT_DENY_RATE = serializers.FloatField(
+        required=False, default=0.5, min_value=0.0, max_value=1.0, label=_("Alert deny rate")
+    )
+    CAPTCHA_ALERT_MIN_SAMPLES = serializers.IntegerField(
+        required=False, default=50, min_value=1, max_value=100000, label=_("Alert minimum samples")
+    )
+    CAPTCHA_LOG_RETENTION_DAYS = serializers.IntegerField(
+        required=False, default=30, min_value=0, max_value=365, label=_("Log retention (days)")
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        keys = ["CAPTCHA_RISK_T_ALLOW", "CAPTCHA_RISK_T_LIGHT", "CAPTCHA_RISK_T_HARD", "CAPTCHA_RISK_T_DENY"]
+        values = [int(attrs.get(key, getattr(settings, key, 0)) or 0) for key in keys]
+        if values != sorted(values) or len(set(values)) != len(values):
+            raise serializers.ValidationError(_("Thresholds must be strictly ascending"))
+        step = str(attrs.get("CAPTCHA_FAIL_STEP", getattr(settings, "CAPTCHA_FAIL_STEP", "")))
+        if step:
+            parts = step.split(",")
+            if len(parts) != 3 or any(not part.strip().isdigit() for part in parts):
+                raise serializers.ValidationError({"CAPTCHA_FAIL_STEP": _("Expected three comma-separated integers")})
+        return attrs
 
 
 class CaptchaImagePreviewDataSerializer(serializers.Serializer):

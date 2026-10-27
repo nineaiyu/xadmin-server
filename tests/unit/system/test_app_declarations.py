@@ -110,6 +110,9 @@ class TestMigrationParity:
             "api/settings/scim": ("ScimSetting", "SettingOpenPlatform"),
             "api/settings/oauth/providers": ("OAuthProviderSetting", "SettingOpenPlatform"),
             "api/settings/notify/webhook": ("WebhookNotifySetting", "SettingChannel"),
+            "api/settings/captcha/log": ("SecurityCaptchaLog", "SettingCaptcha"),
+            "api/settings/captcha/stats": ("SecurityCaptchaStats", "SettingCaptcha"),
+            "api/settings/captcha/risk": ("SecurityCaptchaRisk", "SettingCaptcha"),
             "api/ai/mcp-call-logs": ("McpCallLog", "AiMcpServers"),
             "api/identity/authorized-applications": ("AuthorizedApplication", "SettingOpenPlatform"),
         }

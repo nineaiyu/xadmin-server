@@ -40,7 +40,7 @@ pytestmark = pytest.mark.django_db
 #  2026-10 聊天群权限：admin/default/test 补 createGroup/members/rename/leave，demo 补 createGroup/rename/leave
 #  2026-10 开放平台设置页：admin 补页面 + SCIM/第三方登录 8 个权限点，268 → 279）
 #  2026-10 设置页归类：admin 补「通知渠道」「账号安全」两个页面，290 → 292）
-EXPECTED_ROLE_MENUS = {"admin": 292, "test": 87, "default": 33, "demo": 67}
+EXPECTED_ROLE_MENUS = {"admin": 297, "test": 87, "default": 33, "demo": 67}
 
 
 def _plan_grants():

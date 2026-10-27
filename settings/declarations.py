@@ -13,6 +13,10 @@ DECLARATIONS = AppDeclarations(
         "api/settings/oauth/providers": ("OAuthProviderSetting", "SettingOpenPlatform"),
         # Webhook 通知渠道（通知渠道页页签）：与邮件 / IM 渠道同页归属
         "api/settings/notify/webhook": ("WebhookNotifySetting", "SettingChannel"),
+        # 验证码观测面（验证码页「验证数据」页签）：日志列表与大盘聚合各自独立权限位
+        "api/settings/captcha/log": ("SecurityCaptchaLog", "SettingCaptcha"),
+        "api/settings/captcha/stats": ("SecurityCaptchaStats", "SettingCaptcha"),
+        "api/settings/captcha/risk": ("SecurityCaptchaRisk", "SettingCaptcha"),
     },
     audit_known_duplicates=(
         # 基本设置与水印同端点：水印是独立页签权限位（读写同 `/api/settings/basic`，
