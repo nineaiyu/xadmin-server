@@ -21,6 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -34,14 +35,14 @@ MAX_BYTES = 10 * 1024 * 1024
 class Command(BaseCommand):
     help = "导入验证码背景图到只读资产目录（管理员离线执行，不走 HTTP 上传）"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--dir", required=True, help="待导入图片目录")
         parser.add_argument("--license", required=True, help="许可（CC0/self/OFL/Apache-2.0/MIT）")
         parser.add_argument("--source", required=True, help="来源 URL 或内部生成说明")
         parser.add_argument("--asset-dir", default="", help="目标只读资产目录（默认 CAPTCHA_ASSET_DIR）")
         parser.add_argument("--pack-id", default="custom", help="manifest pack_id，默认 custom")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         license_name = str(options["license"])
         if license_name not in ALLOWED_LICENSES:
             raise CommandError(f"license must be one of {sorted(ALLOWED_LICENSES)}")
@@ -60,7 +61,9 @@ class Command(BaseCommand):
 
         manifest_path = target / "manifest.json"
         manifest = self._load_manifest(manifest_path, options["pack_id"])
-        existing = {str(item.get("id")): item for item in manifest.get("files") or [] if isinstance(item, dict)}
+        existing: dict[str, dict[str, Any]] = {
+            str(item.get("id")): item for item in manifest.get("files") or [] if isinstance(item, dict)
+        }
         imported = 0
         for path in sorted(source_dir.iterdir()):
             if not path.is_file() or path.suffix.lower() not in ALLOWED_SUFFIXES:
@@ -69,11 +72,16 @@ class Command(BaseCommand):
                 self.stderr.write(f"skip oversized: {path.name}")
                 continue
             try:
-                with Image.open(path) as image:
-                    if image.width < 160 or image.height < 90 or image.width > 4096 or image.height > 4096:
+                with Image.open(path) as source_image:
+                    if (
+                        source_image.width < 160
+                        or source_image.height < 90
+                        or source_image.width > 4096
+                        or source_image.height > 4096
+                    ):
                         self.stderr.write(f"skip bad dimensions: {path.name}")
                         continue
-                    image = ImageOps.exif_transpose(image).convert("RGB")
+                    image = ImageOps.exif_transpose(source_image).convert("RGB")
                     image = ImageOps.fit(image, (640, 360), method=Image.Resampling.BICUBIC)
                     digest = hashlib.sha256(image.tobytes()).hexdigest()[:12]
                     name = f"{path.stem.lower().replace(' ', '-')}-{digest}.webp"
@@ -90,7 +98,7 @@ class Command(BaseCommand):
                 "height": 360,
                 "sha256": hashlib.sha256(out.read_bytes()).hexdigest(),
             }
-            existing[item["id"]] = item
+            existing[str(item["id"])] = item
             imported += 1
         manifest.update(
             {
@@ -105,7 +113,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"imported {imported} image(s) into {target}"))
 
     @staticmethod
-    def _load_manifest(path: Path, pack_id: str) -> dict:
+    def _load_manifest(path: Path, pack_id: str) -> dict[str, Any]:
         if path.is_file():
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))

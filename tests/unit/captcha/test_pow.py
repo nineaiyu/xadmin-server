@@ -43,6 +43,7 @@ class TestPowBackend:
         assert payload["difficulty_bits"] > 0
         assert payload["challenge"]
         assert payload["expire"] > 0
+        assert payload["ttl"] >= 10
 
     def test_budget(self, settings):
         settings.CAPTCHA_POW_IP_BUDGET = 2

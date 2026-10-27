@@ -12,17 +12,17 @@
     {
       "id": "cache-keys",
       "question": "缓存键的命名规范、TTL 与失效矩阵在哪里查？",
-      "expected": ["docs/architecture/cache.md", "docs/cache-keys-audit.md"]
+      "expected": ["docs/architecture/cache.md"]
     },
     {
       "id": "data-permission-compiler",
       "question": "数据权限规则编译器有哪几段管线？ScopeResult 布尔代数怎么设计？",
-      "expected": ["docs/plans/archive/数据权限与字段权限重构方案-2026.09.md"]
+      "expected": ["docs/plans/数据权限与字段权限重构方案-2026.09.md"]
     },
     {
       "id": "field-permission",
       "question": "字段权限如何控制列表或详情列的可见性？白名单怎么配？",
-      "expected": ["docs/architecture/field-permission.md"]
+      "expected": ["docs/architecture/permission.md"]
     },
     {
       "id": "permission-layers",
@@ -65,11 +65,6 @@
       "expected": ["docs/adr/ADR-021-dashboard-display-and-reports.md"]
     },
     {
-      "id": "index-review",
-      "question": "数据库索引的评审规范与 EXPLAIN 回归记录在哪里？",
-      "expected": ["docs/architecture/indexes.md"]
-    },
-    {
       "id": "asgi-db-pool",
       "question": "ASGI 形态下每个请求新建数据库连接的问题与连接池配置方案是什么？",
       "expected": ["docs/adr/ADR-006-asgi-db-connection-pool.md"]
@@ -87,7 +82,7 @@
     {
       "id": "backup-drill",
       "question": "备份演练的 RTO 与 RPO 口径是什么？异地副本和媒体目录如何处理？",
-      "expected": ["docs/ops/backup-drill-2027-03.md", "docs/ops/backup-drill-2026-Q4.md"]
+      "expected": ["docs/ops/deployment-docker.md"]
     },
     {
       "id": "pat-scope",
@@ -167,7 +162,7 @@
     {
       "id": "hard-field-hidden",
       "question": "某个用户看不到某张表的某一列，可能是哪种权限配置导致的？",
-      "expected": ["docs/architecture/field-permission.md"]
+      "expected": ["docs/architecture/permission.md"]
     },
     {
       "id": "hard-im-notify",

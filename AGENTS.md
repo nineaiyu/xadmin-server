@@ -23,7 +23,7 @@
 | `locale/` | i18n 译文（`locale/zh/LC_MESSAGES/django.po`；新增 `_()` 文案必须补 zh） |
 | `examples/` | 二开插件样例（`examples/plugins`，配 `docs/guide/plugin-development.md`） |
 | `loadtest/` | k6 性能基线（配 CI `perf.yml` 与 `settings_loadtest.py`） |
-| `docs/` | 文档中心（`docs/README.md` 是索引；`docs/schema/` 是接口契约真源；`docs/plans/` 含工作区台账与 2026-10 审查分册） |
+| `docs/` | 文档中心（`docs/README.md` 是索引；`docs/schema/` 是接口契约真源；`docs/plans/` 含工作区台账与仍被引用的设计/映射文档） |
 | `tests/` | `unit/` + `integration/`，按 app 分目录（档位基座 `tests/settings_base.py`，real / pg / e2e 三档均继承它） |
 
 权威文档入口是 `docs/README.md`；高频必读：`docs/ci-gates.md`（全部门禁统一索引，**新增门禁必须先在那登记**）、

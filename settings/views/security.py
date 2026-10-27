@@ -7,9 +7,11 @@
 
 from typing import Any
 
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 
 from captcha.contracts import (
     CaptchaInvalidError,
@@ -182,16 +184,27 @@ class SecurityCaptchaRiskViewSet(BaseSettingViewSet):
         request=CaptchaRuleUpdateSerializer,
         responses={200: OpenApiResponse(response=CaptchaRuleSerializer(many=True))},
     )
+    # PUT 没有独立权限点：运行时由 _shared_method_menu_pk 回退到同 handler 的 GET
+    # 权限码（rules:SecurityCaptchaRisk，语义即读写）。权限点生成器忽略 PUT，若
+    # 后续把本 action 拆成独立方法，必须为写方法单独登记权限点。
     @action(detail=False, methods=["get", "put"], url_path="rules")  # type: ignore[untyped-decorator]
     def rules(self, request: Any) -> Any:
         """风险规则列表与更新"""
         if request.method == "PUT":
             serializer = CaptchaRuleUpdateSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            for item in serializer.validated_data["rules"]:
-                updates = {key: value for key, value in item.items() if key != "code" and value is not None}
-                if updates:
-                    CaptchaRule.objects.filter(code=item["code"]).update(**updates)
+            items = serializer.validated_data["rules"]
+            codes = [item["code"] for item in items]
+            existing = set(CaptchaRule.objects.filter(code__in=codes).values_list("code", flat=True))
+            missing = [code for code in codes if code not in existing]
+            if missing:
+                # 过期/伪造 code 必须显式失败：静默 noop 会让运营以为已保存
+                raise ValidationError({"rules": _("Unknown rule codes: {}").format(", ".join(missing))})
+            with transaction.atomic():
+                for item in items:
+                    updates = {key: value for key, value in item.items() if key != "code" and value is not None}
+                    if updates:
+                        CaptchaRule.objects.filter(code=item["code"]).update(**updates)
         queryset = CaptchaRule.objects.all()
         return ApiResponse(data=CaptchaRuleSerializer(queryset, many=True).data)
 

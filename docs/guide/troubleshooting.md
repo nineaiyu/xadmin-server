@@ -8,7 +8,7 @@
 > - 运维故障的完整清册（启动退出 / DB / Redis / Celery / 磁盘 / 恢复 / CVE）见 [ops/runbook.md](../ops/runbook.md)；
 > - 「不报错、但功能静默失效」的开发坑见 [dev-pitfalls.md](../dev-pitfalls.md)；
 > - 部署与配置速查见 [ops/deployment.md](../ops/deployment.md)；跨版本升级见 [upgrade-faq.md](upgrade-faq.md)；
-> - 测试 / E2E 相关问题见 [xadmin-client/e2e/README.md](xadmin-client/e2e/README.md)。
+> - 测试 / E2E 相关问题见 [xadmin-client/e2e/README.md](../../../xadmin-client/e2e/README.md)。
 >
 > 通用前置三件套：`GET /api/common/api/health`（免认证，验 DB / Redis / Celery / 存储四项）、
 > `data/logs/server.log`（按 `X-Request-Id` 检索单请求全链路）、`python manage.py doctor`
@@ -190,7 +190,7 @@
 - **原因**：dev server 的 `/api` 代理目标端口与后端实际端口不一致；或端口被别的进程占用
   （Docker 后端 8896 / E2E 后端 18896 / 桩 LLM 18897）。
 - **处置**：确认 vite 代理指向后端（默认 8848 → 8896）；跑 E2E 用隔离端口，勿与 Docker 的 8896 混用。
-- **相关**：[xadmin-client/e2e/README.md](xadmin-client/e2e/README.md)。
+- **相关**：[xadmin-client/e2e/README.md](../../../xadmin-client/e2e/README.md)。
 
 ### 21. 上传图片 / 大文件失败（1002 / 1003）
 

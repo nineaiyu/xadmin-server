@@ -30,7 +30,7 @@ def _audio_text(challenge: str) -> str:
 class ImageBackend(ChallengeBackend):
     type = "image"
 
-    def generate(self, difficulty: str = "normal") -> CaptchaChallenge:
+    def generate(self, difficulty: str = "normal", *, include_pow: bool | None = None) -> CaptchaChallenge:
         challenge, response = get_challenge()()
         image = render_challenge(challenge, 1)
         answer = str(response).strip().lower()
@@ -46,14 +46,20 @@ class ImageBackend(ChallengeBackend):
             "length": len(answer),
             "audio": Path(str(getattr(settings, "CAPTCHA_FLITE_PATH", "") or "")).is_file(),
         }
-        if bool(getattr(settings, "CAPTCHA_POW_FOR_IMAGE_FALLBACK", True)):
+        want_pow = (
+            bool(getattr(settings, "CAPTCHA_POW_FOR_IMAGE_FALLBACK", True)) if include_pow is None else include_pow
+        )
+        if want_pow:
             proof = PowBackend().generate(CAPTCHA_DIFFICULTY_EASY)
             secret["pow"] = proof.secret
             payload["pow"] = proof.payload
         return CaptchaChallenge(type=self.type, secret=secret, payload=payload)
 
     def verify(self, secret: dict[str, Any], answer: Any, difficulty: str = "normal") -> bool:
-        if isinstance(answer, dict) and secret.get("pow"):
+        # 内嵌 PoW 必须无条件校验：裸字符串答案不得绕过算力轴
+        if secret.get("pow"):
+            if not isinstance(answer, dict):
+                return False
             if not PowBackend().verify(secret["pow"], answer.get("pow_answer")):
                 return False
         value = answer.get("code") if isinstance(answer, dict) else answer

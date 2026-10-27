@@ -76,6 +76,9 @@ REST_FRAMEWORK = {
         # 与图片码同量级收紧（challenge 30/min、verify 60/min）
         "captcha_challenge": "30/m",
         "captcha_verify": "60/m",
+        # 音频合成走本地 flite/sox 子进程（单次可达 2s）：同一挑战可反复拉取，
+        # 必须独立收紧，避免把音频端点当作 TTS 算力放大器
+        "captcha_audio": "20/m",
         # AI 对话类端点（问答/NL/受限动作/聊天室 AI，含流式）：LLM 外呼是最高成本入口，
         # 按用户维度防突发（人工问答远低于该值；批量跑批/多浏览器回归不触顶）
         "ai_chat": "120/m",

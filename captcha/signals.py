@@ -16,6 +16,8 @@ from typing import Any
 from django.conf import settings
 from django.core.cache import cache
 
+from captcha import cache as captcha_cache
+
 ENV_VERSION = 1
 #: 挑战速率 / 指纹并发 / 历史信誉的缓存前缀（TTL 见各函数）
 FREQ_IP_PREFIX = "captcha_freq_ip"
@@ -69,16 +71,44 @@ def hash_ip(ip: str) -> str:
         return hash_value(ip)
 
 
+def _screen_dict(env: Any) -> dict[str, Any]:
+    """``env.screen`` 必须为对象；畸形值一律按空对象处理（客户端可传任意结构）。"""
+    if not isinstance(env, dict):
+        return {}
+    screen = env.get("screen")
+    return screen if isinstance(screen, dict) else {}
+
+
+def _as_int(value: Any) -> int:
+    """宽松转 int：非数值 / 布尔 / 溢出值一律按 0（信号层不得抛异常）。"""
+    if isinstance(value, bool) or value is None:
+        return 0
+    try:
+        return int(value)
+    except (TypeError, ValueError, OverflowError):
+        return 0
+
+
+def _as_float(value: Any) -> float:
+    if isinstance(value, bool) or value is None:
+        return 0.0
+    try:
+        return float(value)
+    except (TypeError, ValueError, OverflowError):
+        return 0.0
+
+
 def fingerprint(env: Any, ua: str = "") -> str:
     """客户端指纹 = 环境摘要 + UA 大类的哈希（不含明文）。"""
     if not isinstance(env, dict):
         return hash_value(ua)
+    screen = _screen_dict(env)
     parts = [
         str(env.get("timezone") or ""),
         str(env.get("language") or ""),
-        str((env.get("screen") or {}).get("width") or ""),
-        str((env.get("screen") or {}).get("height") or ""),
-        str((env.get("screen") or {}).get("dpr") or ""),
+        str(screen.get("width") or ""),
+        str(screen.get("height") or ""),
+        str(screen.get("dpr") or ""),
         str(env.get("cores") or ""),
         str(env.get("touch") or ""),
         str(env.get("canvas") or ""),
@@ -107,13 +137,12 @@ def _primary_language(value: str) -> str:
 def env_signals(env: Any, ua: str = "", accept_language: str = "", sec_ch_ua: str = "") -> dict[str, bool]:
     """环境包与服务端旁路的一致性信号。"""
     data = env if isinstance(env, dict) else {}
-    raw_screen = data.get("screen")
-    screen: dict[str, Any] = raw_screen if isinstance(raw_screen, dict) else {}
+    screen = _screen_dict(data)
     language = str(data.get("language") or "")
     timezone_name = str(data.get("timezone") or "")
-    width = int(screen.get("width") or 0)
-    height = int(screen.get("height") or 0)
-    dpr = float(screen.get("dpr") or 0)
+    width = _as_int(screen.get("width"))
+    height = _as_int(screen.get("height"))
+    dpr = _as_float(screen.get("dpr"))
     contradiction = False
     try:
         from zoneinfo import ZoneInfo
@@ -255,9 +284,7 @@ def freq_ip_hit(ip: str, limit: int = 10, window: int = 60) -> bool:
     """同 IP 挑战速率：挑战入口自增，超过窗口阈值即命中。"""
     key = f"{FREQ_IP_PREFIX}_{hash_ip(ip)}"
     try:
-        count = int(cache.get(key, 0) or 0) + 1
-        cache.set(key, count, window)
-        return count > limit
+        return captcha_cache.incr_counter(key, window) > limit
     except Exception:  # noqa: BLE001 缓存不可用 = 无法判定（不误伤）
         return False
 
@@ -267,9 +294,7 @@ def freq_fp_hit(fp: str, limit: int = 3, window: int = 60) -> bool:
     if not fp:
         return False
     try:
-        count = int(cache.get(key, 0) or 0) + 1
-        cache.set(key, count, window)
-        return count > limit
+        return captcha_cache.incr_counter(key, window) > limit
     except Exception:  # noqa: BLE001
         return False
 
@@ -288,7 +313,7 @@ def record_account_fail(account: str, window: int = 900) -> None:
         return
     key = f"{ACCT_FAIL_PREFIX}_{hash_value(account)}"
     try:
-        cache.set(key, int(cache.get(key, 0) or 0) + 1, window)
+        captcha_cache.incr_counter(key, window)
     except Exception:  # noqa: BLE001
         pass
 
@@ -318,9 +343,7 @@ def record_hist(fp: str, success: bool, window: int = 7 * 24 * 3600) -> None:
 
 def _counter(key: str, window: int = 600) -> int:
     try:
-        value = int(cache.get(key, 0) or 0) + 1
-        cache.set(key, value, window)
-        return value
+        return captcha_cache.incr_counter(key, window)
     except Exception:  # noqa: BLE001
         return 0
 

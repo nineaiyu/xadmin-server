@@ -60,6 +60,16 @@ class TestDisposalLadder:
         assert disposal.cooldown_remaining(_dims()) == 0
         assert disposal.register_failure(_dims())["cooldown"] == 0
 
+    def test_action_dimension_is_scoped_to_client(self, settings):
+        settings.CAPTCHA_FAIL_STEP = "3,8,20"
+        client_a = disposal.dimension_keys(ip_hash="iph-a", action="identity.login.basic", fp="fph-a")
+        client_b = disposal.dimension_keys(ip_hash="iph-b", action="identity.login.basic", fp="fph-b")
+        assert not any(dim == "action" for dim, _value in client_a)
+        for _ in range(8):
+            disposal.register_failure(client_a)
+        assert disposal.cooldown_remaining(client_a) > 0
+        assert disposal.cooldown_remaining(client_b) == 0
+
     def test_disabled_ladder(self, settings):
         settings.CAPTCHA_FAIL_STEP = "0,0,0"
         for _ in range(30):

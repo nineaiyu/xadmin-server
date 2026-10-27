@@ -79,8 +79,11 @@ class IconBackend(WordClickBackend):
 
     def generate(self, difficulty: str = "normal") -> CaptchaChallenge:
         rng = random.Random()
-        width, height = size_setting(getattr(settings, "CAPTCHA_SLIDE_SIZE", None), (320, 180))
-        count = 3 if difficulty != "hard" else 4
+        width, height = size_setting(
+            getattr(settings, "CAPTCHA_ICON_SIZE", None) or getattr(settings, "CAPTCHA_SLIDE_SIZE", None),
+            (320, 180),
+        )
+        count = {"easy": 2, "hard": 4}.get(difficulty, 3)
         if len(SHAPES) < count + 1:
             count = max(len(SHAPES) - 1, 2)
         targets = rng.sample(SHAPES, count)

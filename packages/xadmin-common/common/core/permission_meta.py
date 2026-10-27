@@ -43,8 +43,9 @@ class SharedPermissionSpec:
     field_groups: Callable[[Any], dict[str, set[str]]] | None = None
 
 
-#: 声明注册表：查看 ``common.core.permission.SHARED_PERMISSION_PRIORITY`` 的兜底表，
-#: 注册表优先；两者由守护测试锁定一致，新增共享端点只需在视图声明处登记。
+#: 声明注册表：同一 ``(path, method)`` 的唯一事实源，新增共享端点只需在视图声明处登记。
+#: ``common.core.permission.SHARED_PERMISSION_PRIORITY`` 仅保留「URLconf 尚未装载」时的
+#: 离线扫描兜底；注册表可以比兜底表更全，两者重叠项由守护测试锁定一致。
 SHARED_PERMISSION_REGISTRY: dict[tuple[str, str], SharedPermissionSpec] = {}
 
 

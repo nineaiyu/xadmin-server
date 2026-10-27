@@ -95,7 +95,28 @@ class TestRiskRules:
         assert rule.score == 70
         assert rule.enabled is False
 
-    def test_unknown_rule_is_noop(self, auth_client):
+    def test_unknown_rule_is_rejected(self, auth_client):
+        """过期/伪造 code 必须显式失败，不能静默 noop 后回显「已保存」。"""
         resp = auth_client.put(RULES_URL, {"rules": [{"code": "no_such_rule", "score": 10}]}, format="json")
-        assert resp.status_code == 200
+        assert resp.status_code == 400
+        assert "no_such_rule" in str(resp.data)
         assert not CaptchaRule.objects.filter(code="no_such_rule").exists()
+
+    def test_score_is_bounded(self, auth_client):
+        resp = auth_client.put(
+            RULES_URL,
+            {"rules": [{"code": "env_headless", "score": 1000}]},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert CaptchaRule.objects.get(code="env_headless").score != 1000
+
+    def test_params_is_not_writable(self, auth_client):
+        """params 无运行时消费点：不开放写入（可编辑但不生效会误导运营）。"""
+        resp = auth_client.put(
+            RULES_URL,
+            {"rules": [{"code": "env_headless", "params": {"limit": 1}}]},
+            format="json",
+        )
+        assert resp.status_code == 200
+        assert CaptchaRule.objects.get(code="env_headless").params == {}

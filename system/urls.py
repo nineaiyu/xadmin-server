@@ -31,7 +31,7 @@ app_name = "system"
 router = SimpleRouter(False)
 no_detail_router = NoDetailRouter(False)
 
-no_auth_url = []
+no_auth_url: list[URLPattern] = []
 
 auth_url: list[URLPattern] = []
 

@@ -63,7 +63,7 @@ D1 预留的「审批人解析的补充筛选」与名录展示全面落地；**
   「启用岗位的在岗用户」；远程搜索候选 `search/post`（`list:SearchPost`，仅启用岗位）；
 - **通讯录**（新页面 `SystemDirectory`，只读）：`/api/system/directory` 轻量名录
   （部门树 / 岗位清单两种视角），数据权限随调用者收口，AI 分级登记 exempt；
-- **检索与展示**：全局搜索新增岗位分组（小表走 trgm 豁免，见 docs/architecture/indexes.md）；
+- **检索与展示**：全局搜索新增岗位分组（小表走 trgm 豁免，见模型 Meta / system/search_indexes.py）；
   个人中心 userinfo 只读回显岗位；服务端 zh 翻译补齐（含 fuzzy 传播的旧文案修正）。
 
 ## 边界

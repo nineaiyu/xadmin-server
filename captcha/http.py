@@ -62,5 +62,6 @@ def audio_file_response(request: Any, path: str, filename: str) -> HttpResponse:
             response["Content-Range"] = f"bytes {start}-{end}/{size}"
             response["Accept-Ranges"] = "bytes"
             _cleanup(path)
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    # inline：<audio> 回退播放不应触发下载（文件名仍可读）
+    response["Content-Disposition"] = f'inline; filename="{filename}"'
     return response

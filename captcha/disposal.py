@@ -41,17 +41,23 @@ def parse_steps() -> tuple[int, int, int]:
 
 
 def dimension_keys(*, ip_hash: str = "", action: str = "", fp: str = "", account: str = "") -> list[tuple[str, str]]:
-    """参与处置的维度（空值跳过）。动作维度用 scene/action 常量，不存明文账号。"""
-    dims: list[tuple[str, str]] = []
+    """参与处置的维度（空值跳过）。
+
+    客户端维度（IP / 指纹 / 账号）各自独立计数；动作维度**必须**与客户端标识
+    组合（``ip_action`` / ``fp_action`` / ``acct_action``），不产生裸 ``action``
+    维度——否则任意匿名者对同一动作错答若干次即可把全站该动作锁死。没有任何
+    客户端标识时返回空列表（无法归因 = 不处置，避免误伤）。
+    """
+    scopes: list[tuple[str, str]] = []
     if ip_hash:
-        dims.append(("ip", ip_hash))
-    if action:
-        dims.append(("action", action))
+        scopes.append(("ip", ip_hash))
     if fp:
-        dims.append(("fp", fp))
+        scopes.append(("fp", fp))
     if account:
-        dims.append(("acct", account))
-    return dims
+        scopes.append(("acct", account))
+    if not action:
+        return scopes
+    return scopes + [(f"{dim}_action", f"{value}|{action}") for dim, value in scopes]
 
 
 def _fail_key(dim: str, value: str) -> str:
@@ -80,16 +86,20 @@ def cooldown_remaining(dims: list[tuple[str, str]]) -> int:
 
 
 def register_failure(dims: list[tuple[str, str]]) -> dict[str, Any]:
-    """记录一次失败并按阶梯返回处置：``force_hard`` / ``cooldown`` 秒。"""
+    """记录一次失败并按阶梯返回处置：``force_hard`` / ``cooldown`` 秒。
+
+    计数走 ``incr_counter`` 原子自增：爆发流量下并发失败不会互相覆盖
+    （get + set 会让阈值越并发越难触发，等于把阶梯关掉）。
+    """
     first, second, third = parse_steps()
     if not first:
         return {"force_hard": False, "cooldown": 0}
+    from captcha import cache as captcha_cache
+
     highest = 0
     for dim, value in dims:
         try:
-            key = _fail_key(dim, value)
-            count = int(cache.get(key, 0) or 0) + 1
-            cache.set(key, count, FAIL_WINDOW)
+            count = captcha_cache.incr_counter(_fail_key(dim, value), FAIL_WINDOW)
             highest = max(highest, count)
         except Exception:  # noqa: BLE001 计数不可用 = 不处置（不误伤）
             continue

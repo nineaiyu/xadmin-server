@@ -139,7 +139,7 @@ sum by (cache) (rate(xadmin_cache_requests_total{result="hit"}[5m]))
 | `captcha_attempt_{challenge_id}` | 与挑战同 TTL | 已尝试次数；超 `CAPTCHA_MAX_ATTEMPTS` 即删挑战 |
 | `captcha_nonce_{n}` | 票据 TTL + 60s | 结构化签名票据的一次性 nonce（`captcha/tickets.py`）；消费走 `atomic_get_delete` |
 | `captcha_seen_{nonce}` | 300s | verify 请求签名的 nonce 防重放登记（`cache.add`，重复即拒） |
-| `captcha_ticket_inflight_{ip}` | 300s | 同 IP 未消费 ticket 计数，上限 3（防囤票重放） |
+| `captcha_ticket_inflight_{ip_hash}` | 300s | 同 IP（精确 IP 加盐哈希）未消费 ticket 计数，上限 3（防囤票重放；键不落明文 IP） |
 | `captcha_stats_{hours}` | 60s | 观测大盘聚合缓存（`captcha/stats.py`，键为窗口小时数；缓存故障直接现算，fail-open） |
 | `captcha_freq_ip_{ip_hash}` / `captcha_freq_fp_{fp}` | 60s | 挑战频率信号（同 IP >10/分、同指纹并发 >3） |
 | `captcha_phase_challenge_{ip_hash}` / `captcha_phase_verify_{ip_hash}` | 600s | 挑战/校验计数，派生 `challenge_abandon`（挑战远多于校验 = 枚举/爬题） |

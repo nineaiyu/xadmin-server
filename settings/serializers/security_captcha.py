@@ -56,13 +56,6 @@ class SecurityCaptchaCodeSerializer(SettingSaveContractMixin, serializers.Serial
         help_text=_("Font size of the captcha code"),
     )
 
-    CAPTCHA_TIMEOUT = serializers.IntegerField(
-        min_value=1,
-        max_value=60 * 24 * 7,
-        label=_("Captcha timeout (minute)"),
-        help_text=_("Captcha code expiration time"),
-    )
-
     CAPTCHA_BACKGROUND_COLOR = ColorField(max_length=256, required=True, label=_("Captcha background color"))
     CAPTCHA_FOREGROUND_COLOR = ColorField(max_length=256, required=True, label=_("Captcha foreground color"))
 
@@ -267,7 +260,7 @@ class SecurityCaptchaRiskSerializer(SettingSaveContractMixin, serializers.Serial
         label=_("Trust private networks"),
         help_text=_(
             "Treat RFC1918 and loopback addresses as trusted (no puzzle in enforce mode); "
-            "keep enabled unless the office network is in the whitelist"
+            "only effective when TRUSTED_PROXY_IPS is configured"
         ),
     )
     CAPTCHA_RISK_DATACENTER_CIDRS = serializers.CharField(
@@ -344,7 +337,10 @@ class SecurityCaptchaRiskSerializer(SettingSaveContractMixin, serializers.Serial
         min_value=0,
         max_value=100000,
         label=_("PoW budget per IP/hour"),
-        help_text=_("PoW verifications allowed per IP per hour; 0 = unlimited; requests over budget are rejected"),
+        help_text=_(
+            "PoW challenges issued per IP per hour; 0 = unlimited; over-budget requests "
+            "degrade to another enabled puzzle type"
+        ),
     )
     CAPTCHA_FAIL_STEP = serializers.CharField(
         required=False,

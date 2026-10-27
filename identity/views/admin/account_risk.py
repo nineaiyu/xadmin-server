@@ -11,7 +11,7 @@ from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 
@@ -55,7 +55,10 @@ class AccountRiskViewSet(OnlyListModelSet):
 
     @extend_schema(
         parameters=[OpenApiParameter(name="task_id", required=True, type=OpenApiTypes.STR)],
-        responses=get_default_response_schema(),
+        responses={
+            **get_default_response_schema(),
+            404: OpenApiResponse(description="任务不存在或不属于当前用户（同口径，避免枚举）"),
+        },
     )
     @action(methods=["get"], detail=False, url_path="scan-status")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def scan_status(self, request: Any, *args: Any, **kwargs: Any) -> Any:

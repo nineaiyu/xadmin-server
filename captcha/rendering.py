@@ -19,20 +19,32 @@ from captcha.helpers import filter_functions, makeimg, noise_functions
 DISTANCE_FROM_TOP = 4
 
 
-def getsize(font: ImageFont.FreeTypeFont | ImageFont.ImageFont, text: str) -> tuple[int, int]:
-    """文本包围盒宽高（兼容新老 Pillow 接口）。"""
-    if hasattr(font, "getbbox"):
-        _top, _left, _right, _bottom = font.getbbox(text)
-        return int(_right - _left), int(_bottom - _top)
+def _legacy_text_size(font: Any, text: str) -> tuple[int, int]:
+    if hasattr(font, "getoffset"):
+        size = font.getsize(text)
+        offset = font.getoffset(text)
+        return int(size[0] + offset[0]), int(size[1] + offset[1])
+    size = font.getsize(text)
+    return int(size[0]), int(size[1])
 
-    legacy: Any = font
-    if hasattr(legacy, "getoffset"):
-        size = legacy.getsize(text)
-        offset = legacy.getoffset(text)
-        pairs = [int(x + y) for x, y in zip(size, offset, strict=True)]
-        return pairs[0], pairs[1]
-    legacy_size = legacy.getsize(text)
-    return int(legacy_size[0]), int(legacy_size[1])
+
+def _ink_box(font: Any, text: str) -> tuple[int, int, tuple[int, int]]:
+    """文本墨迹的 (宽, 高, 绘制偏移)。
+
+    ``getbbox`` 返回 ``(left, top, right, bottom)``；按 ``left/top`` 归零绘制，
+    否则宽高会按错误的轴相减，右侧字形被裁掉一截（图片码肉眼可见缺笔画）。
+    """
+    if hasattr(font, "getbbox"):
+        left, top, right, bottom = font.getbbox(text)
+        return max(int(right - left), 1), max(int(bottom - top), 1), (-int(left), -int(top))
+    width, height = _legacy_text_size(font, text)
+    return max(width, 1), max(height, 1), (0, 0)
+
+
+def getsize(font: ImageFont.FreeTypeFont | ImageFont.ImageFont, text: str) -> tuple[int, int]:
+    """文本墨迹宽高（兼容新老 Pillow 接口）。"""
+    width, height, _offset = _ink_box(font, text)
+    return width, height
 
 
 def _resolve_font_path() -> str:
@@ -80,16 +92,24 @@ def render_challenge(text: str, scale: int, rng: random.Random | None = None) ->
     charlist = _split_challenge_chars(text)
     for char in charlist:
         fgimage = makeimg(size, settings.CAPTCHA_FOREGROUND_COLOR)
-        charimage = Image.new("L", getsize(font, f" {char} "), "#000000")
+        char_text = f" {char} "
+        char_width, char_height, offset = _ink_box(font, char_text)
+        charimage = Image.new("L", (char_width, char_height), "#000000")
         chardraw = ImageDraw.Draw(charimage)
-        chardraw.text((0, 0), f" {char} ", font=font, fill="#ffffff")
+        chardraw.text(offset, char_text, font=font, fill="#ffffff")
         if settings.CAPTCHA_LETTER_ROTATION:
-            charimage = charimage.rotate(
+            # 先留出半个对角线的空白再旋转：紧贴墨迹的画布旋转后会切掉字形四角
+            pad = max(char_width, char_height) // 2
+            padded = Image.new("L", (char_width + pad * 2, char_height + pad * 2), "#000000")
+            padded.paste(charimage, (pad, pad))
+            charimage = padded.rotate(
                 rng.randrange(*settings.CAPTCHA_LETTER_ROTATION),
                 expand=0,
                 resample=Image.Resampling.BICUBIC,
             )
-        charimage = charimage.crop(charimage.getbbox())
+        ink = charimage.getbbox()
+        if ink:
+            charimage = charimage.crop(ink)
         maskimage = Image.new("L", size)
 
         maskimage.paste(

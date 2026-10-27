@@ -16,6 +16,7 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.generics import GenericAPIView
 
+from captcha import telemetry
 from captcha.audio import synthesize_audio
 from captcha.const import CAPTCHA_SCENE_LOGIN
 from captcha.contracts import (
@@ -30,7 +31,7 @@ from captcha.contracts import (
 )
 from captcha.http import audio_file_response
 from common.core.response import ApiResponse
-from common.core.throttle import CaptchaChallengeThrottle, CaptchaVerifyThrottle
+from common.core.throttle import CaptchaAudioThrottle, CaptchaChallengeThrottle, CaptchaVerifyThrottle
 from common.utils.request import get_request_ip
 
 CAPTCHA_SID_COOKIE = "captcha_sid"
@@ -95,6 +96,8 @@ class CaptchaChallengeAPIView(GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         scene = serializer.validated_data.get("scene", CAPTCHA_SCENE_LOGIN)
+        # 同一请求内的事件合并为一次投递（异常路径同样冲刷）
+        telemetry.begin_request()
         try:
             data = InteractiveCaptcha().challenge(
                 captcha_type=serializer.validated_data.get("type"),
@@ -108,16 +111,22 @@ class CaptchaChallengeAPIView(GenericAPIView):
                 account=str(serializer.validated_data.get("account") or ""),
                 honeypot=bool(serializer.validated_data.get("hp")),
                 xff_inconsistent=xff_inconsistent(request.META),
+                sid=_captcha_sid(request),
             )
         except CaptchaServiceError as exc:
             return _service_error(exc)
+        finally:
+            telemetry.end_request()
         sid = str(data.pop("_sid", "") or "")
         response = ApiResponse(data=data)
         if sid:
+            # cookie 必须覆盖「挑战有效期 + 票据有效期」：用户拖到挑战快过期才作答时，
+            # 登录消费票据仍要带得上 sid（只按挑战 TTL 会让 cookie 先于票据失效）
+            cookie_max_age = int(data.get("ttl") or 120) + int(getattr(settings, "CAPTCHA_TICKET_TTL", 120) or 120) + 60
             response.set_cookie(
                 CAPTCHA_SID_COOKIE,
                 sid,
-                max_age=int(data.get("ttl") or 120),
+                max_age=cookie_max_age,
                 httponly=True,
                 secure=request.is_secure(),
                 samesite="Lax",
@@ -145,6 +154,7 @@ class CaptchaVerifyAPIView(GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        telemetry.begin_request()
         try:
             result = InteractiveCaptcha().verify(
                 challenge_id=data["challenge_id"],
@@ -170,6 +180,8 @@ class CaptchaVerifyAPIView(GenericAPIView):
             )
         except CaptchaServiceError as exc:
             return _service_error(exc)
+        finally:
+            telemetry.end_request()
         return ApiResponse(data=result)
 
 
@@ -210,7 +222,7 @@ class CaptchaAudioAPIView(GenericAPIView):
 
     permission_classes: list[type] = []
     authentication_classes: list[type] = []
-    throttle_classes = [CaptchaVerifyThrottle]
+    throttle_classes = [CaptchaAudioThrottle]
 
     @extend_schema(exclude=True)
     def get(self, request: Any, challenge_id: str, *args: Any, **kwargs: Any) -> Any:

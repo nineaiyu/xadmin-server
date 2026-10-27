@@ -204,7 +204,7 @@ SETTINGS_CONFIG = {
     # 口径标注：本档默认 report-only 与 nginx 页面层强制头（xadmin-web/default.conf）
     # 的差异是**有意分层**——浏览器页面流量经 nginx 已强制；直连 Django 的仅 JSON API
     # （无脚本执行面）与 swagger/api-docs（django-csp 策略已按 swagger 放行，切 enforce
-    # 属行为变更需独立观察）。评估结论与重开条件见 docs/security-review.md 七期登记
+    # 属行为变更需独立观察）。评估结论与重开条件见 docs/asvs-mapping.md §三登记
     "CSP_MODE": "report-only",  # disabled / report-only（观察期）/ enforce
     "CSP_REPORT_URI": "",  # 空 = 不下发 report-uri；建议 /api/common/api/csp-report
     # PAT 凭证级限流速率（SimpleRateThrottle 速率串；空或 0 = 不限）
@@ -295,7 +295,7 @@ SETTINGS_CONFIG = {
     "CAPTCHA_IMAGE_SIZE": (120, 40),  # 设置 captcha 图片大小
     "CAPTCHA_CHALLENGE_FUNCT": "captcha.helpers.math_challenge",
     "CAPTCHA_LENGTH": 4,  # 字符个数,仅针对随机字符串生效
-    "CAPTCHA_TIMEOUT": 5,  # 超时(minutes)
+    "CAPTCHA_TIMEOUT": 5,  # 遗留键（仅 config.yml 兼容保留）：挑战有效期统一由 CAPTCHA_CHALLENGE_TTL 控制
     "CAPTCHA_FONT_SIZE": 26,
     "CAPTCHA_BACKGROUND_COLOR": "#ffffff",
     "CAPTCHA_FOREGROUND_COLOR": "#001100",
@@ -313,6 +313,10 @@ SETTINGS_CONFIG = {
     "CAPTCHA_MAX_ATTEMPTS": 3,
     "CAPTCHA_TRACK_CHECK_ENABLED": True,
     "CAPTCHA_SLIDE_SIZE": (320, 180),
+    # 交互题型画布尺寸解耦：未配置时回退 CAPTCHA_SLIDE_SIZE（兼容既有部署）
+    "CAPTCHA_CLICK_SIZE": (320, 180),
+    "CAPTCHA_WORD_ORDER_SIZE": (320, 180),
+    "CAPTCHA_ICON_SIZE": (320, 180),
     "CAPTCHA_ROTATE_SIZE": (240, 240),
     # simplified = 内置 GB2312 一级字库（3755 常用字）；ascii = 字母数字
     "CAPTCHA_CLICK_CHARSET": "simplified",
@@ -320,6 +324,8 @@ SETTINGS_CONFIG = {
     # procedural = 强制程序化；自定义只读目录用 CAPTCHA_ASSET_DIR
     "CAPTCHA_BACKGROUND_PACK": "builtin",
     "CAPTCHA_ASSET_DIR": "",
+    # 运行期资产完整性校验：首次加载按 manifest 的 sha256 比对（只读挂载被替换时跳过该图）
+    "CAPTCHA_ASSET_VERIFY_SHA256": True,
     # 无障碍回退：图片题型只作为显式回退 / 低风险兜底，默认权重 0；
     # 图片题请求必须付低难度 PoW，避免成为 OCR 农场入口
     "CAPTCHA_IMAGE_FALLBACK_ENABLED": True,

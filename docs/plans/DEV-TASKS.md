@@ -20,8 +20,8 @@
 ## 〇、状态快照（2026-10-25 提案候选五批；2026-10-23 及更早批次已滚动归档）
 
 > 2026-10-23 及更早的批次执行记录（审查整改 / 依赖补丁 / 字段类型渲染 / 角色授权审计 /
-> 登录链路重构 / 种子分层 / 5.0 发布窗口等）已滚动归档到
-> [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
+> 登录链路重构 / 种子分层 / 5.0 发布窗口等）已于 2026-10-27 清理，
+> 移入工作区 `_delete/2026-10-27-plans-cleanup/`（可恢复，去向见 `plans/README.md`）。
 
 - **2026-10-26 两件收口（弹层内核统一 + 设计器实时预览 / a11y 扩面）**：
   ①弹层内核统一（arch-P1-04② 提前）：新增声明式壳 `OverlayDialog` / `OverlayDrawer` 并扩展
@@ -175,7 +175,7 @@
   ⑥**A-1 命令面板「问 AI」**：⌘K 面板新增「问 AI」入口，经 `?q=` 直达 AI 控制台问答并预填
   输入框（`initial-draft` seq 保重复触发；消费后 URL 移除防刷新重复预填）。
   ⑦**E-2 axe-core 无障碍门禁**：`test:e2e:a11y` 定向档（wcag2a/2aa，只阻断 critical/serious，
-  豁免表 `ALLOWED_VIOLATIONS` 只减不增、扩白须先登记 `docs/accessibility-audit.md`）；基线 3 页 +
+  豁免表 `ALLOWED_VIOLATIONS` 只减不增、扩白须先登记 `e2e/README.md` / `ALLOWED_VIOLATIONS`）；基线 3 页 +
   扩面 4 页（流程配置抽屉 / 菜单树行 / welcome / AI 控制台），spec 随全量档执行。
   **验证**：后端全量 pytest exit 0（真 PG/Redis，`-n auto`）；前端 vitest 417 文件 / 2717 例、
   typecheck、lint、`check:i18n/contract/ledger-ids/version` 全绿；ruff format+check、行数/函数/
@@ -186,12 +186,11 @@
   **未做（维持提案归位）**：P2 AI 日报（观察窗口）、P4 生成器合流（中期，先 T11）、P5 MCP 治理
   （观察窗口）、P7②③、T4 拆分。
 
-- **2026-10-23 审查整改批次（442 条全验收，server `24d01e98` / client `c9490c53` / installer `3f45a34`）、2026-10-23 依赖安全补丁、2026-10-20 字段类型全量自动渲染、2026-10-19 内置角色授权审计 / 登录链路重构 / AI 动作声明下沉、2026-10-18 种子分层收口、2026-10-17 清库重建升级演练、2026-10-16 5.0 发布收口、2026-10-14 5.0 发布与授权修复各批**：执行记录已滚动归档至
-  [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)（2026-10-25 文档体积门禁回写）。
+- **2026-10-23 审查整改批次（442 条全验收，server `24d01e98` / client `c9490c53` / installer `3f45a34`）、2026-10-23 依赖安全补丁、2026-10-20 字段类型全量自动渲染、2026-10-19 内置角色授权审计 / 登录链路重构 / AI 动作声明下沉、2026-10-18 种子分层收口、2026-10-17 清库重建升级演练、2026-10-16 5.0 发布收口、2026-10-14 5.0 发布与授权修复各批**：执行记录已于 2026-10-27 清理（移入工作区 `_delete/2026-10-27-plans-cleanup/`，可恢复）。
 ## 〇-历史
 
 > 2026-10-23 及更早的历史执行记录（2026-09 审查整改收口、2026-10 各批交付与推送明细）
-> 已归档至 [archive/工作区开发任务执行记录-2026.10.md](archive/工作区开发任务执行记录-2026.10.md)。
+> 已于 2026-10-27 清理（移入工作区 `_delete/2026-10-27-plans-cleanup/`，可恢复）。
 
 ## 一、近期待办（2026-10 ~ 2026-11）
 
@@ -205,8 +204,8 @@
 | 6 | ~~文档站死链与口径守护补强~~ | **已完成（2026-10-17）**：新增 `scripts/check_docs_site_links.py`（锚点级 + 跨仓路径引用校验，进 docs CI），抓出并修复 8 处锚点死链；升级门槛串纳入事实门禁（+3 条）。 |
 | 7 | ~~回灌链路端到端集成测试~~ | **已取消（2026-10-17，用户决策）**：回灌路径对二开损失面过大（旧迁移引用须人工改写、表文件不搬、审批/表单/数据集/日志/任务/PAT 不在搬运面内），转 #8；回灌保留为逃生舱。 |
 | 8 | **真·原地升级立项与分批实施** | **已立项（2026-10-17）**：决策 [ADR-094](../adr/ADR-094-inplace-upgrade-for-legacy-libraries.md) + 方案 [原地升级立项与方案-2026.10.md](原地升级立项与方案-2026.10.md)。**第一~三批已交付**：旧结构样本生成器 + 结构与引用与账本一键对齐（`legacy_align`）+ 差异报告 + 体检新判定 `legacy-inplace-capable` + 安装器接线（`--probe` 三态）+ 二开 app 迁移引用改写工具；`v4.1.3`/`v4.2.3`/`v4.2.5` 三代样本原地对齐全绿（实测数据见方案 §八）。**第四批（实机演练完成）**：真实 4.2.5 库升 5.0.1 跑通、数据零丢失（行数+哈希比对）；修复「容器无 git → common_monitor 未映射」与「有菜单无列（字段白名单 fail-closed）」两个真问题（后者改 post_upgrade 自动补齐+清缓存）。 |
-| 9 | ~~应用级种子拆分（五批次）~~ | **已交付（2026-10-17）**：种子按 app 落 `<app>/seeds/`（平台层保留 `loadjson/`），12 个 manifest 自声明依赖与归属；`load_init_json --list/--check/--apps` + `seed_split` + `dump_init_json --split-apps`；角色授权改声明式 grants 并集（破除 loaddata m2m 覆盖清零）；决策 [ADR-095](../adr/ADR-095-per-app-seed-layering.md)，方案与执行记录见 [应用级种子拆分方案-2026.10.md](应用级种子拆分方案-2026.10.md) / [执行计划](应用级种子拆分执行计划-2026.10.md) |
-| 10 | ~~前端框架一致性收敛（表单字段元数据化 + 弹窗全屏按钮体验缺口）~~ | **已完成（2026-10-18）**：调查、迁移与验证证据见 [方案](前端框架一致性调查与收敛方案-2026.10.md) §九。① ReDialog 全屏按钮默认渲染；② `check-handwritten-forms.mjs` 门禁 + 豁免登记进 CI；③ post / tag / login-policy / subscription / mcp / api-app / screen / approval-rule 八页迁至元数据表单（混合形态用字段渲染器或扩展字段）；④ 选型判定写入 component-handbook §六；⑤ 顺带修 `headerRenderer` DOM 泄漏、`time` 协议、`tag.color` 类型、MCP `pk` 只读、`formProps.rules` 整块覆盖；⑥ 最大化态强制显示还原按钮（`lay-tag/index.vue`，避免进入最大化后无可见出口）。数据集/报表因联动列维持豁免。验证：vitest 2312、后端 103 passed、E2E 双浏览器 60+（含 `tag-bar` 最大化还原 6 例） |
+| 9 | ~~应用级种子拆分（五批次）~~ | **已交付（2026-10-17）**：种子按 app 落 `<app>/seeds/`（平台层保留 `loadjson/`），12 个 manifest 自声明依赖与归属；`load_init_json --list/--check/--apps` + `seed_split` + `dump_init_json --split-apps`；角色授权改声明式 grants 并集（破除 loaddata m2m 覆盖清零）；决策 [ADR-095](../adr/ADR-095-per-app-seed-layering.md)，执行记录见 [执行计划](应用级种子拆分执行计划-2026.10.md) |
+| 10 | ~~前端框架一致性收敛（表单字段元数据化 + 弹窗全屏按钮体验缺口）~~ | **已完成（2026-10-18）**：调查、迁移与验证证据见 方案（历史文档已清理） §九。① ReDialog 全屏按钮默认渲染；② `check-handwritten-forms.mjs` 门禁 + 豁免登记进 CI；③ post / tag / login-policy / subscription / mcp / api-app / screen / approval-rule 八页迁至元数据表单（混合形态用字段渲染器或扩展字段）；④ 选型判定写入 component-handbook §六；⑤ 顺带修 `headerRenderer` DOM 泄漏、`time` 协议、`tag.color` 类型、MCP `pk` 只读、`formProps.rules` 整块覆盖；⑥ 最大化态强制显示还原按钮（`lay-tag/index.vue`，避免进入最大化后无可见出口）。数据集/报表因联动列维持豁免。验证：vitest 2312、后端 103 passed、E2E 双浏览器 60+（含 `tag-bar` 最大化还原 6 例） |
 | 11 | **下一补丁版本发布（含审查整改批次）** | 版本号三方同步（`server/const.py` ↔ `client/package.json` ↔ tag）→ 变更日志/Release notes → 按 server·client → web → docs → installer 顺序构建镜像 → `sync-image-mirror` → 目标机复测；发布前跑一次干净机安装 + 幂等升级 |
 | 12 | **4.2.5 旧镜像回填 + 目标机旧库升级复跑** | **已登记（2026-10-23）**：`postgres:16.8` / `redis:7.4.3` 已入 `xadmin-installer/utils/base-images.yml`；待 push 触发 `sync-base-image-mirror` + `gh workflow run sync-image-mirror.yml -f version=4.2.5` 补 `xadmin-web`，再目标机 `./xadmin.sh upgrade v<version>` 复跑，验收 `upgrade_check=up-to-date`、健康全 true、数据保留 |
 | 13 | ~~R5 首屏 LCP 靶心优化~~ | **✅ 已完成（2026-10-23）**：welcome 生产口径 LCP **792 → 244 ms（-69%）**、CLS 0.0095 → 0.0088–0.0095、FCP/TBT 持平；改动 = 移除欢迎卡片入场动画 + 活跃用户卡预占位；证据见 `xadmin-client/docs/perf-firstscreen.md` §六 |
@@ -254,11 +253,11 @@
 
 3. **供应链与安全登记（周期复核）**
    - **O9-6 停维依赖季度台账**：`unicodecsv` / `django-ranged-response` / `user-agents` / `ldap3` / `pilkit`
-     逐包复核（`pyexcel` 已核实仍活跃移出清单）；处置路径与重开条件见 `security-review.md` 七期 S-2；
+     逐包复核（`pyexcel` 已核实仍活跃移出清单）；处置路径与重开条件见 `asvs-mapping.md` 七期 S-2；
    - **O9-7 wangEditor 替换触发三条件**：安全公告无上游修复 / 协同编辑等产品需求 / Vue 主版本致适配层不可用；
    - **O8-7 CSP Django 侧 enforce 重开条件**：swagger enforce 兼容性完成一轮观察，或出现绕过 nginx 直连 Django 的 HTML 面；
    - **其他已接受安全项**：JWT 存 JS 可读 Cookie、HTTP 直连无 Secure、注册账号占用提示、Django 6.0.8 EOL 监控等，
-     理由与重开条件见 `security-review.md` S-6 台账（季度窗口随 S-6 一并复核）。
+     理由与重开条件见 `asvs-mapping.md` S-6 台账（季度窗口随 S-6 一并复核）。
 
 ---
 
@@ -331,7 +330,7 @@
 
 > 2026-10-09 核销两项：**ASGI 异步中间件链迁移**（ADR-078 `33b941e1`，2026-10-02 交付：
 > 4 项双模化 + 3 显式同步边界 + 收口复核与链能力守护 2 例）；**缓存与索引季度复核**
-> （`check_cache_keys.py --strict` 退出码 0、`indexes.md` 全量对齐 64 项、`cache-keys-audit.md` 复核，见各文档 §五）。
+> （`check_cache_keys.py --strict` 退出码 0、缓存键/索引季度复核完成（原审计文档已清理））。
 
 ---
 
@@ -378,11 +377,11 @@ R57-5（linkage 剔除早有提示）。
 
 | 主题 | 位置 |
 |---|---|
-| 长期方向 / 优化清单 / 审查结论 | 本目录 `长期开发计划-2026Q4起.md`（度量驱动审查 + 外部案例对标 + 分期与风险） |
+| 长期任务 / 现状盘点 / 三阶层任务 / 债务 | 本目录 `长期任务方案-2026.10.md`（长期方向与优先级；原《长期开发计划》已清理） |
 | 触发制 / 红线 / 时间窗 / 滚动债 | `docs/plans/触发制任务清单-长期.md` |
 | 月度窗口 / 贯穿专项 / 候选池 | `docs/plans/下阶段长期计划-2026.10.md` |
 | 决策记录（ADR 全集 + 索引） | `docs/adr/`（最新 ADR-092；`adr/README.md` 为索引） |
-| 安全接受项 / 供应链台账 | `docs/security-review.md` |
+| 安全接受项 / 供应链台账 | `docs/asvs-mapping.md` |
 | 发布 checklist / 运维 | `docs/ops/`（`release-checklist.md` / `deployment.md` / `upgrade-stock.md` / `log-archive.md` / `kernel-release.md`） |
 | 指标与性能基线 | `docs/metrics.md`、`loadtest/baseline.json`、`xadmin-client/e2e/perf-baseline.json` |
 | 架构 / 权限 / 契约 / 内核包 | `docs/architecture/`（`kernel-package.md` / `component-handbook.md` / `permission.md` / 框架开发遵循准则.md） |
@@ -395,7 +394,7 @@ R57-5（linkage 剔除早有提示）。
 
 **2026-10-14（5.0 发版窗口）**：工作区根文档两轮整理——①已交付的一次性工作文档（vben 对标系列
 任务书、对标参考截图等）移入工作区回收站 `_delete/workspace-working-docs-20261014/`（可恢复）；
-②**工作区级台账入库**：本清单、`长期开发计划-2026Q4起.md`、`RELEASE-5.0.0.md` 由工作区根迁入
+②**工作区级台账入库**：本清单、原《长期开发计划》（已清理）、原 5.0.0 发布台账（已清理）由工作区根迁入；现行发版台账为 `RELEASE-5.0.1.md`
 本目录 `docs/plans/`（纳入版本保存），`README.md`（工作区总览）与 `AGENTS.md`（AI 协作规范）
 作为工具常驻约定文件留在工作区根；工具目录中的散落内容（`.codeartsdoer/temp/accept` 备份、
 `.workbuddy/memory` 旧记忆、空 `.trae` / `.arts`）同批移入 `_delete/`（可恢复）。

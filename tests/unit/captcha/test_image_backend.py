@@ -51,6 +51,8 @@ class TestImageBackend:
         assert ImageBackend().verify(generated.secret, {"code": "wrong", "pow_answer": {"nonce": nonce}}) is False
         assert ImageBackend().verify(generated.secret, {"code": answer, "pow_answer": {"nonce": "bad"}}) is False
         assert ImageBackend().verify(generated.secret, {"code": answer}) is False
+        # 裸字符串答案不得绕过内嵌 PoW
+        assert ImageBackend().verify(generated.secret, answer) is False
 
     def test_pow_can_be_disabled(self, settings):
         settings.CAPTCHA_POW_FOR_IMAGE_FALLBACK = False

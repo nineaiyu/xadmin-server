@@ -40,7 +40,10 @@ class WordOrderBackend(WordClickBackend):
 
     def generate(self, difficulty: str = "normal") -> CaptchaChallenge:
         rng = random.Random()
-        width, height = size_setting(getattr(settings, "CAPTCHA_SLIDE_SIZE", None), (320, 180))
+        width, height = size_setting(
+            getattr(settings, "CAPTCHA_WORD_ORDER_SIZE", None) or getattr(settings, "CAPTCHA_SLIDE_SIZE", None),
+            (320, 180),
+        )
         tier = difficulty if difficulty in PHRASES else "normal"
         script = selected_charset()
         phrase = rng.choice(TRADITIONAL_PHRASES[tier] if script == "traditional" else PHRASES[tier])

@@ -66,10 +66,10 @@ def build_captcha_meta(scene: str | None = None) -> dict[str, Any]:
 
 
 def preview_image_captcha() -> dict[str, Any]:
-    """按已保存的图片验证码配置生成一张预览图（不写挑战缓存）。"""
+    """按已保存的图片验证码配置生成一张预览图（不写挑战缓存、不生成 PoW）。"""
     from captcha.backends.image import ImageBackend
 
-    generated = ImageBackend().generate()
+    generated = ImageBackend().generate(include_pow=False)
     payload = generated.payload
     return {"image": payload.get("background", ""), "length": int(payload.get("length") or 0)}
 
@@ -94,5 +94,11 @@ def preview_interactive_challenge(captcha_type: str) -> dict[str, Any]:
     backend = get_backend(captcha_type)
     if backend is None:
         raise CaptchaInvalidError()
-    generated = backend.generate()
+    if captcha_type == CAPTCHA_TYPE_IMAGE:
+        # 预览只展示图面：内嵌 PoW 无人消费，白白消耗一次渲染与随机数
+        from captcha.backends.image import ImageBackend
+
+        generated = ImageBackend().generate(include_pow=False)
+    else:
+        generated = backend.generate()
     return {"type": generated.type, **generated.payload}

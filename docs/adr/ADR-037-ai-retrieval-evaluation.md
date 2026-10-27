@@ -6,7 +6,7 @@
 
 - 状态：已接受（结论：**不引入向量检索**，词频重叠检索维持；登记评估出口）
 - 日期：2026-09-14
-- 关联：[下一年度规划建议](../plans/archive/下一年度规划建议-2027.10-2028.09.md)（已归档）§四.A1（W1–W2）；[ADR-023](ADR-023-ai-assistant-phase1.md)（AI 一期：词频检索 + 向量升级候选池）；
+- 关联：下一年度规划建议（历史文档已清理）§四.A1（W1–W2）；[ADR-023](ADR-023-ai-assistant-phase1.md)（AI 一期：词频检索 + 向量升级候选池）；
   [ADR-033](ADR-033-knowledge-base-management.md)（知识库文档管理）；
   `ai/services/assistant/ai.py::retrieve`；`tests/data/ai_retrieval_eval.json`、
   `tests/integration/ai/test_ai_retrieval_eval.py`（回答内容层面的评测见
@@ -41,7 +41,7 @@ AI 一期采用零依赖「词频重叠评分」检索（CJK 二元组 + ASCII �
 | **hit@5** | **35/36 = 97.2%** | < 75% 才升级 | 远高于阈值，质量充分 |
 | 分块数 | 535 | > 500 才升级 | 略超（+7%），见下 |
 | 单次检索耗时 | 平均 30.3ms / 最差 31.6ms（36 问实测） | — | 全量扫描成本在预算内 |
-| 唯一未命中 | `hard-field-hidden`（「看不到某一列」→ 命中 `permission.md`/`data-permission.md` 等语义近邻，非期望的 `field-permission.md`） | — | 语义近邻命中，非事实性错误 |
+| 唯一未命中 | `hard-field-hidden`（「看不到某一列」→ 命中 `permission.md` 等语义近邻，非期望的字段权限教程（已清理）） | — | 语义近邻命中，非事实性错误 |
 
 ## 决策：暂不引入向量检索
 

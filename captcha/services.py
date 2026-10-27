@@ -21,15 +21,21 @@ from captcha import cache as captcha_cache
 from captcha import disposal, flow, risk, telemetry, tickets
 from captcha import signals as sig
 from captcha.backends import get_backend
-from captcha.backends.track import validate_track
-from captcha.challenge_flow import early_decision, emit_decision, emit_verify, failure_dims
+from captcha.challenge_flow import (
+    answer_passed,
+    early_decision,
+    emit_decision,
+    emit_verify,
+    failure_dims,
+    load_stored_challenge,
+    strict_binding,
+)
 from captcha.const import (
     CAPTCHA_DECISION_CHALLENGE,
     CAPTCHA_DECISION_DENY,
     CAPTCHA_DECISION_HARD,
     CAPTCHA_DECISION_LIGHT,
     CAPTCHA_SCENE_SWITCHES,
-    CAPTCHA_TYPE_CLICK,
     CAPTCHA_TYPE_IMAGE,
     CAPTCHA_TYPE_POW,
     captcha_globally_enabled,
@@ -44,26 +50,7 @@ from captcha.meta import (
     max_attempts,
     preview_image_captcha,
     preview_interactive_challenge,
-    track_required,
 )
-
-
-def _strict_binding() -> bool:
-    return bool(getattr(settings, "CAPTCHA_STRICT_BINDING", True))
-
-
-def _load_stored(challenge_id: str, captcha_type: str, scene: str, sid: str = "") -> dict[str, Any]:
-    try:
-        stored = captcha_cache.load_challenge(challenge_id)
-    except Exception as exc:  # noqa: BLE001 缓存不可用 = 无法校验（fail-closed）
-        raise CaptchaInvalidError() from exc
-    if not stored or stored.get("type") != captcha_type or stored.get("scene") != scene:
-        raise CaptchaInvalidError()
-    if _strict_binding():
-        expected = str(stored.get("sid_hash") or "")
-        if not sid or not expected or expected != sig.hash_value(sid):
-            raise CaptchaInvalidError()
-    return stored
 
 
 def _attempts(challenge_id: str) -> int:
@@ -75,27 +62,6 @@ def _attempts(challenge_id: str) -> int:
         captcha_cache.delete_challenge(challenge_id)
         raise CaptchaInvalidError()
     return attempts
-
-
-def _answer_passed(
-    backend: Any,
-    stored: dict[str, Any],
-    answer: Any,
-    captcha_type: str,
-    difficulty: str,
-    track: Any,
-    input_mode: str,
-) -> bool:
-    passed = bool(backend.verify(stored.get("secret") or {}, answer, difficulty=difficulty))
-    if (
-        passed
-        and track_required()
-        and captcha_type not in (CAPTCHA_TYPE_POW, CAPTCHA_TYPE_IMAGE)
-        and input_mode != "keyboard"
-    ):
-        min_points = 3 if captcha_type == CAPTCHA_TYPE_CLICK else 2
-        passed = bool(validate_track(track, min_points=min_points))
-    return passed
 
 
 def _build_payload(
@@ -142,6 +108,7 @@ class InteractiveCaptcha:
         account: str = "",
         honeypot: bool = False,
         xff_inconsistent: bool = False,
+        sid: str = "",
     ) -> dict[str, Any]:
         if scene not in CAPTCHA_SCENE_SWITCHES:
             raise CaptchaInvalidError()
@@ -177,13 +144,12 @@ class InteractiveCaptcha:
             if risk.severity(assessed.decision) < risk.severity(CAPTCHA_DECISION_HARD):
                 assessed.decision = CAPTCHA_DECISION_HARD
                 assessed.reasons.append("fail_ladder")
-        early = early_decision(ctx, assessed, scene, action)
-        if early is not None:
-            return early
+        early_decision(ctx, assessed, scene, action)
         decision = assessed.decision if enforce and assessed else CAPTCHA_DECISION_CHALLENGE
         if decision == CAPTCHA_DECISION_LIGHT and not bool(getattr(settings, "CAPTCHA_POW_ENABLED", True)):
             decision = CAPTCHA_DECISION_CHALLENGE
         selected, difficulty = flow.pick_type(ctx, types, captcha_type, decision)
+        selected = flow.avoid_pow_budget(ctx.ip_hash, types, selected)
         backend = get_backend(selected)
         if backend is None:
             raise CaptchaInvalidError()
@@ -191,7 +157,11 @@ class InteractiveCaptcha:
         generated = backend.generate(difficulty)
         challenge_id = uuid.uuid4().hex
         ttl = challenge_ttl()
-        sid = secrets.token_urlsafe(32)
+        # 会话 sid 在同一浏览器内复用：每个挑战都换新 cookie 会让多标签页
+        # 互相顶掉对方，先出的题因 sid 不再匹配而永远无法校验。
+        session_id = str(sid or "").strip()
+        if not 16 <= len(session_id) <= 128:
+            session_id = secrets.token_urlsafe(32)
         payload = _build_payload(
             ctx,
             scene=scene,
@@ -201,7 +171,7 @@ class InteractiveCaptcha:
             decision=decision,
             assessed=assessed,
             enforce=enforce,
-            sid_hash=sig.hash_value(sid),
+            sid_hash=sig.hash_value(session_id),
         )
         ck = ""
         if tickets.verify_sign_enforced():
@@ -213,7 +183,9 @@ class InteractiveCaptcha:
             raise CaptchaInvalidError() from exc
         sig.record_challenge(ip, fp=ctx.fp, captcha_type=generated.type)
         result = self._challenge_result(challenge_id, generated, ttl, ck, enforce, decision, difficulty, ctx, assessed)
-        result["_sid"] = sid
+        # 服务端时间：verify 加签以它为时间基准，客户端时钟偏差不再导致必败
+        result["ts"] = int(time.time())
+        result["_sid"] = session_id
         return result
 
     def _challenge_result(
@@ -254,7 +226,14 @@ class InteractiveCaptcha:
             )
         return result
 
-    def verify(
+    def verify(self, challenge_id: str, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        """校验入口：同一 challenge 单飞，防止并发请求各自签发 ticket。"""
+        with captcha_cache.challenge_guard(challenge_id) as acquired:
+            if not acquired:
+                raise CaptchaInvalidError()
+            return self._verify_unlocked(challenge_id, *args, **kwargs)
+
+    def _verify_unlocked(
         self,
         challenge_id: str,
         captcha_type: str,
@@ -281,19 +260,29 @@ class InteractiveCaptcha:
         sig.record_verify(ip)
         if not self._validate_action(scene, action):
             raise CaptchaInvalidError()
-        stored = _load_stored(challenge_id, captcha_type, scene, sid)
+        stored = load_stored_challenge(challenge_id, captcha_type, scene, sid, action)
         backend = get_backend(captcha_type)
         if backend is None:
             captcha_cache.delete_challenge(challenge_id)
             raise CaptchaInvalidError()
         effective_answer = pow_answer if captcha_type == CAPTCHA_TYPE_POW and pow_answer is not None else answer
         attempts = _attempts(challenge_id)
+        # 前端以挑战下发的服务端 ts 作为 gen_time：窗口至少要覆盖挑战本身的有效期
+        sign_window = max(int(getattr(settings, "CAPTCHA_VERIFY_SIGN_WINDOW", 300) or 300), challenge_ttl() + 60)
         if tickets.verify_sign_enforced() and not tickets.verify_request_signature(
-            str(stored.get("ck") or ""), challenge_id, captcha_type, scene, effective_answer, gen_time, nonce, sign
+            str(stored.get("ck") or ""),
+            challenge_id,
+            captcha_type,
+            scene,
+            effective_answer,
+            gen_time,
+            nonce,
+            sign,
+            window=sign_window,
         ):
             raise CaptchaInvalidError()
         difficulty = str(stored.get("difficulty") or "normal")
-        passed = _answer_passed(backend, stored, effective_answer, captcha_type, difficulty, track, input_mode)
+        passed = answer_passed(backend, stored, effective_answer, captcha_type, difficulty, track, input_mode)
         ctx = flow.RiskContext(
             scene=scene,
             action=action,
@@ -362,8 +351,6 @@ class InteractiveCaptcha:
 
         if disposal.cooldown_remaining(dims):
             return "cooldown"
-        if captcha_type == CAPTCHA_TYPE_POW and not flow.pow_budget_ok(ctx.ip_hash):
-            return "pow_budget"
         if merged is not None and merged.decision == CAPTCHA_DECISION_DENY:
             return "deny"
         return ""
@@ -476,7 +463,7 @@ class InteractiveCaptcha:
             raise CaptchaInvalidError() from exc
         if not stored or stored.get("type") != CAPTCHA_TYPE_IMAGE:
             raise CaptchaInvalidError()
-        if _strict_binding():
+        if strict_binding():
             expected = str(stored.get("sid_hash") or "")
             if not sid or not expected or expected != sig.hash_value(sid):
                 raise CaptchaInvalidError()

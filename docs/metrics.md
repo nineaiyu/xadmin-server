@@ -4,9 +4,9 @@
 > 用途：半年规划 §八 KPI 的基线登记处，每阶段结束时回填实测值。
 > 统一口径：any 统计正则 `: any|as any`（src/ 内）；跨 app 坏味道 = 非 tests/migrations 的跨 app `models/serializers/views/notifications/backends/signal` 直接 import。
 
-> **本文为概览页**：KPI 基线与构建 / 体积见下；
-> 逐阶段回填履历（§三 回填记录 + 依赖安全审计）见 [metrics-history.md](metrics-history.md)，
-> 性能与前端基线实测履历（§五 性能基线及后续日期条目）见 [metrics-perf-history.md](metrics-perf-history.md)。
+> **本文为概览页**：KPI 基线与构建 / 体积见下。
+> 原逐阶段履历与性能实测记录（`metrics-history.md` / `metrics-perf-history.md`）已清理，
+> 移入工作区 `_delete/2026-10-27-docs-fourth-pass/`（可恢复）。
 
 ## 一、基线实测值（2026-09-04）
 

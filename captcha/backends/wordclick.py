@@ -26,6 +26,11 @@ ASCII_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 CONFUSABLE_CHARS = set("己已巳日曰木术未末土士干千天夫失矢王玉主住八入人个几儿了子孑")
 
 
+def _click_size() -> Any:
+    """点选画布尺寸：独立配置优先，未配置时沿用滑块尺寸（兼容既有部署）。"""
+    return getattr(settings, "CAPTCHA_CLICK_SIZE", None) or getattr(settings, "CAPTCHA_SLIDE_SIZE", None)
+
+
 def _gb2312_level1_chars() -> str:
     chars: list[str] = []
     for high in range(0xB0, 0xD8):
@@ -137,7 +142,7 @@ class WordClickBackend(ChallengeBackend):
 
     def generate(self, difficulty: str = "normal") -> CaptchaChallenge:
         rng = random.Random()
-        width, height = size_setting(getattr(settings, "CAPTCHA_SLIDE_SIZE", None), (320, 180))
+        width, height = size_setting(_click_size(), (320, 180))
         script = selected_charset()
         charset = click_charset(script)
         count = CLICK_COUNT

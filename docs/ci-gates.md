@@ -21,11 +21,11 @@
 | `lint.yml` | Captcha asset gate | 背景图库 manifest：许可 / 来源 / 路径穿越 / 扩展名 / sha256 / 2MB 体积；空 files = 程序化兜底 | `scripts/check_captcha_assets.py` | `python scripts/check_captcha_assets.py` |
 | `lint.yml` | Menu title gate | 视图类与 `@action` 的 docstring 首行 ≤24 字（首行 = 菜单显示名 / 操作日志 module，详细说明下沉后续段落） | `scripts/check_menu_titles.py` | `python scripts/check_menu_titles.py` |
 | `lint.yml` | Doc facts gate | 文档"当前事实"防漂移（版本 / 端口 / workflow 参数等，FACTS 表逐条登记） | `scripts/check_doc_facts.py` | `python scripts/check_doc_facts.py` |
-| `lint.yml` | Doc index gate | 文档索引覆盖（防孤儿文档：`docs/` 内容型文档必须登记索引）；`plans/archive/` 双向登记（逐篇登记 plans/README，且不得出现在 docs/README 主索引） | `scripts/check_doc_index.py` | `python scripts/check_doc_index.py` |
+| `lint.yml` | Doc index gate | 文档索引覆盖（防孤儿文档：`docs/` 内容型文档必须登记索引）；若存在 `plans/archive/`：逐篇登记 plans/README，且不得出现在 docs/README 主索引（当前归档区已清空，规则保留） | `scripts/check_doc_index.py` | `python scripts/check_doc_index.py` |
 | `lint.yml` | Doc paths gate | 组件手册（主册 + `handbook-backend/frontend` 分册）/ 活跃文档引用的代码路径必须可达 | `scripts/check_doc_paths.py` | `python scripts/check_doc_paths.py` |
 | `lint.yml` | Tutorial mirror gate | 教程中的 manage.py 命令 / CLI 参数 / demo 路径与代码一致 | `scripts/check_tutorial_mirror.py` | `python scripts/check_tutorial_mirror.py` |
 | `lint.yml` | ADR status gate | ADR 生命周期：状态行归一且取值落闭集 / supersede 链（目标存在·无环·双向一致）/ 触发制项登记 / `adr/README.md` 状态列锁步 | `scripts/check_adr_status.py` | `python scripts/check_adr_status.py` |
-| `lint.yml` | Doc size gate | 文档体积预算（单篇 >40 KB 新增即失败；`plans/archive/` 前缀豁免、单篇豁免只减不增） | `scripts/check_doc_size.py` | `python scripts/check_doc_size.py` |
+| `lint.yml` | Doc size gate | 文档体积预算（单篇 >40 KB 新增即失败；`plans/archive/` 前缀豁免——当前归档区已清空，规则保留；单篇豁免只减不增） | `scripts/check_doc_size.py` | `python scripts/check_doc_size.py` |
 | `test.yml` | pytest（真 PG + 真 Redis） | 全量单测 + 集成测试 + 守护测试；覆盖率阈值门禁（`--cov-fail-under`，值见 workflow 注释） | `tests/` 全树 | `pytest -n auto`（先 `docker compose -f compose.test.yml up -d`） |
 | `test.yml` | Django system check | 数据库标记检查（索引名超长 / GinIndex 前置条件等仅 `check --database` 可见的模型缺陷） | `manage.py check --database default` | 同左（需真 PG） |
 | `security.yml` | pip-audit | 生产依赖已知漏洞（requirements.txt 口径，PR + 每周定时） | `pip-audit -r requirements.txt` | 同左 |

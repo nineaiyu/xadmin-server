@@ -161,12 +161,13 @@ class TestSharedPathPermissionSelection:
 
 
 def test_every_duplicate_seed_permission_is_registered():
-    """所有 seeds 中重复的 (path, method) 必须在视图声明处登记，且与兜底表一致。
+    """所有 seeds 中重复的 (path, method) 必须在视图声明处登记（注册表为唯一事实源）。
 
     运行时按 path 建字典只能保留一个权限点；未登记的共享端点会退化为按码名排序，
     字段权限上下文与数据权限菜单上下文都不可预期。新增共享权限点必须在视图上用
     ``@shared_permissions`` 声明（含该端点下的全部权限码）；兼容期兜底表
-    ``SHARED_PERMISSION_PRIORITY`` 仍保留，但必须与声明注册表完全一致。
+    ``SHARED_PERMISSION_PRIORITY`` 只服务「URLconf 尚未装载」的离线扫描，
+    允许注册表有而表无，重叠项的主权限点顺序必须一致。
     """
     import json
     from collections import defaultdict
@@ -196,14 +197,8 @@ def test_every_duplicate_seed_permission_is_registered():
                 groups[(str(fields.get("path")), str(fields.get("method")))].append(str(fields.get("name")))
     duplicates = {key: names for key, names in groups.items() if len(names) > 1}
 
-    unregistered = set(duplicates) - set(SHARED_PERMISSION_PRIORITY)
-    assert not unregistered, f"共享权限点未登记 SHARED_PERMISSION_PRIORITY: {sorted(unregistered)}"
     stale = set(SHARED_PERMISSION_PRIORITY) - set(duplicates)
     assert not stale, f"SHARED_PERMISSION_PRIORITY 存在失效登记（seeds 已无重复码）: {sorted(stale)}"
-    for key, names in duplicates.items():
-        assert set(names) == set(SHARED_PERMISSION_PRIORITY[key]), (
-            f"{key} 的权限码未完整登记：seeds={sorted(names)} priority={sorted(SHARED_PERMISSION_PRIORITY[key])}"
-        )
 
     declared = {
         (normalize_shared_path(path), method.upper()): spec
@@ -217,6 +212,11 @@ def test_every_duplicate_seed_permission_is_registered():
         assert set(spec.priority) == set(names), (
             f"{key} 的视图声明未覆盖全部权限码：seeds={sorted(names)} declared={sorted(spec.priority)}"
         )
-        assert spec.priority == SHARED_PERMISSION_PRIORITY[key], (
-            f"{key} 的视图声明与兜底表顺序不一致：declared={spec.priority} table={SHARED_PERMISSION_PRIORITY[key]}"
+    # 兜底表只约束重叠项：允许注册表新增而表未跟进（离线扫描按码名排序兜底）
+    for key, priority in SHARED_PERMISSION_PRIORITY.items():
+        normalized = (normalize_shared_path(key[0]), key[1].upper())
+        spec = declared.get(normalized)
+        assert spec is not None, f"兜底表登记项在视图声明注册表中缺失: {key}"
+        assert spec.priority == priority, (
+            f"{key} 的视图声明与兜底表顺序不一致：declared={spec.priority} table={priority}"
         )

@@ -25,7 +25,7 @@ class TestAudioRange:
         response = audio_file_response(RequestFactory().get("/audio"), path, "a.wav")
         assert response.status_code == 200
         assert response["Accept-Ranges"] == "bytes"
-        assert response["Content-Disposition"] == 'attachment; filename="a.wav"'
+        assert response["Content-Disposition"] == 'inline; filename="a.wav"'
         response.close()
         assert not os.path.exists(path)
 

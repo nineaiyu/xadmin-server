@@ -13,6 +13,7 @@ from typing import Any
 from django.conf import settings
 from django.core.cache import cache
 
+from captcha import cache as captcha_cache
 from captcha import risk
 from captcha import signals as sig
 from captcha.const import (
@@ -30,6 +31,7 @@ from captcha.const import (
     CAPTCHA_TYPE_WORDORDER,
     current_risk_mode,
 )
+from captcha.errors import CaptchaInvalidError
 
 RECENT_TYPE_PREFIX = "captcha_type_recent"
 POW_BUDGET_PREFIX = "captcha_pow_budget"
@@ -143,9 +145,9 @@ def _recent_type_key(ctx: RiskContext) -> str:
 
 
 def _choose(ctx: RiskContext, pool: list[str]) -> str:
-    """加权池内随机，并做短窗防重复；池为空时退回 click。"""
+    """加权池内随机，并做短窗防重复；池为空属于调用方错误（不得凭空造题型）。"""
     if not pool:
-        return CAPTCHA_TYPE_CLICK
+        raise CaptchaInvalidError()
     selected = random.choice(pool)
     try:
         recent = cache.get(_recent_type_key(ctx))
@@ -172,7 +174,13 @@ def pick_type(ctx: RiskContext, types: list[str], requested: str | None, decisio
 
     决策优先：allow/light 恒走 PoW；hard 忽略客户端请求并强制难题型；
     challenge 才允许在启用池内尊重请求；image 只作为显式回退且永不进 hard。
+    任何分支都只能返回 ``types`` 内的题型（题型开关是硬约束）。
     """
+    candidates = [item for item in types if item != CAPTCHA_TYPE_POW]
+    if not candidates:
+        raise CaptchaInvalidError()
+    # 图片题型只作为显式回退：随机池默认排除它（权重为 0 时同样排除）
+    puzzle_pool = [item for item in candidates if item != CAPTCHA_TYPE_IMAGE] or candidates
     if decision in (CAPTCHA_DECISION_ALLOW, CAPTCHA_DECISION_LIGHT):
         # 显式图片回退优先于静默 PoW：无障碍用户需要看到图片题本身；
         # 图片题自带 PoW（CAPTCHA_POW_FOR_IMAGE_FALLBACK），不会白嫖。
@@ -181,19 +189,17 @@ def pick_type(ctx: RiskContext, types: list[str], requested: str | None, decisio
         if bool(getattr(settings, "CAPTCHA_POW_ENABLED", True)):
             difficulty = CAPTCHA_DIFFICULTY_EASY if decision == CAPTCHA_DECISION_ALLOW else CAPTCHA_DIFFICULTY_HARD
             return CAPTCHA_TYPE_POW, difficulty
-        return CAPTCHA_TYPE_CLICK, CAPTCHA_DIFFICULTY_NORMAL
+        # PoW 关闭：在已启用题型内出题，不得落到未启用的 click
+        pool = _weighted_types(puzzle_pool) or puzzle_pool
+        return _choose(ctx, pool), CAPTCHA_DIFFICULTY_NORMAL
 
-    candidates = [item for item in types if item != CAPTCHA_TYPE_POW]
     if decision == CAPTCHA_DECISION_HARD:
         hard_pool = [
-            item for item in candidates if item in (CAPTCHA_TYPE_WORDORDER, CAPTCHA_TYPE_CLICK, CAPTCHA_TYPE_ICON)
+            item for item in puzzle_pool if item in (CAPTCHA_TYPE_WORDORDER, CAPTCHA_TYPE_CLICK, CAPTCHA_TYPE_ICON)
         ]
         if CAPTCHA_TYPE_WORDORDER in hard_pool:
             return CAPTCHA_TYPE_WORDORDER, CAPTCHA_DIFFICULTY_HARD
-        if hard_pool:
-            return _choose(ctx, hard_pool), CAPTCHA_DIFFICULTY_HARD
-        fallback = [item for item in candidates if item != CAPTCHA_TYPE_IMAGE]
-        return _choose(ctx, fallback or [CAPTCHA_TYPE_CLICK]), CAPTCHA_DIFFICULTY_HARD
+        return _choose(ctx, hard_pool or puzzle_pool), CAPTCHA_DIFFICULTY_HARD
 
     if (
         requested == CAPTCHA_TYPE_IMAGE
@@ -205,9 +211,7 @@ def pick_type(ctx: RiskContext, types: list[str], requested: str | None, decisio
     if requested and requested in candidates and _weight_positive(requested):
         return requested, difficulty_for(decision)
 
-    pool = _weighted_types(candidates)
-    if not pool:
-        pool = [item for item in candidates if item != CAPTCHA_TYPE_IMAGE] or [CAPTCHA_TYPE_CLICK]
+    pool = _weighted_types(puzzle_pool) or puzzle_pool
     return _choose(ctx, pool), difficulty_for(decision)
 
 
@@ -220,17 +224,31 @@ def pow_budget_ok(ip_hash: str) -> bool:
         return True
     key = f"{POW_BUDGET_PREFIX}_{ip_hash}"
     try:
-        count = int(cache.get(key, 0) or 0) + 1
-        cache.set(key, count, 3600)
-        return count <= budget
+        return captcha_cache.incr_counter(key, 3600) <= budget
     except Exception:  # noqa: BLE001 缓存不可用 = 不拦截（宁可放行也不误伤）
         return True
+
+
+def avoid_pow_budget(ip_hash: str, types: list[str], selected: str) -> str:
+    """PoW 超预算时降级到其他已启用题型（图片回退自带 PoW，排在其次）。
+
+    预算按「每小时发放」计数，超预算的请求不直接拒绝；只有题型池仅剩
+    PoW（及图片回退）时才继续发放，避免绕过题型开关。
+    """
+    if selected != CAPTCHA_TYPE_POW or pow_budget_ok(ip_hash):
+        return selected
+    fallback = next(
+        (item for item in types if item not in (CAPTCHA_TYPE_POW, CAPTCHA_TYPE_IMAGE)),
+        "",
+    )
+    return fallback or next((item for item in types if item != CAPTCHA_TYPE_POW), selected)
 
 
 __all__ = [
     "RiskContext",
     "assess_challenge",
     "assess_verify",
+    "avoid_pow_budget",
     "difficulty_for",
     "pick_type",
     "pow_budget_ok",

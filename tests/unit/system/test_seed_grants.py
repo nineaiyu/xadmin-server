@@ -39,8 +39,9 @@ pytestmark = pytest.mark.django_db
 #  2026-10 字段/设置页改只读台账：移除 16 个写/删除/导入权限点，admin 255 → 251；
 #  2026-10 聊天群权限：admin/default/test 补 createGroup/members/rename/leave，demo 补 createGroup/rename/leave
 #  2026-10 开放平台设置页：admin 补页面 + SCIM/第三方登录 8 个权限点，268 → 279）
-#  2026-10 设置页归类：admin 补「通知渠道」「账号安全」两个页面，290 → 292）
-EXPECTED_ROLE_MENUS = {"admin": 297, "test": 87, "default": 33, "demo": 67}
+#  2026-10 设置页归类：admin 补「通知渠道」「账号安全」两个页面，290 → 292；
+#  IM / Webhook 通知渠道补写权限点（partialUpdate/create），297 → 301）
+EXPECTED_ROLE_MENUS = {"admin": 301, "test": 87, "default": 33, "demo": 67}
 
 
 def _plan_grants():
@@ -126,6 +127,22 @@ class TestDeclarationIntegrity:
         declarations = _plan_grants()
         assert PLATFORM in {item.app for item in declarations}
         assert "identity" in {item.app for item in declarations}
+
+    def test_admin_holds_notification_channel_write_permissions(self):
+        """通知渠道页的保存/测试按钮门控 IM/Webhook 写码，内置 admin 必须持有。
+
+        缺口现场：权限点在菜单种子中存在，但没有任何角色 grants 授予它们，
+        非超管管理员进入新页签只能看邮件渠道，IM/Webhook 保存恒 403。
+        """
+
+        merged = merge_grants(_plan_grants())
+        for name in (
+            "partialUpdate:ImNotifySetting",
+            "create:ImNotifySetting",
+            "partialUpdate:WebhookNotifySetting",
+            "create:WebhookNotifySetting",
+        ):
+            assert name in merged["admin"], f"admin 缺少渠道写权限点：{name}"
 
 
 class TestLoadReportNotes:

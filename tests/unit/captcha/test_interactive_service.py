@@ -7,7 +7,7 @@ import pytest
 from django.core.cache import cache
 
 from captcha import cache as captcha_cache
-from captcha import tickets
+from captcha import flow, tickets
 from captcha.const import CAPTCHA_ACTION_LOGIN, verify_code_send_action
 from captcha.services import CaptchaInvalidError, InteractiveCaptcha, build_captcha_meta
 
@@ -102,6 +102,45 @@ class TestChallenge:
 
 
 class TestVerifyAndTicket:
+    def test_challenge_exposes_server_time(self, interactive):
+        challenge = interactive.challenge(captcha_type="slide", scene="login")
+        assert isinstance(challenge["ts"], int) and challenge["ts"] > 0
+
+    def test_session_sid_is_reused_across_challenges(self, interactive):
+        sid = "s" * 32
+        first = interactive.challenge(captcha_type="slide", scene="login", sid=sid)
+        second = interactive.challenge(captcha_type="slide", scene="login", sid=sid)
+        assert first["_sid"] == sid
+        assert second["_sid"] == sid
+        # 第二个挑战不会顶掉第一个的会话绑定
+        assert _solve(interactive, first)["passed"] is True
+
+    def test_unusable_sid_is_replaced(self, interactive):
+        challenge = interactive.challenge(captcha_type="slide", scene="login", sid="short")
+        assert challenge["_sid"] != "short"
+        assert len(challenge["_sid"]) >= 16
+
+    def test_click_track_min_points_follow_target_count(self, settings, interactive, monkeypatch):
+        settings.CAPTCHA_TRACK_CHECK_ENABLED = True
+        settings.CAPTCHA_CLICK_COUNT_EASY = 2
+        settings.CAPTCHA_ENABLED_TYPES = ["click"]
+        monkeypatch.setattr(flow, "pick_type", lambda *_args, **_kwargs: ("click", "easy"))
+        challenge = interactive.challenge(captcha_type="click", scene="login", action=CAPTCHA_ACTION_LOGIN)
+        stored = captcha_cache.load_challenge(challenge["challenge_id"])
+        assert stored is not None
+        assert len(stored["secret"]["points"]) == 2
+        track = [{"x": 0, "y": 0, "t": 0}, {"x": 1, "y": 1, "t": 200}]
+        result = interactive.verify(
+            challenge_id=challenge["challenge_id"],
+            captcha_type="click",
+            scene="login",
+            answer=stored["secret"],
+            track=track,
+            action=CAPTCHA_ACTION_LOGIN,
+            sid=challenge["_sid"],
+        )
+        assert result["passed"] is True
+
     def test_pass_issues_one_time_ticket_bound_to_scene(self, interactive):
         challenge = interactive.challenge(captcha_type="slide", scene="login")
         result = _solve(interactive, challenge)
@@ -126,6 +165,26 @@ class TestVerifyAndTicket:
                 )
             )
         assert results.count(True) == 1
+
+    def test_concurrent_verify_issues_one_ticket(self, interactive):
+        challenge = interactive.challenge(captcha_type="slide", scene="login")
+
+        def attempt(_index):
+            try:
+                return _solve(interactive, challenge, ip="10.0.0.11")
+            except CaptchaInvalidError:
+                return None
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(attempt, range(2)))
+        assert sum(1 for result in results if result and result.get("passed")) == 1
+
+    def test_pow_budget_falls_back_to_enabled_non_pow_type(self, monkeypatch, settings, interactive):
+        settings.CAPTCHA_ENABLED_TYPES = ["pow", "slide"]
+        monkeypatch.setattr(flow, "pick_type", lambda *_args, **_kwargs: ("pow", "easy"))
+        monkeypatch.setattr(flow, "pow_budget_ok", lambda _ip: False)
+        challenge = interactive.challenge(scene="login")
+        assert challenge["type"] == "slide"
 
     def test_ticket_scene_mismatch_consumes_and_fails(self, interactive):
         challenge = interactive.challenge(captcha_type="rotate", scene="reset")
@@ -221,6 +280,21 @@ class TestActionBinding:
             interactive.verify(**base)
         with pytest.raises(CaptchaInvalidError):
             interactive.verify(**base, action="invite.accept")
+        assert interactive.verify(**base, action=CAPTCHA_ACTION_LOGIN)["passed"] is True
+
+    def test_verify_action_must_match_challenge_action(self, interactive):
+        challenge = interactive.challenge(captcha_type="slide", scene="login", action=CAPTCHA_ACTION_LOGIN)
+        _, answer = _answer_for(challenge["challenge_id"])
+        base = dict(
+            challenge_id=challenge["challenge_id"],
+            captcha_type=challenge["type"],
+            scene="login",
+            answer=answer,
+            track=None,
+        )
+        # 同 scene 的另一个 action 不得套用本题（出题动作必须贯穿到校验）
+        with pytest.raises(CaptchaInvalidError):
+            interactive.verify(**base, action=verify_code_send_action("login"))
         assert interactive.verify(**base, action=CAPTCHA_ACTION_LOGIN)["passed"] is True
 
     def test_login_ticket_cannot_be_used_to_send_verify_code(self, interactive):

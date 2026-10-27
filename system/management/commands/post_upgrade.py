@@ -11,7 +11,8 @@
    均为 no-op，不执行 DDL）；
 2. ``migrate_api_prefixes --apply`` —— 存量库里的旧 API 前缀路径平移（四域路由
    独立前缀化；全新库为 0 命中 no-op）；
-3. ``load_init_json``     —— 内置种子与新增权限点入库（含设置页重组后的角色页面授权回填）；
+3. ``load_init_json``     —— 内置种子与新增权限点入库（含设置页重组后的角色页面授权回填，
+   以及已下线权限点的残留清理——旧库结构对齐路径不执行本仓库数据迁移）；
 4. ``compilemessages``    —— 编译语言包（缺 gettext 时降级为警告）；
 5. ``expire_caches config_*`` —— 失效配置缓存；
 6. 权限点缺口扫描（只报告，不修改数据；修复命令 sync_menu_permissions）。
@@ -66,6 +67,14 @@ class Command(BaseCommand):
                 "partialUpdate:SecurityPasswordRule",
             ),
         ),
+        (
+            "SettingSecurity",
+            "SettingCaptcha",
+            (
+                "retrieve:SecurityCaptchaCode",
+                "partialUpdate:SecurityCaptchaCode",
+            ),
+        ),
     )
 
     def add_arguments(self, parser: Any) -> None:
@@ -100,6 +109,14 @@ class Command(BaseCommand):
             if granted:
                 self.stdout.write(self.style.SUCCESS(f"      设置页重组授权回填：{granted} 个角色"))
 
+        self._remove_dead_permissions()
+
+        # 存量库可能缺默认风险规则行：补齐后设置页才能看到并调整（幂等，不覆盖已改行）
+        try:
+            management.call_command("captcha_ensure_rules", verbosity=0)
+        except Exception as exc:  # noqa: BLE001 规则补齐失败不阻断升级，风险层仍走代码默认值
+            self.stdout.write(self.style.WARNING(f"      验证码风险规则补齐失败（跳过）：{exc}"))
+
         if options["skip_compile"]:
             self.stdout.write("[4/6] 跳过语言包编译（--skip-compile）")
         else:
@@ -121,6 +138,18 @@ class Command(BaseCommand):
             self._scan_permissions(skip_field_permissions=options["skip_field_permissions"])
 
         self.stdout.write(self.style.SUCCESS("post_upgrade 完成"))
+
+    def _remove_dead_permissions(self) -> None:
+        """清理已下线权限点残留（旧库结构对齐路径不执行本仓库数据迁移）。"""
+        try:
+            from system.services.dead_permissions import remove_dead_permissions
+
+            removed = remove_dead_permissions()
+        except Exception as exc:
+            self.stdout.write(self.style.WARNING(f"      下线权限点清理失败（跳过）：{exc}"))
+            return
+        if removed:
+            self.stdout.write(self.style.SUCCESS(f"      已清理下线权限点：{removed} 条"))
 
     def _scan_permissions(self, skip_field_permissions: bool = False) -> None:
         self.stdout.write("[6/6] 权限点与字段白名单…")

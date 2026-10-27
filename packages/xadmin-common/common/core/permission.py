@@ -85,8 +85,9 @@ def get_user_field_queryset_for_menus(user_obj: Any, menus: Any) -> Any:
 
 
 #: 同一 (path, method) 登记多个权限码时的兜底主权限点优先级（兼容期）。
-#: 新代码应在视图声明处用 ``@shared_permissions`` 登记（注册表优先）；
-#: 本表仅为「URLconf 尚未装载 / 离线扫描」时 import 顺序兜底，与注册表由守护测试锁定一致。
+#: 新代码应在视图声明处用 ``@shared_permissions`` 登记（注册表为唯一事实源）；
+#: 本表仅为「URLconf 尚未装载 / 离线扫描」时的 import 顺序兜底，允许注册表有而本表无；
+#: 重叠项的主权限点顺序由守护测试锁定一致。
 SHARED_PERMISSION_PRIORITY: dict[tuple[str, str], tuple[str, ...]] = {
     ("api/settings/basic$", "GET"): ("retrieve:SettingBasic", "retrieve:SettingWatermark"),
     ("api/settings/basic$", "PATCH"): ("partialUpdate:SettingBasic", "partialUpdate:SettingWatermark"),

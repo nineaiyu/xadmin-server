@@ -159,6 +159,17 @@ class TestCaptchaStats:
         _log(latency_ms=200)
         assert captcha_stats(24)["summary"]["latency_p50"] == 200
 
+    def test_top_reasons_sample_is_bounded(self, monkeypatch):
+        from captcha import stats
+
+        monkeypatch.setattr(stats, "TOP_REASON_SAMPLE_LIMIT", 2)
+        _log(decision="deny", passed=False, risk_reasons=["old"])
+        _log(decision="deny", passed=False, risk_reasons=["middle"])
+        _log(decision="deny", passed=False, risk_reasons=["new"])
+        reasons = {row["reason"] for row in captcha_stats(24)["top_reasons"]}
+        # 只采样最近 2 行，避免大窗口把全部 deny 行拉进 Python
+        assert reasons == {"middle", "new"}
+
     def test_window_filters_old_rows(self):
         from datetime import timedelta
 

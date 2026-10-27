@@ -131,5 +131,5 @@ DJANGO_SETTINGS_MODULE=tests.settings_pg \
 
 - 版本对齐：`postgres:17` ≙ loadtest §3.1 与生产 compose 的 `postgres:17.11`；psycopg3 依赖已在 `requirements.txt:94-96`（无需新增安装面）；
 - 与 `perf.yml`（k6 基线）分工：nightly 管**正确性**，perf 管**性能口径**；
-- 台账入口：[NEXT-DEV-PLAN.md](../../../NEXT-DEV-PLAN.md) §三 B **F6**；
+- 台账入口：NEXT-DEV-PLAN（历史文档） §三 B **F6**；
 - 关联登记：`docs/ops/performance-baseline.md` §九（2026-10-01 fields 深度定位——本次立项的动因之一，ASGI/真库行为差异在真实环境下才可见）。

@@ -19,8 +19,9 @@ DECLARATIONS = AppDeclarations(
         "api/settings/captcha/risk": ("SecurityCaptchaRisk", "SettingCaptcha"),
     },
     audit_known_duplicates=(
-        # 基本设置与水印同端点：水印是独立页签权限位（读写同 `/api/settings/basic`，
-        # 后端按 path+method 鉴权为 OR 语义，字段级隔离不做）
+        # 基本设置与水印同端点：水印是独立页签权限位（读写同 `/api/settings/basic`）。
+        # 读取按 path+method 为 OR 语义（任一码即可读）；写入侧按字段分组隔离
+        # （见 settings/views/basic.py 的 field_groups，越权字段逐字段 400）。
         ("api/settings/basic$", "GET"),
         ("api/settings/basic$", "PATCH"),
     ),

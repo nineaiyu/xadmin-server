@@ -28,10 +28,10 @@ def _window() -> int:
 
 
 def _incr(key: str, ttl: int) -> int:
+    from captcha import cache as captcha_cache
+
     try:
-        value = int(cache.get(key, 0) or 0) + 1
-        cache.set(key, value, ttl)
-        return value
+        return captcha_cache.incr_counter(key, ttl)
     except Exception:  # noqa: BLE001 计数不可用 = 不告警
         return 0
 

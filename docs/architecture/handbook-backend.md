@@ -141,7 +141,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | 前端消费 | `hasAuth("动作:组件名")` / `<Auth>` / `usePageAuth` | 见 §2.6 |
 
 - 权限码约定 `{action}:{ViewSetName}`；**新增端点必须登记权限点**（生成器种子或 `sync_menu_permissions`），漏登记 = 非超管 403。
-- 深入：[permission.md](permission.md)（体系）、[data-permission.md](data-permission.md)、[field-permission.md](field-permission.md)（配置操作教程）。
+- 深入：[permission.md](permission.md)（体系、配置与排障；原独立教程已清理）。
 
 ### 1.7 统一响应与异常
 

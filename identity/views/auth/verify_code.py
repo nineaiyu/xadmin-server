@@ -62,8 +62,8 @@ def get_register_config(request: Any) -> Any:
         **_captcha_meta("register"),
         "token": settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED,
         "encrypted": settings.SECURITY_REGISTER_ENCRYPTED_ENABLED,
-        "email": settings.SECURITY_REGISTER_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
-        "sms": settings.SECURITY_REGISTER_BY_SMS_ENABLED and settings.SMS_ENABLED,
+        "email": settings.SECURITY_REGISTER_BY_EMAIL_ENABLED and email_service_ready(),
+        "sms": settings.SECURITY_REGISTER_BY_SMS_ENABLED and sms_service_ready(),
         "rate": settings.VERIFY_CODE_LIMIT,
         "password": get_password_check_rules(request.user),
     }
@@ -78,8 +78,8 @@ def get_login_config(request: Any) -> Any:
         **_captcha_meta("login"),
         "token": settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
         "encrypted": settings.SECURITY_LOGIN_ENCRYPTED_ENABLED,
-        "email": settings.SECURITY_LOGIN_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
-        "sms": settings.SECURITY_LOGIN_BY_SMS_ENABLED and settings.SMS_ENABLED,
+        "email": settings.SECURITY_LOGIN_BY_EMAIL_ENABLED and email_service_ready(),
+        "sms": settings.SECURITY_LOGIN_BY_SMS_ENABLED and sms_service_ready(),
         "rate": settings.VERIFY_CODE_LIMIT,
         "lifetime": settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME").days,
     }
@@ -93,8 +93,8 @@ def get_reset_config(request: Any) -> Any:
         **_captcha_meta("reset"),
         "token": settings.SECURITY_RESET_PASSWORD_TEMP_TOKEN_ENABLED,
         "encrypted": settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED,
-        "email": settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
-        "sms": settings.SECURITY_RESET_PASSWORD_BY_SMS_ENABLED and settings.SMS_ENABLED,
+        "email": settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED and email_service_ready(),
+        "sms": settings.SECURITY_RESET_PASSWORD_BY_SMS_ENABLED and sms_service_ready(),
         "rate": settings.VERIFY_CODE_LIMIT,
         "password": get_password_check_rules(request.user),
     }

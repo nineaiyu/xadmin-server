@@ -11,7 +11,7 @@
 不落明文 UA 全文，只落 UA 类别与浏览器族。
 """
 
-import hashlib
+import contextvars
 import random
 import re
 import threading
@@ -27,6 +27,12 @@ logger = get_logger(__name__)
 
 #: 进程内降级缓冲上限：溢出丢最旧（遥测完整性让位于主链路内存安全）
 FALLBACK_BUFFER_LIMIT = 2000
+#: 单请求缓冲上限：达到即投递（异常请求不把整窗事件攒到请求结束）
+BATCH_SIZE = 20
+#: 请求级事件缓冲（同一请求的 challenge/verify/decision 合并为一次 Celery 投递）
+_REQUEST_BUFFER: contextvars.ContextVar[list[dict[str, Any]] | None] = contextvars.ContextVar(
+    "captcha_telemetry_buffer", default=None
+)
 _FIELDS = (
     "phase",
     "scene",
@@ -63,12 +69,14 @@ def telemetry_enabled() -> bool:
 
 
 def hash_ip(ip: str) -> str:
-    """IP 加盐哈希（盐随票据密钥派生，可轮换切断历史关联）。"""
-    from captcha.tickets import _derived_secret
+    """IP 加盐哈希（与风控/票据/处置共用 ``captcha.signals.hash_ip`` 单一实现）。
 
-    if not ip:
-        return ""
-    return hashlib.sha256(f"{_derived_secret()}|{ip}".encode()).hexdigest()
+    两套哈希会让观测日志的 TopN 与处置键对不上（无法互证），因此这里只做转发，
+    盐与网段口径一律由信号层决定。
+    """
+    from captcha.signals import hash_ip as _hash_ip
+
+    return _hash_ip(ip)
 
 
 def classify_ua(ua: str) -> str:
@@ -104,6 +112,18 @@ def emit(**event: Any) -> None:
         logger.debug("captcha telemetry emit failed", exc_info=True)
 
 
+def begin_request() -> None:
+    """标记进入一次验证码请求：其间的遥测事件合并为一次投递。"""
+    _REQUEST_BUFFER.set([])
+
+
+def end_request() -> None:
+    """请求结束（含异常路径）：冲刷本请求缓冲；未成对调用 begin 时为 no-op。"""
+    pending = _REQUEST_BUFFER.get()
+    _REQUEST_BUFFER.set(None)
+    _flush(pending or [])
+
+
 def _emit_inner(**event: Any) -> None:
     if not telemetry_enabled():
         return
@@ -113,18 +133,29 @@ def _emit_inner(**event: Any) -> None:
     record = {key: event.get(key) for key in _FIELDS if key in event}
     record["ts"] = time.time()
     _stats["emitted"] += 1
+    pending = _REQUEST_BUFFER.get()
+    if pending is None:
+        # 非请求上下文（任务 / 单测）：保持即时投递语义
+        _flush([record])
+        return
+    pending.append(record)
+    if len(pending) >= BATCH_SIZE:
+        _REQUEST_BUFFER.set([])
+        _flush(pending)
+
+
+def _flush(events: list[dict[str, Any]]) -> None:
+    """投递一批事件；同时补发降级缓冲（队列恢复后自动追平）。"""
+    if not events:
+        return
     with _lock:
         pending = _fallback.copy()
         _fallback.clear()
-    if pending:
-        if _dispatch(pending):
-            _stats["dispatched"] += len(pending)
-        else:
-            _rebuffer(pending)
-    if _dispatch([record]):
-        _stats["dispatched"] += 1
+    batch = pending + events
+    if _dispatch(batch):
+        _stats["dispatched"] += len(batch)
     else:
-        _rebuffer([record])
+        _rebuffer(batch)
 
 
 def _success_sample_rate() -> float:

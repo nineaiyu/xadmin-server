@@ -114,6 +114,39 @@ class TestCapabilities:
         assert "captcha_mode" not in data
 
 
+class TestSessionCookie:
+    @pytest.fixture
+    def strict_binding(self, settings):
+        settings.CAPTCHA_ENABLED = True
+        settings.CAPTCHA_ENABLED_TYPES = ["slide"]
+        settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = False
+        settings.CAPTCHA_RISK_MODE = "off"
+        settings.CAPTCHA_TRACK_CHECK_ENABLED = False
+        settings.CAPTCHA_VERIFY_SIGN_REQUIRED = False
+        settings.CAPTCHA_STRICT_BINDING = True
+        settings.SECURITY_LOGIN_CAPTCHA_ENABLED = True
+
+    def test_second_challenge_keeps_first_verifiable(self, api_client, strict_binding):
+        """同浏览器多标签页并发出题：sid 复用，先出的题不能被后来的挑战顶掉。"""
+        first = _challenge(api_client)
+        sid = api_client.cookies["captcha_sid"].value
+        second = _challenge(api_client)
+        assert api_client.cookies["captcha_sid"].value == sid
+        assert first["ts"] > 0 and second["ts"] > 0
+        resp = _verify(api_client, first)
+        assert resp.status_code == 200, resp.data
+        assert resp.data["data"]["passed"] is True
+
+    def test_fresh_browser_still_gets_a_sid(self, api_client, strict_binding):
+        resp = api_client.post(CHALLENGE_URL, {"type": "slide", "scene": "login"}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["data"]["ts"] > 0
+        cookie = resp.cookies["captcha_sid"]
+        assert len(cookie.value) >= 16
+        # cookie 寿命必须覆盖挑战 + 票据：否则拖到挑战末尾作答后，登录会丢 sid
+        assert int(cookie["max-age"]) > int(resp.data["data"]["ttl"])
+
+
 class TestChallengeVerifyLogin:
     def test_full_flow_issues_ticket_and_login_succeeds(self, api_client, normal_user, unified_login):
         challenge = _challenge(api_client)
@@ -257,6 +290,52 @@ class TestActionBindingAPI:
             format="json",
         )
         assert login.status_code == 400
+
+
+class TestEnvPayloadValidation:
+    """畸形 env 必须在入口被 400 拒绝，不能把 500 打到风险信号层。
+
+    ``RiskContext`` 恒调 ``fingerprint(env)``，若对 ``env.screen`` 直接
+    ``.get`` / ``int()``，匿名者用 ``{"env": {"screen": "x"}}`` 一个请求
+    就能刷 5xx（风险层关闭也照样触发）。
+    """
+
+    @pytest.mark.parametrize(
+        "env",
+        [
+            {"screen": "x"},
+            {"screen": {"width": "abc"}},
+            {"screen": {"dpr": "abc"}},
+            {"screen": [1, 2]},
+            {"screen": {"width": 10**9}},
+            [],
+        ],
+    )
+    def test_malformed_env_is_rejected_with_400(self, api_client, unified_login, env):
+        resp = api_client.post(
+            CHALLENGE_URL,
+            {"type": "slide", "scene": "login", "env": env},
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
+        assert resp.data["code"] == 400
+
+    def test_well_formed_env_still_issues_challenge(self, api_client, unified_login):
+        env = {
+            "v": 1,
+            "timezone": "Asia/Shanghai",
+            "language": "zh-CN",
+            "screen": {"width": 1920, "height": 1080, "dpr": 2},
+            "cores": 8,
+            "touch": 0,
+        }
+        resp = api_client.post(
+            CHALLENGE_URL,
+            {"type": "slide", "scene": "login", "env": env},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000
 
 
 class TestLegacyRemoved:

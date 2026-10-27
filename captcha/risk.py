@@ -91,20 +91,41 @@ def ensure_default_rules() -> None:
         pass
 
 
-def load_rules() -> list[dict[str, Any]]:
-    """读取启用规则（DB 失败时回退代码默认值，风险层不因 DB 抖动整体失效）。"""
-    try:
-        from captcha.models import CaptchaRule
-
-        rows = list(CaptchaRule.objects.filter(enabled=True).values("code", "scope", "score", "priority", "params"))
-        if rows:
-            return sorted(rows, key=lambda row: (row["priority"], row["code"]))
-    except Exception:  # noqa: BLE001
-        pass
+def _code_rule_rows() -> list[dict[str, Any]]:
+    """代码内置规则（DB 缺行时的兜底行，与 ``default_rule_rows`` 同口径）。"""
     return [
         {"code": rule["code"], "scope": "", "score": rule["score"], "priority": rule["priority"], "params": {}}
         for rule in DEFAULT_RULES
     ]
+
+
+def load_rules() -> list[dict[str, Any]]:
+    """读取启用规则；DB 缺行时用代码默认值补齐缺项（单行缺失不再静默失效）。
+
+    - DB 不可用：整体回退代码默认值；
+    - DB 有行：按 code 与 ``DEFAULT_RULES`` 合并，缺的补默认行；已显式停用的
+      规则保持停用（不会因合并被重新启用）。
+    """
+    defaults = _code_rule_rows()
+    try:
+        from captcha.models import CaptchaRule
+
+        rows = list(CaptchaRule.objects.values("code", "scope", "score", "priority", "params", "enabled"))
+    except Exception:  # noqa: BLE001
+        return defaults
+    by_code = {str(row["code"]): row for row in rows}
+    default_codes = {item["code"] for item in defaults}
+    merged: list[dict[str, Any]] = []
+    for default in defaults:
+        row = by_code.get(default["code"])
+        if row is None:
+            merged.append(default)
+        elif row["enabled"]:
+            merged.append(row)
+    for code, row in by_code.items():
+        if code not in default_codes and row["enabled"]:
+            merged.append(row)
+    return sorted(merged, key=lambda row: (row["priority"], row["code"]))
 
 
 def thresholds() -> dict[str, int]:
@@ -130,13 +151,27 @@ def decide(score: int, limits: dict[str, int] | None = None) -> str:
     return CAPTCHA_DECISION_ALLOW
 
 
+def _trusted_proxies_configured() -> bool:
+    """是否配置了反向代理信任清单（决定私网 IP 能否被视为「内网客户端」）。"""
+    from common.settings_contract import kernel_setting
+
+    return bool(kernel_setting("TRUSTED_PROXY_IPS") or [])
+
+
 def is_trusted_ip(ip: str) -> bool:
-    """信任网段：显式白名单 + （默认开启的）私网/回环兜底。"""
+    """信任网段：显式白名单 + 仅在配置了可信代理时的私网/回环兜底。
+
+    未配置 ``TRUSTED_PROXY_IPS`` 时，反代部署下 ``REMOTE_ADDR`` 是代理容器私网
+    地址（所有请求同值），若仍把私网当作可信，等于风险层整体失效、限流/冷却
+    退化成全站单桶。因此私网兜底必须与「能识别真实客户端 IP」同时成立。
+    """
     from django.conf import settings as dj_settings
 
     if sig.in_cidrs(ip, ",".join(getattr(dj_settings, "SECURITY_LOGIN_IP_WHITE_LIST", []) or [])):
         return True
-    return bool(getattr(dj_settings, "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS", True)) and sig.is_private_ip(ip)
+    if not bool(getattr(dj_settings, "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS", True)):
+        return False
+    return _trusted_proxies_configured() and sig.is_private_ip(ip)
 
 
 def evaluate(hits: dict[str, bool], rules: list[dict[str, Any]] | None = None, scene: str = "") -> RiskResult:

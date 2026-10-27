@@ -3,7 +3,7 @@
 > 建立：2026-09-14（下一年度规划 §三.4「运维尾巴进发布窗口 checklist」）。
 > 用途：把依赖外部窗口的运维尾巴固化为每次发布前逐项核对的清单，并承载硬门禁：
 > **CSP enforce（§1）与 AES v1 解密关闭（§2）未闭环前，不启动下一年度第一个功能窗口（W1）**。
-> 相关：备份演练口径见 [backup-drill-2027-03.md](backup-drill-2027-03.md)；故障处置见 [runbook.md](runbook.md)；
+> 相关：备份/异地副本口径见 [deployment-docker.md](deployment-docker.md)；故障处置见 [runbook.md](runbook.md)；
 > 安全背景见 [ADR-011](../adr/ADR-011-aes-protocol-v2.md) 与 `server/settings/base.py` 的 CSP 配置。
 
 ## 0. 每次发布都过（基线项）
@@ -28,7 +28,7 @@
 - [ ] **Django 线安全公告核对**（6.0.8 停留期，2026-09-29 起）：Django 6.0 线已退出安全支持而升级被
       `django-celery-beat 2.9.0`（`Django<6.1`）阻断 → 每窗口核对官方安全发布公告是否落在 6.0 线；
       命中走「紧急升级（6.1 override）」或「补丁后移」二选一，结论追加到 §4 执行记录
-      （完整口径见 [../security-review.md](../security-review.md) 六期登记 S-1）
+      （完整口径见 [../asvs-mapping.md](../asvs-mapping.md) 六期登记 S-1）
 - [ ] **备份**：发布前执行备份（异地副本 + 媒体目录，RPO 6h 口径见演练记录）；确认失败告警可达
 - [ ] **发布窗口公告**：compose 单副本形态的滚动重建会断开在途连接（重启 3–10 秒内 502/断连属预期）、
       离线安装器升级为停机迁移 → 提前公告窗口与影响面；要求零停机时改用
@@ -66,7 +66,7 @@
        - 页面文档层护栏**已补齐**：`xadmin-web/default.conf` 的 `location /` 已下发同策略串
          （**report-only 起步**，report-uri 同指 `/api/csp-report`；`nginx -t` 语法校验通过）。
          部署 xadmin-web 形态后：① 浏览器过核心页收集真实违规上报；② 确认无违规后把两处
-         `Report-Only` 去掉切强制头（变更需两处同步，口径见 [security-review.md](../security-review.md) S3）。
+         `Report-Only` 去掉切强制头（变更需两处同步，口径见 [asvs-mapping.md](../asvs-mapping.md) S3）。
          本机开发形态（vite 直出）页面不受 CSP 影响。
 3. [x] 保留回滚开关：`CSP_MODE=report-only` 即刻恢复观察态（无需发版）
 
@@ -135,12 +135,12 @@
 | **切换执行** | 2026-09-16 | ✅ **已切 enforce**（`CSP_REPORT_URI=/api/csp-report` 已配 + `CSP_MODE=enforce`；响应头已验：`Content-Security-Policy` 含 `report-uri`） | ✅ **已关闭**（`config.yml` 置 `SECURITY_AES_V1_DECRYPT_ENABLED: false` + 三容器重启；实测 v1 密文解密返回空串、v2 不受影响） | 前置以「全量归因 + 隔离验证」替代 7 天窗口：① 历史命中（09-15 572 条 / 09-16 390 条）全部归因**测试流量**（caller 定位 + 集成测试用服务端加密器构造 v1 密文 + 时段形态与 pytest 运行窗口吻合）；② **测试日志隔离落地**（`tests/settings_test.py` / `settings_e2e.py` → `tmp/test_logs/`，实测跑含 v1 构造的测试后生产日志零新增）；③ 真实客户端为零命中（浏览器已全量 v2）。回滚：`CSP_MODE=report-only`（即时）/ `SECURITY_AES_V1_DECRYPT_ENABLED: true` + 重启 |
 | 演练与核对 | 2026-09-16 | — | — | PITR 首次时间点回放演练通过（见 [pitr.md](pitr.md) §5）；异地副本链路核对：未启用（见 §3）。**顺带修复**：`SECURITY_AES_V1_DECRYPT_ENABLED` 此前未导出到 django settings（`getattr` 永远落默认 True，开关形同虚设）——已补 `server/settings/setting.py` 转发 + 全量 SECURITY_* 转发对账守护测试 |
 | **切换后观测** | 2026-09-16 | ✅ 0 条 | ✅ 0 条 | 切换 + 重启后 5 小时生产日志复核：`CSP violation:` **0** / `aes_v1_decrypt_used` **0**；合成上报隔离 INFO 留痕 45 条（不计违规，隔离在工作）；health 四指标全 true、6 容器 healthy。两项硬门禁进入**持续观察**：CSP 页面层待部署形态验证；AES v1 观察无回归后关闭灰度（回滚路径保留）。installer 升级预检同步完成四分支 mock 验证（4/4） |
-| **运营基线（2029-10）** | 2026-09-16 | — | — | 指标端点启用（`METRICS_ENABLED`+`TOKEN`，修复「死开关」漏导出）+ 基线快照（队列 0 / 今日 WARN 10 万行→**降噪 96%**、ERROR 415）；**Redis 冻结韧性五轮修复**（socket 超时 + `IGNORE_EXCEPTIONS` + Config 兜底 + health 豁免限流 + 预算 1s）：health 从 10.1s 收敛至 **1.85s** 且降级正确（详录 [observability-drills.md](observability-drills.md) §六 / [observability.md](observability.md) §七）；E2E 全量 278 passed（2 条偶发 flaky 重跑稳定）；SLO 校准按计划 2029-12 |
+| **运营基线（2029-10）** | 2026-09-16 | — | — | 指标端点启用（`METRICS_ENABLED`+`TOKEN`，修复「死开关」漏导出）+ 基线快照（队列 0 / 今日 WARN 10 万行→**降噪 96%**、ERROR 415）；**Redis 冻结韧性五轮修复**（socket 超时 + `IGNORE_EXCEPTIONS` + Config 兜底 + health 豁免限流 + 预算 1s）：health 从 10.1s 收敛至 **1.85s** 且降级正确（详录 [observability.md](observability.md) §六 / [observability.md](observability.md) §七）；E2E 全量 278 passed（2 条偶发 flaky 重跑稳定）；SLO 校准按计划 2029-12 |
 | **季度依赖窗口（2030-01）** | 2026-09-16 | — | — | audit 双零（pip-audit / pnpm audit）；Django 线：6.2 LTS 未发布、`django-celery-beat` 仍声明 `Django<6.1`（6.1.1 升级维持阻断）；venv 对齐容器基线 **3.14.7**（全量测试 2382 passed）；`@iconify/vue` 升级 5.0.1 / `cropperjs` 维持 1.x（依据 2029-11 评估） |
-| **季度审计与演练（2030-06）** | 2026-09-16 | — | — | audit 全链路：server/client **双 0**；docs 18 项（构建链传递依赖，内部站无输入面 → 分级可接受）。**备份恢复演练通过**：sha256 ✓ / 导入 0 错误 / 表数 89=89 / 核心表一致（记录 [backup-drill-2026-09-16](backup-drill-2026-09-16.md)）。CSP/AES 持续 0/0；权限覆盖无缺口 |
+| **季度审计与演练（2030-06）** | 2026-09-16 | — | — | audit 全链路：server/client **双 0**；docs 18 项（构建链传递依赖，内部站无输入面 → 分级可接受）。**备份恢复演练通过**：sha256 ✓ / 导入 0 错误 / 表数 89=89 / 核心表一致（2026-09-16 演练记录已清理；备份/异地副本口径见 [deployment-docker.md](deployment-docker.md)）。CSP/AES 持续 0/0；权限覆盖无缺口 |
 | **全年核对（2030-08）** | 2026-09-16 | ✅ 持续干净（切换后 8h+ 违规 0） | ✅ 已关闭、零命中、回滚开关保留 | 第四年度全项核对：§0 基线项每窗口在跑（门禁 / E2E / 备份 / 发布后观察）；§1 CSP **页面层**待 web 部署形态（`default.conf` report-only 已备 + `nginx -t` 通过）——**2026-09-18 已切强制，见下**；§3 挂起项（异地副本 / Renovate / SCIM）状态不变；运营资源：磁盘 9% 充足、日志按天轮转（867M 存量、降噪后增速放缓）、备份 7 天保留生效（最老 09-09）、**Docker 清理释放 20.5GB**（构建缓存 20.35GB + 悬空镜像 175MB；非悬空 10.4GB 待评估） |
 | **页面层切强制（T3）** | 2026-09-18 | ✅ **页面层已切强制**：`xadmin-web/default.conf` 下发 `Content-Security-Policy`（去 `Report-Only`），策略串与服务端 `_CSP_DIRECTIVES`、验证服务 `csp-page-server.mjs` **三处同源**（新增守护 `tests/unit/common/test_csp.py::TestCSPPolicySync`）；真实 nginx 产物复验：`nginx -t` 通过 + `curl -I` 头为强制版 | — | 前置以「全量归因 + 隔离验证」替代观察窗口（测试服 192.168.0.200 不可达，无法累计 7 天真实流量），与 §1 服务端切换同口径：新增 `pnpm test:e2e:csp`（`e2e/csp-page.e2e.ts` + `scripts/csp-page-server.mjs` = 构建产物 + 强制头 + 真实浏览器扫核心页面）——**核心页面零违规**且 `/__csp_probe` 负对照命中（内联脚本被拦）。为通过强制头四处收口：① `index.html` 的 `window.process` 内联脚本 → 同源 `public/process-shim.js`；② 新增 `worker-src 'self' blob:`（version-rocket 的 Blob 轮询 Worker）；③ ~~`connect-src` 放行 Iconify 官方三处 API 镜像~~ **已收口（同日）**：**前端图标离线化**——常用图标随包注册 + 其余按 set 懒加载构建期内置图标集（同源 chunk），`connect-src` 不再放行任何外部主机（内网/离线部署可用；隔离验证新增「侧边栏菜单图标渲染」「图标选择器本地集渲染」断言）；④ **修复页面层上报死链**：`report-uri` 由 `/api/csp-report` 改为 `/api/common/api/csp-report`（原路径打到后端 404，违规上报静默丢失——隔离验证同时断言上报可达 204）。回滚：换回 `Content-Security-Policy-Report-Only` 同串 + reload。口径说明：~~验证仅 chromium~~ **已收口（2026-09-18 同日）**：跑批默认 `E2E_CSP_TLS=1`——验证服务以 HTTPS 提供（openssl 自签 + `ignoreHTTPSErrors`，webServer 与 context 双处放行），**chromium + webkit 双浏览器核心页零违规 + 探针命中**（生产构建认证 Cookie 带 `Secure`，http 下 WebKit 拒收无法登录，TLS 形态复现部署前提后纳入）；线上 http 形态下 WebKit 仍无法登录，生产/测试服部署应走 HTTPS |
-| **依赖线复核（Django 6.0 EOL + Python 3.14）** | 2026-09-29 | — | — | ① **Django 6.0.8 停留决策落地**：实查阻断面收敛为唯一一个包 `django-celery-beat 2.9.0`（`Django<6.1`，最新版 2026-02-28 无新版；`django-timezone-field 7.2.2` 的 `<6.2` 卡的是未来 6.2 LTS）→ 维持 6.0.8 + 登记 EOL 安全监控（§0 新增核对项 + security-review 六期登记 S-1 + ADR-004 复审记录），命中公告走「6.1 override 升级」或「补丁后移」二选一；② **Python 口径对齐 3.14**：`requires-python`/mypy + CI 9 处 workflow + `uv.lock` 重生成 + server 6 处文档与文档站 4 文件（`check_doc_facts.py` 受保护事实）同步（容器与 venv 早已 3.14.7，属口径追平） |
+| **依赖线复核（Django 6.0 EOL + Python 3.14）** | 2026-09-29 | — | — | ① **Django 6.0.8 停留决策落地**：实查阻断面收敛为唯一一个包 `django-celery-beat 2.9.0`（`Django<6.1`，最新版 2026-02-28 无新版；`django-timezone-field 7.2.2` 的 `<6.2` 卡的是未来 6.2 LTS）→ 维持 6.0.8 + 登记 EOL 安全监控（§0 新增核对项 + asvs-mapping.md §三 + ADR-004 复审记录），命中公告走「6.1 override 升级」或「补丁后移」二选一；② **Python 口径对齐 3.14**：`requires-python`/mypy + CI 9 处 workflow + `uv.lock` 重生成 + server 6 处文档与文档站 4 文件（`check_doc_facts.py` 受保护事实）同步（容器与 venv 早已 3.14.7，属口径追平） |
 | **部署扩展收尾（P1-35/36/37/38/40）** | 2026-09-29 | — | — | ① **独立盘迁移开关**：`PITR_ARCHIVE_DIR` / `BACKUP_REMOTE_DIR`（只改宿主路径，容器内路径不变）+ 生产强制异地副本 `BACKUP_REMOTE_REQUIRED`（prod overlay 默认 1：启动自检告警 + 单次模式非零退出，本地备份不受影响）；② **监控参考栈**：`ops/monitoring/`（Prometheus + Grafana + blackbox + SLO 告警规则 + 面板）+ 告警桥接 `scripts/prometheus_alert_bridge.py`（firing → ops-alert，4h 重复抑制、恢复立即重发）+ 三个宿主 agent 的 systemd 单元；**队列积压进指标端点**（`xadmin_celery_queue_length`，broker 直读，SLO 第四项数据源闭环）；③ **压测中位数工具链**：`loadtest/median_results.py`（异常轮次整轮作废 + 中位数输出可直接 `--update`），数值复测待固定环境；④ **installer 季度镜像核对**：`scripts/check_images.sh` + 映射完整性守护；⑤ `server.depends_on` 改真实依赖（postgresql/redis healthy，去掉无 healthcheck 的 nginx） |
 | **季度依赖窗口（2026-Q4）** | 2026-10-23 | — | — | `pnpm audit` 初始 4 high / 6 moderate / 1 low（`follow-redirects` 1.16.0、`vite` 8.3.0、`vitest` 5.0.1）→ 升级 `follow-redirects` 1.16.1 / `vite` 8.3.5 / `vitest` + `@vitest/coverage-v8` 5.0.5 后 **0 活跃漏洞**（仅剩已登记忽略的 `braces` 无修复 high，`pnpm-workspace.yaml` 的 `ignoreGhsas` 维持）；后端 `pip-audit --local` **0 漏洞**（本机 `-r requirements.txt` 受 macOS 缺 mysqlclient 构建依赖限制，CI `security.yml` 以 requirements.txt 为准）；O9-6 六包复核无新发布，`pyexcel` 仍活跃；Django 6.0 线仍受 `django-celery-beat<6.1` 阻断 |
 

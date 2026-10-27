@@ -11566,7 +11566,7 @@ msgstr "模板名称已存在"
 
 #: task/serializers/task.py:61
 msgid "Timezone"
-msgstr "时间"
+msgstr "时区"
 
 #: task/serializers/task.py:84
 #, python-brace-format
@@ -13419,8 +13419,8 @@ msgstr "分数达到该值：直接拒绝，响应与答案错误同形（deny�
 
 msgid ""
 "Treat RFC1918 and loopback addresses as trusted (no puzzle in enforce mode); "
-"keep enabled unless the office network is in the whitelist"
-msgstr "将 RFC1918 与回环地址视为可信（enforce 下无题直过）；除非办公网已进白名单，否则保持开启"
+"only effective when TRUSTED_PROXY_IPS is configured"
+msgstr "将 RFC1918 与回环地址视为可信（enforce 下无题直过）；仅在已配置 TRUSTED_PROXY_IPS 时生效"
 
 msgid "Comma-separated CIDRs for datacenter/cloud ranges; a hit adds 20 points; empty disables"
 msgstr "机房 / 云网段，逗号分隔 CIDR；命中加 20 分；留空不启用"
@@ -13440,8 +13440,16 @@ msgstr "hard 档 PoW 前导零位数；默认 20，受位数上限约束"
 msgid "Server-side hard cap (max 24); prevents turning the server into a hash amplifier"
 msgstr "服务端硬上限（最大 24）；防止把服务端变成算力放大器"
 
-msgid "PoW verifications allowed per IP per hour; 0 = unlimited; requests over budget are rejected"
-msgstr "单 IP 每小时 PoW 验证预算；0 = 不限；超出后该 IP 的 PoW 请求被拒"
+msgid ""
+"PoW challenges issued per IP per hour; 0 = unlimited; over-budget requests "
+"degrade to another enabled puzzle type"
+msgstr "单 IP 每小时 PoW 出题预算；0 = 不限；超出后降级为其他已启用题型（不直接拒绝）"
+
+msgid "Server time"
+msgstr "服务器时间"
+
+msgid "Server epoch seconds; use it as gen_time when signing the verify request"
+msgstr "服务端时间戳（秒）；verify 加签时以它为 gen_time，避免客户端时钟偏差"
 
 msgid ""
 "Failure ladder: 3,8,20 means 3 failures -> force hard, 8 -> 15 min cooldown, "
@@ -13468,3 +13476,322 @@ msgstr "窗口内样本数不足时不告警，避免低流量误报"
 
 msgid "CaptchaLog retention in days; 0 = keep forever; a daily beat task purges expired rows"
 msgstr "CaptchaLog 保留天数；0 = 永久保留；每日 beat 任务清理过期行"
+
+#: captcha/serializers.py
+msgid ""
+"Asset ID"
+msgstr ""
+"资产 ID"
+
+#: captcha/serializers.py
+msgid ""
+"Audio available"
+msgstr ""
+"音频可用"
+
+#: captcha/serializers.py
+msgid ""
+"Available height"
+msgstr ""
+"可用高度"
+
+#: captcha/serializers.py
+msgid ""
+"Available width"
+msgstr ""
+"可用宽度"
+
+#: captcha/serializers.py
+msgid ""
+"Background pack"
+msgstr ""
+"背景图包"
+
+#: captcha/serializers.py
+msgid ""
+"By asset"
+msgstr ""
+"按资产"
+
+#: captcha/serializers.py
+msgid ""
+"CPU cores"
+msgstr ""
+"CPU 核心数"
+
+#: captcha/serializers.py
+msgid ""
+"Canvas digest"
+msgstr ""
+"Canvas 摘要"
+
+#: captcha/serializers.py
+msgid ""
+"Challenge types eligible for random selection; image stays opt-in fallback"
+msgstr ""
+"参与随机抽取的题型；图片题仅作显式回退"
+
+#: captcha/serializers.py
+msgid ""
+"Client fingerprint"
+msgstr ""
+"客户端指纹"
+
+#: captcha/serializers.py
+msgid ""
+"Decision thresholds"
+msgstr ""
+"决策阈值"
+
+#: captcha/serializers.py
+msgid ""
+"Deny count"
+msgstr ""
+"拦截次数"
+
+#: captcha/serializers.py
+msgid ""
+"Deny rate"
+msgstr ""
+"拦截率"
+
+#: captcha/serializers.py
+msgid ""
+"Deployment identifier bound into tickets; empty = site URL / first allowed host"
+msgstr ""
+"绑定到票据的部署标识；空 = 站点 URL / 首个允许的 Host"
+
+#: captcha/serializers.py
+msgid ""
+"Device pixel ratio"
+msgstr ""
+"设备像素比"
+
+#: captcha/serializers.py
+msgid ""
+"Enabled captcha types"
+msgstr ""
+"启用的验证码题型"
+
+#: captcha/serializers.py
+msgid ""
+"Expose the image type as an accessibility fallback; it never enters the random pool"
+msgstr ""
+"将图片题型作为无障碍回退开放；不进入随机池"
+
+#: captcha/serializers.py
+msgid ""
+"Icon click"
+msgstr ""
+"图标点选"
+
+#: captcha/serializers.py
+msgid ""
+"Image answer length"
+msgstr ""
+"图片答案长度"
+
+#: captcha/serializers.py
+msgid ""
+"Image characters (fallback)"
+msgstr ""
+"图片字符（回退）"
+
+#: captcha/serializers.py
+msgid ""
+"Issue a PoW challenge for allow/light decisions; disabling it weakens the cost axis"
+msgstr ""
+"allow/light 决策下发 PoW 挑战；关闭会削弱算力轴"
+
+#: captcha/serializers.py
+msgid ""
+"Language"
+msgstr ""
+"语言"
+
+#: captcha/serializers.py
+msgid ""
+"Mixed simplified / traditional per challenge"
+msgstr ""
+"每道题简繁混合"
+
+#: captcha/serializers.py
+msgid ""
+"Plugin count"
+msgstr ""
+"插件数量"
+
+#: captcha/serializers.py
+msgid ""
+"PoW bits (allow)"
+msgstr ""
+"PoW 位数（allow）"
+
+#: captcha/serializers.py
+msgid ""
+"PoW enabled"
+msgstr ""
+"启用 PoW"
+
+#: captcha/serializers.py
+msgid ""
+"PoW for image fallback"
+msgstr ""
+"图片回退 PoW"
+
+#: captcha/serializers.py
+msgid ""
+"Reason code"
+msgstr ""
+"原因码"
+
+#: captcha/serializers.py
+msgid ""
+"Reduced motion"
+msgstr ""
+"减少动态效果"
+
+#: captcha/serializers.py
+msgid ""
+"Referer present"
+msgstr ""
+"存在 Referer"
+
+#: captcha/serializers.py
+msgid ""
+"Require a low-difficulty PoW before accepting an image fallback challenge"
+msgstr ""
+"接受图片回退题前要求低难度 PoW"
+
+#: captcha/serializers.py
+msgid ""
+"Require matching sid cookie and X-Captcha-Fp fingerprint when consuming a ticket"
+msgstr ""
+"消费票据时要求 sid cookie 与 X-Captcha-Fp 指纹一致"
+
+#: captcha/serializers.py
+msgid ""
+"Risk score distribution"
+msgstr ""
+"风险分值分布"
+
+#: captcha/serializers.py
+msgid ""
+"Score bucket"
+msgstr ""
+"分值区间"
+
+#: captcha/serializers.py
+msgid ""
+"Screen height"
+msgstr ""
+"屏幕高度"
+
+#: captcha/serializers.py
+msgid ""
+"Screen width"
+msgstr ""
+"屏幕宽度"
+
+#: captcha/serializers.py
+msgid ""
+"Silent PoW difficulty for low-risk allow decisions; default 16"
+msgstr ""
+"低风险 allow 决策的静默 PoW 难度；默认 16"
+
+#: captcha/serializers.py
+msgid ""
+"Simplified Chinese characters"
+msgstr ""
+"简体中文字符"
+
+#: captcha/serializers.py
+msgid ""
+"Strict ticket binding"
+msgstr ""
+"严格票据绑定"
+
+#: captcha/serializers.py
+msgid ""
+"Ticket audience"
+msgstr ""
+"票据 audience"
+
+#: captcha/serializers.py
+msgid ""
+"Top IP hashes"
+msgstr ""
+"IP 哈希 Top"
+
+#: captcha/serializers.py
+msgid ""
+"Top UA classes"
+msgstr ""
+"UA 类别 Top"
+
+#: captcha/serializers.py
+msgid ""
+"Top deny reasons"
+msgstr ""
+"拦截原因 Top"
+
+#: captcha/serializers.py
+msgid ""
+"Top fingerprints"
+msgstr ""
+"指纹 Top"
+
+#: captcha/serializers.py
+msgid ""
+"Touch points"
+msgstr ""
+"触摸点数"
+
+#: captcha/serializers.py
+msgid ""
+"Traditional Chinese characters"
+msgstr ""
+"繁体中文字符"
+
+#: captcha/serializers.py
+msgid ""
+"WebDriver"
+msgstr ""
+"WebDriver"
+
+#: captcha/serializers.py
+msgid ""
+"WebGL digest"
+msgstr ""
+"WebGL 摘要"
+
+#: captcha/serializers.py
+msgid ""
+"builtin = bundled manifest (procedural when empty); procedural = disable photo pack"
+msgstr ""
+"builtin = 内置清单（为空时程序化生成）；procedural = 禁用图片包"
+
+#: captcha/serializers.py
+msgid ""
+"off = risk layer disabled; shadow = score and log only; enforce = apply decisions (default for the hardened profile)"
+msgstr ""
+"off = 关闭风险层；shadow = 仅评分与记录；enforce = 应用决策（强化档默认）"
+
+
+#: captcha/serializers.py
+msgid "Track event"
+msgstr "轨迹事件"
+
+#: identity/views/admin/online.py
+msgid "Invalid parameter format"
+msgstr "参数格式不正确"
+
+msgid "No permission to operate this user"
+msgstr "无权操作该用户"
+
+msgid "Session not found or out of scope"
+msgstr "会话不存在或超出数据范围"
+
+#: settings/views/security.py
+msgid "Unknown rule codes: {}"
+msgstr "未知的规则编码：{}"

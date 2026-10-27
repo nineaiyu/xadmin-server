@@ -2,7 +2,7 @@
 
 - 状态：已接受
 - 日期：2026-09-20
-- 关联：[ADR-038](ADR-038-ai-assistant-restricted-actions.md)（受限动作与白名单注册表）；
+- 关联：[ADR-038](ADR-038-ai-actions.md)（受限动作与白名单注册表）；
   [ADR-023](ADR-023-ai-assistant-phase1.md)（AI 一期问答）；
   `ai/models/ai.py::AiChatMessage`、`ai/services/assistant/ai_chat.py`、`ai/views/`、
   `xadmin-client/src/views/integration/ai/`

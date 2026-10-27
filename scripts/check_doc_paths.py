@@ -75,8 +75,6 @@ ACTIVE_DOC_GLOBS = ("docs/architecture/*.md", "docs/guide/*.md", "docs/*.md")
 EXCLUDE_ACTIVE_DOCS = (
     "docs/metrics.md",
     # 履历性质子页：保留历史路径（与 metrics.md 同口径，见 check_doc_facts.py 的设计注释）
-    "docs/metrics-history.md",
-    "docs/metrics-perf-history.md",
 )
 # 活跃文档只校验"代码路径"（窄前缀集；示例性路径多集中于 loadjson / ops / tests 等，不纳入）
 CODE_PREFIXES = (

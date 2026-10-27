@@ -47,5 +47,5 @@ SeparateDatabaseAndState 认领形态另行提供升级迁移。本地开发库�
 
 - `tests/unit/system/test_search_indexes.py`：快照导入路径不变（system/0004、approval/0001），
   **删除改名折算逻辑**（`RENAME_MIGRATIONS` / `TRGM_TABLE_RENAMES` 对账测试）——快照即现名；
-- `system/search_indexes.py` 注释与 `docs/architecture/indexes.md` 口径同步；
+- `system/search_indexes.py` 注释与模型 Meta 口径同步；
 - 新装全链验证：pytest 真环境档（全新 `test_xadmin_realtest` 库即全新迁移链 replay）全量通过。

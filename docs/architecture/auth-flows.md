@@ -168,13 +168,17 @@ GET  /api/settings/captcha/log    ?phase=&scene=&...   # 观测日志（只读�
   `CaptchaLog`）；Redis 只登记 `captcha_nonce_{n}` 做一次性消费，票据自身不落缓存。
   challenge 下发 `captcha_sid` HttpOnly cookie，票据绑定 `sid` + `X-Captcha-Fp` + `aud`；
   `CAPTCHA_STRICT_BINDING=true`（默认）时缺失或不一致一律拒绝；IP 按 /24、/64 弱绑定。
+  同一浏览器的 `captcha_sid` 跨挑战复用（仅在缺失/非法时新生成）：多标签页并发出题不会
+  互相顶掉对方，先出的题仍可校验。challenge 响应另带服务端 `ts`，前端以它作为 verify
+  加签的 `gen_time`，客户端时钟偏差不再导致验证必败。
   分档 TTL：`allow 60s / light 90s / challenge 120s / hard 90s`；
   `CAPTCHA_TICKET_SECRET` 为生产必填（缺失即启动失败），
   `CAPTCHA_TICKET_SECRET_PREVIOUS` 支持双密钥轮换不断流。
 - **动作绑定**：业务消费请求**不得携带** action，由消费点引用 `captcha/const.py` 常量；
   verify 由前端声明意图动作（必须落在该 scene 的登记表内）。`CAPTCHA_ACTION_BIND=true`
-  （默认）时 verify 缺失 / 越权 action 与答案错误同形失败，消费端两端完全一致才放行，
-  未绑票据一律拒绝；关掉开关即回退只绑 scene 的旧语义。
+  （默认）时 verify 缺失 / 越权 action 与答案错误同形失败，且校验时声明的 action 必须与
+  出题时一致；消费端两端完全一致才放行，未绑票据一律拒绝。关掉开关只回退 action 语义，
+  `sid` / `fp` 强绑定仍由 `CAPTCHA_STRICT_BINDING` 独立控制。
 - **Origin 校验**：浏览器请求带 `Origin` 时必须同源、`Sec-Fetch-Site` 为 same-origin/same-site，
   或命中 `CORS_ALLOWED_ORIGINS` / `CSRF_TRUSTED_ORIGINS` / `CAPTCHA_ALLOWED_ORIGINS`；
   无 `Origin` 的 API 客户端保持兼容。跨站请求与答案错误同形失败。

@@ -35,6 +35,7 @@ def interactive(settings):
     settings.SECURITY_LOGIN_ENCRYPTED_ENABLED = False
     settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
     settings.CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS = False
+    settings.TRUSTED_PROXY_IPS = ["127.0.0.1/32", "::1/128"]
     settings.CAPTCHA_TYPE_WEIGHTS = {"slide": 30, "rotate": 30, "click": 30, "wordorder": 10, "pow": 0}
     settings.CAPTCHA_POW_BITS_ALLOW = 6
     settings.CAPTCHA_POW_BITS_LIGHT = 6

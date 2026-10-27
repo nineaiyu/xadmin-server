@@ -102,7 +102,7 @@
 
 - **定位**：Security Audit workflow 邮件/页面，确认漏洞包、版本、严重级别、是否有 fix 版本。
 - **处置**：有 fix → 升级 patch 版本走独立 PR + 全量门禁；无 fix → 评估缓解（配置收紧/下线特性）并在
-  `docs/security-review.md` 登记豁免理由与复查日期。
+  `docs/asvs-mapping.md` 登记豁免理由与复查日期。
 
 ## 16. 容器 OOM 告警（运维告警）
 

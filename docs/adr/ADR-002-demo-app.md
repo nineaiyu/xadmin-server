@@ -26,7 +26,7 @@
 
 **变更**：`config_example.yml` 的 `XADMIN_APPS` 默认值由空改为 `[demo]`。
 
-**理由**：二次开发友好化（[plans/archive/二次开发友好化改造方案-2026.09.md](../plans/archive/二次开发友好化改造方案-2026.09.md) P1-3）——
+**理由**：二次开发友好化（二次开发友好化改造方案（历史文档已清理） P1-3）——
 新用户 clone 后直接 `bash utils/dev_up.sh` 即有「活的」示例（Book 四件套 + 前端页面）可抄，
 替代「先读文档再理解框架」。demo 无菜单种子，教程（[guide/first-module-30min.md](../guide/first-module-30min.md)）
 以「为 demo 添加菜单 → 页面可达」作为第一个实践步骤。

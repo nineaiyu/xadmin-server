@@ -3,7 +3,7 @@
 - 状态：**已实施（2026-09-24）**
 - 日期：2026-09-24
 - 关联：[ADR-020](ADR-020-dataset-dashboard-phase1.md)（数据集行级数据权限 fail-closed）、[ADR-012](ADR-012-approval-flow-engine.md)（审批流与数据权限）、
-  `docs/architecture/data-permission.md`（现状口径）、`common/core/data_scope/`（规则编译器）
+  `docs/architecture/permission.md`（现状口径）、`common/core/data_scope/`（规则编译器）
 
 ## 一、背景
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PG nightly 测试专用配置（容器化 PG 的 nightly 测试档，docs/plans/archive/容器化PG-nightly测试档立项-2026.10.md）。
+PG nightly 测试专用配置（容器化 PG 的 nightly 测试档，docs/plans/容器化PG-nightly测试档立项-2026.10.md）。
 
 单变量换库：与 tests/settings_real（真环境门禁档）唯一的差异是不接真 Redis
 ——CACHES 仍为进程内 FakeRedis、channel 仍为内存层（本档自有定义，基座有意不含

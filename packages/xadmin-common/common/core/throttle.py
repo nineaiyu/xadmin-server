@@ -126,6 +126,16 @@ class CaptchaVerifyThrottle(IpScopedThrottle):
     scope = "captcha_verify"
 
 
+class CaptchaAudioThrottle(IpScopedThrottle):
+    """图片验证码音频限流：每次请求调用 flite/sox 子进程，成本远高于出题。
+
+    同一挑战可反复拉取音频（不像校验会消费挑战），因此必须单独收紧，
+    否则单个挑战即可把音频端点当作 TTS 算力放大器。
+    """
+
+    scope = "captcha_audio"
+
+
 class UploadThrottle(UserRateThrottle):
     """上传速率限制"""
 

@@ -104,5 +104,5 @@ reload/restart nginx。
 
 - `xadmin_http_request_duration_seconds` 各副本应接近（差异大说明轮询不均或某副本受限）；
 - `/api/common/api/metrics` 的 `xadmin_authz_grants_cache_keys`（授权池键基数）随副本数
-  与并发菜单数增长，TTL 300s 兜底（见 [../cache-keys-audit.md](../cache-keys-audit.md) 观察项）；
+  与并发菜单数增长，TTL 300s 兜底（见 [../architecture/cache.md](../architecture/cache.md) 观察项）；
 - 任务队列长度与 worker 并发（`celery inspect`）；重队列（heavy）按任务耗时单独扩容。

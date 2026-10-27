@@ -1,8 +1,7 @@
 # 权限体系设计（API / 数据 / 字段 + 应用级授权）
 
 > 适用版本：xadmin-server 5.0.0+（T2.6 梳理，2026-09-05；2026-09 增补第四道「应用级授权」）
-> 本文是权限体系的**整体设计文档**；操作教程见 [data-permission.md](data-permission.md)
-> 与 [field-permission.md](field-permission.md)。
+> 本文是权限体系的**整体设计文档**；原独立操作教程已清理，数据 / 字段权限的配置与排障以本文为准。
 
 ## 一、总览
 
@@ -161,8 +160,7 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
 ```
 
 - `get_user_field_queryset(user, menu)`（缓存 10s）：汇总该用户在当前菜单下的字段授权，产出 `{模型名: {字段名集合}}`。
-- `BaseModelSerializer` 在实例化时按 `request.fields` 保留/剔除字段，未配置字段权限的用户输出为空集（需显式授权，见
-  field-permission.md）。
+- `BaseModelSerializer` 在实例化时按 `request.fields` 保留/剔除字段，未配置字段权限的用户输出为空集（需显式授权）。
 - 跳过条件：超管、白名单 URL、`PERMISSION_FIELD_ENABLED=False`（`ignore_field_permission`）。
 - 单个字段可通过 `ignore_field_permission=True`（extra_kwargs）豁免，如文件回显字段。
 
@@ -201,7 +199,7 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
 | 改了角色/菜单权限未生效 | 确认请求经 API 发起（信号已挂 `m2m_changed`）；若绕过 ORM 直改，触发 `system.signal_handler.clean_cache_handler` 或调 `MagicCacheData.invalid_caches` |
 | 列表有数据但详情 400/403 | 数据权限按「显式 action 覆盖 + list 缺省回退」：1) 若 detail 配了显式规则，detail 只认它，可能比 list 更窄（预期行为）；2) 若未配 detail，检查同资源 `list` 权限点是否绑定了授权；3) 显式规则只针对其它模型时视为未配置，仍回退 list |
 | 字段输出比预期少     | 1) `request.fields` 是否被 FieldPermission 收敛；2) 字段所在模型是否在 `ModelLabelField` 树中正确挂载；3) 前端传参字段与后端字段名大小写                           |
-| 列表空集但用户确有授权 | 1) 跑 `python manage.py audit_data_permission_rules`（非法规则 + 不生效提示：未绑定 / 主管部门规则无主管 / 引用对象已删除）；2) 数据权限页「试算」按目标用户实跑过滤，看实际生效授权与命中（排障口径见 [data-permission.md](data-permission.md) 排障节） |
+| 列表空集但用户确有授权 | 1) 跑 `python manage.py audit_data_permission_rules`（非法规则 + 不生效提示：未绑定 / 主管部门规则无主管 / 引用对象已删除）；2) 数据权限页「试算」按目标用户实跑过滤，看实际生效授权与命中（排障口径见本节 FAQ；原教程已清理） |
 | 导入/导出 403    | 未绑定模型的菜单回退到 list/create 权限——检查菜单的「绑定模型」配置                                                                                     |
 
 ### 6.2 Shell 验证片段

@@ -82,6 +82,34 @@ class TestEmit:
         assert flushed == 1
         assert CaptchaLog.objects.count() == 1
 
+    def test_events_within_request_are_dispatched_once(self, monkeypatch):
+        """一次请求内（challenge + decision）合并为一次 Celery 投递。"""
+        batches: list[list[dict]] = []
+
+        def fake_dispatch(events):
+            batches.append(list(events))
+            return True
+
+        monkeypatch.setattr(telemetry, "_dispatch", fake_dispatch)
+        telemetry.begin_request()
+        telemetry.emit(phase="challenge", scene="login", passed=False)
+        telemetry.emit(phase="decision", scene="login", passed=False)
+        assert batches == []
+        telemetry.end_request()
+        assert len(batches) == 1
+        assert [event["phase"] for event in batches[0]] == ["challenge", "decision"]
+
+    def test_request_buffer_flushes_on_error_path(self, monkeypatch):
+        batches: list[list[dict]] = []
+        monkeypatch.setattr(telemetry, "_dispatch", lambda events: (batches.append(list(events)), True)[1])
+        telemetry.begin_request()
+        try:
+            telemetry.emit(phase="challenge", scene="login", passed=False)
+            raise RuntimeError("boom")
+        except RuntimeError:
+            telemetry.end_request()
+        assert len(batches) == 1
+
 
 class TestFlushTask:
     def test_bulk_write_skips_non_dict_events(self):
@@ -116,6 +144,16 @@ class TestPurge:
         assert CaptchaLog.purge_expired_logs() == 0
         assert CaptchaLog.objects.count() == 1
 
+    def test_purge_deletes_in_batches(self, settings, monkeypatch):
+        """大删除按主键小批执行，避免单事务长持锁。"""
+        settings.CAPTCHA_LOG_RETENTION_DAYS = 7
+        monkeypatch.setattr(CaptchaLog, "PURGE_BATCH_SIZE", 2)
+        for index in range(5):
+            self._log(10 + index)
+        self._log(1)
+        assert CaptchaLog.purge_expired_logs() == 5
+        assert CaptchaLog.objects.count() == 1
+
     def test_management_command(self):
         import io
 
@@ -129,13 +167,23 @@ class TestPurge:
 
 class TestHelpers:
     def test_hash_ip_stable_and_salted(self, settings):
+        """与风控同口径：同 /24 同哈希、跨网段不同、换盐即变。"""
         settings.SECRET_KEY = "seed-a"
+        settings.CAPTCHA_FP_SALT = ""
         first = telemetry.hash_ip("10.0.0.1")
         assert first == telemetry.hash_ip("10.0.0.1")
-        assert first != telemetry.hash_ip("10.0.0.2")
+        assert first == telemetry.hash_ip("10.0.0.2")  # 同 /24 网段（隐私口径）
+        assert first != telemetry.hash_ip("10.0.1.1")
         assert telemetry.hash_ip("") == ""
         settings.SECRET_KEY = "seed-b"
         assert telemetry.hash_ip("10.0.0.1") != first
+
+    def test_hash_ip_matches_risk_signal_implementation(self, settings):
+        """观测与处置必须同一哈希，否则 TopN 与冷却键无法互证。"""
+        from captcha import signals
+
+        settings.CAPTCHA_FP_SALT = "shared-salt"
+        assert telemetry.hash_ip("192.168.1.10") == signals.hash_ip("192.168.1.10")
 
     def test_classify_ua(self):
         assert telemetry.classify_ua("Mozilla/5.0 HeadlessChrome/120") == "headless"

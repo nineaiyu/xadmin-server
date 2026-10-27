@@ -248,3 +248,112 @@ class TestShippedRegistryIsSelfSufficient:
         assert blockers == [], f"没有 tag 目录时必须靠登记表兜底，未映射：{blockers}"
         assert len(renamed) == len(self.LEGACY_TABLES)
         assert kept == []
+
+
+class TestRemovedTables:
+    """clean cut 删除表：不参与结构差异/缺失判定，删除动作只允许白名单。"""
+
+    def test_diff_schemas_ignores_removed_tables(self):
+        diff = legacy_schema.diff_schemas({"captcha_captchastore": {"id": _column("int")}}, {})
+        assert diff["changes"] == []
+        assert diff["blockers"] == []
+        assert diff["tables_old"] == 0
+
+    def test_missing_tables_excludes_removed(self, monkeypatch):
+        from ops.legacy import structure
+
+        monkeypatch.setattr(
+            legacy_schema,
+            "target_schema",
+            lambda: {"captcha_captchastore": {}, "identity_userinfo": {}},
+        )
+        monkeypatch.setattr(legacy_schema, "introspect_schema", lambda _dsn: {})
+        assert structure.missing_tables("postgresql://unused") == ["identity_userinfo"]
+
+    def test_drop_removed_tables_only_touches_whitelist(self, monkeypatch):
+        import contextlib
+
+        from ops.legacy import align
+
+        executed: list[str] = []
+
+        class FakeCursor:
+            def execute(self, sql, params=None):
+                executed.append(str(sql))
+
+            def fetchone(self):
+                return ("captcha_captchastore",)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        class FakeConnection:
+            def cursor(self):
+                return FakeCursor()
+
+            def transaction(self):
+                return contextlib.nullcontext()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        monkeypatch.setattr("psycopg.connect", lambda _dsn: FakeConnection())
+        dropped = align.drop_removed_tables("postgresql://unused")
+
+        assert dropped == sorted(legacy_schema.REMOVED_TABLES)
+        statements = [sql.lower() for sql in executed]
+        assert any("captcha_captchastore" in sql for sql in statements)
+        # 非查询语句只允许白名单表的 DROP
+        drops = [sql for sql in statements if not sql.startswith("select")]
+        assert drops and all("drop table if exists" in sql for sql in drops)
+        assert all("captcha_captchastore" in sql for sql in drops)
+
+
+class TestDataCleanupReporting:
+    """数据迁移第二遍不得把已执行的前置操作重复报告为「未登记」。"""
+
+    @staticmethod
+    def _loader(operation, module):
+        from types import SimpleNamespace
+
+        migration = SimpleNamespace(operations=[operation], __module__=module)
+        return SimpleNamespace(
+            disk_migrations={("demo", "0001"): migration},
+            project_state=lambda _nodes: None,
+        )
+
+    def test_prerequisites_are_skipped_silently(self, monkeypatch):
+        from django.db import migrations
+
+        from ops.legacy import structure
+
+        def create_vector_extension(apps, schema_editor):
+            return None
+
+        operation = migrations.RunPython(create_vector_extension, migrations.RunPython.noop)
+        monkeypatch.setattr(structure, "is_project_migration", lambda _migration: True)
+
+        ran, skipped = structure._run_data_cleanups(self._loader(operation, "tests.fake"), None, [("demo", "0001")])
+        assert ran == []
+        assert skipped == []
+
+    def test_unregistered_cleanup_is_still_reported(self, monkeypatch):
+        from django.db import migrations
+
+        from ops.legacy import structure
+
+        def unknown_cleanup(apps, schema_editor):
+            return None
+
+        operation = migrations.RunPython(unknown_cleanup, migrations.RunPython.noop)
+        monkeypatch.setattr(structure, "is_project_migration", lambda _migration: True)
+
+        _ran, skipped = structure._run_data_cleanups(self._loader(operation, "tests.fake"), None, [("demo", "0001")])
+        assert len(skipped) == 1
+        assert "unknown_cleanup" in skipped[0]

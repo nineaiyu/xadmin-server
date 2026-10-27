@@ -80,5 +80,5 @@
   - **split-pane 拖拽失效**真因 = 首轮列表的 el-loading 遮罩未退场吞掉 mouse 事件（遮罩覆盖整个分栏容器），此前登记的「webkit 位移判定限制」实为同一竞态 → 用例增加「有数据行 + 遮罩计数 0」web-first 等待后双浏览器 4 passed，拖拽参数未动；
   - **RePlusPage 自适应高度缺陷**（既有 UI bug，本次暴露）：上方内容较多 + 矮视口时公式算出 33px 表格、表体 0 高、行溢出到分页之下 → 组件内钳制最小 260px（写定值只依赖表顶位置，不与 ResizeObserver 振荡），ai.e2e webkit 此前 6/6 失败 → 双浏览器 4 passed；核心回归 perf/a11y/smoke/system-pages/split-pane/analysis/dashboard 双浏览器 52 passed；
   - **split-pane 服务端状态泄漏**：拖拽结果持久化到 WEB_SITE_CONFIG.SplitPanes（跨会话生效），把分栏页右侧压扁连坐 import-mapping/preview → 用例 afterEach 统一复原默认 20 后 import-mapping/preview/notify-im 复跑通过；
-  - **a11y 未读角标对比度**：通知类功能（催办/审批提醒）产生 `.el-badge__content--danger`（EP Badge 默认配色 ≈3.9:1）命中扫描，采样窗口决定命中与否 → 按既有治理流程补进 ALLOWED_VIOLATIONS 并登记 docs/accessibility-audit.md（EP Badge 配色调整后摘除），污染库条件下双浏览器 6 passed；
+  - **a11y 未读角标对比度**：通知类功能（催办/审批提醒）产生 `.el-badge__content--danger`（EP Badge 默认配色 ≈3.9:1）命中扫描，采样窗口决定命中与否 → 按既有治理流程补进 ALLOWED_VIOLATIONS 并登记 `ALLOWED_VIOLATIONS` / `e2e/README.md`（EP Badge 配色调整后摘除），污染库条件下双浏览器 6 passed；
   - 余下失败为既有已知负载瞬态（zz-preview-smoke 并行首屏锁死、chat webkit 私聊），与本次改动无关。

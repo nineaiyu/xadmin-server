@@ -23,7 +23,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 
 from common.core.config import SysConfig
-from common.core.filter import BaseFilterSet, PkMultipleFilter
+from common.core.filter import BaseFilterSet, PkMultipleFilter, get_filter_queryset
 from common.core.modelset import ListDeleteModelSet, OnlyExportDataAction
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
@@ -72,6 +72,30 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         if creator is not None and creator.is_superuser and not request.user.is_superuser:
             raise PermissionDenied(_("Cannot force logout a superuser"))
 
+    def _scoped_user_pks(self, user_pks: set[int]) -> tuple[set[int], set[int]]:
+        """按数据权限收敛目标用户：返回 (可见, 越界)。超管不受限。"""
+        request = getattr(self, "request", None)
+        if request is None or request.user.is_superuser or not user_pks:
+            return set(user_pks), set()
+        scoped = get_filter_queryset(UserSession.objects.filter(creator_id__in=user_pks), request.user)
+        visible = set(scoped.values_list("creator_id", flat=True))
+        return visible, set(user_pks) - visible
+
+    def _scoped_session_pks(self, session_pks: list[str]) -> tuple[set[int], list[str]]:
+        """会话行同样按数据权限收敛；返回 (可处理会话的所属用户, 越界/不存在的会话 pk)。"""
+        if not session_pks:
+            return set(), []
+        request = getattr(self, "request", None)
+        rows = dict(UserSession.objects.filter(pk__in=session_pks).values_list("pk", "creator_id"))
+        found = {str(pk): creator for pk, creator in rows.items()}
+        denied = [pk for pk in session_pks if pk not in found]
+        if request is not None and not request.user.is_superuser and found:
+            scoped = get_filter_queryset(UserSession.objects.filter(pk__in=list(found)), request.user)
+            visible = {str(pk) for pk in scoped.values_list("pk", flat=True)}
+            denied.extend(pk for pk in found if pk not in visible)
+            found = {pk: creator for pk, creator in found.items() if pk in visible}
+        return set(found.values()), denied
+
     def perform_destroy(self, instance: Any) -> Any:
         """行维度「下线」：WS 会话踢 channel；HTTP 会话按 sid 服务端失效 token。"""
         # 批量删除逐行调用：越权目标在这里抛错，由 BatchDestroyAction 记入 failures
@@ -118,6 +142,9 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         if target is None and not UserSession.objects.filter(creator_id=user_pk).exists():
             return ApiResponse(code=400, detail=_("User not found"))
         self._ensure_target_logout_allowed(target)
+        visible, _denied = self._scoped_user_pks({user_pk})
+        if user_pk not in visible:
+            raise PermissionDenied(_("No permission to operate this user"))
         channels = force_logout_user(user_pk, operator=request.user)
         return ApiResponse(
             data={"channels": channels},
@@ -125,38 +152,78 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         )
 
     @extend_schema(
-        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
-        responses=get_default_response_schema({"users": build_basic_type(OpenApiTypes.NUMBER)}),
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    "session_pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+                    "user_pks": build_array_type(build_basic_type(OpenApiTypes.NUMBER) or {}),
+                },
+                description="session_pks=会话行主键；user_pks=会话所属用户主键。"
+                "不接受未标注类型的混合数组（整数不再被猜测为用户/登录日志主键）。",
+            )
+        ),
+        responses=get_default_response_schema(
+            {
+                "users": build_basic_type(OpenApiTypes.NUMBER),
+                "channels": build_basic_type(OpenApiTypes.NUMBER),
+                "failures": build_array_type(
+                    build_object_type(
+                        properties={
+                            "pk": build_basic_type(OpenApiTypes.STR),
+                            "reason": build_basic_type(OpenApiTypes.STR),
+                        }
+                    )
+                    or {}
+                ),
+            }
+        ),
     )
     @action(methods=["post"], detail=False, url_path="batch-force-logout")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_force_logout(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """批量强制下线（按选中行的用户去重后踢全部会话）"""
-        pks = [str(pk) for pk in request.data if str(pk).strip()]
+        """批量强制下线（按选中行的用户去重后踢全部会话）
+
+        入参两种形态，禁止按主键类型猜测语义（历史实现把整数同时当用户主键与
+        登录日志主键取并集，会误踢无关用户）：
+
+        - ``{"session_pks": [...], "user_pks": [...]}``：显式区分会话行与用户；
+        - ``[...]``：旧版数组形态，只接受**会话行主键（UUID）**。
+        """
+        data = request.data
+        if isinstance(data, dict):
+            raw_sessions = data.get("session_pks") or []
+            raw_users = data.get("user_pks") or []
+        elif isinstance(data, list):
+            raw_sessions = data
+            raw_users = []
+        else:
+            return ApiResponse(code=400, detail=_("Invalid parameter format"))
+        if not isinstance(raw_sessions, (list, tuple)) or not isinstance(raw_users, (list, tuple)):
+            return ApiResponse(code=400, detail=_("Invalid parameter format"))
+        session_pks = [str(pk) for pk in raw_sessions if str(pk).strip()]
+        user_pks: set[int] = set()
+        for pk in raw_users:
+            try:
+                user_pks.add(int(pk))
+            except (TypeError, ValueError):
+                return ApiResponse(code=400, detail=_("Invalid parameter format"))
+        # 两种入参形态都必须校验会话主键；对象形态直接过滤 UUIDField 会抛 500
+        for pk in session_pks:
+            try:
+                uuid.UUID(pk)
+            except ValueError:
+                return ApiResponse(code=400, detail=_("Invalid parameter format"))
         # 用原始 queryset（不做在线交集过滤）：选中行来自列表快照，请求瞬间
         # 用户可能刚好掉线，被踢语义仍应生效。
-        # 兼容三种入参：会话行 pk（UUID）/ 用户 pk / 旧版登录日志行 pk（整型）。
-        # UUID 解析失败的项只参与整型/用户维度查询，避免 pk 字段校验 500。
-        from audit.services import UserLoginLog
-
-        session_pks = []
-        user_or_log_pks = []
-        for pk in pks:
-            try:
-                session_pks.append(str(uuid.UUID(pk)))
-                continue
-            except ValueError:
-                pass
-            try:
-                user_or_log_pks.append(int(pk))
-            except ValueError:
-                continue
-        user_pks = (
-            set(UserSession.objects.filter(pk__in=session_pks).values_list("creator_id", flat=True))
-            | set(UserSession.objects.filter(creator_id__in=user_or_log_pks).values_list("creator_id", flat=True))
-            | set(UserLoginLog.objects.filter(pk__in=user_or_log_pks).values_list("creator_id", flat=True))
-        )
+        session_user_pks, denied_sessions = self._scoped_session_pks(session_pks)
+        scoped_user_pks, denied_users = self._scoped_user_pks(user_pks)
+        targets = (session_user_pks | scoped_user_pks) - denied_users
         # 超管目标逐用户过滤：非超管整批踢超管属于提权，过滤项回传 failures
-        allowed_pks, failures = filter_force_logout_targets(request.user, user_pks)
+        allowed_pks, failures = filter_force_logout_targets(request.user, targets)
+        failures = [
+            *failures,
+            *({"pk": str(pk), "reason": str(_("No permission to operate this user"))} for pk in sorted(denied_users)),
+            *({"pk": str(pk), "reason": str(_("Session not found or out of scope"))} for pk in denied_sessions),
+        ]
         # 批量踢线走批量原语（缓存/黑名单/WS 逐用户循环收敛为整批一次）
         channels = force_logout_users(allowed_pks, operator=request.user)
         return ApiResponse(

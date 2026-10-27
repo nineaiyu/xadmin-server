@@ -1,17 +1,17 @@
 # 验证码风险分级运行手册（off / shadow / enforce）
 
 > 适用：交互式验证码 + 风险分级（`captcha` 域）。
-> 设计口径见 [验证码企业级增强方案](../plans/验证码企业级增强方案-2026.10.md) 与
-> [实施细则](../plans/验证码企业级增强实施细则-2026.10.md)；
+> 设计口径见 [验证码企业级增强实施细则](../plans/验证码企业级增强实施细则-2026.10.md)
+> （原主方案已清理；目标与差距判定见 [auth-flows](../architecture/auth-flows.md)）；
 > 接口与挂载面见 [auth-flows.md](../architecture/auth-flows.md)。
 
 ## 一、三档模式与切换顺序
 
 | 模式 | 行为 | 使用场景 |
 |------|------|----------|
-| `off`（默认） | 与历史行为一致：按场景出题 / 判题 / 发票，风险层不运行 | 升级初始态、事故回退 |
+| `off` | 与历史行为一致：按场景出题 / 判题 / 发票，风险层不运行 | 事故回退 |
 | `shadow` | 完整评分与决策并落日志，不改变放行结果 | 积累基线、校准阈值 |
-| `enforce` | 按 `allow / light / challenge / hard / deny` 执行 | 影子期达标后启用 |
+| `enforce`（默认） | 按 `allow / light / challenge / hard / deny` 执行 | 影子期达标后启用 |
 
 切换入口：管理端「系统设置 → 验证码 → 风险策略」，或
 `PATCH /api/settings/captcha/risk`（字段 `CAPTCHA_RISK_MODE`）。也可在
@@ -27,12 +27,18 @@ python manage.py doctor          # 关注「enforce 且信任网段为空」告�
 python manage.py sync_menu_permissions --dry-run   # 权限点缺口 0
 ```
 
+- **反代信任（硬前置）**：Docker/nginx 反代部署必须先配 `TRUSTED_PROXY_IPS`（`ops/init_config.sh`
+  会按 compose 固定子网自动写入；手工部署填反代所在网段）。未配置时 `REMOTE_ADDR` 是反代
+  容器私网地址，**不能**据此判定真实客户端：私网兜底不再视为可信（`captcha/risk.py`），
+  否则所有请求共用一个 IP 网段——风险分级永不升档，`captcha_challenge 30/m`、
+  `captcha_verify 60/m`、`captcha_audio 20/m` 与失败冷却退化成全站单桶。`doctor` 在 enforce 且未配置时告警。
 - **信任网段**：复用 `SECURITY_LOGIN_IP_WHITE_LIST`；`CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS`
-  默认开启（RFC1918 / 回环无题直过），避免首日误拦办公网。关闭私网信任且白名单为空时
-  `doctor` 会告警。
+  默认开启（RFC1918 / 回环无题直过），但**仅在上一条 `TRUSTED_PROXY_IPS` 已配置时生效**，
+  避免首日误拦办公网。关闭私网信任且白名单为空时 `doctor` 会告警。
 - **影子期基线**：`shadow` 下日志的 `would_decision` 应能回答「若开启会放行 / 拦下多少」；
   抽样人工核对被判 `deny` 的流量，真人比例应 < 0.5%。
-- **PoW 预算**：`CAPTCHA_POW_IP_BUDGET`（默认 600/h）防止算力放大器；低配设备可通过
+- **PoW 预算**：`CAPTCHA_POW_IP_BUDGET`（默认 600/h）按**每小时发放**计数（不是失败次数），
+  超预算的请求降级为点选题而不是拒绝，防止服务端被当作算力放大器；低配设备可通过
   `CAPTCHA_POW_BITS_LIGHT/HARD` 下调，但不要超过 `CAPTCHA_POW_BITS_MAX`（默认 20）。
 
 ## 二·补充：影子基线与压测脚本

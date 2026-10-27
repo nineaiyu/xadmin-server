@@ -18,9 +18,26 @@ from captcha.contracts import build_captcha_meta, captcha_globally_enabled
 from identity.utils.oauth import get_providers
 
 
-def _channel(scenario_enabled: bool, backend_enabled: bool) -> bool:
-    """场景开关 AND 投递通道前提(EMAIL_ENABLED / SMS_ENABLED)。"""
-    return scenario_enabled and backend_enabled
+def _channel(scenario_enabled: bool, backend_ready: bool) -> bool:
+    """场景开关 AND 通道可实际投递（与设置页「实际生效状态」同一硬判定）。
+
+    仅看 ``EMAIL_ENABLED`` / ``SMS_ENABLED`` 会把「开关开着但发不出」的通道
+    也展示成可用入口；就绪判定收口在 ``settings.services``（SMTP 缺主机、
+    短信凭据不全即未就绪）。
+    """
+    return scenario_enabled and backend_ready
+
+
+def _email_ready() -> bool:
+    from settings.services import email_service_ready
+
+    return email_service_ready()
+
+
+def _sms_ready() -> bool:
+    from settings.services import sms_service_ready
+
+    return sms_service_ready()
 
 
 def _oauth_entries() -> list[dict[str, str]]:
@@ -33,12 +50,14 @@ def _oauth_entries() -> list[dict[str, str]]:
 
 def build_login_capabilities() -> dict[str, Any]:
     """汇总各登录方式的能力清单(开关计算集中于此,便于组合测试)。"""
-    login_email = _channel(settings.SECURITY_LOGIN_BY_EMAIL_ENABLED, settings.EMAIL_ENABLED)
-    login_sms = _channel(settings.SECURITY_LOGIN_BY_SMS_ENABLED, settings.SMS_ENABLED)
-    register_email = _channel(settings.SECURITY_REGISTER_BY_EMAIL_ENABLED, settings.EMAIL_ENABLED)
-    register_sms = _channel(settings.SECURITY_REGISTER_BY_SMS_ENABLED, settings.SMS_ENABLED)
-    reset_email = _channel(settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED, settings.EMAIL_ENABLED)
-    reset_sms = _channel(settings.SECURITY_RESET_PASSWORD_BY_SMS_ENABLED, settings.SMS_ENABLED)
+    email_ready = _email_ready()
+    sms_ready = _sms_ready()
+    login_email = _channel(settings.SECURITY_LOGIN_BY_EMAIL_ENABLED, email_ready)
+    login_sms = _channel(settings.SECURITY_LOGIN_BY_SMS_ENABLED, sms_ready)
+    register_email = _channel(settings.SECURITY_REGISTER_BY_EMAIL_ENABLED, email_ready)
+    register_sms = _channel(settings.SECURITY_REGISTER_BY_SMS_ENABLED, sms_ready)
+    reset_email = _channel(settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED, email_ready)
+    reset_sms = _channel(settings.SECURITY_RESET_PASSWORD_BY_SMS_ENABLED, sms_ready)
     # 注册/重置流程必须经短信或邮箱验证码完成,通道全关时流程走不通,入口即隐藏
     captcha_meta = build_captcha_meta("login")
     return {

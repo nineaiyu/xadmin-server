@@ -2,22 +2,35 @@
 # -*- coding:utf-8 -*-
 """验证码背景资产注册表。
 
-资产随包发布或通过 ``CAPTCHA_ASSET_DIR`` 只读挂载；manifest 记录许可、来源与
-sha256。manifest 为空时回退程序化底图，行为与旧版本一致。
+资产随包发布，或通过 ``CAPTCHA_ASSET_DIR`` 在**运行期只读挂载**（离线导入命令
+可在构建/运维阶段写入该目录）；manifest 记录许可、来源与 sha256，运行期首次加载
+按需比对（``CAPTCHA_ASSET_VERIFY_SHA256``，默认开启）。manifest 为空时回退
+程序化底图，行为与旧版本一致。
 """
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import random
+import threading
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 from PIL import Image, ImageOps
 
+from common.utils import get_logger
+
+logger = get_logger(__name__)
+
 MANIFEST_NAME = "manifest.json"
+#: 已校验资产的 (size, mtime) 指纹：运行期只读挂载时命中缓存，不重复读盘
+_verified: dict[str, tuple[int, float]] = {}
+_verify_lock = threading.Lock()
 
 
 @dataclass(frozen=True)
@@ -25,6 +38,7 @@ class BackgroundAsset:
     id: str
     path: Path
     orientation: str = ""
+    sha256: str = ""
 
 
 def asset_root() -> Path:
@@ -34,7 +48,7 @@ def asset_root() -> Path:
     return Path(__file__).resolve().parent / "resources" / "backgrounds"
 
 
-def load_manifest(root: Path | None = None) -> dict:
+def load_manifest(root: Path | None = None) -> dict[str, Any]:
     path = (root or asset_root()) / MANIFEST_NAME
     if not path.is_file():
         return {"pack_id": "procedural", "version": "0", "license": "procedural", "files": []}
@@ -43,6 +57,39 @@ def load_manifest(root: Path | None = None) -> dict:
     except (OSError, ValueError):
         return {"pack_id": "procedural", "version": "0", "license": "procedural", "files": []}
     return data if isinstance(data, dict) else {}
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _asset_trusted(asset: BackgroundAsset) -> bool:
+    """运行期校验资产完整性（manifest 未登记 sha256 时跳过以兼容旧包）。"""
+    expected = str(asset.sha256 or "").strip().lower()
+    if not expected or not bool(getattr(settings, "CAPTCHA_ASSET_VERIFY_SHA256", True)):
+        return True
+    try:
+        stat = asset.path.stat()
+    except OSError:
+        return False
+    key = str(asset.path)
+    with _verify_lock:
+        if _verified.get(key) == (stat.st_size, stat.st_mtime):
+            return True
+    try:
+        actual = _file_sha256(asset.path)
+    except OSError:
+        return False
+    if not hmac.compare_digest(actual, expected):
+        logger.warning("captcha asset checksum mismatch, skipped: %s", key)
+        return False
+    with _verify_lock:
+        _verified[key] = (stat.st_size, stat.st_mtime)
+    return True
 
 
 def background_assets() -> list[BackgroundAsset]:
@@ -65,13 +112,15 @@ def background_assets() -> list[BackgroundAsset]:
         path = (root / raw).resolve()
         if not path.is_relative_to(root.resolve()) or not path.is_file():
             continue
-        assets.append(
-            BackgroundAsset(
-                id=str(item.get("id") or path.stem),
-                path=path,
-                orientation=str(item.get("orientation") or ""),
-            )
+        asset = BackgroundAsset(
+            id=str(item.get("id") or path.stem),
+            path=path,
+            orientation=str(item.get("orientation") or ""),
+            sha256=str(item.get("sha256") or ""),
         )
+        if not _asset_trusted(asset):
+            continue
+        assets.append(asset)
     return assets
 
 

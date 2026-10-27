@@ -11,6 +11,34 @@ from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 
 
+class CaptchaScreenSerializer(serializers.Serializer):
+    """客户端屏幕信息（只用于风险信号，数值越界/类型错误在入口即拒绝）。"""
+
+    width = serializers.IntegerField(required=False, min_value=0, max_value=20000, label=_("Screen width"))
+    height = serializers.IntegerField(required=False, min_value=0, max_value=20000, label=_("Screen height"))
+    availWidth = serializers.IntegerField(required=False, min_value=0, max_value=20000, label=_("Available width"))
+    availHeight = serializers.IntegerField(required=False, min_value=0, max_value=20000, label=_("Available height"))
+    dpr = serializers.FloatField(required=False, min_value=0, max_value=10, label=_("Device pixel ratio"))
+
+
+class CaptchaEnvSerializer(serializers.Serializer):
+    """客户端环境包；字段与前端 captchaSignal/env.ts 对齐，畸形结构直接 400。"""
+
+    v = serializers.IntegerField(required=False, min_value=0, max_value=10, label=_("Env version"))
+    timezone = serializers.CharField(required=False, allow_blank=True, max_length=64, label=_("Timezone"))
+    language = serializers.CharField(required=False, allow_blank=True, max_length=64, label=_("Language"))
+    screen = CaptchaScreenSerializer(required=False, allow_null=True, label=_("Screen"))
+    touch = serializers.IntegerField(required=False, min_value=0, max_value=100, label=_("Touch points"))
+    cores = serializers.IntegerField(required=False, min_value=0, max_value=256, label=_("CPU cores"))
+    reduced_motion = serializers.BooleanField(required=False, label=_("Reduced motion"))
+    webdriver = serializers.BooleanField(required=False, label=_("WebDriver"))
+    plugins = serializers.IntegerField(required=False, min_value=0, max_value=1000, label=_("Plugin count"))
+    referer = serializers.BooleanField(required=False, label=_("Referer present"))
+    canvas = serializers.CharField(required=False, allow_blank=True, max_length=128, label=_("Canvas digest"))
+    webgl = serializers.CharField(required=False, allow_blank=True, max_length=128, label=_("WebGL digest"))
+    fp = serializers.CharField(required=False, allow_blank=True, max_length=128, label=_("Client fingerprint"))
+
+
 class CaptchaChallengeInSerializer(serializers.Serializer):
     type = serializers.ChoiceField(
         choices=CAPTCHA_TYPES,
@@ -25,7 +53,11 @@ class CaptchaChallengeInSerializer(serializers.Serializer):
         label=_("Server action"),
         help_text=_("Intent action from the scene registry; required when action binding is enabled"),
     )
-    env = serializers.JSONField(required=False, label=_("Client environment"))
+    env = CaptchaEnvSerializer(
+        required=False,
+        allow_null=True,
+        label=_("Client environment"),
+    )
     account = serializers.CharField(max_length=128, required=False, allow_blank=True, label=_("Account hash"))
     hp = serializers.CharField(max_length=128, required=False, allow_blank=True, label=_("Honeypot"))
 
@@ -34,6 +66,8 @@ class CaptchaTrackPointSerializer(serializers.Serializer):
     x = serializers.FloatField(label=_("X coordinate"))
     y = serializers.FloatField(label=_("Y coordinate"))
     t = serializers.FloatField(label=_("Timestamp (ms)"))
+    # 事件类型（down/move/up/click/keyboard）：信号层区分轨迹阶段；缺省视为 move
+    ev = serializers.CharField(required=False, allow_blank=True, max_length=16, label=_("Track event"))
 
 
 class CaptchaVerifyInSerializer(serializers.Serializer):
@@ -65,7 +99,11 @@ class CaptchaVerifyInSerializer(serializers.Serializer):
         label=_("Signature"),
         help_text=_("HMAC signature over the canonical verify payload keyed by ck"),
     )
-    env = serializers.JSONField(required=False, label=_("Client environment"))
+    env = CaptchaEnvSerializer(
+        required=False,
+        allow_null=True,
+        label=_("Client environment"),
+    )
     account = serializers.CharField(max_length=128, required=False, allow_blank=True, label=_("Account hash"))
     hp = serializers.CharField(max_length=128, required=False, allow_blank=True, label=_("Honeypot"))
     input = serializers.ChoiceField(
@@ -90,6 +128,11 @@ class CaptchaChallengeOutSerializer(serializers.Serializer):
     length = serializers.IntegerField(required=False, label=_("Image answer length"))
     audio = serializers.BooleanField(required=False, label=_("Audio available"))
     ttl = serializers.IntegerField(label=_("Validity period (second)"))
+    ts = serializers.IntegerField(
+        required=False,
+        label=_("Server time"),
+        help_text=_("Server epoch seconds; use it as gen_time when signing the verify request"),
+    )
     pow = serializers.JSONField(required=False, label=_("PoW challenge"))
     ck = serializers.CharField(
         required=False,
@@ -178,11 +221,17 @@ class CaptchaRuleSerializer(serializers.ModelSerializer):
 
 
 class CaptchaRuleUpdateItemSerializer(serializers.Serializer):
+    """规则可写字段：分值 / 开关 / 优先级。
+
+    ``params`` 当前无运行时消费点（规则判据固定实现），因此不开放写入——
+    可编辑但永不生效会让运营误以为调过窗口/阈值。分值与分数域一致限制在
+    [-100, 100]，避免误填极端值把全站推向 allow/deny。
+    """
+
     code = serializers.CharField(max_length=32, label=_("Rule code"))
-    score = serializers.IntegerField(required=False, label=_("Score"))
+    score = serializers.IntegerField(required=False, min_value=-100, max_value=100, label=_("Score"))
     enabled = serializers.BooleanField(required=False, label=_("Enabled"))
     priority = serializers.IntegerField(required=False, min_value=1, max_value=9999, label=_("Priority"))
-    params = serializers.JSONField(required=False, label=_("Parameters"))
 
 
 class CaptchaRuleUpdateSerializer(serializers.Serializer):

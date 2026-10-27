@@ -30,6 +30,8 @@ from typing import Any
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from system.utils.platform.captcha_doctor import captcha_risk_findings
+
 PASS = "✅"
 WARN = "⚠️"
 FAIL = "❌"
@@ -351,39 +353,35 @@ class Command(BaseCommand):
             )
 
     def _check_captcha_risk(self) -> None:
-        """enforce 档的信任网段兜底：白名单为空且私网信任关闭 → 可能误拦办公网。"""
-        mode = str(getattr(settings, "CAPTCHA_RISK_MODE", "off") or "off").strip().lower()
-        if mode not in ("shadow", "enforce"):
-            self._report(PASS, "验证码风险档", f"{mode}（风险决策未启用）")
-            return
+        """验证码风险档：反代信任、网段兜底与影子期样本检查。"""
+        mode = str(getattr(settings, "CAPTCHA_RISK_MODE", "enforce") or "enforce").strip().lower()
         whitelist = list(getattr(settings, "SECURITY_LOGIN_IP_WHITE_LIST", []) or [])
         trust_private = bool(getattr(settings, "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS", True))
-        if mode == "enforce" and not whitelist and not trust_private:
-            self._report(
-                WARN,
-                "验证码风险档",
-                "enforce 且信任网段为空（私网兜底已关闭）",
-                "配置 SECURITY_LOGIN_IP_WHITE_LIST，或在验证码风险策略中开启「信任私网」",
-            )
-            return
+        trusted_proxies = list(getattr(settings, "TRUSTED_PROXY_IPS", []) or [])
+        samples = days = 0
         if mode == "enforce":
             try:
                 from captcha.models import CaptchaLog
 
                 shadow = CaptchaLog.objects.filter(mode="shadow")
-                samples = shadow.count()
-                days = shadow.values("ts__date").distinct().count()
-                if samples < 1000 or days < 3:
-                    self._report(
-                        WARN,
-                        "验证码影子期",
-                        f"样本 {samples} / 覆盖 {days} 天（建议 ≥1000 / ≥3 天）",
-                        "先切 shadow 积累基线并人工核对 deny 误拦，再开 enforce",
-                    )
-                    return
+                samples, days = shadow.count(), shadow.values("ts__date").distinct().count()
             except Exception:  # noqa: BLE001 数据库不可用时由数据库自检项报告
                 pass
-        self._report(PASS, "验证码风险档", f"{mode}（信任网段 {len(whitelist)} 条 / 私网兜底 {trust_private}）")
+        findings = captcha_risk_findings(
+            mode=mode,
+            whitelist=whitelist,
+            trust_private=trust_private,
+            trusted_proxies=trusted_proxies,
+            samples=samples,
+            days=days,
+        )
+        for item in findings:
+            self._report(
+                PASS if item["level"] == "pass" else WARN,
+                item["name"],
+                item["detail"],
+                item.get("fix"),
+            )
 
     def _check_ai_declarations(self) -> None:
         """AI 动作声明自检：发现结果与路由面对齐（各应用 ``ai_declarations.py``）。

@@ -49,7 +49,7 @@ class PowBackend(ChallengeBackend):
     def generate(self, difficulty: str = "normal") -> CaptchaChallenge:
         bits = bits_for(difficulty)
         challenge = secrets.token_hex(16)
-        ttl = int(getattr(settings, "CAPTCHA_CHALLENGE_TTL", 120) or 120)
+        ttl = max(int(getattr(settings, "CAPTCHA_CHALLENGE_TTL", 120) or 120), 10)
         return CaptchaChallenge(
             type=self.type,
             secret={"challenge": challenge, "bits": bits},
@@ -57,6 +57,9 @@ class PowBackend(ChallengeBackend):
                 "algorithm": "sha256",
                 "challenge": challenge,
                 "difficulty_bits": bits,
+                # 相对有效期：客户端按「收到时刻 + ttl」计时，不能用本地时钟直接
+                # 比较服务端绝对 epoch（客户端时钟偏差会让 PoW 立即判过期）
+                "ttl": ttl,
                 "expire": int(time.time()) + ttl,
             },
         )

@@ -67,6 +67,17 @@ class TestStrictBinding:
         settings.CAPTCHA_TICKET_AUDIENCE = "deploy-b"
         assert service.consume_ticket(ticket, "login", action=CAPTCHA_ACTION_LOGIN, fp="fph", sid=sid) is False
 
+    def test_action_binding_off_keeps_strict_sid_fp(self, strict, settings):
+        settings.CAPTCHA_ACTION_BIND = False
+        service = InteractiveCaptcha()
+        ticket, sid = _issue(service)
+        assert service.consume_ticket(ticket, "login", fp="fph", sid=sid) is True
+        missing_fp, sid2 = _issue(service)
+        assert service.consume_ticket(missing_fp, "login", sid=sid2) is False
+        missing_sid, sid3 = _issue(service)
+        assert service.consume_ticket(missing_sid, "login", fp="fph") is False
+        assert service.consume_ticket(missing_sid, "login", fp="fph", sid=sid3) is False  # 已失败消费，票据作废
+
     def test_strict_challenge_requires_sid(self, strict):
         service = InteractiveCaptcha()
         challenge = service.challenge(

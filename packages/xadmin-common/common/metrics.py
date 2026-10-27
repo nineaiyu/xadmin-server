@@ -278,7 +278,7 @@ def _render_grants_cache() -> bytes:
     """授权池缓存存活键数（观察项）。
 
     键空间 = 用户 × 菜单（含部门维度），TTL 300s 兜底；本仓决策为「维持 + 监控」
-    （不做键去 menu 维度、也不做版本分段淘汰，收敛预案见 docs/cache-keys-audit.md）：
+    （不做键去 menu 维度、也不做版本分段淘汰，收敛预案见 docs/architecture/cache.md）：
     这里给出存活键数，供监控侧设阈值观察，超预期再评估收敛方案。
     SCAN 游标遍历（不用 KEYS，避免大 keyspace 阻塞）；redis 不可用返回空。
     """

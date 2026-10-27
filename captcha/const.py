@@ -77,8 +77,8 @@ CAPTCHA_SCENE_SWITCHES = {
 }
 
 
-#: 风险分级三档：off = 升级零行为变化（默认）；shadow = 跑分留痕不改变放行；
-#: enforce = 按风险决策分级验证（信号/规则层上线后启用）。
+#: 风险分级三档：off = 只做题不分级（事故回退用）；shadow = 跑分留痕不改变放行；
+#: enforce = 按风险决策分级验证（**当前默认**，见 server/conf/settings_defaults.py）。
 CAPTCHA_RISK_MODE_OFF = "off"
 CAPTCHA_RISK_MODE_SHADOW = "shadow"
 CAPTCHA_RISK_MODE_ENFORCE = "enforce"

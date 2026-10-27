@@ -66,8 +66,8 @@ ln -sf "$PWD/scripts/hooks/pre-commit" .git/hooks/pre-commit
 - 新增错误码必须先登记 [docs/exception-handling.md](docs/exception-handling.md)；未预期异常返回通用文案，详情只进日志；
 - 改动权限/缓存相关代码，先读 [docs/architecture/permission.md](docs/architecture/permission.md)
   与 [docs/architecture/cache.md](docs/architecture/cache.md)（绕过 ORM 的信号失效红线）；
-- 涉及模型字段变更，评估索引必要性并对照 [docs/architecture/indexes.md](docs/architecture/indexes.md) 评审记录；
-- 生产安全相关配置（密钥、密码、认证）一律配置化，禁止硬编码默认值（见 [docs/security-review.md](docs/security-review.md)）。
+- 涉及模型字段变更，评估索引必要性；
+- 生产安全相关配置（密钥、密码、认证）一律配置化，禁止硬编码默认值（见 [docs/asvs-mapping.md](docs/asvs-mapping.md)）。
 
 ## 5. ADR 流程
 
@@ -87,4 +87,4 @@ ln -sf "$PWD/scripts/hooks/pre-commit" .git/hooks/pre-commit
 
 ## 7. 安全问题
 
-请勿通过公开 Issue/PR 报告安全漏洞。安全修复参考 [docs/security-review.md](docs/security-review.md) 的基线与档案。
+请勿通过公开 Issue/PR 报告安全漏洞。安全修复参考 [docs/asvs-mapping.md](docs/asvs-mapping.md) 的基线与档案。

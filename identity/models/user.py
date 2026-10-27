@@ -122,7 +122,7 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
         verbose_name_plural = verbose_name
         ordering = ("-date_joined",)
         # 全局搜索的 pg_trgm 索引（PostgreSQL 生效，其它后端由迁移跳过；
-        # 清单与豁免见 system/search_indexes.py 与 docs/architecture/indexes.md）：
+        # 清单与豁免见 system/search_indexes.py）：
         # username/nickname/email/phone 均为 icontains 检索字段，B-tree 帮不上前缀通配
         indexes = [
             GinIndex(fields=["username"], name="idx_userinfo_username_trgm", opclasses=["gin_trgm_ops"]),

@@ -29,6 +29,16 @@ def _assert_bilingual(text, en_kw, zh_kw):
     assert en_kw in text or zh_kw in text, text
 
 
+def _enable_sms(settings):
+    """短信通道「可实际投递」：开关 + 服务商凭据齐全（与设置页硬判定同口径）。"""
+    settings.SMS_ENABLED = True
+    settings.SMS_BACKEND = "alibaba"
+    settings.ALIBABA_ACCESS_KEY_ID = "test-key"
+    settings.ALIBABA_ACCESS_KEY_SECRET = "test-secret"
+    settings.ALIBABA_VERIFY_SIGN_NAME = "test-sign"
+    settings.ALIBABA_VERIFY_TEMPLATE_CODE = "test-template"
+
+
 @pytest.fixture
 def silent_send(monkeypatch):
     """屏蔽真实投递（mock celery 发送任务）：验证码生成与缓存写入保持真实。"""
@@ -195,7 +205,7 @@ class TestVerifyCodeConfig:
         assert resp.data["data"]["sms"] is False
 
         # 开关开着但阿里云凭据缺失：发不出验证码，绑定入口同样不可用
-        settings.SMS_ENABLED = True
+        _enable_sms(settings)
         settings.SMS_BACKEND = "alibaba"
         settings.ALIBABA_ACCESS_KEY_ID = ""
         settings.ALIBABA_ACCESS_KEY_SECRET = ""
@@ -375,7 +385,7 @@ class TestSendVerifyCodeLoginReset:
     def test_login_send_phone_via_sms(self, api_client, normal_user, settings, monkeypatch):
         """sms 通道开启：phone 表单类型映射为 sms 后端下发（非 dryrun，不回显验证码）。"""
         settings.SECURITY_LOGIN_BY_SMS_ENABLED = True
-        settings.SMS_ENABLED = True
+        _enable_sms(settings)
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
         settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_LOGIN_ENCRYPTED_ENABLED = False
@@ -444,7 +454,7 @@ class TestSendVerifyCodeRegisterEmail:
         settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_REGISTER_ENCRYPTED_ENABLED = False
         settings.SECURITY_REGISTER_BY_SMS_ENABLED = True
-        settings.SMS_ENABLED = True
+        _enable_sms(settings)
         normal_user.phone = "13800138001"
         normal_user.save(update_fields=["phone"])
         monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", lambda self: None)
@@ -502,7 +512,7 @@ class TestSendVerifyCodeBind:
         assert resp.data["data"]["extra"] == {}
 
     def test_bind_phone_existing_user_extra(self, api_client, normal_user, settings, monkeypatch):
-        settings.SMS_ENABLED = True
+        _enable_sms(settings)
         settings.SMS_BACKEND = "alibaba"
         # 绑定发码要求短信通道可实际投递：补齐已收录服务商凭据
         settings.ALIBABA_ACCESS_KEY_ID = "ak"

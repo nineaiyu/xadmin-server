@@ -184,7 +184,7 @@ python manage.py seed_demo_clean             # 一键卸载（清理演示数据
 | 登录页提示"当前服务器不允许登录"         | 多为登录接口限流（默认 `login: 50/h`，GET/POST 共享额度）；检查是否被自动化/共享出口打满，可在 `config.yml` 的 `DEFAULT_THROTTLE_RATES` 调整                                       |
 | `db_status: false` 但数据库正常 | 确认 `config.yml` 数据库连接项；4.2.5 起健康检查不再依赖 Monitor 表                                                                                             |
 | 导入/导出无响应                  | 检查 heavy worker 是否在线（`celery_status`、flower 面板）；无 heavy worker 时任务滞留队列                                                                       |
-| flower 无法访问               | flower 随 web 容器启动（`start web`），认证取 `CELERY_FLOWER_AUTH` 配置；未配置认证时仅允许绑定 127.0.0.1，绑定其他地址启动会被拒绝（见 [security-review.md](../security-review.md)） |
+| flower 无法访问               | flower 随 web 容器启动（`start web`），认证取 `CELERY_FLOWER_AUTH` 配置；未配置认证时仅允许绑定 127.0.0.1，绑定其他地址启动会被拒绝（见 [asvs-mapping.md](../asvs-mapping.md)） |
 | 服务启动即退出                   | `SECRET_KEY` 未设置（非 DEBUG 强制校验）；查看 `data/logs/`                                                                                               |
 
 更多场景（登录锁定、WebSocket 不通、导入导出积压、权限不生效、磁盘占满、备份恢复、migrate 卡住、CVE

@@ -21,9 +21,18 @@ def no_oauth(monkeypatch):
 
 @pytest.fixture
 def all_channels(settings):
-    """邮箱/短信投递通道与场景开关全开(运行时默认关闭,这里显式打开)。"""
+    """邮箱/短信投递通道与场景开关全开(运行时默认关闭,这里显式打开)。
+
+    「可用」按硬判定:除开关外还需具备可实际投递的前提(测试邮件后端视为就绪,
+    短信需服务商凭据完整)。
+    """
     settings.EMAIL_ENABLED = True
     settings.SMS_ENABLED = True
+    settings.SMS_BACKEND = "alibaba"
+    settings.ALIBABA_ACCESS_KEY_ID = "test-key"
+    settings.ALIBABA_ACCESS_KEY_SECRET = "test-secret"
+    settings.ALIBABA_VERIFY_SIGN_NAME = "test-sign"
+    settings.ALIBABA_VERIFY_TEMPLATE_CODE = "test-template"
     settings.SECURITY_LOGIN_BY_EMAIL_ENABLED = True
     settings.SECURITY_LOGIN_BY_SMS_ENABLED = True
 
@@ -79,6 +88,25 @@ class TestBuildLoginCapabilities:
         settings.SMS_ENABLED = False
         cap = build_login_capabilities()
         assert cap["code"] == {"enabled": True, "email": True, "sms": False}
+
+    def test_sms_channel_requires_provider_credentials(self, settings, no_oauth):
+        """SMS_ENABLED 开着但服务商凭据不全:短信通道不可用(硬判定与设置页同口径)。"""
+        settings.SECURITY_LOGIN_BY_SMS_ENABLED = True
+        settings.SMS_ENABLED = True
+        settings.SMS_BACKEND = "alibaba"
+        settings.ALIBABA_ACCESS_KEY_ID = ""
+        settings.ALIBABA_ACCESS_KEY_SECRET = ""
+        cap = build_login_capabilities()
+        assert cap["code"]["sms"] is False
+
+    def test_email_channel_requires_smtp_host(self, settings, no_oauth):
+        """EMAIL_ENABLED 开着但 SMTP 主机为空:邮箱通道不可用。"""
+        settings.SECURITY_LOGIN_BY_EMAIL_ENABLED = True
+        settings.EMAIL_ENABLED = True
+        settings.EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        settings.EMAIL_HOST = ""
+        cap = build_login_capabilities()
+        assert cap["code"]["email"] is False
 
     def test_oauth_projection_only_public_fields(self, settings, no_oauth, monkeypatch):
         """oauth 只投影 key/name/flavor,未启用或不完整的 provider 不下发。"""

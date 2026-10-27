@@ -141,12 +141,18 @@ class TestSignals:
 
 
 class TestTrust:
-    def test_private_network_trusted_by_default(self, settings):
+    def test_private_network_trusted_when_proxy_configured(self, settings):
         settings.CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS = True
+        settings.TRUSTED_PROXY_IPS = ["10.0.0.1/32"]
         assert risk.is_trusted_ip("127.0.0.1") is True
         result = risk.assess(ip="10.0.0.5", env={"webdriver": True})
         assert result.trusted is True
         assert result.decision == "allow"
+
+    def test_private_network_not_trusted_without_proxy(self, settings):
+        settings.CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS = True
+        settings.TRUSTED_PROXY_IPS = []
+        assert risk.is_trusted_ip("127.0.0.1") is False
 
     def test_public_ip_not_trusted(self, settings):
         settings.CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS = False

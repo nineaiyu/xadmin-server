@@ -259,7 +259,8 @@ def drop_removed_tables(dsn: str) -> list[str]:
     with psycopg.connect(dsn) as connection, connection.cursor() as cursor, connection.transaction():
         for table in sorted(REMOVED_TABLES):
             cursor.execute("select to_regclass(%s)", (table,))
-            if cursor.fetchone()[0] is None:
+            row = cursor.fetchone()
+            if row is None or row[0] is None:
                 continue
             cursor.execute(sql.SQL("DROP TABLE IF EXISTS {} CASCADE").format(sql.Identifier(table)))
             dropped.append(table)

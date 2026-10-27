@@ -20,6 +20,34 @@ def _clean_cache():
         pass
 
 
+class TestEnvTypeGuards:
+    """畸形环境包不得让信号层抛异常。
+
+    原缺陷：``env.screen`` 被直接 ``.get`` / ``int()``，匿名请求传
+    ``{"env": {"screen": "x"}}`` 即在 ``RiskContext.__post_init__`` 抛
+    AttributeError → 500（风险层关闭也触发）。
+    """
+
+    @pytest.mark.parametrize(
+        "env",
+        [
+            None,
+            "x",
+            [],
+            {"screen": "x"},
+            {"screen": [1, 2]},
+            {"screen": {"width": "abc", "height": None, "dpr": "abc"}},
+            {"screen": {"width": 10**9, "height": -1}},
+            {"v": "not-int", "timezone": 123, "language": ["zh"]},
+        ],
+    )
+    def test_env_signals_and_fingerprint_never_raise(self, env):
+        ua = "Mozilla/5.0 Chrome/120.0 Safari/537.36"
+        assert isinstance(signals.fingerprint(env, ua), str)
+        hits = signals.env_signals(env, ua)
+        assert set(hits) == {"env_missing", "env_headless", "env_contradiction", "ua_mismatch"}
+
+
 class TestCounterSignals:
     def test_challenge_abandon(self):
         for _ in range(10):

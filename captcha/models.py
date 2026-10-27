@@ -12,7 +12,7 @@ class CaptchaLog(DbUuidModel):
 
     异步写入（Celery 批量落库），遥测故障不影响验证结果；风险分只进本表
     与票据，不向客户端回显。字段语义见
-    ``docs/plans/验证码企业级增强方案-2026.10.md`` 观测层一节。
+    ``docs/ops/captcha-risk-runbook.md`` 观测与告警一节。
     """
 
     class PhaseChoices(models.TextChoices):
@@ -54,9 +54,15 @@ class CaptchaLog(DbUuidModel):
             models.Index(fields=["fp_hash", "ts"]),
         ]
 
+    #: 单批删除行数：首次清理 30 天存量时避免单事务长时间持锁 / 放大 WAL
+    PURGE_BATCH_SIZE = 2000
+
     @classmethod
     def purge_expired_logs(cls, retention_days: int | None = None) -> int:
-        """删除超过保留期的观测日志；返回删除行数（保留期 0 = 不清理）。"""
+        """删除超过保留期的观测日志；返回删除行数（保留期 0 = 不清理）。
+
+        按主键小批循环删除（每批独立提交），把大删除拆成可控事务。
+        """
         from django.conf import settings
 
         if retention_days is None:
@@ -64,14 +70,22 @@ class CaptchaLog(DbUuidModel):
         if retention_days <= 0:
             return 0
         horizon = timezone.now() - datetime.timedelta(days=retention_days)
-        deleted, _ = cls.objects.filter(ts__lte=horizon).delete()
-        return int(deleted)
+        total = 0
+        while True:
+            batch = list(cls.objects.filter(ts__lte=horizon).values_list("pk", flat=True)[: cls.PURGE_BATCH_SIZE])
+            if not batch:
+                break
+            deleted, _detail = cls.objects.filter(pk__in=batch).delete()
+            total += int(deleted)
+            if len(batch) < cls.PURGE_BATCH_SIZE:
+                break
+        return total
 
 
 class CaptchaRule(DbUuidModel):
     """风险规则（DB 可配：分值 / 开关 / 优先级热更，不发版）。
 
-    规则判据在 ``captcha/risk.py`` 的 16 个可解释信号求值器中实现；
+    规则判据在 ``captcha/risk.py`` 的可解释信号求值器中实现（内置 22 条）；
     本表只承载运营可调项，避免把任意表达式（eval）引入运行时。
     ``params`` 用于窗口/阈值等规则私有参数（JSON）。
     """

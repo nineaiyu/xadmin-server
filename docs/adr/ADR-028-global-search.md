@@ -108,7 +108,7 @@ P2 评估出口，触发条件未命中但按需启动）。本 ADR 同步修订
   非 PG 不执行 DDL、扩展不可用时不建索引；
 - 既有 12 例检索契约（分组结构/通配符/403/fail-closed/行级收紧）全部保持——语义零变更由它们背书；
 - PG 库上的可用性断言（`enable_seqscan=off` + EXPLAIN）在 `test_index_usage.py` 内按 vendor
-  门控（本地/CI SQLite 跳过）；库上手工验证 SQL 见 [indexes.md](../architecture/indexes.md) §三。
+  门控（本地/CI SQLite 跳过）；库上手工验证 SQL 见模型 Meta / 迁移（原索引评审文档已清理）。
 
 ## 7. 增量（2026-10-25）：命中跳转承接 + 提供者注册扩展点
 

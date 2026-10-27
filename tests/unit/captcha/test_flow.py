@@ -31,6 +31,22 @@ class TestFlow:
         assert selected in ("slide", "click")
         assert difficulty == "normal"
 
+    def test_pow_disabled_never_leaks_a_disabled_type(self, settings):
+        settings.CAPTCHA_POW_ENABLED = False
+        # 权重为 0 也不得把未启用的 click 当兜底
+        settings.CAPTCHA_TYPE_WEIGHTS = {"slide": 0}
+        ctx = flow.RiskContext(scene="login", ip="8.8.8.8")
+        for decision in ("allow", "light"):
+            selected, _ = flow.pick_type(ctx, ["slide"], None, decision)
+            assert selected == "slide"
+
+    def test_hard_falls_back_to_enabled_types_only(self, settings):
+        settings.CAPTCHA_IMAGE_FALLBACK_ENABLED = True
+        ctx = flow.RiskContext(scene="login", ip="8.8.8.8")
+        selected, difficulty = flow.pick_type(ctx, ["image"], "image", "hard")
+        assert selected == "image"
+        assert difficulty == "hard"
+
     def test_hard_prefers_wordorder(self):
         ctx = flow.RiskContext(scene="login", ip="8.8.8.8")
         selected, difficulty = flow.pick_type(ctx, ["slide", "click", "wordorder"], None, "hard")
@@ -86,6 +102,12 @@ class TestFlow:
         selected, difficulty = flow.pick_type(ctx, ["slide", "click", "wordorder"], "slide", "hard")
         assert selected == "wordorder"
         assert difficulty == "hard"
+
+    def test_pow_budget_fallback_prefers_interactive_over_image(self, monkeypatch):
+        monkeypatch.setattr(flow, "pow_budget_ok", lambda _ip: False)
+        assert flow.avoid_pow_budget("iph", ["pow", "slide", "image"], "pow") == "slide"
+        assert flow.avoid_pow_budget("iph", ["pow", "image"], "pow") == "image"
+        assert flow.avoid_pow_budget("iph", ["pow"], "pow") == "pow"
 
     def test_stored_result_roundtrip(self):
         result = flow.stored_result({"decision": "hard", "risk": 75, "risk_reasons": ["env_headless"]})

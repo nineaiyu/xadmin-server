@@ -3,7 +3,7 @@
 - 状态：**已交付（2026-10-20）**
 - 日期：2026-10-20
 - 关联：[ADR-056](ADR-056-data-permission-config-and-scope.md)（数据权限配置页与生效范围归一）、
-  `docs/architecture/data-permission.md`（现状口径）、`common/core/data_scope/`（规则编译器）
+  `docs/architecture/permission.md`（现状口径）、`common/core/data_scope/`（规则编译器）
 
 ## 一、背景
 

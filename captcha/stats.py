@@ -16,7 +16,7 @@ from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Case, CharField, Count, F, Q, When
+from django.db.models import Case, CharField, Count, F, Q, Value, When
 from django.db.models.functions import TruncHour
 from django.utils import timezone
 
@@ -35,6 +35,8 @@ RISK_BUCKETS = (
 )
 TOP_REASON_LIMIT = 10
 TOP_ENTITY_LIMIT = 5
+#: 原因分布的单次采样上限：攻击窗口内 deny 行可达百万级，全量拉 JSON 会拖垮管理端
+TOP_REASON_SAMPLE_LIMIT = 50000
 
 
 def _cache_key(hours: int) -> str:
@@ -144,22 +146,36 @@ def _trend(logs: Any) -> list[dict[str, Any]]:
 
 
 def _risk_distribution(logs: Any) -> list[dict[str, Any]]:
-    """风险分直方图（仅校验期有分数的行）。"""
-    counts = {label: 0 for label, _low, _high in RISK_BUCKETS}
-    scores = logs.filter(phase="verify").exclude(risk_score__isnull=True).values_list("risk_score", flat=True)
-    for score in scores:
-        value = int(score or 0)
-        for label, low, high in RISK_BUCKETS:
-            if low <= value <= high:
-                counts[label] += 1
-                break
-    return [{"bucket": label, "total": counts[label]} for label, _low, _high in RISK_BUCKETS]
+    """风险分直方图（仅校验期有分数的行）。
+
+    分桶交给数据库（``CASE WHEN``）：168h 窗口百万级行时不能把全部分数拉进
+    Python 逐条比较（内存与耗时都会随窗口线性增长）。
+    """
+    buckets = Case(
+        *[When(risk_score__gte=low, risk_score__lte=high, then=Value(label)) for label, low, high in RISK_BUCKETS],
+        default=Value(""),
+        output_field=CharField(),
+    )
+    rows = (
+        logs.filter(phase="verify")
+        .exclude(risk_score__isnull=True)
+        .annotate(bucket=buckets)
+        .values("bucket")
+        .annotate(total=Count("pk"))
+    )
+    counts = {row["bucket"]: row["total"] for row in rows}
+    return [{"bucket": label, "total": counts.get(label, 0)} for label, _low, _high in RISK_BUCKETS]
 
 
 def _top_reasons(logs: Any) -> list[dict[str, Any]]:
-    """拦截原因 TopN（只统计 deny 行，原因来自规则 code / 处置标记）。"""
+    """拦截原因 TopN（只统计 deny 行，原因来自规则 code / 处置标记）。
+
+    最多采样最近 ``TOP_REASON_SAMPLE_LIMIT`` 行：这是 TopN 趋势而非精确计数，
+    不能为了完整性把整窗 JSON 拉进 Python（大窗口下会打爆管理端内存）。
+    """
     counter: Counter[str] = Counter()
-    for reasons in logs.filter(phase="verify", effective_decision="deny").values_list("risk_reasons", flat=True):
+    sampled = logs.filter(phase="verify", effective_decision="deny").order_by("-ts")
+    for reasons in sampled.values_list("risk_reasons", flat=True)[:TOP_REASON_SAMPLE_LIMIT]:
         if isinstance(reasons, list):
             counter.update(str(reason) for reason in reasons if reason)
     return [{"reason": reason, "total": total} for reason, total in counter.most_common(TOP_REASON_LIMIT)]

@@ -49,6 +49,30 @@ def test_custom_asset_dir_loads_and_crops(settings, tmp_path):
     assert image.size == (64, 64)
 
 
+def test_checksum_mismatch_is_skipped(settings, tmp_path):
+    """运行期资产被替换（sha256 不匹配）时跳过该图，不静默使用被篡改内容。"""
+    _write_pack(tmp_path)
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    manifest["files"][0]["sha256"] = "0" * 64
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    settings.CAPTCHA_ASSET_DIR = str(tmp_path)
+    settings.CAPTCHA_BACKGROUND_PACK = "builtin"
+    settings.CAPTCHA_ASSET_VERIFY_SHA256 = True
+    assert background_assets() == []
+
+
+def test_checksum_verification_can_be_disabled(settings, tmp_path):
+    """兼容旧资产包：显式关闭校验后按 manifest 加载（默认开启）。"""
+    _write_pack(tmp_path)
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    manifest["files"][0]["sha256"] = "0" * 64
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    settings.CAPTCHA_ASSET_DIR = str(tmp_path)
+    settings.CAPTCHA_BACKGROUND_PACK = "builtin"
+    settings.CAPTCHA_ASSET_VERIFY_SHA256 = False
+    assert len(background_assets()) == 1
+
+
 def test_path_traversal_is_ignored(settings, tmp_path):
     _write_pack(tmp_path)
     manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))

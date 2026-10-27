@@ -128,8 +128,9 @@ PREREQUISITE_CALLABLES = (
 )
 
 #: 幂等数据迁移白名单。当前为空：它们通过 ORM 查询默认连接，在「旧库别名」
-#: 对齐场景下会命中错误库；结构与账本对齐后由 post_upgrade / load_init_json
-#: 统一补齐，不在对齐器内执行（此前误跑会直接报 relation 不存在）。
+#: 对齐场景下会命中错误库；结构与账本对齐后由 post_upgrade 统一补齐（含下线
+#: 权限点清理与风险规则缺行合并），不在对齐器内执行（此前误跑会直接报 relation
+#: 不存在）。新增数据迁移必须在此表态或登记到 DEFERRED_CALLABLES。
 DATA_CLEANUP_CALLABLES: tuple[str, ...] = ()
 
 #: 明确「跳过」的数据迁移登记（仅用于白名单守护：新增数据迁移必须在这里表态，
@@ -179,8 +180,18 @@ def _run_prerequisites(loader: Any, editor: Any, nodes: list[tuple[str, str]]) -
 
 
 def _run_data_cleanups(loader: Any, editor: Any, nodes: list[tuple[str, str]]) -> tuple[list[str], list[str]]:
-    """在建表之后执行幂等数据迁移（删除废权限点 / 补风险规则默认行）。"""
-    return _run_callables(loader, editor, nodes, DATA_CLEANUP_CALLABLES, "数据迁移")
+    """在建表之后执行幂等数据迁移（删除废权限点 / 补风险规则默认行）。
+
+    ``PREREQUISITE_CALLABLES`` 已在第一遍执行过，不在本遍重复报告为「未登记」。
+    """
+    return _run_callables(
+        loader,
+        editor,
+        nodes,
+        DATA_CLEANUP_CALLABLES,
+        "数据迁移",
+        silent=PREREQUISITE_CALLABLES,
+    )
 
 
 def _run_callables(
@@ -189,6 +200,7 @@ def _run_callables(
     nodes: list[tuple[str, str]],
     allowed: tuple[str, ...],
     label: str,
+    silent: tuple[str, ...] = (),
 ) -> tuple[list[str], list[str]]:
     from django.db.migrations.operations.special import RunPython, RunSQL
 
@@ -209,7 +221,8 @@ def _run_callables(
                     skipped.append(f"{node[0]}.{node[1]}: RunPython {name} 属三方 app，交由 migrate 处理")
                     continue
                 if name not in allowed:
-                    skipped.append(f"{node[0]}.{node[1]}: RunPython {name or '<lambda>'} 未登记为{label}，跳过")
+                    if name not in silent:
+                        skipped.append(f"{node[0]}.{node[1]}: RunPython {name or '<lambda>'} 未登记为{label}，跳过")
                     continue
                 # 白名单操作均幂等；from/to 传同一状态，避免 initial 迁移空依赖导致
                 # 状态里没有自身 app。建表后执行的数据迁移此时表已就绪。

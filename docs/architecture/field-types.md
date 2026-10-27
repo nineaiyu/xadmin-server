@@ -163,7 +163,7 @@ app 模型字段声明统计，用于判断该类型的真实出镜率。
 |---|---|---|
 | 序列化器字段类 | 类型 / 格式 / 空值语义（服务端最终裁决） | `common/core/fields.py`、`validators.py` |
 | 元数据 rule | 前端提交前的即时反馈（与后端同口径，不替代后端） | `RePlusPage/src/utils/fieldTypeRegistry.ts` + `src/utils/rules/` |
-| 字段权限 / 脱敏 | 字段是否下发、值是否脱敏 | 见 [permission.md](permission.md)、[field-permission.md](field-permission.md) |
+| 字段权限 / 脱敏 | 字段是否下发、值是否脱敏 | 见 [permission.md](permission.md) |
 
 ## 七、守护与门禁
 

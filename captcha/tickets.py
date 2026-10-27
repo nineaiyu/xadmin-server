@@ -170,7 +170,7 @@ def issue_ticket(
 def parse_ticket(ticket: str) -> dict[str, Any] | None:
     """拆解并验签票据；格式 / 签名不符返回 None（不抛异常，防探测同形）。"""
     ticket = str(ticket or "").strip()
-    if ticket.count(".") != 1:
+    if not ticket or len(ticket) > 4096 or ticket.count(".") != 1:
         return None
     body, _, signature = ticket.partition(".")
     try:
@@ -212,14 +212,14 @@ def consume_ticket_payload(
         return None
     if payload.get("scene") != scene:
         return None
-    if not action_binding_enabled():
-        return payload
-    # 强绑定：签发与消费两端必须声明且完全一致。未绑 action 的票据只可能
-    # 来自绑定关闭窗口（或旧格式遗留），一律拒绝并要求重做验证——否则
-    # 「verify 省略 action」即可签发万能票，跨动作挪用防不住。
-    bound = str(payload.get("action") or "")
-    if not bound or not action or bound != action:
-        return None
+    if action_binding_enabled():
+        # 强绑定：签发与消费两端必须声明且完全一致。未绑 action 的票据只可能
+        # 来自绑定关闭窗口（或旧格式遗留），一律拒绝并要求重做验证——否则
+        # 「verify 省略 action」即可签发万能票，跨动作挪用防不住。
+        bound = str(payload.get("action") or "")
+        if not bound or not action or bound != action:
+            return None
+    # 动作绑定关闭只回退 action 语义；sid / fp 强绑定仍按 CAPTCHA_STRICT_BINDING 执行
     if _binding_rejected(payload, ip_hash, fp_hash, sid_hash):
         return None
     return payload
@@ -297,13 +297,23 @@ def verify_request_signature(
     gen_time: Any,
     nonce: Any,
     sign: Any,
+    window: int | None = None,
 ) -> bool:
-    """校验 verify 请求签名、时间窗与 nonce 未见过；任一不符即失败。"""
+    """校验 verify 请求签名、时间窗与 nonce 未见过；任一不符即失败。
+
+    ``window`` 由调用方按挑战 TTL 放大（前端以挑战下发的服务端 ``ts`` 作为
+    ``gen_time``，慢速作答不应被固定 300s 窗口误杀）；缺省沿用配置值。
+    """
     try:
         gen_time = int(gen_time)
     except (TypeError, ValueError):
         return False
-    window = max(int(getattr(settings, "CAPTCHA_VERIFY_SIGN_WINDOW", 300) or 300), 30)
+    configured = getattr(settings, "CAPTCHA_VERIFY_SIGN_WINDOW", 300) or 300
+    window_value = window if window is not None else configured
+    try:
+        window = max(int(window_value), 30)
+    except (TypeError, ValueError):
+        window = 300
     if abs(int(time.time()) - gen_time) > window:
         return False
     nonce = str(nonce or "").strip()

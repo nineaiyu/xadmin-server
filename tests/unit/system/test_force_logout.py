@@ -102,12 +102,49 @@ def test_batch_force_logout_action(superuser, auth_client):
     from audit.models.log import UserLoginLog as LoginLog
 
     target = UserInfo.objects.create_user(username="online_batch", password="x")
-    log = LoginLog.objects.create(
-        creator=target, login_type=LoginLog.LoginTypeChoices.WEBSOCKET, channel_name="ch-batch"
-    )
-    response = auth_client.post("/api/identity/online/batch-force-logout", [str(log.pk)], format="json")
+    LoginLog.objects.create(creator=target, login_type=LoginLog.LoginTypeChoices.WEBSOCKET, channel_name="ch-batch")
+    response = auth_client.post("/api/identity/online/batch-force-logout", {"user_pks": [target.pk]}, format="json")
     assert response.data["code"] == 1000
     assert response.data["data"]["users"] == 1
+
+
+def test_batch_force_logout_rejects_ambiguous_integer_array(superuser, auth_client):
+    """旧版数组只接受会话 UUID：整数不得再被猜测为用户/登录日志主键。"""
+    target = UserInfo.objects.create_user(username="online_ambiguous", password="x")
+    response = auth_client.post("/api/identity/online/batch-force-logout", [str(target.pk)], format="json")
+    assert response.data["code"] == 400
+
+
+def test_batch_force_logout_rejects_invalid_session_pk_in_object(superuser, auth_client):
+    """对象形态的 session_pks 同样必须校验 UUID，不能把 ValidationError 打成 500。"""
+    response = auth_client.post(
+        "/api/identity/online/batch-force-logout",
+        {"session_pks": ["not-a-uuid"]},
+        format="json",
+    )
+    assert response.data["code"] == 400
+
+
+def test_batch_force_logout_rejects_non_list_fields(superuser, auth_client):
+    response = auth_client.post(
+        "/api/identity/online/batch-force-logout",
+        {"session_pks": "not-a-list", "user_pks": None},
+        format="json",
+    )
+    assert response.data["code"] == 400
+
+
+def test_batch_force_logout_accepts_session_pks(superuser, auth_client):
+    from audit.models.log import UserLoginLog as LoginLog
+    from identity.models import UserSession
+    from identity.utils.session import register_user_session
+
+    target = UserInfo.objects.create_user(username="online_session", password="x")
+    session = register_user_session(None, target, LoginLog.LoginTypeChoices.WEBSOCKET, channel_name="ch-session")
+    response = auth_client.post("/api/identity/online/batch-force-logout", [str(session.pk)], format="json")
+    assert response.data["code"] == 1000
+    assert response.data["data"]["users"] == 1
+    assert not UserSession.objects.filter(creator=target, status=UserSession.Status.ONLINE).exists()
 
 
 def test_verify_rejects_without_token_error_message():

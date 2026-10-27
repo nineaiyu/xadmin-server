@@ -3,10 +3,8 @@
 平台通用工具（字典 / 菜单 / 标签 / 规则文案等）。本目录按
 「服务型 / 只读查询型 / 纯工具型」三类分区，**服务型**模块已全部下沉到
 `system/services/`；代码生成、监控与旧版本迁移三个域已按归属迁出本目录
-（见下方「按域迁出」）。归类口径与术语与
-[`docs/plans/system-utils域拆分映射-2026.10.md`](../../../docs/plans/system-utils域拆分映射-2026.10.md)
-（utils 五域归位）及 [`docs/plans/system-services服务层下沉-2026.10.md`](../../../docs/plans/system-services服务层下沉-2026.10.md)
-（服务层目标形态）保持一致。
+（见下方「按域迁出」）。归类口径与术语与 [`docs/plans/system四域切分映射-2026.10.md`](../../../docs/plans/system四域切分映射-2026.10.md)
+（四域切分）保持一致；原 utils / services 阶段映射文档已清理。
 
 ## 判据
 
@@ -45,6 +43,7 @@
 
 | 文件 | 职责 |
 |---|---|
+| `captcha_doctor.py` | 验证码风险档自检口径（反代信任 / 网段兜底 / 影子期样本，纯计算） |
 | `menu.py` | 菜单 / 权限点推导（URL registry + 模型内省，无 IO） |
 | `rule_meta.py` | 数据权限规则可读文案常量 |
 

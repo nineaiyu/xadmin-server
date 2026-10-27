@@ -1,4 +1,4 @@
-# 全真容器化测试档依赖（docs/plans/archive/全真容器化测试迁移方案-2026.10.md §3.5）：
+# 全真容器化测试档依赖（docs/plans/全真容器化测试迁移方案-2026.10.md §3.5）：
 #   docker compose -f compose.test.yml up -d
 # 一次性专用容器：数据不落盘（无 volume），禁止指向日常/生产实例。
 # PG 端口 55433 与 loadtest（55432）错开可共存；Redis 56379 与 loadtest 同端口，

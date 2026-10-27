@@ -727,3 +727,27 @@ class TestMaskPreviewRegexSafety:
         )
         assert resp.status_code == 400
         assert "timed out" in str(resp.data).lower() or "超时" in str(resp.data)
+
+
+class TestMaskPreviewSpawnBranch:
+    """请求线程（非主线程）走 spawn：子进程需自行导入本模块，必须仍能正常脱敏。
+
+    只用主线程 fork 分支的用例无法发现「spawn 导入链失败 → 所有预览稳定 400」
+    （单元测试全绿而生产请求全挂）。
+    """
+
+    def test_custom_pattern_preview_works_in_spawn_context(self, monkeypatch):
+        import multiprocessing
+
+        from audit.utils import mask
+
+        monkeypatch.setattr(
+            mask,
+            "_preview_process_context",
+            lambda: (multiprocessing.get_context("spawn"), 15.0),
+        )
+        rule = {"mask_type": "custom", "pattern": r"\d{4}", "keep_head": 0, "keep_tail": 0, "mask_char": "*"}
+        outputs = mask.apply_masks_with_timeout(["13812345678"], rule)
+        # 与主进程口径一致（等价于子进程成功导入模块并执行纯函数）
+        assert outputs == [mask.apply_mask("13812345678", rule)]
+        assert outputs and "*" in outputs[0]

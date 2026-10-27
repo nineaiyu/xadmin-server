@@ -7,10 +7,34 @@
 """
 
 import os
+import re
 import subprocess
 import tempfile
 
 from django.conf import settings
+
+from common.utils import get_logger
+
+logger = get_logger(__name__)
+
+
+def _safe_key(key: str) -> str:
+    """临时文件前缀只保留安全字符（挑战 id 正常为十六进制）。"""
+    return re.sub(r"[^0-9a-zA-Z_-]", "", str(key or ""))[:32] or "audio"
+
+
+def _temp_file(key: str, suffix: str) -> str:
+    """唯一临时文件（``mkstemp`` 避免并发同名互相覆盖与符号链接风险）。"""
+    handle, path = tempfile.mkstemp(prefix=f"captcha_{_safe_key(key)}_", suffix=suffix)
+    os.close(handle)
+    return path
+
+
+def _remove(path: str) -> None:
+    try:
+        os.remove(path)
+    except OSError:
+        pass
 
 
 def synthesize_audio(text: str, key: str) -> str | None:
@@ -18,37 +42,49 @@ def synthesize_audio(text: str, key: str) -> str | None:
     flite = str(getattr(settings, "CAPTCHA_FLITE_PATH", "") or "")
     if not flite or not text:
         return None
-    path = str(os.path.join(tempfile.gettempdir(), f"captcha_{key}.wav"))
+    path = _temp_file(key, ".wav")
     try:
-        subprocess.run([flite, "-t", text, "-o", path], check=False, timeout=2)
-    except (OSError, subprocess.SubprocessError):
+        result = subprocess.run([flite, "-t", text, "-o", path], check=False, timeout=2, capture_output=True)
+    except (OSError, subprocess.SubprocessError) as exc:
+        logger.warning("captcha audio synth failed (challenge=%s): %s", _safe_key(key), exc)
+        _remove(path)
+        return None
+    if result.returncode != 0 or not os.path.isfile(path):
+        logger.warning(
+            "captcha audio synth unavailable (challenge=%s, rc=%s)",
+            _safe_key(key),
+            result.returncode,
+        )
+        _remove(path)
         return None
 
     sox = str(getattr(settings, "CAPTCHA_SOX_PATH", "") or "")
-    if sox and os.path.isfile(path):
-        noise_path = str(os.path.join(tempfile.gettempdir(), f"captcha_{key}_noise.wav"))
-        merged_path = str(os.path.join(tempfile.gettempdir(), f"captcha_{key}_merged.wav"))
+    if sox:
+        noise_path = _temp_file(key, "_noise.wav")
+        merged_path = _temp_file(key, "_merged.wav")
         try:
             subprocess.run(
                 [sox, "-r", "8000", "-n", noise_path, "synth", "2", "brownnoise", "gain", "-15"],
                 check=False,
                 timeout=2,
+                capture_output=True,
             )
             subprocess.run(
                 [sox, "-m", noise_path, path, "-t", "wavpcm", "-b", "16", merged_path],
                 check=False,
                 timeout=2,
+                capture_output=True,
             )
-            if os.path.isfile(merged_path):
+            if os.path.isfile(merged_path) and os.path.getsize(merged_path) > 0:
                 os.replace(merged_path, path)
-        except (OSError, subprocess.SubprocessError):
-            pass
+        except (OSError, subprocess.SubprocessError) as exc:
+            logger.warning("captcha audio noise mix failed (challenge=%s): %s", _safe_key(key), exc)
         finally:
             for leftover in (noise_path, merged_path):
                 if os.path.isfile(leftover):
-                    try:
-                        os.remove(leftover)
-                    except OSError:
-                        pass
+                    _remove(leftover)
 
-    return path if os.path.isfile(path) else None
+    if not os.path.isfile(path) or os.path.getsize(path) == 0:
+        _remove(path)
+        return None
+    return path
