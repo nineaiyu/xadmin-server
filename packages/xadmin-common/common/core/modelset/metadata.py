@@ -19,6 +19,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
 from common.base.crypto import get_choices_dict
+from common.contracts import application_of_request
 from common.core.fields import get_search_choices_max_count
 from common.core.modelset.input_types import get_format_intput_type
 from common.core.modelset.metadata_cache import cached_payload
@@ -44,6 +45,9 @@ def metadata_cache_key(view_instance: Any, method_name: Any, request: Any) -> st
     序列化器字段面还可能依赖**其他查询参数**（如 setting 类视图集按
     ``?channel=`` / ``?category=`` 收敛序列化器）：视图集可覆写
     ``metadata_extra_cache_key(request)`` 返回额外键段，缺省空串不入键。
+
+    应用凭证维度：序列化器字段面会按应用授权收敛（同一 owner 的不同应用凭证
+    共享 ``user_pk``），键缺凭证维度时会话 / 应用交替请求互相串味（META-P1-01）。
     """
     user_pk = getattr(getattr(request, "user", None), "pk", "anonymous")
     query = getattr(request, "query_params", None)
@@ -53,7 +57,13 @@ def metadata_cache_key(view_instance: Any, method_name: Any, request: Any) -> st
     digest = f"_{md5(str(raw_fields).encode('utf-8')).hexdigest()[:12]}" if raw_fields else ""
     extra_hook = getattr(view_instance, "metadata_extra_cache_key", None)
     extra = f"_x{md5(str(extra_hook(request)).encode('utf-8')).hexdigest()[:12]}" if callable(extra_hook) else ""
-    return f"metadata_payload_{view_instance.__class__.__name__}_{method_name}_{user_pk}{digest}{extra}"
+    application = application_of_request(request)
+    app_digest = (
+        f"_app{md5(str(getattr(application, 'pk', None)).encode('utf-8')).hexdigest()[:12]}"
+        if application is not None
+        else ""
+    )
+    return f"metadata_payload_{view_instance.__class__.__name__}_{method_name}_{user_pk}{digest}{app_digest}{extra}"
 
 
 def invalidate_metadata_payload_cache() -> None:

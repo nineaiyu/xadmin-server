@@ -62,6 +62,13 @@ def _build_draft_grant(draft: Any, menu_ctx: Any) -> Any:
         raise ValidationError("试算草稿的模式不合法") from None
     if mode not in (ModeTypeAbstract.ModeChoices.OR, ModeTypeAbstract.ModeChoices.AND):
         raise ValidationError("试算草稿的模式不合法")
+    # 试算是「只读诊断」而非授权放大器：草稿含「全部数据」/通配字段规则直接 400
+    # （ALLOW_ALL 草稿经 OR 合并会变成任意模型全量采样，PREVIEW-P1-01）
+    from common.core.data_scope.constants import KeyChoices
+
+    for rule in rules:
+        if isinstance(rule, dict) and (rule.get("type") == KeyChoices.ALL or rule.get("field") == "*"):
+            raise ValidationError("试算草稿不允许「全部数据/通配」规则")
     draft_menus = _normalize_pk_list(draft.get("menu"))
     if draft_menus and not any(menu_binding_matches_context(pk, menu_ctx) for pk in draft_menus):
         # 草稿绑定了菜单：仅在与当前上下文有交集时参与试算，否则与运行期语义不符
@@ -199,7 +206,18 @@ def run_data_trial(user_obj: UserInfo, model_label: Any, menu_pk: Any, draft: An
     draft_grant = _build_draft_grant(draft, menu_ctx)
     # 与 IsAuthenticated 的 request.user.menu 注入同构（UserInfo 无 menu 字段，纯属性）
     user_obj.menu = menu_ctx
-    queryset = get_filter_queryset(model.objects.all(), user_obj, extra_grants=[draft_grant] if draft_grant else None)
+    queryset = get_filter_queryset(model.objects.all(), user_obj)
+    if draft_grant is not None:
+        # 草稿只收窄不放大（PREVIEW-P1-01）：草稿效果与现有授权取交集，
+        # 而非经 extra_grants 的 OR 合并——否则「全部数据」草稿等于全表采样
+        from common.core.data_scope.compiler import compile_grant
+        from common.core.data_scope.values import ScopeResult
+
+        draft_effect = compile_grant(draft_grant, model, user_obj)
+        if draft_effect.kind == ScopeResult.KIND_DENY:
+            queryset = queryset.none()
+        elif draft_effect.kind == ScopeResult.KIND_COND:
+            queryset = queryset.filter(draft_effect.q)
     note = None
     if user_obj.is_superuser:
         note = "目标用户为超级管理员，试算返回全量"

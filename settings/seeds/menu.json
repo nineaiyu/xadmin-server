@@ -1955,5 +1955,28 @@
    "method": "GET",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "e2e1502f-cf16-4d9d-bace-132fba2c8e02",
+  "fields": {
+   "created_time": "2026-10-26T14:57:08.258Z",
+   "updated_time": "2026-10-26T14:57:08.258Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4d302dbd-d4d8-43be-ab62-1bbdcffc7abd",
+   "menu_type": 2,
+   "name": "updateRules:SecurityCaptchaRisk",
+   "rank": 10003,
+   "path": "api/settings/captcha/risk/rules$",
+   "component": null,
+   "is_active": true,
+   "meta": "4467d1ab-212a-4190-af2d-a4bd73962cc6",
+   "method": "PUT",
+   "model": []
+  }
  }
 ]

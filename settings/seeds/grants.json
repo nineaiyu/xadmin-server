@@ -57,6 +57,7 @@
       "retrieve:SecurityCaptchaInteractive",
       "retrieve:SecurityCaptchaRisk",
       "rules:SecurityCaptchaRisk",
+      "updateRules:SecurityCaptchaRisk",
       "retrieve:SecurityLoginAuth",
       "retrieve:SecurityLoginLimit",
       "retrieve:SecurityMFA",

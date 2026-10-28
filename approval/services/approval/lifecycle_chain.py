@@ -99,7 +99,7 @@ def _approve_chain(approval: Any, user: Any, comment: str) -> Any:
             invalidate_pending_count_cache()
             return True, None
         # 末级通过：整单终态 + 令牌有效期（申请人可在有效期内重发原请求）
-        ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
+        finalized = ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
             status=ApprovalRequest.Status.APPROVED,
             approver=user,
             approver_display=user_display(user),
@@ -107,6 +107,12 @@ def _approve_chain(approval: Any, user: Any, comment: str) -> Any:
             expired_at=now + datetime.timedelta(seconds=int(SysConfig.APPROVAL_TOKEN_TTL)),
             updated_time=now,
         )
+        if not finalized:
+            # 并发落败：整单已被撤回/驳回/置过期（撤回方只条件更新主单状态、不加锁）。
+            # 终态唯一性优先——通知/事件/自动落库一律不执行，否则 DB 已是 CANCELLED/EXPIRED
+            # 的单仍会收到「已通过」通知并触发业务落库（已撤销的操作被系统代执行）
+            approval.refresh_from_db(fields=["status"])
+            return False, _("Only pending requests can be approved")
         sync_current_level(approval, None)
 
     approval.status = ApprovalRequest.Status.APPROVED
@@ -166,7 +172,7 @@ def _reject_chain(approval: Any, user: Any, reason: str) -> Any:
         ApprovalRequestStep.objects.filter(request=approval, status=ApprovalRequestStep.Status.PENDING).update(
             status=ApprovalRequestStep.Status.CANCELLED, updated_time=now
         )
-        ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
+        finalized = ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
             status=ApprovalRequest.Status.REJECTED,
             approver=user,
             approver_display=user_display(user),
@@ -174,6 +180,11 @@ def _reject_chain(approval: Any, user: Any, reason: str) -> Any:
             reason=(reason or "")[:255],
             updated_time=now,
         )
+        if not finalized:
+            # 并发落败：整单已被撤回/通过/置过期——终态唯一性优先，通知与事件不执行
+            # （同链式通过路径口径：CAS 成功才发通知/事件）
+            approval.refresh_from_db(fields=["status"])
+            return False, _("Only pending requests can be rejected")
         sync_current_level(approval, None)
 
     approval.status = ApprovalRequest.Status.REJECTED

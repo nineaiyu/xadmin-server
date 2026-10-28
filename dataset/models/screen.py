@@ -75,6 +75,8 @@ class Screen(DbAuditModel, DbUuidModel):
         default="",
         help_text=_("Screen accent color (hex); empty = follow site primary"),
     )
+    #: 布局版本：每次布局载荷实质变更 +1；回滚同样生成新版本（历史不删除）
+    layout_version = models.PositiveIntegerField(_("Layout version"), default=1)
 
     class Meta:
         verbose_name = _("Screen")
@@ -83,6 +85,34 @@ class Screen(DbAuditModel, DbUuidModel):
 
     def __str__(self) -> str:
         return f"{self.name}({len(self.dashboards)})"
+
+
+class ScreenVersion(DbAuditModel, DbUuidModel):
+    """大屏本体的历史版本：保存布局时自动记一版，可回滚。
+
+    存两份画布载荷与模式（模式切换是坐标语义的有损变更，回滚必须同时还原两份），
+    名称 / 可见性 / 主题 / 轮播清单跟随主表。保留最近 ``SCREEN_VERSION_KEEP`` 版。
+    """
+
+    screen = models.ForeignKey(
+        Screen,
+        on_delete=models.CASCADE,
+        related_name="versions",
+        verbose_name=_("Screen"),
+    )
+    version = models.PositiveIntegerField(_("Version"))
+    layout = models.JSONField(_("Layout"), default=list, blank=True)
+    layout_mode = models.CharField(_("Layout mode"), max_length=8, choices=Screen.LayoutMode.choices)
+    free_layout = models.JSONField(_("Free layout"), default=dict, blank=True)
+
+    class Meta:
+        verbose_name = _("Screen version")
+        verbose_name_plural = _("Screen versions")
+        ordering = ("-version",)
+        constraints = [models.UniqueConstraint(fields=("screen", "version"), name="uniq_screen_version")]
+
+    def __str__(self) -> str:
+        return f"{self.screen_id}#v{self.version}"
 
 
 class ScreenTemplate(DbAuditModel, DbUuidModel):

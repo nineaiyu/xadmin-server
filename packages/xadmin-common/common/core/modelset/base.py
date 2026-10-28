@@ -123,8 +123,11 @@ class BaseViewSet:
         return self._serializer_related_fields
 
     def paginate_queryset(self, queryset: Any) -> Any:
-        # 文件导出的时候，忽略 paginate_queryset
-        if self.request.query_params.get("type") in ["csv", "xlsx"] and self.request.path_info.endswith("export-data"):
+        # 文件导出忽略分页：按 action 判定——export-data 缺省格式也是 xlsx，
+        # 只认 type 参数时「不传 type 的缺省导出」会被分页截断成第一页（静默丢数据）
+        if self.action == "export_data" or (
+            self.request.query_params.get("type") in ["csv", "xlsx"] and self.request.path_info.endswith("export-data")
+        ):
             return None
         return super().paginate_queryset(queryset)  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
 

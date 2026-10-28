@@ -48,10 +48,12 @@ def loopback_allowed() -> bool:
     生产默认 fail-closed（跟随 DEBUG=False）：持订阅权限的账号不得借投递通道
     探测本机内部服务；本地联调（DEBUG=true）与测试栈（显式配置）放开。
     两边必须同源，否则会出现「订阅写得进、投递发不出」的割裂。
+    实现在内核 ``common.utils.outbound``：Webhook / AI / MCP 全部出站链路同一口径。
     """
-    from django.conf import settings
+    from common.utils.outbound import loopback_allowed as _loopback_allowed
 
-    return bool(getattr(settings, "WEBHOOK_ALLOW_LOOPBACK", settings.DEBUG))
+    typed_value: bool = _loopback_allowed()
+    return typed_value
 
 
 def validate_url(url: str) -> str:

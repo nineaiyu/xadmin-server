@@ -32,8 +32,22 @@ DeprecationWarning，一个版本周期后移除。
 import warnings
 from typing import Any
 
+from django.conf import settings as django_settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework.serializers import Serializer
+
+
+def effective_value(serializer: Serializer, name: str, attrs: dict[str, Any], default: Any) -> Any:
+    """跨字段组合校验取「保存后实际生效值」：显式提交取提交值，否则回落运行时当前值。
+
+    PATCH 只持久化显式提交键；带 default 的字段未提交也会进 attrs，
+    直接读 attrs 会把「未提交」误判成「提交了默认值」。组合校验的语义是
+    保存后的整体配置，未提交键必须回落运行时 settings 当前值。validate()
+    阶段 validated_data 尚未装配，字段级校验通过的提交值以 attrs 传入。
+    """
+    if name in serializer.initial_data:
+        return attrs.get(name, serializer.initial_data.get(name))
+    return getattr(django_settings, name, default)
 
 
 class SettingReadonlyValuesMixin(Serializer):

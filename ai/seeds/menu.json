@@ -1028,5 +1028,27 @@
     "b5e9a978-60a6-41d4-843c-bbb5f1339113"
    ]
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "9c177e55-776b-5ee3-b05a-23acc6b41d00",
+  "fields": {
+   "created_time": "2026-10-28T00:00:00.000Z",
+   "updated_time": "2026-10-28T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "10c28e70-3d19-5c65-8589-c8913c643d25",
+   "menu_type": 2,
+   "name": "testResult:AiProfile",
+   "rank": 11,
+   "path": "api/ai/profiles/(?P<pk>[^/.]+)/test-result$",
+   "component": null,
+   "is_active": true,
+   "meta": "7a6cf066-7220-536f-a417-56b3d006dfce",
+   "method": "GET",
+   "model": []
+  }
  }
 ]

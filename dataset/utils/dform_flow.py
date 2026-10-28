@@ -256,7 +256,10 @@ def resubmit_submission(submission: Any, user: Any) -> Any:
             # 先裁剪再校验，否则驳回重提被 Unknown submission keys 卡死
             # upload 归属按申请人断言（超管代重提时文件仍属原申请人）
             locked.data = validate_submission_data(
-                locked.form.schema, trim_stale_schema_keys(locked.form.schema, locked.data or {}), user=locked.creator
+                locked.form.schema,
+                trim_stale_schema_keys(locked.form.schema, locked.data or {}),
+                user=locked.creator,
+                previous=locked.data,
             )
         except ValidationError as exc:
             messages = getattr(exc, "messages", None) or [str(exc)]
@@ -324,7 +327,12 @@ def update_from_approval(approval: Any, user: Any) -> Any:
     if not form.is_active:
         return False, str(_("This form is no longer accepting submissions"))
     try:
-        data = validate_submission_data(form.schema, payload.get("data") or submission.data, user=submission.creator)
+        data = validate_submission_data(
+            form.schema,
+            payload.get("data") or submission.data,
+            user=submission.creator,
+            previous=submission.data,
+        )
     except ValidationError as exc:
         messages = getattr(exc, "messages", None) or [str(exc)]
         return False, str(messages[0])

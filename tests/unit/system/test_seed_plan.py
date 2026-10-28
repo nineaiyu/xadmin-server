@@ -247,10 +247,14 @@ class TestValidate:
         # 2026-10 验证码设置拆总配置/图片/交互式：菜单 +5（1 页面 + 4 权限点）、权限点 +4
         # 2026-10 验证码预览端点：菜单 +2、权限点 +2
         # 2026-10 设置页归类：新增通知渠道/账号安全 2 个页面（权限点仅换父菜单）
-        assert summary.totals["menu"] == 742
-        assert summary.totals["field"] == 2164
+        # 2026-10 读写共码收口：验证码风险规则 PUT 拆独立权限点（菜单 +1、权限点 +1）
+        # 2026-10 执行历史收敛（TASK-P1-01）：args/kwargs 出序列化面 → 字段树种子 -2
+        # 2026-10 报表/大屏版本化：新增 versions/rollback 4 个权限点（菜单 +4、权限点 +4）
+        # 2026-10 AI「测试连接」下沉 celery：新增 testResult 结果回读权限点（菜单 +1）
+        assert summary.totals["menu"] == 748
+        assert summary.totals["field"] == 2163
         assert summary.totals["grant"] == 250
-        assert summary.permission_total == 663
+        assert summary.permission_total == 669
 
 
 class TestRows:

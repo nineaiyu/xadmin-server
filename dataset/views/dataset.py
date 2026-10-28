@@ -112,6 +112,8 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         行级数据权限随调用者过滤，fail-closed
 
         ``count_only=true``：仅取行数（数字卡场景，跳过行物化）。
+        ``max_rows``：预览侧行数上限（与数据集 row_limit 取小者下推 SQL），
+        报表预览按展示口径收数，不在前端物化后切片（REP-P1-01）。
         ``filters``：请求级行过滤（卡片下钻），与数据集定义 filters 叠加，
         校验口径同保存侧（``validate_filters``：字段白名单 + op 白名单 + 类型），
         并按浏览者字段权限收敛（无该列权限即 1001，防隐藏列布尔预言机）。
@@ -121,11 +123,23 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
             extra_filters = request.data.get("filters")
             if extra_filters:
                 validate_filters(dataset.bound_model, extra_filters, user_obj=request.user)
+            max_rows = None
+            max_rows_raw = request.data.get("max_rows")
+            if max_rows_raw is not None:
+                if isinstance(max_rows_raw, float) and not max_rows_raw.is_integer():
+                    raise ValidationError(_("max_rows must be a non-negative integer"))
+                try:
+                    max_rows = int(max_rows_raw)
+                except (TypeError, ValueError):
+                    raise ValidationError(_("max_rows must be a non-negative integer")) from None
+                if max_rows < 0:
+                    raise ValidationError(_("max_rows must be a non-negative integer"))
             result = execute_dataset(
                 dataset,
                 request.user,
                 count_only=bool(request.data.get("count_only")),
                 extra_filters=extra_filters or None,
+                max_rows=max_rows,
             )
         except ValidationError as exc:
             return ApiResponse(code=1001, detail="; ".join(exc.messages), status_code=status.HTTP_400_BAD_REQUEST)

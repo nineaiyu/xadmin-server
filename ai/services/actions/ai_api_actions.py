@@ -88,11 +88,20 @@ class ApiActionSpec:
         return ((self.method.upper(), self.path),)
 
     def has_permission(self, user: Any) -> bool:
-        """与 ActionSpec 同口径三合一：模块启用 + 业务权限点 + 可用性。"""
-        return (
-            module_allows(self)
-            and all(user_can_visit(user, method, path) for method, path in self.required_visits)
-            and bool(self.available(user))
+        """与 ActionSpec 同口径三合一：模块启用 + 业务权限点 + 可用性。
+
+        模块维度双保险：``spec.modules`` 显式声明之外，path 命中停用模块路由前缀
+        （``match_disabled_module``，与 HTTP 网关同源）同样从目录摘除——API 动作由
+        路由清单派生，声明侧未逐条标 ``modules`` 也不会漏（TRIM-P1-01）。
+        """
+        if not module_allows(self):
+            return False
+        from common.core.modules.gate import match_disabled_module
+
+        if match_disabled_module(self.path):
+            return False
+        return all(user_can_visit(user, method, path) for method, path in self.required_visits) and bool(
+            self.available(user)
         )
 
     def validate(self, user: Any, params: Any) -> Any:
@@ -197,6 +206,15 @@ def execute_api_action(spec: ApiActionSpec, user: Any, params: dict[str, Any]) -
         return {"ok": False, "detail": str(_("The action is not available")), "data": {}}
     if query:
         url = f"{url}?{urlencode(query, doseq=True)}"
+
+    # 内部 dispatch 不经 ASGI 的模块网关：这里按同一闸口复检，停用模块的动作
+    # 不再「REST 已 404、AI 仍可直调」（TRIM-P1-01，与 ModuleGateMiddleware 同源）
+    from common.core.modules.gate import match_disabled_module
+
+    trimmed_module = match_disabled_module(url.split("?", 1)[0])
+    if trimmed_module:
+        logger.warning("ai api action blocked by module trim. key:%s module:%s", spec.key, trimmed_module)
+        return {"ok": False, "detail": str(_("The action is not available")), "data": {}}
 
     try:
         # resolve 只接受纯 path（带 query string 会 Resolver404），query 只进请求

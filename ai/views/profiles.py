@@ -14,7 +14,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from ai.models.ai import AiProfile
 from ai.serializers.ai import AiProfileSerializer
-from ai.services.assistant.ai import profile_credentials, set_active_profile
+from ai.services.assistant.ai import set_active_profile
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseViewSet,
@@ -30,7 +30,6 @@ from common.core.response import ApiResponse
 from common.core.throttle import AiThrottleMixin
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
 logger = get_logger(__name__)
 
@@ -132,19 +131,44 @@ class AiProfileViewSet(
     def test(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """档案连通性探测
 
-        api_key 用已存密钥
+        api_key 用已存密钥；外呼下沉 celery，返回 task_id 供 test-result 回读
         """
+        from ai.tasks import test_ai_profile_task
+
         profile = self.get_object()
         if not profile.is_configured:
             return ApiResponse(code=1001, detail=_("Fill in base URL, API key and model before testing"))
-        try:
-            reply = ChatCompletionsClient(profile_credentials(profile)).chat([{"role": "user", "content": "ping"}])
-        except AiSdkError as exc:
-            return ApiResponse(code=1002, detail=str(exc))
-        except Exception as exc:  # noqa: BLE001 测试入口兜底
-            logger.warning("AI profile test unexpected error", exc_info=True)
-            return ApiResponse(code=1002, detail=str(exc))
-        return ApiResponse(detail=_("AI provider OK: {}").format(reply[:80]))
+        task = test_ai_profile_task.delay(str(profile.pk))
+        payload: dict[str, Any] = {"task_id": task.id, "state": task.state}
+        # eager（测试 / E2E / CELERY_TASK_ALWAYS_EAGER）下任务已就地跑完：结果直接带回，
+        # 前端不必再轮询（这类环境没有结果后端，AsyncResult 永远读不到结论）
+        if task.state == "SUCCESS" and isinstance(getattr(task, "result", None), dict):
+            outcome = task.result
+            payload.update({"ok": bool(outcome.get("ok")), "detail": str(outcome.get("detail") or "")})
+        return ApiResponse(data=payload, detail=_("Connectivity test submitted"))
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="test-result")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def test_result(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """连通性探测结果
+
+        按 task_id 回读异步探测结论：PENDING/STARTED 表示仍在执行
+        """
+        from celery.result import AsyncResult
+
+        self.get_object()  # 走权限与数据域校验（不能用别人的档案读别人的任务）
+        task_id = str(request.query_params.get("task_id") or "").strip()
+        if not task_id:
+            return ApiResponse(code=1001, detail=_("Missing task id"))
+        result = AsyncResult(task_id)
+        state = result.state
+        data: dict[str, Any] = {"task_id": task_id, "state": state}
+        if state == "SUCCESS":
+            payload = result.result if isinstance(result.result, dict) else {}
+            data.update({"ok": bool(payload.get("ok")), "detail": str(payload.get("detail") or "")})
+        elif state == "FAILURE":
+            data.update({"ok": False, "detail": str(result.result)[:255]})
+        return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="probe")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

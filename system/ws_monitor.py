@@ -71,11 +71,11 @@ class MonitorNotify(AsyncJsonWebsocket):
 
     async def connect(self) -> None:
         self.user = self.scope["user"]
-        if not self.user:
-            await self.close(4401)
+        if not self.is_authenticated():
+            await self.reject(4401)
             return
         if not await _has_monitor_permission(self.user):
-            await self.close(4403)
+            await self.reject(4403)
             return
         self.disconnected = False
         await self.accept()

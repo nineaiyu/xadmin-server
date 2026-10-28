@@ -108,6 +108,26 @@ def test_batch_force_logout_action(superuser, auth_client):
     assert response.data["data"]["users"] == 1
 
 
+def test_batch_force_logout_writes_operation_log(superuser, auth_client):
+    """高危动作必须留审计：强退后的 OperationLog 能追到操作者与目标。
+
+    历史状态只有 logger 文本（进程内），审计页查不到「谁在什么时候踢了谁」。
+    """
+    from audit.models.log import OperationLog
+    from audit.models.log import UserLoginLog as LoginLog
+
+    target = UserInfo.objects.create_user(username="online_audit", password="x")
+    LoginLog.objects.create(creator=target, login_type=LoginLog.LoginTypeChoices.WEBSOCKET, channel_name="ch-audit")
+
+    before = OperationLog.objects.count()
+    response = auth_client.post("/api/identity/online/batch-force-logout", {"user_pks": [target.pk]}, format="json")
+    assert response.data["code"] == 1000
+    logs = OperationLog.objects.order_by("-pk")[: max(OperationLog.objects.count() - before, 1)]
+    hit = [row for row in logs if "batch-force-logout" in (row.path or "")]
+    assert hit, "强退未落 OperationLog"
+    assert hit[0].method == "POST"
+
+
 def test_batch_force_logout_rejects_ambiguous_integer_array(superuser, auth_client):
     """旧版数组只接受会话 UUID：整数不得再被猜测为用户/登录日志主键。"""
     target = UserInfo.objects.create_user(username="online_ambiguous", password="x")

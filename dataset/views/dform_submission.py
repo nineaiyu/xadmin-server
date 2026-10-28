@@ -235,14 +235,12 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         from dataset.utils.dform_filter import build_filter_data
 
         instance = self.get_object()
-        guarded = self._creator_guard(instance, request)
-        if guarded:
-            return guarded
-
         form = instance.form
         needs_approval = form.approval_required and not getattr(request.user, "is_superuser", False)
-        # 操作审批重放（携令牌）先于草稿态检查：审批通过（含「通过后自动落库」）后的重放
-        # 在此返回成功语义，而不是被「仅草稿可提交」拒绝（自动完成时状态已不是草稿）
+        # 操作审批重放（携令牌）先于终态守卫：审批通过（含「通过后自动落库」）后的重放
+        # 在此返回成功语义。已生效单（status=""）按终态只读收敛后，普通写已被守卫拒绝，
+        # 但携一次性令牌的重放不是改写（consume 校验 creator/指纹/一次性）——若先过守卫，
+        # 重放会被终态 1003 拦下，「审批通过自动落库」的成功回执丢失
         approved_replay = False
         if needs_approval:
             from approval.contracts import APPROVAL_HEADER, APPROVAL_QUERY_PARAM, consume_approval
@@ -253,6 +251,10 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
                 if response is not None:
                     return response
                 approved_replay = True
+
+        guarded = self._creator_guard(instance, request)
+        if guarded:
+            return guarded
 
         if instance.status != DynamicFormSubmission.Status.DRAFT:
             return ApiResponse(code=1001, detail=_("Only draft submissions can be submitted"))
@@ -316,25 +318,26 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
     def perform_create(self, serializer: Any) -> None:
         serializer.save(creator=self.request.user, modifier=self.request.user)
 
-    def _creator_guard(self, instance: Any, request: Any) -> Any:
+    def _creator_guard(self, instance: Any, request: Any, *, allow_superuser_terminal: bool = False) -> Any:
         if instance and not getattr(request.user, "is_superuser", False) and instance.creator_id != request.user.pk:
             return ApiResponse(code=1003, detail=_EDIT_DENY)
         # 审批中的提交不可改动：流程实例按提交快照推进，改动会造成两处数据不一致
         if instance and instance.status == DynamicFormSubmission.Status.PENDING:
             return ApiResponse(code=1003, detail=_PENDING_DENY)
-        # 终态只读：已通过/已撤回的提交是审批留痕，申请人不得再改写或删除
-        # （只允许草稿与驳回态继续编辑；需要「重新填写」时复制为新单）
-        if instance and instance.status in (
-            DynamicFormSubmission.Status.APPROVED,
-            DynamicFormSubmission.Status.CANCELLED,
-        ):
+        # 终态只读：已通过/已撤回的提交是审批留痕，申请人不得再改写或删除；
+        # status=""（免审批直接生效）同样是留痕数据——可改写等于绕过审批留痕，
+        # 故按「可编辑白名单」兜底（草稿/驳回态之外一律只读，新增状态默认只读）。
+        # 管理面清理（改/删）对超管放行；提交动作不放行——终态单仍不是草稿。
+        editable_states = (DynamicFormSubmission.Status.DRAFT, DynamicFormSubmission.Status.REJECTED)
+        superuser_cleanup = allow_superuser_terminal and getattr(request.user, "is_superuser", False)
+        if instance and instance.status not in editable_states and not superuser_cleanup:
             return ApiResponse(code=1003, detail=_TERMINAL_DENY)
         return None
 
     def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
-        guarded = self._creator_guard(instance, request)
+        guarded = self._creator_guard(instance, request, allow_superuser_terminal=True)
         if guarded:
             return guarded
         # 草稿编辑走轻校验（允许缺必填）；非草稿（已生效/驳回等）保持 schema 完整校验
@@ -351,7 +354,24 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
 
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         instance = self.get_object()
-        guarded = self._creator_guard(instance, request)
+        guarded = self._creator_guard(instance, request, allow_superuser_terminal=True)
         if guarded:
             return guarded
         return super().destroy(request, *args, **kwargs)
+
+    def _needs_rowwise_delete(self) -> Any:
+        """批量删除必须逐行：提交删除有归属/终态守卫（_creator_guard），
+        批量 SQL 直删会绕过守卫硬删审批留痕（覆写契约见 docs/architecture/framework-cookbook.md）。"""
+        return True
+
+    def perform_destroy(self, instance: Any) -> Any:
+        """删除守卫：批量删除逐行走与单删相同的 _creator_guard。
+
+        守卫拒绝在此抛出，由批量分支归一为逐项 failures 明细（不静默跳过
+        越权/终态项）；返回值必须回传（批量逐行分支以删除计数判定成功项）。
+        """
+        guarded = self._creator_guard(instance, self.request, allow_superuser_terminal=True)
+        if guarded:
+            detail = guarded.data.get("detail") if isinstance(guarded.data, dict) else None
+            raise ValidationError(detail or _("Operation failed"))
+        return super().perform_destroy(instance)

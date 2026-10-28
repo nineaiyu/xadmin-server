@@ -1898,5 +1898,97 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "aee29661-d177-5dc8-aeb9-6b12abba6ef3",
+  "fields": {
+   "created_time": "2026-10-28T00:00:00Z",
+   "updated_time": "2026-10-28T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "versions:DataReport",
+   "rank": 7,
+   "path": "api/dataset/reports/(?P<pk>[^/.]+)/versions$",
+   "component": null,
+   "is_active": true,
+   "meta": "5da1e086-1d21-5581-bd3a-ea6790a1c294",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "50aa5e93-8ecb-51b5-9b1f-fe696b3217a5",
+  "fields": {
+   "created_time": "2026-10-28T00:00:00Z",
+   "updated_time": "2026-10-28T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "rollback:DataReport",
+   "rank": 8,
+   "path": "api/dataset/reports/(?P<pk>[^/.]+)/rollback$",
+   "component": null,
+   "is_active": true,
+   "meta": "d193e6b3-b844-5018-9935-1141ce018acb",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "11de109f-e8f8-5f4c-82a3-1e07ec270d59",
+  "fields": {
+   "created_time": "2026-10-28T00:00:00Z",
+   "updated_time": "2026-10-28T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "versions:DataScreen",
+   "rank": 11,
+   "path": "api/dataset/screens/(?P<pk>[^/.]+)/versions$",
+   "component": null,
+   "is_active": true,
+   "meta": "cba26f6f-d1f2-5179-8978-419f7ea77316",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "72b9f5e0-3a4c-5d0c-a426-332926b01cac",
+  "fields": {
+   "created_time": "2026-10-28T00:00:00Z",
+   "updated_time": "2026-10-28T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "rollback:DataScreen",
+   "rank": 12,
+   "path": "api/dataset/screens/(?P<pk>[^/.]+)/rollback$",
+   "component": null,
+   "is_active": true,
+   "meta": "f2ab159a-81af-5e5c-9aaa-e7b5fadd773f",
+   "method": "POST",
+   "model": []
+  }
  }
 ]

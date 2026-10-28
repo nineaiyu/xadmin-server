@@ -153,6 +153,7 @@ Django 内置键中的身份、媒体与本地化配置（密钥、用户模型�
 | `RECYCLE_BIN_RETENTION_DAYS` | int | 30 | 回收站保留天数（清理任务与回收站列表倒计时） | `core/modelset/recycle.py`、`tasks.py` |
 | `TRUSTED_PROXY_IPS` | list[str] | [] | 可信反向代理地址（单个 IP 或 CIDR；空 = 不信任转发头） | `utils/request.py` |
 | `AUDIT_DIFF_MODELS` | list[str] | [] | 字段级审计 diff 白名单（模型 _meta.label；空 = 关闭 diff 记录） | `core/config/conf_security.py` |
+| `WEBHOOK_ALLOW_LOOPBACK` | bool | False | 出站请求是否放行环回地址（127.0.0.1 / ::1 / localhost；False = 环回与私网一并拒绝） | `utils/outbound.py` |
 | `LANGUAGE_CODE` | str | 必给 | 语言码（IP 归属地本地化、时间格式） | `utils/ip/geoip/utils.py`、`utils/ip/utils.py` |
 | `DEFAULT_CHARSET` | str | 必给 | 默认字符集（axios 表单解析回退编码） | `drf/parsers/axios_form_data.py` |
 

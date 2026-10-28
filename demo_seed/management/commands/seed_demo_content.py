@@ -156,7 +156,9 @@ class Command(BaseCommand):
         removed = ChatMessage.objects.filter(client_msg_id__startswith=CHAT_CLIENT_PREFIX).delete()[0]
         self.stdout.write(f"removed demo chat messages: {removed}")
 
-        docs = AiKnowledgeDocument.objects.filter(path__startswith=f"upload/{KNOWLEDGE_NAME_PREFIX}")
+        # 演示文档按 title 前缀识别（KNOWLEDGE_NAME_PREFIX）：上传路径已按上传者
+        # 命名空间化（AI-P1-02，upload/{pk}/{name}.md），路径前缀不再能圈定演示文档
+        docs = AiKnowledgeDocument.objects.filter(title__startswith=KNOWLEDGE_NAME_PREFIX)
         doc_count = docs.count()
         for doc in docs:
             remove_chunks(doc.path)
@@ -232,8 +234,9 @@ class Command(BaseCommand):
     def _create_knowledge(self, admin: UserInfo) -> None:
         created = 0
         for name, content in KNOWLEDGE_DOCS:
-            path = f"upload/{name}.md"
-            if AiKnowledgeDocument.objects.filter(path=path).exists():
+            # 幂等检查按 title（路径命名空间化后 path 形态因 creator 而异；
+            # 重复调用 upsert_upload_document 本身也是覆盖语义，此处仅省查询）
+            if AiKnowledgeDocument.objects.filter(title=name).exists():
                 continue
             _doc, is_created = upsert_upload_document(name, content, creator=admin)
             if is_created:

@@ -37,7 +37,8 @@ class TestUpload:
         assert response.status_code == 200, response.data
         doc = AiKnowledgeDocument.objects.get(title="内网使用指南")
         assert doc.source_type == AiKnowledgeDocument.SourceType.UPLOAD
-        assert doc.path == "upload/内网使用指南.md"
+        # 存储路径按上传者命名空间隔离（同名覆盖仅限本人文档）
+        assert doc.path == f"upload/{doc.creator.pk}/内网使用指南.md"
         assert doc.chunk_count == 3
         assert AiKnowledgeChunk.objects.filter(source_path=doc.path).count() == 3
         assert doc.creator is not None
@@ -53,6 +54,59 @@ class TestUpload:
         doc = AiKnowledgeDocument.objects.get(title="内网使用指南")
         assert doc.chunk_count == 2
         assert not AiKnowledgeChunk.objects.filter(source_path=doc.path, content__contains="下载中心").exists()
+
+    def test_same_name_other_creator_coexists(self, auth_client, api_client, django_user_model):
+        """AI-P1-02：他人同名文档不被覆盖——上传按 creator 隔离，双方并存。"""
+        assert _upload(auth_client, name="部署手册", content="管理员版本").status_code == 200
+        other_admin = django_user_model.objects.create_superuser(
+            username="other-admin", email="other@example.com", password="Other@123456"
+        )
+        api_client.force_authenticate(user=other_admin)
+        response = api_client.post(KNOWLEDGE_URL, {"name": "部署手册", "content": "普通用户版本"}, format="json")
+        assert response.status_code == 200, response.data
+
+        docs = AiKnowledgeDocument.objects.filter(title="部署手册")
+        assert docs.count() == 2, "两个上传者的同名文档应并存"
+        mine = docs.get(creator=other_admin)
+        theirs = docs.exclude(creator=other_admin).first()
+        assert mine.content == "普通用户版本"
+        assert theirs.content == "管理员版本", "后上传者不得改写他人文档内容"
+        assert mine.path != theirs.path, "同名文档按 creator 命名空间隔离存储路径"
+
+    def test_same_name_reupload_adopts_legacy_row(self, auth_client, superuser):
+        """存量兼容：本人 legacy 全局路径同名行被收编（不产生第二份文档）。"""
+        from ai.services.knowledge import ai_knowledge
+
+        legacy = AiKnowledgeDocument.objects.create(
+            path="upload/存量文档.md",
+            title="存量文档",
+            content="旧内容",
+            source_type=AiKnowledgeDocument.SourceType.UPLOAD,
+            creator=superuser,
+        )
+        doc, created = ai_knowledge.upsert_upload_document("存量文档", "新内容", superuser)
+        assert created is False
+        assert doc.pk == legacy.pk, "本人 legacy 文档应原行收编（path 不变）"
+        assert doc.path == "upload/存量文档.md"
+        assert doc.content == "新内容"
+        assert AiKnowledgeDocument.objects.filter(title="存量文档").count() == 1
+
+    def test_same_name_legacy_row_of_other_creator_not_touched(self, superuser, normal_user):
+        """他人 legacy 全局路径同名行不收编、不改写：上传者得到自己的命名空间文档。"""
+        from ai.services.knowledge import ai_knowledge
+
+        AiKnowledgeDocument.objects.create(
+            path="upload/共享笔记.md",
+            title="共享笔记",
+            content="他人旧内容",
+            source_type=AiKnowledgeDocument.SourceType.UPLOAD,
+            creator=normal_user,
+        )
+        doc, created = ai_knowledge.upsert_upload_document("共享笔记", "我的新内容", superuser)
+        assert created is True
+        assert doc.path == f"upload/{superuser.pk}/共享笔记.md"
+        legacy = AiKnowledgeDocument.objects.get(path="upload/共享笔记.md")
+        assert legacy.content == "他人旧内容", "他人 legacy 文档内容不得被改写"
 
     @pytest.mark.parametrize(
         "payload",

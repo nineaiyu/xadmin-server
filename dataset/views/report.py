@@ -4,10 +4,12 @@
 
 from typing import Any
 
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 
 from common.core.filter import BaseFilterSet
 from common.core.permission_meta import shared_list_action
@@ -19,7 +21,9 @@ from dataset.serializers.report import (
     IM_NOTIFY_CHANNELS,
     REPORT_NOTIFY_CHANNELS,
     ReportSerializer,
+    ReportVersionSerializer,
 )
+from dataset.services.report import snapshot_report_version, version_keep
 from dataset.utils.dataset import dataset_visible_to
 from dataset.views.analysis_common import BaseAnalysisViewSet, _creator_guard
 from identity.utils.user_options import search_user_options
@@ -39,6 +43,60 @@ class ReportViewSet(BaseAnalysisViewSet):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
     filterset_class = ReportFilter
+
+    def perform_create(self, serializer: Any) -> None:
+        super().perform_create(serializer)
+        snapshot_report_version(serializer.instance, actor=self.request.user)
+
+    def perform_update(self, serializer: Any) -> None:
+        before = serializer.instance.design or {}
+        super().perform_update(serializer)
+        # 仅设计载荷实质变更才记版本：改名 / 调度 / 收件人调整不挤掉设计历史
+        if before != (serializer.instance.design or {}):
+            snapshot_report_version(serializer.instance, actor=self.request.user)
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="versions")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def versions(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """报表设计版本历史
+
+        只读，最新在前；历史属于作者工作台，与回滚同一归属口径
+        """
+        report = self.get_object()
+        guarded = _creator_guard(request, report)
+        if guarded:
+            return guarded
+        rows = report.versions.all()[: version_keep()]
+        return ApiResponse(data=ReportVersionSerializer(rows, many=True).data)
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["post"], detail=True, url_path="rollback")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def rollback(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """回滚报表设计版本
+
+        恢复历史设计并再记一版（回滚可逆）
+        """
+        report = self.get_object()
+        guarded = _creator_guard(request, report)
+        if guarded:
+            return guarded
+        try:
+            version = int(request.data.get("version"))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(_("A design version is required")) from exc
+        with transaction.atomic():
+            report = Report.objects.select_for_update().get(pk=report.pk)
+            target = report.versions.filter(version=version).first()
+            if target is None:
+                return ApiResponse(code=1001, detail=_("Report version not found"))
+            report.design = target.design or {}
+            report.modifier = request.user
+            report.save(update_fields=["design", "modifier", "updated_time"])
+            snapshot_report_version(report, actor=request.user)
+        return ApiResponse(
+            data=ReportSerializer(report, context=self.get_serializer_context()).data,
+            detail=_("Report design rolled back"),
+        )
 
     @extend_schema(responses=get_default_response_schema())
     @shared_list_action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

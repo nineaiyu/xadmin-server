@@ -180,18 +180,34 @@ def schedule_upload_ingest(doc: Any) -> None:
 def upsert_upload_document(name: str, content: str, creator: Any = None, defer_chunks: bool = False) -> Any:
     """创建/覆盖上传文档并重建分块，返回 (doc, created)。
 
-    同名（稳定 path）视为更新——「重新上传即覆盖」，列表不会出现同名多份；
-    路径前缀 upload/ 与仓库文档隔离，sync 不参与其维护。
+    同名按 creator 隔离（AI-P1-02）：同名仅覆盖本人文档，他人同名文档并存
+    互不影响。存储路径带上传者命名空间（upload/{pk}/{name}.md），本人重复
+    上传路径稳定（覆盖更新语义）；本人名下的 legacy 全局路径文档
+    （upload/{name}.md）首次再上传时原行收编、path 不变——存量数据不迁移
+    也不会在列表出现两份。无归属上下文（creator=None）的调用方维持 legacy
+    全局路径口径。
     """
     from ai.models.ai import AiKnowledgeDocument, upload_document_path
 
-    path = upload_document_path(name)
-    doc = AiKnowledgeDocument.objects.filter(path=path).first()
+    doc = None
+    creator_pk = getattr(creator, "pk", None) if creator is not None else None
+    if creator_pk:
+        doc = AiKnowledgeDocument.objects.filter(path=upload_document_path(name, creator_pk)).first()
+        if doc is None:
+            # 存量兼容：本人 legacy 全局路径同名行收编（他人 legacy 行不触碰，自然并存）
+            legacy = AiKnowledgeDocument.objects.filter(path=upload_document_path(name)).first()
+            if legacy is not None and legacy.creator_id == creator_pk:
+                doc = legacy
+    else:
+        doc = AiKnowledgeDocument.objects.filter(path=upload_document_path(name)).first()
     created = doc is None
     if doc is None:
-        doc = AiKnowledgeDocument(path=path, source_type=AiKnowledgeDocument.SourceType.UPLOAD)
+        doc = AiKnowledgeDocument(
+            path=upload_document_path(name, creator_pk) if creator_pk else upload_document_path(name),
+            source_type=AiKnowledgeDocument.SourceType.UPLOAD,
+        )
     elif doc.source_type != AiKnowledgeDocument.SourceType.UPLOAD:
-        raise DjangoValidationError(_("Path {} conflicts with a repository document").format(path))
+        raise DjangoValidationError(_("Path {} conflicts with a repository document").format(doc.path))
     doc.title = name[:255]
     doc.content = content
     doc.content_hash = AiKnowledgeDocument.hash_content(content)

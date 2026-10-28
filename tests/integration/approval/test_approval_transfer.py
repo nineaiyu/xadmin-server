@@ -386,6 +386,13 @@ class TestOngoingScopeApi:
         assert approver.username in row["current_assignees"]
 
 
+def _export_body(response) -> bytes:
+    """导出正文：流式化后走 FileResponse（没有 ``.content``），一次性生成器需缓存复用。"""
+    if getattr(response, "streaming", False):
+        return b"".join(response.streaming_content)
+    return response.content
+
+
 class TestInstanceExport:
     """审批导出：复用 list 链路（支持筛选），走轻量序列化器（不含 tasks/表单快照）。
 
@@ -398,8 +405,9 @@ class TestInstanceExport:
         client = APIClient(HTTP_USER_AGENT="pytest-agent")
         client.force_authenticate(user=superuser)
         response = client.get(f"{LIST_URL}/export-data?type=csv")
-        assert response.status_code == 200, response.content[:300]
-        content = response.content.decode("utf-8-sig")
+        assert response.status_code == 200
+        raw = _export_body(response)
+        content = raw.decode("utf-8-sig")
         # 解包占位不用 `_`（函数内赋值会让 gettext 别名 `_` 变成局部变量而不可调用）
         header, _sep, first_row = content.partition("\r\n")
         assert "转交测试" in content  # 实例标题进入导出文件
@@ -418,8 +426,8 @@ class TestInstanceExport:
         response = client.get(f"{LIST_URL}/export-data")
         assert response.status_code == 200
         # xlsx 是 zip 容器：首字节为 PK
-        assert response.content[:2] == b"PK"
-        assert "xlsx" in response["Content-Type"]
+        assert _export_body(response)[:2] == b"PK"
+        assert response["Content-Type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
     def test_export_requires_permission(self, applicant, approver):
         """普通用户无 exportData 权限点：拒绝（导出与列表同受权限点约束）"""

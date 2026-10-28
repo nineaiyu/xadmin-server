@@ -24,6 +24,7 @@ from dataset.utils.dform_history import (
     key_of,
     merged_fields_of_forms,
     schema_for_version,
+    snapshot_resolvable,
     submission_schema,
 )
 
@@ -188,7 +189,12 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
         else:
             # 提交侧校验：与 schema 定义同源（未知键/required/选项/边界；字典字段读字典值；
             # 联动规则参与：隐藏字段跳过校验且不落库、动态必填覆盖字段定义）
-            attrs["data"] = validate_submission_data(schema, data, user=getattr(self.request, "user", None))
+            attrs["data"] = validate_submission_data(
+                schema,
+                data,
+                user=getattr(self.request, "user", None),
+                previous=getattr(self.instance, "data", None),
+            )
         # 记录保存时的表单版本（审计与展示；校验始终按提交当时的 schema）
         attrs["schema_version"] = schema_version
         # 物化筛选列：勾选「可筛选」的字段取值（列表筛选走 JSON 包含查询，可命中 GIN）
@@ -207,13 +213,18 @@ class SubmissionDataField(serializers.Field):
         self.data_key = data_key
         self.sensitive = sensitive
         self.mask_sensitive = False
+        self.row_fail_closed = False
         super().__init__(**kwargs)
 
     def get_attribute(self, instance: Any) -> Any:
+        # 行级快照可解析性（get_attribute 与 to_representation 按行成对调用）：
+        # 版本快照超出保留窗口的提交按 fail-closed 掩码——列敏感性按当前 schema
+        # 解析，无法代表提交当时的敏感性，宁可掩码不可明文
+        self.row_fail_closed = not snapshot_resolvable(instance)
         return (instance.data or {}).get(self.data_key)
 
     def to_representation(self, value: Any) -> Any:
-        if self.sensitive and self.mask_sensitive:
+        if self.mask_sensitive and (self.sensitive or self.row_fail_closed):
             return SENSITIVE_MASK
         return value
 
@@ -289,15 +300,20 @@ class FormDataListSerializer(BaseModelSerializer):
         allowed = self.context.get("data_fields")
         if allowed and isinstance(data.get("data"), dict):
             data["data"] = {key: value for key, value in data["data"].items() if key in allowed}
-        # 敏感字段掩码：schema 级 sensitive 标记；超管可见，其余角色一律掩码
+        # 敏感字段掩码：schema 级 sensitive 标记；超管可见，其余角色一律掩码。
+        # 版本快照超出保留窗口（无法确认提交当时敏感性）的提交 fail-closed：
+        # 全部动态键掩码，历史敏感键不因版本滚出 schema_history 而明文
         request = self.context.get("request")
         user = getattr(request, "user", None)
         if not getattr(user, "is_superuser", False) and isinstance(data.get("data"), dict):
-            sensitive = {str(item.get("key")) for item in form_schema_of(instance) if item.get("sensitive")}
-            if sensitive:
-                data["data"] = {
-                    key: SENSITIVE_MASK if key in sensitive else value for key, value in data["data"].items()
-                }
+            if not snapshot_resolvable(instance):
+                data["data"] = {key: SENSITIVE_MASK for key in data["data"]}
+            else:
+                sensitive = {str(item.get("key")) for item in form_schema_of(instance) if item.get("sensitive")}
+                if sensitive:
+                    data["data"] = {
+                        key: SENSITIVE_MASK if key in sensitive else value for key, value in data["data"].items()
+                    }
         return data
 
 

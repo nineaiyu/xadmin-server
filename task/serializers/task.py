@@ -358,8 +358,8 @@ class TaskExecutionSerializer(BaseModelSerializer):
             "can_cancel",
             "can_rerun",
             "periodic_task",
-            "args",
-            "kwargs",
+            # args/kwargs 不进序列化面（TASK-P1-01）：执行参数含导入/导出条件等
+            # 业务载荷，任务参数属字段面泄漏；table_fields 本就不含，详情/列表一并收敛
             "status",
             "creator",
             "time_cost",

@@ -53,6 +53,8 @@ class Report(DbAuditModel, DbUuidModel):
     is_active = models.BooleanField(_("Is active"), default=True)
     last_run_at = models.DateTimeField(_("Last run at"), null=True, blank=True)
     last_status = models.CharField(_("Last status"), max_length=32, blank=True, default="")
+    #: 设计版本：每次 design 实质变更 +1；回滚同样生成新版本（历史不删除）
+    design_version = models.PositiveIntegerField(_("Design version"), default=1)
 
     class Meta:
         verbose_name = _("Report")
@@ -61,3 +63,29 @@ class Report(DbAuditModel, DbUuidModel):
 
     def __str__(self) -> str:
         return f"{self.name}({self.frequency})"
+
+
+class ReportVersion(DbAuditModel, DbUuidModel):
+    """报表设计的历史版本：保存设计时自动记一版，可回滚。
+
+    只存会被设计器编辑的 ``design`` 载荷；名称 / 调度 / 收件人跟随主表。
+    每个报表保留最近 ``REPORT_VERSION_KEEP`` 版（超出裁剪最旧）。
+    """
+
+    report = models.ForeignKey(
+        Report,
+        on_delete=models.CASCADE,
+        related_name="versions",
+        verbose_name=_("Report"),
+    )
+    version = models.PositiveIntegerField(_("Version"))
+    design = models.JSONField(_("Design"), default=dict, blank=True)
+
+    class Meta:
+        verbose_name = _("Report version")
+        verbose_name_plural = _("Report versions")
+        ordering = ("-version",)
+        constraints = [models.UniqueConstraint(fields=("report", "version"), name="uniq_report_version")]
+
+    def __str__(self) -> str:
+        return f"{self.report_id}#v{self.version}"

@@ -30,6 +30,7 @@ from common.core.config import (
     batch_user_config_values,
 )
 from common.core.fields import BasePrimaryKeyRelatedField
+from common.core.oplog_recorder import PAIR_VALUE_FIELDS, mark_sensitive_value_fields
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
 from common.injection import get_server_config
@@ -232,6 +233,9 @@ class SystemConfigSerializer(BaseModelSerializer):
         key = attrs.get("key") or getattr(self.instance, "key", None)
         if key and "value" in attrs:
             if is_sensitive_key(key):
+                # 敏感键的值是凭据本体：PATCH 请求体只有 {"value": "<明文>"}，
+                # 操作日志无法按键名判定，按「值语义」登记给脱敏链路
+                mark_sensitive_value_fields(self.context.get("request"), PAIR_VALUE_FIELDS)
                 # 掩码占位 = 「已配置但值不下发」：更新保留原值，新建视为未配置
                 if attrs["value"] == MASK:
                     attrs.pop("value")

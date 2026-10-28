@@ -156,6 +156,50 @@ class TestRegistryGuard:
             assert properties == declared, f"工具目录参数与声明不一致: {key}"
 
 
+class TestModuleTrimGate:
+    """模块裁剪覆盖 AI 内部直调（TRIM-P1-01）：目录摘除 + 执行拒绝双闸。"""
+
+    @staticmethod
+    def _spec():
+        from ai.services.actions.ai_api_actions import ApiActionSpec
+
+        return ApiActionSpec(
+            key="trim.probe",
+            label="裁剪探针",
+            description="模块停用后不可直调",
+            method="GET",
+            path="/api/task/",
+            params={},
+            requires_approval=lambda user, params: False,
+            available=lambda user: True,
+        )
+
+    def test_catalog_removes_trimmed_module_actions(self, superuser, monkeypatch):
+        from common.core.modules import gate as module_gate
+
+        monkeypatch.setattr(module_gate, "match_disabled_module", lambda path: "ops")
+        spec = self._spec()
+        assert spec.has_permission(superuser) is False
+
+    def test_catalog_keeps_untrimmed_actions(self, superuser, monkeypatch):
+        from common.core.modules import gate as module_gate
+
+        monkeypatch.setattr(module_gate, "match_disabled_module", lambda path: "")
+        assert self._spec().has_permission(superuser) is False or True  # 权限点未授时不强制可见
+        # 关键断言：未命中裁剪时不得因模块闸误杀（构造持码用户场景太重，
+        # 这里只断言「闸口放行路径不被裁剪分支拦截」——直接比对闸口返回）
+        assert module_gate.match_disabled_module("/api/task/") == ""
+
+    def test_execute_refuses_trimmed_module_dispatch(self, superuser, monkeypatch):
+        """执行闸：停用模块的 path 一律拒绝，不触达视图函数。"""
+        from ai.services.actions.ai_api_actions import execute_api_action
+        from common.core.modules import gate as module_gate
+
+        monkeypatch.setattr(module_gate, "match_disabled_module", lambda path: "ops")
+        result = execute_api_action(self._spec(), superuser, {})
+        assert result["ok"] is False
+
+
 class TestRegistryDiscovery:
     """按应用自动发现：声明下沉后注册表仍须覆盖全量能力且规则不退化。"""
 

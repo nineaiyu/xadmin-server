@@ -80,20 +80,21 @@ class AsyncChatCompletionsClient:
         """生产路径发送前严格校验出站归属（注入 http 的测试路径跳过）。
 
         异步流式链路不复用同步侧的固定解析连接（httpx 生命周期自管），以
-        「发送前严格解析校验」承担纵深防御：私网目标默认拒绝（loopback 供本地
-        联调），自建服务须在 OUTBOUND_ALLOWED_HOSTS 登记后放行。
+        「发送前严格解析校验」承担纵深防御：私网目标默认拒绝；环回目标跟随
+        ``DEBUG`` / ``WEBHOOK_ALLOW_LOOPBACK`` 口径（与同步侧、Webhook 同源），
+        自建服务须在 OUTBOUND_ALLOWED_HOSTS 登记后放行。
         """
         if self.http is not None:
             return
         from asgiref.sync import sync_to_async
 
-        from common.utils.outbound import OutboundBlocked, validate_outbound_url
+        from common.utils.outbound import OutboundBlocked, loopback_allowed, validate_outbound_url
 
         try:
             await sync_to_async(validate_outbound_url, thread_sensitive=False)(
                 url,
                 allow_private=False,
-                allow_loopback=True,
+                allow_loopback=loopback_allowed(),
                 allowed_hosts=self._builder._outbound_allowed_hosts(),
             )
         except OutboundBlocked as exc:

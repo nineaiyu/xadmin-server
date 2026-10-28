@@ -78,6 +78,38 @@ class TestNoticeRecycleBin:
         assert not MessageContent.all_objects.filter(pk=old_pk).exists()
         assert MessageContent.all_objects.filter(pk=recent_pk).exists()
 
+    @pytest.mark.parametrize(
+        "body",
+        [
+            "raw-body",
+            {"pks": "not-a-list"},
+            {"pks": []},
+            {"pks": [{"nested": "value"}]},
+            {"pks": [None]},
+        ],
+    )
+    def test_purge_invalid_pks_never_sweeps_expired(self, auth_client, superuser, body):
+        """非法 pks 必须显式报错：归一成空列表会落入「清除全部超期数据」分支。"""
+        pk = _create_notice_via_api(auth_client, superuser, title="非法入参保护公告")
+        auth_client.delete(f"{NOTICE_URL}/{pk}")
+        MessageContent.all_objects.filter(pk=pk).update(deleted_at=timezone.now() - timedelta(days=31))
+
+        resp = auth_client.delete(f"{NOTICE_URL}/recycle/purge", body, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] != 1000, resp.data
+        # 超期行仍在：非法入参没有触发保留期清扫
+        assert MessageContent.all_objects.filter(pk=pk).exists()
+
+    def test_restore_invalid_pks_rejected(self, auth_client, superuser):
+        """恢复同样按模型级主键归一，非法 UUID 不 500。"""
+        pk = _create_notice_via_api(auth_client, superuser, title="恢复非法入参公告")
+        auth_client.delete(f"{NOTICE_URL}/{pk}")
+
+        resp = auth_client.patch(f"{NOTICE_URL}/recycle/restore", {"pks": ["not-a-uuid"]}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] != 1000, resp.data
+        assert MessageContent.all_objects.filter(pk=pk, deleted_at__isnull=False).exists()
+
 
 class TestSoftDeleteModel:
     def test_upload_soft_delete_keeps_file(self, auth_client):

@@ -50,7 +50,7 @@ class ChatNotifyMixin:
     async def notify_room(self, room: Any, payload: dict[str, Any]) -> None:
         """站内信提醒：私聊/群聊提醒不在聊天室的成员、公共房间提醒被 @ 的用户。"""
         if room.room_type == ChatRoom.RoomType.PUBLIC:
-            await self.notify_mentions(payload)
+            await self.notify_mentions(room, payload)
             return
         if room.room_type == ChatRoom.RoomType.GROUP:
             await self.notify_group(room, payload)
@@ -121,11 +121,15 @@ class ChatNotifyMixin:
             )
         )
 
-    async def notify_mentions(self, payload: dict[str, Any]) -> None:
-        """@提及站内信：全位置、多目标（不含自己）；受用户 PUSH_CHAT_MESSAGE 偏好约束。"""
+    async def notify_mentions(self, room: Any, payload: dict[str, Any]) -> None:
+        """@提及站内信：全位置、多目标（不含自己）；受用户 PUSH_CHAT_MESSAGE 偏好约束。
+
+        提醒目标按房间成员收敛（非成员不投递、不提醒，见 chat_ops.mention_users）：
+        公共房间限定持有聊天准入权的用户，手打 @username 不再触达未开通聊天的账号。
+        """
         content = payload.get("content") or ""
         try:
-            targets = await database_sync_to_async(chat_service.mention_users)(content, self.user.username)
+            targets = await database_sync_to_async(chat_service.mention_users)(content, self.user.username, room=room)
         except Exception:  # noqa: BLE001 提及通知属增强链路，失败不影响消息投递
             logger.warning("parse mentions failed", exc_info=True)
             return

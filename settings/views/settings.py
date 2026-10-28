@@ -14,7 +14,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.viewsets import GenericViewSet
 
-from common.core.auth.credentials import filter_out_sensitive_rows
+from common.core.auth.credentials import MASK, filter_out_sensitive_rows
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     DetailAction,
@@ -126,6 +126,11 @@ class BaseSettingViewSet(NoDetailModelSet):
             encrypted = name in encrypted_items
             if encrypted and value in ["", None]:
                 continue
+            # 掩码占位值永不落库：响应回填的掩码被前端表单原样回传时，
+            # 视同「未修改」丢弃该键（与 SettingSerializer 写入侧同口径），
+            # 避免把占位串加密成新密钥
+            if encrypted and value == MASK:
+                continue
             data.append({"name": name, "value": value, "encrypted": encrypted, "category": self.category})
         return data
 
@@ -134,9 +139,10 @@ class BaseSettingViewSet(NoDetailModelSet):
 
         - 仅 request.data 显式提交的键持久化（带 default 的可选字段未提交不落库，
           PUT 同口径——设置页语义是「改了什么存什么」）；write_only 密文提交
-          空值 = 不修改（回退已存值）；
+          空值或掩码占位值 = 不修改（回退已存值）；
         - 响应载荷 = 未提交键取运行时当前值 + 变更键取新值的合并视图，经
-          set_response_data 显式回写（不再裸改 serializer._data）；
+          set_response_data 显式回写（不再裸改 serializer._data）；加密键的
+          变更值以掩码占位回填，不回显明文（与设置台账列表口径一致）；
         - serializer.change_fields = 实际落库且值变化的键名；
         - 序列化器可实现 post_save() 做联动失效/响应整形（change_fields 与响应
           载荷已就绪；运行时 settings 由 pub/sub 订阅者异步热更）。
@@ -156,7 +162,12 @@ class BaseSettingViewSet(NoDetailModelSet):
                 continue
             assert setting is not None  # 契约：changed 为真时必有实例（此处仅作类型收窄）
             change_fields.append(setting.name)
-            serializer_data[setting.name] = setting.cleaned_value
+            if setting.encrypted:
+                # write_only 密文键（SET-P1-01）：响应不回显明文，回填占位掩码，
+                # 与设置台账列表的输出掩码口径一致（掩码回传不会落库，见 parse_serializer_data）
+                serializer_data[setting.name] = MASK
+            else:
+                serializer_data[setting.name] = setting.cleaned_value
         if hasattr(serializer, "set_response_data"):
             serializer.set_response_data(serializer_data)
             serializer.change_fields = change_fields

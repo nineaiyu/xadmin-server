@@ -1175,5 +1175,30 @@
    "group_name": null,
    "group_rank": null
   }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "7a6cf066-7220-536f-a417-56b3d006dfce",
+  "fields": {
+   "created_time": "2026-10-28T00:00:00.000Z",
+   "updated_time": "2026-10-28T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "连通性探测结果",
+   "icon": null,
+   "r_svg_name": null,
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": null,
+   "frame_loading": false,
+   "transition_enter": null,
+   "transition_leave": null,
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
  }
 ]

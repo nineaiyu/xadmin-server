@@ -6,6 +6,7 @@
 """
 
 import datetime
+import json
 
 import pytest
 from django.utils import timezone
@@ -88,6 +89,152 @@ def _pending(applicant):
     return ApprovalRequest.objects.filter(creator=applicant, status=PENDING_STATUS).first()
 
 
+class TestRequestSnapshotDesensitize:
+    """审批快照统一递归脱敏 + 指纹改哈希（等长换值重放必须被拦下）。
+
+    历史缺陷：仅 dict 体脱敏（数组型请求体整包明文进 params），掩码保留长度使
+    指纹只比得出「长度没变」——批准 A 值、重发等长 B 值借道同一令牌。
+    """
+
+    @staticmethod
+    def _raw_request(user, data):
+        from rest_framework.parsers import JSONParser
+        from rest_framework.request import Request
+
+        factory = APIRequestFactory()
+        raw = factory.post("/api/test/batch", data, format="json")
+        force_authenticate(raw, user=user)
+        # 手工构造的 Request 不经视图装配，需显式给解析器（默认注册表在此缺席）
+        return Request(raw, authenticators=(), parsers=[JSONParser()])
+
+    def test_list_body_recursively_desensitized(self, normal_user):
+        """数组型请求体（批量对象）里的敏感键同样掩码，不再整包明文进快照。"""
+        from approval.services.approval.payload import get_request_params
+
+        request = self._raw_request(normal_user, [{"password": "Secret@123", "note": "x"}, {"token": "abc"}])
+        params = get_request_params(request)
+        assert params[0]["note"] == "x"
+        assert params[0]["password"].startswith("sha256:")
+        assert params[1]["token"].startswith("sha256:")
+
+    def test_mask_not_length_preserving(self, normal_user):
+        """等长换值产生不同掩码：指纹比对不再退化成「只比长度」。"""
+        from approval.services.approval.payload import canonical_params, get_request_params
+
+        first = get_request_params(self._raw_request(normal_user, {"password": "AAAAAAA"}))
+        second = get_request_params(self._raw_request(normal_user, {"password": "BBBBBBB"}))
+        assert canonical_params(first) != canonical_params(second)
+        # 同一原值掩码恒等（确定性），正常重放的比对能力不受影响
+        assert canonical_params(first) == canonical_params(
+            get_request_params(self._raw_request(normal_user, {"password": "AAAAAAA"}))
+        )
+
+    def test_value_detail_carrier_masked(self, normal_user):
+        """敏感名载体（key/name 命中敏感名模式）的 value/detail 标量一并掩码。"""
+        from approval.services.approval.payload import get_request_params
+
+        request = self._raw_request(normal_user, {"key": "SCIM_TOKEN", "value": "plain-secret", "detail": "note"})
+        params = get_request_params(request)
+        assert params["value"].startswith("sha256:")
+        assert params["detail"].startswith("sha256:")
+
+    def test_plain_value_key_not_overmasked(self, normal_user):
+        """无敏感名载体的普通 value/detail 不误伤（业务参数保持可读）。"""
+        from approval.services.approval.payload import get_request_params
+
+        request = self._raw_request(normal_user, {"key": "MAX_LIMIT", "value": 100, "detail": {"n": 1}})
+        params = get_request_params(request)
+        assert params["value"] == 100
+        assert params["detail"] == {"n": 1}
+
+    def test_nested_container_under_sensitive_key_masked(self, normal_user):
+        """敏感键下的容器叶子同样掩码：列表/对象里的明文不能因键名不敏感而漏出。"""
+        from approval.services.approval.payload import get_request_params
+
+        request = self._raw_request(
+            normal_user,
+            {
+                "password": {"old": "Old@123", "new": "New@123"},
+                "token": ["plain-a", "plain-b"],
+            },
+        )
+        params = get_request_params(request)
+        assert params["password"]["old"].startswith("sha256:")
+        assert params["password"]["new"].startswith("sha256:")
+        assert all(item.startswith("sha256:") for item in params["token"])
+
+    def test_carrier_nested_value_masked(self, normal_user):
+        """敏感载体下的 value 为容器时，所有标量叶子都要掩码（整值配置对象场景）。"""
+        from approval.services.approval.payload import get_request_params
+
+        request = self._raw_request(
+            normal_user,
+            {
+                "key": "BACKUP_ALERT_TOKEN",
+                "value": [{"label": "primary", "secret": "plain-secret"}],
+            },
+        )
+        params = get_request_params(request)
+        assert params["value"][0]["label"].startswith("sha256:")
+        assert params["value"][0]["secret"].startswith("sha256:")
+
+    def test_equal_length_substitution_replay_rejected(self, superuser, normal_user):
+        """等长换值重放 403：批准 A 值、重发同长度 B 值不能借道同一令牌。"""
+        _enable_interception([r"^/api/test/batch$"])
+        response = _dispatch(normal_user, "post", "/api/test/batch", {"password": "AAAAAAA", "note": "x"})
+        approval = ApprovalRequest.objects.get(pk=response.data["data"]["approval_id"])
+        ok, _detail = approve_request(approval, superuser)
+        assert ok
+
+        replay = _dispatch(
+            normal_user,
+            "post",
+            "/api/test/batch",
+            {"password": "BBBBBBB", "note": "x"},
+            headers={"HTTP_X_APPROVAL_ID": str(approval.pk)},
+        )
+        assert replay.status_code == 403
+        approval.refresh_from_db()
+        assert approval.status == ApprovalRequest.Status.FAILED
+
+
+class TestPayloadSeal:
+    """请求体快照落库加密：审批通过后的自动执行需要可逆还原，库内不留明文。"""
+
+    @staticmethod
+    def _raw_request(user, data):
+        from rest_framework.parsers import JSONParser
+        from rest_framework.request import Request
+
+        factory = APIRequestFactory()
+        raw = factory.post("/api/test/1", data, format="json")
+        force_authenticate(raw, user=user)
+        return Request(raw, authenticators=(), parsers=[JSONParser()])
+
+    def test_snapshot_payload_sealed_at_rest(self, normal_user):
+        from approval.services.approval.approved_actions import PAYLOAD_SEAL_KEY, snapshot_payload
+
+        sealed = snapshot_payload(self._raw_request(normal_user, {"data": {"name": "张三"}}))
+        assert PAYLOAD_SEAL_KEY in sealed
+        # 密文形态：明文不落库（params 是单向哈希，payload 必须可逆故用字段级加密）
+        assert "张三" not in json.dumps(sealed, ensure_ascii=False)
+
+    def test_unseal_roundtrip_and_legacy_plaintext(self):
+        from approval.services.approval.approved_actions import seal_payload, unseal_payload
+
+        data = {"data": {"name": "张三", "count": 3}}
+        assert unseal_payload(seal_payload(data)) == data
+        # 升级前的明文行没有密封标记：原样返回，历史在途单的自动执行不受影响
+        assert unseal_payload({"data": {"legacy": True}}) == {"data": {"legacy": True}}
+        assert unseal_payload({}) == {}
+
+    def test_tampered_sealed_payload_degrades_to_empty(self):
+        """密文损坏/主密钥不可用：自动执行降级（申请人手动重放兜底），不抛 500。"""
+        from approval.services.approval.approved_actions import PAYLOAD_SEAL_KEY, unseal_payload
+
+        assert unseal_payload({PAYLOAD_SEAL_KEY: "v3:not-a-valid-ciphertext"}) == {}
+
+
 class TestInterception:
     """拦截判定与建单。"""
 
@@ -120,8 +267,9 @@ class TestInterception:
         assert record.object_pk == "1"
         assert record.creator == normal_user
         assert record.module == "测试对象"
-        # 快照脱敏：密码掩码入库
-        assert record.params["password"] == "*" * len("Secret@123")
+        # 快照脱敏：密码以确定性哈希掩码入库（不保留明文与长度）
+        assert record.params["password"].startswith("sha256:")
+        assert "Secret@123" not in json.dumps(record.params)
         assert record.params["note"] == "x"
 
     def test_duplicate_submit_reuses_pending(self, superuser, normal_user):

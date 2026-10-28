@@ -65,20 +65,27 @@ class TestDetailSchemaByVersion:
         assert f"乙{HISTORICAL_MARK}" == next(item for item in fields if item["key"] == "b")["label"]
 
 
+def _export_text(resp) -> str:
+    """导出响应正文：流式化后 CSV 走 FileResponse，没有 ``.content`` 属性。"""
+    raw = b"".join(resp.streaming_content) if getattr(resp, "streaming", False) else resp.content
+    return raw.decode("utf-8-sig")
+
+
 class TestExportColumns:
     def test_my_submission_export_keeps_historical_column(self, auth_client, versioned_scene):
         resp = auth_client.get(f"{SUBMISSIONS_URL}/export-data?type=csv")
         assert resp.status_code == 200
-        header = resp.content.decode("utf-8-sig").strip().splitlines()[0]
+        body = _export_text(resp)
+        header = body.strip().splitlines()[0]
         assert "甲(a)" in header
         assert f"乙{HISTORICAL_MARK}(b)" in header
         # 历史值仍在导出数据行里
-        assert "B1" in resp.content.decode("utf-8-sig")
+        assert "B1" in body
 
     def test_form_data_export_keeps_historical_column(self, auth_client, versioned_scene):
         resp = auth_client.get(f"{FORM_DATA_URL}/export-data?type=csv")
         assert resp.status_code == 200
-        header = resp.content.decode("utf-8-sig").strip().splitlines()[0]
+        header = _export_text(resp).strip().splitlines()[0]
         assert f"乙{HISTORICAL_MARK}(b)" in header
 
 

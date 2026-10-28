@@ -408,3 +408,126 @@ class TestDashboardVisibilityOnWrite:
         )
         resp = auth_client.post(SCREEN_URL, {"name": "超管大屏", "dashboards": [str(personal.pk)]}, format="json")
         assert resp.json()["code"] == 1000, resp.json()
+
+
+class TestVersioning:
+    """布局版本表 + 乐观锁：保存即记版、实质变更才 +1、回滚还原两份载荷。"""
+
+    def _create(self, auth_client, layout, name="画布大屏-版本"):
+        body = auth_client.post(
+            SCREEN_URL,
+            {"name": name, "dashboards": [], "layout": layout},
+            format="json",
+        ).json()
+        assert body["code"] == 1000, body
+        return body["data"]
+
+    def test_create_records_initial_version(self, auth_client, dashboard):
+        created = self._create(auth_client, [_pane("p1", str(dashboard.pk))])
+        assert created["layout_version"] == 1
+        versions = auth_client.get(f"{SCREEN_URL}/{created['pk']}/versions").json()
+        assert versions["code"] == 1000, versions
+        assert [item["version"] for item in versions["data"]] == [1]
+        assert versions["data"][0]["layout"][0]["pk"] == "p1"
+
+    def test_only_layout_change_adds_version(self, auth_client, dashboard):
+        created = self._create(auth_client, [_pane("p1", str(dashboard.pk))])
+        pk = created["pk"]
+        auth_client.patch(f"{SCREEN_URL}/{pk}", {"name": "画布大屏-改名"}, format="json")
+        assert len(auth_client.get(f"{SCREEN_URL}/{pk}/versions").json()["data"]) == 1
+        patched = auth_client.patch(
+            f"{SCREEN_URL}/{pk}",
+            {"layout": [{"pk": "c1", "type": "clock", "x": 0, "y": 0, "w": 3, "h": 2}]},
+            format="json",
+        ).json()
+        assert patched["code"] == 1000, patched
+        assert patched["data"]["layout_version"] == 2
+        assert [item["version"] for item in auth_client.get(f"{SCREEN_URL}/{pk}/versions").json()["data"]] == [2, 1]
+
+    def test_rollback_restores_both_canvas_payloads(self, auth_client, dashboard):
+        created = self._create(auth_client, [_pane("p1", str(dashboard.pk))], name="画布大屏-双载荷")
+        pk = created["pk"]
+        free_pane = {"pk": "f1", "type": "text", "x": 32, "y": 32, "w": 320, "h": 200, "text": "自由"}
+        free = auth_client.patch(
+            f"{SCREEN_URL}/{pk}",
+            {"layout_mode": "free", "free_layout": {"design_w": 1920, "design_h": 1080, "panes": [free_pane]}},
+            format="json",
+        ).json()
+        assert free["code"] == 1000, free
+        assert free["data"]["layout_version"] == 2
+        grid = auth_client.patch(
+            f"{SCREEN_URL}/{pk}",
+            {"layout_mode": "grid", "layout": [{"pk": "c1", "type": "clock", "x": 0, "y": 0, "w": 3, "h": 2}]},
+            format="json",
+        ).json()
+        assert grid["code"] == 1000, grid
+        assert grid["data"]["layout_version"] == 3
+
+        # 回滚到 v2：自由模式 + 栅格旧载荷 + 自由载荷一并还原
+        rolled = auth_client.post(f"{SCREEN_URL}/{pk}/rollback", {"version": 2}, format="json").json()
+        assert rolled["code"] == 1000, rolled
+        assert rolled["data"]["layout_mode"]["value"] == "free"
+        assert rolled["data"]["layout"][0]["pk"] == "p1"
+        assert rolled["data"]["free_layout"]["panes"][0]["pk"] == "f1"
+        assert rolled["data"]["layout_version"] == 4
+
+        # 回滚到 v3：栅格模式与 v3 的载荷
+        rolled_back = auth_client.post(f"{SCREEN_URL}/{pk}/rollback", {"version": 3}, format="json").json()
+        assert rolled_back["code"] == 1000, rolled_back
+        assert rolled_back["data"]["layout_mode"]["value"] == "grid"
+        assert rolled_back["data"]["layout"][0]["pk"] == "c1"
+
+    def test_rollback_unknown_version(self, auth_client, dashboard):
+        created = self._create(auth_client, [_pane("p1", str(dashboard.pk))], name="画布大屏-未知版")
+        resp = auth_client.post(f"{SCREEN_URL}/{created['pk']}/rollback", {"version": 99}, format="json")
+        assert resp.status_code == 200
+        assert resp.json()["code"] == 1001
+
+    def test_optimistic_lock_rejects_stale_base(self, auth_client, dashboard):
+        created = self._create(auth_client, [_pane("p1", str(dashboard.pk))], name="画布大屏-锁")
+        pk = created["pk"]
+        stale_base = created["layout_version"]
+        first = auth_client.patch(
+            f"{SCREEN_URL}/{pk}",
+            {
+                "layout": [{"pk": "c1", "type": "clock", "x": 0, "y": 0, "w": 3, "h": 2}],
+                "base_version": stale_base,
+            },
+            format="json",
+        )
+        assert first.json()["code"] == 1000, first.json()
+        second = auth_client.patch(
+            f"{SCREEN_URL}/{pk}",
+            {
+                "layout": [{"pk": "c2", "type": "clock", "x": 3, "y": 0, "w": 3, "h": 2}],
+                "base_version": stale_base,
+            },
+            format="json",
+        )
+        assert second.status_code == 400, second.json()
+        assert Screen.objects.get(pk=pk).layout[0]["pk"] == "c1"
+
+    def test_versions_and_rollback_creator_only(self, auth_client, dashboard, normal_user, menu_factory):
+        from rest_framework.test import APIClient
+
+        from identity.models import UserRole
+
+        created = self._create(auth_client, [_pane("p1", str(dashboard.pk))], name="画布大屏-归属")
+        # 共享可见性：非创建者能读到行，才轮得到行级归属守卫判定（personal 会被可见性过滤 404）
+        Screen.objects.filter(pk=created["pk"]).update(visibility="shared")
+        detail = "api/dataset/screens/(?P<pk>[^/.]+)"
+        menus = [
+            menu_factory("retrieve:DataScreen", detail + "$", "GET"),
+            menu_factory("versions:DataScreen", detail + "/versions$", "GET"),
+            menu_factory("rollback:DataScreen", detail + "/rollback$", "POST"),
+        ]
+        role = UserRole.objects.create(name="screen-version-reader", code="screen-version-reader")
+        normal_user.roles.add(role)
+        role.menu.set(menus)
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        client.force_authenticate(user=normal_user)
+
+        versions = client.get(f"{SCREEN_URL}/{created['pk']}/versions").json()
+        assert versions["code"] == 1003, versions
+        rolled = client.post(f"{SCREEN_URL}/{created['pk']}/rollback", {"version": 1}, format="json").json()
+        assert rolled["code"] == 1003, rolled

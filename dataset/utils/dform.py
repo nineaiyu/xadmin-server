@@ -321,11 +321,17 @@ def _validate_field_value(item: dict[str, Any], label: str, value: Any, user: An
     return value
 
 
-def validate_submission_data(schema: dict[str, Any], data: Any, user: Any = None) -> dict[str, Any]:
+def validate_submission_data(
+    schema: dict[str, Any], data: Any, user: Any = None, previous: Any = None
+) -> dict[str, Any]:
     """提交数据校验：未知键拒绝 + required + 类型/选项/边界校验。返回规范化 data。
 
-    联动优先：先按原始数据求值联动规则——被隐藏的字段跳过全部校验且不写入
-    （隐藏即不生效），动态必填/非必填覆盖字段自身定义（见 ``evaluate_linkages``）。
+    联动优先：先按原始数据求值联动规则——被隐藏的字段跳过全部校验；动态必填/非必填
+    覆盖字段自身定义（见 ``evaluate_linkages``）。
+
+    被隐藏字段的落库值分两种场景：新建（``previous`` 为空）写 None，隐藏即不生效；
+    **编辑**（``previous`` 给出既有数据）保留上次已存值——改动触发字段把目标隐藏时，
+    不该把用户此前填过的内容抹掉，重新显示时仍能取回（FORM-P1-05）。
 
     ``user`` 给出时，upload 控件值额外做归属断言（文件必须存在且由该用户上传）；
     省略（种子/脚本/无请求上下文）则跳过该断言，其余校验不变。
@@ -350,7 +356,9 @@ def validate_submission_data(schema: dict[str, Any], data: Any, user: Any = None
         value = data.get(key)
         control = controls.get(key) or {}
         if control.get("hidden"):
-            normalized[key] = None
+            # 编辑场景保留历史已存值（隐藏只是「当前不生效」）；新建无历史值 → None
+            kept = previous.get(key) if isinstance(previous, dict) else None
+            normalized[key] = kept
             continue
         if ftype == "formula":
             # 计算字段：不接受客户端提交值，统一在循环后按依赖顺序求值覆盖

@@ -13,10 +13,11 @@ from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 
 from approval.models.approval import ApprovalDelegation
-from approval.models.approval_request import ApprovalRequest
+from approval.models.approval_instance import ApprovalInstance, ApprovalNodeTask
 from approval.serializers.approval_delegation import ApprovalDelegationSerializer
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, SuggestionsAction
@@ -66,39 +67,56 @@ class ApprovalDelegationViewSet(BaseModelSet, SuggestionsAction):
             return queryset
         return queryset.filter(delegator=user)
 
+    def perform_destroy(self, instance: Any) -> Any:
+        """销毁归属护栏：委托记录属个人审批权处置，仅委托人本人或超管可删。
+
+        「查看全部委托」授权（all 码）只放大读取面（get_queryset 的可见域），
+        写/删仍收敛到本人——否则持管理视角码的角色可硬删他人生效委托，
+        静默拆掉他人的代审权。更新路径已有序列化器 delegator 归属校验，
+        销毁不走序列化器，在此单独收敛。
+        """
+        user = self.request.user
+        if not getattr(user, "is_superuser", False) and instance.delegator_id != user.pk:
+            raise PermissionDenied(_("Only the delegator can delete a delegation"))
+        super().perform_destroy(instance)
+
+    def _needs_rowwise_delete(self) -> Any:
+        """批量删除逐行：perform_destroy 的归属护栏只在逐行分支可达（覆写契约）。"""
+        return True
+
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="impact")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def impact(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """委托停用影响面
 
-        当前在途审批单中挂在该委托人或代理人名下的待办。停用委托不会自动改派既有待办（建单/进节点时已按快照分配），
-        这里只把「哪些在途单会受影响」显式列出，供停用前确认。
+        在途流程实例当前节点挂在该委托人或代理人名下的待办任务（与委托展开同一实体：
+        引擎的唯一消费点是流程节点候选人替换，见 conditions.py::_expand_delegations）。
+        停用委托不会自动改派既有待办（建单/进节点时已按快照分配），这里只把「哪些在途
+        待办会受影响」显式列出，供停用前确认；代理人名下只统计经本委托人代审而来的任务
+        （delegate_from = 委托人）。
         """
         delegation = self.get_object()
-        pending = ApprovalRequest.objects.filter(status=ApprovalRequest.Status.PENDING).filter(
-            Q(current_assignees=delegation.delegator) | Q(current_assignees=delegation.delegate)
-        )
-        total = pending.distinct().count()
-        rows = (
-            pending.select_related("creator")
-            .distinct()
-            .order_by("-created_time")
-            .values("pk", "module", "path", "method", "creator__username")[:20]
-        )
+        pending = ApprovalNodeTask.objects.filter(
+            status=ApprovalNodeTask.Status.PENDING,
+            instance__status=ApprovalInstance.Status.PENDING,
+        ).filter(Q(assignee=delegation.delegator) | Q(assignee=delegation.delegate, delegate_from=delegation.delegator))
+        total = pending.count()
+        rows = pending.select_related("instance", "instance__flow", "instance__creator").order_by("-created_time")[:20]
         return ApiResponse(
             data={
                 "total": total,
-                "delegator_pending": pending.filter(current_assignees=delegation.delegator).distinct().count(),
-                "delegate_pending": pending.filter(current_assignees=delegation.delegate).distinct().count(),
+                "delegator_pending": pending.filter(assignee=delegation.delegator).count(),
+                "delegate_pending": pending.filter(assignee=delegation.delegate).count(),
                 "items": [
                     {
-                        "pk": str(item["pk"]),
-                        "module": item["module"] or "",
-                        "path": item["path"],
-                        "method": item["method"],
-                        "applicant": item["creator__username"] or "",
+                        "pk": str(task.instance_id),
+                        "task_pk": str(task.pk),
+                        "node_name": task.node_name,
+                        "title": task.instance.title or "",
+                        "flow": task.instance.flow.name if task.instance.flow_id else "",
+                        "applicant": task.instance.creator.username if task.instance.creator_id else "",
                     }
-                    for item in rows
+                    for task in rows
                 ],
                 "note": str(_("Existing assignments stay unchanged after disabling")),
             }

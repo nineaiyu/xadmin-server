@@ -268,6 +268,16 @@ class TestDatasetExecute:
         assert body["code"] == 1000
         assert [row["username"] for row in body["data"]["rows"]] == ["admin"]
 
+    def test_execute_max_rows_validated_and_limited(self, auth_client, dataset):
+        """max_rows 是外部输入：非法/负数按 1001 拒绝，合法值下推为 SQL 上限。"""
+        for invalid in (-1, "abc", 1.5):
+            body = auth_client.post(f"{DATASET_URL}/{dataset.pk}/execute", {"max_rows": invalid}, format="json").json()
+            assert body["code"] == 1001, body
+        body = auth_client.post(f"{DATASET_URL}/{dataset.pk}/execute", {"max_rows": 1}, format="json").json()
+        assert body["code"] == 1000, body
+        assert body["data"]["limit"] == 1
+        assert len(body["data"]["rows"]) <= 1
+
     def test_execute_request_filters_validated(self, auth_client, dataset):
         """非法请求级 filters 拒绝（白名单外字段 / 非法 op），口径同保存侧。"""
         body = auth_client.post(

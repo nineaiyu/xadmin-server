@@ -95,14 +95,47 @@ def parse_mentions(content: str) -> list[Any]:
     return seen
 
 
-def mention_users(content: str, exclude_username: str = "") -> list[Any]:
-    """把 @提及解析为在用用户对象（跳过自己与不存在的用户名）。"""
+def mention_users(content: str, exclude_username: str = "", room: Any = None) -> list[Any]:
+    """把 @提及解析为可提醒的用户对象（跳过自己与不存在的用户名）。
+
+    携带 ``room`` 时按房间成员收敛提醒目标（非成员不投递、不提醒）：
+    - 公共房间「成员」= 持有聊天通道准入权的用户（与 WS 准入同一套权限数据）——
+      否则任意聊天用户手打 @username 即可向未开通聊天的任意账号投递任意内容站内信；
+    - 私聊/群聊/AI 房间 = 房间成员行（ChatRoomMember）。
+    """
     from identity.models import UserInfo
 
     names = [name for name in parse_mentions(content) if name != exclude_username]
     if not names:
         return []
-    return list(UserInfo.objects.filter(username__in=names, is_active=True))
+    matched = list(UserInfo.objects.filter(username__in=names, is_active=True))
+    if room is not None:
+        matched = _room_mention_scope(matched, room)
+    return matched
+
+
+def _room_mention_scope(users: list[Any], room: Any) -> list[Any]:
+    """按房间可访问性收敛 @提及目标（公共房间按聊天准入权，其余按成员行）。"""
+    from message.models import ChatRoom, ChatRoomMember
+
+    if getattr(room, "room_type", None) == ChatRoom.RoomType.PUBLIC:
+        return [user for user in users if _can_access_chat(user)]
+    member_pks = set(ChatRoomMember.objects.filter(room=room).values_list("user_id", flat=True))
+    return [user for user in users if user.pk in member_pks]
+
+
+def _can_access_chat(user: Any) -> bool:
+    """聊天通道准入（与 message/ws/consumers.py 的 has_chat_permission 同一口径）。
+
+    超管放行；其余用户需持有聊天室会话列表权限（菜单权限点 list:ChatRoom →
+    路径 api/chat/room$）。逐用户判定（@提及目标一消息内至多数人，可接受）。
+    """
+    if getattr(user, "is_superuser", False):
+        return True
+    from common.core.permission import get_menu_pk, get_user_permission
+
+    data = get_user_permission(user, "GET")
+    return bool(get_menu_pk(data, "/api/chat/room"))
 
 
 def new_client_msg_id() -> str:

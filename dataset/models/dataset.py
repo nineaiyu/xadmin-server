@@ -51,20 +51,23 @@ class Dataset(DbAuditModel, DbUuidModel):
 
 # 同 app 其余模型的兼容再导出（历史 import 面零改动；定义在各自域文件）
 from .dashboard import Dashboard  # noqa: E402,F401
-from .report import Report  # noqa: E402,F401
+from .report import Report, ReportVersion  # noqa: E402,F401
 from .screen import (  # noqa: E402,F401
     Screen,
     ScreenClipboard,
     ScreenTemplate,
     ScreenTemplateVersion,
+    ScreenVersion,
 )
 
 __all__ = [
     "Dataset",
     "Dashboard",
     "Report",
+    "ReportVersion",
     "Screen",
     "ScreenClipboard",
     "ScreenTemplate",
     "ScreenTemplateVersion",
+    "ScreenVersion",
 ]

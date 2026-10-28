@@ -8463,6 +8463,12 @@ msgstr "请选择要恢复的数据"
 msgid "Restored {} data"
 msgstr "已恢复 {} 条数据"
 
+
+#: packages/xadmin-common/common/core/modelset/recycle.py
+#, python-brace-format
+msgid "Skipped {} data with integrity constraints"
+msgstr "因完整性约束跳过 {} 条数据"
+
 #: packages/xadmin-common/common/core/modelset/recycle.py:92
 #, python-brace-format
 msgid "Skipped {} data with unique conflicts"
@@ -12364,6 +12370,45 @@ msgstr "请假申请审批中或已批准，不能删除"
 msgid "The form has been modified by another user; reload before saving"
 msgstr "表单已被其他管理员修改，请刷新后重试"
 
+msgid "The content has been modified by another user; reload before saving"
+msgstr "内容已被其他用户修改，请刷新后重试"
+
+msgid "Report version"
+msgstr "报表版本"
+
+msgid "Report versions"
+msgstr "报表版本"
+
+msgid "Screen version"
+msgstr "大屏版本"
+
+msgid "Screen versions"
+msgstr "大屏版本"
+
+msgid "Design version"
+msgstr "设计版本"
+
+msgid "Layout version"
+msgstr "布局版本"
+
+msgid "A design version is required"
+msgstr "请选择要回滚的设计版本"
+
+msgid "Report version not found"
+msgstr "报表版本不存在"
+
+msgid "Report design rolled back"
+msgstr "报表设计已回滚"
+
+msgid "A layout version is required"
+msgstr "请选择要回滚的布局版本"
+
+msgid "Screen version not found"
+msgstr "大屏版本不存在"
+
+msgid "Screen layout rolled back"
+msgstr "大屏布局已回滚"
+
 msgid "Only the creator can modify it"
 msgstr "仅创建者可修改"
 
@@ -13392,6 +13437,21 @@ msgstr "观测日志保留期（天）"
 msgid "Thresholds must be strictly ascending"
 msgstr "阈值必须严格递增"
 
+msgid "PoW difficulty must not exceed the bits cap (%(cap)s)"
+msgstr "PoW 难度不得超过位数上限（%(cap)s）"
+
+msgid "Verify code charset requires at least one of uppercase, lowercase or digits"
+msgstr "验证码字符集须至少启用大写、小写、数字中的一项"
+
+msgid "Login requires at least one enabled method (basic, email or sms)"
+msgstr "登录须至少启用一种方式（账密、邮箱或短信）"
+
+msgid "Register requires at least one verify code channel (email or sms)"
+msgstr "注册须至少启用一个验证码发送渠道（邮箱或短信）"
+
+msgid "Reset password requires at least one verify code channel (email or sms)"
+msgstr "找回密码须至少启用一个验证码发送渠道（邮箱或短信）"
+
 msgid "Expected three comma-separated integers"
 msgstr "需要三个逗号分隔的整数"
 
@@ -13795,3 +13855,32 @@ msgstr "会话不存在或超出数据范围"
 #: settings/views/security.py
 msgid "Unknown rule codes: {}"
 msgstr "未知的规则编码：{}"
+
+#, python-brace-format
+msgid "Too many dashboard cards (max {})"
+msgstr "仪表盘卡片数超出上限（最多 {} 张）"
+
+
+#, python-brace-format
+msgid "Invalid dashboard card title"
+msgstr "卡片标题不合法"
+
+
+#, python-brace-format
+msgid "Invalid dashboard card span"
+msgstr "卡片宽度档位不合法"
+
+msgid "Invalid dashboard card height"
+msgstr "卡片高度档位不合法"
+
+#: dataset/views/dataset.py
+msgid "max_rows must be a non-negative integer"
+msgstr "max_rows 必须为非负整数"
+
+#: system/serializers/menu.py
+msgid "Iframe URL must be a same-origin path starting with /"
+msgstr "Iframe 地址必须是站内相对路径（以 / 开头）"
+
+#: identity/views/auth/verify_code.py
+msgid "Failed to send verification code, please try again later"
+msgstr "验证码发送失败，请稍后重试"

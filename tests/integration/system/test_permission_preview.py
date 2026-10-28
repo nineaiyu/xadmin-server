@@ -290,6 +290,45 @@ def test_trial_count_and_sql(api_client, normal_user, role, menu_factory, books)
     assert data["note"] is None
 
 
+def test_trial_draft_rejects_all_rules(api_client, normal_user, role, menu_factory, books):
+    """草稿含「全部数据/通配」规则直接 400：试算不是授权放大器（PREVIEW-P1-01）。"""
+    grant_preview_menus(role, menu_factory)
+    make_book_registry()
+    api_client.force_authenticate(user=normal_user)
+    for rules in (
+        [{"table": "demo.book", "field": "*", "type": "all", "value": "*", "match": "all"}],
+        [{"table": "*", "field": "*", "type": "all", "value": "*", "match": "all"}],
+    ):
+        response = api_client.post(
+            trial_url(normal_user),
+            {"model": "demo.book", "draft": {"rules": rules, "mode_type": 1}},
+            format="json",
+        )
+        assert response.status_code == 400, rules
+
+
+def test_trial_draft_narrows_existing_scope(api_client, normal_user, role, menu_factory, books):
+    """草稿只收窄：existing ∩ 草稿效果，不得把可见集放大到草稿自身口径。"""
+    grant_preview_menus(role, menu_factory)
+    make_book_registry()
+    # 现有授权 = 仅本人书籍（2 本中可见 1 本）；草稿把归属改为「他人的书」这类
+    # 现有授权之外的约束——若草稿走 OR 放大，count 会变 1（他人那本），收窄口径下仍 ≤ 现有可见集
+    normal_user.rules.add(make_user_self_scope())
+    normal_user.rules.add(make_owner_book_permission())
+    api_client.force_authenticate(user=normal_user)
+    draft = {
+        "rules": [
+            {"table": "demo.book", "field": "name", "type": "value.text", "value": "不存在的书名", "match": "exact"}
+        ],
+        "mode_type": 1,
+    }
+    response = api_client.post(trial_url(normal_user), {"model": "demo.book", "draft": draft}, format="json")
+    assert response.status_code == 200
+    data = response.data["data"]
+    assert data["count"] == 0
+    assert data["sample"] == []
+
+
 def test_trial_superuser_note(auth_client, superuser, books):
     make_book_registry()
     response = auth_client.post(trial_url(superuser), {"model": "demo.book"}, format="json")
@@ -611,7 +650,12 @@ def test_post_preview_filters_users_by_caller_scope(api_client, normal_user, dep
 # ---------- 试算草稿（配置页即时验证影响面） ----------
 
 
-def test_trial_draft_rules_apply_and_widen_scope(api_client, normal_user, role, menu_factory, books):
+def test_trial_draft_rules_apply_and_narrow_scope(api_client, normal_user, role, menu_factory, books):
+    """草稿参与试算但只收窄（existing ∩ 草稿效果），且永不落库（PREVIEW-P1-01）。
+
+    旧口径经 extra_grants 的 OR 合并，草稿可把可见集放大到自身口径（含「全部数据」
+    = 任意模型全量采样）；改为收窄后，指向「现有授权之外的书」的草稿条件 count=0。
+    """
     grant_preview_menus(role, menu_factory)
     make_book_registry()
     normal_user.rules.add(make_user_self_scope())  # 让调用者能看到自己（否则 get_object 404）
@@ -623,16 +667,18 @@ def test_trial_draft_rules_apply_and_widen_scope(api_client, normal_user, role, 
     assert response.data["data"]["count"] == 0
     assert response.data["data"]["draft_applied"] is False
 
-    # 草稿「全部数据」不落库，但参与本次试算
+    # 有「仅本人书籍」授权（可见 own-1）：草稿条件指向授权之外的书名 → 收窄为 0，
+    # 不得因 OR 放大看到「别人的书」
+    normal_user.rules.add(make_owner_book_permission())
     draft = {
-        "rules": [{"table": "demo.book", "field": "isbn", "type": "value.all", "value": "*", "match": "all"}],
+        "rules": [{"table": "demo.book", "field": "isbn", "type": "value.text", "value": "other-1", "match": "exact"}],
         "mode_type": ModeTypeAbstract.ModeChoices.OR,
     }
     response = api_client.post(trial_url(normal_user), {"model": "demo.book", "draft": draft}, format="json")
     assert response.status_code == 200, response.data
     data = response.data["data"]
     assert data["draft_applied"] is True
-    assert data["count"] == 2
+    assert data["count"] == 0
     # 草稿不入库：库存授权数量不变
     assert not DataPermission.objects.filter(name="__draft__").exists()
 
@@ -656,7 +702,7 @@ def test_trial_draft_menu_scoped_only_in_matching_context(api_client, normal_use
     normal_user.rules.add(make_user_self_scope())
     api_client.force_authenticate(user=normal_user)
     draft = {
-        "rules": [{"table": "demo.book", "field": "isbn", "type": "value.all", "value": "*", "match": "all"}],
+        "rules": [{"table": "demo.book", "field": "isbn", "type": "value.text", "value": "own-1", "match": "exact"}],
         "menu": str(menu.pk),
     }
     response = api_client.post(trial_url(normal_user), {"model": "demo.book", "draft": draft}, format="json")
@@ -757,18 +803,19 @@ def test_trial_draft_menu_list_matches_any_context(api_client, normal_user, role
     normal_user.rules.add(make_user_self_scope())
     api_client.force_authenticate(user=normal_user)
     draft = {
-        "rules": [{"table": "demo.book", "field": "isbn", "type": "value.all", "value": "*", "match": "all"}],
+        "rules": [{"table": "demo.book", "field": "isbn", "type": "value.text", "value": "own-1", "match": "exact"}],
         "menu": [str(menu_a.pk), str(menu_b.pk)],
     }
-    # 上下文 = 绑定菜单之一 → 草稿参与，「全部数据」放行
+    # 上下文 = 绑定菜单之一 → 草稿参与（条件收窄口径）；调用者对 demo.book
+    # 无存量授权，收窄语义下 count=0（草稿只收窄、不凭空创建可见性）
     response = api_client.post(
         trial_url(normal_user), {"model": "demo.book", "menu": str(menu_a.pk), "draft": draft}, format="json"
     )
     assert response.status_code == 200, response.data
     data = response.data["data"]
     assert data["draft_applied"] is True
-    assert data["count"] == 2
-    assert any(item["source"] == "draft" and item["kind"] == "all" for item in data["grants"])
+    assert data["count"] == 0
+    assert any(item["source"] == "draft" for item in data["grants"])
     # 换一个未绑定的可见菜单 → 草稿不参与
     menu_c = menu_factory(name="DemoBookPageC", path="/demo/book/third", menu_type=1)
     role.menu.add(menu_c)

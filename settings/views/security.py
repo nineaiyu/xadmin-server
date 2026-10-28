@@ -184,9 +184,8 @@ class SecurityCaptchaRiskViewSet(BaseSettingViewSet):
         request=CaptchaRuleUpdateSerializer,
         responses={200: OpenApiResponse(response=CaptchaRuleSerializer(many=True))},
     )
-    # PUT 没有独立权限点：运行时由 _shared_method_menu_pk 回退到同 handler 的 GET
-    # 权限码（rules:SecurityCaptchaRisk，语义即读写）。权限点生成器忽略 PUT，若
-    # 后续把本 action 拆成独立方法，必须为写方法单独登记权限点。
+    # PUT 有独立权限点 updateRules:SecurityCaptchaRisk（种子与 grants 同步登记）：
+    # 多方法 action 不再回退兄弟方法权限码（fail-closed），写方法必须显式授权。
     @action(detail=False, methods=["get", "put"], url_path="rules")  # type: ignore[untyped-decorator]
     def rules(self, request: Any) -> Any:
         """风险规则列表与更新"""

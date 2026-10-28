@@ -225,10 +225,28 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         )
 
     def get_form_schema(self, obj: Any) -> list[Any]:
-        """表单字段快照：列表不返回（字段已裁剪，前端详情用 retrieve 渲染）。"""
+        """表单字段快照：按实例钉住的流程版本快照回显，改版后历史单不受影响。
+
+        ``form_schema`` 存在 ``ApprovalFlowDef`` 单行上且改版即覆盖，直接读活定义会让
+        历史实例的字段 label/枚举随最新定义漂移（节点已按 ``flow_version`` 钉住，
+        表单定义必须同源）；版本快照缺失（历史脏数据 version 为空 / 快照行不存在）
+        回退活定义，与钉版本改造前行为一致。列表不返回（字段已裁剪，详情用 retrieve 渲染）。
+        """
         if getattr(self.context.get("view"), "action", None) == "list":
             return []
-        return list(getattr(obj.flow, "form_schema", None) or []) if obj.flow_id else []
+        if not obj.flow_id:
+            return []
+        if obj.flow_version:
+            from approval.models.approval_flow_def import ApprovalFlowVersion
+
+            snapshot = (
+                ApprovalFlowVersion.objects.filter(flow_id=obj.flow_id, version=obj.flow_version)
+                .values_list("snapshot", flat=True)
+                .first()
+            )
+            if snapshot is not None:
+                return list(snapshot.get("form_schema") or [])
+        return list(getattr(obj.flow, "form_schema", None) or [])
 
     def get_related_object(self, obj: Any) -> Any:
         """关联业务对象当前状态（白名单渲染器）：仅详情返回，列表零业务表查询。"""

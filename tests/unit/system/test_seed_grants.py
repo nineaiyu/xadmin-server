@@ -41,7 +41,10 @@ pytestmark = pytest.mark.django_db
 #  2026-10 开放平台设置页：admin 补页面 + SCIM/第三方登录 8 个权限点，268 → 279）
 #  2026-10 设置页归类：admin 补「通知渠道」「账号安全」两个页面，290 → 292；
 #  IM / Webhook 通知渠道补写权限点（partialUpdate/create），297 → 301）
-EXPECTED_ROLE_MENUS = {"admin": 301, "test": 87, "default": 33, "demo": 67}
+#  2026-10 读写共码收口：admin 补验证码风险规则 PUT 独立码 updateRules，301 → 302
+#  2026-10 种子授权补全（G10/SEED-P1-01）：admin 补通讯录/我的管辖/标签/数据字典/模块管理
+#  5 页与对应权限点 + 部门管理员任命/我的管辖视角动作，302 → 338
+EXPECTED_ROLE_MENUS = {"admin": 338, "test": 87, "default": 33, "demo": 67}
 
 
 def _plan_grants():
@@ -258,6 +261,42 @@ class TestEndToEnd:
             for role in UserRole.objects.filter(code__in=EXPECTED_ROLE_MENUS, deleted_at__isnull=True)
         }
         assert actual == EXPECTED_ROLE_MENUS
+
+    def test_seed_end_fills_directory_field_whitelist(self, seed_creator_user):
+        """端到端：通讯录授权后，种子收尾必须补齐绑定模型的字段白名单（G10）。
+
+        字段权限 fail-closed：授权 list:SystemDirectory 而白名单未覆盖绑定模型时，
+        非超管访问通讯录得到每行空对象。静态种子不逐条列举该白名单，由
+        load_init_json 收尾的 fill_field_permissions 按缺口补齐——本用例钉住
+        「授权 → 白名单就绪」的链路不回退。
+        """
+
+        from django.core.management import call_command
+
+        from identity.models import UserRole
+        from system.models import FieldPermission, Menu, ModelLabelField
+
+        call_command("load_init_json", verbosity=0)
+
+        admin = UserRole.objects.get(code="admin", deleted_at__isnull=True)
+        directory_menu = Menu.objects.get(name="list:SystemDirectory", deleted_at__isnull=True)
+        assert admin.menu.filter(pk=directory_menu.pk).exists()
+        bound_models = {row for row in directory_menu.model.values_list("name", flat=True)}
+        assert bound_models, "通讯录权限点必须绑定模型（字段白名单取值面）"
+        whitelist = FieldPermission.objects.get(role=admin, menu=directory_menu)
+        covered_pks = set(whitelist.field.values_list("pk", flat=True))
+        roots = ModelLabelField.objects.filter(
+            name__in=bound_models, parent__isnull=True, field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        assert roots.count() == len(bound_models), "绑定模型的字段树节点必须齐备"
+        for root in roots:
+            child_pks = set(
+                ModelLabelField.objects.filter(parent=root, field_type=ModelLabelField.FieldChoices.ROLE).values_list(
+                    "pk", flat=True
+                )
+            )
+            assert child_pks, f"{root.name} 字段树无孩子节点"
+            assert child_pks <= covered_pks, f"{root.name} 的字段白名单有缺口（通讯录将渲染空行）"
 
     def test_reseeding_keeps_runtime_granted_menus(self, seed_creator_user):
         """存量守护：重灌种子不得清零运行期授予的菜单。

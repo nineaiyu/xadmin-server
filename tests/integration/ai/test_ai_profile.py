@@ -244,7 +244,10 @@ class TestTestAction:
         row = AiProfile.objects.get(name="主档案")
         response = auth_client.post(f"{PROFILES_URL}/{row.pk}/test")
         assert response.status_code == 200, response.data
-        assert "provider ok" in response.json()["detail"]
+        # 外呼已下沉 celery：eager 环境把结论内联在 data（顶层 detail 固定为「已提交」）
+        outcome = response.json()["data"]
+        assert outcome["ok"] is True
+        assert "provider ok" in outcome["detail"]
         request_body = stub_llm[0]["json"]
         assert request_body["temperature"] == 0.5
         assert request_body["stop"] == ["观察", "结束"]

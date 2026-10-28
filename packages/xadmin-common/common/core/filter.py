@@ -4,6 +4,7 @@
 # filename : filter
 # author : ly_13
 # date : 6/2/2023
+import uuid
 from types import SimpleNamespace
 from typing import Any
 
@@ -14,6 +15,7 @@ from django.db.models import (
 )
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
+from django_filters.constants import EMPTY_VALUES
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.exceptions import ValidationError as RestValidationError
 from rest_framework.filters import BaseFilterBackend
@@ -238,6 +240,23 @@ class BaseDataPermissionFilter(BaseFilterBackend):
         queryset = get_filter_queryset(queryset, request.user)
         # 应用行级授权：AND 叠加在数据权限之后（超管 owner 同样生效）
         return apply_grant_row_scope(request, queryset)
+
+
+class UUIDPkFilter(filters.CharFilter):
+    """UUID 主键型查询参数：非法值返回 400（不是 500）。
+
+    ``CharFilter`` 把原始串直接交给 ORM，``UUIDField.to_python`` 会在查询集求值时
+    抛 ValidationError → 500。查询参数错误属于客户端问题，在过滤阶段就拒绝。
+    """
+
+    def filter(self, queryset: Any, value: Any) -> Any:
+        if value in EMPTY_VALUES:
+            return queryset
+        try:
+            uuid.UUID(str(value))
+        except (AttributeError, TypeError, ValueError):
+            raise RestValidationError({self.field_name: _("Invalid primary key")}) from None
+        return super().filter(queryset, value)
 
 
 class BaseFilterSet(filters.FilterSet):

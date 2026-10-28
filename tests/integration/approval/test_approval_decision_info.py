@@ -68,6 +68,16 @@ class TestTargetSnapshot:
         assert changes["name"]["new"] == "新角色名"
         assert changes["name"]["label"]  # label 可读（序列化器 label 或字段名兜底）
 
+    def test_sensitive_value_hashed_in_snapshot(self):
+        """密码/令牌类字段在快照里只留不可逆哈希（详情不随附明文）。"""
+        from approval.services.approval.snapshot import _iter_changes
+
+        user = UserInfo.objects.create(username="snap_sensitive_u1", nickname="快照用户")
+        request = types.SimpleNamespace(data={"password": "Plain@123456"})
+        changes = {item["field"]: item for item in _iter_changes(user, request)}
+        assert changes["password"]["new"].startswith("sha256:")
+        assert "Plain@123456" not in changes["password"]["new"]
+
     def test_snapshot_missing_for_unreachable_object(self):
         from approval.services.approval.snapshot import build_target_snapshot
         from identity.views.admin.role import RoleViewSet

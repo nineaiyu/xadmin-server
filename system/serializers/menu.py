@@ -26,6 +26,20 @@ class MenuMetaSerializer(BaseModelSerializer):
 
     pk = serializers.UUIDField(source="id", read_only=True)
 
+    def validate_frame_url(self, value: Any) -> str:
+        """内嵌页只接受同源相对路径（C-31）。
+
+        绝对地址（`http(s)://`、`//host`）以及 `javascript:` / `data:` 都能把外部页面
+        塞进可信外壳——用户在站内「正常页面」里输入凭据、或借壳触发站内操作。
+        存量数据都是 `/api-docs/swagger/` 这类同源路径，收窄不会影响既有配置。
+        """
+        url = (value or "").strip()
+        if not url:
+            return ""
+        if not url.startswith("/") or url.startswith("//"):
+            raise serializers.ValidationError(_("Iframe URL must be a same-origin path starting with /"))
+        return url
+
 
 class MenuSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
     meta = MenuMetaSerializer(label=_("Menu meta"))

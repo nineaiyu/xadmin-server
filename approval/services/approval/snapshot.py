@@ -17,7 +17,7 @@ from typing import Any
 
 from common.utils import get_logger
 
-from .payload import get_request_object_pk
+from .payload import desensitize_params, get_request_object_pk
 
 logger = get_logger(__name__)
 
@@ -54,6 +54,15 @@ def _scalar(value: Any) -> str:
     return text[:MAX_SNAPSHOT_VALUE]
 
 
+def _mask_value(field: str, value: Any) -> str:
+    """字段值脱敏后转可读串：敏感字段只留不可逆哈希。
+
+    快照是给审批人看的「事实对照」，不需要原值；密码 / 令牌 / 密钥原样进
+    ``target_snapshot.changes`` 会随审批详情下发（与 ``params`` 的脱敏口径不一致）。
+    """
+    return _scalar(desensitize_params({field: value}).get(field))
+
+
 def _iter_changes(obj: Any, request: Any) -> Any:
     """遍历请求体声明的字段：返回 [(field, old, new)]（仅模型实际字段）。"""
     data = getattr(request, "data", None)
@@ -71,8 +80,8 @@ def _iter_changes(obj: Any, request: Any) -> Any:
         if model_field.many_to_many:
             old_value, new_value = MULTI_VALUE_PLACEHOLDER, MULTI_VALUE_PLACEHOLDER
         else:
-            old_value = _scalar(getattr(obj, str(field), None))
-            new_value = _scalar(data.get(field))
+            old_value = _mask_value(str(field), getattr(obj, str(field), None))
+            new_value = _mask_value(str(field), data.get(field))
         if old_value == new_value:
             continue
         changes.append({"field": str(field), "old": old_value, "new": new_value})

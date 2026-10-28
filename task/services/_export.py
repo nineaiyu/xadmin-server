@@ -44,29 +44,61 @@ def mime_type_for(file_format: Any) -> str:
     return EXPORT_MIME_TYPES.get(str(file_format or "").lower(), "application/octet-stream")
 
 
-def persist_export_artifact(record: Any, filename: str, content: bytes, user: Any = None) -> Any:
+def persist_export_artifact(record: Any, filename: str, content: Any, user: Any = None) -> Any:
     """导出产物落 UploadFile(is_tmp=True) 并挂接到下载中心记录。
 
-    渲染完成的字节流统一经此落盘（文件存储 + mime 按格式注册表回写），
-    返回 UploadFile 实例并写入 ``record.file``——记录行的落库（update_fields
-    取舍）仍归各编排方，避免同一记录的两条链路对字段时序产生分歧。
+    产物形态有两种：同步渲染留下的 ``bytes``，与流式导出产生的**文件对象**
+    （``export_data`` 现在是 FileResponse，流式内容落地后以文件句柄传入）。
+    两种情况都走同一套落盘与 mime 回写，调用方不必关心形态。
     """
+    import os
+
     from django.core.files.base import ContentFile
+    from django.core.files.base import File as DjangoFile
 
     from file.services import UploadFile
 
+    if isinstance(content, (bytes, bytearray)):
+        filesize = len(content)
+        payload: Any = ContentFile(bytes(content))
+    else:
+        # 文件对象：尺寸按内容长度计（不依赖 .name，匿名临时文件没有可用路径）
+        content.seek(0, os.SEEK_END)
+        filesize = content.tell()
+        content.seek(0)
+        payload = DjangoFile(content, name=filename)
+
     upload = UploadFile(
         filename=filename,
-        filesize=len(content),
+        filesize=filesize,
         mime_type=mime_type_for(record.file_format),
         is_tmp=True,
         is_upload=False,
         creator=user,
     )
-    upload.filepath.save(filename, ContentFile(content), save=False)
+    upload.filepath.save(filename, payload, save=False)
     upload.save()
     record.file = upload
     return upload
+
+
+def _drain_streaming_response(response: Any) -> Any:
+    """把流式导出的分块内容落到匿名临时文件（``TemporaryFile``：无目录项、自动回收）。
+
+    直接 ``b"".join(streaming_content)`` 会把整份产物读回内存，等于把流式白做了；
+    这里边收边写盘，返回可直接交给 ``UploadFile`` 的文件对象。
+    """
+    import tempfile
+
+    handle = tempfile.TemporaryFile()
+    try:
+        for chunk in response.streaming_content:
+            handle.write(chunk)
+    except Exception:
+        handle.close()
+        raise
+    handle.seek(0)
+    return handle
 
 
 def build_export_request(record: Any, query_params: Any, user: Any) -> Any:
@@ -96,14 +128,41 @@ def _save_progress(record: Any, percent: Any, stage: Any = "") -> None:
     record.progress = max(0, min(100, int(percent)))
 
 
+def _notify_export_result(record: Any, user: Any, state: Any, start_time: Any) -> None:
+    """导出终态站内信（成功/失败/取消同一外壳）：失败只记日志，不影响任务结论。"""
+    from common.notifications import ExportDataMessage
+
+    try:
+        ExportDataMessage(
+            user,
+            {
+                "task_name": record.name,
+                "state": state,
+                "status": _("Operation successful") if state else _("Operation failed"),
+                "tasks": [
+                    {
+                        "task_id": str(record.pk),
+                        "start_time": start_time,
+                        "end_time": local_now_display(),
+                        "result": record.error or _("Exported {} rows").format(record.rows),
+                    }
+                ],
+            },
+        ).publish()
+    except Exception:
+        logger.warning("Send export data message failed", exc_info=True)
+
+
 def run_async_export(record_id: Any, view_path: Any, query_params: Any, user_pk: Any) -> Any:
     """异步执行数据导出：重放 export_data 视图，产物落 UploadFile 供下载中心取用。
 
     记录状态在任务内推进（PENDING → RUNNING → SUCCESS/FAILURE）；同 pk 的
     TaskExecution 由 after_task_publish/prerun/postrun 信号自动记账，
     因此执行历史页与增量日志零成本复用。
+
+    终态守卫：记录已是 SUCCESS/FAILURE/REVOKED 时直接返回（幂等），重复投递
+    不会重复渲染、不会覆盖已有产物。主键即 task_id，同一任务在库层面只有一行。
     """
-    from common.notifications import ExportDataMessage
     from identity.models import UserInfo
     from task.models.export import ExportRecord
     from task.models.task import TaskExecution
@@ -112,6 +171,9 @@ def run_async_export(record_id: Any, view_path: Any, query_params: Any, user_pk:
     if record is None:
         logger.warning("Export record not found: %s", record_id)
         return 0
+    if record.status in ExportRecord.TERMINAL_STATUSES:
+        logger.info("async export skipped (record already %s): %s", record.status, record_id)
+        return record.rows or 0
     # 真实投递由 after_task_publish 自动记账；同步执行（apply/EAGER）不发该信号，此处补齐，
     # 保证执行历史页与增量日志在两种环境下都可用
     TaskExecution.objects.get_or_create(
@@ -138,20 +200,27 @@ def run_async_export(record_id: Any, view_path: Any, query_params: Any, user_pk:
         _save_progress(record, 30, stage=_("Counting rows"))
 
         response = view_cls.as_view({"get": "export_data"})(request)
-        response.render()
         if response.status_code != 200:
             raise ValueError(f"export view returned status {response.status_code}")
-        content = response.content
+        # 同步导出走流式文件响应（FileResponse）：把流落到匿名临时文件，避免整包进内存
+        content: Any
+        if hasattr(response, "streaming_content"):
+            content = _drain_streaming_response(response)
+        else:
+            response.render()
+            content = response.content
         _save_progress(record, 80, stage=_("Rendering content"))
 
         filename = f"{record.name}.{record.file_format}"
         persist_export_artifact(record, filename, content, user=user)
+        if hasattr(content, "close"):
+            content.close()
         record.rows = min(total, getattr(settings, "EXPORT_MAX_LIMIT", total))
         record.status = ExportRecord.Status.SUCCESS
         record.progress = 100
         record.error = None
         record.save(update_fields=["file", "rows", "status", "progress", "error", "updated_time"])
-        logger.info("async export done: %s bytes, rows: %s", len(content), record.rows)
+        logger.info("async export done: rows=%s, file=%s", record.rows, filename)
     except TaskCancelled as exc:
         # 协作式取消：落 REVOKED 终态并同步执行历史行；不 re-raise（不是故障）
         state = False
@@ -170,23 +239,5 @@ def run_async_export(record_id: Any, view_path: Any, query_params: Any, user_pk:
         raise
     finally:
         if user:
-            try:
-                ExportDataMessage(
-                    user,
-                    {
-                        "task_name": record.name,
-                        "state": state,
-                        "status": _("Operation successful") if state else _("Operation failed"),
-                        "tasks": [
-                            {
-                                "task_id": str(record.pk),
-                                "start_time": start_time,
-                                "end_time": local_now_display(),
-                                "result": record.error or _("Exported {} rows").format(record.rows),
-                            }
-                        ],
-                    },
-                ).publish()
-            except Exception:
-                logger.warning("Send export data message failed", exc_info=True)
+            _notify_export_result(record, user, state, start_time)
     return record.rows

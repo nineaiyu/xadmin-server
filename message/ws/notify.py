@@ -89,26 +89,24 @@ class MessageNotify(AsyncJsonWebsocket):
 
     async def connect(self) -> None:
         self.user = self.scope["user"]
-        if not self.user:
-            logger.error(f"user not exists. so close. {self.scope}")
-            await asyncio.sleep(3)
-            # https://developer.mozilla.org/zh-CN/docs/Web/API/CloseEvent#status_codes
-            await self.close(4401)
-        else:
-            logger.info(f"{self.user} connect success")
-            group_name = self.scope["url_route"]["kwargs"].get("group_name")
-            username = self.scope["url_route"]["kwargs"].get("username")
-            if username and group_name and username != self.user.username:  # 加入聊天室房间
-                self.group_name = "message_system_default_0"
-            else:  # 加入个人消息推送组
-                self.group_name = get_user_layer_group_name(self.user.pk)
-                await websocket_login_success(self.user, self.channel_name)
-                self.ws_session_registered = True
+        if not self.is_authenticated():
+            logger.error("message connect rejected: not authenticated")
+            await self.reject(4401)
+            return
+        logger.info(f"{self.user} connect success")
+        group_name = self.scope["url_route"]["kwargs"].get("group_name")
+        username = self.scope["url_route"]["kwargs"].get("username")
+        if username and group_name and username != self.user.username:  # 加入聊天室房间
+            self.group_name = "message_system_default_0"
+        else:  # 加入个人消息推送组
+            self.group_name = get_user_layer_group_name(self.user.pk)
+            await websocket_login_success(self.user, self.channel_name)
+            self.ws_session_registered = True
 
-            self.disconnected = False
-            # Join room group
-            await self.channel_layer.group_add(self.group_name, self.channel_name)
-            await self.accept()
+        self.disconnected = False
+        # Join room group
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
 
     async def disconnect(self, close_code: Any) -> None:
         self.disconnected = True

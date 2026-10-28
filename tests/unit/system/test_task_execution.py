@@ -165,6 +165,15 @@ def test_run_action_rejects_unregistered_task():
     assert TaskExecution.objects.filter(periodic_task=instance).exists() is False
 
 
+def test_execution_serializer_drops_args_kwargs(superuser):
+    """执行历史不下发 args/kwargs（TASK-P1-01）：任务参数属字段面泄漏。"""
+    execution = TaskExecution.objects.create(
+        name="demo_task", args=["secret-export-params"], kwargs={"query": "条件"}, creator=superuser
+    )
+    data = TaskExecutionSerializer(execution).data
+    assert "args" not in data and "kwargs" not in data
+
+
 def test_log_action_reads_file(monkeypatch, tmp_path):
     execution = TaskExecution.objects.create(name="x.tasks.log")
     log_file = tmp_path / f"{execution.pk}.log"

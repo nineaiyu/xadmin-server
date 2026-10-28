@@ -110,3 +110,47 @@ class TestRoleSerializer:
         assert not FieldPermission.objects.filter(role=role, menu=menu1).exists()
         fp = FieldPermission.objects.get(role=role, menu=menu2)
         assert {children[1].pk} == set(fp.field.values_list("pk", flat=True))
+
+    def test_update_with_empty_fields_clears_grants(self, role, menu_factory, field_tree):
+        """显式提交 fields={} 必须清空字段白名单（前端撤销授权的唯一通道）。"""
+        menu = menu_factory("menu", menu_type=Menu.MenuChoices.MENU)
+        _, children = field_tree()
+        fp = FieldPermission.objects.create(role=role, menu=menu)
+        fp.field.add(children[0])
+
+        serializer = RoleSerializer(instance=role, data={"fields": {}}, partial=True)
+        assert serializer.is_valid(), serializer.errors
+        serializer.save()
+
+        assert not FieldPermission.objects.filter(role=role).exists()
+
+    def test_update_without_fields_key_keeps_grants(self, role, menu_factory, field_tree):
+        """未提交 fields 键（只改名称等）保留既有字段授权，不因空默认值误清空。"""
+        menu = menu_factory("menu", menu_type=Menu.MenuChoices.MENU)
+        _, children = field_tree()
+        fp = FieldPermission.objects.create(role=role, menu=menu)
+        fp.field.add(children[0])
+
+        serializer = RoleSerializer(instance=role, data={"name": "改名不碰字段"}, partial=True)
+        assert serializer.is_valid(), serializer.errors
+        serializer.save()
+
+        kept = FieldPermission.objects.get(role=role, menu=menu)
+        assert set(kept.field.values_list("pk", flat=True)) == {children[0].pk}
+
+    def test_update_with_unchanged_fields_keeps_rows(self, role, menu_factory, field_tree):
+        """提交与库内一致的字段字典不重建关系行（避免每次保存都制造删除/新增）。"""
+        menu = menu_factory("menu", menu_type=Menu.MenuChoices.MENU)
+        _, children = field_tree()
+        fp = FieldPermission.objects.create(role=role, menu=menu)
+        fp.field.add(*children[:2])
+
+        serializer = RoleSerializer(
+            instance=role, data={"fields": {str(menu.pk): [children[1].pk, children[0].pk]}}, partial=True
+        )
+        assert serializer.is_valid(), serializer.errors
+        serializer.save()
+
+        kept = FieldPermission.objects.get(role=role, menu=menu)
+        assert kept.pk == fp.pk
+        assert set(kept.field.values_list("pk", flat=True)) == {children[0].pk, children[1].pk}

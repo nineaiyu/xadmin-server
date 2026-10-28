@@ -107,3 +107,30 @@ def ingest_upload_document_task(self: Any, document_pk: Any) -> Any:
         doc.chunk_count = 0
         doc.save(update_fields=["chunk_count", "ingest_status", "ingest_error", "synced_at"])
         return {"ok": False, "detail": str(exc)[:255]}
+
+
+@shared_task(verbose_name="Test AI profile connectivity")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+def test_ai_profile_task(profile_pk: Any) -> dict[str, Any]:
+    """档案连通性探测（后台执行）。
+
+    外呼供应商是秒级网络 IO，放在请求线程里会占住 daphne 工作线程（PERF-AI-01）；
+    下沉后请求只排队，前端凭 task_id 轮询 ``test-result`` 回读。失败不外抛：
+    以 ``{"ok": False, "detail": ...}`` 返回，避免把网络抖动记成任务失败（会触发告警）。
+    """
+    from ai.models import AiProfile
+    from ai.services.assistant.ai import profile_credentials
+    from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+
+    profile = AiProfile.objects.filter(pk=profile_pk).first()
+    if profile is None:
+        return {"ok": False, "detail": "profile not found"}
+    if not profile.is_configured:
+        return {"ok": False, "detail": "not configured"}
+    try:
+        reply = ChatCompletionsClient(profile_credentials(profile)).chat([{"role": "user", "content": "ping"}])
+    except AiSdkError as exc:
+        return {"ok": False, "detail": str(exc)[:255]}
+    except Exception as exc:  # noqa: BLE001 任务入口兜底：任何异常都归一为可读结论
+        logger.warning("AI profile test failed. profile:%s", profile_pk, exc_info=True)
+        return {"ok": False, "detail": str(exc)[:255]}
+    return {"ok": True, "detail": reply[:120]}

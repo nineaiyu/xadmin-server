@@ -17,7 +17,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from common.core.approval import ApprovalRequired
-from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend
+from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend, UUIDPkFilter
 from common.core.modelset import (
     BaseModelSet,
     BatchPartialUpdateAction,
@@ -71,7 +71,8 @@ class UserFilter(TagFilterMixin, BaseFilterSet):
     nickname = filters.CharFilter(field_name="nickname", lookup_expr="icontains")
     phone = filters.CharFilter(field_name="phone", lookup_expr="icontains")
     # 联动：角色列表「用户数」可点击跳转到按角色筛选的用户列表（传角色 pk）
-    role = filters.CharFilter(field_name="roles", lookup_expr="pk")
+    # 非法 UUID 返回 400（CharFilter 直传 ORM 会在求值时抛 500）
+    role = UUIDPkFilter(field_name="roles", lookup_expr="pk")
     # 按岗位（多对多）筛选：多选主键，命中所选任一岗位即返回（空岗位用户不误筛）
     posts = filters.ModelMultipleChoiceFilter(field_name="posts", queryset=Post.objects.all())
 

@@ -21,6 +21,7 @@
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 # 后缀登记表（存 url_path，不含斜杠；运行期编译为 $ 锚定正则）
@@ -214,3 +215,33 @@ def shared_list_action(**action_kwargs: Any) -> Any:
 def parent_fallback_action(**action_kwargs: Any) -> Any:
     """``@parent_fallback_action(...)``：声明即登记为「自身权限点优先、父级兜底」。"""
     return _registering_action(register_parent_fallback, **action_kwargs)
+
+
+# ---- 读写同权（多方法单权限码）声明消费 ----
+# 运行时兄弟方法回退只对本表编译出的路由生效；未声明的多方法 action 一律 fail-closed
+# （SEC-P0-01：读权限码不得经回退提权为写权限码）。声明源即各 app declarations.py 的
+# ``shared_method_paths``（与 permission_sync 同一数据面，进程内静态）。
+@lru_cache(maxsize=1)
+def _rw_shared_patterns() -> tuple[tuple[re.Pattern[str], frozenset[str]], ...]:
+    """编译各 app 声明的「读写同权」路由表（``shared_method_paths``，进程内静态）。"""
+    from common.core.declarations import discover_app_declarations, merge_app_declarations
+
+    try:
+        merged = merge_app_declarations(discover_app_declarations())
+    except Exception:  # noqa: BLE001 声明不可用时一律不回退（读码不得提权为写码）
+        return ()
+    patterns: list[tuple[re.Pattern[str], frozenset[str]]] = []
+    for route, methods in merged.shared_method_paths.items():
+        try:
+            patterns.append((re.compile(str(route)), frozenset(str(m).upper() for m in methods)))
+        except re.error:
+            continue
+    return tuple(patterns)
+
+
+def rw_shared_declared(url: str, method: str) -> bool:
+    """该 URL+方法是否属于 app 声明的「读写同权」多方法端点。"""
+    stripped = str(url).lstrip("/")
+    return any(
+        pattern.fullmatch(stripped) is not None and method in methods for pattern, methods in _rw_shared_patterns()
+    )

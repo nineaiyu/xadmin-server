@@ -102,11 +102,25 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
+    @staticmethod
+    def _normalize_fields(fields: Any) -> Any:
+        return {str(menu): sorted(str(pk) for pk in field_pks or []) for menu, field_pks in fields.items()}
+
+    @staticmethod
+    def _current_fields(instance: Any) -> Any:
+        data = {}
+        for fp in FieldPermission.objects.filter(role=instance).prefetch_related("field"):
+            data[str(fp.menu_id)] = sorted(str(item.pk) for item in fp.field.all())
+        return data
+
     def update(self, instance: Any, validated_data: Any) -> Any:
-        fields = validated_data.pop("fields", None)
+        # 空字典是显式「清空字段授权」，与「未提交 fields 键」语义不同：
+        # 未提交键保留原授权，提交 {} 删除全部 FieldPermission（前端撤销白名单的唯一通道）
+        missing = object()
+        fields = validated_data.pop("fields", missing)
         with transaction.atomic():
             instance = super().update(instance, validated_data)
-            if fields:
+            if fields is not missing and self._normalize_fields(fields) != self._current_fields(instance):
                 FieldPermission.objects.filter(role=instance).delete()
                 self.save_fields(fields, instance)
         return instance

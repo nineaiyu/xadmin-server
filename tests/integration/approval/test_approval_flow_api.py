@@ -583,6 +583,12 @@ class TestApprovalInstanceApi:
         versions = api_client.get(f"{FLOWS_URL}/{flow_pk}/versions").data["data"]
         assert versions[0]["version"] == 3
 
+        # query 兜底（老客户端兼容层）：载荷以 body 为准，version/remark 也可走 query
+        rolled_by_query = api_client.post(f"{FLOWS_URL}/{flow_pk}/rollback?version=2&remark=按query回滚")
+        assert rolled_by_query.data["code"] == 1000, rolled_by_query.data
+        detail = api_client.get(f"{FLOWS_URL}/{flow_pk}").data["data"]
+        assert len(detail["nodes"]) == 2
+
         # 在途单仍钉住 v2：按 v2 的两节点定义推进（回滚只影响之后的单）
         instance = ApprovalInstance.objects.get(pk=instance_pk)
         assert instance.flow_version == 2

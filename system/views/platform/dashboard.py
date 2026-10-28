@@ -7,7 +7,7 @@
 import datetime
 from typing import Any
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import TruncDay
 from django.utils import timezone
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -25,6 +25,9 @@ from identity.services import UserInfo
 # 全量计数的独立缓存窗口（秒）：登录日志等大表 COUNT(*) 代价随存量线性上升，
 # 而卡片数值口径（累计总数）变化缓慢，趋势 results/percent 仍随响应缓存 60 秒刷新
 TOTAL_COUNT_CACHE_TIMEOUT = 600
+
+# 活跃用户卡片的四个统计窗口（天）：今日 / 近 3 天 / 近 7 天 / 近 30 天
+ACTIVE_BUCKET_DAYS = (1, 3, 7, 30)
 
 
 def scope_limited(queryset: Any) -> bool:
@@ -94,6 +97,34 @@ def trend_info(queryset: Any, limit_day: Any = 30, total_count: Any = True) -> A
     """
     results, percent, window_queryset = trend_points(queryset, limit_day)
     return results, percent, queryset.count() if total_count else window_queryset.count()
+
+
+def active_user_buckets(queryset: Any, today: Any = None) -> list[list[Any]]:
+    """活跃用户矩阵 ``[[天数, 注册数, 活跃数], ...]``：单次聚合替代逐窗 COUNT。
+
+    四个窗口各含「注册数 / 活跃数」两列，逐窗两次 ``.count()`` 是 8 次全表扫描
+    （大用户表上每列都是独立 COUNT）。改为一次 ``aggregate`` 内带 filter 的
+    ``Count('pk', filter=Q(...))``：同表只扫一遍，行数口径不变（按主键计数，
+    不再落到 ``values('last_login')`` 的 distinct 语义）。
+    """
+    today = today or timezone.localtime(timezone.now())
+    windows = {
+        date: today
+        - datetime.timedelta(
+            days=date - 1,
+            hours=today.hour,
+            minutes=today.minute,
+            seconds=today.second,
+            microseconds=today.microsecond,
+        )
+        for date in ACTIVE_BUCKET_DAYS
+    }
+    aggregates: dict[str, Any] = {}
+    for date, x_day in windows.items():
+        aggregates[f"registered_{date}"] = Count("pk", filter=Q(date_joined__gte=x_day))
+        aggregates[f"active_{date}"] = Count("pk", filter=Q(last_login__gte=x_day))
+    row = queryset.aggregate(**aggregates)
+    return [[date, row[f"registered_{date}"], row[f"active_{date}"]] for date in ACTIVE_BUCKET_DAYS]
 
 
 def get_schema_response(has_count: Any = True) -> Any:
@@ -206,22 +237,6 @@ class DashboardViewSet(GenericViewSet):
     @cache_response(timeout=60, key_func="get_cache_key")
     def user_active(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-活跃用户"""
-        # 与 trend_info 保持一致：按本地时间切分自然日
-        today = timezone.localtime(timezone.now())
-        active_date_list = [1, 3, 7, 30]
-        results = []
         queryset = self.filter_queryset(self.get_queryset())
-        for date in active_date_list:
-            x_day = today - datetime.timedelta(
-                days=date - 1,
-                hours=today.hour,
-                minutes=today.minute,
-                seconds=today.second,
-                microseconds=today.microsecond,
-            )
-            x_day_register_user = queryset.filter(date_joined__gte=x_day).count()
-            # values('last_login').annotate(...).count() 统计的是不同 last_login 值的个数，
-            # 同一秒登录的多个用户会被合并成 1，导致活跃用户数被系统性低估
-            x_day_active_user = queryset.filter(last_login__gte=x_day).count()
-            results.append([date, x_day_register_user, x_day_active_user])
-        return ApiResponse(data=results, scope_limited=scope_limited(queryset))
+        # 与 trend_info 保持一致：按本地时间切分自然日；四个窗口合并为单次聚合
+        return ApiResponse(data=active_user_buckets(queryset), scope_limited=scope_limited(queryset))

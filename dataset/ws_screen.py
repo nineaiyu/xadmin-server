@@ -212,12 +212,12 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
 
     async def connect(self) -> None:
         self.user = self.scope["user"]
-        if not self.user:
-            await self.close(4401)
+        if not self.is_authenticated():
+            await self.reject(4401)
             return
         self.pk = self.scope["url_route"]["kwargs"]["pk"]
         if not await database_sync_to_async(can_view_screen)(self.user, self.pk):
-            await self.close(4403)
+            await self.reject(4403)
             return
         self.group_name = screen_group_name(self.pk)
         self.disconnected = False

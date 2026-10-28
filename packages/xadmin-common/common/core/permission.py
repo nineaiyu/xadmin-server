@@ -183,19 +183,25 @@ def get_menu_pk(permission_data: Any, url: Any) -> Any:
 
 
 def _shared_method_menu_pk(request: Any, view: Any, url: str) -> Any:
-    """单 action 绑定多方法时的权限点回退：按视图 action_map 找同 handler 的兄弟方法。
+    """单 action 绑定多方法时的权限点回退：仅限声明的「读写同权」端点。
 
     DRF 路由会把同一个 action 的多个方法绑定到同一个 handler（如聊天室的
-    ``members`` 同时服务 GET/POST），权限点生成器也只产出这一个权限码；但运行时
+    ``members`` 同时服务 GET/POST），权限点生成器也只产出这一个权限码；运行时
     按 ``(method, path)`` 取权限，种子只登记了其中一个方法时另一个方法必然
     fail-closed（表现为「能看不能改」）。这里只回退到**同 handler** 的兄弟方法，
     并要求权限点 path 与当前请求地址尾部同段（``/members$``）——不做前缀放宽，
     避免把列表级权限放大成详情级写权限。
+
+    回退必须以 app 声明（``declarations.py`` 的 ``shared_method_paths``）为前提：
+    未声明的多方法 action（如 grants / thresholds / rules 的 GET+PUT）一律
+    fail-closed——写方法必须持有自己的权限码，读权限码不得经回退提权为写权限。
     """
     action_map = getattr(view, "action_map", None) or {}
     method = (request.method or "").upper()
     handler = action_map.get(method.lower())
     if not handler:
+        return None
+    if not permission_meta.rw_shared_declared(url, method):
         return None
     tail = "/" + str(url).rstrip("/").rsplit("/", 1)[-1] + "$"
     for sibling_method, sibling_handler in action_map.items():

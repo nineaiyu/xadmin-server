@@ -201,22 +201,37 @@ class TestCreatorIsolation:
         assert DynamicFormSubmission.objects.filter(pk=submission.pk).exists()
 
     def test_creator_can_update_own(self, form, normal_user):
+        """创建者可编辑自己的草稿；已生效单（免审批 status=""）按终态只读收敛
+        （FORM-P1-02：提交后改写等于绕过已生效快照）。"""
         grant_form_menus(normal_user)
         client = client_for(normal_user)
         client.post(SUBMISSION_URL, {"form": str(form.pk), "data": {"name": "张三"}}, format="json")
         submission = DynamicFormSubmission.objects.get()
+        # 免审批表单 POST 即生效（status=""）：终态只读
         response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"name": "张三改"}}, format="json")
-        assert response.json()["code"] == 1000
+        assert response.json()["code"] == 1003, response.data
+        submission.refresh_from_db()
+        assert submission.data["name"] == "张三"
+        # 草稿态仍可编辑（编辑流保留在草稿/驳回态）
+        submission.status = DynamicFormSubmission.Status.DRAFT
+        submission.save(update_fields=["status"])
+        response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"name": "张三改"}}, format="json")
+        assert response.json()["code"] == 1000, response.data
         submission.refresh_from_db()
         assert submission.data["name"] == "张三改"
 
     def test_partial_update_merges_existing_data(self, form, normal_user):
-        """PATCH 局部更新：data 先与库内合并再整份校验，未提交的必填字段不误报。"""
+        """PATCH 局部更新：data 先与库内合并再整份校验，未提交的必填字段不误报。
+
+        以草稿态验证合并机制（已生效单终态只读，见 test_creator_can_update_own）。
+        """
         grant_form_menus(normal_user)
         client = client_for(normal_user)
-        # 缺 level/score 但 name 已满足必填 → 通过
+        # 缺 level/score 但 name 已满足必填 → 通过（草稿态，可继续 PATCH）
         client.post(SUBMISSION_URL, {"form": str(form.pk), "data": {"name": "张三", "level": "P5"}}, format="json")
         submission = DynamicFormSubmission.objects.get()
+        submission.status = DynamicFormSubmission.Status.DRAFT
+        submission.save(update_fields=["status"])
 
         response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"level": "P6"}}, format="json")
         assert response.json()["code"] == 1000, response.data

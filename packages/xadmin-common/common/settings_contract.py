@@ -211,7 +211,7 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
         "int",
         "同步导出最大行数（超过引导异步导出）",
         default=20000,
-        consumers=("drf/renders/base.py",),
+        consumers=("drf/renders/base.py", "core/modelset/import_export/streaming.py"),
     ),
     # ---------------------------------------------------------------
     # 五、缓存与令牌
@@ -404,6 +404,12 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
         "字段级审计 diff 白名单（模型 _meta.label；空 = 关闭 diff 记录）",
         default=[],
         consumers=("core/config/conf_security.py",),
+    ),
+    "WEBHOOK_ALLOW_LOOPBACK": KS(
+        "bool",
+        "出站请求是否放行环回地址（127.0.0.1 / ::1 / localhost；False = 环回与私网一并拒绝）",
+        default=False,
+        consumers=("utils/outbound.py",),
     ),
     # ---------------------------------------------------------------
     # 十二、本地化与协议

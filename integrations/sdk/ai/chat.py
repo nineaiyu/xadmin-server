@@ -37,16 +37,18 @@ def outbound_allowed_hosts(configured: Any = None) -> tuple[str, ...]:
 def outbound_pinned_post(url: str, kwargs: dict[str, Any], *, allowed_hosts: Any = None) -> Any:
     """生产路径出站 POST：守卫校验 + 固定解析连接（Webhook/MCP 同口径）。
 
-    私网目标默认拒绝（loopback 供本地联调，自建服务须登记白名单）；域名固定为
-    已校验 IP 连接，消除配置写入与发送之间的 DNS rebinding 窗口。
+    私网目标默认拒绝；环回目标跟随 ``DEBUG`` / ``WEBHOOK_ALLOW_LOOPBACK`` 口径
+    （与 Webhook 投递、开放平台回调、MCP 同源），生产环境不因 AI 档案配置放行
+    本机内部服务。自建服务须登记 ``OUTBOUND_ALLOWED_HOSTS`` 白名单。
+    域名固定为已校验 IP 连接，消除配置写入与发送之间的 DNS rebinding 窗口。
     """
-    from common.utils.outbound import pinned_request
+    from common.utils.outbound import loopback_allowed, pinned_request
 
     return pinned_request(
         "POST",
         url,
         allow_private=False,
-        allow_loopback=True,
+        allow_loopback=loopback_allowed(),
         allowed_hosts=outbound_allowed_hosts(allowed_hosts),
         **kwargs,
     )

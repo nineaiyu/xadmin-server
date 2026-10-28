@@ -37,20 +37,25 @@ class OnlyExportDataAction(ExportImportThrottleMixin, ListAction):
         """导出{cls}数据
 
         type=csv|xlsx，缺省 xlsx
+
+        走流式渲染（见 import_export/streaming.py）：逐行序列化 + 逐行落临时文件 +
+        文件响应，峰值内存不随导出行数增长；不再经 DRF 把全量列表与整本工作簿同时
+        驻留内存。旧渲染器仍服务导入模板（``template=import``，含下拉校验）。
         """
+        from common.core.modelset.import_export.streaming import stream_export_response
+
         file_format = request.query_params.get("type", "xlsx")
         self.format_kwarg = file_format
         request.no_cache = True  # 防止自定义缓存数据
+        # 保持渲染器声明（内容协商与 OpenAPI 仍按 xlsx 声明二进制响应）
         self.renderer_classes = [ExcelFileRenderer, CSVFileRenderer]
-        # 显式绑定渲染器：DRF 内容协商按 Accept 列表挑渲染器，浏览器/axios 默认
-        # `Accept: application/json` 会一路落到 renderers[0]（xlsx），**type=csv 被忽略**
-        # （历史缺陷：全站选 CSV 导出的文件实际是 xlsx）。这里按 type 直接指定，
-        # 并把 accepted_renderer 交给 finalize_response（非空即不再协商）。
         renderer = CSVFileRenderer() if file_format == "csv" else ExcelFileRenderer()
         request.accepted_renderer = renderer
         request.accepted_media_type = renderer.media_type
-        data = self.list(request, *args, **kwargs)
-        return data
+        if request.query_params.get("template", "export") != "export":
+            # 导入/更新模板保留旧链路：需要表头帮助行与 Excel 数据校验（write_only 不支持）
+            return self.list(request, *args, **kwargs)
+        return stream_export_response(self, request, file_format)
 
     @extend_schema(
         request=OpenApiRequest(build_object_type(properties={"type": build_basic_type(OpenApiTypes.STR)})),

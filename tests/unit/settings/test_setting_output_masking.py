@@ -16,6 +16,7 @@ from common.base.crypto import signer
 from common.core.auth.credentials import MASK
 from settings.models import Setting
 from settings.serializers.setting import SettingSerializer
+from tests.responses import read_text
 
 pytestmark = pytest.mark.django_db
 
@@ -43,7 +44,7 @@ def _row_by_name(resp, name):
 
 
 def _csv_rows(resp) -> list[list[str]]:
-    lines = resp.content.decode("utf-8-sig").strip().splitlines()
+    lines = read_text(resp).strip().splitlines()
     return [row for row in csv.reader(io.StringIO("\n".join(lines))) if row]
 
 

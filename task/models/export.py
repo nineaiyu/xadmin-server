@@ -7,6 +7,11 @@
   与增量日志（CELERY_LOG_DIR/<task_id>.log）零成本复用；
 - 任务内直接用 logger 写进度即可，前端复用 TaskLogDialog 消费。
 
+幂等性：``id`` 既是主键又是 task_id，**同一任务落两行在库层面不可能**；重复投递
+（broker 重投、手工重放）只会重跑同一个 pk，由 ``run_async_export`` 的终态守卫
+（``TERMINAL_STATUSES``）拦下，不再重复渲染与产物落盘。「任务中心 → 重跑」按语义
+是**新任务**（新 pk + 记录名带 ``-rerun`` 后缀），不属重复投递。
+
 产物落 UploadFile(is_tmp=True)，复用临时文件定时清理能力；记录本身由
 auto_clean_export_record_job 按 EXPORT_FILE_KEEP_DAYS（默认 7 天）清理。
 """
@@ -30,6 +35,9 @@ class ExportRecord(CeleryTaskRecordModel):
         FAILURE = "FAILURE", _("Failure")
         # 用户取消（任务中心）：与失败区分，便于运营判断「是坏了还是停了」
         REVOKED = "REVOKED", _("Cancelled")
+
+    # 终态集合：任务重投递 / 重放时的幂等守卫（见 task/services/_export.run_async_export）
+    TERMINAL_STATUSES = (Status.SUCCESS, Status.FAILURE, Status.REVOKED)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("File name"), max_length=255)

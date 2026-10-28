@@ -26,8 +26,15 @@ from common.core.models import DbAuditModel, DbUuidModel
 UPLOAD_PATH_PREFIX = "upload/"
 
 
-def upload_document_path(name: str) -> str:
-    """上传文档的稳定存储路径：同一名称重复上传落到同一 path（覆盖更新语义）。"""
+def upload_document_path(name: str, creator_pk: Any = None) -> str:
+    """上传文档的稳定存储路径：同一名称重复上传落到同一 path（覆盖更新语义）。
+
+    带 ``creator_pk`` 时路径按上传者命名空间隔离（``upload/{pk}/{name}.md``）——
+    不同用户同名文档并存互不覆盖（同名覆盖仅限本人文档）；不传 creator_pk
+    为 legacy 全局路径（``upload/{name}.md``，无归属上下文调用方的兼容口径）。
+    """
+    if creator_pk is not None:
+        return f"{UPLOAD_PATH_PREFIX}{creator_pk}/{name}.md"
     return f"{UPLOAD_PATH_PREFIX}{name}.md"
 
 

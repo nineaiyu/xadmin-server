@@ -39,3 +39,12 @@ async def test_private_target_blocked_for_stream():
         async for _event in client.chat_stream([{"role": "user", "content": "hi"}]):
             pass
     assert "outbound policy" in str(exc.value)
+
+
+async def test_loopback_blocked_when_policy_off(settings):
+    """异步流式与同步侧同一放行口径：策略关闭时环回目标发送前即拒绝。"""
+    settings.WEBHOOK_ALLOW_LOOPBACK = False
+    client = AsyncChatCompletionsClient(_credentials(base_url="http://127.0.0.1:11434/v1"))
+    with pytest.raises(AiSdkError) as exc:
+        await client.chat([{"role": "user", "content": "hi"}])
+    assert "outbound policy" in str(exc.value)

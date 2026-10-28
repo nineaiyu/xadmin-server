@@ -112,10 +112,136 @@ class TestPaginateExportBypass:
         view.request = self._request("/api/demo/book/export-data", {"type": "xlsx"})
         assert view.paginate_queryset(Book.objects.none()) is None
 
+    def test_export_data_default_format_bypasses_pagination(self, view):
+        """缺省导出（不传 type，服务端按 xlsx 渲染）同样必须全量，不得被分页截断。"""
+        view.action = "export_data"
+        view.request = self._request("/api/demo/book/export-data")
+        assert view.paginate_queryset(Book.objects.none()) is None
+
     def test_list_request_still_paginates(self, view):
         view.request = self._request("/api/demo/book")
         page = view.paginate_queryset(Book.objects.none())
         assert page is not None
+
+
+class TestRecycleBinGuard:
+    """回收站 purge/restore：影响面守卫复用 + pks 类型规范化 + 逐行失败不毒化整批。"""
+
+    @staticmethod
+    def _view(request):
+        view = BookViewSet()
+        view.action = "recycle_purge"
+        view.request = request
+        view.kwargs = {}
+        view.format_kwarg = None
+        return view
+
+    @staticmethod
+    def _delete_request(pks, user):
+        from rest_framework.parsers import JSONParser
+        from rest_framework.request import Request
+
+        factory = APIRequestFactory()
+        raw = factory.delete(
+            "/api/demo/book/recycle/purge",
+            {"pks": pks},
+            format="json",
+        )
+        request = Request(raw, parsers=[JSONParser()])
+        request.user = user
+        return request
+
+    @staticmethod
+    def _restore_request(pks, user):
+        from rest_framework.parsers import JSONParser
+        from rest_framework.request import Request
+
+        factory = APIRequestFactory()
+        raw = factory.patch("/api/demo/book/recycle/restore", {"pks": pks}, format="json")
+        request = Request(raw, parsers=[JSONParser()])
+        request.user = user
+        return request
+
+    @staticmethod
+    def _make_book(name, isbn, superuser):
+        from file.models import UploadFile
+
+        upload = UploadFile.objects.create(
+            filename="cover.png", filesize=1, mime_type="image/png", md5sum=name, creator=superuser
+        )
+        return Book.objects.create(name=name, isbn=isbn, author="a", admin=superuser, admin2=superuser, file=upload)
+
+    def test_pks_shape_is_parsed_strictly(self):
+        """入参三态：非法一律报错（绝不归一为空列表——purge 会当成「清扫全部超期」）。"""
+        import types
+
+        from common.core.modelset.recycle import _parse_pks
+
+        def parse(body, required=True):
+            return _parse_pks(types.SimpleNamespace(data=body), Book, required=required)
+
+        pk_field = Book._meta.pk
+        valid_pk = 1 if "AutoField" in pk_field.get_internal_type() else "00000000-0000-0000-0000-000000000001"
+        assert parse({"pks": [valid_pk]})[0] == [pk_field.to_python(valid_pk)]
+        # 非对象体 / 非数组 / 空数组 / 非法主键 / 空值：全部拒绝
+        for body in ("raw", {"a": 1}, {"pks": "pk1"}, {"pks": []}, {"pks": ["not-a-uuid"]}, {"pks": [None]}):
+            pks, error = parse(body)
+            assert pks is None and error is not None, body
+        # 未提供 pks：required=False 视为「保留期清扫」语义
+        assert parse({}, required=False) == (None, None)
+
+    def test_restore_rejects_non_list_pks(self, db):
+        from common.core.response import ApiResponse
+
+        request = self._restore_request({"a": 1}, type("U", (), {"pk": 1, "username": "t"})())
+        view = self._view(request)
+        view.action = "recycle_restore"
+        resp = view.recycle_restore(request)
+        assert isinstance(resp, ApiResponse)
+        assert resp.data["code"] == 1004
+
+    def test_purge_requires_impact_confirmation_for_guarded_models(self, superuser, monkeypatch):
+        import pytest
+        from rest_framework.exceptions import ValidationError
+
+        from audit.utils import impact as impact_mod
+
+        book = self._make_book("守卫书", "g1", superuser)
+        book.delete()
+        monkeypatch.setattr(impact_mod, "guarded_models", lambda: {"demo.book"})
+        monkeypatch.setattr(
+            impact_mod,
+            "impact_for_many",
+            lambda instances: {"has_impact": True, "totals": [{"model": "demo.other", "count": 2}]},
+        )
+        request = self._delete_request([str(book.pk)], superuser)
+        with pytest.raises(ValidationError):
+            self._view(request).recycle_purge(request)
+        confirmed = self._delete_request([str(book.pk)], superuser)
+        confirmed.data["impact_confirmed"] = "true"
+        self._view(confirmed).recycle_purge(confirmed)
+        assert Book.all_objects.filter(pk=book.pk).exists() is False
+
+    def test_purge_rowwise_failure_keeps_batch(self, superuser, monkeypatch):
+        from django.db.utils import IntegrityError
+
+        kept = self._make_book("约束书", "g2", superuser)
+        purged = self._make_book("可清书", "g3", superuser)
+        kept.delete()
+        purged.delete()
+        original = Book.hard_delete
+
+        def flaky_hard_delete(self):
+            if self.pk == kept.pk:
+                raise IntegrityError("protected reference")
+            return original(self)
+
+        monkeypatch.setattr(Book, "hard_delete", flaky_hard_delete)
+        request = self._delete_request([str(kept.pk), str(purged.pk)], superuser)
+        resp = self._view(request).recycle_purge(request)
+        assert "1" in resp.data["detail"]
+        assert Book.all_objects.filter(pk=kept.pk).exists() is True
+        assert Book.all_objects.filter(pk=purged.pk).exists() is False
 
 
 class TestOptimizeQueryset:
@@ -185,6 +311,38 @@ class TestRunViewByCeleryTask:
         request = Request(rf.get("/api/demo/book/import-data", {"task": "false"}))
         assert run_view_by_celery_task(view, request, {}, [{"name": "x"}]) is None
         assert run_view_by_celery_task(view, request, {}, [{"name": "x"}], batch_length=10) is None
+
+    def test_broker_meta_is_whitelisted_without_credentials(self, view, rf, monkeypatch):
+        """任务 meta 白名单化：Authorization/Cookie 等凭证不得入 broker，且不污染原请求。"""
+        from common.core.modelset.import_export.celery_utils import background_task_view_set_job
+
+        captured = []
+        monkeypatch.setattr(
+            "common.core.modelset.import_export.celery_utils.has_active_celery_worker",
+            lambda: True,
+        )
+        monkeypatch.setattr(
+            background_task_view_set_job,
+            "apply_async",
+            lambda *args, **kwargs: captured.append(kwargs) or type("R", (), {"id": "1"})(),
+        )
+        view.action_map = {"post": view.import_data}
+        raw = rf.post("/api/demo/book/import-data?task=true", data={"x": "1"})
+        raw.META["HTTP_AUTHORIZATION"] = "Bearer secret-token"
+        raw.META["HTTP_COOKIE"] = "sessionid=secret-cookie"
+        request = Request(raw)
+        request.user = type("U", (), {"pk": 9})()
+        resp = run_view_by_celery_task(view, request, {}, [{"name": "x"}])
+        assert resp is not None
+        assert len(captured) == 1
+        meta = captured[0]["args"][1]
+        assert meta["user_pk"] == 9
+        assert meta["action"] == "list"
+        assert "task_id" in meta and "task_index" in meta and "task_count" in meta
+        for leaked in ("HTTP_AUTHORIZATION", "HTTP_COOKIE", "HTTP_X_CSRFTOKEN"):
+            assert leaked not in meta, f"凭证键 {leaked} 不得进入 broker meta"
+        # 原请求的 META 不被任务分片键污染（旧行为是原地写入 task_id/task_index）
+        assert "task_id" not in raw.META and "task_index" not in raw.META
 
 
 class TestImportExportComposition:

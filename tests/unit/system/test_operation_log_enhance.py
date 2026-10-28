@@ -105,8 +105,9 @@ def test_list_carries_bounded_preview_with_marker(superuser):
     assert json.loads(row["changes"])["name"]["new"] == "b"
 
 
-def test_retrieve_keeps_full_large_json(superuser):
-    """详情接口返回全量大字段（列表预览不影响详情/导出口径）。"""
+def test_retrieve_bounded_preview(superuser):
+    """详情接口正文与列表同级收敛（LOG-P1-01）：有界预览，不再提供全量正文出口
+    （详情/导出曾是「全站请求/响应正文」的整包出口）。"""
     big_body = json.dumps({"payload": "x" * 800})
     log = _make_log(body=big_body, response_result=json.dumps({"code": 1000}))
     client = APIClient(HTTP_USER_AGENT="pytest-agent")
@@ -114,9 +115,11 @@ def test_retrieve_keeps_full_large_json(superuser):
     response = client.get(f"{LIST_URL}/{log.pk}")
     assert response.status_code == 200
     data = response.data["data"]
-    assert data["body"] == big_body
-    assert data["response_result"] == json.dumps({"code": 1000})
-    assert "body_truncated" not in data
+    from audit.serializers.log import OPERATION_LOG_LIST_PREVIEW_MAX
+
+    assert len(data["body"]) <= OPERATION_LOG_LIST_PREVIEW_MAX
+    assert data["body"].startswith(json.dumps({"payload": "x" * 800})[:50])
+    assert len(data["response_result"]) <= OPERATION_LOG_LIST_PREVIEW_MAX
 
 
 def test_layered_retention_keeps_recent_errors(superuser):

@@ -35,6 +35,25 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
     user: None
     group_name: str
 
+    def is_authenticated(self) -> bool:
+        """连接身份是否有效。
+
+        ``AuthMiddlewareStack`` 在未认证时注入 ``AnonymousUser``（truthy），
+        只做 ``if not user`` 会把匿名连接当成已登录，后续只能靠权限检查落到 4403
+        ——前端无法区分「未登录」与「无权限」。
+        """
+        user = self.scope.get("user")
+        return bool(user and getattr(user, "is_authenticated", False))
+
+    async def reject(self, code: int) -> None:
+        """鉴权/授权失败：先 accept 再按业务码关闭。
+
+        未 accept 就 close 会被 ASGI 服务器降级成握手阶段的 HTTP 403，浏览器侧只能
+        拿到 1006，前端 ``4401`` / ``4403`` 终态分支永远不可达（真实 nginx 代理已实测）。
+        """
+        await self.accept()
+        await self.close(code)
+
     @classmethod
     async def encode_json(cls, content: Any) -> Any:
         return json.dumps(content, cls=encoders.JSONEncoder, ensure_ascii=False)

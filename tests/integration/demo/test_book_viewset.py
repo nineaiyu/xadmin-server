@@ -5,6 +5,7 @@ import pytest
 
 from demo.models import Book
 from system.models import DataPermission
+from tests.responses import read_body
 
 pytestmark = pytest.mark.django_db
 
@@ -130,7 +131,7 @@ class TestBookExportSmoke:
         Book.objects.create(name="导出书", isbn="i9", author="a", admin=superuser, admin2=superuser, file=upload_file)
         resp = auth_client.get(f"{BOOK_LIST_URL}/export-data?type=xlsx")
         assert resp.status_code == 200
-        assert len(resp.content) > 0
+        assert len(read_body(resp)) > 0
 
 
 class TestBookDataPermissionIntegration:

@@ -15,7 +15,7 @@ from rest_framework import serializers
 
 from captcha.contracts import CAPTCHA_TYPES
 from common.core.fields import ColorField
-from settings.serializers.contract import SettingSaveContractMixin
+from settings.serializers.contract import SettingSaveContractMixin, effective_value
 
 
 class SecurityCaptchaGeneralSerializer(SettingSaveContractMixin, serializers.Serializer):
@@ -405,10 +405,21 @@ class SecurityCaptchaRiskSerializer(SettingSaveContractMixin, serializers.Serial
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         keys = ["CAPTCHA_RISK_T_ALLOW", "CAPTCHA_RISK_T_LIGHT", "CAPTCHA_RISK_T_HARD", "CAPTCHA_RISK_T_DENY"]
-        values = [int(attrs.get(key, getattr(settings, key, 0)) or 0) for key in keys]
+        values = [int(effective_value(self, key, attrs, getattr(settings, key, 0)) or 0) for key in keys]
         if values != sorted(values) or len(set(values)) != len(values):
             raise serializers.ValidationError(_("Thresholds must be strictly ascending"))
-        step = str(attrs.get("CAPTCHA_FAIL_STEP", getattr(settings, "CAPTCHA_FAIL_STEP", "")))
+        # 分档上界包含（PoW 分档难度 ≤ MAX 封顶）：运行期 pow.bits_for 会静默
+        # min(value, cap)，超限保存被静默降档——保存期直接给出可读错误
+        cap = int(
+            effective_value(self, "CAPTCHA_POW_BITS_MAX", attrs, getattr(settings, "CAPTCHA_POW_BITS_MAX", 20)) or 0
+        )
+        for key in ("CAPTCHA_POW_BITS_ALLOW", "CAPTCHA_POW_BITS_LIGHT", "CAPTCHA_POW_BITS_HARD"):
+            value = int(effective_value(self, key, attrs, getattr(settings, key, 0)) or 0)
+            if value > cap:
+                raise serializers.ValidationError(
+                    {key: _("PoW difficulty must not exceed the bits cap (%(cap)s)") % {"cap": cap}}
+                )
+        step = str(effective_value(self, "CAPTCHA_FAIL_STEP", attrs, getattr(settings, "CAPTCHA_FAIL_STEP", "")) or "")
         if step:
             parts = step.split(",")
             if len(parts) != 3 or any(not part.strip().isdigit() for part in parts):

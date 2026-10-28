@@ -337,11 +337,30 @@ def build_queryset(dataset: Any, user_obj: Any, extra_filters: Any = None) -> An
     ``columns`` 里（请求级过滤按维度值取明细时本就如此），缺注解会让
     ``queryset.filter(json_xxx__...)`` 抛 FieldError 变成 500。
     数据权限过滤 fail-closed（无授权 → none()）。
+
+    字段权限收口（P0-04）：
+    - 返回的 ``columns`` 按浏览者可见字段（``viewer_visible_fields``）裁剪——
+      NL 查数等不经 ``execute_dataset`` 的调用方直接 ``values(*columns)`` 取数，
+      不裁剪就把字段权限旁路成「隐藏列原值直读」；``execute_dataset`` 自己的
+      再裁剪与本处交集后语义不变；
+    - ``extra_filters``（请求级过滤）按浏览者可见字段校验——无字段权限的列
+      不得作为过滤条件，否则可用 ``gte/lt`` 二分推断隐藏列分布；
+    - ``dataset.filters`` 是创建者的显式取数范围（保存侧与执行侧均不随浏览者
+      变化），保持不带 ``user_obj`` 校验。
     """
     model = get_whitelisted_model(dataset.bound_model)
     whitelist = set(available_fields(dataset.bound_model))
     specs = resolve_columns(model, dataset.columns, whitelist)
     validate_filters(dataset.bound_model, dataset.filters)
+    if extra_filters:
+        validate_filters(dataset.bound_model, extra_filters, user_obj=user_obj)
+
+    visible = viewer_visible_fields(dataset.bound_model, user_obj)
+    if visible is not None:
+        specs = [spec for spec in specs if visible_root_of(spec) in visible]
+    if not specs:
+        # 无任何可见列：直接空集——values() 无参会退回模型全字段，反而放大暴露面
+        return model.objects.none(), model, []
 
     columns = [spec.raw for spec in specs]
     conditions = list(dataset.filters or []) + list(extra_filters or [])

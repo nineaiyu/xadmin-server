@@ -17,6 +17,7 @@ from rest_framework import serializers
 from common.core.auth.credentials import MASK
 from common.core.serializers import BaseModelSerializer
 from dataset.models.dataset import Dataset, Report
+from dataset.models.report import ReportVersion
 from dataset.utils.dataset import dataset_visible_to, numeric_columns_of
 from dataset.utils.report_design import ReportDesignError, normalize_report_design
 
@@ -37,6 +38,8 @@ class ReportSerializer(BaseModelSerializer):
     dataset = serializers.PrimaryKeyRelatedField(queryset=Dataset.objects.all(), label=_("Dataset"))
     # 非创建者修改/删除被写守卫拒绝（1003）：下发 is_owner 供行内按钮显隐
     row_owner_guard = True
+    # 乐观锁基线（write_only）：客户端回传所见行的设计版本，保存时与当前版本比对
+    base_version = serializers.IntegerField(write_only=True, required=False, min_value=0)
 
     class Meta:
         model = Report
@@ -50,6 +53,8 @@ class ReportSerializer(BaseModelSerializer):
             "date_trunc",
             "value_field",
             "design",
+            "design_version",
+            "base_version",
             "frequency",
             "send_time",
             "weekday",
@@ -64,7 +69,14 @@ class ReportSerializer(BaseModelSerializer):
             "created_time",
             "updated_time",
         ]
-        read_only_fields = ["pk", "last_run_at", "last_status", "created_time", "updated_time"]
+        read_only_fields = [
+            "pk",
+            "design_version",
+            "last_run_at",
+            "last_status",
+            "created_time",
+            "updated_time",
+        ]
         # RePlusPage 列表列：聚合细则（group_by/metric/date_trunc/value_field）与 IM 收件人明细不进列表
         table_fields = [
             "name",
@@ -140,6 +152,15 @@ class ReportSerializer(BaseModelSerializer):
         return list(dict.fromkeys(cleaned))
 
     def validate(self, attrs: Any) -> Any:
+        base_version = attrs.pop("base_version", None)
+        if (
+            base_version is not None
+            and self.instance is not None
+            and int(base_version) != int(self.instance.design_version or 1)
+        ):
+            raise serializers.ValidationError(
+                {"base_version": _("The content has been modified by another user; reload before saving")}
+            )
         merged_mode = attrs.get("mode", getattr(self.instance, "mode", "rows"))
         # 报表设计：列 / 聚合字段都按数据集与数值列校验，单一事实源在
         # dataset.utils.report_design；空载荷 = 存量口径（全列明细单表），不做强制。
@@ -190,3 +211,14 @@ class ReportSerializer(BaseModelSerializer):
             if not im_recipients:
                 raise serializers.ValidationError(_("IM channel requires at least one recipient"))
         return attrs
+
+
+class ReportVersionSerializer(BaseModelSerializer):
+    """报表设计历史版本（只读列表形态）：回滚目标选择用，不做写操作。"""
+
+    ignore_field_permission = True
+
+    class Meta:
+        model = ReportVersion
+        fields = ["pk", "version", "design", "created_time"]
+        read_only_fields = fields

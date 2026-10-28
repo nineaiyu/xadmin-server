@@ -128,8 +128,12 @@ class UpdateAction(mixins.UpdateModelMixin):
             snapshot[field.name] = pks
         return snapshot
 
-    def _stash_audit_changes(self, old_values: Any) -> None:
-        """对比更新前后字段值与 M2M 关系，把 diff 挂到当前请求上，由 ApiLoggingMiddleware 写入操作日志。"""
+    def _stash_audit_changes(self, old_values: Any, *, key_prefix: str = "") -> None:
+        """对比更新前后字段值与 M2M 关系，把 diff 挂到当前请求上，由 ApiLoggingMiddleware 写入操作日志。
+
+        ``key_prefix``：批量更新时同一请求涉及多行，字段键加 ``@pk`` 前缀区分行，
+        避免后一行覆盖前一行（单行保持原 ``field -> {old,new}`` 形状）。
+        """
         m2m_old = old_values.pop("__m2m__", None)
         pk = old_values.get("pk") or old_values.get("id")
         new_values = self.get_queryset().filter(pk=pk).values().first()
@@ -156,6 +160,8 @@ class UpdateAction(mixins.UpdateModelMixin):
                         "old": ",".join(old_pks) if old_pks else None,
                         "new": ",".join(new_pks) if new_pks else None,
                     }
+        if changes and key_prefix:
+            changes = {f"{field}@{key_prefix}": value for field, value in changes.items()}
         if changes:
             current_request = get_current_request()
             if current_request is not None:
@@ -163,7 +169,10 @@ class UpdateAction(mixins.UpdateModelMixin):
                 # 统一落到原始 Django request 上，ApiLoggingMiddleware 才能读到；
                 # DRF Request.__getattr__ 代理 _request，读侧不受影响
                 target = getattr(current_request, "_request", current_request)
-                target.operation_log_changes = changes
+                # 同一请求可能有多行 diff（批量更新）：合并而不是覆盖
+                existing = getattr(target, "operation_log_changes", None) or {}
+                existing.update(changes)
+                target.operation_log_changes = existing
                 # 输出侧按源模型取脱敏规则（changes 是 JSON 文本，字段级规则无法直接套）
                 target.operation_log_model_label = self.queryset.model._meta.label_lower
 

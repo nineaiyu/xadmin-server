@@ -260,8 +260,9 @@ class TestApprovalAndValidation:
             read_only=read_only,
         )
 
-    def test_read_only_never_requires_approval(self, normal_user, superuser):
-        assert self._spec(True).requires_approval(normal_user, {}) is False
+    def test_external_read_only_hint_never_skips_approval(self, normal_user, superuser):
+        """外接工具不凭对端 readOnlyHint 免审批（MCP-P1-01：外部输入不可决定信任级别）。"""
+        assert self._spec(True).requires_approval(normal_user, {}) is True
         assert self._spec(True).requires_approval(superuser, {}) is False
 
     def test_non_read_only_high_risk(self, normal_user, superuser):

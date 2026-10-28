@@ -139,7 +139,7 @@ def test_content_seed_is_idempotent_and_clean_removes(admin):
 
     assert MessageContent.objects.filter(title__startswith="演示：").count() == 2
     assert ChatMessage.objects.filter(client_msg_id__startswith="demo-content-").count() == 2
-    assert AiKnowledgeDocument.objects.filter(path__startswith="upload/演示-").count() == 2
+    assert AiKnowledgeDocument.objects.filter(title__startswith="演示-").count() == 2
     assert UploadFile.all_objects.filter(filename__startswith="演示-").count() == 2
     assert WebhookSubscription.objects.filter(name="演示-审批事件订阅").count() == 1
     assert WebhookDelivery.objects.count() == 2
@@ -149,14 +149,14 @@ def test_content_seed_is_idempotent_and_clean_removes(admin):
     call_command("seed_demo_content")
     assert MessageContent.objects.filter(title__startswith="演示：").count() == 2
     assert ChatMessage.objects.filter(client_msg_id__startswith="demo-content-").count() == 2
-    assert AiKnowledgeDocument.objects.filter(path__startswith="upload/演示-").count() == 2
+    assert AiKnowledgeDocument.objects.filter(title__startswith="演示-").count() == 2
     assert UploadFile.all_objects.filter(filename__startswith="演示-").count() == 2
     assert ApiApplication.objects.filter(name="演示-开放平台应用").count() == 1
 
     call_command("seed_demo_content", clean_only=True)
     assert MessageContent.objects.filter(title__startswith="演示：").count() == 0
     assert ChatMessage.objects.filter(client_msg_id__startswith="demo-content-").count() == 0
-    assert AiKnowledgeDocument.objects.filter(path__startswith="upload/演示-").count() == 0
+    assert AiKnowledgeDocument.objects.filter(title__startswith="演示-").count() == 0
     assert UploadFile.all_objects.filter(filename__startswith="演示-").count() == 0
     assert WebhookSubscription.objects.filter(name="演示-审批事件订阅").count() == 0
     assert WebhookDelivery.objects.count() == 0
@@ -212,7 +212,7 @@ def test_all_and_clean_roundtrip(admin, menus, field_trees, builtin_flows, demo_
     assert Leave.objects.filter(pk__in=LEAVE_PKS).count() == 0
     assert MessageContent.objects.filter(title__startswith="演示：").count() == 0
     assert DeptInfo.objects.filter(code__in=["demo_rd", "demo_fin"]).count() == 0
-    assert AiKnowledgeDocument.objects.filter(path__startswith="upload/演示-").count() == 0
+    assert AiKnowledgeDocument.objects.filter(title__startswith="演示-").count() == 0
 
     # 回滚：定义还原成种子形态——种子行复活（审批人恢复种子值）、演示落的新行退役、
     # 演示版本快照清空、版本号回落

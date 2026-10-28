@@ -183,6 +183,26 @@ class TestMenuBatchUpdate:
         assert resp.data["code"] == 1004
         assert Menu.objects.get(pk=pk).path == "/test"
 
+    def test_batch_active_rejects_permission_mixed_with_menu(self, auth_client):
+        """权限点不能与菜单/目录混批停用：权限码是动作授权，停用会让授权面静默失效。"""
+        menu_pk = _create_menu(auth_client, name="batch-menu-d")
+        permission_pk = _create_menu(
+            auth_client,
+            name="list:SystemDemo",
+            title="查看演示",
+            menu_type=Menu.MenuChoices.PERMISSION,
+            path="api/demo/book$",
+            method="GET",
+        )
+        resp = auth_client.post(
+            f"{MENU_URL}/batch-update",
+            {"pks": [menu_pk, permission_pk], "fields": {"is_active": False}},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1004, resp.data
+        assert Menu.objects.filter(pk__in=[menu_pk, permission_pk], is_active=True).count() == 2
+
 
 class TestMenuCacheInvalidation:
     """菜单与菜单元数据的缓存失效：路由快照（TTL 24h）与权限数据必须即时清。

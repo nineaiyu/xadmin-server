@@ -329,6 +329,45 @@ class TestConfigApi:
         assert sent["json"]["model"] == "form-model"
         assert sent["headers"]["Authorization"] == "Bearer sk-profile"
 
+    def test_connection_test_private_http_url_rejected(self, auth_client):
+        """AI-P1-01：内网 http 地址走不出站守卫（与档案序列化器同口径，私网默认拒绝）。"""
+        response = auth_client.post(
+            CONFIG_URL,
+            {"AI_BASE_URL": "http://192.168.1.10:11434/v1", "AI_API_KEY": "sk", "AI_MODEL": "m"},
+            format="json",
+        )
+        assert response.status_code == 400, response.data
+
+    def test_connection_test_https_private_ip_rejected(self, auth_client):
+        """https 私网 IP 字面量同样拒绝（写入侧 IP 字面量直接做归属校验）。"""
+        response = auth_client.post(
+            CONFIG_URL,
+            {"AI_BASE_URL": "https://10.0.0.5/v1", "AI_API_KEY": "sk", "AI_MODEL": "m"},
+            format="json",
+        )
+        assert response.status_code == 400, response.data
+
+    def test_save_private_base_url_rejected(self, auth_client):
+        """保存路径（PATCH）同样挂出站守卫：不能把内网地址存成 AI_BASE_URL。"""
+        response = auth_client.patch(CONFIG_URL, {"AI_BASE_URL": "https://10.0.0.5/v1"}, format="json")
+        assert response.status_code == 400, response.data
+
+    def test_connection_test_loopback_http_allowed(self, auth_client, stub_llm):
+        """守卫不过度拦截：loopback http（本地联调）仍放行。"""
+        response = auth_client.post(
+            CONFIG_URL,
+            {"AI_BASE_URL": "http://127.0.0.1:11434/v1", "AI_API_KEY": "sk", "AI_MODEL": "m"},
+            format="json",
+        )
+        assert response.status_code == 200, response.data
+        assert stub_llm.requests[0]["url"].startswith("http://127.0.0.1:11434/v1")
+
+    def test_connection_test_profile_fallback_private_url_rejected(self, auth_client):
+        """表单未填地址、回落到私网档案地址时：视图层守卫拒绝（code 1001），不发起请求。"""
+        self._activate_profile(base_url="http://192.168.1.5:8000/v1", model="profile-model")
+        response = auth_client.post(CONFIG_URL, {"AI_MODEL": "form-model"}, format="json")
+        assert response.json()["code"] == 1001
+
 
 class TestAskStream:
     """文档问答流式（SSE）：meta → reasoning* → delta* → done | error。

@@ -168,13 +168,17 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
         快照写入活定义并落新版本；有 PENDING 实例时拒绝
         """
         ensure_approval_action_confirmed(request, "rollback")
-        version = request.data.get("version")
+        # 载荷以 body 为准；query 兜底兼容曾把 version 放 query 的旧客户端
+        # （读写两侧契约测试已同步钉住 body 形态）
+        version = request.data.get("version") or request.query_params.get("version")
         try:
             version = int(version)
         except (TypeError, ValueError):
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
         flow = self.get_object()
-        ok, detail = rollback_flow(flow, version, remark=request.data.get("remark") or "")
+        ok, detail = rollback_flow(
+            flow, version, remark=request.data.get("remark") or request.query_params.get("remark") or ""
+        )
         if not ok:
             return ApiResponse(code=1004, detail=detail)
         return ApiResponse(detail=detail)

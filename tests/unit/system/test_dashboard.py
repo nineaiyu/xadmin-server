@@ -19,7 +19,13 @@ from django.utils import timezone
 
 from audit.models import OperationLog, UserLoginLog
 from identity.models import UserInfo
-from system.views.platform.dashboard import cached_total_count, scope_limited, trend_info, trend_points
+from system.views.platform.dashboard import (
+    active_user_buckets,
+    cached_total_count,
+    scope_limited,
+    trend_info,
+    trend_points,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -124,6 +130,23 @@ class TestTrendInfoCountScope:
 
 
 class TestUserActive:
+    def test_single_aggregate_query(self, superuser):
+        """四个窗口的 8 次全表 COUNT 收敛为单次聚合（PERF-SYS-01 回归防护）。"""
+        same_time = timezone.now()
+        for i in range(2):
+            user = UserInfo.objects.create_user(username=f"agg{i}", password="Test@123456")
+            UserInfo.objects.filter(pk=user.pk).update(last_login=same_time, date_joined=same_time)
+
+        with CaptureQueriesContext(connection) as ctx:
+            results = active_user_buckets(UserInfo.objects.all())
+
+        assert len(business_queries(ctx)) == 1
+        assert [item[0] for item in results] == [1, 3, 7, 30]
+        # 今日注册：本用例新建的用户都在今天（含夹具账号）
+        assert results[0][1] == UserInfo.objects.count()
+        # 今日活跃：同秒登录的两个用户计 2（不能退化成 distinct last_login）
+        assert results[0][2] == 2
+
     def test_active_user_count_counts_users_not_timestamps(self, auth_client):
         """两个用户在同一秒登录 -> 活跃数为 2（旧实现返回 1）"""
         same_time = timezone.now()

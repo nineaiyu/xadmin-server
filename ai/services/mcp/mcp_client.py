@@ -26,7 +26,7 @@ import requests
 from django.utils.translation import gettext_lazy as _
 
 from common.core.response import API_SUCCESS_CODE
-from common.utils.outbound import OutboundBlocked, pinned_request, validate_outbound_config_url
+from common.utils.outbound import OutboundBlocked, loopback_allowed, pinned_request, validate_outbound_config_url
 
 MCP_PROTOCOL_VERSION = "2025-06-18"
 CLIENT_NAME = "xadmin"
@@ -275,7 +275,7 @@ class McpClient:
                 "POST",
                 self.url,
                 allow_private=False,
-                allow_loopback=True,
+                allow_loopback=loopback_allowed(),
                 allowed_hosts=outbound_allowed_hosts(),
                 headers=self._headers(),
                 json=payload,

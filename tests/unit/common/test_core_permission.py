@@ -160,6 +160,82 @@ class TestSharedPathPermissionSelection:
         assert merged["demo.book"] == {"name", "isbn"}
 
 
+class TestSharedMethodFallback:
+    """单 action 绑定多方法时的权限点回退：仅 app 声明的「读写同权」端点放行。
+
+    未声明端点（grants / thresholds / rules 的 GET+PUT）读权限码不得经兄弟方法
+    回退提权为写权限码（fail-closed）；已声明端点（im-binding / members / command）
+    保持「一个权限码管读写」的语义。
+    """
+
+    @staticmethod
+    def _grant(role, *menus):
+        from django.core.cache import cache as django_cache
+
+        role.menu.add(*menus)
+        django_cache.clear()
+
+    def test_undeclared_endpoint_does_not_fall_back(self, api_client, normal_user, role, menu_factory):
+        """grants：仅授予 GET 码的用户 PUT 必须拒绝（全量替换授权规则是写操作）。"""
+        from identity.models import ApiApplication
+
+        application = ApiApplication.objects.create(
+            name="sec-app",
+            client_id="sec-client-id",
+            client_secret_hash="x" * 64,
+            client_secret_prefix="sec",
+            creator=normal_user,
+        )
+        menu = menu_factory(
+            "listGrants:IntegrationApiApp",
+            path="api/identity/api-applications/(?P<pk>[^/.]+)/grants$",
+            method="GET",
+        )
+        self._grant(role, menu)
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.put(f"/api/identity/api-applications/{application.pk}/grants", {}, format="json")
+        assert resp.status_code == 403
+
+    def test_undeclared_thresholds_put_requires_own_code(self, api_client, normal_user, role, menu_factory):
+        """thresholds：仅 GET 码的 PUT 拒绝（改告警阈值可静默关闭告警）。"""
+        menu = menu_factory("thresholds:SystemMonitor", path="api/system/monitor/thresholds$", method="GET")
+        self._grant(role, menu)
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.put("/api/system/monitor/thresholds", {}, format="json")
+        assert resp.status_code == 403
+
+    def test_rules_put_with_independent_code_passes(self, api_client, normal_user, role, menu_factory):
+        """rules：写权限点拆分后，持 updateRules 码的 PUT 通过权限层（空载荷落业务校验）。"""
+        get_menu = menu_factory("rules:SecurityCaptchaRisk", path="api/settings/captcha/risk/rules$", method="GET")
+        put_menu = menu_factory(
+            "updateRules:SecurityCaptchaRisk", path="api/settings/captcha/risk/rules$", method="PUT"
+        )
+        self._grant(role, get_menu, put_menu)
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.put("/api/settings/captcha/risk/rules", {}, format="json")
+        assert resp.status_code != 403
+
+    def test_rules_put_with_read_code_only_denied(self, api_client, normal_user, role, menu_factory):
+        """rules：仅持 GET 码的 PUT 拒绝（此前经回退放行，属读写共码）。"""
+        menu = menu_factory("rules:SecurityCaptchaRisk", path="api/settings/captcha/risk/rules$", method="GET")
+        self._grant(role, menu)
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.put("/api/settings/captcha/risk/rules", {}, format="json")
+        assert resp.status_code == 403
+
+    def test_declared_rw_shared_endpoint_still_falls_back(self, api_client, normal_user, role, menu_factory):
+        """im-binding：声明过「读写同权」的端点保留回退——仅 GET 码也能 POST 代录。"""
+        menu = menu_factory("imBinding:SystemUser", path="api/identity/user/(?P<pk>[^/.]+)/im-binding$", method="GET")
+        self._grant(role, menu)
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.post(
+            f"/api/identity/user/{normal_user.pk}/im-binding",
+            {"provider": "dingtalk", "subject": "sec-union-1"},
+            format="json",
+        )
+        assert resp.status_code != 403
+
+
 def test_every_duplicate_seed_permission_is_registered():
     """所有 seeds 中重复的 (path, method) 必须在视图声明处登记（注册表为唯一事实源）。
 

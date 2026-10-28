@@ -190,7 +190,8 @@ class TestDashboardDataNotifyConsumer:
         consumer, captured, closed = _make_consumer(get_channel_layer(), None, dashboard_a.pk)
         async_to_sync(consumer.connect)()
         assert closed == [4401]
-        assert captured == []
+        # 先 accept 再 close：否则客户端只会拿到握手 403
+        assert [item["action"] for item in captured] == ["accepted"]
 
     def test_personal_dashboard_rejected_for_other_user(self, superuser, normal_user, dashboard_a):
         dashboard_a.visibility = "personal"
@@ -198,7 +199,7 @@ class TestDashboardDataNotifyConsumer:
         consumer, captured, closed = _make_consumer(get_channel_layer(), normal_user, dashboard_a.pk)
         async_to_sync(consumer.connect)()
         assert closed == [4403]
-        assert captured == []
+        assert [item["action"] for item in captured] == ["accepted"]
         # 创建者 / 超管可连
         for user in (superuser,):
             owner_consumer, owner_captured, owner_closed = _make_consumer(get_channel_layer(), user, dashboard_a.pk)

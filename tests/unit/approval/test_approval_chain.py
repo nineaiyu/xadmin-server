@@ -486,3 +486,63 @@ class TestApproveType:
         # 会签已通过者不再可操作（前端按钮自然消失），未处理者仍可操作
         assert can_act(record, chain_users[0]) is False
         assert can_act(record, chain_users[1]) is True
+
+
+class TestChainCasLostRace:
+    """链式终审 CAS 落败：通知/事件/自动落库一律不执行（终态唯一性优先）。
+
+    历史缺陷：末级通过/驳回对主单的条件更新（CAS）返回值被丢弃——与申请人撤回
+    并发时（撤回方只条件更新主单状态、不加锁），DB 已是 CANCELLED 仍发「已通过」
+    通知、发 approved 事件并触发业务落库（已撤销的操作被系统代执行）。
+    扁平路径（lifecycle.py）原有守卫，此处钉住链式路径同口径。
+    """
+
+    def _approve_to_last_level(self, applicant, chain_users):
+        record = _create_chain(applicant, chain_users)
+        ok, _detail = approve_request(record, chain_users[0], "初审通过")
+        assert ok is True
+        record.refresh_from_db()
+        assert record.current_level == len(chain_users)
+        return record
+
+    def _capture_side_effects(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(
+            "approval.services.approval.lifecycle_chain.notify_applicant", lambda *a, **k: calls.append("notify")
+        )
+        monkeypatch.setattr(
+            "approval.services.approval.lifecycle_chain._emit_approval_event", lambda *a, **k: calls.append("event")
+        )
+        monkeypatch.setattr(
+            "approval.services.approval.lifecycle_chain.run_on_approved", lambda *a, **k: calls.append("run")
+        )
+        return calls
+
+    def test_final_approve_cas_lost_no_side_effects(self, applicant, chain_users, monkeypatch):
+        record = self._approve_to_last_level(applicant, chain_users[:2])
+
+        # 模拟并发撤回抢先落主单终态（内存对象仍持 PENDING 快照的竞态窗口）
+        ApprovalRequest.objects.filter(pk=record.pk).update(status=ApprovalRequest.Status.CANCELLED)
+        calls = self._capture_side_effects(monkeypatch)
+
+        ok, _detail = approve_request(record, chain_users[1])
+
+        assert ok is False
+        record.refresh_from_db()
+        assert record.status == ApprovalRequest.Status.CANCELLED  # 撤回终态未被覆盖为 APPROVED
+        assert record.consume_time is None
+        assert calls == []  # 通知 / 事件 / 自动落库全部不执行
+
+    def test_final_reject_cas_lost_no_side_effects(self, applicant, chain_users, monkeypatch):
+        record = self._approve_to_last_level(applicant, chain_users[:2])
+
+        # 模拟并发通过抢先落主单终态
+        ApprovalRequest.objects.filter(pk=record.pk).update(status=ApprovalRequest.Status.APPROVED)
+        calls = self._capture_side_effects(monkeypatch)
+
+        ok, _detail = reject_request(record, chain_users[1], "迟到的驳回")
+
+        assert ok is False
+        record.refresh_from_db()
+        assert record.status == ApprovalRequest.Status.APPROVED  # 通过终态未被覆盖为 REJECTED
+        assert calls == []  # 通知 / 事件不执行

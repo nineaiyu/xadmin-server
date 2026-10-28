@@ -4,21 +4,66 @@
 # filename : log
 # author : ly_13
 # date : 8/10/2024
+import json
 from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+from rest_framework.utils import encoders
 
 from audit.models import OperationLog, UserLoginLog
 from audit.utils.mask import mask_operation_changes
 from common.core.fields import DictChoiceField, LabeledChoiceField
-from common.core.oplog_recorder import _log_field_limit
+from common.core.oplog_recorder import _log_field_limit, desensitize_payload
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from message.services import get_online_users_layers
 
 logger = get_logger(__name__)
+
+
+# 日志大 JSON 字段的有界预览上限：三字段落库时已按 OPERATION_LOG_FIELD_MAX 截断，
+# 输出侧再收一道有界预览（list / retrieve / export 同级），避免详情与导出文件
+# 成为「全站请求/响应正文」的整包出口（LOG-P1-01）
+OPERATION_LOG_LIST_PREVIEW_MAX = 500
+
+
+# 值语义敏感端点：请求体只有 {"value": ...}（敏感键在上游行/URL），写入侧按
+# 序列化器上下文登记脱敏；存量行没有登记，读侧按路径兜底重脱敏
+VALUE_ONLY_SENSITIVE_PATHS = ("/api/system/config/system", "/api/system/config/personal")
+
+
+def _bounded_log_body(value: Any, path: Any = "") -> Any:
+    """日志正文读侧收敛：重跑脱敏 + 与列表同级的有界预览。
+
+    落库是 JSON 文本（写入侧已脱敏）：解析成功按结构重跑一次脱敏——覆盖存量行
+    在旧写入口径下漏掩的明文（value / 标量形态敏感值，见 LOG-P1-02）；配置写入
+    端点额外按值语义掩掉 value/detail（存量行无请求级登记）。解析失败按原文
+    处理。再按预览上限截断。任何一步失败回落原文截断，不让坏行把
+    retrieve / 导出打挂。
+    """
+    if isinstance(value, str) and value:
+        try:
+            parsed = json.loads(value)
+        except (TypeError, ValueError):
+            parsed = None
+        if parsed is not None:
+            # 值语义兜底只收「无 key 载体」的配置体：带 key 的请求由 key 名判定
+            # （SITE_TITLE 这类非敏感配置项不能被按路径一刀切掩掉）
+            value_only = (
+                str(path or "").startswith(VALUE_ONLY_SENSITIVE_PATHS)
+                and isinstance(parsed, dict)
+                and "key" not in parsed
+            )
+            value_fields = ("value", "detail") if value_only else ()
+            try:
+                value = json.dumps(desensitize_payload(parsed, value_fields), cls=encoders.JSONEncoder, default=str)
+            except Exception:  # noqa: BLE001 重脱敏失败回落原文（仍有截断兜底）
+                logger.warning("operation log body re-desensitize failed", exc_info=True)
+    if isinstance(value, str) and len(value) > OPERATION_LOG_LIST_PREVIEW_MAX:
+        return value[:OPERATION_LOG_LIST_PREVIEW_MAX]
+    return value
 
 
 class OperationLogSerializer(BaseModelSerializer):
@@ -70,7 +115,12 @@ class OperationLogSerializer(BaseModelSerializer):
     changes = serializers.JSONField(required=False, allow_null=True)
 
     def to_representation(self, instance: Any) -> Any:
-        """changes 按源模型规则与查看者角色脱敏（超管/原文通道原样返回）。"""
+        """changes 按源模型规则与查看者角色脱敏（超管/原文通道原样返回）。
+
+        body / response_result 读侧收敛（LOG-P1-01）：retrieve / 导出与列表同级
+        ——先重跑一次脱敏（存量行旧口径漏掩的 value/标量敏感值在此兜住），再
+        截断到有界预览。详情与导出文件不再提供全量正文出口。
+        """
         data = super().to_representation(instance)
         changes = data.get("changes")
         if changes:
@@ -80,12 +130,10 @@ class OperationLogSerializer(BaseModelSerializer):
                 getattr(self, "request", None),
                 getattr(getattr(self, "request", None), "user", None),
             )
+        for name in ("body", "response_result"):
+            # 响应体没有「值语义」漏项，路径兜底只对请求体生效
+            data[name] = _bounded_log_body(data.get(name), getattr(instance, "path", "") if name == "body" else "")
         return data
-
-
-# 列表行大 JSON 字段的预览上限：三字段落库时已按 OPERATION_LOG_FIELD_MAX 截断，
-# 列表再收一道有界预览，避免整页载荷被请求/响应正文撑爆（详情/导出走全量口径）
-OPERATION_LOG_LIST_PREVIEW_MAX = 500
 
 
 class OperationLogListSerializer(OperationLogSerializer):
@@ -95,7 +143,8 @@ class OperationLogListSerializer(OperationLogSerializer):
     详情抽屉直接渲染列表行（本视图集历史上无 retrieve），「变更历史」弹窗
     逐行读取 changes 渲染 old/new 对照——因此 changes 保留全量不裁剪；
     body / response_result 只保留预览，截断时附 ``*_truncated`` 标记
-    （键恒在，向后兼容）。全量口径由 retrieve / 导出经 OperationLogSerializer 承载。
+    （键恒在，向后兼容）。截断与脱敏由基类 to_representation 统一承载，
+    retrieve / 导出与列表同级（LOG-P1-01）。
     """
 
     body_truncated = serializers.SerializerMethodField(label=_("Request body truncated"))
@@ -125,14 +174,6 @@ class OperationLogListSerializer(OperationLogSerializer):
 
     def get_response_result_dropped(self, obj: Any) -> bool:
         return _log_field_limit() == 0 and not obj.response_result
-
-    def to_representation(self, instance: Any) -> dict[str, Any]:
-        data: dict[str, Any] = super().to_representation(instance)
-        for name in ("body", "response_result"):
-            value = data.get(name)
-            if isinstance(value, str) and len(value) > OPERATION_LOG_LIST_PREVIEW_MAX:
-                data[name] = value[:OPERATION_LOG_LIST_PREVIEW_MAX]
-        return data
 
 
 class LoginLogSerializer(BaseModelSerializer):

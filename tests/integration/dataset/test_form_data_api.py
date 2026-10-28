@@ -12,6 +12,7 @@ import pytest
 
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 from system.models import DataPermission
+from tests.responses import read_text
 
 pytestmark = pytest.mark.django_db
 
@@ -155,7 +156,7 @@ class TestFormDataExport:
         _make_submission(form, superuser)
         resp = auth_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}")
         assert resp.status_code == 200
-        lines = resp.content.decode("utf-8-sig").strip().splitlines()
+        lines = read_text(resp).strip().splitlines()
         assert "姓名(name)" in lines[0]
         assert "联系电话(phone)" in lines[0]
         assert "张三" in lines[1]
@@ -209,12 +210,12 @@ class TestFormDataSensitiveMask:
         _all_permission(normal_user)
 
         api_client.force_authenticate(user=normal_user)
-        content = api_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}").content.decode("utf-8-sig")
+        content = read_text(api_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}"))
         assert "13800000000" not in content
         assert "******" in content
 
         api_client.force_authenticate(user=superuser)
-        admin_content = api_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}").content.decode("utf-8-sig")
+        admin_content = read_text(api_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}"))
         assert "13800000000" in admin_content
 
 
@@ -264,11 +265,11 @@ class TestFormDataDataPermission:
         resp = api_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}")
         assert resp.status_code == 200
         # 无授权：导出内容不包含任何他人数据行（空结果按空文件输出）
-        assert "超管的提交" not in resp.content.decode("utf-8-sig")
+        assert "超管的提交" not in read_text(resp)
 
         _all_permission(normal_user)
         resp = api_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}")
-        content = resp.content.decode("utf-8-sig")
+        content = read_text(resp)
         assert "姓名(name)" in content
         assert "超管的提交" in content
 
@@ -281,6 +282,93 @@ class TestFormDataDataPermission:
         api_client.force_authenticate(user=normal_user)
         resp = api_client.get(LIST_URL)
         assert resp.status_code == 403
+
+
+class TestFormDataSnapshotWindowFailClosed:
+    """版本快照滚出保留窗口的提交：掩码 fail-closed（历史敏感键不因版本滚出而明文）。
+
+    提交版本超出 schema_history 保留窗口时回退「当前 schema + data 兜底」，
+    敏感性无法确认——无法确认的动态键一律按敏感掩码（列表/详情/导出同口径），
+    窗口内的提交仍按 schema 声明精确掩码。
+    """
+
+    def _window_form(self):
+        """当前 v30；历史窗口仅含 v29——v10 的提交已滚出快照窗口。"""
+        return _make_form(
+            schema={
+                "fields": [
+                    {"key": "name", "label": "姓名", "type": "input"},
+                    {"key": "phone", "label": "联系电话", "type": "input", "sensitive": True},
+                ]
+            },
+            schema_version=30,
+            schema_history=[{"version": 29, "schema": {"fields": [{"key": "name", "label": "姓名", "type": "input"}]}}],
+        )
+
+    def _grant_read(self, role, menu_factory):
+        _grant_list(role, menu_factory)
+        role.menu.add(menu_factory("retrieve:FormData", path="api/dataset/form-data/(?P<pk>[^/.]+)$", method="GET"))
+
+    def test_out_of_window_submission_masked_in_list_and_detail(
+        self, api_client, auth_client, normal_user, role, menu_factory, superuser
+    ):
+        form = self._window_form()
+        rolled_out = DynamicFormSubmission.objects.create(
+            form=form,
+            creator=superuser,
+            schema_version=10,
+            data={"name": "张三", "phone": "13800000000", "legacy": "机密"},
+        )
+        current = DynamicFormSubmission.objects.create(
+            form=form,
+            creator=superuser,
+            schema_version=30,
+            data={"name": "李四", "phone": "13900000000"},
+        )
+        self._grant_read(role, menu_factory)
+        _all_permission(normal_user)
+
+        api_client.force_authenticate(user=normal_user)
+        rows = {row["pk"]: row for row in _rows(api_client.get(LIST_URL))}
+        # 滚出窗口：无法确认敏感性 → 全部动态键掩码（含当前 schema 声明非敏感的 name
+        # 与快照兜底补出的 legacy）
+        assert rows[str(rolled_out.pk)]["data"] == {"name": "******", "phone": "******", "legacy": "******"}
+        # 窗口内（当前版本）：按 schema 声明精确掩码，非敏感键保持可见
+        assert rows[str(current.pk)]["data"] == {"name": "李四", "phone": "******"}
+
+        detail = api_client.get(f"{LIST_URL}/{rolled_out.pk}")
+        assert detail.data["data"]["data"] == {"name": "******", "phone": "******", "legacy": "******"}
+        # schema 快照兜底补出的未知键带 sensitive 标记（fail-closed）
+        legacy_item = next(item for item in detail.data["data"]["form_schema"] if item["key"] == "legacy")
+        assert legacy_item["sensitive"] is True
+
+        api_client.force_authenticate(user=superuser)
+        admin_rows = {row["pk"]: row for row in _rows(api_client.get(LIST_URL))}
+        assert admin_rows[str(rolled_out.pk)]["data"]["phone"] == "13800000000"
+
+    def test_out_of_window_submission_masked_in_export(
+        self, api_client, auth_client, normal_user, role, menu_factory, superuser
+    ):
+        form = self._window_form()
+        DynamicFormSubmission.objects.create(
+            form=form,
+            creator=superuser,
+            schema_version=10,
+            data={"name": "张三", "phone": "13800000000"},
+        )
+        role.menu.add(menu_factory("exportData:FormData", path="api/dataset/form-data/export-data$", method="GET"))
+        _grant_list(role, menu_factory)
+        _all_permission(normal_user)
+
+        api_client.force_authenticate(user=normal_user)
+        content = read_text(api_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}"))
+        assert "张三" not in content
+        assert "13800000000" not in content
+        assert "******" in content
+
+        api_client.force_authenticate(user=superuser)
+        admin_content = read_text(api_client.get(f"{EXPORT_URL}?type=csv&form={form.pk}"))
+        assert "张三" in admin_content
 
 
 class TestFormDataWriteDenied:

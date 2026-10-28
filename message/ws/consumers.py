@@ -98,14 +98,13 @@ class ChatNotify(ChatNotifyMixin, AsyncJsonWebsocket):
 
     async def connect(self) -> None:
         self.user = self.scope["user"]
-        if not self.user:
+        if not self.is_authenticated():
             logger.error("chat connect rejected: not authenticated")
-            await asyncio.sleep(3)
-            await self.close(4401)
+            await self.reject(4401)
             return
         if not await database_sync_to_async(has_chat_permission)(self.user):
             logger.warning("chat connect rejected: no permission user=%s", self.user)
-            await self.close(4403)
+            await self.reject(4403)
             return
 
         self.group_name = get_chat_user_group_name(self.user.pk)

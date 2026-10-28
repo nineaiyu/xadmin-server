@@ -378,6 +378,21 @@ def outbound_allowed_hosts() -> tuple[str, ...]:
         return ()
 
 
+def loopback_allowed() -> bool:
+    """环回目标（127.0.0.1 / ::1 / localhost）是否放行：全部出站链路的同一口径。
+
+    生产默认 fail-closed（跟随 ``DEBUG=False``）：持配置权限的账号不得借出站通道
+    （Webhook 投递 / AI base_url / MCP server / 回调测试）探测本机内部服务；
+    本地联调（DEBUG=true）与测试栈（显式 ``WEBHOOK_ALLOW_LOOPBACK``）放开。
+    写入侧与发送侧必须同源，否则会出现「配置写得进、请求发不出」的割裂。
+    读取走内核契约访问器（``settings_contract``），契约缺省 False 即 fail-closed；
+    宿主出厂口径（``WEBHOOK_ALLOW_LOOPBACK`` 未显式配置时跟随 ``DEBUG``）由宿主侧装配。
+    """
+    from common.settings_contract import kernel_setting
+
+    return bool(kernel_setting("WEBHOOK_ALLOW_LOOPBACK"))
+
+
 def validate_outbound_config_url(
     url: str,
     *,

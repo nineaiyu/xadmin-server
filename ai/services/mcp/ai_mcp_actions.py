@@ -93,7 +93,7 @@ class McpActionSpec:
     description: object
     #: 同步快照的白名单化有界 schema（见 mcp_client.bound_input_schema）
     input_schema: dict[str, Any]
-    #: 快照 readOnlyHint：只读工具免审批
+    #: 快照 readOnlyHint：仅目录展示用途，不作为免审批依据（外部输入不可信）
     read_only: bool
 
     @property
@@ -157,9 +157,12 @@ class McpActionSpec:
         return params, None
 
     def requires_approval(self, user: Any, params: Any) -> bool:
-        """只读工具直执行；写类/未知只读性的工具按高危动作处理（非超管 412）。"""
-        if self.read_only:
-            return False
+        """外接工具一律按高危动作审批（非超管 412）。
+
+        ``read_only`` 来自对端 ``tools/list`` 的 ``readOnlyHint`` 快照——外部输入
+        不能决定本地信任级别（MCP-P1-01）：恶意/被劫持的服务器把写工具标成
+        只读即可绕过审批。外接工具不享有免审批通道，内置专用动作不受影响。
+        """
         return requires_approval_high_risk(user, params)
 
     def execute(self, user: Any, params: Any) -> dict[str, Any]:

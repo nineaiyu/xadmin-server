@@ -23,13 +23,13 @@
 > 登录链路重构 / 种子分层 / 5.0 发布窗口等）已于 2026-10-27 清理，
 > 移入工作区 `_delete/2026-10-27-plans-cleanup/`（可恢复，去向见 `plans/README.md`）。
 
-- **2026-10-26 两件收口（弹层内核统一 + 设计器实时预览 / a11y 扩面）**：
-  ①弹层内核统一（arch-P1-04② 提前）：新增声明式壳 `OverlayDialog` / `OverlayDrawer` 并扩展
-  滚动锁可见性源；19 处内联弹层迁移，基线 21→4。
-  ②设计器实时预览（fe-other-E-01）：新增「设计/预览」页签，复用 `SubmissionForm` 消费未保存
-  schema（联动实时生效、不可提交）；E2E 双浏览器覆盖未保存改动与联动。
-  ③a11y 扩面（fe-F-03）：扫描面 10→12；修复字段表控件可访问名与四处对比度；双浏览器 24 例全绿。
-  **验证**：vitest 439/2837、check 全量 + 行数门禁绿；弹层相关既有 E2E 32 例过。
+- **2026-10-28 双篇审查整改批次（全部收口，全量验收已跑）**：P0 + P1 #9~#13、`FORM-P1-05`、
+  C 级 41 + B 篇 15；六轮补 WS 4401 语义、列元数据兜底、联动隐藏清理与逐列断言；
+  后端全量 / 前端 3023 例 / 全量 E2E 全绿；见 [交接单](交接-审查整改剩余项-2026.10.28.md)。
+
+- **2026-10-26 三件收口**：弹层内核统一（`OverlayDialog`/`OverlayDrawer` + 19 处迁移，基线 21→4）、
+  设计器实时预览（未保存 schema 联动、不可提交）、a11y 扩面（扫描 10→12，双浏览器 24 例）；
+  vitest 439/2837、check 全量 + 行数门禁绿，弹层相关既有 E2E 32 例过。
 
 - **2026-10-25 提案候选第五批（B-3 外观包 + P1 联动二期 + D-2 工作台 WS 推送，改动已提交
   client `de446dbd` / server `6d4c0f07` + client `cc42d6a1` / server `e7041372` + client `e24371de`，
@@ -57,10 +57,8 @@
   刷新新增「实时（推送）」档（-1）——`useDashboardChannel` 开合连接（切盘重连、编辑态不吃
   推送）、帧按卡片 id 路由 `ChartCard.applyData`（与令牌重拉共用渲染路径）。集成测试 25 例 +
   vitest 8 例 + E2E 实时档用例（断言 ws 连接建立与首帧到达）。
-  **同批门禁清偿**：`check:hook-length` 存量越线 4 处——`usePanelActions`（本批扩出 237 行）
-  拆出 `useAppearancePackActions`；`useScreenExport`（156）实现域下沉 `screenExportFiles`；
-  `useOverlayFooter`（121）/ `useCommandPalette`（120）注释归并回落（近期批次只跑了 check 子集
-  未覆盖该门禁，本轮全量口径补齐）。
+  **同批门禁清偿**：`check:hook-length` 越线 4 处——`usePanelActions` 拆出
+  `useAppearancePackActions`、`useScreenExport` 下沉 `screenExportFiles`、两处注释归并回落。
   **验证**：后端全量 `PYTEST_EXIT=0`（真 PG / Redis，pipefail 取真实退出码）；ruff、行数 / 函数 /
   缓存键 / 菜单标题 / 台账编号门禁、`makemigrations --check`、`dump_openapi --check`、
   `gen_ws_frame_schema --check` 全绿；前端 vitest 425 文件 / 2781 例、typecheck / lint /
@@ -209,6 +207,7 @@
 | 11 | **下一补丁版本发布（含审查整改批次）** | 版本号三方同步（`server/const.py` ↔ `client/package.json` ↔ tag）→ 变更日志/Release notes → 按 server·client → web → docs → installer 顺序构建镜像 → `sync-image-mirror` → 目标机复测；发布前跑一次干净机安装 + 幂等升级 |
 | 12 | **4.2.5 旧镜像回填 + 目标机旧库升级复跑** | **已登记（2026-10-23）**：`postgres:16.8` / `redis:7.4.3` 已入 `xadmin-installer/utils/base-images.yml`；待 push 触发 `sync-base-image-mirror` + `gh workflow run sync-image-mirror.yml -f version=4.2.5` 补 `xadmin-web`，再目标机 `./xadmin.sh upgrade v<version>` 复跑，验收 `upgrade_check=up-to-date`、健康全 true、数据保留 |
 | 13 | ~~R5 首屏 LCP 靶心优化~~ | **✅ 已完成（2026-10-23）**：welcome 生产口径 LCP **792 → 244 ms（-69%）**、CLS 0.0095 → 0.0088–0.0095、FCP/TBT 持平；改动 = 移除欢迎卡片入场动画 + 活跃用户卡预占位；证据见 `xadmin-client/docs/perf-firstscreen.md` §六 |
+| 14 | **双篇审查整改批次（2026-10-28，代码修复完成，运行时验收待跑）** | P0 5 → B 篇立即/次周 → A 篇 P1 47 编号（含版本化 2 项补测试）→ B 篇 P1 34；月度/结构性 16 项顺延，P2 backlog 按域归组。状态见 [审查整改批次-2026.10.28.md](审查整改批次-2026.10.28.md)；验收口径 = 每项带测试 + 门禁全绿 + 后端改动 E2E fresh |
 
 > 2026-11 窗口两项主项（存量库升级通道、HNSW 向量定型实测）已于 2026-10-09 提前完成，无需再排。
 

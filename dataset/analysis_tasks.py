@@ -141,6 +141,55 @@ def _precreate_record(report: Any) -> str:
     return str(record.pk)
 
 
+#: 派发占位 TTL（秒）：覆盖单次渲染的硬超时（CELERY_TASK_TIME_LIMIT = 30 分钟）加余量。
+#: 任务结束（成功 / 失败 / 取消）即时释放；worker 崩溃或消息丢失时靠 TTL 自愈。
+REPORT_DISPATCH_CLAIM_TTL = 30 * 60 + 120
+
+
+def report_dispatch_claim_key(report_pk: Any) -> str:
+    """定时报表派发占位键：同一报表同一时刻只允许一个派发者。"""
+    return f"report_schedule_dispatch_claim_{report_pk}"
+
+
+def claim_report_dispatch(report_pk: Any) -> bool:
+    """原子占位一次派发：``cache.add`` 单命令语义，并发扫描只有一个赢者。
+
+    beat 每分钟扫描，而 ``last_run_at`` 只有任务完成后才推进——worker 停机 / 积压后
+    恢复的瞬间，多条积压扫描会并发看到同一期次（实测 3 条并发扫描产生 3 份相同报表）。
+    占位把「判定到期 + 派发」收敛为一次原子操作，落选者直接跳过本轮。
+    """
+    from django.core.cache import cache
+
+    return bool(cache.add(report_dispatch_claim_key(report_pk), "1", REPORT_DISPATCH_CLAIM_TTL))
+
+
+def release_report_dispatch(report_pk: Any) -> None:
+    """释放派发占位（任务终态调用；未持有时为空操作）。"""
+    from django.core.cache import cache
+
+    cache.delete(report_dispatch_claim_key(report_pk))
+
+
+def _dispatch_report(report: Any) -> bool:
+    """派发单个报表：先占位再预创建记录；broker 拒收时回滚占位与记录，避免吞掉下一期。"""
+    from task.services import ExportRecord
+
+    if not claim_report_dispatch(report.pk):
+        return False
+    task_id = None
+    try:
+        task_id = _precreate_record(report)
+        run_scheduled_report.apply_async(kwargs={"report_id": str(report.pk), "dispatch_claim": True}, task_id=task_id)
+    except Exception as exc:
+        if task_id:
+            ExportRecord.objects.filter(pk=task_id).update(
+                status=ExportRecord.Status.FAILURE, error=str(exc)[:2000], updated_time=timezone.now()
+            )
+        release_report_dispatch(report.pk)
+        raise
+    return True
+
+
 @shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 @register_as_period_task(crontab="* * * * *", description="定时报表调度分发", module="analysis")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def dispatch_scheduled_reports() -> Any:
@@ -155,8 +204,11 @@ def dispatch_scheduled_reports() -> Any:
         except Exception:  # noqa: BLE001 单条判定异常不中断扫描
             logger.warning("report schedule check failed: %s", report.pk, exc_info=True)
             continue
-        run_scheduled_report.apply_async(kwargs={"report_id": str(report.pk)}, task_id=_precreate_record(report))
-        dispatched += 1
+        try:
+            if _dispatch_report(report):
+                dispatched += 1
+        except Exception:  # noqa: BLE001 单条派发异常不中断扫描
+            logger.warning("report dispatch failed: %s", report.pk, exc_info=True)
     if dispatched:
         logger.info("dispatched %s scheduled report(s)", dispatched)
     return dispatched
@@ -176,15 +228,20 @@ def dispatch_cron_reports() -> Any:
         except Exception:  # noqa: BLE001 单条判定异常不中断扫描
             logger.warning("report cron check failed: %s", report.pk, exc_info=True)
             continue
-        run_scheduled_report.apply_async(kwargs={"report_id": str(report.pk)}, task_id=_precreate_record(report))
-        dispatched += 1
+        try:
+            if _dispatch_report(report):
+                dispatched += 1
+        except Exception:  # noqa: BLE001 单条派发异常不中断扫描
+            logger.warning("report cron dispatch failed: %s", report.pk, exc_info=True)
     if dispatched:
         logger.info("dispatched %s cron scheduled report(s)", dispatched)
     return dispatched
 
 
 @shared_task(bind=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
-def run_scheduled_report(self: Any, report_id: str, bookkeep_schedule: bool = True) -> Any:
+def run_scheduled_report(
+    self: Any, report_id: str, bookkeep_schedule: bool = True, dispatch_claim: bool = False
+) -> Any:
     """执行单个报表：数据集渲染 xlsx → ExportRecord（下载中心）→ 邮件附件。
 
     task_id == 预创建 ExportRecord.pk（CeleryTaskRecordModel 契约）。产物落库、
@@ -194,7 +251,19 @@ def run_scheduled_report(self: Any, report_id: str, bookkeep_schedule: bool = Tr
     （见 report_due），只有调度派发链路（缺省 True）才推进它；手动运行（run 动作 /
     任务中心重跑传 False）恰好落在到期点与派发扫描之间时，若推进 last_run_at 会
     吞掉当期投递——last_status 照常写入，用户仍能看到本次结果。
+
+    ``dispatch_claim``：本任务由调度扫描派发时置 True——执行结束（成功 / 失败 /
+    取消）释放派发占位，使下一期扫描可正常派发；手动运行不占位故不释放。
     """
+    try:
+        return _run_scheduled_report(self, report_id, bookkeep_schedule)
+    finally:
+        if dispatch_claim:
+            release_report_dispatch(report_id)
+
+
+def _run_scheduled_report(self: Any, report_id: str, bookkeep_schedule: bool) -> Any:
+    """``run_scheduled_report`` 的执行体（派发占位释放由外层 finally 统一收敛）。"""
     from dataset.models.dataset import Report
     from task.models.task import TaskExecution
     from task.services import KIND_REPORT, ExportRecord, persist_export_artifact, update_progress

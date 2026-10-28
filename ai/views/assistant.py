@@ -30,6 +30,7 @@ from common.core.throttle import AiThrottleMixin
 from common.drf.renders import SseRendererMixin
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from common.utils.outbound import OutboundBlocked, outbound_allowed_hosts, validate_outbound_config_url
 from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 from settings.services import AiAssistantSettingSerializer, BaseSettingViewSet
 
@@ -94,6 +95,18 @@ class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
             return ApiResponse(code=1001, detail=_("Base URL is required"))
         if not (creds["api_key"] and creds["model"]):
             return ApiResponse(code=1001, detail=_("API Key and model are required"))
+        # 出站守卫（AI-P1-01）：解析后的 base_url（表单 / 档案 / Setting 兜底、含存量值）
+        # 统一过私网拦截，与档案序列化器同口径——测试连接不得成为内网探测通道
+        try:
+            validate_outbound_config_url(
+                str(creds["base_url"]),
+                allowed_hosts=outbound_allowed_hosts(),
+                scheme_message=_(
+                    "Base URL must use https (http is allowed for loopback or OUTBOUND_ALLOWED_HOSTS targets)"
+                ),
+            )
+        except OutboundBlocked as exc:
+            return ApiResponse(code=1001, detail="; ".join(str(item) for item in exc.messages))
         try:
             client = ChatCompletionsClient(creds)
             reply = client.chat([{"role": "user", "content": "ping"}])

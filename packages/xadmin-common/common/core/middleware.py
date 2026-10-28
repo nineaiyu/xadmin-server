@@ -134,6 +134,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
     def __handle_response(self, request: Any, response: Any) -> Any:
         request_start_time = getattr(request, "request_start_time", time.time())
         exec_time = time.time() - request_start_time
+        # 视图执行期登记的「值语义敏感字段」（如 SystemConfig 的 value-only PATCH）
+        value_fields = request_value_fields(request)
         # 慢请求阈值走系统配置（默认 1.0s），与监控面板 slow 接口同口径
         threshold = SysConfig.SLOW_REQUEST_THRESHOLD
         if exec_time > threshold:
@@ -141,7 +143,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             # 明文 token/password/code 落日志文件等同泄露凭证
             logger.warning(
                 f"exec time {exec_time} over {threshold}s. {request.method} {request.path} "
-                f"{log_body_preview(request.request_data)} "
+                f"{log_body_preview(request.request_data, value_fields)} "
                 f"request_id:{getattr(request, 'request_uuid', None)}"
             )
         # 判断有无待写标记（process_view 只标记不写库；health 等无 cls 视图、
@@ -163,7 +165,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             logger.warning("sensitive operation alert failed", exc_info=True)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
-                f"request end. {request.method} {request.path} {log_body_preview(request.request_data)} log:{info}"
+                f"request end. {request.method} {request.path} "
+                f"{log_body_preview(request.request_data, value_fields)} log:{info}"
             )
         return True
 
@@ -260,6 +263,8 @@ from common.core.oplog_recorder import (  # noqa: F401  (日志辅助拆至 oplo
     desensitize_payload,
     insert_operation_log,
     log_body_preview,
+    mark_sensitive_value_fields,
+    request_value_fields,
     resolve_auth_identity,
     sensitive_get_actions,
 )
@@ -282,6 +287,8 @@ __all__ = (
     "desensitize_payload",
     "insert_operation_log",
     "log_body_preview",
+    "mark_sensitive_value_fields",
+    "request_value_fields",
     "resolve_auth_identity",
     "sensitive_get_actions",
 )

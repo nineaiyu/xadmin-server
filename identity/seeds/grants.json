@@ -3,11 +3,13 @@
   "roles": {
     "admin": [
       "SystemDept",
+      "SystemDirectory",
       "SystemPost",
       "SystemRole",
       "SystemUser",
       "SystemUserOnline",
       "assign:SystemPost",
+      "assignManagers:SystemDept",
       "batchDestroy:SystemDept",
       "batchDestroy:SystemPost",
       "batchDestroy:SystemRole",
@@ -44,6 +46,7 @@
       "list:SearchRole",
       "list:SearchUser",
       "list:SystemDept",
+      "list:SystemDirectory",
       "list:SystemPost",
       "list:SystemRole",
       "list:SystemUser",

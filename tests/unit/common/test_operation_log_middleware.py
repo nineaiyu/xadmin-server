@@ -24,7 +24,14 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from audit.models import OperationLog
-from common.core.middleware import MAX_LOG_FIELD, build_operation_log_info, desensitize_body, insert_operation_log
+from common.core.middleware import (
+    MAX_LOG_FIELD,
+    build_operation_log_info,
+    desensitize_body,
+    insert_operation_log,
+    mark_sensitive_value_fields,
+    request_value_fields,
+)
 from common.utils.request import get_browser, get_os
 from demo.models import Book
 from demo.serializers.book import BookSerializer
@@ -170,6 +177,29 @@ class TestFieldTruncation:
     def test_desensitize_non_container_passthrough(self):
         assert desensitize_body("raw") == "raw"
         assert desensitize_body(None) is None
+
+    def test_value_only_config_patch_masked_by_request_marker(self):
+        """PATCH /api/system/config/{pk} 只带 value：敏感键在上游行，按值语义脱敏。"""
+        body = {"value": "scim-plain-token", "is_active": True}
+        assert desensitize_body(body)["value"] == "scim-plain-token"  # 无上下文时原样
+        masked = desensitize_body(body, ("value", "detail"))
+        assert masked["value"] == "*" * len("scim-plain-token")
+        assert masked["is_active"] is True
+
+    def test_request_marker_is_shared_with_drf_request(self):
+        """DRF Request 的标记必须落到原生 HttpRequest（中间件读原始对象）。"""
+
+        class _Raw:
+            pass
+
+        class _Drf:
+            _request = _Raw()
+
+        mark_sensitive_value_fields(_Drf(), ("value",))
+        mark_sensitive_value_fields(_Drf(), ("detail",))
+        assert request_value_fields(_Drf()._request) == ("detail", "value")
+        # 无请求上下文时静默跳过（离线序列化 / 导入导出）
+        mark_sensitive_value_fields(None, ("value",))
 
 
 class TestResponseDesensitization:
@@ -430,6 +460,66 @@ class TestDesensitizeIntegration:
         assert payload["password"] == "**********"
         assert payload["access"] == "*********"
         assert payload["name"] == "alice"
+
+
+class TestValueScalarDesensitization:
+    """LOG-P1-02 / G18：脱敏覆盖「键值对 value/detail」与「键名命中敏感模式」形态。
+
+    键名精确匹配只收 SENSITIVE_FIELDS 名单键；SystemConfig 的标量凭据以
+    {"key": "SCIM_TOKEN", "value": "<明文>"} 键值对（或凭据自身名作 JSON 键）
+    出现时同样是凭据本体，漏掩即全站凭据明文进操作日志（日志导出 = 凭据外带）。
+    """
+
+    def test_system_config_pair_value_masked(self):
+        """SystemConfig 写入体的 value 是凭据本体：key 命中整值加密键即掩码。"""
+        masked = desensitize_body({"key": "SCIM_TOKEN", "value": "tok-plain-value"})
+        assert masked["value"] == "*" * len("tok-plain-value")
+        assert "tok-plain-value" not in json.dumps(masked)
+
+    def test_system_config_pair_detail_masked(self):
+        masked = desensitize_body({"key": "OPS_ALERT_TOKEN", "detail": "detail-carries-secret"})
+        assert masked["detail"] == "*" * len("detail-carries-secret")
+
+    def test_pair_non_sensitive_key_kept(self):
+        """key 非敏感配置键：value 照常保留（业务键值对不受影响）。"""
+        masked = desensitize_body({"key": "SITE_TITLE", "value": "xadmin"})
+        assert masked["value"] == "xadmin"
+
+    def test_credential_name_key_masked(self):
+        """凭据以自身名为 JSON 键出现（如 {"scim_token": ...}）同样收敛。"""
+        masked = desensitize_body({"scim_token": "tok-abc", "FILE_S3_SECRET_KEY": "s3-secret", "name": "keep"})
+        assert masked["scim_token"] == "*" * len("tok-abc")
+        assert masked["FILE_S3_SECRET_KEY"] == "*" * len("s3-secret")
+        assert masked["name"] == "keep"
+
+    def test_numeric_counter_not_masked(self):
+        """命中模式的数值计数器（max_tokens 等）不受影响——模式口径只收字符串值。"""
+        masked = desensitize_body({"max_tokens": 2048, "AI_MAX_TOKENS": 4096})
+        assert masked["max_tokens"] == 2048
+        assert masked["AI_MAX_TOKENS"] == 4096
+
+    def test_scim_token_write_log_has_no_plaintext(self, auth_client):
+        """part5 验证口径：写 SCIM_TOKEN 后查 OperationLog.body 不含明文。"""
+        from system.models import SystemConfig
+
+        secret = "scim-bearer-secret-9f2c"
+        resp = auth_client.post(
+            "/api/system/config/system",
+            {"key": "SCIM_TOKEN", "value": secret, "is_active": True},
+            format="json",
+        )
+        assert resp.status_code == 200, getattr(resp, "data", resp.content)
+        assert SystemConfig.objects.filter(key="SCIM_TOKEN").exists()
+
+        log = (
+            OperationLog.objects.filter(method="POST", path="/api/system/config/system")
+            .order_by("-created_time")
+            .first()
+        )
+        assert log is not None, "写配置请求应落操作日志"
+        assert secret not in (log.body or "")
+        payload = json.loads(log.body)
+        assert payload["value"] == "*" * len(secret)
 
 
 class TestResponseTimeWritePath:

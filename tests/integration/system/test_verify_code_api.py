@@ -91,6 +91,49 @@ class TestSendVerifyCode:
             assert resp.status_code == 200, resp.data
             assert resp.data["code"] == 1004, resp.data
 
+    def test_transport_failure_returns_readable_error(self, api_client, register_free, monkeypatch):
+        """C-03：SMTP 不可达（连接类异常）时给可读错误，不是 500、不泄露内部地址。"""
+
+        class _Down:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def gen_and_send_async(self):
+                raise ConnectionRefusedError("smtp.example.com:25 refused")
+
+        monkeypatch.setattr("identity.views.auth.verify_code.SendAndVerifyCodeUtil", _Down)
+
+        resp = api_client.post(
+            SEND_VERIFY_URL + "?category=register",
+            {"form_type": "email", "target": "transport-down@example.com"},
+            format="json",
+        )
+
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1002
+        assert "smtp.example.com" not in str(resp.data["detail"])
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("transport-down@example.com")) is None
+
+    def test_charset_all_off_returns_readable_error(self, api_client, register_free, settings):
+        """C-28：字符集三项全关（历史脏配置）时发码必须给可读错误，不能 500。
+
+        写入侧已由 SET-P1-02 拦截，但存量配置行仍可能存在——发送链路两分支
+        （真实投递 / 防枚举占位）都不能把 ValueError 抛成 500。
+        """
+        settings.VERIFY_CODE_UPPER_CASE = False
+        settings.VERIFY_CODE_LOWER_CASE = False
+        settings.VERIFY_CODE_DIGIT_CASE = False
+
+        resp = api_client.post(
+            SEND_VERIFY_URL + "?category=register",
+            {"form_type": "email", "target": "charset-off@example.com"},
+            format="json",
+        )
+
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1002
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("charset-off@example.com")) is None
+
     def test_send_verify_code_access_disabled(self, api_client, register_free, settings):
         settings.SECURITY_REGISTER_ACCESS_ENABLED = False
         resp = api_client.post(
@@ -328,6 +371,43 @@ class TestSendVerifyCodeLoginReset:
         assert resp.data["code"] == 1000, resp.data
         assert resp.data["data"]["verify_token"]
         assert sent == [], "目标不存在时不应发送验证码"
+
+    def test_reset_rejected_when_channel_turned_off_after_send(self, api_client, normal_user, settings, silent_send):
+        """发码后关闭通道：重置提交侧同样拒绝（通道开关不能只拦发码入口）。
+
+        组合约束（SET-P1-02）禁止「场景开、通道全关」的配置落库，但配置可能
+        在发码与提交之间变化；这一层是发码路径之外的兜底复核，缺了它等于
+        「先发码、再关通道」即可绕过开关。
+        """
+        settings.SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = False
+        settings.SECURITY_RESET_PASSWORD_TEMP_TOKEN_ENABLED = False
+        settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED = False
+        settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED = True
+        settings.EMAIL_ENABLED = True
+        normal_user.email = "zhangsan@example.com"
+        normal_user.set_password("OldPass@123456")
+        normal_user.save(update_fields=["email", "password"])
+
+        resp = api_client.post(
+            SEND_VERIFY_URL + "?category=reset",
+            {"form_type": "email", "target": "zhangsan@example.com"},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        verify_token = resp.data["data"]["verify_token"]
+        verify_code = cache.get(VERIFY_CODE_KEY_TPL.format("zhangsan@example.com"))
+        assert verify_code, "发码应写入缓存"
+
+        settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED = False
+        resp = api_client.post(
+            "/api/identity/auth/reset",
+            {"verify_token": verify_token, "verify_code": verify_code, "password": "NewPass@123456"},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1001, resp.data
+        normal_user.refresh_from_db()
+        assert normal_user.check_password("OldPass@123456"), "通道关闭后密码不得被改写"
 
     def test_login_send_encrypted_target(self, api_client, normal_user, settings, silent_send):
         """encrypted + temp token 开启：先用临时 token 加密 target，服务端解密后下发。"""

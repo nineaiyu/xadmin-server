@@ -31,8 +31,24 @@ def _rows(dsn: str, sql: str) -> list:
         return cursor.fetchall()
 
 
+def _runtime_index_names() -> set[str]:
+    """运行期 DDL 建的索引名（不进迁移状态，不参与结构一致性判定）。
+
+    pgvector 的 HNSW 索引由 ``ensure_vector_index`` 在向量构建成功后就地定型
+    （见 ``ai/models/ai.py`` 的 embedding_vector 注释），既不进迁移状态也不随
+    建表产生；同一进程内先跑过向量构建的库会多出这条索引，与「全新安装」的
+    建表语义无关。
+    """
+    try:
+        from ai.services.knowledge.ai_vector_ddl import INDEX_NAME
+    except Exception:  # noqa: BLE001 ai 域被裁剪时无该索引，按空集处理
+        return set()
+    return {INDEX_NAME}
+
+
 def _index_names(dsn: str, table: str) -> set[str]:
-    return {row[0] for row in _rows(dsn, f"select indexname from pg_indexes where tablename = '{table}'")}
+    names = {row[0] for row in _rows(dsn, f"select indexname from pg_indexes where tablename = '{table}'")}
+    return names - _runtime_index_names()
 
 
 def _project_ledger(dsn: str) -> set[tuple[str, str]]:
@@ -212,7 +228,10 @@ class TestUpgradeCheckIntegration:
 class TestStructureParityWithFreshInstall:
     """补表路径必须与全新安装一致：新建表的索引集合逐一对齐（结构出自 Django 的 CreateModel）。"""
 
-    def test_created_tables_match_fresh_database(self, aligned_sample):
+    def test_created_tables_match_fresh_database(self, aligned_sample, db):
+        # 显式依赖 db 夹具：本模块其余用例不用数据库标记（见文件头注释），单模块运行时
+        # 没有兄弟模块触发测试库建库/换名，对照库会落到空库上（表集合为空 → 假失败）。
+        # db 只影响默认别名的测试库，样本库是 out-of-band 建的独立库，不受影响。
         dsn, _meta, result = aligned_sample
         fresh = settings.DATABASES["default"]
         fresh_dsn = f"postgresql://{fresh['USER']}:{fresh['PASSWORD']}@{fresh['HOST']}:{fresh['PORT']}/{fresh['NAME']}"

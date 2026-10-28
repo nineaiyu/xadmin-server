@@ -81,6 +81,38 @@ class MenuViewSet(
     # 批量更新白名单：批量启停（与行内启停同一字段口径，逐项走序列化器校验）
     batch_update_fields = ("is_active",)
 
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+                    "fields": build_object_type(),
+                },
+                required=["pks", "fields"],
+                description="批量更新：主键列表 + 待修改字段（白名单校验）",
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="batch-update")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """批量修改菜单
+
+        权限点与菜单/目录的启停语义不同：权限点代表动作授权，由角色与字段权限
+        链路独立消费，停用权限点会让授权面静默失效。两类节点混批一律拒绝，
+        避免前端级联或第三方客户端把权限点随目录一起停用。
+        """
+        payload = request.data if isinstance(request.data, dict) else {}
+        pks = payload.get("pks") or []
+        if isinstance(pks, (list, tuple)) and pks:
+            types = set(Menu.objects.filter(pk__in=pks).values_list("menu_type", flat=True))
+            if Menu.MenuChoices.PERMISSION in types and len(types) > 1:
+                return ApiResponse(
+                    code=1004,
+                    detail=_("Permission codes cannot be batch updated together with menus or directories"),
+                )
+        return super().batch_update(request, *args, **kwargs)
+
     def get_recycle_restore_queryset(self, pks: Any) -> Any:
         """成组恢复：目录删除时后代被标记同一 deleted_at，按时间戳成组恢复。"""
         selected = self.filter_queryset(Menu.all_objects.filter(deleted_at__isnull=False, pk__in=pks))

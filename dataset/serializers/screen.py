@@ -22,6 +22,7 @@ from dataset.models.dataset import (
     ScreenClipboard,
     ScreenTemplate,
     ScreenTemplateVersion,
+    ScreenVersion,
 )
 from dataset.utils.dataset import numeric_columns_of, visible_dataset_queryset
 from dataset.utils.screen_layout import (
@@ -131,6 +132,8 @@ class ScreenSerializer(BaseModelSerializer):
     ignore_field_permission = True
     # 非创建者修改/删除被写守卫拒绝（1003）：下发 is_owner 供行内按钮显隐
     row_owner_guard = True
+    # 乐观锁基线（write_only）：客户端回传所见行的布局版本，保存时与当前版本比对
+    base_version = serializers.IntegerField(write_only=True, required=False, min_value=0)
 
     # 列表形态派生：canvas-grid / canvas-free / carousel（与投屏端 active_screen_panes 同源）
     render_mode = serializers.SerializerMethodField(label=_("Render mode"))
@@ -151,6 +154,8 @@ class ScreenSerializer(BaseModelSerializer):
             "layout",
             "layout_mode",
             "free_layout",
+            "layout_version",
+            "base_version",
             "render_mode",
             "interval",
             "refresh",
@@ -160,7 +165,7 @@ class ScreenSerializer(BaseModelSerializer):
             "created_time",
             "updated_time",
         ]
-        read_only_fields = ["pk", "created_time", "updated_time"]
+        read_only_fields = ["pk", "layout_version", "created_time", "updated_time"]
         # RePlusPage 列表列（主题色不进列表：色彩单元格无可读信息）
         table_fields = [
             "name",
@@ -232,6 +237,15 @@ class ScreenSerializer(BaseModelSerializer):
         不匹配的载荷永远不会被渲染（静默回退到另一形态），必然是一次误操作，直接拒绝。
         未写入的另一模式载荷原样保留——模式来回切换不丢布局。
         """
+        base_version = attrs.pop("base_version", None)
+        if (
+            base_version is not None
+            and self.instance is not None
+            and int(base_version) != int(self.instance.layout_version or 1)
+        ):
+            raise serializers.ValidationError(
+                {"base_version": _("The content has been modified by another user; reload before saving")}
+            )
         mode = attrs.get("layout_mode") or getattr(self.instance, "layout_mode", Screen.LayoutMode.GRID)
         if mode == Screen.LayoutMode.FREE:
             if attrs.get("layout"):
@@ -321,6 +335,17 @@ class ScreenTemplateVersionSerializer(BaseModelSerializer):
     class Meta:
         model = ScreenTemplateVersion
         fields = ["pk", "version", "name", "group", "free_layout", "created_time"]
+        read_only_fields = fields
+
+
+class ScreenVersionSerializer(BaseModelSerializer):
+    """大屏布局历史版本（只读列表形态）：回滚目标选择用，不做写操作。"""
+
+    ignore_field_permission = True
+
+    class Meta:
+        model = ScreenVersion
+        fields = ["pk", "version", "layout", "layout_mode", "free_layout", "created_time"]
         read_only_fields = fields
 
 

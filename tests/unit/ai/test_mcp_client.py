@@ -128,6 +128,25 @@ class TestResponseParsing:
         with pytest.raises(mcp.McpClientError):
             client._call("tools/list")
 
+    @pytest.mark.parametrize("allowed", [False, True])
+    def test_request_follows_loopback_policy(self, monkeypatch, allowed):
+        """环回放行跟随 DEBUG / WEBHOOK_ALLOW_LOOPBACK，不再硬编码放行。"""
+        seen = {}
+
+        def _capture(method, url, **kwargs):
+            seen.update(kwargs)
+            return _FakeResponse(
+                payload=json.dumps({"jsonrpc": "2.0", "id": 1, "result": {}}).encode(),
+                headers={"Content-Type": "application/json"},
+            )
+
+        monkeypatch.setattr(mcp, "loopback_allowed", lambda: allowed)
+        monkeypatch.setattr(mcp, "pinned_request", _capture)
+        client = mcp.McpClient("http://127.0.0.1:9/mcp")
+
+        assert client._call("tools/list") == {}
+        assert seen["allow_loopback"] is allowed
+
 
 class TestToolSummary:
     def test_summary_keeps_display_fields(self):

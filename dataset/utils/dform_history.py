@@ -97,11 +97,41 @@ def merged_fields_of_forms(forms: Any) -> list[Any]:
     return fields
 
 
+def snapshot_resolvable(obj: Any) -> bool:
+    """提交版本能否解析到 schema 快照（= 当前版本，或命中历史窗口内快照行）。
+
+    版本真值且超出保留窗口（``MAX_SCHEMA_HISTORY``）时返回 False——掩码侧对这类
+    提交按 fail-closed 处理（敏感性无法确认的键一律按敏感掩码），历史敏感键不因
+    版本滚出快照窗口而明文。版本为空（版本化之前的行）维持「回退当前 schema」
+    既有语义，按可解析处理。
+    """
+    if not getattr(obj, "form_id", None):
+        return True
+    form = obj.form
+    try:
+        version = int(obj.schema_version)
+    except (TypeError, ValueError):
+        return True
+    if version and version == int(form.schema_version or 1):
+        return True
+    for item in form.schema_history or []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            snapshot_version = int(item.get("version") or 0)
+        except (TypeError, ValueError):
+            continue
+        if snapshot_version == version:
+            return True
+    return False
+
+
 def submission_schema(obj: Any) -> list[Any]:
     """单条提交的详情渲染口径：提交版 schema ∪ data 中无法识别的键（兜底可见）。
 
     当前 schema 仍存在的字段保持原样，已删除字段标注历史；快照缺失（版本超出保留
-    窗口）时以当前 schema 为底，data 中的其余键按「未知键」补出（值确定可见）。
+    窗口）时以当前 schema 为底，data 中的其余键按「未知键」补出——fail-closed：
+    该场景下敏感性无法确认，未知键补 ``sensitive`` 标记（掩码链路按敏感处理）。
     """
     if not obj.form_id:
         return []
@@ -112,10 +142,14 @@ def submission_schema(obj: Any) -> list[Any]:
         for item in fields_of(schema_for_version(form, obj.schema_version))
     ]
     known = {key_of(item) for item in fields}
+    fail_closed = not snapshot_resolvable(obj)
     for key in obj.data or {}:
         name = str(key)
         if name in known:
             continue
-        fields.append({"key": name, "label": f"{name}{HISTORICAL_MARK}", "type": "input", "historical": True})
+        fallback = {"key": name, "label": f"{name}{HISTORICAL_MARK}", "type": "input", "historical": True}
+        if fail_closed:
+            fallback["sensitive"] = True
+        fields.append(fallback)
         known.add(name)
     return fields

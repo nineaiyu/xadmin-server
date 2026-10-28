@@ -82,7 +82,17 @@ def get_users_notice_q(user_obj: Any) -> Any:
 
 
 def get_user_unread_q1(user_obj: Any) -> Any:
-    return get_users_notice_q(user_obj) & ~Q(notice_user=user_obj)
+    """公告类未读：发布范围内、尚无本人「已读」行（messageuserread.unread=False）的消息。
+
+    已读口径统一到 messageuserread（batch-read / all-read 为公告补建 read 行）：
+    标记已读后角标与 ?unread=true 同步归零，all-read 也不再为已读公告重复补建无效行
+    （旧口径 ``~Q(notice_user=user)`` 让公告恒为未读，角标永不归零且与列表口径相悖）。
+    """
+    return (
+        get_users_notice_q(user_obj)
+        & ~Q(notice_user=user_obj)
+        & ~Q(messageuserread__owner=user_obj, messageuserread__unread=False)
+    )
 
 
 def get_user_unread_q2(user_obj: Any) -> Any:

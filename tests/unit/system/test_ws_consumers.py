@@ -15,6 +15,7 @@ import os
 import pytest
 
 from common.celery.utils import CELERY_LOG_MAGIC_MARK
+from message.ws.base import AsyncJsonWebsocket
 from task.models.export import ExportRecord
 from task.models.task import TaskExecution
 
@@ -96,6 +97,8 @@ class FakeTaskLogConsumer:
         self.accepted = True
 
     # --- 复用真实实现 ---
+    is_authenticated = AsyncJsonWebsocket.is_authenticated
+    reject = AsyncJsonWebsocket.reject
     push_once = property(lambda self: self._cls.push_once.__get__(self))
     push_tick = property(lambda self: self._cls.push_tick.__get__(self))
     push_log_loop = property(lambda self: self._cls.push_log_loop.__get__(self))
@@ -194,11 +197,13 @@ class TestTaskLogPush:
         anon.scope = {"user": None, "url_route": {"kwargs": {"pk": record.pk}}}
         run(TaskLogNotify.connect(anon))
         assert anon.closed == 4401
+        assert anon.accepted is True  # 先 accept 再 close：否则客户端只会拿到握手 403
 
         other = make_consumer(record.pk, normal_user)
         other.scope = {"user": normal_user, "url_route": {"kwargs": {"pk": record.pk}}}
         run(TaskLogNotify.connect(other))
         assert other.closed == 4403
+        assert other.accepted is True
 
     def test_connect_accepts_owner(self, normal_user):
         from task.ws import TaskLogNotify
@@ -318,6 +323,8 @@ class TestMonitorNotify:
             async def accept(self):
                 self.accepted = True
 
+            is_authenticated = AsyncJsonWebsocket.is_authenticated
+            reject = AsyncJsonWebsocket.reject
             connect = MonitorNotify.connect
             disconnect = MonitorNotify.disconnect
             ping = MonitorNotify.ping
@@ -331,6 +338,7 @@ class TestMonitorNotify:
         consumer = self._consumer(None)
         run(MonitorNotify.connect(consumer))
         assert consumer.closed == 4401
+        assert consumer.accepted is True
 
     def test_unauthorized_rejected(self, normal_user):
         """无 SystemMonitor 菜单权限：4403（监控数据属敏感信息）。"""
@@ -339,6 +347,7 @@ class TestMonitorNotify:
         consumer = self._consumer(normal_user)
         run(MonitorNotify.connect(consumer))
         assert consumer.closed == 4403
+        assert consumer.accepted is True
 
     def test_authorized_accepts(self, superuser, monkeypatch):
         from system.ws_monitor import MonitorNotify

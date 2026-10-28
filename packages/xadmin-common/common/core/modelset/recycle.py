@@ -25,6 +25,8 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
+from common.contracts import ensure_impact_confirmed
+from common.core.modelset.batch import normalize_pks
 from common.core.response import ApiResponse
 from common.settings_contract import kernel_setting
 from common.swagger.utils import get_default_response_schema
@@ -34,6 +36,40 @@ logger = get_logger(__name__)
 
 # drf-spectacular 中字符串类型为 STR（无 STRING 别名）
 _PKS_ARRAY = build_array_type(build_basic_type(OpenApiTypes.STR) or {})
+
+
+def _parse_pks(request: Any, model: Any, *, required: bool, empty_detail: Any = None) -> Any:
+    """回收站 ``pks`` 入参解析：显式提供时做模型级主键归一，非法即拒绝。
+
+    返回 ``(pks, error)`` 三元语义：
+
+    - ``error`` 非 None：参数非法，直接返回给客户端——**绝不能**把「归一失败」
+      折叠成空列表，否则 purge 会落入「清除全部超期数据」分支（越权清库）；
+    - ``pks`` 非 None：按选中主键处理；
+    - 两者皆 None：未提供 ``pks``（仅 purge 的保留期清扫语义）。
+
+    JSON 数组等非对象请求体、非数组 / 空数组 / 非法主键（如向 UUID 主键传
+    任意字符串）一律显式报错，不再静默按空处理。
+    """
+    empty_detail = empty_detail or _("Please select the data")
+    data = request.data
+    if not isinstance(data, dict):
+        return None, ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+    if "pks" not in data:
+        if required:
+            return None, ApiResponse(code=1001, detail=empty_detail)
+        return None, None
+    raw = data.get("pks")
+    if not isinstance(raw, (list, tuple)):
+        return None, ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+    if not raw:
+        return None, ApiResponse(code=1001, detail=empty_detail)
+    valid, invalid = normalize_pks(model, raw)
+    # 空值不算非法主键但也不能作为选中项：整批只有空值时等同于未选
+    valid = [pk for pk in valid if pk not in (None, "")]
+    if invalid or not valid:
+        return None, ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+    return valid, None
 
 
 class RecycleBinAction:
@@ -70,9 +106,10 @@ class RecycleBinAction:
     @action(methods=["patch"], detail=False, url_path="recycle/restore")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def recycle_restore(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """从回收站恢复{cls}数据"""
-        pks = request.data.get("pks") or []
-        if not pks:
-            return ApiResponse(code=1001, detail=_("Please select the data to restore"))
+        model = self.get_queryset().model
+        pks, error = _parse_pks(request, model, required=True, empty_detail=_("Please select the data to restore"))
+        if error is not None:
+            return error
         count = 0
         skipped = 0
         for instance in self.get_recycle_restore_queryset(pks):
@@ -102,14 +139,31 @@ class RecycleBinAction:
 
         不传 pks 时清除全部超过保留期的数据
         """
-        queryset = self.get_recycle_purge_queryset(request.data.get("pks") or [])
+        model = self.get_queryset().model
+        pks, error = _parse_pks(request, model, required=False)
+        if error is not None:
+            return error
+        queryset = self.get_recycle_purge_queryset(pks)
+        # 复用删除影响面守卫：登记模型仍有引用时要求显式确认（与 destroy/batch 同口径），
+        # 否则「彻底删除」可绕过引用保护直接清库
+        ensure_impact_confirmed(self, request, queryset=queryset)
         count = 0
+        skipped = 0
         # 经 filter_queryset 后不保证是 QuerySet（过滤器/取值域可返回 list），
         # 因此保留 iterator 能力判断：是 QuerySet 时走游标分批，否则按可迭代对象处理
         for instance in queryset.iterator() if hasattr(queryset, "iterator") else queryset:
-            instance.hard_delete()  # 走原始 delete 链，物理文件/级联照常清理
-            count += 1
-        return ApiResponse(detail=_("Purged {} data").format(count))
+            try:
+                # 逐行 savepoint：单行硬删失败（PROTECT 引用等）不毒化整批
+                with transaction.atomic():
+                    instance.hard_delete()  # 走原始 delete 链，物理文件/级联照常清理
+                count += 1
+            except IntegrityError:
+                skipped += 1
+                logger.warning(f"purge skipped due to integrity constraint: {instance}")
+        detail = _("Purged {} data").format(count)
+        if skipped:
+            detail += ", " + _("Skipped {} data with integrity constraints").format(skipped)
+        return ApiResponse(detail=detail)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="recycle")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

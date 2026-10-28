@@ -226,6 +226,37 @@ class TestMentions:
         users = chat_service.mention_users("@alice @bob @nobody 集合", exclude_username="alice")
         assert [user.pk for user in users] == [bob.pk]
 
+    def test_mention_users_scoped_to_public_room_chat_access(self, alice, bob):
+        """公共房间「成员」= 持聊天准入权：未开通聊天的账号不被 @ 触达。"""
+        from identity.models import UserRole
+        from system.models import Menu, MenuMeta
+
+        menu = Menu.objects.create(
+            name="聊天室列表",
+            path="api/chat/room$",
+            method="GET",
+            menu_type=Menu.MenuChoices.PERMISSION,
+            meta=MenuMeta.objects.create(title="聊天室列表"),
+        )
+        role = UserRole.objects.create(name="chat-alice", code="chat-alice")
+        role.menu.add(menu)
+        alice.roles.add(role)
+
+        room = chat_service.get_public_room()
+        users = chat_service.mention_users("@alice @bob", room=room)
+        assert [user.pk for user in users] == [alice.pk]
+
+    def test_mention_users_scoped_to_private_room_members(self, alice, bob):
+        """私聊/群聊按成员行收敛：非成员的 @username 不产生提醒目标。"""
+        from identity.models import UserInfo
+
+        outsider = UserInfo.objects.create_user(username="carol", password="Test@123456")
+        room = chat_service.get_or_create_private_room(alice, bob)
+        users = chat_service.mention_users("@alice @carol", room=room)
+        assert [user.pk for user in users] == [alice.pk]
+        # carol 已存在且被 @ 到（按用户名解析），但非成员 → 不产生提醒目标
+        assert outsider.pk not in [user.pk for user in users]
+
 
 class TestRoomListing:
     def test_list_user_rooms_public_first(self, alice):

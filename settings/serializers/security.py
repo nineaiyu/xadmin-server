@@ -4,11 +4,13 @@
 # filename : security
 # author : ly_13
 # date : 8/1/2024
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.utils.ip import is_ip_address, is_ip_network, is_ip_segment
-from settings.serializers.contract import SettingSaveContractMixin
+from settings.serializers.contract import SettingSaveContractMixin, effective_value
 
 
 class SecurityPasswordRuleSerializer(SettingSaveContractMixin, serializers.Serializer):
@@ -184,6 +186,20 @@ class SecurityLoginAuthSerializer(SettingSaveContractMixin, serializers.Serializ
         required=False, default=True, label=_("Login by basic"), help_text=_("Enable basic verify to user login")
     )
 
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # 组合约束：登录入口开启时三种登录方式至少启用一项，否则登录页整体死页
+        # （与 settings.services「实际生效状态」诊断同口径，保存期即拒绝）
+        if effective_value(self, "SECURITY_LOGIN_ACCESS_ENABLED", attrs, True) and not any(
+            effective_value(self, name, attrs, default)
+            for name, default in (
+                ("SECURITY_LOGIN_BY_BASIC_ENABLED", True),
+                ("SECURITY_LOGIN_BY_EMAIL_ENABLED", True),
+                ("SECURITY_LOGIN_BY_SMS_ENABLED", False),
+            )
+        ):
+            raise serializers.ValidationError(_("Login requires at least one enabled method (basic, email or sms)"))
+        return attrs
+
 
 class SecurityRegisterAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
     SECURITY_REGISTER_ACCESS_ENABLED = serializers.BooleanField(
@@ -217,6 +233,19 @@ class SecurityRegisterAuthSerializer(SettingSaveContractMixin, serializers.Seria
     SECURITY_REGISTER_BY_SMS_ENABLED = serializers.BooleanField(
         required=False, default=False, label=_("Register by sms"), help_text=_("Enable send sms verify code to user")
     )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # 组合约束：注册流程必须经邮箱/短信验证码完成，通道全关 = 流程走不通
+        # （与 settings.services 注册诊断「requires at least one available channel」同口径）
+        if effective_value(self, "SECURITY_REGISTER_ACCESS_ENABLED", attrs, True) and not any(
+            effective_value(self, name, attrs, default)
+            for name, default in (
+                ("SECURITY_REGISTER_BY_EMAIL_ENABLED", True),
+                ("SECURITY_REGISTER_BY_SMS_ENABLED", False),
+            )
+        ):
+            raise serializers.ValidationError(_("Register requires at least one verify code channel (email or sms)"))
+        return attrs
 
 
 class SecurityResetPasswordAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
@@ -257,6 +286,20 @@ class SecurityResetPasswordAuthSerializer(SettingSaveContractMixin, serializers.
         label=_("Reset password by sms"),
         help_text=_("Enable send sms verify code to user"),
     )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # 组合约束：找回密码必须经邮箱/短信验证码完成，通道全关 = 流程走不通
+        if effective_value(self, "SECURITY_RESET_PASSWORD_ACCESS_ENABLED", attrs, True) and not any(
+            effective_value(self, name, attrs, default)
+            for name, default in (
+                ("SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED", True),
+                ("SECURITY_RESET_PASSWORD_BY_SMS_ENABLED", False),
+            )
+        ):
+            raise serializers.ValidationError(
+                _("Reset password requires at least one verify code channel (email or sms)")
+            )
+        return attrs
 
 
 class SecurityBindEmailAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
@@ -351,6 +394,23 @@ class SecurityVerifyCodeSerializer(SettingSaveContractMixin, serializers.Seriali
     VERIFY_CODE_LOWER_CASE = serializers.BooleanField(required=False, label=_("Lowercase"))
 
     VERIFY_CODE_DIGIT_CASE = serializers.BooleanField(required=False, label=_("Digits"))
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # 组合约束（SET-P1-02）：字符集三项全关会让 random_string 抛 ValueError，
+        # 邮箱/短信验证码、注册、找回密码、MFA 邮件挑战全部 500——保存期直接拒绝。
+        # 未提交键回落运行时当前值：PATCH 单关最后一项时同样能拦住。
+        if not any(
+            effective_value(self, name, attrs, default)
+            for name, default in (
+                ("VERIFY_CODE_UPPER_CASE", False),
+                ("VERIFY_CODE_LOWER_CASE", False),
+                ("VERIFY_CODE_DIGIT_CASE", True),
+            )
+        ):
+            raise serializers.ValidationError(
+                _("Verify code charset requires at least one of uppercase, lowercase or digits")
+            )
+        return attrs
 
 
 # MFA / 监控阈值序列化器拆分至 security_mfa.py（文件行数门禁），此处再导出保持既有导入面

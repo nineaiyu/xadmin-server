@@ -10,6 +10,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
+from tests.responses import read_text
 
 pytestmark = pytest.mark.django_db
 
@@ -31,7 +32,7 @@ def _make_form(**overrides):
 
 
 def _csv_lines(resp) -> list:
-    return resp.content.decode("utf-8-sig").strip().splitlines()
+    return read_text(resp).strip().splitlines()
 
 
 @pytest.fixture
@@ -81,7 +82,7 @@ class TestSubmissionExport:
         client.force_authenticate(user=normal_user)
         resp = client.get(f"{EXPORT_URL}?type=csv")
         assert resp.status_code == 200
-        content = resp.content.decode("utf-8-sig")
+        content = read_text(resp)
         assert "张三" in content
         assert "超管" not in content
 

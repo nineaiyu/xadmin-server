@@ -369,18 +369,31 @@ class SendVerifyCodeAPIView(GenericAPIView):
             return ApiResponse(code=1001, detail=_("Operation failed. Abnormal data"))
 
         # 仅真实投递通道（phone/email）：验证码随真实下发，响应不回显
-        if should_send:
-            try:
+        try:
+            if should_send:
                 content, code = self.prepare_code_data(username)
                 SendAndVerifyCodeUtil(target, code, backend=form_type, **content).gen_and_send_async()
-            except ValueError as e:
-                # 发送工具抛出的 ValueError 为业务文案
-                logger.warning("Send verify code failed: %s", e)
-                return ApiResponse(code=1002, detail=str(e))
-        else:
-            # 防枚举：目标不存在时不发送，但支付同等的模板渲染开销（响应时间对齐），
-            # 响应文案/结构与其他请求完全一致（后续验证码校验必然失败）
-            self.prepare_code_data(username or target)
+            else:
+                # 防枚举：目标不存在时不发送，但支付同等的模板渲染开销（响应时间对齐），
+                # 响应文案/结构与其他请求完全一致（后续验证码校验必然失败）
+                self.prepare_code_data(username or target)
+        except ValueError as e:
+            # 账号/短信工具抛出的 ValueError 是业务文案；字符集三项全关（历史脏配置，
+            # 写入侧已拦截但存量行仍可能存在）同样从这里出——统一可读错误，不再 500
+            logger.warning("Send verify code failed: %s", e)
+            return ApiResponse(code=1002, detail=str(e))
+        except APIException:
+            # 限流（CodeSendOverRate）等控制流异常必须原样上抛：中间件映射成 429，
+            # 不能被下面的兜底吞成 1002
+            raise
+        except Exception:
+            # C-03：SMTP / 短信网关不可达抛的是连接类异常（不是 ValueError），
+            # 以前会直接 500 且把内部地址抛给前端；改为可读文案 + 服务端完整堆栈
+            logger.warning("Send verify code transport failed", exc_info=True)
+            return ApiResponse(
+                code=1002,
+                detail=_("Failed to send verification code, please try again later"),
+            )
         cache_data = {"target": target, "form_type": form_type, "query_key": query_key, "extra": extra}
         verify_token = TokenTempCache.generate_cache_token(settings.VERIFY_CODE_TTL, cache_data)
         data = {"verify_token": verify_token, "extra": extra}
