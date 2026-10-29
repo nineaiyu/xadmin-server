@@ -122,7 +122,9 @@ def check_upload_limits(user_obj: Any, file_objs: Any) -> list[int]:
     max_size = get_upload_max_size(user_obj)
     quota_mb = get_user_quota_mb(user_obj) or 0
     count_limit = get_user_count_limit(user_obj) or 0
-    owner_files = UploadFile.objects.filter(creator=user_obj)
+    # 软删除只置 deleted_at、物理文件保留到回收站彻底清除：配额必须按全量行统计，
+    # 否则「上传 → 删除 → 再上传」可绕过存储配额与文件数上限。
+    owner_files = UploadFile.all_objects.filter(creator=user_obj)
     used_size = (owner_files.aggregate(size=Sum("filesize"))["size"] or 0) if quota_mb else 0
     used_count = owner_files.count() if count_limit else 0
 

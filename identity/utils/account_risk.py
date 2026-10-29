@@ -303,6 +303,9 @@ def handle_account_risk(risk: Any, action: Any, operator: Any = None, remark: An
     user = risk.user
     if action in ("notify", "force_change_password", "force_logout", "disable") and user is None:
         return False, str(_("The user of this risk item no longer exists"))
+    if user is not None and user.is_superuser and action in ("force_logout", "disable"):
+        # 与用户管理页 target-mutable 同口径：风险处置入口不能成为停用/踢超管的旁路。
+        return False, str(_("Superuser accounts cannot be disabled or forcibly logged out by risk handling"))
 
     try:
         if action == "notify":

@@ -21,8 +21,13 @@ from audit.services import UserLoginLog
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
+from common.utils.request import get_request_ip
 from common.utils.verify_code import TokenTempCache
-from identity.services.auth_login import login_success
+from identity.services.auth_login import (
+    complete_login,
+    evaluate_login_policy_for_request,
+    reject_login,
+)
 from identity.services.token_issue_login import issue_session_token
 from identity.utils.auth import ValidateError
 from mfa.services import (
@@ -155,8 +160,27 @@ class LoginMFAVerifyAPIView(APIView):
         if not ok:
             raise ValidateError(msg)
 
+        # 二次验证通过后再复核全局登录开关与访问策略：密码阶段到 MFA 提交之间
+        # 管理员可能关闭登录或收紧策略；策略的「强制 MFA」已由本次验证满足，
+        # 因此只处理拒绝分支，不再触发第二次 MFA 挑战。
+        _force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, get_request_ip(request))
+        if reject_detail:
+            return reject_login(
+                request,
+                user,
+                reject_detail,
+                login_type=UserLoginLog.LoginTypeChoices.USERNAME,
+            )
+        mfa_response = complete_login(
+            request,
+            user,
+            login_type=UserLoginLog.LoginTypeChoices.USERNAME,
+            policy_checked=True,
+            ignore_user_mfa=True,
+        )
+        if mfa_response:
+            return mfa_response
         TokenTempCache.expired_cache_token(request.data.get("mfa_token"))
         # 会话登记 + sid claim 绑定 + 生命周期 + 改密标记 + last_login（与账密/验证码登录同口径）
         result = issue_session_token(request, user, UserLoginLog.LoginTypeChoices.USERNAME)
-        login_success(request, user)
         return ApiResponse(data=result)

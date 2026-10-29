@@ -302,6 +302,10 @@ def build_zip(payload: dict[str, Any]) -> bytes:
     for raw in models:
         single = {**payload, "model": str(raw)}
         single.pop("models", None)
+        # 批量模式文档口径：字段级覆盖只属于单模型请求；串用会把首个模型的
+        # 字段名/字典绑定套到其余模型（未知字段直接报错，同名则被错误改写）。
+        for key in ("fields", "include_fields", "exclude_fields"):
+            single.pop(key, None)
         ctx, artifacts, steps = _prepare(engine, single)
         all_artifacts.extend(artifacts)
         sections.append((f"{ctx['app_label']}.{ctx['model_name']}（{ctx['verbose_name']}）", steps))

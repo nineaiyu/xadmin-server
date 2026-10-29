@@ -169,6 +169,17 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
 元数据接口（search-columns）复用同一套字段权限，前端表单/表格列随用户权限动态收敛——**列隐藏是服务端裁剪的结果，不是前端遮挡
 **。
 
+### 4.3 数据集执行链路
+
+数据集执行没有单一菜单上下文，字段权限按「角色在所有菜单下的该模型字段授权并集」生效，
+并与数据集 `columns` 求交集。数据集通过 `field_permission_mode` 选择无配置时的语义：
+
+- `inherit`（个人数据集、存量共享数据集默认）：角色没有任何该模型字段授权时不额外裁剪；
+- `strict`（新建/切换为共享数据集默认）：无授权即空结果，`execute` / `aggregate` / `count_only`
+  与请求级 `filters` 全部 fail-closed；
+- 迁移前运行 `python manage.py dataset_field_permission_audit`，列出有共享数据集执行权限、
+  但未配置字段权限的角色；`--fail` 可用于发布门禁。
+
 ## 五、缓存与失效
 
 ### 5.1 缓存 key 一览（`packages/xadmin-common/common/decorators/cache.py`）

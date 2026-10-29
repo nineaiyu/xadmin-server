@@ -10,7 +10,7 @@ from typing import Any
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.base.crypto import AESCipher
+from common.base.crypto import AESCipher, get_signer
 from common.settings_contract import kernel_required_setting
 
 
@@ -63,6 +63,23 @@ class AESField(models.Field):
 
 class AESCharField(AESField, models.CharField):
     pass
+
+
+class EncryptedCharField(models.CharField):
+    """字段级 v3（HKDF + AES-GCM）透明加密；存量明文原样可读、下次写回自动加密。"""
+
+    def from_db_value(self, value: Any, expression: Any, connection: Any) -> Any:
+        return self.to_python(value)
+
+    def to_python(self, value: Any) -> Any:
+        if not isinstance(value, str) or not value.startswith("v3:"):
+            return value
+        return get_signer().decrypt(value)
+
+    def get_prep_value(self, value: Any) -> Any:
+        if isinstance(value, str) and value and not value.startswith("v3:"):
+            return get_signer().encrypt(value).decode("utf-8")
+        return value
 
 
 class AESTextField(AESField, models.TextField):

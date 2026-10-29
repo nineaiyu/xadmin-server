@@ -130,7 +130,12 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         try:
             extra_filters = request.data.get("filters")
             if extra_filters:
-                validate_filters(dataset.bound_model, extra_filters, user_obj=request.user)
+                validate_filters(
+                    dataset.bound_model,
+                    extra_filters,
+                    user_obj=request.user,
+                    strict=str(dataset.field_permission_mode) == "strict",
+                )
             max_rows = None
             max_rows_raw = request.data.get("max_rows")
             if max_rows_raw is not None:
@@ -168,7 +173,12 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         try:
             extra_filters = request.data.get("filters")
             if extra_filters:
-                validate_filters(dataset.bound_model, extra_filters, user_obj=request.user)
+                validate_filters(
+                    dataset.bound_model,
+                    extra_filters,
+                    user_obj=request.user,
+                    strict=str(dataset.field_permission_mode) == "strict",
+                )
             result = aggregate_dataset(
                 dataset,
                 request.user,

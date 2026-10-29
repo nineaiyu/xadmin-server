@@ -69,6 +69,8 @@ class ApiLogin(GenericAPIView):
     @extend_schema(exclude=True)
     @xframe_options_exempt  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        if not kernel_setting("SECURITY_LOGIN_ACCESS_ENABLED"):
+            return ApiResponse(code=1001, detail=_("Login forbidden"))
         username = str(request.data.get("username") or "").strip()
         ipaddr = get_request_ip(request)
         login_block = LoginBlockUtil(username, ipaddr)

@@ -69,10 +69,20 @@ def _extract_pdf(raw: bytes) -> str:
     return text
 
 
+#: DOCX 解压后 XML/媒体总量上限（防高压缩比 zip bomb；压缩前 2MB 不足以约束展开体积）
+MAX_DOCX_UNCOMPRESSED_BYTES = 20 * 1024 * 1024
+
+
 def _extract_docx(raw: bytes) -> str:
     """DOCX 正文提取：段落 + 表格单元格（各自成行，保序）。"""
     _require_size(raw)
     try:
+        import zipfile
+
+        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+            uncompressed = sum(info.file_size for info in archive.infolist())
+        if uncompressed > MAX_DOCX_UNCOMPRESSED_BYTES:
+            raise ValidationError(str(_("The DOCX document is too large after decompression")))
         import docx
 
         document = docx.Document(io.BytesIO(raw))

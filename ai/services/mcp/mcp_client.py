@@ -25,8 +25,10 @@ from typing import Any
 import requests
 from django.utils.translation import gettext_lazy as _
 
-from common.core.response import API_SUCCESS_CODE
 from common.utils.outbound import OutboundBlocked, loopback_allowed, pinned_request, validate_outbound_config_url
+
+from .mcp_audit import MCP_AUDIT_MODULE
+from .mcp_audit import audit_mcp_call as audit_mcp_call
 
 MCP_PROTOCOL_VERSION = "2025-06-18"
 CLIENT_NAME = "xadmin"
@@ -37,8 +39,6 @@ MAX_BODY_BYTES = 2 * 1024 * 1024
 RESULT_TEXT_LIMIT = 4000
 #: 工具调用参数 JSON 体积上限（AI 动作链路与 mcp-servers/call 端点同一口径）
 MAX_ARGUMENTS_BYTES = 32 * 1024
-#: MCP client 侧调用审计的 module 名（审计报表与配额计数共用同一口径）
-MCP_AUDIT_MODULE = "AI:mcp:client"
 
 # ---------------------------------------------------------------------------
 # 快照 input_schema 有界化（快照要喂给 LLM 工具目录，必须收敛体积与形态）
@@ -235,8 +235,16 @@ class McpClient:
         return b"".join(chunks).decode("utf-8", errors="replace")
 
     def _read_sse(self, response: Any, request_id: Any) -> dict[str, Any]:
-        """SSE 响应：逐行取 ``data:`` 负载，返回 id 匹配的 JSON-RPC message。"""
+        """SSE 响应：逐行取 ``data:`` 负载，返回 id 匹配的 JSON-RPC message。
+
+        累计字节上限与 JSON 分支共用 ``MAX_BODY_BYTES``：远端可持续流式输出，
+        不能让它把 worker 内存/连接占满。
+        """
+        total = 0
         for raw_line in response.iter_lines(decode_unicode=False):
+            total += len(raw_line) if raw_line else 0
+            if total > MAX_BODY_BYTES:
+                raise McpClientError(_("MCP server response exceeds the size limit"))
             if not raw_line:
                 continue
             line = raw_line.decode("utf-8", errors="replace").strip()
@@ -454,47 +462,3 @@ def daily_quota_error(server: Any) -> str:
     if used >= limit:
         return str(_("MCP daily call quota reached ({}/{}); it resets tomorrow").format(used, limit))
     return ""
-
-
-def audit_mcp_call(
-    user: Any,
-    server: Any,
-    tool: str,
-    ok: bool,
-    detail: str = "",
-    arguments: dict[str, Any] | None = None,
-    extra: dict[str, Any] | None = None,
-) -> None:
-    """MCP 调用语义审计：落 OperationLog(module=AI:mcp:client)。
-
-    ``extra``：补充对账维度——AI 动作链路传 ``channel=mcp_tool``，与
-    同请求落下的 AI:action 审计行按调用参数对上双模块记录。
-    """
-    import logging
-
-    from audit.services import OperationLog
-
-    logger = logging.getLogger(__name__)
-    try:
-        OperationLog.objects.create(
-            module=MCP_AUDIT_MODULE,
-            object_pk=str(getattr(server, "pk", "")),
-            creator=user if getattr(user, "pk", None) else None,
-            auth_type=OperationLog.AuthType.AI,
-            status_code=API_SUCCESS_CODE if ok else 1001,
-            response_code=API_SUCCESS_CODE if ok else 1001,
-            changes=json.dumps(
-                {
-                    "server": server.name,
-                    "tool": tool,
-                    "arguments": arguments or {},
-                    "status": "ok" if ok else "failed",
-                    "detail": detail,
-                    **(extra or {}),
-                },
-                ensure_ascii=False,
-                default=str,
-            )[:4096],
-        )
-    except Exception:  # noqa: BLE001 审计失败不影响业务
-        logger.warning("write MCP client audit failed", exc_info=True)

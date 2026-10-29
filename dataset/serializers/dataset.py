@@ -90,6 +90,7 @@ class DatasetSerializer(BaseModelSerializer):
             "row_limit",
             "config",
             "visibility",
+            "field_permission_mode",
             "numeric_columns",
             "report_count",
             "created_time",
@@ -108,7 +109,18 @@ class DatasetSerializer(BaseModelSerializer):
         return count if count is not None else obj.report_set.count()
 
     def validate(self, attrs: Any) -> Any:
-        """保存侧白名单校验：部分更新时与既有实例字段合并后整体校验。"""
+        """保存侧白名单校验：部分更新时与既有实例字段合并后整体校验。
+
+        新建/切换为共享且未显式选择模式时默认 strict：共享数据集面向未配置字段权限
+        的角色时 fail-closed；个人数据集保持 inherit，避免打空个人仪表盘。
+        """
+        visibility = attrs.get("visibility", getattr(self.instance, "visibility", None))
+        if (
+            visibility == Dataset.Visibility.SHARED
+            and "field_permission_mode" not in self.initial_data
+            and (self.instance is None or self.instance.visibility != Dataset.Visibility.SHARED)
+        ):
+            attrs["field_permission_mode"] = Dataset.FieldPermissionMode.STRICT
         merged = {
             "bound_model": attrs.get("bound_model", getattr(self.instance, "bound_model", "")),
             "columns": attrs.get("columns", getattr(self.instance, "columns", [])),

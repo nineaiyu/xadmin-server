@@ -129,6 +129,9 @@ class AsyncChatCompletionsClient:
                 raise AiSdkError("Failed to contact the AI provider") from exc
             if (response.status_code >= 500 or response.status_code == 429) and attempt + 1 < attempts:
                 logger.warning("ai async chat provider busy (%s), retrying", response.status_code)
+                close = getattr(response, "aclose_all", None)
+                if close is not None:
+                    await close()
                 await asyncio.sleep(_backoff(attempt))
                 continue
             return response

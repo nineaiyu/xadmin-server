@@ -121,7 +121,11 @@ def invite_user(instance: Any, request: Any) -> tuple[bool, Any]:
 
     if not user_invite.mail_channel_configured():
         return False, user_invite.INVITE_MAIL_UNAVAILABLE_MESSAGE
-    user_invite.send_invite(instance, request=request)
+    try:
+        user_invite.send_invite(instance, request=request)
+    except Exception as exc:  # noqa: BLE001 邮箱缺失等可读校验错误转业务码
+        detail = getattr(exc, "detail", None) or str(exc)
+        return False, detail
     return True, _("Invitation sent")
 
 

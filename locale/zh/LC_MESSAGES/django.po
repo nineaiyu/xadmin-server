@@ -3756,6 +3756,15 @@ msgstr "配置"
 msgid "{\"date_field\": ...} for trend"
 msgstr "{\"date_field\": ...}，趋势聚合用时间字段"
 
+msgid "Field permission mode"
+msgstr "字段权限模式"
+
+msgid "Inherit"
+msgstr "继承"
+
+msgid "Strict"
+msgstr "严格"
+
 #: dataset/models/dataset.py:36 dataset/models/dataset.py:58
 #: dataset/models/dataset.py:108 dataset/models/dataset.py:149
 msgid "Visibility"

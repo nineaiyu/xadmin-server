@@ -323,7 +323,7 @@ def rerun_record(user: Any, kind: str, pk: str) -> dict[str, Any]:
         if kind == TYPE_IMPORT:
             return _rerun_import(record, user)
         if str(record.module or "") == REPORT_MODULE:
-            return _rerun_report(record)
+            return _rerun_report(record, user)
         return _rerun_export(record, user)
     except Exception:  # noqa: BLE001 重跑失败归一为可读文案
         # 异常原文可能含 SQL/连接串/内部路径：只进日志，不回传任务中心
@@ -370,7 +370,7 @@ def _rerun_import(record: Any, user: Any) -> dict[str, Any]:
     return {"ok": True, "detail": str(_("Rerun submitted")), "data": {"record_id": str(clone.pk)}}
 
 
-def _rerun_report(record: Any) -> dict[str, Any]:
+def _rerun_report(record: Any, user: Any = None) -> dict[str, Any]:
     from dataset.analysis_tasks import _precreate_record, run_scheduled_report
     from dataset.models.dataset import Report
 
@@ -378,7 +378,7 @@ def _rerun_report(record: Any) -> dict[str, Any]:
     report = Report.objects.filter(pk=report_id).first() if report_id else None
     if report is None:
         return {"ok": False, "detail": str(_("The original report no longer exists"))}
-    new_record = _precreate_record(report)
+    new_record = _precreate_record(report, creator=user)
     # 重跑与「run 动作」同为手动触发：不推进调度簿记 last_run_at（bookkeep_schedule=False），
     # last_status 照常写——否则重跑恰好落在到期点与派发扫描之间会吞掉当期投递
     _dispatch(

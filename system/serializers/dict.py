@@ -100,22 +100,31 @@ class DataDictSerializer(BaseModelSerializer):
         typed_value: int = count
         return typed_value
 
+    @staticmethod
+    def _usage(obj: Any) -> dict[str, Any]:
+        """同一次序列化内复用一次 dict_usage（3 个指标共用，避免 3×3 Redis GET）。"""
+        usage = getattr(obj, "_dict_usage_cache", None)
+        if usage is None:
+            usage = dict_usage(obj.code)
+            obj._dict_usage_cache = usage
+        return usage
+
     def get_usage_count(self, obj: Any) -> int | None:
         """消费次数（仅类型行；字典项行不展示）。"""
         if obj.parent_id:
             return None
-        return int(dict_usage(obj.code)["usage_count"])
+        return int(self._usage(obj)["usage_count"])
 
     def get_last_used_at(self, obj: Any) -> str | None:
         if obj.parent_id:
             return None
-        return str(dict_usage(obj.code)["last_used_at"] or "") or None
+        return str(self._usage(obj)["last_used_at"] or "") or None
 
     def get_load_failure_count(self, obj: Any) -> int | None:
         """消费端加载失败次数（Redis 观测；失败不影响消费）。"""
         if obj.parent_id:
             return None
-        return int(dict_usage(obj.code)["load_failure_count"])
+        return int(self._usage(obj)["load_failure_count"])
 
     def to_internal_value(self, data: Any) -> Any:
         """写入前把 parent_code（字典类型编码）翻译成 parent 主键。

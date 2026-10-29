@@ -6,7 +6,7 @@
 # date : 8/10/2024
 from typing import Any
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -83,7 +83,7 @@ class DeptSerializer(BaseModelSerializer):
         }
 
     # 关联计数声明：注解名与字段名一致，列表/详情/导出由 RelationCountMixin 预聚合
-    relation_count_fields = {"user_count": Count("dept_query")}
+    relation_count_fields = {"user_count": Count("dept_query", filter=Q(dept_query__deleted_at__isnull=True))}
 
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
 
@@ -116,20 +116,29 @@ class DeptSerializer(BaseModelSerializer):
         未传的项保持不变（保留既有授权），避免编辑部门信息时误清空。
         """
         if roles is not None:
-            instance.roles.set(
+            requested = {str(item.pk) for item in roles if getattr(item, "pk", None)}
+            allowed = list(
                 get_filter_queryset(
-                    UserRole.objects.filter(pk__in=[item.pk for item in roles if getattr(item, "pk", None)]),
+                    UserRole.objects.filter(pk__in=requested),
                     self.request.user,
-                ).all()
+                )
             )
+            # 与用户页同口径：越权项显式拒绝，不能静默丢弃后仍提示保存成功。
+            if {str(item.pk) for item in allowed} != requested:
+                raise ValidationError(_("Some roles are outside your data scope"))
+            instance.roles.set(allowed)
         if rules is not None:
-            # 与 roles 同口径过行级数据权限：部门编辑带上取值域外的规则时不挂载
-            instance.rules.set(
+            # 与 roles 同口径过行级数据权限：越权规则显式拒绝
+            requested = {str(item.pk) for item in rules if getattr(item, "pk", None)}
+            allowed = list(
                 get_filter_queryset(
-                    DataPermission.objects.filter(pk__in=[item.pk for item in rules if getattr(item, "pk", None)]),
+                    DataPermission.objects.filter(pk__in=requested),
                     self.request.user,
-                ).all()
+                )
             )
+            if {str(item.pk) for item in allowed} != requested:
+                raise ValidationError(_("Some data permissions are outside your data scope"))
+            instance.rules.set(allowed)
 
     def create(self, validated_data: Any) -> Any:
         roles = validated_data.pop("roles", None)

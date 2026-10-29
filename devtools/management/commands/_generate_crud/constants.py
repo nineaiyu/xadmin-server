@@ -58,5 +58,5 @@ IMPORT_EXPORT_PERMISSIONS = (
 )
 # 不进序列化器/搜索的字段类型与审计字段名
 SEARCH_EXCLUDE_TYPES = (models.JSONField, models.FileField, models.ImageField, models.BinaryField)
-AUDIT_FIELDS = ("creator", "modifier", "dept_belong")
+AUDIT_FIELDS = ("creator", "modifier", "dept_belong", "deleted_at")
 FILE_RELATED_MODEL = "file.uploadfile"

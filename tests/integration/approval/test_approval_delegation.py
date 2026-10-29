@@ -372,6 +372,17 @@ class TestDelegationOwnership:
         assert resp.data["code"] == 1000, resp.data
         assert ApprovalDelegation.objects.filter(delegator=normal_user, delegate=agent).exists()
 
+    def test_create_all_flows_allowed(self, normal_user, agent, grant_permission, grant_data_all):
+        """空 flow_codes = 全部流程（与模型/前端标签同义），创建不再被拒绝。"""
+        grant_data_all(normal_user, "identity.userinfo", self.MODEL_LABEL)
+        grant_permission(
+            normal_user, "create:SystemApprovalDelegation", self.CREATE_PATH, method="POST", fields=self.WRITABLE_FIELDS
+        )
+        resp = self._client(normal_user).post(DELEGATIONS_URL, self._payload(normal_user, agent), format="json")
+        assert resp.data["code"] == 1000, resp.data
+        row = ApprovalDelegation.objects.get(delegator=normal_user, delegate=agent)
+        assert row.flow_codes == []
+
     def test_list_scoped_to_own(self, normal_user, other, agent, other_agent, grant_permission, grant_data_all):
         """列表只含本人作为委托人的记录（他人委托记录不可见）。"""
         grant_data_all(normal_user, self.MODEL_LABEL)

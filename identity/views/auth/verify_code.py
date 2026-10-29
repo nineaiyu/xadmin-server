@@ -19,7 +19,6 @@ from rest_framework.generics import GenericAPIView
 
 from captcha.const import verify_code_send_action
 from captcha.contracts import build_captcha_meta, captcha_globally_enabled
-from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import VerifyCodeThrottle
 from common.swagger.utils import get_default_response_schema
@@ -27,7 +26,7 @@ from common.utils import get_logger, random_string
 from common.utils.request import get_request_ip
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
 from identity.models import UserInfo
-from identity.utils.auth import ValidateError, check_is_block, check_token_and_captcha
+from identity.utils.auth import ValidateError, check_is_block, check_token_and_captcha, decrypt_submitted
 from settings.services import (
     LoginIpBlockUtil,
     SendVerifyCodeBlockUtil,
@@ -346,7 +345,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         )
 
         if config.get("encrypted"):
-            target = AESCipherV2(token).decrypt(target)
+            target = decrypt_submitted(target, token)
 
         query_key = form_type
         if form_type == "phone":

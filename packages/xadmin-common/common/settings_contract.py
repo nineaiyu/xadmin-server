@@ -130,6 +130,12 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
         default=30,
         consumers=("swagger/views.py",),
     ),
+    "SECURITY_LOGIN_ACCESS_ENABLED": KS(
+        "bool",
+        "全局登录开关（文档站登录与主登录共用；关闭后所有登录入口拒绝签发）",
+        default=True,
+        consumers=("swagger/views.py",),
+    ),
     # ---------------------------------------------------------------
     # 二、验证码
     # ---------------------------------------------------------------

@@ -17,6 +17,7 @@
   逐条落审计会淹没日志；鉴权口径本身已限定到房间成员）。
 """
 
+import mimetypes
 from typing import Any
 from urllib.parse import quote
 
@@ -148,6 +149,28 @@ def mark_attachment_used(upload: Any) -> None:
         upload.save(update_fields=["is_tmp", "updated_time"])
 
 
+_MEDIA_PREFIX = {KIND_VIDEO: "video/", KIND_AUDIO: "audio/"}
+
+
+def _safe_inline_media_type(upload: Any, kind: str) -> str:
+    """音/视频内联响应的服务端媒体类型。
+
+    客户端 ``mime_type`` 不可信（可把 HTML 声明成任意类型）：只有「扩展名推导类型」
+    或「已声明类型」落在对应 ``video/`` / ``audio/`` 前缀内才允许内联；声明为
+    ``text/html`` 等异类时返回空串，调用方回退为附件下载。扩展名推导优先，
+    避免 ``.mp4 + text/html`` 这类记录被浏览器当作 HTML 执行。
+    """
+    expected = _MEDIA_PREFIX[kind]
+    declared = str(upload.mime_type or "").split(";")[0].strip().lower()
+    guessed, _encoding = mimetypes.guess_type(str(upload.filename or ""))
+    guessed = str(guessed or "").lower()
+    if guessed.startswith(expected) and declared in ("", "application/octet-stream", guessed):
+        return guessed
+    if declared.startswith(expected):
+        return declared
+    return ""
+
+
 def attachment_response(message: Any, request: Any) -> Any:
     """受鉴权取件响应。
 
@@ -175,11 +198,16 @@ def attachment_response(message: Any, request: Any) -> Any:
     if not name or not storage_exists(name):
         return None
     if kind in (KIND_VIDEO, KIND_AUDIO):
-        # inline 渲染按存储的真实 MIME 下发（浏览器以该类型交给播放器，不做嗅探改判）；
-        # nosniff 兜底：即便 MIME 记录被污染也不会被浏览器嗅探成 HTML 执行
-        content_type = (upload.mime_type or "").split(";")[0].strip() or "application/octet-stream"
-        response = FileResponse(storage_open(name, "rb"), as_attachment=False, content_type=content_type)
-        response["Content-Disposition"] = "inline; filename*=UTF-8''{}".format(quote(upload.filename or ""))
+        # 内联类型不由客户端 MIME 决定：扩展名/白名单校验不通过时回退附件下载，
+        # 防止 .mp4 + text/html 之类的记录在应用同源执行脚本。
+        media_type = _safe_inline_media_type(upload, kind)
+        if media_type:
+            response = FileResponse(storage_open(name, "rb"), as_attachment=False, content_type=media_type)
+            response["Content-Disposition"] = "inline; filename*=UTF-8''{}".format(quote(upload.filename or ""))
+            response["X-Content-Type-Options"] = "nosniff"
+            return response
+        response = FileResponse(storage_open(name, "rb"), as_attachment=True, content_type="application/octet-stream")
+        response["Content-Disposition"] = "attachment; filename*=UTF-8''{}".format(quote(upload.filename or ""))
         response["X-Content-Type-Options"] = "nosniff"
         return response
     response = FileResponse(

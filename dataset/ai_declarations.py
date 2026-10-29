@@ -147,7 +147,7 @@ AI_ACTIONS = {
         label=_("Aggregate a dataset"),
         description=_(
             "Aggregate a dataset into series (for charts): group by a field with a metric "
-            "(count/sum/avg/max/min + value field), optionally truncated by date"
+            "(count/sum/avg + value field), optionally truncated by day/month"
         ),
         method="POST",
         path="/api/dataset/datasets/<pk>/aggregate",
@@ -158,7 +158,7 @@ AI_ACTIONS = {
                 "type": "string",
                 "required": False,
                 "in": "body",
-                "description": "Aggregate metric: count (default) / sum / avg / max / min",
+                "description": "Aggregate metric: count (default) / sum / avg",
             },
             "value_field": {
                 "type": "string",
@@ -170,7 +170,7 @@ AI_ACTIONS = {
                 "type": "string",
                 "required": False,
                 "in": "body",
-                "description": "Date truncation for time grouping: day / month / year",
+                "description": "Date truncation for time grouping: day / month",
             },
         },
         modules=("analysis",),

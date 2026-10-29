@@ -128,6 +128,31 @@ class ChoicesAction:
         return ApiResponse(choices_dict=result)
 
 
+def _bounded_search_choices(value: Any, widget: Any, max_choices: int) -> tuple[list[Any], bool]:
+    """求值 search-fields 的 widget choices，并在求值前收紧关联 queryset。"""
+    queryset = getattr(getattr(value, "field", None), "queryset", None)
+    choices_source = widget
+    if max_choices and queryset is not None:
+        try:
+            # 复制字段/widget 后再绑定截断 queryset：直接改原字段会让本次元数据
+            # 构建把切片 QuerySet 缓存下来，后续过滤校验永久读到空集。
+            import copy
+
+            limited_field = copy.copy(value.field)
+            limited_field.queryset = queryset[: max_choices + 1]
+            limited_field.widget = copy.copy(value.field.widget)
+            limited_field.widget.choices = limited_field.choices
+            choices_source = limited_field.widget
+        except (TypeError, ValueError):
+            choices_source = widget
+    choices = list(getattr(choices_source, "choices", []))
+    if choices and choices[0][0] == "":
+        choices.pop(0)
+    if max_choices and len(choices) > max_choices:
+        return choices[:max_choices], True
+    return choices, False
+
+
 class SearchFieldsAction:
     filterset_class: Any
 
@@ -200,15 +225,8 @@ class SearchFieldsAction:
                 #     widget.input_type = 'text'
                 #     widget.choices = []
                 widget.input_type = get_format_intput_type(value, widget.input_type)
-                choices = list(getattr(widget, "choices", []))
-                if choices and len(choices) > 0 and choices[0][0] == "":
-                    choices.pop(0)
-                # 关联字段的 widget.choices 同样会全量求值，这里做同样的行数上限
                 max_choices = get_search_choices_max_count()
-                choices_truncated = False
-                if max_choices and len(choices) > max_choices:
-                    choices = choices[:max_choices]
-                    choices_truncated = True
+                choices, choices_truncated = _bounded_search_choices(value, widget, max_choices)
                 field = get_model_field(self.filterset_class._meta.model, value.field_name)
                 results.append(
                     {

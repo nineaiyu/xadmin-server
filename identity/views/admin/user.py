@@ -120,7 +120,7 @@ class UserViewSet(
     controlled_lookup = True
     extra_filter_class = [TagFilterBackend, ControlledLookupFilterBackend]
 
-    # export_as_zip = True  导出zip压缩包，密码是用户名
+    # export_as_zip = True  导出 zip 压缩包（口令为响应头 X-Export-Zip-Password 中的一次性随机值）
 
     def get_permissions(self) -> Any:
         """删除用户（单删/批量删）与模拟用户为敏感操作，需先通过密码二次确认"""

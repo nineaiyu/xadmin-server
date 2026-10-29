@@ -29,6 +29,7 @@ from typing import Any
 from django.http import FileResponse
 from django.utils.encoding import escape_uri_path
 from openpyxl import Workbook
+from openpyxl.cell import WriteOnlyCell
 from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.utils import get_column_letter
 from rest_framework.utils import encoders
@@ -80,13 +81,22 @@ def write_excel_file(path: str, renderer: Any, titles: list[Any], rows: Iterable
     """
     workbook = Workbook(write_only=True)
     sheet = workbook.create_sheet("Sheet")
+
     # 列宽：write_only 模式要求 <cols> 先于数据行写盘，而宽度必须扫完内容才知道，
     # 因此流式档不设自定义列宽（旧实现靠回读单元格算宽，与 write_only 互斥）。
-    title_row = [ILLEGAL_CHARACTERS_RE.sub("", str(cell)) for cell in titles]
+    def safe_cell(value: Any) -> Any:
+        text = ILLEGAL_CHARACTERS_RE.sub("", str(value))
+        # write_only 工作簿不回读单元格，append 的字符串会被 openpyxl 判为公式
+        # （=1+1 → data_type='f'）；显式构造文本单元格，与旧渲染器 data_type='s' 同口径。
+        cell = WriteOnlyCell(sheet, value=text)
+        cell.data_type = "s"
+        return cell
+
+    title_row = [safe_cell(cell) for cell in titles]
     sheet.append(title_row)
     count = 0
     for row in _iter_rendered_rows(renderer, rows, fields):
-        cells = [ILLEGAL_CHARACTERS_RE.sub("", str(value)) for value in row]
+        cells = [safe_cell(value) for value in row]
         sheet.append(cells)
         count += 1
     if titles:

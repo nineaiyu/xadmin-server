@@ -150,7 +150,12 @@ def validate_providers(value: Any) -> list[dict[str, Any]]:
     loopback 联调例外），IP 字面量按归属校验拒绝私网 / link-local / 元数据地址；
     域名写入侧不解析（内网 IdP 可能仅对服务端 DNS 可见），归属校验留到发送侧。
     """
-    from common.utils.outbound import OutboundBlocked, outbound_allowed_hosts, validate_outbound_config_url
+    from common.utils.outbound import (
+        OutboundBlocked,
+        loopback_allowed,
+        outbound_allowed_hosts,
+        validate_outbound_config_url,
+    )
     from identity.utils.oauth_flavors import FLAVOR_PRESETS, FLAVOR_REQUIRED_KEYS
 
     if value in (None, ""):
@@ -183,6 +188,7 @@ def validate_providers(value: Any) -> list[dict[str, Any]]:
                     url,
                     allowed_hosts=outbound_allowed_hosts(),
                     allow_http_whitelist=False,
+                    allow_loopback=loopback_allowed(),
                     scheme_message=_("OAuth provider url must use https: {}").format(url_key),
                 )
             except OutboundBlocked as exc:
@@ -343,13 +349,13 @@ def _pinned_request(method: str, url: str, **kwargs: Any) -> Any:
     """生产路径出站请求：与 Webhook / AI / MCP 同口径走 ``pinned_request``——
     发送侧严格校验归属（私网 / 环回 / link-local 拒绝，``OUTBOUND_ALLOWED_HOSTS``
     放行）并把连接固定为已校验 IP，消除 DNS rebinding 窗口；flavor 适配器共用。"""
-    from common.utils.outbound import pinned_request
+    from common.utils.outbound import loopback_allowed, pinned_request
 
     return pinned_request(
         method,
         url,
         allow_private=False,
-        allow_loopback=True,
+        allow_loopback=loopback_allowed(),
         allowed_hosts=_outbound_allowed_hosts(),
         **kwargs,
     )

@@ -13,14 +13,13 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 
-from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import ResetPasswordThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils.verify_code import TokenTempCache
 from identity.models import UserInfo
 from identity.models.ldap import LdapUserBinding
-from identity.utils.auth import verify_sms_email_code
+from identity.utils.auth import decrypt_submitted, verify_sms_email_code
 from settings.services import (
     ResetBlockUtil,
     check_history_password,
@@ -66,7 +65,7 @@ class ResetPasswordAPIView(GenericAPIView):
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 
         if settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED:
-            password = AESCipherV2(verify_token).decrypt(password)
+            password = decrypt_submitted(password, verify_token)
 
         instance = UserInfo.objects.filter(is_active=True, **{query_key: target}).first()
         if instance is None:

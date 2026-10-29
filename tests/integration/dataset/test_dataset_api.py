@@ -174,6 +174,27 @@ class TestDatasetCrud:
         dataset = Dataset.objects.get(name="活跃用户")
         assert dataset.creator.username == "admin"
 
+    def test_shared_dataset_defaults_to_strict_field_permission(self, auth_client, model_registry):
+        payload = {
+            "name": "共享严格字段",
+            "bound_model": "identity.userinfo",
+            "columns": ["username"],
+            "visibility": "shared",
+        }
+        response = auth_client.post(DATASET_URL, payload, format="json")
+        assert response.json()["code"] == 1000, response.data
+        assert Dataset.objects.get(name="共享严格字段").field_permission_mode == "strict"
+
+    def test_personal_dataset_defaults_to_inherit(self, auth_client, model_registry):
+        payload = {
+            "name": "个人继承字段",
+            "bound_model": "identity.userinfo",
+            "columns": ["username"],
+        }
+        response = auth_client.post(DATASET_URL, payload, format="json")
+        assert response.json()["code"] == 1000, response.data
+        assert Dataset.objects.get(name="个人继承字段").field_permission_mode == "inherit"
+
     def test_create_rejects_out_of_whitelist_model(self, auth_client, model_registry):
         payload = {"name": "坏模型", "bound_model": "demo.book", "columns": ["id"]}
         response = auth_client.post(DATASET_URL, payload, format="json")

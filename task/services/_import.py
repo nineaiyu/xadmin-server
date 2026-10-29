@@ -146,7 +146,10 @@ def _prepare_import_rows(record: Any, view_path: Any, user: Any) -> Any:
     """装配视图上下文并解析源文件行数据（含 thread-local 请求注入），返回 (view, rows, column_titles)。"""
     if not record.source_file or not record.source_file.filepath:
         raise ValueError(_("Import source file not found"))
-    source_path = record.source_file.filepath.path
+    # 对象存储没有本地 .path：统一走存储适配层读取源文件（本地/远端同一入口）。
+    from common.storage import storage_open
+
+    source_name = record.source_file.filepath.name
 
     view_cls = import_string(view_path)
     view = view_cls()
@@ -161,8 +164,8 @@ def _prepare_import_rows(record: Any, view_path: Any, user: Any) -> Any:
     # 行数据在 action 内已由文件解析器解析并序列化为 JSON（与同步导入同一条解析链）
     import json
 
-    with open(source_path, encoding="utf-8") as fp:
-        rows = json.load(fp)
+    with storage_open(source_name, "rb") as fp:
+        rows = json.loads(fp.read().decode("utf-8"))
     column_titles = (record.params or {}).get("column_titles") or []
     if rows:
         # 自关联依赖拓扑排序（与同步导入 import_data 同口径，父行先建）

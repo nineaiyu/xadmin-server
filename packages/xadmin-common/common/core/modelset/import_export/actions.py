@@ -11,6 +11,7 @@ from drf_spectacular.plumbing import build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
 
+from common.core.modelset.batch import normalize_pks
 from common.core.modelset.crud import CreateAction, UpdateAction
 from common.core.permission_meta import parent_fallback_action
 from common.core.response import ApiResponse
@@ -100,7 +101,11 @@ class ImportExportDataAction(CreateAction, UpdateAction, ImportAsyncAction, Only
         elif act == "update":
             queryset = self.filter_queryset(self.get_queryset())
             for item in data:
-                instance = queryset.filter(pk=item.get("pk")).first()
+                valid_pks, invalid = normalize_pks(queryset.model, [item.get("pk")])
+                if invalid or not valid_pks:
+                    failed += 1
+                    continue
+                instance = queryset.filter(pk=valid_pks[0]).first()
                 if not instance:
                     failed += 1
                     continue

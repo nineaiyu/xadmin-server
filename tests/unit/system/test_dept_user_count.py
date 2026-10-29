@@ -10,7 +10,7 @@
 
 import pytest
 from django.db import connection
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.test.utils import CaptureQueriesContext
 
 from identity.models import DeptInfo, UserInfo
@@ -92,6 +92,19 @@ class TestDeptUserCount:
         plain = DeptInfo.objects.get(pk=dept_page[0].pk)
         assert not hasattr(plain, "user_count")
 
+        serializer = DeptSerializer()
+        assert serializer.get_user_count(annotated) == 2
+        assert serializer.get_user_count(plain) == 2
+
+    def test_soft_deleted_user_not_counted(self, dept_page):
+        """注解与单对象回退都必须排除软删除成员。"""
+        dept = dept_page[0]
+        user = UserInfo.objects.create_user(username="soft-deleted", password="Test@123456", dept=dept)
+        user.delete()
+        annotated = DeptInfo.objects.annotate(
+            user_count=Count("dept_query", filter=Q(dept_query__deleted_at__isnull=True))
+        ).get(pk=dept.pk)
+        plain = DeptInfo.objects.get(pk=dept.pk)
         serializer = DeptSerializer()
         assert serializer.get_user_count(annotated) == 2
         assert serializer.get_user_count(plain) == 2

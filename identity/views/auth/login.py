@@ -18,7 +18,6 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from audit.services import UserLoginLog
 from captcha.const import CAPTCHA_ACTION_LOGIN
-from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
@@ -31,13 +30,13 @@ from identity.services.auth_login import (
 from identity.services.auth_login import (
     evaluate_login_policy_for_request,
     login_failed,
-    login_success,
     reject_login,
 )
 from identity.services.token_issue_login import issue_session_token
 from identity.utils.auth import (
     check_is_block,
     check_token_and_captcha,
+    decrypt_submitted,
     get_username_password,
     verify_sms_email_code,
 )
@@ -130,7 +129,13 @@ class BasicLoginAPIView(TokenObtainPairView):
         force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
         if reject_detail:
             return reject_login(request, user, reject_detail, login_type=_login_type_for(user))
-        mfa_response = complete_login(request, user, login_type=_login_type_for(user), force_mfa=force_mfa)
+        mfa_response = complete_login(
+            request,
+            user,
+            login_type=_login_type_for(user),
+            force_mfa=force_mfa,
+            policy_checked=True,
+        )
         if mfa_response:
             return mfa_response
         data = issue_session_token(request, user, _login_type_for(user))
@@ -192,7 +197,7 @@ class VerifyCodeLoginAPIView(GenericAPIView):
         if query_key == "username":
             password = request.data.get("password")
             if settings.SECURITY_LOGIN_ENCRYPTED_ENABLED:
-                password = AESCipherV2(verify_token).decrypt(password)
+                password = decrypt_submitted(password, verify_token)
             user = authenticate(**{query_key: target}, password=password)
             if not user:
                 # login_failed 内部抛异常，return 仅为显式终止（语义不依赖栈展开）
@@ -201,13 +206,8 @@ class VerifyCodeLoginAPIView(GenericAPIView):
             force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
             if reject_detail:
                 return reject_login(request, user, reject_detail, login_type=UserLoginLog.get_login_type(query_key))
-            mfa_response = complete_login(
-                request, user, login_type=UserLoginLog.LoginTypeChoices.USERNAME, force_mfa=force_mfa
-            )
-            if mfa_response:
-                return mfa_response
         else:
-            # 验证码登录本身已通过动态因子（短信/邮件验证码）验证，无需再走 MFA。
+            # 验证码登录本身已通过动态因子（短信/邮件验证码）验证，无需再走用户级 MFA。
             # is_active 复核：发码端点已按启用态过滤，这里兜底「发码后到提交前
             # 被禁用/删除」的窗口——禁用或不存在同走 login_failed 统一文案
             # （防枚举），不 500、不签发 token
@@ -219,6 +219,17 @@ class VerifyCodeLoginAPIView(GenericAPIView):
                 return reject_login(request, user, reject_detail, login_type=UserLoginLog.get_login_type(query_key))
 
         login_type = UserLoginLog.get_login_type(query_key)
+        # 所有验证码登录分支统一走 complete_login：策略强制 MFA 必须生效；动态因子
+        # 入口忽略用户级 MFA，但仍受全局登录开关/策略拒绝与登录成功链路约束。
+        mfa_response = complete_login(
+            request,
+            user,
+            login_type=login_type,
+            force_mfa=force_mfa,
+            policy_checked=True,
+            ignore_user_mfa=(query_key != "username"),
+        )
+        if mfa_response:
+            return mfa_response
         result = issue_session_token(request, user, login_type)
-        login_success(request, user, login_type=login_type)
         return ApiResponse(data=result)

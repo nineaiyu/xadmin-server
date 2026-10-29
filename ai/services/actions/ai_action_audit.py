@@ -13,6 +13,7 @@
 from typing import Any
 
 from audit.services import OperationLog, record
+from common.core.oplog_recorder import desensitize_payload
 from common.core.response import API_SUCCESS_CODE
 
 
@@ -28,7 +29,7 @@ def audit_ai_action(
         response_code=API_SUCCESS_CODE if ok else 1001,
         changes={
             "action": action_key,
-            "params": params,
+            "params": desensitize_payload(params),
             "status": "ok" if ok else "failed",
             "detail": detail,
             **(extra or {}),

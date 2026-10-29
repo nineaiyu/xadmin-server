@@ -22,6 +22,7 @@ from common.core.models import (
     SoftDeleteQuerySet,
     upload_directory_path,
 )
+from common.fields.char import EncryptedCharField
 from common.fields.image import ProcessedImageField
 
 
@@ -76,7 +77,7 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
     mfa_level = models.IntegerField(
         verbose_name=_("MFA level"), choices=MFALevelChoices.choices, default=MFALevelChoices.DISABLED
     )
-    otp_secret_key = models.CharField(verbose_name=_("OTP secret key"), max_length=64, default="", blank=True)
+    otp_secret_key = EncryptedCharField(verbose_name=_("OTP secret key"), max_length=256, default="", blank=True)
 
     # 认证方式策略：用户级可用验证方式（只能收窄全局/角色策略，空 = 不限）
     allowed_mfa_types = models.JSONField(verbose_name=_("Allowed MFA types"), default=list, blank=True)

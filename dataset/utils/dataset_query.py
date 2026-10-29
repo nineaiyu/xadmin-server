@@ -62,13 +62,14 @@ def execute_dataset(
     limit = min(int(dataset.row_limit or 1000), ROW_LIMIT_CAP)
     if max_rows is not None:
         limit = min(limit, max_rows)
+    strict = str(getattr(dataset, "field_permission_mode", "inherit")) == "strict"
     if count_only:
-        visible = viewer_visible_fields(dataset.bound_model, user_obj)
+        visible = viewer_visible_fields(dataset.bound_model, user_obj, strict=strict)
         if visible is not None and not visible:
             return {"columns": [], "rows": [], "total": 0, "limit": limit}
         return {"columns": [], "rows": [], "total": queryset.count(), "limit": limit}
     specs = [parse_column(model, column, whitelist) for column in columns]
-    visible = viewer_visible_fields(dataset.bound_model, user_obj)
+    visible = viewer_visible_fields(dataset.bound_model, user_obj, strict=strict)
     if visible is not None:
         specs = [spec for spec in specs if visible_root_of(spec) in visible]
     if not specs:
@@ -159,7 +160,8 @@ def aggregate_dataset(
     if date_trunc and group_spec is not None and group_spec.is_json and group_spec.value_type != "date":
         raise ValidationError(_("JSON trend column requires |date type: {}").format(group_spec.raw))
 
-    visible = viewer_visible_fields(dataset.bound_model, user_obj)
+    strict = str(getattr(dataset, "field_permission_mode", "inherit")) == "strict"
+    visible = viewer_visible_fields(dataset.bound_model, user_obj, strict=strict)
     if visible is not None:
         if group_spec is not None and visible_root_of(group_spec) not in visible:
             raise ValidationError(_("No field permission for {}.{}").format(dataset.bound_model, group_spec.raw))

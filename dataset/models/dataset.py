@@ -24,6 +24,12 @@ class Dataset(DbAuditModel, DbUuidModel):
     # 兼容历史访问面 `Dataset.Visibility`（枚举单源在 visibility.py）
     Visibility = Visibility
 
+    class FieldPermissionMode(models.TextChoices):
+        """字段权限模式：inherit = 未配置不裁剪（兼容存量）；strict = 未配置即空结果。"""
+
+        INHERIT = "inherit", _("Inherit")
+        STRICT = "strict", _("Strict")
+
     name = models.CharField(_("Name"), max_length=128, unique=True)
     description = models.CharField(_("Description"), max_length=512, blank=True, default="")
     bound_model = models.CharField(
@@ -38,6 +44,14 @@ class Dataset(DbAuditModel, DbUuidModel):
     config = models.JSONField(_("Config"), default=dict, blank=True, help_text=_('{"date_field": ...} for trend'))
     visibility = models.CharField(
         _("Visibility"), max_length=16, choices=Visibility.choices, default=Visibility.PERSONAL, db_index=True
+    )
+    field_permission_mode = models.CharField(
+        _("Field permission mode"),
+        max_length=16,
+        choices=FieldPermissionMode.choices,
+        default=FieldPermissionMode.INHERIT,
+        db_index=True,
+        help_text=_("strict = role without field permission config sees no columns; inherit = no extra pruning"),
     )
 
     class Meta:

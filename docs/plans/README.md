@@ -30,6 +30,11 @@
 | [RELEASE-5.0.1.md](RELEASE-5.0.1.md) | **5.0.1 发版台账**：上线实测暴露问题的修复清单 / 验证证据 / 正确的 tag 顺序 / 发布后验证 |
 | [交接-审查整改剩余项-2026.10.28.md](交接-审查整改剩余项-2026.10.28.md) | **本批交接单**：接手第一步（门禁 / 环境 / 契约核对）、剩余任务分级（P0 七项阻塞验收 / P1 八项新登记与未清偿 / P2 与测试缺口）、改动边界与已知风险、命令速查与验收口径 |
 | [审查整改批次-2026.10.28.md](审查整改批次-2026.10.28.md) | **双篇审查整改批次（状态唯一源）**：A 篇 P0 5 / P1 47 编号 + B 篇 P1 34 + 立即批次 P2 1 的任务总表与逐项状态（P0 全 ✅、A 篇 P1 全 ✅（含 2 项版本化补测试）、B 篇立即/次周全 ✅、月度/结构性 16 项按审查分层 ⏭ 顺延）、P2 backlog 归组与计数口径、门禁证据与进度日志 |
+| [code-review-fullstack-2026-10-29.md](code-review-fullstack-2026-10-29.md) | **全栈功能审查（A 篇，进行中）**：2026-10-29 全量审查的状态唯一源（页面/app 清单、发现登记簿、批次日志、门禁证据、覆盖率统计） |
+| [code-review-fullstack-2026-10-29-part2.md](code-review-fullstack-2026-10-29-part2.md) | **全栈功能审查（A 篇）part2**：页面清单与审查结果总表、链路映射表、页面详述（主篇的分篇） |
+| [code-review-fullstack-2026-10-29-part3.md](code-review-fullstack-2026-10-29-part3.md) | **全栈功能审查（A 篇）part3**：续审批次 17–23（common 剩余 / identity 剩余 / ai / approval / system / task / audit / file / dataset / notifications / settings / captcha / 前端共享层）、新增 P1×3 与 P2 候选×10 |
+| [code-review-fullstack-2026-10-29-part4.md](code-review-fullstack-2026-10-29-part4.md) | **全栈功能审查（A 篇）part4**：全量补读收口（common 内核 / integrations / demo / devtools / 前端剩余运行时源文件）、新增 P0×1（聊天附件 XSS）、P1×3（菜单图标 XSS / OAuth 环回 SSRF / 设置测试连接掩码）与 P2 候选×24 |
+| [code-review-remediation-2026-10-29.md](code-review-remediation-2026-10-29.md) | **上述审查的整改执行台账（状态唯一源）**：P0×2 / P1×8 全量修复、P2 已修与保留项逐条状态、验证命令与运行期未验证清单 |
 
 ## 已清理文档与去向（滚动登记）
 

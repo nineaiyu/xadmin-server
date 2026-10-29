@@ -103,7 +103,13 @@ class Command(BaseCommand):
 
     def _verify(self, options: Any, directory: str | None) -> None:
         model_key = options["model"]
-        months = options["month"] or sorted(log_archive.archived_months(model_key, directory))
+        # 校验入口必须列出清单中的所有月份（含损坏月份），不能复用「仅通过校验」的
+        # archived_months——否则篡改归档会被当成“不存在”，永远不报失败。
+        months = options["month"] or sorted(
+            item["month"]
+            for item in log_archive.list_archives(directory)
+            if item.get("model") == model_key and item.get("month")
+        )
         if not months:
             self.stdout.write(self.style.WARNING("（暂无可校验的归档）"))
             return

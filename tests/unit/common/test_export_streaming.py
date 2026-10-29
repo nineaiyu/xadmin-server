@@ -100,6 +100,20 @@ class TestWriteExcelFile:
         assert sheet.auto_filter.ref == "A1:B3"
         # 流式档不设自定义列宽（write_only 下 <cols> 必须先于数据行，见实现注释）
 
+    def test_formula_like_text_is_written_as_text(self, tmp_path):
+        """回归：write_only append 不得把用户可控的 = 开头文本写成公式。"""
+        path = str(tmp_path / "formula.xlsx")
+        write_excel_file(
+            path,
+            _FakeRenderer(),
+            ["名称(name)"],
+            [{"name": "=1+1"}, {"name": "+SUM(A1:A2)"}, {"name": "@cmd"}],
+            _fields(),
+        )
+        sheet = load_workbook(path).active
+        assert [sheet.cell(row=row, column=1).value for row in (2, 3, 4)] == ["=1+1", "+SUM(A1:A2)", "@cmd"]
+        assert all(sheet.cell(row=row, column=1).data_type != "f" for row in (2, 3, 4))
+
 
 class TestWriteCsvFile:
     def test_bom_and_rows(self, tmp_path):

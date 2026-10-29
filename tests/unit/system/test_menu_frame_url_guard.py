@@ -47,3 +47,28 @@ class TestFrameUrlGuard:
     def test_external_or_script_urls_rejected(self, url):
         with pytest.raises(serializers.ValidationError):
             _validate(url)
+
+
+class TestMenuIconGuard:
+    def _validate(self, icon):
+        return MenuMetaSerializer().validate_icon(icon)
+
+    @pytest.mark.parametrize(
+        "icon",
+        ["ep:reading", "IF-icon-home", '<svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z"/></svg>', None, ""],
+    )
+    def test_safe_icons_allowed(self, icon):
+        assert self._validate(icon) == icon
+
+    @pytest.mark.parametrize(
+        "icon",
+        [
+            '<svg onload="alert(1)"></svg>',
+            "<svg><script>alert(1)</script></svg>",
+            '<svg><foreignObject><body xmlns="http://www.w3.org/1999/xhtml">x</body></foreignObject></svg>',
+            "javascript:alert(1)",
+        ],
+    )
+    def test_script_icons_rejected(self, icon):
+        with pytest.raises(serializers.ValidationError):
+            self._validate(icon)

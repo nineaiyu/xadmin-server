@@ -3924,6 +3924,23 @@
             "title": "描述",
             "type": "string"
           },
+          "field_permission_mode": {
+            "default": {
+              "label": "Inherit",
+              "value": "inherit"
+            },
+            "description": "strict = role without field permission config sees no columns; inherit = no extra pruning",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "title": "Field permission mode",
+            "type": "object"
+          },
           "filters": {
             "description": "[{field, op, value}]，op 限白名单",
             "title": "过滤条件"
@@ -5697,7 +5714,6 @@
           "deleted_at",
           "description",
           "field",
-          "fields",
           "is_active",
           "menu",
           "name",
@@ -10565,6 +10581,23 @@
             "title": "描述",
             "type": "string"
           },
+          "field_permission_mode": {
+            "default": {
+              "label": "Inherit",
+              "value": "inherit"
+            },
+            "description": "strict = role without field permission config sees no columns; inherit = no extra pruning",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "title": "Field permission mode",
+            "type": "object"
+          },
           "filters": {
             "description": "[{field, op, value}]，op 限白名单",
             "title": "过滤条件"
@@ -15349,7 +15382,6 @@
           "builtin",
           "code",
           "field",
-          "fields",
           "name",
           "pk",
           "updated_time",
@@ -16160,11 +16192,6 @@
             "title": "昵称",
             "type": "string"
           },
-          "password": {
-            "readOnly": true,
-            "title": "密码",
-            "type": "string"
-          },
           "phone": {
             "readOnly": true,
             "title": "手机",
@@ -16191,7 +16218,6 @@
           "is_active",
           "last_login",
           "nickname",
-          "password",
           "phone",
           "pk",
           "username"

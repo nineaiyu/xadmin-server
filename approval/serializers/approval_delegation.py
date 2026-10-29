@@ -100,10 +100,7 @@ class ApprovalDelegationSerializer(BaseModelSerializer):
         flow_codes = attrs.get("flow_codes")
         if flow_codes is None and self.instance is not None:
             flow_codes = self.instance.flow_codes
-        # 新建必须显式选择流程；更新显式传空同样拒绝。存量空值（历史「全部流程」
-        # 语义）不因无关字段 PATCH 被强制中断，避免升级即不可维护旧行。
-        if not flow_codes and (self.instance is None or "flow_codes" in attrs):
-            raise serializers.ValidationError({"flow_codes": _("Select at least one approval flow")})
+        # 空列表 = 全部流程（与模型/前端「全部流程」标签同义）；非空时逐码校验。
         if flow_codes:
             from approval.models import ApprovalFlow
 

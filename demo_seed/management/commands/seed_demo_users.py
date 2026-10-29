@@ -53,8 +53,9 @@ class Command(BaseCommand):
         count = max(1, min(int(options["count"]), 2000))
         user_model = get_user_model()
         if options["reset"]:
-            deleted, _ = user_model.objects.filter(username__startswith=DEMO_PREFIX).delete()
-            self.stdout.write(f"removed existing demo users: {deleted}")
+            # 与 --clean-only 同口径：只删本命令的 demo_数字 用户，不误伤
+            # seed_demo_flows / seed_demo_org 创建的 demo_flow_* 等命令专用账号。
+            self._remove_batch_users()
 
         demo_dept = DeptInfo.objects.filter(code="demo").first()
         depts = list(DeptInfo.objects.filter(code__in=("demo", "demo_rd", "demo_fin")).order_by("pk"))

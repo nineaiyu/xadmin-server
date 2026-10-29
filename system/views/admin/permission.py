@@ -6,7 +6,7 @@
 # date : 6/16/2023
 from typing import Any
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 
@@ -58,7 +58,7 @@ class DataPermissionViewSet(BaseModelSet, ImportExportDataAction, RecycleBinActi
             # 多个关系注解会相互放大，统一 distinct=True 纠正
             queryset = queryset.annotate(
                 scope_menu_count=Count("menu", distinct=True),
-                scope_user_count=Count("userinfo", distinct=True),
+                scope_user_count=Count("userinfo", distinct=True, filter=Q(userinfo__deleted_at__isnull=True)),
                 scope_dept_count=Count("deptinfo", distinct=True),
             )
         return queryset

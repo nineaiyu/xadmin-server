@@ -78,6 +78,9 @@ class EmbeddingClient:
                 raise AiSdkError("Failed to contact the AI provider") from exc
             if (response.status_code >= 500 or response.status_code == 429) and attempt + 1 < attempts:
                 logger.warning("ai embedding provider busy (%s), retrying", response.status_code)
+                close = getattr(response, "close", None)
+                if close is not None:
+                    close()
                 time.sleep(min(_RETRY_BASE_DELAY * (2**attempt), _RETRY_MAX_DELAY))
                 continue
             return response

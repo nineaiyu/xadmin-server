@@ -185,7 +185,7 @@ def _check_model_values(model: Any, spec: Any, op: str, values: Any) -> None:
             raise ValidationError(_("Filter value does not match field type: {}").format(item)) from None
 
 
-def validate_filters(bound_model: str, filters: Any, user_obj: Any = None) -> None:
+def validate_filters(bound_model: str, filters: Any, user_obj: Any = None, strict: bool = False) -> None:
     """filters: [{field, op, value}]；field 在白名单、op 在白名单、op 与字段类型匹配、
     value 能按字段类型转换。
 
@@ -206,7 +206,7 @@ def validate_filters(bound_model: str, filters: Any, user_obj: Any = None) -> No
         raise ValidationError(_("Too many dataset filters (max {})").format(FILTER_LIMIT))
     model = get_whitelisted_model(bound_model)
     whitelist = set(available_fields(bound_model))
-    visible = viewer_visible_fields(bound_model, user_obj) if user_obj is not None else None
+    visible = viewer_visible_fields(bound_model, user_obj, strict=strict) if user_obj is not None else None
     for item in filters:
         if not isinstance(item, dict) or not item.get("field") or not item.get("op"):
             raise ValidationError(_("Invalid dataset filters"))
@@ -351,11 +351,12 @@ def build_queryset(dataset: Any, user_obj: Any, extra_filters: Any = None) -> An
     model = get_whitelisted_model(dataset.bound_model)
     whitelist = set(available_fields(dataset.bound_model))
     specs = resolve_columns(model, dataset.columns, whitelist)
+    strict = str(getattr(dataset, "field_permission_mode", "inherit")) == "strict"
     validate_filters(dataset.bound_model, dataset.filters)
     if extra_filters:
-        validate_filters(dataset.bound_model, extra_filters, user_obj=user_obj)
+        validate_filters(dataset.bound_model, extra_filters, user_obj=user_obj, strict=strict)
 
-    visible = viewer_visible_fields(dataset.bound_model, user_obj)
+    visible = viewer_visible_fields(dataset.bound_model, user_obj, strict=strict)
     if visible is not None:
         specs = [spec for spec in specs if visible_root_of(spec) in visible]
     if not specs:
@@ -391,7 +392,7 @@ def build_queryset(dataset: Any, user_obj: Any, extra_filters: Any = None) -> An
     return get_filter_queryset(queryset, user_obj), model, columns
 
 
-def viewer_visible_fields(bound_model: str, user_obj: Any) -> Any:
+def viewer_visible_fields(bound_model: str, user_obj: Any, strict: bool = False) -> Any:
     """浏览者对 bound_model 的字段权限白名单。
 
     角色解析与 `common.core.permission.get_user_field_queryset` 同口径
@@ -399,12 +400,14 @@ def viewer_visible_fields(bound_model: str, user_obj: Any) -> Any:
     数据集执行无菜单上下文，逐菜单裁剪在此无意义。
 
     返回值语义：
-    - ``None``：超管，或浏览者的角色**没有任何**该模型字段权限配置 → 不裁剪（全量）。
-      字段权限是显式授权行为（白名单制），而数据集执行不走菜单序列化裁剪链路；
-      若在此 fail-closed 全裁，所有未配置字段权限的普通用户的仪表盘都会被裁空；
-    - ``set``：白名单字段名集合（执行/聚合列与其求交集后输出）。
+    - 超管：``None``（不裁剪）；
+    - 角色有字段权限配置：``set`` 白名单（执行/聚合列与其求交集）；
+    - 角色无任何配置：``strict=True`` 返回空集（fail-closed），否则 ``None``（inherit）。
 
-    结果按请求级 memo 缓存（键含用户 pk）：同请求多卡片同屏只查一次。
+    数据集按 ``field_permission_mode`` 选择 strict：新建/切换为共享数据集默认 strict，
+    个人数据集与存量共享数据集保持 inherit，避免直接打空仪表盘。
+
+    结果按请求级 memo 缓存（键含用户 pk 与 strict）：同请求多卡片同屏只查一次。
     """
 
     def _load() -> Any:
@@ -415,16 +418,18 @@ def viewer_visible_fields(bound_model: str, user_obj: Any) -> Any:
             return None
         conditions, has_role = role_dept_q(user_obj, "role")
         if not has_role:
-            return None
+            return frozenset() if strict else None
         fields = set(
             FieldPermission.objects.filter(conditions)
             .filter(field__parent__name=bound_model)
             .values_list("field__name", flat=True)
             .distinct()
         )
-        return frozenset(fields) if fields else None
+        if fields:
+            return frozenset(fields)
+        return frozenset() if strict else None
 
-    cached = _request_memo(("viewer_visible_fields", bound_model, getattr(user_obj, "pk", None)), _load)
+    cached = _request_memo(("viewer_visible_fields", bound_model, getattr(user_obj, "pk", None), strict), _load)
     return set(cached) if cached is not None else None
 
 

@@ -138,14 +138,14 @@ class TestInstanceCc:
 
 
 class TestDiscussion:
-    def _make_instance(self, applicant, approver):
-        flow = make_flow(approver)
+    def _make_instance(self, applicant, approver, cc_users=None):
+        flow = make_flow(approver, cc_users=cc_users)
         instance, error = create_instance(flow=flow, applicant=applicant, title="讨论", form_data={})
         assert error is None
         return instance
 
     def test_comment_with_mention(self, auth_client, applicant, approver, cc_user):
-        instance = self._make_instance(applicant, approver)
+        instance = self._make_instance(applicant, approver, cc_users=[cc_user])
         resp = auth_client.post(
             f"{INSTANCES_URL}/{instance.pk}/comment",
             {"content": f"@{approver.username} @{cc_user.username} 请补充说明"},
@@ -159,6 +159,17 @@ class TestDiscussion:
         resp = auth_client.get(f"{INSTANCES_URL}/{instance.pk}/comments")
         assert resp.data["code"] == 1000, resp.data
         assert len(resp.data["data"]) == 1
+
+    def test_comment_mention_outside_scope_is_dropped(self, auth_client, applicant, approver):
+        outsider = UserInfo.objects.create_user(username="collab_outsider", password="Test@123456")
+        instance = self._make_instance(applicant, approver)
+        resp = auth_client.post(
+            f"{INSTANCES_URL}/{instance.pk}/comment",
+            {"content": f"@{outsider.username} 不应收到提醒"},
+            format="json",
+        )
+        assert resp.data["code"] == 1000
+        assert resp.data["data"]["mentions"] == []
 
     def test_comment_validation(self, auth_client, applicant, approver):
         instance = self._make_instance(applicant, approver)

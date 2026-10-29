@@ -135,20 +135,24 @@ def service_connection(config: "LdapConfig | None" = None) -> Any:
         server,
         user=cfg.bind_dn or None,
         password=cfg.bind_password or None,
-        auto_bind=True,
+        auto_bind=False,
         read_only=True,
     )
+    # StartTLS 必须在 bind 之前：auto_bind=True 会先完成明文 bind，
+    # 服务账号口令在 TLS 建立前已走网络。
     if cfg.start_tls:
         conn.start_tls()
+    conn.bind()
     return conn
 
 
 def user_connection(user_dn: Any, password: Any, config: "LdapConfig | None" = None) -> Any:
     """以用户 DN + 密码 bind（认证判定）；auto_bind 失败抛 LDAPException。"""
     server = build_server(config)
-    conn = Connection(server, user=user_dn, password=password, auto_bind=True, read_only=True)
+    conn = Connection(server, user=user_dn, password=password, auto_bind=False, read_only=True)
     if _resolve(config).start_tls:
         conn.start_tls()
+    conn.bind()
     return conn
 
 

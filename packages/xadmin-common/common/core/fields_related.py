@@ -10,6 +10,7 @@ from functools import partial
 from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Model
 from django.db.models.fields.files import FieldFile
 from django.utils.translation import gettext_lazy as _
@@ -278,7 +279,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             obj = queryset.get(pk=pk)
         except ObjectDoesNotExist:
             self.fail("does_not_exist", pk_value=pk)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, DjangoValidationError):
             self.fail("incorrect_type", data_type=type(pk).__name__)
 
         if memo is not None:

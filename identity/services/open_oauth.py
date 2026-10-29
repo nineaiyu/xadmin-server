@@ -207,13 +207,19 @@ def validate_authorize_request(data: Any) -> tuple[Any, ...]:
     return application, redirect_uri, scopes, code_challenge, code_challenge_method, state, None
 
 
-def _revoke_refresh_row(row: Any) -> None:
-    """一次性失效刷新令牌并联动失效关联 access（轮换 / 撤销共用）。"""
+def _revoke_refresh_row(row: Any) -> bool:
+    """一次性失效刷新令牌并联动失效关联 access（轮换 / 撤销共用）。
+
+    条件 UPDATE 返回是否真正由本次调用完成失效：并发轮换时只有一方拿到 True，
+    另一方必须按 invalid_grant 拒绝，不能各自签发一套新令牌。
+    """
     with transaction.atomic():
-        row.is_revoked = True
-        row.save(update_fields=["is_revoked", "updated_time"])
-        if row.access_token_id:
+        changed = OAuthRefreshToken.objects.filter(pk=row.pk, is_revoked=False).update(
+            is_revoked=True, updated_time=timezone.now()
+        )
+        if changed and row.access_token_id:
             PersonalAccessToken.objects.filter(pk=row.access_token_id).update(is_active=False)
+        return bool(changed)
 
 
 def token_payload(
@@ -257,21 +263,24 @@ def rotate_refresh_token(application: Any, raw_refresh: Any) -> Any:
 
     返回 ``(token 载荷, 错误三元组)``，语义同 :func:`exchange_authorization_code`。
     """
-    row = (
-        OAuthRefreshToken.objects.filter(token_hash=hash_pat_token(raw_refresh), application=application)
-        .select_related("user")
-        .first()
-        if raw_refresh
-        else None
-    )
-    now = timezone.now()
-    if row is None or row.is_revoked or (row.expired_at and row.expired_at <= now):
+    if not raw_refresh:
         return None, ("invalid_grant", _("Refresh token is invalid or revoked"), 400)
-    user = row.user
-    if user is None or not user.is_active:
-        return None, ("invalid_grant", _("Authorized user is disabled"), 400)
+    now = timezone.now()
     with transaction.atomic():
-        _revoke_refresh_row(row)
+        # 行锁把并发轮换串行化；条件 UPDATE 再兜底（锁等待期间被撤销的行）。
+        row = (
+            OAuthRefreshToken.objects.select_for_update()
+            .filter(token_hash=hash_pat_token(raw_refresh), application=application)
+            .select_related("user")
+            .first()
+        )
+        if row is None or row.is_revoked or (row.expired_at and row.expired_at <= now):
+            return None, ("invalid_grant", _("Refresh token is invalid or revoked"), 400)
+        user = row.user
+        if user is None or not user.is_active:
+            return None, ("invalid_grant", _("Authorized user is disabled"), 400)
+        if not _revoke_refresh_row(row):
+            return None, ("invalid_grant", _("Refresh token is invalid or revoked"), 400)
         scopes = row.scopes or []
         access, raw_access = issue_oauth_access_token(application, user, scopes)
         _refresh_row, raw_refresh_new = issue_oauth_refresh_token(application, user, scopes, access)

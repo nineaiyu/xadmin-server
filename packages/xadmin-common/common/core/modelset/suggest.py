@@ -119,8 +119,12 @@ class SuggestionsAction:
             return ApiResponse(code=1001, detail=_("Field is not a related field"))
 
         if pks:
-            # 回显：只补已选主键的 label，数量按上限截断防止拼长列表
-            queryset = queryset.filter(pk__in=pks[:SUGGEST_LIMIT_MAX])
+            # 回显：只补已选主键的 label，数量按上限截断防止拼长列表；
+            # 非法主键按模型主键类型归一后丢弃（不能把 UUID 校验异常打成 500）
+            from common.core.modelset.batch import normalize_pks
+
+            valid_pks, _invalid = normalize_pks(queryset.model, pks[:SUGGEST_LIMIT_MAX])
+            queryset = queryset.filter(pk__in=valid_pks)
         elif search:
             query = Q()
             for lookup in self._resolve_search_fields(field_name, field, queryset.model):

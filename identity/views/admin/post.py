@@ -17,7 +17,7 @@ from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
-from common.core.filter import BaseFilterSet
+from common.core.filter import BaseFilterSet, get_filter_queryset
 from common.core.modelset import (
     BaseModelSet,
     BatchPartialUpdateAction,
@@ -38,13 +38,16 @@ logger = get_logger(__name__)
 MEMBER_LIMIT = 500
 
 
-def _members_payload(post: Any) -> tuple[list[Any], int]:
+def _members_payload(post: Any, user: Any = None) -> tuple[list[Any], int]:
     """岗位成员简要信息与全量在用成员数（在用用户，按 pk 顺序稳定输出）。
 
+    非超管按用户数据权限收敛：岗位名录不能成为跨部门用户枚举的旁路。
     成员数超出 MEMBER_LIMIT 时仅返回前 MEMBER_LIMIT 条；调用方以 total/truncated
     向前端标记截断状态，避免「列表悄悄少了人」无提示。
     """
     users = post.users.filter(is_active=True)
+    if user is not None:
+        users = get_filter_queryset(users, user)
     total = users.count()
     rows = users.order_by("pk").only("pk", "username", "nickname")[:MEMBER_LIMIT]
     return [{"pk": row.pk, "username": row.username, "nickname": row.nickname} for row in rows], total
@@ -83,7 +86,7 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
         total 为全量在用成员数，truncated 标记本次是否截断（向后兼容新增字段）。
         """
         post = self.get_object()
-        members, total = _members_payload(post)
+        members, total = _members_payload(post, request.user)
         return ApiResponse(data={"members": members, "total": total, "truncated": total > len(members)})
 
     @extend_schema(request=PostMemberSerializer, responses=get_default_response_schema())
@@ -107,15 +110,18 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
         skipped: list[str] = []
         try:
             if add_pks:
-                matched = list(UserInfo.objects.filter(pk__in=add_pks, is_active=True))
+                matched = list(
+                    get_filter_queryset(UserInfo.objects.filter(pk__in=add_pks, is_active=True), request.user)
+                )
                 skipped = sorted({str(pk) for pk in add_pks} - {str(user.pk) for user in matched})
                 post.users.add(*matched)
             if remove_pks:
-                post.users.remove(*UserInfo.objects.filter(pk__in=remove_pks))
+                removable = get_filter_queryset(UserInfo.objects.filter(pk__in=remove_pks), request.user)
+                post.users.remove(*removable)
         except (DjangoValidationError, ValueError, TypeError):
             # 非法主键形态：按可读参数错误返回（不落 500）
             return ApiResponse(code=1001, detail=_("Invalid member id"))
-        members, total = _members_payload(post)
+        members, total = _members_payload(post, request.user)
         return ApiResponse(
             data={"members": members, "total": total, "truncated": total > len(members), "skipped": skipped},
             detail=_("Members updated"),

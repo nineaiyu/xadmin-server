@@ -124,10 +124,12 @@ def _three_tier_due_at(report: Any, now: Any = None) -> Any:
     return None
 
 
-def _precreate_record(report: Any) -> str:
+def _precreate_record(report: Any, creator: Any = None) -> str:
     """预创建 ExportRecord（下载中心条目），pk 即派发的 celery task_id。
 
     params 记 ``report_id``：任务中心「重跑」按记录即可重放同一报表。
+    ``creator`` 缺省为报表创建者；手动重跑由操作者传入，避免他人重跑产生的
+    记录出现在原作者下载中心。
     """
     from task.services import ExportRecord
 
@@ -136,7 +138,7 @@ def _precreate_record(report: Any) -> str:
         module="Report",
         file_format="xlsx",
         params={"report_id": str(report.pk)},
-        creator=report.creator,
+        creator=creator or report.creator,
     )
     return str(record.pk)
 

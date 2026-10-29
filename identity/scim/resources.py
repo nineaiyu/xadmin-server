@@ -236,7 +236,17 @@ def create_user(payload: dict[str, Any]) -> Any:
     _apply_payload(user, payload, creating=True)
     password = payload.get("password")
     if password:
-        user.set_password(str(password))
+        # 与本地建号同口径：IdP 传入的口令同样受强度规则与泄露库约束。
+        from settings.services import check_leak_password, check_password_rules
+
+        plain = str(password)
+        if not check_password_rules(plain):
+            raise ScimApiError(400, str(_("Password does not match security rules")), scim_type="invalidValue")
+        if check_leak_password(plain):
+            raise ScimApiError(
+                400, str(_("Password has been leaked, please change to another one")), scim_type="invalidValue"
+            )
+        user.set_password(plain)
     else:
         user.set_unusable_password()
     user.save()

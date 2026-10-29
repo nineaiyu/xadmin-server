@@ -96,6 +96,7 @@ Django 内置键中的身份、媒体与本地化配置（密钥、用户模型�
 | `AUTH_USER_MODEL` | str | 必给 | 用户模型标签（内核模型基类/权限组件解析用户模型用） | `core/models.py` |
 | `ALLOWED_HOSTS` | list[str] | None | 允许主机（CSP 上报的站内域名判定；Django 安全基建） | `api/csp.py`、`swagger/views.py` |
 | `SECURITY_LOGIN_LIMIT_TIME` | int | 30 | 登录锁定提示中的锁定时长（分钟，文案展示用） | `swagger/views.py` |
+| `SECURITY_LOGIN_ACCESS_ENABLED` | bool | True | 全局登录开关（文档站登录与主登录共用；关闭后所有登录入口拒绝签发） | `swagger/views.py` |
 | `VERIFY_CODE_TTL` | int | 300 | 验证码有效期（秒） | `utils/verify_code.py` |
 | `VERIFY_CODE_LIMIT` | int | 60 | 验证码单目标发送次数上限（限流窗口内） | `utils/verify_code.py` |
 | `VERIFY_CODE_LENGTH` | int | 6 | 验证码位数 | `utils/verify_code.py` |

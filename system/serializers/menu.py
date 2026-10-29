@@ -4,6 +4,7 @@
 # filename : menu
 # author : ly_13
 # date : 8/10/2024
+import re
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
@@ -26,6 +27,21 @@ class MenuMetaSerializer(BaseModelSerializer):
         read_only_fields = ["creator", "modifier", "dept_belong", "id"]
 
     pk = serializers.UUIDField(source="id", read_only=True)
+
+    def validate_icon(self, value: Any) -> Any:
+        """菜单图标只接受图标名或受控 SVG：拒绝事件属性/脚本/外链脚本协议。
+
+        前端 ReIcon 对内联 SVG 走 DOMPurify 兜底；服务端再拦一层，避免
+        非浏览器消费方或未来渲染器直接信任该字段。
+        """
+        icon = str(value or "")
+        if not icon:
+            return value
+        if re.search(r"\son[a-z]+\s*=", icon, re.IGNORECASE) or re.search(
+            r"<script|javascript:|<foreignObject", icon, re.IGNORECASE
+        ):
+            raise serializers.ValidationError(_("Invalid menu icon"))
+        return value
 
     def validate_frame_url(self, value: Any) -> str:
         """内嵌页只接受同源相对路径（同源相对路径）。

@@ -7,7 +7,7 @@
 from typing import Any
 
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
@@ -55,11 +55,11 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
 
     # field和fields 设置两个相同的label，可以进行文件导入导出
     field = serializers.SerializerMethodField(read_only=True, label=_("Fields"))
-    fields = serializers.DictField(write_only=True, label=_("Fields"))
+    fields = serializers.DictField(write_only=True, required=False, label=_("Fields"))
 
     # 关联计数声明：列表/详情/导出由 RelationCountMixin 预聚合（与影响面同源，
     # 角色→用户为「删除/停用影响谁」的同一口径）；单对象序列化回退为单次 COUNT
-    relation_count_fields = {"user_count": Count("userinfo")}
+    relation_count_fields = {"user_count": Count("userinfo", filter=Q(userinfo__deleted_at__isnull=True))}
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
 
     @extend_schema_field(serializers.IntegerField)
@@ -126,7 +126,7 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
         return instance
 
     def create(self, validated_data: Any) -> Any:
-        fields = validated_data.pop("fields")
+        fields = validated_data.pop("fields", {})
         with transaction.atomic():
             instance = super().create(validated_data)
             self.save_fields(fields, instance)

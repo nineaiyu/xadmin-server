@@ -1,6 +1,7 @@
 import abc
 import io
 import re
+import secrets
 from collections.abc import Iterator
 from datetime import datetime
 from typing import Any
@@ -319,19 +320,14 @@ class BaseFileRenderer(BaseRenderer):
         response["Content-Disposition"] = content_disposition.replace(self.format, "zip")
 
         contents_io = io.BytesIO()
-        secret_key = request.user.username  # 默认密码是用户名，后期可配置
-        if not secret_key:
-            content = _(
-                "{} - The encryption password has not been set - "
-                "please go to personal information -> file encryption password "
-                "to set the encryption password"
-            ).format(request.user.nickname)
-
-            response["Content-Disposition"] = content_disposition.replace(self.format, "txt")
-            contents_io.write(content.encode("utf-8"))
-            return contents_io.getvalue()
-
+        # 每次导出使用一次性随机口令，不再使用可公开推导的用户名；口令经响应头
+        # 交给当前请求方（同一 TLS 通道），不落库、不写日志。
+        secret_key = secrets.token_urlsafe(18)
         with pyzipper.AESZipFile(contents_io, "w", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zf:
             zf.setpassword(secret_key.encode("utf8"))
             zf.writestr(filename, value)
+        response["X-Export-Zip-Password"] = secret_key
+        response["Access-Control-Expose-Headers"] = (
+            response.get("Access-Control-Expose-Headers", "") + ", X-Export-Zip-Password"
+        ).lstrip(", ")
         return contents_io.getvalue()

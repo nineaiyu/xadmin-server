@@ -11,7 +11,11 @@ from .dataset import Dataset
 
 
 class Report(DbAuditModel, DbUuidModel):
-    """定时报表：数据集 + 调度 + 投递渠道与收件人（邮件 + IM）。"""
+    """定时报表：数据集 + 调度 + 投递渠道与收件人（邮件 + IM）。
+
+    可见性口径（产品决策）：报表定义对全员共享只读，不设 personal/shared 维度；
+    真正的数据边界由数据集行级权限 + 字段权限承担。收件人列表仍按字段掩码输出。
+    """
 
     class Frequency(models.TextChoices):
         DAILY = "daily", _("Daily")

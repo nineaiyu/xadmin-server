@@ -46,9 +46,11 @@ class RankAction:
         pks = [pk for pk in request.data if pk not in (None, "")]
         if len(pks) > RANK_MAX_ITEMS:
             return ApiResponse(code=1004, detail=_("Too many items to sort (max {})").format(RANK_MAX_ITEMS))
+        queryset = self.filter_queryset(self.get_queryset())
+        pks, _invalid = _normalize_pks(queryset.model, pks)
         if pks:
             # Case/When 单条批量 UPDATE，替代逐条 filter(pk=pk).update(rank=rank)
-            queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
+            queryset = queryset.filter(pk__in=pks)
             queryset.update(
                 rank=Case(
                     *[When(pk=pk, then=Value(index)) for index, pk in enumerate(pks, start=1)],

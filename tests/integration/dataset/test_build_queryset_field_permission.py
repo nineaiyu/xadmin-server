@@ -101,6 +101,22 @@ def test_build_queryset_allows_filter_on_visible_column(restricted_viewer, datas
 
 
 def test_build_queryset_no_field_config_returns_all_columns(superuser, dataset_with_hidden_column):
-    """浏览者无任何字段权限配置：不裁剪（字段权限是显式授权行为，见 viewer_visible_fields）。"""
+    """inherit 模式 + 浏览者无字段权限配置：不裁剪（兼容存量个人/共享数据集）。"""
     _queryset, _model, columns = build_queryset(dataset_with_hidden_column, superuser)
     assert columns == ["username", "phone"]
+
+
+def test_build_queryset_strict_mode_without_field_config_returns_empty(normal_user, user_registry, superuser):
+    """strict 模式 + 角色无任何字段权限配置：fail-closed，列与行均为空。"""
+    dataset = Dataset.objects.create(
+        name=f"strict字段权限数据集-{uuid.uuid4().hex[:6]}",
+        bound_model=USER_BOUND,
+        columns=["username", "phone"],
+        filters=[],
+        row_limit=100,
+        visibility=Dataset.Visibility.SHARED,
+        field_permission_mode=Dataset.FieldPermissionMode.STRICT,
+        creator=superuser,
+    )
+    _queryset, _model, columns = build_queryset(dataset, normal_user)
+    assert columns == []

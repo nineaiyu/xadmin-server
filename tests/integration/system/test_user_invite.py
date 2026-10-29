@@ -67,6 +67,15 @@ class TestSendInvite:
         invited_user.refresh_from_db()
         assert invited_user.invite_status == ""  # 未产生半邀请状态
 
+    def test_invite_without_email_rejected_without_lockout(self, auth_client):
+        target = UserInfo.objects.create_user(username="no_email", password="Old@123456")
+        resp = auth_client.post(f"{USER_URL}/{target.pk}/invite", {}, format="json")
+        assert resp.status_code == 200
+        assert resp.json()["code"] == 1001
+        target.refresh_from_db()
+        assert target.invite_status == ""
+        assert target.has_usable_password() is True
+
     def test_invited_account_cannot_login_with_old_password(self, auth_client, invited_user):
         from django.contrib.auth import authenticate
 

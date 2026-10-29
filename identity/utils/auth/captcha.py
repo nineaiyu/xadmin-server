@@ -96,10 +96,28 @@ def check_token_and_captcha(
     return client_id, token
 
 
+DECRYPT_FAILED_MESSAGE = _("The submitted credential is invalid, please refresh the page and try again")
+
+
+def decrypt_submitted(value: Any, key: Any) -> str:
+    """受控解密前端 AES 提交值：坏 base64/短密文/错钥/空明文统一 400。
+
+    匿名登录/注册/重置/发码端点都可能收到任意密文；直接调用
+    ``AESCipherV2.decrypt`` 会让 ``binascii.Error`` / ``IndexError`` 穿透成 500。
+    """
+    try:
+        plain = AESCipherV2(key).decrypt(value)
+    except Exception as exc:  # noqa: BLE001 任意解密异常统一受控拒绝
+        raise ValidateError(DECRYPT_FAILED_MESSAGE) from exc
+    if not plain:
+        raise ValidateError(DECRYPT_FAILED_MESSAGE)
+    return plain
+
+
 def get_username_password(need: Any, request: Any, token: Any) -> Any:
     username = request.data.get("username")
     password = request.data.get("password")
     if need:
-        username = AESCipherV2(token).decrypt(username)
-        password = AESCipherV2(token).decrypt(password)
+        username = decrypt_submitted(username, token)
+        password = decrypt_submitted(password, token)
     return username, password
