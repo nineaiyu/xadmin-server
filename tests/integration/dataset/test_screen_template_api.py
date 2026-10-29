@@ -244,7 +244,7 @@ class TestTemplateVersions:
         assert template.versions.first().name == "版5"
 
     def test_versions_creator_only(self, auth_client, normal_user, template_urls):
-        """版本历史与回滚同一归属口径：非创建者持 versions 码也读不到（SCR-P1-01）。"""
+        """版本历史与回滚同一归属口径：非创建者持 versions 码也读不到（版本与回滚同一归属）。"""
 
         # shared：非创建者可见模板本体（读路径放行），但历史仍只对创建者开放
         mine = ScreenTemplate.objects.create(name="我的骨架", visibility="shared", free_layout={"panes": [_pane()]})

@@ -244,14 +244,14 @@ class TestMessageFormat:
         assert notice.message_format == MessageContent.MessageFormat.MARKDOWN
 
     def test_update_message_uses_instance_format(self, auth_client, superuser):
-        """PATCH 未传格式：按实例当前格式校验，Markdown 正文不被 HTML 净化改写。"""
+        """PATCH 未传格式：按实例当前格式校验，Markdown 正文走 HTML 中和（不按 HTML 白名单改写）。"""
         created = self._create(auth_client, superuser, MessageContent.MessageFormat.MARKDOWN, self.MARKDOWN_BODY)
         pk = created.data["data"]["pk"]
         resp = auth_client.patch(f"{NOTICE_MSG_URL}/{pk}", {"message": "<b>x</b>"}, format="json")
         assert resp.status_code == 200, resp.data
         notice = MessageContent.objects.get(pk=pk)
         assert notice.message_format == MessageContent.MessageFormat.MARKDOWN
-        assert notice.message == "<b>x</b>"
+        assert notice.message == "&lt;b&gt;x&lt;/b&gt;"
 
     def test_markdown_too_long_rejected(self, auth_client, superuser):
         from notifications.serializers.message import MAX_MARKDOWN_LENGTH

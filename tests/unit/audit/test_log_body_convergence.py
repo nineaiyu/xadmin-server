@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""操作日志正文读侧收敛测试（LOG-P1-01 / G14）。
+"""操作日志正文读侧收敛测试（列表/详情同口径）。
 
 retrieve 与导出经 ``OperationLogSerializer`` 输出——正文（body /
 response_result）此前在该口径下不截断、不重脱敏，持 retrieve/export 权限的
@@ -31,7 +31,7 @@ def _make_row(**overrides):
     long_body = json.dumps(
         {
             "key": "SCIM_TOKEN",
-            "value": SECRET,  # 修复 LOG-P1-02 前的存量行：value 明文落库
+            "value": SECRET,  # 修复前的存量行：value 明文落库
             "note": "x" * 800,
         }
     )

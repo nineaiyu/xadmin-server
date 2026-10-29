@@ -186,11 +186,13 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
 
         敏感操作：需密码二次确认
         """
-        query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
-        instance = UserInfo.objects.filter(**{query_key: target}).first()
-        if instance:
-            setattr(instance, query_key, "")
-            instance.save(update_fields=(query_key,))
+        query_key, target, verify_token = verify_sms_email_code(
+            request, ResetBlockUtil, scenes=("bind_email", "bind_phone")
+        )
+        # 唯一性冲突只能拒绝，不能迁移归属：清除他人绑定会让受害者的邮箱/手机登录、
+        # 找回密码与通知同时失效（对象级越权写）。如需换绑由管理员在用户管理页操作。
+        if UserInfo.objects.filter(**{query_key: target}).exclude(pk=request.user.pk).exists():
+            raise ValidationError({"detail": _("This email or phone number is already bound to another account")})
         setattr(request.user, query_key, target)
         request.user.save(update_fields=(query_key,))
         # 手机/邮箱变更影响短信、邮件验证方式可用性，清除旧确认状态

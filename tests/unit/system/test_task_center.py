@@ -7,6 +7,9 @@
 """
 
 import pytest
+from django.core.cache import cache
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from task.models.export import ExportRecord
@@ -43,10 +46,13 @@ def _clean_records():
     ExportRecord.objects.all().delete()
     ImportRecord.objects.all().delete()
     TaskExecution.objects.all().delete()
+    # 计数短缓存按用户+过滤条件键控：清库后同步清缓存，避免跨用例读到旧总数
+    cache.delete_pattern("task_center_counts_*")
     yield
     ExportRecord.objects.all().delete()
     ImportRecord.objects.all().delete()
     TaskExecution.objects.all().delete()
+    cache.delete_pattern("task_center_counts_*")
 
 
 def _export(user, **kwargs):
@@ -85,6 +91,16 @@ class TestUnifiedRows:
         page, page_total = unified_rows(superuser, page=1, size=1)
         assert page_total == 3 and len(page) == 1
         assert unified_rows(superuser, types=["task"])[1] == 0
+
+    def test_counts_cached_between_requests(self, superuser):
+        """首屏重复打开不重复全量 COUNT：同用户同过滤条件的计数走 10s 缓存。"""
+        _export(superuser)
+        unified_rows(superuser)
+        with CaptureQueriesContext(connection) as ctx:
+            _, total = unified_rows(superuser)
+        assert total == 1
+        count_queries = [q["sql"] for q in ctx.captured_queries if "COUNT(" in q["sql"].upper()]
+        assert count_queries == []
 
     def test_rows_expose_actions_and_flags(self, superuser):
         running = _export(superuser, name="运行中", status=ExportRecord.Status.RUNNING, progress=30)
@@ -246,6 +262,19 @@ class TestRerun:
     def test_running_record_not_rerunnable(self, superuser):
         record = _export(superuser, status=ExportRecord.Status.RUNNING)
         assert rerun_record(superuser, "export", str(record.pk))["ok"] is False
+
+    def test_rerun_error_detail_hides_internal_text(self, superuser, monkeypatch):
+        """重跑异常原文只进日志：任务中心拿到统一可读文案，不泄露 SQL/路径/连接串。"""
+        record = _export(superuser, status=ExportRecord.Status.SUCCESS)
+        monkeypatch.setattr(
+            task_center_unified,
+            "_rerun_export",
+            lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("internal-marker /tmp/secret.sql")),
+        )
+        result = rerun_record(superuser, "export", str(record.pk))
+        assert result["ok"] is False
+        assert "internal-marker" not in result["detail"]
+        assert "/tmp/secret.sql" not in result["detail"]
 
     def test_task_execution_rerun_unsupported(self, superuser):
         TaskExecution.objects.create(pk="2" * 32, name="system.tasks.demo", creator=superuser)

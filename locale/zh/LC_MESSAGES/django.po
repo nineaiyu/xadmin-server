@@ -13831,6 +13831,11 @@ msgid ""
 msgstr ""
 "builtin = 内置清单（为空时程序化生成）；procedural = 禁用图片包"
 
+#: settings/serializers/security_captcha.py
+msgid "off = risk layer disabled; shadow = score and log only; enforce = apply decisions (requires trusted proxy/client IP configuration)"
+msgstr "off = 关闭风险层；shadow = 仅评分与记录；enforce = 应用决策（需配置可信代理/客户端 IP）"
+
+
 #: captcha/serializers.py
 msgid ""
 "off = risk layer disabled; shadow = score and log only; enforce = apply decisions (default for the hardened profile)"

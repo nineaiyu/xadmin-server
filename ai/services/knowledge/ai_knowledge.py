@@ -180,7 +180,7 @@ def schedule_upload_ingest(doc: Any) -> None:
 def upsert_upload_document(name: str, content: str, creator: Any = None, defer_chunks: bool = False) -> Any:
     """创建/覆盖上传文档并重建分块，返回 (doc, created)。
 
-    同名按 creator 隔离（AI-P1-02）：同名仅覆盖本人文档，他人同名文档并存
+    同名按 creator 隔离：同名仅覆盖本人文档，他人同名文档并存
     互不影响。存储路径带上传者命名空间（upload/{pk}/{name}.md），本人重复
     上传路径稳定（覆盖更新语义）；本人名下的 legacy 全局路径文档
     （upload/{name}.md）首次再上传时原行收编、path 不变——存量数据不迁移

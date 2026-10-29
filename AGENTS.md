@@ -144,9 +144,9 @@ docs-build 里对构建产物跑）。全量清单以 `docs/ci-gates.md` 为准�
 ## 七、提交纪律
 
 - 只有用户明确要求才 `git commit`；提交信息 `type(scope): 中文描述`（subject 中文开头）。
-- 源码注释 / docstring / 测试名 / 种子 JSON 里**不写台账编号**（`ADR-090` 决策编号、
-  `T03-01` / `O10-2` / `TG-3` 一类），需要交代来龙去脉时写一句自足的语义说明。
-  守护：`python scripts/check_ledger_ids.py`。
+- 源码注释 / docstring / 测试名 / 种子 JSON / 配置文件里**不写台账编号**（`ADR-090` 决策编号、
+  `T03-01` / `O10-2` / `TG-3`，以及评审编号 `LOG-P1-01` / `FE-DATA-P1-04` / `C-03` 一类），
+  需要交代来龙去脉时写一句自足的语义说明。守护：`python scripts/check_ledger_ids.py`。
 - **docstring 首行 = 菜单显示名**：视图类与 `@action` 方法的 docstring 首行必须是精炼的
   名词短语（≤24 字、不带句号），详细说明下沉到空行之后的段落。首行会被权限点同步取作
   `MenuMeta.title`，写长会撑破菜单树与授权选择器。守护：`python scripts/check_menu_titles.py`。

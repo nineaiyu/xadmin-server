@@ -157,7 +157,7 @@ class TestRegistryGuard:
 
 
 class TestModuleTrimGate:
-    """模块裁剪覆盖 AI 内部直调（TRIM-P1-01）：目录摘除 + 执行拒绝双闸。"""
+    """模块裁剪覆盖 AI 内部直调（与模块网关同源）：目录摘除 + 执行拒绝双闸。"""
 
     @staticmethod
     def _spec():

@@ -31,7 +31,7 @@ from ai.services.nl_query.nl_query import (
     validate_dsl,
     visible_datasets,
 )
-from dataset.contracts import Dataset, aggregate_dataset, build_queryset
+from dataset.contracts import Dataset, aggregate_dataset, build_queryset, execute_dataset
 from integrations.sdk.ai.chat import AiSdkError
 
 
@@ -85,7 +85,8 @@ def _validate_and_preview(user: Any, raw: str) -> tuple[Any, ...]:
     dataset = Dataset.objects.get(pk=normalized["dataset"])
     extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
     queryset, model, __ = build_queryset(dataset, user, extra_filters=extra)
-    preview_count, preview_capped = bounded_preview_count(queryset, model)
+    # 预览与执行同口径：都按 DSL 的 limit 截断，避免「预览 N 行」与实际返回行数不一致
+    preview_count, preview_capped = bounded_preview_count(queryset, model, limit=normalized["limit"])
     return dsl, normalized, dataset, preview_count, preview_capped
 
 
@@ -240,8 +241,14 @@ def execute_dsl(user: Any, dsl: Any) -> tuple[bool, Any]:
             summary = str(_("Query finished: {} groups")).format(rows)
         else:
             extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
-            queryset, model, columns = build_queryset(dataset, user, extra_filters=extra)
-            result = {"columns": columns, "rows": list(queryset.values(*columns)[: normalized["limit"]])}
+            # 复用数据集执行链：JSON 路径列的别名映射、字段权限、row_limit 与
+            # 稳定排序只在这里实现一次；直接 values(*columns) 会把 data.x 当成模型字段
+            result = execute_dataset(
+                dataset,
+                user,
+                extra_filters=extra,
+                max_rows=normalized["limit"],
+            )
             rows = len(result["rows"])
             summary = str(_("Query finished: {} rows")).format(rows)
     except DjangoValidationError as exc:

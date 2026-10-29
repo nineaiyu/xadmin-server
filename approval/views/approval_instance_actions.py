@@ -6,6 +6,7 @@
 统计 / 可发起流程。ViewSet 组合本 mixin 后对外行为与拆分前完全一致。
 """
 
+import uuid
 from typing import TYPE_CHECKING, Any
 
 from django.db.models import Q
@@ -54,6 +55,10 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
         task_pk = request.data.get("task")
         queryset = instance.tasks.all()
         if task_pk:
+            try:
+                task_pk = str(uuid.UUID(str(task_pk)))
+            except (ValueError, AttributeError, TypeError):
+                raise ValidationError({"detail": _("Invalid approval task id")}) from None
             queryset = queryset.filter(pk=task_pk)
         else:
             queryset = queryset.filter(
@@ -76,7 +81,7 @@ class ApprovalInstanceActionMixin(ApprovalInstanceBatchMixin, ApprovalInstanceCo
         小集合接口：超过量级上限时截断并随响应给出提示（见 limit_datasource）。
         """
         flows, truncated = limit_datasource(
-            ApprovalFlow.objects.filter(is_active=True).order_by("-created_time"), name="available-flows"
+            ApprovalFlow.visible_to(request.user).order_by("-created_time"), name="available-flows"
         )
         data = [
             {

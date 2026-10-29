@@ -56,7 +56,7 @@ class TestUpload:
         assert not AiKnowledgeChunk.objects.filter(source_path=doc.path, content__contains="下载中心").exists()
 
     def test_same_name_other_creator_coexists(self, auth_client, api_client, django_user_model):
-        """AI-P1-02：他人同名文档不被覆盖——上传按 creator 隔离，双方并存。"""
+        """他人同名文档不被覆盖——上传按 creator 隔离，双方并存。"""
         assert _upload(auth_client, name="部署手册", content="管理员版本").status_code == 200
         other_admin = django_user_model.objects.create_superuser(
             username="other-admin", email="other@example.com", password="Other@123456"

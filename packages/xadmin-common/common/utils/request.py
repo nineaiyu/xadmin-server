@@ -139,8 +139,12 @@ def get_request_data(request: Any) -> Any:
         except (TypeError, ValueError):
             length = 0
         if 0 < length <= MULTIPART_FIELD_PARSE_LIMIT:
+            try:
+                body = request.body
+            except Exception:  # noqa: BLE001 DRF 已消费流：审计退化为无字段
+                return {"_multipart_fields": [], "_multipart_body_skipped": True}
             # 前缀断言 [;\s]：避免把 filename="..." 也当成字段名（filename 里含 "name="）
-            names = re.findall(rb'[;\s]name="([^"]{1,128})"', request.body)
+            names = re.findall(rb'[;\s]name="([^"]{1,128})"', body)
             fields = sorted({name.decode("utf-8", "ignore") for name in names})
             return {"_multipart_fields": fields}
         return {"_multipart_fields": [], "_multipart_body_skipped": True}

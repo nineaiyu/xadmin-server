@@ -330,7 +330,7 @@ class TestConfigApi:
         assert sent["headers"]["Authorization"] == "Bearer sk-profile"
 
     def test_connection_test_private_http_url_rejected(self, auth_client):
-        """AI-P1-01：内网 http 地址走不出站守卫（与档案序列化器同口径，私网默认拒绝）。"""
+        """内网 http 地址走不出站守卫（与档案序列化器同口径，私网默认拒绝）。"""
         response = auth_client.post(
             CONFIG_URL,
             {"AI_BASE_URL": "http://192.168.1.10:11434/v1", "AI_API_KEY": "sk", "AI_MODEL": "m"},

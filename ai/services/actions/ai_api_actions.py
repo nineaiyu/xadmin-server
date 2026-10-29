@@ -92,7 +92,7 @@ class ApiActionSpec:
 
         模块维度双保险：``spec.modules`` 显式声明之外，path 命中停用模块路由前缀
         （``match_disabled_module``，与 HTTP 网关同源）同样从目录摘除——API 动作由
-        路由清单派生，声明侧未逐条标 ``modules`` 也不会漏（TRIM-P1-01）。
+        路由清单派生，声明侧未逐条标 ``modules`` 也不会漏（与模块网关同源）。
         """
         if not module_allows(self):
             return False
@@ -208,7 +208,7 @@ def execute_api_action(spec: ApiActionSpec, user: Any, params: dict[str, Any]) -
         url = f"{url}?{urlencode(query, doseq=True)}"
 
     # 内部 dispatch 不经 ASGI 的模块网关：这里按同一闸口复检，停用模块的动作
-    # 不再「REST 已 404、AI 仍可直调」（TRIM-P1-01，与 ModuleGateMiddleware 同源）
+    # 不再「REST 已 404、AI 仍可直调」（与 ModuleGateMiddleware 同源）
     from common.core.modules.gate import match_disabled_module
 
     trimmed_module = match_disabled_module(url.split("?", 1)[0])
@@ -247,9 +247,10 @@ def execute_api_action(spec: ApiActionSpec, user: Any, params: dict[str, Any]) -
         request._approval_pre_authorized = True
     try:
         response = match.func(request, **match.kwargs)
-    except Exception as exc:  # noqa: BLE001 内部 dispatch 失败一律转可读错误
+    except Exception:  # noqa: BLE001 内部 dispatch 失败一律转可读错误
+        # 异常原文可能含 SQL / 内部路径 / 连接串：只进日志，不回传对话流
         logger.warning("ai api action dispatch failed. key:%s url:%s", spec.key, url, exc_info=True)
-        return {"ok": False, "detail": str(_("The action failed: {}").format(str(exc)[:200])), "data": {}}
+        return {"ok": False, "detail": str(_("The action failed, please try again later")), "data": {}}
 
     payload = getattr(response, "data", None) or {}
     status_code = int(getattr(response, "status_code", 500) or 500)

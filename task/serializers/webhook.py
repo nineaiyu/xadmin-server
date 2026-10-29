@@ -8,6 +8,8 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from common.core.auth.credentials import SENSITIVE_KEY_PATTERN
+from common.core.oplog_recorder import desensitize_payload
 from common.core.serializers import BaseModelSerializer
 from task.models.webhook import WebhookDelivery, WebhookSubscription
 from task.services.webhook import encrypt_secret, validate_events, validate_url
@@ -58,12 +60,34 @@ class WebhookSubscriptionSerializer(BaseModelSerializer):
         return encrypt_secret(value)
 
 
+#: 授权/会话类请求头不命中通用敏感键名模式，单独按头名收敛
+SENSITIVE_HEADER_NAMES = {"authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key"}
+
+
 class WebhookDeliverySerializer(BaseModelSerializer):
     subscription_name = serializers.CharField(source="subscription.name", read_only=True, label=_("Subscription"))
     payload = serializers.JSONField(read_only=True, label=_("Payload"))
     request_headers = serializers.JSONField(read_only=True, label=_("Request headers"))
 
     ignore_field_permission = True
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        ret: dict[str, Any] = super().to_representation(instance)
+        # 投递审计含事件载荷与请求头：按敏感键名统一掩码，避免查看者读到
+        # 订阅密钥 / 授权头 / 用户敏感字段原文
+        if isinstance(ret.get("payload"), dict):
+            ret["payload"] = desensitize_payload(ret["payload"])
+        headers = ret.get("request_headers")
+        if isinstance(headers, dict):
+            ret["request_headers"] = {
+                key: (
+                    "*" * len(str(value))
+                    if str(key).lower() in SENSITIVE_HEADER_NAMES or SENSITIVE_KEY_PATTERN.search(str(key))
+                    else value
+                )
+                for key, value in headers.items()
+            }
+        return ret
 
     class Meta:
         model = WebhookDelivery

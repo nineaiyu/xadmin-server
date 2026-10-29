@@ -48,6 +48,14 @@ def preview_kind_of(mime_type: Any, filename: Any) -> str | None:
     """
     mime = (mime_type or "").lower()
     filename = (filename or "").lower()
+    # 密钥/凭据类文本即使落在 text/* 也不进入内联预览：只允许下载
+    blocked = getattr(
+        settings,
+        "FILE_PREVIEW_BLOCKED_EXTENSIONS",
+        (".env", ".pem", ".key", ".p12", ".pfx", ".kdbx"),
+    )
+    if filename.endswith(tuple(str(item).lower() for item in (blocked or ()))):
+        return None
     if mime.startswith("image/"):
         return KIND_IMAGE
     if mime == "application/pdf" or filename.endswith(".pdf"):

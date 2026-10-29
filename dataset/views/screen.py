@@ -202,7 +202,7 @@ class ScreenTemplateViewSet(BaseAnalysisViewSet):
     def versions(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """模板历史版本（只读，最新在前）。"""
         template = self.get_object()
-        # 与 rollback 同一归属口径（SCR-P1-01）：docstring 即「版本与回滚都只对
+        # 与 rollback 同一归属口径（版本与回滚同一归属）：docstring 即「版本与回滚都只对
         # 创建者开放」，只读端点同样不能越权读他人模板历史
         guarded = _creator_guard(request, template)
         if guarded:

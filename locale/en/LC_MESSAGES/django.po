@@ -12117,3 +12117,6 @@ msgstr "Invalid dashboard card span"
 
 msgid "Invalid dashboard card height"
 msgstr "Invalid dashboard card height"
+
+msgid "off = risk layer disabled; shadow = score and log only; enforce = apply decisions (requires trusted proxy/client IP configuration)"
+msgstr "off = risk layer disabled; shadow = score and log only; enforce = apply decisions (requires trusted proxy/client IP configuration)"

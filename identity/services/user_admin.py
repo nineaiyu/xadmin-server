@@ -15,7 +15,6 @@ from django.utils.translation import gettext_lazy as _
 from audit.services import OperationLog
 from identity.models import UserInfo, UserOAuthBinding
 from identity.utils.impersonation import start_impersonation
-from message.services import send_logout_msg
 from mfa.cache import UserConfirmStateCache
 from mfa.services import clear_recovery_codes
 from notifications.message import SiteMessageUtil
@@ -131,9 +130,15 @@ def unblock_user(instance: Any) -> None:
     LoginBlockUtil.unblock_user(instance.username)
 
 
-def logout_user(instance: Any, channel_names: Any) -> None:
-    """强制下线指定会话（channel_names 为空由底层按全部会话处理）。"""
-    send_logout_msg(instance.pk, channel_names or [])
+def logout_user(instance: Any, channel_names: Any = None, operator: Any = None) -> Any:
+    """强制用户全部会话下线（令牌失效 + refresh 黑名单 + WS + 会话离线）。
+
+    用户页与在线会话页共用同一实现；``channel_names`` 仅为兼容旧调用入参，
+    下线语义固定为「该用户全部会话」，避免只推 WS 而 HTTP 令牌仍可用的半失效状态。
+    """
+    from identity.utils.session import force_logout_user
+
+    return force_logout_user(instance.pk, operator=operator)
 
 
 def im_bindings(instance: Any) -> list[dict[str, Any]]:

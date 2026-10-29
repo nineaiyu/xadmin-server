@@ -14,6 +14,8 @@ from __future__ import annotations
 import collections
 from typing import Any
 
+from django.db.models import Count
+
 from common.core.modules import (
     compute_hidden_menu_pks,
     module_index,
@@ -131,6 +133,13 @@ def module_impact(resolution: Any = None) -> dict[str, Any]:
     hidden_counts = _counts_by_type(rows, hidden)
 
     user_model = get_user_model()
+    # 一次按角色聚合活跃用户数，替代逐角色 COUNT（角色数 × 一次查询）
+    role_user_counts = {
+        row["roles"]: row["total"]
+        for row in user_model.objects.filter(is_active=True, roles__isnull=False)
+        .values("roles")
+        .annotate(total=Count("pk"))
+    }
     roles = []
     for role in UserRole.objects.all().order_by("pk"):
         bound = set(role.menu.values_list("pk", flat=True))
@@ -139,7 +148,7 @@ def module_impact(resolution: Any = None) -> dict[str, Any]:
                 "name": _display_name(role),
                 "bound": len(bound),
                 "hidden": len(bound & hidden),
-                "users": user_model.objects.filter(roles=role, is_active=True).count(),
+                "users": role_user_counts.get(role.pk, 0),
             }
         )
 

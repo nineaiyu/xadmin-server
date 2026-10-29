@@ -150,7 +150,14 @@ class ModelLabelFieldViewSet(
             table = "identity.userinfo"
         obj = (
             self.filter_queryset(self.get_queryset())
-            .filter(name=field, parent__name=table, parent__parent=None)
+            .filter(
+                name=field,
+                parent__name=table,
+                parent__parent=None,
+                # 只允许数据权限注册表中的模型根节点，避免借 lookups 枚举任意
+                # 已注册模型（含未授权业务模型）的字段与关联关系
+                parent__field_type=ModelLabelField.FieldChoices.DATA,
+            )
             .first()
         )
         if obj:

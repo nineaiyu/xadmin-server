@@ -68,7 +68,7 @@ class TestRelatedMemo:
         second = field.to_internal_value(normal_user.pk)
 
         assert first.pk == second.pk == normal_user.pk
-        assert set(serializer.context["request"]._related_memo) == {("admin", str(normal_user.pk))}
+        assert set(serializer.context["request"]._related_memo) == {("S", "admin", str(normal_user.pk))}
 
     def test_memo_isolated_by_field_name(self, normal_user):
         """同一 pk 在不同字段下不得串用（各字段的数据权限过滤条件可能不同）"""
@@ -80,7 +80,10 @@ class TestRelatedMemo:
             field.field_name = name
             field.bind(name, holder)
             field.to_internal_value(normal_user.pk)
-        assert set(request._related_memo) == {("admin", str(normal_user.pk)), ("managers", str(normal_user.pk))}
+        assert set(request._related_memo) == {
+            ("S", "admin", str(normal_user.pk)),
+            ("S", "managers", str(normal_user.pk)),
+        }
 
     def test_import_selects_independent_of_row_count(self, auth_client, admin_user, upload_file):
         """导入 1 行 vs 7 行（同一关联 pk）时，关联字段校验的 SELECT 数保持常数"""

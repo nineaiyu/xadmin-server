@@ -85,14 +85,15 @@ class TestOnlineReverseIndex:
     def test_online_info_snapshot_cached(self, layer):
         from tests.channel_layer import inject_group_channels, inject_online_user
 
-        group = msg_utils.get_user_layer_group_name(21)
+        # 高号 pk：避免与其它用例的异步消费者共用低号用户，迟到断连会清掉注入的 channel
+        group = msg_utils.get_user_layer_group_name(9021)
         inject_group_channels(layer, group, ["chan-a"])
-        inject_online_user(layer, 21)
+        inject_online_user(layer, 9021)
 
         first = get_online_info()
-        inject_online_user(layer, 22)  # 新心跳，但快照仍在有效期内
+        inject_online_user(layer, 9022)  # 新心跳，但快照仍在有效期内
         second = get_online_info()
-        assert first == second == ([21], ["chan-a"])
+        assert first == second == ([9021], ["chan-a"])
         assert cache.get(msg_utils.ONLINE_INFO_CACHE_KEY) is not None
 
     def test_falls_back_to_groups_when_index_empty(self, layer):
@@ -119,8 +120,8 @@ class TestOnlineLayersBatch:
     """批量在线 channel 查询：展示口径走 5s 快照，动作口径（强制下线）强制实时。"""
 
     def test_snapshot_builds_once_and_serves_from_cache(self, layer):
-        _beat(layer, 1, "c1")
-        _beat(layer, 2, "c2")
+        _beat(layer, 9001, "c1")
+        _beat(layer, 9002, "c2")
         calls = []
         original = layer.get_layers_for_groups
 
@@ -130,37 +131,37 @@ class TestOnlineLayersBatch:
 
         layer.get_layers_for_groups = spy
 
-        first = msg_utils.get_online_users_layers([1, 2, 1])  # 重复 pk 自动去重
-        second = msg_utils.get_online_users_layers([2])
-        assert first == {1: ["c1"], 2: ["c2"]}
-        assert second == {2: ["c2"]}
+        first = msg_utils.get_online_users_layers([9001, 9002, 9001])  # 重复 pk 自动去重
+        second = msg_utils.get_online_users_layers([9002])
+        assert first == {9001: ["c1"], 9002: ["c2"]}
+        assert second == {9002: ["c2"]}
         assert len(calls) == 1, "5s 快照窗口内的重复查询不应再次访问 channel layer"
         assert cache.get(msg_utils.ONLINE_LAYERS_CACHE_KEY) is not None
 
     def test_snapshot_rebuilds_after_expiry(self, layer):
-        _beat(layer, 3, "c3")
-        assert msg_utils.get_online_users_layers([3]) == {3: ["c3"]}
+        _beat(layer, 9003, "c3")
+        assert msg_utils.get_online_users_layers([9003]) == {9003: ["c3"]}
         cache.delete(msg_utils.ONLINE_LAYERS_CACHE_KEY)  # 等价 TTL 到期
-        _beat(layer, 4, "c4")
-        assert msg_utils.get_online_users_layers([3, 4]) == {3: ["c3"], 4: ["c4"]}
+        _beat(layer, 9004, "c4")
+        assert msg_utils.get_online_users_layers([9003, 9004]) == {9003: ["c3"], 9004: ["c4"]}
 
     def test_snapshot_falls_back_to_groups_when_index_empty(self, layer):
         from tests.channel_layer import inject_group_channels
 
-        group = msg_utils.get_user_layer_group_name(6)
+        group = msg_utils.get_user_layer_group_name(9006)
         inject_group_channels(layer, group, ["chan-6"])
         # 反向索引为空（Redis 重启后首个心跳尚未到来）→ 降级 SCAN 重建
-        assert msg_utils.get_online_users_layers([6]) == {6: ["chan-6"]}
+        assert msg_utils.get_online_users_layers([9006]) == {9006: ["chan-6"]}
 
     def test_realtime_path_queries_each_call_without_snapshot(self, layer):
         from tests.channel_layer import inject_group_channels
 
-        _beat(layer, 5, "c5")
-        first = msg_utils.get_online_users_layers([5], use_snapshot=False)
-        inject_group_channels(layer, msg_utils.get_user_layer_group_name(5), ["c6"])  # 新连接
-        second = msg_utils.get_online_users_layers([5], use_snapshot=False)
-        assert first == {5: ["c5"]}
-        assert sorted(second[5]) == ["c5", "c6"], "实时口径必须拿到最新 channel 明细"
+        _beat(layer, 9005, "c5")
+        first = msg_utils.get_online_users_layers([9005], use_snapshot=False)
+        inject_group_channels(layer, msg_utils.get_user_layer_group_name(9005), ["c6"])  # 新连接
+        second = msg_utils.get_online_users_layers([9005], use_snapshot=False)
+        assert first == {9005: ["c5"]}
+        assert sorted(second[9005]) == ["c5", "c6"], "实时口径必须拿到最新 channel 明细"
         assert cache.get(msg_utils.ONLINE_LAYERS_CACHE_KEY) is None, "实时口径不写快照"
 
     def test_falls_back_to_per_user_query(self, monkeypatch):
@@ -169,7 +170,7 @@ class TestOnlineLayersBatch:
                 return ["legacy"]
 
         monkeypatch.setattr(msg_utils, "channel_layer", LegacyLayer())
-        assert msg_utils.get_online_users_layers([5], use_snapshot=False) == {5: ["legacy"]}
+        assert msg_utils.get_online_users_layers([9005], use_snapshot=False) == {9005: ["legacy"]}
 
     def test_empty_input_no_call(self, monkeypatch):
         class Boom:

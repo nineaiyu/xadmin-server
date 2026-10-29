@@ -86,7 +86,7 @@ class TestVerifyCodeLoginChannelEnforced:
         settings.SECURITY_LOGIN_BY_EMAIL_ENABLED = True
         monkeypatch.setattr(
             "identity.views.auth.login.verify_sms_email_code",
-            lambda request, block: ("email", "zhangsan@example.com", "token"),
+            lambda request, block, scenes=None: ("email", "zhangsan@example.com", "token"),
         )
         settings.SECURITY_LOGIN_BY_EMAIL_ENABLED = False  # 发码后关闭
         resp = api_client.post(
@@ -101,7 +101,7 @@ class TestVerifyCodeLoginChannelEnforced:
         """短信通道同理:phone 提交在 LOGIN_BY_SMS 关闭后被拒。"""
         monkeypatch.setattr(
             "identity.views.auth.login.verify_sms_email_code",
-            lambda request, block: ("phone", "13800000000", "token"),
+            lambda request, block, scenes=None: ("phone", "13800000000", "token"),
         )
         resp = api_client.post(
             "/api/identity/login/code",

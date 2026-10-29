@@ -24,11 +24,12 @@ from rest_framework.filters import OrderingFilter
 
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImpactPreviewAction, RelationCountMixin
+from common.core.permission import get_user_permission_codes
 from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.core.throttle import DatasetQueryThrottleMixin
 from common.swagger.utils import get_default_response_schema
-from common.utils import get_logger
+from common.utils import get_logger, parse_bool
 from dataset.models.dataset import Dashboard, Dataset
 from dataset.serializers.dataset import DashboardSerializer, DatasetSerializer
 from dataset.utils.dataset import aggregate_dataset, designer_meta_payload, execute_dataset, validate_filters
@@ -102,6 +103,13 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
 
         与数据集 list 同权限口径：只读定义元数据不额外要求独立权限点。
         """
+        # 设计器字段清单属 schema 面：只对具备数据集编辑权限的角色下发，
+        # 避免仅有列表权限的用户枚举全部数据模型/字段
+        if not getattr(request.user, "is_superuser", False):
+            codes = get_user_permission_codes(request.user, "POST")
+            codes |= get_user_permission_codes(request.user, "PATCH")
+            if not {"create:DataDataset", "partialUpdate:DataDataset"} & codes:
+                return ApiResponse(code=1003, detail=_("No permission to read dataset designer metadata"))
         return ApiResponse(data=designer_meta_payload())
 
     @extend_schema(responses=get_default_response_schema())
@@ -113,7 +121,7 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
 
         ``count_only=true``：仅取行数（数字卡场景，跳过行物化）。
         ``max_rows``：预览侧行数上限（与数据集 row_limit 取小者下推 SQL），
-        报表预览按展示口径收数，不在前端物化后切片（REP-P1-01）。
+        报表预览按展示口径收数，不在前端物化后切片（按展示口径收数）。
         ``filters``：请求级行过滤（卡片下钻），与数据集定义 filters 叠加，
         校验口径同保存侧（``validate_filters``：字段白名单 + op 白名单 + 类型），
         并按浏览者字段权限收敛（无该列权限即 1001，防隐藏列布尔预言机）。
@@ -126,18 +134,18 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
             max_rows = None
             max_rows_raw = request.data.get("max_rows")
             if max_rows_raw is not None:
-                if isinstance(max_rows_raw, float) and not max_rows_raw.is_integer():
+                # 只接受真正的整数：bool 是 int 子类（True 会变成 1），字符串/浮点
+                # 属契约错误，统一 400 而不是静默强转
+                if isinstance(max_rows_raw, bool) or not isinstance(max_rows_raw, int):
                     raise ValidationError(_("max_rows must be a non-negative integer"))
-                try:
-                    max_rows = int(max_rows_raw)
-                except (TypeError, ValueError):
-                    raise ValidationError(_("max_rows must be a non-negative integer")) from None
+                max_rows = max_rows_raw
                 if max_rows < 0:
                     raise ValidationError(_("max_rows must be a non-negative integer"))
+            count_only_raw = request.data.get("count_only")
             result = execute_dataset(
                 dataset,
                 request.user,
-                count_only=bool(request.data.get("count_only")),
+                count_only=parse_bool(count_only_raw) if count_only_raw is not None else False,
                 extra_filters=extra_filters or None,
                 max_rows=max_rows,
             )

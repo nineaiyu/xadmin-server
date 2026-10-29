@@ -119,7 +119,7 @@ class TestWriteOnlySecretFallback:
 
 class TestSecretNotEchoed:
     def test_patch_response_masks_encrypted_secret(self, auth_client):
-        """SET-P1-01：write_only 密文键保存成功后，响应载荷以掩码回填，不回显明文。"""
+        """write_only 密文键保存成功后，响应载荷以掩码回填，不回显明文。"""
         from common.core.auth.credentials import MASK
 
         plaintext = "super-secret-ldap-password"

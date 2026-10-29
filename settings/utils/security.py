@@ -64,10 +64,16 @@ class BlockUtilBase:
 
     @staticmethod
     def _incr(key: str) -> int:
-        count = int(cache.get(key, 0) or 0)
-        count += 1
-        cache.set(key, count, int(settings.SECURITY_LOGIN_LIMIT_TIME) * 60)
-        return count
+        """原子计数：add 建窗 + incr 自增，并发失败不互相覆盖。"""
+        ttl = int(settings.SECURITY_LOGIN_LIMIT_TIME) * 60
+        try:
+            if cache.add(key, 1, ttl):
+                return 1
+            return int(cache.incr(key))
+        except ValueError:
+            # 键在 add 与 incr 之间过期：重建窗口，本次按第一次计数
+            cache.set(key, 1, ttl)
+            return 1
 
     def get_failed_count(self) -> int:
         count = int(cache.get(self.limit_key, 0) or 0)
@@ -130,9 +136,14 @@ class BlockGlobalIpUtilBase:
     def set_block_if_need(self) -> None:
         if self.ip_in_white_list or self.ip_in_black_list:
             return
-        count = int(cache.get(self.limit_key, 0) or 0)
-        count += 1
-        cache.set(self.limit_key, count, self.key_ttl)
+        try:
+            if cache.add(self.limit_key, 1, self.key_ttl):
+                count = 1
+            else:
+                count = int(cache.incr(self.limit_key))
+        except ValueError:
+            cache.set(self.limit_key, 1, self.key_ttl)
+            count = 1
 
         limit_count = int(settings.SECURITY_LOGIN_IP_LIMIT_COUNT)
         if count < limit_count:

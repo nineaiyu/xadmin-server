@@ -182,6 +182,27 @@ class TestInterpret:
         body = auth_client.post(INTERPRET_URL, {"question": "列出用户"}, format="json").json()
         assert body["data"]["dsl"]["limit"] <= 200
 
+    @pytest.mark.parametrize("limit", ["abc", [], {}, 1.5, -1, True])
+    def test_invalid_limit_rejected_without_500(self, auth_client, dataset, nl_enabled, limit):
+        """LLM/脚本产出非法 limit：解释与执行都返回可读 1001，不抛 ValueError → 500。"""
+        body = auth_client.post(RUN_URL, {"dsl": dsl_of(dataset, limit=limit)}, format="json").json()
+        assert body["code"] == 1001, body
+        assert body["detail"]
+
+    def test_preview_uses_execution_limit(self, auth_client, dataset, nl_enabled, superuser, stub_llm):
+        """预览计数与执行同一 limit：预览显示 ≥2，执行也只返回 2 行。"""
+        for index in range(3):
+            UserInfo.objects.create_user(username=f"nl_preview_user_{index}", password="Test@123456")
+        stub_llm([json.dumps(dsl_of(dataset, limit=2))])
+        body = auth_client.post(INTERPRET_URL, {"question": "列出用户"}, format="json").json()
+        assert body["code"] == 1000, body
+        assert body["data"]["preview_count"] == 2
+        assert body["data"]["preview_capped"] is True
+
+        run = auth_client.post(RUN_URL, {"dsl": body["data"]["dsl"]}, format="json").json()
+        assert run["code"] == 1000, run
+        assert len(run["data"]["rows"]) == 2
+
     def test_out_of_whitelist_op_rejected(self, auth_client, dataset, nl_enabled, stub_llm):
         stub_llm([json.dumps(dsl_of(dataset, filters=[{"field": "username", "op": "regex", "value": ".*"}]))])
         body = auth_client.post(INTERPRET_URL, {"question": "x"}, format="json").json()

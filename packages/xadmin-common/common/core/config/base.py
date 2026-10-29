@@ -77,7 +77,10 @@ def render_config_value(value: str, context_dict: dict[str, Any], model: Any) ->
                 logger.warning(f"db config - render failed {e}")
         except Exception as e:
             logger.warning(f"db config - render failed {e}")
-    value = value.replace('"(', "").replace(')"', "")  # 支持"({{ h }})"， 为了转换变量，h不能为字符串
+    # 仅解包「整值恰好是数字括号占位」的形态；全局 replace 会把业务字符串
+    # 里的 `"(` / `)"` 一并删掉，造成 JSON 损坏或值被篡改
+    if re.fullmatch(r'"\(-?\d+(?:\.\d+)?\)"', value):
+        value = value[2:-2]
     try:
         value = json.loads(value)
     except Exception as e:

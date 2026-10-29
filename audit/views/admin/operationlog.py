@@ -91,7 +91,7 @@ class OperationLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction):
     列表与详情分口径：列表行的大 JSON 字段（body / response_result）降为有界
     预览（``OperationLogListSerializer``，changes 保留全量供「变更历史」弹窗
     逐行渲染），retrieve / 导出经 ``serializer_class`` 返回——正文（body /
-    response_result）读侧统一收敛：重脱敏 + 与列表同级的有界预览（LOG-P1-01），
+    response_result）读侧统一收敛：重脱敏 + 与列表同级的有界预览（列表/详情同口径），
     全站请求/响应正文不构成可批量拉取的出口。
     """
 

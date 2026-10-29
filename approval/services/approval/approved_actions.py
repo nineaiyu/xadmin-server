@@ -76,6 +76,10 @@ def snapshot_payload(request: Any) -> dict[str, Any]:
 def run_on_approved(approval: Any, user: Any) -> None:
     """审批通过后自动执行业务：命中注册路径且带快照时执行，成功即标记自动完成。
 
+    Handler 契约：在框架提供的 ``transaction.atomic()`` 内执行，失败抛异常由框架回滚；
+    返回 ``(False, detail)`` 表示纯校验拒绝且**不得留下任何副作用**。以 ``approval.pk``
+    作为幂等键，重放（手动/自动）不得重复落业务行。
+
     失败只记日志：审批结果已生效，落库失败仍保留申请人手动重放兜底。
     """
     if approval.auto_completed or approval.consume_time or not approval.payload:
@@ -86,6 +90,7 @@ def run_on_approved(approval: Any, user: Any) -> None:
         return
     # 处理器沿用 approval.payload 的既有读取面：先解封再回填内存对象
     approval.payload = payload
+    from django.db import transaction
     from django.utils import timezone
 
     from approval.models.approval import ApprovalRequest
@@ -94,17 +99,21 @@ def run_on_approved(approval: Any, user: Any) -> None:
         if not re.match(pattern, approval.path or ""):
             continue
         try:
-            ok, detail = handler(approval, user)
+            # 业务落库与「已自动完成」标记同一事务：标记写入失败时回滚业务写，
+            # 避免「副作用已发生但单据仍可被手动重放」的重复执行窗口
+            with transaction.atomic():
+                ok, detail = handler(approval, user)
+                if ok:
+                    now = timezone.now()
+                    ApprovalRequest.objects.filter(pk=approval.pk, auto_completed=False).update(
+                        auto_completed=True, consume_time=now, updated_time=now
+                    )
+                    approval.auto_completed = True
+                    approval.consume_time = now
         except Exception:
             logger.exception("on approved handler raised. approval:%s", approval.pk)
             return
         if ok:
-            now = timezone.now()
-            ApprovalRequest.objects.filter(pk=approval.pk, auto_completed=False).update(
-                auto_completed=True, consume_time=now, updated_time=now
-            )
-            approval.auto_completed = True
-            approval.consume_time = now
             logger.info("approval auto completed. approval:%s", approval.pk)
         else:
             logger.warning("on approved handler rejected. approval:%s detail:%s", approval.pk, detail)

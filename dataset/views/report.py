@@ -45,15 +45,21 @@ class ReportViewSet(BaseAnalysisViewSet):
     filterset_class = ReportFilter
 
     def perform_create(self, serializer: Any) -> None:
-        super().perform_create(serializer)
-        snapshot_report_version(serializer.instance, actor=self.request.user)
+        with transaction.atomic():
+            super().perform_create(serializer)
+            snapshot_report_version(serializer.instance, actor=self.request.user)
 
     def perform_update(self, serializer: Any) -> None:
         before = serializer.instance.design or {}
-        super().perform_update(serializer)
-        # 仅设计载荷实质变更才记版本：改名 / 调度 / 收件人调整不挤掉设计历史
-        if before != (serializer.instance.design or {}):
-            snapshot_report_version(serializer.instance, actor=self.request.user)
+        with transaction.atomic():
+            # 主表保存与版本快照同事务：任一步失败整体回滚，避免 design 与
+            # design_version/版本表漂移
+            locked = type(serializer.instance).objects.select_for_update().get(pk=serializer.instance.pk)
+            serializer.instance = locked
+            super().perform_update(serializer)
+            # 仅设计载荷实质变更才记版本：改名 / 调度 / 收件人调整不挤掉设计历史
+            if before != (serializer.instance.design or {}):
+                snapshot_report_version(serializer.instance, actor=self.request.user)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="versions")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

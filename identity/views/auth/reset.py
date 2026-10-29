@@ -53,7 +53,7 @@ class ResetPasswordAPIView(GenericAPIView):
         # 重置开关强校验:关闭后接口层同样拒绝(关闭前已发出的验证码一并作废)
         if not settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Reset password forbidden"))
-        query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
+        query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil, scenes=("reset",))
         # 通道开关复核:与验证码登录同口径,防止发码后关闭通道绕过
         channel_enabled = {
             "email": settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
@@ -68,7 +68,10 @@ class ResetPasswordAPIView(GenericAPIView):
         if settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED:
             password = AESCipherV2(verify_token).decrypt(password)
 
-        instance = UserInfo.objects.get(**{query_key: target})
+        instance = UserInfo.objects.filter(is_active=True, **{query_key: target}).first()
+        if instance is None:
+            # 与发码阶段「不暴露账号是否存在」同口径：统一按验证码失效处理
+            return ApiResponse(code=1002, detail=_("The verification code has expired, please request a new one"))
         if LdapUserBinding.objects.filter(user=instance).exists():
             # LDAP 绑定用户密码由目录管理，本地重置入口直接拒绝
             return ApiResponse(

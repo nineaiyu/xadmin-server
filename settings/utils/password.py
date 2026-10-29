@@ -118,11 +118,12 @@ def check_password_rules(password: str, is_super_admin: bool = False) -> bool:
         pattern += r"(?=.*\d)"
     if settings.SECURITY_PASSWORD_SPECIAL_CHAR:
         pattern += r'(?=.*[`~!@#$%^&*()\-=_+\[\]{}|;:\'",.<>/?])'
-    pattern += r"[a-zA-Z\d`~!@#\$%\^&\*\(\)-=_\+\[\]\{\}\|;:\'\",\.<>\/\?]"
+    allowed = r"[a-zA-Z\d`~!@#\$%\^&\*\(\)-=_\+\[\]\{\}\|;:\'\",\.<>\/\?]"
     if is_super_admin:
         min_length = settings.SECURITY_ADMIN_USER_PASSWORD_MIN_LENGTH
     else:
         min_length = settings.SECURITY_PASSWORD_MIN_LENGTH
-    pattern += ".{" + str(min_length - 1) + ",}$"
+    # 字符白名单约束整串（历史写法只在首字符生效，后续 .{n,} 允许空格/反斜杠/Unicode）
+    pattern += allowed + f"{{{min_length},}}$"
     match_obj = re.match(pattern, password)
     return bool(match_obj)

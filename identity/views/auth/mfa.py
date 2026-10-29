@@ -25,7 +25,12 @@ from common.utils.verify_code import TokenTempCache
 from identity.services.auth_login import login_success
 from identity.services.token_issue_login import issue_session_token
 from identity.utils.auth import ValidateError
-from mfa.services import check_user_mfa_code, send_user_mfa_code, validate_login_mfa_token
+from mfa.services import (
+    check_user_mfa_code,
+    get_login_mfa_methods,
+    send_user_mfa_code,
+    validate_login_mfa_token,
+)
 
 # 登录 MFA 允许的验证方式（密码方式在登录场景无意义；recovery 为 OTP 恢复码自救通道）
 LOGIN_MFA_METHODS = ["otp", "sms", "email", "passkey", "recovery"]
@@ -35,13 +40,16 @@ CHALLENGE_METHODS = ["sms", "email"]
 def _get_mfa_user(request: Any) -> Any:
     """校验 mfa_token 并返回待验证用户，无效则直接抛业务异常。
 
-    只要求已绑定凭据（OTP 密钥或 Passkey）：全局强制场景下允许验证"个人已关闭但被强制"的账号。
+    只要求登录 MFA 至少有一种当前可用方式（OTP / Passkey / 短信 / 邮件 / 恢复码）：
+    角色或登录策略强制 MFA 时，仅配置短信/邮箱的账号也曾能拿到 mfa_token，
+    却被这里按「必须有 OTP/Passkey」拒绝，密码正确也永远登不进。
+    具体方式是否可用仍由 ``check_user_mfa_code`` / ``send_user_mfa_code`` 按策略校验。
     """
     user = validate_login_mfa_token(request.data.get("mfa_token"))
     if not user:
         raise ValidateError(_("Login verification expired, please log in again"))
-    if not user.otp_secret_key and not user.passkeys.exists():
-        raise ValidateError(_("Operation failed. Abnormal data"))
+    if not get_login_mfa_methods(user, request):
+        raise ValidateError(_("No available login verification method"))
     return user
 
 

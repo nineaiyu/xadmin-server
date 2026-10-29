@@ -170,6 +170,8 @@ def create_instance(
             return None, str(_("The flow does not exist"))
         if not flow.is_active:
             return None, str(_("The flow is disabled"))
+        if not flow.user_can_initiate(applicant):
+            return None, str(_("You are not allowed to initiate this flow"))
         error = validate_form(flow, form_data)
         if error:
             return None, error

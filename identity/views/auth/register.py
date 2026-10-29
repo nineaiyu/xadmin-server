@@ -64,7 +64,7 @@ class RegisterViewAPIView(GenericAPIView):
 
         channel = request.data.get("channel", "default")
 
-        query_key, target, verify_token = verify_sms_email_code(request, RegisterBlockUtil)
+        query_key, target, verify_token = verify_sms_email_code(request, RegisterBlockUtil, scenes=("register",))
         password = request.data.get("password")
         if not password:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
@@ -95,9 +95,9 @@ class RegisterViewAPIView(GenericAPIView):
         record_password_hash(user, user.password)
 
         if channel and user:
+            # 仅按 channel 精确匹配部门编码；不再回落到任意第一个 auto_bind 部门，
+            # 避免未匹配渠道的注册用户被塞进不确定部门、污染数据权限归属
             dept = DeptInfo.objects.filter(is_active=True, auto_bind=True, code=channel).first()
-            if not dept:
-                dept = DeptInfo.objects.filter(is_active=True, auto_bind=True).first()
             if dept:
                 user.dept = dept
                 user.creator = user

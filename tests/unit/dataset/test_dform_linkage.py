@@ -188,7 +188,7 @@ class TestSubmissionWithLinkages:
         assert normalized["reason"] is None, "新建时隐藏字段不落库"
 
     def test_edit_keeps_previously_stored_value_when_hidden(self):
-        """编辑：把触发值改成隐藏态时保留上次已存值（FORM-P1-05）。"""
+        """编辑：把触发值改成隐藏态时保留上次已存值（编辑保留联动隐藏值）。"""
         schema = _schema([{"target": "reason", "field": "kind", "op": "eq", "value": "A", "effect": "hide"}])
         previous = {"kind": "B", "reason": "上次填的说明"}
 

@@ -26,6 +26,29 @@ def load_gate(module_name: str, script_name: str):
 
 
 # ---------------------------------------------------------------------------
+# check_ledger_ids.py
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def cli():
+    return load_gate("cli_gate_under_test", "check_ledger_ids")
+
+
+class TestLedgerIds:
+    @pytest.mark.parametrize(
+        "token",
+        ["ADR-090", "T03-01", "O10-2", "TG-3", "FE-DATA-P1-04", "LOG-P1-01", "ROB-APPR-P2-01", "C-03"],
+    )
+    def test_ledger_forms_are_detected(self, cli, token):
+        assert any(pattern.search(token) for pattern in cli.LEDGER_PATTERNS), token
+
+    @pytest.mark.parametrize("text", ["P1-01", "HTTP-200", "C-3PO", "ADR"])
+    def test_normal_text_not_matched(self, cli, text):
+        assert not any(pattern.search(text) for pattern in cli.LEDGER_PATTERNS), text
+
+
+# ---------------------------------------------------------------------------
 # check_cross_app_imports.py
 # ---------------------------------------------------------------------------
 

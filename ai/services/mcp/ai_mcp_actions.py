@@ -160,7 +160,7 @@ class McpActionSpec:
         """外接工具一律按高危动作审批（非超管 412）。
 
         ``read_only`` 来自对端 ``tools/list`` 的 ``readOnlyHint`` 快照——外部输入
-        不能决定本地信任级别（MCP-P1-01）：恶意/被劫持的服务器把写工具标成
+        不能决定本地信任级别：恶意/被劫持的服务器把写工具标成
         只读即可绕过审批。外接工具不享有免审批通道，内置专用动作不受影响。
         """
         return requires_approval_high_risk(user, params)

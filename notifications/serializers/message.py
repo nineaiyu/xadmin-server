@@ -24,7 +24,7 @@ from notifications.models import MessageContent, MessageUserRead
 
 logger = get_logger(__name__)
 
-# Markdown 正文长度上限：源码原样入库，不做 HTML 净化，长度校验是唯一的体积防线
+# Markdown 正文长度上限：入库前会中和 HTML（sanitize_markdown），长度校验防体积滥用
 MAX_MARKDOWN_LENGTH = 100_000
 
 
@@ -101,14 +101,14 @@ class NoticeMessageSerializer(BaseModelSerializer):
     def validate_message(self, value: Any) -> Any:
         # 公告/站内信内容按格式分流：
         # - html：入库前按白名单净化（前端 NoticeShow 以 v-html 渲染，防存储型 XSS）；
-        # - markdown：保留源码（净化会破坏 #/**/表格/围栏代码块），安全由展示层
-        #   markdown-it(html:false) + DOMPurify 保证，这里只做长度上限。
-        from common.utils.sanitize import sanitize_rich_text
+        # - markdown：剥离源码中的 HTML 标签（保留 #/**/表格/围栏代码块），
+        #   任何客户端渲染器都拿不到可执行标签，不再只依赖 Web 端 html:false。
+        from common.utils.sanitize import sanitize_markdown, sanitize_rich_text
 
         if self._requested_format() == MessageContent.MessageFormat.MARKDOWN:
             if len(value or "") > MAX_MARKDOWN_LENGTH:
                 raise ValidationError(_("The Markdown content is too long"))
-            return value
+            return sanitize_markdown(value)
         return sanitize_rich_text(value)
 
     @extend_schema_field(serializers.IntegerField)
@@ -179,14 +179,41 @@ class NoticeMessageSerializer(BaseModelSerializer):
         cached = self.context.get("_page_notice_user_counts")
         if cached is not None:
             return cached
+        recipients = self._page_recipient_counts(obj)
+        if recipients is None:
+            return None
+        counts = {pk: values["user"] for pk, values in recipients.items()}
+        self.context["_page_notice_user_counts"] = counts
+        return counts
+
+    def _page_recipient_counts(self, obj: Any) -> Any:
+        """整页「接收人数 + 已读数」一次聚合成 {notice_pk: {"user": n, "read": m}}。
+
+        两个口径都走 notice_user through 表：合并后 USER/NOTICE 列表每页只发一条
+        聚合查询（历史上 user_count 与 read_user_count 各一条）；软删除接收人
+        在 join 侧显式排除，与逐对象查询一致。
+        """
+        page = self.get_page_instances(obj)
+        if not page:
+            return None
+        cached = self.context.get("_page_recipient_counts")
+        if cached is not None:
+            return cached
         # all_objects：回收站列表序列化软删除消息时计数不归零（与逐对象查询同口径）
         rows = (
             MessageContent.all_objects.filter(pk__in=[item.pk for item in page])
-            .annotate(user_total=Count("notice_user", filter=Q(notice_user__deleted_at__isnull=True), distinct=True))
-            .values_list("pk", "user_total")
+            .annotate(
+                user_total=Count("notice_user", filter=Q(notice_user__deleted_at__isnull=True), distinct=True),
+                read_total=Count(
+                    "notice_user",
+                    filter=Q(messageuserread__unread=False, notice_user__deleted_at__isnull=True),
+                    distinct=True,
+                ),
+            )
+            .values_list("pk", "user_total", "read_total")
         )
-        counts = dict(rows)
-        self.context["_page_notice_user_counts"] = counts
+        counts = {pk: {"user": user_total, "read": read_total} for pk, user_total, read_total in rows}
+        self.context["_page_recipient_counts"] = counts
         return counts
 
     def _page_target_user_counts(self, obj: Any) -> Any:
@@ -212,41 +239,45 @@ class NoticeMessageSerializer(BaseModelSerializer):
         cached = self.context.get(cache_key)
         if cached is not None:
             return cached
-        queryset = MessageContent.all_objects.filter(pk__in=[item.pk for item in page])
-        if obj.notice_type == MessageContent.NoticeChoices.DEPT:
-            # dept 为 FK，每名用户至多命中一次
-            queryset = queryset.annotate(
-                user_total=Count(
-                    "notice_dept__dept_query",
-                    filter=Q(notice_dept__dept_query__deleted_at__isnull=True),
-                    distinct=True,
+
+        def _build() -> dict[Any, int]:
+            queryset = MessageContent.all_objects.filter(pk__in=[item.pk for item in page])
+            if obj.notice_type == MessageContent.NoticeChoices.DEPT:
+                # dept 为 FK，每名用户至多命中一次
+                queryset = queryset.annotate(
+                    user_total=Count(
+                        "notice_dept__dept_query",
+                        filter=Q(notice_dept__dept_query__deleted_at__isnull=True),
+                        distinct=True,
+                    )
                 )
-            )
-        elif obj.notice_type == MessageContent.NoticeChoices.ROLE:
-            queryset = queryset.annotate(
-                user_total=Count(
-                    "notice_role__userinfo",
-                    filter=Q(
-                        notice_role__deleted_at__isnull=True,
-                        notice_role__userinfo__deleted_at__isnull=True,
-                    ),
+            elif obj.notice_type == MessageContent.NoticeChoices.ROLE:
+                queryset = queryset.annotate(
+                    user_total=Count(
+                        "notice_role__userinfo",
+                        filter=Q(
+                            notice_role__deleted_at__isnull=True,
+                            notice_role__userinfo__deleted_at__isnull=True,
+                        ),
+                    )
                 )
-            )
-        else:
-            queryset = queryset.annotate(
-                user_total=Count(
-                    "notice_post__post_query",
-                    filter=Q(
-                        notice_post__deleted_at__isnull=True,
-                        notice_post__post_query__deleted_at__isnull=True,
-                        notice_post__post_query__is_active=True,
-                        notice_post__post_query__posts__is_active=True,
-                        notice_post__post_query__posts__deleted_at__isnull=True,
-                    ),
-                    distinct=True,
+            else:
+                queryset = queryset.annotate(
+                    user_total=Count(
+                        "notice_post__post_query",
+                        filter=Q(
+                            notice_post__deleted_at__isnull=True,
+                            notice_post__post_query__deleted_at__isnull=True,
+                            notice_post__post_query__is_active=True,
+                            notice_post__post_query__posts__is_active=True,
+                            notice_post__post_query__posts__deleted_at__isnull=True,
+                        ),
+                        distinct=True,
+                    )
                 )
-            )
-        counts = dict(queryset.values_list("pk", "user_total"))
+            return dict(queryset.values_list("pk", "user_total"))
+
+        counts = _build()
         self.context[cache_key] = counts
         return counts
 
@@ -263,22 +294,12 @@ class NoticeMessageSerializer(BaseModelSerializer):
         cached = self.context.get("_page_read_counts")
         if cached is not None:
             return cached
-        # notice_user 走 MessageUserRead through 表，messageuserread__unread=False 过滤
-        # 已读行；两次 join 各自独立，distinct 去重后即等价于逐对象的
-        # MessageUserRead.objects.filter(notice=obj, unread=False, owner_id__in=obj.notice_user.all()).count()；
-        # 软删除接收人经 owner_id__in 同样被排除，join 侧需显式补齐
-        rows = (
-            MessageContent.all_objects.filter(pk__in=[item.pk for item in page])
-            .annotate(
-                read_count=Count(
-                    "notice_user",
-                    filter=Q(messageuserread__unread=False, notice_user__deleted_at__isnull=True),
-                    distinct=True,
-                )
-            )
-            .values_list("pk", "read_count")
-        )
-        counts = dict(rows)
+        # 已读数与 notice_user 人数同源（through 表 messageuserread.unread=False），
+        # 由 _page_recipient_counts 一次聚合产出，避免每页多一条 COUNT。
+        recipients = self._page_recipient_counts(obj)
+        if recipients is None:
+            return None
+        counts = {item.pk: recipients.get(item.pk, {}).get("read", 0) for item in page}
         self.context["_page_read_counts"] = counts
         return counts
 

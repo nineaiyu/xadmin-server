@@ -163,7 +163,7 @@ class BaseSettingViewSet(NoDetailModelSet):
             assert setting is not None  # 契约：changed 为真时必有实例（此处仅作类型收窄）
             change_fields.append(setting.name)
             if setting.encrypted:
-                # write_only 密文键（SET-P1-01）：响应不回显明文，回填占位掩码，
+                # write_only 密文键（密文键不回显）：响应不回显明文，回填占位掩码，
                 # 与设置台账列表的输出掩码口径一致（掩码回传不会落库，见 parse_serializer_data）
                 serializer_data[setting.name] = MASK
             else:

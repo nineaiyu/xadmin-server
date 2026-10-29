@@ -42,7 +42,7 @@ pytestmark = pytest.mark.django_db
 #  2026-10 设置页归类：admin 补「通知渠道」「账号安全」两个页面，290 → 292；
 #  IM / Webhook 通知渠道补写权限点（partialUpdate/create），297 → 301）
 #  2026-10 读写共码收口：admin 补验证码风险规则 PUT 独立码 updateRules，301 → 302
-#  2026-10 种子授权补全（G10/SEED-P1-01）：admin 补通讯录/我的管辖/标签/数据字典/模块管理
+#  2026-10 种子授权补全（授权种子补全）：admin 补通讯录/我的管辖/标签/数据字典/模块管理
 #  5 页与对应权限点 + 部门管理员任命/我的管辖视角动作，302 → 338
 EXPECTED_ROLE_MENUS = {"admin": 338, "test": 87, "default": 33, "demo": 67}
 
@@ -263,7 +263,7 @@ class TestEndToEnd:
         assert actual == EXPECTED_ROLE_MENUS
 
     def test_seed_end_fills_directory_field_whitelist(self, seed_creator_user):
-        """端到端：通讯录授权后，种子收尾必须补齐绑定模型的字段白名单（G10）。
+        """端到端：通讯录授权后，种子收尾必须补齐绑定模型的字段白名单。
 
         字段权限 fail-closed：授权 list:SystemDirectory 而白名单未覆盖绑定模型时，
         非超管访问通讯录得到每行空对象。静态种子不逐条列举该白名单，由

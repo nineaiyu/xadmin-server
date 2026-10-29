@@ -15,6 +15,7 @@ import hmac
 import json
 import random
 import threading
+import time
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -31,6 +32,11 @@ MANIFEST_NAME = "manifest.json"
 #: 已校验资产的 (size, mtime) 指纹：运行期只读挂载时命中缓存，不重复读盘
 _verified: dict[str, tuple[int, float]] = {}
 _verify_lock = threading.Lock()
+# 资产清单短缓存：挑战接口每次都会取一张底图，manifest 读盘 + 全量 stat 不能
+# 落在每条匿名请求上；文件变化最多滞后 ASSET_CACHE_TTL 秒
+_ASSET_CACHE_TTL = 60
+_asset_cache: dict[str, Any] = {"key": None, "expires": 0.0, "value": []}
+_asset_cache_lock = threading.Lock()
 
 
 @dataclass(frozen=True)
@@ -98,6 +104,16 @@ def background_assets() -> list[BackgroundAsset]:
     if pack in {"", "procedural"}:
         return []
     root = asset_root()
+    manifest_path = root / MANIFEST_NAME
+    try:
+        stat = manifest_path.stat()
+        cache_key = (str(root), stat.st_mtime_ns, stat.st_size)
+    except OSError:
+        cache_key = (str(root), 0, 0)
+    now = time.monotonic()
+    with _asset_cache_lock:
+        if _asset_cache["key"] == cache_key and _asset_cache["expires"] > now:
+            return list(_asset_cache["value"])
     manifest = load_manifest(root)
     # 自定义只读目录本身就是选中的资产包，不要求 pack_id 与内置名一致
     if not configured_dir and str(manifest.get("pack_id") or "builtin") not in {pack, "builtin"}:
@@ -121,6 +137,8 @@ def background_assets() -> list[BackgroundAsset]:
         if not _asset_trusted(asset):
             continue
         assets.append(asset)
+    with _asset_cache_lock:
+        _asset_cache.update(key=cache_key, expires=now + _ASSET_CACHE_TTL, value=assets)
     return assets
 
 

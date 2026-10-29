@@ -22,7 +22,7 @@ from common.core.modelset import OnlyExportDataAction, OnlyListModelSet
 from common.core.pagination import KeysetPageNumber
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from message.services import send_logout_msg
+from identity.utils.session import force_logout_user
 
 
 class LoginLogFilter(BaseFilterSet):
@@ -63,9 +63,7 @@ class LoginLogViewSet(OnlyListModelSet, OnlyExportDataAction):
         # creator / channel_name 可能为空（历史日志、系统记录）：空值返回可读错误，避免 AttributeError 500
         if not instance.creator_id or not instance.channel_name:
             return ApiResponse(code=400, detail=_("This login record cannot be forcibly logged out"))
-        hit = send_logout_msg(instance.creator_id, [instance.channel_name])
-        if not hit:
-            # 会话已下线（channel 已不在推送组）：记录留存不受影响，仍算成功，
-            # 但给出可读提示让操作者知道无需重复下线，而非静默成功
-            return ApiResponse(detail=_("The session is already offline"))
+        # 与用户管理 / 在线会话页同口径：吊销全部 HTTP 令牌 + refresh 黑名单 +
+        # WS 推送 + 会话置离线。只推 WS 会让 access token 在剩余有效期内继续可用。
+        force_logout_user(instance.creator_id, operator=request.user)
         return ApiResponse()

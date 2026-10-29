@@ -878,6 +878,7 @@
             "title": "表单结构已锁定",
             "type": "boolean"
           },
+          "initiator_roles": {},
           "is_active": {
             "default": true,
             "title": "激活状态",
@@ -6971,7 +6972,7 @@
         "type": "object"
       },
       "OperationLogList": {
-        "description": "操作日志列表序列化器：大 JSON 字段降为有界预览（列表载荷轻量化）。\n\n列表表格列不渲染 body / response_result，但行数据仍被前端复用：\n详情抽屉直接渲染列表行（本视图集历史上无 retrieve），「变更历史」弹窗\n逐行读取 changes 渲染 old/new 对照——因此 changes 保留全量不裁剪；\nbody / response_result 只保留预览，截断时附 ``*_truncated`` 标记\n（键恒在，向后兼容）。截断与脱敏由基类 to_representation 统一承载，\nretrieve / 导出与列表同级（LOG-P1-01）。",
+        "description": "操作日志列表序列化器：大 JSON 字段降为有界预览（列表载荷轻量化）。\n\n列表表格列不渲染 body / response_result，但行数据仍被前端复用：\n详情抽屉直接渲染列表行（本视图集历史上无 retrieve），「变更历史」弹窗\n逐行读取 changes 渲染 old/new 对照——changes 超过列表预览上限时截断并置\n``changes_truncated``（详情/导出仍经同一上限，避免大 diff 放大首屏载荷）；\nbody / response_result 只保留预览，截断时附 ``*_truncated`` 标记\n（键恒在，向后兼容）。截断与脱敏由基类 to_representation 统一承载。",
         "properties": {
           "auth_type": {
             "description": null,
@@ -7007,6 +7008,10 @@
           },
           "changes": {
             "nullable": true
+          },
+          "changes_truncated": {
+            "readOnly": true,
+            "type": "boolean"
           },
           "created_time": {
             "format": "date-time",
@@ -7115,6 +7120,7 @@
           "body_dropped",
           "body_truncated",
           "browser",
+          "changes_truncated",
           "created_time",
           "creator",
           "exec_time",
@@ -9590,6 +9596,7 @@
             "title": "表单结构已锁定",
             "type": "boolean"
           },
+          "initiator_roles": {},
           "is_active": {
             "default": true,
             "title": "激活状态",
@@ -12923,7 +12930,7 @@
         "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
         "properties": {
           "SECURITY_BIND_EMAIL_ACCESS_ENABLED": {
-            "default": true,
+            "default": false,
             "description": "允许用户进行绑定邮件",
             "title": "绑定邮件",
             "type": "boolean"
@@ -12953,7 +12960,7 @@
         "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
         "properties": {
           "SECURITY_BIND_PHONE_ACCESS_ENABLED": {
-            "default": true,
+            "default": false,
             "description": "允许用户绑定手机",
             "title": "绑定手机",
             "type": "boolean"
@@ -13199,12 +13206,6 @@
             "title": "告警窗口（分钟）",
             "type": "integer"
           },
-          "CAPTCHA_FAILURE_LINK_LOCK": {
-            "default": false,
-            "description": "验证码失败达到阶梯阈值时同时锁定登录账号；默认关闭，避免误锁",
-            "title": "验证码失败联动登录锁定",
-            "type": "boolean"
-          },
           "CAPTCHA_FAIL_STEP": {
             "default": "3,8,20",
             "description": "失败阶梯：3,8,20 表示第 3 次强制难题、第 8 次冷却 15 分钟、第 20 次冷却 1 小时；0,0,0 停用",
@@ -13285,8 +13286,8 @@
                 "$ref": "#/components/schemas/CAPTCHARISKMODEEnum"
               }
             ],
-            "default": "enforce",
-            "description": "off = 关闭风险层；shadow = 仅评分与记录；enforce = 应用决策（强化档默认）\n\n* `off` - 关闭（保持现状）\n* `shadow` - 影子（只评分留痕）\n* `enforce` - 强制执行决策",
+            "default": "shadow",
+            "description": "off = 关闭风险层；shadow = 仅评分与记录；enforce = 应用决策（需配置可信代理/客户端 IP）\n\n* `off` - 关闭（保持现状）\n* `shadow` - 影子（只评分留痕）\n* `enforce` - 强制执行决策",
             "title": "风险模式"
           },
           "CAPTCHA_RISK_PROXY_CIDRS": {
@@ -16201,7 +16202,7 @@
         "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
         "properties": {
           "SECURITY_BIND_EMAIL_ACCESS_ENABLED": {
-            "default": true,
+            "default": false,
             "description": "允许用户进行绑定邮件",
             "title": "绑定邮件",
             "type": "boolean"
@@ -16231,7 +16232,7 @@
         "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
         "properties": {
           "SECURITY_BIND_PHONE_ACCESS_ENABLED": {
-            "default": true,
+            "default": false,
             "description": "允许用户绑定手机",
             "title": "绑定手机",
             "type": "boolean"
@@ -16503,12 +16504,6 @@
             "title": "告警窗口（分钟）",
             "type": "integer"
           },
-          "CAPTCHA_FAILURE_LINK_LOCK": {
-            "default": false,
-            "description": "验证码失败达到阶梯阈值时同时锁定登录账号；默认关闭，避免误锁",
-            "title": "验证码失败联动登录锁定",
-            "type": "boolean"
-          },
           "CAPTCHA_FAIL_STEP": {
             "default": "3,8,20",
             "description": "失败阶梯：3,8,20 表示第 3 次强制难题、第 8 次冷却 15 分钟、第 20 次冷却 1 小时；0,0,0 停用",
@@ -16589,8 +16584,8 @@
                 "$ref": "#/components/schemas/CAPTCHARISKMODEEnum"
               }
             ],
-            "default": "enforce",
-            "description": "off = 关闭风险层；shadow = 仅评分与记录；enforce = 应用决策（强化档默认）\n\n* `off` - 关闭（保持现状）\n* `shadow` - 影子（只评分留痕）\n* `enforce` - 强制执行决策",
+            "default": "shadow",
+            "description": "off = 关闭风险层；shadow = 仅评分与记录；enforce = 应用决策（需配置可信代理/客户端 IP）\n\n* `off` - 关闭（保持现状）\n* `shadow` - 影子（只评分留痕）\n* `enforce` - 强制执行决策",
             "title": "风险模式"
           },
           "CAPTCHA_RISK_PROXY_CIDRS": {
@@ -36885,7 +36880,7 @@
     },
     "/api/dataset/datasets/{id}/execute": {
       "post": {
-        "description": "执行数据集\n\n行级数据权限随调用者过滤，fail-closed\n\n``count_only=true``：仅取行数（数字卡场景，跳过行物化）。\n``max_rows``：预览侧行数上限（与数据集 row_limit 取小者下推 SQL），\n报表预览按展示口径收数，不在前端物化后切片（REP-P1-01）。\n``filters``：请求级行过滤（卡片下钻），与数据集定义 filters 叠加，\n校验口径同保存侧（``validate_filters``：字段白名单 + op 白名单 + 类型），\n并按浏览者字段权限收敛（无该列权限即 1001，防隐藏列布尔预言机）。",
+        "description": "执行数据集\n\n行级数据权限随调用者过滤，fail-closed\n\n``count_only=true``：仅取行数（数字卡场景，跳过行物化）。\n``max_rows``：预览侧行数上限（与数据集 row_limit 取小者下推 SQL），\n报表预览按展示口径收数，不在前端物化后切片（按展示口径收数）。\n``filters``：请求级行过滤（卡片下钻），与数据集定义 filters 叠加，\n校验口径同保存侧（``validate_filters``：字段白名单 + op 白名单 + 类型），\n并按浏览者字段权限收敛（无该列权限即 1001，防隐藏列布尔预言机）。",
         "operationId": "api_dataset_datasets_execute_create",
         "parameters": [
           {
@@ -49231,6 +49226,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
         "tags": [
           "SendVerifyCodeAPIView"
         ]
@@ -49389,6 +49389,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
         "tags": [
           "SendVerifyCodeAPIView"
         ]

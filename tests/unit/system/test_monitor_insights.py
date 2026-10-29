@@ -475,12 +475,12 @@ class TestExport:
         now = timezone.now()
         MonitorAlert.objects.create(item="disk_used", value=95, threshold=80, first_time=now, last_time=now)
         resp = invoke("export", user=superuser, query="kind=alerts&type=csv")
-        content = resp.content.decode("utf-8-sig")
+        content = b"".join(resp.streaming_content).decode("utf-8-sig")
         # 状态文案取模型 choices（本机有 .mo 显中文、CI 无 .mo 显英文，须同源断言）
         assert str(MonitorAlert.Status.FIRING.label) in content
         assert str(MonitorAlert.Item.DISK_USED.label) in content
 
-    def test_alerts_export_fetches_all_rows_across_chunks(self, superuser, monkeypatch):
+    def test_alerts_export_streams_all_rows_across_chunks(self, superuser, monkeypatch):
         from system.services.monitor import events as monitor_events
 
         monkeypatch.setattr(monitor_events, "EXPORT_CHUNK_SIZE", 2)
@@ -490,5 +490,5 @@ class TestExport:
                 item="disk_used", value=95, threshold=80, first_time=now, last_time=now, message=f"alert-{i}"
             )
         resp = invoke("export", user=superuser, query="kind=alerts&type=csv")
-        content = resp.content.decode("utf-8-sig")
+        content = b"".join(resp.streaming_content).decode("utf-8-sig")
         assert all(f"alert-{i}" in content for i in range(5))

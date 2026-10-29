@@ -202,7 +202,7 @@ class TestCreatorIsolation:
 
     def test_creator_can_update_own(self, form, normal_user):
         """创建者可编辑自己的草稿；已生效单（免审批 status=""）按终态只读收敛
-        （FORM-P1-02：提交后改写等于绕过已生效快照）。"""
+        （提交后改写等于绕过已生效快照）。"""
         grant_form_menus(normal_user)
         client = client_for(normal_user)
         client.post(SUBMISSION_URL, {"form": str(form.pk), "data": {"name": "张三"}}, format="json")

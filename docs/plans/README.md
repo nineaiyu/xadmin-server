@@ -35,6 +35,7 @@
 
 | 已删除 / 归档 | 去向与理由 |
 |---------------|-----------|
+| **2026-10-29 双篇审查报告清理（26 份）** | 移入工作区 `_delete/2026-10-29-code-review-2026-10-28/`（可恢复）：A 篇全栈 16 份（主篇 + part2–16）+ B 篇前端 10 份（主篇 + part1–9）；整改状态与结论以 [审查整改批次-2026.10.28.md](审查整改批次-2026.10.28.md) 为准，P2 编号明细与证据原文以归档件为准 |
 | **2026-10-28 双篇审查快照清理（18 份）** | 移入工作区 `_delete/2026-10-28-code-review-snapshots/`（可恢复）：A 篇 11 篇（`code-review-fullstack-2026-10-27*`）+ B 篇 7 篇（`code-review-frontend-2026-10-27*`）；整改状态与结论已收敛至 [审查整改批次-2026.10.28.md](审查整改批次-2026.10.28.md)，P2 backlog 明细以归档件为准 |
 | **2026-10-27 一次性方案 / 审查快照清理（43 份）** | 移入工作区 `_delete/2026-10-27-plans-cleanup/docs-plans-archive/`（可恢复）：`code-review-*` 审查快照 22 份、2026.09/2026.10 已交付方案与执行记录、年度计划/回顾、验证码多形态/统一题型/安全硬化方案、全量 pytest 移交等；仍被代码 / ADR / 活跃文档引用的 20 份设计/映射/台账已恢复至本目录 |
 | **2026-10-27 履历 / 审计 / 演练 / 旧教程清理（10 份）** | 移入工作区 `_delete/2026-10-27-docs-fourth-pass/`（可恢复）：`metrics-history` / `metrics-perf-history` / `security-review` / `cache-keys-audit` / `architecture/indexes` / `xadmin-client/docs/accessibility-audit` / `observability-drills` / `backup-drill-2027-03` / `data-permission` / `field-permission`；现行口径分别收敛到 `metrics.md` / `asvs-mapping.md` / `architecture/cache.md` / `permission.md` / `e2e/README.md` / `deployment-docker.md` |

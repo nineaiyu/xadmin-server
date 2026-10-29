@@ -193,13 +193,13 @@ class TestSerializerMasking:
         _rule(field="phone", mask_type="phone", sort=0).roles.add(role)
         _rule(field="email", mask_type="email", keep_head=1, sort=1)
         user_no_role = UserInfo.objects.create_user(username="lisi", password="Test@123456")
-        user_no_role.phone = PHONE
-        user_no_role.email = "nobody@example.com"
+        user_no_role.phone = "13987654321"
+        user_no_role.email = "other@example.com"
         user_no_role.save()
         _make_request(user_no_role)
         data = _serialize(user_no_role)
-        assert data["phone"] == PHONE  # 无该角色 → 不掩码
-        assert data["email"] == "n*****@example.com"  # 无角色限制规则生效
+        assert data["phone"] == "13987654321"  # 无该角色 → 不掩码
+        assert data["email"] == "o****@example.com"  # 无角色限制规则生效
         _make_request(normal_user)
         data2 = _serialize(normal_user)
         assert data2["phone"] == "138******78"  # 命中角色 → 掩码

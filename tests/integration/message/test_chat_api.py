@@ -6,10 +6,13 @@
 AI 双形态（多轮 / `/kb` 引用来源 / 门禁 / 降级）、菜单权限门控。
 """
 
+import json
+
 import pytest
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.test import APIClient
 
+from audit.models import OperationLog
 from message import chat as chat_service
 from message.models import ChatMessage, ChatRoom
 
@@ -287,6 +290,34 @@ class TestGroups:
         # 被移除者失去访问权（按房间不存在拒绝）
         with pytest.raises(DjangoValidationError):
             chat_service.accessible_room(group.pk, alice)
+
+    def test_members_add_remove_atomic(self, auth_client, superuser, bob, alice):
+        """add 合法 + remove 非法：整体拒绝，add 不落库（不留下半更新）。"""
+        group = self._create(superuser, [bob])
+        response = auth_client.post(
+            f"{ROOM_URL}/{group.pk}/members",
+            {"add": [alice.pk], "remove": [superuser.pk]},
+            format="json",
+        )
+        assert response.json()["code"] == 1001, response.data
+        with pytest.raises(DjangoValidationError):
+            chat_service.accessible_room(group.pk, alice)
+        assert set(group.members.values_list("user_id", flat=True)) == {superuser.pk, bob.pk}
+
+    def test_group_changes_audited(self, auth_client, superuser, bob, alice):
+        """企业直拉模型不设邀请确认，成员变更必须留操作日志供追溯。"""
+        created = auth_client.post(
+            f"{ROOM_URL}/create-group", {"name": "项目群", "member_pks": [bob.pk]}, format="json"
+        )
+        group = ChatRoom.objects.get(pk=created.json()["data"]["id"])
+        auth_client.post(f"{ROOM_URL}/{group.pk}/members", {"add": [alice.pk]}, format="json")
+        auth_client.post(f"{ROOM_URL}/{group.pk}/rename", {"name": "审计群"}, format="json")
+
+        logs = OperationLog.objects.filter(module="chat:group").order_by("created_time")
+        actions = [json.loads(log.changes)["action"] for log in logs]
+        assert actions == ["create", "members", "rename"]
+        member_log = json.loads(logs[1].changes)
+        assert member_log["add"] == [alice.pk] and member_log["room_name"] == "项目群"
 
     def test_non_owner_cannot_manage_members(self, superuser, bob, alice):
         group = self._create(superuser, [bob])

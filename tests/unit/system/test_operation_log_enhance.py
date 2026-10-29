@@ -106,7 +106,7 @@ def test_list_carries_bounded_preview_with_marker(superuser):
 
 
 def test_retrieve_bounded_preview(superuser):
-    """详情接口正文与列表同级收敛（LOG-P1-01）：有界预览，不再提供全量正文出口
+    """详情接口正文与列表同级收敛（列表/详情同口径）：有界预览，不再提供全量正文出口
     （详情/导出曾是「全站请求/响应正文」的整包出口）。"""
     big_body = json.dumps({"payload": "x" * 800})
     log = _make_log(body=big_body, response_result=json.dumps({"code": 1000}))

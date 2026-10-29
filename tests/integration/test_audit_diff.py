@@ -49,7 +49,7 @@ def test_non_whitelisted_model_not_recorded(auth_client, notice, django_capture_
 
 
 def test_batch_update_records_changes(auth_client, role, django_capture_on_commit_callbacks, monkeypatch):
-    """批量更新复用单条审计钩子（AUDIT-P1-01）：白名单模型的治理字段经 batch-update
+    """批量更新复用单条审计钩子（批量复用单条审计钩子）：白名单模型的治理字段经 batch-update
     改动同样落 changes old/new 明细，不得整批绕过审计。"""
     from common.core.config import SysConfig
 

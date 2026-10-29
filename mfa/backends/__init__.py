@@ -70,8 +70,11 @@ def get_user_mfa_policy(user: Any) -> dict[str, Any]:
                 layers.append(role_methods)
             if role.mfa_required:
                 policy["mfa_required"] = True
-    except Exception:  # noqa: BLE001 角色查询异常不阻断验证方式判定
+    except Exception:  # noqa: BLE001 策略读取失败必须 fail-closed，不能放宽白名单
         logger.warning("load role mfa policy failed. user:%s", user.pk, exc_info=True)
+        # 空集 = 全部验证方式不可用（与「共享账号防锁死」的空集语义一致）；
+        # 不回退为 methods=None（那会把角色层收窄降级为不限制）。
+        return {"methods": set(), "mfa_required": bool(policy["mfa_required"])}
 
     user_methods = _normalize_methods(getattr(user, "allowed_mfa_types", []))
     if user_methods:
@@ -86,17 +89,18 @@ def get_user_mfa_policy(user: Any) -> dict[str, Any]:
     return policy
 
 
-def _method_allowed(user: Any, name: str) -> bool:
-    methods = get_user_mfa_policy(user).get("methods")
+def _method_allowed(user: Any, name: str, policy: dict[str, Any] | None = None) -> bool:
+    methods = (policy or get_user_mfa_policy(user)).get("methods")
     return methods is None or name in methods
 
 
 def get_backend(user: Any, name: str, request: Any = None) -> Any:
     """按名称获取指定验证后端（须全局启用、策略允许且用户可用），不可用返回 None"""
+    policy = get_user_mfa_policy(user)
     for cls in MFA_BACKEND_CLASSES:
         if cls.name != name or not cls.global_enabled():
             continue
-        if not _method_allowed(user, cls.name):
+        if not _method_allowed(user, cls.name, policy):
             return None
         # 注册项均为 BaseMFA 的具体子类（抽象 check_code 已实现），mypy 按抽象基类推断故忽略
         backend = cls(user, request=request)  # type: ignore[abstract]
@@ -108,12 +112,14 @@ def get_backend(user: Any, name: str, request: Any = None) -> Any:
 def get_enabled_backends(user: Any, request: Any = None, levels: Any = None) -> list[Any]:
     """获取用户当前可用的全部验证方式，可按确认级别过滤（levels 为 ConfirmType 列表）"""
     backends: list[Any] = []
+    # 策略只算一次：逐后端调用若各自读取，会按后端数放大角色查询
+    policy = get_user_mfa_policy(user)
     for cls in MFA_BACKEND_CLASSES:
         if not cls.global_enabled():
             continue
         if levels and cls.confirm_level not in levels:
             continue
-        if not _method_allowed(user, cls.name):
+        if not _method_allowed(user, cls.name, policy):
             continue
         backend = cls(user, request=request)  # type: ignore[abstract]  # 同上（具体子类）
         if backend.is_active():

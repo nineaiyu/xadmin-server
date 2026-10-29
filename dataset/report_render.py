@@ -106,7 +106,7 @@ def _render_workbook(report: Any, user: Any) -> tuple[Any, ...]:
     else:
         # 明细行数上限随执行下推到 SQL（LIMIT），不再全量物化后在 Python 侧切片
         limit = design_table_limit(design)
-        result = execute_dataset(report.dataset, user, max_rows=limit)
+        result = execute_dataset(report.dataset, user, max_rows=limit, with_total=False)
         columns = design_export_columns(design, result["columns"])
         rows = [[excel_safe_value(row.get(col)) for col in columns] for row in result["rows"]]
         main_sheet = [list(columns), *rows]

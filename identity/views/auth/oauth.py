@@ -370,7 +370,10 @@ def _create_user_and_binding(provider: Any, config: Any, subject: Any, userinfo:
 
     username = make_unique_username(provider, subject)
     user = UserInfo(username=username, nickname=str(userinfo.get("nickname") or username))
-    user.email = str(userinfo.get("email") or "")
+    email = str(userinfo.get("email") or "")
+    # 邮箱是登录标识（库层非空唯一）：IdP 返回的邮箱已被本地账号占用时不阻断建号，
+    # 与 LDAP 首登同口径丢弃邮箱，避免唯一冲突导致首次登录 500。
+    user.email = email if email and not UserInfo.objects.filter(email=email).exists() else ""
     user.set_unusable_password()
     user.save()
     return UserOAuthBinding.objects.create(

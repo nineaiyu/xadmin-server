@@ -226,3 +226,14 @@ class TestFiltering:
         queryset = UserInfo.objects.all()
         assert filter_by_tags(queryset, UserInfo, []) is queryset
         assert filter_by_tag_name(queryset, "") is queryset
+
+    def test_filter_uses_exists_subquery_not_materialized_ids(self, superuser):
+        """标签过滤走相关子查询（EXISTS），不把命中的 object_id 全量物化进 IN 列表。"""
+        alice = UserInfo.objects.create(username="tag-exists", nickname="E")
+        tag = Tag.objects.create(name="大标签")
+        set_object_tags(UserInfo, alice.pk, [tag.pk], superuser)
+
+        queryset = filter_by_tags(UserInfo.objects.all(), UserInfo, [tag.name])
+        sql = str(queryset.query).upper()
+        assert "EXISTS" in sql
+        assert str(alice.pk) not in sql

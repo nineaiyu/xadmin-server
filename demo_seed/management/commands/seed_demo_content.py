@@ -157,7 +157,7 @@ class Command(BaseCommand):
         self.stdout.write(f"removed demo chat messages: {removed}")
 
         # 演示文档按 title 前缀识别（KNOWLEDGE_NAME_PREFIX）：上传路径已按上传者
-        # 命名空间化（AI-P1-02，upload/{pk}/{name}.md），路径前缀不再能圈定演示文档
+        # 命名空间化（按创建者隔离，upload/{pk}/{name}.md），路径前缀不再能圈定演示文档
         docs = AiKnowledgeDocument.objects.filter(title__startswith=KNOWLEDGE_NAME_PREFIX)
         doc_count = docs.count()
         for doc in docs:

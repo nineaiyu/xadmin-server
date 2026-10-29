@@ -142,35 +142,47 @@ def rename_group(room_id: Any, user: Any, name: str) -> ChatRoom:
     return room
 
 
-def add_group_members(room_id: Any, user: Any, member_pks: Any) -> ChatRoom:
-    """群主拉人入群：已在内/失效成员静默跳过；超上限整体拒绝。"""
+def update_group_members(room_id: Any, user: Any, add_pks: Any = None, remove_pks: Any = None) -> ChatRoom:
+    """一次提交的成员变更：先整体校验（群主不可移除/上限），再同一事务内 add+remove。
+
+    历史实现由视图分两次调用 add/remove：add 已落库而 remove 校验失败时请求返回
+    失败但群成员已变。这里两侧合并，任一校验不通过都不产生写入。
+    """
     from identity.models import UserInfo
 
     room = group_room_or_deny(room_id, user)
     _require_group_owner(room, user)
     owner_pk = _user_pk(user)
+    remove_ids = _normalize_user_pks(remove_pks or [])
+    if owner_pk in remove_ids:
+        raise DjangoValidationError(_("The group owner cannot be removed"))
     existing = set(room.members.values_list("user_id", flat=True))
-    pks = [pk for pk in _normalize_user_pks(member_pks) if pk not in existing and pk != owner_pk]
-    if not pks:
-        return room
-    new_members = list(UserInfo.objects.filter(pk__in=pks, is_active=True))
-    if len(existing) + len(new_members) > MAX_GROUP_MEMBERS:
+    # 变更目标不存在的成员按幂等跳过；同一请求里既加又减的按「减」处理
+    remove_ids = [pk for pk in remove_ids if pk in existing]
+    add_ids = [
+        pk
+        for pk in _normalize_user_pks(add_pks or [])
+        if pk not in existing and pk != owner_pk and pk not in remove_ids
+    ]
+    new_members = list(UserInfo.objects.filter(pk__in=add_ids, is_active=True))
+    if len(existing) - len(remove_ids) + len(new_members) > MAX_GROUP_MEMBERS:
         raise DjangoValidationError(_("Group members exceed the limit of {}").format(MAX_GROUP_MEMBERS))
-    for member in sorted(new_members, key=lambda user: user.pk):
-        ChatRoomMember.objects.get_or_create(room=room, user=member)
+    with transaction.atomic():
+        if remove_ids:
+            room.members.filter(user_id__in=remove_ids).delete()
+        for member in sorted(new_members, key=lambda row: row.pk):
+            ChatRoomMember.objects.get_or_create(room=room, user=member)
     return room
+
+
+def add_group_members(room_id: Any, user: Any, member_pks: Any) -> ChatRoom:
+    """群主拉人入群：已在内/失效成员静默跳过；超上限整体拒绝。"""
+    return update_group_members(room_id, user, add_pks=member_pks)
 
 
 def remove_group_members(room_id: Any, user: Any, member_pks: Any) -> ChatRoom:
     """群主移除成员：成员行（含未读游标）删除；群主不能被移除。"""
-    room = group_room_or_deny(room_id, user)
-    _require_group_owner(room, user)
-    pks = _normalize_user_pks(member_pks)
-    if _user_pk(user) in pks:
-        raise DjangoValidationError(_("The group owner cannot be removed"))
-    if pks:
-        room.members.filter(user_id__in=pks).delete()
-    return room
+    return update_group_members(room_id, user, remove_pks=member_pks)
 
 
 def leave_group(room_id: Any, user: Any) -> ChatRoom:

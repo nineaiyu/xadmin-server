@@ -207,7 +207,7 @@
 | 11 | **下一补丁版本发布（含审查整改批次）** | 版本号三方同步（`server/const.py` ↔ `client/package.json` ↔ tag）→ 变更日志/Release notes → 按 server·client → web → docs → installer 顺序构建镜像 → `sync-image-mirror` → 目标机复测；发布前跑一次干净机安装 + 幂等升级 |
 | 12 | **4.2.5 旧镜像回填 + 目标机旧库升级复跑** | **已登记（2026-10-23）**：`postgres:16.8` / `redis:7.4.3` 已入 `xadmin-installer/utils/base-images.yml`；待 push 触发 `sync-base-image-mirror` + `gh workflow run sync-image-mirror.yml -f version=4.2.5` 补 `xadmin-web`，再目标机 `./xadmin.sh upgrade v<version>` 复跑，验收 `upgrade_check=up-to-date`、健康全 true、数据保留 |
 | 13 | ~~R5 首屏 LCP 靶心优化~~ | **✅ 已完成（2026-10-23）**：welcome 生产口径 LCP **792 → 244 ms（-69%）**、CLS 0.0095 → 0.0088–0.0095、FCP/TBT 持平；改动 = 移除欢迎卡片入场动画 + 活跃用户卡预占位；证据见 `xadmin-client/docs/perf-firstscreen.md` §六 |
-| 14 | **双篇审查整改批次（2026-10-28，代码修复完成，运行时验收待跑）** | P0 5 → B 篇立即/次周 → A 篇 P1 47 编号（含版本化 2 项补测试）→ B 篇 P1 34；月度/结构性 16 项顺延，P2 backlog 按域归组。状态见 [审查整改批次-2026.10.28.md](审查整改批次-2026.10.28.md)；验收口径 = 每项带测试 + 门禁全绿 + 后端改动 E2E fresh |
+| 14 | **双篇审查整改批次（2026-10-28，代码修复完成，全量验收已跑）** | P0 5 → B 篇立即/次周 → A 篇 P1 47 编号（含版本化 2 项补测试）→ B 篇 P1 34；月度/结构性 16 项顺延，P2 backlog 按域归组。状态见 [审查整改批次-2026.10.28.md](审查整改批次-2026.10.28.md)；验收口径 = 每项带测试 + 门禁全绿 + 后端改动 E2E fresh |
 
 > 2026-11 窗口两项主项（存量库升级通道、HNSW 向量定型实测）已于 2026-10-09 提前完成，无需再排。
 

@@ -112,7 +112,10 @@ def validate_dsl(dsl: dict[str, Any], user_obj: Any) -> dict[str, Any]:
     from dataset.contracts import Dataset
 
     dataset = Dataset.objects.get(pk=dsl["dataset"])
-    mode = dsl.get("mode") or "rows"
+    raw_mode = dsl.get("mode")
+    if raw_mode is not None and not isinstance(raw_mode, str):
+        raise ValidationError(_("Invalid report mode"))
+    mode = raw_mode or "rows"
     if mode not in ("rows", "aggregate"):
         raise ValidationError(_("Invalid report mode"))
 
@@ -124,15 +127,27 @@ def validate_dsl(dsl: dict[str, Any], user_obj: Any) -> dict[str, Any]:
             raise ValidationError(_("Invalid dataset filters"))
         _validate_filter_field(dataset, str(item.get("field") or ""), str(item.get("op") or ""), item.get("value"))
 
+    raw_limit = dsl.get("limit")
+    try:
+        if isinstance(raw_limit, bool) or isinstance(raw_limit, float) and not raw_limit.is_integer():
+            raise ValueError
+        limit = int(raw_limit) if raw_limit is not None else 100
+    except (TypeError, ValueError):
+        raise ValidationError(_("Invalid NL query limit")) from None
+    if limit <= 0:
+        raise ValidationError(_("Invalid NL query limit"))
     normalized = {
         "dataset": str(dataset.pk),
         "mode": mode,
         "filters": [{"field": str(i["field"]), "op": i["op"], "value": i.get("value")} for i in filters],
-        "limit": min(int(dsl.get("limit") or 100), ROW_LIMIT_CAP, NL_ROW_LIMIT_CAP, dataset.row_limit or 100),
+        "limit": min(limit, ROW_LIMIT_CAP, NL_ROW_LIMIT_CAP, dataset.row_limit or 100),
     }
     if mode == "aggregate":
         columns = [str(col) for col in (dataset.columns or [])]
-        group_by = str(dsl.get("group_by") or "")
+        raw_group_by = dsl.get("group_by")
+        if raw_group_by is not None and not isinstance(raw_group_by, str):
+            raise ValidationError(_("Invalid group by field"))
+        group_by = raw_group_by or ""
         metric = dsl.get("metric") or "count"
         if metric not in ALLOWED_METRICS:
             raise ValidationError(_("Metric {} is not allowed").format(metric))

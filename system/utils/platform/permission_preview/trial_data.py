@@ -63,7 +63,7 @@ def _build_draft_grant(draft: Any, menu_ctx: Any) -> Any:
     if mode not in (ModeTypeAbstract.ModeChoices.OR, ModeTypeAbstract.ModeChoices.AND):
         raise ValidationError("试算草稿的模式不合法")
     # 试算是「只读诊断」而非授权放大器：草稿含「全部数据」/通配字段规则直接 400
-    # （ALLOW_ALL 草稿经 OR 合并会变成任意模型全量采样，PREVIEW-P1-01）
+    # （ALLOW_ALL 草稿经 OR 合并会变成任意模型全量采样）
     from common.core.data_scope.constants import KeyChoices
 
     for rule in rules:
@@ -208,7 +208,7 @@ def run_data_trial(user_obj: UserInfo, model_label: Any, menu_pk: Any, draft: An
     user_obj.menu = menu_ctx
     queryset = get_filter_queryset(model.objects.all(), user_obj)
     if draft_grant is not None:
-        # 草稿只收窄不放大（PREVIEW-P1-01）：草稿效果与现有授权取交集，
+        # 草稿只收窄不放大（草稿只收窄）：草稿效果与现有授权取交集，
         # 而非经 extra_grants 的 OR 合并——否则「全部数据」草稿等于全表采样
         from common.core.data_scope.compiler import compile_grant
         from common.core.data_scope.values import ScopeResult

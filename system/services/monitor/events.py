@@ -177,13 +177,9 @@ def _fmt_time(value: Any) -> Any:
     return str(value)[:19].replace("T", " ")
 
 
-def build_alert_export_sheets(rows: Any) -> Any:
-    """告警记录导出（CSV/Excel 共用的表格结构）。"""
-    from system.models import MonitorAlert
-
-    item_labels = dict(MonitorAlert.Item.choices)
-    status_labels = dict(MonitorAlert.Status.choices)
-    header = [
+def alert_export_columns() -> Any:
+    """告警导出的标题与表头（与流式行映射同源）。"""
+    return str(_("Monitor alerts")), [
         str(_("Alert item")),
         str(_("Status")),
         str(_("Trigger value")),
@@ -194,18 +190,47 @@ def build_alert_export_sheets(rows: Any) -> Any:
         str(_("Resolved time")),
         str(_("Message")),
     ]
-    export_rows = [
-        [
-            str(item_labels.get(row["item"], row["item"])),
-            str(status_labels.get(row["status"], row["status"])),
-            row["value"],
-            row["threshold"],
-            row["count"],
-            _fmt_time(row["first_time"]),
-            _fmt_time(row["last_time"]),
-            _fmt_time(row["resolved_time"]),
-            row["message"],
-        ]
-        for row in rows
+
+
+def _alert_export_row(row: Any, item_labels: Any, status_labels: Any) -> Any:
+    return [
+        str(item_labels.get(row["item"], row["item"])),
+        str(status_labels.get(row["status"], row["status"])),
+        row["value"],
+        row["threshold"],
+        row["count"],
+        _fmt_time(row["first_time"]),
+        _fmt_time(row["last_time"]),
+        _fmt_time(row["resolved_time"]),
+        row["message"],
     ]
-    return [{"title": str(_("Monitor alerts")), "header": header, "rows": export_rows}]
+
+
+def iter_alert_export_rows(
+    status: Any = None, item: Any = None, range_key: Any = "30d", chunk_size: Any = EXPORT_CHUNK_SIZE
+) -> Any:
+    """告警导出逐行生成：单条游标查询，内存不随行数增长（CSV 直接流式下发）。"""
+    from system.models import MonitorAlert
+
+    item_labels = dict(MonitorAlert.Item.choices)
+    status_labels = dict(MonitorAlert.Status.choices)
+    deadline = timezone.now() - datetime.timedelta(seconds=EVENT_RANGES.get(range_key, 2592000))
+    queryset = MonitorAlert.objects.filter(last_time__gte=deadline)
+    if status in MonitorAlert.Status.values:
+        queryset = queryset.filter(status=status)
+    if item in ALERT_ITEMS:
+        queryset = queryset.filter(item=item)
+    values = queryset.order_by("-last_time", "-pk").values(
+        "pk",
+        "item",
+        "status",
+        "value",
+        "threshold",
+        "message",
+        "count",
+        "first_time",
+        "last_time",
+        "resolved_time",
+    )
+    for row in values.iterator(chunk_size=chunk_size):
+        yield _alert_export_row(row, item_labels, status_labels)

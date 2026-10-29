@@ -19,6 +19,7 @@
 import re
 from typing import Any
 
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 
 import common.contracts as contracts
@@ -192,9 +193,11 @@ def encrypt_setting_value(key: str, value: Any) -> Any:
         return value
     try:
         return _map_field_values(value, fields, _encrypt_scalar)
-    except Exception:  # noqa: BLE001 加密失败不阻断写入（由巡检暴露明文）
-        logger.warning("credential encrypt failed. key:%s", key, exc_info=True)
-        return value
+    except Exception as exc:  # noqa: BLE001 加密失败必须 fail-closed，禁止落明文
+        logger.exception("credential encrypt failed. key:%s", key)
+        raise ValidationError(
+            "Sensitive credential encryption failed, please retry or contact the administrator"
+        ) from exc
 
 
 def decrypt_setting_value(key: str, value: Any) -> Any:

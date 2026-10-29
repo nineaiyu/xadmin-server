@@ -15,7 +15,7 @@ from rest_framework.test import APIRequestFactory
 
 from identity.models import UserPasskey
 from integrations.sdk.sms.exceptions import CodeError, CodeExpired, CodeSendOverRate
-from mfa.backends import get_backend, get_user_mfa_policy
+from mfa.backends import get_backend, get_enabled_backends, get_user_mfa_policy
 from mfa.backends.base import BaseMFA
 from mfa.backends.email import EmailBackend
 from mfa.backends.otp import OtpBackend
@@ -237,7 +237,21 @@ class TestBackendRegistry:
     def test_policy_for_none_user(self):
         assert get_user_mfa_policy(None) == {"methods": None, "mfa_required": False}
 
-    def test_policy_survives_role_query_failure(self):
+    def test_enabled_backends_loads_policy_once(self, normal_user, monkeypatch):
+        """一次方法列表只算一次策略：逐后端不得重复查角色。"""
+        from mfa import backends
+
+        calls = []
+        original = backends.get_user_mfa_policy
+        monkeypatch.setattr(
+            backends,
+            "get_user_mfa_policy",
+            lambda user: calls.append(user) or original(user),
+        )
+        backends.get_enabled_backends(normal_user)
+        assert len(calls) == 1
+
+    def test_policy_fails_closed_on_role_query_failure(self):
         class _BrokenRoles:
             pk = 1
 
@@ -246,7 +260,10 @@ class TestBackendRegistry:
                 raise RuntimeError("boom")
 
         policy = get_user_mfa_policy(_BrokenRoles())
+        # 角色策略不可读 → 全部方式禁用（空集），绝不回退为「不限制」
+        assert policy["methods"] == set()
         assert policy["mfa_required"] is False
+        assert get_enabled_backends(_BrokenRoles()) == []
 
     def test_get_backend_blocked_by_method_policy(self, normal_user, settings):
         settings.SECURITY_MFA_CONFIRM_BACKENDS = ["otp", "email"]

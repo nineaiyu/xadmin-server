@@ -219,7 +219,7 @@ def parent_fallback_action(**action_kwargs: Any) -> Any:
 
 # ---- 读写同权（多方法单权限码）声明消费 ----
 # 运行时兄弟方法回退只对本表编译出的路由生效；未声明的多方法 action 一律 fail-closed
-# （SEC-P0-01：读权限码不得经回退提权为写权限码）。声明源即各 app declarations.py 的
+# （读权限码不得经回退提权为写权限码）。声明源即各 app declarations.py 的
 # ``shared_method_paths``（与 permission_sync 同一数据面，进程内静态）。
 @lru_cache(maxsize=1)
 def _rw_shared_patterns() -> tuple[tuple[re.Pattern[str], frozenset[str]], ...]:

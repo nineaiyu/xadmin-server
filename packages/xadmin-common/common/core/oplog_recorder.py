@@ -54,7 +54,7 @@ HEALTH_CHECK_PATH = "/api/common/api/health"
 
 # SystemConfig 键值对写入体（POST/PATCH /api/system/config）里承载凭据本体的
 # 兄弟字段：body 形如 {"key": "SCIM_TOKEN", "value": "<明文>"}——"value"/"detail"
-# 不在键名精确匹配名单，按「key 值命中整值加密配置键」的值语义补脱敏（G18）
+# 不在键名精确匹配名单，按「key 值命中整值加密配置键」的值语义补脱敏（值语义脱敏）
 PAIR_VALUE_FIELDS = ("value", "detail")
 # 整值加密的 SystemConfig 键（小写）：字段级键（如 OAUTH_PROVIDERS.client_secret）
 # 已由键名精确匹配覆盖，此处只收整值键（与 credentials.SENSITIVE_SETTING_KEYS 同源）
@@ -93,7 +93,7 @@ def desensitize_payload(value: Any, sensitive_value_fields: tuple[str, ...] = ()
     进操作日志的 ``body`` / ``response_result`` 与 DEBUG/慢请求日志。
     掩码保留长度信息（与原值等长），便于排障时识别字段是否为空。
 
-    三类命中口径（G18：脱敏不能只靠键名精确匹配）：
+    三类命中口径（脱敏不能只靠键名精确匹配）：
 
     1. 键名精确命中 ``SENSITIVE_FIELDS``（原有口径）；
     2. 键名命中敏感模式（password / secret / token / api_key…，与

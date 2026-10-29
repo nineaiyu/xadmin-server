@@ -74,21 +74,3 @@ class TestDisposalLadder:
         settings.CAPTCHA_FAIL_STEP = "0,0,0"
         for _ in range(30):
             assert disposal.register_failure(_dims()) == {"force_hard": False, "cooldown": 0}
-
-    def test_login_lock_link_is_optional(self, settings):
-        settings.CAPTCHA_FAILURE_LINK_LOCK = False
-        disposal.link_login_lock("zhangsan", "10.0.0.1")
-        from settings.services import LoginBlockUtil
-
-        assert LoginBlockUtil.is_user_block("zhangsan") is False
-
-    def test_login_lock_link_sets_block_when_enabled(self, settings):
-        settings.CAPTCHA_FAILURE_LINK_LOCK = True
-        disposal.link_login_lock("lisi", "10.0.0.2")
-        from settings.services import LoginBlockUtil
-
-        util = LoginBlockUtil("lisi", "10.0.0.2")
-        try:
-            assert LoginBlockUtil.is_user_block("lisi") is True
-        finally:
-            cache.delete(util.block_key)

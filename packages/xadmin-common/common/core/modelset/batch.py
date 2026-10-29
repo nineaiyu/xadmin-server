@@ -263,7 +263,7 @@ class BatchPartialUpdateAction:
                 continue
             try:
                 with transaction.atomic():
-                    # 与单条 update 同一审计口径（AUDIT-P1-01）：AUDIT_DIFF_MODELS
+                    # 与单条 update 同一审计口径（批量复用单条审计钩子）：AUDIT_DIFF_MODELS
                     # 白名单模型的治理字段经 batch-update 改动同样留下 old/new 明细，
                     # 否则白名单可被批更新整批绕过审计
                     old_values = self._audit_diff_old_values(pk)

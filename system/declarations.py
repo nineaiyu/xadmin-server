@@ -21,5 +21,8 @@ DECLARATIONS = AppDeclarations(
     permission_exempt_views={
         # PAT 作用域自管配置（PatScopePermission），按令牌范围鉴权而非菜单权限点
         "system.views.user.configs.ConfigsViewSet": "PAT 作用域自管配置（PatScopePermission），按令牌范围鉴权而非菜单权限点",
+        # 个人列表视图：归属与读写由 get_queryset/perform_* 收口到「本人 + 共享只读」，
+        # 属于登录用户个人能力，不设菜单权限点（否则非超管恒 403，端点 dormant）
+        "system.views.admin.saved_view.SavedListViewSet": "个人列表视图（本人 + 共享只读），按登录态与对象归属鉴权",
     },
 )

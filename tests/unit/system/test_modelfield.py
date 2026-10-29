@@ -85,6 +85,24 @@ def test_lookups_unknown_field_returns_empty_candidates(superuser):
 
 
 @pytest.mark.django_db
+def test_lookups_rejects_model_outside_data_registry(superuser):
+    """lookups 只对数据权限注册表（DATA 根）暴露字段，不能枚举任意已注册模型。"""
+    from system.models import ModelLabelField
+
+    root = ModelLabelField.objects.create(name="identity.userinfo", label="RoleUser", field_type=0)
+    ModelLabelField.objects.create(name="username", label="Username", parent=root, field_type=0)
+
+    factory = APIRequestFactory()
+    request = factory.get("/api/system/field/lookups", {"table": "identity.userinfo", "field": "username"})
+    force_authenticate(request, user=superuser)
+    response = ModelLabelFieldViewSet.as_view({"get": "lookups"})(request)
+
+    assert response.status_code == 200
+    assert response.data["data"] == []
+    assert response.data["field_meta"] is None
+
+
+@pytest.mark.django_db
 def test_parent_filter_accepts_parent_name(superuser):
     """parent 过滤兼容父级名称（页面按模型名搜索），不再只认 UUID。"""
     from system.models import ModelLabelField

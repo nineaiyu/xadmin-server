@@ -112,6 +112,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             "form_schema",
             "form_schema_locked",
             "is_active",
+            "initiator_roles",
             "nodes",
             "node_count",
             "creator",
@@ -138,6 +139,30 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             return locked
         bound: bool = obj.bound_forms.filter(is_template=False).exists()
         return bound
+
+    def validate_initiator_roles(self, value: Any) -> Any:
+        """发起范围：角色 code 列表；空 = 公开。未知/停用角色直接拒绝（避免静默不可发起）。"""
+        if value in (None, ""):
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("Initiator roles must be a list"))
+        codes: list[str] = []
+        for item in value:
+            code = str(item or "").strip()
+            if code and code not in codes:
+                codes.append(code)
+        if len(codes) > 100:
+            raise serializers.ValidationError(_("Too many initiator roles"))
+        if codes:
+            from identity.models import UserRole
+
+            valid = set(UserRole.objects.filter(code__in=codes, is_active=True).values_list("code", flat=True))
+            unknown = [code for code in codes if code not in valid]
+            if unknown:
+                raise serializers.ValidationError(
+                    _("Unknown or disabled role codes: %(codes)s") % {"codes": ", ".join(unknown)}
+                )
+        return codes
 
     def validate_form_schema(self, value: Any) -> Any:
         """表单字段定义校验：key/label/type 必填，type 白名单，select 需 options。"""

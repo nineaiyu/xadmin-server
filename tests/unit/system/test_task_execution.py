@@ -166,7 +166,7 @@ def test_run_action_rejects_unregistered_task():
 
 
 def test_execution_serializer_drops_args_kwargs(superuser):
-    """执行历史不下发 args/kwargs（TASK-P1-01）：任务参数属字段面泄漏。"""
+    """执行历史不下发 args/kwargs（执行参数不进序列化面）：任务参数属字段面泄漏。"""
     execution = TaskExecution.objects.create(
         name="demo_task", args=["secret-export-params"], kwargs={"query": "条件"}, creator=superuser
     )

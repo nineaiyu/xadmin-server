@@ -92,7 +92,7 @@ class TestSendVerifyCode:
             assert resp.data["code"] == 1004, resp.data
 
     def test_transport_failure_returns_readable_error(self, api_client, register_free, monkeypatch):
-        """C-03：SMTP 不可达（连接类异常）时给可读错误，不是 500、不泄露内部地址。"""
+        """SMTP 不可达（连接类异常）时给可读错误，不是 500、不泄露内部地址。"""
 
         class _Down:
             def __init__(self, *args, **kwargs):
@@ -115,9 +115,9 @@ class TestSendVerifyCode:
         assert cache.get(VERIFY_CODE_KEY_TPL.format("transport-down@example.com")) is None
 
     def test_charset_all_off_returns_readable_error(self, api_client, register_free, settings):
-        """C-28：字符集三项全关（历史脏配置）时发码必须给可读错误，不能 500。
+        """字符集三项全关（历史脏配置）时发码必须给可读错误，不能 500。
 
-        写入侧已由 SET-P1-02 拦截，但存量配置行仍可能存在——发送链路两分支
+        写入侧已由跨字段组合约束拦截，但存量配置行仍可能存在——发送链路两分支
         （真实投递 / 防枚举占位）都不能把 ValueError 抛成 500。
         """
         settings.VERIFY_CODE_UPPER_CASE = False
@@ -375,7 +375,7 @@ class TestSendVerifyCodeLoginReset:
     def test_reset_rejected_when_channel_turned_off_after_send(self, api_client, normal_user, settings, silent_send):
         """发码后关闭通道：重置提交侧同样拒绝（通道开关不能只拦发码入口）。
 
-        组合约束（SET-P1-02）禁止「场景开、通道全关」的配置落库，但配置可能
+        组合约束（跨字段组合约束）禁止「场景开、通道全关」的配置落库，但配置可能
         在发码与提交之间变化；这一层是发码路径之外的兜底复核，缺了它等于
         「先发码、再关通道」即可绕过开关。
         """
@@ -549,20 +549,29 @@ class TestSendVerifyCodeRegisterEmail:
 
 
 class TestSendVerifyCodeBind:
-    """bind_email / bind_phone 类别：目标已绑定时回传用户信息（含头像绝对地址）。"""
+    """bind_email / bind_phone 类别：必须登录，且发码响应不回显任何账号资料。"""
+
+    def test_anonymous_bind_category_requires_auth(self, api_client, settings):
+        settings.EMAIL_ENABLED = True
+        settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = False
+        settings.SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED = False
+        resp = api_client.post(
+            SEND_VERIFY_URL + "?category=bind_email",
+            {"form_type": "email", "target": "bind@example.com"},
+            format="json",
+        )
+        assert resp.status_code == 401, resp.data
 
     def test_bind_email_existing_user_extra(self, api_client, normal_user, settings, monkeypatch):
         settings.EMAIL_ENABLED = True
+        settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED = True
         settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = False
         settings.SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED = False
         normal_user.email = "bind@example.com"
         normal_user.save(update_fields=["email"])
-        # 头像字段为空文件对象，mock 绝对地址构造逻辑验证 request 拼接
-        monkeypatch.setattr(
-            "identity.views.auth.verify_code.get_file_absolute_uri",
-            lambda value, request=None, use_url=True: f"{request.scheme}://{request.get_host()}/media/avatar.png",
-        )
+        api_client.force_authenticate(user=normal_user)
+        monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", lambda self: None)
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=bind_email",
             {"form_type": "email", "target": "bind@example.com"},
@@ -570,17 +579,16 @@ class TestSendVerifyCodeBind:
         )
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000, resp.data
-        extra = resp.data["data"]["extra"]
-        assert extra["username"] == "zhangsan"
-        assert extra["nickname"] == "张三"
-        # 头像必须带 request 的 scheme/host 绝对地址
-        assert extra["avatar"] == "http://testserver/media/avatar.png"
+        # 发码阶段不再回显 username / nickname / avatar，避免匿名枚举面
+        assert resp.data["data"]["extra"] == {}
 
-    def test_bind_email_new_target_empty_extra(self, api_client, settings, monkeypatch):
+    def test_bind_email_new_target_empty_extra(self, api_client, normal_user, settings, monkeypatch):
         settings.EMAIL_ENABLED = True
+        settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED = True
         settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = False
         settings.SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED = False
+        api_client.force_authenticate(user=normal_user)
         monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", lambda self: None)
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=bind_email",
@@ -599,11 +607,13 @@ class TestSendVerifyCodeBind:
         settings.ALIBABA_ACCESS_KEY_SECRET = "sk"
         settings.ALIBABA_VERIFY_SIGN_NAME = "sign"
         settings.ALIBABA_VERIFY_TEMPLATE_CODE = "SMS_1"
+        settings.SECURITY_BIND_PHONE_ACCESS_ENABLED = True
         settings.SECURITY_BIND_PHONE_CAPTCHA_ENABLED = False
         settings.SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_BIND_PHONE_ENCRYPTED_ENABLED = False
         normal_user.phone = "13800138000"
         normal_user.save(update_fields=["phone"])
+        api_client.force_authenticate(user=normal_user)
         monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", lambda self: None)
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=bind_phone",
@@ -612,7 +622,7 @@ class TestSendVerifyCodeBind:
         )
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000, resp.data
-        assert resp.data["data"]["extra"]["username"] == "zhangsan"
+        assert resp.data["data"]["extra"] == {}
 
 
 class TestSendVerifyCodeFailurePaths:

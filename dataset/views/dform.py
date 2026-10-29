@@ -11,6 +11,7 @@
 
 from typing import Any
 
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -80,7 +81,6 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
         serializer.save(creator=self.request.user, modifier=self.request.user)
 
     def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        from django.db import transaction
 
         partial = kwargs.pop("partial", False)
         # 行锁 + 版本比对：两个管理员并发编辑时，后写者拿到的是更新后的 updated_time
@@ -184,15 +184,19 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
             version = int(request.data.get("version"))
         except (TypeError, ValueError) as exc:
             raise ValidationError(_("A schema version is required")) from exc
-        target = next(
-            (item for item in (form.schema_history or []) if int(item.get("version") or 0) == version),
-            None,
-        )
-        if target is None:
-            raise ValidationError(_("Schema version {} does not exist").format(version))
-        serializer = self.get_serializer(form, data={"schema": target.get("schema") or {}}, partial=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        with transaction.atomic():
+            # 与常规编辑同口径加行锁：并发回滚/编辑不能基于同一旧快照互相覆盖
+            locked = type(form).objects.select_for_update().get(pk=form.pk)
+            target = next(
+                (item for item in (locked.schema_history or []) if int(item.get("version") or 0) == version),
+                None,
+            )
+            if target is None:
+                raise ValidationError(_("Schema version {} does not exist").format(version))
+            serializer = self.get_serializer(locked, data={"schema": target.get("schema") or {}}, partial=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            form = locked
         return ApiResponse(
             data=self.get_serializer(form).data,
             detail=_("Rolled back to schema version {}").format(version),

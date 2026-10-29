@@ -128,3 +128,18 @@ def sanitize_rich_text(value: Any) -> Any:
         css_sanitizer=_css_sanitizer,
         strip=True,
     )
+
+
+def sanitize_markdown(value: Any) -> Any:
+    """中和 Markdown 源码中的内联/块级 HTML，保留 Markdown 语法字符。
+
+    Markdown 正文的渲染安全不能只依赖某一个客户端：移动端、第三方 API 消费方
+    或未来渲染器若开启 HTML 透传，作者注入的标签会被执行。存储侧统一剥离标签
+    （围栏代码块里的 ``<`` 会转义成实体，渲染后仍显示为原文），
+    因此任何渲染器都拿不到可执行 HTML。
+    """
+    if not isinstance(value, str) or not value:
+        return value
+    # strip=False：标签转义为文本而不是连同内容删除——围栏代码块里的 HTML
+    # 仍能作为示例展示，同时任何渲染器都不会把它当标签执行。
+    return bleach.clean(value, tags=[], attributes={}, protocols=[], strip=False)

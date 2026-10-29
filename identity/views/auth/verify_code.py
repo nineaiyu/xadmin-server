@@ -14,7 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schema, extend_schema_view
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, NotAuthenticated
 from rest_framework.generics import GenericAPIView
 
 from captcha.const import verify_code_send_action
@@ -22,7 +22,6 @@ from captcha.contracts import build_captcha_meta, captcha_globally_enabled
 from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import VerifyCodeThrottle
-from common.fields.utils import get_file_absolute_uri
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger, random_string
 from common.utils.request import get_request_ip
@@ -148,14 +147,12 @@ def get_bind_email_config(request: Any) -> Any:
 
 
 def check_bind_email_config(request: Any, form_type: Any, query_key: Any, target: Any) -> Any:
-    """绑定场景：回显目标用户资料（绑定流程需要展示「绑定到哪个账号」）。"""
-    extra = request.data.get("extra", {})
-    user = UserInfo.objects.filter(**{query_key: target}).first()
-    if user:
-        extra["avatar"] = get_file_absolute_uri(user.avatar, request)
-        extra["username"] = user.username
-        extra["nickname"] = user.nickname
-    return "", extra, True
+    """绑定场景：只发送验证码，不回显任何目标账号资料。
+
+    匿名发码接口不得成为「邮箱/手机 → 用户名/昵称/头像」的枚举面；绑定确认所需的
+    冲突提示由登录态 bind 接口在提交时返回，发码阶段不需要知道目标归属。
+    """
+    return "", request.data.get("extra", {}), True
 
 
 def get_bind_phone_config(request: Any) -> Any:
@@ -184,6 +181,8 @@ class VerifyCodeCategory:
     config: Callable[[Any], dict[str, Any]]
     #: (request, form_type, query_key, target) -> (username, extra, should_send)
     check: Callable[..., tuple[str, dict[str, Any], bool]]
+    #: 是否要求已登录：绑定类场景必须先证明当前会话身份，避免匿名发码成为枚举面
+    requires_auth: bool = False
 
 
 #: 场景表：新增场景只需在此登记一行（CATEGORY_KEYS 与 swagger enum 均从本表派生）。
@@ -192,8 +191,8 @@ CATEGORIES: dict[str, VerifyCodeCategory] = {
     "register": VerifyCodeCategory("register", get_register_config, check_register_config),
     "login": VerifyCodeCategory("login", get_login_config, check_reset_config),
     "reset": VerifyCodeCategory("reset", get_reset_config, check_reset_config),
-    "bind_email": VerifyCodeCategory("bind_email", get_bind_email_config, check_bind_email_config),
-    "bind_phone": VerifyCodeCategory("bind_phone", get_bind_phone_config, check_bind_email_config),
+    "bind_email": VerifyCodeCategory("bind_email", get_bind_email_config, check_bind_email_config, requires_auth=True),
+    "bind_phone": VerifyCodeCategory("bind_phone", get_bind_phone_config, check_bind_email_config, requires_auth=True),
 }
 
 #: 允许的场景键（单一事实源，与 CATEGORIES 键集一致）
@@ -277,7 +276,8 @@ class SendVerifyCodeAPIView(GenericAPIView):
     """获取验证码配置"""
 
     permission_classes: list[type] = []
-    authentication_classes: list[type] = []
+    # 不显式清空 authentication_classes：默认认证链在没有凭证时静默返回匿名，
+    # 有凭证时识别当前用户——绑定类 category 依赖这一点做登录态校验。
 
     @staticmethod
     def prepare_code_data(username: Any) -> Any:
@@ -317,6 +317,8 @@ class SendVerifyCodeAPIView(GenericAPIView):
         category = self.get_category(request)
         if category is None:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+        if category.requires_auth and not (request.user and request.user.is_authenticated):
+            raise NotAuthenticated(_("Unauthorized authentication"))
         config = category.config(request)
         if not config.get("access"):
             return ApiResponse(code=1001, detail=_("Forbidden send verification code"))
@@ -387,14 +389,21 @@ class SendVerifyCodeAPIView(GenericAPIView):
             # 不能被下面的兜底吞成 1002
             raise
         except Exception:
-            # C-03：SMTP / 短信网关不可达抛的是连接类异常（不是 ValueError），
+            # 连接类异常：SMTP / 短信网关不可达抛的是连接类异常（不是 ValueError），
             # 以前会直接 500 且把内部地址抛给前端；改为可读文案 + 服务端完整堆栈
             logger.warning("Send verify code transport failed", exc_info=True)
             return ApiResponse(
                 code=1002,
                 detail=_("Failed to send verification code, please try again later"),
             )
-        cache_data = {"target": target, "form_type": form_type, "query_key": query_key, "extra": extra}
+        cache_data = {
+            "target": target,
+            "form_type": form_type,
+            "query_key": query_key,
+            "extra": extra,
+            # 场景绑定：登录/重置/注册/绑定令牌不可跨场景复用
+            "scene": category.key,
+        }
         verify_token = TokenTempCache.generate_cache_token(settings.VERIFY_CODE_TTL, cache_data)
         data = {"verify_token": verify_token, "extra": extra}
 

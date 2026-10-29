@@ -147,7 +147,10 @@ class TestMigrationParity:
         assert set(sync.RUNTIME_PERMISSION_PREFIXES) == {"6eed000c"}
 
     def test_permission_exempt_views(self):
-        assert set(sync.PERMISSION_EXEMPT_VIEWS) == {"system.views.user.configs.ConfigsViewSet"}
+        assert set(sync.PERMISSION_EXEMPT_VIEWS) == {
+            "system.views.user.configs.ConfigsViewSet",
+            "system.views.admin.saved_view.SavedListViewSet",
+        }
 
     def test_framework_constants_stay_in_constants_module(self):
         from system.services.permission_sync import constants

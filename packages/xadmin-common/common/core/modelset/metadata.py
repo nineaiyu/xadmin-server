@@ -47,7 +47,7 @@ def metadata_cache_key(view_instance: Any, method_name: Any, request: Any) -> st
     ``metadata_extra_cache_key(request)`` 返回额外键段，缺省空串不入键。
 
     应用凭证维度：序列化器字段面会按应用授权收敛（同一 owner 的不同应用凭证
-    共享 ``user_pk``），键缺凭证维度时会话 / 应用交替请求互相串味（META-P1-01）。
+    共享 ``user_pk``），键缺凭证维度时会话 / 应用交替请求互相串味（缓存键含应用凭证维度）。
     """
     user_pk = getattr(getattr(request, "user", None), "pk", "anonymous")
     query = getattr(request, "query_params", None)

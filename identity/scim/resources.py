@@ -70,6 +70,19 @@ def _first_value(values: Any, key: Any = "value") -> Any:
     return ""
 
 
+def _ensure_contact_unique(user: Any, field: str, value: str) -> None:
+    """email/phone 是登录标识：重复值在库层被部分唯一索引拒绝，这里先给 SCIM 可读的 409。"""
+    if not value:
+        return
+    from identity.models import UserInfo
+
+    queryset = UserInfo.objects.filter(**{field: value})
+    if user.pk:
+        queryset = queryset.exclude(pk=user.pk)
+    if queryset.exists():
+        raise ScimApiError(409, str(_("{} already exists").format(field)), scim_type="uniqueness")
+
+
 def user_resource(user: Any, base_path: str = "/api/scim/v2/Users") -> dict[str, Any]:
     """User 资源序列化（只读投影：不含密码等敏感字段）。"""
     display = user.nickname or user.username
@@ -191,12 +204,14 @@ def _apply_payload(user: Any, payload: dict[str, Any], *, creating: bool) -> lis
     if creating or "emails" in payload:
         email = _first_value(payload.get("emails"))
         if email != (user.email or ""):
+            _ensure_contact_unique(user, "email", email[:254])
             user.email = email[:254]
             changed.append("email")
 
     if creating or "phoneNumbers" in payload:
         phone = _first_value(payload.get("phoneNumbers"))
         if phone != (user.phone or ""):
+            _ensure_contact_unique(user, "phone", phone[:16])
             user.phone = phone[:16]
             changed.append("phone")
 
@@ -251,8 +266,12 @@ def update_user(user: Any, payload: dict[str, Any]) -> list[Any]:
 
     user.username = username[:150]
     user.nickname = _display_name(payload, username)
-    user.email = _first_value(payload.get("emails"))[:254]
-    user.phone = _first_value(payload.get("phoneNumbers"))[:16]
+    email = _first_value(payload.get("emails"))[:254]
+    phone = _first_value(payload.get("phoneNumbers"))[:16]
+    _ensure_contact_unique(user, "email", email)
+    _ensure_contact_unique(user, "phone", phone)
+    user.email = email
+    user.phone = phone
     user.is_active = bool(payload.get("active", True))
     user.save()
     return ["username", "nickname", "email", "phone", "is_active"]
@@ -304,10 +323,14 @@ def _apply_patch_path(user: Any, path: str, value: Any) -> list[Any]:
         user.username = str(value or "").strip()[:150] or user.username
         return ["username"]
     if path == "emails":
-        user.email = _first_value(value if isinstance(value, list) else [value])[:254]
+        email = _first_value(value if isinstance(value, list) else [value])[:254]
+        _ensure_contact_unique(user, "email", email)
+        user.email = email
         return ["email"]
     if path == "phoneNumbers":
-        user.phone = _first_value(value if isinstance(value, list) else [value])[:16]
+        phone = _first_value(value if isinstance(value, list) else [value])[:16]
+        _ensure_contact_unique(user, "phone", phone)
+        user.phone = phone
         return ["phone"]
     logger.info("SCIM patch: unsupported path ignored: %s", path)
     return []

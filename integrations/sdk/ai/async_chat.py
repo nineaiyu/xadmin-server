@@ -269,6 +269,9 @@ class AsyncChatCompletionsClient:
                     continue
                 choices = chunk.get("choices") or []
                 delta = ((choices[0] or {}).get("delta") or {}) if choices else {}
+                usage = chunk.get("usage")
+                if isinstance(usage, dict):
+                    self.last_usage = usage
                 reasoning = delta.get("reasoning_content")
                 if reasoning:
                     produced_reasoning = True

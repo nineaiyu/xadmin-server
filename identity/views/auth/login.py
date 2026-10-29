@@ -178,7 +178,7 @@ class VerifyCodeLoginAPIView(GenericAPIView):
         if not settings.SECURITY_LOGIN_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Login forbidden"))
         ipaddr = get_request_ip(request)
-        query_key, target, verify_token = verify_sms_email_code(request, LoginBlockUtil)
+        query_key, target, verify_token = verify_sms_email_code(request, LoginBlockUtil, scenes=("login",))
         # 通道开关复核:发码后到提交前开关被关闭(或旧 token 绕过发码端校验)时,
         # 提交侧同样拒绝——通道开关不能只拦发码入口
         channel_enabled = {

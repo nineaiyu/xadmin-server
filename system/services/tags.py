@@ -14,6 +14,8 @@ from typing import Any
 
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import CharField, Exists, OuterRef
+from django.db.models.functions import Cast
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
@@ -268,20 +270,15 @@ def set_object_tags_batch(
     return changed, failed
 
 
-def _ids_for_token(model: Any, token: str) -> set[Any]:
-    """单个过滤词（标签主键或名称）→ 该模型下已打标对象的 id 集合。"""
-    from system.models.tag import Tag, TaggedItem
+def _tag_for_token(token: Any) -> Any:
+    """单个过滤词（标签主键或名称）→ Tag 行；未命中返回 None。"""
+    from system.models.tag import Tag
 
-    token = str(token or "").strip()
-    if not token:
-        return set()
-    tag = Tag.objects.filter(pk=token).first() if _looks_like_pk(token) else None
-    if tag is None:
-        tag = Tag.objects.filter(name=token).first()
-    if tag is None:
-        return set()
-    content_type = ContentType.objects.get_for_model(model)
-    return set(TaggedItem.objects.filter(content_type=content_type, tag=tag).values_list("object_id", flat=True))
+    text = str(token or "").strip()
+    if not text:
+        return None
+    tag = Tag.objects.filter(pk=text).first() if _looks_like_pk(text) else None
+    return tag or Tag.objects.filter(name=text).first()
 
 
 def _looks_like_pk(token: str) -> bool:
@@ -289,14 +286,25 @@ def _looks_like_pk(token: str) -> bool:
 
 
 def filter_by_tags(queryset: Any, model: Any, tokens: list[Any]) -> Any:
-    """按标签过滤（多词 AND 语义）：未命中任何标签时返回空集（而不是全量）。"""
-    ids = None
+    """按标签过滤（多词 AND 语义）：用相关子查询避免把全量 object_id 物化进 IN。
+
+    泛关联的 object_id 是文本列，用 ``Cast(pk, CharField)`` 对齐类型；每个标签一个
+    ``Exists``，多标签 AND 由 SQL 直接执行，内存不随命中对象数增长。
+    """
+    from system.models.tag import TaggedItem
+
+    content_type = ContentType.objects.get_for_model(model)
     for token in tokens:
-        current = _ids_for_token(model, token)
-        ids = current if ids is None else (ids & current)
-    if ids is None:
-        return queryset
-    return queryset.filter(pk__in=list(ids))
+        tag = _tag_for_token(token)
+        if tag is None:
+            return queryset.none()
+        tagged = TaggedItem.objects.filter(
+            content_type=content_type,
+            tag=tag,
+            object_id=Cast(OuterRef("pk"), output_field=CharField()),
+        )
+        queryset = queryset.filter(Exists(tagged))
+    return queryset
 
 
 def tag_choice_options(limit: int = 200) -> list[Any]:
@@ -355,7 +363,7 @@ class TagChoiceFilter:
         class _TagValueField(forms.ChoiceField):
             """校验放宽：值可为「标签名 / 标签主键 / 逗号分隔组合」。
 
-            与 ``filter_by_tag_name`` → ``_ids_for_token`` 的解析口径一致（主键与名称都支持、
+            与 ``filter_by_tag_name`` 的解析口径一致（主键与名称都支持、
             多标签 AND 语义）；未知标签由过滤器返回空集（fail-closed），不在此处 400——
             否则「下拉里没有的取值」（新建标签 60s 缓存窗口内、深链带主键、多标签组合）会被拦。
             """

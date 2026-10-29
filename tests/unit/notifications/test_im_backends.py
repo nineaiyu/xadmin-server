@@ -244,6 +244,11 @@ class TestWeComClient:
 
 
 class TestFeishuClient:
+    def test_token_url_uses_official_auth_v3_path(self):
+        # 飞书自建应用的 tenant_access_token 在 auth/v3 命名空间下；
+        # authen/v1 是 OAuth 用户令牌接口，路径错误会让整个飞书渠道不可用
+        assert FeishuClient.token_url == "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+
     def test_send_per_user_with_union_id(self):
         http = StubHttp(
             {

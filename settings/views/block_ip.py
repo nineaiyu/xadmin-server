@@ -9,6 +9,7 @@ from typing import Any
 from django.conf import settings
 from django.core.cache import cache
 from django.http import Http404
+from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type
 from drf_spectacular.types import OpenApiTypes
@@ -19,11 +20,14 @@ from rest_framework.request import Request
 from common.core.modelset import ListDeleteModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
 from common.utils.ip.utils import contains_ip
 from settings.models import Setting
 from settings.serializers.security import SecurityBlockIPSerializer
 from settings.utils.ip_block import FilterIps, IpUtils
 from settings.utils.security import LoginIpBlockUtil
+
+logger = get_logger(__name__)
 
 
 class SecurityBlockIpViewSet(ListDeleteModelSet):
@@ -31,11 +35,30 @@ class SecurityBlockIpViewSet(ListDeleteModelSet):
 
     serializer_class = SecurityBlockIPSerializer
     queryset = Setting.objects.none()
+    # 管理端列表上限：拦截键来自公开攻击面，无上限扫描会拖垮管理页与 Redis；
+    # 超限只展示前 N 条并告警，清理后可继续查看
+    MAX_LIST_IPS = 5000
+
+    @staticmethod
+    def _block_info(value: Any) -> Any:
+        if not value:
+            return "N/A"
+        try:
+            return parse_datetime(str(value))
+        except (TypeError, ValueError):
+            return "N/A"
 
     def filter_queryset(self, obj: Any) -> FilterIps:
-        # 为啥写函数，去没有加(), 因为只有在序列化的时候，才会判断，如果是方法就执行，减少资源浪费
+        # 一批 get_many 取回所有拦截时间，替代逐 IP 一次 Redis 读
+        keys = {ip: LoginIpBlockUtil(ip).block_key for ip in obj}
+        cached = cache.get_many(list(keys.values())) if keys else {}
         data = [
-            {"ip": ip, "pk": IpUtils(ip).ip_to_int, "created_time": LoginIpBlockUtil(ip).get_block_info} for ip in obj
+            {
+                "ip": ip,
+                "pk": IpUtils(ip).ip_to_int,
+                "created_time": self._block_info(cached.get(key)),
+            }
+            for ip, key in keys.items()
         ]
         return FilterIps(data)
 
@@ -45,9 +68,11 @@ class SecurityBlockIpViewSet(ListDeleteModelSet):
         # iter_keys 走 Redis SCAN 游标增量遍历；keys() 的 KEYS 命令是全库扫描，
         # 拦截键量大时会阻塞整个 Redis 实例。两者经同一套 key_func/reverse_key
         # 拼接与还原键前缀，命中范围与返回的逻辑键口径不变。
-        keys = cache.iter_keys(f"{prefix}*")
-        for key in keys:
+        for key in cache.iter_keys(f"{prefix}*"):
             ips.append(key.replace(prefix, ""))
+            if len(ips) >= self.MAX_LIST_IPS:
+                logger.warning("block ip list truncated at %s entries", self.MAX_LIST_IPS)
+                break
 
         white_list = [str(item) for item in settings.SECURITY_LOGIN_IP_WHITE_LIST if str(item).strip()]
         ips = [ip for ip in set(ips) if ip != "*" and not contains_ip(ip, white_list)]

@@ -74,6 +74,7 @@ from .chat_room_ops import leave_group as leave_group
 from .chat_room_ops import remove_group_members as remove_group_members
 from .chat_room_ops import rename_group as rename_group
 from .chat_room_ops import room_member_pks as room_member_pks
+from .chat_room_ops import update_group_members as update_group_members
 from .chat_rooms import UNSET as UNSET
 from .chat_rooms import online_user_pks as online_user_pks
 from .chat_rooms import prefetch_room_context as prefetch_room_context

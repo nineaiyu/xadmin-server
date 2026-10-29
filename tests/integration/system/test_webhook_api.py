@@ -162,6 +162,27 @@ class TestDelivery:
         assert headers["X-Xadmin-Timestamp"].isdigit()
         assert headers["X-Xadmin-Signature"].startswith("sha256=")
 
+    def test_delivery_audit_masks_sensitive_payload_and_headers(self, auth_client):
+        """投递审计按敏感键名掩码：载荷里的密码/令牌与 Authorization 头不原文下发。"""
+        sub = make_subscription(event="user.login_succeeded")
+        WebhookDelivery.objects.create(
+            subscription=sub,
+            event="user.login_succeeded",
+            payload={
+                "event": "user.login_succeeded",
+                "data": {"username": "audit-user", "password": "S3cret!", "access_token": "jwt-token"},
+            },
+            request_headers={"Authorization": "Bearer raw-token", "X-Xadmin-Event": "user.login_succeeded"},
+            status=WebhookDelivery.Status.SUCCESS,
+        )
+
+        row = auth_client.get(DELIVERY_URL).data["data"]["results"][0]
+        assert row["payload"]["data"]["username"] == "audit-user"
+        assert row["payload"]["data"]["password"] == "*" * len("S3cret!")
+        assert row["payload"]["data"]["access_token"] == "*" * len("jwt-token")
+        assert row["request_headers"]["Authorization"] == "*" * len("Bearer raw-token")
+        assert row["request_headers"]["X-Xadmin-Event"] == "user.login_succeeded"
+
     def test_unsubscribed_event_not_delivered(self, receiver):
         url, handler = receiver
         make_subscription(url=url, event="user.login_failed")

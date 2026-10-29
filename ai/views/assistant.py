@@ -95,7 +95,7 @@ class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
             return ApiResponse(code=1001, detail=_("Base URL is required"))
         if not (creds["api_key"] and creds["model"]):
             return ApiResponse(code=1001, detail=_("API Key and model are required"))
-        # 出站守卫（AI-P1-01）：解析后的 base_url（表单 / 档案 / Setting 兜底、含存量值）
+        # 出站守卫：解析后的 base_url（表单 / 档案 / Setting 兜底、含存量值）
         # 统一过私网拦截，与档案序列化器同口径——测试连接不得成为内网探测通道
         try:
             validate_outbound_config_url(

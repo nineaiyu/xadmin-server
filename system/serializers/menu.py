@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/10/2024
 from typing import Any
+from urllib.parse import unquote, urlsplit
 
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -27,7 +28,7 @@ class MenuMetaSerializer(BaseModelSerializer):
     pk = serializers.UUIDField(source="id", read_only=True)
 
     def validate_frame_url(self, value: Any) -> str:
-        """内嵌页只接受同源相对路径（C-31）。
+        """内嵌页只接受同源相对路径（同源相对路径）。
 
         绝对地址（`http(s)://`、`//host`）以及 `javascript:` / `data:` 都能把外部页面
         塞进可信外壳——用户在站内「正常页面」里输入凭据、或借壳触发站内操作。
@@ -36,7 +37,18 @@ class MenuMetaSerializer(BaseModelSerializer):
         url = (value or "").strip()
         if not url:
             return ""
-        if not url.startswith("/") or url.startswith("//"):
+        # 反斜杠/控制字符会被浏览器归一为路径分隔符（`/\evil.com` → 外站），
+        # 百分号编码的同形串同样拒绝——解码后再检查，最多展开三层编码
+        decoded = url
+        for _depth in range(3):
+            next_value = unquote(decoded)
+            if next_value == decoded:
+                break
+            decoded = next_value
+        if "\\" in decoded or any(ord(char) < 0x20 or ord(char) == 0x7F for char in decoded):
+            raise serializers.ValidationError(_("Iframe URL must be a same-origin path starting with /"))
+        parts = urlsplit(url)
+        if parts.scheme or parts.netloc or not decoded.startswith("/") or decoded.startswith("//"):
             raise serializers.ValidationError(_("Iframe URL must be a same-origin path starting with /"))
         return url
 
@@ -65,6 +77,17 @@ class MenuSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
             "parent": {"attrs": ["pk", "name"], "allow_null": True, "required": False},
             "model": {"attrs": ["pk", "name", "label"], "allow_null": True, "required": False},
         }
+
+    def validate_parent(self, value: Any) -> Any:
+        """拒绝把菜单挂到自身或自己的后代下（parent 成环会让整棵子树消失）。"""
+        if value is None or self.instance is None:
+            return value
+        current = value
+        while current is not None:
+            if current.pk == self.instance.pk:
+                raise serializers.ValidationError(_("A menu cannot be its own parent or descendant"))
+            current = current.parent
+        return value
 
     # name 的 DB 唯一约束已改为"未删除数据"条件约束（见 Menu.Meta.constraints），
     # 显式校验活跃菜单唯一，保证重复时返回 400 而非数据库 IntegrityError

@@ -304,7 +304,7 @@ class SecurityResetPasswordAuthSerializer(SettingSaveContractMixin, serializers.
 
 class SecurityBindEmailAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
     SECURITY_BIND_EMAIL_ACCESS_ENABLED = serializers.BooleanField(
-        required=False, default=True, label=_("Bind email enable"), help_text=_("Enable bind email for user")
+        required=False, default=False, label=_("Bind email enable"), help_text=_("Enable bind email for user")
     )
     SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = serializers.BooleanField(
         required=False,
@@ -332,7 +332,7 @@ class SecurityBindPhoneAuthSerializer(SettingSaveContractMixin, serializers.Seri
     # 字段名即 Setting 行名与运行时 settings 键（verify_code.py 按 SECURITY_BIND_PHONE_* 消费），
     # 不得复用 EMAIL 前缀，否则手机页签会读写邮箱配置（2026-10 修复）
     SECURITY_BIND_PHONE_ACCESS_ENABLED = serializers.BooleanField(
-        required=False, default=True, label=_("Bind phone enable"), help_text=_("Enable bind phone for user")
+        required=False, default=False, label=_("Bind phone enable"), help_text=_("Enable bind phone for user")
     )
     SECURITY_BIND_PHONE_CAPTCHA_ENABLED = serializers.BooleanField(
         required=False,
@@ -396,7 +396,7 @@ class SecurityVerifyCodeSerializer(SettingSaveContractMixin, serializers.Seriali
     VERIFY_CODE_DIGIT_CASE = serializers.BooleanField(required=False, label=_("Digits"))
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        # 组合约束（SET-P1-02）：字符集三项全关会让 random_string 抛 ValueError，
+        # 组合约束（跨字段组合约束）：字符集三项全关会让 random_string 抛 ValueError，
         # 邮箱/短信验证码、注册、找回密码、MFA 邮件挑战全部 500——保存期直接拒绝。
         # 未提交键回落运行时当前值：PATCH 单关最后一项时同样能拦住。
         if not any(

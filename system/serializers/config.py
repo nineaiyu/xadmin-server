@@ -236,8 +236,11 @@ class SystemConfigSerializer(BaseModelSerializer):
                 # 敏感键的值是凭据本体：PATCH 请求体只有 {"value": "<明文>"}，
                 # 操作日志无法按键名判定，按「值语义」登记给脱敏链路
                 mark_sensitive_value_fields(self.context.get("request"), PAIR_VALUE_FIELDS)
-                # 掩码占位 = 「已配置但值不下发」：更新保留原值，新建视为未配置
+                # 掩码占位 = 「已配置但值不下发」：更新保留原值；
+                # 新建时掩码不是真实值，不能让 NOT NULL 列以缺失值落库
                 if attrs["value"] == MASK:
+                    if self.instance is None:
+                        raise ValidationError({"value": _("A value is required when creating a sensitive config")})
                     attrs.pop("value")
                     return attrs
                 # 字段级敏感值：回传的掩码字段用库内已解密原值回填，避免把占位加密落库

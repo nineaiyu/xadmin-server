@@ -104,6 +104,21 @@ class TestValueEncryption:
         assert decrypt_setting_value("WEB_SITE_CONFIG", value) is value
         assert encryption_status("WEB_SITE_CONFIG", value) == "not_sensitive"
 
+    def test_encrypt_failure_rejected_not_plaintext(self, monkeypatch):
+        """加密服务异常必须拒绝写入，绝不能把 client_secret / SCIM_TOKEN 明文落库。"""
+        from django.core.exceptions import ValidationError
+
+        from common.core.auth import credentials
+
+        def boom(value):
+            raise RuntimeError("crypto unavailable")
+
+        monkeypatch.setattr(credentials, "_encrypt_scalar", boom)
+        with pytest.raises(ValidationError):
+            encrypt_setting_value("SCIM_TOKEN", "plain-token")
+        with pytest.raises(ValidationError):
+            encrypt_setting_value("OAUTH_PROVIDERS", [{"client_secret": "plain-secret"}])
+
     def test_empty_value_status(self):
         assert encryption_status("SCIM_TOKEN", "") == "empty"
         assert encryption_status("SCIM_TOKEN", None) == "empty"

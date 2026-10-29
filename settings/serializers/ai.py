@@ -137,7 +137,7 @@ class AiAssistantSettingSerializer(SettingSaveContractMixin, serializers.Seriali
     )
 
     def validate_AI_BASE_URL(self, value: Any) -> Any:
-        """出站守卫（AI-P1-01）：与档案序列化器（ai/serializers/ai.py）同口径。
+        """出站守卫：与档案序列化器（ai/serializers/ai.py）同口径。
 
         保存与「测试连接」共用本序列化器——表单 AI_BASE_URL 在 ping 之前先过
         私网拦截（https 放行；http 仅 loopback 或 OUTBOUND_ALLOWED_HOSTS 登记目标），

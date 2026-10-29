@@ -76,12 +76,12 @@ SETTINGS_CONFIG = {
     # 拒绝；脚本/E2E 等按明文提交密码的场景可关闭（关闭后按明文接收）
     "SECURITY_INVITE_ENCRYPTED_ENABLED": True,
     # 绑定邮箱
-    "SECURITY_BIND_EMAIL_ACCESS_ENABLED": True,
+    "SECURITY_BIND_EMAIL_ACCESS_ENABLED": False,
     "SECURITY_BIND_EMAIL_CAPTCHA_ENABLED": True,
     "SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED": True,
     "SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED": True,
     # 绑定手机
-    "SECURITY_BIND_PHONE_ACCESS_ENABLED": True,
+    "SECURITY_BIND_PHONE_ACCESS_ENABLED": False,
     "SECURITY_BIND_PHONE_CAPTCHA_ENABLED": True,
     "SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED": True,
     "SECURITY_BIND_PHONE_ENCRYPTED_ENABLED": True,
@@ -354,7 +354,7 @@ SETTINGS_CONFIG = {
     "CAPTCHA_TICKET_TTL_LIGHT": 90,
     "CAPTCHA_TICKET_TTL_HARD": 90,
     # 风险分级三档：上线默认 enforce；shadow 仅用于基线观察
-    "CAPTCHA_RISK_MODE": "enforce",
+    "CAPTCHA_RISK_MODE": "shadow",
     # 决策阈值（allow < 20 ≤ light < 40 ≤ challenge < 70 ≤ hard < 90 ≤ deny）
     "CAPTCHA_RISK_T_ALLOW": 20,
     "CAPTCHA_RISK_T_LIGHT": 40,
@@ -376,7 +376,6 @@ SETTINGS_CONFIG = {
     "CAPTCHA_POW_IP_BUDGET": 600,
     # 阶梯处置：失败阈值（IP/动作标识/指纹三维度）与联动登录锁定
     "CAPTCHA_FAIL_STEP": "3,8,20",
-    "CAPTCHA_FAILURE_LINK_LOCK": False,
     "CAPTCHA_HONEYPOT_ENABLED": True,
     # 题型加权轮换与难度系数（easy/hard 相对 normal 的容差倍数；点选数量默认 3/4/5）
     "CAPTCHA_TYPE_WEIGHTS": {

@@ -34,6 +34,7 @@ def execute_dataset(
     count_only: bool = False,
     max_rows: int | None = None,
     extra_filters: Any = None,
+    with_total: bool = True,
 ) -> Any:
     """执行数据集：返回白名单列的行数据（row_limit 上限）。
 
@@ -52,6 +53,9 @@ def execute_dataset(
 
     ``extra_filters``：请求级行过滤（卡片下钻「按维度值看明细」），与数据集
     定义 filters 叠加；调用方（视图层）须先经 ``validate_filters`` 完整校验。
+
+    ``with_total=False``：调用方不需要完整行数（如定时报表只消费前 N 行）时跳过
+    全过滤集 COUNT，``total`` 返回 None——大表明细查询少一次全量计数。
     """
     queryset, model, columns = build_queryset(dataset, user_obj, extra_filters=extra_filters)
     whitelist = set(available_fields(dataset.bound_model))
@@ -77,7 +81,8 @@ def execute_dataset(
     rows = list(queryset.values(*[spec.alias for spec in specs])[:limit])
     if alias_map:
         rows = [{alias_map.get(key, key): value for key, value in row.items()} for row in rows]
-    return {"columns": [spec.raw for spec in specs], "rows": rows, "total": queryset.count(), "limit": limit}
+    total = queryset.count() if with_total else None
+    return {"columns": [spec.raw for spec in specs], "rows": rows, "total": total, "limit": limit}
 
 
 def _trend_series(

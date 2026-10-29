@@ -15,7 +15,7 @@
 | `lint.yml` | Type check | 全仓 mypy；**common 框架层 + 全部业务 app 启用 strict 子集**（`[[tool.mypy.overrides]]` 逐 app 入列：captcha / demo / devtools / integrations / mfa / server / settings + audit / file / demo_seed / notifications / task / message / dataset / approval / ai / system / identity；2026-10-09 收口，无未推广面） | `pyproject.toml [tool.mypy]` + 守护 `tests/unit/test_mypy_strict_pilot.py` | `mypy` |
 | `lint.yml` | File length gate | 单文件 >500 行新增即失败（存量基线只减不增） | `scripts/check_file_length.py` | `python scripts/check_file_length.py` |
 | `lint.yml` | Function length gate | 单函数 ≥100 行新增即失败（存量基线只减不增，AST 计行） | `scripts/check_function_length.py` | `python scripts/check_function_length.py` |
-| `lint.yml` | Ledger id gate | 源码 / 测试 / 种子 / 配置里禁止出现 `ADR-090`、`T03-01`、`O10-2`、`TG-3` 一类台账编号（只允许提交信息与 `docs/` 台账本体） | `scripts/check_ledger_ids.py` | `python scripts/check_ledger_ids.py` |
+| `lint.yml` | Ledger id gate | 源码 / 测试 / 种子 / 配置里禁止出现 `ADR-090`、`T03-01`、`O10-2`、`TG-3`，以及 `LOG-P1-01`、`FE-DATA-P1-04`、`C-03` 一类评审编号（只允许提交信息与 `docs/` 台账本体） | `scripts/check_ledger_ids.py` | `python scripts/check_ledger_ids.py` |
 | `lint.yml` | Captcha coverage gate | 匿名写端点必须调用 `require_human` / `check_token_and_captcha`，或在脚本 `EXEMPTIONS` 写明豁免理由（新增匿名接口漏挂人机校验 = CI 红） | `scripts/check_captcha_coverage.py` | `python scripts/check_captcha_coverage.py` |
 | `lint.yml` | Captcha clean-cut gate | 旧图片码模式 / `CaptchaStore` / `CaptchaAuth` / `captcha_key` / `captcha_code` 不得复活（统一协议是唯一路径） | `scripts/check_captcha_legacy.py` | `python scripts/check_captcha_legacy.py` |
 | `lint.yml` | Captcha asset gate | 背景图库 manifest：许可 / 来源 / 路径穿越 / 扩展名 / sha256 / 2MB 体积；空 files = 程序化兜底 | `scripts/check_captcha_assets.py` | `python scripts/check_captcha_assets.py` |

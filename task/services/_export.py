@@ -229,10 +229,11 @@ def run_async_export(record_id: Any, view_path: Any, query_params: Any, user_pk:
         record.save(update_fields=["status", "error", "updated_time"])
         mark_execution_revoked(record.pk)
         logger.info("async export cancelled by user: %s", record_id)
-    except Exception as exc:
+    except Exception:
         state = False
         record.status = ExportRecord.Status.FAILURE
-        record.error = str(exc)[:2000]
+        # 记录创建者可见错误列：不落内部异常原文，细节只进服务端日志
+        record.error = str(_("The export failed, please try again later or contact the administrator"))
         record.save(update_fields=["status", "error", "updated_time"])
         logger.exception("async export failed: %s", record_id)
         # 继续抛出，交给 celery 标记任务失败并触发 task_failure 告警

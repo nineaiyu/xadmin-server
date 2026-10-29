@@ -125,6 +125,8 @@ def _atomic(connection: Any) -> Any:
 PREREQUISITE_CALLABLES = (
     "create_vector_extension",
     "_ensure_trgm_extension",
+    # 登录标识唯一索引的存量重复前置检查：只读校验，必须在 AddConstraint 前执行
+    "check_duplicate_logins",
 )
 
 #: 幂等数据迁移白名单。当前为空：它们通过 ORM 查询默认连接，在「旧库别名」

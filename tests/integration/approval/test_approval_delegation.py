@@ -178,6 +178,7 @@ class TestDelegationCrud:
 
     def test_overlap_rejected(self, auth_client, target, agent):
         now = timezone.now()
+        make_flow("deleg_crud")
         make_delegation(target, agent)
         resp = auth_client.post(
             DELEGATIONS_URL,
@@ -186,6 +187,7 @@ class TestDelegationCrud:
                 "delegate": str(agent.pk),
                 "start_time": (now + datetime.timedelta(minutes=10)).isoformat(),
                 "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
+                "flow_codes": ["deleg_crud"],
             },
             format="json",
         )
@@ -211,6 +213,7 @@ class TestDelegationCrud:
     def test_inactive_new_row_may_overlap(self, auth_client, target, agent):
         """未启用的委托模板允许先保存：重叠校验按本行落库后的 is_active 收口。"""
         now = timezone.now()
+        make_flow("deleg_crud")
         make_delegation(target, agent)
         resp = auth_client.post(
             DELEGATIONS_URL,
@@ -219,6 +222,7 @@ class TestDelegationCrud:
                 "delegate": str(agent.pk),
                 "start_time": (now + datetime.timedelta(minutes=10)).isoformat(),
                 "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
+                "flow_codes": ["deleg_crud"],
                 "is_active": False,
             },
             format="json",
@@ -228,6 +232,7 @@ class TestDelegationCrud:
     def test_activating_overlapping_row_rejected(self, auth_client, target, agent):
         """未启用模板补启用时同样过重叠校验：与既有生效委托重叠即拒绝。"""
         now = timezone.now()
+        make_flow("deleg_crud")
         make_delegation(target, agent)
         created = auth_client.post(
             DELEGATIONS_URL,
@@ -236,6 +241,7 @@ class TestDelegationCrud:
                 "delegate": str(agent.pk),
                 "start_time": (now + datetime.timedelta(minutes=10)).isoformat(),
                 "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
+                "flow_codes": ["deleg_crud"],
                 "is_active": False,
             },
             format="json",
@@ -332,14 +338,17 @@ class TestDelegationOwnership:
         return client
 
     @staticmethod
-    def _payload(delegator, delegate):
+    def _payload(delegator, delegate, flow_codes=None):
         now = timezone.now()
-        return {
+        payload = {
             "delegator": str(delegator.pk),
             "delegate": str(delegate.pk),
             "start_time": (now - datetime.timedelta(minutes=5)).isoformat(),
             "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
         }
+        if flow_codes is not None:
+            payload["flow_codes"] = flow_codes
+        return payload
 
     def test_create_for_others_rejected(self, normal_user, other, agent, grant_permission, grant_data_all):
         """以他人名义建委托：拒绝且不落行（否则收编他人待办）。"""
@@ -352,11 +361,14 @@ class TestDelegationOwnership:
         assert not ApprovalDelegation.objects.filter(delegator=other).exists()
 
     def test_create_in_own_name_allowed(self, normal_user, agent, grant_permission, grant_data_all):
+        make_flow("deleg_own")
         grant_data_all(normal_user, "identity.userinfo", self.MODEL_LABEL)
         grant_permission(
             normal_user, "create:SystemApprovalDelegation", self.CREATE_PATH, method="POST", fields=self.WRITABLE_FIELDS
         )
-        resp = self._client(normal_user).post(DELEGATIONS_URL, self._payload(normal_user, agent), format="json")
+        resp = self._client(normal_user).post(
+            DELEGATIONS_URL, self._payload(normal_user, agent, flow_codes=["deleg_own"]), format="json"
+        )
         assert resp.data["code"] == 1000, resp.data
         assert ApprovalDelegation.objects.filter(delegator=normal_user, delegate=agent).exists()
 

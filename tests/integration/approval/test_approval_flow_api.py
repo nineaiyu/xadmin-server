@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """全量审批流引擎一期 API 集成：流程定义 CRUD + 流程审批中心主链路 + 菜单权限。"""
 
+import uuid
+
 import pytest
 from django.db.models import Q
 
@@ -471,6 +473,42 @@ class TestApprovalInstanceApi:
         assert denied.data["data"]["succeeded"] == 0
         assert len(denied.data["data"]["failures"]) == 1
         assert denied.data["data"]["failures"][0]["pk"] == str(first)
+
+    def test_batch_actions_normalize_invalid_uuid(self, approver_client):
+        """非法 UUID 主键逐项进 failures，不再让 filter(pk__in) 抛 500，也不重复计数。"""
+        resp = approver_client.post(
+            f"{INSTANCES_URL}/batch-approve",
+            {"pks": ["not-a-uuid", "123"], "comment": "批量同意"},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000
+        assert resp.data["data"]["succeeded"] == 0
+        failures = resp.data["data"]["failures"]
+        assert [item["pk"] for item in failures] == ["not-a-uuid", "123"]
+        assert all(item["detail"] for item in failures)
+
+    def test_batch_actions_reject_too_many_instances(self, approver_client):
+        """批量入口有上限（200）：超限整体 400，不进入逐条循环。"""
+        resp = approver_client.post(
+            f"{INSTANCES_URL}/batch-approve",
+            {"pks": [str(uuid.uuid4()) for _ in range(201)], "comment": "批量同意"},
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
+
+    def test_approve_rejects_invalid_task_uuid(self, applicant, approver_client, api_client):
+        """指定 task 的非法 UUID 返回可读 400，不再抛 Django ValidationError（500）。"""
+        flow = make_flow(
+            code="invalid_task_uuid",
+            nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}],
+        )
+        api_client.force_authenticate(user=applicant)
+        instance_pk = api_client.post(
+            INSTANCES_URL, {"flow": str(flow.pk), "title": "非法任务号", "form_data": {}}, format="json"
+        ).data["data"]["pk"]
+        resp = approver_client.post(f"{INSTANCES_URL}/{instance_pk}/approve", {"task": "not-a-uuid"}, format="json")
+        assert resp.status_code == 400, resp.data
 
     # 二期：条件分支主链路 API + 版本列表/回滚 API
 

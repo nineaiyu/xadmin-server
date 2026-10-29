@@ -463,7 +463,7 @@ class TestDesensitizeIntegration:
 
 
 class TestValueScalarDesensitization:
-    """LOG-P1-02 / G18：脱敏覆盖「键值对 value/detail」与「键名命中敏感模式」形态。
+    """脱敏覆盖「键值对 value/detail」与「键名命中敏感模式」形态。
 
     键名精确匹配只收 SENSITIVE_FIELDS 名单键；SystemConfig 的标量凭据以
     {"key": "SCIM_TOKEN", "value": "<明文>"} 键值对（或凭据自身名作 JSON 键）
@@ -607,8 +607,9 @@ class TestLogLevelGuard:
         ApiLoggingMiddleware(lambda r: None).process_request(request)
 
         assert calls == []
-        # 契约不变：请求体照旧解析并挂到 request 上（审批指纹 / 刷新回退 / 操作日志消费）
-        assert request.request_data == {"page": "1"}
+        # 惰性解析：DEBUG 关闭且非操作日志/慢请求时不再为预览复制完整请求体；
+        # 真正需要正文的路径（操作日志装配 / 慢请求）在消费点按需解析。
+        assert not hasattr(request, "request_data")
 
     def test_request_preview_emitted_when_debug_enabled(self, monkeypatch):
         from django.test import RequestFactory

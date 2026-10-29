@@ -223,6 +223,13 @@ class TestDatasetCrud:
         fresh = auth_client.get(f"{DATASET_URL}/meta").json()["data"]
         assert "username" not in fresh["fields"]["identity.userinfo"]
 
+    def test_meta_requires_editor_permission(self, normal_user, model_registry, menu_factory, role, api_client):
+        """设计器元数据是 schema 面：只有 list 权限的用户不得枚举全部模型/字段。"""
+        role.menu.add(menu_factory("list:Dataset", path="api/dataset/datasets$", method="GET"))
+        api_client.force_authenticate(user=normal_user)
+        body = api_client.get(f"{DATASET_URL}/meta").json()
+        assert body["code"] == 1003, body
+
 
 class TestDatasetExecute:
     def test_fail_closed_without_grant(self, dataset, normal_user, grant_dataset_menus):

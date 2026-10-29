@@ -71,6 +71,31 @@ class TestReportVersioning:
         assert versions["code"] == 1000, versions
         assert [row["version"] for row in versions["data"]] == [2, 1]
 
+    def test_snapshot_failure_rolls_back_design(self, auth_client, dataset, monkeypatch):
+        """版本快照失败与主表保存同事务：design 不能留下超前于版本表的中间态。"""
+        created = auth_client.post(
+            REPORTS_URL,
+            _report_body(dataset, {"columns": ["username"], "table_limit": 20}),
+            format="json",
+        ).json()
+        report_pk = created["data"]["pk"]
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("snapshot failed")
+
+        monkeypatch.setattr("dataset.views.report.snapshot_report_version", boom)
+        resp = auth_client.patch(
+            f"{REPORTS_URL}/{report_pk}",
+            {"design": {"columns": ["gender"], "table_limit": 50}},
+            format="json",
+        )
+        assert resp.status_code == 500
+
+        report = Report.objects.get(pk=report_pk)
+        assert report.design["columns"] == ["username"]
+        assert report.design_version == 1
+        assert report.versions.count() == 1
+
     def test_non_design_update_keeps_version(self, auth_client, dataset):
         created = auth_client.post(
             REPORTS_URL,

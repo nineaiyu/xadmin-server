@@ -12,5 +12,10 @@ const { api, auth } = use[[component]]();
 </script>
 
 <template>
-  <RePlusPage :api="api" :auth="auth" locale-name="[[locale_name]]" />
+  <RePlusPage
+    :api="api"
+    :auth="auth"
+    :selection="Boolean(auth.batchDestroy)"
+    locale-name="[[locale_name]]"
+  />
 </template>

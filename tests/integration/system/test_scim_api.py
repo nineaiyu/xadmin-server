@@ -182,6 +182,34 @@ class TestScimUsers:
         # 审计绝不落请求体（可能含密码）
         assert not log.body
 
+    def test_duplicate_login_identity_rejected(self, api_client, scim_enabled):
+        """email/phone 是登录标识（库层唯一）：目录再推同值 → 409 uniqueness，不产生半写。"""
+        UserInfo.objects.create_user(username="scim_taken", email="taken@example.com", phone="13900000000")
+        other = UserInfo.objects.create_user(username="scim_other", phone="13700000000")
+        created = api_client.post(
+            f"{SCIM_BASE}/Users",
+            {
+                "userName": "scim_conflict",
+                "emails": [{"value": "taken@example.com"}],
+            },
+            format="json",
+            **AUTH,
+        )
+        assert created.status_code == 409, created.json()
+        assert created.json()["scimType"] == "uniqueness"
+        assert not UserInfo.objects.filter(username="scim_conflict").exists()
+
+        existing = UserInfo.objects.get(username="scim_taken")
+        patched = api_client.patch(
+            f"{SCIM_BASE}/Users/{existing.pk}",
+            {"Operations": [{"op": "replace", "path": "phoneNumbers", "value": [{"value": other.phone}]}]},
+            format="json",
+            **AUTH,
+        )
+        assert patched.status_code == 409, patched.json()
+        existing.refresh_from_db()
+        assert existing.phone == "13900000000"
+
 
 class TestScimGroups:
     def test_group_lifecycle(self, api_client, scim_enabled):

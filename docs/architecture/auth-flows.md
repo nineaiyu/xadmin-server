@@ -208,7 +208,8 @@ GET  /api/settings/captcha/log    ?phase=&scene=&...   # 观测日志（只读�
   一致性、挑战频率、账号失败、机房/代理网段、蜜罐与历史信誉；16 条规则落 `CaptchaRule`
   （分值/开关/优先级热更，设置页「风险策略」可调），键盘操作不参与轨迹扣分。
 - **处置**：IP / 动作 / 指纹三维度失败阶梯（默认 3/8/20：强制难题 → 15min 冷却 →
-  1h 冷却），冷却期与失败同形；`CAPTCHA_FAILURE_LINK_LOCK` 可联动登录锁定；蜜罐命中直接 deny；
+  1h 冷却），冷却期与失败同形；验证码失败不再联动登录锁定（匿名客户端自报 `account`
+  可借此锁号，已下线 `CAPTCHA_FAILURE_LINK_LOCK`）；蜜罐命中直接 deny；
   拦截率/同 IP 突增接既有通知渠道告警（`CaptchaRiskAlertMessage`）。
 - **挂载面**：业务消费统一走 `require_human(request, scene, action)`（服务端动作常量单源）；
   匿名写端点漏挂由 `scripts/check_captcha_coverage.py` 门禁拦截（豁免需写明理由）。
@@ -282,6 +283,22 @@ GET  /api/settings/captcha/log    ?phase=&scene=&...   # 观测日志（只读�
 错误处理口径：`handleOperation`（成功 / 失败提示 + `requestEnd` loading 收口），
 业务失败一律页面显式处理；路由层失败（动态拉取失败）走 `initRouter().catch`
 跳静态 500 页。
+
+### 前端令牌存储口径（显式权衡）
+
+access / refresh token 由前端写入 **JS 可读 Cookie**（`js-cookie`，`sameSite=Lax`，
+`secure` 按 `isSecureContext` 自适应），因此无法使用 HttpOnly：任何 XSS 都能读取
+refresh token 并长期续期。当前选择 Bearer + 前端续期的原因是多端（Web / 移动端 /
+PAT / 开放平台）共用同一套 JWT 契约，HttpOnly Cookie 会话需要前后端同时改造。
+
+缓解与约束（缺一不可）：
+
+- 存储型 XSS 面收敛：公告 HTML 入库净化、Markdown 中和 HTML、`v-html` 仅用于
+  受控富文本、消息正文默认插值渲染；
+- CSP 以 `report-only → enforce` 演进，第三方脚本白名单最小化；
+- 依赖审计与漏洞响应保持在发布门禁内；
+- 若后续改 HttpOnly 会话，需先完成移动端/第三方客户端的凭证迁移，再移除前端
+  token Cookie 与续期器，避免一侧升级导致全部客户端掉线。
 
 ## 六、相关测试
 

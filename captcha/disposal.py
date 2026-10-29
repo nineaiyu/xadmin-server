@@ -142,18 +142,3 @@ def clear_failures(dims: list[tuple[str, str]]) -> None:
             cache.delete(_cooldown_key(dim, value))
         except Exception:  # noqa: BLE001
             continue
-
-
-def link_login_lock(username: str, ip: str) -> None:
-    """可选联动：验证码失败达阈值时锁登录账号（默认关闭）。"""
-    if not username or not getattr(settings, "CAPTCHA_FAILURE_LINK_LOCK", False):
-        return
-    try:
-        from django.core.cache import cache
-
-        from settings.services import LoginBlockUtil
-
-        util = LoginBlockUtil(username, ip)
-        cache.set(util.block_key, True, util.key_ttl)
-    except Exception:  # noqa: BLE001 处置失败不影响主链路
-        logger.debug("captcha link login lock failed", exc_info=True)

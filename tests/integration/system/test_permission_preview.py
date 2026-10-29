@@ -291,7 +291,7 @@ def test_trial_count_and_sql(api_client, normal_user, role, menu_factory, books)
 
 
 def test_trial_draft_rejects_all_rules(api_client, normal_user, role, menu_factory, books):
-    """草稿含「全部数据/通配」规则直接 400：试算不是授权放大器（PREVIEW-P1-01）。"""
+    """草稿含「全部数据/通配」规则直接 400：试算不是授权放大器（草稿只收窄）。"""
     grant_preview_menus(role, menu_factory)
     make_book_registry()
     api_client.force_authenticate(user=normal_user)
@@ -651,7 +651,7 @@ def test_post_preview_filters_users_by_caller_scope(api_client, normal_user, dep
 
 
 def test_trial_draft_rules_apply_and_narrow_scope(api_client, normal_user, role, menu_factory, books):
-    """草稿参与试算但只收窄（existing ∩ 草稿效果），且永不落库（PREVIEW-P1-01）。
+    """草稿参与试算但只收窄（existing ∩ 草稿效果），且永不落库（草稿只收窄）。
 
     旧口径经 extra_grants 的 OR 合并，草稿可把可见集放大到自身口径（含「全部数据」
     = 任意模型全量采样）；改为收窄后，指向「现有授权之外的书」的草稿条件 count=0。

@@ -371,7 +371,6 @@ class InteractiveCaptcha:
         from captcha import disposal
 
         disposal.register_failure(dims)
-        disposal.link_login_lock(account, ip)
         sig.record_account_fail(account)
         sig.record_hist(ctx.fp, False)
         if attempts >= limit:

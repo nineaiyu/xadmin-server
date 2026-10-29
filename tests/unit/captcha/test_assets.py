@@ -49,6 +49,23 @@ def test_custom_asset_dir_loads_and_crops(settings, tmp_path):
     assert image.size == (64, 64)
 
 
+def test_manifest_read_once_within_ttl(settings, tmp_path, monkeypatch):
+    """同一资产包在 TTL 内只读一次 manifest（挑战接口是匿名高频路径）。"""
+    from captcha import assets
+
+    _write_pack(tmp_path)
+    settings.CAPTCHA_ASSET_DIR = str(tmp_path)
+    settings.CAPTCHA_BACKGROUND_PACK = "builtin"
+    assets._asset_cache.update(key=None, expires=0.0, value=[])
+    calls = []
+    original = assets.load_manifest
+    monkeypatch.setattr(assets, "load_manifest", lambda root=None: calls.append(root) or original(root))
+
+    assert len(assets.background_assets()) == 1
+    assert len(assets.background_assets()) == 1
+    assert len(calls) == 1
+
+
 def test_checksum_mismatch_is_skipped(settings, tmp_path):
     """运行期资产被替换（sha256 不匹配）时跳过该图，不静默使用被篡改内容。"""
     _write_pack(tmp_path)

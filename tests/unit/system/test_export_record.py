@@ -84,7 +84,9 @@ def test_export_task_failure_records_error(superuser):
             )
     record.refresh_from_db()
     assert record.status == ExportRecord.Status.FAILURE
-    assert "boom" in record.error
+    # 对外错误列只保留可读文案：内部异常原文（"boom"）不暴露给记录创建者
+    assert record.error
+    assert "boom" not in record.error
     # 失败任务不伪造完成度（里程碑进度保留，绝不到 100）
     assert record.progress < 100
 

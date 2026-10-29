@@ -7,7 +7,7 @@
 from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -159,9 +159,12 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
     def delete(self, *args: Any, **kwargs: Any) -> Any:
         """软删除：标记自身并级联标记全部后代菜单（同一时间戳，成组恢复/清除）。"""
         deleted_at = timezone.now()
-        self.deleted_at = deleted_at
-        self.save(update_fields=["deleted_at"])
-        self._cascade_soft_delete_descendants(deleted_at)
+        # 自身与后代必须同一事务提交：第二次 UPDATE 失败时不能留下
+        # 「父菜单已删、子菜单仍在」的中间态
+        with transaction.atomic():
+            self.deleted_at = deleted_at
+            self.save(update_fields=["deleted_at"])
+            self._cascade_soft_delete_descendants(deleted_at)
         return 1
 
     def hard_delete(self, *args: Any, **kwargs: Any) -> Any:

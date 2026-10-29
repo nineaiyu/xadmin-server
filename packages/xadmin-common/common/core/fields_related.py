@@ -258,7 +258,11 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         else:
             pk = data.get("id") or data.get("pk") or data.get(self.attrs[0])
 
-        memo_key = (self.field_name, str(pk))
+        # key 含父序列化器类名 + 字段名：不同序列化器/字段的 queryset 与数据权限
+        # 过滤条件不同，同一 pk 不能串用；不能含 id(self)——导入每行都会 clone 字段
+        # 实例，用实例 id 会让 memo 完全失效（N 行 N 次 SELECT）。
+        parent_name = type(self.parent).__name__ if self.parent is not None else ""
+        memo_key = (parent_name, self.field_name, str(pk))
         if memo is not None and memo_key in memo:
             return memo[memo_key]
 

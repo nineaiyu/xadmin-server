@@ -63,7 +63,6 @@ class TestRiskSettings:
             "CAPTCHA_POW_BITS_MAX",
             "CAPTCHA_POW_IP_BUDGET",
             "CAPTCHA_FAIL_STEP",
-            "CAPTCHA_FAILURE_LINK_LOCK",
             "CAPTCHA_HONEYPOT_ENABLED",
             "CAPTCHA_ALERT_ENABLED",
             "CAPTCHA_ALERT_WINDOW_MINUTES",

@@ -215,11 +215,11 @@ class SecurityCaptchaRiskSerializer(SettingSaveContractMixin, serializers.Serial
     CAPTCHA_RISK_MODE = serializers.ChoiceField(
         choices=RiskModeChoices.choices,
         required=False,
-        default=RiskModeChoices.ENFORCE,
+        default=RiskModeChoices.SHADOW,
         label=_("Risk mode"),
         help_text=_(
             "off = risk layer disabled; shadow = score and log only; "
-            "enforce = apply decisions (default for the hardened profile)"
+            "enforce = apply decisions (requires trusted proxy/client IP configuration)"
         ),
     )
     CAPTCHA_RISK_T_ALLOW = serializers.IntegerField(
@@ -351,12 +351,6 @@ class SecurityCaptchaRiskSerializer(SettingSaveContractMixin, serializers.Serial
             "Failure ladder: 3,8,20 means 3 failures -> force hard, 8 -> 15 min cooldown, "
             "20 -> 1 hour cooldown; 0,0,0 disables"
         ),
-    )
-    CAPTCHA_FAILURE_LINK_LOCK = serializers.BooleanField(
-        required=False,
-        default=False,
-        label=_("Link failures to login lock"),
-        help_text=_("Also lock the login account when captcha failures reach the ladder threshold; off by default"),
     )
     CAPTCHA_HONEYPOT_ENABLED = serializers.BooleanField(
         required=False,

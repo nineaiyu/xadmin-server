@@ -81,6 +81,18 @@ class TestExecuteJsonColumns:
         assert amounts == [3.0, 10.0]
         assert any(row["data.amount|number"] is None for row in result["rows"])
 
+    def test_nl_execute_dsl_reuses_execute_dataset_for_json_columns(self, dataset, submissions, superuser):
+        """NL run 必走 execute_dataset：JSON 路径列不得被 values(*columns) 当模型字段。"""
+        from ai.services.nl_query.orchestrator import execute_dsl
+
+        ok, result = execute_dsl(
+            superuser,
+            {"dataset": str(dataset.pk), "mode": "rows", "filters": [], "limit": 10},
+        )
+        assert ok, result
+        assert result["columns"] == ["schema_version", "data.kind", "data.amount|number"]
+        assert any(row.get("data.amount|number") == 3.0 for row in result["rows"])
+
     def test_filter_text_column(self, dataset, submissions, superuser):
         dataset.filters = [{"field": "data.kind", "op": "exact", "value": "a"}]
         result = execute_dataset(dataset, superuser)

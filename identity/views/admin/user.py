@@ -295,7 +295,7 @@ class UserViewSet(
         """强退用户"""
         instance = self.get_object()
         self._assert_target_mutable(instance)
-        user_admin.logout_user(instance, request.data.get("channel_names", []))
+        user_admin.logout_user(instance, request.data.get("channel_names", []), operator=request.user)
         return ApiResponse()
 
     @extend_schema(responses=get_default_response_schema(), request=None)
