@@ -53,7 +53,7 @@ class ApprovalInstanceCommentMixin:
                 return True
             if instance.cc_users.filter(pk=user.pk).exists():
                 return True
-            return instance.tasks.filter(Q(assignee=user) | Q(actor=user)).exists()
+            return bool(instance.tasks.filter(Q(assignee=user) | Q(actor=user)).exists())
 
         users = []
         for user in UserInfo.objects.filter(username__in=names[:20], is_active=True):

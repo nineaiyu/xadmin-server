@@ -18,7 +18,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.viewsets import GenericViewSet
 
 from ai.serializers.mcp_audit import McpCallLogSerializer
-from ai.services.mcp.mcp_client import MCP_AUDIT_MODULE
+from ai.services.mcp.mcp_audit import MCP_AUDIT_MODULE
 from audit.services import OperationLog
 from common.core.filter import BaseFilterSet
 from common.core.modelset import DetailAction, OnlyExportDataAction, OnlyListModelSet
