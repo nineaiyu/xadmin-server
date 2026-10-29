@@ -26,6 +26,9 @@ from typing import Any
 
 # 等价链白名单：app → 该 app 在「四域切分之后、5.0 合并之前」的 4.x 链中的全部迁移名。
 # 合并链的初始迁移与它在表结构上等价，因此这些记录可被安全认领（删除）。
+#
+# 注意：2026-10-29 起当前代码基线再次整体重建为全新初始迁移，既有库（含 5.0.x）
+# 不再走本认领路径；此白名单仅用于识别历史 4.x 账本并 fail-closed（由 schema 体检拦截）。
 LEGACY_4X_CHAIN: dict[str, tuple[str, ...]] = {
     "ai": ("0001_initial",),
     "approval": ("0001_initial", "0002_approvalrule_methods"),

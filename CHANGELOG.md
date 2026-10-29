@@ -10,7 +10,14 @@
 
 ## [Unreleased]
 
-### 新增
+### 变更
+
+- **迁移基线重建（不兼容既有库）**：全部业务 app 迁移重新生成为全新 `0001/0002`
+  初始迁移，删除历史迁移与旧数据兼容数据迁移；4.x / 5.0.x 既有库不再支持原地升级，
+  需清库重建 + `legacy_export` / `legacy_import` 回灌（见
+  [docs/ops/upgrade-stock.md](docs/ops/upgrade-stock.md)）。新基线保留 pgvector /
+  pg_trgm 扩展创建与验证码规则种子。
+
 
 - **AI 动作声明按应用自动发现**：各应用可在根目录提供 `ai_declarations.py`
   （`AI_ACTIONS`，兼容 `AI_READ_ACTIONS` / `AI_WRITE_ACTIONS`），由

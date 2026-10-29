@@ -1,5 +1,9 @@
 # 升级到 5.0（4.x → 5.0 升级指南）
 
+> **历史指南说明**：本文描述 5.0 发布时的迁移链。当前代码基线（2026-10-29）已再次
+> 整体重建为全新初始迁移，**不再兼容任何既有库的迁移账本**；本文的原地升级步骤不适用于
+> 新基线，既有库请按 [upgrade-stock.md](upgrade-stock.md) §五 清库重建 + §七 回灌。
+
 > **一句话结论**：**四域切分之后**的 4.x 库（表名为 `identity_userinfo` / `file_uploadfile` /
 > `audit_operationlog` 等）**可直接原地升级**——新版本先由
 > `python manage.py upgrade_ledger --apply` 认领迁移账本（不执行 DDL），再
