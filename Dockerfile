@@ -1,4 +1,4 @@
-FROM nineaiyu/xadmin-server-base:20261027_002336 AS stage-build
+FROM nineaiyu/xadmin-server-base:20261030_091711 AS stage-build
 ARG VERSION
 
 WORKDIR /data/xadmin-server
