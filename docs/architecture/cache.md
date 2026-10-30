@@ -159,3 +159,13 @@ sum by (cache) (rate(xadmin_cache_requests_total{result="hit"}[5m]))
 失效语义：Redis 不可用时 challenge / verify / ticket 消费一律 **fail-closed**
 （拒绝），不降级为放行；挑战通过后立即删除挑战键，ticket 消费即删除（nonce
 一次性取回），不做主动失效。
+
+## 十一、AI 档案连通性任务归属（2026-10-30）
+
+celery 结果后端的 task_id 是全局命名空间；`test-result` 回读必须校验「该任务由
+当前用户针对当前档案提交」，否则任意登录用户拿到 task_id 即可读取他人档案的探测
+结论（历史实现只校验档案可见性，注释声称的保护并不存在）。
+
+| 键 | TTL | 说明 |
+|----|-----|------|
+| `ai_profile_test_task_{task_id}` | 3600s（`AI_PROFILE_TEST_TASK_TTL`） | `{profile: <pk>, user: <pk>}` 归属映射；提交时写入，回读时与当前档案/用户比对，未登记或不匹配一律 `1001`。缓存不可用时提交不失败，但回读 fail-closed。 |

@@ -108,3 +108,5 @@
 | [ADR-096](ADR-096-ai-action-declaration-discovery.md) | 已交付 | AI 动作声明按应用下沉 + 自动发现：各应用 `ai_declarations.py` 声明、注册表合并唯一；内置动作回归业务应用；`modules` 字段对齐功能模块裁剪；明确不按路由自动生成动作 |
 | [ADR-097](ADR-097-data-scope-list-anchor.md) | 已交付 | 数据权限「显式 action 覆盖 + 同资源 list 缺省回退」：当前 action 有可编译显式授权时只用它，否则回退 list；通用授权始终参与；字段权限保持精确匹配不继承；配套修正种子旧表名 `system.userrole` → `identity.userrole` 并加模型 label 守护 |
 | [ADR-098](ADR-098-report-screen-versioning.md) | 已交付 | 报表设计 / 大屏布局版本化与乐观锁：独立版本表（保留 20 版、回滚再记一版）+ `base_version` 整数基线拒绝后写覆盖；历史与回滚仅创建者；两端设计器接入版本历史弹窗 |
+| [ADR-099](ADR-099-http-only-refresh-token.md) | 暂不实施（触发制） | refresh token 迁 HttpOnly Cookie（结构性安全候选）：当前双 Cookie 维持，触发条件与迁移轮廓见正文 |
+| [ADR-100](ADR-100-review-retained-decisions.md) | 已接受 | 第二轮审查保留项处置：iframe sandbox / 限流 fail-open / IM SDK 出站 / 颜色与贴线基线 / 报表脱敏投递 |

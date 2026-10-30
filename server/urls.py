@@ -64,8 +64,13 @@ urlpatterns = [
     re_path("^api/flower/(?P<path>.*)$", CeleryFlowerAPIView.as_view(), name="flower-view"),
     # media路径配置 开发环境可以启动下面配置，正式环境需要让nginx读取资源，无需进行转发
     re_path("^media/(?P<path>.*)$", media_serve, {"document_root": settings.MEDIA_ROOT}),
-    re_path("^api/static/(?P<path>.*)$", static_serve, {"document_root": settings.STATIC_ROOT}),
 ]
+
+# 静态文件兜底仅开发环境启用：django.views.static.serve 官方标注仅供开发（无缓存头、
+# 无清单校验，且每个请求都走 Python）。生产由 nginx 直接托管构建产物（xadmin-web），
+# 若部署方确需应用层兜底，应在反向代理层显式配置而不是依赖此路由。
+if settings.DEBUG:
+    urlpatterns.append(re_path("^api/static/(?P<path>.*)$", static_serve, {"document_root": settings.STATIC_ROOT}))
 
 urlpatterns = swagger_apis + urlpatterns
 auto_register_app_url(urlpatterns)

@@ -95,13 +95,18 @@ def _dform_requires_approval(user: Any, params: dict[str, Any]) -> bool:
 
 def _execute_dform(user: Any, params: dict[str, Any]) -> dict[str, Any]:
     from dataset.contracts import DynamicFormSubmission
+    from dataset.utils.dform_filter import build_filter_data
 
     form, error = _resolve_form(params)
     if error:
         return {"ok": False, "detail": error, "data": {}}
+    data = params.get("data") or {}
     submission = DynamicFormSubmission.objects.create(
         form=form,
-        data=params.get("data") or {},
+        data=data,
+        # 与 REST 提交同口径物化可筛选字段：缺这一步时 AI 提交的行在管理端
+        # 「表单数据」按可筛选字段查不到（filter_data @> 不命中），直到重建命令跑过
+        filter_data=build_filter_data(form.schema, data),
         creator=user,
         modifier=user,
         dept_belong=getattr(user, "dept", None),

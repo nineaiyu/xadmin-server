@@ -378,6 +378,8 @@ def test_path_allowed_by_scopes_pure_function():
     # 非法正则被跳过：不匹配该条，但清单内其余条目照常生效
     assert path_allowed_by_scopes("/api/identity/user", ["[invalid", "/api/identity/user"]) is True
     assert path_allowed_by_scopes("/api/identity/role", ["[invalid"]) is False
+    # 锚定后整串匹配：`$` 不允许尾部换行绕过（search 语义会放行）
+    assert path_allowed_by_scopes("/api/identity/user\n", [r"^/api/identity/user$"]) is False
 
 
 def test_scope_empty_allows_all_paths(superuser):

@@ -117,7 +117,9 @@ def path_allowed_by_scopes(path: str, scopes: Any, method: str | None = None) ->
         if matcher is None:
             logger.warning("pat scope skipped: invalid or empty path regex %s", entry_path)
             continue
-        if matcher.search(path) is not None:
+        # 统一锚定后必须整串匹配：search 会让 `^...$` 在尾部换行等边界上放行，
+        # 也会让作者手写的 `.` 类正则产生非预期后缀命中
+        if matcher.fullmatch(path) is not None:
             return True
     return False
 

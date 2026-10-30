@@ -113,7 +113,10 @@ search-fields 条目为子集：`key/label/help_text/input_type/choices/default`
    剥掉尾缀后与 `list` 一致（`packages/xadmin-common/common/core/permission.py::_resolve_menu_pk`）——
    能进列表就能拿元数据，反之列表权限未授权时元数据同样 403；
 3. **值级脱敏在上游**：脱敏（数据掩码）作用于序列化输出（`to_representation`），豁免口径与
-   `get_allow_fields` 一致（超管 / 显式豁免 / 原文通道）；元数据只描述形态，不携带明文；
+   `get_allow_fields` 一致（超管 / 显式豁免 / 原文通道）；元数据只描述形态，不携带明文。
+   数据集执行/聚合不经序列化器、直接 `values()` 出数，已在 `execute_dataset` /
+   `aggregate_dataset` 内显式套用同一 `apply_output_mask`（定时报表与 WS 推送共用），
+   聚合值（sum/avg）对已掩码字段 fail-closed，见 [permission.md](permission.md) §4.3；
 4. **数据权限在查询集**：与元数据无关；列表行级可见范围见 [permission.md](permission.md)。
 
 ## 五、失败可见性（防静默）

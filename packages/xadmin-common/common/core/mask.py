@@ -8,7 +8,9 @@
 - ``BasePrimaryKeyRelatedField.to_representation``：关联字段 attrs 输出——
   嵌套输出同样受目标模型规则约束（历史实现只掩码主链路，嵌套 attrs 靠"恰好无
   敏感字段"侥幸通过，后续给关联 attrs 加字段即静默绕过）；
-- ``system.search``：全局搜索分组输出（同款"声明式字段不掩码"风险面）。
+- ``system.search``：全局搜索分组输出（同款"声明式字段不掩码"风险面）；
+- ``dataset`` 执行链：数据集 execute/aggregate 的 ORM ``values()`` 直出（不经
+  序列化器），REST / 定时报表 / 仪表盘与大屏 WS 共用同一挂点。
 
 豁免口径与字段权限同源：超管 / 显式 ``ignore_field_permission`` / 原文通道
 （``?mask=false`` 且对当前地址有更新权限，放行时按请求留一条审计日志）。
@@ -105,11 +107,38 @@ def apply_related_output_mask(field: Any, data: Any, value: Any) -> Any:
     return apply_output_mask(data, request, user, value._meta.model, ignore)
 
 
+def masked_fields_for(model: Any, request: Any, user: Any, ignore_field_permission: bool = False) -> set[str]:
+    """当前用户在该模型上实际生效的掩码字段集合（豁免 / 无规则 → 空集）。
+
+    与 ``apply_output_mask`` 同口径（同一豁免判定、同一角色交集规则、同字段
+    sort 小者优先）。供「不能逐字段掩码、只能整体拒绝」的消费面使用——例如
+    数据集对已掩码字段做 sum/avg 聚合，聚合结果无法掩码，必须 fail-closed。
+    """
+    if model is None or user is None:
+        return set()
+    if mask_exempt(request, user, model, ignore_field_permission=ignore_field_permission):
+        return set()
+    rules = get_mask_rules(model._meta.label_lower)
+    if not rules:
+        return set()
+    role_pks = mask_role_pks(request, user)
+    fields: set[str] = set()
+    for rule in rules:
+        field_name = rule["field"]
+        if field_name in fields:
+            continue
+        if rule["roles"] and not bool(role_pks & set(rule["roles"])):
+            continue
+        fields.add(field_name)
+    return fields
+
+
 def apply_output_mask(data: Any, request: Any, user: Any, model: Any, ignore_field_permission: bool = False) -> Any:
     """按 model 的脱敏规则对输出字典逐字段掩码；豁免 / 无规则 / 非字典时原样返回。
 
     规则按 sort 升序加载；同字段「sort 小者优先」——首个命中（字段匹配 + 角色匹配）
     的规则生效，其后该字段规则跳过；不同字段互不干扰。就地修改并返回入参字典。
+    键为 JSON 路径（``data.phone``，数据集列直出形态）时，按根字段规则逐项掩码。
     """
     if not isinstance(data, dict) or not data or model is None or user is None:
         return data
@@ -122,10 +151,21 @@ def apply_output_mask(data: Any, request: Any, user: Any, model: Any, ignore_fie
     masked_fields = set()
     for rule in rules:
         field_name = rule["field"]
-        if field_name in masked_fields or field_name not in data:
+        if field_name in masked_fields:
             continue
         if rule["roles"] and not bool(role_pks & set(rule["roles"])):
             continue
-        data[field_name] = apply_mask(data[field_name], rule)
-        masked_fields.add(field_name)
+        if field_name in data:
+            data[field_name] = apply_mask(data[field_name], rule)
+            masked_fields.add(field_name)
+            continue
+        # JSON 路径列（`data.phone`）：数据集按列声明直出，规则挂在根 JSON 字段上，
+        # 逐个子路径套用同一规则（序列化器的字段名不会带点，不受影响）
+        prefix = f"{field_name}."
+        matched = False
+        for key in [item for item in data if item.startswith(prefix)]:
+            data[key] = apply_mask(data[key], rule)
+            matched = True
+        if matched:
+            masked_fields.add(field_name)
     return data

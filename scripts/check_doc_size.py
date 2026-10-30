@@ -47,9 +47,17 @@ DOC_SIZE_EXEMPT = {
     "docs/plans/DEV-TASKS.md": {
         "reason": (
             "工作区唯一待办入口（滚动台账）：状态快照按批次累积、逐批回写执行记录与验证证据，"
-            "历史批次滚动归档至 docs/plans/archive/；登记基线为快照区扩容当日的实际体积"
+            "历史批次滚动归档至 docs/plans/archive/；登记基线为快照区扩容当日的实际体积，"
+            "2026-10-30 追加第二轮审查整改批次状态行后按实际体积上调 1 KB"
         ),
-        "baseline_kb": 42,
+        "baseline_kb": 43,
+    },
+    "docs/plans/code-review-frontend-2026-10-29-part6.md": {
+        "reason": (
+            "一次性前端审查证据快照：system 全子域逐文件台账 + 四闭环表，需保持单篇可检索；"
+            "审查结束后随整改归档，不再增长（拆分只会切断同一分区的证据链）"
+        ),
+        "baseline_kb": 69,
     },
 }
 

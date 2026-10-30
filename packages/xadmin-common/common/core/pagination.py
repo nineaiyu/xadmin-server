@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import Any
 
 from django.db.models import Q
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -96,6 +97,10 @@ class KeysetPageNumber(PageNumber):
         try:
             payload = json.loads(base64.urlsafe_b64decode(raw.encode()).decode())
             created_time = datetime.fromisoformat(payload["t"])
+            if timezone.is_naive(created_time):
+                # 手工构造/旧客户端游标可能不带时区：naive 与 DB 的 aware 值比较
+                # 在 PG 上直接抛错（500），按当前时区补齐后再参与 keyset 条件
+                created_time = timezone.make_aware(created_time, timezone.get_current_timezone())
             pk = queryset.model._meta.pk.to_python(payload["pk"])
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             raise ValidationError({"cursor": _("Invalid cursor")}) from exc

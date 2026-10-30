@@ -8818,6 +8818,14 @@ msgstr "任务结束时间"
 msgid "Task result"
 msgstr "任务结果"
 
+#: ai/views/profiles.py
+msgid "Task result not found"
+msgstr "任务结果不存在或无权查看"
+
+#: ai/views/profiles.py
+msgid "Missing task id"
+msgstr "缺少任务 ID"
+
 #: packages/xadmin-common/common/utils/country.py:47
 msgid "China"
 msgstr "中国"

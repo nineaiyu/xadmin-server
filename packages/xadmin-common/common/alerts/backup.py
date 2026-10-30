@@ -13,6 +13,7 @@
 
 import hashlib
 import logging
+from html import escape
 from typing import Any
 
 from django.core.cache import cache
@@ -50,14 +51,16 @@ class BackupFailureMessage(SystemMessage):
         occurred_at = self.payload.get("time") or "-"
         detail = (self.payload.get("detail") or "")[:2000]
         subject = _("Backup failure alert: {}").format(event)
+        # payload 来自备份脚本回调（外部输入）：进入 HTML 邮件/站内信前必须转义，
+        # 否则脚本侧或中间人可以注入标签（站内信是超管阅读面）
         message = (
-            f"<p>{_('Source')}: <code>{source}</code></p>"
-            f"<p>{_('Event')}: <code>{event}</code></p>"
-            f"<p>{_('Host')}: <code>{host}</code></p>"
-            f"<p>{_('Time')}: <code>{occurred_at}</code></p>"
+            f"<p>{_('Source')}: <code>{escape(str(source))}</code></p>"
+            f"<p>{_('Event')}: <code>{escape(str(event))}</code></p>"
+            f"<p>{_('Host')}: <code>{escape(str(host))}</code></p>"
+            f"<p>{_('Time')}: <code>{escape(str(occurred_at))}</code></p>"
         )
         if detail:
-            message += f"<pre style='white-space:pre-wrap'>{detail}</pre>"
+            message += f"<pre style='white-space:pre-wrap'>{escape(str(detail))}</pre>"
         message += f"<p>{_('Please check the backup container logs and the backup directory.')}</p>"
         return {"subject": subject, "message": message}
 

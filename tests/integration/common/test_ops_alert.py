@@ -77,6 +77,20 @@ class TestOpsAlertAPI:
         assert second.data["data"]["published"] is False
         assert MessageContent.objects.count() == 1
 
+    def test_payload_html_is_escaped(self, api_client, superuser, alert_enabled):
+        """外部 payload 进入 HTML 前转义：事件/详情不能注入标签（站内信是超管阅读面）。"""
+        payload = dict(
+            PAYLOAD,
+            event="<script>alert(1)</script>",
+            detail="<img src=x onerror=alert(2)>",
+        )
+        api_client.post(ALERT_URL, payload, format="json", HTTP_X_OPS_TOKEN=TOKEN)
+        message = MessageContent.objects.get()
+        assert "<script>" not in message.message
+        assert "<img" not in message.message
+        assert "&lt;script&gt;" in message.message
+        assert "&lt;img" in message.message
+
     def test_different_event_not_throttled(self, api_client, superuser, alert_enabled):
         """同来源不同事件独立计数：OOM 与后续宿主级告警各自送达。"""
         api_client.post(ALERT_URL, PAYLOAD, format="json", HTTP_X_OPS_TOKEN=TOKEN)

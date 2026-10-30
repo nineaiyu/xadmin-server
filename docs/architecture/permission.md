@@ -163,6 +163,11 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
 - `BaseModelSerializer` 在实例化时按 `request.fields` 保留/剔除字段，未配置字段权限的用户输出为空集（需显式授权）。
 - 跳过条件：超管、白名单 URL、`PERMISSION_FIELD_ENABLED=False`（`ignore_field_permission`）。
 - 单个字段可通过 `ignore_field_permission=True`（extra_kwargs）豁免，如文件回显字段。
+- **异步任务链同源**：导入任务不经过视图 dispatch，`task_request.bind_view_task_context`
+  在绑定视图上下文后复用 `IsAuthenticated.has_permission` 装载 `request.fields`
+  （契约第 6 项）。缺少这一步时非超管的 serializer 字段白名单 fail-closed 为空集，
+  逐行 `validated_data={}` 导致异步导入整体不可用；权限在任务执行期被收回时任务
+  直接失败（fail-closed），不退化为静默空导入。
 
 ### 4.2 与 search-columns 的联动
 
@@ -179,6 +184,17 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
   与请求级 `filters` 全部 fail-closed；
 - 迁移前运行 `python manage.py dataset_field_permission_audit`，列出有共享数据集执行权限、
   但未配置字段权限的角色；`--fail` 可用于发布门禁。
+
+**值级脱敏（DataMaskRule）同样在数据集执行链生效**：字段权限（能否看到该列）与值级
+脱敏（看到的是否原文）是两层独立控制，`execute_dataset` / `aggregate_dataset` 在
+ORM `values()` 直出后逐行套用 `common.core.mask.apply_output_mask`（与列表/搜索同源），
+REST、定时报表 xlsx、仪表盘/大屏 WS 推送共用该内核，不存在「列表已掩码、数据集仍原文」
+的旁路。聚合口径：
+
+- 分组字段（含趋势桶）按字段规则掩码后再输出 `name` / `raw`（下钻过滤不能反推原值）；
+- `sum` / `avg` 的取值字段若对当前浏览者命中掩码规则，直接 fail-closed——
+  聚合结果无法掩码，继续执行等于泄露原值分布；`count` 不受影响；
+- 豁免口径与序列化器一致（超管 / `?mask=false` + 更新权限 / 无规则）。
 
 ## 五、缓存与失效
 
@@ -240,6 +256,9 @@ user.rules.all()  # 用户直接挂载的数据权限
 | API 权限 fail-closed / 白名单 | `tests/unit/common/test_core_permission.py`                                      |
 | 数据权限 16 种规则过滤            | `tests/unit/common/test_data_permission_filter.py`、`test_dept_tree_cache.py`     |
 | 字段权限裁剪                   | `tests/unit/common/test_serializer_field_permission.py`                          |
+| 任务链字段权限契约（异步导入）          | `tests/unit/system/test_import_export_execution_context.py`                      |
+| 数据集执行链值级脱敏              | `tests/integration/dataset/test_dataset_output_mask.py`                          |
+| 副作用 GET 清单门禁              | `tests/unit/common/test_side_effect_get_actions.py`                              |
 | 三层联动端到端（越权验证）            | `tests/integration/demo/test_book_viewset.py::TestBookDataPermissionIntegration` |
 
 ## 八、已知限制与设计取舍
@@ -247,3 +266,7 @@ user.rules.all()  # 用户直接挂载的数据权限
 - 菜单权限经角色控制后**不再**叠加数据权限过滤（避免双重配置，见 `get_user_menu_queryset` 注释）——给角色配数据权限即可，无需两处都配。
 - `get_user_permission` 缓存 24h 是性能取舍，正确性由信号失效保证；若新增绕过 ORM 的写路径，必须补信号或手动失效。
 - `request.fields` 由权限类 `IsAuthenticated._load_field_permission` 注入（非 DRF 中间件），非 DRF 权限类场景（WebSocket 等）需自行处理字段权限。
+- **Cookie 承载 JWT 的残余风险面**：无感刷新与 WS/SSE 认证需要 Cookie 通道，SameSite=Lax
+  已封住跨站 POST；剩余理论面是「名为 GET、实际改状态」的 action。全仓当前无此类端点，
+  由 `tests/unit/common/test_side_effect_get_actions.py` 做 AST 清单门禁：新增副作用 GET
+  必须改 POST，或在白名单登记「为何不能改 POST + Content-Type/自定义头收紧」的理由。

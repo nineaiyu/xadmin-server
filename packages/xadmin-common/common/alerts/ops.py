@@ -13,6 +13,7 @@
 
 import hashlib
 import logging
+from html import escape
 from typing import Any
 
 from django.core.cache import cache
@@ -63,14 +64,15 @@ class OpsAlertMessage(SystemMessage):
         context = self.get_template_vars()
         event = context["event"] or _("Unknown event")
         subject = _("Ops alert: {}").format(event)
+        # payload 来自宿主 watcher 回调（外部输入）：HTML 邮件/站内信前统一转义
         message = (
-            f"<p>{_('Source')}: <code>{context['source']}</code></p>"
-            f"<p>{_('Event')}: <code>{event}</code></p>"
-            f"<p>{_('Host')}: <code>{context['host']}</code></p>"
-            f"<p>{_('Time')}: <code>{context['time']}</code></p>"
+            f"<p>{_('Source')}: <code>{escape(str(context['source']))}</code></p>"
+            f"<p>{_('Event')}: <code>{escape(str(event))}</code></p>"
+            f"<p>{_('Host')}: <code>{escape(str(context['host']))}</code></p>"
+            f"<p>{_('Time')}: <code>{escape(str(context['time']))}</code></p>"
         )
         if context["detail"]:
-            message += f"<pre style='white-space:pre-wrap'>{context['detail']}</pre>"
+            message += f"<pre style='white-space:pre-wrap'>{escape(str(context['detail']))}</pre>"
         message += f"<p>{_('Please check the container status and host resource usage.')}</p>"
         return {"subject": subject, "message": message}
 

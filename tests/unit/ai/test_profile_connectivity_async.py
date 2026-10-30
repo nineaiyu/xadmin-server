@@ -82,12 +82,36 @@ class TestResultEndpoint:
         assert data["ok"] is True
         assert data["detail"] == "pong"
 
-    def test_unknown_task_reports_pending(self, client, profile):
-        """结果后端查不到的任务（未开结果后端 / 已过期）按未完成返回，形状不变。"""
+    def test_unknown_task_rejected(self, client, profile):
+        """未登记归属的 task_id 一律拒绝：不再把全局任务命名空间当存在性探针。"""
         resp = client.get(f"/api/ai/profiles/{profile.pk}/test-result", {"task_id": "no-such-task"})
-        data = resp.json()["data"]
-        assert data["task_id"] == "no-such-task"
-        assert data["state"] in {"PENDING", "FAILURE"}
+        assert resp.json()["code"] == 1001
+
+    def test_task_result_requires_owner(self, client, profile, monkeypatch):
+        """task_id → (档案, 提交者) 归属绑定：他人拿到 task_id 也读不到结论。"""
+        from identity.models import UserInfo
+
+        class _Queued:
+            id = "task-owner"
+            state = "PENDING"
+            result = None
+
+        monkeypatch.setattr("ai.tasks.test_ai_profile_task.delay", lambda profile_pk: _Queued())
+        submitted = client.post(f"/api/ai/profiles/{profile.pk}/test", {}, format="json").json()["data"]
+        assert submitted["task_id"] == "task-owner"
+
+        # 提交者本人可回读
+        mine = client.get(f"/api/ai/profiles/{profile.pk}/test-result", {"task_id": "task-owner"})
+        assert mine.json()["code"] == 1000
+
+        # 另一个超管即使能看到同一档案，也不能读走他人任务结论
+        other = UserInfo.objects.create_superuser(
+            username="admin-other", email="other@example.com", password="Admin@123456"
+        )
+        other_client = APIClient()
+        other_client.force_authenticate(other)
+        resp = other_client.get(f"/api/ai/profiles/{profile.pk}/test-result", {"task_id": "task-owner"})
+        assert resp.json()["code"] == 1001
 
 
 class TestTaskNormalizesFailure:

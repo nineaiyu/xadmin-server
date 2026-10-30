@@ -33,7 +33,11 @@ from approval.services.approval import (
     reject_request,
 )
 from approval.utils.approval_mfa import ensure_approval_action_confirmed
-from approval.views.approval_instance_batch import missing_pk_failures
+from approval.views.approval_instance_batch import (
+    MAX_BATCH_INSTANCES,
+    missing_pk_failures,
+    normalize_uuid_pks,
+)
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseViewSet, DetailAction, ListAction, SearchColumnsAction, SearchFieldsAction
 from common.core.response import ApiResponse
@@ -152,17 +156,20 @@ class ApprovalRequestViewSet(
             if not pending_queryset_for(request.user).exists():
                 raise PermissionDenied(_("Permission denied"))
         pks = request.data.get("pks") or []
-        if not pks:
+        if not isinstance(pks, (list, tuple)) or not pks:
             raise ValidationError(_("Please select the data to operate"))
-        succeeded, failures, handled_pks = 0, [], set()
-        for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
+        if len(pks) > MAX_BATCH_INSTANCES:
+            raise ValidationError(_("Too many applications in one batch (max {})").format(MAX_BATCH_INSTANCES))
+        valid_pks, failures = normalize_uuid_pks(pks)
+        succeeded, handled_pks = 0, set()
+        for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=valid_pks):
             handled_pks.add(str(approval.pk))
             ok, detail = approve_request(approval, request.user)
             if ok:
                 succeeded += 1
             else:
                 failures.append({"pk": str(approval.pk), "detail": str(detail)})
-        failures.extend(self._missing_pk_failures(pks, handled_pks))
+        failures.extend(self._missing_pk_failures(valid_pks, handled_pks))
         return ApiResponse(
             data={
                 "succeeded": succeeded,
@@ -199,17 +206,20 @@ class ApprovalRequestViewSet(
         if not reason:
             raise ValidationError(_("Rejection reason is required"))
         pks = request.data.get("pks") or []
-        if not pks:
+        if not isinstance(pks, (list, tuple)) or not pks:
             raise ValidationError(_("Please select the data to operate"))
-        succeeded, failures, handled_pks = 0, [], set()
-        for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
+        if len(pks) > MAX_BATCH_INSTANCES:
+            raise ValidationError(_("Too many applications in one batch (max {})").format(MAX_BATCH_INSTANCES))
+        valid_pks, failures = normalize_uuid_pks(pks)
+        succeeded, handled_pks = 0, set()
+        for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=valid_pks):
             handled_pks.add(str(approval.pk))
             ok, detail = reject_request(approval, request.user, reason)
             if ok:
                 succeeded += 1
             else:
                 failures.append({"pk": str(approval.pk), "detail": str(detail)})
-        failures.extend(self._missing_pk_failures(pks, handled_pks))
+        failures.extend(self._missing_pk_failures(valid_pks, handled_pks))
         return ApiResponse(
             data={
                 "succeeded": succeeded,

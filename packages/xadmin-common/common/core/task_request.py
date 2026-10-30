@@ -9,13 +9,18 @@
 - ``build_task_request``：显式给出 method / path / 查询串 / body / content-type / 提交者，
   构造最小 ``HttpRequest``（不再拼 environ）；提交者经 DRF ``_force_auth_user`` 直通
   （``ForcedAuthentication``，任务排队超过 access token 寿命也不会认证失败）；
-- ``bind_view_task_context``：装配并文档化五个契约——
+- ``bind_view_task_context``：装配并文档化六个契约——
   1. ``view.request``：DRF Request（serializer 字段权限、filterset 与数据权限上下文读它）；
   2. ``view.action``：serializer 行为分支（如创建时密码规则）；
   3. ``view.kwargs``：detail action 路由参数（本链路为空 dict）；
   4. ``view.format_kwarg = None``：``get_serializer_context`` 依赖（漏设直接 AttributeError）；
   5. ``set_current_request``：creator 信号赋值 + 操作审计 request_uuid，由调用方绑定并在出口清理
      （``common.local.set_current_request``）；
+  6. **字段权限上下文**：任务内请求同样经 ``IsAuthenticated`` 权限链装载
+     ``request.fields`` 与菜单上下文——异步导入不经过 dispatch，缺这一项时
+     serializer 的字段白名单 fail-closed 会把非超管的所有列裁空（导入逐行
+     validated_data={}，任务整体不可用）。装载与 Web 同源，权限在任务执行期
+     被收回时按 fail-closed 处理（任务失败而不是静默写入）。
 - 每任务构造独立请求对象：字段权限的关联对象 memo（``request._related_memo``）按请求隔离。
 
 契约由 ``tests/unit/system/test_import_export_execution_context.py`` 以 spy 视图集守护。
@@ -29,6 +34,21 @@ from django.http import HttpRequest, QueryDict
 from rest_framework.request import Request
 
 TASK_SERVER_NAME = "xadmin"
+
+
+def _load_field_permission_context(request: Request, view: Any) -> None:
+    """契约 6：任务内请求复用 Web 权限链装载字段上下文（超管/匿名跳过）。
+
+    只对已认证用户执行；权限在任务执行期被收回时 ``PermissionDenied`` 直接失败
+    （fail-closed），不退化为「字段全裁空的静默导入」。
+    """
+    user = getattr(request, "user", None)
+    if user is None or not getattr(user, "is_authenticated", False):
+        return
+    # 惰性 import：本模块是任务装配底层，避免导入期拉起权限/宿主契约链
+    from common.core.permission import IsAuthenticated
+
+    IsAuthenticated().has_permission(request, view)
 
 
 def _query_string(query: Any) -> str:
@@ -96,4 +116,6 @@ def bind_view_task_context(
     view.action = action
     view.kwargs = kwargs or {}
     view.format_kwarg = None
+    # 契约 6：字段权限上下文（须在 view.action 就位后解析权限点）
+    _load_field_permission_context(drf_request, view)
     return drf_request

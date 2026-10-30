@@ -303,7 +303,20 @@ class TestLeaveAction:
 class TestDformAction:
     def test_submit_without_approval(self, action_client, ai_action_settings, action_user, menu_factory):
         grant_perms(action_user.roles.first(), menu_factory, DFORM_CREATE_PERMS)
-        form = make_form()
+        form = make_form(
+            schema={
+                "fields": [
+                    {
+                        "key": "note",
+                        "label": "备注",
+                        "type": "input",
+                        "required": False,
+                        "max_length": 100,
+                        "filterable": True,
+                    }
+                ]
+            }
+        )
         response = action_client.post(
             EXECUTE_URL,
             {"action": "dform.submit", "params": {"form_id": str(form.pk), "data": {"note": "AI 提交"}}},
@@ -313,6 +326,8 @@ class TestDformAction:
         submission = DynamicFormSubmission.objects.get()
         assert str(submission.creator.pk) == str(action_user.pk)
         assert submission.data["note"] == "AI 提交"
+        # 可筛选字段与 REST 提交同口径物化（否则管理端按字段筛选查不到 AI 行）
+        assert submission.filter_data == {"note": "AI 提交"}
 
     def test_unavailable_when_no_active_form(self, action_client, ai_action_settings):
         response = action_client.post(

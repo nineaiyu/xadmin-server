@@ -13,6 +13,7 @@ from django.db.models import Avg, Count, DateTimeField, Sum
 from django.db.models.functions import Trunc
 from django.utils.translation import gettext_lazy as _
 
+from common.core.mask import apply_output_mask, masked_fields_for
 from dataset.utils.columns import date_bucket_expression, expression_of, parse_column, visible_root_of
 from dataset.utils.dataset import (
     AGGREGATE_BUCKET_LIMIT,
@@ -26,6 +27,50 @@ from dataset.utils.dataset import (
     get_whitelisted_model,
     viewer_visible_fields,
 )
+
+
+def _request_context() -> Any:
+    """当前线程请求（HTTP / WS 有值，celery 定时报表为 None）：仅用于原文通道豁免判定。"""
+    from server.utils import get_current_request
+
+    return get_current_request()
+
+
+def _mask_rows(rows: Any, model: Any, user_obj: Any) -> Any:
+    """逐行套用输出掩码：``values()`` 直出不经过序列化器，掩码必须在此显式补挂。
+
+    字段权限（FieldPermission）与值级脱敏（DataMaskRule）是两层独立控制：只裁列
+    不掩码，会让「列表/详情已掩码、数据集仍原文」成为旁路。豁免口径（超管 /
+    ``?mask=false`` + 更新权限）与序列化器同源，见 ``common.core.mask``。
+    """
+    request = _request_context()
+    for row in rows:
+        apply_output_mask(row, request, user_obj, model)
+    return rows
+
+
+def _mask_series(series: Any, model: Any, group_spec: Any, user_obj: Any) -> Any:
+    """聚合分组值套用掩码：分组列本身可能有脱敏规则（如按手机号分组）。
+
+    ``raw`` 是下钻过滤用的原始值、``name`` 是展示值；掩码后两者必须一致替换，
+    否则前端用未掩码 raw 回传过滤条件可反推原值。字段无生效规则时保持原样。
+    """
+    if not series or group_spec is None:
+        return series
+    request = _request_context()
+    field_name = group_spec.root
+    for item in series:
+        # 趋势序列只有格式化后的 name（时间桶），无 raw；同样按分组字段规则收敛
+        key = "raw" if "raw" in item else "name"
+        original = item.get(key)
+        flat = {field_name: original}
+        apply_output_mask(flat, request, user_obj, model)
+        masked = flat.get(field_name)
+        if masked == original:
+            continue
+        item[key] = masked
+        item["name"] = "" if masked is None else str(masked)
+    return series
 
 
 def execute_dataset(
@@ -82,6 +127,7 @@ def execute_dataset(
     rows = list(queryset.values(*[spec.alias for spec in specs])[:limit])
     if alias_map:
         rows = [{alias_map.get(key, key): value for key, value in row.items()} for row in rows]
+    rows = _mask_rows(rows, model, user_obj)
     total = queryset.count() if with_total else None
     return {"columns": [spec.raw for spec in specs], "rows": rows, "total": total, "limit": limit}
 
@@ -176,6 +222,10 @@ def aggregate_dataset(
         if not value_field:
             raise ValidationError(_("Value field is required for aggregation"))
         value_spec = _check_numeric(model, value_field, whitelist)
+        # 聚合值本身无法掩码：对当前浏览者已生效掩码规则的字段做 sum/avg 会直接
+        # 泄露原值分布，必须 fail-closed（count 不暴露字段值，不受影响）
+        if value_spec.root in masked_fields_for(model, _request_context(), user_obj):
+            raise ValidationError(_("Masked field {} cannot be aggregated").format(value_spec.raw))
         # 模型字段用字段名引用；JSON 路径用 Cast 表达式（数值比较与聚合同一口径）
         expression = expression_of(value_spec) or value_spec.root
         annotation = Sum(expression) if metric == "sum" else Avg(expression)
@@ -211,6 +261,7 @@ def aggregate_dataset(
             }
             for row in rows
         ]
+    series = _mask_series(series, model, group_spec, user_obj)
     return {"name": group_by, "metric": metric, "series": series}
 
 

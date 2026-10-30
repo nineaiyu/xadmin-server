@@ -6,7 +6,6 @@
 其余字段照常。属主由 pre_save 信号写入 creator，禁止客户端指定。
 """
 
-import ipaddress
 from typing import Any
 
 from django.utils.translation import gettext_lazy as _
@@ -16,6 +15,7 @@ from common.core.auth import normalize_scope_entry
 from common.core.serializers import BaseModelSerializer
 from identity.models.token import ApiApplication, ApiApplicationGrant, PersonalAccessToken
 from identity.services.token_issue import new_token_secret
+from identity.utils.ip_allowlist import clean_ip_allowlist
 
 #: 单条 scope 的最大长度：scope 按请求逐条执行 ``re.search``，长度上限用于收敛
 #: 灾难性回溯（ReDoS）面——正常路径前缀/正则远小于该值
@@ -127,27 +127,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
 
     def validate_ip_allowlist(self, value: Any) -> Any:
         """IP 白名单清洗：去空白、去重、逐条校验 IP/CIDR 格式；None/空 = 不限。"""
-        if value in (None, ""):
-            return []
-        if not isinstance(value, list):
-            raise serializers.ValidationError(_("Ip allowlist must be a list of IPs or CIDR networks"))
-        cleaned = []
-        for item in value:
-            entry = str(item or "").strip()
-            if not entry:
-                continue
-            try:
-                if "/" in entry:
-                    ipaddress.ip_network(entry, strict=False)
-                else:
-                    ipaddress.ip_address(entry)
-            except ValueError as exc:
-                raise serializers.ValidationError(
-                    _("Invalid IP or CIDR network: %(entry)s") % {"entry": entry}
-                ) from exc
-            if entry not in cleaned:
-                cleaned.append(entry)
-        return cleaned
+        return clean_ip_allowlist(value)
 
     def create(self, validated_data: Any) -> Any:
         # 明文仅此一次：pat_ 前缀 + 32 字节 URL 安全随机串（签发口径经 token service）
@@ -217,9 +197,7 @@ class ApiApplicationSerializer(BaseModelSerializer):
         return _clean_scope_entries(value)
 
     def validate_ip_allowlist(self, value: Any) -> Any:
-        if not isinstance(value, list):
-            raise serializers.ValidationError(_("Ip allowlist must be a list"))
-        return [str(item).strip() for item in value if str(item).strip()]
+        return clean_ip_allowlist(value)
 
     def validate_rate_limit_per_minute(self, value: Any) -> Any:
         if value is not None and value < 0:

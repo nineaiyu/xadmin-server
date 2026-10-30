@@ -10,6 +10,7 @@ from audit.models import DataMaskRule
 from audit.serializers.mask import DataMaskRuleSerializer
 from audit.utils.mask import apply_mask, get_mask_rules, invalid_mask_cache
 from audit.views.admin.mask import PREVIEW_MAX_VALUE_LENGTH, PREVIEW_MAX_VALUES
+from common.core.mask import apply_output_mask
 from identity.models import UserInfo
 from identity.serializers.userinfo import UserInfoSerializer
 from server.utils import set_current_request
@@ -155,6 +156,16 @@ class TestMaskRulesCache:
         # 规则删除后（pre_delete 信号失效）重新加载为空
         DataMaskRule.objects.filter(model="system.message").delete()
         assert get_mask_rules("system.message") == []
+
+
+class TestJsonPathOutputMask:
+    def test_dataset_json_column_uses_root_field_rule(self, normal_user):
+        """数据集 JSON 路径列（data.phone）按根字段 data 的规则掩码。"""
+        _rule(field="data", mask_type="phone")
+        request = _make_request(normal_user)
+        row = {"data.phone": PHONE, "data.note": "ok"}
+        apply_output_mask(row, request, normal_user, UserInfo)
+        assert row["data.phone"] == "138******78"
 
 
 class TestSerializerMasking:

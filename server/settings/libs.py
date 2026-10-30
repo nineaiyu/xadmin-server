@@ -240,7 +240,9 @@ CELERY_RESULT_EXPIRES = 3600 * 24 * 7  # 任务结果过期时间
 # 任务执行历史（TaskExecution/TaskResult）及日志保留天数
 TASK_EXECUTION_KEEP_DAYS = int(CONFIG.get("TASK_EXECUTION_KEEP_DAYS", 30))
 
-CELERY_WORKER_DISABLE_RATE_LIMITS = True  # 任务发出后，经过一段时间还未收到acknowledge , 就将任务重新交给其他worker执行
+# 禁用任务级 rate limit（注释历史上误写成 acks_late 语义；重投由
+# CELERY_TASK_ACKS_LATE / 可见性超时控制，与本键无关）
+CELERY_WORKER_DISABLE_RATE_LIMITS = True
 # 预取倍数（默认队列的 worker）：与并发量级匹配即可，取 4。
 # 取值口径：默认 worker 线程池并发 = CELERY_WORKER_COUNT（默认 4，见 conf/defaults.py），
 # 预取 4 倍并发在「长任务排队」与「worker 崩溃重投」之间取平衡——

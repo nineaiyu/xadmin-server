@@ -60,6 +60,19 @@ class TestApplicationManagement:
         row = ApiApplication.objects.get(pk=application["pk"])
         assert not row.client_secret_hash.startswith("aps_")  # 库内只有哈希
 
+    def test_ip_allowlist_is_validated_and_cleaned(self, auth_client):
+        """应用白名单与 PAT 同口径：空白项剔除，非法 IP/CIDR 直接 400。"""
+        application = _create_application(auth_client, ip_allowlist=[" 127.0.0.1 ", "127.0.0.1", "", "10.0.0.0/8"])
+        assert application["ip_allowlist"] == ["127.0.0.1", "10.0.0.0/8"]
+
+        invalid = auth_client.post(
+            APPS_URL,
+            {"name": "非法白名单", "ip_allowlist": ["127.0.0.1", "999.1.1.1"]},
+            format="json",
+        )
+        assert invalid.status_code == 400
+        assert "ip_allowlist" in invalid.data
+
     def test_callback_url_requires_https(self, auth_client):
         resp = auth_client.post(
             APPS_URL,

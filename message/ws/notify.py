@@ -5,15 +5,12 @@
 # author : ly_13
 # date : 6/2/2023
 import asyncio
-import os
 from typing import Any
 
-import aiofiles
 from channels.db import database_sync_to_async
 from django.conf import settings
 
 from audit.services import UserLoginLog
-from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
 from common.utils import get_logger
 from identity.services import (
@@ -146,36 +143,3 @@ class MessageNotify(AsyncJsonWebsocket):
                 logger.error(f"action unknown. so close. {content}")
                 await asyncio.sleep(3)
                 await self.close()
-
-    # 下面查看文件方法忽略
-    async def task_log(self, event: Any) -> None:
-        task_id = event.get("data", {}).get("task_id")
-        log_path = get_celery_task_log_path(task_id)
-        await self.async_handle_task(task_id, log_path)
-
-    async def async_handle_task(self, task_id: Any, log_path: Any) -> None:
-        logger.info(f"Task id: {task_id}")
-        while not self.disconnected:
-            if not os.path.exists(log_path):
-                await self.send_json({"message": ".", "task": task_id})
-                await asyncio.sleep(0.5)
-            else:
-                await self.send_task_log(task_id, log_path)
-                break
-
-    async def send_task_log(self, task_id: Any, log_path: Any) -> None:
-        await self.send_json({"message": "\r\n"})
-        try:
-            logger.debug(f"Task log path: {log_path}")
-            async with aiofiles.open(log_path, "rb") as task_log_f:
-                await task_log_f.seek(0, os.SEEK_END)
-                backup = min(4096 * 5, await task_log_f.tell())
-                await task_log_f.seek(-backup, os.SEEK_END)
-                while not self.disconnected:
-                    data = await task_log_f.read(4096)
-                    if data:
-                        data = data.replace(b"\n", b"\r\n")
-                        await self.send_json({"message": data.decode(errors="ignore"), "task": task_id})
-                    await asyncio.sleep(0.2)
-        except OSError as e:
-            logger.warning(f"Task log path open failed: {e}")

@@ -669,6 +669,36 @@ class TestApprovalOperations:
         approval = ApprovalRequest.objects.get(pk=approval_id)
         assert approval.status == ApprovalRequest.Status.REJECTED
 
+    def test_batch_actions_normalize_invalid_pk_and_limit(self, superuser, api_client):
+        """批量主键先归一：非法 UUID 进 failed 明细（不再 500），单批上限 200。"""
+        import uuid
+
+        api_client.force_authenticate(user=superuser)
+        response = api_client.post(
+            "/api/approval/approvals/batch-approve",
+            {"pks": ["not-a-uuid", 123]},
+            format="json",
+        )
+        assert response.status_code == 200, response.data
+        assert response.data["code"] == 1000
+        assert response.data["data"]["succeeded"] == 0
+        assert [item["pk"] for item in response.data["data"]["failures"]] == ["not-a-uuid", "123"]
+
+        rejected = api_client.post(
+            "/api/approval/approvals/batch-reject",
+            {"pks": ["not-a-uuid", 123], "reason": "风险操作"},
+            format="json",
+        )
+        assert rejected.status_code == 200, rejected.data
+        assert [item["pk"] for item in rejected.data["data"]["failures"]] == ["not-a-uuid", "123"]
+
+        too_many = api_client.post(
+            "/api/approval/approvals/batch-approve",
+            {"pks": [str(uuid.uuid4()) for _ in range(201)]},
+            format="json",
+        )
+        assert too_many.status_code == 400, too_many.data
+
     def test_batch_reject_requires_approver(self, superuser, normal_user):
         """批量驳回同样要求审批人身份（与单条 reject 口径一致）。"""
         _enable_interception()

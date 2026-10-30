@@ -163,6 +163,9 @@ RequestMiddleware（request_id + 当前请求上下文）
 ```
 
 - 常用上下文：`server/utils.py`（`get_current_request` / `set_current_request`，当前请求与当前用户）；异步任务构造请求用 `packages/xadmin-common/common/core/task_request.py::build_task_request`。
+  `bind_view_task_context` 负责六个契约（视图请求/action/kwargs/format_kwarg/thread-local/字段权限），
+  其中字段权限经 `IsAuthenticated.has_permission` 同源装载——新增任务链必须复用它，
+  不要手工拼 `request.fields`。
 - 扩展点：新增中间件写类后插入 `MIDDLEWARE`（注意响应阶段自内向外）；需要开关时 `raise MiddlewareNotUsed`。范例 `server/middleware.py`。
 
 ### 1.9 Celery 任务
