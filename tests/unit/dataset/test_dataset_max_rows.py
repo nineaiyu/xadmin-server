@@ -62,6 +62,16 @@ def test_max_rows_caps_rows_and_keeps_total_count(dataset, superuser):
     assert [row["username"] for row in result["rows"]] == expected
 
 
+def test_with_total_false_skips_count(dataset, superuser):
+    """报表渲染只消费行数据：with_total=False 跳过全过滤集 COUNT。"""
+    _seed_users()
+    with CaptureQueriesContext(connection) as ctx:
+        result = execute_dataset(dataset, superuser, max_rows=4, with_total=False)
+    assert result["total"] is None
+    assert len(result["rows"]) == 4
+    assert not [q for q in ctx.captured_queries if "COUNT(" in q["sql"].upper()]
+
+
 def test_max_rows_pushes_limit_into_sql(dataset, superuser):
     _seed_users()
     with CaptureQueriesContext(connection) as ctx:

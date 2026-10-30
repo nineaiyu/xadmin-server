@@ -4,10 +4,11 @@
 背景：未创建 config.yml 时，``server/conf/manager.py`` 回落 ``config_example.yml``
 并自动生成/持久化 SECRET_KEY（``data/.secret_key``）。本文件钉死该行为的关键边界：
 
-1. 回落路径生效：自动生成 49 位密钥并持久化，二次加载复用同一密钥（重启一致性）；
+1. 回落路径生效：自动生成 49 位 SECRET_KEY 与 48 位 CAPTCHA_TICKET_SECRET 并持久化，
+   二次加载复用同一密钥（重启一致性）；
 2. 显式配置的 SECRET_KEY 不被覆盖，也不产生密钥文件；
-3. 存在 config.yml 但未填 SECRET_KEY、非 DEBUG、未显式开启自动生成时保持为空
-   （生产口径：交由 settings 校验拒绝启动，不得静默生成）；
+3. 存在 config.yml 但未填密钥、非 DEBUG、未显式开启自动生成时保持为空
+   （生产口径：交由 settings 校验拒绝启动，不得静默生成；票据密钥同口径）；
 4. DEBUG=true 时允许自动生成（本地开发免配置）。
 
 SECRET_KEY 同时是 JWT 签名与字段级加密（signer）密钥，密钥稳定性由
@@ -67,16 +68,21 @@ def test_explicit_secret_key_not_overridden(tmp_path, config_manager_cls):
 
     assert config.get("SECRET_KEY") == "explicit-key-for-test"
     assert not (tmp_path / manager_module.AUTO_SECRET_KEY_FILE).exists()
+    # 票据密钥同样不得静默生成
+    assert not config.get("CAPTCHA_TICKET_SECRET")
+    assert not (tmp_path / manager_module.AUTO_CAPTCHA_TICKET_SECRET_FILE).exists()
 
 
 def test_missing_secret_key_without_debug_or_switch_stays_empty(tmp_path, config_manager_cls):
-    # 生产口径：显式提供 config.yml（未填 SECRET_KEY）、非 DEBUG、未开自动生成 → 保持为空
+    # 生产口径：显式提供 config.yml（未填密钥）、非 DEBUG、未开自动生成 → 保持为空
     (tmp_path / "config.yml").write_text("DEBUG: false\n", encoding="utf8")
 
     config = config_manager_cls.load_user_config(root_path=str(tmp_path))
 
     assert not config.get("SECRET_KEY")
+    assert not config.get("CAPTCHA_TICKET_SECRET")
     assert not (tmp_path / manager_module.AUTO_SECRET_KEY_FILE).exists()
+    assert not (tmp_path / manager_module.AUTO_CAPTCHA_TICKET_SECRET_FILE).exists()
 
 
 def test_debug_enables_auto_generation(tmp_path, config_manager_cls):
@@ -86,6 +92,24 @@ def test_debug_enables_auto_generation(tmp_path, config_manager_cls):
 
     assert config.get("SECRET_KEY")
     assert (tmp_path / manager_module.AUTO_SECRET_KEY_FILE).is_file()
+    assert config.get("CAPTCHA_TICKET_SECRET")
+    assert (tmp_path / manager_module.AUTO_CAPTCHA_TICKET_SECRET_FILE).is_file()
+
+
+def test_fallback_generates_and_persists_captcha_ticket_secret(tmp_path, config_manager_cls):
+    """开箱路径（无 config.yml）必须同时补票据密钥，否则 DEBUG=false 拒启。"""
+    _prepare_example(tmp_path)
+    config = config_manager_cls.load_user_config(root_path=str(tmp_path))
+
+    secret = config.get("CAPTCHA_TICKET_SECRET")
+    assert secret and len(secret) == manager_module.AUTO_CAPTCHA_TICKET_SECRET_LENGTH
+    secret_file = tmp_path / manager_module.AUTO_CAPTCHA_TICKET_SECRET_FILE
+    assert secret_file.is_file()
+    assert secret_file.read_text(encoding="utf8").strip() == secret
+
+    # 二次加载复用同一密钥（多进程/重启验签一致，票据不因重启失效）
+    again = config_manager_cls.load_user_config(root_path=str(tmp_path))
+    assert again.get("CAPTCHA_TICKET_SECRET") == secret
 
 
 def test_concurrent_first_boot_shares_one_secret_key(tmp_path, config_manager_cls):

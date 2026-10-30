@@ -50,6 +50,37 @@ class TestGlobalSearchAPI:
         assert user_group["items"][0]["text"] == "alice-search"
         assert user_group["items"][0]["meta"]["nickname"] == "爱丽丝"
 
+    def test_group_carries_search_field(self, auth_client, searchable_data):
+        """分组下发 search_field（命中跳转承接字段）；未配置的实体为 None。"""
+        resp = auth_client.get(SEARCH_URL, {"keyword": "alice"})
+        groups = resp.data["data"]["groups"]
+        assert _group(groups, "user")["search_field"] == "username"
+        # 未配置承接字段的实体（审批单）单独用 path 关键词命中后断言为 None
+        resp2 = auth_client.get(SEARCH_URL, {"keyword": "user/1"})
+        approval_group = _group(resp2.data["data"]["groups"], "approval")
+        assert approval_group is not None
+        assert approval_group["search_field"] is None
+
+    def test_search_field_aligned_with_list_page_filter(self):
+        """承接字段必须是列表页真实搜索字段（否则跳转 query 不被 RePlusPage 承接）。"""
+        from system.search import SEARCH_PROVIDERS
+
+        by_key = {provider.key: provider for provider in SEARCH_PROVIDERS}
+        # 列表页过滤器字段（与各 ViewSet/filter_class 对齐的口径锚点）
+        expected = {
+            "user": "username",
+            "dept": "name",
+            "post": "name",
+            "file": "filename",
+            "tag": "name",
+            "approval": None,
+            "leave": None,
+            "log": None,
+        }
+        assert set(by_key) >= set(expected)
+        for key, field in expected.items():
+            assert by_key[key].search_field == field, key
+
     def test_tag_group_matches_name(self, auth_client):
         """标签分组：按名称/备注命中，路由指向标签管理页。"""
         from system.models import Tag
@@ -265,3 +296,47 @@ class TestApprovalRowScope:
 
     def test_superuser_sees_all(self, superuser, searchable_data):
         assert _approval_row_scope(superuser, ApprovalRequest.objects.all()).count() == 1
+
+
+class TestRegisterSearchProvider:
+    """二开扩展点：运行期注册业务模型分组，key 冲突 fail-fast。"""
+
+    @pytest.fixture(autouse=True)
+    def _restore_providers(self):
+        from system.search import SEARCH_PROVIDERS
+
+        builtin = list(SEARCH_PROVIDERS)
+        yield
+        SEARCH_PROVIDERS[:] = builtin
+
+    def test_registered_provider_searchable(self, auth_client):
+        from system.search import SEARCH_PROVIDERS, SearchProvider, register_search_provider
+
+        register_search_provider(
+            SearchProvider(
+                key="e2e-book",
+                label="图书",
+                route="/demo/book/index",
+                list_url="api/demo/book",
+                queryset=lambda: [],
+                text_fields=("name",),
+                display_field="name",
+            )
+        )
+        assert any(provider.key == "e2e-book" for provider in SEARCH_PROVIDERS)
+
+    def test_duplicate_key_rejected(self, auth_client):
+        from system.search import SearchProvider, register_search_provider
+
+        with pytest.raises(ValueError, match="duplicate"):
+            register_search_provider(
+                SearchProvider(
+                    key="user",
+                    label="重复",
+                    route="/x",
+                    list_url="api/x",
+                    queryset=lambda: [],
+                    text_fields=("name",),
+                    display_field="name",
+                )
+            )

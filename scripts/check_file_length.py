@@ -48,6 +48,8 @@ SCAN_DIRS = sorted(
         "file",
         "audit",
         "task",
+        "dataset",
+        "ai",
     }
 ) + [
     "ops",
@@ -55,6 +57,7 @@ SCAN_DIRS = sorted(
     "integrations",
     "devtools",
     "examples",
+    "scripts",
 ]
 
 EXCLUDED_SEGMENTS = {"migrations", "tests", "__pycache__", ".venv", "node_modules"}

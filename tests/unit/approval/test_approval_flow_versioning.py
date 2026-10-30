@@ -10,7 +10,8 @@ from django.utils.translation import gettext as _gettext
 
 from approval.models.approval import ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 from approval.serializers.approval_flow import ApprovalFlowSerializer
-from approval.utils.approval_flow import approve_task, create_instance
+from approval.services.approval_flow import approve_task, create_instance
+from approval.services.approval_flow.definition import rollback_flow
 from identity.models import UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
@@ -130,7 +131,7 @@ class TestInFlightVersioning:
                 {"name": "归档", "order": 3, **NODE_CORE},
             ],
         )
-        ok, detail = ApprovalFlowSerializer().rollback_to_version(flow, 1)
+        ok, detail = rollback_flow(flow, 1)
         assert ok is True and not detail
         assert flow.nodes.count() == 2
 
@@ -210,3 +211,86 @@ class TestCreateInstanceGuards:
         instance, error = create_instance(flow=flow, applicant=applicant, title="孤儿单", form_data={})
         assert instance is None
         assert _gettext("The flow does not exist") in str(error)
+
+
+class TestInstanceFormSchemaSnapshot:
+    """实例表单 schema 按其 flow_version 的快照回显：改版后历史单不受影响。
+
+    ``form_schema`` 存在 ApprovalFlowDef 单行上且改版即覆盖——节点按版本钉住后，
+    表单定义必须同源（版本快照里本就保存了 form_schema）。
+    """
+
+    SCHEMA_V1 = [{"key": "amount", "label": "金额", "type": "number"}]
+    SCHEMA_V2 = [
+        {"key": "amount", "label": "报销金额（元）", "type": "number"},
+        {"key": "reason", "label": "事由", "type": "input"},
+    ]
+
+    @staticmethod
+    def _retrieve_schema(instance):
+        from approval.serializers.approval_instance import ApprovalInstanceSerializer
+
+        context = {"view": type("V", (), {"action": "retrieve"})()}
+        return ApprovalInstanceSerializer(instance, context=context).data["form_schema"]
+
+    def test_in_flight_instance_keeps_schema_after_revision(self, applicant, approver):
+        """改版后在途单详情仍显示旧 schema；新单用新 schema。"""
+        flow = ApprovalFlowSerializer().create(
+            {
+                "name": "流程-schema-pin",
+                "code": "schema_pin",
+                "nodes": [{"name": "审", **NODE_CORE}],
+                "form_schema": self.SCHEMA_V1,
+            }
+        )
+        instance, error = create_instance(flow=flow, applicant=applicant, title="v1 单", form_data={})
+        assert error is None, error
+
+        ApprovalFlowSerializer().update(flow, {"nodes": [{"name": "审", **NODE_CORE}], "form_schema": self.SCHEMA_V2})
+
+        instance.refresh_from_db()
+        assert instance.flow_version == 1
+        assert self._retrieve_schema(instance) == self.SCHEMA_V1
+
+        new_instance, error = create_instance(flow=flow, applicant=applicant, title="v2 单", form_data={})
+        assert error is None, error
+        assert self._retrieve_schema(new_instance) == self.SCHEMA_V2
+
+    def test_missing_snapshot_falls_back_to_live(self, applicant, approver):
+        """快照行缺失（历史脏数据）回退活定义，不抛错。"""
+        from approval.models import ApprovalFlowVersion
+
+        flow = ApprovalFlowSerializer().create(
+            {
+                "name": "流程-schema-fallback",
+                "code": "schema_fallback",
+                "nodes": [{"name": "审", **NODE_CORE}],
+                "form_schema": self.SCHEMA_V1,
+            }
+        )
+        instance, error = create_instance(flow=flow, applicant=applicant, title="快照缺失单", form_data={})
+        assert error is None, error
+
+        ApprovalFlowVersion.objects.filter(flow=flow).delete()
+        instance.refresh_from_db()
+        assert self._retrieve_schema(instance) == self.SCHEMA_V1
+
+    def test_list_action_returns_empty_schema(self, applicant, approver):
+        """列表裁剪口径不回退：list 场景 form_schema 恒空（详情独立 retrieve）。"""
+        flow = ApprovalFlowSerializer().create(
+            {
+                "name": "流程-schema-list",
+                "code": "schema_list",
+                "nodes": [{"name": "审", **NODE_CORE}],
+                "form_schema": self.SCHEMA_V1,
+            }
+        )
+        instance, error = create_instance(flow=flow, applicant=applicant, title="列表单", form_data={})
+        assert error is None, error
+
+        from approval.serializers.approval_instance import ApprovalInstanceSerializer
+
+        context = {"view": type("V", (), {"action": "list"})()}
+        # list 裁剪口径：form_schema 是详情专属字段（不在 table_fields），
+        # 列表序列化结果中直接不存在（而非存在但为空）
+        assert "form_schema" not in ApprovalInstanceSerializer(instance, context=context).data

@@ -786,7 +786,7 @@
    "menu_type": 2,
    "name": "batchDisable:SystemTask",
    "rank": 10006,
-   "path": "api/task/periodic/batch-enable$",
+   "path": "api/task/periodic/batch-disable$",
    "component": null,
    "is_active": true,
    "meta": "9bd8ac51-0d91-46cd-acb3-4b91b2dfff72",
@@ -1437,29 +1437,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "8c6f14b4-97d5-4180-ab53-f4104786d54d",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.677Z",
-   "updated_time": "2026-09-14T13:49:28.677Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "a7556f4a-4031-562e-8850-4bb0977f9ca3",
-   "menu_type": 2,
-   "name": "batchDestroy:WebhookDelivery",
-   "rank": 10002,
-   "path": "api/task/webhooks/deliveries/batch-destroy$",
-   "component": null,
-   "is_active": true,
-   "meta": "52255a5e-7654-4284-abd8-3dfadc0ecbde",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "1722d931-ea57-4ad4-9095-163f94d14734",
   "fields": {
    "created_time": "2026-09-14T13:49:28.674Z",
@@ -1482,29 +1459,6 @@
     "8108f7ab-cefc-4048-849d-dcfbb821e4a9",
     "d76a6bbf-c662-47a8-9c67-bc719d50c999"
    ]
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "22ec0d72-53ef-4cd7-ad76-7d3783b96352",
-  "fields": {
-   "created_time": "2026-09-14T13:49:28.672Z",
-   "updated_time": "2026-09-14T13:49:28.672Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "a7556f4a-4031-562e-8850-4bb0977f9ca3",
-   "menu_type": 2,
-   "name": "destroy:WebhookDelivery",
-   "rank": 10000,
-   "path": "api/task/webhooks/deliveries/(?P<pk>[^/.]+)$",
-   "component": null,
-   "is_active": true,
-   "meta": "4c9b2bc3-8a48-446e-9022-da609d97ffe5",
-   "method": "DELETE",
-   "model": []
   }
  },
  {
@@ -1792,24 +1746,93 @@
  },
  {
   "model": "system.menu",
-  "pk": "e6313dbf-70c4-4f5e-9b20-e07664e740f0",
+  "pk": "1e00d149-3f66-4186-a2fb-b7c593404c55",
   "fields": {
-   "created_time": "2026-09-23T02:13:28.252Z",
-   "updated_time": "2026-09-23T02:13:28.252Z",
+   "created_time": "2026-10-21T12:50:37.200Z",
+   "updated_time": "2026-10-21T12:50:37.200Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
    "deleted_at": null,
-   "parent": "cad6c60d-48c7-4aed-b1fa-3896a301ce1e",
+   "parent": "21205d75-8558-5405-a646-b526b3fd5009",
    "menu_type": 2,
-   "name": "batchUpdate:SystemTask",
+   "name": "rotateSecret:WebhookSubscription",
    "rank": 10000,
-   "path": "api/task/periodic/batch-update$",
+   "path": "api/task/webhooks/subscriptions/(?P<pk>[^/.]+)/rotate-secret$",
    "component": null,
    "is_active": true,
-   "meta": "a190a767-e0af-4d05-a0ea-f9fabc5d3471",
+   "meta": "031a57e9-05ee-4d58-bef8-4ff33b8a857f",
    "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "cc1961b4-15f7-4203-80e9-10b1d1eb1834",
+  "fields": {
+   "created_time": "2026-10-22T00:00:00Z",
+   "updated_time": "2026-10-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "ef380759-0acd-48cc-b5bf-691f57731f75",
+   "menu_type": 2,
+   "name": "preview:SystemTaskCrontab",
+   "rank": 10050,
+   "path": "api/task/crontab/preview$",
+   "component": null,
+   "is_active": true,
+   "meta": "f6264468-04c2-4934-aaf6-f330e69a6843",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3a012064-f8d2-49df-bc6c-fd0a36ab1297",
+  "fields": {
+   "created_time": "2026-10-22T00:00:00Z",
+   "updated_time": "2026-10-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "ef380759-0acd-48cc-b5bf-691f57731f75",
+   "menu_type": 2,
+   "name": "references:SystemTaskCrontab",
+   "rank": 10051,
+   "path": "api/task/crontab/(?P<pk>[^/.]+)/references$",
+   "component": null,
+   "is_active": true,
+   "meta": "f88afdf6-3c7d-4f97-a662-b241c17a0bdb",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5641e3af-0adb-40a0-bf27-ae4846f8b8d4",
+  "fields": {
+   "created_time": "2026-10-22T00:00:00Z",
+   "updated_time": "2026-10-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3cb6d75e-93f0-46c1-a34d-6ce81d65a12a",
+   "menu_type": 2,
+   "name": "references:SystemTaskInterval",
+   "rank": 10001,
+   "path": "api/task/interval/(?P<pk>[^/.]+)/references$",
+   "component": null,
+   "is_active": true,
+   "meta": "7ffa2210-114f-4224-b755-4f53a920c8f2",
+   "method": "GET",
    "model": []
   }
  }

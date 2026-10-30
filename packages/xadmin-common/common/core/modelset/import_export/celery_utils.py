@@ -80,26 +80,33 @@ def run_view_by_celery_task(view: Any, request: Any, kwargs: Any, data: Any, bat
     )  # 默认为任务异步导入
     if task:
         view_str = f"{view.__class__.__module__}.{view.__class__.__name__}"
-        meta = request.META
-        task_id = uuid.uuid4()
         if isinstance(data, dict):
             data = [data]
-        meta["task_count"] = math.ceil(len(data) / batch_length)
-        meta["action"] = view.action
-        # 分片任务显式携带提交者身份：任务内据此构造请求（ForcedAuthentication 直通），
-        # 不依赖 META 里的 cookie/令牌（排队超过 access token 寿命时后者会失效）
-        meta["user_pk"] = getattr(request.user, "pk", None)
+        # 白名单键构造任务 meta：整份 request.META 会把 Authorization/Cookie 等
+        # 凭证一起带进 broker（任务侧只消费下列键，见 common/tasks.py 的
+        # background_task_view_set_job），且不得再原地写入 request.META
+        meta = {
+            "REQUEST_METHOD": request.META.get("REQUEST_METHOD", request.method),
+            "PATH_INFO": request.path,
+            "QUERY_STRING": request.META.get("QUERY_STRING", ""),
+            "task_count": math.ceil(len(data) / batch_length),
+            "action": view.action,
+            # 分片任务显式携带提交者身份：任务内据此构造请求（ForcedAuthentication 直通），
+            # 不依赖 META 里的 cookie/令牌（排队超过 access token 寿命时后者会失效）
+            "user_pk": getattr(request.user, "pk", None),
+        }
         try:
             # 检查Celery是否可用，如果不可用则直接执行任务（探测结果带短缓存，避免请求内广播阻塞）
             if not has_active_celery_worker():
                 # 没有活跃的worker，直接执行任务
                 logger.warning("No active Celery workers found, executing task directly")
                 return None  # 返回None表示需要直接执行
+            task_id = uuid.uuid4()
             for index, batch in enumerate(itertools.batched(data, batch_length, strict=False)):
                 meta["task_id"] = f"{task_id}_{index}"
                 meta["task_index"] = index
                 res = background_task_view_set_job.apply_async(
-                    args=(view_str, meta, json.dumps(batch), view.action_map), task_id=meta["task_id"]
+                    args=(view_str, dict(meta), json.dumps(batch), view.action_map), task_id=meta["task_id"]
                 )
                 logger.info(f"add {view_str} task success. {res}")
             return ApiResponse(detail=_("Task add success"))

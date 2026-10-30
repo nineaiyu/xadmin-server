@@ -17,8 +17,8 @@ from types import SimpleNamespace
 import pytest
 
 from ai.models.ai import AiKnowledgeChunk, AiProfile
-from ai.utils.ai_embeddings import invalidate_vector_index, schedule_auto_rebuild, vector_stats
-from ai.utils.ai_index import invalidate_chunk_index
+from ai.services.knowledge.ai_embeddings import invalidate_vector_index, schedule_auto_rebuild, vector_stats
+from ai.services.knowledge.ai_index import invalidate_chunk_index
 
 pytestmark = pytest.mark.django_db
 
@@ -39,8 +39,8 @@ def _clear_caches():
 @pytest.fixture(autouse=True)
 def _hermetic_lock(monkeypatch):
     """锁原语打桩：默认「锁空闲」（调度可继续），释放为 no-op（不触共享 Redis）。"""
-    monkeypatch.setattr("ai.utils.embedding_progress.try_acquire_lock", lambda: True)
-    monkeypatch.setattr("ai.utils.embedding_progress.release_lock", lambda: None)
+    monkeypatch.setattr("ai.services.knowledge.embedding_progress.try_acquire_lock", lambda: True)
+    monkeypatch.setattr("ai.services.knowledge.embedding_progress.release_lock", lambda: None)
 
 
 def _make_embedding_profile(model="fake-embed"):
@@ -101,13 +101,13 @@ def _chunk_of(doc):
 
 
 def _upload(name: str, content: str):
-    from ai.utils.ai_knowledge import upsert_upload_document
+    from ai.services.knowledge.ai_knowledge import upsert_upload_document
 
     return upsert_upload_document(name, content)
 
 
 def _sync() -> dict:
-    from ai.utils.ai_knowledge import sync_knowledge
+    from ai.services.knowledge.ai_knowledge import sync_knowledge
 
     return sync_knowledge()
 
@@ -151,7 +151,7 @@ class TestAutoRebuildOnUpload:
         stub_client({"__default__": [0.5, 0.5]})
         applied = _patch_task_spy(monkeypatch)
         # 覆写夹具默认桩：锁被占（try_acquire_lock → False）
-        monkeypatch.setattr("ai.utils.embedding_progress.try_acquire_lock", lambda: False)
+        monkeypatch.setattr("ai.services.knowledge.embedding_progress.try_acquire_lock", lambda: False)
         doc, _created = _upload("backup.md", CONTENT_V1)
         assert _chunk_of(doc).embedding is None
         assert applied == []
@@ -179,8 +179,8 @@ class TestAutoRebuildOnSync:
         (docs / "a.md").write_text(f"# A\n\n{CONTENT_V1}", encoding="utf-8")
         (docs / "b.md").write_text(f"# B\n\n{CONTENT_V2}", encoding="utf-8")
         stub_client({"__default__": [0.3, 0.9], QUESTION: [1.0, 0.0]})
-        monkeypatch.setattr("ai.utils.ai_knowledge.DOCS_DIR", docs)
-        monkeypatch.setattr("ai.utils.ai_knowledge.ROOT_DOCS", [])
+        monkeypatch.setattr("ai.services.knowledge.ai_knowledge.DOCS_DIR", docs)
+        monkeypatch.setattr("ai.services.knowledge.ai_knowledge.ROOT_DOCS", [])
         summary = _sync()
         assert summary["created"] == 2
         assert summary["vector_rebuild"] is True
@@ -193,8 +193,8 @@ class TestAutoRebuildOnSync:
         docs.mkdir()
         (docs / "a.md").write_text(f"# A\n\n{CONTENT_V1}", encoding="utf-8")
         stub_client({"__default__": [0.3, 0.9]})
-        monkeypatch.setattr("ai.utils.ai_knowledge.DOCS_DIR", docs)
-        monkeypatch.setattr("ai.utils.ai_knowledge.ROOT_DOCS", [])
+        monkeypatch.setattr("ai.services.knowledge.ai_knowledge.DOCS_DIR", docs)
+        monkeypatch.setattr("ai.services.knowledge.ai_knowledge.ROOT_DOCS", [])
         assert _sync()["vector_rebuild"] is True
         assert _sync()["vector_rebuild"] is False
 

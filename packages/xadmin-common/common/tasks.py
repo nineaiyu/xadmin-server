@@ -28,7 +28,7 @@ from common.celery.utils import (
     get_celery_periodic_task,
 )
 from common.core.task_request import build_task_request
-from common.core.utils import get_doc_first_line
+from common.core.url_inventory import get_doc_first_line
 from common.local import set_current_request
 from common.notifications import BatchDeleteDataMessage, ImportDataMessage, ServerPerformanceCheckUtil
 from common.settings_contract import kernel_required_setting, kernel_setting

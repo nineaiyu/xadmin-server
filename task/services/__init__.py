@@ -48,6 +48,7 @@ __all__ = [
     "encrypt_secret",  # noqa: F822
     "sign_payload",  # noqa: F822
     "outbound_allowed_hosts",  # noqa: F822
+    "loopback_allowed",  # noqa: F822
     "validate_url",  # noqa: F822
     # 进度契约
     "update_progress",  # noqa: F822
@@ -74,15 +75,16 @@ _LAZY_EXPORTS = {
     "WebhookSubscription": "task.models",
     "WebhookDelivery": "task.models",
     "CeleryTaskRecordModel": "task.models",
-    "DisplayRelatedField": "task.serializers.task",
-    "emit_webhook_event": "task.utils.webhook",
+    "DisplayRelatedField": "common.core.fields",  # 展示增强关联字段已下沉内核（task 侧保留再导出）
+    "emit_webhook_event": "task.services.webhook",
     "deliver_webhook": "task.webhook_tasks",
-    "EVENT_CATALOG": "task.utils.webhook",
-    "decrypt_secret": "task.utils.webhook",
-    "encrypt_secret": "task.utils.webhook",
-    "sign_payload": "task.utils.webhook",
-    "outbound_allowed_hosts": "task.utils.webhook",
-    "validate_url": "task.utils.webhook",
+    "EVENT_CATALOG": "task.services.webhook",
+    "decrypt_secret": "task.services.webhook",
+    "encrypt_secret": "task.services.webhook",
+    "sign_payload": "task.services.webhook",
+    "outbound_allowed_hosts": "task.services.webhook",
+    "loopback_allowed": "task.services.webhook",
+    "validate_url": "task.services.webhook",
     "update_progress": "task.utils.task_progress",
     "KIND_REPORT": "task.utils.task_progress",
     "run_async_export": "task.services._export",

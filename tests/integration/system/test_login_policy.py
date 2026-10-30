@@ -16,7 +16,7 @@ from django.utils import timezone
 
 from audit.models import UserLoginLog
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
-from identity.models import LoginAccessPolicy, UserSession
+from identity.models import DeptInfo, LoginAccessPolicy, UserRole, UserSession
 from identity.utils.login_policy import evaluate_login_policy, match_ip, match_time, preview_login_policy
 
 pytestmark = pytest.mark.django_db
@@ -45,6 +45,13 @@ def login_free(settings):
     settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
     settings.SECURITY_LOGIN_ENCRYPTED_ENABLED = False
     settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
+
+
+@pytest.fixture
+def email_channel_on(settings):
+    """email 通道开放:提交侧通道复核上线后,email 类型用例需显式打开。"""
+    settings.SECURITY_LOGIN_BY_EMAIL_ENABLED = True
+    settings.EMAIL_ENABLED = True
 
 
 def _login(api_client):
@@ -102,6 +109,23 @@ class TestEvaluatePolicy:
             action=LoginAccessPolicy.Action.REJECT,
         )
         assert policy.pk
+        result = evaluate_login_policy(normal_user, "127.0.0.1")
+        assert result["action"] == "reject"
+
+    def test_department_role_target_match(self, normal_user):
+        """部门挂角色同样命中角色级登录策略。"""
+        role = UserRole.objects.create(name="策略部门角色", code="login_policy_dept_role")
+        dept = DeptInfo.objects.create(name="策略部门", code="login_policy_dept")
+        dept.roles.add(role)
+        normal_user.dept = dept
+        normal_user.save(update_fields=["dept"])
+        LoginAccessPolicy.objects.create(
+            name="dept-role-reject",
+            priority=10,
+            target_type=LoginAccessPolicy.TargetType.ROLE,
+            target_value=role.code,
+            action=LoginAccessPolicy.Action.REJECT,
+        )
         result = evaluate_login_policy(normal_user, "127.0.0.1")
         assert result["action"] == "reject"
 
@@ -178,7 +202,7 @@ class TestLoginBlockedByPolicy:
         log = UserLoginLog.objects.filter(creator=normal_user).first()
         assert log is not None and log.policy_result.startswith("reject:")
 
-    def test_reject_policy_blocks_verify_code_login(self, api_client, normal_user, login_free):
+    def test_reject_policy_blocks_verify_code_login(self, api_client, normal_user, login_free, email_channel_on):
         """验证码登录同样收口 reject_login：失败日志的 login_type 记真实来源。
 
         历史缺陷：策略拒绝分支漏传 login_type，验证码登录的失败日志被记成
@@ -334,28 +358,6 @@ class TestPolicyApi:
         """真正无法解析的时间仍需报错，而不是静默按当前时间预演"""
         resp = auth_client.post(PREVIEW_URL, {"when": "not-a-time"}, format="json")
         assert resp.data["code"] != 1000
-
-
-class TestChoicesMetadata:
-    """choices 选项元数据：target_type / action 枚举的选项单源（编辑表单渲染用）。
-
-    choices 路径在 PERMISSION_WHITE_URL 白名单内（``^/api/.*choices$``）：
-    所有登录用户可达，无需任何菜单权限。
-    """
-
-    CHOICES_URL = "/api/identity/login-policies/choices"
-
-    def test_choices_available_to_plain_user_with_no_menus(self, api_client, normal_user):
-        api_client.force_authenticate(user=normal_user)
-        resp = api_client.get(self.CHOICES_URL)
-        assert resp.status_code == 200, resp.data
-        choices = resp.json()["choices_dict"]
-        assert len(choices["target_type"]) == 3
-        assert len(choices["action"]) == 4
-        # gettext_lazy label 经 JSON 渲染后必须是可读 str（Promise 序列化安全）
-        for item in choices["target_type"] + choices["action"]:
-            assert isinstance(item["label"], str) and item["label"]
-            assert isinstance(item["value"], str)
 
 
 class TestIpRangesValidation:

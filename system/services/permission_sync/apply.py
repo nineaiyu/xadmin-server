@@ -12,7 +12,8 @@ from identity.services import UserRole
 from system.models import Menu, MenuMeta, ModelLabelField
 from system.utils.platform.menu import get_related_models
 
-from .constants import CRUD_BIND_ACTIONS, IMPORT_EXPORT_ACTIONS, RUNTIME_PERMISSION_PREFIXES
+from .constants import CRUD_BIND_ACTIONS, IMPORT_EXPORT_ACTIONS
+from .declarations import RUNTIME_PERMISSION_PREFIXES
 from .types import BindingFix
 
 logger = get_logger(__name__)

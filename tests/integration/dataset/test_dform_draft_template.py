@@ -82,7 +82,11 @@ class TestDraftLifecycle:
         created = auth_client.post(f"{SUBMISSIONS_URL}", {"form": form.pk, "data": {"name": "李四"}}, format="json")
         pk = created.data["data"]["pk"]
         resp = auth_client.post(f"{SUBMISSIONS_URL}/{pk}/submit", {}, format="json")
-        assert resp.data["code"] == 1001, resp.data
+        # 已生效单（status=""）按终态只读收敛：守卫先于「仅草稿可提交」检查
+        assert resp.data["code"] == 1003, resp.data
+        submission = DynamicFormSubmission.objects.get(pk=pk)
+        assert submission.status == ""
+        assert submission.data == {"name": "李四"}
 
     def test_draft_submit_with_flow_enters_engine(self, auth_client, superuser):
         approver = UserInfo.objects.create_user(username="draft_approver", password="Test@123456")
@@ -97,6 +101,65 @@ class TestDraftLifecycle:
         assert submission.status == DynamicFormSubmission.Status.PENDING
         assert submission.instance_id is not None
         assert submission.instance.biz_type == "dform_submission"
+
+    def test_submit_flow_failure_rolls_back_saved_data(self, auth_client, monkeypatch):
+        """流程发起失败必须回滚：草稿数据保持提交前原样，不能被新值覆盖或裁剪。"""
+        approver = UserInfo.objects.create_user(username="draft_rollback_approver", password="Test@123456")
+        flow = _make_flow(approver, code="dform_rollback_flow")
+        form = _make_form(name="回滚登记表", approval_flow=flow)
+        created = auth_client.post(
+            f"{SUBMISSIONS_URL}", {"form": form.pk, "data": {"name": "旧值"}, "as_draft": True}, format="json"
+        )
+        pk = created.data["data"]["pk"]
+
+        from dataset.views import dform_submission as view_module
+
+        monkeypatch.setattr(view_module, "create_flow_instance", lambda *args, **kwargs: (False, "no approver"))
+        resp = auth_client.post(f"{SUBMISSIONS_URL}/{pk}/submit", {"data": {"name": "新值"}}, format="json")
+        assert resp.data["code"] == 1001, resp.data
+        submission = DynamicFormSubmission.objects.get(pk=pk)
+        assert submission.status == DynamicFormSubmission.Status.DRAFT
+        assert submission.data == {"name": "旧值"}
+        assert submission.filter_data == {}
+
+    def test_edit_legacy_submission_uses_snapshot_schema(self, auth_client):
+        """驳回态编辑历史提交：按提交时 schema 校验，不报未知键/新增必填缺失。
+
+        提交行先置 REJECTED：已生效单（status=""）属终态只读（改写等于绕过留痕），
+        可继续编辑的是草稿与驳回态。
+        """
+        form = _make_form(
+            name="历史表单",
+            schema={
+                "fields": [
+                    {"key": "name", "label": "姓名", "type": "input", "required": True},
+                    {"key": "age", "label": "年龄", "type": "number"},
+                ]
+            },
+        )
+        created = auth_client.post(
+            f"{SUBMISSIONS_URL}", {"form": form.pk, "data": {"name": "张三", "age": 30}}, format="json"
+        )
+        pk = created.data["data"]["pk"]
+        DynamicFormSubmission.objects.filter(pk=pk).update(status=DynamicFormSubmission.Status.REJECTED)
+
+        # 改版：删除 age、新增必填 email，并把 v1 归档进 schema_history
+        form.schema_history = [{"version": form.schema_version, "schema": form.schema}]
+        form.schema = {
+            "fields": [
+                {"key": "name", "label": "姓名", "type": "input", "required": True},
+                {"key": "email", "label": "邮箱", "type": "input", "required": True},
+            ]
+        }
+        form.schema_version = 2
+        form.save(update_fields=["schema", "schema_history", "schema_version"])
+
+        resp = auth_client.patch(f"{SUBMISSIONS_URL}/{pk}", {"data": {"name": "李四", "age": 31}}, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        submission = DynamicFormSubmission.objects.get(pk=pk)
+        assert submission.data == {"name": "李四", "age": 31}
+        # 版本保持提交时版本，不用当前版本覆盖
+        assert submission.schema_version == 1
 
     def test_other_user_cannot_submit_draft(self, api_client, normal_user, menu_factory):
         """creator 隔离：他人草稿对普通用户不可见（取值域过滤 → 404），提交无从下手。"""
@@ -137,7 +200,7 @@ class TestDraftOperationApproval:
 
     def test_draft_submit_then_auto_complete_and_replay(self, api_client, normal_user, menu_factory):
         from approval.models.approval import ApprovalRequest
-        from approval.utils.approval import approve_request
+        from approval.services.approval import approve_request
 
         approver = UserInfo.objects.create_superuser(
             username="draft_op_approver", email="draft_op@example.com", password="Test@123456"

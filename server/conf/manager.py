@@ -27,18 +27,21 @@ from .config import PROJECT_DIR, Config, import_string
 # 丢失会导致登录态失效与已加密数据无法解密。
 AUTO_SECRET_KEY_FILE = os.path.join("data", ".secret_key")
 AUTO_SECRET_KEY_LENGTH = 49
+# 验证码票据密钥与 SECRET_KEY 同级的开箱兜底：独立文件持久化，多实例共享 data/ 即一致
+AUTO_CAPTCHA_TICKET_SECRET_FILE = os.path.join("data", ".captcha_ticket_secret")
+AUTO_CAPTCHA_TICKET_SECRET_LENGTH = 48
 SECRET_KEY_AUTO_GENERATE = "SECRET_KEY_AUTO_GENERATE"
 # 内部标记：本次配置来自 config_example.yml 回落（不参与用户配置）
 FALLBACK_FLAG = "_XADMIN_EXAMPLE_FALLBACK"
 
 
-def _random_secret_key() -> str:
+def _random_secret(length: int) -> str:
     alphabet = string.ascii_letters + string.digits
-    return "".join(secrets.choice(alphabet) for _ in range(AUTO_SECRET_KEY_LENGTH))
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-def _load_or_create_auto_secret_key(root_path: str) -> tuple[str, bool]:
-    """读取或创建自动生成的 SECRET_KEY；返回 ``(value, created)``。
+def _load_or_create_auto_secret(root_path: str, relative_path: str, length: int) -> tuple[str, bool]:
+    """读取或创建自动生成的密钥文件；返回 ``(value, created)``。
 
     并发安全（多 worker / migrate 容器同时首启 settings）：
     文件锁（``flock``）选举唯一写入者，写入用「临时文件 + ``os.replace``」
@@ -48,7 +51,7 @@ def _load_or_create_auto_secret_key(root_path: str) -> tuple[str, bool]:
     ``flock`` 随进程退出自动释放，无陈旧锁；只读文件系统保持旧行为
     （内存密钥 + 告警）。
     """
-    secret_path = os.path.join(root_path, AUTO_SECRET_KEY_FILE)
+    secret_path = os.path.join(root_path, relative_path)
     try:
         with open(secret_path, encoding="utf8") as f:
             value = f.read().strip()
@@ -62,8 +65,8 @@ def _load_or_create_auto_secret_key(root_path: str) -> tuple[str, bool]:
         os.makedirs(os.path.dirname(secret_path), exist_ok=True)
         lock_fd = os.open(lock_path, os.O_WRONLY | os.O_CREAT, 0o600)
     except OSError as e:
-        logger.warning("[xadmin] SECRET_KEY 自动生成后无法持久化（%s），本次仅存于内存。", e)
-        return _random_secret_key(), True
+        logger.warning("[xadmin] %s 自动生成后无法持久化（%s），本次仅存于内存。", relative_path, e)
+        return _random_secret(length), True
 
     acquired = False
     deadline = time.monotonic() + 10
@@ -86,7 +89,7 @@ def _load_or_create_auto_secret_key(root_path: str) -> tuple[str, bool]:
                     return value, False
             except OSError:
                 pass
-            value = _random_secret_key()
+            value = _random_secret(length)
             tmp_path = f"{secret_path}.{os.getpid()}.tmp"
             with open(tmp_path, "w", encoding="utf8") as f:
                 f.write(value)
@@ -100,8 +103,8 @@ def _load_or_create_auto_secret_key(root_path: str) -> tuple[str, bool]:
                 return value, False
         except OSError:
             pass
-        logger.warning("[xadmin] SECRET_KEY 文件锁等待超时，本次使用内存密钥（多进程可能不一致）。")
-        return _random_secret_key(), True
+        logger.warning("[xadmin] %s 文件锁等待超时，本次使用内存密钥（多进程可能不一致）。", relative_path)
+        return _random_secret(length), True
     finally:
         try:
             if acquired:
@@ -112,6 +115,15 @@ def _load_or_create_auto_secret_key(root_path: str) -> tuple[str, bool]:
             os.close(lock_fd)
         except OSError:
             pass
+
+
+def _load_or_create_auto_secret_key(root_path: str) -> tuple[str, bool]:
+    return _load_or_create_auto_secret(root_path, AUTO_SECRET_KEY_FILE, AUTO_SECRET_KEY_LENGTH)
+
+
+def _auto_secret_allowed(config: Config) -> bool:
+    """自动生成密钥的触发条件：无配置回退开箱 / DEBUG / 显式开启自动生成。"""
+    return bool(config.get(FALLBACK_FLAG)) or bool(config.get("DEBUG")) or bool(config.get(SECRET_KEY_AUTO_GENERATE))
 
 
 class ConfigManager:
@@ -237,10 +249,7 @@ class ConfigManager:
         """
         if config.get("SECRET_KEY"):
             return
-        auto = (
-            bool(config.get(FALLBACK_FLAG)) or bool(config.get("DEBUG")) or bool(config.get(SECRET_KEY_AUTO_GENERATE))
-        )
-        if not auto:
+        if not _auto_secret_allowed(config):
             return
         value, created = _load_or_create_auto_secret_key(root_path)
         config["SECRET_KEY"] = value
@@ -251,6 +260,31 @@ class ConfigManager:
             "[xadmin] 使用自动密钥时请持久化 data/ 目录——密钥丢失将导致登录态失效与已加密数据无法解密。\n",
             action,
             os.path.join(root_path, AUTO_SECRET_KEY_FILE),
+        )
+
+    @staticmethod
+    def _ensure_captcha_ticket_secret(config: Config, root_path: str) -> None:
+        """CAPTCHA_TICKET_SECRET 缺失时的开箱即用兜底（与 SECRET_KEY 同触发条件）。
+
+        显式配置的生产环境仍保持为空，由系统检查拒绝启动（captcha.E002），
+        避免多实例部署静默使用各自生成的票据密钥。源码部署与安装器分别在
+        ops/init_config.sh / prepare_config 中显式生成并写回配置。
+        """
+        if config.get("CAPTCHA_TICKET_SECRET"):
+            return
+        if not _auto_secret_allowed(config):
+            return
+        value, created = _load_or_create_auto_secret(
+            root_path, AUTO_CAPTCHA_TICKET_SECRET_FILE, AUTO_CAPTCHA_TICKET_SECRET_LENGTH
+        )
+        config["CAPTCHA_TICKET_SECRET"] = value
+        action = "已自动生成并保存到" if created else "已复用"
+        logger.warning(
+            "\n[xadmin] 未检测到 CAPTCHA_TICKET_SECRET，%s %s（仅用于开发/首次体验）。\n"
+            "[xadmin] 生产环境请通过 config.yml 或环境变量 CAPTCHA_TICKET_SECRET 显式配置"
+            "（多实例部署必须一致）。\n",
+            action,
+            os.path.join(root_path, AUTO_CAPTCHA_TICKET_SECRET_FILE),
         )
 
     @classmethod
@@ -276,4 +310,5 @@ class ConfigManager:
             raise ImportError(msg)
 
         cls._ensure_secret_key(config, root_path)
+        cls._ensure_captcha_ticket_secret(config, root_path)
         return config

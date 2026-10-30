@@ -23,6 +23,7 @@ from rest_framework.decorators import action
 
 from common.core.filter import ControlledLookupFilterBackend
 from common.core.modelset import ListDeleteModelSet
+from common.core.permission_meta import shared_permissions
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from task.models.task import TaskExecution
@@ -75,6 +76,12 @@ class TaskExecutionFilter(filters.FilterSet):
         return queryset.filter(~(has_export | has_import))
 
 
+@shared_permissions(
+    path="api/task/executions",
+    methods={
+        "GET": ("list:SystemTaskExecution", "log:SystemTask"),
+    },
+)
 class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
     """Celery 任务执行日志
 

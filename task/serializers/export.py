@@ -62,6 +62,7 @@ class ExportRecordSerializer(BaseModelSerializer):
             "rows",
             "filesize",
             "creator",
+            "error",
             "created_time",
         ]
         read_only_fields = fields

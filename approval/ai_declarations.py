@@ -14,8 +14,8 @@ from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
-from ai.utils.ai_action_types import MAX_REASON_LENGTH, ActionSpec, always_available, never_requires_approval
-from ai.utils.ai_api_actions import IN_QUERY, api_action, requires_approval_high_risk
+from ai.services.actions.ai_action_types import MAX_REASON_LENGTH, ActionSpec, always_available, never_requires_approval
+from ai.services.actions.ai_api_actions import IN_QUERY, api_action, requires_approval_high_risk
 
 
 def _parse_date(value: Any) -> Any:

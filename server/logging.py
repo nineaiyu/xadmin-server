@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 from logging.handlers import TimedRotatingFileHandler
 from typing import Any
 
-from common.core.sensitive import SENSITIVE_FIELDS
+from common.core.auth.sensitive import SENSITIVE_FIELDS
 from server.utils import get_current_request
 
 # 按天目录滚动（rotator 把旧日志移入 日期/ 子目录）后，
@@ -82,7 +82,7 @@ class SensitiveDataFilter(logging.Filter):
     操作日志链路的请求体/响应体已由 ``oplog_recorder.desensitize_payload`` 收敛，
     本过滤器补齐**运行日志面**：自定义 logger 的 f-string 插值、第三方库拼进消息
     或异常栈的 ``password=…`` / ``"token": "…"` 等键值形态不再明文落盘（日志文件
-    保留期长，明文凭证等同泄露）。名单复用 ``common.core.sensitive.SENSITIVE_FIELDS``
+    保留期长，明文凭证等同泄露）。名单复用 ``common.core.auth.sensitive.SENSITIVE_FIELDS``
     （与操作日志同源）；该模块纯常量零依赖，可在 dictConfig 期安全导入
     （oplog_recorder 本体带 app 注册表依赖，不能在此期 import）。
 

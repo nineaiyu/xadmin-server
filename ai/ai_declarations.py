@@ -2,13 +2,13 @@
 # -*- coding:utf-8 -*-
 """AI 自身能力的动作声明（知识库目录 / 用量自观测，只读）。
 
-由 ``ai.utils.ai_registry`` 自动发现；标注 ``modules=("ai",)``，停用 AI 模块后
+由 ``ai.services.actions.ai_registry`` 自动发现；标注 ``modules=("ai",)``，停用 AI 模块后
 目录与执行一起收敛（AI 模块本身可裁剪）。
 """
 
 from django.utils.translation import gettext_lazy as _
 
-from ai.utils.ai_api_actions import IN_QUERY, api_action
+from ai.services.actions.ai_api_actions import IN_QUERY, api_action
 
 AI_ACTIONS = {
     "knowledge.list": api_action(

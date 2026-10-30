@@ -3,7 +3,7 @@
 - 状态：已接受（2026-09-13 实现落地）
 - 日期：2026-09-13
 - 关联：年度开发计划 2026.10-2027.09 §四 2027-08（G11）；ADR-008/ADR-022（PAT 与 webhook 签名）；
-  `system/models/token.py::PersonalAccessToken`、`common/core/auth.py`（`hash_pat_token` /
+  `system/models/token.py::PersonalAccessToken`、`common/core/auth/authentication.py`（`hash_pat_token` /
   `PersonalAccessTokenAuthentication`）、`common/core/permission.py`（`resolve_pat_scopes` /
   `PatScopePermission`）、`system/utils/webhook.py`（HMAC 签名）
 
@@ -60,7 +60,7 @@ ApiApplication（应用）
 - `system/models/token.py`：`ApiApplication` + `PersonalAccessToken.api_application`（迁移 `0021`）；
 - `system/views/open.py`：换发端点（凭据失败显式 401——无认证类的视图抛 `AuthenticationFailed` 会被 DRF 归一为 403）、
   `ApiApplicationViewSet`（create 返回一次性 secret + `regenerate-secret` 轮换 + `test-callback`）；
-- `common/core/auth.py`：`check_api_application_rate_limit` + 认证处校验应用停用/过期；
+- `common/core/auth/authentication.py`：`check_api_application_rate_limit` + 认证处校验应用停用/过期；
 - 种子：页面菜单 + 7 个权限码（list/retrieve/create/partialUpdate/destroy/regenerateSecret/testCallback）；
 - 前端：`集成管理 → API 应用`（管理页 + 一次性密钥弹窗 + 回调测试）；白名单 `^/api/system/open/token$`。
 

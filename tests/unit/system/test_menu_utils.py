@@ -35,6 +35,21 @@ class TestGetViewPermissions:
     def test_unknown_view_returns_empty(self):
         assert get_view_permissions("identity.views.admin.user.NoSuchViewSet") == []
 
+    def test_plain_viewset_action_title_from_docstring(self):
+        """纯 viewsets.ViewSet + @action：动态路由 mapping 由 get_urls 期才装配，
+        标题必须取自 action docstring 首行，而非回退成视图名字符串
+        （回退形态形如 ``system.views.admin.codegen.SystemCodeGenViewSet``，
+        会被菜单 i18n 守护当作未登记 key 拦下）。"""
+        perms = get_view_permissions("system.views.admin.codegen.SystemCodeGenViewSet", "SystemCodeGen")
+        assert perms
+        ai_draft = [p for p in perms if p["code"] == "aiDraft:SystemCodeGen"]
+        assert len(ai_draft) == 1
+        assert ai_draft[0]["description"] == "AI 字段草案"
+        assert ai_draft[0]["url"].endswith("api/system/codegen/ai-draft$")
+        # 无 docstring 的动作回退视图摘要（视图 docstring 首行），同样不是视图名
+        for perm in perms:
+            assert "views.admin" not in perm["description"]
+
 
 class TestMenuTitlePolicy:
     """菜单标题口径：首行短、无句号、{cls} 展开后仍短。"""

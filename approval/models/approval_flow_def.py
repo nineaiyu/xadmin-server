@@ -29,6 +29,9 @@ class ApprovalFlow(DbAuditModel):
     code = models.CharField(_("Flow code"), max_length=64, unique=True)
     form_schema = models.JSONField(_("Form schema"), default=list, blank=True)
     is_active = models.BooleanField(_("Is active"), default=True, db_index=True)
+    # 可发起角色（角色 code 列表）：空 = 所有用户可发起；非空 = 仅这些角色的用户
+    # 能在 available-flows 看到并可发起（创建入口同样校验，防止绕过列表直调接口）
+    initiator_roles = models.JSONField(_("Initiator roles"), default=list, blank=True)
     # 当前定义版本号：每次节点/表单定义变化 +1，并在 ApprovalFlowVersion 落全量快照
     # （回滚 = 把历史快照写入活定义并落新版本）
     version = models.IntegerField(_("Definition version"), default=0)
@@ -40,6 +43,27 @@ class ApprovalFlow(DbAuditModel):
 
     def __str__(self) -> str:
         return f"{self.name}({self.code})"
+
+    @classmethod
+    def visible_to(cls, user: Any) -> Any:
+        """当前用户可发起的流程：空 ``initiator_roles`` 对所有用户公开。"""
+        from common.core.roles import user_role_codes
+
+        queryset = cls.objects.filter(is_active=True)
+        if getattr(user, "is_superuser", False):
+            return queryset
+        role_codes = sorted(user_role_codes(user))
+        scope = models.Q(initiator_roles=[])
+        for code in role_codes:
+            scope |= models.Q(initiator_roles__contains=[code])
+        return queryset.filter(scope)
+
+    def user_can_initiate(self, user: Any) -> bool:
+        from common.core.roles import user_role_codes
+
+        if getattr(user, "is_superuser", False) or not self.initiator_roles:
+            return True
+        return bool(user_role_codes(user) & set(self.initiator_roles))
 
 
 class ApprovalFlowNodeQuerySet(models.QuerySet):

@@ -8,12 +8,24 @@
 from typing import Any
 
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
+from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
+from rest_framework.viewsets import GenericViewSet
 
-from common.core.credentials import filter_out_sensitive_rows
+from common.core.auth.credentials import MASK, filter_out_sensitive_rows
 from common.core.filter import BaseFilterSet
-from common.core.modelset import ImportExportDataAction, ListDeleteModelSet, NoDetailModelSet
+from common.core.modelset import (
+    DetailAction,
+    ListAction,
+    NoDetailModelSet,
+    OnlyExportDataAction,
+    SearchColumnsAction,
+    SearchFieldsAction,
+)
+from common.core.modelset.base import BaseViewSet
+from common.core.permission import get_user_permission_codes
 from common.utils import get_logger
 from settings.models import Setting
 from settings.serializers.basic import BasicSettingSerializer
@@ -27,20 +39,33 @@ class BaseSettingViewSet(NoDetailModelSet):
     serializer_class = BasicSettingSerializer
     category = "basic"
     serializer_class_mapper: dict[str, Any] = {}
+    #: ?category= 允许的取值域；None = 由 mapper 键与端点默认 category 推导。
+    #: 显式声明用于「mapper 只覆盖部分渠道、其余渠道走公共字段面」的端点（如短信）。
+    category_whitelist: frozenset[str] | None = None
 
     def get_serializer_class(self) -> Any:
         if not self.serializer_class_mapper:
             return super().get_serializer_class()
-        self.category = self.request.query_params.get("category", "basic")
+        # 未带 ?category= 时回落到端点自身的默认渠道（SMS=alibaba），不再一律 basic
+        requested = str(self.request.query_params.get("category") or "").strip()
+        if requested:
+            allowed = self.category_whitelist
+            if allowed is None:
+                allowed = frozenset(self.serializer_class_mapper) | {self.category}
+            if requested not in allowed:
+                # 校验取值域：parse_serializer_data 会把 self.category 写进 Setting，
+                # 未校验时拼错的 category 会静默落到新分区，读侧永远查不到。
+                raise ValidationError({"category": _("Unsupported category: {}").format(requested)})
+            self.category = requested
         cls = self.serializer_class_mapper.get(self.category, self.serializer_class)
         return cls
 
     def metadata_extra_cache_key(self, request: Request) -> str:
         """元数据字段面随 `?category=` 变化（get_serializer_class 收敛），并入缓存键。"""
-        return str(self.request.query_params.get("category") or "")
+        return str(request.query_params.get("category") or self.category)
 
     def get_fields(self) -> dict[str, Any]:
-        serializer = self.get_serializer_class()()
+        serializer = self.get_serializer_class()(context=self.get_serializer_context())
         fields: dict[str, Any] = serializer.get_fields()
         return fields
 
@@ -54,6 +79,45 @@ class BaseSettingViewSet(NoDetailModelSet):
                 obj[item] = None
         return obj
 
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """只读派生字段钩子（默认无）：子类覆写以在 GET/PUT 响应中附加计算值。
+
+        经 SettingSaveContractMixin.to_representation 注入序列化输出——不声明
+        为 serializer 字段，列元数据与保存契约均不受影响。典型用途：设置 tab
+        的「实际生效状态」诊断（settings.services.build_setting_effective）。
+        """
+        return {}
+
+    def get_permission_field_groups(self) -> dict[str, set[str]]:
+        """按权限码分组的字段面（默认不做字段级隔离）。
+
+        同一 ``path+method`` 登记多个权限点的端点，在视图声明处用
+        ``@shared_permissions(..., field_groups={...})`` 登记分组；未持有对应
+        权限码却提交组内字段时返回 400，权限码按当前 HTTP 方法取。
+        """
+        from common.core.permission_meta import shared_field_groups
+
+        return shared_field_groups(self, self.request.method)
+
+    def enforce_field_permission_groups(self) -> None:
+        groups = self.get_permission_field_groups()
+        if not groups:
+            return
+        user = self.request.user
+        if getattr(user, "is_superuser", False):
+            return
+        submitted = set(self.request.data.keys())
+        held = get_user_permission_codes(user, self.request.method)
+        errors: dict[str, str] = {}
+        for code, fields in groups.items():
+            denied = submitted & fields
+            if not denied or code in held:
+                continue
+            for name in denied:
+                errors[name] = _("No permission to modify this setting")
+        if errors:
+            raise ValidationError(errors)
+
     def parse_serializer_data(self, serializer: Any) -> list[dict[str, Any]]:
         data: list[dict[str, Any]] = []
         fields = self.get_fields()
@@ -61,6 +125,11 @@ class BaseSettingViewSet(NoDetailModelSet):
         for name, value in serializer.validated_data.items():
             encrypted = name in encrypted_items
             if encrypted and value in ["", None]:
+                continue
+            # 掩码占位值永不落库：响应回填的掩码被前端表单原样回传时，
+            # 视同「未修改」丢弃该键（与 SettingSerializer 写入侧同口径），
+            # 避免把占位串加密成新密钥
+            if encrypted and value == MASK:
                 continue
             data.append({"name": name, "value": value, "encrypted": encrypted, "category": self.category})
         return data
@@ -70,15 +139,17 @@ class BaseSettingViewSet(NoDetailModelSet):
 
         - 仅 request.data 显式提交的键持久化（带 default 的可选字段未提交不落库，
           PUT 同口径——设置页语义是「改了什么存什么」）；write_only 密文提交
-          空值 = 不修改（回退已存值）；
+          空值或掩码占位值 = 不修改（回退已存值）；
         - 响应载荷 = 未提交键取运行时当前值 + 变更键取新值的合并视图，经
-          set_response_data 显式回写（不再裸改 serializer._data）；
+          set_response_data 显式回写（不再裸改 serializer._data）；加密键的
+          变更值以掩码占位回填，不回显明文（与设置台账列表口径一致）；
         - serializer.change_fields = 实际落库且值变化的键名；
         - 序列化器可实现 post_save() 做联动失效/响应整形（change_fields 与响应
           载荷已就绪；运行时 settings 由 pub/sub 订阅者异步热更）。
         未经契约混入的序列化器（二开存量）维持旧 _data/_change_fields 写入一个
         版本周期。
         """
+        self.enforce_field_permission_groups()
         post_data_names = set(self.request.data.keys())
         settings_items = self.parse_serializer_data(serializer)
         serializer_data = serializer.data
@@ -91,7 +162,12 @@ class BaseSettingViewSet(NoDetailModelSet):
                 continue
             assert setting is not None  # 契约：changed 为真时必有实例（此处仅作类型收窄）
             change_fields.append(setting.name)
-            serializer_data[setting.name] = setting.cleaned_value
+            if setting.encrypted:
+                # write_only 密文键（密文键不回显）：响应不回显明文，回填占位掩码，
+                # 与设置台账列表的输出掩码口径一致（掩码回传不会落库，见 parse_serializer_data）
+                serializer_data[setting.name] = MASK
+            else:
+                serializer_data[setting.name] = setting.cleaned_value
         if hasattr(serializer, "set_response_data"):
             serializer.set_response_data(serializer_data)
             serializer.change_fields = change_fields
@@ -119,8 +195,25 @@ class SettingFilter(BaseFilterSet):
         fields = ["pk", "is_active", "name", "category", "value"]
 
 
-class SettingViewSet(ListDeleteModelSet, ImportExportDataAction):
-    """系统设置"""
+class SettingViewSet(
+    BaseViewSet,
+    # OnlyExportDataAction 继承 ListAction：必须排在 ListAction 之前，否则 MRO 冲突
+    OnlyExportDataAction,
+    ListAction,
+    DetailAction,
+    SearchFieldsAction,
+    SearchColumnsAction,
+    GenericViewSet,
+):
+    """系统设置
+
+    只读台账（页面名「设置台账」）：写入唯一入口是各 typed 设置页（``/api/settings/*`` 的序列化器：字段白名单 +
+    write_only 加密 + 保存契约）。本视图只保留 list / retrieve / 导出：
+    历史继承 ImportExportDataAction 时，任一持 create/partialUpdate 的角色都能
+    直接向 Setting 表写任意 name，并显式 ``encrypted=false`` 绕过 typed 校验与
+    敏感键加密，属「第二条写路径」缺陷。需要清理存量脏行时使用维护命令而不是
+    管理页删除入口，避免误删运行期配置。
+    """
 
     queryset = Setting.objects.all()
     serializer_class = SettingSerializer

@@ -4,7 +4,7 @@
 > 本文给出现状、启用步骤、成本口径、演练流程与回滚。
 > **✅ 2026-09-16 已启用**（发布窗口执行：archive_mode=on 重启 + gzip 压缩归档 + 归档滞后告警接线，
 > 归档卷为同盘独立目录——单机退让决策与迁移条件见 §6）。
-> 相关：[deployment.md](deployment.md)（备份总览）、[backup-drill-*.md](backup-drill-2027-03.md)（既有演练口径）、`ops/pitr_drill.sh`（链路检查助手）。
+> 相关：[deployment.md](deployment.md)（备份总览）、（既有演练记录已清理）、`ops/pitr_drill.sh`（链路检查助手）。
 
 ## 1. 现状与目标
 

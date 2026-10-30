@@ -27,8 +27,24 @@ def _create_role(auth_client, name="导出角色", code="export_role", **kwargs)
     return resp.data["data"]["pk"]
 
 
+XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def _body(resp) -> bytes:
+    """导出响应正文：流式化后 CSV/xlsx 走 FileResponse（没有 ``.content``）。
+
+    ``streaming_content`` 是一次性生成器：同一响应多次断言须复用首次读到的字节。
+    """
+    cached = getattr(resp, "_probe_body", None)
+    if cached is not None:
+        return cached
+    raw = b"".join(resp.streaming_content) if getattr(resp, "streaming", False) else resp.content
+    resp._probe_body = raw
+    return raw
+
+
 def _load_xlsx(resp):
-    return openpyxl.load_workbook(io.BytesIO(resp.content)).active
+    return openpyxl.load_workbook(io.BytesIO(_body(resp))).active
 
 
 class TestExportXlsx:
@@ -39,7 +55,7 @@ class TestExportXlsx:
         resp = auth_client.get(f"{EXPORT_URL}?type=xlsx")
 
         assert resp.status_code == 200
-        assert resp["Content-Type"].startswith("application/xlsx")
+        assert resp["Content-Type"] == XLSX_MIME
         disposition = resp["Content-Disposition"]
         # 文件名前缀取模型名小写（UserRole → userrole）
         assert 'filename="userrole_' in disposition and '.xlsx"' in disposition
@@ -65,7 +81,7 @@ class TestExportXlsx:
         """空数据集导出：仅表头行，仍是合法 xlsx。"""
         resp = auth_client.get(f"{EXPORT_URL}?type=xlsx&name=不存在的角色")
         assert resp.status_code == 200
-        assert resp["Content-Type"].startswith("application/xlsx")
+        assert resp["Content-Type"] == XLSX_MIME
         assert _load_xlsx(resp).max_row == 1
 
     def test_export_with_chinese_and_special_chars(self, auth_client):
@@ -86,8 +102,8 @@ class TestExportCsv:
 
         assert resp.status_code == 200
         assert resp["Content-Type"].startswith("text/csv")
-        assert resp.content.startswith(codecs.BOM_UTF8)
-        text = resp.content.decode("utf-8-sig")
+        assert _body(resp).startswith(codecs.BOM_UTF8)
+        text = _body(resp).decode("utf-8-sig")
         assert "(name)" in text.splitlines()[0]
         # CSV_FILE_ESCAPE_CHARS（=/@/0）开头的单元格需转义，防公式注入
         assert "'=evil角色" in text
@@ -97,7 +113,7 @@ class TestExportCsv:
         resp = auth_client.get(f"{EXPORT_URL}?type=csv&name=不存在")
         assert resp.status_code == 200
         assert resp["Content-Type"].startswith("text/csv")
-        text = resp.content.decode("utf-8-sig")
+        text = _body(resp).decode("utf-8-sig")
         assert len(text.splitlines()) == 1
 
 
@@ -126,7 +142,7 @@ class TestExportTemplates:
         _create_role(auth_client)
         resp = auth_client.get(f"{EXPORT_URL}?type=unknown")
         assert resp.status_code == 200
-        assert resp["Content-Type"].startswith("application/xlsx")
+        assert resp["Content-Type"] == XLSX_MIME
 
     def test_menu_import_template_includes_pk_for_self_relation(self, auth_client):
         """菜单（自关联模型）import 模板：需包含 pk 列用于拓扑排序。"""

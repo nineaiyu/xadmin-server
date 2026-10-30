@@ -72,32 +72,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "5c53f18e-633f-4664-b627-287e7aa20358",
-  "fields": {
-   "created_time": "2024-10-30T11:30:25.439Z",
-   "updated_time": "2024-10-31T09:36:33.129Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
-   "menu_type": 2,
-   "name": "retrieve:SystemUserLoginLog",
-   "rank": 117,
-   "path": "api/audit/logs/login/(?P<pk>[^/.]+)$",
-   "component": null,
-   "is_active": true,
-   "meta": "e3fabbc2-58ff-4fec-a092-c2efaed4d267",
-   "method": "GET",
-   "model": [
-    "585d2a2a-1c9b-42de-9b69-113e150da4a2",
-    "14071ee3-6725-4fcc-962d-ad7898efa284"
-   ]
-  }
- },
- {
-  "model": "system.menu",
   "pk": "66847cd8-ab49-42ae-bb60-a32e42e69ea8",
   "fields": {
    "created_time": "2024-01-22T09:32:10.589Z",

@@ -6,6 +6,7 @@
 # date : 6/16/2023
 from typing import Any
 
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 
@@ -65,7 +66,7 @@ class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDa
 
 class UserPersonalConfigFilter(SystemConfigFilter):
     pk = filters.UUIDFilter(field_name="id")
-    username = filters.CharFilter(field_name="owner__username")
+    username = filters.CharFilter(field_name="owner__username", lookup_expr="icontains")
     owner_id = PkMultipleFilter(input_type="api-search-user")
 
     class Meta:
@@ -82,3 +83,11 @@ class UserPersonalConfigViewSet(SystemConfigViewSet):
     filterset_class = UserPersonalConfigFilter
     import_data_serializer_class = UserPersonalConfigExportImportSerializer
     export_data_serializer_class = UserPersonalConfigExportImportSerializer
+
+    @shared_list_action(methods=["get"], detail=False, url_path="registered-keys")  # type: ignore[untyped-decorator]  # 第三方装饰器无类型存根
+    def registered_keys(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """注册键清单（仅系统配置）
+
+        用户配置继承该动作会形成语义错误的空转端点。
+        """
+        return ApiResponse(code=1001, detail=_("Not supported for user config"))

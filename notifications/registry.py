@@ -5,7 +5,8 @@
 from typing import Any
 
 from common.utils import get_logger
-from notifications.backends import BACKEND
+from notifications.backends import CHANNEL_SPECS
+from notifications.backends.specs import ChannelSpec, register_channel_spec
 from notifications.notifications import (
     SYSTEM_MESSAGE_REGISTRY,
     USER_MESSAGE_REGISTRY,
@@ -42,6 +43,8 @@ def register_message(cls: Any) -> Any:
         "message_type_label": cls.message_type_label,
         "category": cls.category,
         "category_label": cls.category_label,
+        # 系统消息是否开放个人订阅页自选（视图层据此合并展示，默认 False）
+        "user_subscribable": bool(getattr(cls, "user_subscribable", False)),
         # 类引用：post_migrate 补建订阅时回调 cls.post_insert_to_db
         "cls": cls,
     }
@@ -54,11 +57,27 @@ def register_message(cls: Any) -> Any:
     return cls
 
 
-# 内置后端渲染方法注册（新增后端时在各自模块加一行 register_backend_msg 即可）
-register_backend_msg(BACKEND.EMAIL, "get_email_msg")
-register_backend_msg(BACKEND.SITE_MSG, "get_site_msg_msg")
-register_backend_msg(BACKEND.SMS, "get_sms_msg")
-# IM 渠道：文本消息共用 HTML 转纯文本渲染
-register_backend_msg(BACKEND.DINGTALK, "get_text_msg")
-register_backend_msg(BACKEND.WECOM, "get_text_msg")
-register_backend_msg(BACKEND.FEISHU, "get_text_msg")
+# 内置后端渲染方法注册：渠道 → 渲染方法由 backends/specs.py 单一声明派生
+for _spec in CHANNEL_SPECS:
+    if not hasattr(Message, _spec.renderer):
+        logger.error(
+            "Notification channel %s declares missing renderer %s, fallback to common message",
+            _spec.code,
+            _spec.renderer,
+        )
+        continue
+    register_backend_msg(_spec.code, _spec.renderer)
+
+
+def register_channel(spec: ChannelSpec) -> ChannelSpec:
+    """登记通知渠道（二开扩展点）：spec 清单 + 渲染方法接线一次完成。
+
+    与内置渠道的导入期注册不同，本入口在运行期调用并立即生效；渲染方法必须
+    已定义（fail-fast——静默回退公共渲染会让新渠道的排版问题难排查）。
+    spec 清单的登记/冲突判定见 ``notifications.backends.specs.register_channel_spec``。
+    """
+    if not hasattr(Message, spec.renderer):
+        raise ValueError(f"Notification channel {spec.code!r} declares missing renderer {spec.renderer!r}")
+    register_channel_spec(spec)
+    register_backend_msg(spec.code, spec.renderer)
+    return spec

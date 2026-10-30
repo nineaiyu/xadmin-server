@@ -156,6 +156,12 @@ class UploadSession(DbAuditModel):
     chunk_size = models.IntegerField(verbose_name=_("Chunk size"))
     # 客户端可选声明的内容指纹（整文件 md5）：complete 时一致性校验，为空跳过
     md5sum = models.CharField(max_length=36, verbose_name=_("File md5sum"), blank=True, default="")
+    # 断点续传的会话键：客户端算出的整文件 SHA-256（64 位十六进制），complete 期
+    # 由合并结果复算比对。只按「同名 + 同大小」命中会把两个不同文件拼成一个，
+    # 内容指纹是唯一的正确性依据，因此 init 必填。
+    content_hash = models.CharField(
+        max_length=64, verbose_name=_("Content hash"), blank=True, default="", db_index=True
+    )
     mime_type = models.CharField(max_length=255, verbose_name=_("Mime type"), blank=True, default="")
     status = models.CharField(verbose_name=_("Status"), max_length=16, choices=Status.choices, default=Status.PENDING)
     upload = models.ForeignKey(
@@ -171,7 +177,7 @@ class UploadSession(DbAuditModel):
         verbose_name = _("Upload session")
         verbose_name_plural = verbose_name
         indexes = [
-            # 断点续传命中：同属主同名同大小的未完成会话
+            # 断点续传命中：同属主 + 同名同大小 + 同内容指纹的未完成会话
             models.Index(fields=["creator", "filename", "filesize", "status"], name="idx_upsess_resume"),
             # 过期清理（pending 会话 + 终态会话行）按时间扫描
             models.Index(fields=["status", "created_time"], name="idx_upsess_status_created"),

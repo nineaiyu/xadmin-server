@@ -12,15 +12,17 @@ from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 
 from audit.models import UserLoginLog
 from audit.serializers.log import LoginLogSerializer
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import OnlyExportDataAction, OnlyListModelSet
+from common.core.pagination import KeysetPageNumber
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from message.services import send_logout_msg
+from identity.utils.session import force_logout_user
 
 
 class LoginLogFilter(BaseFilterSet):
@@ -45,6 +47,7 @@ class LoginLogViewSet(OnlyListModelSet, OnlyExportDataAction):
 
     queryset = UserLoginLog.objects.all()
     serializer_class = LoginLogSerializer
+    pagination_class = KeysetPageNumber
 
     ordering_fields = ["created_time"]
     filterset_class = LoginLogFilter
@@ -54,12 +57,13 @@ class LoginLogViewSet(OnlyListModelSet, OnlyExportDataAction):
     def logout(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """强退用户"""
         instance = self.get_object()
+        # 超管会话只有超管能踢：登录日志强退与在线用户管理同口径
+        if instance.creator is not None and instance.creator.is_superuser and not request.user.is_superuser:
+            raise PermissionDenied(_("Cannot force logout a superuser"))
         # creator / channel_name 可能为空（历史日志、系统记录）：空值返回可读错误，避免 AttributeError 500
         if not instance.creator_id or not instance.channel_name:
             return ApiResponse(code=400, detail=_("This login record cannot be forcibly logged out"))
-        hit = send_logout_msg(instance.creator_id, [instance.channel_name])
-        if not hit:
-            # 会话已下线（channel 已不在推送组）：记录留存不受影响，仍算成功，
-            # 但给出可读提示让操作者知道无需重复下线，而非静默成功
-            return ApiResponse(detail=_("The session is already offline"))
+        # 与用户管理 / 在线会话页同口径：吊销全部 HTTP 令牌 + refresh 黑名单 +
+        # WS 推送 + 会话置离线。只推 WS 会让 access token 在剩余有效期内继续可用。
+        force_logout_user(instance.creator_id, operator=request.user)
         return ApiResponse()

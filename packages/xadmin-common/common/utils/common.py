@@ -8,6 +8,7 @@
 import logging
 import os
 import socket
+from typing import Any
 
 import html2text
 import psutil
@@ -99,6 +100,28 @@ def test_ip_connectivity(host: str, port: int | str, timeout: float = 0.5) -> bo
     else:
         connectivity = False
     return connectivity
+
+
+TRUE_BOOL_STRINGS = frozenset({"1", "true", "yes", "on"})
+FALSE_BOOL_STRINGS = frozenset({"0", "false", "no", "off", ""})
+
+
+def parse_bool(value: Any) -> bool:
+    """解析布尔入参：bool / 0|1 / 常见字符串；无法识别抛 ValueError。
+
+    不能直接用 ``bool(value)``——``bool("false")`` 为 True，会把停用请求当启用执行。
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in TRUE_BOOL_STRINGS:
+            return True
+        if normalized in FALSE_BOOL_STRINGS:
+            return False
+    raise ValueError(f"invalid boolean value: {value!r}")
 
 
 def convert_html_to_markdown(html_str: str) -> str:

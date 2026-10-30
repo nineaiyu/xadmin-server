@@ -22,10 +22,10 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core.cache import cache
 
-from dataset.analysis_tasks import _screen_has_viewers, push_screen_data
+from dataset.analysis_tasks import _group_has_viewers, push_screen_data
 from dataset.models.dataset import Dashboard, Dataset, Screen
 from dataset.screen_data import build_screen_data_payload, collect_screen_cards
-from dataset.views import analysis as analysis_views
+from dataset.views import screen as screen_views
 from dataset.ws_screen import (
     MIN_DATA_PUSH_INTERVAL,
     SCREEN_TRIGGER_MERGE_WINDOW,
@@ -38,7 +38,7 @@ from dataset.ws_screen import (
     screen_push_due,
     screen_push_ts_key,
 )
-from message.protocol import MessageAction
+from message.ws.protocol import MessageAction
 from system.models import ModelLabelField
 
 pytestmark = pytest.mark.django_db
@@ -180,6 +180,16 @@ class TestCollectScreenCards:
             (str(dashboard_a.pk), "c2"),
         ]
 
+    def test_personal_dashboard_not_pushed_to_other_viewer(self, dashboard_a, superuser, normal_user):
+        """personal 仪表盘只对创建者可见：帧展开不把卡片数据推给其他浏览者。"""
+        dashboard_a.visibility = "personal"
+        dashboard_a.creator = superuser
+        dashboard_a.save(update_fields=["visibility", "creator"])
+        screen = _make_screen(superuser, [dashboard_a])
+
+        assert [ref["card"] for ref in collect_screen_cards(screen, user=superuser)] == ["c1", "c2"]
+        assert collect_screen_cards(screen, user=normal_user) == []
+
     def test_card_level_permission_filter(self, dashboard_a, superuser, normal_user):
         dashboard_a.layout[0]["allowed_roles"] = ["nobody_role"]
         dashboard_a.save(update_fields=["layout"])
@@ -189,6 +199,14 @@ class TestCollectScreenCards:
         assert [ref["card"] for ref in collect_screen_cards(screen, user=superuser)] == ["c1", "c2"]
         # 浏览者：未命中 allowed_roles 的卡片不参与聚合（与仪表盘读取侧同口径）
         assert [ref["card"] for ref in collect_screen_cards(screen, user=normal_user)] == ["c2"]
+
+    def test_dashboard_creator_bypasses_card_roles(self, dashboard_a, normal_user):
+        """创建者旁路：自己仪表盘上的受限卡片仍要进帧（与 REST 读侧 owner 旁路同口径）。"""
+        dashboard_a.layout[0]["allowed_roles"] = ["nobody_role"]
+        dashboard_a.creator = normal_user
+        dashboard_a.save(update_fields=["layout", "creator"])
+        screen = _make_screen(normal_user, [dashboard_a])
+        assert [ref["card"] for ref in collect_screen_cards(screen, user=normal_user)] == ["c1", "c2"]
 
     def test_dedupe_and_missing_references(self, dashboard_a, superuser):
         screen = _make_screen(superuser, [dashboard_a, dashboard_a, "00000000-0000-0000-0000-000000000000"])
@@ -461,7 +479,7 @@ class TestGroupBroadcastTrigger:
     def test_switch_page_auto_do_not_trigger_data_push(self, dashboard_a, superuser, auth_client, monkeypatch):
         screen = _make_screen(superuser, [dashboard_a])
         called = []
-        monkeypatch.setattr(analysis_views, "broadcast_screen_data_trigger", lambda pk: called.append(str(pk)))
+        monkeypatch.setattr(screen_views, "broadcast_screen_data_trigger", lambda pk: called.append(str(pk)))
         for payload in (
             {"command": "switch", "dashboard_pk": str(dashboard_a.pk)},
             {"command": "page", "index": 0},
@@ -474,7 +492,7 @@ class TestGroupBroadcastTrigger:
     def test_refresh_command_triggers_data_push(self, dashboard_a, superuser, auth_client, monkeypatch):
         screen = _make_screen(superuser, [dashboard_a])
         called = []
-        monkeypatch.setattr(analysis_views, "broadcast_screen_data_trigger", lambda pk: called.append(str(pk)))
+        monkeypatch.setattr(screen_views, "broadcast_screen_data_trigger", lambda pk: called.append(str(pk)))
         resp = auth_client.post(f"{SCREEN_URL}/{screen.pk}/command", {"command": "refresh"}, format="json").json()
         assert resp["code"] == 1000, resp
         assert called == [str(screen.pk)]
@@ -552,7 +570,7 @@ class TestPushHelpers:
         assert data_push_interval(screen) == 120
 
     def test_layer_without_get_layers_assumes_online(self):
-        assert _screen_has_viewers(object(), "any_group") is True
+        assert _group_has_viewers(object(), "any_group") is True
 
 
 class TestCarouselPageState:
@@ -758,3 +776,74 @@ class TestBeatPushAtomicClaim:
         # 占位键 TTL = 该屏推送周期：到期自动放行下一轮，无需清理
         assert cache.get(screen_push_claim_key(screen.pk)) is not None
         assert cache.ttl(screen_push_claim_key(screen.pk)) <= data_push_interval(screen)
+
+
+class TestScreenDataQueryBatching:
+    """同一帧内的取数收敛：数据集 in_bulk + 同参卡片结果复用。"""
+
+    def test_datasets_loaded_in_bulk(self, dashboard_a, dashboard_b, superuser, dataset):
+        """两张卡引用同一数据集时，本帧只查一次 dataset 表（不再逐卡 filter）。"""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from dataset.models.dataset import Dataset as DatasetModel
+
+        other = DatasetModel.objects.create(
+            name="第二数据集",
+            bound_model=dataset.bound_model,
+            columns=["username"],
+            filters=[],
+            row_limit=100,
+            visibility="shared",
+            creator=superuser,
+        )
+        dashboard_b.layout = [
+            {
+                "id": "c9",
+                "dataset": str(other.pk),
+                "title": "另一个数据集",
+                "chart_type": "bar",
+                "group_by": "username",
+                "metric": "count",
+            }
+        ]
+        dashboard_b.save(update_fields=["layout"])
+        screen = _make_screen(superuser, [dashboard_a, dashboard_b])
+
+        with CaptureQueriesContext(connection) as captured:
+            build_screen_data_payload(superuser, screen, rev=1)
+
+        dataset_selects = [
+            query["sql"]
+            for query in captured.captured_queries
+            if 'FROM "dataset_dataset"' in query["sql"] and " IN (" in query["sql"].upper()
+        ]
+        assert len(dataset_selects) == 1
+
+    def test_identical_card_params_execute_once(self, superuser, dataset, monkeypatch):
+        """同数据集 + 同取数参数的多张卡只执行一次，结果复用给每一张卡。"""
+        import dataset.screen_data as screen_data
+
+        dashboard = Dashboard.objects.create(
+            name="重复指标看板",
+            layout=[
+                {"id": "n1", "dataset": str(dataset.pk), "title": "总数1", "chart_type": "number"},
+                {"id": "n2", "dataset": str(dataset.pk), "title": "总数2", "chart_type": "number"},
+            ],
+            visibility="shared",
+            creator=superuser,
+        )
+        screen = _make_screen(superuser, [dashboard])
+
+        calls: list[str] = []
+        real_execute = screen_data.execute_card
+
+        def counting(ref, user, ds):
+            calls.append(ref["card"])
+            return real_execute(ref, user, ds)
+
+        monkeypatch.setattr(screen_data, "execute_card", counting)
+        payload = build_screen_data_payload(superuser, screen, rev=1)
+
+        assert calls == ["n1"]
+        assert [card["data"] for card in payload[0]["cards"]] == [payload[0]["cards"][0]["data"]] * 2

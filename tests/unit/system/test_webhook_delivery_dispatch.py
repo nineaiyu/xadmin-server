@@ -11,7 +11,7 @@ import pytest
 from django.utils import timezone
 
 from task.models.webhook import WebhookDelivery, WebhookSubscription
-from task.utils.webhook import MAX_ATTEMPTS, emit_webhook_event, encrypt_secret
+from task.services.webhook import MAX_ATTEMPTS, emit_webhook_event, encrypt_secret
 from task.webhook_tasks import deliver_webhook, dispatch_deliver_webhook
 
 pytestmark = pytest.mark.django_db
@@ -204,6 +204,17 @@ class TestNormalPaths:
         assert delivery.next_retry_at is None
         assert delivery.generation == 1  # 成功后无续派，代际不再推进
         assert calls[0]["delivery"] == str(delivery.pk)  # 幂等键恒为主键
+
+    def test_long_response_body_marked_truncated(self, post_stub):
+        """响应体超过 8KB 审计上限：保留内容并置截断标记，供前端展示完整/截断状态。"""
+        _, result = post_stub
+        result["code"], result["text"] = 200, "x" * 9000
+        sub = make_subscription()
+        delivery = make_delivery(sub)
+        dispatch_deliver_webhook(str(delivery.pk))
+        delivery.refresh_from_db()
+        assert delivery.response_body_truncated is True
+        assert delivery.response_body
 
     def test_failure_backoff_until_exhausted_unchanged(self, post_stub):
         """失败链路：逐次退避重试至耗尽，attempt/状态/告警面行为不变。"""

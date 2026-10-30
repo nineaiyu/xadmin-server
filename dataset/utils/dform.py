@@ -72,6 +72,35 @@ from dataset.utils.dform_linkage import evaluate_linkages, validate_linkages
 logger = get_logger(__name__)
 
 
+def _validate_table_columns(key: str, columns: Any) -> None:
+    """明细子表列校验：列 key 形态/去重、label 必填、类型白名单、select 列选项。"""
+    if not isinstance(columns, list) or not columns:
+        raise ValidationError(_("Field {} requires table columns").format(key))
+    if len(columns) > MAX_TABLE_COLUMNS:
+        raise ValidationError(_("Field {} has too many table columns").format(key))
+    seen_columns = set()
+    for column in columns:
+        if not isinstance(column, dict):
+            raise ValidationError(_("Field {} has an invalid table column").format(key))
+        column_key = str(column.get("key") or "")
+        if not KEY_RE.match(column_key):
+            raise ValidationError(_("Table column key {} is invalid").format(column_key))
+        if column_key in seen_columns:
+            raise ValidationError(_("Duplicate table column key: {}").format(column_key))
+        seen_columns.add(column_key)
+        if not str(column.get("label") or "").strip():
+            raise ValidationError(_("Table column {} requires a label").format(column_key))
+        column_type = column.get("type")
+        if column_type not in TABLE_COLUMN_TYPES:
+            raise ValidationError(_("Unsupported table column type: {}").format(column_type))
+        column_options = column.get("options")
+        if column_type == "select":
+            if not isinstance(column_options, list) or not column_options:
+                raise ValidationError(_("Table column {} requires options").format(column_key))
+        elif column_options not in (None, []):
+            raise ValidationError(_("Table column {} does not accept options").format(column_key))
+
+
 def validate_schema(schema: dict[str, Any]) -> list[Any]:
     """校验表单 schema，返回规范化字段列表。"""
     if not isinstance(schema, dict):
@@ -132,32 +161,7 @@ def validate_schema(schema: dict[str, Any]) -> list[Any]:
             if item.get("required"):
                 raise ValidationError(_("Field {} is a computed field and cannot be required").format(key))
         if ftype == "table":
-            columns = item.get("columns")
-            if not isinstance(columns, list) or not columns:
-                raise ValidationError(_("Field {} requires table columns").format(key))
-            if len(columns) > MAX_TABLE_COLUMNS:
-                raise ValidationError(_("Field {} has too many table columns").format(key))
-            seen_columns = set()
-            for column in columns:
-                if not isinstance(column, dict):
-                    raise ValidationError(_("Field {} has an invalid table column").format(key))
-                column_key = str(column.get("key") or "")
-                if not KEY_RE.match(column_key):
-                    raise ValidationError(_("Table column key {} is invalid").format(column_key))
-                if column_key in seen_columns:
-                    raise ValidationError(_("Duplicate table column key: {}").format(column_key))
-                seen_columns.add(column_key)
-                if not str(column.get("label") or "").strip():
-                    raise ValidationError(_("Table column {} requires a label").format(column_key))
-                column_type = column.get("type")
-                if column_type not in TABLE_COLUMN_TYPES:
-                    raise ValidationError(_("Unsupported table column type: {}").format(column_type))
-                column_options = column.get("options")
-                if column_type == "select":
-                    if not isinstance(column_options, list) or not column_options:
-                        raise ValidationError(_("Table column {} requires options").format(column_key))
-                elif column_options not in (None, []):
-                    raise ValidationError(_("Table column {} does not accept options").format(column_key))
+            _validate_table_columns(key, item.get("columns"))
         max_length = item.get("max_length")
         if max_length is not None and (not isinstance(max_length, int) or not (1 <= max_length <= MAX_TEXT_LENGTH)):
             raise ValidationError(_("Field {} max_length must be 1-{}").format(key, MAX_TEXT_LENGTH))
@@ -165,6 +169,9 @@ def validate_schema(schema: dict[str, Any]) -> list[Any]:
             value = item.get(bound)
             if value is not None and not isinstance(value, (int, float)):
                 raise ValidationError(_("Field {} {} must be numeric").format(key, bound))
+        sensitive = item.get("sensitive")
+        if sensitive is not None and not isinstance(sensitive, bool):
+            raise ValidationError(_("Field {} sensitive must be boolean").format(key))
         filterable = item.get("filterable")
         if filterable is not None and not isinstance(filterable, bool):
             raise ValidationError(_("Field {} filterable must be boolean").format(key))
@@ -229,11 +236,102 @@ def trim_stale_schema_keys(schema: dict[str, Any], data: Any) -> Any:
     return data
 
 
-def validate_submission_data(schema: dict[str, Any], data: Any, user: Any = None) -> dict[str, Any]:
+def _validate_field_value(item: dict[str, Any], label: str, value: Any, user: Any) -> Any:
+    """按控件类型校验取值并返回规范化值（table 已逐行规范化；校验失败抛 ValidationError）。"""
+    ftype = item["type"]
+    if ftype in ("number", "amount"):
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise ValidationError(_("Field {} must be numeric").format(label))
+        if item.get("min") is not None and value < item["min"]:
+            raise ValidationError(_("Field {} is below the minimum").format(label))
+        if item.get("max") is not None and value > item["max"]:
+            raise ValidationError(_("Field {} is above the maximum").format(label))
+        precision = item.get("precision")
+        if ftype == "amount" and precision is not None and abs(value - round(value, precision)) > 1e-9:
+            raise ValidationError(_("Field {} allows at most {} decimal places").format(label, precision))
+    elif ftype == "user":
+        multiple = bool(item.get("multiple"))
+        if multiple:
+            if not isinstance(value, list):
+                raise ValidationError(_("Field {} must be a list").format(label))
+            if len(value) > MAX_USER_PICKS:
+                raise ValidationError(_("Field {} has too many users").format(label))
+            for picked in value:
+                _validate_user_pk(label, picked)
+        else:
+            _validate_user_pk(label, value)
+    elif ftype == "cascader":
+        if not isinstance(value, list) or not value:
+            raise ValidationError(_("Field {} must be a cascader path").format(label))
+        if not all(isinstance(step, (str, int)) and not isinstance(step, bool) for step in value):
+            raise ValidationError(_("Field {} must be a cascader path").format(label))
+        if not _cascader_path_valid(item.get("options") or [], value):
+            raise ValidationError(_("Field {} has an invalid cascader path").format(label))
+    elif ftype == "checkbox":
+        if not isinstance(value, list):
+            raise ValidationError(_("Field {} must be a list").format(label))
+        allowed = field_option_values(item)
+        outside = [v for v in value if v not in allowed]
+        if outside:
+            raise ValidationError(_("Field {} has invalid options: {}").format(label, outside))
+    elif ftype == "date":
+        # 日期值契约 YYYY-MM-DD（与明细子表 date 列同口径）：数据集趋势按 ISO 前缀截断分桶，
+        # 非 ISO 值会让桶失真
+        if not isinstance(value, str) or not DATE_RE.match(value):
+            raise ValidationError(_("Field {} must be a date (YYYY-MM-DD)").format(label))
+    elif ftype == "switch":
+        if not isinstance(value, bool):
+            raise ValidationError(_("Field {} must be boolean").format(label))
+    elif ftype in OPTIONED_TYPES:
+        if value not in field_option_values(item):
+            raise ValidationError(_("Field {} has an invalid option: {}").format(label, value))
+    elif ftype == "upload":
+        if not isinstance(value, list):
+            raise ValidationError(_("Field {} must be a list").format(label))
+        if len(value) > MAX_UPLOAD_FILES:
+            raise ValidationError(_("Field {} has too many files").format(label))
+        # 值为文件条目对象（与通用上传组件回传结构一致：pk/filename/filesize/filepath）
+        for entry in value:
+            if not isinstance(entry, dict) or not str(entry.get("pk") or "").strip():
+                raise ValidationError(_("Field {} contains an invalid file").format(label))
+        if user is not None and getattr(user, "pk", None):
+            assert_upload_ownership(value, label, user)
+    elif ftype == "daterange":
+        if not isinstance(value, list) or len(value) != 2:
+            raise ValidationError(_("Field {} must be a date range").format(label))
+        start, end = value
+        if not isinstance(start, str) or not isinstance(end, str):
+            raise ValidationError(_("Field {} must be a date range").format(label))
+        if not (DATE_RE.match(start) and DATE_RE.match(end)):
+            raise ValidationError(_("Field {} must be a date range").format(label))
+        if start > end:
+            raise ValidationError(_("Field {} has an invalid date range").format(label))
+    elif ftype == "table":
+        if not isinstance(value, list):
+            raise ValidationError(_("Field {} must be a list of rows").format(label))
+        if len(value) > MAX_TABLE_ROWS:
+            raise ValidationError(_("Field {} has too many rows").format(label))
+        return [normalize_table_row(item, label, row) for row in value]
+    else:
+        if not isinstance(value, str):
+            raise ValidationError(_("Field {} must be text").format(label))
+        max_length = int(item.get("max_length") or MAX_TEXT_LENGTH)
+        if len(value) > max_length:
+            raise ValidationError(_("Field {} exceeds the max length {}").format(label, max_length))
+    return value
+
+
+def validate_submission_data(
+    schema: dict[str, Any], data: Any, user: Any = None, previous: Any = None
+) -> dict[str, Any]:
     """提交数据校验：未知键拒绝 + required + 类型/选项/边界校验。返回规范化 data。
 
-    联动优先：先按原始数据求值联动规则——被隐藏的字段跳过全部校验且不写入
-    （隐藏即不生效），动态必填/非必填覆盖字段自身定义（见 ``evaluate_linkages``）。
+    联动优先：先按原始数据求值联动规则——被隐藏的字段跳过全部校验；动态必填/非必填
+    覆盖字段自身定义（见 ``evaluate_linkages``）。
+
+    被隐藏字段的落库值分两种场景：新建（``previous`` 为空）写 None，隐藏即不生效；
+    **编辑**（``previous`` 给出既有数据）保留上次已存值——改动触发字段把目标隐藏时，
+    不该把用户此前填过的内容抹掉，重新显示时仍能取回（编辑保留联动隐藏值）。
 
     ``user`` 给出时，upload 控件值额外做归属断言（文件必须存在且由该用户上传）；
     省略（种子/脚本/无请求上下文）则跳过该断言，其余校验不变。
@@ -258,7 +356,9 @@ def validate_submission_data(schema: dict[str, Any], data: Any, user: Any = None
         value = data.get(key)
         control = controls.get(key) or {}
         if control.get("hidden"):
-            normalized[key] = None
+            # 编辑场景保留历史已存值（隐藏只是「当前不生效」）；新建无历史值 → None
+            kept = previous.get(key) if isinstance(previous, dict) else None
+            normalized[key] = kept
             continue
         if ftype == "formula":
             # 计算字段：不接受客户端提交值，统一在循环后按依赖顺序求值覆盖
@@ -273,87 +373,7 @@ def validate_submission_data(schema: dict[str, Any], data: Any, user: Any = None
                 raise ValidationError(_("Field {} is required").format(label))
             normalized[key] = None
             continue
-        if ftype in ("number", "amount"):
-            if not isinstance(value, (int, float)) or isinstance(value, bool):
-                raise ValidationError(_("Field {} must be numeric").format(label))
-            if item.get("min") is not None and value < item["min"]:
-                raise ValidationError(_("Field {} is below the minimum").format(label))
-            if item.get("max") is not None and value > item["max"]:
-                raise ValidationError(_("Field {} is above the maximum").format(label))
-            precision = item.get("precision")
-            if ftype == "amount" and precision is not None and abs(value - round(value, precision)) > 1e-9:
-                raise ValidationError(_("Field {} allows at most {} decimal places").format(label, precision))
-        elif ftype == "user":
-            multiple = bool(item.get("multiple"))
-            if multiple:
-                if not isinstance(value, list):
-                    raise ValidationError(_("Field {} must be a list").format(label))
-                if len(value) > MAX_USER_PICKS:
-                    raise ValidationError(_("Field {} has too many users").format(label))
-                for picked in value:
-                    _validate_user_pk(label, picked)
-            else:
-                _validate_user_pk(label, value)
-        elif ftype == "cascader":
-            if not isinstance(value, list) or not value:
-                raise ValidationError(_("Field {} must be a cascader path").format(label))
-            if not all(isinstance(step, (str, int)) and not isinstance(step, bool) for step in value):
-                raise ValidationError(_("Field {} must be a cascader path").format(label))
-            if not _cascader_path_valid(item.get("options") or [], value):
-                raise ValidationError(_("Field {} has an invalid cascader path").format(label))
-        elif ftype == "checkbox":
-            if not isinstance(value, list):
-                raise ValidationError(_("Field {} must be a list").format(label))
-            allowed = field_option_values(item)
-            outside = [v for v in value if v not in allowed]
-            if outside:
-                raise ValidationError(_("Field {} has invalid options: {}").format(label, outside))
-        elif ftype == "date":
-            # 日期值契约 YYYY-MM-DD（与明细子表 date 列同口径）：数据集趋势按 ISO 前缀截断分桶，
-            # 非 ISO 值会让桶失真
-            if not isinstance(value, str) or not DATE_RE.match(value):
-                raise ValidationError(_("Field {} must be a date (YYYY-MM-DD)").format(label))
-        elif ftype == "switch":
-            if not isinstance(value, bool):
-                raise ValidationError(_("Field {} must be boolean").format(label))
-        elif ftype in OPTIONED_TYPES:
-            if value not in field_option_values(item):
-                raise ValidationError(_("Field {} has an invalid option: {}").format(label, value))
-        elif ftype == "upload":
-            if not isinstance(value, list):
-                raise ValidationError(_("Field {} must be a list").format(label))
-            if len(value) > MAX_UPLOAD_FILES:
-                raise ValidationError(_("Field {} has too many files").format(label))
-            # 值为文件条目对象（与通用上传组件回传结构一致：pk/filename/filesize/filepath）
-            for item in value:
-                if not isinstance(item, dict) or not str(item.get("pk") or "").strip():
-                    raise ValidationError(_("Field {} contains an invalid file").format(label))
-            if user is not None and getattr(user, "pk", None):
-                assert_upload_ownership(value, label, user)
-        elif ftype == "daterange":
-            if not isinstance(value, list) or len(value) != 2:
-                raise ValidationError(_("Field {} must be a date range").format(label))
-            start, end = value
-            if not isinstance(start, str) or not isinstance(end, str):
-                raise ValidationError(_("Field {} must be a date range").format(label))
-            if not (DATE_RE.match(start) and DATE_RE.match(end)):
-                raise ValidationError(_("Field {} must be a date range").format(label))
-            if start > end:
-                raise ValidationError(_("Field {} has an invalid date range").format(label))
-        elif ftype == "table":
-            if not isinstance(value, list):
-                raise ValidationError(_("Field {} must be a list of rows").format(label))
-            if len(value) > MAX_TABLE_ROWS:
-                raise ValidationError(_("Field {} has too many rows").format(label))
-            normalized[key] = [normalize_table_row(item, label, row) for row in value]
-            continue
-        else:
-            if not isinstance(value, str):
-                raise ValidationError(_("Field {} must be text").format(label))
-            max_length = int(item.get("max_length") or MAX_TEXT_LENGTH)
-            if len(value) > max_length:
-                raise ValidationError(_("Field {} exceeds the max length {}").format(label, max_length))
-        normalized[key] = value
+        normalized[key] = _validate_field_value(item, label, value, user)
     if any(item["type"] == "formula" for item in fields):
         hidden_keys = {key for key, control in controls.items() if control.get("hidden")}
         normalized.update(evaluate_formula_fields(fields, normalized, hidden_keys))

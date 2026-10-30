@@ -1,6 +1,6 @@
 # 出站 Webhook 事件契约
 
-> 本文档由 `scripts/gen_event_docs.py` 从 `task/utils/webhook.py` 的 `EVENT_CATALOG` 自动生成，
+> 本文档由 `scripts/gen_event_docs.py` 从 `task/services/webhook/events.py` 的 `EVENT_CATALOG` 自动生成，
 > 请勿手工编辑；一致性由守护测试 `tests/unit/system/test_webhook_contract.py` 在 CI 保证，
 > 本地/发布前可用 `python scripts/gen_event_docs.py --check` 复核。
 
@@ -202,10 +202,10 @@
 | `current_node` | string | 否 | Current node |
 | `reason` | string | 否 | Finish reason |
 
-### `flow.node_auto_approved`
+### `flow.node_no_approver`
 
 - 版本：1
-- 说明：Flow node auto-approved
+- 说明：Flow node blocked: no available approver
 
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|

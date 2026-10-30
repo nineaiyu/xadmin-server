@@ -38,6 +38,15 @@ pytestmark = pytest.mark.django_db
 CHALLENGE_URL = "/api/identity/passkeys/challenge"
 REGISTER_URL = "/api/identity/passkeys/register"
 PASSKEY_URL = "/api/identity/passkeys"
+CONFIRM_URL = "/api/mfa/confirm"
+
+
+def _confirm_password(client):
+    """通过管理员本人密码二次确认（绑定持久凭据为账号接管面）。"""
+    resp = client.post(
+        CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"}, format="json"
+    )
+    assert resp.data["code"] == 1000, resp.data
 
 
 def _b64(value: bytes) -> str:
@@ -223,6 +232,7 @@ class TestPasskeyApi:
 
         private_key = ec.generate_private_key(ec.SECP256R1())
         payload = _registration_payload(superuser, private_key, credential_id=b"api-cred", challenge=challenge)
+        _confirm_password(auth_client)
         resp = auth_client.post(REGISTER_URL, payload, format="json", HTTP_ORIGIN=ORIGIN)
         assert resp.data["code"] == 1000, resp.data
         passkey_pk = resp.data["data"]["pk"]
@@ -233,6 +243,18 @@ class TestPasskeyApi:
 
         resp = auth_client.delete(f"{PASSKEY_URL}/{passkey_pk}")
         assert resp.data["code"] == 1000, resp.data
+        assert UserPasskey.objects.count() == 0
+
+    def test_register_requires_confirm(self, auth_client, superuser):
+        """绑定持久凭据需本人密码二次确认（未确认返回 412，不落库）。"""
+        resp = auth_client.post(CHALLENGE_URL, {"scene": "register"}, format="json", HTTP_ORIGIN=ORIGIN)
+        private_key = ec.generate_private_key(ec.SECP256R1())
+        payload = _registration_payload(
+            superuser, private_key, credential_id=b"needs-confirm", challenge=resp.data["data"]["challenge"]
+        )
+        resp = auth_client.post(REGISTER_URL, payload, format="json", HTTP_ORIGIN=ORIGIN)
+        assert resp.status_code == 412
+        assert resp.data["type"] == "user_confirm_required"
         assert UserPasskey.objects.count() == 0
 
     def test_challenge_returns_rp_name(self, auth_client):
@@ -248,11 +270,13 @@ class TestPasskeyApi:
         payload = _registration_payload(
             superuser, private_key, credential_id=b"dup-cred", challenge=resp.data["data"]["challenge"]
         )
+        _confirm_password(auth_client)
         resp = auth_client.post(REGISTER_URL, payload, format="json", HTTP_ORIGIN=ORIGIN)
         assert resp.data["code"] == 1001
 
     def test_register_rejected_when_policy_disallows(self, auth_client, superuser):
         """方式白名单收窄到空集的账号（如共享演示账号）绑定入口直接拒绝。"""
+        _confirm_password(auth_client)
         superuser.allowed_mfa_types = ["none"]
         superuser.save(update_fields=["allowed_mfa_types"])
         resp = auth_client.post(REGISTER_URL, {}, format="json", HTTP_ORIGIN=ORIGIN)

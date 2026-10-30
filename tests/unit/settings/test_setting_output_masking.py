@@ -12,9 +12,11 @@ import json
 
 import pytest
 
-from common.base.utils import signer
-from common.core.credentials import MASK
+from common.base.crypto import signer
+from common.core.auth.credentials import MASK
 from settings.models import Setting
+from settings.serializers.setting import SettingSerializer
+from tests.responses import read_text
 
 pytestmark = pytest.mark.django_db
 
@@ -42,7 +44,7 @@ def _row_by_name(resp, name):
 
 
 def _csv_rows(resp) -> list[list[str]]:
-    lines = resp.content.decode("utf-8-sig").strip().splitlines()
+    lines = read_text(resp).strip().splitlines()
     return [row for row in csv.reader(io.StringIO("\n".join(lines))) if row]
 
 
@@ -89,45 +91,38 @@ class TestOutputMasking:
 
 
 class TestMaskWritebackGuard:
-    def test_patch_mask_keeps_stored_secret(self, auth_client):
+    """掩码占位值永不落库（序列化器层契约）。
+
+    设置总表已改为只读台账（写端点移除，见 test_readonly_ledger_views），
+    但「读-改-回写」的协议约定仍是序列化器契约的一部分：任何复用
+    ``SettingSerializer`` 的写路径都不能把 ``******`` 落库。
+    """
+
+    def test_update_drops_mask_placeholder(self):
         encrypted, _, _ = _make_rows()
-        resp = auth_client.patch(f"{SETTING_URL}/{encrypted.pk}", {"value": MASK}, format="json")
-        assert resp.data["code"] == 1000, resp.data
+        serializer = SettingSerializer(encrypted, data={"value": MASK}, partial=True)
+        assert serializer.is_valid(), serializer.errors
 
-        encrypted.refresh_from_db()
-        assert encrypted.cleaned_value == "smtp-secret", "掩码占位提交不得覆盖库内真实值"
+        assert "value" not in serializer.validated_data, "掩码占位提交不得覆盖库内真实值"
 
-    def test_patch_real_new_value_passes_guard_but_reads_masked(self, auth_client):
-        """真实新值不受守护拦截（原样落列）；读侧仍按敏感行掩码。"""
-        _, plaintext, _ = _make_rows()
-        resp = auth_client.patch(f"{SETTING_URL}/{plaintext.pk}", {"value": "sk-rotated"}, format="json")
-        assert resp.data["code"] == 1000, resp.data
-        assert resp.data["data"]["value"] == MASK
-
-        plaintext.refresh_from_db()
-        assert plaintext.value == "sk-rotated"
-
-    def test_create_with_mask_stores_unconfigured(self, auth_client):
-        resp = auth_client.post(
-            SETTING_URL,
-            {"name": "LDAP_BIND_PASSWORD", "value": MASK, "encrypted": True, "category": "ldap"},
-            format="json",
+    def test_create_with_mask_leaves_value_unset(self):
+        serializer = SettingSerializer(
+            data={"name": "LDAP_BIND_PASSWORD", "value": MASK, "encrypted": True, "category": "ldap"}
         )
-        assert resp.data["code"] == 1000, resp.data
+        assert serializer.is_valid(), serializer.errors
+        assert "value" not in serializer.validated_data, "掩码占位串不得落库"
 
-        row = Setting.objects.get(name="LDAP_BIND_PASSWORD")
-        assert row.value != MASK, "掩码占位串不得落库"
-        assert row.cleaned_value is None
+    def test_real_new_value_passes_guard(self):
+        _, plaintext, _ = _make_rows()
+        serializer = SettingSerializer(plaintext, data={"value": "sk-rotated"}, partial=True)
+        assert serializer.is_valid(), serializer.errors
+        assert serializer.validated_data["value"] == "sk-rotated"
 
-    def test_non_sensitive_row_write_unaffected(self, auth_client):
-        """非敏感行的读-改-回写链路保持原状。"""
+    def test_non_sensitive_row_write_unaffected(self):
         _, _, normal = _make_rows()
-        resp = auth_client.patch(f"{SETTING_URL}/{normal.pk}", {"value": "https://new.example.com"}, format="json")
-        assert resp.data["code"] == 1000
-        assert resp.data["data"]["value"] == "https://new.example.com"
-
-        normal.refresh_from_db()
-        assert normal.value == "https://new.example.com"
+        serializer = SettingSerializer(normal, data={"value": "https://new.example.com"}, partial=True)
+        assert serializer.is_valid(), serializer.errors
+        assert serializer.validated_data["value"] == "https://new.example.com"
 
 
 class TestValueSearchSideChannel:

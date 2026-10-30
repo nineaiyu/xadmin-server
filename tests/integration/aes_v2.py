@@ -7,7 +7,7 @@ import hashlib
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 
 
 def encrypt_v2(key: str, plain: str) -> str:

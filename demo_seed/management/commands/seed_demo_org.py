@@ -20,7 +20,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode
-from approval.utils.approval_flow.versioning import apply_definition
+from approval.services.approval_flow.versioning import apply_definition
 from dataset.models import DynamicForm
 from identity.models import DeptInfo, UserInfo, UserRole
 from system.models import DataPermission, FieldPermission, Menu, ModelLabelField
@@ -106,11 +106,11 @@ LEGACY_GRANT_MODELS = ("system.approvalflow", "system.approvalrequest", "system.
 
 
 #: 页面授权时排除的权限点：
-#: - mcp:AiMcp：MCP 协议端点是外部客户端接入通道，不对演示业务角色开放（面向机器凭证，
+#: - mcp:AiMcpServers：MCP 协议端点是外部客户端接入通道，不对演示业务角色开放（面向机器凭证，
 #:   与 AI 动作执行不同——后者有业务权限双门保护）；
 #: - ongoing:SystemApprovalInstance：「全部在途」是管理视角（巡看/催办全部申请），
 #:   仅管理员（超管或显式授权）可用，随页面授权自动下发会越权。
-EXCLUDE_PERMISSION_NAMES = {"mcp:AiMcp", "ongoing:SystemApprovalInstance"}
+EXCLUDE_PERMISSION_NAMES = {"mcp:AiMcpServers", "ongoing:SystemApprovalInstance"}
 
 
 def _page_menus(paths: Any) -> list[Any]:
@@ -241,24 +241,28 @@ class Command(BaseCommand):
                 permission.field.set(all_fields)
 
         # 数据权限：全量放行规则（fail-closed：无授权则列表为空）
-        DataPermission.objects.filter(name__in=[f"示例-{name}" for name in LEGACY_GRANT_MODELS]).delete()
+        # DataPermission 已软删（回收站可恢复）：name 唯一约束不受 deleted_at 影响，
+        # 旧数据须走 all_objects 复用/复活；死规则（LEGACY）物理清除。
+        for row in DataPermission.all_objects.filter(name__in=[f"示例-{name}" for name in LEGACY_GRANT_MODELS]):
+            row.hard_delete()
         for model_name in GRANT_MODELS:
-            DataPermission.objects.update_or_create(
-                name=f"示例-{model_name}",
-                defaults={
-                    "is_active": True,
-                    "rules": [
-                        {
-                            "table": model_name,
-                            "field": "id",
-                            "type": "value.all",
-                            "match": "all",
-                            "value": "",
-                            "exclude": False,
-                        }
-                    ],
-                },
-            )
+            name = f"示例-{model_name}"
+            perm = DataPermission.all_objects.filter(name=name).first()
+            if perm is None:
+                perm = DataPermission(name=name)
+            perm.is_active = True
+            perm.rules = [
+                {
+                    "table": model_name,
+                    "field": "id",
+                    "type": "value.all",
+                    "match": "all",
+                    "value": "",
+                    "exclude": False,
+                }
+            ]
+            perm.deleted_at = None
+            perm.save()
 
     def _bind_users(self, roles: dict[str, Any], depts: dict[str, Any]) -> None:
         rules = list(DataPermission.objects.filter(name__startswith="示例-"))

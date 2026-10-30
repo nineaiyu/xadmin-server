@@ -105,3 +105,21 @@ class TestPasswordRules:
         assert pwd.check_password_rules("Abc@1") is False  # 长度不足
         assert pwd.check_password_rules("Abcdef@12345", is_super_admin=True) is True
         assert pwd.check_password_rules("Abcdef@1", is_super_admin=True) is False  # 管理员 12 位
+
+    @pytest.mark.parametrize(
+        "password",
+        [
+            "A bcdefgh1@",  # 空格
+            "A\\bcdefgh1@",  # 反斜杠
+            "A中bcdefgh1@",  # 非 ASCII
+            "Abcdefgh1@\t",  # 控制字符
+        ],
+    )
+    def test_disallowed_chars_rejected_after_first_position(self, settings, password):
+        """白名单约束整串：首字符合法但后续含空格/反斜杠/中文/控制字符一律拒绝。"""
+        settings.SECURITY_PASSWORD_UPPER_CASE = True
+        settings.SECURITY_PASSWORD_LOWER_CASE = True
+        settings.SECURITY_PASSWORD_NUMBER = True
+        settings.SECURITY_PASSWORD_SPECIAL_CHAR = True
+        settings.SECURITY_PASSWORD_MIN_LENGTH = 8
+        assert pwd.check_password_rules(password) is False

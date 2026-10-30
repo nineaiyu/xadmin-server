@@ -13,7 +13,9 @@ ARG DEPENDENCIES="                    \
         pkg-config                    \
         procps                        \
         libmariadb-dev                \
-        gettext"
+        gettext                       \
+        flite                         \
+        sox"
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=core \
     --mount=type=cache,target=/var/lib/apt,sharing=locked,id=core \

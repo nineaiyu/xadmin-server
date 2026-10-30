@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 @register_as_period_task(crontab="42 3 * * *", module="approval")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def auto_expire_approval_job() -> Any:
     """敏感操作审批单超时（APPROVAL_PENDING_TIMEOUT，默认 3 天）置 EXPIRED。"""
-    from approval.utils.approval import expire_pending_approvals
+    from approval.services.approval import expire_pending_approvals
 
     count = expire_pending_approvals()
     if count:
@@ -33,7 +33,7 @@ def auto_expire_approval_job() -> Any:
 @register_as_period_task(crontab="0 9 * * *", module="approval")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def auto_remind_approval_job() -> Any:
     """待审批超时提醒（APPROVAL_REMIND_HOURS，默认 24h）：每日 09:00 对未处理且未提醒过的单补发一次。"""
-    from approval.utils.approval import remind_pending_approvals
+    from approval.services.approval import remind_pending_approvals
 
     count = remind_pending_approvals()
     if count:
@@ -45,7 +45,7 @@ def auto_remind_approval_job() -> Any:
 @register_as_period_task(crontab="52 3 * * *", module="approval")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def auto_clean_approval_job() -> Any:
     """清理超过保留期的审批单（APPROVAL_KEEP_DAYS，默认 180 天，分批删）。"""
-    from approval.utils.approval import clean_expired_approvals
+    from approval.services.approval import clean_expired_approvals
 
     removed = clean_expired_approvals()
     if removed:
@@ -57,7 +57,7 @@ def auto_clean_approval_job() -> Any:
 @register_as_period_task(crontab="*/30 * * * *", module="approval_flow")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def auto_remind_approval_flow_job() -> Any:
     """流程节点超时提醒：节点 timeout_hours 超时未处理，向指派人补发一次（每任务每日一次）。"""
-    from approval.utils.approval_flow import remind_pending_tasks
+    from approval.services.approval_flow import remind_pending_tasks
 
     count = remind_pending_tasks()
     if count:
@@ -74,7 +74,7 @@ def auto_execute_timeout_approval_flow_job() -> Any:
     transfer_up = 升级转交处理人部门 leader（无 leader 跳过并节流重试）。
     与提醒任务（*/30 的 :00/:30）错峰在 :07/:37 执行，避免同一 beat 窗口双读大表。
     """
-    from approval.utils.approval_flow import execute_timeout_actions
+    from approval.services.approval_flow import execute_timeout_actions
 
     counts = execute_timeout_actions()
     if any(counts.values()):
@@ -89,7 +89,7 @@ def auto_cancel_stuck_approval_flow_job() -> Any:
 
     置 CANCELLED——这类单无人可处理，且会锁住流程改版（在途实例存在时禁止改节点）。
     """
-    from approval.utils.approval_flow import cancel_stuck_instances
+    from approval.services.approval_flow import cancel_stuck_instances
 
     count = cancel_stuck_instances()
     if count:
@@ -101,7 +101,7 @@ def auto_cancel_stuck_approval_flow_job() -> Any:
 @register_as_period_task(crontab="12 4 * * *", module="approval_flow")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def auto_clean_approval_flow_job() -> Any:
     """清理超过保留期的流程实例（APPROVAL_FLOW_KEEP_DAYS，默认 365 天，分批删，级联任务）。"""
-    from approval.utils.approval_flow import clean_finished_instances
+    from approval.services.approval_flow import clean_finished_instances
 
     removed = clean_finished_instances()
     if removed:

@@ -94,12 +94,12 @@ class TestPeriodicTaskCrud:
 
 
 class TestBatchEnable:
-    def test_batch_enable_with_explicit_flag(self, auth_client, crontab_pk):
+    def test_batch_enable(self, auth_client, crontab_pk):
         pk1 = _create_task(auth_client, crontab_pk, name="批量启停-任务A")
         pk2 = _create_task(auth_client, crontab_pk, name="批量启停-任务B")
         PeriodicTask.objects.filter(pk__in=[pk1, pk2]).update(enabled=False)
 
-        resp = auth_client.post(f"{TASK_URL}/batch-enable", {"pks": [pk1, pk2], "enabled": True}, format="json")
+        resp = auth_client.post(f"{TASK_URL}/batch-enable", {"pks": [pk1, pk2]}, format="json")
         assert resp.status_code == 200, resp.data
         assert resp.data["data"]["success"] == 2
         assert PeriodicTask.objects.get(pk=pk1).enabled is True
@@ -109,14 +109,14 @@ class TestBatchEnable:
         pk1 = _create_task(auth_client, crontab_pk, name="批量停用-任务A")
         pk2 = _create_task(auth_client, crontab_pk, name="批量停用-任务B")
 
-        resp = auth_client.post(f"{TASK_URL}/batch-enable", {"pks": [pk1, pk2], "enabled": False}, format="json")
+        resp = auth_client.post(f"{TASK_URL}/batch-disable", {"pks": [pk1, pk2]}, format="json")
         assert resp.status_code == 200, resp.data
         assert PeriodicTask.objects.get(pk=pk1).enabled is False
         assert PeriodicTask.objects.get(pk=pk2).enabled is False
 
-    def test_batch_enable_toggle_without_flag(self, auth_client, crontab_pk):
-        pk1 = _create_task(auth_client, crontab_pk, name="批量取反-任务A")
-        PeriodicTask.objects.filter(pk=pk1).update(enabled=False)
+    def test_batch_enable_is_idempotent(self, auth_client, crontab_pk):
+        pk1 = _create_task(auth_client, crontab_pk, name="批量启用幂等-任务A")
+        PeriodicTask.objects.filter(pk=pk1).update(enabled=True)
 
         resp = auth_client.post(f"{TASK_URL}/batch-enable", {"pks": [pk1]}, format="json")
         assert resp.status_code == 200, resp.data
@@ -126,7 +126,7 @@ class TestBatchEnable:
         pk = _create_task(auth_client, crontab_pk, name="批量未知主键")
         bogus = str(uuid.uuid4())
 
-        resp = auth_client.post(f"{TASK_URL}/batch-enable", {"pks": [pk, bogus], "enabled": False}, format="json")
+        resp = auth_client.post(f"{TASK_URL}/batch-disable", {"pks": [pk, bogus]}, format="json")
         assert resp.status_code == 200, resp.data
         assert resp.data["data"]["success"] == 1
         assert PeriodicTask.objects.get(pk=pk).enabled is False
@@ -268,3 +268,47 @@ class TestPeriodicTaskIntervalSchedule:
         assert task.interval_id == interval_pk
         assert task.crontab_id is None
         assert "19" in resp.data["data"]["interval"]["label"]
+
+
+class TestCrontabPreview:
+    def test_preview_returns_next_five_runs(self, auth_client):
+        resp = auth_client.post(
+            f"{CRONTAB_URL}/preview",
+            {
+                "minute": "*/5",
+                "hour": "*",
+                "day_of_week": "*",
+                "day_of_month": "*",
+                "month_of_year": "*",
+                "timezone": "Asia/Shanghai",
+            },
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000, resp.data
+        data = resp.data["data"]
+        assert data["timezone"] == "Asia/Shanghai"
+        assert len(data["next_runs"]) == 5
+        assert all("T" in item for item in data["next_runs"])
+
+    def test_preview_rejects_invalid_expression(self, auth_client):
+        resp = auth_client.post(
+            f"{CRONTAB_URL}/preview",
+            {
+                "minute": "not-a-cron",
+                "hour": "*",
+                "day_of_week": "*",
+                "day_of_month": "*",
+                "month_of_year": "*",
+            },
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
+
+    def test_references_returns_linked_tasks(self, auth_client, crontab_pk):
+        _create_task(auth_client, crontab_pk, name="引用任务-预览")
+        resp = auth_client.get(f"{CRONTAB_URL}/{crontab_pk}/references")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["total"] >= 1
+        assert any(item["name"] == "引用任务-预览" for item in resp.data["data"]["tasks"])

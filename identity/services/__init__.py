@@ -6,7 +6,7 @@
 禁止直接 import identity.views / identity.serializers / identity.models 等内部实现，
 避免 app 间横向依赖扩散。业务逻辑实现在本包的服务子模块
 （``identity.services.auth_login`` / ``open_oauth`` / ``token_issue`` /
-``token_issue_login``），本模块只做契约面：跨 app 消费方从这里 import，系统内部
+``token_issue_login`` / ``user_admin``），本模块只做契约面：跨 app 消费方从这里 import，系统内部
 视图直接消费子模块。
 
 模型再导出说明：跨 app 关联（isinstance 判断、类型标注、related field
@@ -52,11 +52,16 @@ __all__ = [
     "get_users_by_pks",
     "get_users_by_perm",
     "get_users_by_perms",
+    "get_users_by_role_codes",
+    "user_role_codes",
     "get_active_user_pk_by_username",
     "serialize_user_info",
     "register_user_session",
     "websocket_session_logout",
     "login_success",  # noqa: F822
+    "evaluate_login_policy_for_request",  # noqa: F822
+    "is_login_mfa_required",  # noqa: F822
+    "get_login_mfa_methods",  # noqa: F822
     "invalidate_menu_user_caches",  # noqa: F822
     # 契约委托函数（common 侧函数级业务 import 的模块级替代）
     "publish_api_quota_warning",
@@ -89,8 +94,14 @@ _LAZY_EXPORTS = {
     "invalid_user_cache_signal": "identity.signal",
     # 登录成功处置（服务子模块；import 链重，按需加载）
     "login_success": "identity.services.auth_login",
+    "evaluate_login_policy_for_request": "identity.services.auth_login",
+    "is_login_mfa_required": "identity.services.auth_login",
+    "get_login_mfa_methods": "identity.services.auth_login",
     # 菜单变更联动的用户缓存失效（identity.signal_handler；Menu 接收器跨域消费）
     "invalidate_menu_user_caches": "identity.signal_handler",
+    # 生效角色解析：直挂 ∪ 部门挂角色
+    "get_users_by_role_codes": "identity.services.roles",
+    "user_role_codes": "identity.services.roles",
 }
 
 
@@ -145,25 +156,37 @@ def get_users_by_perms(perms: Any) -> Any:
 
     权限码（"动作:组件名"，如 approve:SystemApprovalRequest）挂 PERMISSION 类型
     菜单的 name，经 角色↔菜单 授权间接授予用户（即"按权限反查"）。
-    软删除角色/菜单显式排除，不依赖关联查询的管理器行为。
+    生效角色 = 直挂角色 ∪ 所属启用部门绑定角色；软删除角色/菜单显式排除，
+    不依赖关联查询的管理器行为。
 
-    通用职能推导工具：审批人解析（approval.utils.approval.get_approver_queryset）
+    通用职能推导工具：审批人解析（approval.services.approval.get_approver_queryset）
     与通知接收人解析共用，替代逐处复制"角色清单成员查询"。
     """
+    from django.db.models import Q
+
     from identity.models import UserInfo
     from system.services import Menu
 
     if not perms:
         return UserInfo.objects.none()
-    return UserInfo.objects.filter(
-        is_active=True,
+    menu_filters = {
+        "menu__is_active": True,
+        "menu__deleted_at__isnull": True,
+        "menu__menu_type": Menu.MenuChoices.PERMISSION,
+        "menu__name__in": list(perms),
+    }
+    direct = Q(
         roles__is_active=True,
         roles__deleted_at__isnull=True,
-        roles__menu__is_active=True,
-        roles__menu__deleted_at__isnull=True,
-        roles__menu__menu_type=Menu.MenuChoices.PERMISSION,
-        roles__menu__name__in=list(perms),
-    ).distinct()
+        **{f"roles__{key}": value for key, value in menu_filters.items()},
+    )
+    via_dept = Q(
+        dept__is_active=True,
+        dept__roles__is_active=True,
+        dept__roles__deleted_at__isnull=True,
+        **{f"dept__roles__{key}": value for key, value in menu_filters.items()},
+    )
+    return UserInfo.objects.filter(is_active=True).filter(direct | via_dept).distinct()
 
 
 def get_active_user_pk_by_username(username: Any) -> Any:

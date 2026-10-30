@@ -22,7 +22,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from approval.models.approval import ApprovalRequest
 from approval.serializers.approval import ApprovalRequestDetailSerializer, ApprovalRequestSerializer
-from approval.utils.approval import (
+from approval.services.approval import (
     approval_stats,
     approve_request,
     can_act,
@@ -33,7 +33,11 @@ from approval.utils.approval import (
     reject_request,
 )
 from approval.utils.approval_mfa import ensure_approval_action_confirmed
-from approval.views.approval_instance_batch import missing_pk_failures
+from approval.views.approval_instance_batch import (
+    MAX_BATCH_INSTANCES,
+    missing_pk_failures,
+    normalize_uuid_pks,
+)
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseViewSet, DetailAction, ListAction, SearchColumnsAction, SearchFieldsAction
 from common.core.response import ApiResponse
@@ -70,8 +74,10 @@ class ApprovalScopeFilter(BaseFilterBackend):
         scope = request.query_params.get("scope")
         if scope == "pending":
             # 待办口径与 pending_count_for 共用同一函数（角标数与页签行数必须一致）：
-            # 扁平单给全局审批人，多级链单只给当前级候选人，本人发起恒排除
-            return pending_queryset_for(user)
+            # 扁平单给全局审批人，多级链单只给当前级候选人，本人发起恒排除。
+            # 以 pk 子查询与传入 queryset 求交：保留 DjangoFilterBackend 的筛选、
+            # OrderingFilter 的排序与 get_queryset 的取值域，不能直接返回新 queryset。
+            return queryset.filter(pk__in=pending_queryset_for(user).values("pk"))
         if scope == "mine":
             return queryset.filter(creator=user)
         if user.is_superuser:
@@ -150,23 +156,24 @@ class ApprovalRequestViewSet(
             if not pending_queryset_for(request.user).exists():
                 raise PermissionDenied(_("Permission denied"))
         pks = request.data.get("pks") or []
-        if not pks:
+        if not isinstance(pks, (list, tuple)) or not pks:
             raise ValidationError(_("Please select the data to operate"))
-        succeeded, failures, handled_pks = 0, [], set()
-        for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
+        if len(pks) > MAX_BATCH_INSTANCES:
+            raise ValidationError(_("Too many applications in one batch (max {})").format(MAX_BATCH_INSTANCES))
+        valid_pks, failures = normalize_uuid_pks(pks)
+        succeeded, handled_pks = 0, set()
+        for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=valid_pks):
             handled_pks.add(str(approval.pk))
             ok, detail = approve_request(approval, request.user)
             if ok:
                 succeeded += 1
             else:
                 failures.append({"pk": str(approval.pk), "detail": str(detail)})
-        failures.extend(self._missing_pk_failures(pks, handled_pks))
+        failures.extend(self._missing_pk_failures(valid_pks, handled_pks))
         return ApiResponse(
             data={
                 "succeeded": succeeded,
                 "failures": failures,
-                # 兼容字段（过渡期保留）：旧客户端按 单号+原因 展示失败明细
-                "failed": [{"no": item["pk"][:8].upper(), "reason": item["detail"]} for item in failures],
             },
             detail=_("Operation successful. Approved {} data").format(succeeded),
         )
@@ -199,23 +206,24 @@ class ApprovalRequestViewSet(
         if not reason:
             raise ValidationError(_("Rejection reason is required"))
         pks = request.data.get("pks") or []
-        if not pks:
+        if not isinstance(pks, (list, tuple)) or not pks:
             raise ValidationError(_("Please select the data to operate"))
-        succeeded, failures, handled_pks = 0, [], set()
-        for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
+        if len(pks) > MAX_BATCH_INSTANCES:
+            raise ValidationError(_("Too many applications in one batch (max {})").format(MAX_BATCH_INSTANCES))
+        valid_pks, failures = normalize_uuid_pks(pks)
+        succeeded, handled_pks = 0, set()
+        for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=valid_pks):
             handled_pks.add(str(approval.pk))
             ok, detail = reject_request(approval, request.user, reason)
             if ok:
                 succeeded += 1
             else:
                 failures.append({"pk": str(approval.pk), "detail": str(detail)})
-        failures.extend(self._missing_pk_failures(pks, handled_pks))
+        failures.extend(self._missing_pk_failures(valid_pks, handled_pks))
         return ApiResponse(
             data={
                 "succeeded": succeeded,
                 "failures": failures,
-                # 兼容字段（过渡期保留）：旧客户端按 单号+原因 展示失败明细
-                "failed": [{"no": item["pk"][:8].upper(), "reason": item["detail"]} for item in failures],
             },
             detail=_("Operation successful. Rejected {} data").format(succeeded),
         )

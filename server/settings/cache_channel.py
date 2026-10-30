@@ -44,8 +44,8 @@ CACHES = {
             "IGNORE_EXCEPTIONS": True,
         },
         "TIMEOUT": 60 * 15,
-        "KEY_FUNCTION": "common.base.utils.redis_key_func",
-        "REVERSE_KEY_FUNCTION": "common.base.utils.redis_reverse_key_func",
+        "KEY_FUNCTION": "common.base.crypto.redis_key_func",
+        "REVERSE_KEY_FUNCTION": "common.base.crypto.redis_reverse_key_func",
     },
 }
 

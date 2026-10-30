@@ -26,7 +26,7 @@ from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError
 
-from system.utils.platform import legacy_align as engine
+from ops.legacy import align as engine
 
 
 class Command(BaseCommand):
@@ -71,7 +71,7 @@ class Command(BaseCommand):
     def _default_dsn(self) -> str:
         from django.db import connection
 
-        from system.utils.platform import legacy_structure
+        from ops.legacy import structure as legacy_structure
 
         return legacy_structure.dsn_from_connection(connection)
 

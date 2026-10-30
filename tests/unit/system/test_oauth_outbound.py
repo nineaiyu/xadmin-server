@@ -8,6 +8,7 @@ MCP / 开放平台回调的出站守卫（`packages/xadmin-common/common/utils/o
 """
 
 import pytest
+from django.conf import settings
 from django.core.exceptions import ValidationError
 
 from common.utils.outbound import OutboundBlocked
@@ -35,8 +36,15 @@ class TestProviderUrlWriteSide:
         with pytest.raises(ValidationError):
             validate_providers([dict(PROVIDER, token_url="http://idp.example.com/token")])
 
-    def test_loopback_http_accepted_for_local_testing(self):
-        """统一口径的 loopback 例外：本地联调 IdP 可走 http（与 Webhook 一致）。"""
+    def test_loopback_rejected_by_default(self, monkeypatch):
+        """环回与 Webhook/AI/MCP 同口径：未显式放行时写入侧拒绝。"""
+        monkeypatch.setattr(settings, "WEBHOOK_ALLOW_LOOPBACK", False)
+        with pytest.raises(ValidationError):
+            validate_providers([dict(PROVIDER, token_url="http://127.0.0.1:9000/token")])
+
+    def test_loopback_http_accepted_when_explicitly_allowed(self, monkeypatch):
+        """显式 WEBHOOK_ALLOW_LOOPBACK=true 时本地联调 IdP 可走 http。"""
+        monkeypatch.setattr(settings, "WEBHOOK_ALLOW_LOOPBACK", True)
         config = validate_providers([dict(PROVIDER, token_url="http://127.0.0.1:9000/token")])
         assert config[0]["token_url"] == "http://127.0.0.1:9000/token"
 
@@ -72,6 +80,11 @@ class TestSendSideGuard:
     def test_metadata_target_rejected_on_post(self):
         with pytest.raises(OutboundBlocked):
             _post("https://169.254.169.254/token", {})
+
+    def test_loopback_target_rejected_by_default(self, monkeypatch):
+        monkeypatch.setattr(settings, "WEBHOOK_ALLOW_LOOPBACK", False)
+        with pytest.raises(OutboundBlocked):
+            _get("http://127.0.0.1:9/token", {})
 
     def test_flavor_helper_shares_guard(self):
         """IM flavor 适配器的出站助手与通用链路同源（同一守卫 + 固定连接）。"""

@@ -6,7 +6,7 @@ from typing import Any
 
 from django.core.management.base import BaseCommand
 
-from ai.utils.ai import sync_knowledge
+from ai.services.assistant.ai import sync_knowledge
 
 
 class Command(BaseCommand):

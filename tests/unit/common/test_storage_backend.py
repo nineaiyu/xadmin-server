@@ -201,7 +201,7 @@ class TestAdapterForRemoteBackend:
 @pytest.mark.parametrize("key", ["FILE_S3_ACCESS_KEY", "FILE_S3_SECRET_KEY"])
 def test_s3_credentials_registered_as_sensitive(key):
     """对象存储凭据必须登记为敏感键（落库加密 + 守护只减不增）。"""
-    from common.core.credentials import SENSITIVE_SETTING_KEYS
+    from common.core.auth.credentials import SENSITIVE_SETTING_KEYS
 
     assert key in SENSITIVE_SETTING_KEYS
 

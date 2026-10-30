@@ -4,13 +4,13 @@
 # filename : security
 # author : ly_13
 # date : 8/1/2024
-from django.db.models import TextChoices
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.fields import ColorField
 from common.utils.ip import is_ip_address, is_ip_network, is_ip_segment
-from settings.serializers.contract import SettingSaveContractMixin
+from settings.serializers.contract import SettingSaveContractMixin, effective_value
 
 
 class SecurityPasswordRuleSerializer(SettingSaveContractMixin, serializers.Serializer):
@@ -24,6 +24,28 @@ class SecurityPasswordRuleSerializer(SettingSaveContractMixin, serializers.Seria
     SECURITY_PASSWORD_LOWER_CASE = serializers.BooleanField(required=False, label=_("Lowercase"))
     SECURITY_PASSWORD_NUMBER = serializers.BooleanField(required=False, label=_("Digits"))
     SECURITY_PASSWORD_SPECIAL_CHAR = serializers.BooleanField(required=False, label=_("Special characters"))
+    SECURITY_PASSWORD_HISTORY_COUNT = serializers.IntegerField(
+        required=False,
+        min_value=0,
+        max_value=50,
+        default=3,
+        label=_("Password history count"),
+        help_text=_("Recent passwords that cannot be reused (0 = disabled)"),
+    )
+    SECURITY_PASSWORD_EXPIRATION_DAYS = serializers.IntegerField(
+        required=False,
+        min_value=0,
+        max_value=3650,
+        default=90,
+        label=_("Password expiration (days)"),
+        help_text=_("Force password change after N days (0 = never)"),
+    )
+    SECURITY_PASSWORD_LEAK_CHECK_ENABLED = serializers.BooleanField(
+        required=False,
+        default=True,
+        label=_("Password leak check"),
+        help_text=_("Reject passwords found in known breach corpora"),
+    )
 
 
 login_ip_limit_time_help_text = _(
@@ -108,6 +130,14 @@ class SecurityLoginLimitSerializer(SettingSaveContractMixin, serializers.Seriali
         child=serializers.CharField(max_length=1024, validators=[ip_group_child_validator]),
         help_text=ip_group_help_text,
     )
+    SECURITY_LOGIN_MAX_SESSIONS = serializers.IntegerField(
+        required=False,
+        min_value=0,
+        max_value=100,
+        default=0,
+        label=_("Max concurrent sessions"),
+        help_text=_("Kick the least recently active session beyond this limit (0 = unlimited)"),
+    )
 
 
 class SecurityLoginAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
@@ -149,12 +179,26 @@ class SecurityLoginAuthSerializer(SettingSaveContractMixin, serializers.Serializ
     )
 
     SECURITY_LOGIN_BY_SMS_ENABLED = serializers.BooleanField(
-        required=False, default=True, label=_("Login by sms"), help_text=_("Enable send sms verify code to user")
+        required=False, default=False, label=_("Login by sms"), help_text=_("Enable send sms verify code to user")
     )
 
     SECURITY_LOGIN_BY_BASIC_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Login by basic"), help_text=_("Enable basic verify to user login")
     )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # 组合约束：登录入口开启时三种登录方式至少启用一项，否则登录页整体死页
+        # （与 settings.services「实际生效状态」诊断同口径，保存期即拒绝）
+        if effective_value(self, "SECURITY_LOGIN_ACCESS_ENABLED", attrs, True) and not any(
+            effective_value(self, name, attrs, default)
+            for name, default in (
+                ("SECURITY_LOGIN_BY_BASIC_ENABLED", True),
+                ("SECURITY_LOGIN_BY_EMAIL_ENABLED", True),
+                ("SECURITY_LOGIN_BY_SMS_ENABLED", False),
+            )
+        ):
+            raise serializers.ValidationError(_("Login requires at least one enabled method (basic, email or sms)"))
+        return attrs
 
 
 class SecurityRegisterAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
@@ -187,8 +231,21 @@ class SecurityRegisterAuthSerializer(SettingSaveContractMixin, serializers.Seria
     )
 
     SECURITY_REGISTER_BY_SMS_ENABLED = serializers.BooleanField(
-        required=False, default=True, label=_("Register by sms"), help_text=_("Enable send sms verify code to user")
+        required=False, default=False, label=_("Register by sms"), help_text=_("Enable send sms verify code to user")
     )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # 组合约束：注册流程必须经邮箱/短信验证码完成，通道全关 = 流程走不通
+        # （与 settings.services 注册诊断「requires at least one available channel」同口径）
+        if effective_value(self, "SECURITY_REGISTER_ACCESS_ENABLED", attrs, True) and not any(
+            effective_value(self, name, attrs, default)
+            for name, default in (
+                ("SECURITY_REGISTER_BY_EMAIL_ENABLED", True),
+                ("SECURITY_REGISTER_BY_SMS_ENABLED", False),
+            )
+        ):
+            raise serializers.ValidationError(_("Register requires at least one verify code channel (email or sms)"))
+        return attrs
 
 
 class SecurityResetPasswordAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
@@ -225,15 +282,29 @@ class SecurityResetPasswordAuthSerializer(SettingSaveContractMixin, serializers.
 
     SECURITY_RESET_PASSWORD_BY_SMS_ENABLED = serializers.BooleanField(
         required=False,
-        default=True,
+        default=False,
         label=_("Reset password by sms"),
         help_text=_("Enable send sms verify code to user"),
     )
 
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # 组合约束：找回密码必须经邮箱/短信验证码完成，通道全关 = 流程走不通
+        if effective_value(self, "SECURITY_RESET_PASSWORD_ACCESS_ENABLED", attrs, True) and not any(
+            effective_value(self, name, attrs, default)
+            for name, default in (
+                ("SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED", True),
+                ("SECURITY_RESET_PASSWORD_BY_SMS_ENABLED", False),
+            )
+        ):
+            raise serializers.ValidationError(
+                _("Reset password requires at least one verify code channel (email or sms)")
+            )
+        return attrs
+
 
 class SecurityBindEmailAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
     SECURITY_BIND_EMAIL_ACCESS_ENABLED = serializers.BooleanField(
-        required=False, default=True, label=_("Bind email enable"), help_text=_("Enable bind email for user")
+        required=False, default=False, label=_("Bind email enable"), help_text=_("Enable bind email for user")
     )
     SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = serializers.BooleanField(
         required=False,
@@ -261,7 +332,7 @@ class SecurityBindPhoneAuthSerializer(SettingSaveContractMixin, serializers.Seri
     # 字段名即 Setting 行名与运行时 settings 键（verify_code.py 按 SECURITY_BIND_PHONE_* 消费），
     # 不得复用 EMAIL 前缀，否则手机页签会读写邮箱配置（2026-10 修复）
     SECURITY_BIND_PHONE_ACCESS_ENABLED = serializers.BooleanField(
-        required=False, default=True, label=_("Bind phone enable"), help_text=_("Enable bind phone for user")
+        required=False, default=False, label=_("Bind phone enable"), help_text=_("Enable bind phone for user")
     )
     SECURITY_BIND_PHONE_CAPTCHA_ENABLED = serializers.BooleanField(
         required=False,
@@ -289,6 +360,10 @@ class SecurityBlockIPSerializer(serializers.Serializer):
     pk = serializers.CharField(required=False, label=_("ID"))
     ip = serializers.CharField(max_length=1024, required=False, allow_blank=True, label=_("Block IP"))
     created_time = serializers.DateTimeField(label=_("Created time"))
+
+    class Meta:
+        # pk 是整数串内部标识，不作为列表列展示（前端 selection 仍可用行数据）
+        table_fields = ["ip", "created_time"]
 
 
 class SecurityVerifyCodeSerializer(SettingSaveContractMixin, serializers.Serializer):
@@ -320,52 +395,46 @@ class SecurityVerifyCodeSerializer(SettingSaveContractMixin, serializers.Seriali
 
     VERIFY_CODE_DIGIT_CASE = serializers.BooleanField(required=False, label=_("Digits"))
 
-
-class SecurityCaptchaCodeSerializer(SettingSaveContractMixin, serializers.Serializer):
-    class ChallengeChoices(TextChoices):
-        RANDOM_CHAR = "captcha.helpers.random_char_challenge", _("Random char")
-        MATH_CHALLENGE = "captcha.helpers.math_challenge", _("Math challenge")
-
-    class NoiseFunctionsChoices(TextChoices):
-        FUNCTION_NULL = "captcha.helpers.noise_null", _("Noise function null")
-        FUNCTION_ARCS = "captcha.helpers.noise_arcs", _("Noise function arcs")
-        FUNCTION_DOTS = "captcha.helpers.noise_dots", _("Noise function dots")
-
-    CAPTCHA_CHALLENGE_FUNCT = serializers.ChoiceField(
-        choices=ChallengeChoices.choices,
-        default=ChallengeChoices.MATH_CHALLENGE,
-        label=_("Challenge generator"),
-        help_text=_("Image verification code generation mode"),
-    )
-
-    CAPTCHA_LENGTH = serializers.IntegerField(
-        default=4, min_value=2, max_value=16, label=_("Captcha code length"), help_text=_("Length of the captcha code")
-    )
-
-    CAPTCHA_FONT_SIZE = serializers.IntegerField(
-        default=22,
-        min_value=10,
-        max_value=50,
-        label=_("Captcha font size"),
-        help_text=_("Font size of the captcha code"),
-    )
-
-    CAPTCHA_TIMEOUT = serializers.IntegerField(
-        min_value=1,
-        max_value=60 * 24 * 7,
-        label=_("Captcha timeout (minute)"),
-        help_text=_("Captcha code expiration time"),
-    )
-
-    CAPTCHA_BACKGROUND_COLOR = ColorField(max_length=256, required=True, label=_("Captcha background color"))
-    CAPTCHA_FOREGROUND_COLOR = ColorField(max_length=256, required=True, label=_("Captcha foreground color"))
-
-    CAPTCHA_NOISE_FUNCTIONS = serializers.MultipleChoiceField(
-        label=_("Noise functions"), default=NoiseFunctionsChoices.FUNCTION_NULL, choices=NoiseFunctionsChoices.choices
-    )
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # 组合约束（跨字段组合约束）：字符集三项全关会让 random_string 抛 ValueError，
+        # 邮箱/短信验证码、注册、找回密码、MFA 邮件挑战全部 500——保存期直接拒绝。
+        # 未提交键回落运行时当前值：PATCH 单关最后一项时同样能拦住。
+        if not any(
+            effective_value(self, name, attrs, default)
+            for name, default in (
+                ("VERIFY_CODE_UPPER_CASE", False),
+                ("VERIFY_CODE_LOWER_CASE", False),
+                ("VERIFY_CODE_DIGIT_CASE", True),
+            )
+        ):
+            raise serializers.ValidationError(
+                _("Verify code charset requires at least one of uppercase, lowercase or digits")
+            )
+        return attrs
 
 
 # MFA / 监控阈值序列化器拆分至 security_mfa.py（文件行数门禁），此处再导出保持既有导入面
+from settings.serializers.security_captcha import (  # noqa: E402,F401 显式再导出（no_implicit_reexport）
+    CaptchaImagePreviewResponseSerializer as CaptchaImagePreviewResponseSerializer,
+)
+from settings.serializers.security_captcha import (
+    CaptchaInteractivePreviewInSerializer as CaptchaInteractivePreviewInSerializer,
+)
+from settings.serializers.security_captcha import (
+    CaptchaInteractivePreviewResponseSerializer as CaptchaInteractivePreviewResponseSerializer,
+)
+from settings.serializers.security_captcha import (
+    SecurityCaptchaCodeSerializer as SecurityCaptchaCodeSerializer,
+)
+from settings.serializers.security_captcha import (
+    SecurityCaptchaGeneralSerializer as SecurityCaptchaGeneralSerializer,
+)
+from settings.serializers.security_captcha import (
+    SecurityCaptchaInteractiveSerializer as SecurityCaptchaInteractiveSerializer,
+)
+from settings.serializers.security_captcha import (
+    SecurityCaptchaRiskSerializer as SecurityCaptchaRiskSerializer,
+)
 from settings.serializers.security_mfa import (  # noqa: E402,F401 显式再导出（no_implicit_reexport）
     SecurityMFASerializer as SecurityMFASerializer,
 )

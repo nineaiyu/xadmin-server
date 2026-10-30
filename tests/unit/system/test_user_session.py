@@ -28,7 +28,7 @@ from identity.utils.session import (
     register_user_session,
 )
 from identity.views.admin.online import UserOnlineViewSet
-from message import utils as msg_utils
+from message.ws import utils as msg_utils
 
 pytestmark = pytest.mark.django_db
 

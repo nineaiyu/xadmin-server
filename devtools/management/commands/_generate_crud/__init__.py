@@ -22,9 +22,9 @@ Django 命令发现只识别模块、跳过包目录，命令入口是同目录�
 
 from typing import Any
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
-from .analysis import AnalysisMixin
+from .analysis import FIELD_CLASS_OPTIONS, AnalysisMixin
 from .constants import (
     AUDIT_FIELDS,
     BLOCK_END,
@@ -87,6 +87,14 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             metavar="字段=字典code",
             help="字段绑定数据字典（生成 DictChoiceField 声明，可多次）：如 --dict-field status=task_status",
         )
+        parser.add_argument(
+            "--field-class",
+            action="append",
+            default=[],
+            metavar="字段=字段类",
+            help="字段声明为专用字段类（GUI 表单同源能力，可多次）：如 --field-class phone=PhoneField，"
+            f"可选 {' / '.join(FIELD_CLASS_OPTIONS)}",
+        )
         parser.add_argument("--with-import-export", action="store_true", help="ViewSet 追加导入导出 Mixin 与权限码")
         parser.add_argument("--with-tags", action="store_true", help="AI 声明文件附带标签接入声明（白名单）")
         parser.add_argument("--with-tests", action="store_true", help="生成 pytest 测试骨架（tests/unit/<app>/）")
@@ -118,6 +126,16 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             default="",
             help="仅 --bootstrap 生效：把本页菜单与权限点授予指定角色（逗号分隔角色 code，如 admin,ops）；授权属业务决策，不传则跳过",
         )
+        parser.add_argument(
+            "--verify",
+            action="store_true",
+            help="生成后运行权限缺口与 OpenAPI 契约漂移检查（只报告，不阻断生成）",
+        )
+        parser.add_argument(
+            "--strict",
+            action="store_true",
+            help="自检失败即以非零码退出（隐含 --verify，用于教程与 CI 的生成后校验）",
+        )
 
     # ------------------------------------------------------------------ 入口
 
@@ -125,6 +143,7 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
         model = self._resolve_model(options["model"])
         ctx = self._build_context(model, options)
         self._apply_dict_fields(ctx, options.get("dict_field") or [])
+        self._apply_field_classes(ctx, options.get("field_class") or [])
         artifacts = self._collect_artifacts(ctx, options)
         self._emit(artifacts, options)
         ctx["app_registered"] = False
@@ -132,4 +151,50 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
             ctx["app_registered"] = self._register_app(ctx, options)
         if options.get("bootstrap"):
             self._bootstrap(ctx, options)
+        if (options.get("verify") or options.get("strict")) and not options.get("dry_run"):
+            failures = self._verify_generated()
+            if failures and options.get("strict"):
+                raise CommandError("生成后自检未通过：" + "；".join(failures))
         self._print_next_steps(ctx, options)
+
+    def _verify_generated(self) -> list[str]:
+        """生成后自检：system check + 权限缺口 + OpenAPI 漂移；返回失败项供 --strict 阻断。"""
+        from io import StringIO
+        from re import search
+
+        from django.core.management import call_command
+
+        failures: list[str] = []
+        self.stdout.write("\n生成后自检：")
+        buffer = StringIO()
+        try:
+            call_command("check", stdout=buffer, stderr=buffer)
+            self.stdout.write("  - Django system check：通过")
+        except Exception as exc:  # noqa: BLE001 只报告，生成物已落盘
+            self.stdout.write(f"  - Django system check：失败（{exc}）")
+            failures.append("Django system check 失败")
+
+        buffer = StringIO()
+        try:
+            call_command("sync_menu_permissions", dry_run=True, stdout=buffer)
+            summary = [line for line in buffer.getvalue().splitlines() if "缺口" in line or "路由" in line]
+            self.stdout.write("  - 权限点：")
+            for line in summary[-3:]:
+                self.stdout.write(f"      {line.strip()}")
+            gap = search(r"缺口 (\d+) 条", buffer.getvalue())
+            if gap and int(gap.group(1)):
+                failures.append(f"权限点缺口 {gap.group(1)} 条")
+        except Exception as exc:  # noqa: BLE001 应用未注册 / URLconf 导入失败等
+            self.stdout.write(f"  - 权限点检查跳过（{exc}）")
+            failures.append("权限点检查无法执行")
+
+        buffer = StringIO()
+        try:
+            call_command("dump_openapi", check=True, stdout=buffer, stderr=buffer)
+            self.stdout.write("  - OpenAPI 契约：与 docs/schema/openapi.json 一致")
+        except Exception:  # noqa: BLE001 新增端点后 schema 尚未重导出属预期
+            self.stdout.write(
+                "  - OpenAPI 契约：已漂移（运行 python manage.py dump_openapi 后执行 pnpm sync:contract）"
+            )
+            failures.append("OpenAPI 契约已漂移")
+        return failures

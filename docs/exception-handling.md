@@ -7,15 +7,15 @@
 
 | 位置                                                                                               | 场景                  | 决策           | 说明                                                                  |
 |--------------------------------------------------------------------------------------------------|---------------------|--------------|---------------------------------------------------------------------|
-| `packages/xadmin-common/common/core/exception.py`（未处理异常分支）                                                              | 全站兜底异常处理器           | **已修复**      | 未预期异常不再直出 `str(exc)`，改为通用文案；完整堆栈仍由 `unexpected_exception_logger` 记录 |
-| `packages/xadmin-common/common/core/exception.py`（list detail 分支）                                                       | DRF 校验错误 detail 为列表 | **已修复**      | 保留列表结构透传，不再 `str(exc)` 扁平化（避免 ErrorDetail repr 泄露/乱码）               |
+| `packages/xadmin-common/common/core/response/exception.py`（未处理异常分支）                                                              | 全站兜底异常处理器           | **已修复**      | 未预期异常不再直出 `str(exc)`，改为通用文案；完整堆栈仍由 `unexpected_exception_logger` 记录 |
+| `packages/xadmin-common/common/core/response/exception.py`（list detail 分支）                                                       | DRF 校验错误 detail 为列表 | **已修复**      | 保留列表结构透传，不再 `str(exc)` 扁平化（避免 ErrorDetail repr 泄露/乱码）               |
 | `identity/views/auth/verify_code.py` check 配置接口                                                    | 用户侧（登录/注册/重置发码）     | **已修复**      | 业务校验改抛 `ValidateError`（APIException 子类）按原文案透传；非预期异常返回通用文案并记录日志      |
 | `identity/utils/auth.py` 登录失败提示                                                                    | 用户侧登录限流提示           | 保留           | `error=str(e)` 内容为登录校验的业务文案（如"用户名或密码错误"），非内部信息                      |
 | `settings/views/email.py` 测试邮件接口                                                                 | 超管诊断接口              | 保留 + 已有日志    | SMTP 报错是诊断能力的一部分，接口仅超管可达                                            |
 | `settings/views/sms.py` 测试短信接口                                                                   | 超管诊断接口              | 保留 + **补日志** | 同上，新增 `logger.warning`                                              |
 | `packages/xadmin-common/common/api/common.py` healthz 探测                                                                | 运维健康检查              | 保留           | 返回给 healthz 状态字段，含探测错误便于定位                                          |
 | `packages/xadmin-common/common/drf/parsers/*`（axios_form_data/excel/base）                                               | 上传解析错误              | 保留           | ParseError 文案来自第一方解析代码，面向用户上传场景                                     |
-| `packages/xadmin-common/common/base/magic.py` / `packages/xadmin-common/common/decorators/` / `packages/xadmin-common/common/core/config/` / `settings/models.py` | 后台任务/缓存/日志路径        | 保留           | 不直接进客户端响应                                                           |
+| `packages/xadmin-common/common/decorators/cache.py` / `packages/xadmin-common/common/decorators/` / `packages/xadmin-common/common/core/config/` / `settings/models.py` | 后台任务/缓存/日志路径        | 保留           | 不直接进客户端响应                                                           |
 | `identity/views/auth/verify_code.py` ValueError 分支                                                 | 用户侧发码失败             | 保留 + **补日志** | `SendAndVerifyCodeUtil` 抛出的 ValueError 为业务校验文案                      |
 
 **脱敏原则**（后续新代码遵循）：
@@ -29,18 +29,23 @@
 
 | code    | 含义                             | 触发位置                            |
 |---------|--------------------------------|---------------------------------|
-| 1000    | 成功                             | ApiResponse 默认（`packages/xadmin-common/common/core/response.py`） |
-| 500     | 服务器内部错误（详情不入响应）                | `packages/xadmin-common/common/core/exception.py` 兜底分支 |
-| 998     | 数据被其他数据引用，无法删除（ProtectedError；**HTTP 400**，业务码语义不变） | `packages/xadmin-common/common/core/exception.py`      |
-| 999     | 请求过于频繁（Throttled）              | `packages/xadmin-common/common/core/exception.py`      |
-| 40001   | access token 失效或过期（前端触发无感刷新）   | `packages/xadmin-common/common/core/exception.py`      |
-| 40002   | refresh token 失效或过期（前端跳登录页）    | `packages/xadmin-common/common/core/exception.py`      |
+| 1000    | 成功                             | ApiResponse 默认（`packages/xadmin-common/common/core/response/__init__.py`） |
+| 500     | 服务器内部错误（详情不入响应）                | `packages/xadmin-common/common/core/response/exception.py` 兜底分支 |
+| 998     | 数据被其他数据引用，无法删除（ProtectedError；**HTTP 400**，业务码语义不变） | `packages/xadmin-common/common/core/response/exception.py`      |
+| 999     | 请求过于频繁（Throttled）              | `packages/xadmin-common/common/core/response/exception.py`      |
+| 40001   | access token 失效或过期（前端触发无感刷新）   | `packages/xadmin-common/common/core/response/exception.py`      |
+| 40002   | refresh token 失效或过期（前端跳登录页）    | `packages/xadmin-common/common/core/response/exception.py`      |
 | 1001    | 业务校验失败（发码配置校验、权限不足等）           | verify_code、各业务视图               |
 | 1002    | 发送失败/参数处理失败（邮件、发码、上传类型校验等）     | verify_code、email 测试、`packages/xadmin-common/common/core/modelset/upload.py` |
 | 1003    | 文件大小超限（上传）                     | `packages/xadmin-common/common/core/modelset/upload.py` |
 | 1004    | 请求数据异常                         | verify_code                     |
 
 > 约定：新增错误码必须先在本表登记；`40001/40002` 为前端约定的协议码，不可挪作他用。
+>
+> 交互式验证码：HTTP 400 + `code=400`（操作日志 `status_code` 为整型，不能写字符串），
+> 具体语义放在响应体 `error` 字段：`captcha_invalid`（挑战未知 / 过期 / 跨场景） /
+> `captcha_exhausted`（尝试耗尽 / 同 IP 未消费 ticket 超限）。可重试失败仍为
+> HTTP 200 + `{passed:false, attempts_left}`，不泄漏具体失败原因。
 >
 > 业务码与 HTTP 状态的分工：业务码承载**语义**，HTTP 状态承载**传输层归类**（客户端错误 4xx /
 > 服务端错误 5xx），二者不互相替代——客户端错误不得伪装成 HTTP 200（网关与监控按状态码统计）。

@@ -123,8 +123,11 @@ def archive_month(
     start, end = parse_month(month)
     gz_path, sha_path, manifest_path = _paths(model_key, month, directory)
     if gz_path.exists() and manifest_path.exists():
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        return {**manifest, "skipped": True}
+        verdict = verify_archive(model_key, month, directory)
+        if verdict["ok"]:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            return {**manifest, "skipped": True}
+        logger.warning("归档校验失败，将重建：%s %s (%s)", model_key, month, verdict.get("reason") or "checksum")
 
     if dry_run:
         rows = model.objects.filter(created_time__gte=start, created_time__lt=end).count()
@@ -185,7 +188,15 @@ def list_archives(directory: str | Path | None = None) -> list[dict[str, Any]]:
 
 
 def archived_months(model_key: str, directory: str | Path | None = None) -> set[str]:
-    return {item["month"] for item in list_archives(directory) if item.get("model") == model_key}
+    """已归档且**完整性校验通过**的月份；损坏/缺失的归档不推进删除水位。"""
+    verified: set[str] = set()
+    for item in list_archives(directory):
+        if item.get("model") != model_key:
+            continue
+        month = str(item.get("month") or "")
+        if month and verify_archive(model_key, month, directory)["ok"]:
+            verified.add(month)
+    return verified
 
 
 def retention_days(model_key: str, override: int | None = None) -> int:

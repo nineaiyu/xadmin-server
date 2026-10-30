@@ -10,7 +10,7 @@
 > **状态口径**：满足 / 部分满足 / 不适用 / 差距。
 > **证据口径**：引用本项目内的实现与守护（文档章节 / ADR 编号 / 测试路径 / 代码模块）。
 >
-> **关联**：安全接受项与重开条件汇总见 [security-review.md](security-review.md) 八期登记；
+> **关联**：安全接受项与重开条件汇总见本文 §三；
 > 触发制项另见 [plans/触发制任务清单-长期.md](plans/触发制任务清单-长期.md) §三；
 > 每条的残余面在「备注」列指向 §三 归属。
 
@@ -30,12 +30,12 @@
 | 条目 | 要求摘要 | 状态 | 证据（实现与守护） | 备注 |
 |---|---|---|---|---|
 | V1.1 | 安全开发生命周期 | 部分满足 | ADR 机制（`docs/adr/README.md` 索引，篇数由 `scripts/check_doc_facts.py` 计数守护）、CI 门禁统一登记（`docs/ci-gates.md`）、提交与回归纪律红线（`docs/plans/README.md`） | 无正式威胁建模流程 → §三.②接受项 |
-| V1.2 | 认证架构 | 满足 | JWT-only（ADR-001）；认证 backend 链显式（`server/settings/libs.py` `AUTHENTICATION_BACKENDS`）+ LDAP/OAuth/OIDC/Passkey 多通道（`packages/xadmin-common/common/core/auth.py`） | |
-| V1.3 | 会话管理架构 | 满足 | JWT 双 Token 轮换 + 黑名单 + `sid` 会话失效（ADR 见 `docs/security-review.md` 三期 JWT 专项）；会话存储 `SESSION_ENGINE=cached_db`（`server/settings/libs.py`） | |
+| V1.2 | 认证架构 | 满足 | JWT-only（ADR-001）；认证 backend 链显式（`server/settings/libs.py` `AUTHENTICATION_BACKENDS`）+ LDAP/OAuth/OIDC/Passkey 多通道（`packages/xadmin-common/common/core/auth/authentication.py`） | |
+| V1.3 | 会话管理架构 | 满足 | JWT 双 Token 轮换 + 黑名单 + `sid` 会话失效（ADR-008 等会话相关决策）；会话存储 `SESSION_ENGINE=cached_db`（`server/settings/libs.py`） | |
 | V1.4 | 访问控制架构 | 满足 | 权限点 + 菜单 + 数据/字段权限三层，默认拒绝（`docs/architecture/permission.md`、`packages/xadmin-common/common/core/permission.py`） | |
 | V1.5 | 输入/输出架构 | 满足 | DRF 序列化器 + 元数据协议；受控查询字段/lookup 白名单 fail-closed（`docs/architecture/metadata-protocol.md`） | |
-| V1.6 | 密码学架构 | 满足 | 传输加密 AES v2（ADR-011）；字段级加密 signer v3（`packages/xadmin-common/common/core/credentials.py`）；密码哈希 argon2id（`server/settings/libs.py`） | |
-| V1.7 | 错误、日志与审计架构 | 满足 | 统一异常处理（`docs/exception-handling.md`、`packages/xadmin-common/common/core/exception.py`）、操作日志 + 运行日志脱敏（ADR-072） | |
+| V1.6 | 密码学架构 | 满足 | 传输加密 AES v2（ADR-011）；字段级加密 signer v3（`packages/xadmin-common/common/core/auth/credentials.py`）；密码哈希 argon2id（`server/settings/libs.py`） | |
+| V1.7 | 错误、日志与审计架构 | 满足 | 统一异常处理（`docs/exception-handling.md`、`packages/xadmin-common/common/core/response/exception.py`）、操作日志 + 运行日志脱敏（ADR-072） | |
 | V1.8 | 数据保护与隐私架构 | 满足 | 数据权限 / 字段权限 / 脱敏规则（ADR-009，`packages/xadmin-common/common/core/mask.py`） | |
 | V1.9 | 通信安全架构 | 部分满足 | HTTPS/HSTS/Secure Cookie 开关（`server/settings/security_https.py`） | 默认 HTTP 直连可用 → §三.②接受项 |
 | V1.10 | 恶意软件架构 | 满足 | 依赖审计（`.github/workflows/security.yml` pip-audit）+ 镜像扫描（`docs/ops/deployment-upgrade.md` §6.3 trivy/SBOM）；CELERY 仅 JSON 序列化（`server/settings/libs.py`） | |
@@ -52,7 +52,7 @@
 | V2.3 | 认证器生命周期 | 满足 | 密码重置 / 强制改密 / 账号有效期 / 邀请开户（ADR-071 系列登记）；MFA 绑定与解绑（`identity/views/auth/mfa.py`） | |
 | V2.4 | 凭证存储 | 满足 | argon2id 首位 + PBKDF2 回退渐进重哈希；守护 `tests/unit/system/test_password_hashers.py` | |
 | V2.5 | 凭证恢复 | 满足 | 重置链路不区分账号存在性（S-5 收口）+ `ResetPasswordThrottle`；守护 `tests/integration/system/test_password_reset_api.py` | |
-| V2.6 | 查找式密钥验证器（用户枚举面） | 部分满足 | 登录/验证码发送链路防枚举（`docs/security-review.md` S-5） | 注册链路保留「账号已占用」明确提示 → §三.②接受项 |
+| V2.6 | 查找式密钥验证器（用户枚举面） | 部分满足 | 登录/验证码发送链路防枚举（本文 §三 接受项） | 注册链路保留「账号已占用」明确提示 → §三.②接受项 |
 | V2.8 | 一次性验证器（OTP / MFA） | 满足 | MFA 后端与一次性状态缓存（`server/settings/base.py` `mfa_*_key`）；Passkey/WebAuthn 作为 MFA（`mfa/backends/passkey.py`、`identity/views/admin/passkey.py`） | |
 | V2.10 | 服务认证 | 满足 | PAT（ADR-008）、开放平台 client-credentials（ADR-030）、SCIM 独立令牌（S1）、OIDC（ADR-053） | |
 
@@ -62,10 +62,10 @@
 |---|---|---|---|---|
 | V3.1 | 基础会话管理 | 满足 | 无状态 JWT + 服务端 `UserSession` 登记与在线口径（会话级 `sid` 失效） | |
 | V3.2 | 会话绑定 | 部分满足 | 临时令牌绑客户端指纹（UA/Accept/XFF，`common/utils/token.py` 口径）；access/refresh 分离 | 无设备绑定强校验 → 计入 §三.③ |
-| V3.3 | 登出与超时 | 满足 | 登出吊销 access + refresh 拉黑；强制下线（用户级 / 会话级）（`docs/security-review.md` 三期 4–6 项）；守护 `tests/integration` 强制下线用例 | |
+| V3.3 | 登出与超时 | 满足 | 登出吊销 access + refresh 拉黑；强制下线（用户级 / 会话级）（原安全自查档案已清理）；守护 `tests/integration` 强制下线用例 | |
 | V3.4 | Cookie 型会话属性 | 部分满足 | `SESSION_COOKIE_SECURE` / `CSRF_COOKIE_SECURE` 随 HTTPS 开关（`server/settings/security_https.py`）；SameSite=Lax | HTTP 直连无 Secure → §三.②接受项 |
 | V3.5 | 令牌型会话 | 满足 | 算法固定 HS256（不接受 header 算法）、类型限制 `AUTH_TOKEN_CLASSES`、轮换 + 黑名单（`server/settings/libs.py`） | |
-| V3.7 | 会话管理攻击防护 | 满足 | 登录锁定 / 异地登录检测 / 令牌失效时间戳（`docs/security-review.md` 三期） | |
+| V3.7 | 会话管理攻击防护 | 满足 | 登录锁定 / 异地登录检测 / 令牌失效时间戳（原安全自查档案已清理） | |
 
 ### V4 访问控制
 
@@ -73,7 +73,7 @@
 |---|---|---|---|---|
 | V4.1 | 通用访问控制设计（默认拒绝/最小权限） | 满足 | `DEFAULT_PERMISSION_CLASSES=IsAuthenticated`（`server/settings/libs.py`）+ 权限点 + 数据权限编译器 fail-closed（`docs/architecture/permission.md`） | |
 | V4.2 | 操作级访问控制 | 满足 | 权限码 `动作:组件名`，方法级绑定；越权矩阵 29 例入 CI（`tests/integration/system/test_privilege_escalation_matrix.py`） | |
-| V4.3 | 字段级 / 其他访问控制 | 满足 | 字段权限白名单同时约束读（响应裁剪）与写（字段忽略）（`docs/architecture/field-permission.md`）；应用级四级授权（ADR-039） | |
+| V4.3 | 字段级 / 其他访问控制 | 满足 | 字段权限白名单同时约束读（响应裁剪）与写（字段忽略）（`docs/architecture/permission.md`）；应用级四级授权（ADR-039） | |
 | V4.4 | 防 IDOR（对象级） | 满足 | 数据权限编译 + `OwnerUserFilter` 水平隔离；越权矩阵断言数据库零副作用 | |
 
 ### V5 校验、净化与编码
@@ -90,7 +90,7 @@
 
 | 条目 | 要求摘要 | 状态 | 证据（实现与守护） | 备注 |
 |---|---|---|---|---|
-| V6.1 | 数据分类与静态加密 | 部分满足 | 密钥类字段级加密（signer v3，HKDF/AES-GCM）；凭据注册表（`packages/xadmin-common/common/core/credentials.py`） | 数据库无透明加密（依赖部署层磁盘加密）→ §三.②接受项 |
+| V6.1 | 数据分类与静态加密 | 部分满足 | 密钥类字段级加密（signer v3，HKDF/AES-GCM）；凭据注册表（`packages/xadmin-common/common/core/auth/credentials.py`） | 数据库无透明加密（依赖部署层磁盘加密）→ §三.②接受项 |
 | V6.2 | 算法 | 满足 | argon2id、AES-256-GCM、HMAC-SHA256（Webhook 签名）、HS256（JWT）；守护 `tests/unit/common/test_aes_cipher_v2.py`、`tests/unit/common/test_signer_v3.py` | |
 | V6.3 | 随机值 | 满足 | 前端 WebCrypto / 服务端 `secrets`；AES v2 salt/iv 由 CSPRNG 生成（ADR-011） | |
 | V6.4 | 密钥管理 | 满足 | 凭据注册表 + 轮换命令 + 只读凭据页；`SENSITIVE_SETTING_KEYS` 写侧加密、读侧不回传明文 | |
@@ -167,7 +167,7 @@
 ## 三、差距项清单与归属
 
 > 口径：本清单只覆盖 §二 中状态为「部分满足 / 差距」的条目；**本轮只登记，不实施新整改**。
-> 「接受项」写入 [security-review.md](security-review.md) 八期登记的既有台账形态（含理由与重开条件）。
+> 「接受项」写入本文 §三 的接受项台账形态（含理由与重开条件）。
 
 ### ① 自动化可下沉（可做成的 CI 检查 / 守护测试方向）
 
@@ -179,7 +179,7 @@
 | SBOM 生成仅在发布时 | V14.1 | 将 CycloneDX SBOM 生成前移到 CI 并归档（现随 release 生成，见 `docs/ops/deployment-upgrade.md` §6.3） |
 | 上传扩展名策略与被引用测试未对账 | V12.1 | 策略词表 ↔ 消费点（校验代码 / 单测）双向对账守护，形态参照 `docs/ci-gates.md` 既有对账门禁 |
 
-### ② 接受项（已接受残余风险；理由 + 重开条件登记见 security-review.md 八期）
+### ② 接受项（已接受残余风险；理由 + 重开条件见本文 §三）
 
 | 差距 | 对应条目 | 接受理由（摘要） | 重开条件（摘要） |
 |---|---|---|---|

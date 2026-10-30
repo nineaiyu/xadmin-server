@@ -1,11 +1,10 @@
 # `system/utils/platform/` 分区说明
 
-平台通用工具（字典 / 菜单 / 标签 / 代码生成 / 监控 / 种子等）。本目录按
+平台通用工具（字典 / 菜单 / 标签 / 规则文案等）。本目录按
 「服务型 / 只读查询型 / 纯工具型」三类分区，**服务型**模块已全部下沉到
-`system/services/`，本目录只保留只读查询与纯工具两类。归类口径与术语与
-[`docs/plans/system-utils域拆分映射-2026.10.md`](../../../docs/plans/system-utils域拆分映射-2026.10.md)
-（utils 五域归位）及 [`docs/plans/system-services服务层下沉-2026.10.md`](../../../docs/plans/system-services服务层下沉-2026.10.md)
-（服务层目标形态）保持一致。
+`system/services/`；代码生成、监控与旧版本迁移三个域已按归属迁出本目录
+（见下方「按域迁出」）。归类口径与术语与 [`docs/plans/system四域切分映射-2026.10.md`](../../../docs/plans/system四域切分映射-2026.10.md)
+（四域切分）保持一致；原 utils / services 阶段映射文档已清理。
 
 ## 判据
 
@@ -37,21 +36,34 @@
 | 文件 | 职责 |
 |---|---|
 | `dict.py` | 数据字典读取（带缓存，信号失效） |
-| `codegen_gui.py` | 代码生成器 GUI 适配（模型内省 + 字典查询 + 产物预览/打包，不落盘不写库） |
 | `module_impact.py` | 功能裁剪影响面预演（只读复算） |
-| `monitor_events.py` | 监控告警 / 异常 / 任务事件查询 |
-| `monitor_history.py` | 监控历史趋势时间桶聚合 |
-| `monitor_metrics.py` | 监控面板指标采集（psutil/inspect + 只读库） |
 | `permission_preview/` | 数据权限规则预览 |
 
 ### 纯工具型（留在本目录）
 
 | 文件 | 职责 |
 |---|---|
-| `codegen_fields.py` | 生成器字段计划翻译 / 覆盖写回（纯 ctx 计算） |
+| `captcha_doctor.py` | 验证码风险档自检口径（反代信任 / 网段兜底 / 影子期样本，纯计算） |
 | `menu.py` | 菜单 / 权限点推导（URL registry + 模型内省，无 IO） |
-| `monitor_export.py` | 监控报表编码（CSV / Excel，返回字节流） |
 | `rule_meta.py` | 数据权限规则可读文案常量 |
+
+### 按域迁出（不在本目录）
+
+| 原文件 | 新位置 | 归属依据 |
+|---|---|---|
+| `codegen_fields.py` | `devtools/services/codegen/fields.py` | 代码生成器字段计划（开发工具域） |
+| `codegen_gui.py` | `devtools/services/codegen/gui.py` | 代码生成器 GUI 适配（开发工具域） |
+| `monitor_events.py` | `system/services/monitor/events.py` | 监控事件查询（监控域服务层） |
+| `monitor_export.py` | `system/services/monitor/export.py` | 监控报表编码（监控域服务层） |
+| `monitor_history.py` | `system/services/monitor/history.py` | 监控趋势聚合（监控域服务层） |
+| `monitor_metrics.py` | `system/services/monitor/metrics.py` | 监控指标采集（监控域服务层） |
+| `legacy_align.py` | `ops/legacy/align.py` | 旧版本结构对齐（运维升级域） |
+| `legacy_app_refs.py` | `ops/legacy/app_refs.py` | 旧版本 app 引用改写（运维升级域） |
+| `legacy_importer.py` | `ops/legacy/importer.py` | 旧版本数据导入（运维升级域） |
+| `legacy_refs.py` | `ops/legacy/refs.py` | 旧版本存储引用改写（运维升级域） |
+| `legacy_schema.py` | `ops/legacy/schema.py` | 旧版本结构内省（运维升级域） |
+| `legacy_structure.py` | `ops/legacy/structure.py` | 旧版本结构对比（运维升级域） |
+| `legacy_transfer.py` | `ops/legacy/transfer.py` | 旧版本数据搬运（运维升级域） |
 
 ## 迁移滚动方向
 

@@ -9,11 +9,13 @@ from typing import Any
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.core.models import DbAuditModel, DbCharModel, DbUuidModel
+from common.core.models import DbAuditModel, DbCharModel, DbUuidModel, SoftDeleteModel
 from system.models import ModeTypeAbstract
 
 
-class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
+# 软删：规则误删会立即改变被授权用户的可见数据，必须可回收（回收站恢复/物理清除）。
+# SoftDeleteModel 必须位于 MRO 首位，delete() 才优先于审计基类解析。
+class DataPermission(SoftDeleteModel, DbAuditModel, ModeTypeAbstract, DbUuidModel):
     name = models.CharField(verbose_name=_("Name"), max_length=255, unique=True)
     rules = models.JSONField(verbose_name=_("Rules"), max_length=10240)
     is_active = models.BooleanField(verbose_name=_("Is active"), default=True)

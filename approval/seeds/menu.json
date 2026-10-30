@@ -1692,5 +1692,51 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "4963f9d9-87ee-4364-865a-b5131548f752",
+  "fields": {
+   "created_time": "2026-10-22T00:00:00Z",
+   "updated_time": "2026-10-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c400",
+   "menu_type": 2,
+   "name": "impact:SystemApprovalRule",
+   "rank": 8,
+   "path": "api/approval/approval-rules/impact-preview$",
+   "component": null,
+   "is_active": true,
+   "meta": "d5618b60-455d-4aff-a998-6308b74c7dc1",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "4fbeff3c-9d1a-4a47-bc54-2f0fbaf0395b",
+  "fields": {
+   "created_time": "2026-10-22T00:00:00Z",
+   "updated_time": "2026-10-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8a8a9349-cdaf-48cd-a0ba-4bc0c9f3bacd",
+   "menu_type": 2,
+   "name": "impact:SystemApprovalDelegation",
+   "rank": 10007,
+   "path": "api/approval/approval-delegations/(?P<pk>[^/.]+)/impact$",
+   "component": null,
+   "is_active": true,
+   "meta": "2bb38040-0da0-40bf-a8a0-524eb5aa608b",
+   "method": "GET",
+   "model": []
+  }
  }
 ]

@@ -29,12 +29,14 @@ from approval.serializers.approval_flow import (
     ApprovalInstanceExportSerializer,
     ApprovalInstanceSerializer,
 )
-from approval.utils.approval_flow import (
+from approval.services.approval_flow import (
     create_instance,
     visible_instances_for,
 )
+from approval.services.approval_flow.definition import rollback_flow
 from approval.utils.approval_mfa import ensure_approval_action_confirmed
 from approval.views.approval_instance_actions import ApprovalInstanceActionMixin
+from approval.views.approval_rule import build_candidate_options
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseModelSet,
@@ -48,6 +50,7 @@ from common.core.modelset import (
 )
 from common.core.modelset.import_export.export_actions import OnlyExportDataAction
 from common.core.permission import user_has_permission
+from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.services.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
@@ -95,6 +98,20 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
             raise ValidationError({"detail": _("A flow with applications cannot be deleted")})
         return super().perform_destroy(instance)
 
+    @shared_list_action(methods=["get"], detail=False, url_path="candidate-options")  # type: ignore[untyped-decorator]
+    def candidate_options(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """审批人候选目录
+
+        流程设计器的审批人下拉与审批规则共用目录；与流程 list 权限同口径，
+        避免只有流程编辑权限的角色拿到 403、下拉只能手填。
+        """
+        keyword = str(request.query_params.get("keyword") or "").strip()
+        try:
+            limit = int(request.query_params.get("limit") or 1000)
+        except (TypeError, ValueError):
+            limit = 1000
+        return ApiResponse(data=build_candidate_options(keyword=keyword, limit=limit))
+
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
@@ -108,13 +125,22 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
     def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除
 
-        静默排除有历史实例的流程，不因单条受保护而整批失败
-
-        ⚠️ 覆写基类 `BatchDestroyAction.batch_destroy` 必须保留 `@action`
-        装饰器（DRF 靠其 `.mapping` 注册路由），否则端点丢失、请求 405。
+        有历史实例的流程不删除，但必须进入失败明细：静默跳过会让管理员误以为全部删除。
         """
+        pks = request.data if isinstance(request.data, (list, tuple)) else []
+        protected = {
+            str(pk)
+            for pk in self.get_queryset().filter(pk__in=pks, instances__isnull=False).values_list("pk", flat=True)
+        }
         self.queryset = self.queryset.filter(instances__isnull=True)
-        return super().batch_destroy(request, *args, **kwargs)
+        response = super().batch_destroy(request, *args, **kwargs)
+        if protected:
+            data = response.data.setdefault("data", {})
+            failures = data.setdefault("failures", [])
+            failures.extend(
+                {"pk": pk, "detail": str(_("Flow has instances and cannot be deleted"))} for pk in sorted(protected)
+            )
+        return response
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="versions")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -142,13 +168,17 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
         快照写入活定义并落新版本；有 PENDING 实例时拒绝
         """
         ensure_approval_action_confirmed(request, "rollback")
-        version = request.data.get("version")
+        # 载荷以 body 为准；query 兜底兼容曾把 version 放 query 的旧客户端
+        # （读写两侧契约测试已同步钉住 body 形态）
+        version = request.data.get("version") or request.query_params.get("version")
         try:
             version = int(version)
         except (TypeError, ValueError):
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
         flow = self.get_object()
-        ok, detail = self.get_serializer().rollback_to_version(flow, version, remark=request.data.get("remark") or "")
+        ok, detail = rollback_flow(
+            flow, version, remark=request.data.get("remark") or request.query_params.get("remark") or ""
+        )
         if not ok:
             return ApiResponse(code=1004, detail=detail)
         return ApiResponse(detail=detail)
@@ -165,10 +195,13 @@ class ApprovalInstanceFilter(TagFilterMixin, BaseFilterSet):
 
 
 class ApprovalInstanceScopeFilter(BaseFilterBackend):
-    """页签取值域：scope=pending（待我审批）/ mine（我的申请）/ done（已办）/ ongoing（在途管理）。
+    """页签取值域：scope=pending（待我审批）/ mine（我的申请）/ done（已办）/ cc（抄送我）/ ongoing（在途管理）。
 
-    缺省 = 可见域（我发起 ∪ 待我审批 ∪ 我参与过）；超管不设限。
+    缺省 = 可见域（我发起 ∪ 待我审批 ∪ 我参与过 ∪ 我被抄送）；超管不设限。
     与 pending_count_for 同口径：本人发起的申请不计入待办（在「我的申请」处理）。
+
+    scope=cc 只取「抄送人包含我」的实例：抄送语义是知会与只读参与，不能与待办混在
+    默认列表里（默认可见域含抄送，但前端需要一个可单独查看的入口）。
 
     scope=ongoing 是**管理视角**（全部审批中的申请，供管理员巡看/催办），按权限点
     `ongoing:SystemApprovalInstance` 授权（超管天然具备）——普通用户只能看可见域。
@@ -195,6 +228,8 @@ class ApprovalInstanceScopeFilter(BaseFilterBackend):
             return queryset.filter(creator=user)
         if scope == "done":
             return queryset.filter(tasks__actor=user).distinct()
+        if scope == "cc":
+            return queryset.filter(cc_users=user).distinct()
         return visible_instances_for(user)
 
 
@@ -258,6 +293,8 @@ class ApprovalInstanceViewSet(
             form_data=serializer.validated_data.get("form_data") or {},
             # 抄送人：发起时追加（与节点级默认抄送合并，去重）
             cc_users=request.data.get("cc_users") or [],
+            # 驳回重提：原实例关联（引擎侧校验同申请人 + 同流程后才建立）
+            source_instance=request.data.get("source_instance"),
         )
         if error:
             raise ValidationError({"detail": error})

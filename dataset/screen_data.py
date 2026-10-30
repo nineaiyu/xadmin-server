@@ -22,6 +22,7 @@ import time
 from typing import Any, TypedDict
 
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from dataset.utils.dataset import filter_layout_for_user
@@ -107,7 +108,12 @@ def collect_screen_cards(screen: Any, user: Any = None) -> list[CardRef]:
         dashboard_pks = [str(item) for item in (screen.dashboards or [])]
 
     # in_bulk 的键是字段原值（UUID），统一 str(pk) 自建映射，避免类型不一致漏查
-    dashboards = {str(item.pk): item for item in Dashboard.objects.filter(pk__in=dashboard_pks)}
+    dashboard_qs = Dashboard.objects.filter(pk__in=dashboard_pks)
+    if user is not None and not getattr(user, "is_superuser", False):
+        # 与 REST 读侧同口径：personal 仅创建者可见，shared 全员可见；
+        # 展示层虽会丢不可见窗格，但帧不应把他人 personal 仪表盘数据推到浏览器
+        dashboard_qs = dashboard_qs.filter(Q(visibility=Dashboard.Visibility.SHARED) | Q(creator=user))
+    dashboards = {str(item.pk): item for item in dashboard_qs}
 
     refs: list[CardRef] = list(metric_refs)
     seen: set[tuple[str, str]] = {("", ref["card"]) for ref in metric_refs}
@@ -117,7 +123,7 @@ def collect_screen_cards(screen: Any, user: Any = None) -> list[CardRef]:
             continue
         cards = list(dashboard.layout or [])
         if user is not None:
-            cards = filter_layout_for_user(cards, user)
+            cards = filter_layout_for_user(cards, user, owner_id=dashboard.creator_id)
         for card in cards:
             if not isinstance(card, dict):
                 continue
@@ -165,15 +171,33 @@ def build_screen_data_payload(user: Any, screen: Any, rev: int, page_index: int 
             current_pk = ordered[int(page_index)]
             groups = [(current_pk, [ref for ref in refs if ref["dashboard"] == current_pk])]
 
+    datasets = load_datasets(refs)
+    # 同帧内相同取数参数（同数据集 + 同分组/度量/分桶）只执行一次：
+    # 多张卡展示同一指标是常见配置，逐卡执行会让查询量随卡片数线性放大。
+    result_cache: dict[tuple[str, ...], dict[str, Any]] = {}
     payloads: list[dict[str, Any]] = []
     for dashboard_pk, group_refs in groups:
         cards: list[dict[str, Any]] = []
         errors: list[dict[str, Any]] = []
         for ref in group_refs:
+            cache_key = (
+                ref["dataset"],
+                ref["kind"],
+                ref["chart_type"],
+                ref["group_by"],
+                ref["metric"],
+                ref["date_trunc"],
+                ref["value_field"],
+            )
             try:
-                cards.append({"card": ref["card"], "kind": ref["kind"], "data": _execute_card(ref, user)})
+                if cache_key in result_cache:
+                    data = result_cache[cache_key]
+                else:
+                    data = execute_card(ref, user, datasets.get(ref["dataset"]))
+                    result_cache[cache_key] = data
+                cards.append({"card": ref["card"], "kind": ref["kind"], "data": data})
             except Exception as exc:  # noqa: BLE001 单卡失败只记 errors，不中断整帧（旧链路单卡 4xx 同语义）
-                errors.append({"card": ref["card"], "detail": _error_detail(exc)})
+                errors.append({"card": ref["card"], "detail": error_detail(exc)})
         payloads.append(
             {
                 "screen": str(screen.pk),
@@ -187,23 +211,43 @@ def build_screen_data_payload(user: Any, screen: Any, rev: int, page_index: int 
     return payloads
 
 
-def _execute_card(ref: CardRef, user: Any) -> dict[str, Any]:
-    """执行单卡：按 kind 路由到 execute/aggregate（权限过滤在 dataset_query 内 fail-closed）。"""
+def load_datasets(refs: list[CardRef]) -> dict[str, Any]:
+    """批量载入本帧引用的数据集：一次 in_bulk 替代逐卡 filter。"""
+    if not refs:
+        return {}
     from dataset.models.dataset import Dataset
-    from dataset.utils.dataset import aggregate_dataset, execute_dataset
 
-    dataset = Dataset.objects.filter(pk=ref["dataset"]).first()
+    pks = {ref["dataset"] for ref in refs}
+    return {str(pk): obj for pk, obj in Dataset.objects.in_bulk(list(pks)).items()}
+
+
+def _visible_dataset(dataset: Any, user: Any) -> Any:
+    """数据集定义可见性：与旧「逐卡 HTTP 重拉」对齐（REST 经 get_object 过滤，
+    personal 数据集对非创建者 404），聚合路径同样 fail-closed 进 errors。"""
     if dataset is None:
         # 数据集在建卡后被删：旧链路里该卡 HTTP 404 报错，此处进 errors 同语义
         raise ValidationError(_("Unknown dataset in layout"))
-    # 数据集定义可见性与旧「逐卡 HTTP 重拉」对齐：REST 路径经 get_object 过滤
-    # （personal 数据集对非创建者 404），聚合路径同样 fail-closed 进 errors
     if not (
         getattr(user, "is_superuser", False)
         or dataset.visibility == "shared"
         or dataset.creator_id == getattr(user, "pk", None)
     ):
         raise ValidationError(_("No permission for dataset: {}").format(dataset.name))
+    return dataset
+
+
+def execute_card(ref: CardRef, user: Any, dataset: Any = None) -> dict[str, Any]:
+    """执行单卡：按 kind 路由到 execute/aggregate（权限过滤在 dataset_query 内 fail-closed）。
+
+    ``dataset`` 可由整帧构建方批量载入后传入；缺省时按 pk 单查（兼容直接调用方）。
+    """
+    from dataset.utils.dataset import aggregate_dataset, execute_dataset
+
+    if dataset is None:
+        from dataset.models.dataset import Dataset
+
+        dataset = Dataset.objects.filter(pk=ref["dataset"]).first()
+    _visible_dataset(dataset, user)
     if ref["kind"] == KIND_EXECUTE:
         # 数字卡只读 total：count_only 跳过全量行物化（与 ChartCard 同口径）
         total: dict[str, Any] = execute_dataset(dataset, user, count_only=True)
@@ -222,7 +266,7 @@ def _execute_card(ref: CardRef, user: Any) -> dict[str, Any]:
     return aggregated
 
 
-def _error_detail(exc: Exception) -> str:
+def error_detail(exc: Exception) -> str:
     """单卡失败的可读原因：ValidationError 取 messages（与 REST execute/aggregate 出口同款拼接）。"""
     if isinstance(exc, ValidationError):
         return "; ".join(exc.messages)

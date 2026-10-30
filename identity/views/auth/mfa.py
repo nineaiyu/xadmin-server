@@ -21,11 +21,21 @@ from audit.services import UserLoginLog
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
+from common.utils.request import get_request_ip
 from common.utils.verify_code import TokenTempCache
-from identity.services.auth_login import login_success
+from identity.services.auth_login import (
+    complete_login,
+    evaluate_login_policy_for_request,
+    reject_login,
+)
 from identity.services.token_issue_login import issue_session_token
 from identity.utils.auth import ValidateError
-from mfa.services import check_user_mfa_code, send_user_mfa_code, validate_login_mfa_token
+from mfa.services import (
+    check_user_mfa_code,
+    get_login_mfa_methods,
+    send_user_mfa_code,
+    validate_login_mfa_token,
+)
 
 # 登录 MFA 允许的验证方式（密码方式在登录场景无意义；recovery 为 OTP 恢复码自救通道）
 LOGIN_MFA_METHODS = ["otp", "sms", "email", "passkey", "recovery"]
@@ -35,13 +45,16 @@ CHALLENGE_METHODS = ["sms", "email"]
 def _get_mfa_user(request: Any) -> Any:
     """校验 mfa_token 并返回待验证用户，无效则直接抛业务异常。
 
-    只要求已绑定凭据（OTP 密钥或 Passkey）：全局强制场景下允许验证"个人已关闭但被强制"的账号。
+    只要求登录 MFA 至少有一种当前可用方式（OTP / Passkey / 短信 / 邮件 / 恢复码）：
+    角色或登录策略强制 MFA 时，仅配置短信/邮箱的账号也曾能拿到 mfa_token，
+    却被这里按「必须有 OTP/Passkey」拒绝，密码正确也永远登不进。
+    具体方式是否可用仍由 ``check_user_mfa_code`` / ``send_user_mfa_code`` 按策略校验。
     """
     user = validate_login_mfa_token(request.data.get("mfa_token"))
     if not user:
         raise ValidateError(_("Login verification expired, please log in again"))
-    if not user.otp_secret_key and not user.passkeys.exists():
-        raise ValidateError(_("Operation failed. Abnormal data"))
+    if not get_login_mfa_methods(user, request):
+        raise ValidateError(_("No available login verification method"))
     return user
 
 
@@ -147,8 +160,27 @@ class LoginMFAVerifyAPIView(APIView):
         if not ok:
             raise ValidateError(msg)
 
+        # 二次验证通过后再复核全局登录开关与访问策略：密码阶段到 MFA 提交之间
+        # 管理员可能关闭登录或收紧策略；策略的「强制 MFA」已由本次验证满足，
+        # 因此只处理拒绝分支，不再触发第二次 MFA 挑战。
+        _force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, get_request_ip(request))
+        if reject_detail:
+            return reject_login(
+                request,
+                user,
+                reject_detail,
+                login_type=UserLoginLog.LoginTypeChoices.USERNAME,
+            )
+        mfa_response = complete_login(
+            request,
+            user,
+            login_type=UserLoginLog.LoginTypeChoices.USERNAME,
+            policy_checked=True,
+            ignore_user_mfa=True,
+        )
+        if mfa_response:
+            return mfa_response
         TokenTempCache.expired_cache_token(request.data.get("mfa_token"))
         # 会话登记 + sid claim 绑定 + 生命周期 + 改密标记 + last_login（与账密/验证码登录同口径）
         result = issue_session_token(request, user, UserLoginLog.LoginTypeChoices.USERNAME)
-        login_success(request, user)
         return ApiResponse(data=result)

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """通讯录 API：菜单权限门 + 名录可见性（数据权限随调用者）+ 部门/岗位/关键字筛选。"""
 
+import uuid
+
 import pytest
 
 from identity.models import DeptInfo, Post, UserInfo
@@ -100,3 +102,53 @@ class TestDirectoryScope:
         post.save(update_fields=["deleted_at"])
         resp = auth_client.get(DIRECTORY_URL, {"posts": str(post.pk)})
         assert resp.status_code == 400
+
+
+class TestDirectoryTagFilter:
+    def _tag_user(self, user, name):
+        from django.contrib.contenttypes.models import ContentType
+
+        from system.models import Tag, TaggedItem
+
+        tag = Tag.objects.create(name=name)
+        TaggedItem.objects.create(
+            content_type=ContentType.objects.get_for_model(type(user)),
+            object_id=str(user.pk),
+            tag=tag,
+        )
+        return tag
+
+    @staticmethod
+    def _unique(prefix):
+        """测试库可能复用：标签名唯一，避免上一次失败残留造成唯一键冲突。"""
+        return f"{prefix}-{uuid.uuid4().hex[:8]}"
+
+    def test_tag_filter_hits_tagged_user(self, auth_client, member):
+        other = UserInfo.objects.create_user(username="dir_untagged", password="Test@123456")
+        tag_name = self._unique("重点")
+        self._tag_user(member, tag_name)
+
+        resp = auth_client.get(DIRECTORY_URL, {"tag": tag_name})
+        assert resp.data["code"] == 1000
+        assert {row["username"] for row in resp.data["data"]["results"]} == {"dir_member"}
+        assert other.username not in {row["username"] for row in resp.data["data"]["results"]}
+
+    def test_multi_tag_filter_is_and_semantics(self, auth_client, member):
+        first = self._unique("重点")
+        second = self._unique("外包")
+        self._tag_user(member, first)
+        self._tag_user(member, second)
+
+        both = auth_client.get(DIRECTORY_URL, {"tag": f"{first},{second}"})
+        assert {row["username"] for row in both.data["data"]["results"]} == {"dir_member"}
+
+        none = auth_client.get(DIRECTORY_URL, {"tag": f"{first},missing-{uuid.uuid4().hex[:8]}"})
+        assert none.data["data"]["results"] == []
+
+    def test_tag_choices_exposed_in_search_fields(self, auth_client, member):
+        tag_name = self._unique("重点")
+        self._tag_user(member, tag_name)
+        resp = auth_client.get(f"{DIRECTORY_URL}/search-fields")
+        assert resp.data["code"] == 1000
+        field = next(item for item in resp.data["data"] if item["key"] == "tag")
+        assert {choice["value"] for choice in field["choices"]} >= {tag_name}

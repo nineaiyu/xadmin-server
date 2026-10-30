@@ -5,11 +5,34 @@
 # author : ly_13
 # date : 8/1/2024
 
+from typing import Any
+
+from django.db import transaction
+from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+
+from captcha.contracts import (
+    CaptchaInvalidError,
+    CaptchaRule,
+    CaptchaRuleSerializer,
+    CaptchaRuleUpdateSerializer,
+    preview_image_captcha,
+    preview_interactive_challenge,
+)
+from common.core.response import ApiResponse
 from common.utils import get_logger
 from settings.serializers.security import (
+    CaptchaImagePreviewResponseSerializer,
+    CaptchaInteractivePreviewInSerializer,
+    CaptchaInteractivePreviewResponseSerializer,
     SecurityBindEmailAuthSerializer,
     SecurityBindPhoneAuthSerializer,
     SecurityCaptchaCodeSerializer,
+    SecurityCaptchaGeneralSerializer,
+    SecurityCaptchaInteractiveSerializer,
+    SecurityCaptchaRiskSerializer,
     SecurityLoginAuthSerializer,
     SecurityLoginLimitSerializer,
     SecurityMFASerializer,
@@ -19,6 +42,7 @@ from settings.serializers.security import (
     SecurityResetPasswordAuthSerializer,
     SecurityVerifyCodeSerializer,
 )
+from settings.services import build_setting_effective
 from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__name__)
@@ -44,12 +68,20 @@ class SecurityLoginAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityLoginAuthSerializer
     category = "security_login_auth"
 
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(与登录页能力清单同口径)。"""
+        return {"effective": build_setting_effective("security_login_auth")}
+
 
 class SecurityRegisterAuthViewSet(BaseSettingViewSet):
     """注册安全"""
 
     serializer_class = SecurityRegisterAuthSerializer
     category = "security_register_auth"
+
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(与登录页能力清单同口径)。"""
+        return {"effective": build_setting_effective("security_register_auth")}
 
 
 class SecurityResetPasswordAuthViewSet(BaseSettingViewSet):
@@ -58,6 +90,10 @@ class SecurityResetPasswordAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityResetPasswordAuthSerializer
     category = "security_reset_password_auth"
 
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(与登录页能力清单同口径)。"""
+        return {"effective": build_setting_effective("security_reset_password_auth")}
+
 
 class SecurityBindEmailAuthViewSet(BaseSettingViewSet):
     """绑定邮件"""
@@ -65,12 +101,20 @@ class SecurityBindEmailAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityBindEmailAuthSerializer
     category = "security_bind_email_auth"
 
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(与登录页能力清单同口径)。"""
+        return {"effective": build_setting_effective("security_bind_email_auth")}
+
 
 class SecurityBindPhoneAuthViewSet(BaseSettingViewSet):
     """绑定手机"""
 
     serializer_class = SecurityBindPhoneAuthSerializer
     category = "security_bind_phone_auth"
+
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(与登录页能力清单同口径)。"""
+        return {"effective": build_setting_effective("security_bind_phone_auth")}
 
 
 class SecurityVerifyCodeViewSet(BaseSettingViewSet):
@@ -80,11 +124,88 @@ class SecurityVerifyCodeViewSet(BaseSettingViewSet):
     category = "verify"
 
 
+class SecurityCaptchaGeneralViewSet(BaseSettingViewSet):
+    """验证码总配置"""
+
+    serializer_class = SecurityCaptchaGeneralSerializer
+    category = "captcha_general"
+
+
 class SecurityCaptchaCodeViewSet(BaseSettingViewSet):
     """图片验证码"""
 
     serializer_class = SecurityCaptchaCodeSerializer
     category = "captcha"
+
+    @extend_schema(
+        request=None,
+        responses={200: OpenApiResponse(response=CaptchaImagePreviewResponseSerializer)},
+    )
+    @action(detail=False, methods=["post"], url_path="preview")  # type: ignore[untyped-decorator]
+    def preview(self, request: Any) -> Any:
+        """预览图片验证码"""
+        return ApiResponse(data=preview_image_captcha())
+
+
+class SecurityCaptchaInteractiveViewSet(BaseSettingViewSet):
+    """交互式验证码"""
+
+    serializer_class = SecurityCaptchaInteractiveSerializer
+    category = "captcha_interactive"
+
+    @extend_schema(
+        request=CaptchaInteractivePreviewInSerializer,
+        responses={200: OpenApiResponse(response=CaptchaInteractivePreviewResponseSerializer)},
+    )
+    @action(detail=False, methods=["post"], url_path="preview")  # type: ignore[untyped-decorator]
+    def preview(self, request: Any) -> Any:
+        """预览交互式验证码"""
+        serializer = CaptchaInteractivePreviewInSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        captcha_type = str(serializer.validated_data.get("type") or "").strip()
+        try:
+            data = preview_interactive_challenge(captcha_type)
+        except CaptchaInvalidError:
+            return ApiResponse(
+                code=1004,
+                status=400,
+                detail=_("Operation failed. Abnormal data"),
+            )
+        return ApiResponse(data=data)
+
+
+class SecurityCaptchaRiskViewSet(BaseSettingViewSet):
+    """验证码风险策略"""
+
+    serializer_class = SecurityCaptchaRiskSerializer
+    category = "captcha_risk"
+
+    @extend_schema(
+        request=CaptchaRuleUpdateSerializer,
+        responses={200: OpenApiResponse(response=CaptchaRuleSerializer(many=True))},
+    )
+    # PUT 有独立权限点 updateRules:SecurityCaptchaRisk（种子与 grants 同步登记）：
+    # 多方法 action 不再回退兄弟方法权限码（fail-closed），写方法必须显式授权。
+    @action(detail=False, methods=["get", "put"], url_path="rules")  # type: ignore[untyped-decorator]
+    def rules(self, request: Any) -> Any:
+        """风险规则列表与更新"""
+        if request.method == "PUT":
+            serializer = CaptchaRuleUpdateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            items = serializer.validated_data["rules"]
+            codes = [item["code"] for item in items]
+            existing = set(CaptchaRule.objects.filter(code__in=codes).values_list("code", flat=True))
+            missing = [code for code in codes if code not in existing]
+            if missing:
+                # 过期/伪造 code 必须显式失败：静默 noop 会让运营以为已保存
+                raise ValidationError({"rules": _("Unknown rule codes: {}").format(", ".join(missing))})
+            with transaction.atomic():
+                for item in items:
+                    updates = {key: value for key, value in item.items() if key != "code" and value is not None}
+                    if updates:
+                        CaptchaRule.objects.filter(code=item["code"]).update(**updates)
+        queryset = CaptchaRule.objects.all()
+        return ApiResponse(data=CaptchaRuleSerializer(queryset, many=True).data)
 
 
 class SecurityMFAViewSet(BaseSettingViewSet):

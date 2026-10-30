@@ -8,7 +8,7 @@
 import pytest
 
 from ai.models.ai import AiKnowledgeChunk
-from ai.utils.ai_retrieval import retrieve
+from ai.services.knowledge.ai_retrieval import retrieve
 
 pytestmark = pytest.mark.django_db
 
@@ -28,7 +28,7 @@ def hit_pks(question) -> set:
 
 @pytest.fixture(autouse=True)
 def _clear_index():
-    from ai.utils.ai_index import invalidate_chunk_index
+    from ai.services.knowledge.ai_index import invalidate_chunk_index
 
     invalidate_chunk_index()
     yield
@@ -39,8 +39,8 @@ class TestRetrievalIndexParity:
     def test_index_path_matches_full_scan(self):
         make_chunk("docs/a.md", 0, CONTENT_A, title="备份")
         make_chunk("docs/b.md", 1, CONTENT_B, title="审批")
-        from ai.utils.ai_index import _tokenize
-        from ai.utils.ai_retrieval import _retrieve_full_scan
+        from ai.services.knowledge.ai_index import _tokenize
+        from ai.services.knowledge.ai_retrieval import _retrieve_full_scan
 
         question = "数据库备份"
         indexed = retrieve(question)
@@ -59,7 +59,7 @@ class TestRetrievalIndexParity:
         assert {borderline.pk, full_hit.pk} <= hits
 
     def test_content_change_invalidates_entry(self):
-        from ai.utils.ai_index import invalidate_chunk_index
+        from ai.services.knowledge.ai_index import invalidate_chunk_index
 
         chunk = make_chunk("docs/c.md", 0, CONTENT_A)
         assert chunk.pk in hit_pks("数据库备份")
@@ -73,7 +73,7 @@ class TestRetrievalIndexParity:
         assert chunk.pk not in hit_pks("数据库备份"), "内容变更后旧问题不应命中"
 
     def test_deleted_chunk_removed(self):
-        from ai.utils.ai_index import invalidate_chunk_index
+        from ai.services.knowledge.ai_index import invalidate_chunk_index
 
         chunk = make_chunk("docs/d.md", 0, CONTENT_A)
         assert chunk.pk in hit_pks("数据库备份")
@@ -82,7 +82,7 @@ class TestRetrievalIndexParity:
         assert chunk.pk not in hit_pks("数据库备份")
 
     def test_new_chunk_picked_up(self):
-        from ai.utils.ai_index import invalidate_chunk_index
+        from ai.services.knowledge.ai_index import invalidate_chunk_index
 
         make_chunk("docs/other.md", 0, CONTENT_B)  # 先预热元数据缓存
         assert hit_pks("会签规则")
@@ -92,7 +92,7 @@ class TestRetrievalIndexParity:
 
     def test_capacity_overflow_falls_back(self, monkeypatch):
         chunk = make_chunk("docs/e.md", 0, CONTENT_A)
-        from ai.utils import ai_index
+        from ai.services.knowledge import ai_index
 
         monkeypatch.setattr(ai_index, "MAX_INDEXED_CHUNKS", 0)
         assert ai_index.chunk_token_index() is None
@@ -107,8 +107,8 @@ class TestRetrievalIndexParity:
         from django.db import connection
         from django.test.utils import CaptureQueriesContext
 
-        from ai.utils.ai_index import _tokenize
-        from ai.utils.ai_retrieval import _retrieve_full_scan
+        from ai.services.knowledge.ai_index import _tokenize
+        from ai.services.knowledge.ai_retrieval import _retrieve_full_scan
 
         hit = make_chunk("docs/pf.md", 0, CONTENT_A, title="备份")
         make_chunk("docs/pf.md", 1, "完全无关的正文内容", title="无关")
@@ -135,7 +135,7 @@ class TestMetaRowsShortCache:
         from django.db import connection
         from django.test.utils import CaptureQueriesContext
 
-        from ai.utils.ai_index import invalidate_chunk_index
+        from ai.services.knowledge.ai_index import invalidate_chunk_index
 
         make_chunk("docs/meta.md", 0, CONTENT_A)
         invalidate_chunk_index()
@@ -148,7 +148,7 @@ class TestMetaRowsShortCache:
 
     def test_write_path_invalidation_picks_up_new_chunk_immediately(self):
         """写入路径（rebuild_chunks/remove_chunks）显式失效：新块无需等 TTL。"""
-        from ai.utils.index_meta import invalidate_index_meta
+        from ai.services.knowledge.index_meta import invalidate_index_meta
 
         hit_pks("数据库备份")  # 预热元数据缓存（不假设库中块集合为空）
         chunk = make_chunk("docs/meta-new.md", 0, CONTENT_A)
@@ -157,7 +157,7 @@ class TestMetaRowsShortCache:
 
     def test_stale_window_heals_after_ttl(self, monkeypatch):
         """未显式失效（直改库）时，TTL 过期后签名比对自愈，不长期陈旧。"""
-        from ai.utils import index_meta
+        from ai.services.knowledge import index_meta
 
         chunk = make_chunk("docs/meta-stale.md", 0, CONTENT_A)
         assert chunk.pk in hit_pks("数据库备份")

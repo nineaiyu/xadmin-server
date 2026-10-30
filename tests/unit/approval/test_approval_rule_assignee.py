@@ -12,7 +12,7 @@ from rest_framework.exceptions import ValidationError
 
 from approval.models.approval_rule import ApprovalRuleLevel
 from approval.serializers.approval_rule import ApprovalRuleSerializer
-from approval.utils.approval.chains import resolve_level_users
+from approval.services.approval.chains import resolve_level_users
 from identity.models import Post, UserInfo
 
 pytestmark = pytest.mark.django_db

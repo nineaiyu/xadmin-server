@@ -37,6 +37,19 @@ class TestMenuRecycleBin:
         page.refresh_from_db()
         assert directory.deleted_at is None and page.deleted_at is None
 
+    def test_delete_rolls_back_when_cascade_fails(self, menu_factory, monkeypatch):
+        """自身与后代级联在同一事务：第二步失败不能留下「父已删、子仍在」。"""
+        directory, _page, _button = self._tree(menu_factory)
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("cascade failed")
+
+        monkeypatch.setattr(Menu, "_cascade_soft_delete_descendants", boom)
+        with pytest.raises(RuntimeError):
+            directory.delete()
+        directory.refresh_from_db()
+        assert directory.deleted_at is None
+
     def test_restore_restores_group(self, auth_client, menu_factory):
         directory, page, button = self._tree(menu_factory)
         auth_client.delete(f"{MENU_URL}/{directory.pk}")

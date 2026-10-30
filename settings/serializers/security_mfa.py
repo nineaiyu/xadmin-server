@@ -37,6 +37,23 @@ class SecurityMFASerializer(SettingSaveContractMixin, serializers.Serializer):
         help_text=_("Verification methods allowed to be used for sensitive operation verification"),
     )
 
+    SECURITY_MFA_METHODS = serializers.ListField(
+        required=False,
+        default=[],
+        label=_("Allowed MFA methods"),
+        allow_empty=True,
+        child=serializers.ChoiceField(
+            choices=[
+                ("otp", _("OTP verification code")),
+                ("recovery", _("Recovery codes")),
+                ("sms", _("SMS verification code")),
+                ("email", _("Email verification code")),
+                ("passkey", _("Passkey")),
+            ]
+        ),
+        help_text=_("Global whitelist of MFA methods available to accounts (empty = all enabled methods)"),
+    )
+
     SECURITY_MFA_VERIFY_TTL = serializers.IntegerField(
         min_value=60,
         max_value=60 * 60 * 24,

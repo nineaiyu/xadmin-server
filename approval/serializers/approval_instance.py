@@ -14,10 +14,9 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from approval.models.approval import ApprovalFlow, ApprovalInstance, ApprovalNodeTask
-from common.core.fields import DictChoiceField
+from common.core.fields import DictChoiceField, DisplayRelatedField
 from common.core.serializers import BaseModelSerializer
 from system.services import TaggedObjectSerializerMixin
-from task.services import DisplayRelatedField
 
 
 def _username(value: Any) -> Any:
@@ -106,6 +105,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         "reason",
         "biz_type",
         "biz_id",
+        "source_instance",
     )
 
     flow = DisplayRelatedField(queryset=ApprovalFlow.objects.all(), label=_("Flow"), label_builder=lambda v: v.name)
@@ -127,6 +127,10 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
     form_schema = serializers.SerializerMethodField(label=_("Form schema"))
     # 关联业务对象当前状态（biz_type 白名单渲染；无关联返回 null，前端不渲染卡片）
     related_object = serializers.SerializerMethodField(label=_("Related object"))
+    # 驳回重提的原单（不存在/跨流程 / 非本人时为 null）
+    source_instance = DisplayRelatedField(
+        read_only=True, allow_null=True, label=_("Source instance"), label_builder=lambda v: v.title
+    )
     # 抄送人（只读回显；发起时经 create_instance 的 cc_users 参数追加）
     cc_users = DisplayRelatedField(
         read_only=True, many=True, label=_("CC users"), label_builder=lambda v: v.nickname or v.username
@@ -151,6 +155,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
             "form_schema",
             "biz_type",
             "biz_id",
+            "source_instance",
             "related_object",
             "cc_users",
             "comments",
@@ -182,6 +187,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
             "updated_time",
             "biz_type",
             "biz_id",
+            "source_instance",
             "related_object",
         ]
 
@@ -200,7 +206,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         """当前节点进度（比例会签达标线预览）：列表不计算（字段已裁剪）。"""
         if getattr(self.context.get("view"), "action", None) == "list":
             return None
-        from approval.utils.approval_flow import node_progress_for
+        from approval.services.approval_flow import node_progress_for
 
         return node_progress_for(obj, tasks=obj.tasks.all())
 
@@ -219,16 +225,34 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         )
 
     def get_form_schema(self, obj: Any) -> list[Any]:
-        """表单字段快照：列表不返回（字段已裁剪，前端详情用 retrieve 渲染）。"""
+        """表单字段快照：按实例钉住的流程版本快照回显，改版后历史单不受影响。
+
+        ``form_schema`` 存在 ``ApprovalFlowDef`` 单行上且改版即覆盖，直接读活定义会让
+        历史实例的字段 label/枚举随最新定义漂移（节点已按 ``flow_version`` 钉住，
+        表单定义必须同源）；版本快照缺失（历史脏数据 version 为空 / 快照行不存在）
+        回退活定义，与钉版本改造前行为一致。列表不返回（字段已裁剪，详情用 retrieve 渲染）。
+        """
         if getattr(self.context.get("view"), "action", None) == "list":
             return []
-        return list(getattr(obj.flow, "form_schema", None) or []) if obj.flow_id else []
+        if not obj.flow_id:
+            return []
+        if obj.flow_version:
+            from approval.models.approval_flow_def import ApprovalFlowVersion
+
+            snapshot = (
+                ApprovalFlowVersion.objects.filter(flow_id=obj.flow_id, version=obj.flow_version)
+                .values_list("snapshot", flat=True)
+                .first()
+            )
+            if snapshot is not None:
+                return list(snapshot.get("form_schema") or [])
+        return list(getattr(obj.flow, "form_schema", None) or [])
 
     def get_related_object(self, obj: Any) -> Any:
         """关联业务对象当前状态（白名单渲染器）：仅详情返回，列表零业务表查询。"""
         if getattr(self.context.get("view"), "action", None) != "retrieve":
             return None
-        from approval.utils.approval_flow.biz import biz_summary
+        from approval.services.approval_flow.biz import biz_summary
 
         return biz_summary(obj)
 

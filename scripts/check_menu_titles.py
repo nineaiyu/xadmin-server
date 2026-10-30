@@ -3,7 +3,7 @@
 """菜单标题静态门禁：约束「会进菜单显示名」的 docstring 首行长度。
 
 背景：权限点的 ``MenuMeta.title`` 取自视图/动作 docstring 的**首行**
-（``common.core.utils.get_doc_first_line``）；首行过长会把菜单树与授权选择器
+（``common.core.url_inventory.get_doc_first_line``）；首行过长会把菜单树与授权选择器
 撑破。约定见 ``docs/architecture/handbook-backend.md``：首行是精炼的名词短语
 （操作日志 module 与菜单显示名），详细说明下沉到后续段落。
 

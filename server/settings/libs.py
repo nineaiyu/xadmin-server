@@ -10,7 +10,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from common.celery.routing import celery_task_route
 
-from ..const import CONFIG
+from ..const import CONFIG, VERSION
 from .base import CACHES, CELERY_BROKER_CACHE_ID, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, SECRET_KEY
 
 REST_FRAMEWORK = {
@@ -30,13 +30,15 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "common.core.auth.CookieJWTAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+        # 文档站 session 只信任 /api-docs/*：其余路径返回 None 交给 JWT / PAT；
+        # 普通主站 session（无 docs 标记）行为不变
+        "common.swagger.auth.ApiDocsSessionAuthentication",
         # Basic 认证为 base64 明文凭证，仅限本地调试按需开启（BASIC_AUTH_ENABLED）
         *(["rest_framework.authentication.BasicAuthentication"] if CONFIG.BASIC_AUTH_ENABLED else []),
         # PAT 认证（机器集成凭证）：无 Pat 头静默跳过，带 Pat 头时按凭证认证
         "common.core.auth.PersonalAccessTokenAuthentication",
     ],
-    "EXCEPTION_HANDLER": "common.core.exception.common_exception_handler",
+    "EXCEPTION_HANDLER": "common.core.response.exception.common_exception_handler",
     "DEFAULT_METADATA_CLASS": "common.drf.metadata.SimpleMetadataWithFilters",
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
@@ -70,6 +72,13 @@ REST_FRAMEWORK = {
         # 临时令牌（/api/identity/auth/token）：每次调用强制生成新缓存令牌
         # 收紧到低于全局匿名档
         "temp_token": "30/m",
+        # 交互式验证码出题 / 校验：生成底图与坐标枚举都需服务端算力，
+        # 与图片码同量级收紧（challenge 30/min、verify 60/min）
+        "captcha_challenge": "30/m",
+        "captcha_verify": "60/m",
+        # 音频合成走本地 flite/sox 子进程（单次可达 2s）：同一挑战可反复拉取，
+        # 必须独立收紧，避免把音频端点当作 TTS 算力放大器
+        "captcha_audio": "20/m",
         # AI 对话类端点（问答/NL/受限动作/聊天室 AI，含流式）：LLM 外呼是最高成本入口，
         # 按用户维度防突发（人工问答远低于该值；批量跑批/多浏览器回归不触顶）
         "ai_chat": "120/m",
@@ -231,7 +240,9 @@ CELERY_RESULT_EXPIRES = 3600 * 24 * 7  # 任务结果过期时间
 # 任务执行历史（TaskExecution/TaskResult）及日志保留天数
 TASK_EXECUTION_KEEP_DAYS = int(CONFIG.get("TASK_EXECUTION_KEEP_DAYS", 30))
 
-CELERY_WORKER_DISABLE_RATE_LIMITS = True  # 任务发出后，经过一段时间还未收到acknowledge , 就将任务重新交给其他worker执行
+# 禁用任务级 rate limit（注释历史上误写成 acks_late 语义；重投由
+# CELERY_TASK_ACKS_LATE / 可见性超时控制，与本键无关）
+CELERY_WORKER_DISABLE_RATE_LIMITS = True
 # 预取倍数（默认队列的 worker）：与并发量级匹配即可，取 4。
 # 取值口径：默认 worker 线程池并发 = CELERY_WORKER_COUNT（默认 4，见 conf/defaults.py），
 # 预取 4 倍并发在「长任务排队」与「worker 崩溃重投」之间取平衡——
@@ -261,7 +272,7 @@ CELERY_TASK_SERIALIZER = "json"
 SPECTACULAR_SETTINGS = {
     "TITLE": "Xadmin Server API",
     "DESCRIPTION": "Django Xadmin Server",
-    "VERSION": "1.0.0",
+    "VERSION": VERSION,
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PUBLIC": False,
     "SWAGGER_UI_DIST": "SIDECAR",  # shorthand to use the sidecar instead

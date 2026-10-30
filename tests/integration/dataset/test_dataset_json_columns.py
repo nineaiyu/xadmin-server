@@ -81,6 +81,18 @@ class TestExecuteJsonColumns:
         assert amounts == [3.0, 10.0]
         assert any(row["data.amount|number"] is None for row in result["rows"])
 
+    def test_nl_execute_dsl_reuses_execute_dataset_for_json_columns(self, dataset, submissions, superuser):
+        """NL run 必走 execute_dataset：JSON 路径列不得被 values(*columns) 当模型字段。"""
+        from ai.services.nl_query.orchestrator import execute_dsl
+
+        ok, result = execute_dsl(
+            superuser,
+            {"dataset": str(dataset.pk), "mode": "rows", "filters": [], "limit": 10},
+        )
+        assert ok, result
+        assert result["columns"] == ["schema_version", "data.kind", "data.amount|number"]
+        assert any(row.get("data.amount|number") == 3.0 for row in result["rows"])
+
     def test_filter_text_column(self, dataset, submissions, superuser):
         dataset.filters = [{"field": "data.kind", "op": "exact", "value": "a"}]
         result = execute_dataset(dataset, superuser)
@@ -196,6 +208,20 @@ class TestSaveValidation:
                 "bound_model": BOUND,
                 "columns": ["data.kind"],
                 "config": {"date_field": "data.created"},
+            },
+            format="json",
+        )
+        assert response.status_code == 400
+
+    def test_rejects_non_date_root_trend_field(self, auth_client, registry):
+        """根字段趋势只接受 Date/DateTime，整型字段不再被当作时间桶。"""
+        response = auth_client.post(
+            DATASET_URL,
+            {
+                "name": "整数趋势字段",
+                "bound_model": BOUND,
+                "columns": ["schema_version"],
+                "config": {"date_field": "schema_version"},
             },
             format="json",
         )

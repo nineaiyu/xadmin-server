@@ -10,6 +10,7 @@ from audit.models import DataMaskRule
 from audit.serializers.mask import DataMaskRuleSerializer
 from audit.utils.mask import apply_mask, get_mask_rules, invalid_mask_cache
 from audit.views.admin.mask import PREVIEW_MAX_VALUE_LENGTH, PREVIEW_MAX_VALUES
+from common.core.mask import apply_output_mask
 from identity.models import UserInfo
 from identity.serializers.userinfo import UserInfoSerializer
 from server.utils import set_current_request
@@ -157,6 +158,16 @@ class TestMaskRulesCache:
         assert get_mask_rules("system.message") == []
 
 
+class TestJsonPathOutputMask:
+    def test_dataset_json_column_uses_root_field_rule(self, normal_user):
+        """数据集 JSON 路径列（data.phone）按根字段 data 的规则掩码。"""
+        _rule(field="data", mask_type="phone")
+        request = _make_request(normal_user)
+        row = {"data.phone": PHONE, "data.note": "ok"}
+        apply_output_mask(row, request, normal_user, UserInfo)
+        assert row["data.phone"] == "138******78"
+
+
 class TestSerializerMasking:
     def test_normal_user_phone_masked(self, normal_user):
         normal_user.phone = PHONE
@@ -193,17 +204,32 @@ class TestSerializerMasking:
         _rule(field="phone", mask_type="phone", sort=0).roles.add(role)
         _rule(field="email", mask_type="email", keep_head=1, sort=1)
         user_no_role = UserInfo.objects.create_user(username="lisi", password="Test@123456")
-        user_no_role.phone = PHONE
-        user_no_role.email = "nobody@example.com"
+        user_no_role.phone = "13987654321"
+        user_no_role.email = "other@example.com"
         user_no_role.save()
         _make_request(user_no_role)
         data = _serialize(user_no_role)
-        assert data["phone"] == PHONE  # 无该角色 → 不掩码
-        assert data["email"] == "n*****@example.com"  # 无角色限制规则生效
+        assert data["phone"] == "13987654321"  # 无该角色 → 不掩码
+        assert data["email"] == "o****@example.com"  # 无角色限制规则生效
         _make_request(normal_user)
         data2 = _serialize(normal_user)
         assert data2["phone"] == "138******78"  # 命中角色 → 掩码
         assert data2["email"] == "n*****@example.com"
+
+    def test_dept_role_grants_mask(self, normal_user):
+        """部门挂角色与直挂角色同口径：规则命中部门角色时同样掩码。"""
+        from identity.models import DeptInfo, UserRole
+
+        normal_user.phone = PHONE
+        normal_user.save()
+        dept = DeptInfo.objects.create(name="脱敏部门", code="mask_dept")
+        role = UserRole.objects.create(name="脱敏角色", code="mask_role")
+        dept.roles.add(role)
+        normal_user.dept = dept
+        normal_user.save(update_fields=["dept"])
+        _rule(field="phone", mask_type="phone", sort=0).roles.add(role)
+        _make_request(normal_user)
+        assert _serialize(normal_user)["phone"] == "138******78"
 
     def test_multi_rule_smallest_sort_wins(self, normal_user, role):
         normal_user.phone = PHONE
@@ -702,3 +728,52 @@ class TestPreviewPermission:
         role.menu.add(menu_factory(name="wrong-method", path=self.PREVIEW_PERM_PATH, method="GET"))
         api_client.force_authenticate(user=normal_user)
         assert self._post(api_client).status_code == 403
+
+
+class TestMaskPreviewRegexSafety:
+    """自定义正则预览的输入上限与灾难性回溯保护。"""
+
+    def test_preview_rejects_overlong_pattern(self, auth_client):
+        from audit.utils.mask import MAX_CUSTOM_PATTERN_LENGTH
+
+        resp = auth_client.post(
+            "/api/audit/mask-rules/preview",
+            {"value": PHONE, "rule": {"mask_type": "custom", "pattern": "a" * (MAX_CUSTOM_PATTERN_LENGTH + 1)}},
+            format="json",
+        )
+        assert resp.data["code"] == 1000
+        assert resp.data["data"]["invalid_pattern"] is True
+
+    def test_preview_catastrophic_pattern_times_out(self, auth_client):
+        # (a+)+$ 对 500 个 a 后接非 a 字符是指数级回溯；子进程超时应转 400 而不是挂住 worker
+        resp = auth_client.post(
+            "/api/audit/mask-rules/preview",
+            {"value": "a" * 499 + "!", "rule": {"mask_type": "custom", "pattern": "(a+)+$"}},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert "timed out" in str(resp.data).lower() or "超时" in str(resp.data)
+
+
+class TestMaskPreviewSpawnBranch:
+    """请求线程（非主线程）走 spawn：子进程需自行导入本模块，必须仍能正常脱敏。
+
+    只用主线程 fork 分支的用例无法发现「spawn 导入链失败 → 所有预览稳定 400」
+    （单元测试全绿而生产请求全挂）。
+    """
+
+    def test_custom_pattern_preview_works_in_spawn_context(self, monkeypatch):
+        import multiprocessing
+
+        from audit.utils import mask
+
+        monkeypatch.setattr(
+            mask,
+            "_preview_process_context",
+            lambda: (multiprocessing.get_context("spawn"), 15.0),
+        )
+        rule = {"mask_type": "custom", "pattern": r"\d{4}", "keep_head": 0, "keep_tail": 0, "mask_char": "*"}
+        outputs = mask.apply_masks_with_timeout(["13812345678"], rule)
+        # 与主进程口径一致（等价于子进程成功导入模块并执行纯函数）
+        assert outputs == [mask.apply_mask("13812345678", rule)]
+        assert outputs and "*" in outputs[0]

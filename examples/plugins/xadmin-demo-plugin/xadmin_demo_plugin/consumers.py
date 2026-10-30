@@ -7,7 +7,9 @@
 - 只用 channels 公开基类（``AsyncJsonWebsocketConsumer``），不 import 宿主业务 app
   的内部实现（跨 app 耦合是二开最常见的返工来源）；
 - **必须自行鉴权**：内核的 ASGI 栈完成认证并注入 ``scope["user"]``，但准入判断在
-  消费者一侧——未登录直接 ``close(4401)``（与内核既有口径一致）；
+  消费者一侧——**先 ``accept()`` 再 ``close(4401)``**（与内核既有口径一致）。未 accept
+  直接 close 会被 ASGI 服务器降级为握手阶段的 HTTP 403，浏览器只会看到 1006，
+  前端的 4401 终态分支将永远不可达；
 - 模块停用时本通道由 ``ModuleTrimWebsocketMiddleware`` 在准入层拒绝（4404），
   消费者不会收到 connect。
 """

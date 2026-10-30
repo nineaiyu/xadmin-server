@@ -21,6 +21,8 @@ class RouteInfo:
     actions: dict[str, Any]
     view_cls: object
     requires_permission: bool
+    # 权限面分类（menu/public/custom，见 scan.permission_face；custom 需豁免登记）
+    permission_face: str = ""
 
 
 @dataclass

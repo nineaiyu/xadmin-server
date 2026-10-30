@@ -7,7 +7,7 @@
 知识库向量检索当前形态（ADR-065）：
 
 - 向量以 **float32 小端二进制** 存 `AiKnowledgeChunk.embedding`（BinaryField），随行落 PG；
-- 检索 = **进程内存索引**（`ai/utils/ai_embeddings.py` 的 `vector_index()`）：每个 worker
+- 检索 = **进程内存索引**（`ai/services/knowledge/ai_embeddings.py` 的 `vector_index()`）：每个 worker
   启动后按需把全部「新鲜向量」加载进 dict，纯 Python 余弦逐一打分（O(N×dim)）；
 - 索引容量上限 `MAX_INDEXED_VECTORS = 20000`，超限**停用向量通道**（回退词频）并告警；
 - 多 worker 各自维护一份内存索引（元数据签名经 `index_meta` 短 TTL 缓存止血，
@@ -87,13 +87,13 @@
   `ai/migrations/0005_aiknowledgechunk_embedding_vector`：扩展创建（容错，pg_trgm
   同口径）→ `SeparateDatabaseAndState` 加列（DDL 幂等、扩展缺失不阻断 migrate）→
   存量二进制 500 批 `RunPython` 回填。
-- **HNSW 定型助手**（`ai/utils/ai_vector_ddl.py` + `build_ai_vector_index` 命令）：
+- **HNSW 定型助手**（`ai/services/knowledge/ai_vector_ddl.py` + `build_ai_vector_index` 命令）：
   维度稳定 → `ALTER TYPE vector(N)` + `CREATE INDEX ... hnsw vector_cosine_ops
   WITH (m=16, ef_construction=64)`；维度混存（换档窗口）→ **反向定型**撤索引退回
   无维度；<1000 行 no-op；`pg_advisory_lock` 串行化；`build_embeddings` 成功后自动
   尝试，且写库前调 `ensure_column_accepts_dim(dim)` 反向定型护栏（列定型后模型换档
   仍能写进新维度，有测试守护）。
-- **检索重写**（`ai/utils/ai_embeddings.py`）：内存索引（`_INDEX`/`VectorEntry`/
+- **检索重写**（`ai/services/knowledge/ai_embeddings.py`）：内存索引（`_INDEX`/`VectorEntry`/
   逐块余弦）退役；`search_vectors` = SQL 余弦（`CosineDistance` 升序），新鲜度
   `embedding_hash=F("content_hash")`、模型一致、**维度一致**全在 WHERE 收敛（复刻
   旧逐块 skip 语义且不触发 pgvector 维度错误）；RRF 融合层与 `retrieve` 契约零变化；

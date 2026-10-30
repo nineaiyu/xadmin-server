@@ -5,7 +5,7 @@
 > [runbook.md](runbook.md)（故障处置）、`server/monitoring.py`（Sentry 初始化）、
 > `packages/xadmin-common/common/metrics.py` + `packages/xadmin-common/common/celery/metrics.py`（指标定义与任务信号）。
 
-> §六 演练记录（逐次追加）已拆分至 [observability-drills.md](observability-drills.md)。
+> §六 演练记录（历史记录已清理，按需在发布记录中追加）。
 
 ## 一、三支柱现状
 
@@ -60,7 +60,7 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 | `xadmin_celery_tasks_total` | Counter | task, status（SUCCESS / FAILURE / REVOKED …） |
 | `xadmin_celery_task_duration_seconds` | Histogram | task |
 | `xadmin_celery_queue_length` | Gauge | queue（celery / heavy；broker 直读 LLEN，2026-09-29 起进端点——队列积压 SLO 的数据源） |
-| `xadmin_authz_grants_cache_keys` | Gauge | 无（授权池缓存存活键数，SCAN 计数；TTL 300s 兜底，见 cache-keys-audit.md 观察项） |
+| `xadmin_authz_grants_cache_keys` | Gauge | 无（授权池缓存存活键数，SCAN 计数；TTL 300s 兜底，见 architecture/cache.md 观察项） |
 | `xadmin_cache_requests_total` | Counter | cache（缓存名，取 `{View}_{method}` / 被装饰函数名，非缓存键）, result（hit / miss）；命中率 PromQL 见 [cache.md](../architecture/cache.md) |
 
 > **消费端**：[monitoring-stack.md](monitoring-stack.md) 提供 Prometheus + Grafana + blackbox 参考编排、
@@ -150,7 +150,7 @@ tail -5 <仓库>/tmp/slo_cron.log                                 # 执行日志
 | 敏感操作 | 操作日志中间件 | 站内信 + 邮件 | ✅ 已接 |
 | Webhook 投递耗尽 | 投递任务 | 站内信 | ✅ 已接 |
 | API 应用配额软告警 | 开放平台 | 站内信 | ✅ 已接 |
-| 主机资源阈值（CPU / 内存 / 磁盘） | 主机监控心跳 + 周期检查 | 站内信 / 邮件（`ServerPerformanceMessage`）；2026-09-19 起同时落 `MonitorAlert` 流水（监控页可查/可导出） | ✅ 已接 |
+| 主机资源阈值（CPU / 内存 / 磁盘） | 主机监控心跳 + 周期检查 | 站内信 / 邮件（`ServerPerformanceMessage`）；2026-09-19 起同时落 `MonitorAlert` 流水（监控页可查/可导出）；2026-10-25 起开放个人订阅页自选（`user_subscribable`：任何用户可勾选该消息与自选渠道，publish 时并入投递；未勾选 = 不订阅） | ✅ 已接 |
 | **容器 OOM** | `docker events` 的 `oom` 事件 | `ops/oom_alert.sh` → `/api/common/api/ops-alert` → 站内信 + 邮件 + Webhook `system.ops_alert` | ✅ 新增（A1，第十六轮验证） |
 | HTTP 可用性 / P95 延迟 / 任务成功率 / 队列积压 | Prometheus 指标 + SLO 阈值（`ops/monitoring/alerts.yml`） | 参考栈抓取判定 → 宿主侧 `scripts/prometheus_alert_bridge.py` → `ops-alert`（站内信 + 邮件 + Webhook `system.ops_alert`），与 OOM 告警同链路 | ✅ 已接（P1-36，见 [monitoring-stack.md](monitoring-stack.md)） |
 | 端点级 P95（登录/路由/列表/元数据列·字段/导出/导入） | `xadmin_http_request_duration_seconds{view}` 的 `histogram_quantile`，阈值 = 基线 P95 × 3（`XadminCaseLatency*`） | 同上（Prometheus 判定 → 告警桥接 → `ops-alert`） | ✅ 已接（阈值口径见 [monitoring-stack.md](monitoring-stack.md) §三） |
@@ -243,7 +243,7 @@ bash ops/oom_alert.sh
 |--------|------|--------------|------|--------------|
 | ASGI / HTTP | Sentry transaction；`request_uuid` 进日志 | `opentelemetry-instrumentation-asgi`（+`-django`） | 请求级 span + contextvars 传播 | 低（自动仪表，setup 期一行） |
 | ORM / DB | Sentry DB span | `-psycopg`（DBAPI） | 慢查询 span 瀑布 | 低 |
-| Redis / 缓存 | Sentry cache span | `-redis` | 缓存命中 / 耗时 span | 低；本项目缓存语义多（见 [cache-keys-audit.md](../cache-keys-audit.md)），标签需收敛 |
+| Redis / 缓存 | Sentry cache span | `-redis` | 缓存命中 / 耗时 span | 低；本项目缓存语义多（见 [architecture/cache.md](../architecture/cache.md)），标签需收敛 |
 | Celery（四进程） | Sentry task transaction；`packages/xadmin-common/common/celery/metrics.py` 已挂 `task_prerun/postrun` | `-celery`（task header 传 traceparent） | web→worker→heavy 链路贯通 | 中：beat 只投递、worker/heavy 分别建 span；需确认线程池下 context 正确 |
 | channels WS | 无 | 无官方仪表 → 手动 span（connect/receive/disconnect） | WS 上行 / 下行可归因 | 中高：消费方显式埋点，改动面在手写代码 |
 | 外部调用 | `pinned_request`（`requests.Session`），无 trace 头 | `-requests` | AI / webhook / MCP 出站 span + 端到端 | 低；与出站白名单（`packages/xadmin-common/common/utils/outbound.py`）正交 |

@@ -10,8 +10,7 @@
       "list:SystemUserLoginLog",
       "list:UserLoginLog",
       "logout:SystemUserLoginLog",
-      "retrieve:SystemOperationLog",
-      "retrieve:SystemUserLoginLog"
+      "retrieve:SystemOperationLog"
     ],
     "default": [
       "list:UserLoginLog"
@@ -27,8 +26,7 @@
       "list:SystemOperationLog",
       "list:SystemUserLoginLog",
       "list:UserLoginLog",
-      "retrieve:SystemOperationLog",
-      "retrieve:SystemUserLoginLog"
+      "retrieve:SystemOperationLog"
     ]
   }
 }

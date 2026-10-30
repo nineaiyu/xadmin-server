@@ -7,7 +7,7 @@
 import datetime
 from typing import Any
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import TruncDay
 from django.utils import timezone
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -17,14 +17,28 @@ from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
 from audit.services import LoginLogSerializer, OperationLog, UserLoginLog
-from common.base.magic import MagicCacheData, cache_response
 from common.core.response import ApiResponse
+from common.decorators import MagicCacheData, cache_response
 from common.swagger.utils import get_default_response_schema
 from identity.services import UserInfo
 
 # 全量计数的独立缓存窗口（秒）：登录日志等大表 COUNT(*) 代价随存量线性上升，
 # 而卡片数值口径（累计总数）变化缓慢，趋势 results/percent 仍随响应缓存 60 秒刷新
 TOTAL_COUNT_CACHE_TIMEOUT = 600
+
+# 活跃用户卡片的四个统计窗口（天）：今日 / 近 3 天 / 近 7 天 / 近 30 天
+ACTIVE_BUCKET_DAYS = (1, 3, 7, 30)
+
+
+def scope_limited(queryset: Any) -> bool:
+    """统计 queryset 是否因「无数据授权」被收敛为空集。
+
+    只认 ``queryset.none()``（数据权限无授权 / 显式拒绝返回的空 queryset）；
+    有授权但确实没有行时是普通 ``filter`` 结果，``query.is_empty()`` 为 False，
+    仍按真实 0 展示，避免把空库误报成无权限。
+    """
+    query = getattr(queryset, "query", None)
+    return bool(query is not None and query.is_empty())
 
 
 def trend_points(queryset: Any, limit_day: Any = 30) -> Any:
@@ -59,12 +73,17 @@ def trend_points(queryset: Any, limit_day: Any = 30) -> Any:
     return results, percent, window_queryset
 
 
-@MagicCacheData.make_cache(timeout=TOTAL_COUNT_CACHE_TIMEOUT, key_func=lambda scope_key, queryset: scope_key)
+@MagicCacheData.make_cache(
+    timeout=TOTAL_COUNT_CACHE_TIMEOUT,
+    key_func=lambda scope_key, queryset: f"{scope_key}:{queryset.model._meta.label_lower}",
+)
 def cached_total_count(scope_key: Any, queryset: Any) -> Any:
     """全量计数走数据缓存（走既有 MagicCacheData 基建，单飞 + 占位保护）。
 
     scope_key 为用户主键：统计 queryset 经默认数据权限过滤（非超管按授权收敛、
-    无授权返回空集），计数随用户不同，缓存键必须携带用户维度。
+    无授权返回空集），计数随用户不同，缓存键必须携带用户维度；同一用户会命中
+    多个统计 action（登录总数 / 用户总数），键还必须带模型标识，否则两个接口
+    会互相复用对方的 count。
     """
     return queryset.count()
 
@@ -80,6 +99,34 @@ def trend_info(queryset: Any, limit_day: Any = 30, total_count: Any = True) -> A
     return results, percent, queryset.count() if total_count else window_queryset.count()
 
 
+def active_user_buckets(queryset: Any, today: Any = None) -> list[list[Any]]:
+    """活跃用户矩阵 ``[[天数, 注册数, 活跃数], ...]``：单次聚合替代逐窗 COUNT。
+
+    四个窗口各含「注册数 / 活跃数」两列，逐窗两次 ``.count()`` 是 8 次全表扫描
+    （大用户表上每列都是独立 COUNT）。改为一次 ``aggregate`` 内带 filter 的
+    ``Count('pk', filter=Q(...))``：同表只扫一遍，行数口径不变（按主键计数，
+    不再落到 ``values('last_login')`` 的 distinct 语义）。
+    """
+    today = today or timezone.localtime(timezone.now())
+    windows = {
+        date: today
+        - datetime.timedelta(
+            days=date - 1,
+            hours=today.hour,
+            minutes=today.minute,
+            seconds=today.second,
+            microseconds=today.microsecond,
+        )
+        for date in ACTIVE_BUCKET_DAYS
+    }
+    aggregates: dict[str, Any] = {}
+    for date, x_day in windows.items():
+        aggregates[f"registered_{date}"] = Count("pk", filter=Q(date_joined__gte=x_day))
+        aggregates[f"active_{date}"] = Count("pk", filter=Q(last_login__gte=x_day))
+    row = queryset.aggregate(**aggregates)
+    return [[date, row[f"registered_{date}"], row[f"active_{date}"]] for date in ACTIVE_BUCKET_DAYS]
+
+
 def get_schema_response(has_count: Any = True) -> Any:
     ext = {}
     if has_count:
@@ -87,6 +134,7 @@ def get_schema_response(has_count: Any = True) -> Any:
             "percent": build_basic_type(OpenApiTypes.NUMBER),
             "count": build_basic_type(OpenApiTypes.NUMBER),
         }
+    ext["scope_limited"] = build_basic_type(OpenApiTypes.BOOL)
     return get_default_response_schema(
         {
             "results": build_array_type(
@@ -125,7 +173,12 @@ class DashboardViewSet(GenericViewSet):
         queryset = self.filter_queryset(self.get_queryset())
         results, percent, _ = trend_points(queryset, 7)
         # count 口径不变（累计登录总数），仅走独立数据缓存避免全表 COUNT 高频回源
-        return ApiResponse(results=results, percent=percent, count=cached_total_count(request.user.pk, queryset))
+        return ApiResponse(
+            results=results,
+            percent=percent,
+            count=cached_total_count(request.user.pk, queryset),
+            scope_limited=scope_limited(queryset),
+        )
 
     @extend_schema(responses=get_schema_response())
     @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-total")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -134,21 +187,28 @@ class DashboardViewSet(GenericViewSet):
         """{cls}-用户数量"""
         queryset = self.filter_queryset(self.get_queryset())
         results, percent, _ = trend_points(queryset, 7)
-        return ApiResponse(results=results, percent=percent, count=cached_total_count(request.user.pk, queryset))
+        return ApiResponse(
+            results=results,
+            percent=percent,
+            count=cached_total_count(request.user.pk, queryset),
+            scope_limited=scope_limited(queryset),
+        )
 
     @extend_schema(responses=get_schema_response(False))
     @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-registered-trend")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
     def user_registered_trend(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-注册报表"""
-        return ApiResponse(data=trend_points(self.filter_queryset(self.get_queryset()))[0])
+        queryset = self.filter_queryset(self.get_queryset())
+        return ApiResponse(data=trend_points(queryset)[0], scope_limited=scope_limited(queryset))
 
     @extend_schema(responses=get_schema_response(False))
     @action(methods=["GET"], detail=False, url_path="user-login-trend")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
     def user_login_trend(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-登录报表"""
-        return ApiResponse(data=trend_points(self.filter_queryset(self.get_queryset()))[0])
+        queryset = self.filter_queryset(self.get_queryset())
+        return ApiResponse(data=trend_points(queryset)[0], scope_limited=scope_limited(queryset))
 
     @extend_schema(responses=get_schema_response())
     @action(methods=["GET"], detail=False, queryset=OperationLog.objects.all(), url_path="today-operate-total")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -156,34 +216,27 @@ class DashboardViewSet(GenericViewSet):
     def today_operate_total(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-最近操作日志"""
         # 前端该卡片只使用 results/percent，不使用 count，故按趋势窗口计数，避免全表 COUNT
-        results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7, total_count=False)
-        return ApiResponse(results=results, percent=percent, count=count)
+        queryset = self.filter_queryset(self.get_queryset())
+        results, percent, count = trend_info(queryset, 7, total_count=False)
+        return ApiResponse(
+            results=results,
+            percent=percent,
+            count=count,
+            scope_limited=scope_limited(queryset),
+        )
 
     @extend_schema(
         responses=get_default_response_schema(
-            {"data": build_array_type(build_array_type(build_basic_type(OpenApiTypes.NUMBER) or {}))}
+            {
+                "data": build_array_type(build_array_type(build_basic_type(OpenApiTypes.NUMBER) or {})),
+                "scope_limited": build_basic_type(OpenApiTypes.BOOL),
+            }
         )
     )
     @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-active")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     @cache_response(timeout=60, key_func="get_cache_key")
     def user_active(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """{cls}-活跃用户"""
-        # 与 trend_info 保持一致：按本地时间切分自然日
-        today = timezone.localtime(timezone.now())
-        active_date_list = [1, 3, 7, 30]
-        results = []
         queryset = self.filter_queryset(self.get_queryset())
-        for date in active_date_list:
-            x_day = today - datetime.timedelta(
-                days=date - 1,
-                hours=today.hour,
-                minutes=today.minute,
-                seconds=today.second,
-                microseconds=today.microsecond,
-            )
-            x_day_register_user = queryset.filter(date_joined__gte=x_day).count()
-            # values('last_login').annotate(...).count() 统计的是不同 last_login 值的个数，
-            # 同一秒登录的多个用户会被合并成 1，导致活跃用户数被系统性低估
-            x_day_active_user = queryset.filter(last_login__gte=x_day).count()
-            results.append([date, x_day_register_user, x_day_active_user])
-        return ApiResponse(data=results)
+        # 与 trend_info 保持一致：按本地时间切分自然日；四个窗口合并为单次聚合
+        return ApiResponse(data=active_user_buckets(queryset), scope_limited=scope_limited(queryset))

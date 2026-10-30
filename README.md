@@ -30,7 +30,7 @@ bash ops/dev_up.sh              # --with-demo 追加演示数据；--backend-onl
 uv sync --all-groups          # 依赖以 uv.lock 为准，见下方「依赖管理」
 #   无 uv 时：python3.14 -m venv .venv && source .venv/bin/activate
 #             && pip install -r requirements.txt -r requirements-dev.txt
-cp config_example.yml config.yml   # 可跳过：不创建时自动使用内置默认配置并自动生成 SECRET_KEY
+bash ops/init_config.sh            # 生成 config.yml（密钥/凭据随机化）；可跳过：不创建时用内置默认配置并自动生成密钥
 uv run python manage.py migrate    # 走 uv 时命令加 `uv run`；或 source .venv/bin/activate 后直接用 python
 uv run python ops/init_data.py   # 幂等；--with-demo / --skip-ip-db / --admin-password
 uv run python manage.py start all -d

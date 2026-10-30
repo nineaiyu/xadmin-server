@@ -19,8 +19,8 @@ class RenderAiMixin:
     def _render_ai_declarations(self, ctx: dict[str, Any], options: dict[str, Any]) -> str:
         """AI 动作声明骨架：只读动作直接给出，写动作以注释给出。
 
-        与 ``ai/utils/ai_api_actions.py`` 同一格式（``api_action`` 声明式复用
-        业务接口）：产物放应用根目录，由 ``ai.utils.ai_registry`` 自动发现，
+        与 ``ai/services/actions/ai_api_actions.py`` 同一格式（``api_action`` 声明式复用
+        业务接口）：产物放应用根目录，由 ``ai.services.actions.ai_registry`` 自动发现，
         无需改动 ai 应用。产物过 ``manage.py ai_tool_audit``（端点可发现）与
         ``doctor``（声明路径可解析）。--with-tags 时在产物末尾追加标签白名单声明；
         --with-module 时动作自动标注所属模块（停用模块即从 AI 目录移除）。

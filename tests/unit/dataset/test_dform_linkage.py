@@ -185,7 +185,28 @@ class TestSubmissionWithLinkages:
     def test_hidden_field_skips_required_and_is_dropped(self):
         schema = _schema([{"target": "reason", "field": "kind", "op": "eq", "value": "A", "effect": "hide"}])
         normalized = validate_submission_data(schema, {"kind": "A", "reason": "随便写的"})
-        assert normalized["reason"] is None, "隐藏字段不落库"
+        assert normalized["reason"] is None, "新建时隐藏字段不落库"
+
+    def test_edit_keeps_previously_stored_value_when_hidden(self):
+        """编辑：把触发值改成隐藏态时保留上次已存值（编辑保留联动隐藏值）。"""
+        schema = _schema([{"target": "reason", "field": "kind", "op": "eq", "value": "A", "effect": "hide"}])
+        previous = {"kind": "B", "reason": "上次填的说明"}
+
+        normalized = validate_submission_data(schema, {"kind": "A"}, previous=previous)
+
+        assert normalized["reason"] == "上次填的说明"
+        assert normalized["kind"] == "A"
+
+    def test_edit_without_previous_value_still_none(self):
+        schema = _schema([{"target": "reason", "field": "kind", "op": "eq", "value": "A", "effect": "hide"}])
+        normalized = validate_submission_data(schema, {"kind": "A"}, previous={"kind": "B"})
+        assert normalized["reason"] is None
+
+    def test_edit_visible_field_still_revalidated(self):
+        """保留旧值只针对隐藏字段：可见字段照常重新校验（不能被 previous 绕过）。"""
+        schema = _schema([{"target": "reason", "field": "kind", "op": "eq", "value": "A", "effect": "hide"}])
+        with pytest.raises(ValidationError):
+            validate_submission_data(schema, {"kind": "B"}, previous={"kind": "A", "reason": "旧值"})
 
     def test_dynamic_require_enforced(self):
         schema = _schema([{"target": "amount", "field": "kind", "op": "eq", "value": "B", "effect": "require"}])

@@ -22,15 +22,52 @@
 
 二开兼容：旧名 ``_change_fields`` / ``_data`` 保留读写别名并告
 DeprecationWarning，一个版本周期后移除。
+
+响应扩展：本混入同时承担「视图侧只读派生字段」的输出注入——序列化时调用
+视图的 ``get_readonly_values(data)``（如设置 tab 的「实际生效状态」诊断）,
+把计算值合并进响应载荷。不声明为 serializer 字段,列元数据与保存契约均不受
+影响;视图未实现该钩子时为零开销跳过。
 """
 
 import warnings
 from typing import Any
 
+from django.conf import settings as django_settings
 from django.utils.translation import gettext_lazy as _
+from rest_framework.serializers import Serializer
 
 
-class SettingSaveContractMixin:
+def effective_value(serializer: Serializer, name: str, attrs: dict[str, Any], default: Any) -> Any:
+    """跨字段组合校验取「保存后实际生效值」：显式提交取提交值，否则回落运行时当前值。
+
+    PATCH 只持久化显式提交键；带 default 的字段未提交也会进 attrs，
+    直接读 attrs 会把「未提交」误判成「提交了默认值」。组合校验的语义是
+    保存后的整体配置，未提交键必须回落运行时 settings 当前值。validate()
+    阶段 validated_data 尚未装配，字段级校验通过的提交值以 attrs 传入。
+    """
+    if name in serializer.initial_data:
+        return attrs.get(name, serializer.initial_data.get(name))
+    return getattr(django_settings, name, default)
+
+
+class SettingReadonlyValuesMixin(Serializer):
+    """序列化输出注入视图侧只读派生字段（不进列元数据、不参与保存校验）。
+
+    继承 Serializer 而非裸 mixin：to_representation / context 由宿主提供，
+    类型检查可校验；所有使用点均与 serializers.Serializer 组合，MRO 线性不受影响。
+    """
+
+    def to_representation(self, instance: Any) -> Any:
+        data = super().to_representation(instance)
+        getter = getattr(self.context.get("view"), "get_readonly_values", None)
+        if callable(getter):
+            extra = getter(data)
+            if extra:
+                data.update(extra)
+        return data
+
+
+class SettingSaveContractMixin(SettingReadonlyValuesMixin):
     """与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。"""
 
     change_fields: list[str] = []

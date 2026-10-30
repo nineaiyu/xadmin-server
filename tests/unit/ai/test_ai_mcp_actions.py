@@ -19,9 +19,9 @@ import pytest
 from django.utils.translation import gettext as _
 
 from ai.models.mcp import McpServer
-from ai.utils import ai_mcp_actions as mcp_actions
-from ai.utils import mcp_client as mcp
-from ai.utils.ai_mcp_actions import (
+from ai.services.mcp import ai_mcp_actions as mcp_actions
+from ai.services.mcp import mcp_client as mcp
+from ai.services.mcp.ai_mcp_actions import (
     MAX_ARGUMENTS_BYTES,
     McpActionSpec,
     mcp_action_specs,
@@ -214,7 +214,7 @@ class TestMcpActionSpecFilters:
     def test_snapshot_missing_schema_skipped(self, superuser, caplog):
         """旧快照缺 input_schema：fail-closed 跳过并告警提示重新 sync。"""
         _server(tools_snapshot=[{"name": "echo", "description": "旧快照", "read_only": True}])
-        with caplog.at_level("WARNING", logger="ai.utils.ai_mcp_actions"):
+        with caplog.at_level("WARNING", logger="ai.services.mcp.ai_mcp_actions"):
             assert mcp_action_specs(superuser) == {}
         assert "re-sync required" in caplog.text
 
@@ -234,8 +234,8 @@ class TestMcpActionSpecFilters:
 
     def test_prompt_catalog_and_openai_tools_include_dynamic(self, superuser):
         """三条消费轨同源：prompt 目录与 openai_tools 都含动态动作（params 为 schema 原文）。"""
-        from ai.utils.ai_actions import build_catalog
-        from ai.utils.ai_tool_catalog import openai_tools
+        from ai.services.actions.ai_actions import build_catalog
+        from ai.services.actions.ai_tool_catalog import openai_tools
 
         server = _server()
         key = f"mcp.{server.pk}.echo"
@@ -260,8 +260,9 @@ class TestApprovalAndValidation:
             read_only=read_only,
         )
 
-    def test_read_only_never_requires_approval(self, normal_user, superuser):
-        assert self._spec(True).requires_approval(normal_user, {}) is False
+    def test_external_read_only_hint_never_skips_approval(self, normal_user, superuser):
+        """外接工具不凭对端 readOnlyHint 免审批（外部输入不可决定信任级别）。"""
+        assert self._spec(True).requires_approval(normal_user, {}) is True
         assert self._spec(True).requires_approval(superuser, {}) is False
 
     def test_non_read_only_high_risk(self, normal_user, superuser):

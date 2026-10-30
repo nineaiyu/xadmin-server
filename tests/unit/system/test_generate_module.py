@@ -2,6 +2,7 @@
 """`manage.py generate_module` 与「app 侧模块声明」扩展点测试。"""
 
 import importlib.util
+import json
 import sys
 import types
 from io import StringIO
@@ -20,9 +21,13 @@ from common.core.modules import ModuleSpec, all_module_specs, module_index
 def demo_app(tmp_path, monkeypatch):
     """把已安装的 demo app 指向临时目录，避免脚手架测试写进仓库。"""
 
-    stub = types.SimpleNamespace(name="demo", verbose_name="演示应用", path=str(tmp_path))
+    stub = types.SimpleNamespace(name="demo", label="demo", verbose_name="演示应用", path=str(tmp_path))
+    real_get_app_config = django_apps.get_app_config
     monkeypatch.setitem(django_apps.app_configs, "demo", stub)
-    monkeypatch.setattr(django_apps, "get_app_config", lambda label: stub if label == "demo" else None)
+    # 其他 app 回退真实注册表（--check 等全库校验会查任意 app）
+    monkeypatch.setattr(
+        django_apps, "get_app_config", lambda label: stub if label == "demo" else real_get_app_config(label)
+    )
     return tmp_path
 
 
@@ -83,6 +88,107 @@ class TestGenerateModuleCommand:
         with pytest.raises(CommandError, match="已存在"):
             run_generate("my_biz", "--app", "demo")
         run_generate("my_biz", "--app", "demo", "--force")  # 覆盖成功
+
+
+class TestSeedSkeleton:
+    """--with-seeds：种子四件套 + ai_declarations 骨架与回写串联。"""
+
+    SEED_FILES = (
+        "seeds/manifest.json",
+        "seeds/menumeta.json",
+        "seeds/menu.json",
+        "seeds/fieldpermission.json",
+        "seeds/modellabelfield.json",
+        "ai_declarations.py",
+    )
+
+    def test_with_seeds_generates_containers(self, demo_app):
+        output = run_generate(
+            "my_biz",
+            "--app",
+            "demo",
+            "--label",
+            "自有业务",
+            "--menu",
+            "MyBizPage",
+            "--route",
+            "^/api/demo/",
+            "--with-seeds",
+        )
+        for rel in self.SEED_FILES:
+            assert (demo_app / rel).exists(), rel
+        manifest = json.loads((demo_app / "seeds/manifest.json").read_text(encoding="utf-8"))
+        assert manifest["app"] == "demo"
+        assert manifest["url_prefixes"] == ["api/demo/"]
+        assert {item["name"] for item in manifest["files"]} == {
+            "menumeta.json",
+            "menu.json",
+            "fieldpermission.json",
+            "modellabelfield.json",
+        }
+        menu = json.loads((demo_app / "seeds/menu.json").read_text(encoding="utf-8"))
+        assert [row["fields"]["name"] for row in menu] == ["MyBizPage"]
+        row = menu[0]["fields"]
+        assert row["parent"] is None and row["menu_type"] == 1
+        meta = json.loads((demo_app / "seeds/menumeta.json").read_text(encoding="utf-8"))
+        assert row["meta"] == meta[0]["pk"]  # 页面根 → meta 跨文件引用可解析
+        assert meta[0]["fields"]["title"] == "自有业务"
+        # 回写指引随骨架一并输出
+        assert "sync_menu_permissions --update-seed --default-parent MyBizPage" in output
+
+    def test_seed_pk_is_deterministic(self, demo_app):
+        from system.services.module_scaffold import seed_pk
+
+        run_generate("my_biz", "--app", "demo", "--menu", "MyBizPage", "--with-seeds")
+        menu = json.loads((demo_app / "seeds/menu.json").read_text(encoding="utf-8"))
+        assert menu[0]["pk"] == seed_pk("system.menu", "demo", "MyBizPage")
+        run_generate("my_biz", "--app", "demo", "--menu", "MyBizPage", "--with-seeds", "--force")
+        again = json.loads((demo_app / "seeds/menu.json").read_text(encoding="utf-8"))
+        assert again[0]["pk"] == menu[0]["pk"]  # 重复生成幂等，无主键漂移
+
+    def test_existing_seed_files_not_overwritten(self, demo_app):
+        run_generate("my_biz", "--app", "demo", "--menu", "MyBizPage", "--with-seeds")
+        hand_written = '[\n {"model": "system.menu", "pk": "hand-written"}\n]\n'
+        (demo_app / "seeds/menu.json").write_text(hand_written, encoding="utf-8")
+        output = run_generate("my_biz", "--app", "demo", "--menu", "MyBizPage", "--with-seeds", "--force")
+        assert "跳过（已存在）：demo/seeds/menu.json" in output
+        assert (demo_app / "seeds/menu.json").read_text(encoding="utf-8") == hand_written
+
+    def test_with_seeds_requires_menu(self, demo_app):
+        with pytest.raises(CommandError, match="需要至少一个 --menu"):
+            run_generate("my_biz", "--app", "demo", "--with-seeds")
+        assert not (demo_app / "seeds").exists()  # 校验先于任何文件写入
+
+    def test_sync_chains_seed_commands(self, demo_app, monkeypatch):
+        calls = []
+
+        def fake_call_command(name, *args, **kwargs):
+            calls.append((name, args))
+
+        monkeypatch.setattr("system.management.commands.generate_module.call_command", fake_call_command)
+        run_generate("my_biz", "--app", "demo", "--menu", "MyBizPage", "--with-seeds", "--sync")
+        assert calls[0][0] == "load_init_json"
+        assert calls[1] == ("sync_menu_permissions", ("--update-seed", "--default-parent", "MyBizPage"))
+
+    def test_seed_skeleton_passes_check(self, demo_app):
+        """生成的骨架必须过种子结构校验（--check 无库运行：行结构 + 跨文件引用 + 归属）。"""
+        run_generate(
+            "my_biz",
+            "--app",
+            "demo",
+            "--label",
+            "自有业务",
+            "--menu",
+            "MyBizPage",
+            "--route",
+            "^/api/demo/",
+            "--with-seeds",
+        )
+        out = StringIO()
+        call_command("load_init_json", "--check", stdout=out)
+        report = out.getvalue()
+        # demo app 指向临时目录：仓库内既有种子应零错误，骨架行也不产生新问题
+        assert "error" not in report.lower() or "0 error" in report.lower() or "错误 0" in report
 
 
 class TestAppModuleDiscovery:

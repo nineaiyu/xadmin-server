@@ -13,7 +13,7 @@ from django.conf import settings
 from django.utils import timezone
 from django_celery_results.models import TaskResult
 
-from common.base.utils import remove_file
+from common.base.crypto import remove_file
 from common.celery.utils import get_celery_task_log_path
 from common.utils import get_logger
 from task.models.export import ExportRecord

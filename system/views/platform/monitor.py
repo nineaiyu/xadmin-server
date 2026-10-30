@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """系统监控面板：主机资源 / 服务健康 / Redis / Celery / 指标历史 / 告警 / 事件 / 导出。
 
-数据源全部复用既有基建（不引入新组件），采集逻辑在 system/utils/platform/monitor_metrics.py
+数据源全部复用既有基建（不引入新组件），采集逻辑在 system/services/monitor/metrics.py
 （与 WS 实时推送 ws_monitor.py 共用，保证两路口径一致）：
 - 主机指标：common.Monitor 心跳表（startup 线程 30s 落盘，psutil 采集）+ 实时快照；
 - 指标历史：monitor_history（时间范围/聚合粒度/多指标/环比，按需直查不缓存）；
@@ -24,12 +24,13 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
-from common.base.magic import cache_response
 from common.core.response import ApiResponse
+from common.decorators import cache_response
 from common.swagger.utils import get_default_response_schema
-from system.utils.platform import monitor_events, monitor_history
-from system.utils.platform import monitor_metrics as metrics
-from system.utils.platform.monitor_export import render_table_export
+from system.services.monitor import events as monitor_events
+from system.services.monitor import history as monitor_history
+from system.services.monitor import metrics
+from system.services.monitor.export import render_streaming_export, render_table_export
 
 THRESHOLD_CATEGORY = "security_monitor"
 
@@ -215,35 +216,22 @@ class MonitorViewSet(GenericViewSet):
         """
         file_format = "xlsx" if request.query_params.get("type") == "xlsx" else "csv"
         if request.query_params.get("kind") == "alerts":
-            # 导出按块循环取全量：不静默截断，单次查询行数仍受 EXPORT_CHUNK_SIZE 约束
-            alert_rows = []
-            offset = 0
-            while True:
-                page = monitor_events.collect_alerts(
-                    status=request.query_params.get("status") or None,
-                    item=request.query_params.get("item") or None,
-                    range_key=request.query_params.get("range") or "30d",
-                    limit=monitor_events.EXPORT_CHUNK_SIZE,
-                    offset=offset,
-                )
-                alert_rows.extend(page["results"])
-                # 空页兜底：total 与分页切片是两条独立查询，并发删除下可能出现
-                # "truncated 为真但当页为空"，直接收尾避免空转
-                if not page["results"] or not page["truncated"]:
-                    break
-                offset += len(page["results"])
-            sheets = monitor_events.build_alert_export_sheets(alert_rows)
-            prefix = "monitor-alerts"
-        else:
-            result = monitor_history.collect_history(
-                range_key=request.query_params.get("range"),
-                start=request.query_params.get("start"),
-                end=request.query_params.get("end"),
-                interval=request.query_params.get("interval"),
-                metrics=request.query_params.get("metrics"),
+            title, header = monitor_events.alert_export_columns()
+            rows = monitor_events.iter_alert_export_rows(
+                status=request.query_params.get("status") or None,
+                item=request.query_params.get("item") or None,
+                range_key=request.query_params.get("range") or "30d",
             )
-            sheets = monitor_history.build_history_export_sheets(result)
-            prefix = "monitor-history"
+            return render_streaming_export("monitor-alerts", title, header, rows, file_format)
+        result = monitor_history.collect_history(
+            range_key=request.query_params.get("range"),
+            start=request.query_params.get("start"),
+            end=request.query_params.get("end"),
+            interval=request.query_params.get("interval"),
+            metrics=request.query_params.get("metrics"),
+        )
+        sheets = monitor_history.build_history_export_sheets(result)
+        prefix = "monitor-history"
         filename, content, content_type = render_table_export(prefix, sheets, file_format)
         response = HttpResponse(content, content_type=content_type)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'

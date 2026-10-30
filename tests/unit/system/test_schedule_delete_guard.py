@@ -58,6 +58,8 @@ class TestScheduleDeleteGuard:
         response = _destroy(viewset, superuser, schedule_obj)
         assert response.status_code == 400
         assert "引用任务A" in str(response.data)
+        assert response.data["data"]["total"] >= 1
+        assert any(item["name"] == "引用任务A" for item in response.data["data"]["tasks"])
         assert PeriodicTask.objects.filter(pk=periodic.pk).exists()
         assert type(schedule_obj).objects.filter(pk=schedule_obj.pk).exists()
 

@@ -12,6 +12,7 @@
 
 import pytest
 from django.core.cache import cache
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -58,6 +59,19 @@ class TestApplicationManagement:
         assert detail.data["data"]["client_secret_prefix"] == application["client_secret"][:12]
         row = ApiApplication.objects.get(pk=application["pk"])
         assert not row.client_secret_hash.startswith("aps_")  # 库内只有哈希
+
+    def test_ip_allowlist_is_validated_and_cleaned(self, auth_client):
+        """应用白名单与 PAT 同口径：空白项剔除，非法 IP/CIDR 直接 400。"""
+        application = _create_application(auth_client, ip_allowlist=[" 127.0.0.1 ", "127.0.0.1", "", "10.0.0.0/8"])
+        assert application["ip_allowlist"] == ["127.0.0.1", "10.0.0.0/8"]
+
+        invalid = auth_client.post(
+            APPS_URL,
+            {"name": "非法白名单", "ip_allowlist": ["127.0.0.1", "999.1.1.1"]},
+            format="json",
+        )
+        assert invalid.status_code == 400
+        assert "ip_allowlist" in invalid.data
 
     def test_callback_url_requires_https(self, auth_client):
         resp = auth_client.post(
@@ -143,6 +157,32 @@ class TestClientCredentials:
         row.expired_at = timezone.now() - timezone.timedelta(minutes=1)
         row.save(update_fields=["expired_at"])
         assert _issue_token(application).status_code == 401
+
+    def test_scope_or_ip_change_revokes_existing_tokens(self, auth_client):
+        """收紧 scopes / IP 白名单必须让已签发凭证立即失效，不能等 TTL。"""
+        application = _create_application(auth_client, scopes=["api/identity/userinfo"])
+        token = _issue_token(application).data["data"]["access_token"]
+        client = _pat_client(token)
+        assert client.get("/api/identity/userinfo").status_code == 200
+
+        updated = auth_client.patch(
+            f"{APPS_URL}/{application['pk']}",
+            {"scopes": []},
+            format="json",
+        )
+        assert updated.data["code"] == 1000
+        assert PersonalAccessToken.objects.get(api_application_id=application["pk"]).is_active is False
+        assert client.get("/api/identity/userinfo").status_code == 401
+
+        second = _issue_token(application).data["data"]["access_token"]
+        second_client = _pat_client(second)
+        assert second_client.get("/api/identity/userinfo").status_code == 200
+        auth_client.patch(
+            f"{APPS_URL}/{application['pk']}",
+            {"ip_allowlist": ["10.0.0.0/8"]},
+            format="json",
+        )
+        assert second_client.get("/api/identity/userinfo").status_code == 401
 
     def test_application_scopes_restrict_paths(self, auth_client):
         """scope 限制凭证可访问的路径（超管 owner 同样受限，口径见 IsAuthenticated）。"""
@@ -231,9 +271,10 @@ class TestCallbackProbe:
         assert calls[0]["headers"]["X-Webhook-Signature"].startswith("sha256=")
         assert calls[0]["headers"]["X-Webhook-Timestamp"]
 
+    @override_settings(WEBHOOK_ALLOW_LOOPBACK=False)
     def test_test_callback_keeps_outbound_guard(self, auth_client, monkeypatch):
         """探测与投递链路同口径过出站守卫：私网拒绝（allow_private=False），
-        OUTBOUND_ALLOWED_HOSTS 透传放行；守卫拒绝按失败结果返回而非 500。"""
+        环回跟随 WEBHOOK_ALLOW_LOOPBACK；守卫拒绝按失败结果返回而非 500。"""
         seen_kwargs = {}
 
         def fake_pinned_request(method, url, **kwargs):
@@ -248,8 +289,23 @@ class TestCallbackProbe:
         assert results[0]["success"] is False
         assert "blocked by outbound guard" in results[0]["detail"]
         assert seen_kwargs["allow_private"] is False
-        assert seen_kwargs["allow_loopback"] is True
+        assert seen_kwargs["allow_loopback"] is False
         assert isinstance(seen_kwargs["allowed_hosts"], tuple)
+
+    @override_settings(WEBHOOK_ALLOW_LOOPBACK=True)
+    def test_test_callback_loopback_allowed_by_policy(self, auth_client, monkeypatch):
+        """本地联调/测试栈显式放行环回时，回调测试与 Webhook 投递同口径放行。"""
+        seen_kwargs = {}
+
+        def fake_pinned_request(method, url, **kwargs):
+            seen_kwargs.update(kwargs)
+            raise ConnectionError("blocked by outbound guard")
+
+        monkeypatch.setattr("common.utils.outbound.pinned_request", fake_pinned_request)
+        application = _create_application(auth_client, callback_urls=["https://example.com/hook"])
+        resp = auth_client.post(f"{APPS_URL}/{application['pk']}/test-callback")
+        assert resp.data["code"] == 1000
+        assert seen_kwargs["allow_loopback"] is True
 
     def test_test_callback_without_urls(self, auth_client):
         application = _create_application(auth_client)

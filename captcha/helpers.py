@@ -1,11 +1,11 @@
 import operator
 import random
 import re
+import secrets
 from collections.abc import Callable, Iterable
 from typing import Any
 
 from django.conf import settings
-from django.urls import reverse
 from PIL import Image
 
 #: 数学验证码的运算表：显式映射（不用 eval——输入虽全部内部生成，
@@ -40,8 +40,8 @@ def filter_functions() -> Iterable[Callable[[Image.Image], Image.Image]]:
 
 
 def math_challenge() -> tuple[str, str]:
-    symbol = random.choice(tuple(_MATH_OPERATORS))
-    operands = (random.randint(1, 10), random.randint(1, 10))
+    symbol = secrets.choice(tuple(_MATH_OPERATORS))
+    operands = (secrets.randbelow(10) + 1, secrets.randbelow(10) + 1)
     if operands[0] < operands[1] and "-" == symbol:
         operands = (operands[1], operands[0])
     challenge = f"{operands[0]}{symbol}{operands[1]}"
@@ -55,14 +55,14 @@ def math_challenge() -> tuple[str, str]:
 def random_char_challenge() -> tuple[str, str]:
     chars, ret = "abcdefghijklmnopqrstuvwxyz", ""
     for _ in range(settings.CAPTCHA_LENGTH):
-        ret += random.choice(chars)
+        ret += secrets.choice(chars)
     return ret.upper(), ret
 
 
 def unicode_challenge() -> tuple[str, str]:
     chars, ret = "äàáëéèïíîöóòüúù", ""
     for _ in range(settings.CAPTCHA_LENGTH):
-        ret += random.choice(chars)
+        ret += secrets.choice(chars)
     return ret.upper(), ret
 
 
@@ -113,15 +113,3 @@ def post_smooth(image: Image.Image) -> Image.Image:
     from PIL import ImageFilter
 
     return image.filter(ImageFilter.SMOOTH)
-
-
-def captcha_image_url(key: str) -> str:
-    """Return url to image. Need for ajax refresh and, etc"""
-    url: str = reverse("system:captcha-image", args=[key])
-    return url
-
-
-def captcha_audio_url(key: str) -> str:
-    """Return url to image. Need for ajax refresh and, etc"""
-    url: str = reverse("system:captcha-audio", args=[key])
-    return url

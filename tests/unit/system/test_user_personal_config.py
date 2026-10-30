@@ -29,14 +29,14 @@ def _serializer_payload(users, key=KEY, value=None):
 
 class TestBatchCreateUserPersonalConfig:
     def test_batch_create_multiple_users(self):
-        """多用户批量建参：逐用户各落一条，返回最后一条实例。"""
+        """多用户批量建参：逐用户各落一条，返回首条实例（响应主键稳定可预期）。"""
         users = [UserInfo.objects.create_user(username=f"cfg_u{i}", password="Test@123456") for i in range(3)]
         serializer = UserPersonalConfigSerializer(data=_serializer_payload(users))
         assert serializer.is_valid(), serializer.errors
         instance = serializer.save()
         assert UserPersonalConfig.objects.filter(key=KEY).count() == 3
         assert {row.owner_id for row in UserPersonalConfig.objects.filter(key=KEY)} == {user.pk for user in users}
-        assert instance.owner_id == users[-1].pk
+        assert instance.owner_id == users[0].pk
 
     def test_duplicate_users_in_request_deduped(self):
         """同一用户重复提交只建一条（否则撞 (owner, key) 唯一约束）。"""

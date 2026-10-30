@@ -79,7 +79,7 @@ class TestChangeFieldsContract:
 class TestWriteOnlySecretFallback:
     def test_empty_secret_keeps_stored_value(self, auth_client):
         """write_only 密文提交空值 = 不修改（回退已存值）。"""
-        from common.base.utils import signer
+        from common.base.crypto import signer
 
         stored = "stored-ldap-password"
         Setting.objects.create(
@@ -94,6 +94,50 @@ class TestWriteOnlySecretFallback:
 
         row = Setting.objects.get(name="LDAP_BIND_PASSWORD")
         assert row.cleaned_value == stored, "空密文提交不得清掉已存密码"
+
+    def test_masked_secret_echo_not_persisted(self, auth_client):
+        """响应回填的掩码占位值被表单原样回传时 = 未修改，不得把掩码串加密成新密钥。"""
+        from common.base.crypto import signer
+        from common.core.auth.credentials import MASK
+
+        stored = "stored-ldap-password"
+        Setting.objects.create(
+            name="LDAP_BIND_PASSWORD",
+            value=signer.encrypt(json.dumps(stored).encode("utf-8")).decode("utf-8"),
+            encrypted=True,
+            category="ldap",
+        )
+
+        resp = auth_client.patch(LDAP_URL, {"LDAP_BIND_PASSWORD": MASK})
+        assert resp.data["code"] == 1000, resp.data
+
+        row = Setting.objects.get(name="LDAP_BIND_PASSWORD")
+        assert row.cleaned_value == stored, "掩码占位值不得落库覆盖已存密码"
+        # 掩码提交视为未修改：键不落库、响应载荷也不回填该键（write_only 不参与序列化输出）
+        assert "LDAP_BIND_PASSWORD" not in resp.data["data"]
+
+
+class TestSecretNotEchoed:
+    def test_patch_response_masks_encrypted_secret(self, auth_client):
+        """write_only 密文键保存成功后，响应载荷以掩码回填，不回显明文。"""
+        from common.core.auth.credentials import MASK
+
+        plaintext = "super-secret-ldap-password"
+        resp = auth_client.patch(LDAP_URL, {"LDAP_BIND_PASSWORD": plaintext})
+        assert resp.data["code"] == 1000, resp.data
+
+        assert plaintext not in str(resp.data), "PATCH 响应不得回显密钥明文"
+        assert resp.data["data"]["LDAP_BIND_PASSWORD"] == MASK, "加密键响应值应回落掩码占位"
+
+        row = Setting.objects.get(name="LDAP_BIND_PASSWORD")
+        assert row.encrypted is True
+        assert row.cleaned_value == plaintext, "落库值不受响应掩码影响"
+
+    def test_non_encrypted_change_still_echoed(self, auth_client):
+        """非敏感字段变更键仍回写新值（掩码只收敛加密键，不扩大收敛面）。"""
+        resp = auth_client.patch(LDAP_URL, {"LDAP_CONNECT_TIMEOUT": 42})
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["LDAP_CONNECT_TIMEOUT"] == 42
 
 
 class TestContractMixinCompat:

@@ -68,7 +68,7 @@ class OperationLog(DbAuditModel):
         SCIM = "scim", _("SCIM directory sync")
         # LDAP 目录同步：同步冲突/摘要由 system/ldap/sync 落库
         LDAP = "ldap", _("LDAP directory sync")
-        # AI NL 查数：interpret/run 语义审计由 ai/utils/nl_query 落库
+        # AI NL 查数：interpret/run 语义审计由 ai/services/nl_query 落库
         AI = "ai", _("AI assistant")
 
     module = models.CharField(max_length=64, verbose_name=_("Module"), null=True, blank=True)
@@ -88,6 +88,9 @@ class OperationLog(DbAuditModel):
     exec_time = models.FloatField(verbose_name=_("Execution time"), null=True, blank=True)
     # 字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径写入）
     changes = models.TextField(verbose_name=_("Changed fields"), null=True, blank=True)
+    # 变更来源模型的 label_lower（如 identity.userinfo）：changes 是 JSON 文本，
+    # 输出侧要按源模型的脱敏规则逐字段掩码，必须知道变更属于哪个模型
+    model_label = models.CharField(max_length=128, verbose_name=_("Source model"), blank=True, default="")
     # 凭证标识（PAT 精确审计）：PAT 请求记 pat + token_pk，
     # JWT 请求记 jwt，匿名/白名单接口留空。token_pk 刻意不建 FK——凭证被清理任务
     # 删除后日志不断链（主键快照本身即可回溯）；类型对齐凭证主键（大整数）。

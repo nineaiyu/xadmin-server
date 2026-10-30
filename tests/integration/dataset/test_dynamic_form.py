@@ -201,22 +201,37 @@ class TestCreatorIsolation:
         assert DynamicFormSubmission.objects.filter(pk=submission.pk).exists()
 
     def test_creator_can_update_own(self, form, normal_user):
+        """创建者可编辑自己的草稿；已生效单（免审批 status=""）按终态只读收敛
+        （提交后改写等于绕过已生效快照）。"""
         grant_form_menus(normal_user)
         client = client_for(normal_user)
         client.post(SUBMISSION_URL, {"form": str(form.pk), "data": {"name": "张三"}}, format="json")
         submission = DynamicFormSubmission.objects.get()
+        # 免审批表单 POST 即生效（status=""）：终态只读
         response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"name": "张三改"}}, format="json")
-        assert response.json()["code"] == 1000
+        assert response.json()["code"] == 1003, response.data
+        submission.refresh_from_db()
+        assert submission.data["name"] == "张三"
+        # 草稿态仍可编辑（编辑流保留在草稿/驳回态）
+        submission.status = DynamicFormSubmission.Status.DRAFT
+        submission.save(update_fields=["status"])
+        response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"name": "张三改"}}, format="json")
+        assert response.json()["code"] == 1000, response.data
         submission.refresh_from_db()
         assert submission.data["name"] == "张三改"
 
     def test_partial_update_merges_existing_data(self, form, normal_user):
-        """PATCH 局部更新：data 先与库内合并再整份校验，未提交的必填字段不误报。"""
+        """PATCH 局部更新：data 先与库内合并再整份校验，未提交的必填字段不误报。
+
+        以草稿态验证合并机制（已生效单终态只读，见 test_creator_can_update_own）。
+        """
         grant_form_menus(normal_user)
         client = client_for(normal_user)
-        # 缺 level/score 但 name 已满足必填 → 通过
+        # 缺 level/score 但 name 已满足必填 → 通过（草稿态，可继续 PATCH）
         client.post(SUBMISSION_URL, {"form": str(form.pk), "data": {"name": "张三", "level": "P5"}}, format="json")
         submission = DynamicFormSubmission.objects.get()
+        submission.status = DynamicFormSubmission.Status.DRAFT
+        submission.save(update_fields=["status"])
 
         response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"level": "P6"}}, format="json")
         assert response.json()["code"] == 1000, response.data
@@ -235,6 +250,56 @@ def auth_client_list(superuser):
 
 
 # ---------------------------------------------------------------- 审批挂接
+
+
+class TestTerminalSubmissionReadOnly:
+    """终态（已通过 / 已撤回）提交只读：审批留痕不得被申请人改写或删除。
+
+    仅草稿与驳回态可继续编辑；需要重新填写时复制为新单。
+    """
+
+    @staticmethod
+    def _create(form, user, status):
+        return DynamicFormSubmission.objects.create(form=form, data={"name": "张三"}, status=status, creator=user)
+
+    @pytest.mark.parametrize(
+        "status",
+        [DynamicFormSubmission.Status.APPROVED, DynamicFormSubmission.Status.CANCELLED],
+    )
+    def test_terminal_cannot_be_edited_or_deleted(self, form, normal_user, status):
+        grant_form_menus(normal_user)
+        submission = self._create(form, normal_user, status)
+        client = client_for(normal_user)
+
+        patched = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"name": "李四"}}, format="json")
+        assert patched.json()["code"] == 1003
+
+        deleted = client.delete(f"{SUBMISSION_URL}/{submission.pk}")
+        assert deleted.json()["code"] == 1003
+
+        submission.refresh_from_db()
+        assert submission.data["name"] == "张三"
+        assert DynamicFormSubmission.objects.filter(pk=submission.pk).exists()
+
+    def test_rejected_can_still_be_edited(self, form, normal_user):
+        grant_form_menus(normal_user)
+        submission = self._create(form, normal_user, DynamicFormSubmission.Status.REJECTED)
+        client = client_for(normal_user)
+
+        response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"name": "李四"}}, format="json")
+
+        assert response.status_code == 200, response.data
+        submission.refresh_from_db()
+        assert submission.data["name"] == "李四"
+
+    def test_pending_cannot_be_edited(self, form, normal_user):
+        grant_form_menus(normal_user)
+        submission = self._create(form, normal_user, DynamicFormSubmission.Status.PENDING)
+        client = client_for(normal_user)
+
+        response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"name": "李四"}}, format="json")
+
+        assert response.json()["code"] == 1003
 
 
 class TestFormApproval:
@@ -308,7 +373,7 @@ class TestFormApproval:
         response = client.post(SUBMISSION_URL, {"form": str(gated_form.pk), "data": {"name": "张三"}}, format="json")
         approval_id = response.data["data"]["approval_id"]
         from approval.models.approval import ApprovalRequest
-        from approval.utils.approval import approve_request
+        from approval.services.approval import approve_request
 
         approval = ApprovalRequest.objects.get(pk=approval_id)
         assert approve_request(approval, superuser)[0] is True
@@ -332,7 +397,7 @@ class TestFormApproval:
         response = client.post(SUBMISSION_URL, {"form": str(gated_form.pk), "data": {"name": "张三"}}, format="json")
         approval_id = response.data["data"]["approval_id"]
         from approval.models.approval import ApprovalRequest
-        from approval.utils.approval import approve_request
+        from approval.services.approval import approve_request
 
         approval = ApprovalRequest.objects.get(pk=approval_id)
         assert approve_request(approval, superuser)[0] is True

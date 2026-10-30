@@ -50,6 +50,10 @@ def login_failed(request: Any, username: Any) -> None:
     login_ip_block = LoginIpBlockUtil(ipaddr)
     request.user = UserInfo.objects.filter(username=username).first()
     save_login_log(request, status=False)
+    # 风险层账号维度失败计数（只存加盐哈希；不改变登录失败语义）
+    from captcha import signals as captcha_signals
+
+    captcha_signals.record_account_fail(str(username or ""))
     # 出站 Webhook：登录失败事件
     from task.services import emit_webhook_event
 
@@ -143,12 +147,14 @@ def evaluate_login_policy_for_request(request: Any, user_obj: Any, ipaddr: Any) 
     return policy.get("action") == "require_mfa", ""
 
 
-def login_mfa_if_required(request: Any, user_obj: Any, force_mfa: Any = False) -> Any:
+def login_mfa_if_required(request: Any, user_obj: Any, force_mfa: Any = False, ignore_user_mfa: bool = False) -> Any:
     """用户开启登录 MFA 时返回 True：清理密码阶段锁定计数（登录日志在二次验证通过后记录）。
 
     ``force_mfa``：登录访问策略要求二次验证——无可用方式时降级放行避免登录死锁。
+    ``ignore_user_mfa``：验证码登录等已用动态因子完成验证的入口，不再重复要求
+    用户级 MFA；但登录访问策略的 ``force_mfa`` 仍必须生效。
     """
-    required = is_login_mfa_required(user_obj)
+    required = False if ignore_user_mfa else is_login_mfa_required(user_obj)
     if not required and force_mfa:
         if get_login_mfa_methods(user_obj, request):
             required = True
@@ -165,18 +171,42 @@ def login_mfa_if_required(request: Any, user_obj: Any, force_mfa: Any = False) -
 
 
 def complete_login(
-    request: Any, user_obj: Any, login_type: Any = UserLoginLog.LoginTypeChoices.USERNAME, force_mfa: Any = False
+    request: Any,
+    user_obj: Any,
+    login_type: Any = UserLoginLog.LoginTypeChoices.USERNAME,
+    force_mfa: Any = False,
+    *,
+    policy_checked: bool = False,
+    ignore_user_mfa: bool = False,
 ) -> Any:
-    """登录成功后的**唯一收口**：MFA 判定 → 会话登记 / 登录日志 / 异常提醒 / 锁定计数清理。
+    """登录成功后的**唯一收口**：开关/策略 → MFA 判定 → 会话登记 / 登录日志。
 
     任何新增登录路径（本地密码 / 验证码 / WebSocket / 第三方 OAuth…）都必须调用它：
-    绕过这里等于同时绕过登录 MFA、``UserSession`` 登记、登录日志与失败计数清理
-    （历史教训：MFA 只在本地密码链路生效时，新增登录方式就是一条后门）。
+    绕过这里等于同时绕过登录开关、登录访问策略、登录 MFA、``UserSession`` 登记、
+    登录日志与失败计数清理（历史教训：MFA 只在本地密码链路生效时，新增登录方式
+    就是一条后门）。
 
-    :return: 需要 MFA 二次验证时返回可直接下发的 ``ApiResponse``；否则返回 ``None``，
-             由调用方继续下发自己的 token 载荷。
+    :param policy_checked: 调用方已完成登录策略判定（避免同请求重复求值/记日志）
+    :param ignore_user_mfa: 已用短信/邮件动态因子完成验证的入口，不再要求用户级 MFA；
+                            策略强制 MFA 仍生效
+    :return: 需要 MFA 二次验证或策略拒绝时返回可直接下发的 ``ApiResponse``；
+             否则返回 ``None``，由调用方继续下发自己的 token 载荷。
     """
-    if login_mfa_if_required(request, user_obj, force_mfa=force_mfa):
+    if not settings.SECURITY_LOGIN_ACCESS_ENABLED:
+        # 全局登录开关：所有入口共用同一拒绝语义（停服/应急时不留旁路）
+        return ApiResponse(code=1001, detail=_("Login forbidden"))
+    if not getattr(user_obj, "is_active", False):
+        # 防御纵深：各登录路径各自校验后仍在此兜底（发码/IdP 认证到提交之间
+        # 账号被禁用的窗口）；未来新增登录路径漏做 is_active 校验也在此拦截。
+        # 文案与 OAuth 登录的禁用拦截同源（identity/views/auth/oauth.py）
+        raise ValidateError(_("The account has been disabled"))
+    if not policy_checked:
+        ipaddr = get_request_ip(request)
+        policy_force_mfa, reject_detail = evaluate_login_policy_for_request(request, user_obj, ipaddr)
+        if reject_detail:
+            return reject_login(request, user_obj, reject_detail, login_type=login_type)
+        force_mfa = force_mfa or policy_force_mfa
+    if login_mfa_if_required(request, user_obj, force_mfa=force_mfa, ignore_user_mfa=ignore_user_mfa):
         return ApiResponse(
             data={
                 "mfa_required": True,

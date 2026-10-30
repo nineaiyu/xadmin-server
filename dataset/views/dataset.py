@@ -24,13 +24,15 @@ from rest_framework.filters import OrderingFilter
 
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImpactPreviewAction, RelationCountMixin
+from common.core.permission import get_user_permission_codes
+from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.core.throttle import DatasetQueryThrottleMixin
 from common.swagger.utils import get_default_response_schema
-from common.utils import get_logger
+from common.utils import get_logger, parse_bool
 from dataset.models.dataset import Dashboard, Dataset
 from dataset.serializers.dataset import DashboardSerializer, DatasetSerializer
-from dataset.utils.dataset import aggregate_dataset, designer_meta_payload, execute_dataset
+from dataset.utils.dataset import aggregate_dataset, designer_meta_payload, execute_dataset, validate_filters
 
 logger = get_logger(__name__)
 
@@ -93,12 +95,21 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         return super().destroy(request, *args, **kwargs)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="meta")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @shared_list_action(methods=["get"], detail=False, url_path="meta")  # type: ignore[untyped-decorator]
     def meta(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """设计器元数据
 
         模型白名单、字段清单与可用的 JSON 路径根字段（短 TTL 缓存）
+
+        与数据集 list 同权限口径：只读定义元数据不额外要求独立权限点。
         """
+        # 设计器字段清单属 schema 面：只对具备数据集编辑权限的角色下发，
+        # 避免仅有列表权限的用户枚举全部数据模型/字段
+        if not getattr(request.user, "is_superuser", False):
+            codes = get_user_permission_codes(request.user, "POST")
+            codes |= get_user_permission_codes(request.user, "PATCH")
+            if not {"create:DataDataset", "partialUpdate:DataDataset"} & codes:
+                return ApiResponse(code=1003, detail=_("No permission to read dataset designer metadata"))
         return ApiResponse(data=designer_meta_payload())
 
     @extend_schema(responses=get_default_response_schema())
@@ -109,10 +120,40 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         行级数据权限随调用者过滤，fail-closed
 
         ``count_only=true``：仅取行数（数字卡场景，跳过行物化）。
+        ``max_rows``：预览侧行数上限（与数据集 row_limit 取小者下推 SQL），
+        报表预览按展示口径收数，不在前端物化后切片（按展示口径收数）。
+        ``filters``：请求级行过滤（卡片下钻），与数据集定义 filters 叠加，
+        校验口径同保存侧（``validate_filters``：字段白名单 + op 白名单 + 类型），
+        并按浏览者字段权限收敛（无该列权限即 1001，防隐藏列布尔预言机）。
         """
         dataset = self.get_object()
         try:
-            result = execute_dataset(dataset, request.user, count_only=bool(request.data.get("count_only")))
+            extra_filters = request.data.get("filters")
+            if extra_filters:
+                validate_filters(
+                    dataset.bound_model,
+                    extra_filters,
+                    user_obj=request.user,
+                    strict=str(dataset.field_permission_mode) == "strict",
+                )
+            max_rows = None
+            max_rows_raw = request.data.get("max_rows")
+            if max_rows_raw is not None:
+                # 只接受真正的整数：bool 是 int 子类（True 会变成 1），字符串/浮点
+                # 属契约错误，统一 400 而不是静默强转
+                if isinstance(max_rows_raw, bool) or not isinstance(max_rows_raw, int):
+                    raise ValidationError(_("max_rows must be a non-negative integer"))
+                max_rows = max_rows_raw
+                if max_rows < 0:
+                    raise ValidationError(_("max_rows must be a non-negative integer"))
+            count_only_raw = request.data.get("count_only")
+            result = execute_dataset(
+                dataset,
+                request.user,
+                count_only=parse_bool(count_only_raw) if count_only_raw is not None else False,
+                extra_filters=extra_filters or None,
+                max_rows=max_rows,
+            )
         except ValidationError as exc:
             return ApiResponse(code=1001, detail="; ".join(exc.messages), status_code=status.HTTP_400_BAD_REQUEST)
         return ApiResponse(data=result)
@@ -123,9 +164,21 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         """聚合序列
 
         图表数据源：group_by + metric(+value_field) + date_trunc
+
+        ``filters``：请求级行过滤（卡片联动），与数据集定义 filters 叠加，
+        校验口径同 ``execute``（``validate_filters``：字段白名单 + op 白名单 + 类型
+        + 浏览者字段权限收敛）。
         """
         dataset = self.get_object()
         try:
+            extra_filters = request.data.get("filters")
+            if extra_filters:
+                validate_filters(
+                    dataset.bound_model,
+                    extra_filters,
+                    user_obj=request.user,
+                    strict=str(dataset.field_permission_mode) == "strict",
+                )
             result = aggregate_dataset(
                 dataset,
                 request.user,
@@ -133,13 +186,14 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
                 metric=request.data.get("metric", "count"),
                 date_trunc=request.data.get("date_trunc"),
                 value_field=request.data.get("value_field"),
+                extra_filters=extra_filters or None,
             )
         except ValidationError as exc:
             return ApiResponse(code=1001, detail="; ".join(exc.messages), status_code=status.HTTP_400_BAD_REQUEST)
         return ApiResponse(data=result)
 
 
-class DashboardViewSet(BaseModelSet):
+class DashboardViewSet(ImpactPreviewAction, BaseModelSet):
     """仪表盘"""
 
     queryset = Dashboard.objects.all()

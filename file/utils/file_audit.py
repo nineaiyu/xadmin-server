@@ -33,7 +33,7 @@ def log_file_access(
     from file.models import FileAccessLog
 
     try:
-        from approval.utils.approval.display import user_display
+        from approval.services.approval.display import user_display
         from common.utils.request import get_request_ip
 
         ip = get_request_ip(request) if request is not None else ""

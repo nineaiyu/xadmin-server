@@ -4,6 +4,7 @@
 
 from typing import Any
 
+from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -14,7 +15,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from ai.models.ai import AiProfile
 from ai.serializers.ai import AiProfileSerializer
-from ai.utils.ai import profile_credentials, set_active_profile
+from ai.services.assistant.ai import set_active_profile
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseViewSet,
@@ -30,9 +31,37 @@ from common.core.response import ApiResponse
 from common.core.throttle import AiThrottleMixin
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 
 logger = get_logger(__name__)
+
+#: 连通性任务归属：task_id 在 celery 结果后端是全局命名空间，回读时必须校验
+#: 「任务由当前用户针对当前档案提交」，否则任意登录用户猜到/拿到 task_id 即可
+#: 读取他人档案的探测结论。TTL 覆盖前端轮询窗口（60s）即可，结果本身另有保留期。
+AI_PROFILE_TEST_TASK_KEY_PREFIX = "ai_profile_test_task_"
+AI_PROFILE_TEST_TASK_TTL = 3600
+
+
+def _remember_test_task(task_id: Any, profile: Any, user: Any) -> None:
+    """登记 task_id → (profile, user) 归属；缓存故障不阻断提交（回读会 fail-closed）。"""
+    try:
+        cache.set(
+            f"{AI_PROFILE_TEST_TASK_KEY_PREFIX}{task_id}",
+            {"profile": str(profile.pk), "user": getattr(user, "pk", None)},
+            AI_PROFILE_TEST_TASK_TTL,
+        )
+    except Exception:  # noqa: BLE001 缓存不可用不应让探测提交失败
+        logger.warning("ai profile test task ownership cache failed", exc_info=True)
+
+
+def _test_task_owned_by(task_id: str, profile: Any, user: Any) -> bool:
+    """回读归属校验：未登记、档案不匹配、提交者不匹配一律视为不存在。"""
+    try:
+        owner = cache.get(f"{AI_PROFILE_TEST_TASK_KEY_PREFIX}{task_id}")
+    except Exception:  # noqa: BLE001 缓存故障 fail-closed
+        return False
+    if not isinstance(owner, dict):
+        return False
+    return owner.get("profile") == str(profile.pk) and str(owner.get("user")) == str(getattr(user, "pk", None))
 
 
 class AiProfileFilter(BaseFilterSet):
@@ -111,7 +140,8 @@ class AiProfileViewSet(
     def activate(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """激活档案
 
-        事务内清掉其余激活行，全局至多一个激活档案
+        同一 purpose 内至多一个激活档案（chat / structured / embedding 各自独立）；
+        全局激活数可大于一，按用途分别清理。
         """
         set_active_profile(self.get_object(), True)
         return ApiResponse(detail=_("Profile activated"))
@@ -131,19 +161,48 @@ class AiProfileViewSet(
     def test(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """档案连通性探测
 
-        api_key 用已存密钥
+        api_key 用已存密钥；外呼下沉 celery，返回 task_id 供 test-result 回读
         """
+        from ai.tasks import test_ai_profile_task
+
         profile = self.get_object()
         if not profile.is_configured:
             return ApiResponse(code=1001, detail=_("Fill in base URL, API key and model before testing"))
-        try:
-            reply = ChatCompletionsClient(profile_credentials(profile)).chat([{"role": "user", "content": "ping"}])
-        except AiSdkError as exc:
-            return ApiResponse(code=1002, detail=str(exc))
-        except Exception as exc:  # noqa: BLE001 测试入口兜底
-            logger.warning("AI profile test unexpected error", exc_info=True)
-            return ApiResponse(code=1002, detail=str(exc))
-        return ApiResponse(detail=_("AI provider OK: {}").format(reply[:80]))
+        task = test_ai_profile_task.delay(str(profile.pk))
+        _remember_test_task(task.id, profile, request.user)
+        payload: dict[str, Any] = {"task_id": task.id, "state": task.state}
+        # eager（测试 / E2E / CELERY_TASK_ALWAYS_EAGER）下任务已就地跑完：结果直接带回，
+        # 前端不必再轮询（这类环境没有结果后端，AsyncResult 永远读不到结论）
+        if task.state == "SUCCESS" and isinstance(getattr(task, "result", None), dict):
+            outcome = task.result
+            payload.update({"ok": bool(outcome.get("ok")), "detail": str(outcome.get("detail") or "")})
+        return ApiResponse(data=payload, detail=_("Connectivity test submitted"))
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="test-result")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def test_result(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """连通性探测结果
+
+        按 task_id 回读异步探测结论：PENDING/STARTED 表示仍在执行
+        """
+        from celery.result import AsyncResult
+
+        profile = self.get_object()  # 走权限与数据域校验
+        task_id = str(request.query_params.get("task_id") or "").strip()
+        if not task_id:
+            return ApiResponse(code=1001, detail=_("Missing task id"))
+        if not _test_task_owned_by(task_id, profile, request.user):
+            # 不区分「不存在」与「不属于你」：避免把 task_id 当成存在性探针
+            return ApiResponse(code=1001, detail=_("Task result not found"))
+        result = AsyncResult(task_id)
+        state = result.state
+        data: dict[str, Any] = {"task_id": task_id, "state": state}
+        if state == "SUCCESS":
+            payload = result.result if isinstance(result.result, dict) else {}
+            data.update({"ok": bool(payload.get("ok")), "detail": str(payload.get("detail") or "")})
+        elif state == "FAILURE":
+            data.update({"ok": False, "detail": str(result.result)[:255]})
+        return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="probe")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -158,7 +217,7 @@ class AiProfileViewSet(
         """
         from django.utils import timezone
 
-        from ai.utils.ai_probe import ALL_CAPABILITIES, probe_profile
+        from ai.services.assistant.ai_probe import ALL_CAPABILITIES, probe_profile
 
         profile = self.get_object()
         if not profile.is_configured:

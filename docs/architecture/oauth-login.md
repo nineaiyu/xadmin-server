@@ -6,7 +6,9 @@
 
 ## 一、配置位置与字段
 
-系统配置 → 第三方登录（`SysConfig.OAUTH_PROVIDERS`，JSON 数组），每项字段：
+系统设置 → 开放平台 → 第三方登录（结构化编辑 / 原始 JSON 双形态，见
+[open-platform-console.md](open-platform-console.md)）；存储为 `SysConfig.OAUTH_PROVIDERS`
+（JSON 数组），每项字段：
 
 | 字段 | 必填 | 说明 |
 |------|------|------|

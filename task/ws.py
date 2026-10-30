@@ -24,8 +24,8 @@ from channels.db import database_sync_to_async
 
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 from common.utils import get_logger
-from message.base import AsyncJsonWebsocket
-from message.protocol import MessageAction
+from message.ws.base import AsyncJsonWebsocket
+from message.ws.protocol import MessageAction
 from task.models.task import TaskExecution
 
 logger = get_logger(__name__)
@@ -44,8 +44,11 @@ def next_push_interval(current: float, has_new_content: bool) -> float:
 
 
 def can_read_task_log(user: Any, pk: Any) -> bool:
-    """日志读取权限（同步，供 connect 线程化调用与单测）：超管全量，
-    普通用户仅本人提交的记录（未知 pk 一律拒绝）。"""
+    """日志读取权限（同步，供 connect 线程化调用与单测）：超管或记录创建者。
+
+    菜单权限点只决定「能进入下载中心」，不能放大到读取他人记录；与 HTTP
+    log/download 的 RecordOwnerFilter 同口径，避免仅持日志菜单即可订阅他人日志。
+    """
     if not user or not getattr(user, "is_authenticated", False):
         return False
     if user.is_superuser:
@@ -84,12 +87,12 @@ class TaskLogNotify(AsyncJsonWebsocket):
 
     async def connect(self) -> None:
         self.user = self.scope["user"]
-        if not self.user:
-            await self.close(4401)
+        if not self.is_authenticated():
+            await self.reject(4401)
             return
         self.pk = self.scope["url_route"]["kwargs"]["pk"]
         if not await database_sync_to_async(can_read_task_log)(self.user, self.pk):
-            await self.close(4403)
+            await self.reject(4403)
             return
         self.offset = 0
         self.disconnected = False

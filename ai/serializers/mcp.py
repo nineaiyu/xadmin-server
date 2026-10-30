@@ -15,11 +15,11 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from ai.models.mcp import McpServer
-from ai.utils.mcp_client import tools_with_callable, validate_server_url
-from common.base.utils import signer
+from ai.services.mcp.mcp_client import tools_with_callable, validate_server_url
+from common.base.crypto import signer
+from common.core.fields import DisplayRelatedField
+from common.core.response.validation import trim_required
 from common.core.serializers import BaseModelSerializer
-from common.core.validation import trim_required
-from task.services import DisplayRelatedField
 
 MAX_ALLOWED_TOOLS = 100
 MAX_TOOL_NAME_LENGTH = 128
@@ -45,6 +45,7 @@ class McpServerSerializer(BaseModelSerializer):
     # 工具快照在序列化时逐条补 callable 标记（与 call 端点准入规则同口径），
     # 后端规则变更后列表标记即时生效；原始快照不入此逻辑（read_only 展示面）
     tools_snapshot = serializers.SerializerMethodField(label=_("Tools snapshot"))
+    tools_count = serializers.SerializerMethodField(label=_("Tools count"))
 
     class Meta:
         model = McpServer
@@ -59,7 +60,9 @@ class McpServerSerializer(BaseModelSerializer):
             "allowed_tools",
             "enabled",
             "expose_to_ai",
+            "daily_call_limit",
             "tools_snapshot",
+            "tools_count",
             "last_synced_time",
             "last_sync_error",
             "remark",
@@ -68,11 +71,20 @@ class McpServerSerializer(BaseModelSerializer):
             "updated_time",
         ]
         # pk 由服务端生成：落进 read_only 才不会被元数据表单渲染成可编辑的「ID」输入框
-        read_only_fields = ["pk", "auth_token_set", "tools_snapshot", "last_synced_time", "last_sync_error"]
+        read_only_fields = [
+            "pk",
+            "auth_token_set",
+            "tools_snapshot",
+            "tools_count",
+            "last_synced_time",
+            "last_sync_error",
+        ]
         table_fields = [
             "name",
             "url",
             "enabled",
+            "expose_to_ai",
+            "tools_count",
             "last_synced_time",
             "last_sync_error",
             "remark",
@@ -84,6 +96,9 @@ class McpServerSerializer(BaseModelSerializer):
 
     def get_tools_snapshot(self, obj: Any) -> list[Any]:
         return tools_with_callable(obj, obj.tools_snapshot or [])
+
+    def get_tools_count(self, obj: Any) -> int:
+        return len(obj.tools_snapshot or [])
 
     def validate_name(self, value: Any) -> Any:
         return trim_required(value, _("Server name is required"))
@@ -104,6 +119,16 @@ class McpServerSerializer(BaseModelSerializer):
         if not 5 <= timeout <= 120:
             raise serializers.ValidationError(_("Timeout must be between 5 and 120 seconds"))
         return timeout
+
+    def validate_daily_call_limit(self, value: Any) -> Any:
+        # 0 = 不限（缺省）；配额是治理护栏不是限流器，上限给到宽裕的六位数
+        try:
+            limit = int(value or 0)
+        except (TypeError, ValueError):
+            raise serializers.ValidationError(_("Daily call limit must be an integer between 0 and 999999")) from None
+        if not 0 <= limit <= 999999:
+            raise serializers.ValidationError(_("Daily call limit must be between 0 and 999999"))
+        return limit
 
     def validate_auth_header(self, value: Any) -> Any:
         header = (value or "").strip()

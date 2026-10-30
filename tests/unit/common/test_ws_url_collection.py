@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""packages/xadmin-common/common/core/utils.py::collect_app_ws_urls 单元测试（WS 路由自动收集约定）。
+"""packages/xadmin-common/common/core/url_inventory.py::collect_app_ws_urls 单元测试（WS 路由自动收集约定）。
 
 约定：<app>/routing.py 暴露 urlpatterns 即自动接入 asgi，无需改工程层文件。
 """
 
 import pytest
 
-from common.core.utils import collect_app_ws_urls
+from common.core.url_inventory import collect_app_ws_urls
 
 
 def _route_paths(patterns):
@@ -38,7 +38,7 @@ def test_missing_routing_module_skipped():
 def test_routing_internal_import_error_raised(monkeypatch):
     """routing.py 存在但内部 import 失败必须抛错（仅「无 routing.py」被吞）。"""
 
-    from common.core import utils as ws_utils
+    from common.core import url_inventory as ws_utils
 
     def fake_import(name):
         if name.endswith(".routing"):

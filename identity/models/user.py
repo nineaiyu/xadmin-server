@@ -10,6 +10,7 @@ from django.contrib.auth.models import AbstractUser, UserManager
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
 
@@ -21,6 +22,7 @@ from common.core.models import (
     SoftDeleteQuerySet,
     upload_directory_path,
 )
+from common.fields.char import EncryptedCharField
 from common.fields.image import ProcessedImageField
 
 
@@ -75,7 +77,7 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
     mfa_level = models.IntegerField(
         verbose_name=_("MFA level"), choices=MFALevelChoices.choices, default=MFALevelChoices.DISABLED
     )
-    otp_secret_key = models.CharField(verbose_name=_("OTP secret key"), max_length=64, default="", blank=True)
+    otp_secret_key = EncryptedCharField(verbose_name=_("OTP secret key"), max_length=256, default="", blank=True)
 
     # 认证方式策略：用户级可用验证方式（只能收窄全局/角色策略，空 = 不限）
     allowed_mfa_types = models.JSONField(verbose_name=_("Allowed MFA types"), default=list, blank=True)
@@ -122,13 +124,28 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
         verbose_name_plural = verbose_name
         ordering = ("-date_joined",)
         # 全局搜索的 pg_trgm 索引（PostgreSQL 生效，其它后端由迁移跳过；
-        # 清单与豁免见 system/search_indexes.py 与 docs/architecture/indexes.md）：
+        # 清单与豁免见 system/search_indexes.py）：
         # username/nickname/email/phone 均为 icontains 检索字段，B-tree 帮不上前缀通配
         indexes = [
             GinIndex(fields=["username"], name="idx_userinfo_username_trgm", opclasses=["gin_trgm_ops"]),
             GinIndex(fields=["nickname"], name="idx_userinfo_nickname_trgm", opclasses=["gin_trgm_ops"]),
             GinIndex(fields=["email"], name="idx_userinfo_email_trgm", opclasses=["gin_trgm_ops"]),
             GinIndex(fields=["phone"], name="idx_userinfo_phone_trgm", opclasses=["gin_trgm_ops"]),
+        ]
+        # email/phone 是登录标识（验证码登录按值定位账号），非空时在活跃数据内唯一：
+        # 应用层 exists() 校验挡不住并发与直接导入；软删除行不参与，邮箱可被新账号复用，
+        # 恢复时若已被占用由回收站恢复流程按唯一冲突跳过。
+        constraints = [
+            models.UniqueConstraint(
+                fields=["email"],
+                condition=Q(deleted_at__isnull=True) & ~Q(email=""),
+                name="uniq_userinfo_email_active",
+            ),
+            models.UniqueConstraint(
+                fields=["phone"],
+                condition=Q(deleted_at__isnull=True) & ~Q(phone=""),
+                name="uniq_userinfo_phone_active",
+            ),
         ]
         # 注意：username 不做"未删除数据"条件唯一（Django auth.E003 要求
         # USERNAME_FIELD 全局唯一，部分唯一约束不满足检查），

@@ -13,7 +13,6 @@
 import re
 from typing import Any
 
-from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -22,6 +21,7 @@ from approval.models.approval_rule import (
     ApprovalRule,
     ApprovalRuleLevel,
 )
+from approval.services.approval.rules import create_rule, update_rule
 from common.core.serializers import BaseModelSerializer
 
 
@@ -170,42 +170,10 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             return
         raise serializers.ValidationError(_("Unknown assignee type: {}").format(str(assignee_type) or "(empty)"))
 
-    @transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def create(self, validated_data: Any) -> Any:
-        levels = validated_data.pop("levels", [])
-        rule = super().create(validated_data)
-        self._sync_levels(rule, levels)
-        return rule
+        # 事务编排（规则 + 级次原子写）在 services 层收口，本层只保留字段校验
+        return create_rule(validated_data)
 
-    @transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def update(self, instance: Any, validated_data: Any) -> Any:
-        levels = validated_data.pop("levels", None)
-        rule = super().update(instance, validated_data)
-        if levels is not None:
-            self._sync_levels(rule, levels)
-        return rule
-
-    def _sync_levels(self, rule: Any, levels: Any) -> None:
-        """级次按 order upsert：order 相同的既有行原位更新，缺失的删除，新出现的创建。
-
-        不再 delete+recreate——级次行主键与创建审计在编辑间保持稳定（重复编辑
-        不重置 created_time/created_by），order 在规则内唯一（DB 约束）天然可作
-        upsert 键；在途单不受影响（级次快照在建单时已落到独立表）。
-        """
-        existing = {level.order: level for level in rule.levels.all()}
-        incoming_orders = set()
-        for level in levels:
-            level.pop("pk", None)
-            order = int(level["order"])
-            level["order"] = order
-            incoming_orders.add(order)
-            row = existing.get(order)
-            if row is None:
-                ApprovalRuleLevel.objects.create(rule=rule, **level)
-                continue
-            for attr, value in level.items():
-                setattr(row, attr, value)
-            row.save()
-        for order, row in existing.items():
-            if order not in incoming_orders:
-                row.delete()
+        # 事务编排（规则字段 + 级次同步）在 services 层收口
+        return update_rule(instance, validated_data)

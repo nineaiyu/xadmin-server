@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """[[verbose_name]] 的 AI 动作声明骨架（generate_crud 生成）。
 
-注册方式：本文件位于应用根目录，声明由 ai.utils.ai_registry 自动发现并合并
+注册方式：本文件位于应用根目录，声明由 ai.services.actions.ai_registry 自动发现并合并
 （无需改动 ai 应用）；只读动作可直接启用（AI 工具目录 / MCP / 原生 function calling 三者同源）。
 
 写动作（create/update/destroy）启用前需确认：412 审批口径、字段权限、幂等语义，
@@ -11,7 +11,7 @@
 
 from django.utils.translation import gettext_lazy as _
 
-from ai.utils.ai_api_actions import api_action
+from ai.services.actions.ai_api_actions import api_action
 
 RESOURCE_PATH = "[[resource]]"
 

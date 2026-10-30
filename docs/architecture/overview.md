@@ -3,7 +3,7 @@
 > 本文为框架深度分析的**精炼导航版**（T6.1，2026-09-06；原 1289 行完整版报告已于
 > 2026-09-18 文档精简中清理）。内容与代码冲突时以代码为准。
 > 关联：[permission.md](permission.md)（权限体系）、[mfa.md](mfa.md)（MFA/敏感操作二次验证）、[cache.md](cache.md)
-> （缓存策略）、[indexes.md](indexes.md)（索引评审）、[../exception-handling.md](../exception-handling.md)
+> （缓存策略）、[../exception-handling.md](../exception-handling.md)
 > （错误码）、[../schema/](../schema/)（元数据契约）。
 
 ## 一、技术栈与系统形态
@@ -78,19 +78,19 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 
 | 子系统       | 入口                                         | 要点                                                                                              |
 |-----------|--------------------------------------------|-------------------------------------------------------------------------------------------------|
-| 认证        | `packages/xadmin-common/common/core/auth.py`                      | access+refresh 双 Token、登出黑名单（Redis）、AES 加密登录、验证码前置                                              |
-| 统一响应      | `packages/xadmin-common/common/core/response.py`                  | `{code, detail, requestId, timestamp, data}`，code 表见 exception-handling.md；错误码登记制               |
-| 异常处理      | `packages/xadmin-common/common/core/exception.py`                 | 全局兜底脱敏（未预期异常返回通用文案），JWT 40001/40002 协议码                                                         |
-| 缓存        | `packages/xadmin-common/common/cache/` + `packages/xadmin-common/common/base/magic.py`   | 四套缓存键规范/TTL/失效矩阵见 [cache.md](cache.md)；MagicCacheData 函数级 + cache_response 视图级                  |
+| 认证        | `packages/xadmin-common/common/core/auth/authentication.py`                      | access+refresh 双 Token、登出黑名单（Redis）、AES 加密登录、验证码前置                                              |
+| 统一响应      | `packages/xadmin-common/common/core/response/__init__.py`                  | `{code, detail, requestId, timestamp, data}`，code 表见 exception-handling.md；错误码登记制               |
+| 异常处理      | `packages/xadmin-common/common/core/response/exception.py`                 | 全局兜底脱敏（未预期异常返回通用文案），JWT 40001/40002 协议码                                                         |
+| 缓存        | `packages/xadmin-common/common/cache/` + `packages/xadmin-common/common/decorators/cache.py`   | 四套缓存键规范/TTL/失效矩阵见 [cache.md](cache.md)；MagicCacheData 函数级 + cache_response 视图级                  |
 | 信号失效      | `system/signal_handler.py`                 | Menu/UserRole/DeptInfo/UserInfo/SystemConfig/登出 变更即失效权限与路由缓存，含 m2m_changed 挂钩                   |
 | 通知        | `notifications/`                           | `@register_message` 显式注册 + `BACKEND_MSG_RENDERERS` 集中注册（T2.4）；站内信/邮件/短信后端；新增后端 1 文件 + 1 行       |
-| WebSocket | `message/base.py`                          | 自定义 `{action, data, mid}` 协议，补类型约束后保持（ADR-003）；action 全集见 `message/protocol.py`（ping/userinfo/push_message/chat_message/chat_recall/chat_read/chat_unread/task_log/monitor/screen_command） |
+| WebSocket | `message/ws/base.py`                          | 自定义 `{action, data, mid}` 协议，补类型约束后保持（ADR-003）；action 全集见 `message/ws/protocol.py`（ping/userinfo/push_message/chat_message/chat_recall/chat_read/chat_unread/task_log/monitor/screen_command） |
 | Celery    | `packages/xadmin-common/common/celery/`                           | `@register_as_period_task` 声明式定时任务；default/heavy 队列分离；批量导入分片异步、无 Worker 自动降级同步                  |
 | 导入导出      | `packages/xadmin-common/common/drf/parsers                        | renders`                                                                                        | CSV(编码探测)/Excel(下拉验证/列宽/样式)/ZIP(AES 加密)；AxiosMultiPartParser 反解 dot-notation（TD-19 登记，更换 HTTP 库需评估） |
 | 限流        | `packages/xadmin-common/common/core/throttle.py`                  | login/register/reset_password/upload/download 分类限流（login 50/h 等 6 类）                            |
 | 中间件链      | `server/settings/base.py`                  | Request-Id 注入、操作日志（动词方法无兜底缺陷已修复 TD-24）、Referer 校验（可选开关）、SQL 统计                                  |
 | 配置系统      | `server/conf/` + `packages/xadmin-common/common/core/config/` | 取值链：config.yml（或 config.py）→ 同名环境变量 → 代码默认值；无配置文件时回落 config_example.yml 并自动生成 SECRET_KEY（开发）；数据库态 SysConfig/UserConfig 支持模板引用；SECRET_KEY 生产拒启校验 |
-| 上传        | `packages/xadmin-common/common/core/modelset/upload.py`           | 扩展名白名单（png/jpeg/jpg/gif）+ 大小上限；安全复核见 [../security-review.md](../security-review.md)             |
+| 上传        | `packages/xadmin-common/common/core/modelset/upload.py`           | 扩展名白名单（png/jpeg/jpg/gif）+ 大小上限；安全复核见 [../asvs-mapping.md](../asvs-mapping.md)             |
 | 任务监控      | Flower（`CELERY_FLOWER_AUTH`）               | basic-auth 配置化（T5.3 收尾）：未配置认证仅允许绑定 127.0.0.1                                                    |
 
 ## 六、前端核心结构
@@ -130,7 +130,7 @@ Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/R
   error) + vitest 覆盖率阈值 + Playwright E2E（扩展中）；
 - 发布：前后端版本一致性校验 → 单架构构建 → trivy 镜像扫描（HIGH/CRITICAL 阻断）→ 多架构推送 → SBOM 附 release（T5.5）；
 - 安全基线：CORS/ALLOWED_HOSTS 配置化、SECRET_KEY 显式配置（生产缺失拒绝启动，开发可自动生成）、JWT 轮换+黑名单、
-  六类限流、pip-audit 周检；自查档案见 [security-review.md](../security-review.md)。
+  六类限流、pip-audit 周检；自查档案见 [asvs-mapping.md](../asvs-mapping.md)。
 
 ## 九、架构决策与技术债索引
 

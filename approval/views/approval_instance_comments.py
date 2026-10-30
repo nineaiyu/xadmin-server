@@ -8,6 +8,7 @@
 import re
 from typing import TYPE_CHECKING, Any
 
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -17,7 +18,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from approval.models.approval import ApprovalInstanceComment
 from approval.serializers.approval_instance import ApprovalInstanceCommentSerializer
-from approval.utils.approval.display import user_display
+from approval.services.approval.display import user_display
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 
@@ -33,7 +34,7 @@ class ApprovalInstanceCommentMixin:
 
         def get_object(self, *args: Any, **kwargs: Any) -> Any: ...
 
-    def _resolve_comment_mentions(self, content: Any, exclude_user: Any) -> Any:
+    def _resolve_comment_mentions(self, content: Any, exclude_user: Any, instance: Any = None) -> Any:
         """解析评论中的 @用户名 → 启用用户列表（排除自己，去重保序）。"""
         from identity.models import UserInfo
 
@@ -43,9 +44,20 @@ class ApprovalInstanceCommentMixin:
                 names.append(name)
         if not names:
             return []
+
+        # 只允许提及可见该实例的人：评论 @ 不能成为向无关用户外泄审批标题/摘要的通道。
+        def can_view(user: Any) -> bool:
+            if instance is None:
+                return False
+            if getattr(user, "is_superuser", False) or instance.creator_id == user.pk:
+                return True
+            if instance.cc_users.filter(pk=user.pk).exists():
+                return True
+            return bool(instance.tasks.filter(Q(assignee=user) | Q(actor=user)).exists())
+
         users = []
         for user in UserInfo.objects.filter(username__in=names[:20], is_active=True):
-            if user.pk != exclude_user.pk:
+            if user.pk != exclude_user.pk and can_view(user):
                 users.append(user)
         return users
 
@@ -93,7 +105,7 @@ class ApprovalInstanceCommentMixin:
             return ApiResponse(
                 code=1004, detail=_("Comment is too long (max {} characters)").format(COMMENT_MAX_LENGTH)
             )
-        mentioned = self._resolve_comment_mentions(content, request.user)
+        mentioned = self._resolve_comment_mentions(content, request.user, instance)
         comment = ApprovalInstanceComment.objects.create(
             instance=instance,
             content=content,

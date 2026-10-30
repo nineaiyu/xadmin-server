@@ -62,6 +62,11 @@ def _app_biz_syncers() -> dict[str, Any]:
     return collected
 
 
+def reset_biz_syncers() -> None:
+    """清空应用声明发现缓存（测试 / 声明热改后的显式重建入口）。"""
+    _app_biz_syncers.cache_clear()
+
+
 def get_biz_syncer(biz_type: str) -> Any:
     """按 biz_type 解析业务同步器函数；应用声明优先，内置表兜底，未注册返回 None。"""
     path = _app_biz_syncers().get(biz_type) or BUILTIN_BIZ_SYNCERS.get(biz_type)

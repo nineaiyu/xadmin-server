@@ -8,7 +8,7 @@
 
 from django.utils.translation import gettext_lazy as _
 
-from ai.utils.ai_api_actions import IN_QUERY, api_action
+from ai.services.actions.ai_api_actions import IN_QUERY, api_action
 
 AI_ACTIONS = {
     "notice.publish": api_action(

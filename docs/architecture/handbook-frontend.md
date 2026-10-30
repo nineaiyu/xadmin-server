@@ -58,7 +58,7 @@ const { api, auth } = useCustomer();
 - 定制：`addOrEditOptions.props.columns/row/formProps`（列解析器 ctx 含 `column / isAdd / formValue`）+ `beforeSubmit`（提交前加工）+ `apiReq`（换接口）。
 - 服务端校验失败自动内联到表单项（`src/components/RePlusPage/src/utils/serverErrors.ts`）。
 
-**复用列装配**（非 RePlusPage 页面）：`useBaseColumns(localeName)` 产出六组列/规则，范例 `src/views/settings/components/settings/SettingItem.vue`。
+**复用列装配**（非 RePlusPage 页面）：`useBaseColumns(localeName)` 产出六组列/规则，范例 `src/views/settings/components/settings-shell/SettingItem.vue`。
 
 - 依赖：`@pureadmin/table`（PureTable/PureTableBar，必需）、`plus-pro-components`（PlusSearch/PlusForm，必需）、`src/utils/http`、图标方案。
 - 扩展点：渲染器注册（§4.2）、`openDialogDrawer`（复用弹层表单能力）、`handleOperation`（请求 + 提示 + 回调的标准封装）。
@@ -89,6 +89,20 @@ addDrawer({ title, size: "55%", props: { pk: row.pk }, contentRenderer: () => h(
 
 - 项目内已收敛模式（新弹窗照抄）：`addDialog({...}) + components/XxxForm.vue（reactive 表单 + getPayload() 校验）`，范例 `views/integration/knowledge/`、`views/integration/api-app/`。
 
+**声明式弹层判定**（模板里直接写 `<el-dialog>` / `<el-drawer>`）：
+
+- 默认走 `addDialog` / `addDrawer`：overlay 内核统一滚动锁、页脚与尺寸，且与全站弹层行为一致；
+- **常驻面板 / 组件内部交互**（随页面或设计器生命周期存续、不适合命令式开关）走声明式壳
+  `OverlayDialog` / `OverlayDrawer`（`src/components/overlay/`）——与命令式弹层共用滚动锁与
+  尺寸档位，禁止直接写 EP 弹层；
+- 仅以下情形允许内联 EP 声明：① 弹层内核封装本体（ReDialog / ReDrawer / OverlayDialog /
+  OverlayDrawer）；② 移动端导航抽屉等非业务弹层基础设施；
+- 内联用法必须登记 `xadmin-client/scripts/declarative-overlays-baseline.json`（处数 + 理由），
+  `pnpm check:overlays` 按文件只减不增；新增文件未登记即红。
+
+**确认框选型**：二值确认（含危险操作）用 `useConfirm`；`ElMessageBox.prompt / alert`
+尚无统一封装，新增前先评估是否能用 `useConfirm` + 表单弹层替代（该收敛项在滚动清偿中）。
+
 ### 2.3 图标：ReIcon / LocalIcon（全离线）
 
 ```ts
@@ -115,7 +129,7 @@ useRenderIcon("ep:user")       // 后端元数据下发的图标名 → LocalIco
 | `ReCropper` / `RePictureUpload` | 图片裁剪 / 头像裁剪上传 | — |
 | `ReMfaConfirm` | 412 敏感操作二次验证弹窗 | `confirmMfa()`，http 层自动接线 |
 | `ReSplitPane` | 可拖拽分栏（宽度持久化） | 配合 `src/hooks/useSplitPaneConfig.ts` |
-| `ReCountTo` / `ReFlicker` / `ReQrcode` / `ReImageVerify` / `ReSendVerifyCode` / `ReTypeit` / `ReTreeLine` / `ReAnimateSelector` | 数字滚动 / 闪烁点 / 二维码 / 图形验证码 / 验证码倒计时 / 打字机 / 树形连接线 / 动画选择器 | 按需引用 |
+| `ReCountTo` / `ReFlicker` / `ReQrcode` / `ReImageCaptcha` / `ReSendVerifyCode` / `ReTypeit` / `ReTreeLine` / `ReAnimateSelector` | 数字滚动 / 闪烁点 / 二维码 / 图片题型验证码 / 验证码倒计时 / 打字机 / 树形连接线 / 动画选择器 | 按需引用 |
 
 ### 2.5 请求层：BaseApi / http
 

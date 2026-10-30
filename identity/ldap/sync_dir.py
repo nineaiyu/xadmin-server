@@ -36,11 +36,24 @@ def _norm_code(dn: str) -> str:
     return DEPT_CODE_PREFIX + dn
 
 
+def _min_sync_entries() -> int:
+    """目录搜索最小条目数：低于该值视为过滤条件误配，跳过 missing 策略。"""
+    return max(0, int(getattr(settings, "LDAP_SYNC_MIN_ENTRIES", 1) or 1))
+
+
 def _sync_depts(conn: Any, summary: dict[str, Any]) -> dict[str, Any]:
     """同步 OU 为部门树。返回 {规范化父 DN: dept_pk} 供用户归属计算。"""
     if not settings.LDAP_DEPT_ENABLED or not settings.LDAP_DEPT_SEARCH_BASE:
         return {}
     entries = paged_search_entries(conn, settings.LDAP_DEPT_SEARCH_BASE, LDAP_FILTER_OU, ["ou", "name"])
+    min_entries = _min_sync_entries()
+    if len(entries) < min_entries:
+        logger.warning(
+            "LDAP dept search returned %s entries (< %s); skip missing policy to avoid mass deactivation",
+            len(entries),
+            min_entries,
+        )
+        return {}
     by_dn = {}
     for entry in entries:
         attrs = entry_to_attrs(entry)
@@ -129,6 +142,16 @@ def _sync_users(conn: Any, summary: dict[str, Any], dept_by_dn: dict[str, Any]) 
     entries = paged_search_entries(conn, settings.LDAP_USER_SEARCH_BASE, settings.LDAP_USER_FILTER, attributes)
     summary["total_entries"] = len(entries)
     seen_dns = set()
+    # 空目录保护：搜索过滤条件误配时返回 0 条，不能据此把全部绑定用户按
+    # missing 策略批量停用/软删（可配置最小条目数，缺省 1 即覆盖空目录）
+    min_entries = _min_sync_entries()
+    if len(entries) < min_entries:
+        logger.warning(
+            "LDAP directory returned %s entries (< %s); skip missing policy to avoid mass deactivation",
+            len(entries),
+            min_entries,
+        )
+        return
 
     for entry in entries:
         dn = normalize_dn(entry["dn"])

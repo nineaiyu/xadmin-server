@@ -12,7 +12,7 @@ import pytest
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 
 # Node webcrypto 生成：PBKDF2-HMAC-SHA256 100k / AES-256-GCM / salt[16]+iv[12]+ct+tag[16]
 WEBCRYPTO_VECTOR = "RgM6se8zz0QERDwTWB7MNqY7W7oCQaQrAnENQ6EyHhinCeHdP147wLAJGeO4UQTtV5C+Q74OtMq/LghhsoiEvASa"

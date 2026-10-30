@@ -17,7 +17,7 @@
 ### D2 专门迁移 = 各 app 单迁移 `AlterModelTable`
 
 - `ai/0006`、`approval/0005`、`dataset/0006` 共 25 个 `AlterModelTable(table=None)`（回落默认命名）；Django 6 的该操作对 PG 执行元数据级 `ALTER TABLE ... RENAME TO`，**单迁移单事务原子完成、无数据重写**，并自动连带重命名 auto m2m 中间表；
-- **索引与约束名不重命名**：trgm / GIN / HNSW 索引名本就不含表前缀（`idx_approvalrequest_path_trgm`、`idx_dformsub_filter_gin`、`aichunk_embedding_vector_hnsw`）且随表自动跟随，命中路径不变；Django 自建 B-tree 索引 / 约束的旧名（含 `system_` 串）保留——批量重命名需按 vendor 分支 DDL（MySQL 无 `ALTER INDEX RENAME`），无行为收益，登记为外观性余量（indexes.md 已注）。此后新建索引按新表名自动取名，无名称冲突面；
+- **索引与约束名不重命名**：trgm / GIN / HNSW 索引名本就不含表前缀（`idx_approvalrequest_path_trgm`、`idx_dformsub_filter_gin`、`aichunk_embedding_vector_hnsw`）且随表自动跟随，命中路径不变；Django 自建 B-tree 索引 / 约束的旧名（含 `system_` 串）保留——批量重命名需按 vendor 分支 DDL（MySQL 无 `ALTER INDEX RENAME`），无行为收益，登记为外观性余量（原索引评审文档已清理）。此后新建索引按新表名自动取名，无名称冲突面；
 - **历史迁移一律不改**（approval/0001 等建表语句仍写 `system_*`）：全新链重放 = 0001 建旧名表 → 0005/0006 改名，自洽；存量库（当前链已应用库）直接 `migrate` 应用 3 个改名迁移即可，无 SeparateDatabaseAndState 兼容层（ADR-058 清库重建口径下不存在旧链升级包袱）。
 
 ### D3 外部 SQL 兼容期评估：无消费者，不设兼容视图
@@ -27,7 +27,7 @@
 - 全仓（server / installer / client / web / docs / scripts / loadjson）**无** `CREATE VIEW | PROCEDURE | FUNCTION | TRIGGER | MATERIALIZED`；
 - 业务代码无 raw SQL / cursor 触达这些表：dataset 报表与数据集执行、AI NL 查数、全局搜索（`system/search.py` 提供者）均走 ORM，表名经 `_meta.db_table` 动态解析，自动跟随；
 - loadjson 种子用 model label（如 `approval.approvalrequest`），content_type / 权限点 / Menu.path / ModuleSpec 均不依赖物理表名（ADR-057 已把 app_label 类持久化状态平移收口）；
-- 代码内手写 DDL 两处同源化：`ai/utils/ai_vector_ddl.py` 表名改从模型 Meta 取（`_chunk_table()`，不再硬编码）；trgm 索引建在迁移内、随表跟随。
+- 代码内手写 DDL 两处同源化：`ai/services/knowledge/ai_vector_ddl.py` 表名改从模型 Meta 取（`_chunk_table()`，不再硬编码）；trgm 索引建在迁移内、随表跟随。
 
 → 兼容期 / 兼容视图**无对象，不设**（避免引入只读转发层的长期债）。若某部署侧存在仓外备份脚本、外接报表直连旧表名，属部署资产：PG rename 后旧名直接失效（不会静默错读），随发布 checklist 自查。
 

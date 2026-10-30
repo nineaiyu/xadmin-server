@@ -11,35 +11,16 @@
 工作簿渲染器与多渠道投递（下载中心链路的报表侧薄适配）。
 """
 
-import io
-import json
-from datetime import datetime
-from datetime import time as dt_time
 from typing import Any
-from uuid import UUID
 
 from django.core.mail import EmailMessage
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
-from common.utils.excel import append_text_safe_row
+from common.utils.excel import excel_safe_value, to_xlsx
 
 logger = get_logger(__name__)
-
-
-def _excel_safe(value: Any) -> Any:
-    """openpyxl 仅支持基础标量：UUID（FK pk）转字符串、带时区 datetime/time 转本地
-    naive（Excel 不接受 tzinfo）、dict/list 转 JSON 文本，其余原样。"""
-    if isinstance(value, UUID):
-        return str(value)
-    if isinstance(value, datetime) and timezone.is_aware(value):
-        return timezone.localtime(value).replace(tzinfo=None)
-    if isinstance(value, dt_time) and getattr(value, "tzinfo", None) is not None:
-        return value.replace(tzinfo=None)
-    if isinstance(value, (dict, list, tuple)):
-        return json.dumps(value, ensure_ascii=False, default=str)
-    return value
 
 
 def _sheet_title(component: Any, index: int) -> str:
@@ -51,49 +32,66 @@ def _sheet_title(component: Any, index: int) -> str:
     return f"{index}-{title}"
 
 
-def _render_component_sheet(wb: Any, report: Any, user: Any, component: Any, index: int) -> None:
-    """单个聚合组件落一张独立 sheet（名称/值两列）。
+def _component_query_key(component: Any) -> tuple[str, str, str, str]:
+    """组件取数参数指纹：同参数的组件可复用同一次聚合结果。"""
+    return (
+        str(component.get("group_by") or ""),
+        str(component.get("metric") or "count"),
+        str(component.get("date_trunc") or ""),
+        str(component.get("value_field") or ""),
+    )
+
+
+def _component_rows(
+    report: Any,
+    user: Any,
+    component: Any,
+    cache: dict[tuple[str, str, str, str], Any] | None = None,
+) -> list[list[Any]]:
+    """单个聚合组件的数据行（名称/值两列，首行为表头；sheet 装配见 _render_workbook）。
 
     单组件失败（字段被删、字段权限收紧等）只写一行提示，不拖垮整份报表投递：
     投递的可用性优先于单个图表，失败原因落日志供排查。
+
+    ``cache`` 由整份工作簿共享：多张卡展示同一指标是常见配置，逐卡重复执行会让
+    查询量随组件数线性放大；同参组件复用首次结果。
     """
     from dataset.utils.dataset import aggregate_dataset
 
-    sheet = wb.create_sheet(_sheet_title(component, index))
-    append_text_safe_row(sheet, [str(_("Name")), str(_("Value"))])
+    key = _component_query_key(component)
     try:
-        result = aggregate_dataset(
-            report.dataset,
-            user,
-            group_by=component.get("group_by", ""),
-            metric=component.get("metric") or "count",
-            date_trunc=component.get("date_trunc") or None,
-            value_field=component.get("value_field") or None,
-        )
+        if cache is not None and key in cache:
+            result = cache[key]
+        else:
+            result = aggregate_dataset(
+                report.dataset,
+                user,
+                group_by=component.get("group_by", ""),
+                metric=component.get("metric") or "count",
+                date_trunc=component.get("date_trunc") or None,
+                value_field=component.get("value_field") or None,
+            )
+            if cache is not None:
+                cache[key] = result
     except Exception:  # noqa: BLE001 单组件失败不影响其余 sheet
         logger.warning("scheduled report component failed: %s", component.get("id"), exc_info=True)
-        append_text_safe_row(sheet, [str(_("Chart data unavailable")), ""])
-        return
-    for item in result["series"]:
-        append_text_safe_row(sheet, [_excel_safe(item["name"]), _excel_safe(item["value"])])
+        return [[str(_("Name")), str(_("Value"))], [str(_("Chart data unavailable")), ""]]
+    return [[str(_("Name")), str(_("Value"))]] + [
+        [excel_safe_value(item["name"]), excel_safe_value(item["value"])] for item in result["series"]
+    ]
 
 
 def _render_workbook(report: Any, user: Any) -> tuple[Any, ...]:
-    """执行数据集并渲染 xlsx 到内存。返回 (bytes, 明细行数)。
+    """执行数据集并渲染 xlsx 到内存（装配走内核 to_xlsx：防注入/值收敛/表头样式单源）。
+    返回 (bytes, 明细行数)。
 
     报表设计：`design` 决定明细列与行数上限（空 = 存量全列口径），并为每个聚合组件
     追加独立 sheet；`mode == "aggregate"` 的存量单表行为不变。
     """
-    from openpyxl import Workbook
-
     from dataset.utils.dataset import aggregate_dataset, execute_dataset
     from dataset.utils.report_design import design_components, design_export_columns, design_table_limit
 
     design = report.design or {}
-    wb = Workbook()
-    ws = wb.active
-    ws.title = str(_("Report"))
-
     if report.mode == "aggregate":
         result = aggregate_dataset(
             report.dataset,
@@ -103,25 +101,21 @@ def _render_workbook(report: Any, user: Any) -> tuple[Any, ...]:
             date_trunc=report.date_trunc or None,
             value_field=report.value_field or None,
         )
-        # openpyxl 只接受 str：gettext_lazy 代理不是 str 实例，必须显式转换
-        append_text_safe_row(ws, [str(_("Name")), str(_("Value"))])
-        rows = [[_excel_safe(item["name"]), _excel_safe(item["value"])] for item in result["series"]]
+        rows = [[excel_safe_value(item["name"]), excel_safe_value(item["value"])] for item in result["series"]]
+        main_sheet: list[list[Any]] = [[str(_("Name")), str(_("Value"))], *rows]
     else:
         # 明细行数上限随执行下推到 SQL（LIMIT），不再全量物化后在 Python 侧切片
         limit = design_table_limit(design)
-        result = execute_dataset(report.dataset, user, max_rows=limit)
+        result = execute_dataset(report.dataset, user, max_rows=limit, with_total=False)
         columns = design_export_columns(design, result["columns"])
-        append_text_safe_row(ws, list(columns))
-        rows = [[_excel_safe(row.get(col)) for col in columns] for row in result["rows"]]
-    for row in rows:
-        append_text_safe_row(ws, row)
+        rows = [[excel_safe_value(row.get(col)) for col in columns] for row in result["rows"]]
+        main_sheet = [list(columns), *rows]
 
+    sheets: dict[str, list[list[Any]]] = {str(_("Report")): main_sheet}
+    aggregate_cache: dict[tuple[str, str, str, str], Any] = {}
     for index, component in enumerate(design_components(design), start=1):
-        _render_component_sheet(wb, report, user, component, index)
-
-    buffer = io.BytesIO()
-    wb.save(buffer)
-    return buffer.getvalue(), len(rows)
+        sheets[_sheet_title(component, index)] = _component_rows(report, user, component, aggregate_cache)
+    return to_xlsx(sheets), len(rows)
 
 
 def _deliver_email(report: Any, filename: str, content: bytes, rows: int) -> None:
@@ -141,7 +135,7 @@ def _deliver_email(report: Any, filename: str, content: bytes, rows: int) -> Non
 
 def report_notify_channels(report: Any) -> list[Any]:
     """报表投递渠道清单：非法取值忽略；空 = 仅邮件（存量数据与旧客户端兼容）。"""
-    from dataset.serializers.analysis import REPORT_NOTIFY_CHANNELS
+    from dataset.serializers.report import REPORT_NOTIFY_CHANNELS
 
     channels = [item for item in (report.notify_channels or []) if item in REPORT_NOTIFY_CHANNELS]
     return channels or ["email"]

@@ -84,6 +84,22 @@ class TestSeedCheck:
         assert "orphanapp" in output
         assert "失败 0" in output  # 只是告警，不判失败
 
+    def test_official_demo_seed_dir_is_not_warned(self, monkeypatch, tmp_path):
+        """官方 demo 是可选示例 app：未注册时 seeds 忽略是预期，不应告警。"""
+
+        shutil.copytree(Path(settings.PROJECT_DIR) / "loadjson", tmp_path / "loadjson")
+        seed_dir = tmp_path / "demo" / "seeds"
+        seed_dir.mkdir(parents=True)
+        (seed_dir / "manifest.json").write_text(
+            json.dumps({"version": 1, "app": "demo", "files": []}), encoding="utf-8"
+        )
+        monkeypatch.setattr(settings, "PROJECT_DIR", str(tmp_path))
+
+        output = _run("doctor")
+
+        assert "未注册" not in output
+        assert "失败 0" in output
+
 
 class TestLocaleCheck:
     """语言包检查：缺失 .mo 时报出**语言码**（zh/en），而不是父目录名 locale。"""

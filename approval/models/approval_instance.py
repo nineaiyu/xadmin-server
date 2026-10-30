@@ -36,7 +36,7 @@ class ApprovalInstance(DbAuditModel):
     form_data = models.JSONField(_("Form data"), default=dict, blank=True)
     # 通用业务绑定：biz_type 为业务标识（如 "leave"），biz_id 为业务行主键
     # 字符串。业务模块经 create_instance(biz_type=..., biz_id=...) 挂载，实例终态时由
-    # approval/utils/approval_flow/engine_events.py 的 _finish_instance 发 approval_instance_finished
+    # approval/services/approval_flow/engine_events.py 的 _finish_instance 发 approval_instance_finished
     # 信号回写业务状态；两者皆空 = 引擎自带表单的独立申请（历史行为不变）。
     biz_type = models.CharField(_("Business type"), max_length=64, blank=True, default="", db_index=True)
     biz_id = models.CharField(_("Business id"), max_length=64, blank=True, default="")
@@ -61,6 +61,16 @@ class ApprovalInstance(DbAuditModel):
         related_name="approval_cc_instances",
         verbose_name=_("CC users"),
         blank=True,
+    )
+    # 驳回重提链：新实例指回被驳回的原实例（同一申请人 + 同一流程才建立），
+    # 用于追溯「第几次提交」；原实例被删时置空，不影响新单。
+    source_instance = models.ForeignKey(
+        "self",
+        related_name="resubmitted_instances",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_("Source instance"),
     )
 
     class Meta:

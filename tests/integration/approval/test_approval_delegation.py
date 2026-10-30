@@ -9,7 +9,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from approval.models.approval import ApprovalDelegation, ApprovalFlow, ApprovalFlowNode
-from approval.utils.approval_flow import resolve_assignees
+from approval.services.approval_flow import resolve_assignees
 from identity.models import UserInfo, UserRole
 from system.models import DataPermission, FieldPermission, Menu, MenuMeta, ModelLabelField
 
@@ -117,7 +117,7 @@ class TestResolveWithDelegation:
 
     def test_delegated_task_records_source(self, applicant, target, agent):
         """委托代审落任务时记录 delegate_from（审批轨迹标注「由 X 代理」）。"""
-        from approval.utils.approval_flow import create_instance
+        from approval.services.approval_flow import create_instance
 
         flow, _node = make_flow()
         make_delegation(target, agent)
@@ -178,6 +178,7 @@ class TestDelegationCrud:
 
     def test_overlap_rejected(self, auth_client, target, agent):
         now = timezone.now()
+        make_flow("deleg_crud")
         make_delegation(target, agent)
         resp = auth_client.post(
             DELEGATIONS_URL,
@@ -186,6 +187,7 @@ class TestDelegationCrud:
                 "delegate": str(agent.pk),
                 "start_time": (now + datetime.timedelta(minutes=10)).isoformat(),
                 "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
+                "flow_codes": ["deleg_crud"],
             },
             format="json",
         )
@@ -211,6 +213,7 @@ class TestDelegationCrud:
     def test_inactive_new_row_may_overlap(self, auth_client, target, agent):
         """未启用的委托模板允许先保存：重叠校验按本行落库后的 is_active 收口。"""
         now = timezone.now()
+        make_flow("deleg_crud")
         make_delegation(target, agent)
         resp = auth_client.post(
             DELEGATIONS_URL,
@@ -219,6 +222,7 @@ class TestDelegationCrud:
                 "delegate": str(agent.pk),
                 "start_time": (now + datetime.timedelta(minutes=10)).isoformat(),
                 "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
+                "flow_codes": ["deleg_crud"],
                 "is_active": False,
             },
             format="json",
@@ -228,6 +232,7 @@ class TestDelegationCrud:
     def test_activating_overlapping_row_rejected(self, auth_client, target, agent):
         """未启用模板补启用时同样过重叠校验：与既有生效委托重叠即拒绝。"""
         now = timezone.now()
+        make_flow("deleg_crud")
         make_delegation(target, agent)
         created = auth_client.post(
             DELEGATIONS_URL,
@@ -236,6 +241,7 @@ class TestDelegationCrud:
                 "delegate": str(agent.pk),
                 "start_time": (now + datetime.timedelta(minutes=10)).isoformat(),
                 "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
+                "flow_codes": ["deleg_crud"],
                 "is_active": False,
             },
             format="json",
@@ -332,14 +338,17 @@ class TestDelegationOwnership:
         return client
 
     @staticmethod
-    def _payload(delegator, delegate):
+    def _payload(delegator, delegate, flow_codes=None):
         now = timezone.now()
-        return {
+        payload = {
             "delegator": str(delegator.pk),
             "delegate": str(delegate.pk),
             "start_time": (now - datetime.timedelta(minutes=5)).isoformat(),
             "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
         }
+        if flow_codes is not None:
+            payload["flow_codes"] = flow_codes
+        return payload
 
     def test_create_for_others_rejected(self, normal_user, other, agent, grant_permission, grant_data_all):
         """以他人名义建委托：拒绝且不落行（否则收编他人待办）。"""
@@ -352,13 +361,27 @@ class TestDelegationOwnership:
         assert not ApprovalDelegation.objects.filter(delegator=other).exists()
 
     def test_create_in_own_name_allowed(self, normal_user, agent, grant_permission, grant_data_all):
+        make_flow("deleg_own")
+        grant_data_all(normal_user, "identity.userinfo", self.MODEL_LABEL)
+        grant_permission(
+            normal_user, "create:SystemApprovalDelegation", self.CREATE_PATH, method="POST", fields=self.WRITABLE_FIELDS
+        )
+        resp = self._client(normal_user).post(
+            DELEGATIONS_URL, self._payload(normal_user, agent, flow_codes=["deleg_own"]), format="json"
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert ApprovalDelegation.objects.filter(delegator=normal_user, delegate=agent).exists()
+
+    def test_create_all_flows_allowed(self, normal_user, agent, grant_permission, grant_data_all):
+        """空 flow_codes = 全部流程（与模型/前端标签同义），创建不再被拒绝。"""
         grant_data_all(normal_user, "identity.userinfo", self.MODEL_LABEL)
         grant_permission(
             normal_user, "create:SystemApprovalDelegation", self.CREATE_PATH, method="POST", fields=self.WRITABLE_FIELDS
         )
         resp = self._client(normal_user).post(DELEGATIONS_URL, self._payload(normal_user, agent), format="json")
         assert resp.data["code"] == 1000, resp.data
-        assert ApprovalDelegation.objects.filter(delegator=normal_user, delegate=agent).exists()
+        row = ApprovalDelegation.objects.get(delegator=normal_user, delegate=agent)
+        assert row.flow_codes == []
 
     def test_list_scoped_to_own(self, normal_user, other, agent, other_agent, grant_permission, grant_data_all):
         """列表只含本人作为委托人的记录（他人委托记录不可见）。"""
@@ -421,3 +444,114 @@ class TestDelegationOwnership:
         assert resp.status_code == 400, resp.data
         row.refresh_from_db()
         assert row.delegator_id == normal_user.pk
+
+    def test_all_code_cannot_destroy_others(self, normal_user, other, other_agent, grant_permission, grant_data_all):
+        """「查看全部委托」只放大读取面：持 all 码删除他人委托 → 403，行保留。
+
+        get_queryset 同时是删除门禁的历史缺陷：all 码可见他人记录后，
+        destroy 经 get_object 可硬删他人生效委托（静默拆掉他人代审权）。
+        """
+        grant_data_all(normal_user, self.MODEL_LABEL)
+        grant_permission(normal_user, "list:SystemApprovalDelegation", self.LIST_PATH, method="GET")
+        grant_permission(normal_user, "all:SystemApprovalDelegation", self.ALL_PATH, method="GET")
+        grant_permission(normal_user, "destroy:SystemApprovalDelegation", self.DETAIL_PATH, method="DELETE")
+        row = make_delegation(other, other_agent)
+
+        client = self._client(normal_user)
+        assert client.get(f"{DELEGATIONS_URL}").json()["data"]["total"] == 1  # all 码放大读取面生效
+        resp = client.delete(f"{DELEGATIONS_URL}/{row.pk}")
+        assert resp.status_code == 403, resp.data
+        assert ApprovalDelegation.objects.filter(pk=row.pk).exists()
+
+    def test_delegator_destroys_own_delegation(self, normal_user, agent, grant_permission, grant_data_all):
+        """销毁护栏不误伤本人：委托人删除自己的委托照常放行。"""
+        grant_data_all(normal_user, self.MODEL_LABEL)
+        grant_permission(normal_user, "destroy:SystemApprovalDelegation", self.DETAIL_PATH, method="DELETE")
+        row = make_delegation(normal_user, agent)
+
+        resp = self._client(normal_user).delete(f"{DELEGATIONS_URL}/{row.pk}")
+        assert resp.status_code == 200, resp.data
+        assert not ApprovalDelegation.objects.filter(pk=row.pk).exists()
+
+
+class TestDelegationImpact:
+    """停用影响面对账同一实体：流程节点 PENDING 待办（与 _expand_delegations 同源）。
+
+    历史缺陷：impact 查的是敏感操作审批单（ApprovalRequest.current_assignees）——
+    委托在流程域的唯一消费点是节点候选人替换，敏感审批链不读委托，
+    「停用前列出受影响在途单」的承诺落空。
+    """
+
+    @pytest.fixture
+    def imp_applicant(self, db):
+        return UserInfo.objects.create_user(username="deleg_imp_applicant", password="Test@123456")
+
+    @staticmethod
+    def _superuser_client(superuser):
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        client.force_authenticate(user=superuser)
+        return client
+
+    @staticmethod
+    def _impact_data(client, delegation):
+        resp = client.get(f"{DELEGATIONS_URL}/{delegation.pk}/impact")
+        assert resp.status_code == 200, resp.data
+        return resp.data["data"]
+
+    def _pending_instance(self, applicant):
+        from approval.services.approval_flow import create_instance
+
+        flow, _node = make_flow(code="deleg_impact")
+        instance, error = create_instance(flow=flow, applicant=applicant, title="委托影响面单", form_data={})
+        assert error is None, error
+        return instance
+
+    def test_delegate_side_pending_counted(self, superuser, imp_applicant, target, agent):
+        """生效委托：待办经委托展开落在代理人名下，impact 计入 delegate_pending。"""
+        delegation = make_delegation(target, agent)
+        instance = self._pending_instance(imp_applicant)
+        task = instance.tasks.first()
+        assert task.assignee_id == agent.pk
+        assert task.delegate_from_id == target.pk
+
+        data = self._impact_data(self._superuser_client(superuser), delegation)
+        assert data["total"] == 1
+        assert data["delegator_pending"] == 0
+        assert data["delegate_pending"] == 1
+
+    def test_delegator_side_pending_counted(self, superuser, imp_applicant, target, agent):
+        """未生效委托：待办挂在委托人名下，impact 计入 delegator_pending。"""
+        delegation = make_delegation(target, agent, is_active=False)
+        instance = self._pending_instance(imp_applicant)
+        assert instance.tasks.first().assignee_id == target.pk
+
+        data = self._impact_data(self._superuser_client(superuser), delegation)
+        assert data["total"] == 1
+        assert data["delegator_pending"] == 1
+        assert data["delegate_pending"] == 0
+
+    def test_sensitive_approval_request_not_counted(self, superuser, imp_applicant, target, agent):
+        """敏感操作审批单（ApprovalRequest）不参与影响面：对账实体为流程待办。"""
+        from approval.models.approval_request import ApprovalRequest
+
+        delegation = make_delegation(target, agent, is_active=False)
+        self._pending_instance(imp_applicant)
+        request_row = ApprovalRequest.objects.create(
+            module="敏感操作", method="DELETE", path="/api/test/1", creator=imp_applicant, params={}
+        )
+        request_row.current_assignees.add(target)
+
+        data = self._impact_data(self._superuser_client(superuser), delegation)
+        assert data["total"] == 1
+        assert data["delegator_pending"] == 1
+
+    def test_finished_instance_tasks_not_counted(self, superuser, imp_applicant, target, agent):
+        """仅统计在途实例的待办：终态实例的 PENDING 任务不进影响面。"""
+        from approval.models.approval import ApprovalInstance
+
+        delegation = make_delegation(target, agent, is_active=False)
+        instance = self._pending_instance(imp_applicant)
+        ApprovalInstance.objects.filter(pk=instance.pk).update(status=ApprovalInstance.Status.CANCELLED)
+
+        data = self._impact_data(self._superuser_client(superuser), delegation)
+        assert data["total"] == 0

@@ -107,6 +107,38 @@ def test_cache_key_is_user_scoped(superuser):
     )
 
 
+def test_cache_key_is_application_scoped(superuser):
+    """键必须区分应用凭证：同一 owner 的不同应用共享 user_pk，缺凭证维度会串味。"""
+    from django.test import RequestFactory
+
+    from common.core.modelset.metadata import metadata_cache_key
+
+    class BookViewSet:
+        pass
+
+    view = BookViewSet()
+
+    def _request(application):
+        request = RequestFactory().get(COLUMNS_URL)
+        request.user = superuser
+        # application_of_request 按 request.auth（绑定应用的 PAT）解析——按同一入口打桩
+        request.auth = (
+            None
+            if application is None
+            else type("Auth", (), {"api_application_id": application.pk, "api_application": application})()
+        )
+        return request
+
+    app_a = type("AppA", (), {"pk": "aaa-1"})()
+    app_b = type("AppB", (), {"pk": "bbb-2"})()
+    keys = {
+        metadata_cache_key(view, "search_columns", _request(app_a)),
+        metadata_cache_key(view, "search_columns", _request(app_b)),
+        metadata_cache_key(view, "search_columns", _request(None)),
+    }
+    assert len(keys) == 3, "会话与应用凭证（两枚不同凭证）必须得到三个不同缓存键"
+
+
 def test_fields_param_has_separate_key(superuser, monkeypatch):
     client = APIClient()
     client.force_authenticate(superuser)

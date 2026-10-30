@@ -161,6 +161,10 @@ class TestParseValue:
         assert self.parser.parse_value(field, "True") is True
         assert self.parser.parse_value(field, "yes") is True
         assert self.parser.parse_value(field, "0") is False
+        # XLSX 布尔单元格是 Python bool / None：不能调用 .lower() 让整份文件解析失败
+        assert self.parser.parse_value(field, True) is True
+        assert self.parser.parse_value(field, False) is False
+        assert self.parser.parse_value(field, None) is False
 
     def test_json_field(self):
         field = RowSerializer().fields["config"]

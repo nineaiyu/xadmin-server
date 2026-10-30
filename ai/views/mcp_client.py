@@ -22,11 +22,12 @@ from rest_framework.viewsets import GenericViewSet
 
 from ai.models.mcp import McpServer
 from ai.serializers.mcp import McpServerSerializer
-from ai.utils.mcp_client import (
+from ai.services.mcp.mcp_client import (
     MAX_ARGUMENTS_BYTES,
     McpClientError,
     audit_mcp_call,
     client_for,
+    daily_quota_error,
     summarize_tool_result,
     tools_with_callable,
 )
@@ -45,7 +46,7 @@ from common.core.response import ApiResponse
 from common.core.throttle import AiThrottleMixin
 from common.swagger.utils import get_default_response_schema
 
-# 说明：调用参数 JSON 体积上限常量下沉到 ai/utils/mcp_client.py（MAX_ARGUMENTS_BYTES），
+# 说明：调用参数 JSON 体积上限常量下沉到 ai/services/mcp/mcp_client.py（MAX_ARGUMENTS_BYTES），
 # AI 动作链路（ai_mcp_actions）与这里共用同一口径，避免两处漂移。
 
 
@@ -137,6 +138,11 @@ class McpServerViewSet(
         if tool not in server.tool_names:
             audit_mcp_call(request.user, server, tool, False, "tool is not in the allowed list", arguments)
             return ApiResponse(code=1001, detail=_("Tool {} is not in the allowed list").format(tool))
+        quota = daily_quota_error(server)
+        if quota:
+            # 配额拒绝也落审计（计数即审计流水，拒绝行同样计入当日用量）
+            audit_mcp_call(request.user, server, tool, False, quota, arguments)
+            return ApiResponse(code=1001, detail=quota)
         try:
             result = client_for(server).call_tool(tool, arguments)
         except McpClientError as exc:

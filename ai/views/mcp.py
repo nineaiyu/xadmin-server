@@ -88,8 +88,8 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
 
     def _check_enabled(self, msg_id: Any) -> Any:
         """灰度门禁（与 action/execute 同口径）：动作开关 + 助手配置。"""
-        from ai.utils.ai import is_enabled
-        from ai.utils.ai_actions import ai_action_enabled
+        from ai.services.actions.ai_actions import ai_action_enabled
+        from ai.services.assistant.ai import is_enabled
 
         if not ai_action_enabled():
             return _rpc_error(msg_id, JSONRPC_SERVER_ERROR, str(_("AI actions are not enabled")))
@@ -110,8 +110,8 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
         )
 
     def _handle_tools_list(self, request: Any, msg_id: Any) -> Any:
-        from ai.utils.ai_actions import get_action
-        from ai.utils.ai_tool_catalog import tool_catalog
+        from ai.services.actions.ai_actions import get_action
+        from ai.services.actions.ai_tool_catalog import tool_catalog
 
         user = request.user
         tools = []
@@ -128,7 +128,7 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
         return _rpc_result(msg_id, {"tools": tools})
 
     def _handle_tools_call(self, request: Any, msg_id: Any, params: Any) -> Any:
-        from ai.utils.ai_actions import audit_ai_action, execute_action, get_action
+        from ai.services.actions.ai_actions import audit_ai_action, execute_action, get_action
 
         params = params if isinstance(params, dict) else {}
         name = str(params.get("name") or "").strip()
@@ -191,7 +191,7 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
             return call_result(False, error, {})
 
         # 幂等：MCP 通道与 Web 通道同口径（用户 + 动作 + 参数哈希，TTL 内去重）
-        from ai.utils.ai_idempotency import execute_idempotent
+        from ai.services.assistant.ai_idempotency import execute_idempotent
 
         result = execute_idempotent(user, name, clean, execute_action)
         ok = bool(result.get("ok"))

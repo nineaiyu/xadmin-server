@@ -68,7 +68,7 @@ backend = Wecom  # 约定：模块级 backend 变量
 `UserOAuthBinding`（provider key 自由命名，按 flavor 归集）。钉钉发送前按
 `user/getbyunionid` 换 userid（缓存）；从未经该 IM 登录的用户不可达该渠道
 （warning 日志口径，含用户名）。凭据与开关走 Setting（category=notify_im，secret 值级加密），
-管理页在「消息通知设置」按渠道拆为钉钉 / 企业微信 / 飞书三个页签（后端按
+管理页在「通知渠道」按渠道拆为邮件 / 钉钉 / 企业微信 / 飞书 / Webhook 页签（后端按
 `?channel=` 收敛字段，非密文凭据必填、密文不回显故可选；测试按钮只测本渠道，
 未启用/未测通按失败反馈）；`is_enable` = 开关 AND 凭据齐全（SMS 同款降级语义），
 token/userid 缓存按凭据摘要隔离（改密换 key）。SDK 收口 `integrations/sdk/im/`，与
@@ -79,3 +79,13 @@ token/userid 缓存按凭据摘要隔离（改密换 key）。SDK 收口 `integr
 - **没收到邮件/短信**：确认订阅 `receive_backends` 含该渠道 → 渠道级开关 → 用户级 `account_field` 是否绑定（warning 日志 `skip N user(s) without ...`）；
 - **订阅页渠道列表**：`/api/notifications/` 的 backends 接口只下发 `is_enable` 为真的渠道（`notifications/views/notifications.py`）;
 - **发送异常不外抛**：`Message.send_msg` 对单渠道异常打印堆栈并继续其他渠道（`NotImplementedError` 直接跳过）。
+
+## 七、运行期扩展边界（插件渠道）
+
+`register_channel` / `register_channel_spec` 的 `code` 必须已存在于 `BACKEND` 枚举
+（渠道枚举是序列化契约，运行期不扩枚举）；插件只能复用现有渠道码，**不能新增渠道码**。
+二开接入全新渠道需要随宿主版本同时提交：`BACKEND` 枚举 + `CHANNEL_SPECS` + `backends/<module>.py`
++ 客户端加载；插件侧可选路径是复用 `webhook` 渠道转发到自有服务。
+
+守护：`tests/unit/common/test_registry_primitives.py::TestNotificationChannelRegistration`
+覆盖「枚举外 code fail-fast / 重复 code fail-fast / 缺渲染方法 fail-fast」。

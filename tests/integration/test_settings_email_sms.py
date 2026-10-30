@@ -156,6 +156,37 @@ class TestSmsSettingView:
         values = {item["value"] for item in resp.data["data"]}
         assert "alibaba" in values
 
+    def test_general_endpoint_carries_effective_diagnostic(self, auth_client, settings):
+        """总开关诊断挂在「短信设置」页签（/api/settings/sms），不混入服务商页签。"""
+        settings.SMS_ENABLED = False
+        resp = auth_client.get("/api/settings/sms")
+
+        assert resp.status_code == 200
+        item = resp.data["data"]["effective"]["items"][0]
+        assert item["enabled"] is False
+        assert item["reasons"]
+
+    def test_general_endpoint_reports_missing_credentials_as_blocked(self, auth_client, settings):
+        """开关开着但凭据不完整时不能报“已生效”（发不出验证码）。"""
+        settings.SMS_ENABLED = True
+        settings.SMS_BACKEND = "alibaba"
+        settings.ALIBABA_ACCESS_KEY_ID = ""
+        settings.ALIBABA_ACCESS_KEY_SECRET = ""
+        settings.ALIBABA_VERIFY_SIGN_NAME = ""
+        settings.ALIBABA_VERIFY_TEMPLATE_CODE = ""
+        resp = auth_client.get("/api/settings/sms")
+
+        item = resp.data["data"]["effective"]["items"][0]
+        assert item["enabled"] is False
+        assert item["reasons"] == [str(_("SMS provider credentials are incomplete; verify codes may fail to be sent"))]
+
+    def test_provider_endpoint_does_not_carry_general_effective(self, auth_client):
+        """阿里云页签只负责服务商凭据，不应显示短信服务总开关的生效诊断。"""
+        resp = auth_client.get(f"{SMS_CONFIG_URL}?category=alibaba")
+
+        assert resp.status_code == 200
+        assert "effective" not in resp.data["data"]
+
     @pytest.mark.parametrize("backend", BACKENDS.values)
     def test_config_field_face_for_every_registered_backend(self, auth_client, backend):
         resp = auth_client.get(f"{SMS_CONFIG_URL}?category={backend}")
@@ -168,14 +199,18 @@ class TestSmsSettingView:
         assert "SITE_URL" not in fields
         assert BACKEND_EXCLUSIVE_FIELDS.get(backend, set()) <= fields
 
-    def test_config_unknown_category_send_returns_controlled_error(self, auth_client):
+    def test_config_unknown_category_returns_400(self, auth_client):
+        """未知渠道不再落到 provider-not-support 的误导文案，保存期明确 400。"""
         resp = auth_client.post(f"{SMS_CONFIG_URL}?category=nonexistent", SMS_PAYLOAD)
 
-        assert resp.data["code"] == 400
-        assert resp.data["detail"] == str(_("SMS provider not support: {}").format("nonexistent"))
+        assert resp.status_code == 400
+        assert "nonexistent" in str(resp.data)
 
-    def test_config_without_category_requires_test_phone(self, auth_client):
-        resp = auth_client.post(SMS_CONFIG_URL, {})
+    def test_config_without_category_defaults_alibaba(self, auth_client):
+        """缺省 category 按 Alibaba 口径校验；缺测试手机号返回受控 1001。"""
+        payload = {key: value for key, value in SMS_PAYLOAD.items() if key != "SMS_TEST_PHONE"}
+        resp = auth_client.post(SMS_CONFIG_URL, payload)
+
         assert resp.data["code"] == 1001
         assert resp.data["detail"] == str(_("test_phone is required"))
 
@@ -183,7 +218,8 @@ class TestSmsSettingView:
         monkeypatch.setattr("integrations.sdk.sms.alibaba.client", FakeSMSClient)
         resp = auth_client.post(f"{SMS_CONFIG_URL}?category=alibaba", SMS_PAYLOAD)
 
-        assert resp.data["code"] == 200, resp.data
+        # 成功必须下发默认业务码（前端只认 1000；HTTP 200 会被判为业务失败）
+        assert resp.data["code"] == 1000, resp.data
         assert resp.data["detail"] == str(_("Test success"))
 
         client = FakeSMSClient.instances[-1]
@@ -199,7 +235,7 @@ class TestSmsSettingView:
         monkeypatch.setattr("integrations.sdk.sms.alibaba.client", FakeSMSClient)
         resp = auth_client.post(f"{SMS_CONFIG_URL}?category=alibaba", SMS_PAYLOAD)
 
-        assert resp.data["code"] == 200
+        assert resp.data["code"] == 1000
         client = FakeSMSClient.instances[-1]
         assert client.init_params["access_key_secret"] == "db-secret"
 
@@ -207,14 +243,14 @@ class TestSmsSettingView:
         monkeypatch.setattr("integrations.sdk.sms.alibaba.client", APIErrorSMSClient)
         resp = auth_client.post(f"{SMS_CONFIG_URL}?category=alibaba", SMS_PAYLOAD)
 
-        assert resp.data["code"] == 400
+        assert resp.data["code"] == 1001
         assert resp.data["detail"] == "quota exceeded"
 
     def test_config_alibaba_unexpected_error_returns_unified_detail(self, auth_client, monkeypatch):
         monkeypatch.setattr("integrations.sdk.sms.alibaba.client", UnexpectedSMSClient)
         resp = auth_client.post(f"{SMS_CONFIG_URL}?category=alibaba", SMS_PAYLOAD)
 
-        assert resp.data["code"] == 400
+        assert resp.data["code"] == 1002
         # 对外统一文案：SDK/网络原始细节不回显，原始异常只进服务端日志
         assert resp.data["detail"] == str(_("SMS test failed, please check the SMS configuration"))
         assert "network down" not in resp.data["detail"]

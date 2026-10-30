@@ -83,7 +83,7 @@ DENY_PERMISSIONS = {
     "create:SystemUser",
     "partialUpdate:SystemUser",
     "create:SystemFlower",
-    "mcp:AiMcp",
+    "mcp:AiMcpServers",
     "deleteComment:SystemApprovalInstance",
     "batchToggle:AiKnowledge",
 }

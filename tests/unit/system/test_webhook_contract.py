@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from task.models.webhook import WebhookDelivery, WebhookSubscription
-from task.utils.webhook import EVENT_CATALOG, emit_webhook_event, encrypt_secret
+from task.services.webhook import EVENT_CATALOG, emit_webhook_event, encrypt_secret
 
 pytestmark = pytest.mark.django_db
 
@@ -33,8 +33,8 @@ class TestEventContract:
 
     def test_required_fields_present_in_wiring_payloads(self):
         """关键信号源的 payload 必须覆盖契约 required 字段（真实接线点抽查）。"""
-        from approval.utils.approval import _emit_approval_event
-        from approval.utils.approval_flow import _emit_flow_event
+        from approval.services.approval import _emit_approval_event
+        from approval.services.approval_flow import _emit_flow_event
 
         delivered = []
 
@@ -42,8 +42,8 @@ class TestEventContract:
             delivered.append((event, data))
             return 0
 
-        import approval.utils.approval as approval_module
-        import approval.utils.approval_flow as flow_module
+        import approval.services.approval as approval_module
+        import approval.services.approval_flow as flow_module
 
         # 消费方（approval/identity）经 task.services 缝调用期导入，补丁须落在缝上
         import task.services as webhook_module
@@ -150,7 +150,7 @@ class TestPayloadShell:
             secret=encrypt_secret("whs-other"),
             events=["system.backup_failure"],
         )
-        monkeypatch.setattr("task.utils.webhook.connection", types.SimpleNamespace(vendor="sqlite"))
+        monkeypatch.setattr("task.services.webhook.delivery.connection", types.SimpleNamespace(vendor="sqlite"))
         emit_webhook_event("webhook.ping", {"subscription": "命中订阅"})
         deliveries = WebhookDelivery.objects.filter(event="webhook.ping")
         assert deliveries.count() == 1

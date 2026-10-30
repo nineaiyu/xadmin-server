@@ -6,7 +6,8 @@
 # date : 8/6/2024
 import importlib
 from collections import OrderedDict
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, cast
 
 from django.conf import settings
 from django.db.models import TextChoices
@@ -24,6 +25,36 @@ class BACKENDS(TextChoices):
     ALIBABA = "alibaba", _("Alibaba cloud")
 
 
+@dataclass(frozen=True)
+class SmsProviderSpec:
+    """短信供应商注册项：枚举值 → 实现模块（模块须暴露 ``client`` 客户端类）。
+
+    ``client`` 必须实现 :class:`BaseSMSClient` 协议（``new_from_settings`` /
+    ``send_sms`` / ``need_pre_check``）；新增供应商 = 加一条注册项 + 一个模块。
+    """
+
+    code: str
+    module: str
+
+
+SMS_PROVIDERS = (SmsProviderSpec("alibaba", "alibaba"),)
+PROVIDER_SPECS = {spec.code: spec for spec in SMS_PROVIDERS}
+
+
+def _load_provider(spec: SmsProviderSpec) -> BaseSMSClient:
+    """按注册表加载供应商客户端，并校验协议方法齐全。"""
+    m = importlib.import_module(f".{spec.module}", __package__)
+    client_cls = getattr(m, "client", None)
+    if client_cls is None or not all(
+        callable(getattr(client_cls, name, None)) for name in ("new_from_settings", "send_sms", "need_pre_check")
+    ):
+        raise APIException(
+            code="sms_provider_invalid",
+            detail=_("SMS provider implementation invalid: {}").format(spec.code),
+        )
+    return cast(BaseSMSClient, client_cls.new_from_settings())
+
+
 class SMS:
     client: BaseSMSClient
 
@@ -33,8 +64,12 @@ class SMS:
             raise APIException(
                 code="sms_provider_not_support", detail=_("SMS provider not support: {}").format(backend)
             )
-        m = importlib.import_module(f".{backend or settings.SMS_BACKEND}", __package__)
-        self.client = m.client.new_from_settings()
+        spec = PROVIDER_SPECS.get(str(backend))
+        if spec is None:
+            raise APIException(
+                code="sms_provider_not_support", detail=_("SMS provider not support: {}").format(backend)
+            )
+        self.client = _load_provider(spec)
 
     def send_sms(
         self,

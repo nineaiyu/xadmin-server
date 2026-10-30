@@ -10,9 +10,9 @@ import json
 import pytest
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from ai.utils.ai_actions import ACTION_DASHBOARD_OVERVIEW, drafts_from_tool_calls
-from ai.utils.ai_draft_tools import draft_result_from_chat
-from ai.utils.ai_tool_catalog import SUMMARY_PARAM, openai_tools, tool_catalog
+from ai.services.actions.ai_actions import ACTION_DASHBOARD_OVERVIEW, drafts_from_tool_calls
+from ai.services.actions.ai_draft_tools import draft_result_from_chat
+from ai.services.actions.ai_tool_catalog import SUMMARY_PARAM, openai_tools, tool_catalog
 
 pytestmark = pytest.mark.django_db
 

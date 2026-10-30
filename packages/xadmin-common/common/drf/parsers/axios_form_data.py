@@ -16,8 +16,10 @@ from rest_framework.parsers import BaseParser, DataAndFiles
 
 from common.settings_contract import kernel_required_setting
 
+_MAX_NESTING_DEPTH = 20
 
-def format_data(data: QueryDict | dict[str, Any]) -> Any:
+
+def format_data(data: QueryDict | dict[str, Any], _depth: int = 0) -> Any:
     """
     axios 配置如下：
 
@@ -64,6 +66,8 @@ def format_data(data: QueryDict | dict[str, Any]) -> Any:
             ]
         }
     """
+    if _depth > _MAX_NESTING_DEPTH:
+        raise ParseError(_("Multipart form field nesting is too deep"))
     new_data = {}
     for key, value in data.items():
         key_split = key.split(".")
@@ -76,7 +80,7 @@ def format_data(data: QueryDict | dict[str, Any]) -> Any:
             new_data[key_split[0]] = value
         else:
             if re.match(r"\d+", key_split[1]):  # 列表
-                result = format_data({".".join(key_split[1:]): value})
+                result = format_data({".".join(key_split[1:]): value}, _depth + 1)
                 lk = list(result.keys())
                 index = int(lk[0])
                 info: list[Any] = new_data.get(key_split[0]) or []
@@ -93,9 +97,9 @@ def format_data(data: QueryDict | dict[str, Any]) -> Any:
             else:  # 字典
                 info_dict: dict[str, Any] = new_data.get(key_split[0], {})
                 if not info_dict:
-                    new_data[key_split[0]] = format_data({".".join(key_split[1:]): value})
+                    new_data[key_split[0]] = format_data({".".join(key_split[1:]): value}, _depth + 1)
                 else:
-                    info_dict.update(format_data({".".join(key_split[1:]): value}))
+                    info_dict.update(format_data({".".join(key_split[1:]): value}, _depth + 1))
 
     return new_data
 

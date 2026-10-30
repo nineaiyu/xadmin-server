@@ -22,6 +22,8 @@ from rest_framework.viewsets import GenericViewSet
 
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from mfa.confirm import UserConfirmation
+from mfa.const import ConfirmType
 from system.models import SystemConfig
 from system.services.credential import (
     credential_overview,
@@ -38,6 +40,13 @@ class CredentialViewSet(GenericViewSet):
     """凭据与密钥"""
 
     queryset = SystemConfig.objects.none()
+
+    def get_permissions(self) -> Any:
+        """轮换是敏感操作：服务端要求密码二次确认（与前端确认弹窗同一协议）。"""
+        permissions = super().get_permissions()
+        if getattr(self, "action", None) == "rotate":
+            permissions.append(UserConfirmation.require(ConfirmType.PASSWORD)())
+        return permissions
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="overview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

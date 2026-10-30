@@ -7,12 +7,15 @@ import time
 from typing import Any
 
 from django.contrib.auth.models import AnonymousUser
+from django.http import StreamingHttpResponse
 from rest_framework.utils import encoders
 
 from common.contracts import OperationLog, PersonalAccessToken
+from common.core.auth.credentials import SENSITIVE_KEY_PATTERN, SENSITIVE_SETTING_KEYS
+from common.core.auth.sensitive import SENSITIVE_FIELDS as SENSITIVE_FIELDS
 from common.core.config import SysConfig
-from common.core.sensitive import SENSITIVE_FIELDS as SENSITIVE_FIELDS
-from common.core.utils import get_doc_first_line
+from common.core.response import API_SUCCESS_CODE
+from common.core.url_inventory import get_doc_first_line
 from common.utils import get_logger
 from common.utils.request import (
     get_browser,
@@ -26,7 +29,7 @@ logger = get_logger(__name__)
 # 日志大字段截断上限（系统配置 OPERATION_LOG_FIELD_MAX 的默认值），
 # 避免大请求体/大响应整包入库；运行期取值见 _log_field_limit()
 MAX_LOG_FIELD = 4096
-# 操作日志脱敏字段清单单一事实源在 common.core.sensitive（拆出，顶部导入
+# 操作日志脱敏字段清单单一事实源在 common.core.auth.sensitive（拆出，顶部导入
 # SENSITIVE_FIELDS 随之再导出保持既有导入路径不变）
 
 
@@ -49,27 +52,83 @@ OPERATION_LOG_MODULE_MAX = OperationLog._meta.get_field("module").max_length
 HEALTH_CHECK_PATH = "/api/common/api/health"
 
 
-def desensitize_payload(value: Any) -> Any:
+# SystemConfig 键值对写入体（POST/PATCH /api/system/config）里承载凭据本体的
+# 兄弟字段：body 形如 {"key": "SCIM_TOKEN", "value": "<明文>"}——"value"/"detail"
+# 不在键名精确匹配名单，按「key 值命中整值加密配置键」的值语义补脱敏（值语义脱敏）
+PAIR_VALUE_FIELDS = ("value", "detail")
+# 整值加密的 SystemConfig 键（小写）：字段级键（如 OAUTH_PROVIDERS.client_secret）
+# 已由键名精确匹配覆盖，此处只收整值键（与 credentials.SENSITIVE_SETTING_KEYS 同源）
+_WHOLE_VALUE_CONFIG_KEYS = frozenset(str(key).lower() for key, fields in SENSITIVE_SETTING_KEYS.items() if not fields)
+
+# 请求级「值是凭据本体」的字段标记：键在 URL/上游行、值在 body 的形态
+# （如 PATCH /api/system/config/{pk} → {"value": "<明文>"}）无法按键名判定，
+# 由能判定语义的序列化器/视图登记，脱敏按值语义收口。
+VALUE_FIELDS_REQUEST_ATTR = "operation_log_sensitive_value_fields"
+
+
+def mark_sensitive_value_fields(request: Any, fields: Any) -> None:
+    """登记本请求中「值是凭据本体」的字段名（操作日志脱敏用）。
+
+    ``request`` 可传 DRF ``Request``（自动解引用到底层 HttpRequest）或原生
+    HttpRequest；无请求上下文（离线序列化 / 导入导出）时静默跳过。
+    """
+    if request is None:
+        return
+    raw = getattr(request, "_request", request)
+    current = set(getattr(raw, VALUE_FIELDS_REQUEST_ATTR, ()) or ())
+    current.update(str(field) for field in fields)
+    setattr(raw, VALUE_FIELDS_REQUEST_ATTR, current)
+
+
+def request_value_fields(request: Any) -> tuple[str, ...]:
+    """读取本请求登记的「值语义敏感字段」（无登记返回空元组）。"""
+    return tuple(sorted(getattr(request, VALUE_FIELDS_REQUEST_ATTR, ()) or ()))
+
+
+def desensitize_payload(value: Any, sensitive_value_fields: tuple[str, ...] = ()) -> Any:
     """递归脱敏：dict 按键名掩码、list 逐项处理，其余（标量 / 非容器）原样返回。
 
     请求体（含嵌套 payload、嵌套 list）与**响应体**共用同一口径——登录响应的
     ``access`` / ``refresh`` 与临时令牌响应的 ``token`` 都在此收敛，不再明文
     进操作日志的 ``body`` / ``response_result`` 与 DEBUG/慢请求日志。
     掩码保留长度信息（与原值等长），便于排障时识别字段是否为空。
+
+    三类命中口径（脱敏不能只靠键名精确匹配）：
+
+    1. 键名精确命中 ``SENSITIVE_FIELDS``（原有口径）；
+    2. 键名命中敏感模式（password / secret / token / api_key…，与
+       credentials.SENSITIVE_KEY_PATTERN 同源）且值为**非空字符串**——SCIM_TOKEN
+       等凭据以自身名为 JSON 键出现时同样收敛；仅收字符串值，max_tokens 等
+       命中模式的数值计数器不受影响；
+    3. 键值对形态：dict 的 ``key`` 值命中整值加密 SystemConfig 键时，兄弟
+       ``value`` / ``detail`` 视为凭据本体一并掩码（POST /api/system/config
+       写入 SCIM_TOKEN 等标量凭据是主场景）；
+    4. 请求级登记字段（``sensitive_value_fields``）：PATCH /api/system/config/{pk}
+       的请求体只有 ``{"value": "<明文>"}``，敏感键在上游行而不在 body 里，
+       由序列化器按实例键判定后经 :func:`mark_sensitive_value_fields` 登记。
     """
     if isinstance(value, dict):
-        return {
-            key: ("*" * len(str(item)) if key in SENSITIVE_FIELDS and item else desensitize_payload(item))
-            for key, item in value.items()
-        }
+        pair_key = str(value.get("key") or "").strip().lower()
+        pair_sensitive = pair_key in _WHOLE_VALUE_CONFIG_KEYS
+        masked: dict[str, Any] = {}
+        for key, item in value.items():
+            key_name = str(key)
+            hit = (
+                (key in SENSITIVE_FIELDS and item)
+                or (isinstance(item, str) and item and bool(SENSITIVE_KEY_PATTERN.search(key_name)))
+                or (pair_sensitive and key in PAIR_VALUE_FIELDS and item)
+                or (key_name in sensitive_value_fields and item)
+            )
+            masked[key] = "*" * len(str(item)) if hit else desensitize_payload(item, sensitive_value_fields)
+        return masked
     if isinstance(value, (list, tuple)):
-        return [desensitize_payload(item) for item in value]
+        return [desensitize_payload(item, sensitive_value_fields) for item in value]
     return value
 
 
-def desensitize_body(body: Any) -> Any:
+def desensitize_body(body: Any, sensitive_value_fields: tuple[str, ...] = ()) -> Any:
     """对请求体中的敏感字段做掩码处理（递归入口，兼容既有调用点）。"""
-    return desensitize_payload(body)
+    return desensitize_payload(body, sensitive_value_fields)
 
 
 def sensitive_get_actions(view_cls: Any) -> frozenset[Any]:
@@ -88,14 +147,14 @@ def sensitive_get_actions(view_cls: Any) -> frozenset[Any]:
     return frozenset(actions)
 
 
-def log_body_preview(payload: Any) -> str:
+def log_body_preview(payload: Any, sensitive_value_fields: tuple[str, ...] = ()) -> str:
     """日志正文预览：脱敏 + 按大字段上限截断（DEBUG / 慢请求日志共用）。
 
     ``OPERATION_LOG_FIELD_MAX=0``（不落大字段）时同样不落正文——配置意图对
     运行日志一致；脱敏先于截断，避免截断把敏感串留在前缀里。
     """
     limit = _log_field_limit()
-    text = json.dumps(desensitize_payload(payload), cls=encoders.JSONEncoder, default=str)
+    text = json.dumps(desensitize_payload(payload, sensitive_value_fields), cls=encoders.JSONEncoder, default=str)
     return text[:limit] if limit else ""
 
 
@@ -167,7 +226,7 @@ def build_operation_log_info(request: Any, response: Any, request_start_time: An
     后随请求透传（detail 路由的行级变更历史定位，list/create 无 pk 路由留空）。
     """
     limit = _log_field_limit()
-    body = desensitize_body(getattr(request, "request_data", {}))
+    body = desensitize_body(getattr(request, "request_data", {}), request_value_fields(request))
     # 非 dict 响应的整包解析丢弃逻辑已删除——DRF 渲染后的 content
     # 无法可靠还原 data，解析了也不用，只会白白序列化一遍大响应
     response_data = getattr(response, "data", None)
@@ -187,6 +246,11 @@ def build_operation_log_info(request: Any, response: Any, request_start_time: An
                 response_data = None
     if not isinstance(response_data, dict):
         response_data = {}
+    # 文件下载类响应（流式化后的导出 / 附件）没有 JSON 业务码：HTTP 200 即业务成功，
+    # 否则日志页会出现「响应码 200 + 业务码空」的割裂行
+    status_code = response_data.get("code")
+    if status_code is None and isinstance(response, StreamingHttpResponse) and response.status_code == 200:
+        status_code = API_SUCCESS_CODE
     user = get_request_user(request)
     request_module = getattr(request, "request_module", "")
     if hasattr(response, "renderer_context"):
@@ -225,13 +289,17 @@ def build_operation_log_info(request: Any, response: Any, request_start_time: An
         # Step2：UA 只解析一次（旧实现 get_os/get_browser 各跑一次重型正则）
         "system": get_os(request),
         "browser": get_browser(request),
-        "status_code": response_data.get("code"),
+        "status_code": status_code,
         "request_uuid": getattr(request, "request_uuid", None),
         "exec_time": time.time() - request_start_time,
-        # 字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径由视图集挂载）
-        "changes": json.dumps(changes, cls=encoders.JSONEncoder, default=str)[:limit]
+        # 字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径由视图集挂载）。
+        # 写入前先跑凭据名脱敏（password / token 等字段名，与请求体同口径），字段级
+        # 业务脱敏（手机号等）由输出侧按源模型规则完成（见 audit.serializers.log）。
+        "changes": json.dumps(desensitize_payload(changes), cls=encoders.JSONEncoder, default=str)[:limit]
         if (changes := getattr(request, "operation_log_changes", None))
         else None,
+        # 变更来源模型：输出侧据此套用源模型的脱敏规则
+        "model_label": str(getattr(request, "operation_log_model_label", "") or "")[:128],
         # 响应体同口径脱敏：登录响应（access/refresh）与临时令牌响应（token）等
         # 敏感值不落操作日志（与请求体 body 共用 desensitize_payload）
         "response_result": json.dumps(

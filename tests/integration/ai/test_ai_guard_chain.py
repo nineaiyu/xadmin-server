@@ -11,7 +11,7 @@
 import pytest
 
 from ai.models.ai import AiKnowledgeChunk
-from ai.utils.ai_guard import REDACTED, REFERENCE_BEGIN, REFERENCE_END, REFERENCE_GUARD_INSTRUCTION
+from ai.services.assistant.ai_guard import REDACTED, REFERENCE_BEGIN, REFERENCE_END, REFERENCE_GUARD_INSTRUCTION
 
 pytestmark = pytest.mark.django_db
 
@@ -112,7 +112,7 @@ class TestReferenceIsolation:
 
 class TestCatalogWrapping:
     def test_action_catalog_wrapped(self, superuser):
-        from ai.utils.ai_actions import ALLOWED_ACTIONS_MARKER, build_draft_prompt
+        from ai.services.actions.ai_actions import ALLOWED_ACTIONS_MARKER, build_draft_prompt
 
         messages = build_draft_prompt(superuser, "请帮我请年假")
         content = messages[1]["content"]
@@ -121,7 +121,7 @@ class TestCatalogWrapping:
         assert REFERENCE_GUARD_INSTRUCTION in messages[0]["content"]
 
     def test_nl_catalog_wrapped(self, superuser):
-        from ai.utils.nl_query import build_interpret_prompt
+        from ai.services.nl_query.nl_query import build_interpret_prompt
 
         datasets = [{"pk": "d1", "name": "用户清单", "description": "", "columns": ["username"]}]
         messages = build_interpret_prompt("有多少用户", datasets, superuser)

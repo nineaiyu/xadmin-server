@@ -7,7 +7,7 @@ from django.core.management.base import SystemCheckError
 from django.db.utils import OperationalError
 
 from common.contracts import Setting, scan_permission_gaps
-from common.core.utils import PrintLogFormat
+from common.core.url_inventory import PrintLogFormat
 from common.injection import get_server_config, get_server_version
 from common.settings_contract import kernel_required_setting
 from common.utils import test_ip_connectivity

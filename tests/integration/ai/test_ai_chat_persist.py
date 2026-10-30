@@ -157,7 +157,7 @@ class TestAskStreamPersist:
         from common.core.config import SysConfig
 
         monkeypatch.setattr(type(SysConfig), "AI_QUOTA_USER_DAILY_CALLS", property(lambda self: 1), raising=False)
-        from ai.utils.ai_usage import invalidate_usage_cache, record_usage
+        from ai.services.assistant.ai_usage import invalidate_usage_cache, record_usage
 
         record_usage(superuser, "docs")
         invalidate_usage_cache(superuser)
@@ -287,7 +287,7 @@ class TestPersistJsonSafe:
         """NL 结果行含 UUID/datetime（values 原样）时落库不炸且可读。"""
         from datetime import datetime
 
-        from ai.utils.ai_chat import persist_message
+        from ai.services.assistant.ai_chat import persist_message
 
         row = persist_message(
             superuser,

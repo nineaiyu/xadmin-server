@@ -2,13 +2,13 @@
 # -*- coding:utf-8 -*-
 """文件域的 AI 动作声明（文件清单 / 存储统计，只读）。
 
-由 ``ai.utils.ai_registry`` 自动发现；上传与删除不纳入 AI 动作面（含上传策略与
+由 ``ai.services.actions.ai_registry`` 自动发现；上传与删除不纳入 AI 动作面（含上传策略与
 回收站语义，走页面链路）。
 """
 
 from django.utils.translation import gettext_lazy as _
 
-from ai.utils.ai_api_actions import IN_QUERY, api_action
+from ai.services.actions.ai_api_actions import IN_QUERY, api_action
 
 AI_ACTIONS = {
     "file.list": api_action(

@@ -15,13 +15,13 @@
 | `SoftDeleteModel` | 软删（`deleted_at` + `objects`/`all_objects`），配套回收站三通道 | **必须放 MRO 首位**：`class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel)` |
 | `AutoCleanFileMixin` | 保存/删除时自动清理旧文件 | 模型含 `FileField`/`ImageField` 或关联 `system.UploadFile` 时混入 |
 | `AESCharField` / `AESTextField` | 模型字段级加密（`aes:::` 前缀，落库密文） | 少量高敏字段：`from common.fields.char import AESCharField` |
-| `signer`（值级加密） | HKDF+AES-GCM（`v3:` 前缀），用于 JSON 值内的敏感键 | `packages/xadmin-common/common/base/utils.py::signer.encrypt/decrypt`（webhook secret / AI api_key 同款） |
+| `signer`（值级加密） | HKDF+AES-GCM（`v3:` 前缀），用于 JSON 值内的敏感键 | `packages/xadmin-common/common/base/crypto.py::signer.encrypt/decrypt`（webhook secret / AI api_key 同款） |
 | `upload_directory_path` | 统一上传路径 `{app}/{model}/{creator}/{pk}/{uuid5}.{ext}` | `upload_to=upload_directory_path` |
 
 - 依赖：仅依赖 `django.db`；`DbAuditModel.dept_belong` 关联 `system.DeptInfo`（数据权限的归属字段）。
 - 配置项：无需配置；`Meta.ordering` 必须给默认排序（列表分页依赖，缺失有告警）。
 - 扩展点：新增通用字段时在 `packages/xadmin-common/common/core/models.py` 加抽象基类（内核），**不要**改 `DbAuditModel` 既有字段语义。
-- 权威源：`packages/xadmin-common/common/core/models.py`、`packages/xadmin-common/common/fields/char.py`、`packages/xadmin-common/common/base/utils.py`。
+- 权威源：`packages/xadmin-common/common/core/models.py`、`packages/xadmin-common/common/fields/char.py`、`packages/xadmin-common/common/base/crypto.py`。
 
 ### 1.2 序列化器与字段形态（`BaseModelSerializer`）
 
@@ -99,8 +99,9 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 - 权限点自动同步（`sync_menu_permissions`）会把首行写入 `MenuMeta.title`；写长会撑破菜单树
   与批量授权选择器，过度依赖生成器截断还会出现省略号。
 
-- 依赖：`packages/xadmin-common/common/core/modelset/` 各模块 + `packages/xadmin-common/common/core/response.py`。
+- 依赖：`packages/xadmin-common/common/core/modelset/` 各模块 + `packages/xadmin-common/common/core/response/__init__.py`。
 - 配置项（类属性）：`queryset` / `serializer_class` / `filterset_class` / `pagination_class` / `ordering_fields` / `select_related_fields` / `prefetch_related_fields` / `{action}_serializer_class`。
+- 审计大表（OperationLog / UserLoginLog）使用 `KeysetPageNumber`：顺序翻页传 `cursor`，跳页或自定义 `ordering` 自动回退 page 模式；cursor 响应含 `next_cursor` / `has_more`，可能省略 `total`（沿用上一页）。
 - 扩展点：覆写点表与红线见 [framework-cookbook.md](framework-cookbook.md) §四；自定义动作 `@action` + `@extend_schema` + `ApiResponse`。
 - 权威源：`packages/xadmin-common/common/core/modelset/viewsets.py`、`packages/xadmin-common/common/core/modelset/base.py`。
 
@@ -140,7 +141,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | 前端消费 | `hasAuth("动作:组件名")` / `<Auth>` / `usePageAuth` | 见 §2.6 |
 
 - 权限码约定 `{action}:{ViewSetName}`；**新增端点必须登记权限点**（生成器种子或 `sync_menu_permissions`），漏登记 = 非超管 403。
-- 深入：[permission.md](permission.md)（体系）、[data-permission.md](data-permission.md)、[field-permission.md](field-permission.md)（配置操作教程）。
+- 深入：[permission.md](permission.md)（体系、配置与排障；原独立教程已清理）。
 
 ### 1.7 统一响应与异常
 
@@ -162,6 +163,9 @@ RequestMiddleware（request_id + 当前请求上下文）
 ```
 
 - 常用上下文：`server/utils.py`（`get_current_request` / `set_current_request`，当前请求与当前用户）；异步任务构造请求用 `packages/xadmin-common/common/core/task_request.py::build_task_request`。
+  `bind_view_task_context` 负责六个契约（视图请求/action/kwargs/format_kwarg/thread-local/字段权限），
+  其中字段权限经 `IsAuthenticated.has_permission` 同源装载——新增任务链必须复用它，
+  不要手工拼 `request.fields`。
 - 扩展点：新增中间件写类后插入 `MIDDLEWARE`（注意响应阶段自内向外）；需要开关时 `raise MiddlewareNotUsed`。范例 `server/middleware.py`。
 
 ### 1.9 Celery 任务
@@ -246,4 +250,17 @@ config.yml（config.py）→ 同名环境变量 → 代码默认值   ← server
 | `integrations/sdk/sms/` | 短信发送 |
 
 业务调用 AI/IM/短信一律走 SDK，不要自己拼 HTTP。
+
+### 1.15 领域逻辑归属（services vs utils）
+
+| 位置 | 放什么 | 判定 |
+|------|--------|------|
+| `<app>/services/` | 有状态编排、跨模型事务、外部副作用（重试 / 缓存失效 / 审批回写 / 审计） | 一个用例一个入口，ViewSet 只做参数校验与响应 |
+| `<app>/utils/` | 纯函数、单模型查询装配、无副作用格式化 | 可被 services 与视图共同复用 |
+
+- 存量差异：`dataset` 的领域逻辑主要落 `utils/`（历史形态），`ai` / `identity` 以
+  `services/` 为中心；新增逻辑按上表口径放 `services/`，不要继续扩大 `utils/` 的事务面。
+- 反例：在 `utils/` 里写跨模型写库 + 重试 —— 重试/回滚语义会散落在调用方，
+  `check_cross_app_imports` 管不到，只能靠 review。
+- 新 app 由 `generate_crud` 生成的骨架默认按 services 分层，照生成的目录放业务实现。
 

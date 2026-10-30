@@ -6,6 +6,7 @@ URL 前缀与 app 对齐：``/api/identity/...``；Menu.path 权限点、前端 
 模块裁剪 ModuleSpec 的 routes 正则已同步平移。
 """
 
+from django.conf import settings
 from django.urls import path, re_path
 from rest_framework.routers import SimpleRouter
 
@@ -18,6 +19,13 @@ from identity.views.admin.passkey import PasskeyViewSet
 from identity.views.admin.post import PostViewSet
 from identity.views.admin.role import RoleViewSet
 from identity.views.admin.user import UserViewSet
+from identity.views.auth.capabilities import LoginCapabilitiesAPIView
+from identity.views.auth.captcha_challenge import (
+    CaptchaAudioAPIView,
+    CaptchaChallengeAPIView,
+    CaptchaInspectAPIView,
+    CaptchaVerifyAPIView,
+)
 from identity.views.auth.impersonation import ImpersonateExitAPIView
 from identity.views.auth.invite import InviteAcceptAPIView, InviteValidateAPIView
 from identity.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
@@ -38,7 +46,7 @@ from identity.views.auth.oauth import (
 from identity.views.auth.register import RegisterViewAPIView
 from identity.views.auth.reset import ResetPasswordAPIView
 from identity.views.auth.rule import PasswordRulesAPIView
-from identity.views.auth.token import CaptchaAPIView, RefreshTokenAPIView, TempTokenAPIView
+from identity.views.auth.token import RefreshTokenAPIView, TempTokenAPIView
 from identity.views.auth.verify_code import SendVerifyCodeAPIView
 from identity.views.open.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
 from identity.views.open.open_oauth import (
@@ -51,6 +59,10 @@ from identity.views.search.dept import SearchDeptViewSet
 from identity.views.search.post import SearchPostViewSet
 from identity.views.search.role import SearchRoleViewSet
 from identity.views.search.user import SearchUserViewSet
+from identity.views.user.authorized_app import (
+    AuthorizedApplicationViewSet,
+    MyAuthorizedApplicationViewSet,
+)
 from identity.views.user.directory import DirectoryViewSet
 from identity.views.user.token import PersonalAccessTokenViewSet
 from identity.views.user.userinfo import UserInfoViewSet
@@ -71,8 +83,20 @@ no_auth_url = [
         name="login-mfa-passkey-challenge",
     ),
     re_path("^register$", RegisterViewAPIView.as_view(), name="register"),
-    re_path("^auth/captcha$", CaptchaAPIView.as_view(), name="captcha"),
+    # 统一人机验证：匿名出题 / 校验 / 图片题音频，答案永不下发
+    re_path("^auth/captcha/challenge$", CaptchaChallengeAPIView.as_view(), name="captcha-challenge"),
+    re_path("^auth/captcha/verify$", CaptchaVerifyAPIView.as_view(), name="captcha-verify"),
+    re_path(
+        "^auth/captcha/audio/(?P<challenge_id>[0-9a-f]+)$",
+        CaptchaAudioAPIView.as_view(),
+        name="captcha-audio",
+    ),
     re_path("^auth/token$", TempTokenAPIView.as_view(), name="temp_token"),
+    re_path(
+        "^auth/capabilities$",
+        LoginCapabilitiesAPIView.as_view(),
+        name="login-capabilities",
+    ),
     re_path("^auth/verify$", SendVerifyCodeAPIView.as_view(), name="send-verify-code"),
     re_path("^auth/reset$", ResetPasswordAPIView.as_view(), name="reset-password"),
     # 邀请激活：令牌即凭据，激活页未登录，必须匿名可达
@@ -104,6 +128,11 @@ no_auth_url = [
     ),
 ]
 
+if getattr(settings, "CAPTCHA_INSPECT_ENABLED", False):
+    # E2E 专用：必须同时配置 CAPTCHA_INSPECT_TOKEN，且请求头匹配才返回答案；
+    # 生产默认配置不定义该键，路由不存在。
+    no_auth_url.append(re_path("^auth/captcha/inspect$", CaptchaInspectAPIView.as_view(), name="captcha-inspect"))
+
 auth_url = [
     re_path("^logout$", LogoutAPIView.as_view(), name="logout"),
     re_path("^impersonate/exit$", ImpersonateExitAPIView.as_view(), name="impersonate-exit"),
@@ -116,6 +145,8 @@ router_url: list[str] = []
 # 个人用户信息
 no_detail_router.register("userinfo", UserInfoViewSet, basename="userinfo")
 router.register("personal-access-tokens", PersonalAccessTokenViewSet, basename="personal_access_token")
+router.register("my-authorized-applications", MyAuthorizedApplicationViewSet, basename="my_authorized_application")
+router.register("authorized-applications", AuthorizedApplicationViewSet, basename="authorized_application")
 
 # 系统组织与认证相关路由
 router.register("user", UserViewSet, basename="user")

@@ -47,7 +47,7 @@ FORWARD_KEYS = [
     "SECURITY_PASSWORD_HISTORY_COUNT",
     # 密码有效期（天数，0 = 永不过期；date_password_updated 为空的存量用户 = 宽限期）
     "SECURITY_PASSWORD_EXPIRATION_DAYS",
-    # AES 旧格式（Salted__）解密灰度开关：读取方 packages/xadmin-common/common/base/utils.py 走
+    # AES 旧格式（Salted__）解密灰度开关：读取方 packages/xadmin-common/common/base/crypto.py 走
     # getattr(settings, ...)——漏转发会让开关永远落默认值（形同虚设）
     "SECURITY_AES_V1_DECRYPT_ENABLED",
     # 用户登录限制的规则
@@ -185,6 +185,10 @@ FORWARD_KEYS = [
     "FEISHU_ENABLED",
     "FEISHU_APP_ID",
     "FEISHU_APP_SECRET",
+    # Webhook 通知渠道（notifications/backends/webhook.py 消费）
+    "WEBHOOK_ENABLED",
+    "WEBHOOK_URL",
+    "WEBHOOK_SECRET",
     # 聊天：历史 ws/message 通道的直广播兼容开关（默认关闭，见 message/notify.py）
     "CHAT_LEGACY_WS_BROADCAST_ENABLED",
     # AI 助手
@@ -196,6 +200,8 @@ FORWARD_KEYS = [
     "AI_NL_QUERY_ENABLED",
     # 灰度开关：不转发则 config.yml 里配置不生效（只能靠 Setting 表热更新注入）
     "AI_ACTION_ENABLED",
+    "AI_DAILY_REPORT_ENABLED",
+    "AI_CODEGEN_DRAFT_ENABLED",
     # AI 采样/行为参数（多档案回落通路）
     "AI_TEMPERATURE",
     "AI_MAX_TOKENS",
@@ -250,6 +256,75 @@ FORWARD_KEYS = [
     "CAPTCHA_BACKGROUND_COLOR",
     "CAPTCHA_FOREGROUND_COLOR",
     "CAPTCHA_NOISE_FUNCTIONS",
+    # 统一人机验证（图片 / 滑动 / 旋转 / 点选 / 语序 / PoW）
+    "CAPTCHA_ENABLED",
+    "CAPTCHA_ENABLED_TYPES",
+    "CAPTCHA_SLIDE_TOLERANCE",
+    "CAPTCHA_ROTATE_TOLERANCE",
+    "CAPTCHA_CLICK_RADIUS",
+    "CAPTCHA_CHALLENGE_TTL",
+    "CAPTCHA_TICKET_TTL",
+    "CAPTCHA_MAX_ATTEMPTS",
+    "CAPTCHA_TRACK_CHECK_ENABLED",
+    "CAPTCHA_SLIDE_SIZE",
+    "CAPTCHA_CLICK_SIZE",
+    "CAPTCHA_WORD_ORDER_SIZE",
+    "CAPTCHA_ICON_SIZE",
+    "CAPTCHA_ROTATE_SIZE",
+    "CAPTCHA_CLICK_CHARSET",
+    "CAPTCHA_BACKGROUND_PACK",
+    "CAPTCHA_ASSET_DIR",
+    "CAPTCHA_ASSET_VERIFY_SHA256",
+    "CAPTCHA_IMAGE_FALLBACK_ENABLED",
+    "CAPTCHA_POW_FOR_IMAGE_FALLBACK",
+    # 票据层加固（结构化签名票据 + 动作绑定 + verify 加签 + 分档时效）
+    "CAPTCHA_TICKET_SECRET",
+    "CAPTCHA_TICKET_SECRET_KEY_ID",
+    "CAPTCHA_TICKET_SECRET_PREVIOUS",
+    "CAPTCHA_TICKET_AUDIENCE",
+    "CAPTCHA_ACTION_BIND",
+    "CAPTCHA_STRICT_BINDING",
+    "CAPTCHA_ORIGIN_CHECK_ENABLED",
+    "CAPTCHA_ALLOWED_ORIGINS",
+    "CAPTCHA_VERIFY_SIGN_REQUIRED",
+    "CAPTCHA_VERIFY_SIGN_WINDOW",
+    "CAPTCHA_TICKET_TTL_ALLOW",
+    "CAPTCHA_TICKET_TTL_LIGHT",
+    "CAPTCHA_TICKET_TTL_HARD",
+    # 风险分级模式（off / shadow / enforce）
+    "CAPTCHA_RISK_MODE",
+    "CAPTCHA_RISK_T_ALLOW",
+    "CAPTCHA_RISK_T_LIGHT",
+    "CAPTCHA_RISK_T_HARD",
+    "CAPTCHA_RISK_T_DENY",
+    "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS",
+    "CAPTCHA_RISK_DATACENTER_CIDRS",
+    "CAPTCHA_RISK_PROXY_CIDRS",
+    "CAPTCHA_FP_SALT",
+    "CAPTCHA_POW_ENABLED",
+    "CAPTCHA_POW_BITS_ALLOW",
+    "CAPTCHA_POW_BITS_LIGHT",
+    "CAPTCHA_POW_BITS_HARD",
+    "CAPTCHA_POW_BITS_MAX",
+    "CAPTCHA_POW_IP_BUDGET",
+    "CAPTCHA_FAIL_STEP",
+    "CAPTCHA_HONEYPOT_ENABLED",
+    "CAPTCHA_TYPE_WEIGHTS",
+    "CAPTCHA_DIFFICULTY_EASY_FACTOR",
+    "CAPTCHA_DIFFICULTY_HARD_FACTOR",
+    "CAPTCHA_DIFFICULTY_MAP",
+    "CAPTCHA_CLICK_COUNT_EASY",
+    "CAPTCHA_CLICK_COUNT_HARD",
+    "CAPTCHA_ALERT_ENABLED",
+    "CAPTCHA_ALERT_WINDOW_MINUTES",
+    "CAPTCHA_ALERT_DENY_RATE",
+    "CAPTCHA_ALERT_MIN_SAMPLES",
+    "CAPTCHA_FLITE_PATH",
+    "CAPTCHA_SOX_PATH",
+    # 观测层（CaptchaLog 全链路留痕）
+    "CAPTCHA_LOG_ENABLED",
+    "CAPTCHA_LOG_RETENTION_DAYS",
+    "CAPTCHA_LOG_SUCCESS_SAMPLE_RATE",
 ]
 
 for _key in FORWARD_KEYS:
@@ -271,11 +346,14 @@ CAPTCHA_OUTPUT_FORMAT = "%(image)s %(text_field)s %(hidden_field)s "
 # CAPTCHA_NOISE_FUNCTIONS = ("captcha.helpers.noise_arcs", "captcha.helpers.noise_dots")
 # CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.random_char_challenge'
 CAPTCHA_FONT_PATH = os.path.join(PROJECT_DIR, "captcha", "fonts", "Vera.ttf")
+# 交互式点选题的中文字体（OFL 许可，GB2312 一级字库子集）；缺失时出题 fail-fast
+CAPTCHA_CLICK_FONT_PATH = os.path.join(PROJECT_DIR, "captcha", "resources", "fonts", "NotoSansSC-Captcha.ttf")
+CAPTCHA_CLICK_TRADITIONAL_FONT_PATH = os.path.join(
+    PROJECT_DIR, "captcha", "resources", "fonts", "NotoSerifTC-Captcha.ttf"
+)
 CAPTCHA_LETTER_ROTATION = (-35, 35)
 CAPTCHA_FILTER_FUNCTIONS = ("captcha.helpers.post_smooth",)
 CAPTCHA_PUNCTUATION = """_"',.;:-"""
-CAPTCHA_FLITE_PATH = None
-CAPTCHA_SOX_PATH = None
 CAPTCHA_MATH_CHALLENGE_OPERATOR = "*"
 CAPTCHA_GET_FROM_POOL = False
 CAPTCHA_GET_FROM_POOL_TIMEOUT = 5

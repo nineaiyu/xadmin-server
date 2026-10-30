@@ -18,8 +18,8 @@ from approval.models.approval import (
     ApprovalNodeTask,
     ApprovalRequest,
 )
-from approval.utils.approval import approve_request
-from approval.utils.approval_flow import approve_task, reject_task
+from approval.services.approval import approve_request
+from approval.services.approval_flow import approve_task, reject_task
 from common.core.config import SysConfig
 from demo.models import Book
 from demo.services import BOOK_BIZ_TYPE, BOOK_FLOW_CODE
@@ -84,9 +84,9 @@ class TestBookOnShelfFlow:
         ).exists()
 
     def test_submit_without_flow_is_rejected(self, auth_client, book):
-        """无可用流程定义时 fail-closed（不静默直通）。"""
+        """无可用流程定义时 fail-closed（不静默直通）；传输口径 = HTTP 400 + 业务码。"""
         resp = auth_client.post(f"{BOOK_LIST_URL}/{book.pk}/submit")
-        assert resp.status_code == 200
+        assert resp.status_code == 400
         assert resp.data["code"] == 1001
         book.refresh_from_db()
         assert book.status == Book.Status.DRAFT
@@ -115,10 +115,11 @@ class TestBookOnShelfFlow:
         assert book.status == Book.Status.REJECTED
 
     def test_submit_twice_conflicts(self, auth_client, approver, book):
-        """审批中不可重复提交。"""
+        """审批中不可重复提交（HTTP 400 + 业务码，与全局拒绝口径一致）。"""
         make_book_flow(approver.username)
         auth_client.post(f"{BOOK_LIST_URL}/{book.pk}/submit")
         resp = auth_client.post(f"{BOOK_LIST_URL}/{book.pk}/submit")
+        assert resp.status_code == 400
         assert resp.data["code"] == 1001
 
     def test_resubmit_after_reject_keeps_old_instance(self, auth_client, approver, book):

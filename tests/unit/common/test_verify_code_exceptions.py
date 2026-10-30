@@ -6,7 +6,7 @@
 429 策略据此提示剩余秒数（``detail`` 由异常携带）。
 """
 
-from common.core.exception import common_exception_handler
+from common.core.response.exception import common_exception_handler
 from common.utils.verify_code import CodeSendOverRate, CodeSendTooFrequently
 
 

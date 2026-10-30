@@ -35,7 +35,6 @@ class SearchUserSerializer(UserSerializer):
             "email",
             "gender",
             "is_active",
-            "password",
             "dept",
             "description",
             "last_login",

@@ -91,7 +91,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ### 3.1 数据库备份与恢复
 
 > 2026-09-08 收口：异地副本、媒体目录、RPO 6h 三项已落地（下期规划 N1/L1），
-> 详见 [backup-drill-2027-03.md](backup-drill-2027-03.md)。
+> 备份 / 异地副本口径见本节。
 
 - 备份：`db-backup` 服务每 **6 小时**（`BACKUP_INTERVAL`，原 24h）自动执行 `pg_dump | gzip`，产出
   `${VOLUME_DIR}/xadmin-db-backups/<库名>_<时间戳>.sql.gz`，滚动保留 7 天（`KEEP_DAYS`）。
@@ -143,16 +143,14 @@ bash ops/backup_drill.sh
 BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash ops/backup_drill.sh   # 含异地副本校验
 ```
 
-- 演练记录：2026-09-07 首次正式演练通过（RTO 0.88s、52 表逐行一致，见
-  [backup-drill-2026-09.md](backup-drill-2026-09.md)）；2026-09-08 异地副本收口演练通过
-  （RTO 0.89s、53 表 0 不一致、异地 sha256 一致，见 [backup-drill-2027-03.md](backup-drill-2027-03.md)）。
+- 演练记录：2026-09-08 异地副本收口演练通过（RTO 0.89s、53 表 0 不一致、
+  异地 sha256 一致；原始演练记录已清理）。
 - **季度演练常态化（N5，2026-09-11 起）**：每季度执行一轮上述检查清单 + `backup_drill.sh`
   全项演练，报告存入 `docs/ops/backup-drill-<年>-<季度>.md`（沿用现有模板：
   范围/方法 → RTO 与一致性 → 异地副本校验 → 遗留缺口）。`backup-drill-reminder.yml`
   workflow 在 3/6/9/12 月 8 日自动开提醒 issue（去重），按清单执行后勾选关闭；
   若 workflow 未生效，请人工按本节清单执行，不得跳过「逐表行数一致」项。
-  **2026 Q4 报表（提前于 2026-09-11 执行）见 [backup-drill-2026-Q4.md](backup-drill-2026-Q4.md)**：
-  67 表逐表 0 不一致、RTO 0.28s，并一并验收了 S2 失败告警接线。
+  备份 / 异地副本 / 媒体入包 / RPO 6h 口径见本节。
 - **备份/恢复检查清单**（部署验收与季度演练用）：
 
 ```markdown
@@ -201,7 +199,7 @@ CORS_ALLOWED_ORIGINS:     # 跨域部署时配置；nginx 同源反代无需配�
 
 | worker 数 | 端点吞吐膝点 | 20 VU P95（目标 <60ms） | 出处 |
 |---|---|---|---|
-| 4（默认） | ~780 rps（≈195 rps/worker） | 117.62ms（排队尾，默认容量下不可达） | `docs/metrics-perf-history.md` 2026-10-01 深度定位 |
+| 4（默认） | ~780 rps（≈195 rps/worker） | 117.62ms（排队尾，默认容量下不可达） | 2026-10-01 压测深度定位（原性能履历已清理） |
 | 8 | 未触顶（20 VU 需求内） | **26.5ms 达标**、吞吐 1209 rps | 同上（单轮验证，详见容量立项） |
 
 参照：columns 端点 4-worker 膝点 ~1100 rps、复杂列表（book）~2000+——接口越重膝点越低，容量按**最重高频接口**核算。完整证据链与达标杠杆见 [ASGI 同步段容量立项](../plans/ASGI同步段容量立项-2026.10.md)。

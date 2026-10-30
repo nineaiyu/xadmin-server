@@ -7,7 +7,7 @@
 
 from typing import Any
 
-from common.core.credentials import MASK, is_sensitive_setting_row
+from common.core.auth.credentials import ENCRYPTED_SETTING_KEYS, MASK, is_sensitive_setting_row
 from common.core.serializers import BaseModelSerializer
 from settings.models import Setting
 
@@ -36,6 +36,11 @@ class SettingSerializer(BaseModelSerializer):
         return ret
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # 声明清单内的敏感键强制加密落库：通用行端点不得成为「明文 + encrypted=false」
+        # 的第二条弱约束写路径（typed 设置页仍是正常入口）
+        name = attrs.get("name", getattr(self.instance, "name", ""))
+        if str(name or "") in ENCRYPTED_SETTING_KEYS:
+            attrs["encrypted"] = True
         if attrs.get("value") == MASK:
             # 掩码占位 = 「已配置但值不下发」，与 write_only 密文留空不改的保存契约同义；
             # 丢弃该键：更新保留库内原值，新建落模型默认（未配置），占位串本身不落库

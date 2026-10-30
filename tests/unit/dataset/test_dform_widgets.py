@@ -241,3 +241,10 @@ def test_cascader_requires_leaf_path():
     }
     with pytest.raises(ValidationError):
         validate_schema(schema_with({"key": "region", "label": "地区", "type": "cascader", "options": [deep]}))
+
+
+def test_sensitive_flag_is_boolean():
+    """schema 级敏感标记只接受布尔值；写入侧不能靠字符串「yes」绕过掩码判定。"""
+    validate_schema(schema_with({"key": "phone", "label": "电话", "type": "input", "sensitive": True}))
+    with pytest.raises(ValidationError):
+        validate_schema(schema_with({"key": "phone", "label": "电话", "type": "input", "sensitive": "yes"}))

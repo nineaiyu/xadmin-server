@@ -19,18 +19,21 @@ AES 密文（``AesEncrypted(token, password)``，与 register/reset 同库同参
 from typing import Any
 
 from django.conf import settings
-from drf_spectacular.plumbing import build_basic_type, build_object_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 
-from common.base.utils import AESCipherV2
+from captcha.const import CAPTCHA_ACTION_INVITE_ACCEPT
+from captcha.contracts import build_captcha_meta, captcha_globally_enabled
+from common.base.crypto import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import ResetPasswordThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from identity.serializers.user import PASSWORD_DECRYPT_FAILED_MESSAGE
 from identity.utils import user_invite
+from identity.utils.auth.captcha import require_human
 
 logger = get_logger(__name__)
 
@@ -51,6 +54,10 @@ class InviteValidateAPIView(GenericAPIView):
                         "state": build_basic_type(OpenApiTypes.STR),
                         "username": build_basic_type(OpenApiTypes.STR),
                         "encrypted": build_basic_type(OpenApiTypes.BOOL),
+                        "captcha_required": build_basic_type(OpenApiTypes.BOOL),
+                        "captcha_types": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+                        "captcha_image_fallback": build_basic_type(OpenApiTypes.BOOL),
+                        "captcha_flow": build_basic_type(OpenApiTypes.STR),
                     }
                 )
             }
@@ -59,11 +66,17 @@ class InviteValidateAPIView(GenericAPIView):
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         token = str(request.query_params.get("token") or "").strip()
         user, state = user_invite.resolve_invite_token(token)
+        captcha_meta = build_captcha_meta("invite")
         return ApiResponse(
             data={
                 "state": state,
                 "username": getattr(user, "username", ""),
                 "encrypted": settings.SECURITY_INVITE_ENCRYPTED_ENABLED,
+                # 匿名激活默认必须通过人机校验；总开关关闭时随全局一起停用
+                "captcha_required": captcha_globally_enabled(),
+                "captcha_types": captcha_meta["types"],
+                "captcha_image_fallback": captcha_meta["image_fallback"],
+                "captcha_flow": captcha_meta.get("captcha_flow", "always"),
             }
         )
 
@@ -87,6 +100,7 @@ class InviteAcceptAPIView(GenericAPIView):
                             "plaintext is only accepted when the encrypted switch is off"
                         ),
                     },
+                    "captcha_ticket": build_basic_type(OpenApiTypes.STR),
                 }
             )
         ),
@@ -95,6 +109,8 @@ class InviteAcceptAPIView(GenericAPIView):
     def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         token = str(request.data.get("token") or "").strip()
         password = str(request.data.get("password") or "")
+        # 服务端人机校验：失败直接 400（ValidateError），不进入令牌解析与密码校验
+        require_human(request, "invite", CAPTCHA_ACTION_INVITE_ACCEPT, need=True)
         user, state = user_invite.resolve_invite_token(token)
         if state == "invalid":
             return ApiResponse(code=1001, detail=user_invite.INVITE_INVALID_MESSAGE)

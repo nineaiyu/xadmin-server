@@ -42,6 +42,7 @@ __all__ = [
     # 契约委托函数（观察项收口：common 侧函数级业务 import 的模块级替代）
     "sync_model_field",
     "scan_permission_gaps",
+    "list_dict_types",
 ]
 
 # 惰性再导出表：名字 -> 所属模块
@@ -107,3 +108,11 @@ def get_dict_items(code: str) -> list[dict[str, Any]]:
 
     items: list[dict[str, Any]] = _get(code)
     return items
+
+
+def list_dict_types() -> list[dict[str, Any]]:
+    """启用中的字典类型清单（code / label），开发工具字典选择器消费。"""
+    from system.models.dict import DataDict
+
+    rows = DataDict.objects.filter(parent__isnull=True, is_active=True).order_by("code").values("code", "label")
+    return [{"code": row["code"], "label": row["label"] or row["code"]} for row in rows]

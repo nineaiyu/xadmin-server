@@ -13,7 +13,7 @@ from asgiref.sync import async_to_sync
 from django.test import override_settings
 
 from common.local import set_current_request
-from message.base import get_userinfo
+from message.ws.base import get_userinfo
 
 pytestmark = pytest.mark.django_db
 

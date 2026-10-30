@@ -20,7 +20,7 @@ import pytest
 from ai.models.ai import AiChatMessage
 from approval.models.approval import ApprovalRequest
 from approval.models.leave import Leave
-from approval.utils.approval import approve_request
+from approval.services.approval import approve_request
 from audit.models import OperationLog
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 from identity.models import UserInfo
@@ -158,6 +158,26 @@ def make_form(name="E2E-AI动作表单", approval_required=False, schema=None):
     )
 
 
+def make_dform_flow(field_key="note", assignee_value="leave_approver"):
+    from approval.models.approval import ApprovalFlow, ApprovalFlowNode
+
+    flow = ApprovalFlow.objects.create(
+        name="表单审批",
+        code="dform_ai_flow",
+        form_schema=[{"key": field_key, "label": "备注", "type": "text", "required": False}],
+    )
+    ApprovalFlowNode.objects.create(
+        flow=flow,
+        name="直属主管审批",
+        order=1,
+        approve_type=ApprovalFlowNode.ApproveType.OR,
+        assignee_type=ApprovalFlowNode.AssigneeType.USER,
+        assignee_value=assignee_value,
+        timeout_hours=24,
+    )
+    return flow
+
+
 class TestActionGate:
     """灰度与门禁：默认关闭；AI 未配置同样拒绝。"""
 
@@ -282,7 +302,7 @@ class TestLeaveAction:
 
     def test_draft_structured_max_tokens(self, action_client, ai_action_settings, stub_llm, action_user, menu_factory):
         """未配置 max_tokens 时 /do 草稿调用携带结构化安全上限（防思考型模型无界推理）。"""
-        from ai.utils.ai import ai_structured_max_tokens
+        from ai.services.assistant.ai import ai_structured_max_tokens
 
         grant_perms(action_user.roles.first(), menu_factory, LEAVE_CREATE_PERMS)
         stub = stub_llm["install"](draft_answer("leave.submit", LEAVE_PARAMS))
@@ -303,7 +323,20 @@ class TestLeaveAction:
 class TestDformAction:
     def test_submit_without_approval(self, action_client, ai_action_settings, action_user, menu_factory):
         grant_perms(action_user.roles.first(), menu_factory, DFORM_CREATE_PERMS)
-        form = make_form()
+        form = make_form(
+            schema={
+                "fields": [
+                    {
+                        "key": "note",
+                        "label": "备注",
+                        "type": "input",
+                        "required": False,
+                        "max_length": 100,
+                        "filterable": True,
+                    }
+                ]
+            }
+        )
         response = action_client.post(
             EXECUTE_URL,
             {"action": "dform.submit", "params": {"form_id": str(form.pk), "data": {"note": "AI 提交"}}},
@@ -313,6 +346,29 @@ class TestDformAction:
         submission = DynamicFormSubmission.objects.get()
         assert str(submission.creator.pk) == str(action_user.pk)
         assert submission.data["note"] == "AI 提交"
+        # 可筛选字段与 REST 提交同口径物化（否则管理端按字段筛选查不到 AI 行）
+        assert submission.filter_data == {"note": "AI 提交"}
+
+    def test_submit_with_bound_flow_enters_approval(
+        self, action_client, ai_action_settings, action_user, flow_approver, menu_factory
+    ):
+        """绑定审批流程的表单必须建实例并保持 PENDING，不得直接生效。"""
+        from approval.models.approval import ApprovalInstance
+
+        grant_perms(action_user.roles.first(), menu_factory, DFORM_CREATE_PERMS)
+        form = make_form()
+        form.approval_flow = make_dform_flow()
+        form.save(update_fields=["approval_flow"])
+        response = action_client.post(
+            EXECUTE_URL,
+            {"action": "dform.submit", "params": {"form_id": str(form.pk), "data": {"note": "走流程"}}},
+            format="json",
+        )
+        assert response.data["code"] == 1000
+        submission = DynamicFormSubmission.objects.get()
+        assert submission.status == DynamicFormSubmission.Status.PENDING
+        assert submission.instance_id is not None
+        assert ApprovalInstance.objects.filter(pk=submission.instance_id, status="PENDING").exists()
 
     def test_unavailable_when_no_active_form(self, action_client, ai_action_settings):
         response = action_client.post(
@@ -357,6 +413,29 @@ class TestDformAction:
 
         third = action_client.post(EXECUTE_URL, body, format="json", HTTP_X_APPROVAL_ID=approval_id)
         assert third.status_code == 403
+
+    def test_execute_revalidates_schema_changed_during_approval(
+        self, action_client, ai_action_settings, action_user, superuser, menu_factory
+    ):
+        """操作审批滞留期间表单改版：执行阶段必须按当前 schema 复校验，不得写入过期数据。"""
+        grant_perms(action_user.roles.first(), menu_factory, DFORM_CREATE_PERMS)
+        form = make_form(approval_required=True)
+        body = {"action": "dform.submit", "params": {"form_id": str(form.pk), "data": {"note": "旧结构"}}}
+        first = action_client.post(EXECUTE_URL, body, format="json")
+        assert first.status_code == 412
+        approval_id = first.data["data"]["approval_id"]
+
+        # 审批期间改版：删除 note、新增必填 title
+        form.schema = {
+            "fields": [{"key": "title", "label": "标题", "type": "input", "required": True, "max_length": 50}]
+        }
+        form.save(update_fields=["schema"])
+        ok, __ = approve_request(ApprovalRequest.objects.get(pk=approval_id), superuser)
+        assert ok
+
+        second = action_client.post(EXECUTE_URL, body, format="json", HTTP_X_APPROVAL_ID=approval_id)
+        assert second.data["code"] == 1001, second.data
+        assert not DynamicFormSubmission.objects.exists()
 
     def test_cross_user_token_rejected(
         self, api_client, action_client, ai_action_settings, action_user, superuser, db, menu_factory
@@ -463,7 +542,7 @@ class TestNoticeAction:
 
     def test_catalog_hides_const_fields(self, action_user, menu_factory):
         """动作目录（进 LLM prompt）不下发 const 固定值字段（notice_type 等由服务端注入）。"""
-        from ai.utils.ai_actions import build_catalog
+        from ai.services.actions.ai_actions import build_catalog
 
         grant_perms(action_user.roles.first(), menu_factory, NOTICE_PERMS)
         catalog = build_catalog(action_user)
@@ -544,7 +623,7 @@ class TestUserSetActiveAction:
         assert target.is_active is True
 
     def test_catalog_lists_action(self, action_user, menu_factory):
-        from ai.utils.ai_actions import available_actions
+        from ai.services.actions.ai_actions import available_actions
 
         grant_perms(action_user.roles.first(), menu_factory, USER_UPDATE_PERMS)
         keys = [spec.key for spec in available_actions(action_user)]
@@ -594,7 +673,7 @@ class TestCatalogExtensions:
 
     def test_user_search_read_action(self, ai_action_settings, superuser):
         """读类动作（GET + query 参数）dispatch 列表接口：分页响应按成功处理。"""
-        from ai.utils.ai_actions import execute_action
+        from ai.services.actions.ai_actions import execute_action
 
         result = execute_action(superuser, "user.search", {"username": "admin"})
         assert result["ok"] is True, result
@@ -602,14 +681,14 @@ class TestCatalogExtensions:
 
     def test_user_search_requires_business_permission(self, ai_action_settings, action_user):
         """权限双门：无 list:UserInfo 的用户不得查询用户（数据权限随调用者收窄）。"""
-        from ai.utils.ai_actions import execute_action
+        from ai.services.actions.ai_actions import execute_action
 
         result = execute_action(action_user, "user.search", {"username": "admin"})
         assert result["ok"] is False
 
     def test_user_update_partial_fields(self, ai_action_settings, superuser, normal_user):
         """部分字段更新：只改提供的字段（数据权限随调用者；以超管验证功能链路）。"""
-        from ai.utils.ai_actions import execute_action
+        from ai.services.actions.ai_actions import execute_action
 
         result = execute_action(superuser, "user.update", {"pk": "zhangsan", "nickname": "新昵称"})
         assert result["ok"] is True, result
@@ -618,7 +697,7 @@ class TestCatalogExtensions:
 
     def test_role_create(self, ai_action_settings, superuser):
         """角色管理动作以超管验证（普通用户受字段级权限裁剪，属业务接口既有约束）。"""
-        from ai.utils.ai_actions import execute_action
+        from ai.services.actions.ai_actions import execute_action
         from identity.models import UserRole
 
         result = execute_action(superuser, "role.create", {"name": "运营组", "code": "ops"})
@@ -627,7 +706,7 @@ class TestCatalogExtensions:
 
     def test_role_grant_menu_subtree(self, ai_action_settings, superuser, menu_factory):
         """菜单名解析为「菜单 + 子树全量权限点」（与授权树勾选父节点同语义）。"""
-        from ai.utils.ai_actions import execute_action
+        from ai.services.actions.ai_actions import execute_action
         from identity.models import UserRole
 
         parent = menu_factory("AI授权测试父菜单", menu_type=Menu.MenuChoices.MENU)

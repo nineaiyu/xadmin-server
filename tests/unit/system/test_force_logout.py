@@ -90,21 +90,81 @@ def test_force_logout_blacklists_refresh_tokens():
 
 def test_force_logout_action(superuser, auth_client):
     target = UserInfo.objects.create_user(username="online_target", password="x")
-    response = auth_client.post(f"/api/identity/online/{target.pk}/force-logout")
+    response = auth_client.post("/api/identity/online/force-logout", {"user_pk": target.pk}, format="json")
     assert response.data["code"] == 1000
     assert response.data["data"]["channels"] == 0
+
+    missing = auth_client.post("/api/identity/online/force-logout", {}, format="json")
+    assert missing.data["code"] == 400
 
 
 def test_batch_force_logout_action(superuser, auth_client):
     from audit.models.log import UserLoginLog as LoginLog
 
     target = UserInfo.objects.create_user(username="online_batch", password="x")
-    log = LoginLog.objects.create(
-        creator=target, login_type=LoginLog.LoginTypeChoices.WEBSOCKET, channel_name="ch-batch"
-    )
-    response = auth_client.post("/api/identity/online/batch-force-logout", [str(log.pk)], format="json")
+    LoginLog.objects.create(creator=target, login_type=LoginLog.LoginTypeChoices.WEBSOCKET, channel_name="ch-batch")
+    response = auth_client.post("/api/identity/online/batch-force-logout", {"user_pks": [target.pk]}, format="json")
     assert response.data["code"] == 1000
     assert response.data["data"]["users"] == 1
+
+
+def test_batch_force_logout_writes_operation_log(superuser, auth_client):
+    """高危动作必须留审计：强退后的 OperationLog 能追到操作者与目标。
+
+    历史状态只有 logger 文本（进程内），审计页查不到「谁在什么时候踢了谁」。
+    """
+    from audit.models.log import OperationLog
+    from audit.models.log import UserLoginLog as LoginLog
+
+    target = UserInfo.objects.create_user(username="online_audit", password="x")
+    LoginLog.objects.create(creator=target, login_type=LoginLog.LoginTypeChoices.WEBSOCKET, channel_name="ch-audit")
+
+    before = OperationLog.objects.count()
+    response = auth_client.post("/api/identity/online/batch-force-logout", {"user_pks": [target.pk]}, format="json")
+    assert response.data["code"] == 1000
+    logs = OperationLog.objects.order_by("-pk")[: max(OperationLog.objects.count() - before, 1)]
+    hit = [row for row in logs if "batch-force-logout" in (row.path or "")]
+    assert hit, "强退未落 OperationLog"
+    assert hit[0].method == "POST"
+
+
+def test_batch_force_logout_rejects_ambiguous_integer_array(superuser, auth_client):
+    """旧版数组只接受会话 UUID：整数不得再被猜测为用户/登录日志主键。"""
+    target = UserInfo.objects.create_user(username="online_ambiguous", password="x")
+    response = auth_client.post("/api/identity/online/batch-force-logout", [str(target.pk)], format="json")
+    assert response.data["code"] == 400
+
+
+def test_batch_force_logout_rejects_invalid_session_pk_in_object(superuser, auth_client):
+    """对象形态的 session_pks 同样必须校验 UUID，不能把 ValidationError 打成 500。"""
+    response = auth_client.post(
+        "/api/identity/online/batch-force-logout",
+        {"session_pks": ["not-a-uuid"]},
+        format="json",
+    )
+    assert response.data["code"] == 400
+
+
+def test_batch_force_logout_rejects_non_list_fields(superuser, auth_client):
+    response = auth_client.post(
+        "/api/identity/online/batch-force-logout",
+        {"session_pks": "not-a-list", "user_pks": None},
+        format="json",
+    )
+    assert response.data["code"] == 400
+
+
+def test_batch_force_logout_accepts_session_pks(superuser, auth_client):
+    from audit.models.log import UserLoginLog as LoginLog
+    from identity.models import UserSession
+    from identity.utils.session import register_user_session
+
+    target = UserInfo.objects.create_user(username="online_session", password="x")
+    session = register_user_session(None, target, LoginLog.LoginTypeChoices.WEBSOCKET, channel_name="ch-session")
+    response = auth_client.post("/api/identity/online/batch-force-logout", [str(session.pk)], format="json")
+    assert response.data["code"] == 1000
+    assert response.data["data"]["users"] == 1
+    assert not UserSession.objects.filter(creator=target, status=UserSession.Status.ONLINE).exists()
 
 
 def test_verify_rejects_without_token_error_message():
@@ -205,7 +265,7 @@ class TestBatchForceLogoutUsers:
         from common.cache.storage import UserTokenRevokedCache
         from identity.models import UserSession
         from identity.utils.session import force_logout_users
-        from message.utils import get_user_layer_group_name
+        from message.ws.utils import get_user_layer_group_name
         from tests.channel_layer import beat_layer
 
         targets = [

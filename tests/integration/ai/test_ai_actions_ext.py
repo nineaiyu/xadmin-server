@@ -18,7 +18,7 @@ import pytest
 from django.urls import resolve
 
 from approval.models.approval import ApprovalRequest
-from approval.utils.approval import approve_request
+from approval.services.approval import approve_request
 from audit.models import OperationLog
 from common.core.config import SysConfig
 from identity.models import UserRole
@@ -257,7 +257,7 @@ class TestHighRiskApproval:
         grant_perms(
             role,
             menu_factory,
-            (("mcp:AiMcp", r"api/ai/mcp$", "POST"),) + DELETE_ROLE_PERMS,
+            (("mcp:AiMcpServers", r"api/ai/mcp$", "POST"),) + DELETE_ROLE_PERMS,
         )
         api_client.force_authenticate(user=user)
         payload = {

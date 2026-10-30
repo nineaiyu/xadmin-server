@@ -16,11 +16,18 @@ from notifications.models import UserMsgSubscription
 from notifications.notifications import (
     SYSTEM_MESSAGE_REGISTRY,
     USER_MESSAGE_REGISTRY,
+    system_msgs,
     user_msgs,
 )
 from notifications.views.notifications import UserMsgSubscriptionViewSet
 
 pytestmark = pytest.mark.django_db
+
+
+def _subscribable_msgs():
+    """与个人订阅视图同源的消息清单（用户消息 + 开放自选的系统消息）。"""
+    return [*user_msgs, *(m for m in system_msgs if m.get("user_subscribable"))]
+
 
 SYSTEM_SUB_URL = "/api/notifications/system-msg-subscription"
 USER_SUB_URL = "/api/notifications/user-msg-subscription"
@@ -96,6 +103,26 @@ class TestSubscriptionViews:
         assert other.data["code"] == 1000
 
 
+class TestSubscriptionBackends:
+    """渠道清单按订阅面收敛：站点级渠道只在系统订阅页出现。"""
+
+    def test_system_page_lists_all_enabled_channels(self, auth_client):
+        from notifications.backends import BACKEND
+
+        values = {item["value"] for item in auth_client.get(f"{SYSTEM_SUB_URL}/backends").data["data"]}
+        assert values == {str(item) for item in BACKEND if item.is_enable}
+
+    def test_personal_page_hides_site_level_webhook(self, auth_client):
+        from django.test import override_settings
+
+        with override_settings(WEBHOOK_ENABLED=True, WEBHOOK_URL="https://ops.example.com/hook"):
+            system = {item["value"] for item in auth_client.get(f"{SYSTEM_SUB_URL}/backends").data["data"]}
+            personal = {item["value"] for item in auth_client.get(f"{USER_SUB_URL}/backends").data["data"]}
+        assert "webhook" in system
+        assert "webhook" not in personal
+        assert "site_msg" in personal
+
+
 class TestSendTestMessageAPI:
     """「发送测试消息」入口：按 message_type 走真实发送链路（渠道连通性自检）。"""
 
@@ -163,14 +190,15 @@ class TestUserSubscriptionListBackfill:
         inserts = _user_sub_inserts(ctx)
         assert len(inserts) == 1, inserts
 
-        assert UserMsgSubscription.objects.filter(user=superuser).count() == len(user_msgs)
+        assert UserMsgSubscription.objects.filter(user=superuser).count() == len(_subscribable_msgs())
         tree = resp.data["data"]
+        subscribable = _subscribable_msgs()
         assert [str(node["category"]) for node in tree] == list(
-            dict.fromkeys(str(msg["category"]) for msg in user_msgs)
+            dict.fromkeys(str(msg["category"]) for msg in subscribable)
         )
         children = [child for node in tree for child in node["children"]]
-        assert [child["message_type"] for child in children] == [msg["message_type"] for msg in user_msgs]
-        labels = {msg["message_type"]: str(msg["message_type_label"]) for msg in user_msgs}
+        assert [child["message_type"] for child in children] == [msg["message_type"] for msg in subscribable]
+        labels = {msg["message_type"]: str(msg["message_type_label"]) for msg in subscribable}
         for child in children:
             assert child["message_type_label"] == labels[child["message_type"]]
             assert child["receive_backends"] == []
@@ -208,4 +236,4 @@ class TestUserSubscriptionListBackfill:
         assert resp.data["code"] == 1000
         children = {child["message_type"]: child for node in resp.data["data"] for child in node["children"]}
         assert children[existing_type]["receive_backends"] == ["email"]
-        assert UserMsgSubscription.objects.filter(user=superuser).count() == len(user_msgs)
+        assert UserMsgSubscription.objects.filter(user=superuser).count() == len(_subscribable_msgs())

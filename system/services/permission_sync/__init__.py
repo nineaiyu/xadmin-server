@@ -25,17 +25,27 @@ from .apply import (
     plan_binding_fixes,
     snapshot_role_field_names,
 )
-from .audit import audit_field_permissions, audit_permission_menus, audit_wide_manager_grants
-from .constants import (
+from .audit import (
+    audit_custom_permissions,
+    audit_field_permissions,
+    audit_permission_menus,
+    audit_wide_manager_grants,
+)
+from .constants import CRUD_BIND_ACTIONS, DEAD_ENDPOINT_PREFIXES, IMPORT_EXPORT_ACTIONS
+from .declarations import (
     AUDIT_KNOWN_DUPLICATES,
     AUDIT_SKIP_PREFIXES,
-    CRUD_BIND_ACTIONS,
-    DEAD_ENDPOINT_PREFIXES,
-    IMPORT_EXPORT_ACTIONS,
     PARENT_MENU_MAP,
+    PERMISSION_EXEMPT_VIEWS,
     RUNTIME_PERMISSION_PREFIXES,
     SHARED_METHOD_PATHS,
     SKIP_ROUTE_PREFIXES,
+)
+from .generate import (
+    build_permission_items,
+    save_permission_items,
+    serialize_permission_items,
+    sync_permission_models,
 )
 from .scan import (
     build_plans,
@@ -44,12 +54,14 @@ from .scan import (
     find_covering,
     load_permission_menus,
     path_whitelisted,
+    permission_face,
     refresh_titles,
     requires_permission,
     resolve_view_context,
     sample_path,
     scan_gaps,
     scan_permission_gaps,
+    unclassified_views,
     url_to_sample,
 )
 from .seed import detect_indent, dump_entries, merge_seed_file, seed_entry_pks
@@ -57,11 +69,16 @@ from .types import PERMISSION_MENU_RANK_BASE, BindingFix, PlanItem, RouteInfo
 
 __all__ = [
     "AUDIT_KNOWN_DUPLICATES",
+    "build_permission_items",
+    "save_permission_items",
+    "serialize_permission_items",
+    "sync_permission_models",
     "AUDIT_SKIP_PREFIXES",
     "CRUD_BIND_ACTIONS",
     "DEAD_ENDPOINT_PREFIXES",
     "IMPORT_EXPORT_ACTIONS",
     "PARENT_MENU_MAP",
+    "PERMISSION_EXEMPT_VIEWS",
     "PERMISSION_MENU_RANK_BASE",
     "RUNTIME_PERMISSION_PREFIXES",
     "SHARED_METHOD_PATHS",
@@ -71,11 +88,14 @@ __all__ = [
     "RouteInfo",
     "apply_binding_fixes",
     "apply_plans",
+    "audit_custom_permissions",
     "audit_field_permissions",
     "audit_permission_menus",
     "audit_wide_manager_grants",
     "build_plans",
     "build_route_index",
+    "permission_face",
+    "unclassified_views",
     "complete_field_permissions",
     "detect_indent",
     "dump_entries",

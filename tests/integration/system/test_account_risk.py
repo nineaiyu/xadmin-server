@@ -140,7 +140,12 @@ class TestAccountRiskDispose:
     def test_scan_and_stats_endpoints(self, auth_client, superuser):
         resp = auth_client.post(SCAN_URL, format="json")
         assert resp.data["code"] == 1000, resp.data
-        assert "total" in resp.data["data"]
+        task_id = resp.data["data"]["task_id"]
+        status = auth_client.get(f"{SCAN_URL}-status", {"task_id": task_id})
+        assert status.data["code"] == 1000, status.data
+        assert status.data["data"]["status"] == "SUCCESS"
+        assert status.data["data"]["progress"] == 100
+        assert status.data["data"]["result"]["total"] >= 1
         resp = auth_client.get(STATS_URL)
         assert resp.data["code"] == 1000, resp.data
         assert resp.data["data"]["pending"] >= 1
@@ -153,3 +158,47 @@ class TestAccountRiskDispose:
         resp = auth_client.get(LIST_URL, {"risk_type": "superuser_no_mfa"})
         assert resp.data["code"] == 1000, resp.data
         assert resp.data["data"]["total"] >= 1
+
+
+class TestScanTaskOwnership:
+    """scan-status 只允许任务发起人与超管查看；他人 task_id 与不存在同口径 404。"""
+
+    SCAN_STATUS_URL = "/api/identity/account-risks/scan-status"
+
+    def test_other_user_gets_404(self, api_client, normal_user, menu_factory, role):
+        from django.core.cache import cache as django_cache
+
+        from identity.models import UserInfo
+        from identity.utils.account_risk_scan import dispatch_account_risk_scan
+
+        other = UserInfo.objects.create_user(username="scan_other", password="Test@123456")
+        other.roles.add(role)
+        execution = dispatch_account_risk_scan(normal_user)
+        role.menu.add(menu_factory("scan-status:get", path="api/identity/account-risks/scan-status$", method="GET"))
+        django_cache.clear()
+
+        api_client.force_authenticate(user=other)
+        resp = api_client.get(self.SCAN_STATUS_URL, {"task_id": str(execution.pk)})
+        assert resp.status_code == 404
+        assert "detail" in resp.data
+
+    def test_owner_and_superuser_can_read(self, api_client, normal_user, menu_factory, role, superuser):
+        from django.core.cache import cache as django_cache
+
+        from identity.utils.account_risk_scan import dispatch_account_risk_scan
+
+        execution = dispatch_account_risk_scan(normal_user)
+        role.menu.add(menu_factory("scan-status:get", path="api/identity/account-risks/scan-status$", method="GET"))
+        django_cache.clear()
+
+        api_client.force_authenticate(user=normal_user)
+        owned = api_client.get(self.SCAN_STATUS_URL, {"task_id": str(execution.pk)})
+        assert owned.data["code"] == 1000, owned.data
+
+        api_client.force_authenticate(user=superuser)
+        admin = api_client.get(self.SCAN_STATUS_URL, {"task_id": str(execution.pk)})
+        assert admin.data["code"] == 1000, admin.data
+
+    def test_unknown_task_also_404(self, auth_client):
+        resp = auth_client.get(self.SCAN_STATUS_URL, {"task_id": "00000000-0000-0000-0000-000000000000"})
+        assert resp.status_code == 404

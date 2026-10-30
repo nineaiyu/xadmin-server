@@ -44,6 +44,8 @@ SCAN_DIRS = sorted(
         "file",
         "audit",
         "task",
+        "dataset",
+        "ai",
     }
 ) + [
     "ops",
@@ -51,6 +53,7 @@ SCAN_DIRS = sorted(
     "integrations",
     "devtools",
     "examples",
+    "scripts",
 ]
 
 EXCLUDED_SEGMENTS = {"migrations", "tests", "__pycache__", ".venv", "node_modules"}
@@ -60,8 +63,10 @@ THRESHOLD = 100
 # 存量基线：`相对路径::限定名` -> 基线行数（只减不增；行数降到阈值内即可从此表移除）
 # 2026-10-10 建立：7 项 → 清偿拆分 5 项（metadata_columns / data_scope.compiler /
 # task 导入实现 / captcha 绘图 / message ai 流式），余 2 项登记待后续批次。
-# 当前为空：`analysis.py::_collect_artifacts`（113）与 `account_risk.py::_collect_risks`（111）
-# 已按产物族 / 风险族拆分达标（超阈值函数 0 个）
+# 当前为空：2026-10-24 历史登记的存量超长函数已全部清偿——dataset/ai 两应用的
+# 9 项（actions/assistant/dform/screen_layout/dataset_query/ai_embeddings）与
+# scripts 的 3 项（e2e_seed/stub_llm/e2e_seed_scenes）均已按「行为不变的等价拆分」
+# 降到阈值内，BASELINE 清空；此后新函数超 100 行即门禁失败。
 BASELINE = {}
 
 

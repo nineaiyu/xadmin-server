@@ -2,7 +2,7 @@
 
 > 目标：把「HTTP 可用性 / API P95 / 任务成功率 / 队列积压」四项 SLO 从
 > 「指标端点已暴露、无人值守看不到」推到**可看 + 可告警**。
-> 相关：[observability.md](observability.md)（三支柱 / SLO 口径）+ [observability-drills.md](observability-drills.md)（演练记录）、
+> 相关：[observability.md](observability.md)（三支柱 / SLO 口径）+ 演练记录已清理、
 > [runbook.md](runbook.md)（故障处置）、`ops/monitoring/`（本栈资产）、
 > `scripts/prometheus_alert_bridge.py`（告警投递桥接）。
 
@@ -73,7 +73,7 @@ curl -s -H "Authorization: Bearer $(cat ops/monitoring/metrics_token)" \
 service 端不可分，阈值取两者基线较大者；`Export` / `Import` 为重 IO，阈值仅作数量级兜底。
 
 授权池缓存键基数（观察项）规则默认注释，按部署规模开启并调参；键空间与收敛预案见
-[../cache-keys-audit.md](../cache-keys-audit.md)。
+[../architecture/cache.md](../architecture/cache.md)。
 
 **指标名漂移守护**：`tests/unit/common/test_monitoring_assets.py` 断言规则与面板表达式
 只引用 `packages/xadmin-common/common/metrics.py` 中真实存在的指标——名字改了而规则没改会直接失败

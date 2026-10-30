@@ -182,7 +182,7 @@ groups:
           description: "轻量任务被长任务拖住或 worker 副本不足：查 heavy 队列与 worker 并发。"
 
   # 观察项（默认注释：阈值随部署规模变化，按需开启并调参）：
-  # 授权池缓存键基数 = 用户 × 菜单量级，TTL 300s 兜底（见 docs/cache-keys-audit.md 收敛预案）。
+  # 授权池缓存键基数 = 用户 × 菜单量级，TTL 300s 兜底（见 docs/architecture/cache.md 收敛预案）。
   # - alert: XadminAuthzGrantsCacheKeysHigh
   #   expr: xadmin_authz_grants_cache_keys > 50000
   #   for: 30m

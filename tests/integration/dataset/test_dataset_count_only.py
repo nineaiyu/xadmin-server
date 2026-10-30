@@ -6,7 +6,7 @@ number/metric 卡全量物化 ≤row_limit 行 × 全列只为读 total：挂屏
 字段权限与行权限口径与全量路径一致：
 - 行权限 fail-closed（无授权 → none()）→ total 恒 0，不泄露行数；
 - 字段权限收敛输出列不影响 total（字段白名单管的是"看什么列"）；
-- 大屏数字卡链路（_execute_card）已默认走 count_only。
+- 大屏数字卡链路（execute_card）已默认走 count_only。
 """
 
 import uuid
@@ -15,7 +15,7 @@ import pytest
 from django.utils import timezone
 
 from dataset.models.dataset import Dashboard, Dataset, Screen
-from dataset.screen_data import _execute_card, collect_screen_cards
+from dataset.screen_data import collect_screen_cards, execute_card
 from dataset.utils.dataset import execute_dataset
 from identity.models import UserInfo
 from system.models import DataPermission, FieldPermission, ModelLabelField
@@ -138,7 +138,7 @@ class TestScreenNumberCardUsesCountOnly:
         )
         ref = collect_screen_cards(screen)[0]
         assert ref["kind"] == "execute"
-        result = _execute_card(ref, superuser)
+        result = execute_card(ref, superuser)
         assert calls == [True]
         assert result["total"] == UserInfo.objects.count()
         assert result["rows"] == []

@@ -5,9 +5,12 @@
 complete 合并落库与 md5 一致性、abort 清理、过期会话清理。
 """
 
+import hashlib
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
+from django.utils.translation import gettext as _
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from file.models import UploadFile, UploadSession
@@ -59,12 +62,29 @@ def _post(user, action, payload=None, files=None):
         return _view(action)(request)
 
 
-def _init(user, filename="big.bin", filesize=10, total_chunks=3, chunk_size=4, **kwargs):
+DEFAULT_CONTENT = b"abcdefghij"
+
+
+def _content_hash(content: bytes = DEFAULT_CONTENT) -> str:
+    """整文件 SHA-256（与前端 computeFileHash 同算法：逐字节摘要）。"""
+    return hashlib.sha256(content).hexdigest()
+
+
+def _init(user, filename="big.bin", filesize=10, total_chunks=3, chunk_size=4, content_hash=None, **kwargs):
     """发起 chunk/init；成功返回 data 载荷，失败返回完整响应体（含 code/detail）。"""
+    if content_hash is None:
+        content_hash = _content_hash()
     response = _post(
         user,
         "chunk_init",
-        {"filename": filename, "filesize": filesize, "total_chunks": total_chunks, "chunk_size": chunk_size, **kwargs},
+        {
+            "filename": filename,
+            "filesize": filesize,
+            "total_chunks": total_chunks,
+            "chunk_size": chunk_size,
+            "content_hash": content_hash,
+            **kwargs,
+        },
     )
     assert response.status_code == 200, response.data
     return response.data.get("data") or response.data
@@ -103,6 +123,64 @@ class TestChunkInit:
         result = _init(superuser, filesize=10, total_chunks=2, chunk_size=4)
         assert result["code"] == 1002
 
+    def test_same_name_size_different_content_starts_new_session(self, superuser, _small_chunks):
+        """同名同大小但内容不同：不得命中旧会话（否则会拼出「旧前半 + 新后半」）。"""
+        first = _init(superuser, filesize=10, total_chunks=3, chunk_size=4, content_hash=_content_hash(b"abcdefghij"))
+        _part(superuser, first["session"], 0, b"abcd")
+
+        other = _init(superuser, filesize=10, total_chunks=3, chunk_size=4, content_hash=_content_hash(b"ABCDEFGHIJ"))
+
+        assert other["created"] is True
+        assert other["session"] != first["session"]
+        assert other["received"] == []
+
+    def test_content_hash_required(self, superuser, _small_chunks):
+        """旧客户端（不传指纹）被拒绝并给出可读原因，不静默降级成同名同大小口径。"""
+        response = _post(
+            superuser,
+            "chunk_init",
+            {"filename": "big.bin", "filesize": 10, "total_chunks": 3, "chunk_size": 4},
+        )
+        assert response.data["code"] == 1002
+        assert str(response.data["detail"]) == str(_("File fingerprint is required, please refresh the page and retry"))
+        assert not UploadSession.objects.exists()
+
+    def test_malformed_content_hash_rejected(self, superuser, _small_chunks):
+        response = _post(
+            superuser,
+            "chunk_init",
+            {
+                "filename": "big.bin",
+                "filesize": 10,
+                "total_chunks": 3,
+                "chunk_size": 4,
+                "content_hash": "not-a-hash",
+            },
+        )
+        assert response.data["code"] == 1002
+        assert str(response.data["detail"]) == str(_("Invalid file fingerprint"))
+
+    def test_quota_and_count_include_soft_deleted_files(self, superuser, _small_chunks):
+        """软删文件仍占磁盘：分片 init 必须按 all_objects 统计配额与数量。"""
+        from django.core.files.base import ContentFile
+
+        from common.core.config import SysConfig
+
+        reused = UploadFile.objects.create(
+            filename="old.bin",
+            filesize=1,
+            is_upload=True,
+            creator=superuser,
+            filepath=ContentFile(b"x", name="old.bin"),
+        )
+        reused.delete()
+        SysConfig.set_value("FILE_UPLOAD_COUNT_LIMIT", 1)
+
+        result = _init(superuser, filesize=10, total_chunks=3, chunk_size=4)
+
+        assert result["code"] == 1004
+        assert not UploadSession.objects.filter(creator=superuser).exists()
+
 
 class TestChunkPart:
     def test_stores_and_is_idempotent(self, superuser, _small_chunks):
@@ -125,6 +203,17 @@ class TestChunkPart:
         plan = _init(superuser, filesize=10, total_chunks=3, chunk_size=4)
         response = _part(superuser, plan["session"], 0, b"a" * 100)
         assert response.data["code"] == 1002
+
+    @pytest.mark.parametrize("bad_index", ["abc", "1.5", "-1", "", [1]])
+    def test_rejects_malformed_index_as_business_error(self, superuser, _small_chunks, bad_index):
+        """非数字/负分片索引走业务码而非 500（内核直调，绕过序列化层）。"""
+        from file.utils.upload_chunk import store_part
+
+        plan = _init(superuser, filesize=10, total_chunks=3, chunk_size=4)
+        session = UploadSession.objects.get(pk=plan["session"])
+        with pytest.raises(UploadError) as exc_info:
+            store_part(superuser, session, bad_index, SimpleUploadedFile("part", b"abcd"))
+        assert exc_info.value.code == 1002
 
     def test_other_user_cannot_feed_session(self, superuser, normal_user, _small_chunks):
         # API 层先被权限门拦下（normal_user 未授权文件中心）
@@ -187,6 +276,27 @@ class TestChunkComplete:
         response = _post(superuser, "chunk_complete", {"pk": plan["session"], "md5": "1" * 32})
         assert response.data["code"] == CHECKSUM_MISMATCH_CODE
         assert UploadSession.objects.get(pk=plan["session"]).status == UploadSession.Status.PENDING
+        assert not UploadFile.objects.filter(filename="big.bin").exists()
+
+    def test_content_hash_mismatch_aborts_session(self, superuser, _small_chunks):
+        """分片内容与 init 声明不符（串会话/损坏）：拒绝落库并作废会话（不可复用）。"""
+        content = b"abcdefghij"
+        plan = _init(
+            superuser,
+            filesize=len(content),
+            total_chunks=3,
+            chunk_size=4,
+            content_hash=_content_hash(b"zzzzzzzzzz"),
+        )
+        for index in range(3):
+            _part(superuser, plan["session"], index, content[index * 4 : (index + 1) * 4])
+
+        response = _post(superuser, "chunk_complete", {"pk": plan["session"]})
+
+        assert response.data["code"] == CHECKSUM_MISMATCH_CODE
+        session = UploadSession.objects.get(pk=plan["session"])
+        assert session.status == UploadSession.Status.ABORTED
+        assert session.parts.count() == 0
         assert not UploadFile.objects.filter(filename="big.bin").exists()
 
     def test_incomplete_upload_rejected(self, superuser, _small_chunks):

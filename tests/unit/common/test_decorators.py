@@ -202,8 +202,10 @@ class TestDebounceInfrastructure:
 
         start = time.time()
         job()
-        # 轮询到执行完成；防抖的「延迟语义」仍以 elapsed 下限断言兜底
-        assert wait_until(lambda: calls) == [1]
+        # 轮询到执行完成；防抖的「延迟语义」仍以 elapsed 下限断言兜底。
+        # 超时给到 15s：`-n auto` 满并发时执行池线程被调度延迟会超过默认 5s
+        # （与防抖自身语义无关，纯线程调度抖动）
+        assert wait_until(lambda: calls, timeout=15.0) == [1]
         assert time.time() - start >= 0.1
 
 

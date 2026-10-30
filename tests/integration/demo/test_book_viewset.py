@@ -5,6 +5,7 @@ import pytest
 
 from demo.models import Book
 from system.models import DataPermission
+from tests.responses import read_body
 
 pytestmark = pytest.mark.django_db
 
@@ -67,6 +68,21 @@ class TestBookCrudSmoke:
         resp = auth_client.post(BOOK_LIST_URL, payload, format="json")
         assert resp.data["code"] != 1000
 
+    def test_push_writes_audit(self, auth_client, book_payload):
+        """示例 push 不再是假成功：真实落一条推送审计。
+
+        审计字段口径与 oplog_recorder 一致：status_code=业务码、response_code=HTTP 状态
+        （业务码塞进 response_code 会污染按 HTTP 维度的审计统计）。
+        """
+        from audit.models import OperationLog
+
+        created = auth_client.post(BOOK_LIST_URL, book_payload, format="json").data["data"]
+        resp = auth_client.post(f"{BOOK_LIST_URL}/{created['pk']}/push", format="json")
+        assert resp.data["code"] == 1000
+        log = OperationLog.objects.get(module="DEMO:BookPush", object_pk=str(created["pk"]))
+        assert log.status_code == 1000
+        assert log.response_code == 200
+
     def test_batch_destroy(self, auth_client, superuser, upload_file):
         pks = [
             Book.objects.create(
@@ -115,7 +131,7 @@ class TestBookExportSmoke:
         Book.objects.create(name="导出书", isbn="i9", author="a", admin=superuser, admin2=superuser, file=upload_file)
         resp = auth_client.get(f"{BOOK_LIST_URL}/export-data?type=xlsx")
         assert resp.status_code == 200
-        assert len(resp.content) > 0
+        assert len(read_body(resp)) > 0
 
 
 class TestBookDataPermissionIntegration:

@@ -4,7 +4,7 @@
 
 - 配置视图与邮件/LDAP 同构：POST create = 连接测试（真实 ping LLM）；
 - ask/status/history/tools 经菜单权限点门控（未授权 403）；问答链路不触生产数据；
-- 对话持久化：三入口消息落 AiChatMessage（ai/utils/ai_chat.py 收口），
+- 对话持久化：三入口消息落 AiChatMessage（ai/services/assistant/ai_chat.py 收口），
   流式 done/error 载荷携带持久化消息（前端以服务端载荷为准，刷新可续看）；
 - NL 查数与受限动作执行拆至同目录 mixin（nl_query.py / actions.py，仅行数门禁，
   URL 与权限点不变）。
@@ -21,7 +21,7 @@ from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
 from ai.models.ai import AiKnowledgeChunk
-from ai.utils.ai import ask, is_configured, is_enabled
+from ai.services.assistant.ai import ask, is_configured, is_enabled
 from ai.views.actions import AiActionExecuteMixin
 from ai.views.nl_query import AiNlQueryMixin
 from ai.views.observability import AiObservabilityMixin
@@ -30,6 +30,7 @@ from common.core.throttle import AiThrottleMixin
 from common.drf.renders import SseRendererMixin
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from common.utils.outbound import OutboundBlocked, outbound_allowed_hosts, validate_outbound_config_url
 from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 from settings.services import AiAssistantSettingSerializer, BaseSettingViewSet
 
@@ -53,7 +54,7 @@ class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
         忽略——用户在配置页填了新地址点「测试连接」，实际测的却是档案，结果误导。
         未提交的字段仍按「档案 → Setting」兜底，保持部分填写可测。
         """
-        from ai.utils.ai import active_profile
+        from ai.services.assistant.ai import active_profile
 
         profile = active_profile()
 
@@ -94,6 +95,18 @@ class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
             return ApiResponse(code=1001, detail=_("Base URL is required"))
         if not (creds["api_key"] and creds["model"]):
             return ApiResponse(code=1001, detail=_("API Key and model are required"))
+        # 出站守卫：解析后的 base_url（表单 / 档案 / Setting 兜底、含存量值）
+        # 统一过私网拦截，与档案序列化器同口径——测试连接不得成为内网探测通道
+        try:
+            validate_outbound_config_url(
+                str(creds["base_url"]),
+                allowed_hosts=outbound_allowed_hosts(),
+                scheme_message=_(
+                    "Base URL must use https (http is allowed for loopback or OUTBOUND_ALLOWED_HOSTS targets)"
+                ),
+            )
+        except OutboundBlocked as exc:
+            return ApiResponse(code=1001, detail="; ".join(str(item) for item in exc.messages))
         try:
             client = ChatCompletionsClient(creds)
             reply = client.chat([{"role": "user", "content": "ping"}])
@@ -138,7 +151,7 @@ class AiAssistantViewSet(
 
         开关/配置/知识库规模/动作可用性（前端渲染未配置引导与 /do 提示）
         """
-        from ai.utils.ai_actions import ai_action_enabled, available_actions
+        from ai.services.actions.ai_actions import ai_action_enabled, available_actions
 
         last_synced = AiKnowledgeChunk.objects.order_by("-synced_at").values_list("synced_at", flat=True).first()
         action_ready = ai_action_enabled() and is_enabled()
@@ -165,7 +178,7 @@ class AiAssistantViewSet(
         契约：时间正序返回最近一页，``has_more`` 为真时用 ``before_id=最早一条 id``
         继续向上翻页（与聊天室历史同口径）。
         """
-        from ai.utils.ai_chat import load_history
+        from ai.services.assistant.ai_chat import load_history
 
         data = load_history(
             request.user,
@@ -185,10 +198,10 @@ class AiAssistantViewSet(
         输出当前用户**有权执行**的全部系统动作（白名单注册表），每条包含
         ``name / description / inputSchema``（JSON Schema）；LLM 的 function
         calling、外部 MCP 客户端或二开脚本可共用这一份目录——机制说明见
-        ``ai/utils/ai_actions.py`` 的模块注释（新增能力 = 加一条声明）。
+        ``ai/services/actions/ai_actions.py`` 的模块注释（新增能力 = 加一条声明）。
         """
-        from ai.utils.ai_actions import ai_action_enabled
-        from ai.utils.ai_tool_catalog import tool_catalog
+        from ai.services.actions.ai_actions import ai_action_enabled
+        from ai.services.actions.ai_tool_catalog import tool_catalog
 
         enabled = ai_action_enabled()
         return ApiResponse(
@@ -207,9 +220,9 @@ class AiAssistantViewSet(
 
         对话持久化与流式端点同口径（user 消息 + assistant/system 消息）。
         """
-        from ai.utils.ai_actions import audit_ai_ask
-        from ai.utils.ai_chat import message_payload, persist_message, system_error_message
-        from ai.utils.ai_usage import quota_error
+        from ai.services.actions.ai_actions import audit_ai_ask
+        from ai.services.assistant.ai_chat import message_payload, persist_message, system_error_message
+        from ai.services.assistant.ai_usage import quota_error
 
         question = str(request.data.get("question") or "")
         quota = quota_error(request.user, "docs")
@@ -239,6 +252,64 @@ class AiAssistantViewSet(
         )
         return ApiResponse(data={**result, "message": message_payload(row)})
 
+    @staticmethod
+    def _ask_stream_finishers(user: Any, question: str, content_chunks: list[Any], reasoning_chunks: list[Any]) -> Any:
+        """流式收尾三件套（done / error / interrupted）：DB 写经 sync_to_async 保线程本地连接语义。"""
+        from asgiref.sync import sync_to_async
+
+        from ai.services.actions.ai_actions import audit_ai_ask
+        from ai.services.assistant.ai_chat import message_payload, persist_message, system_error_message
+
+        @sync_to_async
+        def _finish_done(item: Any) -> Any:
+            audit_ai_ask(user, question, ok=True, guard=item.get("guard"))
+            row = persist_message(
+                user,
+                "docs",
+                "assistant",
+                content=item["answer"],
+                reasoning="".join(reasoning_chunks),
+                extra={"sources": item["sources"]},
+            )
+            return message_payload(row)
+
+        @sync_to_async
+        def _finish_error(detail: Any) -> Any:
+            audit_ai_ask(user, question, ok=False, detail=detail)
+            if content_chunks or reasoning_chunks:
+                # 已有增量后中断：保留部分内容（与前端「已到达增量保留」一致）
+                row = persist_message(
+                    user,
+                    "docs",
+                    "assistant",
+                    content="".join(content_chunks) or detail,
+                    reasoning="".join(reasoning_chunks),
+                    extra={"partial": detail},
+                )
+                return {"detail": detail, "message": message_payload(row)}
+            return {"detail": detail, "message": system_error_message(user, "docs", detail)}
+
+        @sync_to_async
+        def _finish_interrupted() -> Any:
+            """客户端中途断开（刷新/离开页）的收尾：按「已到达增量保留」口径落部分回答。
+
+            无增量（还在思考/未首帧）不落任何行——此时历史里只有本轮提问，与流前
+            断开语义一致。尽力而为：清理期再次被取消则放弃保留。
+            """
+            if not content_chunks and not reasoning_chunks:
+                return None
+            row = persist_message(
+                user,
+                "docs",
+                "assistant",
+                content="".join(content_chunks),
+                reasoning="".join(reasoning_chunks),
+                extra={"partial": str(_("Answer stream interrupted; partial content retained"))},
+            )
+            return message_payload(row)
+
+        return _finish_done, _finish_error, _finish_interrupted
+
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="ask/stream")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def ask_stream(self, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -255,13 +326,11 @@ class AiAssistantViewSet(
         事件循环内 await（帧组装零线程占用，数百并发流不再受线程池上限约束）；
         流内 DB 写（审计/落库）经 ``sync_to_async`` 保持线程本地连接语义。
         """
-        from asgiref.sync import sync_to_async
-
-        from ai.utils.ai import prepare_ask
-        from ai.utils.ai_actions import audit_ai_ask
-        from ai.utils.ai_async import ask_stream_async as ai_ask_stream_async
-        from ai.utils.ai_chat import message_payload, persist_message, system_error_message
-        from ai.utils.ai_usage import quota_error
+        from ai.services.actions.ai_actions import audit_ai_ask
+        from ai.services.assistant.ai import prepare_ask
+        from ai.services.assistant.ai_async import ask_stream_async as ai_ask_stream_async
+        from ai.services.assistant.ai_chat import message_payload, persist_message, system_error_message
+        from ai.services.assistant.ai_usage import quota_error
         from common.drf.renders import sse_response_async
 
         question = str(request.data.get("question") or "")
@@ -285,53 +354,9 @@ class AiAssistantViewSet(
         content_chunks: list[Any] = []
         reasoning_chunks: list[Any] = []
 
-        @sync_to_async
-        def _finish_done(item: Any) -> Any:
-            audit_ai_ask(request.user, question, ok=True, guard=item.get("guard"))
-            row = persist_message(
-                request.user,
-                "docs",
-                "assistant",
-                content=item["answer"],
-                reasoning="".join(reasoning_chunks),
-                extra={"sources": item["sources"]},
-            )
-            return message_payload(row)
-
-        @sync_to_async
-        def _finish_error(detail: Any) -> Any:
-            audit_ai_ask(request.user, question, ok=False, detail=detail)
-            if content_chunks or reasoning_chunks:
-                # 已有增量后中断：保留部分内容（与前端「已到达增量保留」一致）
-                row = persist_message(
-                    request.user,
-                    "docs",
-                    "assistant",
-                    content="".join(content_chunks) or detail,
-                    reasoning="".join(reasoning_chunks),
-                    extra={"partial": detail},
-                )
-                return {"detail": detail, "message": message_payload(row)}
-            return {"detail": detail, "message": system_error_message(request.user, "docs", detail)}
-
-        @sync_to_async
-        def _finish_interrupted() -> Any:
-            """客户端中途断开（刷新/离开页）的收尾：按「已到达增量保留」口径落部分回答。
-
-            无增量（还在思考/未首帧）不落任何行——此时历史里只有本轮提问，与流前
-            断开语义一致。尽力而为：清理期再次被取消则放弃保留。
-            """
-            if not content_chunks and not reasoning_chunks:
-                return None
-            row = persist_message(
-                request.user,
-                "docs",
-                "assistant",
-                content="".join(content_chunks),
-                reasoning="".join(reasoning_chunks),
-                extra={"partial": str(_("Answer stream interrupted; partial content retained"))},
-            )
-            return message_payload(row)
+        _finish_done, _finish_error, _finish_interrupted = self._ask_stream_finishers(
+            request.user, question, content_chunks, reasoning_chunks
+        )
 
         # meta 载荷在同步段预构建（message_payload 可能触发 FK 懒加载，异步段禁止 DB 访问）
         user_payload = message_payload(user_row)

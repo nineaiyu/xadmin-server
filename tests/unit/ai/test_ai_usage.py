@@ -8,7 +8,7 @@
 import pytest
 
 from ai.models.ai import AiUsageRecord
-from ai.utils.ai_usage import (
+from ai.services.assistant.ai_usage import (
     acquire_stream_slot,
     extract_tokens,
     invalidate_usage_cache,
@@ -108,7 +108,7 @@ class TestUsageDimensions:
 
     def test_p95_reported_with_enough_samples(self, superuser):
         """样本量足够时按最近秩给 P95（小样本给 None，避免把长尾读成正常）。"""
-        from ai.utils.ai_usage import P95_MIN_SAMPLES
+        from ai.services.assistant.ai_usage import P95_MIN_SAMPLES
 
         for index in range(P95_MIN_SAMPLES):
             record_usage(superuser, "docs", profile_name="p", model="m", duration_ms=(index + 1) * 10)
@@ -192,7 +192,7 @@ class TestQuota:
         """每次获取续期：长会话不让计数键中途过期（旧实现只在创建时设 TTL）。"""
         from django.core.cache import cache
 
-        from ai.utils.ai_usage import STREAM_SLOT_KEY, STREAM_SLOT_TTL
+        from ai.services.assistant.ai_usage import STREAM_SLOT_KEY, STREAM_SLOT_TTL
 
         calls = []
         original = cache.touch
@@ -222,7 +222,7 @@ class TestQuota:
 
 class TestTrackedWrappers:
     def test_tracked_chat_records_usage(self, superuser, monkeypatch):
-        from ai.utils.ai_usage import tracked_chat
+        from ai.services.assistant.ai_usage import tracked_chat
 
         class Client:
             model = "m"
@@ -237,7 +237,7 @@ class TestTrackedWrappers:
 
     def test_tracked_chat_records_track(self, superuser):
         """双轨对照：包装器的 track 参数落账（prompt / native）。"""
-        from ai.utils.ai_usage import tracked_chat
+        from ai.services.assistant.ai_usage import tracked_chat
 
         class Client:
             model = "m"
@@ -250,7 +250,7 @@ class TestTrackedWrappers:
         assert AiUsageRecord.objects.get().track == "prompt"
 
     def test_tracked_chat_records_failure(self, superuser):
-        from ai.utils.ai_usage import tracked_chat
+        from ai.services.assistant.ai_usage import tracked_chat
         from integrations.sdk.ai.chat import AiSdkError
 
         class Client:
@@ -266,7 +266,7 @@ class TestTrackedWrappers:
         assert row.ok is False and row.detail == "boom"
 
     def test_tracked_stream_releases_slot(self, superuser, monkeypatch):
-        from ai.utils.ai_usage import stream_slots_in_use, tracked_chat_stream
+        from ai.services.assistant.ai_usage import stream_slots_in_use, tracked_chat_stream
         from common.core.config import SysConfig
 
         monkeypatch.setattr(type(SysConfig), "AI_QUOTA_MAX_CONCURRENT_STREAMS", property(lambda self: 1), raising=False)

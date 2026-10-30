@@ -87,12 +87,13 @@ python manage.py seed_demo_book
   走 worker，本地演示需 worker 在线；
 - **审批人**：种子默认 `xadmin,isummer`（双环境占位），提交时按实际存在的用户生效；
   全都不存在时提交会被引擎 fail-closed 拒绝（提示无可用审批人）；
+- **分页**：`DynamicPageNumber(1000)` 仅为示例展示自定义分页上限，业务页请按数据量取 100 或更小；
 - **`block`** 为可写开关字段（`input_type="boolean"` 的渲染与提交示意）。
 
 ## 文档引用
 
 - 框架能力速查与覆写红线：`docs/architecture/framework-cookbook.md`
-- 数据权限 / 字段权限原理：`docs/architecture/data-permission.md` / `field-permission.md`
+- 数据权限 / 字段权限原理：`docs/architecture/permission.md`
 - 新人上手路径：`docs/architecture/overview.md` §十
 - 手写教程（与本文代码同源）：xadmin-docs 的 `example/new-app-api.md` / `new-app-client.md`
 - 测试：`tests/integration/demo/`（CRUD / 权限 / 上传 / 导入导出 / 上架审批与二次确认 / 定时任务）

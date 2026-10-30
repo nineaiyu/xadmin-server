@@ -6,9 +6,7 @@
 # date : 6/6/2023
 from typing import Any
 
-from django.db import transaction
 from django.db.models.signals import post_save
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -16,7 +14,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
-from common.base.magic import temporary_disable_signal
+from common.base.decorators import temporary_disable_signal
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseModelSet,
@@ -30,10 +28,10 @@ from common.core.modelset import (
 )
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
-from common.core.utils import get_all_url_dict
+from common.core.url_inventory import get_all_url_dict
 from common.swagger.utils import get_default_response_schema
 from identity.services import invalidate_menu_user_caches
-from system.models import Menu, MenuMeta, ModelLabelField
+from system.models import Menu
 from system.serializers.menu import MenuSerializer
 from system.services import permission_sync as sync
 from system.signal_handler import clean_cache_handler
@@ -82,6 +80,38 @@ class MenuViewSet(
     filterset_class = MenuFilter
     # 批量更新白名单：批量启停（与行内启停同一字段口径，逐项走序列化器校验）
     batch_update_fields = ("is_active",)
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+                    "fields": build_object_type(),
+                },
+                required=["pks", "fields"],
+                description="批量更新：主键列表 + 待修改字段（白名单校验）",
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="batch-update")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def batch_update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """批量修改菜单
+
+        权限点与菜单/目录的启停语义不同：权限点代表动作授权，由角色与字段权限
+        链路独立消费，停用权限点会让授权面静默失效。两类节点混批一律拒绝，
+        避免前端级联或第三方客户端把权限点随目录一起停用。
+        """
+        payload = request.data if isinstance(request.data, dict) else {}
+        pks = payload.get("pks") or []
+        if isinstance(pks, (list, tuple)) and pks:
+            types = set(Menu.objects.filter(pk__in=pks).values_list("menu_type", flat=True))
+            if Menu.MenuChoices.PERMISSION in types and len(types) > 1:
+                return ApiResponse(
+                    code=1004,
+                    detail=_("Permission codes cannot be batch updated together with menus or directories"),
+                )
+        return super().batch_update(request, *args, **kwargs)
 
     def get_recycle_restore_queryset(self, pks: Any) -> Any:
         """成组恢复：目录删除时后代被标记同一 deleted_at，按时间戳成组恢复。"""
@@ -205,6 +235,7 @@ class MenuViewSet(
         missing = self._serialize_gap_items(gaps, routes, perms)
         orphan = self._serialize_perm_items(unmatched, "orphan", "verify")
         duplicate = self._serialize_perm_items(duplicates, "duplicate", "merge")
+        custom_action = self._serialize_perm_items(sync.audit_custom_permissions(perms), "custom_action", "verify")
         field_unconfigured = self._serialize_field_audit_items(sync.audit_field_permissions())
         return ApiResponse(
             data={
@@ -212,6 +243,7 @@ class MenuViewSet(
                     "missing": len(missing),
                     "orphan": len(orphan),
                     "duplicate": len(duplicate),
+                    "custom_action": len(custom_action),
                     "field_unconfigured": len(field_unconfigured),
                     "total": len(missing) + len(orphan) + len(duplicate) + len(field_unconfigured),
                     "routes": len(routes),
@@ -220,6 +252,7 @@ class MenuViewSet(
                 "missing": missing,
                 "orphan": orphan,
                 "duplicate": duplicate,
+                "custom_action": custom_action,
                 "field_unconfigured": field_unconfigured,
             }
         )
@@ -243,195 +276,20 @@ class MenuViewSet(
         ]
 
     def _build_permission_items(self, instance: Any, permissions: Any, skip_existing: Any) -> Any:
-        """构造待写入的权限点（只读，不落库）。
+        """构建待写入权限点（内核在 permission_sync.generate，此处薄委托）。
 
-        返回 ``(action, 已有菜单或 None, 数据)`` 列表：``action=create`` 为新建（标题前缀 C-），
-        ``update`` 为覆盖既有权限点（前缀 U-）；``skip_existing`` 命中时整体跳过——
-        预览与执行共用本方法，保证「所见即所得」。
-
-        既有权限点与角色模型清单各以一次 ``__in`` 批量查询取回，避免逐权限点回表；
-        meta 一并 select_related，供覆盖更新时直接改标题。
+        预览与执行共用同一构建（所见即所得）；保留同名私有方法供既有用例
+        脱离 HTTP 层直驱视图集。
         """
-        permissions = list(permissions)
-        if not permissions:
-            return []
-        existing = {
-            menu.name: menu
-            for menu in self.get_queryset()
-            .filter(
-                menu_type=Menu.MenuChoices.PERMISSION,
-                name__in=[permission.get("code") for permission in permissions],
-            )
-            .select_related("meta")
-        }
-        role_models: dict[str, list[Any]] = {}
-        role_labels = {label for permission in permissions for label in permission.get("models")}
-        if role_labels:
-            fields = ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE, name__in=role_labels)
-            for field in fields:
-                role_models.setdefault(field.name, []).append(field)
-
-        items = []
-        rank = sync.PERMISSION_MENU_RANK_BASE
-        for permission in permissions:
-            rank += 1
-            models = [field for label in permission.get("models") for field in role_models.get(label, [])]
-            data = {
-                "rank": rank,
-                "is_active": True,
-                "menu_type": Menu.MenuChoices.PERMISSION,
-                "name": permission.get("code"),
-                "parent": instance,
-                "path": permission.get("url"),
-                "method": permission.get("method"),
-                "model": models,
-                "meta": {"title": permission.get("description")[:250]},
-            }
-            permission_menu = existing.get(data["name"])
-            if permission_menu and skip_existing:
-                continue
-            action = "update" if permission_menu else "create"
-            data["meta"]["title"] = ("U-" if permission_menu else "C-") + data["meta"]["title"]
-            items.append((action, permission_menu, data))
-        return items
-
-    @staticmethod
-    def _serialize_permission_items(items: Any) -> Any:
-        """预览载荷：逐条给出动作、权限码、接口与标题，附新建/覆盖计数。"""
-        results = [
-            {
-                "action": action,
-                "name": data["name"],
-                "path": data["path"],
-                "method": data["method"],
-                "title": data["meta"]["title"],
-            }
-            for action, _target, data in items
-        ]
-        return {
-            "results": results,
-            "create_count": len([item for item in results if item["action"] == "create"]),
-            "update_count": len([item for item in results if item["action"] == "update"]),
-        }
+        return sync.build_permission_items(instance, permissions, skip_existing)
 
     @temporary_disable_signal(post_save, receiver=clean_cache_handler, sender=Menu)
     def _save_permission_items(self, items: Any) -> Any:
-        """批量落库权限点并返回落库实例（信号临时禁用，失效由调用方统一执行）。
-
-        覆盖更新与新创建各走一支批量写入，整个落库过程原子提交。若逐条保存触发信号，
-        会按每个权限点各自扫一遍用户/角色/部门（同一批内重复扫描）；改为收集实例后
-        一次精确失效，保证「被覆盖更新的子权限点」也进失效集——只失效父菜单会让
-        这些用户最长 24h 持旧权限（路由缓存 TTL）。creator/modifier 原由全局 pre_save
-        信号按请求用户补齐，批量写入不触发信号，按同一口径显式赋值。
-        """
+        """批量落库权限点（内核在 permission_sync.generate；请求用户经此注入审计字段）。"""
         user = getattr(self.request, "user", None)
         if user is not None and not user.is_authenticated:
             user = None
-        # 同一批出现重复权限码时按顺序收敛：覆盖更新后写生效（与逐条保存一致），新建先到先得
-        updates: dict[str, Any] = {}
-        creates: dict[str, Any] = {}
-        for _action, permission_menu, data in items:
-            if permission_menu is not None:
-                updates[permission_menu.pk] = (permission_menu, data)
-            else:
-                creates.setdefault(data["name"], data)
-        with transaction.atomic():
-            saved = self._update_permission_items(list(updates.values()), user)
-            saved += self._create_permission_items(list(creates.values()), user)
-        return saved
-
-    @staticmethod
-    def _update_permission_items(updates: Any, user: Any) -> Any:
-        """覆盖既有权限点：菜单行与 meta 标题各一次批量 UPDATE，角色模型按差集同步。"""
-        if not updates:
-            return []
-        updated_time = timezone.now()
-        metas = []
-        for permission_menu, data in updates:
-            for field in ("rank", "is_active", "menu_type", "name", "parent", "path", "method"):
-                setattr(permission_menu, field, data[field])
-            permission_menu.modifier = user
-            permission_menu.updated_time = updated_time
-            meta = permission_menu.meta
-            meta.title = data["meta"]["title"]
-            meta.modifier = user
-            meta.updated_time = updated_time
-            metas.append(meta)
-        menus = [menu for menu, _data in updates]
-        Menu.objects.bulk_update(
-            menus,
-            fields=["rank", "is_active", "menu_type", "name", "parent", "path", "method", "modifier", "updated_time"],
-        )
-        MenuMeta.objects.bulk_update(metas, fields=["title", "modifier", "updated_time"])
-        MenuViewSet._sync_permission_models([(menu, data["model"]) for menu, data in updates])
-        return menus
-
-    @staticmethod
-    def _create_permission_items(creates: Any, user: Any) -> Any:
-        """新建权限点：meta 先批量落库取得主键回填 meta_id，菜单行随后批量落库。
-
-        活跃行名称唯一约束兜底并发冲突，冲突行被数据库跳过；按主键回读实际
-        落库实例，角色模型关联只建给真实存在的菜单行。
-        """
-        if not creates:
-            return []
-        dept = getattr(user, "dept", None)
-        models_by_name = {data["name"]: data["model"] for data in creates}
-        metas = MenuMeta.objects.bulk_create(
-            [MenuMeta(title=data["meta"]["title"], creator=user, modifier=user, dept_belong=dept) for data in creates]
-        )
-        menus = Menu.objects.bulk_create(
-            [
-                Menu(
-                    rank=data["rank"],
-                    is_active=data["is_active"],
-                    menu_type=data["menu_type"],
-                    name=data["name"],
-                    parent=data["parent"],
-                    path=data["path"],
-                    method=data["method"],
-                    meta=meta,
-                    creator=user,
-                    modifier=user,
-                    dept_belong=dept,
-                )
-                for data, meta in zip(creates, metas, strict=True)
-            ],
-            ignore_conflicts=True,
-        )
-        # ignore_conflicts 无法区分被跳过的冲突行，按主键回读实际落库实例
-        saved = list(Menu.objects.filter(pk__in=[menu.pk for menu in menus]).select_related("meta"))
-        if saved:
-            Menu.model.through.objects.bulk_create(
-                [
-                    Menu.model.through(menu=menu, modellabelfield=field)
-                    for menu in saved
-                    for field in models_by_name.get(menu.name, [])
-                ]
-            )
-        return saved
-
-    @staticmethod
-    def _sync_permission_models(menu_model_pairs: Any) -> None:
-        """把 ``[(menu, models)]`` 的角色模型关联同步进中间表（等价于逐实例 ``set()``）。
-
-        现有关联一次读回后按差集增删，避免每权限点各查一遍。
-        """
-        if not menu_model_pairs:
-            return
-        through = Menu.model.through
-        menu_ids = [menu.pk for menu, _models in menu_model_pairs]
-        rows = list(through.objects.filter(menu_id__in=menu_ids).values_list("pk", "menu_id", "modellabelfield_id"))
-        desired = {(menu.pk, field.pk) for menu, models in menu_model_pairs for field in models}
-        current = {(menu_id, field_id) for _pk, menu_id, field_id in rows}
-        stale_pks = [pk for pk, menu_id, field_id in rows if (menu_id, field_id) not in desired]
-        fresh_pairs = desired - current
-        if stale_pks:
-            through.objects.filter(pk__in=stale_pks).delete()
-        if fresh_pairs:
-            through.objects.bulk_create(
-                [through(menu_id=menu_id, modellabelfield_id=field_id) for menu_id, field_id in fresh_pairs]
-            )
+        return sync.save_permission_items(items, user)
 
     @extend_schema(
         request=OpenApiRequest(
@@ -458,16 +316,25 @@ class MenuViewSet(
         if isinstance(views, list) and len(views) > 0:
             instance = self.get_object()
             items = []
+            matched_views = 0
             for view in views:
                 code_suffix = view.split(".")[-1].replace("ViewSet", " ").replace("APIView", " ")
                 if len(views) == 1 and component:
                     code_suffix = component
-                items.extend(
-                    self._build_permission_items(instance, get_view_permissions(view, code_suffix), skip_existing)
-                )
+                permissions = get_view_permissions(view, code_suffix)
+                if not permissions:
+                    continue
+                matched_views += 1
+                items.extend(self._build_permission_items(instance, permissions, skip_existing))
+
+            # 视图名过期/拼错时 get_view_permissions 返回空：不能以「0 条新增」静默成功，
+            # 否则管理员以为权限点已生成。全部视图零匹配才报错；匹配到但被 skip_existing
+            # 全部跳过仍属正常幂等结果。
+            if matched_views == 0:
+                return ApiResponse(code=1001, detail=_("No matched api views for permission generation"))
 
             if dry_run:
-                return ApiResponse(data=self._serialize_permission_items(items))
+                return ApiResponse(data=sync.serialize_permission_items(items))
 
             saved = self._save_permission_items(items)
             # 保存数据，触发刷新缓存信号（父菜单）；本次变更的子权限点一并精确失效

@@ -118,13 +118,25 @@ class LeaveViewSet(BaseModelSet):
     def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除
 
-        静默排除审批中/已批准的申请，不因单条受保护而整批失败
-
-        ⚠️ 覆写基类 `BatchDestroyAction.batch_destroy` 必须保留 `@action`
-        装饰器（DRF 靠其 `.mapping` 注册路由），否则端点丢失、请求 405。
+        审批中/已批准的申请不删除，但必须进入失败明细，避免管理员误以为全部删除。
         """
+        pks = request.data if isinstance(request.data, (list, tuple)) else []
+        protected = {
+            str(pk)
+            for pk in self.get_queryset()
+            .filter(pk__in=pks, status__in=[Leave.Status.PENDING, Leave.Status.APPROVED])
+            .values_list("pk", flat=True)
+        }
         self.queryset = self.queryset.exclude(status__in=[Leave.Status.PENDING, Leave.Status.APPROVED])
-        return super().batch_destroy(request, *args, **kwargs)
+        response = super().batch_destroy(request, *args, **kwargs)
+        if protected:
+            data = response.data.setdefault("data", {})
+            failures = data.setdefault("failures", [])
+            failures.extend(
+                {"pk": pk, "detail": str(_("Leave request is pending or approved and cannot be deleted"))}
+                for pk in sorted(protected)
+            )
+        return response
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

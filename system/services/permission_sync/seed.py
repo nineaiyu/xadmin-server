@@ -33,7 +33,7 @@ def write_field_seed_layers(manifests: Any = None, apps: Any = None) -> Any:
     from system.models import FieldPermission, ModelLabelField
     from system.services.seeding import PLATFORM, discover, read_model_rows, row_owners, write_layer_model
 
-    from .constants import RUNTIME_PERMISSION_PREFIXES
+    from .declarations import RUNTIME_PERMISSION_PREFIXES
 
     manifests = manifests or discover().manifests
     selected = set(apps) if apps else None

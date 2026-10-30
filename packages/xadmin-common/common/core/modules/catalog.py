@@ -82,8 +82,11 @@ MODULES: tuple[ModuleSpec, ...] = (
             r"^/api/dataset/screens",
             r"^/api/dataset/reports",
         ),
-        ws_routes=(r"^/ws/screen/",),
-        note="关闭后定时报表周期任务与 ws/screen 展示通道一并停止",
+        ws_routes=(
+            r"^/ws/screen/",
+            r"^/ws/dashboard/",
+        ),
+        note="关闭后定时报表周期任务与 ws/screen、ws/dashboard 推送通道一并停止",
     ),
     ModuleSpec(
         "dform",

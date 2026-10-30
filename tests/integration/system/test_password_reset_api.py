@@ -34,12 +34,22 @@ def email_user(normal_user):
 
 
 @pytest.fixture
-def verified(monkeypatch, email_user):
-    """打桩验证码校验：视为已完成「邮箱验证码已下发且校验通过」。"""
+def verified(monkeypatch, email_user, settings):
+    """打桩验证码校验：视为已完成「邮箱验证码已下发且校验通过」。
+
+    email 通道开关显式打开：提交侧通道复核上线后,通道关闭的提交先行拒绝。
+    """
+    settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED = True
+    settings.EMAIL_ENABLED = True
+
+    def _verify(request, block_utils, scenes=None):
+        assert scenes == ("reset",)
+        return "email", email_user.email, VERIFY_TOKEN
+
     monkeypatch.setattr(
         reset_view,
         "verify_sms_email_code",
-        lambda request, block_utils: ("email", email_user.email, VERIFY_TOKEN),
+        _verify,
     )
     expired: list[str] = []
     monkeypatch.setattr(
@@ -86,6 +96,13 @@ class TestResetPasswordApi:
         resp = post_reset(api_client, "NewStrong@2026")
         assert resp.data["code"] == 1002
         assert any(k in str(resp.data["detail"]) for k in ("recent", "最近"))
+
+    def test_target_removed_after_code_issued(self, api_client, verified, email_user):
+        """发码后账号被删除/停用：统一「验证码已失效」，不 500 也不泄露账号状态。"""
+        email_user.delete()
+        resp = post_reset(api_client, "NewStrong@2026")
+        assert resp.data["code"] == 1002
+        assert any(k in str(resp.data["detail"]) for k in ("expired", "失效"))
 
     def test_success_resets_password_and_expires_token(self, api_client, verified, email_user, monkeypatch):
         recorded: list[str] = []

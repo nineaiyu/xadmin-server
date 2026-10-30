@@ -2,7 +2,7 @@
 """索引命中回归测试。
 
 以 EXPLAIN 断言高频列表/清理查询命中索引，防止后续模型改动无意间退化成
-全表扫描。索引清单与评审结论见 docs/architecture/indexes.md。
+全表扫描。索引清单见 system/search_indexes.py 与各模型 Meta。
 
 方言自适应（nightly PG 档首轮暴露的差异，见 docs/plans/容器化PG-nightly测试档立项-2026.10.md §五）：
 - sqlite 走 EXPLAIN QUERY PLAN（明细文本在 row[3]）；PG 走 EXPLAIN（文本行自带

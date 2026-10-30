@@ -14,14 +14,14 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from ai.models.ai import AiKnowledgeChunk, AiKnowledgeDocument, AiProfile
-from ai.utils.ai import MAX_UPLOAD_CONTENT_LENGTH, MAX_UPLOAD_NAME_LENGTH, set_document_active
-from ai.utils.ai_config import outbound_allowed_hosts
-from ai.utils.doc_extract import PARSABLE_EXTENSIONS
-from common.base.utils import signer
+from ai.services.assistant.ai import MAX_UPLOAD_CONTENT_LENGTH, MAX_UPLOAD_NAME_LENGTH, set_document_active
+from ai.services.assistant.ai_config import outbound_allowed_hosts
+from ai.services.knowledge.doc_extract import PARSABLE_EXTENSIONS
+from common.base.crypto import signer
+from common.core.fields import DisplayRelatedField
+from common.core.response.validation import trim_required
 from common.core.serializers import BaseModelSerializer
-from common.core.validation import trim_required
 from common.utils.outbound import OutboundBlocked, validate_outbound_config_url
-from task.services import DisplayRelatedField
 
 # 名称中的路径分隔符会破坏 upload/ 前缀隔离，统一拒绝
 NAME_FORBIDDEN_CHARS = ("/", "\\")
@@ -261,7 +261,7 @@ class KnowledgeUploadSerializer(serializers.Serializer):
         import base64
         import binascii
 
-        from ai.utils.doc_extract import extract_text
+        from ai.services.knowledge.doc_extract import extract_text
 
         try:
             raw = base64.b64decode(file_b64, validate=True)
@@ -290,6 +290,8 @@ class AiKnowledgeDocumentSerializer(BaseModelSerializer):
             "path",
             "content",
             "chunk_count",
+            "ingest_status",
+            "ingest_error",
             "is_active",
             "creator",
             "synced_at",
@@ -299,7 +301,15 @@ class AiKnowledgeDocumentSerializer(BaseModelSerializer):
         ]
         # 仅 is_active 可写（启用/停用重建分块，见 update）；其余字段由上传/同步维护
         read_only_fields = [field for field in fields if field != "is_active"]
-        table_fields = ["title", "source_type", "chunk_count", "is_active", "creator", "synced_at"]
+        table_fields = [
+            "title",
+            "source_type",
+            "ingest_status",
+            "chunk_count",
+            "is_active",
+            "creator",
+            "synced_at",
+        ]
 
     def get_chunks(self, obj: Any) -> list[Any]:
         """分块摘要（仅详情返回）：问答检索时会命中的块清单。

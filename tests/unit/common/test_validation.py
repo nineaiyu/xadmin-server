@@ -12,7 +12,7 @@ import pytest
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from common.core.validation import ActiveUniqueValidationMixin, trim_required
+from common.core.response.validation import ActiveUniqueValidationMixin, trim_required
 from identity.models import Post
 from identity.serializers.post import PostSerializer
 from identity.serializers.role import RoleSerializer

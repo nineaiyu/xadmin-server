@@ -2,14 +2,16 @@
 """导入导出执行链：装配契约测试（的「先补契约测试」落地）。
 
 任务内执行不再重放 WSGIRequest，改为 `packages/xadmin-common/common/core/task_request.py` 的显式上下文。
-本文件以 **spy 视图集**（子类化真实视图集，行为不变、只记录）断言五个契约在真实执行链内
+本文件以 **spy 视图集**（子类化真实视图集，行为不变、只记录）断言六个契约在真实执行链内
 均可观测：
 
 1. 提交者身份：`view.request.user` 与 thread-local 请求均指向提交者（权限/字段权限/creator）；
 2. `view.action`：serializer 行为分支（如创建时密码规则）依赖它；
 3. `view.format_kwarg`：`get_serializer_context` 依赖（漏设直接 AttributeError）；
 4. `view.kwargs`：detail 路由参数（本链路为空 dict）；
-5. thread-local 请求（creator 信号赋值 + 审计 request_uuid），出口必须清理。
+5. thread-local 请求（creator 信号赋值 + 审计 request_uuid），出口必须清理；
+6. 字段权限上下文：任务内请求经同一权限链装载 `request.fields`——异步导入不经过
+   dispatch，缺这一项时非超管的所有列会被 fail-closed 裁空（逐行 validated_data={}）。
 
 另含：请求构造/上下文绑定的单元形态断言、分片任务的身份携带（meta.user_pk）与通知对象。
 """
@@ -142,6 +144,44 @@ class TestAsyncImportContracts:
         assert row.creator_id == superuser.pk
         # 出口清理：任务结束后 thread-local 不残留（防跨任务串号）
         assert get_current_request() is None
+
+
+class TestAsyncImportFieldPermission:
+    def test_non_superuser_import_applies_field_permission(self, normal_user, menu_factory):
+        """非超管异步导入：字段白名单在任务内同样生效（行落库，越权列被裁）。"""
+        from system.models import FieldPermission, ModelLabelField
+
+        menu = menu_factory(name="importAsync:SystemDataDict", path="api/system/dict/import-async$", method="POST")
+        normal_user.roles.first().menu.add(menu)
+        root = ModelLabelField.objects.create(
+            name="system.datadict",
+            field_type=ModelLabelField.FieldChoices.DATA,
+            label="数据字典",
+        )
+        allowed = [
+            ModelLabelField.objects.create(
+                name=name,
+                parent=root,
+                field_type=ModelLabelField.FieldChoices.DATA,
+                label=name,
+            )
+            for name in ("code", "label")
+        ]
+        permission = FieldPermission.objects.create(role=normal_user.roles.first(), menu=menu)
+        permission.field.set(allowed)
+
+        ContractDictViewSet.captured = {}
+        response = _post_import_as(
+            normal_user,
+            b"code,label,sort\nctx-limited,\xe9\x99\x90\xe5\x88\xb6,99\n",
+        )
+        assert response.data["code"] == 1000
+
+        row = DataDict.objects.get(code="ctx-limited")
+        assert row.creator_id == normal_user.pk
+        # 未授权列（sort）被字段权限裁掉，落库为模型默认值而不是源文件值
+        assert row.sort == 0
+        assert ContractDictViewSet.captured["request_user_pk"] == normal_user.pk
 
 
 class TestAsyncExportContracts:

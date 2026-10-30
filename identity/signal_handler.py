@@ -13,8 +13,8 @@ from django.contrib.auth import user_logged_out
 from django.db.models.signals import m2m_changed, post_migrate, post_save, pre_delete
 from django.dispatch import receiver
 
-from common.base.magic import MagicCacheData, cache_response
 from common.core.filter import invalidate_data_permission_grants_cache
+from common.decorators import MagicCacheData, cache_response
 from common.utils import get_logger
 from identity.models import DeptInfo, UserInfo, UserRole
 from identity.signal import invalid_user_cache_signal
@@ -28,6 +28,9 @@ M2M_CHANGED_ACTIONS = ("post_add", "post_remove", "post_clear")
 def get_cache_data_keys(pks: Any) -> Any:
     for pk in pks:
         for method in ["GET", "PUT", "DELETE", "POST", "PATCH"]:
+            # 同 path 多权限码的全量清单与主权限点字典必须一起失效，否则主字典刷新后
+            # 仍会从旧清单里选权限点（字段权限上下文也会停留在旧授权）
+            yield f"get_user_permission_menus_{pk}_{method}"
             yield f"get_user_permission_{pk}_{method}"
 
 

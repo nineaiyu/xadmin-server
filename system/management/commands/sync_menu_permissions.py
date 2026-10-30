@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from identity.models import UserInfo
 from system.models import FieldPermission, Menu, MenuMeta, ModelLabelField
@@ -57,6 +57,16 @@ class Command(BaseCommand):
             help="补齐字段白名单（含新增字段；只增不减，不改写已有裁剪）",
         )
         parser.add_argument("--default-parent", default="", help="无法自动归属时的兜底父菜单 name（默认报告并跳过）")
+        parser.add_argument(
+            "--strict",
+            action="store_true",
+            help="存在未匹配路由的孤儿权限点时返回非零退出码（CI/上线前门禁）",
+        )
+        parser.add_argument(
+            "--prune",
+            action="store_true",
+            help="删除库内未匹配路由的孤儿权限点（建议先配 --dry-run 核对；种子侧由覆盖守护测试拦截）",
+        )
 
     def handle(self, *args: Any, **options: Any) -> None:
         dry_run = options["dry_run"]
@@ -96,6 +106,18 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------ 权限点
 
+    def _ensure_no_unclassified_views(self, routes: Any) -> None:
+        """custom 权限面必须显式豁免：fail-loud（此前静默跳过，未登记 = 非超管恒 403 无告警）。"""
+        unclassified = sync.unclassified_views(routes)
+        if not unclassified:
+            return
+        for view in unclassified:
+            self.stdout.write(self.style.ERROR(f"  ! 未分类权限面：{view}（自定义权限类且未登记豁免）"))
+        raise CommandError(
+            "存在未登记豁免的 custom 权限面视图：请在 constants.PERMISSION_EXEMPT_VIEWS "
+            "登记（注明自管原因）或改回标准权限链后重试"
+        )
+
     def _sync_permissions(self, options: Any, user: Any, dry_run: Any) -> None:
         default_parent = None
         if options["default_parent"]:
@@ -104,6 +126,7 @@ class Command(BaseCommand):
             ).first()
 
         routes = sync.build_route_index()
+        self._ensure_no_unclassified_views(routes)
         perms = sync.load_permission_menus()
         gaps = sync.scan_gaps(routes, perms)
         plans, unresolved = sync.build_plans(gaps, routes, perms, default_parent)
@@ -149,6 +172,8 @@ class Command(BaseCommand):
         for perm in duplicates[:DETAIL_LIMIT]:
             self.stdout.write(self.style.WARNING(f"  ~ 重复权限点：{perm.name} | {perm.path} | {perm.method}"))
 
+        remaining_orphans = self._handle_orphan_permissions(options, unmatched, dry_run)
+
         # 报告口径基于「当前库内绑定」：本轮存在绑定校正时，收缩前的陈旧绑定可能
         # 让「白名单脱节」暂不显形（补齐动作放在绑定校正之后执行，见下方）
         self._report_field_permission_gaps()
@@ -161,6 +186,8 @@ class Command(BaseCommand):
         if dry_run:
             if options["fix_field_permissions"]:
                 self._report_pending_field_nodes()
+            if options["strict"] and remaining_orphans:
+                raise SystemExit(1)
             return
 
         created, conflicts, method_fixed = sync.apply_plans(plans, user)
@@ -188,6 +215,30 @@ class Command(BaseCommand):
             # load_init_json 会用旧种子把它们覆盖回去）+ 字段权限补齐
             fixed_menus = [fix.menu for fix in fixes] + [menu for menu, _old, _new in refreshed]
             self._update_seed(created, fixed_menus, method_fixed, options["fix_field_permissions"])
+
+    def _handle_orphan_permissions(self, options: Any, orphans: Any, dry_run: Any) -> Any:
+        """按 --prune 处理库内孤儿权限点；返回处理后仍存在的列表（供 --strict 判定）。"""
+        remaining = list(orphans)
+        if not options["prune"]:
+            return remaining
+        if dry_run:
+            self.stdout.write(self.style.WARNING(f"[清理] dry-run：将删除 {len(remaining)} 个库内孤儿权限点（未执行）"))
+            return remaining
+        self._prune_permissions(remaining)
+        return []
+
+    def _prune_permissions(self, orphans: Any) -> None:
+        """删除库内未匹配路由的孤儿权限点（种子侧由覆盖守护测试拦截，不由本命令改种子）。"""
+        if not orphans:
+            self.stdout.write(self.style.SUCCESS("[清理] 无库内孤儿权限点"))
+            return
+        for perm in orphans[:DETAIL_LIMIT]:
+            self.stdout.write(f"  - {perm.name} | {perm.path} | {perm.method or '-'}")
+        if len(orphans) > DETAIL_LIMIT:
+            self.stdout.write(f"  ... 其余 {len(orphans) - DETAIL_LIMIT} 条略")
+        pks = [perm.pk for perm in orphans]
+        deleted, _ = Menu.objects.filter(pk__in=pks).delete()
+        self.stdout.write(self.style.WARNING(f"[清理] 已删除 {len(pks)} 个库内孤儿权限点（关联行 {deleted}）"))
 
     def _refresh_titles(self, routes: Any, perms: Any, dry_run: Any) -> Any:
         """按当前 docstring 重算存量权限点标题，返回变更列表（供种子回写复用）。"""

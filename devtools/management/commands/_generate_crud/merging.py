@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from django.core.management.base import CommandError
 
 from .constants import BLOCK_END, BLOCK_START, FIRST_PARTY_TOP_LEVEL, _import_name_sort_key
+from .locale_yaml import merge_locale_yaml
 
 
 class MergeMixin:
@@ -72,6 +73,8 @@ class MergeMixin:
             return self._merge_seed_rows(path, item["content"])
         if item["mode"] == "seed_manifest":
             return self._merge_seed_manifest(path, item)
+        if item["mode"] == "locale_yaml":
+            return self._merge_locale_yaml(path, item["locale"])
         if item["mode"] == "urls":
             if not path.exists():
                 path.write_text(item["content"], encoding="utf-8")
@@ -183,6 +186,16 @@ class MergeMixin:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(existing, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         return f"写入种子（新增 {added} / 更新 {updated}）"
+
+    @staticmethod
+    def _merge_locale_yaml(path: Path, payload: dict[str, Any]) -> str:
+        """前端词条合并：按顶层块插入/替换，保留人工维护文件的注释与既有格式。"""
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        merged = merge_locale_yaml(text, **payload)
+        if merged == text:
+            return "跳过（词条已存在）"
+        path.write_text(merged, encoding="utf-8")
+        return "更新词条" if text else "写入"
 
     def _merge_seed_manifest(self, path: Path, item: dict[str, Any]) -> str:
         """应用种子清单：登记本次生成的种子文件（按 name 去重，幂等）。

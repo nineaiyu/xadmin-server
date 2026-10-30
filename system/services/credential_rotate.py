@@ -10,7 +10,7 @@ from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
-from common.core.credentials import (
+from common.core.auth.credentials import (
     SENSITIVE_SETTING_KEYS,
     decrypt_setting_value,
     encrypt_setting_value,
@@ -49,6 +49,31 @@ def regenerate_system_config(key: str, user: Any = None) -> dict[str, Any]:
     detail = {"key": key, "scope": "system_config", "action": "rotate", "ok": True}
     write_credential_audit(detail, user=user)
     return {"ok": True, "action": "rotate", "detail": ""}
+
+
+def issue_system_config_secret(key: str, user: Any = None) -> dict[str, Any]:
+    """首次生成或更换系统自生成的 SystemConfig 密钥，明文仅本次返回。
+
+    与 :func:`regenerate_system_config` 的差别只在「行不存在时允许创建」：
+    设置页首次启用 SCIM 等能力时需要立即拿到可用密钥，而不是先手工造行。
+    """
+    from common.core.config import SysConfig
+    from system.models import SystemConfig
+
+    key = str(key or "").strip()
+    if key not in ROTATABLE_SYSTEM_CONFIG_KEYS:
+        return {"ok": False, "action": "skip", "detail": str(NOT_ROTATABLE_DETAIL)}
+    raw = secrets.token_urlsafe(32)
+    row = SystemConfig.objects.filter(key=key).first()
+    if row is None:
+        row = SystemConfig.objects.create(key=key, value=encrypt_setting_value(key, raw), creator=user)
+    else:
+        row.value = encrypt_setting_value(key, raw)
+        row.save(update_fields=["value", "updated_time"])
+    SysConfig.invalid_config_cache(key=key)
+    detail = {"key": key, "scope": "system_config", "action": "issue", "ok": True}
+    write_credential_audit(detail, user=user)
+    return {"ok": True, "action": "issue", "detail": "", "value": raw}
 
 
 def rotate_model_field(name: str, user: Any = None) -> dict[str, Any]:
@@ -128,8 +153,8 @@ def rotate_setting(name: str, user: Any = None) -> dict[str, Any]:
       （``rotate_credential`` 命令口径与 SystemConfig 侧一致）；
     - 值已是 v3 密文但标记为明文（标记漂移）：只校正 encrypted 标记，不重复加密。
     """
-    from common.base.utils import signer
-    from common.core.credentials import is_cipher_str
+    from common.base.crypto import signer
+    from common.core.auth.credentials import is_cipher_str
     from settings.models import Setting
 
     name = str(name or "").strip()

@@ -248,6 +248,37 @@ def seed_directory_scene():
     print("directory scene seeded (2 posts + members)")
 
 
+def _ensure_menu(
+    admin,
+    *,
+    name,
+    path,
+    title,
+    rank,
+    parent=None,
+    menu_type=None,
+    component="",
+    **meta_extra,
+):
+    """幂等建菜单：同名即复用；meta_extra 直落 MenuMeta（徽标 / 分组 / 查询参数等）。"""
+    from system.models import Menu, MenuMeta
+
+    existing = Menu.objects.filter(name=name).first()
+    if existing:
+        return existing
+    meta = MenuMeta.objects.create(title=title, creator=admin, **meta_extra)
+    return Menu.objects.create(
+        name=name,
+        path=path,
+        component=component,
+        menu_type=menu_type or Menu.MenuChoices.MENU,
+        rank=rank,
+        parent=parent,
+        meta=meta,
+        creator=admin,
+    )
+
+
 def seed_menu_decoration_scene():
     """侧栏菜单装饰场景：徽标 / 分组 / 查询参数 / 菜单外页面高亮。
 
@@ -261,37 +292,12 @@ def seed_menu_decoration_scene():
       loadjson 中个人中心菜单的 active_path 配置）。
     """
     from identity.models import UserInfo
-    from system.models import Menu, MenuMeta
+    from system.models import Menu
 
     admin = UserInfo.objects.filter(username="xadmin").first()
 
-    def ensure_menu(
-        *,
-        name,
-        path,
-        title,
-        rank,
-        parent=None,
-        menu_type=Menu.MenuChoices.MENU,
-        component="",
-        **meta_extra,
-    ):
-        existing = Menu.objects.filter(name=name).first()
-        if existing:
-            return existing
-        meta = MenuMeta.objects.create(title=title, creator=admin, **meta_extra)
-        return Menu.objects.create(
-            name=name,
-            path=path,
-            component=component,
-            menu_type=menu_type,
-            rank=rank,
-            parent=parent,
-            meta=meta,
-            creator=admin,
-        )
-
-    root = ensure_menu(
+    root = _ensure_menu(
+        admin,
         name="E2EMenuDemo",
         path="/e2e-menu-demo",
         title="E2E菜单演示",
@@ -302,7 +308,8 @@ def seed_menu_decoration_scene():
         badge="1",
         badge_type="dot",
     )
-    ensure_menu(
+    _ensure_menu(
+        admin,
         name="E2EMenuBadge",
         path="/e2e-menu-demo/badge",
         component="system/notice/index",
@@ -314,7 +321,8 @@ def seed_menu_decoration_scene():
         group_name="基础功能",
         group_rank=1,
     )
-    ensure_menu(
+    _ensure_menu(
+        admin,
         name="E2EMenuDot",
         path="/e2e-menu-demo/dot",
         component="system/user/index",
@@ -327,7 +335,8 @@ def seed_menu_decoration_scene():
         group_name="基础功能",
         group_rank=1,
     )
-    ensure_menu(
+    _ensure_menu(
+        admin,
         name="E2EMenuQuery",
         path="/e2e-menu-demo/query",
         component="system/role/index",
@@ -339,7 +348,8 @@ def seed_menu_decoration_scene():
         group_name="高级功能",
         group_rank=2,
     )
-    ensure_menu(
+    _ensure_menu(
+        admin,
         name="E2EMenuDetail",
         path="/e2e-menu-demo/detail",
         component="system/dept/index",

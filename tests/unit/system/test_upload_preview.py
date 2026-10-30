@@ -87,6 +87,12 @@ class TestPreviewKind:
             ("", "a.log", "text"),
             ("application/zip", "a.zip", None),
             ("application/octet-stream", "a.bin", None),
+            # 密钥/凭据类文本：即便 MIME 是 text/* 也不进内联预览，只允许下载
+            ("text/plain", ".env", None),
+            ("text/plain", "server.pem", None),
+            ("application/x-pem-file", "private.key", None),
+            ("application/x-pkcs12", "client.p12", None),
+            ("application/octet-stream", "vault.kdbx", None),
         ],
     )
     def test_dispatch(self, mime, name, expected):

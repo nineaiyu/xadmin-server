@@ -23,15 +23,16 @@ import pytest
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils.translation import gettext as _
 from rest_framework.test import APIClient
 
 from file.models import UploadFile
 from identity.models import UserRole
 from message import chat as chat_service
-from message.attachments import attachment_kind
-from message.consumers import ChatNotify
-from message.models import ChatMessage
-from message.utils import get_chat_user_group_name, get_public_chat_group_name
+from message.chat import attachment_kind
+from message.models import MAX_CONTENT_LENGTH, ChatMessage
+from message.ws.consumers import ChatNotify
+from message.ws.utils import get_chat_user_group_name, get_public_chat_group_name
 
 pytestmark = pytest.mark.django_db
 
@@ -306,6 +307,31 @@ class TestAttachmentMessage:
         assert payload["extra"]["file"]["url"].startswith("/api/chat/message/")
         assert payload["extra"]["file"]["missing"] is False
 
+    def test_attachment_caption_uses_user_length_limit(self, ws_layer, alice, chat_perms):
+        """附件消息的文案也受用户长度上限约束（不能借 message_type=image 绕过）。"""
+        room = chat_service.get_public_room()
+        chat_perms["grant"](alice)
+        file_pk = _upload(_api_client(alice), kind="image").data["data"]["pk"]
+
+        __, captured = _send(
+            ws_layer,
+            alice,
+            {
+                "room_id": room.pk,
+                "message_type": "image",
+                "file_pk": file_pk,
+                "content": "x" * (MAX_CONTENT_LENGTH + 1),
+                "client_msg_id": "c-img-long",
+            },
+        )
+
+        assert captured[0]["code"] == 1001
+        assert str(captured[0]["detail"]) == str(_("Message is too long (max {} characters)")).format(
+            MAX_CONTENT_LENGTH
+        )
+        assert ChatMessage.objects.filter(room=room).count() == 0
+        assert UploadFile.objects.get(pk=file_pk).is_tmp is True, "校验失败的附件不应被转正"
+
     def test_attachment_must_belong_to_sender(self, ws_layer, alice, bob, chat_perms):
         room = chat_service.get_public_room()
         chat_perms["grant"](alice)
@@ -416,6 +442,35 @@ class TestAttachmentServing:
         payload = chat_service.message_payload(message, room=room)
         assert payload["extra"]["file"]["missing"] is True
         assert payload["extra"]["file"]["url"] == ""
+
+
+class TestAttachmentMimeHardening:
+    def test_video_extension_with_html_mime_is_served_as_attachment(self, ws_layer, alice, chat_perms, monkeypatch):
+        """扩展名判 video 但客户端声明 text/html：取件不得按 HTML 内联执行。"""
+        room = chat_service.get_public_room()
+        _capture_group_send(ws_layer, monkeypatch)
+        chat_perms["grant"](alice)
+        payload = b"<html><script>alert(document.cookie)</script></html>"
+        upload_resp = _upload(
+            _api_client(alice),
+            name="evil.mp4",
+            content=payload,
+            content_type="text/html",
+            kind="video",
+        )
+        assert upload_resp.data["code"] == 1000, upload_resp.data
+        file_pk = upload_resp.data["data"]["pk"]
+        __, captured = _send(
+            ws_layer,
+            alice,
+            {"room_id": room.pk, "message_type": "video", "file_pk": file_pk, "client_msg_id": "c-evil"},
+        )
+        assert captured == []
+        message = ChatMessage.objects.get(room=room)
+        resp = _api_client(alice).get(f"/api/chat/message/{message.pk}/file")
+        assert resp.status_code == 200
+        assert resp["Content-Disposition"].startswith("attachment")
+        assert resp["Content-Type"].split(";")[0] != "text/html"
 
 
 class TestAttachmentKindInference:

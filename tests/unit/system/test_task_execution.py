@@ -120,7 +120,7 @@ def test_run_action_creates_execution_and_publishes(monkeypatch, django_capture_
     request = factory.post(f"/api/task/periodic/{instance.pk}/run")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "run"})
-    with mock.patch("task.views.task_periodic.app.send_task") as send_task:
+    with mock.patch("task.services.periodic.app.send_task") as send_task:
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request, pk=str(instance.pk))
     assert response.data["code"] == 1000
@@ -163,6 +163,15 @@ def test_run_action_rejects_unregistered_task():
     response = view(request, pk=str(instance.pk))
     assert response.data["code"] != 1000
     assert TaskExecution.objects.filter(periodic_task=instance).exists() is False
+
+
+def test_execution_serializer_drops_args_kwargs(superuser):
+    """执行历史不下发 args/kwargs（执行参数不进序列化面）：任务参数属字段面泄漏。"""
+    execution = TaskExecution.objects.create(
+        name="demo_task", args=["secret-export-params"], kwargs={"query": "条件"}, creator=superuser
+    )
+    data = TaskExecutionSerializer(execution).data
+    assert "args" not in data and "kwargs" not in data
 
 
 def test_log_action_reads_file(monkeypatch, tmp_path):
@@ -228,7 +237,7 @@ def test_registered_action_lists_user_tasks():
 
 def test_ensure_tasks_registered_scans_once_per_process(monkeypatch):
     """全量 autodiscover 开销大：进程内只扫一次，后续调用直接复用已注册任务。"""
-    from task.views import task_periodic
+    from task.services import periodic as task_periodic
 
     monkeypatch.setattr(task_periodic, "_autodiscovered", False)
     with mock.patch.object(task_periodic.app, "autodiscover_tasks") as autodiscover:
@@ -238,7 +247,7 @@ def test_ensure_tasks_registered_scans_once_per_process(monkeypatch):
 
 
 def test_ensure_tasks_registered_force_rescans(monkeypatch):
-    from task.views import task_periodic
+    from task.services import periodic as task_periodic
 
     monkeypatch.setattr(task_periodic, "_autodiscovered", True)
     with mock.patch.object(task_periodic.app, "autodiscover_tasks") as autodiscover:
@@ -248,7 +257,7 @@ def test_ensure_tasks_registered_force_rescans(monkeypatch):
 
 def test_registered_action_reuses_scanned_tasks_by_default(monkeypatch):
     """缺省（不带 refresh）复用进程内已注册任务，不再重复全量扫描。"""
-    from task.views import task_periodic
+    from task.services import periodic as task_periodic
 
     monkeypatch.setattr(task_periodic, "_autodiscovered", True)
     user = _make_user()
@@ -264,7 +273,7 @@ def test_registered_action_reuses_scanned_tasks_by_default(monkeypatch):
 
 def test_registered_action_refresh_forces_rescan(monkeypatch):
     """refresh=1 强制重新扫描任务模块（新装 app 后立即可见的逃生口）。"""
-    from task.views import task_periodic
+    from task.services import periodic as task_periodic
 
     monkeypatch.setattr(task_periodic, "_autodiscovered", True)
     user = _make_user()
@@ -379,8 +388,8 @@ def test_batch_run_action_dispatches_selected(monkeypatch, django_capture_on_com
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
     with (
-        mock.patch("task.views.task_periodic.app.send_task") as send_task,
-        mock.patch("task.views.task_periodic.app.autodiscover_tasks"),
+        mock.patch("task.services.periodic.app.send_task") as send_task,
+        mock.patch("task.services.periodic.app.autodiscover_tasks"),
     ):
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request)
@@ -398,7 +407,7 @@ def test_batch_run_action_reports_unregistered(monkeypatch):
     request = factory.post("/api/task/periodic/batch-run", data=[str(instance.pk)], format="json")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
-    with mock.patch("task.views.task_periodic.app.autodiscover_tasks"):
+    with mock.patch("task.services.periodic.app.autodiscover_tasks"):
         response = view(request)
     assert response.data["code"] == 1000
     assert response.data["data"]["success"] == 0
@@ -500,6 +509,21 @@ def test_ws_log_permission_export_record_owner(normal_user, superuser):
     assert can_read_task_log(superuser, str(record.pk)) is True
     other = UserInfo.objects.create_user(username="ws-other-2", password="x")
     assert can_read_task_log(other, str(record.pk)) is False
+
+
+def test_ws_log_menu_permission_does_not_read_other_logs(normal_user, menu_factory):
+    """仅持日志菜单权限不能订阅他人记录：读取仍按 creator 归属收口。"""
+    from identity.models import UserRole
+    from task.models.task import TaskExecution
+    from task.ws import can_read_task_log
+
+    execution = TaskExecution.objects.create(name="x.tasks.private", creator=normal_user)
+    role = UserRole.objects.create(name="日志管理员", code="ws_log_admin")
+    role.menu.add(menu_factory("log:SystemTaskExecution", path="api/task/task-execution", method="GET"))
+    other = UserInfo.objects.create_user(username="ws-log-admin", password="x")
+    other.roles.add(role)
+
+    assert can_read_task_log(other, str(execution.pk)) is False
 
 
 def test_execution_list_exposes_product_info(superuser):
@@ -736,7 +760,7 @@ def test_batch_enable_reports_unmatched_and_invalid_pks():
     factory = APIRequestFactory()
     request = factory.post(
         "/api/task/periodic/batch-enable",
-        data={"pks": [str(instance.pk), "abc", "999999", bogus], "enabled": True},
+        data={"pks": [str(instance.pk), "abc", "999999", bogus]},
         format="json",
     )
     force_authenticate(request, user=user)
@@ -765,12 +789,12 @@ def test_batch_enable_reports_save_failure():
 
     factory = APIRequestFactory()
     request = factory.post(
-        "/api/task/periodic/batch-enable",
-        data={"pks": [str(ok_task.pk), str(doomed.pk)], "enabled": False},
+        "/api/task/periodic/batch-disable",
+        data={"pks": [str(ok_task.pk), str(doomed.pk)]},
         format="json",
     )
     force_authenticate(request, user=user)
-    view = PeriodicTaskViewSet.as_view({"post": "batch_enable"})
+    view = PeriodicTaskViewSet.as_view({"post": "batch_disable"})
     with mock.patch.object(PeriodicTask, "save", _flaky_save):
         response = view(request)
     assert response.data["code"] == 1000
@@ -852,3 +876,23 @@ def test_periodic_create_accepts_registered_task_path(monkeypatch):
     response = view(request)
     assert response.data["code"] == 1000, response.data
     assert PeriodicTask.objects.filter(pk=response.data["data"]["pk"]).exists() is True
+
+
+def test_periodic_enable_parses_string_boolean():
+    """字符串 "false" 不得被当成启用；非法值返回 400 而不是静默切换。"""
+    user = _make_user()
+    instance = _make_periodic_task()
+    factory = APIRequestFactory()
+    view = PeriodicTaskViewSet.as_view({"patch": "enable"})
+
+    request = factory.patch(f"/api/task/periodic/{instance.pk}/enable", data={"enabled": "false"}, format="json")
+    force_authenticate(request, user=user)
+    response = view(request, pk=instance.pk)
+    assert response.data["code"] == 1000, response.data
+    instance.refresh_from_db()
+    assert instance.enabled is False
+
+    request = factory.patch(f"/api/task/periodic/{instance.pk}/enable", data={"enabled": "abc"}, format="json")
+    force_authenticate(request, user=user)
+    response = view(request, pk=instance.pk)
+    assert response.status_code == 400

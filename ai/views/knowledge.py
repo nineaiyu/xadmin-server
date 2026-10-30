@@ -19,7 +19,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from ai.models.ai import AiKnowledgeDocument
 from ai.serializers.ai import AiKnowledgeDocumentSerializer, KnowledgeUploadSerializer
-from ai.utils.ai import remove_chunks, set_documents_active, upsert_upload_document
+from ai.services.assistant.ai import remove_chunks, set_documents_active, upsert_upload_document
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseViewSet,
@@ -61,9 +61,8 @@ class AiKnowledgeDocumentViewSet(
 
     ``batch-destroy`` 自带 ``@action`` 定义，不走框架 ``BatchDestroyAction``：
     需要逐条清理分块（见 ``batch_destroy`` 文档字符串）；同时避免装饰器叠加。
-    """
 
-    """知识库文档管理：上传/预览/启用停用/删除 + 仓库文档重建。
+    管理面：上传/预览/启用停用/删除 + 仓库文档重建。
 
     - 上传：{name, content} 文本入库（同名覆盖更新），前端选本地 .md 文件由浏览器读文本；
     - 预览：详情返回全文 + 分块摘要（列表轻量）；
@@ -89,8 +88,12 @@ class AiKnowledgeDocumentViewSet(
         """
         serializer = KnowledgeUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        # 分块/向量化走后台任务：大文档不再阻塞请求线程；状态随列表下发
         doc, created = upsert_upload_document(
-            serializer.validated_data["name"], serializer.validated_data["content"], creator=request.user
+            serializer.validated_data["name"],
+            serializer.validated_data["content"],
+            creator=request.user,
+            defer_chunks=True,
         )
         return ApiResponse(
             data=self.get_serializer(doc).data,
@@ -121,15 +124,21 @@ class AiKnowledgeDocumentViewSet(
         """
         if not isinstance(request.data, (list, tuple)):
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
-        queryset = self.filter_queryset(self.get_queryset()).filter(
-            pk__in=request.data, source_type=AiKnowledgeDocument.SourceType.UPLOAD
-        )
+        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=request.data)
         count = 0
+        failures = []
         for doc in queryset:
+            if doc.source_type != AiKnowledgeDocument.SourceType.UPLOAD:
+                # 仓库文档不静默跳过：按 failures 回传，框架会提示具体被忽略的条目
+                failures.append({"pk": str(doc.pk), "detail": str(_("Repository documents are managed by sync"))})
+                continue
             remove_chunks(doc.path)
             doc.delete()
             count += 1
-        return ApiResponse(detail=_("Operation successful. Batch deleted {} data").format(count))
+        detail = _("Operation successful. Batch deleted {} data").format(count)
+        if failures:
+            detail = f"{detail}; {_('Skipped {} repository documents').format(len(failures))}"
+        return ApiResponse(data={"failures": failures, "deleted": count}, detail=detail)
 
     @extend_schema(
         request=OpenApiRequest(
@@ -183,7 +192,7 @@ class AiKnowledgeDocumentViewSet(
         提交即翻 running（先于 worker 拉起）：上一轮随通道保留的旧终态从提交
         时刻起不可命中，首轮轮询只会读到 running。
         """
-        from ai.utils.sync_progress import mark_running, try_acquire_lock
+        from ai.services.knowledge.sync_progress import mark_running, try_acquire_lock
 
         if not try_acquire_lock():
             return ApiResponse(code=1001, detail=_("A repository sync is already running"))
@@ -209,7 +218,7 @@ class AiKnowledgeDocumentViewSet(
 
         轮询端点：state + 终态同步摘要
         """
-        from ai.utils.sync_progress import get_status
+        from ai.services.knowledge.sync_progress import get_status
 
         return ApiResponse(data=get_status())
 
@@ -222,7 +231,7 @@ class AiKnowledgeDocumentViewSet(
 
         未配置 embedding 档案时 ``enabled=false``，检索完全走词频（零变化）。
         """
-        from ai.utils.ai_embeddings import vector_stats
+        from ai.services.knowledge.ai_embeddings import vector_stats
 
         return ApiResponse(data=vector_stats())
 
@@ -249,8 +258,8 @@ class AiKnowledgeDocumentViewSet(
         提交即翻 running（先于 worker 拉起）：上一轮随通道保留的旧终态从提交
         时刻起不可命中，首轮轮询只会读到 running。
         """
-        from ai.utils.ai_config import embedding_credentials
-        from ai.utils.embedding_progress import get_status, mark_running, try_acquire_lock
+        from ai.services.assistant.ai_config import embedding_credentials
+        from ai.services.knowledge.embedding_progress import get_status, mark_running, try_acquire_lock
 
         if embedding_credentials() is None:
             return ApiResponse(code=1001, detail=_("No active embedding profile is configured"))
@@ -266,7 +275,7 @@ class AiKnowledgeDocumentViewSet(
         if document_param:
             document = self.get_queryset().filter(pk=document_param).first()
             if document is None:
-                from ai.utils.embedding_progress import release_lock
+                from ai.services.knowledge.embedding_progress import release_lock
 
                 release_lock()
                 raise ValidationError(_("Document does not exist"))
@@ -296,6 +305,6 @@ class AiKnowledgeDocumentViewSet(
 
         轮询端点：state/percent/stage + 终态摘要
         """
-        from ai.utils.embedding_progress import get_status
+        from ai.services.knowledge.embedding_progress import get_status
 
         return ApiResponse(data=get_status())

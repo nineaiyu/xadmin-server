@@ -9,7 +9,7 @@ from django.utils.translation import gettext as _gettext
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 from approval.serializers.approval_flow import ApprovalFlowSerializer
-from approval.utils.approval_flow import (
+from approval.services.approval_flow import (
     add_sign,
     approve_task,
     cancel_instance,
@@ -22,6 +22,7 @@ from approval.utils.approval_flow import (
     resolve_assignees,
     validate_form,
 )
+from approval.services.approval_flow.definition import rollback_flow
 from common.core.config import SysConfig
 from identity.models import DeptInfo, Post, UserInfo, UserRole
 
@@ -464,9 +465,15 @@ class TestEngineFlow:
         assert remind_pending_tasks() == 1
         assert remind_pending_tasks() == 0
 
-        # 保留期清理：实例超过保留期即删除（级联任务）
+        # 保留期清理：在途实例即使超过保留期也必须保留
         monkeypatch.setattr(type(SysConfig), "APPROVAL_FLOW_KEEP_DAYS", property(lambda self: 1), raising=False)
         ApprovalInstance.objects.filter(pk=instance.pk).update(created_time=old - datetime.timedelta(days=3))
+        assert clean_finished_instances() == 0
+        assert ApprovalInstance.objects.filter(pk=instance.pk).exists()
+        assert ApprovalNodeTask.objects.filter(instance_id=instance.pk).exists()
+
+        # 仅终态实例可清理（级联任务）
+        ApprovalInstance.objects.filter(pk=instance.pk).update(status=ApprovalInstance.Status.APPROVED)
         removed = clean_finished_instances()
         assert removed >= 1
         assert not ApprovalInstance.objects.filter(pk=instance.pk).exists()
@@ -546,7 +553,7 @@ class TestPendingCountPreciseInvalidation:
 
     def test_cancel_pending_tasks_returns_assignees(self, applicant, approver, approver2):
         """作废任务返回 assignee pk 列表（计数失效集；assignee 为空的任务不计入）。"""
-        from approval.utils.approval_flow.engine import _cancel_pending_tasks
+        from approval.services.approval_flow.engine import _cancel_pending_tasks
 
         flow = make_flow(nodes=[{"name": "会签", "approve_type": ApprovalFlowNode.ApproveType.AND}])
         instance, error = create_instance(flow=flow, applicant=applicant, title="返回值", form_data={})
@@ -566,7 +573,7 @@ class TestPendingCountPreciseInvalidation:
         """源码级守护：全量失效（无参调用）已移除，防止回退。"""
         import inspect
 
-        from approval.utils.approval_flow import engine, extra_actions
+        from approval.services.approval_flow import engine, extra_actions
 
         for module in (engine, extra_actions):
             assert "_invalidate_pending_count()" not in inspect.getsource(module)
@@ -577,7 +584,7 @@ class TestBranchRoutes:
 
     def test_route_hit_jumps_to_target(self, applicant, approver):
         """路由命中跳转 target（排他网关）：跳过中间线性节点。"""
-        from approval.utils.approval_flow import simulate_path
+        from approval.services.approval_flow import simulate_path
 
         flow = make_flow(
             "branch_hit",
@@ -606,7 +613,7 @@ class TestBranchRoutes:
 
     def test_route_target_missing_falls_back_linear(self, applicant, approver):
         """target 节点不存在：记日志后回退线性语义（fail-safe）。"""
-        from approval.utils.approval_flow import next_node
+        from approval.services.approval_flow import next_node
 
         flow = make_flow(
             "branch_missing",
@@ -750,7 +757,7 @@ class TestFlowVersions:
         assert ApprovalFlowNode.all_objects.filter(flow=flow).count() == 3  # v1 行收口留档
 
         # 回滚到 v1 → 生效定义恢复单节点 + 落 v3（回滚也是一次变更）
-        ok, detail = serializer.rollback_to_version(flow, 1)
+        ok, detail = rollback_flow(flow, 1)
         assert ok is True
         assert not detail
         assert flow.nodes.count() == 1
@@ -760,7 +767,7 @@ class TestFlowVersions:
     def test_rollback_missing_version(self, applicant):
 
         flow, serializer = self._flow_with_nodes("ver_missing")
-        ok, _detail = serializer.rollback_to_version(flow, 99)
+        ok, _detail = rollback_flow(flow, 99)
         assert ok is False
 
     def test_rollback_allowed_with_pending_instance(self, applicant, approver):
@@ -769,7 +776,7 @@ class TestFlowVersions:
         flow, serializer = self._flow_with_nodes("ver_pending")
         instance, error = create_instance(flow=flow, applicant=applicant, title="在途", form_data={})
         assert error is None
-        ok, detail = serializer.rollback_to_version(flow, 1)
+        ok, detail = rollback_flow(flow, 1)
         assert ok is True
         assert not detail
 
@@ -839,7 +846,7 @@ class TestConcurrencyGuard:
 
     def test_finish_instance_cas_only_once(self, applicant, approver):
         """终态 CAS：重复置终态只生效一次（Webhook/业务回调/通知不重复投递）。"""
-        from approval.utils.approval_flow.engine import _finish_instance
+        from approval.services.approval_flow.engine import _finish_instance
 
         flow = make_flow(nodes=[{"name": "初审"}])
         instance, error = create_instance(flow=flow, applicant=applicant, title="终态幂等", form_data={})
@@ -861,7 +868,7 @@ class TestCreateAtomicityAndStuckCleanup:
         def boom(*args, **kwargs):
             raise RuntimeError("enter node failed")
 
-        monkeypatch.setattr("approval.utils.approval_flow.engine._enter_node", boom)
+        monkeypatch.setattr("approval.services.approval_flow.engine._enter_node", boom)
         with pytest.raises(RuntimeError):
             create_instance(flow=flow, applicant=applicant, title="发起失败", form_data={})
         assert not ApprovalInstance.objects.filter(flow=flow).exists()
@@ -869,8 +876,8 @@ class TestCreateAtomicityAndStuckCleanup:
 
     def test_cancel_stuck_instances(self, applicant, approver):
         """超时且无任务的在途实例被兜底 CANCELLED；有任务的在途实例不受影响。"""
-        from approval.utils.approval_flow import cancel_stuck_instances
-        from approval.utils.approval_flow.periodic import STUCK_INSTANCE_TIMEOUT_MINUTES
+        from approval.services.approval_flow import cancel_stuck_instances
+        from approval.services.approval_flow.periodic import STUCK_INSTANCE_TIMEOUT_MINUTES
 
         flow = make_flow(nodes=[{"name": "初审"}])
         stuck = ApprovalInstance.objects.create(
@@ -899,7 +906,7 @@ class TestCreateAtomicityAndStuckCleanup:
 
     def test_fresh_pending_instance_not_cancelled(self, applicant, approver):
         """门槛内的无任务实例不动（避免误伤正在发起的请求）。"""
-        from approval.utils.approval_flow import cancel_stuck_instances
+        from approval.services.approval_flow import cancel_stuck_instances
 
         flow = make_flow(nodes=[{"name": "初审"}])
         fresh = ApprovalInstance.objects.create(
@@ -946,7 +953,7 @@ class TestNotifyDeferredToCommit:
     @pytest.mark.django_db(transaction=True)
     def test_notify_immediate_without_transaction(self, monkeypatch):
         """无活动事务：提交后立即投递（语义与改造前一致，不改变既有调用方观感）。"""
-        from approval.utils.approval_flow.engine import _notify
+        from approval.services.approval_flow.engine import _notify
 
         events = self._record(monkeypatch)
         _notify([self._user()], "submitted", self._instance())
@@ -956,7 +963,7 @@ class TestNotifyDeferredToCommit:
     def test_notify_deferred_until_commit(self, monkeypatch):
         from django.db import transaction
 
-        from approval.utils.approval_flow.engine import _notify
+        from approval.services.approval_flow.engine import _notify
 
         events = self._record(monkeypatch)
         with transaction.atomic():
@@ -970,7 +977,7 @@ class TestNotifyDeferredToCommit:
         """核心守卫：推进失败回滚后不得投递通知（否则点进去 404）。"""
         from django.db import transaction
 
-        from approval.utils.approval_flow.engine import _notify
+        from approval.services.approval_flow.engine import _notify
 
         events = self._record(monkeypatch)
         with pytest.raises(RuntimeError):
@@ -980,7 +987,7 @@ class TestNotifyDeferredToCommit:
         assert events == []
 
     def test_notify_skips_empty_users(self, monkeypatch, django_capture_on_commit_callbacks):
-        from approval.utils.approval_flow.engine import _notify
+        from approval.services.approval_flow.engine import _notify
 
         events = self._record(monkeypatch)
         with django_capture_on_commit_callbacks(execute=True):
@@ -1000,7 +1007,7 @@ class TestNodeLimitAndBatchPaths:
 
     def test_node_count_limit(self):
         """节点数上限：恰好上限通过，超过上限在保存时被拒。"""
-        from approval.utils.approval_flow import MAX_FLOW_NODES
+        from approval.services.approval_flow import MAX_FLOW_NODES
 
         ok = ApprovalFlowSerializer(data={"name": "上限流程", "code": "limit_ok", "nodes": self._nodes(MAX_FLOW_NODES)})
         assert ok.is_valid(), ok.errors
@@ -1016,7 +1023,7 @@ class TestNodeLimitAndBatchPaths:
         from django.db import connection
         from django.test.utils import CaptureQueriesContext
 
-        from approval.utils.approval_flow import simulate_path
+        from approval.services.approval_flow import simulate_path
 
         def node_queries(count):
             flow = make_flow(
@@ -1034,7 +1041,7 @@ class TestNodeLimitAndBatchPaths:
         from django.db import connection
         from django.test.utils import CaptureQueriesContext
 
-        from approval.utils.approval_flow.engine import _enter_node
+        from approval.services.approval_flow.engine import _enter_node
 
         flow = make_flow(code="bulk_flow", nodes=[{"name": "会签", "order": 1, "assignee_value": "flow_approver"}])
         node = flow.nodes.get(order=1)
@@ -1060,18 +1067,18 @@ class TestNodeLimitAndBatchPaths:
         from django.db import connection
         from django.test.utils import CaptureQueriesContext
 
-        from approval.utils.approval_flow.assignees import _resolve_instance_cc
+        from approval.services.approval_flow.assignees import _resolve_instance_cc
 
         with CaptureQueriesContext(connection) as ctx:
             users = _resolve_instance_cc([], applicant, [str(approver.pk), approver2.username])
         assert {user.pk for user in users} == {approver.pk, approver2.pk}
         assert len([item for item in ctx.captured_queries if "identity_userinfo" in item["sql"].lower()]) == 1
 
-    def test_auto_approved_alerts_webhook_and_admins(
+    def test_no_approver_blocks_without_task_and_alerts_admins(
         self, monkeypatch, applicant, superuser, django_capture_on_commit_callbacks
     ):
-        """无候选自动通过：审计行照旧 + 出站 Webhook + 知会超管（节点名不串上一节点）。"""
-        from approval.utils.approval_flow.engine import _enter_node
+        """无候选阻塞：不建自动通过任务、不推进；出站 Webhook + 知会超管。"""
+        from approval.services.approval_flow.engine import _enter_node
 
         flow = make_flow(
             code="no_candidate_flow", nodes=[{"name": "空节点", "order": 1, "assignee_value": "ghost_role"}]
@@ -1099,12 +1106,111 @@ class TestNodeLimitAndBatchPaths:
         with django_capture_on_commit_callbacks(execute=True):
             assert _enter_node(instance, node) is False
 
-        assert [event for event, _data in emitted] == ["flow.node_auto_approved"]
+        assert [event for event, _data in emitted] == ["flow.node_no_approver"]
         assert emitted[0][1]["node_name"] == "空节点"
-        assert [item["event"] for item in notified] == ["auto_approved"]
+        assert [item["event"] for item in notified] == ["no_approver"]
         assert notified[0]["node_name"] == "空节点"
         assert notified[0]["user"] == superuser.pk
+        assert not ApprovalNodeTask.objects.filter(instance=instance, node=node).exists()
 
-        task = ApprovalNodeTask.objects.get(instance=instance, node=node)
-        assert task.status == ApprovalNodeTask.Status.APPROVED
-        assert task.assignee is None
+    def test_runtime_no_approver_blocks_instance_at_node(self, applicant, approver, django_capture_on_commit_callbacks):
+        """运行期角色成员被清空：下一节点保持 PENDING，不自动通过、不继续推进。"""
+        second_role = UserRole.objects.create(name="终审角色", code="runtime_final_role")
+        member = UserInfo.objects.create_user(username="revoked_role_member", password="Test@123456")
+        member.roles.add(second_role)
+        flow = make_flow(
+            code="runtime_no_candidate",
+            nodes=[
+                {
+                    "name": "初审",
+                    "order": 1,
+                    "assignee_type": ApprovalFlowNode.AssigneeType.USER,
+                    "assignee_value": approver.username,
+                },
+                {
+                    "name": "终审",
+                    "order": 2,
+                    "assignee_type": ApprovalFlowNode.AssigneeType.ROLE,
+                    "assignee_value": second_role.code,
+                },
+            ],
+        )
+        instance, error = create_instance(flow=flow, applicant=applicant, title="运行期阻塞", form_data={})
+        assert error is None
+        first_task = ApprovalNodeTask.objects.get(instance=instance, node=flow.nodes.get(order=1), assignee=approver)
+        member.roles.remove(second_role)
+
+        with django_capture_on_commit_callbacks(execute=True):
+            ok, detail = approve_task(first_task.pk, approver)
+        assert ok is True, detail
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.PENDING
+        assert instance.current_node == flow.nodes.get(order=2)
+        assert not ApprovalNodeTask.objects.filter(instance=instance, node=flow.nodes.get(order=2)).exists()
+
+
+class TestResubmitSourceLink:
+    """驳回重提的原单关联：只接受同申请人 + 同流程的原实例。"""
+
+    def _start(self, flow, applicant, title="申请"):
+        instance, error = create_instance(flow=flow, applicant=applicant, title=title, form_data={})
+        assert error is None
+        assert instance is not None
+        return instance
+
+    def test_links_same_creator_and_flow(self, applicant, approver):
+        flow = make_flow(code="resubmit_same", nodes=[{"name": "初审"}])
+        first = self._start(flow, applicant, "首次提交")
+        second = self._start(flow, applicant, "重新提交")
+
+        linked, error = create_instance(
+            flow=flow, applicant=applicant, title="关联提交", form_data={}, source_instance=first.pk
+        )
+
+        assert error is None
+        assert linked is not None
+        assert linked.source_instance_id == first.pk
+        assert second.source_instance_id is None
+
+    def test_ignores_other_flow_and_other_creator(self, applicant, approver, approver2):
+        flow = make_flow(code="resubmit_base", nodes=[{"name": "初审"}])
+        other_flow = make_flow(code="resubmit_other", nodes=[{"name": "初审"}])
+        source = self._start(flow, applicant)
+
+        cross_flow, _ = create_instance(
+            flow=other_flow, applicant=applicant, title="跨流程", form_data={}, source_instance=source.pk
+        )
+        assert cross_flow is not None and cross_flow.source_instance_id is None
+
+        foreign_source = self._start(flow, approver2, "他人申请")
+        foreign, _ = create_instance(
+            flow=flow, applicant=applicant, title="关联他人单", form_data={}, source_instance=foreign_source.pk
+        )
+        assert foreign is not None and foreign.source_instance_id is None
+
+    def test_invalid_pk_is_ignored(self, applicant, approver):
+        flow = make_flow(code="resubmit_invalid", nodes=[{"name": "初审"}])
+        instance, error = create_instance(
+            flow=flow, applicant=applicant, title="非法关联", form_data={}, source_instance="not-a-uuid"
+        )
+        assert error is None
+        assert instance is not None and instance.source_instance_id is None
+
+
+class TestDepartmentRoles:
+    """部门挂角色与直挂角色同口径：可发起流程、可作为 role 节点审批人。"""
+
+    def test_visible_to_and_role_assignee_include_department_roles(self, applicant, approver_role):
+        dept = DeptInfo.objects.create(name="流程部门", code="flow_dept")
+        dept.roles.add(approver_role)
+        applicant.dept = dept
+        applicant.save(update_fields=["dept"])
+        member = UserInfo.objects.create_user(username="dept_approver", password="Test@123456", dept=dept)
+        flow = make_flow(code="dept_role_flow", nodes=[{"name": "部门审批"}])
+        flow.initiator_roles = [approver_role.code]
+        flow.save(update_fields=["initiator_roles"])
+
+        assert flow in ApprovalFlow.visible_to(applicant)
+        assert flow.user_can_initiate(applicant) is True
+        node = flow.nodes.first()
+        assert member in resolve_assignees(node, applicant, {})

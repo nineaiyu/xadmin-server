@@ -100,6 +100,7 @@ class ApprovalDelegationSerializer(BaseModelSerializer):
         flow_codes = attrs.get("flow_codes")
         if flow_codes is None and self.instance is not None:
             flow_codes = self.instance.flow_codes
+        # 空列表 = 全部流程（与模型/前端「全部流程」标签同义）；非空时逐码校验。
         if flow_codes:
             from approval.models import ApprovalFlow
 

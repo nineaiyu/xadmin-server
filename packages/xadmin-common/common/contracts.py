@@ -79,11 +79,14 @@ _CONTRACT_PROVIDERS: dict[str, tuple[str, str]] = {
     "UserMessage": ("notifications.services", "用户站内信实体（渠道投递）"),
     "register_message": ("notifications.services", "消息渠道注册（渠道生产者登记）"),
     # --- 其它业务 app 契约 ---
-    "process_approval": ("approval.services", "审批流拦截入口（通用装饰器消费）"),
-    "API_ACTION_SPECS": ("ai.services", "AI 动作声明注册表（OpenAPI 元数据派生）"),
+    "process_approval": ("approval.contracts", "审批流拦截入口（通用装饰器消费）"),
+    "API_ACTION_SPECS": ("ai.contracts", "AI 动作声明注册表（OpenAPI 元数据派生）"),
     "Setting": ("settings.services", "Setting 模型（启动自检迁移就绪探测）"),
     "LoginBlockUtil": ("settings.services", "文档站登录账号锁定（与主登录链路同计数）"),
     "LoginIpBlockUtil": ("settings.services", "文档站登录 IP 锁定（与主登录链路同计数）"),
+    "evaluate_login_policy_for_request": ("identity.services", "文档站登录复用主登录访问策略"),
+    "is_login_mfa_required": ("identity.services", "文档站登录复用主登录 MFA 判定"),
+    "get_login_mfa_methods": ("identity.services", "文档站登录复用主登录 MFA 方式探测"),
 }
 
 __all__ = tuple(_CONTRACT_PROVIDERS)
@@ -91,6 +94,26 @@ __all__ = tuple(_CONTRACT_PROVIDERS)
 #: entry points group：外置分发包声明契约提供方的装配通道。
 #: 条目名 = 契约名（须在白名单声明），条目值 = 提供方对象（``pkg.mod:attr``）。
 ENTRY_POINT_GROUP = "xadmin.contracts"
+
+# 二开注入最小示例（复制到插件 apps.py；契约名必须已在上方白名单声明）：
+#
+#   # my_plugin/apps.py
+#   from django.apps import AppConfig
+#   from common.contracts import MenuContract, register_contract
+#
+#   class MyMenu:                        # 实现 MenuContract 的窄面
+#       objects = MyMenuManager()        # .values_list("pk", "parent_id", "menu_type", "name", "path")
+#       MenuChoices = MyMenuChoices      # 至少提供 PERMISSION 常量
+#
+#   class MyPluginConfig(AppConfig):
+#       name = "my_plugin"
+#
+#       def ready(self) -> None:
+#           register_contract("Menu", MyMenu)
+#
+# 等价 entry point（宿主零接线，pyproject.toml）：
+#   [project.entry-points."xadmin.contracts"]
+#   Menu = "my_plugin.providers:MyMenu"
 
 #: 已注入的提供方覆盖（契约名 → 实现对象）：AppConfig.ready() 或 entry-point
 #: 装配写入；解析序优先于白名单默认。白名单外名字被 register 拒绝，注册表

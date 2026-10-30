@@ -46,9 +46,11 @@ class RankAction:
         pks = [pk for pk in request.data if pk not in (None, "")]
         if len(pks) > RANK_MAX_ITEMS:
             return ApiResponse(code=1004, detail=_("Too many items to sort (max {})").format(RANK_MAX_ITEMS))
+        queryset = self.filter_queryset(self.get_queryset())
+        pks, _invalid = _normalize_pks(queryset.model, pks)
         if pks:
             # Case/When 单条批量 UPDATE，替代逐条 filter(pk=pk).update(rank=rank)
-            queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
+            queryset = queryset.filter(pk__in=pks)
             queryset.update(
                 rank=Case(
                     *[When(pk=pk, then=Value(index)) for index, pk in enumerate(pks, start=1)],
@@ -161,6 +163,11 @@ def _normalize_pks(model: Any, pks: Any) -> Any:
     return valid, invalid
 
 
+def normalize_pks(model: Any, pks: Any) -> Any:
+    """批量入参 pk 的类型安全规范化（回收站等其它批量入口复用同一口径）。"""
+    return _normalize_pks(model, pks)
+
+
 def _batch_error_message(exc: Any, limit: int = 200) -> Any:
     """批量逐项失败原因的可读归一（DRF ValidationError → 字段: 消息）。"""
     detail = getattr(exc, "detail", None)
@@ -193,6 +200,9 @@ class BatchPartialUpdateAction:
     get_queryset: Callable[..., Any]
     get_serializer: Callable[..., Any]
     perform_update: Callable[..., Any]
+    # 宿主 BaseModelSet（crud.py）提供的字段级审计钩子（AUDIT_DIFF_MODELS 白名单）
+    _audit_diff_old_values: Callable[..., Any]
+    _stash_audit_changes: Callable[..., Any]
 
     # 视图声明：允许批量修改的字段白名单（None/空 = 未开放批量更新）
     batch_update_fields: tuple[Any, ...] | dict[str, Any] = ()
@@ -246,6 +256,8 @@ class BatchPartialUpdateAction:
         queryset = self.filter_queryset(queryset).filter(pk__in=valid_pks)
         instances = {str(obj.pk): obj for obj in queryset}
         success = []
+        # 审计 diff 在全部行更新后统一对比：先收集更新前快照，避免每行覆盖上一行
+        audit_rows: list[tuple[str, Any]] = []
         for pk in valid_pks:
             instance = instances.get(str(pk))
             if instance is None:
@@ -253,13 +265,23 @@ class BatchPartialUpdateAction:
                 continue
             try:
                 with transaction.atomic():
+                    # 与单条 update 同一审计口径（批量复用单条审计钩子）：AUDIT_DIFF_MODELS
+                    # 白名单模型的治理字段经 batch-update 改动同样留下 old/new 明细，
+                    # 否则白名单可被批更新整批绕过审计
+                    old_values = self._audit_diff_old_values(pk)
                     serializer = self.get_serializer(instance, data=fields, partial=True)
                     serializer.is_valid(raise_exception=True)
                     self.perform_update(serializer)
+                    if old_values is not None:
+                        audit_rows.append((str(pk), old_values))
                 success.append(str(pk))
             except Exception as e:  # noqa: BLE001 单项失败不影响其余项（部分成功语义）
                 logger.warning("batch update item failed. pk:%s error:%s", pk, e)
                 failures.append({"pk": str(pk), "reason": _batch_error_message(e)})
+        # 单行 batch 保持原 changes 形状；多行按 field@pk 区分，不丢任何一行
+        multi_row = len(audit_rows) > 1
+        for row_pk, old_values in audit_rows:
+            self._stash_audit_changes(old_values, key_prefix=row_pk if multi_row else "")
         return ApiResponse(
             data={"success": success, "failures": failures, "updated": len(success)},
             detail=_("Batch update completed: {} succeeded, {} failed").format(len(success), len(failures)),

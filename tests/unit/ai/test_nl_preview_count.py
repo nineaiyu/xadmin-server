@@ -7,7 +7,7 @@
 
 import pytest
 
-from ai.utils.nl_query import PREVIEW_PROBE_LIMIT, bounded_preview_count
+from ai.services.nl_query.nl_query import PREVIEW_PROBE_LIMIT, bounded_preview_count
 from identity.models import UserInfo
 
 pytestmark = pytest.mark.django_db
@@ -58,14 +58,14 @@ class TestBoundedPreviewCount:
 
     def test_default_limit_matches_row_cap(self):
         """默认探测上限与 NL 行数上限同源（NL_ROW_LIMIT_CAP）。"""
-        from ai.utils.nl_query import NL_ROW_LIMIT_CAP
+        from ai.services.nl_query.nl_query import NL_ROW_LIMIT_CAP
 
         assert PREVIEW_PROBE_LIMIT == NL_ROW_LIMIT_CAP
 
 
 class TestPreviewText:
     def test_capped_text_marks_lower_bound(self):
-        from ai.views.nl_query import _preview_text
+        from ai.services.nl_query.orchestrator import preview_text
 
-        assert _preview_text(200, True) == "≥200"
-        assert _preview_text(7, False) == "7"
+        assert preview_text(200, True) == "≥200"
+        assert preview_text(7, False) == "7"

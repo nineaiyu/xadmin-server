@@ -68,6 +68,10 @@ class TaskExecution(CeleryTaskRecordModel):
         default=Status.PENDING,
         db_index=True,
     )
+    # 通用任务进度：导出/导入仍以产物记录（product_data 注解）为准；
+    # 账号巡检等无独立记录的任务直接写本行，任务中心可显示运行进度
+    progress = models.PositiveSmallIntegerField(_("Progress"), default=0)
+    stage = models.CharField(_("Progress stage"), max_length=64, blank=True, default="")
     date_start = models.DateTimeField(_("Start Time"), null=True, blank=True)
     date_finished = models.DateTimeField(_("Finish Time"), null=True, blank=True)
 

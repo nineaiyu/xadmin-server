@@ -17,7 +17,7 @@ from typing import Any
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.base.utils import signer
+from common.base.crypto import signer
 from common.core.models import DbAuditModel, DbUuidModel
 
 
@@ -42,6 +42,9 @@ class McpServer(DbAuditModel, DbUuidModel):
     tools_snapshot = models.JSONField(_("Tools snapshot"), default=list, blank=True)
     last_synced_time = models.DateTimeField(_("Last synced time"), null=True, blank=True)
     last_sync_error = models.CharField(_("Last sync error"), max_length=255, blank=True, default="")
+    # 服务器级日调用配额（0 = 不限）：管理面直调与 AI 动作链路共用同一配额，
+    # 计数源 = 审计流水（OperationLog module=AI:mcp:client 当日行数），见 services 层
+    daily_call_limit = models.IntegerField(_("Daily call limit"), default=0)
     remark = models.CharField(_("Remark"), max_length=255, blank=True, default="")
 
     class Meta:

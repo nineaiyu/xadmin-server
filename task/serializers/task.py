@@ -9,6 +9,7 @@ periodic task / crontab / interval / 执行历史（TaskExecution）四类资源
 
 import json
 from typing import Any
+from zoneinfo import available_timezones
 
 from celery.schedules import crontab_parser
 from django.conf import settings
@@ -17,8 +18,13 @@ from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
 from rest_framework import serializers
 
-from common.core.fields import DictChoiceField
-from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField
+from common.core.fields import (
+    DictChoiceField,
+)
+from common.core.fields import (
+    DisplayRelatedField as DisplayRelatedField,  # noqa: F401 序列化器族既有导入面经本模块再导出
+)
+from common.core.serializers import BaseModelSerializer
 from task.models.task import TaskExecution
 from task.utils.task_center import ACTIVE_STATUSES
 
@@ -31,22 +37,8 @@ _CRONTAB_STEPS = {
     "month_of_year": 13,
 }
 
-
-class DisplayRelatedField(BasePrimaryKeyRelatedField):
-    """对象关联字段展示增强：补充 label（默认 str(instance)），
-    供前端列表/详情/下拉直接可读，避免展示裸外键主键（周期任务页的
-    crontab/interval 原先显示 1/2/3 这种数字主键，无法辨认）。"""
-
-    def __init__(self, *args: Any, label_builder: Any = str, **kwargs: Any) -> None:
-        self.label_builder = label_builder
-        super().__init__(*args, **kwargs)
-
-    def to_representation(self, value: Any) -> Any:
-        data = super().to_representation(value)
-        if isinstance(data, dict):
-            # 基类已把 label 兜底为 pk，这里必须覆盖而非 setdefault，否则 label_builder 永不生效
-            data["label"] = self.label_builder(value)
-        return data
+# 时区候选一次加载（ZoneInfo 数据库），写入侧 fail-closed
+_AVAILABLE_TIMEZONES = frozenset(available_timezones())
 
 
 def crontab_display(value: CrontabSchedule) -> str:
@@ -63,14 +55,10 @@ class CrontabScheduleSerializer(BaseModelSerializer):
     class Meta:
         model = CrontabSchedule
         fields = "__all__"
-        table_fields = ["pk", "minute", "hour", "day_of_week", "day_of_month", "month_of_year", "timezone"]
+        table_fields = ["minute", "hour", "day_of_week", "day_of_month", "month_of_year", "timezone"]
 
     def validate(self, attrs: Any) -> Any:
-        """五字段合法性校验，防止存入 beat 无法解析的 crontab。
-
-        编辑（PUT/PATCH 部分字段）时 attrs 可能缺某字段，用 instance 兜底；
-        创建时五字段全量校验。
-        """
+        """五字段与时区合法性校验，防止存入 beat 无法解析的 crontab。"""
         instance = self.instance
         for field in ("minute", "hour", "day_of_week", "day_of_month", "month_of_year"):
             value = attrs.get(field)
@@ -82,14 +70,22 @@ class CrontabScheduleSerializer(BaseModelSerializer):
                 crontab_parser(_CRONTAB_STEPS[field]).parse(str(value))
             except ValueError as exc:
                 raise serializers.ValidationError({field: _("Invalid crontab expression: {}").format(exc)}) from exc
+        timezone = attrs.get("timezone")
+        if timezone is None and instance:
+            timezone = getattr(instance, "timezone", None)
+        timezone_text = str(getattr(timezone, "key", timezone) or "")
+        if timezone_text and timezone_text not in _AVAILABLE_TIMEZONES:
+            raise serializers.ValidationError({"timezone": _("Unknown timezone: {}").format(timezone_text)})
         return attrs
 
 
 class IntervalScheduleSerializer(BaseModelSerializer):
+    reference_count = serializers.IntegerField(read_only=True, label=_("Referenced tasks"))
+
     class Meta:
         model = IntervalSchedule
         fields = "__all__"
-        table_fields = ["pk", "every", "period"]
+        table_fields = ["every", "period", "reference_count"]
 
     def validate(self, attrs: Any) -> Any:
         """间隔唯一性校验（django_celery_beat>=2.9 已移除库级 unique_together）。
@@ -155,7 +151,8 @@ def _task_routes_config() -> dict[str, Any]:
     if callable(routes):
         from common.celery.routing import get_all_task_routes
 
-        return get_all_task_routes()
+        routes_map: dict[str, Any] = get_all_task_routes()
+        return routes_map
     return routes or {}
 
 
@@ -361,8 +358,8 @@ class TaskExecutionSerializer(BaseModelSerializer):
             "can_cancel",
             "can_rerun",
             "periodic_task",
-            "args",
-            "kwargs",
+            # args/kwargs 不进序列化面（执行参数不进序列化面）：执行参数含导入/导出条件等
+            # 业务载荷，任务参数属字段面泄漏；table_fields 本就不含，详情/列表一并收敛
             "status",
             "creator",
             "time_cost",
@@ -404,10 +401,12 @@ class TaskExecutionSerializer(BaseModelSerializer):
         return str(self._product_data(obj).get("name") or "")
 
     def get_product_progress(self, obj: Any) -> int:
-        return int(self._product_data(obj).get("progress") or 0)
+        data = self._product_data(obj)
+        return int(data.get("progress") or getattr(obj, "progress", 0) or 0)
 
     def get_product_stage(self, obj: Any) -> str:
-        return str(self._product_data(obj).get("stage") or "")
+        data = self._product_data(obj)
+        return str(data.get("stage") or getattr(obj, "stage", "") or "")
 
     def get_product_error(self, obj: Any) -> str:
         return str(self._product_data(obj).get("error") or "")[:500]

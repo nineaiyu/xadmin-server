@@ -1,7 +1,7 @@
 # ADR-004: Django 升级决策——维持 6.0.8（EOL 期监控），升级线被 django-celery-beat 声明阻断
 
 - 状态：已接受（2026-09-06，P5 前置评估）；**修订（2026-09-11）：6.2 升级取消**；**修订（2026-09-16）：实际已运行 6.0.8，6.1 被 beat 声明阻断**；**修订（2026-09-29）：维持 6.0.8 + EOL 期安全监控（现行口径）**——历次复审见文末
-- **现行口径速览（2026-10-02 对齐 `security-review.md` S-1/S-6）**：当前运行 **Django 6.0.8 + Python 3.14**（6.0 非
+- **现行口径速览（2026-10-02 对齐 `asvs-mapping.md` S-1/S-6）**：当前运行 **Django 6.0.8 + Python 3.14**（6.0 非
   LTS，自 2026-08-05 6.1 发布起退出安全支持）；不启动 override 升级，以安全公告监控 + 补丁后移兜住风险；
   重开条件 = `django-celery-beat` 声明放宽到 `Django>=6.1`，或 6.2 LTS 发布且全家桶声明覆盖，或出现影响本部署
   形态的 6.0 线高危公告。**下方「背景 / 备选方案 / 决策 / 实施项 / 后果」为 2026-09-06 时点记录**（当时运行
@@ -88,7 +88,7 @@ beat/results 的声明矩阵亦未覆盖 6.0 之上版本）。下次复核时�
 配套说明：原「升级后启用内置 CSP」的诉求已由独立方案解除绑定——S3 采用
 `django-csp 4.0` + 运行期模式开关（`CSP_MODE`：disabled/report-only/enforce）落地，
 默认 report-only 观察，观察期结束后切 enforce，无需等待框架升级（见
-`docs/ops/deployment.md` 与 `docs/security-review.md`）。
+`docs/ops/deployment.md` 与 `docs/asvs-mapping.md`）。
 
 ## 复审记录（2026-09-15，下一年度规划 W3–W4 依赖窗口评估）
 
@@ -150,10 +150,10 @@ Django 6.1.1 下全量测试 **2358 passed / 1 skipped 零回归**（运行时�
 
 1. **EOL 期安全监控进清单**：`docs/ops/release-checklist.md` §0 新增「Django 线安全公告核对」基线项
    （每次发布窗口 + 每季度依赖窗口执行），执行记录逐窗口追加；
-2. **处置双路径登记**（`docs/security-review.md` 六期登记 S-1）：命中 6.0 线公告时按影响面选择
+2. **处置双路径登记**（`docs/asvs-mapping.md` 六期登记 S-1）：命中 6.0 线公告时按影响面选择
    「紧急升级 6.1（override：`[tool.uv] override-dependencies` 注释原因与撤销条件 + 全量门禁 + beat 周期任务链路专项验证 + 回滚预案）」
    或「上游补丁后移到自有镜像（记录补丁来源与到期时间）」；
-3. **接受项入台账**：`docs/security-review.md` S-6 接受项台账新增「Django 6.0.8 停留」行（接受理由 + 重开条件）；
+3. **接受项入台账**：`docs/asvs-mapping.md` S-6 接受项台账新增「Django 6.0.8 停留」行（接受理由 + 重开条件）；
 4. **Python 口径对齐（D3，同批交付）**：`requires-python`/mypy `python_version` 与 9 处 CI workflow 由 3.13 对齐到 **3.14**
    （容器基线 `python:3.14.7-slim` 与本机 venv 早已 3.14.7），`uv.lock` 重生成，server 内 6 处文档与文档站 4 文件
    5 处受保护事实同步——本条关闭 2026-09-16 记录的「本机 venv 版本差异登记」。

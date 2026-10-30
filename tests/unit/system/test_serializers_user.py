@@ -145,10 +145,10 @@ class TestUserSerializerPasswordTransport:
 
 
 class TestRoleSerializer:
-    def test_fields_required(self, post_request):
+    def test_fields_optional_for_api_create(self, post_request):
+        """fields 缺省 = 空授权集：API 建角色不应因未带字段树而 400。"""
         serializer = RoleSerializer(data={"name": "角色", "code": "role"}, ignore_field_permission=True)
-        assert not serializer.is_valid()
-        assert "fields" in serializer.errors
+        assert serializer.is_valid(), serializer.errors
 
     def test_valid_with_empty_fields(self, post_request):
         serializer = RoleSerializer(data={"name": "角色", "code": "role", "fields": {}}, ignore_field_permission=True)

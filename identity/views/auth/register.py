@@ -14,15 +14,22 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 
 from audit.services import UserLoginLog
-from common.base.utils import AESCipherV2
 from common.cache.lock import ReentrantLock
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
 from common.swagger.utils import get_default_response_schema
 from identity.models import DeptInfo, UserInfo
+from identity.services.auth_login import complete_login
 from identity.services.token_issue_login import issue_session_token
-from identity.utils.auth import save_login_log, verify_sms_email_code
-from settings.services import RegisterBlockUtil, check_leak_password, check_password_rules, record_password_hash
+from identity.utils.auth import decrypt_submitted, verify_sms_email_code
+from settings.services import (
+    RegisterBlockUtil,
+    check_leak_password,
+    check_password_rules,
+    email_service_ready,
+    record_password_hash,
+    sms_service_ready,
+)
 
 
 class RegisterViewAPIView(GenericAPIView):
@@ -64,13 +71,21 @@ class RegisterViewAPIView(GenericAPIView):
 
         channel = request.data.get("channel", "default")
 
-        query_key, target, verify_token = verify_sms_email_code(request, RegisterBlockUtil)
+        query_key, target, verify_token = verify_sms_email_code(request, RegisterBlockUtil, scenes=("register",))
+        # 提交侧复核通道开关：发码后关闭邮箱/短信注册时，已发出的验证码也不能继续注册。
+        channel_ready = {
+            "email": settings.SECURITY_REGISTER_BY_EMAIL_ENABLED and email_service_ready(),
+            "phone": settings.SECURITY_REGISTER_BY_SMS_ENABLED and sms_service_ready(),
+            "sms": settings.SECURITY_REGISTER_BY_SMS_ENABLED and sms_service_ready(),
+        }.get(query_key)
+        if channel_ready is False:
+            return ApiResponse(code=1001, detail=_("Registration forbidden"))
         password = request.data.get("password")
         if not password:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 
         if settings.SECURITY_REGISTER_ENCRYPTED_ENABLED:
-            password = AESCipherV2(verify_token).decrypt(password)
+            password = decrypt_submitted(password, verify_token)
 
         if not check_password_rules(password):
             return ApiResponse(code=1001, detail=_("Password does not match security rules"))
@@ -95,17 +110,20 @@ class RegisterViewAPIView(GenericAPIView):
         record_password_hash(user, user.password)
 
         if channel and user:
+            # 仅按 channel 精确匹配部门编码；不再回落到任意第一个 auto_bind 部门，
+            # 避免未匹配渠道的注册用户被塞进不确定部门、污染数据权限归属
             dept = DeptInfo.objects.filter(is_active=True, auto_bind=True, code=channel).first()
-            if not dept:
-                dept = DeptInfo.objects.filter(is_active=True, auto_bind=True).first()
             if dept:
                 user.dept = dept
                 user.creator = user
                 user.dept_belong = dept
                 user.save(update_fields=["dept_belong", "dept", "creator"])
 
-        # 注册即登录：登记会话并绑定 sid claim（失败不影响注册主流程）；last_login 由签发函数统一刷新
+        # 注册即登录同样经唯一收口：登录开关关闭 / 访问策略拒绝时不签发 token，
+        # 账号保留供管理员处理；策略要求 MFA 时返回与普通登录一致的挑战载荷。
+        mfa_response = complete_login(request, user, login_type=UserLoginLog.LoginTypeChoices.USERNAME)
+        if mfa_response:
+            return mfa_response
+        # 会话登记并绑定 sid claim；last_login 由签发函数统一刷新
         result = issue_session_token(request, user, UserLoginLog.LoginTypeChoices.USERNAME)
-        request.user = user
-        save_login_log(request)
         return ApiResponse(data=result)

@@ -13,7 +13,7 @@ from django.db.models import ProtectedError
 from django.http import Http404
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
 
-from common.core.exception import common_exception_handler
+from common.core.response.exception import common_exception_handler
 from identity.models import DeptInfo, UserInfo
 
 

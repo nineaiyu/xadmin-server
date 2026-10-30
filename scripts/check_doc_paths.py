@@ -75,8 +75,6 @@ ACTIVE_DOC_GLOBS = ("docs/architecture/*.md", "docs/guide/*.md", "docs/*.md")
 EXCLUDE_ACTIVE_DOCS = (
     "docs/metrics.md",
     # 履历性质子页：保留历史路径（与 metrics.md 同口径，见 check_doc_facts.py 的设计注释）
-    "docs/metrics-history.md",
-    "docs/metrics-perf-history.md",
 )
 # 活跃文档只校验"代码路径"（窄前缀集；示例性路径多集中于 loadjson / ops / tests 等，不纳入）
 CODE_PREFIXES = (
@@ -161,7 +159,7 @@ def _top_level_paths(text: str) -> list:
     """全文提取"以已知仓库顶层目录开头"的反引号路径（示例简写 / 占位符自动豁免）。"""
     paths = []
     for raw in TOKEN_RE.findall(text):
-        # "文件::符号" 写法（如 packages/xadmin-common/common/base/utils.py::signer）只校验文件部分
+        # "文件::符号" 写法（如 packages/xadmin-common/common/base/crypto.py::signer）只校验文件部分
         token = raw.split("::")[0].strip()
         if not token or " " in token:
             continue

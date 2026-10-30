@@ -156,4 +156,13 @@ class DeptViewSet(
         # 与部门行 member_count 同口径：未删除成员（默认管理器已滤软删除，含停用），
         # 与成员预览/用户管理按部门筛选列表实际展示一致；各直属计数之和即此总数
         user_count = UserInfo.objects.filter(dept__in=tree_pks).count() if tree_pks else 0
-        return ApiResponse(data={"depts": depts, "dept_count": len(depts), "user_count": user_count})
+        direct_count = sum(1 for item in depts if item["is_direct"])
+        return ApiResponse(
+            data={
+                "depts": depts,
+                "dept_count": len(depts),
+                "direct_count": direct_count,
+                "sub_count": len(depts) - direct_count,
+                "user_count": user_count,
+            }
+        )

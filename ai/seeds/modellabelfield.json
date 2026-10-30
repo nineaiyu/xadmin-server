@@ -2563,5 +2563,110 @@
    "name": "auth_token_set",
    "label": "令牌已配置"
   }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "3173b3a7-1e32-43c8-b147-a5053348fa5e",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.535Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "dbc7f447-1eb4-4de8-a18a-fdf17c6981e9",
+   "name": "tools_count",
+   "label": "工具数量"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "06526e91-d0aa-448a-b5af-690a5111d7f4",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.518Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "6772d9ac-fe07-40f5-9a06-2dfbfbcc0c0f",
+   "name": "ingest_error",
+   "label": "Ingest error"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "50df9581-224f-45c6-9860-66d8aaeb93df",
+  "fields": {
+   "created_time": "2026-10-25T07:38:08.517Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "6772d9ac-fe07-40f5-9a06-2dfbfbcc0c0f",
+   "name": "ingest_status",
+   "label": "Ingest status"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5342fbed-1f71-4160-a8e9-512df0afd78f",
+  "fields": {
+   "created_time": "2026-10-25T07:38:07.326Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "189f09b9-18dc-45e0-9667-dc5cb56f69d9",
+   "name": "ingest_error",
+   "label": "Ingest error"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "859a6e72-9b77-4255-a6d4-545905e05a92",
+  "fields": {
+   "created_time": "2026-10-25T07:38:07.326Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "189f09b9-18dc-45e0-9667-dc5cb56f69d9",
+   "name": "ingest_status",
+   "label": "Ingest status"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "decbf0cf-6fdc-4ba8-b510-ac5bd4b77c67",
+  "fields": {
+   "created_time": "2026-10-25T09:56:04.672Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 0,
+   "parent": "dbc7f447-1eb4-4de8-a18a-fdf17c6981e9",
+   "name": "daily_call_limit",
+   "label": "日调用配额"
+  }
+ },
+ {
+  "model": "system.modellabelfield",
+  "pk": "5ab1789c-38e5-430a-8ded-f0da9bc4bc26",
+  "fields": {
+   "created_time": "2026-10-25T09:56:03.563Z",
+   "description": null,
+   "creator": null,
+   "modifier": null,
+   "dept_belong": null,
+   "field_type": 1,
+   "parent": "e28db1b8-f518-457c-8c8e-25aed6adb531",
+   "name": "daily_call_limit",
+   "label": "日调用配额"
+  }
  }
 ]

@@ -6,7 +6,7 @@ import pytest
 from django.core import mail
 from django.core.cache import cache
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from tests.integration.aes_v2 import encrypt_v2
 
 pytestmark = pytest.mark.django_db
@@ -836,6 +836,20 @@ class TestMethodPolicyChain:
         user.save(update_fields=["allowed_mfa_types"])
         assert self._listed(client) == ["sms"]
 
+    def test_open_rejected_when_policy_excludes_otp(self, otp_user):
+        """otp/open 与 start/confirm 同口径校验白名单：策略禁止 OTP 时不能重新启用。"""
+        from django.contrib.auth import get_user_model
+
+        user, client, secret = otp_user
+        user.mfa_level = get_user_model().MFALevelChoices.DISABLED
+        user.allowed_mfa_types = ["email"]
+        user.save(update_fields=["mfa_level", "allowed_mfa_types"])
+
+        resp = client.post(OTP_OPEN_URL, {"code": pyotp.TOTP(secret).now()})
+        assert resp.data["code"] == 1001, resp.data
+        user.refresh_from_db()
+        assert user.mfa_level == get_user_model().MFALevelChoices.DISABLED
+
     @pytest.mark.parametrize(
         ("method", "confirm_type"),
         [
@@ -855,6 +869,39 @@ class TestMethodPolicyChain:
         resp = client.post(CONFIRM_URL, {"confirm_type": confirm_type, "method": method, "code": "irrelevant"})
         assert resp.data["code"] == 1002, resp.data
         assert "unavailable" in resp.data["detail"] or "不可用" in resp.data["detail"]
+
+    def test_role_mfa_required_accepts_email_only_user(
+        self, normal_user, role, api_client, login_free, settings, monkeypatch
+    ):
+        """角色强制 MFA + 仅配置邮箱（无 OTP/Passkey）：第二步必须可用，不能锁死。"""
+        from django.contrib.auth import get_user_model
+
+        from common.utils.verify_code import SendAndVerifyCodeUtil
+
+        settings.EMAIL_ENABLED = True
+        normal_user.email = "email-only@example.com"
+        normal_user.save(update_fields=["email"])
+        normal_user.mfa_recovery_codes.all().delete()
+        normal_user.mfa_level = get_user_model().MFALevelChoices.DISABLED
+        normal_user.save(update_fields=["mfa_level"])
+        role.mfa_required = True
+        role.save(update_fields=["mfa_required"])
+        monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", lambda self: None)
+
+        api_client.force_authenticate(user=None)
+        resp = api_client.post(
+            BASIC_LOGIN_URL, {"username": normal_user.username, "password": "Test@123456"}, format="json"
+        )
+        data = resp.data["data"]
+        assert data["mfa_required"] is True, data
+        assert "email" in [m["name"] for m in data["methods"]]
+
+        resp = api_client.post(
+            "/api/identity/login/mfa/send-code",
+            {"mfa_token": data["mfa_token"], "method": "email"},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
 
     def test_role_mfa_required_forces_login_mfa(self, all_methods, role, api_client, login_free):
         """角色 mfa_required：个人已关闭 MFA 的账号登录仍强制二次验证。"""

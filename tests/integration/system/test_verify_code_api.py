@@ -11,7 +11,7 @@ from unittest.mock import Mock
 import pytest
 from django.core.cache import cache
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from common.utils.verify_code import SendAndVerifyCodeUtil
 from identity.models import UserInfo
 from identity.views.auth.verify_code import CATEGORIES
@@ -27,6 +27,16 @@ VERIFY_CODE_KEY_TPL = "auth_verify_code_{}"
 def _assert_bilingual(text, en_kw, zh_kw):
     """文案断言兼容 zh/en 双语（活动语言不确定，二者命中其一即可）。"""
     assert en_kw in text or zh_kw in text, text
+
+
+def _enable_sms(settings):
+    """短信通道「可实际投递」：开关 + 服务商凭据齐全（与设置页硬判定同口径）。"""
+    settings.SMS_ENABLED = True
+    settings.SMS_BACKEND = "alibaba"
+    settings.ALIBABA_ACCESS_KEY_ID = "test-key"
+    settings.ALIBABA_ACCESS_KEY_SECRET = "test-secret"
+    settings.ALIBABA_VERIFY_SIGN_NAME = "test-sign"
+    settings.ALIBABA_VERIFY_TEMPLATE_CODE = "test-template"
 
 
 @pytest.fixture
@@ -80,6 +90,49 @@ class TestSendVerifyCode:
             )
             assert resp.status_code == 200, resp.data
             assert resp.data["code"] == 1004, resp.data
+
+    def test_transport_failure_returns_readable_error(self, api_client, register_free, monkeypatch):
+        """SMTP 不可达（连接类异常）时给可读错误，不是 500、不泄露内部地址。"""
+
+        class _Down:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def gen_and_send_async(self):
+                raise ConnectionRefusedError("smtp.example.com:25 refused")
+
+        monkeypatch.setattr("identity.views.auth.verify_code.SendAndVerifyCodeUtil", _Down)
+
+        resp = api_client.post(
+            SEND_VERIFY_URL + "?category=register",
+            {"form_type": "email", "target": "transport-down@example.com"},
+            format="json",
+        )
+
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1002
+        assert "smtp.example.com" not in str(resp.data["detail"])
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("transport-down@example.com")) is None
+
+    def test_charset_all_off_returns_readable_error(self, api_client, register_free, settings):
+        """字符集三项全关（历史脏配置）时发码必须给可读错误，不能 500。
+
+        写入侧已由跨字段组合约束拦截，但存量配置行仍可能存在——发送链路两分支
+        （真实投递 / 防枚举占位）都不能把 ValueError 抛成 500。
+        """
+        settings.VERIFY_CODE_UPPER_CASE = False
+        settings.VERIFY_CODE_LOWER_CASE = False
+        settings.VERIFY_CODE_DIGIT_CASE = False
+
+        resp = api_client.post(
+            SEND_VERIFY_URL + "?category=register",
+            {"form_type": "email", "target": "charset-off@example.com"},
+            format="json",
+        )
+
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1002
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("charset-off@example.com")) is None
 
     def test_send_verify_code_access_disabled(self, api_client, register_free, settings):
         settings.SECURITY_REGISTER_ACCESS_ENABLED = False
@@ -148,9 +201,10 @@ class TestVerifyCodeConfig:
             "sms",
             "rate",
             "lifetime",
-            "reset",
-            "register",
         } <= set(data)
+        # 方式级入口可见性(reset/register)已上移到 auth/capabilities,不再随 verify 下发
+        assert "reset" not in data
+        assert "register" not in data
         # email 开关 = 业务开关 且 邮件通道可用
         assert data["email"] is True
         assert data["lifetime"] == settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].days
@@ -179,10 +233,28 @@ class TestVerifyCodeConfig:
         assert data["email"] is False
         assert data["rate"] == settings.VERIFY_CODE_LIMIT
 
-    def test_get_bind_phone_config(self, api_client):
+        # 开关开着但 SMTP 主机缺失：邮件通道不可投递，绑定入口同样不可用
+        settings.EMAIL_ENABLED = True
+        settings.EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        settings.EMAIL_HOST = ""
+        resp = api_client.get(SEND_VERIFY_URL, {"category": "bind_email"})
+        assert resp.data["data"]["email"] is False
+
+    def test_get_bind_phone_config(self, api_client, settings):
+        settings.SMS_ENABLED = False
         resp = api_client.get(SEND_VERIFY_URL, {"category": "bind_phone"})
         assert resp.data["code"] == 1000
-        # 默认 SMS_ENABLED=False，sms 开关跟随通道可用性
+        # SMS_ENABLED=False，sms 开关跟随通道可用性
+        assert resp.data["data"]["sms"] is False
+
+        # 开关开着但阿里云凭据缺失：发不出验证码，绑定入口同样不可用
+        _enable_sms(settings)
+        settings.SMS_BACKEND = "alibaba"
+        settings.ALIBABA_ACCESS_KEY_ID = ""
+        settings.ALIBABA_ACCESS_KEY_SECRET = ""
+        settings.ALIBABA_VERIFY_SIGN_NAME = ""
+        settings.ALIBABA_VERIFY_TEMPLATE_CODE = ""
+        resp = api_client.get(SEND_VERIFY_URL, {"category": "bind_phone"})
         assert resp.data["data"]["sms"] is False
 
     def test_get_config_category_missing(self, api_client):
@@ -300,6 +372,43 @@ class TestSendVerifyCodeLoginReset:
         assert resp.data["data"]["verify_token"]
         assert sent == [], "目标不存在时不应发送验证码"
 
+    def test_reset_rejected_when_channel_turned_off_after_send(self, api_client, normal_user, settings, silent_send):
+        """发码后关闭通道：重置提交侧同样拒绝（通道开关不能只拦发码入口）。
+
+        组合约束（跨字段组合约束）禁止「场景开、通道全关」的配置落库，但配置可能
+        在发码与提交之间变化；这一层是发码路径之外的兜底复核，缺了它等于
+        「先发码、再关通道」即可绕过开关。
+        """
+        settings.SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = False
+        settings.SECURITY_RESET_PASSWORD_TEMP_TOKEN_ENABLED = False
+        settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED = False
+        settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED = True
+        settings.EMAIL_ENABLED = True
+        normal_user.email = "zhangsan@example.com"
+        normal_user.set_password("OldPass@123456")
+        normal_user.save(update_fields=["email", "password"])
+
+        resp = api_client.post(
+            SEND_VERIFY_URL + "?category=reset",
+            {"form_type": "email", "target": "zhangsan@example.com"},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        verify_token = resp.data["data"]["verify_token"]
+        verify_code = cache.get(VERIFY_CODE_KEY_TPL.format("zhangsan@example.com"))
+        assert verify_code, "发码应写入缓存"
+
+        settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED = False
+        resp = api_client.post(
+            "/api/identity/auth/reset",
+            {"verify_token": verify_token, "verify_code": verify_code, "password": "NewPass@123456"},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1001, resp.data
+        normal_user.refresh_from_db()
+        assert normal_user.check_password("OldPass@123456"), "通道关闭后密码不得被改写"
+
     def test_login_send_encrypted_target(self, api_client, normal_user, settings, silent_send):
         """encrypted + temp token 开启：先用临时 token 加密 target，服务端解密后下发。"""
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
@@ -340,7 +449,7 @@ class TestSendVerifyCodeLoginReset:
         _assert_bilingual(str(resp.data["detail"]), "Temporary Token validation failed", "临时Token校验失败")
 
     def test_login_send_captcha_missing(self, api_client, normal_user, settings):
-        """图片验证码开启但缺 captcha_key/captcha_code → 校验失败。"""
+        """人机校验开启但缺 captcha_ticket → 校验失败。"""
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = True
         settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
         settings.EMAIL_ENABLED = True
@@ -356,7 +465,7 @@ class TestSendVerifyCodeLoginReset:
     def test_login_send_phone_via_sms(self, api_client, normal_user, settings, monkeypatch):
         """sms 通道开启：phone 表单类型映射为 sms 后端下发（非 dryrun，不回显验证码）。"""
         settings.SECURITY_LOGIN_BY_SMS_ENABLED = True
-        settings.SMS_ENABLED = True
+        _enable_sms(settings)
         settings.SECURITY_LOGIN_CAPTCHA_ENABLED = False
         settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_LOGIN_ENCRYPTED_ENABLED = False
@@ -425,7 +534,7 @@ class TestSendVerifyCodeRegisterEmail:
         settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_REGISTER_ENCRYPTED_ENABLED = False
         settings.SECURITY_REGISTER_BY_SMS_ENABLED = True
-        settings.SMS_ENABLED = True
+        _enable_sms(settings)
         normal_user.phone = "13800138001"
         normal_user.save(update_fields=["phone"])
         monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", lambda self: None)
@@ -440,20 +549,29 @@ class TestSendVerifyCodeRegisterEmail:
 
 
 class TestSendVerifyCodeBind:
-    """bind_email / bind_phone 类别：目标已绑定时回传用户信息（含头像绝对地址）。"""
+    """bind_email / bind_phone 类别：必须登录，且发码响应不回显任何账号资料。"""
+
+    def test_anonymous_bind_category_requires_auth(self, api_client, settings):
+        settings.EMAIL_ENABLED = True
+        settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = False
+        settings.SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED = False
+        resp = api_client.post(
+            SEND_VERIFY_URL + "?category=bind_email",
+            {"form_type": "email", "target": "bind@example.com"},
+            format="json",
+        )
+        assert resp.status_code == 401, resp.data
 
     def test_bind_email_existing_user_extra(self, api_client, normal_user, settings, monkeypatch):
         settings.EMAIL_ENABLED = True
+        settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED = True
         settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = False
         settings.SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED = False
         normal_user.email = "bind@example.com"
         normal_user.save(update_fields=["email"])
-        # 头像字段为空文件对象，mock 绝对地址构造逻辑验证 request 拼接
-        monkeypatch.setattr(
-            "identity.views.auth.verify_code.get_file_absolute_uri",
-            lambda value, request=None, use_url=True: f"{request.scheme}://{request.get_host()}/media/avatar.png",
-        )
+        api_client.force_authenticate(user=normal_user)
+        monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", lambda self: None)
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=bind_email",
             {"form_type": "email", "target": "bind@example.com"},
@@ -461,17 +579,16 @@ class TestSendVerifyCodeBind:
         )
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000, resp.data
-        extra = resp.data["data"]["extra"]
-        assert extra["username"] == "zhangsan"
-        assert extra["nickname"] == "张三"
-        # 头像必须带 request 的 scheme/host 绝对地址
-        assert extra["avatar"] == "http://testserver/media/avatar.png"
+        # 发码阶段不再回显 username / nickname / avatar，避免匿名枚举面
+        assert resp.data["data"]["extra"] == {}
 
-    def test_bind_email_new_target_empty_extra(self, api_client, settings, monkeypatch):
+    def test_bind_email_new_target_empty_extra(self, api_client, normal_user, settings, monkeypatch):
         settings.EMAIL_ENABLED = True
+        settings.SECURITY_BIND_EMAIL_ACCESS_ENABLED = True
         settings.SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = False
         settings.SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED = False
+        api_client.force_authenticate(user=normal_user)
         monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", lambda self: None)
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=bind_email",
@@ -483,12 +600,20 @@ class TestSendVerifyCodeBind:
         assert resp.data["data"]["extra"] == {}
 
     def test_bind_phone_existing_user_extra(self, api_client, normal_user, settings, monkeypatch):
-        settings.SMS_ENABLED = True
+        _enable_sms(settings)
+        settings.SMS_BACKEND = "alibaba"
+        # 绑定发码要求短信通道可实际投递：补齐已收录服务商凭据
+        settings.ALIBABA_ACCESS_KEY_ID = "ak"
+        settings.ALIBABA_ACCESS_KEY_SECRET = "sk"
+        settings.ALIBABA_VERIFY_SIGN_NAME = "sign"
+        settings.ALIBABA_VERIFY_TEMPLATE_CODE = "SMS_1"
+        settings.SECURITY_BIND_PHONE_ACCESS_ENABLED = True
         settings.SECURITY_BIND_PHONE_CAPTCHA_ENABLED = False
         settings.SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_BIND_PHONE_ENCRYPTED_ENABLED = False
         normal_user.phone = "13800138000"
         normal_user.save(update_fields=["phone"])
+        api_client.force_authenticate(user=normal_user)
         monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", lambda self: None)
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=bind_phone",
@@ -497,7 +622,7 @@ class TestSendVerifyCodeBind:
         )
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000, resp.data
-        assert resp.data["data"]["extra"]["username"] == "zhangsan"
+        assert resp.data["data"]["extra"] == {}
 
 
 class TestSendVerifyCodeFailurePaths:

@@ -912,5 +912,28 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0b338b4d-421a-44e4-ae18-0c31f1e88ab2",
+  "fields": {
+   "created_time": "2026-10-22T00:00:00Z",
+   "updated_time": "2026-10-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "b8664880-b2dd-48d9-ad88-c79258156084",
+   "menu_type": 2,
+   "name": "allRead:SystemNoticeRead",
+   "rank": 139,
+   "path": "api/notifications/user-read-messages/all-read$",
+   "component": null,
+   "is_active": true,
+   "meta": "7382fc6d-98c2-4f83-81b9-ab5b7364148c",
+   "method": "PATCH",
+   "model": []
+  }
  }
 ]

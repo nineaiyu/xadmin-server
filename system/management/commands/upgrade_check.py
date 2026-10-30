@@ -77,7 +77,7 @@ def collect_report(connection: Any, dsn: str | None = None, tag: str | None = No
 
 def collect_inplace_report(connection: Any, dsn: str | None = None, tag: str | None = None) -> dict[str, Any]:
     """原地升级可行性（只读）：结构差异规模 + 阻断项 + 二开表清单。"""
-    from system.utils.platform import legacy_align
+    from ops.legacy import align as legacy_align
 
     target = dsn or dsn_from_settings(connection)
     try:
@@ -152,7 +152,7 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> None:
         from django.db import connection
 
-        from system.utils.platform import legacy_structure
+        from ops.legacy import structure as legacy_structure
 
         target = connection
         if options["dsn"]:

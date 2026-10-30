@@ -9,7 +9,7 @@
 import pytest
 
 from ai.models.ai import AiKnowledgeChunk, AiKnowledgeDocument
-from ai.utils.ai import retrieve
+from ai.services.assistant.ai import retrieve
 
 pytestmark = pytest.mark.django_db
 
@@ -37,7 +37,8 @@ class TestUpload:
         assert response.status_code == 200, response.data
         doc = AiKnowledgeDocument.objects.get(title="内网使用指南")
         assert doc.source_type == AiKnowledgeDocument.SourceType.UPLOAD
-        assert doc.path == "upload/内网使用指南.md"
+        # 存储路径按上传者命名空间隔离（同名覆盖仅限本人文档）
+        assert doc.path == f"upload/{doc.creator.pk}/内网使用指南.md"
         assert doc.chunk_count == 3
         assert AiKnowledgeChunk.objects.filter(source_path=doc.path).count() == 3
         assert doc.creator is not None
@@ -53,6 +54,59 @@ class TestUpload:
         doc = AiKnowledgeDocument.objects.get(title="内网使用指南")
         assert doc.chunk_count == 2
         assert not AiKnowledgeChunk.objects.filter(source_path=doc.path, content__contains="下载中心").exists()
+
+    def test_same_name_other_creator_coexists(self, auth_client, api_client, django_user_model):
+        """他人同名文档不被覆盖——上传按 creator 隔离，双方并存。"""
+        assert _upload(auth_client, name="部署手册", content="管理员版本").status_code == 200
+        other_admin = django_user_model.objects.create_superuser(
+            username="other-admin", email="other@example.com", password="Other@123456"
+        )
+        api_client.force_authenticate(user=other_admin)
+        response = api_client.post(KNOWLEDGE_URL, {"name": "部署手册", "content": "普通用户版本"}, format="json")
+        assert response.status_code == 200, response.data
+
+        docs = AiKnowledgeDocument.objects.filter(title="部署手册")
+        assert docs.count() == 2, "两个上传者的同名文档应并存"
+        mine = docs.get(creator=other_admin)
+        theirs = docs.exclude(creator=other_admin).first()
+        assert mine.content == "普通用户版本"
+        assert theirs.content == "管理员版本", "后上传者不得改写他人文档内容"
+        assert mine.path != theirs.path, "同名文档按 creator 命名空间隔离存储路径"
+
+    def test_same_name_reupload_adopts_legacy_row(self, auth_client, superuser):
+        """存量兼容：本人 legacy 全局路径同名行被收编（不产生第二份文档）。"""
+        from ai.services.knowledge import ai_knowledge
+
+        legacy = AiKnowledgeDocument.objects.create(
+            path="upload/存量文档.md",
+            title="存量文档",
+            content="旧内容",
+            source_type=AiKnowledgeDocument.SourceType.UPLOAD,
+            creator=superuser,
+        )
+        doc, created = ai_knowledge.upsert_upload_document("存量文档", "新内容", superuser)
+        assert created is False
+        assert doc.pk == legacy.pk, "本人 legacy 文档应原行收编（path 不变）"
+        assert doc.path == "upload/存量文档.md"
+        assert doc.content == "新内容"
+        assert AiKnowledgeDocument.objects.filter(title="存量文档").count() == 1
+
+    def test_same_name_legacy_row_of_other_creator_not_touched(self, superuser, normal_user):
+        """他人 legacy 全局路径同名行不收编、不改写：上传者得到自己的命名空间文档。"""
+        from ai.services.knowledge import ai_knowledge
+
+        AiKnowledgeDocument.objects.create(
+            path="upload/共享笔记.md",
+            title="共享笔记",
+            content="他人旧内容",
+            source_type=AiKnowledgeDocument.SourceType.UPLOAD,
+            creator=normal_user,
+        )
+        doc, created = ai_knowledge.upsert_upload_document("共享笔记", "我的新内容", superuser)
+        assert created is True
+        assert doc.path == f"upload/{superuser.pk}/共享笔记.md"
+        legacy = AiKnowledgeDocument.objects.get(path="upload/共享笔记.md")
+        assert legacy.content == "他人旧内容", "他人 legacy 文档内容不得被改写"
 
     @pytest.mark.parametrize(
         "payload",
@@ -130,13 +184,13 @@ class TestDeleteAndToggle:
 class TestSyncIsolation:
     def test_sync_keeps_upload_documents(self, tmp_path, monkeypatch, auth_client):
         """关键守护：仓库同步（含清理）不得触碰上传文档及其分块。"""
-        from ai.utils import ai as ai_utils
-        from ai.utils import ai_knowledge
+        from ai.services.assistant import ai as ai_utils
+        from ai.services.knowledge import ai_knowledge
 
         _upload(auth_client)
         empty_docs = tmp_path / "docs"
         empty_docs.mkdir()
-        # 实现位于 ai_knowledge（ai.utils.ai 仅再导出），patch 目标须与实现同源
+        # 实现位于 ai_knowledge（ai.services.assistant.ai 仅再导出），patch 目标须与实现同源
         monkeypatch.setattr(ai_knowledge, "DOCS_DIR", empty_docs)
         monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
         summary = ai_utils.sync_knowledge()
@@ -147,12 +201,12 @@ class TestSyncIsolation:
 
 class TestRepoRebuildAction:
     def test_sync_repo_action(self, auth_client, tmp_path, monkeypatch):
-        from ai.utils import ai_knowledge
+        from ai.services.knowledge import ai_knowledge
 
         docs = tmp_path / "docs"
         docs.mkdir()
         (docs / "guide.md").write_text("# Guide\n\n## Setup\n\n安装说明内容", encoding="utf-8")
-        # 实现位于 ai_knowledge（ai.utils.ai 仅再导出），patch 目标须与实现同源
+        # 实现位于 ai_knowledge（ai.services.assistant.ai 仅再导出），patch 目标须与实现同源
         monkeypatch.setattr(ai_knowledge, "DOCS_DIR", docs)
         monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
         response = auth_client.post(f"{KNOWLEDGE_URL}/sync-repo", {}, format="json")
@@ -168,7 +222,7 @@ class TestRepoRebuildAction:
 
     def test_sync_repo_conflict_when_already_running(self, auth_client):
         """单飞：已有同步在跑时返回 1001，不排队、不重复扫盘。"""
-        from ai.utils.sync_progress import try_acquire_lock
+        from ai.services.knowledge.sync_progress import try_acquire_lock
 
         assert try_acquire_lock()
         response = auth_client.post(f"{KNOWLEDGE_URL}/sync-repo", {}, format="json")
@@ -176,9 +230,9 @@ class TestRepoRebuildAction:
 
     def test_sync_repo_task_error_releases_lock(self, monkeypatch):
         """任务级兜底：同步异常落 error 终态并释放单飞锁（同步入口不会永久卡死）。"""
+        from ai.services.knowledge import ai_knowledge
+        from ai.services.knowledge.sync_progress import get_status, try_acquire_lock
         from ai.tasks import sync_repo_task
-        from ai.utils import ai_knowledge
-        from ai.utils.sync_progress import get_status, try_acquire_lock
 
         def _boom():
             raise RuntimeError("sync exploded")
@@ -194,7 +248,7 @@ class TestRepoRebuildAction:
         首轮轮询（任务尚未被 worker 拉起）读到的只能是 running，而非旧摘要。"""
         from django.core.cache import cache
 
-        from ai.utils.sync_progress import SYNC_STATUS_KEY, release_lock
+        from ai.services.knowledge.sync_progress import SYNC_STATUS_KEY, release_lock
 
         cache.set(
             SYNC_STATUS_KEY,
@@ -212,8 +266,8 @@ class TestRepoRebuildAction:
 
 
 class TestBatchOperations:
-    def test_batch_destroy_only_uploads_and_clears_chunks(self, auth_client):
-        """批量删除：只删上传文档（repo 静默保留），分块随删除清理。"""
+    def test_batch_destroy_only_uploads_and_reports_skipped_repo(self, auth_client):
+        """批量删除：只删上传文档，仓库文档按 failures 明示跳过（不再静默）。"""
         _upload(auth_client, name="批量甲")
         _upload(auth_client, name="批量乙")
         repo = AiKnowledgeDocument.objects.create(
@@ -229,8 +283,11 @@ class TestBatchOperations:
             )
         ]
         assert len(pks) == 2
-        response = auth_client.post(f"{KNOWLEDGE_URL}/batch-destroy", pks, format="json")
+        response = auth_client.post(f"{KNOWLEDGE_URL}/batch-destroy", pks + [str(repo.pk)], format="json")
         assert response.status_code == 200, response.data
+        body = response.json()
+        assert body["data"]["deleted"] == 2
+        assert [item["pk"] for item in body["data"]["failures"]] == [str(repo.pk)]
         assert not AiKnowledgeDocument.objects.filter(source_type=AiKnowledgeDocument.SourceType.UPLOAD).exists()
         # 分块必须随删除清理（框架批量删除不触发 perform_destroy，此处逐条清理）
         assert not AiKnowledgeChunk.objects.filter(source_path__startswith="upload/").exists()
@@ -257,7 +314,7 @@ class TestBatchOperations:
 
     def test_batch_toggle_merged_rebuild(self, auth_client, monkeypatch):
         """批量启用走合并重建：多文档只触发一次批量重建，不逐文档循环。"""
-        from ai.utils import ai_knowledge
+        from ai.services.knowledge import ai_knowledge
 
         _upload(auth_client, name="合并启停甲")
         _upload(auth_client, name="合并启停乙")
@@ -444,3 +501,46 @@ class TestBinaryDocumentUpload:
     def test_text_upload_contract_unchanged(self, auth_client):
         """文本直传路径零变化（回归护栏）。"""
         assert _upload(auth_client, name="纯文本回归").status_code == 200
+
+
+class TestUploadAsyncIngest:
+    def test_defer_marks_pending_before_task(self, monkeypatch):
+        """异步入口：先落库为 PENDING，任务完成前不假装已生成分块。"""
+        from ai.services.knowledge import ai_knowledge
+
+        monkeypatch.setattr(ai_knowledge, "schedule_upload_ingest", lambda _doc: None)
+
+        doc, created = ai_knowledge.upsert_upload_document("异步文档", "# 标题\n\n## 小节\n\n正文", defer_chunks=True)
+
+        assert created is True
+        assert doc.ingest_status == AiKnowledgeDocument.IngestStatus.PENDING
+        assert doc.chunk_count == 0
+
+    def test_task_marks_success(self, superuser):
+        from ai.services.knowledge import ai_knowledge
+        from ai.tasks import ingest_upload_document_task
+
+        doc, _ = ai_knowledge.upsert_upload_document(
+            "任务文档", "# 标题\n\n## 小节\n\n正文", superuser, defer_chunks=True
+        )
+        ingest_upload_document_task.apply(args=[str(doc.pk)])
+
+        doc.refresh_from_db()
+        assert doc.ingest_status == AiKnowledgeDocument.IngestStatus.SUCCESS
+        assert doc.chunk_count >= 1
+
+    def test_task_failure_keeps_reason(self, superuser, monkeypatch):
+        from ai.services.knowledge import ai_knowledge
+        from ai.tasks import ingest_upload_document_task
+
+        doc, _ = ai_knowledge.upsert_upload_document("失败文档", "# 标题\n\n正文", superuser, defer_chunks=True)
+
+        def boom(_doc):
+            raise RuntimeError("chunk build failed")
+
+        monkeypatch.setattr(ai_knowledge, "rebuild_chunks", boom)
+        ingest_upload_document_task.apply(args=[str(doc.pk)])
+
+        doc.refresh_from_db()
+        assert doc.ingest_status == AiKnowledgeDocument.IngestStatus.FAILED
+        assert "chunk build failed" in doc.ingest_error

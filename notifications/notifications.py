@@ -9,9 +9,10 @@ from django.utils.translation import gettext_lazy as _
 from html2text import HTML2Text
 
 from common.utils import get_logger
+from common.utils.display import user_label
 from common.utils.sanitize import sanitize_rich_text
 from identity.services import UserInfo, get_superusers, get_users_by_pks
-from notifications.backends import BACKEND
+from notifications.backends import BACKEND, all_channel_specs
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 
 logger = get_logger(__name__)
@@ -29,13 +30,16 @@ user_msgs = USER_MESSAGE_REGISTRY
 # key: BACKEND 成员；value: Message 实例上的渲染方法名；未注册的后端回退 get_common_msg
 BACKEND_MSG_RENDERERS: dict[Any, str] = {}
 
+
 # 正文按 HTML 渲染的渠道（站内信前端 v-html 展示、邮件 html_message 投递）：
 # 渲染收口处对正文做白名单净化。存量缺口：公告路径在 serializer 入库前已净化，
 # 但通知链路（含 DB 模板覆盖渲染）从未净化——模板文本与变量值（如审批标题等
 # 用户可控数据）都可能携带 <script>/on* 注入 payload，落库 MessageContent 后即成
 # 存储型 XSS。SMS/IM 渠道正文是纯文本（get_text_msg 已用 html2text 剥离标签），
 # 不做 HTML 净化（净化反而会把纯文本当片段转义）。
-HTML_MESSAGE_BACKENDS = frozenset({BACKEND.SITE_MSG, BACKEND.EMAIL})
+def html_message_backends() -> frozenset[str]:
+    """支持 HTML 正文的渠道集合（内置 + 运行期登记，随注册动态更新）。"""
+    return frozenset(BACKEND(spec.code) for spec in all_channel_specs() if spec.html)
 
 
 def register_backend_msg(backend: Any, method_name: str) -> str:
@@ -93,7 +97,7 @@ class Message:
             get_msg_method = getattr(self, method_name)
             # 模板覆盖收口：渠道渲染完成后统一套用 DB 覆盖（未配置零行为变化）
             msg = self.apply_template_override(get_msg_method())
-            if backend in HTML_MESSAGE_BACKENDS:
+            if backend in html_message_backends():
                 # HTML 渠道正文统一白名单净化（按渠道分派，覆盖默认模板与 DB 覆盖渲染
                 # 两条路径，测试消息同口径）。净化幂等：公告路径已在 serializer 净化过，
                 # 此处二次净化结果一致，无行为漂移。
@@ -112,7 +116,7 @@ class Message:
 
     @property
     def user_display(self) -> str:
-        """接收人展示名（昵称优先，空则用户名）。
+        """接收人展示名（昵称优先，空则用户名；取值单源 common.utils.display.user_label）。
 
         样例消息（模板预览、守护测试）可能没有真实用户，系统级消息也可能没有
         接收人——此处退化为占位符，避免渲染期抛错导致整条通知静默丢失。
@@ -120,8 +124,7 @@ class Message:
         user = getattr(self, "user", None)
         if user is None:
             return "-"
-        display: str = user.nickname or user.username
-        return display
+        return user_label(user)
 
     @property
     def user_username(self) -> str:
@@ -290,24 +293,52 @@ class Message:
 
 
 class SystemMessage(Message):
+    #: 该系统消息是否允许用户在个人订阅页自选订阅（publish 时并入自选者，
+    #: 各自按勾选渠道投递）。默认关闭：仅运维类告警等明确开放的消息置 True。
+    user_subscribable = False
+
+    def _subscriber_groups(self, subscription: Any) -> dict[frozenset[str], list[Any]]:
+        """收件人按渠道集合分组：系统订阅者用订阅行渠道；自选订阅者（仅
+        user_subscribable 消息）用各自勾选渠道；两边都登记的用户渠道取并集。
+        站内信不参与分组（get_backend_msg_mapper 内恒发兜底）。
+        """
+        system_backends = frozenset(BACKEND.filter_enable_backends(subscription.receive_backends))
+        # 必须物化为 list：软删除模型的 related manager 返回 SoftDeleteQuerySet，
+        # 直接把 QuerySet 传给 celery delay 会因 JSON 序列化失败抛 EncodeError
+        system_user_ids = list(subscription.users.values_list("pk", flat=True))
+        user_backends_map: dict[Any, frozenset[str]] = {}
+        if self.user_subscribable:
+            for sub in UserMsgSubscription.objects.filter(message_type=self.get_message_type()):
+                backends = frozenset(BACKEND.filter_enable_backends(sub.receive_backends))
+                if backends:
+                    user_backends_map[sub.user_id] = backends
+        groups: dict[frozenset[str], list[Any]] = {}
+        system_id_set = set(system_user_ids)
+        for user_id in system_user_ids:
+            merged = system_backends | user_backends_map.get(user_id, frozenset())
+            groups.setdefault(merged, []).append(user_id)
+        for user_id, backends in user_backends_map.items():
+            if user_id not in system_id_set:
+                groups.setdefault(backends, []).append(user_id)
+        return groups
+
     def publish(self, is_async: bool = False) -> None:
         subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
 
-        # 只发送当前有效后端
-        receive_backends = subscription.receive_backends
-        receive_backends = BACKEND.filter_enable_backends(receive_backends)
-
-        # 必须物化为 list：软删除模型的 related manager 返回 SoftDeleteQuerySet，
-        # 直接把 QuerySet 传给 celery delay 会因 JSON 序列化失败抛 EncodeError
-        receive_user_ids = list(subscription.users.values_list("pk", flat=True))
-        if not receive_user_ids:
+        # 按渠道集合分组的收件人（组数 = 渠道组合数，通常 1 组；行为与
+        # 「单一收件人集合 + 单一渠道集合」的旧实现等价，除非有自选订阅者）
+        groups = self._subscriber_groups(subscription)
+        if not any(user_ids for user_ids in groups.values()):
             logger.warning(f"send system msg failed. No receive users found for {self}")
             return
-        backends_msg_mapper = self.get_backend_msg_mapper(receive_backends)
-        if is_async:
-            publish_task.delay(receive_user_ids, self._json_safe_backends_msg_mapper(backends_msg_mapper))
-        else:
-            self.send_msg(receive_user_ids, backends_msg_mapper)
+        for receive_backends, receive_user_ids in groups.items():
+            if not receive_user_ids:
+                continue
+            backends_msg_mapper = self.get_backend_msg_mapper(receive_backends)
+            if is_async:
+                publish_task.delay(receive_user_ids, self._json_safe_backends_msg_mapper(backends_msg_mapper))
+            else:
+                self.send_msg(receive_user_ids, backends_msg_mapper)
 
     @classmethod
     def post_insert_to_db(cls, subscription: SystemMsgSubscription) -> None:

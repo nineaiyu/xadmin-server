@@ -384,6 +384,25 @@ def test_storage_quota_exceeded_rejects_without_saving(superuser):
     assert UploadFile.objects.filter(creator=superuser, filename="a.txt").count() == 0
 
 
+def test_soft_deleted_files_still_count_toward_quota(superuser):
+    """软删除只标记不释放物理文件：配额不能按活跃行统计，否则可循环绕过。"""
+    from common.core.config import SysConfig
+
+    record = UploadFile.objects.create(
+        creator=superuser,
+        filename="deleted.bin",
+        filesize=1024 * 1024 - 50,
+        mime_type="application/octet-stream",
+        md5sum="d" * 32,
+    )
+    record.delete()
+    assert UploadFile.objects.filter(pk=record.pk).exists() is False
+    SysConfig.set_value("FILE_STORAGE_QUOTA_MB", 1)
+
+    response = _upload(superuser, _mkfile("after-delete.txt", b"x" * 100))
+    assert response.data["code"] == 1004
+
+
 def test_count_limit_exceeded_rejects(superuser):
     """数量上限超限：1004 且不落盘。"""
     from common.core.config import SysConfig

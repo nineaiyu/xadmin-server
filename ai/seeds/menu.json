@@ -57,7 +57,7 @@
    "menu_type": 2,
    "name": "status:AiAssistant",
    "rank": 1,
-   "path": "api/ai/assistant/(status|metrics|history|tools|usage)$",
+   "path": "api/ai/assistant/(status|metrics|history|tools|usage|daily-report)$",
    "component": null,
    "is_active": true,
    "meta": "5a7bbc72-13c7-5f00-b54c-59d3627867c5",
@@ -663,7 +663,7 @@
    "deleted_at": null,
    "parent": "21c88c48-6624-5cff-b85f-952e130e06e0",
    "menu_type": 2,
-   "name": "mcp:AiMcp",
+   "name": "mcp:AiMcpServers",
    "rank": 6,
    "path": "api/ai/mcp$",
    "component": null,
@@ -930,6 +930,124 @@
    "is_active": true,
    "meta": "c4d5e6f7-8a9b-4c0d-9e1f-2a3b4c5d6e7f",
    "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "25ae128c-9829-442b-9fc7-50714088eb8e",
+  "fields": {
+   "created_time": "2026-10-25T09:56:05.187Z",
+   "updated_time": "2026-10-25T09:56:05.187Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "9c1e7a30-4b2f-4d8a-91e3-6f0a2b3c4d5e",
+   "menu_type": 2,
+   "name": "exportData:McpCallLog",
+   "rank": 10003,
+   "path": "api/ai/mcp-call-logs/export-data$",
+   "component": null,
+   "is_active": true,
+   "meta": "e1374dcf-1574-40bf-8a7d-75617fbbbed0",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "79b6975a-e0b3-4893-bf6e-d9f358bc76b3",
+  "fields": {
+   "created_time": "2026-10-25T09:56:05.185Z",
+   "updated_time": "2026-10-25T09:56:05.185Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "9c1e7a30-4b2f-4d8a-91e3-6f0a2b3c4d5e",
+   "menu_type": 2,
+   "name": "exportAsync:McpCallLog",
+   "rank": 10002,
+   "path": "api/ai/mcp-call-logs/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "6edaec73-209a-44df-900e-4921e5187142",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "4bf1cc87-e7ae-426f-b5ee-8b7a9b4a4a32",
+  "fields": {
+   "created_time": "2026-10-25T09:56:05.180Z",
+   "updated_time": "2026-10-25T09:56:05.180Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "9c1e7a30-4b2f-4d8a-91e3-6f0a2b3c4d5e",
+   "menu_type": 2,
+   "name": "retrieve:McpCallLog",
+   "rank": 10001,
+   "path": "api/ai/mcp-call-logs/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "2079ce27-6921-48a8-9f11-71be3c6322ce",
+   "method": "GET",
+   "model": [
+    "b5e9a978-60a6-41d4-843c-bbb5f1339113"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "fca85e64-f0da-414d-91b1-22063839c4cd",
+  "fields": {
+   "created_time": "2026-10-25T09:56:05.175Z",
+   "updated_time": "2026-10-25T09:56:05.175Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "9c1e7a30-4b2f-4d8a-91e3-6f0a2b3c4d5e",
+   "menu_type": 2,
+   "name": "list:McpCallLog",
+   "rank": 10000,
+   "path": "api/ai/mcp-call-logs$",
+   "component": null,
+   "is_active": true,
+   "meta": "a1bb2aa9-f14f-4d3a-9f01-1265abc72efe",
+   "method": "GET",
+   "model": [
+    "b5e9a978-60a6-41d4-843c-bbb5f1339113"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "9c177e55-776b-5ee3-b05a-23acc6b41d00",
+  "fields": {
+   "created_time": "2026-10-28T00:00:00.000Z",
+   "updated_time": "2026-10-28T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "10c28e70-3d19-5c65-8589-c8913c643d25",
+   "menu_type": 2,
+   "name": "testResult:AiProfile",
+   "rank": 11,
+   "path": "api/ai/profiles/(?P<pk>[^/.]+)/test-result$",
+   "component": null,
+   "is_active": true,
+   "meta": "7a6cf066-7220-536f-a417-56b3d006dfce",
+   "method": "GET",
    "model": []
   }
  }

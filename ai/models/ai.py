@@ -19,15 +19,22 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from pgvector.django import VectorField
 
-from common.base.utils import signer
+from common.base.crypto import signer
 from common.core.models import DbAuditModel, DbUuidModel
 
 # 上传文档的存储路径前缀（与仓库文档路径隔离，同步清理时不越界）
 UPLOAD_PATH_PREFIX = "upload/"
 
 
-def upload_document_path(name: str) -> str:
-    """上传文档的稳定存储路径：同一名称重复上传落到同一 path（覆盖更新语义）。"""
+def upload_document_path(name: str, creator_pk: Any = None) -> str:
+    """上传文档的稳定存储路径：同一名称重复上传落到同一 path（覆盖更新语义）。
+
+    带 ``creator_pk`` 时路径按上传者命名空间隔离（``upload/{pk}/{name}.md``）——
+    不同用户同名文档并存互不覆盖（同名覆盖仅限本人文档）；不传 creator_pk
+    为 legacy 全局路径（``upload/{name}.md``，无归属上下文调用方的兼容口径）。
+    """
+    if creator_pk is not None:
+        return f"{UPLOAD_PATH_PREFIX}{creator_pk}/{name}.md"
     return f"{UPLOAD_PATH_PREFIX}{name}.md"
 
 
@@ -37,6 +44,12 @@ class AiKnowledgeDocument(DbAuditModel, DbUuidModel):
     class SourceType(models.TextChoices):
         REPO = "repo", _("Repository docs")
         UPLOAD = "upload", _("Uploaded document")
+
+    class IngestStatus(models.TextChoices):
+        PENDING = "PENDING", _("Pending")
+        PROCESSING = "PROCESSING", _("Processing")
+        SUCCESS = "SUCCESS", _("Succeeded")
+        FAILED = "FAILED", _("Failed")
 
     source_type = models.CharField(
         _("Source type"), max_length=16, choices=SourceType.choices, default=SourceType.REPO, db_index=True
@@ -48,6 +61,11 @@ class AiKnowledgeDocument(DbAuditModel, DbUuidModel):
     chunk_count = models.IntegerField(_("Chunk count"), default=0)
     is_active = models.BooleanField(_("Active"), default=True, db_index=True)
     synced_at = models.DateTimeField(_("Synced at"), auto_now=True)
+    # 上传文档的分块摄取状态（异步任务）；存量/仓库文档默认 SUCCESS。
+    ingest_status = models.CharField(
+        _("Ingest status"), max_length=16, choices=IngestStatus.choices, default=IngestStatus.SUCCESS, db_index=True
+    )
+    ingest_error = models.CharField(_("Ingest error"), max_length=500, blank=True, default="")
 
     class Meta:
         verbose_name = _("AI knowledge document")
@@ -82,7 +100,7 @@ class AiKnowledgeChunk(DbAuditModel, DbUuidModel):
     chunk_index = models.IntegerField(_("Chunk index"), default=0)
     content = models.TextField(_("Content"))
     content_hash = models.CharField(_("Content hash"), max_length=64)
-    # 向量以 float32 小端二进制落库（见 ai/utils/ai_embeddings.py 的编解码），
+    # 向量以 float32 小端二进制落库（见 ai/services/knowledge/ai_embeddings.py 的编解码），
     # 比 JSON 文本省 ~5 倍体积且省去检索时的文本解析
     embedding = models.BinaryField(_("Embedding"), null=True, blank=True, editable=False)
     # pgvector 向量列：与 embedding 二进制列**双写**（迁移窗口，回滚=代码回退）
@@ -189,7 +207,7 @@ class AiProfile(DbAuditModel, DbUuidModel):
 class AiUsageRecord(DbAuditModel, DbUuidModel):
     """AI 调用用量账本：逐次记录 token / 耗时 / 成败，供用量端点与配额判定。
 
-    写入口收敛（``ai/utils/ai_usage.py`` 的 ``tracked_chat`` / ``tracked_chat_stream``），
+    写入口收敛（``ai/services/assistant/ai_usage.py`` 的 ``tracked_chat`` / ``tracked_chat_stream``），
     不在各链路散落；保留期随 ``MONITOR_RETENTION_DAYS`` 由周期任务清理。
     ``feature`` 区分链路（文档问答 / 聊天室 / NL 查数 / 动作草稿），用于成本归因。
     """
@@ -200,6 +218,8 @@ class AiUsageRecord(DbAuditModel, DbUuidModel):
         NL = "nl", _("NL query")
         ACTION = "action", _("Action execution")
         EMBEDDING = "embedding", _("Knowledge embedding")
+        DAILY = "daily", _("AI daily report")
+        CODEGEN = "codegen", _("Codegen field draft")
 
     class Track(models.TextChoices):
         """草稿链路轨道（双轨对照）：原生 function calling / prompt-JSON。"""

@@ -10,11 +10,15 @@ import pytest
 from rest_framework.test import APIClient
 
 from ai.models.ai import AiProfile
-from ai.utils.ai import (
+from ai.services.assistant.ai import (
+    PURPOSE_CHAT,
+    PURPOSE_EMBEDDING,
     ai_context_limit,
     ai_credentials,
     ai_persona,
+    embedding_profile,
     is_configured,
+    profile_for,
     set_active_profile,
 )
 
@@ -173,6 +177,24 @@ class TestActivation:
         assert AiProfile.objects.count() == 0
         assert ai_credentials()["base_url"] == "https://fallback.example.com/v1"
 
+    def test_embedding_profile_not_used_as_chat_fallback(self):
+        """仅激活 embedding 档案时：chat/structured 未配置，embedding 用途自身可用。"""
+        profile = AiProfile.objects.create(
+            name="向量档案",
+            base_url="https://embed.example.com/v1",
+            api_key="sk-embed",
+            model="text-embedding-3-small",
+            purpose=AiProfile.Purpose.EMBEDDING,
+        )
+        profile.api_key_plain = "sk-embed"
+        profile.save()
+        set_active_profile(profile, True)
+        assert profile_for(PURPOSE_CHAT) is None
+        assert profile_for("structured") is None
+        assert is_configured() is False
+        assert embedding_profile() == profile
+        assert is_configured(PURPOSE_EMBEDDING) is True
+
 
 class TestCredentialsResolution:
     def test_profile_takes_priority(self, settings):
@@ -244,7 +266,10 @@ class TestTestAction:
         row = AiProfile.objects.get(name="主档案")
         response = auth_client.post(f"{PROFILES_URL}/{row.pk}/test")
         assert response.status_code == 200, response.data
-        assert "provider ok" in response.json()["detail"]
+        # 外呼已下沉 celery：eager 环境把结论内联在 data（顶层 detail 固定为「已提交」）
+        outcome = response.json()["data"]
+        assert outcome["ok"] is True
+        assert "provider ok" in outcome["detail"]
         request_body = stub_llm[0]["json"]
         assert request_body["temperature"] == 0.5
         assert request_body["stop"] == ["观察", "结束"]

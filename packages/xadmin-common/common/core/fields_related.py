@@ -10,6 +10,7 @@ from functools import partial
 from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Model
 from django.db.models.fields.files import FieldFile
 from django.utils.translation import gettext_lazy as _
@@ -258,7 +259,11 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         else:
             pk = data.get("id") or data.get("pk") or data.get(self.attrs[0])
 
-        memo_key = (self.field_name, str(pk))
+        # key 含父序列化器类名 + 字段名：不同序列化器/字段的 queryset 与数据权限
+        # 过滤条件不同，同一 pk 不能串用；不能含 id(self)——导入每行都会 clone 字段
+        # 实例，用实例 id 会让 memo 完全失效（N 行 N 次 SELECT）。
+        parent_name = type(self.parent).__name__ if self.parent is not None else ""
+        memo_key = (parent_name, self.field_name, str(pk))
         if memo is not None and memo_key in memo:
             return memo[memo_key]
 
@@ -274,7 +279,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             obj = queryset.get(pk=pk)
         except ObjectDoesNotExist:
             self.fail("does_not_exist", pk_value=pk)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, DjangoValidationError):
             self.fail("incorrect_type", data_type=type(pk).__name__)
 
         if memo is not None:
@@ -390,3 +395,25 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         获取对象属性的 OpenAPI schema
         """
         return self._get_openapi_object_schema()["properties"]
+
+
+class DisplayRelatedField(BasePrimaryKeyRelatedField):
+    """对象关联字段展示增强：补充 label（默认 str(instance)）。
+
+    供前端列表/详情/下拉直接可读，避免展示裸外键主键（周期任务页的
+    crontab/interval 原先显示 1/2/3 这种数字主键，无法辨认）。
+    本体自 task/serializers/task.py 下沉内核（ai / approval 跨 app 引用它的
+    先前形态是 ``from task.services import ...``，属越层）；task 侧与
+    ``common.core.fields`` 均保留导入面。
+    """
+
+    def __init__(self, *args: Any, label_builder: Any = str, **kwargs: Any) -> None:
+        self.label_builder = label_builder
+        super().__init__(*args, **kwargs)
+
+    def to_representation(self, value: Any) -> Any:
+        data = super().to_representation(value)
+        if isinstance(data, dict):
+            # 基类已把 label 兜底为 pk，这里必须覆盖而非 setdefault，否则 label_builder 永不生效
+            data["label"] = self.label_builder(value)
+        return data

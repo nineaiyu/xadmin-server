@@ -7,7 +7,9 @@
 from typing import Any
 
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db.models import Q, QuerySet
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -67,10 +69,13 @@ def invalidate_unread_summary(user: Any) -> None:
 
 
 def get_users_notice_q(user_obj: Any) -> Any:
+    from common.core.roles import user_role_pks
+
     q = Q()
     q |= Q(notice_type=MessageContent.NoticeChoices.NOTICE)
     q |= Q(notice_type=MessageContent.NoticeChoices.DEPT, notice_dept=user_obj.dept)
-    q |= Q(notice_type=MessageContent.NoticeChoices.ROLE, notice_role__in=user_obj.roles.all())
+    # 生效角色 = 直挂 ∪ 部门挂（与菜单/审批/脱敏同一解析口径）
+    q |= Q(notice_type=MessageContent.NoticeChoices.ROLE, notice_role__in=user_role_pks(user_obj))
     # 岗位通知：仅启用岗位的在岗用户可见（与审批人解析/计数同口径）
     q |= Q(
         notice_type=MessageContent.NoticeChoices.POST,
@@ -80,7 +85,17 @@ def get_users_notice_q(user_obj: Any) -> Any:
 
 
 def get_user_unread_q1(user_obj: Any) -> Any:
-    return get_users_notice_q(user_obj) & ~Q(notice_user=user_obj)
+    """公告类未读：发布范围内、尚无本人「已读」行（messageuserread.unread=False）的消息。
+
+    已读口径统一到 messageuserread（batch-read / all-read 为公告补建 read 行）：
+    标记已读后角标与 ?unread=true 同步归零，all-read 也不再为已读公告重复补建无效行
+    （旧口径 ``~Q(notice_user=user)`` 让公告恒为未读，角标永不归零且与列表口径相悖）。
+    """
+    return (
+        get_users_notice_q(user_obj)
+        & ~Q(notice_user=user_obj)
+        & ~Q(messageuserread__owner=user_obj, messageuserread__unread=False)
+    )
 
 
 def get_user_unread_q2(user_obj: Any) -> Any:
@@ -91,16 +106,27 @@ def get_user_unread_q(user_obj: Any) -> Any:
     return get_user_unread_q1(user_obj) | get_user_unread_q2(user_obj)
 
 
+def get_visible_notice_queryset(user_obj: Any) -> Any:
+    """当前用户可见的消息域（与列表页同一口径）：已发布 + 公告类范围 + 本人私信。
+
+    标记已读、取消已读等写操作必须先过这个 queryset：只按 pk 操作会让任意登录用户
+    给他人私信补建已读行，破坏未读口径与消息边界。
+    """
+    q = get_users_notice_q(user_obj) | Q(notice_type__in=MessageContent.get_user_choices(), notice_user=user_obj)
+    return MessageContent.objects.filter(publish=True).filter(q).distinct()
+
+
 class UserSiteMessageViewSetFilter(BaseFilterSet):
     message = filters.CharFilter(field_name="message", lookup_expr="icontains")
     title = filters.CharFilter(field_name="title", lookup_expr="icontains")
     unread = filters.BooleanFilter(field_name="unread", method="unread_filter")
 
     def unread_filter(self, queryset: Any, name: Any, value: Any) -> Any:
+        unread_q = get_user_unread_q(self.request.user)
         if value:
-            return queryset.filter(get_user_unread_q(self.request.user))
-        else:
-            return queryset.filter(notice_user=self.request.user, messageuserread__unread=False)
+            return queryset.filter(unread_q)
+        # 「已读」= 未读集合的补集：公告类没有 notice_user/read 行，不能按私信表过滤
+        return queryset.exclude(unread_q)
 
     class Meta:
         model = MessageContent
@@ -196,28 +222,39 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
           迭代后分批 bulk_create。
         """
         if isinstance(pks, QuerySet):
+            # 只处理当前用户可见的消息：客户端传入的 pk 可能属于他人私信或已撤回公告
+            visible = get_visible_notice_queryset(request.user).filter(pk__in=pks)
             # 1. 已存在的未读记录批量置为已读（pk 集合以子查询下推）
-            MessageUserRead.objects.filter(notice__in=pks, owner=request.user, unread=True).update(unread=False)
+            MessageUserRead.objects.filter(notice__in=visible, owner=request.user, unread=True).update(unread=False)
             # 2+3. 仅对尚无该用户已读行的消息（DB 反连接差集）补建"已读"行
-            missing_pks = (
-                MessageContent.objects.filter(pk__in=pks)
-                .exclude(messageuserread__owner=request.user)
-                .values_list("pk", flat=True)
-            )
+            missing_pks = visible.exclude(messageuserread__owner=request.user).values_list("pk", flat=True)
         else:
+            if not isinstance(pks, (list, tuple, set)):
+                return ApiResponse(code=1001, detail=_("Invalid message ids"))
             pks = list(set(pks))
             if not pks:
                 return ApiResponse()
+            try:
+                visible_ids = list(
+                    get_visible_notice_queryset(request.user).filter(pk__in=pks).values_list("pk", flat=True)
+                )
+            except (ValidationError, ValueError, TypeError):
+                # 非法 UUID 不能让 filter 求值抛 500：按参数错误返回可读原因
+                return ApiResponse(code=1001, detail=_("Invalid message ids"))
+            if not visible_ids:
+                return ApiResponse()
             # 1. 已存在的未读记录批量置为已读
-            MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user, unread=True).update(unread=False)
+            MessageUserRead.objects.filter(notice__id__in=visible_ids, owner=request.user, unread=True).update(
+                unread=False
+            )
             # 2. 已存在的记录（无论原状态）不再重复创建
             exist_ids = set(
-                MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user).values_list(
+                MessageUserRead.objects.filter(notice__id__in=visible_ids, owner=request.user).values_list(
                     "notice_id", flat=True
                 )
             )
             # 3. 仅对尚无记录的消息补建"已读"行
-            missing_pks = [pk for pk in pks if pk not in exist_ids]
+            missing_pks = [pk for pk in visible_ids if pk not in exist_ids]
         new_reads = [MessageUserRead(owner=request.user, notice_id=pk, unread=False) for pk in missing_pks]
         # 未读量大（如系统公告全量下发）时一次性 bulk_create 会生成超大 INSERT：分批写入
         for start in range(0, len(new_reads), 1000):

@@ -5,8 +5,11 @@
 `?tag=` 多值 AND 语义；删除被引用的标签被拒（保护先解绑）。
 """
 
+import uuid
+
 import pytest
 from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework.exceptions import NotFound
 
 from identity.models import UserInfo
 from system.models.tag import TAGGABLE_MODELS, Tag, TaggedItem
@@ -88,9 +91,29 @@ class TestTagging:
         with pytest.raises(DjangoValidationError):
             set_object_tags(UserInfo, "", [])
 
+    def test_nonexistent_or_invisible_object_rejected(self, superuser):
+        """写口与读口同口径：目标对象不存在/不可见时不落 TaggedItem。"""
+        tag = Tag.objects.create(name="有效标签")
+        with pytest.raises(NotFound):
+            set_object_tags(UserInfo, uuid.uuid4(), [tag.pk], superuser)
+        assert TaggedItem.objects.count() == 0
+
 
 class TestBatchTagging:
     """多对象批量打标：三种模式语义 + 重复执行幂等 + 单对象失败隔离与统计口径。"""
+
+    def test_batch_nonexistent_object_goes_to_failures(self, superuser):
+        alice = UserInfo.objects.create(username="tag-batch-real", nickname="A")
+        tag = Tag.objects.create(name="批量有效")
+        missing = str(uuid.uuid4())
+
+        changed, failed = set_object_tags_batch(
+            UserInfo, [str(alice.pk), missing], [str(tag.pk)], mode="add", user=superuser
+        )
+
+        assert [item["pk"] for item in changed] == [str(alice.pk)]
+        assert [item["pk"] for item in failed] == [missing]
+        assert TaggedItem.objects.filter(object_id=missing).count() == 0
 
     def test_batch_modes_multi_objects_and_idempotent(self, superuser):
         alice = UserInfo.objects.create(username="tag-batch-a", nickname="A")
@@ -226,3 +249,14 @@ class TestFiltering:
         queryset = UserInfo.objects.all()
         assert filter_by_tags(queryset, UserInfo, []) is queryset
         assert filter_by_tag_name(queryset, "") is queryset
+
+    def test_filter_uses_exists_subquery_not_materialized_ids(self, superuser):
+        """标签过滤走相关子查询（EXISTS），不把命中的 object_id 全量物化进 IN 列表。"""
+        alice = UserInfo.objects.create(username="tag-exists", nickname="E")
+        tag = Tag.objects.create(name="大标签")
+        set_object_tags(UserInfo, alice.pk, [tag.pk], superuser)
+
+        queryset = filter_by_tags(UserInfo.objects.all(), UserInfo, [tag.name])
+        sql = str(queryset.query).upper()
+        assert "EXISTS" in sql
+        assert str(alice.pk) not in sql

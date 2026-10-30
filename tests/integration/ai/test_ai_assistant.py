@@ -117,13 +117,13 @@ def stub_llm(monkeypatch):
 class TestKnowledgeSync:
     def test_sync_creates_chunks(self, tmp_path, monkeypatch, settings):
         from ai.models.ai import AiKnowledgeDocument
-        from ai.utils import ai as ai_utils
-        from ai.utils import ai_knowledge
+        from ai.services.assistant import ai as ai_utils
+        from ai.services.knowledge import ai_knowledge
 
         doc = tmp_path / "docs"
         doc.mkdir()
         (doc / "demo.md").write_text("# Demo\n\n## Alpha\n\n内容甲\n\n## Beta\n\n内容乙", encoding="utf-8")
-        # 实现位于 ai_knowledge（ai.utils.ai 仅再导出），patch 目标须与实现同源
+        # 实现位于 ai_knowledge（ai.services.assistant.ai 仅再导出），patch 目标须与实现同源
         monkeypatch.setattr(ai_knowledge, "DOCS_DIR", doc)
         monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
 
@@ -141,8 +141,8 @@ class TestKnowledgeSync:
         assert again["created"] == 0 and again["total"] == 3
 
     def test_sync_removes_stale(self, tmp_path, monkeypatch):
-        from ai.utils import ai as ai_utils
-        from ai.utils import ai_knowledge
+        from ai.services.assistant import ai as ai_utils
+        from ai.services.knowledge import ai_knowledge
 
         AiKnowledgeChunk.objects.create(source_path="docs/gone.md", chunk_index=0, content="旧", content_hash="x" * 64)
         doc = tmp_path / "docs"
@@ -156,14 +156,14 @@ class TestKnowledgeSync:
 
 class TestRetrieve:
     def test_relevant_chunk_first(self, knowledge):
-        from ai.utils.ai import retrieve
+        from ai.services.assistant.ai import retrieve
 
         results = retrieve("数据集怎么过滤数据？")
         assert results
         assert "数据集" in results[0]["chunk"].content
 
     def test_no_match_empty(self, knowledge):
-        from ai.utils.ai import retrieve
+        from ai.services.assistant.ai import retrieve
 
         assert retrieve("完全无关的量子力学问题") == []
 
@@ -296,7 +296,7 @@ class TestConfigApi:
     @staticmethod
     def _activate_profile(base_url="https://profile.example.com/v1", model="profile-model"):
         from ai.models.ai import AiProfile
-        from ai.utils.ai import set_active_profile
+        from ai.services.assistant.ai import set_active_profile
 
         profile = AiProfile.objects.create(name="激活档案", base_url=base_url, model=model)
         profile.api_key_plain = "sk-profile"
@@ -328,6 +328,45 @@ class TestConfigApi:
         assert sent["url"] == "https://profile.example.com/v1/chat/completions"
         assert sent["json"]["model"] == "form-model"
         assert sent["headers"]["Authorization"] == "Bearer sk-profile"
+
+    def test_connection_test_private_http_url_rejected(self, auth_client):
+        """内网 http 地址走不出站守卫（与档案序列化器同口径，私网默认拒绝）。"""
+        response = auth_client.post(
+            CONFIG_URL,
+            {"AI_BASE_URL": "http://192.168.1.10:11434/v1", "AI_API_KEY": "sk", "AI_MODEL": "m"},
+            format="json",
+        )
+        assert response.status_code == 400, response.data
+
+    def test_connection_test_https_private_ip_rejected(self, auth_client):
+        """https 私网 IP 字面量同样拒绝（写入侧 IP 字面量直接做归属校验）。"""
+        response = auth_client.post(
+            CONFIG_URL,
+            {"AI_BASE_URL": "https://10.0.0.5/v1", "AI_API_KEY": "sk", "AI_MODEL": "m"},
+            format="json",
+        )
+        assert response.status_code == 400, response.data
+
+    def test_save_private_base_url_rejected(self, auth_client):
+        """保存路径（PATCH）同样挂出站守卫：不能把内网地址存成 AI_BASE_URL。"""
+        response = auth_client.patch(CONFIG_URL, {"AI_BASE_URL": "https://10.0.0.5/v1"}, format="json")
+        assert response.status_code == 400, response.data
+
+    def test_connection_test_loopback_http_allowed(self, auth_client, stub_llm):
+        """守卫不过度拦截：loopback http（本地联调）仍放行。"""
+        response = auth_client.post(
+            CONFIG_URL,
+            {"AI_BASE_URL": "http://127.0.0.1:11434/v1", "AI_API_KEY": "sk", "AI_MODEL": "m"},
+            format="json",
+        )
+        assert response.status_code == 200, response.data
+        assert stub_llm.requests[0]["url"].startswith("http://127.0.0.1:11434/v1")
+
+    def test_connection_test_profile_fallback_private_url_rejected(self, auth_client):
+        """表单未填地址、回落到私网档案地址时：视图层守卫拒绝（code 1001），不发起请求。"""
+        self._activate_profile(base_url="http://192.168.1.5:8000/v1", model="profile-model")
+        response = auth_client.post(CONFIG_URL, {"AI_MODEL": "form-model"}, format="json")
+        assert response.json()["code"] == 1001
 
 
 class TestAskStream:

@@ -13,6 +13,7 @@ from typing import Any
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.utils.outbound import OutboundBlocked, outbound_allowed_hosts, validate_outbound_config_url
 from settings.serializers.contract import SettingSaveContractMixin
 
 
@@ -55,6 +56,22 @@ class AiAssistantSettingSerializer(SettingSaveContractMixin, serializers.Seriali
         label=_("AI actions"),
         help_text=_(
             "Enable AI action drafts (whitelisted actions executed as the current user after confirmation, audited)"
+        ),
+    )
+    AI_DAILY_REPORT_ENABLED = serializers.BooleanField(
+        default=False,
+        label=_("AI daily report"),
+        help_text=_(
+            "Daily site digest on the welcome page: aggregate approval/monitor/audit/AI usage metrics "
+            "and summarize via LLM (scheduled task, read-only, no actions)"
+        ),
+    )
+    AI_CODEGEN_DRAFT_ENABLED = serializers.BooleanField(
+        default=False,
+        label=_("AI codegen draft"),
+        help_text=_(
+            "Natural-language field draft in the code generator: AI proposes field overrides for "
+            "human review (never writes code directly)"
         ),
     )
     # 采样/行为参数（回落通路；与 AiProfile 档案字段同义）
@@ -118,6 +135,28 @@ class AiAssistantSettingSerializer(SettingSaveContractMixin, serializers.Seriali
             "timeout). Built-in default 20, raise it to match the deployment size; 0 = unlimited"
         ),
     )
+
+    def validate_AI_BASE_URL(self, value: Any) -> Any:
+        """出站守卫：与档案序列化器（ai/serializers/ai.py）同口径。
+
+        保存与「测试连接」共用本序列化器——表单 AI_BASE_URL 在 ping 之前先过
+        私网拦截（https 放行；http 仅 loopback 或 OUTBOUND_ALLOWED_HOSTS 登记目标），
+        内网默认拒绝（fail-closed）。
+        """
+        url = (value or "").strip()
+        if not url:
+            return value
+        try:
+            validate_outbound_config_url(
+                url,
+                allowed_hosts=outbound_allowed_hosts(),
+                scheme_message=_(
+                    "Base URL must use https (http is allowed for loopback or OUTBOUND_ALLOWED_HOSTS targets)"
+                ),
+            )
+        except OutboundBlocked as exc:
+            raise serializers.ValidationError([str(item) for item in exc.messages]) from exc
+        return url
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         # 留白模型名收敛默认值，避免空配置静默失效

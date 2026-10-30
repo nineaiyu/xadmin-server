@@ -19,7 +19,7 @@ from system.services.seeding import read_model_rows
 SEED_DIR = Path(settings.PROJECT_DIR) / "loadjson"
 
 #: 运行时模块自建权限点的 pk 前缀（demo_seed 家族固定段，不进 loadjson）；
-#: 与扫描/回写内核同源（permission_sync.constants.RUNTIME_PERMISSION_PREFIXES）
+#: 与扫描/回写内核同源（permission_sync.declarations.RUNTIME_PERMISSION_PREFIXES）
 RUNTIME_MODULE_PREFIXES = RUNTIME_PERMISSION_PREFIXES
 
 

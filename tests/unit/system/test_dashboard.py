@@ -19,7 +19,13 @@ from django.utils import timezone
 
 from audit.models import OperationLog, UserLoginLog
 from identity.models import UserInfo
-from system.views.platform.dashboard import cached_total_count, trend_info, trend_points
+from system.views.platform.dashboard import (
+    active_user_buckets,
+    cached_total_count,
+    scope_limited,
+    trend_info,
+    trend_points,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -124,6 +130,23 @@ class TestTrendInfoCountScope:
 
 
 class TestUserActive:
+    def test_single_aggregate_query(self, superuser):
+        """四个窗口的 8 次全表 COUNT 收敛为单次聚合（PERF-SYS-01 回归防护）。"""
+        same_time = timezone.now()
+        for i in range(2):
+            user = UserInfo.objects.create_user(username=f"agg{i}", password="Test@123456")
+            UserInfo.objects.filter(pk=user.pk).update(last_login=same_time, date_joined=same_time)
+
+        with CaptureQueriesContext(connection) as ctx:
+            results = active_user_buckets(UserInfo.objects.all())
+
+        assert len(business_queries(ctx)) == 1
+        assert [item[0] for item in results] == [1, 3, 7, 30]
+        # 今日注册：本用例新建的用户都在今天（含夹具账号）
+        assert results[0][1] == UserInfo.objects.count()
+        # 今日活跃：同秒登录的两个用户计 2（不能退化成 distinct last_login）
+        assert results[0][2] == 2
+
     def test_active_user_count_counts_users_not_timestamps(self, auth_client):
         """两个用户在同一秒登录 -> 活跃数为 2（旧实现返回 1）"""
         same_time = timezone.now()
@@ -163,6 +186,14 @@ class TestTotalCountCache:
         assert second == 1
         assert all("COUNT" not in q["sql"].upper() for q in ctx.captured_queries)
 
+    def test_cached_total_count_keyed_by_model(self, superuser):
+        """同一用户的不同统计模型不串数：键必须带 model label。"""
+        _make_login_log(superuser, days_ago=0)
+        _make_login_log(superuser, days_ago=0)
+
+        assert cached_total_count("model-key-probe", UserLoginLog.objects.all()) == 2
+        assert cached_total_count("model-key-probe", UserInfo.objects.all()) == UserInfo.objects.count()
+
     def test_cached_total_count_keyed_by_user(self, superuser, normal_user):
         """数据权限收敛后的计数随用户不同：缓存键携带用户维度，互不串值。"""
         _make_login_log(superuser, days_ago=0)
@@ -171,6 +202,28 @@ class TestTotalCountCache:
         assert cached_total_count(normal_user.pk, UserLoginLog.objects.none()) == 0
         # superuser 键命中自身缓存，不受其他用户键影响
         assert cached_total_count(superuser.pk, UserLoginLog.objects.all()) == 1
+
+
+class TestScopeLimited:
+    def test_none_queryset_is_limited(self):
+        """数据权限无授权返回 queryset.none()：必须标记为受限，而不是真实 0。"""
+        assert scope_limited(UserInfo.objects.none()) is True
+
+    def test_filtered_empty_is_not_limited(self):
+        """有授权但没数据是普通 filter 结果：仍按真实 0 展示，不能误报无权限。"""
+        assert scope_limited(UserInfo.objects.filter(username="no-such-user")) is False
+
+    def test_dashboard_marks_no_data_scope(self, api_client, normal_user):
+        api_client.force_authenticate(user=normal_user)
+        response = api_client.get(f"{DASHBOARD_URL}/user-total")
+        assert response.status_code == 200
+        assert response.data["scope_limited"] is True
+        assert response.data["count"] == 0
+
+    def test_dashboard_superuser_is_not_limited(self, auth_client):
+        response = auth_client.get(f"{DASHBOARD_URL}/user-total")
+        assert response.status_code == 200
+        assert response.data["scope_limited"] is False
 
 
 class TestDashboardCache:

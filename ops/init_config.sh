@@ -4,7 +4,8 @@
 #
 # 做四件事（全部幂等）：
 #   1. config.yml 缺失时从 config_example.yml 复制，并把 SECRET_KEY / DB_PASSWORD /
-#      REDIS_PASSWORD 写成随机值（已有值完全不动）；
+#      REDIS_PASSWORD / CAPTCHA_TICKET_SECRET 写成随机值，为 CAPTCHA_TICKET_AUDIENCE
+#      写入部署标识（已有值完全不动；存量配置缺新键时同样补齐）；
 #   2. ALLOWED_HOSTS 为空时按本机 IP + 回环推导（5.0 fail-fast：缺失即拒绝启动）；
 #   3. .env 缺失时从 config.yml 同步 DB_PASSWORD / REDIS_PASSWORD
 #      （compose 变量插值读不了 YAML，缺 .env 时 docker compose up 直接报错拒启；
@@ -13,6 +14,11 @@
 #
 # 已有配置想全部重新生成：mv config.yml config.yml.bak.$(date +%s) 后重跑（脚本不删除文件）。
 # 只想补 .env、不动 config.yml：bash ops/init_config.sh --no-secrets。
+# 用 sh/dash 执行会在 set -o pipefail 处直接失败（且报错难读），这里先给出明确指引
+if [ -z "${BASH_VERSION:-}" ]; then
+  echo "[init-config] 需要 bash 执行（sh 不支持 pipefail）：bash ops/init_config.sh" >&2
+  exit 1
+fi
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -24,7 +30,8 @@ for arg in "$@"; do
     --force) FORCE=1 ;;          # 预留：覆盖式重生成（当前实现保守，不覆盖既有文件）
     --no-secrets) NO_SECRETS=1 ;;
     -h|--help)
-      sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
+      # 头部注释即帮助文本：打印到 set -euo 之前的注释行（新增说明无需改行号）
+      awk 'NR > 1 && /^set -euo pipefail/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"
       exit 0
       ;;
     *) echo "[init-config] 未知参数: $arg"; exit 1 ;;
@@ -150,6 +157,29 @@ if [ "$NO_SECRETS" != "1" ]; then
     echo "[init-config]   SECRET_KEY: 已有值，保留"
   fi
 
+  # 验证码签名票据密钥：DEBUG=false 时缺失即拒绝启动（captcha.E002），与 SECRET_KEY
+  # 同级的根凭据。存量 config.yml（升级路径）没有该键，重跑本脚本即补齐。
+  if [ -z "$(get_yaml_key CAPTCHA_TICKET_SECRET)" ]; then
+    set_yaml_key CAPTCHA_TICKET_SECRET "$(random_str 48)"
+    echo "[init-config]   CAPTCHA_TICKET_SECRET: 已生成（随机 48 位）"
+  else
+    echo "[init-config]   CAPTCHA_TICKET_SECRET: 已有值，保留"
+  fi
+
+  # audience 把票据隔离到单个部署：留空会回落到 SITE_URL（未配置时默认
+  # http://127.0.0.1:8000，各部署相同 = 不隔离），启动时告警 captcha.W002。
+  host_ip="$(get_host_ip)"
+  if ! yaml_key_configured CAPTCHA_TICKET_AUDIENCE; then
+    site_url="$(get_yaml_key SITE_URL)"
+    if [ -n "$site_url" ] && [ "$site_url" != "http://127.0.0.1:8000" ]; then
+      audience="$site_url"
+    else
+      audience="${host_ip:-localhost}"
+    fi
+    set_yaml_key CAPTCHA_TICKET_AUDIENCE "$audience"
+    echo "[init-config]   CAPTCHA_TICKET_AUDIENCE: 已写入 ${audience}（部署标识，跨部署票据隔离）"
+  fi
+
   # DB/Redis 密码取值链：config.yml > .env（派生缓存回读）> 随机生成。
   # .env 回读是关键：PG 数据卷以首装密码初始化，config.yml 意外丢失后重生成新密码
   # 会让应用连不上旧库；从 .env 回读才与既有卷一致。
@@ -193,7 +223,6 @@ fi
 # 与安装器 ensure_allowed_hosts 同口径：本机 IP + 回环推导 JSON 数组；已配置则不覆盖
 # （块感知判定：手工配置的块序列域名形态 get_yaml_key 返回空，不能据此判未配置）。
 if [ "$NO_SECRETS" != "1" ] && ! yaml_key_configured ALLOWED_HOSTS; then
-  host_ip="$(get_host_ip)"
   entries="\"127.0.0.1\", \"localhost\""
   if [ -n "$host_ip" ]; then
     entries="\"${host_ip}\", ${entries}"

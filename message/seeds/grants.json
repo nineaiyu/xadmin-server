@@ -11,7 +11,11 @@
       "list:ChatRoom",
       "recall:ChatMessage",
       "stream:ChatRoom",
-      "upload:ChatMessage"
+      "upload:ChatMessage",
+      "createGroup:ChatRoom",
+      "members:ChatRoom",
+      "rename:ChatRoom",
+      "leave:ChatRoom"
     ],
     "default": [
       "Chat",
@@ -23,7 +27,11 @@
       "list:ChatRoom",
       "recall:ChatMessage",
       "stream:ChatRoom",
-      "upload:ChatMessage"
+      "upload:ChatMessage",
+      "createGroup:ChatRoom",
+      "members:ChatRoom",
+      "rename:ChatRoom",
+      "leave:ChatRoom"
     ],
     "demo": [
       "Chat",
@@ -36,7 +44,10 @@
       "members:ChatRoom",
       "recall:ChatMessage",
       "stream:ChatRoom",
-      "upload:ChatMessage"
+      "upload:ChatMessage",
+      "createGroup:ChatRoom",
+      "rename:ChatRoom",
+      "leave:ChatRoom"
     ],
     "test": [
       "Chat",
@@ -48,7 +59,11 @@
       "list:ChatRoom",
       "recall:ChatMessage",
       "stream:ChatRoom",
-      "upload:ChatMessage"
+      "upload:ChatMessage",
+      "createGroup:ChatRoom",
+      "members:ChatRoom",
+      "rename:ChatRoom",
+      "leave:ChatRoom"
     ]
   }
 }

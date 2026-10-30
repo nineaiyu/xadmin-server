@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from django.conf import settings
+from django.utils.translation import gettext as _
 from ldap3 import ALL, SUBTREE, Connection, Server
 from ldap3.core.exceptions import LDAPException
 from ldap3.utils.conv import escape_filter_chars
@@ -117,7 +118,7 @@ def build_server(config: "LdapConfig | None" = None) -> Any:
     cfg = _resolve(config)
     uri = cfg.server_uri
     if not uri:
-        raise LdapConfigError("LDAP_SERVER_URI is empty")
+        raise LdapConfigError(str(_("LDAP_SERVER_URI is empty")))
     return Server(
         uri,
         use_ssl=uri.lower().startswith("ldaps://"),
@@ -134,20 +135,24 @@ def service_connection(config: "LdapConfig | None" = None) -> Any:
         server,
         user=cfg.bind_dn or None,
         password=cfg.bind_password or None,
-        auto_bind=True,
+        auto_bind=False,
         read_only=True,
     )
+    # StartTLS 必须在 bind 之前：auto_bind=True 会先完成明文 bind，
+    # 服务账号口令在 TLS 建立前已走网络。
     if cfg.start_tls:
         conn.start_tls()
+    conn.bind()
     return conn
 
 
 def user_connection(user_dn: Any, password: Any, config: "LdapConfig | None" = None) -> Any:
     """以用户 DN + 密码 bind（认证判定）；auto_bind 失败抛 LDAPException。"""
     server = build_server(config)
-    conn = Connection(server, user=user_dn, password=password, auto_bind=True, read_only=True)
+    conn = Connection(server, user=user_dn, password=password, auto_bind=False, read_only=True)
     if _resolve(config).start_tls:
         conn.start_tls()
+    conn.bind()
     return conn
 
 
@@ -156,7 +161,7 @@ def paged_search_entries(
 ) -> Any:
     """分页搜索，返回条目属性 dict 列表（每条含 dn 与 attributes）。"""
     if not search_base:
-        raise LdapConfigError("LDAP search base is empty")
+        raise LdapConfigError(str(_("LDAP search base is empty")))
     entries = conn.extend.standard.paged_search(
         search_base=search_base,
         search_filter=search_filter,

@@ -190,7 +190,10 @@ def _impact_dynamicform(obj: Any) -> list[ImpactCheck]:
             "form_submissions",
             _("Form submissions"),
             obj.submissions.count(),
-            hint=_("Submissions reference this form; deleting removes the schema linkage"),
+            # 有提交时删除被拒绝（外键 CASCADE 会物理清空填报），提示必须说清真实后果
+            hint=_(
+                "Submissions will be permanently deleted together with the form; a form with submissions cannot be deleted"
+            ),
             samples=obj.submissions.values_list("pk", flat=True)[:SAMPLE_LIMIT],
         ),
     ]
@@ -203,6 +206,32 @@ def _impact_screen(obj: Any) -> list[ImpactCheck]:
             _("Dashboards shown on this screen"),
             len(obj.dashboards or []),
             hint=_("Only the screen layout is removed; dashboards keep untouched"),
+        ),
+    ]
+
+
+def _impact_dashboard(obj: Any) -> list[ImpactCheck]:
+    """仪表盘被大屏引用：dashboards 清单与 layout/free_layout 窗格三类引用。"""
+    from dataset.models.dataset import Screen
+
+    referenced_by: list[str] = []
+    target = str(obj.pk)
+    for screen in Screen.objects.only("name", "dashboards", "layout", "free_layout").iterator():
+        if target in {str(item) for item in (screen.dashboards or [])}:
+            referenced_by.append(screen.name)
+            continue
+        panes = list(screen.layout or [])
+        free = screen.free_layout if isinstance(screen.free_layout, dict) else {}
+        panes.extend(free.get("panes") or [])
+        if any(isinstance(pane, dict) and str(pane.get("dashboard") or "") == target for pane in panes):
+            referenced_by.append(screen.name)
+    return [
+        _check(
+            "dashboard_screens",
+            _("Screens referencing this dashboard"),
+            len(referenced_by),
+            hint=_("Remove the dashboard from these screens before deleting"),
+            samples=referenced_by[:SAMPLE_LIMIT],
         ),
     ]
 
@@ -232,15 +261,51 @@ def _impact_menu(obj: Any) -> list[ImpactCheck]:
 
 
 #: 影响面计算器注册表：模型 label_lower → 计算器（返回 ImpactCheck 列表）
+
+
+def _impact_datapermission(obj: Any) -> list[ImpactCheck]:
+    """数据权限规则：绑定的用户 / 部门 / 菜单范围。"""
+    from identity.models.department import DeptInfo
+    from identity.services import UserInfo
+
+    users = UserInfo.objects.filter(rules=obj, is_active=True)
+    depts = DeptInfo.objects.filter(rules=obj, is_active=True)
+    return [
+        _check(
+            "dp_users",
+            _("Users bound to this data rule"),
+            users.count(),
+            hint=_("Reassign these users before deleting the rule"),
+            samples=users.values_list("username", flat=True)[:SAMPLE_LIMIT],
+        ),
+        _check(
+            "dp_depts",
+            _("Departments bound to this data rule"),
+            depts.count(),
+            hint=_("Reassign these departments before deleting the rule"),
+            samples=depts.values_list("name", flat=True)[:SAMPLE_LIMIT],
+        ),
+        _check(
+            "dp_menus",
+            _("Menus scoped by this data rule"),
+            obj.menu.count(),
+            hint=_("Remove the rule from these menus first if they must keep current visibility"),
+            samples=obj.menu.values_list("name", flat=True)[:SAMPLE_LIMIT],
+        ),
+    ]
+
+
 IMPACT_CALCULATORS: dict[str, Callable[[Any], list[ImpactCheck]]] = {
     "identity.userrole": _impact_userrole,
     "identity.deptinfo": _impact_deptinfo,
     "system.datadict": _impact_datadict,
     "dataset.dataset": _impact_dataset,
+    "dataset.dashboard": _impact_dashboard,
     "approval.approvalflow": _impact_approvalflow,
     "dataset.dynamicform": _impact_dynamicform,
     "dataset.screen": _impact_screen,
     "system.menu": _impact_menu,
+    "system.datapermission": _impact_datapermission,
 }
 
 

@@ -74,3 +74,36 @@ class TestEmbeddingOutboundGuard:
         with pytest.raises(AiSdkError) as exc:
             client.embed(["hello"])
         assert "outbound policy" in str(exc.value)
+
+
+class TestLoopbackPolicy:
+    """环回放行跟随 ``DEBUG`` / ``WEBHOOK_ALLOW_LOOPBACK``（与 Webhook / 回调测试同源）。
+
+    历史实现硬编码 ``allow_loopback=True``：生产环境持 AI 档案配置权限的账号可借
+    base_url 探测本机内部服务（测试连接接口即可验证连通性）。
+    """
+
+    LOOPBACK_BASE = "http://127.0.0.1:11434/v1"
+
+    @pytest.mark.parametrize("allowed", [False, True])
+    def test_flag_follows_policy(self, monkeypatch, settings, allowed):
+        seen = {}
+
+        def fake_pinned_request(method, url, **kwargs):
+            seen["allow_loopback"] = kwargs.get("allow_loopback")
+            return _StubResponse({"choices": [{"message": {"content": "ok"}}]})
+
+        settings.WEBHOOK_ALLOW_LOOPBACK = allowed
+        monkeypatch.setattr("common.utils.outbound.pinned_request", fake_pinned_request)
+        client = ChatCompletionsClient(_credentials(base_url=self.LOOPBACK_BASE))
+
+        assert client.chat([{"role": "user", "content": "hi"}]) == "ok"
+        assert seen["allow_loopback"] is allowed
+
+    def test_loopback_blocked_when_policy_off(self, settings):
+        """策略关闭（生产默认）：环回目标在发送侧被守卫拒绝，不发起请求。"""
+        settings.WEBHOOK_ALLOW_LOOPBACK = False
+        client = ChatCompletionsClient(_credentials(base_url=self.LOOPBACK_BASE))
+        with pytest.raises(AiSdkError) as exc:
+            client.chat([{"role": "user", "content": "hi"}])
+        assert "outbound policy" in str(exc.value)

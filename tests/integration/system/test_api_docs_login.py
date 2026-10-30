@@ -44,3 +44,45 @@ class TestApiDocsLoginFlow:
         resp = client.post(DOCS_LOGIN_URL, {"username": "admin", "password": "wrong"}, format="json")
         assert resp.status_code == 200  # ApiResponse 业务提示，不建 session
         assert "Incorrect" in str(resp.data) or resp.data.get("detail")
+
+    def test_docs_session_cannot_access_business_api(self, superuser):
+        """文档站 session 只信任 /api-docs/*，不能当通用 API session 使用。"""
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        login_resp = client.post(
+            DOCS_LOGIN_URL,
+            {"username": "admin", "password": "Admin@123456"},
+        )
+        assert login_resp.status_code == 302
+        assert client.get(SCHEMA_URL).status_code == 200
+        # 业务 API：docs 标记的 session 不被认证类接受（无 JWT/PAT 时 401）
+        assert client.get("/api/identity/userinfo").status_code == 401
+
+    def test_mfa_required_rejected(self, superuser):
+        """要求 MFA 的账号不能经文档站登录静默建立 session。"""
+        from unittest import mock
+
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        with (
+            mock.patch("common.swagger.views.is_login_mfa_required", return_value=True),
+            mock.patch("common.swagger.views.get_login_mfa_methods", return_value=[{"key": "otp"}]),
+        ):
+            resp = client.post(DOCS_LOGIN_URL, {"username": "admin", "password": "Admin@123456"})
+        assert resp.status_code == 200
+        assert resp.data["code"] == 1001
+        assert "MFA" in resp.data["detail"]
+        assert client.get(SCHEMA_URL).status_code == 401
+
+    def test_login_policy_reject_denied(self, superuser):
+        """主登录访问策略拒绝时，文档站登录不得绕过。"""
+        from unittest import mock
+
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        with mock.patch(
+            "common.swagger.views.evaluate_login_policy_for_request",
+            return_value=(False, "Login is not allowed by policy: E2E"),
+        ):
+            resp = client.post(DOCS_LOGIN_URL, {"username": "admin", "password": "Admin@123456"})
+        assert resp.status_code == 200
+        assert resp.data["code"] == 1001
+        assert "policy" in resp.data["detail"]
+        assert client.get(SCHEMA_URL).status_code == 401

@@ -17,7 +17,8 @@ from audit.serializers.log import OperationLogListSerializer, OperationLogSerial
 from common.core.config import SysConfig
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend, PkMultipleFilter
 from common.core.modelset import DetailAction, OnlyExportDataAction, OnlyListModelSet
-from common.core.permission_meta import shared_list_action
+from common.core.pagination import KeysetPageNumber
+from common.core.permission_meta import shared_list_action, shared_permissions
 from common.core.response import API_SUCCESS_CODE, ApiResponse
 
 
@@ -74,6 +75,12 @@ class OperationLogFilter(BaseFilterSet):
         ]
 
 
+@shared_permissions(
+    path="api/audit/logs/operation",
+    methods={
+        "GET": ("list:SystemOperationLog", "changeHistory:SystemUser", "changeHistory:SystemDept"),
+    },
+)
 class OperationLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction):
     """操作日志（只读 + 详情 + 导出）
 
@@ -83,11 +90,14 @@ class OperationLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction):
 
     列表与详情分口径：列表行的大 JSON 字段（body / response_result）降为有界
     预览（``OperationLogListSerializer``，changes 保留全量供「变更历史」弹窗
-    逐行渲染），retrieve / 导出经 ``serializer_class`` 返回全量。
+    逐行渲染），retrieve / 导出经 ``serializer_class`` 返回——正文（body /
+    response_result）读侧统一收敛：重脱敏 + 与列表同级的有界预览（列表/详情同口径），
+    全站请求/响应正文不构成可批量拉取的出口。
     """
 
     queryset = OperationLog.objects.all()
     serializer_class = OperationLogSerializer
+    pagination_class = KeysetPageNumber
     list_serializer_class = OperationLogListSerializer
 
     ordering_fields = ["created_time", "updated_time", "exec_time"]

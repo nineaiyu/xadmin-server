@@ -11,10 +11,12 @@
 
 from identity.utils.auth.block import check_is_block
 from identity.utils.auth.captcha import (
+    DECRYPT_FAILED_MESSAGE,
     ValidateError,
     check_captcha,
     check_tmp_token,
     check_token_and_captcha,
+    decrypt_submitted,
     get_username_password,
 )
 from identity.utils.auth.lifetime import get_token_lifetime
@@ -25,7 +27,9 @@ from identity.utils.auth.login_log import (
 )
 
 __all__ = [
+    "DECRYPT_FAILED_MESSAGE",
     "ValidateError",
+    "decrypt_submitted",
     "check_captcha",
     "check_token_and_captcha",
     "check_tmp_token",

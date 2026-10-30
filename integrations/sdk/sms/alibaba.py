@@ -56,12 +56,13 @@ class AlibabaSMS(BaseSMSClient):
             template_param=json.dumps(template_param),
         )
         try:
+            # 验证码/手机号不落日志：只记录收件数与模板，凭据参数键名脱敏
             logger.info(
-                f"Alibaba sms send: "
-                f"phone_numbers={phone_numbers} "
-                f"sign_name={sign_name} "
-                f"template_code={template_code} "
-                f"template_param={template_param}"
+                "Alibaba sms send: recipients=%s sign_name=%s template_code=%s param_keys=%s",
+                len(phone_numbers),
+                sign_name,
+                template_code,
+                sorted(template_param),
             )
             response = self.client.send_sms(send_sms_request)
             # 这里只判断是否成功，失败抛出异常

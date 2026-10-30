@@ -11,12 +11,12 @@ from typing import Any
 from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
 
-from common.base.magic import cache_response
-from common.base.utils import format_menu_data, menu_list_to_tree
+from common.base.crypto import format_menu_data, menu_list_to_tree
 from common.core.modelset import CacheDetailResponseMixin
 from common.core.modules import filter_menu_queryset
 from common.core.permission import get_user_menu_queryset
 from common.core.response import ApiResponse
+from common.decorators import cache_response
 from system.models import Menu
 from system.serializers.route import RouteSerializer
 

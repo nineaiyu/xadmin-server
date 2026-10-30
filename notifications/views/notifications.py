@@ -11,7 +11,7 @@ from common.core.modelset import DetailUpdateModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from notifications.backends import BACKEND
+from notifications.backends import BACKEND, all_channel_specs
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 from notifications.notifications import get_message_cls, system_msgs, user_msgs
 from notifications.serializers import (
@@ -25,6 +25,10 @@ logger = get_logger(__name__)
 
 
 class MsgSubscriptionBackend:
+    #: 个人订阅页只展示 user_selectable 渠道：站点级渠道（webhook）由管理员统一配置，
+    #: 个人勾选等于把自己的通知转发到站点端点（越权外发面）
+    only_user_selectable = False
+
     @extend_schema(
         parameters=None,
         responses=get_default_response_schema(
@@ -43,11 +47,14 @@ class MsgSubscriptionBackend:
     @action(methods=["get"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def backends(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取消息通知后端"""
+        allowed = None
+        if self.only_user_selectable:
+            allowed = {spec.code for spec in all_channel_specs() if spec.user_selectable}
         return ApiResponse(
             data=[
                 {"value": backend, "label": backend.label}
                 for backend in BACKEND  # type: ignore[attr-defined]  # TextChoices 迭代由元类提供
-                if backend.is_enable
+                if backend.is_enable and (allowed is None or str(backend) in allowed)
             ]
         )
 
@@ -113,7 +120,14 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubs
                 data.append({"category": category, "category_label": category_label, "children": children})
                 category_children_mapper[category] = children
 
-            sub = msg_type_sub_mapper[message_type]
+            sub = msg_type_sub_mapper.get(message_type)
+            if sub is None:
+                # 新增消息类型尚未进入种子/存量库时自愈补建，避免整页 KeyError。
+                sub = SystemMsgSubscription.objects.create(message_type=message_type)
+                msg_cls = get_message_cls(message_type)
+                if msg_cls is not None and hasattr(msg_cls, "post_insert_to_db"):
+                    msg_cls.post_insert_to_db(sub)
+                msg_type_sub_mapper[message_type] = sub
             sub.message_type_label = message_type_label
             category_children_mapper[category].append(sub)
 
@@ -126,6 +140,8 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
 
     # 个人订阅页的「发送测试」发给自己（系统订阅页则发给全部超管）
     test_msg_to_request_user = True
+    # 站点级渠道不在个人页展示（webhook 端点管理员统一配置）
+    only_user_selectable = True
     lookup_field = "message_type"
     list_serializer_class = UserMsgSubscriptionByCategorySerializer
     serializer_class = UserMsgSubscriptionSerializer
@@ -137,13 +153,21 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
     @extend_schema(responses={200: UserMsgSubscriptionByCategorySerializer})
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """获取用户消息订阅列表"""
+        # 数据源 = 用户消息 + 开放自选订阅的系统消息（如主机资源告警）：
+        # 系统订阅页的管理员兜底收件不变，个人订阅页是「额外自选」的叠加面
+        subscribable_msgs = [
+            *user_msgs,
+            *(msg for msg in system_msgs if msg.get("user_subscribable")),
+        ]
         msg_type_sub_mapper = {sub.message_type: sub for sub in self.get_queryset()}
 
         # GET 请求补齐缺失订阅（隐含批量写）：并发首访会同时查空、同时逐条
         # create，撞 (user, message_type) 唯一约束而 500。改为一次 bulk_create
         # 并 ignore_conflicts（谁先插入谁生效，后来者静默跳过），随后重查全量
         # 订阅重建映射再组装响应树，保证双方都拿到完整且一致的返回。
-        missing_types = [msg["message_type"] for msg in user_msgs if msg["message_type"] not in msg_type_sub_mapper]
+        missing_types = [
+            msg["message_type"] for msg in subscribable_msgs if msg["message_type"] not in msg_type_sub_mapper
+        ]
         if missing_types:
             UserMsgSubscription.objects.bulk_create(
                 [
@@ -156,7 +180,7 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
 
         data = []
         category_children_mapper = {}
-        for msg in user_msgs:
+        for msg in subscribable_msgs:
             message_type = msg["message_type"]
             message_type_label = msg["message_type_label"]
             category = msg["category"]

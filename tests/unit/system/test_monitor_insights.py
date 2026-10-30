@@ -236,7 +236,7 @@ class TestHistoryDbAggregation:
         end = base + datetime.timedelta(seconds=3600)
         picked = ["cpu_percent", "cpu_load", "memory_used", "disk_used", "net_sent_rate", "net_recv_rate"]
 
-        from system.utils.platform.monitor_history import collect_history
+        from system.services.monitor.history import collect_history
 
         result = collect_history(start=start, end=end, interval="5m", metrics=",".join(picked), compare=False)
 
@@ -254,7 +254,7 @@ class TestHistoryDbAggregation:
         moment = _slot(20, 60)
         seed_monitor([(moment, {"net_sent_mb": 100.0, "net_recv_mb": 200.0})])
         start = moment - datetime.timedelta(minutes=5)
-        from system.utils.platform.monitor_history import collect_history
+        from system.services.monitor.history import collect_history
 
         result = collect_history(start=start, end=moment, interval="1m", compare=False)
         assert len(result["points"]) == 1
@@ -270,7 +270,7 @@ class TestHistoryDbAggregation:
 
 class TestHealthSummary:
     def test_critical_resource_and_degraded_celery(self):
-        from system.utils.platform import monitor_metrics as metrics
+        from system.services.monitor import metrics
 
         health = metrics.collect_health_summary(
             live={"cpu_percent": 100, "cpu_load": 0.1, "memory_used": 10, "disk_used": 10},
@@ -290,7 +290,7 @@ class TestHealthSummary:
         assert health["score"] < 100
 
     def test_all_healthy_scores_full(self):
-        from system.utils.platform import monitor_metrics as metrics
+        from system.services.monitor import metrics
 
         health = metrics.collect_health_summary(
             live={"cpu_percent": 10, "cpu_load": 0.5, "memory_used": 20, "disk_used": 30},
@@ -305,7 +305,7 @@ class TestHealthSummary:
         assert health["score"] == 100
 
     def test_skipped_celery_not_counted(self):
-        from system.utils.platform import monitor_metrics as metrics
+        from system.services.monitor import metrics
 
         health = metrics.collect_health_summary(
             live={"cpu_percent": 10, "cpu_load": 0.5, "memory_used": 20, "disk_used": 30},
@@ -453,7 +453,7 @@ class TestEvents:
 
 class TestExport:
     def test_history_csv_and_xlsx(self, superuser):
-        from system.utils.platform.monitor_history import metric_label
+        from system.services.monitor.history import metric_label
 
         seed_monitor([(timezone.now(), {"cpu_percent": 42.0})])
         resp = invoke("export", user=superuser, query="kind=history&type=csv&range=1h&metrics=cpu_percent")
@@ -475,13 +475,13 @@ class TestExport:
         now = timezone.now()
         MonitorAlert.objects.create(item="disk_used", value=95, threshold=80, first_time=now, last_time=now)
         resp = invoke("export", user=superuser, query="kind=alerts&type=csv")
-        content = resp.content.decode("utf-8-sig")
+        content = b"".join(resp.streaming_content).decode("utf-8-sig")
         # 状态文案取模型 choices（本机有 .mo 显中文、CI 无 .mo 显英文，须同源断言）
         assert str(MonitorAlert.Status.FIRING.label) in content
         assert str(MonitorAlert.Item.DISK_USED.label) in content
 
-    def test_alerts_export_fetches_all_rows_across_chunks(self, superuser, monkeypatch):
-        from system.utils.platform import monitor_events
+    def test_alerts_export_streams_all_rows_across_chunks(self, superuser, monkeypatch):
+        from system.services.monitor import events as monitor_events
 
         monkeypatch.setattr(monitor_events, "EXPORT_CHUNK_SIZE", 2)
         now = timezone.now()
@@ -490,5 +490,5 @@ class TestExport:
                 item="disk_used", value=95, threshold=80, first_time=now, last_time=now, message=f"alert-{i}"
             )
         resp = invoke("export", user=superuser, query="kind=alerts&type=csv")
-        content = resp.content.decode("utf-8-sig")
+        content = b"".join(resp.streaming_content).decode("utf-8-sig")
         assert all(f"alert-{i}" in content for i in range(5))

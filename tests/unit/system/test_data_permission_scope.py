@@ -171,7 +171,8 @@ class TestFieldApiMetadata:
         assert response.data["field_meta"]["internal_type"] == "ForeignKey"
         assert response.data["field_meta"]["related_model"] == "identity.deptinfo"
 
-    def test_lookups_unknown_field_returns_business_error(self, superuser):
+    def test_lookups_unknown_field_returns_empty_candidates(self, superuser):
+        """未同步/未知字段返回空候选，而不是业务错误（前端展示「无匹配符」）。"""
         response = self._get(
             "lookups",
             "/api/system/field/lookups",
@@ -179,4 +180,5 @@ class TestFieldApiMetadata:
             table="system.notexists",
             field="whatever",
         )
-        assert response.data["code"] == 1001
+        assert response.data["code"] == 1000
+        assert response.data["data"] == []

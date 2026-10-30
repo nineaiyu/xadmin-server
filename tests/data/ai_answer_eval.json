@@ -7,49 +7,85 @@
       "id": "docs-dataset-permission",
       "kind": "docs",
       "question": "数据集执行时如何按数据权限过滤？",
-      "expected_sources": ["docs/answer-eval/dataset.md"],
-      "required_phrases": ["调用者数据权限过滤"],
-      "forbidden_phrases": ["cron 表达式"]
+      "expected_sources": [
+        "docs/answer-eval/dataset.md"
+      ],
+      "required_phrases": [
+        "调用者数据权限过滤"
+      ],
+      "forbidden_phrases": [
+        "cron 表达式"
+      ]
     },
     {
       "id": "docs-report-trigger",
       "kind": "docs",
       "question": "定时报表是怎么触发并通过邮件发送的？",
-      "expected_sources": ["docs/answer-eval/report.md"],
-      "required_phrases": ["cron 表达式触发", "邮件发送给收件人"],
-      "forbidden_phrases": ["页面水印"]
+      "expected_sources": [
+        "docs/answer-eval/report.md"
+      ],
+      "required_phrases": [
+        "cron 表达式触发",
+        "邮件发送给收件人"
+      ],
+      "forbidden_phrases": [
+        "页面水印"
+      ]
     },
     {
       "id": "docs-watermark-content",
       "kind": "docs",
       "question": "页面水印会显示哪些内容？",
-      "expected_sources": ["docs/answer-eval/watermark.md"],
-      "required_phrases": ["叠加用户名与时间戳"],
-      "forbidden_phrases": ["数据集"]
+      "expected_sources": [
+        "docs/answer-eval/watermark.md"
+      ],
+      "required_phrases": [
+        "叠加用户名与时间戳"
+      ],
+      "forbidden_phrases": [
+        "数据集"
+      ]
     },
     {
       "id": "docs-dataset-whitelist",
       "kind": "docs",
       "question": "数据集的模型与字段白名单是怎么约束的？",
-      "expected_sources": ["docs/answer-eval/dataset.md"],
-      "required_phrases": ["白名单模型", "字段超出白名单会被拒绝"],
+      "expected_sources": [
+        "docs/answer-eval/dataset.md"
+      ],
+      "required_phrases": [
+        "白名单模型",
+        "字段超出白名单会被拒绝"
+      ],
       "forbidden_phrases": []
     },
     {
       "id": "docs_stream-dataset-permission",
       "kind": "docs_stream",
       "question": "数据集执行时如何按数据权限过滤？",
-      "expected_sources": ["docs/answer-eval/dataset.md"],
-      "required_phrases": ["调用者数据权限过滤"],
-      "forbidden_phrases": ["cron 表达式"]
+      "expected_sources": [
+        "docs/answer-eval/dataset.md"
+      ],
+      "required_phrases": [
+        "调用者数据权限过滤"
+      ],
+      "forbidden_phrases": [
+        "cron 表达式"
+      ]
     },
     {
       "id": "docs_stream-watermark-content",
       "kind": "docs_stream",
       "question": "页面水印会显示哪些内容？",
-      "expected_sources": ["docs/answer-eval/watermark.md"],
-      "required_phrases": ["叠加用户名与时间戳"],
-      "forbidden_phrases": ["数据集"]
+      "expected_sources": [
+        "docs/answer-eval/watermark.md"
+      ],
+      "required_phrases": [
+        "叠加用户名与时间戳"
+      ],
+      "forbidden_phrases": [
+        "数据集"
+      ]
     },
     {
       "id": "nl-users-rows",
@@ -57,7 +93,9 @@
       "question": "列出所有用户",
       "expected_dataset_name": "用户清单",
       "expected_mode": "rows",
-      "required_phrases": ["用户清单"],
+      "required_phrases": [
+        "用户清单"
+      ],
       "forbidden_phrases": []
     },
     {
@@ -66,7 +104,9 @@
       "question": "用户一共有多少个？",
       "expected_dataset_name": "用户清单",
       "expected_mode": "aggregate",
-      "required_phrases": ["用户清单"],
+      "required_phrases": [
+        "用户清单"
+      ],
       "forbidden_phrases": []
     },
     {
@@ -75,7 +115,9 @@
       "question": "按用户名列一下用户",
       "expected_dataset_name": "用户清单",
       "expected_mode": "rows",
-      "required_phrases": ["用户清单"],
+      "required_phrases": [
+        "用户清单"
+      ],
       "forbidden_phrases": []
     },
     {
@@ -113,6 +155,51 @@
       "question": "数据集执行时如何按数据权限过滤？",
       "expected_code": 1001,
       "expected_detail": "The model did not provide a final answer; please retry or switch models"
+    },
+    {
+      "id": "docs-approval-flow",
+      "kind": "docs",
+      "question": "审批流支持哪些节点类型，驳回后还能重新提交吗？",
+      "expected_sources": [
+        "docs/answer-eval/approval.md"
+      ],
+      "required_phrases": [
+        "会签",
+        "驳回后申请人可修改并重新提交"
+      ],
+      "forbidden_phrases": [
+        "页面水印"
+      ]
+    },
+    {
+      "id": "docs-dform-sensitive",
+      "kind": "docs",
+      "question": "动态表单的敏感字段和终态提交分别怎么处理？",
+      "expected_sources": [
+        "docs/answer-eval/dform.md"
+      ],
+      "required_phrases": [
+        "统一掩码",
+        "已通过或已撤回的提交只读"
+      ],
+      "forbidden_phrases": [
+        "cron 表达式"
+      ]
+    },
+    {
+      "id": "docs-open-platform",
+      "kind": "docs",
+      "question": "Webhook 如何校验来源，个人访问令牌的权限范围怎么限制？",
+      "expected_sources": [
+        "docs/answer-eval/open-platform.md"
+      ],
+      "required_phrases": [
+        "HMAC 签名",
+        "按 scope 限制接口范围"
+      ],
+      "forbidden_phrases": [
+        "页面水印"
+      ]
     }
   ]
 }

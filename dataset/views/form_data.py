@@ -82,6 +82,9 @@ class DynamicFormDataViewSet(
         context = super().get_serializer_context()
         if getattr(self, "action", None) == "export_data":
             context["dynamic_fields"] = export_dynamic_fields(self.filter_queryset(self.get_queryset()))
+            # 导出链路在 ExportAction 内复用 list，request 上下文可能不是 DRF Request；
+            # 显式下发掩码开关，避免超管被误掩码
+            context["mask_sensitive_fields"] = not getattr(self.request.user, "is_superuser", False)
             return context
         # ?data_fields=key1,key2：行内 data 载荷收缩（列表页只渲染所需动态列）
         raw = str(self.request.query_params.get("data_fields") or "")
@@ -121,9 +124,11 @@ class DynamicFormDataViewSet(
                     "schema_version": form.schema_version or 1,
                 }
             )
+        # 截断提示必须带显式标记：成功响应的 detail 默认是「操作成功」，
+        # 前端不能以「detail 非空」判断截断（否则每次打开页面都会弹提示）
         if truncated:
-            return ApiResponse(data=data, detail=truncation_detail())
-        return ApiResponse(data=data)
+            return ApiResponse(data=data, detail=truncation_detail(), truncated=True)
+        return ApiResponse(data=data, truncated=False)
 
     @extend_schema(responses=get_default_response_schema())
     @shared_list_action(methods=["get"], detail=False, url_path="user-options")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

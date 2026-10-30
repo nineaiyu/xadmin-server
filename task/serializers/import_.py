@@ -81,6 +81,7 @@ class ImportRecordSerializer(BaseModelSerializer):
             "report_filesize",
             "error_report",
             "creator",
+            "error",
             "created_time",
         ]
         read_only_fields = fields

@@ -13,8 +13,8 @@ docs/schema/ws-frame.schema.json 由 message/ws_schema.py（枚举 + TypedDict �
 import json
 from pathlib import Path
 
-from message import protocol
-from message.ws_schema import PAYLOAD_DECLARATIONS, render
+from message.ws import protocol
+from message.ws.ws_schema import PAYLOAD_DECLARATIONS, render
 
 SCHEMA_PATH = Path(__file__).resolve().parents[3] / "docs" / "schema" / "ws-frame.schema.json"
 

@@ -383,7 +383,7 @@
    "menu_type": 2,
    "name": "forceLogout:SystemUserOnline",
    "rank": 1,
-   "path": "api/identity/online/(?P<pk>[^/.]+)/force-logout$",
+   "path": "api/identity/online/force-logout$",
    "component": null,
    "is_active": true,
    "meta": "b8764771-777a-5f0b-ae5e-2752135d19f1",
@@ -2512,7 +2512,7 @@
    "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
    "menu_type": 1,
    "name": "SystemLoginPolicy",
-   "rank": 911,
+   "rank": 201,
    "path": "/settings/login-policy/index",
    "component": "settings/login-policy/index",
    "is_active": true,
@@ -3044,6 +3044,105 @@
    "component": null,
    "is_active": true,
    "meta": "16a3b90a-c2a4-40f9-8168-ec4c0b5f3559",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "ed7ab31b-038e-5757-bc6a-35391aeefced",
+  "fields": {
+   "created_time": "2026-10-21T11:45:00.000Z",
+   "updated_time": "2026-10-21T11:45:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": null,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+   "menu_type": 2,
+   "name": "managed:SystemDept",
+   "rank": 33,
+   "path": "api/identity/dept/managed$",
+   "component": null,
+   "is_active": true,
+   "meta": "1c234a77-e9e9-5377-8f40-44fca756e7ac",
+   "method": "GET",
+   "model": [
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "16a823b0-c4fb-40cd-af63-9aed309823aa",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "4de0ff32-5185-4eef-8988-88804bbe1c05",
+  "fields": {
+   "created_time": "2026-10-22T00:00:00Z",
+   "updated_time": "2026-10-22T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "a228fcfc-e39e-4f97-aa25-bfd1afb1b423",
+   "menu_type": 2,
+   "name": "scanStatus:SystemAccountRisk",
+   "rank": 10005,
+   "path": "api/identity/account-risks/scan-status$",
+   "component": null,
+   "is_active": true,
+   "meta": "e5bc7b61-3bc9-4795-8095-548d61964551",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "238beb7f-254d-43fd-9931-e644ae11dc8c",
+  "fields": {
+   "created_time": "2026-10-22T23:30:08.332Z",
+   "updated_time": "2026-10-22T23:30:08.332Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+   "menu_type": 2,
+   "name": "list:AuthorizedApplication",
+   "rank": 10000,
+   "path": "api/identity/authorized-applications$",
+   "component": null,
+   "is_active": true,
+   "meta": "657b8934-a399-4b26-97fc-49798e93d3c7",
+   "method": "GET",
+   "model": [
+    "ed2cbcdd-9646-43ad-91c0-5458ce718f00"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f812d6df-8a90-4438-99ff-961e77380138",
+  "fields": {
+   "created_time": "2026-10-22T23:30:08.337Z",
+   "updated_time": "2026-10-22T23:30:08.337Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "7e6b20e1-c624-4dfd-9ec6-29278f03f525",
+   "menu_type": 2,
+   "name": "revoke:AuthorizedApplication",
+   "rank": 10001,
+   "path": "api/identity/authorized-applications/(?P<pk>[^/.]+)/revoke$",
+   "component": null,
+   "is_active": true,
+   "meta": "6ee26cda-2a14-42e0-86f0-9baaf1461a7c",
    "method": "POST",
    "model": []
   }

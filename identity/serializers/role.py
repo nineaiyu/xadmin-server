@@ -7,14 +7,14 @@
 from typing import Any
 
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from common.core.response.validation import ActiveUniqueValidationMixin
 from common.core.serializers import BaseModelSerializer
-from common.core.validation import ActiveUniqueValidationMixin
 from common.utils import get_logger
 from identity.models import UserRole
 from system.services import FieldPermission
@@ -55,11 +55,11 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
 
     # field和fields 设置两个相同的label，可以进行文件导入导出
     field = serializers.SerializerMethodField(read_only=True, label=_("Fields"))
-    fields = serializers.DictField(write_only=True, label=_("Fields"))
+    fields = serializers.DictField(write_only=True, required=False, label=_("Fields"))
 
     # 关联计数声明：列表/详情/导出由 RelationCountMixin 预聚合（与影响面同源，
     # 角色→用户为「删除/停用影响谁」的同一口径）；单对象序列化回退为单次 COUNT
-    relation_count_fields = {"user_count": Count("userinfo")}
+    relation_count_fields = {"user_count": Count("userinfo", filter=Q(userinfo__deleted_at__isnull=True))}
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
 
     @extend_schema_field(serializers.IntegerField)
@@ -102,17 +102,31 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
+    @staticmethod
+    def _normalize_fields(fields: Any) -> Any:
+        return {str(menu): sorted(str(pk) for pk in field_pks or []) for menu, field_pks in fields.items()}
+
+    @staticmethod
+    def _current_fields(instance: Any) -> Any:
+        data = {}
+        for fp in FieldPermission.objects.filter(role=instance).prefetch_related("field"):
+            data[str(fp.menu_id)] = sorted(str(item.pk) for item in fp.field.all())
+        return data
+
     def update(self, instance: Any, validated_data: Any) -> Any:
-        fields = validated_data.pop("fields", None)
+        # 空字典是显式「清空字段授权」，与「未提交 fields 键」语义不同：
+        # 未提交键保留原授权，提交 {} 删除全部 FieldPermission（前端撤销白名单的唯一通道）
+        missing = object()
+        fields = validated_data.pop("fields", missing)
         with transaction.atomic():
             instance = super().update(instance, validated_data)
-            if fields:
+            if fields is not missing and self._normalize_fields(fields) != self._current_fields(instance):
                 FieldPermission.objects.filter(role=instance).delete()
                 self.save_fields(fields, instance)
         return instance
 
     def create(self, validated_data: Any) -> Any:
-        fields = validated_data.pop("fields")
+        fields = validated_data.pop("fields", {})
         with transaction.atomic():
             instance = super().create(validated_data)
             self.save_fields(fields, instance)

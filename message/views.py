@@ -42,9 +42,9 @@ from common.core.throttle import UploadThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from identity.utils.user_options import search_user_options
-from message import ai as chat_ai
 from message import chat as chat_service
-from message.attachments import attachment_response
+from message.chat import ai as chat_ai
+from message.chat import attachment_response
 from message.models import ChatMessage, ChatRoom
 from message.serializers import (
     CreateGroupSerializer,
@@ -52,9 +52,27 @@ from message.serializers import (
     OpenPrivateRoomSerializer,
     RenameGroupSerializer,
 )
-from message.utils import broadcast_message_recall
+from message.ws.protocol import MessageAction
+from message.ws.utils import broadcast_message_recall, push_room_event
 
 logger = get_logger(__name__)
+
+
+def _audit_group_action(request: Any, room: Any, action: str, changes: dict[str, Any]) -> None:
+    """群聊管理审计：企业群采用「有建群权限即可直拉」模型，成员变更必须可追溯。"""
+    from audit.services import record
+    from common.core.response import API_SUCCESS_CODE
+
+    record(
+        module="chat:group",
+        object_pk=room.pk,
+        path=request.path,
+        method=request.method,
+        changes={"action": action, "room_name": room.name, **changes},
+        status_code=API_SUCCESS_CODE,
+        creator=request.user,
+    )
+
 
 # 历史分页默认/最大条数
 HISTORY_DEFAULT_LIMIT = 20
@@ -122,6 +140,7 @@ class ChatRoomViewSet(GenericViewSet):
             )
         except DjangoValidationError as exc:
             return ApiResponse(code=1001, detail=_validation_detail(exc))
+        _audit_group_action(request, room, "create", {"member_pks": serializer.validated_data["member_pks"]})
         return ApiResponse(
             data=chat_service.room_to_dict(room, request.user, 0, chat_service.online_user_pks()),
             detail=_("Group created"),
@@ -147,13 +166,28 @@ class ChatRoomViewSet(GenericViewSet):
         serializer = GroupMembersSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            if serializer.validated_data.get("add"):
-                chat_service.add_group_members(kwargs.get("pk"), request.user, serializer.validated_data["add"])
-            if serializer.validated_data.get("remove"):
-                chat_service.remove_group_members(kwargs.get("pk"), request.user, serializer.validated_data["remove"])
+            # add/remove 单次提交先整体校验再同事务落库：后一步失败不会留下半更新
+            chat_service.update_group_members(
+                kwargs.get("pk"),
+                request.user,
+                add_pks=serializer.validated_data.get("add") or [],
+                remove_pks=serializer.validated_data.get("remove") or [],
+            )
             room = chat_service.group_room_or_deny(kwargs.get("pk"), request.user)
         except DjangoValidationError as exc:
             return ApiResponse(code=1001, detail=_validation_detail(exc))
+        _audit_group_action(
+            request,
+            room,
+            "members",
+            {
+                "add": serializer.validated_data.get("add") or [],
+                "remove": serializer.validated_data.get("remove") or [],
+            },
+        )
+        # 成员变化通知房间内其他成员重拉会话列表（人数/成员名单），
+        # 否则只有操作者本地行更新，其他人需重进页面才看到。
+        push_room_event(room, {"room_id": room.pk, "change": "members"}, MessageAction.CHAT_ROOM.value)
         return ApiResponse(data=chat_service.room_to_dict(room, request.user, 0, chat_service.online_user_pks()))
 
     @extend_schema(request=RenameGroupSerializer, responses=get_default_response_schema())
@@ -166,6 +200,8 @@ class ChatRoomViewSet(GenericViewSet):
             room = chat_service.rename_group(kwargs.get("pk"), request.user, serializer.validated_data["name"])
         except DjangoValidationError as exc:
             return ApiResponse(code=1001, detail=_validation_detail(exc))
+        _audit_group_action(request, room, "rename", {"name": room.name})
+        push_room_event(room, {"room_id": room.pk, "change": "rename"}, MessageAction.CHAT_ROOM.value)
         return ApiResponse(
             data=chat_service.room_to_dict(room, request.user, 0, chat_service.online_user_pks()),
             detail=_("Group renamed"),

@@ -12,8 +12,8 @@ import pytest
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-from message.notify import MessageNotify
-from message.utils import get_user_layer_group_name
+from message.ws.notify import MessageNotify
+from message.ws.utils import get_user_layer_group_name
 
 pytestmark = pytest.mark.django_db
 

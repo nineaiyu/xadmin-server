@@ -12,11 +12,13 @@ import json
 import pytest
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.utils.translation import gettext as _
 
 from message import chat as chat_service
-from message.consumers import ChatNotify
 from message.models import ChatMessage, ChatRoom
-from message.utils import get_chat_user_group_name, get_public_chat_group_name
+from message.ws.consumers import ChatNotify
+from message.ws.utils import get_chat_user_group_name, get_public_chat_group_name
+from notifications.models import MessageContent
 
 pytestmark = pytest.mark.django_db
 
@@ -65,8 +67,12 @@ def _make_consumer(ws_layer, user, channel="specific.chat-channel"):
     async def fake_close(code=None):
         closed.append(code)
 
+    async def fake_accept():
+        captured.append({"action": "accepted"})
+
     consumer.send_base_json = fake_send_base_json
     consumer.close = fake_close
+    consumer.accept = fake_accept
     return consumer, captured, closed
 
 
@@ -89,7 +95,7 @@ def fast_close(monkeypatch):
     async def fake_sleep(*args, **kwargs):
         return None
 
-    monkeypatch.setattr("message.consumers.asyncio.sleep", fake_sleep)
+    monkeypatch.setattr("message.ws.consumers.asyncio.sleep", fake_sleep)
 
 
 @pytest.fixture
@@ -105,6 +111,29 @@ def chat_push_enabled(db):
     yield
 
 
+@pytest.fixture
+def chat_perm_menu(db):
+    """聊天室会话列表权限点（@提及「公共房间成员」判定与 WS 准入同源）。"""
+    from system.models import Menu, MenuMeta
+
+    return Menu.objects.create(
+        name="聊天室列表",
+        path="api/chat/room$",
+        method="GET",
+        menu_type=Menu.MenuChoices.PERMISSION,
+        meta=MenuMeta.objects.create(title="聊天室列表"),
+    )
+
+
+def _grant_chat_permission(user, menu):
+    """授予用户聊天通道准入权（与 WS 连接准入同一套权限数据）。"""
+    from identity.models import UserRole
+
+    role = UserRole.objects.create(name=f"chat-{user.username}", code=f"chat-{user.username}")
+    role.menu.add(menu)
+    user.roles.add(role)
+
+
 class TestConnect:
     def test_anonymous_rejected(self, ws_layer, fast_close):
         async def scenario():
@@ -118,9 +147,17 @@ class TestConnect:
             async def fake_close(code=None):
                 closed.append(code)
 
+            accepted = []
+
+            async def fake_accept():
+                accepted.append(True)
+
             consumer.close = fake_close
+            consumer.accept = fake_accept
             await consumer.connect()
             assert closed == [4401]
+            # 先 accept 再 close：否则客户端只会拿到握手 403，前端 4401 分支不可达
+            assert accepted == [True]
 
         async_to_sync(scenario)()
 
@@ -160,7 +197,7 @@ class TestConnect:
     def test_ping_keeps_chat_groups_without_online_index(self, ws_layer, superuser):
         """聊天连接心跳只续期聊天组：不写入在线索引（在线列表不重复计数）。"""
 
-        from message.utils import get_online_info
+        from message.ws.utils import get_online_info
 
         async def scenario():
             consumer, captured, __ = _make_consumer(ws_layer, superuser)
@@ -188,7 +225,7 @@ class TestSendPublic:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append((user_pk, message))
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
 
         async def scenario():
             consumer, __, ___ = _make_consumer(ws_layer, superuser)
@@ -217,8 +254,11 @@ class TestSendPublic:
         assert pushes == []  # 无 @提及
 
     def test_mentions_push_all_targets_except_sender(
-        self, ws_layer, superuser, alice, bob, monkeypatch, chat_push_enabled
+        self, ws_layer, superuser, alice, bob, monkeypatch, chat_push_enabled, chat_perm_menu
     ):
+        """@提及站内信投递给房间成员（公共房间 = 持聊天准入权的用户）。"""
+        _grant_chat_permission(alice, chat_perm_menu)
+        _grant_chat_permission(bob, chat_perm_menu)
         room = chat_service.get_public_room()
         sent = _capture_group_send(ws_layer, monkeypatch)
         pushes = []
@@ -226,7 +266,7 @@ class TestSendPublic:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append((user_pk, message))
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
 
         async def scenario():
             consumer, __, ___ = _make_consumer(ws_layer, superuser)
@@ -244,6 +284,38 @@ class TestSendPublic:
         assert pushed_pks == sorted([alice.pk, bob.pk])
         assert all(message["message_type"] == "chat_message" for __, message in pushes)
         assert all(message["notice_type"]["value"] == 0 for __, message in pushes)
+        # 落库兜底与推送同批目标：一条站内信、M2M 挂两个接收人
+        notices = MessageContent.objects.filter(notice_type=MessageContent.NoticeChoices.USER)
+        assert notices.count() == 1
+        assert set(notices.get().notice_user.values_list("pk", flat=True)) == {alice.pk, bob.pk}
+
+    def test_mention_non_member_not_delivered(
+        self, ws_layer, superuser, alice, bob, monkeypatch, chat_push_enabled, chat_perm_menu
+    ):
+        """非房间成员不投递、不提醒：手打 @username 触达不到未开通聊天的账号。"""
+        _grant_chat_permission(alice, chat_perm_menu)  # alice 是「成员」
+        # bob 未授予聊天权限：对公共房间而言不是成员
+        room = chat_service.get_public_room()
+        pushes = []
+
+        async def fake_push(user_pk, message, **kwargs):
+            pushes.append((user_pk, message))
+
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
+
+        async def scenario():
+            consumer, __, ___ = _make_consumer(ws_layer, superuser)
+            await consumer.handle_send(
+                {"room_id": room.pk, "content": "@bob 你在吗 @alice 帮忙看下", "client_msg_id": "c-mention-scope"}
+            )
+
+        async_to_sync(scenario)()
+
+        assert [pk for pk, __ in pushes] == [alice.pk]
+        # 非成员不落站内信（store_chat_notices 与推送同批目标）
+        contents = MessageContent.objects.filter(notice_type=MessageContent.NoticeChoices.USER)
+        assert contents.count() == 1
+        assert list(contents.first().notice_user.values_list("username", flat=True)) == ["alice"]
 
     def test_invalid_room_returns_readable_error(self, ws_layer, superuser):
         async def scenario():
@@ -252,6 +324,23 @@ class TestSendPublic:
             assert captured[0]["code"] == 1001
 
         async_to_sync(scenario)()
+
+    def test_forged_bot_message_type_rejected(self, ws_layer, superuser):
+        """客户端伪造 system / ai 类型被拒：不落库、不广播（站内钓鱼入口）。"""
+        room = chat_service.get_public_room()
+
+        async def scenario():
+            consumer, captured, __ = _make_consumer(ws_layer, superuser)
+            for message_type in ("system", "ai"):
+                await consumer.handle_send(
+                    {"room_id": room.pk, "content": "官方通知：请点击链接", "message_type": message_type}
+                )
+            return captured
+
+        captured = async_to_sync(scenario)()
+        assert [item["code"] for item in captured] == [1001, 1001]
+        assert all(str(item["detail"]) == str(_("Unsupported message type")) for item in captured)
+        assert ChatMessage.objects.filter(room=room).count() == 0
 
     def test_empty_content_rejected(self, ws_layer, superuser):
         room = chat_service.get_public_room()
@@ -278,7 +367,7 @@ class TestSendPrivate:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append((user_pk, message))
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
 
         async def scenario():
             consumer, __, ___ = _make_consumer(ws_layer, alice)
@@ -308,7 +397,7 @@ class TestSendPrivate:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append(user_pk)
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
 
         async def scenario():
             # 对端聊天连接在线（页面打开）：消息已实时送达，不再重复弹站内信
@@ -326,7 +415,7 @@ class TestSendPrivate:
         async def fake_push(*args, **kwargs):
             return None
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
 
         async def scenario():
             consumer, captured, __ = _make_consumer(ws_layer, alice)
@@ -365,7 +454,7 @@ class TestGroupFanoutBatch:
     def test_single_batch_query_for_layer_and_preference(
         self, ws_layer, alice, group_room, monkeypatch, chat_push_enabled
     ):
-        from message import consumers as consumers_module
+        from message.ws import chat_notify as consumers_module
 
         room, members = group_room
         calls = {"layers": 0, "groups": [], "pref": 0}
@@ -388,7 +477,7 @@ class TestGroupFanoutBatch:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append(user_pk)
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
 
         async def scenario():
             consumer, __, ___ = _make_consumer(ws_layer, alice)
@@ -410,7 +499,7 @@ class TestGroupFanoutBatch:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append(user_pk)
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
 
         async def scenario():
             # 该成员聊天室页面在线（连接在其个人聊天组）：实时可达，不再重复弹站内信
@@ -424,7 +513,7 @@ class TestGroupFanoutBatch:
         assert sorted(pushes) == sorted(user.pk for user in members[1:])
 
     def test_preference_off_skips_target(self, ws_layer, alice, group_room, monkeypatch, chat_push_enabled):
-        from message import consumers as consumers_module
+        from message.ws import chat_notify as consumers_module
 
         room, members = group_room
         muted = members[-1]
@@ -433,7 +522,7 @@ class TestGroupFanoutBatch:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append(user_pk)
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
 
         original_batch = consumers_module.batch_push_chat_enabled
 
@@ -498,7 +587,7 @@ class TestSendRateLimit:
     """WS 上行发送限流（每用户每秒 N 条）：恶意连接高频灌消息会放大成 DB 写与推送风暴。"""
 
     def test_over_limit_rejected_without_persisting(self, ws_layer, superuser, monkeypatch):
-        monkeypatch.setattr("message.consumers.CHAT_SEND_LIMIT_PER_SECOND", 2)
+        monkeypatch.setattr("message.ws.consumers.CHAT_SEND_LIMIT_PER_SECOND", 2)
         room = chat_service.get_public_room()
         sent = _capture_group_send(ws_layer, monkeypatch)
 
@@ -530,7 +619,7 @@ class TestSendRateLimit:
         assert rejected[0]["detail"]
 
     def test_limit_is_per_user(self, ws_layer, alice, bob, monkeypatch):
-        monkeypatch.setattr("message.consumers.CHAT_SEND_LIMIT_PER_SECOND", 1)
+        monkeypatch.setattr("message.ws.consumers.CHAT_SEND_LIMIT_PER_SECOND", 1)
         room = chat_service.get_public_room()
         _capture_group_send(ws_layer, monkeypatch)
 
@@ -561,7 +650,7 @@ class TestRecallFlagBroadcast:
         async def fake_push(*args, **kwargs):
             return None
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
 
     def test_sender_frame_carries_field_public_shared_frame_does_not(self, ws_layer, superuser, monkeypatch):
         room = chat_service.get_public_room()
@@ -632,7 +721,7 @@ class TestChatNoticePersistence:
         async def fake_push(user_pk, message, **kwargs):
             pushes.append((user_pk, message))
 
-        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+        monkeypatch.setattr("message.ws.chat_notify.async_push_message", fake_push)
         return pushes
 
     def test_private_message_persists_notice(self, ws_layer, alice, bob, monkeypatch, chat_push_enabled):
@@ -655,9 +744,11 @@ class TestChatNoticePersistence:
         assert notice.extra_json["chat_room_id"] == str(room.pk)
         assert notice.extra_json["chat_message_type"] == "chat_private"
 
-    def test_mention_persists_notice(self, ws_layer, superuser, alice, monkeypatch, chat_push_enabled):
+    def test_mention_persists_notice(self, ws_layer, superuser, alice, monkeypatch, chat_push_enabled, chat_perm_menu):
         from notifications.models import MessageContent
 
+        # 公共房间的 @提及按「持聊天准入权」收敛：先给 alice 准入
+        _grant_chat_permission(alice, chat_perm_menu)
         room = chat_service.get_public_room()
         self._fake_push(monkeypatch)
 

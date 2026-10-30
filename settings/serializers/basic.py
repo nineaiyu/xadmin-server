@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.fields import ColorField, StepFloatField
-from common.core.validators import COLOR_PATTERN as WATERMARK_COLOR_RE
+from common.core.response.validators import COLOR_PATTERN as WATERMARK_COLOR_RE
 from identity.services import invalid_user_cache_signal
 from settings.serializers.contract import SettingSaveContractMixin
 
@@ -105,7 +105,10 @@ class BasicSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     )
 
     EXPORT_MAX_LIMIT = serializers.IntegerField(
-        required=False, label=_("Export max limit"), help_text=_("Limit the maximum number of rows of exported data")
+        required=False,
+        min_value=1,
+        label=_("Export max limit"),
+        help_text=_("Limit the maximum number of rows of exported data (>=1)"),
     )
 
     @staticmethod

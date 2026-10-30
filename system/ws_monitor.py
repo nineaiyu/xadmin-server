@@ -7,7 +7,7 @@
 - panel：服务健康 / Redis / Celery / 慢请求 / 趋势，30s 一推（重采集），
   连接建立时立即推一帧兜底。
 
-与 HTTP action（system/views/platform/monitor.py + system/utils/platform/monitor_metrics.py）共用同一套
+与 HTTP action（system/views/platform/monitor.py + system/services/monitor/metrics.py）共用同一套
 采集函数，保证 WS 与 HTTP 两路口径一致。采集为阻塞调用，统一经
 database_sync_to_async 丢线程池执行，避免拖慢共享事件循环。
 
@@ -23,9 +23,9 @@ from typing import Any
 from channels.db import database_sync_to_async
 
 from common.utils import get_logger
-from message.base import AsyncJsonWebsocket
-from message.protocol import MessageAction
-from system.utils.platform import monitor_metrics as metrics
+from message.ws.base import AsyncJsonWebsocket
+from message.ws.protocol import MessageAction
+from system.services.monitor import metrics
 
 logger = get_logger(__name__)
 
@@ -71,11 +71,11 @@ class MonitorNotify(AsyncJsonWebsocket):
 
     async def connect(self) -> None:
         self.user = self.scope["user"]
-        if not self.user:
-            await self.close(4401)
+        if not self.is_authenticated():
+            await self.reject(4401)
             return
         if not await _has_monitor_permission(self.user):
-            await self.close(4403)
+            await self.reject(4403)
             return
         self.disconnected = False
         await self.accept()

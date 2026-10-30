@@ -18,7 +18,8 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
-from common.base.utils import get_choices_dict
+from common.base.crypto import get_choices_dict
+from common.contracts import application_of_request
 from common.core.fields import get_search_choices_max_count
 from common.core.modelset.input_types import get_format_intput_type
 from common.core.modelset.metadata_cache import cached_payload
@@ -44,6 +45,9 @@ def metadata_cache_key(view_instance: Any, method_name: Any, request: Any) -> st
     序列化器字段面还可能依赖**其他查询参数**（如 setting 类视图集按
     ``?channel=`` / ``?category=`` 收敛序列化器）：视图集可覆写
     ``metadata_extra_cache_key(request)`` 返回额外键段，缺省空串不入键。
+
+    应用凭证维度：序列化器字段面会按应用授权收敛（同一 owner 的不同应用凭证
+    共享 ``user_pk``），键缺凭证维度时会话 / 应用交替请求互相串味（缓存键含应用凭证维度）。
     """
     user_pk = getattr(getattr(request, "user", None), "pk", "anonymous")
     query = getattr(request, "query_params", None)
@@ -53,7 +57,13 @@ def metadata_cache_key(view_instance: Any, method_name: Any, request: Any) -> st
     digest = f"_{md5(str(raw_fields).encode('utf-8')).hexdigest()[:12]}" if raw_fields else ""
     extra_hook = getattr(view_instance, "metadata_extra_cache_key", None)
     extra = f"_x{md5(str(extra_hook(request)).encode('utf-8')).hexdigest()[:12]}" if callable(extra_hook) else ""
-    return f"metadata_payload_{view_instance.__class__.__name__}_{method_name}_{user_pk}{digest}{extra}"
+    application = application_of_request(request)
+    app_digest = (
+        f"_app{md5(str(getattr(application, 'pk', None)).encode('utf-8')).hexdigest()[:12]}"
+        if application is not None
+        else ""
+    )
+    return f"metadata_payload_{view_instance.__class__.__name__}_{method_name}_{user_pk}{digest}{app_digest}{extra}"
 
 
 def invalidate_metadata_payload_cache() -> None:
@@ -116,6 +126,31 @@ class ChoicesAction:
                 if choices:
                     result[field.name] = get_choices_dict(choices)
         return ApiResponse(choices_dict=result)
+
+
+def _bounded_search_choices(value: Any, widget: Any, max_choices: int) -> tuple[list[Any], bool]:
+    """求值 search-fields 的 widget choices，并在求值前收紧关联 queryset。"""
+    queryset = getattr(getattr(value, "field", None), "queryset", None)
+    choices_source = widget
+    if max_choices and queryset is not None:
+        try:
+            # 复制字段/widget 后再绑定截断 queryset：直接改原字段会让本次元数据
+            # 构建把切片 QuerySet 缓存下来，后续过滤校验永久读到空集。
+            import copy
+
+            limited_field = copy.copy(value.field)
+            limited_field.queryset = queryset[: max_choices + 1]
+            limited_field.widget = copy.copy(value.field.widget)
+            limited_field.widget.choices = limited_field.choices
+            choices_source = limited_field.widget
+        except (TypeError, ValueError):
+            choices_source = widget
+    choices = list(getattr(choices_source, "choices", []))
+    if choices and choices[0][0] == "":
+        choices.pop(0)
+    if max_choices and len(choices) > max_choices:
+        return choices[:max_choices], True
+    return choices, False
 
 
 class SearchFieldsAction:
@@ -190,15 +225,8 @@ class SearchFieldsAction:
                 #     widget.input_type = 'text'
                 #     widget.choices = []
                 widget.input_type = get_format_intput_type(value, widget.input_type)
-                choices = list(getattr(widget, "choices", []))
-                if choices and len(choices) > 0 and choices[0][0] == "":
-                    choices.pop(0)
-                # 关联字段的 widget.choices 同样会全量求值，这里做同样的行数上限
                 max_choices = get_search_choices_max_count()
-                choices_truncated = False
-                if max_choices and len(choices) > max_choices:
-                    choices = choices[:max_choices]
-                    choices_truncated = True
+                choices, choices_truncated = _bounded_search_choices(value, widget, max_choices)
                 field = get_model_field(self.filterset_class._meta.model, value.field_name)
                 results.append(
                     {

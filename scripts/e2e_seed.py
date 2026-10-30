@@ -186,9 +186,8 @@ def reset_pg_database() -> None:
     print(f"reset pg database: {_e2e_db_name}")
 
 
-def main() -> None:
-    reset_pg_database()
-
+def _bootstrap_django() -> None:
+    """django.setup + migrate + ops/init_data 初始化（菜单/角色/超管）。"""
     import django
 
     django.setup()
@@ -207,8 +206,10 @@ def main() -> None:
     sys.argv = ["init_data"]
     init_data_main()
 
+
+def _create_e2e_users() -> dict:
+    """按 E2E_USERS 清单建场景用户（幂等：已存在跳过），返回 username → user。"""
     from identity.models import UserInfo, UserRole
-    from system.models import DataPermission
 
     created_users = {}
     for username, password, nickname, is_superuser, role_code in E2E_USERS:
@@ -227,6 +228,13 @@ def main() -> None:
         user.save()
         created_users[username] = user
         print(f"created e2e user: {username}")
+    return created_users
+
+
+def _seed_permission_scenarios(created_users: dict) -> None:
+    """数据权限 / 部门主管 / 字段权限三场景（e2e_dp / e2e_leader / e2e_fp）。"""
+    from identity.models import DeptInfo, UserInfo
+    from system.models import DataPermission
 
     # ---- 数据权限场景：e2e_dp 的用户列表仅返回本人（menu 不绑定 = 全局生效）----
     e2e_dp = created_users.get("e2e_dp") or UserInfo.objects.filter(username="e2e_dp").first()
@@ -245,8 +253,6 @@ def main() -> None:
         print("data permission seeded for e2e_dp")
 
     # ---- 部门主管场景：e2e_leader 主管测试部门（本人兼成员），列表可见本人 + 部门成员 ----
-    from identity.models import DeptInfo
-
     e2e_leader = created_users.get("e2e_leader") or UserInfo.objects.filter(username="e2e_leader").first()
     e2e_member = created_users.get("e2e_member") or UserInfo.objects.filter(username="e2e_member").first()
     if e2e_leader and e2e_member:
@@ -298,14 +304,14 @@ def main() -> None:
             grant_field_permission(fp_role, excluded_field="phone")
             print("field permission seeded for e2e_fp (phone hidden)")
 
-    # ---- 定时任务管理页演示数据 ----
-    seed_periodic_task()
+
+def _apply_runtime_config_overrides() -> None:
+    """E2E 运行期配置覆写：敏感操作告警关闭 + 手动任务白名单扩容。"""
+    from common.core.config import SysConfig
 
     # ---- 敏感操作告警关闭：删除类用例触发 WS 站内信实时弹窗，盖在抽屉按钮上 ----
     # 造成点击「element is not stable」（回收站恢复用例实测命中）；告警链路由单测覆盖。
     # 注意：方法清单为空 =「不按方法过滤」（全告警），须用永不命中的哨兵值关闭
-    from common.core.config import SysConfig
-
     SysConfig.set_value("SENSITIVE_OPERATION_METHODS", ["__E2E_DISABLED__"])
     print("sensitive operation alert disabled")
 
@@ -318,6 +324,9 @@ def main() -> None:
     )
     print("manual runnable tasks extended")
 
+
+def _seed_feature_scenes() -> None:
+    """登录页入口 / 通知 / 文件中心 / 监控 / 样板页 / 通讯录 / 菜单装饰 / 登录策略种子。"""
     # ---- 登录页第三方入口（feishu flavor）----
     seed_oauth_im_provider()
 
@@ -342,6 +351,18 @@ def main() -> None:
     # ---- 登录辅助安全项：非工作时间 MFA 策略会让夜间跑批的登录被拦截 ----
     disable_login_mfa_policy()
 
+
+def main() -> None:
+    reset_pg_database()
+    _bootstrap_django()
+    created_users = _create_e2e_users()
+    _seed_permission_scenarios(created_users)
+
+    # ---- 定时任务管理页演示数据 ----
+    seed_periodic_task()
+
+    _apply_runtime_config_overrides()
+    _seed_feature_scenes()
     print("E2E seed done")
 
 

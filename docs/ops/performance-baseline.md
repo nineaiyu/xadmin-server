@@ -1,9 +1,9 @@
 # 性能基线测定流程（T3.1）
 
 > 关联：半年规划（[docs/plans/](../plans/)）P3/T3.1；基线登记处 [metrics.md](../metrics.md)；
-> 缓存体系见 `docs/architecture/cache.md`，索引现状见 `docs/architecture/indexes.md`。
+> 缓存体系见 `docs/architecture/cache.md`。
 > 状态：**开发侧准备完成（2026-09-06）**——silk 接入 + k6 脚本 + 本流程文档已就绪，
-> 实测待具备运行环境（压测专用 DB/Redis + k6）后按本文执行，结果回填 [metrics-perf-history.md](../metrics-perf-history.md)。
+> 实测待具备运行环境（压测专用 DB/Redis + k6）后按本文执行，结果回填 [metrics.md](../metrics.md)。
 
 ## 一、目的与分工
 
@@ -166,9 +166,9 @@ python manage.py migrate          # 创建 silk 三张表
 
 > **目标口径定案（2026-10-09）**：`04-metadata-fields` 的 <60ms 目标改按**生产容量档**（8 worker）判定达标
 > （P95 26.5ms）；4-worker 默认档为 ASGI 同步段容量膝点，走容量规划（worker 档位）解决。`03-list` 与
-> `04-metadata-with-meta` 统一为同一容量口径。详见 [metrics-perf-history.md §「API 尾延迟目标正式定案」](../metrics-perf-history.md)。
+> `04-metadata-with-meta` 统一为同一容量口径。详见 [metrics.md](../metrics.md) 的基线表（原性能履历已清理）。
 
-metrics-perf-history.md 的「五、性能基线」占位表逐行回填，形如：
+按本文流程回填到 `metrics.md` 的基线表，形如：
 
 ```
 | 接口 | RPS | P50 | P95 | 错误率 | 环境 |
@@ -178,7 +178,7 @@ metrics-perf-history.md 的「五、性能基线」占位表逐行回填，形�
 
 ## 七、回归判定
 
-- 以 metrics-perf-history.md 登记的基线为参照：某接口 P95 劣化 **>20%** 且 RPS 同向下降 → 需开 silk 归因，
+- 以 `metrics.md` / `loadtest/baseline.json` 登记的基线为参照：某接口 P95 劣化 **>20%** 且 RPS 同向下降 → 需开 silk 归因，
   并在 PR 描述中给出 SQL/火焰证据；
 - 涉及 `packages/xadmin-common/common/core/`（modelset/filter/serializers/permission）、元数据接口、分页的改动，
   PR 自查项加「是否跑过基线回归」；
@@ -194,7 +194,7 @@ k6 跑完由脚本自动比对并给出退出码。
 
 | 文件 | 职责 |
 |------|------|
-| `loadtest/baseline.json` | 基线快照：各用例（元数据按 columns/fields/with_meta 三变体分列）的 P95 / RPS 基线 + 环境元数据 + 容差（三轮中位数，来源 metrics-perf-history.md §五） |
+| `loadtest/baseline.json` | 基线快照：各用例（元数据按 columns/fields/with_meta 三变体分列）的 P95 / RPS 基线 + 环境元数据 + 容差（三轮中位数，来源 metrics.md / loadtest/baseline.json） |
 | `loadtest/check_baseline.py` | 比对脚本：读 `loadtest/k6/results/*.json` 与快照比对，输出表格/markdown/JSON，劣化非 0 退出 |
 | `loadtest/k6/run-all.sh` | `CHECK=1` 时跑完自动调比对（`CHECK_PYTHON` / `CHECK_FORMAT` / `CHECK_ARGS` 可覆盖） |
 | `.github/workflows/perf.yml` | 夜间 + 手动触发的 CI 压测档（PG/Redis service + gunicorn + k6 + 比对） |
@@ -267,7 +267,7 @@ cd ../..
   **不代表精确回归结论**。首轮 CI 跑完后按实测调整 `tolerance` 入参并在此登记。
 
 **快照刷新纪律**：改动 `packages/xadmin-common/common/core/`、元数据接口、索引、连接池、缓存策略后，
-在固定环境重跑三轮并 `--update` 刷新快照，同时在 metrics-history.md §三 回填记录中写明环境与方法。
+在固定环境重跑三轮并 `--update` 刷新快照，同时在 `metrics.md` 基线与发布记录中写明环境与方法。
 
 > **P1-37 复测已完成（2026-09-30）**：固定环境（容器栈 + 专用 PG/Redis + 1000 种子用户）
 > 三轮中位数已 `--update` 收紧快照（routes 682→1185 rps / P95 61.8→28.1ms、login P95 174→66ms、
@@ -324,4 +324,4 @@ P95 26.5ms（<60ms 达标）、吞吐 1209 rps。** 达标杠杆 = worker 容量
 **目标口径定案（2026-10-09）**：上述 fields 目标（<60ms）改按**生产容量档**判定——8-worker 达标
 （P95 26.5ms），4-worker 默认档容量膝点走容量规划（worker 档位）；`03-list` / `04-metadata-with-meta`
 统一为同一容量口径。回归护栏（P95 1.2x 容差）对默认档形态不变。详见
-[metrics-perf-history.md §「API 尾延迟目标正式定案」](../metrics-perf-history.md)。
+[metrics.md](../metrics.md) 的基线表（原性能履历已清理）。

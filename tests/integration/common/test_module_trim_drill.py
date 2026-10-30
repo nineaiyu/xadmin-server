@@ -67,6 +67,10 @@ WS_CHANNEL_OWNERSHIP = {
     ),
     r"ws/system/monitor/$": ("ops", "/ws/system/monitor/"),
     r"ws/screen/(?P<pk>[0-9a-f\-]{36})$": ("analysis", "/ws/screen/5eed0001-0000-0000-0000-000000000002"),
+    r"ws/dashboard/(?P<pk>[0-9a-f\-]{36})$": (
+        "analysis",
+        "/ws/dashboard/5eed0001-0000-0000-0000-000000000003",
+    ),
 }
 
 pytestmark = pytest.mark.django_db

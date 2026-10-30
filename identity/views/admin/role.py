@@ -6,8 +6,10 @@
 # date : 6/19/2023
 from typing import Any
 
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 
 from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet
@@ -69,6 +71,20 @@ class RoleViewSet(
     def get_recycle_purge_queryset(self, pks: Any) -> Any:
         # 回收站物理清除走 all_objects：显式排除内置角色
         return super().get_recycle_purge_queryset(pks).exclude(code__in=BUILTIN_ROLE_CODES)
+
+    def perform_update(self, serializer: Any) -> None:
+        """内置角色只允许改展示信息：code/is_active 会击穿按 code 引用的治理配置。
+
+        与删除保护同口径（内置角色不可删），写入口也需收口：
+        改 code 会让审批人角色等配置凭空失效，停用会让内置治理角色失去授权。
+        批量更新逐项调用本方法，因此同一处即可覆盖单条与批量两个入口。
+        """
+        instance = serializer.instance
+        if instance is not None and instance.code in BUILTIN_ROLE_CODES:
+            blocked = [name for name in ("code", "is_active") if name in serializer.validated_data]
+            if blocked:
+                raise ValidationError({"detail": _("Built-in role cannot be modified: {}").format(", ".join(blocked))})
+        super().perform_update(serializer)
 
     @ApprovalRequired()
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:

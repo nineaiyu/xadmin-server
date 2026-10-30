@@ -11,8 +11,8 @@ import json as jsonlib
 import pytest
 
 from ai.models.ai import AiChatMessage, AiProfile, AiUsageRecord
-from ai.utils.ai_actions import ACTION_DASHBOARD_OVERVIEW
-from ai.utils.ai_config import PURPOSE_STRUCTURED, set_active_profile
+from ai.services.actions.ai_actions import ACTION_DASHBOARD_OVERVIEW
+from ai.services.assistant.ai_config import PURPOSE_STRUCTURED, set_active_profile
 from audit.models.log import OperationLog
 
 pytestmark = pytest.mark.django_db
@@ -267,7 +267,7 @@ class TestNativeToolTrack:
         """流内未知异常（非 DjangoValidationError/AiSdkError）转 error 帧，不断连接。"""
         ai_settings.AI_NATIVE_TOOLS_ENABLED = True
         make_profile(purpose=PURPOSE_STRUCTURED, capabilities={"tool_calls": {"ok": True}})
-        import ai.utils.ai_actions as ai_actions
+        import ai.services.actions.ai_actions as ai_actions
 
         def broken_stream(user, message):
             yield {"type": "reasoning", "text": "先想一下"}
@@ -325,7 +325,7 @@ class TestIdempotency:
 
 class TestUsageEndpoint:
     def test_usage_summary(self, auth_client, superuser, ai_settings, stub_llm):
-        from ai.utils.ai_usage import invalidate_usage_cache, record_usage
+        from ai.services.assistant.ai_usage import invalidate_usage_cache, record_usage
 
         record_usage(superuser, "docs", usage={"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3})
         invalidate_usage_cache(superuser)
@@ -342,7 +342,7 @@ class TestUsageEndpoint:
 
         monkeypatch.setattr(type(SysConfig), "AI_QUOTA_USER_DAILY_CALLS", property(lambda self: 1), raising=False)
         make_profile()
-        from ai.utils.ai_usage import invalidate_usage_cache, record_usage
+        from ai.services.assistant.ai_usage import invalidate_usage_cache, record_usage
 
         record_usage(superuser, "docs")
         invalidate_usage_cache(superuser)

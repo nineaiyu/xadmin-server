@@ -6,7 +6,7 @@ from typing import Any
 
 from django.apps import apps
 from django.core.cache import cache
-from django.utils import translation
+from django.utils import timezone, translation
 
 from common.utils import get_logger
 
@@ -14,6 +14,48 @@ logger = get_logger(__name__)
 
 DICT_CACHE_PREFIX = "data_dict_"
 DICT_CACHE_TIMEOUT = 300
+DICT_USAGE_PREFIX = "data_dict_usage_"
+DICT_USAGE_TIMEOUT = 7 * 24 * 3600
+
+
+def _usage_keys(code: str) -> tuple[str, str, str]:
+    return (
+        f"{DICT_USAGE_PREFIX}count_{code}",
+        f"{DICT_USAGE_PREFIX}last_{code}",
+        f"{DICT_USAGE_PREFIX}failed_{code}",
+    )
+
+
+def record_dict_usage(code: str, failed: bool = False) -> None:
+    """记录字典消费次数/最近使用/加载失败次数（观测用，失败不影响消费）。"""
+    if not code:
+        return
+    count_key, last_key, failed_key = _usage_keys(code)
+    try:
+        if cache.add(count_key, 1, DICT_USAGE_TIMEOUT):
+            pass
+        else:
+            cache.incr(count_key)
+        cache.set(last_key, timezone.now().isoformat(), DICT_USAGE_TIMEOUT)
+        if failed:
+            if cache.add(failed_key, 1, DICT_USAGE_TIMEOUT):
+                pass
+            else:
+                cache.incr(failed_key)
+    except Exception:  # noqa: BLE001 观测失败不得影响字典消费
+        logger.debug("record dict usage failed: %s", code, exc_info=True)
+
+
+def dict_usage(code: str) -> dict[str, Any]:
+    count_key, last_key, failed_key = _usage_keys(code)
+    try:
+        return {
+            "usage_count": int(cache.get(count_key) or 0),
+            "last_used_at": cache.get(last_key) or "",
+            "load_failure_count": int(cache.get(failed_key) or 0),
+        }
+    except Exception:  # noqa: BLE001 缓存不可用按无观测数据处理
+        return {"usage_count": 0, "last_used_at": "", "load_failure_count": 0}
 
 
 def get_dict_items(code: str) -> list[dict[str, Any]]:
@@ -46,9 +88,11 @@ def get_dict_items(code: str) -> list[dict[str, Any]]:
             rows = _load()
         except Exception:  # noqa: BLE001 字典读取失败降级：不阻断请求，恢复后自动重试
             logger.warning("data dict load failed, degrade to empty: %s", code, exc_info=True)
+            record_dict_usage(code, failed=True)
             return []
         cache.set(cache_key, rows, DICT_CACHE_TIMEOUT)
 
+    record_dict_usage(code)
     use_en = (translation.get_language() or "").startswith("en")
     return [
         {

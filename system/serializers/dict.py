@@ -16,6 +16,7 @@ from rest_framework import serializers
 from common.core.fields import ColorField
 from common.core.serializers import BaseModelSerializer
 from system.models.dict import DataDict
+from system.utils.platform.dict import dict_usage
 from task.services import DisplayRelatedField
 
 
@@ -34,6 +35,9 @@ class DataDictSerializer(BaseModelSerializer):
     # 所属类型编码：导入时用编码定位父级，导出时给出可读的类型标识
     parent_code = serializers.CharField(source="parent.code", read_only=True, label=_("Parent code"))
     children_count = serializers.SerializerMethodField(label=_("Children count"))
+    usage_count = serializers.SerializerMethodField(label=_("Consumption count"))
+    last_used_at = serializers.SerializerMethodField(label=_("Last consumed at"))
+    load_failure_count = serializers.SerializerMethodField(label=_("Consumption failures"))
 
     # 关联计数声明（注解名与字段名一致）：列表/详情/导出由 RelationCountMixin
     # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT
@@ -54,6 +58,9 @@ class DataDictSerializer(BaseModelSerializer):
             "is_active",
             "is_locked",
             "children_count",
+            "usage_count",
+            "last_used_at",
+            "load_failure_count",
             "description",
             "created_time",
             "updated_time",
@@ -70,6 +77,9 @@ class DataDictSerializer(BaseModelSerializer):
             "is_active",
             "is_locked",
             "children_count",
+            "usage_count",
+            "last_used_at",
+            "load_failure_count",
             "created_time",
         ]
 
@@ -89,6 +99,32 @@ class DataDictSerializer(BaseModelSerializer):
             return 0 if obj.parent_id else obj.children.count()
         typed_value: int = count
         return typed_value
+
+    @staticmethod
+    def _usage(obj: Any) -> dict[str, Any]:
+        """同一次序列化内复用一次 dict_usage（3 个指标共用，避免 3×3 Redis GET）。"""
+        usage = getattr(obj, "_dict_usage_cache", None)
+        if usage is None:
+            usage = dict_usage(obj.code)
+            obj._dict_usage_cache = usage
+        return usage
+
+    def get_usage_count(self, obj: Any) -> int | None:
+        """消费次数（仅类型行；字典项行不展示）。"""
+        if obj.parent_id:
+            return None
+        return int(self._usage(obj)["usage_count"])
+
+    def get_last_used_at(self, obj: Any) -> str | None:
+        if obj.parent_id:
+            return None
+        return str(self._usage(obj)["last_used_at"] or "") or None
+
+    def get_load_failure_count(self, obj: Any) -> int | None:
+        """消费端加载失败次数（Redis 观测；失败不影响消费）。"""
+        if obj.parent_id:
+            return None
+        return int(self._usage(obj)["load_failure_count"])
 
     def to_internal_value(self, data: Any) -> Any:
         """写入前把 parent_code（字典类型编码）翻译成 parent 主键。

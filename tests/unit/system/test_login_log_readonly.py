@@ -94,8 +94,10 @@ class TestLogoutAction:
         assert resp.status_code == 200
         assert resp.data["code"] == 1000
 
-    def test_offline_session_logout_returns_readable_detail(self, superuser):
-        """channel 已不在推送组（会话已下线）：不算失败，但提示无需重复下线。"""
+    def test_offline_session_logout_still_revokes_http_sessions(self, superuser):
+        """channel 不在推送组也必须吊销 HTTP 会话，不能只推 WS 就返回成功。"""
+        from common.cache.storage import UserTokenRevokedCache
+
         user = UserInfo.objects.create_user(username="loginlog_logout_offline", password="x")
         log = _make_log(creator=user, channel_name="ch-loginlog-gone")
 
@@ -103,4 +105,4 @@ class TestLogoutAction:
 
         assert resp.status_code == 200
         assert resp.data["code"] == 1000
-        assert any(k in str(resp.data["detail"]) for k in ("offline", "已离线"))
+        assert UserTokenRevokedCache(user.pk).get_storage_cache()

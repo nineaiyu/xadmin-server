@@ -9,6 +9,8 @@
 覆盖面：
 - 模型契约：OperationLog / UserLoginLog / DataMaskRule（中间件审计、身份域
   登录留痕、AI 脱敏的模型消费）；
+- 审计写入契约：record（各域语义审计统一落库：changes 序列化/截断、creator
+  解析、异常只告警均内建，替代散落的 OperationLog.objects.create 样板）；
 - 掩码契约：apply_mask / get_mask_rules / record_original_channel_access；
 - 影响面契约：ensure_impact_confirmed / impact_for_many / guarded_models；
 - 告警与清理：maybe_alert_sensitive_operation、auto_clean_operation_log。
@@ -28,6 +30,9 @@ __all__ = [
     "DataMaskRule",  # noqa: F822
     # 序列化器契约（面板聚合等跨域消费）
     "LoginLogSerializer",  # noqa: F822
+    # 审计写入契约（各域语义审计统一落库）
+    "record",  # noqa: F822
+    "CHANGES_MAX_LENGTH",  # noqa: F822
     # 掩码契约（common.core.mask 消费）
     "apply_mask",  # noqa: F822
     "get_mask_rules",  # noqa: F822
@@ -51,6 +56,8 @@ _LAZY_EXPORTS = {
     "UserLoginLog": "audit.models",
     "DataMaskRule": "audit.models",
     "LoginLogSerializer": "audit.serializers.log",
+    "record": "audit.services.recorder",
+    "CHANGES_MAX_LENGTH": "audit.services.recorder",
     "apply_mask": "audit.utils.mask",
     "get_mask_rules": "audit.utils.mask",
     "record_original_channel_access": "audit.utils.mask",

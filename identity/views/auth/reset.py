@@ -13,14 +13,13 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 
-from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import ResetPasswordThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils.verify_code import TokenTempCache
 from identity.models import UserInfo
 from identity.models.ldap import LdapUserBinding
-from identity.utils.auth import verify_sms_email_code
+from identity.utils.auth import decrypt_submitted, verify_sms_email_code
 from settings.services import (
     ResetBlockUtil,
     check_history_password,
@@ -50,15 +49,28 @@ class ResetPasswordAPIView(GenericAPIView):
     )
     def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """重置密码"""
-        query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
+        # 重置开关强校验:关闭后接口层同样拒绝(关闭前已发出的验证码一并作废)
+        if not settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED:
+            return ApiResponse(code=1001, detail=_("Reset password forbidden"))
+        query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil, scenes=("reset",))
+        # 通道开关复核:与验证码登录同口径,防止发码后关闭通道绕过
+        channel_enabled = {
+            "email": settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
+            "phone": settings.SECURITY_RESET_PASSWORD_BY_SMS_ENABLED and settings.SMS_ENABLED,
+        }.get(query_key)
+        if channel_enabled is False:
+            return ApiResponse(code=1001, detail=_("Reset password forbidden"))
         password = request.data.get("password")
         if not password:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 
         if settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED:
-            password = AESCipherV2(verify_token).decrypt(password)
+            password = decrypt_submitted(password, verify_token)
 
-        instance = UserInfo.objects.get(**{query_key: target})
+        instance = UserInfo.objects.filter(is_active=True, **{query_key: target}).first()
+        if instance is None:
+            # 与发码阶段「不暴露账号是否存在」同口径：统一按验证码失效处理
+            return ApiResponse(code=1002, detail=_("The verification code has expired, please request a new one"))
         if LdapUserBinding.objects.filter(user=instance).exists():
             # LDAP 绑定用户密码由目录管理，本地重置入口直接拒绝
             return ApiResponse(
@@ -78,5 +90,8 @@ class ResetPasswordAPIView(GenericAPIView):
         instance.modifier = instance
         instance.save(update_fields=["password", "modifier"])
         record_password_hash(instance, instance.password)
+        from identity.utils.session import revoke_user_credentials
+
+        revoke_user_credentials(instance.pk, operator=instance)
         TokenTempCache.expired_cache_token(verify_token)
         return ApiResponse(detail=_("Reset password success, return to login page"))

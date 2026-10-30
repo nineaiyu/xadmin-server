@@ -122,26 +122,29 @@ class ApiLoggingMiddleware(MiddlewareMixin):
     @classmethod
     def __handle_request(cls, request: Any) -> None:
         request.request_ip = get_request_ip(request)
-        request.request_data = get_request_data(request)
         request.request_start_time = time.time()
-        # DEBUG 正文同样脱敏 + 截断（与操作日志 / 慢请求日志同口径）：明文
-        # token / password 落日志文件等同泄露凭证。
-        # isEnabledFor 守卫：f-string 会先求值再过滤级别，正文预览要做一遍脱敏 +
-        # json.dumps，DEBUG 关闭时白算（先例 common/cache/storage.py:23-29）
+        # 请求体按需解析：普通请求（操作日志关闭、非慢请求）不再为审计预览
+        # 复制一份完整 JSON。DEBUG 正文预览是唯一请求期消费者。
         if logger.isEnabledFor(logging.DEBUG):
+            request.request_data = get_request_data(request)
             logger.debug(f"request start. {request.method} {request.path} {log_body_preview(request.request_data)}")
 
     def __handle_response(self, request: Any, response: Any) -> Any:
         request_start_time = getattr(request, "request_start_time", time.time())
         exec_time = time.time() - request_start_time
+        # 视图执行期登记的「值语义敏感字段」（如 SystemConfig 的 value-only PATCH）
+        value_fields = request_value_fields(request)
         # 慢请求阈值走系统配置（默认 1.0s），与监控面板 slow 接口同口径
         threshold = SysConfig.SLOW_REQUEST_THRESHOLD
         if exec_time > threshold:
+            # 慢请求才解析正文（普通请求不承担这份内存/解析开销）
+            if not hasattr(request, "request_data"):
+                request.request_data = get_request_data(request)
             # 请求体必须脱敏（与 OperationLog 同口径）：慢请求日志保留期长，
             # 明文 token/password/code 落日志文件等同泄露凭证
             logger.warning(
                 f"exec time {exec_time} over {threshold}s. {request.method} {request.path} "
-                f"{log_body_preview(request.request_data)} "
+                f"{log_body_preview(request.request_data, value_fields)} "
                 f"request_id:{getattr(request, 'request_uuid', None)}"
             )
         # 判断有无待写标记（process_view 只标记不写库；health 等无 cls 视图、
@@ -150,6 +153,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         if pending is None:
             return None
 
+        if not hasattr(request, "request_data"):
+            request.request_data = get_request_data(request)
         info = build_operation_log_info(request, response, request_start_time, pending.get("object_pk"))
 
         # Step3：响应阶段已在 ATOMIC_REQUESTS 事务之外（请求事务随视图退出已终结），
@@ -163,7 +168,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             logger.warning("sensitive operation alert failed", exc_info=True)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
-                f"request end. {request.method} {request.path} {log_body_preview(request.request_data)} log:{info}"
+                f"request end. {request.method} {request.path} "
+                f"{log_body_preview(request.request_data, value_fields)} log:{info}"
             )
         return True
 
@@ -260,6 +266,8 @@ from common.core.oplog_recorder import (  # noqa: F401  (日志辅助拆至 oplo
     desensitize_payload,
     insert_operation_log,
     log_body_preview,
+    mark_sensitive_value_fields,
+    request_value_fields,
     resolve_auth_identity,
     sensitive_get_actions,
 )
@@ -282,6 +290,8 @@ __all__ = (
     "desensitize_payload",
     "insert_operation_log",
     "log_body_preview",
+    "mark_sensitive_value_fields",
+    "request_value_fields",
     "resolve_auth_identity",
     "sensitive_get_actions",
 )

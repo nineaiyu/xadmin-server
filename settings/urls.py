@@ -9,13 +9,20 @@ from rest_framework.routers import SimpleRouter
 from common.core.routers import NoDetailRouter
 from settings.views.basic import BasicSettingViewSet
 from settings.views.block_ip import SecurityBlockIpViewSet
+from settings.views.captcha_insight import SecurityCaptchaLogViewSet, SecurityCaptchaStatsViewSet
 from settings.views.email import EmailServerSettingViewSet
 from settings.views.ldap import LdapServerSettingViewSet
 from settings.views.notify_im import ImNotifySettingViewSet
+from settings.views.notify_webhook import WebhookNotifySettingViewSet
+from settings.views.oauth import OAuthProviderSettingViewSet
+from settings.views.scim import ScimSettingViewSet
 from settings.views.security import (
     SecurityBindEmailAuthViewSet,
     SecurityBindPhoneAuthViewSet,
     SecurityCaptchaCodeViewSet,
+    SecurityCaptchaGeneralViewSet,
+    SecurityCaptchaInteractiveViewSet,
+    SecurityCaptchaRiskViewSet,
     SecurityLoginAuthViewSet,
     SecurityLoginLimitViewSet,
     SecurityMFAViewSet,
@@ -37,11 +44,21 @@ no_detail_router = NoDetailRouter(False)
 no_detail_router.register("email", EmailServerSettingViewSet, basename="email-server")
 no_detail_router.register("ldap", LdapServerSettingViewSet, basename="ldap-server")
 no_detail_router.register("notify/im", ImNotifySettingViewSet, basename="notify-im")
+no_detail_router.register("notify/webhook", WebhookNotifySettingViewSet, basename="notify-webhook")
+no_detail_router.register("scim", ScimSettingViewSet, basename="scim-setting")
+no_detail_router.register("oauth/providers", OAuthProviderSettingViewSet, basename="oauth-provider-setting")
 
 no_detail_router.register("basic", BasicSettingViewSet, basename="basic")
 no_detail_router.register("password", SecurityPasswordRuleViewSet, basename="security-password")
 no_detail_router.register("verify", SecurityVerifyCodeViewSet, basename="verify-code")
+no_detail_router.register("captcha/general", SecurityCaptchaGeneralViewSet, basename="captcha-general")
 no_detail_router.register("captcha", SecurityCaptchaCodeViewSet, basename="captcha-code")
+no_detail_router.register("captcha/interactive", SecurityCaptchaInteractiveViewSet, basename="captcha-interactive")
+no_detail_router.register("captcha/risk", SecurityCaptchaRiskViewSet, basename="captcha-risk")
+
+# 观测面是集合 / 聚合端点（list 语义），走标准 router 而不是 NoDetailRouter
+router.register("captcha/log", SecurityCaptchaLogViewSet, basename="captcha-log")
+router.register("captcha/stats", SecurityCaptchaStatsViewSet, basename="captcha-stats")
 
 no_detail_router.register("login/limit", SecurityLoginLimitViewSet, basename="security-login-limit")
 no_detail_router.register("login/auth", SecurityLoginAuthViewSet, basename="security-login-auth")

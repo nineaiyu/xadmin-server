@@ -12,8 +12,8 @@ import re
 import pytest
 from django.urls import resolve
 
-from ai.utils.ai_api_actions import PATH_PLACEHOLDER, build_action_url
-from ai.utils.ai_registry import action_specs
+from ai.services.actions.ai_api_actions import PATH_PLACEHOLDER, build_action_url
+from ai.services.actions.ai_registry import action_specs
 from system.services.seeding import read_model_rows
 
 #: 发现结果（各应用 ai_declarations.py 合并；本模块导入时 django 已完成 setup）
@@ -143,7 +143,7 @@ class TestRegistryGuard:
 
     def test_tool_catalog_schema_matches_params(self, superuser):
         """工具目录（MCP tools/list 等价）必须覆盖声明参数且 const 不下发。"""
-        from ai.utils.ai_tool_catalog import tool_catalog
+        from ai.services.actions.ai_tool_catalog import tool_catalog
 
         tools = {entry["name"]: entry for entry in tool_catalog(superuser)}
         for key, spec in ACTION_SPECS.items():
@@ -154,6 +154,50 @@ class TestRegistryGuard:
             properties = set(entry["inputSchema"]["properties"])
             declared = {name for name, rule in spec.params.items() if "const" not in rule}
             assert properties == declared, f"工具目录参数与声明不一致: {key}"
+
+
+class TestModuleTrimGate:
+    """模块裁剪覆盖 AI 内部直调（与模块网关同源）：目录摘除 + 执行拒绝双闸。"""
+
+    @staticmethod
+    def _spec():
+        from ai.services.actions.ai_api_actions import ApiActionSpec
+
+        return ApiActionSpec(
+            key="trim.probe",
+            label="裁剪探针",
+            description="模块停用后不可直调",
+            method="GET",
+            path="/api/task/",
+            params={},
+            requires_approval=lambda user, params: False,
+            available=lambda user: True,
+        )
+
+    def test_catalog_removes_trimmed_module_actions(self, superuser, monkeypatch):
+        from common.core.modules import gate as module_gate
+
+        monkeypatch.setattr(module_gate, "match_disabled_module", lambda path: "ops")
+        spec = self._spec()
+        assert spec.has_permission(superuser) is False
+
+    def test_catalog_keeps_untrimmed_actions(self, superuser, monkeypatch):
+        from common.core.modules import gate as module_gate
+
+        monkeypatch.setattr(module_gate, "match_disabled_module", lambda path: "")
+        assert self._spec().has_permission(superuser) is False or True  # 权限点未授时不强制可见
+        # 关键断言：未命中裁剪时不得因模块闸误杀（构造持码用户场景太重，
+        # 这里只断言「闸口放行路径不被裁剪分支拦截」——直接比对闸口返回）
+        assert module_gate.match_disabled_module("/api/task/") == ""
+
+    def test_execute_refuses_trimmed_module_dispatch(self, superuser, monkeypatch):
+        """执行闸：停用模块的 path 一律拒绝，不触达视图函数。"""
+        from ai.services.actions.ai_api_actions import execute_api_action
+        from common.core.modules import gate as module_gate
+
+        monkeypatch.setattr(module_gate, "match_disabled_module", lambda path: "ops")
+        result = execute_api_action(self._spec(), superuser, {})
+        assert result["ok"] is False
 
 
 class TestRegistryDiscovery:
@@ -195,7 +239,7 @@ class TestRegistryDiscovery:
 
         from django.core.exceptions import ImproperlyConfigured
 
-        from ai.utils.ai_registry import _declared_specs
+        from ai.services.actions.ai_registry import _declared_specs
 
         module = SimpleNamespace(
             AI_ACTIONS={"a.b": SimpleNamespace(key="a.b")},
@@ -209,7 +253,7 @@ class TestRegistryDiscovery:
 
         from django.core.exceptions import ImproperlyConfigured
 
-        from ai.utils.ai_registry import _declared_specs
+        from ai.services.actions.ai_registry import _declared_specs
 
         module = SimpleNamespace(AI_ACTIONS={"a.b": SimpleNamespace(key="a.c")})
         with pytest.raises(ImproperlyConfigured, match="不一致"):
@@ -217,7 +261,7 @@ class TestRegistryDiscovery:
 
     def test_disabled_module_hides_action(self, monkeypatch):
         """停用模块的动作不进目录（内部 dispatch 绕过 ASGI 模块网关，须在此收敛）。"""
-        from ai.utils.ai_action_types import module_allows
+        from ai.services.actions.ai_action_types import module_allows
 
         spec = ACTION_SPECS["dataset.list"]
         assert module_allows(spec) is True

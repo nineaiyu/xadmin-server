@@ -107,6 +107,36 @@ class TestEmailTestEndpoint:
         assert resp.data["code"] == 1000, resp.data
         assert dj_settings.EMAIL_HOST == "stored.smtp.local"
 
+    def test_sender_prefers_email_from(self, auth_client, settings):
+        """测试发件人与真实发送同口径：EMAIL_FROM 优先，留空回落登录账号。"""
+        settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+        mail.outbox = []
+        resp = auth_client.post(
+            EMAIL_URL,
+            {
+                "EMAIL_HOST": "form.smtp.local",
+                "EMAIL_PORT": "465",
+                "EMAIL_HOST_USER": "tester@test.local",
+                "EMAIL_FROM": "noreply@test.local",
+                "EMAIL_USE_SSL": True,
+            },
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert mail.outbox[0].from_email == "noreply@test.local"
+
+    def test_ssl_and_tls_mutually_exclusive(self, auth_client):
+        resp = auth_client.post(
+            EMAIL_URL,
+            {
+                "EMAIL_HOST": "form.smtp.local",
+                "EMAIL_PORT": "465",
+                "EMAIL_HOST_USER": "tester@test.local",
+                "EMAIL_USE_SSL": True,
+                "EMAIL_USE_TLS": True,
+            },
+        )
+        assert resp.status_code == 400
+
 
 class TestImTestEndpoint:
     def test_uses_form_values_fallback_stored(self, auth_client, settings, monkeypatch):

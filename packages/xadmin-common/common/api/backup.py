@@ -32,7 +32,7 @@ class BackupAlertAPIView(AlertReportAPIView):
     received_detail = _("Backup alert received")
 
     def get_notify(self) -> Any:
-        from common.backup_alert import notify_backup_failure
+        from common.alerts import notify_backup_failure
 
         return notify_backup_failure
 

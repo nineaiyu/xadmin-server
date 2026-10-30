@@ -240,6 +240,8 @@ class UserOTPViewSet(GenericViewSet):
         密钥保留时校验一次动态码证明持有，无需重新扫码
         """
         user = request.user
+        if _binding_disallowed(user, OtpBackend.name):
+            return ApiResponse(code=1001, detail=_("MFA method is not allowed by account policy"))
         if not user.otp_secret_key:
             return ApiResponse(code=1001, detail=_("Please start binding first"))
 

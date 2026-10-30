@@ -8,7 +8,7 @@ import pytest
 from django.core.files.base import ContentFile
 from django.core.management import call_command
 
-from system.utils.platform import legacy_transfer as lt
+from ops.legacy import transfer as lt
 
 
 def _patch_export_models(monkeypatch):
@@ -188,6 +188,27 @@ class TestRoundTrip:
         restored = MessageContent.objects.get(title="带附件公告")
         assert list(restored.file.values_list("filename", flat=True)) == [upload.filename]
 
+    def test_same_title_notices_are_not_merged(self, tmp_path, monkeypatch):
+        """公告自然键为 title+created_time：同名不同时间的公告必须分别落库。"""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from notifications.models.message import MessageContent
+
+        _seed()
+        now = timezone.now()
+        first = MessageContent.objects.create(title="系统维护通知", message="第一次")
+        second = MessageContent.objects.create(title="系统维护通知", message="第二次")
+        MessageContent.objects.filter(pk=first.pk).update(created_time=now)
+        MessageContent.objects.filter(pk=second.pk).update(created_time=now + timedelta(hours=1))
+        payload = self._export(tmp_path / "legacy", monkeypatch)
+        assert payload["counts"]["notices"] == 2
+
+        MessageContent.objects.filter(title="系统维护通知").delete()
+        call_command("legacy_import", "--input", str(tmp_path / "legacy"), stdout=StringIO())
+        assert MessageContent.objects.filter(title="系统维护通知").count() == 2
+
     def test_missing_attachment_file_is_skipped(self, tmp_path, monkeypatch):
         """附件记录在、物理文件不在：跳过该记录（不建下载不了的坏行），不中断导入。"""
         from file.models import UploadFile
@@ -339,7 +360,7 @@ class TestRoundTrip:
 
     def test_extra_table_without_model_is_reported(self, tmp_path):
         """二开表在目标库没有对应模型时只告警跳过，不中断导入。"""
-        from system.utils.platform.legacy_importer import Importer
+        from ops.legacy.importer import Importer
 
         importer = Importer(tmp_path)
         results = importer.import_extra_tables({"not_a_real_table": [{"id": 1}]})

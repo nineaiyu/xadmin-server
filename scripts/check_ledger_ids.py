@@ -7,7 +7,8 @@
 - 源码注释 / docstring / 测试名 / 种子 JSON / 配置文件里不写台账编号；
 - 台账编号只允许出现在提交信息、``docs/``（含 ``docs/plans/`` 与 ``docs/adr/``）
   以及本脚本与 ``check_adr_status.py`` 的实现/自测中；
-- 禁止形态：``ADR-090``、``T03-01``、``O10-2``、``TG-3`` 一类。
+- 禁止形态：``ADR-090``、``T03-01``、``O10-2``、``TG-3`` 一类，
+  以及评审编号 ``FE-DATA-P1-04`` / ``LOG-P1-01`` / ``C-03`` 一类。
 
 用法::
 
@@ -38,7 +39,10 @@ SCAN_SUFFIXES = {
     ".js",
     ".mjs",
     ".ts",
+    ".tsx",
     ".vue",
+    ".tmpl",
+    ".txt",
     ".scss",
     ".css",
     ".po",
@@ -51,6 +55,10 @@ LEDGER_PATTERNS = (
     re.compile(r"\bT\d{2,}-\d{2,}\b"),
     re.compile(r"\bO\d{1,2}-\d+\b"),
     re.compile(r"\bTG-\d+\b"),
+    # 评审编号：LOG-P1-01 / FE-DATA-P1-04 / SEC-ID-P0-01 / ROB-APPR-P2-01
+    re.compile(r"\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-P\d+-\d+\b"),
+    # 运行时清偿编号：C-03 / C-31 / C-36
+    re.compile(r"\bC-\d{1,2}\b"),
 )
 
 #: 非源码目录
@@ -65,6 +73,7 @@ EXCLUDED_DIRS = {
     ".ruff_cache",
     "dist",
     "build",
+    "data",
     "docs",
     "htmlcov",
 }

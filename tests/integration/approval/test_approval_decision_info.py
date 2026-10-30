@@ -53,7 +53,7 @@ class TestTargetSnapshot:
 
     def test_patch_style_changes_diff_rendered(self):
         """变更类请求（PATCH body）→ 快照含「变更前 → 变更后」对照。"""
-        from approval.utils.approval.snapshot import build_target_snapshot
+        from approval.services.approval.snapshot import build_target_snapshot
         from identity.views.admin.role import RoleViewSet
 
         role = UserRole.objects.create(name="原角色名", code="u1_role3")
@@ -68,8 +68,18 @@ class TestTargetSnapshot:
         assert changes["name"]["new"] == "新角色名"
         assert changes["name"]["label"]  # label 可读（序列化器 label 或字段名兜底）
 
+    def test_sensitive_value_hashed_in_snapshot(self):
+        """密码/令牌类字段在快照里只留不可逆哈希（详情不随附明文）。"""
+        from approval.services.approval.snapshot import _iter_changes
+
+        user = UserInfo.objects.create(username="snap_sensitive_u1", nickname="快照用户")
+        request = types.SimpleNamespace(data={"password": "Plain@123456"})
+        changes = {item["field"]: item for item in _iter_changes(user, request)}
+        assert changes["password"]["new"].startswith("sha256:")
+        assert "Plain@123456" not in changes["password"]["new"]
+
     def test_snapshot_missing_for_unreachable_object(self):
-        from approval.utils.approval.snapshot import build_target_snapshot
+        from approval.services.approval.snapshot import build_target_snapshot
         from identity.views.admin.role import RoleViewSet
 
         view = RoleViewSet()
@@ -98,7 +108,7 @@ class TestRelatedObject:
         instance = ApprovalInstance.objects.create(
             flow=flow, flow_name=flow.name, title="请假申请", creator=superuser, biz_type="leave", biz_id=str(leave.pk)
         )
-        from approval.utils.approval_flow.biz import biz_summary
+        from approval.services.approval_flow.biz import biz_summary
 
         summary = biz_summary(instance)
         assert summary["type"] == "leave"
@@ -108,7 +118,7 @@ class TestRelatedObject:
         assert "年假" in title or "annual" in title
 
     def test_unknown_biz_type_degrades(self, superuser):
-        from approval.utils.approval_flow.biz import biz_summary
+        from approval.services.approval_flow.biz import biz_summary
 
         flow = self._flow()
         instance = ApprovalInstance.objects.create(
@@ -125,7 +135,7 @@ class TestRelatedObject:
         }
 
     def test_missing_business_row_degrades(self, superuser):
-        from approval.utils.approval_flow.biz import biz_summary
+        from approval.services.approval_flow.biz import biz_summary
 
         flow = self._flow()
         instance = ApprovalInstance.objects.create(
@@ -160,7 +170,7 @@ class TestRelatedObject:
 
 class TestAssigneeSnapshot:
     def test_node_task_and_actor_display(self, superuser, approver):
-        from approval.utils.approval_flow.engine import _enter_node, approve_task
+        from approval.services.approval_flow.engine import _enter_node, approve_task
 
         flow = ApprovalFlow.objects.create(name="快照流程", code="u1_snapshot_flow")
         node = ApprovalFlowNode.objects.create(
@@ -184,7 +194,7 @@ class TestAssigneeSnapshot:
         role = UserRole.objects.create(name="快照角色", code="u1_role4")
         auth_client.delete(f"/api/identity/role/{role.pk}")
         approval = ApprovalRequest.objects.get(status=ApprovalRequest.Status.PENDING)
-        from approval.utils.approval import approve_request
+        from approval.services.approval import approve_request
 
         ok, detail = approve_request(approval, approver)
         assert ok is True, detail

@@ -14,6 +14,10 @@ from django.core.management.base import CommandError
 from .field_plan import FieldPlanMixin
 from .seed_ingest import SeedIngestMixin
 
+#: 非关联字段可选的专用字段类（渲染能力随字段类下发，见 common/core/fields.py）。
+#: CLI 旗标与 GUI 表单共用（GUI 侧 fields.py 再导出为选项清单数据源）。
+FIELD_CLASS_OPTIONS = ("PhoneField", "ColorField", "RichTextField", "StepFloatField")
+
 
 class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
     """模型 → 生成上下文与产物清单（不落盘）。"""
@@ -48,6 +52,10 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
 
         def _render_client_page(self, *args: Any, **kwargs: Any) -> Any: ...
 
+        def _client_locale(self, *args: Any, **kwargs: Any) -> dict[str, Any]: ...
+
+        def _render_client_locale(self, *args: Any, **kwargs: Any) -> str: ...
+
     # ------------------------------------------------------------- 上下文构建
 
     def _resolve_model(self, label: str) -> Any:
@@ -68,6 +76,7 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
         component = options["component"] or f"{app_label.title()}{model.__name__}"
         router_path = model_snake.replace("_", "-")
         ordering = self._parse_ordering(options)
+        client_root = Path(options["frontend_root"]) if options["frontend_root"] else self._default_client_root()
         ctx = {
             "model": model,
             "app_label": app_label,
@@ -84,6 +93,9 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
             "with_import_export": options["with_import_export"],
             "menu_icon": str(options.get("menu_icon") or "").strip(),
             "default_ordering": ordering or self._default_ordering(model),
+            # 只有确实会写前端词条时才把菜单标题落 key；--skip-frontend 或找不到
+            # 前端仓库时保留中文标题，避免生成一个无人翻译的 menus.<Component>
+            "use_locale_title": not options["skip_frontend"] and client_root is not None,
         }
         ctx.update(self._field_plan(model))
         return ctx
@@ -123,6 +135,15 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
         if dict_fields:
             ctx["dict_fields"] = dict_fields
         return dict_fields
+
+    def _apply_field_classes(
+        self,
+        ctx: dict[str, Any],
+        pairs: list[str],
+        overrides: dict[str, dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """专用字段类声明（薄委托：见模块级 :func:`apply_field_classes`）。"""
+        return apply_field_classes(ctx, pairs, overrides)
 
     # --------------------------------------------------------------- 产物收集
 
@@ -329,6 +350,17 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
                 "mode": "create",
                 "key": f"client-hook-{ctx['model_snake']}",
             },
+            *[
+                {
+                    "label": f"前端词条（{locale}）",
+                    "path": client_root / "locales" / f"{locale}.yaml",
+                    "content": self._render_client_locale(ctx, locale),
+                    "mode": "locale_yaml",
+                    "key": f"client-locale-{locale}-{ctx['model_snake']}",
+                    "locale": self._client_locale(ctx, locale),
+                }
+                for locale in ("zh-CN", "en")
+            ],
         ]
 
     @staticmethod
@@ -396,3 +428,52 @@ class AnalysisMixin(FieldPlanMixin, SeedIngestMixin):
         lines.append("复核：关联字段 input_type 是否符合数据量（大数据量换 api-search-* 形态）；")
         lines.append("      菜单上级是否要挂到已有目录（--parent 或菜单管理里调整）。")
         self.stdout.write("\n".join(lines))
+
+
+def apply_field_classes(
+    ctx: dict[str, Any],
+    pairs: list[str],
+    overrides: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """专用字段类声明：``字段名=类名`` 对收敛为 ctx["field_declarations"]。
+
+    CLI 旗标（--field-class）与 GUI 表单（fields.apply_field_overrides）共用本
+    推导——单一规则，不引入第二套；``overrides`` 携带 GUI 表单对该字段的
+    label / read_only / required 覆盖（CLI 不传，走模型属性推导）。声明后从
+    extra_kwargs 摘除同名字段（DRF 对显式声明 + extra_kwargs 并存会直接断言失败）。
+    """
+    declarations: dict[str, Any] = {}
+    for pair in pairs:
+        name, _, field_class = str(pair).partition("=")
+        name, field_class = name.strip(), field_class.strip()
+        if not name or not field_class:
+            raise CommandError(f"专用字段类需形如 <字段名>=<类名>，收到：{pair!r}")
+        field = next(
+            (item for item in [*ctx["model"]._meta.fields, *ctx["model"]._meta.many_to_many] if item.name == name),
+            None,
+        )
+        if name == "pk" or field is None or field.is_relation:
+            raise CommandError(f"{name}：专用字段类仅支持非关联字段")
+        if field_class not in FIELD_CLASS_OPTIONS:
+            raise CommandError(f"{name}：非法专用字段类「{field_class}」（可选：{', '.join(FIELD_CLASS_OPTIONS)}）")
+        if name in (ctx.get("dict_fields") or {}):
+            raise CommandError(f"{name}：已绑定字典，不能同时声明专用字段类")
+        kwargs = (overrides or {}).get(name) or {}
+        declaration: dict[str, Any] = {"label": kwargs.get("label") or str(field.verbose_name or name)}
+        if kwargs.get("read_only"):
+            declaration["read_only"] = True
+        else:
+            declaration["required"] = kwargs.get("required", not field.blank and not field.null)
+        if field_class in {"PhoneField", "ColorField", "RichTextField"}:
+            if getattr(field, "max_length", None):
+                declaration["max_length"] = field.max_length
+            if field.blank and not declaration.get("read_only"):
+                declaration["allow_blank"] = True
+            if field.null:
+                declaration["allow_null"] = True
+        declarations[name] = {"class": field_class, "kwargs": declaration}
+        # 显式声明的字段不能再出现在 extra_kwargs（DRF 会直接断言失败）
+        ctx["extra_kwargs"].pop(name, None)
+    if declarations:
+        ctx.setdefault("field_declarations", {}).update(declarations)
+    return declarations

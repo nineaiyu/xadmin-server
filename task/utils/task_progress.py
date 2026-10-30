@@ -29,12 +29,14 @@ logger = get_logger(__name__)
 KIND_EXPORT = "export"
 KIND_IMPORT = "import"
 KIND_REPORT = "report"
+KIND_TASK = "task"
 
 #: 进度落库模型（延迟解析，避免模块加载期依赖 app registry）
 _RECORD_MODELS = {
     KIND_EXPORT: ("task.models.export", "ExportRecord"),
     KIND_IMPORT: ("task.models.import_", "ImportRecord"),
     KIND_REPORT: ("task.models.export", "ExportRecord"),
+    KIND_TASK: ("task.models.task", "TaskExecution"),
 }
 
 #: 阶段描述最大长度（模型字段同口径）

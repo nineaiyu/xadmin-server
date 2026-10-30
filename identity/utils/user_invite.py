@@ -28,6 +28,7 @@ from typing import Any
 from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ValidationError
 
 from common.core.config import SysConfig
 from common.utils import get_logger
@@ -99,6 +100,13 @@ def send_invite(user: Any, request: Any = None) -> str:
     """发送（或重发）邀请：置待激活 + 密码不可用 + 邮件链接；返回一次性令牌。"""
     from identity.models import UserInfo
 
+    # fail-closed：没有投递通道或收件邮箱时不能把账号置为待激活（否则用户既收不到
+    # 邀请也无法用密码登录，管理端却看到成功）。
+    if not mail_channel_configured():
+        raise ValidationError(INVITE_MAIL_UNAVAILABLE_MESSAGE)
+    if not str(getattr(user, "email", "") or "").strip():
+        raise ValidationError(_("The user has no email address; add one before inviting"))
+
     token = generate_invite_token(user)
     user.invite_status = UserInfo.InviteStatusChoices.PENDING
     user.invited_time = timezone.now()
@@ -110,16 +118,12 @@ def send_invite(user: Any, request: Any = None) -> str:
         "You are invited to activate your account (%(username)s). "
         "Please open the link within 72 hours to set your password: %(link)s"
     ) % {"username": user.username, "link": invite_link(token, request)}
-    email = getattr(user, "email", "")
-    if email:
-        try:
-            from common.tasks import send_mail_async
+    try:
+        from common.tasks import send_mail_async
 
-            send_mail_async.delay(str(title), str(message), [email], html_message=str(message))
-        except Exception:
-            logger.warning("send invite mail failed. user: %s", user, exc_info=True)
-    else:
-        logger.warning("invite user %s has no email, invitation link is not delivered", user.username)
+        send_mail_async.delay(str(title), str(message), [user.email], html_message=str(message))
+    except Exception:
+        logger.warning("send invite mail failed. user: %s", user, exc_info=True)
     logger.info("invite user %s (pending)", user.username)
     return token
 
@@ -147,5 +151,8 @@ def accept_invite(user: Any, password: str) -> Any:
     user.invite_status = UserInfo.InviteStatusChoices.ACCEPTED
     user.save(update_fields=["password", "invite_status"])
     record_password_hash(user, user.password)
+    from identity.utils.session import revoke_user_credentials
+
+    revoke_user_credentials(user.pk, operator=user)
     logger.info("activate invited user %s", user.username)
     return True, str(_("Activated successfully, please sign in"))

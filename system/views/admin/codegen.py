@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """代码生成器 GUI 端点：模型清单 / 字段计划 / 产物预览 / zip 下载。
 
-适配层与安全口径见 :mod:`system.utils.platform.codegen_gui`（复用 generate_crud 引擎，
+适配层与安全口径见 :mod:`devtools.services.codegen.gui`（复用 generate_crud 引擎，
 不落盘不写库；权限走菜单种子权限点，默认仅超管可用，授予角色即开放）。
 """
 
@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import quote
 
 from django.http import HttpResponse
+from django.utils.translation import gettext as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -18,7 +19,10 @@ from rest_framework.decorators import action
 
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.utils.platform import codegen_gui
+from common.utils import get_logger
+from devtools.services.codegen import gui as codegen_gui
+
+logger = get_logger(__name__)
 
 # 生成表单载荷的 schema 声明：与 codegen_gui._base_options / _prepare 实际读取的键
 # 一致（GUI 表单面）；preview 单模型必填 model，download 额外支持 models 批量清单。
@@ -142,6 +146,7 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
                             "path": build_basic_type(OpenApiTypes.STR),
                             "content": build_basic_type(OpenApiTypes.STR),
                             "mode": build_basic_type(OpenApiTypes.STR),
+                            "kind": build_basic_type(OpenApiTypes.STR),
                             "key": build_basic_type(OpenApiTypes.STR),
                             "notice": build_basic_type(OpenApiTypes.STR),
                         }
@@ -156,6 +161,41 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
             return ApiResponse(data=codegen_gui.build_artifacts(request.data or {}))
         except codegen_gui.CodegenError as exc:
             return ApiResponse(code=1001, detail=str(exc))
+
+    @extend_schema(
+        description="AI 字段草案：自然语言 → 字段覆盖草案（服务端按字段表格同套约束过滤，人审采纳后进既有预览/下载管线）",
+        request=build_object_type(
+            properties={
+                "model": build_basic_type(OpenApiTypes.STR),
+                "description": build_basic_type(OpenApiTypes.STR),
+            },
+            required=["model", "description"],
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="ai-draft")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def ai_draft(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """AI 字段草案
+
+        自然语言描述 → CodegenFieldOverride[] 草案 + 告警 + 摘要；AI 产物过
+        人审（前端逐项采纳），不直写代码
+        """
+        from devtools.services.codegen import ai_draft as codegen_ai_draft
+        from integrations.sdk.ai.chat import AiSdkError
+
+        label = str((request.data or {}).get("model") or "")
+        description = str((request.data or {}).get("description") or "").strip()
+        if not description:
+            return ApiResponse(code=1001, detail=str(_("Description is required")))
+        try:
+            return ApiResponse(data=codegen_ai_draft.generate_ai_draft(request.user, label, description))
+        except codegen_gui.CodegenError as exc:
+            return ApiResponse(code=1001, detail=str(exc))
+        except AiSdkError as exc:
+            return ApiResponse(code=1002, detail=str(exc))
+        except Exception:  # noqa: BLE001 LLM 链路兜底：细节留日志，对外统一文案
+            logger.warning("codegen ai draft unexpected error", exc_info=True)
+            return ApiResponse(code=1002, detail=str(_("AI draft failed, please retry")))
 
     @extend_schema(
         description="生成产物打包下载（zip，路径 = 仓库相对路径；models 传多模型清单走批量打包）",

@@ -16,9 +16,8 @@ from rest_framework import serializers
 
 from approval.models.leave import Leave
 from approval.utils.leave import leave_days, validate_leave_payload
-from common.core.fields import DictChoiceField
+from common.core.fields import DictChoiceField, DisplayRelatedField
 from common.core.serializers import BaseModelSerializer
-from task.services import DisplayRelatedField
 
 
 def _username(value: Any) -> Any:

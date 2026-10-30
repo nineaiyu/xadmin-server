@@ -9,7 +9,7 @@
     python manage.py build_ai_embeddings --dry-run    # 只统计待构建条数
     python manage.py build_ai_embeddings --document upload/xxx.md --batch-size 16
 
-与知识库页「构建向量」按钮同源（``ai.utils.ai_embeddings.build_embeddings``）；
+与知识库页「构建向量」按钮同源（``ai.services.knowledge.ai_embeddings.build_embeddings``）；
 向量配置见 AI 配置页（用途 = 文本向量化）的激活档案。
 """
 
@@ -17,7 +17,7 @@ from typing import Any
 
 from django.core.management.base import BaseCommand
 
-from ai.utils.ai_embeddings import build_embeddings, vector_stats
+from ai.services.knowledge.ai_embeddings import build_embeddings, vector_stats
 
 
 class Command(BaseCommand):

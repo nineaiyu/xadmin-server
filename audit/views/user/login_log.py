@@ -16,6 +16,7 @@ from audit.models import UserLoginLog
 from audit.serializers.log import UserLoginLogSerializer
 from common.core.filter import BaseFilterSet
 from common.core.modelset import SearchColumnsAction, SearchFieldsAction
+from common.core.pagination import KeysetPageNumber
 from common.core.response import ApiResponse
 
 
@@ -48,6 +49,7 @@ class UserLoginLogViewSet(ListModelMixin, SearchFieldsAction, SearchColumnsActio
 
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer
+    pagination_class = KeysetPageNumber
 
     filterset_class = UserLoginLogFilter
     ordering_fields = ["created_time"]

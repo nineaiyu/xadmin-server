@@ -35,7 +35,7 @@ def allow_by_identity(ident: Any, scope: str, limit: int, window_seconds: int = 
 def allow_by_ip(request: Any, scope: str, limit: int, window_seconds: int = 60) -> bool:
     """IP 固定窗口限流（非 DRF 视图用，如 Django 原生验证码端点）：True = 放行。
 
-    验证码图片/刷新每次都会生成并写入 CaptchaStore 行，匿名可刷即等于可灌库；
+    验证码出题 / 音频每次都会写挑战缓存并消耗 Pillow / TTS 资源，匿名可刷即等于可灌库；
     DRF 的限流类只能在 DRF 视图上挂载，此函数提供同等语义的独立入口。
     """
     from common.utils.request import get_request_ip
@@ -112,6 +112,28 @@ class TempTokenThrottle(IpScopedThrottle):
     收紧到低于全局匿名档。"""
 
     scope = "temp_token"
+
+
+class CaptchaChallengeThrottle(IpScopedThrottle):
+    """交互式验证码出题限流：每次请求生成底图并写缓存，按 IP 收敛刷题。"""
+
+    scope = "captcha_challenge"
+
+
+class CaptchaVerifyThrottle(IpScopedThrottle):
+    """交互式验证码校验限流：按 IP 收敛坐标枚举与缓存读写风暴。"""
+
+    scope = "captcha_verify"
+
+
+class CaptchaAudioThrottle(IpScopedThrottle):
+    """图片验证码音频限流：每次请求调用 flite/sox 子进程，成本远高于出题。
+
+    同一挑战可反复拉取音频（不像校验会消费挑战），因此必须单独收紧，
+    否则单个挑战即可把音频端点当作 TTS 算力放大器。
+    """
+
+    scope = "captcha_audio"
 
 
 class UploadThrottle(UserRateThrottle):

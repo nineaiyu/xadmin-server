@@ -17,7 +17,8 @@ from approval.models.approval import (
     ApprovalInstance,
     ApprovalRequest,
 )
-from approval.utils.approval import approve_request
+from approval.services.approval import approve_request
+from approval.services.approval_flow.definition import rollback_flow
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 from dataset.utils.dform_flow import (
     DFORM_BIZ_TYPE,
@@ -303,7 +304,7 @@ class TestFieldAssigneeDualResolution:
             assignee_type=ApprovalFlowNode.AssigneeType.FIELD,
             assignee_value="approver_field",
         )
-        from approval.utils.approval_flow.conditions import resolve_assignees
+        from approval.services.approval_flow.conditions import resolve_assignees
 
         resolved = resolve_assignees(flow.nodes.get(order=2), applicant, {"approver_field": approver.pk})
         assert [user.pk for user in resolved] == [approver.pk]
@@ -318,7 +319,7 @@ class TestFieldAssigneeDualResolution:
             assignee_type=ApprovalFlowNode.AssigneeType.FIELD,
             assignee_value="approver_field",
         )
-        from approval.utils.approval_flow.conditions import resolve_assignees
+        from approval.services.approval_flow.conditions import resolve_assignees
 
         resolved = resolve_assignees(flow.nodes.get(order=2), applicant, {"approver_field": approver.username})
         assert [user.pk for user in resolved] == [approver.pk]
@@ -333,7 +334,7 @@ class TestFieldAssigneeDualResolution:
             assignee_type=ApprovalFlowNode.AssigneeType.FIELD,
             assignee_value="approver_field",
         )
-        from approval.utils.approval_flow.conditions import resolve_assignees
+        from approval.services.approval_flow.conditions import resolve_assignees
 
         resolved = resolve_assignees(
             flow.nodes.get(order=2), applicant, {"approver_field": [approver.pk, "flow_approver1"]}
@@ -350,7 +351,7 @@ class TestFieldAssigneeDualResolution:
             assignee_type=ApprovalFlowNode.AssigneeType.FIELD,
             assignee_value="approver_field",
         )
-        from approval.utils.approval_flow.conditions import resolve_assignees
+        from approval.services.approval_flow.conditions import resolve_assignees
 
         assert resolve_assignees(flow.nodes.get(order=2), applicant, {"approver_field": "ghost_user"}) == []
 
@@ -602,6 +603,87 @@ class TestFlowFormSchemaProjection:
         flow.refresh_from_db()
         assert not [item for item in flow.form_schema if item["key"] == "hacked"]
         assert ApprovalFlowSerializer(flow).data["form_schema_locked"] is True
+
+    def test_rebind_reprojects_previous_flow(self, applicant):
+        """A→B 换绑：旧流程 A 按剩余绑定表单重算，不再保留已脱离表单的字段。"""
+        from dataset.serializers.dform import DynamicFormSerializer
+
+        flow_a = ApprovalFlow.objects.create(name="旧流程", code="rebind_old", form_schema=[])
+        flow_b = ApprovalFlow.objects.create(name="新流程", code="rebind_new", form_schema=[])
+        for flow in (flow_a, flow_b):
+            ApprovalFlowNode.objects.create(
+                flow=flow,
+                name="审批",
+                order=1,
+                assignee_type=ApprovalFlowNode.AssigneeType.USER,
+                assignee_value="dform_applicant",
+            )
+        moved = DynamicFormSerializer(
+            data={
+                "name": "换绑表单",
+                "approval_flow": str(flow_a.pk),
+                "schema": {"fields": [{"key": "only_moved", "label": "旧字段", "type": "input"}]},
+            }
+        )
+        assert moved.is_valid(), moved.errors
+        moved_form = moved.save()
+        leave = DynamicFormSerializer(
+            data={
+                "name": "留下表单",
+                "approval_flow": str(flow_a.pk),
+                "schema": {"fields": [{"key": "stays", "label": "保留字段", "type": "input"}]},
+            }
+        )
+        assert leave.is_valid(), leave.errors
+        leave.save()
+        serializer = DynamicFormSerializer(instance=moved_form, data={"approval_flow": str(flow_b.pk)}, partial=True)
+        assert serializer.is_valid(), serializer.errors
+        serializer.save()
+
+        flow_a.refresh_from_db()
+        assert [item["key"] for item in flow_a.form_schema] == ["stays"]
+
+    def test_rollback_keeps_projected_schema_when_locked(self, form, approver):
+        """回滚尊重表单锁：绑定期 form_schema 保留投影（仅节点回滚），新版本快照带现值。
+
+        旧快照里的历史表单结构不能借回滚写回——否则投影被破坏，之后发起的新单
+        会拿到与绑定表单不一致的字段定义。
+        """
+        from approval.services.approval_flow.versioning import apply_definition
+
+        def node_def(name):
+            return {
+                "name": name,
+                "order": 1,
+                "approve_type": ApprovalFlowNode.ApproveType.OR,
+                "assignee_type": ApprovalFlowNode.AssigneeType.USER,
+                "assignee_value": approver.username,
+            }
+
+        flow = form.approval_flow
+        # 现状 = 绑定表单的投影（落库，模拟投影维护后的活定义）
+        projected = [{"key": "name", "label": "姓名", "type": "input", "required": True}]
+        flow.form_schema = projected
+        flow.save(update_fields=["form_schema"])
+        apply_definition(flow, [node_def("旧节点")], remark="历史版本")
+        flow.refresh_from_db()
+        legacy_version = flow.version
+        # 历史快照里是绑定前的旧表单结构（与投影不同）
+        legacy_snapshot = flow.versions.get(version=legacy_version).snapshot
+        legacy_snapshot["form_schema"] = [{"key": "legacy", "label": "旧字段", "type": "text"}]
+        flow.versions.filter(version=legacy_version).update(snapshot=legacy_snapshot)
+        # 当前版本：投影 + 新节点
+        flow.form_schema = projected
+        apply_definition(flow, [node_def("新节点")], remark="当前版本")
+
+        ok, detail = rollback_flow(flow, legacy_version)
+        assert ok is True
+        assert detail  # 明示「仅回滚了节点」而非静默吞掉表单差异
+        flow.refresh_from_db()
+        assert [item["key"] for item in flow.form_schema] == ["name"]
+        assert list(flow.nodes.values_list("name", flat=True)) == ["旧节点"]
+        latest_snapshot = flow.versions.order_by("-version").values_list("snapshot", flat=True).first()
+        assert [item["key"] for item in latest_snapshot["form_schema"]] == ["name"]
 
     def test_unbound_flow_unlocked(self):
         """未绑定流程可自由编辑 form_schema（存量行为）。"""

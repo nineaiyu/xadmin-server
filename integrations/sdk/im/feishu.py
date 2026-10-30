@@ -19,7 +19,7 @@ API_BASE = "https://open.feishu.cn/open-apis"
 
 
 class FeishuClient(BaseImClient):
-    token_url = f"{API_BASE}/authen/v1/tenant_access_token/internal"
+    token_url = f"{API_BASE}/auth/v3/tenant_access_token/internal"
     token_ttl = 7200
     token_cache_prefix = "im_feishu_token_"
 

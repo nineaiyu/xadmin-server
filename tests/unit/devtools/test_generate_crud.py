@@ -8,6 +8,7 @@
 样本用 `demo.Book`（demo 仅在测试 settings 启用，见 tests/settings_real.py 的 XADMIN_APPS 注入）。
 """
 
+import io
 import json
 import shutil
 import subprocess
@@ -22,6 +23,7 @@ from devtools.management.commands.generate_crud import (
     BLOCK_END,
     BLOCK_START,
     PERMISSION_ACTIONS,
+    Command,
 )
 
 pytestmark = pytest.mark.django_db
@@ -101,6 +103,8 @@ class TestArtifacts:
             client / "src" / "views" / "demo" / "book" / "index.vue",
             client / "src" / "views" / "demo" / "book" / "utils" / "api.ts",
             client / "src" / "views" / "demo" / "book" / "utils" / "hook.tsx",
+            client / "locales" / "zh-CN.yaml",
+            client / "locales" / "en.yaml",
         ]
         for path in expected:
             assert path.exists(), f"缺少产物：{path}"
@@ -403,6 +407,52 @@ class TestBootstrap:
         assert "跳过角色授权" in capsys.readouterr().out
 
 
+class TestGenerateVerifyStrict:
+    """--strict：生成后自检失败必须以非零码退出（只报告模式保持原行为）。"""
+
+    def test_verify_reports_gap_and_drift_as_failures(self, monkeypatch):
+        command = Command()
+        command.stdout = io.StringIO()
+
+        def fake_call_command(name, **kwargs):
+            if name == "sync_menu_permissions":
+                kwargs["stdout"].write("扫描到 10 条路由，缺口 2 条 → 计划新增 2 个（无法归属 0）\n")
+                return None
+            if name == "dump_openapi":
+                raise RuntimeError("schema drift")
+            return None
+
+        monkeypatch.setattr("django.core.management.call_command", fake_call_command)
+        failures = command._verify_generated()
+        assert failures == ["权限点缺口 2 条", "OpenAPI 契约已漂移"]
+
+    def test_verify_passes_when_checks_are_clean(self, monkeypatch):
+        command = Command()
+        command.stdout = io.StringIO()
+
+        def fake_call_command(name, **kwargs):
+            if name == "sync_menu_permissions":
+                kwargs["stdout"].write("扫描到 10 条路由，缺口 0 条 → 计划新增 0 个（无法归属 0）\n")
+            return None
+
+        monkeypatch.setattr("django.core.management.call_command", fake_call_command)
+        assert command._verify_generated() == []
+
+    def test_strict_implies_verify_and_raises(self, workspace, monkeypatch):
+        from django.core.management.base import CommandError
+
+        called = []
+
+        def fake_verify(self):
+            called.append(True)
+            return ["权限点缺口 1 条"]
+
+        monkeypatch.setattr(Command, "_verify_generated", fake_verify)
+        with pytest.raises(CommandError, match="生成后自检未通过"):
+            _generate(workspace, "--strict")
+        assert called == [True]
+
+
 class TestModuleDeclaration:
     """--with-module：顺带生成 {app}/modules.py（模板与 generate_module 同源）。"""
 
@@ -664,7 +714,7 @@ class TestMenuTitleAndOrdering:
         page_meta = next(
             item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
         )
-        assert page_meta["fields"]["title"] == "书籍管理"
+        assert page_meta["fields"]["title"] == "menus.DemoBook"
         permission_meta = next(
             item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" not in item["fields"]
         )
@@ -676,7 +726,39 @@ class TestMenuTitleAndOrdering:
         page_meta = next(
             item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
         )
+        assert page_meta["fields"]["title"] == "menus.DemoBook"
+
+
+class TestClientLocale:
+    """生成产物带 zh/en 词条：菜单标题 + 表格字段 label（幂等合并）。"""
+
+    def test_locale_files_generated(self, workspace):
+        _, client = _generate(workspace)
+        zh = yaml.safe_load((client / "locales" / "zh-CN.yaml").read_text(encoding="utf-8"))
+        en = yaml.safe_load((client / "locales" / "en.yaml").read_text(encoding="utf-8"))
+        assert zh["menus"]["DemoBook"] == "书籍名称"
+        assert zh["demoBook"]["name"] == "书籍名称"
+        assert zh["demoBook"]["isbn"] == "标准书号"
+        assert en["menus"]["DemoBook"] == "Book"
+        assert en["demoBook"]["name"] == "Name"
+
+    def test_locale_merge_is_idempotent(self, workspace):
+        _, client = _generate(workspace)
+        path = client / "locales" / "zh-CN.yaml"
+        _generate(workspace, "--force")
+        text = path.read_text(encoding="utf-8")
+        assert text.count("menus:") == 1
+        assert text.count("demoBook:") == 1
+
+    def test_skip_frontend_keeps_chinese_title(self, workspace):
+        """--skip-frontend 不生成词条：菜单标题保留中文，不落无人翻译的 key。"""
+        backend, client = _generate(workspace, "--skip-frontend")
+        entries = _seed_entries(workspace)
+        page_meta = next(
+            item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
+        )
         assert page_meta["fields"]["title"] == "书籍名称"
+        assert not (client / "locales" / "zh-CN.yaml").exists()
 
     def test_ordering_override_in_views(self, workspace):
         backend, _ = _generate(workspace, "--ordering", "isbn")
@@ -930,3 +1012,66 @@ class TestTemplates:
             "fixed_tag",
             "dynamic_level",
         ]
+
+
+class TestFieldClasses:
+    """--field-class：字段声明为专用字段类（GUI 表单同源能力对齐 CLI 旗标）。"""
+
+    def test_color_field_declaration(self, workspace):
+        backend, _ = _generate(workspace, "--field-class", "name=ColorField")
+        serializer = (backend / "demo" / "serializers.py").read_text(encoding="utf-8")
+        assert "from common.core.fields import ColorField" in serializer
+        assert 'name = ColorField(label="书籍名称", required=True, max_length=100)' in serializer
+        _assert_python_compiles(backend)
+        _assert_ruff_clean(backend)
+
+    def test_relation_field_rejected(self, workspace):
+        from django.core.management.base import CommandError
+
+        backend, client = workspace
+        with pytest.raises(CommandError):
+            call_command(
+                "generate_crud",
+                "demo.Book",
+                "--field-class",
+                "admin=ColorField",
+                output=str(backend),
+                frontend_root=str(client),
+            )
+
+    def test_unknown_class_rejected(self, workspace):
+        from django.core.management.base import CommandError
+
+        backend, client = workspace
+        with pytest.raises(CommandError):
+            call_command(
+                "generate_crud",
+                "demo.Book",
+                "--field-class",
+                "name=NotAField",
+                output=str(backend),
+                frontend_root=str(client),
+            )
+
+    def test_dict_binding_conflict_rejected(self, workspace):
+        """字典绑定与专用字段类互斥（同一字段只能有一种显式声明形态）。"""
+        from django.core.management.base import CommandError
+
+        backend, client = workspace
+        with pytest.raises(CommandError):
+            call_command(
+                "generate_crud",
+                "demo.Book",
+                "--dict-field",
+                "name=book_tag",
+                "--field-class",
+                "name=ColorField",
+                output=str(backend),
+                frontend_root=str(client),
+            )
+
+    def test_without_field_class_no_declaration(self, workspace):
+        """未声明时产物与历史形态一致（幂等回归保护）。"""
+        backend, _ = _generate(workspace)
+        serializer = (backend / "demo" / "serializers.py").read_text(encoding="utf-8")
+        assert "ColorField" not in serializer

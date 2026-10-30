@@ -87,7 +87,7 @@ class TestApiLogin:
 
 
 class TestApiLoginHardening:
-    """文档站登录加固（S-1）：开放重定向拦截 + 账号锁定接入（与主登录共用计数）。"""
+    """文档站登录加固：开放重定向拦截 + 账号锁定接入（与主登录共用计数）。"""
 
     CREDENTIALS = {"username": "admin", "password": "Admin@123456"}
 

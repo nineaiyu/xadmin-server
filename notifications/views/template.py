@@ -8,6 +8,11 @@
 - ``preview``：未保存的模板文本按样例变量渲染（保存前可见效果）；
 - ``save``：保存覆盖（校验模板语法与变量白名单，保存即失效缓存）；
 - ``reset``：删除覆盖行（回到代码默认模板）。
+
+无元数据面（search-columns / search-fields）是**有意形态**：``list`` 的行来自
+代码注册表 + 可选覆盖层的联拼（非模型 queryset），元数据协议没有可描述的模型面；
+编辑表单是模板语法编辑器（schema 与模型字段不同源，已登记手写豁免）。勿按
+「GenericViewSet 缺元数据」补齐——补出的端点无消费方，还要新增权限点。
 """
 
 from typing import Any
@@ -90,9 +95,9 @@ class MessageTemplateViewSet(GenericViewSet):
                     # 无样例消息（gen_test_msg 未实现）的消息类型无法预览：前端据此禁用预览按钮
                     "has_preview": sample is not None,
                     "variables": [*COMMON_VARIABLES, *cls.template_variables()],
-                    "has_override": bool(
-                        row and ((row.subject_template or "").strip() or (row.body_template or "").strip())
-                    ),
+                    # 覆盖状态以「存在覆盖行」为准：只关 is_active / 只填 remark 的行
+                    # 也是可重置的覆盖，不能因为正文为空就假装还是代码默认
+                    "has_override": row is not None,
                     "override": {
                         "subject_template": row.subject_template if row else "",
                         "body_template": row.body_template if row else "",

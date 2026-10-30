@@ -1,0 +1,284 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+"""聊天室 WebSocket 通道：`ws/chat/` → ChatNotify。
+
+与历史 `ws/message/<group>/<username>`（MessageNotify）的关系：
+- 旧通道保持原样（全站通知推送 + 登录日志/会话登记），聊天室页面已切到本通道；
+- 本通道**不登记 UserSession / 不写登录日志**：会话登记由全局通知连接唯一负责，
+  避免在线列表把同一会话数成两条（`test_online_stats.py` 口径不回归）；
+- 组名显式：公共广播组 `chat_room_public` + 用户聊天组 `chat_user_{pk}`，
+  不再依赖「URL 第二段用户名是否是本人」这条隐式规则。
+
+上行 action（protocol.MessageAction）：
+- `chat_message {room_id, content, client_msg_id, message_type?, file_pk?}` → 落库后广播
+  （幂等：同 client_msg_id 不重复落库/广播）；message_type 只接受
+  text/image/video/audio/file（附件类型携带 `file_pk`，先经
+  `POST /api/chat/message/upload` 取得，服务端校验归属后引用）；ai/system 是服务端
+  生成语义（sender=None 的内部路径），客户端上行伪造一律 1001 拒绝；
+- `chat_reaction {message, emoji, op}` → 表情回应落库（extra.reactions 全量表）后
+  向房间广播；消息不存在/已撤回/非成员/机器消息静默忽略（fail-closed）；
+- `chat_read {room_id}` → 清零未读并回执最新已读游标。
+
+撤回不经 WS 上行：唯一入口是 REST `POST /api/chat/message/{id}/recall`（仅本人、
+窗口内），落库成功后向房间广播 `chat_recall` 下行帧（多端同步）。
+
+下行 action：`chat_message` / `chat_recall` / `chat_reaction` / `chat_read` / `chat_unread`。
+
+站内信提醒与在线态判定在 ``chat_notify.py``（ChatNotifyMixin，随本文件拆出控制体量）。
+"""
+
+import asyncio
+from typing import Any
+
+from channels.db import database_sync_to_async
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils.translation import gettext_lazy as _
+
+from common.utils import get_logger
+from message import chat as chat_service
+from message.models import UPLINK_MESSAGE_TYPES, ChatMessage, ChatRoomMember
+
+from .base import AsyncJsonWebsocket
+from .chat_notify import ChatNotifyMixin
+from .protocol import MessageAction
+from .utils import (
+    get_chat_user_group_name,
+    get_public_chat_group_name,
+    room_event_groups,
+)
+
+logger = get_logger(__name__)
+
+#: 单个用户每秒可发送的聊天消息条数（Redis 固定窗口计数）。
+#: WS 上行不受 DRF 限流覆盖，恶意连接可高频灌消息：每条都会落库 + 广播 + 计未读，
+#: 放大成 DB 写与推送风暴（每用户每秒 5 条已远高于人工输入速度）。
+CHAT_SEND_LIMIT_PER_SECOND = 5
+
+
+def allow_chat_send(user_pk: Any) -> bool:
+    """聊天消息发送速率判定（每用户每秒上限）。"""
+    from common.core.throttle import allow_by_identity
+
+    allowed: bool = allow_by_identity(user_pk, scope="chat_send", limit=CHAT_SEND_LIMIT_PER_SECOND, window_seconds=1)
+    return allowed
+
+
+def unread_rows(user: Any) -> list[Any]:
+    """本人未读会话（room_id, unread_count）列表（连接建立时的首屏对齐）。"""
+    return list(ChatRoomMember.objects.filter(user=user, unread_count__gt=0).values_list("room_id", "unread_count"))
+
+
+def has_chat_permission(user: Any) -> bool:
+    """聊天通道准入（fail-closed）：超管放行；其余用户需持有聊天室会话列表权限。
+
+    与 HTTP 侧同一套权限数据（菜单权限点 `list:ChatRoom` → 路径 `api/chat/room$`），
+    未被授予聊天室页面的用户即使拿到 WS 地址也无法接入。
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_superuser", False):
+        return True
+    from common.core.permission import get_menu_pk, get_user_permission
+
+    data = get_user_permission(user, "GET")
+    return bool(get_menu_pk(data, "/api/chat/room"))
+
+
+class ChatNotify(ChatNotifyMixin, AsyncJsonWebsocket):
+    """聊天室专用连接：一条连接同时承载公共广播 + 私聊/AI 定向 + 未读推送。"""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(args, kwargs)
+        self.user: Any = None
+        self.disconnected = True
+        self.group_name = ""  # 本人聊天组（私聊/AI/未读）
+        self.public_group = ""  # 公共聊天室广播组
+
+    # ------------------------------------------------------------ 连接生命周期
+
+    async def connect(self) -> None:
+        self.user = self.scope["user"]
+        if not self.is_authenticated():
+            logger.error("chat connect rejected: not authenticated")
+            await self.reject(4401)
+            return
+        if not await database_sync_to_async(has_chat_permission)(self.user):
+            logger.warning("chat connect rejected: no permission user=%s", self.user)
+            await self.reject(4403)
+            return
+
+        self.group_name = get_chat_user_group_name(self.user.pk)
+        self.public_group = get_public_chat_group_name()
+        await self.channel_layer.group_add(self.public_group, self.channel_name)
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        self.disconnected = False
+        await self.accept()
+        # 首屏未读对齐：连接建立即下发本人未读快照（前端左列表红点）
+        await self.push_unread_snapshot()
+
+    async def disconnect(self, close_code: Any) -> None:
+        self.disconnected = True
+        for group in (self.public_group, self.group_name):
+            if group:
+                await self.channel_layer.group_discard(group, self.channel_name)
+        logger.info("chat disconnect: %s", self.user)
+
+    async def ping(self, event: Any) -> None:
+        """心跳：同时续期两个分组（基类只续期 self.group_name）。
+
+        两个组名都不匹配个人推送组前缀，因此不会写入在线索引/在线列表。
+        """
+        for group in (self.public_group, self.group_name):
+            if group:
+                await self.channel_layer.update_active_layers(group, self.channel_name)
+        event["data"] = "pong"
+        await self._send_base(event)
+
+    # ------------------------------------------------------------ 上行分发
+
+    async def receive_json(self, action: Any, data: Any, content: Any, **kwargs: Any) -> None:
+        match action:
+            case MessageAction.CHAT_MESSAGE.value:
+                await self.handle_send(data)
+            case MessageAction.CHAT_REACTION.value:
+                await self.handle_reaction(data)
+            case MessageAction.CHAT_READ.value:
+                await self.handle_read(data)
+            case _:
+                logger.error("chat action unknown. so close. %s", content)
+                await asyncio.sleep(3)
+                await self.close()
+
+    async def handle_send(self, data: Any) -> None:
+        # 限流：超过每用户每秒上限时回执可读错误并丢弃本条（幂等重发同样受控）
+        if not await database_sync_to_async(allow_chat_send)(self.user.pk):
+            logger.warning("chat send rate limited: user=%s", self.user.pk)
+            await self.send_base_json(
+                MessageAction.CHAT_MESSAGE.value, code=1001, detail=str(_("Sending too fast, please slow down"))
+            )
+            return
+
+        # 消息类型：text（缺省）/ image / video / audio / file；附件消息携带 file_pk
+        # （先经 REST 上传取得）。ai / system 属服务端生成语义：客户端伪造「官方通知 /
+        # 模型回复」是站内钓鱼入口，直接拒绝而不是静默降级（降级会吞掉内容差异）。
+        message_type = str(data.get("message_type") or ChatMessage.MessageType.TEXT)
+        if message_type not in UPLINK_MESSAGE_TYPES:
+            logger.warning("chat send rejected invalid message_type=%s user=%s", message_type, self.user.pk)
+            await self.send_base_json(
+                MessageAction.CHAT_MESSAGE.value,
+                code=1001,
+                detail=str(_("Unsupported message type")),
+            )
+            return
+        try:
+            room = await database_sync_to_async(chat_service.accessible_room)(data.get("room_id"), self.user)
+            attachment = None
+            if message_type in chat_service.ATTACHMENT_MESSAGE_TYPES:
+                # 归属校验 fail-closed：只能引用本人上传的文件（他人 pk 一律拒绝）
+                attachment = await database_sync_to_async(chat_service.resolve_sender_attachment)(
+                    data.get("file_pk"), self.user
+                )
+            message, created = await database_sync_to_async(chat_service.create_message)(
+                room,
+                self.user,
+                data.get("content"),
+                message_type=message_type,
+                client_msg_id=str(data.get("client_msg_id") or "")[:64],
+                attachment=attachment,
+            )
+        except DjangoValidationError as exc:
+            await self.send_base_json(MessageAction.CHAT_MESSAGE.value, code=1001, detail="; ".join(exc.messages))
+            return
+
+        payload = await database_sync_to_async(chat_service.message_payload)(message, room=room, sender=self.user)
+        if not created:
+            # 幂等命中（断线重发）：只回执给发送方，不重复广播/不重复计未读
+            await self.send_base_json(MessageAction.CHAT_MESSAGE.value, data=payload)
+            return
+
+        await self.broadcast(room, MessageAction.CHAT_MESSAGE.value, payload)
+        unread = await database_sync_to_async(chat_service.bump_unread)(room, self.user.pk)
+        for user_pk, unread_count in unread.items():
+            await self.channel_layer.group_send(
+                get_chat_user_group_name(user_pk),
+                {"type": MessageAction.CHAT_UNREAD.value, "data": {"room_id": room.pk, "unread_count": unread_count}},
+            )
+        await self.notify_room(room, payload)
+        # 撤回资格按观看者计（发送者本人 + 未撤回 + 窗口内，与 REST 历史 can_recall
+        # 同一判定），不能随共享帧扇出给全房间——否则其他成员会渲染出撤回入口。
+        # 房间广播帧不带该字段（前端按「服务端未下发才本地置位」兜底），另向发送者
+        # 聊天组定向补帧下发，多端同步一并覆盖；与共享帧先后到达均幂等。
+        can_recall = await database_sync_to_async(chat_service.can_recall_for)(message, self.user)
+        await self.channel_layer.group_send(
+            get_chat_user_group_name(self.user.pk),
+            {"type": MessageAction.CHAT_MESSAGE.value, "data": {**payload, "can_recall": can_recall}},
+        )
+
+    async def handle_reaction(self, data: Any) -> None:
+        # 限流与消息发送同源：回应同样是「落库 + 房间广播」的上行写操作，
+        # 恶意连接高频刷回应会放大成 DB 写与广播风暴
+        if not await database_sync_to_async(allow_chat_send)(self.user.pk):
+            logger.warning("chat reaction rate limited: user=%s", self.user.pk)
+            await self.send_base_json(
+                MessageAction.CHAT_REACTION.value, code=1001, detail=str(_("Sending too fast, please slow down"))
+            )
+            return
+        try:
+            result = await database_sync_to_async(chat_service.toggle_reaction)(
+                self.user, data.get("message"), data.get("emoji"), data.get("op")
+            )
+        except DjangoValidationError as exc:
+            await self.send_base_json(MessageAction.CHAT_REACTION.value, code=1001, detail="; ".join(exc.messages))
+            return
+        if result is None:
+            # 消息不存在/已撤回/非成员/机器消息：静默忽略（fail-closed，不回错误帧）
+            return
+        room, message_pk, reactions, ts = result
+        # 全量回应表广播（幂等，客户端整体替换）：即使本次 op 落空也下发当前表，
+        # 让 stale 客户端借同一帧对齐
+        await self.broadcast(
+            room,
+            MessageAction.CHAT_REACTION.value,
+            {"room": room.pk, "message": message_pk, "reactions": reactions, "ts": ts},
+        )
+
+    async def handle_read(self, data: Any) -> None:
+        try:
+            room = await database_sync_to_async(chat_service.accessible_room)(data.get("room_id"), self.user)
+        except DjangoValidationError as exc:
+            await self.send_base_json(MessageAction.CHAT_READ.value, code=1001, detail="; ".join(exc.messages))
+            return
+        last_read_id = await database_sync_to_async(chat_service.mark_read)(room, self.user, data.get("last_read_id"))
+        await self.send_base_json(
+            MessageAction.CHAT_READ.value, data={"room_id": room.pk, "last_read_id": last_read_id}
+        )
+
+    # ------------------------------------------------------------ 下行事件
+
+    async def chat_recall(self, event: Any) -> None:
+        await self._send_base(event)
+
+    async def chat_reaction(self, event: Any) -> None:
+        await self._send_base(event)
+
+    async def chat_unread(self, event: Any) -> None:
+        await self._send_base(event)
+
+    async def chat_room(self, event: Any) -> None:
+        await self._send_base(event)
+
+    # ------------------------------------------------------------ 内部
+
+    async def broadcast(self, room: Any, message_type: str, payload: dict[str, Any]) -> None:
+        """按房间类型广播（目标组口径见 message.ws.utils.room_event_groups，REST 侧同源）。"""
+        groups = await database_sync_to_async(room_event_groups)(room)
+        for group in groups:
+            await self.channel_layer.group_send(group, {"type": message_type, "data": payload})
+
+    async def push_unread_snapshot(self) -> None:
+        """连接建立时下发本人未读快照（私聊/AI 会话逐条）。"""
+        rows = await database_sync_to_async(unread_rows)(self.user)
+        for room_id, unread_count in rows:
+            await self.send_base_json(
+                MessageAction.CHAT_UNREAD.value, data={"room_id": room_id, "unread_count": unread_count}
+            )

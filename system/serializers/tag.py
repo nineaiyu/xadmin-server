@@ -9,8 +9,8 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.fields import ColorField
+from common.core.response.validation import trim_required
 from common.core.serializers import BaseModelSerializer
-from common.core.validation import trim_required
 from system.models.tag import TAGGABLE_MODELS, Tag
 from task.services import DisplayRelatedField
 

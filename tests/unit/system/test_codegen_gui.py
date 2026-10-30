@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""代码生成器 GUI 端点守护测试（适配层 system/utils/platform/codegen_gui.py）。
+"""代码生成器 GUI 端点守护测试（适配层 devtools/services/codegen/gui.py）。
 
 覆盖：模型清单过滤（仓库内 / 非抽象）、字段计划回显、字段选择收敛
 （include/exclude 与未知字段拒绝）、产物预览（不落盘）、zip 下载。
@@ -12,7 +12,7 @@ import zipfile
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.utils.platform import codegen_gui
+from devtools.services.codegen import gui as codegen_gui
 from system.views.admin.codegen import SystemCodeGenViewSet
 
 pytestmark = pytest.mark.django_db
@@ -76,6 +76,8 @@ class TestPreview:
         labels = [row["label"] for row in artifacts]
         assert "序列化器" in labels and "视图" in labels and any(label.startswith("菜单种子") for label in labels)
         assert "后续步骤" in labels  # zip 附带 NEXT_STEPS.md，预览同步可见
+        # 前端按结构化 kind 识别 MD 产物（不按中文 label 匹配），契约字段缺失会回退到字符串暗耦合
+        assert "next-steps" in [row.get("kind") for row in artifacts]
         paths = [row["path"] for row in artifacts]
         assert any(path.startswith("xadmin-server/demo/") for path in paths)
         assert any(path.startswith("xadmin-client/src/views/demo/") for path in paths)
@@ -327,7 +329,8 @@ class TestAdvancedOptions:
     def test_menu_title_overrides_seed(self, superuser):
         response = _post(superuser, "preview", {"model": "demo.Book", "menu_title": "书籍管理"})
         seed = next(row for row in response.data["data"] if row["label"].startswith("菜单种子"))
-        assert '"title": "书籍管理"' in seed["content"]
+        assert '"title": "menus.DemoBook"' in seed["content"]
+        assert '"title": "书籍管理-list"' in seed["content"]
 
     def test_ordering_override_in_views(self, superuser):
         response = _post(superuser, "preview", {"model": "demo.Book", "ordering": "isbn"})
@@ -406,6 +409,44 @@ class TestDownload:
         assert "python manage.py doctor" in content
 
 
+class TestAiDraft:
+    """AI 字段草案端点：服务层打桩（LLM 不真连），验门禁与透传契约。"""
+
+    def test_missing_description_rejected(self, superuser):
+        response = _post(superuser, "ai_draft", {"model": "demo.Book"})
+        assert response.data["code"] == 1001
+
+    def test_disabled_returns_readable_error(self, superuser, monkeypatch):
+        from devtools.services.codegen import ai_draft as codegen_ai_draft
+
+        def _boom(user, label, description):
+            raise codegen_gui.CodegenError("AI field draft is disabled")
+
+        monkeypatch.setattr(codegen_ai_draft, "generate_ai_draft", _boom)
+        response = _post(superuser, "ai_draft", {"model": "demo.Book", "description": "书籍页"})
+        assert response.data["code"] == 1001
+        assert "disabled" in response.data["detail"]
+
+    def test_draft_result_passthrough(self, superuser, monkeypatch):
+        from devtools.services.codegen import ai_draft as codegen_ai_draft
+
+        def _fake(user, label, description):
+            return {
+                "model": label,
+                "summary": "草案就绪",
+                "warnings": ["status: unknown dict code x dropped"],
+                "fields": [{"name": "name", "label": "书名", "required": True}],
+            }
+
+        monkeypatch.setattr(codegen_ai_draft, "generate_ai_draft", _fake)
+        response = _post(superuser, "ai_draft", {"model": "demo.Book", "description": "书籍页"})
+        assert response.status_code == 200
+        data = response.data["data"]
+        assert data["model"] == "demo.Book"
+        assert data["fields"][0]["label"] == "书名"
+        assert len(data["warnings"]) == 1
+
+
 class TestBatchDownload:
     """批量多模型打包：共享选项 + 逐模型默认字段计划 + 合并 NEXT_STEPS.md。"""
 
@@ -451,3 +492,53 @@ class TestBatchDownload:
         assert response.status_code == 200
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
             assert "NEXT_STEPS.md" in archive.namelist()
+
+
+class TestSameSourceAsCli:
+    """同源守护（模板单一事实源）：GUI 预览与 CLI 引擎管线产物一致。
+
+    口径分两层：①零覆盖基线（GUI 不带 fields / CLI 不带旗标）字段序恒等，
+    全部产物逐字符断言——守护模板与 options 组装不漂移；②专用字段类推导
+    同源——GUI 表单与 CLI --field-class 生成同一声明行（GUI 的表单序重排是
+    其特性，不断言全文件逐字符）。
+    """
+
+    def test_baseline_artifacts_match_cli_pipeline(self, superuser):
+        from pathlib import Path
+
+        engine = codegen_gui._engine()
+        _, gui_artifacts, _ = codegen_gui._prepare(engine, {"model": "demo.Book"})
+        gui_by_name = {Path(row["path"]).name: row["content"] for row in gui_artifacts if row.get("content")}
+
+        options = codegen_gui._base_options({})
+        ctx = engine._build_context(engine._resolve_model("demo.Book"), options)
+        cli_artifacts = engine._collect_artifacts(ctx, options)
+        cli_by_name = {Path(row["path"]).name: row["content"] for row in cli_artifacts if row.get("content")}
+        assert set(gui_by_name) == set(cli_by_name)
+        for key in sorted(gui_by_name):
+            assert gui_by_name[key] == cli_by_name[key], key
+
+    def test_field_class_declaration_matches_cli_flag(self, superuser):
+        from devtools.management.commands._generate_crud.analysis import apply_field_classes
+
+        engine = codegen_gui._engine()
+        payload = {
+            "model": "demo.Book",
+            "fields": [{"name": "name", "field_class": "ColorField"}],
+        }
+        _, gui_artifacts, _ = codegen_gui._prepare(engine, payload)
+        gui_serializer = _serializer(gui_artifacts)
+
+        options = codegen_gui._base_options({})
+        ctx = engine._build_context(engine._resolve_model("demo.Book"), options)
+        apply_field_classes(ctx, ["name=ColorField"])
+        cli_serializer = _serializer(engine._collect_artifacts(ctx, options))
+
+        def declaration_lines(text):
+            return [line for line in text.splitlines() if "ColorField" in line and "import" not in line]
+
+        # 同一声明行（label/required/max_length 由引擎单一推导，两侧共用）
+        assert declaration_lines(gui_serializer) == declaration_lines(cli_serializer)
+        assert declaration_lines(gui_serializer) == [
+            '    name = ColorField(label="书籍名称", required=True, max_length=100)'
+        ]

@@ -194,6 +194,22 @@ ATTACHMENT_MESSAGE_TYPES = frozenset(
     }
 )
 
+# 客户端可上行的消息类型：ai / system 是「服务端生成」的语义（官方通知 / 模型回复），
+# 只允许 sender=None 的内部路径产出。上行白名单在这里而不是消费者里：REST / 未来的
+# 新入口都走 create_message，单点判定才不会被绕过。
+UPLINK_MESSAGE_TYPES = frozenset(
+    {
+        ChatMessage.MessageType.TEXT,
+        ChatMessage.MessageType.IMAGE,
+        ChatMessage.MessageType.VIDEO,
+        ChatMessage.MessageType.AUDIO,
+        ChatMessage.MessageType.FILE,
+    }
+)
+
+# 服务端生成类型（sender 必须为空）：伪装成官方通知/模型回复是站内钓鱼的主要手法
+BOT_MESSAGE_TYPES = frozenset({ChatMessage.MessageType.AI, ChatMessage.MessageType.SYSTEM})
+
 # 允许表情回应的消息类型：仅用户产生的内容消息（ai / system 为机器生成，回应没有
 # 对象语义，服务端静默忽略；前端也不提供入口）
 REACTION_MESSAGE_TYPES = frozenset(

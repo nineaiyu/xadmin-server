@@ -9,13 +9,13 @@ from typing import Any
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-from common.core.utils import get_all_url_dict, get_doc_first_line, permission_path_matches
+from common.core.url_inventory import get_all_url_dict, get_doc_first_line, permission_path_matches
 from common.utils import get_logger
 from system.models import Menu, ModelLabelField
 from system.utils.platform.menu import MENU_TITLE_MAX, get_view_permissions
 
-from .constants import (
-    DEAD_ENDPOINT_PREFIXES,
+from .constants import DEAD_ENDPOINT_PREFIXES
+from .declarations import (
     PARENT_MENU_MAP,
     RUNTIME_PERMISSION_PREFIXES,
     SHARED_METHOD_PATHS,
@@ -44,13 +44,47 @@ def path_whitelisted(sample: str, method: str) -> bool:
     )
 
 
-def requires_permission(view_cls: Any) -> bool:
-    """视图是否走默认菜单权限链（显式 AllowAny / 空清单 / 自定义权限类不走）。"""
+def permission_face(view_cls: Any) -> str:
+    """视图的权限面三分类：menu（菜单权限链）/ public（显式公开）/ custom（自定义权限类）。
+
+    - menu：未声明 permission_classes（走 ViewSet 默认链）或 IsAuthenticated 链；
+    - public：显式 AllowAny 或空清单（认证前 / 面向匿名，无需权限点）；
+    - custom：其余（PatScopePermission 等自管权限类）——既不走菜单链也不公开，
+      此前被扫描静默跳过：未登记权限点时非超管恒 403 且无任何告警。
+    """
     permission_classes = getattr(view_cls, "permission_classes", None)
     if permission_classes is None:
-        return True
+        return "menu"
     names = [getattr(item, "__name__", "") for item in permission_classes]
-    return bool(permission_classes) and "IsAuthenticated" in names and "AllowAny" not in names
+    if not permission_classes or "AllowAny" in names:
+        return "public"
+    if "IsAuthenticated" in names:
+        return "menu"
+    return "custom"
+
+
+def requires_permission(view_cls: Any) -> bool:
+    """视图是否走默认菜单权限链（menu 权限面；public / custom 不走）。"""
+    return permission_face(view_cls) == "menu"
+
+
+def unclassified_views(routes: Any) -> list[str]:
+    """custom 权限面且未登记豁免的视图路径（排序去重）。
+
+    豁免清单见 ``declarations.PERMISSION_EXEMPT_VIEWS``（逐条注明自管原因）；
+    新增 custom 视图必须显式登记豁免或改为标准权限链——这就是
+    「无显式权限点即失败」的收口点：不再静默不可见。
+    """
+    from .declarations import PERMISSION_EXEMPT_VIEWS
+
+    seen = set()
+    for route in routes:
+        if getattr(route, "permission_face", "") != "custom":
+            continue
+        if route.view in PERMISSION_EXEMPT_VIEWS or route.view in seen:
+            continue
+        seen.add(route.view)
+    return sorted(seen)
 
 
 def ensure_urlconf_loaded() -> None:
@@ -95,6 +129,7 @@ def build_route_index() -> Any:
                 actions=dict(getattr(resolved.func, "actions", {}) or {}),
                 view_cls=getattr(resolved.func, "cls", None),
                 requires_permission=requires_permission(getattr(resolved.func, "cls", None)),
+                permission_face=permission_face(getattr(resolved.func, "cls", None)),
             )
         )
     return routes
@@ -118,7 +153,7 @@ def _method_covers(perm: Any, path: Any, method: Any) -> Any:
 def find_covering(perms: Any, path: Any, method: Any) -> Any:
     """与运行时 get_menu_pk 同口径：精确 `path$` 优先，其次段边界前缀回退。
 
-    回退匹配复用 ``common.core.utils.permission_path_matches``（单点口径），
+    回退匹配复用 ``common.core.url_inventory.permission_path_matches``（单点口径），
     无 `$` 的 `api/user` 不粘连命中 `/api/userfoo`——扫描器口径比运行时宽
     会产生「已覆盖」的漏报。
     """
@@ -186,12 +221,14 @@ def resolve_view_context(view: Any, view_route_urls: Any, perms: Any, default_pa
         parent = Counter(parents).most_common(1)[0][0] if parents else None
         return suffix, parent, "existing"
 
-    for prefix, menu_name in PARENT_MENU_MAP.items():
+    for prefix, target in PARENT_MENU_MAP.items():
         if not any(url.startswith(prefix) for url in view_route_urls):
             continue
+        # 兼容两种声明：字符串 = 权限码后缀与父菜单同名；元组 = (后缀, 父菜单 name)
+        suffix, menu_name = target if isinstance(target, tuple) else (target, target)
         parent = Menu.objects.filter(name=menu_name, menu_type=Menu.MenuChoices.MENU, deleted_at__isnull=True).first()
         if parent:
-            return parent.name, parent, "prefix-map"
+            return suffix, parent, "prefix-map"
 
     if default_parent:
         return default_parent.name, default_parent, "default"

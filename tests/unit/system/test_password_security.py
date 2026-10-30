@@ -12,7 +12,7 @@ import pytest
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from common.base.utils import AESCipherV2
+from common.base.crypto import AESCipherV2
 from identity.serializers.user import ResetPasswordSerializer, is_password_decrypt_failure
 from identity.serializers.userinfo import ChangePasswordSerializer
 from settings.services import (

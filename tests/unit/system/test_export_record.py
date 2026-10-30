@@ -84,9 +84,46 @@ def test_export_task_failure_records_error(superuser):
             )
     record.refresh_from_db()
     assert record.status == ExportRecord.Status.FAILURE
-    assert "boom" in record.error
+    # 对外错误列只保留可读文案：内部异常原文（"boom"）不暴露给记录创建者
+    assert record.error
+    assert "boom" not in record.error
     # 失败任务不伪造完成度（里程碑进度保留，绝不到 100）
     assert record.progress < 100
+
+
+@pytest.mark.parametrize(
+    "status",
+    [ExportRecord.Status.SUCCESS, ExportRecord.Status.FAILURE, ExportRecord.Status.REVOKED],
+)
+def test_replay_of_finished_export_is_skipped(superuser, status):
+    """终态记录被重复投递（broker 重投 / 手工重放）时直接返回，不再重跑渲染。
+
+    主键即 task_id，同一任务在库层面只有一行；此守卫保证「同一任务重投」不会
+    二次渲染、二次落产物，也不会把终态翻回进行中。
+    """
+    record = ExportRecord.objects.create(name="x", file_format="xlsx", params={"type": "xlsx"}, creator=superuser)
+    ExportRecord.objects.filter(pk=record.pk).update(status=status, rows=7)
+
+    with mock.patch.object(UserViewSet, "as_view", side_effect=AssertionError("不应重跑渲染")):
+        result = async_export_data_task.apply(
+            args=[str(record.pk), USER_VIEW_PATH, {"type": "xlsx"}, superuser.pk],
+            task_id=str(record.pk),
+        )
+
+    assert result.successful()
+    record.refresh_from_db()
+    assert record.status == status
+    assert record.rows == 7
+    assert record.file_id is None
+
+
+def test_export_record_pk_is_task_id(superuser):
+    """结构护栏：记录主键即 task_id（同任务不可能落两行），无需额外唯一约束。"""
+    record = ExportRecord.objects.create(name="x", file_format="xlsx", creator=superuser)
+    assert record.pk is not None
+    assert ExportRecord.objects.filter(pk=record.pk).count() == 1
+    assert ExportRecord._meta.pk.name == "id"
+    assert ExportRecord._meta.get_field("id").primary_key is True
 
 
 def test_download_action_streams_file(superuser, normal_user):

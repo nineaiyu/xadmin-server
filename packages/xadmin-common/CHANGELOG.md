@@ -9,6 +9,21 @@
 
 ## [Unreleased]
 
+### 破坏性变更（导入路径）
+
+- **公共模块按职责拆分，旧导入路径不再存在（无兼容 shim）**；二开 / 外部消费者按
+  下表改 import（模块地图见 `xadmin-server` 的 `docs/architecture/kernel-package.md`）：
+
+  | 旧路径 | 新路径 | 迁移内容 |
+  |---|---|---|
+  | `common.base.utils` | `common.base.crypto` | `AESCipher` / `AESCipherV2` / `AESCipherV3` / `get_signer` / `AesBaseCrypt`、choices 辅助（`get_choices_dict` / `get_choices_name_from_key`）、缓存键函数（`redis_key_func` / `redis_reverse_key_func`）、菜单格式化（`menu_list_to_tree` / `format_menu_meta` / `format_menu_data`）、`remove_file` |
+  | `common.base.magic` | `common.decorators.cache` | `MagicCacheData` / `MagicCacheResponse` / `cached_method` |
+  | `common.base.magic` | `common.decorators.concurrency` | `run_function_by_locker` / `call_function_try_attempts` / `magic_wrapper` / `magic_call_in_times` |
+  | `common.base.magic` | `common.utils.importing` | `import_from_string` |
+  | `common.core.utils` | `common.core.url_inventory` | `get_doc_first_line`、权限点匹配（`permission_path_matches` / `check_show_url` / `ignore_white_url`）、路由收集与二开注册（`recursion_urls` / `get_all_url_dict` / `collect_app_ws_urls` / `auto_register_app_url`）、`get_query_post_pks` / `PrintLogFormat` / `topological_sort` / `has_self_fields` |
+
+  `common.base.decorators`（连接管理 / 信号禁停 / 诊断计时）保持不变。
+
 ## [0.2.0] - 2026-10-08
 
 ### 变更

@@ -11,9 +11,10 @@ from datetime import datetime
 import pytest
 from django.core import mail
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from dataset.models.dataset import Dashboard, Dataset, Report, Screen
-from dataset.serializers.analysis import IM_NOTIFY_CHANNELS, REPORT_NOTIFY_CHANNELS
+from dataset.serializers.report import IM_NOTIFY_CHANNELS, REPORT_NOTIFY_CHANNELS
 from identity.models import UserInfo
 from system.models import ModelLabelField
 
@@ -122,6 +123,76 @@ class TestScreen:
         )
         assert response.status_code == 400
 
+    def test_list_exposes_render_mode(self, auth_client, superuser, dashboard_factory):
+        """列表派生 carousel / canvas-grid / canvas-free，与投屏端窗格判定同源。"""
+        dashboard = dashboard_factory()
+        pane = {"id": "p1", "dashboard": str(dashboard.pk)}
+        Screen.objects.create(name="轮播屏", dashboards=[str(dashboard.pk)], creator=superuser)
+        Screen.objects.create(name="栅格屏", dashboards=[str(dashboard.pk)], layout=[pane], creator=superuser)
+        Screen.objects.create(
+            name="自由屏",
+            dashboards=[str(dashboard.pk)],
+            layout_mode=Screen.LayoutMode.FREE,
+            free_layout={"panes": [pane]},
+            creator=superuser,
+        )
+
+        rows = {item["name"]: item["render_mode"] for item in auth_client.get(SCREEN_URL).json()["data"]["results"]}
+        assert rows == {"轮播屏": "carousel", "栅格屏": "canvas-grid", "自由屏": "canvas-free"}
+
+
+class TestScreenMetricDatasetVisibility:
+    """大屏指标卡引用的数据集必须落在当前用户可见域（shared 或本人创建）。
+
+    与仪表盘引用同口径：存在但不可见（他人的 personal 数据集）按未知引用拒绝，
+    避免低权用户把他人数据集挂进自己的大屏。
+    """
+
+    @staticmethod
+    def _payload(dataset, name="指标大屏"):
+        return {
+            "name": name,
+            "dashboards": [],
+            "layout": [
+                {
+                    "pk": "m1",
+                    "type": "metric",
+                    "x": 0,
+                    "y": 0,
+                    "w": 3,
+                    "h": 2,
+                    "dataset": str(dataset.pk),
+                    "metric": "count",
+                }
+            ],
+            "interval": 20,
+            "refresh": 60,
+            "visibility": "shared",
+        }
+
+    def test_other_personal_dataset_rejected(self, screen_urls, superuser):
+        other = _second_user(screen_urls)
+        personal = Dataset.objects.create(
+            name="他人私有集",
+            bound_model="identity.userinfo",
+            columns=["username"],
+            visibility=Dataset.Visibility.PERSONAL,
+            creator=superuser,
+        )
+
+        response = other["client"].post(SCREEN_URL, self._payload(personal), format="json")
+
+        assert response.status_code == 400, response.data
+        assert not Screen.objects.filter(name="指标大屏").exists()
+
+    def test_shared_dataset_allowed(self, screen_urls, dataset):
+        other = _second_user(screen_urls)
+
+        response = other["client"].post(SCREEN_URL, self._payload(dataset), format="json")
+
+        assert response.status_code == 200, response.data
+        assert Screen.objects.filter(name="指标大屏").exists()
+
 
 class TestReportSchedule:
     """到期判定：以「最近一次应当执行的时刻」为基准（含漏跑补偿）。"""
@@ -180,6 +251,21 @@ class TestReportSchedule:
         payload = {"name": "坏邮箱", "dataset": str(dataset.pk), "recipients": ["not-an-email"]}
         response = auth_client.post(REPORT_URL, payload, format="json")
         assert response.status_code == 400
+
+    def test_binding_shared_dataset_does_not_require_dataset_data_permission(
+        self, api_client, normal_user, dataset, screen_urls
+    ):
+        """能看到 shared 数据集即可绑定；行级数据权限在执行期 fail-closed，不在保存期拦截。"""
+        grant(normal_user, screen_urls)
+        api_client.force_authenticate(user=normal_user)
+        payload = {
+            "name": "无数据集授权也能建报表",
+            "dataset": str(dataset.pk),
+            "recipients": ["a@corp.com"],
+        }
+        response = api_client.post(REPORT_URL, payload, format="json")
+        assert response.status_code == 200, response.data
+        assert Report.objects.filter(name=payload["name"]).exists()
 
     def test_aggregate_requires_group_by(self, auth_client, dataset):
         payload = {"name": "缺分组", "dataset": str(dataset.pk), "mode": "aggregate", "recipients": ["a@corp.com"]}
@@ -269,6 +355,110 @@ class TestReportRun:
             auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
         report.refresh_from_db()
         assert report.last_status == "SUCCESS_WITH_DELIVERY_ERROR"
+
+
+class TestReportDatasetVisibility:
+    """报表绑定/执行他人 personal 数据集：保存侧 400、执行侧 fail-closed。
+
+    数据集可见域与 DatasetViewSet 读侧同口径（shared 全员 / personal 仅创建者）；
+    报表执行以 report.creator 身份查数，因此「绑定」与「运行」两侧都要判定。
+    """
+
+    @staticmethod
+    def _allow_dataset_rows(user):
+        """给用户一条 dataset.dataset 的「全部数据」行权限。
+
+        报表的 ``dataset`` 是关联字段，取值域先经行级数据权限过滤（fail-closed）；
+        本用例要验证的是「可见性」这一层，故先把行权限补齐，避免把两种拒绝混为一谈。
+        """
+        from system.models import DataPermission
+
+        rule = [
+            {
+                "table": "dataset.dataset",
+                "field": "id",
+                "type": "value.all",
+                "match": "all",
+                "value": "",
+                "exclude": False,
+            }
+        ]
+        user.rules.add(DataPermission.objects.create(name=f"数据集行权限-{user.username}", rules=rule))
+
+    @staticmethod
+    def _payload(dataset, name="越权报表"):
+        return {
+            "name": name,
+            "dataset": str(dataset.pk),
+            "mode": "rows",
+            "frequency": "daily",
+            "send_time": "08:00",
+            "recipients": ["a@corp.com"],
+        }
+
+    def test_bind_other_personal_dataset_rejected(self, screen_urls, superuser):
+        other = _second_user(screen_urls)
+        self._allow_dataset_rows(other["user"])
+        personal = Dataset.objects.create(
+            name="他人私有集",
+            bound_model="identity.userinfo",
+            columns=["username"],
+            visibility=Dataset.Visibility.PERSONAL,
+            creator=superuser,
+        )
+
+        response = other["client"].post(REPORT_URL, self._payload(personal), format="json")
+
+        assert response.status_code == 400, response.data
+        assert str(_("The dataset is not visible to you (personal dataset of another user)")) in str(
+            response.data["dataset"]
+        )
+        assert not Report.objects.filter(name="越权报表").exists()
+
+    def test_bind_shared_dataset_allowed(self, screen_urls, dataset):
+        other = _second_user(screen_urls)
+        self._allow_dataset_rows(other["user"])
+        response = other["client"].post(REPORT_URL, self._payload(dataset, "共享集报表"), format="json")
+        assert response.status_code == 200, response.data
+        assert Report.objects.filter(name="共享集报表").exists()
+
+    def test_run_rejected_when_dataset_becomes_invisible(self, screen_urls, dataset, superuser):
+        """建单后被改为他人 personal：run 动作立刻拒绝，不派发任务、不产生下载条目。"""
+        from task.models.export import ExportRecord
+
+        other = _second_user(screen_urls)
+        report = _make_report(dataset, other["user"])
+        dataset.visibility = Dataset.Visibility.PERSONAL
+        dataset.creator = superuser
+        dataset.save()
+
+        response = other["client"].post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
+
+        assert response.json()["code"] == 1001
+        assert str(response.json()["detail"]) == str(
+            _("The dataset is not visible to you (personal dataset of another user)")
+        )
+        assert not ExportRecord.objects.filter(params__report_id=str(report.pk)).exists()
+
+    def test_scheduled_run_fails_closed(self, screen_urls, dataset, superuser):
+        """调度链路不经过 run 动作：任务侧复核后记 FAILURE，不渲染任何数据。"""
+        from dataset.analysis_tasks import schedule_report_run
+        from task.models.export import ExportRecord
+
+        other = _second_user(screen_urls)
+        report = _make_report(dataset, other["user"])
+        dataset.visibility = Dataset.Visibility.PERSONAL
+        dataset.creator = superuser
+        dataset.save()
+
+        task_id = schedule_report_run(str(report.pk))
+
+        record = ExportRecord.objects.get(pk=task_id)
+        assert record.status == ExportRecord.Status.FAILURE
+        assert not record.file
+        assert str(_("The dataset is not visible to the report creator, run cancelled")) == record.error
+        report.refresh_from_db()
+        assert report.last_status == "FAILURE"
 
 
 class TestReportImDelivery:
@@ -418,3 +608,26 @@ class TestReportListWithoutVisibilityDimension:
 
         assert response.status_code == 200
         assert report.name in {item["name"] for item in response.json()["data"]["results"]}
+
+    def test_non_creator_recipients_masked_and_last_run_exposed(
+        self, auth_client, normal_user, screen_urls, dataset, superuser
+    ):
+        """列表全员可见不变，但非创建者拿不到收件人原文；last_run_at 随列表下发。"""
+        from rest_framework.test import APIClient
+
+        from common.core.auth.credentials import MASK
+
+        report = _make_report(dataset, superuser, recipients=["boss@corp.com"])
+        Report.objects.filter(pk=report.pk).update(last_run_at=timezone.now())
+        grant(normal_user, screen_urls)
+
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        client.force_authenticate(user=normal_user)
+        row = next(item for item in client.get(REPORT_URL).json()["data"]["results"] if item["name"] == report.name)
+        assert row["recipients"] == [MASK]
+        assert row["last_run_at"] is not None
+
+        owner_row = next(
+            item for item in auth_client.get(REPORT_URL).json()["data"]["results"] if item["name"] == report.name
+        )
+        assert owner_row["recipients"] == ["boss@corp.com"]

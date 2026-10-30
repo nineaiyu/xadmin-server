@@ -76,12 +76,12 @@ SETTINGS_CONFIG = {
     # 拒绝；脚本/E2E 等按明文提交密码的场景可关闭（关闭后按明文接收）
     "SECURITY_INVITE_ENCRYPTED_ENABLED": True,
     # 绑定邮箱
-    "SECURITY_BIND_EMAIL_ACCESS_ENABLED": True,
+    "SECURITY_BIND_EMAIL_ACCESS_ENABLED": False,
     "SECURITY_BIND_EMAIL_CAPTCHA_ENABLED": True,
     "SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED": True,
     "SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED": True,
     # 绑定手机
-    "SECURITY_BIND_PHONE_ACCESS_ENABLED": True,
+    "SECURITY_BIND_PHONE_ACCESS_ENABLED": False,
     "SECURITY_BIND_PHONE_CAPTCHA_ENABLED": True,
     "SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED": True,
     "SECURITY_BIND_PHONE_ENCRYPTED_ENABLED": True,
@@ -204,7 +204,7 @@ SETTINGS_CONFIG = {
     # 口径标注：本档默认 report-only 与 nginx 页面层强制头（xadmin-web/default.conf）
     # 的差异是**有意分层**——浏览器页面流量经 nginx 已强制；直连 Django 的仅 JSON API
     # （无脚本执行面）与 swagger/api-docs（django-csp 策略已按 swagger 放行，切 enforce
-    # 属行为变更需独立观察）。评估结论与重开条件见 docs/security-review.md 七期登记
+    # 属行为变更需独立观察）。评估结论与重开条件见 docs/asvs-mapping.md §三登记
     "CSP_MODE": "report-only",  # disabled / report-only（观察期）/ enforce
     "CSP_REPORT_URI": "",  # 空 = 不下发 report-uri；建议 /api/common/api/csp-report
     # PAT 凭证级限流速率（SimpleRateThrottle 速率串；空或 0 = 不限）
@@ -295,11 +295,123 @@ SETTINGS_CONFIG = {
     "CAPTCHA_IMAGE_SIZE": (120, 40),  # 设置 captcha 图片大小
     "CAPTCHA_CHALLENGE_FUNCT": "captcha.helpers.math_challenge",
     "CAPTCHA_LENGTH": 4,  # 字符个数,仅针对随机字符串生效
-    "CAPTCHA_TIMEOUT": 5,  # 超时(minutes)
+    "CAPTCHA_TIMEOUT": 5,  # 遗留键（仅 config.yml 兼容保留）：挑战有效期统一由 CAPTCHA_CHALLENGE_TTL 控制
     "CAPTCHA_FONT_SIZE": 26,
     "CAPTCHA_BACKGROUND_COLOR": "#ffffff",
     "CAPTCHA_FOREGROUND_COLOR": "#001100",
     "CAPTCHA_NOISE_FUNCTIONS": ("captcha.helpers.noise_arcs", "captcha.helpers.noise_dots"),
+    # 统一人机验证（图片 / 滑动 / 旋转 / 点选 / 语序 / PoW）：
+    # 场景总开关仍由 SECURITY_<场景>_CAPTCHA_ENABLED 控制
+    # 验证码总开关：关闭后所有场景不再人机校验（各场景开关仍独立保留）
+    "CAPTCHA_ENABLED": True,
+    "CAPTCHA_ENABLED_TYPES": ["slide", "rotate", "click"],
+    "CAPTCHA_SLIDE_TOLERANCE": 4,
+    "CAPTCHA_ROTATE_TOLERANCE": 4,
+    "CAPTCHA_CLICK_RADIUS": 20,
+    "CAPTCHA_CHALLENGE_TTL": 120,
+    "CAPTCHA_TICKET_TTL": 120,
+    "CAPTCHA_MAX_ATTEMPTS": 3,
+    "CAPTCHA_TRACK_CHECK_ENABLED": True,
+    "CAPTCHA_SLIDE_SIZE": (320, 180),
+    # 交互题型画布尺寸解耦：未配置时回退 CAPTCHA_SLIDE_SIZE（兼容既有部署）
+    "CAPTCHA_CLICK_SIZE": (320, 180),
+    "CAPTCHA_WORD_ORDER_SIZE": (320, 180),
+    "CAPTCHA_ICON_SIZE": (320, 180),
+    "CAPTCHA_ROTATE_SIZE": (240, 240),
+    # simplified = 内置 GB2312 一级字库（3755 常用字）；ascii = 字母数字
+    "CAPTCHA_CLICK_CHARSET": "simplified",
+    # 背景图库：builtin = 读 captcha/resources/backgrounds/manifest.json（空则程序化）；
+    # procedural = 强制程序化；自定义只读目录用 CAPTCHA_ASSET_DIR
+    "CAPTCHA_BACKGROUND_PACK": "builtin",
+    "CAPTCHA_ASSET_DIR": "",
+    # 运行期资产完整性校验：首次加载按 manifest 的 sha256 比对（只读挂载被替换时跳过该图）
+    "CAPTCHA_ASSET_VERIFY_SHA256": True,
+    # 无障碍回退：图片题型只作为显式回退 / 低风险兜底，默认权重 0；
+    # 图片题请求必须付低难度 PoW，避免成为 OCR 农场入口
+    "CAPTCHA_IMAGE_FALLBACK_ENABLED": True,
+    "CAPTCHA_POW_FOR_IMAGE_FALLBACK": True,
+    # 票据层加固：生产必须显式配置，缺失即拒绝启动
+    "CAPTCHA_TICKET_SECRET": "",
+    # 当前签名密钥 id（轮换期与 CAPTCHA_TICKET_SECRET_PREVIOUS 并行验签）
+    "CAPTCHA_TICKET_SECRET_KEY_ID": "k1",
+    # 轮换期旧密钥（"key_id:secret"，如 "k0:<旧密钥>"；空 = 无轮换）
+    "CAPTCHA_TICKET_SECRET_PREVIOUS": "",
+    # 票据 audience：防止 A 部署票据在 B 部署使用（空 = 站点 URL / 首 Host）
+    "CAPTCHA_TICKET_AUDIENCE": "",
+    # 票据动作绑定：关掉即只绑 scene（不推荐）
+    "CAPTCHA_ACTION_BIND": True,
+    # sid + fp 强绑定；缺失或不一致一律拒绝
+    "CAPTCHA_STRICT_BINDING": True,
+    # 浏览器请求 Origin 校验：缺 Origin 的 API 客户端放行；有 Origin 时必须同源或命中白名单
+    "CAPTCHA_ORIGIN_CHECK_ENABLED": True,
+    "CAPTCHA_ALLOWED_ORIGINS": "",
+    # verify 请求加签常开
+    "CAPTCHA_VERIFY_SIGN_REQUIRED": True,
+    # verify 签名时间窗与 nonce 防重放窗口（秒）
+    "CAPTCHA_VERIFY_SIGN_WINDOW": 300,
+    # 分档票据时效（challenge 档沿用 CAPTCHA_TICKET_TTL；0/非法回退默认）
+    "CAPTCHA_TICKET_TTL_ALLOW": 60,
+    "CAPTCHA_TICKET_TTL_LIGHT": 90,
+    "CAPTCHA_TICKET_TTL_HARD": 90,
+    # 风险分级三档：上线默认 enforce；shadow 仅用于基线观察
+    "CAPTCHA_RISK_MODE": "shadow",
+    # 决策阈值（allow < 20 ≤ light < 40 ≤ challenge < 70 ≤ hard < 90 ≤ deny）
+    "CAPTCHA_RISK_T_ALLOW": 20,
+    "CAPTCHA_RISK_T_LIGHT": 40,
+    "CAPTCHA_RISK_T_HARD": 70,
+    "CAPTCHA_RISK_T_DENY": 90,
+    # 私网 / 回环默认按可信处理（enforce 首日不误伤客户办公网；可在设置页关闭）
+    "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS": True,
+    # 机房 / 代理网段清单（可热更，不发版）：逗号分隔 CIDR
+    "CAPTCHA_RISK_DATACENTER_CIDRS": "",
+    "CAPTCHA_RISK_PROXY_CIDRS": "",
+    # 指纹/网段哈希盐（空 = 由票据密钥派生；轮换盐可切断历史关联）
+    "CAPTCHA_FP_SALT": "",
+    # 算力轴：PoW 开关、分档位数与单 IP 每小时预算
+    "CAPTCHA_POW_ENABLED": True,
+    "CAPTCHA_POW_BITS_ALLOW": 16,
+    "CAPTCHA_POW_BITS_LIGHT": 18,
+    "CAPTCHA_POW_BITS_HARD": 20,
+    "CAPTCHA_POW_BITS_MAX": 20,
+    "CAPTCHA_POW_IP_BUDGET": 600,
+    # 阶梯处置：失败阈值（IP/动作标识/指纹三维度）与联动登录锁定
+    "CAPTCHA_FAIL_STEP": "3,8,20",
+    "CAPTCHA_HONEYPOT_ENABLED": True,
+    # 题型加权轮换与难度系数（easy/hard 相对 normal 的容差倍数；点选数量默认 3/4/5）
+    "CAPTCHA_TYPE_WEIGHTS": {
+        "image": 0,
+        "slide": 30,
+        "rotate": 30,
+        "click": 30,
+        "wordorder": 10,
+        "icon": 0,
+        "pow": 0,
+    },
+    "CAPTCHA_DIFFICULTY_EASY_FACTOR": 1.5,
+    "CAPTCHA_DIFFICULTY_HARD_FACTOR": 0.5,
+    # 按题型的难度容差倍数（覆盖全局 easy/hard factor；normal 恒 1.0）
+    "CAPTCHA_DIFFICULTY_MAP": {
+        "slide": {"easy": 1.5, "normal": 1.0, "hard": 0.5},
+        "rotate": {"easy": 1.5, "normal": 1.0, "hard": 0.5},
+        "click": {"easy": 1.5, "normal": 1.0, "hard": 0.5},
+        "wordorder": {"easy": 1.5, "normal": 1.0, "hard": 0.5},
+    },
+    "CAPTCHA_CLICK_COUNT_EASY": 3,
+    "CAPTCHA_CLICK_COUNT_HARD": 5,
+    # 无障碍音频验证码：镜像内置 flite/sox，路径可覆盖（空 = 禁用音频回退）
+    "CAPTCHA_FLITE_PATH": "/usr/bin/flite",
+    "CAPTCHA_SOX_PATH": "/usr/bin/sox",
+    # 告警（接既有通知渠道）：窗口内拦截率异常 / 同 IP 挑战突增
+    "CAPTCHA_ALERT_ENABLED": True,
+    "CAPTCHA_ALERT_WINDOW_MINUTES": 10,
+    "CAPTCHA_ALERT_DENY_RATE": 0.5,
+    "CAPTCHA_ALERT_MIN_SAMPLES": 50,
+    # 观测层：全链路留痕（异步写，遥测故障不影响验证结果）
+    "CAPTCHA_LOG_ENABLED": True,
+    # 观测日志保留期（天；0 = 只记录不清理）
+    "CAPTCHA_LOG_RETENTION_DAYS": 30,
+    # 成功事件采样率（0~1；失败恒 100% 记录）
+    "CAPTCHA_LOG_SUCCESS_SAMPLE_RATE": 1.0,
     # ------------------------------------------------------------------
     # 运行期系统配置（SysConfig 热更新）的代码默认值唯一源：
     # packages/xadmin-common/common/core/config.py 的 SysConfig property 一律回读这里（CONFIG.<KEY>），

@@ -20,7 +20,7 @@ from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError
 
-from system.utils.platform import legacy_schema
+from ops.legacy import schema as legacy_schema
 
 
 class Command(BaseCommand):

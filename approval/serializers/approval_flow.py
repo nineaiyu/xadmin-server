@@ -15,7 +15,6 @@
 
 from typing import Any
 
-from django.db import transaction
 from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -33,10 +32,13 @@ from approval.serializers.approval_instance import (
 from approval.serializers.approval_instance import (
     ApprovalNodeTaskSerializer as ApprovalNodeTaskSerializer,  # noqa: F401 显式再导出（PEP 484 语义）
 )
-from approval.utils.approval_flow import CONDITION_OPS, MAX_FLOW_NODES
-from approval.utils.approval_flow.versioning import apply_definition, build_snapshot
+from approval.services.approval_flow import CONDITION_OPS, MAX_FLOW_NODES
+from approval.services.approval_flow.definition import (
+    create_flow,
+    update_flow,
+)
+from common.core.fields import DisplayRelatedField
 from common.core.serializers import BaseModelSerializer
-from task.services import DisplayRelatedField
 
 FORM_FIELD_TYPES = ("text", "textarea", "number", "date", "select")
 # 数值比较运算符：条件值必须可转数值。引擎对转换失败一律按不命中处理（节点静默跳过、
@@ -110,6 +112,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             "form_schema",
             "form_schema_locked",
             "is_active",
+            "initiator_roles",
             "nodes",
             "node_count",
             "creator",
@@ -136,6 +139,30 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             return locked
         bound: bool = obj.bound_forms.filter(is_template=False).exists()
         return bound
+
+    def validate_initiator_roles(self, value: Any) -> Any:
+        """发起范围：角色 code 列表；空 = 公开。未知/停用角色直接拒绝（避免静默不可发起）。"""
+        if value in (None, ""):
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("Initiator roles must be a list"))
+        codes: list[str] = []
+        for item in value:
+            code = str(item or "").strip()
+            if code and code not in codes:
+                codes.append(code)
+        if len(codes) > 100:
+            raise serializers.ValidationError(_("Too many initiator roles"))
+        if codes:
+            from identity.models import UserRole
+
+            valid = set(UserRole.objects.filter(code__in=codes, is_active=True).values_list("code", flat=True))
+            unknown = [code for code in codes if code not in valid]
+            if unknown:
+                raise serializers.ValidationError(
+                    _("Unknown or disabled role codes: %(codes)s") % {"codes": ", ".join(unknown)}
+                )
+        return codes
 
     def validate_form_schema(self, value: Any) -> Any:
         """表单字段定义校验：key/label/type 必填，type 白名单，select 需 options。"""
@@ -169,6 +196,8 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         if len(value) > MAX_FLOW_NODES:
             raise serializers.ValidationError(_("A flow supports at most {} nodes").format(MAX_FLOW_NODES))
         orders = []
+        assignee_types = set(ApprovalFlowNode.AssigneeType.values)
+        timeout_actions = set(ApprovalFlowNode.TimeoutAction.values)
         for index, node in enumerate(value):
             order = node.get("order")
             node["order"] = order if order not in (None, "") else index + 1
@@ -180,10 +209,13 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         for node in value:
             if not (node.get("name") or "").strip():
                 raise serializers.ValidationError(_("Node name is required"))
-            if (
-                node.get("assignee_type") != ApprovalFlowNode.AssigneeType.LEADER
-                and not (node.get("assignee_value") or "").strip()
-            ):
+            assignee_type = node.get("assignee_type")
+            if assignee_type not in assignee_types:
+                raise serializers.ValidationError(_("Unsupported assignee type: {}").format(assignee_type))
+            timeout_action = node.get("timeout_action") or ApprovalFlowNode.TimeoutAction.NONE
+            if timeout_action not in timeout_actions:
+                raise serializers.ValidationError(_("Unsupported timeout action: {}").format(timeout_action))
+            if assignee_type != ApprovalFlowNode.AssigneeType.LEADER and not (node.get("assignee_value") or "").strip():
                 raise serializers.ValidationError(_("Assignee value is required for node {}").format(node["name"]))
             hours = int(node.get("timeout_hours") or 0)
             if hours < 0:
@@ -254,12 +286,15 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                     raise serializers.ValidationError(
                         _("Branch route target is required for node {}").format(node["name"])
                     )
-                target = int(target)
+                try:
+                    target = int(target)
+                except (TypeError, ValueError):
+                    raise serializers.ValidationError(_("Branch route target must be a number")) from None
                 if target not in orders:
                     raise serializers.ValidationError(_("Branch route target {} does not exist").format(target))
-                if target == order:
+                if target <= order:
                     raise serializers.ValidationError(
-                        _("Branch route cannot point to itself (node {})").format(node["name"])
+                        _("Branch route target must be greater than the current node (node {})").format(node["name"])
                     )
                 targets.append(target)
             if targets:
@@ -290,79 +325,10 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                     if target_state == 0:
                         stack.append((target, False))
 
-    @transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def create(self, validated_data: Any) -> Any:
-        nodes = validated_data.pop("nodes", [])
-        flow = super().create(validated_data)
-        apply_definition(flow, nodes, remark=_("Initial version"))
-        return flow
+        # 事务编排（主表 + 节点初始版本）在 services 层收口，本层只保留字段校验
+        return create_flow(validated_data)
 
-    @transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def update(self, instance: Any, validated_data: Any) -> Any:
-        nodes = validated_data.pop("nodes", None)
-        base_updated_time = validated_data.pop("base_updated_time", None)
-        # 编辑锁：绑定期 form_schema 由绑定表单单向投影，客户端改动忽略不落库
-        # （响应带 form_schema_locked=true 供前端禁用编辑；防手滑覆盖投影结果）
-        if "form_schema" in validated_data and self.get_form_schema_locked(instance):
-            validated_data.pop("form_schema")
-        # 行锁：并发改版时「版本号分配 + 旧行收口 + 新行落库」串行化
-        # （版本快照的 (flow, version) 唯一约束仍作二层兜底）
-        flow = ApprovalFlow.objects.select_for_update().get(pk=instance.pk)
-        self._check_not_concurrently_modified(flow, base_updated_time)
-        flow = super().update(flow, validated_data)
-        # 定义（节点或表单）有实质变化才落新版本；无变化时节点行保持原样（主键不变）
-        if nodes is not None and self._definition_changed(flow, nodes):
-            apply_definition(flow, nodes, remark=_("Nodes updated"))
-        return flow
-
-    def _check_not_concurrently_modified(self, flow: Any, base_updated_time: Any) -> None:
-        """乐观锁：编辑基线落后于当前行说明他人已先保存，拒绝整单覆盖（fail-closed）。
-
-        基线值是客户端原样回传的 updated_time 渲染串，这里用同款 DateTimeField 渲染
-        当前行再比较，避免日期解析/时区/精度（DATETIME_FORMAT 为秒级）比对歧义；
-        未携带基线的历史客户端保持原有语义（不做拦截）。
-        """
-        if not base_updated_time:
-            return
-        current = serializers.DateTimeField().to_representation(flow.updated_time)
-        if str(base_updated_time) != str(current):
-            raise serializers.ValidationError(_("The flow was modified by someone else, please refresh and retry"))
-
-    def _definition_changed(self, flow: Any, nodes: Any) -> bool:
-        """与最新版本快照比较：nodes 或 form_schema 有变化返回 True。
-
-        历史快照缺 `timeout_action`（字段后补）时按默认值回填再比较，避免
-        语义未变的存量定义被误判为「有变化」而多落一个版本。
-        """
-        latest = flow.versions.order_by("-version").values_list("snapshot", flat=True).first()
-        if latest is None:
-            return True
-        import json
-
-        latest = json.loads(json.dumps(latest))
-        for node in latest.get("nodes") or []:
-            if isinstance(node, dict):
-                node.setdefault("timeout_action", ApprovalFlowNode.TimeoutAction.NONE)
-        return json.dumps(latest, sort_keys=True, ensure_ascii=False) != json.dumps(
-            build_snapshot(flow, nodes), sort_keys=True, ensure_ascii=False
-        )
-
-    def rollback_to_version(self, flow: Any, version: int, remark: Any = "") -> Any:
-        """回滚到历史版本：快照写入活定义（节点/表单）并落新版本。返回 (ok, detail)。
-
-        与改节点同口径：在途实例按自身 ``flow_version`` 推进，回滚只影响之后发起的新单，
-        因此不再受 PENDING 实例限制。
-        """
-        snapshot = flow.versions.filter(version=version).values_list("snapshot", flat=True).first()
-        if snapshot is None:
-            return False, str(_("The flow version does not exist"))
-        with transaction.atomic():
-            flow = ApprovalFlow.objects.select_for_update().get(pk=flow.pk)
-            flow.form_schema = snapshot.get("form_schema") or []
-            flow.save(update_fields=["form_schema", "updated_time"])
-            apply_definition(
-                flow,
-                snapshot.get("nodes") or [],
-                remark=remark or str(_("Rollback from version {}").format(version)),
-            )
-        return True, None
+        # 事务编排（编辑锁 / 行锁 / 乐观锁 / 改版落版本）在 services 层收口
+        return update_flow(instance, validated_data)

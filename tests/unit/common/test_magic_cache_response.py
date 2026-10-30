@@ -15,7 +15,7 @@ from django.core.cache import cache
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 
-from common.base.magic import MagicCacheResponse
+from common.decorators import MagicCacheResponse
 
 pytestmark = pytest.mark.django_db
 

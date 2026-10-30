@@ -7,8 +7,7 @@
 
 1. 文件接口权限点清单存在、path / method 与端点一致、挂在文件页面菜单下；
 2. 权限点 path 正则覆盖真实端点（`django.urls.resolve` 可解析 + 正则命中），
-   含 `stats` 的**隐性覆盖**语义（无独立权限点，由 `retrieve` 覆盖，前端按
-   retrieve 判定是否请求）；
+   含 `stats` 的独立权限点语义；
 3. 有文件页面授权的内置角色同步授权接口权限点——管理员全量；演示模式只读展示，
    写操作（建改删/上传/物理清除）不出现在其 allow-list。
 """
@@ -37,6 +36,7 @@ FILE_POINTS = {
     "upload:SystemUploadFile": ("api/file/file/upload$", "POST", "/api/file/file/upload"),
     "config:SystemUploadFile": ("api/file/file/config$", "GET", "/api/file/file/config"),
     "download:SystemUploadFile": (r"api/file/file/(?P<pk>[^/.]+)/download$", "GET", "/api/file/file/1/download"),
+    "stats:SystemUploadFile": ("api/file/file/stats$", "GET", "/api/file/file/stats"),
     "preview:SystemUploadFile": (r"api/file/file/(?P<pk>[^/.]+)/preview$", "GET", "/api/file/file/1/preview"),
     "accessLogs:SystemUploadFile": (
         r"api/file/file/(?P<pk>[^/.]+)/access-logs$",
@@ -52,9 +52,8 @@ FILE_POINTS = {
     "chunkAbort:SystemUploadFile": ("api/file/file/chunk/abort$", "POST", "/api/file/file/chunk/abort"),
 }
 
-#: 统计端点无独立权限点：由 retrieve 的正则覆盖（前端按 retrieve 判定是否请求）
+#: 统计端点使用独立权限点
 STATS_PATH = "api/file/file/stats$"
-STATS_COVER = "retrieve:SystemUploadFile"
 
 ROLE_ADMIN = "admin"  # 管理员
 
@@ -106,12 +105,12 @@ def test_file_permission_points_match_real_endpoints(menus_by_name):
         assert menus_by_name[name]["fields"]["method"] == method
 
 
-def test_stats_endpoint_covered_by_retrieve(menus_by_name):
-    """统计端点无独立权限点，由 retrieve 覆盖（前端调用条件与服务端判定同口径）。"""
-    assert "stats:SystemUploadFile" not in menus_by_name, "stats 不应登记独立权限点（隐性覆盖为既有口径）"
-    assert resolve("/api/file/file/stats").func is not None
-    retrieve_path = menus_by_name[STATS_COVER]["fields"]["path"]
-    assert re.match(f"/{retrieve_path}", "/api/file/file/stats")
+def test_stats_endpoint_has_independent_permission(menus_by_name):
+    """统计端点使用独立权限点，不再借 retrieve 代填权限边界。"""
+    item = menus_by_name["stats:SystemUploadFile"]
+    assert item["fields"]["path"] == STATS_PATH
+    assert item["fields"]["method"] == "GET"
+    assert item["fields"]["parent"] == FILE_MENU_PK
 
 
 def test_serialized_actions_bind_model(menus_by_name):

@@ -8378,6 +8378,12 @@ msgstr ""
 msgid "Restored {} data"
 msgstr ""
 
+
+#: packages/xadmin-common/common/core/modelset/recycle.py
+#, python-brace-format
+msgid "Skipped {} data with integrity constraints"
+msgstr "Skipped {} data with integrity constraints"
+
 #: packages/xadmin-common/common/core/modelset/recycle.py:92
 #, python-brace-format
 msgid "Skipped {} data with unique conflicts"
@@ -12094,3 +12100,23 @@ msgstr ""
 
 msgid "LDAP/AD directory sync configuration status (server, base DN, sync state; no credentials)"
 msgstr ""
+
+#, python-brace-format
+msgid "Too many dashboard cards (max {})"
+msgstr "Too many dashboard cards (max {})"
+
+
+#, python-brace-format
+msgid "Invalid dashboard card title"
+msgstr "Invalid dashboard card title"
+
+
+#, python-brace-format
+msgid "Invalid dashboard card span"
+msgstr "Invalid dashboard card span"
+
+msgid "Invalid dashboard card height"
+msgstr "Invalid dashboard card height"
+
+msgid "off = risk layer disabled; shadow = score and log only; enforce = apply decisions (requires trusted proxy/client IP configuration)"
+msgstr "off = risk layer disabled; shadow = score and log only; enforce = apply decisions (requires trusted proxy/client IP configuration)"

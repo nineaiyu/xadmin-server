@@ -44,6 +44,34 @@ python manage.py sync_menu_permissions --update-seed
 包装完必须能回答三个问题，否则不算接完：**契约有没有生效**（§三）、**路由/通道/任务有没有接线**
 （§四）、**模块开关能不能一起管住它们**（§五）。§六 给了逐条验证命令。
 
+## 二点五、种子该放哪：决策树
+
+种子双轨（静态 `<app>/seeds/` 与运行期命令播种）并存带来的第一个问题就是「我的新模块种子放哪」。
+按下面的决策树走（判断顺序自上而下，命中即停）：
+
+```text
+你的数据是产品功能的一部分（菜单 / 权限点 / 字段树 / 应用配置 / 字典）？
+├─ 是 → 静态种子：<app>/seeds/ 三件套（manifest.json + menu.json + menumeta.json）
+│        · 内置业务 app 与二开插件同口径（demo 插件即活样本）
+│        · `sync_menu_permissions --update-seed` 会按归属回写，改完 `--dry-run` 验证缺口 0
+│        · 平台级目录 / 跨域页面才落 loadjson/（平台共享层）
+└─ 否（演示 / 可选样例 / 开箱体验数据）？
+    └─ 运行期命令播种：写 seed_<名称> management command
+         · demo app 的 seed_demo_book 是活样本（菜单与权限点由命令播种，随模块可裁剪）
+         · 命令需幂等（唯一名 + 存在即跳过），生产默认不执行
+```
+
+判定口诀：**装完系统就该有的 → 静态种子；管理员可选开启的 → 命令播种**。
+两轨都经 `load_init_json --check`（0 error）与权限点缺口扫描把关。
+
+## 二点六、代码生成：CLI 与 GUI 同源
+
+`generate_crud`（CLI）与「系统管理 → 代码生成」（GUI 页）**不是两套实现**：
+GUI 适配层 `devtools/services/codegen/gui.py` 直接实例化 CLI 命令类
+（`from devtools.management.commands._generate_crud import Command`），
+预览 / 下载产物与 CLI 落盘走同一引擎与同一套模板——GUI 是 CLI 的参数化视图，
+不存在「双入口产物漂移」的面。改动生成逻辑只改 `_generate_crud/`（唯一事实源）。
+
 ## 三、契约注入（`register_contract`）
 
 ### 3.1 白名单与解析序
@@ -113,11 +141,11 @@ def get_active_superuser_queryset():
 
 | 文件 | 契约 | 宿主消费点 |
 | --- | --- | --- |
-| `config.py::URLPATTERNS` | 路由前缀声明 | `server/urls.py` → `common/core/utils.py::auto_register_app_url`（同时并入 `PERMISSION_SHOW_PREFIX` / `PERMISSION_DATA_AUTH_APPS`） |
+| `config.py::URLPATTERNS` | 路由前缀声明 | `server/urls.py` → `common/core/url_inventory.py::auto_register_app_url`（同时并入 `PERMISSION_SHOW_PREFIX` / `PERMISSION_DATA_AUTH_APPS`） |
 | `routing.py::urlpatterns` | WS 通道 | `server/asgi.py` → `collect_app_ws_urls`（按 INSTALLED_APPS 收集） |
 | `tasks.py` | 周期任务声明 | `{app}.tasks` 被 celery autodiscover；`@register_as_period_task(module=...)` 声明归属模块 |
 | `modules.py::MODULES` | 功能模块声明 | `common/core/modules/registry.py::discovered_modules` |
-| `ai_declarations.py::AI_ACTIONS` | AI 动作声明（白名单，随应用安装自动发现） | `ai/utils/ai_registry.py::action_specs`（工具目录 / MCP / function calling 同源） |
+| `ai_declarations.py::AI_ACTIONS` | AI 动作声明（白名单，随应用安装自动发现） | `ai/services/actions/ai_registry.py::action_specs`（工具目录 / MCP / function calling 同源） |
 | `migrations/` | 自有数据面 | `manage.py migrate <app>`（与宿主迁移链解耦） |
 
 三条实现要点：
@@ -136,7 +164,7 @@ def get_active_superuser_queryset():
 
 ```python
 # my_plugin/ai_declarations.py
-from ai.utils.ai_api_actions import api_action
+from ai.services.actions.ai_api_actions import api_action
 
 AI_ACTIONS = {
     "myplugin.item.list": api_action(
@@ -153,6 +181,67 @@ AI_ACTIONS = {
 
 发现器遍历已安装应用并合并声明，key 全局唯一（重复直接启动失败）；声明文件不存在
 即跳过，不影响内核。新增写动作前先确认审批口径（`requires_approval`）与字段权限。
+
+### 4.2 5 分钟四类扩展
+
+四类扩展都有可直接复制的样板：照「复制 → 改 3 处 → 验证」做完即可，机制细节沿链接回看。
+
+#### ① 自定义 action + 权限点
+
+| 步骤 | 做什么 |
+| --- | --- |
+| 复制 | `demo/views.py::push`（`@action` 方法 + 审计写入的最小样板） |
+| 改 3 处 | ① 方法名与 `url_path` 改成业务语义；② docstring 首行写成 ≤24 字名词短语（会被取作菜单标题，见 `scripts/check_menu_titles.py`）；③ 在 `<app>/seeds/menu.json` 登记权限点（`name: push:BookPush`、`path: api/demo/book/{pk}/push$`、`method: POST`），并在 `<app>/seeds/menumeta.json` 补标题 |
+| 验证 | `python manage.py sync_menu_permissions --update-seed` 后 `python manage.py sync_menu_permissions --dry-run`（缺口 0 条）；再跑 `uv run pytest tests/integration/demo/test_book_viewset.py -q` |
+
+未入库的权限点 = 非超管恒 403，登记这一步不能省。
+
+#### ② 自定义 `input_type` 渲染器
+
+| 步骤 | 做什么 |
+| --- | --- |
+| 复制 | `xadmin-client/src/components/RePlusPage/src/utils/renderers-detail.tsx` 中同类渲染器（按搜索 / 表单 / 详情通道选） |
+| 改 3 处 | ① 用 `registerSearchRenderer` / `registerFormRenderer` / `registerDetailRenderer` 在模块顶层注册（放在 `xadmin-client/src/extensions/` 作为构建期扩展）；② 在 `xadmin-client/src/components/RePlusPage/src/utils/__tests__/renderers-pairing.spec.ts` 的分类清单登记新 type（四通道配对守护，未登记即失败）；③ 后端若引入新字段类，在 `packages/xadmin-common/common/drf/metadata.py::get_field_type` 加 isinstance 分支，契约变更后跑 `pnpm sync:contract` |
+| 验证 | `pnpm test:run -- src/components/RePlusPage/src/utils/__tests__/renderers-pairing.spec.ts` + `pnpm typecheck`；四通道细节见 [recipes R10](recipes.md) |
+
+#### ③ 通知渠道（宿主级扩展）
+
+| 步骤 | 做什么 |
+| --- | --- |
+| 复制 | `notifications/backends/email.py` → `notifications/backends/<name>.py`，模块级保留 `backend = YourBackend` |
+| 改 3 处 | ① `notifications/backends/specs.py::CHANNEL_SPECS` 增一条 `ChannelSpec`（`code` / `module` / `renderer` / `html`）；② 在 `notifications/notifications.py::Message` 补 `get_<name>_msg` 渲染方法（`get_email_msg` / `get_text_msg` 二选一）；③ 在 `notifications/backends/__init__.py::BACKEND` 枚举加值——**这是宿主级扩展，目前仍需改枚举**，否则渠道无法被订阅与选择 |
+| 验证 | `uv run pytest tests/unit/notifications/test_channel_specs.py tests/unit/notifications/test_backend_loading.py -q`（缺 spec 或 client 会被守护拦下） |
+
+#### ⑤ 匿名写接口挂人机校验（`require_human`）
+
+匿名可达且有副作用的接口必须过人机校验，统一入口：
+
+```python
+from identity.utils.auth.captcha import require_human
+
+
+class YourAnonymousAPIView(GenericAPIView):
+    def post(self, request, *args, **kwargs):
+        # scene 取 captcha.const 的已登记场景；action 必须在该 scene 的动作表内
+        require_human(request, "login", "your.action", need=True)
+        ...
+```
+
+- 业务请求不携带 `action`：消费点用服务端常量（`captcha.const`）声明；
+- 新场景/动作先扩 `CAPTCHA_SCENES` / `CAPTCHA_SCENE_ACTIONS`，再在
+  `<app>/declarations.py` 登记权限点归属；
+- 门禁：`python scripts/check_captcha_coverage.py` 会扫描全部匿名写端点；确有上游
+  人机校验等例外时，在脚本 `EXEMPTIONS` 写明理由（并在 `docs/ci-gates.md` 登记变更）。
+
+#### ④ 审批 biz sync（终态回写业务单）
+
+| 步骤 | 做什么 |
+| --- | --- |
+| 复制 | `demo/services.py::sync_book_instance` → `<app>/services.py` |
+| 改 3 处 | ① `<app>/config.py::APPROVAL_BIZ_SYNCERS` 增 `{"<biz_type>": "<app>.services.sync_xxx"}`（注册表按声明收集，零核心文件改动）；② 提交端 `create_instance(..., biz_type=..., biz_id=...)` 绑定业务单；③ 回写函数按 APPROVED / REJECTED / CANCELLED 幂等映射业务状态，只写状态字段、不动 `modifier` |
+| 验证 | `uv run pytest tests/integration/demo/test_book_flow.py -q`；或前端走一遍「提交 → 审批通过 → 业务状态回写」 |
+
+跨 app 调用引擎一律函数内惰性导入（跨 app import 门禁），样板已按此组织。
 
 ## 五、功能模块声明与发行预设
 
@@ -230,7 +319,26 @@ python manage.py doctor                             # 启动自检（含权限�
 | 迁移报依赖缺失 | 插件迁移引用了宿主 app 的中间状态迁移 | 依赖写到宿主**已发布**的迁移上，或改用抽象基类字段 |
 | 周期任务停用后仍在跑 | 装饰器漏写 `module=` | 补 `module="<id>"` 并重启 beat |
 
-## 八、参考
+## 八、前端页面配套（`xadmin-client/src/extensions/`）
+
+插件的后端接口就绪后，前端页面落在宿主前端仓的 `src/extensions/<module>/`
+（不污染 `src/views/`；该目录已被动态路由 glob 覆盖，**无需改前端路由文件**）。
+活样本：`src/extensions/demo-plugin/` + 本插件种子，最小三件——
+
+1. 页面组件 `extensions/<module>/index.vue`：`defineOptions({ name })` 是路由
+   匹配键，必须与菜单种子的 `name`、权限点 `<动作>:<组件名>` 后缀一致；
+   列表页用 `RePlusPage`，列 / 表单 / 按钮可全部来自插件后端的
+   `search-columns` / `search-fields` 元数据（后端加字段 → 前端免改）。
+2. 插件种子 `xadmin_demo_plugin/seeds/menu.json`：页面菜单（`menu_type=1`、
+   `component="extensions/<module>/index"`）+ 权限点（`menu_type=2`）；宿主把
+   插件写进 `XADMIN_APPS` 后 `load_init_json` 自动收集，未装插件则不残留菜单。
+3. 断链守护：`xadmin-client` 的 `pnpm check:menu-components` 会校验插件种子
+   引用的页面文件真实存在（含 `examples/plugins/*/*/seeds/`）——插件改组件名
+   / 移页面而种子未同步，CI 直接拦截。
+
+接线细节与约定见 `xadmin-client/src/extensions/README.md`。
+
+## 九、参考
 
 - 契约面与白名单：`packages/xadmin-common/common/contracts.py`
 - 模块声明 / 解析 / 裁剪：`packages/xadmin-common/common/core/modules/`

@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 """任务中心统一聚合视图（任务/导出/导入三源合并，自 task_center 拆分，行为不变）。"""
 
+import hashlib
 from typing import Any
 
+from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from django.utils.module_loading import import_string
@@ -23,6 +25,10 @@ from task.utils.task_center import (
 
 logger = get_logger(__name__)
 
+# 统一列表三类记录各一次全量 COUNT：任务中心首屏常被反复打开/轮询，
+# 10s 短缓存与审批待办同口径；取消/重跑后的状态变化最多滞后一个 TTL。
+TASK_CENTER_COUNT_CACHE_TTL = 10
+
 
 # --------------------------------------------------------------- 统一视图
 
@@ -40,6 +46,16 @@ def _time_filters(queryset: Any, start: Any, end: Any) -> Any:
     if end:
         queryset = queryset.filter(created_time__lte=end)
     return queryset
+
+
+def _count_cached(queryset: Any, kind: str, user: Any, token: str) -> int:
+    """按（用户 + 过滤条件 + 类型）缓存总数：过滤条件不同不能共用键。"""
+    key = f"task_center_counts_{token}_{kind}_{user.pk}"
+    cached = cache.get(key)
+    if cached is None:
+        cached = queryset.count()
+        cache.set(key, cached, TASK_CENTER_COUNT_CACHE_TTL)
+    return int(cached)
 
 
 def progress_of(record: Any, kind: str) -> Any:
@@ -170,6 +186,7 @@ def unified_rows(
     # 每类型取数窗口 = 已翻过的页数 × 页大小：合并后第 N 页的行必然落在各自类型
     # 前 N×size 行内（各类型自身按创建时间倒序），无需全表扫描即可保证分页正确性
     window = min(MAX_UNIFIED_ROWS, page * size)
+    count_token = hashlib.sha256(repr((tuple(kinds), start, end, status, keyword, creator)).encode()).hexdigest()[:16]
 
     def _filtered(queryset: Any, keyword_q: Any) -> Any:
         queryset = _time_filters(_owner_filter(queryset, user), start, end)
@@ -194,21 +211,21 @@ def unified_rows(
             TaskExecution.objects.annotate(_has_product=product_exists).filter(_has_product=False),
             Q(name__icontains=keyword) | Q(periodic_task__name__icontains=keyword),
         )
-        total += queryset.count()
+        total += _count_cached(queryset, TYPE_TASK, user, count_token)
         rows += [_task_row(row) for row in queryset.select_related("periodic_task", "creator")[:window]]
     if TYPE_EXPORT in kinds:
         queryset = _filtered(
             ExportRecord.objects.all(),
             Q(name__icontains=keyword) | Q(module__icontains=keyword),
         )
-        total += queryset.count()
+        total += _count_cached(queryset, TYPE_EXPORT, user, count_token)
         rows += [_export_row(row) for row in queryset.select_related("creator", "file")[:window]]
     if TYPE_IMPORT in kinds:
         queryset = _filtered(
             ImportRecord.objects.all(),
             Q(name__icontains=keyword) | Q(module__icontains=keyword),
         )
-        total += queryset.count()
+        total += _count_cached(queryset, TYPE_IMPORT, user, count_token)
         rows += [_import_row(row) for row in queryset.select_related("creator", "source_file")[:window]]
     rows.sort(key=lambda row: row["created_time"] or timezone.now(), reverse=True)
     offset = (page - 1) * size
@@ -306,11 +323,12 @@ def rerun_record(user: Any, kind: str, pk: str) -> dict[str, Any]:
         if kind == TYPE_IMPORT:
             return _rerun_import(record, user)
         if str(record.module or "") == REPORT_MODULE:
-            return _rerun_report(record)
+            return _rerun_report(record, user)
         return _rerun_export(record, user)
-    except Exception as exc:  # noqa: BLE001 重跑失败归一为可读文案
+    except Exception:  # noqa: BLE001 重跑失败归一为可读文案
+        # 异常原文可能含 SQL/连接串/内部路径：只进日志，不回传任务中心
         logger.warning("rerun task failed. kind:%s pk:%s", kind, pk, exc_info=True)
-        return {"ok": False, "detail": str(exc)}
+        return {"ok": False, "detail": str(_("The task failed, please try again later"))}
 
 
 def _rerun_export(record: Any, user: Any) -> dict[str, Any]:
@@ -352,7 +370,7 @@ def _rerun_import(record: Any, user: Any) -> dict[str, Any]:
     return {"ok": True, "detail": str(_("Rerun submitted")), "data": {"record_id": str(clone.pk)}}
 
 
-def _rerun_report(record: Any) -> dict[str, Any]:
+def _rerun_report(record: Any, user: Any = None) -> dict[str, Any]:
     from dataset.analysis_tasks import _precreate_record, run_scheduled_report
     from dataset.models.dataset import Report
 
@@ -360,7 +378,7 @@ def _rerun_report(record: Any) -> dict[str, Any]:
     report = Report.objects.filter(pk=report_id).first() if report_id else None
     if report is None:
         return {"ok": False, "detail": str(_("The original report no longer exists"))}
-    new_record = _precreate_record(report)
+    new_record = _precreate_record(report, creator=user)
     # 重跑与「run 动作」同为手动触发：不推进调度簿记 last_run_at（bookkeep_schedule=False），
     # last_status 照常写——否则重跑恰好落在到期点与派发扫描之间会吞掉当期投递
     _dispatch(

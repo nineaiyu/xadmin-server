@@ -14,9 +14,9 @@ import hashlib
 import pytest
 
 from ai.models.ai import AiKnowledgeChunk, AiProfile
-from ai.utils.ai_embeddings import build_embeddings, invalidate_vector_index, vector_index, vector_stats
-from ai.utils.ai_index import invalidate_chunk_index
-from ai.utils.ai_retrieval import retrieve
+from ai.services.knowledge.ai_embeddings import build_embeddings, invalidate_vector_index, vector_index, vector_stats
+from ai.services.knowledge.ai_index import invalidate_chunk_index
+from ai.services.knowledge.ai_retrieval import retrieve
 from integrations.sdk.ai.chat import AiSdkError
 
 pytestmark = pytest.mark.django_db
@@ -93,8 +93,8 @@ class TestDisabledWithoutProfile:
         chunk = _make_chunk("docs/a.md", 0, "数据库备份与恢复演练说明", title="备份")
         assert vector_index() is None
         assert [item["chunk"].pk for item in retrieve(QUESTION)] == [chunk.pk]
-        from ai.utils.ai_index import _tokenize
-        from ai.utils.ai_retrieval import _retrieve_full_scan
+        from ai.services.knowledge.ai_index import _tokenize
+        from ai.services.knowledge.ai_retrieval import _retrieve_full_scan
 
         full = _retrieve_full_scan(set(_tokenize(QUESTION)), 5)
         assert [item["chunk"].pk for item in retrieve(QUESTION)] == [item["chunk"].pk for item in full]
@@ -109,7 +109,7 @@ class TestDisabledWithoutProfile:
 
 class TestBuildAndHybrid:
     def test_build_writes_vectors_and_stats(self, stub_client, monkeypatch):
-        monkeypatch.setattr("ai.utils.ai_embeddings.MIN_INDEXED_VECTORS", 1)
+        monkeypatch.setattr("ai.services.knowledge.ai_embeddings.MIN_INDEXED_VECTORS", 1)
         _make_embedding_profile()
         content = "数据库备份与恢复演练说明"
         stub_client({content: [0.5, 0.5], QUESTION: [1.0, 0.0]})
@@ -131,7 +131,7 @@ class TestBuildAndHybrid:
         assert again["embedded"] == 0 and again["skipped"] == 1
 
     def test_force_rebuild_recomputes(self, stub_client, monkeypatch):
-        monkeypatch.setattr("ai.utils.ai_embeddings.MIN_INDEXED_VECTORS", 1)
+        monkeypatch.setattr("ai.services.knowledge.ai_embeddings.MIN_INDEXED_VECTORS", 1)
         _make_embedding_profile()
         content = "数据库备份与恢复演练说明"
         stub_client({content: [0.5, 0.5]})
@@ -151,7 +151,7 @@ class TestBuildAndHybrid:
 
     def test_hybrid_recalls_semantic_only_chunk(self, stub_client, monkeypatch):
         """语义相近但无词元重叠的块应被向量通道召回（单通道命中不排首位=RRF 设计）。"""
-        monkeypatch.setattr("ai.utils.ai_embeddings.MIN_INDEXED_VECTORS", 1)
+        monkeypatch.setattr("ai.services.knowledge.ai_embeddings.MIN_INDEXED_VECTORS", 1)
         _make_embedding_profile()
         lexical_a = _make_chunk("docs/lex.md", 0, "数据库备份与恢复演练说明", title="备份")
         lexical_b = _make_chunk("docs/lex.md", 1, "数据库备份策略说明")
@@ -176,7 +176,7 @@ class TestBuildAndHybrid:
 
     def test_vector_channel_survives_provider_failure(self, stub_client, monkeypatch):
         """查询向量化失败时静默回退词频结果（问答可用性优先）。"""
-        monkeypatch.setattr("ai.utils.ai_embeddings.MIN_INDEXED_VECTORS", 1)
+        monkeypatch.setattr("ai.services.knowledge.ai_embeddings.MIN_INDEXED_VECTORS", 1)
         _make_embedding_profile()
         content = "数据库备份与恢复演练说明"
         stub_client({content: [0.5, 0.5], QUESTION: [1.0, 0.0]})
@@ -212,7 +212,7 @@ class TestBuildAndHybrid:
 
 class TestStaleVectors:
     def test_stale_vector_skipped_by_vector_channel(self, stub_client, monkeypatch):
-        monkeypatch.setattr("ai.utils.ai_embeddings.MIN_INDEXED_VECTORS", 1)
+        monkeypatch.setattr("ai.services.knowledge.ai_embeddings.MIN_INDEXED_VECTORS", 1)
         _make_embedding_profile()
         chunk = _make_chunk("docs/a.md", 0, "数据库备份与恢复演练说明")
         stub_client({"数据库备份与恢复演练说明": [1.0, 0.0], QUESTION: [1.0, 0.0]})
@@ -231,7 +231,7 @@ class TestStaleVectors:
         assert chunk.pk in {item["chunk"].pk for item in retrieve("全新内容")}
 
     def test_model_switch_ignores_old_vectors(self, stub_client, monkeypatch):
-        monkeypatch.setattr("ai.utils.ai_embeddings.MIN_INDEXED_VECTORS", 1)
+        monkeypatch.setattr("ai.services.knowledge.ai_embeddings.MIN_INDEXED_VECTORS", 1)
         profile = _make_embedding_profile(model="model-a")
         content = "数据库备份与恢复演练说明"
         stub_client({content: [1.0, 0.0]})
@@ -248,10 +248,10 @@ class TestStaleVectors:
 
 class TestRebuildPreservesVectors:
     def test_rebuild_keeps_unchanged_chunk_vectors(self, stub_client, monkeypatch):
-        monkeypatch.setattr("ai.utils.ai_embeddings.MIN_INDEXED_VECTORS", 1)
+        monkeypatch.setattr("ai.services.knowledge.ai_embeddings.MIN_INDEXED_VECTORS", 1)
         _make_embedding_profile()
         from ai.models.ai import AiKnowledgeDocument
-        from ai.utils.ai import rebuild_chunks
+        from ai.services.assistant.ai import rebuild_chunks
 
         content = "## 备份\n数据库备份与恢复演练说明\n\n## 审批\n审批流程会签规则说明"
         stub_client(
@@ -271,8 +271,12 @@ class TestRebuildPreservesVectors:
 
         # 重建（内容不变）：向量按 content_hash 保留，无需重算
         assert rebuild_chunks(doc) == 2
-        rows = list(AiKnowledgeChunk.objects.filter(source_path="docs/keep.md").values_list("embedding", flat=True))
-        assert all(row is not None for row in rows)
+        rows = list(
+            AiKnowledgeChunk.objects.filter(source_path="docs/keep.md").values_list("embedding", "embedding_vector")
+        )
+        assert all(row[0] is not None for row in rows)
+        # 二进制列与 pgvector 列必须同时保留；只保留其一会让向量检索静默退化
+        assert all(row[1] is not None for row in rows)
         assert build_embeddings()["embedded"] == 0
 
         # 变更一块：仅该块失去向量（陈旧），另一块保留
@@ -302,14 +306,14 @@ class TestAsyncBuildTask:
         assert result.successful()
         assert result.get()["embedded"] == 1
 
-        from ai.utils.embedding_progress import get_status
+        from ai.services.knowledge.embedding_progress import get_status
 
         status = get_status()
         assert status["state"] == "done"
         assert status["percent"] == 100
         assert status["summary"]["embedded"] == 1
         # 任务结束释放单飞锁（可再次提交）
-        from ai.utils.embedding_progress import try_acquire_lock
+        from ai.services.knowledge.embedding_progress import try_acquire_lock
 
         assert try_acquire_lock() is True
 
@@ -320,7 +324,7 @@ class TestAsyncBuildTask:
             _make_chunk("docs/a.md", index, f"数据库备份说明 {index}")
         seen = []
 
-        from ai.utils.ai_embeddings import build_embeddings
+        from ai.services.knowledge.ai_embeddings import build_embeddings
 
         build_embeddings(
             batch_size=2, progress_cb=lambda percent, stage="", embedded=0: seen.append((percent, embedded))
@@ -334,7 +338,7 @@ class TestAsyncBuildTask:
         stub_client({"__default__": [1.0, 0.0]})
         _make_embedding_profile()
 
-        from ai.utils.embedding_progress import release_lock
+        from ai.services.knowledge.embedding_progress import release_lock
 
         release_lock()
         first = auth_client.post(f"{KNOWLEDGE_URL}/build-embeddings", {}, format="json")
@@ -344,7 +348,7 @@ class TestAsyncBuildTask:
         release_lock()
 
     def test_endpoint_requires_embedding_profile(self, auth_client):
-        from ai.utils.embedding_progress import release_lock
+        from ai.services.knowledge.embedding_progress import release_lock
 
         release_lock()
         response = auth_client.post(f"{KNOWLEDGE_URL}/build-embeddings", {}, format="json")
@@ -366,7 +370,7 @@ class TestAsyncBuildTask:
         _make_embedding_profile()
         _make_chunk("docs/a.md", 0, "数据库备份说明")
 
-        from ai.utils.embedding_progress import release_lock
+        from ai.services.knowledge.embedding_progress import release_lock
 
         release_lock()
         response = auth_client.post(f"{KNOWLEDGE_URL}/build-embeddings", {}, format="json")
@@ -383,7 +387,7 @@ class TestAsyncBuildTask:
 
         from django.core.cache import cache
 
-        from ai.utils.embedding_progress import BUILD_STATUS_KEY, release_lock
+        from ai.services.knowledge.embedding_progress import BUILD_STATUS_KEY, release_lock
 
         cache.set(
             BUILD_STATUS_KEY,

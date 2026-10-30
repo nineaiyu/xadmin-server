@@ -1,9 +1,11 @@
 # 存量库升级通道（版本间迁移口径）
 
-> **一句话结论**：**4.2.5 及之后的库支持原地升级**——4.2.5 → 5.0 由
-> `python manage.py upgrade_ledger --apply` 认领迁移账本（不执行 DDL），再 `migrate`；
-> 更早的库按本文 §五的清库重建流程处置。**升级前先跑** `python manage.py upgrade_check`**，
-> 由命令给出该库的判定与处置建议。
+> **一句话结论（2026-10-29 当前基线）**：**仅全新空库支持直接建库**；既有 4.x / 5.0.x 库
+> 一律按本文 §五清库重建 + §七回灌，不承诺原地升级。升级前先跑
+> `python manage.py upgrade_check`，按判定处置，不要按版本号自行判断。
+>
+> **历史口径**：5.0 曾支持四域切分之后的 4.2.5 库经 `upgrade_ledger --apply` 原地升级；
+> 当前基线已整体重建迁移，该通道不再适用，历史说明保留在下方。
 
 ## 一、为什么会有「不能直接升级」的库
 
@@ -16,6 +18,7 @@
 | 第二轮 | system `0004~0011` 合并；dataset / approval / ai / message 全链合并为单一初始迁移；表归域改名 | [ADR-084](../adr/ADR-084-migration-squash-2026h2.md) |
 | 第三轮 | system 拆分为 identity / file / audit / task 四域，全业务 app 迁移再次重建 | [system四域切分映射-2026.10.md](../plans/system四域切分映射-2026.10.md) |
 | 第四轮（5.0） | 全部业务 app 收敛为初始迁移（每 app `0001_initial`，必要时 `0002_initial`），表结构与 4.2.5 逐行等价 | [升级 5.0](upgrade-5.0.md) |
+| 第五轮（2026-10-29） | 全部业务 app 再次重建为全新 `0001/0002` 基线，不保留历史迁移与数据兼容 | 本次变更 |
 
 重建后，旧版库的 `django_migrations` 记录与当前代码链**不再对应**（记录名不存在于
 代码中，或同名迁移的内容已变化导致表结构漂移）——直接执行 `migrate` 会造成迁移状态
@@ -31,6 +34,9 @@
 §七 回灌处置——**不要**按版本号自行判断「版本够了就能原地升级」。
 
 ## 二、支持矩阵（先判断你的库属于哪一档）
+
+> **2026-10-29 新基线**：下表是 5.0 历史口径，**仅「本次基线创建的全新库」适用**；
+> 4.x / 5.0.x 既有库一律清库重建 + 回灌（§五、§七），不再承诺原地升级。
 
 | 库的来源 | `upgrade_check` 结论 | 处置 |
 |----------|----------------------|------|
@@ -67,11 +73,15 @@ python manage.py upgrade_ledger --apply  # 认领账本（写迁移记录，不�
 python manage.py legacy_schema_report --dsn "postgresql://..." --tag v4.2.5 --plan
 # 原地升级（默认 dry-run；--apply 执行结构对齐 + 引用重指 + 账本重写）
 python manage.py legacy_align --dsn "postgresql://..." --tag v4.2.5 [--apply]
-python manage.py legacy_align --probe [--tag v4.2.5]   # 三态退出码：0 需要 / 1 已一致 / 2 阻断 / 3 无法判定
+python manage.py legacy_align --probe [--tag v4.2.5]   # 四态退出码：0 需要 / 1 已一致 / 2 阻断 / 3 无法判定
+# 安装器消费 `inplace-needed` / `inplace-none` / `inplace-blocked` / `inplace-unknown` 标记行，
+# 不只看退出码：目标镜像没有该命令时 manage.py 以 1 退出，与「已一致」同码。
 # 二开 app 的旧引用改写（FK 目标 / 依赖节点），默认只出 diff
 python manage.py legacy_rewrite_app_refs --app-path ../my_app --tag v4.2.5 [--apply]
-# 一键（安装器 v5.0.1+）：判定 → 预演 → 确认 → 执行 → 复检 → 账本 → migrate → post_upgrade
-cd /opt/xa-installer-5x && INPLACE_ALIGN=1 ./xadmin.sh upgrade 5.0.1
+# 一键（安装器 + 含原地升级能力的目标镜像）：判定 → 预演 → 确认 → 执行 → 复检 → 账本 → migrate → post_upgrade
+cd /opt/xa-installer-5x && INPLACE_ALIGN=1 ./xadmin.sh upgrade <目标版本>
+# 注意：5.0.1 及更早镜像不含 legacy_align，探询会判为「无法判定」并降级为标准路径；
+# 切分前旧库请升级到 5.0.2+（或按 §五 / §七 清库重建 + 回灌）。
 # 旧结构样本库（验证靶）：用历史 tag 的迁移真实建库，可灌样本数据
 python ops/legacy_sample_db.py --tag v4.2.5 --dsn "postgresql://.../xadmin_legacy_sample" --with-data
 ```

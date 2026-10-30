@@ -10,7 +10,7 @@ from urllib.parse import quote
 import pytest
 from django.conf import settings
 
-from system.utils.platform import legacy_schema
+from ops.legacy import schema as legacy_schema
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SAMPLE_SCRIPT = REPO_ROOT / "ops" / "legacy_sample_db.py"

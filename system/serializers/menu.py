@@ -4,14 +4,16 @@
 # filename : menu
 # author : ly_13
 # date : 8/10/2024
+import re
 from typing import Any
+from urllib.parse import unquote, urlsplit
 
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.core.response.validation import ActiveUniqueValidationMixin
 from common.core.serializers import BaseModelSerializer
-from common.core.validation import ActiveUniqueValidationMixin
 from common.utils import get_logger
 from system.models import Menu, MenuMeta
 
@@ -25,6 +27,46 @@ class MenuMetaSerializer(BaseModelSerializer):
         read_only_fields = ["creator", "modifier", "dept_belong", "id"]
 
     pk = serializers.UUIDField(source="id", read_only=True)
+
+    def validate_icon(self, value: Any) -> Any:
+        """菜单图标只接受图标名或受控 SVG：拒绝事件属性/脚本/外链脚本协议。
+
+        前端 ReIcon 对内联 SVG 走 DOMPurify 兜底；服务端再拦一层，避免
+        非浏览器消费方或未来渲染器直接信任该字段。
+        """
+        icon = str(value or "")
+        if not icon:
+            return value
+        if re.search(r"\son[a-z]+\s*=", icon, re.IGNORECASE) or re.search(
+            r"<script|javascript:|<foreignObject", icon, re.IGNORECASE
+        ):
+            raise serializers.ValidationError(_("Invalid menu icon"))
+        return value
+
+    def validate_frame_url(self, value: Any) -> str:
+        """内嵌页只接受同源相对路径（同源相对路径）。
+
+        绝对地址（`http(s)://`、`//host`）以及 `javascript:` / `data:` 都能把外部页面
+        塞进可信外壳——用户在站内「正常页面」里输入凭据、或借壳触发站内操作。
+        存量数据都是 `/api-docs/swagger/` 这类同源路径，收窄不会影响既有配置。
+        """
+        url = (value or "").strip()
+        if not url:
+            return ""
+        # 反斜杠/控制字符会被浏览器归一为路径分隔符（`/\evil.com` → 外站），
+        # 百分号编码的同形串同样拒绝——解码后再检查，最多展开三层编码
+        decoded = url
+        for _depth in range(3):
+            next_value = unquote(decoded)
+            if next_value == decoded:
+                break
+            decoded = next_value
+        if "\\" in decoded or any(ord(char) < 0x20 or ord(char) == 0x7F for char in decoded):
+            raise serializers.ValidationError(_("Iframe URL must be a same-origin path starting with /"))
+        parts = urlsplit(url)
+        if parts.scheme or parts.netloc or not decoded.startswith("/") or decoded.startswith("//"):
+            raise serializers.ValidationError(_("Iframe URL must be a same-origin path starting with /"))
+        return url
 
 
 class MenuSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
@@ -51,6 +93,17 @@ class MenuSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
             "parent": {"attrs": ["pk", "name"], "allow_null": True, "required": False},
             "model": {"attrs": ["pk", "name", "label"], "allow_null": True, "required": False},
         }
+
+    def validate_parent(self, value: Any) -> Any:
+        """拒绝把菜单挂到自身或自己的后代下（parent 成环会让整棵子树消失）。"""
+        if value is None or self.instance is None:
+            return value
+        current = value
+        while current is not None:
+            if current.pk == self.instance.pk:
+                raise serializers.ValidationError(_("A menu cannot be its own parent or descendant"))
+            current = current.parent
+        return value
 
     # name 的 DB 唯一约束已改为"未删除数据"条件约束（见 Menu.Meta.constraints），
     # 显式校验活跃菜单唯一，保证重复时返回 400 而非数据库 IntegrityError

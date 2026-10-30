@@ -4,6 +4,7 @@
 # filename : modelfield
 # author : ly_13
 # date : 1/5/2024
+import uuid
 from typing import Any
 
 from django.apps import apps
@@ -14,16 +15,24 @@ from drf_spectacular.plumbing import build_array_type, build_basic_type, build_o
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
+from rest_framework.viewsets import GenericViewSet
 
-from common.base.utils import get_choices_dict
+from common.base.crypto import get_choices_dict
 from common.core.filter import BaseFilterSet
-from common.core.modelset import ImportExportDataAction, ListDeleteModelSet
+from common.core.modelset import (
+    DetailAction,
+    ListAction,
+    OnlyExportDataAction,
+    SearchColumnsAction,
+    SearchFieldsAction,
+)
+from common.core.modelset.base import BaseViewSet
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import ModelLabelField
-from system.serializers.field import ModelLabelFieldImportSerializer, ModelLabelFieldSerializer
+from system.serializers.field import ModelLabelFieldSerializer
 from system.services.modelfield import (
     get_extra_field_lookups,
     get_field_lookup_info,
@@ -47,6 +56,11 @@ class ModelLabelFieldFilter(BaseFilterSet):
     def get_parent(self, queryset: Any, name: Any, value: Any) -> Any:
         if value == "0":
             return queryset.filter(parent=None)
+        # 兼容两种入参：父级主键（UUID 精确）与父级名称（模糊搜索）
+        try:
+            uuid.UUID(str(value))
+        except (ValueError, AttributeError, TypeError):
+            return queryset.filter(parent__name__icontains=value)
         return queryset.filter(parent__id=value)
 
     class Meta:
@@ -54,24 +68,30 @@ class ModelLabelFieldFilter(BaseFilterSet):
         fields = ["pk", "name", "label", "parent", "field_type", "created_time"]
 
 
-class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
-    """模型字段。
+class ModelLabelFieldViewSet(
+    BaseViewSet,
+    # OnlyExportDataAction 继承 ListAction：必须排在 ListAction 之前，否则 MRO 冲突
+    OnlyExportDataAction,
+    ListAction,
+    DetailAction,
+    SearchFieldsAction,
+    SearchColumnsAction,
+    GenericViewSet,
+):
+    """模型字段
 
-    导入导出与「展示序列化器全字段 read_only + 页面关闭行编辑」并存的口径说明：
-    保留 ImportExportDataAction 是为与全站模型集能力对齐。导出用于字段元数据
-    落档/对账；导入不是空转——import 动作经按 action 取序列化器的机制命中独立的
-    ModelLabelFieldImportSerializer（未设 read_only，可写 name/label/parent/field_type，
-    pk 与审计时间字段由框架自动只读），同步导入与异步任务重放（重放侧绑
-    action=import_data）均走该序列化器，是与 sync 动作（按模型注册表自动装配）
-    互补的手工批量维护入口（如跨环境迁移字段标签树）。展示序列化器全只读使
-    视图自带的 create/update 端点无有效写入字段；前端字段管理页仅注册 sync
-    权限码，RePlusPage 因此不渲染导入导出按钮，导入导出当前只有直连 API 入口。
+    只读台账：列表 / 详情 / 导出，**不提供** create / update / delete / import。
+    历史上继承 ImportExportDataAction（自带 Create/Update 动作）时，展示序列化器
+    虽全字段只读，空表单 POST 仍会落到 Django 默认值，在字段注册表里生成
+    ``name='' label=''`` 的空行（污染字段树与权限白名单）。删除同样关闭：批量删除
+    会把字段从所有角色的字段权限白名单里连带抹掉（M2M 级联），而页面没有任何影响面
+    提示。字段的维护入口只有两条且都不经过本视图的写动作：``sync``（按模型注册表
+    自动装配，含过期行修剪）与 ``sync_field_permissions``（字段树 + 白名单）。
     """
 
     queryset = ModelLabelField.objects.all()
     serializer_class = ModelLabelFieldSerializer
     pagination_class = DynamicPageNumber(1000)
-    import_data_serializer_class = ModelLabelFieldImportSerializer
     ordering_fields = ["created_time", "updated_time"]
     filterset_class = ModelLabelFieldFilter
 
@@ -124,25 +144,35 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
         """
         table = request.query_params.get("table")
         field = request.query_params.get("field")
-        if table and field:
-            if table == LOOKUPS_USER_TABLE_WILDCARD:
-                table = "identity.userinfo"
-            obj = (
-                self.filter_queryset(self.get_queryset())
-                .filter(name=field, parent__name=table, parent__parent=None)
-                .first()
+        if not (table and field):
+            return ApiResponse(code=1001, detail=_("No lookups available for the field"))
+        if table == LOOKUPS_USER_TABLE_WILDCARD:
+            table = "identity.userinfo"
+        obj = (
+            self.filter_queryset(self.get_queryset())
+            .filter(
+                name=field,
+                parent__name=table,
+                parent__parent=None,
+                # 只允许数据权限注册表中的模型根节点，避免借 lookups 枚举任意
+                # 已注册模型（含未授权业务模型）的字段与关联关系
+                parent__field_type=ModelLabelField.FieldChoices.DATA,
             )
-            if obj:
-                try:
-                    mt = apps.get_model(table)
-                    mf = mt._meta.get_field(field) if mt else None
-                except (LookupError, FieldDoesNotExist):
-                    # 未注册模型 / 字段名不存在：按无可用匹配符处理，不抛 500
-                    mf = None
-                if mf:
-                    lookups = list(mf.get_class_lookups().keys()) + get_extra_field_lookups(mf)
-                    return ApiResponse(data=get_field_lookup_info(lookups), field_meta=get_field_meta(mf))
-        return ApiResponse(code=1001, detail=_("No lookups available for the field"))
+            .first()
+        )
+        if obj:
+            try:
+                mt = apps.get_model(table)
+                mf = mt._meta.get_field(field) if mt else None
+            except (LookupError, FieldDoesNotExist):
+                # 未注册模型 / 字段名不存在：按无可用匹配符处理，不抛 500
+                mf = None
+            if mf:
+                lookups = list(mf.get_class_lookups().keys()) + get_extra_field_lookups(mf)
+                return ApiResponse(data=get_field_lookup_info(lookups), field_meta=get_field_meta(mf))
+        # 字段未同步/已下线：返回空候选（前端展示「无匹配符」），
+        # 不再用 1001 让消费方只能静默吞掉
+        return ApiResponse(data=[], field_meta=None)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

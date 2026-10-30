@@ -9,7 +9,8 @@
 4. 语言包编译（locale/*/LC_MESSAGES/*.mo 缺失或过期 → 界面回退英文）；
 5. 权限点缺口（代码路由 ↔ 库内权限点，非超管 403 的根因）；
 6. 内置种子（平台层 ``loadjson/`` + 各应用 ``seeds/``：清单/归属/引用，未注册应用告警）；
-7. 模块裁剪配置（config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE 有效性）；
+7. 模块裁剪配置（config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE 有效性，
+   含停用模块的周期任务条目残留——重启后由启动期对账自动清理）；
 8. 前端契约镜像（contract/schema ↔ docs/schema；单仓检出自动跳过）；
 9. 前后端版本一致性（server/const.py ↔ xadmin-client/package.json；单仓检出自动跳过）。
 
@@ -29,10 +30,15 @@ from typing import Any
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from system.utils.platform.captcha_doctor import captcha_risk_findings
+
 PASS = "✅"
 WARN = "⚠️"
 FAIL = "❌"
 DETAIL_LIMIT = 8
+# 官方示例 app：按需注册（XADMIN_APPS），未注册时其 seeds 被忽略是预期行为，
+# 不在 doctor 里报「种子写了但没生效」的告警（二开 app 仍按未注册告警）。
+OPTIONAL_UNREGISTERED_SEED_APPS = {"demo"}
 # 探针缓存键：仅本文件使用（缓存键审计门禁按「单文件前缀」判定）
 CACHE_PROBE_KEY = "xadmin_doctor_probe"
 
@@ -60,6 +66,7 @@ class Command(BaseCommand):
             self._check_permissions()
         self._check_seeds()
         self._check_modules()
+        self._check_captcha_risk()
         self._check_ai_declarations()
         self._check_frontend_contract()
         self._check_version_sync()
@@ -172,7 +179,10 @@ class Command(BaseCommand):
                 return
             from system.services import permission_sync as sync
 
-            gaps = sync.scan_permission_gaps()
+            routes = sync.build_route_index()
+            perms = sync.load_permission_menus()
+            gaps = sync.scan_gaps(routes, perms)
+            orphans, duplicates, _exempted, _known = sync.audit_permission_menus(routes, perms)
             if gaps:
                 self._report(
                     WARN,
@@ -184,7 +194,25 @@ class Command(BaseCommand):
                     self.stdout.write(f"        · {method:<6s} {route.url}")
                 if len(gaps) > DETAIL_LIMIT:
                     self.stdout.write(f"        · ……其余 {len(gaps) - DETAIL_LIMIT} 条略")
-            else:
+            if orphans:
+                self._report(
+                    WARN,
+                    "权限点",
+                    f"检测到 {len(orphans)} 个库内孤儿权限点（种子已无对应端点）",
+                    "python manage.py sync_menu_permissions --prune（建议先加 --dry-run 核对）",
+                )
+                for perm in orphans[:DETAIL_LIMIT]:
+                    self.stdout.write(f"        · {perm.name} | {perm.path} | {perm.method or '-'}")
+                if len(orphans) > DETAIL_LIMIT:
+                    self.stdout.write(f"        · ……其余 {len(orphans) - DETAIL_LIMIT} 条略")
+            if duplicates:
+                self._report(
+                    WARN,
+                    "权限点",
+                    f"检测到 {len(duplicates)} 个未登记的重复权限点（同 path+method）",
+                    "确认是否为页签级独立权限位；是则登记 AUDIT_KNOWN_DUPLICATES，否则清理",
+                )
+            if not gaps and not orphans and not duplicates:
                 self._report(PASS, "权限点", "代码路由与库内权限点一致")
         except Exception as exc:
             self._report(WARN, "权限点", f"扫描失败（跳过）：{exc}")
@@ -247,6 +275,8 @@ class Command(BaseCommand):
         for candidate in candidates:
             if candidate.name in registered or candidate.name.startswith((".", "_")):
                 continue
+            if candidate.name in OPTIONAL_UNREGISTERED_SEED_APPS:
+                continue
             if (candidate / "seeds" / "manifest.json").is_file():
                 ignored.append(candidate.name)
         return ignored
@@ -273,12 +303,84 @@ class Command(BaseCommand):
                 )
             else:
                 self._report(PASS, "模块裁剪", detail)
+            self._check_module_periodic_tasks()
         except Exception as exc:
             self._report(
                 FAIL,
                 "模块裁剪",
                 f"配置非法：{exc}",
                 "检查 config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE",
+            )
+
+    def _check_module_periodic_tasks(self) -> None:
+        """任务层切片自检：停用模块的周期任务不应仍有启用条目。
+
+        注册期由 ``create_or_update_registered_periodic_tasks`` 跳过停用模块并清理
+        历史条目——本检查抓的是「改了配置还没重启」的窗口期残留，只提示不判失败。
+        """
+
+        from common.celery.decorator import get_register_period_tasks
+        from common.core.modules import resolve_modules
+        from task.services.periodic import ensure_tasks_registered
+
+        try:
+            from django_celery_beat.models import PeriodicTask
+        except ImportError:  # pragma: no cover - beat 未安装
+            return
+        disabled = resolve_modules().disabled
+        if not disabled:
+            return
+        ensure_tasks_registered()
+        disabled_paths = {
+            detail["task"]
+            for entry in get_register_period_tasks()
+            for _name, detail in entry.items()
+            if detail.get("module") in disabled
+        }
+        if not disabled_paths:
+            return
+        stale = list(
+            PeriodicTask.objects.filter(enabled=True, task__in=disabled_paths).values_list("name", flat=True)[
+                :DETAIL_LIMIT
+            ]
+        )
+        if stale:
+            self._report(
+                WARN,
+                "模块裁剪",
+                f"停用模块的周期任务仍启用：{'、'.join(stale)}",
+                "重启进程（启动期对账会自动清理重建周期任务）",
+            )
+
+    def _check_captcha_risk(self) -> None:
+        """验证码风险档：反代信任、网段兜底与影子期样本检查。"""
+        mode = str(getattr(settings, "CAPTCHA_RISK_MODE", "enforce") or "enforce").strip().lower()
+        whitelist = list(getattr(settings, "SECURITY_LOGIN_IP_WHITE_LIST", []) or [])
+        trust_private = bool(getattr(settings, "CAPTCHA_RISK_TRUST_PRIVATE_NETWORKS", True))
+        trusted_proxies = list(getattr(settings, "TRUSTED_PROXY_IPS", []) or [])
+        samples = days = 0
+        if mode == "enforce":
+            try:
+                from captcha.models import CaptchaLog
+
+                shadow = CaptchaLog.objects.filter(mode="shadow")
+                samples, days = shadow.count(), shadow.values("ts__date").distinct().count()
+            except Exception:  # noqa: BLE001 数据库不可用时由数据库自检项报告
+                pass
+        findings = captcha_risk_findings(
+            mode=mode,
+            whitelist=whitelist,
+            trust_private=trust_private,
+            trusted_proxies=trusted_proxies,
+            samples=samples,
+            days=days,
+        )
+        for item in findings:
+            self._report(
+                PASS if item["level"] == "pass" else WARN,
+                item["name"],
+                item["detail"],
+                item.get("fix"),
             )
 
     def _check_ai_declarations(self) -> None:
@@ -290,8 +392,8 @@ class Command(BaseCommand):
         """
         from django.urls import Resolver404, resolve
 
-        from ai.utils.ai_api_params import PATH_PLACEHOLDER, build_action_url
-        from ai.utils.ai_registry import action_specs
+        from ai.services.actions.ai_api_params import PATH_PLACEHOLDER, build_action_url
+        from ai.services.actions.ai_registry import action_specs
 
         checked, broken = 0, []
         try:
@@ -327,7 +429,7 @@ class Command(BaseCommand):
                 FAIL,
                 "AI 动作声明",
                 f"{len(broken)} 条声明对不上路由：{broken[:3]}",
-                "修正所属应用 ai_declarations.py 的声明 path（口径见 ai/utils/ai_api_actions.py）",
+                "修正所属应用 ai_declarations.py 的声明 path（口径见 ai/services/actions/ai_api_actions.py）",
             )
         elif checked:
             self._report(PASS, "AI 动作声明", f"{checked} 条声明路径可解析（动作 {len(specs)} 个）")

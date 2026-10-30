@@ -1,8 +1,7 @@
 # 权限体系设计（API / 数据 / 字段 + 应用级授权）
 
 > 适用版本：xadmin-server 5.0.0+（T2.6 梳理，2026-09-05；2026-09 增补第四道「应用级授权」）
-> 本文是权限体系的**整体设计文档**；操作教程见 [data-permission.md](data-permission.md)
-> 与 [field-permission.md](field-permission.md)。
+> 本文是权限体系的**整体设计文档**；原独立操作教程已清理，数据 / 字段权限的配置与排障以本文为准。
 
 ## 一、总览
 
@@ -48,12 +47,17 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 3. **特例重定向**：
     - `/search-columns` 与所属资源共享 list 权限（元数据接口不单独授权）；
     - `/import-data`、`/export-data` 在菜单**未绑定模型**时，回退匹配去掉后缀的 list / create 菜单。
+4. **同端点双方法回退**：一个 `@action(methods=["get", "post"])` 的 handler 在权限点生成器里
+   只产出一个权限码（如 `members:ChatRoom`），但运行时按 `(method, path)` 取权限。当前方法
+   没有独立权限点时，按视图 `action_map` 回退到**同 handler 兄弟方法**的权限点——只认同尾部
+   路径（`/members$`），不做前缀放宽（见 `_shared_method_menu_pk`）。新增此类端点无需登记；
+   `system/services/permission_sync/constants.py::SHARED_METHOD_PATHS` 只服务扫描器的缺口口径。
 
 ### 2.3 关键行为
 
 - **白名单**：`settings.PERMISSION_WHITE_URL`（正则 → 方法集合），命中则完全跳过权限。
   - 命名提示：`PERMISSION_WHITE_REURL` 是各业务 app 的 `config.py` 导出的扩展变量（形如
-    `PERMISSION_WHITE_REURL = [("^/api/demo/", ["GET", "POST"])]`），由 `packages/xadmin-common/common/core/utils.py`
+    `PERMISSION_WHITE_REURL = [("^/api/demo/", ["GET", "POST"])]`），由 `packages/xadmin-common/common/core/url_inventory.py`
     的 `auto_register_app_url` 在注册路由时合并进 `settings.PERMISSION_WHITE_URL`——运行时真正直读的
     只有后者。
 - **fail-closed**：权限缓存或 DB 查询抛异常时返回 403，绝不放行（PERF-01 修复项）。
@@ -156,19 +160,45 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
 ```
 
 - `get_user_field_queryset(user, menu)`（缓存 10s）：汇总该用户在当前菜单下的字段授权，产出 `{模型名: {字段名集合}}`。
-- `BaseModelSerializer` 在实例化时按 `request.fields` 保留/剔除字段，未配置字段权限的用户输出为空集（需显式授权，见
-  field-permission.md）。
+- `BaseModelSerializer` 在实例化时按 `request.fields` 保留/剔除字段，未配置字段权限的用户输出为空集（需显式授权）。
 - 跳过条件：超管、白名单 URL、`PERMISSION_FIELD_ENABLED=False`（`ignore_field_permission`）。
 - 单个字段可通过 `ignore_field_permission=True`（extra_kwargs）豁免，如文件回显字段。
+- **异步任务链同源**：导入任务不经过视图 dispatch，`task_request.bind_view_task_context`
+  在绑定视图上下文后复用 `IsAuthenticated.has_permission` 装载 `request.fields`
+  （契约第 6 项）。缺少这一步时非超管的 serializer 字段白名单 fail-closed 为空集，
+  逐行 `validated_data={}` 导致异步导入整体不可用；权限在任务执行期被收回时任务
+  直接失败（fail-closed），不退化为静默空导入。
 
 ### 4.2 与 search-columns 的联动
 
 元数据接口（search-columns）复用同一套字段权限，前端表单/表格列随用户权限动态收敛——**列隐藏是服务端裁剪的结果，不是前端遮挡
 **。
 
+### 4.3 数据集执行链路
+
+数据集执行没有单一菜单上下文，字段权限按「角色在所有菜单下的该模型字段授权并集」生效，
+并与数据集 `columns` 求交集。数据集通过 `field_permission_mode` 选择无配置时的语义：
+
+- `inherit`（个人数据集、存量共享数据集默认）：角色没有任何该模型字段授权时不额外裁剪；
+- `strict`（新建/切换为共享数据集默认）：无授权即空结果，`execute` / `aggregate` / `count_only`
+  与请求级 `filters` 全部 fail-closed；
+- 迁移前运行 `python manage.py dataset_field_permission_audit`，列出有共享数据集执行权限、
+  但未配置字段权限的角色；`--fail` 可用于发布门禁。
+
+**值级脱敏（DataMaskRule）同样在数据集执行链生效**：字段权限（能否看到该列）与值级
+脱敏（看到的是否原文）是两层独立控制，`execute_dataset` / `aggregate_dataset` 在
+ORM `values()` 直出后逐行套用 `common.core.mask.apply_output_mask`（与列表/搜索同源），
+REST、定时报表 xlsx、仪表盘/大屏 WS 推送共用该内核，不存在「列表已掩码、数据集仍原文」
+的旁路。聚合口径：
+
+- 分组字段（含趋势桶）按字段规则掩码后再输出 `name` / `raw`（下钻过滤不能反推原值）；
+- `sum` / `avg` 的取值字段若对当前浏览者命中掩码规则，直接 fail-closed——
+  聚合结果无法掩码，继续执行等于泄露原值分布；`count` 不受影响；
+- 豁免口径与序列化器一致（超管 / `?mask=false` + 更新权限 / 无规则）。
+
 ## 五、缓存与失效
 
-### 5.1 缓存 key 一览（`packages/xadmin-common/common/base/magic.py`）
+### 5.1 缓存 key 一览（`packages/xadmin-common/common/decorators/cache.py`）
 
 | 数据                  | key 形态                                        | TTL  |
 |---------------------|-----------------------------------------------|------|
@@ -196,7 +226,7 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
 | 改了角色/菜单权限未生效 | 确认请求经 API 发起（信号已挂 `m2m_changed`）；若绕过 ORM 直改，触发 `system.signal_handler.clean_cache_handler` 或调 `MagicCacheData.invalid_caches` |
 | 列表有数据但详情 400/403 | 数据权限按「显式 action 覆盖 + list 缺省回退」：1) 若 detail 配了显式规则，detail 只认它，可能比 list 更窄（预期行为）；2) 若未配 detail，检查同资源 `list` 权限点是否绑定了授权；3) 显式规则只针对其它模型时视为未配置，仍回退 list |
 | 字段输出比预期少     | 1) `request.fields` 是否被 FieldPermission 收敛；2) 字段所在模型是否在 `ModelLabelField` 树中正确挂载；3) 前端传参字段与后端字段名大小写                           |
-| 列表空集但用户确有授权 | 1) 跑 `python manage.py audit_data_permission_rules`（非法规则 + 不生效提示：未绑定 / 主管部门规则无主管 / 引用对象已删除）；2) 数据权限页「试算」按目标用户实跑过滤，看实际生效授权与命中（排障口径见 [data-permission.md](data-permission.md) 排障节） |
+| 列表空集但用户确有授权 | 1) 跑 `python manage.py audit_data_permission_rules`（非法规则 + 不生效提示：未绑定 / 主管部门规则无主管 / 引用对象已删除）；2) 数据权限页「试算」按目标用户实跑过滤，看实际生效授权与命中（排障口径见本节 FAQ；原教程已清理） |
 | 导入/导出 403    | 未绑定模型的菜单回退到 list/create 权限——检查菜单的「绑定模型」配置                                                                                     |
 
 ### 6.2 Shell 验证片段
@@ -226,6 +256,9 @@ user.rules.all()  # 用户直接挂载的数据权限
 | API 权限 fail-closed / 白名单 | `tests/unit/common/test_core_permission.py`                                      |
 | 数据权限 16 种规则过滤            | `tests/unit/common/test_data_permission_filter.py`、`test_dept_tree_cache.py`     |
 | 字段权限裁剪                   | `tests/unit/common/test_serializer_field_permission.py`                          |
+| 任务链字段权限契约（异步导入）          | `tests/unit/system/test_import_export_execution_context.py`                      |
+| 数据集执行链值级脱敏              | `tests/integration/dataset/test_dataset_output_mask.py`                          |
+| 副作用 GET 清单门禁              | `tests/unit/common/test_side_effect_get_actions.py`                              |
 | 三层联动端到端（越权验证）            | `tests/integration/demo/test_book_viewset.py::TestBookDataPermissionIntegration` |
 
 ## 八、已知限制与设计取舍
@@ -233,3 +266,7 @@ user.rules.all()  # 用户直接挂载的数据权限
 - 菜单权限经角色控制后**不再**叠加数据权限过滤（避免双重配置，见 `get_user_menu_queryset` 注释）——给角色配数据权限即可，无需两处都配。
 - `get_user_permission` 缓存 24h 是性能取舍，正确性由信号失效保证；若新增绕过 ORM 的写路径，必须补信号或手动失效。
 - `request.fields` 由权限类 `IsAuthenticated._load_field_permission` 注入（非 DRF 中间件），非 DRF 权限类场景（WebSocket 等）需自行处理字段权限。
+- **Cookie 承载 JWT 的残余风险面**：无感刷新与 WS/SSE 认证需要 Cookie 通道，SameSite=Lax
+  已封住跨站 POST；剩余理论面是「名为 GET、实际改状态」的 action。全仓当前无此类端点，
+  由 `tests/unit/common/test_side_effect_get_actions.py` 做 AST 清单门禁：新增副作用 GET
+  必须改 POST，或在白名单登记「为何不能改 POST + Content-Type/自定义头收紧」的理由。

@@ -49,6 +49,7 @@ __all__ = [
     "check_state_cookie",
     "clear_state_cookie",
     "consume_bind_state",
+    "peek_bind_state",
     "consume_nonce",
     "consume_state",
     "exchange_code",
@@ -110,8 +111,12 @@ def get_providers(enabled_only: bool = False) -> list[dict[str, Any]]:
 
     flavor 预设合并优先级：显式配置 > flavor 官方端点预设 > 通用默认值
     （IM flavor 管理员只需填应用三元组）。
+
+    「配置完整」= flavor 必填键（FLAVOR_REQUIRED_KEYS，通用 oauth2 兜底
+    key/name/client_id/client_secret）全部非空：缺 client_secret 等必填项的
+    provider 授权流程必然失败，不再下发到登录页（避免「显示入口但点了就失败」）。
     """
-    from identity.utils.oauth_flavors import FLAVOR_PRESETS
+    from identity.utils.oauth_flavors import FLAVOR_PRESETS, FLAVOR_REQUIRED_KEYS
 
     providers = []
     for item in _config_providers():
@@ -119,8 +124,10 @@ def get_providers(enabled_only: bool = False) -> list[dict[str, Any]]:
             continue
         flavor = item.get("flavor") or "oauth2"
         provider = {**OPTIONAL_DEFAULTS, **FLAVOR_PRESETS.get(flavor, {}), **item, "flavor": flavor}
-        if enabled_only and not (provider.get("enabled") and provider.get("client_id")):
-            continue
+        if enabled_only:
+            required = FLAVOR_REQUIRED_KEYS.get(flavor, ("key", "name", "client_id", "client_secret"))
+            if not provider.get("enabled") or not all(provider.get(key) for key in required):
+                continue
         providers.append(provider)
     return providers
 
@@ -143,7 +150,12 @@ def validate_providers(value: Any) -> list[dict[str, Any]]:
     loopback 联调例外），IP 字面量按归属校验拒绝私网 / link-local / 元数据地址；
     域名写入侧不解析（内网 IdP 可能仅对服务端 DNS 可见），归属校验留到发送侧。
     """
-    from common.utils.outbound import OutboundBlocked, outbound_allowed_hosts, validate_outbound_config_url
+    from common.utils.outbound import (
+        OutboundBlocked,
+        loopback_allowed,
+        outbound_allowed_hosts,
+        validate_outbound_config_url,
+    )
     from identity.utils.oauth_flavors import FLAVOR_PRESETS, FLAVOR_REQUIRED_KEYS
 
     if value in (None, ""):
@@ -176,6 +188,7 @@ def validate_providers(value: Any) -> list[dict[str, Any]]:
                     url,
                     allowed_hosts=outbound_allowed_hosts(),
                     allow_http_whitelist=False,
+                    allow_loopback=loopback_allowed(),
                     scheme_message=_("OAuth provider url must use https: {}").format(url_key),
                 )
             except OutboundBlocked as exc:
@@ -238,6 +251,14 @@ def issue_bind_state(provider_key: str, user_pk: Any) -> str:
         OAUTH_STATE_TTL,
     )
     return state
+
+
+def peek_bind_state(state: str) -> dict[str, Any] | None:
+    """只读绑定 state（不删除）：回调先校验登录态，通过后再原子消费。"""
+    if not state:
+        return None
+    payload = cache.get(BIND_STATE_CACHE_KEY.format(state=state))
+    return payload if isinstance(payload, dict) else None
 
 
 def consume_bind_state(state: str) -> dict[str, Any] | None:
@@ -328,13 +349,13 @@ def _pinned_request(method: str, url: str, **kwargs: Any) -> Any:
     """生产路径出站请求：与 Webhook / AI / MCP 同口径走 ``pinned_request``——
     发送侧严格校验归属（私网 / 环回 / link-local 拒绝，``OUTBOUND_ALLOWED_HOSTS``
     放行）并把连接固定为已校验 IP，消除 DNS rebinding 窗口；flavor 适配器共用。"""
-    from common.utils.outbound import pinned_request
+    from common.utils.outbound import loopback_allowed, pinned_request
 
     return pinned_request(
         method,
         url,
         allow_private=False,
-        allow_loopback=True,
+        allow_loopback=loopback_allowed(),
         allowed_hosts=_outbound_allowed_hosts(),
         **kwargs,
     )
@@ -429,7 +450,8 @@ def make_unique_username(provider_key: str, subject: str) -> str:
     base = f"{provider_key}_{subject}"[:30]
     username = base
     index = 1
-    while UserInfo.objects.filter(username=username).exists():
+    # 回收站用户名仍占唯一约束：只查活动行会在命中软删账号时建号 500
+    while UserInfo.all_objects.filter(username=username).exists():
         index += 1
         username = f"{base[: 30 - len(str(index))]}_{index}"
     return username

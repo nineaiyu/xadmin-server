@@ -3,13 +3,13 @@
 """身份与访问域的 AI 动作声明（用户 / 角色 / 部门 / 在线会话）。
 
 约定：本文件只做声明，执行一律复用既有业务接口（``api_action`` 声明式动作），
-由 ``ai.utils.ai_registry`` 在首次构建工具目录时自动发现，无需改动 ai 应用。
+由 ``ai.services.actions.ai_registry`` 在首次构建工具目录时自动发现，无需改动 ai 应用。
 写动作的审批口径见 ``ai_api_actions.requires_approval_high_risk``（非超管走 412）。
 """
 
 from django.utils.translation import gettext_lazy as _
 
-from ai.utils.ai_api_actions import IN_QUERY, api_action, requires_approval_high_risk
+from ai.services.actions.ai_api_actions import IN_QUERY, api_action, requires_approval_high_risk
 
 AI_ACTIONS = {
     # ---- 用户 ----
@@ -235,10 +235,8 @@ AI_ACTIONS = {
         label=_("Force a user offline"),
         description=_("Revoke all sessions of one user (server-side token revocation + WebSocket kick)"),
         method="POST",
-        path="/api/identity/online/<pk>/force-logout",
-        params={
-            "pk": {"type": "user", "required": True, "in": "path", "description": "Target user username or nickname"}
-        },
+        path="/api/identity/online/force-logout",
+        params={"user_pk": {"type": "user", "required": True, "in": "body", "description": "Target user pk"}},
     ),
     # ---- 岗位 / 登录策略 / 账号巡检 / 开放平台（只读） ----
     "post.list": api_action(

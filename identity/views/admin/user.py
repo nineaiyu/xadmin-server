@@ -4,9 +4,10 @@
 # filename : user
 # author : ly_13
 # date : 6/16/2023
-import json
+from functools import lru_cache
 from typing import Any
 
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -15,9 +16,8 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from audit.services import OperationLog
 from common.core.approval import ApprovalRequired
-from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend
+from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend, UUIDPkFilter
 from common.core.modelset import (
     BaseModelSet,
     BatchPartialUpdateAction,
@@ -29,7 +29,7 @@ from common.core.permission import IsAuthenticated, user_has_permission
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from identity.models import DeptInfo, Post, UserInfo, UserOAuthBinding
+from identity.models import DeptInfo, Post, UserInfo
 from identity.serializers.user import (
     PASSWORD_DECRYPT_FAILED_MESSAGE,
     ResetPasswordSerializer,
@@ -37,23 +37,28 @@ from identity.serializers.user import (
     is_password_decrypt_failure,
     record_create_password_decrypt_failure,
 )
+from identity.services import user_admin
 from identity.utils import user_invite
-from identity.utils.impersonation import is_impersonating, start_impersonation
-from message.services import send_logout_msg
-from mfa.cache import UserConfirmStateCache
+from identity.utils.impersonation import is_impersonating
 from mfa.confirm import UserConfirmation
 from mfa.const import ConfirmType
-from mfa.services import clear_recovery_codes
-from notifications.message import SiteMessageUtil
-from settings.services import LoginBlockUtil
 from system.services.modelset import ChangeRolePermissionAction, PermissionPreviewAction
 from system.services.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 
 logger = get_logger(__name__)
 
 
-#: 邀请权限点 path（与 loadjson/menumeta.json 同源）：创建即邀请需同时具备该权限
-INVITE_PERMISSION_PATH = "api/identity/user/1/invite"
+@lru_cache(maxsize=1)
+def invite_permission_path() -> str:
+    """邀请权限点 path（伪 pk=1，与种子正则同源）。
+
+    按路由反解派生而非硬编码字符串：路由 url_path 改名时本检查随路由同步，
+    不会像字面量那样与种子正则形状静默脱钩（fail-closed 方向，脱钩表现为
+    邀请被误拦）。本模块在 URLconf 装配期被导入，reverse 不能在导入期执行，
+    故惰性到首次调用。
+    """
+    return str(reverse("identity:user-invite", kwargs={"pk": 1})).lstrip("/")
+
 
 #: 演示角色 code：演示账号的用户可见范围强制收敛到其部门子树（数据权限之外
 #: 的兜底，防止数据权限配置漂移后再次看到真实用户）。
@@ -66,7 +71,8 @@ class UserFilter(TagFilterMixin, BaseFilterSet):
     nickname = filters.CharFilter(field_name="nickname", lookup_expr="icontains")
     phone = filters.CharFilter(field_name="phone", lookup_expr="icontains")
     # 联动：角色列表「用户数」可点击跳转到按角色筛选的用户列表（传角色 pk）
-    role = filters.CharFilter(field_name="roles", lookup_expr="pk")
+    # 非法 UUID 返回 400（CharFilter 直传 ORM 会在求值时抛 500）
+    role = UUIDPkFilter(field_name="roles", lookup_expr="pk")
     # 按岗位（多对多）筛选：多选主键，命中所选任一岗位即返回（空岗位用户不误筛）
     posts = filters.ModelMultipleChoiceFilter(field_name="posts", queryset=Post.objects.all())
 
@@ -114,7 +120,7 @@ class UserViewSet(
     controlled_lookup = True
     extra_filter_class = [TagFilterBackend, ControlledLookupFilterBackend]
 
-    # export_as_zip = True  导出zip压缩包，密码是用户名
+    # export_as_zip = True  导出 zip 压缩包（口令为响应头 X-Export-Zip-Password 中的一次性随机值）
 
     def get_permissions(self) -> Any:
         """删除用户（单删/批量删）与模拟用户为敏感操作，需先通过密码二次确认"""
@@ -132,6 +138,10 @@ class UserViewSet(
         """
 
         queryset = super().get_queryset()
+        if self.action == "batch_destroy":
+            # 批量删除不作用于超管账号：按 get_queryset 分支收口（与 RoleViewSet
+            # 同风格，不靠实例属性遮蔽类属性）；单删由 perform_destroy 给可读错误
+            queryset = queryset.filter(is_superuser=False)
         request = getattr(self, "request", None)
         user = getattr(request, "user", None) if request is not None else None
         if user is None or not user.is_authenticated or user.is_superuser:
@@ -180,7 +190,7 @@ class UserViewSet(
         if user_invite.invite_requested(request.data):
             if not user_invite.mail_channel_configured():
                 return ApiResponse(code=1001, detail=user_invite.INVITE_MAIL_UNAVAILABLE_MESSAGE)
-            if not user_has_permission(request.user, INVITE_PERMISSION_PATH, "POST"):
+            if not user_has_permission(request.user, invite_permission_path(), "POST"):
                 raise PermissionDenied(
                     str(_("You do not have permission to perform the action: {}").format(str(_("Invite activation"))))
                 )
@@ -214,7 +224,6 @@ class UserViewSet(
     @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """批量删除{cls}"""
-        self.queryset = self.queryset.filter(is_superuser=False)
         return super().batch_destroy(request, *args, **kwargs)
 
     @ApprovalRequired()
@@ -223,19 +232,21 @@ class UserViewSet(
         return super().destroy(request, *args, **kwargs)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="reset-password", serializer_class=ResetPasswordSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+        methods=["post"],
+        detail=True,
+        url_path="reset-password",
+        serializer_class=ResetPasswordSerializer,
+        permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
+    )
     def reset_password(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """重置用户密码"""
+        """重置用户密码
+
+        账号接管面，与重置 MFA 同口径：管理员需本人密码二次确认
+        """
         instance = self.get_object()
         self._assert_target_mutable(instance)
-        serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        SiteMessageUtil.notify_success(
-            users=instance,
-            title=_("Password reset successful"),
-            message=_("Your password has been reset by an administrator"),
-        )
+        user_admin.reset_user_password(instance, request)
         return ApiResponse()
 
     @extend_schema(responses=get_default_response_schema(), request=None)
@@ -247,10 +258,10 @@ class UserViewSet(
         """
         instance = self.get_object()
         self._assert_target_mutable(instance)
-        if not user_invite.mail_channel_configured():
-            return ApiResponse(code=1001, detail=user_invite.INVITE_MAIL_UNAVAILABLE_MESSAGE)
-        user_invite.send_invite(instance, request=request)
-        return ApiResponse(detail=_("Invitation sent"))
+        sent, detail = user_admin.invite_user(instance, request)
+        if not sent:
+            return ApiResponse(code=1001, detail=detail)
+        return ApiResponse(detail=detail)
 
     @extend_schema(responses=get_default_response_schema(), request=None)
     @action(methods=["post"], detail=True)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -258,7 +269,7 @@ class UserViewSet(
         """解禁用户"""
         instance = self.get_object()
         self._assert_target_mutable(instance)
-        LoginBlockUtil.unblock_user(instance.username)
+        user_admin.unblock_user(instance)
         return ApiResponse()
 
     @extend_schema(responses=get_default_response_schema(), request=None)
@@ -275,12 +286,7 @@ class UserViewSet(
         """
         instance = self.get_object()
         self._assert_target_mutable(instance)
-        instance.otp_secret_key = ""
-        instance.mfa_level = UserInfo.MFALevelChoices.DISABLED
-        instance.save(update_fields=["otp_secret_key", "mfa_level"])
-        clear_recovery_codes(instance)
-        UserConfirmStateCache(instance).clear()
-        LoginBlockUtil.unblock_user(instance.username)
+        user_admin.reset_user_mfa(instance)
         return ApiResponse(detail=_("The user's MFA has been reset"))
 
     @extend_schema(
@@ -298,8 +304,7 @@ class UserViewSet(
         """强退用户"""
         instance = self.get_object()
         self._assert_target_mutable(instance)
-        channel_names = request.data.get("channel_names", [])
-        send_logout_msg(instance.pk, channel_names)
+        user_admin.logout_user(instance, request.data.get("channel_names", []), operator=request.user)
         return ApiResponse()
 
     @extend_schema(responses=get_default_response_schema(), request=None)
@@ -311,15 +316,10 @@ class UserViewSet(
         """
         if is_impersonating(request):
             return ApiResponse(code=1001, detail=_("You are already impersonating another user, exit first"))
-        target = self.get_object()
-        if target.pk == request.user.pk:
-            return ApiResponse(code=1001, detail=_("Impersonating yourself is not allowed"))
-        if target.is_superuser:
-            return ApiResponse(code=1001, detail=_("Impersonating a super administrator is not allowed"))
-        if not target.is_active:
-            return ApiResponse(code=1001, detail=_("Disabled users cannot be impersonated"))
-        data = start_impersonation(request, target, request.user)
-        return ApiResponse(data=data, detail=_("Now impersonating user {}").format(target.username))
+        ok, detail, data = user_admin.impersonate_user(request, self.get_object())
+        if not ok:
+            return ApiResponse(code=1001, detail=detail)
+        return ApiResponse(data=data, detail=detail)
 
     @extend_schema(
         request=OpenApiRequest(
@@ -349,34 +349,12 @@ class UserViewSet(
         if request.method.upper() != "GET":
             self._assert_target_mutable(user)
         if request.method.upper() == "GET":
-            rows = list(user.oauth_bindings.values("pk", "provider", "subject", "profile", "created_time"))
-            return ApiResponse(data=rows)
+            return ApiResponse(data=user_admin.im_bindings(user))
 
-        provider = (request.data.get("provider") or "").strip()
-        subject = (request.data.get("subject") or "").strip()
-        if not provider or not subject:
-            return ApiResponse(code=1001, detail=_("Provider and subject are required"))
-        conflict = UserOAuthBinding.objects.filter(provider=provider, subject=subject).exclude(user=user).first()
-        if conflict:
-            return ApiResponse(code=1001, detail=_("This identity is already bound to another user"))
-        nickname = (request.data.get("nickname") or "").strip()
-        binding, created = UserOAuthBinding.objects.update_or_create(
-            user=user,
-            provider=provider,
-            defaults={"subject": subject, "profile": {"nickname": nickname, "source": "admin_manual"}},
-        )
-        OperationLog.objects.create(
-            module="IM:binding",
-            object_pk=str(user.pk),
-            path=request.path,
-            changes=json.dumps({"provider": provider, "subject": subject, "created": created}, ensure_ascii=False)[
-                :4096
-            ],
-        )
-        return ApiResponse(
-            data={"pk": str(binding.pk), "created": created},
-            detail=_("IM identity bound") if created else _("IM identity updated"),
-        )
+        data, detail, error = user_admin.bind_im_identity(user, request)
+        if error is not None:
+            return ApiResponse(code=1001, detail=error)
+        return ApiResponse(data=data, detail=detail)
 
     @extend_schema(
         request=OpenApiRequest(
@@ -396,17 +374,7 @@ class UserViewSet(
         """
         user = self.get_object()
         self._assert_target_mutable(user)
-        provider = (request.data.get("provider") or "").strip()
-        binding = user.oauth_bindings.filter(provider=provider).first()
-        if binding is None:
-            return ApiResponse(code=1001, detail=_("Binding not found"))
-        if not UserOAuthBinding.user_has_other_login_method(user, exclude_pk=binding.pk):
-            return ApiResponse(code=1001, detail=_("User would lose the last login method"))
-        binding.delete()
-        OperationLog.objects.create(
-            module="IM:binding",
-            object_pk=str(user.pk),
-            path=request.path,
-            changes=json.dumps({"provider": provider, "action": "unbind"}, ensure_ascii=False)[:4096],
-        )
-        return ApiResponse(detail=_("IM identity unbound"))
+        detail, error = user_admin.unbind_im_identity(user, request)
+        if error is not None:
+            return ApiResponse(code=1001, detail=error)
+        return ApiResponse(detail=detail)

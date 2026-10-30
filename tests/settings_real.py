@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-真环境测试专用配置（全真容器化测试迁移方案，docs/plans/archive/全真容器化测试迁移方案-2026.10.md §3.1）。
+真环境测试专用配置（全真容器化测试迁移方案，docs/plans/全真容器化测试迁移方案-2026.10.md §3.1）。
 
 真实 PostgreSQL 17 + Redis 8 容器全面替换 sqlite/FakeRedis：DATABASES / CACHES /
 CHANNEL_LAYERS 全部指向真实后端（生产同款 backend 与参数），celery 保持 eager +

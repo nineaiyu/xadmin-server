@@ -21,9 +21,9 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 from message import chat as chat_service
-from message.consumers import ChatNotify
 from message.models import ChatMessage
-from message.utils import get_chat_user_group_name, get_public_chat_group_name
+from message.ws.consumers import ChatNotify
+from message.ws.utils import get_chat_user_group_name, get_public_chat_group_name
 
 pytestmark = pytest.mark.django_db
 
@@ -277,7 +277,7 @@ class TestReactionValidation:
 
     def test_max_emoji_keys_enforced(self, ws_layer, alice, monkeypatch):
         # 上限常量经 chat_service 按值导入，需 patch 使用方模块的绑定
-        monkeypatch.setattr("message.chat.REACTION_MAX_EMOJI_KEYS", 2)
+        monkeypatch.setattr("message.chat.reactions.REACTION_MAX_EMOJI_KEYS", 2)
         room = chat_service.get_public_room()
         message, __ = chat_service.create_message(room, alice, "emoji 键上限")
         for emoji in ("👍", "🎉"):
@@ -290,7 +290,7 @@ class TestReactionValidation:
         assert captured == []
 
     def test_max_users_per_emoji_enforced(self, ws_layer, alice, monkeypatch):
-        monkeypatch.setattr("message.chat.REACTION_MAX_USERS_PER_EMOJI", 1)
+        monkeypatch.setattr("message.chat.reactions.REACTION_MAX_USERS_PER_EMOJI", 1)
         room = chat_service.get_public_room()
         message, __ = chat_service.create_message(room, alice, "单 emoji 用户上限")
         chat_service.toggle_reaction(alice, message.pk, "👍", "add")
@@ -311,7 +311,7 @@ class TestReactionRateLimit:
         """回应与消息发送共用每用户每秒限流：超限时回执 1001 且不落库不广播。"""
         from identity.models import UserInfo
 
-        monkeypatch.setattr("message.consumers.CHAT_SEND_LIMIT_PER_SECOND", 1)
+        monkeypatch.setattr("message.ws.consumers.CHAT_SEND_LIMIT_PER_SECOND", 1)
         user = UserInfo.objects.create_user(username="react-rate", password="Test@123456")
         room = chat_service.get_public_room()
         message, __ = chat_service.create_message(room, user, "限流目标")

@@ -1054,15 +1054,6 @@ wheels = [
 ]
 
 [[package]]
-name = "django-ranged-response"
-version = "0.2.0"
-source = { registry = "https://mirrors.huaweicloud.com/repository/pypi/simple" }
-dependencies = [
-    { name = "django" },
-]
-sdist = { url = "https://mirrors.huaweicloud.com/repository/pypi/packages/70/e3/9372fcdca8e9c3205e7979528ccd1a14354a9a24d38efff11c1846ff8bf1/django-ranged-response-0.2.0.tar.gz", hash = "sha256:f71fff352a37316b9bead717fc76e4ddd6c9b99c4680cdf4783b9755af1cf985" }
-
-[[package]]
 name = "django-redis"
 version = "7.0.0"
 source = { registry = "https://mirrors.huaweicloud.com/repository/pypi/simple" }
@@ -3191,7 +3182,6 @@ dependencies = [
     { name = "django-filter" },
     { name = "django-imagekit" },
     { name = "django-proxy" },
-    { name = "django-ranged-response" },
     { name = "django-redis" },
     { name = "djangorestframework" },
     { name = "djangorestframework-simplejwt" },
@@ -3274,7 +3264,6 @@ requires-dist = [
     { name = "django-filter", specifier = "==26.1" },
     { name = "django-imagekit", specifier = "==6.1.0" },
     { name = "django-proxy", specifier = "==1.3.0" },
-    { name = "django-ranged-response", specifier = "==0.2.0" },
     { name = "django-redis", specifier = "==7.0.0" },
     { name = "django-storages", marker = "extra == 'storage'", specifier = ">=1.14" },
     { name = "djangorestframework", specifier = "==3.18.1" },

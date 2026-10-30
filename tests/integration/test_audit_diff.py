@@ -48,6 +48,57 @@ def test_non_whitelisted_model_not_recorded(auth_client, notice, django_capture_
     assert not log.changes
 
 
+def test_batch_update_records_changes(auth_client, role, django_capture_on_commit_callbacks, monkeypatch):
+    """批量更新复用单条审计钩子（批量复用单条审计钩子）：白名单模型的治理字段经 batch-update
+    改动同样落 changes old/new 明细，不得整批绕过审计。"""
+    from common.core.config import SysConfig
+
+    monkeypatch.setattr(
+        type(SysConfig), "AUDIT_DIFF_MODELS", property(lambda self: ["identity.UserRole"]), raising=False
+    )
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.post(
+            "/api/identity/role/batch-update",
+            {"pks": [str(role.pk)], "fields": {"is_active": False}},
+            format="json",
+        )
+    assert resp.data["code"] == 1000, resp.data
+    assert resp.data["data"]["updated"] == 1
+
+    log = OperationLog.objects.filter(path__icontains="role/batch-update", method="POST").latest("id")
+    changes = json.loads(log.changes)
+    # JSON 序列化后的布尔为字符串口径（与单条 update 的 changes 同源）
+    assert changes["is_active"]["old"] in (True, "True")
+    assert changes["is_active"]["new"] in (False, "False")
+
+
+def test_batch_update_merges_changes_for_multiple_rows(
+    auth_client, role, django_capture_on_commit_callbacks, monkeypatch
+):
+    """多行批更新不得互相覆盖：每行 diff 以 `字段@pk` 区分全部保留。"""
+    from common.core.config import SysConfig
+    from identity.models import UserRole
+
+    other = UserRole.objects.create(name="批量审计角色", code="batch-audit-role")
+    monkeypatch.setattr(
+        type(SysConfig), "AUDIT_DIFF_MODELS", property(lambda self: ["identity.UserRole"]), raising=False
+    )
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.post(
+            "/api/identity/role/batch-update",
+            {"pks": [str(role.pk), str(other.pk)], "fields": {"is_active": False}},
+            format="json",
+        )
+    assert resp.data["code"] == 1000, resp.data
+    assert set(resp.data["data"]["success"]) == {str(role.pk), str(other.pk)}
+
+    log = OperationLog.objects.filter(path__icontains="role/batch-update", method="POST").latest("id")
+    changes = json.loads(log.changes)
+    for pk in (str(role.pk), str(other.pk)):
+        assert changes[f"is_active@{pk}"]["new"] in (False, "False")
+    assert "is_active" not in changes
+
+
 def test_default_whitelist_covers_user_management(settings):
     """默认白名单覆盖「用户管理」：它是当前唯一挂「变更历史」入口的页面。
 

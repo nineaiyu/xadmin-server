@@ -19,10 +19,9 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from approval.models.approval import ApprovalRequest
-from approval.utils.approval import can_act
-from common.core.fields import DictChoiceField
+from approval.services.approval import can_act
+from common.core.fields import DictChoiceField, DisplayRelatedField
 from common.core.serializers import BaseModelSerializer
-from task.services import DisplayRelatedField
 
 
 class ApprovalRequestSerializer(BaseModelSerializer):

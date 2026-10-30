@@ -4,14 +4,14 @@
 
 from typing import Any
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from common.core.response.validation import ActiveUniqueValidationMixin
 from common.core.serializers import BaseModelSerializer
-from common.core.validation import ActiveUniqueValidationMixin
 from identity.models import Post
 
 
@@ -72,7 +72,7 @@ class PostSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
 
     # 关联计数声明：列表/详情/导出由 RelationCountMixin 预聚合（成员数），
     # 单对象序列化回退为单次 COUNT
-    relation_count_fields = {"user_count": Count("post_query")}
+    relation_count_fields = {"user_count": Count("post_query", filter=Q(post_query__deleted_at__isnull=True))}
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
 
     @extend_schema_field(serializers.IntegerField)

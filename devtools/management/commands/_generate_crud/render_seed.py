@@ -24,7 +24,10 @@ class RenderSeedMixin:
     def _render_menu_seed(self, ctx: dict[str, Any], parent: Any) -> str:
         # model_label_pk 由 _collect_artifacts 预先解析（后续步骤提示复用）；兜底现场解析
         model_pk = ctx["model_label_pk"] if "model_label_pk" in ctx else self._model_label_pk(ctx["model"])
+        # 页面菜单标题落词条 key（由生成的前端 locale 段提供 zh/en 文案）；
+        # 权限点标题保持「菜单中文名-动作」的可读形态，避免权限树出现长 key
         menu_title = ctx.get("menu_title") or ctx["verbose_name"]
+        page_title_key = f"menus.{ctx['component']}" if ctx.get("use_locale_title") else menu_title
         meta_pk = self._seed_pk(ctx, "meta")
         menu_pk = self._seed_pk(ctx, "menu")
         permissions = list(PERMISSION_ACTIONS)
@@ -32,7 +35,7 @@ class RenderSeedMixin:
             permissions.extend(IMPORT_EXPORT_PERMISSIONS)
         # 页面 meta 的固定字段脚手架来自外部 JSON 模板（键序保真）；标题/图标按本次输入覆盖
         meta_fields = load_json_template("seed_menu_meta.json")
-        meta_fields["title"] = menu_title
+        meta_fields["title"] = page_title_key
         meta_fields["icon"] = ctx.get("menu_icon") or "ep:document"
         entries = [
             {

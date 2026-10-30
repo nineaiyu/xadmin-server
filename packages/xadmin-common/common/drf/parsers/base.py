@@ -113,7 +113,8 @@ class BaseFileParser(BaseParser):
         elif hasattr(field, "to_file_internal_value"):
             value = field.to_file_internal_value(value)
         elif isinstance(field, serializers.BooleanField):
-            value = value.lower() in ["true", "1", "yes"]
+            # XLSX 布尔单元格可能是 bool/None，不能假设字符串
+            value = str(value).strip().lower() in ["true", "1", "yes"] if value is not None else False
         elif isinstance(field, serializers.ChoiceField):
             value = value
         elif isinstance(field, BasePrimaryKeyRelatedField):

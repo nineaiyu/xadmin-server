@@ -1,4 +1,4 @@
-FROM nineaiyu/xadmin-server-base:20261019_103228 AS stage-build
+FROM nineaiyu/xadmin-server-base:20261027_002336 AS stage-build
 ARG VERSION
 
 WORKDIR /data/xadmin-server
@@ -23,6 +23,8 @@ ARG DEPENDENCIES="                    \
         gettext                       \
         curl                          \
         procps                        \
+        flite                         \
+        sox                           \
         libmariadb-dev"
 
 RUN set -ex \

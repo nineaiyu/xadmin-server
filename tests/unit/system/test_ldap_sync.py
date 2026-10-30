@@ -156,7 +156,8 @@ class TestMissingPolicy:
 
     def test_deactivate(self, sync_on, stub_directory):
         user = self._prepare(sync_on)
-        stub_directory["by_base"][PEOPLE_BASE] = []  # 目录侧已消失
+        # 目录仍有其他条目（仅 ghost 消失），missing 策略正常生效
+        stub_directory["by_base"][PEOPLE_BASE] = [user_entry("cn=alive,ou=people,dc=corp,dc=com", "alive")]
         summary = ldap_sync.run_ldap_sync()
         assert summary["deactivated_users"] == 1
         user.refresh_from_db()
@@ -166,7 +167,7 @@ class TestMissingPolicy:
     def test_soft_delete_to_recycle_bin(self, sync_on, stub_directory):
         sync_on.LDAP_SYNC_MISSING_POLICY = "soft_delete"
         user = self._prepare(sync_on)
-        stub_directory["by_base"][PEOPLE_BASE] = []
+        stub_directory["by_base"][PEOPLE_BASE] = [user_entry("cn=alive,ou=people,dc=corp,dc=com", "alive")]
         summary = ldap_sync.run_ldap_sync()
         assert summary["soft_deleted_users"] == 1
         user.refresh_from_db()
@@ -175,10 +176,21 @@ class TestMissingPolicy:
     def test_ignore(self, sync_on, stub_directory):
         sync_on.LDAP_SYNC_MISSING_POLICY = "ignore"
         user = self._prepare(sync_on)
-        stub_directory["by_base"][PEOPLE_BASE] = []
+        stub_directory["by_base"][PEOPLE_BASE] = [user_entry("cn=alive,ou=people,dc=corp,dc=com", "alive")]
         ldap_sync.run_ldap_sync()
         user.refresh_from_db()
         assert user.is_active is True
+
+    def test_empty_directory_skips_missing_policy(self, sync_on, stub_directory):
+        """空目录保护：过滤条件误配返回 0 条时不得批量停用/软删绑定用户。"""
+        user = self._prepare(sync_on)
+        stub_directory["by_base"][PEOPLE_BASE] = []
+        summary = ldap_sync.run_ldap_sync()
+        assert summary["deactivated_users"] == 0
+        assert summary["soft_deleted_users"] == 0
+        user.refresh_from_db()
+        assert user.is_active is True
+        assert user.deleted_at is None
 
     def test_reappear_restores_soft_deleted(self, sync_on, stub_directory):
         """目录重新出现：软删用户自动恢复并重新启用。"""
@@ -229,11 +241,23 @@ class TestDeptSync:
         sync_on.LDAP_DEPT_ENABLED = True
         sync_on.LDAP_DEPT_SEARCH_BASE = DEPT_BASE
         stale = DeptInfo.objects.create(name="旧部门", code="ldap:ou=old,ou=depts,dc=corp,dc=com")
-        stub_directory["by_base"][DEPT_BASE] = []
+        # 目录仍有其他 OU（仅旧部门消失），missing 策略正常生效
+        stub_directory["by_base"][DEPT_BASE] = [ou_entry("ou=new,ou=depts,dc=corp,dc=com", "新部门")]
         summary = ldap_sync.run_ldap_sync()
         assert summary["deactivated_depts"] == 1
         stale.refresh_from_db()
         assert stale.is_active is False
+
+    def test_empty_dept_directory_skips_missing_policy(self, sync_on, stub_directory):
+        """空 OU 目录同样不执行消失清扫：避免过滤误配批量停用部门。"""
+        sync_on.LDAP_DEPT_ENABLED = True
+        sync_on.LDAP_DEPT_SEARCH_BASE = DEPT_BASE
+        stale = DeptInfo.objects.create(name="保留部门", code="ldap:ou=keep,ou=depts,dc=corp,dc=com")
+        stub_directory["by_base"][DEPT_BASE] = []
+        summary = ldap_sync.run_ldap_sync()
+        assert summary["deactivated_depts"] == 0
+        stale.refresh_from_db()
+        assert stale.is_active is True
 
     def test_manual_dept_codes_untouched(self, sync_on, stub_directory):
         """无 ldap: 前缀的手工部门不被同步触碰。"""

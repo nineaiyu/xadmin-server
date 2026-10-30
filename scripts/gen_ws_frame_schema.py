@@ -17,7 +17,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE_DIR))
 
-from message.ws_schema import render  # noqa: E402
+from message.ws.ws_schema import render  # noqa: E402
 
 SCHEMA_PATH = BASE_DIR / "docs" / "schema" / "ws-frame.schema.json"
 

@@ -11,7 +11,7 @@
 | 0 | 认识参照样例 demo.Book | 5 min |
 | 1 | 建 app + 定义模型 | 5 min |
 | 2 | 注册 `XADMIN_APPS` + 迁移 | 3 min |
-| 3 | `generate_crud` 生成四件套 + 前端页面 + 菜单种子 | 5 min |
+| 3 | `generate_crud` 生成四件套 + 前端页面 + 菜单种子 + 前端词条 | 5 min |
 | 4 | 装载菜单种子 + 角色授权 | 7 min |
 | 5 | 验收与自检（doctor） | 5 min |
 
@@ -97,6 +97,7 @@ python manage.py generate_crud crm.Customer             # 落盘
 | 路由 | `crm/urls.py` |
 | 应用配置 | `crm/config.py`（随 `XADMIN_APPS` 自动注入路由） |
 | 前端页面 | `xadmin-client/src/views/crm/customer/index.vue` + `utils/{api.ts,hook.tsx}` |
+| 前端词条 | `xadmin-client/locales/zh-CN.yaml` + `en.yaml`（菜单标题 `menus.<Component>` + 字段 label；按顶层块幂等合并；`--skip-frontend` 时保留中文标题） |
 | 菜单种子 | `crm/seeds/menu.json` + `menumeta.json`（菜单 + 全部权限点，pk 由 uuid5 派生，按主键合并，可重复装载；同目录 `manifest.json` 自动登记，`load_init_json` 会装载） |
 
 补充参数：`--register-app`（自动写入 `XADMIN_APPS` 注册）、`--with-import-export`（加导入导出）、
@@ -162,7 +163,7 @@ python manage.py sync_menu_permissions --update-seed   # 按应用归属回写�
 | ruff check / format | 一次通过（import 按「标准库 → 第三方 → 第一方」分组，新 app 名自动归入第一方） | 生成后可直接提交 |
 | 列表默认排序 | 模型未声明 `Meta.ordering` 时自动生成 `ordering = ["-created_time"]`（无该字段则退回 `-pk`） | 满足 `tests/unit/system/test_viewset_ordering.py` 门禁，分页结果稳定 |
 | 关联字段形态 | `api-search-user`（远程搜索）＋ `format` 展示 | 数据量大时按 cookbook 换形态 |
-| AI 动作声明 | 生成只读动作骨架（写动作在注释中给出注册指引） | 放在应用根即由 `ai.utils.ai_registry` 自动发现，无需改 ai 应用；`--with-module` 时自动标注 `modules` 跟随裁剪；同一应用多模型按生成块合并（重复生成幂等） |
+| AI 动作声明 | 生成只读动作骨架（写动作在注释中给出注册指引） | 放在应用根即由 `ai.services.actions.ai_registry` 自动发现，无需改 ai 应用；`--with-module` 时自动标注 `modules` 跟随裁剪；同一应用多模型按生成块合并（重复生成幂等） |
 | 迁移文件 | `makemigrations` 产物与 ruff 格式略有差异 | 仓库 pre-commit 会自动格式化，无需手工处理 |
 | 批量删除保护 | 生成的 ViewSet 只继承 `BaseModelSet`，不自行覆写批删：基类的 `batch-destroy` 与单删都从 `get_queryset()` 取数，子类对 `get_queryset` 的收口（如内置角色排除，见 `identity/views/admin/role.py`）对两个入口同口径生效 | 生成物无需修补；需要引用保护时按同一 `get_queryset` 收口范式写 |
 | 菜单种子幂等 | pk 由固定 uuid5 命名空间按 `app:model:角色` 派生，重复生成结果一致，重复 `loaddata` 覆盖同一批行不产生新行 | 可放心反复生成与装载 |
@@ -188,7 +189,7 @@ python manage.py sync_menu_permissions --update-seed   # 按应用归属回写�
   `POST <prefix>/batch-destroy` 也需要 method=POST 的独立权限点（权限点 path 带 `$` 精确锚定，
   不覆盖子路径）。不需要批删入口的模块，可在菜单管理停用该权限点或自行收窄授权。
 - **GUI 与 CLI 同源**：管理页代码生成器端点 `system/views/admin/codegen.py` 经适配层
-  `system/utils/platform/codegen_gui.py` 复用同一引擎（`_build_context → _collect_artifacts`，
+  `devtools/services/codegen/gui.py` 复用同一引擎（`_build_context → _collect_artifacts`，
   预览/打包不落盘），字段计划与产物口径一致。
 
 ## 常见问题

@@ -12,18 +12,18 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.request import Request
 
-from common.base.utils import get_choices_dict
+from common.base.crypto import get_choices_dict
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from integrations.sdk.sms.endpoint import BACKENDS
 from settings.models import Setting
 from settings.serializers.sms import AlibabaSMSSettingSerializer, BaseSMSSettingSerializer, SMSSettingSerializer
+from settings.services import build_setting_effective
 from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__name__)
@@ -37,6 +37,10 @@ class SmsSettingViewSet(BaseSettingViewSet):
 
     serializer_class = SMSSettingSerializer
     category = "sms"
+
+    def get_readonly_values(self, values: dict[str, Any]) -> dict[str, Any]:
+        """附加「实际生效状态」诊断(服务开关 + 凭据完整性软提示)。"""
+        return {"effective": build_setting_effective("sms")}
 
     @extend_schema(
         parameters=None,
@@ -62,6 +66,8 @@ class SmsSettingViewSet(BaseSettingViewSet):
 class SmsConfigViewSet(BaseSettingViewSet):
     """短信服务"""
 
+    # 无 ?category= 的直连调用默认按 Alibaba 口径（此前回落 basic → provider not support）
+    category = "alibaba"
     # 字段面按供应商显式收敛：有专属配置项的供应商在 mapper 里给专属序列化器，
     # 未收录的已注册供应商回落短信公共字段面（仅测试手机号），不再错配
     # 基础设置序列化器导致取字段面/校验对不上
@@ -69,6 +75,14 @@ class SmsConfigViewSet(BaseSettingViewSet):
     serializer_class_mapper = {
         "alibaba": AlibabaSMSSettingSerializer,
     }
+    # 已注册供应商（含未收录专属字段面、回落公共字段面的渠道）均可作为 category
+    category_whitelist = frozenset(value for value, _label in BACKENDS.choices)
+
+    def get_serializer_class(self) -> Any:
+        requested = self.request.query_params.get("category")
+        if requested and requested not in {value for value, _label in BACKENDS.choices}:
+            raise ValidationError(_("Unknown SMS provider: {}").format(requested))
+        return super().get_serializer_class()
 
     @property
     def test_code(self) -> str:
@@ -126,18 +140,17 @@ class SmsConfigViewSet(BaseSettingViewSet):
             m = importlib.import_module(f"integrations.sdk.sms.{self.category}", __package__)
             client = m.client(**init_params)
             client.send_sms(phone_numbers=[test_phone], **send_sms_params)
-            status_code = status.HTTP_200_OK
-            detail = _("Test success")
         except APIException as e:
+            # 供应商侧拒绝（模板/签名/配额）：回显可读原因，业务码 1001（参数校验失败）
             try:
                 error = e.detail["errmsg"]
             except Exception:
                 error = e.detail
-            status_code = status.HTTP_400_BAD_REQUEST
-            detail = error
+            return ApiResponse(code=1001, detail=error)
         except Exception:
             # 测试入口兜底：SDK/网络等原始异常细节只留服务端日志，对外统一文案避免泄露内部信息
             logger.warning("SMS test send unexpected error", exc_info=True)
-            status_code = status.HTTP_400_BAD_REQUEST
-            detail = _("SMS test failed, please check the SMS configuration")
-        return ApiResponse(code=status_code, detail=detail)
+            return ApiResponse(code=1002, detail=_("SMS test failed, please check the SMS configuration"))
+        # 成功必须走默认业务码（1000）：前端按 code 判定成败，HTTP 200 会被当成业务失败
+        # 提示「测试失败」，管理员会重复点击造成重复发送/计费。
+        return ApiResponse(detail=_("Test success"))

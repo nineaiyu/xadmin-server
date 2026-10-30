@@ -158,3 +158,95 @@ class TestScheduleBookkeeping:
         assert report.last_status == "SUCCESS"
         assert report.last_run_at is not None
         assert report_due(report) is False
+
+
+class TestDispatchClaim:
+    """派发原子占位：worker 停机/积压恢复时，并发扫描对同一期次只派发一次。
+
+    复现口径（真实环境实测）：暂停默认队列 worker 后注入 3 条积压的 dispatch，
+    恢复瞬间 3 条在同一毫秒内并发执行 → 同一报表生成 3 份相同产物。占位把
+    「判定到期 + 派发」收敛为一次 cache.add，落选者跳过本轮。
+    """
+
+    def _due(self, report):
+        Report.objects.filter(pk=report.pk).update(created_time=timezone.localtime() - timedelta(days=2))
+        report.refresh_from_db()
+        assert report_due(report) is True
+        return report
+
+    def _patch_async(self, monkeypatch):
+        """拦截真实投递（不让任务执行）：只记录派发次数，模拟「任务仍在队列中」。"""
+        calls: list[dict] = []
+
+        def fake_apply_async(**kwargs):
+            calls.append(kwargs)
+
+        monkeypatch.setattr("dataset.analysis_tasks.run_scheduled_report.apply_async", fake_apply_async)
+        return calls
+
+    def test_concurrent_scans_dispatch_once(self, report, monkeypatch):
+        """连续两轮扫描（等效并发）：第二轮被占位拦下，不产生第二份记录。"""
+        from dataset.analysis_tasks import dispatch_scheduled_reports
+
+        self._due(report)
+        calls = self._patch_async(monkeypatch)
+
+        assert dispatch_scheduled_reports.apply().get() == 1
+        assert dispatch_scheduled_reports.apply().get() == 0
+        assert len(calls) == 1
+        assert ExportRecord.objects.filter(module="Report").count() == 1
+
+    def test_release_allows_next_dispatch(self, report, monkeypatch):
+        """任务结束释放占位后，同一期次仍可再次派发（未推进 last_run_at 的场景）。"""
+        from dataset.analysis_tasks import dispatch_scheduled_reports, release_report_dispatch
+
+        self._due(report)
+        calls = self._patch_async(monkeypatch)
+
+        assert dispatch_scheduled_reports.apply().get() == 1
+        release_report_dispatch(report.pk)
+        assert dispatch_scheduled_reports.apply().get() == 1
+        assert len(calls) == 2
+
+    def test_broker_failure_releases_claim(self, report, monkeypatch):
+        """broker 拒收：占位回滚 + 预创建记录标 FAILURE，恢复后同一期次可正常派发。"""
+        from django.core.cache import cache
+
+        from dataset.analysis_tasks import (
+            dispatch_scheduled_reports,
+            report_dispatch_claim_key,
+        )
+
+        self._due(report)
+
+        def boom(**kwargs):
+            raise RuntimeError("broker down")
+
+        monkeypatch.setattr("dataset.analysis_tasks.run_scheduled_report.apply_async", boom)
+        assert dispatch_scheduled_reports.apply().get() == 0
+        assert cache.get(report_dispatch_claim_key(report.pk)) is None
+        assert ExportRecord.objects.get(module="Report").status == ExportRecord.Status.FAILURE
+
+        calls = self._patch_async(monkeypatch)
+        assert dispatch_scheduled_reports.apply().get() == 1
+        assert len(calls) == 1
+
+    def test_dispatch_task_releases_claim_on_completion(self, report, superuser):
+        """任务终态（成功）释放占位：键不残留，下一期扫描不被永久挡住。"""
+        from django.core.cache import cache
+
+        from dataset.analysis_tasks import claim_report_dispatch, report_dispatch_claim_key, run_scheduled_report
+
+        assert claim_report_dispatch(report.pk) is True
+        record_pk = _precreate_record(report)
+        run_scheduled_report.apply(kwargs={"report_id": str(report.pk), "dispatch_claim": True}, task_id=record_pk)
+        assert cache.get(report_dispatch_claim_key(report.pk)) is None
+        assert ExportRecord.objects.get(pk=record_pk).status == ExportRecord.Status.SUCCESS
+
+    def test_manual_run_not_blocked_by_claim(self, report, superuser):
+        """手动运行不走占位：调度占位存在时仍可立即执行（不影响当期投递判定）。"""
+        from dataset.analysis_tasks import claim_report_dispatch, schedule_report_run
+
+        assert claim_report_dispatch(report.pk) is True
+        task_id = schedule_report_run(str(report.pk))
+        assert ExportRecord.objects.get(pk=task_id).status == ExportRecord.Status.SUCCESS

@@ -16,7 +16,7 @@ from django.utils.translation import gettext as _
 from rest_framework.test import APIClient
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
-from approval.utils.approval_flow import add_sign, create_instance, transfer_task
+from approval.services.approval_flow import add_sign, create_instance, transfer_task
 from identity.models import UserInfo, UserRole
 from system.models import Menu, MenuMeta
 
@@ -97,7 +97,7 @@ def notify_spy(monkeypatch):
     """捕获引擎通知调用（extra_actions 经 engine 模块属性访问，单一 patch 点）。"""
     calls = []
     monkeypatch.setattr(
-        "approval.utils.approval_flow.engine._notify",
+        "approval.services.approval_flow.engine._notify",
         lambda users, event, instance, extra=None: calls.append(
             {"users": list(users), "event": event, "extra": extra, "instance": instance.pk}
         ),
@@ -155,7 +155,7 @@ class TestTransferEngine:
         assert ok is False
 
     def test_transfer_processed_task_fails(self, applicant, approver, target):
-        from approval.utils.approval_flow import approve_task
+        from approval.services.approval_flow import approve_task
 
         instance = make_instance(applicant, approver, code="transfer_processed")
         task = instance.tasks.first()
@@ -282,7 +282,7 @@ class TestOngoingScopeApi:
         assert response.json()["data"]["total"] == 1
 
         # 只含审批中：终止（撤回）后不再出现
-        from approval.utils.approval_flow import cancel_instance
+        from approval.services.approval_flow import cancel_instance
 
         cancel_instance(instance, applicant)
         response = client.get(f"{LIST_URL}?scope=ongoing")
@@ -314,7 +314,7 @@ class TestOngoingScopeApi:
         assert response.status_code == 200, response.data
         body = response.json()
         assert body["code"] == 1000
-        assert body["data"]["success"] == 2
+        assert body["data"]["succeeded"] == 2
         assert body["data"]["failures"] == []
         for instance in (first, second):
             assert instance.tasks.filter(
@@ -338,7 +338,7 @@ class TestOngoingScopeApi:
         )
         body = response.json()
         assert body["code"] == 1000
-        assert body["data"]["success"] == 1
+        assert body["data"]["succeeded"] == 1
         assert [item["pk"] for item in body["data"]["failures"]] == [str(other.pk)]
         assert body["data"]["failures"][0]["detail"]
 
@@ -386,6 +386,13 @@ class TestOngoingScopeApi:
         assert approver.username in row["current_assignees"]
 
 
+def _export_body(response) -> bytes:
+    """导出正文：流式化后走 FileResponse（没有 ``.content``），一次性生成器需缓存复用。"""
+    if getattr(response, "streaming", False):
+        return b"".join(response.streaming_content)
+    return response.content
+
+
 class TestInstanceExport:
     """审批导出：复用 list 链路（支持筛选），走轻量序列化器（不含 tasks/表单快照）。
 
@@ -398,8 +405,9 @@ class TestInstanceExport:
         client = APIClient(HTTP_USER_AGENT="pytest-agent")
         client.force_authenticate(user=superuser)
         response = client.get(f"{LIST_URL}/export-data?type=csv")
-        assert response.status_code == 200, response.content[:300]
-        content = response.content.decode("utf-8-sig")
+        assert response.status_code == 200
+        raw = _export_body(response)
+        content = raw.decode("utf-8-sig")
         # 解包占位不用 `_`（函数内赋值会让 gettext 别名 `_` 变成局部变量而不可调用）
         header, _sep, first_row = content.partition("\r\n")
         assert "转交测试" in content  # 实例标题进入导出文件
@@ -418,8 +426,8 @@ class TestInstanceExport:
         response = client.get(f"{LIST_URL}/export-data")
         assert response.status_code == 200
         # xlsx 是 zip 容器：首字节为 PK
-        assert response.content[:2] == b"PK"
-        assert "xlsx" in response["Content-Type"]
+        assert _export_body(response)[:2] == b"PK"
+        assert response["Content-Type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
     def test_export_requires_permission(self, applicant, approver):
         """普通用户无 exportData 权限点：拒绝（导出与列表同受权限点约束）"""

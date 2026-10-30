@@ -20,6 +20,25 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
+def filter_force_logout_targets(operator: Any, user_pks: Any) -> tuple[list[Any], list[dict[str, Any]]]:
+    """超管会话只有超管能强制下线：返回 (允许处理的用户 pk, 被拒明细)。
+
+    批量入口逐用户过滤并回传失败，避免「一个超管目标导致整批不可用」或
+    「部分成功但前端只看到成功」。
+    """
+    from identity.models import UserInfo
+
+    pks = list(dict.fromkeys(user_pks))
+    if getattr(operator, "is_superuser", False) or not pks:
+        return pks, []
+    protected = set(UserInfo.objects.filter(pk__in=pks, is_superuser=True).values_list("pk", flat=True))
+    if not protected:
+        return pks, []
+    allowed = [pk for pk in pks if pk not in protected]
+    failures = [{"pk": str(pk), "reason": str(_("Cannot force logout a superuser"))} for pk in pks if pk in protected]
+    return allowed, failures
+
+
 def force_logout_user(user_pk: Any, operator: Any = None) -> Any:
     """强制某用户全部会话下线，返回被踢掉的 WS channel 数。
 
@@ -72,6 +91,19 @@ def force_logout_users(user_pks: Any, operator: Any = None) -> int:
     )
     logger.info("force logout %s users: %s channels, operator %s", len(pks), channels, operator)
     return channels
+
+
+def revoke_user_credentials(user_pk: Any, operator: Any = None) -> dict[str, Any]:
+    """用户凭证整体失效：JWT 会话（access/refresh）+ PAT。
+
+    密码变更/重置后调用：旧 access 由用户级失效时间戳拒绝，refresh 拉黑，
+    PAT 置停用；WS 在线连接与 UserSession 一并离线。返回处置计数。
+    """
+    from identity.models import PersonalAccessToken
+
+    pats = PersonalAccessToken.objects.filter(creator_id=user_pk, is_active=True).update(is_active=False)
+    channels = force_logout_user(user_pk, operator=operator)
+    return {"pat": pats, "channels": channels}
 
 
 def enforce_session_limit(user: Any, limit: Any = None) -> Any:

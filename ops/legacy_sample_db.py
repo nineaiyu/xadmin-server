@@ -175,7 +175,7 @@ def write_stub_models(workdir: Path, tag: str) -> int:
     """按历史迁移里的模型名生成最小存根（只为让 content type / 权限与真库同构）。"""
     if str(REPO_ROOT) not in sys.path:  # 独立脚本自举：保证能导入仓库内的解析器
         sys.path.insert(0, str(REPO_ROOT))
-    from system.utils.platform import legacy_schema
+    from ops.legacy import schema as legacy_schema
 
     models = legacy_schema.load_tag_models(tag)
     grouped: dict[str, list[tuple[str, str]]] = {}

@@ -1,0 +1,457 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""AI 用量账本与配额：逐次记账 + 三级配额（日调用次数 / 日 token / 全局并发流式）。
+
+- **账本写入口收敛**：``tracked_chat`` / ``tracked_chat_stream`` / ``tracked_chat_tools``
+  是各链路的统一包装（保持原 SDK 返回契约），记账不散落在业务代码里；
+- **配额**（AI 设置页 / config.yml / 系统配置页任一可配，0 / 缺省 = 不限）：
+  ``AI_QUOTA_USER_DAILY_CALLS`` / ``AI_QUOTA_USER_DAILY_TOKENS`` /
+  ``AI_QUOTA_MAX_CONCURRENT_STREAMS``（缓存计数信号量，内置默认 20：流式每条独占
+  请求线程直至模型超时，无上限时高并发会耗尽线程拖垮 HTTP 面）；
+- **超限口径**：读类链路返回可读提示并拒绝本次调用（不静默、不半执行），写类动作
+  在审批/执行前置直接 fail-closed；调用量与账本按用户日汇总（60s 短缓存）。
+"""
+
+import datetime
+import math
+import time
+from typing import Any
+
+from django.core.cache import cache
+from django.db.models import Count, Q, Sum
+from django.db.models.functions import TruncDate
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
+from ai.services.assistant.ai_quota import quota_limits
+from ai.services.assistant.ai_stream_slots import (  # noqa: F401  (并发信号量实现拆出，再导出保持调用面)
+    STREAM_SLOT_KEY,
+    STREAM_SLOT_TTL,
+    StreamSlot,
+    stream_slot,
+    stream_slots_in_use,
+)
+from ai.services.assistant.ai_stream_slots import (
+    acquire_stream_slot as acquire_stream_slot,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.services.assistant.ai_stream_slots import (
+    release_stream_slot as release_stream_slot,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from common.utils import get_logger
+
+logger = get_logger(__name__)
+
+# 日用量汇总缓存时长（配额判定读缓存，避免每次调用都聚合账本）
+USAGE_CACHE_TTL = 60
+# 用量/观测端点查询窗口的天数上限（usage 与 metrics 共用同一口径）
+USAGE_MAX_DAYS = 365
+# p95 延迟的最小样本量：低于此值只给均值（小样本分位数不可靠，给均值会被误读为长尾正常）
+P95_MIN_SAMPLES = 20
+
+
+def extract_tokens(usage: Any) -> dict[str, Any]:
+    """供应商 usage → (in, out, total) 三元组（字段缺失按 0，total 缺省用 in+out）。"""
+    data = usage if isinstance(usage, dict) else {}
+    tokens_in = int(data.get("prompt_tokens") or data.get("input_tokens") or 0)
+    tokens_out = int(data.get("completion_tokens") or data.get("output_tokens") or 0)
+    tokens_total = int(data.get("total_tokens") or (tokens_in + tokens_out))
+    return {"tokens_in": tokens_in, "tokens_out": tokens_out, "tokens_total": tokens_total}
+
+
+def record_usage(
+    user: Any,
+    feature: str,
+    *,
+    usage: Any = None,
+    duration_ms: int = 0,
+    ok: bool = True,
+    detail: str = "",
+    profile_name: str = "",
+    model: str = "",
+    track: str = "",
+) -> None:
+    """写一条用量记录（失败只记日志，不影响业务链路）。
+
+    ``track``（双轨对照）：仅动作草稿链路写 ``native`` / ``prompt``，
+    其余链路留空；供用量端点按轨道统计成功率复核双轨策略。
+    """
+    from ai.models.ai import AiUsageRecord
+
+    tokens = extract_tokens(usage)
+    try:
+        AiUsageRecord.objects.create(
+            creator=user if getattr(user, "pk", None) else None,
+            feature=str(feature)[:16],
+            track=str(track or "")[:16],
+            profile_name=str(profile_name or "")[:64],
+            model=str(model or "")[:128],
+            duration_ms=max(0, int(duration_ms)),
+            ok=bool(ok),
+            detail=str(detail or "")[:255],
+            **tokens,
+        )
+    except Exception:  # noqa: BLE001 记账失败不影响业务
+        logger.warning("write AI usage record failed", exc_info=True)
+
+
+def _usage_cache_key(user: Any) -> str:
+    return f"ai_usage_sum_{getattr(user, 'pk', 'anonymous')}_{timezone.localdate().isoformat()}"
+
+
+def today_usage(user: Any) -> dict[str, Any]:
+    """当前用户当日用量（调用次数 / token；60s 短缓存，兼容无缓存后端）。"""
+    from ai.models.ai import AiUsageRecord
+
+    key = _usage_cache_key(user)
+    try:
+        cached = cache.get(key)
+    except Exception:  # noqa: BLE001 缓存不可用直接查库
+        cached = None
+    if isinstance(cached, dict):
+        return cached
+    rows = AiUsageRecord.objects.filter(creator=user, created_time__date=timezone.localdate()).aggregate(
+        calls=Count("pk"), tokens=Sum("tokens_total")
+    )
+    data = {"calls": int(rows["calls"] or 0), "tokens": int(rows["tokens"] or 0)}
+    try:
+        cache.set(key, data, USAGE_CACHE_TTL)
+    except Exception:  # noqa: BLE001
+        logger.debug("cache AI usage summary failed", exc_info=True)
+    return data
+
+
+def invalidate_usage_cache(user: Any) -> None:
+    try:
+        cache.delete(_usage_cache_key(user))
+    except Exception:  # noqa: BLE001
+        logger.debug("invalidate AI usage cache failed", exc_info=True)
+
+
+def usage_tokens_since(since: Any) -> dict[str, Any]:
+    """窗口内 token 合计（prompt / completion / total）：DB 侧聚合账本列。
+
+    供观测端点使用——不解析审计日志的 JSON（原实现把窗口内全部日志拉进内存逐行
+    解析 changes.usage，90 天窗口下是明显的 CPU 与内存热点）。
+    """
+    from ai.models.ai import AiUsageRecord
+
+    rows = AiUsageRecord.objects.filter(created_time__gte=since).aggregate(
+        prompt=Sum("tokens_in"), completion=Sum("tokens_out"), total=Sum("tokens_total")
+    )
+    return {
+        "prompt": int(rows["prompt"] or 0),
+        "completion": int(rows["completion"] or 0),
+        "total": int(rows["total"] or 0),
+    }
+
+
+def quota_error(user: Any, feature: str = "") -> str:
+    """配额检查：返回空串 = 通过；否则返回可读拒绝文案（i18n）。"""
+    limits = quota_limits()
+    if not limits["daily_calls"] and not limits["daily_tokens"]:
+        return ""
+    used = today_usage(user)
+    if limits["daily_calls"] and used["calls"] >= limits["daily_calls"]:
+        logger.info("AI quota exceeded (calls). user:%s feature:%s", getattr(user, "pk", ""), feature)
+        return str(
+            _("Daily AI call quota reached ({}/{}); it resets tomorrow").format(used["calls"], limits["daily_calls"])
+        )
+    if limits["daily_tokens"] and used["tokens"] >= limits["daily_tokens"]:
+        logger.info("AI quota exceeded (tokens). user:%s feature:%s", getattr(user, "pk", ""), feature)
+        return str(
+            _("Daily AI token quota reached ({}/{}); it resets tomorrow").format(used["tokens"], limits["daily_tokens"])
+        )
+    return ""
+
+
+# --------------------------------------------------------------------- 统一包装
+
+
+def tracked_chat(
+    user: Any, feature: str, messages: list[Any], client: Any = None, track: str = "", **overrides: Any
+) -> str:
+    """单轮 LLM 调用 + 用量记账（保持 ``ChatCompletionsClient.chat`` 返回契约）。"""
+    from ai.services.assistant.ai_config import active_profile_name, ai_credentials
+    from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+
+    owned = client is None
+    client = client or ChatCompletionsClient(ai_credentials())
+    started = time.monotonic()
+    try:
+        reply = client.chat(messages, **overrides)
+    except AiSdkError as exc:
+        record_usage(
+            user,
+            feature,
+            duration_ms=int((time.monotonic() - started) * 1000),
+            ok=False,
+            detail=str(exc),
+            profile_name=active_profile_name() if owned else "",
+            model=getattr(client, "model", ""),
+            track=track,
+        )
+        raise
+    record_usage(
+        user,
+        feature,
+        usage=client.last_usage,
+        duration_ms=int((time.monotonic() - started) * 1000),
+        profile_name=active_profile_name() if owned else "",
+        model=getattr(client, "model", ""),
+        track=track,
+    )
+    invalidate_usage_cache(user)
+    reply_text: str = reply
+    return reply_text
+
+
+def tracked_chat_tools(
+    user: Any,
+    feature: str,
+    messages: list[Any],
+    tools: list[Any],
+    client: Any = None,
+    track: str = "",
+    **overrides: Any,
+) -> dict[str, Any]:
+    """原生 function calling 调用 + 用量记账（保持 ``chat_tools`` 返回契约）。"""
+    from ai.services.assistant.ai_config import active_profile_name, ai_credentials
+    from integrations.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+
+    owned = client is None
+    client = client or ChatCompletionsClient(ai_credentials())
+    started = time.monotonic()
+    try:
+        result = client.chat_tools(messages, tools, **overrides)
+    except AiSdkError as exc:
+        record_usage(
+            user,
+            feature,
+            duration_ms=int((time.monotonic() - started) * 1000),
+            ok=False,
+            detail=str(exc),
+            profile_name=active_profile_name() if owned else "",
+            model=getattr(client, "model", ""),
+            track=track,
+        )
+        raise
+    record_usage(
+        user,
+        feature,
+        usage=client.last_usage,
+        duration_ms=int((time.monotonic() - started) * 1000),
+        profile_name=active_profile_name() if owned else "",
+        model=getattr(client, "model", ""),
+        track=track,
+    )
+    invalidate_usage_cache(user)
+    payload: dict[str, Any] = result
+    return payload
+
+
+def tracked_chat_stream(
+    user: Any, feature: str, client: Any, messages: list[Any], track: str = "", **overrides: Any
+) -> Any:
+    """流式 LLM 调用 + 结束时记账（逐事件透传 ``{type, text}``，行为与 SDK 一致）。
+
+    流式增量不改变调用方处理：产出结束后按累计用量记账；失败路径同样记账（ok=False）。
+    """
+    from ai.services.assistant.ai_config import active_profile_name
+    from integrations.sdk.ai.chat import AiSdkError
+
+    # with 覆盖整个生成器生命周期：异常/中断路径也释放并发信号量
+    with stream_slot() as acquired:
+        if not acquired:
+            # 全局并发流式上限：给可读提示而不是静默排队
+            raise AiSdkError("Too many concurrent AI streams, please retry later")
+        started = time.monotonic()
+        try:
+            yield from client.chat_stream(messages, **overrides)
+        except AiSdkError as exc:
+            record_usage(
+                user,
+                feature,
+                duration_ms=int((time.monotonic() - started) * 1000),
+                ok=False,
+                detail=str(exc),
+                profile_name=active_profile_name(),
+                model=getattr(client, "model", ""),
+                track=track,
+            )
+            raise
+        record_usage(
+            user,
+            feature,
+            usage=client.last_usage,
+            duration_ms=int((time.monotonic() - started) * 1000),
+            profile_name=active_profile_name(),
+            model=getattr(client, "model", ""),
+            track=track,
+        )
+        invalidate_usage_cache(user)
+
+
+# --------------------------------------------------------------------- 汇总口径
+
+
+def _latency_stats(durations: list[int]) -> dict[str, Any]:
+    """延迟统计（毫秒）：均值恒给，p95 仅在样本量足够时给（否则 None）。
+
+    p95 用「最近秩」（nearest-rank）口径在 Python 侧计算——不依赖数据库方言
+    （跨 PG / sqlite 结果一致）。样本不足时给 None 而非均值：均值会把长尾抹平，
+    读起来像「延迟正常」，反而误导。
+    """
+    if not durations:
+        return {"avg_latency_ms": None, "p95_latency_ms": None, "latency_samples": 0}
+    ordered = sorted(int(item or 0) for item in durations)
+    avg = round(sum(ordered) / len(ordered), 1)
+    p95: int | None = None
+    if len(ordered) >= P95_MIN_SAMPLES:
+        rank = math.ceil(0.95 * len(ordered))
+        p95 = ordered[min(rank, len(ordered)) - 1]
+    return {"avg_latency_ms": avg, "p95_latency_ms": p95, "latency_samples": len(ordered)}
+
+
+def _group_dimension(records: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
+    """按维度键（档案 / 模型）聚合：调用 / 失败 / token / 成功率 / 延迟；键为空不入表。
+
+    延迟需要全量样本（p95 无标准 ORM 聚合、跨方言口径不一），故由调用方一次取回
+    记录（``profile_name/model/duration_ms/ok/tokens_total``）后在此内存分组；
+    端点面向管理员观测面，窗口受 ``USAGE_MAX_DAYS`` 约束。
+    """
+    buckets: dict[str, dict[str, Any]] = {}
+    for row in records:
+        name = str(row.get(key) or "").strip()
+        if not name:
+            continue
+        bucket = buckets.setdefault(name, {"calls": 0, "failed": 0, "tokens": 0, "durations": []})
+        bucket["calls"] += 1
+        bucket["failed"] += 0 if row.get("ok") else 1
+        bucket["tokens"] += int(row.get("tokens_total") or 0)
+        bucket["durations"].append(int(row.get("duration_ms") or 0))
+    results = []
+    for name, bucket in sorted(buckets.items(), key=lambda item: -item[1]["calls"]):
+        calls = int(bucket["calls"])
+        failed = int(bucket["failed"])
+        results.append(
+            {
+                key: name,
+                "calls": calls,
+                "failed": failed,
+                "tokens": int(bucket["tokens"]),
+                "success_rate": round((1 - failed / max(calls, 1)) * 100, 1),
+                **_latency_stats(bucket["durations"]),
+            }
+        )
+    return results
+
+
+def usage_summary(days: int = 7, feature: str = "") -> dict[str, Any]:
+    """用量汇总（端点用）：按天 / 按链路 / 按档案 / 按模型 / Top 用户 + 合计。
+
+    合计与 each 维度带成功率与延迟（均值恒给，P95 样本足够才给，见 ``_latency_stats``）。
+    """
+    from ai.models.ai import AiUsageRecord
+
+    days = max(1, min(int(days or 7), USAGE_MAX_DAYS))
+    since = timezone.now() - datetime.timedelta(days=days)
+    rows = AiUsageRecord.objects.filter(created_time__gte=since)
+    if feature:
+        rows = rows.filter(feature=feature)
+    totals = rows.aggregate(calls=Count("pk"), tokens=Sum("tokens_total"), failed=Count("pk", filter=Q(ok=False)))
+    by_day = list(
+        rows.annotate(day=TruncDate("created_time"))
+        .values("day")
+        .annotate(calls=Count("pk"), tokens=Sum("tokens_total"))
+        .order_by("day")
+    )
+    by_feature = list(rows.values("feature").annotate(calls=Count("pk"), tokens=Sum("tokens_total")).order_by("-calls"))
+    # 双轨对照：仅动作草稿链路带轨道标记（native / prompt），其余为空不在本表出现
+    by_track = list(
+        rows.exclude(track="")
+        .values("track")
+        .annotate(calls=Count("pk"), failed=Count("pk", filter=Q(ok=False)), tokens=Sum("tokens_total"))
+        .order_by("-calls")
+    )
+    top_users = list(
+        rows.exclude(creator__isnull=True)
+        .values("creator__username")
+        .annotate(calls=Count("pk"), tokens=Sum("tokens_total"))
+        .order_by("-tokens")[:10]
+    )
+    # 维度明细（档案 / 模型）与延迟统计：一次取回窗口内记录，内存分组
+    records = list(rows.values("profile_name", "model", "duration_ms", "ok", "tokens_total"))
+    total_calls = int(totals["calls"] or 0)
+    failed_calls = int(totals["failed"] or 0)
+    return {
+        "days": days,
+        "total_calls": total_calls,
+        "total_tokens": int(totals["tokens"] or 0),
+        "failed": failed_calls,
+        "success": total_calls - failed_calls,
+        "success_rate": round((1 - failed_calls / total_calls) * 100, 1) if total_calls else 0.0,
+        **_latency_stats([int(row["duration_ms"] or 0) for row in records]),
+        "by_day": [
+            {
+                "day": row["day"].isoformat() if hasattr(row["day"], "isoformat") else str(row["day"]),
+                "calls": int(row["calls"] or 0),
+                "tokens": int(row["tokens"] or 0),
+            }
+            for row in by_day
+        ],
+        "by_feature": [
+            {"feature": row["feature"], "calls": int(row["calls"] or 0), "tokens": int(row["tokens"] or 0)}
+            for row in by_feature
+        ],
+        "by_track": [
+            {
+                "track": row["track"],
+                "calls": int(row["calls"] or 0),
+                "failed": int(row["failed"] or 0),
+                "tokens": int(row["tokens"] or 0),
+                "success_rate": round(
+                    (1 - int(row["failed"] or 0) / max(int(row["calls"] or 0), 1)) * 100,
+                    1,
+                ),
+            }
+            for row in by_track
+        ],
+        "top_users": [
+            {
+                "username": row["creator__username"] or "",
+                "calls": int(row["calls"] or 0),
+                "tokens": int(row["tokens"] or 0),
+            }
+            for row in top_users
+        ],
+        # 按档案 / 按模型分布：成功率 + 平均 / P95 延迟（键为空的行不入表，见 _group_dimension）
+        "by_profile": _group_dimension(records, "profile_name"),
+        "by_model": _group_dimension(records, "model"),
+        "quota": quota_limits(),
+        "stream_slots": stream_slots_in_use(),
+    }
+
+
+def auto_clean_ai_usage(retention_days: Any = None, batch_size: Any = 2000) -> Any:
+    """分批清理超保留期的 AI 用量记录：保留期取 MONITOR_RETENTION_DAYS。
+
+    用量账本是观测数据（与监控心跳同口径），过期即失去成本归因价值；
+    0/缺省 = 跟随系统配置，配置为 0 表示不清理。
+    """
+    from ai.models.ai import AiUsageRecord
+    from common.core.config import SysConfig
+
+    if retention_days is None:
+        retention_days = SysConfig.MONITOR_RETENTION_DAYS
+    retention_days = int(retention_days or 0)
+    if retention_days <= 0:
+        return 0
+    deadline = timezone.now() - datetime.timedelta(days=retention_days)
+    removed = 0
+    while True:
+        pks = list(AiUsageRecord.objects.filter(created_time__lt=deadline).values_list("pk", flat=True)[:batch_size])
+        if not pks:
+            break
+        removed += AiUsageRecord.objects.filter(pk__in=pks).delete()[0]
+    logger.info(f"clean {removed} AI usage records (retention {retention_days} days)")
+    return removed

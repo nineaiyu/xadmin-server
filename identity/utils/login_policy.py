@@ -33,7 +33,9 @@ def _split_values(raw: Any) -> Any:
 
 def _user_role_codes(user: Any) -> Any:
     try:
-        return set(user.roles.values_list("code", flat=True))
+        from common.core.roles import user_role_codes
+
+        return user_role_codes(user)
     except Exception:  # noqa: BLE001 角色查询异常不阻断登录（视为无角色）
         return set()
 

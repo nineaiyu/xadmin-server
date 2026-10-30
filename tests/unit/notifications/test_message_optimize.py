@@ -4,7 +4,7 @@
 覆盖：
 1. 列表 unread 字段的查询数与页内消息条数解耦；
 2. 优化前后响应数据逐字段一致（unread / read_user_count）；
-3. read_message 固定 3 条 SQL，与 pks 数量无关；
+3. read_message 固定 4 条 SQL（含可见域校验），与 pks 数量无关；
 4. read_message 幂等且结果正确；
 5. DEPT/ROLE/POST 目标人数与公告类已读人数的整页聚合（含软删除边界）。
 """
@@ -116,7 +116,7 @@ class TestUnreadSummaryCache:
 
 
 class TestReadMessage:
-    def test_fixed_three_queries(self, api_client, normal_user, message_page):
+    def test_fixed_query_count(self, api_client, normal_user, message_page):
         pks = [m.pk for m in message_page]
         view = UserSiteMessageViewSet()
 
@@ -127,7 +127,8 @@ class TestReadMessage:
             resp = view.read_message(pks, FakeRequest())
         assert resp.status_code == 200
 
-        assert len(_business_queries(ctx)) <= 3
+        # 固定查询数：可见域（直挂角色 + 部门挂角色各一次）+ 已读行批量写
+        assert len(_business_queries(ctx)) <= 5
 
     def test_marks_all_as_read(self, api_client, normal_user, message_page):
         pks = [m.pk for m in message_page]
@@ -165,6 +166,30 @@ class TestReadMessage:
         assert resp.status_code == 200
         assert MessageUserRead.objects.count() == 0
 
+    def test_batch_read_ignores_other_users_private_notice(self, normal_user):
+        """他人私信不可被当前用户标记已读：写操作必须先过可见域。"""
+        other = UserInfo.objects.create_user(username="msg-other", password="Test@123456")
+        others_msg = _make_message(other, MessageContent.NoticeChoices.USER, "other-private", unread=True)
+        view = UserSiteMessageViewSet()
+
+        class FakeRequest:
+            user = normal_user
+
+        resp = view.read_message([others_msg.pk], FakeRequest())
+        assert resp.status_code == 200
+        assert not MessageUserRead.objects.filter(owner=normal_user, notice=others_msg).exists()
+        assert MessageUserRead.objects.get(owner=other, notice=others_msg).unread is True
+
+    def test_batch_read_invalid_pk_returns_1001(self, normal_user):
+        view = UserSiteMessageViewSet()
+
+        class FakeRequest:
+            user = normal_user
+
+        resp = view.read_message(["not-a-uuid"], FakeRequest())
+        assert resp.data["code"] == 1001
+        assert MessageUserRead.objects.count() == 0
+
     def test_queryset_path_matches_explicit_pks_semantics(self, normal_user):
         """queryset 形态（all-read 口径）：pk 过滤与「尚无已读行」差集下推 DB，端态等价。
 
@@ -190,7 +215,8 @@ class TestReadMessage:
         with CaptureQueriesContext(connection) as ctx:
             resp = view.read_message(scope, FakeRequest())
         assert resp.status_code == 200
-        assert len(_business_queries(ctx)) <= 3
+        # 固定查询数：可见域（直挂角色 + 部门挂角色各一次）+ 已读行批量写
+        assert len(_business_queries(ctx)) <= 5
 
         # 端态与显式 pks 路径一致：每条消息恰一行已读，无重复行
         assert MessageUserRead.objects.filter(owner=normal_user).count() == 4
@@ -212,6 +238,80 @@ class TestReadMessage:
         assert resp.status_code == 200
         assert MessageUserRead.objects.get(owner=superuser, notice=notice).unread is False
         assert MessageUserRead.objects.get(owner=superuser, notice=user_msg).unread is False
+
+
+class TestAnnounceUnreadBadgeContract:
+    """公告未读口径统一到 messageuserread：已读后角标归零、?unread=true 同步收敛。
+
+    历史缺陷：角标 q1 只判 ``~Q(notice_user=user)``（无 messageuserread 条件），
+    公告恒为未读——列表已读、角标仍全额计入，all-read 后角标永不归零，
+    且每次 all-read 为全量已读公告重复补建无效行（表膨胀）。
+    """
+
+    UNREAD_URL = f"{SITE_MSG_URL}/unread"
+
+    def _announce(self, title):
+        return MessageContent.objects.create(
+            title=title, message="m", notice_type=MessageContent.NoticeChoices.NOTICE, publish=True
+        )
+
+    def _announce_badge(self, client):
+        results = client.get(self.UNREAD_URL).data["data"]["results"]
+        return next(item for item in results if item["name"] == "layout.announcement")["total"]
+
+    def test_announce_badge_zero_after_all_read(self, auth_client, superuser):
+        self._announce("badge-公告A")
+        self._announce("badge-公告B")
+
+        # 发布即计入角标（尚无已读行）
+        assert auth_client.get(SITE_MSG_URL).data["unread_count"] == 2
+        assert self._announce_badge(auth_client) == 2
+
+        # 全部已读 → 角标归零（角标与列表同一 messageuserread 口径）
+        auth_client.patch(f"{SITE_MSG_URL}/all-read")
+        assert auth_client.get(SITE_MSG_URL).data["unread_count"] == 0
+        assert self._announce_badge(auth_client) == 0
+
+        # ?unread=true 不再计入已读公告；已读公告仍在列表中（补集口径）
+        assert auth_client.get(SITE_MSG_URL, {"unread": "true"}).data["unread_count"] == 0
+        rows = auth_client.get(SITE_MSG_URL).data["data"]["results"]
+        assert {row["title"] for row in rows} >= {"badge-公告A", "badge-公告B"}
+
+    def test_batch_read_announce_updates_badge(self, auth_client, superuser):
+        first = self._announce("batch-公告A")
+        second = self._announce("batch-公告B")
+        assert self._announce_badge(auth_client) == 2
+
+        resp = auth_client.patch(f"{SITE_MSG_URL}/batch-read", {"pks": [str(first.pk)]}, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        assert self._announce_badge(auth_client) == 1
+        assert auth_client.get(SITE_MSG_URL).data["unread_count"] == 1
+
+        auth_client.patch(f"{SITE_MSG_URL}/batch-read", {"pks": [str(second.pk)]}, format="json")
+        assert self._announce_badge(auth_client) == 0
+        assert auth_client.get(SITE_MSG_URL).data["unread_count"] == 0
+
+    def test_all_read_skips_already_read_announcements(self, auth_client, superuser):
+        """all-read 只处理未读集合：重复触发不再为已读公告 bulk_create 无效行（表膨胀）。"""
+        announce = self._announce("dedup-公告")
+        auth_client.patch(f"{SITE_MSG_URL}/all-read")
+        assert MessageUserRead.objects.filter(owner=superuser, notice=announce).count() == 1
+
+        auth_client.patch(f"{SITE_MSG_URL}/all-read")
+        auth_client.patch(f"{SITE_MSG_URL}/all-read")
+        assert MessageUserRead.objects.filter(owner=superuser, notice=announce).count() == 1
+
+    def test_user_unread_badge_unaffected_by_announce_rows(self, auth_client, superuser):
+        """私信角标口径不变（q2：notice_user + 未读行），公告已读行不串味。"""
+        private = _make_message(superuser, MessageContent.NoticeChoices.USER, "badge-private", unread=True)
+        self._announce("badge-mix-公告")
+
+        assert auth_client.get(SITE_MSG_URL).data["unread_count"] == 2
+        auth_client.patch(f"{SITE_MSG_URL}/batch-read", {"pks": [str(private.pk)]}, format="json")
+        # 私信已读、公告未读：角标只剩公告
+        assert auth_client.get(SITE_MSG_URL).data["unread_count"] == 1
+        summary = auth_client.get(self.UNREAD_URL).data["data"]
+        assert summary["total"] == 1
 
 
 NOTICE_MSG_URL = "/api/notifications/notice-messages"

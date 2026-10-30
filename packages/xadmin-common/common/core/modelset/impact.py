@@ -18,6 +18,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
 from common.contracts import guarded_models, impact_for_many
+from common.core.modelset.batch import normalize_pks
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 
@@ -48,7 +49,9 @@ class ImpactPreviewAction:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
         if len(pks) > IMPACT_MAX_ITEMS:
             return ApiResponse(code=1004, detail=_("Too many items to preview (max {})").format(IMPACT_MAX_ITEMS))
-        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
+        queryset = self.filter_queryset(self.get_queryset())
+        valid_pks, _invalid = normalize_pks(queryset.model, pks)
+        queryset = queryset.filter(pk__in=valid_pks)
         data = impact_for_many(queryset)
         model = getattr(getattr(self, "queryset", None), "model", None)
         data["guarded"] = bool(model is not None and model._meta.label_lower in guarded_models())

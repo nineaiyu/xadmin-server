@@ -8,7 +8,9 @@ ARG DEPENDENCIES="                    \
         pkg-config                    \
         procps                        \
         libmariadb-dev                \
-        gettext"
+        gettext                       \
+        flite                         \
+        sox"
 
 ARG APT_MIRROR=http://deb.debian.org
 

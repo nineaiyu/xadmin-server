@@ -6,8 +6,10 @@
 mixin 后对外行为与拆分前完全一致。
 """
 
+import uuid
 from typing import TYPE_CHECKING, Any
 
+from django.db.models import Prefetch
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -15,11 +17,30 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 
-from approval.models.approval import ApprovalInstance, ApprovalNodeTask
-from approval.utils.approval_flow import approve_task, reject_task, transfer_task, visible_instances_for
+from approval.models.approval import ApprovalNodeTask
+from approval.services.approval_flow import approve_task, reject_task, transfer_task, visible_instances_for
 from approval.utils.approval_mfa import ensure_approval_action_confirmed
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+
+MAX_BATCH_INSTANCES = 200
+
+
+def normalize_uuid_pks(pks: Any) -> tuple[list[str], list[dict[str, str]]]:
+    """批量实例主键归一：UUID 解析失败逐项进 failures，避免 filter(pk__in) 抛 500。"""
+    if not isinstance(pks, (list, tuple)):
+        return [], [{"pk": str(pks), "detail": str(_("Invalid application id"))}]
+    valid: list[str] = []
+    failures: list[dict[str, str]] = []
+    for value in pks:
+        try:
+            parsed = str(uuid.UUID(str(value)))
+        except (ValueError, AttributeError, TypeError):
+            failures.append({"pk": str(value), "detail": str(_("Invalid application id"))})
+            continue
+        if parsed not in valid:
+            valid.append(parsed)
+    return valid, failures
 
 
 def missing_pk_failures(pks: Any, handled_pks: Any) -> list[Any]:
@@ -43,13 +64,22 @@ class ApprovalInstanceBatchMixin:
 
         def filter_queryset(self, queryset: Any, *args: Any, **kwargs: Any) -> Any: ...
 
-    def _my_current_task(self, instance: Any, user: Any) -> Any:
-        """我的当前待办（无则 None）：批量转交逐条使用（与单条 _resolve_task 同口径，不抛错）"""
-        if instance.status != ApprovalInstance.Status.PENDING or instance.current_node_id is None:
-            return None
-        return instance.tasks.filter(
-            assignee=user, status=ApprovalNodeTask.Status.PENDING, node=instance.current_node
-        ).first()
+    def _with_my_pending_tasks(self, queryset: Any, user: Any) -> Any:
+        """批量子查询预取「我的待办」：N 条实例只发一条任务查询（逐条过滤会 N+1）。"""
+        return queryset.prefetch_related(
+            Prefetch(
+                "tasks",
+                queryset=ApprovalNodeTask.objects.filter(assignee=user, status=ApprovalNodeTask.Status.PENDING),
+                to_attr="_my_pending_tasks",
+            )
+        )
+
+    @staticmethod
+    def _prefetched_my_task(instance: Any) -> Any:
+        return next(
+            (task for task in instance._my_pending_tasks if task.node_id == instance.current_node_id),
+            None,
+        )
 
     @extend_schema(
         request=OpenApiRequest(
@@ -72,16 +102,19 @@ class ApprovalInstanceBatchMixin:
         """
         ensure_approval_action_confirmed(request, "batch_approve")
         pks = request.data.get("pks") or []
-        if not pks:
+        if not isinstance(pks, (list, tuple)) or not pks:
             raise ValidationError(_("Please select the data to operate"))
+        if len(pks) > MAX_BATCH_INSTANCES:
+            raise ValidationError(_("Too many applications in one batch (max {})").format(MAX_BATCH_INSTANCES))
         comment = (request.data.get("comment") or "").strip()
-        succeeded, failures, handled_pks = 0, [], set()
-        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
+        valid_pks, failures = normalize_uuid_pks(pks)
+        succeeded, handled_pks = 0, set()
+        queryset = self._with_my_pending_tasks(
+            self.filter_queryset(self.get_queryset()).filter(pk__in=valid_pks), request.user
+        )
         for instance in queryset:
             handled_pks.add(str(instance.pk))
-            task = instance.tasks.filter(
-                assignee=request.user, status=ApprovalNodeTask.Status.PENDING, node=instance.current_node
-            ).first()
+            task = self._prefetched_my_task(instance)
             if task is None:
                 failures.append({"pk": str(instance.pk), "detail": str(_("No pending task for you"))})
                 continue
@@ -90,7 +123,9 @@ class ApprovalInstanceBatchMixin:
                 succeeded += 1
             else:
                 failures.append({"pk": str(instance.pk), "detail": str(detail)})
-        failures.extend(missing_pk_failures(pks, handled_pks))
+        # 只对通过 UUID 归一的主键补「不可见」明细：非法值已在归一阶段进 failures，
+        # 再按原 pks 遍历会给同一个非法值追加第二条失败记录（勾选数与明细对不上）
+        failures.extend(missing_pk_failures(valid_pks, handled_pks))
         return ApiResponse(
             data={"succeeded": succeeded, "failures": failures},
             detail=_("Operation successful. Approved {} data").format(succeeded),
@@ -117,15 +152,18 @@ class ApprovalInstanceBatchMixin:
         if not reason:
             raise ValidationError(_("Rejection reason is required"))
         pks = request.data.get("pks") or []
-        if not pks:
+        if not isinstance(pks, (list, tuple)) or not pks:
             raise ValidationError(_("Please select the data to operate"))
-        succeeded, failures, handled_pks = 0, [], set()
-        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
+        if len(pks) > MAX_BATCH_INSTANCES:
+            raise ValidationError(_("Too many applications in one batch (max {})").format(MAX_BATCH_INSTANCES))
+        valid_pks, failures = normalize_uuid_pks(pks)
+        succeeded, handled_pks = 0, set()
+        queryset = self._with_my_pending_tasks(
+            self.filter_queryset(self.get_queryset()).filter(pk__in=valid_pks), request.user
+        )
         for instance in queryset:
             handled_pks.add(str(instance.pk))
-            task = instance.tasks.filter(
-                assignee=request.user, status=ApprovalNodeTask.Status.PENDING, node=instance.current_node
-            ).first()
+            task = self._prefetched_my_task(instance)
             if task is None:
                 failures.append({"pk": str(instance.pk), "detail": str(_("No pending task for you"))})
                 continue
@@ -134,7 +172,8 @@ class ApprovalInstanceBatchMixin:
                 succeeded += 1
             else:
                 failures.append({"pk": str(instance.pk), "detail": str(detail)})
-        failures.extend(missing_pk_failures(pks, handled_pks))
+        # 同 batch_approve：非法 UUID 已在归一阶段记失败，不能重复追加「不可见」
+        failures.extend(missing_pk_failures(valid_pks, handled_pks))
         return ApiResponse(
             data={"succeeded": succeeded, "failures": failures},
             detail=_("Operation successful. Rejected {} data").format(succeeded),
@@ -167,34 +206,42 @@ class ApprovalInstanceBatchMixin:
         pks = request.data.get("pks") or []
         if not isinstance(pks, (list, tuple)) or not pks:
             return ApiResponse(code=1001, detail=_("Please select the applications to transfer"))
+        if len(pks) > MAX_BATCH_INSTANCES:
+            return ApiResponse(
+                code=1001,
+                detail=_("Too many applications in one batch (max {})").format(MAX_BATCH_INSTANCES),
+            )
+        valid_pks, failures = normalize_uuid_pks(pks)
         username = (request.data.get("username") or "").strip()
         if not username:
             return ApiResponse(code=1001, detail=_("Please select the user to transfer to"))
         comment = (request.data.get("comment") or "").strip()
 
         # 取值域收敛：只能对自己可见的实例操作（越权 pk 直接计失败，不泄露存在性）
-        visible = visible_instances_for(request.user).filter(pk__in=pks)
+        visible = self._with_my_pending_tasks(
+            visible_instances_for(request.user).filter(pk__in=valid_pks), request.user
+        )
         instance_map = {str(instance.pk): instance for instance in visible}
-        success, failures = 0, []
-        for pk in pks:
+        succeeded = 0
+        for pk in valid_pks:
             instance = instance_map.get(str(pk))
             if instance is None:
                 failures.append({"pk": str(pk), "detail": str(_("No visible application for the given id"))})
                 continue
-            task = self._my_current_task(instance, request.user)
+            task = self._prefetched_my_task(instance) if instance.current_node_id else None
             if task is None:
                 failures.append({"pk": str(pk), "detail": str(_("No pending task available for the current user"))})
                 continue
             ok, detail = transfer_task(task.pk, request.user, username, comment)
             if ok:
-                success += 1
+                succeeded += 1
             else:
                 failures.append({"pk": str(pk), "detail": detail})
-        if not success:
+        if not succeeded:
             # 全失败：以整体失败返回（前端按普通业务失败提示，明细随 data 带回）
             detail = failures[0]["detail"] if failures else str(_("The approval task has been transferred"))
-            return ApiResponse(code=1001, detail=detail, data={"success": 0, "failures": failures})
+            return ApiResponse(code=1001, detail=detail, data={"succeeded": 0, "failures": failures})
         return ApiResponse(
-            data={"success": success, "failures": failures},
-            detail=_("{success} transferred, {failed} failed").format(success=success, failed=len(failures)),
+            data={"succeeded": succeeded, "failures": failures},
+            detail=_("{succeeded} transferred, {failed} failed").format(succeeded=succeeded, failed=len(failures)),
         )

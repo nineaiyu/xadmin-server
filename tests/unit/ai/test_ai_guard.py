@@ -6,7 +6,7 @@
 
 import pytest
 
-from ai.utils.ai_guard import (
+from ai.services.assistant.ai_guard import (
     REDACTED,
     REFERENCE_BEGIN,
     REFERENCE_END,

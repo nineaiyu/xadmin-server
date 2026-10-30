@@ -51,7 +51,7 @@ def save_login_log(
     serializer.save()
 
 
-def verify_sms_email_code(request: Any, block_utils: Any) -> Any:
+def verify_sms_email_code(request: Any, block_utils: Any, scenes: tuple[str, ...] | None = None) -> Any:
     verify_token = request.data.get("verify_token")
     verify_code = request.data.get("verify_code")
     ipaddr = get_request_ip(request)
@@ -62,6 +62,12 @@ def verify_sms_email_code(request: Any, block_utils: Any) -> Any:
 
     data = TokenTempCache.validate_cache_token(verify_token)
     if not data:
+        ip_block.set_block_if_need()
+        raise ValidateError(_("Token is invalid or expired"))
+    # 场景绑定：登录/重置/注册/绑定令牌不可跨场景复用。历史令牌（本次升级前签发）
+    # 没有 scene 字段，按 TTL 自然过期兼容放行；新签发令牌一律带 scene。
+    stored_scene = data.get("scene")
+    if scenes is not None and stored_scene and stored_scene not in scenes:
         ip_block.set_block_if_need()
         raise ValidateError(_("Token is invalid or expired"))
 

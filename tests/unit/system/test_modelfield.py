@@ -9,11 +9,31 @@ from system.views.admin.modelfield import ModelLabelFieldViewSet
 
 
 def test_lookup_info_covers_known_lookups():
-    fields = ["exact", "icontains", "in", "gt", "isnull"]
+    fields = [
+        "exact",
+        "icontains",
+        "in",
+        "gt",
+        "isnull",
+        "ne",
+        "range",
+        "year",
+        "month",
+        "day",
+        "week",
+    ]
     result = get_field_lookup_info(fields)
     assert [r["value"] for r in result] == fields
     for item in result:
-        assert item["label"]  # 已知 lookup 必须有翻译说明
+        assert item["label"] != item["value"]  # 已知 lookup 必须有可读说明
+
+
+def test_match_texts_cover_rule_summary_lookups():
+    """规则摘要使用 choices.matches：常用条件匹配符不得回退为裸 key。"""
+    from system.utils.platform.rule_meta import MATCH_TEXTS
+
+    for lookup in ("range", "year", "month", "day", "week", "isnull", "ne"):
+        assert MATCH_TEXTS.get(lookup), f"匹配符 {lookup} 缺少可读文案"
 
 
 def test_framework_special_lookups_have_labels():
@@ -47,6 +67,59 @@ def test_lookup_info_unknown_lookup_falls_back_to_name():
 
 def test_lookup_info_empty_fields():
     assert get_field_lookup_info([]) == []
+
+
+@pytest.mark.django_db
+def test_lookups_unknown_field_returns_empty_candidates(superuser):
+    """未同步/未知字段返回空候选而不是业务错误，前端可展示「无匹配符」。"""
+    factory = APIRequestFactory()
+    request = factory.get("/api/system/field/lookups", {"table": "identity.userinfo", "field": "not_exists"})
+    force_authenticate(request, user=superuser)
+    view = ModelLabelFieldViewSet.as_view({"get": "lookups"})
+
+    response = view(request)
+
+    assert response.status_code == 200
+    assert response.data["code"] == 1000
+    assert response.data["data"] == []
+
+
+@pytest.mark.django_db
+def test_lookups_rejects_model_outside_data_registry(superuser):
+    """lookups 只对数据权限注册表（DATA 根）暴露字段，不能枚举任意已注册模型。"""
+    from system.models import ModelLabelField
+
+    root = ModelLabelField.objects.create(name="identity.userinfo", label="RoleUser", field_type=0)
+    ModelLabelField.objects.create(name="username", label="Username", parent=root, field_type=0)
+
+    factory = APIRequestFactory()
+    request = factory.get("/api/system/field/lookups", {"table": "identity.userinfo", "field": "username"})
+    force_authenticate(request, user=superuser)
+    response = ModelLabelFieldViewSet.as_view({"get": "lookups"})(request)
+
+    assert response.status_code == 200
+    assert response.data["data"] == []
+    assert response.data["field_meta"] is None
+
+
+@pytest.mark.django_db
+def test_parent_filter_accepts_parent_name(superuser):
+    """parent 过滤兼容父级名称（页面按模型名搜索），不再只认 UUID。"""
+    from system.models import ModelLabelField
+
+    root = ModelLabelField.objects.create(name="identity.userinfo", label="User", field_type=1)
+    child = ModelLabelField.objects.create(name="username", label="Username", parent=root, field_type=1)
+    other = ModelLabelField.objects.create(name="other.model", label="Other", field_type=1)
+
+    factory = APIRequestFactory()
+    request = factory.get("/api/system/field", {"parent": "identity.userinfo"})
+    force_authenticate(request, user=superuser)
+    response = ModelLabelFieldViewSet.as_view({"get": "list"})(request)
+
+    assert response.status_code == 200
+    pks = {row["pk"] for row in response.data["data"]["results"]}
+    assert str(child.pk) in pks
+    assert str(other.pk) not in pks
 
 
 @pytest.mark.django_db

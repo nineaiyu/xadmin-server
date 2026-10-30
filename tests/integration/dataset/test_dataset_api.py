@@ -102,6 +102,60 @@ def make_permission(user, table="identity.userinfo", field="id", value_type="val
     return dp
 
 
+class TestFilterTypeValidation:
+    """filter 的 op / 取值必须与字段类型匹配（否则执行期 DB 报错变 500）。"""
+
+    @staticmethod
+    def _payload(filters):
+        return {
+            "name": "过滤类型校验",
+            "bound_model": "identity.userinfo",
+            "columns": ["username"],
+            "filters": filters,
+        }
+
+    def test_text_op_on_boolean_field_rejected(self, auth_client, model_registry):
+        response = auth_client.post(
+            DATASET_URL,
+            self._payload([{"field": "is_active", "op": "contains", "value": "true"}]),
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert not Dataset.objects.filter(name="过滤类型校验").exists()
+
+    def test_value_type_mismatch_rejected(self, auth_client, model_registry):
+        response = auth_client.post(
+            DATASET_URL,
+            self._payload([{"field": "is_active", "op": "exact", "value": "not-a-bool"}]),
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert not Dataset.objects.filter(name="过滤类型校验").exists()
+
+    def test_text_op_on_text_field_allowed(self, auth_client, model_registry):
+        response = auth_client.post(
+            DATASET_URL,
+            self._payload([{"field": "username", "op": "contains", "value": "ad"}]),
+            format="json",
+        )
+
+        assert response.status_code == 200, response.data
+        assert Dataset.objects.filter(name="过滤类型校验").exists()
+
+    def test_legacy_bad_filter_executes_with_readable_error(self, auth_client, dataset):
+        """本校验上线前保存的脏配置：执行返回 1001 可读原因，不再 500。"""
+        Dataset.objects.filter(pk=dataset.pk).update(
+            filters=[{"field": "is_active", "op": "contains", "value": "true"}]
+        )
+
+        response = auth_client.post(f"{DATASET_URL}/{dataset.pk}/execute", {}, format="json")
+
+        assert response.json()["code"] == 1001
+        assert "text field" in str(response.json()["detail"])
+
+
 class TestDatasetCrud:
     def test_anonymous_rejected(self, api_client):
         assert api_client.get(DATASET_URL).status_code == 401
@@ -119,6 +173,27 @@ class TestDatasetCrud:
         assert response.json()["code"] == 1000
         dataset = Dataset.objects.get(name="活跃用户")
         assert dataset.creator.username == "admin"
+
+    def test_shared_dataset_defaults_to_strict_field_permission(self, auth_client, model_registry):
+        payload = {
+            "name": "共享严格字段",
+            "bound_model": "identity.userinfo",
+            "columns": ["username"],
+            "visibility": "shared",
+        }
+        response = auth_client.post(DATASET_URL, payload, format="json")
+        assert response.json()["code"] == 1000, response.data
+        assert Dataset.objects.get(name="共享严格字段").field_permission_mode == "strict"
+
+    def test_personal_dataset_defaults_to_inherit(self, auth_client, model_registry):
+        payload = {
+            "name": "个人继承字段",
+            "bound_model": "identity.userinfo",
+            "columns": ["username"],
+        }
+        response = auth_client.post(DATASET_URL, payload, format="json")
+        assert response.json()["code"] == 1000, response.data
+        assert Dataset.objects.get(name="个人继承字段").field_permission_mode == "inherit"
 
     def test_create_rejects_out_of_whitelist_model(self, auth_client, model_registry):
         payload = {"name": "坏模型", "bound_model": "demo.book", "columns": ["id"]}
@@ -169,6 +244,13 @@ class TestDatasetCrud:
         fresh = auth_client.get(f"{DATASET_URL}/meta").json()["data"]
         assert "username" not in fresh["fields"]["identity.userinfo"]
 
+    def test_meta_requires_editor_permission(self, normal_user, model_registry, menu_factory, role, api_client):
+        """设计器元数据是 schema 面：只有 list 权限的用户不得枚举全部模型/字段。"""
+        role.menu.add(menu_factory("list:Dataset", path="api/dataset/datasets$", method="GET"))
+        api_client.force_authenticate(user=normal_user)
+        body = api_client.get(f"{DATASET_URL}/meta").json()
+        assert body["code"] == 1003, body
+
 
 class TestDatasetExecute:
     def test_fail_closed_without_grant(self, dataset, normal_user, grant_dataset_menus):
@@ -203,6 +285,131 @@ class TestDatasetExecute:
         dataset.save()
         body = auth_client.post(f"{DATASET_URL}/{dataset.pk}/execute", {}, format="json").json()
         assert [row["username"] for row in body["data"]["rows"]] == ["admin"]
+
+    def test_execute_request_filters_drilldown(self, auth_client, dataset):
+        """请求级 filters（卡片下钻）：与数据集定义 filters 叠加，同口径过滤。"""
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/execute",
+            {"filters": [{"field": "username", "op": "exact", "value": "admin"}]},
+            format="json",
+        ).json()
+        assert body["code"] == 1000
+        assert [row["username"] for row in body["data"]["rows"]] == ["admin"]
+
+    def test_execute_max_rows_validated_and_limited(self, auth_client, dataset):
+        """max_rows 是外部输入：非法/负数按 1001 拒绝，合法值下推为 SQL 上限。"""
+        for invalid in (-1, "abc", 1.5):
+            body = auth_client.post(f"{DATASET_URL}/{dataset.pk}/execute", {"max_rows": invalid}, format="json").json()
+            assert body["code"] == 1001, body
+        body = auth_client.post(f"{DATASET_URL}/{dataset.pk}/execute", {"max_rows": 1}, format="json").json()
+        assert body["code"] == 1000, body
+        assert body["data"]["limit"] == 1
+        assert len(body["data"]["rows"]) <= 1
+
+    def test_execute_request_filters_validated(self, auth_client, dataset):
+        """非法请求级 filters 拒绝（白名单外字段 / 非法 op），口径同保存侧。"""
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/execute",
+            {"filters": [{"field": "password", "op": "exact", "value": "x"}]},
+            format="json",
+        ).json()
+        assert body["code"] == 1001
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/execute",
+            {"filters": [{"field": "username", "op": "regex", "value": "x"}]},
+            format="json",
+        ).json()
+        assert body["code"] == 1001
+
+    def test_aggregate_series_carries_raw_value(self, auth_client, dataset, model_registry):
+        """分组序列带 raw 原始值（卡片下钻过滤依据）：label 走元数据映射，raw 保持原值，
+        且 raw 可直接回灌 execute 的请求级 filters（下钻闭环）。"""
+        root = ModelLabelField.objects.get(name="identity.userinfo")
+        ModelLabelField.objects.get_or_create(
+            name="gender",
+            parent=root,
+            defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "性别"},
+        )
+        UserInfo.objects.update(gender=1)
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "gender", "metric": "count"},
+            format="json",
+        ).json()
+        assert body["code"] == 1000
+        series = body["data"]["series"]
+        assert len(series) == 1
+        assert series[0]["raw"] == 1, "raw 必须是分组原始值（下钻过滤用）"
+        assert series[0]["name"] != "1", "label 走元数据映射，与 raw 分离"
+        drill = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/execute",
+            {"filters": [{"field": "gender", "op": "exact", "value": series[0]["raw"]}]},
+            format="json",
+        ).json()
+        assert drill["code"] == 1000
+        assert drill["data"]["total"] >= 1
+
+    def test_aggregate_request_filters(self, auth_client, dataset, normal_user):
+        """请求级 filters（卡片联动）：聚合序列随过滤收敛，口径同 execute。"""
+        all_rows = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "username", "metric": "count"},
+            format="json",
+        ).json()
+        assert all_rows["code"] == 1000
+        assert len(all_rows["data"]["series"]) >= 2, "至少超管与普通用户两桶，过滤收敛才有对照"
+        filtered = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {
+                "group_by": "username",
+                "metric": "count",
+                "filters": [{"field": "username", "op": "exact", "value": normal_user.username}],
+            },
+            format="json",
+        ).json()
+        assert filtered["code"] == 1000
+        assert [row["name"] for row in filtered["data"]["series"]] == [normal_user.username]
+        assert filtered["data"]["series"][0]["value"] == 1
+
+    def test_aggregate_request_filters_validated(self, auth_client, dataset):
+        """非法请求级 filters 拒绝（白名单外字段 / 非法 op），口径同 execute。"""
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "username", "filters": [{"field": "password", "op": "exact", "value": "x"}]},
+            format="json",
+        ).json()
+        assert body["code"] == 1001
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "username", "filters": [{"field": "username", "op": "regex", "value": "x"}]},
+            format="json",
+        ).json()
+        assert body["code"] == 1001
+
+    def test_aggregate_raw_filters_linkage(self, auth_client, dataset, model_registry):
+        """raw 原值回灌 aggregate 请求级 filters（卡片联动闭环）：布尔分组
+        label 经元数据映射（≠raw），过滤必须用 raw 才能命中同桶。"""
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "is_active", "metric": "count"},
+            format="json",
+        ).json()
+        assert body["code"] == 1000
+        target = body["data"]["series"][0]
+        assert isinstance(target["raw"], bool), "raw 必须是分组原始布尔值"
+        assert target["name"] != str(target["raw"]), "label 走元数据映射，与 raw 分离"
+        linked = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {
+                "group_by": "is_active",
+                "metric": "count",
+                "filters": [{"field": "is_active", "op": "exact", "value": target["raw"]}],
+            },
+            format="json",
+        ).json()
+        assert linked["code"] == 1000
+        assert len(linked["data"]["series"]) == 1
+        assert linked["data"]["series"][0]["value"] == target["value"]
 
     def test_aggregate_trend(self, auth_client, dataset, model_registry):
         root = ModelLabelField.objects.get(name="identity.userinfo")

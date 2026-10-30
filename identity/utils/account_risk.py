@@ -151,7 +151,7 @@ def _superuser_count_risk(max_superusers: int, user_model: Any) -> list[dict[str
     ]
 
 
-def _collect_risks(now: Any) -> Any:
+def _collect_risks(now: Any, progress: Any = None) -> Any:
     """产出当前全部风险项：[{"user", "risk_type", "level", "detail"}]。"""
     from identity.models import UserInfo
 
@@ -160,7 +160,7 @@ def _collect_risks(now: Any) -> Any:
     max_superusers = int(getattr(settings, "SECURITY_SUPERUSER_MAX_COUNT", 5) or 0)
 
     items = []
-    users = UserInfo.objects.all().only(
+    queryset = UserInfo.objects.all().only(
         "pk",
         "username",
         "nickname",
@@ -172,26 +172,37 @@ def _collect_risks(now: Any) -> Any:
         "otp_secret_key",
         "date_password_updated",
     )
-    for user in users:
+    total = queryset.count()
+    for index, user in enumerate(queryset.iterator(chunk_size=500), start=1):
         items.extend(_password_risks(user, now, stale_days))
         items.extend(_login_risks(user, now, idle_days))
         items.extend(_privilege_risks(user))
+        # 每 500 人上报一次扫描进度（10% → 50%），避免逐用户写进度表
+        if progress and total and index % 500 == 0:
+            progress(10 + int(index / total * 40), "Scanning users")
     items.extend(_superuser_count_risk(max_superusers, UserInfo))
     return items
 
 
-def scan_account_risks(operator: Any = None) -> dict[str, Any]:
+def scan_account_risks(operator: Any = None, progress: Any = None) -> dict[str, Any]:
     """执行一次巡检（幂等），返回 {"created", "updated", "resolved", "total"}。
+
+    ``progress`` 可选回调 ``(percent, stage)``：供异步任务把扫描阶段写入
+    任务执行记录；同步调用（测试/脚本）不传即保持原行为。
 
     写入侧批量落库：存量行一次取回、按状态分流后 bulk_create / bulk_update，
     自动解除一次 queryset update——避免用户量大时「逐风险项 SELECT + 逐行写」
     的 N 次往返把同步请求拖长（巡检语义与逐行处理完全一致）。
     """
-    from approval.utils.approval.display import user_display
+    from approval.services.approval.display import user_display
     from identity.models import AccountRisk
 
     now = timezone.now()
-    items = _collect_risks(now)
+    if progress:
+        progress(10, "Scanning users")
+    items = _collect_risks(now, progress=progress)
+    if progress:
+        progress(55, "Merging risk items")
     current = {}
     for item in items:
         user = item["user"]
@@ -235,6 +246,8 @@ def scan_account_risks(operator: Any = None) -> dict[str, Any]:
             revived.append(row)
         else:
             refreshed.append(row)
+    if progress:
+        progress(65, "Saving risk items")
     if to_create:
         AccountRisk.objects.bulk_create(to_create, batch_size=500)
     if refreshed:
@@ -246,6 +259,8 @@ def scan_account_risks(operator: Any = None) -> dict[str, Any]:
             batch_size=500,
         )
     created, updated = len(to_create), len(refreshed) + len(revived)
+    if progress:
+        progress(80, "Resolving stale risks")
 
     resolved = 0
     pending = AccountRisk.objects.filter(status=AccountRisk.Status.PENDING).values_list("pk", "user_id", "risk_type")
@@ -258,6 +273,8 @@ def scan_account_risks(operator: Any = None) -> dict[str, Any]:
             updated_time=now,
         )
     result = {"created": created, "updated": updated, "resolved": resolved, "total": len(items)}
+    if progress:
+        progress(95, "Resolving stale risks")
     logger.info("account risk scan: %s (operator=%s)", result, getattr(operator, "username", None))
     return result
 
@@ -286,6 +303,9 @@ def handle_account_risk(risk: Any, action: Any, operator: Any = None, remark: An
     user = risk.user
     if action in ("notify", "force_change_password", "force_logout", "disable") and user is None:
         return False, str(_("The user of this risk item no longer exists"))
+    if user is not None and user.is_superuser and action in ("force_logout", "disable"):
+        # 与用户管理页 target-mutable 同口径：风险处置入口不能成为停用/踢超管的旁路。
+        return False, str(_("Superuser accounts cannot be disabled or forcibly logged out by risk handling"))
 
     try:
         if action == "notify":

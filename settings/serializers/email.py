@@ -4,6 +4,8 @@
 # filename : email
 # author : ly_13
 # date : 8/1/2024
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -25,6 +27,7 @@ class EmailSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     EMAIL_HOST_PASSWORD = serializers.CharField(
         max_length=1024,
         required=False,
+        allow_blank=True,
         label=_("Password"),
         write_only=True,
         help_text=_(
@@ -69,3 +72,13 @@ class EmailSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
         label=_("Recipient"),
         help_text=_("The recipient is used for testing the email server's connectivity"),
     )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        """SSL（隐式 TLS）与 TLS（STARTTLS）互斥：同时开启必然在握手阶段失败。"""
+        from django.conf import settings as django_settings
+
+        use_ssl = attrs.get("EMAIL_USE_SSL", bool(getattr(django_settings, "EMAIL_USE_SSL", False)))
+        use_tls = attrs.get("EMAIL_USE_TLS", bool(getattr(django_settings, "EMAIL_USE_TLS", False)))
+        if use_ssl and use_tls:
+            raise serializers.ValidationError(_("EMAIL_USE_SSL and EMAIL_USE_TLS cannot both be enabled"))
+        return attrs

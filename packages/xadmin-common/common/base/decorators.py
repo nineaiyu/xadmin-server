@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """通用函数装饰器（自 common/base/magic.py 平移）：连接管理、信号禁停与诊断计时。
 
-对外的既有导入面（common.base.magic）经该模块再导出保持不变。
+历史上经 common.base.magic 间接再导出，magic.py 拆分后请直接从本模块导入。
 """
 
 import time

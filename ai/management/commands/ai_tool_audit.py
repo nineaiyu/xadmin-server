@@ -80,8 +80,8 @@ class Command(BaseCommand):
         import json
         import re
 
-        from ai.utils.ai_registry import action_specs
-        from ai.utils.ai_tool_triage import triage_for
+        from ai.services.actions.ai_registry import action_specs
+        from ai.services.actions.ai_tool_triage import triage_for
         from common.swagger.ai_meta import normalize_path
         from system.services.permission_sync import build_route_index
 

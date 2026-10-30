@@ -89,23 +89,24 @@ Django 内置键中的身份、媒体与本地化配置（密钥、用户模型�
 
 | 键 | 类型 | 缺省 | 用途 | 消费（内核模块，相对 `common/`） |
 |---|---|---|---|---|
-| `SECRET_KEY` | str | 必给 | Django 密钥；内核用于字段级加密派生材料与签名（base/utils.py::signer、fields/char.py） | `base/utils.py`、`fields/char.py` |
-| `FIELD_ENCRYPTION_KEY` | str | '' | 字段级加密主密钥（AESCipherV3 根材料；空 = 回落到 SECRET_KEY 派生并告警） | `base/utils.py` |
-| `FIELD_ENCRYPTION_LEGACY_KEYS` | list[str] | () | 字段级加密历史密钥（轮换期解密旧密文） | `base/utils.py` |
-| `SECURITY_AES_V1_DECRYPT_ENABLED` | bool | True | 是否允许解密 AES v1（Salted__）旧格式请求体；关闭即 fail-closed | `base/utils.py` |
+| `SECRET_KEY` | str | 必给 | Django 密钥；内核用于字段级加密派生材料与签名（base/crypto.py::get_signer、fields/char.py） | `base/crypto.py`、`fields/char.py` |
+| `FIELD_ENCRYPTION_KEY` | str | '' | 字段级加密主密钥（AESCipherV3 根材料；空 = 回落到 SECRET_KEY 派生并告警） | `base/crypto.py` |
+| `FIELD_ENCRYPTION_LEGACY_KEYS` | list[str] | () | 字段级加密历史密钥（轮换期解密旧密文） | `base/crypto.py` |
+| `SECURITY_AES_V1_DECRYPT_ENABLED` | bool | True | 是否允许解密 AES v1（Salted__）旧格式请求体；关闭即 fail-closed | `base/crypto.py` |
 | `AUTH_USER_MODEL` | str | 必给 | 用户模型标签（内核模型基类/权限组件解析用户模型用） | `core/models.py` |
 | `ALLOWED_HOSTS` | list[str] | None | 允许主机（CSP 上报的站内域名判定；Django 安全基建） | `api/csp.py`、`swagger/views.py` |
 | `SECURITY_LOGIN_LIMIT_TIME` | int | 30 | 登录锁定提示中的锁定时长（分钟，文案展示用） | `swagger/views.py` |
+| `SECURITY_LOGIN_ACCESS_ENABLED` | bool | True | 全局登录开关（文档站登录与主登录共用；关闭后所有登录入口拒绝签发） | `swagger/views.py` |
 | `VERIFY_CODE_TTL` | int | 300 | 验证码有效期（秒） | `utils/verify_code.py` |
 | `VERIFY_CODE_LIMIT` | int | 60 | 验证码单目标发送次数上限（限流窗口内） | `utils/verify_code.py` |
 | `VERIFY_CODE_LENGTH` | int | 6 | 验证码位数 | `utils/verify_code.py` |
 | `VERIFY_CODE_UPPER_CASE` | bool | False | 验证码字符集是否含大写字母 | `utils/verify_code.py` |
 | `VERIFY_CODE_LOWER_CASE` | bool | False | 验证码字符集是否含小写字母 | `utils/verify_code.py` |
 | `VERIFY_CODE_DIGIT_CASE` | bool | True | 验证码字符集是否含数字 | `utils/verify_code.py` |
-| `PERMISSION_WHITE_URL` | dict[str, list[str]] | {} | 免鉴权 URL 白名单（path 正则 → 方法清单；缺省空表 = 无免鉴权端点，fail-closed） | `core/permission.py`、`core/utils.py` |
-| `PERMISSION_SHOW_PREFIX` | list[str] | [] | 需要展示按钮级权限码的 URL 前缀正则（路由收集时附带 auths；缺省空表 = 不附带） | `core/utils.py` |
+| `PERMISSION_WHITE_URL` | dict[str, list[str]] | {} | 免鉴权 URL 白名单（path 正则 → 方法清单；缺省空表 = 无免鉴权端点，fail-closed） | `core/permission.py`、`core/url_inventory.py` |
+| `PERMISSION_SHOW_PREFIX` | list[str] | [] | 需要展示按钮级权限码的 URL 前缀正则（路由收集时附带 auths；缺省空表 = 不附带） | `core/url_inventory.py` |
 | `PERMISSION_DATA_ENABLED` | bool | 必给 | 数据权限总开关（关闭即所有查询不做行级裁剪） | `core/filter.py` |
-| `PERMISSION_DATA_AUTH_APPS` | list[str] | [] | 纳入数据权限编译的 app 白名单（其余 app 不注册模型维度；缺省空表 = 不注册） | `core/utils.py` |
+| `PERMISSION_DATA_AUTH_APPS` | list[str] | [] | 纳入数据权限编译的 app 白名单（其余 app 不注册模型维度；缺省空表 = 不注册） | `core/url_inventory.py` |
 | `PERMISSION_FIELD_ENABLED` | bool | 必给 | 字段权限总开关（序列化时按角色×菜单裁剪字段） | `core/controlled_lookup.py`、`core/fields_related.py`、`core/permission.py`、`core/serializers.py` |
 | `BASE_DIR` | str | 必给 | 工程根目录（进程管理命令定位项目/静态资源用） | `management/commands/services/hands.py` |
 | `PROJECT_DIR` | str | 必给 | 工程根目录（启动自检读取版本/配置） | `startup.py` |
@@ -139,9 +140,9 @@ Django 内置键中的身份、媒体与本地化配置（密钥、用户模型�
 | `MODULE_PRESET` | str | 'full' | 模块发行预设（core / standard / full；与 core/modules/registry.py 的 DEFAULT_PRESET 同值） | `core/modules/registry.py` |
 | `MODULE_ENABLE` | list[str] \| tuple[str, ...] | () | 显式启用模块清单（预设之外的加白） | `core/modules/registry.py` |
 | `MODULE_DISABLE` | list[str] \| tuple[str, ...] | () | 显式停用模块清单（预设之内的裁剪） | `core/modules/registry.py` |
-| `ROOT_URLCONF` | str | 必给 | 根 URLConf（路由收集/OpenAPI 生成用） | `core/utils.py` |
-| `ROUTE_IGNORE_URL` | list[str] | [] | 路由收集忽略表（正则，不纳入权限点/路由树；缺省空表 = 不忽略） | `core/utils.py` |
-| `XADMIN_APPS` | list[str] | [] | 二开 app 注册表（路由/WS/周期任务自动发现；缺省空表 = 不自动发现） | `core/utils.py` |
+| `ROOT_URLCONF` | str | 必给 | 根 URLConf（路由收集/OpenAPI 生成用） | `core/url_inventory.py` |
+| `ROUTE_IGNORE_URL` | list[str] | [] | 路由收集忽略表（正则，不纳入权限点/路由树；缺省空表 = 不忽略） | `core/url_inventory.py` |
+| `XADMIN_APPS` | list[str] | [] | 二开 app 注册表（路由/WS/周期任务自动发现；缺省空表 = 不自动发现） | `core/url_inventory.py` |
 | `DB_PREFIX` | str | '' | 物理表前缀（多环境共库时的表空间隔离；空 = 不加前缀） | `core/db/prefix.py` |
 | `DEBUG` | bool | False | 调试模式（媒体文件直出、开发态分支） | `base/decorators.py`、`management/commands/services/services/flower.py`、`utils/media.py` |
 | `DEBUG_DEV` | bool | False | 开发态增强开关（额外诊断输出/演示能力） | `base/decorators.py`、`core/exception.py`、`signal_handlers.py` |
@@ -153,6 +154,7 @@ Django 内置键中的身份、媒体与本地化配置（密钥、用户模型�
 | `RECYCLE_BIN_RETENTION_DAYS` | int | 30 | 回收站保留天数（清理任务与回收站列表倒计时） | `core/modelset/recycle.py`、`tasks.py` |
 | `TRUSTED_PROXY_IPS` | list[str] | [] | 可信反向代理地址（单个 IP 或 CIDR；空 = 不信任转发头） | `utils/request.py` |
 | `AUDIT_DIFF_MODELS` | list[str] | [] | 字段级审计 diff 白名单（模型 _meta.label；空 = 关闭 diff 记录） | `core/config/conf_security.py` |
+| `WEBHOOK_ALLOW_LOOPBACK` | bool | False | 出站请求是否放行环回地址（127.0.0.1 / ::1 / localhost；False = 环回与私网一并拒绝） | `utils/outbound.py` |
 | `LANGUAGE_CODE` | str | 必给 | 语言码（IP 归属地本地化、时间格式） | `utils/ip/geoip/utils.py`、`utils/ip/utils.py` |
 | `DEFAULT_CHARSET` | str | 必给 | 默认字符集（axios 表单解析回退编码） | `drf/parsers/axios_form_data.py` |
 

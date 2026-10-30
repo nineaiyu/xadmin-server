@@ -173,6 +173,11 @@ BASE_CONFIG = {
     "FEISHU_ENABLED": False,
     "FEISHU_APP_ID": "",
     "FEISHU_APP_SECRET": "",
+    # Webhook 通知渠道：站点级转发端点（category=notify_webhook 热更新覆盖，
+    # secret 值级加密落库）。URL 必填才真正启用；出站走 pinned_request 统一出口
+    "WEBHOOK_ENABLED": False,
+    "WEBHOOK_URL": "",
+    "WEBHOOK_SECRET": "",
     # AI 助手：OpenAI 兼容协议；API Key 值级加密落库。
     # 多档案（AiProfile）为主通路：激活档案供全部 AI 链路使用；
     # 以下键是「无激活档案时」的 Setting 回落默认值（category=ai 可热更新覆盖）。
@@ -192,8 +197,14 @@ BASE_CONFIG = {
     # 与数据权限（visible_datasets）口径
     "AI_NL_QUERY_ENABLED": True,
     # AI 受限动作（草稿→确认→以用户身份执行）：2026-10-03 灰度转正
-    # 协议自身 fail-closed；白名单动作与审计见 ai/utils/ai_actions.py
+    # 协议自身 fail-closed；白名单动作与审计见 ai/services/actions/ai_actions.py
     "AI_ACTION_ENABLED": True,
+    # AI 主动日报（提案 P2）：定时聚合观测指标生成 LLM 摘要供首页日报卡；
+    # 默认关（LLM 成本增量），开启后每日 07:31 周期任务生成，只读无动作
+    "AI_DAILY_REPORT_ENABLED": False,
+    # AI 字段草案（提案 P4 二阶段）：代码生成器「自然语言 → 字段覆盖草案」，
+    # 产物过人审进既有 GUI 管线；默认关（按次调用的 LLM 成本增量）
+    "AI_CODEGEN_DRAFT_ENABLED": False,
     # AI 三期采样/行为参数（档案未配置的参数按此回落；None = 不下发走供应商默认）
     "AI_TEMPERATURE": 0.2,
     "AI_MAX_TOKENS": 0,

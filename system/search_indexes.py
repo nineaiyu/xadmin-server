@@ -8,7 +8,7 @@
 - **部署形态无关**：只有 PostgreSQL 会真正建索引（迁移内判 vendor 并 try/except），
   其它后端与「pg_trgm 扩展不可用」的库一律跳过——检索仍然正确，只退回顺序扫描，
   不阻断迁移（warning 可观测）；
-- 索引清单与豁免理由登记在 docs/architecture/indexes.md；trgm 索引随各域 0001 迁移的
+- 索引清单与豁免理由见本文件与各模型 Meta；trgm 索引随各域 0001 迁移的
   模型 Meta GinIndex 落地（identity.0001 首操作先行确保扩展可用），新增检索字段时
   tests/unit/system/test_search_indexes.py 的覆盖守护与漂移守护会提示同步。
 """
@@ -21,7 +21,7 @@ TRGM_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS pg_trgm"
 
 @dataclass(frozen=True)
 class TrigramIndex:
-    """单个 trigram 索引：表 + 字段 + 索引名（命名与 indexes.md 的 idx_* 约定一致）。"""
+    """单个 trigram 索引：表 + 字段 + 索引名（命名遵循 idx_* 约定）。"""
 
     table: str
     field: str

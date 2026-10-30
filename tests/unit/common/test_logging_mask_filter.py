@@ -4,12 +4,12 @@
 覆盖：三种键值形态（JSON 双引号 / repr 单引号 / kv 裸值）、裸数字不掩码
 （业务响应包络 code: 200 是日志主诊断信息）、异常栈与 args 记录、幂等
 （同一 record 流经多个 handler 重复掩码不变形）、过滤器自身故障放行。
-名单与操作日志链路同源（common.core.sensitive.SENSITIVE_FIELDS）。
+名单与操作日志链路同源（common.core.auth.sensitive.SENSITIVE_FIELDS）。
 """
 
 import logging
 
-from common.core.sensitive import SENSITIVE_FIELDS
+from common.core.auth.sensitive import SENSITIVE_FIELDS
 from server.logging import SensitiveDataFilter
 
 

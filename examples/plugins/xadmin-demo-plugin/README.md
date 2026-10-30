@@ -33,8 +33,13 @@ python manage.py migrate xadmin_demo_plugin
 # 4. 重启进程（装配与模块组合在启动期解析；celery worker/beat 同重启）
 ```
 
-菜单与权限点：插件自己的菜单/权限点按宿主既有流程入库
-（`python manage.py sync_menu_permissions --update-seed` 或直接在后台配置）。
+菜单与权限点：随包分发静态种子（`xadmin_demo_plugin/seeds/`，页面菜单 + 标准动作权限点），
+宿主把它写进 `XADMIN_APPS` 后 `python manage.py load_init_json` 自动收集（未装插件则不收集，
+菜单不残留）；后续新增 action 照宿主流程 `sync_menu_permissions --update-seed` 回写。
+**配套前端页面**在宿主前端仓 `xadmin-client/src/extensions/demo-plugin/`
+（最小 RePlusPage 形态，约定见该目录上级 `src/extensions/README.md`；菜单种子的
+`component="extensions/demo-plugin/index"` 与组件 `defineOptions({ name: "PluginNote" })`
+对齐，断链由 `pnpm check:menu-components` 守护）。
 模块清单可随时用 `python manage.py module --list` 核对 `demo_plugin` 的等级与开关状态。
 
 ## 验证清单（装完即可对照执行）
@@ -80,3 +85,16 @@ curl -i http://127.0.0.1:8896/api/plugin-demo/note     # ④ 路由层：404 + {
 # 2. 数据面按需保留：插件表与迁移记录不动，回滚后重新启用即可继续用
 pip uninstall xadmin-demo-plugin
 ```
+
+
+## 内核契约三连改 checklist（给内核维护者）
+
+在 `packages/xadmin-common/common/contracts.py` 新增一条 common → 业务契约时，三处必须同步改
+（漏任何一处都会被对应门禁拦下）：
+
+1. **白名单登记**：`contracts.py` 的 `_CONTRACT_PROVIDERS` 增加契约名与默认提供方说明；
+2. **门禁登记**：`scripts/check_cross_app_imports.py` 的 `CONTRACT_SEAMS` 增加对应缝名；
+3. **守护测试**：契约消费方测试（`tests/unit/common/test_contracts.py`）补注入面用例。
+
+二开插件侧只需照 `providers.py` 的形态 `register_contract` 注册实现——白名单外的
+契约名注入会被拒绝（缝面不扩散是刻意保守）。
