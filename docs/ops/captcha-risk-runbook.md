@@ -93,7 +93,9 @@ python loadtest/captcha_attack.py --base-url http://127.0.0.1:8896
 - 已签发未消费的旧票据在升级后失效，用户需重做一次验证。
 - 交互式 `verify` 在 `CAPTCHA_ACTION_BIND=True`（默认）时必须携带 `action`；前端需同批升级。
   旧第三方前端可临时 `CAPTCHA_ACTION_BIND=False` 过渡。
-- 密钥单源是 `config.yml` 的 `CAPTCHA_TICKET_SECRET`；未配置时由 `SECRET_KEY` 派生并告警一次。
+- 密钥单源是 `config.yml` 的 `CAPTCHA_TICKET_SECRET`：`DEBUG=false` 时缺失即拒绝启动
+  （`captcha.E002`），只有 `DEBUG=true` 才从 `SECRET_KEY` 派生并告警一次。源码部署重跑
+  `ops/init_config.sh`、安装器执行 `upgrade` / `reconfig` 会按空值自动补齐，存量配置无需手工编辑。
 - 改完后端运行时代码需重启 `xadmin-server` 与 Celery 容器；改种子后先
   `load_init_json --check` 再复灌。
 

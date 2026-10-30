@@ -39,7 +39,7 @@ uv sync --all-groups                # 依赖以 uv.lock 为准（框架内核 xa
                                     # 无 uv 时：python3.14 -m venv .venv
                                     #   && pip install -r requirements.txt -r requirements-dev.txt
                                     #   && pip install --no-deps -e ./packages/xadmin-common）
-cp config_example.yml config.yml    # 本地开发建议 DB_ENGINE: sqlite3
+bash ops/init_config.sh             # 生成 config.yml（本地开发建议再改 DB_ENGINE: sqlite3）
 uv run python manage.py migrate && uv run python ops/init_data.py
 uv run python manage.py start all
 ```

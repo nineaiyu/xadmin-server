@@ -28,6 +28,19 @@ SECRET_KEY:
 #FIELD_ENCRYPTION_KEY:
 #FIELD_ENCRYPTION_LEGACY_KEYS: []
 
+# 验证码签名票据密钥（生产必填）：DEBUG=false 时缺失即拒绝启动（captcha.E002），
+# 多实例部署必须一致；生成方法同 SECRET_KEY。ops/init_config.sh 与安装器会在
+# 空值时自动生成，存量配置重跑引导脚本也会补齐；未创建 config.yml 的开箱路径
+# （含 DEBUG=true）会持久化生成到 data/.captcha_ticket_secret。
+CAPTCHA_TICKET_SECRET:
+# 当前密钥 id（默认 k1）。轮换时改 id、把旧密钥写入下一条，旧票据在有效期内仍可验签
+#CAPTCHA_TICKET_SECRET_KEY_ID: k1
+# 轮换期旧密钥（格式 key_id:secret，与当前密钥并行验签；滚动完成后清空）
+#CAPTCHA_TICKET_SECRET_PREVIOUS:
+# 票据 audience：部署标识，隔离不同部署签发的票据。留空回落到 SITE_URL
+# （未配置时默认 127.0.0.1:8000，各部署相同 = 不隔离并触发启动告警 captcha.W002）。
+#CAPTCHA_TICKET_AUDIENCE: https://xadmin.example.com
+
 # Development env open this, when error occur display the full process track, Production disable it
 # DEBUG 模式 开启DEBUG后遇到错误时可以看到更多日志，正式服要禁用，开发阶段，需要取消该注释，否则会导致前端ws连接失败
 # DEBUG: true

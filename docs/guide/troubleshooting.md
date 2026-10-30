@@ -97,9 +97,9 @@
 
 ### 10. 服务启动即退出
 
-- **常见三类**：无 `config.yml`（回落 `config_example.yml` 并自动生成密钥，显式配了却没填 `SECRET_KEY` 且 `DEBUG=false` 才拒绝启动）、
-  `SECRET_KEY` 为空、端口被占用（exit code 10）。
-- **处置**：`cp config_example.yml config.yml` 并填 `SECRET_KEY`（生产必须显式且多实例一致）；改 `HTTP_LISTEN_PORT` 或释放端口。
+- **常见四类**：无 `config.yml`（回落 `config_example.yml` 并自动生成密钥，显式配了却没填密钥且 `DEBUG=false` 才拒绝启动）、
+  `SECRET_KEY` 为空、`CAPTCHA_TICKET_SECRET` 为空（系统检查报 `captcha.E002`）、端口被占用（exit code 10）。
+- **处置**：`bash ops/init_config.sh` 生成 / 补齐密钥与凭据（生产必须显式且多实例一致）；改 `HTTP_LISTEN_PORT` 或释放端口。
 - **相关**：[ops/runbook.md §1](../ops/runbook.md)、[dev-pitfalls.md](../dev-pitfalls.md) §7。
 
 ### 11. 生产形态改了 `config.yml` 不生效

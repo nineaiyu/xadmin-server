@@ -123,6 +123,7 @@ python manage.py post_upgrade             # 3. 补全种子/文案/缓存
 | 现象 | 原因与处置 |
 |------|-----------|
 | `migrate` 输出 `No migrations to apply` | 正常：等价链（四域切分后的 4.x）→ 5.0 表结构等价，认领后无需 DDL |
+| 升级后容器反复重启，日志报 `captcha.E002` | 新版本要求 `CAPTCHA_TICKET_SECRET`（`DEBUG=false` 缺失即拒启）：源码部署重跑 `ops/init_config.sh`；安装器升级会自动补齐（旧 `config.txt` 也可再执行 `./xadmin.sh reconfig`） |
 | `upgrade_ledger --apply` 报 `unsupported` | 存在白名单之外的游离记录或表结构缺表/缺列：按 [upgrade-stock.md §五](upgrade-stock.md) 清库重建 |
 | 认领后仍提示有 `pending` 迁移 | 先 `upgrade_check` 看是否 `schema-drift`；漂移库不要强行认领 |
 | 升级后新入口 403 / 菜单缺失 | `python manage.py post_upgrade`（灌种子 + 清缓存）后重启后端 |

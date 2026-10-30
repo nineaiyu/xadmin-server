@@ -6,10 +6,10 @@
 
 ## 1. 服务启动即退出
 
-- **定位**：`data/logs/` 下启动日志；常见三类——`config.yml` 不存在 / `SECRET_KEY` 为空且 DEBUG=false / 端口被占用（exit
-  code 10）。
-- **处置**：`cp config_example.yml config.yml` 并填 `SECRET_KEY`（`cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 49`
-  ）；端口占用改 `HTTP_LISTEN_PORT` 或释放端口。
+- **定位**：`data/logs/` 下启动日志；常见四类——`config.yml` 不存在 / `SECRET_KEY` 为空且 DEBUG=false /
+  `CAPTCHA_TICKET_SECRET` 为空（`captcha.E002`）/ 端口被占用（exit code 10）。
+- **处置**：`bash ops/init_config.sh` 生成或补齐密钥与凭据（既有值保留；生产须多实例一致）；
+  端口占用改 `HTTP_LISTEN_PORT` 或释放端口。
 
 ## 2. healthz `db_status: false`
 
