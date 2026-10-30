@@ -144,10 +144,26 @@ class TestFormOptions:
 
         resp = auth_client.get(FORM_OPTIONS_URL)
         assert resp.status_code == 200
+        # 未截断：显式 false + 默认成功 detail（前端不得据此弹提示）
+        assert resp.data["truncated"] is False
         pks = {row["pk"] for row in resp.data["data"]}
         assert pks == {active.pk, inactive.pk}
         row = next(item for item in resp.data["data"] if item["pk"] == active.pk)
         assert row["schema"]["fields"][0]["key"] == "name"
+
+    def test_truncated_flag_and_notice(self, auth_client, monkeypatch):
+        """超过数据源上限：显式 truncated 标记 + 截断提示，前端只据此提示。"""
+        from common.utils.datasource import truncation_detail
+
+        monkeypatch.setattr("common.utils.datasource.DATASOURCE_MAX_ROWS", 1)
+        _make_form(name="表单-A")
+        _make_form(name="表单-B")
+
+        resp = auth_client.get(FORM_OPTIONS_URL)
+        assert resp.data["code"] == 1000
+        assert len(resp.data["data"]) == 1
+        assert resp.data["truncated"] is True
+        assert resp.data["detail"] == truncation_detail()
 
 
 class TestFormDataExport:
