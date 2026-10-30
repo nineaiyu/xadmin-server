@@ -200,6 +200,14 @@ class TestCollectScreenCards:
         # 浏览者：未命中 allowed_roles 的卡片不参与聚合（与仪表盘读取侧同口径）
         assert [ref["card"] for ref in collect_screen_cards(screen, user=normal_user)] == ["c2"]
 
+    def test_dashboard_creator_bypasses_card_roles(self, dashboard_a, normal_user):
+        """创建者旁路：自己仪表盘上的受限卡片仍要进帧（与 REST 读侧 owner 旁路同口径）。"""
+        dashboard_a.layout[0]["allowed_roles"] = ["nobody_role"]
+        dashboard_a.creator = normal_user
+        dashboard_a.save(update_fields=["layout", "creator"])
+        screen = _make_screen(normal_user, [dashboard_a])
+        assert [ref["card"] for ref in collect_screen_cards(screen, user=normal_user)] == ["c1", "c2"]
+
     def test_dedupe_and_missing_references(self, dashboard_a, superuser):
         screen = _make_screen(superuser, [dashboard_a, dashboard_a, "00000000-0000-0000-0000-000000000000"])
         # 同仪表盘重复清单只展开一次；已删仪表盘跳过

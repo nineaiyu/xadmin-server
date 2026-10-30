@@ -31,7 +31,7 @@ from .conditions import (
 )
 from .constants import _models
 from .engine_events import (  # noqa: F401 再导出：事件/通知调用面保持不变
-    _alert_auto_approved as _alert_auto_approved,
+    _alert_no_approver as _alert_no_approver,
 )
 from .engine_events import (
     _cancel_pending_tasks as _cancel_pending_tasks,  # noqa: F401 显式再导出（PEP 484 语义）
@@ -56,31 +56,20 @@ logger = get_logger(__name__)
 
 
 def _enter_node(instance: Any, node: Any) -> bool:
-    """进入节点：解析候选并建 PENDING 任务 + 通知；无候选返回 False（调用方跳过该节点）。
+    """进入节点：解析候选并建 PENDING 任务 + 通知；无候选返回 False（调用方阻塞节点）。
 
-    无候选（如部门 leader 被清空）在推进期发生时不阻塞流程：写一行 assignee 为空的
-    审计任务（comment 注明自动通过），保证行为可追溯。委托代审的候选会记录
-    delegate_from（原审批人），供审批轨迹标注「由 X 代理」。
+    运行期无候选（如角色成员被移除、部门 leader 被清空）不能自动通过：审批控制
+    必须 fail-closed。此处不写 APPROVED 空任务、不推进实例，仅告警管理员；调用方
+    把实例 current_node 固定到该节点并保持 PENDING，等待管理员修复配置/加签或撤回。
+    委托代审的候选会记录 delegate_from（原审批人），供审批轨迹标注「由 X 代理」。
 
     任务行批量创建（候选数上限内单次 INSERT）；候选解析、通知与待办计数失效语义不变。
     """
     ApprovalNodeTask = _models().Task
-    now = timezone.now()
     pairs = resolve_assignee_pairs(node, instance.creator, instance.form_data)
     if not pairs:
-        ApprovalNodeTask.objects.create(
-            instance=instance,
-            node=node,
-            node_name=node.name,
-            node_order=node.order,
-            assignee=None,
-            actor=None,
-            status=ApprovalNodeTask.Status.APPROVED,
-            comment=str(_("No available approver, node auto-approved")),
-            acted_at=now,
-        )
-        logger.warning("approval flow node auto-approved (no candidate). instance:%s node:%s", instance.pk, node.pk)
-        _alert_auto_approved(instance, node)
+        logger.warning("approval flow node blocked (no candidate). instance:%s node:%s", instance.pk, node.pk)
+        _alert_no_approver(instance, node)
         return False
 
     candidates = [user for user, _source in pairs]
@@ -232,8 +221,11 @@ def _advance(instance: Any, node: Any) -> None:
             ApprovalInstance.objects.filter(pk=instance.pk).update(current_node=following, updated_time=timezone.now())
             instance.current_node = following
             return
-        # 无候选节点：审计行已写，继续找下一个节点（不改变 current_node）
-        node = following
+        # 无候选节点：fail-closed 阻塞在当前节点（不自动通过、不继续跳过），
+        # 实例保持 PENDING，等待管理员修复审批人配置/加签或撤回。
+        ApprovalInstance.objects.filter(pk=instance.pk).update(current_node=following, updated_time=timezone.now())
+        instance.current_node = following
+        return
 
 
 def _load_task(task_pk: Any) -> Any:

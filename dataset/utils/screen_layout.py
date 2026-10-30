@@ -360,6 +360,8 @@ def normalize_screen_layout(raw: Any, dashboard_pks: Any, dataset_pks: Any = ())
 
         pane = _normalize_pane_body(item, index, known_dashboards, known_datasets)
         pane_id = pane["pk"]
+        if any(placed["pk"] == pane_id for placed in normalised):
+            raise ScreenLayoutError(_("Duplicate screen pane id: {}").format(pane_id))
         x = _as_int(item.get("x"), "x")
         y = _as_int(item.get("y"), "y")
         w = _as_int(item.get("w"), "w")
@@ -428,6 +430,8 @@ def normalize_screen_free_layout(raw: Any, dashboard_pks: Any, dataset_pks: Any 
 
         pane = _normalize_pane_body(item, index, known_dashboards, known_datasets)
         pane_id = pane["pk"]
+        if any(placed["pk"] == pane_id for placed in normalised):
+            raise ScreenLayoutError(_("Duplicate screen pane id: {}").format(pane_id))
         x = _as_int(item.get("x"), "x")
         y = _as_int(item.get("y"), "y")
         w = _as_int(item.get("w"), "w")

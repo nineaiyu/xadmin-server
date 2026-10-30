@@ -69,10 +69,13 @@ def invalidate_unread_summary(user: Any) -> None:
 
 
 def get_users_notice_q(user_obj: Any) -> Any:
+    from common.core.roles import user_role_pks
+
     q = Q()
     q |= Q(notice_type=MessageContent.NoticeChoices.NOTICE)
     q |= Q(notice_type=MessageContent.NoticeChoices.DEPT, notice_dept=user_obj.dept)
-    q |= Q(notice_type=MessageContent.NoticeChoices.ROLE, notice_role__in=user_obj.roles.all())
+    # 生效角色 = 直挂 ∪ 部门挂（与菜单/审批/脱敏同一解析口径）
+    q |= Q(notice_type=MessageContent.NoticeChoices.ROLE, notice_role__in=user_role_pks(user_obj))
     # 岗位通知：仅启用岗位的在岗用户可见（与审批人解析/计数同口径）
     q |= Q(
         notice_type=MessageContent.NoticeChoices.POST,

@@ -138,8 +138,9 @@ class DynamicFormSerializer(BaseModelSerializer):
 
         if instance.approval_flow_id:
             sync_bound_flow_schema(instance)
-        elif previous_flow_id:
-            # 解绑（含换绑）：旧流程仍有其他绑定表单时重投影
+        if previous_flow_id and previous_flow_id != instance.approval_flow_id:
+            # 换绑 A→B：新流程已投影；旧流程仍需按剩余绑定表单重算，
+            # 否则 A 会保留已脱离表单的字段（独立发起 A 时展示/校验漂移）。
             resync_flow_after_unbind(previous_flow_id)
         return instance
 

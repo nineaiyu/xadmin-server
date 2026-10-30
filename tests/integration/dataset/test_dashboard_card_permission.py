@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from dataset.models.dataset import Dashboard, Dataset
 from dataset.utils.dataset import aggregate_dataset, execute_dataset, filter_layout_for_user
-from identity.models import UserInfo, UserRole
+from identity.models import DeptInfo, UserInfo, UserRole
 from system.models import DataPermission, FieldPermission, ModelLabelField
 
 pytestmark = pytest.mark.django_db
@@ -69,6 +69,16 @@ class TestFilterLayout:
         """创建者不能被自己的卡片级授权过滤掉（否则保存响应丢卡 → 再保存即删卡）。"""
         layout = [card("c1", dataset, ["other_role"])]
         assert filter_layout_for_user(layout, normal_user, owner_id=normal_user.pk) == layout
+
+    def test_department_role_sees_card(self, dataset, normal_user):
+        """部门挂角色与直挂角色同口径：卡片 allowed_roles 命中部门角色即可见。"""
+        role = UserRole.objects.create(name="卡片部门角色", code="card_dept_role")
+        dept = DeptInfo.objects.create(name="卡片部门", code="card_dept")
+        dept.roles.add(role)
+        normal_user.dept = dept
+        normal_user.save(update_fields=["dept"])
+        layout = [card("c1", dataset, [role.code]), card("c2", dataset, ["other_role"])]
+        assert [item["id"] for item in filter_layout_for_user(layout, normal_user)] == ["c1"]
 
     def test_superuser_sees_all(self, dataset):
         admin = UserInfo.objects.create_superuser(

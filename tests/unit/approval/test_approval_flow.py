@@ -1074,10 +1074,10 @@ class TestNodeLimitAndBatchPaths:
         assert {user.pk for user in users} == {approver.pk, approver2.pk}
         assert len([item for item in ctx.captured_queries if "identity_userinfo" in item["sql"].lower()]) == 1
 
-    def test_auto_approved_alerts_webhook_and_admins(
+    def test_no_approver_blocks_without_task_and_alerts_admins(
         self, monkeypatch, applicant, superuser, django_capture_on_commit_callbacks
     ):
-        """无候选自动通过：审计行照旧 + 出站 Webhook + 知会超管（节点名不串上一节点）。"""
+        """无候选阻塞：不建自动通过任务、不推进；出站 Webhook + 知会超管。"""
         from approval.services.approval_flow.engine import _enter_node
 
         flow = make_flow(
@@ -1106,15 +1106,47 @@ class TestNodeLimitAndBatchPaths:
         with django_capture_on_commit_callbacks(execute=True):
             assert _enter_node(instance, node) is False
 
-        assert [event for event, _data in emitted] == ["flow.node_auto_approved"]
+        assert [event for event, _data in emitted] == ["flow.node_no_approver"]
         assert emitted[0][1]["node_name"] == "空节点"
-        assert [item["event"] for item in notified] == ["auto_approved"]
+        assert [item["event"] for item in notified] == ["no_approver"]
         assert notified[0]["node_name"] == "空节点"
         assert notified[0]["user"] == superuser.pk
+        assert not ApprovalNodeTask.objects.filter(instance=instance, node=node).exists()
 
-        task = ApprovalNodeTask.objects.get(instance=instance, node=node)
-        assert task.status == ApprovalNodeTask.Status.APPROVED
-        assert task.assignee is None
+    def test_runtime_no_approver_blocks_instance_at_node(self, applicant, approver, django_capture_on_commit_callbacks):
+        """运行期角色成员被清空：下一节点保持 PENDING，不自动通过、不继续推进。"""
+        second_role = UserRole.objects.create(name="终审角色", code="runtime_final_role")
+        member = UserInfo.objects.create_user(username="revoked_role_member", password="Test@123456")
+        member.roles.add(second_role)
+        flow = make_flow(
+            code="runtime_no_candidate",
+            nodes=[
+                {
+                    "name": "初审",
+                    "order": 1,
+                    "assignee_type": ApprovalFlowNode.AssigneeType.USER,
+                    "assignee_value": approver.username,
+                },
+                {
+                    "name": "终审",
+                    "order": 2,
+                    "assignee_type": ApprovalFlowNode.AssigneeType.ROLE,
+                    "assignee_value": second_role.code,
+                },
+            ],
+        )
+        instance, error = create_instance(flow=flow, applicant=applicant, title="运行期阻塞", form_data={})
+        assert error is None
+        first_task = ApprovalNodeTask.objects.get(instance=instance, node=flow.nodes.get(order=1), assignee=approver)
+        member.roles.remove(second_role)
+
+        with django_capture_on_commit_callbacks(execute=True):
+            ok, detail = approve_task(first_task.pk, approver)
+        assert ok is True, detail
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.PENDING
+        assert instance.current_node == flow.nodes.get(order=2)
+        assert not ApprovalNodeTask.objects.filter(instance=instance, node=flow.nodes.get(order=2)).exists()
 
 
 class TestResubmitSourceLink:
@@ -1163,3 +1195,22 @@ class TestResubmitSourceLink:
         )
         assert error is None
         assert instance is not None and instance.source_instance_id is None
+
+
+class TestDepartmentRoles:
+    """部门挂角色与直挂角色同口径：可发起流程、可作为 role 节点审批人。"""
+
+    def test_visible_to_and_role_assignee_include_department_roles(self, applicant, approver_role):
+        dept = DeptInfo.objects.create(name="流程部门", code="flow_dept")
+        dept.roles.add(approver_role)
+        applicant.dept = dept
+        applicant.save(update_fields=["dept"])
+        member = UserInfo.objects.create_user(username="dept_approver", password="Test@123456", dept=dept)
+        flow = make_flow(code="dept_role_flow", nodes=[{"name": "部门审批"}])
+        flow.initiator_roles = [approver_role.code]
+        flow.save(update_fields=["initiator_roles"])
+
+        assert flow in ApprovalFlow.visible_to(applicant)
+        assert flow.user_can_initiate(applicant) is True
+        node = flow.nodes.first()
+        assert member in resolve_assignees(node, applicant, {})

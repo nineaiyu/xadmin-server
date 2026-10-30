@@ -11,10 +11,14 @@ from rest_framework.test import APIClient
 
 from ai.models.ai import AiProfile
 from ai.services.assistant.ai import (
+    PURPOSE_CHAT,
+    PURPOSE_EMBEDDING,
     ai_context_limit,
     ai_credentials,
     ai_persona,
+    embedding_profile,
     is_configured,
+    profile_for,
     set_active_profile,
 )
 
@@ -172,6 +176,24 @@ class TestActivation:
         assert auth_client.delete(f"{PROFILES_URL}/{row.pk}").status_code in (200, 204)
         assert AiProfile.objects.count() == 0
         assert ai_credentials()["base_url"] == "https://fallback.example.com/v1"
+
+    def test_embedding_profile_not_used_as_chat_fallback(self):
+        """仅激活 embedding 档案时：chat/structured 未配置，embedding 用途自身可用。"""
+        profile = AiProfile.objects.create(
+            name="向量档案",
+            base_url="https://embed.example.com/v1",
+            api_key="sk-embed",
+            model="text-embedding-3-small",
+            purpose=AiProfile.Purpose.EMBEDDING,
+        )
+        profile.api_key_plain = "sk-embed"
+        profile.save()
+        set_active_profile(profile, True)
+        assert profile_for(PURPOSE_CHAT) is None
+        assert profile_for("structured") is None
+        assert is_configured() is False
+        assert embedding_profile() == profile
+        assert is_configured(PURPOSE_EMBEDDING) is True
 
 
 class TestCredentialsResolution:

@@ -237,6 +237,19 @@ class TestBackendRegistry:
     def test_policy_for_none_user(self):
         assert get_user_mfa_policy(None) == {"methods": None, "mfa_required": False}
 
+    def test_policy_includes_department_roles(self, db):
+        """部门挂角色同样参与 MFA 强制与方式收窄。"""
+        from identity.models import DeptInfo, UserInfo, UserRole
+
+        role = UserRole.objects.create(name="部门 MFA", code="dept_mfa", mfa_required=True, allowed_mfa_types=["otp"])
+        dept = DeptInfo.objects.create(name="MFA 部门", code="mfa_dept")
+        dept.roles.add(role)
+        user = UserInfo.objects.create_user(username="dept_mfa_user", password="Test@123456", dept=dept)
+
+        policy = get_user_mfa_policy(user)
+        assert policy["mfa_required"] is True
+        assert policy["methods"] == {"otp"}
+
     def test_enabled_backends_loads_policy_once(self, normal_user, monkeypatch):
         """一次方法列表只算一次策略：逐后端不得重复查角色。"""
         from mfa import backends

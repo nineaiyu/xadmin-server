@@ -160,6 +160,27 @@ class TestChunkInit:
         assert response.data["code"] == 1002
         assert str(response.data["detail"]) == str(_("Invalid file fingerprint"))
 
+    def test_quota_and_count_include_soft_deleted_files(self, superuser, _small_chunks):
+        """软删文件仍占磁盘：分片 init 必须按 all_objects 统计配额与数量。"""
+        from django.core.files.base import ContentFile
+
+        from common.core.config import SysConfig
+
+        reused = UploadFile.objects.create(
+            filename="old.bin",
+            filesize=1,
+            is_upload=True,
+            creator=superuser,
+            filepath=ContentFile(b"x", name="old.bin"),
+        )
+        reused.delete()
+        SysConfig.set_value("FILE_UPLOAD_COUNT_LIMIT", 1)
+
+        result = _init(superuser, filesize=10, total_chunks=3, chunk_size=4)
+
+        assert result["code"] == 1004
+        assert not UploadSession.objects.filter(creator=superuser).exists()
+
 
 class TestChunkPart:
     def test_stores_and_is_idempotent(self, superuser, _small_chunks):
@@ -182,6 +203,17 @@ class TestChunkPart:
         plan = _init(superuser, filesize=10, total_chunks=3, chunk_size=4)
         response = _part(superuser, plan["session"], 0, b"a" * 100)
         assert response.data["code"] == 1002
+
+    @pytest.mark.parametrize("bad_index", ["abc", "1.5", "-1", "", [1]])
+    def test_rejects_malformed_index_as_business_error(self, superuser, _small_chunks, bad_index):
+        """非数字/负分片索引走业务码而非 500（内核直调，绕过序列化层）。"""
+        from file.utils.upload_chunk import store_part
+
+        plan = _init(superuser, filesize=10, total_chunks=3, chunk_size=4)
+        session = UploadSession.objects.get(pk=plan["session"])
+        with pytest.raises(UploadError) as exc_info:
+            store_part(superuser, session, bad_index, SimpleUploadedFile("part", b"abcd"))
+        assert exc_info.value.code == 1002
 
     def test_other_user_cannot_feed_session(self, superuser, normal_user, _small_chunks):
         # API 层先被权限门拦下（normal_user 未授权文件中心）

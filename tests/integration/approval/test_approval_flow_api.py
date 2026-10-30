@@ -161,6 +161,34 @@ class TestApprovalFlowCrud:
         payload["nodes"][0]["routes"] = [{"condition": {"field": "amount", "op": "lt", "value": "200"}, "target": 2}]
         assert auth_client.post(FLOWS_URL, payload, format="json").data["code"] == 1000
 
+    def test_rejects_backward_route_and_invalid_node_enums(self, auth_client):
+        """反向路由会被引擎判环；非法枚举必须在保存期拒绝。"""
+        payload = {
+            "name": "反向路由",
+            "code": "backward_route",
+            "nodes": [
+                {"name": "A", "order": 1, "assignee_type": "user", "assignee_value": "u1"},
+                {
+                    "name": "B",
+                    "order": 2,
+                    "assignee_type": "user",
+                    "assignee_value": "u2",
+                    "routes": [{"target": 1}],
+                },
+            ],
+        }
+        assert auth_client.post(FLOWS_URL, payload, format="json").status_code == 400
+
+        payload["code"] = "invalid_assignee"
+        payload["nodes"][1]["routes"] = []
+        payload["nodes"][1]["assignee_type"] = "robot"
+        assert auth_client.post(FLOWS_URL, payload, format="json").status_code == 400
+
+        payload["code"] = "invalid_timeout_action"
+        payload["nodes"][1]["assignee_type"] = "user"
+        payload["nodes"][1]["timeout_action"] = "explode"
+        assert auth_client.post(FLOWS_URL, payload, format="json").status_code == 400
+
     def test_flow_optimistic_lock(self, auth_client):
         """并发编辑：基线落后于当前行拒绝整单覆盖；携带最新基线或未携带基线正常保存。"""
         flow = make_flow(code="lock_flow", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "u1"}])

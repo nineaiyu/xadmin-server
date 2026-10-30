@@ -207,10 +207,10 @@ def _pending_rows(qs: Any, model: str, force: bool) -> Any:
     """待构建块：force 全量；否则仅「未向量化 / 模型变更 / 正文 hash 变更」的块。"""
     pending = []
     skipped = 0
-    for pk, content_hash, embedding_hash, embedding_model, content in qs.values_list(
-        "pk", "content_hash", "embedding_hash", "embedding_model", "content"
+    for pk, content_hash, embedding_hash, embedding_model, embedding_vector, content in qs.values_list(
+        "pk", "content_hash", "embedding_hash", "embedding_model", "embedding_vector", "content"
     ):
-        if force or embedding_hash != content_hash or embedding_model != model:
+        if force or embedding_hash != content_hash or embedding_model != model or embedding_vector is None:
             pending.append((pk, content_hash, content or ""))
         else:
             skipped += 1
@@ -368,14 +368,18 @@ def _has_pending_chunks(source_path: str | None, model: str) -> bool:
     """是否存在待建块（缺向量 / 正文变更 / 模型不符），判定与 ``_pending_rows`` 同口径。
 
     ``embedding_hash`` 为非空默认 ""（未构建块），与 64 位十六进制 ``content_hash``
-    恒不相等，SQL 比较无 NULL 三值逻辑坑。
+    恒不相等，SQL 比较无 NULL 三值逻辑坑。二进制向量存在但 pgvector 列为空的行
+    同样视为待建（重建保留路径曾只回填二进制列，检索按 pgvector 列过滤会静默丢块）。
     """
+    from django.db.models import Q
+
     from ai.models.ai import AiKnowledgeChunk
 
     qs = AiKnowledgeChunk.objects.all()
     if source_path:
         qs = qs.filter(source_path=source_path)
-    typed_value: bool = qs.exclude(embedding_hash=F("content_hash"), embedding_model=model).exists()
+    stale = ~Q(embedding_hash=F("content_hash"), embedding_model=model)
+    typed_value: bool = qs.filter(Q(embedding_vector__isnull=True) | stale).exists()
     return typed_value
 
 

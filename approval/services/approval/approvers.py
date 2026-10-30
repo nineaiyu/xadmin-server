@@ -18,7 +18,7 @@ def get_approver_queryset() -> Any:
     """
     from common.core.config import SysConfig
     from identity.models import UserInfo
-    from identity.services import get_users_by_perms
+    from identity.services import get_users_by_perms, get_users_by_role_codes
 
     role_codes = SysConfig.APPROVAL_APPROVER_ROLES or []
     perms = SysConfig.APPROVAL_APPROVER_PERMS or []
@@ -26,10 +26,7 @@ def get_approver_queryset() -> Any:
         return UserInfo.objects.filter(is_superuser=True, is_active=True)
     queryset = UserInfo.objects.none()
     if role_codes:
-        queryset = (
-            queryset
-            | UserInfo.objects.filter(is_active=True, roles__is_active=True, roles__code__in=role_codes).distinct()
-        )
+        queryset = queryset | get_users_by_role_codes(role_codes)
     if perms:
         queryset = queryset | get_users_by_perms(perms)
     return queryset.distinct()

@@ -93,6 +93,19 @@ def force_logout_users(user_pks: Any, operator: Any = None) -> int:
     return channels
 
 
+def revoke_user_credentials(user_pk: Any, operator: Any = None) -> dict[str, Any]:
+    """用户凭证整体失效：JWT 会话（access/refresh）+ PAT。
+
+    密码变更/重置后调用：旧 access 由用户级失效时间戳拒绝，refresh 拉黑，
+    PAT 置停用；WS 在线连接与 UserSession 一并离线。返回处置计数。
+    """
+    from identity.models import PersonalAccessToken
+
+    pats = PersonalAccessToken.objects.filter(creator_id=user_pk, is_active=True).update(is_active=False)
+    channels = force_logout_user(user_pk, operator=operator)
+    return {"pat": pats, "channels": channels}
+
+
 def enforce_session_limit(user: Any, limit: Any = None) -> Any:
     """并发会话上限（SECURITY_LOGIN_MAX_SESSIONS，0 = 不限）：超限踢最久未活跃会话。
 

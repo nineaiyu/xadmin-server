@@ -123,7 +123,7 @@ def collect_screen_cards(screen: Any, user: Any = None) -> list[CardRef]:
             continue
         cards = list(dashboard.layout or [])
         if user is not None:
-            cards = filter_layout_for_user(cards, user)
+            cards = filter_layout_for_user(cards, user, owner_id=dashboard.creator_id)
         for card in cards:
             if not isinstance(card, dict):
                 continue

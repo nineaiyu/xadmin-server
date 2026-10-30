@@ -110,8 +110,11 @@ def _validate_plan(filename: str, filesize: int, total_chunks: int, chunk_size: 
     if filesize > max_size:
         raise UploadError(SIZE_EXCEEDED_CODE, _("upload file size cannot exceed {}").format(max_size))
     quota_mb = get_user_quota_mb(user_obj) or 0
+    # 配额/数量按全量行统计（含回收站）：软删只标记、物理文件仍占磁盘，
+    # 按活动行统计会允许「上传→删除→再上传」绕过上限（与单请求上传同口径）。
+    owner_files = UploadFile.all_objects.filter(creator=user_obj)
     if quota_mb:
-        used = UploadFile.objects.filter(creator=user_obj).aggregate(size=Sum("filesize"))["size"] or 0
+        used = owner_files.aggregate(size=Sum("filesize"))["size"] or 0
         if used + filesize > quota_mb * 1024 * 1024:
             raise UploadError(
                 QUOTA_EXCEEDED_CODE,
@@ -119,7 +122,7 @@ def _validate_plan(filename: str, filesize: int, total_chunks: int, chunk_size: 
             )
     count_limit = get_user_count_limit(user_obj) or 0
     if count_limit:
-        used_count = UploadFile.objects.filter(creator=user_obj).count()
+        used_count = owner_files.count()
         if used_count + 1 > count_limit:
             raise UploadError(
                 QUOTA_EXCEEDED_CODE,
@@ -201,7 +204,11 @@ def store_part(user_obj: Any, session: Any, index: Any, file_obj: Any) -> int:
     """
     if session.creator_id != user_obj.pk or session.status != UploadSession.Status.PENDING:
         raise UploadError(INVALID_CODE, _("Invalid upload session"))
-    index = int(index)
+    try:
+        index = int(index)
+    except (TypeError, ValueError):
+        # 非数字分片索引按业务错误拒绝（裸 ValueError 会冒泡成 500）
+        raise UploadError(INVALID_CODE, _("Invalid chunk index")) from None
     if not 0 <= index < session.total_chunks:
         raise UploadError(INVALID_CODE, _("Chunk index out of range"))
     size = file_obj.size

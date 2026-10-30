@@ -10,6 +10,8 @@
 """
 
 import pytest
+from rest_framework.exceptions import ValidationError
+from rest_framework.test import APIRequestFactory
 
 from dataset.models.dataset import Dataset
 from dataset.models.report import Report
@@ -167,6 +169,34 @@ class TestReportVersioning:
         ).json()
         assert ok["code"] == 1000, ok
 
+    def test_stale_base_version_rejected_after_lock(self, auth_client, dataset, superuser):
+        """模拟校验通过后并发写入：行锁复核必须拒绝，不能静默覆盖。"""
+        from dataset.serializers.report import ReportSerializer
+        from dataset.views.report import ReportViewSet
+
+        created = auth_client.post(
+            REPORTS_URL,
+            _report_body(dataset, {"columns": ["username"]}),
+            format="json",
+        ).json()
+        report = Report.objects.get(pk=created["data"]["pk"])
+        request = APIRequestFactory().patch(f"{REPORTS_URL}/{report.pk}")
+        request.user = superuser
+        serializer = ReportSerializer(
+            report,
+            data={"design": {"columns": ["gender"]}, "base_version": 1},
+            partial=True,
+            context={"request": request},
+        )
+        assert serializer.is_valid(), serializer.errors
+
+        Report.objects.filter(pk=report.pk).update(design_version=2)
+        view = ReportViewSet()
+        view.request = request
+        view.format_kwarg = None
+        with pytest.raises(ValidationError):
+            view.perform_update(serializer)
+
 
 class TestScreenVersioning:
     def test_create_and_layout_change_append_versions(self, auth_client):
@@ -224,3 +254,28 @@ class TestScreenVersioning:
         )
         assert resp.status_code == 400, resp.data
         assert "base_version" in resp.data
+
+    def test_stale_base_version_rejected_after_lock(self, auth_client, superuser):
+        """模拟校验通过后并发写入：大屏行锁复核必须拒绝。"""
+        from dataset.models.screen import Screen
+        from dataset.serializers.screen import ScreenSerializer
+        from dataset.views.screen import ScreenViewSet
+
+        created = auth_client.post(SCREENS_URL, _screen_body([_text_pane("p1")]), format="json").json()
+        screen = Screen.objects.get(pk=created["data"]["pk"])
+        request = APIRequestFactory().patch(f"{SCREENS_URL}/{screen.pk}")
+        request.user = superuser
+        serializer = ScreenSerializer(
+            screen,
+            data={"layout": [_text_pane("p2")], "base_version": 1},
+            partial=True,
+            context={"request": request},
+        )
+        assert serializer.is_valid(), serializer.errors
+
+        Screen.objects.filter(pk=screen.pk).update(layout_version=2)
+        view = ScreenViewSet()
+        view.request = request
+        view.format_kwarg = None
+        with pytest.raises(ValidationError):
+            view.perform_update(serializer)

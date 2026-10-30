@@ -511,6 +511,21 @@ def test_ws_log_permission_export_record_owner(normal_user, superuser):
     assert can_read_task_log(other, str(record.pk)) is False
 
 
+def test_ws_log_menu_permission_does_not_read_other_logs(normal_user, menu_factory):
+    """仅持日志菜单权限不能订阅他人记录：读取仍按 creator 归属收口。"""
+    from identity.models import UserRole
+    from task.models.task import TaskExecution
+    from task.ws import can_read_task_log
+
+    execution = TaskExecution.objects.create(name="x.tasks.private", creator=normal_user)
+    role = UserRole.objects.create(name="日志管理员", code="ws_log_admin")
+    role.menu.add(menu_factory("log:SystemTaskExecution", path="api/task/task-execution", method="GET"))
+    other = UserInfo.objects.create_user(username="ws-log-admin", password="x")
+    other.roles.add(role)
+
+    assert can_read_task_log(other, str(execution.pk)) is False
+
+
 def test_execution_list_exposes_product_info(superuser):
     """列表按 pk 带出产物信息：导出/导入任务与执行记录共用主键，一行即有类型/业务名/进度/重跑能力。"""
     from task.models.export import ExportRecord

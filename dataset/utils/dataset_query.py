@@ -280,7 +280,9 @@ def filter_layout_for_user(layout: Any, user: Any, owner_id: Any = None) -> list
         return cards
     if owner_id is not None and str(getattr(user, "pk", "")) == str(owner_id):
         return cards
-    role_codes = set(user.roles.filter(is_active=True).values_list("code", flat=True))
+    from common.core.roles import user_role_codes
+
+    role_codes = user_role_codes(user)
     return [
         card for card in cards if not card.get("allowed_roles") or role_codes & set(card.get("allowed_roles") or [])
     ]

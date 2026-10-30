@@ -51,21 +51,26 @@ def structured_chat_client() -> Any:
 
 
 def profile_for(purpose: str = PURPOSE_CHAT) -> Any:
-    """按用途取激活档案：本用途优先 → chat 激活档案 → 任意激活档案（无则 None）。
+    """按用途取激活档案：本用途优先 → chat 激活档案 → 任意非 embedding 激活档案（无则 None）。
 
     单档案场景（默认 ``purpose=chat``）行为与拆分前完全一致；
     「问答用 A 档案、结构化链路用 B 档案」时两行可同时激活（见模型层用途级唯一约束）。
+    embedding 档案**不参与任何用途回落**（模型不可互换）：既不作 chat/structured 的
+    兜底，``purpose=embedding`` 时也不回落到 chat/其它档案。
     """
     from ai.models.ai import AiProfile
 
-    row = AiProfile.objects.filter(is_active=True, purpose=str(purpose or PURPOSE_CHAT)).first()
+    normalized = str(purpose or PURPOSE_CHAT)
+    row = AiProfile.objects.filter(is_active=True, purpose=normalized).first()
     if row is not None:
         return row
-    if str(purpose) != PURPOSE_CHAT:
+    if normalized == PURPOSE_EMBEDDING:
+        return None
+    if normalized != PURPOSE_CHAT:
         fallback = AiProfile.objects.filter(is_active=True, purpose=PURPOSE_CHAT).first()
         if fallback is not None:
             return fallback
-    return AiProfile.objects.filter(is_active=True).first()
+    return AiProfile.objects.filter(is_active=True).exclude(purpose=PURPOSE_EMBEDDING).first()
 
 
 def active_profile() -> Any:
@@ -165,11 +170,15 @@ def _setting_credentials() -> dict[str, Any]:
     }
 
 
-def is_configured() -> bool:
-    profile = active_profile()
+def is_configured(purpose: str = PURPOSE_CHAT) -> bool:
+    """该用途的 AI 链路是否可用：档案按用途取（embedding 不回落），无档案走 Setting 通路。"""
+    profile = profile_for(purpose)
     if profile is not None:
         typed_value: bool = profile.is_configured
         return typed_value
+    if str(purpose or PURPOSE_CHAT) == PURPOSE_EMBEDDING:
+        # Setting 通路是 chat 模型配置，不能代表 embedding 可用
+        return False
     return bool(settings.AI_BASE_URL and settings.AI_API_KEY and settings.AI_MODEL)
 
 

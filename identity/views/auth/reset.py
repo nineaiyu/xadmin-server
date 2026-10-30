@@ -90,5 +90,8 @@ class ResetPasswordAPIView(GenericAPIView):
         instance.modifier = instance
         instance.save(update_fields=["password", "modifier"])
         record_password_hash(instance, instance.password)
+        from identity.utils.session import revoke_user_credentials
+
+        revoke_user_credentials(instance.pk, operator=instance)
         TokenTempCache.expired_cache_token(verify_token)
         return ApiResponse(detail=_("Reset password success, return to login page"))

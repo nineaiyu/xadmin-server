@@ -64,7 +64,9 @@ def get_user_mfa_policy(user: Any) -> dict[str, Any]:
         layers.append(global_methods)
 
     try:
-        for role in user.roles.filter(is_active=True):
+        from common.core.roles import iter_user_roles
+
+        for role in iter_user_roles(user):
             role_methods = _normalize_methods(role.allowed_mfa_types)
             if role_methods:
                 layers.append(role_methods)

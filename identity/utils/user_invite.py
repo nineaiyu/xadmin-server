@@ -151,5 +151,8 @@ def accept_invite(user: Any, password: str) -> Any:
     user.invite_status = UserInfo.InviteStatusChoices.ACCEPTED
     user.save(update_fields=["password", "invite_status"])
     record_password_hash(user, user.password)
+    from identity.utils.session import revoke_user_credentials
+
+    revoke_user_credentials(user.pk, operator=user)
     logger.info("activate invited user %s", user.username)
     return True, str(_("Activated successfully, please sign in"))

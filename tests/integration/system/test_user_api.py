@@ -132,7 +132,8 @@ class TestUserActionsSmoke:
         assert not UserInfo.objects.filter(pk=normal_pk).exists()
         assert UserInfo.objects.filter(pk=super_pk).exists()
 
-    def test_reset_password(self, auth_client):
+    def test_reset_password(self, confirmed_client):
+        auth_client = confirmed_client
         pk = _create_user(auth_client, username="lisi")
         encrypted = AESCipherV2("lisi").encrypt(b"NewPass@123456").decode()
         resp = auth_client.post(f"{USER_URL}/{pk}/reset-password", {"password": encrypted}, format="json")
@@ -140,8 +141,21 @@ class TestUserActionsSmoke:
         assert resp.data["code"] == 1000
         assert UserInfo.objects.get(pk=pk).check_password("NewPass@123456")
 
-    def test_reset_password_with_v2_encrypted_payload(self, auth_client):
+    def test_reset_password_requires_confirm(self, auth_client):
+        """账号接管面与重置 MFA 同口径：管理员重置密码需本人密码二次确认。"""
+        pk = _create_user(auth_client, username="lisi")
+        resp = auth_client.post(
+            f"{USER_URL}/{pk}/reset-password",
+            {"password": encrypt_v2("lisi", "NewPass@123456")},
+            format="json",
+        )
+        assert resp.status_code == 412
+        assert resp.data["type"] == "user_confirm_required"
+        assert UserInfo.objects.get(pk=pk).check_password("Test@123456")
+
+    def test_reset_password_with_v2_encrypted_payload(self, confirmed_client):
         """v2 协议（WebCrypto PBKDF2+AES-GCM）密文走真实 API 解密链路。"""
+        auth_client = confirmed_client
         pk = _create_user(auth_client, username="lisi")
         encrypted = encrypt_v2("lisi", "NewPass@123456")
         resp = auth_client.post(f"{USER_URL}/{pk}/reset-password", {"password": encrypted}, format="json")
@@ -149,8 +163,9 @@ class TestUserActionsSmoke:
         assert resp.data["code"] == 1000
         assert UserInfo.objects.get(pk=pk).check_password("NewPass@123456")
 
-    def test_reset_password_enforces_unified_password_policy(self, auth_client):
+    def test_reset_password_enforces_unified_password_policy(self, confirmed_client):
         """重置密码下限/复杂度由 check_password_rules 统一判定（与注册/改密同源）。"""
+        auth_client = confirmed_client
         pk = _create_user(auth_client, username="lisi")
         for weak in ("Abc@1", "abcdefghij"):  # 过短（低于默认 10 位） / 缺大写与数字
             resp = auth_client.post(f"{USER_URL}/{pk}/reset-password", {"password": encrypt_v2("lisi", weak)})
@@ -159,8 +174,9 @@ class TestUserActionsSmoke:
         # 原密码未被重置
         assert UserInfo.objects.get(pk=pk).check_password("Test@123456")
 
-    def test_reset_password_short_input_rejected_by_rules_not_field(self, auth_client):
+    def test_reset_password_short_input_rejected_by_rules_not_field(self, confirmed_client):
         """超短输入不再被字段级 min_length 双轨拦截，统一落到密码规则文案（且不 500）。"""
+        auth_client = confirmed_client
         pk = _create_user(auth_client, username="lisi")
         for raw in ("a", "abc"):
             resp = auth_client.post(f"{USER_URL}/{pk}/reset-password", {"password": raw})

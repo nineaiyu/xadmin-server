@@ -90,31 +90,54 @@ def _dform_requires_approval(user: Any, params: dict[str, Any]) -> bool:
     if getattr(user, "is_superuser", False):
         return False
     form, error = _resolve_form(params)
-    return bool(form is not None and form.approval_required)
+    # 绑定流程的表单由流程引擎承载审批，不再叠加操作审批（与 REST 提交同口径）；
+    # 其审批实例在 _execute_dform 内创建并按 PENDING 返回。
+    return bool(form is not None and form.approval_required and not form.approval_flow_id)
 
 
 def _execute_dform(user: Any, params: dict[str, Any]) -> dict[str, Any]:
-    from dataset.contracts import DynamicFormSubmission
+    from django.db import transaction
+
+    from dataset.contracts import DynamicFormSubmission, validate_submission_data
     from dataset.utils.dform_filter import build_filter_data
+    from dataset.utils.dform_flow import create_flow_instance
 
     form, error = _resolve_form(params)
     if error:
         return {"ok": False, "detail": error, "data": {}}
-    data = params.get("data") or {}
-    submission = DynamicFormSubmission.objects.create(
-        form=form,
-        data=data,
-        # 与 REST 提交同口径物化可筛选字段：缺这一步时 AI 提交的行在管理端
-        # 「表单数据」按可筛选字段查不到（filter_data @> 不命中），直到重建命令跑过
-        filter_data=build_filter_data(form.schema, data),
-        creator=user,
-        modifier=user,
-        dept_belong=getattr(user, "dept", None),
-    )
+    raw_data = params.get("data") or {}
+    try:
+        # 执行阶段按当前 schema 复校验：草稿/操作审批滞留期间表单可能已改版，
+        # 不能把按旧 schema 规范化的数据直接写入（未知键/类型/必填变化即拒绝）
+        data = validate_submission_data(form.schema, raw_data, user=user)
+    except DjangoValidationError as exc:
+        return {"ok": False, "detail": "; ".join(exc.messages), "data": {}}
+    with transaction.atomic():
+        submission = DynamicFormSubmission.objects.create(
+            form=form,
+            data=data,
+            # 与 REST 提交同口径物化可筛选字段：缺这一步时 AI 提交的行在管理端
+            # 「表单数据」按可筛选字段查不到（filter_data @> 不命中），直到重建命令跑过
+            filter_data=build_filter_data(form.schema, data),
+            creator=user,
+            modifier=user,
+            dept_belong=getattr(user, "dept", None),
+        )
+        if form.approval_flow_id:
+            ok, detail = create_flow_instance(submission, user)
+            if not ok:
+                transaction.set_rollback(True)
+                return {"ok": False, "detail": detail or str(_("Failed to start the approval flow")), "data": {}}
     return {
         "ok": True,
         "detail": str(_("The form has been submitted")),
-        "data": {"submission_id": str(submission.pk), "form_id": str(form.pk), "form_name": form.name},
+        "data": {
+            "submission_id": str(submission.pk),
+            "form_id": str(form.pk),
+            "form_name": form.name,
+            "status": submission.status,
+            "instance_id": str(submission.instance_id or ""),
+        },
     }
 
 

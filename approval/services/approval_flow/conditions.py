@@ -98,7 +98,9 @@ def resolve_assignee_pairs(node: Any, applicant: Any, form_data: Any) -> list[An
         codes = _split_values(node.assignee_value)
         if not codes:
             return []
-        queryset = queryset.filter(roles__is_active=True, roles__code__in=codes).distinct()
+        from common.core.roles import role_members_q
+
+        queryset = queryset.filter(role_members_q(codes)).distinct()
     elif assignee_type == node.AssigneeType.USER:
         names = _split_values(node.assignee_value)
         if not names:

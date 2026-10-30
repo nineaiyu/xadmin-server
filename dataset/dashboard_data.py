@@ -59,7 +59,8 @@ def collect_dashboard_cards(dashboard: Any, user: Any = None) -> list[CardRef]:
     """
     cards = list(dashboard.layout or [])
     if user is not None:
-        cards = filter_layout_for_user(cards, user)
+        # 创建者旁路与 REST 读侧同口径：创建者配置的卡片即使不含自身角色也应推送
+        cards = filter_layout_for_user(cards, user, owner_id=dashboard.creator_id)
     refs: list[CardRef] = []
     seen: set[str] = set()
     dashboard_pk = str(dashboard.pk)

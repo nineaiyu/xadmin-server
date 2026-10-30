@@ -52,13 +52,6 @@ DOC_SIZE_EXEMPT = {
         ),
         "baseline_kb": 43,
     },
-    "docs/plans/code-review-frontend-2026-10-29-part6.md": {
-        "reason": (
-            "一次性前端审查证据快照：system 全子域逐文件台账 + 四闭环表，需保持单篇可检索；"
-            "审查结束后随整改归档，不再增长（拆分只会切断同一分区的证据链）"
-        ),
-        "baseline_kb": 69,
-    },
 }
 
 

@@ -158,6 +158,32 @@ class TestClientCredentials:
         row.save(update_fields=["expired_at"])
         assert _issue_token(application).status_code == 401
 
+    def test_scope_or_ip_change_revokes_existing_tokens(self, auth_client):
+        """收紧 scopes / IP 白名单必须让已签发凭证立即失效，不能等 TTL。"""
+        application = _create_application(auth_client, scopes=["api/identity/userinfo"])
+        token = _issue_token(application).data["data"]["access_token"]
+        client = _pat_client(token)
+        assert client.get("/api/identity/userinfo").status_code == 200
+
+        updated = auth_client.patch(
+            f"{APPS_URL}/{application['pk']}",
+            {"scopes": []},
+            format="json",
+        )
+        assert updated.data["code"] == 1000
+        assert PersonalAccessToken.objects.get(api_application_id=application["pk"]).is_active is False
+        assert client.get("/api/identity/userinfo").status_code == 401
+
+        second = _issue_token(application).data["data"]["access_token"]
+        second_client = _pat_client(second)
+        assert second_client.get("/api/identity/userinfo").status_code == 200
+        auth_client.patch(
+            f"{APPS_URL}/{application['pk']}",
+            {"ip_allowlist": ["10.0.0.0/8"]},
+            format="json",
+        )
+        assert second_client.get("/api/identity/userinfo").status_code == 401
+
     def test_application_scopes_restrict_paths(self, auth_client):
         """scope 限制凭证可访问的路径（超管 owner 同样受限，口径见 IsAuthenticated）。"""
         application = _create_application(auth_client, scopes=["api/identity/userinfo"])

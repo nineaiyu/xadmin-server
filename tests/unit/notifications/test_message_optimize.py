@@ -127,7 +127,8 @@ class TestReadMessage:
             resp = view.read_message(pks, FakeRequest())
         assert resp.status_code == 200
 
-        assert len(_business_queries(ctx)) <= 4
+        # 固定查询数：可见域（直挂角色 + 部门挂角色各一次）+ 已读行批量写
+        assert len(_business_queries(ctx)) <= 5
 
     def test_marks_all_as_read(self, api_client, normal_user, message_page):
         pks = [m.pk for m in message_page]
@@ -214,7 +215,8 @@ class TestReadMessage:
         with CaptureQueriesContext(connection) as ctx:
             resp = view.read_message(scope, FakeRequest())
         assert resp.status_code == 200
-        assert len(_business_queries(ctx)) <= 4
+        # 固定查询数：可见域（直挂角色 + 部门挂角色各一次）+ 已读行批量写
+        assert len(_business_queries(ctx)) <= 5
 
         # 端态与显式 pks 路径一致：每条消息恰一行已读，无重复行
         assert MessageUserRead.objects.filter(owner=normal_user).count() == 4

@@ -16,6 +16,7 @@ from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.modelset import BaseViewSet, DestroyAction, ListAction, SearchColumnsAction
+from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from identity.models import UserPasskey
@@ -28,6 +29,8 @@ from identity.utils.webauthn import (
     rp_id_and_origin,
     verify_registration,
 )
+from mfa.confirm import UserConfirmation
+from mfa.const import ConfirmType
 from mfa.services import is_method_binding_allowed
 
 # 单用户凭据数量上限（多设备场景足够，防滥用）
@@ -94,9 +97,17 @@ class PasskeyViewSet(BaseViewSet, ListAction, SearchColumnsAction, DestroyAction
         ),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="register")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+        methods=["post"],
+        detail=False,
+        url_path="register",
+        permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
+    )
     def register(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """绑定一个 Passkey 凭据"""
+        """绑定一个 Passkey 凭据
+
+        持久凭据可为账号接管提供入口：绑定前需本人密码二次确认（同重置 MFA 口径）
+        """
         user = request.user
         # 与验证同口径的方式白名单（共享/演示账号策略可收窄到不允许绑定）
         if not is_method_binding_allowed(user, "passkey"):

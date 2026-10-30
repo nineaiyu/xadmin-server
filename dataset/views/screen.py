@@ -71,20 +71,24 @@ class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
         snapshot_screen_version(serializer.instance, actor=self.request.user)
 
     def perform_update(self, serializer: Any) -> None:
-        before = (
-            serializer.instance.layout or [],
-            serializer.instance.layout_mode,
-            serializer.instance.free_layout or {},
-        )
-        super().perform_update(serializer)
-        after = (
-            serializer.instance.layout or [],
-            serializer.instance.layout_mode,
-            serializer.instance.free_layout or {},
-        )
-        # 仅布局载荷或模式实质变更才记版本：改名 / 可见性 / 主题 / 轮播清单不挤掉布局历史
-        if before != after:
-            snapshot_screen_version(serializer.instance, actor=self.request.user)
+        base_version = (getattr(serializer, "initial_data", {}) or {}).get("base_version")
+        with transaction.atomic():
+            locked = Screen.objects.select_for_update().get(pk=serializer.instance.pk)
+            if base_version is not None and int(base_version) != int(locked.layout_version or 1):
+                raise ValidationError(
+                    {"base_version": _("The content has been modified by another user; reload before saving")}
+                )
+            before = (locked.layout or [], locked.layout_mode, locked.free_layout or {})
+            serializer.instance = locked
+            super().perform_update(serializer)
+            after = (
+                serializer.instance.layout or [],
+                serializer.instance.layout_mode,
+                serializer.instance.free_layout or {},
+            )
+            # 仅布局载荷或模式实质变更才记版本：改名 / 可见性 / 主题 / 轮播清单不挤掉布局历史
+            if before != after:
+                snapshot_screen_version(serializer.instance, actor=self.request.user)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="versions")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -192,10 +196,23 @@ class ScreenTemplateViewSet(BaseAnalysisViewSet):
         snapshot_template_version(serializer.instance, actor=self.request.user)
 
     def perform_update(self, serializer: Any) -> None:
-        super().perform_update(serializer)
-        # 仅布局载荷变更才记版本：重命名/分组/可见性调整不应挤掉真正的布局历史
-        if "free_layout" in self.request.data:
-            snapshot_template_version(serializer.instance, actor=self.request.user)
+        base_version = (getattr(serializer, "initial_data", {}) or {}).get("base_version")
+        with transaction.atomic():
+            locked = ScreenTemplate.objects.select_for_update().get(pk=serializer.instance.pk)
+            if base_version is not None:
+                latest = locked.versions.first()
+                current = latest.version if latest else 0
+                if int(base_version) != int(current):
+                    raise ValidationError(
+                        {"base_version": _("The content has been modified by another user; reload before saving")}
+                    )
+            before = locked.free_layout or {}
+            serializer.instance = locked
+            super().perform_update(serializer)
+            # 仅布局载荷实质变更才记版本：整包保存但内容未变 / 重命名 / 分组 / 可见性调整
+            # 不应挤掉真正的布局历史（与 ScreenViewSet 同口径）
+            if (serializer.instance.free_layout or {}) != before:
+                snapshot_template_version(serializer.instance, actor=self.request.user)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="versions")  # type: ignore[untyped-decorator]

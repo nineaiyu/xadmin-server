@@ -136,6 +136,13 @@ class TestCollectDashboardCards:
         # 浏览者：未命中 allowed_roles 的卡片不参与聚合（与仪表盘读取侧同口径）
         assert [ref["card"] for ref in collect_dashboard_cards(dashboard_a, user=normal_user)] == ["c2"]
 
+    def test_creator_bypasses_card_roles(self, dashboard_a, normal_user):
+        """创建者旁路：自己仪表盘上未含自身角色的卡片也要推送（与 REST 读侧一致）。"""
+        dashboard_a.layout[0]["allowed_roles"] = ["nobody_role"]
+        dashboard_a.creator = normal_user
+        dashboard_a.save(update_fields=["layout", "creator"])
+        assert [ref["card"] for ref in collect_dashboard_cards(dashboard_a, user=normal_user)] == ["c1", "c2"]
+
     def test_dedupe_and_broken_cards_skipped(self, dashboard_a, superuser, dataset):
         dashboard_a.layout = [
             *dashboard_a.layout,

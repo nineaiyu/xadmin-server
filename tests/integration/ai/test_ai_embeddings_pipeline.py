@@ -271,8 +271,12 @@ class TestRebuildPreservesVectors:
 
         # 重建（内容不变）：向量按 content_hash 保留，无需重算
         assert rebuild_chunks(doc) == 2
-        rows = list(AiKnowledgeChunk.objects.filter(source_path="docs/keep.md").values_list("embedding", flat=True))
-        assert all(row is not None for row in rows)
+        rows = list(
+            AiKnowledgeChunk.objects.filter(source_path="docs/keep.md").values_list("embedding", "embedding_vector")
+        )
+        assert all(row[0] is not None for row in rows)
+        # 二进制列与 pgvector 列必须同时保留；只保留其一会让向量检索静默退化
+        assert all(row[1] is not None for row in rows)
         assert build_embeddings()["embedded"] == 0
 
         # 变更一块：仅该块失去向量（陈旧），另一块保留

@@ -604,6 +604,45 @@ class TestFlowFormSchemaProjection:
         assert not [item for item in flow.form_schema if item["key"] == "hacked"]
         assert ApprovalFlowSerializer(flow).data["form_schema_locked"] is True
 
+    def test_rebind_reprojects_previous_flow(self, applicant):
+        """A→B 换绑：旧流程 A 按剩余绑定表单重算，不再保留已脱离表单的字段。"""
+        from dataset.serializers.dform import DynamicFormSerializer
+
+        flow_a = ApprovalFlow.objects.create(name="旧流程", code="rebind_old", form_schema=[])
+        flow_b = ApprovalFlow.objects.create(name="新流程", code="rebind_new", form_schema=[])
+        for flow in (flow_a, flow_b):
+            ApprovalFlowNode.objects.create(
+                flow=flow,
+                name="审批",
+                order=1,
+                assignee_type=ApprovalFlowNode.AssigneeType.USER,
+                assignee_value="dform_applicant",
+            )
+        moved = DynamicFormSerializer(
+            data={
+                "name": "换绑表单",
+                "approval_flow": str(flow_a.pk),
+                "schema": {"fields": [{"key": "only_moved", "label": "旧字段", "type": "input"}]},
+            }
+        )
+        assert moved.is_valid(), moved.errors
+        moved_form = moved.save()
+        leave = DynamicFormSerializer(
+            data={
+                "name": "留下表单",
+                "approval_flow": str(flow_a.pk),
+                "schema": {"fields": [{"key": "stays", "label": "保留字段", "type": "input"}]},
+            }
+        )
+        assert leave.is_valid(), leave.errors
+        leave.save()
+        serializer = DynamicFormSerializer(instance=moved_form, data={"approval_flow": str(flow_b.pk)}, partial=True)
+        assert serializer.is_valid(), serializer.errors
+        serializer.save()
+
+        flow_a.refresh_from_db()
+        assert [item["key"] for item in flow_a.form_schema] == ["stays"]
+
     def test_rollback_keeps_projected_schema_when_locked(self, form, approver):
         """回滚尊重表单锁：绑定期 form_schema 保留投影（仅节点回滚），新版本快照带现值。
 

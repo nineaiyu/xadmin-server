@@ -64,6 +64,31 @@ class TestExecuteIdempotent:
         assert "deduplicated" not in forced
         assert len(calls) == 2
 
+    def test_concurrent_calls_execute_once(self, superuser):
+        """并发双请求只能有一个真正执行写动作。"""
+        import threading
+        from concurrent.futures import ThreadPoolExecutor
+
+        calls = []
+        started = threading.Event()
+        release = threading.Event()
+
+        def executor(user, action, params):
+            calls.append(params)
+            started.set()
+            release.wait(2)
+            return {"ok": True, "detail": "done", "data": {"n": 1}}
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(execute_idempotent, superuser, "leave.submit", {"a": 1}, executor)
+            assert started.wait(2)
+            second = pool.submit(execute_idempotent, superuser, "leave.submit", {"a": 1}, executor)
+            release.set()
+            results = [first.result(timeout=5), second.result(timeout=5)]
+
+        assert len(calls) == 1
+        assert any(item.get("ok") for item in results)
+
     def test_failure_not_cached(self, superuser):
         calls = []
 

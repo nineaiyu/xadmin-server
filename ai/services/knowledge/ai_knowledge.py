@@ -67,15 +67,33 @@ def _chunk_markdown(text: str) -> list[Any]:
 
 
 def _preserved_vectors(paths: list[Any]) -> dict[str, Any]:
-    """读取若干文档的既有向量并按正文 hash 去重保留（正文未变的块重建不失效）。"""
+    """读取若干文档的既有向量并按正文 hash 去重保留（正文未变的块重建不失效）。
+
+    二进制列与 pgvector 列双写，必须一并保留；只保留二进制会让 ``search_vectors``
+    查不到行（它按 ``embedding_vector`` 过滤），且待建判据看到旧 hash 不会自动补齐。
+    """
     from ai.models.ai import AiKnowledgeChunk
 
     preserved: dict[str, tuple[Any, ...]] = {}
     existing = AiKnowledgeChunk.objects.filter(source_path__in=paths).exclude(embedding__isnull=True)
-    for content_hash, embedding, embedding_model, embedding_hash, embedding_dim in existing.values_list(
-        "content_hash", "embedding", "embedding_model", "embedding_hash", "embedding_dim"
+    for (
+        content_hash,
+        embedding,
+        embedding_vector,
+        embedding_model,
+        embedding_hash,
+        embedding_dim,
+    ) in existing.values_list(
+        "content_hash",
+        "embedding",
+        "embedding_vector",
+        "embedding_model",
+        "embedding_hash",
+        "embedding_dim",
     ):
-        preserved.setdefault(content_hash, (embedding, embedding_model, embedding_hash, embedding_dim))
+        preserved.setdefault(
+            content_hash, (embedding, embedding_vector, embedding_model, embedding_hash, embedding_dim)
+        )
     return preserved
 
 
@@ -97,9 +115,10 @@ def _chunk_rows(doc: Any, preserved: dict[str, Any]) -> list[Any]:
                 **(
                     {
                         "embedding": vector[0],
-                        "embedding_model": vector[1],
-                        "embedding_hash": vector[2],
-                        "embedding_dim": vector[3],
+                        "embedding_vector": vector[1],
+                        "embedding_model": vector[2],
+                        "embedding_hash": vector[3],
+                        "embedding_dim": vector[4],
                     }
                     if vector
                     else {}

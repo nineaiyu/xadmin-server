@@ -56,17 +56,13 @@ def resolve_rule(path: str, method: str = "", exclude_pk: Any = None) -> Any:
 def resolve_level_users(level: Any) -> Any:
     """级次候选人：user=用户名清单，role/post=角色/岗位 code 清单（仅启用账号，均支持逗号多值）。"""
     from identity.models import UserInfo
+    from identity.services import get_users_by_role_codes
 
     values = [value.strip() for value in str(level.assignee_value or "").split(",") if value.strip()]
     if not values:
         return UserInfo.objects.none()
     if level.assignee_type == "role":
-        return UserInfo.objects.filter(
-            is_active=True,
-            roles__is_active=True,
-            roles__deleted_at__isnull=True,
-            roles__code__in=values,
-        ).distinct()
+        return get_users_by_role_codes(values)
     if level.assignee_type == "post":
         # 岗位人员维度（不参与权限判定）：仅启用且未删除岗位的在岗用户
         return UserInfo.objects.filter(

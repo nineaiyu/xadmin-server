@@ -42,6 +42,8 @@ class ApprovalFlowMessage(UserMessage):
         "cancelled": _("Approval application cancelled"),
         # auto_approved = 节点无候选自动通过（治理告警，知会超管）
         "auto_approved": _("Approval node auto-approved due to no available approver"),
+        # no_approver = 节点无候选阻塞（fail-closed，知会超管处理）
+        "no_approver": _("Approval node blocked due to no available approver"),
         "cc": _("Approval application copied to you"),
         "mentioned": _("You were mentioned in the approval discussion"),
     }

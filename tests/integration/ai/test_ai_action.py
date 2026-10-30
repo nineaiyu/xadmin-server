@@ -158,6 +158,26 @@ def make_form(name="E2E-AI动作表单", approval_required=False, schema=None):
     )
 
 
+def make_dform_flow(field_key="note", assignee_value="leave_approver"):
+    from approval.models.approval import ApprovalFlow, ApprovalFlowNode
+
+    flow = ApprovalFlow.objects.create(
+        name="表单审批",
+        code="dform_ai_flow",
+        form_schema=[{"key": field_key, "label": "备注", "type": "text", "required": False}],
+    )
+    ApprovalFlowNode.objects.create(
+        flow=flow,
+        name="直属主管审批",
+        order=1,
+        approve_type=ApprovalFlowNode.ApproveType.OR,
+        assignee_type=ApprovalFlowNode.AssigneeType.USER,
+        assignee_value=assignee_value,
+        timeout_hours=24,
+    )
+    return flow
+
+
 class TestActionGate:
     """灰度与门禁：默认关闭；AI 未配置同样拒绝。"""
 
@@ -329,6 +349,27 @@ class TestDformAction:
         # 可筛选字段与 REST 提交同口径物化（否则管理端按字段筛选查不到 AI 行）
         assert submission.filter_data == {"note": "AI 提交"}
 
+    def test_submit_with_bound_flow_enters_approval(
+        self, action_client, ai_action_settings, action_user, flow_approver, menu_factory
+    ):
+        """绑定审批流程的表单必须建实例并保持 PENDING，不得直接生效。"""
+        from approval.models.approval import ApprovalInstance
+
+        grant_perms(action_user.roles.first(), menu_factory, DFORM_CREATE_PERMS)
+        form = make_form()
+        form.approval_flow = make_dform_flow()
+        form.save(update_fields=["approval_flow"])
+        response = action_client.post(
+            EXECUTE_URL,
+            {"action": "dform.submit", "params": {"form_id": str(form.pk), "data": {"note": "走流程"}}},
+            format="json",
+        )
+        assert response.data["code"] == 1000
+        submission = DynamicFormSubmission.objects.get()
+        assert submission.status == DynamicFormSubmission.Status.PENDING
+        assert submission.instance_id is not None
+        assert ApprovalInstance.objects.filter(pk=submission.instance_id, status="PENDING").exists()
+
     def test_unavailable_when_no_active_form(self, action_client, ai_action_settings):
         response = action_client.post(
             EXECUTE_URL, {"action": "dform.submit", "params": {"form_id": "x", "data": {}}}, format="json"
@@ -372,6 +413,29 @@ class TestDformAction:
 
         third = action_client.post(EXECUTE_URL, body, format="json", HTTP_X_APPROVAL_ID=approval_id)
         assert third.status_code == 403
+
+    def test_execute_revalidates_schema_changed_during_approval(
+        self, action_client, ai_action_settings, action_user, superuser, menu_factory
+    ):
+        """操作审批滞留期间表单改版：执行阶段必须按当前 schema 复校验，不得写入过期数据。"""
+        grant_perms(action_user.roles.first(), menu_factory, DFORM_CREATE_PERMS)
+        form = make_form(approval_required=True)
+        body = {"action": "dform.submit", "params": {"form_id": str(form.pk), "data": {"note": "旧结构"}}}
+        first = action_client.post(EXECUTE_URL, body, format="json")
+        assert first.status_code == 412
+        approval_id = first.data["data"]["approval_id"]
+
+        # 审批期间改版：删除 note、新增必填 title
+        form.schema = {
+            "fields": [{"key": "title", "label": "标题", "type": "input", "required": True, "max_length": 50}]
+        }
+        form.save(update_fields=["schema"])
+        ok, __ = approve_request(ApprovalRequest.objects.get(pk=approval_id), superuser)
+        assert ok
+
+        second = action_client.post(EXECUTE_URL, body, format="json", HTTP_X_APPROVAL_ID=approval_id)
+        assert second.data["code"] == 1001, second.data
+        assert not DynamicFormSubmission.objects.exists()
 
     def test_cross_user_token_rejected(
         self, api_client, action_client, ai_action_settings, action_user, superuser, db, menu_factory

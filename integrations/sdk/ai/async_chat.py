@@ -76,22 +76,22 @@ class AsyncChatCompletionsClient:
         if not (self.base_url and self.api_key and self.model):
             raise AiSdkError("AI client is not configured (base_url/api_key/model)")
 
-    async def _ensure_outbound_allowed(self, url: str) -> None:
-        """生产路径发送前严格校验出站归属（注入 http 的测试路径跳过）。
+    async def _resolve_target(self, url: str) -> Any:
+        """生产路径发送前严格解析校验并返回固定连接目标（注入 http 的测试路径返回 None）。
 
-        异步流式链路不复用同步侧的固定解析连接（httpx 生命周期自管），以
-        「发送前严格解析校验」承担纵深防御：私网目标默认拒绝；环回目标跟随
-        ``DEBUG`` / ``WEBHOOK_ALLOW_LOOPBACK`` 口径（与同步侧、Webhook 同源），
-        自建服务须在 OUTBOUND_ALLOWED_HOSTS 登记后放行。
+        私网目标默认拒绝；环回目标跟随 ``DEBUG`` / ``WEBHOOK_ALLOW_LOOPBACK`` 口径
+        （与同步侧、Webhook 同源），自建服务须在 OUTBOUND_ALLOWED_HOSTS 登记后放行。
+        返回的 ``OutboundTarget`` 供 ``_request_parts`` 固定解析连接，消除
+        「校验一次解析、连接又解析一次」的 DNS rebinding 窗口（与同步侧同口径）。
         """
         if self.http is not None:
-            return
+            return None
         from asgiref.sync import sync_to_async
 
         from common.utils.outbound import OutboundBlocked, loopback_allowed, validate_outbound_url
 
         try:
-            await sync_to_async(validate_outbound_url, thread_sensitive=False)(
+            return await sync_to_async(validate_outbound_url, thread_sensitive=False)(
                 url,
                 allow_private=False,
                 allow_loopback=loopback_allowed(),
@@ -100,6 +100,20 @@ class AsyncChatCompletionsClient:
         except OutboundBlocked as exc:
             logger.warning("ai async chat outbound blocked: %s", "; ".join(str(item) for item in exc.messages))
             raise AiSdkError("AI provider base_url is blocked by the outbound policy") from exc
+
+    @staticmethod
+    def _request_parts(
+        url: str, target: Any, headers: dict[str, str]
+    ) -> tuple[str, dict[str, str], dict[str, Any] | None]:
+        """固定解析连接：域名目标改连已校验 IP，Host 头与 TLS SNI 保留原域名。
+
+        IP 字面量 / 白名单域名（未解析）无固定目标，按原 URL 请求。
+        """
+        if target is None or target.is_ip_literal or not target.ips:
+            return url, headers, None
+        pinned_headers = dict(headers)
+        pinned_headers["Host"] = target.host_header
+        return target.pinned_url, pinned_headers, {"sni_hostname": target.host}
 
     def _body(self, messages: list[Any], stream: bool = False, **overrides: Any) -> dict[str, Any]:
         return self._builder._body(messages, stream=stream, **overrides)
@@ -139,15 +153,17 @@ class AsyncChatCompletionsClient:
 
     async def _post_once(self, url: str, body: dict[str, Any]) -> Any:
         """单次非流式 POST（自带客户端生命周期；注入客户端时直接复用）。"""
-        await self._ensure_outbound_allowed(url)
+        target = await self._resolve_target(url)
+        request_url, headers, extensions = self._request_parts(url, target, {"Authorization": f"Bearer {self.api_key}"})
         if self.http is not None:
-            return await self.http.post(
-                url, timeout=self.timeout, json=body, headers={"Authorization": f"Bearer {self.api_key}"}
-            )
+            return await self.http.post(request_url, timeout=self.timeout, json=body, headers=headers)
         import httpx
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            return await client.post(url, json=body, headers={"Authorization": f"Bearer {self.api_key}"})
+            request = client.build_request(
+                "POST", request_url, timeout=self.timeout, json=body, headers=headers, extensions=extensions
+            )
+            return await client.send(request)
 
     async def _open_stream(self, url: str, body: dict[str, Any]) -> tuple[Any, Any]:
         """打开流式响应：返回 ``(closer, response)``。
@@ -157,13 +173,16 @@ class AsyncChatCompletionsClient:
         注入客户端（测试桩）时 closer 为空操作（生命周期归注入方）。
         重试只发生在响应头到达前（响应体未消费即可整体弃置重开）。
         """
-        await self._ensure_outbound_allowed(url)
+        target = await self._resolve_target(url)
+        request_url, headers, extensions = self._request_parts(url, target, {"Authorization": f"Bearer {self.api_key}"})
         import httpx
 
-        headers = {"Authorization": f"Bearer {self.api_key}"}
+        stream_kwargs: dict[str, Any] = {"timeout": self.timeout, "json": body, "headers": headers}
+        if extensions is not None:
+            stream_kwargs["extensions"] = extensions
 
         async def _open_with(client: Any) -> tuple[Any, Any]:
-            cm = client.stream("POST", url, timeout=self.timeout, json=body, headers=headers)
+            cm = client.stream("POST", request_url, **stream_kwargs)
             response = await cm.__aenter__()
             return cm, response
 

@@ -351,4 +351,7 @@ class ResetPasswordSerializer(serializers.Serializer):
         instance.modifier = self.context.get("request").user
         instance.save(update_fields=["password", "modifier"])
         record_password_hash(instance, instance.password)
+        from identity.utils.session import revoke_user_credentials
+
+        revoke_user_credentials(instance.pk, operator=instance.modifier)
         return instance

@@ -50,11 +50,18 @@ class ReportViewSet(BaseAnalysisViewSet):
             snapshot_report_version(serializer.instance, actor=self.request.user)
 
     def perform_update(self, serializer: Any) -> None:
-        before = serializer.instance.design or {}
+        base_version = (getattr(serializer, "initial_data", {}) or {}).get("base_version")
         with transaction.atomic():
             # 主表保存与版本快照同事务：任一步失败整体回滚，避免 design 与
             # design_version/版本表漂移
             locked = type(serializer.instance).objects.select_for_update().get(pk=serializer.instance.pk)
+            # 乐观锁在行锁后复核：serializer.validate 比对的是锁前实例，两个并发保存
+            # 都可能通过；以 locked 版本为准，后提交者得到冲突提示而不是覆盖。
+            if base_version is not None and int(base_version) != int(locked.design_version or 1):
+                raise ValidationError(
+                    {"base_version": _("The content has been modified by another user; reload before saving")}
+                )
+            before = locked.design or {}
             serializer.instance = locked
             super().perform_update(serializer)
             # 仅设计载荷实质变更才记版本：改名 / 调度 / 收件人调整不挤掉设计历史

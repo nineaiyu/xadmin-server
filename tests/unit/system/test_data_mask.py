@@ -216,6 +216,21 @@ class TestSerializerMasking:
         assert data2["phone"] == "138******78"  # 命中角色 → 掩码
         assert data2["email"] == "n*****@example.com"
 
+    def test_dept_role_grants_mask(self, normal_user):
+        """部门挂角色与直挂角色同口径：规则命中部门角色时同样掩码。"""
+        from identity.models import DeptInfo, UserRole
+
+        normal_user.phone = PHONE
+        normal_user.save()
+        dept = DeptInfo.objects.create(name="脱敏部门", code="mask_dept")
+        role = UserRole.objects.create(name="脱敏角色", code="mask_role")
+        dept.roles.add(role)
+        normal_user.dept = dept
+        normal_user.save(update_fields=["dept"])
+        _rule(field="phone", mask_type="phone", sort=0).roles.add(role)
+        _make_request(normal_user)
+        assert _serialize(normal_user)["phone"] == "138******78"
+
     def test_multi_rule_smallest_sort_wins(self, normal_user, role):
         normal_user.phone = PHONE
         normal_user.save()

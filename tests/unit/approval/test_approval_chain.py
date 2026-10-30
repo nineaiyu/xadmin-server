@@ -33,11 +33,12 @@ from approval.services.approval import (
     pending_count_for,
     pending_queryset_for,
     reject_request,
+    resolve_level_users,
     resolve_rule,
 )
 from common.core.approval import ApprovalRequired
 from common.core.response import ApiResponse
-from identity.models import UserInfo
+from identity.models import DeptInfo, UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 
@@ -546,3 +547,19 @@ class TestChainCasLostRace:
         record.refresh_from_db()
         assert record.status == ApprovalRequest.Status.APPROVED  # 通过终态未被覆盖为 REJECTED
         assert calls == []  # 通知 / 事件不执行
+
+
+def test_role_level_includes_department_member(db):
+    """审批规则 role 级次的成员解析包含部门挂角色。"""
+    role = UserRole.objects.create(name="规则部门角色", code="rule_dept_role")
+    dept = DeptInfo.objects.create(name="规则部门", code="rule_dept")
+    dept.roles.add(role)
+    member = UserInfo.objects.create_user(username="rule_dept_member", password="Test@123456", dept=dept)
+    level = ApprovalRuleLevel(
+        name="部门审批",
+        order=1,
+        assignee_type=ApprovalRuleLevel.AssigneeType.ROLE,
+        assignee_value=role.code,
+    )
+
+    assert member in resolve_level_users(level)

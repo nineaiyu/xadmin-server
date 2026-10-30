@@ -159,6 +159,9 @@ def set_object_tags(model: Any, pk: Any, tag_pks: Any, user: Any = None) -> list
     missing = set(wanted) - {str(tag.pk) for tag in tags}
     if missing:
         raise DjangoValidationError(_("Some tags no longer exist; refresh and retry"))
+    if user is not None:
+        # 写口与读口同口径：目标对象必须存在且落在调用者数据权限内，防止跨范围脏关联
+        ensure_object_visible(user, model, pk)
     content_type = ContentType.objects.get_for_model(model)
     with transaction.atomic():
         TaggedItem.objects.filter(content_type=content_type, object_id=str(pk)).delete()
@@ -225,9 +228,14 @@ def set_object_tags_batch(
     )
 
     changed, failed, valid_pks = [], [], []
+    from rest_framework.exceptions import NotFound
+
     for raw_pk in raw_pks:
         pk = str(raw_pk)
         try:
+            if user is not None:
+                # 与 GET objects / 单对象写口同口径：不存在或数据范围外一律失败
+                ensure_object_visible(user, model, raw_pk)
             if guard is not None:
                 guard(raw_pk)
             if raw_pk in (None, ""):
@@ -237,7 +245,7 @@ def set_object_tags_batch(
                 raise DjangoValidationError(_("Too many tags (max {})").format(MAX_TAGS_PER_OBJECT))
             if set(wanted) - existing_tag_ids:
                 raise DjangoValidationError(_("Some tags no longer exist; refresh and retry"))
-        except DjangoValidationError as exc:
+        except (DjangoValidationError, NotFound) as exc:
             failed.append({"pk": pk, "reason": "; ".join(getattr(exc, "messages", None) or [str(exc)])})
             continue
         valid_pks.append(pk)

@@ -57,9 +57,16 @@ def invalid_notify_caches(instance: Any, pk_set: Any) -> None:
     if instance.notice_type == MessageContent.NoticeChoices.USER:
         pks = pk_set
     if instance.notice_type == MessageContent.NoticeChoices.ROLE:
-        pks = UserInfo.objects.filter(roles__in=pk_set).values_list("pk", flat=True)
+        # 生效角色 = 直挂 ∪ 部门挂：与列表可见域 / 角色解析同一口径
+        from common.core.roles import role_members_q
+        from identity.models import UserRole
+
+        codes = UserRole.objects.filter(pk__in=pk_set).values_list("code", flat=True)
+        pks = UserInfo.objects.filter(role_members_q(codes)).values_list("pk", flat=True)
     if instance.notice_type == MessageContent.NoticeChoices.DEPT:
         pks = UserInfo.objects.filter(dept__in=pk_set).values_list("pk", flat=True)
+    if instance.notice_type == MessageContent.NoticeChoices.POST:
+        pks = UserInfo.objects.filter(posts__in=pk_set).values_list("pk", flat=True)
     if pks:
         if instance.publish:
             SiteMessageUtil.push_notice_messages(instance, set(pks))
@@ -75,6 +82,8 @@ def clean_notify_cache_handler_post_save(sender: Any, instance: Any, **kwargs: A
         pk_set = instance.notice_dept.values_list("pk", flat=True)
     elif instance.notice_type == MessageContent.NoticeChoices.ROLE:
         pk_set = instance.notice_role.values_list("pk", flat=True)
+    elif instance.notice_type == MessageContent.NoticeChoices.POST:
+        pk_set = instance.notice_post.values_list("pk", flat=True)
     else:
         pk_set = instance.notice_user.values_list("pk", flat=True)
     if pk_set:

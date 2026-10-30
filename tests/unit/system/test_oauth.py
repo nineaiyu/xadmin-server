@@ -497,6 +497,16 @@ class TestUsernameUniqueness:
         assert first == "idp_dup_2"
         assert second not in (first, "idp_dup")
 
+    def test_make_unique_username_avoids_recycled_collision(self, superuser, oauth_config):
+        """回收站用户名仍占唯一约束：只查活动行会在命中软删账号时建号 500。"""
+        from identity.models import UserInfo
+
+        recycled = UserInfo.objects.create_user(username="idp_dup", password="Dup-Pwd-2026!")
+        recycled.delete()
+        assert UserInfo.objects.filter(username="idp_dup").exists() is False
+        assert UserInfo.all_objects.filter(username="idp_dup").exists() is True
+        assert make_unique_username("idp", "dup") == "idp_dup_2"
+
 
 def test_oauth_error_carries_readable_detail():
     """OAuthError 只带面向用户的文案（IdP 原始报文不回显）。"""

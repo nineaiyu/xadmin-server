@@ -326,6 +326,15 @@ class TestRejections:
         with pytest.raises(ScreenLayoutError):
             normalize_screen_layout(raw, [DASH])
 
+    def test_duplicate_pane_id_rejected(self):
+        """重复 pk 会破坏前端 key / 层级语义：即使不重叠也拒绝。"""
+        raw = [
+            {"pk": "p1", "type": "clock", "x": 0, "y": 0, "w": 6, "h": 3},
+            {"pk": "p1", "type": "clock", "x": 6, "y": 0, "w": 6, "h": 3},
+        ]
+        with pytest.raises(ScreenLayoutError, match="Duplicate"):
+            normalize_screen_layout(raw, [DASH])
+
 
 class TestOverlap:
     def test_edge_touching_is_allowed(self):
@@ -384,6 +393,16 @@ class TestFreeLayoutNormalisation:
             "design_h": 2160,
             "panes": [],
         }
+
+    def test_duplicate_pane_id_rejected(self):
+        raw = {
+            "panes": [
+                _free_pane(pk="p1", x=0, y=0, w=100, h=80),
+                _free_pane(pk="p1", pane_type="text", x=200, y=0, w=100, h=80, text="另一个"),
+            ]
+        }
+        with pytest.raises(ScreenLayoutError, match="Duplicate"):
+            normalize_screen_free_layout(raw, [DASH])
 
     def test_overlap_allowed_and_array_order_kept(self):
         """自由画布的核心能力是层叠：完全重叠允许，数组顺序即层级（后者在上）。"""

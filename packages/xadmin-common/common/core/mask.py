@@ -70,16 +70,15 @@ def mask_exempt(request: Any, user: Any, model: Any = None, ignore_field_permiss
 
 
 def mask_role_pks(request: Any, user: Any) -> set[Any]:
-    """当前用户角色 pk 集合（按请求缓存，避免列表逐行 N+1 查询）。"""
+    """当前用户生效角色 pk 集合（直挂 ∪ 部门挂角色；按请求缓存，避免列表逐行 N+1）。"""
     if user is None or not hasattr(user, "roles"):
         return set()
     cached: set[Any] | None = getattr(request, "_mask_role_pks", None) if request is not None else None
     if cached is not None:
         return cached
-    try:
-        role_pks = set(user.roles.values_list("pk", flat=True))
-    except Exception:  # noqa: BLE001 非 UserInfo 用户（Anonymous 等）兜底
-        role_pks = set()
+    from common.core.roles import user_role_pks
+
+    role_pks = user_role_pks(user)
     if request is not None:
         try:
             request._mask_role_pks = role_pks

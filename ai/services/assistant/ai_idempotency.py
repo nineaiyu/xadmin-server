@@ -21,6 +21,8 @@ logger = get_logger(__name__)
 
 # 幂等窗口（秒）：与审批令牌 TTL 同口径
 IDEMPOTENCY_TTL = 600
+# 执行中占位 TTL：覆盖一次动作执行的常见时长；进程崩溃后最多阻塞该窗口
+IN_PROGRESS_TTL = 60
 CACHE_PREFIX = "ai_action_idem"
 
 
@@ -71,13 +73,35 @@ def store_result(user: Any, key: str, result: dict[str, Any]) -> None:
         logger.warning("write AI idempotency cache failed", exc_info=True)
 
 
+def _in_progress_key(user: Any, key: str) -> str:
+    return f"{_cache_key(user, key)}:in_progress"
+
+
+def _acquire_execution(user: Any, key: str) -> bool:
+    """尝试原子占位执行权；缓存不可用时放行（幂等是加固，不阻断业务）。"""
+    try:
+        return bool(cache.add(_in_progress_key(user, key), 1, IN_PROGRESS_TTL))
+    except Exception:  # noqa: BLE001 缓存不可用时无法保证并发幂等，按放行处理
+        logger.warning("acquire AI idempotency lock failed, execute without lock", exc_info=True)
+        return True
+
+
+def _release_execution(user: Any, key: str) -> None:
+    try:
+        cache.delete(_in_progress_key(user, key))
+    except Exception:  # noqa: BLE001 占位随 TTL 自愈
+        logger.debug("release AI idempotency lock failed", exc_info=True)
+
+
 def execute_idempotent(
     user: Any, action_key: str, params: dict[str, Any], executor: Any, force: bool = False
 ) -> dict[str, Any]:
     """带幂等的动作执行：``executor(user, action_key, params)`` 返回 ``{ok, detail, data}``。
 
     幂等只作用于**成功**结果（失败允许立即重试）；``force=True`` 跳过幂等检查。
-    返回结果追加 ``draft_id``；命中未强制的重复请求追加 ``deduplicated=True``。
+    并发保护：执行前用 ``cache.add`` 原子占位，占位失败的并发请求不执行写动作，
+    直接返回「处理中」；执行结束（成功或失败）即释放占位。返回结果追加
+    ``draft_id``；命中未强制的重复请求追加 ``deduplicated=True``。
     """
     key = draft_id(user, action_key, params)
     if not force:
@@ -85,8 +109,21 @@ def execute_idempotent(
         if first is not None:
             logger.info("AI action deduplicated. action:%s user:%s", action_key, getattr(user, "pk", ""))
             return {**first, "draft_id": key, "deduplicated": True}
-    result = executor(user, action_key, params)
-    result = {**result, "draft_id": key}
-    if result.get("ok"):
-        store_result(user, key, {"ok": True, "detail": result.get("detail"), "data": result.get("data") or {}})
-    return result
+        if not _acquire_execution(user, key):
+            logger.info("AI action in progress, skip duplicate. action:%s user:%s", action_key, getattr(user, "pk", ""))
+            return {
+                "ok": False,
+                "detail": "The same action is being processed, please retry later",
+                "data": {},
+                "draft_id": key,
+                "in_progress": True,
+            }
+    try:
+        result = executor(user, action_key, params)
+        result = {**result, "draft_id": key}
+        if result.get("ok"):
+            store_result(user, key, {"ok": True, "detail": result.get("detail"), "data": result.get("data") or {}})
+        return result
+    finally:
+        if not force:
+            _release_execution(user, key)

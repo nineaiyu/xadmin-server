@@ -243,6 +243,28 @@ class TestTemplateVersions:
         assert versions == [6, 5, 4]
         assert template.versions.first().name == "版5"
 
+    def test_noop_save_does_not_bump_version(self, auth_client):
+        """整包保存但布局未变（含仅改名）不记版本，避免挤掉真实布局历史。"""
+        layout = {"panes": [_pane()]}
+        created = auth_client.post(TEMPLATE_URL, {"name": "无变更", "free_layout": layout}, format="json").json()[
+            "data"
+        ]
+        pk = created["pk"]
+
+        same = auth_client.patch(f"{TEMPLATE_URL}/{pk}", {"name": "无变更", "free_layout": layout}, format="json")
+        assert same.data["code"] == 1000, same.data
+        renamed = auth_client.patch(f"{TEMPLATE_URL}/{pk}", {"name": "仅改名"}, format="json")
+        assert renamed.data["code"] == 1000, renamed.data
+        assert [row["version"] for row in auth_client.get(f"{TEMPLATE_URL}/{pk}/versions").json()["data"]] == [1]
+
+        changed = auth_client.patch(
+            f"{TEMPLATE_URL}/{pk}",
+            {"free_layout": {"panes": [_pane(text="改布局")]}},
+            format="json",
+        )
+        assert changed.data["code"] == 1000, changed.data
+        assert [row["version"] for row in auth_client.get(f"{TEMPLATE_URL}/{pk}/versions").json()["data"]] == [2, 1]
+
     def test_versions_creator_only(self, auth_client, normal_user, template_urls):
         """版本历史与回滚同一归属口径：非创建者持 versions 码也读不到（版本与回滚同一归属）。"""
 

@@ -59,22 +59,22 @@ def _invalidate_pending_count(users: Any) -> None:
         cache.delete_many([f"approval_flow_pending_count_{pk}" for pk in pks])
 
 
-def _alert_auto_approved(instance: Any, node: Any) -> None:
-    """节点无候选自动通过的治理告警：出站 Webhook + 知会启用中的超管。
+def _alert_no_approver(instance: Any, node: Any) -> None:
+    """节点无候选阻塞的治理告警：出站 Webhook + 知会启用中的超管。
 
-    自动通过 = 流程按「无人可审」静默放行，属配置缺口，必须能被运维察觉
-    （原来只有服务端日志与审计行，无任何外发信号）；超管知会同提交/终态事件走
-    同一通知链路，单条失败只记日志。
+    无候选节点保持 PENDING 并阻塞在当前节点（不再自动通过），属配置缺口；
+    必须让运维可察觉并由管理员修复审批人配置、加签或撤回。超管知会同提交/终态
+    事件走同一通知链路，单条失败只记日志。
     """
     _emit_flow_event(
-        "flow.node_auto_approved",
+        "flow.node_no_approver",
         instance,
         extra={"node_name": node.name, "current_node": node.name},
     )
     UserInfo = _users()
     admins = list(UserInfo.objects.filter(is_superuser=True, is_active=True)[:MAX_AUTO_APPROVE_NOTIFY_ADMINS])
     if admins:
-        _notify(admins, "auto_approved", instance, node_name=node.name)
+        _notify(admins, "no_approver", instance, node_name=node.name)
 
 
 def _emit_flow_event(event: str, instance: Any, extra: Any = None) -> None:

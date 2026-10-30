@@ -202,10 +202,10 @@
 | `current_node` | string | 否 | Current node |
 | `reason` | string | 否 | Finish reason |
 
-### `flow.node_auto_approved`
+### `flow.node_no_approver`
 
 - 版本：1
-- 说明：Flow node auto-approved
+- 说明：Flow node blocked: no available approver
 
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|

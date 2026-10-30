@@ -228,6 +228,7 @@ def execute_dsl(user: Any, dsl: Any) -> tuple[bool, Any]:
     try:
         normalized = validate_dsl(parsed, user)
         dataset = Dataset.objects.get(pk=normalized["dataset"])
+        extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
         if normalized["mode"] == "aggregate":
             result = aggregate_dataset(
                 dataset,
@@ -236,11 +237,11 @@ def execute_dsl(user: Any, dsl: Any) -> tuple[bool, Any]:
                 metric=normalized["metric"],
                 date_trunc=normalized["date_trunc"] or None,
                 value_field=normalized["value_field"] or None,
+                extra_filters=extra,
             )
             rows = len(result["series"])
             summary = str(_("Query finished: {} groups")).format(rows)
         else:
-            extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
             # 复用数据集执行链：JSON 路径列的别名映射、字段权限、row_limit 与
             # 稳定排序只在这里实现一次；直接 values(*columns) 会把 data.x 当成模型字段
             result = execute_dataset(

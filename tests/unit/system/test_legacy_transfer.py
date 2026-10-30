@@ -188,6 +188,27 @@ class TestRoundTrip:
         restored = MessageContent.objects.get(title="带附件公告")
         assert list(restored.file.values_list("filename", flat=True)) == [upload.filename]
 
+    def test_same_title_notices_are_not_merged(self, tmp_path, monkeypatch):
+        """公告自然键为 title+created_time：同名不同时间的公告必须分别落库。"""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from notifications.models.message import MessageContent
+
+        _seed()
+        now = timezone.now()
+        first = MessageContent.objects.create(title="系统维护通知", message="第一次")
+        second = MessageContent.objects.create(title="系统维护通知", message="第二次")
+        MessageContent.objects.filter(pk=first.pk).update(created_time=now)
+        MessageContent.objects.filter(pk=second.pk).update(created_time=now + timedelta(hours=1))
+        payload = self._export(tmp_path / "legacy", monkeypatch)
+        assert payload["counts"]["notices"] == 2
+
+        MessageContent.objects.filter(title="系统维护通知").delete()
+        call_command("legacy_import", "--input", str(tmp_path / "legacy"), stdout=StringIO())
+        assert MessageContent.objects.filter(title="系统维护通知").count() == 2
+
     def test_missing_attachment_file_is_skipped(self, tmp_path, monkeypatch):
         """附件记录在、物理文件不在：跳过该记录（不建下载不了的坏行），不中断导入。"""
         from file.models import UploadFile

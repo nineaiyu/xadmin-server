@@ -289,11 +289,13 @@ class ScreenTemplateSerializer(BaseModelSerializer):
     ignore_field_permission = True
     # 非创建者修改/删除被写守卫拒绝（1003）：下发 is_owner 供行内按钮显隐
     row_owner_guard = True
+    base_version = serializers.IntegerField(write_only=True, required=False, min_value=0)
 
     class Meta:
         model = ScreenTemplate
         fields = [
             "pk",
+            "base_version",
             "name",
             "group",
             "free_layout",
@@ -304,6 +306,18 @@ class ScreenTemplateSerializer(BaseModelSerializer):
         read_only_fields = ["pk", "created_time", "updated_time"]
         # RePlusPage 列表列
         table_fields = ["name", "group", "visibility", "updated_time"]
+
+    def validate(self, attrs: Any) -> Any:
+        """模板乐观锁：客户端携带 base_version 时与当前最新版本比对。"""
+        base_version = attrs.pop("base_version", None)
+        if base_version is not None and self.instance is not None:
+            latest = self.instance.versions.first()
+            current = latest.version if latest else 0
+            if int(base_version) != int(current):
+                raise serializers.ValidationError(
+                    {"base_version": _("The content has been modified by another user; reload before saving")}
+                )
+        return attrs
 
     def validate_group(self, value: Any) -> str:
         """分组名：去空白 + 长度上限（空 = 未分组）。"""

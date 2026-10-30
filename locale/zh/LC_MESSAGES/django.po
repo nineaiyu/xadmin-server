@@ -2382,6 +2382,10 @@ msgid "Approval node auto-approved due to no available approver"
 msgstr "审批节点因无可用审批人自动通过"
 
 #: approval/notifications.py:45
+msgid "Approval node blocked due to no available approver"
+msgstr "审批节点因无可用审批人已阻塞"
+
+#: approval/notifications.py:45
 msgid "Approval application copied to you"
 msgstr "审批申请已抄送给你"
 
@@ -11889,6 +11893,10 @@ msgstr "审批申请已退回"
 #: task/utils/webhook.py:197
 msgid "Flow node auto-approved"
 msgstr "流程节点自动通过"
+
+#: task/services/webhook/events.py
+msgid "Flow node blocked: no available approver"
+msgstr "流程节点因无可用审批人阻塞"
 
 #: task/utils/webhook.py:217
 msgid "Used requests today"

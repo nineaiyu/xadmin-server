@@ -16,7 +16,7 @@ from django.utils import timezone
 
 from audit.models import UserLoginLog
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
-from identity.models import LoginAccessPolicy, UserSession
+from identity.models import DeptInfo, LoginAccessPolicy, UserRole, UserSession
 from identity.utils.login_policy import evaluate_login_policy, match_ip, match_time, preview_login_policy
 
 pytestmark = pytest.mark.django_db
@@ -109,6 +109,23 @@ class TestEvaluatePolicy:
             action=LoginAccessPolicy.Action.REJECT,
         )
         assert policy.pk
+        result = evaluate_login_policy(normal_user, "127.0.0.1")
+        assert result["action"] == "reject"
+
+    def test_department_role_target_match(self, normal_user):
+        """部门挂角色同样命中角色级登录策略。"""
+        role = UserRole.objects.create(name="策略部门角色", code="login_policy_dept_role")
+        dept = DeptInfo.objects.create(name="策略部门", code="login_policy_dept")
+        dept.roles.add(role)
+        normal_user.dept = dept
+        normal_user.save(update_fields=["dept"])
+        LoginAccessPolicy.objects.create(
+            name="dept-role-reject",
+            priority=10,
+            target_type=LoginAccessPolicy.TargetType.ROLE,
+            target_value=role.code,
+            action=LoginAccessPolicy.Action.REJECT,
+        )
         result = evaluate_login_policy(normal_user, "127.0.0.1")
         assert result["action"] == "reject"
 

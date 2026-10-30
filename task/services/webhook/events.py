@@ -172,9 +172,9 @@ EVENT_CATALOG = {
             "reason": {"type": "string", "required": False, "description": _("Finish reason")},
         },
     },
-    # 节点无候选自动通过（治理告警：配置缺口导致流程静默放行，实例仍为 PENDING）
-    "flow.node_auto_approved": {
-        "label": _("Flow node auto-approved"),
+    # 节点无候选阻塞（治理告警：配置缺口导致流程停在该节点，实例仍为 PENDING）
+    "flow.node_no_approver": {
+        "label": _("Flow node blocked: no available approver"),
         "version": 1,
         "fields": {
             "instance_no": {"type": "string", "required": True, "description": _("Instance number")},

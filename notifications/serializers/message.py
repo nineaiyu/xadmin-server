@@ -152,7 +152,9 @@ class NoticeMessageSerializer(BaseModelSerializer):
         if obj.notice_type == MessageContent.NoticeChoices.DEPT:
             return UserInfo.objects.filter(dept__in=obj.notice_dept.all()).count()
         if obj.notice_type == MessageContent.NoticeChoices.ROLE:
-            return UserInfo.objects.filter(roles__in=obj.notice_role.all()).count()
+            # 与列表可见域同口径：直挂角色 ∪ 所属启用部门挂角色
+            roles = obj.notice_role.filter(is_active=True, deleted_at__isnull=True)
+            return UserInfo.objects.filter(Q(roles__in=roles) | Q(dept__is_active=True, dept__roles__in=roles)).count()
         if obj.notice_type == MessageContent.NoticeChoices.POST:
             # 仅启用岗位的在岗用户（与审批人解析同口径）
             return (
@@ -256,9 +258,21 @@ class NoticeMessageSerializer(BaseModelSerializer):
                     user_total=Count(
                         "notice_role__userinfo",
                         filter=Q(
+                            notice_role__is_active=True,
                             notice_role__deleted_at__isnull=True,
                             notice_role__userinfo__deleted_at__isnull=True,
                         ),
+                        distinct=True,
+                    )
+                    + Count(
+                        "notice_role__deptinfo__dept_query",
+                        filter=Q(
+                            notice_role__is_active=True,
+                            notice_role__deleted_at__isnull=True,
+                            notice_role__deptinfo__is_active=True,
+                            notice_role__deptinfo__dept_query__deleted_at__isnull=True,
+                        ),
+                        distinct=True,
                     )
                 )
             else:

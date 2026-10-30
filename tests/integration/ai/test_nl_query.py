@@ -278,6 +278,19 @@ class TestRun:
         assert body["code"] == 1000
         assert isinstance(body["data"]["series"], list)
 
+    def test_run_aggregate_applies_filters(self, auth_client, dataset, nl_enabled, superuser):
+        """聚合执行必须带上 DSL filters，与试算预览同口径。"""
+        dsl = dsl_of(
+            dataset,
+            mode="aggregate",
+            group_by="username",
+            metric="count",
+            filters=[{"field": "username", "op": "exact", "value": "admin"}],
+        )
+        body = auth_client.post(RUN_URL, {"dsl": dsl}, format="json").json()
+        assert body["code"] == 1000, body
+        assert [item["name"] for item in body["data"]["series"]] == ["admin"]
+
     def test_run_aggregate_without_group_by(self, auth_client, dataset, nl_enabled, superuser):
         """无分组纯聚合（「一共有多少个」等总数问题）：单桶输出，不再被 group_by 必填拒绝。"""
         dsl = {"dataset": str(dataset.pk), "mode": "aggregate", "metric": "count"}

@@ -196,6 +196,8 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         if len(value) > MAX_FLOW_NODES:
             raise serializers.ValidationError(_("A flow supports at most {} nodes").format(MAX_FLOW_NODES))
         orders = []
+        assignee_types = set(ApprovalFlowNode.AssigneeType.values)
+        timeout_actions = set(ApprovalFlowNode.TimeoutAction.values)
         for index, node in enumerate(value):
             order = node.get("order")
             node["order"] = order if order not in (None, "") else index + 1
@@ -207,10 +209,13 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         for node in value:
             if not (node.get("name") or "").strip():
                 raise serializers.ValidationError(_("Node name is required"))
-            if (
-                node.get("assignee_type") != ApprovalFlowNode.AssigneeType.LEADER
-                and not (node.get("assignee_value") or "").strip()
-            ):
+            assignee_type = node.get("assignee_type")
+            if assignee_type not in assignee_types:
+                raise serializers.ValidationError(_("Unsupported assignee type: {}").format(assignee_type))
+            timeout_action = node.get("timeout_action") or ApprovalFlowNode.TimeoutAction.NONE
+            if timeout_action not in timeout_actions:
+                raise serializers.ValidationError(_("Unsupported timeout action: {}").format(timeout_action))
+            if assignee_type != ApprovalFlowNode.AssigneeType.LEADER and not (node.get("assignee_value") or "").strip():
                 raise serializers.ValidationError(_("Assignee value is required for node {}").format(node["name"]))
             hours = int(node.get("timeout_hours") or 0)
             if hours < 0:
@@ -281,12 +286,15 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                     raise serializers.ValidationError(
                         _("Branch route target is required for node {}").format(node["name"])
                     )
-                target = int(target)
+                try:
+                    target = int(target)
+                except (TypeError, ValueError):
+                    raise serializers.ValidationError(_("Branch route target must be a number")) from None
                 if target not in orders:
                     raise serializers.ValidationError(_("Branch route target {} does not exist").format(target))
-                if target == order:
+                if target <= order:
                     raise serializers.ValidationError(
-                        _("Branch route cannot point to itself (node {})").format(node["name"])
+                        _("Branch route target must be greater than the current node (node {})").format(node["name"])
                     )
                 targets.append(target)
             if targets:

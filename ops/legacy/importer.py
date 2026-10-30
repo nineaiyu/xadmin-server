@@ -314,9 +314,12 @@ class Importer:
             if self.dry_run:
                 created += 1
                 continue
-            instance, is_created = self._upsert(
-                "notices", row, {"title": row["title"]}, self._scalar_defaults("notices", row)
-            )
+            # 公告自然键 = title + created_time（见 transfer.notice_signature）：
+            # 标题可重复（如每日「系统维护通知」），单按 title 会互相覆盖。
+            lookup = {"title": row["title"]}
+            if row.get("created_time") is not None:
+                lookup["created_time"] = row["created_time"]
+            instance, is_created = self._upsert("notices", row, lookup, self._scalar_defaults("notices", row))
             created += int(is_created)
             updated += int(not is_created)
             self._apply_m2m("notices", row, instance)

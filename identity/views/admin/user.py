@@ -232,9 +232,18 @@ class UserViewSet(
         return super().destroy(request, *args, **kwargs)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True, url_path="reset-password", serializer_class=ResetPasswordSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+        methods=["post"],
+        detail=True,
+        url_path="reset-password",
+        serializer_class=ResetPasswordSerializer,
+        permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
+    )
     def reset_password(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """重置用户密码"""
+        """重置用户密码
+
+        账号接管面，与重置 MFA 同口径：管理员需本人密码二次确认
+        """
         instance = self.get_object()
         self._assert_target_mutable(instance)
         user_admin.reset_user_password(instance, request)

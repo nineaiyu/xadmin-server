@@ -133,9 +133,12 @@ class ApiApplicationViewSet(BaseModelSet):
         return ApiResponse(data=data, status=status.HTTP_201_CREATED)
 
     def perform_update(self, serializer: Any) -> None:
-        """应用停用与凭证联动：停用即失效其全部有效凭证（即时生效）。"""
+        """应用授权收紧即时生效：停用或 scopes/IP 白名单/有效期变更即失效全部凭证。"""
+        instance = serializer.instance
+        before = {field: getattr(instance, field, None) for field in ("scopes", "ip_allowlist", "expired_at")}
         application = serializer.save()
-        if not application.is_active:
+        changed = any(before[field] != getattr(application, field, None) for field in before)
+        if not application.is_active or changed:
             revoke_application_tokens(application)
 
     @action(methods=["post"], detail=True, url_path="regenerate-secret")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

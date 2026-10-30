@@ -450,7 +450,8 @@ def make_unique_username(provider_key: str, subject: str) -> str:
     base = f"{provider_key}_{subject}"[:30]
     username = base
     index = 1
-    while UserInfo.objects.filter(username=username).exists():
+    # 回收站用户名仍占唯一约束：只查活动行会在命中软删账号时建号 500
+    while UserInfo.all_objects.filter(username=username).exists():
         index += 1
         username = f"{base[: 30 - len(str(index))]}_{index}"
     return username

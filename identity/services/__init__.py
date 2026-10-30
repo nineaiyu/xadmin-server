@@ -52,6 +52,8 @@ __all__ = [
     "get_users_by_pks",
     "get_users_by_perm",
     "get_users_by_perms",
+    "get_users_by_role_codes",
+    "user_role_codes",
     "get_active_user_pk_by_username",
     "serialize_user_info",
     "register_user_session",
@@ -97,6 +99,9 @@ _LAZY_EXPORTS = {
     "get_login_mfa_methods": "identity.services.auth_login",
     # 菜单变更联动的用户缓存失效（identity.signal_handler；Menu 接收器跨域消费）
     "invalidate_menu_user_caches": "identity.signal_handler",
+    # 生效角色解析：直挂 ∪ 部门挂角色
+    "get_users_by_role_codes": "identity.services.roles",
+    "user_role_codes": "identity.services.roles",
 }
 
 
@@ -151,25 +156,37 @@ def get_users_by_perms(perms: Any) -> Any:
 
     权限码（"动作:组件名"，如 approve:SystemApprovalRequest）挂 PERMISSION 类型
     菜单的 name，经 角色↔菜单 授权间接授予用户（即"按权限反查"）。
-    软删除角色/菜单显式排除，不依赖关联查询的管理器行为。
+    生效角色 = 直挂角色 ∪ 所属启用部门绑定角色；软删除角色/菜单显式排除，
+    不依赖关联查询的管理器行为。
 
     通用职能推导工具：审批人解析（approval.services.approval.get_approver_queryset）
     与通知接收人解析共用，替代逐处复制"角色清单成员查询"。
     """
+    from django.db.models import Q
+
     from identity.models import UserInfo
     from system.services import Menu
 
     if not perms:
         return UserInfo.objects.none()
-    return UserInfo.objects.filter(
-        is_active=True,
+    menu_filters = {
+        "menu__is_active": True,
+        "menu__deleted_at__isnull": True,
+        "menu__menu_type": Menu.MenuChoices.PERMISSION,
+        "menu__name__in": list(perms),
+    }
+    direct = Q(
         roles__is_active=True,
         roles__deleted_at__isnull=True,
-        roles__menu__is_active=True,
-        roles__menu__deleted_at__isnull=True,
-        roles__menu__menu_type=Menu.MenuChoices.PERMISSION,
-        roles__menu__name__in=list(perms),
-    ).distinct()
+        **{f"roles__{key}": value for key, value in menu_filters.items()},
+    )
+    via_dept = Q(
+        dept__is_active=True,
+        dept__roles__is_active=True,
+        dept__roles__deleted_at__isnull=True,
+        **{f"dept__roles__{key}": value for key, value in menu_filters.items()},
+    )
+    return UserInfo.objects.filter(is_active=True).filter(direct | via_dept).distinct()
 
 
 def get_active_user_pk_by_username(username: Any) -> Any:

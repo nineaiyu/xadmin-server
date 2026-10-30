@@ -47,19 +47,23 @@ class ApprovalFlow(DbAuditModel):
     @classmethod
     def visible_to(cls, user: Any) -> Any:
         """当前用户可发起的流程：空 ``initiator_roles`` 对所有用户公开。"""
+        from common.core.roles import user_role_codes
+
         queryset = cls.objects.filter(is_active=True)
         if getattr(user, "is_superuser", False):
             return queryset
-        role_codes = list(user.roles.filter(is_active=True).values_list("code", flat=True))
+        role_codes = sorted(user_role_codes(user))
         scope = models.Q(initiator_roles=[])
         for code in role_codes:
             scope |= models.Q(initiator_roles__contains=[code])
         return queryset.filter(scope)
 
     def user_can_initiate(self, user: Any) -> bool:
+        from common.core.roles import user_role_codes
+
         if getattr(user, "is_superuser", False) or not self.initiator_roles:
             return True
-        return bool(user.roles.filter(is_active=True, code__in=self.initiator_roles).exists())
+        return bool(user_role_codes(user) & set(self.initiator_roles))
 
 
 class ApprovalFlowNodeQuerySet(models.QuerySet):
