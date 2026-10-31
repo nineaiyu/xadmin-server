@@ -22,7 +22,6 @@
 
 from typing import Any
 
-from django.core.cache import cache
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -80,9 +79,13 @@ class Command(BaseCommand):
                 label = "平台层" if layer == "platform" else layer
                 self.stdout.write(f"[种子] {label} {path}（{count} 行）")
 
-        cache.clear()
+        # 只失效列/字段元数据缓存，不做 cache.clear()：整库 FLUSH 会同时清掉会话、
+        # 权限与分布式锁（与 post_upgrade 同口径）
+        from common.core.modelset.metadata import invalidate_metadata_payload_cache
+
+        invalidate_metadata_payload_cache()
         self.stdout.write(
-            self.style.SUCCESS("[字段权限] 同步完成，已清空元数据缓存；重启服务进程后前端即可看到新字段。")
+            self.style.SUCCESS("[字段权限] 同步完成，已失效元数据缓存；重启服务进程后前端即可看到新字段。")
         )
 
     def _report_pending(self) -> None:

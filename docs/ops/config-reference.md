@@ -22,6 +22,7 @@
 | `SECRET_KEY_AUTO_GENERATE` | 同名 | `false` | 否 | 显式 `true` 强制自动生成；回落 `config_example.yml` 或 `DEBUG=true` 时自动生效 |
 | `DEBUG` | 同名 | `false` | 否 | 开发开启；开启后 Host 校验放行、WebSocket 走 daphne |
 | `DEBUG_DEV` | 同名 | `false` | 否 | 输出 SQL 日志 |
+| `ENABLE_DJANGO_ADMIN` | 同名 | `false` | 否 | 是否挂载 Django admin（`/admin/`）。默认关闭：该入口只认 session，绕过验证码/登录锁定/登录访问策略/MFA；需要数据排查时显式开启并限制来源 |
 | `ALLOWED_HOSTS` | 同名（JSON 数组） | `[]` | 生产必填 | DEBUG 下默认放行所有 Host |
 | `TRUSTED_PROXY_IPS` | 同名（JSON 数组） | `[]` | HTTP 反代场景必填 | 仅代理会注入 `X-Forwarded-For` 时可配；纯 TCP 代理勿配 |
 | `SECURITY_HTTPS_ENABLED` | 同名 | `false` | 否 | 开启后强制 Secure Cookie + HSTS |

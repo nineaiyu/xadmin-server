@@ -67,6 +67,9 @@ def custom_pattern_error(pattern: Any) -> re.error | None:
         return None
     if len(pattern) > MAX_CUSTOM_PATTERN_LENGTH:
         return re.error(f"pattern exceeds {MAX_CUSTOM_PATTERN_LENGTH} characters")
+    # 拒绝常见灾难性回溯形态（嵌套量词 / 反向引用）：输出链路没有逐值超时
+    if re.search(r"\([^()]*[+*][^()]*\)[+*]", pattern) or re.search(r"\\[1-9]", pattern):
+        return re.error("pattern contains potentially catastrophic backtracking")
     try:
         re.compile(pattern)
     except re.error as exc:
@@ -146,6 +149,11 @@ def apply_mask(value: Any, rule: dict[str, Any]) -> Any:
     if mask_type == "custom":
         pattern = rule.get("pattern")
         if not pattern:
+            return value
+        if custom_pattern_error(pattern) is not None:
+            # 存量脏配置（非法/疑似灾难性回溯）不执行：输出侧不是预览入口，没有
+            # 子进程超时兜底，直接执行可能占死 worker
+            logger.warning("skip unsafe mask pattern: %r", pattern)
             return value
         try:
             return re.sub(pattern, lambda m: _segment(m.group(0), keep_head, keep_tail, mask_char), value)

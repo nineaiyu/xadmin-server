@@ -40,10 +40,12 @@ def mask_exempt(request: Any, user: Any, model: Any = None, ignore_field_permiss
     仅有更新权限的用户才被放行，只读用户的列表/详情/导出仍按规则掩码。
     放行的原文访问会记一条审计日志（每个请求一次，含模型标识）。
     """
-    if user is None or not hasattr(user, "is_superuser"):
+    if user is not None and getattr(user, "is_superuser", False):
         return True
-    if user.is_superuser or ignore_field_permission or getattr(request, "ignore_field_permission", False):
+    if ignore_field_permission or getattr(request, "ignore_field_permission", False):
         return True
+    if user is None:
+        return False
     if request is None:  # 无请求上下文（后台任务/搜索等）不享受原文通道
         return False
     params = getattr(request, "query_params", None) or getattr(request, "GET", None)

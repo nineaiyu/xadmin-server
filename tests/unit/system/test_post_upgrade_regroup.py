@@ -90,3 +90,31 @@ def test_dead_permission_is_cleaned_on_upgrade():
     # 幂等：再次执行不报错也不产生副作用
     Command()._remove_dead_permissions()
     assert not Menu.objects.filter(name="retrieve:SystemUserLoginLog").exists()
+
+
+def test_bind_legacy_menu_models_only_uses_role_field_tree(monkeypatch):
+    """模型绑定只取 ROLE 字段树根：DATA 根绑上后会被下次同步判为陈旧删除。"""
+    from types import SimpleNamespace
+
+    import django.urls
+    from django.urls import Resolver404
+
+    from identity.models import UserInfo
+    from system.models import ModelLabelField
+
+    role_root = ModelLabelField.objects.create(
+        name="identity.userinfo", label="用户", field_type=ModelLabelField.FieldChoices.ROLE
+    )
+    data_root = ModelLabelField.objects.create(
+        name="identity.userinfo", label="用户", field_type=ModelLabelField.FieldChoices.DATA
+    )
+    menu = _menu("list:SystemUser", Menu.MenuChoices.PERMISSION, "api/identity/user$")
+
+    view_class = SimpleNamespace(serializer_class=SimpleNamespace(Meta=SimpleNamespace(model=UserInfo)))
+    matched = SimpleNamespace(func=SimpleNamespace(view_class=view_class))
+    monkeypatch.setattr(django.urls, "resolve", lambda url: matched)
+    monkeypatch.setattr(django.urls, "Resolver404", Resolver404, raising=False)
+
+    assert Command()._bind_legacy_menu_models() == 1
+    assert menu.model.filter(pk=role_root.pk).exists()
+    assert not menu.model.filter(pk=data_root.pk).exists()

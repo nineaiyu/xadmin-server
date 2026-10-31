@@ -536,6 +536,22 @@ class TestPushScreenDataTask:
         assert push_screen_data() == 1
         assert triggered == [str(screen.pk)]
 
+    def test_scan_loads_only_throttle_columns(self, dashboard_a, superuser):
+        """beat 扫描只取 pk/refresh：layout/free_layout 等大 JSON 不进内存。"""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        _make_screen(superuser, [dashboard_a])
+        with CaptureQueriesContext(connection) as ctx:
+            push_screen_data()
+        table = Screen._meta.db_table.lower()
+        scans = [query["sql"].lower() for query in ctx.captured_queries if f'from "{table}"' in query["sql"].lower()]
+        assert len(scans) == 1, scans
+        sql = scans[0]
+        assert "refresh" in sql
+        for payload_column in ("layout", "free_layout", "dashboards", "theme_color"):
+            assert payload_column not in sql, payload_column
+
     def test_beat_registration(self):
         from common.celery.decorator import get_register_period_tasks
 

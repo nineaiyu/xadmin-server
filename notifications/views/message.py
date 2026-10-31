@@ -129,4 +129,7 @@ class NoticeUserReadMessageViewSet(ListDeleteModelSet):
             instance.save(update_fields=["unread", "modifier"])
         if instance.notice.notice_type in MessageContent.get_notice_choices():
             instance.delete()
+        from notifications.views.user_site_msg import invalidate_unread_summary
+
+        invalidate_unread_summary(request.user)
         return ApiResponse()

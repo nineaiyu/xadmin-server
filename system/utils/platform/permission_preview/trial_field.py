@@ -5,7 +5,6 @@
 from typing import Any
 
 from django.conf import settings
-from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 
 from identity.services import UserInfo
@@ -21,15 +20,9 @@ def _direct_user_field_matrix(user_obj: UserInfo, menu_pk: Any) -> dict[str, Any
     试算需反映「当前配置」，即便 10s 缓存也会让「刚改完立刻试算」失真；
     多角色/部门角色的白名单按字段并集合并（运行时同款语义）。
     """
-    q = Q()
-    has_q = False
-    roles = list(user_obj.roles.all())
-    if roles:
-        q |= Q(role__in=roles) & Q(role__is_active=True)
-        has_q = True
-    if user_obj.dept:
-        q |= Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True)
-        has_q = True
+    from common.core.permission import role_dept_q
+
+    q, has_q = role_dept_q(user_obj, "role")
     data: dict[str, Any] = {}
     if not has_q:
         return data
@@ -146,6 +139,11 @@ def run_field_trial(user_obj: UserInfo, menu_pk: Any, draft: Any = None) -> dict
         note = f"未配置字段白名单的模型（{'、'.join(unconfigured)}）在运行时会裁空所有字段（未配置=默认拒绝）"
     else:
         note = None
+    if draft_fields:
+        # 草稿与保存路径语义不同：试算把草稿与现状取并集，保存却是整份替换
+        # 目标角色白名单——必须显式标注，避免把「收窄」试算误读为保存后结果
+        draft_note = "草稿按并集模拟叠加到当前生效字段；保存会整份替换目标角色白名单（收窄需在保存后复核）"
+        note = f"{note}；{draft_note}" if note else draft_note
     return {
         "scope": "field",
         "menu": {"pk": str(menu_obj.pk), "title": menu_obj.meta.title if menu_obj.meta else menu_obj.name},

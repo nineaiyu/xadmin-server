@@ -3926,7 +3926,7 @@
           },
           "field_permission_mode": {
             "default": {
-              "label": "Inherit",
+              "label": "继承",
               "value": "inherit"
             },
             "description": "strict = role without field permission config sees no columns; inherit = no extra pruning",
@@ -3938,7 +3938,7 @@
                 "type": "string"
               }
             },
-            "title": "Field permission mode",
+            "title": "字段权限模式",
             "type": "object"
           },
           "filters": {
@@ -6087,6 +6087,7 @@
           "deleted_at": {
             "format": "date-time",
             "nullable": true,
+            "readOnly": true,
             "title": "删除时间",
             "type": "string"
           },
@@ -6185,6 +6186,7 @@
           },
           "pk": {
             "format": "uuid",
+            "readOnly": true,
             "title": "主键ID",
             "type": "string"
           },
@@ -6197,9 +6199,11 @@
           }
         },
         "required": [
+          "deleted_at",
           "meta",
           "name",
-          "path"
+          "path",
+          "pk"
         ],
         "type": "object"
       },
@@ -6534,6 +6538,19 @@
             "readOnly": true,
             "type": "string"
           },
+          "instance": {
+            "description": null,
+            "nullable": true,
+            "properties": {
+              "pk": {
+                "description": "pk field",
+                "type": "string"
+              }
+            },
+            "readOnly": true,
+            "title": "审批实例",
+            "type": "object"
+          },
           "pk": {
             "format": "uuid",
             "readOnly": true,
@@ -6573,6 +6590,7 @@
           "data",
           "form",
           "form_name",
+          "instance",
           "pk",
           "schema_version",
           "status",
@@ -10583,7 +10601,7 @@
           },
           "field_permission_mode": {
             "default": {
-              "label": "Inherit",
+              "label": "继承",
               "value": "inherit"
             },
             "description": "strict = role without field permission config sees no columns; inherit = no extra pruning",
@@ -10595,7 +10613,7 @@
                 "type": "string"
               }
             },
-            "title": "Field permission mode",
+            "title": "字段权限模式",
             "type": "object"
           },
           "filters": {
@@ -11722,6 +11740,7 @@
           "deleted_at": {
             "format": "date-time",
             "nullable": true,
+            "readOnly": true,
             "title": "删除时间",
             "type": "string"
           },
@@ -11820,6 +11839,7 @@
           },
           "pk": {
             "format": "uuid",
+            "readOnly": true,
             "title": "主键ID",
             "type": "string"
           },
@@ -12903,6 +12923,11 @@
       "PatchedScreenTemplate": {
         "description": "大屏模板（团队共享）：载荷与自由画布同形，复用同一份归一化与校验。\n\n引用可见性口径与保存大屏一致（引用不可见即拒绝）——模板是「将来要落到大屏上的\n布局」，放行不可见引用只会把 400 推迟到应用模板那一刻。",
         "properties": {
+          "base_version": {
+            "minimum": 0,
+            "type": "integer",
+            "writeOnly": true
+          },
           "created_time": {
             "format": "date-time",
             "nullable": true,
@@ -15785,6 +15810,11 @@
       "ScreenTemplate": {
         "description": "大屏模板（团队共享）：载荷与自由画布同形，复用同一份归一化与校验。\n\n引用可见性口径与保存大屏一致（引用不可见即拒绝）——模板是「将来要落到大屏上的\n布局」，放行不可见引用只会把 400 推迟到应用模板那一刻。",
         "properties": {
+          "base_version": {
+            "minimum": 0,
+            "type": "integer",
+            "writeOnly": true
+          },
           "created_time": {
             "format": "date-time",
             "nullable": true,
@@ -19754,7 +19784,7 @@
     },
     "/api/ai/assistant/usage": {
       "get": {
-        "description": "AI 用量账本\n\n按天 / 链路 / 档案 / 模型 / Top 用户 + 成功率与延迟 + 配额与并发占用\n\n数据源 = AiUsageRecord（逐次记账，保留期随 MONITOR_RETENTION_DAYS 清理）；\n合计与档案 / 模型维度带成功率与延迟（均值恒给，P95 样本足够才给）；\n与 status/metrics 共用权限点路径正则（`(status|metrics|history|tools|usage)$`），\n不新增权限点。",
+        "description": "AI 用量账本\n\n按天 / 链路 / 档案 / 模型 / Top 用户 + 成功率与延迟 + 配额与并发占用\n\n数据源 = AiUsageRecord（逐次记账，保留期随 MONITOR_RETENTION_DAYS 清理）；\n合计与档案 / 模型维度带成功率与延迟（均值恒给，P95 样本足够才给）；\n与 status/metrics/history/tools/daily-report 共用权限点路径正则\n（`(status|metrics|history|tools|usage|daily-report)$`），不新增权限点。",
         "operationId": "api_ai_assistant_usage_retrieve",
         "responses": {
           "200": {
@@ -24985,7 +25015,7 @@
     },
     "/api/approval/approval-flows/{id}/rollback": {
       "post": {
-        "description": "回滚到历史版本\n\n快照写入活定义并落新版本；有 PENDING 实例时拒绝",
+        "description": "回滚到历史版本\n\n快照写入活定义并落新版本；在途实例按建单时钉住的版本继续，回滚只影响新单",
         "operationId": "api_approval_approval_flows_rollback_create",
         "parameters": [
           {
@@ -34832,6 +34862,9 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "celery_error": {
+                      "type": "string"
+                    },
                     "celery_status": {
                       "type": "boolean"
                     },
@@ -34839,12 +34872,18 @@
                       "format": "float",
                       "type": "number"
                     },
+                    "db_error": {
+                      "type": "string"
+                    },
                     "db_status": {
                       "type": "boolean"
                     },
                     "db_time": {
                       "format": "float",
                       "type": "number"
+                    },
+                    "redis_error": {
+                      "type": "string"
                     },
                     "redis_status": {
                       "type": "boolean"
@@ -34855,6 +34894,9 @@
                     },
                     "status": {
                       "type": "boolean"
+                    },
+                    "storage_error": {
+                      "type": "string"
                     },
                     "storage_status": {
                       "type": "boolean"
@@ -54818,7 +54860,7 @@
     },
     "/api/identity/passkeys/register": {
       "post": {
-        "description": "绑定一个 Passkey 凭据",
+        "description": "绑定一个 Passkey 凭据\n\n持久凭据可为账号接管提供入口：绑定前需本人密码二次确认（同重置 MFA 口径）",
         "operationId": "api_identity_passkeys_register_create",
         "requestBody": {
           "content": {
@@ -63189,7 +63231,7 @@
     },
     "/api/identity/user/{id}/reset-password": {
       "post": {
-        "description": "重置用户密码",
+        "description": "重置用户密码\n\n账号接管面，与重置 MFA 同口径：管理员需本人密码二次确认",
         "operationId": "api_identity_user_reset_password_create",
         "parameters": [
           {
@@ -64161,7 +64203,7 @@
     },
     "/api/mfa/otp/confirm": {
       "post": {
-        "description": "确认绑定\n\n校验动态码后写入密钥，并自动开启登录 MFA\n\n绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。",
+        "description": "确认绑定\n\n校验动态码后写入密钥，并自动开启登录 MFA\n\n绑定的落库动作同样要求密码二次确认：仅持有会话不足以接管登录因子。\n绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。",
         "operationId": "api_mfa_otp_confirm_create",
         "requestBody": {
           "content": {
@@ -64421,7 +64463,7 @@
     },
     "/api/mfa/otp/start": {
       "post": {
-        "description": "发起绑定\n\n生成候选密钥与 otpauth URI（前端渲染二维码）",
+        "description": "发起绑定\n\n生成候选密钥与 otpauth URI（前端渲染二维码）\n\n绑定会改变登录因子：与关闭/解绑同口径，需本人密码二次确认（未确认返回 412）。",
         "operationId": "api_mfa_otp_start_create",
         "responses": {
           "200": {
@@ -76131,7 +76173,7 @@
         ]
       },
       "post": {
-        "description": "添加{cls}数据",
+        "description": "保存代码生成方案\n\n同名方案按当前用户覆盖保存（幂等），不产生重复行。",
         "operationId": "api_system_codegen_plans_create",
         "requestBody": {
           "content": {
@@ -76187,7 +76229,7 @@
     },
     "/api/system/codegen-plans/{id}": {
       "delete": {
-        "description": "删除{cls}数据",
+        "description": "删除代码生成方案",
         "operationId": "api_system_codegen_plans_destroy",
         "parameters": [
           {
@@ -76281,7 +76323,7 @@
         ]
       },
       "put": {
-        "description": "整体更新{cls}信息",
+        "description": "更新代码生成方案",
         "operationId": "api_system_codegen_plans_update",
         "parameters": [
           {
@@ -76967,8 +77009,7 @@
             "in": "query",
             "name": "pk",
             "schema": {
-              "format": "uuid",
-              "type": "string"
+              "type": "number"
             }
           },
           {
@@ -78257,8 +78298,7 @@
             "in": "query",
             "name": "pk",
             "schema": {
-              "format": "uuid",
-              "type": "string"
+              "type": "integer"
             }
           },
           {
@@ -83744,7 +83784,7 @@
     },
     "/api/system/menu/rank": {
       "post": {
-        "description": "{cls}排序",
+        "description": "{cls}排序\n\n排序走批量 UPDATE，不触发 post_save：必须手动失效菜单相关缓存，\n否则侧边栏路由快照最长 24h 保持旧顺序。",
         "operationId": "api_system_menu_rank_create",
         "requestBody": {
           "content": {
@@ -86268,32 +86308,11 @@
     },
     "/api/system/permission/recycle/purge": {
       "delete": {
-        "description": "物理清除{cls}回收站数据\n\n不传 pks 时清除全部超过保留期的数据",
+        "description": "物理清除{cls}回收站数据\n\n不可恢复的高危动作：与删除/批删同口径纳入审批，避免硬删绕过审批。",
         "operationId": "api_system_permission_recycle_purge_destroy",
         "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    },
-                    "requestId": {
-                      "type": "string"
-                    },
-                    "timestamp": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              }
-            },
-            "description": ""
+          "204": {
+            "description": "No response body"
           }
         },
         "security": [

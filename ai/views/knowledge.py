@@ -34,6 +34,7 @@ from common.core.modelset import (
 from common.core.response import ApiResponse
 from common.core.throttle import AiThrottleMixin
 from common.swagger.utils import get_default_response_schema
+from common.utils import parse_bool
 
 
 class AiKnowledgeDocumentFilter(BaseFilterSet):
@@ -167,7 +168,10 @@ class AiKnowledgeDocumentViewSet(
             raise ValidationError(_("Please select the data to operate"))
         if "is_active" not in request.data:
             raise ValidationError(_("is_active is required"))
-        want_active = bool(request.data.get("is_active"))
+        try:
+            want_active = parse_bool(request.data.get("is_active"))
+        except ValueError:
+            raise ValidationError({"is_active": _("Invalid boolean value")}) from None
         documents = [
             doc
             for doc in self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
@@ -263,6 +267,10 @@ class AiKnowledgeDocumentViewSet(
 
         if embedding_credentials() is None:
             return ApiResponse(code=1001, detail=_("No active embedding profile is configured"))
+        try:
+            force = parse_bool(request.data.get("force", False))
+        except ValueError:
+            raise ValidationError({"force": _("Invalid boolean value")}) from None
         if not try_acquire_lock():
             return ApiResponse(
                 code=1001,
@@ -280,7 +288,6 @@ class AiKnowledgeDocumentViewSet(
                 release_lock()
                 raise ValidationError(_("Document does not exist"))
             document_pk = str(document.pk)
-        force = bool(request.data.get("force"))
 
         from ai.tasks import build_embeddings_task
 

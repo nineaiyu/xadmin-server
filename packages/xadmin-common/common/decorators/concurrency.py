@@ -101,14 +101,17 @@ def magic_call_in_times(
                 cache_key = f"{cache_key}_{key(*args, **kwargs)}"
             cache_data = cache.get(cache_key)
             if cache_data:
-                if cache_data > call_limit:
+                if cache_data >= call_limit:
                     err_msg = (
                         f"{func} not yet started. cache_key:{cache_key} call over limit {call_limit} in {call_time}"
                     )
                     logger.warning(err_msg)
                     return False, err_msg
-                else:
+                try:
                     cache.incr(cache_key, 1)
+                except ValueError:
+                    # 键在 get/incr 之间过期：按第一次计数重建，不把异常抛给调用方
+                    cache.set(cache_key, 1, call_time)
             else:
                 cache.set(cache_key, 1, call_time)
             start_time = time.time()

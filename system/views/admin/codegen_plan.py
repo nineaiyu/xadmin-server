@@ -61,6 +61,10 @@ class CodegenPlanViewSet(
             raise PermissionDenied(_("You can only modify your own codegen plans"))
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """保存代码生成方案
+
+        同名方案按当前用户覆盖保存（幂等），不产生重复行。
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = request.user
@@ -74,6 +78,7 @@ class CodegenPlanViewSet(
         return ApiResponse(data=self.get_serializer(serializer.instance).data, detail=_("Saved successfully"))
 
     def update(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """更新代码生成方案"""
         partial = kwargs.pop("partial", True)
         instance = self.get_object()
         self._assert_owner(instance)
@@ -83,6 +88,7 @@ class CodegenPlanViewSet(
         return ApiResponse(data=self.get_serializer(serializer.instance).data, detail=_("Saved successfully"))
 
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """删除代码生成方案"""
         instance = self.get_object()
         self._assert_owner(instance)
         instance.delete()

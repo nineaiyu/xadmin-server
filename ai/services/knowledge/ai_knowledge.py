@@ -69,31 +69,26 @@ def _chunk_markdown(text: str) -> list[Any]:
 def _preserved_vectors(paths: list[Any]) -> dict[str, Any]:
     """读取若干文档的既有向量并按正文 hash 去重保留（正文未变的块重建不失效）。
 
-    二进制列与 pgvector 列双写，必须一并保留；只保留二进制会让 ``search_vectors``
-    查不到行（它按 ``embedding_vector`` 过滤），且待建判据看到旧 hash 不会自动补齐。
+    pgvector 列是唯一向量存储；未向量化的块不参与保留，待建判据会按 hash 补齐。
     """
     from ai.models.ai import AiKnowledgeChunk
 
     preserved: dict[str, tuple[Any, ...]] = {}
-    existing = AiKnowledgeChunk.objects.filter(source_path__in=paths).exclude(embedding__isnull=True)
+    existing = AiKnowledgeChunk.objects.filter(source_path__in=paths).exclude(embedding_vector__isnull=True)
     for (
         content_hash,
-        embedding,
         embedding_vector,
         embedding_model,
         embedding_hash,
         embedding_dim,
     ) in existing.values_list(
         "content_hash",
-        "embedding",
         "embedding_vector",
         "embedding_model",
         "embedding_hash",
         "embedding_dim",
     ):
-        preserved.setdefault(
-            content_hash, (embedding, embedding_vector, embedding_model, embedding_hash, embedding_dim)
-        )
+        preserved.setdefault(content_hash, (embedding_vector, embedding_model, embedding_hash, embedding_dim))
     return preserved
 
 
@@ -114,11 +109,10 @@ def _chunk_rows(doc: Any, preserved: dict[str, Any]) -> list[Any]:
                 content_hash=content_hash,
                 **(
                     {
-                        "embedding": vector[0],
-                        "embedding_vector": vector[1],
-                        "embedding_model": vector[2],
-                        "embedding_hash": vector[3],
-                        "embedding_dim": vector[4],
+                        "embedding_vector": vector[0],
+                        "embedding_model": vector[1],
+                        "embedding_hash": vector[2],
+                        "embedding_dim": vector[3],
                     }
                     if vector
                     else {}
@@ -135,12 +129,16 @@ def rebuild_chunks(doc: Any) -> int:
     重新分配块主键，若不保留则每次仓库同步/重传都会让向量全部失效，重算即
     embedding API 成本；陈旧块（正文变更）不带向量，由显式构建补齐。
     """
+    from django.db import transaction
+
     from ai.models.ai import AiKnowledgeChunk
 
     preserved = _preserved_vectors([doc.path])
-    AiKnowledgeChunk.objects.filter(source_path=doc.path).delete()
-    rows = _chunk_rows(doc, preserved)
-    AiKnowledgeChunk.objects.bulk_create(rows)
+    # 先删后插必须原子：并发摄取时半删状态会让列表/检索看到 0 块
+    with transaction.atomic():
+        AiKnowledgeChunk.objects.filter(source_path=doc.path).delete()
+        rows = _chunk_rows(doc, preserved)
+        AiKnowledgeChunk.objects.bulk_create(rows)
     # 块集合变化：清索引元数据签名缓存（本进程立即生效，多 worker 由短 TTL 兜底）
     invalidate_index_meta()
     return len(rows)
@@ -153,18 +151,21 @@ def rebuild_chunks_bulk(documents: Any) -> dict[str, Any]:
     差异只在把 N 次删除/插入/索引失效合并为每表一次——批量启停场景避免
     重复扫盘与重复清缓存。
     """
+    from django.db import transaction
+
     from ai.models.ai import AiKnowledgeChunk
 
     paths = [doc.path for doc in documents]
     preserved = _preserved_vectors(paths)
-    AiKnowledgeChunk.objects.filter(source_path__in=paths).delete()
     counts: dict[str, Any] = {}
-    rows = []
-    for doc in documents:
-        doc_rows = _chunk_rows(doc, preserved)
-        counts[doc.path] = len(doc_rows)
-        rows.extend(doc_rows)
-    AiKnowledgeChunk.objects.bulk_create(rows)
+    with transaction.atomic():
+        AiKnowledgeChunk.objects.filter(source_path__in=paths).delete()
+        rows = []
+        for doc in documents:
+            doc_rows = _chunk_rows(doc, preserved)
+            counts[doc.path] = len(doc_rows)
+            rows.extend(doc_rows)
+        AiKnowledgeChunk.objects.bulk_create(rows)
     invalidate_index_meta()
     return counts
 
@@ -281,22 +282,25 @@ def set_documents_active(documents: Any, active: bool) -> None:
     向量补齐至多调度一次全量增量构建（跨多文档的待建块由一个任务吃掉，不逐文档排队）；
     停用路径无块可建，不调度。
     """
+    from django.db import transaction
+
     from ai.models.ai import AiKnowledgeDocument
 
     documents = list(documents)
     if not documents:
         return
-    if active:
-        counts = rebuild_chunks_bulk(documents)
-    else:
-        remove_chunks_bulk([doc.path for doc in documents])
-        counts = {}
-    synced_at = timezone.now()
-    for doc in documents:
-        doc.is_active = bool(active)
-        doc.chunk_count = counts.get(doc.path, 0)
-        doc.synced_at = synced_at
-    AiKnowledgeDocument.objects.bulk_update(documents, ["is_active", "chunk_count", "synced_at"])
+    with transaction.atomic():
+        if active:
+            counts = rebuild_chunks_bulk(documents)
+        else:
+            remove_chunks_bulk([doc.path for doc in documents])
+            counts = {}
+        synced_at = timezone.now()
+        for doc in documents:
+            doc.is_active = bool(active)
+            doc.chunk_count = counts.get(doc.path, 0)
+            doc.synced_at = synced_at
+        AiKnowledgeDocument.objects.bulk_update(documents, ["is_active", "chunk_count", "synced_at"])
     if active:
         from ai.services.knowledge.ai_embeddings import schedule_auto_rebuild
 
@@ -345,21 +349,32 @@ def sync_knowledge() -> dict[str, Any]:
         doc.chunk_count = rebuild_chunks(doc)
         doc.save()
         rebuilt += 1
-    # 清理已消失的仓库文档（含分块）；upload 来源与 upload/ 前缀分块不动
-    stale_paths = list(
-        AiKnowledgeDocument.objects.filter(source_type=AiKnowledgeDocument.SourceType.REPO)
-        .exclude(path__in=seen_paths)
-        .values_list("path", flat=True)
-    )
-    if stale_paths:
-        AiKnowledgeChunk.objects.filter(source_path__in=stale_paths).delete()
-        removed += AiKnowledgeDocument.objects.filter(path__in=stale_paths).delete()[0]
-    # 孤儿块：无文档登记的 repo 前缀块（旧版遗留/手工造），一并清理
-    orphans = AiKnowledgeChunk.objects.exclude(source_path__startswith=UPLOAD_PATH_PREFIX).exclude(
-        source_path__in=seen_paths
-    )
-    removed += orphans.count()
-    orphans.delete()
+    cleanup_skipped = False
+    if not seen_paths:
+        # 「扫描不到文件」与「文件全被删」必须区分：docs/ 不存在/不可读通常是
+        # 部署镜像未携带文档，按全删处理会把生产知识库（含向量）清空且摘要仍报成功
+        if not DOCS_DIR.is_dir():
+            raise DjangoValidationError(
+                _("Knowledge document directory is unavailable, sync aborted: {}").format(str(DOCS_DIR))
+            )
+        cleanup_skipped = True
+        logger.warning("ai knowledge sync found no repository document, cleanup skipped: %s", DOCS_DIR)
+    else:
+        # 清理已消失的仓库文档（含分块）；upload 来源与 upload/ 前缀分块不动
+        stale_paths = list(
+            AiKnowledgeDocument.objects.filter(source_type=AiKnowledgeDocument.SourceType.REPO)
+            .exclude(path__in=seen_paths)
+            .values_list("path", flat=True)
+        )
+        if stale_paths:
+            AiKnowledgeChunk.objects.filter(source_path__in=stale_paths).delete()
+            removed += AiKnowledgeDocument.objects.filter(path__in=stale_paths).delete()[0]
+        # 孤儿块：无文档登记的 repo 前缀块（旧版遗留/手工造），一并清理
+        orphans = AiKnowledgeChunk.objects.exclude(source_path__startswith=UPLOAD_PATH_PREFIX).exclude(
+            source_path__in=seen_paths
+        )
+        removed += orphans.count()
+        orphans.delete()
     # 仓库同步可能跨多文档变更：只调度一次全量增量构建（一次任务吃掉全部陈旧块，
     # 不逐文档排队）；无档案 / 无待建 / 构建中由调度入口静默跳过
     from ai.services.knowledge.ai_embeddings import schedule_auto_rebuild
@@ -371,6 +386,7 @@ def sync_knowledge() -> dict[str, Any]:
         "removed": removed,
         "total": AiKnowledgeChunk.objects.count(),
         "vector_rebuild": vector_rebuild,
+        "cleanup_skipped": cleanup_skipped,
         "synced_at": timezone.now().isoformat(),
     }
     logger.info("AI knowledge sync: %s", summary)

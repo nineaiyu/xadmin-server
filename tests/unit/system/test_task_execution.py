@@ -11,6 +11,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
+from rest_framework.permissions import AllowAny
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
@@ -170,7 +171,7 @@ def test_execution_serializer_drops_args_kwargs(superuser):
     execution = TaskExecution.objects.create(
         name="demo_task", args=["secret-export-params"], kwargs={"query": "条件"}, creator=superuser
     )
-    data = TaskExecutionSerializer(execution).data
+    data = TaskExecutionSerializer(execution, ignore_field_permission=True).data
     assert "args" not in data and "kwargs" not in data
 
 
@@ -191,6 +192,24 @@ def test_log_action_reads_file(monkeypatch, tmp_path):
     assert response.data["data"]["offset"] == log_file.stat().st_size
 
 
+def test_log_action_rejects_other_users_execution(monkeypatch, tmp_path):
+    """HTTP 日志读取与 WS 同口径：非超管不能读他人发起的执行日志。"""
+    monkeypatch.setattr(settings, "CELERY_LOG_DIR", str(tmp_path))
+    monkeypatch.setattr(TaskExecutionViewSet, "permission_classes", [AllowAny])
+    owner = UserInfo.objects.create_user(username="log-owner", password="x")
+    other = UserInfo.objects.create_user(username="log-other", password="x")
+    execution = TaskExecution.objects.create(name="x.tasks.owner", creator=owner)
+    log_file = tmp_path / f"{execution.pk}.log"
+    log_file.write_bytes(b"hello\n" + CELERY_LOG_MAGIC_MARK)
+
+    factory = APIRequestFactory()
+    request = factory.get(f"/api/task/executions/{execution.pk}/log")
+    force_authenticate(request, user=other)
+    view = TaskExecutionViewSet.as_view({"get": "log"})
+    response = view(request, pk=str(execution.pk))
+    assert response.status_code == 403
+
+
 def test_log_action_missing_file(monkeypatch, tmp_path):
     monkeypatch.setattr(settings, "CELERY_LOG_DIR", str(tmp_path))
     execution = TaskExecution.objects.create(name="x.tasks.nolog")
@@ -209,14 +228,14 @@ def test_execution_serializer_related_fields_display():
     user = _make_user()
     instance = _make_periodic_task()
     execution = TaskExecution.objects.create(name="x.tasks.display", periodic_task=instance, creator=user)
-    data = TaskExecutionSerializer(execution).data
+    data = TaskExecutionSerializer(execution, ignore_field_permission=True).data
     assert data["periodic_task"] == {"pk": instance.pk, "label": "test-periodic-job"}
     assert data["creator"]["pk"] == user.pk
     assert user.username in data["creator"]["label"]
 
     # 定时调度场景：periodic_task 关联缺失 / creator 为空，均序列化为 None
     orphan = TaskExecution.objects.create(name="x.tasks.orphan")
-    orphan_data = TaskExecutionSerializer(orphan).data
+    orphan_data = TaskExecutionSerializer(orphan, ignore_field_permission=True).data
     assert orphan_data["periodic_task"] is None
     assert orphan_data["creator"] is None
 
@@ -558,7 +577,7 @@ def test_execution_list_exposes_product_info(superuser):
     viewset.action = "list"
     queryset = viewset.get_queryset()
 
-    product_row = TaskExecutionSerializer(queryset.get(pk=export.pk)).data
+    product_row = TaskExecutionSerializer(queryset.get(pk=export.pk), ignore_field_permission=True).data
     assert product_row["product_type"] == "export"
     assert product_row["product_name"] == "用户导出-20260924"
     assert product_row["product_progress"] == 100
@@ -567,7 +586,7 @@ def test_execution_list_exposes_product_info(superuser):
     assert product_row["can_cancel"] is False
     assert product_row["can_rerun"] is True
 
-    plain_row = TaskExecutionSerializer(queryset.get(pk=running.pk)).data
+    plain_row = TaskExecutionSerializer(queryset.get(pk=running.pk), ignore_field_permission=True).data
     assert plain_row["product_type"] == ""
     assert plain_row["product_name"] == ""
     assert plain_row["can_cancel"] is True
@@ -639,7 +658,7 @@ def test_execution_detail_without_annotation_stays_safe(superuser):
     viewset.request = request
     viewset.action = "retrieve"
 
-    row = TaskExecutionSerializer(viewset.get_queryset().get(pk=execution.pk)).data
+    row = TaskExecutionSerializer(viewset.get_queryset().get(pk=execution.pk), ignore_field_permission=True).data
     assert row["product_type"] == "" and row["product_progress"] == 0
     # 默认 PENDING 属活跃态（可取消），非产物任务不可重跑
     assert row["can_cancel"] is True and row["can_rerun"] is False

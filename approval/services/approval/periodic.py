@@ -6,6 +6,7 @@ from common.utils import get_logger
 
 from .approvers import get_approver_queryset, resolve_approvers
 from .constants import APPROVAL_REMIND_CACHE_SECONDS
+from .notify import notify_applicant
 from .queries import invalidate_pending_count_cache
 
 logger = get_logger(__name__)
@@ -41,6 +42,9 @@ def expire_pending_approvals(pending_days: int | None = None) -> int:
         status=ApprovalRequestStep.Status.CANCELLED, updated_time=now
     )
     ApprovalRequest.current_assignees.through.objects.filter(approvalrequest_id__in=pks).delete()
+    # 申请人需要知道单已过期（否则只能自己回看列表）；单条通知失败不阻断批量过期
+    for approval in ApprovalRequest.objects.filter(pk__in=pks).select_related("creator"):
+        notify_applicant(approval, "expired")
     invalidate_pending_count_cache()
     return count
 
@@ -95,7 +99,11 @@ def remind_pending_approvals(remind_hours: int | None = None) -> int:
 
 
 def clean_expired_approvals(keep_days: int | None = None, batch_size: int = 2000) -> int:
-    """清理超过保留期的审批单（APPROVAL_KEEP_DAYS，默认 180 天，分批删）。"""
+    """清理超过保留期的终态审批单（APPROVAL_KEEP_DAYS，默认 180 天，分批删）。
+
+    只清理终态（通过/驳回/过期/撤回/失败）：审批单是安全审计载体，PENDING
+    （过期任务被关闭或历史脏数据）不能被静默物理删除，避免审计证据丢失。
+    """
     import datetime
 
     from django.db import transaction
@@ -104,6 +112,13 @@ def clean_expired_approvals(keep_days: int | None = None, batch_size: int = 2000
     from approval.models.approval import ApprovalRequest
     from common.core.config import SysConfig
 
+    terminal = (
+        ApprovalRequest.Status.APPROVED,
+        ApprovalRequest.Status.REJECTED,
+        ApprovalRequest.Status.EXPIRED,
+        ApprovalRequest.Status.CANCELLED,
+        ApprovalRequest.Status.FAILED,
+    )
     if keep_days is None:
         keep_days = int(SysConfig.APPROVAL_KEEP_DAYS)
     if not keep_days or keep_days <= 0:
@@ -111,7 +126,11 @@ def clean_expired_approvals(keep_days: int | None = None, batch_size: int = 2000
     deadline = timezone.now() - datetime.timedelta(days=keep_days)
     total = 0
     while True:
-        pks = list(ApprovalRequest.objects.filter(created_time__lt=deadline).values_list("pk", flat=True)[:batch_size])
+        pks = list(
+            ApprovalRequest.objects.filter(created_time__lt=deadline, status__in=terminal).values_list("pk", flat=True)[
+                :batch_size
+            ]
+        )
         if not pks:
             break
         with transaction.atomic():

@@ -8,6 +8,8 @@ Setting.encrypted=True 值级加密落库，retrieve 回显时自动剔除（与
 自己的字段，非密文字段可 required=True）。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -36,3 +38,18 @@ class WebhookNotifySettingSerializer(SettingSaveContractMixin, serializers.Seria
         label=_("Webhook secret"),
         help_text=_("HMAC-SHA256 signing secret; encrypted at rest and never returned"),
     )
+
+    def validate_WEBHOOK_URL(self, value: Any) -> Any:
+        from common.utils.outbound import (
+            OutboundBlocked,
+            loopback_allowed,
+            outbound_allowed_hosts,
+            validate_outbound_config_url,
+        )
+
+        try:
+            return validate_outbound_config_url(
+                value, allowed_hosts=outbound_allowed_hosts(), allow_loopback=loopback_allowed()
+            )
+        except OutboundBlocked as exc:
+            raise serializers.ValidationError(str(exc)) from exc

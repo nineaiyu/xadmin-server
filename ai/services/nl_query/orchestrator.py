@@ -15,7 +15,7 @@
 （数据权限编译器强制过滤），全程审计（OperationLog module=AI:nl_query）。
 """
 
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 from typing import Any
 
 from django.conf import settings
@@ -215,6 +215,63 @@ def stream_interpret_events(user: Any, question: str, datasets: list[Any]) -> It
         return
     audit_nl_query(user, "interpret", question, normalized, rows=preview_count, guard=guard)
     payload = _interpret_payload(
+        user, normalized, dataset, preview_count, preview_capped, reasoning="".join(reasoning_chunks)
+    )
+    yield {"event": "done", "data": payload}
+
+
+async def stream_interpret_events_async(user: Any, question: str, datasets: list[Any]) -> AsyncIterator[dict[str, Any]]:
+    """``stream_interpret_events`` 的异步对偶：LLM 增量在事件循环内 await。
+
+    事件契约逐字段一致；流内 DB 读写（对话落库 / 校验试算 / 审计）经
+    ``sync_to_async`` 保持线程本地连接语义，长连接不再独占视图线程。
+    """
+    from asgiref.sync import sync_to_async
+
+    from ai.services.assistant.ai_async import tracked_chat_stream_async
+    from ai.services.assistant.ai_chat import message_payload, persist_message, system_error_message
+    from ai.services.assistant.ai_config import structured_async_chat_client
+    from ai.services.assistant.ai_guard import guard_summary
+
+    guard = guard_summary(prompt=question)
+    user_row = await sync_to_async(persist_message)(user, "nl", "user", content=question)
+    yield {
+        "event": "meta",
+        "data": {"question": question, "user_message": await sync_to_async(message_payload)(user_row)},
+    }
+    chunks: list[Any] = []
+    reasoning_chunks: list[Any] = []
+    parsed: dict[str, Any] = {}
+    try:
+        client, max_tokens = await sync_to_async(structured_async_chat_client)()
+        prompt = await sync_to_async(build_interpret_prompt)(question, datasets, user)
+        async for item in tracked_chat_stream_async(user, "nl", client, prompt, max_tokens=max_tokens):
+            text = item.get("text") or ""
+            if not text:
+                continue
+            if item.get("type") == "reasoning":
+                reasoning_chunks.append(text)
+                yield {"event": "reasoning", "data": {"delta": text}}
+            else:
+                chunks.append(text)
+                yield {"event": "delta", "data": {"delta": text}}
+        raw = "".join(chunks)
+        if not raw.strip():
+            raise DjangoValidationError(_("The model did not provide a final answer; please retry or switch models"))
+        parsed, normalized, dataset, preview_count, preview_capped = await sync_to_async(_validate_and_preview)(
+            user, raw
+        )
+    except (DjangoValidationError, AiSdkError) as exc:
+        detail = "; ".join(exc.messages) if isinstance(exc, DjangoValidationError) else readable_ai_error(exc)
+        await sync_to_async(audit_nl_query)(user, "interpret", question, parsed, error=detail, guard=guard)
+        if chunks or reasoning_chunks:
+            payload = await sync_to_async(_persist_nl_partial)(user, reasoning_chunks, detail)
+        else:
+            payload = await sync_to_async(system_error_message)(user, "nl", detail)
+        yield {"event": "error", "data": {"detail": detail, "message": payload}}
+        return
+    await sync_to_async(audit_nl_query)(user, "interpret", question, normalized, rows=preview_count, guard=guard)
+    payload = await sync_to_async(_interpret_payload)(
         user, normalized, dataset, preview_count, preview_capped, reasoning="".join(reasoning_chunks)
     )
     yield {"event": "done", "data": payload}

@@ -37,3 +37,7 @@ def scan_account_risks_task(self: Any, operator_pk: Any = None) -> dict[str, Any
         cache.set(error_cache_key(task_id), str(exc), 3600)
         logger.exception("account risk scan task failed: %s", task_id)
         raise
+    finally:
+        from identity.utils.account_risk_scan import SCAN_LOCK_KEY
+
+        cache.delete(SCAN_LOCK_KEY)

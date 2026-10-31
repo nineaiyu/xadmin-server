@@ -38,7 +38,8 @@ class Setting(DbAuditModel, DbUuidModel):
             return value
         except (json.JSONDecodeError, ValueError):
             # json 损坏 / 密文认证失败（GCM 校验不过抛 ValueError）：按读取失败回落 None，
-            # 不让单条坏配置把设置读取打成 500
+            # 不让单条坏配置把设置读取打成 500；但必须留日志线索（密钥轮换/脏数据）
+            logger.warning("setting decrypt/parse failed: %s", self.name, exc_info=True)
             return None
 
     @cleaned_value.setter
@@ -77,7 +78,11 @@ class Setting(DbAuditModel, DbUuidModel):
             return
         for setting in cls.objects.all():
             try:
-                setting.refresh_setting()
+                if setting.is_active:
+                    setting.refresh_setting()
+                else:
+                    # 停用行回退静态默认值：管理端「停用」必须真的不生效
+                    setattr(settings, setting.name, cls.default_value(setting.name))
             except Exception:  # noqa: BLE001 单条损坏不中断批量刷新
                 logger.warning("refresh setting failed: %s", setting.name, exc_info=True)
 
@@ -94,7 +99,10 @@ class Setting(DbAuditModel, DbUuidModel):
         """
         for setting in cls.objects.filter(name__in=names):
             try:
-                setting.refresh_setting()
+                if setting.is_active:
+                    setting.refresh_setting()
+                else:
+                    setattr(settings, setting.name, cls.default_value(setting.name))
             except Exception:  # noqa: BLE001 单条损坏不中断批量刷新（与 refresh_all_settings 同口径）
                 logger.warning("refresh setting failed: %s", setting.name, exc_info=True)
 
@@ -145,9 +153,17 @@ class Setting(DbAuditModel, DbUuidModel):
                     if isinstance(value, InMemoryUploadedFile):
                         value = cls.save_to_file(value)
 
-                    if setting.cleaned_value != value:
+                    # set 与 list 是同一多选值的两种形态：归一后比较，避免未改动也重写/广播
+                    def _normalized(item: Any) -> Any:
+                        if isinstance(item, (list, tuple, set)):
+                            return sorted(item, key=str)
+                        return item
+
+                    category_changed = bool(category) and setting.category != category
+                    if _normalized(setting.cleaned_value) != _normalized(value) or category_changed:
                         setting.encrypted = encrypted
                         setting.cleaned_value = value
+                        setting.category = category or setting.category
                         setting.modifier = user
                         setting.save()
                         changed = True

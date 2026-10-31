@@ -717,6 +717,25 @@ class TestCatalogExtensions:
         granted = {str(pk) for pk in target.menu.values_list("pk", flat=True)}
         assert str(parent.pk) in granted and len(granted) == 2
 
+    def test_role_grant_and_update_keep_field_permissions(self, ai_action_settings, superuser, menu_factory):
+        """AI 改角色/授权不得携带 fields: {}：空字典是「清空全部字段授权」的显式语义。"""
+        from ai.services.actions.ai_actions import execute_action
+        from identity.models import UserRole
+        from system.models import FieldPermission
+
+        parent = menu_factory("AI字段授权父菜单", menu_type=Menu.MenuChoices.MENU)
+        menu_factory("AI字段授权子权限", path="api/identity/user$", method="GET", parent=parent)
+        target = UserRole.objects.create(name="字段授权保留角色", code="field-keep")
+        FieldPermission.objects.create(role=target, menu=parent)
+
+        result = execute_action(superuser, "role.grant", {"pk": "字段授权保留角色", "menus": ["AI字段授权父菜单"]})
+        assert result["ok"] is True, result
+        assert FieldPermission.objects.filter(role=target).exists()
+
+        result = execute_action(superuser, "role.update", {"pk": "字段授权保留角色", "description": "只改描述"})
+        assert result["ok"] is True, result
+        assert FieldPermission.objects.filter(role=target).exists()
+
 
 class TestActionInterpretStream:
     """助手页指令执行草稿（SSE）：meta → reasoning* → delta* → done | error。"""
@@ -785,3 +804,46 @@ class TestActionInterpretStream:
         frames = _parse_sse_frames(action_client.post(self.INTERPRET_URL, {"message": "查一下"}, format="json"))
         assert frames[-1][0] == "error"
         assert "permission" in str(frames[-1][1]["detail"]).lower() or "权限" in str(frames[-1][1]["detail"])
+
+
+class TestActionScopeInheritance:
+    """AI 内部 dispatch 必须继承外部请求的凭证 scope（不能变成无 scope 的超管上下文）。"""
+
+    def test_narrow_scope_blocks_internal_dispatch(self, ai_action_settings, superuser):
+        from types import SimpleNamespace
+
+        from ai.services.actions.ai_actions import execute_action
+
+        # 只允许 dept 路径的窄 scope：用户查询动作（api/identity/user）必须被拒绝
+        source = SimpleNamespace(auth=None, pat_scopes=["api/identity/dept"])
+        result = execute_action(superuser, "user.search", {"username": "admin"}, request=source)
+
+        assert result["ok"] is False
+
+    def test_application_grant_intersects_internal_dispatch(self, ai_action_settings, superuser):
+        """应用级授权（白名单模式）同样收敛 AI dispatch：未覆盖的模型动作被拒。"""
+        from types import SimpleNamespace
+
+        from ai.services.actions.ai_actions import execute_action
+        from identity.models.token import ApiApplication, ApiApplicationGrant, PersonalAccessToken
+
+        application = ApiApplication.objects.create(
+            name="AI授权收敛应用",
+            client_id="app_ai_scope",
+            client_secret_hash="c" * 64,
+            client_secret_prefix="aps_ai",
+            creator=superuser,
+        )
+        ApiApplicationGrant.objects.create(application=application, model="identity.deptinfo", actions=["list"])
+        pat = PersonalAccessToken.objects.create(
+            name="ai-scope",
+            token_hash="d" * 64,
+            token_prefix="pat_ai",
+            api_application=application,
+            creator=superuser,
+        )
+        source = SimpleNamespace(auth=pat, pat_scopes=[])
+
+        result = execute_action(superuser, "user.search", {"username": "admin"}, request=source)
+
+        assert result["ok"] is False

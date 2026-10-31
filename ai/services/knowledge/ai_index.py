@@ -18,6 +18,7 @@ token 总数 + 标题 token 集合」，以 ``content_hash + title`` 为签名�
 import re
 import sys
 import threading
+from collections.abc import Mapping
 from typing import Any, NamedTuple
 
 from common.utils import get_logger
@@ -76,8 +77,27 @@ def _load_meta_rows() -> Any:
     )
 
 
+class _OrderedIndexView(Mapping[Any, ChunkTokens]):
+    """只读映射：按元数据行顺序迭代 ``_INDEX``，不复制 2 万条 dict（检索每次调用）。"""
+
+    def __init__(self, rows: Any, index: dict[Any, ChunkTokens]) -> None:
+        self._rows = rows
+        self._index = index
+
+    def __getitem__(self, pk: Any) -> ChunkTokens:
+        return self._index[pk]
+
+    def __iter__(self) -> Any:
+        for pk, _content_hash, _title in self._rows:
+            if pk in self._index:
+                yield pk
+
+    def __len__(self) -> int:
+        return sum(1 for _pk, _hash, _title in self._rows if _pk in self._index)
+
+
 def chunk_token_index() -> Any:
-    """块 pk → ChunkTokens（增量刷新后返回浅拷贝）；超容量停用缓存时返回 None。
+    """块 pk → ChunkTokens（增量刷新后返回只读视图）；超容量停用缓存时返回 None。
 
     每次调用做一次轻量签名比对（pk + content_hash + title，按模型 ordering），
     仅变化块回读全文重新分词；块删除自动清理。
@@ -114,9 +134,9 @@ def chunk_token_index() -> Any:
                 "pk", "content", "title"
             ):
                 _INDEX[pk] = _build_entry(signatures[pk], content, title)
-        # 返回按模型 ordering 排列的浅拷贝：检索侧遍历顺序 = 历史实现的 DB 顺序，
-        # 同分块在稳定排序下的相对次序不变
-        return {pk: _INDEX[pk] for pk, _hash, _title in rows if pk in _INDEX}
+        # 只读视图按模型 ordering 迭代：检索侧遍历顺序 = 历史实现的 DB 顺序，
+        # 且不再为每次检索复制整份 dict（2 万块上限下约数 MB 临时对象）
+        return _OrderedIndexView(rows, _INDEX)
 
 
 def invalidate_chunk_index() -> None:

@@ -113,7 +113,7 @@ def visit(node: ast.AST, parents: list, rel: str, rows: list) -> None:
             end = getattr(child, "end_lineno", None)
             if end is not None:
                 size = end - child.lineno + 1
-                if size >= THRESHOLD:
+                if size > THRESHOLD:
                     rows.append((rel, _qualname(child, parents), size))
             visit(child, [*parents, child], rel, rows)
         elif isinstance(child, ast.ClassDef):

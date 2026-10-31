@@ -22,7 +22,7 @@ MODULES = (
         "demo_plugin",
         "示例二开插件",
         OPTIONAL,
-        menus=("DemoPlugin",),  # 菜单根 name：含其全部后代菜单与权限点
+        menus=("PluginNote",),  # 菜单根 name（与 seeds/menu.json 根节点一致）：含全部后代菜单与权限点
         routes=(r"^/api/plugin-demo/",),  # 未写时按 config.py::URLPATTERNS 推导
         ws_routes=(r"^/ws/plugin-demo/",),  # WS 通道准入拦截（4404）
         note="示例二开插件：契约注入 / 独立路由 / WS 通道 / 周期任务（模块裁剪六层全覆盖）",

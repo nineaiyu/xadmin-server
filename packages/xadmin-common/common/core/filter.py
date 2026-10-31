@@ -131,7 +131,7 @@ def _load_grants(user_obj: Any, dq: Any, scope_key: str = "") -> Any:
 
 @timeit
 @count_sql_queries
-def get_filter_queryset(queryset: QuerySet, user_obj: Any, extra_grants: Any = None) -> Any:
+def get_filter_queryset(queryset: QuerySet, user_obj: Any, extra_grants: Any = None, fallback_q: Any = None) -> Any:
     """数据权限过滤入口（薄壳；规则编译与代数在 common/core/data_scope/ 包）。
 
     合并语义（对齐行业「取最宽生效」）：
@@ -145,12 +145,15 @@ def get_filter_queryset(queryset: QuerySet, user_obj: Any, extra_grants: Any = N
 
     extra_grants：额外参与本次编译的授权（如试算草稿的未落库 DataPermission 实例）。
     调用方需自行保证其菜单上下文已判定；该参数不改变正常请求路径的行为。
+
+    fallback_q：仅当「对该模型没有任何适用授权」时生效的安全兜底范围（Q 对象）。
+    缺省 None = 保持 fail-closed；显式授权的优先级不受影响（有适用授权即按授权求值）。
     """
     if not kernel_required_setting("PERMISSION_DATA_ENABLED") or queryset is None:
         return queryset
 
     if user_obj.is_superuser:
-        logger.info(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.label_lower}")
+        logger.debug(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.label_lower}")
         return queryset
 
     # 候选范围 = 当前 action + 同资源 list；具体用哪一组由 select_compiled_grants
@@ -173,29 +176,35 @@ def get_filter_queryset(queryset: QuerySet, user_obj: Any, extra_grants: Any = N
         grants.append(grant)
 
     if not grants:
-        logger.info(f"get filter end. {queryset.model._meta.label} : no grant, return none")
+        if fallback_q is not None:
+            logger.debug(f"get filter end. {queryset.model._meta.label} : no grant, use fallback scope")
+            return queryset.filter(fallback_q)
+        logger.debug(f"get filter end. {queryset.model._meta.label} : no grant, return none")
         return queryset.none()
 
     model = queryset.model
     compiled = [(dp, compile_grant(dp, model, user_obj)) for dp in grants]
     selected = select_compiled_grants(compiled, scope)
     if not selected:
-        logger.info(f"get filter end. {model._meta.label} : no applicable grant, return none")
+        if fallback_q is not None:
+            logger.debug(f"get filter end. {model._meta.label} : no applicable grant, use fallback scope")
+            return queryset.filter(fallback_q)
+        logger.debug(f"get filter end. {model._meta.label} : no applicable grant, return none")
         return queryset.none()
 
     results = [result for _, result in selected]
     combined = combine(results)
     if combined.kind == ScopeResult.KIND_ALLOW:
-        logger.info(f"{model._meta.label_lower} : all queryset")
+        logger.debug(f"{model._meta.label_lower} : all queryset")
         return queryset
     if combined.kind == ScopeResult.KIND_DENY:
-        logger.info(f"get filter end. {model._meta.label} : deny all")
+        logger.debug(f"get filter end. {model._meta.label} : deny all")
         return queryset.none()
-    logger.info(f"get filter end. {model._meta.label} : {combined.q}")
+    logger.debug(f"get filter end. {model._meta.label} : {combined.q}")
     return queryset.filter(combined.q)
 
 
-def assert_within_data_scope(queryset: Any, user_obj: Any, message: Any) -> None:
+def assert_within_data_scope(queryset: Any, user_obj: Any, message: Any, pks: Any = None) -> None:
     """写侧载荷范围校验：目标对象/归属值必须在数据权限可见范围内。
 
     与读侧同源（``get_filter_queryset``）：可见即可写、不可见即拒（fail-closed）——
@@ -208,7 +217,16 @@ def assert_within_data_scope(queryset: Any, user_obj: Any, message: Any) -> None
     if user_obj is None:
         raise RestValidationError(message)
     allowed = get_filter_queryset(queryset, user_obj)
-    if allowed is None or not allowed.exists():
+    if allowed is None:
+        raise RestValidationError(message)
+    if pks is None:
+        if not allowed.exists():
+            raise RestValidationError(message)
+        return
+    # 多值调用：每一个目标 pk 都必须可见，而不是「交集非空」
+    targets = {str(pk) for pk in pks if pk not in (None, "")}
+    visible = {str(pk) for pk in allowed.filter(pk__in=targets).values_list("pk", flat=True)}
+    if targets - visible:
         raise RestValidationError(message)
 
 
@@ -237,7 +255,11 @@ class CreatorUserFilter(_CurrentUserFieldFilter):
 
 class BaseDataPermissionFilter(BaseFilterBackend):
     def filter_queryset(self, request: Any, queryset: Any, view: Any) -> Any:
-        queryset = get_filter_queryset(queryset, request.user)
+        # 视图可声明「无适用授权时的安全兜底范围」（仅显式授权的视图启用；
+        # 未声明 = fail-closed，保持其它模型的现有语义）
+        fallback_provider = getattr(view, "data_permission_fallback_q", None)
+        fallback_q = fallback_provider(request) if callable(fallback_provider) else None
+        queryset = get_filter_queryset(queryset, request.user, fallback_q=fallback_q)
         # 应用行级授权：AND 叠加在数据权限之后（超管 owner 同样生效）
         return apply_grant_row_scope(request, queryset)
 

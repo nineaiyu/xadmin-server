@@ -231,7 +231,7 @@ class TestInstanceFormSchemaSnapshot:
         from approval.serializers.approval_instance import ApprovalInstanceSerializer
 
         context = {"view": type("V", (), {"action": "retrieve"})()}
-        return ApprovalInstanceSerializer(instance, context=context).data["form_schema"]
+        return ApprovalInstanceSerializer(instance, context=context, ignore_field_permission=True).data["form_schema"]
 
     def test_in_flight_instance_keeps_schema_after_revision(self, applicant, approver):
         """改版后在途单详情仍显示旧 schema；新单用新 schema。"""
@@ -293,4 +293,7 @@ class TestInstanceFormSchemaSnapshot:
         context = {"view": type("V", (), {"action": "list"})()}
         # list 裁剪口径：form_schema 是详情专属字段（不在 table_fields），
         # 列表序列化结果中直接不存在（而非存在但为空）
-        assert "form_schema" not in ApprovalInstanceSerializer(instance, context=context).data
+        assert (
+            "form_schema"
+            not in ApprovalInstanceSerializer(instance, context=context, ignore_field_permission=True).data
+        )

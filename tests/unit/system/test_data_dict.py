@@ -715,3 +715,25 @@ def test_batch_active_parses_string_boolean(superuser):
 
     response = _call("batch_active", superuser, method="post", data={"pks": [str(item.pk)], "is_active": "abc"})
     assert response.status_code == 400
+
+
+class TestDictHierarchyGuards:
+    """两层结构不可破坏：类型不能降级、字典项不能提升。"""
+
+    def test_type_cannot_be_nested(self, superuser):
+        from system.serializers.dict import DataDictSerializer
+
+        parent = DataDict.objects.create(code="t1", label="类型1", parent=None)
+        other = DataDict.objects.create(code="t2", label="类型2", parent=None)
+        serializer = DataDictSerializer(instance=parent, data={"parent": other.pk}, partial=True)
+        assert not serializer.is_valid()
+        assert "parent" in serializer.errors
+
+    def test_item_cannot_be_promoted(self, superuser):
+        from system.serializers.dict import DataDictSerializer
+
+        parent = DataDict.objects.create(code="t3", label="类型3", parent=None)
+        item = DataDict.objects.create(code="i1", label="项", parent=parent)
+        serializer = DataDictSerializer(instance=item, data={"parent": None}, partial=True)
+        assert not serializer.is_valid()
+        assert "parent" in serializer.errors

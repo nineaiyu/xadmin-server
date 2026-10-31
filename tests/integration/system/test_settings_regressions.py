@@ -166,7 +166,7 @@ class TestLoginPolicyTargetValidation:
             action=LoginAccessPolicy.Action.REJECT,
             creator=superuser,
         )
-        data = LoginAccessPolicySerializer(policy).data
+        data = LoginAccessPolicySerializer(policy, ignore_field_permission=True).data
         assert data["condition_summary"]
         assert "09:00" in data["condition_summary"]
 

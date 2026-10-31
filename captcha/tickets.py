@@ -71,10 +71,18 @@ def ticket_keys() -> dict[str, str]:
         secret = _derived_secret()
     keys[key_id] = secret
     previous = str(getattr(settings, "CAPTCHA_TICKET_SECRET_PREVIOUS", "") or "").strip()
-    if previous and ":" in previous:
-        prev_id, prev_secret = previous.split(":", 1)
-        if prev_id.strip() and prev_secret.strip():
-            keys[prev_id.strip()] = prev_secret.strip()
+    if previous:
+        if ":" not in previous:
+            logger.warning("CAPTCHA_TICKET_SECRET_PREVIOUS must be '<key_id>:<secret>'; ignored")
+        else:
+            prev_id, prev_secret = previous.split(":", 1)
+            prev_id, prev_secret = prev_id.strip(), prev_secret.strip()
+            if prev_id and prev_secret:
+                if prev_id == key_id:
+                    # key_id 冲突不能覆盖当前密钥（否则「当前密钥」语义被悄悄替换）
+                    logger.warning("CAPTCHA_TICKET_SECRET_PREVIOUS key_id conflicts with current; ignored")
+                else:
+                    keys[prev_id] = prev_secret
     return keys
 
 

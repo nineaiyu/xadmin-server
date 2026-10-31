@@ -140,12 +140,17 @@ def _prepare_rag(question: str, user: Any = None, history: list[dict[str, str]] 
     使追问（「那它的默认值呢？」）能接上前文；检索仍按当前问题独立执行。
     """
     from ai.services.assistant.ai_guard import REFERENCE_GUARD_INSTRUCTION, annotate_reference
+    from ai.services.assistant.ai_usage import quota_error
 
     question = (question or "").strip()[:MAX_QUESTION_LENGTH]
     if not question:
         raise DjangoValidationError(_("Question cannot be empty"))
     if not is_enabled():
         raise DjangoValidationError(_("AI assistant is not enabled or configured"))
+    # 配额在服务层收敛：ask / ask_stream / prepare_ask 的新调用方无需各自前置检查
+    quota = quota_error(user, "docs")
+    if quota:
+        raise DjangoValidationError(quota)
 
     retrieved = retrieve(question)
     if not retrieved:
@@ -217,8 +222,8 @@ def prepare_ask(question: str, user: Any = None) -> tuple[Any, ...]:
 
     与 ask / ask_stream 校验完全同源（空问题 / 未启用 / 无命中 → 可读 ValidationError）。
     """
-    messages, sources, __hits = _prepare_rag(question, user=user, history=conversation_history(user))
-    return messages, sources
+    messages, sources, hits = _prepare_rag(question, user=user, history=conversation_history(user))
+    return messages, sources, hits
 
 
 def ask(question: str, user: Any = None) -> dict[str, Any]:
@@ -252,7 +257,9 @@ def ask(question: str, user: Any = None) -> dict[str, Any]:
     }
 
 
-def ask_stream(messages: list[Any], sources: list[Any], user: Any = None) -> Any:
+def ask_stream(
+    messages: list[Any], sources: list[Any], user: Any = None, injection_hits: list[Any] | None = None
+) -> Any:
     """问答链路（流式生成器）：产出事件 dict，供 SSE 转发。
 
     增量事件：``{"type": "reasoning"|"content", "text": ...}``（思考型模型有 reasoning）；
@@ -305,7 +312,7 @@ def ask_stream(messages: list[Any], sources: list[Any], user: Any = None) -> Any
         "answer": answer,
         "sources": sources,
         "guard": guard_summary(
-            injection=[],
+            injection=list(injection_hits or []),
             mask_hits=content_masker.hits + reasoning_masker.hits,
             output_len=len(answer),
         ),

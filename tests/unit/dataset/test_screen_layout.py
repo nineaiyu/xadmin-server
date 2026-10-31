@@ -332,7 +332,7 @@ class TestRejections:
             {"pk": "p1", "type": "clock", "x": 0, "y": 0, "w": 6, "h": 3},
             {"pk": "p1", "type": "clock", "x": 6, "y": 0, "w": 6, "h": 3},
         ]
-        with pytest.raises(ScreenLayoutError, match="Duplicate"):
+        with pytest.raises(ScreenLayoutError, match="p1"):
             normalize_screen_layout(raw, [DASH])
 
 
@@ -401,7 +401,7 @@ class TestFreeLayoutNormalisation:
                 _free_pane(pk="p1", pane_type="text", x=200, y=0, w=100, h=80, text="另一个"),
             ]
         }
-        with pytest.raises(ScreenLayoutError, match="Duplicate"):
+        with pytest.raises(ScreenLayoutError, match="p1"):
             normalize_screen_free_layout(raw, [DASH])
 
     def test_overlap_allowed_and_array_order_kept(self):

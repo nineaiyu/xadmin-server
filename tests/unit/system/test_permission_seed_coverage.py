@@ -68,3 +68,19 @@ class TestSeedOrphans:
         assert duplicates == [], "菜单种子存在未登记的重复权限点（同 path+method）：" + ", ".join(
             f"{perm.name} | {perm.path}" for perm in duplicates
         )
+
+
+class TestSharedListPermissionAlignment:
+    def test_dataset_meta_has_no_standalone_permission_point(self):
+        """共享 list 子 action（datasets/meta）运行期按父级 list 解析，种子不再登记鬼码。"""
+        import dataset.views.dataset  # noqa: F401 装饰器导入即登记 shared_list 后缀
+        from common.core import permission_meta
+
+        routes = build_route_index()  # 导入 URLconf：装饰器注册 shared_list 后缀
+        perms = _seed_permissions()
+        assert "meta" in permission_meta.SHARED_LIST_SUFFIXES
+        assert not [perm for perm in perms if perm.path == "api/dataset/datasets/meta$"]
+        parent = [perm for perm in perms if perm.path == "api/dataset/datasets$" and perm.method == "GET"]
+        assert parent, "父级 list 权限点必须存在（meta 运行时依赖它）"
+        meta_gaps = [gap for gap in scan_gaps(routes, perms) if "datasets/meta" in gap[0].url]
+        assert meta_gaps == [], meta_gaps

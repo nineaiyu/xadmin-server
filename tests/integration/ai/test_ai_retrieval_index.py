@@ -98,6 +98,19 @@ class TestRetrievalIndexParity:
         assert ai_index.chunk_token_index() is None
         assert chunk.pk in hit_pks("数据库备份"), "退避路径（逐块分词全扫）仍可检索"
 
+    def test_index_returns_read_only_view_without_copy(self):
+        """检索每次取索引返回只读映射视图，不复制整份 dict（2 万块上限下的内存热点）。"""
+        from collections.abc import Mapping
+
+        from ai.services.knowledge import ai_index
+
+        make_chunk("docs/view.md", 0, CONTENT_A)
+        view = ai_index.chunk_token_index()
+        assert isinstance(view, Mapping) and not isinstance(view, dict)
+        assert view._index is ai_index._INDEX, "视图复用同一份索引，不为每次检索复制"
+        with pytest.raises(TypeError):
+            view["x"] = None  # type: ignore[index]  Mapping 只读：写入必须失败
+
     def test_fallback_prefilters_in_sql(self):
         """兜底扫描先在 DB 侧 icontains 预筛：SQL 带 WHERE 子句且不再全表读入。
 

@@ -44,21 +44,33 @@ class Command(BaseCommand):
         if not options["all"]:
             queryset = queryset.filter(Q(category__isnull=True) | Q(category=""))
 
-        changed = []
+        changed = 0
         skipped = 0
+        batch: list[Any] = []
         for upload in queryset.iterator(chunk_size=batch_size):
             category = resolve_upload_category(upload.filename, upload.mime_type)
             if category and category != upload.category:
                 upload.category = category
                 # bulk_update 不触发 auto_now，手动补 updated_time（列表排序/审计口径一致）
                 upload.updated_time = timezone.now()
-                changed.append(upload)
+                batch.append(upload)
+                changed += 1
+                if len(batch) >= batch_size:
+                    # 按批落库：全表累积到内存再一次性 bulk_update 会在大表上放大
+                    # 内存占用与单条大事务（锁与回滚段）
+                    self._flush(batch, dry_run, batch_size)
+                    batch = []
             else:
                 skipped += 1
 
-        if changed and not dry_run:
-            UploadFile.all_objects.bulk_update(changed, ["category", "updated_time"], batch_size=batch_size)
+        self._flush(batch, dry_run, batch_size)
         verb = "would classify" if dry_run else "classified"
-        summary = f"{verb}: {len(changed)}, unchanged: {skipped}"
+        summary = f"{verb}: {changed}, unchanged: {skipped}"
         self.stdout.write(self.style.SUCCESS(summary))
         logger.info("classify upload files. %s", summary)
+
+    @staticmethod
+    def _flush(rows: list[Any], dry_run: bool, batch_size: int) -> None:
+        if not rows or dry_run:
+            return
+        UploadFile.all_objects.bulk_update(rows, ["category", "updated_time"], batch_size=batch_size)

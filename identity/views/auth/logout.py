@@ -16,7 +16,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from common.cache.storage import BlackAccessTokenCache
+from common.cache.storage import BlackAccessTokenCache, SessionTokenRevokedCache
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from mfa.cache import UserConfirmStateCache
@@ -37,26 +37,29 @@ class LogoutAPIView(GenericAPIView):
         if getattr(request, "user", None) and request.user.is_authenticated:
             UserConfirmStateCache(request.user).clear()
         auth = request.auth
-        if not auth:
-            return ApiResponse()
-        exp = auth.payload.get("exp")
-        user_id = auth.payload.get("user_id")
-        timeout = exp - time.time()
-        # 黑名单键派生用 MD5 仅作定长缓存键（非安全用途，usedforsecurity=False）
-        BlackAccessTokenCache(user_id, hashlib.md5(auth.token, usedforsecurity=False).hexdigest()).set_storage_cache(
-            1, timeout
-        )
-        # 自己的会话（登录时登记，token claim sid 关联）置离线，在线列表立即消失
-        sid = auth.payload.get("sid")
-        if sid:
-            try:
-                from identity.models import UserSession
+        # PAT 的 request.auth 是凭证模型（无 payload）；docs session 的 auth 为 None。
+        # 两种情况都必须继续执行 logout(request)，只跳过 JWT 黑名单分支。
+        payload = getattr(auth, "payload", None) or {}
+        exp = payload.get("exp") if isinstance(payload, dict) else None
+        if payload and exp is not None:
+            user_id = payload.get("user_id")
+            timeout = int(exp - time.time())
+            # 黑名单键派生用 MD5 仅作定长缓存键（非安全用途，usedforsecurity=False）
+            BlackAccessTokenCache(
+                user_id, hashlib.md5(auth.token, usedforsecurity=False).hexdigest()
+            ).set_storage_cache(1, timeout)
+            # 会话级撤销：仅置 OFFLINE 不阻止 refresh 续期，必须写 sid 失效标记
+            sid = payload.get("sid")
+            if sid:
+                try:
+                    SessionTokenRevokedCache(sid).set_storage_cache(1)
+                    from identity.models import UserSession
 
-                UserSession.objects.filter(pk=sid, status=UserSession.Status.ONLINE).update(
-                    status=UserSession.Status.OFFLINE, last_active=timezone.now()
-                )
-            except Exception:  # noqa: BLE001 会话管理属附加能力
-                pass
+                    UserSession.objects.filter(pk=sid, status=UserSession.Status.ONLINE).update(
+                        status=UserSession.Status.OFFLINE, last_active=timezone.now()
+                    )
+                except Exception:  # noqa: BLE001 会话管理属附加能力
+                    pass
         if request.data.get("refresh"):
             try:
                 token = RefreshToken(request.data.get("refresh"))

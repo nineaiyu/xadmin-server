@@ -4,6 +4,8 @@
 > 本文给出现状、启用步骤、成本口径、演练流程与回滚。
 > **✅ 2026-09-16 已启用**（发布窗口执行：archive_mode=on 重启 + gzip 压缩归档 + 归档滞后告警接线，
 > 归档卷为同盘独立目录——单机退让决策与迁移条件见 §6）。
+> **2026-10-31 修复**：归档目录属主启动自愈 + 归档命令改为原子写（Linux bind mount 目录默认
+> `root:root` 曾导致归档全部失败、`pg_wal` 无限增长；事故处置见 §7）。
 > 相关：[deployment.md](deployment.md)（备份总览）、（既有演练记录已清理）、`ops/pitr_drill.sh`（链路检查助手）。
 
 ## 1. 现状与目标
@@ -20,6 +22,21 @@
 ### 2.1 PostgreSQL 侧（`xadmin-server/docker-compose.yml` 的 postgresql 服务，已按此启用）
 
 ```yaml
+    # Linux 上 bind mount 目录由 Docker 以 root:root 创建，而归档器以容器内 postgres 执行；
+    # 启动时先探测可写性并修正属主，否则归档失败会让 WAL 永不回收
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /var/lib/postgresql/archive
+        if ! gosu postgres test -w /var/lib/postgresql/archive; then
+          chown postgres:postgres /var/lib/postgresql/archive 2>/dev/null || true
+        fi
+        if ! gosu postgres test -w /var/lib/postgresql/archive; then
+          echo "[xadmin] WARN: WAL archive dir is not writable by postgres; archive_mode=on will retain WAL forever (check host dir ownership/mount options)" >&2
+        fi
+        exec /usr/local/bin/docker-entrypoint.sh "$$@"
+      - --
     command:
       - postgres
       - -c
@@ -29,7 +46,7 @@
       - -c
       - archive_timeout=60
       - -c
-      - "archive_command=test ! -f /var/lib/postgresql/archive/%f.gz && gzip < %p > /var/lib/postgresql/archive/%f.gz"
+      - "archive_command=gzip -c < %p > /var/lib/postgresql/archive/%f.gz.tmp && mv /var/lib/postgresql/archive/%f.gz.tmp /var/lib/postgresql/archive/%f.gz"
     volumes:
       - ${VOLUME_DIR:-../}/xadmin-postgresql/data:/var/lib/postgresql/data
       # 独立卷；换独立盘/NFS 时只改宿主路径：PITR_ARCHIVE_DIR=/mnt/pitr-archive
@@ -39,15 +56,20 @@
 要点：
 
 1. `archive_mode=on` **需要重启** PostgreSQL 才生效（`archive_command` 可 reload，`archive_mode` 不可）；
-2. `archive_command` 用 `test ! -f … && …` 幂等写法（同段重归档不覆盖已有文件；
-   覆盖被拒绝时归档器报失败，由 §2.2 巡检捕获）；
+2. `archive_command` **先写 `%f.gz.tmp` 再原子 `mv`**：直接写目标文件时，一次中途失败
+   （磁盘满等）会留下半截 `.gz`；若再叠加 `test ! -f` 存在性守卫，该段就会永久归档失败、
+   整条链路卡死。`mv` 覆盖是幂等的，重试天然安全；
 3. 归档采用 **gzip 压缩**：空段 16MB → KB 级，持续写入段约压 5~10 倍，
    磁盘成本几乎归零（实测：16MB 段压缩后 1.4MB，见 §6）；恢复端需 gunzip（见 §3）；
 4. **归档目录必须与数据目录分盘/分卷**（同盘故障时两者同失，归档失去意义）。
    当前部署为**同盘独立目录**（单机退让，用户 2026-09-16 确认）：目录独立于数据目录，
    但与数据同盘；换独立盘后仅需把 compose 中该卷的**宿主路径**改为挂载点（容器内路径不变）；
 5. 归档目录应纳入异地副本同步链路（`BACKUP_REMOTE_TYPE` 当前未启用，随异地副本一并规划），
-   保留期建议 ≥ 14 天。
+   保留期建议 ≥ 14 天；
+6. **归档目录属主**：bind mount 目录在 Linux 上由 Docker 以 `root:root` 创建，而归档器以容器内
+   `postgres`（uid 999）执行。上面的 entrypoint 会在启动时探测可写性并修正属主（macOS 开发
+   环境本就可写，不做变更）；手工部署或用旧版 compose 时必须执行
+   `chown -R <data 目录属主> <archive 目录>`，否则归档全部失败、WAL 永久滞留（见 §7）。
 
 ### 2.2 告警（已接线：`ops/db_backup.sh` 的 `check_wal_archive`）
 
@@ -109,3 +131,38 @@ recovery_target_action = 'promote'
   迁移动作已收敛为**只改宿主路径**——`PITR_ARCHIVE_DIR=/mnt/pitr-archive docker compose up -d postgresql`
   （容器内路径 `/var/lib/postgresql/archive` 恒定，归档器与恢复脚本零改动；存量归档先拷到新盘再重建容器）；
 - 演练频次：与季度备份演练同一周期（`backup-drill-reminder.yml` 提醒 workflow 复用）。
+
+## 7. 故障处置：归档失败与 `pg_wal` 膨胀
+
+**症状**：`pg_wal` 持续变大（16MB/段，数天可达几十 GB），但 `data/base` 很小；`archive/`
+为空或不再新增文件；`db-backup` 日志出现 `wal archive failing` / `wal archive stalled`。
+典型原因：Linux 上归档目录由 Docker 以 `root:root` 创建，容器内 postgres（uid 999）不可写
+（macOS 的 Docker Desktop 会抹平属主，本地开发不复现）。
+
+**确认（只读）**：
+
+```shell
+# 从未成功归档 / 持续失败（archived_count=0 且 failed_count 增长）
+docker exec xadmin-postgresql sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc \
+  "select archived_count, failed_count, last_archived_time, last_failed_time from pg_stat_archiver"'
+# 待归档积压段数（健康时应接近 0）
+docker exec xadmin-postgresql sh -c 'ls /var/lib/postgresql/data/pg_wal/archive_status | grep -c "\.ready"'
+# 目录属主与可写性（postgres 应可写）
+ls -ld ${VOLUME_DIR}/xadmin-postgresql/archive
+docker exec -u postgres xadmin-postgresql sh -c 'test -w /var/lib/postgresql/archive && echo writable || echo NOT-writable'
+```
+
+**修复**（严禁手动删除 `pg_wal` 内文件，会让 PG 崩溃）：
+
+```shell
+# 属主对齐数据目录（data 已被镜像 entrypoint 修正为 postgres）
+owner=$(docker exec xadmin-postgresql stat -c '%u:%g' /var/lib/postgresql/data)
+chown -R "$owner" ${VOLUME_DIR}/xadmin-postgresql/archive
+
+# 使用新版 compose 时也可直接重建容器：entrypoint 自动修正属主并切换为原子归档命令
+docker compose up -d postgresql
+```
+
+归档器约 1 分钟内开始追赶（`archived_count` 上涨、`.ready` 归零），随后执行
+`psql -c "checkpoint"`（或等自动 checkpoint）让 PG 回收 WAL，`pg_wal` 会回落到
+`max_wal_size` 附近。用 `ops/pitr_drill.sh` 复检（已含归档目录可写性探测）。

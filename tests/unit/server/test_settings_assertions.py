@@ -27,3 +27,14 @@ def test_csrf_middleware_position():
     csrf_idx = middleware.index("django.middleware.csrf.CsrfViewMiddleware")
     assert csrf_idx > middleware.index("django.contrib.sessions.middleware.SessionMiddleware")
     assert csrf_idx < middleware.index("django.contrib.auth.middleware.AuthenticationMiddleware")
+
+
+def test_django_admin_not_mounted_by_default():
+    """admin 登录只认 session，绕过验证码/锁定/访问策略/MFA：默认不得挂载 /admin/。"""
+    import pytest
+    from django.conf import settings
+    from django.urls import Resolver404, resolve
+
+    assert settings.ENABLE_DJANGO_ADMIN is False
+    with pytest.raises(Resolver404):
+        resolve("/admin/")

@@ -32,11 +32,12 @@ class OtpBackend(BaseMFA):
         if not self.user.otp_secret_key:
             return False, _("OTP is not bound")
         used = UsedOtpCodeCache(self.user, code)
-        if used.exists():
+        # 原子占位先于验码：并发同码只有一个请求能通过 exists→verify 的双花窗口
+        if not used.acquire():
             return False, _("The verification code has already been used")
         if not self.verify_code(self.user.otp_secret_key, code):
+            used.release()
             return False, _("The OTP verification code is incorrect")
-        used.mark()
         return True, ""
 
     @staticmethod

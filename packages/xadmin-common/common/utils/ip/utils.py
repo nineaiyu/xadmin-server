@@ -71,10 +71,12 @@ def contains_ip(ip: Any, ip_group: Any) -> bool:
 
     """
 
-    if "*" in ip_group:
+    # 字符串容器容忍：只把精确的 "*" 条目视为不限，不能把 "10.0.0.*" 当通配
+    group = ip_group if isinstance(ip_group, (list, tuple, set)) else [ip_group]
+    if "*" in group:
         return True
 
-    for _ip in ip_group:
+    for _ip in group:
         if is_ip_address(_ip):
             # 192.168.10.1
             if ip == _ip:
@@ -96,20 +98,30 @@ def contains_ip(ip: Any, ip_group: Any) -> bool:
 
 
 def is_ip(ip: Any, rule_value: Any) -> Any:
+    """单值 IP 规则匹配：``*`` / CIDR / 区间 / 精确地址 / 前缀。
+
+    统一转为 ``ip_address`` 再比较：旧实现 CIDR 分支拿字符串与 ``hosts()`` 的
+    ``IPv4Address`` 比较恒为 False；前缀分支也兼容 IP 对象入参。
+    """
     if rule_value == "*":
         return True
-    elif "/" in rule_value:
-        network = ipaddress.ip_network(rule_value)
-        return ip in network.hosts()
-    elif "-" in rule_value:
-        start_ip, end_ip = rule_value.split("-")
-        start_ip = ipaddress.ip_address(start_ip)
-        end_ip = ipaddress.ip_address(end_ip)
-        return start_ip <= ip <= end_ip
-    elif len(rule_value.split(".")) == 4:
-        return ip == rule_value
-    else:
-        return ip.startswith(rule_value)
+    text = str(ip)
+    if "/" not in rule_value and "-" not in rule_value and not (len(rule_value.split(".")) == 4 or ":" in rule_value):
+        return text.startswith(rule_value)
+    try:
+        addr = ip if isinstance(ip, (ipaddress.IPv4Address, ipaddress.IPv6Address)) else ipaddress.ip_address(text)
+    except ValueError:
+        return False
+    if "/" in rule_value:
+        return addr in ipaddress.ip_network(rule_value)
+    if "-" in rule_value:
+        start_text, end_text = rule_value.split("-", 1)
+        start_ip = ipaddress.ip_address(start_text)
+        end_ip = ipaddress.ip_address(end_text)
+        return min(int(start_ip), int(end_ip)) <= int(addr) <= max(int(start_ip), int(end_ip))
+    if len(rule_value.split(".")) == 4 or ":" in rule_value:
+        return addr == ipaddress.ip_address(rule_value)
+    return text.startswith(rule_value)
 
 
 def get_ip_city(ip: Any) -> Any:

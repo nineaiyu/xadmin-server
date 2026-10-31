@@ -155,7 +155,10 @@ class TestQueueDepthGauge:
             closed = False
 
             def llen(self, name):
-                return {"celery": 3, "heavy": 12}[name]
+                base = name.split(metrics_module.CELERY_PRIORITY_SEP)[0]
+                if name != base:  # 优先级队列键返回 0，和仍为基准值
+                    return 0
+                return {"celery": 3, "heavy": 12}[base]
 
             def close(self):
                 self.closed = True

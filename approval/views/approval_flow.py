@@ -6,7 +6,8 @@
 - ApprovalInstanceViewSet：流程实例（我的申请/待办/已办）+ 发起 / 通过 / 驳回 /
   撤回 / 加签 / 转交（含批量）/ 批量 / 待办计数 / 统计 / 导出。
 
-取值域：超管全部；普通用户「我发起 ∪ 待我审批 ∪ 我参与过」（visible_instances_for）。
+取值域：超管全部；普通用户「我发起 ∪ 待我审批 ∪ 我参与过 ∪ 我被抄送」
+（visible_instances_for）。
 """
 
 from typing import Any
@@ -165,7 +166,7 @@ class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction)
     def rollback(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """回滚到历史版本
 
-        快照写入活定义并落新版本；有 PENDING 实例时拒绝
+        快照写入活定义并落新版本；在途实例按建单时钉住的版本继续，回滚只影响新单
         """
         ensure_approval_action_confirmed(request, "rollback")
         # 载荷以 body 为准；query 兜底兼容曾把 version 放 query 的旧客户端

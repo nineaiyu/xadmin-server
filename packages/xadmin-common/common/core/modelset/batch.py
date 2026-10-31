@@ -47,7 +47,13 @@ class RankAction:
         if len(pks) > RANK_MAX_ITEMS:
             return ApiResponse(code=1004, detail=_("Too many items to sort (max {})").format(RANK_MAX_ITEMS))
         queryset = self.filter_queryset(self.get_queryset())
-        pks, _invalid = _normalize_pks(queryset.model, pks)
+        pks, invalid = _normalize_pks(queryset.model, pks)
+        if invalid and not pks:
+            return ApiResponse(
+                code=1004,
+                detail=_("Sorting not saved: no valid data"),
+                data={"success": [], "failures": invalid},
+            )
         if pks:
             # Case/When 单条批量 UPDATE，替代逐条 filter(pk=pk).update(rank=rank)
             queryset = queryset.filter(pk__in=pks)
@@ -82,6 +88,8 @@ class BatchDestroyAction:
         # 不能整批 500
         valid_pks, failures = _normalize_pks(queryset.model, request.data)
         queryset = self.filter_queryset(queryset).filter(pk__in=valid_pks)
+        # 写侧守卫与单条 destroy 同源：视图可覆写把「不可写」记录排除在批量作用域外
+        queryset = self.get_batch_destroy_queryset(queryset)
         # 引用保护：登记在 IMPACT_GUARD_MODELS 的模型有影响面时要求显式确认。
         # 必须在分支前统一校验——逐行分支的 perform_destroy 异常会被吞（只记日志），
         # 放在分支内会造成「静默不删但提示成功」。
@@ -92,9 +100,15 @@ class BatchDestroyAction:
         if not self._needs_rowwise_delete():
             # 模型无逐行副作用时直接走批量 delete()，单条 SQL 完成
             # （旧实现逐行 instance.delete()，N 行 = N 次级联删除事务）
-            deleted, _rows_count = queryset.delete()
+            _deleted, _rows_count = queryset.delete()
+            if not existing:
+                return ApiResponse(
+                    code=1004,
+                    detail=_("No data was deleted"),
+                    data={"success": [], "failures": failures},
+                )
             return ApiResponse(
-                detail=_("Operation successful. Batch deleted {} data").format(deleted),
+                detail=_("Operation successful. Batch deleted {} data").format(len(existing)),
                 data={"success": existing, "failures": failures},
             )
 
@@ -120,9 +134,20 @@ class BatchDestroyAction:
                 logger.error(f"failed to destroy instance {instance} with error {e}")
                 failures.append({"pk": row_pk, "reason": _batch_error_message(e)})
         return ApiResponse(
-            detail=_("Operation successful. Batch deleted {} data").format(count),
+            code=1000 if count else 1004,
+            detail=(
+                _("Operation successful. Batch deleted {} data").format(count) if count else _("No data was deleted")
+            ),
             data={"success": success, "failures": failures},
         )
+
+    def get_batch_destroy_queryset(self, queryset: Any) -> Any:
+        """批量删除的写侧作用域（默认等于过滤后的可见集）。
+
+        视图有「非创建者不可删 / 共享记录只读」等单条 destroy 守卫时必须覆写本方法，
+        让批量入口与单条删除共用同一授权口径——否则 batch-destroy 会成为绕过守卫的后门。
+        """
+        return queryset
 
     def _needs_rowwise_delete(self) -> Any:
         """是否需要逐行 delete() 以触发模型级副作用。
@@ -271,6 +296,10 @@ class BatchPartialUpdateAction:
                     old_values = self._audit_diff_old_values(pk)
                     serializer = self.get_serializer(instance, data=fields, partial=True)
                     serializer.is_valid(raise_exception=True)
+                    if not serializer.validated_data:
+                        # 字段权限可能把请求字段全部裁掉：DRF 静默忽略等于没改，不能计成功
+                        failures.append({"pk": str(pk), "reason": str(_("No effective fields to update"))})
+                        continue
                     self.perform_update(serializer)
                     if old_values is not None:
                         audit_rows.append((str(pk), old_values))
@@ -283,6 +312,7 @@ class BatchPartialUpdateAction:
         for row_pk, old_values in audit_rows:
             self._stash_audit_changes(old_values, key_prefix=row_pk if multi_row else "")
         return ApiResponse(
+            code=1000 if success else 1004,
             data={"success": success, "failures": failures, "updated": len(success)},
             detail=_("Batch update completed: {} succeeded, {} failed").format(len(success), len(failures)),
         )

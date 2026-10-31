@@ -202,6 +202,9 @@ def aggregate_dataset(
     model = get_whitelisted_model(dataset.bound_model)
     whitelist = set(available_fields(dataset.bound_model))
     group_spec = parse_column(model, group_by, whitelist) if group_by else None
+    if group_spec is not None and group_spec.is_json and group_by not in (dataset.columns or []):
+        # JSON 分组列不在数据集列中时 build_queryset 不会为其建注解，values() 会抛 FieldError
+        raise ValidationError(_("Field {} is not available for datasets").format(group_by))
     # JSON 趋势列必须带 |date 标注（值契约 YYYY-MM-DD，分桶走 Substr 前缀截断）
     if date_trunc and group_spec is not None and group_spec.is_json and group_spec.value_type != "date":
         raise ValidationError(_("JSON trend column requires |date type: {}").format(group_spec.raw))

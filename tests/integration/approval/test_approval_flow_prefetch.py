@@ -84,7 +84,7 @@ class TestFlowListFormLockPrefetch:
         """脱离视图（无注解）直接序列化单个对象：回退单次 EXISTS，语义一致。"""
         from approval.serializers.approval_flow import ApprovalFlowSerializer
 
-        data = ApprovalFlowSerializer(flows[0]).data
+        data = ApprovalFlowSerializer(flows[0], ignore_field_permission=True).data
         assert data["form_schema_locked"] is True
-        data = ApprovalFlowSerializer(flows[2]).data
+        data = ApprovalFlowSerializer(flows[2], ignore_field_permission=True).data
         assert data["form_schema_locked"] is False

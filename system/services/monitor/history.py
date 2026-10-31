@@ -137,12 +137,14 @@ WITH base AS (
     WHERE created_time < %(start)s
     ORDER BY created_time DESC
     LIMIT 1
+), recent AS (
+    SELECT {columns}
+    FROM {table}
+    WHERE created_time >= %(start)s AND created_time <= %(end)s
+    ORDER BY created_time DESC
+    LIMIT %(limit)s
 ), samples AS (
-    (SELECT {columns}
-     FROM {table}
-     WHERE created_time >= %(start)s AND created_time <= %(end)s
-     ORDER BY created_time
-     LIMIT %(limit)s)
+    (SELECT {columns} FROM recent ORDER BY created_time)
     UNION ALL
     (SELECT {columns} FROM base)
 ), diffed AS (

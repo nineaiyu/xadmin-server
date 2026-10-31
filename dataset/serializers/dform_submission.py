@@ -100,6 +100,7 @@ class MySubmissionListSerializer(BaseModelSerializer):
             "schema_version",
             "data",
             "status",
+            "instance",
             "creator",
             "created_time",
             "updated_time",

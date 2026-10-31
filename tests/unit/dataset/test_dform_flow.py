@@ -602,7 +602,7 @@ class TestFlowFormSchemaProjection:
         serializer.save()
         flow.refresh_from_db()
         assert not [item for item in flow.form_schema if item["key"] == "hacked"]
-        assert ApprovalFlowSerializer(flow).data["form_schema_locked"] is True
+        assert ApprovalFlowSerializer(flow, ignore_field_permission=True).data["form_schema_locked"] is True
 
     def test_rebind_reprojects_previous_flow(self, applicant):
         """A→B 换绑：旧流程 A 按剩余绑定表单重算，不再保留已脱离表单的字段。"""
@@ -697,7 +697,7 @@ class TestFlowFormSchemaProjection:
             assignee_type=ApprovalFlowNode.AssigneeType.USER,
             assignee_value="dform_applicant",
         )
-        assert ApprovalFlowSerializer(flow).data["form_schema_locked"] is False
+        assert ApprovalFlowSerializer(flow, ignore_field_permission=True).data["form_schema_locked"] is False
 
     def test_unbind_resyncs_when_other_forms_bound(self, applicant):
         """解绑：旧流程仍有其他绑定表单时重投影（本表单字段移出）。"""
@@ -740,7 +740,7 @@ class TestFlowFormSchemaProjection:
         serializer.save()
         flow.refresh_from_db()
         assert [item["key"] for item in flow.form_schema] == ["name"]
-        assert ApprovalFlowSerializer(flow).data["form_schema_locked"] is False
+        assert ApprovalFlowSerializer(flow, ignore_field_permission=True).data["form_schema_locked"] is False
 
 
 class TestFormDataListPayloadShrink:

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """AI 配置与凭据收口：激活档案优先，Setting 通路回落（自 ai.py 拆出，仅行数门禁）。
 
-调用面保持 `system.utils.ai` 再导出不变；本模块不依赖 ai.py，无循环导入。
+本模块不依赖 ai.py，无循环导入；调用方直接导入本模块（`ai.services.assistant.ai_config`）。
 """
 
 from typing import Any
@@ -47,6 +47,14 @@ def structured_chat_client() -> Any:
     from integrations.sdk.ai.chat import ChatCompletionsClient
 
     client = ChatCompletionsClient(ai_credentials(PURPOSE_STRUCTURED))
+    return client, client.max_tokens or ai_structured_max_tokens()
+
+
+def structured_async_chat_client() -> Any:
+    """``structured_chat_client`` 的异步对偶（流式链路零线程占用）。"""
+    from integrations.sdk.ai.async_chat import AsyncChatCompletionsClient
+
+    client = AsyncChatCompletionsClient(ai_credentials(PURPOSE_STRUCTURED))
     return client, client.max_tokens or ai_structured_max_tokens()
 
 
@@ -116,16 +124,40 @@ def embedding_enabled() -> bool:
 
 
 def set_active_profile(profile: Any, active: bool = True) -> None:
-    """激活/停用档案：激活时事务内清掉「同用途」其余激活行（用途级部分唯一索引兜底）。"""
-    from django.db import transaction
+    """激活/停用档案：激活时事务内清掉「同用途」其余激活行（用途级部分唯一索引兜底）。
+
+    同用途行先 ``select_for_update`` 串行化两个并发激活：后到者在前者提交后再
+    清旧置新，而不是双双通过「清旧」窗口后撞唯一索引报 500。
+    """
+    from django.db import IntegrityError, transaction
 
     from ai.models.ai import AiProfile
 
-    with transaction.atomic():
-        if active:
-            peers = AiProfile.objects.exclude(pk=profile.pk).filter(is_active=True)
-            peers.filter(purpose=profile.purpose).update(is_active=False)
-        if profile.is_active != active:
+    def _apply() -> None:
+        with transaction.atomic():
+            if active:
+                # 锁住该用途已有行（含目标档案本身），统一按 pk 排序避免交叉死锁
+                list(
+                    AiProfile.objects.select_for_update()
+                    .filter(purpose=profile.purpose)
+                    .order_by("pk")
+                    .values_list("pk", flat=True)
+                )
+                AiProfile.objects.exclude(pk=profile.pk).filter(is_active=True, purpose=profile.purpose).update(
+                    is_active=False
+                )
+            if profile.is_active != active:
+                profile.is_active = active
+                profile.save(update_fields=["is_active", "updated_time"])
+
+    try:
+        _apply()
+    except IntegrityError:
+        # 目标档案是并发新建（无既有行可锁）时仍可能撞部分唯一索引：清旧后重试一次
+        with transaction.atomic():
+            AiProfile.objects.exclude(pk=profile.pk).filter(is_active=True, purpose=profile.purpose).update(
+                is_active=False
+            )
             profile.is_active = active
             profile.save(update_fields=["is_active", "updated_time"])
 

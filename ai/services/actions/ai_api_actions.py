@@ -40,6 +40,7 @@ from ai.services.actions.ai_api_params import (  # noqa: F401  (参数解析/URL
     _menu_display,
     _role_display,
     _user_display,
+    remember_param_resolution,
 )
 from ai.services.actions.ai_api_params import (
     IN_QUERY as IN_QUERY,  # noqa: F401 显式再导出（PEP 484 语义）
@@ -128,18 +129,29 @@ class ApiActionSpec:
             else:
                 clean[field] = body.get(target_key)
             # user/role 类型字段：确认卡片展示可读文本（昵称(用户名)/角色名），
-            # 执行期宽容解析回主键（解析幂等）；menu 保持主键列表（执行期原样可解析）
+            # 执行期优先按本阶段登记的映射解析回主键（改名/重名不影响已确认草稿）；
+            # menu 保持主键列表（执行期原样可解析）
             if rule.get("type") == "user" and clean.get(field):
-                clean[field] = _user_display(clean[field])
+                resolved = clean[field]
+                clean[field] = _user_display(resolved)
+                remember_param_resolution("user", clean[field], resolved)
             if rule.get("type") == "role" and clean.get(field):
-                clean[field] = _role_display(clean[field])
+                resolved = clean[field]
+                clean[field] = _role_display(resolved)
+                remember_param_resolution("role", clean[field], resolved)
             if rule.get("type") == "menu" and clean.get(field):
-                clean[field] = _menu_display(clean[field])
+                resolved = clean[field]
+                clean[field] = _menu_display(resolved)
+                remember_param_resolution("menu", clean[field], resolved)
         return clean, None
 
-    def execute(self, user: Any, params: Any) -> Any:
-        """dispatch 到现有业务接口，返回 {ok, detail, data}。"""
-        return execute_api_action(self, user, params)
+    def execute(self, user: Any, params: Any, request: Any = None) -> Any:
+        """dispatch 到现有业务接口，返回 {ok, detail, data}。
+
+        ``request`` 为外部调用方请求：其 PAT 凭证/scope 必须继承到内部 dispatch，
+        否则应用级授权（模型×动作/行/字段）与窄 scope 在 AI 链路上全部失效。
+        """
+        return execute_api_action(self, user, params, source_request=request)
 
 
 def api_action(
@@ -189,10 +201,15 @@ def api_action(
     )
 
 
-def execute_api_action(spec: ApiActionSpec, user: Any, params: dict[str, Any]) -> dict[str, Any]:
+def execute_api_action(
+    spec: ApiActionSpec, user: Any, params: dict[str, Any], source_request: Any = None
+) -> dict[str, Any]:
     """执行声明式动作：解析参数 → 反解 URL → dispatch 现有视图。
 
     返回与专用动作一致的 ``{ok, detail, data}`` 语义（错误一律可读文案）。
+
+    ``source_request``：外部请求（PAT 认证时携带 ``request.auth`` 与 ``pat_scopes``）——
+    内部 dispatch 不是「无凭证的超管上下文」，必须让 scope 与应用级授权照常生效。
     """
     from urllib.parse import urlencode
 
@@ -240,6 +257,18 @@ def execute_api_action(spec: ApiActionSpec, user: Any, params: dict[str, Any]) -
     # 注入已认证用户（等价 DRF 的 force_authenticate）：视图的权限链照常执行，
     # 不给 AI 动作开后门；不经过认证链仅因请求由服务端内部构造。
     request._force_auth_user = user
+    if spec.key == "user.create":
+        # AI 建号口令为服务端校验后的明文（LLM 参数不可信，但已过 ActionSpec 校验）
+        request._ai_plain_password = True
+    if source_request is not None:
+        # 凭证与应用 scope 一并交接：application_of_request 读 request.auth，
+        # resolve_pat_scopes 读 request.pat_scopes（DRF Request 会透传 _request 属性）
+        auth = getattr(source_request, "auth", None)
+        if auth is not None:
+            request._force_auth_token = auth
+        scopes = getattr(source_request, "pat_scopes", None)
+        if scopes is not None:
+            request.pat_scopes = scopes
     if spec.requires_approval(user, params):
         # 高危动作预授权：AI 层强制审批已在 action/execute 完成（412 协议消费
         # 一次性令牌后才可能走到这里），内部 dispatch 标记放行业务层

@@ -364,15 +364,20 @@ def verify_archive(model_key: str, month: str, directory: str | Path | None = No
     gz_path, sha_path, manifest_path = _paths(model_key, month, directory)
     if not gz_path.exists() or not manifest_path.exists():
         return {"model": model_key, "month": month, "ok": False, "reason": "归档文件或清单缺失"}
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    digest = hashlib.sha256()
-    rows = 0
-    with gzip.open(gz_path, "rb") as gz:
-        for raw_line in gz:
-            digest.update(raw_line)
-            rows += 1
-    checksum = digest.hexdigest()
-    sidecar = sha_path.read_text(encoding="utf-8").split()[0] if sha_path.exists() else ""
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        sidecar = sha_path.read_text(encoding="utf-8").split()[0] if sha_path.exists() else ""
+        digest = hashlib.sha256()
+        rows = 0
+        with gzip.open(gz_path, "rb") as gz:
+            for raw_line in gz:
+                digest.update(raw_line)
+                rows += 1
+        checksum = digest.hexdigest()
+    except (OSError, json.JSONDecodeError, IndexError, EOFError):
+        # 单份归档损坏只判本次校验失败，不中断整批清理（否则一个坏文件停摆全部保留期）
+        logger.warning("归档校验失败：%s/%s", model_key, month, exc_info=True)
+        return {"model": model_key, "month": month, "ok": False, "reason": "归档文件损坏"}
     ok = checksum == manifest.get("sha256") == sidecar and rows == manifest.get("rows")
     return {
         "model": model_key,

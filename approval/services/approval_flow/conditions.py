@@ -169,7 +169,13 @@ def _expand_delegations(users: Any, node: Any, applicant: Any) -> list[Any]:
         if target.pk == applicant.pk or not target.is_active:
             continue
         source = user if target.pk != user.pk else None
-        expanded[target.pk] = (target, source)
+        entry = expanded.get(target.pk)
+        if entry is None:
+            # 多个委托人委托同一代理人时只保留一个 delegate_from（字段为单 FK）：
+            # 按候选顺序取第一个委托人，结果确定且不会随 DB 返回顺序漂移
+            expanded[target.pk] = (target, source)
+        elif source is not None and entry[1] is None:
+            expanded[target.pk] = (target, source)
     return list(expanded.values())
 
 

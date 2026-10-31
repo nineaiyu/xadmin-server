@@ -102,15 +102,27 @@ def run_view_by_celery_task(view: Any, request: Any, kwargs: Any, data: Any, bat
                 logger.warning("No active Celery workers found, executing task directly")
                 return None  # 返回None表示需要直接执行
             task_id = uuid.uuid4()
+            submitted: list[str] = []
             for index, batch in enumerate(itertools.batched(data, batch_length, strict=False)):
                 meta["task_id"] = f"{task_id}_{index}"
                 meta["task_index"] = index
                 res = background_task_view_set_job.apply_async(
                     args=(view_str, dict(meta), json.dumps(batch), view.action_map), task_id=meta["task_id"]
                 )
+                submitted.append(meta["task_id"])
                 logger.info(f"add {view_str} task success. {res}")
             return ApiResponse(detail=_("Task add success"))
         except Exception as e:
             logger.error(f"Celery task submission failed: {e}, executing task directly")
+            if submitted:
+                # 已有分片投递成功：不能再回落同步全量导入（同一批数据会被导入两次）。
+                # 任务不可撤回，返回可读失败让调用方走「导入记录」核对后续状态。
+                return ApiResponse(
+                    code=1001,
+                    detail=_(
+                        "Part of the import tasks has been submitted; check the import records "
+                        "before retrying to avoid duplicate imports"
+                    ),
+                )
             return None  # 如果提交任务失败，也返回None表示需要直接执行
     return None  # 如果task参数为false，直接执行

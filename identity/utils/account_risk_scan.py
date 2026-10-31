@@ -15,6 +15,13 @@ logger = get_logger(__name__)
 SCAN_TASK_NAME = "identity.tasks.scan_account_risks_task"
 RESULT_CACHE_PREFIX = "account_risk_scan_result_"
 ERROR_CACHE_PREFIX = "account_risk_scan_error_"
+#: 巡检单飞锁：并发点击会撞 (user, risk_type) 唯一约束并覆盖人工处置
+SCAN_LOCK_KEY = "account_risk_scan_running"
+SCAN_LOCK_TIMEOUT = 900
+
+
+class ScanAlreadyRunning(Exception):
+    """已有巡检在执行（API 层转可读业务失败）。"""
 
 
 def result_cache_key(task_id: Any) -> str:
@@ -31,7 +38,17 @@ def dispatch_account_risk_scan(operator: Any) -> Any:
     from server.celery import app
     from task.models.task import TaskExecution
 
-    execution = TaskExecution.objects.create(
+    if not cache.add(SCAN_LOCK_KEY, "1", timeout=SCAN_LOCK_TIMEOUT):
+        raise ScanAlreadyRunning()
+    try:
+        return _dispatch_account_risk_scan(operator, app, TaskExecution)
+    except Exception:
+        cache.delete(SCAN_LOCK_KEY)
+        raise
+
+
+def _dispatch_account_risk_scan(operator: Any, app: Any, execution_model: Any) -> Any:
+    execution = execution_model.objects.create(
         name=SCAN_TASK_NAME,
         kwargs={"operator_pk": getattr(operator, "pk", None)},
         creator=operator,
@@ -56,9 +73,15 @@ def dispatch_account_risk_scan(operator: Any) -> Any:
 
 def scan_task_status(task_id: Any, operator: Any = None) -> dict[str, Any] | None:
     """按 task_id 取巡检进度；非本人且非超管一律当「不存在」处理（不泄露任务是否存在）。"""
+    import uuid as _uuid
+
     from task.models.task import TaskExecution
 
-    execution = TaskExecution.objects.filter(pk=task_id, name=SCAN_TASK_NAME).first()
+    try:
+        normalized_task_id = _uuid.UUID(str(task_id))
+    except (TypeError, ValueError):
+        return None
+    execution = TaskExecution.objects.filter(pk=normalized_task_id, name=SCAN_TASK_NAME).first()
     if execution is None:
         return None
     if operator is not None and not getattr(operator, "is_superuser", False):

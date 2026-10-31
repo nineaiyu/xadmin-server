@@ -1798,6 +1798,10 @@ msgstr "未知能力项：{}"
 msgid "Model probe finished"
 msgstr "模型能力探测完成"
 
+#: ai/views/profiles.py
+msgid "Model probe submitted"
+msgstr "已提交模型能力探测"
+
 #: approval/models/approval_delegation.py:22
 msgid "Delegator"
 msgstr "委托人"
@@ -2408,6 +2412,9 @@ msgstr "审批申请已通过"
 #: approval/notifications.py:117
 msgid "Approval request rejected"
 msgstr "审批申请已驳回"
+
+msgid "Approval request expired"
+msgstr "审批申请已过期"
 
 #: approval/notifications.py:119
 msgid "Approval request pending reminder"
@@ -13914,3 +13921,439 @@ msgstr "Iframe 地址必须是站内相对路径（以 / 开头）"
 #: identity/views/auth/verify_code.py
 msgid "Failed to send verification code, please try again later"
 msgstr "验证码发送失败，请稍后重试"
+
+#: packages/xadmin-common/common/core/modelset/import_export/celery_utils.py
+msgid ""
+"Part of the import tasks has been submitted; check the import records before "
+"retrying to avoid duplicate imports"
+msgstr "部分导入任务已提交，请先在导入记录中核对结果再重试，避免重复导入"
+
+#: ai/services/knowledge/ai_knowledge.py
+#, python-format
+msgid "Knowledge document directory is unavailable, sync aborted: {}"
+msgstr "知识库文档目录不可用，同步已中止：{}"
+
+#: message/chat/messaging.py
+msgid "[Message has been recalled]"
+msgstr "[消息已撤回]"
+
+msgid "A dict type cannot be nested under another type"
+msgstr "字典类型不能再挂到其他类型下"
+
+msgid "A dict item cannot be promoted to a dict type"
+msgstr "字典项不能提升为字典类型"
+
+#: system/serializers/config.py
+msgid "Config key cannot be modified"
+msgstr "配置键不可修改"
+
+#: system/serializers/saved_view.py
+msgid "A view with this name already exists for this page"
+msgstr "该页面下已存在同名视图"
+
+#: system/search.py
+msgid "Departments"
+msgstr "部门"
+
+msgid "Files"
+msgstr "文件"
+
+msgid "Approval requests"
+msgstr "审批单"
+
+msgid "Leave requests"
+msgstr "请假申请"
+
+msgid "Operation logs"
+msgstr "操作日志"
+
+msgid "Scan task not found"
+msgstr "巡检任务不存在"
+
+msgid "Scan task submitted"
+msgstr "巡检任务已提交"
+
+msgid "Some roles are outside your data scope"
+msgstr "部分角色超出你的数据权限范围"
+
+msgid "Some data permissions are outside your data scope"
+msgstr "部分数据权限超出你的数据权限范围"
+
+msgid "Superuser accounts cannot be disabled or forcibly logged out by risk handling"
+msgstr "超管账号不能被风险处置停用或强制下线"
+
+msgid "No available login verification method"
+msgstr "没有可用的登录验证方式"
+
+msgid "The user has no email address; add one before inviting"
+msgstr "该用户没有邮箱地址，请先补充邮箱再邀请"
+
+msgid "This email or phone number is already bound to another account"
+msgstr "该邮箱或手机号已绑定其他账号"
+
+msgid "The verification code has expired, please request a new one"
+msgstr "验证码已过期，请重新获取"
+
+msgid "The submitted credential is invalid, please refresh the page and try again"
+msgstr "提交的凭据无效，请刷新页面后重试"
+
+msgid "%(field)s already exists"
+msgstr "%(field)s 已存在"
+
+msgid "Invalid boolean value: {}"
+msgstr "布尔值不合法：{}"
+
+msgid "emails must be a list"
+msgstr "emails 必须是数组"
+
+msgid "phoneNumbers must be a list"
+msgstr "phoneNumbers 必须是数组"
+
+msgid "Only a superuser can grant all actions (*)"
+msgstr "只有超管可以授予全部动作（*）"
+
+msgid "This username is already taken"
+msgstr "该用户名已被占用"
+
+msgid "A menu cannot be its own parent or descendant"
+msgstr "菜单不能作为自己的父级或后代"
+
+msgid "A risk scan is already running, please wait"
+msgstr "风险巡检正在运行，请稍候"
+
+msgid "A value is required when creating a sensitive config"
+msgstr "创建敏感配置时必须提供值"
+
+msgid "AI codegen draft"
+msgstr "AI 代码生成草稿"
+
+msgid "Aggregate a dataset into series (for charts): group by a field with a metric (count/sum/avg + value field), optionally truncated by day/month"
+msgstr "将数据集聚合为序列（图表用）：按字段分组并选择指标（count/sum/avg + 取值字段），可按日/月分桶"
+
+msgid "Branch route target must be a number"
+msgstr "分支路由目标必须是数字"
+
+msgid "Branch route target must be greater than the current node (node {})"
+msgstr "分支路由目标必须大于当前节点（节点 {}）"
+
+msgid "Changes truncated"
+msgstr "变更已截断"
+
+msgid "Connection test failed"
+msgstr "连通性测试失败"
+
+msgid "Connectivity test submitted"
+msgstr "已提交连通性测试"
+
+msgid "Consumption count"
+msgstr "消费次数"
+
+msgid "Consumption failures"
+msgstr "消费失败次数"
+
+msgid "Dashboard data build failed"
+msgstr "仪表盘数据构建失败"
+
+msgid "Departments bound to this data rule"
+msgstr "绑定到该数据规则的部门"
+
+msgid "Directory page size per search request during scheduled sync (10-5000)"
+msgstr "定时同步时每次搜索请求的目录页大小（10-5000）"
+
+msgid "Duplicate screen pane id: {}"
+msgstr "大屏窗格 ID 重复：{}"
+
+msgid "Each import row must be an object"
+msgstr "每行导入数据必须是对象"
+
+msgid "Encrypted at rest and never returned by the API; submit empty to keep the current token. Generate a random token below if you do not have one"
+msgstr "加密存储且 API 永不返回；留空保持当前令牌。没有令牌可在下方生成随机令牌"
+
+msgid "Existing assignments stay unchanged after disabling"
+msgstr "停用后现有分配保持不变"
+
+msgid "Failed to start the approval flow"
+msgstr "发起审批流失败"
+
+msgid "Field {} sensitive must be boolean"
+msgstr "字段 {} 的敏感标记必须是布尔值"
+
+msgid "File fingerprint is required, please refresh the page and retry"
+msgstr "缺少文件指纹，请刷新页面后重试"
+
+msgid "Filter op {} requires a text field: {}"
+msgstr "筛选操作 {} 需要文本字段：{}"
+
+msgid "Filter value does not match field type: {}"
+msgstr "筛选值与字段类型不匹配：{}"
+
+msgid "Filter value of {} must be a user id"
+msgstr "筛选值 {} 必须是用户 ID"
+
+msgid "Force password change after N days (0 = never)"
+msgstr "密码 N 天后强制修改（0 = 不强制）"
+
+msgid "Global whitelist of MFA methods available to accounts (empty = all enabled methods)"
+msgstr "账号可用的 MFA 方法全局白名单（空 = 全部已启用方法）"
+
+msgid "Group field is not in dataset columns"
+msgstr "分组字段不在数据集列中"
+
+msgid "Ingest error"
+msgstr "摄取错误"
+
+msgid "Ingest status"
+msgstr "摄取状态"
+
+msgid "Initiator roles"
+msgstr "发起角色"
+
+msgid "Initiator roles must be a list"
+msgstr "发起角色必须是列表"
+
+msgid "Invalid NL query limit"
+msgstr "NL 查询条数限制无效"
+
+msgid "Invalid application id"
+msgstr "应用 ID 无效"
+
+msgid "Invalid approval task id"
+msgstr "审批任务 ID 无效"
+
+msgid "Invalid chunk index"
+msgstr "分块索引无效"
+
+msgid "Invalid cursor"
+msgstr "游标无效"
+
+msgid "Invalid date trunc"
+msgstr "时间分桶无效"
+
+msgid "Invalid date trunc in dashboard card: {}"
+msgstr "仪表盘卡片时间分桶无效：{}"
+
+msgid "Invalid date trunc in pane: {}"
+msgstr "大屏窗格时间分桶无效：{}"
+
+msgid "Invalid file fingerprint"
+msgstr "文件指纹无效"
+
+msgid "Invalid group by field"
+msgstr "分组字段无效"
+
+msgid "Invalid import template id"
+msgstr "导入模板 ID 无效"
+
+msgid "Invalid menu icon"
+msgstr "菜单图标无效"
+
+msgid "Invalid message ids"
+msgstr "消息 ID 无效"
+
+msgid "Invalid metric: {}"
+msgstr "指标无效：{}"
+
+msgid "Invalid primary key"
+msgstr "主键无效"
+
+msgid "Kick the least recently active session beyond this limit (0 = unlimited)"
+msgstr "超出该上限时踢出最近最少活跃的会话（0 = 不限制）"
+
+msgid "Last consumed at"
+msgstr "最后消费时间"
+
+msgid "Limit the maximum number of rows of exported data (>=1)"
+msgstr "限制导出数据的最大行数（>=1）"
+
+msgid "Marked {} message(s) as read"
+msgstr "已将 {} 条消息标记为已读"
+
+msgid "Masked field {} cannot be aggregated"
+msgstr "已掩码字段 {} 不能参与聚合"
+
+msgid "Menus scoped by this data rule"
+msgstr "该数据规则作用的菜单"
+
+msgid "Missing configuration: WEBHOOK_URL"
+msgstr "缺少配置：WEBHOOK_URL"
+
+msgid "Multi-value relation {} is not supported as a dataset column"
+msgstr "多值关系 {} 不能作为数据集列"
+
+msgid "Multipart form field index is invalid"
+msgstr "multipart 表单字段索引无效"
+
+msgid "Multipart form field nesting is too deep"
+msgstr "multipart 表单字段嵌套过深"
+
+msgid "Multipart form field shape conflicts"
+msgstr "multipart 表单字段结构冲突"
+
+msgid "Multipart form parse error"
+msgstr "multipart 表单解析失败"
+
+msgid "No data was deleted"
+msgstr "未删除任何数据"
+
+msgid "No effective fields to update"
+msgstr "没有可更新的有效字段"
+
+msgid "No permission to read dataset designer metadata"
+msgstr "无权读取数据集设计器元数据"
+
+msgid "Not equal to, the field value must differ from the given value."
+msgstr "不等于，字段值必须与给定值不同。"
+
+msgid "Only the delegator can delete a delegation"
+msgstr "只有委托人可以删除委托"
+
+msgid "Parse file error"
+msgstr "文件解析失败"
+
+msgid "Permission codes cannot be batch updated together with menus or directories"
+msgstr "权限码不能与菜单或目录一起批量更新"
+
+msgid "Please select the data"
+msgstr "请选择数据"
+
+msgid "Processing"
+msgstr "处理中"
+
+msgid "Reassign these departments before deleting the rule"
+msgstr "删除规则前请先重新分配这些部门"
+
+msgid "Reassign these users before deleting the rule"
+msgstr "删除规则前请先重新分配这些用户"
+
+msgid "Recent passwords that cannot be reused (0 = disabled)"
+msgstr "不可复用的近期密码数量（0 = 关闭）"
+
+msgid "Referenced tasks"
+msgstr "被引用任务"
+
+msgid "Reject passwords found in known breach corpora"
+msgstr "拒绝已知泄露密码库中的密码"
+
+msgid "Remove the rule from these menus first if they must keep current visibility"
+msgstr "如这些菜单需保留当前可见性，请先将规则从这些菜单移除"
+
+msgid "Render mode"
+msgstr "渲染模式"
+
+msgid "Request headers"
+msgstr "请求头"
+
+msgid "Response body truncated"
+msgstr "响应体已截断"
+
+msgid "SMS provider implementation invalid: {}"
+msgstr "短信服务实现无效：{}"
+
+msgid "Secret configured"
+msgstr "密钥已配置"
+
+msgid "Secret is too long (max 256 characters)"
+msgstr "密钥过长（最多 256 个字符）"
+
+msgid "Sorting not saved: no valid data"
+msgstr "排序未保存：没有有效数据"
+
+msgid "Source instance"
+msgstr "来源实例"
+
+msgid "Source model"
+msgstr "来源模型"
+
+msgid "Succeeded"
+msgstr "已成功"
+
+msgid "Template only supports {{ variable }} interpolation"
+msgstr "模板仅支持 {{ variable }} 变量插值"
+
+msgid "The DOCX document is too large after decompression"
+msgstr "DOCX 文档解压后过大"
+
+msgid "The action failed, please try again later"
+msgstr "操作失败，请稍后重试"
+
+msgid "The export failed, please try again later or contact the administrator"
+msgstr "导出失败，请稍后重试或联系管理员"
+
+msgid "The form is bound to an approval flow; submit through the flow"
+msgstr "表单已绑定审批流，请通过流程提交"
+
+msgid "The submission is finished (approved or cancelled) and cannot be modified"
+msgstr "提交已完成（已通过或已取消），不能修改"
+
+msgid "The task failed, please try again later"
+msgstr "任务失败，请稍后重试"
+
+msgid "This account requires MFA; please sign in from the main login page"
+msgstr "该账号需要 MFA，请从主登录页登录"
+
+msgid "Too many applications in one batch (max {})"
+msgstr "单批应用过多（最多 {}）"
+
+msgid "Too many initiator roles"
+msgstr "发起角色过多"
+
+msgid "Too many rows to validate at once (max {})"
+msgstr "单次校验行数过多（最多 {}）"
+
+msgid "Unknown action for dashboard channel"
+msgstr "仪表盘通道动作未知"
+
+msgid "Unknown or disabled role codes: %(codes)s"
+msgstr "未知或已停用的角色编码：%(codes)s"
+
+msgid "Unsupported assignee type: {}"
+msgstr "不支持的审批人类型：{}"
+
+msgid "Unsupported timeout action: {}"
+msgstr "不支持的超时动作：{}"
+
+msgid "Users bound to this data rule"
+msgstr "绑定到该数据规则的用户"
+
+msgid "Value field is not numeric in dataset"
+msgstr "取值字段不是数据集中的数值字段"
+
+msgid "Webhook url must use https (loopback http is allowed for local testing)"
+msgstr "Webhook 地址必须使用 https（本地联调允许回环 http）"
+
+msgid "You are not allowed to initiate this flow"
+msgstr "你无权发起该流程"
+
+msgid "strict = role without field permission config sees no columns; inherit = no extra pruning"
+msgstr "strict = 未配置字段权限的角色看不到列；inherit = 不额外裁剪"
+
+msgid "{succeeded} transferred, {failed} failed"
+msgstr "已转交 {succeeded} 条，失败 {failed} 条"
+
+msgid "File URL must be an http(s) address"
+msgstr "文件地址必须是 http(s) 链接"
+
+msgid "Create and dispatch a new run of an export, import or scheduled report record (same pipeline, audited)"
+msgstr "创建并派发导出、导入或定时报表记录的新一轮执行（同一条流水线，留痕审计）"
+
+msgid "Field {} help text is too long"
+msgstr "字段 {} 的帮助文案过长"
+
+msgid "Field {} label is too long"
+msgstr "字段 {} 的标签过长"
+
+msgid "Field {} option text is too long"
+msgstr "字段 {} 的选项文案过长"
+
+msgid "Form schema is too large"
+msgstr "表单结构过大"
+
+msgid "Too many recipients (max 100)"
+msgstr "收件人过多（最多 100 个）"
+
+msgid "Not found"
+msgstr "未找到"
+
+#: identity/utils/user_invite.py
+msgid "WEB_SITE_URL is not configured and the request host is not an allowed host; configure WEB_SITE_URL"
+msgstr "未配置 WEB_SITE_URL，且请求 Host 不在 ALLOWED_HOSTS 中；请配置 WEB_SITE_URL"

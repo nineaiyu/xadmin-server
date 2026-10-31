@@ -826,3 +826,15 @@ def test_scope_entry_length_and_count_limits(superuser):
         response = PersonalAccessTokenViewSet.as_view({"post": "create"})(request)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert not PersonalAccessToken.objects.filter(name="many-scope").exists()
+
+
+def test_pat_of_soft_deleted_user_rejected(superuser):
+    """软删用户的机器凭证必须失效（离职/违规账号软删后 PAT 仍可用的历史缺口）。"""
+    response = _create_token(superuser)
+    plain = response.data["data"]["token"]
+    superuser.delete()  # 软删只写 deleted_at，不改 is_active
+    superuser.refresh_from_db()
+    assert superuser.deleted_at is not None and superuser.is_active
+
+    with pytest.raises(AuthenticationFailed):
+        _auth_request(plain)

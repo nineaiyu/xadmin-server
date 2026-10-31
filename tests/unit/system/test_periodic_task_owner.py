@@ -204,7 +204,7 @@ class TestDispatchCreatorAttribution:
             body=([], {}),
         )
         execution = TaskExecution.objects.get(periodic_task=task)
-        data = TaskExecutionSerializer(execution).data
+        data = TaskExecutionSerializer(execution, ignore_field_permission=True).data
         assert data["creator"]["pk"] == owner_user.pk
         assert owner_user.username in data["creator"]["label"]
 

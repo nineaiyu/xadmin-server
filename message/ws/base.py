@@ -121,15 +121,30 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
             except Exception as e:
                 logger.error("failed to decode json", exc_info=e)
                 return
+            if not isinstance(content, dict):
+                logger.error("invalid ws frame payload type: %s", type(content).__name__)
+                await self.close()
+                return
             action = content.get("action")
             if not action:
                 logger.error(f"action not exists. so close. {content}")
                 await asyncio.sleep(3)
                 await self.close()
                 return
-            if mid := content.get("mid"):
+            mid = content.get("mid")
+            # mid 来自客户端：先做长度/类型校验，避免任意长键与高频造键
+            if isinstance(mid, str) and 0 < len(mid) <= 64:
                 set_mid_result_to_cache(mid, content)
             data = content.get("data", {})
+            # 聊天类上行必须是对象；ping/userinfo 等控制帧允许空载荷
+            if action in (
+                MessageAction.CHAT_MESSAGE.value,
+                MessageAction.CHAT_REACTION.value,
+                MessageAction.CHAT_READ.value,
+            ) and not isinstance(data, dict):
+                logger.error("invalid ws action data type. action=%s", action)
+                await self.close()
+                return
             match action:
                 case MessageAction.PING.value:
                     # 心跳直收。旧实现先把 ping 投进 channel layer 队列再由

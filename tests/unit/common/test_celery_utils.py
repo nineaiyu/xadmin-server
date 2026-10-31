@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 """packages/xadmin-common/common/celery/utils.py：任务日志路径与定时任务注册。"""
 
-from datetime import timedelta
-
 import pytest
 
 from common.celery.utils import (
     CELERY_LOG_MAGIC_MARK,
-    eta_second,
     get_celery_task_log_path,
     get_task_log_path,
     make_dirs,
@@ -33,12 +30,6 @@ def test_get_celery_task_log_path_uses_settings(tmp_path, settings):
     path = get_celery_task_log_path("task-1")
     assert path.startswith(str(tmp_path / "logs"))
     assert path.endswith("task-1.log")
-
-
-def test_eta_second_future():
-    # 两次调用间存在微秒差，用 1s 容差断言偏移量
-    diff = eta_second(30) - eta_second(0)
-    assert timedelta(seconds=29) < diff <= timedelta(seconds=31)
 
 
 def test_log_magic_mark():

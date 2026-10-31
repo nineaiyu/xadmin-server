@@ -1,6 +1,5 @@
 import json
 import textwrap
-import traceback
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
@@ -152,16 +151,22 @@ class Message:
 
     @staticmethod
     def send_msg(receive_user_ids: Any, backends_msg_mapper: dict[Any, Any]) -> None:
+        # 收件人只查一次：渠道数可达 7，逐渠道重复 same query 无收益
+        users = list(get_users_by_pks(receive_user_ids))
         for backend, msg in backends_msg_mapper.items():
             try:
                 backend = BACKEND(backend)
                 client = backend.client()
-                users = get_users_by_pks(receive_user_ids)
                 client.send_msg(users, **msg)
             except NotImplementedError:
                 continue
-            except Exception:
-                traceback.print_exc()
+            except Exception:  # noqa: BLE001 单渠道失败不影响其他渠道
+                # 只记录后端名与接收人数，不记录正文/凭据
+                logger.exception(
+                    "notification send failed. backend=%s recipients=%s",
+                    backend,
+                    len(receive_user_ids or []),
+                )
 
     @classmethod
     def send_test_msg(cls, user: Any = None) -> None:

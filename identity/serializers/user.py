@@ -243,13 +243,16 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
         if roles:
             pks = [getattr(item, "pk", item) for item in roles]
             assert_within_data_scope(
-                UserRole.objects.filter(pk__in=pks), user, _("Role is outside your assignable scope")
+                UserRole.objects.filter(pk__in=pks), user, _("Role is outside your assignable scope"), pks=pks
             )
         rules = attrs.get("rules")
         if rules:
             pks = [getattr(item, "pk", item) for item in rules]
             assert_within_data_scope(
-                DataPermission.objects.filter(pk__in=pks), user, _("Data permission is outside your assignable scope")
+                DataPermission.objects.filter(pk__in=pks),
+                user,
+                _("Data permission is outside your assignable scope"),
+                pks=pks,
             )
 
     def _assert_target_mutable(self) -> None:
@@ -279,7 +282,11 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
                 # AESCipherV2(username) 加密串，若拿提交原文校验，收紧
                 # 大小写/数字规则后密文无法稳定满足（hex/base64 形态随机），
                 # 会导致合法密码被拒。
-                if settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED:
+                if getattr(self.request, "_ai_plain_password", False):
+                    # AI 内部动作提交的是服务端校验后的明文（参数经 ActionSpec 白名单校验，
+                    # 非浏览器直传），不能按前端密文协议解密
+                    plain_password = password
+                elif settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED:
                     # 密文模式：前端建号提交的是加密串，解密失败直接拒绝，
                     # 不再把密文/明文误当密码落库（导入/脚本等明文提交场景应关闭该开关）
                     try:
@@ -332,11 +339,10 @@ class ResetPasswordSerializer(serializers.Serializer):
 
     def update(self, instance: Any, validated_data: Any) -> Any:
         ensure_local_password_changeable(instance)
-        try:
-            password = AESCipherV2(instance.username).decrypt(validated_data.get("password"))
-        except Exception as e:
-            # 解密失败视同不满足密码策略，与下方规则校验同文案拒绝（避免裸异常落成 500）
-            raise serializers.ValidationError(_("Password does not match security rules")) from e
+        from identity.serializers.userinfo import decrypt_submitted_password
+
+        # 与本人改密/建号同口径：密文开关关闭时（导入/E2E 等）按明文处理
+        password = decrypt_submitted_password(instance, validated_data.get("password"))
         if not check_password_rules(password, instance.is_superuser):
             raise serializers.ValidationError(_("Password does not match security rules"))
         if check_leak_password(password):

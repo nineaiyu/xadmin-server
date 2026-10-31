@@ -169,3 +169,28 @@ celery 结果后端的 task_id 是全局命名空间；`test-result` 回读必�
 | 键 | TTL | 说明 |
 |----|-----|------|
 | `ai_profile_test_task_{task_id}` | 3600s（`AI_PROFILE_TEST_TASK_TTL`） | `{profile: <pk>, user: <pk>}` 归属映射；提交时写入，回读时与当前档案/用户比对，未登记或不匹配一律 `1001`。缓存不可用时提交不失败，但回读 fail-closed。 |
+
+## 十二、内核手写键登记（2026-10-31）
+
+以下键由 `packages/xadmin-common/common/` 内手写（含 `cache.add` 型），纳入
+`scripts/check_cache_keys.py --strict` 的 R1（命名空间前缀）/ R3（前缀冲突）扫描：
+
+| 键 | 位置 | TTL / 语义 |
+|----|------|-----------|
+| `metadata_payload_*` | `core/modelset/metadata.py` | 300s；字段权限 / 角色菜单 / 字典 / 模块裁剪变更时整族失效 |
+| `data_permission_grants_*` / `data_permission_grants_version` | `core/filter.py` | 300s / 全局版本号；授权规则与用户/部门/菜单绑定变更即失效 |
+| `pat_scope_fallback_*` | `core/permission.py` | 60s；PAT 作用域解析降级兜底 |
+| `api_app_quota_*` / `api_app_rate_*` / `pat_ip_rejected_*` | `core/auth/authentication.py` | 应用配额 / 速率 / 被拒 IP 缓存 |
+| `throttle_*` | `core/throttle.py` | DRF 限流计数（PAT 维度） |
+| `celery_active_worker_probe` | `core/modelset/import_export/celery_utils.py` | 工作进程存活探测短缓存 |
+| `csp_report_{ident}` | `api/csp.py` | CSP 上报节流（`cache.add`） |
+| `backup_failure_alert_{ident}` / `ops_alert_{ident}` | `alerts/backup.py` / `alerts/ops.py` | 告警节流（`cache.add`），窗口内只发一次 |
+| `task_failure_alert_{task_name}` | `celery/failure_handler.py` | 任务失败告警节流（`cache.add`） |
+| `monitor_thresholds_reconcile_at` | `notifications.py` | 监控阈值对账时间戳 |
+| `view_task_{id}` / `view_task_summary_{id}` | `tasks.py` | 任务分片进度 / 汇总（1d；汇总带重入锁） |
+| `auth_verify_code_{target}` / `auth_verify_code_send_at_{target}` / `_failed` | `utils/verify_code.py` | 验证码 / 发送间隔限流 / 失败计数 |
+| `auth_temp_token_<sha256>` | `utils/token.py` | 临时令牌（键不落明文） |
+| `CacheBaseState_{class}_{key}` | `cache/state.py` | 原子占位互斥（`cache.add`） |
+| `xadmin:metrics:celery_tasks*` | `metrics.py` | Prometheus 任务指标聚合 |
+| `xadmin:lock:*` | `cache/lock.py` | 缓存写锁（ReentrantLock） |
+| `DELAY_RUN_*` / `MERGE_DELAY_RUN_*` | `decorators/debounce.py` | 防抖 / 合并延迟任务登记 |

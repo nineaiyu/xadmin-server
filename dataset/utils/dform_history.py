@@ -69,30 +69,46 @@ def merged_fields(form: Any) -> list[Any]:
     """当前 schema 字段 + 历史快照中当前已删除的字段（历史字段追加标注）。
 
     顺序：当前 schema 原序在前，历史字段按版本从新到旧补在末尾（key 去重）。
+
+    敏感性按「任一版本敏感即敏感」合并：字段由敏感改为非敏感后，历史提交里
+    的旧值仍是敏感数据——导出口径若跟随当前 schema，会把这些值明文导出
+    （列表/详情按提交快照掩码，导出成了旁路）。
     """
     fields = fields_of(form.schema)
-    seen = {key_of(item) for item in fields}
+    sensitivity = {key_of(item): bool(item.get("sensitive")) for item in fields}
+    seen = set(sensitivity)
     for snapshot in form.schema_history or []:
         if not isinstance(snapshot, dict):
             continue
         for item in fields_of(snapshot.get("schema")):
             key = key_of(item)
+            sensitivity[key] = sensitivity.get(key, False) or bool(item.get("sensitive"))
             if key in seen:
                 continue
             seen.add(key)
             fields.append(_as_historical(item))
-    return fields
+    return [{**item, "sensitive": sensitivity.get(key_of(item), bool(item.get("sensitive")))} for item in fields]
 
 
 def merged_fields_of_forms(forms: Any) -> list[Any]:
-    """跨表单合并（导出口径）：按表单顺序拼接并标注历史字段，key 去重保序。"""
-    seen, fields = set(), []
+    """跨表单合并（导出口径）：按表单顺序拼接并标注历史字段，key 去重保序。
+
+    同 key 在不同表单的敏感性可能不同（A 表单敏感、B 表单普通）：合并后
+    按「任一表单敏感即敏感」处理，导出列不会因为先遇到普通表单而明文。
+    """
+    seen: dict[str, int] = {}
+    fields: list[Any] = []
     for form in forms:
         for item in merged_fields(form):
             key = key_of(item)
-            if not key or key in seen:
+            if not key:
                 continue
-            seen.add(key)
+            if key in seen:
+                index = seen[key]
+                if item.get("sensitive"):
+                    fields[index] = {**fields[index], "sensitive": True}
+                continue
+            seen[key] = len(fields)
             fields.append(item)
     return fields
 

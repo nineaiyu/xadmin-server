@@ -18,10 +18,18 @@ from identity.models import UserInfo
 MAX_USER_OPTIONS = 20
 
 
-def search_user_options(keyword: str = "", pks: str = "", limit: int = MAX_USER_OPTIONS) -> list[Any]:
-    """返回候选用户列表（pk/用户名/昵称）；无关键字且无合法主键时返回空列表。"""
+def search_user_options(keyword: str = "", pks: str = "", limit: int = MAX_USER_OPTIONS, user: Any = None) -> list[Any]:
+    """返回候选用户列表（pk/用户名/昵称）；无关键字且无合法主键时返回空列表。
+
+    ``user`` 非空时套用数据权限（与列表同口径）：只按 is_active 枚举会让
+    仅持 dept 列表权限的部门管理员跨部门探测/枚举用户。
+    """
     keyword = (keyword or "").strip()
     queryset = UserInfo.objects.filter(is_active=True)
+    if user is not None:
+        from common.core.filter import get_filter_queryset
+
+        queryset = get_filter_queryset(queryset, user)
     if keyword:
         queryset = queryset.filter(Q(username__icontains=keyword) | Q(nickname__icontains=keyword))
     else:

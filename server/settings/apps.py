@@ -60,7 +60,9 @@ def build_installed_apps(xadmin_apps: list[str]) -> list[str]:
     # 演示种子命令（seed_demo_* 家族）条件注册：生产环境（非 DEBUG 且未启用 demo
     # app）不注册，manage.py 不再暴露演示数据入口；公开演示部署（XADMIN_APPS 含
     # demo，可 DEBUG=false）、开发与测试环境注册。命令名与行为与迁出前一致。
-    if "demo" in xadmin_apps or CONFIG.DEBUG or CONFIG.DEBUG_DEV:
+    # XADMIN_APPS 支持 "demo" 与 "demo.apps.DemoConfig" 两种写法：统一按点号首段判定
+    xadmin_labels = {app.split(".", 1)[0] for app in xadmin_apps}
+    if "demo" in xadmin_labels or CONFIG.DEBUG or CONFIG.DEBUG_DEV:
         apps.insert(apps.index("common.apps.CommonConfig"), "demo_seed.apps.DemoSeedConfig")
     apps.append("django.contrib.postgres")
     if CONFIG.DEBUG or CONFIG.DEBUG_DEV:

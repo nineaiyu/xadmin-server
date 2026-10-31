@@ -98,6 +98,18 @@ class BlockUtilBase:
         cache.delete(key_block)
 
     @classmethod
+    def unblock_account(cls, user: Any) -> None:
+        """清理同一账号 username/email/phone 三套标识的失败计数与封锁键。
+
+        失败计数按「本次提交的标识」分桶：只清 username 会留下 email/phone 的封锁键，
+        表现为「解禁无效」。
+        """
+        identifiers = {getattr(user, "username", ""), getattr(user, "email", ""), getattr(user, "phone", "")}
+        for identifier in identifiers:
+            if identifier:
+                cls.unblock_user(str(identifier))
+
+    @classmethod
     def is_user_block(cls, username: str) -> bool:
         block_key = cls.BLOCK_KEY_TMPL.format(username)
         return bool(cache.get(block_key))

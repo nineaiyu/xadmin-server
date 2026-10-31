@@ -210,13 +210,18 @@ class TestVerifyRoundTrip:
         return str(token)
 
     def _spy_get_many(self, monkeypatch):
-        import django.core.cache as django_cache
+        """挂在 django-redis 客户端上：吊销读取绕过 IGNORE_EXCEPTIONS 降级包装，
+        不再经过 cache.get_many 代理层。"""
+        from django.core.cache import cache
 
+        client = cache.__dict__["_connections"]["default"].client
         calls = []
-        original = django_cache.cache.get_many
+        original = client.get_many
         monkeypatch.setattr(
-            "django.core.cache.cache.get_many",
+            client,
+            "get_many",
             lambda keys, *args, **kwargs: (calls.append(list(keys)), original(keys, *args, **kwargs))[1],
+            raising=False,
         )
         return calls
 
@@ -307,3 +312,21 @@ class TestBatchForceLogoutUsers:
             ServerAccessToken(old_token).verify()
         assert BlacklistedToken.objects.filter(token__user=target).exists()
         assert UserTokenRevokedCache(target.pk).get_storage_cache() is not None
+
+
+def test_revocation_cache_failure_fails_closed(monkeypatch):
+    """Redis 故障时吊销判断必须 fail-closed：不能把「状态未知」当作未吊销。"""
+    from django.core.cache import cache
+
+    user = _make_user()
+    token = _access_token(user)
+
+    client = cache.__dict__["_connections"]["default"].client
+    monkeypatch.setattr(
+        client,
+        "get_many",
+        lambda keys, *args, **kwargs: (_ for _ in ()).throw(RuntimeError("redis down")),
+        raising=False,
+    )
+    with pytest.raises(TokenError):
+        ServerAccessToken(token.encode()).verify()

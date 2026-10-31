@@ -149,5 +149,14 @@ class McpServerViewSet(
             audit_mcp_call(request.user, server, tool, False, exc.message, arguments)
             return ApiResponse(code=1001, detail=exc.message)
         summary = summarize_tool_result(result)
-        audit_mcp_call(request.user, server, tool, not summary["is_error"], summary["text"][:200], arguments)
+        from common.core.oplog_recorder import desensitize_payload
+
+        audit_mcp_call(
+            request.user,
+            server,
+            tool,
+            not summary["is_error"],
+            str(desensitize_payload(summary["text"]))[:200],
+            arguments,
+        )
         return ApiResponse(data={"tool": tool, **summary})

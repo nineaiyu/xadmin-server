@@ -15,6 +15,7 @@ from ai.services.assistant.ai_usage import (
     quota_error,
     quota_limits,
     record_usage,
+    refresh_stream_slot,
     release_stream_slot,
     stream_slots_in_use,
     today_usage,
@@ -219,8 +220,58 @@ class TestQuota:
         assert stream_slots_in_use() == 1
         assert acquire_stream_slot() is True
 
+    def test_expired_slot_recounted_by_heartbeat(self, monkeypatch):
+        """长会话跨过 TTL 后计数键被清零：心跳把在途槽重新计回，避免上限被稀释。"""
+        from django.core.cache import cache
+
+        from ai.services.assistant.ai_usage import STREAM_SLOT_KEY
+        from common.core.config import SysConfig
+
+        monkeypatch.setattr(type(SysConfig), "AI_QUOTA_MAX_CONCURRENT_STREAMS", property(lambda self: 2), raising=False)
+        assert acquire_stream_slot() is True
+        cache.delete(STREAM_SLOT_KEY)  # 模拟 TTL 过期（在途流仍未结束）
+        assert stream_slots_in_use() == 0
+        refresh_stream_slot()
+        assert stream_slots_in_use() == 1, "心跳必须把过期后的在途槽重新计入"
+        release_stream_slot()
+        assert stream_slots_in_use() == 0
+
+    def test_stream_heartbeats_while_events_flow(self, monkeypatch):
+        """流式事件推进时按时间窗续期（不是只在 acquire 时续一次）。"""
+        from ai.services.assistant import ai_stream_slots
+        from ai.services.assistant.ai_usage import tracked_chat_stream
+
+        recorded = []
+        monkeypatch.setattr(ai_stream_slots, "STREAM_SLOT_REFRESH_INTERVAL", 0)
+        monkeypatch.setattr(ai_stream_slots, "refresh_stream_slot", lambda: recorded.append(True))
+
+        class Client:
+            model = "m"
+            last_usage = None
+
+            def chat_stream(self, messages, **overrides):
+                for _ in range(3):
+                    yield {"type": "content", "text": "x"}
+
+        stream = tracked_chat_stream(None, "docs", Client(), [{"role": "user", "content": "hi"}])
+        assert list(stream)
+        assert len(recorded) == 3, "每个流式事件都应触发（节流窗口设为 0 时）续期"
+        assert stream_slots_in_use() == 0
+
 
 class TestTrackedWrappers:
+    def test_prepare_ask_enforces_quota_at_service_layer(self, superuser, monkeypatch):
+        """配额检查下沉到服务层：ask / ask_stream / prepare_ask 的新调用方不会漏检。"""
+        from django.core.exceptions import ValidationError
+
+        from ai.services.assistant import ai, ai_usage
+
+        monkeypatch.setattr(ai_usage, "quota_error", lambda user, feature="": "quota hit")
+        monkeypatch.setattr(ai, "is_enabled", lambda: True)
+        with pytest.raises(ValidationError) as excinfo:
+            ai.prepare_ask("问题", user=superuser)
+        assert "quota hit" in str(excinfo.value)
+
     def test_tracked_chat_records_usage(self, superuser, monkeypatch):
         from ai.services.assistant.ai_usage import tracked_chat
 
@@ -283,3 +334,33 @@ class TestTrackedWrappers:
         assert [item["text"] for item in events] == ["a", "b"]
         assert stream_slots_in_use() == 0  # 生成器结束后释放
         assert AiUsageRecord.objects.get().tokens_total == 7
+
+    def test_async_stream_interruption_records_usage(self, superuser, monkeypatch):
+        """异步流被客户端关闭时也要记一次 interrupted（成本不能漏账）。"""
+        import asyncio
+
+        from ai.services.assistant import ai_usage
+        from ai.services.assistant.ai_async import tracked_chat_stream_async
+
+        recorded: list[dict[str, object]] = []
+        monkeypatch.setattr(ai_usage, "record_usage", lambda *args, **kwargs: recorded.append(kwargs))
+        monkeypatch.setattr(ai_usage, "invalidate_usage_cache", lambda user: None)
+        monkeypatch.setattr(ai_usage, "acquire_stream_slot", lambda: True)
+        monkeypatch.setattr(ai_usage, "release_stream_slot", lambda: None)
+
+        class AsyncClient:
+            model = "m"
+            last_usage = None
+
+            async def chat_stream(self, messages, **overrides):
+                yield {"type": "content", "text": "a"}
+                yield {"type": "content", "text": "b"}
+
+        async def _consume() -> None:
+            source = tracked_chat_stream_async(superuser, "docs", AsyncClient(), [])
+            assert (await source.__anext__())["text"] == "a"
+            await source.aclose()
+
+        asyncio.run(_consume())
+        assert len(recorded) == 1
+        assert recorded[0]["ok"] is False and recorded[0]["detail"] == "interrupted"

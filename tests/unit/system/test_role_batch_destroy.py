@@ -25,11 +25,11 @@ def _batch_delete(user, pks):
 
 class TestBuiltinRoleBatchDestroy:
     def test_batch_delete_builtin_blocked(self, superuser):
-        """批删清单只含内置角色：请求成功但内置角色不被软删。"""
+        """批删清单只含内置角色：全部被守卫拒绝，返回 1004 且角色不被软删。"""
         sync_builtin_roles()
         role = UserRole.objects.get(code="SystemAdmin")
         response = _batch_delete(superuser, [role.pk])
-        assert response.data.get("code") == 1000
+        assert response.data.get("code") == 1004
         role.refresh_from_db()
         assert role.deleted_at is None
         assert UserRole.all_objects.filter(code="SystemAdmin", deleted_at__isnull=False).exists() is False

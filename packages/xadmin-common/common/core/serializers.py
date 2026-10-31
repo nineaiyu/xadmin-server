@@ -144,7 +144,16 @@ class BaseModelSerializer(ModelSerializer):
         """
         super().__init__(instance, data, **kwargs)
         self.request: Request = get_current_request()
+        # 先记录显式豁免参数：无请求/事件循环分支也要用它决定是否 fail-closed
+        self.ignore_field_permission = self.ignore_field_permission or ignore_field_permission
         if self.request is None:
+            # 无请求上下文无法判定角色字段权限：输出 fail-closed（内部导出等需要
+            # 全字段的调用方必须显式传 ``ignore_field_permission=True``）；不裁
+            # ``self.fields``——写入校验与关联字段推断仍需完整字段表。
+            if not self.ignore_field_permission and kernel_required_setting("PERMISSION_FIELD_ENABLED"):
+                logger.warning(
+                    "serializer without request context; field permission fail-closed: %s", type(self).__name__
+                )
             return
         # 事件循环线程内不做字段收敛：ASGI 下 URLconf 首次加载发生在事件循环线程，
         # 而声明式嵌套序列化器（字段在类体实例化）与 @extend_schema 响应里的 schema
@@ -154,8 +163,6 @@ class BaseModelSerializer(ModelSerializer):
         # 请求 deepcopy 重做绑定与收敛，输出口径不受影响。
         if _running_in_event_loop():
             return
-        # 记录显式豁免参数，供输出侧（to_representation 脱敏）与 get_allow_fields 同口径判断
-        self.ignore_field_permission = self.ignore_field_permission or ignore_field_permission
         allowed = self.get_allow_fields(fields, ignore_field_permission)
         for field_name in set(self.fields) - allowed:
             self.fields.pop(field_name)
@@ -278,7 +285,17 @@ class BaseModelSerializer(ModelSerializer):
         掩码与豁免口径集中在 ``common.core.mask.apply_output_mask``（与关联字段、
         全局搜索共用同一实现）；只脱敏输出，写入不受影响（写入侧的掩码回写守护
         在 to_internal_value）。
+
+        无请求上下文时输出 fail-closed：无法判定角色字段权限，返回空对象而不是
+        全字段（内核承诺「未配置 = 零字段」）；显式 ``ignore_field_permission`` 放行。
         """
+        if not self.ignore_field_permission and kernel_required_setting("PERMISSION_FIELD_ENABLED"):
+            # 根序列化器无请求上下文 → fail-closed；声明式嵌套序列化器跟随根请求
+            # （嵌套实例在类体创建、自身没有 request，但只要祖先链上有请求就属可信输出）
+            if not self._has_request_context():
+                return {}
+            if _running_in_event_loop() and getattr(self, "parent", None) is None:
+                return {}
         ret = super().to_representation(instance)
         model = getattr(getattr(self, "Meta", None), "model", None)
         request = self.request
@@ -287,6 +304,15 @@ class BaseModelSerializer(ModelSerializer):
         user = getattr(request, "user", None)
         self._inject_row_ownership(ret, instance, user)
         return apply_output_mask(ret, request, user, model, self.ignore_field_permission)
+
+    def _has_request_context(self) -> bool:
+        """自身或祖先序列化器链上是否有请求上下文。"""
+        node: Any = self
+        while node is not None:
+            if getattr(node, "request", None) is not None:
+                return True
+            node = getattr(node, "parent", None)
+        return False
 
     def to_internal_value(self, data: Any) -> Any:
         """写入侧统一入口：丢弃「掩码回写」的字段值（数据完整性守护）。
@@ -307,11 +333,19 @@ class BaseModelSerializer(ModelSerializer):
         rules = get_mask_rules(model._meta.label_lower)
         if not rules:
             return
-        rule_map: dict[str, Any] = {}
-        for rule in rules:
-            rule_map.setdefault(rule["field"], rule)
+        from common.core.mask import mask_role_pks
+
+        role_pks = mask_role_pks(self.request, getattr(self.request, "user", None))
         for name in list(ret):
-            rule = rule_map.get(name)
+            # 与输出脱敏同源：按 sort + 角色命中选规则，不能拿首条规则误伤其它角色
+            rule = next(
+                (
+                    item
+                    for item in rules
+                    if item.get("field") == name and (not item.get("roles") or bool(role_pks & set(item["roles"])))
+                ),
+                None,
+            )
             field = self.fields.get(name)
             if rule is None or field is None:
                 continue

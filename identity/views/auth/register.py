@@ -18,10 +18,14 @@ from common.cache.lock import ReentrantLock
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
 from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
 from identity.models import DeptInfo, UserInfo
 from identity.services.auth_login import complete_login
 from identity.services.token_issue_login import issue_session_token
 from identity.utils.auth import decrypt_submitted, verify_sms_email_code
+
+logger = get_logger(__name__)
+
 from settings.services import (
     RegisterBlockUtil,
     check_leak_password,
@@ -97,14 +101,30 @@ class RegisterViewAPIView(GenericAPIView):
         if query_key == "username":
             default = {}
 
-        # 防并发注册导致手机/邮箱/用户名重复：token 化锁安全释放（可重入、事务外立即释放）
-        with ReentrantLock("register_user", timeout=10):
-            # username 在 DB 层全局唯一，回收站中的同名用户仍占用唯一约束；
-            # 必须走 all_objects 校验，否则软删除同名用户会让 create 抛 IntegrityError 500
-            # （与 UserSerializer.validate_username 口径保持一致）
-            if UserInfo.all_objects.filter(**{query_key: target}).exists():
+        # 防并发注册导致手机/邮箱/用户名重复：锁到事务提交后释放，避免第二个请求
+        # 在第一个请求提交前读到「不存在」；等待上限 5s，锁被长期占用时退化为
+        # 唯一约束兜底（不能返回 500）
+        from django.db import IntegrityError
+
+        from common.cache.lock import LockNotOwnedError
+
+        def _create_registered_user() -> Any:
+            # 唯一性口径统一为「活跃行」：软删账号的邮箱/用户名可复用（DB 部分唯一索引同口径）
+            if UserInfo.objects.filter(**{query_key: target}).exists():
                 return ApiResponse(code=1002, detail=_("The account already exists, please try another one"))
-            user = UserInfo.objects.create_user(username=username, password=password, nickname=username, **default)
+            try:
+                return UserInfo.objects.create_user(username=username, password=password, nickname=username, **default)
+            except IntegrityError:
+                return ApiResponse(code=1002, detail=_("The account already exists, please try another one"))
+
+        try:
+            with ReentrantLock("register_user", timeout=10, blocking_timeout=5, release_on_commit=True):
+                user = _create_registered_user()
+        except LockNotOwnedError:
+            logger.warning("register lock busy, fallback to unique constraint")
+            user = _create_registered_user()
+        if isinstance(user, ApiResponse):
+            return user
 
         # 注册即留存首条密码历史（建号链路统一口径）；后续改密的「最近 N 次不可复用」覆盖初始密码
         record_password_hash(user, user.password)

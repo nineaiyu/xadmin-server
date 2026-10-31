@@ -74,3 +74,24 @@ class TestDisposalLadder:
         settings.CAPTCHA_FAIL_STEP = "0,0,0"
         for _ in range(30):
             assert disposal.register_failure(_dims()) == {"force_hard": False, "cooldown": 0}
+
+
+class TestAccountDimensionIsolation:
+    """账号维度必须绑定客户端标识：匿名者无法用他人账号触发全局冷却。"""
+
+    def test_same_account_different_ip_does_not_share_cooldown(self, settings):
+        settings.CAPTCHA_FAIL_STEP = "1,1,2"
+        victim = disposal.dimension_keys(ip_hash="victim-ip", action="identity.login.basic", account="acct-hash")
+        attacker = disposal.dimension_keys(ip_hash="attacker-ip", action="identity.login.basic", account="acct-hash")
+
+        assert disposal.register_failure(attacker)["cooldown"] == 900
+        assert disposal.cooldown_remaining(attacker) > 0
+        assert disposal.cooldown_remaining(victim) == 0
+
+    def test_same_account_same_ip_shares_cooldown(self, settings):
+        settings.CAPTCHA_FAIL_STEP = "1,1,2"
+        first = disposal.dimension_keys(ip_hash="shared-ip", action="identity.login.basic", account="acct-hash")
+        second = disposal.dimension_keys(ip_hash="shared-ip", action="identity.login.basic", account="acct-hash")
+
+        disposal.register_failure(first)
+        assert disposal.cooldown_remaining(second) > 0

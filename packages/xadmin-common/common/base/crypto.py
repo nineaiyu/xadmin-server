@@ -15,6 +15,7 @@ import hashlib
 import os
 import sys
 from collections.abc import Iterable
+from functools import lru_cache
 from typing import Any
 
 from Cryptodome import Random
@@ -87,7 +88,13 @@ class AESCipherV3:
         不记录生成密钥，解密时按「当前 → 历史」逐个尝试）。"""
         self.key = key.encode("utf-8") if isinstance(key, str) else key
         self.legacy_masters = tuple(m.encode("utf-8") if isinstance(m, str) else m for m in legacy_masters)
-        self._legacy = AESCipher(key.decode("utf-8") if isinstance(key, bytes) else key)
+        # v1（CBC）密文不记录生成密钥：按「当前 → 历史」逐个尝试，与 v3 同口径。
+        # 历史实现固定用当前主密钥构造，FIELD_ENCRYPTION_KEY 分离后 4.x 遗留密文
+        # 会被错钥解成空串（padding 碰巧合法）或直接抛异常
+        self._legacy_ciphers = [
+            AESCipher(master.decode("utf-8") if isinstance(master, bytes) else master)
+            for master in (self.key, *self.legacy_masters)
+        ]
 
     def _derive_key(self, salt: bytes, master: bytes | None = None) -> bytes:
         derived = HKDF(
@@ -113,8 +120,20 @@ class AESCipherV3:
     def decrypt(self, enc: str | bytes) -> str:
         text = enc.decode("utf-8", "ignore") if isinstance(enc, bytes) else enc
         if not text.startswith(self.PREFIX):
-            # 旧格式（v1 CBC）回落：存量密文继续可读
-            return self._legacy.decrypt(enc)
+            # 旧格式（v1 CBC）回落：存量密文继续可读；错钥可能「成功」解出空串，
+            # 因此空结果继续尝试下一个历史主密钥，全部失败才按旧行为返回空值
+            legacy_error: Exception | None = None
+            for legacy in self._legacy_ciphers:
+                try:
+                    plain = legacy.decrypt(enc)
+                except Exception as exc:  # noqa: BLE001 错钥/畸形密文：尝试下一个主密钥
+                    legacy_error = exc
+                    continue
+                if plain:
+                    return plain
+            if legacy_error is not None:
+                raise legacy_error
+            return ""
         data = base64.b64decode(text[len(self.PREFIX) :])
         salt = data[: self.SALT_LENGTH]
         nonce = data[self.SALT_LENGTH : self.SALT_LENGTH + self.NONCE_LENGTH]
@@ -125,12 +144,17 @@ class AESCipherV3:
         for master in (self.key, *self.legacy_masters):
             cipher = AES.new(self._derive_key(salt, master), AES.MODE_GCM, nonce=nonce)
             try:
-                plain = cipher.decrypt_and_verify(body[: -self.TAG_LENGTH], body[-self.TAG_LENGTH :])
-                return plain.decode("utf-8")
+                verified = cipher.decrypt_and_verify(body[: -self.TAG_LENGTH], body[-self.TAG_LENGTH :])
+                return verified.decode("utf-8") if isinstance(verified, bytes) else str(verified)
             except ValueError as exc:
                 last_error = exc
         assert last_error is not None  # 循环至少尝试一次当前主密钥
         raise last_error
+
+
+@lru_cache(maxsize=8)
+def _cached_signer(primary: str, legacy: tuple[str, ...]) -> AESCipherV3:
+    return AESCipherV3(primary, legacy_masters=legacy)
 
 
 def get_signer() -> AESCipherV3:
@@ -141,34 +165,23 @@ def get_signer() -> AESCipherV3:
     轮换时把旧 SECRET_KEY（或旧 FIELD_ENCRYPTION_KEY）保留在
     ``FIELD_ENCRYPTION_LEGACY_KEYS`` 中即可读出存量密文（写新读旧，逐项试钥）。
     未配置时维持旧行为（主密钥 = SECRET_KEY）。改动密钥需重启进程。
+
+    结果按密钥材料缓存：字段读写是高频热路径，不能每行重建 HKDF/CBC 派生器。
     """
     encryption_key = kernel_setting("FIELD_ENCRYPTION_KEY")
     secret_key = kernel_required_setting("SECRET_KEY")
-    primary = encryption_key or secret_key
+    primary = str(encryption_key or secret_key)
     legacy: tuple[str, ...] = ()
     if encryption_key:
         legacy = tuple(
-            key for key in (secret_key, *kernel_setting("FIELD_ENCRYPTION_LEGACY_KEYS")) if key and key != primary
+            str(key)
+            for key in (secret_key, *kernel_setting("FIELD_ENCRYPTION_LEGACY_KEYS"))
+            if key and str(key) != primary
         )
-    return AESCipherV3(primary, legacy_masters=legacy)
+    return _cached_signer(primary, legacy)
 
 
 signer: AESCipherV3 = get_signer()
-
-
-class AesBaseCrypt:
-    def __init__(self) -> None:
-        self.cipher = AESCipher(self.__class__.__name__)
-
-    def set_encrypt_uid(self, key: str) -> str:
-        return self.cipher.encrypt(key.encode("utf-8")).decode("utf-8")
-
-    def get_decrypt_uid(self, enc: str | bytes) -> str | None:
-        try:
-            return self.cipher.decrypt(enc)
-        except Exception as e:
-            logger.warning(f"decrypt {enc!r} failed. exception:{e}")
-            return None
 
 
 def get_choices_dict(choices: Iterable[Any], disabled_choices: list[Any] | None = None) -> list[dict[str, Any]]:

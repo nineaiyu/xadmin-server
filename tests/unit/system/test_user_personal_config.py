@@ -78,3 +78,12 @@ class TestBatchCreateUserPersonalConfig:
         # 事务回滚：user_b 的记录未落库，user_a 的存量记录未被破坏
         assert UserPersonalConfig.objects.filter(key=KEY, owner=user_b).exists() is False
         assert UserPersonalConfig.objects.get(key=KEY, owner=user_a).value == {"old": True}
+
+
+def test_config_key_is_immutable_on_update():
+    """运行期改名会让旧 key 缓存不失效、加密域漂移：更新必须拒绝改 key。"""
+    user = UserInfo.objects.create_user(username="cfg_rename", password="Test@123456")
+    row = UserPersonalConfig.objects.create(owner=user, key=KEY, value={"a": 1})
+    serializer = UserPersonalConfigSerializer(instance=row, data={"key": "ui.other"}, partial=True)
+    assert not serializer.is_valid()
+    assert "key" in serializer.errors

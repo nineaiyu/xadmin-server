@@ -88,7 +88,6 @@ def test_demo_dept_is_isolated_top_level_tenant():
         "31ea340e-0c81-4d62-a141-90efc61f17e6",
         "86dc227d-6676-4c22-a28d-c98b77d0def6",
         "7218022d-0141-4df4-a134-c2d0f2676dc9",
-        "9678b554-0659-4ca1-a9a0-c17d283cd774",
     } <= set(demo["rules"])
 
 
@@ -131,8 +130,10 @@ def test_demo_scope_permissions_cover_userinfo_and_business_rows():
         "identity.post",
     } <= read_scope
 
-    read_ext = {rule["table"] for rule in by_name["演示只读扩展"]["rules"]}
-    assert {
+    # 治理面（日志/文件/下载中心/任务/Webhook/开放平台）不得进入演示数据权限：
+    # 读权限 + 全量数据规则会让游客看到真实用户与审计数据
+    assert "演示只读扩展" not in by_name
+    governed_tables = {
         "system.menu",
         "system.datapermission",
         "system.modellabelfield",
@@ -149,7 +150,13 @@ def test_demo_scope_permissions_cover_userinfo_and_business_rows():
         "identity.accountrisk",
         "approval.approvaldelegation",
         "django_celery_beat.periodictask",
-    } <= read_ext
+    }
+    demo_scope_names = ("演示部门用户范围", "演示写入数据范围", "演示只读数据范围")
+    for name in demo_scope_names:
+        fields = by_name[name]
+        # 只拦截「全量」规则：value.user.id（仅本人）等收敛规则是安全的
+        tables = {rule["table"] for rule in fields.get("rules") or [] if rule.get("type") == "value.all"}
+        assert not (tables & governed_tables), f"演示数据权限 {name} 越界覆盖治理面：{tables & governed_tables}"
 
 
 def test_demo_role_has_avatar_upload_but_no_identity_writes():

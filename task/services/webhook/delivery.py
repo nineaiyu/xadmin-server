@@ -109,11 +109,14 @@ def build_payload(event: str, data: dict[str, Any] | None = None) -> dict[str, A
 
 
 def dispatch_deliveries(deliveries: Any) -> None:
-    """把已落库的投递交给异步任务（调用方负责异常口径）。"""
+    """把已落库的投递交给异步任务（单条失败不阻断其余投递）。"""
     from task.webhook_tasks import dispatch_deliver_webhook
 
     for delivery in deliveries:
-        dispatch_deliver_webhook(str(delivery.pk))
+        try:
+            dispatch_deliver_webhook(str(delivery.pk))
+        except Exception:  # noqa: BLE001 broker/派发异常不阻断同批其余投递
+            logger.warning("dispatch webhook delivery failed: %s", delivery.pk, exc_info=True)
 
 
 def send_test_delivery(subscription: Any) -> tuple[bool, Any]:

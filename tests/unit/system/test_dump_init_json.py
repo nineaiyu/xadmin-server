@@ -23,6 +23,7 @@ SEED_FILES = [
     "menu.json",
     "menumeta.json",
     "systemconfig.json",
+    "datadict.json",
     "datapermission.json",
     "fieldpermission.json",
     "modellabelfield.json",
@@ -62,3 +63,21 @@ def test_dump_init_json_empty_models_still_produce_valid_files(tmp_path):
         path = tmp_path / "loadjson" / filename
         assert path.exists(), f"缺少导出文件 {filename}"
         json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_save_json_failure_raises_and_removes_partial_file(tmp_path, monkeypatch):
+    """导出失败必须中止并清理半截文件，不能静默返回 0（后续分层导出会读到坏 JSON）。"""
+    from django.core.management.base import CommandError
+
+    from system.management.commands import dump_init_json as dump_cmd
+
+    def _boom(*args, **kwargs):
+        raise ValueError("probe serialize failure")
+
+    monkeypatch.setattr(dump_cmd.serializers, "serialize", _boom)
+    target = tmp_path / "menu.json"
+
+    with pytest.raises(CommandError, match="dump failed"):
+        dump_cmd.Command().save_json(dump_cmd.Menu.objects.all(), target)
+
+    assert not target.exists()

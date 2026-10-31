@@ -19,12 +19,11 @@ AI_ACTIONS = {
         path="/api/audit/logs/operation",
         params={
             "module": {"type": "string", "required": False, "in": IN_QUERY, "description": "Module keyword"},
-            "creator": {
-                "type": "string",
+            "creator_id": {
+                "type": "pk",
                 "required": False,
                 "in": IN_QUERY,
-                "target": "creator_id",
-                "description": "Operator username or id",
+                "description": "Operator user id (from user search)",
             },
         },
     ),

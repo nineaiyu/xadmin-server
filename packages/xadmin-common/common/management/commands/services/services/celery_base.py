@@ -19,7 +19,6 @@ class CeleryBaseService(BaseService):
     def cmd(self) -> Any:
         print(f"\n- Start Celery as Distributed Task Queue: {self.queue.capitalize()}")
         os.environ.setdefault("LC_ALL", "C.UTF-8")
-        os.environ.setdefault("PYTHONOPTIMIZE", "1")
 
         if os.getuid() == 0:
             os.environ.setdefault("C_FORCE_ROOT", "1")

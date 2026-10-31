@@ -38,6 +38,17 @@ if [[ "${archive_mode}" != "on" ]]; then
   fail=1
 fi
 
+# 归档器以容器内 postgres 用户执行；Linux 上 bind mount 目录默认 root:root，
+# 不可写时归档全部失败、WAL 只能堆在 pg_wal（空目录无法提前暴露，必须探测权限）。
+if [[ "${archive_mode}" == "on" ]]; then
+  if docker exec -u postgres "${PG_CONTAINER}" sh -c 'test -w "$1"' _ "${PG_ARCHIVE_DIR}" >/dev/null 2>&1; then
+    echo "归档目录可写（postgres）= yes"
+  else
+    echo "[FAIL] 归档目录对 postgres 用户不可写：执行 chown -R \$(docker exec ${PG_CONTAINER} stat -c '%u:%g' /var/lib/postgresql/data) <宿主归档目录>"
+    fail=1
+  fi
+fi
+
 command_line="$(docker exec "${PG_CONTAINER}" psql -U "${PG_USER}" -d "${PG_DATABASE}" -Atc "show archive_command" 2>/dev/null || true)"
 echo "archive_command = ${command_line}"
 timeout_value="$(docker exec "${PG_CONTAINER}" psql -U "${PG_USER}" -d "${PG_DATABASE}" -Atc "show archive_timeout" 2>/dev/null || true)"

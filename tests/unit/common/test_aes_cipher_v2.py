@@ -155,3 +155,28 @@ def test_both_formats_share_decrypt_entry(key, plain):
     v2 = _encrypt_v2(key, plain)
     assert cipher.decrypt(legacy) == plain
     assert cipher.decrypt(v2) == plain
+
+
+class TestV3LegacyMasterFallback:
+    """v1(CBC) 密文的主密钥回落：FIELD_ENCRYPTION_KEY 分离后旧密文必须仍可读。"""
+
+    def test_v1_ciphertext_decrypts_with_legacy_master(self):
+        from common.base.crypto import AESCipher, AESCipherV3
+
+        old = AESCipher("old-secret")
+        ciphertext = old.encrypt("sk-legacy-value")
+
+        signer = AESCipherV3("new-master", legacy_masters=("old-secret",))
+
+        assert signer.decrypt(ciphertext) == "sk-legacy-value"
+
+    def test_v1_skips_candidate_that_yields_empty(self):
+        """错钥偶尔会「解出」空串：必须继续尝试历史主密钥而不是提前返回空值。"""
+        from common.base.crypto import AESCipher, AESCipherV3
+
+        old = AESCipher("old-secret")
+        ciphertext = old.encrypt("sk-legacy-value")
+
+        signer = AESCipherV3("new-master", legacy_masters=("old-secret", "third-old"))
+
+        assert signer.decrypt(ciphertext) == "sk-legacy-value"

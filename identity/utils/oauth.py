@@ -179,7 +179,15 @@ def validate_providers(value: Any) -> list[dict[str, Any]]:
             raise ValidationError(_("Duplicate OAuth provider key: {}").format(key))
         seen.add(key)
 
-        for url_key in ("authorize_url", "token_url", "userinfo_url", "issuer", "discovery_url", "jwks_uri"):
+        for url_key in (
+            "authorize_url",
+            "token_url",
+            "userinfo_url",
+            "issuer",
+            "discovery_url",
+            "jwks_uri",
+            "gettoken_url",
+        ):
             url = str(item.get(url_key) or "")
             if not url:
                 continue
@@ -287,7 +295,7 @@ def consume_nonce(state: str) -> str | None:
     return typed_value
 
 
-def set_state_cookie(response: Any, state: str) -> None:
+def set_state_cookie(response: Any, state: str, secure: bool = False) -> None:
     """登录 state 写入浏览器会话 Cookie（与发起授权的浏览器绑定）。
 
     仅在登录 authorize 下发；回调校验一致后才消费 state。
@@ -298,6 +306,7 @@ def set_state_cookie(response: Any, state: str) -> None:
         max_age=OAUTH_STATE_TTL,
         httponly=True,
         samesite="Lax",
+        secure=secure,
     )
 
 

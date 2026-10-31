@@ -257,11 +257,34 @@ def collect_redis_info() -> Any:
         import redis as redis_lib
 
         broker = redis_lib.from_url(settings.CELERY_BROKER_URL)
-        data["queues"] = {queue: broker.llen(queue) for queue in ("celery", "default", "heavy")}
+        data["queues"] = {queue: broker.llen(queue) for queue in _celery_queue_names()}
         broker.close()
     except Exception as e:  # noqa: BLE001 memory broker / broker 不可用时不影响其余指标
         data["queues"] = {"error": str(e)}
     return data
+
+
+def _celery_queue_names() -> list[str]:
+    """从 Celery 配置推导队列名（默认队列 + 路由显式指定的队列）。
+
+    硬编码队列名会与部署配置（compose 改队列/裁剪 worker）脱节，监控页队列长度
+    恒 0 掩盖真实积压；这里与定时任务队列下拉同源（``CELERY_TASK_DEFAULT_QUEUE``
+    + ``CELERY_TASK_ROUTES``）。
+    """
+    names = {str(getattr(settings, "CELERY_TASK_DEFAULT_QUEUE", None) or "celery")}
+    routes = getattr(settings, "CELERY_TASK_ROUTES", None)
+    if callable(routes):
+        try:
+            from common.celery.routing import get_all_task_routes
+
+            routes = get_all_task_routes()
+        except Exception:  # noqa: BLE001 路由收集失败只保留默认队列
+            routes = {}
+    for route in (routes or {}).values():
+        queue = route.get("queue") if isinstance(route, dict) else route
+        if queue:
+            names.add(str(queue))
+    return sorted(names)
 
 
 def collect_celery_status() -> Any:

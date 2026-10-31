@@ -109,7 +109,7 @@ def get_password_check_rules(user: Any) -> list[dict[str, Any]]:
 
 
 def check_password_rules(password: str, is_super_admin: bool = False) -> bool:
-    pattern = r"^"
+    pattern = r""
     if settings.SECURITY_PASSWORD_UPPER_CASE:
         pattern += r"(?=.*[A-Z])"
     if settings.SECURITY_PASSWORD_LOWER_CASE:
@@ -124,6 +124,6 @@ def check_password_rules(password: str, is_super_admin: bool = False) -> bool:
     else:
         min_length = settings.SECURITY_PASSWORD_MIN_LENGTH
     # 字符白名单约束整串（历史写法只在首字符生效，后续 .{n,} 允许空格/反斜杠/Unicode）
-    pattern += allowed + f"{{{min_length},}}$"
-    match_obj = re.match(pattern, password)
-    return bool(match_obj)
+    pattern += allowed + f"{{{min_length},}}"
+    # fullmatch 而非 $：Python 的 $ 允许末尾换行通过，白名单字符集实际被绕过
+    return bool(re.fullmatch(pattern, password))

@@ -47,6 +47,10 @@ SCAN_DIRS = (
     "approval",
     "notifications",
     "devtools",
+    "mfa",
+    "server",
+    "integrations",
+    "demo",
 )
 IGNORE_PARTS = ("/tests/", "/migrations/")
 
@@ -54,7 +58,7 @@ IGNORE_PARTS = ("/tests/", "/migrations/")
 DECORATOR_PREFIXES = ("magic_cache_data_", "magic_cache_response_")
 
 # 手写键的调用形态（DOTALL：容忍多行调用，键与调用同行或紧随其后）
-KEY_CALL_RE = re.compile(r"cache\.(?:get_or_set|set|get|delete)\(\s*(f?)(['\"])([^'\"\n]+)\2")
+KEY_CALL_RE = re.compile(r"cache\.(?:get_or_set|add|set|get|delete)\(\s*(f?)(['\"])([^'\"\n]+)\2")
 # 键常量声明（``cache.set(REPORT_CACHE_KEY, ...)`` 这类把键抽成常量的写法）：
 # 调用点正则看不到键字面量，只有登记表核对能发现；单独列出供人工登记
 KEY_CONST_RE = re.compile(r"^([A-Z][A-Z0-9_]*)\s*=\s*(f?)(['\"])([^'\"\n]+)\3", re.MULTILINE)
@@ -156,6 +160,9 @@ def main() -> int:
             flag = "  <-- R3 冲突：多个文件共用同一键前缀"
             violations.append(prefix)
         for rel, lineno, key in sites:
+            # R1：静态键必须带命名空间前缀（至少一段下划线命名空间）
+            if "_" not in key and key not in KNOWN_NON_CACHE_KEYS:
+                violations.append(f"R1:{rel}:{lineno}:{key}")
             print(f"  {rel}:{lineno}  key={key}{flag}")
 
     print(f"\n== 失效点（{len(invalidations)} 处）==")
@@ -163,9 +170,9 @@ def main() -> int:
         print(f"  {item}")
 
     if violations:
-        print(f"\n[R3] 键前缀冲突：{violations}")
+        print(f"\n[R1/R3] 违规：{violations}")
     else:
-        print("\n[R3] 无键前缀冲突。")
+        print("\n[R1/R3] 无违规。")
     return 1 if (args.strict and violations) else 0
 
 

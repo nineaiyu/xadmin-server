@@ -7,6 +7,7 @@
 """
 
 import pytest
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from ai.models.ai import AiKnowledgeChunk, AiKnowledgeDocument
 from ai.services.assistant.ai import retrieve
@@ -544,3 +545,48 @@ class TestUploadAsyncIngest:
         doc.refresh_from_db()
         assert doc.ingest_status == AiKnowledgeDocument.IngestStatus.FAILED
         assert "chunk build failed" in doc.ingest_error
+
+
+class TestSyncMissingDocsGuard:
+    """docs/ 不可用时同步必须失败：不能把「镜像没带文档」当成「文件全被删」清空知识库。"""
+
+    def test_missing_docs_dir_aborts_without_deleting(self, tmp_path, monkeypatch):
+        from ai.models.ai import AiKnowledgeDocument
+        from ai.services.knowledge import ai_knowledge
+
+        existing = AiKnowledgeDocument.objects.create(
+            path="docs/keep.md",
+            source_type=AiKnowledgeDocument.SourceType.REPO,
+            title="保留",
+            content="内容",
+            content_hash=AiKnowledgeDocument.hash_content("内容"),
+        )
+        monkeypatch.setattr(ai_knowledge, "DOCS_DIR", tmp_path / "missing-docs")
+        monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
+
+        with pytest.raises(DjangoValidationError):
+            ai_knowledge.sync_knowledge()
+
+        assert AiKnowledgeDocument.objects.filter(pk=existing.pk).exists()
+
+    def test_existing_empty_docs_dir_skips_cleanup(self, tmp_path, monkeypatch):
+        from ai.models.ai import AiKnowledgeDocument
+        from ai.services.knowledge import ai_knowledge
+
+        existing = AiKnowledgeDocument.objects.create(
+            path="docs/keep.md",
+            source_type=AiKnowledgeDocument.SourceType.REPO,
+            title="保留",
+            content="内容",
+            content_hash=AiKnowledgeDocument.hash_content("内容"),
+        )
+        empty_docs = tmp_path / "docs"
+        empty_docs.mkdir()
+        monkeypatch.setattr(ai_knowledge, "DOCS_DIR", empty_docs)
+        monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
+
+        summary = ai_knowledge.sync_knowledge()
+
+        assert summary["removed"] == 0
+        assert summary["cleanup_skipped"] is True
+        assert AiKnowledgeDocument.objects.filter(pk=existing.pk).exists()

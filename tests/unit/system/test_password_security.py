@@ -229,6 +229,19 @@ class TestAdminResetFlow:
         assert instance.check_password("New@Password123")
         assert instance.password_histories.count() == 1
 
+    def test_reset_plaintext_mode_accepts_submitted_password(self, normal_user, settings):
+        """密文开关关闭（导入/脚本/E2E）：管理员重置按提交明文生效，不被解密失败拦截。"""
+        settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED = False
+        serializer = ResetPasswordSerializer(
+            instance=normal_user,
+            data={"password": "New@Password123"},
+            context={"request": SimpleNamespace(user=normal_user)},
+        )
+        assert serializer.is_valid(), serializer.errors
+        instance = serializer.save()
+        instance.refresh_from_db()
+        assert instance.check_password("New@Password123")
+
     def test_reset_rejects_leak_password(self, normal_user, settings):
         settings.SECURITY_PASSWORD_LEAK_CHECK_ENABLED = True
         serializer = self._reset_password(normal_user, "Password@123")

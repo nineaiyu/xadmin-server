@@ -23,6 +23,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 
 from common.core.config import SysConfig
+from common.core.data_scope import KeyChoices, resolve_rule, rule_to_q
 from common.core.filter import BaseFilterSet, PkMultipleFilter, get_filter_queryset
 from common.core.modelset import ListDeleteModelSet, OnlyExportDataAction
 from common.core.pagination import DynamicPageNumber
@@ -64,6 +65,27 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
             Q(channel_name__in=online_user_sockets) | Q(channel_name="", last_active__gte=cutoff)
         )
 
+    def _fallback_scope_q(self, user: Any) -> Any:
+        """无适用数据权限时的安全默认范围：本人 + 本部门（含子部门）。
+
+        在线会话是账号安全视角的数据，非超管天然应能看到「自己与同组织成员」；
+        显式数据权限（含「全部数据」）仍由 ``get_filter_queryset`` 优先求值。
+        """
+        scope = None
+        for rule in (
+            {"type": KeyChoices.OWNER, "field": "creator"},
+            {"type": KeyChoices.OWNER_DEPARTMENTS, "field": "dept_belong"},
+        ):
+            rule_q = rule_to_q(resolve_rule(rule, user))
+            scope = rule_q if scope is None else scope | rule_q
+        return scope
+
+    def data_permission_fallback_q(self, request: Any) -> Any:
+        user = getattr(request, "user", None)
+        if user is None or getattr(user, "is_superuser", False):
+            return None
+        return self._fallback_scope_q(user)
+
     def _ensure_target_logout_allowed(self, creator: Any) -> None:
         request = getattr(self, "request", None)
         # 无请求上下文 = 进程内直接调用（单测/内部清理），不属于 HTTP 越权面
@@ -77,7 +99,11 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         request = getattr(self, "request", None)
         if request is None or request.user.is_superuser or not user_pks:
             return set(user_pks), set()
-        scoped = get_filter_queryset(UserSession.objects.filter(creator_id__in=user_pks), request.user)
+        scoped = get_filter_queryset(
+            UserSession.objects.filter(creator_id__in=user_pks),
+            request.user,
+            fallback_q=self.data_permission_fallback_q(request),
+        )
         visible = set(scoped.values_list("creator_id", flat=True))
         return visible, set(user_pks) - visible
 
@@ -90,7 +116,11 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         found = {str(pk): creator for pk, creator in rows.items()}
         denied = [pk for pk in session_pks if pk not in found]
         if request is not None and not request.user.is_superuser and found:
-            scoped = get_filter_queryset(UserSession.objects.filter(pk__in=list(found)), request.user)
+            scoped = get_filter_queryset(
+                UserSession.objects.filter(pk__in=list(found)),
+                request.user,
+                fallback_q=self.data_permission_fallback_q(request),
+            )
             visible = {str(pk) for pk in scoped.values_list("pk", flat=True)}
             denied.extend(pk for pk in found if pk not in visible)
             found = {pk: creator for pk, creator in found.items() if pk in visible}

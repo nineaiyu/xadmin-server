@@ -264,10 +264,11 @@ def draft_summary(drafts: list[Any]) -> str:
     return str(_("I will perform {} actions: {}").format(len(drafts), " → ".join(draft["label"] for draft in drafts)))
 
 
-def execute_action(user: Any, action_key: str, params: Any) -> dict[str, Any]:
+def execute_action(user: Any, action_key: str, params: Any, request: Any = None) -> dict[str, Any]:
     """执行动作（调用方已完成门禁/审批）：返回 (ok, detail, data) 语义的 dict。
 
     执行前做参数指向对象的行级复核（见 ``verify_action_target``）。
+    ``request`` 透传给声明式 API 动作：PAT 凭证与 scope 必须在内部 dispatch 继续生效。
     """
     spec = get_action(action_key, user)
     if spec is None:
@@ -283,7 +284,12 @@ def execute_action(user: Any, action_key: str, params: Any) -> dict[str, Any]:
     target_error = verify_action_target(user, spec, clean)
     if target_error:
         return {"ok": False, "detail": target_error, "data": {}}
-    result: dict[str, Any] = spec.execute(user, clean)
+    from ai.services.actions.ai_api_actions import ApiActionSpec
+
+    if isinstance(spec, ApiActionSpec):
+        result: dict[str, Any] = spec.execute(user, clean, request=request)
+    else:
+        result = spec.execute(user, clean)
     return result
 
 

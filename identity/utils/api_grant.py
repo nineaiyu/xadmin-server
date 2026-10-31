@@ -29,6 +29,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import PermissionDenied
 
 from common.core.data_scope import ScopeResult, compile_grant
+from common.core.data_scope.menu_scope import NO_MENU_SENTINEL
 from common.core.url_inventory import permission_path_matches
 from common.utils import get_logger
 from identity.utils.api_grant_catalog import (  # noqa: F401 目录/选项拆出后保持既有导入面
@@ -82,7 +83,7 @@ def active_grants(application: Any) -> Any:
 
 def resolve_menu_meta(menu_pk: Any) -> Any:
     """菜单权限点的 ``{"action": 动作段, "models": [模型标签]}``（短缓存）。"""
-    if not menu_pk:
+    if not menu_pk or str(menu_pk) == NO_MENU_SENTINEL:
         return None
     cache_key = MENU_META_CACHE_KEY.format(pk=menu_pk)
     try:
@@ -178,6 +179,21 @@ def _match_menu_pk(permission_data: Any, url: Any) -> Any:
     return None
 
 
+def _request_menu_pk(request: Any) -> Any:
+    """应用授权用的菜单上下文：白名单/超管出口的哨兵回退为按请求路径命中。"""
+    cached = getattr(request, "_api_grant_menu_pk", None)
+    if cached is not None:
+        return cached
+    menu_pk = getattr(getattr(request, "user", None), "menu", None)
+    if menu_pk is None or str(menu_pk) == NO_MENU_SENTINEL:
+        menu_pk = resolve_request_menu_pk(request)
+    try:
+        request._api_grant_menu_pk = menu_pk
+    except Exception:  # noqa: BLE001 自定义 request 禁止写属性时每次重算
+        pass
+    return menu_pk
+
+
 def resolve_request_model_label(request: Any, view: Any) -> Any:
     """请求的目标模型标签：优先视图 ``queryset.model``（真实资源），回退菜单绑定模型。
 
@@ -188,7 +204,7 @@ def resolve_request_model_label(request: Any, view: Any) -> Any:
     model = getattr(queryset, "model", None)
     if model is not None:
         return model._meta.label_lower
-    menu_meta = resolve_menu_meta(getattr(getattr(request, "user", None), "menu", None))
+    menu_meta = resolve_menu_meta(_request_menu_pk(request))
     models = (menu_meta or {}).get("models") or []
     return models[0] if len(models) == 1 else None
 
@@ -265,7 +281,7 @@ def enforce_application_grant(request: Any, view: Any) -> Any:
     if not grants:
         return None
     model_label = resolve_request_model_label(request, view)
-    menu_meta = resolve_menu_meta(getattr(getattr(request, "user", None), "menu", None))
+    menu_meta = resolve_menu_meta(_request_menu_pk(request))
     action = (menu_meta or {}).get("action") or ""
     matched = match_grants(grants, model_label, action)
     if not matched:

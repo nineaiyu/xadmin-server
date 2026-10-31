@@ -9,7 +9,7 @@ from typing import Any
 
 from django.core.management.base import CommandError
 from django.core.management.commands.loaddata import Command as LoadCommand
-from django.db import DEFAULT_DB_ALIAS
+from django.db import DEFAULT_DB_ALIAS, transaction
 from django.db.models.signals import ModelSignal
 
 from common.core.modules import ModuleSeedFilter
@@ -136,10 +136,12 @@ class Command(LoadCommand):
         with tempfile.TemporaryDirectory(prefix="xadmin_seed_") as target_dir:
             report = prepare(plan, target_dir, module_filter=ModuleSeedFilter.build(), using=DEFAULT_DB_ALIAS)
             self._report_notes(report, verbosity=int(options.get("verbosity", 1)))
-            super().handle(*[str(label) for label in report.fixture_labels], **options)
-            # 属性型 m2m 已从 fixture 抽出，装载后一次落库：与 loaddata 逐行 set() 等价，
-            # 但把近 500 行的「JOIN + DELETE + INSERT」三连收敛成每组两条语句
-            written = apply_m2m_relations(report.m2m)
+            # loaddata 与属性型 m2m 必须同一事务：m2m 先删后插，中途失败会留下半覆盖关系集
+            with transaction.atomic(using=DEFAULT_DB_ALIAS):
+                super().handle(*[str(label) for label in report.fixture_labels], **options)
+                # 属性型 m2m 已从 fixture 抽出，装载后一次落库：与 loaddata 逐行 set() 等价，
+                # 但把近 500 行的「JOIN + DELETE + INSERT」三连收敛成每组两条语句
+                written = apply_m2m_relations(report.m2m)
             if written:
                 self.stdout.write(f"[种子装配] 批量写入 {written} 条多对多关系（{len(report.m2m)} 组）")
 

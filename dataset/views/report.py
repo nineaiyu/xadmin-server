@@ -14,6 +14,7 @@ from rest_framework.exceptions import ValidationError
 from common.core.filter import BaseFilterSet
 from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
+from common.core.throttle import DatasetQueryThrottleMixin
 from common.swagger.utils import get_default_response_schema
 from dataset.analysis_tasks import schedule_report_run
 from dataset.models.report import Report
@@ -37,11 +38,12 @@ class ReportFilter(BaseFilterSet):
         fields = ["dataset", "frequency", "is_active"]
 
 
-class ReportViewSet(BaseAnalysisViewSet):
+class ReportViewSet(DatasetQueryThrottleMixin, BaseAnalysisViewSet):
     """定时报表"""
 
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
+    dataset_query_actions = ("run",)
     filterset_class = ReportFilter
 
     def perform_create(self, serializer: Any) -> None:
@@ -102,7 +104,16 @@ class ReportViewSet(BaseAnalysisViewSet):
             target = report.versions.filter(version=version).first()
             if target is None:
                 return ApiResponse(code=1001, detail=_("Report version not found"))
-            report.design = target.design or {}
+            # 历史设计可能引用已删除列/数值字段：回滚前按当前数据集重新规范化
+            from dataset.utils.dataset import numeric_columns_of
+            from dataset.utils.report_design import ReportDesignError, normalize_report_design
+
+            try:
+                report.design = normalize_report_design(
+                    target.design or {}, report.dataset, numeric_columns_of(report.dataset)
+                )
+            except ReportDesignError as exc:
+                return ApiResponse(code=1001, detail=str(exc))
             report.modifier = request.user
             report.save(update_fields=["design", "modifier", "updated_time"])
             snapshot_report_version(report, actor=request.user)

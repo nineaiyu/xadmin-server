@@ -52,56 +52,56 @@ def _make_row(**overrides):
 class TestSerializerBodyConvergence:
     def test_retrieve_serializer_truncates_body(self):
         row = _make_row()
-        data = OperationLogSerializer(row).data
+        data = OperationLogSerializer(row, ignore_field_permission=True).data
         assert len(data["body"]) == OPERATION_LOG_LIST_PREVIEW_MAX, "retrieve 口径与列表同级截断"
 
     def test_retrieve_serializer_masks_legacy_plaintext(self):
         """存量行里 value 键的明文凭据在读侧重脱敏后不外发。"""
         row = _make_row()
-        data = OperationLogSerializer(row).data
+        data = OperationLogSerializer(row, ignore_field_permission=True).data
         assert SECRET not in data["body"]
 
     def test_value_only_config_body_masked_on_read(self):
         """存量行（仅 value、无 key 载体）在配置写入端点按值语义兜底掩码。"""
         row = _make_row(body=json.dumps({"value": SECRET, "is_active": True}))
-        data = OperationLogSerializer(row).data
+        data = OperationLogSerializer(row, ignore_field_permission=True).data
         assert SECRET not in data["body"]
 
     def test_value_only_body_not_masked_for_other_paths(self):
         """非配置写入端点不对普通 value 字段误伤。"""
         row = _make_row(body=json.dumps({"value": SECRET}), path="/api/demo/book")
-        data = OperationLogSerializer(row).data
+        data = OperationLogSerializer(row, ignore_field_permission=True).data
         assert SECRET in data["body"]
 
     def test_response_result_truncated(self):
         row = _make_row()
-        data = OperationLogSerializer(row).data
+        data = OperationLogSerializer(row, ignore_field_permission=True).data
         assert len(data["response_result"]) == OPERATION_LOG_LIST_PREVIEW_MAX
 
     def test_changes_kept_full(self):
         """changes 是「变更历史」弹窗的渲染数据：保持全量不裁剪。"""
         row = _make_row()
-        data = OperationLogSerializer(row).data
+        data = OperationLogSerializer(row, ignore_field_permission=True).data
         assert json.dumps([{"field": "value", "old": "a", "new": "b"}]) == data["changes"]
 
     def test_short_body_untouched(self):
         """短正文（未达上限）原样返回，不因收敛丢信息。"""
         row = _make_row()
         row.body = json.dumps({"key": "SITE_TITLE", "value": "xadmin"})
-        data = OperationLogSerializer(row).data
+        data = OperationLogSerializer(row, ignore_field_permission=True).data
         assert json.loads(data["body"]) == {"key": "SITE_TITLE", "value": "xadmin"}
 
     def test_truncated_json_falls_back_to_text(self):
         """落库截断导致的残缺 JSON（解析失败）按文本截断，不抛异常。"""
         row = _make_row()
         row.body = '{"blob": "' + "z" * 600  # 非 JSON
-        data = OperationLogSerializer(row).data
+        data = OperationLogSerializer(row, ignore_field_permission=True).data
         assert len(data["body"]) == OPERATION_LOG_LIST_PREVIEW_MAX
 
     def test_list_serializer_same_bounds(self):
         """列表口径不变：同样的截断上界（回归护栏）。"""
         row = _make_row()
-        data = OperationLogListSerializer(row).data
+        data = OperationLogListSerializer(row, ignore_field_permission=True).data
         assert len(data["body"]) == OPERATION_LOG_LIST_PREVIEW_MAX
         assert SECRET not in data["body"]
 

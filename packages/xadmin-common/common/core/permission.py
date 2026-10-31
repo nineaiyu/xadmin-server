@@ -17,11 +17,10 @@ from rest_framework.permissions import BasePermission
 from common.contracts import (
     FieldPermission,
     Menu,
-    application_of_request,
     enforce_application_grant,
-    resolve_request_menu_pk,
 )
 from common.core import permission_meta
+from common.core.data_scope.menu_scope import NO_MENU_SENTINEL
 from common.core.modules import filter_menu_queryset
 from common.core.url_inventory import permission_path_matches
 from common.decorators import MagicCacheData
@@ -108,6 +107,7 @@ def get_user_permission_menus(user_obj: Any, method: Any) -> dict[str, list[tupl
     需要该端点用户持有的全部权限码做并集，避免同 path 多码时只命中其中一个。
     ``model`` 保留权限点绑定的模型 id（无绑定为 ``None``），供父级回退判定使用。
     """
+    method = "GET" if str(method).upper() == "HEAD" else method
     menu_queryset = get_user_menu_queryset(user_obj)
     if not menu_queryset:
         return {}
@@ -254,6 +254,7 @@ def match_permission_white_url(method: str, path: str) -> bool:
     """
     if not method or not path:
         return False
+    method = "GET" if str(method).upper() == "HEAD" else method
     for w_url, methods in kernel_setting("PERMISSION_WHITE_URL").items():
         if re.match(w_url, path) and ("*" in methods or method.upper() in methods):
             return True
@@ -392,13 +393,10 @@ class IsAuthenticated(BasePermission):
 
         # 应用四级授权：应用凭证存在授权规则时走白名单（模型×动作×字段×行），
         # 无规则 = 兼容模式直接跳过。三个出口统一收敛（超管 / 白名单 URL 不豁免）。
-        if request.user.is_superuser:
+        if request.user.is_superuser or self._match_white_url(request):
             request.ignore_field_permission = True
-            self._check_application_grant(request, view)
-            return True
-
-        if self._match_white_url(request):
-            request.ignore_field_permission = True
+            # 无菜单上下文写哨兵：数据权限只应用通用授权，不退化到全部菜单授权并集
+            request.user.menu = NO_MENU_SENTINEL
             self._check_application_grant(request, view)
             return True
 
@@ -413,11 +411,10 @@ class IsAuthenticated(BasePermission):
     def _check_application_grant(request: Any, view: Any) -> None:
         """应用四级授权校验（模型 × 动作级；字段/行级在各自消费点收敛）。
 
-        超管与白名单 URL 出口未解析菜单上下文（``request.user.menu`` 为空）——
-        应用凭证在此按请求路径在启用权限菜单里命中一次（动作段解析所需）。
+        白名单/超管出口的 ``request.user.menu`` 是无菜单哨兵（数据权限只走通用授权）；
+        应用授权所需的菜单上下文由 ``enforce_application_grant`` 按请求路径解析，
+        不能把哨兵改写成真实菜单，否则数据权限会退化为全部菜单授权并集。
         """
-        if getattr(request.user, "menu", None) is None and application_of_request(request) is not None:
-            request.user.menu = resolve_request_menu_pk(request)
         enforce_application_grant(request, view)
 
     @staticmethod

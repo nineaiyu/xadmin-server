@@ -5,7 +5,7 @@
 from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
@@ -15,6 +15,7 @@ from rest_framework.exceptions import ValidationError
 from common.core.filter import BaseFilterSet
 from common.core.modelset import ImpactPreviewAction
 from common.core.response import ApiResponse
+from common.core.throttle import DatasetQueryThrottleMixin
 from common.swagger.utils import get_default_response_schema
 from dataset.models.screen import Screen, ScreenClipboard, ScreenTemplate
 from dataset.serializers.screen import (
@@ -56,7 +57,7 @@ class ScreenTemplateFilter(BaseFilterSet):
         fields = ["visibility"]
 
 
-class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
+class ScreenViewSet(DatasetQueryThrottleMixin, BaseAnalysisViewSet, ImpactPreviewAction):
     """大屏
 
     含远程控制：管理端下发指令，展示端经 ``ws/screen/<pk>`` 接收。
@@ -64,6 +65,7 @@ class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
 
     queryset = Screen.objects.all()
     serializer_class = ScreenSerializer
+    dataset_query_actions = ("command",)
     filterset_class = ScreenFilter
 
     def perform_create(self, serializer: Any) -> None:
@@ -124,10 +126,31 @@ class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
             target = screen.versions.filter(version=version).first()
             if target is None:
                 return ApiResponse(code=1001, detail=_("Screen version not found"))
+            # 历史载荷可能引用已删除/不可见仪表盘或失效字段：回滚前按当前可见域复校
+            from dataset.serializers.screen import check_metric_value_fields, layout_references
+            from dataset.utils.screen_layout import (
+                ScreenLayoutError,
+                normalize_screen_free_layout,
+                normalize_screen_layout,
+            )
+
+            try:
+                dashboards, datasets_pks, datasets = layout_references(request.user, target.layout or [])
+                layout = normalize_screen_layout(target.layout or [], dashboards, datasets_pks)
+                check_metric_value_fields(layout, datasets)
+                raw_free = target.free_layout or {}
+                free_panes = raw_free.get("panes") if isinstance(raw_free, dict) else []
+                f_dashboards, f_datasets_pks, f_datasets = layout_references(request.user, free_panes or [])
+                free_layout = normalize_screen_free_layout(raw_free, f_dashboards, f_datasets_pks)
+                check_metric_value_fields(free_layout.get("panes") or [], f_datasets)
+            except ScreenLayoutError as exc:
+                return ApiResponse(code=1001, detail=str(exc))
+            except ValidationError as exc:
+                return ApiResponse(code=1001, detail="; ".join(exc.messages))
             # 快照取自已验证的历史版本，直接还原；两份载荷必须同时回写（模式不互转坐标）
-            screen.layout = target.layout or []
+            screen.layout = layout
             screen.layout_mode = target.layout_mode
-            screen.free_layout = target.free_layout or {}
+            screen.free_layout = free_layout
             screen.modifier = request.user
             screen.save(update_fields=["layout", "layout_mode", "free_layout", "modifier", "updated_time"])
             snapshot_screen_version(screen, actor=request.user)
@@ -239,15 +262,21 @@ class ScreenTemplateViewSet(BaseAnalysisViewSet):
         if guarded:
             return guarded
         version = request.data.get("version")
-        target = template.versions.filter(version=version).first()
-        if target is None:
-            return ApiResponse(code=1001, detail=_("Template version not found"))
-        template.name = target.name
-        template.group = target.group
-        template.free_layout = target.free_layout
-        template.modifier = request.user
-        template.save(update_fields=["name", "group", "free_layout", "modifier", "updated_time"])
-        snapshot_template_version(template, actor=request.user)
+        with transaction.atomic():
+            # 锁行：并发回滚/保存不能交错生成重复版本号或丢失更新
+            template = ScreenTemplate.objects.select_for_update().get(pk=template.pk)
+            target = template.versions.filter(version=version).first()
+            if target is None:
+                return ApiResponse(code=1001, detail=_("Template version not found"))
+            template.name = target.name
+            template.group = target.group
+            template.free_layout = target.free_layout
+            template.modifier = request.user
+            try:
+                template.save(update_fields=["name", "group", "free_layout", "modifier", "updated_time"])
+            except IntegrityError:
+                return ApiResponse(code=1001, detail=_("Template name already exists"))
+            snapshot_template_version(template, actor=request.user)
         return ApiResponse(
             data=ScreenTemplateSerializer(template, context=self.get_serializer_context()).data,
             detail=_("Template rolled back"),

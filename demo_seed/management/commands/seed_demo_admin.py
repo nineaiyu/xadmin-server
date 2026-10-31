@@ -56,6 +56,17 @@ logger = get_logger(__name__)
 ADMIN_USERNAME = DEMO_ADMIN_USERNAME
 ADMIN_PASSWORD = "admin123"
 ADMIN_NICKNAME = "演示管理员"
+#: 演示账号标记邮箱：命令只接管带该标记的 admin 账号。
+#: 仅按用户名判定会把真实环境里同名的普通账号重置为公开口令（甚至 --clean-only 删除）
+DEMO_ADMIN_EMAIL = f"{ADMIN_USERNAME}@demo.local"
+
+
+def is_demo_account(user: Any) -> bool:
+    """是否由演示种子创建的账号（按邮箱标记 + 非超管判定）。"""
+    if user is None or getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
+        return False
+    return str(getattr(user, "email", "") or "").strip().lower() == DEMO_ADMIN_EMAIL
+
 
 #: 演示角色（loadjson 种子定义，按 code 引用）
 DEMO_ROLE_NAME = "演示模式"
@@ -345,10 +356,10 @@ class Command(BaseCommand):
 
     def _ensure_admin(self, role: UserRole | None) -> None:
         existing = UserInfo.all_objects.filter(username=ADMIN_USERNAME).first()
-        if existing is not None and existing.is_superuser:
-            # 绝不改写真实超管的密码/权限：同名 superuser 视为正式账号，跳过
+        if existing is not None and not is_demo_account(existing):
+            # 绝不改写真实账号的密码/权限：同名非演示账号（含超管）一律跳过
             self.stdout.write(
-                self.style.WARNING(f"'{ADMIN_USERNAME}' is a superuser; demo account skipped to avoid hijacking")
+                self.style.WARNING(f"'{ADMIN_USERNAME}' exists but is not a demo account; skipped to avoid hijacking")
             )
             return
 
@@ -362,7 +373,7 @@ class Command(BaseCommand):
             user = UserInfo(
                 username=ADMIN_USERNAME,
                 nickname=ADMIN_NICKNAME,
-                email=f"{ADMIN_USERNAME}@demo.local",
+                email=DEMO_ADMIN_EMAIL,
                 is_active=True,
                 is_superuser=False,
                 is_staff=False,
@@ -396,8 +407,9 @@ class Command(BaseCommand):
     # ---------------------------------------------------------------- 清理
 
     def _clean(self) -> None:
-        # 严格限定用户名 admin 且非超管：绝不误伤 xadmin/isummer 等真实超管
-        removed = UserInfo.all_objects.filter(username=ADMIN_USERNAME, is_superuser=False).delete()[0]
+        # 严格限定「演示标记账号」：同名真实账号（含超管）一律不动
+        victims = [user for user in UserInfo.all_objects.filter(username=ADMIN_USERNAME) if is_demo_account(user)]
+        removed = UserInfo.all_objects.filter(pk__in=[user.pk for user in victims]).delete()[0]
         self.stdout.write(f"removed demo account: {removed}")
 
         role = self._demo_role()

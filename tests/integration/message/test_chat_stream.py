@@ -275,6 +275,7 @@ class TestStream:
         response = auth_client.post(STREAM_URL, {"content": "hello", "room_id": room.pk}, format="json")
         assert response.json()["code"] == 1001
 
+    @pytest.mark.django_db(transaction=True)
     def test_permission_gate_fail_closed(self, db, alice, ai_enabled, stream_stub):
         """未授予 stream:ChatRoom 权限点的普通用户 fail-closed 403。"""
         client = APIClient()

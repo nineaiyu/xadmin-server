@@ -82,6 +82,8 @@ class CeleryThreadTaskFileHandler(CeleryThreadingLoggerHandler):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.thread_id_fd_mapper: dict[Any, Any] = {}
         self.task_id_thread_id_mapper: dict[str, Any] = {}
+        # 以 task_id 为主键持有句柄：线程复用/任务跨线程结束时按任务关文件，避免 fd 泄漏
+        self.task_id_fd_mapper: dict[str, Any] = {}
         super().__init__(*args, **kwargs)
 
     def write_thread_task_log(self, thread_id: Any, record: Any) -> None:
@@ -104,11 +106,15 @@ class CeleryThreadTaskFileHandler(CeleryThreadingLoggerHandler):
         self.task_id_thread_id_mapper[task_id] = thread_id
         f = open(log_path, "ab")
         self.thread_id_fd_mapper[thread_id] = f
+        self.task_id_fd_mapper[task_id] = f
 
     def handle_task_end(self, task_id: Any) -> None:
-        ident_id = self.task_id_thread_id_mapper.get(task_id, "")
-        f = self.thread_id_fd_mapper.pop(ident_id, None)
+        ident_id = self.task_id_thread_id_mapper.pop(task_id, "")
+        f = self.task_id_fd_mapper.pop(task_id, None) or self.thread_id_fd_mapper.pop(ident_id, None)
         if f and not f.closed:
             f.write(CELERY_LOG_MAGIC_MARK)
             f.close()
-        self.task_id_thread_id_mapper.pop(task_id, None)
+        # 线程映射可能已被后续任务覆盖：只清理仍指向本任务文件句柄的项
+        for thread, opened in list(self.thread_id_fd_mapper.items()):
+            if opened is f:
+                self.thread_id_fd_mapper.pop(thread, None)

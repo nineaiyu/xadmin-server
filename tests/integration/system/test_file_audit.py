@@ -26,7 +26,9 @@ class TestUploadPolicy:
     def test_blocked_extension_rejected(self, auth_client):
         resp = _upload(auth_client, name="evil.sh", content=b"echo hi", content_type="text/x-sh")
         assert resp.data["code"] == 1002, resp.data
-        assert FileAccessLog.objects.filter(action=FileAccessLog.Action.UPLOAD).count() == 0
+        rejected = FileAccessLog.objects.filter(action=FileAccessLog.Action.UPLOAD, result=False)
+        assert rejected.count() == 1
+        assert rejected.first().filename == "evil.sh"
 
     def test_allow_list_enforced(self, auth_client, settings):
         settings.SECURITY_UPLOAD_ALLOW_EXTENSIONS = ["pdf"]

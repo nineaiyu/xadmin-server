@@ -16,12 +16,16 @@ DRF 渲染器整本工作簿进内存 → 字节串``，峰值内存约为成品
 
 与旧实现的已知差异：流式档不再给工作表加「表格样式」（``Table`` 对象需要回读
 单元格，与 write_only 互斥），改为表头冻结 + 自动筛选；列宽仍按内容估算。
+单元格类型：安全整数/浮点保持数值类型（旧实现一律写文本），前导零 / 超长整数 /
+科学计数法 / 公式前缀文本仍按文本写出（保留公式注入防护）。
 """
 
 from __future__ import annotations
 
 import json
+import math
 import os
+import re
 import tempfile
 from collections.abc import Iterable, Iterator
 from typing import Any
@@ -41,6 +45,48 @@ logger = get_logger(__name__)
 
 #: 每批从游标拉取的实例数：太小会放大往返，太大则吃掉分批收益
 STREAM_CHUNK_SIZE = 500
+
+#: 可安全保持数值类型的文本形态：无前导零、非科学计数法、无正号（`+` 另有公式语义）
+SAFE_NUMBER_RE = re.compile(r"^-?(0|[1-9]\d*)(\.\d+)?$")
+#: Excel 数值精度上限（15 位有效数字；更长整数会静默丢精度，必须按文本写出）
+EXCEL_MAX_SIGNIFICANT_DIGITS = 15
+
+
+def safe_number(text: str) -> Any:
+    """文本 → 可安全写入的数值；不满足安全条件返回 None（调用方按文本写出）。
+
+    保留数值的边界（其余一律文本，避免静默精度损失 / 科学计数误读）：
+    - 整数或小数，无前导零、无正号、非科学计数法（`1e5` / `+123` 均为文本）；
+    - 有效数字不超过 15 位（Excel 双精度上限）。
+    """
+    if not SAFE_NUMBER_RE.fullmatch(text):
+        return None
+    digits = text.lstrip("-").replace(".", "").lstrip("0")
+    if len(digits) > EXCEL_MAX_SIGNIFICANT_DIGITS:
+        return None
+    try:
+        value: Any = int(text) if "." not in text else float(text)
+    except ValueError:
+        return None
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
+def _text_cell(sheet: Any, text: str) -> Any:
+    """显式文本单元格：公式注入前缀（``=`` / ``+`` / ``-`` / ``@``）不会被判为公式。"""
+    cell = WriteOnlyCell(sheet, value=text)
+    cell.data_type = "s"
+    return cell
+
+
+def _value_cell(sheet: Any, value: Any) -> Any:
+    """数据单元格：安全数值保持数字类型，其余按文本写出（含公式注入防护）。"""
+    text = ILLEGAL_CHARACTERS_RE.sub("", str(value))
+    number = safe_number(text)
+    if number is not None:
+        return WriteOnlyCell(sheet, value=number)
+    return _text_cell(sheet, text)
 
 
 def iter_serialized_rows(
@@ -84,19 +130,13 @@ def write_excel_file(path: str, renderer: Any, titles: list[Any], rows: Iterable
 
     # 列宽：write_only 模式要求 <cols> 先于数据行写盘，而宽度必须扫完内容才知道，
     # 因此流式档不设自定义列宽（旧实现靠回读单元格算宽，与 write_only 互斥）。
-    def safe_cell(value: Any) -> Any:
-        text = ILLEGAL_CHARACTERS_RE.sub("", str(value))
-        # write_only 工作簿不回读单元格，append 的字符串会被 openpyxl 判为公式
-        # （=1+1 → data_type='f'）；显式构造文本单元格，与旧渲染器 data_type='s' 同口径。
-        cell = WriteOnlyCell(sheet, value=text)
-        cell.data_type = "s"
-        return cell
 
-    title_row = [safe_cell(cell) for cell in titles]
+    title_row = [_text_cell(sheet, ILLEGAL_CHARACTERS_RE.sub("", str(cell))) for cell in titles]
     sheet.append(title_row)
     count = 0
     for row in _iter_rendered_rows(renderer, rows, fields):
-        cells = [safe_cell(value) for value in row]
+        # 安全整数/浮点保持数值类型；超长/前导零/科学计数/公式前缀值按文本写出
+        cells = [_value_cell(sheet, value) for value in row]
         sheet.append(cells)
         count += 1
     if titles:

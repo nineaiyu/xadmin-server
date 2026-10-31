@@ -165,7 +165,8 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
 
         if not isinstance(self.attrs, (list, set)):  # 如果存在，且不是列表，则返回所有字段
             self.attrs = fields
-        extra_fields = set(self.attrs) - set(fields)  # 这些字段不在model内，并且不受权限控制
+        # 非模型字段名只豁免 pk（关联选择器需要主键）；dunder/属性展示字段不再天然绕开字段权限
+        extra_fields = set(self.attrs) & {"pk"}
 
         # 与 BaseModelSerializer.get_allow_fields 保持同一口径：按取值判断而非 hasattr，
         # 避免 request.ignore_field_permission 被显式置为 False 时仍被当作豁免

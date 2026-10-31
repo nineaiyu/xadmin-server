@@ -238,6 +238,7 @@ def audit_nl_query(
     guard 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数，缺省不写）。
     """
     from audit.services import OperationLog
+    from common.core.oplog_recorder import desensitize_payload
 
     try:
         OperationLog.objects.create(
@@ -250,7 +251,8 @@ def audit_nl_query(
                 {
                     "action": action,
                     "question": (question or "")[:120],
-                    "dsl": dsl,
+                    # DSL 含用户过滤值（可能是手机号/证件号）：与动作结果同口径脱敏
+                    "dsl": desensitize_payload(dsl),
                     "rows": rows,
                     "error": error,
                     **({"usage": usage} if usage else {}),

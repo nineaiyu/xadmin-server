@@ -23,6 +23,7 @@ CI 失败，避免文档成为无人可达的孤儿。
 """
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -42,25 +43,38 @@ def _client_root() -> Path:
     return Path(os.environ.get("XADMIN_CLIENT_DIR", REPO_ROOT.parent / "xadmin-client"))
 
 
+def _linked_targets(text: str) -> set[str]:
+    """Markdown 链接目标文件名集合：正文提一句不算索引，必须是可点击链接。"""
+    targets: set[str] = set()
+    for match in re.finditer(r"\]\(([^)]+)\)", text):
+        target = match.group(1).split("#", 1)[0].split("?", 1)[0].rstrip("/")
+        if target:
+            targets.add(Path(target).name)
+    return targets
+
+
 def collect_violations(root: Path = REPO_ROOT, client_root: Path | None = None) -> list:
     """返回违例清单（空列表 = 通过）；``root`` / ``client_root`` 参数供测试注入。"""
     violations = []
     docs = root / "docs"
     main_readme = docs / "README.md"
     main_text = main_readme.read_text(encoding="utf-8") if main_readme.is_file() else ""
+    main_targets = _linked_targets(main_text)
     for sub in INDEXED_DIRS:
         directory = docs / sub if sub else docs
         if not directory.is_dir():
             continue
         dir_readme = directory / "README.md"
         dir_text = dir_readme.read_text(encoding="utf-8") if sub and dir_readme.is_file() else ""
-        for path in sorted(directory.glob("*.md")):
-            if path.name == "README.md":
+        dir_targets = _linked_targets(dir_text)
+        candidates = directory.glob("*.md") if not sub else directory.rglob("*.md")
+        for path in sorted(candidates):
+            if path.name == "README.md" or "archive" in path.parts:
                 continue
-            if path.name in main_text or path.name in dir_text:
+            if path.name in main_targets or path.name in dir_targets:
                 continue
             violations.append(
-                f"{path.relative_to(root).as_posix()}: 未被索引引用（登记到 docs/README.md 或同目录 README.md）"
+                f"{path.relative_to(root).as_posix()}: 未被 Markdown 链接索引（登记到 docs/README.md 或同目录 README.md）"
             )
     violations.extend(collect_archive_violations(root, main_text))
     client = client_root if client_root is not None else _client_root()
@@ -68,10 +82,11 @@ def collect_violations(root: Path = REPO_ROOT, client_root: Path | None = None) 
     if client_docs.is_dir():
         client_readme = client_docs / "README.md"
         client_text = client_readme.read_text(encoding="utf-8") if client_readme.is_file() else ""
+        client_targets = _linked_targets(client_text)
         for path in sorted(client_docs.glob("*.md")):
             if path.name == "README.md":
                 continue
-            if path.name not in client_text:
+            if path.name not in client_targets:
                 violations.append(f"xadmin-client/docs/{path.name}: 未被 xadmin-client/docs/README.md 引用")
     return violations
 

@@ -9,8 +9,8 @@ import time
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
+from django.db import models, transaction
 from django.db.models import QuerySet
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -56,7 +56,9 @@ class AutoCleanFileMixin:
         else:
             filelist = self.__get_filelist(self._meta.model.objects.filter(pk=self.pk).first())
         result = super().save(*args, **kwargs)  # type: ignore[misc]  # 宿主 Model 提供基类实现（mixin 模式）
-        self.__delete_file(filelist, True)
+        if filelist:
+            # 物理删除挂到提交后：事务回滚时记录仍在，文件不能被提前删掉
+            transaction.on_commit(lambda: self.__delete_file(filelist, True))
         return result
 
     @property
@@ -92,8 +94,11 @@ class AutoCleanFileMixin:
         # 或级联删除，删除后再判定引用必然查不到（守护形同失效）
         keep_flags = {name: self.file_still_referenced(field, name) for field, name, _file in filelist}
         result = super().delete(*args, **kwargs)  # type: ignore[misc]  # 宿主 Model 提供基类实现（mixin 模式）
-        self.__delete_file(filelist, keep_flags=keep_flags)
-        self.__delete_related_files(related_filelist)
+        # 提交后再删物理文件：删除记录的事务回滚时文件必须还在
+        if filelist:
+            transaction.on_commit(lambda: self.__delete_file(filelist, keep_flags=keep_flags))
+        if related_filelist:
+            transaction.on_commit(lambda: self.__delete_related_files(related_filelist))
         return result
 
     def file_still_referenced(self, file_field_name: str, file_name: str) -> bool:
@@ -240,8 +245,21 @@ class SoftDeleteModel(models.Model):
     class Meta:
         abstract = True
 
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        mro_names = [base.__name__ for base in cls.__mro__]
+        if "AutoCleanFileMixin" in mro_names and mro_names.index("AutoCleanFileMixin") < mro_names.index(
+            "SoftDeleteModel"
+        ):
+            raise ImproperlyConfigured(
+                f"{cls.__name__}: SoftDeleteModel must precede AutoCleanFileMixin in MRO, "
+                "otherwise delete() physically removes files before soft-deleting the row"
+            )
+
     def delete(self, *args: Any, **kwargs: Any) -> int:
         """软删除：标记 deleted_at 并触发 post_save 信号（权限缓存失效依赖此链路）。"""
+        if self.deleted_at is not None:
+            return 0
         self.deleted_at = timezone.now()
         self.save(update_fields=["deleted_at"])
         return 1

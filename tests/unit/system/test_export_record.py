@@ -76,7 +76,7 @@ def test_export_async_runs_task_when_eager(superuser):
 def test_export_task_failure_records_error(superuser):
     """导出视图返回非 200 时：记录转 FAILURE 并留存错误，异常继续抛出（触发告警）。"""
     record = ExportRecord.objects.create(name="x", file_format="xlsx", params={"type": "xlsx"}, creator=superuser)
-    with mock.patch.object(UserViewSet, "as_view", side_effect=ValueError("boom")):
+    with mock.patch.object(UserViewSet, "export_data", side_effect=ValueError("boom")):
         with pytest.raises(ValueError):
             async_export_data_task.apply(
                 args=[str(record.pk), USER_VIEW_PATH, {"type": "xlsx"}, superuser.pk],
@@ -189,7 +189,7 @@ def test_log_action_reads_export_log(superuser, monkeypatch, tmp_path):
     assert response.data["data"]["finished"] is False
 
 
-def test_auto_clean_export_record_removes_file(superuser):
+def test_auto_clean_export_record_removes_file(superuser, django_capture_on_commit_callbacks):
     record = ExportRecord.objects.create(name="x", file_format="csv", creator=superuser)
     upload = UploadFile(filename="x.csv", filesize=5, mime_type="text/csv", is_tmp=True, creator=superuser)
     upload.filepath.save("x.csv", _content_file(b"a,b,c\n"), save=False)
@@ -199,7 +199,8 @@ def test_auto_clean_export_record_removes_file(superuser):
     file_path = upload.filepath.path
     ExportRecord.objects.filter(pk=record.pk).update(created_time=timezone.now() - datetime.timedelta(days=30))
 
-    removed = auto_clean_export_record_job.run()
+    with django_capture_on_commit_callbacks(execute=True):
+        removed = auto_clean_export_record_job.run()
     assert removed == 1
     assert not ExportRecord.objects.filter(pk=record.pk).exists()
     assert not UploadFile.all_objects.filter(pk=upload.pk).exists()
@@ -268,3 +269,22 @@ def test_export_async_limit_zero_disables_throttle(superuser, monkeypatch):
     ):
         response = _post_export_async(superuser)
     assert response.data["code"] == 1000
+
+
+def test_export_async_replay_uses_submitter_permission(normal_user, role, menu_factory):
+    """非超管异步导出：任务重放必须按 export-async(POST) 的权限口径放行。
+
+    历史实现用 GET 重放 export-async 路径，种子只登记 POST 权限点 → 任务 403，
+    下载中心记录停在 FAILURE。
+    """
+
+    menu = menu_factory("exportAsync:SystemUser", path="api/identity/user/export-async$", method="POST")
+    role.menu.set([menu])
+    normal_user.roles.add(role)
+
+    response = _post_export_async(normal_user)
+
+    assert response.data["code"] == 1000, response.data
+    record = ExportRecord.objects.get(pk=response.data["data"]["record_id"])
+    record.refresh_from_db()
+    assert record.status == ExportRecord.Status.SUCCESS, record.error

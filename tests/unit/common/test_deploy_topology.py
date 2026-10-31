@@ -24,6 +24,28 @@ def _server_block() -> str:
     return _compose_text().split("\n  server:")[1].split("\n  celery-worker:")[0]
 
 
+def _postgres_block() -> str:
+    return _compose_text().split("\n  postgresql:")[1].split("\n  redis:")[0]
+
+
+class TestPitrArchiveSafety:
+    """归档链路要在 Linux bind mount 的 root:root 目录上自愈，且归档写入必须原子。"""
+
+    def test_archive_dir_ownership_heals_at_startup(self):
+        """归档器以 postgres（uid 999）写 bind mount；Docker 建目录默认 root:root。"""
+        block = _postgres_block()
+        assert "gosu postgres test -w /var/lib/postgresql/archive" in block
+        assert "chown postgres:postgres /var/lib/postgresql/archive" in block
+        assert "exec /usr/local/bin/docker-entrypoint.sh" in block
+
+    def test_archive_command_writes_atomically(self):
+        """直接写目标文件 + 存在性守卫会留下半截 .gz，让该段永久归档失败。"""
+        text = _compose_text()
+        assert "%f.gz.tmp" in text
+        assert "mv /var/lib/postgresql/archive/%f.gz.tmp /var/lib/postgresql/archive/%f.gz" in text
+        assert 'gzip < %p > /var/lib/postgresql/archive/%f.gz"' not in text
+
+
 class TestBackupTopology:
     """归档/异地副本的宿主路径可由环境变量迁移到独立盘，容器内路径不变。"""
 
@@ -80,6 +102,12 @@ class TestDocsRegistered:
     def test_pitr_doc_documents_archive_migration(self):
         doc = (ROOT / "docs/ops/pitr.md").read_text(encoding="utf-8")
         assert "PITR_ARCHIVE_DIR" in doc
+
+    def test_pitr_doc_documents_archive_failure_playbook(self):
+        """归档失败 → pg_wal 滞留的事故处置必须留在运维文档里。"""
+        doc = (ROOT / "docs/ops/pitr.md").read_text(encoding="utf-8")
+        for token in ("pg_wal", "archive_status", "chown", "pg_stat_archiver"):
+            assert token in doc
 
 
 @pytest.mark.parametrize(

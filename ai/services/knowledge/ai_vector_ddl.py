@@ -38,6 +38,9 @@ HNSW_M = 16
 HNSW_EF_CONSTRUCTION = 64
 #: 语料规模门槛：低于该值精确扫描足够（≤2 万块上限内 P95 远低于 50ms 预算）
 INDEX_MIN_ROWS = 1000
+#: 自动构建路径的定型上限：更大的表 ``ALTER TYPE`` 会重写表并持 ACCESS EXCLUSIVE，
+#: 必须由运维在窗口内跑 ``build_ai_vector_index`` 命令显式执行
+AUTO_INDEX_MAX_ROWS = 50000
 
 #: 维度定型状态（state/命令输出用）
 ACTION_NOOP = "noop"
@@ -76,8 +79,13 @@ def vector_index_state() -> dict[str, Any]:
     }
 
 
-def ensure_vector_index() -> dict[str, Any]:
-    """按维度稳定性定型列 / 建（或撤）HNSW 索引，返回动作与形态（可安全反复执行）。"""
+def ensure_vector_index(allow_large: bool = False) -> dict[str, Any]:
+    """按维度稳定性定型列 / 建（或撤）HNSW 索引，返回动作与形态（可安全反复执行）。
+
+    ``allow_large=False``（构建任务完成后的自动路径）时，超过
+    ``AUTO_INDEX_MAX_ROWS`` 的大表不做自动定型（表重写 + ACCESS EXCLUSIVE
+    需运维窗口）；手工命令传 ``allow_large=True`` 显式执行。
+    """
     from django.db import connection
 
     if connection.vendor != "postgresql":
@@ -104,6 +112,18 @@ def ensure_vector_index() -> dict[str, Any]:
         total = int(cursor.fetchone()[0])
     if total < INDEX_MIN_ROWS:
         return {**state, "action": ACTION_NOOP, "reason": f"rows {total} < {INDEX_MIN_ROWS}", "dim": dim}
+    if not allow_large and total > AUTO_INDEX_MAX_ROWS:
+        logger.warning(
+            "vector index auto-type skipped: rows %s > %s; run build_ai_vector_index in a maintenance window",
+            total,
+            AUTO_INDEX_MAX_ROWS,
+        )
+        return {
+            **state,
+            "action": ACTION_SKIPPED,
+            "reason": f"rows {total} > auto limit {AUTO_INDEX_MAX_ROWS}; run build_ai_vector_index in a maintenance window",
+            "dim": dim,
+        }
 
     _advisory_locked(_apply_typed_index, dim)
     return {**vector_index_state(), "action": ACTION_INDEXED, "dim": dim}

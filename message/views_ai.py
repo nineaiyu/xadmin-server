@@ -39,6 +39,17 @@ class ChatAiViewSet(AiThrottleMixin, SseRendererMixin, GenericViewSet):
     #: 两个 action 均调用 LLM（含流式）：整类按对话类限流
     ai_chat_all = True
 
+    @classmethod
+    def as_view(cls, actions: Any = None, **initkwargs: Any) -> Any:
+        """AI 问答豁免请求级事务：LLM 调用可能持续数十秒，不能在事务里等。
+
+        消息落库自带 ``transaction.atomic``，单条写入的原子性不受影响；
+        非流式请求也不会再长期占用数据库连接。
+        """
+        view = super().as_view(actions, **initkwargs)
+        view._non_atomic_requests = {"default"}
+        return view
+
     @extend_schema(request=ChatAiMessageSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="message")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def message(self, request: Any, *args: Any, **kwargs: Any) -> Any:

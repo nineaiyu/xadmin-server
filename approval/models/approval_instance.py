@@ -14,8 +14,9 @@ from common.core.models import DbAuditModel
 class ApprovalInstance(DbAuditModel):
     """流程实例（一次申请；creator = 申请人）。
 
-    状态机：PENDING → APPROVED / REJECTED / CANCELLED（驳回与撤回均为终态，
-    一期不做「驳回到上一节点」与「重新提交」）。current_node 为空表示已结束。
+    状态机：PENDING → APPROVED / REJECTED / CANCELLED（驳回与撤回均为终态）。
+    支持「驳回到上一节点」与「重新提交」：退回生成 source_instance 关联的新实例，
+    原实例按终态留痕。current_node 为空表示已结束。
     """
 
     class Status(models.TextChoices):

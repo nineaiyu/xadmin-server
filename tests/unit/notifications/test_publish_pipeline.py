@@ -122,8 +122,8 @@ class TestSendMsgErrorPaths:
             Message.send_msg([normal_user.pk], {BACKEND.SITE_MSG: {"subject": "s", "message": "m"}})
         assert MessageContent.objects.count() == 0
 
-    def test_unexpected_error_is_swallowed_with_traceback(self, normal_user, capsys):
-        """渠道其他异常只打印堆栈，不向外抛（发送失败不炸调用方）。"""
+    def test_unexpected_error_is_swallowed_with_log(self, normal_user, caplog):
+        """渠道其他异常只记结构化日志，不向外抛（发送失败不炸调用方）。"""
 
         class BrokenClient:
             @staticmethod
@@ -132,7 +132,7 @@ class TestSendMsgErrorPaths:
 
         with mock.patch.dict(client_name_mapper, {BACKEND.SITE_MSG: BrokenClient}):
             Message.send_msg([normal_user.pk], {BACKEND.SITE_MSG: {"subject": "s", "message": "m"}})
-        assert "boom" in capsys.readouterr().err
+        assert any("notification send failed" in record.getMessage() for record in caplog.records)
 
 
 class TestSendTestMsg:

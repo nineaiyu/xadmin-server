@@ -271,7 +271,7 @@ MODULES = (
 | `full` | `core` + `standard` + `optional` | 全功能版（**插件通常声明 `optional`**） |
 
 `MODULE_ENABLE` / `MODULE_DISABLE` 在预设之上做显式覆盖；
-`config.yml` 片段可由 `python manage.py module --config` 生成，模块清单用 `python manage.py module --list` 核对。
+`config.yml` 片段可由 `python manage.py modules --config` 生成，模块清单用 `python manage.py modules` 核对。
 
 ### 5.2 停用即六层裁剪（声明齐全时自动生效）
 
@@ -293,7 +293,7 @@ MODULES = (
 python -c "import django;django.setup();import common.contracts as c;print(c.get_active_superuser_queryset.__module__)"
 
 # ② 模块声明是否进清单（等级 / 依赖 / 是否启用）
-python manage.py module --list
+python manage.py modules
 
 # ③ 路由是否接上（前缀 + 视图类）
 python -c "import django;django.setup();from django.urls import resolve;print(resolve('/api/my-plugin/note').func.cls.__name__)"

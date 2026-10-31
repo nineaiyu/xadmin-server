@@ -17,7 +17,7 @@ AI_ACTIONS = {
         description=_("List uploaded files (name, size, uploader)"),
         method="GET",
         path="/api/file/file",
-        params={"name": {"type": "string", "required": False, "in": IN_QUERY, "description": "File name keyword"}},
+        params={"filename": {"type": "string", "required": False, "in": IN_QUERY, "description": "File name keyword"}},
     ),
     "file.stats": api_action(
         key="file.stats",

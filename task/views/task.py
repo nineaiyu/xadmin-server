@@ -20,6 +20,7 @@ from drf_spectacular.plumbing import build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 
 from common.core.filter import ControlledLookupFilterBackend
 from common.core.modelset import ListDeleteModelSet
@@ -185,7 +186,23 @@ class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
     @action(methods=["get"], detail=True, url_path="log")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def log(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """增量读取执行日志"""
-        execution = self.get_object()
+        # 与 WS 日志通道同口径（task.ws.can_read_task_log）：超管或记录创建者。
+        # 日志读取是独立权限点，不叠加数据权限过滤——否则他人记录会先被数据面
+        # 隐藏成 404，显式归属校验永远无法给出 403；creator 为空的内建任务保持
+        # 仅超管可读（与 WS 一致，不放宽到「所有日志权限持有者」）。
+        from django.core.exceptions import ValidationError
+        from rest_framework.exceptions import NotFound
+
+        from task.ws import can_read_task_log
+
+        try:
+            execution = TaskExecution.objects.filter(pk=kwargs.get("pk")).first()
+        except ValidationError:
+            execution = None
+        if execution is None:
+            raise NotFound(_("Not found"))
+        if not can_read_task_log(request.user, execution.pk):
+            raise PermissionDenied(_("Permission denied"))
         data = read_task_log_chunk(
             execution.pk,
             offset=request.query_params.get("offset") or 0,

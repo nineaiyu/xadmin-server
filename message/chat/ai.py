@@ -3,7 +3,7 @@
 """聊天室 AI 助手：通用多轮对话 + `/kb` 知识库问答双形态。
 
 - 通用多轮：读取本会话最近 N 条消息裁剪上下文 + 内置助手人设 → ChatCompletionsClient；
-- `/kb 问题`：复用 system.utils.ai 的知识库 RAG（ask）链路，回复附引用来源（extra.sources）；
+- `/kb 问题`：复用 ai.services.assistant.ai 的知识库 RAG（ask）链路，回复附引用来源（extra.sources）；
 - 门禁：`AI_ASSISTANT_ENABLED` 且凭据齐全才可用（未启用/未配置统一可读降级，不静默）；
 - 异常降级：LLM 失败落一条 system 消息（前端可见），REST 同时返回可读 detail；
 - 会话走 REST 同步（LLM 5~60s，不占用 WS 长连接）；流式走 `ai_stream_events`（SSE，二期）。
@@ -29,7 +29,7 @@ ACTION_COMMAND = "/do"
 
 
 def is_enabled() -> bool:
-    """AI 助手可用性：开关开启 + 凭据齐全（复用 system.utils.ai 单一判定）。"""
+    """AI 助手可用性：开关开启 + 凭据齐全（复用 ai.services.assistant.ai 单一判定）。"""
     from ai.services.assistant.ai import is_enabled as _is_enabled
 
     return bool(_is_enabled())
@@ -167,7 +167,7 @@ def _llm_reply(messages: list[Any], user: Any = None) -> tuple[Any, ...]:
 def kb_answer(question: str, user: Any = None) -> tuple[Any, ...]:
     """知识库问答：返回 (answer, sources)；无命中/未启用转可读校验错误。
 
-    answer 已由 ``system.utils.ai.ask`` 走输出护栏脱敏。
+    answer 已由 ``ai.services.assistant.ai.ask`` 走输出护栏脱敏。
     """
     from ai.services.assistant.ai import ask
 

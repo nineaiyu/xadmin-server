@@ -52,7 +52,18 @@ class UploadFileSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             "deleted_at",
             "preview_kind",
         ]
-        read_only_fields = ["pk", "is_upload", "deleted_at", "preview_kind"]
+        # 上传内核写入的物理属性一律只读：客户端改写会绕过配额（filesize）或触发清理（is_tmp）
+        read_only_fields = [
+            "pk",
+            "filename",
+            "filesize",
+            "mime_type",
+            "md5sum",
+            "is_tmp",
+            "is_upload",
+            "deleted_at",
+            "preview_kind",
+        ]
         table_fields = [
             "pk",
             "filename",
@@ -82,12 +93,29 @@ class UploadFileSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
     def get_access_url(self, obj: Any) -> Any:
         return obj.file_url if obj.file_url else get_file_absolute_uri(obj.filepath, self.context.get("request", None))
 
+    @staticmethod
+    def _clean_file_url(value: Any) -> str:
+        from urllib.parse import urlsplit
+
+        text = str(value or "").strip()
+        if not text:
+            return ""
+        parts = urlsplit(text)
+        if parts.scheme not in ("http", "https") or not parts.netloc:
+            raise ValidationError(_("File URL must be an http(s) address"))
+        return text
+
     def create(self, validated_data: dict[str, Any]) -> Any:
-        if not validated_data.get("file_url"):
+        url = self._clean_file_url(validated_data.get("file_url"))
+        if not url:
             raise ValidationError(_("Internet url cannot be null"))
+        validated_data["file_url"] = url
         return super().create(validated_data)
 
     def update(self, instance: Any, validated_data: dict[str, Any]) -> Any:
-        if not validated_data.get("file_url") and not instance.is_upload:
-            raise ValidationError("Internet url cannot be null")
+        if "file_url" in validated_data:
+            validated_data["file_url"] = self._clean_file_url(validated_data["file_url"])
+        effective = validated_data.get("file_url", instance.file_url)
+        if not effective and not instance.is_upload:
+            raise ValidationError(_("Internet url cannot be null"))
         return super().update(instance, validated_data)

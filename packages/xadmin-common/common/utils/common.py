@@ -34,13 +34,35 @@ def get_cpu_percent() -> float:
 
 def get_cpu_load() -> float:
     cpu_load_1, cpu_load_5, cpu_load_15 = psutil.getloadavg()
-    cpu_count = psutil.cpu_count()
+    cpu_count = psutil.cpu_count() or 1
     single_cpu_load_1 = cpu_load_1 / cpu_count
     single_cpu_load_1 = f"{single_cpu_load_1:.2f}"
     return float(single_cpu_load_1)
 
 
 def get_docker_mem_usage_if_limit() -> float | None:
+    # cgroup v2 优先（v1 路径在 v2 主机上不存在，旧实现会直接走异常分支）
+    try:
+        with open("/sys/fs/cgroup/memory.max") as f:
+            raw_limit = f.readline().strip()
+        if raw_limit and raw_limit != "max":
+            limit_bytes = int(raw_limit)
+            total = psutil.virtual_memory().total
+            if limit_bytes < total:
+                with open("/sys/fs/cgroup/memory.current") as f:
+                    usage_bytes = int(f.readline())
+                inactive_file = 0
+                try:
+                    with open("/sys/fs/cgroup/memory.stat") as f:
+                        for line in f:
+                            if line.startswith("inactive_file "):
+                                inactive_file = int(line.split()[1])
+                                break
+                except OSError:
+                    inactive_file = 0
+                return ((usage_bytes - inactive_file) / limit_bytes) * 100
+    except (OSError, ValueError):
+        pass
     try:
         with open("/sys/fs/cgroup/memory/memory.limit_in_bytes") as f:
             limit_in_bytes = int(f.readline())
@@ -52,18 +74,18 @@ def get_docker_mem_usage_if_limit() -> float | None:
             usage_in_bytes = int(f.readline())
 
         with open("/sys/fs/cgroup/memory/memory.stat") as f:
-            inactive_file: int | str = 0
+            inactive_file_v1: int | str = 0
             for line in f:
                 if line.startswith("total_inactive_file"):
-                    name, inactive_file = line.split()
+                    name, inactive_file_v1 = line.split()
                     break
 
                 if line.startswith("inactive_file"):
-                    name, inactive_file = line.split()
+                    name, inactive_file_v1 = line.split()
                     continue
 
-            inactive_file = int(inactive_file)
-        return ((usage_in_bytes - inactive_file) / limit_in_bytes) * 100
+            inactive_file_v1 = int(inactive_file_v1)
+        return ((usage_in_bytes - inactive_file_v1) / limit_in_bytes) * 100
 
     except Exception:
         # 磁盘用量读取失败：返回 None，调用方按「未知」处理（监控非关键路径）

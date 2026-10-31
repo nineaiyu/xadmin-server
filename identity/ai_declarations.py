@@ -141,8 +141,8 @@ AI_ACTIONS = {
                 "target": "menu",
                 "description": "Menu names or primary keys to grant",
             },
-            # 角色接口契约：PATCH 必带 fields（字段权限树）；空 dict = 不改动字段权限
-            "fields": {"const": {}, "in": "body"},
+            # 不携带 fields 键：PATCH 未提交该键才表示「不动字段权限」，
+            # 而空 dict 是显式的「清空全部字段授权」，AI 授权不得误清
         },
     ),
     "role.update": api_action(
@@ -156,9 +156,9 @@ AI_ACTIONS = {
             "name": {"type": "string", "required": False, "in": "body", "description": "New name"},
             "code": {"type": "string", "required": False, "in": "body", "description": "New code"},
             "description": {"type": "string", "required": False, "in": "body", "description": "New description"},
-            # 角色接口契约：PATCH 必带 fields（字段权限树）；空 dict = 不改动字段权限。
+            # 不携带 fields 键：PATCH 未提交该键才表示「不动字段权限」，
+            # 而空 dict 是显式的「清空全部字段授权」，AI 改角色不得误清。
             # 刻意不接受 menu 参数——menu 会整体替换权限，改权限请用 role.grant
-            "fields": {"const": {}, "in": "body"},
         },
     ),
     "role.delete": api_action(

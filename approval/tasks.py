@@ -87,7 +87,7 @@ def auto_execute_timeout_approval_flow_job() -> Any:
 def auto_cancel_stuck_approval_flow_job() -> Any:
     """卡死单兜底：PENDING 且无任何节点任务的实例（发起链路中断的残留）
 
-    置 CANCELLED——这类单无人可处理，且会锁住流程改版（在途实例存在时禁止改节点）。
+    置 CANCELLED——这类单无人可处理，会一直占用待办与统计口径。
     """
     from approval.services.approval_flow import cancel_stuck_instances
 

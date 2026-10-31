@@ -114,7 +114,8 @@ def send_test_callback(
 def application_usage_stats(application: ApiApplication, days: int) -> dict[str, Any]:
     """应用用量报表（近 N 天）：聚合 OperationLog（token_pk ∈ 应用全部凭证）。
 
-    凭证只失效不删除（删除应用才级联），故 token_pk 口径覆盖应用全生命周期；
+    凭证行会在失效 30 天后被清理，统计窗口只覆盖「仍存活凭证」产生的日志；
+    需要更长周期时请以余额/配额审计或延长凭证保留策略为准；
     失败判定与个人令牌 stats 同源（业务码非成功即失败）；配额为软口径读取当日计数缓存。
     """
     from django.core.cache import cache

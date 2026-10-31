@@ -34,15 +34,27 @@ def _clear_snapshot():
 
 @pytest.fixture
 def layer(settings):
-    """channel layer（InMemory 档 / 真 Redis 层通用，清理走 tests/channel_layer helper）。"""
+    """channel layer（InMemory 档 / 真 Redis 层通用，清理走 tests/channel_layer helper）。
+
+    真 Redis 层本文件临时换独立 prefix：xdist 同 worker 内其它用例的异步消费者可能
+    在 reset 后继续写入，使用共享 prefix 会让本文件的注入/清理互相踩踏。
+    """
+    import uuid
+
     from channels.layers import get_channel_layer
 
-    from tests.channel_layer import reset_layer_state
+    from tests.channel_layer import _is_memory_layer, reset_layer_state
 
     layer = get_channel_layer()
+    original_prefix = None
+    if not _is_memory_layer(layer):
+        original_prefix = layer.prefix
+        layer.prefix = f"{original_prefix}_stats_{uuid.uuid4().hex[:8]}"
     reset_layer_state(layer)
     yield layer
     reset_layer_state(layer)
+    if original_prefix is not None:
+        layer.prefix = original_prefix
 
 
 def _beat(layer, user_pk, channel="chan"):
@@ -74,12 +86,13 @@ class TestOnlineReverseIndex:
     def test_get_online_info_returns_sockets(self, layer):
         from tests.channel_layer import inject_group_channels, inject_online_user
 
-        group = msg_utils.get_user_layer_group_name(11)
+        # 高号 pk：避免与其它用例的异步消费者共用低号用户，迟到断连会清掉注入的 channel
+        group = msg_utils.get_user_layer_group_name(9011)
         inject_group_channels(layer, group, ["chan-1", "chan-2"])
-        inject_online_user(layer, 11)
+        inject_online_user(layer, 9011)
 
         pks, sockets = get_online_info()
-        assert pks == [11]
+        assert pks == [9011]
         assert sorted(sockets) == ["chan-1", "chan-2"]
 
     def test_online_info_snapshot_cached(self, layer):
@@ -156,12 +169,12 @@ class TestOnlineLayersBatch:
     def test_realtime_path_queries_each_call_without_snapshot(self, layer):
         from tests.channel_layer import inject_group_channels
 
-        _beat(layer, 9005, "c5")
-        first = msg_utils.get_online_users_layers([9005], use_snapshot=False)
-        inject_group_channels(layer, msg_utils.get_user_layer_group_name(9005), ["c6"])  # 新连接
-        second = msg_utils.get_online_users_layers([9005], use_snapshot=False)
-        assert first == {9005: ["c5"]}
-        assert sorted(second[9005]) == ["c5", "c6"], "实时口径必须拿到最新 channel 明细"
+        _beat(layer, 19005, "c5")
+        first = msg_utils.get_online_users_layers([19005], use_snapshot=False)
+        inject_group_channels(layer, msg_utils.get_user_layer_group_name(19005), ["c6"])  # 新连接
+        second = msg_utils.get_online_users_layers([19005], use_snapshot=False)
+        assert first == {19005: ["c5"]}
+        assert sorted(second[19005]) == ["c5", "c6"], "实时口径必须拿到最新 channel 明细"
         assert cache.get(msg_utils.ONLINE_LAYERS_CACHE_KEY) is None, "实时口径不写快照"
 
     def test_falls_back_to_per_user_query(self, monkeypatch):
@@ -326,8 +339,8 @@ class TestPushMessagesJob:
         assert result["label"] == str(_("Test label"))
         assert result["items"] == [str(uuid.UUID(int=2))]
 
-    def test_batch_user_config_single_get_many(self, monkeypatch):
-        """N 个用户的配置读取只有一次 get_many"""
+    def test_batch_user_config_constant_get_many(self, monkeypatch):
+        """N 个用户的配置读取只走常数次 get_many（个人槽 + 系统级兜底各一次）。"""
         from django.core import cache as django_cache_mod
 
         calls = {"get_many": 0}
@@ -342,7 +355,7 @@ class TestPushMessagesJob:
         import common.core.config as config_mod
 
         assert config_mod.batch_user_config([1, 2, 3], "PUSH_MESSAGE_NOTICE", True) == {1: True, 2: True, 3: True}
-        assert calls["get_many"] == 1
+        assert calls["get_many"] <= 2
 
     def test_batch_user_config_empty(self):
         import common.core.config as config_mod
@@ -371,21 +384,21 @@ class TestLogoutKick:
 
         from message.ws.utils import get_user_layer_group_name, send_logout_msg
 
-        _beat(layer, 11, "ch-live")
-        assert send_logout_msg(11, ["ch-live"]) is True
+        _beat(layer, 19101, "ch-live")
+        assert send_logout_msg(19101, ["ch-live"]) is True
         # 命中即逐 channel 推送并退组：组内清空
-        assert async_to_sync(layer.get_layers)(get_user_layer_group_name(11)) == []
+        assert async_to_sync(layer.get_layers)(get_user_layer_group_name(19101)) == []
 
     def test_stale_channel_misses_without_push(self, layer):
         """已下线会话（channel 不在推送组）：计为未命中，不再做无效投递。"""
         from message.ws.utils import send_logout_msg
 
-        assert send_logout_msg(12, ["ch-gone"]) is False
+        assert send_logout_msg(19102, ["ch-gone"]) is False
 
     def test_auto_resolve_group_channels_reports_hit(self, layer):
         """不传 channel 名时取推送组存活 channel：在线命中、离线未命中。"""
         from message.ws.utils import send_logout_msg
 
-        _beat(layer, 13, "ch-auto")
-        assert send_logout_msg(13) is True
-        assert send_logout_msg(13) is False  # 上一次命中已退组，组内无 channel
+        _beat(layer, 19103, "ch-auto")
+        assert send_logout_msg(19103) is True
+        assert send_logout_msg(19103) is False  # 上一次命中已退组，组内无 channel

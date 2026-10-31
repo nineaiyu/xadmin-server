@@ -57,14 +57,14 @@ class TestDocIndexLogic:
         architecture = tmp_path / "docs" / "architecture"
         architecture.mkdir(parents=True)
         (architecture / "wired.md").write_text("x", encoding="utf-8")
-        (tmp_path / "docs" / "README.md").write_text("| wired.md | ok |\n", encoding="utf-8")
+        (tmp_path / "docs" / "README.md").write_text("[wired](architecture/wired.md)\n", encoding="utf-8")
         assert check_doc_index.collect_violations(tmp_path, client_root=tmp_path / "none") == []
 
     def test_dir_readme_registration_is_honored(self, tmp_path):
         plans = tmp_path / "docs" / "plans"
         plans.mkdir(parents=True)
         (plans / "plan.md").write_text("x", encoding="utf-8")
-        (plans / "README.md").write_text("| plan.md | ok |\n", encoding="utf-8")
+        (plans / "README.md").write_text("[plan](plan.md)\n", encoding="utf-8")
         (tmp_path / "docs" / "README.md").write_text("# index\n", encoding="utf-8")
         assert check_doc_index.collect_violations(tmp_path, client_root=tmp_path / "none") == []
 

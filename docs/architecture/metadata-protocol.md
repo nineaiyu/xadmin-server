@@ -17,6 +17,9 @@
 - 实现位置：`packages/xadmin-common/common/core/modelset/metadata.py`（Action）+ `packages/xadmin-common/common/drf/metadata.py::SimpleMetadataWithFilters`
   （字段信息装配，经 DRF `DEFAULT_METADATA_CLASS` 挂载）；
 - **序列化器是唯一真源**：改字段先改序列化器，前端零改动（渲染器按 `input_type` 分派）。
+- **`choices` 是公开结构元数据**：对所有登录用户开放（不要求菜单权限），仅返回字段枚举 /
+  关联候选（关联候选已套数据权限与条数截断），**不按字段权限裁剪**；它回答「这个字段有哪些
+  可选值」，不承诺「这个字段对该角色可见」。字段可见性以 `search-columns` / 序列化器输出为准。
 
 ## 二、字段语义（search-columns 条目）
 

@@ -148,6 +148,29 @@ class TestScimUsers:
         user.refresh_from_db()
         assert user.nickname == "Bob Three" and user.phone == "13900000000"
 
+    def test_put_rejects_non_boolean_active_and_non_list_emails(self, api_client, scim_enabled):
+        """PUT 与 PATCH/建号同口径：字符串 "false" 不得被当成启用，多值属性必须是数组。"""
+        api_client.post(f"{SCIM_BASE}/Users", {"userName": "scim_strict"}, format="json", **AUTH)
+        user = UserInfo.objects.get(username="scim_strict")
+
+        response = api_client.put(
+            f"{SCIM_BASE}/Users/{user.pk}",
+            {"userName": "scim_strict", "displayName": "Strict", "active": "false"},
+            format="json",
+            **AUTH,
+        )
+        assert response.status_code == 400
+        assert response.json()["scimType"] == "invalidValue"
+
+        response = api_client.put(
+            f"{SCIM_BASE}/Users/{user.pk}",
+            {"userName": "scim_strict", "emails": "strict@example.com"},
+            format="json",
+            **AUTH,
+        )
+        assert response.status_code == 400
+        assert response.json()["scimType"] == "invalidValue"
+
     def test_patch_deactivate_revokes_sessions(self, api_client, scim_enabled):
         """停用即失效：active=false 触发用户级令牌失效时间戳（与强制下线同链路）。"""
         api_client.post(f"{SCIM_BASE}/Users", {"userName": "scim_carol"}, format="json", **AUTH)

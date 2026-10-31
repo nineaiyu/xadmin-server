@@ -401,6 +401,18 @@ class TestPushDashboardDataTask:
         # 离盘不落节流键：观察者上线后能尽快收到首帧
         assert cache.get(dashboard_push_ts_key(dashboard_a.pk)) is None
 
+    def test_scan_loads_only_pk(self):
+        """beat 扫描只取 pk：layout 大 JSON 不随扫描整批载入。"""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        with CaptureQueriesContext(connection) as ctx:
+            push_dashboard_data()
+        table = Dashboard._meta.db_table.lower()
+        scans = [query["sql"].lower() for query in ctx.captured_queries if f'from "{table}"' in query["sql"].lower()]
+        assert len(scans) == 1, scans
+        assert "layout" not in scans[0]
+
     def test_online_dashboard_triggered_then_throttled(self, dashboard_a, superuser, monkeypatch):
         layer = get_channel_layer()
         consumer, _captured, _closed = _make_consumer(layer, superuser, dashboard_a.pk)

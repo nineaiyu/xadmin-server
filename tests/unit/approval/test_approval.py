@@ -743,6 +743,23 @@ class TestApprovalOperations:
         approve_request(target, superuser)
         assert pending_count_for(superuser) == 0  # 未手动清缓存
 
+    def test_pending_count_invalidation_bumps_version_only(self):
+        """待办计数失效用版本号（O(1)）：不枚举审批人、不做全键扫描。"""
+        import inspect
+
+        from django.core.cache import cache
+
+        from approval.services.approval import invalidate_pending_count_cache
+        from approval.services.approval.queries import PENDING_COUNT_VERSION_KEY
+
+        cache.delete(PENDING_COUNT_VERSION_KEY)
+        assert int(cache.get(PENDING_COUNT_VERSION_KEY) or 0) == 0
+        invalidate_pending_count_cache()
+        assert int(cache.get(PENDING_COUNT_VERSION_KEY) or 0) == 1
+        invalidate_pending_count_cache()
+        assert int(cache.get(PENDING_COUNT_VERSION_KEY) or 0) == 2
+        assert "delete_pattern" not in inspect.getsource(invalidate_pending_count_cache)
+
     def test_approval_stats_window(self, superuser, normal_user):
         """统计窗口：我提交 / 我通过 / 我驳回 / 平均时长；窗口外不计入。"""
         from django.core.cache import cache
@@ -801,6 +818,11 @@ class TestLifecycleJobs:
         record = ApprovalRequest.objects.first()
         record.created_time = timezone.now() - datetime.timedelta(days=200)
         record.save(update_fields=["created_time"])
+        # 审批单是审计载体：超保留期的 PENDING 不物理删除
+        assert clean_expired_approvals(keep_days=180) == 0
+        assert ApprovalRequest.objects.exists() is True
+        # 终态（审核通过）超过保留期才清理
+        ApprovalRequest.objects.filter(pk=record.pk).update(status=ApprovalRequest.Status.APPROVED)
         assert clean_expired_approvals(keep_days=180) == 1
         assert ApprovalRequest.objects.exists() is False
         assert clean_expired_approvals(keep_days=0) == 0

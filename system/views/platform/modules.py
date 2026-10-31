@@ -151,6 +151,8 @@ class SystemModuleViewSet(GenericViewSet):
 
     # 非模型视图：queryset 仅用于权限链与元数据机制，不参与查询
     queryset = Menu.objects.none()
+    # 权限点不绑定业务模型（字段权限/应用授权的模型解析跳过）
+    permission_models: tuple[Any, ...] = ()
     serializer_class = None
     ordering_fields: list[str] = []
 

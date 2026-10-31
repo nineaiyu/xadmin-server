@@ -128,9 +128,14 @@ class ChoicesAction:
         return ApiResponse(choices_dict=result)
 
 
-def _bounded_search_choices(value: Any, widget: Any, max_choices: int) -> tuple[list[Any], bool]:
+def _bounded_search_choices(value: Any, widget: Any, max_choices: int, request: Any = None) -> tuple[list[Any], bool]:
     """求值 search-fields 的 widget choices，并在求值前收紧关联 queryset。"""
     queryset = getattr(getattr(value, "field", None), "queryset", None)
+    if queryset is not None and request is not None and getattr(request, "user", None) is not None:
+        # 关联候选过滤也要走数据权限：search-fields 是白名单端点，不能成为跨权限枚举出口
+        from common.core.filter import get_filter_queryset
+
+        queryset = get_filter_queryset(queryset, request.user)
     choices_source = widget
     if max_choices and queryset is not None:
         try:
@@ -226,7 +231,9 @@ class SearchFieldsAction:
                 #     widget.choices = []
                 widget.input_type = get_format_intput_type(value, widget.input_type)
                 max_choices = get_search_choices_max_count()
-                choices, choices_truncated = _bounded_search_choices(value, widget, max_choices)
+                choices, choices_truncated = _bounded_search_choices(
+                    value, widget, max_choices, getattr(self, "request", None)
+                )
                 field = get_model_field(self.filterset_class._meta.model, value.field_name)
                 results.append(
                     {

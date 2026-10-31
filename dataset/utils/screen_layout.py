@@ -14,11 +14,8 @@
 
 坐标系：
 
-- 栅格：``x`` 为列下标（0 起，``x + w <= 12``），``y`` 为行下标（0 起，``y + h <= 60``），
-  重叠一律拒绝——栅格上重叠几乎总是误操作，且会让「谁在上层」变成隐式行为；
-- 自由：``x``/``y`` 为像素坐标（非负），``w``/``h`` 为像素尺寸（下限 16），
-  以基准设计画幅 ``design_w x design_h`` 为界（投屏按此等比适配），
-  **允许重叠**——自由画布的核心能力是层叠，层级 = 数组顺序（后者在上）。
+- 栅格：``x``/``y`` 为列/行下标（0 起，``x + w <= 12``、``y + h <= 60``），重叠一律拒绝；
+- 自由：像素坐标与尺寸，以 ``design_w x design_h`` 为界，**允许重叠**（层级 = 数组顺序）。
 
 两版只差坐标段与重叠判定：``pk`` / ``type`` / ``title`` 与类型专属字段全部经
 ``_normalize_pane_body`` 归一化，杜绝「同一字段在两套模式两套规则」。
@@ -245,6 +242,8 @@ def _normalize_basic_pane_fields(
         pane["metric"] = metric
         if value_field:
             pane["value_field"] = value_field
+        # 分组/时间桶透传：由序列化器按可见数据集复核列/枚举
+        pane.update({key: value for key in ("group_by", "date_trunc") if (value := str(item.get(key) or "").strip())})
 
 
 def _normalize_media_pane_fields(item: dict[str, Any], pane: dict[str, Any], pane_type: str, pane_id: str) -> None:

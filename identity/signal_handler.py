@@ -101,6 +101,10 @@ def invalid_role_menu_m2m_cache_handler(sender: Any, instance: Any, action: Any,
     if action not in M2M_CHANGED_ACTIONS:
         return
     invalid_role_cache_handler(sender=UserRole, instance=instance)
+    # 菜单授权集合变化会改变 search-columns 的字段面：元数据载荷缓存同源失效
+    from common.core.modelset.metadata import invalidate_metadata_payload_cache
+
+    invalidate_metadata_payload_cache()
 
 
 @receiver([post_save, pre_delete], sender=UserInfo)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

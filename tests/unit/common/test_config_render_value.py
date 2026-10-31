@@ -3,7 +3,11 @@
 
 import json
 
+import pytest
+
 from common.core.config.base import render_config_value
+
+pytestmark = pytest.mark.django_db
 
 
 def test_business_parentheses_preserved():
@@ -21,3 +25,22 @@ def test_numeric_parentheses_unwrapped():
 
 def test_non_numeric_parentheses_not_unwrapped_as_number():
     assert render_config_value('"(abc)"', {}, None) == "(abc)"
+
+
+def test_mutual_reference_does_not_recurse():
+    """A→B→A 互引配置只渲染一层，不因重建渲染上下文而无限递归。"""
+    from common.core.config import SysConfig
+    from system.models import SystemConfig
+
+    SystemConfig.objects.create(key="MUTUAL_A", value="{{ MUTUAL_B }}", is_active=True)
+    SystemConfig.objects.create(key="MUTUAL_B", value="{{ MUTUAL_A }}", is_active=True)
+    value = SysConfig.get_value("MUTUAL_A")
+    assert "MUTUAL_A" in str(value)
+
+
+def test_unknown_config_attribute_logs_warning(caplog):
+    from common.core.config import SysConfig
+
+    with caplog.at_level("WARNING"):
+        assert getattr(SysConfig, "TYPO_SECURITY_SWITCH", None) == {}
+    assert "not registered as SysConfig property" in caplog.text

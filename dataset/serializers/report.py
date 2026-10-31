@@ -18,7 +18,7 @@ from common.core.auth.credentials import MASK
 from common.core.serializers import BaseModelSerializer
 from dataset.models.dataset import Dataset, Report
 from dataset.models.report import ReportVersion
-from dataset.utils.dataset import dataset_visible_to, numeric_columns_of
+from dataset.utils.dataset import ALLOWED_DATE_TRUNC, dataset_visible_to, numeric_columns_of
 from dataset.utils.report_design import ReportDesignError, normalize_report_design
 
 SEND_TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
@@ -121,6 +121,8 @@ class ReportSerializer(BaseModelSerializer):
     def validate_recipients(self, value: Any) -> Any:
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Recipients cannot be empty"))
+        if len(value) > 100:
+            raise serializers.ValidationError(_("Too many recipients (max 100)"))
         for item in value:
             try:
                 validate_email(str(item))
@@ -162,13 +164,21 @@ class ReportSerializer(BaseModelSerializer):
                 {"base_version": _("The content has been modified by another user; reload before saving")}
             )
         merged_mode = attrs.get("mode", getattr(self.instance, "mode", "rows"))
+        dataset = attrs.get("dataset", getattr(self.instance, "dataset", None))
         # 报表设计：列 / 聚合字段都按数据集与数值列校验，单一事实源在
         # dataset.utils.report_design；空载荷 = 存量口径（全列明细单表），不做强制。
         if "design" in attrs:
-            dataset = attrs.get("dataset", getattr(self.instance, "dataset", None))
             try:
                 attrs["design"] = normalize_report_design(
                     attrs.get("design"), dataset, numeric_columns_of(dataset) if dataset else []
+                )
+            except ReportDesignError as exc:
+                raise serializers.ValidationError(str(exc)) from exc
+        elif "dataset" in attrs and self.instance is not None and self.instance.design:
+            # 换数据集但未带 design：旧列可能已不存在，按新数据集重新规范化（不合法即拒绝）
+            try:
+                attrs["design"] = normalize_report_design(
+                    self.instance.design, dataset, numeric_columns_of(dataset) if dataset else []
                 )
             except ReportDesignError as exc:
                 raise serializers.ValidationError(str(exc)) from exc
@@ -178,6 +188,15 @@ class ReportSerializer(BaseModelSerializer):
             group_by = attrs.get("group_by", getattr(self.instance, "group_by", ""))
             if not group_by:
                 raise serializers.ValidationError(_("Group by is required for aggregate reports"))
+            if dataset is not None and group_by not in (dataset.columns or []):
+                raise serializers.ValidationError(_("Group field is not in dataset columns"))
+            metric = attrs.get("metric", getattr(self.instance, "metric", "count"))
+            value_field = attrs.get("value_field", getattr(self.instance, "value_field", ""))
+            if metric in ("sum", "avg") and (dataset is None or value_field not in numeric_columns_of(dataset)):
+                raise serializers.ValidationError(_("Value field is not numeric in dataset"))
+            date_trunc = attrs.get("date_trunc", getattr(self.instance, "date_trunc", ""))
+            if date_trunc and date_trunc not in ALLOWED_DATE_TRUNC:
+                raise serializers.ValidationError(_("Invalid date trunc"))
         send_time = attrs.get("send_time", getattr(self.instance, "send_time", ""))
         if send_time and not SEND_TIME_RE.match(send_time):
             raise serializers.ValidationError(_("Send time must be HH:MM"))

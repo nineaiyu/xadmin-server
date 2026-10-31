@@ -30,7 +30,7 @@ from django.test import Client
 
 from common.celery.decorator import get_register_period_tasks
 from common.core.modules import (
-    MENU_TYPE_DIRECTORY,
+    MENU_TYPE_MENU,
     MENU_TYPE_PERMISSION,
     ModuleTrimWebsocketMiddleware,
     all_module_specs,
@@ -259,8 +259,9 @@ class TestModuleDeclaration:
         assert inner == []
         # ③ 菜单/权限点层：声明菜单子树进隐藏集合，权限点前缀落停用集合
         rows = [
-            (1, None, MENU_TYPE_DIRECTORY, "DemoPlugin", "/plugin-demo"),
-            (2, 1, MENU_TYPE_PERMISSION, "PluginNote", "/api/plugin-demo/note"),
+            # 与 seeds/menu.json 的真实结构一致：根节点即页面菜单 PluginNote
+            (1, None, MENU_TYPE_MENU, "PluginNote", "/plugin-demo/note"),
+            (2, 1, MENU_TYPE_PERMISSION, "list:PluginNote", "api/plugin-demo/note$"),
         ]
         spec = module_index()[MODULE_ID]
         hidden = compute_hidden_menu_pks(rows, names=spec.menus, prefixes=permission_prefixes_of([spec]))

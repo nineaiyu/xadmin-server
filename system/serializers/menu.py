@@ -88,7 +88,9 @@ class MenuSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
             "method",
             "deleted_at",
         ]
-        # read_only_fields = ['pk'] # 用于文件导入导出时，不丢失上级节点
+        # deleted_at 只读：可写会让 PATCH 直接软删/恢复菜单，绕过 Menu.delete()
+        # 的级联与影响面确认（权限缓存失效、子级处理全部跳过）
+        read_only_fields = ["pk", "deleted_at"]
         extra_kwargs = {
             "parent": {"attrs": ["pk", "name"], "allow_null": True, "required": False},
             "model": {"attrs": ["pk", "name", "label"], "allow_null": True, "required": False},

@@ -96,3 +96,56 @@ class TestSubmissionExport:
         assert "甲(a)" in lines[0]
         assert "乙(b)" not in lines[0]
         assert len(lines) == 2  # 表头 + 1 行
+
+
+class TestSensitiveExportAfterSchemaChange:
+    """敏感性按「任一版本敏感即敏感」：字段改为非敏感后历史提交的敏感值仍须掩码。"""
+
+    def test_historical_sensitive_value_stays_masked(self, normal_user, export_menu):
+        v1_fields = [
+            {"key": "name", "label": "姓名", "type": "input"},
+            {"key": "phone", "label": "电话", "type": "input", "sensitive": True},
+        ]
+        form = DynamicForm.objects.create(
+            name="敏感改版表单",
+            schema={"fields": v1_fields},
+            schema_history=[{"version": 1, "schema": {"fields": v1_fields}}],
+            schema_version=2,
+        )
+        DynamicFormSubmission.objects.create(
+            form=form, data={"name": "张三", "phone": "13800000000"}, schema_version=1, creator=normal_user
+        )
+        # v2：phone 改为非敏感（当前 schema 不再标记）
+        form.schema = {
+            "fields": [
+                {"key": "name", "label": "姓名", "type": "input"},
+                {"key": "phone", "label": "电话", "type": "input", "sensitive": False},
+            ]
+        }
+        form.save(update_fields=["schema", "updated_time"])
+
+        client = APIClient()
+        client.force_authenticate(user=normal_user)
+        content = read_text(client.get(f"{EXPORT_URL}?type=csv"))
+
+        assert "13800000000" not in content
+        assert "******" in content
+
+    def test_cross_form_mixed_sensitivity_masks(self, normal_user, export_menu):
+        sensitive_form = _make_form(
+            name="敏感表单",
+            schema={"fields": [{"key": "phone", "label": "电话", "type": "input", "sensitive": True}]},
+        )
+        plain_form = _make_form(
+            name="普通表单",
+            schema={"fields": [{"key": "phone", "label": "电话", "type": "input"}]},
+        )
+        DynamicFormSubmission.objects.create(form=sensitive_form, data={"phone": "13900000000"}, creator=normal_user)
+        DynamicFormSubmission.objects.create(form=plain_form, data={"phone": "13700000000"}, creator=normal_user)
+
+        client = APIClient()
+        client.force_authenticate(user=normal_user)
+        content = read_text(client.get(f"{EXPORT_URL}?type=csv"))
+
+        assert "13900000000" not in content
+        assert "13700000000" not in content

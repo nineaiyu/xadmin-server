@@ -13,13 +13,13 @@
   {
    "name": "menu.json",
    "model": "system.menu",
-   "kind": "menu",
+   "kind": "contract",
    "order": 40
   },
   {
    "name": "menumeta.json",
    "model": "system.menumeta",
-   "kind": "menumeta",
+   "kind": "contract",
    "order": 41
   }
  ]

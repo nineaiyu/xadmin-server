@@ -117,10 +117,11 @@ class SendAndVerifyCodeUtil:
         self.other_args = kwargs
 
     def gen_and_send_async(self) -> Any:
-        self.__rata()
         return self.gen_and_send()
 
     def gen_and_send(self) -> None:
+        # 发送间隔限流下沉到同步入口：异步壳与直接调用共用同一防轰炸口径
+        self.__rata()
         try:
             if not self.code:
                 self.__generate()

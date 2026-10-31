@@ -44,3 +44,5 @@ class SearchMenuViewSet(OnlyListModelSet):
     pagination_class = DynamicPageNumber(1000)
     ordering_fields = ["-rank", "updated_time", "created_time"]
     filterset_class = SearchMenuFilter
+    # title 来源 meta.title：逐行取 OneToOne 会成为列表主开销
+    select_related_fields = ("meta",)

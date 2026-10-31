@@ -14,7 +14,8 @@
 设计边界：
 - 公共聊天室不维护未读（进入即浏览）；
 - `sender_name` 存发送时快照，昵称改名不回溯历史消息；
-- `client_msg_id` 幂等键：断线重发/乐观上屏去重，`(sender, client_msg_id)` 部分唯一索引兜底。
+- `client_msg_id` 幂等键：断线重发/乐观上屏去重，`(room, sender, client_msg_id)` 部分唯一索引兜底
+  （不按发送者全局唯一：同一用户在不同房间可复用同一客户端 id）。
 """
 
 import uuid
@@ -100,7 +101,7 @@ class ChatRoom(DbBaseModel):
 
 
 class ChatRoomMember(DbBaseModel):
-    """会话成员 + 未读游标（仅私聊 / AI 会话维护行）。"""
+    """会话成员 + 未读游标（私聊 / AI / 群聊建行；公共聊天室全员可见，不建行）。"""
 
     room = models.ForeignKey(ChatRoom, verbose_name=_("Room"), on_delete=models.CASCADE, related_name="members")
     user = models.ForeignKey(
@@ -172,11 +173,11 @@ class ChatMessage(DbBaseModel):
         ordering = ("-id",)
         indexes = [models.Index(fields=["room", "-id"], name="chat_msg_room_id_idx")]
         constraints = [
-            # 客户端幂等键：同一发送者的同一 client_msg_id 只落一条（断线重发去重）
+            # 客户端幂等键：同一房间内同一发送者的 client_msg_id 只落一条（断线重发去重）
             models.UniqueConstraint(
-                fields=["sender", "client_msg_id"],
+                fields=["room", "sender", "client_msg_id"],
                 condition=~models.Q(client_msg_id=""),
-                name="uniq_chat_msg_sender_client_id",
+                name="uniq_chat_msg_room_sender_client",
             )
         ]
 

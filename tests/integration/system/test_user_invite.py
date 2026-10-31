@@ -19,7 +19,9 @@ from types import SimpleNamespace
 import pytest
 from django.conf import settings as dj_settings
 from django.core import mail
+from django.test import RequestFactory, override_settings
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 
 from common.base.crypto import AESCipherV2
 from identity.models import UserInfo
@@ -140,6 +142,42 @@ class TestCreateWithInvite:
         )
         assert resp.status_code == 403
         assert not UserInfo.objects.filter(username="no_perm").exists()
+
+
+class TestInviteLinkHostFallback:
+    """未配置 WEB_SITE_URL 时，仅 ALLOWED_HOSTS 校验通过的 Host 可用于邀请链接。"""
+
+    @staticmethod
+    def _request(host):
+        return RequestFactory().get("/api/identity/user/1/invite", HTTP_HOST=host)
+
+    def test_forged_host_rejected(self, monkeypatch):
+        monkeypatch.setattr(user_invite, "SysConfig", SimpleNamespace(WEB_SITE_URL=""))
+        with override_settings(ALLOWED_HOSTS=["good.example.com"]):
+            with pytest.raises(ValidationError, match="WEB_SITE_URL"):
+                user_invite.invite_link("tok", self._request("evil.example.com"))
+
+    def test_allowed_host_used(self, monkeypatch):
+        monkeypatch.setattr(user_invite, "SysConfig", SimpleNamespace(WEB_SITE_URL=""))
+        with override_settings(ALLOWED_HOSTS=["good.example.com"]):
+            link = user_invite.invite_link("tok", self._request("good.example.com"))
+        assert link.startswith("http://good.example.com/#/invite/accept?token=tok")
+
+    def test_configured_site_url_ignores_request_host(self, monkeypatch):
+        monkeypatch.setattr(user_invite, "SysConfig", SimpleNamespace(WEB_SITE_URL="https://xadmin.example.com"))
+        # 即便请求 Host 不在 ALLOWED_HOSTS，配置了站点地址也不应看请求 Host
+        with override_settings(ALLOWED_HOSTS=["good.example.com"]):
+            link = user_invite.invite_link("tok", self._request("evil.example.com"))
+        assert link.startswith("https://xadmin.example.com/#/invite/accept?token=tok")
+
+    def test_send_invite_does_not_mark_pending_when_host_rejected(self, invited_user, monkeypatch):
+        """Host 校验失败必须先于落库：不能留下「待激活且收不到邮件」的死号。"""
+        monkeypatch.setattr(user_invite, "SysConfig", SimpleNamespace(WEB_SITE_URL=""))
+        with override_settings(ALLOWED_HOSTS=["good.example.com"]):
+            with pytest.raises(ValidationError, match="WEB_SITE_URL"):
+                user_invite.send_invite(invited_user, self._request("evil.example.com"))
+        invited_user.refresh_from_db()
+        assert invited_user.invite_status == ""
 
 
 class TestAcceptInvite:

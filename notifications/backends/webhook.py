@@ -54,7 +54,7 @@ class Webhook(BackendBase):
         )
 
     def send_msg(self, users: Any, message: Any, subject: Any = "", **kwargs: Any) -> Any:
-        from common.utils.outbound import pinned_request
+        from common.utils.outbound import loopback_allowed, pinned_request
         from task.services import outbound_allowed_hosts
 
         url = settings.WEBHOOK_URL
@@ -86,6 +86,7 @@ class Webhook(BackendBase):
                 "POST",
                 url,
                 allow_private=False,
+                allow_loopback=loopback_allowed(),
                 allowed_hosts=outbound_allowed_hosts(),
                 data=body,
                 headers=headers,

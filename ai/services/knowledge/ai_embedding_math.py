@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""知识库向量检索：编解码 / 余弦相似度 / RRF 融合（自 ai_embeddings 拆分，行为不变）。
+"""知识库向量检索：相似度 / 排名融合与历史二进制编解码（自 ai_embeddings 拆分）。
 
-纯函数（无数据库、无外部服务）：落库二进制形态、相似度与排名融合口径见
-docs/adr 检索设计档案；向量通道不可用时由调用方回退词频结果。
+纯函数（无数据库、无外部服务）：落库已改为 pgvector 列，二进制编解码保留供迁移
+脚本与兼容调用；相似度与排名融合口径见 docs/adr 检索设计档案，向量通道不可用时
+由调用方回退词频结果。
 """
 
 import array
@@ -20,12 +21,12 @@ VECTOR_WEIGHT = 0.5
 
 
 def encode_vector(values: Any) -> bytes:
-    """float 序列 → float32 小端二进制（落库形态）。"""
+    """float 序列 → float32 小端二进制（历史落库形态，供迁移脚本兼容调用）。"""
     return array.array("f", [float(value) for value in values]).tobytes()
 
 
 def decode_vector(blob: Any) -> Any:
-    """落库二进制 → float32 数组；长度非法（非 4 字节对齐）返回 None。"""
+    """历史二进制 → float32 数组；长度非法（非 4 字节对齐）返回 None。"""
     if blob is None:
         return None
     raw = bytes(blob)

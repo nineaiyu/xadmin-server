@@ -51,7 +51,8 @@ class BaseImClient:
             response = self._client().get(url, params=params or {}, headers=headers or {}, timeout=timeout)
             payload = response.json()
         except Exception as exc:
-            raise ImSdkError(f"request failed: {exc}") from exc
+            # 不拼接原始异常文本：requests 的异常常带完整 URL（钉钉/企微 token 在 query 中）
+            raise ImSdkError(f"request failed: {type(exc).__name__}") from exc
         return self._check(payload, url) if isinstance(payload, dict) else {}
 
     def _post_json(self, url: str, body: Any, params: Any = None, headers: Any = None, timeout: int = 10) -> Any:
@@ -59,7 +60,7 @@ class BaseImClient:
             response = self._client().post(url, json=body, params=params or {}, headers=headers or {}, timeout=timeout)
             payload = response.json()
         except Exception as exc:
-            raise ImSdkError(f"request failed: {exc}") from exc
+            raise ImSdkError(f"request failed: {type(exc).__name__}") from exc
         return self._check(payload, url) if isinstance(payload, dict) else {}
 
     def _post_query(self, url: str, params: Any, timeout: int = 10) -> Any:

@@ -319,20 +319,20 @@ def _long_func(name: str, lines: int) -> str:
 
 class TestFunctionLength:
     def test_ast_counts_exact_function_span(self, cfln, tmp_path):
-        write(tmp_path, "common/a.py", _long_func("big", 100))
+        write(tmp_path, "common/a.py", _long_func("big", 101))
         rows = cfln.collect()
-        assert [(rel, name, size) for rel, name, size in rows] == [("common/a.py", "big", 100)]
+        assert [(rel, name, size) for rel, name, size in rows] == [("common/a.py", "big", 101)]
 
     def test_nested_and_method_qualname(self, cfln, tmp_path):
         write(
             tmp_path,
             "common/a.py",
-            "class A:\n" + "\n".join("    " + line for line in _long_func("big", 100).splitlines()),
+            "class A:\n" + "\n".join("    " + line for line in _long_func("big", 101).splitlines()),
         )
-        assert [(name, size) for _rel, name, size in cfln.collect()] == [("A.big", 100)]
+        assert [(name, size) for _rel, name, size in cfln.collect()] == [("A.big", 101)]
 
     def test_below_threshold_not_collected(self, cfln, tmp_path):
-        write(tmp_path, "common/a.py", _long_func("ok", 99))
+        write(tmp_path, "common/a.py", _long_func("ok", 100))
         assert cfln.collect() == []
 
     def test_new_oversized_function_fails(self, cfln, tmp_path, capsys):

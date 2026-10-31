@@ -38,6 +38,8 @@ def inline_file_response(source: Any, content_type: str, filename: str) -> FileR
     response = FileResponse(file_obj, as_attachment=False, content_type=content_type)
     response["Content-Disposition"] = "inline; filename*=UTF-8''{}".format(quote(filename or ""))
     response["Access-Control-Expose-Headers"] = "Content-Disposition, X-Preview-Truncated"
+    # 内容类型由服务端判定：禁止浏览器嗅探改写（上传 mime 由客户端提供，不可信）
+    response["X-Content-Type-Options"] = "nosniff"
     return response
 
 

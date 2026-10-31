@@ -28,6 +28,7 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils import parse_bool
 from identity.services import Post, UserInfo, UserRole
 
 CANDIDATE_LIMIT = 1000
@@ -142,7 +143,10 @@ class ApprovalRuleViewSet(BaseModelSet):
             priority = int(payload.get("priority", getattr(rule, "priority", 0)) or 0)
         except (TypeError, ValueError):
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
-        is_active = bool(payload.get("is_active", getattr(rule, "is_active", True)))
+        try:
+            is_active = parse_bool(payload.get("is_active", getattr(rule, "is_active", True)))
+        except ValueError:
+            return ApiResponse(code=1004, detail=_("Invalid boolean value"))
         exclude_pk = getattr(rule, "pk", None)
         items: list[dict[str, Any]] = []
         total = 0
@@ -159,7 +163,16 @@ class ApprovalRuleViewSet(BaseModelSet):
                     continue
                 current = resolve_rule(approval.path, approval.method, exclude_pk=exclude_pk)
                 current_priority = int(current.priority) if current is not None else -1
-                draft_wins = current is None or priority > current_priority or (priority == current_priority)
+                if current is None:
+                    draft_wins = True
+                elif priority != current_priority:
+                    draft_wins = priority > current_priority
+                elif rule is not None:
+                    # 并列时真实匹配按 created_time 倒序（更新者胜）：编辑中的规则沿用原创建时间
+                    draft_wins = rule.created_time >= current.created_time
+                else:
+                    # 新规则保存后创建时间必然更新，并列时胜出
+                    draft_wins = True
                 items.append(
                     {
                         "pk": str(approval.pk),

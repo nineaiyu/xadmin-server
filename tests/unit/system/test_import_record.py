@@ -246,7 +246,7 @@ def test_import_log_action(superuser, monkeypatch, tmp_path):
     assert response.data["data"]["finished"] is True
 
 
-def test_auto_clean_import_record_removes_files(superuser):
+def test_auto_clean_import_record_removes_files(superuser, django_capture_on_commit_callbacks):
     """清理任务删除过期记录并连带删源文件与错误报告。"""
     record = ImportRecord.objects.create(name="x", action="create", creator=superuser)
     upload = UploadFile(filename="src.xlsx", filesize=5, mime_type="text/csv", is_tmp=True, creator=superuser)
@@ -257,7 +257,8 @@ def test_auto_clean_import_record_removes_files(superuser):
     file_path = upload.filepath.path
     ImportRecord.objects.filter(pk=record.pk).update(created_time=timezone.now() - datetime.timedelta(days=31))
 
-    removed = auto_clean_import_record_job.run()
+    with django_capture_on_commit_callbacks(execute=True):
+        removed = auto_clean_import_record_job.run()
     assert removed == 1
     assert not ImportRecord.objects.filter(pk=record.pk).exists()
     assert not UploadFile.all_objects.filter(pk=upload.pk).exists()

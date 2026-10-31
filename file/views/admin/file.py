@@ -247,6 +247,15 @@ class UploadFileViewSet(
         try:
             check_upload_limits(request.user, files)
         except UploadError as exc:
+            if files:
+                log_file_access(
+                    user=request.user,
+                    action=FileAccessLog.Action.UPLOAD,
+                    request=request,
+                    result=False,
+                    detail=str(exc.detail)[:255],
+                    filename=getattr(files[0], "name", ""),
+                )
             return ApiResponse(code=exc.code, detail=exc.detail)
         # 统一落库：整批包在同一事务内，任一文件写入失败则整体回滚（与前置全量校验配套）
         result = []
@@ -259,6 +268,14 @@ class UploadFileViewSet(
                     result.append(upload)
         except Exception as e:
             logger.exception(f"user:{request.user} upload file save failed: {e}")
+            log_file_access(
+                user=request.user,
+                action=FileAccessLog.Action.UPLOAD,
+                request=request,
+                result=False,
+                detail=str(_("Failed to save uploaded file")),
+                filename=getattr(files[0], "name", "") if files else "",
+            )
             return ApiResponse(code=INVALID_CODE, detail=_("Failed to save uploaded file"))
         if result:
             # 配额使用率卡片依赖 stats 短缓存，上传后主动失效避免读到旧值

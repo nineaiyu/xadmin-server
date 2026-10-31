@@ -416,3 +416,31 @@ class TestPurgeSoftDeleted:
         assert total >= 1
         assert django_user_model.objects.filter(pk=keep.pk).exists()
         assert not django_user_model.all_objects.filter(pk=gone.pk).exists()
+
+
+class TestMonitorMissingData:
+    """无心跳数据（Avg=None）不得被判为超出阈值：空表不能每分钟告警。"""
+
+    def test_none_value_uses_default(self):
+        from common.notifications import ServerPerformanceCheckUtil
+
+        util = ServerPerformanceCheckUtil()
+        data = {
+            "default": 0,
+            "max_threshold": 90,
+            "alarm_msg_format": "{name} {value} > {max_threshold}",
+        }
+        assert util.check_item({"cpu_percent": None}, "cpu_percent", data) is None
+
+    def test_exceeded_value_alerts(self):
+        from common.notifications import ServerPerformanceCheckUtil
+
+        util = ServerPerformanceCheckUtil()
+        data = {
+            "default": 0,
+            "max_threshold": 90,
+            "alarm_msg_format": "{name} {value} > {max_threshold}",
+        }
+        message = util.check_item({"cpu_percent": 95}, "cpu_percent", data)
+        assert message is not None
+        assert "95" in message

@@ -571,6 +571,21 @@ class TestMaskRuleAPI:
         assert data["result"] == PHONE
         assert data["invalid_pattern"] is True
 
+    def test_preview_catastrophic_pattern_is_not_executed(self, auth_client):
+        """灾难性回溯正则直接标记未生效：预览不能在请求线程里跑死正则。"""
+        payload = "a" * 64 + "!"
+        resp = auth_client.post(
+            "/api/audit/mask-rules/preview",
+            {
+                "value": payload,
+                "rule": {"mask_type": "custom", "keep_head": 3, "keep_tail": 2, "pattern": "(a+)+$"},
+            },
+            format="json",
+        )
+        assert resp.data["code"] == 1000
+        assert resp.data["data"]["invalid_pattern"] is True
+        assert resp.data["data"]["result"] == payload
+
     def test_preview_valid_pattern_flag_false(self, auth_client):
         """合法自定义正则：正常脱敏，invalid_pattern=False（响应结构只增不改）。"""
         resp = auth_client.post(
@@ -745,10 +760,10 @@ class TestMaskPreviewRegexSafety:
         assert resp.data["data"]["invalid_pattern"] is True
 
     def test_preview_catastrophic_pattern_times_out(self, auth_client):
-        # (a+)+$ 对 500 个 a 后接非 a 字符是指数级回溯；子进程超时应转 400 而不是挂住 worker
+        # 交替式回溯（(a|aa)+$）不在静态启发式名单内，子进程超时应转 400 而不是挂住 worker
         resp = auth_client.post(
             "/api/audit/mask-rules/preview",
-            {"value": "a" * 499 + "!", "rule": {"mask_type": "custom", "pattern": "(a+)+$"}},
+            {"value": "a" * 100 + "!", "rule": {"mask_type": "custom", "pattern": "(a|aa)+$"}},
             format="json",
         )
         assert resp.status_code == 400

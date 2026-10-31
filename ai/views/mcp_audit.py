@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """MCP 调用审计报表（提案 P5）：OperationLog(module=AI:mcp:client) 的只读视图。
 
-不建第二张表：调用流水由 ``audit_mcp_call`` 统一落审计，本视图集按 module +
-object_pk 预过滤出单服务器的调用历史，工具 / 通道 / 结果经序列化器从 changes
-JSON 提取。审计痕迹不可经 API 抹除——只读 + 详情 + 导出，无删除端点（与
-操作日志页同口径）。
+不建第二张表：调用流水由 ``audit_mcp_call`` 统一落审计，本视图集按 module 预过滤，
+服务器维度由 ``object_pk`` 过滤器限定（未传时返回全部服务器的调用历史）；
+工具 / 通道 / 结果经序列化器从 changes JSON 提取。审计痕迹不可经 API 抹除——
+只读 + 详情 + 导出，无删除端点（与操作日志页同口径）。
 """
 
 from typing import Any

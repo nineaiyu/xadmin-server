@@ -159,7 +159,7 @@ class TestBatchDestroyRowwiseGuard:
         others = _make_submission(form, superuser, status=DynamicFormSubmission.Status.DRAFT)
         outsider = _outsider_client(normal_user)
         resp = outsider.post(f"{SUBMISSIONS_URL}/batch-destroy", [str(others.pk)], format="json")
-        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["code"] == 1004, resp.data
         # 他人行不可删除：数据权限预过滤（不在 success 也不在候选池）或归属守卫（failures）
         assert resp.data["data"]["success"] == []
         assert DynamicFormSubmission.objects.filter(pk=others.pk).exists()

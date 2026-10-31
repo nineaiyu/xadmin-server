@@ -122,11 +122,15 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubs
 
             sub = msg_type_sub_mapper.get(message_type)
             if sub is None:
-                # 新增消息类型尚未进入种子/存量库时自愈补建，避免整页 KeyError。
-                sub = SystemMsgSubscription.objects.create(message_type=message_type)
-                msg_cls = get_message_cls(message_type)
-                if msg_cls is not None and hasattr(msg_cls, "post_insert_to_db"):
-                    msg_cls.post_insert_to_db(sub)
+                # 新增消息类型尚未进入种子/存量库时自愈补建；并发首访由唯一约束收敛
+                sub, created = SystemMsgSubscription.objects.get_or_create(message_type=message_type)
+                if created:
+                    msg_cls = get_message_cls(message_type)
+                    if msg_cls is not None and hasattr(msg_cls, "post_insert_to_db"):
+                        try:
+                            msg_cls.post_insert_to_db(sub)
+                        except Exception:  # noqa: BLE001 单条初始化失败不打断整页
+                            logger.warning("init system msg subscription failed: %s", message_type, exc_info=True)
                 msg_type_sub_mapper[message_type] = sub
             sub.message_type_label = message_type_label
             category_children_mapper[category].append(sub)

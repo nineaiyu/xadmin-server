@@ -27,7 +27,7 @@ class Command(BaseCommand):
         if options["status"]:
             state = vector_index_state()
         else:
-            state = ensure_vector_index()
+            state = ensure_vector_index(allow_large=True)
         self.stdout.write(
             self.style.SUCCESS(
                 f"column={state.get('column_type') or 'missing'} hnsw={state.get('hnsw')} "

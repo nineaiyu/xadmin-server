@@ -129,7 +129,7 @@ class TestPhysicalFileGuard:
 
         assert os.path.exists(disk_path), "仍被业务引用的文件不应删除"
 
-    def test_unreferenced_file_is_removed_from_disk(self, superuser):
+    def test_unreferenced_file_is_removed_from_disk(self, superuser, django_capture_on_commit_callbacks):
         """无任何引用时仍按原语义清理磁盘文件（守护不能把清理能力整体关掉）。"""
         import os
 
@@ -137,7 +137,8 @@ class TestPhysicalFileGuard:
         disk_path = upload.filepath.path
         assert os.path.exists(disk_path)
 
-        upload.hard_delete()
+        with django_capture_on_commit_callbacks(execute=True):
+            upload.hard_delete()
 
         assert not os.path.exists(disk_path)
 
@@ -312,7 +313,7 @@ class TestKeepDaysCleanup:
         assert auto_clean_upload_file(keep_days=0) == 0
         assert UploadFile.objects.filter(pk=record.pk).exists()
 
-    def test_removes_expired_unreferenced(self, superuser):
+    def test_removes_expired_unreferenced(self, superuser, django_capture_on_commit_callbacks):
         """超保留期且无引用：记录与磁盘文件一并清理。"""
         import os
 
@@ -322,7 +323,8 @@ class TestKeepDaysCleanup:
         disk_path = record.filepath.path
         assert os.path.exists(disk_path)
 
-        assert auto_clean_upload_file(keep_days=7) == 1
+        with django_capture_on_commit_callbacks(execute=True):
+            assert auto_clean_upload_file(keep_days=7) == 1
         assert not UploadFile.objects.filter(pk=record.pk).exists()
         assert not os.path.exists(disk_path)
 

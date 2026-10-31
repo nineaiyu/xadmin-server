@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """packages/xadmin-common/common/core/serializers.py 字段权限裁剪单元测试。"""
 
+import asyncio
+
 import pytest
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory, force_authenticate
@@ -12,6 +14,11 @@ from system.models import FieldPermission, ModelLabelField
 pytestmark = pytest.mark.django_db
 
 factory = APIRequestFactory()
+
+
+async def _render(serializer_class, instance):
+    return serializer_class(instance).data
+
 
 ALL_FIELDS = {
     "pk",
@@ -78,9 +85,24 @@ def make_field_tree():
 
 
 class TestGetAllowFields:
-    def test_without_request_context_keeps_all_fields(self, db):
-        serializer = BookSerializer()
-        assert set(serializer.fields.keys()) == ALL_FIELDS
+    def test_without_request_context_fails_closed(self, superuser):
+        from demo.models import Book
+
+        book = Book.objects.create(name="无上下文", isbn="ctx-1", author="a", admin=superuser, admin2=superuser)
+        assert BookSerializer(book).data == {}
+
+    def test_without_request_context_explicit_ignore_keeps_all(self, superuser):
+        from demo.models import Book
+
+        book = Book.objects.create(name="显式豁免", isbn="ctx-2", author="a", admin=superuser, admin2=superuser)
+        assert set(BookSerializer(book, ignore_field_permission=True).data.keys()) == ALL_FIELDS
+
+    def test_event_loop_serialization_fails_closed(self, superuser):
+        """事件循环线程内没有请求线程的字段收敛，输出同样 fail-closed。"""
+        from demo.models import Book
+
+        book = Book.objects.create(name="事件循环", isbn="ctx-3", author="a", admin=superuser, admin2=superuser)
+        assert asyncio.run(_render(BookSerializer, book)) == {}
 
     def test_superuser_sees_all_fields(self, superuser, make_request_ctx):
         make_request_ctx(superuser)

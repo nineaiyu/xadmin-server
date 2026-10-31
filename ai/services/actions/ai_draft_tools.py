@@ -156,6 +156,70 @@ def native_draft_result_stream(user: Any, message: str) -> Any:
     yield {"type": "result", "result": result}
 
 
+async def native_draft_result_stream_async(user: Any, message: str) -> Any:
+    """``native_draft_result_stream`` 的异步对偶：LLM 增量在事件循环内 await。
+
+    工具目录 / 消息构造 / 结果校验仍触 DB，经 ``sync_to_async`` 落回线程本地连接；
+    事件形态与同步版逐字段一致（reasoning/content/tool_calls/result）。
+    """
+    from asgiref.sync import sync_to_async
+
+    from ai.services.actions.ai_tool_catalog import openai_tools
+    from ai.services.assistant.ai_async import tracked_chat_stream_async
+    from ai.services.assistant.ai_config import structured_async_chat_client
+
+    client, max_tokens = await sync_to_async(structured_async_chat_client)()
+    tools = await sync_to_async(openai_tools)(user)
+    if not tools:
+        raise DjangoValidationError(_("The model did not return an actionable request"))
+    messages = await sync_to_async(build_tool_messages)(user, message)
+    content_chunks: list[Any] = []
+    tool_calls: list[Any] = []
+    async for item in tracked_chat_stream_async(
+        user,
+        "action",
+        client,
+        messages,
+        track="native",
+        tools=tools,
+        tool_choice="auto",
+        max_tokens=max_tokens,
+    ):
+        kind = item.get("type")
+        if kind == "tool_calls":
+            tool_calls = item.get("tool_calls") or []
+            continue
+        if kind == "content":
+            content_chunks.append(str(item.get("text") or ""))
+        yield item
+    result = await sync_to_async(draft_result_from_chat)(
+        {"content": "".join(content_chunks), "tool_calls": tool_calls}, user
+    )
+    yield {"type": "result", "result": result}
+
+
+async def prompt_draft_result_stream_async(user: Any, message: str) -> Any:
+    """prompt-JSON 轨道的异步流式形态：与 ``parse_draft`` 共用同一校验链。"""
+    from asgiref.sync import sync_to_async
+
+    from ai.services.actions.ai_actions import build_draft_prompt, parse_draft
+    from ai.services.assistant.ai_async import tracked_chat_stream_async
+    from ai.services.assistant.ai_config import structured_async_chat_client
+
+    client, max_tokens = await sync_to_async(structured_async_chat_client)()
+    prompt = await sync_to_async(build_draft_prompt)(user, message)
+    chunks: list[Any] = []
+    async for item in tracked_chat_stream_async(user, "action", client, prompt, track="prompt", max_tokens=max_tokens):
+        if item.get("type") == "content":
+            chunks.append(str(item.get("text") or ""))
+        yield item
+    raw = "".join(chunks)
+    if not raw.strip():
+        raise DjangoValidationError(_("The model did not provide a final answer; please retry or switch models"))
+    result = await sync_to_async(parse_draft)(raw, user)
+    yield {"type": "result", "result": result}
+
+
 def native_draft_result(user: Any, message: str) -> tuple[Any, ...]:
     """原生 function calling 轨道生成草稿（非流式入口：聊天室 ``/do`` 等）。
 

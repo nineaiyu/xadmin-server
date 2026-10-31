@@ -138,6 +138,13 @@ class TestBatchUserConfig:
         UserConfig(user.pk).set_value(KEY, 77, is_active=True, access=True)
         assert UserConfig(str(user.pk)).get_values([KEY]) == {KEY: 77}
 
+    def test_encrypted_personal_value_is_decrypted_in_batch(self, user):
+        """批量读取与单读同口径：敏感键落库密文，返回明文。"""
+        from common.core.auth.credentials import encrypt_setting_value
+
+        UserConfig(user.pk).set_value("SCIM_TOKEN", encrypt_setting_value("SCIM_TOKEN", "plain-token"), is_active=True)
+        assert batch_user_config([user.pk], "SCIM_TOKEN")[user.pk] == "plain-token"
+
 
 class TestPersonalConfigDataHelper:
     def test_system_fallback_is_not_personal_row(self, user):

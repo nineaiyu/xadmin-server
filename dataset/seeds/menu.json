@@ -308,28 +308,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "4e76df89-3b77-52f4-933a-5eada2c582c6",
-  "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
-   "menu_type": 2,
-   "name": "meta:DataDataset",
-   "rank": 8,
-   "path": "api/dataset/datasets/meta$",
-   "component": null,
-   "is_active": true,
-   "meta": "7208172f-0d80-5a06-8afc-405f08c2c310",
-   "method": "GET",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
   "fields": {
    "created_time": "2026-09-13T00:00:00.000Z",

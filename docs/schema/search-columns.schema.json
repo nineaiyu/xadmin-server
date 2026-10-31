@@ -102,6 +102,10 @@
         "type": "number",
         "description": "字符长度上限（CharField 及路径类字段）"
       },
+      "min_length": {
+        "type": "number",
+        "description": "字符长度下限（DRF min_length，字段声明时下发）"
+      },
       "min_value": {
         "type": "number",
         "description": "数值下限（DRF min_value，字段声明时下发；前端 input-number 消费）"

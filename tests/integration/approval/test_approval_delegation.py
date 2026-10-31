@@ -9,7 +9,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from approval.models.approval import ApprovalDelegation, ApprovalFlow, ApprovalFlowNode
-from approval.services.approval_flow import resolve_assignees
+from approval.services.approval_flow import resolve_assignee_pairs, resolve_assignees
 from identity.models import UserInfo, UserRole
 from system.models import DataPermission, FieldPermission, Menu, MenuMeta, ModelLabelField
 
@@ -114,6 +114,20 @@ class TestResolveWithDelegation:
         agent.save(update_fields=["is_active"])
         resolved = resolve_assignees(node, applicant, {})
         assert resolved == []
+
+    def test_multiple_delegators_same_agent_keep_first_source(self, applicant, target, agent):
+        """多委托人→同一代理人：候选人只保留一个，delegate_from 按候选顺序取首个。"""
+        other = UserInfo.objects.create_user(username="deleg_other", password="Test@123456")
+        _, node = make_flow()
+        node.assignee_value = "deleg_target,deleg_other"
+        node.save(update_fields=["assignee_value"])
+        make_delegation(target, agent)
+        make_delegation(other, agent)
+        pairs = resolve_assignee_pairs(node, applicant, {})
+        assert [user.pk for user, _source in pairs] == [agent.pk]
+        assert pairs[0][1] is not None and pairs[0][1].pk == target.pk
+        # 重复解析不随 DB 返回顺序漂移
+        assert resolve_assignee_pairs(node, applicant, {}) == pairs
 
     def test_delegated_task_records_source(self, applicant, target, agent):
         """委托代审落任务时记录 delegate_from（审批轨迹标注「由 X 代理」）。"""

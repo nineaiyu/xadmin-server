@@ -18,17 +18,30 @@ def run_modules(*args):
 
 
 class TestModulesCommand:
+    @staticmethod
+    def _total():
+        from common.core.modules import MODULES
+
+        return len(MODULES)
+
+    @staticmethod
+    def _non_optional():
+        from common.core.modules import CORE, MODULES, STANDARD
+
+        return sum(1 for spec in MODULES if spec.level in (CORE, STANDARD))
+
     def test_lists_current_combination(self):
         output = run_modules()
+        total = self._total()
         assert "preset=full" in output
-        assert "已启用 20 / 20 个模块" in output
+        assert f"已启用 {total} / {total} 个模块" in output
         for module_id in ("core_rbac", "approval", "chat", "analysis"):
             assert module_id in output
 
     def test_preview_reports_disabled_modules(self):
         output = run_modules("--preset", "standard")
         assert "预演" in output
-        assert "已启用 11 / 20 个模块" in output
+        assert f"已启用 {self._non_optional()} / {self._total()} 个模块" in output
         assert "停用：ai, analysis, approval_flow, chat, dform, open_platform, scim, search, webhook" in output
 
     def test_config_snippet_with_overrides(self):

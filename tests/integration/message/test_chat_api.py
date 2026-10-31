@@ -379,6 +379,13 @@ class TestGroups:
 
 
 class TestAiChat:
+    def test_ai_view_opts_out_atomic_requests(self):
+        """LLM 调用不能包在请求级事务里（最长可持续数十秒）。"""
+        from message.views_ai import ChatAiViewSet
+
+        view = ChatAiViewSet.as_view({"post": "message"})
+        assert "default" in getattr(view, "_non_atomic_requests", set())
+
     def test_disabled_gate(self, auth_client, settings):
         settings.AI_ASSISTANT_ENABLED = False
         response = auth_client.post(AI_URL, {"content": "你好"}, format="json")
@@ -541,3 +548,43 @@ class TestSharedMethodPermission:
         response = client.post(f"{ROOM_URL}/{group.pk}/members", {"add": [bob.pk]}, format="json")
         assert response.status_code == 200, response.data
         assert response.json()["code"] == 1001
+
+
+class TestRecallScrubsCopies:
+    """撤回必须清理冗余副本：会话摘要与离线私聊站内信不得保留原文。"""
+
+    def test_room_last_message_scrubbed(self, superuser, bob):
+        room = chat_service.get_or_create_private_room(superuser, bob)
+        message, __ = chat_service.create_message(room, superuser, "会出现在左侧栏的原文")
+        room.refresh_from_db()
+        assert room.last_message == "会出现在左侧栏的原文"
+
+        chat_service.recall_message(superuser, message.pk)
+
+        room.refresh_from_db()
+        assert room.last_message != "会出现在左侧栏的原文"
+        assert "撤回" in room.last_message or "recalled" in room.last_message.lower()
+
+    def test_offline_private_notice_scrubbed(self, superuser, bob):
+        from notifications.models import MessageContent
+
+        room = chat_service.get_or_create_private_room(superuser, bob)
+        message, __ = chat_service.create_message(room, superuser, "离线站内信原文")
+        chat_service.store_chat_notices(
+            [bob.pk],
+            title="新私聊消息",
+            message="离线站内信原文",
+            extra={
+                "chat_room_id": str(room.pk),
+                "chat_message_type": "chat_private",
+                "sender_pk": str(superuser.pk),
+                "chat_message_id": str(message.pk),
+            },
+        )
+
+        chat_service.recall_message(superuser, message.pk)
+
+        notice = MessageContent.objects.filter(extra_json__chat_message_id=str(message.pk)).first()
+        assert notice is not None
+        assert notice.message != "离线站内信原文"
+        assert "撤回" in notice.message or "recalled" in notice.message.lower()

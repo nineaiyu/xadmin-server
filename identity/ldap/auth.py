@@ -128,6 +128,10 @@ class LdapBindBackend(BaseBackend):
         if local is not None:
             if local.deleted_at is not None:
                 return None
+            if local.is_superuser:
+                # 目录同名账号不得自动接管本地超管（目录被攻破 = 本地提权）
+                logger.warning("ldap auto-bind refused for local superuser: %s", local.username)
+                return None
             # 本地同名账号复用：自动补建绑定（目录接管后续同步，本地密码仍可登录）
             LdapUserBinding.objects.get_or_create(user=local, defaults={"dn": user_dn})
             return local

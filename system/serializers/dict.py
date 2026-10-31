@@ -148,7 +148,8 @@ class DataDictSerializer(BaseModelSerializer):
         DB 侧唯一约束带 condition（parent 非空），DRF 不做该约束校验，这里显式查重，
         避免撞约束 500。内置字典（is_locked）额外禁止改 code 与父级。
         """
-        parent = attrs.get("parent") or (self.instance.parent if self.instance else None)
+        # 显式存在性判断：parent=None 是「提升为类型」的合法提交值，不能被 or 吞掉
+        parent = attrs["parent"] if "parent" in attrs else (self.instance.parent if self.instance else None)
         code = attrs.get("code") or (self.instance.code if self.instance else None)
         if self.instance and self.instance.is_locked:
             # 锁定字典被代码按 code 引用（DictChoiceField），改 code 等于让引用断链
@@ -157,6 +158,12 @@ class DataDictSerializer(BaseModelSerializer):
             if parent is not None and parent.pk != self.instance.parent_id:
                 raise serializers.ValidationError({"parent": _("Locked dict cannot be modified")})
             return attrs
+        if self.instance is not None and "parent" in attrs:
+            # 两层结构约束：类型行（无 parent）不可降级；字典项不可提升为类型
+            if self.instance.parent_id is None and attrs["parent"] is not None:
+                raise serializers.ValidationError({"parent": _("A dict type cannot be nested under another type")})
+            if self.instance.parent_id is not None and attrs["parent"] is None:
+                raise serializers.ValidationError({"parent": _("A dict item cannot be promoted to a dict type")})
         if not code:
             return attrs
         if parent and self.instance and parent.pk == self.instance.pk:

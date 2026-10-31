@@ -195,6 +195,25 @@ class TestSyncModelField:
         assert "BrokenProbeSerializer" in result["role"]["failed_serializers"]
         assert result["role"]["kept"] > 0
 
+    def test_failed_models_are_not_pruned(self):
+        """采集失败的模型子树（根 + 字段节点）不得被当成陈旧行删除。
+
+        删除会级联清空角色字段白名单与菜单模型绑定，且不可恢复。
+        """
+        from system.models import ModelLabelField
+        from system.services.modelfield import _prune_stale
+
+        role = ModelLabelField.FieldChoices.ROLE
+        root = ModelLabelField.objects.create(name="broken.model", label="broken", field_type=role)
+        child = ModelLabelField.objects.create(name="field", parent=root, field_type=role)
+        stale = ModelLabelField.objects.create(name="stale.model", label="stale", field_type=role)
+
+        deleted = _prune_stale(role, set(), enabled=True, skip_models={"broken.model"})
+
+        assert deleted == 1
+        assert ModelLabelField.objects.filter(pk__in=[root.pk, child.pk]).count() == 2
+        assert not ModelLabelField.objects.filter(pk=stale.pk).exists()
+
     def test_seed_matches_sync_scope(self, superuser, seed_creator_user):
         """种子字段树不得在同步时被判为陈旧删除（单向守护）。
 
@@ -272,3 +291,19 @@ class TestSyncEndpoint:
         assert set(summary["data"]) == {"kept", "deleted", "models"}
         assert summary["role"]["kept"] > 0
         assert "failed_serializers" in summary["role"]
+
+
+def test_model_field_known_uses_reverse_fk(db):
+    """已同步字段树时：合法字段通过、未知字段拒绝（反向外键默认名 modellabelfield_set）。"""
+    from system.models import ModelLabelField
+    from system.services.modelfield import model_field_known
+
+    root = ModelLabelField.objects.create(
+        name="identity.userinfo", label="用户", field_type=ModelLabelField.FieldChoices.ROLE
+    )
+    ModelLabelField.objects.create(
+        name="username", label="用户名", parent=root, field_type=ModelLabelField.FieldChoices.ROLE
+    )
+
+    assert model_field_known("identity.userinfo", "username") is True
+    assert model_field_known("identity.userinfo", "not_a_field") is False

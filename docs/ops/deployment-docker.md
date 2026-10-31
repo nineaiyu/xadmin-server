@@ -133,7 +133,9 @@ YES_I_KNOW=1 RESTORE_MEDIA=1 sh ops/db_restore.sh <备份包> xadmin_restore_tes
 
 - WAL 归档（PITR）：**2026-09-16 已启用**——`archive_mode=on` + `archive_timeout=60`
   （RPO 1 分钟），gzip 压缩归档至 `${VOLUME_DIR}/xadmin-postgresql/archive`；
-  归档链路巡检（失败态 + 积压滞留）已并入 `db-backup` 每轮检查，
+  归档目录属主由 postgres 容器启动时自愈（Linux bind mount 目录默认 `root:root`；
+  手工部署或旧版 compose 需手动 `chown`，否则归档失败会让 `pg_wal` 无限增长，
+  处置见 [pitr.md](pitr.md) §7）；归档链路巡检（失败态 + 积压滞留）已并入 `db-backup` 每轮检查，
   时间点回放演练见 [pitr.md](pitr.md)。
 
 - 一键演练（备份 → 异地校验 → 恢复验证库 → 逐表行数对比 → 输出报告，约 2s）：

@@ -40,6 +40,8 @@ class CredentialViewSet(GenericViewSet):
     """凭据与密钥"""
 
     queryset = SystemConfig.objects.none()
+    # 凭据总览/轮换是非模型端点：不把系统配置模型计入权限点绑定
+    permission_models: tuple[Any, ...] = ()
 
     def get_permissions(self) -> Any:
         """轮换是敏感操作：服务端要求密码二次确认（与前端确认弹窗同一协议）。"""

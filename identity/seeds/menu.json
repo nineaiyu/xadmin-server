@@ -374,7 +374,7 @@
   "fields": {
    "created_time": "2026-09-09T00:00:00Z",
    "updated_time": "2026-09-09T00:00:00Z",
-   "description": null,
+   "description": "显式数据权限优先；未授予 identity.usersession 数据权限时，非超管默认仅本人 + 本部门（含子部门）",
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
@@ -817,7 +817,7 @@
   "fields": {
    "created_time": "2025-03-27T06:29:24.594Z",
    "updated_time": "2025-03-27T06:29:24.594Z",
-   "description": null,
+   "description": "显式数据权限优先；未授予 identity.usersession 数据权限时，非超管默认仅本人 + 本部门（含子部门）",
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
@@ -1378,7 +1378,7 @@
   "fields": {
    "created_time": "2026-09-09T00:00:00Z",
    "updated_time": "2026-09-09T00:00:00Z",
-   "description": null,
+   "description": "显式数据权限优先；未授予 identity.usersession 数据权限时，非超管默认仅本人 + 本部门（含子部门）",
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,

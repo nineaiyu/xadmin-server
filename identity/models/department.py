@@ -82,7 +82,12 @@ class DeptInfo(DbAuditModel, DbUuidModel):
 
     @classmethod
     def _recursion_dept_info(
-        cls, dept_id: Any, dept_all_list: Any, dept_list: Any = None, is_parent: Any = False
+        cls,
+        dept_id: Any,
+        dept_all_list: Any,
+        dept_list: Any = None,
+        is_parent: Any = False,
+        visited: set[str] | None = None,
     ) -> Any:
         parent = "parent"
         pk = "pk"
@@ -92,6 +97,10 @@ class DeptInfo(DbAuditModel, DbUuidModel):
             dept_all_list = DeptInfo.objects.values("pk", "parent")
         if dept_list is None:
             dept_list = [dept_id]
+        visited = visited or set()
+        if str(dept_id) in visited:
+            return json.loads(json.dumps(list(set(dept_list)), cls=encoders.JSONEncoder))
+        visited.add(str(dept_id))
         for dept in dept_all_list:
             # str 归一比较：规则 value 经 JSON 反序列化得到的是字符串主键，
             # values() 取出的是 UUID 对象（旧实现直接 == 比较，str 入参永远匹配不上，
@@ -100,7 +109,7 @@ class DeptInfo(DbAuditModel, DbUuidModel):
             if dept_parent is not None and str(dept_parent) == str(dept_id):
                 if dept.get(pk):
                     dept_list.append(dept.get(pk))
-                    cls._recursion_dept_info(dept.get(pk), dept_all_list, dept_list, is_parent)
+                    cls._recursion_dept_info(dept.get(pk), dept_all_list, dept_list, is_parent, visited)
         return json.loads(json.dumps(list(set(dept_list)), cls=encoders.JSONEncoder))
 
     @classmethod

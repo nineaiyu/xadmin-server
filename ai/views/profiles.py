@@ -30,7 +30,7 @@ from common.core.modelset import (
 from common.core.response import ApiResponse
 from common.core.throttle import AiThrottleMixin
 from common.swagger.utils import get_default_response_schema
-from common.utils import get_logger
+from common.utils import get_logger, parse_bool
 
 logger = get_logger(__name__)
 
@@ -111,29 +111,55 @@ class AiProfileViewSet(
 
     def perform_create(self, serializer: Any) -> None:
         # 先清同用途激活行再插入：用途级部分唯一索引（uniq_ai_profile_purpose_active）下
-        # 「带 is_active=true 直接新建」才不会在插入瞬间撞约束
-        from django.db import transaction
+        # 「带 is_active=true 直接新建」才不会在插入瞬间撞约束；锁同用途行串行化并发激活
+        from django.db import IntegrityError, transaction
 
-        with transaction.atomic():
-            if serializer.validated_data.get("is_active"):
-                purpose = serializer.validated_data.get("purpose") or AiProfile.Purpose.CHAT
-                AiProfile.objects.filter(is_active=True, purpose=purpose).update(is_active=False)
-            instance = serializer.save()
-            if instance.is_active:
-                set_active_profile(instance, True)
+        purpose = serializer.validated_data.get("purpose") or AiProfile.Purpose.CHAT
+
+        def _create() -> Any:
+            with transaction.atomic():
+                if serializer.validated_data.get("is_active"):
+                    list(
+                        AiProfile.objects.select_for_update()
+                        .filter(purpose=purpose)
+                        .order_by("pk")
+                        .values_list("pk", flat=True)
+                    )
+                    AiProfile.objects.filter(is_active=True, purpose=purpose).update(is_active=False)
+                return serializer.save()
+
+        try:
+            instance = _create()
+        except IntegrityError:
+            instance = _create()
+        if instance.is_active:
+            set_active_profile(instance, True)
 
     def perform_update(self, serializer: Any) -> None:
-        from django.db import transaction
+        from django.db import IntegrityError, transaction
 
-        with transaction.atomic():
-            if serializer.validated_data.get("is_active"):
-                purpose = serializer.validated_data.get("purpose") or serializer.instance.purpose
-                AiProfile.objects.exclude(pk=serializer.instance.pk).filter(is_active=True, purpose=purpose).update(
-                    is_active=False
-                )
-            instance = serializer.save()
-            if instance.is_active:
-                set_active_profile(instance, True)
+        purpose = serializer.validated_data.get("purpose") or serializer.instance.purpose
+
+        def _update() -> Any:
+            with transaction.atomic():
+                if serializer.validated_data.get("is_active"):
+                    list(
+                        AiProfile.objects.select_for_update()
+                        .filter(purpose=purpose)
+                        .order_by("pk")
+                        .values_list("pk", flat=True)
+                    )
+                    AiProfile.objects.exclude(pk=serializer.instance.pk).filter(is_active=True, purpose=purpose).update(
+                        is_active=False
+                    )
+                return serializer.save()
+
+        try:
+            instance = _update()
+        except IntegrityError:
+            instance = _update()
+        if instance.is_active:
+            set_active_profile(instance, True)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="activate")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -200,6 +226,9 @@ class AiProfileViewSet(
         if state == "SUCCESS":
             payload = result.result if isinstance(result.result, dict) else {}
             data.update({"ok": bool(payload.get("ok")), "detail": str(payload.get("detail") or "")})
+            # probe 任务的结果载荷（能力探测 dict）随轮询带回，test 任务无该键
+            if isinstance(payload.get("result"), dict):
+                data["result"] = payload["result"]
         elif state == "FAILURE":
             data.update({"ok": False, "detail": str(result.result)[:255]})
         return ApiResponse(data=data)
@@ -215,9 +244,8 @@ class AiProfileViewSet(
         - 探测不阻断：单项失败只记录 ok=False + 可读原因，返回结果供前端提示与人工修正；
         - 结果写回档案（capabilities + probed_at），可 PATCH 手工覆盖。
         """
-        from django.utils import timezone
-
-        from ai.services.assistant.ai_probe import ALL_CAPABILITIES, probe_profile
+        from ai.services.assistant.ai_probe import ALL_CAPABILITIES
+        from ai.tasks import probe_ai_profile_task
 
         profile = self.get_object()
         if not profile.is_configured:
@@ -229,11 +257,18 @@ class AiProfileViewSet(
             if unknown:
                 return ApiResponse(code=1001, detail=_("Unknown capability: {}").format(", ".join(unknown[:5])))
         try:
-            result = probe_profile(profile, capabilities=requested, vision=bool(request.data.get("vision")))
-        except Exception as exc:  # noqa: BLE001 探测入口兜底（凭据/网络异常归一可读文案）
-            logger.warning("AI profile probe failed", exc_info=True)
-            return ApiResponse(code=1002, detail=str(exc))
-        profile.capabilities = result
-        profile.probed_at = timezone.now()
-        profile.save(update_fields=["capabilities", "probed_at", "updated_time"])
-        return ApiResponse(data=result, detail=_("Model probe finished"))
+            vision = parse_bool(request.data.get("vision", False))
+        except ValueError:
+            return ApiResponse(code=1004, detail=_("Invalid boolean value"))
+        # 探测多次外呼供应商（最长 4 × timeout），下沉 Celery；请求只排队并返回 task_id
+        task = probe_ai_profile_task.delay(str(profile.pk), requested, vision)
+        _remember_test_task(task.id, profile, request.user)
+        if task.state == "SUCCESS" and isinstance(getattr(task, "result", None), dict):
+            outcome = task.result
+            if outcome.get("ok"):
+                return ApiResponse(data=outcome.get("result") or {}, detail=_("Model probe finished"))
+            return ApiResponse(code=1002, detail=str(outcome.get("detail") or ""))
+        return ApiResponse(
+            data={"task_id": task.id, "state": task.state},
+            detail=_("Model probe submitted"),
+        )

@@ -17,6 +17,7 @@ EXPECTED = {
         "idx_oplog_request_uuid",
         "idx_oplog_exec_time",
         "idx_oplog_module_objectpk",
+        "idx_oplog_mod_obj_created",
         "idx_oplog_path",
         "idx_oplog_token_created",
     },

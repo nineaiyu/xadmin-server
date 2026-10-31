@@ -5,7 +5,7 @@
 内存索引退役后的等价性口径：
 - 新鲜/模型/维度三重过滤在 SQL WHERE 内收敛（维度不一致的行直接排除，等价旧
   实现的逐块 skip，且不触发 pgvector 维度错误）；
-- 构建双写（embedding 二进制 + embedding_vector）；
+- 构建单写 pgvector 列（二进制列已随稳定版本清理）；
 - HNSW 索引定型（ai_vector_ddl）：维度稳定 → 定型列 + 建索引；维度混存 → 反向
   退回无维度；小语料 no-op；幂等可反复执行。
 """
@@ -17,7 +17,6 @@ from django.db import connection
 
 from ai.models.ai import AiKnowledgeChunk, AiProfile
 from ai.services.knowledge import ai_vector_ddl
-from ai.services.knowledge.ai_embedding_math import encode_vector
 from ai.services.knowledge.ai_embeddings import build_embeddings, invalidate_vector_index, search_vectors, vector_index
 
 pytestmark = pytest.mark.django_db
@@ -46,13 +45,12 @@ def _make_embedding_profile(model="fake-embed"):
 
 
 def _store_vector(chunk, vector, model="fake-embed"):
-    """直写双列（绕过供应商客户端）：hash/模型/维度按新鲜口径落库。"""
-    chunk.embedding = encode_vector(vector)
+    """直写 pgvector 列（绕过供应商客户端）：hash/模型/维度按新鲜口径落库。"""
     chunk.embedding_vector = vector
     chunk.embedding_hash = chunk.content_hash
     chunk.embedding_model = model
     chunk.embedding_dim = len(vector)
-    chunk.save(update_fields=["embedding", "embedding_vector", "embedding_hash", "embedding_model", "embedding_dim"])
+    chunk.save(update_fields=["embedding_vector", "embedding_hash", "embedding_model", "embedding_dim"])
 
 
 @pytest.fixture(autouse=True)
@@ -120,8 +118,8 @@ class TestSearchVectorsSQL:
         assert ranked[-1] == far.pk  # 余弦距离最大（2.0），排末位（top_k 默认 50 覆盖全部候选）
 
 
-class TestBuildDualWrite:
-    def test_build_writes_both_columns(self, db, monkeypatch):
+class TestBuildEmbeddings:
+    def test_build_writes_pgvector_column(self, db, monkeypatch):
         _make_embedding_profile()
         chunk = _make_chunk("docs/a.md", 0, "正文")
         monkeypatch.setattr(
@@ -130,7 +128,6 @@ class TestBuildDualWrite:
         summary = build_embeddings()
         assert summary["ok"] and summary["embedded"] == 1
         chunk.refresh_from_db()
-        assert chunk.embedding is not None, "迁移窗口内二进制列必须双写保留（回滚=代码回退）"
         assert list(chunk.embedding_vector) == [1.0, 0.0]
 
 
@@ -183,6 +180,17 @@ class TestEnsureVectorIndex:
         _store_vector(another, [0.5, 0.5, 0.5, 0.5])
         another.refresh_from_db()
         assert list(another.embedding_vector) == [0.5, 0.5, 0.5, 0.5]
+
+    def test_large_table_auto_type_requires_maintenance_window(self, db, monkeypatch):
+        """大表自动路径不定型（ALTER TYPE 重写表并持 ACCESS EXCLUSIVE）；手工命令可显式执行。"""
+        monkeypatch.setattr(ai_vector_ddl, "AUTO_INDEX_MAX_ROWS", 1)
+        self._rows([[1.0, 0.0]] * 2)
+        result = ai_vector_ddl.ensure_vector_index()
+        assert result["action"] == ai_vector_ddl.ACTION_SKIPPED
+        assert "maintenance window" in result["reason"]
+        assert ai_vector_ddl.vector_index_state()["column_type"] == "vector"
+        # 运维窗口内手工命令 allow_large=True 才定型
+        assert ai_vector_ddl.ensure_vector_index(allow_large=True)["action"] == ai_vector_ddl.ACTION_INDEXED
 
     def test_vendor_guard(self, db, monkeypatch):
         monkeypatch.setattr(connection, "vendor", "mysql")

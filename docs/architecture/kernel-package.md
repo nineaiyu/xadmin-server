@@ -112,8 +112,10 @@ Django 内置键中的身份、媒体与本地化配置（密钥、用户模型�
 | `PROJECT_DIR` | str | 必给 | 工程根目录（启动自检读取版本/配置） | `startup.py` |
 | `DATA_DIR` | str | 必给 | 运行期数据目录（IP 归属地库等运行期文件） | `management/commands/services/hands.py`、`utils/ip/geoip/utils.py`、`utils/ip/ipip/utils.py` |
 | `MEDIA_ROOT` | str | 必给 | 上传文件根目录（本地存储后端与文件链路） | `storage/backend.py`、`storage/utils.py` |
-| `MEDIA_URL` | str | 必给 | 媒体 URL 前缀（存储后端拼接访问地址） | `storage/backend.py` |
+| `MEDIA_URL` | str | 必给 | 媒体 URL 前缀（存储后端拼接访问地址） | `storage/backend.py`、`utils/media_signing.py` |
 | `MEDIA_X_ACCEL_PREFIX` | str | '' | nginx X-Accel-Redirect 内网前缀（空 = 由 Django 直接回文件流） | `utils/media.py` |
+| `MEDIA_SIGNED_URL_REQUIRED` | bool | True | 敏感媒体命名空间（导出 / 附件 / 对象存储缓存）是否要求短时效签名 URL（默认开启，关闭回落登录态） | `utils/media_signing.py` |
+| `MEDIA_SIGNED_URL_TTL` | int | 3600 | 敏感媒体签名 URL 有效期（秒） | `utils/media_signing.py` |
 | `FILE_UPLOAD_SIZE` | int | 10485760 | 单文件上传大小上限（字节） | `core/modelset/upload.py` |
 | `EXPORT_MAX_LIMIT` | int | 20000 | 同步导出最大行数（超过引导异步导出） | `drf/renders/base.py` |
 | `CACHE_KEY_TEMPLATE` | dict[str, str] | 必给 | 缓存键模板表（token 黑名单 / 待办状态等跨组件共享键名） | `cache/channel.py`、`cache/storage.py` |

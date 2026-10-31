@@ -245,3 +245,15 @@ class TestLeavePermission:
         grant(role, menu_factory, "create:SystemLeave", "api/approval/leaves$", "POST")
         # 权限生效即返回业务响应；本用例未配流程，走「已存草稿」码 1008
         assert api_client.post(LEAVES_URL, payload(), format="json").data["code"] == 1008
+
+
+def test_update_guards_terminal_states(applicant_client, approver):
+    """审批中/已通过的请假单不可改写业务字段（审批轨迹与业务事实脱节）。"""
+    make_leave_flow()
+    created = applicant_client.post(LEAVES_URL, payload(), format="json")
+    leave_pk = created.data["data"]["pk"]
+    original = Leave.objects.get(pk=leave_pk).reason
+
+    pending = applicant_client.patch(f"{LEAVES_URL}/{leave_pk}", {"reason": "审批中偷改"}, format="json")
+    assert pending.data["code"] != 1000
+    assert Leave.objects.get(pk=leave_pk).reason == original

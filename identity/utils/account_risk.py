@@ -207,7 +207,6 @@ def scan_account_risks(operator: Any = None, progress: Any = None) -> dict[str, 
     for item in items:
         user = item["user"]
         current[(user.pk if user else None, item["risk_type"])] = item
-
     existing = {}
     if current:
         user_pks = {pk for pk, _ in current if pk is not None}
@@ -249,14 +248,21 @@ def scan_account_risks(operator: Any = None, progress: Any = None) -> dict[str, 
     if progress:
         progress(65, "Saving risk items")
     if to_create:
-        AccountRisk.objects.bulk_create(to_create, batch_size=500)
+        # 并发巡检可能已插入同一 (user, risk_type)：忽略冲突而不是整批 500
+        AccountRisk.objects.bulk_create(to_create, batch_size=500, ignore_conflicts=True)
     if refreshed:
         AccountRisk.objects.bulk_update(refreshed, ["level", "detail", "user_display", "updated_time"], batch_size=500)
-    if revived:
-        AccountRisk.objects.bulk_update(
-            revived,
-            ["level", "detail", "user_display", "status", "remark", "handled_by", "handled_at", "updated_time"],
-            batch_size=500,
+    for row in revived:
+        # 条件更新：仅当行仍为 RESOLVED 才复活，不能覆盖并发发生的人工处置留痕
+        AccountRisk.objects.filter(pk=row.pk, status=AccountRisk.Status.RESOLVED).update(
+            level=row.level,
+            detail=row.detail,
+            user_display=row.user_display,
+            status=AccountRisk.Status.PENDING,
+            remark="",
+            handled_by=None,
+            handled_at=None,
+            updated_time=row.updated_time,
         )
     created, updated = len(to_create), len(refreshed) + len(revived)
     if progress:

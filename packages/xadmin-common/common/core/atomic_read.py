@@ -30,7 +30,7 @@ SAFE_METHODS = frozenset({"GET", "HEAD"})
 
 # 只豁免「纯读」的标准动作；新增自定义读接口时不必加入——保持事务更安全，
 # 白名单只服务于调用量最大且确定无副作用的列表/详情/元数据路径。
-READ_ONLY_ACTIONS = frozenset({"list", "retrieve", "search_fields", "search_columns", "choices", "suggestions"})
+READ_ONLY_ACTIONS = frozenset({"list", "retrieve", "search_fields", "search_columns", "suggestions"})
 
 _current_request = contextvars.ContextVar("atomic_read_current_request", default=None)
 

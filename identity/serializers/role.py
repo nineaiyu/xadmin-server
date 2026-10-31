@@ -67,6 +67,27 @@ class RoleSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
         count = getattr(obj, "user_count", None)
         return count if count is not None else obj.userinfo_set.count()
 
+    def validate_menu(self, value: Any) -> Any:
+        """页面/目录勾选展开为「自身 + 全部后代权限点」。
+
+        授权树把「整页已授权」折叠成页面键提交（回显/提交同形）；运行时权限只认
+        menu_type=PERMISSION 的记录，若不展开，编辑任意节点后保存会静默删除该页
+        所有接口权限（菜单仍可见、接口 403）。
+        """
+        from system.models import Menu
+
+        selected = {menu.pk: menu for menu in (value or [])}
+        frontier = list(selected)
+        while frontier:
+            children = list(Menu.objects.filter(parent_id__in=frontier))
+            frontier = []
+            for child in children:
+                if child.pk in selected:
+                    continue
+                selected[child.pk] = child
+                frontier.append(child.pk)
+        return list(selected.values())
+
     def validate_name(self, value: Any) -> Any:
         # 唯一性为「未删除数据」条件约束（见 Meta.constraints），走共享 mixin 显式校验
         return self._validate_active_unique("name", value)

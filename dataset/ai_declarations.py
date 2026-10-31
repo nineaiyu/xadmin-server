@@ -19,10 +19,12 @@ from ai.services.actions.ai_api_actions import IN_QUERY, api_action
 
 
 def available_forms(user: Any) -> list[Any]:
-    """可提交的动态表单（启用中，目录按创建时间倒序取前 N 个）。"""
+    """可提交的动态表单（启用中且非模板，按创建时间倒序取前 N 个）。"""
     from dataset.contracts import DynamicForm
 
-    return list(DynamicForm.objects.filter(is_active=True).order_by("-created_time")[:MAX_CATALOG_FORMS])
+    return list(
+        DynamicForm.objects.filter(is_active=True, is_template=False).order_by("-created_time")[:MAX_CATALOG_FORMS]
+    )
 
 
 def form_fields(form: Any) -> list[Any]:
@@ -64,6 +66,9 @@ def _resolve_form(params: dict[str, Any]) -> Any:
         return None, str(_("The requested form does not exist"))
     if not form.is_active:
         return None, str(_("The form is disabled and cannot accept submissions"))
+    if form.is_template:
+        # 与 REST 提交同口径：模板只用于派生表单，不接受提交
+        return None, str(_("A form template cannot accept submissions"))
     return form, None
 
 
@@ -116,6 +121,7 @@ def _execute_dform(user: Any, params: dict[str, Any]) -> dict[str, Any]:
         submission = DynamicFormSubmission.objects.create(
             form=form,
             data=data,
+            schema_version=form.schema_version,
             # 与 REST 提交同口径物化可筛选字段：缺这一步时 AI 提交的行在管理端
             # 「表单数据」按可筛选字段查不到（filter_data @> 不命中），直到重建命令跑过
             filter_data=build_filter_data(form.schema, data),

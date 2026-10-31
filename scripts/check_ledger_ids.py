@@ -74,6 +74,9 @@ EXCLUDED_DIRS = {
     "dist",
     "build",
     "data",
+    "tmp",
+    "test-results",
+    "playwright-report",
     "docs",
     "htmlcov",
 }

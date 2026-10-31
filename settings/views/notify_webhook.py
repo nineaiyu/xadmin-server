@@ -27,7 +27,7 @@ _SECRET_KEYS = {"WEBHOOK_SECRET"}
 
 def _test_delivery(url: str, secret: str) -> str:
     """按生效配置投递一条测试载荷：返回可直接展示的结果文本。"""
-    from common.utils.outbound import OutboundBlocked, pinned_request
+    from common.utils.outbound import OutboundBlocked, loopback_allowed, pinned_request
     from notifications.backends.webhook import DELIVER_TIMEOUT, sign_webhook_payload
     from task.services import outbound_allowed_hosts
 
@@ -42,6 +42,7 @@ def _test_delivery(url: str, secret: str) -> str:
             "POST",
             url,
             allow_private=False,
+            allow_loopback=loopback_allowed(),
             allowed_hosts=outbound_allowed_hosts(),
             data=body,
             headers=headers,
@@ -49,9 +50,9 @@ def _test_delivery(url: str, secret: str) -> str:
         )
     except OutboundBlocked as exc:
         return str(_("Target rejected by outbound guard: {}")).format(exc)
-    except Exception as exc:  # noqa: BLE001 测试入口兜底，不回显堆栈
+    except Exception:  # noqa: BLE001 测试入口兜底，不回显堆栈与底层 URL/凭据
         logger.warning("Webhook notify test unexpected error", exc_info=True)
-        return str(exc)
+        return str(_("Connection test failed"))
     if 200 <= int(getattr(response, "status_code", 0) or 0) < 300:
         return str(_("OK"))
     return str(_("Endpoint returned HTTP {}")).format(getattr(response, "status_code", "?"))

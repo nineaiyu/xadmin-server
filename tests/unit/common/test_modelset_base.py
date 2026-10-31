@@ -352,3 +352,32 @@ class TestImportExportComposition:
         assert callable(getattr(BookViewSet, "export_data", None))
         assert "import-data" in BookViewSet.import_data.url_path
         assert "export-data" in BookViewSet.export_data.url_path
+
+
+class TestPartialDispatchNoSyncFallback:
+    def test_failure_after_partial_submit_does_not_fall_back(self, view, rf, monkeypatch):
+        """分片提交中途失败：已投递分片会被执行，回落同步会整批重复导入。"""
+        from common.core.modelset.import_export.celery_utils import background_task_view_set_job
+
+        monkeypatch.setattr(
+            "common.core.modelset.import_export.celery_utils.has_active_celery_worker",
+            lambda: True,
+        )
+        calls = []
+
+        def flaky(*args, **kwargs):
+            calls.append(kwargs)
+            if len(calls) == 2:
+                raise RuntimeError("broker blip")
+            return type("R", (), {"id": "1"})()
+
+        monkeypatch.setattr(background_task_view_set_job, "apply_async", flaky)
+        view.action_map = {"post": view.import_data}
+        request = Request(rf.post("/api/demo/book/import-data?task=true", data={"x": "1"}))
+        request.user = type("U", (), {"pk": 9})()
+
+        resp = run_view_by_celery_task(view, request, {}, [{"name": str(i)} for i in range(3)], batch_length=1)
+
+        assert resp is not None, "已投递分片后不得回落同步导入（会重复导入）"
+        assert resp.data["code"] == 1001
+        assert len(calls) == 2

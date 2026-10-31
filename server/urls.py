@@ -37,7 +37,6 @@ swagger_apis = [
 ]
 
 urlpatterns = [
-    re_path("^admin/", admin.site.urls),
     re_path("^api/common/", include("common.urls", namespace="common")),
     re_path("^api/system/", include("system.urls", namespace="system")),
     # 身份与访问域（identity app）：URL 前缀与 app 对齐
@@ -74,3 +73,8 @@ if settings.DEBUG:
 
 urlpatterns = swagger_apis + urlpatterns
 auto_register_app_url(urlpatterns)
+
+# Django admin 默认不挂载：其登录只认 session，绕过验证码/锁定/访问策略/MFA。
+# 需要数据排查时显式开启（ENABLE_DJANGO_ADMIN=true）并限制反向代理来源。
+if getattr(settings, "ENABLE_DJANGO_ADMIN", False):
+    urlpatterns.insert(0, re_path("^admin/", admin.site.urls))

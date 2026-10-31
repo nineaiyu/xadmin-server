@@ -222,20 +222,36 @@ def clean_preview_cache(keep_days: int | None = None, batch: int = 2000) -> dict
         deadline = time.time() - keep_days * 86400
 
     scanned = orphan = expired = 0
-    for name in os.listdir(root)[:batch]:
-        directory = os.path.join(root, name)
-        if not os.path.isdir(directory):
-            continue
-        scanned += 1
-        exists = UploadFile.all_objects.filter(pk=name).exists()
-        if not exists:
-            _remove_dir(directory)
-            orphan += 1
-            continue
-        if deadline is not None and _dir_mtime(directory) < deadline:
-            # 保留期内被访问过则刷新 mtime（预览命中时由调用方 touch）
-            _remove_dir(directory)
-            expired += 1
+    names = sorted(os.listdir(root))
+    for start in range(0, len(names), max(1, int(batch or 1))):
+        for name in names[start : start + max(1, int(batch or 1))]:
+            path = os.path.join(root, name)
+            if not os.path.isdir(path):
+                # 转换中途崩溃的 *.tmp 等散落文件：按 mtime 清理，不阻断后续目录
+                try:
+                    if deadline is None or os.path.getmtime(path) < deadline:
+                        os.remove(path)
+                        expired += 1
+                except OSError:
+                    logger.warning("remove preview cache file failed: %s", path, exc_info=True)
+                continue
+            scanned += 1
+            try:
+                pk = int(name)
+            except ValueError:
+                # 非主键目录（人工/调试残留）按孤儿清理；旧实现会在此抛 ValueError 让整任务失败
+                _remove_dir(path)
+                orphan += 1
+                continue
+            exists = UploadFile.all_objects.filter(pk=pk).exists()
+            if not exists:
+                _remove_dir(path)
+                orphan += 1
+                continue
+            if deadline is not None and _dir_mtime(path) < deadline:
+                # 保留期内被访问过则刷新 mtime（预览命中时由调用方 touch）
+                _remove_dir(path)
+                expired += 1
     logger.info(f"clean preview cache scanned:{scanned} orphan:{orphan} expired:{expired}")
     return {"scanned": scanned, "removed_orphan": orphan, "removed_expired": expired}
 
@@ -251,6 +267,10 @@ def _dir_mtime(path: str) -> float:
         stamps = [os.path.getmtime(os.path.join(root, file)) for root, _dirs, files in os.walk(path) for file in files]
         newest: float = max(stamps)
     except (OSError, ValueError):
-        fallback: float = timezone.now().timestamp()
+        # 空目录：按目录自身 mtime 判定，避免「永远不过期」
+        try:
+            fallback: float = os.path.getmtime(path)
+        except OSError:
+            fallback = timezone.now().timestamp()
         return fallback
     return newest

@@ -218,6 +218,39 @@ class TestValidate:
         )
         assert any(problem.code == "SEED_FILE_MISSING" for problem in result.problems)
 
+    def test_orphan_menumeta_is_warning(self, tmp_path):
+        meta = {"model": "system.menumeta", "pk": "meta-orphan", "fields": {"title": "孤立元数据"}}
+        menu = {"model": "system.menu", "pk": "menu-1", "fields": {"meta": None}}
+        meta_spec = _spec("alpha", "system.menumeta", _write(tmp_path / "a" / "menumeta.json", [meta]))
+        menu_spec = _spec("alpha", "system.menu", _write(tmp_path / "a" / "menu.json", [menu]))
+        result = validate_plan(SeedPlan(apps=("alpha",), files={"alpha": (meta_spec, menu_spec)}))
+        assert [problem.code for problem in result.problems] == ["MENUMETA_ORPHAN"]
+        assert not result.has_error()
+
+    def test_referenced_menumeta_is_clean(self, tmp_path):
+        meta = {"model": "system.menumeta", "pk": "meta-used", "fields": {"title": "在用元数据"}}
+        menu = {"model": "system.menu", "pk": "menu-1", "fields": {"meta": "meta-used"}}
+        meta_spec = _spec("alpha", "system.menumeta", _write(tmp_path / "a" / "menumeta.json", [meta]))
+        menu_spec = _spec("alpha", "system.menu", _write(tmp_path / "a" / "menu.json", [menu]))
+        result = validate_plan(SeedPlan(apps=("alpha",), files={"alpha": (meta_spec, menu_spec)}))
+        assert not any(problem.code == "MENUMETA_ORPHAN" for problem in result.problems)
+
+    def test_duplicate_natural_key_inside_seed_is_error(self, tmp_path):
+        """种子面内「不同 pk、相同自然键」必须在校验期报错。
+
+        loaddata 是单事务：两行同 code/name 会在装库时撞唯一约束并回滚**全部**种子
+        （含菜单与权限点），报错信息与具体文件无关，排查成本极高。
+        """
+        rows = [
+            {"model": "system.systemconfig", "pk": "cfg-a", "fields": {"key": "SAME_KEY", "value": "1"}},
+            {"model": "system.systemconfig", "pk": "cfg-b", "fields": {"key": "SAME_KEY", "value": "2"}},
+        ]
+        spec = _spec("alpha", "system.systemconfig", _write(tmp_path / "systemconfig.json", rows))
+        result = validate_plan(SeedPlan(apps=("alpha",), files={"alpha": (spec,)}))
+        problems = [problem for problem in result.problems if problem.code == "SEED_UNIQUE_IN_SEED"]
+        assert problems and "SAME_KEY" in problems[0].message
+        assert result.has_error()
+
     def test_shipped_seed_files_are_clean(self):
         """仓库内种子必须通过结构 + 归属校验（进 CI 的硬门禁）。"""
 
@@ -251,10 +284,12 @@ class TestValidate:
         # 2026-10 执行历史收敛（执行参数不进序列化面）：args/kwargs 出序列化面 → 字段树种子 -2
         # 2026-10 报表/大屏版本化：新增 versions/rollback 4 个权限点（菜单 +4、权限点 +4）
         # 2026-10 AI「测试连接」下沉 celery：新增 testResult 结果回读权限点（菜单 +1）
-        assert summary.totals["menu"] == 748
-        assert summary.totals["field"] == 2163
+        # 2026-10 数据集元数据端点统一走父级 list 权限：移除运行期不命中的 meta 权限点（菜单 -1、权限点 -1）
+        # 2026-10 知识块向量列收敛为 pgvector 单存储：字段树移除历史二进制列（字段 -1）
+        assert summary.totals["menu"] == 747
+        assert summary.totals["field"] == 2162
         assert summary.totals["grant"] == 250
-        assert summary.permission_total == 669
+        assert summary.permission_total == 668
 
 
 class TestRows:

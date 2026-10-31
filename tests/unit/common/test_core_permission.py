@@ -285,7 +285,8 @@ def test_every_duplicate_seed_permission_is_registered():
     for key, names in duplicates.items():
         normalized = (normalize_shared_path(key[0]), key[1].upper())
         spec = declared[normalized]
-        assert set(spec.priority) == set(names), (
+        # 允许声明面包含演示/二开应用的共享码（只要求种子内全部码均被登记）
+        assert set(names) <= set(spec.priority), (
             f"{key} 的视图声明未覆盖全部权限码：seeds={sorted(names)} declared={sorted(spec.priority)}"
         )
     # 兜底表只约束重叠项：允许注册表新增而表未跟进（离线扫描按码名排序兜底）
@@ -293,6 +294,7 @@ def test_every_duplicate_seed_permission_is_registered():
         normalized = (normalize_shared_path(key[0]), key[1].upper())
         spec = declared.get(normalized)
         assert spec is not None, f"兜底表登记项在视图声明注册表中缺失: {key}"
-        assert spec.priority == priority, (
+        # 兜底表只覆盖存量码；声明注册表可在末尾追加演示/二开码
+        assert spec.priority[: len(priority)] == priority, (
             f"{key} 的视图声明与兜底表顺序不一致：declared={spec.priority} table={priority}"
         )

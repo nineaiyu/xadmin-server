@@ -201,7 +201,7 @@ def _advance(instance: Any, node: Any) -> None:
     并发安全：调用方（approve_task 等）持有实例行锁（select_for_update）时同一实例
     的推进会串行化；终态跃迁另有 CAS 兜底（见 _finish_instance）。
 
-    节点集一次取数后整段复用（连续跳过无候选节点时不再逐步查库）。
+    节点集一次取数后整段复用（推进每步在内存中求下一节点，不逐步查库）。
     """
     ApprovalInstance = _models().Instance
 
@@ -360,6 +360,8 @@ def _reject_task_locked(task_pk: Any, user: Any, reason: str) -> Any:
         return False, str(_("The application has been finished"))
     if task.assignee_id != user.pk:
         return False, str(_("This task is not assigned to you"))
+    if task.node_id and instance.current_node_id != task.node_id:
+        return False, str(_("The task is not in the current node"))
     if instance.creator_id == user.pk:
         return False, str(_("The applicant cannot approve their own application"))
     if task.node is None:

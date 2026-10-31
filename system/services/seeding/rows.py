@@ -38,6 +38,7 @@ from django.utils import timezone
 
 from common.utils import get_logger
 
+from .demo_guard import deactivate_demo_rows, detach_missing_audit_users
 from .m2m import extract_m2m_relations, strip_m2m_fields
 from .types import (
     KIND_CONTRACT,
@@ -154,7 +155,7 @@ def filter_conflicting_rows(rows_by_model: Any, *, using: Any = DEFAULT_DB_ALIAS
 
     # 1) 唯一字段冲突：库内占用者优先
     for label in list(pending):
-        model = apps.get_model(label)
+        model = _seed_model(label)
         if model is None:
             continue
         for field_names, condition in _unique_checks(model):
@@ -215,7 +216,7 @@ def filter_conflicting_rows(rows_by_model: Any, *, using: Any = DEFAULT_DB_ALIAS
         for label, rows in pending.items():
             if not rows:
                 continue
-            model = apps.get_model(label)
+            model = _seed_model(label)
             if model is None:
                 continue
             kept = []
@@ -296,6 +297,15 @@ def _normalize_unique(value: Any) -> str:
 
 def _mark_dropped(dropped: dict[str, Any], label: str, pk: str) -> None:
     dropped.setdefault(label, set()).add(str(pk))
+
+
+def _seed_model(label: str) -> Any:
+    """按 label 取模型；清单声明了未注册模型时告警跳过（``apps.get_model`` 会抛 LookupError）。"""
+    try:
+        return apps.get_model(label)
+    except LookupError:
+        logger.warning("seed model not registered, skip conflict check: %s", label)
+        return None
 
 
 def _row_references_dropped(model: Any, row: Any, dropped: dict[str, Any], notes: list[Any]) -> bool:
@@ -379,6 +389,16 @@ def build_fixtures(
         rows_by_model = _apply_module_filter(module_filter, rows_by_model)
         trimmed = True
 
+    rows_by_model, detach_notes = detach_missing_audit_users(rows_by_model, using=using)
+    if detach_notes:
+        notes.extend(detach_notes)
+        trimmed = True
+
+    rows_by_model, demo_notes = deactivate_demo_rows(rows_by_model, demo_installed=apps.is_installed("demo_seed"))
+    if demo_notes:
+        notes.extend(demo_notes)
+        trimmed = True
+
     rows_by_model, conflict_notes = filter_conflicting_rows(rows_by_model, using=using)
     if conflict_notes:
         notes.extend(conflict_notes)
@@ -399,7 +419,13 @@ def build_fixtures(
         # 返回字符串路径：既有调用方（命令 / 测试 / 二开脚本）按 str 处理标签
         return [str(spec.path) for spec in non_empty], notes, False, []
 
-    models = [apps.get_model(label) for label in rows_by_model if rows_by_model[label]]
+    models = []
+    for label in rows_by_model:
+        if not rows_by_model[label]:
+            continue
+        model = _seed_model(label)
+        if model is not None:
+            models.append(model)
     for note in notes:
         # 策略性剥离行照常导入，降为 INFO；真冲突/引用修剪保持 WARNING，
         # 未标类别的普通字符串按冲突处理（不能把真问题藏起来）

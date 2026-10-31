@@ -32,6 +32,7 @@ from django.utils.translation import gettext_lazy as _
 from common.celery.decorator import register_as_period_task
 from common.utils import get_logger
 from dataset.report_render import (  # noqa: F401  (渲染/投递拆至 report_render，此处再导出保持调用面)
+    REPORT_SCAN_FIELDS,
     _deliver_email,
     _deliver_im,
     _render_workbook,
@@ -195,11 +196,16 @@ def _dispatch_report(report: Any) -> bool:
 @shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 @register_as_period_task(crontab="* * * * *", description="定时报表调度分发", module="analysis")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def dispatch_scheduled_reports() -> Any:
-    """每小时扫描 active 报表并派发到期的执行任务（三档频次；cron 报表由每分钟任务负责）。"""
+    """每分钟扫描 active 报表并派发到期的执行任务（三档频次；cron 报表由同频任务负责）。"""
     from dataset.models.dataset import Report
 
     dispatched = 0
-    for report in Report.objects.filter(is_active=True, cron_expression="").iterator():
+    for report in (
+        Report.objects.filter(is_active=True, cron_expression="")
+        .select_related("creator")
+        .only(*REPORT_SCAN_FIELDS)
+        .iterator()
+    ):
         try:
             if not report_due(report):
                 continue
@@ -219,11 +225,17 @@ def dispatch_scheduled_reports() -> Any:
 @shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 @register_as_period_task(crontab="* * * * *", description="定时报表 cron 表达式调度分发", module="analysis")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def dispatch_cron_reports() -> Any:
-    """每分钟扫描带 cron 表达式的 active 报表并派发（三档报表由每小时任务负责，职责互斥）。"""
+    """每分钟扫描带 cron 表达式的 active 报表并派发（三档报表由同频任务负责，职责互斥）。"""
     from dataset.models.dataset import Report
 
     dispatched = 0
-    for report in Report.objects.filter(is_active=True).exclude(cron_expression="").iterator():
+    for report in (
+        Report.objects.filter(is_active=True)
+        .exclude(cron_expression="")
+        .select_related("creator")
+        .only(*REPORT_SCAN_FIELDS)
+        .iterator()
+    ):
         try:
             if not report_due(report):
                 continue
@@ -362,13 +374,23 @@ def schedule_report_run(report_id: str) -> Any:
     手动运行属触发即执行，不推进调度簿记 last_run_at（到期判定不受影响，
     恰好落在到期点上的期次仍会被分发扫描投递）；last_status 照常写。
     """
+    from django.db import transaction
+
     from dataset.models.dataset import Report
 
     report = Report.objects.filter(pk=report_id).first()
     if report is None:
         return ""
     task_id = _precreate_record(report)
-    run_scheduled_report.apply_async(kwargs={"report_id": str(report.pk), "bookkeep_schedule": False}, task_id=task_id)
+
+    def _dispatch() -> None:
+        run_scheduled_report.apply_async(
+            kwargs={"report_id": str(report.pk), "bookkeep_schedule": False}, task_id=task_id
+        )
+
+    # 记录与任务投递必须按序可见：ATOMIC_REQUESTS 下记录随请求事务提交，
+    # 先投递会让 worker 读到「记录不存在」直接返回 0，下载中心永久 PENDING
+    transaction.on_commit(_dispatch)
     return task_id
 
 
@@ -409,7 +431,8 @@ def push_screen_data() -> Any:
     if layer is None:
         return 0
     pushed = 0
-    for screen in Screen.objects.iterator():
+    # 只取节流判定所需列：layout/free_layout 等大 JSON 不随扫描整批载入
+    for screen in Screen.objects.only("pk", "refresh").iterator():
         try:
             # 先判节流（一次 cache get）再查在线（一次 Redis 往返），离屏不占位不落节流键
             if not screen_push_due(screen):
@@ -455,7 +478,7 @@ def push_dashboard_data() -> Any:
     if layer is None:
         return 0
     pushed = 0
-    for dashboard in Dashboard.objects.iterator():
+    for dashboard in Dashboard.objects.only("pk").iterator():
         try:
             # 先判节流（一次 cache get）再查在线（一次 Redis 往返），离盘不占位不落节流键
             if not dashboard_push_due(dashboard.pk):

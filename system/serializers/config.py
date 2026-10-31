@@ -229,6 +229,10 @@ class SystemConfigSerializer(BaseModelSerializer):
         return ret
 
     def validate(self, attrs: Any) -> Any:
+        # 配置键是缓存键与加密域标识：运行期改名会让旧键缓存不失效、加密形态随新键漂移，
+        # 一律拒绝（需要迁移时由专门的运维命令处理）
+        if self.instance is not None and "key" in attrs and attrs["key"] != self.instance.key:
+            raise ValidationError({"key": _("Config key cannot be modified")})
         # 键取请求值，缺省回退实例行键（PATCH 只改 value 时同样过校验）
         key = attrs.get("key") or getattr(self.instance, "key", None)
         if key and "value" in attrs:
@@ -291,6 +295,8 @@ class UserPersonalConfigExportImportSerializer(SystemConfigSerializer):
         model = UserPersonalConfig
         fields = ["pk", "value", "key", "is_active", "created_time", "description", "cache_value", "owner", "access"]
         read_only_fields = ["pk"]
+        # cache_value 是系统级生效值：个人配置导出既语义错误又可能跨权限面暴露系统配置
+        fields_unexport = ["cache_value"]
         extra_kwargs = {"owner": {"attrs": ["pk", "username"], "required": True}}
 
 

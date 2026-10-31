@@ -130,8 +130,12 @@ def invite_user(instance: Any, request: Any) -> tuple[bool, Any]:
 
 
 def unblock_user(instance: Any) -> None:
-    """解除登录封锁（连续失败计数与锁定窗口）。"""
-    LoginBlockUtil.unblock_user(instance.username)
+    """解除登录封锁（连续失败计数与锁定窗口）。
+
+    失败计数按「本次提交的标识」分桶（username/email/phone），必须三套一起清，
+    否则管理员点「解禁」后 email/phone 的封锁键仍会让登录被拒。
+    """
+    LoginBlockUtil.unblock_account(instance)
 
 
 def logout_user(instance: Any, channel_names: Any = None, operator: Any = None) -> Any:

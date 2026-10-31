@@ -94,3 +94,31 @@ class TestGetMediaPath:
         """app/model 不存在（LookupError）返回 None，而不是让 /media 请求 500。"""
         with django_db_blocker.unblock():
             assert get_media_path("nope/nomodel/x/1/200_pic.png") is None
+
+
+class TestInternalMediaDirs:
+    """预览缓存 / 上传分片只经鉴权 API 下发：/media/ 下即使登录也必须 404。"""
+
+    @pytest.mark.parametrize("path", ["preview_cache/1/thumb.jpg", "upload_sessions/abc/part-00000001"])
+    def test_internal_dirs_are_not_served(self, rf, media_root, path):
+        target = media_root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"internal")
+        request = rf(f"/media/{path}")
+        with pytest.raises(Http404):
+            media_serve(request, path, document_root=str(media_root))
+
+
+class TestUnsafeInlineTypes:
+    """浏览器可执行类型不得以 inline 同源返回（存量 html/svg 也要防同源 XSS）。"""
+
+    @pytest.mark.parametrize("name", ["legacy.html", "legacy.svg"])
+    def test_dangerous_types_are_forced_attachment(self, rf, media_root, name):
+        target = media_root / name
+        target.write_bytes(b"<script>alert(1)</script>")
+        request = rf(f"/media/{name}")
+        response = media_serve(request, name, document_root=str(media_root))
+        assert response.status_code == 200
+        assert response["Content-Type"] == "application/octet-stream"
+        assert response["Content-Disposition"] == "attachment"
+        assert response["X-Content-Type-Options"] == "nosniff"

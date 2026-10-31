@@ -24,6 +24,9 @@ from .celery_utils import _flatten_row_errors
 
 logger = get_logger(__name__)
 
+#: 同步 import-validate 的行数上限：10MB 文件可含数十万行，同步逐行校验会拖垮请求线程
+IMPORT_VALIDATE_MAX_ROWS = 100_000
+
 
 class ImportAsyncAction(ExportImportThrottleMixin):
     """导入前校验与异步导入（大数据量场景，记录与错误报告在下载中心获取）。
@@ -80,6 +83,12 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         template_id = request.query_params.get("template_id")
         mapping = None
         if template_id:
+            from uuid import UUID
+
+            try:
+                UUID(str(template_id))
+            except (TypeError, ValueError):
+                raise ValidationError({"detail": _("Invalid import template id")}) from None
             template_model = apps.get_model("task", "ImportTemplate")
             model_label = self.get_queryset().model._meta.label_lower
             template = (
@@ -268,6 +277,12 @@ class ImportAsyncAction(ExportImportThrottleMixin):
         from common.core.config import SysConfig
 
         rows, _column_titles = self._get_rows_and_titles(request)
+        if len(rows) > IMPORT_VALIDATE_MAX_ROWS:
+            from rest_framework.exceptions import ValidationError as RestValidationError
+
+            raise RestValidationError(
+                {"detail": _("Too many rows to validate at once (max {})").format(IMPORT_VALIDATE_MAX_ROWS)}
+            )
         errors: list[Any] = []
         limit = SysConfig.IMPORT_VALIDATE_ERROR_LIMIT
         invalid_count = 0

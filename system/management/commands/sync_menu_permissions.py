@@ -49,7 +49,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--refresh-titles",
             action="store_true",
-            help="按当前 docstring 首行重算已有权限点标题（只改不一致项；跳过 i18n key 与运行时权限点）",
+            help="只修超限标题（>24 字或带句号）；短标题视为人工收敛不改（跳过 i18n key 与运行时权限点）",
         )
         parser.add_argument(
             "--fix-field-permissions",
@@ -65,7 +65,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--prune",
             action="store_true",
-            help="删除库内未匹配路由的孤儿权限点（建议先配 --dry-run 核对；种子侧由覆盖守护测试拦截）",
+            help="物理删除库内未匹配路由的孤儿权限点及其菜单元数据（建议先配 --dry-run 核对；种子侧由覆盖守护测试拦截）",
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
@@ -174,8 +174,7 @@ class Command(BaseCommand):
 
         remaining_orphans = self._handle_orphan_permissions(options, unmatched, dry_run)
 
-        # 报告口径基于「当前库内绑定」：本轮存在绑定校正时，收缩前的陈旧绑定可能
-        # 让「白名单脱节」暂不显形（补齐动作放在绑定校正之后执行，见下方）
+        # 报告口径基于「当前库内绑定」：补齐动作放在绑定校正之后执行（见下方）
         self._report_field_permission_gaps()
 
         wide_manager = sync.audit_wide_manager_grants()
@@ -200,8 +199,7 @@ class Command(BaseCommand):
         for plan in conflicts[:DETAIL_LIMIT]:
             self.stdout.write(self.style.WARNING(f"  ! 权限码已存在，跳过：{plan.code}（{plan.method} {plan.url}）"))
 
-        # 补齐放在绑定校正之后：判定与取值都基于校正后的绑定模型，
-        # 避免「陈旧绑定掩盖白名单脱节」（补出的白名单混入失效模型字段）
+        # 补齐放在绑定校正之后：判定与取值都基于校正后的绑定模型，避免陈旧绑定掩盖脱节
         if options["fix_field_permissions"]:
             self._fill_field_permissions()
 
@@ -216,6 +214,10 @@ class Command(BaseCommand):
             fixed_menus = [fix.menu for fix in fixes] + [menu for menu, _old, _new in refreshed]
             self._update_seed(created, fixed_menus, method_fixed, options["fix_field_permissions"])
 
+        # --strict 是上线/CI 门禁：apply 模式也要判定（历史实现只在 dry-run 判定，假绿）
+        if options["strict"] and remaining_orphans:
+            raise SystemExit(1)
+
     def _handle_orphan_permissions(self, options: Any, orphans: Any, dry_run: Any) -> Any:
         """按 --prune 处理库内孤儿权限点；返回处理后仍存在的列表（供 --strict 判定）。"""
         remaining = list(orphans)
@@ -228,7 +230,13 @@ class Command(BaseCommand):
         return []
 
     def _prune_permissions(self, orphans: Any) -> None:
-        """删除库内未匹配路由的孤儿权限点（种子侧由覆盖守护测试拦截，不由本命令改种子）。"""
+        """物理删除库内未匹配路由的孤儿权限点（种子侧由覆盖守护测试拦截，不由本命令改种子）。
+
+        ``Menu.objects.delete()`` 只做软删除（回收站可恢复），与「已删除」输出及
+        ``dead_permissions`` 的清理语义不符：孤儿权限点不会回到路由表，残留行还会
+        持续出现在 ``all_objects``。这里走 ``all_objects`` 物理删除，并成组清理
+        ``MenuMeta``（菜单已删、元数据不再被引用）。
+        """
         if not orphans:
             self.stdout.write(self.style.SUCCESS("[清理] 无库内孤儿权限点"))
             return
@@ -237,8 +245,14 @@ class Command(BaseCommand):
         if len(orphans) > DETAIL_LIMIT:
             self.stdout.write(f"  ... 其余 {len(orphans) - DETAIL_LIMIT} 条略")
         pks = [perm.pk for perm in orphans]
-        deleted, _ = Menu.objects.filter(pk__in=pks).delete()
-        self.stdout.write(self.style.WARNING(f"[清理] 已删除 {len(pks)} 个库内孤儿权限点（关联行 {deleted}）"))
+        meta_pks = [pk for pk in Menu.all_objects.filter(pk__in=pks).values_list("meta_id", flat=True) if pk]
+        deleted, _ = Menu.all_objects.filter(pk__in=pks).delete()
+        meta_deleted = MenuMeta.objects.filter(pk__in=meta_pks).delete()[0] if meta_pks else 0
+        self.stdout.write(
+            self.style.WARNING(
+                f"[清理] 已删除 {len(pks)} 个库内孤儿权限点（关联行 {deleted}，菜单元数据 {meta_deleted}）"
+            )
+        )
 
     def _refresh_titles(self, routes: Any, perms: Any, dry_run: Any) -> Any:
         """按当前 docstring 重算存量权限点标题，返回变更列表（供种子回写复用）。"""

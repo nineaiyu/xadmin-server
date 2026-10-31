@@ -6,8 +6,7 @@ ViewSet 只负责请求编排；列表过滤与批量删除共用的纯逻辑收
 便于单测覆盖（不启动 HTTP 栈）。
 """
 
-import socket
-import struct
+import ipaddress
 from typing import Any
 
 
@@ -21,13 +20,13 @@ class FilterIps(list[Any]):
 
 
 class IpUtils:
-    """IPv4 与整数串互转（列表 pk 用整数串，避免 IP 中的点进入 URL 段）。"""
+    """IPv4/IPv6 与整数串互转（列表 pk 用整数串，避免 IP 中的点/冒号进入 URL 段）。"""
 
     def __init__(self, ip: str) -> None:
         self.ip = ip
 
     def ip_to_int(self) -> str:
-        return str(struct.unpack("!I", socket.inet_aton(self.ip))[0])
+        return str(int(ipaddress.ip_address(self.ip)))
 
     def int_to_ip(self) -> str:
-        return socket.inet_ntoa(struct.pack("!I", int(self.ip)))
+        return str(ipaddress.ip_address(int(self.ip)))

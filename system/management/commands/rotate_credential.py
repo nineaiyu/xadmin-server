@@ -128,14 +128,14 @@ class Command(BaseCommand):
 
     def _audit_only(self, keys: Any, setting_keys: Any = None) -> Any:
         """只巡检：明文敏感项输出清单，发现即非零退出（可入运维巡检/CI）。"""
-        from system.models import SystemConfig
 
         offenders = plaintext_sensitive_keys()
         if keys:
             offenders = [key for key in offenders if key in set(keys)]
         for key in offenders:
-            row = SystemConfig.objects.filter(key=key).first()
-            self.stdout.write(self.style.ERROR(f"[plaintext] {key}: {str(getattr(row, 'value', ''))[:40]}…"))
+            # 只报键名与事实，不回显任何值片段：审计命令常进 CI/运维日志，
+            # 输出凭据前缀等于把巡检工具本身变成泄露渠道
+            self.stdout.write(self.style.ERROR(f"[plaintext] {key}: value is stored in plaintext"))
         setting_offenders = plaintext_setting_names()
         if setting_keys:
             setting_offenders = [name for name in setting_offenders if name in set(setting_keys)]

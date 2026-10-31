@@ -254,7 +254,7 @@ user.rules.all()  # 用户直接挂载的数据权限
 |--------------------------|----------------------------------------------------------------------------------|
 | 信号失效真实链路 + m2m_changed   | `tests/unit/system/test_signal_handler.py`                                       |
 | API 权限 fail-closed / 白名单 | `tests/unit/common/test_core_permission.py`                                      |
-| 数据权限 16 种规则过滤            | `tests/unit/common/test_data_permission_filter.py`、`test_dept_tree_cache.py`     |
+| 数据权限 18 种规则过滤            | `tests/unit/common/test_data_permission_filter.py`、`test_dept_tree_cache.py`     |
 | 字段权限裁剪                   | `tests/unit/common/test_serializer_field_permission.py`                          |
 | 任务链字段权限契约（异步导入）          | `tests/unit/system/test_import_export_execution_context.py`                      |
 | 数据集执行链值级脱敏              | `tests/integration/dataset/test_dataset_output_mask.py`                          |

@@ -120,7 +120,7 @@ class TestAutoRebuildOnUpload:
         doc, created = _upload("backup.md", CONTENT_V1)
         assert created is True
         chunk = _chunk_of(doc)
-        assert chunk.embedding is not None
+        assert chunk.embedding_vector is not None
         assert chunk.embedding_hash == chunk.content_hash
         assert chunk.embedding_model == profile.model
         stats = vector_stats()
@@ -141,7 +141,7 @@ class TestAutoRebuildOnUpload:
     def test_no_profile_is_noop(self):
         """无 embedding 档案：零调度零异常，块保持未向量化（部署行为零变化）。"""
         doc, _created = _upload("backup.md", CONTENT_V1)
-        assert _chunk_of(doc).embedding is None
+        assert _chunk_of(doc).embedding_vector is None
         assert schedule_auto_rebuild(doc) is False
         assert vector_stats()["enabled"] is False
 
@@ -153,7 +153,7 @@ class TestAutoRebuildOnUpload:
         # 覆写夹具默认桩：锁被占（try_acquire_lock → False）
         monkeypatch.setattr("ai.services.knowledge.embedding_progress.try_acquire_lock", lambda: False)
         doc, _created = _upload("backup.md", CONTENT_V1)
-        assert _chunk_of(doc).embedding is None
+        assert _chunk_of(doc).embedding_vector is None
         assert applied == []
         assert schedule_auto_rebuild(doc) is False
 
@@ -166,7 +166,7 @@ class TestAutoRebuildOnUpload:
         doc, created = _upload("backup.md", CONTENT_V1)
         assert created is False
         assert applied == []
-        assert _chunk_of(doc).embedding is not None
+        assert _chunk_of(doc).embedding_vector is not None
         assert schedule_auto_rebuild(doc) is False
 
 
@@ -184,7 +184,7 @@ class TestAutoRebuildOnSync:
         summary = _sync()
         assert summary["created"] == 2
         assert summary["vector_rebuild"] is True
-        assert AiKnowledgeChunk.objects.exclude(embedding__isnull=True).count() == 2
+        assert AiKnowledgeChunk.objects.exclude(embedding_vector__isnull=True).count() == 2
 
     def test_sync_without_changes_skips(self, stub_client, monkeypatch, tmp_path):
         """仓库无变更（hash 快路径）：不调度。"""

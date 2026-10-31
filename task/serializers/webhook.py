@@ -57,7 +57,11 @@ class WebhookSubscriptionSerializer(BaseModelSerializer):
             if self.instance:
                 return self.instance.secret
             raise serializers.ValidationError(_("Secret is required"))
-        return encrypt_secret(value)
+        text = str(value)
+        # 密文随明文长度增长；模型列 512，明文上限 256 才能留足加密/编码余量
+        if len(text) > 256:
+            raise serializers.ValidationError(_("Secret is too long (max 256 characters)"))
+        return encrypt_secret(text)
 
 
 #: 授权/会话类请求头不命中通用敏感键名模式，单独按头名收敛

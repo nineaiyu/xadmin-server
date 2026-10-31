@@ -12,6 +12,7 @@ from rest_framework import serializers
 from common.core.serializers import BaseModelSerializer
 from dataset.models.dataset import Dashboard, Dataset
 from dataset.utils.dataset import (
+    ALLOWED_DATE_TRUNC,
     filter_layout_for_user,
     numeric_columns_of,
     validate_dataset,
@@ -196,6 +197,9 @@ class DashboardSerializer(BaseModelSerializer):
             group_by = card.get("group_by")
             if group_by and group_by not in (dataset.columns or []):
                 raise serializers.ValidationError(_("Group field is not in dataset columns: {}").format(card["id"]))
+            date_trunc = card.get("date_trunc")
+            if date_trunc and date_trunc not in ALLOWED_DATE_TRUNC:
+                raise serializers.ValidationError(_("Invalid date trunc in dashboard card: {}").format(card["id"]))
             # 卡片级权限（allowed_roles）：空 = 全员可见；非空须为已知角色 code。
             # 未配置时不回填空列表，保持入库形状与保存内容一致
             if card.get("allowed_roles") is not None:

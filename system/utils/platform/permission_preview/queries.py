@@ -6,7 +6,6 @@ from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 
 from common.base.crypto import menu_list_to_tree
@@ -32,7 +31,9 @@ def _visible_menu_or_error(user_obj: UserInfo, menu_pk: Any, menu_type: Any = No
     非法 UUID 在 filter 时抛 Django ValidationError，需就地归一为业务错误。
     """
     menu_queryset = get_user_menu_queryset_for_preview(user_obj)
-    if not menu_queryset:
+    # 无角色/部门时函数返回 None：用 `is None` 判断，避免 QuerySet 真值求值把
+    # 用户可见菜单全量拉进内存（随后还会再 filter 一次）
+    if menu_queryset is None:
         raise ValidationError("菜单不在目标用户可见范围")
     try:
         queryset = menu_queryset.select_related("meta").filter(pk=menu_pk)
@@ -188,14 +189,9 @@ def get_user_field_matrix(user_obj: UserInfo) -> list[Any]:
     复刻 get_user_field_queryset 的取数范围（用户角色 ∪ 部门挂载角色），
     但直查并保留完整关联关系，不经 10s 缓存。
     """
-    q = Q()
-    has_q = False
-    if user_obj.roles.exists():
-        q |= Q(role__in=user_obj.roles.all()) & Q(role__is_active=True)
-        has_q = True
-    if user_obj.dept:
-        q |= Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True)
-        has_q = True
+    from common.core.permission import role_dept_q
+
+    q, has_q = role_dept_q(user_obj, "role")
     if not has_q:
         return []
     rows = []

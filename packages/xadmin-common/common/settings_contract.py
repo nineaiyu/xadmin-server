@@ -93,7 +93,7 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
     "SECRET_KEY": KS(
         "str",
         "Django 密钥；内核用于字段级加密派生材料与签名（base/crypto.py::get_signer、fields/char.py）",
-        consumers=("base/crypto.py", "fields/char.py"),
+        consumers=("base/crypto.py", "fields/char.py", "utils/media_signing.py"),
         framework=True,
     ),
     "FIELD_ENCRYPTION_KEY": KS(
@@ -200,12 +200,29 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
         consumers=("storage/backend.py", "storage/utils.py"),
         framework=True,
     ),
-    "MEDIA_URL": KS("str", "媒体 URL 前缀（存储后端拼接访问地址）", consumers=("storage/backend.py",), framework=True),
+    "MEDIA_URL": KS(
+        "str",
+        "媒体 URL 前缀（存储后端拼接访问地址）",
+        consumers=("storage/backend.py", "utils/media_signing.py"),
+        framework=True,
+    ),
     "MEDIA_X_ACCEL_PREFIX": KS(
         "str",
         "nginx X-Accel-Redirect 内网前缀（空 = 由 Django 直接回文件流）",
         default="",
         consumers=("utils/media.py",),
+    ),
+    "MEDIA_SIGNED_URL_REQUIRED": KS(
+        "bool",
+        "敏感媒体命名空间（导出 / 附件 / 对象存储缓存）是否要求短时效签名 URL（默认开启，关闭回落登录态）",
+        default=True,
+        consumers=("utils/media_signing.py",),
+    ),
+    "MEDIA_SIGNED_URL_TTL": KS(
+        "int",
+        "敏感媒体签名 URL 有效期（秒）",
+        default=3600,
+        consumers=("utils/media_signing.py",),
     ),
     "FILE_UPLOAD_SIZE": KS(
         "int",

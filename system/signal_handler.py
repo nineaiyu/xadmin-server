@@ -24,6 +24,7 @@ from common.utils import get_logger
 from system.models import (
     DataDict,
     DataPermission,
+    FieldPermission,
     Menu,
     MenuMeta,
     SystemConfig,
@@ -39,9 +40,11 @@ M2M_CHANGED_ACTIONS = ("post_add", "post_remove", "post_clear")
 
 @receiver([post_save, pre_delete], sender=Menu)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def clean_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
+    from common.core.modelset.metadata import invalidate_metadata_payload_cache
     from identity.services import invalidate_menu_user_caches
 
     invalidate_menu_user_caches([instance])
+    invalidate_metadata_payload_cache()
     logger.info(f"invalid cache {instance}")
 
 
@@ -100,12 +103,42 @@ def invalid_data_permission_menu_m2m_cache_handler(sender: Any, instance: Any, a
 
 @receiver([post_save, pre_delete], sender=DataDict)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def invalid_dict_cache_handler(sender: Any, instance: Any, **kwargs: Any) -> None:
+    from common.core.modelset.metadata import invalidate_metadata_payload_cache
+
     # 字典类型变更失效该 code 缓存；类型删除需失效其下字典项缓存，全量失效更稳
     if instance.parent_id:
         invalid_dict_cache(instance.parent.code)
     else:
         invalid_dict_cache()
+    # 字典选项会固化进元数据载荷（search-columns 的 choices），必须同源失效
+    invalidate_metadata_payload_cache()
     logger.info(f"invalid dict cache {instance}")
+
+
+@receiver([post_save, pre_delete], sender=FieldPermission)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+@receiver(
+    m2m_changed,
+    sender=FieldPermission.field.through,
+    dispatch_uid="system.signal_handler.field_permission_metadata_cache",
+)  # type: ignore[untyped-decorator]  # 同上
+def invalid_field_permission_metadata_cache(sender: Any, instance: Any, action: Any = "", **kwargs: Any) -> None:
+    """字段授权变更：元数据载荷缓存（search-columns/search-fields）整族失效。"""
+    if action and action not in M2M_CHANGED_ACTIONS:
+        return
+    from common.core.modelset.metadata import invalidate_metadata_payload_cache
+
+    invalidate_metadata_payload_cache()
+    logger.info(f"invalid metadata payload cache by field permission {instance}")
+
+
+@receiver(m2m_changed, sender=Menu.model.through, dispatch_uid="system.signal_handler.menu_model_metadata_cache")  # type: ignore[untyped-decorator]  # 同上
+def invalid_menu_model_metadata_cache(sender: Any, instance: Any, action: Any, **kwargs: Any) -> None:
+    if action not in M2M_CHANGED_ACTIONS:
+        return
+    from common.core.modelset.metadata import invalidate_metadata_payload_cache
+
+    invalidate_metadata_payload_cache()
+    logger.info(f"invalid metadata payload cache by menu model {instance}")
 
 
 @receiver([post_save, post_delete], sender="system.Tag", dispatch_uid="system.signal_handler.clean_tag_metadata_cache")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

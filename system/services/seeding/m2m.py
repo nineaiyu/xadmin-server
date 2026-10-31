@@ -41,6 +41,15 @@ _M2M_STRIP_FIELDS: dict[str, tuple[str, ...]] = {
 _BULK_BATCH = 1000
 
 
+def _seed_model(label: str) -> Any:
+    """按 label 取模型；清单声明了未注册模型时告警跳过（``apps.get_model`` 会抛 LookupError）。"""
+    try:
+        return apps.get_model(label)
+    except LookupError:
+        logger.warning("seed model not registered, skip m2m handling: %s", label)
+        return None
+
+
 def strip_m2m_fields(rows_by_model: Any) -> tuple[Any, ...]:
     """从种子行中剥离角色菜单授权，返回 ``(rows_by_model, notes)``。
 
@@ -91,7 +100,7 @@ def extract_m2m_relations(rows_by_model: Any) -> tuple[Any, list[SeedM2MBatch]]:
     for label, rows in rows_by_model.items():
         if not rows:
             continue
-        model = apps.get_model(label)
+        model = _seed_model(label)
         if model is None:
             continue
         fields = [field for field in model._meta.many_to_many if field.remote_field.through._meta.auto_created]
@@ -135,7 +144,7 @@ def apply_m2m_relations(batches: Any, *, using: Any = DEFAULT_DB_ALIAS) -> int:
 
     written = 0
     for batch in batches:
-        model = apps.get_model(batch.model)
+        model = _seed_model(batch.model)
         if model is None:
             continue
         field = model._meta.get_field(batch.field_name)

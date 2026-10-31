@@ -178,6 +178,13 @@ def stub_llm(monkeypatch):
     monkeypatch.setattr(
         "integrations.sdk.ai.chat.ChatCompletionsClient._request", lambda self, url, kwargs: stub.post(url, **kwargs)
     )
+
+    async def _async_chat_stream(client, messages, **kwargs):
+        # 异步流式链路复用同一桩：底层 builder 的 _request 已被替换
+        for item in client._builder.chat_stream(messages, **kwargs):
+            yield item
+
+    monkeypatch.setattr("integrations.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", _async_chat_stream)
     return stub
 
 
@@ -267,13 +274,13 @@ class TestNativeToolTrack:
         """流内未知异常（非 DjangoValidationError/AiSdkError）转 error 帧，不断连接。"""
         ai_settings.AI_NATIVE_TOOLS_ENABLED = True
         make_profile(purpose=PURPOSE_STRUCTURED, capabilities={"tool_calls": {"ok": True}})
-        import ai.services.actions.ai_actions as ai_actions
+        import ai.services.actions.ai_draft_tools as draft_tools
 
-        def broken_stream(user, message):
+        async def broken_stream(user, message):
             yield {"type": "reasoning", "text": "先想一下"}
             raise RuntimeError("unexpected native result")
 
-        monkeypatch.setattr(ai_actions, "native_draft_result_stream", broken_stream)
+        monkeypatch.setattr(draft_tools, "native_draft_result_stream_async", broken_stream)
         response = auth_client.post(
             f"{ASSISTANT_URL}/action/interpret/stream", {"message": "看看系统总览"}, format="json"
         )
@@ -302,10 +309,11 @@ class TestNativeToolTrack:
 
 
 class TestIdempotency:
-    def test_duplicate_execute_reported(self, auth_client, ai_settings, stub_llm):
+    def test_duplicate_execute_reported(self, auth_client, ai_settings, stub_llm, django_capture_on_commit_callbacks):
         make_profile()
         payload = {"action": ACTION_DASHBOARD_OVERVIEW, "params": {}}
-        first = auth_client.post(f"{ASSISTANT_URL}/action/execute", payload, format="json").json()
+        with django_capture_on_commit_callbacks(execute=True):
+            first = auth_client.post(f"{ASSISTANT_URL}/action/execute", payload, format="json").json()
         second = auth_client.post(f"{ASSISTANT_URL}/action/execute", payload, format="json").json()
         assert first["code"] == 1000 and second["code"] == 1000
         assert first["data"]["deduplicated"] is False

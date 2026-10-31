@@ -35,10 +35,12 @@ async def tracked_chat_stream_async(
     信号量覆盖整个生成器生命周期（异常/中断路径也释放）。
     """
     from ai.services.assistant.ai_config import active_profile_name
+    from ai.services.assistant.ai_stream_slots import STREAM_SLOT_REFRESH_INTERVAL
     from ai.services.assistant.ai_usage import (
         acquire_stream_slot,
         invalidate_usage_cache,
         record_usage,
+        refresh_stream_slot,
         release_stream_slot,
     )
     from integrations.sdk.ai.chat import AiSdkError
@@ -46,6 +48,8 @@ async def tracked_chat_stream_async(
     if not acquire_stream_slot():
         raise AiSdkError("Too many concurrent AI streams, please retry later")
     started = time.monotonic()
+    last_refresh = started
+    ok, detail = True, ""
     try:
 
         def _record(**kwargs: Any) -> None:
@@ -60,19 +64,34 @@ async def tracked_chat_stream_async(
 
         try:
             async for item in client.chat_stream(messages, **overrides):
+                # 长会话按时间窗续期计数键 TTL（与同步流的 slot.heartbeat 同口径）
+                now = time.monotonic()
+                if now - last_refresh >= STREAM_SLOT_REFRESH_INTERVAL:
+                    last_refresh = now
+                    refresh_stream_slot()
                 yield item
         except AiSdkError as exc:
-            await sync_to_async(_record)(
-                duration_ms=int((time.monotonic() - started) * 1000), ok=False, detail=str(exc)
-            )
+            ok, detail = False, str(exc)
             raise
-        await sync_to_async(_record)(usage=client.last_usage, duration_ms=int((time.monotonic() - started) * 1000))
-        invalidate_usage_cache(user)
+        except BaseException:
+            # 客户端断开（GeneratorExit）/ASGI 取消：中断流同样要记成本
+            ok, detail = False, "interrupted"
+            raise
+        finally:
+            await sync_to_async(_record)(
+                usage=client.last_usage if ok else None,
+                duration_ms=int((time.monotonic() - started) * 1000),
+                ok=ok,
+                detail=detail,
+            )
+            invalidate_usage_cache(user)
     finally:
         release_stream_slot()
 
 
-async def ask_stream_async(messages: list[Any], sources: list[Any], user: Any = None) -> Any:
+async def ask_stream_async(
+    messages: list[Any], sources: list[Any], user: Any = None, injection_hits: list[Any] | None = None
+) -> Any:
     """问答链路（异步流式生成器）：产出事件 dict，供 ``sse_response_async`` 转发。
 
     与同步 ``ask_stream`` 事件契约一致：``{"type": "reasoning"|"content", "text": ...}``
@@ -83,7 +102,13 @@ async def ask_stream_async(messages: list[Any], sources: list[Any], user: Any = 
     from ai.services.assistant.ai import readable_ai_error
     from ai.services.assistant.ai_config import ai_credentials
     from ai.services.assistant.ai_guard import StreamMasker, guard_summary
+    from ai.services.assistant.ai_usage import quota_error
     from integrations.sdk.ai.async_chat import AiSdkError, AsyncChatCompletionsClient
+
+    # 配额在服务层收敛：流式入口被新调用方直接使用时同样受日配额约束
+    quota = await sync_to_async(quota_error)(user, "docs")
+    if quota:
+        raise DjangoValidationError(quota)
 
     # 凭据读取与脱敏规则加载都触 DB（激活档案 / 用户自定义脱敏规则）：在异步段
     # 会被 SynchronousOnlyOperation 拦截——经 sync_to_async 落回线程本地连接构建。
@@ -124,7 +149,7 @@ async def ask_stream_async(messages: list[Any], sources: list[Any], user: Any = 
         "answer": answer,
         "sources": sources,
         "guard": guard_summary(
-            injection=[],
+            injection=list(injection_hits or []),
             mask_hits=content_masker.hits + reasoning_masker.hits,
             output_len=len(answer),
         ),

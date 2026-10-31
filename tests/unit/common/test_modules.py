@@ -424,3 +424,27 @@ class TestTrimmedCacheInvalidation:
         module_config(disable=["chat"])
         # 不依赖被清理的键的具体数量，只要求链路可用且不抛异常
         assert modules.invalidate_trimmed_caches() >= 0
+
+
+class TestTaskCenterModuleSplit:
+    """ops 只裁剪运维监控；任务中心/下载中心由 task_center 独立裁剪。"""
+
+    def _match(self, module_id, path):
+        import re
+
+        spec = next(item for item in MODULES if item.id == module_id)
+        return any(re.match(pattern, path) for pattern in spec.routes)
+
+    def test_ops_does_not_own_task_routes(self):
+        assert self._match("ops", "/api/task/exports") is False
+        assert self._match("ops", "/api/task/webhooks/subscriptions") is False
+        assert self._match("ops", "/api/system/monitor/heartbeat") is True
+
+    def test_task_center_owns_download_and_task_routes(self):
+        assert self._match("task_center", "/api/task/exports") is True
+        assert self._match("task_center", "/api/task/unified") is True
+        assert self._match("task_center", "/api/task/webhooks/subscriptions") is False
+
+    def test_webhook_module_only_owns_webhook_routes(self):
+        assert self._match("webhook", "/api/task/webhooks/subscriptions") is True
+        assert self._match("webhook", "/api/task/exports") is False

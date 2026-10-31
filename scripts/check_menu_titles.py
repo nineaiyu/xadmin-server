@@ -71,7 +71,14 @@ def first_line(doc: str) -> str:
 
 
 def is_view_class(node: ast.ClassDef) -> bool:
-    return node.name.endswith("ViewSet") or node.name.endswith("APIView")
+    if node.name.endswith(("ViewSet", "APIView")):
+        return True
+    # 不以 ViewSet/APIView 命名的路由视图（如 ApiLogin / Scim UsersView）按基类识别
+    for base in node.bases:
+        name = base.attr if isinstance(base, ast.Attribute) else getattr(base, "id", "")
+        if str(name).endswith(("ViewSet", "APIView", "GenericAPIView")):
+            return True
+    return False
 
 
 def is_action_decorator(decorator: ast.expr) -> bool:

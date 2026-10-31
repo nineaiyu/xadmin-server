@@ -92,11 +92,16 @@ def get_view_permissions(view_string: Any, code_suffix: Any = "") -> Any:
             else:
                 routers = router.get_routes(view_set)
             route_info = {r.name.format(basename=basename): r.mapping for r in routers}
-            try:
-                models = get_related_models(view_set.queryset.model)
-            except Exception as e:
-                logger.error(f"get_related_models {view_set} failed {e}", exc_info=True)
-                pass
+            declared_models = getattr(view_set, "permission_models", None)
+            if declared_models is not None:
+                # 非模型视图显式声明（空 = 不绑定模型），不再借用占位 queryset 的模型
+                models = [item._meta.label_lower if hasattr(item, "_meta") else str(item) for item in declared_models]
+            else:
+                try:
+                    models = get_related_models(view_set.queryset.model)
+                except Exception as e:
+                    logger.error(f"get_related_models {view_set} failed {e}", exc_info=True)
+                    pass
         elif hasattr(view_set, "get_extra_actions") and view_set.get_extra_actions():
             # 纯 viewsets.ViewSet + @action（无 queryset 的非 GenericViewSet，如代码生成器）：
             # 动态路由的 mapping 由 router.get_urls 期才装配，这里按

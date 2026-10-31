@@ -6,7 +6,6 @@
 # date : 6/29/2023
 import json
 import os
-from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from django.db.utils import OperationalError, ProgrammingError
@@ -38,10 +37,6 @@ def get_task_log_path(base_path: Any, task_id: Any, level: int = 0) -> Any:
 
 def get_celery_task_log_path(task_id: Any) -> Any:
     return get_task_log_path(kernel_required_setting("CELERY_LOG_DIR"), task_id)
-
-
-def eta_second(second: Any) -> Any:
-    return datetime.fromtimestamp(datetime.now().timestamp(), UTC) + timedelta(seconds=second)
 
 
 def create_or_update_celery_periodic_tasks(tasks: Any) -> dict[str, tuple[Any, bool]] | None:
@@ -113,13 +108,16 @@ def create_or_update_celery_periodic_tasks(tasks: Any) -> dict[str, tuple[Any, b
             args=json.dumps(detail.get("args", [])),
             kwargs=json.dumps(detail.get("kwargs", {})),
             description=detail.get("description") or "",
-            last_run_at=last_run_at,
         )
         enabled = detail.get("enabled")
         if enabled is not None:
             defaults["enabled"] = enabled
+        # last_run_at 只在新建时初始化：更新分支保留 beat 的原值，避免每次 worker
+        # 启动都把日级清理任务的下次到期时间推后一个完整周期（长期不执行）
+        create_defaults = {**defaults, "last_run_at": last_run_at} if last_run_at else None
         result[name] = PeriodicTask.objects.update_or_create(
             defaults=defaults,
+            create_defaults=create_defaults,
             name=name,
         )
 

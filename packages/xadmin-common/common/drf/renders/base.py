@@ -97,8 +97,12 @@ class BaseFileRenderer(BaseRenderer):
         if self.template == "import":
             results = [results[0]] if results else results
         else:
-            # 限制数据数量
-            results = results[: kernel_setting("EXPORT_MAX_LIMIT")]
+            # 限制数据数量：截断必须可感知（响应头 X-Export-Truncated），不能静默少行
+            limit = int(kernel_setting("EXPORT_MAX_LIMIT") or 0)
+            if limit and len(results) > limit:
+                self.truncated = True
+                logger.warning("export truncated to EXPORT_MAX_LIMIT=%s rows", limit)
+                results = results[:limit]
         # 会将一些 UUID 字段转化为 string
         results = json.loads(json.dumps(results, cls=encoders.JSONEncoder))
         return results
@@ -292,6 +296,8 @@ class BaseFileRenderer(BaseRenderer):
             rendered_fields = self.get_rendered_fields()
             column_titles = self.get_column_titles(rendered_fields)
             data = self.process_data(data)
+            if getattr(self, "truncated", False):
+                response["X-Export-Truncated"] = "1"
             rows = self.generate_rows(data, rendered_fields)
             self.initial_writer()
             # self.add_validation(rendered_fields)  # 关闭校验，通过help来进行提醒

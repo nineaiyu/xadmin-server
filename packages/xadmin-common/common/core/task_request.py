@@ -93,7 +93,7 @@ def build_task_request(
     if request_uuid:
         # 审计链路：middleware 缺席时由任务显式携带 X-Request-Id 同源值
         request.request_uuid = request_uuid
-    if user is not None:
+    if user is not None and getattr(user, "is_active", True):
         # 两个读法都要满足：任务汇总/通知直接读 request.user；DRF 侧认 _force_auth_user
         request.user = user
         request._force_auth_user = user

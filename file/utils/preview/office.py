@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 
 from django.core.cache import cache
@@ -59,10 +60,20 @@ def office_preview_available(upload: Any) -> bool:
         return False
     if office_converter_bin() is None:
         return False
+    max_bytes = _config("FILE_OFFICE_MAX_BYTES", 20 * 1024 * 1024)
+    if max_bytes:
+        # 远端后端先取对象 size：避免为了判大小把整个文件下载到本地缓存
+        from common.storage import storage_size
+
+        try:
+            remote_size = storage_size(getattr(upload.filepath, "name", ""))
+        except Exception:  # noqa: BLE001 取不到大小再退回本地路径判断
+            remote_size = None
+        if remote_size is not None and remote_size > max_bytes:
+            return False
     source = source_path(upload)
     if not source:
         return False
-    max_bytes = _config("FILE_OFFICE_MAX_BYTES", 20 * 1024 * 1024)
     if max_bytes and os.path.getsize(source) > max_bytes:
         return False
     return True
@@ -108,7 +119,7 @@ def convert_office_to_pdf(upload: Any) -> str | None:
             timeout=timeout,
             check=False,
         )
-        produced = os.path.join(outdir, f"source{os.path.splitext(extension)[0]}.pdf")
+        produced = os.path.join(outdir, f"{Path(local_source).stem}.pdf")
         if not os.path.exists(produced):
             # 部分版本按 basename 直出：兜底扫描输出目录里的第一个 pdf
             pdfs = [name for name in os.listdir(outdir) if name.lower().endswith(".pdf")]

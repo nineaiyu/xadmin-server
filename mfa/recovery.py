@@ -46,12 +46,16 @@ def hash_code(raw: str) -> str:
 
 def generate_codes(user: Any) -> list[str]:
     """重建该用户的恢复码批次：旧码全部作废，返回明文（仅此一次）"""
-    user.mfa_recovery_codes.all().delete()
+    from django.db import transaction
+
     codes = [
         format_code("".join(secrets.choice(_CODE_ALPHABET) for _ in range(_CODE_LENGTH)))
         for _ in range(RECOVERY_CODE_COUNT)
     ]
-    MfaRecoveryCode.objects.bulk_create([MfaRecoveryCode(user=user, code_hash=hash_code(code)) for code in codes])
+    # 删除与写入必须同事务：中途失败不能留下「无恢复码」的账号
+    with transaction.atomic():
+        user.mfa_recovery_codes.all().delete()
+        MfaRecoveryCode.objects.bulk_create([MfaRecoveryCode(user=user, code_hash=hash_code(code)) for code in codes])
     return codes
 
 

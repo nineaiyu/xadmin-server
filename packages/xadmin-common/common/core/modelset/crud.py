@@ -106,9 +106,10 @@ class UpdateAction(mixins.UpdateModelMixin):
         """
         from common.core.config import SysConfig
 
-        whitelist = SysConfig.AUDIT_DIFF_MODELS or []
+        whitelist = {str(item).strip().lower() for item in (SysConfig.AUDIT_DIFF_MODELS or [])}
         model = getattr(getattr(self, "queryset", None), "model", None)
-        if not whitelist or not pk or model is None or model._meta.label not in whitelist:
+        model_label = model._meta.label.lower() if model is not None else ""
+        if not whitelist or not pk or model is None or model_label not in whitelist:
             return None
         old_values = self.get_queryset().filter(pk=pk).values().first()
         if old_values is None:
