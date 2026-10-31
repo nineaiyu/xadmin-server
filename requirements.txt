@@ -78,7 +78,7 @@ lml==0.2.0
 lockfile==0.12.2
 lxml==6.1.3
 maxminddb==3.2.0
-msgpack==1.2.2
+msgpack==1.2.3
 multidict==6.9.1
 mysqlclient==2.2.8
 openpyxl==3.1.5
