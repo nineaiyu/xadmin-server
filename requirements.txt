@@ -18,7 +18,7 @@ argon2-cffi==25.1.0
 argon2-cffi-bindings==26.1.0
 asgiref==3.12.1
 attrs==26.1.0
-autobahn==26.7.1
+autobahn==26.10.1
 automat==25.4.16
 billiard==4.3.0
 bleach==6.4.0
