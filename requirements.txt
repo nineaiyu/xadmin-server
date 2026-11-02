@@ -2,7 +2,7 @@
 #    uv export --no-hashes --no-emit-project --no-emit-workspace --no-group dev --no-annotate -o requirements.txt
 aiofiles==24.1.0
 aiohappyeyeballs==2.7.1
-aiohttp==3.14.3
+aiohttp==3.14.4
 aiosignal==1.4.0
 alibabacloud-credentials==1.0.12
 alibabacloud-credentials-api==1.0.1
@@ -18,13 +18,14 @@ argon2-cffi==25.1.0
 argon2-cffi-bindings==26.1.0
 asgiref==3.12.1
 attrs==26.1.0
-autobahn==26.7.1
+autobahn==26.10.1
 automat==25.4.16
 billiard==4.3.0
 bleach==6.4.0
-cbor2==5.9.0
+cbor2==5.9.0 ; platform_python_implementation == 'PyPy'
+cbor2==6.2.0 ; platform_python_implementation != 'PyPy'
 celery==5.6.3
-certifi==2026.7.22
+certifi==2026.10.18
 cffi==2.1.1
 channels==4.3.2
 channels-redis==4.3.0
@@ -51,7 +52,7 @@ django-imagekit==6.1.0
 django-proxy==1.3.0
 django-redis==7.0.0
 django-timezone-field==7.2.2
-djangorestframework==3.18.1
+djangorestframework==3.18.2
 djangorestframework-simplejwt==5.5.1
 drf-spectacular==0.30.0
 drf-spectacular-sidecar==2026.9.1
@@ -78,7 +79,7 @@ lml==0.2.0
 lockfile==0.12.2
 lxml==6.1.3
 maxminddb==3.2.0
-msgpack==1.2.2
+msgpack==1.2.3
 multidict==6.9.1
 mysqlclient==2.2.8
 openpyxl==3.1.5
@@ -86,7 +87,7 @@ packaging==26.3
 pgvector==0.5.0
 phonenumbers==9.0.38
 pilkit==3.0
-pillow==12.3.0
+pillow==13.0.0
 prometheus-client==0.26.0
 prompt-toolkit==3.0.53
 propcache==0.5.4
@@ -94,7 +95,7 @@ psutil==7.2.2
 psycopg==3.3.5
 psycopg-binary==3.3.5 ; implementation_name != 'pypy'
 psycopg-pool==3.3.3
-pyasn1==0.6.4
+pyasn1==0.6.5
 pycountry==26.2.16
 pycparser==3.0 ; implementation_name != 'PyPy'
 pycryptodomex==3.23.0
@@ -104,7 +105,7 @@ pyexcel-xlsx==0.6.1
 pyjwt==2.15.1
 pyopenssl==26.4.0
 pyotp==2.10.0
-pypdf==6.20.1
+pypdf==6.21.4
 python-crontab==3.4.0
 python-daemon==3.1.2
 python-dateutil==2.9.0.post0
@@ -122,8 +123,8 @@ six==1.17.0
 sqlparse==0.6.0
 texttable==1.7.0
 tinycss2==1.5.1
-tornado==6.5.10
-twisted==26.4.0
+tornado==6.6
+twisted==26.10.0
 txaio==26.6.1
 typing-extensions==4.16.0
 tzdata==2026.4
