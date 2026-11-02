@@ -37,7 +37,7 @@ dependencies = [
     # 框架内核（工作区成员，editable 安装；源码在 packages/xadmin-common/）
     "xadmin-common",
     "django==6.0.8",
-    "djangorestframework==3.18.1",
+    "djangorestframework==3.18.2",
     "django-cors-headers==4.9.0",
     "django-filter==26.1",
     "django-csp==4.0",
