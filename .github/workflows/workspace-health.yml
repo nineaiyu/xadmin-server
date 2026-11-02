@@ -54,8 +54,18 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11.25.0
+
+      - name: Install client dependencies
+        # 快档其余检查只用 python / node / bash 内置能力；i18n 词条门禁的
+        # check-i18n-keys.mjs 依赖 yaml 解析器，需先装前端依赖。
+        working-directory: xadmin-client
+        run: pnpm install --frozen-lockfile
+
       - name: Run workspace health (fast tier)
-        # 快档门禁只依赖 python / node / bash 内置能力，无需安装依赖。
         # 该步骤只报告不阻断：其退出码写入 summary，健康漂移由 issue 跟踪。
         id: health
         continue-on-error: true
