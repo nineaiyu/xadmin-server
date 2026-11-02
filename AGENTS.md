@@ -37,6 +37,7 @@
 ```bash
 uv sync --all-groups                            # 依赖（唯一入口：pyproject.toml + uv.lock）
 docker compose up -d                            # 开发栈（nginx:8896）
+bash ops/dev_up.sh --with-demo --hot            # 起栈+初始化+演示数据；--hot 仅 web 热加载，celery/beat/配置仍须 restart
 docker restart xadmin-server xadmin-celery-worker xadmin-celery-heavy   # 改后端后必做（约 5s；改 celery 任务/配置时加 xadmin-celery-beat）
 docker restart -t 3 xadmin-server xadmin-celery-worker xadmin-celery-heavy   # 长任务场景：限制本次停止最多等 3s
 docker compose restart server celery-worker celery-heavy celery-beat   # 生产语义：按 compose 宽限期优雅停机
@@ -47,7 +48,7 @@ python manage.py sync_menu_permissions --dry-run    # 权限点缺口扫描（�
 python manage.py sync_menu_permissions --update-seed # 把变更回写种子文件
 python manage.py sync_field_permissions --update-seed # 新增字段后：字段树 + 新增字段白名单 + 种子（不动历史裁剪）
 python manage.py sync_field_permissions --dry-run     # 预览本次新增字段会补到哪些角色白名单
-python manage.py seed_demo_all [--reset]        # 演示数据（演示账号 admin/admin123）
+python manage.py seed_demo_all [--reset]        # 演示数据（演示账号 admin/admin123；非超管 xadmin）
 python manage.py post_upgrade                   # 升级后补全（幂等）
 python manage.py doctor                         # 上线前自检
 python manage.py generate_crud                  # 二开代码生成主线（配套 docs/guide/first-module-30min.md）
@@ -69,6 +70,10 @@ python manage.py upgrade_check / upgrade_ledger # 存量库升级判定 / 迁移
    `seeds/menumeta.json`（前端路由 / 按钮元数据）；平台级目录/跨域页面才落 `loadjson/`。
    `sync_menu_permissions --update-seed` 按归属回写各层，改完用 `--dry-run` 验证缺口 0；
    外部/新应用还可 `dump_init_json --split-apps --apps <app>` 直接生成整层种子。
+   同一 `(path, method)` 只登记一个权限码：运行时权限解析以 path 为字典键，多码会互相覆盖
+   （字段权限 / 菜单上下文可能绑错）；共享端点用 `@shared_permissions` 在视图声明处登记
+   （注册表优先，兜底表仅兼容期保留），由 `tests/unit/common/test_core_permission.py` 守护，
+   不要直接改权限解析。
 
 5. **契约**：改接口响应结构 → 先改 `docs/schema/*.json` → 再改代码 → 前端 `pnpm sync:contract`。
 6. **错误码**：新增错误码先在 `docs/exception-handling.md` 登记；业务失败用 `ApiResponse` 的
@@ -126,6 +131,8 @@ python scripts/check_cross_app_imports.py
 python scripts/check_file_length.py && python scripts/check_function_length.py
 python scripts/check_cache_keys.py --strict            # 纯本地门禁（CI 不跑）
 python scripts/check_ledger_ids.py && python scripts/check_menu_titles.py
+python scripts/check_captcha_coverage.py && python scripts/check_captcha_legacy.py
+python scripts/check_captcha_assets.py
 python scripts/check_tutorial_mirror.py                # 教程命令/参数与代码一致（example 四篇）
 python manage.py makemigrations --check --dry-run      # 迁移漂移（纯本地门禁，CI 不跑）
 python manage.py load_init_json --check                # 种子 0 error

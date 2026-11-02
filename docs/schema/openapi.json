@@ -162,7 +162,7 @@
           "AI_CODEGEN_DRAFT_ENABLED": {
             "default": false,
             "description": "代码生成器的自然语言字段草案：AI 给出字段覆盖建议，人工审核采纳（绝不直接写代码）",
-            "title": "AI codegen draft",
+            "title": "AI 代码生成草稿",
             "type": "boolean"
           },
           "AI_CONTEXT_LIMIT": {
@@ -331,6 +331,7 @@
           },
           "ingest_error": {
             "readOnly": true,
+            "title": "摄取错误",
             "type": "string"
           },
           "ingest_status": {
@@ -344,7 +345,7 @@
               }
             },
             "readOnly": true,
-            "title": "Ingest status",
+            "title": "摄取状态",
             "type": "object"
           },
           "is_active": {
@@ -878,7 +879,9 @@
             "title": "表单结构已锁定",
             "type": "boolean"
           },
-          "initiator_roles": {},
+          "initiator_roles": {
+            "title": "发起角色"
+          },
           "is_active": {
             "default": true,
             "title": "激活状态",
@@ -1631,7 +1634,7 @@
         "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
         "properties": {
           "EXPORT_MAX_LIMIT": {
-            "description": "Limit the maximum number of rows of exported data (>=1)",
+            "description": "限制导出数据的最大行数（>=1）",
             "minimum": 1,
             "title": "数据导出限制",
             "type": "integer"
@@ -3595,14 +3598,14 @@
           "last_used_at": {
             "nullable": true,
             "readOnly": true,
-            "title": "Last consumed at",
+            "title": "最后消费时间",
             "type": "string"
           },
           "load_failure_count": {
             "description": "消费端加载失败次数（Redis 观测；失败不影响消费）。",
             "nullable": true,
             "readOnly": true,
-            "title": "Consumption failures",
+            "title": "消费失败次数",
             "type": "integer"
           },
           "parent": {
@@ -3638,7 +3641,7 @@
             "description": "消费次数（仅类型行；字典项行不展示）。",
             "nullable": true,
             "readOnly": true,
-            "title": "Consumption count",
+            "title": "消费次数",
             "type": "integer"
           },
           "value": {
@@ -3929,7 +3932,7 @@
               "label": "继承",
               "value": "inherit"
             },
-            "description": "strict = role without field permission config sees no columns; inherit = no extra pruning",
+            "description": "strict = 未配置字段权限的角色看不到列；inherit = 不额外裁剪",
             "properties": {
               "label": {
                 "type": "string"
@@ -5318,7 +5321,7 @@
           },
           "reference_count": {
             "readOnly": true,
-            "title": "Referenced tasks",
+            "title": "被引用任务",
             "type": "integer"
           }
         },
@@ -5474,7 +5477,7 @@
           },
           "LDAP_SYNC_PAGE_SIZE": {
             "default": 500,
-            "description": "Directory page size per search request during scheduled sync (10-5000)",
+            "description": "定时同步时每次搜索请求的目录页大小（10-5000）",
             "maximum": 5000,
             "minimum": 10,
             "title": "同步分页大小",
@@ -6938,7 +6941,7 @@
           },
           "model_label": {
             "readOnly": true,
-            "title": "Source model",
+            "title": "来源模型",
             "type": "string"
           },
           "module": {
@@ -7045,6 +7048,7 @@
           },
           "changes_truncated": {
             "readOnly": true,
+            "title": "变更已截断",
             "type": "boolean"
           },
           "created_time": {
@@ -7092,7 +7096,7 @@
           },
           "model_label": {
             "readOnly": true,
-            "title": "Source model",
+            "title": "来源模型",
             "type": "string"
           },
           "module": {
@@ -8962,7 +8966,7 @@
           "AI_CODEGEN_DRAFT_ENABLED": {
             "default": false,
             "description": "代码生成器的自然语言字段草案：AI 给出字段覆盖建议，人工审核采纳（绝不直接写代码）",
-            "title": "AI codegen draft",
+            "title": "AI 代码生成草稿",
             "type": "boolean"
           },
           "AI_CONTEXT_LIMIT": {
@@ -9131,6 +9135,7 @@
           },
           "ingest_error": {
             "readOnly": true,
+            "title": "摄取错误",
             "type": "string"
           },
           "ingest_status": {
@@ -9144,7 +9149,7 @@
               }
             },
             "readOnly": true,
-            "title": "Ingest status",
+            "title": "摄取状态",
             "type": "object"
           },
           "is_active": {
@@ -9630,7 +9635,9 @@
             "title": "表单结构已锁定",
             "type": "boolean"
           },
-          "initiator_roles": {},
+          "initiator_roles": {
+            "title": "发起角色"
+          },
           "is_active": {
             "default": true,
             "title": "激活状态",
@@ -9737,7 +9744,7 @@
         "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
         "properties": {
           "EXPORT_MAX_LIMIT": {
-            "description": "Limit the maximum number of rows of exported data (>=1)",
+            "description": "限制导出数据的最大行数（>=1）",
             "minimum": 1,
             "title": "数据导出限制",
             "type": "integer"
@@ -10297,14 +10304,14 @@
           "last_used_at": {
             "nullable": true,
             "readOnly": true,
-            "title": "Last consumed at",
+            "title": "最后消费时间",
             "type": "string"
           },
           "load_failure_count": {
             "description": "消费端加载失败次数（Redis 观测；失败不影响消费）。",
             "nullable": true,
             "readOnly": true,
-            "title": "Consumption failures",
+            "title": "消费失败次数",
             "type": "integer"
           },
           "parent": {
@@ -10340,7 +10347,7 @@
             "description": "消费次数（仅类型行；字典项行不展示）。",
             "nullable": true,
             "readOnly": true,
-            "title": "Consumption count",
+            "title": "消费次数",
             "type": "integer"
           },
           "value": {
@@ -10604,7 +10611,7 @@
               "label": "继承",
               "value": "inherit"
             },
-            "description": "strict = role without field permission config sees no columns; inherit = no extra pruning",
+            "description": "strict = 未配置字段权限的角色看不到列；inherit = 不额外裁剪",
             "properties": {
               "label": {
                 "type": "string"
@@ -11242,7 +11249,7 @@
           },
           "reference_count": {
             "readOnly": true,
-            "title": "Referenced tasks",
+            "title": "被引用任务",
             "type": "integer"
           }
         },
@@ -11392,7 +11399,7 @@
           },
           "LDAP_SYNC_PAGE_SIZE": {
             "default": 500,
-            "description": "Directory page size per search request during scheduled sync (10-5000)",
+            "description": "定时同步时每次搜索请求的目录页大小（10-5000）",
             "maximum": 5000,
             "minimum": 10,
             "title": "同步分页大小",
@@ -12752,7 +12759,7 @@
             "type": "string"
           },
           "SCIM_TOKEN": {
-            "description": "Encrypted at rest and never returned by the API; submit empty to keep the current token. Generate a random token below if you do not have one",
+            "description": "加密存储且 API 永不返回；留空保持当前令牌。没有令牌可在下方生成随机令牌",
             "maxLength": 512,
             "title": "SCIM Bearer 令牌",
             "type": "string",
@@ -12844,6 +12851,7 @@
           },
           "render_mode": {
             "readOnly": true,
+            "title": "渲染模式",
             "type": "string"
           },
           "theme": {
@@ -13533,7 +13541,7 @@
           },
           "SECURITY_LOGIN_MAX_SESSIONS": {
             "default": 0,
-            "description": "Kick the least recently active session beyond this limit (0 = unlimited)",
+            "description": "超出该上限时踢出最近最少活跃的会话（0 = 不限制）",
             "maximum": 100,
             "minimum": 0,
             "title": "最大并发会话数",
@@ -13582,7 +13590,7 @@
           },
           "SECURITY_MFA_METHODS": {
             "default": [],
-            "description": "Global whitelist of MFA methods available to accounts (empty = all enabled methods)",
+            "description": "账号可用的 MFA 方法全局白名单（空 = 全部已启用方法）",
             "items": {
               "$ref": "#/components/schemas/SECURITYMFAMETHODSEnum"
             },
@@ -13672,7 +13680,7 @@
           },
           "SECURITY_PASSWORD_EXPIRATION_DAYS": {
             "default": 90,
-            "description": "Force password change after N days (0 = never)",
+            "description": "密码 N 天后强制修改（0 = 不强制）",
             "maximum": 3650,
             "minimum": 0,
             "title": "密码有效期（天）",
@@ -13680,7 +13688,7 @@
           },
           "SECURITY_PASSWORD_HISTORY_COUNT": {
             "default": 3,
-            "description": "Recent passwords that cannot be reused (0 = disabled)",
+            "description": "不可复用的近期密码数量（0 = 关闭）",
             "maximum": 50,
             "minimum": 0,
             "title": "密码历史次数",
@@ -13688,7 +13696,7 @@
           },
           "SECURITY_PASSWORD_LEAK_CHECK_ENABLED": {
             "default": true,
-            "description": "Reject passwords found in known breach corpora",
+            "description": "拒绝已知泄露密码库中的密码",
             "title": "密码泄露检测",
             "type": "boolean"
           },
@@ -14053,19 +14061,18 @@
             "title": "网络地址"
           },
           "filename": {
-            "maxLength": 255,
+            "readOnly": true,
             "title": "文件名称",
             "type": "string"
           },
           "filesize": {
-            "maximum": 2147483647,
-            "minimum": -2147483648,
+            "readOnly": true,
             "title": "文件大小",
             "type": "integer"
           },
           "is_tmp": {
-            "default": false,
             "description": "临时文件会被定时任务自动清理",
+            "readOnly": true,
             "title": "临时文件",
             "type": "boolean"
           },
@@ -14075,12 +14082,12 @@
             "type": "boolean"
           },
           "md5sum": {
-            "maxLength": 36,
+            "readOnly": true,
             "title": "文件MD5",
             "type": "string"
           },
           "mime_type": {
-            "maxLength": 255,
+            "readOnly": true,
             "title": "文件类型",
             "type": "string"
           },
@@ -14680,7 +14687,7 @@
           },
           "has_secret": {
             "readOnly": true,
-            "title": "Secret configured",
+            "title": "密钥已配置",
             "type": "boolean"
           },
           "is_active": {
@@ -15597,7 +15604,7 @@
             "type": "string"
           },
           "SCIM_TOKEN": {
-            "description": "Encrypted at rest and never returned by the API; submit empty to keep the current token. Generate a random token below if you do not have one",
+            "description": "加密存储且 API 永不返回；留空保持当前令牌。没有令牌可在下方生成随机令牌",
             "maxLength": 512,
             "title": "SCIM Bearer 令牌",
             "type": "string",
@@ -15692,6 +15699,7 @@
           },
           "render_mode": {
             "readOnly": true,
+            "title": "渲染模式",
             "type": "string"
           },
           "theme": {
@@ -16829,7 +16837,7 @@
           },
           "SECURITY_LOGIN_MAX_SESSIONS": {
             "default": 0,
-            "description": "Kick the least recently active session beyond this limit (0 = unlimited)",
+            "description": "超出该上限时踢出最近最少活跃的会话（0 = 不限制）",
             "maximum": 100,
             "minimum": 0,
             "title": "最大并发会话数",
@@ -16884,7 +16892,7 @@
           },
           "SECURITY_MFA_METHODS": {
             "default": [],
-            "description": "Global whitelist of MFA methods available to accounts (empty = all enabled methods)",
+            "description": "账号可用的 MFA 方法全局白名单（空 = 全部已启用方法）",
             "items": {
               "$ref": "#/components/schemas/SECURITYMFAMETHODSEnum"
             },
@@ -16974,7 +16982,7 @@
           },
           "SECURITY_PASSWORD_EXPIRATION_DAYS": {
             "default": 90,
-            "description": "Force password change after N days (0 = never)",
+            "description": "密码 N 天后强制修改（0 = 不强制）",
             "maximum": 3650,
             "minimum": 0,
             "title": "密码有效期（天）",
@@ -16982,7 +16990,7 @@
           },
           "SECURITY_PASSWORD_HISTORY_COUNT": {
             "default": 3,
-            "description": "Recent passwords that cannot be reused (0 = disabled)",
+            "description": "不可复用的近期密码数量（0 = 关闭）",
             "maximum": 50,
             "minimum": 0,
             "title": "密码历史次数",
@@ -16990,7 +16998,7 @@
           },
           "SECURITY_PASSWORD_LEAK_CHECK_ENABLED": {
             "default": true,
-            "description": "Reject passwords found in known breach corpora",
+            "description": "拒绝已知泄露密码库中的密码",
             "title": "密码泄露检测",
             "type": "boolean"
           },
@@ -17658,19 +17666,18 @@
             "title": "网络地址"
           },
           "filename": {
-            "maxLength": 255,
+            "readOnly": true,
             "title": "文件名称",
             "type": "string"
           },
           "filesize": {
-            "maximum": 2147483647,
-            "minimum": -2147483648,
+            "readOnly": true,
             "title": "文件大小",
             "type": "integer"
           },
           "is_tmp": {
-            "default": false,
             "description": "临时文件会被定时任务自动清理",
+            "readOnly": true,
             "title": "临时文件",
             "type": "boolean"
           },
@@ -17680,12 +17687,12 @@
             "type": "boolean"
           },
           "md5sum": {
-            "maxLength": 36,
+            "readOnly": true,
             "title": "文件MD5",
             "type": "string"
           },
           "mime_type": {
-            "maxLength": 255,
+            "readOnly": true,
             "title": "文件类型",
             "type": "string"
           },
@@ -17711,6 +17718,7 @@
           "deleted_at",
           "filename",
           "filesize",
+          "is_tmp",
           "is_upload",
           "md5sum",
           "mime_type",
@@ -18600,7 +18608,8 @@
             "type": "string"
           },
           "request_headers": {
-            "readOnly": true
+            "readOnly": true,
+            "title": "请求头"
           },
           "response_body": {
             "readOnly": true,
@@ -18609,6 +18618,7 @@
           },
           "response_body_truncated": {
             "readOnly": true,
+            "title": "响应体已截断",
             "type": "boolean"
           },
           "response_code": {
@@ -18717,7 +18727,7 @@
           },
           "has_secret": {
             "readOnly": true,
-            "title": "Secret configured",
+            "title": "密钥已配置",
             "type": "boolean"
           },
           "is_active": {
@@ -30931,6 +30941,13 @@
               "format": "date-time",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "username",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -31597,7 +31614,7 @@
         "x-ai-guidance": "操作审计日志（模块、操作人、状态、时间），按时间倒序",
         "x-ai-label": "检索操作日志",
         "x-ai-params": [
-          "creator",
+          "creator_id",
           "module"
         ],
         "x-ai-required-permissions": [
@@ -44902,7 +44919,7 @@
         "x-ai-guidance": "查询上传文件列表（文件名、大小、上传人）",
         "x-ai-label": "查询上传文件",
         "x-ai-params": [
-          "name"
+          "filename"
         ],
         "x-ai-required-permissions": [
           "GET /api/file/file"
@@ -44939,8 +44956,7 @@
                 "$ref": "#/components/schemas/UploadFile"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -46279,8 +46295,7 @@
                 "$ref": "#/components/schemas/UploadFile"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -68126,7 +68141,7 @@
     },
     "/api/scim/v2/Groups": {
       "get": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_retrieve",
         "responses": {
           "200": {
@@ -68138,7 +68153,7 @@
         ]
       },
       "post": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_create",
         "responses": {
           "200": {
@@ -68152,7 +68167,7 @@
     },
     "/api/scim/v2/Groups/{id}": {
       "delete": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_destroy",
         "parameters": [
           {
@@ -68174,7 +68189,7 @@
         ]
       },
       "get": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_retrieve_2",
         "parameters": [
           {
@@ -68196,7 +68211,7 @@
         ]
       },
       "patch": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_partial_update",
         "parameters": [
           {
@@ -68218,7 +68233,7 @@
         ]
       },
       "put": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_update",
         "parameters": [
           {
@@ -68242,7 +68257,7 @@
     },
     "/api/scim/v2/ResourceTypes": {
       "get": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_ResourceTypes_retrieve",
         "responses": {
           "200": {
@@ -93825,7 +93840,7 @@
           "SystemTaskCenterViewSet"
         ],
         "x-ai-action": "task.rerun",
-        "x-ai-guidance": "为导出或导入记录创建并派发一次新执行（同链路、可审计）",
+        "x-ai-guidance": "创建并派发导出、导入或定时报表记录的新一轮执行（同一条流水线，留痕审计）",
         "x-ai-label": "重跑后台任务",
         "x-ai-params": [
           "pk",
