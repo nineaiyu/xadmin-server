@@ -422,3 +422,36 @@ class TestMenuPermissionAudit:
         """非超管未获授权：检测接口按菜单权限链拒绝（403）。"""
         api_client.force_authenticate(user=normal_user)
         assert api_client.get(self.AUDIT_URL).status_code == 403
+
+
+class TestMenuDeletedAtReadOnly:
+    """deleted_at 不可经序列化器写入：软删必须走 Menu.delete()（级联 + 影响面确认）。"""
+
+    def test_patch_cannot_soft_delete_via_deleted_at(self, auth_client):
+        pk = _create_menu(auth_client, name="no-deleted-at")
+        resp = auth_client.patch(f"{MENU_URL}/{pk}", {"deleted_at": "2026-01-01T00:00:00Z"}, format="json")
+        assert resp.status_code == 200, resp.data
+        row = Menu.objects.get(pk=pk)
+        assert row.deleted_at is None
+        assert Menu.objects.filter(pk=pk).exists()
+
+
+class TestMenuRankCacheInvalidation:
+    def test_rank_invalidates_menu_caches(self, auth_client, monkeypatch, menu_factory):
+        """拖拽排序后必须失效路由/权限缓存（否则侧边栏顺序最长 24h 不变）。"""
+        first = menu_factory("rank-a")
+        second = menu_factory("rank-b")
+        invalidated = []
+        monkeypatch.setattr(
+            "system.views.admin.menu.invalidate_menu_user_caches",
+            lambda menus: invalidated.extend(menu.pk for menu in menus),
+        )
+
+        resp = auth_client.post(
+            f"{MENU_URL}/rank",
+            [str(second.pk), str(first.pk)],
+            format="json",
+        )
+
+        assert resp.data["code"] == 1000, resp.data
+        assert {first.pk, second.pk} <= set(invalidated)

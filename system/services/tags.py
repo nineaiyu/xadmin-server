@@ -95,6 +95,29 @@ VISIBLE_QUERYSETS = {
 }
 
 
+def visible_object_pks(user: Any, model: Any, pks: Any) -> set[str]:
+    """批量可见性：一次数据权限查询求出可见主键集合（逐对象 exists 会放大 N 倍）。"""
+    factory = VISIBLE_QUERYSETS.get(resource_key(model))
+    if factory is None:
+        return set()
+    # 主键类型各异的批量入参（如整型主键混入 UUID 串）：逐项 to_python，非法项按不可见跳过，
+    # 不能因一个坏 pk 让整批都判不可见（否则合法对象也被误报失败）
+    valid_pks = []
+    for pk in pks or []:
+        try:
+            model._meta.pk.to_python(pk)
+        except (ValueError, TypeError, DjangoValidationError):
+            continue
+        valid_pks.append(pk)
+    if not valid_pks:
+        return set()
+    try:
+        queryset = factory(model, user).filter(pk__in=valid_pks)
+        return {str(item) for item in queryset.values_list("pk", flat=True)}
+    except (ValueError, DjangoValidationError):
+        return set()
+
+
 def ensure_object_visible(user: Any, model: Any, pk: Any) -> None:
     """查看级对象校验：目标对象必须落在请求者的用户可见域内（fail-closed）。
 
@@ -219,7 +242,6 @@ def set_object_tags_batch(
         else:
             wanted_map[pk] = incoming
 
-    # 标签存在性整批一次校验（取代逐对象查库；replace 入参可能重复，集合口径不受影响）
     wanted_tag_ids = {item for wanted in wanted_map.values() for item in wanted}
     existing_tag_ids = (
         {str(item) for item in Tag.objects.filter(pk__in=wanted_tag_ids).values_list("pk", flat=True)}
@@ -230,16 +252,20 @@ def set_object_tags_batch(
     changed, failed, valid_pks = [], [], []
     from rest_framework.exceptions import NotFound
 
+    # 可见性一次查询求出（逐对象 exists 会被大 pk 列表放大成 N 次数据权限编译）
+    visible_pks = (
+        visible_object_pks(user, model, [pk for pk in raw_pks if pk not in (None, "")]) if user is not None else None
+    )
+
     for raw_pk in raw_pks:
         pk = str(raw_pk)
         try:
-            if user is not None:
-                # 与 GET objects / 单对象写口同口径：不存在或数据范围外一律失败
-                ensure_object_visible(user, model, raw_pk)
-            if guard is not None:
-                guard(raw_pk)
             if raw_pk in (None, ""):
                 raise DjangoValidationError(_("The target object is required"))
+            if visible_pks is not None and pk not in visible_pks:
+                raise NotFound()
+            if guard is not None:
+                guard(raw_pk)
             wanted = wanted_map[pk]
             if len(wanted) > MAX_TAGS_PER_OBJECT:
                 raise DjangoValidationError(_("Too many tags (max {})").format(MAX_TAGS_PER_OBJECT))

@@ -164,7 +164,17 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
         with transaction.atomic():
             self.deleted_at = deleted_at
             self.save(update_fields=["deleted_at"])
-            self._cascade_soft_delete_descendants(deleted_at)
+            descendant_pks = self._cascade_soft_delete_descendants(deleted_at)
+        if descendant_pks:
+            # 级联走 QuerySet.update()，不触发 post_save：只失效目录自身会让
+            # 持有后代权限点的角色继续命中旧权限缓存（最长 24h）
+            def _invalidate_descendants() -> None:
+                # 直接取定义模块：identity.services 的惰性再导出会把类型退化为 Any|None
+                from identity.signal_handler import invalidate_menu_user_caches
+
+                invalidate_menu_user_caches(Menu.all_objects.filter(pk__in=descendant_pks))
+
+            transaction.on_commit(_invalidate_descendants)
         return 1
 
     def hard_delete(self, *args: Any, **kwargs: Any) -> Any:
@@ -174,15 +184,19 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
             MenuMeta.objects.filter(pk=self.meta_id).delete()
         return super().hard_delete(*args, **kwargs)
 
-    def _cascade_soft_delete_descendants(self, deleted_at: Any) -> None:
-        """按广度优先把未删除的后代菜单标记为同一 deleted_at。"""
+    def _cascade_soft_delete_descendants(self, deleted_at: Any) -> list[Any]:
+        """按广度优先把未删除的后代菜单标记为同一 deleted_at，返回被标记的主键。"""
         frontier = [self.pk]
+        affected: list[Any] = []
         while frontier:
             children = list(Menu.objects.filter(parent_id__in=frontier).values_list("pk", flat=True))
             if not children:
                 break
-            Menu.objects.filter(pk__in=children, deleted_at__isnull=True).update(deleted_at=deleted_at)
+            updated = Menu.objects.filter(pk__in=children, deleted_at__isnull=True)
+            affected.extend(updated.values_list("pk", flat=True))
+            updated.update(deleted_at=deleted_at)
             frontier = children
+        return affected
 
     def get_deleted_descendants(self) -> Any:
         """与本菜单同一时间戳软删除的后代菜单（成组恢复/清除的口径）。"""

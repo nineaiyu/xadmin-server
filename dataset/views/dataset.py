@@ -37,6 +37,23 @@ from dataset.utils.dataset import aggregate_dataset, designer_meta_payload, exec
 logger = get_logger(__name__)
 
 
+def _apply_query_timeout() -> None:
+    """执行/聚合前设置语句超时（PostgreSQL）：慢查询不能长期占住事务与 worker。"""
+    from django.conf import settings
+    from django.db import connection
+
+    if connection.vendor != "postgresql":
+        return
+    timeout_ms = int(getattr(settings, "DATASET_QUERY_TIMEOUT_MS", 30000) or 0)
+    if timeout_ms <= 0:
+        return
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL statement_timeout = %s", [timeout_ms])
+    except Exception:  # noqa: BLE001 超时设置失败不阻断查询（连接级策略兜底）
+        logger.warning("set dataset statement_timeout failed", exc_info=True)
+
+
 class DatasetFilter(BaseFilterSet):
     name = filters.CharFilter(field_name="name", lookup_expr="icontains")
 
@@ -94,6 +111,12 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
             return ApiResponse(code=1003, detail=_("Only the creator can modify a dataset"))
         return super().destroy(request, *args, **kwargs)
 
+    def get_batch_destroy_queryset(self, queryset: Any) -> Any:
+        # 与单条 destroy 同口径：非创建者不得批量删除他人（含共享）数据集
+        if getattr(self.request.user, "is_superuser", False):
+            return queryset
+        return queryset.filter(creator=self.request.user)
+
     @extend_schema(responses=get_default_response_schema())
     @shared_list_action(methods=["get"], detail=False, url_path="meta")  # type: ignore[untyped-decorator]
     def meta(self, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -127,8 +150,10 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         并按浏览者字段权限收敛（无该列权限即 1001，防隐藏列布尔预言机）。
         """
         dataset = self.get_object()
+        _apply_query_timeout()
+        data = request.data if isinstance(request.data, dict) else {}
         try:
-            extra_filters = request.data.get("filters")
+            extra_filters = data.get("filters")
             if extra_filters:
                 validate_filters(
                     dataset.bound_model,
@@ -137,7 +162,7 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
                     strict=str(dataset.field_permission_mode) == "strict",
                 )
             max_rows = None
-            max_rows_raw = request.data.get("max_rows")
+            max_rows_raw = data.get("max_rows")
             if max_rows_raw is not None:
                 # 只接受真正的整数：bool 是 int 子类（True 会变成 1），字符串/浮点
                 # 属契约错误，统一 400 而不是静默强转
@@ -146,11 +171,15 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
                 max_rows = max_rows_raw
                 if max_rows < 0:
                     raise ValidationError(_("max_rows must be a non-negative integer"))
-            count_only_raw = request.data.get("count_only")
+            count_only_raw = data.get("count_only")
+            try:
+                count_only = parse_bool(count_only_raw) if count_only_raw is not None else False
+            except ValueError:
+                raise ValidationError({"count_only": _("Invalid boolean value")}) from None
             result = execute_dataset(
                 dataset,
                 request.user,
-                count_only=parse_bool(count_only_raw) if count_only_raw is not None else False,
+                count_only=count_only,
                 extra_filters=extra_filters or None,
                 max_rows=max_rows,
             )
@@ -170,8 +199,10 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         + 浏览者字段权限收敛）。
         """
         dataset = self.get_object()
+        _apply_query_timeout()
+        data = request.data if isinstance(request.data, dict) else {}
         try:
-            extra_filters = request.data.get("filters")
+            extra_filters = data.get("filters")
             if extra_filters:
                 validate_filters(
                     dataset.bound_model,
@@ -182,10 +213,10 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
             result = aggregate_dataset(
                 dataset,
                 request.user,
-                group_by=request.data.get("group_by"),
-                metric=request.data.get("metric", "count"),
-                date_trunc=request.data.get("date_trunc"),
-                value_field=request.data.get("value_field"),
+                group_by=data.get("group_by"),
+                metric=data.get("metric", "count"),
+                date_trunc=data.get("date_trunc"),
+                value_field=data.get("value_field"),
                 extra_filters=extra_filters or None,
             )
         except ValidationError as exc:
@@ -236,3 +267,9 @@ class DashboardViewSet(ImpactPreviewAction, BaseModelSet):
         if guarded:
             return guarded
         return super().destroy(request, *args, **kwargs)
+
+    def get_batch_destroy_queryset(self, queryset: Any) -> Any:
+        # 与单条 destroy 同口径：共享仪表盘对非创建者只读
+        if getattr(self.request.user, "is_superuser", False):
+            return queryset
+        return queryset.filter(creator=self.request.user)

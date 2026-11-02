@@ -88,8 +88,14 @@ class TestConvertType:
     def test_list_json_string(self, config):
         assert config.convert_type("XADMIN_APPS", '["a", "b"]') == ["a", "b"]
 
-    def test_list_invalid_json_kept_as_string(self, config):
-        assert config.convert_type("XADMIN_APPS", "not-json") == "not-json"
+    def test_list_invalid_json_falls_back_to_comma_split(self, config):
+        assert config.convert_type("XADMIN_APPS", "not-json") == ["not-json"]
+        assert config.convert_type("XADMIN_APPS", "a,b") == ["a", "b"]
+
+    def test_bool_accepts_yes_on(self, config):
+        assert config.convert_type("DEBUG", "yes") is True
+        assert config.convert_type("DEBUG", "on") is True
+        assert config.convert_type("DEBUG", "off") is False
 
     def test_dict_json_string(self, config):
         assert config.convert_type("API_LOG_IGNORE", '{"k": ["GET"]}') == {"k": ["GET"]}

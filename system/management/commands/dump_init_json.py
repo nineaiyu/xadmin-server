@@ -48,6 +48,7 @@ class Command(BaseCommand):
         DataPermission,
         FieldPermission,
         ModelLabelField,
+        DataDict,
         LoginAccessPolicy,
         Setting,
     ]
@@ -105,9 +106,13 @@ class Command(BaseCommand):
                 fields=fields,
             )
         except Exception as e:
-            print(f"{queryset.model._meta.model_name} {filename} dump failed {e}")
-        finally:
+            # 导出失败必须中止：静默继续会产出截断文件，分层导出随后读到半截 JSON
             if stream:
+                stream.close()
+                Path(filename).unlink(missing_ok=True)
+            raise CommandError(f"{queryset.model._meta.model_name} {filename} dump failed: {e}") from e
+        finally:
+            if stream and not stream.closed:
                 stream.close()
 
     def handle(self, *args: Any, **options: Any) -> None:
@@ -176,6 +181,23 @@ class Command(BaseCommand):
 
         prefixes = _app_url_prefixes(app_label)
         path = target_root / app_label / "seeds" / "manifest.json"
+        if path.is_file():
+            # 目标目录已有清单（重复导出到同一输出目录）：沿用其归属声明，
+            # 不无条件覆盖（覆盖会丢掉 config_keys / dict_codes / menu_roots / grants）
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                payload = None
+            if isinstance(payload, dict):
+                self.stdout.write(f"沿用已有应用种子清单：{path}")
+                return SeedManifest(
+                    app=app_label,
+                    depends=tuple(payload.get("depends") or ()),
+                    url_prefixes=tuple(payload.get("url_prefixes") or ()),
+                    menu_roots=tuple(payload.get("menu_roots") or ()),
+                    config_keys=tuple(payload.get("config_keys") or ()),
+                    dict_codes=tuple(payload.get("dict_codes") or ()),
+                )
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             json.dumps(

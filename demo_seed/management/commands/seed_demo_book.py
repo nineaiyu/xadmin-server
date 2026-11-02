@@ -55,8 +55,15 @@ MENU_COMPONENT = "demo/book/index"
 FLOW_CODE = "demo_book"
 FLOW_NAME = "示例-书籍上架"
 NODE_NAME = "图书管理员审批"
-# 审批人（双环境占位：超管 xadmin 通常存在；正式使用请改为实际用户/角色）
-NODE_ASSIGNEE = "xadmin,isummer"
+
+
+# 审批人：优先取当前环境的前两个超管，避免硬编码开发者/默认账号
+def demo_approver_names() -> str:
+    from identity.models import UserInfo
+
+    names = list(UserInfo.objects.filter(is_superuser=True, is_active=True).values_list("username", flat=True)[:2])
+    return ",".join(str(name) for name in names) or "xadmin"
+
 
 # 删除二次确认：写入敏感操作审批拦截清单的 demo 路径
 # （与 demo/views.py 挂 ApprovalRequired 的 action 对应）
@@ -203,12 +210,12 @@ class Command(BaseCommand):
                 "order": 1,
                 "approve_type": "OR",
                 "assignee_type": "user",
-                "assignee_value": NODE_ASSIGNEE,
+                "assignee_value": demo_approver_names(),
                 "condition": {},
                 "routes": [],
                 "layout": {"x": 260, "y": 160},
                 "timeout_hours": 24,
-                "description": "图书管理员审批（示例）：默认取 xadmin/isummer，可在流程设计器调整",
+                "description": "图书管理员审批（示例）：默认取当前环境活跃超管，可在流程设计器调整",
             },
         )
         self.stdout.write(f"demo book flow ready: {FLOW_NAME}({FLOW_CODE})")

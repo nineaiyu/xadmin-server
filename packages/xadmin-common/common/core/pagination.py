@@ -13,6 +13,7 @@ from collections import OrderedDict
 from datetime import datetime
 from typing import Any
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -102,7 +103,7 @@ class KeysetPageNumber(PageNumber):
                 # 在 PG 上直接抛错（500），按当前时区补齐后再参与 keyset 条件
                 created_time = timezone.make_aware(created_time, timezone.get_current_timezone())
             pk = queryset.model._meta.pk.to_python(payload["pk"])
-        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError, DjangoValidationError) as exc:
             raise ValidationError({"cursor": _("Invalid cursor")}) from exc
         # 默认 -created_time, -pk：游标之后 = 时间更早，或同一时间 pk 更小
         return queryset.filter(Q(created_time__lt=created_time) | Q(created_time=created_time, pk__lt=pk)).order_by(

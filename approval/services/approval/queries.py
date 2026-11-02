@@ -4,10 +4,13 @@
 
 from typing import Any
 
-from .approvers import can_approve, get_approver_queryset
+from .approvers import can_approve
 from .constants import APPROVAL_PENDING_COUNT_CACHE_SECONDS, APPROVAL_STATS_WINDOW_DAYS
 
 PENDING_COUNT_KEY_PREFIX = "approval_pending_count_"
+#: 计数缓存版本号：状态变化只递增版本（O(1)），旧键随 10s TTL 自然淘汰，
+#: 不再每次审批动作枚举审批人 + delete_pattern 全键扫描
+PENDING_COUNT_VERSION_KEY = "approval_pending_count_version"
 
 
 def pending_queryset_for(user: Any) -> Any:
@@ -41,42 +44,30 @@ def pending_count_for(user: Any) -> int:
     def _load() -> Any:
         return pending_queryset_for(user).count()
 
-    count: int = cache.get_or_set(f"{PENDING_COUNT_KEY_PREFIX}{user.pk}", _load, APPROVAL_PENDING_COUNT_CACHE_SECONDS)
+    try:
+        version = int(cache.get(PENDING_COUNT_VERSION_KEY) or 0)
+    except Exception:  # noqa: BLE001 缓存不可用按版本 0（仍可命中或回源）
+        version = 0
+    count: int = cache.get_or_set(
+        f"{PENDING_COUNT_KEY_PREFIX}{version}_{user.pk}", _load, APPROVAL_PENDING_COUNT_CACHE_SECONDS
+    )
     return count
 
 
 def invalidate_pending_count_cache() -> None:
-    """失效待办计数缓存（审批单/级次状态变化后调用）。
+    """失效待办计数缓存（审批单/级次状态变化后调用）：仅递增版本号。
 
-    键空间 = 「可能被指派为审批人的用户」：多级链候选人可以是任意用户、无法
-    完全枚举，故采用「枚举删除 + 前缀通配删除」双保险——
-    - 枚举 = 全局审批人集合 ∪ 在途单当前级候选人（覆盖绝大多数命中）；
-    - 通配 = django-redis 的 delete_pattern（测试环境不支持时静默降级，
-      剩余偏差由 10s TTL 兜底，不会长期不一致）。
+    旧实现枚举全部审批人 + 在途候选人，并对整个前缀做全键扫描；
+    审批动作高频时全键扫描成本高。版本号方案为 O(1)，旧键由 10s TTL 清理。
     """
     from django.core.cache import cache
 
-    from approval.models.approval import ApprovalRequest
-
-    pks: set[Any] = set()
     try:
-        pks |= set(get_approver_queryset().values_list("pk", flat=True))
-    except Exception:  # noqa: BLE001 审批人配置异常不影响缓存清理
-        pass
-    try:
-        pks |= set(
-            ApprovalRequest.current_assignees.through.objects.filter(
-                approvalrequest__status=ApprovalRequest.Status.PENDING
-            ).values_list("userinfo_id", flat=True)
-        )
-    except Exception:  # noqa: BLE001 历史库/迁移中表缺失不影响主流程
-        pass
-    if pks:
-        cache.delete_many([f"{PENDING_COUNT_KEY_PREFIX}{pk}" for pk in pks])
-    try:
-        cache.delete_pattern(f"{PENDING_COUNT_KEY_PREFIX}*")
-    except Exception:  # noqa: BLE001 非 redis 后端无 delete_pattern
-        pass
+        cache.incr(PENDING_COUNT_VERSION_KEY)
+    except ValueError:
+        cache.set(PENDING_COUNT_VERSION_KEY, 1, None)
+    except Exception:  # noqa: BLE001 缓存不可用时由短 TTL 兜底
+        return
 
 
 def approval_stats(user: Any, days: int = APPROVAL_STATS_WINDOW_DAYS) -> dict[str, Any]:
@@ -84,8 +75,8 @@ def approval_stats(user: Any, days: int = APPROVAL_STATS_WINDOW_DAYS) -> dict[st
 
     口径：approved/rejected 按「整单终态处理人」计数——多级链的中间级通过
     不计入「我通过」（终态审批人才代表最终放行/驳回该操作）。
-    平均审批时长在 Python 侧求值（sqlite 对 DurationField 聚合支持不一，
-    审批单量级小、窗口有界，遍历开销可忽略）。
+    平均审批时长只统计**通过**的单（``approved_at`` 在驳回时也会落值作处理时点，
+    直接用它会把驳回/失败单计入审批耗时，与「平均审批时长」语义不符）。
     """
     import datetime
 
@@ -97,9 +88,9 @@ def approval_stats(user: Any, days: int = APPROVAL_STATS_WINDOW_DAYS) -> dict[st
     window = ApprovalRequest.objects.filter(created_time__gte=since)
     durations = [
         (approved_at - created_time).total_seconds()
-        for created_time, approved_at in window.filter(approved_at__isnull=False).values_list(
-            "created_time", "approved_at"
-        )
+        for created_time, approved_at in window.filter(
+            status=ApprovalRequest.Status.APPROVED, approved_at__isnull=False
+        ).values_list("created_time", "approved_at")
         if created_time and approved_at
     ]
     return {

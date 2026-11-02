@@ -127,3 +127,56 @@ def test_captcha_source_messages_have_catalog_entries():
     catalog = {msgid for msgid, _msgstr, _fuzzy in _entries()}
     missing = sorted(messages - catalog)
     assert missing == [], f"验证码源码文案缺 zh 词条：{missing[:20]}"
+
+
+SOURCE_ROOTS = (
+    "approval",
+    "dataset",
+    "identity",
+    "settings",
+    "ai",
+    "system",
+    "audit",
+    "task",
+    "file",
+    "notifications",
+    "integrations",
+    "mfa",
+    "message",
+    "captcha",
+    "server",
+    "demo",
+    "packages/xadmin-common",
+)
+
+
+def _source_literal_msgids() -> set[str]:
+    """扫描非测试源码中 ``_("...")`` 的字符串字面量（动态文案不在守护面）。"""
+    roots = PO_PATH.parents[3]
+    found: set[str] = set()
+    for root in SOURCE_ROOTS:
+        for path in (roots / root).rglob("*.py"):
+            if "tests" in path.parts or "migrations" in path.parts or "__pycache__" in path.parts:
+                continue
+            try:
+                tree = ast.parse(path.read_text(encoding="utf-8"))
+            except (OSError, SyntaxError):
+                continue
+            for node in ast.walk(tree):
+                if (
+                    isinstance(node, ast.Call)
+                    and getattr(node.func, "id", None) == "_"
+                    and node.args
+                    and isinstance(node.args[0], ast.Constant)
+                    and isinstance(node.args[0].value, str)
+                    and node.args[0].value.strip()
+                ):
+                    found.add(node.args[0].value)
+    return found
+
+
+def test_source_literals_have_catalog_entries():
+    """源码 ``_()`` 字面量必须全部有 zh 词条（新增文案漏翻直接 CI 红）。"""
+    known = {msgid for msgid, _msgstr, _fuzzy in _entries()}
+    missing = sorted(_source_literal_msgids() - known)
+    assert missing == [], f"以下源码文案缺 zh 词条：{missing[:20]}"

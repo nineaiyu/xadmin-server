@@ -102,7 +102,7 @@ class TestResetPasswordApi:
         email_user.delete()
         resp = post_reset(api_client, "NewStrong@2026")
         assert resp.data["code"] == 1002
-        assert any(k in str(resp.data["detail"]) for k in ("expired", "失效"))
+        assert any(k in str(resp.data["detail"]) for k in ("expired", "失效", "过期"))
 
     def test_success_resets_password_and_expires_token(self, api_client, verified, email_user, monkeypatch):
         recorded: list[str] = []

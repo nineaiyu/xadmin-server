@@ -277,11 +277,17 @@ def rotate_refresh_token(application: Any, raw_refresh: Any) -> Any:
         if row is None or row.is_revoked or (row.expired_at and row.expired_at <= now):
             return None, ("invalid_grant", _("Refresh token is invalid or revoked"), 400)
         user = row.user
-        if user is None or not user.is_active:
+        # 软删用户同样视为不可用：row.user 走关系取值，不经过 UserInfo 的软删管理器
+        if user is None or not user.is_active or getattr(user, "deleted_at", None):
             return None, ("invalid_grant", _("Authorized user is disabled"), 400)
         if not _revoke_refresh_row(row):
             return None, ("invalid_grant", _("Refresh token is invalid or revoked"), 400)
+        # 轮换只保留应用当前范围：应用 scope 收紧后（或历史行仍带旧范围时）
+        # 旧 scope 不能被 refresh 续命
         scopes = row.scopes or []
+        if application.scopes:
+            allowed = {str(item) for item in application.scopes}
+            scopes = [scope for scope in scopes if scope in allowed]
         access, raw_access = issue_oauth_access_token(application, user, scopes)
         _refresh_row, raw_refresh_new = issue_oauth_refresh_token(application, user, scopes, access)
     return token_payload(application, raw_access, access, raw_refresh_new, scopes), None

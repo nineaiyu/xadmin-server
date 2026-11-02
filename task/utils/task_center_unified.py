@@ -180,7 +180,7 @@ def unified_rows(
     from task.models.import_ import ImportRecord
     from task.models.task import TaskExecution
 
-    kinds = [kind for kind in (types or UNIFIED_TYPES) if kind in UNIFIED_TYPES]
+    kinds = list(dict.fromkeys(kind for kind in (types or UNIFIED_TYPES) if kind in UNIFIED_TYPES))
     page = max(1, int(page or 1))
     size = max(1, min(int(size or 15), 100))
     # 每类型取数窗口 = 已翻过的页数 × 页大小：合并后第 N 页的行必然落在各自类型
@@ -299,15 +299,33 @@ def resolve_view_path(url_path: str) -> str:
     return f"{view_cls.__module__}.{view_cls.__name__}"
 
 
-def _dispatch(task: Any, args: Any = None, kwargs: Any = None, task_id: Any = None) -> Any:
-    """派发任务：EAGER（测试/E2E）走同步 apply，否则 apply_async。"""
+def _dispatch(task: Any, args: Any = None, kwargs: Any = None, task_id: Any = None, on_error: Any = None) -> Any:
+    """派发任务：EAGER（测试/E2E）走同步 apply，否则 apply_async。
+
+    ``on_error``：broker 不可用等派发异常时回写业务记录（避免 clone 永久 PENDING）。
+    """
     from django.conf import settings
     from django.db import transaction
 
     if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
         return task.apply(args=args or [], kwargs=kwargs or {}, task_id=task_id)
-    transaction.on_commit(lambda: task.apply_async(args=args or [], kwargs=kwargs or {}, task_id=task_id))
+
+    def _run() -> None:
+        try:
+            task.apply_async(args=args or [], kwargs=kwargs or {}, task_id=task_id)
+        except Exception as exc:  # noqa: BLE001 提交后派发失败不能冒泡成业务 500
+            logger.warning("dispatch task failed: %s", getattr(task, "name", task), exc_info=True)
+            if on_error is not None:
+                on_error(exc)
+
+    transaction.on_commit(_run)
     return None
+
+
+def _rerun_name(name: Any) -> str:
+    """重跑记录名：保留 ``-rerun`` 后缀并截断到模型列上限（255）。"""
+    suffix = "-rerun"
+    return f"{str(name or '')[: 255 - len(suffix)]}{suffix}"
 
 
 def rerun_record(user: Any, kind: str, pk: str) -> dict[str, Any]:
@@ -338,7 +356,7 @@ def _rerun_export(record: Any, user: Any) -> dict[str, Any]:
     if not view_path or not record.params:
         return {"ok": False, "detail": str(_("The original export request cannot be replayed"))}
     clone = ExportRecord.objects.create(
-        name=f"{record.name}-rerun",
+        name=_rerun_name(record.name),
         module=record.module,
         path=record.path,
         file_format=record.file_format,
@@ -346,7 +364,11 @@ def _rerun_export(record: Any, user: Any) -> dict[str, Any]:
         status=ExportRecord.Status.PENDING,
     )
     task = import_string("system.tasks.async_export_data_task")
-    _dispatch(task, args=[str(clone.pk), view_path, record.params, str(getattr(user, "pk", "") or "")])
+    _dispatch(
+        task,
+        args=[str(clone.pk), view_path, record.params, str(getattr(user, "pk", "") or "")],
+        on_error=lambda exc: ExportRecord.objects.filter(pk=clone.pk).update(status=ExportRecord.Status.FAILURE),
+    )
     return {"ok": True, "detail": str(_("Rerun submitted")), "data": {"record_id": str(clone.pk)}}
 
 
@@ -357,7 +379,7 @@ def _rerun_import(record: Any, user: Any) -> dict[str, Any]:
     if not view_path or not record.source_file_id:
         return {"ok": False, "detail": str(_("The original import request cannot be replayed"))}
     clone = ImportRecord.objects.create(
-        name=f"{record.name}-rerun",
+        name=_rerun_name(record.name),
         module=record.module,
         path=record.path,
         action=record.action,
@@ -366,7 +388,11 @@ def _rerun_import(record: Any, user: Any) -> dict[str, Any]:
         status=ImportRecord.Status.PENDING,
     )
     task = import_string("system.tasks.async_import_data_task")
-    _dispatch(task, args=[str(clone.pk), view_path, str(getattr(user, "pk", "") or "")])
+    _dispatch(
+        task,
+        args=[str(clone.pk), view_path, str(getattr(user, "pk", "") or "")],
+        on_error=lambda exc: ImportRecord.objects.filter(pk=clone.pk).update(status=ImportRecord.Status.FAILURE),
+    )
     return {"ok": True, "detail": str(_("Rerun submitted")), "data": {"record_id": str(clone.pk)}}
 
 

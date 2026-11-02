@@ -344,3 +344,27 @@ class TestImportMappingEntryPoints:
             raw_type="text/csv",
         )
         assert response.data["data"]["candidates"] == ["", "label"]
+
+
+class TestTemplateBatchDestroy:
+    def test_shared_template_not_batch_deletable_for_non_superuser(
+        self, normal_user, template_menus, role, superuser, menu_factory
+    ):
+        """batch-destroy 是 POST，但属写路径：共享模板必须与单删同口径（不可删）。"""
+        shared = make_template(superuser, name="shared-batch", is_shared=True)
+        batch_perm = menu_factory(
+            "batchDestroy:SystemImportTemplate", path="api/task/import-templates/batch-destroy$", method="POST"
+        )
+        role.menu.add(batch_perm)
+
+        response = _api(
+            "post",
+            ImportTemplateViewSet,
+            "batch_destroy",
+            f"{BASE_URL}/batch-destroy",
+            normal_user,
+            data=[str(shared.pk)],
+        )
+
+        assert response.status_code == 200
+        assert ImportTemplate.objects.filter(pk=shared.pk).exists()

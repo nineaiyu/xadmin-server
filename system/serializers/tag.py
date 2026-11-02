@@ -80,7 +80,8 @@ class TagAssignSerializer(serializers.Serializer):
 class TagBatchAssignSerializer(TagAssignSerializer):
     """批量打标：``{resource, pks: [...], tags: [...], mode: replace|add|remove}``。"""
 
-    pks = serializers.ListField(child=serializers.CharField(max_length=64), allow_empty=False)
+    # 批量入口必须有上限：逐对象校验/写入不能让单请求无限放大
+    pks = serializers.ListField(child=serializers.CharField(max_length=64), allow_empty=False, max_length=200)
     pk = serializers.CharField(max_length=64, required=False, allow_blank=True)
     mode = serializers.ChoiceField(choices=("replace", "add", "remove"), required=False, default="add")
 

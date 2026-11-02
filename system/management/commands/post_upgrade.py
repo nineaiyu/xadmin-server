@@ -255,7 +255,13 @@ class Command(BaseCommand):
             model = getattr(getattr(serializer_class, "Meta", None), "model", None)
             if model is None:
                 continue
-            roots = list(ModelLabelField.objects.filter(parent__isnull=True, name=model._meta.label_lower))
+            roots = list(
+                ModelLabelField.objects.filter(
+                    parent__isnull=True,
+                    name=model._meta.label_lower,
+                    field_type=ModelLabelField.FieldChoices.ROLE,
+                )
+            )
             if not roots:
                 continue
             existing = set(menu.model.values_list("pk", flat=True))
@@ -276,11 +282,11 @@ class Command(BaseCommand):
         return len(complete_field_permissions())
 
     def _clear_metadata_cache(self) -> None:
-        """清空缓存：列/字段元数据按「用户 + 模型」缓存，白名单变更后必须失效。"""
+        """失效列/字段元数据缓存（不做整库 FLUSH：会话/权限/分布式锁与元数据共用 Redis）。"""
         try:
-            from django.core.cache import cache
+            from common.core.modelset.metadata import invalidate_metadata_payload_cache
 
-            cache.clear()
-            self.stdout.write("      已清空缓存（列/字段元数据）")
+            invalidate_metadata_payload_cache()
+            self.stdout.write("      已失效元数据缓存（列/字段）")
         except Exception as exc:
             self.stdout.write(self.style.WARNING(f"      清缓存失败（可能短暂显示旧列）：{exc}"))

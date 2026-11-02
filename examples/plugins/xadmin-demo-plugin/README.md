@@ -40,7 +40,7 @@ python manage.py migrate xadmin_demo_plugin
 （最小 RePlusPage 形态，约定见该目录上级 `src/extensions/README.md`；菜单种子的
 `component="extensions/demo-plugin/index"` 与组件 `defineOptions({ name: "PluginNote" })`
 对齐，断链由 `pnpm check:menu-components` 守护）。
-模块清单可随时用 `python manage.py module --list` 核对 `demo_plugin` 的等级与开关状态。
+模块清单可随时用 `python manage.py modules` 核对 `demo_plugin` 的等级与开关状态。
 
 ## 验证清单（装完即可对照执行）
 
@@ -53,14 +53,14 @@ print(contracts.get_active_superuser_queryset.__module__)  # → xadmin_demo_plu
 PY
 
 # ② 模块声明进入清单（发行预设语义：optional 仅 full 预设默认开启）
-python manage.py module --list | grep demo_plugin
+python manage.py modules | grep demo_plugin
 
 # ③ 六层裁剪：停用模块后逐层验证
 #    config.yml 写入 MODULE_DISABLE: [demo_plugin] 并重启，然后：
 curl -i http://127.0.0.1:8896/api/plugin-demo/note     # ④ 路由层：404 + {"code":1001,"module":"demo_plugin"}
 #    ⑤ WS 层：ws/plugin-demo/ 被拒（close 4404）
-#    ⑥ 菜单/权限点：DemoPlugin 菜单子树与该前缀权限点对非超管不可见
-#    ⑦ 周期任务：python manage.py module --list 中该任务不再注册
+#    ⑥ 菜单/权限点：PluginNote 菜单子树与该前缀权限点对非超管不可见
+#    ⑦ 周期任务：python manage.py modules 中该任务不再注册
 #    ⑧ 种子导入 / 缓存：见 docs/guide/plugin-development.md §六
 ```
 

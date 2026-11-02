@@ -80,4 +80,4 @@ class McpCallLogSerializer(BaseModelSerializer):
         return str(_changes_dict(obj).get("detail") or "")[:200]
 
     def get_ok(self, obj: Any) -> bool:
-        return getattr(obj, "status_code", None) == API_SUCCESS_CODE
+        return bool(getattr(obj, "status_code", None) == API_SUCCESS_CODE)

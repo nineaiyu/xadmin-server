@@ -91,8 +91,8 @@ class BaseFileParser(BaseParser):
                 try:
                     col = json.loads(col)
                 except json.JSONDecodeError as e:
-                    logger.error("Json load error: ", e)
-                    logger.error("col: ", col)
+                    logger.error("Json load error: %s", e)
+                    logger.error("col: %s", col)
             new_row.append(col)
         return new_row
 
@@ -231,4 +231,5 @@ class BaseFileParser(BaseParser):
             return data
         except Exception as e:
             logger.error(e, exc_info=True)
-            raise ParseError(_("Parse file error: {}").format(str(e))) from e
+            # 不回显底层异常文本（可能带内部路径/列名/用户数据）
+            raise ParseError(_("Parse file error")) from e

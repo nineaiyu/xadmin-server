@@ -144,3 +144,39 @@ class TestProbeCeleryCache:
 
         settings.HEALTH_CHECK_SKIP_CELERY = True
         assert health.probe_celery() == (False, 0.0)
+
+
+import pytest
+
+
+@pytest.mark.django_db
+class TestProbePoolIsolation:
+    """每项探测独立单槽池：挂起的 storage 不会把 db/redis 的调度挤掉。"""
+
+    def test_each_probe_has_own_pool(self):
+        from common.utils import health
+
+        pools = [health._probe_pools[name] for name in ("db", "redis", "celery", "storage")]
+        assert len({id(pool) for pool in pools}) == 4
+
+    def test_hung_storage_does_not_block_db(self, monkeypatch):
+        import threading
+
+        from common.utils import health
+
+        release = threading.Event()
+
+        def hung():
+            release.wait(timeout=5)
+            return False, "storage down"
+
+        monkeypatch.setattr(health, "probe_storage", hung)
+        try:
+            first = health.probe_all(timeout=0.2)
+            second = health.probe_all(timeout=0.2)
+        finally:
+            release.set()
+
+        assert first["storage"] == (False, "probe timeout")
+        assert second["db"][0] is True, second
+        assert second["redis"][0] is True, second

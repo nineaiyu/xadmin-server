@@ -47,6 +47,12 @@ def test_read_only_action_matrix(method, action, expected):
     assert is_read_only_request(_Request(method), _View(action)) is expected
 
 
+def test_read_only_actions_only_match_registered_action_names():
+    """白名单条目必须命中真实 action 名；``choices``（实际 action 为 ``choices_dict``）不应留在白名单。"""
+    assert "choices_dict" not in atomic_read.READ_ONLY_ACTIONS
+    assert "choices" not in atomic_read.READ_ONLY_ACTIONS
+
+
 def test_non_drf_view_not_skipped():
     """admin / 健康探针等无 actions 的视图不参与豁免。"""
 

@@ -122,7 +122,11 @@ def execute_idempotent(
         result = executor(user, action_key, params)
         result = {**result, "draft_id": key}
         if result.get("ok"):
-            store_result(user, key, {"ok": True, "detail": result.get("detail"), "data": result.get("data") or {}})
+            # 业务写入随请求事务提交：缓存必须同边界，否则回滚后重试会命中「假成功」
+            from django.db import transaction
+
+            payload = {"ok": True, "detail": result.get("detail"), "data": result.get("data") or {}}
+            transaction.on_commit(lambda: store_result(user, key, payload))
         return result
     finally:
         if not force:

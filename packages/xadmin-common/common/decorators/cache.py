@@ -132,6 +132,8 @@ class MagicCacheData:
     @staticmethod
     def invalid_caches(keys: Iterable[str]) -> None:
         delete_keys = [f"magic_cache_data_{key}" for key in keys]
+        if not delete_keys:
+            return
         count = cache.delete_many(delete_keys)
         logger.debug(f"invalid_cache_data cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}")
 
@@ -157,6 +159,8 @@ class MagicCacheResponse:
     @staticmethod
     def invalid_caches(keys: Iterable[str]) -> None:
         delete_keys = [f"magic_cache_response_{key}" for key in keys]
+        if not delete_keys:
+            return
         count = cache.delete_many(delete_keys)
         logger.debug(
             f"invalid_response_cache cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}"

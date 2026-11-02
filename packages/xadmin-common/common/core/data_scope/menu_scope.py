@@ -29,6 +29,9 @@ logger = get_logger(__name__)
 
 _SCOPE_CACHE_ATTR = "_data_scope_menu_scope"
 
+#: 无菜单上下文哨兵：权限层对白名单/超管请求显式写入，数据权限只应用通用授权
+NO_MENU_SENTINEL = "__no_menu__"
+
 
 @dataclass(frozen=True)
 class MenuScope:
@@ -48,6 +51,8 @@ class MenuScope:
 
 def _load_menu(menu_pk: Any) -> tuple[Any, Any] | None:
     """菜单名与类型；查询失败返回 None（调用方回落为仅当前菜单）。"""
+    if str(menu_pk) == NO_MENU_SENTINEL:
+        return None
     try:
         row = Menu.objects.filter(pk=menu_pk, is_active=True).values_list("name", "menu_type").first()
         typed_row: tuple[Any, Any] | None = row
@@ -150,7 +155,7 @@ def resolve_menu_scope(menu_pk: Any) -> MenuScope | None:
     - 页面/目录：``exact=fallback=其下 list 权限点``（试算上下文）；
     - 无菜单上下文：返回 None，调用方只应用通用授权。
     """
-    if not menu_pk:
+    if not menu_pk or str(menu_pk) == NO_MENU_SENTINEL:
         return None
 
     key = str(menu_pk)

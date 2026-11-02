@@ -101,9 +101,9 @@ def _test_channel(channel: dict[str, Any], values: dict[str, Any]) -> str:
         channel["client"](credentials)._cached_token()
     except ImSdkError as exc:
         return str(exc)
-    except Exception as exc:  # noqa: BLE001 测试入口兜底，不回显堆栈
+    except Exception:  # noqa: BLE001 测试入口兜底，不回显堆栈与底层 URL/凭据
         logger.warning("IM notify test unexpected error for %s", channel["name"], exc_info=True)
-        return str(exc)
+        return str(_("Connection test failed"))
     return str(_("OK"))
 
 

@@ -5,16 +5,33 @@
 ``ai_api_actions.ApiActionSpec`` 的 validate / execute 复用本模块：类型转换
 （user / role / menu / pk / bool / int / enum / json）、path 占位展开与 URL 反解
 前置校验。
+
+展示值与执行值的两段式解析：确认卡片展示可读名称（昵称/角色名/菜单名），执行期
+再解析回主键。validate 时把「展示文本 → 已解析主键」记入短 TTL 缓存，执行期优先
+命中该映射——改名/重名不会让已确认草稿解析失败或误解析到另一个对象；缓存过期或
+对象已删除时回落名称解析（仍返回可读错误而不是误操作）。
 """
 
+import hashlib
+import json
 import re
 from typing import TYPE_CHECKING, Any
 
+from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
+from common.utils import get_logger
+
 if TYPE_CHECKING:
     from ai.services.actions.ai_api_actions import ApiActionSpec
+
+logger = get_logger(__name__)
+
+#: 展示值解析缓存前缀（validate → execute 窗口内保持「确认过的对象」不变）
+PARAM_RESOLUTION_CACHE_PREFIX = "ai_api_params_resolve_"
+#: 解析缓存 TTL（秒）：覆盖用户确认草稿的常规决策窗口
+PARAM_RESOLUTION_TTL = 600
 
 #: 参数归属：path（填 URL 占位）/ body（请求体字段）/ query（URL 查询串，GET 列表类动作）
 IN_PATH = "path"
@@ -102,6 +119,46 @@ def _menu_display(pks: Any) -> list[Any]:
     return names
 
 
+def _resolution_cache_key(kind: str, display: Any) -> str:
+    """展示值 → 解析结果的缓存键（展示值可为标量或名称数组，统一 JSON 归一）。"""
+    payload = json.dumps(display, ensure_ascii=False, sort_keys=True, default=str)
+    digest = hashlib.sha256(f"{kind}:{payload}".encode()).hexdigest()[:32]
+    return f"{PARAM_RESOLUTION_CACHE_PREFIX}{kind}_{digest}"
+
+
+def remember_param_resolution(kind: str, display: Any, resolved: Any) -> None:
+    """记录 validate 阶段确认的「展示值 → 主键」，供 execute 阶段稳定解析。"""
+    try:
+        cache.set(_resolution_cache_key(kind, display), resolved, PARAM_RESOLUTION_TTL)
+    except Exception:  # noqa: BLE001 缓存不可用时执行期回落名称解析
+        logger.debug("cache AI action param resolution failed", exc_info=True)
+
+
+def _recall_param_resolution(kind: str, value: Any) -> Any:
+    try:
+        return cache.get(_resolution_cache_key(kind, value))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _cached_resolution_valid(kind: str, cached: Any) -> bool:
+    """缓存的主键仍存在（对象删除后回落名称解析，不静默操作已删除对象）。"""
+    if kind == "user":
+        from identity.contracts import get_user
+
+        return get_user(cached) is not None
+    if kind == "role":
+        from identity.contracts import get_role
+
+        return get_role(cached) is not None
+    if kind == "menu":
+        from system.models import Menu
+
+        pks = cached if isinstance(cached, (list, tuple)) else []
+        return bool(pks) and Menu.objects.filter(pk__in=pks, deleted_at__isnull=True).count() == len(pks)
+    return False
+
+
 def _menu_subtree_pks(menu: Any) -> list[Any]:
     """菜单子树主键（含自身与全部后代）：授权语义与 UI 勾选父节点（全选子级）一致。"""
     from system.models import Menu
@@ -141,7 +198,15 @@ def _resolve_menu(value: Any) -> Any:
 
 
 def _convert(kind: str, value: Any, rule: dict[str, Any], field: str) -> Any:
-    """按声明类型转换单个参数值（失败抛 ApiActionError）。"""
+    """按声明类型转换单个参数值（失败抛 ApiActionError）。
+
+    user / role / menu 先命中 validate 阶段登记的展示值映射：确认后对象被改名或
+    出现同名对象时，仍按「确认时的对象」执行，而不是解析失败/误解析。
+    """
+    if kind in ("user", "role", "menu"):
+        cached = _recall_param_resolution(kind, value)
+        if cached is not None and _cached_resolution_valid(kind, cached):
+            return list(cached) if kind == "menu" else str(cached)
     if kind == "user":
         return _resolve_user(value)
     if kind == "role":

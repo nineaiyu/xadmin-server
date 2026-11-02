@@ -169,8 +169,9 @@ class MergeMixin:
         if path.exists():
             try:
                 loaded = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                loaded = []
+            except (OSError, json.JSONDecodeError) as exc:
+                # 损坏的种子不能当空文件重置：会静默丢掉既有权限点
+                raise CommandError(f"现有种子文件无法解析，请先修复：{path}（{exc}）") from exc
             if isinstance(loaded, list):
                 existing = loaded
         index = {str(item.get("pk")): position for position, item in enumerate(existing)}

@@ -159,3 +159,118 @@ class TestBuildPlansFallback:
         assert len(plans) == 1
         assert plans[0].code == "list:ParentPage"
         assert plans[0].parent_id == parent.pk
+
+
+@pytest.mark.django_db
+class TestGrantToRoles:
+    """``--grant-roles`` 只在「同模块 + 父菜单」范围内补授，不静默扩大授权。"""
+
+    @staticmethod
+    def _menu(name, menu_type, parent=None, path=""):
+        from system.models import Menu, MenuMeta
+
+        meta = MenuMeta.objects.create(title=name)
+        return Menu.objects.create(name=name, menu_type=menu_type, path=path, parent=parent, meta=meta)
+
+    @staticmethod
+    def _role(code):
+        from identity.models import UserRole
+
+        return UserRole.objects.create(name=code, code=code)
+
+    def test_parentless_permission_is_not_granted(self):
+        """父菜单为空时不得授予「持有任一顶层权限点」的角色。"""
+        from system.models import Menu
+
+        top = self._menu("list:TopLevel", Menu.MenuChoices.PERMISSION)
+        created = self._menu("list:NewThing", Menu.MenuChoices.PERMISSION)
+        role = self._role("holder-of-top")
+        role.menu.add(top)
+
+        granted = sync.grant_to_roles([created], [top, created], {created.pk: None})
+
+        assert granted == []
+        assert not role.menu.filter(pk=created.pk).exists()
+
+    def test_granted_only_to_roles_holding_parent_and_sibling(self):
+        from system.models import Menu
+
+        parent = self._menu("PageParent", Menu.MenuChoices.MENU, path="/parent/index")
+        sibling = self._menu("list:Sibling", Menu.MenuChoices.PERMISSION, parent=parent, path="api/x/sibling$")
+        created = self._menu("list:NewThing", Menu.MenuChoices.PERMISSION, parent=parent, path="api/x/new$")
+
+        role = self._role("has-parent-and-sibling")
+        role.menu.add(parent, sibling)
+        role_without_parent = self._role("has-sibling-only")
+        role_without_parent.menu.add(sibling)
+
+        granted = sync.grant_to_roles([created], [sibling, created], {created.pk: parent.pk})
+
+        assert [name for name, _menu_name in granted] == ["has-parent-and-sibling"]
+        assert role.menu.filter(pk=created.pk).exists()
+        assert not role_without_parent.menu.filter(pk=created.pk).exists()
+
+
+@pytest.mark.django_db
+class TestStrictGate:
+    """``--strict`` 在 apply 模式（不带 --dry-run）同样判定孤儿权限点。"""
+
+    @staticmethod
+    def _options(**overrides):
+        options = {
+            "dry_run": False,
+            "skip_fields": True,
+            "skip_permissions": False,
+            "grant_roles": False,
+            "update_seed": False,
+            "refresh_titles": False,
+            "fix_field_permissions": False,
+            "default_parent": "",
+            "strict": True,
+            "prune": False,
+        }
+        options.update(overrides)
+        return options
+
+    def _patch_scan(self, monkeypatch, orphans):
+        monkeypatch.setattr(sync, "build_route_index", lambda: [])
+        monkeypatch.setattr(sync, "unclassified_views", lambda routes: [])
+        monkeypatch.setattr(sync, "load_permission_menus", lambda: [])
+        monkeypatch.setattr(sync, "scan_gaps", lambda routes, perms: [])
+        monkeypatch.setattr(sync, "build_plans", lambda *args, **kwargs: ([], []))
+        monkeypatch.setattr(sync, "plan_binding_fixes", lambda *args, **kwargs: [])
+        monkeypatch.setattr(sync, "audit_permission_menus", lambda *args, **kwargs: (orphans, [], [], []))
+        monkeypatch.setattr(sync, "audit_wide_manager_grants", lambda: [])
+        monkeypatch.setattr(sync, "audit_field_permissions", lambda: [])
+        monkeypatch.setattr(sync, "apply_plans", lambda plans, user: ([], [], []))
+        monkeypatch.setattr(sync, "apply_binding_fixes", lambda fixes: 0)
+
+    def test_strict_fails_in_apply_mode(self, monkeypatch):
+        from system.management.commands.sync_menu_permissions import Command
+
+        orphan = SimpleNamespace(pk="orphan-pk", name="list:Orphan", path="api/orphan$", method="GET")
+        self._patch_scan(monkeypatch, [orphan])
+        with pytest.raises(SystemExit):
+            Command()._sync_permissions(self._options(), None, False)
+
+    def test_strict_passes_when_no_orphans(self, monkeypatch):
+        from system.management.commands.sync_menu_permissions import Command
+
+        self._patch_scan(monkeypatch, [])
+        Command()._sync_permissions(self._options(), None, False)
+
+
+@pytest.mark.django_db
+class TestPruneOrphans:
+    def test_prune_physically_removes_menu_and_meta(self):
+        from system.management.commands.sync_menu_permissions import Command
+        from system.models import Menu, MenuMeta
+
+        meta = MenuMeta.objects.create(title="孤儿权限点")
+        orphan = Menu.objects.create(
+            name="list:OrphanPrune", menu_type=Menu.MenuChoices.PERMISSION, path="api/orphan$", meta=meta
+        )
+        Command()._prune_permissions([orphan])
+
+        assert not Menu.all_objects.filter(pk=orphan.pk).exists()
+        assert not MenuMeta.objects.filter(pk=meta.pk).exists()

@@ -24,6 +24,7 @@ from common.core.modelset import BaseModelSet, OnlyExportDataAction
 from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils import parse_bool
 from common.utils.datasource import limit_datasource, truncation_detail
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 from dataset.serializers.dform import (
@@ -184,7 +185,10 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
           X-Approval-Id 重放，服务端校验 creator/指纹/一次性），消费成功才落库；
         - 其余：直接落库。
         """
-        as_draft = bool(request.data.get("as_draft"))
+        try:
+            as_draft = parse_bool(request.data.get("as_draft", False))
+        except ValueError:
+            raise ValidationError({"as_draft": _("Invalid boolean value")}) from None
         serializer = self.get_serializer(
             data=request.data,
             context={**self.get_serializer_context(), "draft": as_draft},

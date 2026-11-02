@@ -41,6 +41,8 @@ def create_approval(view: Any, request: Any, module: str = "") -> Any:
     module：调用方可显式指定审批单归属模块名（缺省取视图 docstring 首行），
     供非标准 CRUD 入口（如 AI 动作执行端点）给出可读的审批单标题。
     """
+    from django.db import transaction
+
     from approval.models.approval import ApprovalRequest
 
     rule = resolve_rule(request.path, request.method)
@@ -56,24 +58,28 @@ def create_approval(view: Any, request: Any, module: str = "") -> Any:
             raise ValidationError(_("No available approver, please contact the administrator to configure approvers"))
 
     params = get_request_params(request)
-    approval = ApprovalRequest.objects.create(
-        module=(module or build_module(view))[:64],
-        method=request.method,
-        path=request.path,
-        object_pk=get_request_object_pk(view),
-        params=params,
-        payload=snapshot_payload(request),
-        # 目标对象轻量快照（变更前后事实对照；不可达时为空 dict 降级展示）
-        target_snapshot=build_target_snapshot(view, request),
-        creator=request.user,
-    )
+    # 链单中途失败必须整体回滚：否则留下无级次的 PENDING 主单（退化为扁平审批语义）
+    with transaction.atomic():
+        approval = ApprovalRequest.objects.create(
+            module=(module or build_module(view))[:64],
+            method=request.method,
+            path=request.path,
+            object_pk=get_request_object_pk(view),
+            params=params,
+            payload=snapshot_payload(request),
+            # 目标对象轻量快照（变更前后事实对照；不可达时为空 dict 降级展示）
+            target_snapshot=build_target_snapshot(view, request),
+            creator=request.user,
+        )
+        if steps:
+            rows = create_steps(approval, steps)
+            sync_current_level(approval, rows[0])
+        notify = (approval, rows[0]) if steps else (approval, approvers)
     invalidate_pending_count_cache()
     if steps:
-        rows = create_steps(approval, steps)
-        sync_current_level(approval, rows[0])
-        notify_step(approval, rows[0])
+        notify_step(*notify)
     else:
-        notify_approvers(approval, approvers)
+        notify_approvers(*notify)
     _emit_approval_event("approval.submitted", approval)
     return approval
 

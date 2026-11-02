@@ -148,6 +148,12 @@ class MessageTemplateViewSet(GenericViewSet):
         row = MessageTemplate.objects.filter(message_type=data["message_type"]).first()
         subject_template = data.get("subject_template") or (row.subject_template if row else "")
         body_template = data.get("body_template") or (row.body_template if row else "")
+        # 预览与保存同一套校验：草稿里的标签/未知变量在预览期就返回可读错误，不落 500
+        available = set(context.keys())
+        for draft in (subject_template, body_template):
+            error = validate_template(draft, available)
+            if error:
+                return ApiResponse(code=1001, detail=error)
         result = {
             "subject": base.get("subject") or "",
             "message": base.get("message") or "",

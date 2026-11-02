@@ -31,7 +31,10 @@ def read_task_log_chunk(task_id: Any, offset: Any = 0, finished_hint: Any = Fals
         # 日志尚未落盘（任务还在排队）或已被清理，不报错，交由调用方按终态判 finished
         return {"offset": 0, "finished": bool(finished_hint), "content": ""}
     size = os.path.getsize(path)
-    offset = min(max(0, int(offset or 0)), size)
+    try:
+        offset = min(max(0, int(offset or 0)), size)
+    except (TypeError, ValueError):
+        offset = 0
     with open(path, "rb") as fp:
         fp.seek(offset)
         chunk = fp.read(LOG_READ_CHUNK)

@@ -110,6 +110,7 @@ class DeptViewSet(
         data = search_user_options(
             keyword=request.query_params.get("keyword", ""),
             pks=request.query_params.get("pks", ""),
+            user=request.user,
         )
         return ApiResponse(data=data)
 

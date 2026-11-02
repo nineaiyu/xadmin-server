@@ -26,6 +26,7 @@
 from typing import Any
 
 from django.conf import settings
+from django.core.exceptions import DisallowedHost
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
@@ -90,6 +91,14 @@ def resolve_invite_token(token: Any) -> Any:
 def invite_link(token: str, request: Any = None) -> str:
     base = str(getattr(SysConfig, "WEB_SITE_URL", "") or "").strip()
     if not base and request is not None:
+        # 未配置站点地址时按请求 Host 推导：只有通过 Django ALLOWED_HOSTS 校验的 Host
+        # 才可用于邀请链接（伪造 Host 头不能成为邮件里的钓鱼链接基址）
+        try:
+            request.get_host()
+        except DisallowedHost as exc:
+            raise ValidationError(
+                _("WEB_SITE_URL is not configured and the request host is not an allowed host; configure WEB_SITE_URL")
+            ) from exc
         base = request.build_absolute_uri("/")
     if not base:
         base = "http://127.0.0.1:8848/"
@@ -108,6 +117,8 @@ def send_invite(user: Any, request: Any = None) -> str:
         raise ValidationError(_("The user has no email address; add one before inviting"))
 
     token = generate_invite_token(user)
+    # 链接基址校验先于落库：Host 不合法时不能把账号置为待激活（否则用户收不到邀请也无法登录）
+    link = invite_link(token, request)
     user.invite_status = UserInfo.InviteStatusChoices.PENDING
     user.invited_time = timezone.now()
     user.set_unusable_password()
@@ -117,7 +128,7 @@ def send_invite(user: Any, request: Any = None) -> str:
     message = _(
         "You are invited to activate your account (%(username)s). "
         "Please open the link within 72 hours to set your password: %(link)s"
-    ) % {"username": user.username, "link": invite_link(token, request)}
+    ) % {"username": user.username, "link": link}
     try:
         from common.tasks import send_mail_async
 
@@ -131,6 +142,7 @@ def send_invite(user: Any, request: Any = None) -> str:
 def accept_invite(user: Any, password: str) -> Any:
     """设置密码并完成激活；返回 ``(ok, detail)``。"""
     from identity.models import UserInfo
+    from identity.serializers.user import ensure_local_password_changeable
     from settings.utils.password import (
         check_history_password,
         check_leak_password,
@@ -138,6 +150,11 @@ def accept_invite(user: Any, password: str) -> Any:
         record_password_hash,
     )
 
+    try:
+        ensure_local_password_changeable(user)
+    except Exception as exc:  # noqa: BLE001 统一转 (ok, detail) 契约
+        detail = getattr(exc, "detail", None)
+        return False, str(detail[0] if isinstance(detail, list) and detail else detail or exc)
     if not check_password_rules(password, user.is_superuser):
         return False, str(_("Password does not match security rules"))
     if check_leak_password(password):

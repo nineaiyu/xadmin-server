@@ -240,7 +240,9 @@ def background_task_view_set_job(view: str, meta: dict[str, Any], data: str, act
     # 显式请求上下文（不再重放 WSGIRequest）：分片任务由 meta["user_pk"] 携带提交者身份，
     # 逐分片构造独立请求（字段权限的关联对象 memo 按分片隔离）；
     # 五个契约的清单与守护测试见 common/core/task_request.py
-    request_user = get_user_model().objects.filter(pk=meta["user_pk"]).first() if meta.get("user_pk") else None
+    request_user = (
+        get_user_model().objects.filter(pk=meta["user_pk"], is_active=True).first() if meta.get("user_pk") else None
+    )
     request = build_task_request(
         method=meta.get("REQUEST_METHOD", "POST"),
         path=meta.get("PATH_INFO", "/"),

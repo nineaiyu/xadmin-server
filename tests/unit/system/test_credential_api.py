@@ -345,3 +345,21 @@ class TestCredentialRotateConfirmation:
         assert resp.status_code == 412
         assert resp.data["type"] == "user_confirm_required"
         assert SystemConfig.objects.get(key="SCIM_TOKEN").value == "plain-token"
+
+
+class TestRotateAuditDoesNotEchoSecrets:
+    def test_audit_output_never_contains_plaintext_value(self):
+        """--audit 只报告键名：命令输出常进 CI/运维日志，回显片段即泄露。"""
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        SystemConfig.objects.create(key="SCIM_TOKEN", value="sk-LEAK-should-not-print-0123456789")
+        out = StringIO()
+
+        with pytest.raises(SystemExit):
+            call_command("rotate_credential", "--audit", stdout=out)
+
+        output = out.getvalue()
+        assert "SCIM_TOKEN" in output
+        assert "sk-LEAK" not in output

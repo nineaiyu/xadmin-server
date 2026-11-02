@@ -22,6 +22,7 @@ DEFAULT_PRESET = "full"
 # 菜单行类型（与 system.models.menu.Menu.MenuChoices 一致；此处只按数值判定，
 # 避免 common 层在导入期依赖 system 模型）
 MENU_TYPE_DIRECTORY = 0
+MENU_TYPE_MENU = 1
 MENU_TYPE_PERMISSION = 2
 
 

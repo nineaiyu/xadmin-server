@@ -17,10 +17,10 @@ from ai.services.nl_query.orchestrator import (
     interpret_gate,
     interpret_question,
     run_gate,
-    stream_interpret_events,
+    stream_interpret_events_async,
 )
 from common.core.response import ApiResponse
-from common.drf.renders import sse_response
+from common.drf.renders import sse_response_async
 from common.swagger.utils import get_default_response_schema
 
 
@@ -58,7 +58,7 @@ class AiNlQueryMixin:
         detail, datasets = interpret_gate(request.user, question)
         if detail:
             return ApiResponse(code=1001, detail=detail, content_type="application/json")
-        return sse_response(stream_interpret_events(request.user, question, datasets))
+        return sse_response_async(stream_interpret_events_async(request.user, question, datasets))
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="nl-query/run")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

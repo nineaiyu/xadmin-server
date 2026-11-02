@@ -146,11 +146,12 @@ class TestAskStreamPersist:
         assert rows[1].reasoning == "先检索文档"
         assert rows[1].extra.get("sources")
 
-    def test_gate_error_persists_nothing(self, knowledge, auth_client, settings):
-        """响应头前门禁失败：不落任何消息（本轮提问未进入对话流）。"""
+    def test_gate_error_persists_user_and_system(self, knowledge, auth_client, settings):
+        """响应头前门禁失败：与非流式 ask 同口径落 user + system 消息（刷新后历史可续看）。"""
         settings.AI_ASSISTANT_ENABLED = False
         auth_client.post(f"{ASSISTANT_URL}/ask/stream", {"question": "x"}, format="json")
-        assert AiChatMessage.objects.count() == 0
+        rows = list(AiChatMessage.objects.order_by("id"))
+        assert [row.role for row in rows] == ["user", "system"]
 
     def test_quota_rejection_persists_user_and_system(self, ai_enabled, knowledge, superuser, auth_client, monkeypatch):
         """配额拒绝与非流式 ask 同口径：落 user + system 消息（刷新后历史可续看）。"""

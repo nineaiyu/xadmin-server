@@ -25,6 +25,10 @@ def auto_clean_tmp_file(clean_day: int = 1) -> None:
     clean_time = timezone.now() - datetime.timedelta(days=clean_day)
     _rows_count = 0
     for instance in UploadFile.all_objects.filter(created_time__lte=clean_time, is_tmp=True):
+        if instance.has_business_reference():
+            # is_tmp 可能被历史数据误置 True：仍被业务引用时不能硬删（外键 SET_NULL 会断链）
+            logger.warning("skip business-referenced tmp upload: %s", instance.pk)
+            continue
         # 临时文件无回收价值，必须物理删除（含底层文件清理），
         # 否则软删除标记会导致磁盘泄漏
         instance.hard_delete()

@@ -62,7 +62,7 @@ class Book(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         verbose_name="书籍单个附件",
         blank=True,
         null=True,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
     )
     files = models.ManyToManyField(to=UploadFile, related_name="book_files", verbose_name="书籍多附件", blank=True)
 

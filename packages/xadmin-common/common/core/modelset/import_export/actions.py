@@ -54,6 +54,10 @@ class ImportExportDataAction(CreateAction, UpdateAction, ImportAsyncAction, Only
         # 处理数据格式，确保是列表格式
         if isinstance(data, dict):
             data = [data]
+        if data and any(not isinstance(item, dict) for item in data):
+            from rest_framework.exceptions import ValidationError
+
+            raise ValidationError({"detail": _("Each import row must be an object")})
 
         # 检查是否存在自关联依赖
         self_field = has_self_fields(self.queryset.model, data[0].keys()) if data else None

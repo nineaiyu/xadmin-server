@@ -133,6 +133,9 @@ def validate_grant_payload(model_label: Any, actions: Any, fields: Any, row_filt
     actions = [str(item).strip() for item in actions if str(item).strip()]
     if not actions:
         raise ValidationError(_("Actions cannot be empty"))
+    if ANY in actions and not getattr(user, "is_superuser", False):
+        # 通配动作由 owner 权限取交集兜底，但管理面口径要求不得超出本人权限面
+        raise ValidationError(_("Only a superuser can grant all actions (*)"))
     fields = [str(item).strip() for item in (fields or []) if str(item).strip()]
     row_filter = row_filter or []
     if model_label == ANY:

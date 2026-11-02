@@ -83,6 +83,13 @@ def parse_column(model: Any, column: Any, whitelist: Any = None) -> ColumnSpec:
             raise ValidationError(_("Column type is only supported for JSON paths: {}").format(raw))
         if whitelist is not None and path not in whitelist:
             raise ValidationError(_("Field {} is not available for datasets").format(path))
+        try:
+            field = model._meta.get_field(path)
+        except Exception:  # noqa: BLE001 白名单内的历史失配字段交给上层统一报错
+            field = None
+        if field is not None and (getattr(field, "many_to_many", False) or getattr(field, "one_to_many", False)):
+            # M2M/反向外键在 values() 下按关联行展开，会放大 total 与 row_limit 口径
+            raise ValidationError(_("Multi-value relation {} is not supported as a dataset column").format(path))
         return ColumnSpec(raw=raw, path=path, is_json=False, root=path)
 
     segments = path.split(".")

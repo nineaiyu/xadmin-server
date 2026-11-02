@@ -103,10 +103,12 @@ def probe_celery(timeout: Any = None) -> Any:
 # 实测收敛（2029-10 复测）：单次预算 1s——冻结时两项超时探测合计 ≤1s，加上请求
 # 路径（中间件/配置读）的快速失败，整体响应稳定低于容器 healthcheck 的 5s 超时。
 PROBE_BUDGET_SECONDS = 1
-# 池容量大于探测项数：故障依赖可能让个别探测 future 长时间不收敛
-# （celery inspect 对不可达 broker 的内部重试不受 timeout 参数完全约束），
-# 池被占满前不影响其余探测的调度；占满后退化为立即超时（仍为快速失败）。
-_probe_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix="health-probe")
+# 每项独立单槽池：故障依赖（如对象存储 connect 挂起）只会占住自己的槽位，
+# 不会因为连续探测把共享池占满而让 db/redis 排队、全部退化为 "probe timeout"。
+_probe_names = ("db", "redis", "celery", "storage")
+_probe_pools = {
+    name: ThreadPoolExecutor(max_workers=1, thread_name_prefix=f"health-probe-{name}") for name in _probe_names
+}
 
 
 def probe_storage() -> Any:
@@ -132,7 +134,7 @@ def probe_all(timeout: Any = PROBE_BUDGET_SECONDS) -> Any:
     5 秒超时，健康状态被误判为不健康。
     """
     probes = {"db": probe_db, "redis": probe_redis, "celery": probe_celery, "storage": probe_storage}
-    futures = {name: _probe_pool.submit(fn) for name, fn in probes.items()}
+    futures = {name: _probe_pools[name].submit(fn) for name, fn in probes.items()}
     deadline = time.monotonic() + timeout
     results = {}
     for name, future in futures.items():

@@ -283,3 +283,71 @@ class TestWriteScopeGuardAPI:
 
         resp = api_client.patch(f"{USER_URL}/{blank.pk}", {"dept": None}, format="json")
         assert resp.status_code == 200
+
+
+class TestEmailTakeoverGuard:
+    """改他人邮箱/手机 = 账号接管面（换成自己的邮箱再走忘记密码），必须密码二次确认。"""
+
+    def _setup(self, dept, manager, role, menu_factory):
+        DeptManagerAssignment.objects.create(dept=dept, user=manager)
+        sync_manager_assembly(manager)
+        patch_menu = grant_menu(role, menu_factory, USER_DETAIL_PATH, "PATCH", name="p-user-email")
+        make_user_field_whitelist(role, patch_menu, fields=("email", "phone"))
+        member = UserInfo.objects.create_user(username="email-member", password="Test@123456")
+        member.dept = dept
+        member.save(update_fields=["dept"])
+        return member
+
+    def test_manager_change_member_email_requires_confirm(self, api_client, dept, normal_user, role, menu_factory):
+        member = self._setup(dept, normal_user, role, menu_factory)
+        api_client.force_authenticate(user=normal_user)
+
+        resp = api_client.patch(f"{USER_URL}/{member.pk}", {"email": "attacker@example.com"}, format="json")
+
+        assert resp.status_code == 412
+        assert resp.data["confirm_type"] == "password"
+        member.refresh_from_db()
+        assert member.email != "attacker@example.com"
+
+    def test_manager_edit_nickname_still_allowed(self, api_client, dept, normal_user, role, menu_factory):
+        """非敏感字段不受影响：只改昵称不触发二次确认。"""
+        DeptManagerAssignment.objects.create(dept=dept, user=normal_user)
+        sync_manager_assembly(normal_user)
+        patch_menu = grant_menu(role, menu_factory, USER_DETAIL_PATH, "PATCH", name="p-user-nickname")
+        make_user_field_whitelist(role, patch_menu, fields=("nickname",))
+        member = UserInfo.objects.create_user(username="nick-member", password="Test@123456")
+        member.dept = dept
+        member.save(update_fields=["dept"])
+        api_client.force_authenticate(user=normal_user)
+
+        resp = api_client.patch(f"{USER_URL}/{member.pk}", {"nickname": "新昵称"}, format="json")
+
+        assert resp.status_code == 200, resp.data
+        member.refresh_from_db()
+        assert member.nickname == "新昵称"
+
+
+class TestManagerUserOptionsScope:
+    """管理员候选（user-options）必须套数据权限：不可跨部门枚举/探测用户。"""
+
+    def test_candidates_are_scoped(self, api_client, dept, normal_user, role, menu_factory):
+        member = UserInfo.objects.create_user(username="opt-member", password="Test@123456")
+        member.dept = dept
+        member.save(update_fields=["dept"])
+        outsider = UserInfo.objects.create_user(username="opt-outsider", password="Test@123456")
+
+        DeptManagerAssignment.objects.create(dept=dept, user=normal_user)
+        sync_manager_assembly(normal_user)
+        grant_menu(role, menu_factory, "api/identity/dept$", "GET", name="p-dept-list")
+
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.get(f"{DEPT_URL}/user-options", {"keyword": "opt-"})
+        assert resp.status_code == 200, resp.data
+        usernames = {row["username"] for row in resp.data["data"]}
+        assert "opt-member" in usernames
+        assert "opt-outsider" not in usernames
+
+        # 按主键探测同样受限
+        resp = api_client.get(f"{DEPT_URL}/user-options", {"pks": str(outsider.pk)})
+        assert resp.status_code == 200
+        assert resp.data["data"] == []

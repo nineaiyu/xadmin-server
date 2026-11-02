@@ -92,6 +92,9 @@ def common_exception_handler(exc: Any, context: Any) -> Any:
             detail=_("Is referenced by other {} and cannot be deleted").format(verbose_name),
         )
     else:
+        # ATOMIC_REQUESTS 下异常被处理器吞掉后请求会按「无异常」提交；
+        # 未预期异常必须显式标记回滚，否则多步写入会残留前半段
+        set_rollback()
         unexpected_exception_logger.exception("")
 
     if not ret:  # drf内置处理不了，丢给django 的，我们自己来处理

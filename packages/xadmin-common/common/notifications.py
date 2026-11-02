@@ -220,7 +220,11 @@ class ServerPerformanceCheckUtil:
     def check_item(term: Any, item: Any, data: Any) -> Any:
         default = data["default"]
         max_threshold = data["max_threshold"]
-        value = term.get(item, default)
+        value = term.get(item)
+        if value is None:
+            # 无心跳数据时 Avg 聚合返回 None（键存在但值为 None）：dict.get 的默认值
+            # 不会生效，None 会一路落入「超出阈值」分支，形成每分钟一次的告警风暴
+            value = default
 
         if isinstance(value, bool) and value != max_threshold:
             return

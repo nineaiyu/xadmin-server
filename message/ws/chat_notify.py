@@ -89,6 +89,8 @@ class ChatNotifyMixin:
                 "chat_room_id": str(room.pk),
                 "chat_message_type": "chat_private",
                 "sender_pk": str(self.user.pk),
+                # 撤回时按消息主键定位并清除站内信原文（见 messaging._scrub_recalled_copies）
+                "chat_message_id": str(payload.get("id") or ""),
             },
         )
 

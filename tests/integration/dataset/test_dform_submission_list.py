@@ -21,7 +21,19 @@ SCHEMA = {
     ]
 }
 
-LIST_KEYS = {"pk", "form", "form_name", "schema_version", "data", "status", "creator", "created_time", "updated_time"}
+#: instance 供「我的填报」撤回按钮判定（PENDING + 绑定流程才可撤回）
+LIST_KEYS = {
+    "pk",
+    "form",
+    "form_name",
+    "schema_version",
+    "data",
+    "status",
+    "instance",
+    "creator",
+    "created_time",
+    "updated_time",
+}
 
 
 @pytest.fixture

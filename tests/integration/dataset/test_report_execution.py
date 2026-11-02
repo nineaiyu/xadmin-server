@@ -10,6 +10,8 @@ from datetime import timedelta
 
 import pytest
 from django.core import mail
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from dataset.analysis_tasks import report_due
@@ -114,14 +116,15 @@ class TestScheduleBookkeeping:
         Report.objects.filter(pk=report.pk).update(created_time=timezone.localtime() - timedelta(days=2))
         report.refresh_from_db()
 
-    def test_manual_run_does_not_advance_last_run_at(self, report, superuser):
+    def test_manual_run_does_not_advance_last_run_at(self, report, superuser, django_capture_on_commit_callbacks):
         """手动 run：last_status 可见结果，但 last_run_at 不动——到期扫描仍会投递该期。"""
         from dataset.analysis_tasks import schedule_report_run
 
         self._backdate_created(report)
         assert report_due(report) is True
 
-        task_id = schedule_report_run(str(report.pk))
+        with django_capture_on_commit_callbacks(execute=True):
+            task_id = schedule_report_run(str(report.pk))
         record = ExportRecord.objects.get(pk=task_id)
         assert record.status == ExportRecord.Status.SUCCESS
         report.refresh_from_db()
@@ -196,6 +199,21 @@ class TestDispatchClaim:
         assert len(calls) == 1
         assert ExportRecord.objects.filter(module="Report").count() == 1
 
+    def test_scan_excludes_design_payload_columns(self, report, monkeypatch):
+        """扫描只取调度判定/派发所需列：design/recipients 等大 JSON 不进内存。"""
+        from dataset.analysis_tasks import dispatch_scheduled_reports
+
+        self._due(report)
+        self._patch_async(monkeypatch)
+        with CaptureQueriesContext(connection) as ctx:
+            assert dispatch_scheduled_reports.apply().get() == 1
+        table = Report._meta.db_table.lower()
+        scans = [query["sql"].lower() for query in ctx.captured_queries if f'from "{table}"' in query["sql"].lower()]
+        assert scans, "应有一次报表扫描查询"
+        sql = scans[0]
+        assert "design" not in sql and "recipients" not in sql
+        assert "send_time" in sql and "last_run_at" in sql
+
     def test_release_allows_next_dispatch(self, report, monkeypatch):
         """任务结束释放占位后，同一期次仍可再次派发（未推进 last_run_at 的场景）。"""
         from dataset.analysis_tasks import dispatch_scheduled_reports, release_report_dispatch
@@ -243,10 +261,32 @@ class TestDispatchClaim:
         assert cache.get(report_dispatch_claim_key(report.pk)) is None
         assert ExportRecord.objects.get(pk=record_pk).status == ExportRecord.Status.SUCCESS
 
-    def test_manual_run_not_blocked_by_claim(self, report, superuser):
+    def test_manual_run_not_blocked_by_claim(self, report, superuser, django_capture_on_commit_callbacks):
         """手动运行不走占位：调度占位存在时仍可立即执行（不影响当期投递判定）。"""
         from dataset.analysis_tasks import claim_report_dispatch, schedule_report_run
 
         assert claim_report_dispatch(report.pk) is True
-        task_id = schedule_report_run(str(report.pk))
+        with django_capture_on_commit_callbacks(execute=True):
+            task_id = schedule_report_run(str(report.pk))
         assert ExportRecord.objects.get(pk=task_id).status == ExportRecord.Status.SUCCESS
+
+
+class TestReportDispatchOrdering:
+    """报表任务必须在记录提交后派发：worker 先读记录，读不到会永久 PENDING。"""
+
+    def test_schedule_report_run_defers_dispatch_until_commit(
+        self, report, superuser, django_capture_on_commit_callbacks
+    ):
+        from dataset.analysis_tasks import schedule_report_run
+        from task.models.export import ExportRecord
+
+        with django_capture_on_commit_callbacks(execute=False) as callbacks:
+            task_id = schedule_report_run(str(report.pk))
+            record = ExportRecord.objects.get(pk=task_id)
+            # 未提交时不派发：worker 不可能看到「记录不存在」的中间态
+            assert record.status == ExportRecord.Status.PENDING
+
+        assert len(callbacks) == 1
+        callbacks[0]()
+        record.refresh_from_db()
+        assert record.status == ExportRecord.Status.SUCCESS

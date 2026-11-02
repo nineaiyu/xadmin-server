@@ -101,6 +101,8 @@ def _hybrid(scored: list[Any], question: str, top_k: int) -> Any:
 
 #: 兜底扫描候选上限：预筛后仍超过该行数时按模型默认排序截断（有界扫描，日志留痕）
 _FALLBACK_SCAN_LIMIT = 5000
+#: 预筛参与词元上限：中文长问题可产生数百个二元组，全量 OR 会生成近千个 ILIKE
+_FALLBACK_MAX_TOKENS = 32
 
 
 def _retrieve_full_scan(query_tokens: set[Any], top_k: int) -> list[Any]:
@@ -117,9 +119,9 @@ def _retrieve_full_scan(query_tokens: set[Any], top_k: int) -> list[Any]:
 
     candidates = AiKnowledgeChunk.objects.all().only("id", "source_path", "title", "content", "chunk_index")
     prefilter = None
-    for token in query_tokens:
-        if len(token) < 2:
-            continue
+    # 词元越长越具体：按长度取前 N 个参与预筛，控制 OR 条件规模（评分仍用全量词元）
+    ranked_tokens = sorted((token for token in query_tokens if len(token) >= 2), key=lambda item: (-len(item), item))
+    for token in ranked_tokens[:_FALLBACK_MAX_TOKENS]:
         condition = Q(content__icontains=token) | Q(title__icontains=token)
         prefilter = condition if prefilter is None else (prefilter | condition)
     if prefilter is not None:

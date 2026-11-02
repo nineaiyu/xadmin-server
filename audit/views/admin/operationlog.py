@@ -41,8 +41,9 @@ class OperationLogFilter(BaseFilterSet):
     def get_error_status(self, queryset: Any, name: Any, value: Any) -> Any:
         # 成功口径 = 全平台 API 业务成功码（与 ApiResponse / 写日志侧同源）
         if value is True:
-            return queryset.exclude(status_code=API_SUCCESS_CODE)
-        return queryset.filter(status_code=API_SUCCESS_CODE)
+            # 未写入业务码的历史行与成功同档（与清理保留策略一致），不算错误
+            return queryset.filter(status_code__isnull=False).exclude(status_code=API_SUCCESS_CODE)
+        return queryset.filter(models.Q(status_code=API_SUCCESS_CODE) | models.Q(status_code__isnull=True))
 
     def get_has_changes(self, queryset: Any, name: Any, value: Any) -> Any:
         # 字段级审计 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径写入）
@@ -78,7 +79,13 @@ class OperationLogFilter(BaseFilterSet):
 @shared_permissions(
     path="api/audit/logs/operation",
     methods={
-        "GET": ("list:SystemOperationLog", "changeHistory:SystemUser", "changeHistory:SystemDept"),
+        "GET": (
+            "list:SystemOperationLog",
+            "changeHistory:SystemUser",
+            "changeHistory:SystemDept",
+            # 二开样板 demo 书籍页的变更历史（同一 path 的共享权限码）
+            "changeHistory:DemoBook",
+        ),
     },
 )
 class OperationLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction):

@@ -25,7 +25,6 @@ from approval.serializers.approval import ApprovalRequestDetailSerializer, Appro
 from approval.services.approval import (
     approval_stats,
     approve_request,
-    can_act,
     can_approve,
     cancel_request,
     pending_count_for,
@@ -122,7 +121,9 @@ class ApprovalRequestViewSet(
         """
         approval = self.get_object()
         if (approval.current_level or 0) > 0:
-            if not can_act(approval, request.user):
+            # 只做「当前级候选人」粗判；「本会签级已处理」由引擎返回可读业务提示，
+            # 避免重复点击得到 403 被误判为权限问题
+            if not approval.current_assignees.filter(pk=request.user.pk).exists():
                 raise PermissionDenied(_("Permission denied"))
             return approval
         if not (request.user.is_superuser or can_approve(request.user)):

@@ -29,7 +29,8 @@ logger = get_logger(__name__)
 
 
 class SystemConfigFilter(BaseFilterSet):
-    pk = filters.UUIDFilter(field_name="id")
+    # UserPersonalConfig 主键是 BigAuto：UUIDFilter 会让 pk 搜索恒为空/400
+    pk = filters.NumberFilter(field_name="id")
     key = filters.CharFilter(field_name="key", lookup_expr="icontains")
     value = filters.CharFilter(field_name="value", lookup_expr="icontains")
 
@@ -65,7 +66,8 @@ class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDa
 
 
 class UserPersonalConfigFilter(SystemConfigFilter):
-    pk = filters.UUIDFilter(field_name="id")
+    # UserPersonalConfig 主键是 BigAuto：UUIDFilter 会让 pk 搜索恒为空/400
+    pk = filters.NumberFilter(field_name="id")
     username = filters.CharFilter(field_name="owner__username", lookup_expr="icontains")
     owner_id = PkMultipleFilter(input_type="api-search-user")
 

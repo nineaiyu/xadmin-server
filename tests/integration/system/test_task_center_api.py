@@ -95,7 +95,7 @@ class TestRerunEndpoint:
         monkeypatch.setattr(
             task_center_unified,
             "_dispatch",
-            lambda task, args=None, kwargs=None, task_id=None: dispatched.append(args),
+            lambda task, args=None, kwargs=None, task_id=None, on_error=None: dispatched.append(args),
         )
         record = _export(superuser, status=ExportRecord.Status.SUCCESS)
         response = auth_client.post(f"{UNIFIED_URL}/rerun", {"type": "export", "pk": str(record.pk)}, format="json")

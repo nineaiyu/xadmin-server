@@ -25,16 +25,24 @@ from typing import Any
 import requests
 from django.utils.translation import gettext_lazy as _
 
+from common.utils import get_logger
 from common.utils.outbound import OutboundBlocked, loopback_allowed, pinned_request, validate_outbound_config_url
 
 from .mcp_audit import MCP_AUDIT_MODULE
 from .mcp_audit import audit_mcp_call as audit_mcp_call
+
+logger = get_logger(__name__)
 
 MCP_PROTOCOL_VERSION = "2025-06-18"
 CLIENT_NAME = "xadmin"
 CLIENT_VERSION = "1.0"
 #: 单次响应体读取上限（防超大响应拖垮工作进程）
 MAX_BODY_BYTES = 2 * 1024 * 1024
+#: tools/list 翻页上限（防异常服务端用无限 cursor/空行拖住调用链）
+MAX_TOOL_PAGES = 50
+MAX_TOOLS = 5000
+#: SSE 行数上限（空行同样计入，避免持续空行绕过字节上限）
+MAX_SSE_LINES = 200_000
 #: 调用结果回传前文本截断长度
 RESULT_TEXT_LIMIT = 4000
 #: 工具调用参数 JSON 体积上限（AI 动作链路与 mcp-servers/call 端点同一口径）
@@ -241,9 +249,12 @@ class McpClient:
         不能让它把 worker 内存/连接占满。
         """
         total = 0
+        lines = 0
         for raw_line in response.iter_lines(decode_unicode=False):
-            total += len(raw_line) if raw_line else 0
-            if total > MAX_BODY_BYTES:
+            lines += 1
+            # 空行也计入累计（服务端可持续发送空行绕过纯字节上限，长期占用 worker）
+            total += len(raw_line) + 1
+            if total > MAX_BODY_BYTES or lines > MAX_SSE_LINES:
                 raise McpClientError(_("MCP server response exceeds the size limit"))
             if not raw_line:
                 continue
@@ -342,11 +353,29 @@ class McpClient:
         return result if isinstance(result, dict) else {}
 
     def list_tools(self) -> list[Any]:
-        """拉取工具清单（initialize → tools/list），返回快照条目列表。"""
+        """拉取工具清单（initialize → tools/list，含 cursor 翻页）。
+
+        MCP 允许服务端分页返回 ``nextCursor``；只取第一页会让白名单里的后续工具
+        在动作目录 fail-closed 跳过（表现为「同步成功但工具不可用」）。翻页设
+        页数/条数上限，异常服务端不会无限循环。
+        """
         self.initialize()
-        result = self._call("tools/list", {})
-        tools = (result or {}).get("tools") if isinstance(result, dict) else None
-        return [self._tool_summary(item) for item in tools or [] if isinstance(item, dict)]
+        tools: list[Any] = []
+        cursor: Any = None
+        seen_cursors: set[str] = set()
+        for _page in range(MAX_TOOL_PAGES):
+            params = {"cursor": cursor} if cursor else {}
+            result = self._call("tools/list", params)
+            batch = (result or {}).get("tools") if isinstance(result, dict) else None
+            tools.extend(self._tool_summary(item) for item in batch or [] if isinstance(item, dict))
+            if len(tools) >= MAX_TOOLS:
+                logger.warning("MCP tools/list truncated at %s tools", MAX_TOOLS)
+                return tools[:MAX_TOOLS]
+            cursor = result.get("nextCursor") if isinstance(result, dict) else None
+            if not cursor or str(cursor) in seen_cursors:
+                break
+            seen_cursors.add(str(cursor))
+        return tools
 
     def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
         """调用工具（initialize → tools/call），返回原始 result。"""

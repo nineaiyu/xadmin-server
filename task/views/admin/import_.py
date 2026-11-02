@@ -123,11 +123,17 @@ class ImportTemplateViewSet(BaseModelSet):
         """共享模板对普通用户只读：写操作（改/删）看不到共享模板，直接 404。
 
         取值域过滤（读）仍包含共享模板——导入时套用共享模板是普通用户的核心用法。
+        batch-destroy 是 POST 但同属写路径，必须与单删同口径（模型为硬删，
+        放过会把共享模板真删掉）。
         """
         queryset = super().get_queryset()
         request = getattr(self, "request", None)
         user = getattr(request, "user", None)
-        if request and getattr(request, "method", None) in ("PUT", "PATCH", "DELETE"):
+        is_write = (
+            getattr(request, "method", None) in ("PUT", "PATCH", "DELETE")
+            or getattr(self, "action", None) == "batch_destroy"
+        )
+        if request and is_write:
             if not getattr(user, "is_superuser", False):
                 return queryset.filter(is_shared=False)
         return queryset

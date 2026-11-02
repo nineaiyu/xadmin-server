@@ -169,12 +169,19 @@ def clean_storage_cache(keep_days: int | None = 7, batch: int = 2000) -> int:
 
 
 def storage_url(name: str) -> str:
-    """存储对象的访问 URL（本地 = MEDIA_URL 相对地址；远端 = 对象存储 / CDN 地址）。"""
+    """存储对象的访问 URL（本地 = MEDIA_URL 相对地址；远端 = 对象存储 / CDN 地址）。
+
+    本地 ``/media/`` 链接对敏感命名空间（导出 / 附件等）追加短时效签名，
+    与 ``media_serve`` 的校验口径同源。
+    """
     try:
-        return str(default_storage.url(name))
+        url = str(default_storage.url(name))
     except Exception:  # noqa: BLE001 取 URL 失败返回空串（调用方按无链接降级）
         logger.debug("read storage url failed. name:%s", name, exc_info=True)
         return ""
+    from common.utils.media_signing import sign_media_url
+
+    return sign_media_url(url)
 
 
 def storage_presigned_url(
@@ -235,6 +242,13 @@ def storage_probe() -> Any:
     t1 = time.time()
     try:
         if storage_is_local():
+            from common.storage.backend import BACKEND_MIRROR, BACKEND_S3, storage_config
+
+            configured = str(storage_config().get("backend") or "")
+            if configured in (BACKEND_S3, BACKEND_MIRROR):
+                # 显式配置对象存储却回退本地：多副本部署会表现为「文件随机丢失」，
+                # 必须在 health 中显式暴露，不能只留一条一次性 WARNING
+                return False, f"configured {configured} unavailable; fell back to local storage"
             root = str(kernel_required_setting("MEDIA_ROOT"))
             os.makedirs(root, exist_ok=True)
             probe = _storage_probe_path(root)

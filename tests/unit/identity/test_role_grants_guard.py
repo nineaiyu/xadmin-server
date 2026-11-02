@@ -73,3 +73,20 @@ def test_patch_without_fields_key_keeps_field_grants(api_client, superuser, role
     resp = api_client.patch(f"{ROLE_URL}/{role.pk}", {"name": "改名不碰字段"}, format="json")
     assert resp.status_code == 200
     assert FieldPermission.objects.filter(pk=grant.pk).exists()
+
+
+def test_patch_with_page_key_expands_descendant_permissions(api_client, superuser, role, menu_factory):
+    """授权树折叠回显提交页面键：后端必须展开为该页全部权限点。
+
+    不展开时运行时只认 PERMISSION 菜单，编辑任意节点后保存会静默删除整页接口权限。
+    """
+    _grant_role_edit(role, menu_factory)
+    page = menu_factory("展开测试页面", menu_type=Menu.MenuChoices.MENU)
+    permission = menu_factory("list:ExpandProbe", path="api/expand/probe$", method="GET", parent=page)
+    api_client.force_authenticate(user=superuser)
+
+    resp = api_client.patch(f"{ROLE_URL}/{role.pk}", {"menu": [str(page.pk)]}, format="json")
+
+    assert resp.status_code == 200
+    pks = set(role.menu.values_list("pk", flat=True))
+    assert page.pk in pks and permission.pk in pks

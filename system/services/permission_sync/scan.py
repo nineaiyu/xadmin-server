@@ -170,6 +170,25 @@ def find_covering(perms: Any, path: Any, method: Any) -> Any:
     return None
 
 
+def _shared_list_parent_covers(perms: Any, path: Any, method: Any) -> bool:
+    """共享 list 子 action 的运行时口径：剥掉已登记后缀后按父级 list 权限解析。
+
+    这类端点（如数据集 ``datasets/meta``）在运行时由 ``IsAuthenticated`` 剥后缀命中
+    父级 ``list`` 权限点，不需要独立权限点；扫描器必须同口径，否则种子会被误导去
+    登记一个运行期永不命中的权限码。
+    """
+    from common.core import permission_meta
+
+    pattern = permission_meta.shared_list_pattern()
+    if pattern is None:
+        return False
+    url = "/" + str(path).lstrip("/")
+    stripped = pattern.sub("", url, count=1)
+    if stripped == url:
+        return False
+    return find_covering(perms, stripped.lstrip("/").rstrip("/"), method) is not None
+
+
 def scan_gaps(routes: Any, perms: Any) -> Any:
     """扫描需要权限点但未覆盖的端点：返回 [(RouteInfo, METHOD, action)]。"""
     gaps = []
@@ -188,6 +207,8 @@ def scan_gaps(routes: Any, perms: Any) -> Any:
             if path_whitelisted(route.sample, upper):
                 continue
             if find_covering(perms, path, upper):
+                continue
+            if _shared_list_parent_covers(perms, path, upper):
                 continue
             gaps.append((route, upper, action))
     return gaps
@@ -293,15 +314,17 @@ def build_plans(gaps: Any, routes: Any, perms: Any, default_parent: Any = None) 
 
 
 def refresh_titles(routes: Any, perms: Any = None, *, dry_run: bool = False) -> Any:
-    """按当前 docstring 重算已有权限点标题（存量库/种子修复）。
+    """只修超限标题（>24 字或带句号/省略号），短标题视为人工收敛不改。
 
     生成器只负责新增权限点；docstring 首行口径变化（例如长句拆成「短标题 +
     详细段落」）后，存量 ``MenuMeta.title`` 不会自动跟随。本函数按
     ``(path, method)`` 找回路由，复用与新建同一套 ``get_view_permissions`` 口径
-    重算标题，仅更新与现状不一致的项。
+    重算标题；只有与生成器口径不一致**且**超限（或带句号/省略号形态）的标题才更新。
 
     跳过：运行时模块权限点、i18n key 形式（``menus.*``）的标题——前者由模块
-    自身维护，后者是人工维护的翻译键。返回 ``[(menu, old_title, new_title), ...]``。
+    自身维护，后者是人工维护的翻译键；≤24 字且无句号的短标题可能是管理员在
+    菜单页人工收敛过的，不能按生成器口径全量覆盖。
+    返回 ``[(menu, old_title, new_title), ...]``。
     """
     perms = perms if perms is not None else load_permission_menus()
     route_by_path = {}

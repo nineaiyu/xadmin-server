@@ -12,7 +12,6 @@ from typing import Any
 
 from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 from django.utils.module_loading import import_string
-from rest_framework.throttling import BaseThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from user_agents import parse
 
@@ -148,7 +147,11 @@ def get_request_data(request: Any) -> Any:
             fields = sorted({name.decode("utf-8", "ignore") for name in names})
             return {"_multipart_fields": fields}
         return {"_multipart_fields": [], "_multipart_body_skipped": True}
-    data: dict[str, Any] = {**request.GET.dict(), **request.POST.dict()}
+    data: dict[str, Any] = {}
+    for source in (request.GET, request.POST):
+        for key in source:
+            values = source.getlist(key)
+            data[key] = values[0] if len(values) == 1 else values
     if not data:
         try:
             body = request.body
@@ -251,5 +254,6 @@ def get_verbose_name(queryset: Any = None, view: Any = None, model: Any = None) 
 def get_request_ident(request: Any) -> Any:
     http_user_agent = request.META.get("HTTP_USER_AGENT")
     http_accept = request.META.get("HTTP_ACCEPT")
-    remote_addr = BaseThrottle().get_ident(request)
+    # 与 get_request_ip 同口径（可信代理链），不要用 DRF 直接信任 XFF 的实现
+    remote_addr = get_request_ip(request)
     return base64.b64encode(f"{http_user_agent}{http_accept}{remote_addr}".encode()).decode("utf-8")

@@ -21,6 +21,7 @@ from common.core.modelset import (
     ImportExportDataAction,
     RelationCountMixin,
 )
+from common.core.modelset.batch import normalize_pks
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import parse_bool
@@ -87,8 +88,9 @@ class DataDictViewSet(
         装饰器（DRF 靠其 `.mapping` 注册路由），否则端点丢失、请求 405。
         """
         pks = request.data if isinstance(request.data, (list, tuple)) else []
+        valid_pks, _invalid = normalize_pks(DataDict, pks)
         locked_pks = [
-            str(pk) for pk in self.get_queryset().filter(pk__in=pks, is_locked=True).values_list("pk", flat=True)
+            str(pk) for pk in self.get_queryset().filter(pk__in=valid_pks, is_locked=True).values_list("pk", flat=True)
         ]
         self.queryset = self.queryset.filter(is_locked=False)
         response = super().batch_destroy(request, *args, **kwargs)
@@ -145,6 +147,9 @@ class DataDictViewSet(
         """
         data = request.data if isinstance(request.data, dict) else {}
         pks = data.get("pks") or []
+        if not isinstance(pks, (list, tuple)):
+            raise serializers.ValidationError({"pks": _("Operation failed. Abnormal data")})
+        pks, _invalid = normalize_pks(DataDict, pks)
         is_active = data.get("is_active")
         if is_active is not None:
             try:

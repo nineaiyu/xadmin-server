@@ -17,7 +17,7 @@
   生成语义（sender=None 的内部路径），客户端上行伪造一律 1001 拒绝；
 - `chat_reaction {message, emoji, op}` → 表情回应落库（extra.reactions 全量表）后
   向房间广播；消息不存在/已撤回/非成员/机器消息静默忽略（fail-closed）；
-- `chat_read {room_id}` → 清零未读并回执最新已读游标。
+- `chat_read {room_id, last_read_id?}` → 清零未读并回执最新已读游标（客户端可携带已读位置）。
 
 撤回不经 WS 上行：唯一入口是 REST `POST /api/chat/message/{id}/recall`（仅本人、
 窗口内），落库成功后向房间广播 `chat_recall` 下行帧（多端同步）。
@@ -84,6 +84,25 @@ def has_chat_permission(user: Any) -> bool:
     return bool(get_menu_pk(data, "/api/chat/room"))
 
 
+def has_chat_action_permission(user: Any, method: str, path: str) -> bool:
+    """WS 上行动作的细粒度权限：与 REST 同源权限点（超管放行）。"""
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_superuser", False):
+        return True
+    from common.core.permission import get_menu_pk, get_user_permission
+
+    return bool(get_menu_pk(get_user_permission(user, method), path))
+
+
+def can_read_chat_messages(user: Any) -> bool:
+    return has_chat_action_permission(user, "GET", "/api/chat/message")
+
+
+def can_upload_chat_attachment(user: Any) -> bool:
+    return has_chat_action_permission(user, "POST", "/api/chat/message/upload")
+
+
 class ChatNotify(ChatNotifyMixin, AsyncJsonWebsocket):
     """聊天室专用连接：一条连接同时承载公共广播 + 私聊/AI 定向 + 未读推送。"""
 
@@ -91,6 +110,7 @@ class ChatNotify(ChatNotifyMixin, AsyncJsonWebsocket):
         super().__init__(args, kwargs)
         self.user: Any = None
         self.disconnected = True
+        self.permission_checked = False
         self.group_name = ""  # 本人聊天组（私聊/AI/未读）
         self.public_group = ""  # 公共聊天室广播组
 
@@ -106,6 +126,7 @@ class ChatNotify(ChatNotifyMixin, AsyncJsonWebsocket):
             logger.warning("chat connect rejected: no permission user=%s", self.user)
             await self.reject(4403)
             return
+        self.permission_checked = True
 
         self.group_name = get_chat_user_group_name(self.user.pk)
         self.public_group = get_public_chat_group_name()
@@ -150,6 +171,17 @@ class ChatNotify(ChatNotifyMixin, AsyncJsonWebsocket):
                 await self.close()
 
     async def handle_send(self, data: Any) -> None:
+        data = data if isinstance(data, dict) else {}
+        # 频道准入只覆盖会话列表；发消息/附件读取沿用 REST 的细粒度权限点
+        message_type = str(data.get("message_type") or ChatMessage.MessageType.TEXT)
+        required = (
+            can_upload_chat_attachment
+            if message_type in chat_service.ATTACHMENT_MESSAGE_TYPES
+            else can_read_chat_messages
+        )
+        if self.permission_checked and not await database_sync_to_async(required)(self.user):
+            await self.send_base_json(MessageAction.CHAT_MESSAGE.value, code=1003, detail=str(_("Permission denied")))
+            return
         # 限流：超过每用户每秒上限时回执可读错误并丢弃本条（幂等重发同样受控）
         if not await database_sync_to_async(allow_chat_send)(self.user.pk):
             logger.warning("chat send rate limited: user=%s", self.user.pk)
@@ -161,7 +193,6 @@ class ChatNotify(ChatNotifyMixin, AsyncJsonWebsocket):
         # 消息类型：text（缺省）/ image / video / audio / file；附件消息携带 file_pk
         # （先经 REST 上传取得）。ai / system 属服务端生成语义：客户端伪造「官方通知 /
         # 模型回复」是站内钓鱼入口，直接拒绝而不是静默降级（降级会吞掉内容差异）。
-        message_type = str(data.get("message_type") or ChatMessage.MessageType.TEXT)
         if message_type not in UPLINK_MESSAGE_TYPES:
             logger.warning("chat send rejected invalid message_type=%s user=%s", message_type, self.user.pk)
             await self.send_base_json(
@@ -215,6 +246,10 @@ class ChatNotify(ChatNotifyMixin, AsyncJsonWebsocket):
         )
 
     async def handle_reaction(self, data: Any) -> None:
+        data = data if isinstance(data, dict) else {}
+        if self.permission_checked and not await database_sync_to_async(can_read_chat_messages)(self.user):
+            await self.send_base_json(MessageAction.CHAT_REACTION.value, code=1003, detail=str(_("Permission denied")))
+            return
         # 限流与消息发送同源：回应同样是「落库 + 房间广播」的上行写操作，
         # 恶意连接高频刷回应会放大成 DB 写与广播风暴
         if not await database_sync_to_async(allow_chat_send)(self.user.pk):
@@ -243,6 +278,10 @@ class ChatNotify(ChatNotifyMixin, AsyncJsonWebsocket):
         )
 
     async def handle_read(self, data: Any) -> None:
+        data = data if isinstance(data, dict) else {}
+        if self.permission_checked and not await database_sync_to_async(can_read_chat_messages)(self.user):
+            await self.send_base_json(MessageAction.CHAT_READ.value, code=1003, detail=str(_("Permission denied")))
+            return
         try:
             room = await database_sync_to_async(chat_service.accessible_room)(data.get("room_id"), self.user)
         except DjangoValidationError as exc:

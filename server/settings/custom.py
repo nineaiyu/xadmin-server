@@ -18,7 +18,7 @@ PERMISSION_WHITE_URL = {
     # 用户维度限流），不参与菜单权限；新增动作端点须在此显式登记精确 path + method
     "^/api/identity/userinfo/verify-password$": ["POST"],
     "^/api/system/routes$": ["*"],
-    "^/api/system/dashboard/": ["*"],
+    "^/api/system/dashboard/": ["GET"],
     # 结构元数据枚举（口径已在文档登记）：choices / search-fields / dict.items 对所有
     # 已登录用户开放，不要求菜单权限——前端表单枚举、通用搜索、引用字段渲染在任意页面
     # 都可能跨菜单消费这些元数据，按菜单收紧会直接破坏渲染。
@@ -128,7 +128,7 @@ PERMISSION_DATA_AUTH_APPS = [
     "approval",
     "ai",
 ]
-if "demo" in INSTALLED_APPS:
+if any(item == "demo" or item.startswith("demo.") for item in INSTALLED_APPS):
     PERMISSION_DATA_AUTH_APPS.append("demo")
 
 API_LOG_ENABLE = CONFIG.API_LOG_ENABLE

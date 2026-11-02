@@ -146,8 +146,8 @@ def new_client_msg_id() -> str:
 def clean_expired_history(keep_days: Any = None, batch_size: Any = 2000) -> int:
     """分批删除超过保留期的聊天消息（CHAT_HISTORY_DAYS，0 = 不清理）。
 
-    只删消息行，不动会话与成员关系：历史清空的会话仍在列表里（摘要自然为空），
-    未读游标等冗余字段失效无害。按 id 升序小批删除，避免长事务长时间锁表。
+    只删消息行，不动会话与成员关系：历史清空的会话仍在列表里；每批删除后重算
+    受影响会话的 last_message/time，避免会话列表继续展示已删除的旧摘要。
     """
     from common.core.config import SysConfig
 
@@ -164,8 +164,18 @@ def clean_expired_history(keep_days: Any = None, batch_size: Any = 2000) -> int:
         )
         if not ids:
             break
+        room_ids = set(ChatMessage.objects.filter(id__in=ids).values_list("room_id", flat=True))
         deleted, _counts = ChatMessage.objects.filter(id__in=ids).delete()
         removed += deleted
+        if room_ids:
+            from message.models import ChatRoom
+
+            for room in ChatRoom.objects.filter(pk__in=room_ids):
+                last = ChatMessage.objects.filter(room=room).order_by("-id").first()
+                ChatRoom.objects.filter(pk=room.pk).update(
+                    last_message=(last.content[:200] if last else ""),
+                    last_message_time=(last.created_time if last else None),
+                )
     logger.info(f"clean {removed} chat history message, keep_days {days}")
     return removed
 

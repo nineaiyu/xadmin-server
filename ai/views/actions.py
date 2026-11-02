@@ -20,9 +20,8 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
 from common.core.response import ApiResponse
-from common.drf.renders import sse_response
 from common.swagger.utils import get_default_response_schema
-from common.utils import get_logger
+from common.utils import get_logger, parse_bool
 
 logger = get_logger(__name__)
 
@@ -45,18 +44,24 @@ class AiActionExecuteMixin:
         return system_error_message(user, "action", detail)
 
     @staticmethod
-    def _native_track_frames(user: Any, text: str, chunks: list[Any], reasoning_chunks: list[Any]) -> Any:
-        """原生轨道帧流：reasoning/content 实时转发，返回值 = 工具调用结果。
+    def _force_flag(data: Any) -> bool:
+        """执行请求的 force 通道：兼容表单字符串，非法值给 400 而非静默按 False。"""
+        try:
+            return parse_bool(data.get("force", False))
+        except ValueError:
+            raise DjangoValidationError(_("Invalid boolean value")) from None
 
-        原生轨道：能力探测通过 + 开关开启时优先。流式产出 reasoning/content，
-        工具调用分片由 SDK 累积成完整列表后再解析（arguments 是 JSON 片段，
-        不逐字上屏；模型若输出推理/正文则实时可见）。
+    @staticmethod
+    async def _track_frames_async(
+        source: Any, chunks: list[Any], reasoning_chunks: list[Any], holder: dict[str, Any]
+    ) -> Any:
+        """把服务层异步事件流转换为 SSE 帧，结果写入 ``holder["result"]``。
+
+        原生轨道通常没有正文增量：done 前补一条草稿摘要，避免界面空等。
         """
-        from ai.services.actions.ai_actions import draft_summary, native_draft_result_stream
+        from ai.services.actions.ai_actions import draft_summary
 
-        logger.info("ai action draft track: native (user=%s)", user.pk)
-        result: dict[str, Any] = {}
-        for item in native_draft_result_stream(user, text):
+        async for item in source:
             kind = item.get("type")
             if kind == "reasoning":
                 reasoning_chunks.append(item["text"])
@@ -65,41 +70,13 @@ class AiActionExecuteMixin:
                 chunks.append(item["text"])
                 yield {"event": "delta", "data": {"delta": item["text"]}}
             elif kind == "result":
-                result = item["result"]
-        if result["kind"] == "draft" and not chunks:
-            # 工具调用轨道通常没有正文增量：done 前补一条摘要，避免界面空等
-            yield {"event": "delta", "data": {"delta": draft_summary(result.get("drafts") or [result["draft"]])}}
-        return result
-
-    @staticmethod
-    def _prompt_track_frames(user: Any, text: str, chunks: list[Any], reasoning_chunks: list[Any]) -> Any:
-        """prompt 轨道帧流：结构化客户端流式产出，空回答拒绝，返回值 = 草稿解析结果。"""
-        from ai.services.actions.ai_actions import build_draft_prompt, parse_draft
-        from ai.services.assistant.ai import structured_chat_client
-        from ai.services.assistant.ai_usage import tracked_chat_stream
-
-        client, max_tokens = structured_chat_client()
-        for item in tracked_chat_stream(
-            user,
-            "action",
-            client,
-            build_draft_prompt(user, text),
-            track="prompt",  # 双轨对照：用量账本按轨道统计成功率
-            max_tokens=max_tokens,
-        ):
-            chunk = item.get("text") or ""
-            if not chunk:
-                continue
-            if item.get("type") == "reasoning":
-                reasoning_chunks.append(chunk)
-                yield {"event": "reasoning", "data": {"delta": chunk}}
-            else:
-                chunks.append(chunk)
-                yield {"event": "delta", "data": {"delta": chunk}}
-        raw = "".join(chunks)
-        if not raw.strip():
-            raise DjangoValidationError(_("The model did not provide a final answer; please retry or switch models"))
-        return parse_draft(raw, user)
+                holder["result"] = item.get("result") or {}
+        result = holder.get("result") or {}
+        if result.get("kind") == "draft" and not chunks:
+            yield {
+                "event": "delta",
+                "data": {"delta": draft_summary(result.get("drafts") or [result.get("draft")])},
+            }
 
     @staticmethod
     def _stream_error_frame(
@@ -164,6 +141,7 @@ class AiActionExecuteMixin:
         from ai.services.assistant.ai_chat import message_payload, persist_message
         from ai.services.assistant.ai_guard import guard_summary
         from ai.services.assistant.ai_usage import quota_error
+        from common.drf.renders import sse_response_async
         from integrations.sdk.ai.chat import AiSdkError
 
         text = str(request.data.get("message") or "").strip()
@@ -181,43 +159,61 @@ class AiActionExecuteMixin:
 
         user_row = persist_message(request.user, "action", "user", content=text)
         quota_hit = quota_error(request.user, "action")
+        use_native = native_tools_enabled()
+        # meta 载荷在同步段预构建（message_payload 可能触发 FK 懒加载，异步段禁止裸 DB 访问）
+        user_payload = message_payload(user_row)
 
-        def events() -> Any:
-            yield {"event": "meta", "data": {"message": text, "user_message": message_payload(user_row)}}
+        async def events() -> Any:
+            from asgiref.sync import sync_to_async
+
+            from ai.services.actions.ai_draft_tools import (
+                native_draft_result_stream_async,
+                prompt_draft_result_stream_async,
+            )
+
+            yield {"event": "meta", "data": {"message": text, "user_message": user_payload}}
             chunks: list[Any] = []
             reasoning_chunks: list[Any] = []
+            holder: dict[str, Any] = {}
             try:
                 if quota_hit:
                     raise DjangoValidationError(quota_hit)
-                if native_tools_enabled():
-                    result = yield from self._native_track_frames(request.user, text, chunks, reasoning_chunks)
+                if use_native:
+                    logger.info("ai action draft track: native (user=%s)", request.user.pk)
+                    source = native_draft_result_stream_async(request.user, text)
                 else:
                     # 双轨对照日志：便于按档案/模型统计两条轨道的成功率
                     logger.info("ai action draft track: prompt (user=%s)", request.user.pk)
-                    result = yield from self._prompt_track_frames(request.user, text, chunks, reasoning_chunks)
+                    source = prompt_draft_result_stream_async(request.user, text)
+                async for frame in self._track_frames_async(source, chunks, reasoning_chunks, holder):
+                    yield frame
+                result = holder.get("result") or {}
                 if not result:
                     raise DjangoValidationError(_("The model did not return an actionable request"))
             except DjangoValidationError as exc:
                 detail = "; ".join(getattr(exc, "messages", None) or [str(exc)])
-                yield self._stream_error_frame(request.user, detail, guard, chunks, reasoning_chunks)
+                yield await sync_to_async(self._stream_error_frame)(
+                    request.user, detail, guard, chunks, reasoning_chunks
+                )
                 return
             except AiSdkError as exc:
                 from ai.services.assistant.ai import readable_ai_error
 
-                yield self._stream_error_frame(request.user, readable_ai_error(exc), guard, chunks, reasoning_chunks)
+                yield await sync_to_async(self._stream_error_frame)(
+                    request.user, readable_ai_error(exc), guard, chunks, reasoning_chunks
+                )
                 return
             except Exception:  # noqa: BLE001 流内未知异常兜底：转 error 帧，避免 ASGI 直接断流
-                # 典型场景：模型返回了未预期的结构（历史上 native 澄清消息取 result["draft"]
-                # 触发 KeyError，客户端只看到连接被截断）。异常细节只进日志，不返回给前端。
+                # 典型场景：模型返回了未预期的结构（客户端只看到连接被截断）。异常细节只进日志。
                 logger.exception("ai action draft stream failed")
-                yield self._stream_error_frame(
+                yield await sync_to_async(self._stream_error_frame)(
                     request.user, str(_("AI service is temporarily unavailable")), guard, chunks, reasoning_chunks
                 )
                 return
 
-            yield self._stream_done_frame(request.user, result, "".join(reasoning_chunks))
+            yield await sync_to_async(self._stream_done_frame)(request.user, result, "".join(reasoning_chunks))
 
-        return sse_response(events())
+        return sse_response_async(events())
 
     @staticmethod
     def _push_action_result(room_id: Any, user: Any, result: dict[str, Any]) -> None:
@@ -340,12 +336,20 @@ class AiActionExecuteMixin:
                 persist_failure(str(_("Waiting for approval")))
                 return approval_response
 
-        from ai.services.assistant.ai_guard import guard_summary
-
         # 幂等：同一意图（用户 + 动作 + 规范化参数）在 TTL 内重复提交返回首次结果，
         # force=true 为用户确认后的「仍要执行」显式通道
+        from functools import partial
+
+        from ai.services.assistant.ai_guard import guard_summary
+        from common.core.oplog_recorder import desensitize_payload
+
+        force = self._force_flag(request.data)
         result = execute_idempotent(
-            request.user, action_key, clean, execute_action, force=bool(request.data.get("force"))
+            request.user,
+            action_key,
+            clean,
+            partial(execute_action, request=request),
+            force=force,
         )
         audit_ai_action(
             request.user,
@@ -354,7 +358,7 @@ class AiActionExecuteMixin:
             bool(result.get("ok")),
             str(result.get("detail") or ""),
             {
-                "result": result.get("data") or {},
+                "result": desensitize_payload(result.get("data") or {}),
                 "guard": guard_summary(prompt=action_key),
                 "draft_id": result.get("draft_id"),
                 "deduplicated": bool(result.get("deduplicated")),

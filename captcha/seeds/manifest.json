@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "app": "captcha",
+  "depends": [
+    "system"
+  ],
+  "files": [
+    {
+      "name": "modellabelfield.json",
+      "model": "system.modellabelfield",
+      "kind": "generated",
+      "order": 10
+    }
+  ]
+}

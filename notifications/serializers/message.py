@@ -6,6 +6,7 @@
 # date : 9/15/2024
 import os.path
 from typing import Any
+from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.db.models import Count, Q
@@ -374,9 +375,12 @@ class NoticeMessageSerializer(BaseModelSerializer):
         files = attrs.get("files")
         if files is not None:
             del attrs["files"]
-            queryset = UploadFile.objects.filter(
-                filepath__in=[file.split(os.path.join("/", settings.MEDIA_URL))[-1] for file in files]
-            )
+            # 媒体链接可能带短时效签名查询串：按 URL path 比对存储对象名
+            file_names = []
+            for file in files:
+                raw_path = urlsplit(str(file)).path
+                file_names.append(raw_path.split(os.path.join("/", settings.MEDIA_URL))[-1])
+            queryset = UploadFile.objects.filter(filepath__in=file_names)
             attrs["file"] = get_filter_queryset(queryset, self.request.user).all()
         return attrs
 

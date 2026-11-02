@@ -100,7 +100,9 @@ def _workflow_value(key: str):
         matched = re.search(r"--cov-fail-under=(\d+)", path.read_text(encoding="utf-8"))
     else:
         raise SystemExit(f"未知 workflow 事实键：{key}（支持 python / cov_fail_under）")
-    return matched.group(1) if matched else None
+    if not matched:
+        raise SystemExit(f"无法从 workflow 解析事实 {key}（{path}）")
+    return matched.group(1)
 
 
 def _adr_count() -> str:
@@ -120,7 +122,9 @@ def _client_engine(key: str):
     data = json.loads(package.read_text(encoding="utf-8"))
     raw = str(data.get("engines", {}).get(key, ""))
     matched = re.search(r"([\d.]+)", raw)
-    return matched.group(1) if matched else None
+    if not matched:
+        raise SystemExit(f"无法从 xadmin-client/package.json 解析 engines.{key}")
+    return matched.group(1)
 
 
 def _installer_root() -> Path:
@@ -138,7 +142,9 @@ def _installer_upgrade_baseline():
     if not script.is_file():
         return None
     matched = re.search(r'required_version="([^"]+)"', script.read_text(encoding="utf-8"))
-    return matched.group(1).lstrip("vV") if matched else None
+    if not matched:
+        raise SystemExit(f"无法从安装器脚本解析升级基线：{script}")
+    return matched.group(1).lstrip("vV")
 
 
 def _resolve_source(source: str):

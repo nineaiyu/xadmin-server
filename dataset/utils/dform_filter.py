@@ -22,6 +22,7 @@
 """
 
 import json
+import math
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -84,12 +85,15 @@ def _coerce_number(key: str, value: Any) -> Any:
     if isinstance(value, bool):
         raise ValidationError(_("Filter value of {} must be numeric").format(key))
     if isinstance(value, (int, float)):
-        return value
-    try:
-        text = str(value).strip()
-        number = float(text)
-    except (TypeError, ValueError) as exc:
-        raise ValidationError(_("Filter value of {} must be numeric").format(key)) from exc
+        number = float(value)
+    else:
+        try:
+            number = float(str(value).strip())
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(_("Filter value of {} must be numeric").format(key)) from exc
+    # NaN / Infinity 不是合法 JSON 数值：PG jsonb 会拒绝，提前归类为可读 400
+    if not math.isfinite(number):
+        raise ValidationError(_("Filter value of {} must be numeric").format(key))
     return int(number) if number.is_integer() else number
 
 
@@ -119,11 +123,14 @@ def coerce_filter_value(item: dict[str, Any], value: Any) -> Any:
     elif ftype == "switch":
         coerced = _coerce_bool(key, value)
     elif ftype == "user":
-        if _is_multi(item):
-            picks = value if isinstance(value, list) else [value]
-            coerced = [int(entry) for entry in picks if str(entry).strip()]
-        else:
-            coerced = int(value)
+        try:
+            if _is_multi(item):
+                picks = value if isinstance(value, list) else [value]
+                coerced = [int(entry) for entry in picks if str(entry).strip()]
+            else:
+                coerced = int(value)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(_("Filter value of {} must be a user id").format(key)) from exc
     elif ftype == "cascader":
         path = value if isinstance(value, list) else [value]
         coerced = [entry for entry in path if not _is_empty(entry)]

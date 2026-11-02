@@ -233,10 +233,11 @@ def demo_account_selfheal_job() -> Any:
     if not django_apps.is_installed("demo_seed"):
         # 演示种子 app 未注册（生产裁剪）却仍被调度：无处自愈，直接跳过
         return None
-    from demo_seed.management.commands.seed_demo_admin import ADMIN_USERNAME
+    from demo_seed.management.commands.seed_demo_admin import ADMIN_USERNAME, is_demo_account
 
     user = UserInfo.all_objects.filter(username=ADMIN_USERNAME, is_superuser=False).first()
-    if user is None or user.deleted_at or not user.is_active:
+    # 只自愈种子创建的演示账号：同名真实账号不能被重置口令/解除锁定
+    if user is None or user.deleted_at or not user.is_active or not is_demo_account(user):
         return None
     call_command("seed_demo_admin")
     LoginBlockUtil.unblock_user(ADMIN_USERNAME)

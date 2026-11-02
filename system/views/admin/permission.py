@@ -36,6 +36,8 @@ class DataPermissionViewSet(BaseModelSet, ImportExportDataAction, RecycleBinActi
     serializer_class = DataPermissionSerializer
     ordering_fields = ["created_time"]
     filterset_class = DataPermissionFilter
+    # menu 关联字段输出 meta__title：按行 × 绑定菜单逐次查 meta 是主要 N+1
+    prefetch_related_fields = ("menu__meta",)
 
     @ApprovalRequired()
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -51,9 +53,18 @@ class DataPermissionViewSet(BaseModelSet, ImportExportDataAction, RecycleBinActi
         """批量删除{cls}（高危：与删除同口径纳入审批）"""
         return super().batch_destroy(request, *args, **kwargs)
 
+    @ApprovalRequired()
+    @action(methods=["delete"], detail=False, url_path="recycle/purge")  # type: ignore[untyped-decorator]
+    def recycle_purge(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """物理清除{cls}回收站数据
+
+        不可恢复的高危动作：与删除/批删同口径纳入审批，避免硬删绕过审批。
+        """
+        return super().recycle_purge(request, *args, **kwargs)
+
     def get_queryset(self) -> Any:
         queryset = super().get_queryset()
-        if self.action == "list":
+        if self.action in ("list", "export_data"):
             # 列表页展示生效范围与分配对象统计：注解计数避免逐行 count()；
             # 多个关系注解会相互放大，统一 distinct=True 纠正
             queryset = queryset.annotate(

@@ -67,7 +67,9 @@ class TestSavedViewCrud:
     def test_duplicate_name_rejected(self, auth_client):
         auth_client.post(VIEWS_URL, _payload(), format="json")
         resp = auth_client.post(VIEWS_URL, _payload(), format="json")
-        assert resp.status_code in (400, 409) or resp.data.get("code") != 1000
+        # 必须可读 400（DRF 因 owner 只读跳过了唯一约束校验，序列化器显式查重）
+        assert resp.status_code == 400, resp.data
+        assert "name" in resp.data.get("errors", {}) or "name" in resp.data
 
     def test_destroy_own_view(self, auth_client):
         resp = auth_client.post(VIEWS_URL, _payload(), format="json")
@@ -108,3 +110,28 @@ class TestSavedViewCrud:
         SavedListView.objects.create(owner=normal_user, page_key=PAGE_KEY, name="同名")
         with pytest.raises(IntegrityError):
             SavedListView.objects.create(owner=normal_user, page_key=PAGE_KEY, name="同名")
+
+
+def test_superuser_default_switch_clears_target_owner_defaults(auth_client, superuser, normal_user):
+    """超管编辑他人视图并置默认：清的是目标用户的默认，不是超管自己的。"""
+    own_default = SavedListView.objects.create(owner=superuser, page_key=PAGE_KEY, name="超管默认", is_default=True)
+    target_old = SavedListView.objects.create(owner=normal_user, page_key=PAGE_KEY, name="用户旧默认", is_default=True)
+    target_new = SavedListView.objects.create(owner=normal_user, page_key=PAGE_KEY, name="用户新默认")
+
+    resp = auth_client.patch(
+        f"{VIEWS_URL}/{target_new.pk}",
+        {"is_default": True},
+        format="json",
+        QUERY_STRING="all=1",
+    )
+    # APIClient 的 query 需显式拼接
+    if resp.status_code == 404:
+        resp = auth_client.patch(f"{VIEWS_URL}/{target_new.pk}?all=1", {"is_default": True}, format="json")
+
+    assert resp.data["code"] == 1000, resp.data
+    own_default.refresh_from_db()
+    target_old.refresh_from_db()
+    target_new.refresh_from_db()
+    assert own_default.is_default is True
+    assert target_old.is_default is False
+    assert target_new.is_default is True

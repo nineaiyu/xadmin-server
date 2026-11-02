@@ -222,6 +222,9 @@ def resolve_rule(rule: Any, user: Any) -> Any:
             cond["value"] = from_current_timezone(parse_datetime(cond["value"]))
     elif f_type == KeyChoices.JSON:
         cond["value"] = _json_value(cond["value"])
+    if f_type not in KeyChoices.values:
+        # 种子导入/直改库可绕过写入校验：未知类型读侧一律 DENY_ALL（不能落成恒真）
+        cond["invalid_type"] = True
     return cond
 
 
@@ -260,6 +263,9 @@ def rule_to_q(rule: Any) -> Any:
     name = rule.get("field")
     val = rule.get("value")
     match = rule.get("match", "exact")
+    if rule.get("invalid_type"):
+        # 未知规则类型按 DENY_ALL（与非法正则/非法值同口径），绝不退化为 Q()
+        return Q(pk__isnull=True)
     if name is None or val is None:
         return Q()
     if match == "all":

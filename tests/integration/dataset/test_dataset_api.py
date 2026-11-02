@@ -153,7 +153,7 @@ class TestFilterTypeValidation:
         response = auth_client.post(f"{DATASET_URL}/{dataset.pk}/execute", {}, format="json")
 
         assert response.json()["code"] == 1001
-        assert "text field" in str(response.json()["detail"])
+        assert any(k in str(response.json()["detail"]) for k in ("text field", "文本字段"))
 
 
 class TestDatasetCrud:
@@ -635,3 +635,40 @@ class TestRowOwnerFlag:
         Book.objects.create(name="无守卫书", isbn="isbn-x", author="a", admin=superuser, admin2=superuser, file=upload)
         rows = self._client(superuser).get("/api/demo/book").json()["data"]["results"]
         assert rows and all("is_owner" not in row for row in rows)
+
+
+class TestBatchDestroyCreatorGuard:
+    """批量删除与单条删除同口径：非创建者不得批删他人（含共享）分析资产。"""
+
+    def _grant(self, user, menu_factory, label):
+        from identity.models import UserRole
+
+        menus = [
+            menu_factory(f"batchDestroy:{label}", path=f"api/dataset/{self._slug(label)}/batch-destroy$", method="POST")
+        ]
+        role = UserRole.objects.create(name=f"bd-{label}-{user.pk}", code=f"bd-{label}-{user.pk}")
+        role.menu.set(menus)
+        user.roles.add(role)
+
+    @staticmethod
+    def _slug(label):
+        return {"Dataset": "datasets", "DataDashboard": "dashboards", "DataScreen": "screens"}[label]
+
+    def test_non_creator_cannot_batch_delete_shared_dataset(self, api_client, normal_user, dataset, menu_factory):
+        self._grant(normal_user, menu_factory, "Dataset")
+        api_client.force_authenticate(user=normal_user)
+
+        resp = api_client.post(f"{DATASET_URL}/batch-destroy", [str(dataset.pk)], format="json")
+
+        assert resp.status_code == 200
+        assert Dataset.objects.filter(pk=dataset.pk).exists()
+
+    def test_non_creator_cannot_batch_delete_shared_dashboard(self, api_client, normal_user, superuser, menu_factory):
+        dashboard = Dashboard.objects.create(name="共享仪表盘", layout=[], visibility="shared", creator=superuser)
+        self._grant(normal_user, menu_factory, "DataDashboard")
+        api_client.force_authenticate(user=normal_user)
+
+        resp = api_client.post(f"{DASHBOARD_URL}/batch-destroy", [str(dashboard.pk)], format="json")
+
+        assert resp.status_code == 200
+        assert Dashboard.objects.filter(pk=dashboard.pk).exists()

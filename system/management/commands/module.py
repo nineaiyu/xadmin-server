@@ -198,8 +198,26 @@ class Command(BaseCommand):
             shutil.copy2(source, target)
             rows = self._read_json(str(source))
             filtered = self._filtered_rows(seed_filter, source, rows, dropped_metas)
-            source.write_text(json.dumps(filtered, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+            # 保留原文件缩进：统一 indent=1 会把 indent=2 的种子整体重排，
+            # 产生与裁剪无关的整文件 diff
+            indent = self._source_indent(source)
+            source.write_text(json.dumps(filtered, ensure_ascii=False, indent=indent) + "\n", encoding="utf-8")
         return archive
+
+    @staticmethod
+    def _source_indent(path: Path) -> int:
+        """探测种子文件的缩进宽度（无缩进或无法读取时回落 1，与项目种子规范一致）。"""
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            return 1
+        for line in text.splitlines():
+            if not line.strip():
+                continue
+            indent = len(line) - len(line.lstrip(" "))
+            if indent:
+                return indent
+        return 1
 
     @staticmethod
     def _archive_root() -> str:

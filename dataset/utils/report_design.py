@@ -165,9 +165,17 @@ def design_export_columns(design: Any, dataset_columns: Any) -> list[Any]:
     return [str(item) for item in design["columns"] if str(item) in known]
 
 
-def design_table_limit(design: Any) -> int:
-    """明细行数上限：非法/缺省回落默认值（读取侧宽容，写入侧已由序列化器拦截）。"""
-    value = design.get("table_limit") if isinstance(design, dict) else None
+def design_table_limit(design: Any) -> int | None:
+    """明细行数上限：None = 不限（空 design 的存量报表保持全量口径）。
+
+    设计功能引入前的存量报表 design 为空，历史行为是全量导出（受数据集
+    row_limit 约束）。若在这里回落 REPORT_TABLE_LIMIT_DEFAULT，存量报表会
+    静默丢行，与「空 design = 完全存量行为」的契约矛盾。显式配置了非法值时
+    仍回落默认值（写入侧已由序列化器拦截，读取侧只需不 500）。
+    """
+    if not isinstance(design, dict) or "table_limit" not in design:
+        return None
+    value = design.get("table_limit")
     if isinstance(value, bool) or not isinstance(value, int):
         return REPORT_TABLE_LIMIT_DEFAULT
     if not REPORT_TABLE_LIMIT_MIN <= value <= REPORT_TABLE_LIMIT_MAX:

@@ -150,11 +150,18 @@ class UserOTPViewSet(GenericViewSet):
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="start")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+        methods=["post"],
+        detail=False,
+        url_path="start",
+        permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
+    )
     def start(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """发起绑定
 
         生成候选密钥与 otpauth URI（前端渲染二维码）
+
+        绑定会改变登录因子：与关闭/解绑同口径，需本人密码二次确认（未确认返回 412）。
         """
         if _binding_disallowed(request.user, OtpBackend.name):
             return ApiResponse(code=1001, detail=_("MFA method is not allowed by account policy"))
@@ -172,12 +179,19 @@ class UserOTPViewSet(GenericViewSet):
         return ApiResponse(data={"secret": secret, "uri": OtpBackend.get_provisioning_uri(request.user, secret)})
 
     @extend_schema(request=OtpBindConfirmSerializer, responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="confirm", serializer_class=OtpBindConfirmSerializer)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+        methods=["post"],
+        detail=False,
+        url_path="confirm",
+        serializer_class=OtpBindConfirmSerializer,
+        permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
+    )
     def confirm(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """确认绑定
 
         校验动态码后写入密钥，并自动开启登录 MFA
 
+        绑定的落库动作同样要求密码二次确认：仅持有会话不足以接管登录因子。
         绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。
         """
         user = request.user

@@ -39,7 +39,9 @@ def get_render_context(tmp: str, context: dict[str, Any]) -> str:
     for node in template.nodelist:
         if isinstance(node, VariableNode):
             v_key = re.findall(r"<Variable Node: (.*)>", str(node))
-            if v_key and v_key[0].isupper():
+            # 上下文已含该键时直接复用：再 getattr(SysConfig, key) 会重建渲染上下文，
+            # A→B→A 的互引配置因此无限递归（自引用另有 serialize_config_rows 守卫）
+            if v_key and v_key[0].isupper() and v_key[0] not in context:
                 context[v_key[0]] = getattr(SysConfig, v_key[0])
     context = Context(context)
     return str(template.render(context))
@@ -382,8 +384,21 @@ class ConfigCacheBase:
         用 ``__getattr__``（仅正常属性查找失败时触发）而非 ``__getattribute__``：
         属性访问热路径不再逐次走 Python 级 try/except，且 property 内部抛出的
         AttributeError 会正常传播，不会被吞成"读一个不存在配置键返回 {}"。
+        未在 property 面登记的键仍按配置读取（二开/插件可注册新键），但记录
+        warning：拼错的安全开关名会静默拿到 ``{}``，必须可诊断。
         """
         if name == "shape":
             return ""
-        logger.debug(f"fallback to config value. name:{name}")
+        if not name.startswith("_") and name not in self._known_keys():
+            logger.warning("config key is not registered as SysConfig property: %s", name)
+        else:
+            logger.debug(f"fallback to config value. name:{name}")
         return self.get_value(name)
+
+    @classmethod
+    def _known_keys(cls) -> set[str]:
+        """property 面登记的配置键（含各 mixin；不含 ``__getattr__`` 动态键）。"""
+        names: set[str] = set()
+        for klass in cls.__mro__:
+            names |= {name for name, value in vars(klass).items() if isinstance(value, property)}
+        return names

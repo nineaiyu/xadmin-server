@@ -10,7 +10,7 @@
 - 输出列叠加浏览者字段权限白名单。
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.apps import apps
 from django.core.exceptions import ValidationError
@@ -83,28 +83,32 @@ def _request_memo(key: Any, loader: Any) -> Any:
 
 
 def available_models() -> list[Any]:
-    """模型白名单：ModelLabelField DATA 根节点（label_lower 列表）。"""
+    """模型白名单：ModelLabelField DATA 根节点（label_lower 列表）。
+
+    ``*`` 是元数据同步的占位根（All tables），不是真实模型：设计器选择它会
+    必然保存失败，因此在白名单入口直接排除。
+    """
     from system.models import ModelLabelField
 
     def _load() -> Any:
         return tuple(
-            ModelLabelField.objects.filter(
-                field_type=ModelLabelField.FieldChoices.DATA, parent__isnull=True
-            ).values_list("name", flat=True)
+            ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.DATA, parent__isnull=True)
+            .exclude(name="*")
+            .values_list("name", flat=True)
         )
 
     return list(_request_memo("available_models", _load))
 
 
 def available_fields(bound_model: str) -> list[Any]:
-    """模型字段白名单：该模型 DATA 节点的子节点字段名。"""
+    """模型字段白名单：该模型 DATA 节点的子节点字段名（排除 ``*`` 占位子节点）。"""
     from system.models import ModelLabelField
 
     def _load() -> Any:
         return tuple(
-            ModelLabelField.objects.filter(
-                field_type=ModelLabelField.FieldChoices.DATA, parent__name=bound_model
-            ).values_list("name", flat=True)
+            ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.DATA, parent__name=bound_model)
+            .exclude(name="*")
+            .values_list("name", flat=True)
         )
 
     return list(_request_memo(("available_fields", bound_model), _load))
@@ -240,7 +244,8 @@ def validate_dataset(instance: Any) -> None:
         parse_column(model, field, whitelist)
     if not (0 < int(instance.row_limit) <= ROW_LIMIT_CAP):
         raise ValidationError(_("Row limit must be between 1 and {}").format(ROW_LIMIT_CAP))
-    date_field = str((instance.config or {}).get("date_field") or "")
+    config = instance.config if isinstance(instance.config, dict) else {}
+    date_field = str(config.get("date_field") or "")
     if not date_field:
         return
     spec = parse_column(model, date_field, whitelist)
@@ -459,6 +464,11 @@ def dataset_visible_to(user_obj: Any, dataset_pk: Any) -> bool:
 # 再导出，保持既有 ``from dataset.utils.dataset import execute_dataset`` 调用面
 # （实现模块反向依赖本模块的白名单与查询构建，直接 import 会成环）。
 _EXECUTION_EXPORTS = ("execute_dataset", "aggregate_dataset", "filter_layout_for_user")
+
+if TYPE_CHECKING:  # 动态再导出对类型检查不可见，显式声明调用面
+    from dataset.utils.dataset_query import aggregate_dataset as aggregate_dataset
+    from dataset.utils.dataset_query import execute_dataset as execute_dataset
+    from dataset.utils.dataset_query import filter_layout_for_user as filter_layout_for_user
 
 
 def __getattr__(name: Any) -> Any:

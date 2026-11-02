@@ -30,8 +30,8 @@ class AiObservabilityMixin:
 
         数据源 = AiUsageRecord（逐次记账，保留期随 MONITOR_RETENTION_DAYS 清理）；
         合计与档案 / 模型维度带成功率与延迟（均值恒给，P95 样本足够才给）；
-        与 status/metrics 共用权限点路径正则（`(status|metrics|history|tools|usage)$`），
-        不新增权限点。
+        与 status/metrics/history/tools/daily-report 共用权限点路径正则
+        （`(status|metrics|history|tools|usage|daily-report)$`），不新增权限点。
         """
         from ai.services.assistant.ai_usage import usage_summary
 

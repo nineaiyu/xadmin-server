@@ -52,4 +52,8 @@ class UserOAuthBinding(DbAuditModel):
         queryset = cls.objects.filter(user=user)
         if exclude_pk is not None:
             queryset = queryset.exclude(pk=exclude_pk)
-        return bool(user.has_usable_password()) or queryset.exists()
+        if user.has_usable_password() or queryset.exists():
+            return True
+        from identity.models.ldap import LdapUserBinding
+
+        return bool(LdapUserBinding.objects.filter(user=user).exists())

@@ -65,22 +65,36 @@ def generate_challenge(user: Any, scene: Any = SCENE_AUTHENTICATE) -> str:
 
 
 def consume_challenge(user: Any, scene: Any, challenge: Any) -> bool:
-    """校验并消费挑战值（一次性；不匹配或已过期返回 False）。"""
+    """校验并消费挑战值（一次性；不匹配或已过期返回 False）。
+
+    删除结果即消费结果：并发提交同一挑战时只有一个请求能删除成功（delete 原子），
+    另一个按已消费拒绝，避免 get + delete 的 TOCTOU。
+    """
     key = CHALLENGE_CACHE_KEY.format(scene=scene, user_pk=user.pk)
     saved = cache.get(key)
     if not saved or not challenge or not secrets.compare_digest(str(saved), str(challenge)):
         return False
-    cache.delete(key)
-    return True
+    return bool(cache.delete(key))
 
 
 def rp_id_and_origin(request: Any) -> tuple[Any, ...]:
-    """从请求推导 WebAuthn 的 RP ID 与 origin（RP ID = 主机名不含端口）。"""
+    """WebAuthn 的 RP ID 与期望 origin。
+
+    优先取站点配置 WEB_SITE_URL（部署方可控）；未配置时才回退请求 Host。
+    绝不能信任客户端 Origin 头作为期望值（自指校验恒成立）。
+    """
+    from urllib.parse import urlsplit
+
+    from common.core.config import SysConfig
+
+    configured = str(getattr(SysConfig, "WEB_SITE_URL", "") or "").strip()
+    if configured:
+        parts = urlsplit(configured)
+        if parts.hostname:
+            return parts.hostname, f"{parts.scheme}://{parts.netloc}"
     host = request.get_host() if request is not None else ""
     rp_id = host.split(":")[0]
-    origin = ""
-    if request is not None:
-        origin = request.headers.get("Origin") or f"{request.scheme}://{host}"
+    origin = f"{request.scheme}://{host}" if request is not None else ""
     return rp_id, origin
 
 

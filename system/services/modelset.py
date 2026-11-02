@@ -11,6 +11,7 @@ from drf_spectacular.plumbing import build_array_type, build_basic_type, build_o
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 
 from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
@@ -27,6 +28,30 @@ from system.utils.platform.permission_preview import (
     run_data_trial,
     run_field_trial,
 )
+
+#: 赋值对象越权/无取值域的拒绝文案（与部门序列化器同口径，复用既有译文）
+_ROLE_SCOPE_DENY = _("Some roles are outside your data scope")
+_RULE_SCOPE_DENY = _("Some data permissions are outside your data scope")
+
+
+def _scoped_assignments(model: Any, pks: Any, user: Any, deny_message: Any) -> Any:
+    """empower 赋值的取值域校验：返回可落库的主键集合，越权/无域即拒绝。
+
+    历史实现直接把 ``get_filter_queryset(...).all()`` 交给 ``.set()``——
+    调用者没有适用数据授权时该函数返回 ``none()``，一次 PATCH 会**静默清空**
+    目标用户的角色/数据权限并返回 200。现在：请求里出现取值域外的主键即整体
+    拒绝（不改动任何既有授权）；请求为空（显式清空）也要求调用者对目标模型
+    存在可见授权，否则同样拒绝。
+    """
+    allowed = list(get_filter_queryset(model.objects.filter(pk__in=pks), user).values_list("pk", flat=True))
+    allowed_set = set(allowed)
+    requested = {str(pk) for pk in pks}
+    if requested - {str(pk) for pk in allowed_set}:
+        raise ValidationError(deny_message)
+    if not requested and not getattr(user, "is_superuser", False):
+        if not get_filter_queryset(model.objects.all(), user).exists():
+            raise ValidationError(deny_message)
+    return allowed_set
 
 
 def _extract_pks(items: Any) -> Any:
@@ -80,15 +105,13 @@ class ChangeRolePermissionAction:
             ):
                 return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
             if roles is not None:
-                instance.roles.set(
-                    get_filter_queryset(UserRole.objects.filter(pk__in=_extract_pks(roles)), request.user).all()
-                )
+                instance.roles.set(_scoped_assignments(UserRole, _extract_pks(roles), request.user, _ROLE_SCOPE_DENY))
             if rules is not None:
                 # 数据权限按「或」合并（取最宽生效），无需附加模式开关；
                 # 与 roles 同口径过行级数据权限：可指派的规则必须在调用者取值域内，
                 # 否则持有 empower 权限点但无数据权限管理权限的用户可挂任意全量规则
                 instance.rules.set(
-                    get_filter_queryset(DataPermission.objects.filter(pk__in=_extract_pks(rules)), request.user).all()
+                    _scoped_assignments(DataPermission, _extract_pks(rules), request.user, _RULE_SCOPE_DENY)
                 )
             return ApiResponse()
         return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))

@@ -70,6 +70,13 @@ def _first_value(values: Any, key: Any = "value") -> Any:
     return ""
 
 
+def _parse_scim_bool(value: Any, field: str = "active") -> bool:
+    """SCIM 布尔严格解析：只接受 JSON 布尔，字符串 "false" 不再被 bool() 当成 True。"""
+    if isinstance(value, bool):
+        return value
+    raise ScimApiError(400, str(_("Invalid boolean value: {}").format(field)), scim_type="invalidValue")
+
+
 def _ensure_contact_unique(user: Any, field: str, value: str) -> None:
     """email/phone 是登录标识：重复值在库层被部分唯一索引拒绝，这里先给 SCIM 可读的 409。"""
     if not value:
@@ -80,7 +87,7 @@ def _ensure_contact_unique(user: Any, field: str, value: str) -> None:
     if user.pk:
         queryset = queryset.exclude(pk=user.pk)
     if queryset.exists():
-        raise ScimApiError(409, str(_("{} already exists").format(field)), scim_type="uniqueness")
+        raise ScimApiError(409, str(_("%(field)s already exists") % {"field": field}), scim_type="uniqueness")
 
 
 def user_resource(user: Any, base_path: str = "/api/scim/v2/Users") -> dict[str, Any]:
@@ -202,6 +209,8 @@ def _apply_payload(user: Any, payload: dict[str, Any], *, creating: bool) -> lis
             changed.append("nickname")
 
     if creating or "emails" in payload:
+        if payload.get("emails") is not None and not isinstance(payload.get("emails"), list):
+            raise ScimApiError(400, str(_("emails must be a list")), scim_type="invalidValue")
         email = _first_value(payload.get("emails"))
         if email != (user.email or ""):
             _ensure_contact_unique(user, "email", email[:254])
@@ -209,6 +218,8 @@ def _apply_payload(user: Any, payload: dict[str, Any], *, creating: bool) -> lis
             changed.append("email")
 
     if creating or "phoneNumbers" in payload:
+        if payload.get("phoneNumbers") is not None and not isinstance(payload.get("phoneNumbers"), list):
+            raise ScimApiError(400, str(_("phoneNumbers must be a list")), scim_type="invalidValue")
         phone = _first_value(payload.get("phoneNumbers"))
         if phone != (user.phone or ""):
             _ensure_contact_unique(user, "phone", phone[:16])
@@ -216,7 +227,7 @@ def _apply_payload(user: Any, payload: dict[str, Any], *, creating: bool) -> lis
             changed.append("phone")
 
     if "active" in payload:
-        active = bool(payload.get("active"))
+        active = _parse_scim_bool(payload.get("active"))
         if active != bool(user.is_active):
             user.is_active = active
             changed.append("is_active")
@@ -234,7 +245,15 @@ def create_user(payload: dict[str, Any]) -> Any:
 
     user = UserInfo(username=username, is_active=True)
     _apply_payload(user, payload, creating=True)
+    from identity.models import LdapUserBinding
+
     password = payload.get("password")
+    if password and LdapUserBinding.objects.filter(user=user).exists():
+        raise ScimApiError(
+            400,
+            str(_("Password is managed by the LDAP directory and cannot be changed locally")),
+            scim_type="invalidValue",
+        )
     if password:
         # 与本地建号同口径：IdP 传入的口令同样受强度规则与泄露库约束。
         from settings.services import check_leak_password, check_password_rules
@@ -250,6 +269,11 @@ def create_user(payload: dict[str, Any]) -> Any:
     else:
         user.set_unusable_password()
     user.save()
+    if password:
+        # 与建号链路统一：留存首条密码历史，防止立即改回初始密码
+        from settings.utils.password import record_password_hash
+
+        record_password_hash(user, user.password)
 
     role_code = str(SysConfig.SCIM_DEFAULT_ROLE_CODE or "").strip()
     if role_code:
@@ -276,13 +300,19 @@ def update_user(user: Any, payload: dict[str, Any]) -> list[Any]:
 
     user.username = username[:150]
     user.nickname = _display_name(payload, username)
+    # 多值属性必须是数组：字符串形态会让 _first_value 返回空串，把邮箱/手机静默清空
+    if payload.get("emails") is not None and not isinstance(payload.get("emails"), list):
+        raise ScimApiError(400, str(_("emails must be a list")), scim_type="invalidValue")
+    if payload.get("phoneNumbers") is not None and not isinstance(payload.get("phoneNumbers"), list):
+        raise ScimApiError(400, str(_("phoneNumbers must be a list")), scim_type="invalidValue")
     email = _first_value(payload.get("emails"))[:254]
     phone = _first_value(payload.get("phoneNumbers"))[:16]
     _ensure_contact_unique(user, "email", email)
     _ensure_contact_unique(user, "phone", phone)
     user.email = email
     user.phone = phone
-    user.is_active = bool(payload.get("active", True))
+    # 严格布尔解析：字符串 "false" 不能被当成启用（PUT 与建号/PATCH 同口径）
+    user.is_active = _parse_scim_bool(payload["active"]) if "active" in payload else True
     user.save()
     return ["username", "nickname", "email", "phone", "is_active"]
 
@@ -322,7 +352,7 @@ def patch_user(user: Any, operations: list[Any]) -> list[Any]:
 
 def _apply_patch_path(user: Any, path: str, value: Any) -> list[Any]:
     if path in ("active", "urn:ietf:params:scim:schemas:core:2.0:User:active"):
-        user.is_active = bool(value)
+        user.is_active = _parse_scim_bool(value)
         return ["is_active"]
     if path in ("displayName", "name.formatted", "name"):
         if isinstance(value, dict):

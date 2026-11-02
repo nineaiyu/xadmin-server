@@ -282,6 +282,9 @@ def submit_from_approval(approval: Any, user: Any) -> Any:
     form = DynamicForm.objects.filter(pk=payload.get("form") or "", is_active=True).first()
     if form is None:
         return False, str(_("The form does not exist or is no longer accepting submissions"))
+    if form.approval_flow_id:
+        # 表单已绑定流程：审批通过只能由流程实例回写，操作审批不得绕过流程
+        return False, str(_("The form is bound to an approval flow; submit through the flow"))
     try:
         # 数据来自申请人提交时的快照：文件归属按申请人（审批单 creator）判定
         data = validate_submission_data(form.schema, payload.get("data") or {}, user=approval.creator)
@@ -292,6 +295,7 @@ def submit_from_approval(approval: Any, user: Any) -> Any:
     submission = DynamicFormSubmission.objects.create(
         form=form,
         data=data,
+        schema_version=form.schema_version,
         filter_data=build_filter_data(form.schema, data),
         creator=approval.creator,
         modifier=approval.creator,
@@ -326,10 +330,12 @@ def update_from_approval(approval: Any, user: Any) -> Any:
     form = submission.form
     if not form.is_active:
         return False, str(_("This form is no longer accepting submissions"))
+    if form.approval_flow_id:
+        return False, str(_("The form is bound to an approval flow; submit through the flow"))
     try:
         data = validate_submission_data(
             form.schema,
-            payload.get("data") or submission.data,
+            payload["data"] if "data" in payload else submission.data,
             user=submission.creator,
             previous=submission.data,
         )
@@ -339,8 +345,9 @@ def update_from_approval(approval: Any, user: Any) -> Any:
 
     submission.data = data
     submission.filter_data = build_filter_data(form.schema, data)
+    submission.schema_version = form.schema_version
     submission.status = ""
-    submission.save(update_fields=["data", "filter_data", "status", "updated_time"])
+    submission.save(update_fields=["data", "filter_data", "schema_version", "status", "updated_time"])
     logger.info("dform draft submitted by approval. approval:%s submission:%s", approval.pk, submission.pk)
     return True, None
 

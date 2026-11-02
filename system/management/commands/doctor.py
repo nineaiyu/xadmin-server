@@ -228,7 +228,9 @@ class Command(BaseCommand):
             from system.services.seeding import build_plan, discover, validate_plan
 
             discovery = discover()
-            plan = build_plan(discovery)
+            # 与 `load_init_json --check` 同口径：展开示例层，否则 seeds/sample/ 的
+            # 结构/引用错误在 doctor 里永远不可见
+            plan = build_plan(discovery, include_sample=True)
             result = validate_plan(plan, manifests=discovery.manifests)
             problems = [*discovery.problems, *result.problems]
         except Exception as exc:

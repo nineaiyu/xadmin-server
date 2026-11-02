@@ -70,8 +70,8 @@ class SavedListViewSet(
             return queryset
         return queryset.filter(Q(owner=user) | Q(is_shared=True))
 
-    def _clear_other_defaults(self, user: Any, page_key: Any, keep_pk: Any = None) -> None:
-        queryset = SavedListView.objects.filter(owner=user, page_key=page_key, is_default=True)
+    def _clear_other_defaults(self, owner_id: Any, page_key: Any, keep_pk: Any = None) -> None:
+        queryset = SavedListView.objects.filter(owner_id=owner_id, page_key=page_key, is_default=True)
         if keep_pk:
             queryset = queryset.exclude(pk=keep_pk)
         queryset.update(is_default=False)
@@ -80,7 +80,7 @@ class SavedListViewSet(
         user = self.request.user
         page_key = serializer.validated_data.get("page_key") or ""
         if serializer.validated_data.get("is_default"):
-            self._clear_other_defaults(user, page_key)
+            self._clear_other_defaults(user.pk, page_key)
         serializer.save(owner=user, creator=user)
 
     def perform_update(self, serializer: Any) -> None:
@@ -90,8 +90,11 @@ class SavedListViewSet(
             raise PermissionDenied(_("You can only modify your own views"))
         is_default = serializer.validated_data.get("is_default", instance.is_default)
         if is_default:
+            # 目标所有者 = 视图所有者：超管编辑他人视图时不能清自己的默认视图
             self._clear_other_defaults(
-                user, serializer.validated_data.get("page_key", instance.page_key), keep_pk=instance.pk
+                instance.owner_id,
+                serializer.validated_data.get("page_key", instance.page_key),
+                keep_pk=instance.pk,
             )
         serializer.save(modifier=user)
 

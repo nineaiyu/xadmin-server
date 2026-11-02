@@ -350,3 +350,21 @@ def test_extras_creates_and_cleans_all(demo_dept, extras_org, builtin_tags, supe
     assert ExportRecord.objects.filter(pk__in=EXPORT_PKS).count() == 0
     # 内置标签本体不受清理影响
     assert Tag.objects.filter(builtin=True).count() == len(builtin_tags)
+
+
+def test_real_admin_account_not_hijacked_or_deleted(demo_dept, demo_role, superuser):
+    """同名真实普通账号（无演示标记）不得被重置口令、改角色或清理删除。"""
+    real = UserInfo.objects.create_user(
+        username=ADMIN_USERNAME, password="Real@123456", email="real-admin@corp.example"
+    )
+    original_password = real.password
+
+    call_command("seed_demo_admin")
+
+    real.refresh_from_db()
+    assert real.password == original_password
+    assert real.email == "real-admin@corp.example"
+    assert not real.roles.filter(code=DEMO_ROLE_CODE).exists()
+
+    call_command("seed_demo_admin", clean_only=True)
+    assert UserInfo.all_objects.filter(pk=real.pk).exists()

@@ -30,11 +30,22 @@ class LoginLogFilter(BaseFilterSet):
     city = filters.CharFilter(field_name="city", lookup_expr="icontains")
     system = filters.CharFilter(field_name="system", lookup_expr="icontains")
     agent = filters.CharFilter(field_name="agent", lookup_expr="icontains")
+    username = filters.CharFilter(field_name="creator__username", lookup_expr="icontains")
     creator_id = PkMultipleFilter(input_type="api-search-user")
 
     class Meta:
         model = UserLoginLog
-        fields = ["login_type", "ipaddress", "city", "system", "creator_id", "status", "agent", "created_time"]
+        fields = [
+            "login_type",
+            "ipaddress",
+            "city",
+            "system",
+            "username",
+            "creator_id",
+            "status",
+            "agent",
+            "created_time",
+        ]
 
 
 class LoginLogViewSet(OnlyListModelSet, OnlyExportDataAction):

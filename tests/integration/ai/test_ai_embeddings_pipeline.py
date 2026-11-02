@@ -147,7 +147,7 @@ class TestBuildAndHybrid:
         summary = build_embeddings(dry_run=True)
         assert summary["enabled"] is True and summary["embedded"] == 0
         chunk.refresh_from_db()
-        assert chunk.embedding is None
+        assert chunk.embedding_vector is None
 
     def test_hybrid_recalls_semantic_only_chunk(self, stub_client, monkeypatch):
         """语义相近但无词元重叠的块应被向量通道召回（单通道命中不排首位=RRF 设计）。"""
@@ -272,11 +272,10 @@ class TestRebuildPreservesVectors:
         # 重建（内容不变）：向量按 content_hash 保留，无需重算
         assert rebuild_chunks(doc) == 2
         rows = list(
-            AiKnowledgeChunk.objects.filter(source_path="docs/keep.md").values_list("embedding", "embedding_vector")
+            AiKnowledgeChunk.objects.filter(source_path="docs/keep.md").values_list("embedding_vector", flat=True)
         )
-        assert all(row[0] is not None for row in rows)
-        # 二进制列与 pgvector 列必须同时保留；只保留其一会让向量检索静默退化
-        assert all(row[1] is not None for row in rows)
+        # pgvector 列是唯一向量存储：重建后仍保留既有向量
+        assert all(row is not None for row in rows)
         assert build_embeddings()["embedded"] == 0
 
         # 变更一块：仅该块失去向量（陈旧），另一块保留

@@ -451,7 +451,9 @@ class InteractiveCaptcha:
         )
         if ip:
             sig.record_ticket_consume(ip)
-            captcha_cache.release_ticket_slot(ip)
+            # 只有成功消费才回收名额：无效票据也释放会让攻击者用伪造票把计数清零
+            if passed:
+                captcha_cache.release_ticket_slot(ip)
         return passed
 
     def audio(self, challenge_id: str, sid: str = "") -> str:

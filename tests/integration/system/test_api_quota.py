@@ -117,6 +117,26 @@ class TestQuotaWarning:
         assert resp.data["data"]["daily_quota_hard"] is False
 
 
+class TestQuotaWarningMessage:
+    def test_html_values_are_escaped(self):
+        """应用名等管理面可控文本进入站内信正文前必须转义（防存储型 HTML 注入）。"""
+        from identity.notifications import ApiQuotaWarningMessage
+
+        payload = ApiQuotaWarningMessage(
+            {
+                "application": "<script>alert(1)</script>",
+                "client_id": "<b>cid</b>",
+                "used": 1,
+                "quota": 2,
+            }
+        ).get_html_msg()
+
+        assert "<script>" not in payload["subject"]
+        assert "&lt;script&gt;" in payload["subject"]
+        assert "<b>" not in payload["message"]
+        assert "&lt;b&gt;cid&lt;/b&gt;" in payload["message"]
+
+
 class TestUsageStats:
     def test_stats_aggregates_operation_logs(self, auth_client):
         application = _create_application(auth_client, daily_quota=100)

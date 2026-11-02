@@ -71,16 +71,33 @@ class SiteMessageUtil:
         notice_type: int,
         level: MessageContent.LevelChoices,
         extra_json: dict[str, Any] | None = None,
+        message_format: str = "",
     ) -> Any:
         """仅落库（不推送）：供已有实时投递链路的调用方做「持久化兜底」。
 
         与 ``base_notify`` 的差别是跳过 ``push_notice_messages``——调用方自身
         负责实时推送（如聊天提醒的 WS 投递），避免同一提醒双通道重复推送。
+
+        标题与正文在唯一写入口统一净化：不依赖前端渲染器兜底，移动端/开放 API
+        等消费方也拿不到可执行 HTML。
         """
+        from common.utils.sanitize import sanitize_markdown, sanitize_rich_text
+
+        fmt = message_format or MessageContent.MessageFormat.HTML
+        safe_title = sanitize_rich_text(str(title or ""))
+        safe_message = (
+            sanitize_markdown(message) if fmt == MessageContent.MessageFormat.MARKDOWN else sanitize_rich_text(message)
+        )
         recipients = users if isinstance(users, (QuerySet, list)) else [users]
         with transaction.atomic():
             notify_obj = MessageContent.objects.create(
-                title=title, publish=True, message=message, level=level, notice_type=notice_type, extra_json=extra_json
+                title=safe_title,
+                publish=True,
+                message=safe_message,
+                message_format=fmt,
+                level=level,
+                notice_type=notice_type,
+                extra_json=extra_json,
             )
             notify_obj.notice_user.set(recipients)
         return notify_obj

@@ -96,11 +96,15 @@ def run_async_import(record_id: Any, view_path: Any, user_pk: Any) -> Any:
     if record is None:
         logger.warning("Import record not found: %s", record_id)
         return 0
+    if record.status in ImportRecord.TERMINAL_STATUSES:
+        # 与异步导出同口径：重投递/人工重放不重复导入（create 动作会逐行建行）
+        logger.info("async import skipped (record already %s): %s", record.status, record_id)
+        return record.success_rows or 0
     TaskExecution.objects.get_or_create(
         pk=record_id,
         defaults={"name": "system.tasks.async_import_data_task", "args": [record.name], "kwargs": record.params or {}},
     )
-    user = UserInfo.objects.filter(pk=user_pk).first() if user_pk else None
+    user = UserInfo.objects.filter(pk=user_pk, is_active=True).first() if user_pk else None
     record.status = ImportRecord.Status.RUNNING
     record.save(update_fields=["status", "updated_time"])
     start_time, state = local_now_display(), True

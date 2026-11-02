@@ -9,6 +9,7 @@ from typing import Any
 from django.apps import apps
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.utils.translation import activate
 from django.utils.translation import gettext_lazy as _
 
@@ -20,7 +21,7 @@ from system.models import ModelLabelField
 logger = get_logger(__name__)
 
 
-def _prune_stale(field_type: Any, kept_pks: Any, enabled: Any) -> Any:
+def _prune_stale(field_type: Any, kept_pks: Any, enabled: Any, skip_models: set[str] | None = None) -> Any:
     """删除本轮未采集到的同类型行（陈旧字段/模型）。
 
     **不依赖 updated_time**：种子 loaddata 写入的行 updated_time 为 NULL，
@@ -31,6 +32,13 @@ def _prune_stale(field_type: Any, kept_pks: Any, enabled: Any) -> Any:
     if not enabled:
         return 0
     stale = ModelLabelField.objects.filter(field_type=field_type).exclude(pk__in=kept_pks)
+    if skip_models:
+        # 采集失败的序列化器所属模型：本轮 kept 不含它们，不能当成陈旧行删除
+        # （删除会级联清空字段白名单/菜单模型绑定且不可恢复）
+        roots = ModelLabelField.objects.filter(field_type=field_type, parent=None, name__in=skip_models).values_list(
+            "pk", flat=True
+        )
+        stale = stale.exclude(Q(parent_id__in=roots) | Q(pk__in=roots))
     count = stale.count()
     if count:
         stale.delete()
@@ -56,11 +64,15 @@ def get_sub_serializer_fields() -> Any:
 
     field_type = ModelLabelField.FieldChoices.ROLE
     kept, processed, failed = set(), 0, []
+    failed_models: set[str] = set()
     for cls in cls_list:
         try:
             instance = cls(ignore_field_permission=True)
         except Exception as e:  # noqa: BLE001 单个坏序列化器不阻断全量同步
             failed.append(cls.__name__)
+            model = getattr(getattr(cls, "Meta", None), "model", None)
+            if model is not None:
+                failed_models.add(model._meta.label_lower)
             logger.warning(f"skip serializer {cls.__name__} in field sync: {e}")
             continue
         model = getattr(getattr(instance, "Meta", None), "model", None)
@@ -80,7 +92,7 @@ def get_sub_serializer_fields() -> Any:
             )
             kept.add(_obj.pk)
 
-    deleted = _prune_stale(field_type, kept, enabled=processed > 0)
+    deleted = _prune_stale(field_type, kept, enabled=processed > 0, skip_models=failed_models)
     logger.info(f"sync role field tree done. kept:{len(kept)} deleted:{deleted} failed:{failed}")
     return {"kept": len(kept), "deleted": deleted, "failed_serializers": failed}
 
@@ -108,6 +120,7 @@ def get_app_model_fields() -> Any:
         kept.add(_obj.pk)
 
     processed = 0
+    failed_models: set[Any] = set()
     for app_name, app in apps.app_configs.items():
         if app_name not in settings.PERMISSION_DATA_AUTH_APPS:
             continue
@@ -117,20 +130,25 @@ def get_app_model_fields() -> Any:
             if not hasattr(model, "Meta"):
                 continue
             processed += 1
-            obj, _created = ModelLabelField.objects.update_or_create(
-                name=f"{app_name}.{model._meta.model_name}",
-                field_type=field_type,
-                parent=None,
-                defaults={"label": model._meta.verbose_name},
-            )
-            kept.add(obj.pk)
-            for field in model._meta.fields + model._meta.many_to_many:
-                _obj, _created = ModelLabelField.objects.update_or_create(
-                    name=field.name, parent=obj, field_type=field_type, defaults={"label": field.verbose_name}
+            model_key = f"{app_name}.{model._meta.model_name}"
+            try:
+                obj, _created = ModelLabelField.objects.update_or_create(
+                    name=model_key,
+                    field_type=field_type,
+                    parent=None,
+                    defaults={"label": model._meta.verbose_name},
                 )
-                kept.add(_obj.pk)
+                kept.add(obj.pk)
+                for field in model._meta.fields + model._meta.many_to_many:
+                    _obj, _created = ModelLabelField.objects.update_or_create(
+                        name=field.name, parent=obj, field_type=field_type, defaults={"label": field.verbose_name}
+                    )
+                    kept.add(_obj.pk)
+            except Exception:  # noqa: BLE001 单模型字段树失败不阻断其余模型，且不误删其既有节点
+                failed_models.add(model_key)
+                logger.warning("sync model field tree failed: %s", model_key, exc_info=True)
 
-    deleted = _prune_stale(field_type, kept, enabled=processed > 0)
+    deleted = _prune_stale(field_type, kept, enabled=processed > 0, skip_models=failed_models)
     logger.info(f"sync data field tree done. kept:{len(kept)} deleted:{deleted} models:{processed}")
     return {"kept": len(kept), "deleted": deleted, "models": processed}
 
@@ -171,9 +189,11 @@ def model_field_known(model: str, field: str) -> bool:
     model_node = ModelLabelField.objects.filter(
         name=model, parent=None, field_type=ModelLabelField.FieldChoices.ROLE
     ).first()
-    if not model_node or not model_node.children.exists():
+    # 反向外键未声明 related_name：默认名为 <model>_set（历史实现误用 children，
+    # 已同步字段树的环境下创建脱敏规则直接 500）
+    if not model_node or not model_node.modellabelfield_set.exists():
         return True
-    return bool(model_node.children.filter(name=field).exists())
+    return bool(model_node.modellabelfield_set.filter(name=field).exists())
 
 
 def get_field_lookup_info(fields: Any) -> Any:

@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """任务域的 AI 动作声明（定时任务 / 执行历史 / 导出记录 / Webhook 订阅）。
 
-- 定时任务与导出记录随 ``ops`` 模块裁剪；
+- 定时任务与导出记录随 ``task_center`` 模块裁剪；
 - Webhook 订阅同时属于 ``ops`` 与 ``webhook`` 两个模块，声明两个模块后
   「全部启用」才进目录（跨模块端点任一侧停用都不可达）。
 """
@@ -20,7 +20,7 @@ AI_ACTIONS = {
         method="GET",
         path="/api/task/periodic",
         params={"name": {"type": "string", "required": False, "in": IN_QUERY, "description": "Task name keyword"}},
-        modules=("ops",),
+        modules=("task_center",),
     ),
     "task.registered": api_action(
         key="task.registered",
@@ -29,7 +29,7 @@ AI_ACTIONS = {
         method="GET",
         path="/api/task/periodic/registered",
         params={},
-        modules=("ops",),
+        modules=("task_center",),
     ),
     "task.enable": api_action(
         key="task.enable",
@@ -48,7 +48,7 @@ AI_ACTIONS = {
                 "description": "True enable, False disable; omit to toggle",
             },
         },
-        modules=("ops",),
+        modules=("task_center",),
     ),
     "task.run": api_action(
         key="task.run",
@@ -57,7 +57,7 @@ AI_ACTIONS = {
         method="POST",
         path="/api/task/periodic/<pk>/run",
         params={"pk": {"type": "pk", "required": True, "in": "path", "description": "Task id (from task.list)"}},
-        modules=("ops",),
+        modules=("task_center",),
     ),
     "task.executions": api_action(
         key="task.executions",
@@ -73,7 +73,7 @@ AI_ACTIONS = {
                 "description": "Filter by status keyword",
             }
         },
-        modules=("ops",),
+        modules=("task_center",),
     ),
     "task.execution_log": api_action(
         key="task.execution_log",
@@ -84,7 +84,7 @@ AI_ACTIONS = {
         params={
             "pk": {"type": "pk", "required": True, "in": "path", "description": "Execution id (from task.executions)"}
         },
-        modules=("ops",),
+        modules=("task_center",),
     ),
     # ---- 下载中心 ----
     "export.list": api_action(
@@ -94,7 +94,7 @@ AI_ACTIONS = {
         method="GET",
         path="/api/task/exports",
         params={},
-        modules=("ops",),
+        modules=("task_center",),
     ),
     # ---- Webhook 订阅 ----
     "webhook.list": api_action(
@@ -104,7 +104,7 @@ AI_ACTIONS = {
         method="GET",
         path="/api/task/webhooks/subscriptions",
         params={},
-        modules=("ops", "webhook"),
+        modules=("task_center", "webhook"),
     ),
     "webhook.deliveries": api_action(
         key="webhook.deliveries",
@@ -120,7 +120,7 @@ AI_ACTIONS = {
                 "description": "Filter by delivery status keyword",
             }
         },
-        modules=("ops", "webhook"),
+        modules=("task_center", "webhook"),
     ),
     # ---- 任务中心（跨类型统一视图 + 协作取消 + 白名单重跑） ----
     "task.unified_list": api_action(
@@ -139,7 +139,7 @@ AI_ACTIONS = {
             "status": {"type": "string", "required": False, "in": IN_QUERY, "description": "Status keyword"},
             "keyword": {"type": "string", "required": False, "in": IN_QUERY, "description": "Name keyword"},
         },
-        modules=("ops",),
+        modules=("task_center",),
     ),
     "task.cancel": api_action(
         key="task.cancel",
@@ -157,12 +157,14 @@ AI_ACTIONS = {
             },
             "pk": {"type": "pk", "required": True, "in": "body", "description": "Record id (from task.unified_list)"},
         },
-        modules=("ops",),
+        modules=("task_center",),
     ),
     "task.rerun": api_action(
         key="task.rerun",
         label=_("Rerun a background task"),
-        description=_("Create and dispatch a new run of an export or import record (same pipeline, audited)"),
+        description=_(
+            "Create and dispatch a new run of an export, import or scheduled report record (same pipeline, audited)"
+        ),
         method="POST",
         path="/api/task/unified/rerun",
         params={
@@ -175,7 +177,7 @@ AI_ACTIONS = {
             },
             "pk": {"type": "pk", "required": True, "in": "body", "description": "Record id (from task.unified_list)"},
         },
-        modules=("ops",),
+        modules=("task_center",),
     ),
     "export.detail": api_action(
         key="export.detail",
@@ -186,7 +188,7 @@ AI_ACTIONS = {
         params={
             "pk": {"type": "pk", "required": True, "in": "path", "description": "Export record id (from export.list)"}
         },
-        modules=("ops",),
+        modules=("task_center",),
     ),
     "import.list": api_action(
         key="import.list",
@@ -195,6 +197,6 @@ AI_ACTIONS = {
         method="GET",
         path="/api/task/imports",
         params={},
-        modules=("ops",),
+        modules=("task_center",),
     ),
 }

@@ -24,7 +24,7 @@ from dataset.models.dataset import (
     ScreenTemplateVersion,
     ScreenVersion,
 )
-from dataset.utils.dataset import numeric_columns_of, visible_dataset_queryset
+from dataset.utils.dataset import ALLOWED_DATE_TRUNC, numeric_columns_of, visible_dataset_queryset
 from dataset.utils.screen_layout import (
     SCREEN_MAX_GROUP,
     ScreenLayoutError,
@@ -112,18 +112,24 @@ def layout_references(user: Any, panes: Any) -> tuple[set[Any], Collection[objec
 
 
 def check_metric_value_fields(panes: Any, datasets: dict[str, Any]) -> None:
-    """指标卡窗格的 sum/avg 取值列必须落在该数据集的数值列白名单内。
+    """指标卡窗格字段校验：取值列必须为数值列，分组/时间桶必须在数据集白名单内。
 
     与报表组件同口径的 fail-closed：源头挡住执行期必然 400 的组合。
     """
     for pane in panes:
-        if pane["type"] != "metric" or pane.get("metric") in (None, "count"):
+        if pane["type"] != "metric":
             continue
         dataset = datasets.get(pane["dataset"])
         if dataset is None:
             continue
-        if pane.get("value_field") not in numeric_columns_of(dataset):
+        if pane.get("metric") not in (None, "count") and pane.get("value_field") not in numeric_columns_of(dataset):
             raise serializers.ValidationError(_("Value field is not numeric in pane: {}").format(pane["pk"]))
+        group_by = pane.get("group_by")
+        if group_by and group_by not in (dataset.columns or []):
+            raise serializers.ValidationError(_("Group field is not in dataset columns: {}").format(pane["pk"]))
+        date_trunc = pane.get("date_trunc")
+        if date_trunc and date_trunc not in ALLOWED_DATE_TRUNC:
+            raise serializers.ValidationError(_("Invalid date trunc in pane: {}").format(pane["pk"]))
 
 
 class ScreenSerializer(BaseModelSerializer):

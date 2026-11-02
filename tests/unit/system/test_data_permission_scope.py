@@ -96,7 +96,7 @@ class TestSerializerScope:
         dp.userinfo_set.add(normal_user)
         dp.deptinfo_set.add(dept)
 
-        data = DataPermissionSerializer(dp).data
+        data = DataPermissionSerializer(dp, ignore_field_permission=True).data
         assert data["rule_count"] == 1
         assert data["menu_count"] == 1
         assert data["user_count"] == 1
@@ -109,7 +109,7 @@ class TestSerializerScope:
         dp.scope_user_count = 3
         dp.scope_dept_count = 2
 
-        data = DataPermissionSerializer(dp).data
+        data = DataPermissionSerializer(dp, ignore_field_permission=True).data
         assert (data["menu_count"], data["user_count"], data["dept_count"]) == (7, 3, 2)
 
 

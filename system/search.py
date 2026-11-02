@@ -23,15 +23,17 @@ from dataclasses import dataclass
 from typing import Any
 
 from django.db.models import Q, QuerySet
+from django.utils.translation import gettext_lazy as _
 
 from audit.services import OperationLog
 from common.core.filter import get_filter_queryset
 from common.core.mask import apply_output_mask
-from common.core.permission import get_menu_pk, get_user_permission
+from common.core.permission import get_menu_pk, get_user_field_queryset_for_menus, get_user_permission
+from common.settings_contract import kernel_required_setting
 from file.services import UploadFile
 from identity.services import DeptInfo, Post, UserInfo
 from server.utils import get_current_request
-from system.models import Tag
+from system.models import Menu, Tag
 
 KEYWORD_MAX_LENGTH = 50
 GROUP_LIMIT = 5
@@ -87,6 +89,8 @@ class SearchProvider:
     limit: int = GROUP_LIMIT
     superuser_only: bool = False
     row_scope: Callable[[Any, QuerySet], QuerySet] | None = None
+    #: 公共字典类资源（如标签中心）：页面列表已显式剥离数据权限，搜索必须同口径
+    skip_data_permission: bool = False
     # 命中跳转承接字段：分组路由对应列表页的搜索字段名（RePlusPage 的
     # route.query → 搜索默认值装配）。跳转带 ?<search_field>=<关键词> 让列表页
     # 直接过滤到命中；None = 列表页无对齐搜索字段，跳转不带 query
@@ -100,14 +104,47 @@ class SearchProvider:
             return True
         return bool(get_menu_pk(permission_data, f"/{self.list_url}"))
 
-    def search(self, user: Any, keyword: str, request: Any = None) -> dict[str, Any] | None:
-        queryset = _match_keyword(self.queryset(), self.text_fields, keyword)
+    def _allowed_fields(self, user: Any, permission_data: Any) -> set[Any] | None:
+        """本组可读字段（字段权限白名单）；None = 不受限（超管 / 字段权限关闭）。
+
+        搜索此前只套数据权限与脱敏、不套字段权限：无字段权限的角色在列表拿到
+        空对象，搜索仍返回 username/nickname——隐藏字段还能当存在性预言机。
+        """
+        if user.is_superuser or not kernel_required_setting("PERMISSION_FIELD_ENABLED"):
+            return None
+        data = permission_data if permission_data is not None else get_user_permission(user, "GET")
+        menu_data = get_menu_pk(data, f"/{self.list_url}")
+        if not menu_data:
+            return set()
+        # get_menu_pk 返回 (pk, model)；按权限点主键取菜单（字段白名单的归属维度）
+        menus = list(Menu.objects.filter(pk=menu_data[0]))
+        fields = get_user_field_queryset_for_menus(user, menus)
+        return set(fields.get(self.queryset().model._meta.label_lower, set()))
+
+    def search(
+        self, user: Any, keyword: str, request: Any = None, permission_data: Any = None
+    ) -> dict[str, Any] | None:
+        allowed = self._allowed_fields(user, permission_data)
+        if allowed is not None:
+            # 显示字段不可见时整组跳过：只返回空 text / 其它元信息的命中
+            # 仍会泄露「存在该记录」这一事实
+            if self.display_field not in allowed:
+                return None
+            visible_meta = tuple(name for name in self.meta_fields if name in allowed)
+            visible_text = tuple(name for name in self.text_fields if name in allowed)
+            if not visible_text:
+                return None
+        else:
+            visible_meta = self.meta_fields
+            visible_text = self.text_fields
+        queryset = _match_keyword(self.queryset(), visible_text, keyword)
         if self.row_scope is not None:
             queryset = self.row_scope(user, queryset)
-        queryset = get_filter_queryset(queryset, user)
+        if not self.skip_data_permission:
+            queryset = get_filter_queryset(queryset, user)
         # 先取「限值 + 1」行：未饱和时条数即总数（省掉一次全量 COUNT，全局搜索 8 个
         # provider 每轮少 8 次计数查询）；只有饱和（结果 ≥ limit）才补一次 COUNT 取真实总数
-        rows = list(queryset.values("pk", self.display_field, *self.meta_fields)[: self.limit + 1])
+        rows = list(queryset.values("pk", self.display_field, *visible_meta)[: self.limit + 1])
         if not rows:
             return None
         if len(rows) <= self.limit:
@@ -119,7 +156,7 @@ class SearchProvider:
             {
                 "pk": str(row["pk"]),
                 "text": row[self.display_field] or "",
-                "meta": {name: row[name] for name in self.meta_fields},
+                "meta": {name: row[name] for name in visible_meta},
             }
             for row in rows
         ]
@@ -129,10 +166,10 @@ class SearchProvider:
             "route": self.route,
             "search_field": self.search_field,
             "total": total,
-            "items": self._mask_items(items, queryset.model, request, user),
+            "items": self._mask_items(items, queryset.model, request, user, visible_meta),
         }
 
-    def _mask_items(self, items: Any, model: Any, request: Any, user: Any) -> list[Any]:
+    def _mask_items(self, items: Any, model: Any, request: Any, user: Any, meta_fields: Any = None) -> list[Any]:
         """分组输出过脱敏规则（与列表接口同源，防「列表已掩码、搜索仍原文」旁路）。
 
         取值维度与声明一致：``text`` 对应 display_field、``meta`` 对应 meta_fields，
@@ -141,11 +178,12 @@ class SearchProvider:
         if not items:
             typed_value: list[Any] = items
             return typed_value
+        fields = self.meta_fields if meta_fields is None else meta_fields
         for item in items:
             flat = {self.display_field: item["text"], **item["meta"]}
             apply_output_mask(flat, request, user, model)
             item["text"] = flat.get(self.display_field) or ""
-            item["meta"] = {name: flat.get(name) for name in item["meta"]}
+            item["meta"] = {name: flat.get(name) for name in fields}
         masked_items: list[Any] = items
         return masked_items
 
@@ -154,7 +192,7 @@ class SearchProvider:
 SEARCH_PROVIDERS: list[SearchProvider] = [
     SearchProvider(
         key="user",
-        label="用户",
+        label=_("User"),
         route="/system/user/index",
         list_url="api/identity/user",
         queryset=lambda: UserInfo.objects.all().order_by("username"),
@@ -165,7 +203,7 @@ SEARCH_PROVIDERS: list[SearchProvider] = [
     ),
     SearchProvider(
         key="dept",
-        label="部门",
+        label=_("Departments"),
         route="/system/dept/index",
         list_url="api/identity/dept",
         queryset=lambda: DeptInfo.objects.all().order_by("name"),
@@ -175,7 +213,7 @@ SEARCH_PROVIDERS: list[SearchProvider] = [
     ),
     SearchProvider(
         key="post",
-        label="岗位",
+        label=_("Posts"),
         route="/system/post/index",
         list_url="api/identity/posts",
         queryset=lambda: Post.objects.all().order_by("name"),
@@ -186,7 +224,7 @@ SEARCH_PROVIDERS: list[SearchProvider] = [
     ),
     SearchProvider(
         key="file",
-        label="文件",
+        label=_("Files"),
         route="/system/file/index",
         list_url="api/file/file",
         queryset=lambda: UploadFile.objects.all().order_by("-created_time"),
@@ -196,17 +234,18 @@ SEARCH_PROVIDERS: list[SearchProvider] = [
     ),
     SearchProvider(
         key="tag",
-        label="标签",
+        label=_("Tags"),
         route="/system/tag/index",
         list_url="api/system/tags",
         queryset=lambda: Tag.objects.all().order_by("name"),
+        skip_data_permission=True,
         text_fields=("name", "remark"),
         display_field="name",
         search_field="name",
     ),
     SearchProvider(
         key="approval",
-        label="审批单",
+        label=_("Approval requests"),
         route="/approval/index",
         list_url="api/approval/approvals",
         queryset=_approval_queryset,
@@ -217,7 +256,7 @@ SEARCH_PROVIDERS: list[SearchProvider] = [
     ),
     SearchProvider(
         key="leave",
-        label="请假申请",
+        label=_("Leave requests"),
         route="/approval/leave/index",
         list_url="api/approval/leaves",
         queryset=_leave_queryset,
@@ -228,7 +267,7 @@ SEARCH_PROVIDERS: list[SearchProvider] = [
     ),
     SearchProvider(
         key="log",
-        label="操作日志",
+        label=_("Operation logs"),
         route="/system/logs/operation/index",
         list_url="api/audit/logs/operation",
         queryset=lambda: OperationLog.objects.all().order_by("-created_time"),
@@ -268,7 +307,7 @@ def run_global_search(user: Any, keyword: str, scope: str | None = None) -> list
             continue
         if not provider.visible_to(user, permission_data):
             continue
-        group = provider.search(user, keyword, request)
+        group = provider.search(user, keyword, request, permission_data=permission_data)
         if group:
             groups.append(group)
     return groups

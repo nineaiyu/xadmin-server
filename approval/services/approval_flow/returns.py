@@ -80,6 +80,17 @@ def return_instance(instance: Any, user: Any, reason: str, target_order: Any = N
     if instance.current_node_id is None or instance.current_node is None:
         return False, str(_("The application has no active node"))
 
+    if task_pk:
+        # task_pk 用于精确校验被退回的待办：必须属于本实例且位于当前节点
+        try:
+            source_task = ApprovalNodeTask.objects.filter(pk=task_pk, instance=instance).first()
+        except (ValueError, TypeError):
+            source_task = None
+        if source_task is None:
+            return False, str(_("The task does not exist"))
+        if source_task.node_id != instance.current_node_id:
+            return False, str(_("The task is not in the current node"))
+
     is_participant = (
         ApprovalNodeTask.objects.filter(instance=instance, node=instance.current_node)
         .filter(Q(assignee=user) | Q(actor=user))
@@ -137,7 +148,7 @@ def return_instance(instance: Any, user: Any, reason: str, target_order: Any = N
     invalidated = set(_cancel_pending_tasks(instance))
     invalidated.add(user.pk)
     candidates = [user_ for user_, _source in pairs]
-    for candidate in candidates:
+    for candidate, source in pairs:
         ApprovalNodeTask.objects.create(
             instance=instance,
             node=target_node,
@@ -145,6 +156,8 @@ def return_instance(instance: Any, user: Any, reason: str, target_order: Any = N
             node_order=target_node.order,
             assignee=candidate,
             assignee_display=user_display(candidate),
+            # 保留委托来源：时间线才能标注「由 X 代理」
+            delegate_from=source,
         )
     ApprovalInstance.objects.filter(pk=instance.pk).update(current_node=target_node, updated_time=now)
     instance.current_node = target_node

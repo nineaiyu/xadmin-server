@@ -77,6 +77,28 @@ class TestWriteLayerModel:
         entries = json.loads((seed_dir / "manifest.json").read_text(encoding="utf-8"))["files"]
         assert [item["name"] for item in entries] == ["menu.json"]
 
+    def test_new_manifest_inherits_ownership_declarations(self, tmp_path):
+        """新建清单必须完整复制模板的归属声明（丢失会让导出层被判「未归属」）。"""
+
+        manifests = {
+            "crm": SeedManifest(
+                app="crm",
+                depends=("system",),
+                url_prefixes=("api/crm/",),
+                menu_roots=("CrmRoot",),
+                config_keys=("CRM_SYNC_ENABLED",),
+                dict_codes=("crm_stage",),
+            )
+        }
+
+        write_layer_model(tmp_path, "crm", "system.menu", [_row("pk-1", "list:Crm")], manifests=manifests)
+
+        manifest = json.loads((tmp_path / "crm" / "seeds" / "manifest.json").read_text(encoding="utf-8"))
+        assert manifest["menu_roots"] == ["CrmRoot"]
+        assert manifest["config_keys"] == ["CRM_SYNC_ENABLED"]
+        assert manifest["dict_codes"] == ["crm_stage"]
+        assert manifest["url_prefixes"] == ["api/crm/"]
+
 
 @pytest.mark.django_db
 class TestUpdateSeedWriteback:

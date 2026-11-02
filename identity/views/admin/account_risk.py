@@ -47,7 +47,12 @@ class AccountRiskViewSet(OnlyListModelSet):
 
         异步执行；轮询 scan-status 获取进度与结果。
         """
-        execution = dispatch_account_risk_scan(request.user)
+        from identity.utils.account_risk_scan import ScanAlreadyRunning
+
+        try:
+            execution = dispatch_account_risk_scan(request.user)
+        except ScanAlreadyRunning:
+            return ApiResponse(code=1001, detail=_("A risk scan is already running, please wait"))
         return ApiResponse(
             data={"task_id": str(execution.pk)},
             detail=_("Scan task submitted"),
@@ -128,10 +133,13 @@ class AccountRiskViewSet(OnlyListModelSet):
         pks = request.data.get("pks") or []
         if not isinstance(pks, (list, tuple)) or not pks:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+        from common.core.modelset.batch import normalize_pks
+
+        pks, invalid = normalize_pks(AccountRisk, pks)
         action_name = request.data.get("action")
         remark = request.data.get("remark") or ""
         queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
-        success, failures = [], []
+        success, failures = [], [{"pk": str(item["pk"]), "reason": str(item["reason"])} for item in invalid]
         for risk in queryset:
             ok, message = handle_account_risk(risk, action_name, operator=request.user, remark=remark)
             if ok:

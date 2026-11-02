@@ -73,7 +73,7 @@ class TestHasFileCleanup:
 
 
 class TestOwnFileCleanup:
-    def test_soft_delete_keeps_file_hard_delete_removes(self, superuser):
+    def test_soft_delete_keeps_file_hard_delete_removes(self, superuser, django_capture_on_commit_callbacks):
         """UploadFile.delete() 为软删除（文件保留、行进回收站）；
         hard_delete() 才清理底层文件。"""
         import os
@@ -91,7 +91,8 @@ class TestOwnFileCleanup:
         assert os.path.exists(stored_path)
         assert UploadFile.all_objects.filter(pk=f.pk, deleted_at__isnull=False).exists()
 
-        f.hard_delete()
+        with django_capture_on_commit_callbacks(execute=True):
+            f.hard_delete()
 
         # 物理删除：文件与行一并清理
         assert not os.path.exists(stored_path)
@@ -106,7 +107,9 @@ class TestOwnFileCleanup:
 
 
 class TestRelatedFileCleanup:
-    def test_book_soft_delete_keeps_file_hard_delete_cascades(self, superuser, upload_file, dept):
+    def test_book_soft_delete_keeps_file_hard_delete_cascades(
+        self, superuser, upload_file, dept, django_capture_on_commit_callbacks
+    ):
         """Book.file -> UploadFile（Book 为软删除模型，MRO 首位 SoftDeleteModel）：
         - delete() 仅标记 deleted_at（回收站可恢复，附件记录保留）；
         - hard_delete() 走物理删除链，级联清理附件记录（按 UploadFile 软删语义，
@@ -121,7 +124,8 @@ class TestRelatedFileCleanup:
         assert UploadFile.all_objects.filter(pk=upload_file.pk, deleted_at__isnull=True).exists()
 
         # 物理清除：走 AutoCleanFileMixin 的删除链，附件记录软删除进入回收站
-        book.hard_delete()
+        with django_capture_on_commit_callbacks(execute=True):
+            book.hard_delete()
         assert not Book.all_objects.filter(pk=book.pk).exists()
         assert UploadFile.all_objects.filter(pk=upload_file.pk, deleted_at__isnull=False).exists()
 
@@ -164,3 +168,29 @@ class TestDeleteQueryProfile:
         assert Book.objects.count() == 0
         # 软删不级联清理附件（回收站恢复后仍可用）
         assert UploadFile.all_objects.filter(pk=upload_file.pk, deleted_at__isnull=True).exists()
+
+
+def test_rollback_keeps_physical_file(superuser, db):
+    """事务回滚时记录仍在，旧物理文件不能被提前删除（清理必须挂在提交后）。"""
+    import os
+
+    from django.conf import settings
+    from django.db import transaction
+
+    f = UploadFile(filename="a.png", filesize=1, mime_type="image/png", md5sum="c" * 32)
+    f.filepath.save("rollback-old.png", ContentFile(PNG_BYTES), save=True)
+    old_name = f.filepath.name
+    old_path = os.path.join(settings.MEDIA_ROOT, old_name)
+    assert os.path.exists(old_path)
+
+    try:
+        with transaction.atomic():
+            f.filepath.save("rollback-new.png", ContentFile(PNG_BYTES), save=False)
+            f.save()
+            raise RuntimeError("rollback")
+    except RuntimeError:
+        pass
+
+    assert os.path.exists(old_path), "回滚后旧文件必须保留"
+    f.refresh_from_db()
+    assert f.filepath.name == old_name

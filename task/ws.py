@@ -17,6 +17,7 @@
 
 import asyncio
 import os
+from contextlib import suppress
 from typing import Any
 
 import aiofiles
@@ -46,16 +47,20 @@ def next_push_interval(current: float, has_new_content: bool) -> float:
 def can_read_task_log(user: Any, pk: Any) -> bool:
     """日志读取权限（同步，供 connect 线程化调用与单测）：超管或记录创建者。
 
-    菜单权限点只决定「能进入下载中心」，不能放大到读取他人记录；与 HTTP
-    log/download 的 RecordOwnerFilter 同口径，避免仅持日志菜单即可订阅他人日志。
+    菜单权限点只决定「能进入下载中心」，不能放大到读取他人记录；导出 / 导入 /
+    执行记录三处按 creator 收敛（导入记录在 eager/无请求上下文下可能没有对应的
+    TaskExecution creator，必须直接回退 ImportRecord）。
     """
     if not user or not getattr(user, "is_authenticated", False):
         return False
     if user.is_superuser:
         return True
     from task.models.export import ExportRecord
+    from task.models.import_ import ImportRecord
 
     creator_id = ExportRecord.objects.filter(pk=pk).values_list("creator_id", flat=True).first()
+    if creator_id is None:
+        creator_id = ImportRecord.objects.filter(pk=pk).values_list("creator_id", flat=True).first()
     if creator_id is None:
         creator_id = TaskExecution.objects.filter(pk=pk).values_list("creator_id", flat=True).first()
     return creator_id is not None and creator_id == user.pk
@@ -97,10 +102,16 @@ class TaskLogNotify(AsyncJsonWebsocket):
         self.offset = 0
         self.disconnected = False
         await self.accept()
-        asyncio.create_task(self.push_log_loop())
+        # 保存引用：事件循环只弱引用任务，GC 可能中断推送且无日志
+        self._push_task = asyncio.create_task(self.push_log_loop())
 
     async def disconnect(self, close_code: Any) -> None:
         self.disconnected = True
+        task = getattr(self, "_push_task", None)
+        if task is not None and not task.done():
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
 
     async def ping(self, event: Any) -> None:
         """任务日志连接不属于消息层分组（无 group_name），心跳无需登记，

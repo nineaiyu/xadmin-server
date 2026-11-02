@@ -91,3 +91,10 @@ class UsedOtpCodeCache:
 
     def mark(self) -> None:
         cache.set(self.cache_key, True, self.TIMEOUT)
+
+    def acquire(self) -> bool:
+        """原子占位（add）：返回 False 表示该码已被使用；验码失败须 release。"""
+        return bool(cache.add(self.cache_key, True, self.TIMEOUT))
+
+    def release(self) -> None:
+        cache.delete(self.cache_key)

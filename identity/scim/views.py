@@ -60,7 +60,10 @@ class ScimJSONParser(JSONParser):
 
 
 class ScimView(APIView):
-    """SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。"""
+    """SCIM 基类
+
+    独立凭证鉴权 + 凭证级限流 + 统一错误文档。
+    """
 
     authentication_classes = [ScimTokenAuthentication]
     permission_classes = [ScimTokenPermission]
@@ -97,7 +100,13 @@ def _get_user(pk: Any) -> Any:
 
 
 def _get_group(pk: Any) -> Any:
-    group = UserRole.objects.filter(pk=pk).first()
+    import uuid as _uuid
+
+    try:
+        normalized = _uuid.UUID(str(pk))
+    except (TypeError, ValueError):
+        raise ScimApiError(404, str(_("Group not found"))) from None
+    group = UserRole.objects.filter(pk=normalized).first()
     if group is None:
         raise ScimApiError(404, str(_("Group not found")))
     return group
@@ -208,7 +217,12 @@ class UsersView(ScimView):
         if attribute == "userName":
             queryset = queryset.filter(username=value)
         elif attribute == "id":
-            queryset = queryset.filter(pk=value) if value.isdigit() else queryset.none()
+            import uuid as _uuid
+
+            try:
+                queryset = queryset.filter(pk=_uuid.UUID(str(value)))
+            except (TypeError, ValueError):
+                queryset = queryset.none() if value.isdigit() else queryset.none()
         elif attribute:
             raise ScimApiError(400, str(_("Unsupported filter attribute")), scim_type="invalidFilter")
 
@@ -275,7 +289,12 @@ class GroupsView(ScimView):
         elif attribute == "externalId":
             queryset = queryset.filter(code=value)
         elif attribute == "id":
-            queryset = queryset.filter(pk=value)
+            import uuid as _uuid
+
+            try:
+                queryset = queryset.filter(pk=_uuid.UUID(str(value)))
+            except (TypeError, ValueError):
+                queryset = queryset.none()
         elif attribute:
             raise ScimApiError(400, str(_("Unsupported filter attribute")), scim_type="invalidFilter")
 

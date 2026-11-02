@@ -220,14 +220,19 @@ def filter_menu_queryset(queryset: Any) -> Any:
         for extra in conditions[1:]:
             condition |= extra
         return queryset.exclude(condition)
-    except Exception as exc:  # noqa: BLE001 依赖异常时不隐藏（仅记录），避免影响主链路
-        logger.warning("module menu filter skipped: %s", exc)
-        return queryset
+    except Exception as exc:  # noqa: BLE001 依赖异常时 fail-closed（宁可少显示，不泄露停用模块菜单）
+        logger.error("module menu filter failed, hide permission menus: %s", exc)
+        return queryset.none()
 
 
 @lru_cache(maxsize=8)
 def _prefix_regex(prefixes: tuple[Any, ...]) -> str:
-    return "^(" + "|".join(re.escape(prefix) for prefix in prefixes) + ")"
+    """停用模块前缀正则：后缀必须是段边界（``/``、权限点结尾 ``$`` 或字符串结尾）。
+
+    无边界时 ``api/dataset/datasets`` 会误伤 ``api/dataset/datasets-v2``（过度隐藏）。
+    """
+    normalized = sorted({str(prefix).lstrip("^").lstrip("/").rstrip("/") for prefix in prefixes if str(prefix)})
+    return "^(" + "|".join(re.escape(prefix) + r"(/|\$|$)" for prefix in normalized) + ")"
 
 
 def invalidate_trimmed_caches(resolution: Any = None) -> int:
@@ -252,6 +257,7 @@ def invalidate_trimmed_caches(resolution: Any = None) -> int:
     for pattern in (
         "magic_cache_data_get_user_permission*",
         "magic_cache_response_UserRoutesAPIView*",
+        "metadata_payload_*",
     ):
         try:
             removed += cache.delete_pattern(pattern) or 0

@@ -95,7 +95,8 @@ class TestWriteExcelFile:
         assert count == 2
         sheet = load_workbook(path).active
         assert [cell.value for cell in sheet[1]] == ["名称(name)", "数量(amount)"]
-        assert [cell.value for cell in sheet[2]] == ["甲", "1"]
+        assert [cell.value for cell in sheet[2]] == ["甲", 1]
+        assert sheet.cell(row=2, column=2).data_type == "n"  # 安全整数保持数值类型
         # write_only 不支持 freeze_panes，但自动筛选仍覆盖表头到末行
         assert sheet.auto_filter.ref == "A1:B3"
         # 流式档不设自定义列宽（write_only 下 <cols> 必须先于数据行，见实现注释）
@@ -107,12 +108,56 @@ class TestWriteExcelFile:
             path,
             _FakeRenderer(),
             ["名称(name)"],
-            [{"name": "=1+1"}, {"name": "+SUM(A1:A2)"}, {"name": "@cmd"}],
+            [{"name": "=1+1"}, {"name": "+SUM(A1:A2)"}, {"name": "-cmd"}, {"name": "@cmd"}],
             _fields(),
         )
         sheet = load_workbook(path).active
-        assert [sheet.cell(row=row, column=1).value for row in (2, 3, 4)] == ["=1+1", "+SUM(A1:A2)", "@cmd"]
-        assert all(sheet.cell(row=row, column=1).data_type != "f" for row in (2, 3, 4))
+        assert [sheet.cell(row=row, column=1).value for row in (2, 3, 4, 5)] == [
+            "=1+1",
+            "+SUM(A1:A2)",
+            "-cmd",
+            "@cmd",
+        ]
+        assert all(sheet.cell(row=row, column=1).data_type != "f" for row in (2, 3, 4, 5))
+
+    def test_safe_numbers_keep_numeric_type(self, tmp_path):
+        """普通整数/负数/小数保持数值：排序/求和等表格能力不被强制文本破坏。"""
+        path = str(tmp_path / "numbers.xlsx")
+        write_excel_file(
+            path,
+            _FakeRenderer(),
+            ["数量(amount)"],
+            [{"amount": "42"}, {"amount": "-7"}, {"amount": "3.14"}, {"amount": "0"}],
+            _fields(),
+        )
+        sheet = load_workbook(path).active
+        values = [sheet.cell(row=row, column=2).value for row in (2, 3, 4, 5)]
+        assert values == [42, -7, 3.14, 0]
+        assert all(sheet.cell(row=row, column=2).data_type == "n" for row in (2, 3, 4, 5))
+
+    def test_unsafe_numeric_text_stays_text(self, tmp_path):
+        """前导零 / 超长整数 / 科学计数法：按文本写出，避免精度损失或语义误读。"""
+        path = str(tmp_path / "unsafe-numbers.xlsx")
+        write_excel_file(
+            path,
+            _FakeRenderer(),
+            ["名称(name)", "编号(amount)"],
+            [
+                {"amount": "007"},
+                {"amount": "12345678901234567890"},
+                {"amount": "1e5"},
+                {"amount": "+123"},
+            ],
+            _fields(),
+        )
+        sheet = load_workbook(path).active
+        assert [sheet.cell(row=row, column=2).value for row in (2, 3, 4, 5)] == [
+            "007",
+            "12345678901234567890",
+            "1e5",
+            "+123",
+        ]
+        assert all(sheet.cell(row=row, column=2).data_type == "s" for row in (2, 3, 4, 5))
 
 
 class TestWriteCsvFile:

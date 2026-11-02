@@ -14,7 +14,7 @@ from django.http import Http404
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
 
 from common.core.response.exception import common_exception_handler
-from identity.models import DeptInfo, UserInfo
+from identity.models import DeptInfo
 
 
 class FakeView:
@@ -107,11 +107,16 @@ class TestUnexpectedException:
         assert response.data["code"] == 500
         assert "secret" not in str(response.data["detail"])
 
-    def test_unexpected_exception_in_transaction_does_not_rollback_data(self, db, superuser):
-        """未预期异常（非 APIException）不应触发 set_rollback"""
-        response = common_exception_handler(RuntimeError("boom"), _context())
-        assert response.status_code == 500
-        assert UserInfo.objects.filter(pk=superuser.pk).exists()
+    def test_unexpected_exception_marks_atomic_request_for_rollback(self, db):
+        """未预期异常必须标记回滚：ATOMIC_REQUESTS 下不能留下前半段写入"""
+        from django.db import transaction
+
+        with transaction.atomic():
+            DeptInfo.objects.create(name="rollback-probe", code="rollback-probe")
+            response = common_exception_handler(RuntimeError("boom"), _context())
+            assert response.status_code == 500
+
+        assert not DeptInfo.objects.filter(code="rollback-probe").exists()
 
 
 class TestResponseShell:

@@ -52,10 +52,9 @@ class CacheList(CacheRedis):
         self.timeout = timeout
 
     def auto_ltrim(self) -> None:
-        stop = self.connect.llen(self.key)
-        if self.max_size < stop:
-            start = stop - self.max_size
-            self.connect.ltrim(self.key, start, stop)
+        # lpush 后最旧元素在尾部：保留 [0, max_size-1] 共 max_size 条
+        if self.max_size >= 0 and self.connect.llen(self.key) > self.max_size:
+            self.connect.ltrim(self.key, 0, self.max_size - 1)
 
     def push(self, json_data: Any, *args: Any) -> None:
         self.connect.lpush(self.key, json.dumps(json_data), *[json.dumps(x) for x in args])

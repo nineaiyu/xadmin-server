@@ -58,7 +58,9 @@ def validate_plan(
             rows_by_model.setdefault(spec.model, []).extend(rows)
 
     problems.extend(_check_references(rows_by_model))
+    problems.extend(_check_duplicate_natural_keys(rows_by_model))
     problems.extend(_check_grants(plan, rows_by_model))
+    problems.extend(_check_orphan_menumeta(rows_by_model))
 
     summary = None
     if manifests is not None:
@@ -162,6 +164,31 @@ def _check_grants(plan: SeedPlan, rows_by_model: dict[str, list[Any]]) -> list[P
     role_codes = {str(row.get("fields", {}).get("code")) for row in rows_by_model.get("identity.userrole", [])}
     problems.extend(validate_grants(declarations, menu_names=menu_names, role_codes=role_codes))
     return problems
+
+
+def _check_orphan_menumeta(rows_by_model: dict[str, list[Any]]) -> list[Problem]:
+    """菜单元数据必须被至少一个菜单引用：孤立行只会随每次装载写入死数据。"""
+
+    metas = rows_by_model.get("system.menumeta") or []
+    menus = rows_by_model.get("system.menu") or []
+    referenced = {
+        str(row.get("fields", {}).get("meta"))
+        for row in menus
+        if isinstance(row, dict) and row.get("fields", {}).get("meta")
+    }
+    orphans = [row for row in metas if isinstance(row, dict) and str(row.get("pk")) not in referenced]
+    if not orphans:
+        return []
+    titles = [str(row.get("fields", {}).get("title") or row.get("pk")) for row in orphans]
+    sample = "、".join(titles[:5])
+    suffix = f" 等 {len(titles)} 条" if len(titles) > 5 else ""
+    return [
+        Problem(
+            LEVEL_WARNING,
+            "MENUMETA_ORPHAN",
+            f"{len(orphans)} 条 menumeta 未被任何菜单引用：{sample}{suffix}",
+        )
+    ]
 
 
 def _check_declarations(manifests: dict[str, SeedManifest], rows_by_model: dict[str, list[Any]]) -> list[Problem]:
@@ -284,6 +311,43 @@ def _validate_rows(
                 file=spec.path,
             )
         )
+    return problems
+
+
+def _check_duplicate_natural_keys(rows_by_model: dict[str, list[Any]]) -> list[Problem]:
+    """种子面内自然键重复：两个 pk 同一 code/name 会在 loaddata 单事务里整批回滚。"""
+    from .rows import _normalize_unique, _unique_checks
+
+    problems: list[Problem] = []
+    for label, rows in rows_by_model.items():
+        model = django_apps.get_model(label)
+        if model is None:
+            continue
+        for field_names, condition in _unique_checks(model):
+            if condition is not None:
+                # 条件唯一约束（软删除等）由数据库兜底，内存侧不做近似判定
+                continue
+            seen: dict[tuple[str, ...], Any] = {}
+            for row in rows:
+                raw_values = [row["fields"].get(name) for name in field_names]
+                if any(value is None for value in raw_values):
+                    # SQL 唯一约束允许多个 NULL（含 OneToOne）：NULL 不构成自然键冲突
+                    continue
+                values = tuple(_normalize_unique(value) for value in raw_values)
+                previous = seen.get(values)
+                if previous is not None and str(previous) != str(row["pk"]):
+                    desc = "、".join(f"{name}={value}" for name, value in zip(field_names, values, strict=True))
+                    problems.append(
+                        Problem(
+                            LEVEL_ERROR,
+                            "SEED_UNIQUE_IN_SEED",
+                            f"{label} 自然键在种子内重复：{desc}（pk={previous} 与 pk={row['pk']}）",
+                        )
+                    )
+                    if len(problems) >= _MAX_ROW_PROBLEMS:
+                        return problems
+                else:
+                    seen[values] = row["pk"]
     return problems
 
 

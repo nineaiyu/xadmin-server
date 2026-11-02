@@ -20,7 +20,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from common.core.auth import hash_pat_token
-from identity.models.token import PersonalAccessToken
+from identity.models.token import OAuthRefreshToken, PersonalAccessToken
 
 #: 个人访问令牌前缀（认证链的历史口径，``Authorization: Pat <token>``）
 PAT_TOKEN_PREFIX = "pat"
@@ -77,9 +77,16 @@ def issue_access_token(
 
 
 def revoke_application_tokens(application: Any) -> int:
-    """失效应用全部有效凭证（应用停用 / 密钥重置 / 凭证轮换共用），返回失效条数。"""
+    """失效应用全部有效凭证（应用停用 / 密钥重置 / 凭证轮换共用），返回失效条数。
+
+    access（PAT 行）与应用范围（scope/IP/有效期）收紧同口径处理 OAuth refresh：
+    只撤 access 时，refresh 仍可在 30 天内换发新 access，收紧等于没生效。
+    """
     typed_value: int = PersonalAccessToken.objects.filter(api_application=application, is_active=True).update(
         is_active=False
+    )
+    OAuthRefreshToken.objects.filter(application=application, is_revoked=False).update(
+        is_revoked=True, updated_time=timezone.now()
     )
     return typed_value
 

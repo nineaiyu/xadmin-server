@@ -237,7 +237,7 @@ class TestRerun:
         monkeypatch.setattr(
             task_center_unified,
             "_dispatch",
-            lambda task, args=None, kwargs=None, task_id=None: dispatched.append(args),
+            lambda task, args=None, kwargs=None, task_id=None, on_error=None: dispatched.append(args),
         )
         record = _export(superuser, status=ExportRecord.Status.SUCCESS)
         result = rerun_record(superuser, "export", str(record.pk))

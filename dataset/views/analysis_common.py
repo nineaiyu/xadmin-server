@@ -82,3 +82,9 @@ class BaseAnalysisViewSet(BaseModelSet):
         if guarded:
             return guarded
         return super().destroy(request, *args, **kwargs)
+
+    def get_batch_destroy_queryset(self, queryset: Any) -> Any:
+        # 与单条 destroy 同口径：非创建者不得批量删除他人（含共享）分析资产
+        if getattr(self.request.user, "is_superuser", False):
+            return queryset
+        return queryset.filter(creator=self.request.user)

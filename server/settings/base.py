@@ -27,6 +27,9 @@ FIELD_ENCRYPTION_LEGACY_KEYS = CONFIG.FIELD_ENCRYPTION_LEGACY_KEYS
 
 DEBUG = CONFIG.DEBUG
 
+# Django admin 站点默认不挂载（只认 session，绕过验证码/锁定/访问策略/MFA）
+ENABLE_DJANGO_ADMIN = CONFIG.ENABLE_DJANGO_ADMIN
+
 # Webhook 环回目标放行（127.0.0.1/localhost 本地联调）：None 跟随 DEBUG——
 # 生产 fail-closed（订阅权限不得用于探测本机内部服务），本地开发自动放开；
 # 显式配置可覆盖（测试栈对本地接收端的真实投递即显式开启）
@@ -239,6 +242,9 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(DATA_DIR, "upload")
 # 受保护媒体的 nginx 内部重定向前缀（默认空 = 应用进程输出；生产建议 /_protected_media）
 MEDIA_X_ACCEL_PREFIX = CONFIG.MEDIA_X_ACCEL_PREFIX
+# 敏感媒体命名空间（导出 / 附件 / 对象存储缓存）的短时效签名 URL 开关与有效期（秒）
+MEDIA_SIGNED_URL_REQUIRED = CONFIG.MEDIA_SIGNED_URL_REQUIRED
+MEDIA_SIGNED_URL_TTL = CONFIG.MEDIA_SIGNED_URL_TTL
 from server.settings.storage import STORAGES  # noqa: E402,F401 可插拔存储后端装配（本体见该模块）
 
 # 审计日志冷归档目录：默认 DATA_DIR/log_archive；环境变量 LOG_ARCHIVE_DIR 可覆盖

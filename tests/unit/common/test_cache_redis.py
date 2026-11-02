@@ -70,7 +70,7 @@ class TestCacheList:
         cache = CacheList("cl:ltrim", max_size=2)
         for i in range(5):
             cache.push(i)
-        assert cache.len() <= 2
+        assert cache.len() == 2
 
     def test_pop_empty_returns_none(self, redis_conn):
         assert CacheList("cl:empty").pop() is None

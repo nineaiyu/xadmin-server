@@ -191,9 +191,11 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
             return call_result(False, error, {})
 
         # 幂等：MCP 通道与 Web 通道同口径（用户 + 动作 + 参数哈希，TTL 内去重）
+        from functools import partial
+
         from ai.services.assistant.ai_idempotency import execute_idempotent
 
-        result = execute_idempotent(user, name, clean, execute_action)
+        result = execute_idempotent(user, name, clean, partial(execute_action, request=request))
         ok = bool(result.get("ok"))
         audit_ai_action(
             user,

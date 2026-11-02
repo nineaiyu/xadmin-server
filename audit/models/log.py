@@ -112,6 +112,8 @@ class OperationLog(DbAuditModel):
             models.Index(fields=["exec_time"], name="idx_oplog_exec_time"),
             # 行级变更历史（RePlusPage「变更历史」按 module + object_pk 回溯该行全部操作）
             models.Index(fields=["module", "object_pk"], name="idx_oplog_module_objectpk"),
+            # MCP 日配额按 module + object_pk + 当日时间窗 COUNT（复合列让时间过滤也走索引）
+            models.Index(fields=["module", "object_pk", "created_time"], name="idx_oplog_mod_obj_created"),
             # path 前缀检索（操作日志页 path 过滤）
             models.Index(fields=["path"], name="idx_oplog_path"),
             # 凭证维度召回（PAT 调用记录/统计按 token_pk + 时间窗过滤）

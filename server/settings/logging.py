@@ -97,7 +97,8 @@ LOGGING: dict[str, Any] = {
         #     'propagate': False,
         # },
         "django": {
-            "handlers": ["null"],
+            # 框架级警告（缓存/DB/模板）不能被 null handler 丢弃；子 logger 已有独立路由
+            "handlers": ["console", "server"],
             "propagate": False,
             "level": LOG_LEVEL,
         },

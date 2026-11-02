@@ -6,7 +6,7 @@
 # date : 6/2/2023
 import functools
 import hashlib
-from typing import Any
+from typing import Any, cast
 
 from django.http.cookie import parse_cookie
 from django.utils.translation import gettext_lazy as _
@@ -157,6 +157,23 @@ class ServerAccessToken(AccessToken):
     自定义的token方法是为了登出的时候，将 access token 禁用
     """
 
+    @staticmethod
+    def _revocation_values(cache: Any, keys: list[str]) -> dict[str, Any]:
+        """吊销状态读取：缓存故障必须 fail-closed（拒绝令牌），不能当作「未吊销」。
+
+        默认 CACHES 开启 IGNORE_EXCEPTIONS（Redis 故障时读返回 None/空）——
+        黑名单/强制下线/单会话撤销三处判断若走降级读，故障窗口内已登出或被踢的
+        access token 会全部复活。这里绕过降级包装直接读客户端，异常即拒绝。
+        """
+        client = getattr(cache, "client", None)
+        if client is not None and hasattr(client, "get_many"):
+            try:
+                return cast(dict[str, Any], client.get_many(keys))
+            except Exception as exc:  # noqa: BLE001 Redis 不可用：吊销状态未知按已吊销处理
+                logger.warning("token revocation cache unavailable, fail closed", exc_info=True)
+                raise TokenError(_("Token is invalid or expired")) from exc
+        return cast(dict[str, Any], cache.get_many(keys))
+
     def verify(self) -> None:
         # 认证热路径：黑名单 / 用户级失效 / 会话级失效三处键值一次 get_many 取回
         # （原先三次独立 GET = 每个已认证请求 3 次 Redis 往返，合并后 1 次；
@@ -173,7 +190,7 @@ class ServerAccessToken(AccessToken):
         revoked_key = UserTokenRevokedCache(user_id).cache_key
         session_key = SessionTokenRevokedCache(sid).cache_key if sid else None
         keys = [black_key, revoked_key] + ([session_key] if session_key else [])
-        values = cache.get_many(keys)
+        values = self._revocation_values(cache, keys)
 
         if values.get(black_key):
             raise TokenError(_("Token is invalid or expired"))
@@ -271,7 +288,9 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
         if pat.expired_at and pat.expired_at <= now:
             raise AuthenticationFailed(_("Token is invalid or expired"))
         user = pat.creator
-        if user is None or not user.is_active:
+        # 软删用户的机器凭证必须失效：pat.creator 走关系取值，不经过 UserInfo 的
+        # 软删管理器（离职/违规账号软删后 PAT 仍可用的历史缺口）
+        if user is None or not user.is_active or getattr(user, "deleted_at", None):
             raise AuthenticationFailed(_("User account is disabled"))
 
         client_ip = get_request_ip(request)

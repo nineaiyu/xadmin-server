@@ -107,9 +107,14 @@ def build_export_request(record: Any, query_params: Any, user: Any) -> Any:
     不在任务里重新签发 access token：任务排队可能超过 access token 寿命（默认 1h），
     重新签发的令牌会因过期导致认证失败。注入 user 后视图内的菜单/数据/字段三层权限与
     filterset 过滤仍按提交者身份生效。
+
+    method 固定 POST：record.path 是 export-async 动作路径，种子只为该路径登记
+    POST 权限点；按 GET 重放会让权限解析落到不存在的 GET 权限点（非超管 403），
+    或被 detail 路由当作 pk 命中 retrieve 权限点。任务重放的仍是 export_data 的
+    渲染链（直接调用 action），method 只影响权限解析口径——必须与提交时一致。
     """
     return build_task_request(
-        method="GET",
+        method="POST",
         path=record.path or "/",
         query_params=query_params or {},
         user=user,
@@ -180,7 +185,7 @@ def run_async_export(record_id: Any, view_path: Any, query_params: Any, user_pk:
         pk=record_id,
         defaults={"name": "system.tasks.async_export_data_task", "args": [record.name], "kwargs": query_params or {}},
     )
-    user = UserInfo.objects.filter(pk=user_pk).first() if user_pk else None
+    user = UserInfo.objects.filter(pk=user_pk, is_active=True).first() if user_pk else None
     record.status = ExportRecord.Status.RUNNING
     # 导出为视图整体重放，无法逐行上报，仅里程碑粒度：RUNNING 10 → 计数完成 30 →
     # 内容渲染完成 80 → SUCCESS 100
@@ -199,7 +204,12 @@ def run_async_export(record_id: Any, view_path: Any, query_params: Any, user_pk:
         logger.info("async export %s total rows: %s", view_path, total)
         _save_progress(record, 30, stage=_("Counting rows"))
 
-        response = view_cls.as_view({"get": "export_data"})(request)
+        # 直接绑定视图实例并调用 action，不走 as_view 的方法分派：
+        # 请求 method 固定 POST（授权口径 = export-async），而 as_view({"get": ...})
+        # 会把 POST 请求判成 405。权限上下文已由 bind_view_task_context 装载。
+        export_view = view_cls()
+        bind_view_task_context(export_view, request, action="export_data")
+        response = export_view.export_data(export_view.request)
         if response.status_code != 200:
             raise ValueError(f"export view returned status {response.status_code}")
         # 同步导出走流式文件响应（FileResponse）：把流落到匿名临时文件，避免整包进内存

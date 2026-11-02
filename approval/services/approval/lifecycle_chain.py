@@ -44,7 +44,14 @@ def _approve_chain(approval: Any, user: Any, comment: str) -> Any:
 
     now = timezone.now()
     with transaction.atomic():
-        step = approval.steps.filter(order=approval.current_level, status=ApprovalRequestStep.Status.PENDING).first()
+        # 行锁串行化同级的并发通过：会签计数必须基于「已提交」的动作行，
+        # 无锁时两个审批人各自只看到自己的动作 → 都判「等待其他人」，
+        # 提交后动作已齐但节点仍 PENDING 且无人可再操作（会签永久卡死）
+        step = (
+            approval.steps.select_for_update()
+            .filter(order=approval.current_level, status=ApprovalRequestStep.Status.PENDING)
+            .first()
+        )
         if step is None:
             return False, _("The current approval level is no longer pending")
         # 逐人动作留痕（或签/会签一致）：同一人重复提交被唯一约束挡住

@@ -162,7 +162,7 @@
           "AI_CODEGEN_DRAFT_ENABLED": {
             "default": false,
             "description": "代码生成器的自然语言字段草案：AI 给出字段覆盖建议，人工审核采纳（绝不直接写代码）",
-            "title": "AI codegen draft",
+            "title": "AI 代码生成草稿",
             "type": "boolean"
           },
           "AI_CONTEXT_LIMIT": {
@@ -331,6 +331,7 @@
           },
           "ingest_error": {
             "readOnly": true,
+            "title": "摄取错误",
             "type": "string"
           },
           "ingest_status": {
@@ -344,7 +345,7 @@
               }
             },
             "readOnly": true,
-            "title": "Ingest status",
+            "title": "摄取状态",
             "type": "object"
           },
           "is_active": {
@@ -878,7 +879,9 @@
             "title": "表单结构已锁定",
             "type": "boolean"
           },
-          "initiator_roles": {},
+          "initiator_roles": {
+            "title": "发起角色"
+          },
           "is_active": {
             "default": true,
             "title": "激活状态",
@@ -1631,7 +1634,7 @@
         "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
         "properties": {
           "EXPORT_MAX_LIMIT": {
-            "description": "Limit the maximum number of rows of exported data (>=1)",
+            "description": "限制导出数据的最大行数（>=1）",
             "minimum": 1,
             "title": "数据导出限制",
             "type": "integer"
@@ -3595,14 +3598,14 @@
           "last_used_at": {
             "nullable": true,
             "readOnly": true,
-            "title": "Last consumed at",
+            "title": "最后消费时间",
             "type": "string"
           },
           "load_failure_count": {
             "description": "消费端加载失败次数（Redis 观测；失败不影响消费）。",
             "nullable": true,
             "readOnly": true,
-            "title": "Consumption failures",
+            "title": "消费失败次数",
             "type": "integer"
           },
           "parent": {
@@ -3638,7 +3641,7 @@
             "description": "消费次数（仅类型行；字典项行不展示）。",
             "nullable": true,
             "readOnly": true,
-            "title": "Consumption count",
+            "title": "消费次数",
             "type": "integer"
           },
           "value": {
@@ -3926,10 +3929,10 @@
           },
           "field_permission_mode": {
             "default": {
-              "label": "Inherit",
+              "label": "继承",
               "value": "inherit"
             },
-            "description": "strict = role without field permission config sees no columns; inherit = no extra pruning",
+            "description": "strict = 未配置字段权限的角色看不到列；inherit = 不额外裁剪",
             "properties": {
               "label": {
                 "type": "string"
@@ -3938,7 +3941,7 @@
                 "type": "string"
               }
             },
-            "title": "Field permission mode",
+            "title": "字段权限模式",
             "type": "object"
           },
           "filters": {
@@ -5318,7 +5321,7 @@
           },
           "reference_count": {
             "readOnly": true,
-            "title": "Referenced tasks",
+            "title": "被引用任务",
             "type": "integer"
           }
         },
@@ -5474,7 +5477,7 @@
           },
           "LDAP_SYNC_PAGE_SIZE": {
             "default": 500,
-            "description": "Directory page size per search request during scheduled sync (10-5000)",
+            "description": "定时同步时每次搜索请求的目录页大小（10-5000）",
             "maximum": 5000,
             "minimum": 10,
             "title": "同步分页大小",
@@ -6087,6 +6090,7 @@
           "deleted_at": {
             "format": "date-time",
             "nullable": true,
+            "readOnly": true,
             "title": "删除时间",
             "type": "string"
           },
@@ -6185,6 +6189,7 @@
           },
           "pk": {
             "format": "uuid",
+            "readOnly": true,
             "title": "主键ID",
             "type": "string"
           },
@@ -6197,9 +6202,11 @@
           }
         },
         "required": [
+          "deleted_at",
           "meta",
           "name",
-          "path"
+          "path",
+          "pk"
         ],
         "type": "object"
       },
@@ -6534,6 +6541,19 @@
             "readOnly": true,
             "type": "string"
           },
+          "instance": {
+            "description": null,
+            "nullable": true,
+            "properties": {
+              "pk": {
+                "description": "pk field",
+                "type": "string"
+              }
+            },
+            "readOnly": true,
+            "title": "审批实例",
+            "type": "object"
+          },
           "pk": {
             "format": "uuid",
             "readOnly": true,
@@ -6573,6 +6593,7 @@
           "data",
           "form",
           "form_name",
+          "instance",
           "pk",
           "schema_version",
           "status",
@@ -6920,7 +6941,7 @@
           },
           "model_label": {
             "readOnly": true,
-            "title": "Source model",
+            "title": "来源模型",
             "type": "string"
           },
           "module": {
@@ -7027,6 +7048,7 @@
           },
           "changes_truncated": {
             "readOnly": true,
+            "title": "变更已截断",
             "type": "boolean"
           },
           "created_time": {
@@ -7074,7 +7096,7 @@
           },
           "model_label": {
             "readOnly": true,
-            "title": "Source model",
+            "title": "来源模型",
             "type": "string"
           },
           "module": {
@@ -8944,7 +8966,7 @@
           "AI_CODEGEN_DRAFT_ENABLED": {
             "default": false,
             "description": "代码生成器的自然语言字段草案：AI 给出字段覆盖建议，人工审核采纳（绝不直接写代码）",
-            "title": "AI codegen draft",
+            "title": "AI 代码生成草稿",
             "type": "boolean"
           },
           "AI_CONTEXT_LIMIT": {
@@ -9113,6 +9135,7 @@
           },
           "ingest_error": {
             "readOnly": true,
+            "title": "摄取错误",
             "type": "string"
           },
           "ingest_status": {
@@ -9126,7 +9149,7 @@
               }
             },
             "readOnly": true,
-            "title": "Ingest status",
+            "title": "摄取状态",
             "type": "object"
           },
           "is_active": {
@@ -9612,7 +9635,9 @@
             "title": "表单结构已锁定",
             "type": "boolean"
           },
-          "initiator_roles": {},
+          "initiator_roles": {
+            "title": "发起角色"
+          },
           "is_active": {
             "default": true,
             "title": "激活状态",
@@ -9719,7 +9744,7 @@
         "description": "与 BaseSettingViewSet.perform_update 配对的保存契约（详见模块 docstring）。",
         "properties": {
           "EXPORT_MAX_LIMIT": {
-            "description": "Limit the maximum number of rows of exported data (>=1)",
+            "description": "限制导出数据的最大行数（>=1）",
             "minimum": 1,
             "title": "数据导出限制",
             "type": "integer"
@@ -10279,14 +10304,14 @@
           "last_used_at": {
             "nullable": true,
             "readOnly": true,
-            "title": "Last consumed at",
+            "title": "最后消费时间",
             "type": "string"
           },
           "load_failure_count": {
             "description": "消费端加载失败次数（Redis 观测；失败不影响消费）。",
             "nullable": true,
             "readOnly": true,
-            "title": "Consumption failures",
+            "title": "消费失败次数",
             "type": "integer"
           },
           "parent": {
@@ -10322,7 +10347,7 @@
             "description": "消费次数（仅类型行；字典项行不展示）。",
             "nullable": true,
             "readOnly": true,
-            "title": "Consumption count",
+            "title": "消费次数",
             "type": "integer"
           },
           "value": {
@@ -10583,10 +10608,10 @@
           },
           "field_permission_mode": {
             "default": {
-              "label": "Inherit",
+              "label": "继承",
               "value": "inherit"
             },
-            "description": "strict = role without field permission config sees no columns; inherit = no extra pruning",
+            "description": "strict = 未配置字段权限的角色看不到列；inherit = 不额外裁剪",
             "properties": {
               "label": {
                 "type": "string"
@@ -10595,7 +10620,7 @@
                 "type": "string"
               }
             },
-            "title": "Field permission mode",
+            "title": "字段权限模式",
             "type": "object"
           },
           "filters": {
@@ -11224,7 +11249,7 @@
           },
           "reference_count": {
             "readOnly": true,
-            "title": "Referenced tasks",
+            "title": "被引用任务",
             "type": "integer"
           }
         },
@@ -11374,7 +11399,7 @@
           },
           "LDAP_SYNC_PAGE_SIZE": {
             "default": 500,
-            "description": "Directory page size per search request during scheduled sync (10-5000)",
+            "description": "定时同步时每次搜索请求的目录页大小（10-5000）",
             "maximum": 5000,
             "minimum": 10,
             "title": "同步分页大小",
@@ -11722,6 +11747,7 @@
           "deleted_at": {
             "format": "date-time",
             "nullable": true,
+            "readOnly": true,
             "title": "删除时间",
             "type": "string"
           },
@@ -11820,6 +11846,7 @@
           },
           "pk": {
             "format": "uuid",
+            "readOnly": true,
             "title": "主键ID",
             "type": "string"
           },
@@ -12732,7 +12759,7 @@
             "type": "string"
           },
           "SCIM_TOKEN": {
-            "description": "Encrypted at rest and never returned by the API; submit empty to keep the current token. Generate a random token below if you do not have one",
+            "description": "加密存储且 API 永不返回；留空保持当前令牌。没有令牌可在下方生成随机令牌",
             "maxLength": 512,
             "title": "SCIM Bearer 令牌",
             "type": "string",
@@ -12824,6 +12851,7 @@
           },
           "render_mode": {
             "readOnly": true,
+            "title": "渲染模式",
             "type": "string"
           },
           "theme": {
@@ -12903,6 +12931,11 @@
       "PatchedScreenTemplate": {
         "description": "大屏模板（团队共享）：载荷与自由画布同形，复用同一份归一化与校验。\n\n引用可见性口径与保存大屏一致（引用不可见即拒绝）——模板是「将来要落到大屏上的\n布局」，放行不可见引用只会把 400 推迟到应用模板那一刻。",
         "properties": {
+          "base_version": {
+            "minimum": 0,
+            "type": "integer",
+            "writeOnly": true
+          },
           "created_time": {
             "format": "date-time",
             "nullable": true,
@@ -13508,7 +13541,7 @@
           },
           "SECURITY_LOGIN_MAX_SESSIONS": {
             "default": 0,
-            "description": "Kick the least recently active session beyond this limit (0 = unlimited)",
+            "description": "超出该上限时踢出最近最少活跃的会话（0 = 不限制）",
             "maximum": 100,
             "minimum": 0,
             "title": "最大并发会话数",
@@ -13557,7 +13590,7 @@
           },
           "SECURITY_MFA_METHODS": {
             "default": [],
-            "description": "Global whitelist of MFA methods available to accounts (empty = all enabled methods)",
+            "description": "账号可用的 MFA 方法全局白名单（空 = 全部已启用方法）",
             "items": {
               "$ref": "#/components/schemas/SECURITYMFAMETHODSEnum"
             },
@@ -13647,7 +13680,7 @@
           },
           "SECURITY_PASSWORD_EXPIRATION_DAYS": {
             "default": 90,
-            "description": "Force password change after N days (0 = never)",
+            "description": "密码 N 天后强制修改（0 = 不强制）",
             "maximum": 3650,
             "minimum": 0,
             "title": "密码有效期（天）",
@@ -13655,7 +13688,7 @@
           },
           "SECURITY_PASSWORD_HISTORY_COUNT": {
             "default": 3,
-            "description": "Recent passwords that cannot be reused (0 = disabled)",
+            "description": "不可复用的近期密码数量（0 = 关闭）",
             "maximum": 50,
             "minimum": 0,
             "title": "密码历史次数",
@@ -13663,7 +13696,7 @@
           },
           "SECURITY_PASSWORD_LEAK_CHECK_ENABLED": {
             "default": true,
-            "description": "Reject passwords found in known breach corpora",
+            "description": "拒绝已知泄露密码库中的密码",
             "title": "密码泄露检测",
             "type": "boolean"
           },
@@ -14028,19 +14061,18 @@
             "title": "网络地址"
           },
           "filename": {
-            "maxLength": 255,
+            "readOnly": true,
             "title": "文件名称",
             "type": "string"
           },
           "filesize": {
-            "maximum": 2147483647,
-            "minimum": -2147483648,
+            "readOnly": true,
             "title": "文件大小",
             "type": "integer"
           },
           "is_tmp": {
-            "default": false,
             "description": "临时文件会被定时任务自动清理",
+            "readOnly": true,
             "title": "临时文件",
             "type": "boolean"
           },
@@ -14050,12 +14082,12 @@
             "type": "boolean"
           },
           "md5sum": {
-            "maxLength": 36,
+            "readOnly": true,
             "title": "文件MD5",
             "type": "string"
           },
           "mime_type": {
-            "maxLength": 255,
+            "readOnly": true,
             "title": "文件类型",
             "type": "string"
           },
@@ -14655,7 +14687,7 @@
           },
           "has_secret": {
             "readOnly": true,
-            "title": "Secret configured",
+            "title": "密钥已配置",
             "type": "boolean"
           },
           "is_active": {
@@ -15572,7 +15604,7 @@
             "type": "string"
           },
           "SCIM_TOKEN": {
-            "description": "Encrypted at rest and never returned by the API; submit empty to keep the current token. Generate a random token below if you do not have one",
+            "description": "加密存储且 API 永不返回；留空保持当前令牌。没有令牌可在下方生成随机令牌",
             "maxLength": 512,
             "title": "SCIM Bearer 令牌",
             "type": "string",
@@ -15667,6 +15699,7 @@
           },
           "render_mode": {
             "readOnly": true,
+            "title": "渲染模式",
             "type": "string"
           },
           "theme": {
@@ -15785,6 +15818,11 @@
       "ScreenTemplate": {
         "description": "大屏模板（团队共享）：载荷与自由画布同形，复用同一份归一化与校验。\n\n引用可见性口径与保存大屏一致（引用不可见即拒绝）——模板是「将来要落到大屏上的\n布局」，放行不可见引用只会把 400 推迟到应用模板那一刻。",
         "properties": {
+          "base_version": {
+            "minimum": 0,
+            "type": "integer",
+            "writeOnly": true
+          },
           "created_time": {
             "format": "date-time",
             "nullable": true,
@@ -16799,7 +16837,7 @@
           },
           "SECURITY_LOGIN_MAX_SESSIONS": {
             "default": 0,
-            "description": "Kick the least recently active session beyond this limit (0 = unlimited)",
+            "description": "超出该上限时踢出最近最少活跃的会话（0 = 不限制）",
             "maximum": 100,
             "minimum": 0,
             "title": "最大并发会话数",
@@ -16854,7 +16892,7 @@
           },
           "SECURITY_MFA_METHODS": {
             "default": [],
-            "description": "Global whitelist of MFA methods available to accounts (empty = all enabled methods)",
+            "description": "账号可用的 MFA 方法全局白名单（空 = 全部已启用方法）",
             "items": {
               "$ref": "#/components/schemas/SECURITYMFAMETHODSEnum"
             },
@@ -16944,7 +16982,7 @@
           },
           "SECURITY_PASSWORD_EXPIRATION_DAYS": {
             "default": 90,
-            "description": "Force password change after N days (0 = never)",
+            "description": "密码 N 天后强制修改（0 = 不强制）",
             "maximum": 3650,
             "minimum": 0,
             "title": "密码有效期（天）",
@@ -16952,7 +16990,7 @@
           },
           "SECURITY_PASSWORD_HISTORY_COUNT": {
             "default": 3,
-            "description": "Recent passwords that cannot be reused (0 = disabled)",
+            "description": "不可复用的近期密码数量（0 = 关闭）",
             "maximum": 50,
             "minimum": 0,
             "title": "密码历史次数",
@@ -16960,7 +16998,7 @@
           },
           "SECURITY_PASSWORD_LEAK_CHECK_ENABLED": {
             "default": true,
-            "description": "Reject passwords found in known breach corpora",
+            "description": "拒绝已知泄露密码库中的密码",
             "title": "密码泄露检测",
             "type": "boolean"
           },
@@ -17628,19 +17666,18 @@
             "title": "网络地址"
           },
           "filename": {
-            "maxLength": 255,
+            "readOnly": true,
             "title": "文件名称",
             "type": "string"
           },
           "filesize": {
-            "maximum": 2147483647,
-            "minimum": -2147483648,
+            "readOnly": true,
             "title": "文件大小",
             "type": "integer"
           },
           "is_tmp": {
-            "default": false,
             "description": "临时文件会被定时任务自动清理",
+            "readOnly": true,
             "title": "临时文件",
             "type": "boolean"
           },
@@ -17650,12 +17687,12 @@
             "type": "boolean"
           },
           "md5sum": {
-            "maxLength": 36,
+            "readOnly": true,
             "title": "文件MD5",
             "type": "string"
           },
           "mime_type": {
-            "maxLength": 255,
+            "readOnly": true,
             "title": "文件类型",
             "type": "string"
           },
@@ -17681,6 +17718,7 @@
           "deleted_at",
           "filename",
           "filesize",
+          "is_tmp",
           "is_upload",
           "md5sum",
           "mime_type",
@@ -18570,7 +18608,8 @@
             "type": "string"
           },
           "request_headers": {
-            "readOnly": true
+            "readOnly": true,
+            "title": "请求头"
           },
           "response_body": {
             "readOnly": true,
@@ -18579,6 +18618,7 @@
           },
           "response_body_truncated": {
             "readOnly": true,
+            "title": "响应体已截断",
             "type": "boolean"
           },
           "response_code": {
@@ -18687,7 +18727,7 @@
           },
           "has_secret": {
             "readOnly": true,
-            "title": "Secret configured",
+            "title": "密钥已配置",
             "type": "boolean"
           },
           "is_active": {
@@ -19754,7 +19794,7 @@
     },
     "/api/ai/assistant/usage": {
       "get": {
-        "description": "AI 用量账本\n\n按天 / 链路 / 档案 / 模型 / Top 用户 + 成功率与延迟 + 配额与并发占用\n\n数据源 = AiUsageRecord（逐次记账，保留期随 MONITOR_RETENTION_DAYS 清理）；\n合计与档案 / 模型维度带成功率与延迟（均值恒给，P95 样本足够才给）；\n与 status/metrics 共用权限点路径正则（`(status|metrics|history|tools|usage)$`），\n不新增权限点。",
+        "description": "AI 用量账本\n\n按天 / 链路 / 档案 / 模型 / Top 用户 + 成功率与延迟 + 配额与并发占用\n\n数据源 = AiUsageRecord（逐次记账，保留期随 MONITOR_RETENTION_DAYS 清理）；\n合计与档案 / 模型维度带成功率与延迟（均值恒给，P95 样本足够才给）；\n与 status/metrics/history/tools/daily-report 共用权限点路径正则\n（`(status|metrics|history|tools|usage|daily-report)$`），不新增权限点。",
         "operationId": "api_ai_assistant_usage_retrieve",
         "responses": {
           "200": {
@@ -24985,7 +25025,7 @@
     },
     "/api/approval/approval-flows/{id}/rollback": {
       "post": {
-        "description": "回滚到历史版本\n\n快照写入活定义并落新版本；有 PENDING 实例时拒绝",
+        "description": "回滚到历史版本\n\n快照写入活定义并落新版本；在途实例按建单时钉住的版本继续，回滚只影响新单",
         "operationId": "api_approval_approval_flows_rollback_create",
         "parameters": [
           {
@@ -30901,6 +30941,13 @@
               "format": "date-time",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "username",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -31567,7 +31614,7 @@
         "x-ai-guidance": "操作审计日志（模块、操作人、状态、时间），按时间倒序",
         "x-ai-label": "检索操作日志",
         "x-ai-params": [
-          "creator",
+          "creator_id",
           "module"
         ],
         "x-ai-required-permissions": [
@@ -34832,6 +34879,9 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "celery_error": {
+                      "type": "string"
+                    },
                     "celery_status": {
                       "type": "boolean"
                     },
@@ -34839,12 +34889,18 @@
                       "format": "float",
                       "type": "number"
                     },
+                    "db_error": {
+                      "type": "string"
+                    },
                     "db_status": {
                       "type": "boolean"
                     },
                     "db_time": {
                       "format": "float",
                       "type": "number"
+                    },
+                    "redis_error": {
+                      "type": "string"
                     },
                     "redis_status": {
                       "type": "boolean"
@@ -34855,6 +34911,9 @@
                     },
                     "status": {
                       "type": "boolean"
+                    },
+                    "storage_error": {
+                      "type": "string"
                     },
                     "storage_status": {
                       "type": "boolean"
@@ -44860,7 +44919,7 @@
         "x-ai-guidance": "查询上传文件列表（文件名、大小、上传人）",
         "x-ai-label": "查询上传文件",
         "x-ai-params": [
-          "name"
+          "filename"
         ],
         "x-ai-required-permissions": [
           "GET /api/file/file"
@@ -44897,8 +44956,7 @@
                 "$ref": "#/components/schemas/UploadFile"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -46237,8 +46295,7 @@
                 "$ref": "#/components/schemas/UploadFile"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -54818,7 +54875,7 @@
     },
     "/api/identity/passkeys/register": {
       "post": {
-        "description": "绑定一个 Passkey 凭据",
+        "description": "绑定一个 Passkey 凭据\n\n持久凭据可为账号接管提供入口：绑定前需本人密码二次确认（同重置 MFA 口径）",
         "operationId": "api_identity_passkeys_register_create",
         "requestBody": {
           "content": {
@@ -63189,7 +63246,7 @@
     },
     "/api/identity/user/{id}/reset-password": {
       "post": {
-        "description": "重置用户密码",
+        "description": "重置用户密码\n\n账号接管面，与重置 MFA 同口径：管理员需本人密码二次确认",
         "operationId": "api_identity_user_reset_password_create",
         "parameters": [
           {
@@ -64161,7 +64218,7 @@
     },
     "/api/mfa/otp/confirm": {
       "post": {
-        "description": "确认绑定\n\n校验动态码后写入密钥，并自动开启登录 MFA\n\n绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。",
+        "description": "确认绑定\n\n校验动态码后写入密钥，并自动开启登录 MFA\n\n绑定的落库动作同样要求密码二次确认：仅持有会话不足以接管登录因子。\n绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。",
         "operationId": "api_mfa_otp_confirm_create",
         "requestBody": {
           "content": {
@@ -64421,7 +64478,7 @@
     },
     "/api/mfa/otp/start": {
       "post": {
-        "description": "发起绑定\n\n生成候选密钥与 otpauth URI（前端渲染二维码）",
+        "description": "发起绑定\n\n生成候选密钥与 otpauth URI（前端渲染二维码）\n\n绑定会改变登录因子：与关闭/解绑同口径，需本人密码二次确认（未确认返回 412）。",
         "operationId": "api_mfa_otp_start_create",
         "responses": {
           "200": {
@@ -68084,7 +68141,7 @@
     },
     "/api/scim/v2/Groups": {
       "get": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_retrieve",
         "responses": {
           "200": {
@@ -68096,7 +68153,7 @@
         ]
       },
       "post": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_create",
         "responses": {
           "200": {
@@ -68110,7 +68167,7 @@
     },
     "/api/scim/v2/Groups/{id}": {
       "delete": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_destroy",
         "parameters": [
           {
@@ -68132,7 +68189,7 @@
         ]
       },
       "get": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_retrieve_2",
         "parameters": [
           {
@@ -68154,7 +68211,7 @@
         ]
       },
       "patch": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_partial_update",
         "parameters": [
           {
@@ -68176,7 +68233,7 @@
         ]
       },
       "put": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_Groups_update",
         "parameters": [
           {
@@ -68200,7 +68257,7 @@
     },
     "/api/scim/v2/ResourceTypes": {
       "get": {
-        "description": "SCIM 基类：独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
+        "description": "SCIM 基类\n\n独立凭证鉴权 + 凭证级限流 + 统一错误文档。",
         "operationId": "api_scim_v2_ResourceTypes_retrieve",
         "responses": {
           "200": {
@@ -76131,7 +76188,7 @@
         ]
       },
       "post": {
-        "description": "添加{cls}数据",
+        "description": "保存代码生成方案\n\n同名方案按当前用户覆盖保存（幂等），不产生重复行。",
         "operationId": "api_system_codegen_plans_create",
         "requestBody": {
           "content": {
@@ -76187,7 +76244,7 @@
     },
     "/api/system/codegen-plans/{id}": {
       "delete": {
-        "description": "删除{cls}数据",
+        "description": "删除代码生成方案",
         "operationId": "api_system_codegen_plans_destroy",
         "parameters": [
           {
@@ -76281,7 +76338,7 @@
         ]
       },
       "put": {
-        "description": "整体更新{cls}信息",
+        "description": "更新代码生成方案",
         "operationId": "api_system_codegen_plans_update",
         "parameters": [
           {
@@ -76967,8 +77024,7 @@
             "in": "query",
             "name": "pk",
             "schema": {
-              "format": "uuid",
-              "type": "string"
+              "type": "number"
             }
           },
           {
@@ -78257,8 +78313,7 @@
             "in": "query",
             "name": "pk",
             "schema": {
-              "format": "uuid",
-              "type": "string"
+              "type": "integer"
             }
           },
           {
@@ -83744,7 +83799,7 @@
     },
     "/api/system/menu/rank": {
       "post": {
-        "description": "{cls}排序",
+        "description": "{cls}排序\n\n排序走批量 UPDATE，不触发 post_save：必须手动失效菜单相关缓存，\n否则侧边栏路由快照最长 24h 保持旧顺序。",
         "operationId": "api_system_menu_rank_create",
         "requestBody": {
           "content": {
@@ -86268,32 +86323,11 @@
     },
     "/api/system/permission/recycle/purge": {
       "delete": {
-        "description": "物理清除{cls}回收站数据\n\n不传 pks 时清除全部超过保留期的数据",
+        "description": "物理清除{cls}回收站数据\n\n不可恢复的高危动作：与删除/批删同口径纳入审批，避免硬删绕过审批。",
         "operationId": "api_system_permission_recycle_purge_destroy",
         "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
-                    },
-                    "requestId": {
-                      "type": "string"
-                    },
-                    "timestamp": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              }
-            },
-            "description": ""
+          "204": {
+            "description": "No response body"
           }
         },
         "security": [
@@ -93806,7 +93840,7 @@
           "SystemTaskCenterViewSet"
         ],
         "x-ai-action": "task.rerun",
-        "x-ai-guidance": "为导出或导入记录创建并派发一次新执行（同链路、可审计）",
+        "x-ai-guidance": "创建并派发导出、导入或定时报表记录的新一轮执行（同一条流水线，留痕审计）",
         "x-ai-label": "重跑后台任务",
         "x-ai-params": [
           "pk",

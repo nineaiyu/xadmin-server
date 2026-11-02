@@ -30,17 +30,14 @@ class CacheBaseState:
         return cache.delete(self.key)
 
     def __enter__(self) -> bool:
-        if cache.get(self.key):
-            return False
-        else:
-            cache.set(self.key, self.value, self.timeout)
-            self.active = True
-        return True
+        # 原子占位：并发方只有一个能进入（旧实现 get-then-set 会双双通过）
+        self.active = bool(cache.add(self.key, self.value, self.timeout))
+        return self.active
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self.active:
             cache.delete(self.key)
-        logger.info(f"cache base state __exit__ {exc_type}, {exc_val}, {exc_tb}")
+        logger.debug(f"cache base state __exit__ {exc_type}, {exc_val}, {exc_tb}")
 
 
 class SyncDriveSizeState(CacheBaseState): ...

@@ -274,11 +274,14 @@ class TestReportSchedule:
 
 
 class TestReportRun:
-    def test_run_creates_record_and_email(self, auth_client, dataset, superuser, settings):
+    def test_run_creates_record_and_email(
+        self, auth_client, dataset, superuser, settings, django_capture_on_commit_callbacks
+    ):
         """run 动作：预创建 ExportRecord（下载中心）→ 任务执行 → 邮件附件。"""
         settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
         report = _make_report(dataset, superuser, recipients=["boss@corp.com"])
-        response = auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
+        with django_capture_on_commit_callbacks(execute=True):
+            response = auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
         assert response.status_code == 200, response.data
         task_id = response.json()["data"]["task_id"]
 
@@ -293,7 +296,9 @@ class TestReportRun:
         report.refresh_from_db()
         assert report.last_status == "SUCCESS"
 
-    def test_run_fail_closed_for_creator_without_grant(self, normal_user, dataset, model_registry, screen_urls):
+    def test_run_fail_closed_for_creator_without_grant(
+        self, normal_user, dataset, model_registry, screen_urls, django_capture_on_commit_callbacks
+    ):
         """核心验收：创建者无数据授权 → 产物为空且 SUCCESS（fail-closed 不报错）。"""
         from openpyxl import load_workbook
 
@@ -301,7 +306,8 @@ class TestReportRun:
         report = _make_report(dataset, normal_user, recipients=["boss@corp.com"])
         from dataset.analysis_tasks import schedule_report_run
 
-        task_id = schedule_report_run(str(report.pk))
+        with django_capture_on_commit_callbacks(execute=True):
+            task_id = schedule_report_run(str(report.pk))
         from task.models.export import ExportRecord
 
         record = ExportRecord.objects.get(pk=task_id)
@@ -309,7 +315,9 @@ class TestReportRun:
         sheet = load_workbook(record.file.filepath).active
         assert sheet.max_row == 1  # 只有表头：无授权 → 空结果（fail-closed）
 
-    def test_run_renders_fk_uuid_column(self, auth_client, dataset, superuser, model_registry, settings):
+    def test_run_renders_fk_uuid_column(
+        self, auth_client, dataset, superuser, model_registry, settings, django_capture_on_commit_callbacks
+    ):
         """FK 列（UUID pk）进 xlsx：单元格转字符串，不再抛 Cannot convert UUID（回归守护）。"""
         from openpyxl import load_workbook
 
@@ -332,7 +340,8 @@ class TestReportRun:
         dataset.save()
 
         report = _make_report(dataset, superuser, recipients=["boss@corp.com"])
-        response = auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
+        with django_capture_on_commit_callbacks(execute=True):
+            response = auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
         assert response.status_code == 200, response.data
         task_id = response.json()["data"]["task_id"]
 
@@ -344,7 +353,9 @@ class TestReportRun:
         joined = sheet.cell(row=2, column=3).value
         assert isinstance(joined, datetime) and joined.tzinfo is None
 
-    def test_email_failure_degrades(self, auth_client, dataset, superuser, settings):
+    def test_email_failure_degrades(
+        self, auth_client, dataset, superuser, settings, django_capture_on_commit_callbacks
+    ):
         """邮件失败：产物 SUCCESS 保留，last_status 标记邮件错误。"""
         settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
         report = _make_report(dataset, superuser, recipients=["boss@corp.com"])
@@ -352,7 +363,8 @@ class TestReportRun:
 
         # 邮件投递实现位于 dataset.report_render（analysis_tasks 仅再导出），patch 目标须与实现同源
         with mock.patch("dataset.report_render.EmailMessage.send", side_effect=Exception("smtp down")):
-            auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
+            with django_capture_on_commit_callbacks(execute=True):
+                auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
         report.refresh_from_db()
         assert report.last_status == "SUCCESS_WITH_DELIVERY_ERROR"
 
@@ -440,7 +452,7 @@ class TestReportDatasetVisibility:
         )
         assert not ExportRecord.objects.filter(params__report_id=str(report.pk)).exists()
 
-    def test_scheduled_run_fails_closed(self, screen_urls, dataset, superuser):
+    def test_scheduled_run_fails_closed(self, screen_urls, dataset, superuser, django_capture_on_commit_callbacks):
         """调度链路不经过 run 动作：任务侧复核后记 FAILURE，不渲染任何数据。"""
         from dataset.analysis_tasks import schedule_report_run
         from task.models.export import ExportRecord
@@ -451,7 +463,8 @@ class TestReportDatasetVisibility:
         dataset.creator = superuser
         dataset.save()
 
-        task_id = schedule_report_run(str(report.pk))
+        with django_capture_on_commit_callbacks(execute=True):
+            task_id = schedule_report_run(str(report.pk))
 
         record = ExportRecord.objects.get(pk=task_id)
         assert record.status == ExportRecord.Status.FAILURE
@@ -486,7 +499,9 @@ class TestReportImDelivery:
 
         monkeypatch.setattr("notifications.backends.BACKEND", FakeBackendEnum())
 
-    def test_im_channel_delivered_without_email(self, auth_client, dataset, superuser, settings, monkeypatch):
+    def test_im_channel_delivered_without_email(
+        self, auth_client, dataset, superuser, settings, monkeypatch, django_capture_on_commit_callbacks
+    ):
         """渠道 = 钉钉：消息发给 IM 收件人（用户主键），邮件通道不执行。"""
         settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
         sent = {}
@@ -496,7 +511,8 @@ class TestReportImDelivery:
         report.im_recipients = [superuser.pk]
         report.save(update_fields=["notify_channels", "im_recipients"])
 
-        auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
+        with django_capture_on_commit_callbacks(execute=True):
+            auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
 
         report.refresh_from_db()
         assert report.last_status == "SUCCESS"
@@ -506,7 +522,9 @@ class TestReportImDelivery:
         assert "定时报表" in sent["message"] or "Scheduled report" in sent["message"]
         assert mail.outbox == []  # 未选邮件渠道 → 不发邮件
 
-    def test_im_not_configured_marks_delivery_error(self, auth_client, dataset, superuser, settings, monkeypatch):
+    def test_im_not_configured_marks_delivery_error(
+        self, auth_client, dataset, superuser, settings, monkeypatch, django_capture_on_commit_callbacks
+    ):
         """渠道未配置（is_enable=False）：交付状态记错误明细，产物仍 SUCCESS。"""
         settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
         sent = {}
@@ -516,7 +534,8 @@ class TestReportImDelivery:
         report.im_recipients = [superuser.pk]
         report.save(update_fields=["notify_channels", "im_recipients"])
 
-        auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
+        with django_capture_on_commit_callbacks(execute=True):
+            auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
 
         from task.models.export import ExportRecord
 

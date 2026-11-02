@@ -63,8 +63,8 @@ def build_personal_file_stats(user: Any) -> dict[str, Any]:
     顶部统计面板的数据源：列表口径（活动记录）+ 一次聚合出多组维度，
     调用方以 10s 短缓存兜住重复刷新。
     """
-    # 配额按上传人维度聚合（creator 索引），与管理页「我的文件」口径一致
-    queryset = UploadFile.objects.filter(creator=user)
+    # 配额按全量行（含回收站）聚合：与 upload_store 的配额判定保持同一口径
+    queryset = UploadFile.all_objects.filter(creator=user)
     agg = queryset.aggregate(count=Count("pk"), total_size=Sum("filesize"))
     count = agg["count"] or 0
     total_size = agg["total_size"] or 0
@@ -164,7 +164,9 @@ def resolve_preview(upload: Any, kind: Any, size: str | None = None) -> tuple[An
         name = getattr(upload.filepath, "name", "")
         if not name or not storage_exists(name):
             return PREVIEW_STATE_FILE_MISSING, None
-        return PREVIEW_STATE_PDF, (storage_open(name, "rb"), upload.mime_type or "application/pdf")
+        # 响应类型固定为 application/pdf：上传 mime 由客户端提供，
+        # 回显会让「.pdf + text/html」的文件在预览 iframe 里以 HTML 执行
+        return PREVIEW_STATE_PDF, (storage_open(name, "rb"), "application/pdf")
 
     # Office：转换产物就绪即 inline 返回；转换中回 1006 由前端重试
     if kind == KIND_OFFICE:

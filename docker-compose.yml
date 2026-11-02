@@ -49,10 +49,27 @@ services:
     # PITR（2026-09-16 启用，见 docs/ops/pitr.md）：
     #   - archive_mode=on 需重启生效（archive_command/timeout 可 reload）；
     #   - 归档用 gzip 压缩（空段 16MB → KB 级，磁盘成本≈0），restore 端 gunzip；
+    #   - 归档命令先写 %f.gz.tmp 再原子 mv：中途失败不会留下半截文件卡死后续重试；
     #   - 归档卷默认与数据同盘（单机退让，风险与迁移条件见 pitr.md §6）；
     #     换独立盘/NFS 时**只改宿主路径**（容器内路径不变）：
     #       PITR_ARCHIVE_DIR=/mnt/pitr-archive docker compose up -d postgresql
     #     （未设置时回落到 ${VOLUME_DIR}/xadmin-postgresql/archive）
+    # 归档目录是 bind mount：Linux 上目录由 Docker 以 root:root 创建，而归档器以容器内
+    # postgres（uid 999）执行；不可写会让 WAL 永不回收（pg_wal 无限膨胀）。启动时先以
+    # root 探测并修正属主，再交回官方 entrypoint（macOS 开发环境本就可写，不执行 chown）。
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /var/lib/postgresql/archive
+        if ! gosu postgres test -w /var/lib/postgresql/archive; then
+          chown postgres:postgres /var/lib/postgresql/archive 2>/dev/null || true
+        fi
+        if ! gosu postgres test -w /var/lib/postgresql/archive; then
+          echo "[xadmin] WARN: WAL archive dir is not writable by postgres; archive_mode=on will retain WAL forever (check host dir ownership/mount options)" >&2
+        fi
+        exec /usr/local/bin/docker-entrypoint.sh "$$@"
+      - --
     command:
       - postgres
       - -c
@@ -62,7 +79,7 @@ services:
       - -c
       - archive_timeout=60
       - -c
-      - "archive_command=test ! -f /var/lib/postgresql/archive/%f.gz && gzip < %p > /var/lib/postgresql/archive/%f.gz"
+      - "archive_command=gzip -c < %p > /var/lib/postgresql/archive/%f.gz.tmp && mv /var/lib/postgresql/archive/%f.gz.tmp /var/lib/postgresql/archive/%f.gz"
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       POSTGRES_DB: ${DB_DATABASE:-xadmin}

@@ -2,9 +2,9 @@
 """副作用 GET 清单门禁。
 
 Cookie 承载 JWT 是无感刷新/WS 认证所必需的通道，SameSite=Lax 已封住跨站 POST；
-剩余风险面是「名为 GET、实际改状态」的 action——浏览器跨站 GET 会携带 Cookie，
-一旦存在副作用就会被 CSRF 利用。当前全仓没有此类端点；本测试用 AST 扫描
-``@action(methods=["get"])`` 内的持久化/外发调用，新增副作用 GET 必须改 POST，
+剩余风险面是「名为 GET、实际改状态」的端点——浏览器跨站 GET 会携带 Cookie，
+一旦存在副作用就会被 CSRF 利用。本测试用 AST 扫描 ``@action(methods=["get"])`` 与
+``APIView`` 家族的 ``get`` 方法内的持久化/外发调用，新增副作用 GET 必须改 POST，
 或在 ``ALLOWED_SIDE_EFFECT_GETS`` 登记并写明「为何必须 GET + 如何防 CSRF」。
 """
 
@@ -31,7 +31,14 @@ SCAN_DIRS = (
 
 #: 允许的副作用 GET：``(相对路径, 函数名) -> 理由``。当前为空——新增项必须
 #: 同时说明「为何不能改 POST」与「Content-Type/自定义头收紧」的防护。
-ALLOWED_SIDE_EFFECT_GETS: dict[tuple[str, str], str] = {}
+ALLOWED_SIDE_EFFECT_GETS: dict[tuple[str, str], str] = {
+    ("packages/xadmin-common/common/swagger/views.py", "get"): (
+        "文档站登出链接是 GET 导航（登录态清理，无数据变更；Lax Cookie 下仅登出自身会话）"
+    ),
+    ("identity/views/auth/oauth.py", "get"): (
+        "OAuth2 回调协议要求 GET（IdP 302 回跳）；state 一次性 Cookie 与 IdP 授权码双重校验防 CSRF"
+    ),
+}
 
 WRITE_ATTRS = {
     "save",
@@ -156,6 +163,25 @@ def _get_action_methods(node: ast.AST) -> set[str] | None:
     return methods or None
 
 
+def iter_plain_get_views():
+    """APIView 家族的 GET 方法（无 @action 装饰器）：协议回调等副作用同样要覆盖。"""
+    for folder in SCAN_DIRS:
+        for path in (ROOT / folder).rglob("*.py"):
+            if "__pycache__" in str(path) or "/migrations/" in str(path):
+                continue
+            try:
+                tree = ast.parse(path.read_text(encoding="utf-8"))
+            except (SyntaxError, UnicodeDecodeError):
+                continue
+            for cls in [node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]:
+                bases = {ast.unparse(base).split(".")[-1] for base in cls.bases}
+                if not any(base.endswith("APIView") for base in bases):
+                    continue
+                for node in cls.body:
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "get":
+                        yield path.relative_to(ROOT).as_posix(), f"{cls.name}.get", node
+
+
 def iter_get_actions():
     for folder in SCAN_DIRS:
         for path in (ROOT / folder).rglob("*.py"):
@@ -189,7 +215,24 @@ def test_no_unregistered_side_effect_get():
     )
 
 
+def test_no_unregistered_side_effect_plain_get():
+    violations = []
+    for rel_path, name, node in iter_plain_get_views():
+        hits = _scan_statements(node.body)
+        if not hits:
+            continue
+        key = (rel_path, "get")
+        if key in ALLOWED_SIDE_EFFECT_GETS:
+            continue
+        violations.append(f"{rel_path}::{name} -> {hits}")
+    assert not violations, (
+        "发现未登记的 APIView 副作用 GET（Cookie 通道可被跨站触发）：改 POST 或在 "
+        "ALLOWED_SIDE_EFFECT_GETS 登记理由。\n" + "\n".join(violations)
+    )
+
+
 def test_allowlist_entries_still_exist():
     actions = {(rel_path, node.name) for rel_path, node in iter_get_actions()}
+    actions |= {(rel_path, "get") for rel_path, _name, _node in iter_plain_get_views()}
     stale = [key for key in ALLOWED_SIDE_EFFECT_GETS if key not in actions]
     assert not stale, f"副作用 GET 白名单存在失效条目（已删除/已改 POST）：{stale}"

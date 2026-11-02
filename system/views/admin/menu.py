@@ -26,6 +26,7 @@ from common.core.modelset import (
     RankAction,
     RecycleBinAction,
 )
+from common.core.modelset.batch import normalize_pks
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from common.core.url_inventory import get_all_url_dict
@@ -78,6 +79,8 @@ class MenuViewSet(
     pagination_class = DynamicPageNumber(1000)
     ordering_fields = ["updated_time", "name", "created_time", "rank"]
     filterset_class = MenuFilter
+    # 嵌套 meta 序列化逐行取 OneToOne：列表 1000 行时避免 1000 次查询
+    select_related_fields = ("meta",)
     # 批量更新白名单：批量启停（与行内启停同一字段口径，逐项走序列化器校验）
     batch_update_fields = ("is_active",)
 
@@ -105,13 +108,32 @@ class MenuViewSet(
         payload = request.data if isinstance(request.data, dict) else {}
         pks = payload.get("pks") or []
         if isinstance(pks, (list, tuple)) and pks:
-            types = set(Menu.objects.filter(pk__in=pks).values_list("menu_type", flat=True))
+            # 先归一主键：非法 UUID 直接查库会抛 ValidationError → 500
+            valid_pks, _invalid = normalize_pks(Menu, pks)
+            types = set(Menu.objects.filter(pk__in=valid_pks).values_list("menu_type", flat=True))
             if Menu.MenuChoices.PERMISSION in types and len(types) > 1:
                 return ApiResponse(
                     code=1004,
                     detail=_("Permission codes cannot be batch updated together with menus or directories"),
                 )
         return super().batch_update(request, *args, **kwargs)
+
+    @extend_schema(
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="rank")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+    def rank(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """{cls}排序
+
+        排序走批量 UPDATE，不触发 post_save：必须手动失效菜单相关缓存，
+        否则侧边栏路由快照最长 24h 保持旧顺序。
+        """
+        response = super().rank(request, *args, **kwargs)
+        if getattr(response, "data", {}).get("code") == 1000:
+            valid_pks, _invalid = normalize_pks(Menu, request.data if isinstance(request.data, (list, tuple)) else [])
+            invalidate_menu_user_caches(Menu.all_objects.filter(pk__in=valid_pks))
+        return response
 
     def get_recycle_restore_queryset(self, pks: Any) -> Any:
         """成组恢复：目录删除时后代被标记同一 deleted_at，按时间戳成组恢复。"""

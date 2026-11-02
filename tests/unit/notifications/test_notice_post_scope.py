@@ -129,7 +129,7 @@ class TestRoleNoticeScope:
 
         assert NoticeMessageSerializer().get_user_count(notice) == 2
         # 整页批量口径（一次聚合）同样包含部门挂角色成员
-        page = NoticeMessageSerializer([notice], many=True).data
+        page = NoticeMessageSerializer([notice], many=True, ignore_field_permission=True).data
         assert page[0]["user_count"] == 2
 
     def test_inactive_role_count_is_zero(self):

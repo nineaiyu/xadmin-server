@@ -205,7 +205,7 @@ class OAuthAuthorizeAPIView(GenericAPIView):
         response = ApiResponse(data={"url": url, "state": state})
         # 登录 state 与发起授权的浏览器会话绑定：回调时校验一致性，
         # 阻断「诱导受害者浏览器访问攻击者的 (code, state) 回调」登录 CSRF
-        set_state_cookie(response, state)
+        set_state_cookie(response, state, secure=request.is_secure())
         return response
 
 

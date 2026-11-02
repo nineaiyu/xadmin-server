@@ -77,3 +77,23 @@ class TestHealthCheck:
         data = resp.json()
         assert data["celery_status"] is False
         assert data["celery_time"] == 0.0
+
+
+class TestHealthStatusCodes:
+    def test_health_returns_503_when_core_dependency_down(self, api_client, monkeypatch):
+        """容器 healthcheck 只认 HTTP 状态码：DB/Redis 不可用时必须 5xx。"""
+        from common.api import common as common_api
+
+        monkeypatch.setattr(
+            common_api,
+            "probe_all",
+            lambda: {
+                "db": (False, "db down"),
+                "redis": (True, 0.01),
+                "celery": (False, 0.0),
+                "storage": (True, 0.01),
+            },
+        )
+        resp = api_client.get(HEALTH_URL)
+        assert resp.status_code == 503
+        assert resp.json()["status"] is False

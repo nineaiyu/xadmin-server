@@ -13,12 +13,11 @@
 """
 
 import datetime
-import math
 import time
 from typing import Any
 
 from django.core.cache import cache
-from django.db.models import Count, Q, Sum
+from django.db.models import Aggregate, Avg, Count, IntegerField, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -33,6 +32,9 @@ from ai.services.assistant.ai_stream_slots import (  # noqa: F401  (并发信号
 )
 from ai.services.assistant.ai_stream_slots import (
     acquire_stream_slot as acquire_stream_slot,  # noqa: F401 显式再导出（PEP 484 语义）
+)
+from ai.services.assistant.ai_stream_slots import (
+    refresh_stream_slot as refresh_stream_slot,  # noqa: F401 显式再导出（PEP 484 语义）
 )
 from ai.services.assistant.ai_stream_slots import (
     release_stream_slot as release_stream_slot,  # noqa: F401 显式再导出（PEP 484 语义）
@@ -77,8 +79,8 @@ def record_usage(
     """
     from ai.models.ai import AiUsageRecord
 
-    tokens = extract_tokens(usage)
     try:
+        tokens = extract_tokens(usage)
         AiUsageRecord.objects.create(
             creator=user if getattr(user, "pk", None) else None,
             feature=str(feature)[:16],
@@ -94,12 +96,22 @@ def record_usage(
         logger.warning("write AI usage record failed", exc_info=True)
 
 
+def _local_day_bounds() -> tuple[Any, Any]:
+    """本地时区当日 [start, end)：区间过滤可利用 created_time 索引（``__date`` 不走索引）。"""
+    start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+    return start, start + datetime.timedelta(days=1)
+
+
 def _usage_cache_key(user: Any) -> str:
     return f"ai_usage_sum_{getattr(user, 'pk', 'anonymous')}_{timezone.localdate().isoformat()}"
 
 
 def today_usage(user: Any) -> dict[str, Any]:
-    """当前用户当日用量（调用次数 / token；60s 短缓存，兼容无缓存后端）。"""
+    """当前用户当日用量（调用次数 / token；60s 短缓存，兼容无缓存后端）。
+
+    配额判定读 60s 缓存：并发突发窗口内可能略超上限（可接受的吞吐换缓存命中），
+    配额是成本护栏而非精确计费。
+    """
     from ai.models.ai import AiUsageRecord
 
     key = _usage_cache_key(user)
@@ -109,7 +121,8 @@ def today_usage(user: Any) -> dict[str, Any]:
         cached = None
     if isinstance(cached, dict):
         return cached
-    rows = AiUsageRecord.objects.filter(creator=user, created_time__date=timezone.localdate()).aggregate(
+    day_start, day_end = _local_day_bounds()
+    rows = AiUsageRecord.objects.filter(creator=user, created_time__gte=day_start, created_time__lt=day_end).aggregate(
         calls=Count("pk"), tokens=Sum("tokens_total")
     )
     data = {"calls": int(rows["calls"] or 0), "tokens": int(rows["tokens"] or 0)}
@@ -259,88 +272,100 @@ def tracked_chat_stream(
     from ai.services.assistant.ai_config import active_profile_name
     from integrations.sdk.ai.chat import AiSdkError
 
-    # with 覆盖整个生成器生命周期：异常/中断路径也释放并发信号量
-    with stream_slot() as acquired:
+    # with 覆盖整个生成器生命周期：异常/中断路径也释放并发信号量；
+    # 事件推进时按时间窗续期计数键 TTL（长会话不让计数被过期清零而稀释上限）
+    slot = stream_slot()
+    with slot as acquired:
         if not acquired:
             # 全局并发流式上限：给可读提示而不是静默排队
             raise AiSdkError("Too many concurrent AI streams, please retry later")
         started = time.monotonic()
+        ok, detail = True, ""
         try:
-            yield from client.chat_stream(messages, **overrides)
+            for item in client.chat_stream(messages, **overrides):
+                slot.heartbeat()
+                yield item
         except AiSdkError as exc:
+            ok, detail = False, str(exc)
+            raise
+        except BaseException:
+            # 客户端断开（GeneratorExit）/ASGI 取消：中断流同样要记成本
+            ok, detail = False, "interrupted"
+            raise
+        finally:
             record_usage(
                 user,
                 feature,
+                usage=client.last_usage if ok else None,
                 duration_ms=int((time.monotonic() - started) * 1000),
-                ok=False,
-                detail=str(exc),
+                ok=ok,
+                detail=detail,
                 profile_name=active_profile_name(),
                 model=getattr(client, "model", ""),
                 track=track,
             )
-            raise
-        record_usage(
-            user,
-            feature,
-            usage=client.last_usage,
-            duration_ms=int((time.monotonic() - started) * 1000),
-            profile_name=active_profile_name(),
-            model=getattr(client, "model", ""),
-            track=track,
-        )
-        invalidate_usage_cache(user)
+            invalidate_usage_cache(user)
 
 
 # --------------------------------------------------------------------- 汇总口径
 
 
-def _latency_stats(durations: list[int]) -> dict[str, Any]:
+class _PercentileDisc95(Aggregate):
+    """数据库侧最近秩 P95（``percentile_disc``），避免把窗口内全部耗时读进内存。"""
+
+    function = "PERCENTILE_DISC"
+    template = "%(function)s(0.95) WITHIN GROUP (ORDER BY %(expressions)s)"
+    output_field = IntegerField()
+
+
+def _latency_fields(avg: Any, p95: Any, samples: Any) -> dict[str, Any]:
     """延迟统计（毫秒）：均值恒给，p95 仅在样本量足够时给（否则 None）。
 
-    p95 用「最近秩」（nearest-rank）口径在 Python 侧计算——不依赖数据库方言
-    （跨 PG / sqlite 结果一致）。样本不足时给 None 而非均值：均值会把长尾抹平，
-    读起来像「延迟正常」，反而误导。
+    样本不足时给 None 而非均值：均值会把长尾抹平，读起来像「延迟正常」，反而误导。
     """
-    if not durations:
+    sample_count = int(samples or 0)
+    if not sample_count:
         return {"avg_latency_ms": None, "p95_latency_ms": None, "latency_samples": 0}
-    ordered = sorted(int(item or 0) for item in durations)
-    avg = round(sum(ordered) / len(ordered), 1)
-    p95: int | None = None
-    if len(ordered) >= P95_MIN_SAMPLES:
-        rank = math.ceil(0.95 * len(ordered))
-        p95 = ordered[min(rank, len(ordered)) - 1]
-    return {"avg_latency_ms": avg, "p95_latency_ms": p95, "latency_samples": len(ordered)}
+    return {
+        "avg_latency_ms": round(float(avg or 0), 1),
+        "p95_latency_ms": int(p95) if sample_count >= P95_MIN_SAMPLES and p95 is not None else None,
+        "latency_samples": sample_count,
+    }
 
 
-def _group_dimension(records: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
+def _group_dimension(rows: Any, key: str) -> list[dict[str, Any]]:
     """按维度键（档案 / 模型）聚合：调用 / 失败 / token / 成功率 / 延迟；键为空不入表。
 
-    延迟需要全量样本（p95 无标准 ORM 聚合、跨方言口径不一），故由调用方一次取回
-    记录（``profile_name/model/duration_ms/ok/tokens_total``）后在此内存分组；
-    端点面向管理员观测面，窗口受 ``USAGE_MAX_DAYS`` 约束。
+    分组与延迟分位数都在数据库侧完成（``percentile_disc``），不再把窗口内
+    全部明细读进内存——365 天窗口下调用量可达数百万行。
     """
-    buckets: dict[str, dict[str, Any]] = {}
-    for row in records:
+    groups = (
+        rows.exclude(**{key: ""})
+        .values(key)
+        .annotate(
+            calls=Count("pk"),
+            failed=Count("pk", filter=Q(ok=False)),
+            tokens=Sum("tokens_total"),
+            avg_latency=Avg("duration_ms"),
+            p95_latency=_PercentileDisc95("duration_ms"),
+        )
+        .order_by("-calls")
+    )
+    results = []
+    for row in groups:
         name = str(row.get(key) or "").strip()
         if not name:
             continue
-        bucket = buckets.setdefault(name, {"calls": 0, "failed": 0, "tokens": 0, "durations": []})
-        bucket["calls"] += 1
-        bucket["failed"] += 0 if row.get("ok") else 1
-        bucket["tokens"] += int(row.get("tokens_total") or 0)
-        bucket["durations"].append(int(row.get("duration_ms") or 0))
-    results = []
-    for name, bucket in sorted(buckets.items(), key=lambda item: -item[1]["calls"]):
-        calls = int(bucket["calls"])
-        failed = int(bucket["failed"])
+        calls = int(row["calls"] or 0)
+        failed = int(row["failed"] or 0)
         results.append(
             {
                 key: name,
                 "calls": calls,
                 "failed": failed,
-                "tokens": int(bucket["tokens"]),
+                "tokens": int(row["tokens"] or 0),
                 "success_rate": round((1 - failed / max(calls, 1)) * 100, 1),
-                **_latency_stats(bucket["durations"]),
+                **_latency_fields(row["avg_latency"], row["p95_latency"], calls),
             }
         )
     return results
@@ -358,7 +383,13 @@ def usage_summary(days: int = 7, feature: str = "") -> dict[str, Any]:
     rows = AiUsageRecord.objects.filter(created_time__gte=since)
     if feature:
         rows = rows.filter(feature=feature)
-    totals = rows.aggregate(calls=Count("pk"), tokens=Sum("tokens_total"), failed=Count("pk", filter=Q(ok=False)))
+    totals = rows.aggregate(
+        calls=Count("pk"),
+        tokens=Sum("tokens_total"),
+        failed=Count("pk", filter=Q(ok=False)),
+        avg_latency=Avg("duration_ms"),
+        p95_latency=_PercentileDisc95("duration_ms"),
+    )
     by_day = list(
         rows.annotate(day=TruncDate("created_time"))
         .values("day")
@@ -379,8 +410,7 @@ def usage_summary(days: int = 7, feature: str = "") -> dict[str, Any]:
         .annotate(calls=Count("pk"), tokens=Sum("tokens_total"))
         .order_by("-tokens")[:10]
     )
-    # 维度明细（档案 / 模型）与延迟统计：一次取回窗口内记录，内存分组
-    records = list(rows.values("profile_name", "model", "duration_ms", "ok", "tokens_total"))
+    # 维度明细（档案 / 模型）与延迟统计：分组与分位数均在 DB 侧完成
     total_calls = int(totals["calls"] or 0)
     failed_calls = int(totals["failed"] or 0)
     return {
@@ -390,7 +420,7 @@ def usage_summary(days: int = 7, feature: str = "") -> dict[str, Any]:
         "failed": failed_calls,
         "success": total_calls - failed_calls,
         "success_rate": round((1 - failed_calls / total_calls) * 100, 1) if total_calls else 0.0,
-        **_latency_stats([int(row["duration_ms"] or 0) for row in records]),
+        **_latency_fields(totals["avg_latency"], totals["p95_latency"], total_calls),
         "by_day": [
             {
                 "day": row["day"].isoformat() if hasattr(row["day"], "isoformat") else str(row["day"]),
@@ -425,8 +455,8 @@ def usage_summary(days: int = 7, feature: str = "") -> dict[str, Any]:
             for row in top_users
         ],
         # 按档案 / 按模型分布：成功率 + 平均 / P95 延迟（键为空的行不入表，见 _group_dimension）
-        "by_profile": _group_dimension(records, "profile_name"),
-        "by_model": _group_dimension(records, "model"),
+        "by_profile": _group_dimension(rows, "profile_name"),
+        "by_model": _group_dimension(rows, "model"),
         "quota": quota_limits(),
         "stream_slots": stream_slots_in_use(),
     }

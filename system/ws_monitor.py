@@ -18,6 +18,7 @@ database_sync_to_async 丢线程池执行，避免拖慢共享事件循环。
 """
 
 import asyncio
+from contextlib import suppress
 from typing import Any
 
 from channels.db import database_sync_to_async
@@ -79,10 +80,16 @@ class MonitorNotify(AsyncJsonWebsocket):
             return
         self.disconnected = False
         await self.accept()
-        asyncio.create_task(self.push_loop())
+        # 保存引用：事件循环只弱引用任务，GC 可能中断推送且无日志
+        self._push_task = asyncio.create_task(self.push_loop())
 
     async def disconnect(self, close_code: Any) -> None:
         self.disconnected = True
+        task = getattr(self, "_push_task", None)
+        if task is not None and not task.done():
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
 
     async def ping(self, event: Any) -> None:
         """监控连接不属于消息层分组（无 group_name），心跳静默忽略即可；

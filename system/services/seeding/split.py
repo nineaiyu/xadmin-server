@@ -228,21 +228,23 @@ def sync_manifest(
         if template is None:
             return
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(
-                {
-                    "version": 1,
-                    "app": app,
-                    "depends": list(template.depends),
-                    "url_prefixes": list(template.url_prefixes),
-                    "files": [],
-                },
-                ensure_ascii=False,
-                indent=2,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
+        # 新建清单必须完整继承模板的归属声明（config_keys / dict_codes / menu_roots /
+        # grants）：只复制 depends/url_prefixes 会让导出补丁层再校验时判「未归属」
+        payload: dict[str, Any] = {
+            "version": 1,
+            "app": app,
+            "depends": list(template.depends),
+            "url_prefixes": list(template.url_prefixes),
+            "menu_roots": list(template.menu_roots),
+            "config_keys": list(template.config_keys),
+            "dict_codes": list(template.dict_codes),
+            "files": [],
+        }
+        if template.grants is not None:
+            payload["grants"] = template.grants.path.name
+        if template.sample:
+            payload["sample"] = []
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     manifest = json.loads(path.read_text(encoding="utf-8"))
     filename, kind, order = SPLIT_MODELS[model]
     dropped = {*removed, filename}

@@ -57,9 +57,15 @@ def invalidate_overrides() -> None:
     cache.delete(OVERRIDE_CACHE_KEY)
 
 
+class _VariableOnlyEngine(Engine):
+    """仅变量插值的模板引擎：不加载 Django 内置标签/过滤器库。"""
+
+    default_builtins: list[str] = []
+
+
 def render_template(template_text: str, context: dict[str, Any]) -> str:
-    # 沙箱：只做变量插值（string_if_invalid 为空串、不自动转义），不注册自定义标签/过滤器
-    engine = Engine(string_if_invalid="", autoescape=False)
+    # 沙箱：只做变量插值（string_if_invalid 为空串、不自动转义），不注册内置标签/过滤器
+    engine = _VariableOnlyEngine(string_if_invalid="", autoescape=False, builtins=[], libraries={})
     rendered: str = engine.from_string(template_text).render(Context(context))
     return rendered
 
@@ -97,8 +103,11 @@ def validate_template(template_text: str, available_variables: Any) -> str:
     text = str(template_text or "")
     if not text.strip():
         return ""
+    if "{%" in text or "{#" in text:
+        # 沙箱只支持 {{ var }} 变量插值：标签/注释会让编译失败或引入不必要能力
+        return str(_("Template only supports {{ variable }} interpolation"))
     try:
-        Engine(string_if_invalid="", autoescape=False).from_string(text)
+        _VariableOnlyEngine(string_if_invalid="", autoescape=False, builtins=[], libraries={}).from_string(text)
     except Exception as exc:  # noqa: BLE001 模板语法错误直接返回可读原因
         return str(_("Template syntax error: {}")).format(str(exc)[:120])
     unknown = sorted(extract_variables(text) - set(available_variables or []))

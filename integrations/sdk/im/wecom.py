@@ -60,7 +60,8 @@ class WeComClient(BaseImClient):
         except ImSdkError:
             raise
         except Exception as exc:
-            raise ImSdkError(f"request failed: {exc}") from exc
+            # 不拼接原始异常文本：requests 异常常带完整 URL（access_token 在 query 中）
+            raise ImSdkError(f"request failed: {type(exc).__name__}") from exc
         return self._check(payload if isinstance(payload, dict) else {}, "message/send")
 
     def send_text(self, accounts: Any, content: Any) -> None:

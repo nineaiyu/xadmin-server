@@ -70,4 +70,4 @@ class TestAvailableFlowsScope:
         flow = _flow("other_flow", ["finance"])
         instance, error = create_instance(flow=flow, applicant=user, title="越权发起", form_data={})
         assert instance is None
-        assert "not allowed" in error
+        assert any(k in error for k in ("not allowed", "无权"))

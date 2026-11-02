@@ -79,23 +79,32 @@ def format_data(data: QueryDict | dict[str, Any], _depth: int = 0) -> Any:
                     value = data.get(key_split[0])
             new_data[key_split[0]] = value
         else:
-            if re.match(r"\d+", key_split[1]):  # 列表
+            if re.fullmatch(r"\d+", key_split[1]):  # 列表（严格数字下标，"1bar" 按普通键处理）
                 result = format_data({".".join(key_split[1:]): value}, _depth + 1)
                 lk = list(result.keys())
+                if not re.fullmatch(r"\d+", str(lk[0])):
+                    raise ParseError(_("Multipart form field index is invalid"))
                 index = int(lk[0])
                 info: list[Any] = new_data.get(key_split[0]) or []
+                if not isinstance(info, list):
+                    raise ParseError(_("Multipart form field shape conflicts"))
                 if not info:
                     new_data[key_split[0]] = info
                 # 下标可能乱序 / 跳号（axios 只提交有值的下标）：先补空位再落值，
                 # 否则 info[index] 会越界（如先 covers.0 再 covers.5）
                 while len(info) <= index:
                     info.append({})
+                entry = result.get(lk[0])
+                if info[index] and not isinstance(info[index], dict):
+                    raise ParseError(_("Multipart form field shape conflicts"))
                 if info[index]:
-                    info[index].update(result.get(lk[0]))
+                    info[index].update(entry if isinstance(entry, dict) else {"value": entry})
                 else:
-                    info[index] = result.get(lk[0])
+                    info[index] = entry
             else:  # 字典
                 info_dict: dict[str, Any] = new_data.get(key_split[0], {})
+                if info_dict and not isinstance(info_dict, dict):
+                    raise ParseError(_("Multipart form field shape conflicts"))
                 if not info_dict:
                     new_data[key_split[0]] = format_data({".".join(key_split[1:]): value}, _depth + 1)
                 else:
@@ -138,3 +147,7 @@ class AxiosMultiPartParser(BaseParser):
             return DataAndFiles(new_data, files)
         except MultiPartParserError as exc:
             raise ParseError(_("Multipart form parse error - {}").format(str(exc))) from exc
+        except ParseError:
+            raise
+        except Exception as exc:  # noqa: BLE001 畸形键等解析异常统一 400，不落成 500
+            raise ParseError(_("Multipart form parse error")) from exc

@@ -352,7 +352,8 @@ class TestEmpowerScopeIsolation:
         full = self._all_rule()
         api_client.force_authenticate(user=normal_user)
         resp = api_client.post(f"{USER_LIST_URL}/{normal_user.pk}/empower", {"rules": [str(full.pk)]}, format="json")
-        assert resp.status_code == 200, resp.data
+        # 越权赋值整体拒绝（不再静默过滤后 set 空集：那会清空既有授权）
+        assert resp.status_code == 400, resp.data
         assert full not in normal_user.rules.all()
 
     def test_visible_rule_assignable(self, api_client, normal_user, role, menu_factory):
@@ -425,3 +426,20 @@ class TestPatScopeBoundary:
         api_client.credentials(HTTP_AUTHORIZATION=f"Pat {token}")
         assert api_client.get(BOOK_LIST_URL).status_code == 200  # 属主菜单内有 → 放行
         assert api_client.get(USER_LIST_URL).status_code == 403  # 属主菜单内没有 → 拦下
+
+
+class TestEmpowerEmptyClearGuard:
+    """显式空清单清空授权也必须要求调用者有取值域（否则无域用户可清空他人授权）。"""
+
+    EMPOWER_PATH = r"api/identity/user/(?P<pk>[^/.]+)/empower$"
+
+    def test_empty_clear_rejected_without_scope(self, api_client, normal_user, role, menu_factory):
+        grant_menu(role, menu_factory, self.EMPOWER_PATH, "POST")
+        keep = make_owner_permission("keep-own", "demo.book", "admin")
+        normal_user.rules.add(keep)
+        api_client.force_authenticate(user=normal_user)
+
+        resp = api_client.post(f"{USER_LIST_URL}/{normal_user.pk}/empower", {"rules": []}, format="json")
+
+        assert resp.status_code == 400, resp.data
+        assert keep in normal_user.rules.all()

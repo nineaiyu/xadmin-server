@@ -90,6 +90,13 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq gettext
           uv run --no-sync python manage.py compilemessages
 
+      - name: Check OpenAPI contract is in sync
+        # docs/schema/openapi.json 是前端类型生成真源：代码改了响应结构但忘记
+        # dump_openapi 时在此失败（此前该检查未挂 CI，文档承诺与实现漂移）
+        run: |
+          uv run --no-sync python manage.py migrate --noinput
+          uv run --no-sync python manage.py dump_openapi --check
+
       - name: Tune PG logging (slow queries / lock waits)
         # service 的 options 只接受 docker create 参数（不是 postgres 启动参数），
         # 只能用运行时 ALTER SYSTEM + reload 打开服务端视角：卡死复现时，

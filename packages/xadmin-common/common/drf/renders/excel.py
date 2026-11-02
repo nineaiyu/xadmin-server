@@ -5,13 +5,9 @@ from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
-from openpyxl.utils import get_column_letter, quote_sheetname
-from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
-from rest_framework import serializers
 from rest_framework.utils import encoders
-
-from common.core.serializers import BasePrimaryKeyRelatedField
 
 from .base import BaseFileRenderer
 
@@ -51,41 +47,6 @@ class ExcelFileRenderer(BaseFileRenderer):
             else:
                 result.append(f"{value}({key})")
         return json.loads(json.dumps(result, cls=encoders.JSONEncoder, ensure_ascii=False))
-
-    def add_validation(self, rendered_fields: Any) -> None:
-        if self.template not in ["import", "update"]:
-            return
-        validation_data_dict = {}
-        w_data = self.wb.create_sheet("data", 1)
-        w_data.sheet_state = "hidden"
-        # self.ws = self.wb.active
-        boolean_choices = {"True": "Yes", "False": "No"}
-        for index, field in enumerate(rendered_fields):
-            name = field.label
-            if field.required:
-                name = "*" + name
-            name = str(name)
-            if isinstance(field, serializers.BooleanField):
-                validation_data_dict[name] = self.format_values(boolean_choices)
-            if hasattr(field, "choices"):
-                validation_data_dict[name] = self.format_values(
-                    field.choices, isinstance(field, BasePrimaryKeyRelatedField)
-                )
-            if validation_data_dict.get(name) is not None:
-                column_letter = get_column_letter(len(validation_data_dict))
-                ## 数据验证不支持多选，后期优化
-                dv = DataValidation(
-                    type="list",
-                    formula1=f"{quote_sheetname('data')}!${column_letter}$2:${column_letter}${len(validation_data_dict[name]) + 1}",
-                    allow_blank=True,
-                )
-                self.ws.add_data_validation(dv)
-                dv.add(f"{get_column_letter(index + 1)}2:{get_column_letter(index + 1)}1048576")
-
-        w_data.append(list(validation_data_dict.keys()))
-        for index, validation_data in enumerate(validation_data_dict.values()):
-            for inx, ele in enumerate(validation_data):
-                w_data[f"{get_column_letter(index + 1)}{inx + 2}"] = ele
 
     def after_render(self) -> None:
         count = 0

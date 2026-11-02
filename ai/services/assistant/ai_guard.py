@@ -122,10 +122,17 @@ def guard_enabled() -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _escape_markers(value: str) -> str:
+    """中和内容里的边界标记：文档正文/文件名不得提前闭合引用块。"""
+    for marker in (REFERENCE_BEGIN, REFERENCE_END):
+        value = value.replace(marker, marker.replace("<<<", "<< <"))
+    return value
+
+
 def wrap_reference(text: str, label: str = "") -> str:
     """把外部内容包成结构化引用块（无条件包裹，标记语义由 system prompt 声明）。"""
-    header = f"{REFERENCE_BEGIN} {label}".rstrip()
-    return "\n".join([header, text or "", REFERENCE_END])
+    header = f"{REFERENCE_BEGIN} {_escape_markers(str(label or ''))}".rstrip()
+    return "\n".join([header, _escape_markers(str(text or "")), REFERENCE_END])
 
 
 def scan_injection(text: str) -> list[Any]:

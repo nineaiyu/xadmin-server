@@ -10,6 +10,8 @@ from typing import Any
 from django.db.models.fields.files import FieldFile
 from rest_framework.fields import Field as RFField
 
+from common.utils.media_signing import sign_media_url
+
 
 def get_file_absolute_uri(value: FieldFile, request: Any = None, use_url: bool = True) -> Any:
     if not value:
@@ -20,6 +22,8 @@ def get_file_absolute_uri(value: FieldFile, request: Any = None, use_url: bool =
             url = value.url
         except AttributeError:
             return None
+        # 敏感命名空间（导出 / 附件等）的媒体链接统一带短时效签名，与 media_serve 校验同源
+        url = sign_media_url(url)
         if request is not None:
             return request.build_absolute_uri(url)
         return url

@@ -52,13 +52,27 @@ def decrypt_submitted_password(
             raise ValidationError(PASSWORD_DECRYPT_FAILED_MESSAGE, code=PASSWORD_DECRYPT_FAILED_CODE)
         return plain
     try:
-        return AESCipherV2(user.username).decrypt(ciphertext)
+        # decrypt 对认证失败/格式非法可能返回空串而不抛异常：空结果同样按明文回退，
+        # 否则导入/E2E 明文提交会以空密码参与后续规则校验被误拒
+        plain = AESCipherV2(user.username).decrypt(ciphertext)
     except Exception as e:
         logger.warning(f"{log_prefix} {field} decrypt failed:{e}. fallback to submitted plaintext")
-        return ciphertext
+        plain = ""
+    return plain or ciphertext
 
 
 class UserInfoSerializer(BaseModelSerializer):
+    def validate_username(self, value: Any) -> Any:
+        """username 在 DB 层全局唯一（含软删行）：与 UserSerializer 同口径显式查重。"""
+        from django.utils.translation import gettext_lazy as _t
+
+        from identity.models import UserInfo
+
+        exists = UserInfo.all_objects.filter(username=value).exclude(pk=getattr(self.instance, "pk", None)).exists()
+        if exists:
+            raise serializers.ValidationError(_t("This username is already taken"))
+        return value
+
     class Meta:
         model = UserInfo
         write_fields = ["username", "nickname", "gender"]

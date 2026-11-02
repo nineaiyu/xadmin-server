@@ -93,18 +93,28 @@ class Config(dict[str, Any]):
             # （AI 采样参数下发即成非数值）
             return self._infer_scalar(v)
         tp: Callable[[Any], Any] = type(default_value)
-        # 对bool特殊处理
-        if tp is bool and isinstance(v, str):
-            if v.lower() in ("true", "1"):
+        # bool：接受 true/1/yes/on（历史实现只认 true/1，yes/on 被静默关闭）
+        if tp is bool:
+            if isinstance(v, bool):
+                return v
+            text = str(v).strip().lower()
+            if text in ("true", "1", "yes", "on"):
                 return True
-            else:
+            if text in ("false", "0", "no", "off", ""):
                 return False
-        if tp in [list, dict] and isinstance(v, str):
+            return default_value
+        if tp in (list, dict, tuple) and isinstance(v, str):
+            text = v.strip()
             try:
-                v = json.loads(v)
-                return v
+                parsed = json.loads(text)
             except json.JSONDecodeError:
+                if tp in (list, tuple):
+                    items = [item.strip() for item in text.split(",") if item.strip()]
+                    return tuple(items) if tp is tuple else items
                 return v
+            if tp is tuple:
+                return tuple(parsed) if isinstance(parsed, list) else default_value
+            return parsed if isinstance(parsed, tp) else default_value
 
         try:
             if tp in [list, dict]:

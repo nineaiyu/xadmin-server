@@ -88,9 +88,8 @@ def login_success(
         # 到期前提醒，此处拦截覆盖「任务时差窗口内仍可登录」的情形
         raise ValidateError(ACCOUNT_EXPIRED_MESSAGE)
     ipaddr = get_request_ip(request)
-    login_block_util = LoginBlockUtil(user_obj.username, ipaddr)
     login_ip_block = LoginIpBlockUtil(ipaddr)
-    login_block_util.clean_failed_count()
+    LoginBlockUtil.unblock_account(user_obj)
     login_ip_block.clean_block_if_need()
     if not save_log:
         # 登录 MFA 待验证：密码阶段已通过，锁定计数需清理；登录日志与异地提醒在二次验证通过后记录

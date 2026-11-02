@@ -19,6 +19,7 @@ from django.db.models import (
     ManyToManyField,
     Q,
     TimeField,
+    UUIDField,
 )
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
@@ -79,6 +80,9 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
                 raise RestValidationError(_("Unsupported filter field: %(key)s") % {"key": key})
             if isinstance(model_field, ManyToManyField) and lookup not in self.m2m_lookups:
                 raise RestValidationError(_("Unsupported filter expression: %(key)s") % {"key": key})
+            if lookup not in self.available_lookups(model_field):
+                # 字段类型不支持该 lookup（如 pk__icontains）：提前 400，避免 DB 编译/执行 500
+                raise RestValidationError(_("Unsupported filter expression: %(key)s") % {"key": key})
             if not self._field_visible(request, model_label, field_name):
                 raise RestValidationError(_("No permission to filter by field: %(field)s") % {"field": field_name})
             values = request.query_params.getlist(key)
@@ -105,7 +109,9 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
             return list(cls.m2m_lookups)
         if isinstance(model_field, BooleanField):
             return list(cls.bool_lookups)
-        if isinstance(model_field, (DateField, DateTimeField, TimeField, IntegerField, FloatField, DecimalField)):
+        if isinstance(
+            model_field, (DateField, DateTimeField, TimeField, IntegerField, FloatField, DecimalField, UUIDField)
+        ):
             return list(cls.range_lookups)
         return list(cls.text_lookups)
 

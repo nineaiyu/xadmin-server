@@ -124,12 +124,14 @@ class OperationLogSerializer(BaseModelSerializer):
         data = super().to_representation(instance)
         changes = data.get("changes")
         if changes:
-            data["changes"] = mask_operation_changes(
+            masked = mask_operation_changes(
                 changes,
                 getattr(instance, "model_label", ""),
                 getattr(self, "request", None),
                 getattr(getattr(self, "request", None), "user", None),
             )
+            # 详情/导出与列表同级有界：changes 不再提供 4KB 全量出口
+            data["changes"] = masked[:OPERATION_LOG_LIST_PREVIEW_MAX] if isinstance(masked, str) else masked
         for name in ("body", "response_result"):
             # 响应体没有「值语义」漏项，路径兜底只对请求体生效
             data[name] = _bounded_log_body(data.get(name), getattr(instance, "path", "") if name == "body" else "")

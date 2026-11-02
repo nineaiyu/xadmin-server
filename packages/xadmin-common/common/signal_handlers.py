@@ -31,11 +31,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def safe_str(x: Any) -> Any:
-    return x
-
-
-pattern = re.compile(r"FROM `(\w+)`")
+pattern = re.compile(r'FROM\s+[`"]?(\w+)[`"]?', re.IGNORECASE)
 
 
 @worker_ready.connect  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -153,7 +149,8 @@ def on_create_set_creator(sender: Any, instance: Any = None, **kwargs: Any) -> N
     if creator:
         instance.creator = creator
         if hasattr(instance, "dept_belong"):
-            instance.dept_belong = creator.dept
+            # 用 *_id 赋值：避免每行 pre_save 都懒加载 creator.dept 触发额外查询
+            instance.dept_belong_id = creator.dept_id
 
 
 @receiver(pre_save)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级

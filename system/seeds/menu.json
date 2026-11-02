@@ -2337,11 +2337,7 @@
    "is_active": true,
    "meta": "ede27e68-b901-4602-a97c-fc6fd5572eba",
    "method": "GET",
-   "model": [
-    "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
-    "c19100c5-725c-4a81-a1f1-1209f757d693",
-    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
-   ]
+   "model": []
   }
  },
  {
@@ -2594,9 +2590,7 @@
    "is_active": true,
    "meta": "c3a1f008-5a02-4b02-8c02-000000000008",
    "method": "GET",
-   "model": [
-    "0f57a580-952e-4751-a110-9e447a08768d"
-   ]
+   "model": []
   }
  },
  {
@@ -2619,9 +2613,7 @@
    "is_active": true,
    "meta": "c3a1f00a-5a02-4b02-8c02-00000000000a",
    "method": "POST",
-   "model": [
-    "0f57a580-952e-4751-a110-9e447a08768d"
-   ]
+   "model": []
   }
  },
  {

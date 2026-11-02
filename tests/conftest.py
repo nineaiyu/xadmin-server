@@ -159,7 +159,7 @@ def _release_pool_connections():
 
     executors = {SyncToAsync.single_thread_executor, *AsyncToSync.loop_thread_executors.values()}
     executors.update(SyncToAsync.context_to_thread_executor.values())
-    executors.add(health._probe_pool)  # 健康探测线程池：probe_db 借出的连接由本步归还
+    executors.update(health._probe_pools.values())  # 健康探测线程池：probe_db 借出的连接由本步归还
     if debounce._executor is not None:
         executors.add(debounce._executor)
     for executor in executors:

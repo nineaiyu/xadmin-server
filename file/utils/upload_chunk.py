@@ -163,8 +163,14 @@ def init_session(
     ``normalize_content_hash``）：同名同大小但内容不同的两个文件必须落到两个会话。
     """
     filename = sanitize_filename(filename)
-    chunk_size = min(max(int(chunk_size), MIN_CHUNK_SIZE), MAX_CHUNK_SIZE)
-    _validate_plan(filename, filesize, int(total_chunks), chunk_size, user_obj)
+    try:
+        filesize = int(filesize)
+        total_chunks = int(total_chunks)
+        chunk_size = int(chunk_size)
+    except (TypeError, ValueError):
+        raise UploadError(INVALID_CODE, _("Invalid upload plan")) from None
+    # 不静默夹取：超范围直接拒绝，避免客户端按被改写后的 chunk_size 计算出误导错误
+    _validate_plan(filename, filesize, total_chunks, chunk_size, user_obj)
     content_hash = normalize_content_hash(content_hash)
     # 防双击/并发重复 init：同用户每秒一次；命中续传路径本就幂等，仅收敛写放大
     if not allow_by_identity(user_obj.pk, scope="upload_chunk_init", limit=5, window_seconds=1):
@@ -215,7 +221,7 @@ def store_part(user_obj: Any, session: Any, index: Any, file_obj: Any) -> int:
     is_last = index == session.total_chunks - 1
     if size > session.chunk_size or (not is_last and size != session.chunk_size):
         raise UploadError(INVALID_CODE, _("Chunk size mismatch"))
-    UploadSessionPart.objects.get_or_create(session=session, index=index, defaults={"size": size})
+    UploadSessionPart.objects.update_or_create(session=session, index=index, defaults={"size": size})
     name = part_storage_name(session.pk, index)
     if default_storage.exists(name):
         default_storage.delete(name)

@@ -30,6 +30,11 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 DICT_CODE_RE = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
 MAX_FIELDS = 50
 MAX_OPTIONS = 50
+# 字符串体积上限：防止设计者保存超长 label/help/选项值导致列表/导出载荷膨胀
+MAX_LABEL_LENGTH = 200
+MAX_HELP_LENGTH = 2000
+MAX_OPTION_TEXT_LENGTH = 500
+MAX_SCHEMA_BYTES = 512 * 1024
 MAX_TEXT_LENGTH = 2000
 # 草稿体积上限（字节）：草稿允许缺必填，但仍是用户可控 JSON，收敛写入体积
 MAX_DRAFT_BYTES = 64 * 1024

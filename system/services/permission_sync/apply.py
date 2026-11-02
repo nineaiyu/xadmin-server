@@ -362,12 +362,14 @@ def grant_to_roles(created_menus: Any, perms: Any, parent_of_created: Any) -> An
     granted = []
     for menu in created_menus:
         parent_id = parent_of_created.get(menu.pk)
+        if not parent_id:
+            # 无父菜单时 `sibling_ids` 会退化为全部顶层权限点，从而把新权限点授予
+            # 「持有任一顶层权限点」的所有角色（静默扩大授权）；直接跳过不授予
+            continue
         sibling_ids = [perm.pk for perm in perms if perm.parent_id == parent_id]
         if not sibling_ids:
             continue
-        roles = UserRole.objects.filter(is_active=True, menu__pk__in=sibling_ids)
-        if parent_id:
-            roles = roles.filter(menu__pk=parent_id)
+        roles = UserRole.objects.filter(is_active=True, menu__pk__in=sibling_ids).filter(menu__pk=parent_id)
         for role in roles.distinct():
             role.menu.add(menu)
             granted.append((role.name, menu.name))

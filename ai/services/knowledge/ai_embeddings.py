@@ -7,10 +7,10 @@
 - **构建**：管理端显式触发（知识库页按钮 / ``build_ai_embeddings`` 命令，支持全量
   force / dry_run）**+ 正文变更后自动增量补齐**（``schedule_auto_rebuild``：
   上传/覆盖、停用再启用、仓库同步三个挂点，只补缺失/陈旧块，无档案/无待建/构建中
-  静默跳过），批量调用后按块落库——``embedding``（float32 二进制，迁移窗口保留，
-  回滚=代码回退）与 ``embedding_vector``（pgvector 列）**双写**；正文变更后的旧向量
-  按 ``embedding_hash`` 判定陈旧，补齐完成前向量通道跳过该块（词频通道兜底）；
-- **检索**：SQL 余弦（``embedding <=> query``，``CosineDistance`` 升序）替代进程内
+  静默跳过），批量调用后按块落库 ``embedding_vector``（pgvector 列，唯一向量存储）；
+  正文变更后的旧向量按 ``embedding_hash`` 判定陈旧，补齐完成前向量通道跳过该块
+  （词频通道兜底）；
+- **检索**：SQL 余弦（``embedding_vector <=> query``，``CosineDistance`` 升序）替代进程内
   索引——新鲜度（``embedding_hash == content_hash``）、模型一致性、维度一致性都在
   SQL WHERE 内收敛（维度不一致的行直接排除，复刻旧内存索引的逐块 skip 语义）；
   返回结构保持 ``[(score, pk)]``（消费方契约不变）；向量链路任一异常（未配置 /
@@ -35,8 +35,6 @@ from ai.services.knowledge.ai_embedding_math import (  # noqa: F401  (纯函数�
     TOKEN_WEIGHT,
     VECTOR_WEIGHT,
     cosine_similarity,
-    decode_vector,
-    encode_vector,
     rrf_fuse,
 )
 from common.utils import get_logger
@@ -66,7 +64,7 @@ def _load_meta_rows() -> Any:
     from ai.models.ai import AiKnowledgeChunk
 
     return list(
-        AiKnowledgeChunk.objects.exclude(embedding__isnull=True)
+        AiKnowledgeChunk.objects.exclude(embedding_vector__isnull=True)
         .order_by("source_path", "chunk_index")
         .values_list("pk", "content_hash", "embedding_hash", "embedding_model", "embedding_dim")
     )
@@ -204,16 +202,29 @@ def hybrid_rank(question: str, token_ranked: list[Any], top_k: int) -> Any:
 
 
 def _pending_rows(qs: Any, model: str, force: bool) -> Any:
-    """待构建块：force 全量；否则仅「未向量化 / 模型变更 / 正文 hash 变更」的块。"""
-    pending = []
+    """待构建块：force 全量；否则仅「未向量化 / 模型变更 / 正文 hash 变更」的块。
+
+    先只读元数据判定待建集合，再按需回读正文——不再把全部块正文（2 万块上限
+    约 20-30MB）连同将被 skip 的行一起载入内存。
+    """
+    pending_meta = []
     skipped = 0
-    for pk, content_hash, embedding_hash, embedding_model, embedding_vector, content in qs.values_list(
-        "pk", "content_hash", "embedding_hash", "embedding_model", "embedding_vector", "content"
+    for pk, content_hash, embedding_hash, embedding_model, embedding_vector in qs.values_list(
+        "pk", "content_hash", "embedding_hash", "embedding_model", "embedding_vector"
     ):
         if force or embedding_hash != content_hash or embedding_model != model or embedding_vector is None:
-            pending.append((pk, content_hash, content or ""))
+            pending_meta.append((pk, content_hash))
         else:
             skipped += 1
+    if not pending_meta:
+        return [], skipped
+    from ai.models.ai import AiKnowledgeChunk
+
+    contents: dict[Any, str] = {}
+    pks = [pk for pk, _hash in pending_meta]
+    for start in range(0, len(pks), 2000):
+        contents.update(AiKnowledgeChunk.objects.filter(pk__in=pks[start : start + 2000]).values_list("pk", "content"))
+    pending = [(pk, content_hash, contents.get(pk) or "") for pk, content_hash in pending_meta]
     return pending, skipped
 
 
@@ -225,7 +236,7 @@ def _embed_batches(
     summary: dict[str, Any],
     progress_cb: Any,
 ) -> tuple[int, dict[str, Any]]:
-    """逐批嵌入并落库（二进制 + pgvector 双写）；单批失败即停（failed 计入 summary）。
+    """逐批嵌入并落库（只写 pgvector 列）；单批失败即停（failed 计入 summary）。
 
     返回 ``(观测到的向量维度, 累计 token 用量)``；维度不一致 / 供应商失败都按
     「已成功批次保留、剩余计入 failed」的口径中断。
@@ -274,13 +285,12 @@ def _embed_batches(
                     embedding_hash=content_hash,
                     embedding_model=model,
                     embedding_dim=dim,
-                    embedding=encode_vector(vector),
                     embedding_vector=vector,
                 )
             )
         AiKnowledgeChunk.objects.bulk_update(
             rows,
-            ["embedding", "embedding_vector", "embedding_model", "embedding_hash", "embedding_dim"],
+            ["embedding_vector", "embedding_model", "embedding_hash", "embedding_dim"],
             batch_size=batch_size,
         )
         summary["embedded"] += len(rows)
@@ -305,9 +315,8 @@ def build_embeddings(
       经 embedding_progress 通道上报；同步调用/命令不传 = 零开销）；
     - 失败语义：单批失败即停止（供应商多半整体不可用），已成功的批次保留，
       ``ok=False`` + ``failed`` 计数返回，调用方据此给出可读提示；
-    - 写入为 ``embedding``（二进制）+ ``embedding_vector``（pgvector）**双写**：
-      二进制列在迁移窗口保留（步骤④后半段「删二进制列与内存索引代码」
-      登记为稳定一个版本后的独立清理项），回滚 = 代码回退，数据无需重建。
+    - 写入为 ``embedding_vector``（pgvector 列）单写：二进制列已在稳定版本后清理，
+      回滚不再依赖旧列；正文未变的块按 ``embedding_hash`` 判定陈旧。
     """
     from ai.models.ai import AiKnowledgeChunk
     from ai.services.assistant.ai_config import embedding_credentials
@@ -368,8 +377,8 @@ def _has_pending_chunks(source_path: str | None, model: str) -> bool:
     """是否存在待建块（缺向量 / 正文变更 / 模型不符），判定与 ``_pending_rows`` 同口径。
 
     ``embedding_hash`` 为非空默认 ""（未构建块），与 64 位十六进制 ``content_hash``
-    恒不相等，SQL 比较无 NULL 三值逻辑坑。二进制向量存在但 pgvector 列为空的行
-    同样视为待建（重建保留路径曾只回填二进制列，检索按 pgvector 列过滤会静默丢块）。
+    恒不相等，SQL 比较无 NULL 三值逻辑坑。pgvector 列为空的行同样视为待建
+    （历史迁移窗口的存量行可能只落过二进制列，不补齐会让检索静默丢块）。
     """
     from django.db.models import Q
 
@@ -468,7 +477,7 @@ def vector_stats() -> dict[str, Any]:
         return data
     model = str(credentials.get("model") or "")
     data["model"] = model
-    embedded = AiKnowledgeChunk.objects.exclude(embedding__isnull=True)
+    embedded = AiKnowledgeChunk.objects.exclude(embedding_vector__isnull=True)
     data["embedded"] = embedded.count()
     fresh = embedded.filter(embedding_model=model).filter(embedding_hash=F("content_hash"))
     data["fresh"] = fresh.count()

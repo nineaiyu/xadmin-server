@@ -69,7 +69,12 @@ def force_logout_users(user_pks: Any, operator: Any = None) -> int:
     if not pks:
         return 0
 
-    # ① 服务端 access token 失效（时间戳取当前秒；iat 与 exp 均为 epoch 秒）
+    # ① 机器凭证一并失效：强制下线语义是「全部会话」，PAT/应用凭证不能继续访问
+    from identity.models import PersonalAccessToken
+
+    PersonalAccessToken.objects.filter(creator_id__in=pks, is_active=True).update(is_active=False)
+
+    # ② 服务端 access token 失效（时间戳取当前秒；iat 与 exp 均为 epoch 秒）
     UserTokenRevokedCache.revoke_many(pks, int(timezone.now().timestamp()))
 
     # ② refresh token 全部拉黑（OutstandingToken 为登录/轮换全量签发记录）
@@ -94,16 +99,20 @@ def force_logout_users(user_pks: Any, operator: Any = None) -> int:
 
 
 def revoke_user_credentials(user_pk: Any, operator: Any = None) -> dict[str, Any]:
-    """用户凭证整体失效：JWT 会话（access/refresh）+ PAT。
+    """用户凭证整体失效：JWT 会话（access/refresh）+ PAT + OAuth refresh。
 
     密码变更/重置后调用：旧 access 由用户级失效时间戳拒绝，refresh 拉黑，
-    PAT 置停用；WS 在线连接与 UserSession 一并离线。返回处置计数。
+    PAT 置停用；OAuth refresh 一并撤销（否则第三方应用仍可换发新 access，
+    30 天有效期内改密等于没生效）；WS 在线连接与 UserSession 一并离线。
     """
-    from identity.models import PersonalAccessToken
+    from identity.models import OAuthRefreshToken, PersonalAccessToken
 
     pats = PersonalAccessToken.objects.filter(creator_id=user_pk, is_active=True).update(is_active=False)
+    oauth_refresh = OAuthRefreshToken.objects.filter(user_id=user_pk, is_revoked=False).update(
+        is_revoked=True, updated_time=timezone.now()
+    )
     channels = force_logout_user(user_pk, operator=operator)
-    return {"pat": pats, "channels": channels}
+    return {"pat": pats, "oauth_refresh": oauth_refresh, "channels": channels}
 
 
 def enforce_session_limit(user: Any, limit: Any = None) -> Any:

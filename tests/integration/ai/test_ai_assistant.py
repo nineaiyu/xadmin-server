@@ -140,7 +140,8 @@ class TestKnowledgeSync:
         again = ai_utils.sync_knowledge()
         assert again["created"] == 0 and again["total"] == 3
 
-    def test_sync_removes_stale(self, tmp_path, monkeypatch):
+    def test_sync_skips_cleanup_when_no_document_found(self, tmp_path, monkeypatch):
+        """扫描不到任何文档时跳过清理：无法区分「全被删」与「镜像未带 docs/」。"""
         from ai.services.assistant import ai as ai_utils
         from ai.services.knowledge import ai_knowledge
 
@@ -150,7 +151,22 @@ class TestKnowledgeSync:
         monkeypatch.setattr(ai_knowledge, "DOCS_DIR", doc)
         monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
         summary = ai_utils.sync_knowledge()
-        assert summary["removed"] == 1
+        assert summary["removed"] == 0
+        assert summary["cleanup_skipped"] is True
+        assert AiKnowledgeChunk.objects.filter(source_path="docs/gone.md").exists()
+
+    def test_sync_removes_stale_when_scan_has_documents(self, tmp_path, monkeypatch):
+        from ai.services.assistant import ai as ai_utils
+        from ai.services.knowledge import ai_knowledge
+
+        AiKnowledgeChunk.objects.create(source_path="docs/gone.md", chunk_index=0, content="旧", content_hash="x" * 64)
+        doc = tmp_path / "docs"
+        doc.mkdir()
+        (doc / "alive.md").write_text("# Alive\n\n仍然存在的文档", encoding="utf-8")
+        monkeypatch.setattr(ai_knowledge, "DOCS_DIR", doc)
+        monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
+        summary = ai_utils.sync_knowledge()
+        assert summary["removed"] >= 1
         assert not AiKnowledgeChunk.objects.filter(source_path="docs/gone.md").exists()
 
 

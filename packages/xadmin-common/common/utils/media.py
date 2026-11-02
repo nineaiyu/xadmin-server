@@ -12,8 +12,10 @@
 - 生产 nginx 部署可开启 `MEDIA_X_ACCEL_PREFIX`（如 `/_protected_media`）：
   鉴权通过后返回 `X-Accel-Redirect` 内部重定向，由 nginx 直出文件（零拷贝）；
   该内部位置必须声明 `internal`（不可外部寻址）；
-- 细粒度文件授权（数据权限 + 访问审计）仍由受鉴权 download / preview 端点承担，
-  本视图的鉴权粒度是「登录态」。
+- 细粒度文件授权（数据权限 + 访问审计）仍由受鉴权 download / preview 端点承担；
+- 敏感命名空间（导出 / 导入报告 / 聊天附件等落在 ``file/uploadfile``，以及
+  ``storage_cache``）在登录态之上还要求短时效签名 URL（见 ``utils/media_signing``），
+  无有效签名一律拒绝；兼容期可通过 ``MEDIA_SIGNED_URL_REQUIRED=false`` 显式关闭。
 """
 
 import mimetypes
@@ -31,6 +33,26 @@ from django.views.static import directory_index, was_modified_since
 
 from common.fields.image import ProcessedImageField, get_thumbnail
 from common.settings_contract import kernel_setting
+from common.utils.media_signing import verify_media_request
+
+# /media/ 下不允许直出的内部派生目录（与 file/utils 的落盘目录同名）
+INTERNAL_MEDIA_DIRS = frozenset({"preview_cache", "upload_sessions"})
+
+# 浏览器会当文档执行的类型：即使存量文件已落盘，也不能以 inline 同源返回
+UNSAFE_INLINE_TYPES = frozenset(
+    {"text/html", "application/xhtml+xml", "image/svg+xml", "text/xml", "application/xml", "text/xsl"}
+)
+
+
+def _serving_type(path: str) -> tuple[str, bool]:
+    """按扩展名推断响应类型，返回 (content_type, 是否强制附件下载)。"""
+    content_type, _encoding = mimetypes.guess_type(path)
+    content_type = content_type or "application/octet-stream"
+    if content_type in UNSAFE_INLINE_TYPES:
+        # 浏览器可执行类型统一降级为二进制附件：/media 与业务同源，
+        # 内联返回等于给出一个可执行脚本的上传落地页
+        return "application/octet-stream", True
+    return content_type, False
 
 
 def get_media_path(path: str) -> Any:
@@ -73,10 +95,13 @@ def _storage_serve(request: Any, path: str) -> Any:
 
     if storage_is_local() or not storage_exists(path):
         raise Http404(_("“%(path)s” does not exist") % {"path": path})
-    content_type, encoding = mimetypes.guess_type(path)
-    content_type = content_type or "application/octet-stream"
+    content_type, _encoding = _serving_type(path)
+    _raw_type, encoding = mimetypes.guess_type(path)
     response = FileResponse(storage_open(path, "rb"), content_type=content_type)
-    if encoding:
+    response["X-Content-Type-Options"] = "nosniff"
+    if content_type == "application/octet-stream":
+        response["Content-Disposition"] = "attachment"
+    elif encoding:
         response.headers["Content-Encoding"] = encoding
     return response
 
@@ -104,6 +129,13 @@ def media_serve(request: Any, path: str, document_root: Any = None, show_indexes
         return HttpResponseForbidden()
 
     path = posixpath.normpath(path).lstrip("/")
+    # 内部派生文件（预览缓存 / Office 转出 PDF / 上传分片）只经鉴权 API 下发：
+    # 这些路径可由 pk 推导，若走 /media/ 直出等于任意登录用户可读他人文件
+    if path.split("/", 1)[0] in INTERNAL_MEDIA_DIRS:
+        raise Http404(_("“%(path)s” does not exist") % {"path": path})
+    # 敏感命名空间：签名无效 / 过期 / 路径被篡改一律拒绝（不泄露文件是否存在）
+    if not verify_media_request(path, request):
+        return HttpResponseForbidden()
     fullpath = Path(safe_join(document_root, path))
     if fullpath.is_dir():
         if show_indexes:
@@ -123,9 +155,12 @@ def media_serve(request: Any, path: str, document_root: Any = None, show_indexes
     if accel_prefix and not kernel_setting("DEBUG"):
         # 生产 nginx：内部重定向给 nginx 直出（零拷贝）；内部位置声明 internal，
         # 外部不可寻址——鉴权已在上方完成。DEBUG（开发/E2E 直连）走下面的本进程输出
-        content_type, encoding = mimetypes.guess_type(str(fullpath))
-        response = HttpResponse(content_type=content_type or "application/octet-stream")
-        if encoding:
+        content_type, attachment = _serving_type(str(fullpath))
+        _raw_type, encoding = mimetypes.guess_type(str(fullpath))
+        response = HttpResponse(content_type=content_type)
+        if attachment:
+            response["Content-Disposition"] = "attachment"
+        elif encoding:
             response.headers["Content-Encoding"] = encoding
         response["X-Accel-Redirect"] = f"{accel_prefix}/{relative_path}"
         return response
@@ -134,10 +169,13 @@ def media_serve(request: Any, path: str, document_root: Any = None, show_indexes
     statobj = fullpath.stat()
     if not was_modified_since(request.META.get("HTTP_IF_MODIFIED_SINCE"), statobj.st_mtime):
         return HttpResponseNotModified()
-    content_type, encoding = mimetypes.guess_type(str(fullpath))
-    content_type = content_type or "application/octet-stream"
+    content_type, attachment = _serving_type(str(fullpath))
+    _raw_type, encoding = mimetypes.guess_type(str(fullpath))
     response = FileResponse(fullpath.open("rb"), content_type=content_type)
+    response["X-Content-Type-Options"] = "nosniff"
     response.headers["Last-Modified"] = http_date(statobj.st_mtime)
-    if encoding:
+    if attachment:
+        response["Content-Disposition"] = "attachment"
+    elif encoding:
         response.headers["Content-Encoding"] = encoding
     return response

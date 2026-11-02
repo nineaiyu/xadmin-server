@@ -7,6 +7,7 @@ from django.core import mail
 from django.core.cache import cache
 
 from common.base.crypto import AESCipherV2
+from mfa.cache import UserConfirmStateCache
 from tests.integration.aes_v2 import encrypt_v2
 
 pytestmark = pytest.mark.django_db
@@ -38,12 +39,19 @@ def authed_client(api_client, normal_user):
     return api_client
 
 
+def confirm_password(client, password="Test@123456"):
+    """绑定/解绑 MFA 属敏感操作：先通过密码二次确认（412 的自动重发口径在 http 层）。"""
+    resp = client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": password})
+    assert resp.data["code"] == 1000, resp.data
+
+
 @pytest.fixture
 def email_ready(authed_client, normal_user, settings):
-    """绑定 OTP 的标准环境：挑战渠道基础设施开启 + 用户已配邮箱。"""
+    """绑定 OTP 的标准环境：挑战渠道基础设施开启 + 用户已配邮箱 + 已通过密码二次确认。"""
     settings.EMAIL_ENABLED = True
     normal_user.email = "zhangsan@example.com"
     normal_user.save(update_fields=["email"])
+    confirm_password(authed_client)
     return authed_client
 
 
@@ -55,6 +63,8 @@ def otp_user(email_ready, normal_user):
     secret = resp.data["data"]["secret"]
     resp = email_ready.post(OTP_CONFIRM_URL, {"code": pyotp.TOTP(secret).now()})
     assert resp.data["code"] == 1000, resp.data
+    # 绑定完成后清掉密码确认状态：后续用例默认「未确认」，412 断言保持有效
+    UserConfirmStateCache(normal_user).clear()
     return normal_user, email_ready, secret
 
 
@@ -76,11 +86,13 @@ class TestOTPBind:
         assert resp.data["code"] == 1002
 
     def test_confirm_without_start(self, authed_client):
+        confirm_password(authed_client)
         resp = authed_client.post(OTP_CONFIRM_URL, {"code": "123456"})
         assert resp.data["code"] == 1001
 
     def test_bind_twice_rejected(self, otp_user, authed_client):
         _, client, _ = otp_user
+        confirm_password(client)
         resp = client.post(OTP_START_URL)
         assert resp.data["code"] == 1001
 
@@ -89,6 +101,7 @@ class TestBindingPolicyGate:
     """绑定入口与验证同口径：方式白名单收窄到空集时拒绝绑定（共享/演示账号防锁死）。"""
 
     def test_start_rejected_when_policy_disallows(self, authed_client, normal_user):
+        confirm_password(authed_client)
         normal_user.allowed_mfa_types = ["none"]
         normal_user.save(update_fields=["allowed_mfa_types"])
         resp = authed_client.post(OTP_START_URL)
@@ -97,6 +110,7 @@ class TestBindingPolicyGate:
 
     def test_confirm_rejected_when_policy_disallows(self, authed_client, normal_user):
         # start 在收窄前发出（候选密钥已进缓存），confirm 仍须拒绝落库
+        confirm_password(authed_client)
         resp = authed_client.post(OTP_START_URL)
         assert resp.data["code"] == 1000
         normal_user.allowed_mfa_types = ["none"]
@@ -113,6 +127,7 @@ class TestBindingPolicyGate:
     def test_start_rejected_without_backup_channel(self, authed_client, normal_user, settings):
         """有挑战渠道基础设施而用户未配置任一渠道时，拒绝绑定 OTP。"""
         settings.EMAIL_ENABLED = True
+        confirm_password(authed_client)
         resp = authed_client.post(OTP_START_URL)
         assert resp.data["code"] == 1001
         assert "challenge channel" in resp.data["detail"] or "备用挑战渠道" in resp.data["detail"]
@@ -123,6 +138,7 @@ class TestBindingPolicyGate:
         """部署侧无任何挑战渠道基础设施（EMAIL/SMS 均关）时不拦截：恢复码是唯一自救通道。"""
         settings.EMAIL_ENABLED = False
         settings.SMS_ENABLED = False
+        confirm_password(authed_client)
         resp = authed_client.post(OTP_START_URL)
         assert resp.data["code"] == 1000, resp.data
 
@@ -533,6 +549,7 @@ class TestRecoveryCodes:
         secret = resp.data["data"]["secret"]
         resp = email_ready.post(OTP_CONFIRM_URL, {"code": pyotp.TOTP(secret).now()})
         assert resp.data["code"] == 1000, resp.data
+        UserConfirmStateCache(normal_user).clear()
         return normal_user, email_ready, secret, resp.data["data"]["recovery_codes"]
 
     def _mfa_token_and_methods(self, api_client, user):
@@ -918,3 +935,22 @@ class TestMethodPolicyChain:
         data = resp.data["data"]
         assert data["mfa_required"] is True, data
         assert "otp" in [m["name"] for m in data["methods"]]
+
+
+class TestOTPBindConfirmGuard:
+    """绑定 OTP 会接管登录因子：start/confirm 均需密码二次确认（未确认 412）。"""
+
+    def test_start_requires_password_confirm(self, email_ready, normal_user):
+        UserConfirmStateCache(normal_user).clear()
+        resp = email_ready.post(OTP_START_URL)
+        assert resp.status_code == 412
+        assert resp.data["confirm_type"] == "password"
+
+    def test_confirm_requires_password_confirm(self, email_ready, normal_user):
+        secret_resp = email_ready.post(OTP_START_URL)
+        assert secret_resp.data["code"] == 1000
+        UserConfirmStateCache(normal_user).clear()
+        resp = email_ready.post(OTP_CONFIRM_URL, {"code": pyotp.TOTP(secret_resp.data["data"]["secret"]).now()})
+        assert resp.status_code == 412
+        normal_user.refresh_from_db()
+        assert not normal_user.otp_secret_key

@@ -136,20 +136,12 @@ def test_admin_role_covers_all_file_points():
     assert not missing, f"管理员缺少文件权限点：{missing}"
 
 
-def test_demo_allow_list_grants_readonly_file_points():
-    """演示模式保留文件中心只读展示；上传/建改删/物理清除仍不得进入 allow-list。"""
+def test_demo_allow_list_excludes_file_center():
+    """演示角色不进入文件中心：读权限 + 全量数据规则会让游客看到真实文件。"""
     from demo_seed.permissions import DEMO_ALLOWED_PERMISSION_NAMES, DEMO_PAGE_NAMES
 
-    assert "SystemUploadFile" in DEMO_PAGE_NAMES
-    read_only = {
-        "accessLogs:SystemUploadFile",
-        "config:SystemUploadFile",
-        "download:SystemUploadFile",
-        "list:SystemUploadFile",
-        "preview:SystemUploadFile",
-        "retrieve:SystemUploadFile",
-    }
-    assert read_only <= DEMO_ALLOWED_PERMISSION_NAMES
+    assert "SystemUploadFile" not in DEMO_PAGE_NAMES
+    assert not {name for name in DEMO_ALLOWED_PERMISSION_NAMES if name.endswith(":SystemUploadFile")}
 
     writes = {
         "create:SystemUploadFile",

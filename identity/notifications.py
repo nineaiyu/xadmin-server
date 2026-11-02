@@ -10,6 +10,7 @@
 from typing import Any
 
 from django.template.loader import render_to_string
+from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 
 from common.utils.request import get_browser, get_request_ip
@@ -193,9 +194,13 @@ class ApiQuotaWarningMessage(SystemMessage):
 
     def get_html_msg(self) -> dict[str, Any]:
         info = self.info
-        subject = _("API application quota warning: {}").format(info.get("application"))
+        # 应用名/客户端标识来自管理面可写字段：站内信正文按 HTML 渲染，必须转义
+        subject = _("API application quota warning: {}").format(escape(str(info.get("application") or "")))
         message = "<p>{}</p><ul><li>client_id: {}</li><li>used: {}</li><li>quota: {}</li></ul>".format(
-            subject, info.get("client_id"), info.get("used"), info.get("quota")
+            subject,
+            escape(str(info.get("client_id") or "")),
+            escape(str(info.get("used") or "")),
+            escape(str(info.get("quota") or "")),
         )
         return {"subject": subject, "message": message}
 

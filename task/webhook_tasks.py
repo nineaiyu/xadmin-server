@@ -212,9 +212,19 @@ def dispatch_deliver_webhook(delivery_id: str, countdown: int | None = None) -> 
         WebhookDelivery.objects.filter(pk=delivery_id).update(generation=F("generation") + 1)
         generation = locked.generation + 1
     message = {"delivery_id": str(delivery_id), "generation": generation}
+
+    def _dispatch(countdown_value: int | None) -> None:
+        try:
+            deliver_webhook.apply_async(kwargs=message, task_id=uuid.uuid4().hex, countdown=countdown_value)
+        except Exception as exc:  # noqa: BLE001 broker 不可用：落失败态，避免永久 PENDING
+            logger.warning("webhook dispatch enqueue failed: %s", delivery_id, exc_info=True)
+            WebhookDelivery.objects.filter(pk=delivery_id, generation=generation).update(
+                status=WebhookDelivery.Status.FAILED,
+                next_retry_at=timezone.now(),
+                response_body=str(exc)[:255],
+            )
+
     if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
         deliver_webhook.apply(kwargs=message, task_id=uuid.uuid4().hex)
         return
-    transaction.on_commit(
-        lambda: deliver_webhook.apply_async(kwargs=message, task_id=uuid.uuid4().hex, countdown=countdown)
-    )
+    transaction.on_commit(lambda: _dispatch(countdown))

@@ -243,6 +243,9 @@ GRANTS_CACHE_KEY_PATTERN = "*data_permission_grants_*"
 #: Celery 队列名（broker 内 list 键）：默认队列与重任务队列，
 #: 与 worker 拉起参数同源（services/celery_default.py 的 "celery" / celery_heavy.py 的 "heavy"）
 CELERY_QUEUE_NAMES = ("celery", "heavy")
+#: kombu Redis 传输的优先级队列分隔符与档位（Redis.Channel.sep / priority_steps）
+CELERY_PRIORITY_SEP = "\x06\x16"
+CELERY_PRIORITY_STEPS = (3, 6, 9)
 
 
 def _render_queue_depth() -> bytes:
@@ -260,7 +263,12 @@ def _render_queue_depth() -> bytes:
             return b""
         client = redis.from_url(url, socket_connect_timeout=0.2, socket_timeout=0.5)
         try:
-            depths = {name: int(client.llen(name)) for name in CELERY_QUEUE_NAMES}
+            # kombu 对 priority>0 使用独立 list 键（queue<sep><pri>）；只统计基础键会漏掉
+            # 验证码/邮件等 priority=100 任务的积压
+            depths = {}
+            for name in CELERY_QUEUE_NAMES:
+                keys = [name, *(f"{name}{CELERY_PRIORITY_SEP}{step}" for step in CELERY_PRIORITY_STEPS)]
+                depths[name] = sum(int(client.llen(key)) for key in keys)
         finally:
             client.close()
     except Exception as e:  # noqa: BLE001 指标旁路：不影响端点其余指标

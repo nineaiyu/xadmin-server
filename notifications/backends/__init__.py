@@ -23,6 +23,20 @@ logger = get_logger(__name__)
 client_name_mapper: dict[str, str] = {}
 
 
+class _DisabledBackendClient:
+    """渠道模块加载失败时的占位客户端：永远禁用，避免订阅/发布链路 KeyError。"""
+
+    @staticmethod
+    def is_enable() -> bool:
+        return False
+
+    def __getattr__(self, name: str) -> Any:
+        raise NotImplementedError(f"notification backend is unavailable: {name}")
+
+
+_DISABLED_CLIENT = _DisabledBackendClient()
+
+
 class BACKEND(models.TextChoices):
     EMAIL = "email", _("Email")
     SITE_MSG = "site_msg", _("Site message")
@@ -36,7 +50,8 @@ class BACKEND(models.TextChoices):
 
     @property
     def client(self) -> Any:
-        return client_name_mapper[self]
+        # 加载失败的渠道返回禁用占位，而不是把 KeyError 抛到通知发布/订阅页
+        return client_name_mapper.get(str(self), _DISABLED_CLIENT)
 
     def get_account(self, user: Any) -> Any:
         return self.client.get_account(user)

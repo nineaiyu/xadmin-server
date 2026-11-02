@@ -3,13 +3,12 @@
 
 import math
 
+from ai.services.knowledge.ai_embedding_math import decode_vector, encode_vector
 from ai.services.knowledge.ai_embeddings import (
     RRF_K,
     TOKEN_WEIGHT,
     VECTOR_WEIGHT,
     cosine_similarity,
-    decode_vector,
-    encode_vector,
     rrf_fuse,
 )
 

@@ -200,11 +200,13 @@ class TestReadHelpers:
         assert design_export_columns({"columns": ["b", "gone"]}, ["a", "b"]) == ["b"]
 
     def test_table_limit_reader_is_lenient(self):
-        assert design_table_limit({}) == 100
+        # 空 design = 存量报表：不设设计层上限（数据集 row_limit 仍生效）
+        assert design_table_limit({}) is None
+        assert design_table_limit(None) is None
+        assert design_table_limit({"columns": ["username"]}) is None
         assert design_table_limit({"table_limit": 20}) == 20
         assert design_table_limit({"table_limit": 9999}) == 100
         assert design_table_limit({"table_limit": True}) == 100
-        assert design_table_limit(None) == 100
 
     def test_design_components_reader_is_lenient(self):
         assert design_components({}) == []

@@ -54,7 +54,12 @@ def dimension_keys(*, ip_hash: str = "", action: str = "", fp: str = "", account
     if fp:
         scopes.append(("fp", fp))
     if account:
-        scopes.append(("acct", account))
+        # 账号维度必须绑定客户端标识：登录/找回等场景的 account 由客户端提交且
+        # 未经认证，裸账号维度会让任意匿名者用他人账号错答若干次，把受害者
+        # 1 小时锁在验证码之外（enforce 档在出题前就拒绝）
+        anchor = ip_hash or fp
+        if anchor:
+            scopes.append(("acct", f"{account}|{anchor}"))
     if not action:
         return scopes
     return scopes + [(f"{dim}_action", f"{value}|{action}") for dim, value in scopes]

@@ -125,6 +125,15 @@ SETTINGS_CONFIG = {
         "bash",
         "php",
         "phtml",
+        # 浏览器可执行/内联渲染的类型：配合 /media 下发即成同源存储型 XSS
+        "html",
+        "htm",
+        "xhtml",
+        "svg",
+        "svgz",
+        "xml",
+        "xsl",
+        "xslt",
         "jsp",
         "jspx",
         "asp",
@@ -246,6 +255,12 @@ SETTINGS_CONFIG = {
     # 生产 nginx 部署推荐配置 /_protected_media：鉴权后返回 X-Accel-Redirect，
     # 文件由 nginx 直出（零拷贝）；nginx 需声明 `location ^~ /_protected_media/ { internal; ... }`
     "MEDIA_X_ACCEL_PREFIX": "",
+    # 敏感媒体命名空间（导出 / 导入报告 / 聊天附件统一落在 file/uploadfile，以及对象存储
+    # 本地缓存 storage_cache）要求短时效签名 URL：链接带 exp + sig（HMAC-SHA256，密钥取
+    # SECRET_KEY）。默认开启；仅在仍依赖裸链接的兼容期部署可显式关闭（回落登录态粒度）。
+    "MEDIA_SIGNED_URL_REQUIRED": True,
+    # 签名 URL 有效期（秒）：由下载 / 预览 / 列表返回的媒体链接短时可用
+    "MEDIA_SIGNED_URL_TTL": 3600,
     # 出站请求域名/IP 白名单（逗号或换行分隔，默认空 = 不启用）。
     # 服务端主动发起的请求（Webhook 投递）默认拒绝私网/环回/link-local 目标（防 SSRF）；
     # 内网自建接收端必须显式登记在此，登记后跳过地址归属校验（仍拒绝 link-local/元数据）。
@@ -278,6 +293,8 @@ SETTINGS_CONFIG = {
     "EMAIL_SUBJECT_PREFIX": "Xadmin-Server ",
     "EMAIL_USE_SSL": True,
     "EMAIL_USE_TLS": False,
+    # SMTP 连接/读取超时（秒）：黑洞 SMTP 不能无限挂住 celery 线程
+    "EMAIL_TIMEOUT": 10,
     # 短信配置
     "SMS_ENABLED": False,
     "SMS_BACKEND": "alibaba",
@@ -436,7 +453,8 @@ SETTINGS_CONFIG = {
     # 账号到期提醒：到期前 N 天发站内信 + 邮件（每日任务）；0 = 关闭提醒
     "ACCOUNT_EXPIRY_REMIND_DAYS": 7,
     # 站点对外访问地址（邀请 / 通知邮件中的链接基址，如 https://xadmin.example.com）；
-    # 空 = 按请求推导（经反向代理部署时依赖 X-Forwarded-* 正确传递）
+    # 空 = 按请求推导，但仅接受通过 Django ALLOWED_HOSTS 校验的 Host（否则邀请发送
+    # 显式报错，提示配置本项），避免伪造 Host 头注入邮件链接
     "WEB_SITE_URL": "",
     # search-columns / search-fields 关联列 choices 最大返回条数
     "SEARCH_CHOICES_MAX_COUNT": 200,
@@ -444,6 +462,10 @@ SETTINGS_CONFIG = {
     "EXPORT_ASYNC_MAX_RUNNING": 3,
     # 主机监控心跳历史保留天数（30s 一条长期落库）
     "MONITOR_RETENTION_DAYS": 30,
+    # AI 助手对话记录保留天数（0 = 不自动清理）
+    "AI_CHAT_RETENTION_DAYS": 365,
+    # 数据集执行/聚合的数据库语句超时（毫秒，0 = 不限）：慢聚合不能长期占用 worker 与连接
+    "DATASET_QUERY_TIMEOUT_MS": 30000,
     # 模块裁剪页展示的重启命令（Docker/Compose 部署按实际部署形态覆盖）
     "MODULE_RESTART_COMMAND": "sh xadmin.sh restart",
     # 纯 HTTP 会话在线判定窗口（秒）/ 已结束会话记录保留天数
@@ -459,4 +481,8 @@ SETTINGS_CONFIG = {
     "BACKUP_ALERT_TOKEN": "",
     # 运维告警回调令牌（容器 OOM 等宿主级事件；空 = 端点未启用）
     "OPS_ALERT_TOKEN": "",
+    # Django 自带 admin 站点：默认关闭（不挂载 /admin/）。
+    # 该入口只校验 Django session，绕过验证码/登录锁定/登录访问策略/MFA，
+    # 开启后必须确保反向代理只对可信来源暴露，或改用业务管理页面。
+    "ENABLE_DJANGO_ADMIN": False,
 }

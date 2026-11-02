@@ -10,10 +10,12 @@
 重置 / 验证码登录、以及 MFA 自有因子流程。新增匿名写端点漏挂 = CI 红。
 """
 
+import ast
 import inspect
 import os
 import re
 import sys
+import textwrap
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -35,6 +37,9 @@ EXEMPTIONS: tuple[tuple[str, str], ...] = (
     (r"api/identity/\^register\$", "注册：人机校验在上游发码端点"),
     (r"api/identity/\^auth/reset\$", "重置密码：人机校验在上游发码端点"),
     (r"api/identity/\^login/mfa/", "MFA 自有因子校验，不属于人机校验面"),
+    (r"api/identity/open/token", "开放平台机器凭证换取令牌：客户端凭据认证，不面向浏览器人机面"),
+    (r"api/identity/open/oauth/token", "OAuth 授权码/刷新令牌：机器端点，不面向浏览器人机面"),
+    (r"api/identity/open/oauth/revoke", "OAuth 令牌撤销：机器端点"),
     (r"api/identity/\^auth/captcha/inspect\$", "E2E 专用答案检查端点（默认不挂载）"),
 )
 
@@ -54,10 +59,17 @@ def is_exempt(route: str) -> bool:
 
 def is_covered(view_class) -> bool:
     try:
-        source = inspect.getsource(view_class)
-    except (OSError, TypeError):
+        source = textwrap.dedent(inspect.getsource(view_class))
+        tree = ast.parse(source)
+    except (OSError, TypeError, SyntaxError, IndentationError):
         return False
-    return any(token in source for token in COVERED_TOKENS)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            func = node.func
+            name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", "")
+            if name in COVERED_TOKENS:
+                return True
+    return False
 
 
 def anonymous_write_routes():
@@ -68,7 +80,13 @@ def anonymous_write_routes():
             continue
         if getattr(view_class, "authentication_classes", None) != []:
             continue
-        if getattr(view_class, "permission_classes", None) != []:
+        permissions = getattr(view_class, "permission_classes", None)
+        # DRF 匿名端点常用 AllowAny 显式声明，不能只认空元组
+        if permissions not in ([], (), None) and not (
+            isinstance(permissions, (list, tuple))
+            and permissions
+            and all(getattr(item, "__name__", "") == "AllowAny" for item in permissions)
+        ):
             continue
         methods = [method for method in WRITE_METHODS if hasattr(view_class, method)]
         if not methods:

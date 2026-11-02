@@ -15,6 +15,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from common.utils import get_logger
 from message.models import (
     AI_MAX_CONTENT_LENGTH,
     BOT_MESSAGE_TYPES,
@@ -36,6 +37,8 @@ from .chat_room_ops import accessible_room
 from .chat_rooms import online_user_pks, room_to_dict
 from .recall_audit import write_recall_snapshot
 
+logger = get_logger(__name__)
+
 # ---------------------------------------------------------------- 消息
 
 
@@ -50,8 +53,8 @@ def create_message(
 ) -> tuple[Any, ...]:
     """落库一条消息，返回 (message, created)。
 
-    幂等：同一发送者 + 同一 client_msg_id 命中已有消息时直接返回旧消息
-    （断线重发 / 乐观上屏重复提交都不产生第二行）。
+    幂等：同一房间 + 同一发送者 + 同一 client_msg_id 命中已有消息时直接返回旧消息
+    （断线重发 / 乐观上屏重复提交都不产生第二行；不同房间可安全复用客户端 id）。
     AI / 系统消息放宽长度上限（模型回答常超用户输入上限）。
     附件消息（image / file）必须携带 attachment（已做过归属校验的上传件），
     内容缺省取文件名；落库同时把附件由临时态转正（见 message/attachments.py）。
@@ -74,7 +77,7 @@ def create_message(
     content = validate_content(content, limit)
     sender_pk = _user_pk(sender) if sender is not None else None
     if sender_pk and client_msg_id:
-        existing = ChatMessage.objects.filter(sender_id=sender_pk, client_msg_id=client_msg_id).first()
+        existing = ChatMessage.objects.filter(room_id=room.pk, sender_id=sender_pk, client_msg_id=client_msg_id).first()
         if existing is not None:
             return existing, False
     try:
@@ -93,8 +96,8 @@ def create_message(
             ChatRoom.objects.filter(pk=room.pk).update(
                 last_message=content[:200], last_message_time=message.created_time or timezone.now()
             )
-    except IntegrityError:  # 并发同 client_msg_id：复用已落库的那条
-        message = ChatMessage.objects.filter(sender_id=sender_pk, client_msg_id=client_msg_id).first()
+    except IntegrityError:  # 并发同 client_msg_id：复用本房间已落库的那条
+        message = ChatMessage.objects.filter(room_id=room.pk, sender_id=sender_pk, client_msg_id=client_msg_id).first()
         if message is None:
             raise
         return message, False
@@ -180,11 +183,44 @@ def recall_message(user: Any, message_id: Any) -> ChatMessage:
                 _("Messages can only be recalled within {} minutes").format(RECALL_WINDOW_MINUTES)
             )
         write_recall_snapshot(message, user)
+        original_content = message.content
         message.is_recalled = True
         message.recalled_time = timezone.now()
         message.content = ""
         message.save(update_fields=["is_recalled", "recalled_time", "content", "updated_time"])
+        _scrub_recalled_copies(message, original_content)
     return message
+
+
+def _scrub_recalled_copies(message: Any, original_content: str) -> None:
+    """撤回的旁路清理：会话摘要与离线私聊站内信不得继续保留原文。
+
+    - 会话列表 ``last_message`` 是独立冗余列：只清消息行会让左侧栏继续显示原文；
+    - 离线私聊会把原文落站内信（通知中心可回看），撤回后同样必须清除。
+    审计原文已由 ``write_recall_snapshot`` 落到操作日志，可追溯性不受影响。
+    """
+    from django.utils.translation import gettext as _t
+
+    placeholder = str(_t("[Message has been recalled]"))
+    if message.room_id:
+        ChatRoom.objects.filter(pk=message.room_id, last_message=original_content).update(last_message=placeholder)
+    try:
+        from notifications.models import MessageContent
+
+        notices = MessageContent.objects.filter(
+            notice_type=MessageContent.NoticeChoices.USER,
+            extra_json__chat_message_id=str(message.pk),
+        )
+        notices.update(message=placeholder)
+        # 兼容标记上线前落库的提醒：按房间 + 发送者 + 原文匹配（只清同一条原文）
+        MessageContent.objects.filter(
+            notice_type=MessageContent.NoticeChoices.USER,
+            extra_json__chat_room_id=str(message.room_id),
+            extra_json__sender_pk=str(message.sender_id),
+            message=original_content,
+        ).update(message=placeholder)
+    except Exception:  # noqa: BLE001 提醒清理失败不影响撤回主流程（原文已清）
+        logger.warning("scrub recalled chat notices failed. message:%s", message.pk, exc_info=True)
 
 
 # ---------------------------------------------------------------- 历史 / 附件取件

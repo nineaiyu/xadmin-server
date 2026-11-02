@@ -167,3 +167,15 @@ def test_duplicate_components_share_one_aggregate_call(dataset, superuser, monke
 
     assert len(wb.sheetnames) == 3
     assert len(calls) == 1
+
+
+def test_legacy_design_exports_beyond_default_limit(dataset, superuser):
+    """存量报表（空 design）保持全量导出：不得按设计器默认 100 行静默截断。"""
+    from identity.models import UserInfo
+
+    for index in range(120):
+        UserInfo.objects.create_user(username=f"legacy_row_{index}", password="Pass-2026!")
+
+    _, rows = _workbook(dataset, superuser, {})
+
+    assert rows > 100

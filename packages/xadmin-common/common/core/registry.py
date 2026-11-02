@@ -55,7 +55,8 @@ class Registry:
         return iter(self.keys())
 
     def __len__(self) -> int:
-        return len(self._builtins) + len(self._extra)
+        # override 会同时存在于 _builtins 与 _extra：按去重后的键数计数
+        return len({**self._builtins, **self._extra})
 
     def __contains__(self, key: Any) -> bool:
         return key in self._builtins or key in self._extra

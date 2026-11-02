@@ -39,14 +39,15 @@ class TestDraftId:
 
 
 class TestExecuteIdempotent:
-    def test_second_call_returns_first_result(self, superuser):
+    def test_second_call_returns_first_result(self, superuser, django_capture_on_commit_callbacks):
         calls = []
 
         def executor(user, action, params):
             calls.append(params)
             return {"ok": True, "detail": "done", "data": {"n": 1}}
 
-        first = execute_idempotent(superuser, "leave.submit", {"a": 1}, executor)
+        with django_capture_on_commit_callbacks(execute=True):
+            first = execute_idempotent(superuser, "leave.submit", {"a": 1}, executor)
         second = execute_idempotent(superuser, "leave.submit", {"a": 1}, executor)
         assert first["ok"] is True and "deduplicated" not in first
         assert second["deduplicated"] is True and second["data"] == {"n": 1}

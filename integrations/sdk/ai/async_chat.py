@@ -57,6 +57,7 @@ class AsyncChatCompletionsClient:
         self.base_url = self._builder.base_url
         self.api_key = self._builder.api_key
         self.model = self._builder.model
+        self.max_tokens = self._builder.max_tokens
         self.timeout = self._builder.timeout
         self.max_retries = self._builder.max_retries
         self.http = http_client

@@ -79,6 +79,7 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
     )
     @action(methods=["get"], detail=False, url_path="models")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def models(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """可生成模型清单"""
         return ApiResponse(data=codegen_gui.list_generatable_models())
 
     @extend_schema(
@@ -128,6 +129,10 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
     )
     @action(methods=["get"], detail=False, url_path="model-fields")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def model_fields(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """模型字段方案
+
+        读取所选模型的字段清单与命名默认值；AI 预设与字段表共用同一份契约。
+        """
         label = request.query_params.get("label") or ""
         try:
             return ApiResponse(data=codegen_gui.model_plan(label))
@@ -157,6 +162,10 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
     )
     @action(methods=["post"], detail=False, url_path="preview")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def preview(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """生成产物预览
+
+        返回将要落盘的文件清单与内容预览，不写磁盘。
+        """
         try:
             return ApiResponse(data=codegen_gui.build_artifacts(request.data or {}))
         except codegen_gui.CodegenError as exc:
@@ -211,6 +220,10 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
     )
     @action(methods=["post"], detail=False, url_path="download")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def download(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """下载生成产物
+
+        打包为 zip 一次性返回，不落服务器磁盘。
+        """
         try:
             payload = codegen_gui.build_zip(request.data or {})
         except codegen_gui.CodegenError as exc:

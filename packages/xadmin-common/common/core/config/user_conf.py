@@ -45,38 +45,14 @@ def _normalized_owner_ids(owner_ids: Any) -> dict[Any, Any]:
 def batch_user_config(user_pks: Any, key: str, default: Any = None) -> Any:
     """批量读取多个用户的同一配置项，返回 {user_pk: value}。
 
-    逐用户 UserConfig(pk).key 会产生 N 次缓存读 + N 次 DB 回源；这里一次 get_many
-    批量取缓存，缺失项只回源一次系统级默认值。系统公告/性能告警等全量推送场景
-    由 N 次降为常数次。
+    委托 :func:`batch_user_config_values`：与单读同口径（读取侧解密、access
+    判定、模板渲染、自引用守卫），逐用户读取的 N 次缓存往返收敛为批量读取。
     """
-    from django.core.cache import cache as django_cache
-
     pks = list(dict.fromkeys(user_pks))
     if not pks:
         return {}
-    owner_ids = _normalized_owner_ids(pks)
-    key_map = {pk: UserSystemConfigCache(f"user_{pk}_{key}").cache_key for pk in pks}
-    cached = django_cache.get_many(list(key_map.values()))
-    result = {}
-    for pk, cache_key in key_map.items():
-        data = cached.get(cache_key)
-        # no_row 缺席标记只表示「无个人行」，值需回退系统级，不能当作已缓存值
-        if isinstance(data, dict) and data.get("key") == key and not data.get("no_row"):
-            result[pk] = data.get("value")
-    missing = [pk for pk in pks if pk not in result]
-    if missing:
-        # 缓存 miss（含 no_row 缺席标记与刚写入未回填的个人行）：一次 IN 查询
-        # 回查个人行，有行用行值，仍无行才回退系统级默认值（单次读取）
-        personal = dict(
-            UserPersonalConfig.objects.filter(key=key, owner_id__in=missing, is_active=True).values_list(
-                "owner_id", "value"
-            )
-        )
-        system_value = SysConfig.get_value(key, default)
-        for pk in missing:
-            # DB 行的 owner_id 是 UUID，入参可能是 str(pk)：按归一键取值，否则静默丢个人行
-            result[pk] = personal.get(owner_ids.get(pk), system_value)
-    return result
+    values = batch_user_config_values([(pk, key) for pk in pks], default)
+    return {pk: values.get((pk, key), default) for pk in pks}
 
 
 class UserConfigSerializer(serializers.ModelSerializer):

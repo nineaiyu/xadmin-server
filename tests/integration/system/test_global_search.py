@@ -149,11 +149,26 @@ class TestGlobalSearchAPI:
         viewer = UserInfo.objects.create_user(username="mask-search-viewer", password="x")
         viewer.rules.add(data_permission)
         role = UserRole.objects.create(name="搜索用户页", code="search-user-page")
+        list_menu = menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
         role.menu.add(
             menu_factory("retrieve:SystemGlobalSearch", path="api/system/global-search$", method="GET"),
-            menu_factory("list:SystemUser", path="api/identity/user$", method="GET"),
+            list_menu,
         )
         viewer.roles.add(role)
+        # 字段权限 fail-closed：无白名单时整组将被隐藏（见 TestGlobalSearchFieldPermission），
+        # 本用例验证的是「字段可见但输出需要脱敏」，故显式授予 username/nickname
+        from system.models import FieldPermission, ModelLabelField
+
+        field_root = ModelLabelField.objects.create(
+            name="identity.userinfo", label="用户", field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        whitelist = [
+            ModelLabelField.objects.create(
+                name=name, label=name, parent=field_root, field_type=ModelLabelField.FieldChoices.ROLE
+            )
+            for name in ("username", "nickname")
+        ]
+        FieldPermission.objects.create(role=role, menu=list_menu).field.add(*whitelist)
         cache.clear()
 
         api_client.force_authenticate(user=viewer)
@@ -340,3 +355,88 @@ class TestRegisterSearchProvider:
                     display_field="name",
                 )
             )
+
+
+class TestGlobalSearchFieldPermission:
+    """字段权限必须约束搜索：隐藏字段既不出现在结果里，也不能作为检索入口。"""
+
+    def _setup(self, user, role, menu_factory):
+        from system.models import FieldPermission, ModelLabelField
+
+        search_menu = menu_factory("retrieve:SystemGlobalSearch", path="api/system/global-search$", method="GET")
+        list_menu = menu_factory("list:SystemUser", path="api/identity/user$", method="GET")
+        role.menu.add(search_menu, list_menu)
+        if not user.roles.filter(pk=role.pk).exists():
+            user.roles.add(role)
+        parent = ModelLabelField.objects.create(
+            name="identity.userinfo", label="用户", field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        username = ModelLabelField.objects.create(
+            name="username", label="用户名", parent=parent, field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        FieldPermission.objects.create(role=role, menu=list_menu).field.add(username)
+        from system.models import DataPermission
+
+        user.rules.add(
+            DataPermission.objects.create(
+                name="字段权限搜索-全量用户",
+                rules=[
+                    {
+                        "table": "identity.userinfo",
+                        "field": "id",
+                        "type": "value.all",
+                        "match": "",
+                        "value": "",
+                        "exclude": False,
+                    }
+                ],
+                is_active=True,
+            )
+        )
+        UserInfo.objects.create_user(username="hidden-nickname-user", password="x", nickname="隐秘昵称")
+
+    def test_hidden_fields_not_searchable_or_returned(self, api_client, normal_user, role, menu_factory):
+        self._setup(normal_user, role, menu_factory)
+        api_client.force_authenticate(user=normal_user)
+
+        hidden = api_client.get(SEARCH_URL, {"keyword": "隐秘昵称"}).data["data"]["groups"]
+        assert _group(hidden, "user") is None
+
+        hit = api_client.get(SEARCH_URL, {"keyword": "hidden-nickname-user"}).data["data"]["groups"]
+        user_group = _group(hit, "user")
+        assert user_group is not None
+        assert user_group["items"][0]["text"] == "hidden-nickname-user"
+        assert "nickname" not in user_group["items"][0]["meta"]
+
+
+class TestGlobalSearchConsistency:
+    def test_tag_group_matches_page_scope_without_data_permission(self, api_client, normal_user, role, menu_factory):
+        """标签页显式剥离数据权限：搜索分组必须同口径（否则页面可见、搜索为空）。"""
+        from system.models import Tag
+
+        search_menu = menu_factory("retrieve:SystemGlobalSearch", path="api/system/global-search$", method="GET")
+        tag_menu = menu_factory("list:Tag", path="api/system/tags$", method="GET")
+        role.menu.add(search_menu, tag_menu)
+        normal_user.roles.add(role)
+        # 字段权限 fail-closed：标签列表的显示字段需在白名单内
+        from system.models import FieldPermission, ModelLabelField
+
+        root = ModelLabelField.objects.create(
+            name="system.tag", label="标签", field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        name_field = ModelLabelField.objects.create(
+            name="name", label="名称", parent=root, field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        FieldPermission.objects.create(role=role, menu=tag_menu).field.add(name_field)
+        Tag.objects.create(name="公共可见标签")
+        api_client.force_authenticate(user=normal_user)
+
+        groups = api_client.get(SEARCH_URL, {"keyword": "公共可见标签"}).data["data"]["groups"]
+
+        assert _group(groups, "tag") is not None
+
+    def test_group_labels_are_translated(self, auth_client, searchable_data):
+        """分组标题走 gettext：英文界面不得显示中文分组名。"""
+        resp = auth_client.get(SEARCH_URL, {"keyword": "alice"}, HTTP_ACCEPT_LANGUAGE="en-us")
+        groups = resp.data["data"]["groups"]
+        assert str(_group(groups, "user")["label"]) == "User"

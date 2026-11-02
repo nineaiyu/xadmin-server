@@ -14,6 +14,11 @@ logger = get_logger(__name__)
 
 
 def get_redis_client(db: int = 0) -> Any:
+    """取 Django cache 的底层 Redis 客户端。
+
+    ``db`` 仅为兼容旧调用签名：连接池由 cache 配置统一管理（含测试档的每 worker
+    逻辑库隔离），运行期另开逻辑库会绕过隔离，故不再切换。
+    """
     client = cache.client.get_client()
     assert isinstance(client, redis.Redis)
     return client

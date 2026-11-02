@@ -21,7 +21,9 @@ from __future__ import annotations
 from typing import Any
 
 #: 演示角色可见的页面（menu_type=MENU，按 path 匹配）。
-#: 覆盖业务演示与系统治理的**只读展示**；写操作由权限点白名单单独限制。
+#: 刻意不含系统治理面（菜单/权限/字段/日志/文件/下载中心/监控/任务调度/Webhook/
+#: 开放平台/在线用户/账号风险）：演示实例可能与真实数据同库，读权限 + 全量数据规则
+#: 会让游客看到真实用户与审计数据。写操作另由权限点白名单限制。
 DEMO_PAGE_PATHS: tuple[str, ...] = (
     # 系统管理：用户 / 角色 / 部门 / 岗位 / 字典 / 标签（只读）
     "/system/user/index",
@@ -30,29 +32,8 @@ DEMO_PAGE_PATHS: tuple[str, ...] = (
     "/system/post/index",
     "/system/dict/index",
     "/system/tag/index",
-    # 系统治理展示：菜单/数据权限/字段权限/日志/文件/导出/监控/任务/通知/在线用户
-    "/system/menu/index",
-    "/system/permission/index",
-    "/system/field/index",
-    "/system/logs/operation/index",
-    "/system/logs/login/index",
-    "/system/file/index",
-    "/system/export/index",
-    "/system/mask/index",
-    "/system/monitor/index",
-    "/system/celery/task/index",
-    "/system/celery/crontab/index",
-    "/system/celery/interval/index",
-    "/system/celery/logs/index",
-    "/system/notice/index",
-    "/system/notice/read/list",
-    "/system/online/index",
-    "/system/account-risk/index",
+    # 我的管辖
     "/system/my-scope/index",
-    # 集成：开放平台应用 / Webhook 订阅与投递（只读）
-    "/integration/api-app/index",
-    "/integration/subscription/index",
-    "/integration/delivery/index",
     # 关于
     "/about/index",
     # 审批：待办 / 实例 / 请假 / 流程定义 / 委托 / 规则只读
@@ -91,27 +72,7 @@ DEMO_PAGE_NAMES: frozenset[str] = frozenset(
         "SystemPost",
         "SystemDataDict",
         "SystemTag",
-        "SystemMenu",
-        "SystemDataPermission",
-        "SystemModelLabelField",
-        "SystemOperationLog",
-        "SystemUserLoginLog",
-        "SystemUploadFile",
-        "SystemExportRecord",
-        "SystemDataMaskRule",
-        "SystemMonitor",
-        "SystemTask",
-        "SystemTaskCrontab",
-        "SystemTaskInterval",
-        "SystemTaskExecution",
-        "SystemNotice",
-        "SystemNoticeRead",
-        "SystemUserOnline",
-        "SystemAccountRisk",
         "SystemMyScope",
-        "IntegrationApiApp",
-        "WebhookSubscription",
-        "WebhookDelivery",
         "About",
         "SystemApprovalRequest",
         "SystemApprovalInstance",
@@ -136,7 +97,8 @@ DEMO_PAGE_NAMES: frozenset[str] = frozenset(
 )
 
 #: 演示角色允许的权限点（菜单名）。写操作只保留演示业务动作与示例图书 CRUD；
-#: 身份治理与系统配置只保留只读展示，日志/监控/任务/Webhook/开放平台同样只读。
+#: 仅含业务演示面与个人中心，系统治理面（日志/文件/下载中心/监控/任务/Webhook/
+#: 开放平台）不进入演示角色。
 DEMO_ALLOWED_PERMISSION_NAMES: frozenset[str] = frozenset(
     {
         # ---- 用户 / 角色 / 部门 / 岗位：只读 + 部门内头像上传 ----
@@ -180,82 +142,6 @@ DEMO_ALLOWED_PERMISSION_NAMES: frozenset[str] = frozenset(
         "retrieve:Tag",
         "resources:Tag",
         "objects:Tag",
-        # ---- 系统治理只读展示：菜单 / 数据权限 / 字段权限 / 日志 / 文件 / 导出 ----
-        "list:SystemMenu",
-        "retrieve:SystemMenu",
-        "apiUrl:SystemMenu",
-        "permissionAudit:SystemMenu",
-        "list:SystemDataPermission",
-        "retrieve:SystemDataPermission",
-        "list:SystemModelLabelField",
-        "retrieve:SystemModelLabelField",
-        "lookups:SystemModelLabelField",
-        "list:SystemOperationLog",
-        "retrieve:SystemOperationLog",
-        "list:SystemUserLoginLog",
-        "list:SystemUploadFile",
-        "retrieve:SystemUploadFile",
-        "preview:SystemUploadFile",
-        "download:SystemUploadFile",
-        "accessLogs:SystemUploadFile",
-        "config:SystemUploadFile",
-        "list:SystemExportRecord",
-        "retrieve:SystemExportRecord",
-        "download:SystemExportRecord",
-        "log:SystemExportRecord",
-        "stats:SystemExportRecord",
-        "list:SystemImportRecord",
-        "retrieve:SystemImportRecord",
-        "download:SystemImportRecord",
-        "log:SystemImportRecord",
-        "stats:SystemImportRecord",
-        "list:SystemImportTemplate",
-        "retrieve:SystemImportTemplate",
-        "list:SystemDataMaskRule",
-        "retrieve:SystemDataMaskRule",
-        "preview:SystemDataMaskRule",
-        # ---- 监控 / 任务调度 / 通知 / 在线用户 / 账号风险 / 我的范围（只读） ----
-        "list:SystemMonitor",
-        "celeryInfo:SystemMonitor",
-        "events:SystemMonitor",
-        "export:SystemMonitor",
-        "history:SystemMonitor",
-        "redisInfo:SystemMonitor",
-        "services:SystemMonitor",
-        "slowList:SystemMonitor",
-        "taskHealth:SystemMonitor",
-        "thresholds:SystemMonitor",
-        "list:SystemTask",
-        "retrieve:SystemTask",
-        "log:SystemTask",
-        "registered:SystemTask",
-        "list:SystemTaskCrontab",
-        "retrieve:SystemTaskCrontab",
-        "list:SystemTaskInterval",
-        "retrieve:SystemTaskInterval",
-        "list:SystemTaskCenter",
-        "list:SystemTaskExecution",
-        "retrieve:SystemTaskExecution",
-        "log:SystemTaskExecution",
-        "stats:SystemTaskExecution",
-        "list:SystemNotice",
-        "retrieve:SystemNotice",
-        "list:SystemNoticeRead",
-        "retrieve:SystemNoticeRead",
-        "list:SystemUserOnline",
-        "retrieve:SystemUserOnline",
-        "list:SystemAccountRisk",
-        "stats:SystemAccountRisk",
-        # ---- 开放平台 / Webhook 只读 ----
-        "list:IntegrationApiApp",
-        "retrieve:IntegrationApiApp",
-        "listGrants:IntegrationApiApp",
-        "stats:IntegrationApiApp",
-        "list:WebhookSubscription",
-        "retrieve:WebhookSubscription",
-        "events:WebhookSubscription",
-        "list:WebhookDelivery",
-        "retrieve:WebhookDelivery",
         # ---- 审批委托 / 规则只读 ----
         "list:SystemApprovalDelegation",
         "retrieve:SystemApprovalDelegation",
@@ -321,7 +207,6 @@ DEMO_ALLOWED_PERMISSION_NAMES: frozenset[str] = frozenset(
         # ---- 数据分析：定义只读 + 执行 ----
         "list:DataDataset",
         "retrieve:DataDataset",
-        "meta:DataDataset",
         "execute:DataDataset",
         "aggregate:DataDataset",
         "list:DataDashboard",

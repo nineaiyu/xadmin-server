@@ -151,10 +151,25 @@ class RecycleBinAction:
         skipped = 0
         # 经 filter_queryset 后不保证是 QuerySet（过滤器/取值域可返回 list），
         # 因此保留 iterator 能力判断：是 QuerySet 时走游标分批，否则按可迭代对象处理
-        for instance in queryset.iterator() if hasattr(queryset, "iterator") else queryset:
+        for instance in queryset.iterator(chunk_size=500) if hasattr(queryset, "iterator") else queryset:
             try:
                 # 逐行 savepoint：单行硬删失败（PROTECT 引用等）不毒化整批
                 with transaction.atomic():
+                    # 文件对象物理清除也要留 DELETE 审计（业务行删除后仍可回溯文件名）
+                    try:
+                        from file.models import FileAccessLog, UploadFile
+                        from file.utils.file_audit import log_file_access
+
+                        if isinstance(instance, UploadFile):
+                            log_file_access(
+                                upload=instance,
+                                user=getattr(request, "user", None),
+                                action=FileAccessLog.Action.DELETE,
+                                request=request,
+                                result=True,
+                            )
+                    except Exception:  # noqa: BLE001 审计失败不阻断物理清除
+                        pass
                     instance.hard_delete()  # 走原始 delete 链，物理文件/级联照常清理
                 count += 1
             except IntegrityError:

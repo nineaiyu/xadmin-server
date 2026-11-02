@@ -30,6 +30,9 @@ class ImportRecord(DbAuditModel):
         # 用户取消（任务中心）
         REVOKED = "REVOKED", _("Cancelled")
 
+    #: 终态：重复投递（broker 重投 / 人工重放）直接跳过，避免同一文件再次逐行建行
+    TERMINAL_STATUSES = (Status.SUCCESS, Status.FAILURE, Status.REVOKED)
+
     class Action(models.TextChoices):
         CREATE = "create", _("Create")
         UPDATE = "update", _("Update")

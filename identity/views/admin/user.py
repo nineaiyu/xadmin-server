@@ -40,7 +40,7 @@ from identity.serializers.user import (
 from identity.services import user_admin
 from identity.utils import user_invite
 from identity.utils.impersonation import is_impersonating
-from mfa.confirm import UserConfirmation
+from mfa.confirm import UserConfirmation, ensure_user_confirmed
 from mfa.const import ConfirmType
 from system.services.modelset import ChangeRolePermissionAction, PermissionPreviewAction
 from system.services.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
@@ -170,6 +170,19 @@ class UserViewSet(
 
     def perform_update(self, serializer: Any) -> None:
         self._assert_target_mutable(serializer.instance)
+        # 改他人邮箱/手机是账号接管面：换成攻击者可控地址后可走「忘记密码」
+        # 重置目标密码。非超管改他人这两个字段必须密码二次确认（412 由前端
+        # 统一唤起验证并重发）；本人资料走个人中心接口，不受此限。
+        instance = serializer.instance
+        request_user = self.request.user
+        sensitive_changed = {
+            field
+            for field in ("email", "phone")
+            if field in serializer.validated_data
+            and str(serializer.validated_data.get(field) or "") != str(getattr(instance, field, "") or "")
+        }
+        if sensitive_changed and not request_user.is_superuser and instance.pk != request_user.pk:
+            ensure_user_confirmed(self.request, ConfirmType.PASSWORD)
         super().perform_update(serializer)
 
     def perform_destroy(self, instance: Any) -> Any:

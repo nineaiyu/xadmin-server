@@ -191,6 +191,9 @@ def collect_app_ws_urls() -> Any:
 
 
 def auto_register_app_url(urlpatterns: Any) -> None:
+    show_prefixes = kernel_setting("PERMISSION_SHOW_PREFIX")
+    data_auth_apps = kernel_setting("PERMISSION_DATA_AUTH_APPS")
+    white_urls = kernel_setting("PERMISSION_WHITE_URL")
     xadmin_apps = []
     for app in kernel_setting("XADMIN_APPS"):
         if "." in app:
@@ -220,14 +223,18 @@ def auto_register_app_url(urlpatterns: Any) -> None:
         logger.info(f"auto register {name} url success")
         if urls:
             urlpatterns.extend(urls)
-            for url in urls:
-                kernel_setting("PERMISSION_SHOW_PREFIX").append(url.pattern.regex.pattern.lstrip("^"))
-            kernel_setting("PERMISSION_DATA_AUTH_APPS").append(name)
+            if isinstance(show_prefixes, list):
+                for url in urls:
+                    pattern = url.pattern.regex.pattern.lstrip("^")
+                    if pattern not in show_prefixes:
+                        show_prefixes.append(pattern)
+            if isinstance(data_auth_apps, list) and name not in data_auth_apps:
+                data_auth_apps.append(name)
 
         try:
             urls = import_from_string(f"{app_module_name}.config.PERMISSION_WHITE_REURL")
-            if urls:
-                kernel_setting("PERMISSION_WHITE_URL").update(urls)
+            if urls and isinstance(white_urls, dict):
+                white_urls.update(urls)
         except Exception as e:
             logger.warning(f"auto register {name} permission_white_reurl failed. {e}")
 

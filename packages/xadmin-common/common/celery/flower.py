@@ -34,7 +34,11 @@ class CeleryFlowerAPIView(GenericAPIView):
         remote_url = f"http://{flower_url}/api/flower/{path}"
         try:
             basic_auth = base64.b64encode(kernel_setting("CELERY_FLOWER_AUTH").encode("utf-8")).decode("utf-8")
-            response = proxy_view(request, remote_url, {"headers": {"Authorization": f"Basic {basic_auth}"}})
+            response = proxy_view(
+                request,
+                remote_url,
+                {"headers": {"Authorization": f"Basic {basic_auth}"}, "timeout": (3, 10)},
+            )
         except Exception as e:
             logger.warning(f"celery flower service unavailable. {e}")
             msg = _("<h3>Celery flower service unavailable. Please contact the administrator</h3>")

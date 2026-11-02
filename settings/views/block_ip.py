@@ -52,15 +52,30 @@ class SecurityBlockIpViewSet(ListDeleteModelSet):
         # 一批 get_many 取回所有拦截时间，替代逐 IP 一次 Redis 读
         keys = {ip: LoginIpBlockUtil(ip).block_key for ip in obj}
         cached = cache.get_many(list(keys.values())) if keys else {}
-        data = [
-            {
-                "ip": ip,
-                "pk": IpUtils(ip).ip_to_int,
-                "created_time": self._block_info(cached.get(key)),
-            }
-            for ip, key in keys.items()
-        ]
+        data = []
+        for ip, key in keys.items():
+            try:
+                pk = IpUtils(ip).ip_to_int
+            except ValueError:
+                # 历史键可能是 IPv6/unknown/非法值：跳过而不是让整个列表 500
+                logger.warning("skip invalid block ip key: %s", ip)
+                continue
+            data.append({"ip": ip, "pk": pk, "created_time": self._block_info(cached.get(key))})
         return FilterIps(data)
+
+    def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Any:
+        ip = self.get_object()
+        rows = self.filter_queryset([ip])
+        if not rows:
+            raise Http404
+        row = rows[0]
+        return ApiResponse(
+            data={
+                "ip": row["ip"],
+                "pk": row["pk"]() if callable(row["pk"]) else row["pk"],
+                "created_time": row["created_time"],
+            }
+        )
 
     def get_queryset(self) -> list[str]:
         ips: list[str] = []

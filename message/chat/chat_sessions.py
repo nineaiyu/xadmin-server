@@ -40,17 +40,27 @@ def mark_read(room: ChatRoom, user: Any, message_id: Any = None) -> int:
     """
     if room.room_type == ChatRoom.RoomType.PUBLIC:
         return 0
-    latest = message_id or ChatMessage.objects.filter(room=room).aggregate(Max("id"))["id__max"] or 0
-    member = ChatRoomMember.objects.filter(room=room, user_id=_user_pk(user)).first()
-    if member is None:
-        return 0
-    cursor: int = max(member.last_read_id or 0, int(latest))
-    if cursor == (member.last_read_id or 0) and member.unread_count == 0:
+    from django.db import transaction
+
+    with transaction.atomic():
+        # 锁成员行：bump_unread 的 +1 会在此排队，避免「算完最大 id 又被清零」丢红点
+        member = ChatRoomMember.objects.select_for_update().filter(room=room, user_id=_user_pk(user)).first()
+        if member is None:
+            return 0
+        max_id = int(ChatMessage.objects.filter(room=room).aggregate(Max("id"))["id__max"] or 0)
+        try:
+            requested = int(message_id) if message_id is not None else max_id
+        except (TypeError, ValueError):
+            requested = max_id
+        # 游标夹取到房间最大消息 id：客户端不能把已读位置推到未来或负数
+        latest = min(max(0, requested), max_id)
+        cursor: int = max(member.last_read_id or 0, latest)
+        if cursor == (member.last_read_id or 0) and member.unread_count == 0:
+            return cursor
+        member.last_read_id = cursor
+        member.unread_count = 0
+        member.save(update_fields=["last_read_id", "unread_count", "updated_time"])
         return cursor
-    member.last_read_id = cursor
-    member.unread_count = 0
-    member.save(update_fields=["last_read_id", "unread_count", "updated_time"])
-    return cursor
 
 
 # ---------------------------------------------------------------- 列表

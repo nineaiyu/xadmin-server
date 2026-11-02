@@ -22,6 +22,20 @@ from common.utils.excel import excel_safe_value, to_xlsx
 
 logger = get_logger(__name__)
 
+#: 调度扫描只取判定/派发所需列：design/recipients 等大 JSON 不进扫描内存
+REPORT_SCAN_FIELDS = (
+    "pk",
+    "name",
+    "creator",
+    "created_time",
+    "cron_expression",
+    "send_time",
+    "frequency",
+    "weekday",
+    "month_day",
+    "last_run_at",
+)
+
 
 def _sheet_title(component: Any, index: int) -> str:
     """组件 sheet 名：标题（非法字符替换、截断）+ 序号前缀（保证唯一且 ≤31 字符）。"""

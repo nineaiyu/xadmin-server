@@ -201,7 +201,10 @@ def leave_group(room_id: Any, user: Any) -> ChatRoom:
 
 def accessible_room(room_id: Any, user: Any) -> ChatRoom:
     """按可访问性取房间（fail-closed）：公共全员可进、私聊/群聊仅成员、AI 仅归属者。"""
-    room: ChatRoom | None = ChatRoom.objects.filter(pk=room_id, is_active=True).first()
+    try:
+        room: ChatRoom | None = ChatRoom.objects.filter(pk=room_id, is_active=True).first()
+    except (TypeError, ValueError, DjangoValidationError):
+        room = None
     if room is None:
         raise DjangoValidationError(_("Chat room not found"))
     if room.room_type == ChatRoom.RoomType.PUBLIC:

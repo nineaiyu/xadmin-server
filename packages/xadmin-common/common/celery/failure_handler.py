@@ -7,6 +7,7 @@ Celery 任务失败告警。
 （站内信 + 邮件）告知超管；同一任务 60 秒内只告警一次，防止失败风暴刷屏。
 """
 
+import html
 import logging
 from typing import Any
 
@@ -57,10 +58,11 @@ class TaskFailureMessage(SystemMessage):
         # 取值与模板变量同源：渠道默认文案与模板覆盖层不会各写一套
         context = self.get_template_vars()
         subject = _("Celery task failure alert: {}").format(context["task_name"])
+        # 异常文本可能含用户可控内容：HTML 渠道必须转义（与备份/运维告警同口径）
         message = (
-            f"<p>{_('Task')}: <code>{context['task_name']}</code></p>"
-            f"<p>{_('Error')}: <code>{context['exc']}</code></p>"
-            f"<pre style='white-space:pre-wrap'>{context['traceback_msg']}</pre>"
+            f"<p>{_('Task')}: <code>{html.escape(str(context['task_name']))}</code></p>"
+            f"<p>{_('Error')}: <code>{html.escape(str(context['exc']))}</code></p>"
+            f"<pre style='white-space:pre-wrap'>{html.escape(str(context['traceback_msg']))}</pre>"
         )
         return {"subject": subject, "message": message}
 

@@ -342,10 +342,13 @@ class AiAssistantViewSet(
             system_error_message(request.user, "docs", quota)
             return ApiResponse(code=1001, detail=quota, content_type="application/json")
         try:
-            messages, sources = prepare_ask(question, user=request.user)
+            messages, sources, injection_hits = prepare_ask(question, user=request.user)
         except DjangoValidationError as exc:
             detail = "; ".join(exc.messages)
             audit_ai_ask(request.user, question, ok=False, detail=detail)
+            # 与非流式 ask 同口径：校验失败也落本轮提问 + 系统错误消息（刷新后历史可续看）
+            persist_message(request.user, "docs", "user", content=question)
+            system_error_message(request.user, "docs", detail)
             return ApiResponse(code=1001, detail=detail, content_type="application/json")
 
         # 校验通过即落用户消息：即使流中断，刷新后也能看到本轮提问
@@ -364,7 +367,9 @@ class AiAssistantViewSet(
         async def events() -> Any:
             yield {"event": "meta", "data": {"question": question, "user_message": user_payload}}
             try:
-                async for item in ai_ask_stream_async(messages, sources, user=request.user):
+                async for item in ai_ask_stream_async(
+                    messages, sources, user=request.user, injection_hits=injection_hits
+                ):
                     kind = item.get("type")
                     if kind == "reasoning":
                         reasoning_chunks.append(item["text"])

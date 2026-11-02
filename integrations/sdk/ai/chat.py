@@ -28,10 +28,10 @@ def outbound_allowed_hosts(configured: Any = None) -> tuple[str, ...]:
     与 Webhook/MCP 同源；配置读取失败按空白名单降级（私网目标默认拒绝）。
     """
     if configured is not None:
-        return tuple(configured)
+        return tuple(str(item) for item in configured)
     from common.utils.outbound import outbound_allowed_hosts as _load_allowed_hosts
 
-    return _load_allowed_hosts()
+    return tuple(str(item) for item in _load_allowed_hosts())
 
 
 def outbound_pinned_post(url: str, kwargs: dict[str, Any], *, allowed_hosts: Any = None) -> Any:
@@ -159,6 +159,8 @@ class ChatCompletionsClient:
             body["stop"] = self.stop
         if stream:
             body["stream"] = True
+            # 多数 OpenAI 兼容供应商默认不在流中返回 usage：显式请求末帧用量
+            body["stream_options"] = {"include_usage": True}
         for key, value in overrides.items():
             if value is not None:
                 body[key] = value

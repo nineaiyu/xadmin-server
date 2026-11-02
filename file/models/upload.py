@@ -63,9 +63,11 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         """
         name = file_name or getattr(self.filepath, "name", None)
         if name:
-            siblings = UploadFile.objects.filter(filepath=name).exclude(pk=self.pk)
+            siblings = UploadFile.all_objects.filter(filepath=name).exclude(pk=self.pk)
             if self.md5sum:
-                siblings = siblings | UploadFile.objects.filter(md5sum=self.md5sum, is_upload=True).exclude(pk=self.pk)
+                siblings = siblings | UploadFile.all_objects.filter(md5sum=self.md5sum, is_upload=True).exclude(
+                    pk=self.pk
+                )
             if siblings.exists():
                 return True
         return self.has_business_reference()

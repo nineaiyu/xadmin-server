@@ -42,8 +42,12 @@ from dataset.utils.dform_constants import (  # noqa: F401 再导出：常量事�
     MAX_CASCADER_NODES,
     MAX_DRAFT_BYTES,
     MAX_FIELDS,
+    MAX_HELP_LENGTH,
+    MAX_LABEL_LENGTH,
     MAX_LINKAGES,
+    MAX_OPTION_TEXT_LENGTH,
     MAX_OPTIONS,
+    MAX_SCHEMA_BYTES,
     MAX_TABLE_COLUMNS,
     MAX_TABLE_ROWS,
     MAX_TEXT_LENGTH,
@@ -105,6 +109,8 @@ def validate_schema(schema: dict[str, Any]) -> list[Any]:
     """校验表单 schema，返回规范化字段列表。"""
     if not isinstance(schema, dict):
         raise ValidationError(_("Invalid form schema"))
+    if len(json.dumps(schema, ensure_ascii=False, default=str).encode("utf-8")) > MAX_SCHEMA_BYTES:
+        raise ValidationError(_("Form schema is too large"))
     fields = schema.get("fields")
     if not isinstance(fields, list) or not fields:
         raise ValidationError(_("Form schema must contain fields"))
@@ -121,8 +127,13 @@ def validate_schema(schema: dict[str, Any]) -> list[Any]:
         if key in seen:
             raise ValidationError(_("Duplicate field key: {}").format(key))
         seen.add(key)
-        if not str(item.get("label") or "").strip():
+        label = str(item.get("label") or "")
+        if not label.strip():
             raise ValidationError(_("Field {} requires a label").format(key))
+        if len(label) > MAX_LABEL_LENGTH:
+            raise ValidationError(_("Field {} label is too long").format(key))
+        if len(str(item.get("help") or "")) > MAX_HELP_LENGTH:
+            raise ValidationError(_("Field {} help text is too long").format(key))
         ftype = item.get("type")
         if ftype not in ALLOWED_TYPES:
             raise ValidationError(_("Unknown widget type: {}").format(ftype))
@@ -140,6 +151,13 @@ def validate_schema(schema: dict[str, Any]) -> list[Any]:
                     raise ValidationError(_("Field {} requires options").format(key))
                 if len(options) > MAX_OPTIONS:
                     raise ValidationError(_("Field {} has too many options").format(key))
+                for option in options:
+                    if isinstance(option, dict):
+                        texts = [option.get("label"), option.get("value")]
+                    else:
+                        texts = [option]
+                    if any(isinstance(text, str) and len(text) > MAX_OPTION_TEXT_LENGTH for text in texts):
+                        raise ValidationError(_("Field {} option text is too long").format(key))
         elif dict_code not in (None, ""):
             raise ValidationError(_("Field {} of type {} does not accept a dict").format(key, ftype))
         elif ftype == "cascader":

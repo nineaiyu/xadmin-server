@@ -20,6 +20,7 @@ from system.management.commands.load_init_json import Command as LoadInitJsonCom
 from system.models import DataDict, ModelLabelField
 from system.services.seed import _unique_checks, build_seed_fixtures, filter_conflicting_rows
 from system.services.seeding import NOTE_CONFLICT, NOTE_PRUNE, read_model_rows
+from system.services.seeding.rows import deactivate_demo_rows, detach_missing_audit_users
 
 pytestmark = pytest.mark.django_db
 
@@ -295,17 +296,83 @@ class TestUniqueChecks:
         assert any(str(existing.pk) in str(note) for note in notes)
 
 
+class TestDetachMissingAuditUsers:
+    def test_missing_creator_and_modifier_are_nulled(self):
+        rows = {
+            "identity.userrole": [
+                {
+                    "model": "identity.userrole",
+                    "pk": "5eed0012-0000-4000-8000-000000000001",
+                    "fields": {"name": "演示角色", "code": "demo_role", "creator": 987654321, "modifier": 987654321},
+                }
+            ]
+        }
+        filtered, notes = detach_missing_audit_users(rows)
+        assert filtered["identity.userrole"][0]["fields"]["creator"] is None
+        assert filtered["identity.userrole"][0]["fields"]["modifier"] is None
+        assert len(notes) == 1 and notes[0].kind == NOTE_PRUNE
+
+    def test_existing_creator_is_kept(self, superuser):
+        rows = {
+            "identity.userrole": [
+                {
+                    "model": "identity.userrole",
+                    "pk": "5eed0012-0000-4000-8000-000000000002",
+                    "fields": {"name": "演示角色", "code": "demo_role_2", "creator": superuser.pk},
+                }
+            ]
+        }
+        filtered, notes = detach_missing_audit_users(rows)
+        assert filtered["identity.userrole"][0]["fields"]["creator"] == superuser.pk
+        assert notes == []
+
+
+class TestDeactivateDemoRows:
+    def _rows(self):
+        return {
+            "identity.userrole": [
+                {"model": "identity.userrole", "pk": "r-demo", "fields": {"code": "demo", "is_active": True}},
+                {"model": "identity.userrole", "pk": "r-admin", "fields": {"code": "admin", "is_active": True}},
+            ],
+            "identity.deptinfo": [
+                {"model": "identity.deptinfo", "pk": "d-test", "fields": {"code": "test", "is_active": True}},
+            ],
+            "system.datapermission": [
+                {
+                    "model": "system.datapermission",
+                    "pk": "p-demo",
+                    "fields": {"name": "演示模式菜单", "is_active": True},
+                },
+                {"model": "system.datapermission", "pk": "p-all", "fields": {"name": "全部数据", "is_active": True}},
+            ],
+        }
+
+    def test_production_disables_demo_rows_only(self):
+        rows, notes = deactivate_demo_rows(self._rows(), demo_installed=False)
+        assert rows["identity.userrole"][0]["fields"]["is_active"] is False
+        assert rows["identity.userrole"][1]["fields"]["is_active"] is True
+        assert rows["identity.deptinfo"][0]["fields"]["is_active"] is False
+        assert rows["system.datapermission"][0]["fields"]["is_active"] is False
+        assert rows["system.datapermission"][1]["fields"]["is_active"] is True
+        assert len(notes) == 1 and notes[0].kind == NOTE_PRUNE
+
+    def test_demo_installed_keeps_rows_active(self):
+        rows, notes = deactivate_demo_rows(self._rows(), demo_installed=True)
+        assert rows["identity.userrole"][0]["fields"]["is_active"] is True
+        assert notes == []
+
+
 class TestBuildSeedFixtures:
-    def test_clean_db_uses_original_files(self, tmp_path, legacy_root):
+    def test_empty_db_detaches_missing_creators(self, tmp_path, legacy_root):
         labels, notes, trimmed, m2m = build_seed_fixtures(
             LoadInitJsonCommand.model_names, str(legacy_root), str(tmp_path / "out")
         )
-        assert trimmed is False
-        assert notes == []
+        # 空库没有超管：creator/modifier 被置空（保持可装载），其余文件零改动
+        assert trimmed is True
+        assert len(notes) == 1 and notes[0].kind == NOTE_PRUNE
         assert m2m == []
-        # 无裁剪无冲突：直接用原始种子文件（不产生临时文件）
-        assert all(label.startswith(str(legacy_root)) for label in labels)
-        assert not (tmp_path / "out").exists()
+        written = {Path(label).stem for label in labels}
+        assert written == {"approvalflow", "approvalflownode", "approvalflowversion"}
 
     def test_conflict_trims_seed_and_cascades(self, tmp_path, legacy_root):
         ApprovalFlow.objects.create(pk="cd81e9b1-f744-495d-b0ba-5d3b2273752a", code="demo_expense", name="库内对象")

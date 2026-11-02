@@ -463,3 +463,21 @@ class TestUploadOwnership:
         )
         ok = auth_client.post(f"{SUBMISSIONS_URL}/{created.data['data']['pk']}/submit", {}, format="json")
         assert ok.data["code"] == 1000, ok.data
+
+
+class TestAICatalogTemplateExclusion:
+    """AI 通道与 REST 同口径：模板表单不可出现在目录里，也不能被提交。"""
+
+    def test_catalog_and_submit_exclude_template(self, auth_client, superuser):
+        from dataset.ai_declarations import _catalog, _resolve_form
+
+        template = _make_form(name="AI模板-A", is_template=True, is_active=True)
+        normal = _make_form(name="AI普通表单", is_active=True)
+
+        form_ids = [item["form_id"] for item in _catalog(superuser)["forms"]]
+        assert str(normal.pk) in form_ids
+        assert str(template.pk) not in form_ids
+
+        form, error = _resolve_form({"form_id": str(template.pk)})
+        assert form is None
+        assert error

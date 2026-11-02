@@ -111,16 +111,25 @@ class TestPriority:
         assert user._ldap_authenticated is True
         assert not user.has_usable_password()
 
-    def test_ldap_first_binds_even_with_local_password(self, backend, ldap_on, stub_directory, superuser):
-        """ldap_first：即使本地有密码也先 bind 目录。"""
+    def test_ldap_first_binds_even_with_local_password(self, backend, ldap_on, stub_directory, normal_user):
+        """ldap_first：即使本地普通账号有密码也先 bind 目录。"""
         ldap_on.LDAP_AUTH_PRIORITY = "ldap_first"
         stub_directory["entries"] = [
-            dict(ALICE_ENTRY, attributes={**ALICE_ENTRY["attributes"], "sAMAccountName": "admin"})
+            dict(ALICE_ENTRY, attributes={**ALICE_ENTRY["attributes"], "sAMAccountName": normal_user.username})
         ]
-        user = backend.authenticate(None, username="admin", password="Dir-Pass-1")
+        user = backend.authenticate(None, username=normal_user.username, password="Dir-Pass-1")
         assert user is not None
-        assert user.pk == superuser.pk
+        assert user.pk == normal_user.pk
         assert stub_directory["searched"] == 1
+
+    def test_ldap_superuser_is_never_auto_bound(self, backend, ldap_on, stub_directory, superuser):
+        """目录同名账号不得自动接管本地超管（目录被攻破即本地提权）。"""
+        ldap_on.LDAP_AUTH_PRIORITY = "ldap_first"
+        stub_directory["entries"] = [
+            dict(ALICE_ENTRY, attributes={**ALICE_ENTRY["attributes"], "sAMAccountName": superuser.username})
+        ]
+        assert backend.authenticate(None, username=superuser.username, password="Dir-Pass-1") is None
+        assert not LdapUserBinding.objects.filter(user=superuser).exists()
 
 
 class TestResolveAndCreate:

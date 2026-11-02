@@ -74,7 +74,7 @@ class TestBatchPartialUpdate:
             {"pks": [str(normal_user.pk)], "fields": {"dept": "not-a-uuid"}},
             format="json",
         )
-        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["code"] == 1004, resp.data
         assert resp.data["data"]["updated"] == 0
         assert resp.data["data"]["failures"][0]["reason"]
 
