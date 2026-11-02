@@ -94,7 +94,7 @@ psutil==7.2.2
 psycopg==3.3.5
 psycopg-binary==3.3.5 ; implementation_name != 'pypy'
 psycopg-pool==3.3.3
-pyasn1==0.6.4
+pyasn1==0.6.5
 pycountry==26.2.16
 pycparser==3.0 ; implementation_name != 'PyPy'
 pycryptodomex==3.23.0
