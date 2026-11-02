@@ -16,6 +16,8 @@
 - **生成**：`python manage.py dump_openapi`（默认写入本目录；`--check` 只校验漂移）。
   导出时剔除 `uuid4` 主键与 `timezone.now` 等**运行期默认值**（见
   `devtools/services/openapi.py`），保证同一份代码两次导出逐字节一致。
+- **前置数据**：字典驱动的 choices（枚举组件与命名）来自库内字典，生成前须先
+  `migrate` 并 `load_init_json`；空库生成会与仓库契约不一致（CI 同口径）。
 - **消费**：client 仓库 `contract/openapi.json` 为镜像，`pnpm gen:openapi-types`
   生成 `src/api/types/openapi.d.ts`；`pnpm check:contract` 校验镜像、
   `pnpm check:openapi-types` 校验生成物未被手改。

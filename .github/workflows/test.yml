@@ -92,9 +92,12 @@ jobs:
 
       - name: Check OpenAPI contract is in sync
         # docs/schema/openapi.json 是前端类型生成真源：代码改了响应结构但忘记
-        # dump_openapi 时在此失败（此前该检查未挂 CI，文档承诺与实现漂移）
+        # dump_openapi 时在此失败（此前该检查未挂 CI，文档承诺与实现漂移）。
+        # 字典驱动的 choices 会把字典数据带进 schema（枚举组件与命名），空库生成
+        # 与开发环境不一致；先灌内置种子，与本地生成口径对齐。
         run: |
           uv run --no-sync python manage.py migrate --noinput
+          uv run --no-sync python manage.py load_init_json
           uv run --no-sync python manage.py dump_openapi --check
 
       - name: Tune PG logging (slow queries / lock waits)
