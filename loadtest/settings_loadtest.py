@@ -27,6 +27,14 @@ _loadtest_config["SECRET_KEY"] = os.environ.get("LOADTEST_SECRET_KEY", "loadtest
 _loadtest_config["DEBUG"] = False
 _loadtest_config["DEBUG_DEV"] = False
 _loadtest_config["SILK_ENABLED"] = False
+# 压测以生产口径运行（DEBUG=False），验证码票据密钥不能再依赖开发期兜底：
+# 系统检查 captcha.E002 会拒绝启动（自动生成只在开发/首次体验条件下生效）。
+# 固定值即可——本配置禁止用于任何真实部署，票据不跨环境使用。
+_loadtest_config["CAPTCHA_TICKET_SECRET"] = os.environ.get(
+    "LOADTEST_CAPTCHA_TICKET_SECRET", "loadtest-only-not-for-production"
+)
+# 部署标识隔离票据（对应系统检查 captcha.W002 的告警口径）
+_loadtest_config["CAPTCHA_TICKET_AUDIENCE"] = "loadtest"
 # 专用容器连接参数：仅监听 127.0.0.1 的发布端口
 _loadtest_config["DB_ENGINE"] = "postgresql"
 _loadtest_config["DB_HOST"] = os.environ.get("LOADTEST_DB_HOST", "127.0.0.1")
