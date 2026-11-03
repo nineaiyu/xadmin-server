@@ -242,9 +242,11 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(DATA_DIR, "upload")
 # 受保护媒体的 nginx 内部重定向前缀（默认空 = 应用进程输出；生产建议 /_protected_media）
 MEDIA_X_ACCEL_PREFIX = CONFIG.MEDIA_X_ACCEL_PREFIX
-# 敏感媒体命名空间（导出 / 附件 / 对象存储缓存）的短时效签名 URL 开关与有效期（秒）
+# 敏感媒体命名空间（导出 / 附件 / 对象存储缓存）的短时效签名 URL 开关、有效期（秒）
+# 与用户绑定开关（开启时签名含签发对象标识，他人持链接不可用）
 MEDIA_SIGNED_URL_REQUIRED = CONFIG.MEDIA_SIGNED_URL_REQUIRED
 MEDIA_SIGNED_URL_TTL = CONFIG.MEDIA_SIGNED_URL_TTL
+MEDIA_SIGNED_URL_BIND_USER = CONFIG.MEDIA_SIGNED_URL_BIND_USER
 from server.settings.storage import STORAGES  # noqa: E402,F401 可插拔存储后端装配（本体见该模块）
 
 # 审计日志冷归档目录：默认 DATA_DIR/log_archive；环境变量 LOG_ARCHIVE_DIR 可覆盖

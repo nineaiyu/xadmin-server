@@ -136,7 +136,13 @@ def consume_approval(request: Any, approval_id: Any) -> Any:
 
     # 原子消费（一次性令牌）：条件更新 + rowcount 判定，防并发重发双消费。
     # 不用 select_for_update：sqlite（单测/E2E 库）不支持 SELECT ... FOR UPDATE，
-    # 条件更新在全部后端语义一致
+    # 条件更新在全部后端语义一致。
+    # 取舍（已知且有意为之）：令牌「先消费、后执行业务」——本函数消费成功并
+    # 放行后，装饰器侧才继续执行真实业务；若业务执行抛错，令牌已烧毁，申请人
+    # 须重新建单并走完整审批链（多级链尤其昂贵）。不做「业务失败回滚 consume_time」：
+    # 回滚会与并发重发竞态（第二个请求已按 CAS 落空收到「令牌已使用」拒绝，回滚
+    # 后该回执语义自相矛盾），防双执行的优先级高于令牌可重试；auto_completed
+    # 场景已有「已完成」友好回执兜底，普通业务失败按重新审批处理（升级 FAQ 有说明）
     now = timezone.now()
     consumed = ApprovalRequest.objects.filter(
         pk=approval.pk,

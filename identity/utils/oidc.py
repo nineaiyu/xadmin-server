@@ -135,6 +135,13 @@ def verify_id_token(
     jwks_uri = endpoints.get("jwks_uri") or ""
     if not jwks_uri:
         raise OAuthError(_("The identity provider returned incomplete configuration"))
+    client_id = str(provider.get("client_id") or "").strip()
+    issuer = str(endpoints.get("issuer") or "").strip()
+    if not client_id or not issuer:
+        # 受众 / 签发者缺位时对应校验不得静默关闭（fail-closed）：绕过写入侧
+        # 必填校验的存量数据、或 discovery 未返回 issuer，一律按配置不完整拒绝
+        logger.warning(f"oidc provider config incomplete. provider:{provider.get('key')}")
+        raise OAuthError(_("The identity provider returned incomplete configuration"))
     try:
         header = jwt.get_unverified_header(id_token)
     except Exception as exc:  # noqa: BLE001 非法 token 结构
@@ -159,12 +166,12 @@ def verify_id_token(
                 id_token,
                 key=_public_key(jwk, algorithm),
                 algorithms=[algorithm],
-                audience=provider.get("client_id"),
-                issuer=endpoints.get("issuer") or None,
+                audience=client_id,
+                issuer=issuer,
                 options={
                     "require": ["exp"],
-                    "verify_aud": bool(provider.get("client_id")),
-                    "verify_iss": bool(endpoints.get("issuer")),
+                    "verify_aud": True,
+                    "verify_iss": True,
                 },
             )
             break

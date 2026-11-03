@@ -88,6 +88,10 @@ def verify_pkce(code_challenge: str, method: str, verifier: str) -> bool:
     ``plain`` 已移除（RFC 8252 / OAuth 2.0 Security BCP 建议仅 S256：plain 下
     授权码被截获即可直接重放，等同无效防护）。方法非 S256（含历史缓存中的 plain
     授权码）一律 fail-closed；方法缺省按 S256 处理（与授权请求侧默认一致）。
+
+    未携带 challenge 时放行的前提是 client_secret 必填（仅机密客户端）：
+    将来引入公共客户端（无 client_secret）时必须在此强制 challenge，
+    否则授权码被截获即可直接换发令牌。
     """
     if not code_challenge:
         return True
@@ -185,7 +189,8 @@ def validate_authorize_request(data: Any) -> tuple[Any, ...]:
         return None, None, None, None, None, None, ("unsupported_response_type", None, 400)
     application = ApiApplication.objects.filter(client_id=client_id, is_active=True).first()
     if application is None:
-        return None, None, None, None, None, None, ("invalid_client", None, 400)
+        # 客户端身份校验失败与 token / revoke 端点同口径用 401（RFC 6749 §5.2）
+        return None, None, None, None, None, None, ("invalid_client", None, 401)
     if not application.callback_urls or redirect_uri not in (application.callback_urls or []):
         return (
             None,

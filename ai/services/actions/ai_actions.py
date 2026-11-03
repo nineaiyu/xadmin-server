@@ -278,6 +278,13 @@ def execute_action(user: Any, action_key: str, params: Any, request: Any = None)
         # 停用模块的动作内部 dispatch 会绕过 ASGI 模块网关（直调视图函数），
         # 必须在执行收口显式拒绝，否则超管仍可执行已停用模块的动作。
         return {"ok": False, "detail": str(_("The action is not available")), "data": {}}
+    if not spec.has_permission(user):
+        # 收口兜底复检：调用方门禁漏查、或确认到执行之间权限被收窄时不放行
+        return {
+            "ok": False,
+            "detail": str(_("You do not have permission to perform the action: {}").format(str(spec.label))),
+            "data": {},
+        }
     clean, error = spec.validate(user, params if isinstance(params, dict) else {})
     if error:
         return {"ok": False, "detail": error, "data": {}}

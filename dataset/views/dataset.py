@@ -29,29 +29,10 @@ from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.core.throttle import DatasetQueryThrottleMixin
 from common.swagger.utils import get_default_response_schema
-from common.utils import get_logger, parse_bool
+from common.utils import parse_bool
 from dataset.models.dataset import Dashboard, Dataset
 from dataset.serializers.dataset import DashboardSerializer, DatasetSerializer
 from dataset.utils.dataset import aggregate_dataset, designer_meta_payload, execute_dataset, validate_filters
-
-logger = get_logger(__name__)
-
-
-def _apply_query_timeout() -> None:
-    """执行/聚合前设置语句超时（PostgreSQL）：慢查询不能长期占住事务与 worker。"""
-    from django.conf import settings
-    from django.db import connection
-
-    if connection.vendor != "postgresql":
-        return
-    timeout_ms = int(getattr(settings, "DATASET_QUERY_TIMEOUT_MS", 30000) or 0)
-    if timeout_ms <= 0:
-        return
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute("SET LOCAL statement_timeout = %s", [timeout_ms])
-    except Exception:  # noqa: BLE001 超时设置失败不阻断查询（连接级策略兜底）
-        logger.warning("set dataset statement_timeout failed", exc_info=True)
 
 
 class DatasetFilter(BaseFilterSet):
@@ -148,9 +129,11 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
         ``filters``：请求级行过滤（卡片下钻），与数据集定义 filters 叠加，
         校验口径同保存侧（``validate_filters``：字段白名单 + op 白名单 + 类型），
         并按浏览者字段权限收敛（无该列权限即 1001，防隐藏列布尔预言机）。
+
+        语句超时由执行入口 ``execute_dataset`` 统一设置（DATASET_QUERY_TIMEOUT_MS，
+        与 WS 推送 / Celery 报表同口径），视图层不再单独设置。
         """
         dataset = self.get_object()
-        _apply_query_timeout()
         data = request.data if isinstance(request.data, dict) else {}
         try:
             extra_filters = data.get("filters")
@@ -196,10 +179,9 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction, Data
 
         ``filters``：请求级行过滤（卡片联动），与数据集定义 filters 叠加，
         校验口径同 ``execute``（``validate_filters``：字段白名单 + op 白名单 + 类型
-        + 浏览者字段权限收敛）。
+        + 浏览者字段权限收敛）。语句超时同样由执行入口统一设置。
         """
         dataset = self.get_object()
-        _apply_query_timeout()
         data = request.data if isinstance(request.data, dict) else {}
         try:
             extra_filters = data.get("filters")

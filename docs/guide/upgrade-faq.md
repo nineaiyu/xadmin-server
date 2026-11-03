@@ -170,9 +170,20 @@ python manage.py upgrade_check          # 预期 up-to-date
   回退旧行为可设 `DB_POOL: false`（仅 `DB_ENGINE=postgresql` 生效）。
 - **相关**：[ops/config-reference.md §9.2](../ops/config-reference.md)、[ops/deployment-docker.md §3.3](../ops/deployment-docker.md)。
 
+### 19. 敏感操作审批通过后，重发请求仍失败（令牌已消耗）
+
+- **现象**：敏感操作（如密码修改、危险写操作）审批通过后携带审批单重发，业务执行失败后**再次重发**
+  提示「审批令牌已使用」。
+- **原因**：审批令牌是**一次性**的，且为「先消费、后执行业务」——令牌校验通过即被消耗，
+  随后的业务执行失败**不会退还令牌**。这是有意取舍：防两个并发重发请求重复执行业务
+  （失败回滚令牌会引入重放竞态），代价是业务失败后不能原样重试。
+- **处置**：重新发起原操作并走完整审批链（多级审批链需逐级重新审批，请一次改对再重发）；
+  审批通过后已自动落库的操作会收到「已完成」友好回执，无需重发。
+- **相关**：`approval/services/approval/lifecycle.py`（`consume_approval` 的取舍注释）。
+
 ## 四、回滚
 
-### 19. 升级失败怎么回滚？
+### 20. 升级失败怎么回滚？
 
 - **镜像回滚**：把镜像 tag 固定到上一版本 `up -d`；
 - **数据库回滚**：Django 迁移**原则上不做反向回滚**——先把服务回到旧版本运行，数据问题走备份恢复
@@ -180,7 +191,7 @@ python manage.py upgrade_check          # 预期 up-to-date
 - **止损顺序**：服务回滚 → 确认 healthz 四项全 `true` → 数据恢复（最后手段）。
 - **相关**：[ops/deployment-upgrade.md §6.2](../ops/deployment-upgrade.md)、[ops/runbook.md §12](../ops/runbook.md)。
 
-### 20. `migrate` 报 `Table ... already exists` 或卡住
+### 21. `migrate` 报 `Table ... already exists` 或卡住
 
 - **报「已存在」**：库不是当前链（或上次迁移中途失败）。按 [ops/upgrade-stock.md](../ops/upgrade-stock.md) §七
   的处置（`upgrade_check` 判定 `legacy-chain-pre-split` / `legacy-chain` / `schema-drift` → 清库重建，
@@ -190,7 +201,7 @@ python manage.py upgrade_check          # 预期 up-to-date
 
 ## 五、升级与二开边界
 
-### 21. 平台升级会覆盖我改过的框架代码吗？
+### 22. 平台升级会覆盖我改过的框架代码吗？
 
 - **事实**：升级以「拉取 / 替换发布版本」为准——直接改框架内核目录（`packages/xadmin-common/common/`、`system/` 等）
   的改动会在下次升级冲突或丢失。

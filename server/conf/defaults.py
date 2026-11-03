@@ -101,6 +101,10 @@ BASE_CONFIG = {
     # 留空 = 沿用 CORS_ALLOWED_ORIGINS（跨域部署下 admin/会话表单 POST 不再撞 CSRF 失败）；
     # 需要独立白名单时在此显式配置。
     "CSRF_TRUSTED_ORIGINS": [],
+    # Cookie 认证（X-Token 回退）的写请求在 Origin/Referer 双缺失时是否拒绝。
+    # 默认 false 放行：保持 CLI / 脚本直调（无浏览器头）兼容；高危部署可置 true
+    # 收紧（浏览器跨站写请求必带 Origin，缺失即拒绝不影响正常浏览器流量）
+    "CSRF_REQUIRE_ORIGIN": False,
     "LANGUAGE_CODE": "zh-hans",
     "TIME_ZONE": "Asia/Shanghai",
     # 服务配置

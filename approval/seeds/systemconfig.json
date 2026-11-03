@@ -151,5 +151,22 @@
    "key": "APPROVAL_MFA_REQUIRED_ACTIONS",
    "inherit": false
   }
+ },
+ {
+  "model": "system.systemconfig",
+  "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b32",
+  "fields": {
+   "created_time": "2026-11-03T00:00:00Z",
+   "updated_time": "2026-11-03T00:00:00Z",
+   "description": "退回重审是否清零比例会签计数（默认关=历史任务行混入新轮达标线；开=只统计本轮任务行，首轮已投者需重新投票）",
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "value": false,
+   "is_active": true,
+   "access": false,
+   "key": "APPROVAL_RETURN_RESET_COUNT",
+   "inherit": false
+  }
  }
 ]

@@ -177,6 +177,9 @@ CORS_ALLOWED_ORIGINS = CONFIG.CORS_ALLOWED_ORIGINS
 # 会话态（admin / 表单）的 POST 仍会被 CSRF 拒绝——默认沿用 CORS 白名单，
 # 需要独立白名单时在 config.yml 配 CSRF_TRUSTED_ORIGINS（两者语义都是「可信前端源」）。
 CSRF_TRUSTED_ORIGINS = CONFIG.CSRF_TRUSTED_ORIGINS or list(CORS_ALLOWED_ORIGINS)
+# Cookie 认证写请求的 Origin/Referer 双缺失口径（认证链兜底校验消费，见
+# common/core/auth/authentication.py）：默认放行保持 CLI/脚本兼容
+CSRF_REQUIRE_ORIGIN = CONFIG.CSRF_REQUIRE_ORIGIN
 
 if CORS_ALLOW_ALL_ORIGINS and CORS_ALLOW_CREDENTIALS:
     # 「带凭证 + 任意源放行」等价于允许任意站点携带登录态调用 API（凭证外泄/CSRF 面），

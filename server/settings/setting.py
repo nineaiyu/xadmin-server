@@ -394,6 +394,7 @@ NON_FORWARDED_KEYS = {
     "APPROVAL_PENDING_TIMEOUT": "审批注入面 conf_security",
     "APPROVAL_REMIND_HOURS": "审批注入面 conf_security",
     "APPROVAL_REQUIRED_PATHS": "审批拦截路径，conf_security + approval.py 消费",
+    "APPROVAL_RETURN_RESET_COUNT": "退回重审清零比例会签计数，conf_security + approval_flow 消费",
     "APPROVAL_TOKEN_TTL": "审批注入面 conf_security",
     "LEAVE_APPROVAL_FLOW_CODE": "请假审批流编码，conf_security 消费",
     "MANUAL_RUNNABLE_TASKS": "手动任务白名单，conf_security + task_whitelist",

@@ -17,6 +17,9 @@
 
 - 扩展名黑白名单与大小上限：init 期即校验（``validate_upload_extension`` /
   ``get_upload_max_size``），complete 合并后再次校验扩展名（纵深）；
+- 内容 magic 抽检：init 只有元信息（无内容），校验落在 complete——
+  ``validate_upload_content`` 直接读第一分片头部，伪装扩展名的二进制内容
+  在落库前即拒（会话按不可复用作废并清理分片，与扩展名失败同口径）；
 - 配额与去重、分类、落库：complete 走既有 ``store_upload_file`` 管线
   （预计算 md5 传入，避免合并文件二次全量读）；
 - 分片落存储（``upload_sessions/<pk>/part-<index>``），并发重传同分片由
@@ -42,7 +45,7 @@ from django.utils.translation import gettext_lazy as _
 from common.core.throttle import allow_by_identity
 from common.utils import get_logger
 from file.models import UploadFile, UploadSession, UploadSessionPart
-from file.utils.file_audit import validate_upload_extension
+from file.utils.file_audit import validate_upload_content, validate_upload_extension
 from file.utils.upload_store import (
     INVALID_CODE,
     QUOTA_EXCEEDED_CODE,
@@ -271,6 +274,19 @@ def _complete_session(user_obj: Any, session_pk: Any, *, declared_md5: str = "")
         session.save(update_fields=["status", "updated_time"])
         _purge_parts(session)
         raise UploadError(INVALID_CODE, extension_error)
+    # 内容 magic 抽检：读第一分片头部（与合并产物同头），伪装扩展名的二进制内容
+    # 落库前即拒；会话不可复用（内容已在分片里，重传 complete 恒失败），按扩展名
+    # 失败同口径作废并清理分片
+    head_name = part_storage_name(session.pk, 0)
+    if not default_storage.exists(head_name):
+        raise UploadError(INVALID_CODE, _("Upload is incomplete"))
+    with default_storage.open(head_name, "rb") as head_file:
+        content_error = validate_upload_content(session.filename, head_file)
+    if content_error:
+        session.status = UploadSession.Status.ABORTED
+        session.save(update_fields=["status", "updated_time"])
+        _purge_parts(session)
+        raise UploadError(INVALID_CODE, content_error)
 
     parts = list(session.parts.order_by("index"))
     if len(parts) != session.total_chunks or [p.index for p in parts] != list(range(session.total_chunks)):

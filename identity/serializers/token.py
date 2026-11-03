@@ -64,12 +64,21 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
     token = serializers.SerializerMethodField(label=_("Token"))
     token_prefix = serializers.CharField(label=_("Token prefix"), read_only=True)
     last_used_time = serializers.DateTimeField(label=_("Last used time"), read_only=True)
-    # scope 清单：允许的路径前缀/正则（可带方法前缀，空 = 不限），update 允许改写
+    # scope 清单：允许的路径前缀/正则（可带方法前缀）。空清单 = 不限范围，但创建/更新
+    # 时必须显式传 unrestricted=true 确认（避免默认路径静默签发全量面凭证）；
+    # 既有空 scope 存量凭证运行期语义不变（空=不限，见 path_allowed_by_scopes）
     scopes = serializers.JSONField(
         label=_("Scopes"),
         required=False,
         allow_null=True,
-        help_text=_("List of allowed path prefixes or regexes; empty means unrestricted"),
+        help_text=_("List of allowed path prefixes or regexes; empty requires unrestricted confirmation"),
+    )
+    # 「不限范围」确认位：write-only、不落库，仅本次创建/更新请求内生效
+    unrestricted = serializers.BooleanField(
+        label=_("Unrestricted access"),
+        required=False,
+        write_only=True,
+        help_text=_("Confirm to allow this token to access all APIs permitted by its owner"),
     )
     # IP 白名单：单个 IP 或 CIDR 网段（空 = 不限来源 IP），update 允许改写
     ip_allowlist = serializers.JSONField(
@@ -87,6 +96,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
             "token",
             "token_prefix",
             "scopes",
+            "unrestricted",
             "ip_allowlist",
             "description",
             "is_active",
@@ -122,12 +132,32 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
         手写条目（如 ``api/identity/user``）在保存时规范为锚定形态
         ``^(?:/api/identity/user)(/.*)?$``：放行该地址及其子路径，但不再粘性命中
         ``/api/identity/user-logs``；``^…$`` 形态（权限点勾选生成的条目）原样保留。
+        空清单的「不限」语义在对象级 validate 里要求显式 ``unrestricted`` 确认。
         """
         return _clean_scope_entries(value)
 
     def validate_ip_allowlist(self, value: Any) -> Any:
         """IP 白名单清洗：去空白、去重、逐条校验 IP/CIDR 格式；None/空 = 不限。"""
         return clean_ip_allowlist(value)
+
+    def validate(self, attrs: Any) -> Any:
+        """空 scope 必须显式确认「不限」：默认路径不再静默签发全量面凭证。
+
+        - 创建：最终 scopes 为空（未传 / None / 空清单）且未传
+          ``unrestricted=true`` → 400（字段错误挂在 scopes 上）；
+        - 更新：仅当本次请求**显式改写** scopes 时才校验（把范围清空同样需要确认）；
+          只改名称 / 吊销 / 续期的更新不回溯——存量空 scope 凭证不受影响，
+          运行期「空=不限」的解析语义保持不变（见 path_allowed_by_scopes）。
+        """
+        unrestricted = bool(attrs.pop("unrestricted", False))
+        if self.instance is not None and "scopes" not in attrs:
+            return attrs
+        # 字段级清洗后 scopes 恒为清单（None/空串归一为 []），空清单 = 不限范围
+        if not attrs.get("scopes") and not unrestricted:
+            raise serializers.ValidationError(
+                {"scopes": _("Scopes cannot be empty unless unrestricted access is explicitly confirmed")}
+            )
+        return attrs
 
     def create(self, validated_data: Any) -> Any:
         # 明文仅此一次：pat_ 前缀 + 32 字节 URL 安全随机串（签发口径经 token service）

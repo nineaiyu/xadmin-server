@@ -27,7 +27,7 @@ from django.utils.translation import gettext_lazy as _
 
 from common.core.config import SysConfig, get_personal_config_data, get_personal_int_config
 from file.models import UploadFile
-from file.utils.file_audit import validate_upload_extension
+from file.utils.file_audit import validate_upload_content, validate_upload_extension
 from file.utils.upload_category import resolve_upload_category
 
 # 上传失败业务码：1002 文件不合法 / 1003 超过大小上限 / 1004 配额或数量超限
@@ -130,10 +130,14 @@ def check_upload_limits(user_obj: Any, file_objs: Any) -> list[int]:
 
     sizes: list[int] = []
     for file_obj in file_objs:
-        # 上传安全策略：扩展名黑名单（默认拒绝可执行 / 脚本类）+ 可选白名单，fail-closed
+        # 上传安全策略：扩展名黑名单（默认拒绝可执行 / 脚本类）+ 可选白名单，fail-closed；
+        # 内容 magic 抽检（伪装扩展名的二进制内容存储侧即拒，见 file_audit）
         extension_error = validate_upload_extension(file_obj.name)
         if extension_error:
             raise UploadError(INVALID_CODE, extension_error)
+        content_error = validate_upload_content(file_obj.name, file_obj)
+        if content_error:
+            raise UploadError(INVALID_CODE, content_error)
         try:
             file_size = file_obj.size
         except Exception as e:  # noqa: BLE001 读取大小失败（非文件对象）按不合法处理

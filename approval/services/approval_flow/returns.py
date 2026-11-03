@@ -21,7 +21,7 @@ from django.utils.translation import gettext_lazy as _
 from approval.services.approval.display import user_display
 
 from .conditions import nodes_effective_at, resolve_assignee_pairs
-from .constants import _models
+from .constants import _models, return_count_reset_enabled
 from .engine import (
     _cancel_pending_tasks,
     _emit_flow_event,
@@ -63,7 +63,10 @@ def return_instance(instance: Any, user: Any, reason: str, target_order: Any = N
       （不允许跳到未到达的节点，防止构造从未走过的路径）；
     - 目标节点无可用审批人时 fail-closed 拒绝（先解析候选、后落任何写入）；
     - 语义：实例保持 PENDING、current_node 回退，目标节点重新建 PENDING 任务；
-      退回原因随被作废任务与通知留痕，Webhook 发 ``flow.returned``。
+      退回原因随被作废任务与通知留痕，Webhook 发 ``flow.returned``；
+    - 重审计数清零开关（``APPROVAL_RETURN_RESET_COUNT``，默认关）开启时：重开
+      前把实例既有任务行全部标记历史轮次，比例会签结算只统计本轮——首轮已投者
+      在新轮需重新投票；关闭时历史 APPROVED 行继续混入新轮达标线计算（既有行为）。
     """
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
 
@@ -147,6 +150,12 @@ def return_instance(instance: Any, user: Any, reason: str, target_order: Any = N
 
     invalidated = set(_cancel_pending_tasks(instance))
     invalidated.add(user.pk)
+    if return_count_reset_enabled():
+        # 重审计数清零：实例既有任务行全部标记为历史轮次——比例会签结算与节点
+        # 进度只统计本轮（随后新建的 PENDING 行），首轮已投者在新轮需重新投票。
+        # 全实例打标（而非仅目标节点）：退回后的重推进会经其他节点，其历史行
+        # 同样不得混入新轮结算；已 True 的行重复置位幂等。
+        ApprovalNodeTask.objects.filter(instance=instance).update(is_history=True)
     candidates = [user_ for user_, _source in pairs]
     for candidate, source in pairs:
         ApprovalNodeTask.objects.create(

@@ -138,6 +138,9 @@ def remove_sign(instance: Any, user: Any, task_pk: Any, comment: str = "") -> An
     - 或签节点下加签本就无约束力（同 add_sign 拒绝口径），减签同样拒绝并引导转交；
     - 会签语义下减签即降低所需通过人数（剩余待办通过即流转）；比例会签与节点进度
       同口径排除已作废行（减签即时降低达标线；转交一出一进、总数不变）；
+    - 移除成功后在实例行锁内按节点策略重结算（与人工通过同口径）：比例会签
+      达标线降到已获票数时即时推进、会签待办清零时即时推进，未达标保持等待——
+      否则已达标节点会挂起，剩余待办人的一票否决会把已满足比例的申请整单驳回；
     - 权限：当前节点任一任务的处理人/被指派人或超管；实例行锁与审批推进互斥。
     """
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
@@ -191,7 +194,14 @@ def remove_sign(instance: Any, user: Any, task_pk: Any, comment: str = "") -> An
         removed = [task.assignee] if task.assignee_id else []
         if removed:
             engine._notify(removed, "sign_removed", instance, extra=task.node_name)
-        engine._invalidate_pending_count({task.assignee_id} if task.assignee_id else set())
+        # 移除成功后重结算：减签即时降低比例会签达标线/会签所需人数，可能「移除
+        # 瞬间已达标」或「待办清零」——不在锁内结算的话节点会挂起（比例已满足
+        # 却不推进，剩余待办人的一票否决可把申请整单驳回）。此处已在实例行锁
+        # 事务内，直接复用人工通过的结算口径（推进或保持等待；终态跃迁仍有
+        # _finish_instance CAS 兜底，不会把已终态实例再推进）。
+        invalidated = {task.assignee_id} if task.assignee_id else set()
+        invalidated.update(engine._settle_node_after_approve(instance, node))
+        engine._invalidate_pending_count(invalidated)
         return True, None
 
 

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-"""受保护媒体签名 URL：敏感命名空间无签名 / 过期 / 篡改路径一律拒绝。"""
+"""受保护媒体签名 URL：无签名 / 过期 / 篡改路径 / 他人链接一律拒绝。"""
 
+import hashlib
+import hmac
 import time
 from urllib.parse import parse_qs, urlsplit
 
@@ -23,6 +25,13 @@ CONTENT = b"protected-media"
 
 class _Authenticated:
     is_authenticated = True
+
+
+class _User(_Authenticated):
+    """带 pk 的最小用户桩（签名绑定只消费 pk）。"""
+
+    def __init__(self, pk):
+        self.pk = pk
 
 
 @pytest.fixture
@@ -119,3 +128,49 @@ class TestVerifyMediaSignature:
         assert not verify_media_signature(
             "file/uploadfile/7/9/other.xlsx", query[MEDIA_EXP_PARAM][0], query[MEDIA_SIG_PARAM][0]
         )
+
+
+class TestUserBoundSignature:
+    """签名绑定用户（默认开启）：链接转发给其他登录用户后不可用（fail-closed）。"""
+
+    def test_signature_is_bound_to_signing_user(self):
+        signed = sign_media_path(SENSITIVE_PATH, ttl=60, user=_User(1))
+        query = parse_qs(signed.split("?")[1])
+        assert verify_media_signature(SENSITIVE_PATH, query[MEDIA_EXP_PARAM][0], query[MEDIA_SIG_PARAM][0], _User(1))
+        assert not verify_media_signature(
+            SENSITIVE_PATH, query[MEDIA_EXP_PARAM][0], query[MEDIA_SIG_PARAM][0], _User(2)
+        )
+        # 无用户上下文签出的链接（如无请求的内部签发点）：认证后恒不匹配
+        assert not verify_media_signature(SENSITIVE_PATH, query[MEDIA_EXP_PARAM][0], query[MEDIA_SIG_PARAM][0])
+
+    def test_bind_disabled_falls_back_to_legacy_two_segment_form(self, settings):
+        """关闭开关 = 回退开关：消息回到仅「路径 + 过期」的旧口径，任意用户可验。"""
+        settings.SECRET_KEY = "media-signing-test-key"
+        settings.MEDIA_SIGNED_URL_BIND_USER = False
+        signed = sign_media_path(SENSITIVE_PATH, ttl=60, user=_User(1))
+        query = parse_qs(signed.split("?")[1])
+        expires = query[MEDIA_EXP_PARAM][0]
+        # 与历史两段消息逐字节一致（升级前签发的未过期链接继续可用）
+        legacy = hmac.new(
+            b"media-signing-test-key",
+            f"{SENSITIVE_PATH}\n{expires}".encode(),
+            hashlib.sha256,
+        ).hexdigest()
+        assert query[MEDIA_SIG_PARAM][0] == legacy
+        for viewer in (_User(1), _User(2), None):
+            assert verify_media_signature(SENSITIVE_PATH, expires, query[MEDIA_SIG_PARAM][0], viewer)
+
+    def test_media_serve_rejects_other_user_link(self, rf, media_root, sensitive_file, settings):
+        """端到端：他人签发的链接对当前请求用户 403；本人链接照常下载。"""
+        settings.SECRET_KEY = "media-signing-test-key"
+        signed = sign_media_path(SENSITIVE_PATH, ttl=60, user=_User(1))
+        request = rf(_request_path(signed))
+        request.user = _User(2)
+        response = media_serve(request, SENSITIVE_PATH, document_root=str(media_root))
+        assert response.status_code == 403
+
+        request = rf(_request_path(signed))
+        request.user = _User(1)
+        response = media_serve(request, SENSITIVE_PATH, document_root=str(media_root))
+        assert response.status_code == 200
+        assert b"".join(response.streaming_content) == CONTENT

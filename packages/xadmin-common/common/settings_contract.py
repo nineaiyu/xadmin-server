@@ -136,6 +136,8 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
         default=True,
         consumers=("swagger/views.py",),
     ),
+    "CSRF_TRUSTED_ORIGINS": KS("list[str]", "可信源", consumers=("core/auth/authentication.py",), framework=True),
+    "CSRF_REQUIRE_ORIGIN": KS("bool", "写请求双缺失拒绝", default=False, consumers=("core/auth/authentication.py",)),
     # ---------------------------------------------------------------
     # 二、验证码
     # ---------------------------------------------------------------
@@ -218,11 +220,9 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
         default=True,
         consumers=("utils/media_signing.py",),
     ),
-    "MEDIA_SIGNED_URL_TTL": KS(
-        "int",
-        "敏感媒体签名 URL 有效期（秒）",
-        default=3600,
-        consumers=("utils/media_signing.py",),
+    "MEDIA_SIGNED_URL_TTL": KS("int", "签名 URL 有效期（秒）", default=3600, consumers=("utils/media_signing.py",)),
+    "MEDIA_SIGNED_URL_BIND_USER": KS(
+        "bool", "敏感媒体签名 URL 是否绑定用户（他人链接不可用）", default=True, consumers=("utils/media_signing.py",)
     ),
     "FILE_UPLOAD_SIZE": KS(
         "int",

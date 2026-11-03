@@ -372,16 +372,19 @@ def create_pat(user, scopes=None):
 
     走真实创建端点（PersonalAccessTokenViewSet.create），确保用例验证的是
     线上同款凭证形态（哈希存储 + scopes 归一化）。
+
+    空 scopes 需显式确认「不限」（新契约：未确认会被创建端点 400 拒绝）——
+    M19 两用例考验的是菜单权限层而非 scope 层，令牌取全量面才符合原意，
+    故 helper 统一注入 ``unrestricted: true``；带具体 scopes 时无需确认位。
     """
     from rest_framework.test import APIRequestFactory, force_authenticate
 
     from identity.views.user.token import PersonalAccessTokenViewSet
 
-    request = APIRequestFactory().post(
-        "/api/identity/personal-access-tokens",
-        {"name": "matrix-pat", "scopes": scopes or []},
-        format="json",
-    )
+    payload: dict = {"name": "matrix-pat", "scopes": scopes or []}
+    if not scopes:
+        payload["unrestricted"] = True
+    request = APIRequestFactory().post("/api/identity/personal-access-tokens", payload, format="json")
     force_authenticate(request, user=user)
     response = PersonalAccessTokenViewSet.as_view({"post": "create"})(request)
     assert response.data["code"] == 1000

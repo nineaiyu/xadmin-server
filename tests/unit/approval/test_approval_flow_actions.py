@@ -19,6 +19,7 @@ from approval.services.approval_flow import (
     approve_task,
     create_instance,
     execute_timeout_actions,
+    node_progress_for,
     reject_task,
     remove_sign,
     return_instance,
@@ -440,6 +441,62 @@ class TestRemoveSign:
         ok, detail = remove_sign(instance, approver, original.pk)
         assert not ok
 
+    def test_remove_sign_settles_when_and_pending_cleared(self, applicant, approver, approver2, dept_leader):
+        """减签使会签待办清零：节点即时推进（不结算则节点永久挂起无人能推进）。
+
+        AND 会签两名候选：A 通过 → 加签 C → B 通过（C 仍待办，不推进）→
+        减签移除 C：此时节点已无剩余待办，应立即推进到终态。
+        """
+        flow = make_flow(
+            code="flow2_rm_and_clear",
+            nodes=[{"name": "会签", "approve_type": ApprovalFlowNode.ApproveType.AND}],
+        )
+        instance, _ = create_instance(flow=flow, applicant=applicant, title="x", form_data={})
+        ok, detail = add_sign(instance, approver, "flow2_leader", "增援")
+        assert ok, detail
+
+        ok, detail = approve_task(
+            instance.tasks.get(assignee=approver, status=ApprovalNodeTask.Status.PENDING).pk, approver
+        )
+        assert ok, detail
+        ok, detail = approve_task(
+            instance.tasks.get(assignee=approver2, status=ApprovalNodeTask.Status.PENDING).pk, approver2
+        )
+        assert ok, detail
+        instance.refresh_from_db()
+        # B 通过后仍有加签待办：节点未推进
+        assert instance.current_node.order == 1
+
+        added = instance.tasks.get(node=instance.current_node, assignee=dept_leader, is_added=True)
+        ok, detail = remove_sign(instance, approver, added.pk, "撤回增援")
+        assert ok, detail
+        added.refresh_from_db()
+        assert added.status == ApprovalNodeTask.Status.CANCELLED
+        # 待办清零即推进：单节点流程到达终态
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED
+
+    def test_remove_sign_after_finished_instance_no_side_effect(self, applicant, approver, approver2):
+        """实例已终态：减签被拒，不产生任何状态变更（终态 CAS 语义不回退、不复活）。"""
+        instance = self._and_instance_with_addsign(applicant, approver, approver2)
+        # 全员处理完毕（含加签人）→ 单节点流程到达终态 APPROVED
+        for task in list(instance.tasks.filter(status=ApprovalNodeTask.Status.PENDING)):
+            ok, detail = approve_task(task.pk, task.assignee)
+            assert ok, detail
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED
+
+        added = instance.tasks.get(assignee=approver2, is_added=True)
+        before_status = added.status
+        ok, detail = remove_sign(instance, approver, added.pk, "事后减签")
+        assert not ok
+        added.refresh_from_db()
+        assert added.status == before_status  # 已终态行不被改写
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED
+        assert instance.current_node is None
+        assert not instance.tasks.filter(status=ApprovalNodeTask.Status.PENDING).exists()
+
     def test_remove_sign_or_node_rejected(self, applicant, approver, approver2):
         """或签节点：减签与加签同口径拒绝并引导转交。"""
         flow = make_flow(
@@ -499,8 +556,6 @@ class TestRemoveSignRatio:
             ],
         )
         instance, _ = create_instance(flow=flow, applicant=applicant, title="x", form_data={})
-        from approval.services.approval_flow import node_progress_for
-
         progress = node_progress_for(instance)
         assert progress["total"] == 2
         assert progress["required"] == 2
@@ -527,5 +582,230 @@ class TestRemoveSignRatio:
                 user,
             )
             assert ok, detail
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED
+
+    def _five_candidate_ratio_instance(self, applicant, approver_role):
+        """比例会签（60% × 5 名角色候选 + 终审节点）的实例与第 3~5 名候选。"""
+        extra_users = []
+        for index in range(3, 6):
+            user = UserInfo.objects.create_user(
+                username=f"flow2_approver{index}", password="Test@123456", nickname=f"审批人{index}"
+            )
+            user.roles.add(approver_role)
+            extra_users.append(user)
+        flow = make_flow(
+            code="flow2_rm_settle",
+            nodes=[
+                {"name": "比例会签", "approve_type": ApprovalFlowNode.ApproveType.RATIO, "approve_ratio": 60},
+                {
+                    "name": "终审",
+                    "assignee_type": ApprovalFlowNode.AssigneeType.USER,
+                    "assignee_value": "flow2_approver1",
+                },
+            ],
+        )
+        instance, _ = create_instance(flow=flow, applicant=applicant, title="x", form_data={})
+        assert node_progress_for(instance)["total"] == 5  # 5 名角色候选，required=3
+        return instance, extra_users
+
+    def test_remove_sign_settles_instantly_when_ratio_reached(
+        self, applicant, approver_role, approver, approver2, dept_leader
+    ):
+        """减签瞬间票数达标：节点立即重结算并推进（不结算则挂起、待办人一票否决可整单驳回）。
+
+        数字组合：60% × 5 候选（required=3）→ 加签后 total=6（required=4）→
+        3 票通过（approved=3 < 4 不推进）→ 减签移除加签行：total=5、required=3，
+        approved=3 已达标 → 应即时推进到终审节点并作废节点剩余待办。
+        """
+        instance, extra = self._five_candidate_ratio_instance(applicant, approver_role)
+
+        ok, detail = add_sign(instance, approver, "flow2_leader", "增援")
+        assert ok, detail
+        progress = node_progress_for(instance)
+        assert progress["total"] == 6
+        assert progress["required"] == 4
+
+        for user in (approver, approver2, extra[0]):
+            ok, detail = approve_task(
+                instance.tasks.get(
+                    node=instance.current_node, assignee=user, status=ApprovalNodeTask.Status.PENDING
+                ).pk,
+                user,
+            )
+            assert ok, detail
+        instance.refresh_from_db()
+        assert instance.current_node.order == 1  # 3 票 < required=4：未推进
+
+        added = instance.tasks.get(node=instance.current_node, assignee=dept_leader, is_added=True)
+        ok, detail = remove_sign(instance, approver, added.pk, "撤回增援")
+        assert ok, detail
+        instance.refresh_from_db()
+        # 减签后 required=3、approved=3：即时推进（不结算则节点挂起）
+        assert instance.status == ApprovalInstance.Status.PENDING
+        assert instance.current_node.order == 2
+        assert instance.tasks.filter(node_order=1, status=ApprovalNodeTask.Status.PENDING).count() == 0
+        # 节点 1 的作废行 = 加签移除 1 + 推进作废剩余待办 2
+        assert instance.tasks.filter(node_order=1, status=ApprovalNodeTask.Status.CANCELLED).count() == 3
+        assert instance.tasks.filter(node_order=2, status=ApprovalNodeTask.Status.PENDING).exists()
+
+    def test_remove_sign_keeps_pending_when_ratio_not_reached(
+        self, applicant, approver_role, approver, approver2, dept_leader
+    ):
+        """减签后仍未达标：节点保持待审、不推进也不误判驳回。"""
+        instance, extra = self._five_candidate_ratio_instance(applicant, approver_role)
+
+        ok, detail = add_sign(instance, approver, "flow2_leader", "增援")
+        assert ok, detail
+        for user in (approver, approver2):  # 仅 2 票（< required=4）
+            ok, detail = approve_task(
+                instance.tasks.get(
+                    node=instance.current_node, assignee=user, status=ApprovalNodeTask.Status.PENDING
+                ).pk,
+                user,
+            )
+            assert ok, detail
+
+        added = instance.tasks.get(node=instance.current_node, assignee=dept_leader, is_added=True)
+        ok, detail = remove_sign(instance, approver, added.pk)
+        assert ok, detail
+        instance.refresh_from_db()
+        # 减签后 total=5、required=3、approved=2：未达标保持待审
+        assert instance.status == ApprovalInstance.Status.PENDING
+        assert instance.current_node.order == 1
+        assert instance.tasks.filter(node_order=1, status=ApprovalNodeTask.Status.PENDING).count() == 3
+        progress = node_progress_for(instance)
+        assert progress["approved"] == 2
+        assert progress["required"] == 3
+
+
+class TestReturnToRatioNodeCurrentSemantics:
+    """退回 × 比例会签：按「重审计数清零」开关分叉断言两侧结算口径。
+
+    场景基底：RATIO 60% × 5 候选，首轮 3/5 通过 → 推进到终审 → 退回比例会签
+    节点重开 5 条新 PENDING。开关关闭（默认，APPROVAL_RETURN_RESET_COUNT=false）：
+    历史 3 条 APPROVED 行混入新轮统计 → total=8、required=5，新轮再获 2 票即推进
+    （历史行为，达标线失真）；开关开启：退回把既有任务行标记历史轮次，只统计
+    本轮 → total=5、required=3，且首轮已投者在新轮需重新投票（满 3 票才推进）。
+    """
+
+    @staticmethod
+    def _patch_return_reset(monkeypatch, enabled: bool) -> None:
+        """monkeypatch 三处消费方模块的开关读取（引擎结算 / 退回写序 / 进度口径）。"""
+        for module in ("engine", "queries", "returns"):
+            monkeypatch.setattr(f"approval.services.approval_flow.{module}.return_count_reset_enabled", lambda: enabled)
+
+    def _ratio_instance(self, applicant, approver_role):
+        extra_users = []
+        for index in range(3, 6):
+            user = UserInfo.objects.create_user(
+                username=f"flow2_approver{index}", password="Test@123456", nickname=f"审批人{index}"
+            )
+            user.roles.add(approver_role)
+            extra_users.append(user)
+        flow = make_flow(
+            code="flow2_ret_ratio",
+            nodes=[
+                {"name": "比例会签", "approve_type": ApprovalFlowNode.ApproveType.RATIO, "approve_ratio": 60},
+                {
+                    "name": "终审",
+                    "assignee_type": ApprovalFlowNode.AssigneeType.USER,
+                    "assignee_value": "flow2_approver1",
+                },
+            ],
+        )
+        instance, _ = create_instance(flow=flow, applicant=applicant, title="x", form_data={})
+        return instance, extra_users
+
+    @staticmethod
+    def _approve_current(instance, user):
+        ok, detail = approve_task(
+            instance.tasks.get(node=instance.current_node, assignee=user, status=ApprovalNodeTask.Status.PENDING).pk,
+            user,
+        )
+        assert ok, detail
+
+    def test_return_reopen_mixes_history_rows_into_ratio_settlement(
+        self, applicant, approver_role, approver, approver2, monkeypatch
+    ):
+        """开关关闭（默认）：历史任务行混入新轮结算，2 票即推进——钉住现状口径。"""
+        self._patch_return_reset(monkeypatch, False)
+        instance, extra = self._ratio_instance(applicant, approver_role)
+        # 首轮 3 票达标（required=ceil(5×0.6)=3）→ 推进到终审
+        for user in (approver, approver2, extra[0]):
+            self._approve_current(instance, user)
+        instance.refresh_from_db()
+        assert instance.current_node.order == 2
+
+        # 终审待办人退回比例会签节点重审
+        ok, detail = return_instance(instance, approver, "退回重审", target_order=1)
+        assert ok, detail
+        instance.refresh_from_db()
+        assert instance.current_node.order == 1
+        # 关闭侧口径：历史 3 条 APPROVED + 新轮 5 条 PENDING 一并计入（不打轮次标记）
+        assert not instance.tasks.filter(is_history=True).exists()
+        progress = node_progress_for(instance)
+        assert progress["total"] == 8
+        assert progress["approved"] == 3
+        assert progress["required"] == 5  # ceil(8×0.6)=5，混入历史后达标线抬高
+
+        # 新轮仅需再获 2 票（清零口径本应重新计数、需 3 票）——钉住现状
+        for user in (extra[1], extra[2]):
+            self._approve_current(instance, user)
+        instance.refresh_from_db()
+        assert instance.current_node.order == 2  # approved=3+2=5 ≥ required=5 → 已推进
+        # 终审走完后实例正常到达终态（退回 × 重审链路完整）
+        ok, detail = approve_task(instance.tasks.get(node_order=2, status=ApprovalNodeTask.Status.PENDING).pk, approver)
+        assert ok, detail
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED
+
+    def test_return_reopen_counts_only_current_round_when_enabled(
+        self, applicant, approver_role, approver, approver2, monkeypatch
+    ):
+        """开关开启：重开清零计数，只统计本轮行，首轮已投者需重新投票。"""
+        self._patch_return_reset(monkeypatch, True)
+        instance, extra = self._ratio_instance(applicant, approver_role)
+        for user in (approver, approver2, extra[0]):  # 首轮 3 票达标 → 推进到终审
+            self._approve_current(instance, user)
+        instance.refresh_from_db()
+        assert instance.current_node.order == 2
+
+        ok, detail = return_instance(instance, approver, "退回重审", target_order=1)
+        assert ok, detail
+        instance.refresh_from_db()
+        assert instance.current_node.order == 1
+        # 既有任务行全部标记历史轮次（节点 1 首轮 5 行 + 终审作废行），新建行为本轮
+        assert instance.tasks.exclude(is_history=True).count() == 5
+        assert instance.tasks.filter(is_history=True).count() == 6
+        history_of_approver = instance.tasks.filter(
+            assignee=approver, is_history=True, status=ApprovalNodeTask.Status.APPROVED
+        )
+        assert history_of_approver.count() == 1  # 首轮已投记录保留但只作历史轨迹
+        # 首轮已投者（approver）在新轮有新 PENDING 待办 → 需重新投票
+        assert instance.tasks.filter(
+            assignee=approver, is_history=False, status=ApprovalNodeTask.Status.PENDING
+        ).exists()
+
+        # 清零口径：只统计本轮 5 行（全部 PENDING），达标线回到本轮人数
+        progress = node_progress_for(instance)
+        assert progress["total"] == 5
+        assert progress["approved"] == 0
+        assert progress["required"] == 3
+
+        # 新轮 2 票不推进（2 < 3）——历史 3 票不再「白送」
+        for user in (extra[1], extra[2]):
+            self._approve_current(instance, user)
+        instance.refresh_from_db()
+        assert instance.current_node.order == 1
+        progress = node_progress_for(instance)
+        assert progress["approved"] == 2
+
+        # 第 3 票（首轮已投者重新投票）→ 达标推进，终审后实例到达终态
+        self._approve_current(instance, approver)
+        instance.refresh_from_db()
+        assert instance.current_node.order == 2
+        ok, detail = approve_task(instance.tasks.get(node_order=2, status=ApprovalNodeTask.Status.PENDING).pk, approver)
+        assert ok, detail
         instance.refresh_from_db()
         assert instance.status == ApprovalInstance.Status.APPROVED

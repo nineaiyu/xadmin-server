@@ -208,6 +208,18 @@ class TestVerifyIdToken:
         with pytest.raises(OAuthError):
             verify_id_token(_provider(), none_token, http_client=client)
 
+    def test_missing_client_id_or_issuer_rejected(self):
+        """受众 / 签发者缺位：aud / iss 校验不得静默关闭，按配置不完整拒绝。"""
+        private_key = _keypair()
+        token = _sign(private_key, _claims())
+        # 两个场景用不同 provider key，避免 discovery 缓存互串
+        no_client = _StubClient({DISCOVERY_URL: _discovery_payload(), JWKS_URL: {"keys": [_jwk(private_key)]}})
+        with pytest.raises(OAuthError):
+            verify_id_token(_provider(key="no-aud", client_id=""), token, http_client=no_client)
+        no_issuer = _StubClient({DISCOVERY_URL: _discovery_payload(issuer=""), JWKS_URL: {"keys": [_jwk(private_key)]}})
+        with pytest.raises(OAuthError):
+            verify_id_token(_provider(key="no-iss", issuer=""), token, http_client=no_issuer)
+
     def test_jwks_refreshed_on_key_rotation(self):
         """kid 未命中（密钥轮换）：强制刷新一次 JWKS 后成功验签。"""
         old_key, new_key = _keypair(), _keypair()

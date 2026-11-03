@@ -89,6 +89,14 @@ class SecurityConfMixin(ConfigCacheBase):
         return int(self.get_value("APPROVAL_FLOW_KEEP_DAYS", get_server_config().APPROVAL_FLOW_KEEP_DAYS))
 
     @property
+    def APPROVAL_RETURN_RESET_COUNT(self) -> Any:
+        """退回重审是否清零比例会签计数（默认关）：开启时退回把既有任务行标记历史
+        轮次，比例会签结算只统计本轮（首轮已投者需重新投票）；关闭时保持既有
+        结算口径（历史 APPROVED 行混入新轮达标线）。只影响 RATIO 节点。
+        """
+        return self.get_value("APPROVAL_RETURN_RESET_COUNT", get_server_config().APPROVAL_RETURN_RESET_COUNT)
+
+    @property
     def LEAVE_APPROVAL_FLOW_CODE(self) -> Any:
         """请假审批流程 code（默认 leave）：请假单提交时绑定的流程定义。
 

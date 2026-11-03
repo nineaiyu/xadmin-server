@@ -31,6 +31,10 @@ TOKENS_URL = "/api/identity/personal-access-tokens"
 
 
 def _create_token(user, name="ci-token", **kwargs):
+    # 序列化器契约：空 scopes 需显式确认「不限」；本文件既有用例默认创建全量
+    # 凭证，统一由 helper 注入确认位（空 scope 校验语义由专项用例守护）
+    if "scopes" not in kwargs and "unrestricted" not in kwargs:
+        kwargs["unrestricted"] = True
     factory = APIRequestFactory()
     request = factory.post(TOKENS_URL, {"name": name, **kwargs}, format="json")
     force_authenticate(request, user=user)
@@ -524,10 +528,76 @@ def test_scopes_crud_cleaning_via_api(superuser):
         "^(?:/api/identity/role)(/.*)?$",
     ]
 
-    request = APIRequestFactory().patch(f"{TOKENS_URL}/{pk}", {"scopes": None}, format="json")
+    request = APIRequestFactory().patch(f"{TOKENS_URL}/{pk}", {"scopes": None, "unrestricted": True}, format="json")
     force_authenticate(request, user=superuser)
     response = PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=pk)
     assert response.data["data"]["scopes"] == []
+
+
+class TestUnrestrictedConfirmation:
+    """空 scope 创建/更新契约：未显式确认「不限」→ 400；确认后放行；存量不回溯。"""
+
+    def test_create_empty_scopes_without_confirmation_rejected(self, superuser):
+        """创建时不传 scopes 且不确认 → 400，字段错误挂在 scopes 上，不落库。"""
+        request = APIRequestFactory().post(TOKENS_URL, {"name": "no-scope"}, format="json")
+        force_authenticate(request, user=superuser)
+        with transaction.atomic():
+            response = PersonalAccessTokenViewSet.as_view({"post": "create"})(request)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "scopes" in response.data
+        assert not PersonalAccessToken.objects.filter(name="no-scope").exists()
+
+    def test_create_empty_scopes_with_confirmation_allowed(self, superuser):
+        """显式 unrestricted=true：空 scope（=不限范围）放行。"""
+        response = _create_token(superuser, name="confirmed")
+        assert response.data["code"] == 1000
+        record = PersonalAccessToken.objects.get(pk=response.data["data"]["pk"])
+        assert record.scopes == []
+        # 存量空 scope 凭证运行期语义不变：任意路径放行（空=不限）
+        plain = response.data["data"]["token"]
+        assert _probe(plain, "/api/identity/user").status_code == 200
+
+    def test_create_with_scopes_needs_no_confirmation(self, superuser):
+        """带 scope 创建：无需确认位（受限范围本来就不是「不限」）。"""
+        response = _create_token(superuser, name="scoped", scopes=["/api/identity/user"])
+        assert response.data["code"] == 1000
+
+    def test_update_clearing_scopes_requires_confirmation(self, superuser):
+        """更新把范围清空：同样需要确认，未确认 → 400。"""
+        pk = _create_token(superuser, name="clear-scope", scopes=["/api/identity/user"]).data["data"]["pk"]
+
+        request = APIRequestFactory().patch(f"{TOKENS_URL}/{pk}", {"scopes": []}, format="json")
+        force_authenticate(request, user=superuser)
+        with transaction.atomic():
+            response = PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=pk)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "scopes" in response.data
+
+        request = APIRequestFactory().patch(f"{TOKENS_URL}/{pk}", {"scopes": [], "unrestricted": True}, format="json")
+        force_authenticate(request, user=superuser)
+        with transaction.atomic():
+            response = PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=pk)
+        assert response.data["code"] == 1000
+        assert response.data["data"]["scopes"] == []
+
+    def test_update_not_touching_scopes_skips_check(self, superuser):
+        """存量空 scope 凭证只改吊销/续期：不回溯校验（运行期语义不受影响）。"""
+        from common.core.auth import hash_pat_token
+
+        plain = "pat_legacy-empty-scopes"
+        record = PersonalAccessToken.objects.create(
+            name="legacy",
+            token_hash=hash_pat_token(plain),
+            token_prefix=plain[:12],
+            scopes=[],
+            creator=superuser,
+        )
+        request = APIRequestFactory().patch(f"{TOKENS_URL}/{record.pk}", {"is_active": False}, format="json")
+        force_authenticate(request, user=superuser)
+        with transaction.atomic():
+            response = PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=record.pk)
+        assert response.data["code"] == 1000
+        assert response.data["data"]["is_active"] is False
 
 
 class TestScopeAnchoring:

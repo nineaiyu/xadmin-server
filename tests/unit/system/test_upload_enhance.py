@@ -87,6 +87,10 @@ def _uploaded_file(user, name="a.txt", content=b"hello", mime="text/plain"):
     return UploadFile.objects.get(pk=row["pk"])
 
 
+#: 真实文件头（内容 magic 抽检启用后，伪造魔数的测试载荷会被上传接口拒绝）
+PNG_HEAD = b"\x89PNG\r\n\x1a\n"
+
+
 class TestPhysicalFileGuard:
     """磁盘删除守护（先守护后功能：去重/保留期清理的前置条件）。"""
 
@@ -201,7 +205,7 @@ class TestUploadAutoCategory:
 
     def test_image_upload_auto_categorised(self, superuser):
         _patch_category_dict("image", "other")
-        record = _uploaded_file(superuser, name="photo.png", content=b"\x89PNG-bytes", mime="image/png")
+        record = _uploaded_file(superuser, name="photo.png", content=PNG_HEAD + b"bytes", mime="image/png")
         assert record.category == "image"
 
     def test_document_and_archive_by_extension(self, superuser):
@@ -214,7 +218,8 @@ class TestUploadAutoCategory:
 
     def test_unknown_type_falls_back_to_other(self, superuser):
         _patch_category_dict("image", "other")
-        record = _uploaded_file(superuser, name="blob.bin", content=b"\x00\x01", mime="application/octet-stream")
+        # .bin 无类型映射：文本内容放行（自定义文本文件不受影响）
+        record = _uploaded_file(superuser, name="blob.bin", content=b"blob-data", mime="application/octet-stream")
         assert record.category == "other"
 
     def test_audio_without_dict_item_falls_back_to_other(self, superuser):
@@ -225,14 +230,14 @@ class TestUploadAutoCategory:
 
     def test_no_dict_keeps_category_empty(self, superuser):
         """字典未配置（或为空）：留空（None），不因缺字典数据阻断上传。"""
-        record = _uploaded_file(superuser, name="photo.png", mime="image/png")
+        record = _uploaded_file(superuser, name="photo.png", content=PNG_HEAD, mime="image/png")
         assert record.category is None
 
     def test_dedup_upload_also_auto_categorised(self, superuser):
         """去重命中的记录同样自动分类（复用物理文件不影响分类推断）。"""
         _patch_category_dict("image", "other")
-        first = _uploaded_file(superuser, name="pic.png", content=b"same-png", mime="image/png")
-        response = _upload(superuser, _mkfile("pic-copy.png", b"same-png", mime="image/png"))
+        first = _uploaded_file(superuser, name="pic.png", content=PNG_HEAD + b"same-png", mime="image/png")
+        response = _upload(superuser, _mkfile("pic-copy.png", PNG_HEAD + b"same-png", mime="image/png"))
         second = UploadFile.objects.get(pk=response.data["data"][0]["pk"])
         assert second.filepath.name == first.filepath.name
         assert second.category == "image"

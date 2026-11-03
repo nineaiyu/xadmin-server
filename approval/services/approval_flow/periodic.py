@@ -277,6 +277,11 @@ def execute_timeout_actions(now: Any = None, batch_size: int = 200) -> dict[str,
             )
             if instance is None:
                 continue
+            if task.node_id != instance.current_node_id:
+                # 过期快照防御：任务已不属当前节点（并发推进/退回留下的待办本应
+                # 被作废，此处与人工路径同口径复核），避免超时代动作结算错误
+                # 节点造成双推进
+                continue
             if action == TimeoutAction.APPROVE:
                 handled = _auto_approve_task(task, instance, now)
             elif action == TimeoutAction.REJECT:

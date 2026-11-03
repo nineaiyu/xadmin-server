@@ -168,11 +168,13 @@ def clean_storage_cache(keep_days: int | None = 7, batch: int = 2000) -> int:
     return removed
 
 
-def storage_url(name: str) -> str:
+def storage_url(name: str, user: Any = None) -> str:
     """存储对象的访问 URL（本地 = MEDIA_URL 相对地址；远端 = 对象存储 / CDN 地址）。
 
     本地 ``/media/`` 链接对敏感命名空间（导出 / 附件等）追加短时效签名，
-    与 ``media_serve`` 的校验口径同源。
+    与 ``media_serve`` 的校验口径同源；签名默认绑定 ``user``（无用户上下文的
+    调用方属内部服务端流程，签出的链接在认证请求上恒不匹配——fail-closed；
+    服务端到服务端取内容应走 ``storage_open`` 直接读存储，不经 HTTP 链接）。
     """
     try:
         url = str(default_storage.url(name))
@@ -181,7 +183,7 @@ def storage_url(name: str) -> str:
         return ""
     from common.utils.media_signing import sign_media_url
 
-    return sign_media_url(url)
+    return sign_media_url(url, user=user)
 
 
 def storage_presigned_url(

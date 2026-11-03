@@ -4,7 +4,9 @@
 
 - apply_mask 为纯函数，单测主战场；
 - get_mask_rules(model_label) 返回按 sort 升序的活动规则（roles 展开为 pk 列表），
-  缓存由 DataMaskRule 的 post_save/post_delete/m2m_changed 信号失效（signal_handler.py）。
+  缓存由 DataMaskRule 的 post_save/post_delete/m2m_changed 信号失效（signal_handler.py）；
+  custom 规则的存量脏 pattern（非法 / 灾难性回溯 / 空）在加载时降级为分段掩码
+  （fail-closed，见 _degraded_output_rule）——输出侧不再原值放行。
 """
 
 import json
@@ -151,15 +153,17 @@ def apply_mask(value: Any, rule: dict[str, Any]) -> Any:
         if not pattern:
             return value
         if custom_pattern_error(pattern) is not None:
-            # 存量脏配置（非法/疑似灾难性回溯）不执行：输出侧不是预览入口，没有
-            # 子进程超时兜底，直接执行可能占死 worker
+            # 直接调用路径的兼容口径：非法/疑似灾难性回溯的 pattern 不执行（输出链路
+            # 没有子进程超时兜底，直接执行可能占死 worker），原值返回。**经
+            # get_mask_rules 加载的规则已在加载层降级为分段掩码（fail-closed，
+            # 见 _degraded_output_rule）**，本分支只对绕过加载层的直接调用生效
+            # （纯函数单测 / 预览子进程——预览入口对非法 pattern 有独立标记与短路）。
             logger.warning("skip unsafe mask pattern: %r", pattern)
             return value
         try:
             return re.sub(pattern, lambda m: _segment(m.group(0), keep_head, keep_tail, mask_char), value)
         except re.error:
-            # 存量脏数据兜底：仅针对历史遗留的非法正则回退原值，保证脱敏管道不因单条坏配置中断；
-            # 新配置的非法正则已在保存期被序列化器拒绝，正常链路不会再走到这里。
+            # 理论不可达（上方已试编译）；保留兜底原值返回，保证脱敏管道不因单条坏配置中断
             return value
     # phone / idcard / name / bankcard 及默认路径统一走分段掩码
     return _segment(value, keep_head, keep_tail, mask_char)
@@ -219,22 +223,47 @@ def mask_operation_changes(value: Any, model_label: Any, request: Any, user: Any
     return json.dumps(masked, ensure_ascii=False, default=str)
 
 
+def _degraded_output_rule(item: dict[str, Any]) -> dict[str, Any]:
+    """输出侧 fail-closed：存量非法 / 空 pattern 的 custom 规则降级为分段掩码。
+
+    存量脏配置（保存期校验上线前落库的非法正则、疑似灾难性回溯形态、空 pattern）
+    若按 ``apply_mask`` 的兼容口径原值返回，等于把该字段原文输出给无更新权限的
+    查看者（泄露路径）。规则加载层统一降级——所有输出消费方（序列化器主链路 /
+    关联 attrs / 数据集直出 / 操作日志 changes）都经 :func:`get_mask_rules` 取规则，
+    降级后掩码动作与 phone / name 等内置类型同走分段掩码（保留 keep_head /
+    keep_tail / mask_char）。管理页预览按表单提交的原 pattern 独立判定与提示，
+    不经过本加载层；``apply_mask`` 纯函数对直接调用保持既有兼容口径不变。
+    """
+    if item["mask_type"] != "custom":
+        return item
+    if item["pattern"] and custom_pattern_error(item["pattern"]) is None:
+        return item
+    logger.warning("unsafe mask pattern degraded to segment mask: %r", item["pattern"])
+    return {**item, "mask_type": "name"}
+
+
 def get_mask_rules(model_label: str) -> list[dict[str, Any]]:
-    """取某模型的活动脱敏规则（按 sort 升序），5 分钟缓存。"""
+    """取某模型的活动脱敏规则（按 sort 升序），5 分钟缓存。
+
+    custom 规则的存量脏 pattern（非法 / 灾难性回溯 / 空）在加载时降级为分段掩码
+    （fail-closed，见 :func:`_degraded_output_rule`），缓存内即降级后的形态。
+    """
     data_mask_model = apps.get_model("audit", "DataMaskRule")
 
     def _load() -> list[dict[str, Any]]:
         queryset = data_mask_model.objects.filter(model=model_label, is_active=True).order_by("sort", "created_time")
         return [
-            {
-                "field": rule.field,
-                "mask_type": rule.mask_type,
-                "keep_head": rule.keep_head,
-                "keep_tail": rule.keep_tail,
-                "mask_char": rule.mask_char,
-                "pattern": rule.pattern,
-                "roles": [pk for pk in rule.roles.values_list("pk", flat=True)],
-            }
+            _degraded_output_rule(
+                {
+                    "field": rule.field,
+                    "mask_type": rule.mask_type,
+                    "keep_head": rule.keep_head,
+                    "keep_tail": rule.keep_tail,
+                    "mask_char": rule.mask_char,
+                    "pattern": rule.pattern,
+                    "roles": [pk for pk in rule.roles.values_list("pk", flat=True)],
+                }
+            )
             for rule in queryset
         ]
 

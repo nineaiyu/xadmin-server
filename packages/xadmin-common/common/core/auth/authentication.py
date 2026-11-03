@@ -7,17 +7,19 @@
 import functools
 import hashlib
 from typing import Any, cast
+from urllib.parse import urlsplit
 
 from django.http.cookie import parse_cookie
 from django.utils.translation import gettext_lazy as _
 from rest_framework.authentication import BaseAuthentication
-from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated
+from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated, PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken
 
 from common.cache.storage import BlackAccessTokenCache, SessionTokenRevokedCache, UserTokenRevokedCache
 from common.contracts import emit_webhook_event, publish_api_quota_warning
+from common.settings_contract import kernel_required_setting, kernel_setting
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -215,6 +217,10 @@ class CookieJWTAuthentication(JWTAuthentication):
     支持cookie认证，是为了可以访问 django-proxy 的页面，比如 flower
     """
 
+    #: 免 CSRF 兜底校验的安全方法（与 Django CsrfViewMiddleware 口径一致：
+    #: GET / HEAD / OPTIONS / TRACE 之外的方法一律校验）
+    CSRF_SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
+
     def get_header(self, request: Any) -> Any:
         header = super().get_header(request)
         if not header:
@@ -225,7 +231,85 @@ class CookieJWTAuthentication(JWTAuthentication):
                     header = f"Bearer {cookie_dict.get('X-Token')}".encode()
         return header
 
+    def _credentials_from_cookie(self, request: Any) -> bool:
+        """凭证是否走 X-Token Cookie 通道（Authorization 头缺席时才可能）。"""
+        if JWTAuthentication.get_header(self, request):
+            return False
+        cookies = request.META.get("HTTP_COOKIE")
+        return bool(cookies and parse_cookie(cookies).get("X-Token"))
+
+    @staticmethod
+    def _origin_allowed(request: Any, origin: str) -> bool:
+        """Origin / Referer 源是否可信：同源 或 ``CSRF_TRUSTED_ORIGINS`` 白名单。
+
+        - 同源按 ``host[:port]`` 收敛比较（不比 scheme）：TLS 终结于反向代理时
+          ``request.is_secure()`` 依赖 ``SECURE_PROXY_SSL_HEADER`` 转发头，参与
+          scheme 比较会在未配置该头的既有部署上把合法同源请求误拒；Origin 的
+          host 部分不受请求方控制，host 一致即视为同源；
+        - 白名单口径与 Django CsrfViewMiddleware 一致：无通配条目按完整源精确
+          匹配，``https://*.example.com`` 形态按「同 scheme + 子域」放行。
+        """
+        from django.utils.http import is_same_domain
+
+        parsed = urlsplit(str(origin))
+        if not parsed.netloc:
+            return False
+        try:
+            if parsed.netloc.lower() == str(request.get_host()).lower():
+                return True
+        except Exception:  # noqa: BLE001 DisallowedHost 等：按不可信处理
+            pass
+        # framework 键（global_settings 恒有值）：宿主未显式配置时按 Django 全局缺省 [] 工作
+        for entry in kernel_required_setting("CSRF_TRUSTED_ORIGINS") or []:
+            text = str(entry)
+            if "*" not in text:
+                if text.lower() == str(origin).lower():
+                    return True
+                continue
+            entry_parsed = urlsplit(text)
+            if entry_parsed.scheme and entry_parsed.scheme != parsed.scheme:
+                continue
+            if is_same_domain(parsed.netloc, entry_parsed.netloc.lstrip("*")):
+                return True
+        return False
+
+    def _enforce_cookie_csrf(self, request: Any) -> None:
+        """Cookie 通道非安全方法的 CSRF 服务端兜底（Bearer / PAT 头凭证不经此路径）。
+
+        Cookie 是浏览器自动携带的环境凭证，前端仅靠 SameSite 收敛不够（本类
+        get_header 的 Cookie 回退使跨站表单 / 脚本可借登录态发起写请求）。规则：
+
+        - 带 ``Origin`` 且不可信 → 拒绝；无 Origin 但带 ``Referer`` 时按其源判定；
+        - 两者都缺失时按 ``CSRF_REQUIRE_ORIGIN``（默认放行，保持 CLI / 脚本
+          直调无浏览器头的兼容口径）。
+        """
+        if str(request.method or "").upper() in self.CSRF_SAFE_METHODS:
+            return
+        origin = str(request.META.get("HTTP_ORIGIN") or "").strip()
+        referer = str(request.META.get("HTTP_REFERER") or "").strip()
+        if not origin and not referer:
+            if kernel_setting("CSRF_REQUIRE_ORIGIN"):
+                raise PermissionDenied(_("Cross-site request rejected: Origin header is required"))
+            return
+        if origin:
+            source = origin
+        else:
+            parsed = urlsplit(referer)
+            source = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else ""
+        if source and self._origin_allowed(request, source):
+            return
+        logger.warning(
+            "cookie auth csrf rejected. path:%s origin:%s referer:%s",
+            getattr(request, "path", ""),
+            origin,
+            referer,
+        )
+        raise PermissionDenied(_("Cross-site request rejected: the request origin is not allowed"))
+
     def authenticate(self, request: Any) -> Any:
+        # Cookie 通道先过 CSRF 兜底再验 token：Bearer / PAT 头凭证不经此分支
+        if self._credentials_from_cookie(request):
+            self._enforce_cookie_csrf(request)
         result = super().authenticate(request)
         if result:
             # 会话活跃刷新（登录即登记的 UserSession）：节流门控在 touch 内部，

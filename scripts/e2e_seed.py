@@ -44,6 +44,10 @@ E2E_USERS = [
     # 部门主管场景：e2e_leader 主管测试部门（本人兼成员），用户列表可见本人 + 部门成员
     ("e2e_leader", "E2E-Leader-2026!", "E2E主管用户", False, "e2e_leader"),
     ("e2e_member", "E2E-Member-2026!", "E2E部门成员", False, None),
+    # 页面级拒绝态：有用户管理页面菜单但无 list 权限点（RePlusPage 渲染拒绝态）
+    ("e2e_denied", "E2E-Denied-2026!", "E2E无列表权限用户", False, "e2e_denied"),
+    # 按钮级负向：有用户管理读接口（GET）但无写接口（编辑/删除按钮应隐藏）
+    ("e2e_ro", "E2E-Readonly-2026!", "E2E只读用户", False, "e2e_ro"),
     # 审批人：第二超管（申请人 xadmin 不能自审，审批中心用例以其身份通过审批单）
     ("e2e_approver", "E2E-Approver-2026!", "E2E审批人", True, None),
 ]
@@ -91,6 +95,55 @@ def grant_user_management_menus(role):
     if page_menu.parent_id:
         menus.append(page_menu.parent)
     menus.extend(Menu.objects.filter(parent=page_menu, menu_type=Menu.MenuChoices.PERMISSION))
+    role.menu.set(menus)
+
+
+def _page_with_parent_menus(path):
+    """按 path 取页面菜单 + 父目录（不含接口权限点），供裁剪式授权变体复用。"""
+    from system.models import Menu
+
+    page_menu = Menu.objects.filter(path=path, menu_type=Menu.MenuChoices.MENU).first()
+    if not page_menu:
+        print(f"skip page menus: {path} menu not found")
+        return None, []
+    menus = [page_menu]
+    if page_menu.parent_id:
+        menus.append(page_menu.parent)
+    return page_menu, menus
+
+
+def _user_management_page_menus():
+    """用户管理页面菜单 + 父目录（不含接口权限点），供裁剪式授权变体复用。"""
+    return _page_with_parent_menus("/system/user/index")
+
+
+def grant_page_only_menus(role, path):
+    """仅授予指定页面与父目录，不挂任何接口权限点。
+
+    list 权限缺失时前端 RePlusPage 渲染框架拒绝态（plus-page-state）——
+    页面级权限负向 E2E 的种子形态。注意目标页必须是 RePlusPage 薄壳：
+    用户管理页对缺 list 有自有 el-alert 兜底（不走框架分支），
+    该场景用岗位管理页承载。
+    """
+    page_menu, menus = _page_with_parent_menus(path)
+    if not page_menu:
+        return
+    role.menu.set(menus)
+
+
+def grant_user_management_readonly_menus(role):
+    """授予页面与父目录 + 全部 GET 读接口权限点（list / retrieve / 导出等）。
+
+    写接口（POST / PATCH / PUT / DELETE）一律不给：操作列编辑、删除按钮应隐藏，
+    工具栏新增、导入按钮应隐藏，直接调用写接口应 403——按钮级权限负向 E2E 的
+    种子形态（读权限齐全，避免列表空行让按钮断言失去意义）。
+    """
+    from system.models import Menu
+
+    page_menu, menus = _user_management_page_menus()
+    if not page_menu:
+        return
+    menus.extend(Menu.objects.filter(parent=page_menu, menu_type=Menu.MenuChoices.PERMISSION, method="GET"))
     role.menu.set(menus)
 
 
@@ -232,7 +285,7 @@ def _create_e2e_users() -> dict:
 
 
 def _seed_permission_scenarios(created_users: dict) -> None:
-    """数据权限 / 部门主管 / 字段权限三场景（e2e_dp / e2e_leader / e2e_fp）。"""
+    """数据权限 / 部门主管 / 字段权限 / 页面拒绝态 / 按钮只读五场景。"""
     from identity.models import DeptInfo, UserInfo
     from system.models import DataPermission
 
@@ -303,6 +356,33 @@ def _seed_permission_scenarios(created_users: dict) -> None:
             # 字段白名单（除 phone 外全部字段）
             grant_field_permission(fp_role, excluded_field="phone")
             print("field permission seeded for e2e_fp (phone hidden)")
+
+    # ---- 页面级拒绝态：e2e_denied 有页面菜单但无任何接口权限点 ----
+    # list 权限缺失 → RePlusPage 渲染框架拒绝态（plus-page-state）。
+    # 用岗位管理页（RePlusPage 薄壳）承载：用户管理页对缺 list 有自有
+    # el-alert 兜底，走不到框架 PageState 分支
+    e2e_denied = created_users.get("e2e_denied") or UserInfo.objects.filter(username="e2e_denied").first()
+    if e2e_denied:
+        denied_role = e2e_denied.roles.filter(code="e2e_denied").first()
+        if denied_role:
+            grant_page_only_menus(denied_role, "/system/post/index")
+            print("page denied scene seeded for e2e_denied")
+
+    # ---- 按钮级负向：e2e_ro 只有读接口（GET），写接口全缺 ----
+    # 行数据沿用「仅本人」数据权限 + 全字段白名单，保证列表有行可供按钮断言
+    e2e_ro = created_users.get("e2e_ro") or UserInfo.objects.filter(username="e2e_ro").first()
+    if e2e_ro:
+        dp_self, _ = DataPermission.objects.get_or_create(
+            name="E2E-仅本人用户数据",
+            defaults={"rules": DATA_PERMISSION_RULES, "mode_type": DataPermission.ModeChoices.OR, "is_active": True},
+        )
+        dp_self.menu.clear()
+        e2e_ro.rules.add(dp_self)
+        ro_role = e2e_ro.roles.filter(code="e2e_ro").first()
+        if ro_role:
+            grant_user_management_readonly_menus(ro_role)
+            grant_field_permission(ro_role, excluded_field=None)
+            print("readonly button-negative scene seeded for e2e_ro")
 
 
 def _apply_runtime_config_overrides() -> None:

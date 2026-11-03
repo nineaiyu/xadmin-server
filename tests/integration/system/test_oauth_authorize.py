@@ -102,6 +102,15 @@ class TestAuthorizeFlow:
         resp = api_client.get(f"{OAUTH_URL}/authorize", {"client_id": "app_x", "redirect_uri": CALLBACK})
         assert resp.status_code == 401
 
+    def test_authorize_unknown_client_returns_401(self, auth_client):
+        """未知 client_id 与 token / revoke 端点同口径 401（客户端身份校验失败）。"""
+        resp = auth_client.get(
+            f"{OAUTH_URL}/authorize",
+            {"client_id": "app_unknown", "redirect_uri": CALLBACK, "response_type": "code"},
+        )
+        assert resp.status_code == 401
+        assert resp.data["data"]["error"] == "invalid_client"
+
     def test_authorize_rejects_unregistered_redirect(self, auth_client):
         application = _create_application(auth_client)
         resp = auth_client.get(

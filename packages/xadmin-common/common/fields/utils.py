@@ -22,8 +22,10 @@ def get_file_absolute_uri(value: FieldFile, request: Any = None, use_url: bool =
             url = value.url
         except AttributeError:
             return None
-        # 敏感命名空间（导出 / 附件等）的媒体链接统一带短时效签名，与 media_serve 校验同源
-        url = sign_media_url(url)
+        # 敏感命名空间（导出 / 附件等）的媒体链接统一带短时效签名，且默认绑定当前
+        # 请求用户（见 utils/media_signing：他人持链接不可用）；无请求上下文时按
+        # 空绑定签出——认证后恒不匹配，fail-closed
+        url = sign_media_url(url, user=getattr(request, "user", None))
         if request is not None:
             return request.build_absolute_uri(url)
         return url

@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""数据集执行与聚合：行数据 / 图表数据源 / 卡片级布局过滤（自 dataset 拆分，行为不变）。
+"""数据集执行与聚合：行数据 / 图表数据源 / 卡片级布局过滤（自 dataset 拆分）。
+
+``execute_dataset`` / ``aggregate_dataset`` 是所有数据集消费路径（HTTP 视图、
+WS 仪表盘/大屏推送、Celery 定时报表、NL 查数）的唯一执行入口，统一经
+``with_statement_timeout`` 挂 PostgreSQL 语句超时——慢查询保护在入口收口，
+不依赖各调用点自行设置。
 
 安全口径与保存侧同源（见 ``dataset.utils.dataset``）：字段白名单 + 行级数据权限 +
 字段权限叠加，聚合分组/取值字段必须对浏览者可见（fail-closed 报错）。
 """
 
+import functools
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -27,6 +35,61 @@ from dataset.utils.dataset import (
     get_whitelisted_model,
     viewer_visible_fields,
 )
+
+#: 「已挂语句超时」标记：守护测试据此断言所有数据集执行入口都经
+#: ``with_statement_timeout`` 包装（见 tests/integration/dataset/
+#: test_dataset_query_timeout.py）。新增执行入口必须复用该装饰器。
+TIMEOUT_WRAPPED_ATTR = "__dataset_timeout_wrapped__"
+
+
+@contextmanager
+def statement_timeout_scope() -> Iterator[None]:
+    """数据集执行统一语句超时（PostgreSQL ``SET LOCAL statement_timeout``）。
+
+    覆盖全部消费路径：HTTP execute/aggregate、WS 仪表盘/大屏推送、Celery
+    定时报表渲染——这些路径的连接来源不同（web 工作线程 / WS 线程执行器 /
+    celery worker 进程），但都走 default 别名的线程本地连接，此处取
+    ``connection`` 即作用于当前线程的连接。
+
+    ``SET LOCAL`` 仅在事务内生效：``atomic`` 保证无外层事务的路径（WS /
+    Celery 不受 ATOMIC_REQUESTS 约束）也有事务包裹，超时随事务结束干净恢复；
+    HTTP 路径嵌套 atomic 即 savepoint，无害。超时设置失败 fail-closed
+    （异常上抛，不吞）：慢查询保护优先于本次查询可用性，宁可报错也不静默
+    跑无超时查询。
+    """
+    from django.conf import settings
+    from django.db import connection, transaction
+
+    if connection.vendor != "postgresql":
+        # 非 PG 后端无语句超时机制（如 sqlite 测试档），不在本保护面内
+        yield
+        return
+    timeout_ms = int(getattr(settings, "DATASET_QUERY_TIMEOUT_MS", 30000) or 0)
+    if timeout_ms <= 0:
+        # 显式配置「0 = 不限」是运维的主动选择，不是设置失败
+        yield
+        return
+    with transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL statement_timeout = %s", [timeout_ms])
+        yield
+
+
+def with_statement_timeout[**P, R](func: Callable[P, R]) -> Callable[P, R]:
+    """装饰器：数据集执行/聚合入口统一挂语句超时。
+
+    超时挂在执行函数本身而非各调用点：WS 推送（execute_card）与 Celery
+    报表（_render_workbook）等新调用方自动获得保护，不再依赖每个入口
+    各写一遍（HTTP 视图层的历史做法漏掉了非 HTTP 路径）。
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        with statement_timeout_scope():
+            return func(*args, **kwargs)
+
+    setattr(wrapper, TIMEOUT_WRAPPED_ATTR, True)
+    return wrapper
 
 
 def _request_context() -> Any:
@@ -73,6 +136,7 @@ def _mask_series(series: Any, model: Any, group_spec: Any, user_obj: Any) -> Any
     return series
 
 
+@with_statement_timeout
 def execute_dataset(
     dataset: Any,
     user_obj: Any,
@@ -177,6 +241,7 @@ def _trend_series(
     ]
 
 
+@with_statement_timeout
 def aggregate_dataset(
     dataset: Any,
     user_obj: Any,

@@ -150,6 +150,11 @@ class ApprovalNodeTask(DbAuditModel):
     comment = models.CharField(_("Comment"), max_length=255, blank=True, null=True)
     acted_at = models.DateTimeField(_("Acted at"), null=True, blank=True)
     is_added = models.BooleanField(_("Added by counter-sign"), default=False)
+    # 历史轮次标记（退回重审清零开关开启时由退回动作写入）：退回重开把实例既有
+    # 任务行全部置 True，RATIO 结算与节点进度只统计 False（本轮）行。开关默认
+    # 关时不写标记，行为与既有版本完全一致。verbose_name 不走 gettext（新增
+    # 词条须同步 locale/，该字段不进用户可见文案面）。
+    is_history = models.BooleanField("History round (returned)", default=False)
 
     class Meta:
         ordering = ["node_order", "created_time"]

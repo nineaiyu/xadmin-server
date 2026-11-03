@@ -29,7 +29,7 @@ from .conditions import (
     simulate_path,
     validate_form,
 )
-from .constants import _models
+from .constants import _models, return_count_reset_enabled
 from .engine_events import (  # noqa: F401 再导出：事件/通知调用面保持不变
     _alert_no_approver as _alert_no_approver,
 )
@@ -258,6 +258,9 @@ def _settle_node_after_approve(instance: Any, node: Any) -> set[Any]:
         node_tasks = ApprovalNodeTask.objects.filter(instance=instance, node=node).exclude(
             status=ApprovalNodeTask.Status.CANCELLED
         )
+        if return_count_reset_enabled():
+            # 退回重审清零开关开启：只统计本轮任务行（退回时既有行已标记历史轮次）
+            node_tasks = node_tasks.exclude(is_history=True)
         total = node_tasks.count()
         approved = node_tasks.filter(status=ApprovalNodeTask.Status.APPROVED).count()
         pending = node_tasks.filter(status=ApprovalNodeTask.Status.PENDING).count()

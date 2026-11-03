@@ -8,7 +8,7 @@ from typing import Any
 from django.db.models import Q
 from django.utils import timezone
 
-from .constants import FLOW_PENDING_COUNT_CACHE_SECONDS, FLOW_STATS_WINDOW_DAYS, _models
+from .constants import FLOW_PENDING_COUNT_CACHE_SECONDS, FLOW_STATS_WINDOW_DAYS, _models, return_count_reset_enabled
 
 
 def pending_tasks_for(user: Any) -> Any:
@@ -57,7 +57,8 @@ def node_progress_for(instance: Any, node: Any = None, tasks: Any = None) -> dic
 
     返回 ``{approve_type, approve_ratio, total, approved, pending, rejected, required, reached}``：
     - ``total``：节点**有效**候选任务数——已作废行（转交换人 / 减签移除）不计入，
-      与 engine 的比例会签判定同口径（减签即时降低达标线）；
+      与 engine 的比例会签判定同口径（减签即时降低达标线）；退回重审清零开关
+      （``APPROVAL_RETURN_RESET_COUNT``）开启时历史轮次行亦不计入；
     - ``required``：达标所需通过数——RATIO = ceil(total × ratio / 100)（与 engine 判定同源），
       AND = total，OR = 1；
     - 非审批中实例或节点无任务 → None（前端不渲染进度块）。
@@ -75,6 +76,10 @@ def node_progress_for(instance: Any, node: Any = None, tasks: Any = None) -> dic
         tasks = [task for task in tasks if task.node_id == node.pk]
     # 与 engine 比例会签判定同口径：已作废行（转交换人/减签移除）不计入候选总数
     tasks = [task for task in tasks if task.status != ApprovalNodeTask.Status.CANCELLED]
+    if return_count_reset_enabled():
+        # 退回重审清零开关开启：历史轮次行不计入（与 engine 结算同口径，
+        # 否则前端进度条与实际达标线不一致）
+        tasks = [task for task in tasks if not task.is_history]
     total = len(tasks)
     if not total:
         return None

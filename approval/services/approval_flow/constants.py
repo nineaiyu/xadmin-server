@@ -26,6 +26,26 @@ _FLOW_FINISH_EVENTS = {
     "CANCELLED": "flow.cancelled",
 }
 
+# 退回重审清零比例会签计数的系统配置键（seed：approval/seeds/systemconfig.json）
+RETURN_RESET_COUNT_CONFIG_KEY = "APPROVAL_RETURN_RESET_COUNT"
+
+
+def return_count_reset_enabled() -> bool:
+    """退回重审是否清零比例会签计数（``APPROVAL_RETURN_RESET_COUNT``，默认关）。
+
+    取值优先级（同 SysConfig 既有键）：系统配置页 DB 行 > config.yml / 同名
+    环境变量 > conf 默认值表 False。关闭时退回重开后目标节点的历史任务行
+    继续混入 RATIO 结算（既有口径，达标线可能失真）；开启时退回把既有任务行
+    标记为历史轮次，结算与节点进度只统计本轮任务行（重审 = 重新投票）。
+    经 conf_security 注册的 property 读取（键进 ``_known_keys``，拼写错误可诊断）。
+    """
+    from common.core.config import SysConfig
+
+    value = SysConfig.APPROVAL_RETURN_RESET_COUNT
+    if isinstance(value, str):  # 系统配置页可能存字符串形态的布尔
+        return value.strip().lower() in ("1", "true", "yes", "on")
+    return bool(value)
+
 
 def _models() -> Any:
     """按需返回模型类容器：延迟导入避免模块导入期循环依赖。

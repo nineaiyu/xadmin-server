@@ -445,10 +445,14 @@ class TestAttachmentServing:
 
 
 class TestAttachmentMimeHardening:
-    def test_video_extension_with_html_mime_is_served_as_attachment(self, ws_layer, alice, chat_perms, monkeypatch):
-        """扩展名判 video 但客户端声明 text/html：取件不得按 HTML 内联执行。"""
-        room = chat_service.get_public_room()
-        _capture_group_send(ws_layer, monkeypatch)
+    """.mp4 名 + HTML 内容的双防线：存储侧 magic 校验拒绝新上传，响应侧隔离兜底存量记录。"""
+
+    def test_video_extension_with_html_content_rejected_at_upload(self, alice, chat_perms):
+        """存储侧新防线：.mp4 名 + HTML 内容（text/html 声明）上传即拒（1002）。
+
+        伪装扩展名的可执行内容不再依赖响应侧隔离兜底，落库前即拒；
+        聊天上传端点复用文件中心安全策略（check_upload_limits → magic 抽检）。
+        """
         chat_perms["grant"](alice)
         payload = b"<html><script>alert(document.cookie)</script></html>"
         upload_resp = _upload(
@@ -458,19 +462,42 @@ class TestAttachmentMimeHardening:
             content_type="text/html",
             kind="video",
         )
-        assert upload_resp.data["code"] == 1000, upload_resp.data
-        file_pk = upload_resp.data["data"]["pk"]
-        __, captured = _send(
-            ws_layer,
-            alice,
-            {"room_id": room.pk, "message_type": "video", "file_pk": file_pk, "client_msg_id": "c-evil"},
+        assert upload_resp.data["code"] == 1002, upload_resp.data
+        # 拒绝发生在落库前：不产生上传件记录，也不会有消息可取件
+        assert UploadFile.objects.filter(creator=alice).count() == 0
+        assert ChatMessage.objects.count() == 0
+
+    def test_legacy_video_record_with_html_mime_served_as_attachment(self, alice, chat_perms):
+        """响应侧隔离兜底存量：magic 校验上线前落库的伪装记录取件仍不得按 HTML 内联执行。
+
+        直建记录模拟存量数据（mime_type 不可信的 text/html + .mp4 扩展）：取件按
+        扩展名判 video、但声明 MIME 不在 video/ 前缀 → 服务端降级附件下载 +
+        octet-stream + nosniff，Content-Type 不得回显 text/html。
+        """
+        room = chat_service.get_public_room()
+        chat_perms["grant"](alice)
+        mp4_head = b"\x00\x00\x00\x18ftypisomlegacy-record-payload"
+        upload = UploadFile.objects.create(
+            creator=alice,
+            filename="evil.mp4",
+            filesize=len(mp4_head),
+            mime_type="text/html",
+            is_upload=True,
+            category="video",
+            filepath=SimpleUploadedFile("evil.mp4", mp4_head, content_type="text/html"),
         )
-        assert captured == []
-        message = ChatMessage.objects.get(room=room)
+        message, __ = chat_service.create_message(
+            room,
+            alice,
+            "",
+            message_type=ChatMessage.MessageType.VIDEO,
+            attachment=upload,
+        )
         resp = _api_client(alice).get(f"/api/chat/message/{message.pk}/file")
         assert resp.status_code == 200
         assert resp["Content-Disposition"].startswith("attachment")
         assert resp["Content-Type"].split(";")[0] != "text/html"
+        assert resp["X-Content-Type-Options"] == "nosniff"
 
 
 class TestAttachmentKindInference:

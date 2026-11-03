@@ -28,6 +28,8 @@
 | `SECURITY_HTTPS_ENABLED` | 同名 | `false` | 否 | 开启后强制 Secure Cookie + HSTS |
 | `SECURITY_HTTPS_REDIRECT_ENABLED` | 同名 | `false` | 否 | 要求代理传递 `X-Forwarded-Proto` |
 | `CORS_ALLOW_ALL_ORIGINS` / `CORS_ALLOWED_ORIGINS` | 同名 | `false` / `[]` | 跨域部署必填 | 同源（nginx 反代）部署无需配置 |
+| `CSRF_TRUSTED_ORIGINS` / `CSRF_REQUIRE_ORIGIN` | 同名 | `[]` / `false` | 否 | Cookie 认证（X-Token 回退）写请求的服务端 CSRF 兜底：`Origin`（或 `Referer` 源）须命中同源或 `CSRF_TRUSTED_ORIGINS` 白名单；两者都缺失时按 `CSRF_REQUIRE_ORIGIN` 决定（默认放行，保持 CLI/脚本兼容）。Bearer / PAT 头认证不受影响 |
+| `MEDIA_SIGNED_URL_REQUIRED` / `MEDIA_SIGNED_URL_TTL` / `MEDIA_SIGNED_URL_BIND_USER` | 同名 | `true` / `3600` / `true` | 否 | 敏感媒体命名空间（导出 / 附件 / 对象存储缓存）的签名 URL：开关（关闭回落登录态）/ 有效期（秒）/ 是否绑定签发用户（关闭回落仅「路径+过期」旧口径，他人可复用链接，仅供确有共享需求的部署放宽） |
 | `LANGUAGE_CODE` / `TIME_ZONE` | 同名 | `zh-hans` / `Asia/Shanghai` | 否 | |
 | `MEDIA_X_ACCEL_PREFIX` | 同名 | 空 | 否 | 受鉴权媒体的 nginx 内部重定向前缀；生产推荐 `/_protected_media`（需 nginx 声明同名前缀的 `internal` location，见 [§3.2](#32-受鉴权媒体与出站请求2026-09-27)） |
 
@@ -102,3 +104,12 @@
 > 平台层 `loadjson/systemconfig.json`，种子初值）与
 > [packages/xadmin-common/common/README.md](../../packages/xadmin-common/common/README.md)；用户级覆盖的读取链路见
 > [architecture/cache.md](../architecture/cache.md)。
+
+### 9.9 审批流行为开关（系统配置页）
+
+审批域的运行期行为开关：取值优先级同 §9.8 运行期参数——系统配置页 DB 行 > `config.yml` /
+同名环境变量（可作初值）> conf 默认值表（默认 `false`）；管理页修改后即时生效（保存即失效缓存）。
+
+| 配置键 | 默认值 | 说明 |
+|---|---|---|
+| `APPROVAL_RETURN_RESET_COUNT` | `false` | 退回重审是否清零**比例会签**计数。`false`：退回重开后目标节点的历史任务行继续混入新一轮达标线计算（既有行为，重审达标线可能失真）；`true`：退回时把实例既有任务行标记为历史轮次，结算与节点进度只统计本轮任务行（重审 = 重新投票，首轮已投者需再投）。只影响 RATIO 节点（或签/会签语义与轮次无关），种子见 `approval/seeds/systemconfig.json` |

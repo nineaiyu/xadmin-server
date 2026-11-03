@@ -5473,6 +5473,15 @@ msgstr "不允许上传 .{} 类型的文件"
 msgid "Only the following file types are allowed: {}"
 msgstr "仅允许以下文件类型：{}"
 
+#: file/utils/file_audit.py:240
+msgid "Unrecognized file content is not allowed to upload"
+msgstr "无法识别的文件内容类型，不允许上传"
+
+#: file/utils/file_audit.py:248
+#, python-brace-format
+msgid "File content does not match the .{} file extension"
+msgstr "文件内容与 .{} 扩展名不符"
+
 #: file/utils/upload_chunk.py:84 file/utils/upload_store.py:140
 #, python-brace-format
 msgid "upload file size cannot exceed {}"
@@ -6405,9 +6414,21 @@ msgstr "非法的令牌范围条目：%(entry)s"
 msgid "Token"
 msgstr "令牌"
 
-#: identity/serializers/token.py:57
-msgid "List of allowed path prefixes or regexes; empty means unrestricted"
-msgstr "允许调用的路径前缀/正则清单；留空表示不限"
+#: identity/serializers/token.py:74
+msgid "List of allowed path prefixes or regexes; empty requires unrestricted confirmation"
+msgstr "允许调用的路径前缀/正则清单；留空须显式确认不限范围"
+
+#: identity/serializers/token.py:78
+msgid "Unrestricted access"
+msgstr "不限范围"
+
+#: identity/serializers/token.py:81
+msgid "Confirm to allow this token to access all APIs permitted by its owner"
+msgstr "确认允许该令牌访问属主权限内的全部接口"
+
+#: identity/serializers/token.py:158
+msgid "Scopes cannot be empty unless unrestricted access is explicitly confirmed"
+msgstr "接口范围不能为空，请至少选择一个接口范围，或显式确认不限"
 
 #: identity/serializers/token.py:64
 msgid "Allowed source IPs or CIDR networks; empty means unrestricted"
@@ -6803,6 +6824,14 @@ msgstr ""
 "{error} 请重新输入。还可以尝试 {times_try} 次（超出后账号将被临时锁定）"
 "{error} 请重新输入。 您还可以尝试 {times_try} 次 (账号将被临时 锁定 "
 "{block_time} 分钟)"
+
+#: packages/xadmin-common/common/core/auth/authentication.py:291
+msgid "Cross-site request rejected: Origin header is required"
+msgstr "跨站请求已拒绝：缺少 Origin 请求头"
+
+#: packages/xadmin-common/common/core/auth/authentication.py:306
+msgid "Cross-site request rejected: the request origin is not allowed"
+msgstr "跨站请求已拒绝：请求来源不在可信源内"
 
 #: identity/utils/auth.py:165
 #: packages/xadmin-common/common/utils/ip/geoip/utils.py:41

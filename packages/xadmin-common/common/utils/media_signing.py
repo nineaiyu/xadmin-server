@@ -9,8 +9,11 @@
   与 ``sig``（HMAC-SHA256，密钥取 ``SECRET_KEY``）；
 - ``MEDIA_SIGNED_URL_REQUIRED`` 默认开启（安全默认）；显式关闭后回落「登录态」粒度，
   仅供仍依赖裸链接的兼容期部署使用；
-- 签名覆盖「归一化后的媒体相对路径 + 过期时间」，篡改路径或改用其它文件的签名均失败；
-  比较使用 ``hmac.compare_digest``，过期即拒绝。
+- ``MEDIA_SIGNED_URL_BIND_USER`` 默认开启（安全默认）：签名消息追加**签发对象用户标识**，
+  验签时与当前请求用户比对——链接被转发给其他登录用户后不可用（fail-closed：无用户
+  上下文签出的链接在认证后的请求上恒不匹配）。关闭后回落仅「路径 + 过期」的旧签名口径；
+- 签名覆盖「归一化后的媒体相对路径 + 过期时间（+ 用户标识）」，篡改路径或改用其它文件
+  的签名均失败；比较使用 ``hmac.compare_digest``，过期即拒绝。
 """
 
 import hashlib
@@ -43,28 +46,52 @@ def media_signature_required() -> bool:
     return bool(kernel_setting("MEDIA_SIGNED_URL_REQUIRED"))
 
 
+def media_signature_bind_user() -> bool:
+    """签名是否绑定用户身份：关闭 = 回落仅「路径 + 过期」的旧签名口径（回退开关）。"""
+    return bool(kernel_setting("MEDIA_SIGNED_URL_BIND_USER"))
+
+
 def _signing_key() -> bytes:
     return str(kernel_required_setting("SECRET_KEY")).encode()
 
 
-def _signature(path: str, expires: int) -> str:
-    message = f"{path}\n{expires}".encode()
-    return hmac.new(_signing_key(), message, hashlib.sha256).hexdigest()
+def _user_bind_id(user: Any) -> str:
+    """签名绑定的用户标识：无用户 / 匿名（无 pk）返回空串。
+
+    标识只进 HMAC 消息（对外不可见、不可逆推）；空串绑定的链接在认证后的
+    请求上恒不匹配——无用户上下文的签发点 fail-closed，而不是放开校验。
+    """
+    pk = getattr(user, "pk", None)
+    return str(pk) if pk is not None else ""
 
 
-def signed_media_query(path: Any, ttl: int | None = None) -> str:
-    """生成敏感路径的签名查询串（``exp=...&sig=...``）；非敏感路径返回空串。"""
+def _signature(path: str, expires: int, bind_id: str = "") -> str:
+    # 绑定开关只改变消息形态（不参与拼接顺序歧义）：关闭时与历史两段消息逐字节一致，
+    # 老链接按旧口径继续可用；开启时第三段是签发对象的用户标识
+    message = f"{path}\n{expires}"
+    if media_signature_bind_user():
+        message = f"{message}\n{bind_id}"
+    return hmac.new(_signing_key(), message.encode(), hashlib.sha256).hexdigest()
+
+
+def signed_media_query(path: Any, ttl: int | None = None, user: Any = None) -> str:
+    """生成敏感路径的签名查询串（``exp=...&sig=...``）；非敏感路径返回空串。
+
+    ``user`` 为签发对象（序列化器侧的 ``request.user``）；``MEDIA_SIGNED_URL_BIND_USER``
+    开启时纳入签名，验签须以同一致的用户比对。
+    """
     normalized = normalize_media_path(path)
     if not is_sensitive_media_path(normalized):
         return ""
     lifetime = int(kernel_setting("MEDIA_SIGNED_URL_TTL")) if ttl is None else int(ttl)
     expires = int(time.time()) + lifetime
-    return urlencode({MEDIA_EXP_PARAM: expires, MEDIA_SIG_PARAM: _signature(normalized, expires)})
+    bind_id = _user_bind_id(user) if media_signature_bind_user() else ""
+    return urlencode({MEDIA_EXP_PARAM: expires, MEDIA_SIG_PARAM: _signature(normalized, expires, bind_id)})
 
 
-def sign_media_path(path: Any, ttl: int | None = None) -> str:
+def sign_media_path(path: Any, ttl: int | None = None, user: Any = None) -> str:
     """为敏感相对路径追加签名参数；非敏感路径原样返回。"""
-    query = signed_media_query(path, ttl)
+    query = signed_media_query(path, ttl, user)
     if not query:
         return str(path or "")
     separator = "&" if "?" in str(path) else "?"
@@ -88,17 +115,18 @@ def _media_relative_path(url: str) -> str | None:
     return None
 
 
-def sign_media_url(url: Any, ttl: int | None = None) -> str:
+def sign_media_url(url: Any, ttl: int | None = None, user: Any = None) -> str:
     """为 ``/media/...`` 形式的 URL 追加签名参数；其余地址原样返回。
 
     ``get_file_absolute_uri`` / ``storage_url`` 等 URL 生成入口统一经此，
-    下载 / 预览端点签发的媒体链接与 ``media_serve`` 的校验口径保持同源。
+    下载 / 预览端点签发的媒体链接与 ``media_serve`` 的校验口径保持同源；
+    ``user`` 为签发对象（默认开启时纳入签名）。
     """
     text = str(url or "")
     relative = _media_relative_path(text)
     if relative is None:
         return text
-    query = signed_media_query(relative, ttl)
+    query = signed_media_query(relative, ttl, user)
     if not query:
         return text
     parts = urlsplit(text)
@@ -106,7 +134,8 @@ def sign_media_url(url: Any, ttl: int | None = None) -> str:
     return urlunsplit((parts.scheme, parts.netloc, parts.path, merged, parts.fragment))
 
 
-def verify_media_signature(path: Any, expires: Any, signature: Any) -> bool:
+def verify_media_signature(path: Any, expires: Any, signature: Any, user: Any = None) -> bool:
+    """验签：签名须由**同一用户**（绑定开启时）签出且未过期，路径篡改 / 冒用均失败。"""
     normalized = normalize_media_path(path)
     if not is_sensitive_media_path(normalized):
         return True
@@ -116,7 +145,8 @@ def verify_media_signature(path: Any, expires: Any, signature: Any) -> bool:
         return False
     if expires_int <= int(time.time()):
         return False
-    return hmac.compare_digest(_signature(normalized, expires_int), str(signature or ""))
+    bind_id = _user_bind_id(user) if media_signature_bind_user() else ""
+    return hmac.compare_digest(_signature(normalized, expires_int, bind_id), str(signature or ""))
 
 
 def verify_media_request(path: Any, request: Any) -> bool:
@@ -127,4 +157,9 @@ def verify_media_request(path: Any, request: Any) -> bool:
     get_params = getattr(request, "GET", None)
     if get_params is None:
         return False
-    return verify_media_signature(normalized, get_params.get(MEDIA_EXP_PARAM), get_params.get(MEDIA_SIG_PARAM))
+    return verify_media_signature(
+        normalized,
+        get_params.get(MEDIA_EXP_PARAM),
+        get_params.get(MEDIA_SIG_PARAM),
+        user=getattr(request, "user", None),
+    )

@@ -195,6 +195,8 @@ SETTINGS_CONFIG = {
     "APPROVAL_REMIND_HOURS": 24,
     # 流程实例（全量审批流引擎）保留天数：超过由清理任务分批删除
     "APPROVAL_FLOW_KEEP_DAYS": 365,
+    # 退回重审是否清零比例会签计数（默认关；开 = 只统计本轮任务行，首轮已投者需重新投票）
+    "APPROVAL_RETURN_RESET_COUNT": False,
     # 请假审批流程 code：请假单提交时绑定的流程定义；该 code 不存在时
     # 依次回退 leave_<请假类型> 与「leave 前缀的启用流程」
     "LEAVE_APPROVAL_FLOW_CODE": "leave",
@@ -261,6 +263,10 @@ SETTINGS_CONFIG = {
     "MEDIA_SIGNED_URL_REQUIRED": True,
     # 签名 URL 有效期（秒）：由下载 / 预览 / 列表返回的媒体链接短时可用
     "MEDIA_SIGNED_URL_TTL": 3600,
+    # 签名 URL 是否绑定用户：开启时签名含签发对象标识，链接转发给其他登录用户后不可用；
+    # 关闭 = 回落仅「路径 + 过期」的旧签名口径（存在他人可复用链接的横向越权面，
+    # 仅供确有共享链接需求的部署显式放宽）
+    "MEDIA_SIGNED_URL_BIND_USER": True,
     # 出站请求域名/IP 白名单（逗号或换行分隔，默认空 = 不启用）。
     # 服务端主动发起的请求（Webhook 投递）默认拒绝私网/环回/link-local 目标（防 SSRF）；
     # 内网自建接收端必须显式登记在此，登记后跳过地址归属校验（仍拒绝 link-local/元数据）。
@@ -464,7 +470,10 @@ SETTINGS_CONFIG = {
     "MONITOR_RETENTION_DAYS": 30,
     # AI 助手对话记录保留天数（0 = 不自动清理）
     "AI_CHAT_RETENTION_DAYS": 365,
-    # 数据集执行/聚合的数据库语句超时（毫秒，0 = 不限）：慢聚合不能长期占用 worker 与连接
+    # 数据集执行/聚合的数据库语句超时（毫秒，0 = 不限）：挂在执行函数统一入口
+    # （execute_dataset / aggregate_dataset），覆盖 HTTP execute/aggregate、
+    # WS 仪表盘/大屏推送、Celery 定时报表/推送聚合等全部消费路径——慢聚合不能
+    # 长期占用 worker 与连接；设置失败 fail-closed（宁可报错也不跑无超时查询）
     "DATASET_QUERY_TIMEOUT_MS": 30000,
     # 模块裁剪页展示的重启命令（Docker/Compose 部署按实际部署形态覆盖）
     "MODULE_RESTART_COMMAND": "sh xadmin.sh restart",
