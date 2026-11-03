@@ -84,5 +84,8 @@ export default function (data) {
 }
 
 export function handleSummary(data) {
-    return {[summaryPath(`04-metadata${VARIANT === 'all' ? '' : `-${VARIANT}`}`)]: JSON.stringify(makeSummary(data), null, 2)};
+    // 用例名与基线/文档统一为横线（with_meta → with-meta）：check_baseline 按
+    // `<case>.json` 取结果，下划线命名会让该用例被判成「缺失结果」而恒定失败
+    const suffix = VARIANT === 'all' ? '' : `-${VARIANT.replace('_', '-')}`;
+    return {[summaryPath(`04-metadata${suffix}`)]: JSON.stringify(makeSummary(data), null, 2)};
 }

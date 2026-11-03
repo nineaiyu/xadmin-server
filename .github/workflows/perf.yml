@@ -3,9 +3,10 @@ name: Performance Baseline
 # 压测基线回归：起 PG/Redis 一次性服务 → gunicorn 生产同参 → k6 六脚本 → 基线比对。
 # 只在夜间定时与手动触发（单次约 10-15 分钟），不挂 dev push，避免拖慢日常反馈。
 #
-# 判定口径（重要）：GitHub runner 规格与本机固定环境不可比，绝对吞吐（RPS）在
-# runner 上必然偏低，因此 CI 只跑「断崖档」——跳过 RPS 项、P95 容差放宽到 3 倍，
-# 用于拦截数量级劣化；精确回归（P95 1.2 倍 + RPS 0.8 倍）在本机固定环境执行，
+# 判定口径（重要）：GitHub runner 规格与本机固定环境不可比（2026-11-03 实测
+# P95 差 4.2-16.9 倍），绝对吞吐（RPS）在 runner 上必然偏低，因此 CI 只跑
+# 「断崖档」——跳过 RPS 项、P95 容差按实测放宽到 25 倍，仅拦截数量级劣化；
+# 精确回归（P95 1.2 倍 + RPS 0.8 倍）在本机固定环境执行，
 # 见 docs/ops/performance-baseline.md §八。
 on:
   workflow_dispatch:
@@ -15,9 +16,9 @@ on:
         required: false
         default: "1000"
       tolerance:
-        description: P95 容差倍数（CI 断崖档默认 3.0）
+        description: P95 容差倍数（CI 断崖档默认 25，按 runner 实测放宽）
         required: false
-        default: "3.0"
+        default: "25.0"
   schedule:
     - cron: "0 3 * * 1"
 
@@ -124,12 +125,15 @@ jobs:
 
       - name: Compare with baseline (CI 断崖档)
         id: compare
+        # 容差按 runner 实测放宽：2026-11-03 首轮完整实测为基线的 4.2-16.9 倍
+        # （2 vCPU + 2 worker，与固定环境的 4 worker 档不可比），3 倍容差必然误判。
+        # 本档只拦数量级劣化；精确回归（P95 1.2 倍 + RPS 0.8 倍）仍在固定环境执行。
         run: |
           set -o pipefail
           uv run --no-sync python loadtest/check_baseline.py \
             --results loadtest/k6/results \
             --checks p95,error \
-            --tolerance "${{ github.event.inputs.tolerance || '3.0' }}" \
+            --tolerance "${{ github.event.inputs.tolerance || '25.0' }}" \
             --format md | tee perf-report.md
           {
             echo "### 压测基线回归（CI 断崖档）"

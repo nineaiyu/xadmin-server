@@ -23,11 +23,13 @@ from loadtest.check_baseline import (
 BASELINE = {
     "tolerance": {"p95_ratio": 1.2, "rps_ratio": 0.8, "max_error_rate": 0.01},
     "cases": {
-        "01-login": {"label": "登录", "rps": 100.0, "p95": 100.0},
+        # target 非空 = 登记了跨环境目标，P95 比值参与判定
+        "01-login": {"label": "登录", "rps": 100.0, "p95": 100.0, "target": "P95 <100ms"},
         "04-metadata": {
             "label": "元数据三变体",
             "rps": 100.0,
             "p95": 100.0,
+            "target": "P95 <100ms",
             "trends": {"meta_columns_duration": 80.0, "meta_fields_duration": 80.0},
         },
     },
@@ -173,6 +175,25 @@ def test_missing_trend_is_skipped_not_passed(tmp_path):
     report = compare(BASELINE, results, BASELINE["tolerance"], ("p95", "rps", "error"))
     assert any("meta_columns_duration" in item for item in report.skipped)
     assert report.ok
+
+
+def test_case_without_target_skips_p95(tmp_path):
+    """基线未登记跨环境目标的用例（重 IO / 容量口径）只留档，不做 P95 比值判定。
+
+    CI runner 与固定环境实测差 4-17 倍，比值比较会稳定误判；错误率仍参与判定。
+    """
+    baseline = {
+        "tolerance": {"p95_ratio": 1.2, "rps_ratio": 0.8, "max_error_rate": 0.01},
+        "cases": {"05-export": {"label": "导出", "rps": 10.0, "p95": 100.0, "target": None}},
+    }
+    report = compare(
+        baseline,
+        write_results(tmp_path, {"05-export": summary(p95=13000.0, rps=0.6)}),
+        baseline["tolerance"],
+        ("p95", "error"),
+    )
+    assert report.ok
+    assert any("未登记跨环境目标" in item for item in report.skipped)
 
 
 def test_missing_result_file_fails(tmp_path):

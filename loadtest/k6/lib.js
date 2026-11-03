@@ -29,17 +29,22 @@ export const RESULT_DIR = __ENV.RESULT_DIR || 'results';
 // 统计口径：P50/P95 为主登记指标（docs/ops/performance-baseline.md）
 const TREND_STATS = ['avg', 'min', 'med', 'max', 'p(50)', 'p(90)', 'p(95)', 'p(99)'];
 
-// 各脚本通用负载档位：VUS/DURATION 环境变量覆盖
-export function baseOptions(defaultVus, defaultDuration) {
+// 各脚本通用负载档位：VUS/DURATION 环境变量覆盖。
+// p95Limit=null 关闭 P95 阈值：重 IO 用例（导出/导入）在 CI runner 上动辄十几秒，
+// 与基线口径一致不设 P95 门限（loadtest/baseline.json 的 target 为空即无跨环境目标）。
+export function baseOptions(defaultVus, defaultDuration, p95Limit = 2000) {
+    const thresholds = {
+        // 宽松护栏：只用于标记异常波动（如被限流/500），不是 SLO；SLO 待基线回填后另行评审
+        http_req_failed: ['rate<0.01'],
+    };
+    if (p95Limit !== null) {
+        thresholds.http_req_duration = [`p(95)<${p95Limit}`];
+    }
     return {
         vus: Number(__ENV.VUS || defaultVus),
         duration: __ENV.DURATION || defaultDuration,
         summaryTrendStats: TREND_STATS,
-        thresholds: {
-            // 宽松护栏：只用于标记异常波动（如被限流/500），不是 SLO；SLO 待基线回填后另行评审
-            http_req_failed: ['rate<0.01'],
-            http_req_duration: ['p(95)<2000'],
-        },
+        thresholds,
     };
 }
 

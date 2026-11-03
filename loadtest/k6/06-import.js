@@ -17,7 +17,8 @@ import {
     summaryPath,
 } from './lib.js';
 
-export const options = baseOptions(5, '1m');
+// P95 门限关闭：导入耗时随文件规模线性变化，基线 target 为空（不设跨环境目标）
+export const options = baseOptions(5, '1m', null);
 
 export function setup() {
     const token = loginOnce();

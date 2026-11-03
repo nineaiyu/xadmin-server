@@ -226,8 +226,8 @@ cd loadtest/k6 && env BASE_URL=... USERNAME=admin PASSWORD=xxx CHECK=1 ./run-all
 # 输出 markdown 贴 PR / step summary
 .venv/bin/python loadtest/check_baseline.py --format md
 
-# CI 断崖档：跳过 RPS（与环境强相关），P95 容差放宽
-.venv/bin/python loadtest/check_baseline.py --checks p95,error --tolerance 3.0
+# CI 断崖档：跳过 RPS（与环境强相关），P95 容差按 runner 实测放宽
+.venv/bin/python loadtest/check_baseline.py --checks p95,error --tolerance 25.0
 
 # 固定环境重新测定（三轮中位数）后刷新快照 —— 见下方「三轮中位数流程」
 .venv/bin/python loadtest/check_baseline.py --update --update-note "2026-xx-xx 复测，环境：xxx"
@@ -263,8 +263,19 @@ cd ../..
 - **本机固定环境档**：机器规格、worker 数、PG/Redis 版本、种子规模与快照 `env` 一致时才可比，
   是精确回归（P95 1.2 倍 + RPS 0.8 倍）的唯一可信来源；
 - **CI 档（perf.yml）**：GitHub runner 规格与快照环境不同，绝对吞吐天然偏低，
-  故只跳过 RPS、P95 容差放宽到 3 倍，用于拦截**数量级**劣化并留档趋势报告，
-  **不代表精确回归结论**。首轮 CI 跑完后按实测调整 `tolerance` 入参并在此登记。
+  故只跳过 RPS、P95 容差按实测放宽（当前 25 倍），用于拦截**数量级**劣化并留档趋势报告，
+  **不代表精确回归结论**。
+
+**CI 首轮完整实测（2026-11-03，2 vCPU / 2 worker）**：各用例 P95 为固定环境基线的
+4.2-16.9 倍（`01-login` 432ms/6.5×、`02-routes` 146ms/5.1×、`03-list` 1140ms/5.9×、
+`04-metadata-columns` 485ms/16.9×、`04-metadata-fields` 516ms/4.4×、`05-export` 13.5s/17.3×），
+原 3 倍容差在任何一轮都会误判。据此：
+
+- `tolerance` 默认放宽到 25（覆盖实测上界并留余量），仅拦 25 倍以上数量级劣化；
+- **基线 `target` 为空的用例不参与 P95 比值判定**（`check_baseline.py` 记入 skipped）——
+  这些用例本就没有跨环境目标（重 IO / 容量口径），绝对值不可比；
+- k6 脚本内 P95 阈值同理只保留给交互接口，导出 / 导入关闭（`baseOptions(..., null)`），
+  否则 CI 上 13 秒级的导出会先触发 k6 exit 99，比对步骤永远跑不到。
 
 **快照刷新纪律**：改动 `packages/xadmin-common/common/core/`、元数据接口、索引、连接池、缓存策略后，
 在固定环境重跑三轮并 `--update` 刷新快照，同时在 `metrics.md` 基线与发布记录中写明环境与方法。

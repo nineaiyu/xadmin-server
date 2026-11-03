@@ -136,9 +136,15 @@ def evaluate(
     error_rate = metric_error_rate(summary)
     trends = metric_trends(summary)
 
+    # 基线 target 为空 = 未登记跨环境目标（重 IO / 容量口径用例）：CI runner 与固定
+    # 环境实测差 4-17 倍，绝对值比值没有判别力，只留档不判定
+    has_target = baseline.get("target") is not None
+
     if "p95" in checks:
         base_p95 = baseline.get("p95")
-        if base_p95 is None or p95 is None:
+        if not has_target:
+            skipped.append(f"{case}:p95（基线未登记跨环境目标，跳过）")
+        elif base_p95 is None or p95 is None:
             skipped.append(f"{case}:p95（基线或结果缺 P95，跳过）")
         else:
             limit = round(base_p95 * tolerance["p95_ratio"], 2)
@@ -164,6 +170,9 @@ def evaluate(
             skipped.append(f"{case}:{name}（结果无该 Trend 分档，跳过）")
             continue
         if "p95" not in checks:
+            continue
+        if not has_target:
+            skipped.append(f"{case}:{name}（基线未登记跨环境目标，跳过）")
             continue
         limit = round(base_value * tolerance["p95_ratio"], 2)
         findings.append(Finding(f"{case}:{name}", "p95", base_value, current, limit, current <= limit))
