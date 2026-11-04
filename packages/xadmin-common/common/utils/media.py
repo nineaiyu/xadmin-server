@@ -16,6 +16,14 @@
 - 敏感命名空间（导出 / 导入报告 / 聊天附件等落在 ``file/uploadfile``，以及
   ``storage_cache``）在登录态之上还要求短时效签名 URL（见 ``utils/media_signing``），
   无有效签名一律拒绝；兼容期可通过 ``MEDIA_SIGNED_URL_REQUIRED=false`` 显式关闭。
+
+**模型图片字段（ProcessedImageField）的显式契约**：原图与按 pk 解析的缩略图
+（``get_media_path``）对全部登录用户可见、不按记录级数据权限过滤——当前全仓
+该字段仅承载头像类站内公开资产（URL 含 uuid5 随机段、不可枚举）。**敏感图片
+不要用 ProcessedImageField**，应存 UploadFile 体系（签名 URL + 归属校验 +
+download/preview 端点的数据权限）。完整契约与取舍见 docs/ops/storage.md §5.1。
+产品需要「模型图片按记录权限收敛」时，经 ``MEDIA_MODEL_IMAGE_VISIBILITY=restricted``
+一行切换（默认 public 保持本契约零变化；受限档语义见 ``_enforce_model_image_visibility``）。
 """
 
 import mimetypes
@@ -89,6 +97,62 @@ def get_media_path(path: str) -> Any:
         return None
 
 
+def _model_image_domain(path: str) -> tuple[Any, Any] | None:
+    """模型图片域判定：路径形态 ``app/model/<creator_pk>/<pk>/<file>``（原图与缩略图
+    同形态，upload_directory_path 的产物）且模型含 ``ProcessedImageField`` 时返回
+    ``(model, 记录或 None)``；路径不属该域返回 None（公开命名空间等，不干预）。
+
+    记录解析口径与 ``get_media_path`` 一致：pk 段直接定位；pk=0（form-data 先传后存）
+    按字段值反查（缩略图形态先还原原图名）。解析不到行时记录为 None——受限档下由
+    调用方按不存在拒绝（不泄露存在性）。
+    """
+    path_list = path.split("/")
+    if len(path_list) != 5:
+        return None
+    try:
+        model = apps.get_model(path_list[0], path_list[1])
+    except LookupError:
+        return None
+    field = next((i for i in model._meta.fields if isinstance(i, ProcessedImageField)), None)
+    if field is None:
+        return None
+    pk = path_list[3]
+    if pk == "0":
+        filename = path_list[4]
+        parts = filename.split("_")
+        if len(parts) == 2 and parts[1].split(".")[0].isdigit():
+            filename = filename.replace(f"_{parts[1]}", f".{field.format}")
+        obj = model.objects.filter(**{field.name: f"{path_list[0]}/{path_list[1]}/{path_list[2]}/0/{filename}"}).first()
+    else:
+        obj = model.objects.filter(pk=pk).first()
+    return model, obj
+
+
+def _enforce_model_image_visibility(request: Any, path: str) -> None:
+    """受限档（``MEDIA_MODEL_IMAGE_VISIBILITY=restricted``）模型图片的记录级准入。
+
+    默认 public（站内公开，模块契约段与 docs/ops/storage.md §5.1）本函数零行为
+    变化。restricted 时模型图片（原图与缩略图同一形态路径，一并收敛——只收一侧
+    是无实效的伪防护）：无行 / 当前用户按数据权限不可见一律按不存在拒绝（404）。
+
+    已知取舍（受限档打开即接受）：跨部门头像渲染只对可见范围生效；pk=0 的
+    「先传后存」表单内预览在行落库前不可见（保存后恢复）。
+    """
+    mode = str(kernel_setting("MEDIA_MODEL_IMAGE_VISIBILITY") or "public").strip().lower()
+    if mode != "restricted":
+        return
+    resolved = _model_image_domain(path)
+    if resolved is None:
+        return
+    model, obj = resolved
+    if obj is not None:
+        from common.core.filter import get_filter_queryset
+
+        if get_filter_queryset(model.objects.filter(pk=obj.pk), request.user).exists():
+            return
+    raise Http404(_("“%(path)s” does not exist") % {"path": path})
+
+
 def _storage_serve(request: Any, path: str) -> Any:
     """对象存储后端的媒体兜底：本地无文件时从存储读取并由应用层代理返回。"""
     from common.storage import storage_exists, storage_is_local, storage_open
@@ -136,6 +200,8 @@ def media_serve(request: Any, path: str, document_root: Any = None, show_indexes
     # 敏感命名空间：签名无效 / 过期 / 路径被篡改一律拒绝（不泄露文件是否存在）
     if not verify_media_request(path, request):
         return HttpResponseForbidden()
+    # 受限档（默认 public 零行为变化）：模型图片按记录数据权限收敛
+    _enforce_model_image_visibility(request, path)
     fullpath = Path(safe_join(document_root, path))
     if fullpath.is_dir():
         if show_indexes:

@@ -57,6 +57,8 @@ SETTINGS_CONFIG = {
     "SECURITY_LOGIN_BY_EMAIL_ENABLED": True,
     "SECURITY_LOGIN_BY_SMS_ENABLED": False,
     "SECURITY_LOGIN_BY_BASIC_ENABLED": True,
+    # 登录态 token 的 HttpOnly Cookie 承载开关（Bearer/PAT 双读兼容；上线/回滚口径见 config_example.yml）
+    "AUTH_COOKIE_HTTPONLY": False,
     # 注册规则
     "SECURITY_REGISTER_ACCESS_ENABLED": True,
     "SECURITY_REGISTER_CAPTCHA_ENABLED": True,
@@ -263,10 +265,11 @@ SETTINGS_CONFIG = {
     "MEDIA_SIGNED_URL_REQUIRED": True,
     # 签名 URL 有效期（秒）：由下载 / 预览 / 列表返回的媒体链接短时可用
     "MEDIA_SIGNED_URL_TTL": 3600,
-    # 签名 URL 是否绑定用户：开启时签名含签发对象标识，链接转发给其他登录用户后不可用；
-    # 关闭 = 回落仅「路径 + 过期」的旧签名口径（存在他人可复用链接的横向越权面，
-    # 仅供确有共享链接需求的部署显式放宽）
+    # 签名 URL 是否绑定用户：开启时转发他人不可用；关闭 = 回落仅「路径+过期」旧口径（横向越权面，仅供显式放宽）
     "MEDIA_SIGNED_URL_BIND_USER": True,
+    # 模型图片（ProcessedImageField 产物）可见性档位：public（默认）= 站内公开契约；
+    # restricted = 按记录数据权限收敛（行为变化清单见 docs/ops/storage.md §5.1）
+    "MEDIA_MODEL_IMAGE_VISIBILITY": "public",
     # 出站请求域名/IP 白名单（逗号或换行分隔，默认空 = 不启用）。
     # 服务端主动发起的请求（Webhook 投递）默认拒绝私网/环回/link-local 目标（防 SSRF）；
     # 内网自建接收端必须显式登记在此，登记后跳过地址归属校验（仍拒绝 link-local/元数据）。

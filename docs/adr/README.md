@@ -111,3 +111,4 @@
 | [ADR-099](ADR-099-http-only-refresh-token.md) | 被取代 | refresh token 迁 HttpOnly Cookie（结构性安全候选）：由 ADR-101 取代（开关化双模式落地） |
 | [ADR-100](ADR-100-review-retained-decisions.md) | 已接受 | 第二轮审查保留项处置：iframe sandbox / 限流 fail-open / IM SDK 出站 / 颜色与贴线基线 / 报表脱敏投递 |
 | [ADR-101](ADR-101-auth-cookie-dual-mode.md) | 已交付 | 登录态 token 承载双模式（取代 ADR-099）：AUTH_COOKIE_HTTPONLY 开关化 HttpOnly Cookie + 响应体剥离，X-Auth-Mode 标记判定，分阶段上线/回滚 |
+| [ADR-102](ADR-102-media-visibility-contract.md) | 已接受 | 媒体可见性契约：模型图片站内公开（原图与缩略图不做记录级数据权限），敏感图片禁用 ProcessedImageField |

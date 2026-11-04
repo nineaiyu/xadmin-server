@@ -125,10 +125,7 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
         framework=True,
     ),
     "SECURITY_LOGIN_LIMIT_TIME": KS(
-        "int",
-        "登录锁定提示中的锁定时长（分钟，文案展示用）",
-        default=30,
-        consumers=("swagger/views.py",),
+        "int", "登录锁定提示中的锁定时长（分钟，文案展示用）", default=30, consumers=("swagger/views.py",)
     ),
     "SECURITY_LOGIN_ACCESS_ENABLED": KS(
         "bool",
@@ -186,9 +183,7 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
     # 四、路径、存储与上传
     # ---------------------------------------------------------------
     "BASE_DIR": KS(
-        "str",
-        "工程根目录（进程管理命令定位项目/静态资源用）",
-        consumers=("management/commands/services/hands.py",),
+        "str", "工程根目录（进程管理命令定位项目/静态资源用）", consumers=("management/commands/services/hands.py",)
     ),
     "PROJECT_DIR": KS("str", "工程根目录（启动自检读取版本/配置）", consumers=("startup.py",)),
     "DATA_DIR": KS(
@@ -224,11 +219,14 @@ KERNEL_SETTINGS: dict[str, KernelSetting] = {
     "MEDIA_SIGNED_URL_BIND_USER": KS(
         "bool", "敏感媒体签名 URL 是否绑定用户（他人链接不可用）", default=True, consumers=("utils/media_signing.py",)
     ),
+    "MEDIA_MODEL_IMAGE_VISIBILITY": KS(
+        "str",
+        "模型图片（ProcessedImageField 产物）可见性：public=对全部登录用户公开（默认，契约见 utils/media.py）；restricted=按记录数据权限收敛（无行/不可见一律按不存在拒绝）",
+        default="public",
+        consumers=("utils/media.py",),
+    ),
     "FILE_UPLOAD_SIZE": KS(
-        "int",
-        "单文件上传大小上限（字节）",
-        default=10 * 1024 * 1024,
-        consumers=("core/modelset/upload.py",),
+        "int", "单文件上传大小上限（字节）", default=10 * 1024 * 1024, consumers=("core/modelset/upload.py",)
     ),
     "EXPORT_MAX_LIMIT": KS(
         "int",

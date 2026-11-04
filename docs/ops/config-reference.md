@@ -33,6 +33,7 @@
 | `MEDIA_SIGNED_URL_REQUIRED` / `MEDIA_SIGNED_URL_TTL` / `MEDIA_SIGNED_URL_BIND_USER` | 同名 | `true` / `3600` / `true` | 否 | 敏感媒体命名空间（导出 / 附件 / 对象存储缓存）的签名 URL：开关（关闭回落登录态）/ 有效期（秒）/ 是否绑定签发用户（关闭回落仅「路径+过期」旧口径，他人可复用链接，仅供确有共享需求的部署放宽） |
 | `LANGUAGE_CODE` / `TIME_ZONE` | 同名 | `zh-hans` / `Asia/Shanghai` | 否 | |
 | `MEDIA_X_ACCEL_PREFIX` | 同名 | 空 | 否 | 受鉴权媒体的 nginx 内部重定向前缀；生产推荐 `/_protected_media`（需 nginx 声明同名前缀的 `internal` location，见 [§3.2](#32-受鉴权媒体与出站请求2026-09-27)） |
+| `MEDIA_MODEL_IMAGE_VISIBILITY` | 同名 | `public` | 否 | 模型图片（头像类 `ProcessedImageField` 的原图与缩略图）可见性：`public` = 站内公开契约（默认，[storage.md §5.1](storage.md#51-媒体访问契约登录态可见不按记录级数据权限过滤)）；`restricted` = 按记录数据权限收敛（无行/不可见一律 404，原图与缩略图一并收敛；跨部门头像渲染与「先传后存」表单预览会随之变化——产品确认需要收敛时一行切换） |
 
 ### 9.2 数据库
 

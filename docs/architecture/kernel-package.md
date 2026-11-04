@@ -117,6 +117,7 @@ Django 内置键中的身份、媒体与本地化配置（密钥、用户模型�
 | `MEDIA_SIGNED_URL_REQUIRED` | bool | True | 敏感媒体命名空间（导出 / 附件 / 对象存储缓存）是否要求短时效签名 URL（默认开启，关闭回落登录态） | `utils/media_signing.py` |
 | `MEDIA_SIGNED_URL_TTL` | int | 3600 | 敏感媒体签名 URL 有效期（秒） | `utils/media_signing.py` |
 | `MEDIA_SIGNED_URL_BIND_USER` | bool | True | 敏感媒体签名 URL 是否绑定用户（签名含签发对象标识，他人持链接不可用；关闭回落仅路径+过期的旧签名口径） | `utils/media_signing.py` |
+| `MEDIA_MODEL_IMAGE_VISIBILITY` | str | 'public' | 模型图片（ProcessedImageField 产物，原图与缩略图同形态路径）可见性：public=对全部登录用户公开（默认，契约见 `utils/media.py`）；restricted=按记录数据权限收敛（无行/不可见一律按不存在拒绝） | `utils/media.py` |
 | `CSRF_TRUSTED_ORIGINS` | list[str] | 必给 | Cookie 认证写请求的可信源（同 Django CSRF 口径，带 scheme；Cookie JWT 兜底校验消费） | `core/auth/authentication.py` |
 | `CSRF_REQUIRE_ORIGIN` | bool | False | Cookie 认证写请求在 Origin/Referer 双缺失时是否拒绝（默认放行保持 CLI/脚本兼容） | `core/auth/authentication.py` |
 | `FILE_UPLOAD_SIZE` | int | 10485760 | 单文件上传大小上限（字节） | `core/modelset/upload.py` |

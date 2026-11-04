@@ -86,6 +86,7 @@ CAPTCHA_TICKET_SECRET:
 # 开启后强制 Secure Cookie（Session/CSRF）+ HSTS 一年（含子域/preload）+ nosniff，
 # 仅在 TLS 终止于反向代理/网关且对外入口为 HTTPS 时开启
 # ⚠ 未开启的 HTTP 直连部署：无 HSTS，文档站（/api-docs）会话 Cookie 不带 Secure——
+#   公网/跨网部署必须开启（或在网关终结 TLS）；`manage.py doctor` 会对该组合给出告警
 # SECURITY_HTTPS_ENABLED: false
 # 是否由 Django 执行 HTTP→HTTPS 301 跳转：仅当代理层会正确传递 X-Forwarded-Proto: https
 # 时才可开启；纯 TCP stream 代理（内置 nginx 默认形态）下开启会造成重定向循环
@@ -96,8 +97,22 @@ CAPTCHA_TICKET_SECRET:
 # CORS_ALLOWED_ORIGINS:
 #   - https://xadmin.example.com
 
+# Cookie 通道 CSRF 兜底：要求非安全方法（POST/PUT/PATCH/DELETE）必须携带
+# Origin（或 Referer）头，双缺失一律拒绝。默认 false 保持 CLI/脚本直调兼容
+# （现代浏览器跨站请求必带 Origin，不受影响）；⚠ 跨域 / 公网 / 高安全部署
+# 建议开启（Bearer/PAT 通道不受该开关影响）；`manage.py doctor` 会对默认关闭给出告警
 # CSRF_REQUIRE_ORIGIN: true
+
+# 登录态 token 的服务端 HttpOnly Cookie 承载（默认 false = 现状：token 在响应体，
+# 前端写 JS 可读 Cookie）。开启后登录/刷新/模拟换签改下发
+# HttpOnly; SameSite=Lax; Secure(HTTPS) 的 X-Token / X-Refresh-Token，并从响应体
+# 剥离 token 明文——浏览器 JS 读不到 token，XSS 无法持久窃取会话凭证。
+# Header(Bearer)/PAT 脚本调用不受影响（服务端双读）。
+# ⚠ 分阶段上线：先升级服务端（本开关保持默认）→ 再升级前端（双模式判定，
+#   由签发响应的 X-Auth-Mode 标记 Cookie + capabilities 的 auth_transport 下发）→
+#   最后才开启本开关；回滚 = 关回 false（存量 Cookie 会话在 token 有效期内自然过渡）。
 # AUTH_COOKIE_HTTPONLY: false
+
 # Database setting, Support sqlite3, mysql, postgres ....
 # 数据库设置
 # ### 更多数据库配置，参考官方文档：https://docs.djangoproject.com/zh-hans/5.0/ref/databases/
@@ -174,6 +189,12 @@ CELERY_HEAVY_CONCURRENCY: 4
 # （nginx 需声明同名前缀的 internal location 并 alias 到 upload 目录，
 #   见 xadmin-web/default.conf 与 docs/ops/deployment.md）：
 # MEDIA_X_ACCEL_PREFIX: /_protected_media
+#
+# 模型图片（头像类 ProcessedImageField 的原图与缩略图）可见性档位：
+#   public（默认）= 站内公开契约（对全部登录用户可见，见 docs/ops/storage.md §5.1）
+#   restricted    = 按记录数据权限收敛（无行/不可见一律 404；原图与缩略图一并收敛，
+#                   跨部门头像渲染与「先传后存」的表单内预览会随之变化——产品确认后切换）
+# MEDIA_MODEL_IMAGE_VISIBILITY: public
 
 # 字段级审计 diff 白名单（模型 _meta.label），决定「变更历史」弹窗能否看到
 # 字段明细（未命中白名单的模型 changes 恒为空，前端显示「—」）。
