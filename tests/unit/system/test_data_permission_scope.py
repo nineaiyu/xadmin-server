@@ -26,6 +26,34 @@ def make_rule(field="creator", type_="value.user.id", value="", match="exact", t
     return {"table": table, "field": field, "type": type_, "value": value, "match": match}
 
 
+class TestSoftDeletedNameReuse:
+    """修复守护（审查 BE-L2）：软删规则的名称可被新规则复用（条件唯一约束）。
+
+    原实现 name 全局唯一（unique=True），与 UserRole / Menu 的「未删除数据」
+    条件唯一模式不一致：规则进回收站后，同名规则在物理清除前无法重建。
+    """
+
+    def test_soft_deleted_rule_releases_name(self):
+        first = DataPermission.objects.create(name="销售区域规则", rules=[make_rule()])
+        first.delete()  # 软删：仅标记 deleted_at
+        assert first.deleted_at is not None
+
+        # 同名新规则可建（条件唯一只约束未删除行）
+        second = DataPermission.objects.create(name="销售区域规则", rules=[make_rule()])
+        assert second.deleted_at is None
+
+        # 两行同名共存于全量数据（回收站 + 活跃），活跃集合内仍唯一
+        assert DataPermission.objects.filter(name="销售区域规则").count() == 1
+        assert DataPermission.all_objects.filter(name="销售区域规则").count() == 2
+
+    def test_active_duplicate_name_still_rejected(self):
+        from django.db import IntegrityError, transaction
+
+        DataPermission.objects.create(name="唯一性回归规则", rules=[make_rule()])
+        with pytest.raises(IntegrityError), transaction.atomic():
+            DataPermission.objects.create(name="唯一性回归规则", rules=[make_rule()])
+
+
 class TestRuleTypeMeta:
     def test_meta_covers_every_choice(self):
         assert set(RULE_TYPE_META) == {choice for choice, _ in ModelLabelField.KeyChoices.choices}
