@@ -313,13 +313,15 @@ class MagicCacheResponse:
 cache_response = MagicCacheResponse
 
 
-def cached_method(ttl: int = 20) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def cached_method(ttl: int = 20, max_entries: int = 512) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     进程内内存缓存，ttl 为缓存时间，-1 表示永久。
 
     使用限制（避免误用）：
     - 仅适用于参数可哈希的调用（list/dict/request 等会直接 TypeError）；
-    - 缓存只增不主动清理，进程内长期驻留，不要用于大对象或高基数 key；
+    - 超过 ``max_entries`` 按插入序（FIFO）淘汰最旧条目：防二开误用于高基数 key
+      时进程内存只增不减（与配置缓存 L1_MAX_ENTRIES 同款兜底语义）；
+    - 过期条目命中时重算覆盖、未命中不扫描清理——回收依赖 FIFO 淘汰与条目覆盖；
     - 多进程/多 worker 之间不共享，不保证一致性。
     """
     _cache: dict[Any, dict[str, Any]] = {}
@@ -332,8 +334,14 @@ def cached_method(ttl: int = 20) -> Callable[[Callable[..., Any]], Callable[...,
             if key in _cache and (ttl == -1 or time.time() - _cache[key]["timestamp"] < ttl):
                 return _cache[key]["result"]
 
-            # 缓存过期或不存在，执行方法并缓存结果
+            # 缓存过期或不存在，执行方法并缓存结果（先算后淘汰：异常时不误伤既有条目）
             result = func(*args, **kwargs)
+            if len(_cache) >= max_entries:
+                # FIFO 淘汰：字典按插入序迭代，丢弃最旧的 max_entries//4 个条目，
+                # 避免每次插入都逐条 pop
+                drop = max(max_entries // 4, 1)
+                for stale_key in list(_cache.keys())[:drop]:
+                    _cache.pop(stale_key, None)
             _cache[key] = {"result": result, "timestamp": time.time()}
             return result
 

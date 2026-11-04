@@ -133,12 +133,14 @@ class TestCacheSortedSet:
         data = cache.get_members(with_scores=True)
         assert data == [{"a": 5}]
 
-    def test_exist_uses_falsy_rank_quirk(self, redis_conn):
+    def test_exist_rank_zero_member_exists(self, redis_conn):
         cache = CacheSortedSet("cz:exist")
         cache.push({"a": "1", "b": "2"})
-        # 已知行为：exist 基于 bool(zrank)，rank 0 的最低分成员被视为不存在
-        assert cache.exist("a") is False  # a 分数最低，rank 0
-        assert cache.exist("b") is True  # b 分数最高，rank 1
+        # 修复守护：exist 原以 bool(zrank) 判定，rank 0 的最低分成员被误判不存在；
+        # 现按「zrank is not None」判定——存在即真，缺失即假
+        assert cache.exist("a") is True  # a 分数最低（rank 0），但确实存在
+        assert cache.exist("b") is True
+        assert cache.exist("missing") is False
 
 
 class TestCacheHash:

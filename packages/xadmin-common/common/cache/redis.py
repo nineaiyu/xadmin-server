@@ -121,7 +121,9 @@ class CacheSortedSet(CacheRedis):
             return [format_return(k) for k in data]
 
     def exist(self, val: Any) -> bool:
-        return bool(self.connect.zrank(self.key, val))
+        # zrank 对「最低分成员」返回 0（而非 None）：bool(0) 会把第一名误判为不存在。
+        # 成员取值保持既有约定（原值查询，与 push 的存储形态一致），只修判定。
+        return self.connect.zrank(self.key, val) is not None
 
     def count(self) -> Any:
         return format_return(self.connect.zcard(self.key))

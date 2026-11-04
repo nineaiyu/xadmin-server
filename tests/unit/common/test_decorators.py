@@ -90,6 +90,41 @@ class TestCachedMethod:
         assert compute() == "v"
         assert calls == [1]
 
+    def test_fifo_eviction_caps_cache_growth(self):
+        """修复守护：超过 max_entries 按插入序淘汰，进程内缓存不再只增不减。"""
+        calls = []
+
+        @cached_method(ttl=-1, max_entries=4)
+        def compute(x):
+            calls.append(x)
+            return x
+
+        # 4 个不同 key 装满（各自首算一次）
+        for i in range(4):
+            compute(i)
+        # 第 5 个 key 触发淘汰（丢最旧的 1 个）：key(0) 被逐出
+        assert compute(9) == 9
+        assert calls.count(9) == 1
+        # key(0) 已被逐出：再次调用必然重算（滚动淘汰下 key(1) 随下一次插入让位）
+        compute(0)
+        assert calls.count(0) == 2
+
+    def test_tiny_max_entries_still_caches_last_key(self):
+        """max_entries 极端小的防御：同 key 仍命中缓存，新 key 触发淘汰后旧 key 重算。"""
+        calls = []
+
+        @cached_method(ttl=-1, max_entries=1)
+        def compute(x):
+            calls.append(x)
+            return x * 10
+
+        assert compute(1) == 10
+        assert compute(1) == 10  # 同 key：命中缓存，不重算
+        assert calls.count(1) == 1
+        assert compute(2) == 20  # 新 key：插入时淘汰 key(1)
+        assert compute(1) == 10  # key(1) 已被逐出：重算
+        assert calls.count(1) == 2
+
 
 class TestDelayRun:
     def test_requires_zero_args(self):

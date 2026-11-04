@@ -38,6 +38,14 @@ from demo.serializers.book import BookSerializer
 
 pytestmark = pytest.mark.django_db
 
+
+def _oplog_metric(result: str) -> float:
+    """操作日志落库计数器的当前值（result=ok/failed，与缓存指标测试同款读法）。"""
+    from common.metrics import _OLOG_WRITES
+
+    return _OLOG_WRITES.labels(result=result)._value.get()
+
+
 DEMO_URL = "/api/demo/book"
 
 # --- 真实链路探针视图（占位行事务边界结论的守护，见 TestResponseTimeWritePath） ---
@@ -127,7 +135,20 @@ class TestInsertOperationLog:
             objects = _BoomManager
 
         monkeypatch.setattr(oplog_recorder, "OperationLog", _BoomModel)
+        before_failed = _oplog_metric("failed")
         assert insert_operation_log({"module": "x"}) is None
+        assert _oplog_metric("failed") == before_failed + 1  # 旁路失败计数可观测（修复守护）
+
+    def test_insert_success_counts_ok(self, superuser):
+        """落库成功计 ok：failed/ok 双标签构成操作日志写入失败率的数据源。"""
+        info = build_operation_log_info(
+            self._fake_request(superuser),
+            type("R", (), {"status_code": 200, "data": {"code": 1000}})(),
+            0,
+        )
+        before_ok = _oplog_metric("ok")
+        assert insert_operation_log(info) is not None
+        assert _oplog_metric("ok") == before_ok + 1
 
 
 class TestFieldTruncation:

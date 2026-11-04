@@ -19,12 +19,19 @@ logger = get_logger(__name__)
 
 
 def handle_db_connections(func: Callable[..., Any]) -> Callable[..., Any]:
+    """任务/批处理前后的数据库连接回收（close_old_connections 对称包裹）。
+
+    审查观察项收口：原实现每次调用打两行 INFO——当前仓内已无调用点
+    （celery 连接回收由既有信号路径承担），保留为内核公共装饰器供二开使用，
+    日志降为 debug（避免未来复用时每个任务多两行噪音）。
+    """
+
     @wraps(func)
     def func_wrapper(*args: Any, **kwargs: Any) -> Any:
         close_old_connections()
-        logger.info(f"{func.__name__} run before do close old connection")
+        logger.debug(f"{func.__name__} run before do close old connection")
         result = func(*args, **kwargs)
-        logger.info(f"{func.__name__} run after do close old connection")
+        logger.debug(f"{func.__name__} run after do close old connection")
         close_old_connections()
 
         return result

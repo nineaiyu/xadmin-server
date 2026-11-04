@@ -62,6 +62,7 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 | `xadmin_celery_queue_length` | Gauge | queue（celery / heavy；broker 直读 LLEN，2026-09-29 起进端点——队列积压 SLO 的数据源） |
 | `xadmin_authz_grants_cache_keys` | Gauge | 无（授权池缓存存活键数，SCAN 计数；TTL 300s 兜底，见 architecture/cache.md 观察项） |
 | `xadmin_cache_requests_total` | Counter | cache（缓存名，取 `{View}_{method}` / 被装饰函数名，非缓存键）, result（hit / miss）；命中率 PromQL 见 [cache.md](../architecture/cache.md) |
+| `xadmin_operation_log_writes_total` | Counter | result（ok=落库成功 / failed=旁路失败被吞）。审计链路的「静默丢失窗口」监控数据源：写入失败只告警不抛错（旁路语义），代价由此可观测 |
 
 > **消费端**：[monitoring-stack.md](monitoring-stack.md) 提供 Prometheus + Grafana + blackbox 参考编排、
 > SLO 告警规则与「告警 → 站内信/邮件/Webhook」桥接脚本（宿主侧 systemd 单元样例同处）。
@@ -154,6 +155,7 @@ tail -5 <仓库>/tmp/slo_cron.log                                 # 执行日志
 | **容器 OOM** | `docker events` 的 `oom` 事件 | `ops/oom_alert.sh` → `/api/common/api/ops-alert` → 站内信 + 邮件 + Webhook `system.ops_alert` | ✅ 新增（A1，第十六轮验证） |
 | HTTP 可用性 / P95 延迟 / 任务成功率 / 队列积压 | Prometheus 指标 + SLO 阈值（`ops/monitoring/alerts.yml`） | 参考栈抓取判定 → 宿主侧 `scripts/prometheus_alert_bridge.py` → `ops-alert`（站内信 + 邮件 + Webhook `system.ops_alert`），与 OOM 告警同链路 | ✅ 已接（P1-36，见 [monitoring-stack.md](monitoring-stack.md)） |
 | 端点级 P95（登录/路由/列表/元数据列·字段/导出/导入） | `xadmin_http_request_duration_seconds{view}` 的 `histogram_quantile`，阈值 = 基线 P95 × 3（`XadminCaseLatency*`） | 同上（Prometheus 判定 → 告警桥接 → `ops-alert`） | ✅ 已接（阈值口径见 [monitoring-stack.md](monitoring-stack.md) §三） |
+| **操作日志落库失败**（审计丢失窗口） | `increase(xadmin_operation_log_writes_total{result="failed"}[5m]) > 0`（写入失败只告警不抛错，指标是唯一出口） | 同上（Prometheus 判定 → 告警桥接 → `ops-alert`），P2 当班处置（合规面） | ✅ 指标就绪（doctor 另有 Redis 持久化 / 周期调度存活两条部署自检） |
 
 维护约定：新增告警必须经演练验证（本清单同步登记证据）；仅接已证实场景，避免告警噪音。
 

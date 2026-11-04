@@ -65,6 +65,13 @@ if _DEP_AVAILABLE:
         "缓存请求数（按缓存名与命中结果）",
         ["cache", "result"],
     )
+    # 操作日志落库结果（审计旁路可观测）：写入在 web 进程，进程内计数即可被
+    # /metrics 端点拉取；failed 标签即「审计链路静默丢失窗口」的告警数据源。
+    _OLOG_WRITES = Counter(
+        "xadmin_operation_log_writes_total",
+        "操作日志落库结果（ok=落库成功 / failed=旁路失败被吞）",
+        ["result"],
+    )
 
 # 任务指标跨进程聚合（redis hash："task|status" -> count，无 TTL）。
 # worker 侧写入（record_task_result），web 端点渲染时附加（_render_task_redis）——
@@ -107,6 +114,22 @@ def record_cache_request(cache_name: str, result: str) -> None:
         _CACHE_REQUESTS.labels(cache=cache_name or "unknown", result=result).inc()
     except Exception as e:  # noqa: BLE001
         logger.debug(f"record cache metrics failed: {e}")
+
+
+def record_operation_log_write(result: str) -> None:
+    """记录一次操作日志落库结果（ok / failed）；任何异常都不得影响主流程。
+
+    操作日志是旁路能力（写入失败只告警不抛错，避免把响应打成 500）——旁路的
+    代价必须可观测：failed 计数即审计链路「静默丢失窗口」的监控/告警数据源
+    （告警口径见 docs/ops/observability.md）。
+    """
+    if not _DEP_AVAILABLE:
+        return
+    assert _OLOG_WRITES is not None  # 依赖可用时已初始化
+    try:
+        _OLOG_WRITES.labels(result=result or "unknown").inc()
+    except Exception as e:  # noqa: BLE001
+        logger.debug(f"record operation log metrics failed: {e}")
 
 
 def record_task_result(task_name: str, status: str, duration: float | None = None) -> None:

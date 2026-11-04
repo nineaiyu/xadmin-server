@@ -179,10 +179,24 @@ def insert_operation_log(info: Any) -> Any:
     数据库瞬时故障同理）。
     """
     try:
-        return OperationLog.objects.create(**info)
+        log_row = OperationLog.objects.create(**info)
     except Exception as e:
         logger.warning(f"insert operation log failed. error:{e}")
+        # 旁路失败的代价必须可观测：failed 计数供监控面板/告警消费
+        # （写入失败绝不能反过来把响应打成 500——旁路语义保持不变）
+        _record_oplog_write("failed")
         return None
+    _record_oplog_write("ok")
+    return log_row
+
+
+def _record_oplog_write(result: str) -> None:
+    """操作日志落库结果计数（指标旁路，失败静默）。"""
+    try:
+        from common.metrics import record_operation_log_write
+    except Exception:  # noqa: BLE001 指标旁路：导入失败不得影响日志主流程
+        return
+    record_operation_log_write(result)
 
 
 def resolve_auth_identity(request: Any, response: Any) -> Any:

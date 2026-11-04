@@ -18,7 +18,12 @@ from rest_framework import serializers
 
 from common.cache.storage import UserSystemConfigCache
 from common.contracts import SystemConfig
-from common.core.auth.credentials import decrypt_setting_value, encrypt_setting_value
+from common.core.auth.credentials import (
+    decrypt_setting_value,
+    encrypt_setting_value,
+    is_sensitive_key,
+    mask_sensitive_config_value,
+)
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -39,10 +44,21 @@ def get_render_context(tmp: str, context: dict[str, Any]) -> str:
     for node in template.nodelist:
         if isinstance(node, VariableNode):
             v_key = re.findall(r"<Variable Node: (.*)>", str(node))
-            # 上下文已含该键时直接复用：再 getattr(SysConfig, key) 会重建渲染上下文，
-            # A→B→A 的互引配置因此无限递归（自引用另有 serialize_config_rows 守卫）
-            if v_key and v_key[0].isupper() and v_key[0] not in context:
-                context[v_key[0]] = getattr(SysConfig, v_key[0])
+            if not v_key or not v_key[0].isupper():
+                continue
+            render_key = v_key[0]
+            if is_sensitive_key(render_key):
+                # 敏感加密键不得经组合模板解引用成明文：掩码后进上下文，模板引用
+                # 只能得到 MASK（整值键）/ 字段掩码副本（字段级键，如 client_secret）。
+                # 出口掩码按「宿主键」判定，非敏感宿主键的渲染产物绕过掩码——
+                # 「配置写权限者→低权设置读者」与「个人配置模板自引用」两条信息流
+                # 在此收口（守护测试 tests/unit/common/test_config_render_value.py）。
+                logger.warning("config render references sensitive key %s; masked instead of dereferencing", render_key)
+                context[render_key] = mask_sensitive_config_value(render_key, getattr(SysConfig, render_key))
+            elif render_key not in context:
+                # 上下文已含该键时直接复用：再 getattr(SysConfig, key) 会重建渲染上下文，
+                # A→B→A 的互引配置因此无限递归（自引用另有 serialize_config_rows 守卫）
+                context[render_key] = getattr(SysConfig, render_key)
     context = Context(context)
     return str(template.render(context))
 
@@ -50,11 +66,15 @@ def get_render_context(tmp: str, context: dict[str, Any]) -> str:
 def build_config_render_context(model: Any) -> dict[str, Any]:
     """{{ KEY }} 渲染上下文：模型全部激活行（key → JSON 字符串值）。
 
-    行值自身含同名渲染键（自引用）时跳过，防止渲染递归；批量回源时整个
-    列表只需构建一次。
+    - 行值自身含同名渲染键（自引用）时跳过，防止渲染递归；批量回源时整个
+      列表只需构建一次上下文；
+    - **敏感加密键不入上下文**：其行值在库内是密文，渲染出来只有噪音；模板对
+      敏感键的引用统一经 ``get_render_context`` 的掩码取值，永不产出明文。
     """
     context_dict = {}
     for sys_obj_dict in model.objects.filter(is_active=True).values("key", "value").all():
+        if is_sensitive_key(sys_obj_dict["key"]):
+            continue
         str_value = json.dumps(sys_obj_dict["value"])  # 将dict转换为json字符串进行匹配
         if re.findall("{{{{.*{}.*}}}}".format(sys_obj_dict["key"]), str_value):
             logger.warning("get same render key. so continue")
