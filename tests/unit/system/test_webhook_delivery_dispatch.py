@@ -258,3 +258,88 @@ class TestRetryAction:
         assert response.status_code == 200
         assert response.data.get("code") == 1001
         assert dispatch_recorder.calls == []
+
+
+class TestRetrySweep:
+    """到期重试兜底扫描（审查修复 BE-M2）：broker 丢 countdown 消息后的自愈重派。
+
+    扫描任务只认 ``status=failed AND next_retry_at <= now`` 的行并经统一派发入口
+    重派；代际号机制保证与在途 countdown / 人工 retry 的并发不产生重复投递。
+    """
+
+    def _due_failed(self, sub, minutes_ago=0):
+        return make_delivery(
+            sub,
+            event="user.login_failed",
+            status="failed",
+            next_retry_at=timezone.now() - timezone.timedelta(minutes=minutes_ago or 1),
+        )
+
+    def test_sweep_redispatches_due_failed_deliveries(self, dispatch_recorder):
+        """next_retry_at 已到期的 failed 行被重派（携带递增代际号）。"""
+        from task.webhook_tasks import sweep_expired_webhook_retries
+
+        sub = make_subscription(event="user.login_failed")
+        due = self._due_failed(sub)
+        # 未到期 / 非终态对照行：不重派
+        waiting = self._due_failed(sub)
+        WebhookDelivery.objects.filter(pk=waiting.pk).update(
+            next_retry_at=timezone.now() + timezone.timedelta(minutes=10)
+        )
+
+        count = sweep_expired_webhook_retries()
+
+        assert count == 1
+        call = dispatch_recorder.calls[0]
+        assert call["kwargs"] == {"delivery_id": str(due.pk), "generation": 1}
+
+    def test_sweep_ignores_non_failed_or_terminal_states(self, dispatch_recorder):
+        """pending / success / exhausted（next_retry_at 恒空）一律不参与兜底。"""
+        from task.webhook_tasks import sweep_expired_webhook_retries
+
+        sub = make_subscription(event="user.login_failed")
+        make_delivery(sub, event="user.login_failed", status="pending")
+        make_delivery(sub, event="user.login_failed", status="success")
+        exhausted = make_delivery(sub, event="user.login_failed", status="exhausted", attempt=5)
+        assert exhausted.next_retry_at is None
+
+        assert sweep_expired_webhook_retries() == 0
+        assert dispatch_recorder.calls == []
+
+    def test_sweep_batch_limit_keeps_run_bounded(self, dispatch_recorder):
+        """极端积压下单轮重派量被 SWEEP_BATCH_LIMIT 钳制（余量留待下一轮）。"""
+        from task import webhook_tasks
+
+        sub = make_subscription(event="user.login_failed")
+        for _ in range(webhook_tasks.SWEEP_BATCH_LIMIT + 3):
+            self._due_failed(sub)
+
+        count = webhook_tasks.sweep_expired_webhook_retries()
+
+        assert count == webhook_tasks.SWEEP_BATCH_LIMIT
+
+    def test_sweep_race_with_manual_retry_no_double_delivery(self, post_stub):
+        """并发窗口（兜底扫描与后续派发同期）：真实投递链路下不产生重复投递。"""
+        calls, result = post_stub
+        result["code"], result["text"] = 200, "ok"
+        from task.webhook_tasks import sweep_expired_webhook_retries
+
+        sub = make_subscription(event="user.login_failed")
+        due = self._due_failed(sub)
+
+        # 兜底扫描派发（代际 1）→ eager 下真实投递一次成功
+        assert sweep_expired_webhook_retries() == 1
+        due.refresh_from_db()
+        assert due.status == "success"
+        assert due.attempt == 1
+        assert due.generation == 1
+        assert len(calls) == 1
+
+        # 派发口被并发击穿（模拟同刻的人工 retry 直调派发）：新代际消息到达时
+        # deliver_webhook 对已成功投递早退——不重复 POST、不覆盖终态
+        dispatch_deliver_webhook(str(due.pk))
+        due.refresh_from_db()
+        assert due.status == "success"
+        assert due.attempt == 1  # 未被第二次执行改写（成功早退）
+        assert len(calls) == 1  # 幂等键（投递主键）只出现一次
+        assert due.generation == 2  # 派发侧代际如实递增（消息本身是新代际）

@@ -43,6 +43,7 @@ logger = get_logger(__name__)
 from dataset.analysis_tasks import dispatch_scheduled_reports as _dispatch_scheduled_reports  # noqa: F401,E402
 from identity.ldap.tasks import sync_ldap_directory_job as _sync_ldap_directory_job  # noqa: F401,E402
 from task.webhook_tasks import deliver_webhook as _deliver_webhook  # noqa: F401,E402
+from task.webhook_tasks import sweep_expired_webhook_retries as _sweep_expired_webhook_retries  # noqa: F401,E402
 
 
 @shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
@@ -183,7 +184,10 @@ def convert_office_preview_task(upload_pk: Any) -> Any:
         cache.delete(f"office_converting_{upload_pk}")
 
 
-@shared_task(bind=True, verbose_name=_("Async export data"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+# acks_late=True：worker 崩溃 / 宿主重启 / 硬超时杀进程时消息不丢（未 ack 即重投）。
+# 重投安全由实现体的终态守卫保证（record.status ∈ 终态直接跳过，不重复渲染/导入），
+# 与邮件/Webhook 任务同口径（守护测试 tests/unit/system/test_async_task_acks.py）。
+@shared_task(bind=True, acks_late=True, verbose_name=_("Async export data"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def async_export_data_task(self: Any, record_id: Any, view_path: Any, query_params: Any, user_pk: Any) -> Any:
     """异步执行数据导出：重放 export_data 视图，产物落 UploadFile 供下载中心取用。
 
@@ -246,7 +250,9 @@ def demo_account_selfheal_job() -> Any:
     return ADMIN_USERNAME
 
 
-@shared_task(bind=True, verbose_name=_("Async import data"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+# acks_late=True 同 async_export_data_task：重投由 run_async_import 的终态守卫幂等化
+# （已 SUCCESS/FAILURE/REVOKED 的记录直接跳过；崩溃在途的外层事务随连接丢失回滚）。
+@shared_task(bind=True, acks_late=True, verbose_name=_("Async import data"))  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
 def async_import_data_task(self: Any, record_id: Any, view_path: Any, user_pk: Any) -> Any:
     """异步执行数据导入：任务内解析源文件，逐行 savepoint 导入并生成失败行报告。
 

@@ -131,6 +131,7 @@ python scripts/check_cross_app_imports.py
 python scripts/check_file_length.py && python scripts/check_function_length.py
 python scripts/check_cache_keys.py --strict            # 纯本地门禁（CI 不跑）
 python scripts/check_ledger_ids.py && python scripts/check_menu_titles.py
+python scripts/check_task_acks.py
 python scripts/check_captcha_coverage.py && python scripts/check_captcha_legacy.py
 python scripts/check_captcha_assets.py
 python scripts/check_tutorial_mirror.py                # 教程命令/参数与代码一致（example 四篇）

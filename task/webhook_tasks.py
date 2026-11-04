@@ -22,6 +22,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
+from common.celery.decorator import register_as_period_task
 from common.utils import get_logger
 from common.utils.outbound import pinned_request
 from task.services.webhook import MAX_ATTEMPTS, RETRY_BASE_SECONDS, RETRY_MAX_SECONDS, decrypt_secret, sign_payload
@@ -196,8 +197,8 @@ def deliver_webhook(self: Any, delivery_id: str, generation: int | None = None) 
 def dispatch_deliver_webhook(delivery_id: str, countdown: int | None = None) -> None:
     """投递任务派发唯一入口：事务内递增代际号，携带新代际号与全新 task_id 派发。
 
-    所有派发点（emit 首投 / 任务内倒计时重试 / 人工 retry）统一经此派发；
-    task_id 每次随机生成，不再复用投递主键（幂等键由 X-Xadmin-Delivery 头
+    所有派发点（emit 首投 / 任务内倒计时重试 / 人工 retry / 到期扫描兜底）统一经
+    此派发；task_id 每次随机生成，不再复用投递主键（幂等键由 X-Xadmin-Delivery 头
     承载，不受影响）。eager（测试/E2E）同步执行；否则等当前事务提交后再
     投递——重置/建行与代际递增同事务落库，worker 读到的一定是已提交的
     代际号，不会把新任务误判为旧代际。
@@ -228,3 +229,42 @@ def dispatch_deliver_webhook(delivery_id: str, countdown: int | None = None) -> 
         deliver_webhook.apply(kwargs=message, task_id=uuid.uuid4().hex)
         return
     transaction.on_commit(lambda: _dispatch(countdown))
+
+
+#: 单轮兜底扫描的重派上限：防极端积压（broker 故障恢复后大量到期行）把
+#: 一轮任务拖成分钟级长任务；超出部分留待下一轮（周期 5 分钟内消化）
+SWEEP_BATCH_LIMIT = 100
+
+
+@shared_task  # type: ignore[untyped-decorator]  # 第三方装饰器（celery）无类型存根：函数自身标注完整，此处不因装饰器降级
+@register_as_period_task(
+    interval=300,
+    description="Webhook 失败投递兜底重派（broker 丢消息后 next_retry_at 到期行自愈）",
+    module="webhook",
+)  # type: ignore[untyped-decorator]  # 第三方装饰器（celery）无类型存根：函数自身标注完整，此处不因装饰器降级
+def sweep_expired_webhook_retries() -> int:
+    """兜底扫描到期重试的失败投递并重派（审查修复 BE-M2）。
+
+    失败重试原本只依赖上一轮任务派发的 Celery countdown 消息：broker（Redis）
+    重启 / 丢消息时 ``status=failed`` 且 ``next_retry_at`` 已到期的投递将无人
+    认领（人工 retry 是唯一出口）。本周期任务按 ``next_retry_at <= now`` 扫描
+    到期行，经 ``dispatch_deliver_webhook`` 统一重派——代际号条件更新天然防
+    与在途 countdown / 人工 retry 重复投递（过期任务静默失效）。
+
+    只处理 ``failed``：``pending``（在途）/ ``success``（终态）/ ``exhausted``
+    （重试耗尽，next_retry_at 恒空，走人工 retry 或告警）均不参与。
+    """
+    from django.utils import timezone as dj_timezone
+
+    from task.models.webhook import WebhookDelivery
+
+    due = list(
+        WebhookDelivery.objects.filter(status=WebhookDelivery.Status.FAILED, next_retry_at__lte=dj_timezone.now())
+        .order_by("next_retry_at")
+        .values_list("pk", flat=True)[:SWEEP_BATCH_LIMIT]
+    )
+    for delivery_id in due:
+        dispatch_deliver_webhook(str(delivery_id))
+    if due:
+        logger.info("webhook retry sweep redispatched %s deliveries", len(due))
+    return len(due)

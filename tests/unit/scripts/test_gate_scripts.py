@@ -529,3 +529,100 @@ class TestCaptchaCoverageGate:
         assert gate.is_exempt("api/identity/^auth/captcha/challenge$") is True
         assert gate.is_exempt("api/identity/^some/new/write$") is False
         assert all(reason for _pattern, reason in gate.EXEMPTIONS)
+
+
+# ---------------------------------------------------------------------------
+# check_task_acks.py
+# ---------------------------------------------------------------------------
+
+
+class TestTaskAcksGate:
+    """Celery 任务 acks 策略门禁自测：违例识别 / 三类合法声明 / 豁免登记。
+
+    门禁是「漏配 acks_late」的根因收口（BE-M1 同类问题不得再漏）：新增任务
+    必须显式落在 acks_late / 周期·启动自愈 / 豁免登记 三类之一，否则 CI 红。
+    """
+
+    @pytest.fixture
+    def tacks(self, tmp_path, monkeypatch):
+        module = load_gate("task_acks_gate_under_test", "check_task_acks")
+        (tmp_path / "alpha").mkdir()
+        monkeypatch.setattr(module, "ROOT", tmp_path)
+        monkeypatch.setattr(module, "SCAN_DIRS", ["alpha"])
+        return module
+
+    def test_missing_declaration_is_violation(self, tacks, tmp_path):
+        """未声明任何策略的按需任务 = 违例（worker 崩溃即丢消息）。"""
+        write(
+            tmp_path,
+            "alpha/tasks.py",
+            "from celery import shared_task\n\n\n@shared_task\ndef lost_task():\n    return 1\n",
+        )
+        records = tacks.scan_task_declarations()
+        assert [(item["task"], item["status"]) for item in records] == [("alpha.tasks:lost_task", "violation")]
+
+    def test_acks_late_true_passes(self, tacks, tmp_path):
+        """显式 acks_late=True：一次性任务的正路声明。"""
+        write(
+            tmp_path,
+            "alpha/tasks.py",
+            "from celery import shared_task\n\n\n@shared_task(bind=True, acks_late=True)\ndef durable():\n    return 1\n",
+        )
+        records = tacks.scan_task_declarations()
+        assert [(item["task"], item["policy"]) for item in records] == [("alpha.tasks:durable", "acks_late")]
+
+    def test_acks_late_false_is_not_a_pass(self, tacks, tmp_path):
+        """显式 acks_late=False 不等于「已声明」：仍需周期/启动/豁免归类。"""
+        write(
+            tmp_path,
+            "alpha/tasks.py",
+            "from celery import shared_task\n\n\n@shared_task(acks_late=False)\ndef eager_ack():\n    return 1\n",
+        )
+        assert tacks.scan_task_declarations()[0]["status"] == "violation"
+
+    def test_periodic_task_self_heals(self, tacks, tmp_path):
+        """@register_as_period_task：调度自愈，自动豁免（重投反而引入重复执行）。"""
+        write(
+            tmp_path,
+            "alpha/tasks.py",
+            "from celery import shared_task\n\n\n@shared_task\n@register_as_period_task(interval=300)\ndef clean_job():\n    return 1\n",
+        )
+        records = tacks.scan_task_declarations()
+        assert records[0]["status"] == "ok" and records[0]["policy"] == "periodic"
+
+    def test_startup_task_self_heals(self, tacks, tmp_path):
+        """@after_app_ready_start：启动对账任务，自动豁免。"""
+        write(
+            tmp_path,
+            "alpha/tasks.py",
+            "from celery import shared_task\n\n\n@shared_task\n@after_app_ready_start\ndef bootstrap():\n    return 1\n",
+        )
+        records = tacks.scan_task_declarations()
+        assert records[0]["status"] == "ok" and records[0]["policy"] == "startup"
+
+    def test_exempt_entry_passes_with_reason(self, tacks, tmp_path, monkeypatch):
+        """豁免登记：EXEMPT 表按「模块:函数名」命中即放行（理由必填由表结构自证）。"""
+        write(
+            tmp_path,
+            "alpha/tasks.py",
+            "from celery import shared_task\n\n\n@shared_task\ndef notify_fanout():\n    return 1\n",
+        )
+        monkeypatch.setitem(tacks.EXEMPT, "alpha.tasks:notify_fanout", "重投=重复通知（非幂等）")
+        records = tacks.scan_task_declarations()
+        assert records[0]["status"] == "exempt"
+
+    def test_kernel_package_path_maps_to_import_name(self, tacks, tmp_path, monkeypatch):
+        """内核包路径剥离：packages/xadmin-common/common/… → common.…（与任务名同口径）。"""
+        monkeypatch.setattr(tacks, "SCAN_DIRS", ["packages/xadmin-common/common"])
+        write(
+            tmp_path,
+            "packages/xadmin-common/common/tasks.py",
+            "from celery import shared_task\n\n\n@shared_task\ndef kernel_task():\n    return 1\n",
+        )
+        records = tacks.scan_task_declarations()
+        assert records[0]["task"] == "common.tasks:kernel_task"
+
+    def test_exemption_entries_all_have_reasons(self, tacks):
+        """豁免表结构守护：登记必须写理由（空理由=逃逸口）。"""
+        assert tacks.EXEMPT, "豁免表不应为空（存在真实豁免任务）"
+        assert all(reason.strip() for reason in tacks.EXEMPT.values())

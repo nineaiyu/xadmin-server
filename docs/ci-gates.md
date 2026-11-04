@@ -20,6 +20,7 @@
 | `lint.yml` | Captcha clean-cut gate | 旧图片码模式 / `CaptchaStore` / `CaptchaAuth` / `captcha_key` / `captcha_code` 不得复活（统一协议是唯一路径） | `scripts/check_captcha_legacy.py` | `python scripts/check_captcha_legacy.py` |
 | `lint.yml` | Captcha asset gate | 背景图库 manifest：许可 / 来源 / 路径穿越 / 扩展名 / sha256 / 2MB 体积；空 files = 程序化兜底 | `scripts/check_captcha_assets.py` | `python scripts/check_captcha_assets.py` |
 | `lint.yml` | Menu title gate | 视图类与 `@action` 的 docstring 首行 ≤24 字（首行 = 菜单显示名 / 操作日志 module，详细说明下沉后续段落） | `scripts/check_menu_titles.py` | `python scripts/check_menu_titles.py` |
+| `lint.yml` | Task acks policy gate | Celery `@shared_task` 必须显式声明投递语义：`acks_late=True`（一次性任务，实现体须幂等）/ 周期·启动任务自愈（伴随 `@register_as_period_task` / `@after_app_ready_start`）/ `EXEMPT` 表登记豁免理由——新增任务漏声明即红（worker 崩溃丢消息 = 丢工作） | `scripts/check_task_acks.py` | `python scripts/check_task_acks.py` |
 | `lint.yml` | Doc facts gate | 文档"当前事实"防漂移（版本 / 端口 / workflow 参数等，FACTS 表逐条登记） | `scripts/check_doc_facts.py` | `python scripts/check_doc_facts.py` |
 | `lint.yml` | Doc index gate | 文档索引覆盖（防孤儿文档：`docs/` 内容型文档必须登记索引）；若存在 `plans/archive/`：逐篇登记 plans/README，且不得出现在 docs/README 主索引（当前归档区已清空，规则保留） | `scripts/check_doc_index.py` | `python scripts/check_doc_index.py` |
 | `lint.yml` | Doc paths gate | 组件手册（主册 + `handbook-backend/frontend` 分册）/ 活跃文档引用的代码路径必须可达 | `scripts/check_doc_paths.py` | `python scripts/check_doc_paths.py` |

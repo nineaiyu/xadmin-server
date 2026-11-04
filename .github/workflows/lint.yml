@@ -150,6 +150,11 @@ jobs:
         # 菜单显示名取自 docstring 首行：首行超 24 字会撑破菜单树与授权选择器
         run: python scripts/check_menu_titles.py
 
+      - name: Check celery task acks policy
+        # 任务投递可靠性：@shared_task 必须显式声明 acks_late=True / 周期·启动自愈 / 豁免登记
+        # （漏声明的按需任务在 worker 崩溃时丢消息 = 丢工作，审查 BE-M1 的根因收口）
+        run: python scripts/check_task_acks.py
+
   doc-facts:
     name: Doc facts gate
     runs-on: ubuntu-latest
