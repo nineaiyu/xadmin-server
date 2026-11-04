@@ -68,16 +68,20 @@
 | [ops/monitoring-stack.md](ops/monitoring-stack.md) | 监控参考栈（Prometheus + Grafana + blackbox + 告警桥接 + systemd 单元） |
 | [ops/release-checklist.md](ops/release-checklist.md) | 发布窗口 checklist（基线门禁 + 执行记录） |
 | [ops/performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（silk + k6） |
+| [ops/dev-stack-network.md](ops/dev-stack-network.md) | **开发 / 测试栈网络纪律**：端口与服务的暴露面清单（仅内网可达的依据）、自检命令与单机收紧建议（真实密钥 + DEBUG 栈不设公网防线） |
 
 ## 四、维护与决策（长期演进）
 
 | 文档 | 内容 |
 |------|------|
-| [adr/README.md](adr/README.md) | **架构决策记录索引（94 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
+| [adr/README.md](adr/README.md) | **架构决策记录索引（96 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
 | [plans/README.md](plans/README.md) | 规划与治理：活跃台账（**工作区级**开发任务总清单 / 长期任务方案 / 触发制任务清单 / 保留任务决策 / 5.0.1 发布清单 + 四域与种子映射 / 验证码实施细则 / 候选提案）；**已完成的一次性方案与审查快照已于 2026-10-27 / 2026-10-30 分批清理**（去向见 [plans/README.md](plans/README.md) 末尾） |
 | [ci-gates.md](ci-gates.md) | **CI 门禁统一清单**：全部流水线门禁与守护测试的登记处（守护语义 / 所在 workflow / 本地复跑；新增门禁必须登记） |
 | [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线概览）；历史履历已清理 |
 | [asvs-mapping.md](asvs-mapping.md) | **OWASP ASVS L1/L2 对照表**：安全现状映射 + 差距项归属（自动化可下沉 / 接受项 / 触发条件），用于回答客户安全问卷 |
+| [audit/2026-11-03-backend.md](audit/2026-11-03-backend.md) | **后端功能与数据链路审查报告（2026-11-03）**：只读逐文件审查 + 全量测试/门禁验证；问题清单（3 中 / 6 低）、肯定项与未覆盖面；工作区级三域合并总审查（前端 / 后端 / 安全统一口径、去重与修复优先级）另见工作区根 `docs/audit/2026-11-03-full-review.md` |
+| [audit/2026-11-03-backend-security-fixes.md](audit/2026-11-03-backend-security-fixes.md) | **审查修复报告（2026-11-03）**：后端 BE-M1~M3 / BE-L1~L6 与服务端安全项 SEC-M2 / SEC-L1~L3 的逐项修复方式、守护测试与部署确认清单 |
+| [audit/2026-11-03-backend-security-gap-closure.md](audit/2026-11-03-backend-security-gap-closure.md) | **查漏补缺与根因治理报告（2026-11-03）**：全部后端/安全条目（含观察项）逐条回码复核；补做项（操作日志告警出口、doctor 的 Redis AOF 与 beat 存活自检、认证 Cookie 单一读取入口）；三项机制化（`check_task_acks` 门禁 / Cookie 入口守护 / 敏感键注册表全量守护）与自测证据；9241 vs 8013 用例数差异定谳（pytest nodeids 缓存累计口径）；全量验证记录与待人工项 |
 
 ## 五、目录结构与维护约定
 
