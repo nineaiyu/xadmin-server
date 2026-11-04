@@ -106,7 +106,11 @@ services:
     container_name: xadmin-redis
     hostname: xadmin-redis
     restart: always
-    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required - run ops/dev_up.sh (auto-passes from config.yml), or set it in .env (see .env.example) / environment}", "--port", "${REDIS_PORT:-6379}" ]
+    # AOF 追加持久化（审查修复 BE-L6）：该实例同时承载缓存 / WS 通道层 / Celery broker
+    #   三个逻辑库，broker 消息（异步导入导出、Webhook 投递/重试）依赖持久化存活——
+    #   RDB 快照的崩溃丢消息窗口可达分钟级，AOF（everysec）收敛到 ≤1s。
+    #   确有「纯缓存、允许全量丢失」的特殊部署可显式置 REDIS_APPENDONLY: "no"。
+    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required - run ops/dev_up.sh (auto-passes from config.yml), or set it in .env (see .env.example) / environment}", "--port", "${REDIS_PORT:-6379}", "--appendonly", "${REDIS_APPENDONLY:-yes}" ]
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       REDIS_PORT: ${REDIS_PORT:-6379}
