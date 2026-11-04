@@ -20,6 +20,7 @@ from common.core.throttle import RegisterThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from identity.models import DeptInfo, UserInfo
+from identity.services.auth_cookie import session_token_response
 from identity.services.auth_login import complete_login
 from identity.services.token_issue_login import issue_session_token
 from identity.utils.auth import decrypt_submitted, verify_sms_email_code
@@ -146,4 +147,4 @@ class RegisterViewAPIView(GenericAPIView):
             return mfa_response
         # 会话登记并绑定 sid claim；last_login 由签发函数统一刷新
         result = issue_session_token(request, user, UserLoginLog.LoginTypeChoices.USERNAME)
-        return ApiResponse(data=result)
+        return session_token_response(request, result)

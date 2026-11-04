@@ -133,3 +133,26 @@ class TestBuildLoginCapabilities:
         )
         cap = build_login_capabilities()
         assert cap["oauth"] == [{"key": "github", "name": "GitHub", "flavor": "github"}]
+
+
+class TestAuthTransportProjection:
+    """auth_transport 投影(HttpOnly Cookie 开关的只读下发)。"""
+
+    def test_default_header(self, settings):
+        """开关默认关闭:投影 header(前端保持现有响应体 + JS Cookie 模式)。"""
+        cap = build_login_capabilities()
+        assert cap["auth_transport"] == "header"
+
+    def test_switch_on_projects_cookie(self, settings):
+        settings.AUTH_COOKIE_HTTPONLY = True
+        cap = build_login_capabilities()
+        assert cap["auth_transport"] == "cookie"
+
+    def test_endpoint_serves_field(self, settings, api_client):
+        """能力清单端点实际下发 auth_transport 字段(集成方判定来源)。"""
+        resp = api_client.get("/api/identity/auth/capabilities")
+        assert resp.status_code == 200
+        assert resp.data["data"]["auth_transport"] == "header"
+        settings.AUTH_COOKIE_HTTPONLY = True
+        resp = api_client.get("/api/identity/auth/capabilities")
+        assert resp.data["data"]["auth_transport"] == "cookie"

@@ -25,6 +25,22 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
+def read_auth_cookie(request: Any, name: str) -> str:
+    """认证 Cookie 的**单一读取入口**（HTTP_COOKIE → parse_cookie → 值）。
+
+    所有取认证凭证 Cookie 的位置（access 的 X-Token 回退、refresh 的
+    X-Refresh-Token 双读、未来的新 Cookie 面）必须经本函数，不得各写一份
+    ``request.META.get("HTTP_COOKIE")`` + ``parse_cookie``——分散解析会在
+    HttpOnly 双模式（AUTH_COOKIE_HTTPONLY）演进时出现口径分叉（如大小写、
+    多值、缺键归一）。守护测试 ``tests/unit/common/test_auth_cookie_entry.py``
+    静态扫描全仓 ``parse_cookie`` / ``HTTP_COOKIE`` 直读点，绕开本入口即红。
+    """
+    cookies = request.META.get("HTTP_COOKIE")
+    if not cookies:
+        return ""
+    return str(parse_cookie(cookies).get(name) or "")
+
+
 def auth_required(view_func: Any) -> Any:
     @functools.wraps(view_func)
     def wrapper(view: Any, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -154,6 +170,43 @@ def check_api_application_rate_limit(application: Any) -> None:
         raise ReadableThrottled(detail=_("Rate limit exceeded for this application"))
 
 
+def enforce_cookie_csrf(request: Any) -> None:
+    """Cookie 通道非安全方法的 CSRF 服务端兜底（Bearer / PAT 头凭证不经此路径）。
+
+    Cookie 是浏览器自动携带的环境凭证，前端仅靠 SameSite 收敛不够（Cookie 回退
+    认证使跨站表单 / 脚本可借登录态发起写请求）。规则：
+
+    - 带 ``Origin`` 且不可信 → 拒绝；无 Origin 但带 ``Referer`` 时按其源判定；
+    - 两者都缺失时按 ``CSRF_REQUIRE_ORIGIN``（默认放行，保持 CLI / 脚本
+      直调无浏览器头的兼容口径）。
+
+    独立为模块级函数：认证类之外还有「凭证经 Cookie 而非认证链」的端点
+    （如刷新端点读 X-Refresh-Token Cookie），必须复用同一判定，不得另写一套。
+    """
+    if str(request.method or "").upper() in CookieJWTAuthentication.CSRF_SAFE_METHODS:
+        return
+    origin = str(request.META.get("HTTP_ORIGIN") or "").strip()
+    referer = str(request.META.get("HTTP_REFERER") or "").strip()
+    if not origin and not referer:
+        if kernel_setting("CSRF_REQUIRE_ORIGIN"):
+            raise PermissionDenied(_("Cross-site request rejected: Origin header is required"))
+        return
+    if origin:
+        source = origin
+    else:
+        parsed = urlsplit(referer)
+        source = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else ""
+    if source and CookieJWTAuthentication._origin_allowed(request, source):
+        return
+    logger.warning(
+        "cookie auth csrf rejected. path:%s origin:%s referer:%s",
+        getattr(request, "path", ""),
+        origin,
+        referer,
+    )
+    raise PermissionDenied(_("Cross-site request rejected: the request origin is not allowed"))
+
+
 class ServerAccessToken(AccessToken):
     """
     自定义的token方法是为了登出的时候，将 access token 禁用
@@ -221,22 +274,23 @@ class CookieJWTAuthentication(JWTAuthentication):
     #: GET / HEAD / OPTIONS / TRACE 之外的方法一律校验）
     CSRF_SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
 
+    #: access token 的 Cookie 名（与前端 TokenKey 一致；双模式同名单签发，
+    #: 开关切换时服务端 Cookie 原位覆写旧 JS Cookie）
+    AUTH_ACCESS_COOKIE_NAME = "X-Token"
+
     def get_header(self, request: Any) -> Any:
         header = super().get_header(request)
         if not header:
-            cookies = request.META.get("HTTP_COOKIE")
-            if cookies:
-                cookie_dict = parse_cookie(cookies)
-                if cookie_dict and cookie_dict.get("X-Token"):
-                    header = f"Bearer {cookie_dict.get('X-Token')}".encode()
+            token = read_auth_cookie(request, self.AUTH_ACCESS_COOKIE_NAME)
+            if token:
+                header = f"Bearer {token}".encode()
         return header
 
     def _credentials_from_cookie(self, request: Any) -> bool:
         """凭证是否走 X-Token Cookie 通道（Authorization 头缺席时才可能）。"""
         if JWTAuthentication.get_header(self, request):
             return False
-        cookies = request.META.get("HTTP_COOKIE")
-        return bool(cookies and parse_cookie(cookies).get("X-Token"))
+        return bool(read_auth_cookie(request, self.AUTH_ACCESS_COOKIE_NAME))
 
     @staticmethod
     def _origin_allowed(request: Any, origin: str) -> bool:
@@ -274,37 +328,8 @@ class CookieJWTAuthentication(JWTAuthentication):
         return False
 
     def _enforce_cookie_csrf(self, request: Any) -> None:
-        """Cookie 通道非安全方法的 CSRF 服务端兜底（Bearer / PAT 头凭证不经此路径）。
-
-        Cookie 是浏览器自动携带的环境凭证，前端仅靠 SameSite 收敛不够（本类
-        get_header 的 Cookie 回退使跨站表单 / 脚本可借登录态发起写请求）。规则：
-
-        - 带 ``Origin`` 且不可信 → 拒绝；无 Origin 但带 ``Referer`` 时按其源判定；
-        - 两者都缺失时按 ``CSRF_REQUIRE_ORIGIN``（默认放行，保持 CLI / 脚本
-          直调无浏览器头的兼容口径）。
-        """
-        if str(request.method or "").upper() in self.CSRF_SAFE_METHODS:
-            return
-        origin = str(request.META.get("HTTP_ORIGIN") or "").strip()
-        referer = str(request.META.get("HTTP_REFERER") or "").strip()
-        if not origin and not referer:
-            if kernel_setting("CSRF_REQUIRE_ORIGIN"):
-                raise PermissionDenied(_("Cross-site request rejected: Origin header is required"))
-            return
-        if origin:
-            source = origin
-        else:
-            parsed = urlsplit(referer)
-            source = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else ""
-        if source and self._origin_allowed(request, source):
-            return
-        logger.warning(
-            "cookie auth csrf rejected. path:%s origin:%s referer:%s",
-            getattr(request, "path", ""),
-            origin,
-            referer,
-        )
-        raise PermissionDenied(_("Cross-site request rejected: the request origin is not allowed"))
+        """Cookie 通道非安全方法的 CSRF 兜底（实现统一走模块级 enforce_cookie_csrf）。"""
+        enforce_cookie_csrf(request)
 
     def authenticate(self, request: Any) -> Any:
         # Cookie 通道先过 CSRF 兜底再验 token：Bearer / PAT 头凭证不经此分支

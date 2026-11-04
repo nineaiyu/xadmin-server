@@ -85,6 +85,7 @@ CAPTCHA_TICKET_SECRET:
 # HTTPS 部署安全头（默认 false = HTTP 直连部署零影响）：
 # 开启后强制 Secure Cookie（Session/CSRF）+ HSTS 一年（含子域/preload）+ nosniff，
 # 仅在 TLS 终止于反向代理/网关且对外入口为 HTTPS 时开启
+# ⚠ 未开启的 HTTP 直连部署：无 HSTS，文档站（/api-docs）会话 Cookie 不带 Secure——
 # SECURITY_HTTPS_ENABLED: false
 # 是否由 Django 执行 HTTP→HTTPS 301 跳转：仅当代理层会正确传递 X-Forwarded-Proto: https
 # 时才可开启；纯 TCP stream 代理（内置 nginx 默认形态）下开启会造成重定向循环
@@ -95,6 +96,8 @@ CAPTCHA_TICKET_SECRET:
 # CORS_ALLOWED_ORIGINS:
 #   - https://xadmin.example.com
 
+# CSRF_REQUIRE_ORIGIN: true
+# AUTH_COOKIE_HTTPONLY: false
 # Database setting, Support sqlite3, mysql, postgres ....
 # 数据库设置
 # ### 更多数据库配置，参考官方文档：https://docs.djangoproject.com/zh-hans/5.0/ref/databases/

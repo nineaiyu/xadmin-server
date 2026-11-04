@@ -63,6 +63,11 @@ def build_login_capabilities() -> dict[str, Any]:
     return {
         "access": settings.SECURITY_LOGIN_ACCESS_ENABLED,
         "lifetime": settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME").days,
+        # 登录态 token 承载模式（HttpOnly Cookie 开关的只读投影）：header = 响应体
+        # 下发、前端写 Cookie；cookie = 服务端 Set-Cookie HttpOnly 下发、响应体剥离
+        # token 明文。前端/集成方以此预判登录响应形态；会话内的运行时判定以签发
+        # 响应的 X-Auth-Mode 标记 Cookie 为准（见 identity/services/auth_cookie.py）。
+        "auth_transport": "cookie" if getattr(settings, "AUTH_COOKIE_HTTPONLY", False) else "header",
         "basic": {
             "enabled": settings.SECURITY_LOGIN_BY_BASIC_ENABLED,
             "captcha": captcha_globally_enabled() and settings.SECURITY_LOGIN_CAPTCHA_ENABLED,

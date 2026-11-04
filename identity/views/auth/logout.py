@@ -19,6 +19,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from common.cache.storage import BlackAccessTokenCache, SessionTokenRevokedCache
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from identity.services.auth_cookie import clear_auth_cookies, refresh_token_from_cookie
 from mfa.cache import UserConfirmStateCache
 
 
@@ -60,11 +61,18 @@ class LogoutAPIView(GenericAPIView):
                     )
                 except Exception:  # noqa: BLE001 会话管理属附加能力
                     pass
-        if request.data.get("refresh"):
+        # refresh 拉黑双读：body 优先（Header 模式），缺失回落 X-Refresh-Token Cookie
+        # （HttpOnly Cookie 模式下 refresh 只在 Cookie 里，登出必须同样拉黑，
+        # 否则 Cookie 会话登出后仍可续期）。已失效/已黑名单不阻断本地登出。
+        refresh_raw: Any = request.data.get("refresh") or refresh_token_from_cookie(request)
+        if refresh_raw:
             try:
-                token = RefreshToken(request.data.get("refresh"))
-                token.blacklist()  # 登出账户，并且将账户的access 和 refresh token 加入黑名单
+                RefreshToken(refresh_raw).blacklist()
             except Exception:  # noqa: BLE001 refresh 缺失/已失效/已黑名单不阻断登出（本地登出仍完成）
                 pass
         logout(request)
-        return ApiResponse()
+        response = ApiResponse()
+        # 无条件清理服务端下发的认证 Cookie（含模式标记）：开关切换窗口内新旧两种
+        # 会话形态都在登出时清干净，不留「登出后 Cookie 仍可用」的窗口
+        clear_auth_cookies(response)
+        return response

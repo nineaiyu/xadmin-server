@@ -70,6 +70,10 @@ FORWARD_KEYS = [
     "SECURITY_LOGIN_BY_EMAIL_ENABLED",
     "SECURITY_LOGIN_BY_SMS_ENABLED",
     "SECURITY_LOGIN_BY_BASIC_ENABLED",
+    # 登录态 token 的 HttpOnly Cookie 承载开关（identity/services/auth_cookie.py 消费；
+    # 登录/刷新/模拟换签/能力清单四处读取，经 FORWARD_KEYS 支持 Setting 表热更——
+    # 灰度切换不需要重启进程）
+    "AUTH_COOKIE_HTTPONLY",
     # 注册规则
     "SECURITY_REGISTER_ACCESS_ENABLED",
     "SECURITY_REGISTER_CAPTCHA_ENABLED",

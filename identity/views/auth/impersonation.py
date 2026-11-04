@@ -16,6 +16,7 @@ from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from identity.services.auth_cookie import session_token_response
 from identity.utils.impersonation import (
     blacklist_impersonated_refresh,
     is_impersonating,
@@ -49,4 +50,7 @@ class ImpersonateExitAPIView(GenericAPIView):
         blacklist_impersonated_refresh(request)
         # 模拟期间积累的敏感操作确认状态属于被模拟用户，退出即清空
         UserConfirmStateCache(request.user).clear()
-        return ApiResponse(data=data, detail=_("Exited impersonation of user {}").format(request.user.username))
+        # 为发起人重签的 token 同样经统一出口：Cookie 模式下重下 HttpOnly Cookie
+        return session_token_response(
+            request, data, detail=_("Exited impersonation of user {}").format(request.user.username)
+        )

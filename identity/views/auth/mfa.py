@@ -23,6 +23,7 @@ from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils.request import get_request_ip
 from common.utils.verify_code import TokenTempCache
+from identity.services.auth_cookie import session_token_response
 from identity.services.auth_login import (
     complete_login,
     evaluate_login_policy_for_request,
@@ -183,4 +184,4 @@ class LoginMFAVerifyAPIView(APIView):
         TokenTempCache.expired_cache_token(request.data.get("mfa_token"))
         # 会话登记 + sid claim 绑定 + 生命周期 + 改密标记 + last_login（与账密/验证码登录同口径）
         result = issue_session_token(request, user, UserLoginLog.LoginTypeChoices.USERNAME)
-        return ApiResponse(data=result)
+        return session_token_response(request, result)

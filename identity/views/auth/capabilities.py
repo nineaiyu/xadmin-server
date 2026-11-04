@@ -44,6 +44,7 @@ class LoginCapabilitiesAPIView(GenericAPIView):
                     properties={
                         "access": build_basic_type(OpenApiTypes.BOOL),
                         "lifetime": build_basic_type(OpenApiTypes.NUMBER),
+                        "auth_transport": build_basic_type(OpenApiTypes.STR),
                         "basic": _way_schema(
                             ("captcha", build_basic_type(OpenApiTypes.BOOL)),
                             ("captcha_types", build_array_type(build_basic_type(OpenApiTypes.STR) or {})),

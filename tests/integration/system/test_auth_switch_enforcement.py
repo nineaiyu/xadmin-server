@@ -28,7 +28,17 @@ class TestCapabilitiesEndpoint:
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000
         data = resp.data["data"]
-        assert set(data) == {"access", "lifetime", "basic", "code", "register", "reset", "oauth"}
+        # auth_transport:登录态 token 承载模式的只读投影(HttpOnly Cookie 开关)
+        assert set(data) == {
+            "access",
+            "lifetime",
+            "auth_transport",
+            "basic",
+            "code",
+            "register",
+            "reset",
+            "oauth",
+        }
         assert set(data["basic"]) == {
             "enabled",
             "captcha",

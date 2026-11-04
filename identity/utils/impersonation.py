@@ -123,10 +123,17 @@ def stop_impersonation(request: Any) -> Any:
 
 
 def blacklist_impersonated_refresh(request: Any) -> None:
-    """拉黑请求体携带的模拟态 refresh token（缺失/已失效静默跳过，不阻断退出）。"""
+    """拉黑请求体携带的模拟态 refresh token（缺失/已失效静默跳过，不阻断退出）。
+
+    body 缺失时回落 ``X-Refresh-Token`` Cookie（HttpOnly Cookie 模式下模拟态
+    refresh 只在 Cookie 里，前端不可读、body 必空——退出模拟同样必须拉黑，
+    否则被模拟用户的凭证在退出后仍可续期）。
+    """
     from rest_framework_simplejwt.tokens import RefreshToken
 
-    refresh_raw = (request.data or {}).get("refresh")
+    from identity.services.auth_cookie import refresh_token_from_cookie
+
+    refresh_raw: Any = (request.data or {}).get("refresh") or refresh_token_from_cookie(request)
     if not refresh_raw:
         return
     try:

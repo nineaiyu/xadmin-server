@@ -24,6 +24,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from common.utils.request import get_request_ip
 from identity.models import UserInfo
+from identity.services.auth_cookie import session_token_response
 from identity.services.auth_login import (
     complete_login as complete_login,  # noqa: F401 显式再导出（PEP 484 语义）
 )
@@ -139,7 +140,7 @@ class BasicLoginAPIView(TokenObtainPairView):
         if mfa_response:
             return mfa_response
         data = issue_session_token(request, user, _login_type_for(user))
-        return ApiResponse(data=data)
+        return session_token_response(request, data)
 
 
 class VerifyCodeLoginAPIView(GenericAPIView):
@@ -232,4 +233,4 @@ class VerifyCodeLoginAPIView(GenericAPIView):
         if mfa_response:
             return mfa_response
         result = issue_session_token(request, user, login_type)
-        return ApiResponse(data=result)
+        return session_token_response(request, result)

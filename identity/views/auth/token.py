@@ -19,6 +19,7 @@ from common.core.throttle import TempTokenThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils.request import get_request_ident
 from common.utils.token import make_token_cache
+from identity.services.auth_cookie import refresh_token_from_cookie, session_token_response
 from identity.utils.auth import get_token_lifetime
 
 
@@ -42,9 +43,31 @@ class TempTokenAPIView(GenericAPIView):
 
 
 class RefreshTokenAPIView(TokenRefreshView):
-    """刷新Token"""
+    """刷新Token
+
+    匿名可达（simplejwt TokenViewBase 自带空认证/权限链，过期 access 不会阻断
+    刷新）；refresh 凭证支持**双读**：请求体优先，缺失时回落 ``X-Refresh-Token``
+    Cookie（HttpOnly Cookie 模式下前端读不到 token，只能走 Cookie）。Cookie 凭证
+    是浏览器自动携带的环境凭证，回落时按登录态 API 同一口径执行 Origin/Referer
+    的 CSRF 兜底（跨站源拒绝），body 凭证不受影响。
+    """
+
+    def _merge_cookie_refresh(self, request: Any) -> None:
+        """body 无 refresh 且 Cookie 有值时并入请求体（Cookie 通道先过 CSRF）。"""
+        if request.data.get("refresh"):
+            return
+        cookie_refresh = refresh_token_from_cookie(request)
+        if not cookie_refresh:
+            return
+        from common.core.auth.authentication import enforce_cookie_csrf
+
+        enforce_cookie_csrf(request)
+        request._full_data = {**request.data, "refresh": cookie_refresh}
 
     def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        self._merge_cookie_refresh(request)
         data = super().post(request, *args, **kwargs).data
         data.update(get_token_lifetime(request.user))
-        return ApiResponse(data=data)
+        # 轮换开关开启时响应含新 refresh：Cookie 模式必须随响应重下两条 Cookie，
+        # 否则旧 refresh 已被拉黑、新 refresh 只在 body（Cookie 会话拿不到）即死锁
+        return session_token_response(request, data)

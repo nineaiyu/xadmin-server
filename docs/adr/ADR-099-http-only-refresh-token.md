@@ -1,9 +1,12 @@
 # ADR-099：refresh token 迁移 HttpOnly Cookie（结构性安全候选）
 
-- 状态：**暂不实施（触发制）**
+- 状态：**被取代（Superseded by ADR-101）**
 - 日期：2026-10-30
 - 关联：[ADR-001](ADR-001-csrf-jwt-only.md)（JWT-only / CSRF 不启用）、
   [ADR-100](ADR-100-review-retained-decisions.md)（审查保留项处置）、
+  [ADR-101](ADR-101-auth-cookie-dual-mode.md)（**取代本篇**：触发条件①由总审查
+  SEC-M1 命中，落地为开关化双模式——access 与 refresh 同时迁 HttpOnly Cookie，
+  与本篇 §四的候选轮廓差异见 ADR-101 §一）、
   `xadmin-client/src/utils/auth.ts`、`packages/xadmin-common/common/core/auth/authentication.py`
 
 ## 一、背景

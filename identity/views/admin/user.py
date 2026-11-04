@@ -38,6 +38,7 @@ from identity.serializers.user import (
     record_create_password_decrypt_failure,
 )
 from identity.services import user_admin
+from identity.services.auth_cookie import session_token_response
 from identity.utils import user_invite
 from identity.utils.impersonation import is_impersonating
 from mfa.confirm import UserConfirmation, ensure_user_confirmed
@@ -332,7 +333,8 @@ class UserViewSet(
         ok, detail, data = user_admin.impersonate_user(request, self.get_object())
         if not ok:
             return ApiResponse(code=1001, detail=detail)
-        return ApiResponse(data=data, detail=detail)
+        # 模拟态 token 下发同样经统一出口：Cookie 模式下浏览器切换到被模拟身份的 Cookie
+        return session_token_response(request, data, detail=detail)
 
     @extend_schema(
         request=OpenApiRequest(

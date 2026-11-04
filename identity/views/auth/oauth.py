@@ -31,6 +31,7 @@ from common.utils import get_logger
 from identity.models.oauth import UserOAuthBinding
 from identity.serializers.oauth import OAuthBindingSerializer
 from identity.serializers.userinfo import decrypt_submitted_password
+from identity.services.auth_cookie import session_token_response
 from identity.services.token_issue_login import issue_session_token
 from identity.utils.oauth import (
     OAuthError,
@@ -306,7 +307,7 @@ class OAuthCallbackAPIView(GenericAPIView):
 
         # 会话登记 + sid claim + 生命周期 + 改密标记 + last_login（与本地登录同口径）
         result = issue_session_token(request, user, UserLoginLog.LoginTypeChoices.OAUTH)
-        response = ApiResponse(data=result)
+        response = session_token_response(request, result)
         clear_state_cookie(response)
         return response
 

@@ -29,6 +29,7 @@
 | `SECURITY_HTTPS_REDIRECT_ENABLED` | 同名 | `false` | 否 | 要求代理传递 `X-Forwarded-Proto` |
 | `CORS_ALLOW_ALL_ORIGINS` / `CORS_ALLOWED_ORIGINS` | 同名 | `false` / `[]` | 跨域部署必填 | 同源（nginx 反代）部署无需配置 |
 | `CSRF_TRUSTED_ORIGINS` / `CSRF_REQUIRE_ORIGIN` | 同名 | `[]` / `false` | 否 | Cookie 认证（X-Token 回退）写请求的服务端 CSRF 兜底：`Origin`（或 `Referer` 源）须命中同源或 `CSRF_TRUSTED_ORIGINS` 白名单；两者都缺失时按 `CSRF_REQUIRE_ORIGIN` 决定（默认放行，保持 CLI/脚本兼容）。Bearer / PAT 头认证不受影响 |
+| `AUTH_COOKIE_HTTPONLY` | 同名 | `false` | 否 | 登录态 token 的服务端 HttpOnly Cookie 承载（双模式开关）：`false` = 现状（token 在响应体、前端写 JS Cookie）；`true` = 登录/刷新/模拟换签下发 `HttpOnly; SameSite=Lax; Secure(HTTPS)` 的 X-Token / X-Refresh-Token 并从响应体剥离明文（`X-Auth-Mode` 标记 + capabilities 的 `auth_transport` 字段供前端判定）。Bearer/PAT 双读兼容；**分阶段上线顺序与回滚见 [ADR-101](../adr/ADR-101-auth-cookie-dual-mode.md) §三**（系统配置页可热更，免重启） |
 | `MEDIA_SIGNED_URL_REQUIRED` / `MEDIA_SIGNED_URL_TTL` / `MEDIA_SIGNED_URL_BIND_USER` | 同名 | `true` / `3600` / `true` | 否 | 敏感媒体命名空间（导出 / 附件 / 对象存储缓存）的签名 URL：开关（关闭回落登录态）/ 有效期（秒）/ 是否绑定签发用户（关闭回落仅「路径+过期」旧口径，他人可复用链接，仅供确有共享需求的部署放宽） |
 | `LANGUAGE_CODE` / `TIME_ZONE` | 同名 | `zh-hans` / `Asia/Shanghai` | 否 | |
 | `MEDIA_X_ACCEL_PREFIX` | 同名 | 空 | 否 | 受鉴权媒体的 nginx 内部重定向前缀；生产推荐 `/_protected_media`（需 nginx 声明同名前缀的 `internal` location，见 [§3.2](#32-受鉴权媒体与出站请求2026-09-27)） |
