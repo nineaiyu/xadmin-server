@@ -66,6 +66,19 @@ class TestCSPHeaders:
         response = api_client.get("/media/not-exists.txt")
         assert CSP_HEADER_REPORT_ONLY not in response.headers
 
+    def test_api_docs_prefix_excluded_in_enforce_mode(self, api_client, monkeypatch):
+        """/api-docs 前缀豁免在切 enforce 后同样成立：Swagger/Redoc（sidecar 静态
+        资源）不背 Django 侧 CSP——api-docs 的页面层 CSP 由 nginx 强制头承担
+        （xadmin-web/default.conf），Django 侧切 enforce 对其零影响、零打断风险。"""
+        patch_config(monkeypatch, "CSP_MODE", "enforce")
+        response = api_client.get("/api-docs/login/")
+        assert response.status_code == 200, response.status_code
+        assert CSP_HEADER not in response.headers
+        assert CSP_HEADER_REPORT_ONLY not in response.headers
+        # 对照组：非豁免路径在同一档位下确实拿到强制头（证明豁免是路径级语义）
+        enforced = api_client.get(HEALTH_URL)
+        assert CSP_HEADER in enforced.headers
+
 
 class TestCSPReportEndpoint:
     def test_report_logged_and_throttled(self, api_client, caplog, settings):

@@ -192,6 +192,46 @@ class TestReadyExcludesDoctor:
         assert calls == [], "doctor 命令下 ready() 不应做模块配置校验（否则 doctor 无法诊断非法配置）"
 
 
+class TestSecurityPostureCheck:
+    """安全基线三态自检（审查修复 SEC-L1/L2/L3 的 doctor 落实项）。
+
+    三态设计「默认取兼容口径、部署按风险面收紧」——doctor 的职责是把默认宽松档
+    点名告警（不判失败），并对已收紧的部署给出通过。
+    """
+
+    def test_default_loose_mode_reports_advisories(self):
+        """默认宽松档（非 DEBUG）：CSRF / HTTPS / CSP 三条各给告警与收紧指引。"""
+        output = _run("doctor")
+        assert "安全基线" in output
+        assert "CSRF_REQUIRE_ORIGIN 未开启" in output
+        assert "SECURITY_HTTPS_ENABLED 未开启" in output
+        assert "CSP 运行期档位：report-only" in output
+        assert "失败 0" in output  # 只告警，不判失败
+
+    def test_tightened_flags_report_pass(self, settings):
+        """已收紧部署：三项均通过（CSRF / HTTPS 开启 + CSP 切 enforce）。"""
+        from system.models import SystemConfig
+
+        settings.DEBUG = False
+        settings.CSRF_REQUIRE_ORIGIN = True
+        settings.SECURITY_HTTPS_ENABLED = True
+        SystemConfig.objects.create(key="CSP_MODE", value="enforce", is_active=True)
+
+        output = _run("doctor")
+
+        assert "CSRF Origin 兜底已开启" in output
+        assert "HTTPS 安全头已开启" in output
+        assert "CSP 运行期档位：enforce" in output
+
+    def test_debug_env_exempted(self, settings):
+        """开发态（DEBUG）豁免：三条基线不告警。"""
+        settings.DEBUG = True
+        output = _run("doctor")
+        assert "开发态（DEBUG）豁免" in output
+        assert "CSRF_REQUIRE_ORIGIN 未开启" not in output
+        assert "SECURITY_HTTPS_ENABLED 未开启" not in output
+
+
 class TestVersionSyncCheck:
     """前后端版本一致性（doctor 第 8 项）：同工作区检出前端时比对，缺失跳过、不一致告警。"""
 
@@ -409,3 +449,98 @@ class TestStartupPermissionCheck:
         hands.check_permission_gaps()  # 不应抛出（自检失败不得阻塞启动）
 
         assert warnings and "跳过" in warnings[0]
+
+
+class TestRedisPersistenceCheck:
+    """Redis AOF 持久化自检（BE-L6 部署校验）：compose 默认开启、自管关闭要点名。"""
+
+    @staticmethod
+    def _patch_conn(monkeypatch, appendonly: str):
+        from types import SimpleNamespace
+
+        import django_redis
+
+        monkeypatch.setattr(
+            django_redis,
+            "get_redis_connection",
+            lambda _alias: SimpleNamespace(config_get=lambda _key: {"appendonly": appendonly}),
+        )
+
+    def test_aof_enabled_passes(self, monkeypatch):
+        self._patch_conn(monkeypatch, "yes")
+        output = _run("doctor")
+        assert "AOF 已开启" in output
+
+    def test_aof_disabled_warns_with_fix(self, monkeypatch):
+        self._patch_conn(monkeypatch, "no")
+        output = _run("doctor")
+        assert "AOF 未开启" in output
+        assert "Celery broker" in output
+        assert "appendonly yes" in output
+        assert "失败 0" in output  # 只告警不判失败
+
+    def test_unsupported_backend_skips(self, monkeypatch):
+        import django_redis
+
+        def boom(_alias):
+            raise RuntimeError("FakeRedis has no CONFIG GET")
+
+        monkeypatch.setattr(django_redis, "get_redis_connection", boom)
+        output = _run("doctor")
+        assert "无法读取 appendonly 配置" in output
+
+
+class TestBeatScheduleCheck:
+    """周期调度存活自检（BE-M2 根因治理：beat 停摆要能被发现）。"""
+
+    @staticmethod
+    def _make_task(name: str, last_run_at):
+        from django_celery_beat.models import IntervalSchedule, PeriodicTask
+
+        interval, _ = IntervalSchedule.objects.get_or_create(every=300, period=IntervalSchedule.SECONDS)
+        return PeriodicTask.objects.create(
+            name=name, task="system.tasks." + name, enabled=True, last_run_at=last_run_at, interval=interval
+        )
+
+    def test_no_enabled_tasks_skips(self):
+        output = _run("doctor")
+        assert "无启用的周期任务" in output
+
+    def test_fresh_schedule_passes(self):
+        from django.utils import timezone
+
+        self._make_task("fresh_job", timezone.now())
+        try:
+            output = _run("doctor")
+            assert "周期任务调度正常" in output
+        finally:
+            from django_celery_beat.models import PeriodicTask
+
+            PeriodicTask.objects.all().delete()
+
+    def test_stale_schedule_warns(self):
+        import datetime
+
+        from django.utils import timezone
+
+        self._make_task("stale_job", timezone.now() - datetime.timedelta(hours=3))
+        try:
+            output = _run("doctor")
+            assert "beat 疑似停摆" in output
+            assert "xadmin-celery-beat" in output
+            assert "失败 0" in output  # 只告警不判失败
+        finally:
+            from django_celery_beat.models import PeriodicTask
+
+            PeriodicTask.objects.all().delete()
+
+    def test_never_scheduled_warns(self):
+        self._make_task("idle_job", None)
+        try:
+            output = _run("doctor")
+            assert "从未运行" in output
+            assert "beat 疑似从未调度" in output
+        finally:
+            from django_celery_beat.models import PeriodicTask
+
+            PeriodicTask.objects.all().delete()

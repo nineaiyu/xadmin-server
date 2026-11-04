@@ -5,14 +5,18 @@
 检查项（只读，不修改任何数据）：
 1. 配置与密钥：SECRET_KEY 来源（显式 / 自动生成）与自动密钥文件权限；
 2. 数据库连通；
-3. Redis 缓存读写；
-4. 语言包编译（locale/*/LC_MESSAGES/*.mo 缺失或过期 → 界面回退英文）；
-5. 权限点缺口（代码路由 ↔ 库内权限点，非超管 403 的根因）；
-6. 内置种子（平台层 ``loadjson/`` + 各应用 ``seeds/``：清单/归属/引用，未注册应用告警）；
-7. 模块裁剪配置（config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE 有效性，
+3. Redis 缓存读写 + 持久化档位（appendonly，条目实现在 utils/platform/ops_doctor.py：
+   该实例同时是 Celery broker，AOF 关闭时崩溃丢消息窗口为分钟级，只告警不判失败）；
+4. 周期任务调度存活（同上模块：beat 停摆会让全部周期任务——含 Webhook 重试兜底
+   扫描——静默停跑，最近一次调度超 1 小时或从未调度即告警）；
+5. 语言包编译（locale/*/LC_MESSAGES/*.mo 缺失或过期 → 界面回退英文）；
+6. 权限点缺口（代码路由 ↔ 库内权限点，非超管 403 的根因）；
+7. 内置种子（平台层 ``loadjson/`` + 各应用 ``seeds/``：清单/归属/引用，未注册应用告警）；
+8. 模块裁剪配置（config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE 有效性，
    含停用模块的周期任务条目残留——重启后由启动期对账自动清理）；
-8. 前端契约镜像（contract/schema ↔ docs/schema；单仓检出自动跳过）；
-9. 前后端版本一致性（server/const.py ↔ xadmin-client/package.json；单仓检出自动跳过）。
+9. 安全基线三态（CSRF_REQUIRE_ORIGIN / SECURITY_HTTPS_ENABLED / CSP_MODE：默认宽松档只告警）；
+10. 前端契约镜像（contract/schema ↔ docs/schema；单仓检出自动跳过）；
+11. 前后端版本一致性（server/const.py ↔ xadmin-client/package.json；单仓检出自动跳过）。
 
 退出码：存在失败项返回 1（可用于 CI）；仅警告返回 0。
 
@@ -31,6 +35,12 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from system.utils.platform.captcha_doctor import captcha_risk_findings
+from system.utils.platform.ops_doctor import (
+    report_beat_schedule,
+    report_redis_persistence,
+    report_stale_module_periodic_tasks,
+)
+from system.utils.platform.security_doctor import report_security_posture
 
 PASS = "✅"
 WARN = "⚠️"
@@ -61,12 +71,15 @@ class Command(BaseCommand):
         self._check_secret_key()
         self._check_database()
         self._check_redis()
+        report_redis_persistence(self._report)  # Redis 持久化档位：条目实现在 utils/platform/ops_doctor.py
         self._check_locale()
         if not options["skip_permissions"]:
             self._check_permissions()
         self._check_seeds()
         self._check_modules()
+        report_beat_schedule(self._report)  # 周期调度存活（beat 停摆可发现）：同上
         self._check_captcha_risk()
+        report_security_posture(self._report)  # 安全基线三态：条目实现在 utils/platform/security_doctor.py
         self._check_ai_declarations()
         self._check_frontend_contract()
         self._check_version_sync()
@@ -315,44 +328,8 @@ class Command(BaseCommand):
             )
 
     def _check_module_periodic_tasks(self) -> None:
-        """任务层切片自检：停用模块的周期任务不应仍有启用条目。
-
-        注册期由 ``create_or_update_registered_periodic_tasks`` 跳过停用模块并清理
-        历史条目——本检查抓的是「改了配置还没重启」的窗口期残留，只提示不判失败。
-        """
-
-        from common.celery.decorator import get_register_period_tasks
-        from common.core.modules import resolve_modules
-        from task.services.periodic import ensure_tasks_registered
-
-        try:
-            from django_celery_beat.models import PeriodicTask
-        except ImportError:  # pragma: no cover - beat 未安装
-            return
-        disabled = resolve_modules().disabled
-        if not disabled:
-            return
-        ensure_tasks_registered()
-        disabled_paths = {
-            detail["task"]
-            for entry in get_register_period_tasks()
-            for _name, detail in entry.items()
-            if detail.get("module") in disabled
-        }
-        if not disabled_paths:
-            return
-        stale = list(
-            PeriodicTask.objects.filter(enabled=True, task__in=disabled_paths).values_list("name", flat=True)[
-                :DETAIL_LIMIT
-            ]
-        )
-        if stale:
-            self._report(
-                WARN,
-                "模块裁剪",
-                f"停用模块的周期任务仍启用：{'、'.join(stale)}",
-                "重启进程（启动期对账会自动清理重建周期任务）",
-            )
+        """任务层切片自检（实现在 utils/platform/ops_doctor.py，按域归组）。"""
+        report_stale_module_periodic_tasks(self._report, DETAIL_LIMIT)
 
     def _check_captcha_risk(self) -> None:
         """验证码风险档：反代信任、网段兜底与影子期样本检查。"""
