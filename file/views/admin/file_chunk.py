@@ -201,5 +201,9 @@ class ChunkUploadActionMixin:
         session_pk = _parse_session_pk((request.data or {}).get("pk"))
         if session_pk is None:
             return ApiResponse(code=SESSION_MISSING_CODE, detail=_("Missing session"))
-        aborted = abort_session(request.user, session_pk)
+        try:
+            aborted = abort_session(request.user, session_pk)
+        except UploadError as exc:
+            # 合并进行中（新鲜 MERGING 认领）不可中途作废：转可读业务码而非 500
+            return ApiResponse(code=exc.code, detail=exc.detail)
         return ApiResponse(detail=_("Upload session aborted") if aborted else _("Invalid upload session"))

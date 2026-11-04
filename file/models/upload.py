@@ -143,10 +143,20 @@ class UploadSession(DbAuditModel):
 
     断点续传 = 客户端对同名同大小文件重新 init 时命中未完成会话，按已收
     分片索引续传；过期未完成会话由 ``auto_clean_upload_sessions`` 定时清理。
+
+    complete 采用两段式（合并 I/O 不占数据库事务/行锁）：
+
+    1. 短事务 CAS 认领 ``PENDING → MERGING``（分片行完整性先行校验）；
+    2. 锁外合并全部分片（读存储 → 哈希 → ``store_upload_file`` 临时行）；
+    3. 短事务 CAS 收口 ``MERGING → COMPLETED``（挂接产物 + 清理分片行）。
+
+    ``MERGING`` 是在途认领标记：认领超时（``upload_chunk.MERGE_STALE_SECONDS``）
+    的残留会话可被下一次 complete 重新认领续跑，或被 abort / 过期清理任务回收。
     """
 
     class Status(models.TextChoices):
         PENDING = "pending", _("Pending")
+        MERGING = "merging", _("Merging")
         COMPLETED = "completed", _("Completed")
         ABORTED = "aborted", _("Aborted")
 

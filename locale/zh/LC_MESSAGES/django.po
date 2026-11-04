@@ -5428,10 +5428,14 @@ msgid "Category options come from the data dictionary upload_category"
 msgstr "分类选项来自数据字典 upload_category"
 
 #: file/models/upload.py:148
+msgid "Merging"
+msgstr "合并中"
+
+#: file/models/upload.py:149
 msgid "Completed"
 msgstr "已完成"
 
-#: file/models/upload.py:149
+#: file/models/upload.py:150
 msgid "Aborted"
 msgstr "已放弃"
 
@@ -5537,6 +5541,11 @@ msgstr "分片大小不符"
 #: file/utils/upload_chunk.py:203
 msgid "Upload session already finished"
 msgstr "上传会话已结束"
+
+#: file/utils/upload_chunk.py:265 file/utils/upload_chunk.py:309
+#: file/utils/upload_chunk.py:394
+msgid "Upload is being merged, please retry later"
+msgstr "上传正在合并中，请稍后重试"
 
 #: file/utils/upload_chunk.py:213 file/utils/upload_chunk.py:215
 #: file/utils/upload_chunk.py:237

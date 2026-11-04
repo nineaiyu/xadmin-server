@@ -342,6 +342,177 @@ class TestChunkAbort:
         assert response.data["code"] == 1001
 
 
+class TestTwoPhaseMerge:
+    """两段式合并守护（审查修复 BE-M3）：CAS 认领互斥、崩溃残留恢复与收口幂等。"""
+
+    def _uploaded_session(self, user, content=b"abcdefghij"):
+        """完成分片传输（不 complete），返回 PENDING 会话。"""
+        plan = _init(user, filesize=len(content), total_chunks=3, chunk_size=4)
+        for index in range(3):
+            chunk = content[index * 4 : (index + 1) * 4]
+            assert _part(user, plan["session"], index, chunk).status_code == 200
+        return plan["session"]
+
+    @staticmethod
+    def _to_merging(session_pk, *, stale):
+        """把会话推入 MERGING 认领态（stale=True 时认领时间已超 MERGE_STALE_SECONDS）。"""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from file.utils import upload_chunk
+
+        delta = timedelta(seconds=upload_chunk.MERGE_STALE_SECONDS * 2) if stale else timedelta(seconds=1)
+        UploadSession.objects.filter(pk=session_pk).update(
+            status=UploadSession.Status.MERGING, updated_time=timezone.now() - delta
+        )
+
+    def test_fresh_merging_rejects_concurrent_complete_and_abort(self, superuser, _small_chunks):
+        """新鲜认领（他方合并进行中）：并发 complete 与 abort 都被拒（可读业务码）。"""
+        from django.utils.translation import gettext as _
+
+        from file.utils.upload_chunk import complete_session
+
+        session_pk = self._uploaded_session(superuser)
+        self._to_merging(session_pk, stale=False)
+
+        with pytest.raises(UploadError) as complete_exc:
+            complete_session(superuser, int(session_pk))
+        assert str(_("Upload is being merged, please retry later")) in str(complete_exc.value.detail)
+
+        response = _post(superuser, "chunk_abort", {"pk": session_pk})
+        assert response.data["code"] == 1002  # 视图层把「合并中不可作废」转业务码而非 500
+        # 认领未被并发请求破坏：会话仍为 MERGING、分片未被动
+        session = UploadSession.objects.get(pk=session_pk)
+        assert session.status == UploadSession.Status.MERGING
+        assert session.parts.count() == 3
+
+    def test_stale_merging_reclaimed_and_completed(self, superuser, _small_chunks):
+        """崩溃残留恢复：认领超时的 MERGING 会被下一次 complete 重认领并正常收口。"""
+        from file.utils.upload_chunk import complete_session
+
+        session_pk = self._uploaded_session(superuser)
+        self._to_merging(session_pk, stale=True)
+
+        upload, session = complete_session(superuser, int(session_pk))
+
+        assert session.status == UploadSession.Status.COMPLETED
+        assert session.upload_id == upload.pk
+        with upload.filepath.open("rb") as fh:
+            assert fh.read() == b"abcdefghij"
+        assert session.parts.count() == 0
+
+    def test_stale_merging_abort_recovers(self, superuser, _small_chunks):
+        """崩溃残留的用户侧出口：认领超时的 MERGING 可被 abort 作废回收。"""
+        from file.utils.upload_chunk import abort_session
+
+        session_pk = self._uploaded_session(superuser)
+        self._to_merging(session_pk, stale=True)
+
+        assert abort_session(superuser, int(session_pk)) is True
+
+        session = UploadSession.objects.get(pk=session_pk)
+        assert session.status == UploadSession.Status.ABORTED
+        assert session.parts.count() == 0
+
+    def test_stale_merging_reclaimed_by_cleanup(self, superuser, _small_chunks):
+        """清理兜底：认领超时超保留期的 MERGING 残留由清理任务回收（分片 + 行）。"""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from file.utils.upload_chunk import auto_clean_upload_sessions
+
+        session_pk = self._uploaded_session(superuser)
+        UploadSession.objects.filter(pk=session_pk).update(
+            status=UploadSession.Status.MERGING, updated_time=timezone.now() - timedelta(days=2)
+        )
+
+        result = auto_clean_upload_sessions(clean_day=1)
+
+        assert result["stale_aborted"] == 1
+        assert not UploadSession.objects.filter(pk=session_pk).exists()
+        from common.storage import storage_exists
+
+        assert not storage_exists(part_storage_name(session_pk, 0))
+
+    def test_fresh_merging_not_reclaimed_by_cleanup(self, superuser, _small_chunks):
+        """清理不误伤：认领仍新鲜（可能在合并中）的 MERGING 不被清理回收。"""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from file.utils.upload_chunk import auto_clean_upload_sessions
+
+        session_pk = self._uploaded_session(superuser)
+        # 会话创建时间早已过期，但认领（updated_time）是新鲜的：不回收
+        UploadSession.objects.filter(pk=session_pk).update(
+            status=UploadSession.Status.MERGING, created_time=timezone.now() - timedelta(days=2)
+        )
+
+        result = auto_clean_upload_sessions(clean_day=1)
+
+        assert result["stale_aborted"] == 0
+        assert UploadSession.objects.filter(pk=session_pk).exists()
+
+    def test_finalize_race_returns_winner_product(self, superuser, _small_chunks, monkeypatch):
+        """收口竞态幂等：他方先收口（同 md5 去重命中同一产物行）时，复用库内终态。"""
+        from django.core.files.base import ContentFile
+        from django.utils import timezone
+
+        from file.utils import upload_chunk
+
+        # 会话保持 PENDING 入口（认领由 complete 正常完成），竞态在合并返回前注入
+        session_pk = self._uploaded_session(superuser)
+
+        def fake_merge(user_obj, session, parts, declared_md5):
+            rival = UploadFile.objects.create(
+                filename=session.filename,
+                filesize=session.filesize,
+                is_upload=True,
+                is_tmp=True,
+                creator=user_obj,
+                md5sum="0" * 32,
+                filepath=ContentFile(b"rival", name="rival.bin"),
+            )
+            # 模拟并发重认领窗口：合并返回前他方已收口
+            UploadSession.objects.filter(pk=session.pk, status=UploadSession.Status.MERGING).update(
+                status=UploadSession.Status.COMPLETED, upload=rival, md5sum="0" * 32, updated_time=timezone.now()
+            )
+            return "0" * 32, rival
+
+        monkeypatch.setattr(upload_chunk, "_merge_and_store", fake_merge)
+        upload, session = upload_chunk.complete_session(superuser, int(session_pk))
+
+        # 败方 CAS 不命中 → 复用他方终态与产物（不重复挂接、不报 500）
+        assert session.status == UploadSession.Status.COMPLETED
+        assert session.upload_id == upload.pk
+        assert UploadSession.objects.filter(pk=session_pk).count() == 1
+
+    def test_merge_failure_reverts_claim_to_pending(self, superuser, _small_chunks, monkeypatch):
+        """合并期可重试失败（存储抖动类）：认领退回 PENDING，会话可再次 complete。"""
+        from file.utils import upload_chunk
+
+        session_pk = self._uploaded_session(superuser)
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("storage hiccup")
+
+        monkeypatch.setattr(upload_chunk, "_merge_and_store", boom)
+        with pytest.raises(RuntimeError):
+            upload_chunk.complete_session(superuser, int(session_pk))
+
+        session = UploadSession.objects.get(pk=session_pk)
+        assert session.status == UploadSession.Status.PENDING  # 认领已退回，可重试
+
+        # 解除桩后重试 complete 成功（分片原样保留）
+        monkeypatch.undo()
+        upload, session = upload_chunk.complete_session(superuser, int(session_pk))
+        assert session.status == UploadSession.Status.COMPLETED
+        with upload.filepath.open("rb") as fh:
+            assert fh.read() == b"abcdefghij"
+
+
 class TestCleanup:
     def test_stale_pending_sessions_purged(self, superuser, _small_chunks):
         from datetime import timedelta

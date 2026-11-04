@@ -26,7 +26,11 @@
   分片行唯一约束兜底幂等；完整性与断点状态以分片行（行数=总分片数、
   尺寸之和=文件大小）为准，不信任客户端清单。
 
-过期未完成会话由 ``auto_clean_upload_sessions`` 定时清理（分片文件 + 会话行）。
+complete 为**两段式事务**（审查修复 BE-M3）：短事务 CAS 认领 ``PENDING →
+MERGING`` → 锁外合并 I/O → 短事务收口 ``MERGING → COMPLETED``——合并时长不再
+占用数据库事务与会话行锁；崩溃残留（认领超时）可重试 complete 续跑 / abort
+作废 / 清理任务按保留期回收。过期未完成会话由 ``auto_clean_upload_sessions``
+定时清理（分片文件 + 会话行）。
 """
 
 import hashlib
@@ -38,8 +42,9 @@ from typing import Any
 
 from django.core.files.base import ContentFile, File
 from django.core.files.storage import default_storage
-from django.db import transaction
+from django.db import models, transaction
 from django.db.models import Sum
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.core.throttle import allow_by_identity
@@ -70,6 +75,11 @@ STORAGE_DIR = "upload_sessions"
 
 # complete 一致性校验失败业务码：分片拼合结果与声明不符（内容损坏/串分片）
 CHECKSUM_MISMATCH_CODE = 1007
+
+# MERGING 认领的过期阈值（秒）：超过即视为「合并进程崩溃」的残留——下一次
+# complete 可重新认领续跑（分片未删）、abort 可作废回收、清理任务按保留期兜底。
+# 取值口径：> 常规 HTTP 请求内的合并时长（受 gunicorn/网关超时约束），< 清理任务的天级兜底。
+MERGE_STALE_SECONDS = 10 * 60
 
 
 class ContentHashMismatch(UploadError):
@@ -233,46 +243,31 @@ def store_part(user_obj: Any, session: Any, index: Any, file_obj: Any) -> int:
     return received
 
 
-def complete_session(user_obj: Any, session_pk: Any, *, declared_md5: str = "") -> tuple[Any, Any]:
-    """合并分片并走既有上传内核落库；会话行锁内串行（与并发 complete/abort 互斥）。
-
-    校验分片完整性（行数 / 尺寸和 / 逐片尺寸）→ 流式合并并计算 md5 / SHA-256 →
-    与 init 声明的内容指纹比对（强制）→ 声明 md5 一致性校验（可选）→
-    ``store_upload_file``（配额 / 去重 / 分类 / 落库）→ 清理分片（存储 + 行）→
-    会话置 completed。指纹不一致说明分片属于另一份内容（串会话/损坏）：整个会话
-    已不可复用，置 aborted 并清理分片后抛错。
+def _claim_for_complete(user_obj: Any, session_pk: Any) -> tuple[Any, Any]:
+    """complete 的阶段一 + 认领：读校验（属主 / 扩展名 / magic / 分片行完整性）与
+    CAS ``PENDING → MERGING``，返回 ``(session, parts)``。失败口径与历史一致：
+    扩展名 / magic 失败作废会话并清理分片，分片不完整保持 PENDING 可续传；
+    新鲜 MERGING（他方合并中）与终态给出可读错误；认领超时的 MERGING 残留先原子
+    退回 PENDING 再按正常流程续跑（认领时间前置条件防并发重开）。
     """
-    try:
-        # 事务装饰器无类型存根（返回 Any）：显式标注收敛 mypy no-any-return
-        result: tuple[Any, Any] = _complete_session(user_obj, session_pk, declared_md5=declared_md5)
-        return result
-    except ContentHashMismatch:
-        # 内层事务已回滚（会话仍是 pending）：在独立事务里作废并清理，
-        # 否则同指纹重新 init 会命中这条永远合不出来的会话。
-        # 仅内容指纹不符才作废；声明 md5 不符属客户端传错，会话本身仍可复用。
-        abort_session(user_obj, session_pk)
-        raise
-
-
-@transaction.atomic  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
-def _complete_session(user_obj: Any, session_pk: Any, *, declared_md5: str = "") -> tuple[Any, Any]:
-    """complete 的事务主体（行锁 + 完整性校验 + 落库），异常由外层统一收敛。"""
-    # 注意：锁定查询不得 select_related("upload")——upload 为可空 FK，会生成
-    # LEFT OUTER JOIN，PG 拒绝对外连接可空侧加行锁（FOR UPDATE cannot be applied
-    # to the nullable side of an outer join；sqlite 无锁语义静默通过，2026-10-01
-    # nightly PG 档首轮暴露）。upload 列仅在 complete 时赋值、PENDING 会话恒为
-    # NULL，此处预取本无消费者，直接去掉即可；of=("self",) 方案在 sqlite 门禁
-    # 上会 NotSupportedError，不可用。
-    session = UploadSession.objects.select_for_update().filter(pk=session_pk).first()
+    session = UploadSession.objects.filter(pk=session_pk).first()
     if not session or session.creator_id != user_obj.pk:
         raise UploadError(INVALID_CODE, _("Invalid upload session"))
-    if session.status != UploadSession.Status.PENDING:
+    if session.status == UploadSession.Status.MERGING and _merge_claim_expired(session):
+        reopened = UploadSession.objects.filter(
+            pk=session.pk, status=UploadSession.Status.MERGING, updated_time__lt=_merge_stale_cutoff()
+        ).update(status=UploadSession.Status.PENDING, updated_time=timezone.now())
+        if not reopened:
+            raise UploadError(INVALID_CODE, _("Upload session already finished"))
+        session = UploadSession.objects.filter(pk=session_pk).first()
+    if session is None or session.status != UploadSession.Status.PENDING:
+        if session is not None and session.status == UploadSession.Status.MERGING:
+            # 新鲜认领（他方合并进行中）：与认领 CAS 失败同一可读口径
+            raise UploadError(INVALID_CODE, _("Upload is being merged, please retry later"))
         raise UploadError(INVALID_CODE, _("Upload session already finished"))
     extension_error = validate_upload_extension(session.filename)
     if extension_error:
-        session.status = UploadSession.Status.ABORTED
-        session.save(update_fields=["status", "updated_time"])
-        _purge_parts(session)
+        _transition_and_purge(session, UploadSession.Status.ABORTED)
         raise UploadError(INVALID_CODE, extension_error)
     # 内容 magic 抽检：读第一分片头部（与合并产物同头），伪装扩展名的二进制内容
     # 落库前即拒；会话不可复用（内容已在分片里，重传 complete 恒失败），按扩展名
@@ -283,36 +278,82 @@ def _complete_session(user_obj: Any, session_pk: Any, *, declared_md5: str = "")
     with default_storage.open(head_name, "rb") as head_file:
         content_error = validate_upload_content(session.filename, head_file)
     if content_error:
-        session.status = UploadSession.Status.ABORTED
-        session.save(update_fields=["status", "updated_time"])
-        _purge_parts(session)
+        _transition_and_purge(session, UploadSession.Status.ABORTED)
         raise UploadError(INVALID_CODE, content_error)
-
     parts = list(session.parts.order_by("index"))
     if len(parts) != session.total_chunks or [p.index for p in parts] != list(range(session.total_chunks)):
         raise UploadError(INVALID_CODE, _("Upload is incomplete"))
     if sum(p.size for p in parts) != session.filesize:
         raise UploadError(INVALID_CODE, _("Upload is incomplete"))
+    # 认领 CAS：并发 complete 只有一方进入合并（失败方按库内现状给出可读错误）
+    claimed = UploadSession.objects.filter(
+        pk=session.pk, status=UploadSession.Status.PENDING, creator_id=session.creator_id
+    ).update(status=UploadSession.Status.MERGING, updated_time=timezone.now())
+    if not claimed:
+        refreshed = UploadSession.objects.filter(pk=session_pk).first()
+        if refreshed is not None and refreshed.status == UploadSession.Status.MERGING:
+            raise UploadError(INVALID_CODE, _("Upload is being merged, please retry later"))
+        raise UploadError(INVALID_CODE, _("Upload session already finished"))
+    return session, parts
 
+
+def complete_session(user_obj: Any, session_pk: Any, *, declared_md5: str = "") -> tuple[Any, Any]:
+    """合并分片并走既有上传内核落库（两段式事务，审查修复 BE-M3）。
+
+    旧实现把「锁会话行 → 合并全部分片 → 落库」包在同一个数据库事务内（合并
+    时长随文件体积线性增长，形成分钟级长事务与行锁持有）。现改为 CAS 状态机：
+    短事务认领（``_claim_for_complete``）→ 锁外合并 I/O → 短事务收口
+    ``MERGING → COMPLETED``；收口 CAS 失败即他方已收口（同 md5 同属主去重命中
+    同一产物行），复用库内终态。失败口径：内容指纹不符 → 作废会话并清理分片；
+    声明 md5 不符等其余异常 → 认领退回 PENDING（可重试）。
+    """
+    session, parts = _claim_for_complete(user_obj, session_pk)
     declared = str(declared_md5 or session.md5sum or "").strip().lower()
-    md5sum, upload = _merge_and_store(user_obj, session, declared)
-    session.status = UploadSession.Status.COMPLETED
-    session.upload = upload
-    session.md5sum = md5sum
-    session.save(update_fields=["status", "upload", "md5sum", "updated_time"])
-    _purge_parts(session)
+    try:
+        md5sum, upload = _merge_and_store(user_obj, session, parts, declared)
+    except ContentHashMismatch:
+        # 分片属于另一份内容（串会话/损坏）：整个会话不可复用，作废并清理分片
+        _transition_and_purge(session, UploadSession.Status.ABORTED, from_status=UploadSession.Status.MERGING)
+        raise
+    except Exception:
+        # 其余失败（声明 md5 不符 / 存储抖动）：会话仍可复用——认领退回 PENDING
+        UploadSession.objects.filter(pk=session_pk, status=UploadSession.Status.MERGING).update(
+            status=UploadSession.Status.PENDING, updated_time=timezone.now()
+        )
+        raise
+    # 收口 CAS：并发重认领窗口内他方先收口时，同 md5 同属主去重命中同一产物行，
+    # 复用库内终态（不重复挂接）；分片行删除在收口事务内，存储对象删除在提交后
+    with transaction.atomic():
+        finalized = UploadSession.objects.filter(pk=session_pk, status=UploadSession.Status.MERGING).update(
+            status=UploadSession.Status.COMPLETED, upload=upload, md5sum=md5sum, updated_time=timezone.now()
+        )
+        if finalized:
+            UploadSessionPart.objects.filter(session_id=session_pk).delete()
+    if not finalized:
+        refreshed = UploadSession.objects.filter(pk=session_pk).first()
+        if refreshed is not None and refreshed.status == UploadSession.Status.COMPLETED and refreshed.upload_id:
+            return refreshed.upload, refreshed
+        logger.warning("chunk upload finalize lost race, session superseded: %s", session_pk)
+        raise UploadError(INVALID_CODE, _("Upload session already finished"))
+    _delete_storage_objects([part_storage_name(session_pk, part.index) for part in parts])
+    session = UploadSession.objects.filter(pk=session_pk).first()
     return upload, session
 
 
-def _merge_and_store(user_obj: Any, session: Any, declared_md5: str) -> tuple[str, Any]:
-    """合并分片到临时文件并落库；md5 与内容指纹在合并时同步计算（整文件只读一遍）。"""
+def _merge_and_store(user_obj: Any, session: Any, parts: Any, declared_md5: str) -> tuple[str, Any]:
+    """合并分片到临时文件并落库；md5 与内容指纹在合并时同步计算（整文件只读一遍）。
+
+    在**会话事务之外**执行（两段式的阶段二）：不持行锁、不占数据库事务；
+    ``store_upload_file`` 落临时行（is_tmp），收口失败/崩溃的孤儿由
+    ``auto_clean_tmp_file`` 按保留期回收（同 md5 同属主重试会去重命中）。
+    """
     digest = hashlib.md5()
     content_digest = hashlib.sha256()
     fd, temp_path = tempfile.mkstemp(prefix="xadmin-merge-")
     os.close(fd)
     try:
         with open(temp_path, "wb") as target:
-            for part in session.parts.order_by("index"):
+            for part in parts:
                 name = part_storage_name(session.pk, part.index)
                 if not default_storage.exists(name):
                     raise UploadError(INVALID_CODE, _("Upload is incomplete"))
@@ -352,23 +393,73 @@ class _MergedFile(File):
 
 
 def abort_session(user_obj: Any, session_pk: Any) -> bool:
-    """放弃会话：清理分片（存储 + 行）并置 aborted；不存在/非本人返回 False。"""
+    """放弃会话：清理分片（存储 + 行）并置 aborted；不存在/非本人返回 False。
+
+    - PENDING → ABORTED（既有语义，CAS 替代行锁）；
+    - 认领超时的 MERGING（合并中断残留）→ ABORTED：崩溃后的用户侧出口；
+    - 进行中的 MERGING（新鲜认领）→ 抛 UploadError：合并正在收口，不可中途作废
+      （清理在途分片会与合并读取竞争）；视图层按业务码转可读响应。
+    """
+    session = UploadSession.objects.filter(pk=session_pk).first()
+    if not session or session.creator_id != user_obj.pk:
+        return False
+    if session.status == UploadSession.Status.MERGING:
+        if _merge_claim_expired(session):
+            return _transition_and_purge(
+                session, UploadSession.Status.ABORTED, from_status=UploadSession.Status.MERGING
+            )
+        raise UploadError(INVALID_CODE, _("Upload is being merged, please retry later"))
+    if session.status != UploadSession.Status.PENDING:
+        return True
+    return _transition_and_purge(session, UploadSession.Status.ABORTED)
+
+
+def _merge_stale_cutoff() -> Any:
+    """MERGING 认领的过期时刻（now - MERGE_STALE_SECONDS）。"""
+    return timezone.now() - timezone.timedelta(seconds=MERGE_STALE_SECONDS)
+
+
+def _merge_claim_expired(session: Any) -> bool:
+    """会话的 MERGING 认领是否已过期（阶段二/三之间进程崩溃的判定口径）。"""
+    updated_time = getattr(session, "updated_time", None)
+    return bool(updated_time and updated_time < _merge_stale_cutoff())
+
+
+def _transition_and_purge(session: Any, to_status: Any, from_status: Any = None) -> bool:
+    """CAS 状态迁移并清理分片（行删除在事务内，存储对象删除在事务提交后）。
+
+    迁移条件默认 PENDING（complete 前置校验的作废路径）；合并期作废显式传
+    ``from_status=MERGING``。CAS 不命中（他方已迁移）返回 False，不清理分片。
+    """
+    if from_status is None:
+        from_status = UploadSession.Status.PENDING
+    names: list[str] = []
     with transaction.atomic():
-        session = UploadSession.objects.select_for_update().filter(pk=session_pk).first()
-        if not session or session.creator_id != user_obj.pk:
-            return False
-        if session.status != UploadSession.Status.PENDING:
-            return True
-        session.status = UploadSession.Status.ABORTED
-        session.save(update_fields=["status", "updated_time"])
-        _purge_parts(session)
-    return True
+        updated = UploadSession.objects.filter(pk=session.pk, status=from_status).update(
+            status=to_status, updated_time=timezone.now()
+        )
+        if updated:
+            names = [
+                part_storage_name(session.pk, index)
+                for index in UploadSessionPart.objects.filter(session_id=session.pk)
+                .values_list("index", flat=True)
+                .order_by("index")
+            ]
+            UploadSessionPart.objects.filter(session_id=session.pk).delete()
+    if updated:
+        _delete_storage_objects(names)
+    return bool(updated)
 
 
 def _purge_parts(session: Any) -> None:
     """删除会话的全部分片（存储对象 + 行）；存储清理失败只告警（行已删，不阻塞）。"""
     names = [part_storage_name(session.pk, part.index) for part in session.parts.all()]
     session.parts.all().delete()
+    _delete_storage_objects(names)
+
+
+def _delete_storage_objects(names: Any) -> None:
+    """批量删除分片存储对象；单个失败只告警，不影响其余对象与其余流程。"""
     for name in names:
         try:
             default_storage.delete(name)
@@ -377,22 +468,26 @@ def _purge_parts(session: Any) -> None:
 
 
 def auto_clean_upload_sessions(clean_day: int = 1) -> dict[str, int]:
-    """清理过期分片会话：pending 超 N 天（分片 + 行）与全部终态会话行。
+    """清理过期分片会话：pending/merging 残留超 N 天（分片 + 行）与全部终态会话行。
 
-    分片是临时数据，会话完成即清理；本任务兜底「客户端中途放弃」与
-    「complete/abort 从未到达」两类残留，防止存储与表被未完成会话蚕食。
+    分片是临时数据，会话完成即清理；本任务兜底「客户端中途放弃」「complete/abort
+    从未到达」与「合并进程崩溃后的 MERGING 残留」三类残留，防止存储与表被未完成
+    会话蚕食。MERGING 按**认领时间**（updated_time）判过期：认领仍新鲜的会话可能
+    正在合并，不做回收。
     """
     from datetime import timedelta
 
-    from django.utils import timezone
-
     deadline = timezone.now() - timedelta(days=clean_day)
-    stale = UploadSession.objects.filter(status=UploadSession.Status.PENDING, created_time__lte=deadline)
+    stale = UploadSession.objects.filter(
+        models.Q(status=UploadSession.Status.PENDING, created_time__lte=deadline)
+        | models.Q(status=UploadSession.Status.MERGING, updated_time__lte=deadline)
+    )
+    recoverable = (UploadSession.Status.PENDING, UploadSession.Status.MERGING)
     count = 0
     for session in stale.iterator():
         with transaction.atomic():
             locked = UploadSession.objects.select_for_update().filter(pk=session.pk).first()
-            if not locked or locked.status != UploadSession.Status.PENDING:
+            if not locked or locked.status not in recoverable:
                 continue
             _purge_parts(locked)
             locked.delete()
