@@ -379,8 +379,11 @@ def main() -> None:
     import os
 
     port = int(os.environ.get("E2E_STUB_LLM_PORT") or 18897)
-    server = ThreadingHTTPServer(("127.0.0.1", port), StubLLMHandler)
-    print(f"stub llm listening on http://127.0.0.1:{port}", flush=True)
+    # 绑定地址默认回环；linux 视觉基线在容器内跑 Playwright（宿主起服务）时，
+    # 经 STUB_LLM_HOST=0.0.0.0 放行 host.docker.internal 的健康检查
+    host = os.environ.get("STUB_LLM_HOST") or "127.0.0.1"
+    server = ThreadingHTTPServer((host, port), StubLLMHandler)
+    print(f"stub llm listening on http://{host}:{port}", flush=True)
     server.serve_forever()
 
 
