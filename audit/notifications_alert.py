@@ -22,8 +22,9 @@ def maybe_alert_sensitive_operation(info: dict[str, Any]) -> None:
     """敏感操作命中判定 + 节流告警（由操作日志中间件在日志落库后调用）。
 
     方法清单（SysConfig.SENSITIVE_OPERATION_METHODS，默认 ["DELETE"]）与路径正则
-    清单（SENSITIVE_OPERATION_PATHS，默认空）AND 组合；同一 方法+路径 60 秒内
-    只告警一次。任何异常都不影响请求响应。
+    清单（SENSITIVE_OPERATION_PATHS，默认空）AND 组合；同一 用户+方法+路径
+    60 秒内只告警一次（按用户维度节流：任一用户触发不抑制他人的告警）；
+    投递失败回滚节流位，下次事件仍可告警。任何异常都不影响请求响应。
     """
     from django.core.cache import cache
 
@@ -46,8 +47,12 @@ def maybe_alert_sensitive_operation(info: dict[str, Any]) -> None:
         if not matched:
             return
 
-    digest = hashlib.md5(f"{method}:{path}".encode()).hexdigest()
-    if not cache.add(f"sensitive_op_alert_{digest}", 1, SENSITIVE_ALERT_THROTTLE_SECONDS):
+    # 节流键含操作人（creator_id）：敏感操作按「谁在做」归集，全局键会让
+    # 任一用户的告警抑制同路径所有人的告警
+    user_id = info.get("creator_id") or ""
+    digest = hashlib.md5(f"{user_id}:{method}:{path}".encode()).hexdigest()
+    throttle_key = f"sensitive_op_alert_{digest}"
+    if not cache.add(throttle_key, 1, SENSITIVE_ALERT_THROTTLE_SECONDS):
         return
     try:
         SensitiveOperationMessage(
@@ -61,6 +66,11 @@ def maybe_alert_sensitive_operation(info: dict[str, Any]) -> None:
         ).publish(is_async=True)
     except Exception:
         logger.warning("send sensitive operation alert failed", exc_info=True)
+        # 投递失败回滚节流位：不回滚会让该用户该路径在 60s 窗口内静默
+        try:
+            cache.delete(throttle_key)
+        except Exception:  # noqa: BLE001 缓存不可用时不影响主流程
+            logger.warning("rollback sensitive alert throttle key failed", exc_info=True)
     # 出站 Webhook：敏感操作事件（emit 全程吞异常）
     from task.services import emit_webhook_event
 

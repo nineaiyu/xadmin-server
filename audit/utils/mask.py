@@ -297,8 +297,10 @@ def record_original_channel_access(request: Any, user: Any, model_label: str | N
 
         OperationLog.objects.create(
             module=ORIGINAL_CHANNEL_MODULE,
-            path=path or "",
-            method=getattr(request, "method", "") or "",
+            # path 列为 varchar(400)：带长查询串的超长 path 直接入库会被
+            # PostgreSQL 拒绝（异常吞掉 = 敏感读审计静默丢失），按模型列宽截断
+            path=(path or "")[:400],
+            method=(getattr(request, "method", "") or "")[:8],
             object_pk=model_label or "*",
             status_code=API_SUCCESS_CODE,
             response_result="original-channel",
