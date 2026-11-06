@@ -8,13 +8,16 @@
 
 from django.utils.translation import gettext_lazy as _
 
-from ai.services.actions.ai_api_actions import IN_QUERY, api_action
+from ai.services.actions.ai_api_actions import IN_QUERY, api_action, requires_approval_high_risk
 
 AI_ACTIONS = {
     "notice.publish": api_action(
         key="notice.publish",
         label=_("Publish a system announcement"),
         description=_("Publish a system-wide announcement visible to all users"),
+        # 全员公告属高影响写操作（一刀广播全站）：与 identity/system 域高危写动作
+        # 同口径——非超管执行需二次确认（412 → 确认卡片），超管豁免
+        requires_approval=requires_approval_high_risk,
         # 复用公告管理页的 announcement 端点（序列化校验 + 净化 + 发布推送信号），
         # 权限点 announcement:SystemNotice
         method="POST",

@@ -208,12 +208,18 @@ class ResourceTypesView(ScimView):
 
 
 class UsersView(ScimView):
-    """GET /Users（filter=userName eq "x" + 分页）/ POST /Users（开通）。"""
+    """GET /Users（filter=userName eq "x" + 分页）/ POST /Users（开通）。
+
+    列表只返回未软删用户（软删是站内生命周期终点，目录同步不应继续见到）；
+    单查（UserDetailView）保留 ``all_objects``——对端按 id 回查撤销 / 审计
+    场景仍可定位已软删行，``active`` 如实反映其状态。
+    """
 
     def get(self, request: Any) -> Any:
         start_index, count = parse_paging(request.query_params)
         attribute, value = parse_filter(request.query_params.get("filter", ""))
-        queryset = UserInfo.all_objects.all()
+        # 软删用户不出现在目录列表（单查不拦，见类 docstring）
+        queryset = UserInfo.objects.all()
         if attribute == "userName":
             queryset = queryset.filter(username=value)
         elif attribute == "id":

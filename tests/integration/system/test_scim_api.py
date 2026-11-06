@@ -6,6 +6,7 @@ filter 子集、PATCH 停用即踢会话、Group ↔ UserRole 成员同步、写
 """
 
 import pytest
+from django.utils import timezone
 
 from audit.models import OperationLog
 from common.cache.storage import UserTokenRevokedCache
@@ -108,6 +109,19 @@ class TestScimUsers:
         bad_filter = api_client.get(f'{SCIM_BASE}/Users?filter=userName co "alice"', **AUTH)
         assert bad_filter.status_code == 400
         assert bad_filter.json()["scimType"] == "invalidFilter"
+
+    def test_soft_deleted_user_hidden_from_list_but_gettable(self, api_client, scim_enabled):
+        """软删是站内生命周期终点：不出现在目录列表；单查保留（对端按 id 撤销/审计）。"""
+        api_client.post(f"{SCIM_BASE}/Users", {"userName": "scim_softdel"}, format="json", **AUTH)
+        user = UserInfo.objects.get(username="scim_softdel")
+        UserInfo.objects.filter(pk=user.pk).update(deleted_at=timezone.now())
+
+        listed = api_client.get(f'{SCIM_BASE}/Users?filter=userName eq "scim_softdel"', **AUTH).json()
+        assert listed["totalResults"] == 0
+
+        detail = api_client.get(f"{SCIM_BASE}/Users/{user.pk}", **AUTH)
+        assert detail.status_code == 200
+        assert detail.json()["userName"] == "scim_softdel"
 
     def test_get_put_and_patch(self, api_client, scim_enabled):
         api_client.post(f"{SCIM_BASE}/Users", {"userName": "scim_bob", "displayName": "Bob"}, format="json", **AUTH)

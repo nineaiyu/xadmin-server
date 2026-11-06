@@ -267,3 +267,13 @@ class TestRegistryDiscovery:
         assert module_allows(spec) is True
         monkeypatch.setattr("common.core.modules.is_module_enabled", lambda module_id: module_id != "analysis")
         assert module_allows(spec) is False
+
+
+class TestHighRiskDeclarations:
+    """高影响写动作的审批定级守护：与 identity/system 域高危写动作同口径。"""
+
+    def test_notice_publish_is_high_risk(self, superuser, normal_user):
+        """全员公告（一刀广播全站）：非超管执行需二次确认（412），超管豁免。"""
+        spec = ACTION_SPECS["notice.publish"]
+        assert spec.requires_approval(normal_user, {}) is True
+        assert spec.requires_approval(superuser, {}) is False
