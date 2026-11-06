@@ -215,6 +215,49 @@ class TestRoutesVersion:
         assert before != after
 
 
+class TestRankTieOrderDeterministic:
+    """rank 并列时以 pk 打破平局的守护。
+
+    单键 order_by("rank") 下并列行的返回顺序由执行计划决定：种子数据中
+    system 与 DemoBook 同为 rank=1，侧栏顶级菜单顺序曾跨会话漂移（视觉
+    基线随侧栏整体位移而抖动）。此处反序创建两个同 rank 菜单，断言响应
+    顺序恒按 pk（与创建顺序无关）。
+    """
+
+    def _create_tied_menus(self):
+        meta_b = MenuMeta.objects.create(title="并列菜单B")
+        meta_a = MenuMeta.objects.create(title="并列菜单A")
+        # 先建 pk 较大者：物理行序与 pk 序相反，单键排序下顺序将不稳定
+        Menu.objects.create(
+            pk="00000000-0000-4000-8000-00000000000b",
+            name="tie-b",
+            path="api/tie-b$",
+            method="GET",
+            menu_type=Menu.MenuChoices.MENU,
+            rank=424242,
+            meta=meta_b,
+        )
+        Menu.objects.create(
+            pk="00000000-0000-4000-8000-00000000000a",
+            name="tie-a",
+            path="api/tie-a$",
+            method="GET",
+            menu_type=Menu.MenuChoices.MENU,
+            rank=424242,
+            meta=meta_a,
+        )
+
+    def test_same_rank_orders_by_pk(self, auth_client):
+        self._create_tied_menus()
+        cache.clear()
+        result = payload(auth_client.get(ROUTES_URL))
+        # 顶级 MENU 项被 format_menu_data 包一层（原节点在 children[0]）、目录项
+        # 原样透传；两种形态的 meta.title 都在顶层 meta 上，用其断言相对顺序
+        titles = [node["meta"].get("title") for node in result["data"]]
+        assert "并列菜单A" in titles and "并列菜单B" in titles
+        assert titles.index("并列菜单A") < titles.index("并列菜单B")
+
+
 class TestGetRoutesVersionUnit:
     def test_stable_for_same_content(self):
         from system.views.user.routes import get_routes_version

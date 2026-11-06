@@ -39,7 +39,8 @@ class SearchMenuSerializer(MenuSerializer):
 class SearchMenuViewSet(OnlyListModelSet):
     """菜单搜索"""
 
-    queryset = Menu.objects.order_by("rank").all()
+    # rank 并列以 pk 打破平局（单键排序下并列行顺序由执行计划决定，会跨会话漂移）
+    queryset = Menu.objects.order_by("rank", "pk").all()
     serializer_class = SearchMenuSerializer
     pagination_class = DynamicPageNumber(1000)
     ordering_fields = ["-rank", "updated_time", "created_time"]

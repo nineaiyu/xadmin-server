@@ -51,11 +51,14 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
         user_obj = request.user
         menu_type = [Menu.MenuChoices.DIRECTORY, Menu.MenuChoices.MENU]
         if user_obj.is_superuser:
-            # 嵌套 meta（OneToOne）预取，缓存失效时不再每菜单一查
+            # 嵌套 meta（OneToOne）预取，缓存失效时不再每菜单一查；
+            # rank 并列时以 pk 打破平局：order_by("rank") 单键排序下并列行
+            # 的返回顺序由执行计划决定（实测种子数据 system 与 DemoBook 同为
+            # rank=1，侧栏顶级菜单顺序跨会话漂移，视觉基线随之抖动）
             route_list = RouteSerializer(
                 filter_menu_queryset(Menu.objects.filter(is_active=True, menu_type__in=menu_type))
                 .select_related("meta")
-                .order_by("rank"),
+                .order_by("rank", "pk"),
                 many=True,
                 ignore_field_permission=True,
             ).data
@@ -69,7 +72,10 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
             menu_queryset = get_user_menu_queryset(user_obj)
             if menu_queryset:
                 route_list = RouteSerializer(
-                    menu_queryset.filter(menu_type__in=menu_type).select_related("meta").distinct().order_by("rank"),
+                    menu_queryset.filter(menu_type__in=menu_type)
+                    .select_related("meta")
+                    .distinct()
+                    .order_by("rank", "pk"),
                     many=True,
                     ignore_field_permission=True,
                 ).data

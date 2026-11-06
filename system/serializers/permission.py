@@ -23,7 +23,8 @@ logger = get_logger(__name__)
 def get_menu_queryset() -> Any:
     queryset = Menu.objects
     pks = queryset.filter(menu_type=Menu.MenuChoices.PERMISSION).values_list("parent", flat=True)
-    return queryset.filter(Q(menu_type=Menu.MenuChoices.PERMISSION) | Q(id__in=pks)).order_by("rank")
+    # rank 并列以 pk 打破平局：单键排序下并列行顺序由执行计划决定，会跨会话漂移
+    return queryset.filter(Q(menu_type=Menu.MenuChoices.PERMISSION) | Q(id__in=pks)).order_by("rank", "pk")
 
 
 def expand_menu_scope(menus: Any) -> Any:

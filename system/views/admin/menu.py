@@ -74,7 +74,8 @@ class MenuViewSet(
 ):
     """菜单"""
 
-    queryset = Menu.objects.order_by("rank").all()
+    # rank 并列以 pk 打破平局（单键排序下并列行顺序由执行计划决定，实测会跨会话漂移）
+    queryset = Menu.objects.order_by("rank", "pk").all()
     serializer_class = MenuSerializer
     pagination_class = DynamicPageNumber(1000)
     ordering_fields = ["updated_time", "name", "created_time", "rank"]
