@@ -111,10 +111,13 @@ class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
             client = ChatCompletionsClient(creds)
             reply = client.chat([{"role": "user", "content": "ping"}])
         except AiSdkError as exc:
-            return ApiResponse(code=1002, detail=str(exc))
-        except Exception as exc:  # noqa: BLE001 测试入口兜底
+            logger.warning("AI connection test rejected: %s", exc)
+            return ApiResponse(code=1002, detail=_("AI connection test failed, please check the configuration"))
+        except Exception:  # noqa: BLE001 测试入口兜底
+            # 异常原文可能含 SQL / 内部路径 / 连接串：只进日志，不回传客户端
+            # （与 ai_api_actions 内部 dispatch 的兜底口径一致）
             logger.warning("AI connection test unexpected error", exc_info=True)
-            return ApiResponse(code=1002, detail=str(exc))
+            return ApiResponse(code=1002, detail=_("AI connection test failed, please try again later"))
         return ApiResponse(detail=_("AI provider OK: {}").format(reply[:80]))
 
 

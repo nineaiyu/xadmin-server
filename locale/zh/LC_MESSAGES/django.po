@@ -1613,6 +1613,22 @@ msgstr "API 密钥与模型不能为空"
 msgid "AI provider OK: {}"
 msgstr "AI 服务连通正常: {}"
 
+#: ai/views/assistant.py:115
+msgid "AI connection test failed, please check the configuration"
+msgstr "AI 连接测试失败，请检查配置"
+
+#: ai/views/assistant.py:120
+msgid "AI connection test failed, please try again later"
+msgstr "AI 连接测试失败，请稍后重试"
+
+#: audit/utils/impact.py:334
+msgid "Impact calculation failed"
+msgstr "影响面计算失败"
+
+#: audit/utils/impact.py:336
+msgid "Impact calculation failed; confirm the deletion impact manually"
+msgstr "影响面计算失败，请人工确认删除影响"
+
 #: ai/views/assistant.py:318
 msgid "Answer stream interrupted; partial content retained"
 msgstr "回答流已中断，已保留部分内容"
