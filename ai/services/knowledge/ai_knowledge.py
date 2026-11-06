@@ -237,20 +237,29 @@ def upsert_upload_document(name: str, content: str, creator: Any = None, defer_c
         # 大文本分块/向量化移出请求线程：先落库并置 PENDING，任务完成后再更新
         doc.chunk_count = 0
         doc.ingest_status = AiKnowledgeDocument.IngestStatus.PENDING
-    else:
-        doc.chunk_count = rebuild_chunks(doc)
-        doc.ingest_status = AiKnowledgeDocument.IngestStatus.SUCCESS
-    if creator is not None and getattr(creator, "pk", None):
-        doc.modifier = creator
-        if created:
-            doc.creator = creator
-    doc.save()
-    if defer_chunks:
+        if creator is not None and getattr(creator, "pk", None):
+            doc.modifier = creator
+            if created:
+                doc.creator = creator
+        doc.save()
         schedule_upload_ingest(doc)
         # eager（测试/E2E）下任务同步执行，回读一行以返回真实状态；
         # 生产为 PENDING，由前端轮询列表推进。
         doc.refresh_from_db()
     else:
+        # 分块重建与文档行落库同事务：两段写分离时 doc.save 失败（如并发撞
+        # path 唯一约束）会留下永不清理的孤儿块——上传前缀分块不在
+        # sync_knowledge 的自愈范围（exclude 上传前缀），且可被全部用户检索召回。
+        from django.db import transaction
+
+        with transaction.atomic():
+            doc.chunk_count = rebuild_chunks(doc)
+            doc.ingest_status = AiKnowledgeDocument.IngestStatus.SUCCESS
+            if creator is not None and getattr(creator, "pk", None):
+                doc.modifier = creator
+                if created:
+                    doc.creator = creator
+            doc.save()
         # 正文变更自动补齐向量：文档行已落库后调度，无档案/无待建静默跳过
         from ai.services.knowledge.ai_embeddings import schedule_auto_rebuild
 
