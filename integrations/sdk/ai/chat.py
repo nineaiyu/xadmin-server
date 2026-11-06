@@ -309,6 +309,10 @@ class ChatCompletionsClient:
         if response.status_code != 200:
             detail = response.text[:300]
             logger.warning("ai chat stream rejected: %s", detail)
+            # stream=True 下连接不自动归还连接池：显式关闭再抛错（测试桩可能无 close）
+            close = getattr(response, "close", None)
+            if close is not None:
+                close()
             raise AiSdkError("The AI provider rejected the streaming request")
 
         produced = False

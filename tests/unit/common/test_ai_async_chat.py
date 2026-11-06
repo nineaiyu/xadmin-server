@@ -223,3 +223,35 @@ async def test_stream_self_built_client_5xx_retry_reads_status(monkeypatch):
     frames = [item async for item in client.chat_stream([{"role": "user", "content": "hi"}])]
     assert calls["n"] == 2  # 500 一次 + 成功一次：重试判定读到状态码后才可能重试
     assert frames[-1] == {"type": "content", "text": "ok"}
+
+
+async def test_stream_self_built_client_non_200_releases_resources(monkeypatch):
+    """回归：自建客户端分支供应商最终返回非 200 时必须释放客户端与流响应。
+
+    非 200 分支在 finally 之前抛错，若不显式 closer() 会泄漏一个
+    httpx.AsyncClient 与未关闭的流式响应（高频失败累积文件描述符）。
+    """
+    import httpx
+
+    opened_clients: list = []
+
+    def handler(request):
+        return httpx.Response(401, content=b"unauthorized")
+
+    real_cls = httpx.AsyncClient
+
+    class _TrackedClient(real_cls):
+        def __init__(self, *args, **kwargs):
+            kwargs.pop("transport", None)
+            kwargs["transport"] = httpx.MockTransport(handler)
+            super().__init__(*args, **kwargs)
+            opened_clients.append(self)
+
+    monkeypatch.setattr(httpx, "AsyncClient", _TrackedClient)
+    monkeypatch.setattr("integrations.sdk.ai.async_chat._RETRY_BASE_DELAY", 0)
+
+    client = AsyncChatCompletionsClient({**CREDENTIALS, "allowed_hosts": ("ai.example.com",)})
+    with pytest.raises(AiSdkError, match="rejected the streaming request"):
+        [item async for item in client.chat_stream([{"role": "user", "content": "hi"}])]
+    assert opened_clients, "自建客户端分支未生效"
+    assert all(client.is_closed for client in opened_clients), "非 200 分支泄漏了未关闭的 AsyncClient"

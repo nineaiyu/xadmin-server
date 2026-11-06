@@ -270,6 +270,10 @@ class AsyncChatCompletionsClient:
             except Exception:  # noqa: BLE001 响应体不可读时按无细节处理
                 pass
             logger.warning("ai async chat stream rejected: %s", detail)
+            # 非 200 分支在 finally 之前：必须显式释放自建客户端与流响应，
+            # 否则每次供应商 4xx/5xx 都泄漏一个 httpx.AsyncClient 与未关闭的流
+            if closer is not None:
+                await closer()
             raise AiSdkError("The AI provider rejected the streaming request")
 
         produced = False
