@@ -91,7 +91,12 @@ def check_user_mfa_code(user: Any, method: str, code: str, request: Any = None) 
 def verify_user_confirm(
     user: Any, method: str, code: str, request: Any = None, confirm_type: str = ConfirmType.MFA
 ) -> tuple[bool, Any]:
-    """校验验证码并写入二次确认状态（有效期内敏感操作免重复验证）"""
+    """校验验证码并写入二次确认状态（有效期内敏感操作免重复验证）
+
+    确认状态按**请求级别**（confirm_type）而非验证方式级别写入：确认窗口的
+    有效期与解锁面都对应「这次操作的敏感度」——用 OTP（MFA 级方式）确认
+    PASSWORD 级请求，只解锁 PASSWORD 级窗口，不因验证方式级别高而放大。
+    """
     backend = get_backend(user, method, request=request)
     if not backend:
         return False, _("The verification method is unavailable")
@@ -100,7 +105,7 @@ def verify_user_confirm(
 
     ok, msg = check_user_mfa_code(user, method, code, request=request)
     if ok:
-        UserConfirmStateCache(user).set(backend.confirm_level, method)
+        UserConfirmStateCache(user).set(confirm_type, method)
     return ok, msg
 
 

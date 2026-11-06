@@ -67,7 +67,11 @@ def _missing_backup_channel(user: Any) -> bool:
 def _state_expire_at(state: Any) -> int | None:
     if not state:
         return None
-    ttl = int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[state["type"]]))
+    # 防御旧版本/损坏缓存结构：缺键按「已过期」处理（None），不抛 KeyError
+    state_type = state.get("type") if isinstance(state, dict) else None
+    if state_type not in CONFIRM_TYPE_TTL_SETTING or "time" not in state:
+        return None
+    ttl = int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[state_type]))
     return int(state["time"] + ttl)
 
 
@@ -193,6 +197,8 @@ class UserOTPViewSet(GenericViewSet):
 
         绑定的落库动作同样要求密码二次确认：仅持有会话不足以接管登录因子。
         绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。
+        候选密钥未入库（check_code 依赖入库密钥），此处直接 verify_code；
+        同码重放绑定确认会被「已绑定」前置拦截，无重放收益。
         """
         user = request.user
         if _binding_disallowed(user, OtpBackend.name):
@@ -251,7 +257,9 @@ class UserOTPViewSet(GenericViewSet):
     def open(self, request: Request, *args: Any, **kwargs: Any) -> Any:
         """重新开启登录二次验证
 
-        密钥保留时校验一次动态码证明持有，无需重新扫码
+        密钥保留时校验一次动态码证明持有，无需重新扫码。
+        走 ``check_code``（UsedOtpCodeCache 原子占位防同码重放，验码失败
+        自动释放不占位、不影响重试）。
         """
         user = request.user
         if _binding_disallowed(user, OtpBackend.name):
@@ -265,9 +273,10 @@ class UserOTPViewSet(GenericViewSet):
         block = MFABlockUtils(user.username, get_request_ip(request))
         if block.is_block():
             return ApiResponse(code=1001, detail=_("Too many failures, the account has been locked"))
-        if not OtpBackend.verify_code(user.otp_secret_key, serializer.validated_data["code"]):
+        ok, msg = OtpBackend(user).check_code(serializer.validated_data["code"])
+        if not ok:
             block.incr_failed_count()
-            return ApiResponse(code=1002, detail=_("The OTP verification code is incorrect"))
+            return ApiResponse(code=1002, detail=msg)
         block.clean_failed_count()
 
         user.mfa_level = get_user_model().MFALevelChoices.ENABLED
@@ -283,6 +292,8 @@ class UserOTPViewSet(GenericViewSet):
 
         供关闭登录二次验证后自检密钥可用性（换设备 / 手机时间漂移场景），
         避免重新开启时才发现码不对而连续失败触发锁定。
+        刻意不走 ``check_code`` 的防重放占位：自检的产品语义就是「先试一个码、
+        确认可用后马上拿同一个码去 open」——占位会把这个引导流程打断。
         """
         user = request.user
         if not user.otp_secret_key:

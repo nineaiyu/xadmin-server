@@ -120,3 +120,39 @@ class TestRequireUserConfirmationDecorator:
 
         with pytest.raises(MFAConfirmRequired):
             op(SimpleNamespace(user=normal_user))
+
+
+class TestConfirmStateLevelSemantics:
+    """确认状态按请求级别写入：验证方式级别不放大确认窗口（TTL 与解锁面）。"""
+
+    def test_state_records_request_level_not_method_level(self, settings, normal_user):
+        import pyotp
+
+        from mfa.services import verify_user_confirm
+
+        settings.SECURITY_MFA_CONFIRM_BACKENDS = ["otp", "password"]
+        secret = pyotp.random_base32()
+        normal_user.otp_secret_key = secret
+        normal_user.save(update_fields=["otp_secret_key"])
+        code = pyotp.TOTP(secret).now()
+        # 用 OTP（MFA 级方式）确认 PASSWORD 级请求
+        ok, msg = verify_user_confirm(normal_user, "otp", code, confirm_type=ConfirmType.PASSWORD)
+        assert ok, msg
+        state_cache = UserConfirmStateCache(normal_user)
+        assert state_cache.is_valid_for(ConfirmType.PASSWORD) is True
+        # 不因验证方式级别高而解锁 MFA 级窗口
+        assert state_cache.is_valid_for(ConfirmType.MFA) is False
+
+    def test_malformed_cache_state_is_invalid_not_error(self, settings, normal_user):
+        from django.core.cache import cache as django_cache
+
+        from mfa.views import _state_expire_at
+
+        state_cache = UserConfirmStateCache(normal_user)
+        key = state_cache.cache_key
+        # 缺 type / time 的旧版或损坏结构：按不满足处理，不抛 KeyError
+        django_cache.set(key, {"level": 3})
+        assert state_cache.is_valid_for(ConfirmType.MFA) is False
+        assert _state_expire_at({"level": 3}) is None
+        # 合法结构：过期时间可正常计算
+        assert _state_expire_at({"type": ConfirmType.MFA, "time": 1000.0}) is not None

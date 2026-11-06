@@ -22,7 +22,8 @@ class MfaRecoveryCode(models.Model):
         on_delete=models.CASCADE,
         related_name="mfa_recovery_codes",
     )
-    code_hash = models.CharField(verbose_name=_("Code hash"), max_length=64)
+    # 版本化摘要（pbkdf2$iter$salt$hash ≈ 111 字符），旧无盐 sha256 为 64 字符
+    code_hash = models.CharField(verbose_name=_("Code hash"), max_length=128)
     created_time = models.DateTimeField(verbose_name=_("Created time"), auto_now_add=True)
     used_time = models.DateTimeField(verbose_name=_("Used time"), null=True, blank=True)
 

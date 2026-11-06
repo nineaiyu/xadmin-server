@@ -48,13 +48,22 @@ class UserConfirmStateCache:
         cache.delete(self.cache_key)
 
     def is_valid_for(self, confirm_type: str) -> bool:
-        """当前确认状态是否满足指定验证类型（级别足够且未过有效期）"""
+        """当前确认状态是否满足指定验证类型（级别足够且未过有效期）
+
+        TTL 双重判定是有意的保守语义：Redis 键 TTL 是硬上界（写入时按当时配置
+        计算），time.time 二次判定按**当前**配置收紧——配置调小立即生效、调大
+        只对新确认生效（旧状态最多活到写入时的 Redis TTL）。缓存结构缺键
+        （旧版本数据 / 损坏）按不满足处理，不抛 KeyError。
+        """
         state = self.get()
         if not state:
             return False
         if state.get("level", 0) < CONFIRM_TYPE_LEVEL[confirm_type]:
             return False
-        ttl = int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[state["type"]]))
+        state_type = state.get("type")
+        if state_type not in CONFIRM_TYPE_TTL_SETTING:
+            return False
+        ttl = int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[state_type]))
         return bool(time.time() - state.get("time", 0) <= ttl)
 
 

@@ -284,3 +284,34 @@ class TestBackendRegistry:
         settings.EMAIL_ENABLED = True
         # 全局方式白名单收窄为 email，otp 即使在启用后端名单里也不可用
         assert get_backend(normal_user, "otp") is None
+
+
+class TestOtpReplayProtection:
+    """OTP 防重放（open 重新开启链路走 check_code，守护同码二用被拒）。"""
+
+    def test_same_code_consumed_once(self, normal_user):
+        import pyotp
+
+        from mfa.backends.otp import OtpBackend
+
+        secret = pyotp.random_base32()
+        normal_user.otp_secret_key = secret
+        normal_user.save(update_fields=["otp_secret_key"])
+        code = pyotp.TOTP(secret).now()
+        backend = OtpBackend(normal_user)
+        assert backend.check_code(code) == (True, "")
+        # 同码二用被拒（文案随 locale，只断言结果）
+        assert backend.check_code(code)[0] is False
+
+    def test_failed_attempt_does_not_consume_valid_code(self, normal_user):
+        import pyotp
+
+        from mfa.backends.otp import OtpBackend
+
+        normal_user.otp_secret_key = pyotp.random_base32()
+        normal_user.save(update_fields=["otp_secret_key"])
+        backend = OtpBackend(normal_user)
+        # 验码失败自动释放占位：错码不烧掉当前窗口的有效码
+        assert backend.check_code("000000")[0] is False
+        code = pyotp.TOTP(normal_user.otp_secret_key).now()
+        assert backend.check_code(code) == (True, "")

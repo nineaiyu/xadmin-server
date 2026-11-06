@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""OTP 恢复码单元测试：生成 / 哈希落库 / 一次性消费 / 后端注册语义。"""
+"""OTP 恢复码单元测试：生成 / 哈希落库 / 一次性消费 / 后端注册语义 / 版本化摘要。"""
 
 import hashlib
 
@@ -19,11 +19,39 @@ class TestCodeFormat:
         assert recovery.normalize_code("a b c d") == "abcd"
         assert recovery.normalize_code(None) == ""
 
-    def test_hash_is_sha256_of_normalized_code(self):
-        assert recovery.hash_code("ABCD-EF12") == hashlib.sha256(b"abcdef12").hexdigest()
+    def test_hash_is_salted_pbkdf2_of_normalized_code(self):
+        digest = recovery.hash_code("ABCD-EF12")
+        assert digest.startswith("pbkdf2$100000$")
+        # 随机盐：同一明文两次产出不同（拖库后无法建统一彩虹表）
+        assert recovery.hash_code("ABCD-EF12") != digest
 
     def test_format_groups_five_five(self):
         assert recovery.format_code("abcdefghij") == "abcde-fghij"
+
+
+class TestVersionedDigest:
+    """版本化摘要：新格式加盐慢哈希，旧无盐 sha256 兼容验证 + 消费即升级。"""
+
+    def test_legacy_sha256_row_verifies_and_upgrades(self, normal_user):
+        legacy_hash = hashlib.sha256(b"abcdef1234").hexdigest()
+        MfaRecoveryCode.objects.create(user=normal_user, code_hash=legacy_hash)
+        ok, msg = recovery.verify_and_consume(normal_user, "ABCDE-F1234")
+        assert ok, msg
+        row = MfaRecoveryCode.objects.get(user=normal_user)
+        # lazy rehash：验成功后原地升级为加盐慢哈希
+        assert row.code_hash.startswith("pbkdf2$")
+        assert row.used_time is not None
+
+    def test_corrupted_digest_row_rejected_without_error(self, normal_user):
+        MfaRecoveryCode.objects.create(user=normal_user, code_hash="pbkdf2$not-a-number$zz$qq")
+        ok, _ = recovery.verify_and_consume(normal_user, "abcdef1234")
+        assert ok is False
+
+    def test_new_format_digest_roundtrip(self, normal_user):
+        code = "abcdefghij"
+        MfaRecoveryCode.objects.create(user=normal_user, code_hash=recovery.hash_code(code))
+        ok, msg = recovery.verify_and_consume(normal_user, "abcde-fghij")
+        assert ok, msg
 
 
 class TestGenerate:
@@ -39,9 +67,11 @@ class TestGenerate:
         rows = MfaRecoveryCode.objects.filter(user=normal_user)
         assert rows.count() == recovery.RECOVERY_CODE_COUNT
         stored = {row.code_hash for row in rows}
-        assert stored == {recovery.hash_code(code) for code in codes}
+        # 版本化摘要（随机盐）：全部为 pbkdf2 前缀，且明文不落库
+        assert all(h.startswith("pbkdf2$") for h in stored)
         for code in codes:
             assert code not in stored
+            assert code.replace("-", "") not in "".join(stored)
 
     def test_regenerate_invalidates_old_batch(self, normal_user):
         old = recovery.generate_codes(normal_user)
