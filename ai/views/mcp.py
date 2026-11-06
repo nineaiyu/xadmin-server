@@ -197,6 +197,10 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
 
         result = execute_idempotent(user, name, clean, partial(execute_action, request=request))
         ok = bool(result.get("ok"))
+        # 审计 result 与助手页通道（views/actions.py）同口径脱敏：MCP 通道结果
+        # 同样可能携带业务接口响应体
+        from common.core.oplog_recorder import desensitize_payload
+
         audit_ai_action(
             user,
             name,
@@ -205,7 +209,7 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
             str(result.get("detail") or ""),
             {
                 "channel": "mcp",
-                "result": result.get("data") or {},
+                "result": desensitize_payload(result.get("data") or {}),
                 "draft_id": result.get("draft_id"),
                 "deduplicated": bool(result.get("deduplicated")),
             },

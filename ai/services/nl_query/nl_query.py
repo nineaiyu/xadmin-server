@@ -236,31 +236,27 @@ def audit_nl_query(
 
     usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。
     guard 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数，缺省不写）。
+    落库统一走 ``audit.services.record``；``object_pk`` 写操作人主键与
+    AI:action 同口径（观测看板 top_users 归集契约）。
     """
-    from audit.services import OperationLog
+    from audit.services import OperationLog, record
     from common.core.oplog_recorder import desensitize_payload
 
-    try:
-        OperationLog.objects.create(
-            module="AI:nl_query",
-            object_pk=str(user_obj.pk),
-            auth_type=OperationLog.AuthType.AI,
-            status_code=API_SUCCESS_CODE if error == "" else 1001,
-            response_code=API_SUCCESS_CODE if error == "" else 1001,
-            changes=json.dumps(
-                {
-                    "action": action,
-                    "question": (question or "")[:120],
-                    # DSL 含用户过滤值（可能是手机号/证件号）：与动作结果同口径脱敏
-                    "dsl": desensitize_payload(dsl),
-                    "rows": rows,
-                    "error": error,
-                    **({"usage": usage} if usage else {}),
-                    **({"guard": guard} if guard else {}),
-                },
-                ensure_ascii=False,
-                default=str,
-            )[:4096],
-        )
-    except Exception:  # noqa: BLE001 审计失败不影响业务
-        logger.warning("write NL query audit failed", exc_info=True)
+    record(
+        module="AI:nl_query",
+        object_pk=str(user_obj.pk),
+        creator=user_obj,
+        auth_type=OperationLog.AuthType.AI,
+        status_code=API_SUCCESS_CODE if error == "" else 1001,
+        response_code=API_SUCCESS_CODE if error == "" else 1001,
+        changes={
+            "action": action,
+            "question": (question or "")[:120],
+            # DSL 含用户过滤值（可能是手机号/证件号）：与动作结果同口径脱敏
+            "dsl": desensitize_payload(dsl),
+            "rows": rows,
+            "error": error,
+            **({"usage": usage} if usage else {}),
+            **({"guard": guard} if guard else {}),
+        },
+    )

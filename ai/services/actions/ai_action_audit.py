@@ -20,10 +20,16 @@ from common.core.response import API_SUCCESS_CODE
 def audit_ai_action(
     user: Any, action_key: str, params: Any, ok: bool, detail: str, extra: dict[str, Any] | None = None
 ) -> None:
-    """AI 动作语义审计：落 OperationLog(module=AI:action, auth_type=ai)。"""
+    """AI 动作语义审计：落 OperationLog(module=AI:action, auth_type=ai)。
+
+    ``object_pk`` 写操作人主键是观测看板 top_users 的既定消费契约
+    （``ai/views/observability.py`` 按 object_pk 归集用户），非语义错位；
+    按操作人筛选走 ``creator`` 列。
+    """
     record(
         module="AI:action",
         object_pk=str(getattr(user, "pk", "")),
+        creator=user,
         auth_type=OperationLog.AuthType.AI,
         status_code=API_SUCCESS_CODE if ok else 1001,
         response_code=API_SUCCESS_CODE if ok else 1001,
@@ -54,6 +60,7 @@ def audit_ai_ask(
     record(
         module="AI:ask",
         object_pk=str(getattr(user_obj, "pk", "")),
+        creator=user_obj,
         auth_type=OperationLog.AuthType.AI,
         status_code=API_SUCCESS_CODE if ok else 1001,
         response_code=API_SUCCESS_CODE if ok else 1001,

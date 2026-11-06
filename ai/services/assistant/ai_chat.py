@@ -59,8 +59,12 @@ def persist_message(
 
     持久化失败不影响对话本身（与审计同口径：吞异常 + 日志），但调用方在
     ``done`` 载荷里应容忍 ``message`` 缺失（前端回落本地构造）。
+    ``extra`` 落库前统一脱敏（与操作日志 ``desensitize_payload`` 同口径）：
+    动作执行结果 / NL 查数结果等结构化载荷可能携带业务接口响应体
+    （用户 / 角色字段值），历史接口会原样回吐，落库侧必须与审计侧同标高。
     """
     from ai.models.ai import AiChatMessage
+    from common.core.oplog_recorder import desensitize_payload
 
     try:
         return AiChatMessage.objects.create(
@@ -68,7 +72,7 @@ def persist_message(
             role=role,
             content=clip_content(content),
             reasoning=clip_reasoning(reasoning),
-            extra=_json_safe(extra or {}),
+            extra=_json_safe(desensitize_payload(extra or {})),
             creator=user,
             modifier=user,
             dept_belong=getattr(user, "dept", None),

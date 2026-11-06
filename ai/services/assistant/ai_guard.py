@@ -24,7 +24,6 @@ JSON 结构；可读摘要与最终落库文本仍走脱敏。
 """
 
 import hashlib
-import json
 import re
 from typing import Any
 
@@ -163,24 +162,20 @@ def audit_ai_security(user: Any, kind: str, detail: str = "", extra: dict[str, A
 
     非 1000 状态码使事件进入监控面板的错误事件流（``collect_error_events``），
     无需新增模型/枚举；写失败只记日志，不影响业务链路。
+    落库统一走 ``audit.services.record``（序列化 / 截断 / creator 解析单源）；
+    ``object_pk`` 写操作人主键与 AI:action / AI:ask 同口径（观测看板归集契约）。
     """
-    from audit.services import OperationLog
+    from audit.services import OperationLog, record
 
-    try:
-        OperationLog.objects.create(
-            module=AUDIT_MODULE,
-            object_pk=str(getattr(user, "pk", "") or ""),
-            auth_type=OperationLog.AuthType.AI,
-            status_code=1001,
-            response_code=1001,
-            changes=json.dumps(
-                {"kind": kind, "detail": (detail or "")[:200], **(extra or {})},
-                ensure_ascii=False,
-                default=str,
-            )[:4096],
-        )
-    except Exception:  # noqa: BLE001 审计失败不影响业务
-        logger.warning("write AI security audit failed", exc_info=True)
+    record(
+        module=AUDIT_MODULE,
+        object_pk=str(getattr(user, "pk", "") or ""),
+        creator=user,
+        auth_type=OperationLog.AuthType.AI,
+        status_code=1001,
+        response_code=1001,
+        changes={"kind": kind, "detail": (detail or "")[:200], **(extra or {})},
+    )
 
 
 def annotate_reference(text: str, label: str = "", user: Any = None, kind: str = "reference") -> tuple[Any, ...]:
