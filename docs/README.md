@@ -81,6 +81,7 @@
 | [asvs-mapping.md](asvs-mapping.md) | **OWASP ASVS L1/L2 对照表**：安全现状映射 + 差距项归属（自动化可下沉 / 接受项 / 触发条件），用于回答客户安全问卷 |
 | [audit/2026-11-03-backend.md](audit/2026-11-03-backend.md) | **后端功能与数据链路审查报告（2026-11-03）**：只读逐文件审查 + 全量测试/门禁验证；问题清单（3 中 / 6 低）、肯定项与未覆盖面；工作区级三域合并总审查（前端 / 后端 / 安全统一口径、去重与修复优先级）另见工作区根 `docs/audit/2026-11-03-full-review.md` |
 | [audit/2026-11-03-backend-security-fixes.md](audit/2026-11-03-backend-security-fixes.md) | **审查修复报告（2026-11-03）**：后端 BE-M1~M3 / BE-L1~L6 与服务端安全项 SEC-M2 / SEC-L1~L3 的逐项修复方式、守护测试与部署确认清单 |
+| [audit/2026-11-06-code-review-verification.md](audit/2026-11-06-code-review-verification.md) | **双仓审查核实与修复报告（2026-11-06）**：对 2026-11-05/06 两篇全栈+前端只读审查（15 P2 + 154 OPT）逐条回码核实——12 P2 已修（AI 审计收口 / 落库脱敏 / 缓存串扰 / dispatch 日志 / 字节上限 / 孤儿块 / 流式泄漏 / 引用保护 fail-closed / 跨部门枚举 / tooltip 注入）、1 P2 不属实（MCP 域口径自洽）、2 P2 属实待裁决（口令弱密钥协议 / 跨域选人）；6 条高价值 OPT 修复、其余按 i18n 专项 / 防御纵深 / 产品口径归并说明；验证证据与待环境项 |
 | [audit/2026-11-03-backend-security-gap-closure.md](audit/2026-11-03-backend-security-gap-closure.md) | **查漏补缺与根因治理报告（2026-11-03）**：全部后端/安全条目（含观察项）逐条回码复核；补做项（操作日志告警出口、doctor 的 Redis AOF 与 beat 存活自检、认证 Cookie 单一读取入口）；三项机制化（`check_task_acks` 门禁 / Cookie 入口守护 / 敏感键注册表全量守护）与自测证据；9241 vs 8013 用例数差异定谳（pytest nodeids 缓存累计口径）；全量验证记录与待人工项 |
 
 ## 五、目录结构与维护约定
