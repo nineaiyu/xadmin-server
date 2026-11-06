@@ -183,3 +183,20 @@ class TestImpactGuard:
             "/api/identity/role/batch-destroy?impact_confirmed=true", [str(role.pk)], format="json"
         )
         assert confirmed.json()["code"] == 1000
+
+    def test_guard_fail_closed_on_calculator_error(self, auth_client, settings, monkeypatch):
+        """回归：计算器异常必须按「有影响」处理（fail-closed），不得静默放行删除。"""
+        from audit.utils.impact import IMPACT_CALCULATORS
+
+        def _broken(_obj):
+            raise RuntimeError("calculator exploded")
+
+        monkeypatch.setitem(IMPACT_CALCULATORS, "identity.userrole", _broken)
+        settings.IMPACT_GUARD_MODELS = ["identity.userrole"]
+        role = self._role_with_user()
+        response = auth_client.delete(f"/api/identity/role/{role.pk}")
+        assert response.status_code == 400
+        assert UserRole.objects.filter(pk=role.pk).exists()
+
+        confirmed = auth_client.delete(f"/api/identity/role/{role.pk}?impact_confirmed=true")
+        assert confirmed.json()["code"] == 1000

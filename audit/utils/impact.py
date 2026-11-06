@@ -314,16 +314,29 @@ def supports_impact(model_label: str) -> bool:
 
 
 def impact_for(obj: Any) -> dict[str, Any]:
-    """单对象影响面（无计算器 = 零影响，前端不展示弹窗）。"""
+    """单对象影响面（无计算器 = 零影响，前端不展示弹窗）。
+
+    计算器异常按「有影响」处理（fail-closed）：引用保护的失败方向必须与
+    模块承诺一致——计算失败时放行删除会静默突破 ``IMPACT_GUARD_MODELS``
+    的防护意图，预览端点也会如实展示「计算失败」条目。
+    """
     model_label = type(obj)._meta.label_lower
     calculator = IMPACT_CALCULATORS.get(model_label)
     checks: list[ImpactCheck] = []
     if calculator is not None:
         try:
             checks = [item for item in (calculator(obj) or []) if item.count][:MAX_ITEMS]
-        except Exception:  # noqa: BLE001 单个计算器失败不影响其余检查
+        except Exception:  # noqa: BLE001 计算失败按有影响处理（fail-closed）
             logger.warning("impact calculation failed. model:%s pk:%s", model_label, obj.pk, exc_info=True)
-            checks = []
+            checks = [
+                ImpactCheck(
+                    key="impact_calc_error",
+                    label=_("Impact calculation failed"),
+                    count=1,
+                    hint=str(_("Impact calculation failed; confirm the deletion impact manually")),
+                    samples=(),
+                )
+            ]
     suggestions = []
     for item in checks:
         if item.hint and item.hint not in suggestions:
