@@ -50,6 +50,12 @@ class McpCallLogViewSet(OnlyListModelSet, DetailAction, OnlyExportDataAction, Ge
     """MCP 调用审计
 
     单服务器调用流水（module=AI:mcp:client）：只读 + 详情 + 导出，不可删除
+
+    ``filter_backends`` 显式覆写（不含 ``BaseDataPermissionFilter``）与同域
+    ``McpServerViewSet`` 同口径：MCP 服务器是全局配置资源、不做行级数据权限，
+    调用流水跟随服务器可见性（持有 ``list:AiMcpServers`` 即可排障全部流水）；
+    与全模块操作日志页（``OperationLogViewSet`` 走数据权限默认链）口径不同是
+    域级设计而非遗漏。
     """
 
     queryset = OperationLog.objects.filter(module=MCP_AUDIT_MODULE)
