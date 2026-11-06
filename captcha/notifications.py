@@ -4,10 +4,20 @@
 
 from typing import Any
 
+from django.utils.html import format_html, format_html_join
 from django.utils.translation import gettext_lazy as _
 
 from identity.services import get_active_superuser_queryset
 from notifications.services import BACKEND, SystemMessage, SystemMsgSubscription, register_message
+
+#: 风险统计键的可读标签（静态映射；未登记的新键回退原键名，告警内容不因缺词条丢失）
+_RISK_LABELS: dict[str, Any] = {
+    "kind": _("Risk type"),
+    "deny_rate": _("Deny rate"),
+    "samples": _("Samples"),
+    "reason": _("Trigger reason"),
+    "ip_hash": _("IP hash"),
+}
 
 
 @register_message
@@ -23,9 +33,16 @@ class CaptchaRiskAlertMessage(SystemMessage):
 
     def get_html_msg(self) -> dict[str, Any]:
         subject = _("Captcha risk alert: {}").format(self.info.get("kind"))
-        message = "<p>{}</p><ul>{}</ul>".format(
+        # format_html_join 逐项转义：统计值当前是聚合指标/加盐哈希（无自由文本），
+        # 但转义让「值可安全嵌入 HTML」成为结构性保证，后续新增键无需逐个审查
+        message = format_html(
+            "<p>{}</p><ul>{}</ul>",
             subject,
-            "".join(f"<li>{key}: {value}</li>" for key, value in self.info.items()),
+            format_html_join(
+                "",
+                "<li>{}: {}</li>",
+                ((str(_RISK_LABELS.get(key, key)), str(value)) for key, value in self.info.items()),
+            ),
         )
         return {"subject": subject, "message": message}
 

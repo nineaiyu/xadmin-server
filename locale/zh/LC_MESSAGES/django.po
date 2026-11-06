@@ -1613,6 +1613,26 @@ msgstr "API 密钥与模型不能为空"
 msgid "AI provider OK: {}"
 msgstr "AI 服务连通正常: {}"
 
+#: ai/apps.py:8
+msgid "AI platform and knowledge base"
+msgstr "AI 平台与知识库"
+
+#: settings/serializers/sms.py:42
+msgid "Access Key ID"
+msgstr "Access Key ID"
+
+#: settings/serializers/sms.py:44
+msgid "Access Key Secret"
+msgstr "Access Key Secret"
+
+#: captcha/notifications.py:17
+msgid "Samples"
+msgstr "样本数"
+
+#: captcha/notifications.py:18
+msgid "Trigger reason"
+msgstr "触发原因"
+
 #: ai/views/assistant.py:115
 msgid "AI connection test failed, please check the configuration"
 msgstr "AI 连接测试失败，请检查配置"
