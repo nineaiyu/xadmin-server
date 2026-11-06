@@ -18,6 +18,9 @@ from user_agents import parse
 from common.core.auth import GetUserFromAccessToken
 from common.core.url_inventory import get_doc_first_line
 from common.settings_contract import kernel_required_setting, kernel_setting
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 #: multipart 请求体解析上限（只解析小表单的字段名；超大请求不读正文，避免整包进内存）
 MULTIPART_FIELD_PARSE_LIMIT = 64 * 1024
@@ -50,8 +53,10 @@ def get_request_user(request: Any) -> Any:
                 )()
                 user = auth_class.get_user(token)
         except Exception:
-            # refresh 令牌同样不可用：按匿名用户处理（由视图权限决定 401）
-            pass
+            # refresh 令牌同样不可用：按匿名用户处理（由视图权限决定 401）。
+            # 留一条 debug 痕迹：解析服务异常（区别于令牌无效）曾被静默吞掉，
+            # 依赖方排障时无法区分「无凭证」与「解析链路故障」
+            logger.debug("get_request_user fell back to anonymous user", exc_info=True)
     return user or AnonymousUser()
 
 

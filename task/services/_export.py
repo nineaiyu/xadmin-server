@@ -221,7 +221,11 @@ def run_async_export(record_id: Any, view_path: Any, query_params: Any, user_pk:
             content = response.content
         _save_progress(record, 80, stage=_("Rendering content"))
 
-        filename = f"{record.name}.{record.file_format}"
+        # record.name 用户可控：产物文件名统一净化（basename + 控制字符剥离），
+        # 防路径分隔符进入存储路径或邮件附件名
+        from file.utils.upload_store import sanitize_filename
+
+        filename = f"{sanitize_filename(record.name)}.{record.file_format}"
         persist_export_artifact(record, filename, content, user=user)
         if hasattr(content, "close"):
             content.close()

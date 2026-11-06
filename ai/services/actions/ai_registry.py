@@ -90,6 +90,11 @@ def register_action(spec: Any) -> Any:
         raise ImproperlyConfigured("AI 动作必须携带 key")
     if key in _EXTRA_ACTIONS:
         raise ImproperlyConfigured(f"AI 动作 key 重复：{key}（register_action）")
+    # 与声明文件（ai_declarations.py）的冲突同样即时 fail-fast：静默登记会让
+    # 冲突延迟到首个工具目录构建才爆（此时故障定位已远离登记点）
+    for app_config in django_apps.get_app_configs():
+        if key in _app_declarations(app_config):
+            raise ImproperlyConfigured(f"AI 动作 key 重复：{key}（与声明文件 {app_config.name} 冲突）")
     _EXTRA_ACTIONS[key] = spec
     action_specs.cache_clear()
     return spec

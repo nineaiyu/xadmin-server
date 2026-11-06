@@ -203,6 +203,9 @@ def tracked_chat(
             model=getattr(client, "model", ""),
             track=track,
         )
+        # 失败调用同样计入日配额（today_usage 统计全部行）：与成功路径一致
+        # 失效汇总缓存，否则 60s 窗口内失败不消耗配额、与记账口径漂移
+        invalidate_usage_cache(user)
         raise
     record_usage(
         user,
@@ -247,6 +250,9 @@ def tracked_chat_tools(
             model=getattr(client, "model", ""),
             track=track,
         )
+        # 失败调用同样计入日配额（today_usage 统计全部行）：与成功路径一致
+        # 失效汇总缓存，否则 60s 窗口内失败不消耗配额、与记账口径漂移
+        invalidate_usage_cache(user)
         raise
     record_usage(
         user,

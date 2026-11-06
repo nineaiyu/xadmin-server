@@ -125,6 +125,10 @@ class AiKnowledgeDocumentViewSet(
         """
         if not isinstance(request.data, (list, tuple)):
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+        # 元素类型归一：dict/list 等畸形元素会让 Django 转换 pk 时抛 ValidationError
+        # 裸奔成 500，按可读参数错误拒绝（与序列化器校验同语义）
+        if any(not isinstance(item, (str, int)) for item in request.data):
+            return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
         queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=request.data)
         count = 0
         failures = []

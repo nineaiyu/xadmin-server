@@ -257,7 +257,10 @@ def _relative_path(path: Path) -> str:
             return f"{prefix}/{path.relative_to(root).as_posix()}"
         except ValueError:
             continue
-    return path.as_posix()
+    # 兜底分支只收单级文件名：root 外路径（含绝对路径/意外形态）不能原样
+    # 进 zip 条目名——解压端存在 zip-slip 面；产物路径来自生成器而非外部
+    # 输入，此处为结构性防御
+    return f"generated/{path.name}"
 
 
 def _relative_artifacts(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]:

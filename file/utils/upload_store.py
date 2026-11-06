@@ -130,12 +130,16 @@ def check_upload_limits(user_obj: Any, file_objs: Any) -> list[int]:
 
     sizes: list[int] = []
     for file_obj in file_objs:
+        # 校验与落盘同源：扩展名/内容校验一律用净化后的文件名（store_upload_file
+        # 落盘即 sanitize），否则极端文件名（路径分隔符/控制字符）可让「被校验的
+        # 对象」与「实际落盘的对象」不一致
+        safe_name = sanitize_filename(file_obj.name)
         # 上传安全策略：扩展名黑名单（默认拒绝可执行 / 脚本类）+ 可选白名单，fail-closed；
         # 内容 magic 抽检（伪装扩展名的二进制内容存储侧即拒，见 file_audit）
-        extension_error = validate_upload_extension(file_obj.name)
+        extension_error = validate_upload_extension(safe_name)
         if extension_error:
             raise UploadError(INVALID_CODE, extension_error)
-        content_error = validate_upload_content(file_obj.name, file_obj)
+        content_error = validate_upload_content(safe_name, file_obj)
         if content_error:
             raise UploadError(INVALID_CODE, content_error)
         try:

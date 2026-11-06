@@ -312,6 +312,7 @@ def _run_scheduled_report(self: Any, report_id: str, bookkeep_schedule: bool) ->
     # 创建者），调度链路不经过 run 动作的前置校验，必须在这里再判一次。判定为
     # 配置态问题（非瞬时故障）：记 FAILURE 后正常返回，不进入重试/告警风暴。
     from dataset.utils.dataset import dataset_visible_to
+    from file.utils.upload_store import sanitize_filename  # report.name 用户可控：产物/附件名净化，防路径分隔符
 
     if not dataset_visible_to(user, report.dataset_id):
         detail = str(_("The dataset is not visible to the report creator, run cancelled"))
@@ -328,7 +329,7 @@ def _run_scheduled_report(self: Any, report_id: str, bookkeep_schedule: bool) ->
         update_progress(KIND_REPORT, record.pk, 20, stage=_("Querying dataset"))
         content, rows = _render_workbook(report, user)
         update_progress(KIND_REPORT, record.pk, 80, stage=_("Rendering workbook"))
-        filename = f"{report.name}-{timezone.localtime():%Y%m%d%H%M}.xlsx"
+        filename = f"{sanitize_filename(report.name)}-{timezone.localtime():%Y%m%d%H%M}.xlsx"
         persist_export_artifact(record, filename, content, user=user)
         record.rows = rows
         record.status = ExportRecord.Status.SUCCESS

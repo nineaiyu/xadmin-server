@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 6/29/2023
 import base64
+import re
 from typing import Any
 
 from django.http import HttpResponse
@@ -23,6 +24,19 @@ FLOWER_HOST = kernel_setting("CELERY_FLOWER_HOST")
 FLOWER_PORT = kernel_setting("CELERY_FLOWER_PORT")
 flower_url = f"{FLOWER_HOST}:{FLOWER_PORT}"
 
+#: Flower 代理路径段白名单：只放行安全字符的 API 子路径；``..`` 段与查询串
+#: 注入一律拒绝——出站目标虽固定为内网 Flower（非外部 SSRF），但路径拼入
+#: URL 前收敛形态可防探测 Flower 其它端点
+_ALLOWED_PATH_RE = re.compile(r"^[A-Za-z0-9_\-./]*$")
+
+
+def _guard_flower_path(path: str) -> str:
+    """收敛代理路径：非法形态直接按服务不可用口径拒绝（不透传给 Flower）。"""
+    segments = str(path or "").strip("/")
+    if not _ALLOWED_PATH_RE.fullmatch(segments) or ".." in segments.split("/"):
+        raise ValueError("invalid flower proxy path")
+    return segments
+
 
 class CeleryFlowerAPIView(GenericAPIView):
     """celery 定时任务"""
@@ -31,7 +45,14 @@ class CeleryFlowerAPIView(GenericAPIView):
     @xframe_options_exempt  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def get(self, request: Any, path: str) -> Any:
         """获取{cls}"""
-        remote_url = f"http://{flower_url}/api/flower/{path}"
+        try:
+            safe_path = _guard_flower_path(path)
+        except ValueError:
+            logger.warning("celery flower proxy rejected invalid path: %r", path)
+            return HttpResponse(
+                str(_("<h3>Celery flower service unavailable. Please contact the administrator</h3>")), status=404
+            )
+        remote_url = f"http://{flower_url}/api/flower/{safe_path}"
         try:
             basic_auth = base64.b64encode(kernel_setting("CELERY_FLOWER_AUTH").encode("utf-8")).decode("utf-8")
             response = proxy_view(

@@ -141,7 +141,10 @@ class SchemaMixin:
 
     def get_cache_key(self, view_instance: Any, view_method: Any, request: Any, args: Any, kwargs: Any) -> str:
         func_name = f"{view_instance.__class__.__name__}_{view_method.__name__}"
-        return f"{func_name}_{request.user.pk}"
+        # 键含语言维度：schema 文案随请求语言变化，同用户跨语言不得共享缓存
+        from django.utils.translation import get_language
+
+        return f"{func_name}_{request.user.pk}_{get_language()}"
 
 
 @extend_schema(exclude=True)
