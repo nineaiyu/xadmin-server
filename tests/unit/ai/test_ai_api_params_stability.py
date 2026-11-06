@@ -80,3 +80,33 @@ class TestDisplayValueResolution:
 
         _path_params, _body, _query, error = resolve_api_params(spec, user, clean)
         assert error and "stab_gone" in error
+
+    def test_resolution_cache_isolated_per_user(self):
+        """展示值解析缓存按用户隔离：B 不得复用 A 的确认态映射。"""
+        from ai.services.actions.ai_api_params import _recall_param_resolution, remember_param_resolution
+
+        user_a = UserInfo.objects.create_user(username="iso_user_a", password="Test@123456")
+        user_b = UserInfo.objects.create_user(username="iso_user_b", password="Test@123456")
+        remember_param_resolution("user", "稳定用户(stab_target)", "123", user_a)
+        assert _recall_param_resolution("user", "稳定用户(stab_target)", user_a) == "123"
+        # B / 无用户上下文都不得命中 A 的映射
+        assert _recall_param_resolution("user", "稳定用户(stab_target)", user_b) is None
+        assert _recall_param_resolution("user", "稳定用户(stab_target)") is None
+
+    def test_cross_user_execution_not_reuse_confirmed_mapping(self):
+        """跨用户执行不复用他人确认态：目标改名后 B 按名称解析失败（A 缓存不生效）。"""
+        target = UserInfo.objects.create_user(username="iso_target", password="Test@123456", nickname="跨用户目标")
+        user_a = UserInfo.objects.create_user(username="iso_user_a2", password="Test@123456")
+        user_b = UserInfo.objects.create_user(username="iso_user_b2", password="Test@123456")
+        spec = _spec()
+        clean = _display_params(spec, user_a, {"user": "iso_target"})
+
+        # A 确认后目标改名：A 自己仍能稳定执行（缓存），B 按展示文本解析应失败
+        target.username = "iso_target_renamed"
+        target.save(update_fields=["username"])
+        _path_params, _body, _query, error = resolve_api_params(spec, user_b, clean)
+        assert error and "iso_target" in error
+
+        path_params, body, _query, error = resolve_api_params(spec, user_a, clean)
+        assert error is None, error
+        assert body["user"] == str(target.pk)

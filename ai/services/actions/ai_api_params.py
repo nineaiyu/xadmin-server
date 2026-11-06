@@ -119,24 +119,29 @@ def _menu_display(pks: Any) -> list[Any]:
     return names
 
 
-def _resolution_cache_key(kind: str, display: Any) -> str:
-    """展示值 → 解析结果的缓存键（展示值可为标量或名称数组，统一 JSON 归一）。"""
+def _resolution_cache_key(kind: str, display: Any, user: Any = None) -> str:
+    """展示值 → 解析结果的缓存键（展示值可为标量或名称数组，统一 JSON 归一）。
+
+    键含用户维度：同一展示文本由不同用户确认时映射互相隔离——跨用户复用
+    会绕过同名菜单的「请用主键」保护并让确认卡片与实际执行对象错位。
+    """
     payload = json.dumps(display, ensure_ascii=False, sort_keys=True, default=str)
     digest = hashlib.sha256(f"{kind}:{payload}".encode()).hexdigest()[:32]
-    return f"{PARAM_RESOLUTION_CACHE_PREFIX}{kind}_{digest}"
+    user_pk = getattr(user, "pk", None) or "anon"
+    return f"{PARAM_RESOLUTION_CACHE_PREFIX}{kind}_{user_pk}_{digest}"
 
 
-def remember_param_resolution(kind: str, display: Any, resolved: Any) -> None:
+def remember_param_resolution(kind: str, display: Any, resolved: Any, user: Any = None) -> None:
     """记录 validate 阶段确认的「展示值 → 主键」，供 execute 阶段稳定解析。"""
     try:
-        cache.set(_resolution_cache_key(kind, display), resolved, PARAM_RESOLUTION_TTL)
+        cache.set(_resolution_cache_key(kind, display, user), resolved, PARAM_RESOLUTION_TTL)
     except Exception:  # noqa: BLE001 缓存不可用时执行期回落名称解析
         logger.debug("cache AI action param resolution failed", exc_info=True)
 
 
-def _recall_param_resolution(kind: str, value: Any) -> Any:
+def _recall_param_resolution(kind: str, value: Any, user: Any = None) -> Any:
     try:
-        return cache.get(_resolution_cache_key(kind, value))
+        return cache.get(_resolution_cache_key(kind, value, user))
     except Exception:  # noqa: BLE001
         return None
 
@@ -197,14 +202,15 @@ def _resolve_menu(value: Any) -> Any:
     return _menu_subtree_pks(menu)
 
 
-def _convert(kind: str, value: Any, rule: dict[str, Any], field: str) -> Any:
+def _convert(kind: str, value: Any, rule: dict[str, Any], field: str, user: Any = None) -> Any:
     """按声明类型转换单个参数值（失败抛 ApiActionError）。
 
     user / role / menu 先命中 validate 阶段登记的展示值映射：确认后对象被改名或
     出现同名对象时，仍按「确认时的对象」执行，而不是解析失败/误解析。
+    映射按用户隔离（缓存键含 user.pk），不跨用户复用。
     """
     if kind in ("user", "role", "menu"):
-        cached = _recall_param_resolution(kind, value)
+        cached = _recall_param_resolution(kind, value, user)
         if cached is not None and _cached_resolution_valid(kind, cached):
             return list(cached) if kind == "menu" else str(cached)
     if kind == "user":
@@ -260,7 +266,7 @@ def resolve_api_params(spec: "ApiActionSpec", user: Any, params: dict[str, Any])
                     return None, None, None, str(_("Missing required parameter: {}").format(field))
                 continue
             try:
-                resolved = _convert(str(rule.get("type") or "string"), value, rule, field)
+                resolved = _convert(str(rule.get("type") or "string"), value, rule, field, user)
             except ApiActionError as exc:
                 return None, None, None, "; ".join(str(item) for item in exc.messages)
         target_key = rule.get("target", field)
