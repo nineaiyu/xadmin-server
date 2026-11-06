@@ -46,6 +46,18 @@ from common.utils import get_logger
 
 logger = get_logger(__name__)
 
+
+def arguments_size_bytes(arguments: Any) -> int:
+    """工具调用参数序列化后的字节体积（UTF-8）。
+
+    体积上限按字节而非字符数校验：``len(json.dumps(...))`` 只计字符数，
+    非 ASCII 输入（中文 3 字节/字）可放行约 3 倍体积，使 32KB 上限失效。
+    AI 动作链路与 mcp-servers/call 端点共用本口径；序列化失败抛
+    ``TypeError/ValueError``，由调用方转可读错误。
+    """
+    return len(json.dumps(arguments, ensure_ascii=False, default=str).encode("utf-8"))
+
+
 #: 全目录动态 spec 总量上限（防快照膨胀拖垮 prompt / tools 目录下发；超限截断并告警）
 MAX_DYNAMIC_SPECS = 200
 #: 单服务器动态工具上限（序列化器已限 allowed_tools ≤ 100，这里防御手工改库的旧数据）
@@ -149,7 +161,7 @@ class McpActionSpec:
             if name not in params or params[name] in (None, ""):
                 return {}, str(_("Missing required parameter: {}").format(name))
         try:
-            size = len(json.dumps(params, ensure_ascii=False, default=str))
+            size = arguments_size_bytes(params)
         except (TypeError, ValueError):
             return {}, str(_("Tool arguments are not serializable"))
         if size > MAX_ARGUMENTS_BYTES:

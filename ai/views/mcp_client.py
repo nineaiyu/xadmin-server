@@ -8,7 +8,6 @@
 - 出站守卫与 Webhook 同口径（https / OUTBOUND_ALLOWED_HOSTS 白名单 / pinned 解析连接）。
 """
 
-import json
 from typing import Any
 
 from django.utils import timezone
@@ -22,6 +21,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from ai.models.mcp import McpServer
 from ai.serializers.mcp import McpServerSerializer
+from ai.services.mcp.ai_mcp_actions import arguments_size_bytes
 from ai.services.mcp.mcp_client import (
     MAX_ARGUMENTS_BYTES,
     McpClientError,
@@ -46,8 +46,9 @@ from common.core.response import ApiResponse
 from common.core.throttle import AiThrottleMixin
 from common.swagger.utils import get_default_response_schema
 
-# 说明：调用参数 JSON 体积上限常量下沉到 ai/services/mcp/mcp_client.py（MAX_ARGUMENTS_BYTES），
-# AI 动作链路（ai_mcp_actions）与这里共用同一口径，避免两处漂移。
+# 说明：调用参数 JSON 体积上限常量在 ai/services/mcp/mcp_client.py（MAX_ARGUMENTS_BYTES），
+# 字节口径校验函数在 ai/services/mcp/ai_mcp_actions.py（arguments_size_bytes），
+# AI 动作链路与这里共用同一口径，避免两处漂移。
 
 
 class McpServerFilter(BaseFilterSet):
@@ -130,7 +131,7 @@ class McpServerViewSet(
         if not isinstance(arguments, dict):
             raise ValidationError(_("Tool arguments must be an object"))
         try:
-            size = len(json.dumps(arguments, ensure_ascii=False, default=str))
+            size = arguments_size_bytes(arguments)
         except (TypeError, ValueError) as exc:
             raise ValidationError(_("Tool arguments are not serializable")) from exc
         if size > MAX_ARGUMENTS_BYTES:

@@ -189,3 +189,19 @@ class TestToolSummary:
         summary = mcp.summarize_tool_result(result, limit=4)
         assert summary == {"is_error": False, "text": "xxxx..."}
         assert mcp.summarize_tool_result({"isError": True, "content": []})["is_error"] is True
+
+
+class TestArgumentsSizeBytes:
+    def test_size_counts_bytes_not_characters(self):
+        """回归：参数体积上限按 UTF-8 字节计（中文 3 字节/字），非字符数。"""
+        from ai.services.mcp.ai_mcp_actions import arguments_size_bytes
+        from ai.services.mcp.mcp_client import MAX_ARGUMENTS_BYTES
+
+        # 12000 个汉字 = 36000 字节 > 32KB，但只有 12000 字符（旧实现放行）
+        payload = {"text": "中" * 12_000}
+        assert len(json.dumps(payload, ensure_ascii=False)) < MAX_ARGUMENTS_BYTES
+        assert arguments_size_bytes(payload) > MAX_ARGUMENTS_BYTES
+
+        # ASCII 载荷两种口径一致
+        ascii_payload = {"text": "a" * 1000}
+        assert arguments_size_bytes(ascii_payload) == len(json.dumps(ascii_payload, ensure_ascii=False))
