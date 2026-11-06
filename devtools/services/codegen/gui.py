@@ -259,8 +259,9 @@ def _relative_path(path: Path) -> str:
             continue
     # 兜底分支只收单级文件名：root 外路径（含绝对路径/意外形态）不能原样
     # 进 zip 条目名——解压端存在 zip-slip 面；产物路径来自生成器而非外部
-    # 输入，此处为结构性防御
-    return f"generated/{path.name}"
+    # 输入，此处为结构性防御。NEXT_STEPS.md 等 zip 根级附件也走本分支，
+    # 单级名即保持根级原样
+    return path.name
 
 
 def _relative_artifacts(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]:

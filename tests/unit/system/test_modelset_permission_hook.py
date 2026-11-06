@@ -21,10 +21,18 @@ def _all_subclasses(base: type) -> list[type]:
 
 class TestPermissionHookOverride:
     def test_all_hosts_override_permission_hook(self):
-        # 显式导入已知宿主模块（URLconf 加载外的兜底；新宿主经路由加载自动纳入）
+        # 显式导入全部已知宿主模块（单跑本文件时 URLconf 不一定全量加载，
+        # __subclasses__ 只能看到已导入的类；新宿主要同步登记到这里）
+        import identity.views.admin.dept  # noqa: F401
         import identity.views.admin.user  # noqa: F401
 
-        hosts = [cls for cls in _all_subclasses(ChangeRolePermissionAction)]
+        hosts = [
+            cls
+            for cls in _all_subclasses(ChangeRolePermissionAction)
+            # 下划线私有命名是测试桩 / 内部辅助类（如 test_search_columns_sortable
+            # 的 _PrefixedOrderingViewSet），不是生产宿主
+            if not cls.__name__.startswith("_")
+        ]
         assert hosts, "应至少发现一个宿主 ViewSet"
         missing = [cls.__qualname__ for cls in hosts if "assert_can_change_permissions" not in cls.__dict__]
         assert not missing, f"混入 ChangeRolePermissionAction 但未覆写授权目标校验钩子: {missing}"

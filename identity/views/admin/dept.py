@@ -64,6 +64,15 @@ class DeptViewSet(
         """
         return super().destroy(request, *args, **kwargs)
 
+    def assert_can_change_permissions(self, instance: Any) -> None:
+        """角色/数据权限分配目标校验：部门无对象级差异，按权限点收敛。
+
+        显式空覆写（非静默漏写）：部门域没有「超管部门 / 内置部门」的对象级
+        保护语义，任何持 empower 权限点的管理员本就可管理全部部门的授权；
+        宿主覆写对账守护测试要求每个混入方显式决策（见
+        tests/unit/system/test_modelset_permission_hook.py）。
+        """
+
     @ApprovalRequired()
     @action(methods=["post"], detail=False, url_path="batch-destroy")  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
     def batch_destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:

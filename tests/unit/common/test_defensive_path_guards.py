@@ -35,7 +35,9 @@ class TestCodegenZipFallbackPath:
 
         outside = Path(tmp_path) / "somewhere" / "evil.py"
         result = _relative_path(outside)
-        assert result == "generated/evil.py"
+        # 单级名：无目录分隔符（zip-slip 不可达），且不带仓库前缀
+        assert result == "evil.py"
+        assert "/" not in result and ".." not in result
         assert settings.PROJECT_DIR not in result
 
 
