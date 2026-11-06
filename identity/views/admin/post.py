@@ -135,10 +135,13 @@ class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateActio
         按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）
 
         与选人控件同源（identity/utils/user_options.py）；权限与 list 同口径
-        （框架 shared_list 注册表，无需新增权限点）。
+        （框架 shared_list 注册表，无需新增权限点）。套数据权限与部门管理页
+        （dept.py 的 user-options）同口径：不传 user 会让仅持本 action 权限的
+        部门管理员跨部门探测/枚举用户。
         """
         data = search_user_options(
             keyword=request.query_params.get("keyword", ""),
             pks=request.query_params.get("pks", ""),
+            user=request.user,
         )
         return ApiResponse(data=data)
