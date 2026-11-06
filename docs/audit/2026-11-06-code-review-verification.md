@@ -21,8 +21,8 @@
 | A-B07-01 | `McpCallLogViewSet` 显式覆写 `filter_backends` 移除数据权限后端、与 `OperationLogViewSet` 口径不一致 | **不属实（对照物选错）** | 反证：同域 `McpServerViewSet`（`views/mcp_client.py:82`）**同样**显式覆写——MCP 服务器是全局配置资源，域级「不做行级数据权限」口径自洽（服务器与调用流水可见性一致）；文档只对照了全模块操作日志页。若按建议去掉覆写，非超管在无 `OperationLog` 数据权限授权时会 fail-closed 得到空列表（`get_filter_queryset` 无授权即 `none()`），破坏「持 MCP 管理权限即可排障」的现有功能。已在 ViewSet docstring 固化设计意图 |
 | A-B08-01 | 异步流式非 200 分支泄漏 httpx 客户端与流响应（U-21 同时要求补自建客户端回归用例） | **属实** | 已修：`async_chat.chat_stream` 非 200 分支 raise 前显式 `await closer()`；补回归用例 `test_stream_self_built_client_non_200_releases_resources`（MockTransport 401 + 断言 `AsyncClient.is_closed`）。重试路径（`_send_with_retry` 的 5xx 关闭）复核确认原本就正确 |
 | A-B09-01 | 影响面计算器异常被吞成「零影响」，引用保护 fail-open | **属实** | 已修：`impact_for` 计算器异常时产出哨兵检查项（`impact_calc_error`，count=1）→ `has_impact=True` → `ensure_impact_confirmed` 要求显式确认；预览端点如实展示「计算失败」。守护用例 1 个 |
-| A-B20-01 | 岗位成员候选接口未传 `user`，部门管理员可跨部门枚举用户 | **属实** | 已修：`identity/views/admin/post.py` user_options 补 `user=request.user`（与 `dept.py:110` 同口径）。**扩展核实**：`search_user_options` 共 7 个视图调用点，`dataset/report.py:135`、`dataset/form_data.py:143`、`dataset/dform_submission.py:122`、`message/views.py:344` 四处同样未传——判定暂不修（见 §三） |
-| F11-P2 | 修改口令用用户名作 AES 密钥（B 篇 F12 回码确认为前后端一致弱密钥协议） | **属实，暂不修** | 见 §三「需人工确认项」 |
+| A-B20-01 | 岗位成员候选接口未传 `user`，部门管理员可跨部门枚举用户 | **属实** | 已修：`identity/views/admin/post.py` user_options 补 `user=request.user`（与 `dept.py:110` 同口径）。**扩展核实**：`search_user_options` 共 7 个视图调用点，dataset/message 域 4 处同样未传——按既有口径处置（见 §三） |
+| F11-P2 | 修改口令用用户名作 AES 密钥（B 篇 F12 回码确认为前后端一致弱密钥协议） | **属实，已修（v4 挑战协议）** | 见 §三「F11-P2 修复方案」 |
 | F60-P2 | 文件分类饼图把后端未转义的字典 label 拼进 ECharts tooltip HTML（存储型注入面） | **属实** | 已修：`CategoryPieChart.vue` tooltip formatter 对 `p.name` 做 HTML 实体转义（局部 `escapeHtml`，与 codegen `ArtifactPreview` 同模式）。`UploadTrendChart` 复核确认只有日期/数值（安全，无需改）。影响面与 B 篇 F68 回码一致：管理员→管理员横向，非低权限提升 |
 
 ## 二、OPT 处置（154 条有效项，按 A 篇 §6 十组根因归并）
@@ -46,37 +46,54 @@
 4. **已撤销 / 前提不成立**（A 篇自行撤销的 A-B03-06；A-B01-O2——B12/U-08 已确认 `catalog` 键齐备不会 KeyError）：无需处理，文档保留痕迹。
 5. **其余单点观察**（A-B02-02~05、A-B03-03~05、A-B04-O2、A-B05-O2、A-B11-O1/O2、A-B14-O2、A-B15-O1、A-B17-O1、A-B18-O1/O2、A-B19-O1、A-B22-O1/O2、A-B25-O2、F76-O1 等）：属实但影响面小（60s TTL 自愈 / CLI 本地工具 / 注释与实现口径不一致），修复优先级低；其中 F76-O1（迁移 AddIndex 与 try 降级语义不一致）按迁移纪律不改已发布初始迁移（PG17 必装 pg_trgm，触发面极小）。
 
-## 三、判定为不属实或暂不修的 P2 级说明
+## 三、判定为不属实或需展开说明的 P2 级
 
 - **A-B07-01 不属实**：见 §一（同域两视图口径自洽，改走数据权限反而破坏功能）。
-- **F11-P2 属实但暂不修**：`useAccountManage.ts:87-94` 以 username 为 AES 密钥、后端 `identity/serializers/userinfo.py` 以 `AESCipherV2(user.username)` 对称解密（`SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED` 控制、关闭回退明文）——这是**前后端一致的既有协议**而非前端单点绕过。根治需引入服务端下发一次性 challenge 的两阶段协议并兼容存量客户端（旧客户端仍发 username 加密串），属产品级协议升级；当前该端点已叠加 412 二次确认 + TLS，风险为「AES 层可离线猜解」。**需人工确认**是否立项升级。
-- **A-B20-01 的扩展面暂不修**：dataset/message 域 4 处 user-options 不传 user 属「跨域功能选人」（报表 IM 收件人 / 表单数据过滤 / 消息选人）——若套数据权限，未配置 `DataPermission` 授权的普通用户将 fail-closed 得到空候选（`get_filter_queryset` 无授权即 `none()`），破坏「功能作者选择目标用户」的场景。是否按「目标用户需数据可见」收敛属产品口径，**需人工确认**。
+
+### F11-P2 修复方案（v4 挑战协议，版本化密钥派生 + 存量兼容 + 可回滚）
+
+改密口令传输加密从「可预测的 username 密钥」升级为「服务端下发的一次性随机挑战密钥」，对齐登录链路 verify_token 的既有模式：
+
+- **协议格式**：密文以 `v4:` 前缀标记，payload 与 v2（WebCrypto PBKDF2-HMAC-SHA256 100k + AES-256-GCM）完全同构，仅密钥来源不同；`AESCipherV2.decrypt` 识别前缀选算法、密钥由调用方构造时传入（`common/base/crypto.py`）。`v3:` 前缀已被字段级加密占用，故顺延 v4。
+- **挑战下发**：新增 `GET /api/identity/userinfo/password-challenge`（IsAuthenticated，本人）——`secrets.token_urlsafe(32)` 随机挑战，缓存 TTL 300s（覆盖「打开弹窗 → 提交」窗口），重复调用轮换旧值；权限点 `passwordChallenge:UserInfo` 登记种子（admin/default 角色授权与 resetPassword 同面，`sync_menu_permissions --dry-run` 缺口 0）。
+- **解密**（`decrypt_submitted_password`）：`v4:` → 挑战密钥解密，挑战缺失/过期/认证失败一律拒绝且**不回退** username 密钥（防降级）；非 v4 → 原 username 协议（存量客户端兼容期）；`SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED` 关闭时明文回退语义不变。
+- **前端**（`useAccountManage.ts`）：拉挑战成功 → `AesEncryptedChallenge` 产出 v4 密文；挑战端点 404/失败 → 回退 username 协议。该「拉取时回退」天然覆盖全部部署组合：新后端+新前端=v4；旧后端（未升级或已回滚）+新前端=端点消失→自动回退；新后端+旧前端=username 密文兼容解。
+- **守护测试**：后端 12 个新用例（挑战下发/轮换/隔离、v4 解密/防降级/挑战缺失拒绝、username 协议兼容、明文回退、API 鉴权、412 确认后 v4 全链改密）+ 前端 3 个（v4 前缀/随机性/异密钥防降级）。
+- **剩余边界**：挑战 5 分钟窗口过期时用户会收到「解密失败请刷新重试」（重开弹窗自动轮换新挑战，低频可接受）；MFA confirm 等其余 3 处口令核验点仍用 username 协议（412 语境各有独立的暴力防护），如需统一升级可复用 v4 挑战机制另行排期。
+
+### A-B20-01 扩展面处置（跨域功能选人显式豁免）
+
+`search_user_options` 的 7 个视图调用点按**两种显式口径**收敛（`identity/utils/user_options.py` 模块 docstring 固化约定）：
+
+1. **组织管理场景（传 user）**：`dept.py` / `post.py`——管理员管理组织成员，与列表页同口径套数据权限（post.py 本轮已补齐）；
+2. **跨域功能选人场景（不传 user，显式豁免并登记）**：`dataset/views/report.py`（IM 收件人）、`form_data.py`（表单数据过滤）、`dform_submission.py`（填报选人/过滤）、`message/views.py`（群成员候选）——功能作者选择**目标用户**（选收件人/建群本就要能搜到全公司的人）。**不套数据权限的依据**：`get_filter_queryset` 无授权即 `none()`（fail-closed），未配置 `DataPermission` 授权的普通用户将得到空候选，功能被破坏。**固有约束**：认证 + 各功能 list 权限点 + 20 条上限 + 必须带 keyword/pks（无关键字不枚举），探测面收敛为「持功能权限者可按关键字搜索用户名/昵称」——这是功能选人的固有需求而非缺陷。4 处调用点 docstring 均已登记豁免理由；守护测试 `test_user_options_scope.py` 锁定双口径语义（传 user 无授权时空候选 / 不传 user 可搜全量）。不额外加限流：与 dept/post 等既有 user-options 端点口径一致（均无限流），report 域已有 `DatasetQueryThrottleMixin` 查询限流。
 
 ## 四、验证结果
 
 | 项 | 命令 | 结果 |
 |----|------|------|
 | 后端定向单测 | `uv run pytest tests/unit/ai tests/unit/audit`（两轮） | 全绿（含新增 8 个守护用例） |
-| 后端域回归 | `uv run pytest tests/unit/approval tests/unit/notifications tests/unit/identity tests/unit/integrations` | 470 用例全绿 |
+| 后端域回归 | `uv run pytest tests/unit/approval tests/unit/notifications tests/unit/identity tests/unit/integrations` | 全绿 |
 | 后端集成 | `uv run pytest tests/integration/ai` | 0 失败 |
+| **后端全量** | `uv run pytest -n auto` | **通过（EXIT=0）**。环境恢复后共三轮收口：首轮确认此前的「用户管理/角色管理」菜单顺序断言失败为**预存在 flaky**（fixture 子菜单未设 rank，同序下 DB 返回顺序不稳定；本轮给 fixture 补 rank 定序修复，连跑 5 次稳定）；次轮两个种子数量守护断言随新增 `passwordChallenge:UserInfo` 权限点同步更新（菜单 747→748 / 权限点 668→669 / default 角色授权 33→34）；末轮全绿 |
 | 后端静态 | `ruff format --check` / `ruff check` / `mypy` | 全过（mypy 1054 文件 0 error） |
-| 后端本地门禁 | `check_cache_keys --strict`、`check_ledger_ids`、`check_menu_titles`、`check_file_length`、`check_function_length`、`check_cross_app_imports`、`check_doc_facts`、`check_doc_paths`、`check_adr_status`、`check_tutorial_mirror`、`check_task_acks`、`check_captcha_{coverage,legacy,assets}` | 全过 |
+| 后端本地门禁 | `check_cache_keys --strict`、`check_ledger_ids`、`check_menu_titles`、`check_file_length`、`check_function_length`、`check_cross_app_imports`、`check_doc_facts`、`check_doc_paths`、`check_adr_status`、`check_doc_index`、`check_doc_size`、`check_tutorial_mirror`、`check_task_acks`、`check_captcha_{coverage,legacy,assets}` | 全过 |
+| 种子 | `load_init_json --check`（0 error）、真灌后 `sync_menu_permissions --dry-run`（缺口 0） | 通过 |
 | 迁移漂移 | `makemigrations --check --dry-run` | No changes detected |
-| 前端单测 | `pnpm test:run`（vitest） | 558 文件 / 3396 用例全过 |
+| 契约 | `docs/schema/openapi.json` 新增 password-challenge 端点 + 4 处 user-options description 同步豁免说明；前端镜像 + `openapi.d.ts` 经 `sync:contract` 同步；`check-contract-sync` 一致 | 通过 |
+| 前端单测 | `pnpm test:run`（vitest） | 558 文件 / 3396+3 用例全过（含 v4 新增 3 个） |
 | 前端类型 | `tsc --noEmit` + `vue-tsc --noEmit` | 全过 |
 | 前端 lint | eslint（改动文件，--max-warnings 0） | 过 |
 | 前端门禁 | template-root / font-size-literals / color-literals / size-literals / forms / tables / overlays / function-length / file-length | 全过 |
-| **后端全量 pytest** | `uv run pytest -n auto` | **待环境**：测试栈 Redis 不可达（OrbStack 引擎不稳定）导致两轮全量未收口——第一轮两个失败（①审查文档未登记索引，属临时产物预期告警，文档已按协议移入 `_delete/`，消除后应绿；②一个菜单断言失败详情未取到，需环境恢复后确认是否与本次改动相关），第二轮阻塞被终止。定向测试已覆盖全部改动面 |
 
-新增守护用例清单：`test_ai_action_audit_mask.py`（creator×3 + extra 脱敏）、`test_ai_api_params_stability.py`（缓存隔离×2）、`test_mcp_client.py`（字节口径）、`test_ai_async_chat.py`（非 200 资源释放）、`test_impact_api.py`（计算器异常 fail-closed）。
+新增守护用例清单：`test_ai_action_audit_mask.py`（creator×3 + extra 脱敏）、`test_ai_api_params_stability.py`（缓存隔离×2）、`test_mcp_client.py`（字节口径）、`test_ai_async_chat.py`（非 200 资源释放）、`test_impact_api.py`（计算器异常 fail-closed）、`test_password_challenge.py`（v4 协议×10）、`test_user_options_scope.py`（双口径×4）、`test_aes_cipher_v2.py`（v4 格式×4）、前端 `aes.spec.ts`（v4×3）。
 
 ## 五、剩余需人工确认项
 
-1. **修改口令加密协议升级**（F11-P2）：是否引入一次性 challenge 替代 username 弱密钥（前后端协同 + 存量兼容）。
-2. **跨域选人数据权限口径**（A-B20-01 扩展面）：dataset/message 域 4 处 user-options 是否按数据权限收敛。
-3. **全量 pytest 环境收口**：Redis/OrbStack 恢复后重跑全量（含确认第一轮那个「用户管理/角色管理」菜单断言失败是否与本次改动相关——本次改动未触碰菜单种子与 `system/views` 菜单链路，初步判断为环境/负载性失败）。
-4. **A 篇 9 个迁移文件补审结论**（F76）：仅 F76-O1 一条 OPT，已判定暂不修。
-5. i18n 文案专项（约 30 条）与产品口径类 OPT（§二.3）建议按主题另立任务。
+1. **v4 协议的退役排期**：username 密钥协议（v1/v2）进入兼容期后，可参照既有 `SECURITY_AES_V1_DECRYPT_ENABLED` 灰度开关的模式，在确认全量客户端升级后考虑关闭兼容路径（当前保持双协议，无时间压力）。
+2. **其余口令核验点是否统一 v4**：MFA confirm / OAuth 解绑 / verify-password 3 处仍用 username 协议（412 语境各有独立暴力防护），如需统一可复用挑战机制另行排期。
+3. **A 篇 9 个迁移文件补审结论**（F76）：仅 F76-O1 一条 OPT，已判定暂不修。
+4. i18n 文案专项（约 30 条）与产品口径类 OPT（§二.3）建议按主题另立任务。
 
 ## 六、提交说明
 
