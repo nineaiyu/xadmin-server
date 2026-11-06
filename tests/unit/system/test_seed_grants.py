@@ -44,7 +44,8 @@ pytestmark = pytest.mark.django_db
 #  2026-10 读写共码收口：admin 补验证码风险规则 PUT 独立码 updateRules，301 → 302
 #  2026-10 种子授权补全（授权种子补全）：admin 补通讯录/我的管辖/标签/数据字典/模块管理
 #  5 页与对应权限点 + 部门管理员任命/我的管辖视角动作，302 → 338
-EXPECTED_ROLE_MENUS = {"admin": 338, "test": 87, "default": 33, "demo": 67}
+#  2026-11 改密口令加密挑战端点：admin/default 补 passwordChallenge:UserInfo（338 → 339 / 33 → 34）
+EXPECTED_ROLE_MENUS = {"admin": 339, "test": 87, "default": 34, "demo": 67}
 
 
 def _plan_grants():

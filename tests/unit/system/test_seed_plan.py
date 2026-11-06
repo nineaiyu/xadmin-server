@@ -286,10 +286,11 @@ class TestValidate:
         # 2026-10 AI「测试连接」下沉 celery：新增 testResult 结果回读权限点（菜单 +1）
         # 2026-10 数据集元数据端点统一走父级 list 权限：移除运行期不命中的 meta 权限点（菜单 -1、权限点 -1）
         # 2026-10 知识块向量列收敛为 pgvector 单存储：字段树移除历史二进制列（字段 -1）
-        assert summary.totals["menu"] == 747
+        # 2026-11 改密口令加密挑战端点：新增 passwordChallenge:UserInfo 权限点（菜单 +1、权限点 +1）
+        assert summary.totals["menu"] == 748
         assert summary.totals["field"] == 2162
         assert summary.totals["grant"] == 250
-        assert summary.permission_total == 668
+        assert summary.permission_total == 669
 
 
 class TestRows:

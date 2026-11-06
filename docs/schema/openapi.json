@@ -33914,7 +33914,7 @@
     },
     "/api/chat/contacts/user-options": {
       "get": {
-        "description": "群成员候选\n\n按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）\n\n口径与选人控件同源（identity/utils/user_options.py）；权限与该视图 list 权限\n同口径（packages/xadmin-common/common/core/permission.py 的 user-options 特例），无需新增权限点。",
+        "description": "群成员候选\n\n按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）\n\n口径与选人控件同源（identity/utils/user_options.py）；权限与该视图 list 权限\n同口径（packages/xadmin-common/common/core/permission.py 的 user-options 特例），无需新增权限点。\n跨域功能选人：不套数据权限（显式豁免，理由与约束见 user_options 模块\ndocstring——建群/加成员须可搜到全公司用户）。",
         "operationId": "api_chat_contacts_user_options_retrieve",
         "responses": {
           "200": {
@@ -37721,7 +37721,7 @@
     },
     "/api/dataset/dynamic-form-submissions/user-options": {
       "get": {
-        "description": "选人控件数据源\n\n关键字搜索或按主键回显（≤20 条，仅基本展示字段）\n\n填报链路的轻量数据源：关键字必填（不做通讯录全量枚举）；编辑既有提交时\n可带 pks 批量回显已选用户（同样字段收敛，仅主键命中）。\n权限与对应 list 权限同口径（见 packages/xadmin-common/common/core/permission.py 的 user-options\n特例），存量角色无需为控件单独授权。",
+        "description": "选人控件数据源\n\n关键字搜索或按主键回显（≤20 条，仅基本展示字段）\n\n填报链路的轻量数据源：关键字必填（不做通讯录全量枚举）；编辑既有提交时\n可带 pks 批量回显已选用户（同样字段收敛，仅主键命中）。\n权限与对应 list 权限同口径（见 packages/xadmin-common/common/core/permission.py 的 user-options\n特例），存量角色无需为控件单独授权。\n跨域功能选人：不套数据权限（显式豁免，理由与约束见 user_options 模块\ndocstring——填报选人/过滤目标须可搜到全公司用户）。",
         "operationId": "api_dataset_dynamic_form_submissions_user_options_retrieve",
         "responses": {
           "200": {
@@ -39673,7 +39673,7 @@
     },
     "/api/dataset/form-data/user-options": {
       "get": {
-        "description": "选人控件数据源\n\n关键字搜索 / 按主键回显，≤20 条：列表内选人字段回显\n\n与「我的填报」的 user-options 同源（common 轻量数据源），供管理端列表把\n选人字段的 pk 展示为用户名；权限与对应 list 权限同口径。",
+        "description": "选人控件数据源\n\n关键字搜索 / 按主键回显，≤20 条：列表内选人字段回显\n\n与「我的填报」的 user-options 同源（common 轻量数据源），供管理端列表把\n选人字段的 pk 展示为用户名；权限与对应 list 权限同口径。\n跨域功能选人：不套数据权限（显式豁免，理由与约束见 user_options 模块\ndocstring——过滤目标须可搜到全公司用户）。",
         "operationId": "api_dataset_form_data_user_options_retrieve",
         "responses": {
           "200": {
@@ -40301,7 +40301,7 @@
     },
     "/api/dataset/reports/user-options": {
       "get": {
-        "description": "IM 收件人候选\n\n按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）\n\n口径与选人控件同源（identity/utils/user_options.py）；权限与该视图 list\n权限同口径（packages/xadmin-common/common/core/permission.py 的 user-options 特例）。",
+        "description": "IM 收件人候选\n\n按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）\n\n口径与选人控件同源（identity/utils/user_options.py）；权限与该视图 list\n权限同口径（packages/xadmin-common/common/core/permission.py 的 user-options 特例）。\n跨域功能选人：不套数据权限（显式豁免，理由与约束见 user_options 模块\ndocstring——功能作者选择目标收件人须可搜到全公司用户）。",
         "operationId": "api_dataset_reports_user_options_retrieve",
         "responses": {
           "200": {
@@ -63750,6 +63750,57 @@
                     },
                     "code": {
                       "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "CookieJWTAuthentication": []
+          }
+        ],
+        "tags": [
+          "UserInfoViewSet"
+        ]
+      }
+    },
+    "/api/identity/userinfo/password-challenge": {
+      "get": {
+        "description": "修改{cls}密码加密挑战\n\n下发改密口令加密挑战（v4 密钥材料：随机、5 分钟有效、重复调用轮换）：\n改密前端以挑战为密钥加密新旧口令，替代历史 username 可预测密钥协议\n（存量客户端密文继续兼容解密，见 decrypt_submitted_password）",
+        "operationId": "api_identity_userinfo_password_challenge_retrieve",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "properties": {
+                        "challenge": {
+                          "type": "string"
+                        },
+                        "expires_in": {
+                          "type": "number"
+                        }
+                      },
+                      "type": "object"
                     },
                     "detail": {
                       "type": "string"

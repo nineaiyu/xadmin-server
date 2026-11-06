@@ -54,6 +54,7 @@
       "logout:SystemUser",
       "managed:SystemDept",
       "members:SystemPost",
+      "passwordChallenge:UserInfo",
       "partialUpdate:SystemDept",
       "partialUpdate:SystemPost",
       "partialUpdate:SystemRole",
@@ -88,6 +89,7 @@
     ],
     "default": [
       "bind:UserInfo",
+      "passwordChallenge:UserInfo",
       "partialUpdate:UserInfo",
       "resetPassword:UserInfo",
       "upload:UserInfo"

@@ -283,6 +283,31 @@
  },
  {
   "model": "system.menumeta",
+  "pk": "17c5ea6f-fcf0-4250-be4a-f51d36a1e2b1",
+  "fields": {
+   "created_time": "2026-11-06T00:00:00Z",
+   "updated_time": "2026-11-06T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "U-修改个人密码加密挑战",
+   "icon": "",
+   "r_svg_name": "",
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": "",
+   "frame_loading": false,
+   "transition_enter": "",
+   "transition_leave": "",
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
+ },
+ {
+  "model": "system.menumeta",
   "pk": "3c2cb988-773a-409b-b374-77677476cdb8",
   "fields": {
    "created_time": "2024-01-22T09:32:05.957Z",

@@ -93,6 +93,26 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
 
     @extend_schema(responses=get_default_response_schema())
     @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
+        methods=["get"],
+        detail=False,
+        url_path="password-challenge",
+        permission_classes=[IsAuthenticated],
+    )
+    def password_challenge(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """修改{cls}密码加密挑战
+
+        下发改密口令加密挑战（v4 密钥材料：随机、5 分钟有效、重复调用轮换）：
+        改密前端以挑战为密钥加密新旧口令，替代历史 username 可预测密钥协议
+        （存量客户端密文继续兼容解密，见 decrypt_submitted_password）
+        """
+        from identity.serializers.userinfo import PASSWORD_CHALLENGE_TTL, issue_password_challenge
+
+        return ApiResponse(
+            data={"challenge": issue_password_challenge(request.user), "expires_in": PASSWORD_CHALLENGE_TTL}
+        )
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["post"],
         detail=False,
         url_path="reset-password",

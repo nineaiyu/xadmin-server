@@ -180,3 +180,33 @@ class TestV3LegacyMasterFallback:
         signer = AESCipherV3("new-master", legacy_masters=("old-secret", "third-old"))
 
         assert signer.decrypt(ciphertext) == "sk-legacy-value"
+
+
+class TestV4ChallengeFormat:
+    """v4（服务端挑战密钥）格式：payload 与 v2 同构，按前缀选算法、密钥由调用方传入。"""
+
+    def test_v4_prefix_decrypts_with_challenge_key(self):
+        challenge = "srv-issued-random-challenge"
+        encrypted = _encrypt_v2(challenge, "NewP@ss2026")
+        v4 = AESCipherV2.V4_PREFIX + encrypted[len(AESCipherV2.V2_PREFIX) :]
+        assert AESCipherV2(challenge).decrypt(v4) == "NewP@ss2026"
+
+    def test_v4_rejects_username_key(self):
+        """防降级：v4 密文不得被其它密钥（如可预测的 username）解出。"""
+        challenge = "srv-issued-random-challenge"
+        encrypted = _encrypt_v2(challenge, "secret-value")
+        v4 = AESCipherV2.V4_PREFIX + encrypted[len(AESCipherV2.V2_PREFIX) :]
+        assert AESCipherV2("predictable-username").decrypt(v4) == ""
+
+    def test_v4_wrong_challenge_returns_empty(self):
+        encrypted = _encrypt_v2("challenge-a", "payload")
+        v4 = AESCipherV2.V4_PREFIX + encrypted[len(AESCipherV2.V2_PREFIX) :]
+        assert AESCipherV2("challenge-b").decrypt(v4) == ""
+
+    def test_v4_tampered_returns_empty(self):
+        challenge = "srv-challenge"
+        encrypted = _encrypt_v2(challenge, "payload")
+        raw = bytearray(base64.b64decode(encrypted[len(AESCipherV2.V2_PREFIX) :]))
+        raw[-1] ^= 0x01
+        v4 = AESCipherV2.V4_PREFIX + base64.b64encode(bytes(raw)).decode()
+        assert AESCipherV2(challenge).decrypt(v4) == ""

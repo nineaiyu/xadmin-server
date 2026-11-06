@@ -913,6 +913,29 @@
  },
  {
   "model": "system.menu",
+  "pk": "a991e492-cd55-402c-97c2-1bc72374f78a",
+  "fields": {
+   "created_time": "2026-11-06T00:00:00Z",
+   "updated_time": "2026-11-06T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
+   "menu_type": 2,
+   "name": "passwordChallenge:UserInfo",
+   "rank": 10004,
+   "path": "api/identity/userinfo/password-challenge$",
+   "component": null,
+   "is_active": true,
+   "meta": "17c5ea6f-fcf0-4250-be4a-f51d36a1e2b1",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
   "pk": "af3ad441-2f48-4d74-b99a-370eb047f669",
   "fields": {
    "created_time": "2024-01-22T09:32:05.961Z",

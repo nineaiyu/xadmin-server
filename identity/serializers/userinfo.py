@@ -4,6 +4,7 @@
 # filename : userinfo
 # author : ly_13
 # date : 8/10/2024
+import secrets
 from typing import Any
 
 from django.conf import settings
@@ -31,19 +32,55 @@ from settings.services import (
 
 logger = get_logger(__name__)
 
+#: 改密口令加密挑战缓存键前缀（password-challenge 端点下发，TTL 内改密请求复用）
+PASSWORD_CHALLENGE_CACHE_PREFIX = "identity_pwd_challenge_"
+#: 挑战有效期（秒）：覆盖「打开改密弹窗 → 提交」的常规窗口
+PASSWORD_CHALLENGE_TTL = 300
+
+
+def issue_password_challenge(user: Any) -> str:
+    """生成并缓存本人改密口令加密挑战（v4 密钥材料，每次调用轮换旧值）。"""
+    from django.core.cache import cache
+
+    challenge = secrets.token_urlsafe(32)
+    cache.set(f"{PASSWORD_CHALLENGE_CACHE_PREFIX}{user.pk}", challenge, PASSWORD_CHALLENGE_TTL)
+    return challenge
+
+
+def load_password_challenge(user: Any) -> str:
+    """读取本人当前挑战（无 / 过期 / 缓存不可用返回空串；TTL 内多次提交共用）。"""
+    from django.core.cache import cache
+
+    try:
+        return str(cache.get(f"{PASSWORD_CHALLENGE_CACHE_PREFIX}{user.pk}") or "")
+    except Exception:  # noqa: BLE001 缓存不可用按无挑战处理（v4 拒绝，不降级）
+        return ""
+
 
 def decrypt_submitted_password(
     user: Any, ciphertext: Any, field: str = "password", log_prefix: str = "password"
 ) -> Any:
     """按密文/明文开关解密提交口令（改密与口令核验共用）。
 
-    前端提交的是 AESCipherV2(username) 加密串；坏 base64 等非法输入不能裸抛成
-    500，须转受控校验异常。``SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED`` 关闭时
-    （导入 / E2E 等场景）解密失败视为「提交值本身是明文」，按明文核验。
+    密文模式按前缀双协议自适应：
+    - ``v4:`` 以服务端下发的会话级随机挑战为密钥（改密链路新协议：密钥不可
+      预测、按 TTL 轮换）；挑战缺失 / 过期按解密失败拒绝，**不回退** username
+      密钥（防降级：挑战密文不得被可预测密钥解）；
+    - 其余（``v2:`` / Salted__ 旧格式）以 username 为密钥——存量客户端兼容期
+      的既有协议，密钥可预测、实际保护依赖 TLS。
+
+    ``SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED`` 关闭时（导入 / E2E 等场景）
+    解密失败视为「提交值本身是明文」，按明文核验。
     """
     if settings.SECURITY_USER_PASSWORD_ENCRYPTED_ENABLED:
         try:
-            plain = AESCipherV2(user.username).decrypt(ciphertext)
+            if str(ciphertext or "").startswith("v4:"):
+                challenge = load_password_challenge(user)
+                if not challenge:
+                    raise ValueError("password challenge missing or expired")
+                plain = AESCipherV2(challenge).decrypt(ciphertext)
+            else:
+                plain = AESCipherV2(user.username).decrypt(ciphertext)
         except Exception as e:
             logger.warning(f"{log_prefix} {field} decrypt failed:{e}. rejected")
             raise ValidationError(PASSWORD_DECRYPT_FAILED_MESSAGE, code=PASSWORD_DECRYPT_FAILED_CODE) from e
@@ -54,7 +91,11 @@ def decrypt_submitted_password(
     try:
         # decrypt 对认证失败/格式非法可能返回空串而不抛异常：空结果同样按明文回退，
         # 否则导入/E2E 明文提交会以空密码参与后续规则校验被误拒
-        plain = AESCipherV2(user.username).decrypt(ciphertext)
+        if str(ciphertext or "").startswith("v4:"):
+            challenge = load_password_challenge(user)
+            plain = AESCipherV2(challenge).decrypt(ciphertext) if challenge else ""
+        else:
+            plain = AESCipherV2(user.username).decrypt(ciphertext)
     except Exception as e:
         logger.warning(f"{log_prefix} {field} decrypt failed:{e}. fallback to submitted plaintext")
         plain = ""

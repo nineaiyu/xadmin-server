@@ -283,15 +283,21 @@ def remove_file(name: str) -> None:
 
 class AESCipherV2:
     """
-    前端凭证加密解密，双格式自适应：
+    前端凭证加密解密，三格式自适应：
 
     - 旧格式：OpenSSL ``Salted__`` 兼容格式（EVP_BytesToKey(MD5) + AES-256-CBC），
       无前缀，由前端 crypto-es（原 crypto-js）产出；
     - v2 格式：以 ``v2:`` 前缀标记，payload 为 base64(salt[16] | iv[12] | ct | tag[16])，
       PBKDF2-HMAC-SHA256（100k 迭代）派生 AES-256-GCM 密钥，与浏览器 WebCrypto
-      subtle 对齐。
+      subtle 对齐；
+    - v4 格式：以 ``v4:`` 前缀标记，payload 与 v2 同构（算法完全一致），差异只在
+      密钥材料——v2/v1 以可预测的 username 为密钥，v4 以**服务端下发的一次性
+      随机挑战**为密钥（改密链路先经 password-challenge 端点领取，见
+      ``identity/serializers/userinfo.py``）。解密端按前缀选算法，密钥由调用方
+      构造 cipher 时传入；v4 密文认证失败按解密失败处理，不回退低版本密钥
+      （防降级：挑战密文不得被 username 密钥解）。
 
-    加密端（前端）优先 v2、无 WebCrypto 环境回退旧格式；解密端按前缀自适应，
+    加密端（前端）优先 v4/v2、无 WebCrypto 环境回退旧格式；解密端按前缀自适应，
     认证失败/格式非法统一返回空串（与旧格式非法输入行为一致）。
 
     旧格式前端操作（已由 crypto-es 替换，协议不变）：
@@ -309,6 +315,7 @@ class AESCipherV2:
     """
 
     V2_PREFIX = "v2:"
+    V4_PREFIX = "v4:"
     V2_SALT_LENGTH = 16
     V2_IV_LENGTH = 12
     V2_TAG_LENGTH = 16
@@ -338,6 +345,9 @@ class AESCipherV2:
         text = enc.decode("utf-8", "ignore") if isinstance(enc, bytes) else enc
         if text.startswith(self.V2_PREFIX):
             return self._decrypt_v2(text[len(self.V2_PREFIX) :])
+        if text.startswith(self.V4_PREFIX):
+            # v4 与 v2 payload 同构：算法复用，密钥差异由调用方构造 cipher 决定
+            return self._decrypt_v2(text[len(self.V4_PREFIX) :])
         if not self._v1_decrypt_enabled():
             # 灰度开关关闭后拒绝旧格式，与非法输入同语义返回空串
             return ""
