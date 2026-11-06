@@ -42,6 +42,8 @@ class DingTalkClient(BaseImClient):
 
     def _fetch_token(self, credentials: dict[str, Any]) -> str:
         payload = self._get_json(self.token_url, params={"appkey": self.app_key, "appsecret": self.app_secret})
+        # 新旧版 gettoken 的有效期字段名不同（expires_in / expireIn），都认
+        self._apply_token_ttl(payload, "expires_in", "expireIn")
         token = str(payload.get("access_token") or "")
         if not token:
             raise ImSdkError("dingtalk token response missing access_token")

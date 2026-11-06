@@ -38,6 +38,7 @@ class WeComClient(BaseImClient):
 
     def _fetch_token(self, credentials: dict[str, Any]) -> str:
         payload = self._get_json(self.token_url, params={"corpid": self.corp_id, "corpsecret": self.corp_secret})
+        self._apply_token_ttl(payload, "expires_in")
         token = str(payload.get("access_token") or "")
         if not token:
             raise ImSdkError("wecom token response missing access_token")

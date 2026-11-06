@@ -91,6 +91,24 @@ class BaseImClient:
     def _fetch_token(self, credentials: dict[str, Any]) -> str:
         raise NotImplementedError
 
+    def _apply_token_ttl(self, payload: dict[str, Any], *keys: str) -> None:
+        """供应商下发的 token 有效期优先（秒），缺省回落类属性保守假设。
+
+        异常值（非正数 / 超过一天——疑似毫秒单位错位）同样回落默认，避免把
+        错误单位当秒缓存出长命过期 token；各家键名不同（wecom=expires_in、
+        feishu=expire、dingtalk 新旧版 expires_in/expireIn），由子类传入候选键。
+        """
+        for key in keys:
+            value = payload.get(key)
+            if isinstance(value, bool):
+                continue
+            if isinstance(value, int) and 0 < value <= 86400:
+                self.token_ttl = value
+                return
+            if isinstance(value, str) and value.isdigit() and 0 < int(value) <= 86400:
+                self.token_ttl = int(value)
+                return
+
     # ------------------------------------------------------------ 发送
 
     def send_text(self, accounts: Any, content: Any) -> None:

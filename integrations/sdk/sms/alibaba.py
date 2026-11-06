@@ -67,11 +67,21 @@ class AlibabaSMS(BaseSMSClient):
             response = self.client.send_sms(send_sms_request)
             # 这里只判断是否成功，失败抛出异常
             if response.body.code != "OK":
-                raise APIException(detail=response.body.message, code=response.body.code)
+                # 供应商原文只进日志（可含 requestId/内部描述），终端用户见固定文案
+                # ——与 IM 侧 ImSdkError「message 面向日志」口径一致
+                logger.warning("Alibaba sms rejected: code=%s message=%s", response.body.code, response.body.message)
+                raise APIException(
+                    detail=_("SMS sending failed, please try again later or contact the administrator"),
+                    code=response.body.code,
+                )
         except TeaException as e:
             if e.code == "SignatureDoesNotMatch":
                 raise APIException(code=e.code, detail=_("Signature does not match")) from e
-            raise APIException(code=e.code, detail=e.message) from e
+            logger.warning("Alibaba sms transport error: code=%s message=%s", e.code, e.message)
+            raise APIException(
+                code=e.code,
+                detail=_("SMS sending failed, please try again later or contact the administrator"),
+            ) from e
         return response
 
 

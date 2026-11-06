@@ -38,6 +38,8 @@ class FeishuClient(BaseImClient):
     def _fetch_token(self, credentials: dict[str, Any]) -> str:
         # tenant_access_token/internal 不走 code 包裹，直接返回 {"tenant_access_token": ...}
         payload = self._post_json(self.token_url, {"app_id": self.app_id, "app_secret": self.app_secret})
+        # 飞书的有效期字段是 expire（秒），兼容 expires_in 形态
+        self._apply_token_ttl(payload, "expire", "expires_in")
         token = str(payload.get("tenant_access_token") or "")
         if not token:
             raise ImSdkError("feishu token response missing tenant_access_token")
