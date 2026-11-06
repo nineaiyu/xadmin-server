@@ -131,6 +131,8 @@ class ReportViewSet(DatasetQueryThrottleMixin, BaseAnalysisViewSet):
 
         口径与选人控件同源（identity/utils/user_options.py）；权限与该视图 list
         权限同口径（packages/xadmin-common/common/core/permission.py 的 user-options 特例）。
+        跨域功能选人：不套数据权限（显式豁免，理由与约束见 user_options 模块
+        docstring——功能作者选择目标收件人须可搜到全公司用户）。
         """
         data = search_user_options(
             keyword=request.query_params.get("keyword", ""),

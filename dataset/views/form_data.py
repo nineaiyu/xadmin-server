@@ -139,6 +139,8 @@ class DynamicFormDataViewSet(
 
         与「我的填报」的 user-options 同源（common 轻量数据源），供管理端列表把
         选人字段的 pk 展示为用户名；权限与对应 list 权限同口径。
+        跨域功能选人：不套数据权限（显式豁免，理由与约束见 user_options 模块
+        docstring——过滤目标须可搜到全公司用户）。
         """
         data = search_user_options(
             keyword=request.query_params.get("keyword", ""),

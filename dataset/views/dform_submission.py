@@ -118,6 +118,8 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         可带 pks 批量回显已选用户（同样字段收敛，仅主键命中）。
         权限与对应 list 权限同口径（见 packages/xadmin-common/common/core/permission.py 的 user-options
         特例），存量角色无需为控件单独授权。
+        跨域功能选人：不套数据权限（显式豁免，理由与约束见 user_options 模块
+        docstring——填报选人/过滤目标须可搜到全公司用户）。
         """
         data = search_user_options(
             keyword=request.query_params.get("keyword", ""),
