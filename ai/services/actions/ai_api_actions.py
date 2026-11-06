@@ -23,6 +23,7 @@ requires_approval/available），可直接混装进同一注册表，调用方�
 """
 
 import json
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -134,15 +135,15 @@ class ApiActionSpec:
             if rule.get("type") == "user" and clean.get(field):
                 resolved = clean[field]
                 clean[field] = _user_display(resolved)
-                remember_param_resolution("user", clean[field], resolved)
+                remember_param_resolution("user", clean[field], resolved, user)
             if rule.get("type") == "role" and clean.get(field):
                 resolved = clean[field]
                 clean[field] = _role_display(resolved)
-                remember_param_resolution("role", clean[field], resolved)
+                remember_param_resolution("role", clean[field], resolved, user)
             if rule.get("type") == "menu" and clean.get(field):
                 resolved = clean[field]
                 clean[field] = _menu_display(resolved)
-                remember_param_resolution("menu", clean[field], resolved)
+                remember_param_resolution("menu", clean[field], resolved, user)
         return clean, None
 
     def execute(self, user: Any, params: Any, request: Any = None) -> Any:
@@ -199,6 +200,64 @@ def api_action(
         catalog=catalog,
         modules=tuple(modules),
     )
+
+
+def _record_internal_dispatch_log(
+    spec: "ApiActionSpec",
+    user: Any,
+    source_request: Any,
+    request: Any,
+    response: Any,
+    match: Any,
+    started: float,
+    body: dict[str, Any],
+) -> None:
+    """内部 dispatch 的业务操作日志补记（对齐 ``ApiLoggingMiddleware`` 落库链）。
+
+    内部 dispatch 直调视图函数不经 ASGI 中间件链：``ApiLoggingMiddleware`` 的
+    process_view（打标）/ process_response（装配 + 落库 + 敏感操作告警）不会执行，
+    AI 动作触发的写操作因此在操作日志页按模型 / 路径 / 操作人检索不可见。
+    此处按同一口径补记：开关 / 方法 / 忽略清单与中间件同源读同一配置键，
+    装配与落库复用 ``oplog_recorder`` 公共件（脱敏 / 截断单源）。AI 语义审计
+    （module=AI:action）由调用方另行落库，两条记录互补。
+    """
+    from common.core.oplog_recorder import build_operation_log_info, insert_operation_log
+    from common.settings_contract import kernel_setting
+    from common.utils.request import get_request_ip, get_verbose_name
+
+    if not (kernel_setting("API_LOG_ENABLE") or False):
+        return
+    methods = kernel_setting("API_LOG_METHODS") or set()
+    if not (methods == "ALL" or spec.method in methods):
+        return
+    view_cls = getattr(match.func, "cls", None)
+    queryset = getattr(view_cls, "queryset", None)
+    if queryset is None:
+        return
+    ignores = kernel_setting("API_LOG_IGNORE") or {}
+    model, module_label = get_verbose_name(queryset, view_cls)
+    if model and spec.method in ignores.get(model._meta.label, []):
+        return
+    if spec.method in ignores.get(request.path, []):
+        return
+    if not module_label:
+        module_label = model._meta.label if model else "AI"
+    # 工厂请求无网络上下文：操作人 / IP / UA 从外部请求继承，日志行与浏览器请求同口径
+    request.user = user
+    request.request_ip = get_request_ip(source_request) if source_request is not None else ""
+    if source_request is not None:
+        request.META["HTTP_USER_AGENT"] = source_request.META.get("HTTP_USER_AGENT", "")
+    request.request_data = body or {}
+    request.request_module = module_label
+    object_pk = str(match.kwargs.get("pk") or match.kwargs.get("id") or "")[:64] or None
+    info = build_operation_log_info(request, response, started, object_pk)
+    insert_operation_log(info)
+    try:
+        from common.contracts import maybe_alert_sensitive_operation
+
+        maybe_alert_sensitive_operation(info)
+    except Exception:  # noqa: BLE001 告警链路异常不影响业务
+        logger.warning("sensitive operation alert failed", exc_info=True)
 
 
 def execute_api_action(
@@ -274,12 +333,15 @@ def execute_api_action(
         # 一次性令牌后才可能走到这里），内部 dispatch 标记放行业务层
         # @ApprovalRequired，避免同一操作被重复拦截建单（见 process_approval）。
         request._approval_pre_authorized = True
+    started = time.time()
     try:
         response = match.func(request, **match.kwargs)
     except Exception:  # noqa: BLE001 内部 dispatch 失败一律转可读错误
         # 异常原文可能含 SQL / 内部路径 / 连接串：只进日志，不回传对话流
         logger.warning("ai api action dispatch failed. key:%s url:%s", spec.key, url, exc_info=True)
         return {"ok": False, "detail": str(_("The action failed, please try again later")), "data": {}}
+
+    _record_internal_dispatch_log(spec, user, source_request, request, response, match, started, body)
 
     payload = getattr(response, "data", None) or {}
     status_code = int(getattr(response, "status_code", 500) or 500)
