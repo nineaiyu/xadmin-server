@@ -341,6 +341,11 @@ def filter_by_tags(queryset: Any, model: Any, tokens: list[Any]) -> Any:
     return queryset
 
 
+#: 本进程登记的「标签下拉缓存 limit 集合」：失效时按实际使用过的 limit 逐个删键，
+#: 避免只删固定 limit（如 200）而其它 limit 的键等 60s TTL 才自愈；多 worker 由短 TTL 兜底
+_TAG_OPTIONS_LIMITS: set[int] = set()
+
+
 def tag_choice_options(limit: int = 200) -> list[Any]:
     """标签下拉选项（元数据 choices 数据源；60s 短缓存，避免每次请求查表）。"""
     from django.core.cache import cache
@@ -358,6 +363,7 @@ def tag_choice_options(limit: int = 200) -> list[Any]:
     data = [(tag.name, tag.name) for tag in Tag.objects.all()[:limit]]
     try:
         cache.set(key, data, 60)
+        _TAG_OPTIONS_LIMITS.add(int(limit))
     except Exception:  # noqa: BLE001
         logger.debug("cache tag options failed", exc_info=True)
     return data
@@ -367,7 +373,8 @@ def invalidate_tag_options_cache() -> None:
     """标签定义变更后失效下拉缓存（新建/改名/删除后元数据立即反映）。"""
     from django.core.cache import cache
 
-    for limit in (200,):
+    limits = set(_TAG_OPTIONS_LIMITS) | {200}
+    for limit in limits:
         try:
             cache.delete(f"tag_choice_options_{limit}")
         except Exception:  # noqa: BLE001
