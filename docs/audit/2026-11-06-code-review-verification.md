@@ -300,12 +300,12 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | 后端定向单测 | `uv run pytest tests/unit/ai tests/unit/audit`（两轮） | 全绿（含新增 8 个守护用例） |
 | 后端域回归 | `uv run pytest tests/unit/approval tests/unit/notifications tests/unit/identity tests/unit/integrations` | 全绿 |
 | 后端集成 | `uv run pytest tests/integration/ai` | 0 失败 |
-| **后端全量** | `uv run pytest -n auto` | **通过（EXIT=0）**。环境恢复后共三轮收口：首轮确认此前的「用户管理/角色管理」菜单顺序断言失败为**预存在 flaky**（fixture 子菜单未设 rank，同序下 DB 返回顺序不稳定；本轮给 fixture 补 rank 定序修复，连跑 5 次稳定）；次轮两个种子数量守护断言随新增 `passwordChallenge:UserInfo` 权限点同步更新（菜单 747→748 / 权限点 668→669 / default 角色授权 33→34）；末轮全绿 |
+| **后端全量** | `uv run pytest -n auto` | **通过（EXIT=0）**，三轮收口：首轮暴露「用户/角色管理」菜单顺序断言为预存在 flaky（fixture 未设 rank，补定序后连跑 5 次稳定）；次轮种子数量守护断言随 `passwordChallenge:UserInfo` 权限点同步更新（747→748 / 668→669 / 33→34）；末轮全绿 |
 | OPT 轮定向复跑 | `pytest tests/unit/captcha tests/unit/common/test_i18n_po.py tests/unit/ai/test_ai_registry_register.py tests/unit/common/test_defensive_path_guards.py`；`pytest tests/unit/dataset` | 全绿（captcha 域覆盖 A-B16-O2；dataset 域 128 用例覆盖 A-B18-O1 及行数门禁回归） |
 | 决议轮定向 | `pytest tests/unit/mfa`（56 用例）、`tests/unit/ai/test_ai_api_registry_guard.py` + `test_ai_conversation_history.py`（24 用例）、`tests/unit/system/test_modelset_permission_hook.py`（2 用例）、`test_i18n_po` | 全绿（覆盖 MFA 4 条 + 公告审批 + 历史护栏 + 钩子对账 + po 2 条新译文） |
-| 决议轮静态 | `ruff format --check` / `ruff check` / `mypy` | 全过（mypy 1054 文件 0 error；ruff 修 4 处 import 排序与格式） |
-| 决议轮**待环境验证** | `tests/unit/integrations/test_im_token_ttl.py`（7 用例）、`tests/integration/system/test_scim_api.py::test_soft_deleted_user_hidden_from_list_but_gettable`、notifications/identity/audit/system/ai 域回归、`makemigrations --check`（mfa 0002 迁移漂移）、`load_init_json --check` | **待环境**——OrbStack 引擎中途停止，按口径不自行重启；测试文件与迁移均已就位，环境恢复后按清单补跑 |
-| 后端静态 | `ruff format --check` / `ruff check` / `mypy` | 全过（mypy 1054 文件 0 error；OPT 轮复跑并修复 `test_ai_registry_register.py` 的 import 排序 I001） |
+| 环境恢复轮补跑 | IM TTL（7 用例）+ SCIM 软删、五域回归、迁移漂移、种子检查 | **全过**（漂移 No changes / 种子 0 error）。五域回归抓出 2 组真失败已修：① codegen 兜底 `generated/` 前缀破坏 NEXT_STEPS.md zip 根级语义（A-B11-O2 引入的回归，4 用例）——兜底改回 `path.name` 单级名；② **DeptViewSet 未覆写权限钩子**（守护测试抓到的真实缺口，即 A-B21-O2 场景）——补显式空覆写（部门无对象级差异），守护测试修导入顺序与测试桩误报（排除下划线私有命名类） |
+| **最终全量** | `uv run pytest -n auto`（修复后） | **通过：8118 passed / 3 skipped / 0 failed**（2:29） |
+| 后端静态 | `ruff format --check` / `ruff check` / `mypy` | 全过（mypy 1054 文件 0 error；OPT 轮修 1 处 import 排序、决议轮修 4 处格式，均复核至绿） |
 | 后端本地门禁 | `check_cache_keys --strict`、`check_ledger_ids`、`check_menu_titles`、`check_file_length`、`check_function_length`、`check_cross_app_imports`、`check_doc_facts`、`check_doc_paths`、`check_adr_status`、`check_doc_index`、`check_doc_size`、`check_tutorial_mirror`、`check_task_acks`、`check_captcha_{coverage,legacy,assets}` | 全过（OPT 轮快扫复核：A-B18-O1 曾把 `dataset/analysis_tasks.py` 推到 502 行，import 块合并压回 499 行后门禁恢复） |
 | 种子 | `load_init_json --check`（0 error）、真灌后 `sync_menu_permissions --dry-run`（缺口 0） | 通过 |
 | 迁移漂移 | `makemigrations --check --dry-run` | No changes detected |
