@@ -71,6 +71,16 @@ def get_signature_user(scope: dict[str, Any]) -> Any:
 
 
 class WsSignatureAuthMiddleware:
+    """JWT 签名认证中间件（尽力而为，fail-open 到 consumer 自检）。
+
+    认证成功把 user 写入 scope；失败不拒绝连接——WS 路由按 app 自动收集
+    （``collect_app_ws_urls``），是否要求认证是各 consumer 的业务决策
+    （与 HTTP 侧视图自带 permission_classes 同构）。**契约：每个要求登录的
+    consumer 必须在 connect() 里自检 ``is_authenticated`` 并 reject**，
+    不得依赖本中间件拦截（message/ws/consumers.py 是参照实现）。
+    二开注册匿名可连通道（如公开大屏）也因此不被误伤。
+    """
+
     def __init__(self, app: Any) -> None:
         self.app = app
 

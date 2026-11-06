@@ -62,3 +62,26 @@ class TestPrepareRagMessages:
         assert messages[2]["content"] == "它是超时配置。"
         assert messages[-1]["content"].endswith("那它的默认值呢？")
         assert sources == [{"title": "文档标题", "path": "guide/doc.md", "chunk_index": 0}]
+
+
+class TestHistoryGuardInstruction:
+    """跨轮注入防护：带历史时 system 追加历史护栏声明，不带历史不追加。"""
+
+    def _prepare(self, monkeypatch, history):
+        from ai.services.assistant import ai_guard
+
+        chunk = SimpleNamespace(content="文档正文", title="文档标题", source_path="guide/doc.md", chunk_index=0)
+        monkeypatch.setattr(ai_service, "is_enabled", lambda: True)
+        monkeypatch.setattr(ai_service, "retrieve", lambda _question: [{"chunk": chunk}])
+        return ai_service._prepare_rag("问题", user=None, history=history), ai_guard
+
+    def test_guard_appended_with_history(self, monkeypatch):
+        (messages, _sources, _hits), ai_guard = self._prepare(
+            monkeypatch, [{"role": "user", "content": "上一问"}, {"role": "assistant", "content": "上一答"}]
+        )
+        assert str(ai_guard.HISTORY_GUARD_INSTRUCTION) in messages[0]["content"]
+
+    def test_guard_absent_without_history(self, monkeypatch):
+        (messages, _sources, _hits), ai_guard = self._prepare(monkeypatch, None)
+        assert str(ai_guard.HISTORY_GUARD_INSTRUCTION) not in messages[0]["content"]
+        assert str(ai_guard.REFERENCE_GUARD_INSTRUCTION) in messages[0]["content"]

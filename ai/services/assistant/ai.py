@@ -139,7 +139,11 @@ def _prepare_rag(question: str, user: Any = None, history: list[dict[str, str]] 
     ``history`` 为同一入口的历史对话（时间正序），拼在 system 与当前问题之间，
     使追问（「那它的默认值呢？」）能接上前文；检索仍按当前问题独立执行。
     """
-    from ai.services.assistant.ai_guard import REFERENCE_GUARD_INSTRUCTION, annotate_reference
+    from ai.services.assistant.ai_guard import (
+        HISTORY_GUARD_INSTRUCTION,
+        REFERENCE_GUARD_INSTRUCTION,
+        annotate_reference,
+    )
     from ai.services.assistant.ai_usage import quota_error
 
     question = (question or "").strip()[:MAX_QUESTION_LENGTH]
@@ -183,6 +187,9 @@ def _prepare_rag(question: str, user: Any = None, history: list[dict[str, str]] 
         ),
         str(REFERENCE_GUARD_INSTRUCTION),
     )
+    if history:
+        # 跨轮注入防护：历史是对话记录而非指令（见 ai_guard.HISTORY_GUARD_INSTRUCTION）
+        system_prompt = f"{system_prompt} {str(HISTORY_GUARD_INSTRUCTION)}"
     user_prompt = "{}\n\n---\n{}".format(
         "\n\n".join(context_blocks),
         str(_("Question: {}").format(question)),

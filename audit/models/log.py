@@ -132,6 +132,11 @@ class OperationLog(DbAuditModel):
     def remove_expired(cls, clean_day: int | None = None, batch_size: int = CLEAN_BATCH_SIZE) -> int:
         """分批删除过期日志（分层留存），避免一次性大 DELETE 造成长事务与锁表。
 
+        **兼容 API（保留给历史调用与测试）**：生产清理链路已收敛到归档驱动
+        （``auto_clean_operation_log`` → ``archive_expired`` + ``prune_archived``，
+        「删必已归档」）；本方法不查归档水位，新调用方勿用——误调会绕过归档
+        保证直接删除。分层留存口径见下。
+
         :param clean_day: 全量保留天数；缺省读取系统配置 OPERATION_LOG_RETENTION_DAYS（默认 180 天）
         :param batch_size: 每批删除的行数
         :return: 删除的总行数
