@@ -32,7 +32,8 @@
 > 与「154 有效」的差即在此。
 >
 > 处置分布：**前轮已修 8** · **本轮 i18n 实修 9** · **本轮纵深实修 14** ·
-> 审查期关闭 1 · **产品口径待定 19**（明细见 §五）· 不修 105（归并理由见 §二.4）。
+> **决议落地 11**（原产品口径待定项，依据与守护见 §五.3）·
+> 审查期关闭 1 · 不修 113（其中 8 条为决议维持现状，回码证据见 §五.3）。
 
 ### 1. 前轮已修（8 条）
 
@@ -102,7 +103,7 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 
 ### 5. 逐条判定清单
 
-判定取值：已修（前轮）/ 已修（本轮 i18n）/ 已修（本轮纵深）/ 不修 / 待定（产品口径，明细见 §五）/ 关闭。
+判定取值：已修（前轮）/ 已修（本轮 i18n）/ 已修（本轮纵深）/ 已修（决议落地）/ 维持现状（决议）/ 不修 / 关闭。原 19 条「产品口径待定」已全部裁定（依据与守护明细见 §五.3）。
 
 **A 篇（61 项）**
 
@@ -114,7 +115,7 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | A-B01-O4 | 不修 | 现状路由无 `/api/<app>/api/` 形态，域键误判无触发面 |
 | A-B02-02 | 不修 | 告警本体仍在（U-07 核实）；节流键加来源域属可观测性增强 |
 | A-B02-03 | 已修（本轮纵深） | tracked_chat/tools 失败路径补 invalidate_usage_cache；mock 断言守护 |
-| A-B02-04 | 待定 | 跨轮注入防护属 AI 安全加固专项（历史隔离 / 扫描需能力取舍），另行排期 |
+| A-B02-04 | 已修（决议落地） | HISTORY_GUARD_INSTRUCTION 历史护栏（带历史才追加）；完整包裹另议（§五.3） |
 | A-B02-05 | 不修 | 配额 0 = 显式不限流是既定语义；心跳虚增仅影响观测值不改变准入 |
 | A-B03-03 | 不修 | 向量容量上限的遗留约束不影响正确性；陈旧向量清理属运维任务 |
 | A-B03-04 | 不修 | 切档案后 60s 查询缓存窗口自愈；同名模型异供应商属边缘配置 |
@@ -124,21 +125,21 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | A-B05-O1 | 已修（前轮） | `ai/views/mcp.py` 审计 result 补 desensitize_payload |
 | A-B05-O2 | 已修（本轮纵深） | batch_destroy 元素类型归一返回 1004；畸形元素用例守护 |
 | A-B06-O1 | 已修（本轮 i18n） | verbose_name 包 `_()`；CLI 文案按「CLI 不强制」口径不译 |
-| A-B07-O1 | 待定 | 三处 OTP action 不走 UsedOtpCodeCache 属防重放口径分叉（confirm 有清绑缓存兜底、test 不改状态、open 幂等） |
+| A-B07-O1 | 已修（决议落地） | open 改走 check_code 防重放；test 保持不占位（试码语义）、confirm 被 already-bound 拦截（§五.3） |
 | A-B07-O2 | 不修 | 二次解析开销小；两次解析间状态变化时下游取新值反而更安全 |
-| A-B07-O3 | 待定 | TTL 配置热更语义（Redis TTL 与 time.time 判定不一致）需产品确认 |
-| A-B07-O4 | 待定 | 恢复码加盐 / 慢哈希需兼容存量摘要的迁移方案 |
-| A-B07-O5 | 待定 | 确认级别与 TTL 脱钩可能是有意设计（高级因子更可信） |
+| A-B07-O3 | 已修（决议落地） | 坏缓存结构防御（缺键不再 KeyError→500）+ TTL 双重判定保守语义登记（§五.3） |
+| A-B07-O4 | 已修（决议落地） | 恢复码摘要版本化 pbkdf2 + 旧 sha256 兼容 + lazy rehash + 迁移 0002（§五.3） |
+| A-B07-O5 | 已修（决议落地） | 确认状态按请求级别写入，方式级别不放大窗口（§五.3） |
 | A-B08-O1 | 已修（前轮） | raise 前显式 close |
-| A-B08-O2 | 待定 | 7200s 是三家一致的保守假设；读 expires_in 需改三家 SDK |
-| A-B08-O3 | 待定 | 短信供应商原始错误回显口径（与 IM 侧 ImSdkError 不一致） |
+| A-B08-O2 | 已修（决议落地） | IM token TTL 读供应商下发值（三家键名差异 + 异常值回落，§五.3） |
+| A-B08-O3 | 已修（决议落地） | 短信供应商原文改固定文案 + 原文进日志（§五.3） |
 | A-B08-O4 | 不修 | tool_calls 分片受 STRUCTURED_MAX_TOKENS=2048 与 max_tokens 有界约束 |
 | A-B09-O1 | 已修（前轮） | 节流键加 creator_id + publish 失败回滚 |
 | A-B09-O2 | 已修（前轮） | path `[:400]` / method `[:8]` 截断 |
-| A-B09-O3 | 待定 | remove_expired 是兼容 API（生产调用已收敛到归档链路），是否删除需运维口径 |
-| A-B10-O1 | 待定 | 全员公告写动作的风险定级（是否 requires_approval） |
+| A-B09-O3 | 已修（决议落地） | remove_expired 登记「兼容 API」地位，生产走归档链路（§五.3） |
+| A-B10-O1 | 已修（决议落地） | notice.publish 声明 requires_approval_high_risk（高危写动作同口径，§五.3） |
 | A-B10-O2 | 不修 | exempt 理由文案漂移不影响 ai_tool_audit（已声明动作不进候选）；代码是事实源 |
-| A-B10-O3 | 待定 | webhook 出站字段最小化（管理员配置的信任边界） |
+| A-B10-O3 | 维持现状（决议） | webhook 语义即投递消息与发送者；管理员配置 + 签名 + SSRF 防护 + 白名单 = 显式信任边界（§五.3） |
 | A-B10-O4 | 不修 | 部分成功可幂等重跑自愈；统一事务边界属行为变更 |
 | A-B11-O1 | 不修 | 开发者本地 CLI，输入操作者自控，非运行时接口 |
 | A-B11-O2 | 已修（本轮纵深） | _relative_path 兜底返回单级名防 zip-slip；`test_defensive_path_guards.py` 守护 |
@@ -157,9 +158,9 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | A-B19-O1 | 不修 | 指纹不符置 FAILED 是失败优先的安全方向；并发覆盖需双请求竞态且不越权 |
 | A-B19-O2 | 已修（前轮） | cache.add 原子占位 + 失败回滚 |
 | A-B20-O1 | 不修 | 历史令牌缺 scene 是有注释的升级兼容，按 TTL 自然过期 |
-| A-B20-O2 | 待定 | SCIM all_objects 含软删行是否为目录同步语义（U-33） |
+| A-B20-O2 | 已修（决议落地） | SCIM 列表过滤软删行；单查保留 all_objects（对端撤销场景，§五.3） |
 | A-B21-O1 | 已修（前轮） | limit 集合并集删除 |
-| A-B21-O2 | 待定 | 权限钩子宿主覆写对账（U-33），是否由基类 / 门禁守护 |
+| A-B21-O2 | 已修（决议落地） | 唯一宿主已覆写（B 篇检索不全）；新增宿主覆写对账守护测试（§五.3） |
 | A-B21-O3 | 不修 | check_menu_titles 实际容忍（rstrip 句号 + 只判长度），风格漂移不影响运行 |
 | A-B22-O1 | 不修 | 限流容错放行是有意设计（与 PatThrottle 同口径），注释已声明 |
 | A-B22-O2 | 不修 | 白名单键全部 `^…$` 精确锚定，re.match 与 fullmatch 语义等价（本轮回码 custom.py:12-20 核实） |
@@ -168,7 +169,7 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | A-B24-O1 | 已修（本轮纵深） | 匿名回落补 logger.debug(exc_info=True) |
 | A-B25-O1 | 已修（本轮纵深） | Flower path 白名单 _ALLOWED_PATH_RE；参数化守护用例 |
 | A-B25-O2 | 已修（本轮纵深） | schema 缓存键加 get_language() 维度；守护用例 |
-| A-B26-O1 | 待定 | WS 中间件 fail-open 统一收口（架构约定） |
+| A-B26-O1 | 维持现状（决议） | consumer 自检无绕过（B14 复核）+ WS 扩展契约；docstring 固化自检契约（§五.3） |
 
 **B 篇（95 项）**
 
@@ -185,7 +186,7 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | F04-O3 | 已修（本轮 i18n） | oauthAuthorize.user 改插值词条；「￥」等符号按不译口径 |
 | F05-O1 | 不修 | playground 演示页脚手架文案，非业务交付面 |
 | F05-O2 | 不修 | 同上（演示页样式字面量） |
-| F06-O1 | 待定 | ai_tokens_24h 契约字段是预留，日报卡是否补 token 维度属产品排期 |
+| F06-O1 | 维持现状（决议） | 5 chip 是既有产品口径；ai_tokens_24h 契约字段预留，消费属产品排期（§五.3） |
 | F06-O2 | 不修 | 欢迎页卡片降级语义（失败显示占位）是有意设计 |
 | F07-O1 | 不修 | 上传有后端 MIME 白名单 + 大小校验（A 篇 B13 回码）；accept 属基础约束冗余 |
 | F07-O2 | 不修 | 改名 / 成员 / 退群的后端权限点独立校验 |
@@ -200,7 +201,7 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | F12-O1 | 不修 | F11-P2 回码衍生；页面级 auth 注入是项目组件编排模式 |
 | F13-O1 | 不修 | 与 F01-O1 同口径（后端下发 URL） |
 | F13-O2 | 不修 | 「s」单位与「—」占位符是符号字面量 |
-| F14-O1 | 待定 | Passkey 注册 / 删除是否纳入 412 二次确认通道 |
+| F14-O1 | 维持现状（决议） | 412 是 http 拦截器全局策略（验证后自动重发）；后端 register 已挂密码级确认，handleOperation 非通道必要条件（§五.3） |
 | F14-O2 | 不修 | res.detail 单独渲染（后端已 i18n 的权威文案）；全角冒号是中文标点惯例 |
 | F15-O1 | 不修 | 就地修改 props 引用在当前单向数据流下工作（父依赖同引用）；重构属行为变更 |
 | F15-O2 | 不修 | 字典创建走后端独立权限点 |
@@ -212,14 +213,14 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | F18-O1 | 不修 | cron 解析以后端预览端点为权威 |
 | F18-O2 | 不修 | componentLabel 动态键已在 i18n 门禁登记面（动态前缀 28 个）；符号不译 |
 | F19-O1 | 不修 | max_rows 下推有后端 per-model 上限 |
-| F19-O2 | 待定 | 大屏 html 组件是功能特性（CSP 面在 F24 链路评估） |
+| F19-O2 | 维持现状（决议） | html 元件是大屏功能特性；渲染走 F24 链路已评估的自建白名单净化（§五.3） |
 | F20-O1 | 不修 | 后端锁权威；按钮 disabled 属交互打磨 |
 | F21-O1 | 不修 | 拖放落点判断是展示层细节 |
 | F22-O1 | 不修 | 图片 URL 提示不阻断是设计；后端存储校验权威 |
 | F23-O1 | 不修 | embed URL 后端 pinned_request 同源校验；提示不阻断是设计 |
 | F24-O1 | 不修 | 自建白名单 + v-html 渲染侧收口（B 篇主审复核安全） |
 | F25-O1 | 不修 | 与 F24 同链路已判安全；时钟占位符是符号 |
-| F26-O1 | 待定 | 详情缺 is_owner 按可编辑放行的前端口径（保存后端校验） |
+| F26-O1 | 维持现状（决议） | designer.vue:85-87 已固化「UX 层守卫 + 写权威在后端 + 缺 is_owner 按可编辑放行」；fail-closed 破坏旧后端兼容（§五.3） |
 | F27-O1 | 不修 | 审批日志无外键关联，近似匹配是产品妥协；串台需同路径同主键同人碰撞 |
 | F28-O1 | 不修 | 候选值校验后端 serializer 权威（allow-create 是选人交互特性） |
 | F29-O1 | 不修 | 注释与实现漂移；自环路由在后端 flow 结构校验中拒绝（编辑器属展示层） |
@@ -234,7 +235,7 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | F38-O1 | 不修 | 判权与模板口径不一致是展示小瑕疵 |
 | F39-O1 | 不修 | 未映射动作回退裸值是枚举兜底（技术值）；后端权限权威 |
 | F40-O1 | 不修 | 富文本写入保原文是产品语义（编辑能力），净化在渲染侧收口 |
-| F41-O1 | 待定 | raw 视图全字段展示是否脱敏 secret（管理员排障面） |
+| F41-O1 | 维持现状（决议） | 后端 mask_providers 回传前 pop client_secret（只留 configured 布尔）——前端 secret 恒为空串，openRaw 无泄露面（§五.3） |
 | F42-O1 | 不修 | 权限在会话期不变（登出整页重载），顶层常量取值安全 |
 | F43-O1 | 不修 | AiMessageBlock 文本插值非 v-html |
 | F44-O1 | 不修 | DSL 文本插值非 v-html |
@@ -260,7 +261,7 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | F65-O1 | 不修 | 后端字段 prop 回显（文本插值） |
 | F66-O1 | 不修 | 后端字段回显 + 单位符号 |
 | F67-O1 | 不修 | 注释漂移；数值范围后端 serializer 校验 |
-| F68-O1 | 待定 | 选人弹窗打开即拉用户列表（后端 list 权限点 + 数据权限收口） |
+| F68-O1 | 维持现状（决议） | my-scope/index.vue:315/324 入口按钮已按 canListUsers 控制 disabled——无权限打不开抽屉，不存在无谓 403（§五.3） |
 | F69-O1 | 不修 | Markdown 占位符（code / https://）是技术值，翻译反而破坏功能 |
 | F70-O1 | 不修 | 批量端点后端权限点权威 |
 | F71-O1 | 不修 | matchOptions / field_meta 是元数据协议模式（后端下发为权威） |
@@ -301,6 +302,9 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 | 后端集成 | `uv run pytest tests/integration/ai` | 0 失败 |
 | **后端全量** | `uv run pytest -n auto` | **通过（EXIT=0）**。环境恢复后共三轮收口：首轮确认此前的「用户管理/角色管理」菜单顺序断言失败为**预存在 flaky**（fixture 子菜单未设 rank，同序下 DB 返回顺序不稳定；本轮给 fixture 补 rank 定序修复，连跑 5 次稳定）；次轮两个种子数量守护断言随新增 `passwordChallenge:UserInfo` 权限点同步更新（菜单 747→748 / 权限点 668→669 / default 角色授权 33→34）；末轮全绿 |
 | OPT 轮定向复跑 | `pytest tests/unit/captcha tests/unit/common/test_i18n_po.py tests/unit/ai/test_ai_registry_register.py tests/unit/common/test_defensive_path_guards.py`；`pytest tests/unit/dataset` | 全绿（captcha 域覆盖 A-B16-O2；dataset 域 128 用例覆盖 A-B18-O1 及行数门禁回归） |
+| 决议轮定向 | `pytest tests/unit/mfa`（56 用例）、`tests/unit/ai/test_ai_api_registry_guard.py` + `test_ai_conversation_history.py`（24 用例）、`tests/unit/system/test_modelset_permission_hook.py`（2 用例）、`test_i18n_po` | 全绿（覆盖 MFA 4 条 + 公告审批 + 历史护栏 + 钩子对账 + po 2 条新译文） |
+| 决议轮静态 | `ruff format --check` / `ruff check` / `mypy` | 全过（mypy 1054 文件 0 error；ruff 修 4 处 import 排序与格式） |
+| 决议轮**待环境验证** | `tests/unit/integrations/test_im_token_ttl.py`（7 用例）、`tests/integration/system/test_scim_api.py::test_soft_deleted_user_hidden_from_list_but_gettable`、notifications/identity/audit/system/ai 域回归、`makemigrations --check`（mfa 0002 迁移漂移）、`load_init_json --check` | **待环境**——OrbStack 引擎中途停止，按口径不自行重启；测试文件与迁移均已就位，环境恢复后按清单补跑 |
 | 后端静态 | `ruff format --check` / `ruff check` / `mypy` | 全过（mypy 1054 文件 0 error；OPT 轮复跑并修复 `test_ai_registry_register.py` 的 import 排序 I001） |
 | 后端本地门禁 | `check_cache_keys --strict`、`check_ledger_ids`、`check_menu_titles`、`check_file_length`、`check_function_length`、`check_cross_app_imports`、`check_doc_facts`、`check_doc_paths`、`check_adr_status`、`check_doc_index`、`check_doc_size`、`check_tutorial_mirror`、`check_task_acks`、`check_captcha_{coverage,legacy,assets}` | 全过（OPT 轮快扫复核：A-B18-O1 曾把 `dataset/analysis_tasks.py` 推到 502 行，import 块合并压回 499 行后门禁恢复） |
 | 种子 | `load_init_json --check`（0 error）、真灌后 `sync_menu_permissions --dry-run`（缺口 0） | 通过 |
@@ -317,13 +321,17 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 
 1. **v4 协议的退役排期**：username 密钥协议（v1/v2）进入兼容期后，可参照既有 `SECURITY_AES_V1_DECRYPT_ENABLED` 灰度开关的模式，在确认全量客户端升级后考虑关闭兼容路径（当前保持双协议，无时间压力）。
 2. **其余口令核验点是否统一 v4**：MFA confirm / OAuth 解绑 / verify-password 3 处仍用 username 协议（412 语境各有独立暴力防护），如需统一可复用挑战机制另行排期。
-3. **产品口径待定 OPT（19 条，逐条判定见 §二.5 清单「待定」行）**，按主题分组：
-   - **MFA / 认证策略（4）**：A-B07-O1（OTP 三处 action 防重放口径）、A-B07-O3（确认 TTL 配置热更语义）、A-B07-O4（恢复码加盐 / 慢哈希迁移）、A-B07-O5（确认级别与 TTL 脱钩）；
-   - **供应商与通知（4）**：A-B08-O2（IM token TTL 读 expires_in）、A-B08-O3（短信供应商错误回显）、A-B10-O1（公告写动作审批定级）、A-B10-O3（webhook 出站字段最小化）；
-   - **协议 / 架构约定（3）**：A-B20-O2（SCIM 软删语义，U-33）、A-B21-O2（权限钩子宿主覆写对账，U-33）、A-B26-O1（WS 中间件 fail-open 统一收口）；
-   - **运维口径（1）**：A-B09-O3（两套日志清理是否收敛删除 remove_expired）；
-   - **前端产品口径（6）**：F06-O1（日报卡消费 ai_tokens_24h）、F14-O1（Passkey 是否纳入 412）、F19-O2（大屏 html 组件保留面）、F26-O1（详情缺 is_owner 的可编辑口径）、F41-O1（raw 视图 secret 脱敏）、F68-O1（选人弹窗打开即拉列表）；
-   - **AI 安全加固（1）**：A-B02-04（多轮历史跨轮注入防护，属能力取舍专项）。
+3. **产品口径决议（原 19 条待定项已全部裁定；逐条判定同步更新 §二.5 清单）**，按主题分组：
+   - **MFA / 认证策略（4，全部采纳落地）**：
+     - A-B07-O1（OTP 防重放）：`open` 改走 `check_code`（原子占位，验码失败自动释放）；`test` 刻意不占位——产品语义是「先试码、确认可用后拿同一个码去 open」，占位会打断引导流程（docstring 防误改）；`confirm` 验的是未入库候选密钥，同码重放被「已绑定」前置拦截。守护 ×2；
+     - A-B07-O3（TTL 热更语义）：`is_valid_for` / `_state_expire_at` 防御坏缓存结构（缺键返回不满足，不再 KeyError→500）；TTL 双重判定维持保守语义（Redis TTL 硬上界 + time.time 按当前配置收紧，配置调小立即生效）并写入 docstring；
+     - A-B07-O4（恢复码摘要）：版本化 `pbkdf2$iter$salt$hash`（随机盐 + 100k 迭代，对齐 v4 的版本化兼容模式）+ 旧无盐 sha256 兼容验证 + 验后 lazy rehash 原地升级（存量码自然过渡，不停机迁移）；逐行验证（每用户 ≤10 行，最坏数百毫秒，自救低频场景可接受）；迁移 0002 扩列 64→128。守护 ×5；
+     - A-B07-O5（确认级别）：确认状态按**请求级别**（confirm_type）而非验证方式级别写入——用 OTP 确认 PASSWORD 级请求只解锁 PASSWORD 级窗口，不因方式级别高而放大（TTL 与解锁面都对应操作敏感度）。守护 ×1。
+   - **供应商与通知（4）**：A-B08-O2 采纳——IM token TTL 读供应商下发值（base `_apply_token_ttl`：三家键名差异 wecom=expires_in / feishu=expire / dingtalk=expireIn，毫秒错位与异常值回落 7200 保守假设），守护 ×7；A-B08-O3 采纳——短信供应商原文改固定文案 + 原文进 warning 日志（与 IM 侧「message 面向日志」口径对齐）；A-B10-O1 采纳——`notice.publish` 声明 `requires_approval_high_risk`（与 identity/system/approval 域高危写动作同口径：非超管 412），守护 ×1；**A-B10-O3 维持现状**——webhook 的产品语义就是投递消息与发送者（IM 渠道同口径），管理员显式配置 URL + HMAC 签名 + SSRF 防护 + 出站白名单 = 四层显式信任边界，项目无「按接收人字段最小化」约定。
+   - **协议 / 架构约定（3）**：A-B20-O2 采纳（最小改动）——SCIM /Users 列表过滤软删行（软删是站内生命周期终点，目录同步不应继续见到），**单查保留 `all_objects`**（对端按 id 回查撤销 / 审计场景），docstring 登记双口径，守护 ×1；A-B21-O2 采纳（守护）——全仓对账确认唯一宿主 `UserViewSet` **已覆写**钩子（B 篇检索不全：覆写在 identity/views 而非 system/），新增宿主覆写对账测试防未来漏写；**A-B26-O1 维持现状**——B14 已复核全部 consumer 按 `is_authenticated` 自检无绕过，WS 路由按 app 自动收集（二开可注册匿名通道如公开大屏），中间件统一收口会把「是否要求认证」的决策从 consumer 上收、破坏与 HTTP 侧（视图自带 permission_classes）同构的扩展契约；落地为 `WsSignatureAuthMiddleware` docstring 固化「consumer 必须自检」契约。
+   - **运维口径（1）**：A-B09-O3 采纳（文档登记）——`remove_expired` docstring 标注「兼容 API（保留给历史调用与测试）」并指引生产走归档链路（`archive_expired` + `prune_archived`，「删必已归档」）；删除该方法是破坏性变更（二开可能调用），不删。
+   - **AI 安全加固（1）**：A-B02-04 采纳（prompt 层先行）——新增 `HISTORY_GUARD_INSTRUCTION`（历史是对话记录非指令，assistant 历史中的指令性文本不应被执行），仅在携带历史时追加到 system prompt；完整的历史隔离（引用块包裹）会影响追问接续质量，出现实际注入案例再升级。守护 ×2。
+   - **前端产品口径（6，全部维持现状，回码证据）**：F06-O1——日报卡 5 chip 是既有产品口径，`ai_tokens_24h` 契约字段预留，消费 token 维度是新功能（需定义形态 / 阈值 / 词条）非缺陷；F14-O1——**412 通道是 http 拦截器全局策略**（`errorStrategies.ts:121`，`user_confirm_required` 验证通过后自动重发原请求），后端 `PasskeyViewSet.register` 已挂 `UserConfirmation.require(PASSWORD)`，`handleOperation` 只是「确认后重发 + 成功回调」的页面级便利封装，「不走 handleOperation = 无 412」前提不成立；F19-O2——html 元件是大屏功能特性，渲染走 F24 链路已评估的自建白名单净化；F26-O1——`designer.vue:85-87` 注释已固化「UX 层守卫 + 写权威在后端 + 缺 is_owner 按可编辑放行」，三处消费点统一 `!== false` 口径，fail-closed 会破坏旧后端兼容；F41-O1——后端 `mask_providers` 回传前直接 pop `client_secret`（只留 `configured` 布尔），前端 providers 里 secret 恒为空串，`openRaw` 无泄露面；F68-O1——`my-scope/index.vue:315/324` 入口按钮已按 `canListUsers` 控制 disabled（无权限打不开抽屉），不存在「无谓 403」，打开即拉是部门成员抽屉的交互语义。
 4. **A 篇 9 个迁移文件补审结论**（F76）：仅 F76-O1 一条 OPT，已判定暂不修。
 
 ## 六、提交说明
@@ -332,3 +340,4 @@ A-B01-O2：U-08 回码确认 `catalog(user)` 返回 forms 两键齐备，KeyErro
 
 - **前两轮**（P2 修复 / v4 挑战协议 / A-B20 扩展面）：server 18 个主题提交 + client 2 个（F60-P2 tooltip 转义、F11-P2 v4 协议）。
 - **本轮 OPT 批**：server 3 个（i18n 文案收口 / 防御纵深批 + 守护测试 / 本报告 OPT 清单）+ client 2 个（i18n 专项词条化 / 防御纵深批）。
+- **本轮决议批**（原 19 条产品口径待定项）：server 5 个——MFA 安全收口（确认级别 / 恢复码版本化 / OTP 防重放 / TTL 防御 + 迁移 0002）、供应商口径（IM token TTL / 短信错误回显 + po）、协议与声明（SCIM 软删列表 / 公告高危审批 + 守护）、护栏与契约（AI 历史护栏 / WS 自检契约 / 清理口径登记 + 守护）、本报告决议记录与 doc-size 豁免登记；client 无改动（前端 6 条全部维持现状，回码证据见 §五.3）。

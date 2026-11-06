@@ -52,6 +52,13 @@ DOC_SIZE_EXEMPT = {
         ),
         "baseline_kb": 43,
     },
+    "docs/audit/2026-11-06-code-review-verification.md": {
+        "reason": (
+            "双仓审查核实的一次性交付台账：含 156 项 OPT 逐条判定清单与 19 条产品口径"
+            "决议依据（均为任务明确要求的交付内容），后续只可能随待办清零而缩减"
+        ),
+        "baseline_kb": 46,
+    },
 }
 
 
