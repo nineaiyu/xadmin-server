@@ -55,14 +55,19 @@ def remind_pending_tasks(now: Any = None) -> int:
         if deadline > now:
             continue
         cache_key = f"approval_flow_remind_{task.pk}"
-        if cache.get(cache_key):
+        # cache.add 原子占位（get+set 在并发调度下有双发窗口，同文件超时跳过重试已是同口径）
+        if not cache.add(cache_key, 1, FLOW_REMIND_CACHE_SECONDS):
             continue
         try:
             _notify([task.assignee], "remind", task.instance, extra=task.node_name)
-            cache.set(cache_key, 1, FLOW_REMIND_CACHE_SECONDS)
             reminded += 1
         except Exception:  # noqa: BLE001 单条提醒失败不阻断其余任务
             logger.warning("send approval flow remind failed. task:%s", task.pk, exc_info=True)
+            # 回滚占位：发送失败的任务下次调度仍可重试（保持原 get+set 的失败重试语义）
+            try:
+                cache.delete(cache_key)
+            except Exception:  # noqa: BLE001 缓存不可用时不影响其余任务
+                logger.warning("rollback approval remind cache key failed. task:%s", task.pk)
     return reminded
 
 
