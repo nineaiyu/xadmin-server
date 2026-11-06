@@ -53,6 +53,8 @@ def _menu_tree(db):
             menu_type=Menu.MenuChoices.MENU,
             parent=parent,
             meta=meta,
+            # 同 rank 下 DB 返回顺序不稳定（曾致顺序断言 flaky）：显式 rank 定序
+            rank=i,
         )
     return parent
 
