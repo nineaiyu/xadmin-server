@@ -123,7 +123,7 @@ six==1.17.0
 sqlparse==0.6.0
 texttable==1.7.0
 tinycss2==1.5.1
-tornado==6.6
+tornado==6.6.1
 twisted==26.10.0
 txaio==26.6.1
 typing-extensions==4.16.0
