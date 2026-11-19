@@ -56796,7 +56796,7 @@
     },
     "/api/identity/posts/user-options": {
       "get": {
-        "description": "成员候选\n\n按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）\n\n与选人控件同源（identity/utils/user_options.py）；权限与 list 同口径\n（框架 shared_list 注册表，无需新增权限点）。",
+        "description": "成员候选\n\n按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）\n\n与选人控件同源（identity/utils/user_options.py）；权限与 list 同口径\n（框架 shared_list 注册表，无需新增权限点）。套数据权限与部门管理页\n（dept.py 的 user-options）同口径：不传 user 会让仅持本 action 权限的\n部门管理员跨部门探测/枚举用户。",
         "operationId": "api_identity_posts_user_options_retrieve",
         "responses": {
           "200": {
@@ -64284,7 +64284,7 @@
     },
     "/api/mfa/otp/confirm": {
       "post": {
-        "description": "确认绑定\n\n校验动态码后写入密钥，并自动开启登录 MFA\n\n绑定的落库动作同样要求密码二次确认：仅持有会话不足以接管登录因子。\n绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。",
+        "description": "确认绑定\n\n校验动态码后写入密钥，并自动开启登录 MFA\n\n绑定的落库动作同样要求密码二次确认：仅持有会话不足以接管登录因子。\n绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。\n候选密钥未入库（check_code 依赖入库密钥），此处直接 verify_code；\n同码重放绑定确认会被「已绑定」前置拦截，无重放收益。",
         "operationId": "api_mfa_otp_confirm_create",
         "requestBody": {
           "content": {
@@ -64394,7 +64394,7 @@
     },
     "/api/mfa/otp/open": {
       "post": {
-        "description": "重新开启登录二次验证\n\n密钥保留时校验一次动态码证明持有，无需重新扫码",
+        "description": "重新开启登录二次验证\n\n密钥保留时校验一次动态码证明持有，无需重新扫码。\n走 ``check_code``（UsedOtpCodeCache 原子占位防同码重放，验码失败\n自动释放不占位、不影响重试）。",
         "operationId": "api_mfa_otp_open_create",
         "requestBody": {
           "content": {
@@ -64584,7 +64584,7 @@
     },
     "/api/mfa/otp/test": {
       "post": {
-        "description": "校验动态码\n\n不改变任何状态，失败计入防爆破锁定\n\n供关闭登录二次验证后自检密钥可用性（换设备 / 手机时间漂移场景），\n避免重新开启时才发现码不对而连续失败触发锁定。",
+        "description": "校验动态码\n\n不改变任何状态，失败计入防爆破锁定\n\n供关闭登录二次验证后自检密钥可用性（换设备 / 手机时间漂移场景），\n避免重新开启时才发现码不对而连续失败触发锁定。\n刻意不走 ``check_code`` 的防重放占位：自检的产品语义就是「先试一个码、\n确认可用后马上拿同一个码去 open」——占位会把这个引导流程打断。",
         "operationId": "api_mfa_otp_test_create",
         "requestBody": {
           "content": {
@@ -68365,7 +68365,7 @@
     },
     "/api/scim/v2/Users": {
       "get": {
-        "description": "GET /Users（filter=userName eq \"x\" + 分页）/ POST /Users（开通）。",
+        "description": "GET /Users（filter=userName eq \"x\" + 分页）/ POST /Users（开通）。\n\n列表只返回未软删用户（软删是站内生命周期终点，目录同步不应继续见到）；\n单查（UserDetailView）保留 ``all_objects``——对端按 id 回查撤销 / 审计\n场景仍可定位已软删行，``active`` 如实反映其状态。",
         "operationId": "api_scim_v2_Users_retrieve",
         "responses": {
           "200": {
@@ -68377,7 +68377,7 @@
         ]
       },
       "post": {
-        "description": "GET /Users（filter=userName eq \"x\" + 分页）/ POST /Users（开通）。",
+        "description": "GET /Users（filter=userName eq \"x\" + 分页）/ POST /Users（开通）。\n\n列表只返回未软删用户（软删是站内生命周期终点，目录同步不应继续见到）；\n单查（UserDetailView）保留 ``all_objects``——对端按 id 回查撤销 / 审计\n场景仍可定位已软删行，``active`` 如实反映其状态。",
         "operationId": "api_scim_v2_Users_create",
         "responses": {
           "200": {

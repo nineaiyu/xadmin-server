@@ -91,7 +91,18 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
             },
         )
 
-    @extend_schema(responses=get_default_response_schema())
+    @extend_schema(
+        responses=get_default_response_schema(
+            {
+                "data": build_object_type(
+                    properties={
+                        "challenge": build_basic_type(OpenApiTypes.STR),
+                        "expires_in": build_basic_type(OpenApiTypes.NUMBER),
+                    }
+                )
+            }
+        )
+    )
     @action(  # type: ignore[untyped-decorator]  # 第三方装饰器（celery / django / DRF）无类型存根：函数自身标注完整，此处不因装饰器降级
         methods=["get"],
         detail=False,
