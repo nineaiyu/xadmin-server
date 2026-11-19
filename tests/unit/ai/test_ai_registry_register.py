@@ -27,6 +27,20 @@ class TestRegisterActionConflict:
         register_action(type("Spec", (), {"key": "plugin.custom.action"})())
         assert "plugin.custom.action" in action_specs()
 
+    def test_registry_reset_invalidates_contract_cache(self):
+        """注册表重建必须同步失效契约缓存：否则同一契约解析出两个对象。"""
+        from common import contracts
+        from common.contracts import invalidate_contract
+
+        invalidate_contract("API_ACTION_SPECS")
+        before = contracts.API_ACTION_SPECS
+        reset_action_specs_cache()
+        after = contracts.API_ACTION_SPECS
+        assert after is not before
+        from ai.contracts import API_ACTION_SPECS as provider_specs
+
+        assert after is provider_specs
+
 
 class TestKnowledgeBatchDestroyInput:
     def test_malformed_elements_rejected_with_readable_code(self, superuser):

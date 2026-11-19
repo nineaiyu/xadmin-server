@@ -153,6 +153,18 @@ def unregister_contract(name: str) -> None:
     globals().pop(name, None)
 
 
+def invalidate_contract(name: str) -> None:
+    """清除白名单默认解析缓存（提供方运行期重建后调用；注入覆盖不受影响）。
+
+    惰性解析会把首次取值缓存为模块属性（见 ``__getattr__``）；提供方自身的
+    缓存若被重建（如 AI 动作注册表 ``reset_action_specs_cache``），契约门面
+    必须同步失效，否则同一契约会解析出两个不同对象（并行测试顺序下暴露）。
+    """
+    if name not in _CONTRACT_PROVIDERS:
+        raise ValueError(f"contract name {name!r} is not declared in _CONTRACT_PROVIDERS（契约面外无缓存）")
+    globals().pop(name, None)
+
+
 def load_contract_entry_points() -> list[str]:
     """装配外置分发包经 entry points 声明的契约提供方。
 

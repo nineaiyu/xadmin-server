@@ -97,6 +97,7 @@ def register_action(spec: Any) -> Any:
             raise ImproperlyConfigured(f"AI 动作 key 重复：{key}（与声明文件 {app_config.name} 冲突）")
     _EXTRA_ACTIONS[key] = spec
     action_specs.cache_clear()
+    _invalidate_contract_cache()
     return spec
 
 
@@ -118,7 +119,15 @@ def _iter_app_declarations() -> Any:
         yield from _app_declarations(app_config).items()
 
 
+def _invalidate_contract_cache() -> None:
+    """注册表重建后同步失效框架契约缓存（防同一契约解析出两个对象）。"""
+    from common.contracts import invalidate_contract
+
+    invalidate_contract("API_ACTION_SPECS")
+
+
 def reset_action_specs_cache() -> None:
     """清空发现缓存与运行期登记（测试 / 声明热改后的显式重建入口）。"""
     _EXTRA_ACTIONS.clear()
     action_specs.cache_clear()
+    _invalidate_contract_cache()
